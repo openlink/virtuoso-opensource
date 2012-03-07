@@ -1,0 +1,293 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectName>virtuoso-javavm-t</ProjectName>
+    <ProjectGuid>{02AD88A0-CF7B-11DA-85E2-A4E5714C712A}</ProjectGuid>
+    <RootNamespace>virtuoso_javavm_t</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros">
+    <ShortPlatform Condition="'$(Platform)' == 'Win32'">x86</ShortPlatform>
+    <ShortPlatform Condition="'$(Platform)' == 'x64'">x64</ShortPlatform>
+  </PropertyGroup>
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ShortPlatform)\$(Configuration)\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ShortPlatform)\$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ShortPlatform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ShortPlatform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|x64'" />
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Midl>
+      <TargetEnvironment>X64</TargetEnvironment>
+    </Midl>
+    <ClCompile>
+      <Optimization>Full</Optimization>
+      <AdditionalIncludeDirectories>$(JDK_PATH)\include;..\libsrc\xml.new;..\libsrc;$(JDK_PATH)\include\win32;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\zlib;..\binsrc\driver;..\libsrc\plugin;..\libsrc\langfunc;..\libsrc\openssl;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;_CONSOLE;_SSL;YYTOKENTYPE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <ExceptionHandling>
+      </ExceptionHandling>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <CompileAs>Default</CompileAs>
+    </ClCompile>
+    <Link>
+      <AdditionalOptions>/MACHINE:AMD64 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalDependencies>libvirtuoso-t.lib;ws2_32.lib;libeay32.lib;ssleay32.lib;$(JDK_PATH)\lib\jvm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutDir)virtuoso-javavm-t.exe</OutputFile>
+      <AdditionalLibraryDirectories>$(ShortPlatform)/$(Configuration)/;../SDK/$(ShortPlatform)/sslsdk/out32dll;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <ProgramDatabaseFile>$(OutDir)virtuoso_javavm_t.pdb</ProgramDatabaseFile>
+      <SubSystem>Console</SubSystem>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
+      <DataExecutionPrevention>
+      </DataExecutionPrevention>
+      <TargetMachine>MachineX64</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Midl />
+    <ClCompile>
+      <Optimization>Full</Optimization>
+      <AdditionalIncludeDirectories>$(JDK_PATH)\include;..\libsrc\xml.new;..\libsrc;$(JDK_PATH)\include\win32;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\zlib;..\binsrc\driver;..\libsrc\plugin;..\libsrc\langfunc;..\libsrc\openssl;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;_CONSOLE;_SSL;YYTOKENTYPE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <ExceptionHandling>
+      </ExceptionHandling>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <CompileAs>Default</CompileAs>
+    </ClCompile>
+    <Link>
+      <AdditionalOptions>
+      </AdditionalOptions>
+      <AdditionalDependencies>libvirtuoso-t.lib;ws2_32.lib;libeay32.lib;ssleay32.lib;$(JDK_PATH)\lib\jvm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutDir)virtuoso-javavm-t.exe</OutputFile>
+      <AdditionalLibraryDirectories>$(ShortPlatform)/$(Configuration)/;../SDK/$(ShortPlatform)/sslsdk/out32dll;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <ProgramDatabaseFile>$(OutDir)virtuoso_javavm_t.pdb</ProgramDatabaseFile>
+      <SubSystem>Console</SubSystem>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
+      <DataExecutionPrevention>
+      </DataExecutionPrevention>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\binsrc\tests\biftest\java_code.c" />
+    <ClCompile Include="..\binsrc\tests\biftest\javavm.c" />
+    <ClCompile Include="..\binsrc\tests\biftest\sql_code_clr.c" />
+    <ClCompile Include="..\binsrc\tests\biftest\sql_code_javavm.c" />
+    <ClCompile Include="..\binsrc\tests\biftest\sql_code_xslt.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\win32\virtuoso_t.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\binsrc\tests\biftest\import_clr.sql">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">cd %(RootDir)%(Directory)
+
+rm -f sql_code_clr.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_clr pass_bootstrap_cli=1 pl_stats=PLDBG %(FullPath) &gt; sql_code_clr.c
+
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)\sql_code_clr.c;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">cd %(RootDir)%(Directory)
+
+rm -f sql_code_clr.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_clr pass_bootstrap_cli=1 pl_stats=PLDBG %(FullPath) &gt; sql_code_clr.c
+
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">cd %(RootDir)%(Directory)
+
+rm -f sql_code_clr.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_clr pass_bootstrap_cli=1 pl_stats=PLDBG %(FullPath) &gt; sql_code_clr.c
+
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RootDir)%(Directory)\sql_code_clr.c;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)\sql_code_clr.c;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">cd %(RootDir)%(Directory)
+
+rm -f sql_code_clr.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_clr pass_bootstrap_cli=1 pl_stats=PLDBG %(FullPath) &gt; sql_code_clr.c
+
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)\sql_code_clr.c;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">cd %(RootDir)%(Directory)
+
+rm -f sql_code_clr.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_clr pass_bootstrap_cli=1 pl_stats=PLDBG %(FullPath) &gt; sql_code_clr.c
+
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">cd %(RootDir)%(Directory)
+
+rm -f sql_code_clr.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_clr pass_bootstrap_cli=1 pl_stats=PLDBG %(FullPath) &gt; sql_code_clr.c
+
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RootDir)%(Directory)\sql_code_clr.c;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)\sql_code_clr.c;%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\binsrc\tests\biftest\javavm_type.xsl">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">cd %(RootDir)%(Directory)
+
+rm -f sql_code_clr.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_xslt pass_bootstrap_cli=1 pl_stats=PLDBG %(FullPath) &gt; sql_code_xslt.c
+
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)\sql_code_xslt.c;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">cd %(RootDir)%(Directory)
+
+rm -f sql_code_xslt.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_xslt pass_bootstrap_cli=1 pl_stats=PLDBG %(Filename)%(Extension) &gt; sql_code_xslt.c
+
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">cd %(RootDir)%(Directory)
+
+rm -f sql_code_xslt.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_xslt pass_bootstrap_cli=1 pl_stats=PLDBG %(Filename)%(Extension) &gt; sql_code_xslt.c
+
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RootDir)%(Directory)\sql_code_xslt.c;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)\sql_code_xslt.c;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">cd %(RootDir)%(Directory)
+
+rm -f sql_code_clr.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_xslt pass_bootstrap_cli=1 pl_stats=PLDBG %(FullPath) &gt; sql_code_xslt.c
+
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)\sql_code_xslt.c;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">cd %(RootDir)%(Directory)
+
+rm -f sql_code_xslt.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_xslt pass_bootstrap_cli=1 pl_stats=PLDBG %(Filename)%(Extension) &gt; sql_code_xslt.c
+
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">cd %(RootDir)%(Directory)
+
+rm -f sql_code_xslt.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_xslt pass_bootstrap_cli=1 pl_stats=PLDBG %(Filename)%(Extension) &gt; sql_code_xslt.c
+
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RootDir)%(Directory)\sql_code_xslt.c;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)\sql_code_xslt.c;%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\binsrc\tests\biftest\javavm_xml.sql">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">cd %(RootDir)%(Directory)
+
+rm -f sql_code_javavm.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_javavm pass_bootstrap_cli=1 pl_stats=PLDBG javavm_xml.sql &gt; sql_code_javavm.c
+
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)\sql_code_javavm.c;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">cd %(RootDir)%(Directory)
+
+rm -f sql_code_javavm.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_javavm pass_bootstrap_cli=1 pl_stats=PLDBG javavm_xml.sql &gt; sql_code_javavm.c
+
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">cd %(RootDir)%(Directory)
+
+rm -f sql_code_javavm.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_javavm pass_bootstrap_cli=1 pl_stats=PLDBG javavm_xml.sql &gt; sql_code_javavm.c
+
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RootDir)%(Directory)\sql_code_javavm.c;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)\sql_code_javavm.c;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">cd %(RootDir)%(Directory)
+
+rm -f sql_code_javavm.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_javavm pass_bootstrap_cli=1 pl_stats=PLDBG javavm_xml.sql &gt; sql_code_javavm.c
+
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)\sql_code_javavm.c;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">cd %(RootDir)%(Directory)
+
+rm -f sql_code_javavm.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_javavm pass_bootstrap_cli=1 pl_stats=PLDBG javavm_xml.sql &gt; sql_code_javavm.c
+
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">cd %(RootDir)%(Directory)
+
+rm -f sql_code_javavm.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_javavm pass_bootstrap_cli=1 pl_stats=PLDBG javavm_xml.sql &gt; sql_code_javavm.c
+
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RootDir)%(Directory)\sql_code_javavm.c;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)\sql_code_javavm.c;%(Outputs)</Outputs>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="libvirtuoso_odbc_t.vcxproj">
+      <Project>{fb836c59-41e1-48ea-a59b-460ab56587ee}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

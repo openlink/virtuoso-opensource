@@ -1,0 +1,1079 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{93051962-7797-49F0-8958-BB1CE60FFE6F}</ProjectGuid>
+    <RootNamespace>wi</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros">
+    <ShortPlatform Condition="'$(Platform)' == 'Win32'">x86</ShortPlatform>
+    <ShortPlatform Condition="'$(Platform)' == 'x64'">x64</ShortPlatform>
+  </PropertyGroup>
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ShortPlatform)\$(Configuration)\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ShortPlatform)\$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ShortPlatform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ShortPlatform)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Midl>
+      <TargetEnvironment>X64</TargetEnvironment>
+    </Midl>
+    <ClCompile>
+      <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
+      <Optimization>Full</Optimization>
+      <AdditionalIncludeDirectories>..\libsrc\zlib;..\libsrc\xml.new;..\libsrc;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\plugin;..\libsrc\langfunc;%(RootDir)%(Directory)\tidy;..\binsrc\driver;..\SDK\$(ShortPlatform)\sslsdk\inc32;..\libsrc\Tidy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_IMSG;_SSL;_LIBC;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;BIF_XML;REPLICATION_SUPPORT=1;REPLICATION_SUPPORT2=1;VIRTUAL_DIR;BIF_XPER;BIF_TIDY;VIRTTP;INC_BACKUP;VAD;_LDAP;YYTOKENTYPE;PLDBG;NDEBUG;YY_NO_UNISTD_H;_CRT_SECURE_NO_DEPRECATE;PCRE_STATIC;OLD_TIDY;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <BrowseInformation>
+      </BrowseInformation>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <CompileAs>Default</CompileAs>
+      <UndefinePreprocessorDefinitions>YYDEBUG;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0419</Culture>
+    </ResourceCompile>
+    <Lib>
+      <OutputFile>$(OutDir)wi.lib</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Midl />
+    <ClCompile>
+      <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
+      <Optimization>Full</Optimization>
+      <AdditionalIncludeDirectories>..\libsrc\zlib;..\libsrc\xml.new;..\libsrc;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\plugin;..\libsrc\langfunc;%(RootDir)%(Directory)\tidy;..\binsrc\driver;..\SDK\$(ShortPlatform)\sslsdk\inc32;..\libsrc\Tidy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_IMSG;_SSL;_LIBC;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;BIF_XML;REPLICATION_SUPPORT=1;REPLICATION_SUPPORT2=1;VIRTUAL_DIR;BIF_XPER;BIF_TIDY;VIRTTP;INC_BACKUP;VAD;_LDAP;YYTOKENTYPE;PLDBG;NDEBUG;YY_NO_UNISTD_H;_CRT_SECURE_NO_DEPRECATE;PCRE_STATIC;OLD_TIDY;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <BrowseInformation>
+      </BrowseInformation>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <CompileAs>Default</CompileAs>
+      <UndefinePreprocessorDefinitions>YYDEBUG;%(UndefinePreprocessorDefinitions)</UndefinePreprocessorDefinitions>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0419</Culture>
+    </ResourceCompile>
+    <Lib>
+      <OutputFile>$(OutDir)wi.lib</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\libsrc\Wi\2pc.c" />
+    <ClCompile Include="..\libsrc\Wi\aqueue.c" />
+    <ClCompile Include="..\libsrc\Wi\arith.c" />
+    <ClCompile Include="..\libsrc\Wi\auxfiles.c" />
+    <ClCompile Include="..\libsrc\Wi\bif_audio.c" />
+    <ClCompile Include="..\libsrc\Wi\bif_crypto.c" />
+    <ClCompile Include="..\libsrc\Wi\bif_date.c" />
+    <ClCompile Include="..\libsrc\Wi\bif_dav.c" />
+    <ClCompile Include="..\libsrc\Wi\bif_diff.c" />
+    <ClCompile Include="..\libsrc\Wi\bif_explain.c" />
+    <ClCompile Include="..\libsrc\Wi\bif_file.c" />
+    <ClCompile Include="..\libsrc\Wi\bif_gnw.c" />
+    <ClCompile Include="..\libsrc\Wi\bif_imap.c" />
+    <ClCompile Include="..\libsrc\Wi\bif_intl.c" />
+    <ClCompile Include="..\libsrc\Wi\bif_json.c" />
+    <ClCompile Include="..\libsrc\Wi\bif_kerberoscli.c" />
+    <ClCompile Include="..\libsrc\Wi\bif_ldapcli.c">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+    </ClCompile>
+    <ClCompile Include="..\libsrc\Wi\bif_mts.c" />
+    <ClCompile Include="..\libsrc\Wi\bif_nntp.c" />
+    <ClCompile Include="..\libsrc\Wi\bif_phrasematch.c" />
+    <ClCompile Include="..\libsrc\Wi\bif_pop3.c" />
+    <ClCompile Include="..\libsrc\Wi\bif_regexp.c" />
+    <ClCompile Include="..\libsrc\Wi\bif_repl.c" />
+    <ClCompile Include="..\libsrc\Wi\bif_search_excerpt.c" />
+    <ClCompile Include="..\libsrc\Wi\bif_smtp.c" />
+    <ClCompile Include="..\libsrc\Wi\bif_soap.c" />
+    <ClCompile Include="..\libsrc\Wi\bif_text.c" />
+    <ClCompile Include="..\libsrc\Wi\bif_tidy.c" />
+    <ClCompile Include="..\libsrc\Wi\bif_uuencode.c" />
+    <ClCompile Include="..\libsrc\Wi\bif_xml.c" />
+    <ClCompile Include="..\libsrc\Wi\bif_xper.c" />
+    <ClCompile Include="..\libsrc\Wi\bitmap.c" />
+    <ClCompile Include="..\libsrc\Wi\blob.c" />
+    <ClCompile Include="..\libsrc\Wi\blobio.c" />
+    <ClCompile Include="..\libsrc\Wi\cl_stubs.c" />
+    <ClCompile Include="..\libsrc\Wi\crypt.c" />
+    <ClCompile Include="..\libsrc\Wi\datesupp.c" />
+    <ClCompile Include="..\libsrc\Wi\ddlrun.c" />
+    <ClCompile Include="..\libsrc\Wi\disk.c" />
+    <ClCompile Include="..\libsrc\Wi\dks_esc.c" />
+    <ClCompile Include="..\libsrc\Wi\eqlcomp.c" />
+    <ClCompile Include="..\libsrc\Wi\extent.c" />
+    <ClCompile Include="..\libsrc\Wi\gate.c" />
+    <ClCompile Include="..\libsrc\Wi\hash.c" />
+    <ClCompile Include="..\libsrc\Wi\hosting.c" />
+    <ClCompile Include="..\libsrc\Wi\http.c" />
+    <ClCompile Include="..\libsrc\Wi\http_client.c" />
+    <ClCompile Include="..\libsrc\Wi\insert.c" />
+    <ClCompile Include="..\libsrc\Wi\inxop.c" />
+    <ClCompile Include="..\libsrc\Wi\jso.c" />
+    <ClCompile Include="..\libsrc\Wi\json_l.c" />
+    <ClCompile Include="..\libsrc\Wi\json_p.c" />
+    <ClCompile Include="..\libsrc\Wi\lisprdr.c" />
+    <ClCompile Include="..\libsrc\Wi\lock.c" />
+    <ClCompile Include="..\libsrc\Wi\log.c" />
+    <ClCompile Include="..\libsrc\Wi\map_schema.c" />
+    <ClCompile Include="..\libsrc\Wi\meta.c" />
+    <ClCompile Include="..\libsrc\Wi\mtwrite.c" />
+    <ClCompile Include="..\libsrc\Wi\multibyte.c" />
+    <ClCompile Include="..\libsrc\Wi\neodisk.c" />
+    <ClCompile Include="..\libsrc\Wi\nquad_p.c" />
+    <ClCompile Include="..\libsrc\Wi\numeric.c" />
+    <ClCompile Include="..\libsrc\Wi\obackup.c" />
+    <ClCompile Include="..\libsrc\Wi\odbccat.c" />
+    <ClCompile Include="..\libsrc\Wi\page.c" />
+    <ClCompile Include="..\libsrc\Wi\pldebug.c" />
+    <ClCompile Include="..\libsrc\Wi\plugin_loader.c" />
+    <ClCompile Include="..\libsrc\Wi\rdf_core.c" />
+    <ClCompile Include="..\libsrc\Wi\rdf_mapping_jso.c" />
+    <ClCompile Include="..\libsrc\Wi\rdfbox.c" />
+    <ClCompile Include="..\libsrc\Wi\rdfinf.c" />
+    <ClCompile Include="..\libsrc\Wi\rdfxml_parser.c" />
+    <ClCompile Include="..\libsrc\Wi\recovery.c" />
+    <ClCompile Include="..\libsrc\Wi\regist.c" />
+    <ClCompile Include="..\libsrc\Wi\rltrx.c" />
+    <ClCompile Include="..\libsrc\Wi\row.c" />
+    <ClCompile Include="..\libsrc\Wi\schspace.c" />
+    <ClCompile Include="..\libsrc\Wi\scn3_vsnet.c" />
+    <ClCompile Include="..\libsrc\Wi\search.c" />
+    <ClCompile Include="..\libsrc\Wi\search_in.c" />
+    <ClCompile Include="..\libsrc\Wi\security.c" />
+    <ClCompile Include="..\libsrc\Wi\shuric.c" />
+    <ClCompile Include="..\libsrc\Wi\sort.c" />
+    <ClCompile Include="..\libsrc\Wi\space.c" />
+    <ClCompile Include="..\libsrc\Wi\sparql2sql.c" />
+    <ClCompile Include="..\libsrc\Wi\sparql2sqltext.c" />
+    <ClCompile Include="..\libsrc\Wi\sparql_core.c" />
+    <ClCompile Include="..\libsrc\Wi\sparql_l.c" />
+    <ClCompile Include="..\libsrc\Wi\sparql_p.c" />
+    <ClCompile Include="..\libsrc\Wi\sparql_qm.c" />
+    <ClCompile Include="..\libsrc\Wi\sparql_rdb2rdf.c" />
+    <ClCompile Include="..\libsrc\Wi\sparql_sff.c" />
+    <ClCompile Include="..\libsrc\Wi\sparql_tree.c" />
+    <ClCompile Include="..\libsrc\Wi\sparqld.c" />
+    <ClCompile Include="..\libsrc\Wi\sparul2sql.c" />
+    <ClCompile Include="..\libsrc\Wi\sql3_vc.c" />
+    <ClCompile Include="..\libsrc\Wi\sql_code.c">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+    </ClCompile>
+    <ClCompile Include="..\libsrc\Wi\sql_code_1.c">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+    </ClCompile>
+    <ClCompile Include="..\libsrc\Wi\sql_code_2pc.c">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+    </ClCompile>
+    <ClCompile Include="..\libsrc\Wi\sql_code_adm.c">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+    </ClCompile>
+    <ClCompile Include="..\libsrc\Wi\sql_code_auto.c">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+    </ClCompile>
+    <ClCompile Include="..\libsrc\Wi\sql_code_blog.c">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+    </ClCompile>
+    <ClCompile Include="..\libsrc\Wi\sql_code_cache.c">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+    </ClCompile>
+    <ClCompile Include="..\libsrc\Wi\sql_code_cache_impl.c">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+    </ClCompile>
+    <ClCompile Include="..\libsrc\Wi\sql_code_dav.c">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+    </ClCompile>
+    <ClCompile Include="..\libsrc\Wi\sql_code_dbp.c">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+    </ClCompile>
+    <ClCompile Include="..\libsrc\Wi\sql_code_ddk.c">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+    </ClCompile>
+    <ClCompile Include="..\libsrc\Wi\sql_code_imsg.c">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+    </ClCompile>
+    <ClCompile Include="..\libsrc\Wi\sql_code_pldbg.c">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+    </ClCompile>
+    <ClCompile Include="..\libsrc\Wi\sql_code_repl.c">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+    </ClCompile>
+    <ClCompile Include="..\libsrc\Wi\sql_code_sparql.c">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+    </ClCompile>
+    <ClCompile Include="..\libsrc\Wi\sql_code_sys.c">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+    </ClCompile>
+    <ClCompile Include="..\libsrc\Wi\sql_code_uddi.c">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+    </ClCompile>
+    <ClCompile Include="..\libsrc\Wi\sql_code_vad.c">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+    </ClCompile>
+    <ClCompile Include="..\libsrc\Wi\sql_code_vdb.c">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+    </ClCompile>
+    <ClCompile Include="..\libsrc\Wi\sql_code_ws.c">
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Disabled</Optimization>
+    </ClCompile>
+    <ClCompile Include="..\libsrc\Wi\sqlbif.c" />
+    <ClCompile Include="..\libsrc\Wi\sqlbif2.c" />
+    <ClCompile Include="..\libsrc\Wi\sqlcomp.c" />
+    <ClCompile Include="..\libsrc\Wi\sqlcomp2.c" />
+    <ClCompile Include="..\libsrc\Wi\sqlcost.c" />
+    <ClCompile Include="..\libsrc\Wi\sqlcr.c" />
+    <ClCompile Include="..\libsrc\Wi\sqldf.c" />
+    <ClCompile Include="..\libsrc\Wi\sqlexp.c" />
+    <ClCompile Include="..\libsrc\Wi\sqlgen.c" />
+    <ClCompile Include="..\libsrc\Wi\sqlhash.c" />
+    <ClCompile Include="..\libsrc\Wi\sqlintrp.c" />
+    <ClCompile Include="..\libsrc\Wi\sqlinx.c" />
+    <ClCompile Include="..\libsrc\Wi\sqlo.c" />
+    <ClCompile Include="..\libsrc\Wi\sqloby.c" />
+    <ClCompile Include="..\libsrc\Wi\sqlocr.c" />
+    <ClCompile Include="..\libsrc\Wi\sqloinv.c" />
+    <ClCompile Include="..\libsrc\Wi\sqloinx.c" />
+    <ClCompile Include="..\libsrc\Wi\sqloprt.c" />
+    <ClCompile Include="..\libsrc\Wi\sqlorder.c" />
+    <ClCompile Include="..\libsrc\Wi\sqlovdb.c" />
+    <ClCompile Include="..\libsrc\Wi\sqlpfn.c" />
+    <ClCompile Include="..\libsrc\Wi\sqlprocc.c" />
+    <ClCompile Include="..\libsrc\Wi\sqlprt.c" />
+    <ClCompile Include="..\libsrc\Wi\sqlrbuf.c" />
+    <ClCompile Include="..\libsrc\Wi\sqlrcomp.c" />
+    <ClCompile Include="..\libsrc\Wi\sqlrrun.c" />
+    <ClCompile Include="..\libsrc\Wi\sqlrun.c" />
+    <ClCompile Include="..\libsrc\Wi\sqlsrv.c" />
+    <ClCompile Include="..\libsrc\Wi\sqlstmts.c" />
+    <ClCompile Include="..\libsrc\Wi\sqltrig.c" />
+    <ClCompile Include="..\libsrc\Wi\sqltype.c" />
+    <ClCompile Include="..\libsrc\Wi\sqlver.c" />
+    <ClCompile Include="..\libsrc\Wi\sqlview.c" />
+    <ClCompile Include="..\libsrc\Wi\srvcr.c" />
+    <ClCompile Include="..\libsrc\Wi\srvmultibyte.c" />
+    <ClCompile Include="..\libsrc\Wi\srvstat.c" />
+    <ClCompile Include="..\libsrc\Wi\string.c" />
+    <ClCompile Include="..\libsrc\Wi\subseq.c" />
+    <ClCompile Include="..\libsrc\Wi\text.c" />
+    <ClCompile Include="..\libsrc\Wi\trans.c" />
+    <ClCompile Include="..\libsrc\Wi\turtle_l.c" />
+    <ClCompile Include="..\libsrc\Wi\turtle_p.c" />
+    <ClCompile Include="..\libsrc\Wi\uname_const_decl.c" />
+    <ClCompile Include="..\libsrc\Wi\update.c" />
+    <ClCompile Include="..\libsrc\Wi\uuencode.c" />
+    <ClCompile Include="..\libsrc\Wi\wi_xid.c" />
+    <ClCompile Include="..\libsrc\Wi\wirpc.c" />
+    <ClCompile Include="..\libsrc\Wi\wiservic.c" />
+    <ClCompile Include="..\libsrc\Wi\xmlenc-dec.c" />
+    <ClCompile Include="..\libsrc\Wi\xmlenc.c" />
+    <ClCompile Include="..\libsrc\Wi\xmlenc_algos.c" />
+    <ClCompile Include="..\libsrc\Wi\xmllazy.c" />
+    <ClCompile Include="..\libsrc\Wi\xmlschema.c" />
+    <ClCompile Include="..\libsrc\Wi\xmlsearch.c" />
+    <ClCompile Include="..\libsrc\Wi\xmlsql.c" />
+    <ClCompile Include="..\libsrc\Wi\xmltree.c" />
+    <ClCompile Include="..\libsrc\Wi\xpath.c" />
+    <ClCompile Include="..\libsrc\Wi\xpathp.c" />
+    <ClCompile Include="..\libsrc\Wi\xpf.c" />
+    <ClCompile Include="..\libsrc\Wi\xpscn_vsnet.c" />
+    <ClCompile Include="..\libsrc\Wi\xqf.c" />
+    <ClCompile Include="..\libsrc\Wi\xslt.c" />
+    <ClCompile Include="..\libsrc\Wi\xslt_fmt.c" />
+    <ClCompile Include="..\libsrc\Wi\xslt_opt.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\libsrc\Wi\map_schema.h" />
+    <ClInclude Include="..\libsrc\Wi\2pc.h" />
+    <ClInclude Include="..\libsrc\Wi\2pc_client.h" />
+    <ClInclude Include="..\libsrc\Wi\arith.h" />
+    <ClInclude Include="..\libsrc\Wi\bif_text.h" />
+    <ClInclude Include="..\libsrc\Wi\bif_xper.h" />
+    <ClInclude Include="..\libsrc\Wi\blobio.h" />
+    <ClInclude Include="..\libsrc\Wi\CLI.h" />
+    <ClInclude Include="..\libsrc\Wi\crsr.h" />
+    <ClInclude Include="..\libsrc\Wi\date.h" />
+    <ClInclude Include="..\libsrc\Wi\datesupp.h" />
+    <ClInclude Include="..\libsrc\Wi\eqlcomp.h" />
+    <ClInclude Include="..\libsrc\Wi\hosting.h" />
+    <ClInclude Include="..\libsrc\Wi\http.h" />
+    <ClInclude Include="..\libsrc\Wi\http_client.h" />
+    <ClInclude Include="..\libsrc\Wi\iodbcinst.h" />
+    <ClInclude Include="..\libsrc\Wi\ksrvext.h" />
+    <ClInclude Include="..\libsrc\Wi\ksrvextphp.h" />
+    <ClInclude Include="..\libsrc\Wi\license.h" />
+    <ClInclude Include="..\libsrc\Wi\lisprdr.h" />
+    <ClInclude Include="..\libsrc\Wi\list2.h" />
+    <ClInclude Include="..\libsrc\Wi\log.h" />
+    <ClInclude Include="..\libsrc\Wi\ltrx.h" />
+    <ClInclude Include="..\libsrc\Wi\msdtc.h" />
+    <ClInclude Include="..\libsrc\Wi\mts.h" />
+    <ClInclude Include="..\libsrc\Wi\mts_client.h" />
+    <ClInclude Include="..\libsrc\Wi\mts_com.h" />
+    <ClInclude Include="..\libsrc\Wi\multibyte.h" />
+    <ClInclude Include="..\libsrc\Wi\numeric.h" />
+    <ClInclude Include="..\libsrc\Wi\odbcinc.h" />
+    <ClInclude Include="..\libsrc\Wi\pldebug.h" />
+    <ClInclude Include="..\libsrc\Wi\rdf_core.h" />
+    <ClInclude Include="..\libsrc\Wi\recovery.h" />
+    <ClInclude Include="..\libsrc\Wi\remote.h" />
+    <ClInclude Include="..\libsrc\Wi\rendezvous.h" />
+    <ClInclude Include="..\libsrc\Wi\repl.h" />
+    <ClInclude Include="..\libsrc\Wi\replsr.h" />
+    <ClInclude Include="..\libsrc\Wi\schspace.h" />
+    <ClInclude Include="..\libsrc\Wi\security.h" />
+    <ClInclude Include="..\libsrc\Wi\sha.h" />
+    <ClInclude Include="..\libsrc\Wi\shuric.h" />
+    <ClInclude Include="..\libsrc\Wi\soap.h" />
+    <ClInclude Include="..\libsrc\Wi\sparql.h" />
+    <ClInclude Include="..\libsrc\Wi\sparql2sql.h" />
+    <ClInclude Include="..\libsrc\Wi\sparql_p.h" />
+    <ClInclude Include="..\libsrc\Wi\sql3.h" />
+    <ClInclude Include="..\libsrc\Wi\sqlbif.h" />
+    <ClInclude Include="..\libsrc\Wi\sqlcmps.h" />
+    <ClInclude Include="..\libsrc\Wi\sqlcomp.h" />
+    <ClInclude Include="..\libsrc\Wi\sqlcstate.h" />
+    <ClInclude Include="..\libsrc\Wi\sqlfn.h" />
+    <ClInclude Include="..\libsrc\Wi\sqlintrp.h" />
+    <ClInclude Include="..\libsrc\Wi\sqlnode.h" />
+    <ClInclude Include="..\libsrc\Wi\sqlo.h" />
+    <ClInclude Include="..\libsrc\Wi\sqlocr.h" />
+    <ClInclude Include="..\libsrc\Wi\sqlofn.h" />
+    <ClInclude Include="..\libsrc\Wi\sqloinv.h" />
+    <ClInclude Include="..\libsrc\Wi\sqlopcod.h" />
+    <ClInclude Include="..\libsrc\Wi\sqlpar.h" />
+    <ClInclude Include="..\libsrc\Wi\sqlparext.h" />
+    <ClInclude Include="..\libsrc\Wi\sqlpfn.h" />
+    <ClInclude Include="..\libsrc\Wi\sqlrcomp.h" />
+    <ClInclude Include="..\libsrc\Wi\sqltype.h" />
+    <ClInclude Include="..\libsrc\Wi\sqltype_c.h" />
+    <ClInclude Include="..\libsrc\Wi\sqlver.h" />
+    <ClInclude Include="..\libsrc\Wi\sqlwords.h" />
+    <ClInclude Include="..\libsrc\Wi\srvmultibyte.h" />
+    <ClInclude Include="..\libsrc\Wi\srvstat.h" />
+    <ClInclude Include="..\libsrc\Wi\statuslog.h" />
+    <ClInclude Include="..\libsrc\Wi\strlike.h" />
+    <ClInclude Include="..\libsrc\Wi\subseq.h" />
+    <ClInclude Include="..\libsrc\Wi\text.h" />
+    <ClInclude Include="..\libsrc\Wi\turtle_p.h" />
+    <ClInclude Include="..\libsrc\Wi\uuencode_impl.h" />
+    <ClInclude Include="..\libsrc\Wi\virtext.h" />
+    <ClInclude Include="..\libsrc\Wi\virtpwd.h" />
+    <ClInclude Include="..\libsrc\Wi\wi.h" />
+    <ClInclude Include="..\libsrc\Wi\wi_xid.h" />
+    <ClInclude Include="..\libsrc\Wi\widd.h" />
+    <ClInclude Include="..\libsrc\Wi\widisk.h" />
+    <ClInclude Include="..\libsrc\Wi\widv.h" />
+    <ClInclude Include="..\libsrc\Wi\wifn.h" />
+    <ClInclude Include="..\libsrc\Wi\wirpce.h" />
+    <ClInclude Include="..\libsrc\Wi\wiservic.h" />
+    <ClInclude Include="..\libsrc\Wi\xml.h" />
+    <ClInclude Include="..\libsrc\Wi\xmlenc.h" />
+    <ClInclude Include="..\libsrc\Wi\xmlenc_algos.h" />
+    <ClInclude Include="..\libsrc\Wi\xmlenc_test.h" />
+    <ClInclude Include="..\libsrc\Wi\xmlgen.h" />
+    <ClInclude Include="..\libsrc\Wi\xmlnode.h" />
+    <ClInclude Include="..\libsrc\Wi\xmlres.h" />
+    <ClInclude Include="..\libsrc\Wi\xmltree.h" />
+    <ClInclude Include="..\libsrc\Wi\xpath.h" />
+    <ClInclude Include="..\libsrc\Wi\xpathp.h" />
+    <ClInclude Include="..\libsrc\Wi\xpathp_impl.h" />
+    <ClInclude Include="..\libsrc\Wi\xpf.h" />
+    <ClInclude Include="..\libsrc\Wi\xqf.h" />
+    <ClInclude Include="..\libsrc\Wi\xslt_impl.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\libsrc\Wi\json.l">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">cd %(RootDir)%(Directory)
+rm -f json_l.c
+flex -8 -Pjsonyy -ojson_l.c %(FullPath)
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">cd %(RootDir)%(Directory)
+rm -f json_l.c
+flex -8 -Pjsonyy -ojson_l.c %(FullPath)
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RootDir)%(Directory)json_l.c;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)json_l.c;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">cd %(RootDir)%(Directory)
+rm -f json_l.c
+flex -8 -Pjsonyy -ojson_l.c %(FullPath)
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">cd %(RootDir)%(Directory)
+rm -f json_l.c
+flex -8 -Pjsonyy -ojson_l.c %(FullPath)
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RootDir)%(Directory)json_l.c;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)json_l.c;%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\libsrc\Wi\json.y">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">cd %(RootDir)%(Directory)
+rm -f json_p.c
+rm -f json_p.h
+bison -y -vd -pjsonyy json.y -ojson_p.c
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">cd %(RootDir)%(Directory)
+rm -f json_p.c
+rm -f json_p.h
+bison -y -vd -pjsonyy json.y -ojson_p.c
+cd $(ProjectDir)
+</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(AdditionalInputs)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RootDir)%(Directory)json_p.c;%(RootDir)%(Directory)json_p.h;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)json_p.c;%(RootDir)%(Directory)json_p.h;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">cd %(RootDir)%(Directory)
+rm -f json_p.c
+rm -f json_p.h
+bison -y -vd -pjsonyy json.y -ojson_p.c
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">cd %(RootDir)%(Directory)
+rm -f json_p.c
+rm -f json_p.h
+bison -y -vd -pjsonyy json.y -ojson_p.c
+cd $(ProjectDir)
+</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RootDir)%(Directory)json_p.c;%(RootDir)%(Directory)json_p.h;%(AdditionalInputs)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)json_p.c;%(RootDir)%(Directory)json_p.h;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RootDir)%(Directory)json_p.c;%(RootDir)%(Directory)json_p.h;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)json_p.c;%(RootDir)%(Directory)json_p.h;%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\libsrc\Wi\nquad_p.y">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">cd %(RootDir)%(Directory)
+rm -f nquad_p.c
+rm -f nquad_p.h
+bison -y -vd -pnqyy nquad_p.y -onquad_p.c
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">cd %(RootDir)%(Directory)
+rm -f nquad_p.c
+rm -f nquad_p.h
+bison -y -vd -pnqyy nquad_p.y -onquad_p.c
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RootDir)%(Directory)nquad_p.c;%(RootDir)%(Directory)nquad_p.h;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)nquad_p.c;%(RootDir)%(Directory)nquad_p.h;%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\libsrc\Wi\scn3.l">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">cd %(RootDir)%(Directory)
+rm -f scn3_vsnet.c
+flex -oscn3_vsnet.c %(FullPath)
+flex -Pscn3splityy -oscn3split.c %(FullPath)
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)scn3_vsnet.c;%(RootDir)%(Directory)scn3split.c;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">cd %(RootDir)%(Directory)
+rm -f scn3_vsnet.c
+flex -oscn3_vsnet.c %(FullPath)
+flex -Pscn3splityy -oscn3split.c %(FullPath)
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">cd %(RootDir)%(Directory)
+rm -f scn3_vsnet.c
+flex -oscn3_vsnet.c %(FullPath)
+flex -Pscn3splityy -oscn3split.c %(FullPath)
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RootDir)%(Directory)scn3_vsnet.c;%(RootDir)%(Directory)scn3split.c;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)scn3_vsnet.c;%(RootDir)%(Directory)scn3split.c;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">cd %(RootDir)%(Directory)
+rm -f scn3_vsnet.c
+flex -oscn3_vsnet.c %(FullPath)
+flex -Pscn3splityy -oscn3split.c %(FullPath)
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)scn3_vsnet.c;%(RootDir)%(Directory)scn3split.c;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">cd %(RootDir)%(Directory)
+rm -f scn3_vsnet.c
+flex -oscn3_vsnet.c %(FullPath)
+flex -Pscn3splityy -oscn3split.c %(FullPath)
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">cd %(RootDir)%(Directory)
+rm -f scn3_vsnet.c
+flex -oscn3_vsnet.c %(FullPath)
+flex -Pscn3splityy -oscn3split.c %(FullPath)
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RootDir)%(Directory)scn3_vsnet.c;%(RootDir)%(Directory)scn3split.c;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)scn3_vsnet.c;%(RootDir)%(Directory)scn3split.c;%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\libsrc\Wi\sparql_l.l">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+cd %(RootDir)%(Directory)
+rm -f sparql_l.c
+flex -8 -Psparyy -osparql_l.c %(FullPath)
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)sparql_l.c;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+cd %(RootDir)%(Directory)
+rm -f sparql_l.c
+flex -8 -Psparyy -osparql_l.c %(FullPath)
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+cd %(RootDir)%(Directory)
+rm -f sparql_l.c
+flex -8 -Psparyy -osparql_l.c %(FullPath)
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RootDir)%(Directory)sparql_l.c;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)sparql_l.c;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+cd %(RootDir)%(Directory)
+rm -f sparql_l.c
+flex -8 -Psparyy -osparql_l.c %(FullPath)
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)sparql_l.c;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+cd %(RootDir)%(Directory)
+rm -f sparql_l.c
+flex -8 -Psparyy -osparql_l.c %(FullPath)
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+cd %(RootDir)%(Directory)
+rm -f sparql_l.c
+flex -8 -Psparyy -osparql_l.c %(FullPath)
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RootDir)%(Directory)sparql_l.c;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)sparql_l.c;%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\libsrc\Wi\sparql_p.y">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+cd %(RootDir)%(Directory)
+rm -f sparql_p.c
+rm -f sparql_p.h
+bison -y -vd -psparyy sparql_p.y -osparql_p.c
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)sparql_p.c;%(RootDir)%(Directory)sparql_p.h;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+cd %(RootDir)%(Directory)
+rm -f sparql_p.c
+rm -f sparql_p.h
+bison -y -vd -psparyy sparql_p.y -osparql_p.c
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+cd %(RootDir)%(Directory)
+rm -f sparql_p.c
+rm -f sparql_p.h
+bison -y -vd -psparyy sparql_p.y -osparql_p.c
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RootDir)%(Directory)sparql_p.c;%(RootDir)%(Directory)sparql_p.h;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)sparql_p.c;%(RootDir)%(Directory)sparql_p.h;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+cd %(RootDir)%(Directory)
+rm -f sparql_p.c
+rm -f sparql_p.h
+bison -y -vd -psparyy sparql_p.y -osparql_p.c
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)sparql_p.c;%(RootDir)%(Directory)sparql_p.h;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+cd %(RootDir)%(Directory)
+rm -f sparql_p.c
+rm -f sparql_p.h
+bison -y -vd -psparyy sparql_p.y -osparql_p.c
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+cd %(RootDir)%(Directory)
+rm -f sparql_p.c
+rm -f sparql_p.h
+bison -y -vd -psparyy sparql_p.y -osparql_p.c
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RootDir)%(Directory)sparql_p.c;%(RootDir)%(Directory)sparql_p.h;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)sparql_p.c;%(RootDir)%(Directory)sparql_p.h;%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\libsrc\Wi\sql3.y">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+cd %(RootDir)%(Directory)
+rm -f sql3.c
+rm -f sql3.h
+bison -y  -vd sql3.y -osql3.c
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)sql3.c;%(RootDir)%(Directory)sql3.h;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+cd %(RootDir)%(Directory)
+rm -f sql3.c
+rm -f sql3.h
+bison -y  -vd sql3.y -osql3.c
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+cd %(RootDir)%(Directory)
+rm -f sql3.c
+rm -f sql3.h
+bison -y  -vd sql3.y -osql3.c
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RootDir)%(Directory)sql3.c;%(RootDir)%(Directory)sql3.h;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)sql3.c;%(RootDir)%(Directory)sql3.h;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+cd %(RootDir)%(Directory)
+rm -f sql3.c
+rm -f sql3.h
+bison -y  -vd sql3.y -osql3.c
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)sql3.c;%(RootDir)%(Directory)sql3.h;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+cd %(RootDir)%(Directory)
+rm -f sql3.c
+rm -f sql3.h
+bison -y  -vd sql3.y -osql3.c
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+cd %(RootDir)%(Directory)
+rm -f sql3.c
+rm -f sql3.h
+bison -y  -vd sql3.y -osql3.c
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RootDir)%(Directory)sql3.c;%(RootDir)%(Directory)sql3.h;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)sql3.c;%(RootDir)%(Directory)sql3.h;%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\libsrc\Wi\sql_to_c.awk">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+cd %(RootDir)%(Directory)
+$(ProjectDir)\sqlcode.bat
+cd $(ProjectDir)
+</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)\..\..\binsrc\vspx\vspx.xsl;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)\sql_code.c;%(RootDir)%(Directory)\sql_code_1.c;%(RootDir)%(Directory)\sql_code_ddk.c;%(RootDir)%(Directory)\sql_code_adm.c;%(RootDir)%(Directory)\sql_code_dav.c;%(RootDir)%(Directory)\sql_code_vad.c;%(RootDir)%(Directory)\sql_code_dbp.c;%(RootDir)%(Directory)\sql_code_uddi.c;%(RootDir)%(Directory)\sql_code_imsg.c;%(RootDir)%(Directory)\sql_code_auto.c;%(RootDir)%(Directory)\sql_code_2pc.c;%(RootDir)%(Directory)\rdf_mapping_jso.h;%(RootDir)%(Directory)\rdf_mapping_jso.c;%(RootDir)%(Directory)\rdf_mapping_jso.ttl;%(RootDir)%(Directory)\rdf_mapping_jso.ttl-sample;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+cd %(RootDir)%(Directory)
+$(ProjectDir)\sqlcode.bat
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+cd %(RootDir)%(Directory)
+$(ProjectDir)\sqlcode.bat
+cd $(ProjectDir)
+</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RootDir)%(Directory)\..\..\binsrc\vspx\vspx.xsl;%(AdditionalInputs)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)\..\..\binsrc\vspx\vspx.xsl;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RootDir)%(Directory)\sql_code.c;%(RootDir)%(Directory)\sql_code_1.c;%(RootDir)%(Directory)\sql_code_ddk.c;%(RootDir)%(Directory)\sql_code_adm.c;%(RootDir)%(Directory)\sql_code_dav.c;%(RootDir)%(Directory)\sql_code_vad.c;%(RootDir)%(Directory)\sql_code_dbp.c;%(RootDir)%(Directory)\sql_code_uddi.c;%(RootDir)%(Directory)\sql_code_imsg.c;%(RootDir)%(Directory)\sql_code_auto.c;%(RootDir)%(Directory)\sql_code_2pc.c;%(RootDir)%(Directory)\rdf_mapping_jso.h;%(RootDir)%(Directory)\rdf_mapping_jso.c;%(RootDir)%(Directory)\rdf_mapping_jso.ttl;%(RootDir)%(Directory)\rdf_mapping_jso.ttl-sample;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)\sql_code.c;%(RootDir)%(Directory)\sql_code_1.c;%(RootDir)%(Directory)\sql_code_ddk.c;%(RootDir)%(Directory)\sql_code_adm.c;%(RootDir)%(Directory)\sql_code_dav.c;%(RootDir)%(Directory)\sql_code_vad.c;%(RootDir)%(Directory)\sql_code_dbp.c;%(RootDir)%(Directory)\sql_code_uddi.c;%(RootDir)%(Directory)\sql_code_imsg.c;%(RootDir)%(Directory)\sql_code_auto.c;%(RootDir)%(Directory)\sql_code_2pc.c;%(RootDir)%(Directory)\rdf_mapping_jso.h;%(RootDir)%(Directory)\rdf_mapping_jso.c;%(RootDir)%(Directory)\rdf_mapping_jso.ttl;%(RootDir)%(Directory)\rdf_mapping_jso.ttl-sample;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+cd %(RootDir)%(Directory)
+$(ProjectDir)\sqlcode.bat
+cd $(ProjectDir)
+</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)\..\..\binsrc\vspx\vspx.xsl;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)\sql_code.c;%(RootDir)%(Directory)\sql_code_1.c;%(RootDir)%(Directory)\sql_code_ddk.c;%(RootDir)%(Directory)\sql_code_adm.c;%(RootDir)%(Directory)\sql_code_dav.c;%(RootDir)%(Directory)\sql_code_vad.c;%(RootDir)%(Directory)\sql_code_dbp.c;%(RootDir)%(Directory)\sql_code_uddi.c;%(RootDir)%(Directory)\sql_code_imsg.c;%(RootDir)%(Directory)\sql_code_auto.c;%(RootDir)%(Directory)\sql_code_2pc.c;%(RootDir)%(Directory)\rdf_mapping_jso.h;%(RootDir)%(Directory)\rdf_mapping_jso.c;%(RootDir)%(Directory)\rdf_mapping_jso.ttl;%(RootDir)%(Directory)\rdf_mapping_jso.ttl-sample;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+cd %(RootDir)%(Directory)
+$(ProjectDir)\sqlcode.bat
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+cd %(RootDir)%(Directory)
+$(ProjectDir)\sqlcode.bat
+cd $(ProjectDir)
+</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RootDir)%(Directory)\..\..\binsrc\vspx\vspx.xsl;%(AdditionalInputs)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)\..\..\binsrc\vspx\vspx.xsl;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RootDir)%(Directory)\sql_code.c;%(RootDir)%(Directory)\sql_code_1.c;%(RootDir)%(Directory)\sql_code_ddk.c;%(RootDir)%(Directory)\sql_code_adm.c;%(RootDir)%(Directory)\sql_code_dav.c;%(RootDir)%(Directory)\sql_code_vad.c;%(RootDir)%(Directory)\sql_code_dbp.c;%(RootDir)%(Directory)\sql_code_uddi.c;%(RootDir)%(Directory)\sql_code_imsg.c;%(RootDir)%(Directory)\sql_code_auto.c;%(RootDir)%(Directory)\sql_code_2pc.c;%(RootDir)%(Directory)\rdf_mapping_jso.h;%(RootDir)%(Directory)\rdf_mapping_jso.c;%(RootDir)%(Directory)\rdf_mapping_jso.ttl;%(RootDir)%(Directory)\rdf_mapping_jso.ttl-sample;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)\sql_code.c;%(RootDir)%(Directory)\sql_code_1.c;%(RootDir)%(Directory)\sql_code_ddk.c;%(RootDir)%(Directory)\sql_code_adm.c;%(RootDir)%(Directory)\sql_code_dav.c;%(RootDir)%(Directory)\sql_code_vad.c;%(RootDir)%(Directory)\sql_code_dbp.c;%(RootDir)%(Directory)\sql_code_uddi.c;%(RootDir)%(Directory)\sql_code_imsg.c;%(RootDir)%(Directory)\sql_code_auto.c;%(RootDir)%(Directory)\sql_code_2pc.c;%(RootDir)%(Directory)\rdf_mapping_jso.h;%(RootDir)%(Directory)\rdf_mapping_jso.c;%(RootDir)%(Directory)\rdf_mapping_jso.ttl;%(RootDir)%(Directory)\rdf_mapping_jso.ttl-sample;%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\libsrc\Wi\sqlwords.gperf">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">cd %(RootDir)%(Directory)
+rm -f sqlwords.h
+gperf -aCDGptr -Kkeiiyword -L ANSI-C -k1,2,3,6,9,$ sqlwords.gperf -Nlex_hash_kw | sed -e %27s/char \*keyword/char *keiiyword/g%27 &gt;sqlwords.h
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">cd %(RootDir)%(Directory)
+rm -f sqlwords.h
+gperf -aCDGptr -Kkeiiyword -L ANSI-C -k1,2,3,6,9,$ sqlwords.gperf -Nlex_hash_kw | sed -e %27s/char \*keyword/char *keiiyword/g%27 &gt;sqlwords.h
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RootDir)%(Directory)\sqlwords.h;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)\sqlwords.h;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">cd %(RootDir)%(Directory)
+rm -f sqlwords.h
+gperf -aCDGptr -Kkeiiyword -L ANSI-C -k1,2,3,6,9,$ sqlwords.gperf -Nlex_hash_kw | sed -e %27s/char \*keyword/char *keiiyword/g%27 &gt;sqlwords.h
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">cd %(RootDir)%(Directory)
+rm -f sqlwords.h
+gperf -aCDGptr -Kkeiiyword -L ANSI-C -k1,2,3,6,9,$ sqlwords.gperf -Nlex_hash_kw | sed -e %27s/char \*keyword/char *keiiyword/g%27 &gt;sqlwords.h
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RootDir)%(Directory)\sqlwords.h;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)\sqlwords.h;%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\libsrc\Wi\turtle_l.l">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+cd %(RootDir)%(Directory)
+rm -f turtle_l.c
+flex -8 -Pttlyy -oturtle_l.c %(FullPath)
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)turtle_l.c;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+cd %(RootDir)%(Directory)
+rm -f turtle_l.c
+flex -8 -Pttlyy -oturtle_l.c %(FullPath)
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+cd %(RootDir)%(Directory)
+rm -f turtle_l.c
+flex -8 -Pttlyy -oturtle_l.c %(FullPath)
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RootDir)%(Directory)turtle_l.c;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)turtle_l.c;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+cd %(RootDir)%(Directory)
+rm -f turtle_l.c
+flex -8 -Pttlyy -oturtle_l.c %(FullPath)
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)turtle_l.c;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+cd %(RootDir)%(Directory)
+rm -f turtle_l.c
+flex -8 -Pttlyy -oturtle_l.c %(FullPath)
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+cd %(RootDir)%(Directory)
+rm -f turtle_l.c
+flex -8 -Pttlyy -oturtle_l.c %(FullPath)
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RootDir)%(Directory)turtle_l.c;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)turtle_l.c;%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\libsrc\Wi\turtle_p.y">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+cd %(RootDir)%(Directory)
+rm -f turtle_p.c
+rm -f turtle_p.h
+bison -y -vd -pttlyy turtle_p.y -oturtle_p.c
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)turtle_p.c;%(RootDir)%(Directory)turtle_p.h;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+cd %(RootDir)%(Directory)
+rm -f turtle_p.c
+rm -f turtle_p.h
+bison -y -vd -pttlyy turtle_p.y -oturtle_p.c
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+cd %(RootDir)%(Directory)
+rm -f turtle_p.c
+rm -f turtle_p.h
+bison -y -vd -pttlyy turtle_p.y -oturtle_p.c
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RootDir)%(Directory)\turtle_p.c;%(RootDir)%(Directory)\turtle_p.h;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)\turtle_p.c;%(RootDir)%(Directory)\turtle_p.h;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+cd %(RootDir)%(Directory)
+rm -f turtle_p.c
+rm -f turtle_p.h
+bison -y -vd -pttlyy turtle_p.y -oturtle_p.c
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)turtle_p.c;%(RootDir)%(Directory)turtle_p.h;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+cd %(RootDir)%(Directory)
+rm -f turtle_p.c
+rm -f turtle_p.h
+bison -y -vd -pttlyy turtle_p.y -oturtle_p.c
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+cd %(RootDir)%(Directory)
+rm -f turtle_p.c
+rm -f turtle_p.h
+bison -y -vd -pttlyy turtle_p.y -oturtle_p.c
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RootDir)%(Directory)turtle_p.c;%(RootDir)%(Directory)turtle_p.h;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)turtle_p.c;%(RootDir)%(Directory)turtle_p.h;%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\libsrc\Wi\xpathp.y">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+cd %(RootDir)%(Directory)
+rm -f xpathp.c
+rm -f xpathp.h
+bison -y -vd -pxpyy xpathp.y -oxpathp.c
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)xpathp.c;%(RootDir)%(Directory)xpathp.h;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+cd %(RootDir)%(Directory)
+rm -f xpathp.c
+rm -f xpathp.h
+bison -y -vd -pxpyy xpathp.y -oxpathp.c
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+cd %(RootDir)%(Directory)
+rm -f xpathp.c
+rm -f xpathp.h
+bison -y -vd -pxpyy xpathp.y -oxpathp.c
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RootDir)%(Directory)xpathp.c;%(RootDir)%(Directory)xpathp.h;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)xpathp.c;%(RootDir)%(Directory)xpathp.h;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+cd %(RootDir)%(Directory)
+rm -f xpathp.c
+rm -f xpathp.h
+bison -y -vd -pxpyy xpathp.y -oxpathp.c
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)xpathp.c;%(RootDir)%(Directory)xpathp.h;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+cd %(RootDir)%(Directory)
+rm -f xpathp.c
+rm -f xpathp.h
+bison -y -vd -pxpyy xpathp.y -oxpathp.c
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+cd %(RootDir)%(Directory)
+rm -f xpathp.c
+rm -f xpathp.h
+bison -y -vd -pxpyy xpathp.y -oxpathp.c
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RootDir)%(Directory)xpathp.c;%(RootDir)%(Directory)xpathp.h;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)xpathp.c;%(RootDir)%(Directory)xpathp.h;%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\libsrc\Wi\xpscn.l">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+cd %(RootDir)%(Directory)
+rm -f xpscn_vsnet.c
+flex -i -oxpscn_vsnet.c -Pxpyy %(FullPath)
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)xpscn_vsnet.c;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+cd %(RootDir)%(Directory)
+rm -f xpscn_vsnet.c
+flex -i -oxpscn_vsnet.c -Pxpyy %(FullPath)
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+cd %(RootDir)%(Directory)
+rm -f xpscn_vsnet.c
+flex -i -oxpscn_vsnet.c -Pxpyy %(FullPath)
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RootDir)%(Directory)xpscn_vsnet.c;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)xpscn_vsnet.c;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+cd %(RootDir)%(Directory)
+rm -f xpscn_vsnet.c
+flex -i -oxpscn_vsnet.c -Pxpyy %(FullPath)
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)xpscn_vsnet.c;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+cd %(RootDir)%(Directory)
+rm -f xpscn_vsnet.c
+flex -i -oxpscn_vsnet.c -Pxpyy %(FullPath)
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+cd %(RootDir)%(Directory)
+rm -f xpscn_vsnet.c
+flex -i -oxpscn_vsnet.c -Pxpyy %(FullPath)
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RootDir)%(Directory)xpscn_vsnet.c;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)xpscn_vsnet.c;%(Outputs)</Outputs>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\libsrc\Wi\sparqlwords.gperf">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">cd %(RootDir)%(Directory)
+rm -f sparqlwords.h
+gperf -aCDGptr -Kkwd -L ANSI-C -k1,2,3,5,7,$ sparqlwords.gperf --ignore-case -Nsparql_lex_hash_kw &gt;sparqlwords.h
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RootDir)%(Directory)\sparqlwords.h;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">cd %(RootDir)%(Directory)
+rm -f sparqlwords.h
+gperf -aCDGptr -Kkwd -L ANSI-C -k1,2,3,5,7,$ sparqlwords.gperf --ignore-case -Nsparql_lex_hash_kw &gt;sparqlwords.h
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)\sparqlwords.h;%(Outputs)</Outputs>
+    </CustomBuild>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
