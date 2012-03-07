@@ -147,10 +147,11 @@ create procedure WEBID_AUTH_GEN (in cert any, in ctype int, in realm varchar, in
   declare stat, msg, meta, data, info, qr, hf, graph, fing, gr, modulus, alts, dummy any;
   declare agent varchar;
   declare acc int;
-  declare ret_code int;
+  declare ret_code, done int;
 
   ret_code := 0;
   acc := 0;
+  done := 0;
   declare exit handler for sqlstate '*'
     {
       rollback work;
@@ -241,6 +242,7 @@ create procedure WEBID_AUTH_GEN (in cert any, in ctype int, in realm varchar, in
 	goto ret;
       };
     page := http_client (url=>graph, n_redirects=>15);
+    verify:
     xt := xtree_doc (page, 2);
     xp := xpath_eval ('string (.)', xt);
     xp := cast (xp as varchar);
@@ -263,24 +265,51 @@ create procedure WEBID_AUTH_GEN (in cert any, in ctype int, in realm varchar, in
 	    goto ret;	
 	  }
       }
-    exec (sprintf ('sparql define get:soft "soft" prefix opl: <http://www.openlinksw.com/schema/attribution#> select ?f from <%S> { ?s opl:hasFingerprint ?f }', graph), 
-	stat, msg, vector (), 0, meta, data);
-    if (length (data))
-     {
-       foreach (any x in data) do
-	 {
-	   if (x[0] = fing)
-	     {
-	       ret_code := 1;
-	       goto ret;
-	     }
-	 }
+    if (not done and graph like 'http://graph.facebook.com/%')
+      {
+	declare tok, og_id, tree, nick any;
+	tree := json_parse (page);
+	og_id := get_keyword ('id', tree);
+	nick := get_keyword ('username', tree);
+	tok := DB.DBA.OPENGRAPH_GET_ACCESS_TOKEN (og_id);
+	if (tok is null)
+	  goto ret;
+	page := http_get (sprintf ('https://graph.facebook.com/%U/feed?access_token=%U', nick, tok));
+	done := 1;
+	goto verify;
       }
+    if (not done and graph like 'http://%.linkedin.com/in/%')
+      {
+	declare oauth_keys, arr, opts any;
+	declare consumer_key, consumer_secret, oauth_token, oauth_secret, url, person_id varchar;
+	person_id := (select LIAT_GRANTOR_ID from DB..LINKEDIN_ACCESS_TOKENS where LIAT_GRANTOR_URL = graph);
+	opts := (select RM_OPTIONS from DB..SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_LINKEDIN');
+	oauth_keys := DB.DBA.LINKEDIN_GET_ACCESS_TOKEN (graph);
+	oauth_token := oauth_keys[0];
+	oauth_secret := oauth_keys[1];
+	consumer_key := get_keyword ('consumer_key', opts);
+	consumer_secret := get_keyword ('consumer_secret', opts);
+	url := DB.DBA.sign_request ('GET', sprintf ('http://api.linkedin.com/v1/people/%s/network', person_id), 'type=SHAR&scope=self', consumer_key, consumer_secret, oauth_token, oauth_secret, 1);
+	page := http_get (url);
+	done := 1;
+	goto verify;
+      }
+    --exec (sprintf ('sparql define get:soft "soft" prefix opl: <http://www.openlinksw.com/schema/attribution#> select ?f from <%S> { ?s opl:hasFingerprint ?f }', graph), 
+    --	stat, msg, vector (), 0, meta, data);
+    --if (length (data))
+    -- {
+    --   foreach (any x in data) do
+    --	 {
+    --	   if (x[0] = fing)
+    --	     {
+    --	       ret_code := 1;
+    --	       goto ret;
+    --	     }
+    --	 }
+    --  }
 
   }
   ret:
-  exec (sprintf ('sparql clear graph <%S>', gr), stat, msg);
-  commit work;
   return ret_code;
 }
 ;
