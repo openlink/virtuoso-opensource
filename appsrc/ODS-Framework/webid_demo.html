@@ -30,8 +30,9 @@
     <script type="text/javascript">
       function check() {
         var x = function (data) {
+	  var expiration = $('expiration').checked ? '&expiration=true' : '';
           var callback = document.location.protocol + '//' + document.location.host + document.location.pathname;
-          document.location = 'https://' + data + '/ods/webid_verify.vsp?callback=' + encodeURIComponent(callback);
+          document.location = 'https://' + data + '/ods/webid_verify.vsp?callback=' + encodeURIComponent(callback) + expiration;
         }
         OAT.AJAX.GET ('/ods/api/getDefaultHttps', false, x, {async: false});
       }
@@ -117,6 +118,7 @@
     <br/>
     <div>
       <form method="get">
+	<input type="checkbox" value="true" name="expiration" id="expiration" />  <label for="expiration">Check Certificate Expiration</label><br /> 
         <input type="button" name="go" value="Check" id="go" onclick="javascript: return check();" />
       </form>
     </div>

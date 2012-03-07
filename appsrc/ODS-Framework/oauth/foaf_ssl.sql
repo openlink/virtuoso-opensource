@@ -415,6 +415,28 @@ create procedure WEBID_DI_SPLIT (in str varchar)
 }
 ;
 
+create procedure DB.DBA.X509_STRING_DATE (in val varchar)
+{
+  declare ret, tmp any;
+  ret := NULL;
+  declare exit handler for sqlstate '*'
+    {
+      return null;
+    };
+  -- Jan 11 14:36:33 2012 GMT
+  if (val is not null and regexp_match ('[[:upper:]][[:lower:]]{2} [0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2} [0-9]{4,} GMT', val) is not null)
+    {
+      tmp := sprintf_inverse (val, '%s %s %s %s GMT', 0);
+      if (tmp is not null and length (tmp) > 3)
+	{
+	  ret := http_string_date (sprintf ('Wee, %s %s %s %s GMT', tmp[1], tmp[0], tmp[3], tmp[2]));
+	  ret := dt_set_tz (ret, 0);
+	}
+    }    
+  return ret;
+}
+;
+
 create procedure WEBID_AUTH_GEN_2 (
 	in cert any,    		-- certificate
 	in ctype int, 			-- certificate type see get_certificate_info for details 
@@ -422,13 +444,16 @@ create procedure WEBID_AUTH_GEN_2 (
 	in allow_nobody int := 0, 	-- anonymous access
 	in use_session int := 1, 	-- use session table
 	out ag any,   			-- detected webid URI
-	inout _gr any)			-- if non null data from webid URI will be loaded in the graph name in _gr
+	inout _gr any,			-- if non null data from webid URI will be loaded in the graph name in _gr
+	in check_expiration int := 0
+	)			
 {
   declare stat, msg, meta, data, info, qr, hf, graph, fing, gr, modulus, alts, dummy any;
   declare agent varchar;
   declare acc int;
   declare ret_code, done, is_di int;
   declare agents, di_arr, dgst, dhash, fing_b64u any;
+  declare valid_from, valid_to datetime;
 
   ret_code := 0;
   acc := 0;
@@ -448,6 +473,10 @@ create procedure WEBID_AUTH_GEN_2 (
     gr := _gr;     
   info := get_certificate_info (9, cert, ctype);
   fing := get_certificate_info (6, cert, ctype);
+  valid_from := X509_STRING_DATE (get_certificate_info (4, cert, ctype)); 
+  valid_to := X509_STRING_DATE (get_certificate_info (5, cert, ctype)); 
+  if (check_expiration = 1 and (valid_to < now () or valid_from > now ()))
+    return 0;
   agents := FOAF_SSL_WEBID_GET_ALL (cert, ctype);
 
   if (not isarray (info))
