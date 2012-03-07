@@ -1,21 +1,41 @@
 DB.DBA.EXEC_STMT ('create table FOAF_SSL_ACL (FS_URI varchar primary key, FS_UID varchar not null)', 0)
 ;
 
+create procedure FOAF_WEBID_USER (
+  inout webID varchar,
+  inout createMode integer := 0)
+{
+  declare uid varchar;
+
+  uid := (select FS_UID from DB.DBA.FOAF_SSL_ACL where FS_URI = webID);
+  if (createMode and isnull (uid))
+  {
+    uid := sprintf ('SPUID%d', sequence_next ('__SPUID'));
+    USER_CREATE (uid, uuid());
+    USER_GRANT_ROLE (uid, 'SPARQL_SELECT');
+    USER_SET_OPTION (uid, 'DISABLED', 1);
+    insert into DB.DBA.FOAF_SSL_ACL (FS_URI, FS_UID)
+      values (webID, uid);
+  }
+  return uid;
+}
+;
+
 create procedure FOAF_SSL_QR (in gr varchar, in uri varchar)
 {
-    return sprintf ('sparql 
-    define input:storage ""  
-    prefix cert: <http://www.w3.org/ns/auth/cert#>  
-    prefix rsa: <http://www.w3.org/ns/auth/rsa#>  
-    select (str (?exp)) (str (?mod))  
-    from <%S>  
-    where 
-    {  	  
-      { ?id cert:identity <%S> ; rsa:public_exponent ?exp ; rsa:modulus ?mod .  } 	  
-      union 
-      { ?id cert:identity <%S> ; rsa:public_exponent ?exp1 ; rsa:modulus ?mod1 . ?exp1 cert:decimal ?exp . ?mod1 cert:hex ?mod . }  	  
-      union 
-      { <%S> cert:key ?key . ?key cert:exponent ?exp . ?key cert:modulus ?mod .  }        
+    return sprintf ('sparql
+    define input:storage ""
+    prefix cert: <http://www.w3.org/ns/auth/cert#>
+    prefix rsa: <http://www.w3.org/ns/auth/rsa#>
+    select (str (?exp)) (str (?mod))
+    from <%S>
+    where
+    {
+      { ?id cert:identity <%S> ; rsa:public_exponent ?exp ; rsa:modulus ?mod .  }
+      union
+      { ?id cert:identity <%S> ; rsa:public_exponent ?exp1 ; rsa:modulus ?mod1 . ?exp1 cert:decimal ?exp . ?mod1 cert:hex ?mod . }
+      union
+      { <%S> cert:key ?key . ?key cert:exponent ?exp . ?key cert:modulus ?mod .  }
     }', gr, uri, uri, uri);
 }
 ;
@@ -31,7 +51,7 @@ create procedure FOAF_SSL_QR_BY_ACCOUNT (in gr varchar, in agent varchar)
   	' where { <%S> <http://xmlns.com/foaf/0.1/holdsAccount> ?acc . ?id cert:identity ?acc ; rsa:public_exponent ?exp ; rsa:modulus ?mod . '||
 	' optional { ?exp cert:decimal ?exp_val . ?mod cert:hex ?mod_val . } } ',
 	gr, agent);
-  return qr;      
+  return qr;
 }
 ;
 
@@ -72,7 +92,7 @@ create procedure FOAF_SSL_MAIL_GET (in cert any := null, in cert_type int := 0)
 
 --
 -- WHEN USE try_loading_webid must clear the graph named as webid
--- 
+--
 create procedure FOAF_SSL_WEBFINGER (in cert any := null, in try_loading_webid int := 0, in cert_type int := 0)
 {
   declare mail, webid, domain, host_info, xrd, template, url any;
@@ -130,7 +150,7 @@ create procedure FOAF_SSL_WEBFINGER (in cert any := null, in try_loading_webid i
 create procedure DB.DBA.FOAF_MOD (in m any)
 {
   declare modulus any;
-  modulus := lower (regexp_replace (m, '[^A-Z0-9a-f]', '', 1, null));	      
+  modulus := lower (regexp_replace (m, '[^A-Z0-9a-f]', '', 1, null));
   --dbg_obj_print_vars (modulus);
   return modulus;
 }
@@ -197,7 +217,7 @@ create procedure WEBID_AUTH_GEN (in cert any, in ctype int, in realm varchar, in
   stat := '00000';
   exec (qr, stat, msg);
   commit work;
-  qr := FOAF_SSL_QR (gr, agent);    
+  qr := FOAF_SSL_QR (gr, agent);
   stat := '00000';
 --  dbg_printf ('%s', qr);
   exec (qr, stat, msg, vector (), 0, meta, data);
@@ -248,11 +268,11 @@ create procedure WEBID_AUTH_GEN (in cert any, in ctype int, in realm varchar, in
     xp := cast (xp as varchar);
     if (strstr (xp, '#SHA1') is not null)
       fing := get_certificate_info (6, cert, ctype, null, 'sha1');
-    fing := replace (fing, ':', '');  
+    fing := replace (fing, ':', '');
     if (strstr (xp, sprintf ('Fingerprint:%s', fing)) is not null)
       {
 	ret_code := 1;
-        goto ret;	
+        goto ret;
       }
     if (graph like 'http://twitter.com/%')
       {
@@ -265,17 +285,17 @@ create procedure WEBID_AUTH_GEN (in cert any, in ctype int, in realm varchar, in
 	if (length (res) > 0)
 	  {
 	    ret_code := 1;
-	    goto ret;	
+	    goto ret;
 	  }
 	fing := get_certificate_info (6, cert, ctype, null, 'sha1');
-	fing := replace (fing, ':', '');  
+	fing := replace (fing, ':', '');
         json := http_get (sprintf ('http://search.twitter.com/search.json?q=%%40Fingerprint%%3A%U%%20from%%3A%U', fing, acco));
 	arr := json_parse (json);
         res := get_keyword ('results', arr);
 	if (length (res) > 0)
 	  {
 	    ret_code := 1;
-	    goto ret;	
+	    goto ret;
 	  }
       }
     if (not done and graph like 'http://graph.facebook.com/%')
@@ -312,7 +332,7 @@ create procedure WEBID_AUTH_GEN (in cert any, in ctype int, in realm varchar, in
 	goto verify;
       }
     exec (sprintf (
-    'sparql define get:soft "add" prefix opl: <http://www.openlinksw.com/schemas/cert#> select ?f ?dgst from <%S> { ?s opl:hasCertificate ?c . ?c opl:fingerprint ?f ; opl:fingerprint-digest ?dgst . }', 
+    'sparql define get:soft "add" prefix opl: <http://www.openlinksw.com/schemas/cert#> select ?f ?dgst from <%S> { ?s opl:hasCertificate ?c . ?c opl:fingerprint ?f ; opl:fingerprint-digest ?dgst . }',
     	graph), stat, msg, vector (), 0, meta, data);
     if (length (data))
      {
@@ -320,9 +340,9 @@ create procedure WEBID_AUTH_GEN (in cert any, in ctype int, in realm varchar, in
     	 {
 	   declare fng, fng2 any;
 	   fng := get_certificate_info (6, cert, ctype, null, x[1]);
-	   fng := replace (fng, ':', '');  
+	   fng := replace (fng, ':', '');
 	   fng2 := x[0];
-	   fng2 := replace (fng2, ':', '');  
+	   fng2 := replace (fng2, ':', '');
     	   if (fng2 = fng)
     	     {
     	       ret_code := 1;
@@ -371,7 +391,7 @@ create procedure FOAF_CHECK_WEBID (in agent varchar)
   stat := '00000';
   exec (qr, stat, msg);
   commit work;
-  qr := FOAF_SSL_QR (gr, agent);    
+  qr := FOAF_SSL_QR (gr, agent);
   stat := '00000';
 --  dbg_printf ('%s', qr);
   exec (qr, stat, msg, vector (), 0, meta, data);
@@ -444,7 +464,7 @@ create procedure FOAF_SSL_AUTH_ACL (in acl varchar, in realm varchar)
 
   gr := uuid ();
 
-  if (wf) 
+  if (wf)
     goto authenticated;
 
   hf := rfc1808_parse_uri (agent);
@@ -454,11 +474,11 @@ create procedure FOAF_SSL_AUTH_ACL (in acl varchar, in realm varchar)
   stat := '00000';
   exec (qr, stat, msg);
   commit work;
-  qr := FOAF_SSL_QR (gr, agent);    
+  qr := FOAF_SSL_QR (gr, agent);
   stat := '00000';
   exec (qr, stat, msg, vector (), 0, meta, data);
-  again_check:; 
-  if (stat = '00000' and length (data)) 
+  again_check:;
+  if (stat = '00000' and length (data))
     {
       foreach (any _row in data) do
         {
@@ -513,7 +533,7 @@ create procedure DB.DBA.FOAF_SSL_LDAP_CHECK_CERT_INT (in agent varchar := null, 
   if (agent is null or agent not like 'ldap://%')
     goto failed;
   arr := sprintf_inverse (agent, 'ldap://%s/%s', 1);
-  if (length (arr) <> 2) 
+  if (length (arr) <> 2)
     goto failed;
   host := arr[0];
   if (strchr (host, ':') is null)
@@ -532,7 +552,7 @@ create procedure DB.DBA.FOAF_SSL_LDAP_CHECK_CERT_INT (in agent varchar := null, 
       declare exit handler for sqlstate '*' { goto failed; };
       rc := ldap_search (host, LS_TRY_SSL, LS_BASE, ss, sprintf('%s=%s, %s', LS_UID_FLD, LS_ACCOUNT, LS_BIND_DN), LS_PASSWORD);
       if (isvector (rc) and length (rc) > 1)
-        {	
+        {
           cert := get_keyword ('userCertificate;binary', rc[1]);
           if (isvector (cert) and length (cert) and get_certificate_info (6, incert, incert_type) = get_certificate_info (6, cert[0], 1))
 	    {

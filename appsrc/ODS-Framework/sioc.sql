@@ -3922,26 +3922,6 @@ create procedure SIOC..private_user_remove (
 --
 -- Private WebID rights
 --
-create procedure SIOC..private_acl_user (
-  inout webID varchar,
-  inout createMode integer := 0)
-{
-  declare uid varchar;
-
-  uid := (select FS_UID from DB.DBA.FOAF_SSL_ACL where FS_URI = webID);
-  if (createMode and isnull (uid))
-  {
-    uid := sprintf ('SPUID%d', sequence_next ('__SPUID'));
-    USER_CREATE (uid, uuid());
-    USER_GRANT_ROLE (uid, 'SPARQL_SELECT');
-    USER_SET_OPTION (uid, 'DISABLED', 1);
-    insert into DB.DBA.FOAF_SSL_ACL (FS_URI, FS_UID)
-      values (webID, uid);
-  }
-  return uid;
-}
-;
-
 create procedure SIOC..private_acl_insert (
   inout graph_iri varchar,
   inout acl any)
@@ -3955,7 +3935,7 @@ create procedure SIOC..private_acl_insert (
     uid := null;
     if (aclArray[N][2] = 'person')
     {
-      uid := SIOC..private_acl_user (aclArray[N][1], 1);
+      uid := DB.DBA.FOAF_WEBID_USER (aclArray[N][1], 1);
     }
     else if (aclArray[N][2] = 'group')
     {
@@ -3994,7 +3974,7 @@ create procedure SIOC..private_acl_delete (
     uid := null;
     if (aclArray[N][2] = 'person')
     {
-      uid := SIOC..private_acl_user (aclArray[N][1]);
+      uid := DB.DBA.FOAF_WEBID_USER (aclArray[N][1]);
     }
     else if (aclArray[N][2] = 'group')
     {
