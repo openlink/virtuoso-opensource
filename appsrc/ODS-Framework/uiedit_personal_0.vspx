@@ -619,7 +619,7 @@
             <tr>
               <td valign="top"><input type="checkbox" name="cb_item_iKnows" id="cb_item_iKnows" value="1" /></td>
               <td valign="top">Knows URIs</td>
-              <td><?vsp self.show_data (self.iKnows, vector ('value')); ?></td>
+              <td><?vsp self.show_data (self.iKnows, vector ('value', 'name')); ?></td>
             </tr>
           </v:template>
         </table>

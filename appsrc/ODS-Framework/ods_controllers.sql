@@ -5090,6 +5090,7 @@ create procedure ODS.ODS_API.extractFOAFDataArray (
                         ?onlineAccount_url
                         ?sameAs_array
                         ?knows_array
+                        ?knows_name
                         ?knows_nick
 		               from <%s>
                    where {
@@ -5402,7 +5403,7 @@ create procedure ODS.ODS_API."user.getKnowsData" (
   }
 
 _exit:;
-  exec (sprintf ('SPARQL clear graph <%s>', foafGraph), st, msg, vector (), 0);
+  SPARQL clear graph ?:foafGraph;
   return obj2json (V);
 }
 ;

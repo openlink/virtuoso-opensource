@@ -1251,7 +1251,7 @@ create procedure sioc_user_offerlist (in user_id integer, in ol_id integer, in o
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
-  user_iri := user_iri (user_id);
+  user_iri := person_iri (user_iri (user_id));
   user_name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = user_id);
   graph_iri := sioc_user_graph (user_name, ol_flag);
   if (isnull (graph_iri))
@@ -1332,7 +1332,7 @@ create procedure sioc_user_likes (in user_id integer, in l_id integer, in l_flag
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
-  user_iri := user_iri (user_id);
+  user_iri := person_iri (user_iri (user_id));
   user_name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = user_id);
   graph_iri := sioc_user_graph (user_name, l_flag);
   if (isnull (graph_iri))
@@ -1394,7 +1394,7 @@ create procedure sioc_user_knows (in user_id integer, in k_id integer, in k_flag
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
-  user_iri := user_iri (user_id);
+  user_iri := person_iri (user_iri (user_id));
   user_name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = user_id);
   graph_iri := sioc_user_graph (user_name, k_flag);
   if (isnull (graph_iri))
@@ -1413,7 +1413,7 @@ create procedure sioc_user_knows_delete (in user_id integer, in k_id integer, in
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
-  user_iri := user_iri (user_id);
+  user_iri := person_iri (user_iri (user_id));
   user_name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = user_id);
   graph_iri := sioc_user_graph (user_name, k_flag);
   if (isnull (graph_iri))
@@ -1433,7 +1433,7 @@ create procedure sioc_user_favorite (in user_id integer, in f_id integer, in f_f
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
-  user_iri := user_iri (user_id);
+  user_iri := person_iri (user_iri (user_id));
   user_name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = user_id);
 
   forum_name := forum_name (user_name, 'FavoriteThings');

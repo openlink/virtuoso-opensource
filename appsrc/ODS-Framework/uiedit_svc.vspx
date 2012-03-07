@@ -39,7 +39,7 @@
 		  <th>URI</th>
 		    <th width="50px">Action</th>
 	      </tr>
-      <v:data-set name="svc" sql="select US_ID, US_SVC, US_IRI, US_KEY from WA_USER_SVC where US_U_ID = :self.u_id" scrollable="1" editable="1" nrows="1000">
+      <v:data-set name="svc" sql="select US_ID, US_SVC, US_IRI, US_KEY from WA_USER_SVC where US_U_ID = :self.u_id" scrollable="1" editable="1" nrows="0">
 		  <v:before-data-bind>
 if (not e.ve_is_post and self.del_svc is not null)
 {

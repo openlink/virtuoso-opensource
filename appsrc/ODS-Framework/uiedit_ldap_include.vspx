@@ -101,7 +101,7 @@
 
   <h3>LDAP Servers Addministration</h3>
   <vm:if test="self.v_mode = 'LDAP/browse'">
-    <v:data-source name="dsrc" expression-type="sql" nrows="10" initial-offset="0">
+    <v:data-source name="dsrc" expression-type="sql" nrows="0" initial-offset="0">
       <v:before-data-bind>
         <![CDATA[
           control.ds_sql := sprintf ('select * from LDAP..LDAP_SERVERS where LS_USER_ID = %d', self.u_id);
