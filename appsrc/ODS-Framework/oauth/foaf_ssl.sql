@@ -71,6 +71,27 @@ create procedure FOAF_SSL_WEBID_GET (in cert any := null, in cert_type int := 0)
 }
 ;
 
+create procedure FOAF_SSL_WEBID_GET_ALL (in cert any := null, in cert_type int := 0)
+{
+  declare agents, agent, tmp, alts any;
+  agent := get_certificate_info (7, cert, cert_type, '', '2.5.29.17');
+  agents := null;
+  if (agent is not null)
+    {
+      declare inx int;
+      alts := regexp_replace (agent, ',[ ]*', ',', 1, null);
+      alts := split_and_decode (alts, 0, '\0\0,:');
+      if (alts is null)
+	return null;
+      while (0 <> (tmp := adm_next_keyword ('URI', alts, inx)))
+	{
+	  agents := vector_concat (agents, vector (tmp));
+	}
+    }
+  return agents;
+}
+;
+
 create procedure FOAF_SSL_MAIL_GET (in cert any := null, in cert_type int := 0)
 {
   declare alts, mail any;
@@ -343,6 +364,221 @@ create procedure WEBID_AUTH_GEN (in cert any, in ctype int, in realm varchar, in
 	   fng := replace (fng, ':', '');
 	   fng2 := x[0];
 	   fng2 := replace (fng2, ':', '');
+    	   if (fng2 = fng)
+    	     {
+    	       ret_code := 1;
+    	       goto ret;
+    	     }
+    	 }
+      }
+
+  }
+  ret:
+  return ret_code;
+}
+;
+
+create procedure WEBID_AUTH_GEN_2 (in cert any, in ctype int, in realm varchar, in allow_nobody int := 0, 
+in use_session int := 1, out ag any, inout _gr any)
+{
+  declare stat, msg, meta, data, info, qr, hf, graph, fing, gr, modulus, alts, dummy any;
+  declare agent varchar;
+  declare acc int;
+  declare ret_code, done int;
+  declare agents any;
+
+  ret_code := 0;
+  acc := 0;
+  done := 0;
+  ag := null;
+  declare exit handler for sqlstate '*'
+    {
+      rollback work;
+      goto err_ret;
+    }
+  ;
+
+  if (_gr is null)
+    gr := uuid ();
+  else
+    gr := _gr;     
+  info := get_certificate_info (9, cert, ctype);
+  fing := get_certificate_info (6, cert, ctype);
+  agents := FOAF_SSL_WEBID_GET_ALL (cert, ctype);
+
+  if (not isarray (info))
+    return 0;
+  if (agents is null)
+    {
+      agent := FOAF_SSL_WEBFINGER (cert, 0, ctype);
+      if (agent is not null)
+	{
+	  goto authenticated;
+	}
+      else
+	{
+	  agent := ODS..FINGERPOINT_WEBID_GET (cert, null, ctype);
+	  goto agent_fp;
+	}
+    }
+  if (agent is null)
+    return 0;
+
+--  for select VS_UID from VSPX_SESSION where VS_SID = fing and VS_REALM = 'FOAF+SSL' do
+--    {
+--      connection_set ('SPARQLUserId', VS_UID);
+--      return 1;
+--    }
+
+  foreach (any _agent in agents) do
+    {
+      agent := _agent;
+      agent_fp:
+      ag := agent;
+      if (agent like 'ldap://%' and DB.DBA.FOAF_SSL_LDAP_CHECK_CERT_INT (agent, cert, ctype, dummy))
+	goto authenticated;
+
+      hf := rfc1808_parse_uri (agent);
+      hf[5] := '';
+      graph := DB.DBA.vspx_uri_compose (hf);
+      qr := sprintf ('sparql load <%S> into graph <%S>', graph, gr);
+      stat := '00000';
+      exec (qr, stat, msg);
+      commit work;
+      qr := FOAF_SSL_QR (graph, agent);    
+      stat := '00000';
+    --  dbg_printf ('%s', qr);
+      exec (qr, stat, msg, vector (), 0, meta, data);
+      again_check:; 
+      if (stat = '00000' and length (data))
+	{
+	  foreach (any _row in data) do
+	    {
+	      declare mod any;
+	      mod := bin2hex (info[2]);
+	      if (_row[0] = cast (info[1] as varchar) and DB.DBA.FOAF_MOD (_row[1]) = bin2hex (info[2]))
+		{
+		  declare arr, uid any;
+		  authenticated:
+		  ag := agent;
+		  _gr := graph;
+		  uid := coalesce ((select FS_UID from FOAF_SSL_ACL where agent like FS_URI), 'nobody');
+		  if ('nobody' = uid and allow_nobody = 0)
+		    goto err_ret;
+		  connection_set ('SPARQLUserId', uid);
+		  if (use_session)
+		    insert replacing VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY) values (fing, 'FOAF+SSL', uid, now ());
+		  if (_gr is null)
+		    exec (sprintf ('sparql clear graph <%S>', gr), stat, msg);
+		  commit work;
+		  return 1;
+		}
+	    }
+	}
+      else if (acc = 0)
+	{
+	  qr := FOAF_SSL_QR_BY_ACCOUNT (gr, agent);
+	  stat := '00000';
+	  --  dbg_printf ('%s', qr);
+	  exec (qr, stat, msg, vector (), 0, meta, data);
+	  acc := 1;
+	  goto again_check;
+	}
+      err_ret:
+    --  dbg_obj_print (stat, data);
+      if (_gr is null)
+        exec (sprintf ('sparql clear graph <%S>', gr), stat, msg);
+      commit work;
+    }
+  {
+    ag := graph;
+    declare page, xt, xp varchar;
+    declare exit handler for sqlstate '*'
+      {
+	goto ret;
+      };
+    page := http_client (url=>graph, n_redirects=>15);
+    verify:
+    xt := xtree_doc (page, 2);
+    xp := xpath_eval ('string (.)', xt);
+    xp := cast (xp as varchar);
+    if (strstr (xp, '#SHA1') is not null)
+      fing := get_certificate_info (6, cert, ctype, null, 'sha1');
+    fing := replace (fing, ':', '');  
+    if (strstr (xp, sprintf ('Fingerprint:%s', fing)) is not null)
+      {
+	ret_code := 1;
+        goto ret;	
+      }
+    if (graph like 'http://twitter.com/%')
+      {
+	declare acco, arr, json, res any;
+	arr := sprintf_inverse (graph, 'http://twitter.com/%s', 1);
+	acco := arr[0];
+        json := http_get (sprintf ('http://search.twitter.com/search.json?q=%%40Fingerprint%%3A%U%%20from%%3A%U', fing, acco));
+	arr := json_parse (json);
+        res := get_keyword ('results', arr);
+	if (length (res) > 0)
+	  {
+	    ret_code := 1;
+	    goto ret;	
+	  }
+	fing := get_certificate_info (6, cert, ctype, null, 'sha1');
+	fing := replace (fing, ':', '');  
+        json := http_get (sprintf ('http://search.twitter.com/search.json?q=%%40Fingerprint%%3A%U%%20from%%3A%U', fing, acco));
+	arr := json_parse (json);
+        res := get_keyword ('results', arr);
+	if (length (res) > 0)
+	  {
+	    ret_code := 1;
+	    goto ret;	
+	  }
+      }
+    if (not done and graph like 'http://graph.facebook.com/%')
+      {
+	declare tok, og_id, tree, nick any;
+	tree := json_parse (page);
+	og_id := get_keyword ('id', tree);
+	nick := get_keyword ('username', tree);
+	tok := DB.DBA.OPENGRAPH_GET_ACCESS_TOKEN (og_id);
+	if (tok is null)
+	  goto ret;
+	page := http_get (sprintf ('https://graph.facebook.com/%U/feed?access_token=%U', nick, tok));
+	done := 1;
+	goto verify;
+      }
+    if (not done and graph like 'http://%.linkedin.com/in/%')
+      {
+	declare oauth_keys, arr, opts, url, api_url, cnt any;
+	declare consumer_key, consumer_secret, oauth_token, oauth_secret, person_id varchar;
+	opts := (select RM_OPTIONS from DB..SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_LINKEDIN');
+	oauth_keys := DB.DBA.LINKEDIN_GET_ACCESS_TOKEN (graph);
+	oauth_token := oauth_keys[0];
+	oauth_secret := oauth_keys[1];
+	consumer_key := get_keyword ('consumer_key', opts);
+	consumer_secret := get_keyword ('consumer_secret', opts);
+	api_url := sprintf ('https://api.linkedin.com/v1/people/url=%U:(id)', graph);
+	url := DB.DBA.sign_request ('GET', api_url, '', consumer_key, consumer_secret, oauth_token, oauth_secret, 1);
+	cnt := http_get (url);
+	xt := xtree_doc (cnt);
+        person_id := cast (xpath_eval ('/person/id/text()', xt) as varchar);
+	url := DB.DBA.sign_request ('GET', sprintf ('http://api.linkedin.com/v1/people/%s/network', person_id), 'type=SHAR&scope=self', consumer_key, consumer_secret, oauth_token, oauth_secret, 1);
+	page := http_get (url);
+	done := 1;
+	goto verify;
+      }
+    exec (sprintf (
+    'sparql define get:soft "add" prefix opl: <http://www.openlinksw.com/schemas/cert#> select ?f ?dgst from <%S> { ?s opl:hasCertificate ?c . ?c opl:fingerprint ?f ; opl:fingerprint-digest ?dgst . }', 
+    	graph), stat, msg, vector (), 0, meta, data);
+    if (length (data))
+     {
+       foreach (any x in data) do
+    	 {
+	   declare fng, fng2 any;
+	   fng := get_certificate_info (6, cert, ctype, null, x[1]);
+	   fng := replace (fng, ':', '');  
+	   fng2 := x[0];
+	   fng2 := replace (fng2, ':', '');  
     	   if (fng2 = fng)
     	     {
     	       ret_code := 1;

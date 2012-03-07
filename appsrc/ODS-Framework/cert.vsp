@@ -44,6 +44,8 @@
          {
 	   exts := vector ('nsComment', 'Virtuoso Generated Certificate');
 	 }
+       exts := vector_concat (exts, vector ('keyUsage', 'critical, digitalSignature,keyEncipherment', 
+					    'extendedKeyUsage', 'critical, clientAuth,emailProtection'));
        days := atoi (get_keyword ('days', params, '365'));
        hours := atof (get_keyword ('hours', params, '0.0'));
        xenc_x509_generate ('id_rsa', kname, sequence_next ('ca_id_rsa'), days,
