@@ -347,6 +347,8 @@ create procedure DB.DBA.JSO_LOAD_AND_PIN_SYS_GRAPH_RO (in graphiri varchar := nu
 {
   if (graphiri is null)
     graphiri := DB.DBA.JSO_SYS_GRAPH();
+  if (not exists (select 1 from SYS_KEYS where KEY_TABLE = 'DB.DBA.RDF_QUAD'))
+    return;
   DB.DBA.JSO_LOAD_GRAPH (graphiri, 0);
   DB.DBA.JSO_PIN_GRAPH (graphiri);
 }
