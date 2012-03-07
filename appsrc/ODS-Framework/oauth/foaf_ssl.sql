@@ -412,7 +412,7 @@ create procedure WEBID_DI_SPLIT (in str varchar)
     {
       h := WS.WS.PARSE_URI (di);
       dgst := bin2hex (cast (decode_base64 (replace (replace (h[3], '-', '+'), '_', '/')) as varbinary));
-      ret := vector_concat (ret, vector (h[2], dgst));
+      ret := vector_concat (ret, vector (vector (h[2], dgst)));
     }
   return ret;
 }
