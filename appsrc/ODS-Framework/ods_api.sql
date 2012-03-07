@@ -325,7 +325,7 @@ create procedure ODS_CREATE_USER (
 
    WA_USER_EDIT (_username, 'WAUI_SEARCHABLE', _is_searchable);
    WA_USER_EDIT (_username, 'WAUI_SHOWACTIVE', _show_activity);
-
+  if (0) -- don't use IP location service, since this api can be run locally
    {
      declare coords any;
      declare exit handler for sqlstate '*';
