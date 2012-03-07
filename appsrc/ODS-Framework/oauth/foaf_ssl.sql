@@ -25,6 +25,7 @@ create procedure FOAF_SSL_QR (in gr varchar, in uri varchar)
 {
     return sprintf ('sparql
     define input:storage ""
+    define input:same-as "yes"
     prefix cert: <http://www.w3.org/ns/auth/cert#>
     prefix rsa: <http://www.w3.org/ns/auth/rsa#>
     select (str (?exp)) (str (?mod))
