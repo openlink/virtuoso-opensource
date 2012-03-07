@@ -1732,12 +1732,27 @@ create procedure wa_vad_check (in pname varchar)
 }
 ;
 
-
-create trigger SYS_USERS_ON_DELETE_WA_FK before delete
- on "DB"."DBA"."SYS_USERS" order 66 referencing old as O
+create trigger SYS_USERS_WA_AU after update on "DB"."DBA"."SYS_USERS" order 66 referencing old as O, new as N
 {
-   ODS_DELETE_USER_DATA(O.U_NAME);
-};
+  declare name varchar;
+  declare o_disabled, n_disabled any;
+
+  name := connection_get ('WA_USER_DISABLED');
+  if (not isnull (name))
+    return;
+
+  o_disabled := get_keyword_ucase ('DISABLED', deserialize (O.U_OPTS), 0);
+  n_disabled := get_keyword_ucase ('DISABLED', deserialize (N.U_OPTS), 0);
+  if (o_disabled <> n_disabled)
+    DB.DBA.WA_USER_SETTING_SET (N.U_NAME, 'DISABLED_BY', 'dav');
+}
+;
+
+create trigger SYS_USERS_ON_DELETE_WA_FK before delete on "DB"."DBA"."SYS_USERS" order 66 referencing old as O
+{
+  ODS_DELETE_USER_DATA(O.U_NAME);
+}
+;
 
 insert soft WA_MEMBER_MODEL (WMM_ID, WMM_NAME) values (0, 'Open')
 ;
@@ -3357,6 +3372,7 @@ wa_exec_no_error_log(
     WAUI_CERT long varbinary,		-- same as above
     WAUI_ACL LONG VARCHAR,
     WAUI_SALMON_KEY varchar, 
+    WAUI_SETTINGS LONG VARCHAR,
 
     primary key (WAUI_U_ID)
   )'
@@ -3409,6 +3425,8 @@ wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_HPHONE_EXT', 'varchar(5)');
 
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_ACL', 'LONG VARCHAR');
 wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_SALMON_KEY', 'VARCHAR');
+
+wa_add_col ('DB.DBA.WA_USER_INFO', 'WAUI_SETTINGS', 'LONG VARCHAR');
 
 wa_exec_no_error ('create index WA_USER_INFO_CERT_FINGERPRINT on DB.DBA.WA_USER_INFO (WAUI_CERT_FINGERPRINT)');
 
@@ -4156,7 +4174,7 @@ create procedure WA_USER_SET_INFO (in _name varchar,in _fname varchar,in _lname 
 }
 ;
 
-create procedure WA_USER_EDIT (in _name varchar,in _key varchar,in _data any)
+create procedure WA_USER_EDIT (in _name varchar, in _key varchar, in _data any)
 {
   declare _uid any;
   declare i int;
@@ -4331,6 +4349,9 @@ create procedure WA_USER_EDIT (in _name varchar,in _key varchar,in _data any)
   else if (_key = 'WAUI_PHOTO_URL')
     UPDATE WA_USER_INFO SET WAUI_PHOTO_URL = _data WHERE WAUI_U_ID = _uid;
 
+  else if (_key = 'WAUI_SETTINGS')
+    UPDATE WA_USER_INFO SET WAUI_SETTINGS = _data WHERE WAUI_U_ID = _uid;
+
   return row_count ();
 
  nf:
@@ -4393,6 +4414,35 @@ create procedure WA_USER_VISIBILITY (in _name varchar, in _arr any default null,
 
  nf:
    signal ('42000', sprintf ('The object "%s" does not exists.', _name), 'U0002');
+}
+;
+
+create procedure WA_USER_SETTING_SET (in _name varchar, in _key varchar, in _data any)
+{
+  declare _uid any;
+  declare _settings any;
+
+  _uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = _name);
+  _settings := (select deserialize (WAUI_SETTINGS) from DB.DBA.WA_USER_INFO where WAUI_U_ID = _uid);
+  if (isnull (_settings))
+    _settings := vector ();
+
+  ODS.ODS_API.set_keyword (_key, _settings, _data);
+  WA_USER_EDIT (_name, 'WAUI_SETTINGS', serialize (_data));
+}
+;
+
+create procedure WA_USER_SETTING_GET (in _name varchar, in _key varchar)
+{
+  declare _uid any;
+  declare _settings any;
+
+  _uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = _name);
+  _settings := (select deserialize (WAUI_SETTINGS) from DB.DBA.WA_USER_INFO where WAUI_U_ID = _uid);
+  if (isnull(_settings))
+    return null;
+
+  return get_keyword (_key, _settings);
 }
 ;
 

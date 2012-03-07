@@ -2418,7 +2418,6 @@ function ufProfileCallback(data) {
 			// main
       hiddenCreate('c_nick', null, tagValue(user, 'nickName'));
       $('ob_left_name').innerHTML = tagValue(user, 'fullName');
-      fieldUpdate(user, 'nickName', 'pf_nickName');
 			fieldUpdate(user, 'name', 'pf_loginName');
 			fieldUpdate(user, 'nickName', 'pf_nickName');
 			fieldUpdate(user, 'mail', 'pf_mail', aclData);
@@ -3527,3 +3526,17 @@ function knowsData() {
 	}
 	OAT.AJAX.GET(S, '', x, {onstart : function() {OAT.Dom.show('k_import_image')}, onend : function() {OAT.Dom.hide('k_import_image')}});
 }
+
+function userDisable(userName)
+{
+  var S = '/ods/api/user.disable?name='+encodeURIComponent($v(userName)) + '&sid=' + $v('sid') + '&realm=wa';
+	var x = function(data) {
+    var xml = OAT.Xml.createXmlDoc(data);
+    if (!hasError(xml, false)) {
+      alert('User\'s account is disabled!');
+      logoutUrl();
+    }
+	}
+  OAT.AJAX.GET(S, '', x);
+}
+

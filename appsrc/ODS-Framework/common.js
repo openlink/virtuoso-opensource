@@ -570,6 +570,25 @@ function pageFocus(tab) {
   }
 }
 
+function accountDisable(userName)
+{
+  var S = '/ods/api/user.disable?name='+encodeURIComponent($v(userName))
+        + '&sid=' + document.forms[0].elements['sid'].value
+        + '&realm=' + document.forms[0].elements['realm'].value;
+	var x = function(data) {
+    var xml = OAT.Xml.createXmlDoc(data);
+    if (!hasError(xml, false)) {
+      alert('User\'s account is disabled!');
+      if (parent) {
+			  parent.document.location = document.location.protocol + '//' + document.location.host + '/ods';
+			} else {
+			  document.location = document.location.protocol + '//' + document.location.host + '/ods';
+			}
+    }
+	}
+  OAT.AJAX.GET(S, '', x);
+}
+
 // RDF Relations
 // ---------------------------------------------------------------------------
 var rdfDialog

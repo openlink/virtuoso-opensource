@@ -1226,11 +1226,18 @@
                       <div id="pf_page_0_1" class="tabContent" style="display:none;">
                         <table class="form" cellspacing="5">
                           <tr>
+                            <th>Account deactivation</th>
+                            <td>
+                              <input type="button" value="Deactivate" onclick="return userDisable('pf_loginName');" />
+                            </td>
+                          </tr>
+                          <tr>
                             <th width="30%">
                               <label for="pf_loginName">Login Name</label>
                             </th>
                             <td>
                               <?php print($_xml->name); ?>
+                              <input type="hidden" name="pf_loginName" value="<?php print($_xml->name); ?>" id="pf_loginName" />
                             </td>
                           </tr>
                           <tr>

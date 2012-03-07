@@ -457,6 +457,13 @@ create procedure params2json (in o any)
 }
 ;
 
+create procedure json2obj (
+  in o any)
+{
+  return json_parse (o);
+}
+;
+
 create procedure dav_path_normalize (
   in path varchar,
   in path_type varchar := 'P')
@@ -1751,6 +1758,10 @@ create procedure ODS.ODS_API."user.authenticate" (
   if (isnull (uname))
     return ods_auth_failed ();
 
+
+  if ((select U_ACCOUNT_DISABLED from DB.DBA.SYS_USERS where U_NAME = uname) = 1)
+    signal ('22000', 'The ODS account is deactivated<>');
+
   sid := DB.DBA.vspx_sid_generate ();
   insert into DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_STATE, VS_EXPIRY)
     values (sid, 'wa', uname, serialize (vector ('vspx_user', uname)), now ());
@@ -2378,22 +2389,34 @@ create procedure ODS.ODS_API."user.delete" (
 create procedure ODS.ODS_API."user.enable" (
   in name varchar) __soap_http 'text/xml'
 {
+  declare rc, allow integer;
   declare uname varchar;
-  declare rc integer;
   declare exit handler for sqlstate '*'
   {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
+
   if (not ods_check_auth (uname))
     return ods_auth_failed ();
+
   if (not exists (select 1 from DB.DBA.SYS_USERS where U_NAME = name))
     return ods_serialize_sql_error ('37000', 'The item is not found');
+
+  allow := 0;
   if (uname in ('dav', 'dba'))
+    allow := 1;
+
+  if ((not allow) and (uname = DB.DBA.WA_USER_SETTING_GET (name, 'DISABLED_BY')))
+    allow := 1;
+
+  if (allow)
     {
     update DB.DBA.WA_INSTANCE
        set WAI_IS_FROZEN = 0
      where WAI_NAME in (select WAM_INST from DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS where WAM_USER = U_ID and U_NAME = name and WAM_MEMBER_TYPE = 1);
+    DB.DBA.WA_USER_SETTING_SET (name, 'DISABLED_BY', null);
+    connection_set ('WA_USER_DISABLED', name);
       DB.DBA.USER_SET_OPTION (name, 'DISABLED', 0);
       rc := 1;
   } else {
@@ -2406,23 +2429,28 @@ create procedure ODS.ODS_API."user.enable" (
 create procedure ODS.ODS_API."user.disable" (
   in name varchar) __soap_http 'text/xml'
 {
-  declare uname varchar;
   declare rc integer;
+  declare uname varchar;
   declare exit handler for sqlstate '*'
   {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
+
   if (not ods_check_auth (uname))
     return ods_auth_failed ();
+
   if (not exists (select 1 from DB.DBA.SYS_USERS where U_NAME = name))
     return ods_serialize_sql_error ('37000', 'The item is not found');
-  if (uname in ('dav', 'dba'))
+
+  if ((uname in ('dav', 'dba')) or (uname = name))
     {
     delete from DB.DBA.VSPX_SESSION where VS_UID = name;
     update DB.DBA.WA_INSTANCE
        set WAI_IS_FROZEN = 1
      where WAI_NAME in (select WAM_INST from DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS where WAM_USER = U_ID and U_NAME = name and WAM_MEMBER_TYPE = 1);
+    DB.DBA.WA_USER_SETTING_SET (name, 'DISABLED_BY', uname);
+    connection_set ('WA_USER_DISABLED', name);
     DB.DBA.USER_SET_OPTION (name, 'DISABLED', 1);
       rc := 1;
   } else {
@@ -2441,6 +2469,7 @@ create procedure ODS.ODS_API."user.get" (
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
+
   q := sprintf ('select * from <%s> where { ?user a sioc:User ; sioc:id "%s" ; ?property ?value } ', ods_graph(), name);
   exec_sparql (q);
   return '';
