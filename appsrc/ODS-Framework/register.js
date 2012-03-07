@@ -315,7 +315,7 @@ function rfInit() {
             rfRowInput(tbl, 'Login Name', 'rf_uid_3', {value: rfSslData.loginName, width: '150px'});
 
           if (rfSslData.mbox && rfSslData.certLogin)
-            rfRowValue(tbl, 'E-Mail', sslData.mbox);
+            rfRowValue(tbl, 'E-Mail', rfSslData.mbox);
 
           if (!rfSslData.certLogin)
             rfRowInput(tbl, 'E-Mail', 'rf_email_3', {value: rfSslData.mbox, width: '300px'});
