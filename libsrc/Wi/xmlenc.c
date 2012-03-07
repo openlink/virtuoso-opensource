@@ -7148,6 +7148,83 @@ bif_xenc_pubkey_magic_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
   return ret;
 }
 
+static int
+xenc_ssh_encode (caddr_t dest, caddr_t src)
+{
+  int32 new_len, len, pos;
+  new_len = len = box_length (src);
+  if (*src & 0x80)
+    {
+      new_len++;
+      dest[4] = 0;
+      pos = 5;
+    }
+  else
+    {
+      pos = 4;
+    }
+  LONG_SET_NA (dest, new_len);
+  memcpy(&dest[pos], src, len);
+  return pos + len;
+}
+
+static caddr_t
+xenc_rsa_pub_ssh_export (RSA * x)
+{
+  static char * ssh_header = "\x00\x00\x00\x07ssh-rsa";
+  caddr_t ret;
+  int len, pos;
+  caddr_t n = BN2binbox (x->n); /* modulus */
+  caddr_t e = BN2binbox (x->e); /* public exponent */
+  len = 11 + 8 + box_length (n) + box_length (e);
+  if (n[0] & 0x80)
+    len ++;
+  if (e[0] & 0x80)
+    len ++;
+  ret = dk_alloc_box (len, DV_BIN);
+  memcpy (ret, ssh_header, 11);
+  pos = xenc_ssh_encode (&ret[11], e);
+  pos = xenc_ssh_encode (&ret[11 + pos], n);
+  dk_free_box (n);
+  dk_free_box (e);
+  ret = xenc_encode_base64_binbox (ret, 1);
+  return ret;
+}
+
+static caddr_t
+bif_xenc_pubkey_ssh_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t key_name = bif_string_arg (qst, args, 0, "xenc_pubkey_ssh_export");
+  xenc_key_t * key = xenc_get_key_by_name (key_name, 1);
+  caddr_t ret = NULL;
+  EVP_PKEY * k;
+
+  if (!key)
+    SQLR_NEW_KEY_ERROR (key_name);
+
+  if (key->xek_x509)
+    {
+      k = X509_get_pubkey (key->xek_x509);
+#ifdef EVP_PKEY_RSA
+      if (k->type == EVP_PKEY_RSA)
+	{
+	  RSA * x = k->pkey.rsa;
+	  ret = xenc_rsa_pub_ssh_export (x);
+	}
+#endif
+      EVP_PKEY_free (k);
+    }
+  else if (key->xek_type == DSIG_KEY_RSA)
+    {
+       RSA * x = key->xek_rsa;
+       ret = xenc_rsa_pub_ssh_export (x);
+    }
+  else
+    sqlr_new_error ("42000", "XENC..", "The key type is not supported for export.");
+
+  return ret;
+}
+
 static caddr_t
 bif_xenc_SPKI_read (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -7306,6 +7383,7 @@ void bif_xmlenc_init ()
   bif_define ("xenc_pubkey_pem_export", bif_xenc_pubkey_pem_export);
   bif_define ("xenc_pubkey_DER_export", bif_xenc_pubkey_der_export);
   bif_define ("xenc_pubkey_magic_export", bif_xenc_pubkey_magic_export);
+  bif_define ("xenc_pubkey_ssh_export", bif_xenc_pubkey_ssh_export);
   bif_define ("xenc_SPKI_read", bif_xenc_SPKI_read);
 
 #ifdef _KERBEROS
