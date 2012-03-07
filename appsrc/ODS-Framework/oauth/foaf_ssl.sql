@@ -246,6 +246,8 @@ create procedure WEBID_AUTH_GEN (in cert any, in ctype int, in realm varchar, in
     xt := xtree_doc (page, 2);
     xp := xpath_eval ('string (.)', xt);
     xp := cast (xp as varchar);
+    if (strstr (xp, '#SHA1') is not null)
+      fing := get_certificate_info (6, cert, ctype, null, 'sha1');
     if (strstr (xp, sprintf ('Fingerprint:%s', fing)) is not null)
       {
 	ret_code := 1;
@@ -299,7 +301,7 @@ create procedure WEBID_AUTH_GEN (in cert any, in ctype int, in realm varchar, in
 	goto verify;
       }
     exec (sprintf (
-    'sparql define get:soft "soft" prefix opl: <http://www.openlinksw.com/schema/attribution#> select ?f from <%S> { ?s opl:hasFingerprint ?f }', 
+    'sparql define get:soft "soft" prefix opl: <http://www.openlinksw.com/schema/cert#> select ?f from <%S> { ?s opl:hasCertificate ?c . ?c opl:fingerprint ?f }', 
     	graph), stat, msg, vector (), 0, meta, data);
     if (length (data))
      {
