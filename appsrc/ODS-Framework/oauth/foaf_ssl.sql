@@ -474,7 +474,7 @@ create procedure WEBID_AUTH_GEN_2 (
   declare exit handler for sqlstate '*'
     {
       rollback work;
-      goto err_ret;
+      goto ret;
     }
   ;
 
@@ -576,10 +576,6 @@ create procedure WEBID_AUTH_GEN_2 (
       validation_type := 1;
       goto authenticated;
     }
-  err_ret:
-  if (_gr is null)
-    exec (sprintf ('sparql clear graph <%S>', gr), stat, msg);
-  commit work;
   validation_type := null;
   {
     ag := graph;
@@ -718,6 +714,9 @@ create procedure WEBID_AUTH_GEN_2 (
 
   }
   ret:
+  if (_gr is null)
+    exec (sprintf ('sparql clear graph <%S>', gr), stat, msg);
+  commit work;
   return ret_code;
 }
 ;
