@@ -312,8 +312,7 @@ create procedure ODS_CREATE_USER (
                  'DAV_ENABLE' , 1,
                  'SQL_ENABLE', 0));
    update SYS_USERS set U_ACCOUNT_DISABLED = _mail_verify_on where U_ID = uid;
-   DAV_MAKE_DIR ('/DAV/home/', http_dav_uid (), http_admin_gid (), '110100100R');
-  DAV_MAKE_DIR ('/DAV/home/' || _username || '/', uid, http_nogroup_gid (), '110100000R');
+  DB.DBA.DAV_HOME_DIR_CREATE (_username);
 
   declare _det_col_id integer;
   _det_col_id := DB.DBA.DAV_MAKE_DIR ('/DAV/home/'||_username||'/RDFData/', uid, http_nogroup_gid (), '110100100N');
