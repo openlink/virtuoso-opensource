@@ -429,7 +429,7 @@ create procedure WEBID_AUTH_GEN_2 (
   ;
 
   if (_gr is null)
-    gr := uuid ();
+    gr := 'http:' || uuid ();
   else
     gr := _gr;     
   info := get_certificate_info (9, cert, ctype);
@@ -464,7 +464,7 @@ create procedure WEBID_AUTH_GEN_2 (
       hf := rfc1808_parse_uri (agent);
       hf[5] := '';
       graph := DB.DBA.vspx_uri_compose (hf);
-      qr := sprintf ('sparql load <%S> into graph <%S>', graph, gr);
+      qr := sprintf ('sparql define get:soft "add" define get:uri <%S> select count(*) from <%S> { ?s ?p ?o }', graph, gr);
       stat := '00000';
       exec (qr, stat, msg);
       commit work;
