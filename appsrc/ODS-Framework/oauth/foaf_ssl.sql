@@ -110,18 +110,35 @@ create procedure FOAF_SSL_MAIL_GET (in cert any := null, in cert_type int := 0)
 }
 ;
 
+create procedure FOAF_SSL_MAIL_GET_ALL (in cert any := null, in cert_type int := 0)
+{
+  declare alts, mail, ret any;
+  ret := vector ();
+  mail := get_certificate_info (10, cert, cert_type, '', 'emailAddress');
+  ret := vector_concat (ret, vector (mail));
+  alts := get_certificate_info (7, cert, cert_type, '', '2.5.29.17');
+  if (alts is not null)
+    {
+      alts := regexp_replace (alts, ',[ ]*', ',', 1, null);
+      alts := split_and_decode (alts, 0, '\0\0,:');
+      mail := get_keyword ('email', alts);
+      if (not position (mail, ret)) 
+        ret := vector_concat (ret, vector (mail));
+    }
+  return ret;
+}
+;
+
 
 --
 -- WHEN USE try_loading_webid must clear the graph named as webid
 --
 create procedure FOAF_SSL_WEBFINGER (in cert any := null, in try_loading_webid int := 0, in cert_type int := 0)
 {
-  declare mail, webid, domain, host_info, xrd, template, url any;
+  declare mails, webid, domain, host_info, xrd, template, url any;
   declare xt, xd, tmpcert any;
 
-  mail := FOAF_SSL_MAIL_GET (cert, cert_type);
-  if (mail is null)
-    return null;
+  mails := FOAF_SSL_MAIL_GET_ALL (cert, cert_type);
 
   declare exit handler for sqlstate '*'
     {
@@ -129,39 +146,42 @@ create procedure FOAF_SSL_WEBFINGER (in cert any := null, in try_loading_webid i
       return null;
     };
 
-  domain := subseq (mail, position ('@', mail));
-  host_info := http_get (sprintf ('http://%s/.well-known/host-meta', domain));
-  xd := xtree_doc (host_info);
-  template := cast (xpath_eval ('/XRD/Link[@rel="lrdd"]/@template', xd) as varchar);
-  url := replace (template, '{uri}', 'acct:' || mail);
-  xrd := http_get (url);
-  xd := xtree_doc (xrd);
-  xt := xpath_eval ('/XRD/Property[@type="certificate"]/@href', xd, 0);
-  foreach (any x in xt) do
+  foreach (varchar mail in mails) do
     {
-      x := cast (x as varchar);
-      tmpcert := http_get (x);
-      if (get_certificate_info (6, cert, cert_type, '') = get_certificate_info (6, tmpcert, 0, ''))
+      domain := subseq (mail, position ('@', mail));
+      host_info := http_get (sprintf ('http://%s/.well-known/host-meta', domain));
+      xd := xtree_doc (host_info);
+      template := cast (xpath_eval ('/XRD/Link[@rel="lrdd"]/@template', xd) as varchar);
+      url := replace (template, '{uri}', 'acct:' || mail);
+      xrd := http_get (url);
+      xd := xtree_doc (xrd);
+      xt := xpath_eval ('/XRD/Property[@type="certificate"]/@href', xd, 0);
+      foreach (any x in xt) do
 	{
-	  webid := null;
-	  if (try_loading_webid)
+	  x := cast (x as varchar);
+	  tmpcert := http_get (x);
+	  if (get_certificate_info (6, cert, cert_type, '') = get_certificate_info (6, tmpcert, 0, ''))
 	    {
-	      declare hf, gr, graph, qr, stat, msg any;
-	  webid := cast (xpath_eval ('/XRD/Property[@type="webid"]/@href', xd) as varchar);
-	      hf := rfc1808_parse_uri (webid);
-	      hf[5] := '';
-	      gr := DB.DBA.vspx_uri_compose (hf);
-	      graph := uuid ();
-	      qr := sprintf ('sparql load <%S> into graph <%S>', gr, graph);
-	      stat := '00000';
-	      exec (qr, stat, msg);
-	      commit work;
-	      if (stat = '00000')
-		return graph;
-	      else
-		return null;
+	      webid := null;
+	      if (try_loading_webid)
+		{
+		  declare hf, gr, graph, qr, stat, msg any;
+		  webid := cast (xpath_eval ('/XRD/Property[@type="webid"]/@href', xd) as varchar);
+		  hf := rfc1808_parse_uri (webid);
+		  hf[5] := '';
+		  gr := DB.DBA.vspx_uri_compose (hf);
+		  graph := uuid ();
+		  qr := sprintf ('sparql load <%S> into graph <%S>', gr, graph);
+		  stat := '00000';
+		  exec (qr, stat, msg);
+		  commit work;
+		  if (stat = '00000')
+		    return graph;
+		  else
+		    return null;
+		}
+	      return coalesce (webid, 'acct:' || mail);
 	    }
-	  return coalesce (webid, 'acct:' || mail);
 	}
     }
   return null;
@@ -381,8 +401,14 @@ create procedure WEBID_AUTH_GEN (in cert any, in ctype int, in realm varchar, in
 }
 ;
 
-create procedure WEBID_AUTH_GEN_2 (in cert any, in ctype int, in realm varchar, in allow_nobody int := 0, 
-in use_session int := 1, out ag any, inout _gr any)
+create procedure WEBID_AUTH_GEN_2 (
+	in cert any,    		-- certificate
+	in ctype int, 			-- certificate type see get_certificate_info for details 
+	in realm varchar, 		-- application realm
+	in allow_nobody int := 0, 	-- anonymous access
+	in use_session int := 1, 	-- use session table
+	out ag any,   			-- detected webid URI
+	inout _gr any)			-- if non null data from webid URI will be loaded in the graph name in _gr
 {
   declare stat, msg, meta, data, info, qr, hf, graph, fing, gr, modulus, alts, dummy any;
   declare agent varchar;
@@ -411,27 +437,20 @@ in use_session int := 1, out ag any, inout _gr any)
 
   if (not isarray (info))
     return 0;
-  if (agents is null)
+  if (use_session)
     {
-      agent := FOAF_SSL_WEBFINGER (cert, 0, ctype);
-      if (agent is not null)
+      for select VS_UID, VS_STATE from VSPX_SESSION where VS_SID = fing and VS_REALM = 'FOAF+SSL' do
 	{
-	  goto authenticated;
-	}
-      else
-	{
-	  agent := ODS..FINGERPOINT_WEBID_GET (cert, null, ctype);
-	  goto agent_fp;
+	  declare st any;
+	  st := deserialize (VS_STATE);
+	  ag := get_keyword ('agent', st);
+	  connection_set ('SPARQLUserId', VS_UID);
+	  return 1;
 	}
     }
-  if (agent is null)
-    return 0;
 
---  for select VS_UID from VSPX_SESSION where VS_SID = fing and VS_REALM = 'FOAF+SSL' do
---    {
---      connection_set ('SPARQLUserId', VS_UID);
---      return 1;
---    }
+  if (agents is null)
+    goto verify_mails;
 
   foreach (any _agent in agents) do
     {
@@ -448,7 +467,7 @@ in use_session int := 1, out ag any, inout _gr any)
       stat := '00000';
       exec (qr, stat, msg);
       commit work;
-      qr := FOAF_SSL_QR (graph, agent);    
+      qr := FOAF_SSL_QR (gr, agent);    
       stat := '00000';
     --  dbg_printf ('%s', qr);
       exec (qr, stat, msg, vector (), 0, meta, data);
@@ -470,7 +489,8 @@ in use_session int := 1, out ag any, inout _gr any)
 		    goto err_ret;
 		  connection_set ('SPARQLUserId', uid);
 		  if (use_session)
-		    insert replacing VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY) values (fing, 'FOAF+SSL', uid, now ());
+		    insert replacing VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY, VS_STATE) 
+			values (fing, 'FOAF+SSL', uid, now (), serialize (vector ('agent', ag)));
 		  if (_gr is null)
 		    exec (sprintf ('sparql clear graph <%S>', gr), stat, msg);
 		  commit work;
@@ -487,12 +507,17 @@ in use_session int := 1, out ag any, inout _gr any)
 	  acc := 1;
 	  goto again_check;
 	}
-      err_ret:
-    --  dbg_obj_print (stat, data);
-      if (_gr is null)
-        exec (sprintf ('sparql clear graph <%S>', gr), stat, msg);
-      commit work;
     }
+  verify_mails:
+  agent := FOAF_SSL_WEBFINGER (cert, 0, ctype);
+  if (agent is not null)
+    {
+      goto authenticated;
+    }
+  err_ret:
+  if (_gr is null)
+    exec (sprintf ('sparql clear graph <%S>', gr), stat, msg);
+  commit work;
   {
     ag := graph;
     declare page, xt, xp varchar;
