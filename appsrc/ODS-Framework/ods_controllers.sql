@@ -1198,7 +1198,7 @@ create procedure ODS.ODS_API."lookup.list" (
 }
 ;
 
-create procedure ODS..getDefaultHttps ()
+create procedure ODS.ODS_API.getDefaultHttps () __SOAP_HTTP 'text/plain'
 {
   declare host, port, tmp varchar;
 
@@ -5785,6 +5785,7 @@ DB.DBA.VHOST_DEFINE (lpath=>'/ods/api', ppath=>'/SOAP/Http', soap_user=>'ODS_API
 grant execute on ODS.ODS_API.error_handler to ODS_API;
 
 grant execute on ODS.ODS_API."qrcode" to ODS_API;
+grant execute on ODS.ODS_API."getDefaultHttps" to ODS_API;
 
 grant execute on ODS.ODS_API."ontology.classes" to ODS_API;
 grant execute on ODS.ODS_API."ontology.classProperties" to ODS_API;

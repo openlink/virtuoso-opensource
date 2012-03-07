@@ -1,11 +1,70 @@
 <?php
+  function parseUrl($url)
+  {
+    // parse the given URL
+    $url = parse_url($url);
+    if (!isset($url['port'])) {
+      if ($url['scheme'] == 'http') {
+        $url['port'] = 80;
+      }
+      elseif ($url['scheme'] == 'https') {
+        $url['port'] = 443;
+      }
+    }
+    if ($url['scheme'] == 'https')
+      $url['scheme'] = 'ssl';
+
+    elseif ($url['scheme'] == 'http')
+      $url['scheme'] = 'tcp';
+
+    $url['query'] = isset($url['query'])? $url['query']: '';
+    $url['protocol'] = $url['scheme'] . '://';
+
+    return $url;
+  }
+  function makeRequest($url, $headers) {
+    // parse the given URL
+    $content = "";
+    $fp = fsockopen($url['protocol'] . $url['host'], $url['port'], $errno, $errstr, 30);
+    if ($fp) {
+      if (fwrite($fp, $headers)) {
+        while (!feof($fp)) {
+          $result .= fgets($fp, 128);
+        }
+        fclose($fp);
+
+        // split the result header from the content
+        $result = explode("\r\n\r\n", $result, 2);
+
+        $header = isset($result[0]) ? $result[0] : '';
+        $content = isset($result[1]) ? $result[1] : '';
+      } else {
+        fclose($fp);
+      }
+    }
+    return $content;
+  }
+  function getRequest($url)
+  {
+    $url = parseUrl($url);
+    $eol = "\r\n";
+    $headers = "GET " . $url['path'] . "?" . $url['query'] . " HTTP/1.1" . $eol .
+               "Host: " . $url['host'].":".$url['port'] . $eol .
+               "Connection: close"  . $eol . $eol;
+    return makeRequest ($url, $headers);
+  }
   function apiURL()
+  {
+    $pageURL = $_SERVER['HTTPS'] == 'on' ? 'https://' : 'http://';
+    $pageURL .= $_SERVER['SERVER_PORT'] <> '80' ? $_SERVER["SERVER_NAME"].":".$_SERVER["SERVER_PORT"] : $_SERVER['SERVER_NAME'];
+    return $pageURL.'/ods/api';
+  }
+  function httpURL()
   {
     $pageURL = $_SERVER['HTTPS'] == 'on' ? 'https://' : 'http://';
     $pageURL .= $_SERVER['SERVER_PORT'] <> '80' ? $_SERVER['SERVER_NAME'] . ':' . $_SERVER['SERVER_PORT'] : $_SERVER['SERVER_NAME'];
     return $pageURL . '/ods/webid/webid_demo.php';
   }
-
 	$_webid = isset ($_REQUEST['webid']) ? $_REQUEST['webid'] : '';
 	$_error = isset ($_REQUEST['error']) ? $_REQUEST['error'] : '';
 	$_action = isset ($_REQUEST['go']) ? $_REQUEST['go'] : '';
@@ -13,8 +72,8 @@
   {
     if ($_action <> '')
     {
-      $_callback = apiURL();
-      $_url = sprintf ('https://id.myopenlink.net/ods/webid_verify.vsp?callback=%s', urlencode($_callback));
+      $_url = getRequest (sprintf ("%s/getDefaultHttps", apiURL()));
+      $_url = sprintf ('https://%s/ods/webid_verify.vsp?callback=%s', $_url, urlencode(httpURL()));
       header (sprintf ('Location: %s', $_url));
       return;
     }

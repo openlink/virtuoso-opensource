@@ -1,5 +1,5 @@
 <?vsp
-  declare webid, error, action, hostUrl, url, callback, certificate any;
+  declare webid, error, action, hostUrl, httpsUrl, url, callback, certificate any;
 
 	webid := get_keyword ('webid', params);
 	error := get_keyword ('error', params);
@@ -12,7 +12,7 @@
 
   if (is_https_ctx ())
   {
-    hostUrl := 'https://' || ODS..getDefaultHttps();
+    hostUrl := 'https://' || ODS.ODS_API.getDefaultHttps ();
   }
   else
   {
@@ -30,8 +30,12 @@
     error := 'No certificate';
     goto html;
   }
+  httpsUrl := ODS..getDefaultHttps();
+  if (isnull (httpsUrl))
+    httpsUrl := 'id.myopenlink.net';
+
   callback := hostUrl || '/ods/webid/webid_demo.vsp';
-  url := sprintf ('https://id.myopenlink.net/ods/webid_verify.vsp?callback=%U', callback);
+  url := sprintf ('https://%s/ods/webid_verify.vsp?callback=%U', httpsUrl, callback);
   http_status_set (302);
   http_header (sprintf ('Location: %s\r\n', url));
   return;

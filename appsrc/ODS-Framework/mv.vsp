@@ -23,18 +23,18 @@
 
    declare ms int;
    ms := 0;
-   http_rewrite ();	
+   http_rewrite ();
    if (length ({?'mbox'}))
      {
        declare mbox, digest, id, mu, https, sender, sid, accept, fmt, cb any;
        accept := http_request_header_full (lines, 'Accept', '*/*');
-       fmt := DB.DBA.HTTP_RDF_GET_ACCEPT_BY_Q (accept); 
+       fmt := DB.DBA.HTTP_RDF_GET_ACCEPT_BY_Q (accept);
        if (fmt = 'application/json')
          http_header ('Content-Type: application/json\r\n');
-       mbox := {?'mbox'}; 
-       cb := {?'cb'}; 
-       https := ODS..getDefaultHttps ();
-       sender := (select U_E_MAIL from SYS_USERS where U_NAME = 'dav');    	
+       mbox := {?'mbox'};
+       cb := {?'cb'};
+       https := ODS.ODS_API.getDefaultHttps ();
+       sender := (select U_E_MAIL from SYS_USERS where U_NAME = 'dav');
        sid := vspx_sid_generate ();
        insert into VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY, VS_STATE) values (sid, 'mv', mbox, now (), serialize (vector ('callback', cb)));
        declare exit handler for sqlstate '*'
@@ -48,7 +48,7 @@
            goto error;	  
 	};
        smtp_send (null, sender, mbox,
-     	sprintf ('Subject: Mail verification service\r\nPlease click on the link bellow to confirm your email.\r\nhttps://%s/mv/mc.vsp?confirm=%U', https, sid)); 
+     	sprintf ('Subject: Mail verification service\r\nPlease click on the link below to confirm your email.\r\nhttps://%s/mv/mc.vsp?confirm=%U', https, sid));
        ms := 1;
        if (fmt = 'application/json')
          {
@@ -65,19 +65,19 @@
 	<?vsp if (ms = 0) { ?>
 	<h1>Enter your mail address</h1>
 	<form name="f" method="post" action="mv.vsp">
-	    <input type="text" size="70" name="mbox" value=""/> 
-	    <input type="submit" value="Verify" name="go" /> 
+	    <input type="text" size="70" name="mbox" value=""/>
+	    <input type="submit" value="Verify" name="go" />
 	</form>
 	<?vsp } else { ?>
 	<div>A confirmation mail was sent, please check your mail box.</div>
-	<?vsp } 
+	<?vsp }
 	   if (0)
 	     {
 		error:
 	?>
 	<div>Error in processing your request.</div>
-	<?vsp    
-	     }		
+	<?vsp
+	     }
 	?>
     </body>
 </html>
