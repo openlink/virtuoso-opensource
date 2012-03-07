@@ -439,7 +439,7 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/ods_upstream.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VHOST_REMOVE (lpath=>'/oauth');" >> $STICKER
   echo "      DB.DBA.VHOST_DEFINE (lpath=>'/oauth', ppath=>'/DAV/VAD/wa/oauth/', vsp_user=>'dba', is_dav=>1, is_brws=>0, def_page=>'index.vsp');" >> $STICKER
-  echo "      if (server_https_port () is not null) " >> $STICKER
+  echo "      if (ODS.ODS_API.getDefaultHttps () is not null) " >> $STICKER
   echo "	DB.DBA.wa_redefine_vhosts (); " >> $STICKER
   echo "	    DB.DBA.WA_USER_OL_ACCOUNTS_SET_UP (); " >> $STICKER
   echo "    ]]>" >> $STICKER
