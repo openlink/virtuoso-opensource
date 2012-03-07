@@ -197,7 +197,7 @@
 		        </th>
             <td>
               <input type="text" name="k_import" id="k_import" value="" size="100" class="_validate_ _uri_" />
-              <input type="button" value="Download" onclick="javascript: knowsData(); return false;" class="button" />
+              <input type="button" value="Retrieve" onclick="javascript: knowsData(); return false;" class="button" />
               <img id="k_import_image" alt="Import knows URIs" src="/ods/images/oat/Ajax_throbber.gif" style="display: none" />
             </td>
           </tr>
@@ -221,7 +221,7 @@
                     </th>
                   </tr>
                 </thead>
-                <tr id="k_tr_no"><td colspan="3"><b>No downloaded items</b></td></tr>
+                <tr id="k_tr_no"><td colspan="3"><b>No retrieved items</b></td></tr>
               </table>
             </td>
           </tr>

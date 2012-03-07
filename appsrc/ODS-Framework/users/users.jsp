@@ -2850,7 +2850,7 @@
                       		        </th>
                                   <td>
                                     <input type="text" class="_validate_ _uri_" size="100" value="" id="k_import" name="k_import">
-                                    <input type="button" class="button" onclick="javascript: knowsData(); return false;" value="Download">
+                                    <input type="button" class="button" onclick="javascript: knowsData(); return false;" value="Retrieve">
                                     <img style="display: none;" src="/ods/images/oat/Ajax_throbber.gif" alt="Import knows URIs" id="k_import_image">
                                   </td>
                                 </tr>
@@ -2877,7 +2877,7 @@
                                       <tbody>
                                         <tr id="k_tr_no">
                                            <td colspan="3">
-                                             <b>No downloaded items</b>
+                                             <b>No retrieved items</b>
                                            </td>
                                         </tr>
                                       </tbody>
