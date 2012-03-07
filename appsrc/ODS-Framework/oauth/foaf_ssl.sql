@@ -266,6 +266,15 @@ create procedure WEBID_AUTH_GEN (in cert any, in ctype int, in realm varchar, in
 	    ret_code := 1;
 	    goto ret;	
 	  }
+	fing := get_certificate_info (6, cert, ctype, null, 'sha1');
+        json := http_get (sprintf ('http://search.twitter.com/search.json?q=%%40Fingerprint%%3A%U%%20from%%3A%U', fing, acco));
+	arr := json_parse (json);
+        res := get_keyword ('results', arr);
+	if (length (res) > 0)
+	  {
+	    ret_code := 1;
+	    goto ret;	
+	  }
       }
     if (not done and graph like 'http://graph.facebook.com/%')
       {
