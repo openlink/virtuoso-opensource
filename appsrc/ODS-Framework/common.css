@@ -98,6 +98,11 @@ table.ODS_grid thead tr th:last-child {
   border-width: 0px 0px 1px 0px;
 }
 
+
+table.ODS_grid tbody tr.selected {
+  background-color: #FFFFCC;
+}
+
 table.ODS_grid th.checkbox, table.ODS_grid td.checkbox {
   width: 1px;
   text-align: center;
