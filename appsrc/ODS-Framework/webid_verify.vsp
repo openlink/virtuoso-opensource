@@ -22,7 +22,7 @@
   else
     cb := cb || '&';
   mod := exp := '';
-  if (not is_http_ctx ())
+  if (not is_http_ctx () or cert = 0)
     res := 'noCert';
   else
     { 
@@ -66,11 +66,32 @@ html:
 <html>
   <head>
    <title>WebID Verification Service</title>
+    <style type="text/css">
+      body {
+      	background-color: white;
+      	color: black;
+      	font-size: 10pt;
+      	font-family: Verdana, Helvetica, sans-serif;
+      }
+      ul {
+        font-family: Verdana, Helvetica, sans-serif;
+        list-style-type: none;
+      }
+    </style>
   </head>
   <body>
     <h1>WebID Verification Service</h1>
     <div>
-This will send a redirection to the URL you have specified in the input, including a signed assertion by this service about your X.509 Certificate's WebID  watermark. <br/>Also note this service supports ldap, http, mailto, acct scheme based WebIDs.
+      This will send a redirection to the URL you have specified in the input, including a signed assertion by this service about your X.509 Certificate's WebID watermark.
+      <br/>
+      This service supports WebIDs based on the following URI schemes (more to come):
+      <ul>
+      	<li>* <b>ldap</b>, for e.g: <span style="font-size: 80%; color: #1DA237;">ldap://ldap.example.com/o=An%20Example%5C2C%20Inc.,c=US</span></li>
+      	<li>* <b>http</b>, for e.g: <span style="font-size: 80%; color: #1DA237;">http://id.example.com/person/ExampleUser#this</span></li>
+
+      	<li>* <b>mailto</b>, for e.g: <span style="font-size: 80%; color: #1DA237;">mailto:ExampleUser@id.example.com</span></li>
+      	<li>* <b>acct</b>, for e.g: <span style="font-size: 80%; color: #1DA237;">acct:ExampleUser@id.example.com</span></li>
+      </ul>
     </div>
     <br/>
     <br/>
