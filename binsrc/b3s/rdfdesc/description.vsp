@@ -56,7 +56,7 @@
   declare vis, printed, _skip, _last int;
   declare all_lang any;
   declare curr_pred any;
-  declare dt1, dt2, count_str, tbinf, tbsas, ua, doc, sp_mode varchar;
+  declare dt1, dt2, count_str, tbinf, tbsas, ua, doc, sp_mode, sp_accept varchar;
   declare c_iri_a any;
 
   declare continue handler for sqlstate 'S1TAT';
@@ -171,12 +171,15 @@
 
   b3s_dbg_out (dbg_out, 'page_resource_uri: ' || page_resource_uri);
   sp_mode := get_keyword ('sponger:get', params, 'add');
+  sp_accept := get_keyword ('sponger:accept', params, '');
+  if (length (sp_accept))
+    sp_accept := 'define get:accept "' || sp_accept || '"';
   if (get_keyword ('sp', params) = '1' and 0 = length (_F))
     {
-      DB.DBA.EXEC_AS (sprintf ('sparql define input:storage "" define get:soft "soft" SELECT * from <%S> where { ?x ?y ?z . }', doc), 'SPARQL');
+      DB.DBA.EXEC_AS (sprintf ('sparql define input:storage "" define get:soft "add" SELECT * from <%S> where { ?x ?y ?z . }', doc), 'SPARQL');
       DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
     }
-  else if ((get_keyword ('sr', params) is not null or get_keyword ('sponger:get', params) is not null) and 0 = length (_F))
+  else if ((get_keyword ('sr', params) is not null or get_keyword ('sponger:get', params) is not null or length (sp_accept) > 0) and 0 = length (_F))
     {
       declare refr varchar;
       if (get_keyword ('sr', params, '') = 'clean')
@@ -189,7 +192,7 @@
         }
       else
         refr := atoi (get_keyword ('sr', params, '0'));
-      DB.DBA.EXEC_AS (sprintf ('sparql define input:storage "" define get:refresh "%d" define get:soft "%s" SELECT * from <%S> where { ?x ?y ?z . }', refr, sp_mode, doc), 'SPARQL');
+      DB.DBA.EXEC_AS (sprintf ('sparql define input:storage "" define get:refresh "%d" define get:soft "%s" %s SELECT * from <%S> where { ?x ?y ?z . }', refr, sp_mode, sp_accept, doc), 'SPARQL');
       DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
     }
 
@@ -216,6 +219,10 @@
     vlbl := label;
   else
     vlbl := charset_recode (label, 'UTF-8', '_WIDE_');
+  if (vlbl = 0)
+    vlbl := charset_recode (label, current_charset (), '_WIDE_');
+  if (vlbl = 0)
+    vlbl := label; 
 
   b3s_dbg_out (dbg_out, 'label: "' || vlbl || '"');
 
