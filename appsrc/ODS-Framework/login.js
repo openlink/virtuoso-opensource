@@ -114,6 +114,13 @@ function lfRowImage(tbl, label, value, leftTag) {
     tr.appendChild(td);
   }
   tbl.appendChild(tr);
+  var loginPage = $('login_page');
+  if (loginPage) {
+    loginPage.style.height = '400px';
+    var loginDiv = $('loginDiv');
+    if (loginDiv)
+  		OAT.Dom.center(loginDiv, 1, 1);
+  }
 }
 
 function lfInit() {
@@ -185,12 +192,12 @@ function lfInit() {
       } catch (e) {
         lfSslData = null;
       }
-      if (lfSslData && lfSslData.iri && lfSslData.certLogin) {
-        var prefix = 'lf';
-        OAT.Dom.show(prefix+"_tab_3");
-        var tbl = $(prefix+'_table_3');
-        if (tbl) {
-          OAT.Dom.unlink(prefix+'_table_3_throbber');
+      var prefix = 'lf';
+      var tbl = $(prefix+'_table_3');
+      if (tbl) {
+        OAT.Dom.unlink(prefix+'_table_3_throbber');
+        if (lfSslData && lfSslData.iri) {
+          OAT.Dom.show(prefix+"_tab_3");
           lfRowValue(tbl, 'WebID', lfSslData.iri);
           if (lfSslData.depiction)
             lfRowImage(tbl, 'Photo', lfSslData.depiction);
@@ -212,6 +219,8 @@ function lfInit() {
             lfRowButton2(td, 'sign_up_1');
           }
           lfTab.go(3);
+        } else {
+          lfRowText(tbl, 'You must have cerificate with WebID to use this option', 'font-weight: bold;');
         }
       }
     }
