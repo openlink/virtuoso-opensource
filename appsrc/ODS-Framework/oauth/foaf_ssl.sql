@@ -531,6 +531,7 @@ create procedure WEBID_AUTH_GEN_2 (
 	    {
 	      declare mod any;
 	      mod := bin2hex (info[2]);
+	      --dbg_obj_print (_row[0], cast (info[1] as varchar), DB.DBA.FOAF_MOD (_row[1]), bin2hex (info[2]));
 	      if (_row[0] = cast (info[1] as varchar) and DB.DBA.FOAF_MOD (_row[1]) = bin2hex (info[2]))
 		{
 		  declare arr, uid any;
@@ -539,7 +540,7 @@ create procedure WEBID_AUTH_GEN_2 (
 		  _gr := graph;
 		  uid := coalesce ((select FS_UID from FOAF_SSL_ACL where agent like FS_URI), 'nobody');
 		  if ('nobody' = uid and allow_nobody = 0)
-		    goto err_ret;
+		    goto ret;
 		  connection_set ('SPARQLUserId', uid);
 		  if (use_session)
 		    insert replacing VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY, VS_STATE) 
