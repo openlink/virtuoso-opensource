@@ -311,6 +311,7 @@ create procedure WEBID_AUTH_GEN (in cert any, in ctype int, in realm varchar, in
     xt := xtree_doc (page, 2);
     xp := xpath_eval ('string (.)', xt);
     xp := cast (xp as varchar);
+    -- try DI
     if (strstr (xp, '#SHA1') is not null)
       fing := get_certificate_info (6, cert, ctype, null, 'sha1');
     fing := replace (fing, ':', '');
@@ -402,6 +403,18 @@ create procedure WEBID_AUTH_GEN (in cert any, in ctype int, in realm varchar, in
 }
 ;
 
+create procedure WEBID_DI_SPLIT (in str varchar)
+{
+  declare di, h, dgst varchar;
+  di := regexp_match ('di:[^ <>]+', str);
+  if (di is null)
+    return null;
+  h := WS.WS.PARSE_URI (di);
+  dgst := bin2hex (cast (decode_base64 (replace (replace (h[3], '-', '+'), '_', '/')) as varbinary));
+  return vector (h[2], dgst);
+}
+;
+
 create procedure WEBID_AUTH_GEN_2 (
 	in cert any,    		-- certificate
 	in ctype int, 			-- certificate type see get_certificate_info for details 
@@ -414,12 +427,13 @@ create procedure WEBID_AUTH_GEN_2 (
   declare stat, msg, meta, data, info, qr, hf, graph, fing, gr, modulus, alts, dummy any;
   declare agent varchar;
   declare acc int;
-  declare ret_code, done int;
-  declare agents any;
+  declare ret_code, done, is_di int;
+  declare agents, di_arr, dgst, dhash, fing_b64u any;
 
   ret_code := 0;
   acc := 0;
   done := 0;
+  is_di := 0;
   ag := null;
   declare exit handler for sqlstate '*'
     {
@@ -527,13 +541,32 @@ create procedure WEBID_AUTH_GEN_2 (
 	goto ret;
       };
     page := http_client (url=>graph, n_redirects=>15);
+
     verify:
     xt := xtree_doc (page, 2);
     xp := xpath_eval ('string (.)', xt);
     xp := cast (xp as varchar);
-    if (strstr (xp, '#SHA1') is not null)
-      fing := get_certificate_info (6, cert, ctype, null, 'sha1');
-    fing := replace (fing, ':', '');  
+    di_arr := WEBID_DI_SPLIT (xp);
+    if (length (di_arr) > 1)
+      {
+	dgst := di_arr [0];
+	dhash := di_arr [1]; 
+	fing := get_certificate_info (6, cert, ctype, null, dgst);
+	fing := lower (replace (fing, ':', ''));
+	fing_b64u := encode_base64url (cast (hex2bin (fing) as varchar));
+	if (fing = dhash)
+	  {
+	    ret_code := 1;
+	    goto ret;	
+	  }
+	is_di := 1;
+      }
+    else
+      {
+	if (strstr (xp, '#SHA1') is not null)
+	  fing := get_certificate_info (6, cert, ctype, null, 'sha1');
+	fing := replace (fing, ':', '');  
+      }
     if (strstr (xp, sprintf ('Fingerprint:%s', fing)) is not null)
       {
 	ret_code := 1;
@@ -541,10 +574,18 @@ create procedure WEBID_AUTH_GEN_2 (
       }
     if (graph like 'http://twitter.com/%')
       {
-	declare acco, arr, json, res any;
+	declare acco, arr, json, res, url any;
 	arr := sprintf_inverse (graph, 'http://twitter.com/%s', 1);
 	acco := arr[0];
-        json := http_get (sprintf ('http://search.twitter.com/search.json?q=%%40Fingerprint%%3A%U%%20from%%3A%U', fing, acco));
+	if (is_di)
+	  {
+	    url := sprintf ('http://search.twitter.com/search.json?q=%%40%%23X509Cert%%20di:%s;%s%%20from%%3A%U', dgst, fing_b64u, acco);
+	  }
+	else
+	  {
+	    url := sprintf ('http://search.twitter.com/search.json?q=%%40Fingerprint%%3A%U%%20from%%3A%U', fing, acco);
+	  }
+        json := http_get (url);
 	arr := json_parse (json);
         res := get_keyword ('results', arr);
 	if (length (res) > 0)
@@ -552,15 +593,18 @@ create procedure WEBID_AUTH_GEN_2 (
 	    ret_code := 1;
 	    goto ret;	
 	  }
-	fing := get_certificate_info (6, cert, ctype, null, 'sha1');
-	fing := replace (fing, ':', '');  
-        json := http_get (sprintf ('http://search.twitter.com/search.json?q=%%40Fingerprint%%3A%U%%20from%%3A%U', fing, acco));
-	arr := json_parse (json);
-        res := get_keyword ('results', arr);
-	if (length (res) > 0)
+	if (not is_di)
 	  {
-	    ret_code := 1;
-	    goto ret;	
+	    fing := get_certificate_info (6, cert, ctype, null, 'sha1');
+	    fing := replace (fing, ':', '');  
+	    json := http_get (sprintf ('http://search.twitter.com/search.json?q=%%40Fingerprint%%3A%U%%20from%%3A%U', fing, acco));
+	    arr := json_parse (json);
+	    res := get_keyword ('results', arr);
+	    if (length (res) > 0)
+	      {
+		ret_code := 1;
+		goto ret;	
+	      }
 	  }
       }
     if (not done and graph like 'http://graph.facebook.com/%')
