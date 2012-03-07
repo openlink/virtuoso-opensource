@@ -243,6 +243,17 @@ create procedure WEBID_AUTH_GEN (in cert any, in ctype int, in realm varchar, in
     xp := cast (xp as varchar);
     if (strstr (xp, sprintf ('#Self #WebID #Fingerprint:%s', fing)) is not null)
       return 1;
+    if (graph like 'http://twitter.com/%')
+      {
+	declare acc, arr, json, res any;
+	arr := sprintf_inverse (graph, 'http://twitter.com/%s', 1);
+	acc := arr[0];
+        json := http_get (sprintf ('http://search.twitter.com/search.json?q=%%40Fingerprint%%3A%U%%20from%%3A%U', fing, acc));
+	arr := json_parse (json);
+        res := get_keyword ('results', arr);
+	if (length (res) > 0)
+	  return 1;
+      }
   }
   return 0;
 }
