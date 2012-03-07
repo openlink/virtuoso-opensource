@@ -68,34 +68,6 @@
         }
         OAT.AJAX.GET ('/ods/api/qrcode?data='+encodeURIComponent(hostURL), false, x, {async: false});
       }
-      function showResult()
-      {
-        var webid = getParam('webid');
-        var error = getParam('error');
-        if ((webid != '') || (error != '')) {
-          show('result');
-          if (webid != '') {
-            show('result_webid');
-            getObject('ts').innerHTML = getParam('ts');;
-            var x = function (data) {
-              var a = getObject('webid');
-              a.innerHTML = data;
-              a.href = data;
-            }
-            OAT.AJAX.GET ('/ods/api/iri2proxy?iri='+encodeURIComponent(webid), false, x, {async: false});
-          } else {
-            hide('result_webid');
-          }
-          if (error != '') {
-            show('result_error');
-            getObject('error').innerHTML = 'error';
-          } else {
-            hide('result_error');
-          }
-        } else {
-          hide('result');
-        }
-      }
     </script>
   </head>
   <body>
