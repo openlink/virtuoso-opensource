@@ -1256,7 +1256,7 @@
                 <div>
                   <table class="form" cellspacing="5">
                     <tr>
-                      <th width="30%">
+                      <th width="20%">
                       </th>
                       <td>
                         <input type="checkbox" name="rf_is_agreed" value="1" id="rf_is_agreed"/><label for="rf_is_agreed">I agree to the <a href="/ods/terms.html" target="_blank">Terms of Service</a>.</label>
@@ -1373,7 +1373,7 @@
                       <div id="pf_page_0_1" class="tabContent" style="display:none;">
                         <table class="form" cellspacing="5">
                           <tr>
-                            <th>
+                            <th width="30%">
                               <label for="pf_loginName">Login Name</label>
                             </th>
                             <td>
@@ -1389,7 +1389,7 @@
                             </td>
                           </tr>
                           <tr>
-                        <th width="30%">
+                            <th>
                           <label for="pf_title">Title</label>
                         </th>
                         <td>

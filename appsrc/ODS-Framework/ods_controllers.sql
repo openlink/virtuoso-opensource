@@ -748,7 +748,6 @@ create procedure ODS.ODS_API."ontology.sparql" (
   commit work;
   st := '00000';
   exec (S, st, msg, V, vector ('use_cache', 1), meta, data);
-  --exec (S, st, msg, V, 0, meta, data);
   if (debug)
     dbg_obj_princ (S, st, msg);
   if (st = '00000')
@@ -1202,33 +1201,42 @@ create procedure ODS.ODS_API."lookup.list" (
 create procedure ODS..getDefaultHttps ()
 {
   declare host, port, tmp varchar;
-  host := null; port := null;
-  for select top 1 HP_HOST, HP_LISTEN_HOST from  DB.DBA.HTTP_PATH, DB.DBA.WA_DOMAINS
-    where HP_PPATH like '/DAV/VAD/wa/%' and WD_HOST = HP_HOST and WD_LISTEN_HOST = HP_LISTEN_HOST
-	and WD_LPATH = HP_LPATH and HP_HOST not like '*sslini*' and HP_SECURITY = 'SSL' and length (HP_HOST) do
-	 {
-	    tmp := split_and_decode (HP_LISTEN_HOST, 0, '\0\0:');
-	    if (length (tmp) = 2)
-	      tmp := tmp[1];
-	    else
-	      tmp := HP_LISTEN_HOST;
-	    host := HP_HOST;
-	    port := tmp;  
-	    if (port <> '443')
-	      host := host || ':' || port;
-	 }
+
+  host := null;
+  port := null;
+  for select top 1 HP_HOST, HP_LISTEN_HOST
+        from DB.DBA.HTTP_PATH, DB.DBA.WA_DOMAINS
+       where HP_PPATH like '/DAV/VAD/wa/%'
+         and WD_HOST = HP_HOST
+         and WD_LISTEN_HOST = HP_LISTEN_HOST
+	       and WD_LPATH = HP_LPATH
+	       and HP_HOST not like '*sslini*'
+	       and HP_SECURITY = 'SSL'
+	       and length (HP_HOST) do
+	{
+	  tmp := split_and_decode (HP_LISTEN_HOST, 0, '\0\0:');
+	  if (length (tmp) = 2)
+	    tmp := tmp[1];
+	  else
+	    tmp := HP_LISTEN_HOST;
+	  host := HP_HOST;
+	  port := tmp;
+	  if (port <> '443')
+	    host := host || ':' || port;
+	}
   if (server_https_port () is not null and host is null)
-    {
-      host := registry_get ('URIQADefaultHost');
-      tmp := split_and_decode (host, 0, '\0\0:');
-      if (length (tmp) = 2)
-	tmp := tmp[0];
-      else
-	tmp := host;
-      port := server_https_port (); 
-      if (port <> '443')
-	host := host || ':' || port;
-    }
+  {
+    host := registry_get ('URIQADefaultHost');
+    tmp := split_and_decode (host, 0, '\0\0:');
+    if (length (tmp) = 2)
+	    tmp := tmp[0];
+    else
+	    tmp := host;
+
+    port := server_https_port ();
+    if (port <> '443')
+	    host := tmp || ':' || port;
+  }
   return host;
 }
 ;
@@ -4961,7 +4969,6 @@ _loginIn:
 
 _exit:;
   ODS.ODS_API.graph_clear (foafGraph);
-  -- dbg_obj_print ('V', V);
   return V;
 }
 ;

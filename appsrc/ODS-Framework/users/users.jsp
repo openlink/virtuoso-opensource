@@ -1090,7 +1090,7 @@
                   <div id="lf_page_0" class="tabContent" >
                 <table class="form" cellspacing="5">
                   <tr>
-                    <th width="30%">
+                        <th width="20%">
                           <label for="lf_uid">User ID</label>
                     </th>
                         <td>
@@ -1110,7 +1110,7 @@
                   <div id="lf_page_1" class="tabContent" style="display: none">
                     <table class="form" cellspacing="5">
                   <tr>
-                        <th width="30%">
+                        <th width="20%">
                           <label for="lf_openId">OpenID URL</label>
                     </th>
                         <td>
@@ -1122,7 +1122,7 @@
                   <div id="lf_page_2" class="tabContent" style="display: none">
                     <table class="form" cellspacing="5">
                   <tr>
-                        <th width="30%">
+                        <th width="20%">
                     </th>
                         <td>
                           <span id="lf_facebookData" style="min-height: 20px;"></span>
@@ -1147,7 +1147,7 @@
                   <div id="lf_page_4" class="tabContent" style="display: none">
                     <table id="lf_table_4" class="form" cellspacing="5">
                       <tr>
-                        <th width="30%">
+                        <th width="20%">
                         </th>
                         <td>
                           <span id="lf_twitter" style="min-height: 20px;"></span>
@@ -1198,7 +1198,7 @@
                   <div id="rf_page_0" class="tabContent" >
                     <table id="rf_table_0" class="form" cellspacing="5">
                       <tr>
-                        <th width="30%">
+                        <th width="20%">
                           <label for="rf_uid_0">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                         </th>
                         <td>
@@ -1234,7 +1234,7 @@
                   <div id="rf_page_1" class="tabContent" style="display: none">
                     <table id="rf_table_1" class="form" cellspacing="5">
                       <tr>
-                        <th width="30%">
+                        <th width="20%">
                           <label for="rf_openId">OpenID</label>
                         </th>
                         <td>
@@ -1246,7 +1246,7 @@
                   <div id="rf_page_2" class="tabContent" style="display: none">
                     <table id="rf_table_2" class="form" cellspacing="5">
                       <tr>
-                        <th width="30%">
+                        <th width="20%">
                         </th>
                         <td>
                           <span id="rf_facebookData" style="min-height: 20px;"></span>
@@ -1271,7 +1271,7 @@
                   <div id="rf_page_4" class="tabContent" style="display: none">
                     <table id="rf_table_4" class="form" cellspacing="5">
                       <tr>
-                        <th width="30%">
+                        <th width="20%">
                         </th>
                         <td>
                           <span id="rf_twitter" style="min-height: 20px;"></span>
@@ -1298,7 +1298,7 @@
                 <div>
                   <table class="form" cellspacing="5">
                     <tr>
-                      <th width="30%">
+                      <th width="20%">
                       </th>
                       <td>
                         <input type="checkbox" name="rf_is_agreed" value="1" id="rf_is_agreed"/><label for="rf_is_agreed">I agree to the <a href="/ods/terms.html" target="_blank">Terms of Service</a>.</label>
