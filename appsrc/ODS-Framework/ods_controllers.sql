@@ -5824,6 +5824,7 @@ create procedure ODS.ODS_API.error_handler () __soap_http 'text/xml'
 ;
 
 DB.DBA.USER_CREATE ('ODS_API', uuid(), vector ('DISABLED', 1, 'LOGIN_QUALIFIER', 'ODS'));
+exec_stmt ('grant SPARQL_UPDATE to ODS_API', 0);
 DB.DBA.VHOST_REMOVE (lpath=>'/ods/api');
 DB.DBA.VHOST_DEFINE (lpath=>'/ods/api', ppath=>'/SOAP/Http', soap_user=>'ODS_API', opts=>vector ('500_page', 'error_handler'));
 
