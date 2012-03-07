@@ -275,10 +275,25 @@ TBL.clean = function (prefix) {
   return true;
 }
 
-TBL.createCellSelect = function (fldName) {
+TBL.createCellOptions = function (fld, fldOptions) {
+  if (fldOptions) {
+    if (fldOptions.className)
+      fld.className = fldOptions.className;
+    if (fldOptions.onblur)
+      fld.onblur = fldOptions.onblur;
+    if (fldOptions.cssText)
+      fld.style.cssText = fldOptions.cssText;
+    if (fldOptions.readOnly)
+      fld.readOnly = fldOptions.readOnly;
+  }
+}
+
+TBL.createCellSelect = function (fldName, fldOptions) {
 	var fld = OAT.Dom.create("select");
   fld.name = fldName;
   fld.id = fldName;
+  TBL.createCellOptions(fld, fldOptions);
+
   return fld;
 }
 
@@ -303,15 +318,8 @@ TBL.createCell0 = function (td, prefix, fldName, No, fldOptions) {
     fld.value = fldOptions.value;
     fld.defaultValue = fld.value;
   }
-  if (fldOptions.className)
-    fld.className = fldOptions.className;
-  if (fldOptions.onblur)
-    fld.onblur = fldOptions.onblur;
+  TBL.createCellOptions(fld, fldOptions);
   fld.style.width = '95%';
-  if (fldOptions.cssText)
-    fld.style.cssText = fldOptions.cssText;
-  if (fldOptions.readOnly)
-    fld.readOnly = fldOptions.readOnly;
 
   td.appendChild(fld);
   return fld;
