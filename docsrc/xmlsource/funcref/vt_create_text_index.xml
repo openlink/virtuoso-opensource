@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2012 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -43,6 +43,7 @@
         <paramdef>in <parameter>use_hook_function</parameter> integer</paramdef>
         <paramdef><optional>in <parameter>language_name</parameter> varchar</optional></paramdef>
         <paramdef><optional>in <parameter>encoding_name</parameter> integer</optional></paramdef>
+        <paramdef><optional>in <parameter>silent</parameter> integer</optional></paramdef>        
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
@@ -161,6 +162,9 @@ index source texts.
 If the parameter is omitted or is equal to '*ini*' string, indexing routines
 will use the encoding specified by charset of the RDBMS connection that is
 in use when the index is created.</para></refsect2>
+    <refsect2><title>silent</title>
+      <para>Flag with values 1/0. Default is 0. When set to 0, the function signals error if the text index exists. 
+      	If set to 1, the function signals no error if the text index exists.</para></refsect2>
   </refsect1>
   <refsect1 id="ret"><title>Return Types</title><para></para></refsect1>
 <!--

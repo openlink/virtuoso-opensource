@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2012 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -74,6 +74,7 @@
   </refsect1>
 -->
   <refsect1 id="seealso"><title>See Also</title>
+    <para><link linkend="fn_vad_load_sql_file">vad_load_sql_file()</link></para>
     <para><link linkend="fn_vad_check_uninstallability">vad_check_uninstallability()</link></para>
     <para><link linkend="fn_vad_check_installability">vad_check_installability()</link></para>
     <para><link linkend="fn_vad_install">vad_install()</link></para>

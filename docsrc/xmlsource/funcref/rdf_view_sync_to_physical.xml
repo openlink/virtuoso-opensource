@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="fn_rdf_view_sync_to_physical">
+  <refmeta>
+    <refentrytitle>RDF_VIEW_SYNC_TO_PHYSICAL</refentrytitle>
+    <refmiscinfo>rdf</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>RDF_VIEW_SYNC_TO_PHYSICAL</refname>
+    <refpurpose>Performs two actions: do triggers on a liked data view and optionally fill 
+    	the physical graph.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_rdf_view_sync_to_physical">
+      <funcprototype id="fproto_rdf_view_sync_to_physical">
+        <funcdef><function>RDF_VIEW_SYNC_TO_PHYSICAL</function></funcdef>
+	<paramdef>in <parameter>vgraph</parameter> varchar</paramdef>
+	<paramdef>in <parameter>load_data</parameter> int := 0</paramdef>
+	<paramdef>in <parameter>pgraph</parameter> varchar := null</paramdef>
+	<paramdef>in <parameter>log_mode</parameter> int := 1</paramdef>
+  <paramdef>in <parameter>load_atomic</parameter> int := 1</paramdef>	
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_rdf_view_sync_to_physical">
+    <title>Description</title>
+    <para>This function does triggers on a liked data view and optionally fills the 
+    	physical graph. Note: applicable for Virtuoso 6.0 and higher.</para>
+  </refsect1>
+  <refsect1 id="params_rdf_view_sync_to_physical">
+    <title>Parameters</title>
+    <refsect2><title>vgraph</title>
+      <para>The graph which linked data view defines.</para>
+    </refsect2>
+    <refsect2><title>load_data</title>
+      <para>1/0 flag to load the triples in the physical store initially.</para>
+    </refsect2>
+    <refsect2><title>pgraph</title>
+      <para>The destination's physical graph.</para>
+    </refsect2>
+    <refsect2><title>log_mode</title>
+      <para>This parameter takes integer values: 0,1,2,3. It is used to call log_enable () 
+      	with the same flags.</para>
+    </refsect2>
+    <refsect2><title>load_atomic</title>
+      <para>This parameter should be set in order to run loading the data in atomic mode. Will 
+      	do a checkpoint when done. This mode is default to handle large tables.</para>
+    </refsect2>    
+  </refsect1>
+  <refsect1 id="ret_rdf_view_sync_to_physical"><title>Return Types</title>
+    <para>any</para>
+  </refsect1>
+  <refsect1 id="examples_rdf_view_sync_to_physical">
+   <title>Examples</title>
+    <example id="ex_rdf_view_sync_to_physical"><title></title>
+     <para></para>
+<screen><![CDATA[
+SQL>RDF_VIEW_SYNC_TO_PHYSICAL ('http://www.openlinksw.com/schemas/oplweb#', 0, 'http://mygraph.com', 1, 1);
+
+Done. -- 0 msec.
+]]></screen>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_rdf_view_sync_to_physical">
+    <title>See Also</title>
+    <para><link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA</function></link></para>
+    <para><link linkend="fn_rdf_backup_metadata"><function>DB.DBA.RDF_BACKUP_METADATA</function></link></para>
+    <para><link linkend="fn_rdf_load_rdfxml_mt"><function>DB.DBA.RDF_LOAD_RDFXML_MT</function></link></para>
+    <para><link linkend="fn_ttlp"><function>DB.DBA.TTLP</function></link></para>
+    <para><link linkend="fn_ttlp_mt"><function>DB.DBA.TTLP_MT</function></link></para>
+    <para><link linkend="fn_rdf_triples_to_rdf_xml_text"><function>DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT</function></link></para>
+    <para><link linkend="fn_sparql_rexec"><function>DB.DBA.SPARQL_REXEC</function></link></para>
+    <para><link linkend="fn_sparql_rexec_to_array"><function>DB.DBA.SPARQL_REXEC_TO_ARRAY</function></link></para>
+    <para><link linkend="fn_sparql_rexec_with_meta"><function>DB.DBA.SPARQL_REXEC_WITH_META</function></link></para>
+    <para><link linkend="fn_rdf_quad_uri"><function>DB.DBA.RDF_QUAD_URI</function></link></para>
+    <para><link linkend="fn_rdf_quad_uri_l_typed"><function>DB.DBA.RDF_QUAD_URI_L_TYPED</function></link></para>
+    <para><link linkend="fn_rdf_ttl2hash"><function>DB.DBA.RDF_TTL2HASH</function></link></para>
+  </refsect1>
+</refentry>
