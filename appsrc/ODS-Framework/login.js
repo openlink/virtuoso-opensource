@@ -21,6 +21,7 @@
  */
 
 var lfTab;
+var lfHeigh = 280;
 var lsRegData;
 var lfSslData;
 var lfFacebookData;
@@ -30,7 +31,15 @@ var lfNotReturn = true;
 var lfAttempts = 0;
 var lfSslLinks = {"in": [], "up": []};
 
-function lfRowText(tbl, txt, txtCSSText) {
+function lfPaneGrow (h) {
+  lfHeigh += h;
+  var loginPage = $('login_page');
+  if (loginPage)
+    loginPage.style.height = lfHeigh+'px';
+	OAT.Dom.center('loginDiv', 1, 1);
+}
+
+function lfRowText(tbl, txt, txtCSSText, h) {
   var tr = OAT.Dom.create('tr');
   var td = OAT.Dom.create('td');
   td.colSpan = 2;
@@ -38,6 +47,7 @@ function lfRowText(tbl, txt, txtCSSText) {
   td.innerHTML = txt;
   tr.appendChild(td);
   tbl.appendChild(tr);
+  if (h) {lfPaneGrow (h);}
 
   return td;
 }
@@ -98,7 +108,7 @@ function lfRowValue(tbl, label, value, leftTag) {
   tbl.appendChild(tr);
 }
 
-function lfRowImage(tbl, label, value, leftTag) {
+function lfRowImage(tbl, label, value, leftTag, h) {
   if (!leftTag)
     leftTag = 'th';
 
@@ -115,13 +125,7 @@ function lfRowImage(tbl, label, value, leftTag) {
     tr.appendChild(td);
   }
   tbl.appendChild(tr);
-  var loginPage = $('login_page');
-  if (loginPage) {
-    loginPage.style.height = '400px';
-    var loginDiv = $('loginDiv');
-    if (loginDiv)
-  		OAT.Dom.center(loginDiv, 1, 1);
-  }
+  if (h) {lfPaneGrow (h);}
 }
 
 function lfInit() {
@@ -203,7 +207,7 @@ function lfInit() {
           OAT.Dom.show(prefix+"_tab_3");
           lfRowValue(tbl, 'WebID', lfSslData.iri);
           if (lfSslData.depiction)
-            lfRowImage(tbl, 'Photo', lfSslData.depiction);
+            lfRowImage(tbl, 'Photo', lfSslData.depiction, null, 150);
 
           if (lfSslData.loginName)
             lfRowValue(tbl, 'Login Name', lfSslData.loginName);
@@ -218,12 +222,12 @@ function lfInit() {
             lfRowValue(tbl, 'Family Name', lfSslData.family_name);
 
           if (!lfSslData.certLogin) {
-            var td = lfRowText(tbl, 'Sign up for an ODS account using your existing WebID - ', 'font-weight: bold;');
+            var td = lfRowText(tbl, 'Sign up for an ODS account using your existing WebID - ', 'font-weight: bold;', 17);
             lfRowButton2(td, 'sign_up_1');
           }
           lfTab.go(3);
         } else {
-          lfRowText(tbl, 'You must have cerificate with WebID to use this option', 'font-weight: bold;');
+          lfRowText(tbl, 'You must have cerificate with WebID to use this option', 'font-weight: bold;', 17);
         }
       }
     }
@@ -238,9 +242,9 @@ function lfInit() {
       var tbl = $('lf_table_3');
       if (tbl) {
         OAT.Dom.unlink('lf_table_3_throbber');
-        var td = lfRowText(tbl, 'Have you registered WebID? Sign in with it - ', 'font-weight: bold;');
+        var td = lfRowText(tbl, 'Have you registered WebID? Sign in with it - ', 'font-weight: bold;', 17);
         lfRowButton(td, 'sign_in_2');
-        var td2 = lfRowText(tbl, 'Sign up for an ODS account using your existing WebID - ', 'font-weight: bold;');
+        var td2 = lfRowText(tbl, 'Sign up for an ODS account using your existing WebID - ', 'font-weight: bold;', 17);
         lfRowButton2(td2, 'sign_up_2');
       }
     }
