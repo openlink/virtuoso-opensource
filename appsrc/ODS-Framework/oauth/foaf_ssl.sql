@@ -298,19 +298,20 @@ create procedure WEBID_AUTH_GEN (in cert any, in ctype int, in realm varchar, in
 	done := 1;
 	goto verify;
       }
-    --exec (sprintf ('sparql define get:soft "soft" prefix opl: <http://www.openlinksw.com/schema/attribution#> select ?f from <%S> { ?s opl:hasFingerprint ?f }', graph), 
-    --	stat, msg, vector (), 0, meta, data);
-    --if (length (data))
-    -- {
-    --   foreach (any x in data) do
-    --	 {
-    --	   if (x[0] = fing)
-    --	     {
-    --	       ret_code := 1;
-    --	       goto ret;
-    --	     }
-    --	 }
-    --  }
+    exec (sprintf (
+    'sparql define get:soft "soft" prefix opl: <http://www.openlinksw.com/schema/attribution#> select ?f from <%S> { ?s opl:hasFingerprint ?f }', 
+    	graph), stat, msg, vector (), 0, meta, data);
+    if (length (data))
+     {
+       foreach (any x in data) do
+    	 {
+    	   if (x[0] = fing)
+    	     {
+    	       ret_code := 1;
+    	       goto ret;
+    	     }
+    	 }
+      }
 
   }
   ret:
