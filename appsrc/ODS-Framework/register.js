@@ -130,6 +130,8 @@ function rfRowInput(tbl, label, fName, fOptions) {
   fld.type = 'text';
   fld.id = fName;
   fld.name = fld.id;
+  if (fld.value == 'undefined')
+    fld.value = '';
   td.appendChild(fld);
 
   tbl.appendChild(tr);
@@ -216,7 +218,7 @@ function rfInit() {
     rfTab.go(1);
     if (typeof (uriParams['openid.signed']) != 'undefined' && uriParams['openid.signed'] != '') {
       var x = function (params, param, data, property) {
-        if (params[param] && params[param].length != 0)
+          if (params[param] && params[param].length != 0 &&  params[param] != 'undefined')
           data[property] = params[param];
       }
       var data = {};
@@ -232,6 +234,7 @@ function rfInit() {
         x(uriParams, 'openid.'+ns+'.value.email', data, 'mbox');
         x(uriParams, 'openid.'+ns+'.value.firstname', data, 'firstName');
         x(uriParams, 'openid.'+ns+'.value.fname', data, 'name');
+          x(uriParams, 'openid.'+ns+'.value.fullname', data, 'name');
         x(uriParams, 'openid.'+ns+'.value.language', data, 'language');
         x(uriParams, 'openid.'+ns+'.value.lastname', data, 'family_name');
         x(uriParams, 'openid.'+ns+'.value.fname', data, 'nick');
@@ -255,8 +258,10 @@ function rfInit() {
       if (!data['nick'] || !data['mbox']) {
         hiddenCreate('oid-data', null, OAT.JSON.stringify(data));
         var tbl = $('rf_table_1');
-          addProfileRowInput(tbl, 'Login Name', 'rf_uid_1', {value: data['nick'], width: '150px'});
-          addProfileRowInput(tbl, 'E-Mail', 'rf_email_1', {value: data['mbox'], width: '300px'});
+          rfRowInput(tbl, 'Login Name', 'rf_uid_1', {value: data['nick'], width: '150px'});
+          rfRowInput(tbl, 'E-Mail', 'rf_email_1', {value: data['mbox'], width: '300px'});
+          if (data['name'])
+            rfRowValue(tbl, 'Full Name', data['name']);
           rfCheckUpdate(1);
       } else {
         var q = 'mode=1&data=' + encodeURIComponent(OAT.JSON.stringify(data));
