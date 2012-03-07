@@ -125,7 +125,7 @@
             if ($_webid <> '')
             {
           ?>
-  	      <li>WebID -  <?php print ($_webid); ?></li>
+          <li>WebID - <?php echo("<a href=\"$_webid\">$_webid</a>"); ?></li>
   	      <li>Timestamp in ISO 8601 format - <?php print ($_REQUEST['ts']); ?></li>
           <?php
             }

@@ -88,7 +88,7 @@ html:
             if (length (webid))
             {
           ?>
-  	      <li>WebID -  <?V webid ?></li>
+  	      <li>WebID - <?vsp http(sprintf('<a href="%s">%s</a>', webid, webid)); ?></li>
   	      <li>Timestamp in ISO 8601 format - <?V get_keyword ('ts', params) ?></li>
           <?vsp
             }
