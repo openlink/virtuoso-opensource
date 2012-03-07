@@ -253,10 +253,10 @@ create procedure WEBID_AUTH_GEN (in cert any, in ctype int, in realm varchar, in
       }
     if (graph like 'http://twitter.com/%')
       {
-	declare acc, arr, json, res any;
+	declare acco, arr, json, res any;
 	arr := sprintf_inverse (graph, 'http://twitter.com/%s', 1);
-	acc := arr[0];
-        json := http_get (sprintf ('http://search.twitter.com/search.json?q=%%40Fingerprint%%3A%U%%20from%%3A%U', fing, acc));
+	acco := arr[0];
+        json := http_get (sprintf ('http://search.twitter.com/search.json?q=%%40Fingerprint%%3A%U%%20from%%3A%U', fing, acco));
 	arr := json_parse (json);
         res := get_keyword ('results', arr);
 	if (length (res) > 0)
@@ -280,15 +280,19 @@ create procedure WEBID_AUTH_GEN (in cert any, in ctype int, in realm varchar, in
       }
     if (not done and graph like 'http://%.linkedin.com/in/%')
       {
-	declare oauth_keys, arr, opts any;
-	declare consumer_key, consumer_secret, oauth_token, oauth_secret, url, person_id varchar;
-	person_id := (select LIAT_GRANTOR_ID from DB..LINKEDIN_ACCESS_TOKENS where LIAT_GRANTOR_URL = graph);
+	declare oauth_keys, arr, opts, url, api_url, cnt any;
+	declare consumer_key, consumer_secret, oauth_token, oauth_secret, person_id varchar;
 	opts := (select RM_OPTIONS from DB..SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_LINKEDIN');
 	oauth_keys := DB.DBA.LINKEDIN_GET_ACCESS_TOKEN (graph);
 	oauth_token := oauth_keys[0];
 	oauth_secret := oauth_keys[1];
 	consumer_key := get_keyword ('consumer_key', opts);
 	consumer_secret := get_keyword ('consumer_secret', opts);
+	api_url := sprintf ('https://api.linkedin.com/v1/people/url=%U:(id)', graph);
+	url := DB.DBA.sign_request ('GET', api_url, '', consumer_key, consumer_secret, oauth_token, oauth_secret, 1);
+	cnt := http_get (url);
+	xt := xtree_doc (cnt);
+        person_id := cast (xpath_eval ('/person/id/text()', xt) as varchar);
 	url := DB.DBA.sign_request ('GET', sprintf ('http://api.linkedin.com/v1/people/%s/network', person_id), 'type=SHAR&scope=self', consumer_key, consumer_secret, oauth_token, oauth_secret, 1);
 	page := http_get (url);
 	done := 1;
