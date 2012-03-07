@@ -1,7 +1,13 @@
 <?vsp
-  declare info, res, cb, mod, exp, webid, ret_url, cert, ctype any;
+  declare info, res, cb, mod, exp, webid, ret_url, cert, ctype, err any;
   cb := {?'callback'};
   cert := {?'certificate'};
+  err := '';
+  if (not xenc_key_exists ('id_rsa'))
+    {
+      err := 'Must configure CA on this host.';
+      goto html;
+    }
   if ((length (cb) = 0) or ((length (cert) = 0) and not is_http_ctx ()))
     {
       goto html;
@@ -81,6 +87,7 @@ html:
   </head>
   <body>
     <h1>WebID Verification Service</h1>
+    <div class="msg"><?V err ?></div>	
     <div>
       This will send a redirection to the URL you have specified in the input, including a signed assertion by this service about your X.509 Certificate's WebID watermark.
       <br/>
