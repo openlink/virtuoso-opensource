@@ -4587,8 +4587,8 @@ void xenc_generate_key_taglist (query_instance_t * qi, xenc_key_inst_t * xki, dk
 
 caddr_t *
 xenc_generate_security_tags (query_instance_t* qi, xpath_keyinst_t ** arr,
-				       dsig_signature_t * dsig, int generate_ref_list, caddr_t * err_ret,
-				       wsse_ser_ctx_t * sctx)
+    dsig_signature_t * dsig, int generate_ref_list, caddr_t * err_ret,
+    wsse_ser_ctx_t * sctx)
 {
   int inx;
   dk_set_t l = 0;
@@ -6929,8 +6929,8 @@ bif_xenc_pem_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   b = BIO_new (BIO_s_mem());
   if (key->xek_x509)
     {
-  PEM_write_bio_X509 (b, key->xek_x509);
-  if (pkey && key->xek_evp_private_key)
+      PEM_write_bio_X509 (b, key->xek_x509);
+      if (pkey && key->xek_evp_private_key)
 	PEM_write_bio_PrivateKey (b, key->xek_evp_private_key, enc, NULL, 0, NULL, pass);
     }
   else if (key->xek_type == DSIG_KEY_RSA)
@@ -6973,22 +6973,22 @@ bif_xenc_pubkey_pem_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
   b = BIO_new (BIO_s_mem());
   if (key->xek_x509)
     {
-  k = X509_get_pubkey (key->xek_x509);
+      k = X509_get_pubkey (key->xek_x509);
 #ifdef EVP_PKEY_RSA
-  if (k->type == EVP_PKEY_RSA)
-    {
-      RSA * x = k->pkey.rsa;
+      if (k->type == EVP_PKEY_RSA)
+	{
+	  RSA * x = k->pkey.rsa;
 	  PEM_write_bio_RSA_PUBKEY (b, x);
-    }
+	}
 #endif
 #ifdef EVP_PKEY_DSA
-  if (k->type == EVP_PKEY_DSA)
-    {
-      DSA * x = k->pkey.dsa;
-      PEM_write_bio_DSA_PUBKEY (b, x);
-    }
+      if (k->type == EVP_PKEY_DSA)
+	{
+	  DSA * x = k->pkey.dsa;
+	  PEM_write_bio_DSA_PUBKEY (b, x);
+	}
 #endif
-  EVP_PKEY_free (k);
+      EVP_PKEY_free (k);
     }
   else if (key->xek_type == DSIG_KEY_RSA)
     PEM_write_bio_RSA_PUBKEY (b, key->xek_rsa);
@@ -7005,6 +7005,61 @@ bif_xenc_pubkey_pem_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
       ret = dk_alloc_box (len + 1, DV_STRING);
       memcpy (ret, data_ptr, len);
       ret[len] = 0;
+    }
+  BIO_free (b);
+  return ret;
+err:
+  return NEW_DB_NULL;
+}
+
+static caddr_t
+bif_xenc_pubkey_der_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t key_name = bif_string_arg (qst, args, 0, "xenc_pubkey_DER_export");
+  xenc_key_t * key = xenc_get_key_by_name (key_name, 1);
+  BIO * b;
+  char *data_ptr;
+  int len;
+  caddr_t ret = NULL;
+  EVP_PKEY * k;
+
+  if (!key)
+    goto err;
+
+  b = BIO_new (BIO_s_mem());
+  if (key->xek_x509)
+    {
+      k = X509_get_pubkey (key->xek_x509);
+#ifdef EVP_PKEY_RSA
+      if (k->type == EVP_PKEY_RSA)
+	{
+	  RSA * x = k->pkey.rsa;
+	  i2d_RSA_PUBKEY_bio (b, x);
+	}
+#endif
+#ifdef EVP_PKEY_DSA
+      if (k->type == EVP_PKEY_DSA)
+	{
+	  DSA * x = k->pkey.dsa;
+	  i2d_DSA_PUBKEY_bio (b, x);
+	}
+#endif
+      EVP_PKEY_free (k);
+    }
+  else if (key->xek_type == DSIG_KEY_RSA)
+    i2d_RSA_PUBKEY_bio (b, key->xek_rsa);
+  else if (key->xek_type == DSIG_KEY_DSA)
+    i2d_DSA_PUBKEY_bio (b, key->xek_dsa);
+  else
+    {
+      BIO_free (b);
+      goto err;
+    }
+  len = BIO_get_mem_data (b, &data_ptr);
+  if (len > 0 && data_ptr)
+    {
+      ret = dk_alloc_box (len, DV_BIN);
+      memcpy (ret, data_ptr, len);
     }
   BIO_free (b);
   return ret;
@@ -7249,6 +7304,7 @@ void bif_xmlenc_init ()
   bif_define ("xenc_pkcs12_export", bif_xenc_pkcs12_export);
   bif_define ("xenc_pem_export", bif_xenc_pem_export);
   bif_define ("xenc_pubkey_pem_export", bif_xenc_pubkey_pem_export);
+  bif_define ("xenc_pubkey_DER_export", bif_xenc_pubkey_der_export);
   bif_define ("xenc_pubkey_magic_export", bif_xenc_pubkey_magic_export);
   bif_define ("xenc_SPKI_read", bif_xenc_SPKI_read);
 
