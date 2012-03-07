@@ -48,6 +48,7 @@ EXTRA_DIST = \
 	sql/*.sql \
 	sql/install.bat \
 	sql/uninstall.bat \
+	vad_version \
 	www-root/*.vsp \
 	www-root/*.vspx \
 	www-root/public/*.html \

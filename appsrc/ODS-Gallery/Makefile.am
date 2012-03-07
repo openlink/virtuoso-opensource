@@ -47,6 +47,7 @@ EXTRA_DIST = \
 	make_vad.sh \
 	sql/*.sql \
 	sql/procedures/*.sql \
+	vad_version \
 	www-root/*.vsp \
 	www-root/*.vspx \
 	www-root/css/*.css \

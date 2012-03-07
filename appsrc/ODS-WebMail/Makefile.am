@@ -49,6 +49,7 @@ EXTRA_DIST = \
 	sql/eml/*.sql \
 	sql/res/*.sql \
 	sql/utl/*.sql \
+	vad_version \
 	www-root/*.vsp \
 	www-root/mail/i/*.gif \
 	www-root/mail/i/*.jpg \

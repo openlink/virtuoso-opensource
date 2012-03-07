@@ -101,4 +101,4 @@ EXTRA_DIST = \
 	templates/thin_pastel/*.css \
 	templates/thin_pastel/*.vspx \
 	vad_version \
-	widgets/*.xsl
+	widgets/*.xs

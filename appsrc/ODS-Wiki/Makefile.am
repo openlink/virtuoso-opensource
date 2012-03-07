@@ -77,6 +77,4 @@ EXTRA_DIST =  \
 	Skins/default/*.png \
 	Skins/default/*.xslt \
 	Template/*.txt \
-	version.base \
-	version.curr \
 	vad_version
