@@ -28,6 +28,7 @@ vhost_remove (lpath=>'/php/users');
 vhost_remove (lpath=>'/jsp/users');
 vhost_remove (lpath=>'/ruby/users');
 vhost_remove (lpath=>'/vsp/users');
+vhost_remove (lpath=>'/ods/webid');
 
 drop procedure WA_GET_EMAIL_TEMPLATE;
 drop procedure WA_SET_EMAIL_TEMPLATE;

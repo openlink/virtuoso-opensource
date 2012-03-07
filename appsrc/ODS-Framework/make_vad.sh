@@ -256,6 +256,7 @@ directory_init() {
   mkdir vad/data/wa/users
   mkdir vad/data/wa/users/css
   mkdir vad/data/wa/users/js
+  mkdir vad/data/wa/webid
   for dir in `find ckeditor -type d -print | LC_ALL=C sort | grep -v CVS`
   do
     mkdir vad/data/wa/$dir
@@ -318,6 +319,10 @@ directory_init() {
   do
     cp $file vad/data/wa/$file
   done
+  cp webid_demo.php vad/data/wa/webid
+  cp vad/data/wa/webid_demo.* vad/data/wa/webid
+  cp vad/data/wa/webid_check.* vad/data/wa/webid
+  cp vad/data/wa/webid_verify.* vad/data/wa/webid
   cp oauth/* vad/data/wa/oauth
   cp oauth/images/* vad/data/wa/oauth/images
 }
@@ -462,8 +467,19 @@ sticker_init() {
      else
 	 perms="111101101NN"
      fi
+     if echo "$file" | grep -v "/users/" > /dev/null
+     then
+       if echo "$file" | grep -v "/webid/" > /dev/null
+       then
+   	     TYPE="dav"
+       else
+  	     TYPE="http"
+       fi
+     else
+	     TYPE="http"
+     fi
      name=`echo "$file" | cut -b10-`
-     echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"$name\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
+     echo "  <file overwrite=\"yes\" type=\"$TYPE\" source=\"data\" target_uri=\"$name\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
   done
 
   echo "</resources>" >> $STICKER

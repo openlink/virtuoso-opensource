@@ -7635,6 +7635,11 @@ create procedure ods_define_common_vd (in _host varchar, in _lhost varchar, in i
   DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/vsp/users',
       ppath=>'/vad/vsp/wa/users', def_page=>'users.vsp', vsp_user=>'dba', is_dav=>0, is_brws=>0, opts=>vector ('url_rewrite', 'ods_vsp_users_list'), sec=>_sec, auth_opts=>_opts);
 
+  -- WebID pages
+  DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/ods/webid');
+  DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/ods/webid',
+      ppath=>'/vad/vsp/wa/webid', is_dav=>0, vsp_user=>'dba', sec=>_sec, auth_opts=>_opts);
+
   -- RDF folder
   DB.DBA.VHOST_REMOVE (vhost=>_host,lhost=>_lhost,lpath=>'/ods/data/rdf');
   DB.DBA.VHOST_DEFINE (vhost=>_host,lhost=>_lhost,lpath=>'/ods/data/rdf',
