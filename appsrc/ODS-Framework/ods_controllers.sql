@@ -4596,7 +4596,7 @@ create procedure ODS.ODS_API."user.certificates.get" (
   for (select UC_ID, UC_CERT, UC_LOGIN, UC_FINGERPRINT from DB.DBA.WA_USER_CERTS where UC_ID = id and UC_U_ID = _u_id) do
   {
     subject := get_certificate_info (2, UC_CERT, 0, '');
-    agentID := ODS.ODS_API.SSL_WEBID_GET (UC_CERT);
+    agentID := DB.DBA.FOAF_SSL_WEBID_GET (UC_CERT);
     fingerPrint := get_certificate_info (6, UC_CERT, 0, '');
     certificate := UC_CERT;
     enableLogin := UC_LOGIN;
@@ -4631,7 +4631,7 @@ create procedure ODS.ODS_API."user.certificates.update" (
 
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
 
-  agent := ODS.ODS_API.SSL_WEBID_GET (certificate);
+  agent := DB.DBA.FOAF_SSL_WEBID_GET (certificate);
   if ((agent is null and length (certificate)) or (0 = length (certificate)))
 	  signal ('', 'The certificate must be in PEM format and must have Alternate Name attribute.');
 
@@ -5204,9 +5204,17 @@ create procedure ODS.ODS_API."user.getFOAFData" (
 }
 ;
 
-create procedure ODS.ODS_API.SSL_WEBID_GET (in certificate any := null)
+create procedure ODS.ODS_API.SSL_WEBID_GET (
+  in cert any := null)
 {
-  return DB.DBA.FOAF_SSL_WEBID_GET (certificate);
+  declare rc, webid, webidType, graph any;
+
+  graph := null;
+  rc := ODS.ODS_API.SSL_WEBID_GET_2 (cert, webid, webidType, graph);
+  if (rc)
+    return webid;
+
+  return null;
 }
 ;
 

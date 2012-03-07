@@ -404,6 +404,7 @@ function rfCheckUpdate(idx, mode) {
 
 function rfStart() {
   rfAjaxs++;
+  $('rf_check').disabled = true;
   $('rf_signup').disabled = true;
 	OAT.Dom.hide('rf_close');
 	OAT.Dom.show('rf_throbber');
@@ -414,6 +415,7 @@ function rfEnd() {
   if (rfAjaxs == 0) {
     OAT.Dom.hide('rf_throbber');
   	OAT.Dom.show('rf_close');
+    $('rf_check').disabled = false;
     $('rf_signup').disabled = false;
   }
 }
