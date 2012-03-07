@@ -67,6 +67,34 @@
         }
         OAT.AJAX.GET ('/ods/api/qrcode?data='+encodeURIComponent(hostURL), false, x, {async: false});
       }
+      function showResult()
+      {
+        var webid = getParam('webid');
+        var error = getParam('error');
+        if ((webid != '') || (error != '')) {
+          show('result');
+          if (webid != '') {
+            show('result_webid');
+            getObject('ts').innerHTML = getParam('ts');;
+            var x = function (data) {
+              var a = getObject('webid');
+              a.innerHTML = data;
+              a.href = data;
+            }
+            OAT.AJAX.GET ('/ods/api/iri2proxy?iri='+encodeURIComponent(webid), false, x, {async: false});
+          } else {
+            hide('result_webid');
+          }
+          if (error != '') {
+            show('result_error');
+            getObject('error').innerHTML = 'error';
+          } else {
+            hide('result_error');
+          }
+        } else {
+          hide('result');
+        }
+      }
     </script>
   </head>
   <body>
@@ -95,9 +123,7 @@
     <div id="result" style="display: none;">
     	The return values are:
 	    <ul id="result_webid" style="display: none;">
-	      <li>WebID - <script language="javascript" type="text/javascript">
-            document.write('<a href="" id="link"><span id="webid"></span><\/a>')
-          </script></li>
+	      <li>WebID -  <a id="webid"></a></li>
 	      <li>Timestamp in ISO 8601 format - <span id="ts"></span></li>
 	    </ul>
 	    <ul id="result_error" style="display: none;">
@@ -105,27 +131,7 @@
 	    </ul>
     </div>
     <script type="text/javascript">
-      var webid = getParam('webid');
-      var error = getParam('error');
-      if ((webid != '') || (error != '')) {
-        show('result');
-        if (webid != '') {
-          show('result_webid');
-          getObject('webid').innerHTML = getParam('webid');;
-          getObject('link').href = getParam('webid');;
-          getObject('ts').innerHTML = getParam('ts');;
-        } else {
-          hide('result_webid');
-        }
-        if (error != '') {
-          show('result_error');
-          getObject('error').innerHTML = getParam('error');;
-        } else {
-          hide('result_error');
-        }
-      } else {
-        hide('result');
-      }
-    </script>
+  	  OAT.Loader.load(['ajax'], showResult);
+  	</script>
   </body>
 </html>
