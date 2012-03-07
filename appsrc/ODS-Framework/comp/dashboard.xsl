@@ -1399,7 +1399,7 @@
 
   			function generateDSLinks()
         {
-          OAT.Preferences.stylePath = '/ods/';
+          OAT.Preferences.stylePath = '/ods/oat/styles/';
           OAT.Anchor.imagePath = '/ods/images/oat/';
           OAT.Anchor.zIndex = 1001;
 

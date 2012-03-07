@@ -236,10 +236,8 @@ if (typeof (OAT) == 'undefined')
       OAT.Loader.load(["ajax","xml"],function(){});
 
       OAT.Preferences.imagePath="<?V self.odsbar_ods_gpath ?>images/oat/";
-      OAT.Preferences.stylePath="<?V self.odsbar_ods_gpath ?>";
-
+  OAT.Preferences.stylePath="<?V self.odsbar_ods_gpath ?>oat/styles/";
       OAT.Style.include('winrect.css');
-
 
       if (typeof ODSInitArray != 'undefined')
         {

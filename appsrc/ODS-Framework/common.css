@@ -345,3 +345,8 @@ div.ODS_tabLabelActive {
   padding: 2px 4px 2px 4px;
   background-color: #FFF;
 }
+
+/* OAT patches */
+div.oat_winms_close_b {
+  background-image: url("/ods/images/oat/MsWin_close.png");
+}

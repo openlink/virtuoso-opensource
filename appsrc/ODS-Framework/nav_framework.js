@@ -211,7 +211,7 @@ function inverseSelected(parentDiv) {
 }
 
 OAT.Preferences.imagePath = "/ods/images/oat/";
-OAT.Preferences.stylePath = "/ods/";
+OAT.Preferences.stylePath = "/ods/oat/styles/";
 
 window.ODS = {};
 
