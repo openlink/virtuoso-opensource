@@ -111,7 +111,7 @@ create procedure CLI_PING_SRV (in src varchar, in tgt varchar)
       pserv := (sparql prefix pingback: <http://purl.org/net/pingback/> select ?ps where { graph ?:gr { ?:tgt pingback:to ?ps }});
       proto := 'RPC';  
     }
-  sparql clear ?:gr;  
+  sparql clear graph ?:gr;
   update CLI_QUEUE set CQ_SERVER = pserv, CQ_PROTO = proto, CQ_STATE = 1 where CQ_SOURCE = src and CQ_TARGET = tgt;
   commit work;
   if (pserv is not null)
