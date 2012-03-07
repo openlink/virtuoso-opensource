@@ -231,6 +231,19 @@ create procedure WEBID_AUTH_GEN (in cert any, in ctype int, in realm varchar, in
   exec (sprintf ('sparql clear graph <%S>', gr), stat, msg);
   commit work;
 --  dbg_obj_print (stat, data);
+  {
+    declare page, xt, xp varchar;
+    declare exit handler for sqlstate '*'
+      {
+	return 0;
+      };
+    page := http_get (graph);
+    xt := xtree_doc (page, 2);
+    xp := xpath_eval ('string (.)', xt);
+    xp := cast (xp as varchar);
+    if (strstr (xp, sprintf ('#Self #WebID #Fingerprint:%s', fing)) is not null)
+      return 1;
+  }
   return 0;
 }
 ;
