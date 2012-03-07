@@ -21,7 +21,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
-   declare sid, mbox, digest, id, mu, rc, webid, accept, fmt, cb any;
+   declare sid, mbox, digest, id, mu, rc, webid, accept, fmt, cb, ep any;
 
    rc := 0;
    accept := http_request_header_full (lines, 'Accept', '*/*');
