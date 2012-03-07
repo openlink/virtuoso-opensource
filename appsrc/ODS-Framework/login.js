@@ -423,7 +423,7 @@ function lfOpenIdAuthenticate(prefix) {
     var xml = OAT.Xml.createXmlDoc(data);
     var error = OAT.Xml.xpath (xml, '//error_response', {});
     if (error.length)
-      showError('Invalied OpenID Server');
+      showError('Invalid OpenID Server');
 
     var oidServer = OAT.Xml.textValue (OAT.Xml.xpath (xml, '/openIdServer_response/server', {})[0]);
     if (!oidServer || !oidServer.length)
