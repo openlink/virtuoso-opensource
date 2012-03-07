@@ -449,8 +449,8 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
                         out_fields [var_pos] := DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_STRINGS (
                           var_strval, dt, lang );
                       else
-                      out_fields [var_pos] := DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (
-                        var_strval, dt, lang );
+                        out_fields [var_pos] := DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (
+                          var_strval, dt, lang );
                     }
                   else
                     signal ('RDFZZ', sprintf (
@@ -2043,16 +2043,16 @@ create procedure WS.WS.SPARQL_ENDPOINT_FORMAT_OPTS (in can_cxml integer, in can_
   {
     format := (
       case lower(format)
-        when 'json' 		then 'application/sparql-results+json'
-        when 'js' 		then 'application/javascript'
-        when 'html' 		then 'text/html'
-        when 'sparql' 		then 'application/sparql-results+xml'
-        when 'xml' 		then 'application/sparql-results+xml'
-        when 'rdf' 		then 'application/rdf+xml'
-        when 'n3' 		then 'text/rdf+n3'
-        when 'cxml' 		then 'text/cxml'
-        when 'cxml+qrcode' 	then 'text/cxml+qrcode'
-        when 'csv' 		then 'text/csv'
+        when 'json'		then 'application/sparql-results+json'
+        when 'js'		then 'application/javascript'
+        when 'html'		then 'text/html'
+        when 'sparql'		then 'application/sparql-results+xml'
+        when 'xml'		then 'application/sparql-results+xml'
+        when 'rdf'		then 'application/rdf+xml'
+        when 'n3'		then 'text/rdf+n3'
+        when 'cxml'		then 'text/cxml'
+        when 'cxml+qrcode'	then 'text/cxml+qrcode'
+        when 'csv'		then 'text/csv'
 	when 'json-ld'		then 'application/ld+json'
         else format
       end);
@@ -2064,47 +2064,45 @@ create procedure WS.WS.SPARQL_ENDPOINT_FORMAT_OPTS (in can_cxml integer, in can_
       )
     {
       opts := vector (
-      		vector ('text/rdf+n3',			'N3/Turtle'),
-      		vector ('application/rdf+json',		'RDF/JSON'),
-      		vector ('application/rdf+xml',		'RDF/XML'),
-		vector ('text/plain',			'N-Triples'),
-      		vector ('application/xhtml+xml',	'XHTML+RDFa'),
-      		vector ('application/atom+xml',		'ATOM+XML'),
-      		vector ('application/odata+json',	'ODATA/JSON'),
-		vector ('application/x-json+ld', 	'JSON-LD'),
-		vector ('text/x-html+ul', 		'HTML (list)'),
-		vector ('text/x-html+tr', 		'HTML (table)'),
-      		vector ('text/html',			'HTML+Microdata'),
-		vector ('application/microdata+json', 	'Microdata/JSON'),
-		vector ('text/csv',			'CSV'),
-		vector ('application/x-trig',		'TriG')
-      );
+	  vector ('text/rdf+n3'				, 'N3/Turtle'		),
+	  vector ('application/rdf+json'		, 'RDF/JSON'		),
+	  vector ('application/rdf+xml'			, 'RDF/XML'		),
+	  vector ('text/plain'				, 'N-Triples'		),
+	  vector ('application/xhtml+xml'		, 'XHTML+RDFa'		),
+	  vector ('application/atom+xml'		, 'ATOM+XML'		),
+	  vector ('application/odata+json'		, 'ODATA/JSON'		),
+	  vector ('application/x-json+ld'		, 'JSON-LD'		),
+	  vector ('text/x-html+ul'			, 'HTML (list)'		),
+	  vector ('text/x-html+tr'			, 'HTML (table)'	),
+	  vector ('text/html'				, 'HTML+Microdata'	),
+	  vector ('application/microdata+json'		, 'Microdata/JSON'	),
+	  vector ('text/csv'				, 'CSV'			),
+	  vector ('application/x-trig'			, 'TriG'		) );
     }
   else
     {
       if (not length (format)) format := 'text/html';
       opts := vector (
-      		vector ('auto',					'Auto'),
-      		vector ('text/html',				'HTML'),
-      		vector ('application/vnd.ms-excel',		'Spreadsheet'),
-      		vector ('application/sparql-results+xml',	'XML'),
-      		vector ('application/sparql-results+json',	'JSON'),
-      		vector ('application/javascript',		'Javascript'),
-      		vector ('text/plain',				'NTriples'),
-      		vector ('application/rdf+xml',			'RDF/XML')
-      );
+	  vector ('auto'				, 'Auto'		),
+	  vector ('text/html'				, 'HTML'		),
+	  vector ('application/vnd.ms-excel'		, 'Spreadsheet'		),
+	  vector ('application/sparql-results+xml'	, 'XML'			),
+	  vector ('application/sparql-results+json'	, 'JSON'		),
+	  vector ('application/javascript'		, 'Javascript'		),
+	  vector ('text/plain'				, 'NTriples'		),
+	  vector ('application/rdf+xml'			, 'RDF/XML'		) );
     }
   foreach (any x in opts) do
     {
-      http(sprintf ('<option value="%V" %s>%V</option>\n',
+      http(sprintf ('			<option value="%V" %s>%V</option>\n',
 	  x[0], case when format = x[0] then 'selected="selected"' else '' end , x[1]));
     }
-  http('			    <option value="text/csv">CSV</option>\n');
+  http('			<option value="text/csv">CSV</option>\n');
   if (can_cxml)
     {
-      http('			    <option value="text/cxml">CXML (Pivot Collection)</option>\n');
+      http('			<option value="text/cxml">CXML (Pivot Collection)</option>\n');
       if (can_qrcode)
-	http('			    <option value="text/cxml+qrcode">CXML (Pivot Collection with QRcode)</option>\n');
+	http('			<option value="text/cxml+qrcode">CXML (Pivot Collection with QRcode)</option>\n');
     }
 }
 ;
@@ -2198,10 +2196,10 @@ create procedure WS.WS.sparql_predefined_nsdecl ()
   http ('    <br />\n');
   http ('    <table class="tableresult" border="1">\n');
   http (sprintf ('	<tr><th>Prefix</th><th>URI</th></tr>\n'));
-  	  for select NS_PREFIX, NS_URL from SYS_XML_PERSISTENT_NS_DECL order by 1 do
-  	    {
+  for select NS_PREFIX, NS_URL from SYS_XML_PERSISTENT_NS_DECL order by 1 do
+    {
        http (sprintf ('	<tr><td>%V</td><td>%V</td></tr>\n', NS_PREFIX, NS_URL));
-  	    }
+    }
   http ('    </table>\n');
   http ('    </div>\n\n');
 
@@ -2210,7 +2208,7 @@ create procedure WS.WS.sparql_predefined_nsdecl ()
   http('</p>\n');
 
   WS.WS.SPARQL_ENDPOINT_FOOTER();
-  http('	</body>\n');
+  http('</body>\n');
   http('</html>\n');
 }
 ;
@@ -2236,10 +2234,10 @@ create procedure WS.WS.sparql_predefined_rdfinf ()
   http ('    <br />\n');
   http ('    <table class="tableresult" border="1">\n');
   http (sprintf ('	<tr><th>Name</th><th>URI</th></tr>\n'));
-  	  for select * from SYS_RDF_SCHEMA order by 1 do
-  	    {
+  for select * from SYS_RDF_SCHEMA order by 1 do
+    {
       http (sprintf ('	<tr><td>%V</td><td>%V</td></tr>\n', RS_NAME, RS_URI));
-  	    }
+    }
   http ('    </table>\n');
   http ('    </div>\n\n');
 
@@ -2248,7 +2246,7 @@ create procedure WS.WS.sparql_predefined_rdfinf ()
   http('</p>\n');
 
   WS.WS.SPARQL_ENDPOINT_FOOTER();
-  http('	</body>\n');
+  http('</body>\n');
   http('</html>\n');
 }
 ;
@@ -2286,7 +2284,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
     if (DAV_HIDE_ERROR (DAV_SEARCH_ID (save_dir, 'C')) is null)
 	save_dir := null;
     else
-{
+    {
 	save_dir := save_dir || 'saved-sparql-results/';
 	save_dir_id := DAV_SEARCH_ID (save_dir, 'C');
 	if (DAV_HIDE_ERROR (save_dir_id) is null)
@@ -2420,6 +2418,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
 }
 ;
 
+
 -- Web service endpoint.
 
 create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout lines any)
@@ -2483,6 +2482,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   hard_timeout := atoi (coalesce (virtuoso_ini_item_value ('SPARQL', 'MaxQueryExecutionTime'), '0')) * 1000;
   timeout := atoi (coalesce (virtuoso_ini_item_value ('SPARQL', 'ExecutionTimeout'), '0')) * 1000;
   client_supports_partial_res := 0;
+
   user_id := connection_get ('SPARQLUserId', 'SPARQL');
   help_topic := get_keyword ('help', params, null);
   if (help_topic is not null)
@@ -2595,7 +2595,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
 
       WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(params, ini_dflt_graph, def_qry, timeout, debug, save_mode, dav_refresh);
 
-       return;
+      return;
     }
   qry_params := dict_new (7);
   for (paramctr := 0; paramctr < paramcount; paramctr := paramctr + 2)
@@ -3013,9 +3013,10 @@ host_found:
         }
       DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
         '500', 'SPARQL Request Failed',
-	full_query, state, msg, format);
+        full_query, state, msg, format);
       return;
     }
+
 write_results:
   if (save_mode is not null)
     {
@@ -3081,12 +3082,12 @@ write_results:
           "DynaRes_INSERT_RESOURCE" (
 	      detcol_id => save_dir_id,
 	      fname => fname,
-            owner_uid => sparql_uid,
-            refresh_seconds => refresh_sec,
-            ttl_seconds => ttl_sec,
-            mime => accept,
-            exec_stmt => 'DB.DBA.SPARQL_REFRESH_DYNARES_RESULTS (?, ?, ?, ?, ?, ?, ?)',
-            exec_params => vector (full_query, qry_params, maxrows, accept, user_id, hard_timeout, jsonp_callback),
+	      owner_uid => sparql_uid,
+	      refresh_seconds => refresh_sec,
+	      ttl_seconds => ttl_sec,
+	      mime => accept,
+	      exec_stmt => 'DB.DBA.SPARQL_REFRESH_DYNARES_RESULTS (?, ?, ?, ?, ?, ?, ?)',
+	      exec_params => vector (full_query, qry_params, maxrows, accept, user_id, hard_timeout, jsonp_callback),
 	      exec_uname => user_id,
 	      content => ses
 	  );
@@ -3101,20 +3102,20 @@ write_results:
 	  http ('	<h1 id="title">Virtuoso SPARQL Query Editor</h1>\n');
 	  http ('    </div>\n\n');
 	  http ('<h3>Saved to DAV</h3>');
-          http ('<p>The SPARQL result is successfully saved in DAV storage as <a href="');
-          http_value (full_uri);
-          http ('">');
-          http_value (full_uri);
-          http ('</a></p>');
-          if (refresh_sec is not null)
-            http (sprintf ('<p>The content of the linked resource will be re-calculated on demand, and the result will be cached for %d minutes.</p>', refresh_sec/60));
-          if (ttl_sec is not null)
-            http (sprintf ('<p>The link will stay valid for %d days. To preserve the referenced document for future use, copy it to some other location before expiration.</p>', ttl_sec/(60*60*24)));
-          if (accept <> 'text/html')
-            http (sprintf ('<p>The resource MIME type is "%s". This type will be reported to the browser when you click on the link.
+	  http ('<p>The SPARQL result is successfully saved in DAV storage as <a href="');
+	  http_value (full_uri);
+	  http ('">');
+	  http_value (full_uri);
+	  http ('</a></p>');
+	  if (refresh_sec is not null)
+	  http (sprintf ('<p>The content of the linked resource will be re-calculated on demand, and the result will be cached for %d minutes.</p>', refresh_sec/60));
+	  if (ttl_sec is not null)
+	  http (sprintf ('<p>The link will stay valid for %d days. To preserve the referenced document for future use, copy it to some other location before expiration.</p>', ttl_sec/(60*60*24)));
+	  if (accept <> 'text/html')
+	  http (sprintf ('<p>The resource MIME type is "%s". This type will be reported to the browser when you click on the link.
 	  If the browser is unable to open the link itself it can prompt for action like launching an additional program.
 	  The program may let you edit the loaded resource, in this case save the changed version should be saved to a different place, so use "Save As" command, not plain "Save".</p>', accept));
-          http ('</body></html>');
+	  http ('</body></html>');
         }
     }
   else
@@ -3368,36 +3369,36 @@ good_host_found:
 
   WS.WS.SPARQL_ENDPOINT_HTML_DOCTYPE();
 
-  http('	<head>\n');
+  http('<head>\n');
   WS.WS.SPARQL_ENDPOINT_HTML_HEAD('Virtuoso SPARQL 1.1 Uniform RDF Graph Query Form');
   WS.WS.SPARQL_ENDPOINT_STYLE ();
-  http('	</head>\n');
+  http('</head>\n');
 
-  http('	<body>\n');
-  http('		<div id="header">\n');
-  http('			<h1>Virtuoso SPARQL 1.1 Uniform RDF Graph Query Form</h1>\n');
+  http('<body>\n');
+  http('    <div id="header">\n');
+  http('	<h1>Virtuoso SPARQL 1.1 Uniform RDF Graph Query Form</h1>\n');
   http('    </div>\n\n');
   http('    <div id="intro">\n');
-  http('			<p>This page is designed to help you test support for <a href="http://www.w3.org/TR/sparql11-http-rdf-update">SPARQL 1.1 Graph Store HTTP Protocol</a> in OpenLink Virtuoso.</p>\n');
+  http('	<p>This page is designed to help you test support for <a href="http://www.w3.org/TR/sparql11-http-rdf-update">SPARQL 1.1 Graph Store HTTP Protocol</a> in OpenLink Virtuoso.</p>\n');
   http('    </div>\n\n');
   http('    <div id="main">\n');
   http('	<form action="" method="post" enctype="multipart/form-data">\n');
-  http('			<fieldset>\n');
-  http('			  <label for="graph-uri">Graph URI</label>\n');
-  http('			  <br />\n');
-  http('			  <input type="text" name="graph-uri" id="graph-uri" ');
+  http('	<fieldset>\n');
+  http('		<label for="graph-uri">Graph URI</label>\n');
+  http('		<br />\n');
+  http('		<input type="text" name="graph-uri" id="graph-uri" ');
   http(sprintf ('value="%s" size="80"/>\n', coalesce ('')));
-  http('			  <br /><br />\n');
-  http('			  <label for="res-file">File to upload</label>\n');
-  http('			  <br />\n');
+  http('		<br /><br />\n');
+  http('		<label for="res-file">File to upload</label>\n');
+  http('		<br />\n');
   http('		<input type="file" name="res-file" id="res-file"/>\n');
-  http('			  <br /><br />\n');
-  http('<input type="submit" value="Upload the resource"/>');
-  http('			</fieldset>\n');
-  http('			</form>\n');
+  http('		<br /><br />\n');
+  http('		<input type="submit" value="Upload the resource"/>');
+  http('	</fieldset>\n');
+  http('	</form>\n');
   http('    </div>\n\n');
   WS.WS.SPARQL_ENDPOINT_FOOTER();
-  http('	</body>\n');
+  http('</body>\n');
   http('</html>\n');
   return;
 graph_processing:
