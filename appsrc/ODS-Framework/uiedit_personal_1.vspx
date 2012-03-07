@@ -133,7 +133,7 @@
         self.s_photo.ufl_value := '';
         return;
       }
-      if (get_keyword ('up_photo', params, '') <> '' or (self.previe_path <> '' and self.s_photo.ufl_value <> ''))
+      if ((get_keyword ('up_photo', params, '') <> '') or (self.previe_path <> '' and self.s_photo.ufl_value <> ''))
       {
         declare dir, p_path, p_path_org, dotpos, up_cont any;
         declare p_path_size2 any;
@@ -195,10 +195,13 @@
           p_path := subseq (p_path, 4);
         WA_USER_EDIT (self.u_name, 'WAUI_PHOTO_URL', p_path);
       }
-      else
+      else if ((get_keyword ('s_photo', params) like 'http://%') or (get_keyword ('s_photo', params) like 'https://%'))
       {
-        if (get_keyword ('s_photo', params, '') = '')
-          WA_USER_EDIT (self.u_name, 'WAUI_PHOTO_URL', '');
+        WA_USER_EDIT (self.u_name, 'WAUI_PHOTO_URL', get_keyword ('s_photo', params));
+      }
+      else if (get_keyword ('s_photo', params) = '')
+      {
+        WA_USER_EDIT (self.u_name, 'WAUI_PHOTO_URL', '');
       }
       if (get_keyword ('up_audio', params, '') <> '')
       {
