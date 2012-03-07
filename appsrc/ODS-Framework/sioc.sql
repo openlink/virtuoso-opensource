@@ -4097,7 +4097,7 @@ create procedure SIOC..acl_delete (
 }
 ;
 
-create procedure SIOC..acl_webID ()
+create procedure SIOC..acl_webid ()
 {
   declare webid varchar;
   declare cert, dummy, vtype any;
@@ -4116,7 +4116,7 @@ create procedure SIOC..acl_webID ()
     goto _exit;
   }
 
-
+  set_user_id ('dba');
   cert := client_attr ('client_certificate');
   dummy := null;
   DB.DBA.WEBID_AUTH_GEN_2 (cert, 0, null, 1, 0, webid, dummy, 0, vtype);
@@ -5159,6 +5159,19 @@ create procedure foaf_check_ssl (in iri varchar)
   return rc;
 }
 ;
+
+create procedure foaf_check_ssl2 ()
+{
+  declare webid varchar;
+
+  webid := SIOC..acl_webid ();
+  if (isnull (webid))
+    return 0;
+
+  return 1;
+}
+;
+
 
 create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p int := 0)
 {

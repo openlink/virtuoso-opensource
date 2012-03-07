@@ -162,7 +162,7 @@ create procedure check_authentication_ssl (
   if (isnull (uname))
     return 0;
 
-  return SIOC..foaf_check_ssl (null);
+  return SIOC..foaf_check_ssl2 ();
 }
 ;
 
@@ -5052,9 +5052,23 @@ create procedure ODS.ODS_API.extractFOAFDataArray (
   in iri varchar,
   in graph varchar)
 {
+  declare V any;
+
+  V := vector ();
+  ODS.ODS_API.extractPersonData (V, iri, graph);
+
+  return V;
+}
+;
+
+
+create procedure ODS.ODS_API.extractPersonData (
+  inout V any,
+  in iri varchar,
+  in graph varchar)
+{
   declare N integer;
-  declare S varchar;
-  declare V, S, st, msg, rows, meta any;
+  declare S, st, msg, rows, meta any;
 
   S := sprintf ('sparql
                  define input:storage ""
@@ -5149,13 +5163,12 @@ create procedure ODS.ODS_API.extractFOAFDataArray (
                                      } .
                           filter (?iri = iri(?::0)).
                         }', graph);
-  V := vector ();
   st := '00000';
   commit work;
   exec (S, st, msg, vector (iri), vector ('use_cache', 1), meta, rows);
   if (st = '00000')
   {
-  meta := ODS.ODS_API.simplifyMeta(meta);
+    meta := ODS.ODS_API.simplifyMeta (meta);
   foreach (any row in rows) do
   {
     N := 0;
@@ -5171,7 +5184,6 @@ create procedure ODS.ODS_API.extractFOAFDataArray (
     }
   }
   }
- return V;
   }
 ;
 
@@ -5192,9 +5204,25 @@ create procedure ODS.ODS_API."user.getFOAFData" (
 }
 ;
 
-create procedure ODS.ODS_API.SSL_WEBID_GET (in cert any := null)
+create procedure ODS.ODS_API.SSL_WEBID_GET (in certificate any := null)
 {
-  return DB.DBA.FOAF_SSL_WEBID_GET (cert);
+  return DB.DBA.FOAF_SSL_WEBID_GET (certificate);
+}
+;
+
+create procedure ODS.ODS_API.SSL_WEBID_GET_2 (
+  in cert any,
+  inout webid varchar,
+  inout webidType integer,
+  inout graph varchar)
+{
+  declare rc any;
+
+  if (isnull (cert))
+    cert := client_attr ('client_certificate');
+
+  rc := DB.DBA.WEBID_AUTH_GEN_2 (cert, 0, null, 1, 0, webid, graph, 0, webidType);
+  return rc;
 }
 ;
 
@@ -5203,70 +5231,82 @@ create procedure ODS.ODS_API."user.getFOAFSSLData" (
   in outputMode integer := 1,
   in sslLoginCheck integer := 0) __soap_http 'application/json'
 {
-  declare foafIRI, alts any;
+  declare rc, webid, webidType, graph, alts any;
   declare V any;
-  declare certLogin, certLoginEnable any;
+  declare cert, loginName, certLogin, certLoginEnable any;
 
-  certLogin := 0;
+  set_user_id ('dba');
+  graph := 'http://' || uuid ();
+  cert := client_attr ('client_certificate');
+  rc := ODS.ODS_API.SSL_WEBID_GET_2 (cert, webid, webidType, graph);
+  if (not rc)
+    return obj2json (null);
+
+ 	V := vector ();
+  appendProperty (V, 'iri', webid);
+
+ 	loginName := '';
+ 	certLogin := 0;
   certLoginEnable := 0;
-  foafIRI := ODS.ODS_API.SSL_WEBID_GET ();
-  if (not isnull (foafIRI))
+  for (select UC_U_ID, UC_LOGIN from DB.DBA.WA_USER_CERTS where UC_FINGERPRINT = get_certificate_info (6, cert, 0, '')) do
+	{
+	  certLogin := 1;
+    certLoginEnable := coalesce (UC_LOGIN, 0);
+    loginName := (select U_NAME from DB.DBA.SYS_USERS where U_ID = UC_U_ID);
+	  appendProperty (V, 'certLogin', cast (certLogin as varchar));
+	  appendProperty (V, 'certLoginEnable', cast (certLoginEnable as varchar));
+	}
+  if (webidType = 0)
   {
-    try_auth:
-    if (foafIRI like 'ldap://%')
-      {
-	declare i, arr, rc any;
-	V := vector ();
-	rc := DB.DBA.FOAF_SSL_LDAP_CHECK_INT (foafIRI, arr);
-	arr := arr[1];
-	for (i := 0; i < length (arr); i := i + 2)
-	   {
-	     if (arr[i] = 'mail')
-	       appendProperty (V, 'mbox', cast (arr[i+1][0] as varchar));
-	     else if (arr[i] = 'cn')
-	       appendProperty (V, 'name', cast (arr[i+1][0] as varchar));
-	   }
-	if (rc)
-	  {
-	    appendProperty (V, 'iri', foafIRI);
-	  }
-    	for (select UC_LOGIN from DB.DBA.WA_USER_CERTS where UC_FINGERPRINT = get_certificate_info (6)) do
-  	  {
-  	    certLogin := 1;
-  	    appendProperty (V, 'certLogin', cast (certLogin as varchar));
-	  }
-      }
-    else
-    V := ODS.ODS_API.getFOAFDataArray (foafIRI, sslFOAFCheck, sslLoginCheck);
-    return case when outputMode then params2json (V) else V end;
+    -- FOAF
+    ODS.ODS_API.extractPersonData (V, webid, graph);
   }
-  else if (is_https_ctx ()) -- try webfinger
+  else if (webidType = 1)
   {
-    declare agent any;
-    agent := DB.DBA.FOAF_SSL_WEBFINGER ();
-    if (agent is not null)
+    -- WEBFINGER
+    appendProperty (V, 'mbox', get_certificate_info (10, cert, 0, '', 'emailAddress'));
+	  appendProperty (V, 'name', get_certificate_info (10, cert, 0, '', 'CN'));
+  }
+  else if (webidType = 2)
+  {
+    -- DI
+    ;
+  }
+  else if (webidType = 3)
+  {
+    -- SEARCH
+    ;
+  }
+  else if (webidType = 4)
+  {
+    -- SPONGE
+    ODS.ODS_API.extractPersonData (V, webid, graph);
+  }
+  else if (webidType = 5)
+  {
+    -- LDAP
+    declare i, items any;
+
+  	if (DB.DBA.FOAF_SSL_LDAP_CHECK_INT (webid, items))
+  	{
+    	items := items[1];
+    	for (i := 0; i < length (items); i := i + 2)
       {
-	V := vector ();
-	for (select UC_LOGIN from DB.DBA.WA_USER_CERTS where UC_FINGERPRINT = get_certificate_info (6)) do
-	  {
-	    certLogin := 1;
-	    certLoginEnable := coalesce (UC_LOGIN, 0);
-	    appendProperty (V, 'iri', agent);
-	    appendProperty (V, 'mbox', get_certificate_info (10, null, 0, '', 'emailAddress'));
-	    appendProperty (V, 'name', get_certificate_info (10, null, 0, '', 'CN'));
-  	    appendProperty (V, 'certLogin', cast (certLogin as varchar));
-  	    --appendProperty (V, 'certLoginEnable', certLoginEnable);
-	    return case when outputMode then params2json (V) else V end;
-	  }
+        if (items[i] = 'mail')
+          appendProperty (V, 'mbox', cast (items[i+1][0] as varchar));
+        else if (items[i] = 'cn')
+          appendProperty (V, 'name', cast (items[i+1][0] as varchar));
       }
-    else
-      {
-	foafIRI := ODS..FINGERPOINT_WEBID_GET ();
-	if (foafIRI is not null)
-	  goto try_auth;
       }
   }
-  return case when outputMode then obj2json (null) else null end;
+  if (loginName = '')
+    loginName := DB.DBA.WA_MAKE_NICK2 (get_keyword ('nick', V), get_keyword ('name', V), get_keyword ('firstName', V), get_keyword ('family_name', V));
+
+  if (loginName <> '')
+    appendProperty (V, 'loginName', loginName);
+
+
+  return params2json (V);
 }
 ;
 
@@ -5824,7 +5864,7 @@ create procedure ODS.ODS_API.error_handler () __soap_http 'text/xml'
 ;
 
 DB.DBA.USER_CREATE ('ODS_API', uuid(), vector ('DISABLED', 1, 'LOGIN_QUALIFIER', 'ODS'));
-exec_stmt ('grant SPARQL_UPDATE to ODS_API', 0);
+DB.DBA.EXEC_STMT ('grant SPARQL_UPDATE to ODS_API', 0);
 DB.DBA.VHOST_REMOVE (lpath=>'/ods/api');
 DB.DBA.VHOST_DEFINE (lpath=>'/ods/api', ppath=>'/SOAP/Http', soap_user=>'ODS_API', opts=>vector ('500_page', 'error_handler'));
 
