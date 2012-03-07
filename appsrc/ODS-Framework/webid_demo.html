@@ -77,9 +77,8 @@
     	The return values are:
 	    <ul id="result_webid" style="display: none;">
 	      <li>WebID - <script language="javascript" type="text/javascript">
-            document.write('<a href="webid"><span id="webid"></span><\/a>')
+            document.write('<a href="" id="link"><span id="webid"></span><\/a>')
           </script></li> 
-	      <li>WebID -  <span id="webid"></span></li>
 	      <li>Timestamp in ISO 8601 format - <span id="ts"></span></li>
 	    </ul>
 	    <ul id="result_error" style="display: none;">
@@ -94,6 +93,7 @@
         if (webid != '') {
           show('result_webid');
           getObject('webid').innerHTML = getParam('webid');;
+          getObject('link').href = getParam('webid');;
           getObject('ts').innerHTML = getParam('ts');;
         } else {
           hide('result_webid');

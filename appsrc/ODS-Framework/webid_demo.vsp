@@ -88,7 +88,7 @@ html:
             if (length (webid))
             {
           ?>
-  	      <li>WebID - <?vsp http(sprintf('<a href="%s">%s</a>', webid, webid)); ?></li>
+  	      <li>WebID - <?vsp http(sprintf('<a href="%s">%s</a>', DB.DBA.RDF_PROXY_ENTITY_IRI (rtrim (webid, '#this')), DB.DBA.RDF_PROXY_ENTITY_IRI (rtrim (webid, '#this')) )); ?></li>
   	      <li>Timestamp in ISO 8601 format - <?V get_keyword ('ts', params) ?></li>
           <?vsp
             }
