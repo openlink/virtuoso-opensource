@@ -546,13 +546,6 @@ create procedure ODS.ODS_API."iri2proxy" (
 }
 ;
 
-create procedure ODS.ODS_API."iri2proxy" (
-  in iri any) __soap_http 'text/plain'
-{
-  return DB.DBA.RDF_PROXY_ENTITY_IRI (rtrim (iri, '#this'));
-}
-;
-
 -- Ontology Info
 create procedure ODS.ODS_API."ontology.classes" (
   in ontology varchar,
@@ -5877,8 +5870,6 @@ DB.DBA.VHOST_REMOVE (lpath=>'/ods/api');
 DB.DBA.VHOST_DEFINE (lpath=>'/ods/api', ppath=>'/SOAP/Http', soap_user=>'ODS_API', opts=>vector ('500_page', 'error_handler'));
 
 grant execute on ODS.ODS_API.error_handler to ODS_API;
-
-grant execute on ODS.ODS_API."iri2proxy" to ODS_API;
 
 grant execute on ODS.ODS_API."iri2proxy" to ODS_API;
 
