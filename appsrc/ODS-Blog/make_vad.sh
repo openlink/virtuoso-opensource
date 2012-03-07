@@ -5,7 +5,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2006 OpenLink Software
+#  Copyright (C) 1998-2012 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -59,8 +59,9 @@ TEMPFILE=/tmp/isql.$$
 LN="ln -fs"
 RM="rm -f"
 fi
+
 VOS=0
-if [ -f ../../autogen.sh ]
+if [ -f ../../../autogen.sh ]
 then
     VOS=1
 fi
@@ -84,7 +85,7 @@ else
   myrm=rm
 fi
 
-VERSION_INIT()
+version_init()
 {
   if [ $VOS -eq 1 ]
   then
@@ -281,7 +282,7 @@ sticker_init() {
   echo "  <name package=\"Weblog\">" >> $STICKER
   echo "    <prop name=\"Title\" value=\"ODS Weblog\"/>" >> $STICKER
   echo "    <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2011 OpenLink Software\"/>" >> $STICKER
+  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2012 OpenLink Software\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso/blog2/download\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso/blog2/download\"/>" >> $STICKER
   echo "  </name>" >> $STICKER
@@ -462,7 +463,7 @@ BANNER "STARTED PACKAGING BLOG VAD"
 STOP_SERVER
 $myrm $LOGFILE 2>/dev/null
 directory_clean
-VERSION_INIT
+version_init
 directory_init
 virtuoso_init
 sticker_init
@@ -470,7 +471,6 @@ vad_create
 virtuoso_shutdown
 chmod 644 ods_blog_dav.vad
 #chmod 644 virtuoso.trx
-directory_clean
 
 CHECK_LOG
 RUN egrep  '"\*\*.*FAILED:|\*\*.*ABORTED:"' "$LOGFILE"
@@ -479,6 +479,8 @@ then
 	$myrm -f *.vad
 	exit 1
 fi
+
+directory_clean
 
 BANNER "COMPLETED VAD PACKAGING"
 exit 0
