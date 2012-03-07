@@ -177,6 +177,9 @@ create procedure DB.DBA.FOAF_MOD (in m any)
 }
 ;
 
+grant execute on DB.DBA.FOAF_MOD to SPARQL_SELECT
+;
+
 create procedure FOAF_SSL_AUTH (in realm varchar)
 {
   return FOAF_SSL_AUTH_GEN (realm, 0);
