@@ -4328,6 +4328,9 @@ create procedure WA_USER_EDIT (in _name varchar,in _key varchar,in _data any)
   else if (_key = 'WAUI_ACL')
     UPDATE WA_USER_INFO SET WAUI_ACL = _data WHERE WAUI_U_ID = _uid;
 
+  else if (_key = 'WAUI_PHOTO_URL')
+    UPDATE WA_USER_INFO SET WAUI_PHOTO_URL = _data WHERE WAUI_U_ID = _uid;
+
   return row_count ();
 
  nf:

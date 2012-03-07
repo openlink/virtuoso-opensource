@@ -1496,6 +1496,7 @@ create procedure ODS.ODS_API."user.register" (
     DB.DBA.WA_USER_EDIT (name, 'WAUI_BORG_HOMEPAGE', get_keyword ('organizationHomepage', data));
     DB.DBA.WA_USER_EDIT (name, 'WAUI_BORG'         , get_keyword ('organizationTitle', data));
     DB.DBA.WA_USER_EDIT (name, 'WAUI_FOAF'         , get_keyword ('iri', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_PHOTO_URL'    , get_keyword ('depiction', data));
 
     declare cert any;
     cert := client_attr ('client_certificate');
