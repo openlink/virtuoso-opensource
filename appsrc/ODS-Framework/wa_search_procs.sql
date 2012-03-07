@@ -2160,7 +2160,7 @@ where WAUI_PHOTO_URL is not null and length (WAUI_PHOTO_URL) = 0
 update WA_USER_INFO set
   WAUI_PHOTO_URL =
     DAV_HOME_DIR ((select U_NAME from SYS_USERS where U_ID = WAUI_U_ID))||'/wa/images/'||WAUI_PHOTO_URL
-where WAUI_PHOTO_URL is not null and blob_to_string (WAUI_PHOTO_URL) not like '/%'
+where WAUI_PHOTO_URL is not null and blob_to_string (WAUI_PHOTO_URL) not like '/%' and blob_to_string (WAUI_PHOTO_URL) not like 'http://%'
 ;
 
 create function WA_SEARCH_CHECK_FT_QUERY (in text varchar, in is_tags integer := 0) returns varchar
