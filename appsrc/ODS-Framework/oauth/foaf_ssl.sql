@@ -152,8 +152,8 @@ create procedure FOAF_SSL_WEBFINGER (in cert any := null, in try_loading_webid i
     {
       domain := subseq (mail, position ('@', mail));
       h := null;
-      host_info := http_get (sprintf ('http://%s/.well-known/host-meta', domain), h);
-      if (h[0] not like 'HTTP/1._ 200')
+      host_info := http_get (sprintf ('http://%s/.well-known/host-meta', domain), h, 'GET', null, null, null, 10, 15);
+      if (h is null or h[0] not like 'HTTP/1._ 200')
 	goto next_mail;
       xd := xtree_doc (host_info);
       template := cast (xpath_eval ('/XRD/Link[@rel="lrdd"]/@template', xd) as varchar);
