@@ -2749,7 +2749,7 @@ ODS.Nav = function(navOptions) {
 
 		var connHTML = templateHtml;
 
-			connHTML = connHTML.replace('{connImgSRC}', conn.photo.length > 0 ? conn.photo : 'images/missing_profile_picture.png'); // images/profile.png
+			connHTML = connHTML.replace('images/profile.png', conn.photo.length > 0 ? conn.photo : 'images/profile.png');
 	connHTML = connHTML.replace ('{connProfileFullName}', conn.fullName);
 	connHTML = connHTML.replace ('{sendMsg}', 'sendMsg_' + conn.uid);
 	connHTML = connHTML.replace ('{viewConnections}', 'viewConnections_' + conn.uid);
@@ -3025,6 +3025,7 @@ ODS.Nav = function(navOptions) {
       img.src = userProfilePhoto;
       img.alt = userDisplayName;
       img.rel = 'foaf:depiction';
+      OAT.Dom.clear('userProfilePhoto');
       $('userProfilePhoto').appendChild(img);
   	} else {
       $('userProfilePhoto').innerHTML = '<br /><b>Photo Not Available</b><br /><br />';
