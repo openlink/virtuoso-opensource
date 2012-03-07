@@ -3765,8 +3765,24 @@ create procedure WA_USER_OL_ACCOUNTS_SET_UP ()
   registry_set ('__WA_USER_OL_ACCOUNTS_SET_UP', 'done');
 
   update WA_USER_OL_ACCOUNTS set WUO_TYPE = 'P' where WUO_TYPE is null;
-};
+}
+;
 WA_USER_OL_ACCOUNTS_SET_UP ();
+
+create procedure WA_USER_OL_ACCOUNTS_URI (
+  in url varchar)
+{
+  declare rc varchar;
+
+  rc := null;
+  if (__proc_exists ('DB.DBA.RDF_PROXY_ENTITY_IRI'))
+    rc := DB.DBA.RDF_PROXY_ENTITY_IRI(url);
+  if (isnull (rc))
+    rc := url || '#this';
+
+  return rc;
+}
+;
 
 create procedure WA_USER_OL_ACCOUNTS_SET_UP ()
 {
@@ -3774,8 +3790,9 @@ create procedure WA_USER_OL_ACCOUNTS_SET_UP ()
     return;
   registry_set ('__WA_USER_OL_ACCOUNTS_SET_UP2', 'done');
 
-  update WA_USER_OL_ACCOUNTS set WUO_URI = ODS.ODS_API."user.onlineAccounts.uri"(WUO_URL) where WUO_URI is null;
-};
+  update WA_USER_OL_ACCOUNTS set WUO_URI = WA_USER_OL_ACCOUNTS_URI (WUO_URL) where WUO_URI is null;
+}
+;
 WA_USER_OL_ACCOUNTS_SET_UP ();
 
 create procedure WA_USER_OL_ACCOUNTS_SET_UP ()
