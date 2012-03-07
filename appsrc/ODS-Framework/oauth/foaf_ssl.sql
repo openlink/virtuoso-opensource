@@ -431,8 +431,9 @@ create procedure DB.DBA.X509_STRING_DATE (in val varchar)
     {
       return null;
     };
+  val := regexp_replace (val, '[ ]+', ' ', 1, null);
   -- Jan 11 14:36:33 2012 GMT
-  if (val is not null and regexp_match ('[[:upper:]][[:lower:]]{2} [0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2} [0-9]{4,} GMT', val) is not null)
+  if (val is not null and regexp_match ('[[:upper:]][[:lower:]]{2} [0-9]{1,} [0-9]{2}:[0-9]{2}:[0-9]{2} [0-9]{4,} GMT', val) is not null)
     {
       tmp := sprintf_inverse (val, '%s %s %s %s GMT', 0);
       if (tmp is not null and length (tmp) > 3)
