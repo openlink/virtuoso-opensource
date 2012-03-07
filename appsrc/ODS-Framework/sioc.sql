@@ -2341,7 +2341,7 @@ create procedure fill_ods_sioc (in doall int := 0)
       else -- sioc:User
 	{
 	  declare u_site_iri, person_iri any;
-	  declare forum_name, forum_iri any;
+    	  declare forum_name any;
 
 	  iri := user_iri (u_id);
 	  if (iri is not null)
@@ -3920,6 +3920,97 @@ create procedure SIOC..private_user_remove (
 ;
 
 --
+-- Private WebID rights
+--
+create procedure SIOC..private_acl_user (
+  inout webID varchar,
+  inout createMode integer := 0)
+{
+  declare uid varchar;
+
+  uid := (select FS_UID from DB.DBA.FOAF_SSL_ACL where FS_URI = webID);
+  if (createMode and isnull (uid))
+  {
+    uid := sprintf ('SPUID%d', sequence_next ('__SPUID'));
+    USER_CREATE (uid, uuid());
+    USER_GRANT_ROLE (uid, 'SPARQL_SELECT');
+    USER_SET_OPTION (uid, 'DISABLED', 1);
+    insert into DB.DBA.FOAF_SSL_ACL (FS_URI, FS_UID)
+      values (webID, uid);
+  }
+  return uid;
+}
+;
+
+create procedure SIOC..private_acl_insert (
+  inout graph_iri varchar,
+  inout acl any)
+{
+  declare uid, rights any;
+  declare N, aclArray any;
+
+  aclArray := deserialize (acl);
+  for (N := 0; N < length (aclArray); N := N + 1)
+  {
+    uid := null;
+    if (aclArray[N][2] = 'person')
+    {
+      uid := SIOC..private_acl_user (aclArray[N][1], 1);
+    }
+    else if (aclArray[N][2] = 'group')
+    {
+      ;
+    }
+    else if (aclArray[N][2] = 'public')
+    {
+      uid := 'nobody';
+    }
+    if (not isnull (uid))
+    {
+      rights := 0;
+      -- read
+      if (aclArray[N][3])
+        rights := rights + 1;
+      -- write
+      if (aclArray[N][4])
+        rights := rights + 2;
+
+      SIOC..private_user_add (graph_iri, uid, rights);
+    }
+  }
+}
+;
+
+create procedure SIOC..private_acl_delete (
+  inout graph_iri varchar,
+  inout acl any)
+{
+  declare uid any;
+  declare N, aclArray any;
+
+  aclArray := deserialize (acl);
+  for (N := 0; N < length (aclArray); N := N + 1)
+  {
+    uid := null;
+    if (aclArray[N][2] = 'person')
+    {
+      uid := SIOC..private_acl_user (aclArray[N][1]);
+    }
+    else if (aclArray[N][2] = 'group')
+    {
+      ;
+    }
+    else if (aclArray[N][2] = 'public')
+    {
+      uid := 'nobody';
+    }
+    if (not isnull (uid))
+      SIOC..private_user_remove (graph_iri, uid);
+  }
+}
+;
+
+--
 -- ACL
 --
 create procedure SIOC..acl_clean_iri (
@@ -4325,6 +4416,7 @@ create procedure SIOC..acl_ping2 (
 ;
 
 create procedure SIOC..wa_instance_acl_insert (
+  inout is_public integer,
   inout type_name varchar,
   inout name varchar,
   inout acl any)
@@ -4339,10 +4431,14 @@ create procedure SIOC..wa_instance_acl_insert (
   graph_iri := SIOC..acl_graph (type_name, name);
 
   SIOC..acl_insert (graph_iri, iri, acl);
+
+  if (not is_public and SIOC..instance_sioc_check (is_public, type_name))
+    SIOC..private_acl_insert (SIOC..get_graph_new (is_public, iri), acl);
 }
 ;
 
 create procedure SIOC..wa_instance_acl_delete (
+  inout is_public integer,
   inout type_name varchar,
   inout name varchar,
   inout acl any)
@@ -4358,29 +4454,32 @@ create procedure SIOC..wa_instance_acl_delete (
   graph_iri := SIOC..acl_graph (type_name, name);
 
   SIOC..acl_delete (graph_iri, iri, acl);
+
+  if (not is_public and SIOC..instance_sioc_check (is_public, type_name))
+    SIOC..private_acl_delete (SIOC..get_graph_new (is_public, iri), acl);
 }
 ;
 
 create trigger WA_INSTANCE_ACL_I after insert on DB.DBA.WA_INSTANCE order 100 referencing new as N
 {
   if (coalesce (N.WAI_ACL, '') <> '')
-    SIOC..wa_instance_acl_insert (N.WAI_TYPE_NAME, N.WAI_NAME, N.WAI_ACL);
+    SIOC..wa_instance_acl_insert (N.WAI_IS_PUBLIC, N.WAI_TYPE_NAME, N.WAI_NAME, N.WAI_ACL);
 }
 ;
 
 create trigger WA_INSTANCE_ACL_U after update on DB.DBA.WA_INSTANCE order 100 referencing old as O, new as N
 {
   if ((coalesce (O.WAI_ACL, '') <> '') and (coalesce (O.WAI_ACL, '') <> coalesce (N.WAI_ACL, '')))
-    SIOC..wa_instance_acl_delete (O.WAI_TYPE_NAME, O.WAI_NAME, O.WAI_ACL);
+    SIOC..wa_instance_acl_delete (O.WAI_IS_PUBLIC, O.WAI_TYPE_NAME, O.WAI_NAME, O.WAI_ACL);
   if ((coalesce (N.WAI_ACL, '') <> '') and (coalesce (O.WAI_ACL, '') <> coalesce (N.WAI_ACL, '')))
-    SIOC..wa_instance_acl_insert (N.WAI_TYPE_NAME, N.WAI_NAME, N.WAI_ACL);
+    SIOC..wa_instance_acl_insert (N.WAI_IS_PUBLIC, N.WAI_TYPE_NAME, N.WAI_NAME, N.WAI_ACL);
 }
 ;
 
 create trigger WA_INSTANCE_ACL_D before delete on DB.DBA.WA_INSTANCE order 100 referencing old as O
 {
   if (coalesce (O.WAI_ACL, '') <> '')
-    SIOC..wa_instance_acl_delete (O.WAI_TYPE_NAME, O.WAI_NAME, O.WAI_ACL);
+    SIOC..wa_instance_acl_delete (O.WAI_IS_PUBLIC, O.WAI_TYPE_NAME, O.WAI_NAME, O.WAI_ACL);
 }
 ;
 

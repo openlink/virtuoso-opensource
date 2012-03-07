@@ -177,7 +177,7 @@ TBL.createRow = function (prefix, No, optionObject, viewMode) {
       // actions
       var td = OAT.Dom.create('td');
       td.id = prefix+'_td_'+ No+'_btn';
-      td.style.whiteSpace = 'nowrap';
+      td.style.cssText = 'white-space: nowrap; verical-align: top;';
       tr.appendChild(td);
       if (options.id) {
       	var fld = OAT.Dom.create("input");
