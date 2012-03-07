@@ -1735,30 +1735,18 @@ create procedure wa_vad_check (in pname varchar)
 create trigger SYS_USERS_WA_AU after update on "DB"."DBA"."SYS_USERS" order 66 referencing old as O, new as N
 {
   declare name varchar;
-  declare o_disabled, n_disabled any;
 
   name := connection_get ('WA_USER_DISABLED');
   if (not isnull (name))
     return;
-  declare exit handler for sqlstate '*'
-    {
-      log_message ('ODS:SYS_USERS_WA_AU triger failed');
-      return;
-    };
-  o_disabled := get_keyword_ucase ('DISABLED', deserialize (O.U_OPTS), 0);
-  n_disabled := get_keyword_ucase ('DISABLED', deserialize (N.U_OPTS), 0);
-  if (o_disabled <> n_disabled)
+
+  if (O.U_ACCOUNT_DISABLED <> N.U_ACCOUNT_DISABLED)
     DB.DBA.WA_USER_SETTING_SET (N.U_NAME, 'DISABLED_BY', 'dav');
 }
 ;
 
 create trigger SYS_USERS_ON_DELETE_WA_FK before delete on "DB"."DBA"."SYS_USERS" order 66 referencing old as O
 {
-  declare exit handler for sqlstate '*'
-    {
-      log_message ('ODS:SYS_USERS_ON_DELETE_WA_FK triger failed');
-      return;
-    };
   ODS_DELETE_USER_DATA(O.U_NAME);
 }
 ;
