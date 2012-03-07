@@ -116,14 +116,15 @@ create procedure FOAF_SSL_MAIL_GET_ALL (in cert any := null, in cert_type int :=
   declare alts, mail, ret any;
   ret := vector ();
   mail := get_certificate_info (10, cert, cert_type, '', 'emailAddress');
-  ret := vector_concat (ret, vector (mail));
+  if (mail is not null)
+    ret := vector_concat (ret, vector (mail));
   alts := get_certificate_info (7, cert, cert_type, '', '2.5.29.17');
   if (alts is not null)
     {
       alts := regexp_replace (alts, ',[ ]*', ',', 1, null);
       alts := split_and_decode (alts, 0, '\0\0,:');
       mail := get_keyword ('email', alts);
-      if (not position (mail, ret)) 
+      if (mail is not null and not position (mail, ret)) 
         ret := vector_concat (ret, vector (mail));
     }
   return ret;
@@ -136,7 +137,7 @@ create procedure FOAF_SSL_MAIL_GET_ALL (in cert any := null, in cert_type int :=
 --
 create procedure FOAF_SSL_WEBFINGER (in cert any := null, in try_loading_webid int := 0, in cert_type int := 0)
 {
-  declare mails, webid, domain, host_info, xrd, template, url any;
+  declare mails, webid, domain, host_info, xrd, template, url, h any;
   declare xt, xd, tmpcert any;
 
   mails := FOAF_SSL_MAIL_GET_ALL (cert, cert_type);
@@ -150,7 +151,10 @@ create procedure FOAF_SSL_WEBFINGER (in cert any := null, in try_loading_webid i
   foreach (varchar mail in mails) do
     {
       domain := subseq (mail, position ('@', mail));
-      host_info := http_get (sprintf ('http://%s/.well-known/host-meta', domain));
+      h := null;
+      host_info := http_get (sprintf ('http://%s/.well-known/host-meta', domain), h);
+      if (h[0] not like 'HTTP/1._ 200')
+	goto next_mail;
       xd := xtree_doc (host_info);
       template := cast (xpath_eval ('/XRD/Link[@rel="lrdd"]/@template', xd) as varchar);
       url := replace (template, '{uri}', 'acct:' || mail);
@@ -184,6 +188,7 @@ create procedure FOAF_SSL_WEBFINGER (in cert any := null, in try_loading_webid i
 	      return coalesce (webid, 'acct:' || mail);
 	    }
 	}
+      next_mail:;
     }
   return null;
 }
