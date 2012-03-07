@@ -186,8 +186,9 @@ create method post_request(
     post_string:=string_output_string(aResult);
 
      declare ret_header, rq_header any;
-  rq_header := 'Content-type: application/x-www-form-urlencoded \r\nUser-Agent: Facebook API VSP Client 1.1';
 
+  commit work;
+  rq_header := 'Content-type: application/x-www-form-urlencoded \r\nUser-Agent: Facebook API VSP Client 1.1';
     _result:=http_get ('http://api.facebook.com/restserver.php', ret_header, 'POST', rq_header, post_string); --'127.0.0.1:8888'
      return _result;
 }

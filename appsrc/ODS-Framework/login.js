@@ -21,6 +21,7 @@
  */
 
 var lfTab;
+var lsRegData;
 var lfSslData;
 var lfFacebookData;
 var lfOptions;
@@ -127,27 +128,28 @@ function lfInit() {
   if (!$("lf")) {return;}
 
   lfOptrions = {onstart: lfStart, onend: lfEnd};
-  var regData;
-  var x = function (data) {
-    try {
-      regData = OAT.JSON.parse(data);
-    } catch (e) { regData = {}; }
+  if (!lsRegData) {
+    var x = function (data) {
+      try {
+        lsRegData = OAT.JSON.parse(data);
+      } catch (e) { lsRegData = {}; }
+    }
+    OAT.AJAX.GET ('/ods/api/server.getInfo?info=regData', false, x, {async: false});
   }
-  OAT.AJAX.GET ('/ods/api/server.getInfo?info=regData', false, x, {async: false});
 
   lfTab = new OAT.Tab("lf_content", {goCallback: lfCallback});
   lfTab.add("lf_tab_0", "lf_page_0");
-  if (regData.openidEnable)
+  if (lsRegData.openidEnable)
     OAT.Dom.show('lf_tab_1');
   lfTab.add("lf_tab_1", "lf_page_1");
   lfTab.add("lf_tab_2", "lf_page_2");
-  if (regData.sslEnable)
+  if (lsRegData.sslEnable)
     OAT.Dom.show('lf_tab_3');
   lfTab.add("lf_tab_3", "lf_page_3");
-  if (regData.twitterEnable)
+  if (lsRegData.twitterEnable)
     OAT.Dom.show('lf_tab_4');
   lfTab.add("lf_tab_4", "lf_page_4");
-  if (regData.linkedinEnable)
+  if (lsRegData.linkedinEnable)
     OAT.Dom.show('lf_tab_5');
   lfTab.add("lf_tab_5", "lf_page_5");
   lfTab.go(0);
@@ -171,7 +173,7 @@ function lfInit() {
     }
   }
 
-  if (regData.facebookEnable) {
+  if (lsRegData.facebookEnable) {
     lfLoadFacebookData(function() {
       if (lfFacebookData)
         FB.init(lfFacebookData.api_key, "/ods/fb_dummy.vsp", {
@@ -185,13 +187,14 @@ function lfInit() {
     });
   }
 
-  if (regData.sslEnable) {
-    var x = function(data) {
-      try {
-        lfSslData = OAT.JSON.parse(data);
-      } catch (e) {
-        lfSslData = null;
-      }
+  if (lsRegData.sslEnable) {
+    var x1 = function(data) {
+      if (!lfSslData)
+        try {
+          lfSslData = OAT.JSON.parse(data);
+        } catch (e) {
+          lfSslData = null;
+        }
       var prefix = 'lf';
       var tbl = $(prefix+'_table_3');
       if (tbl) {
@@ -225,7 +228,11 @@ function lfInit() {
       }
     }
     if (document.location.protocol == 'https:') {
-    OAT.AJAX.GET('/ods/api/user.getFOAFSSLData?sslFOAFCheck=1', '', x);
+      if (!lfSslData) {
+        OAT.AJAX.GET('/ods/api/user.getFOAFSSLData?sslFOAFCheck=1', '', x1);
+      } else {
+        x1();
+      }
     } else {
       OAT.Dom.show('lf_tab_3');
       var tbl = $('lf_table_3');
@@ -240,7 +247,7 @@ function lfInit() {
   }
   if (document.location.protocol != 'https:')
   {
-    var x = function (data) {
+    var x2 = function (data) {
       var o = null;
       try {
         o = OAT.JSON.parse(data);
@@ -258,7 +265,7 @@ function lfInit() {
           links[i].href = ref + '/ods/register.vspx';
       }
     }
-    OAT.AJAX.GET ('/ods/api/server.getInfo?info=sslPort', false, x);
+    OAT.AJAX.GET ('/ods/api/server.getInfo?info=sslPort', false, x2);
   }
 }
 

@@ -1947,6 +1947,8 @@ ODS.Nav = function(navOptions) {
       try {
         self.regData = OAT.JSON.parse(data);
       } catch (e) { self.regData = {}; }
+      if (!lsRegData)
+        lsRegData = self.regData;
     }
     OAT.AJAX.GET ('/ods/api/server.getInfo?info=regData', false, x, {async: false});
 
@@ -1985,6 +1987,9 @@ ODS.Nav = function(navOptions) {
 				} catch (e) {
 					o = null;
 				}
+        if (!lfSslData)
+         lfSslData = o;
+
 				if (o && o.iri) {
           self.sslData = o;
 					if (o.certLogin && !self.userLogged) {
@@ -1997,7 +2002,7 @@ ODS.Nav = function(navOptions) {
 		}
 	    }
         }
-			  OAT.AJAX.GET('/ods/api/user.getFOAFSSLData?sslFOAFCheck=1&sslLoginCheck=1', false, x);
+		  OAT.AJAX.GET('/ods/api/user.getFOAFSSLData?sslFOAFCheck=1', false, x, {async: false});
 			}
       }
 
