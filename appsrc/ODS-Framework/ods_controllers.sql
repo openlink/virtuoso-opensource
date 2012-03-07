@@ -4927,7 +4927,8 @@ create procedure ODS.ODS_API.getFOAFDataArray (
                             select ?iri
           		                from <%s>
                              where {
-                                     ?iri a foaf:Person.
+			     	     [] foaf:primaryTopic ?iri .
+                                     ?iri a foaf:Person .
                                    } ', foafGraph)
                  );
 
