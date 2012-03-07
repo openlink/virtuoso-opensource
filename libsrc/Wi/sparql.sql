@@ -6985,7 +6985,7 @@ create function DB.DBA.SPARUL_COPYMOVEADD_IMPL (in opname varchar, in src_g_iri 
   if (src_repl and tgt_repl)
     {
       repl_text ('__rdf_repl', '__rdf_repl_flush_queue()');
-      repl_text ('__rdf_repl', 'sparql define input:storage "" add iri(??) to iri(??)', src_g_iri, tgt_g_iri);
+      repl_text ('__rdf_repl', 'sparql define input:storage "" add iri( ?? ) to iri( ?? )', src_g_iri, tgt_g_iri);
     }
   old_log_enable := log_enable (log_mode, 1);
   declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
