@@ -294,14 +294,14 @@ fi
   # OAuth server endpoint
   echo "    DB.DBA.VHOST_REMOVE (lpath=>'/oauth');" >> $STICKER
   echo "    DB.DBA.VHOST_DEFINE (lpath=>'/oauth', ppath=>_ppath, vsp_user=>'dba', is_dav=>$ISDAV, is_brws=>0, def_page=>'index.vsp');" >> $STICKER
-  # SPARQL + OAUTH 
-  echo "    DB.DBA.VHOST_REMOVE (lpath=>'/sparql-oauth');" >> $STICKER
-  echo "    DB.DBA.VHOST_DEFINE (lpath=>'/sparql-oauth', ppath=>_ppath, vsp_user=>'dba', is_dav=>$ISDAV, is_brws=>0, def_page=>'sparql.vsp');" >> $STICKER
   # UI for settings etc.
   echo "    DB.DBA.VHOST_REMOVE (lpath=>'/$VAD_NAME');" >> $STICKER
   echo "    DB.DBA.VHOST_DEFINE (lpath=>'/$VAD_NAME', ppath=>_ppath, vsp_user=>'dba', is_dav=>$ISDAV, is_brws=>0, def_page=>'index.vsp');" >> $STICKER
   echo "    DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/oauth.sql', 0, 'report', $ISDAV);" >> $STICKER
   echo "    DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/foaf_ssl.sql', 0, 'report', $ISDAV);" >> $STICKER
+  # SPARQL + OAUTH 
+  echo "    DB.DBA.VHOST_REMOVE (lpath=>'/sparql-oauth');" >> $STICKER
+  echo "    DB.DBA.VHOST_DEFINE (lpath=>'/sparql-oauth', ppath=>_ppath, vsp_user=>'dba', is_dav=>$ISDAV, is_brws=>0, def_page=>'sparql.vsp');" >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
   echo "  <sql purpose='pre-uninstall'>" >> $STICKER

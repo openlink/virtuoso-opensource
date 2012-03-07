@@ -98,7 +98,7 @@ DB.DBA.VHOST_REMOVE (lpath=>'/OAuth');
 DB.DBA.VHOST_DEFINE (lpath=>'/OAuth', ppath=>'/SOAP/Http', soap_user=>'OAuth');
 
 DB.DBA.VHOST_REMOVE (lpath=>'/sparql-oauth');
-DB.DBA.VHOST_DEFINE (lpath=>'/sparql-oauth', ppath=>_ppath, vsp_user=>'dba', is_dav=>1, is_brws=>0, def_page=>'sparql.vsp');
+DB.DBA.VHOST_DEFINE (lpath=>'/sparql-oauth', ppath=>'/DAV/VAD/wa/oauth/', vsp_user=>'dba', is_dav=>1, is_brws=>0, def_page=>'sparql.vsp');
 
 OAUTH..OAUTH_INIT ();
 
