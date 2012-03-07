@@ -478,10 +478,13 @@ create procedure WEBID_AUTH_GEN_2 (
     }
   ;
 
+  if (cert is null and client_attr ('client_certificate') = 0)
+    return 0;
+
   if (_gr is null)
     gr := 'http:' || uuid ();
   else
-    gr := _gr;     
+    gr := _gr;
   info := get_certificate_info (9, cert, ctype);
   fing := get_certificate_info (6, cert, ctype);
   valid_from := X509_STRING_DATE (get_certificate_info (4, cert, ctype)); 
@@ -489,7 +492,6 @@ create procedure WEBID_AUTH_GEN_2 (
   if (check_expiration = 1 and (valid_to < now () or valid_from > now ()))
     return 0;
   agents := FOAF_SSL_WEBID_GET_ALL (cert, ctype);
-
   if (not isarray (info))
     return 0;
   if (use_session)

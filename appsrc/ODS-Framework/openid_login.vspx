@@ -112,14 +112,12 @@
 	  }
     if (get_keyword ('sid', self.vc_event.ve_params) is null and is_https_ctx ())
           {
-	declare gr, stat, msg varchar;
+	declare gr, stat, msg, webid, vtype varchar;
 	declare rc int;
 	declare vec any;
-	gr := null;
-	rc := sioc.DBA.foaf_check_ssl_int (null, gr);
-	if (not rc)
-	gr := FOAF_SSL_WEBFINGER (null, 1);
-	if (gr is not null)
+	gr := 'http:' || uuid ();
+	rc := WEBID_AUTH_GEN_2 (null, 0, null, 1, 0, webid, gr, 0, vtype);
+	if (rc)
 	  {
 	    vec := OPENID.DBA.get_user_details (gr, self._identity);
 	    if (vec is not null)

@@ -5065,50 +5065,11 @@ create procedure foaf_check_friend (in iri varchar, in agent varchar)
 }
 ;
 
-create procedure foaf_check_ssl_int (in iri varchar, out graph varchar)
-{
-  declare stat, msg, meta, data, info, qr, hf, gr any;
-  declare agent varchar;
-  declare rc int;
-  declare groups_iri, arr any;
-
-  graph := null;
-  rc := 0;
-  declare exit handler for sqlstate '*'
+create procedure foaf_check_ssl (in iri varchar)
     {
-      rollback work;
-      return 0;
-  };
+  declare arr, groups_iri, msg, webid varchar;
 
   set_user_id ('dba');
-  info := get_certificate_info (9);
-  agent := ODS.ODS_API.SSL_WEBID_GET (); 
-
-  if (agent is not null and agent like 'ldap://%')
-    {
-      return DB.DBA.FOAF_SSL_LDAP_CHECK (agent);
-    }
-  if (agent is null)
-    {
-      agent := DB.DBA.FOAF_SSL_WEBFINGER ();
-      -- when no webid asked the webfinder already did check for certitificate
-      if (agent is not null and iri is null)
-	{
-	  graph := uuid ();
-	  return 1;
-	}
-    }
-  if (agent is null)
-    agent := ODS..FINGERPOINT_WEBID_GET ();
-
---  dbg_obj_print (info, agent);
-  if (not isarray (info) or agent is null)
-    return 0;
-
-  -- old check
-  -- if (iri is not null and not foaf_check_friend (iri, agent))
-  --  return 0;
-
   if (iri is not null)
   {
   -- ACL check
@@ -5120,54 +5081,10 @@ create procedure foaf_check_ssl_int (in iri varchar, out graph varchar)
   if (SIOC..acl_check (SIOC..acl_clean_iri (iri) || '/webaccess', groups_iri, vector (iri)) = '')
     return 0;
   }
-
-  -- agent := fix_uri (agent);
-  hf := rfc1808_parse_uri (agent);
-  hf[5] := '';
-  gr := DB.DBA.vspx_uri_compose (hf);
-  graph := uuid ();
-  qr := sprintf ('sparql load <%S> into graph <%S>', gr, graph);
-  stat := '00000';
-  exec (qr, stat, msg);
-  commit work;
-  qr := DB.DBA.FOAF_SSL_QR (graph, agent);      
-  stat := '00000';
---  dbg_printf ('%s', qr);
-  exec (qr, stat, msg, vector (), 0, meta, data);
---  dbg_obj_print (data);
-  if (stat = '00000' and length (data))
-    {
-      foreach (any _row in data) do
-	{
-	  if (_row[0] = cast (info[1] as varchar) and DB.DBA.FOAF_MOD (_row[1]) = bin2hex (info[2]))
-    rc := 1;
-	}
-    }
-  return rc;
-}
-;
-
-create procedure foaf_check_ssl (in iri varchar)
-{
-  declare rc int;
-  declare graph, stat, msg varchar;
-
-  set_user_id ('dba');
-  rc := foaf_check_ssl_int (iri, graph);
-  exec (sprintf ('sparql clear graph <%S>', graph), stat, msg);
-  commit work;
-  return rc;
-}
-;
-
-create procedure foaf_check_ssl2 ()
-{
-  declare webid varchar;
-
   webid := SIOC..acl_webid ();
+  commit work;
   if (isnull (webid))
     return 0;
-
   return 1;
 }
 ;
