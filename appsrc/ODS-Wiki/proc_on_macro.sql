@@ -914,7 +914,7 @@ create function WV.WIKI.MACRO_COMMUNITYTABS (inout _data varchar, inout _context
 };
 
 create function WV.WIKI.MACRO_BLOGNAV (inout _data varchar, inout _context any, inout _env any) {
-  return '<div style="width: 100%; clear: both; float: none; margin-top:  5em"><hr /></div><div id="blognav" style="width: 100%; padding: 3px;  background: #2CBCEF; color: white; font-family: helvetica; font-size:  10pt; text-align: left; float:none; clear:both">Copyright (C) 1998-2010 [[http://www.openlinksw.com/][OpenLink Software]]</div>';
+  return '<div style="width: 100%; clear: both; float: none; margin-top:  5em"><hr /></div><div id="blognav" style="width: 100%; padding: 3px;  background: #2CBCEF; color: white; font-family: helvetica; font-size:  10pt; text-align: left; float:none; clear:both">Copyright (C) 1998-2012 [[http://www.openlinksw.com/][OpenLink Software]]</div>';
 };
 
 create function WV.WIKI.MACRO_VSREALM (inout _data varchar, inout _context any, inout _env any) {

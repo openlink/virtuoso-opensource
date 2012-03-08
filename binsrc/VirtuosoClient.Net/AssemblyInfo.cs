@@ -25,7 +25,7 @@ using System.Runtime.CompilerServices;
 #endif
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("OpenLink Software")]
-[assembly: AssemblyCopyright("Copyright (C) OpenLink Software 2007. All rights reserved.")]
+[assembly: AssemblyCopyright("Copyright (C) 1998-2012 OpenLink Software. All rights reserved.")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]		
 

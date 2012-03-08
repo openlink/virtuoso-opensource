@@ -93,7 +93,7 @@ then
 	OpenLink Version Information
 	Version $PRODUCT_VERSION as of $DATE.
 	Compiled for $UNAME_SYSTEM $UNAME_RELEASE
-	Copyright (C) OpenLink Software.
+	Copyright (C) 1998-2012 OpenLink Software.
 
 	Usage: makever [OPTIONS]
 
@@ -118,7 +118,7 @@ cat >$OUTPUT_FILE <<-EOF_VERSION
 	$PRODUCT_NAME\\n\\
 	Version $PRODUCT_VERSION as of $DATE.\\n\\
 	Compiled for $UNAME_SYSTEM $UNAME_RELEASE\\n\\
-	Copyright (C) OpenLink Software.\\n";
+	Copyright (C) 1998-2012 OpenLink Software.\\n";
 EOF_VERSION
 
 exit 0

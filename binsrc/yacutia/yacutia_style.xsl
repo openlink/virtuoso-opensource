@@ -26,7 +26,6 @@
 -->
 <!--
   Virtuoso Conductor XSL style-sheet for page macros
-  (C)Copyright 2005 OpenLink Software
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 version="1.0"

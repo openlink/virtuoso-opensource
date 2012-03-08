@@ -1675,7 +1675,7 @@ if (self.on_type = 'discussion' or self.on_type = 'nntpf')
                 end) ?></SampleSearch>
   <Developer>OpenLink Software</Developer>
   <Contact>OpenLink Software</Contact>
-  <Attribution>Copyright OpenLink Software</Attribution>
+  <Attribution>Copyright (C) 1998-2012 OpenLink Software</Attribution>
   <SyndicationRight>open</SyndicationRight>
   <AdultContent>false</AdultContent>
 &lt;/OpenSearchDescription&gt;<?vsp
