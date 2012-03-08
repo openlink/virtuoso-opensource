@@ -1065,7 +1065,8 @@ wiki_exec_no_error ('drop trigger WS.WS.Wiki_AttachmentDelete')
 -- new triggers
 wiki_exec_no_error ('drop trigger WS.WS.WIKI_SYS_DAV_RES_AI')
 ;
-create trigger "WIKI_SYS_DAV_RES_AI" after insert on WS.WS.SYS_DAV_RES order 1 referencing new as N
+
+create trigger "WIKI_SYS_DAV_RES_AI" after insert on WS.WS.SYS_DAV_RES order 10 referencing new as N
 {
   declare _id any;
   declare _cluster_name varchar;
@@ -1108,9 +1109,9 @@ create trigger "WIKI_SYS_DAV_RES_AI" after insert on WS.WS.SYS_DAV_RES order 1 r
       }
 
       -- Topic Update Permissions
-  SET TRIGGERS OFF;
-  WV.WIKI.UPDATEGRANTS_FOR_RES_OR_COL ( _cluster_name, N.RES_ID, 'R');
-  SET TRIGGERS ON;
+      -- SET TRIGGERS OFF;
+      -- WV.WIKI.UPDATEGRANTS_FOR_RES_OR_COL ( _cluster_name, N.RES_ID, 'R');
+      -- SET TRIGGERS ON;
 
       -- Topic Sparql
       if (N.RES_TYPE = 'application/sparql-query')
@@ -1136,12 +1137,29 @@ create trigger "WIKI_SYS_DAV_RES_AI" after insert on WS.WS.SYS_DAV_RES order 1 r
 }
 ;
 
+wiki_exec_no_error ('drop trigger WS.WS.WIKI_SYS_DAV_RES_BU')
+;
+
+create trigger "WIKI_SYS_DAV_RES_BU" before update on WS.WS.SYS_DAV_RES order 1 referencing old as O, new as N
+{
+  declare exit handler for sqlstate '*'
+  {
+    --dbg_obj_princ (__SQL_STATE, __SQL_MESSAGE);
+    resignal;
+  };
+  if (O.RES_NAME like '%.txt' and O.RES_CONTENT is not null)
+    connection_set ('DAV_RES_CONTENT_MD5', md5 (cast (O.RES_CONTENT as varchar)));
+}
+;
+
+
 wiki_exec_no_error ('drop trigger WS.WS.WIKI_SYS_DAV_RES_AU')
 ;
-create trigger "WIKI_SYS_DAV_RES_AU" after update on WS.WS.SYS_DAV_RES order 1 referencing old as O, new as N
+
+create trigger "WIKI_SYS_DAV_RES_AU" after update on WS.WS.SYS_DAV_RES order 10 referencing old as O, new as N
 {
   declare _id integer;
-  declare _cluster_name, _local_name varchar;
+  declare _o_res_content_md5, _cluster_name, _local_name varchar;
   declare _topic WV.WIKI.TOPICINFO;
   declare exit handler for sqlstate '*'
   {
@@ -1157,7 +1175,8 @@ create trigger "WIKI_SYS_DAV_RES_AU" after update on WS.WS.SYS_DAV_RES order 1 r
     _cluster_name := (select ClusterName from WV.WIKI.CLUSTERS where ColId = N.RES_COL);
     if (not isnull (_cluster_name))
 {
-      if (O.RES_CONTENT <> N.RES_CONTENT)
+      _o_res_content_md5 := connection_get ('DAV_RES_CONTENT_MD5');
+      if (_o_res_content_md5 <> md5 (cast (N.RES_CONTENT as varchar)))
     {
       _topic := WV.WIKI.TOPICINFO();
         _topic.ti_cluster_name := _cluster_name;
@@ -1184,9 +1203,9 @@ create trigger "WIKI_SYS_DAV_RES_AU" after update on WS.WS.SYS_DAV_RES order 1 r
 }
 
       -- Topic Update Permissions
-  SET TRIGGERS OFF;
-  WV.WIKI.UPDATEGRANTS_FOR_RES_OR_COL ( _cluster_name, N.RES_ID, 'R');
-  SET TRIGGERS ON;
+      -- SET TRIGGERS OFF;
+      -- WV.WIKI.UPDATEGRANTS_FOR_RES_OR_COL ( _cluster_name, N.RES_ID, 'R');
+      -- SET TRIGGERS ON;
 
       -- Topic Sparql
       if (N.RES_TYPE = 'application/sparql-query')
@@ -1770,97 +1789,102 @@ create procedure WV.WIKI.CREATEROLES (in _cname varchar)
 }
 ;
 
-create procedure WV.WIKI.UPDATEACL (in _article varchar, in _gid integer, in _bitmask integer, in _auth_name varchar, in _auth_pwd varchar)
+create procedure WV.WIKI.UPDATEACL (
+  in _path varchar,
+  in _type varchar,
+  in _gid integer,
+  in _bitmask integer,
+  in _auth_name varchar,
+  in _auth_pwd varchar)
 {
-  --dbg_obj_princ ('UPDATEACL: ', _article, ' ', _gid, ' ', '_bitmask', ' ');
   declare _acl any;
-  _acl := DB.DBA.DAV_PROP_GET(_article, ':virtacl', _auth_name, _auth_pwd);
+  declare _res integer;
+  declare _new_acl any;
+
+  _acl := DB.DBA.DAV_PROP_GET_INT (DB.DBA.DAV_SEARCH_ID (_path, _type), _type, ':virtacl', 0);
   if (not isinteger (_acl))
     {
-      declare _res integer;
-      declare _new_acl, _old_acl any;
       _acl := cast (_acl as varbinary);
-      _old_acl := _acl;
-      _new_acl := WS.WS.ACL_ADD_ENTRY(_old_acl, _gid, _bitmask, 1);
-      --dbg_obj_print (ws.ws.ACL_PARSE(_acl), ws.ws.acl_parse(_new_acl));
+    _new_acl := _acl;
+    WS.WS.ACL_REMOVE_ENTRY(_new_acl, _gid, _bitmask, 0);
+    if (_type = 'C')
+      WS.WS.ACL_ADD_ENTRY(_new_acl, _gid, _bitmask, 1, 1);
       if (1 or _acl <> _new_acl)
         {
-	  _acl := _new_acl;
-	  --dbg_obj_princ (_article, _gid, _auth_name, _auth_pwd, _acl);
-      	  _res := DB.DBA.DAV_PROP_SET_INT(_article, ':virtacl',  _acl, null, null, 0, 0, 0, http_dav_uid ());
+      _res := DB.DBA.DAV_PROP_SET_INT (_path, ':virtacl', _new_acl, null, null, 0, 0, 0, http_dav_uid ());
       	  if (_res < 0)
-        	signal ('WIKI00', sprintf ('Can not update ACL: %d %d',_res,coalesce ((select top 1 RES_OWNER from WS.WS.SYS_DAV_RES where RES_ID = (select RES_ID from WS.WS.SYS_DAV_RES where RES_FULL_PATH = _article)), 0))); 
+        signal ('WIKI00', sprintf ('Can not update ACL: %d %d', _res, coalesce ((select top 1 RES_OWNER from WS.WS.SYS_DAV_RES where RES_ID = (select RES_ID from WS.WS.SYS_DAV_RES where RES_FULL_PATH = _path)), 0)));
 	}
     }
-  else
-    signal ('WIKI01', ':virtacl property retrieval failed: ' || DAV_PERROR (_acl));
 }
 ;
 
-create procedure WV.WIKI.UPDATEGRANTS (in _cname varchar, in signalerror int:=0)
+create procedure WV.WIKI.UPDATEGRANTS (
+  in _cname varchar,
+  in _signal integer := 0)
 {
   declare _readers, _writers integer;
-  _readers := ( select U_ID from DB.DBA.SYS_USERS where U_NAME = _cname || 'Readers'
-  			and U_IS_ROLE = 1 );
-  _writers := ( select U_ID from DB.DBA.SYS_USERS where U_NAME = _cname || 'Writers'
-  			and U_IS_ROLE = 1 );
+
+  _readers := (select U_ID from DB.DBA.SYS_USERS where U_NAME = _cname || 'Readers' and U_IS_ROLE = 1);
+  _writers := (select U_ID from DB.DBA.SYS_USERS where U_NAME = _cname || 'Writers' and U_IS_ROLE = 1);
   if ( (_readers is null) or (_writers is null) )
     {
-      if (signalerror)
+    if (_signal)
     signal ('WK002', 'No readers or writers group for ' || _cname);
-      else
+
 	 return;
     }
-  for select DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_PATH (ResId, 'R')) as _path
-    from WV.WIKI.TOPIC natural inner join WV.WIKI.CLUSTERS
-    where clustername = _cname
-  do {
+  for (select DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_PATH (ResId, 'R')) as _path
+         from WV.WIKI.TOPIC natural
+                inner join WV.WIKI.CLUSTERS
+        where clustername = _cname) do
+  {
     if (_path is not null) 
       {
     declare _owner, _pwd varchar;
-        _owner := WV.WIKI.CLUSTERPARAM (_cname, 'creator', 'dav');
-    select U_NAME, pwd_magic_calc (U_NAME, U_PASSWORD, 1) into _owner, _pwd
-            from DB.DBA.SYS_USERS 
-	    where U_NAME = _owner;
 
-    WV.WIKI.UPDATEACL (_path, _writers, 6, _owner, _pwd);
-    WV.WIKI.UPDATEACL (_path, _readers, 4, _owner, _pwd);
+        _owner := WV.WIKI.CLUSTERPARAM (_cname, 'creator', 'dav');
+      select U_NAME, pwd_magic_calc (U_NAME, U_PASSWORD, 1) into _owner, _pwd from DB.DBA.SYS_USERS where U_NAME = _owner;
+
+      WV.WIKI.UPDATEACL (_path, 'R', _writers, 6, _owner, _pwd);
+      WV.WIKI.UPDATEACL (_path, 'R', _readers, 4, _owner, _pwd);
   }
   }
 }
 ;
 
-create procedure WV.WIKI.UPDATEGRANTS_FOR_RES_OR_COL (in _cname varchar, in _res_id integer, in _type varchar(1):='R')
+create procedure WV.WIKI.UPDATEGRANTS_FOR_RES_OR_COL (
+  in _cname varchar,
+  in _id integer,
+  in _type varchar(1) := 'R',
+  in _signal integer := 1)
 {
   declare _readers, _writers integer;
   declare _path varchar;
   declare _owner, _pwd varchar;
   
-  _readers := ( select U_ID from DB.DBA.SYS_USERS where U_NAME = _cname || 'Readers'
-  			and U_IS_ROLE = 1 );
-  _writers := ( select U_ID from DB.DBA.SYS_USERS where U_NAME = _cname || 'Writers'
-  			and U_IS_ROLE = 1 );
+  _readers := ( select U_ID from DB.DBA.SYS_USERS where U_NAME = _cname || 'Readers' and U_IS_ROLE = 1 );
+  _writers := ( select U_ID from DB.DBA.SYS_USERS where U_NAME = _cname || 'Writers' and U_IS_ROLE = 1 );
   if ( (_readers is null) or (_writers is null) )
+  {
+    if (_signal)
     signal ('XXXXX', 'No readers or writers group for ' || _cname);
-  _path := DB.DBA.DAV_SEARCH_PATH (_res_id, _type);
-  --dbg_obj_princ (':::' , _path);
-  if (not isinteger (_path))
+    return;
+  }
+
+  _path := DB.DBA.DAV_SEARCH_PATH (_id, _type);
+  if (isinteger (_path))
     {
-      _owner := WV.WIKI.CLUSTERPARAM (_cname, 'creator', 'dav');
-      select U_NAME, pwd_magic_calc (U_NAME, U_PASSWORD, 1) into _owner, _pwd
-        from DB.DBA.SYS_USERS 
-	where U_NAME = _owner;
+    if (_signal)
+      signal ('XXXXX', 'path is unknown');
+    return;
+  }
 
+  _owner := WV.WIKI.CLUSTERPARAM (_cname, 'creator', 'dav');
+  select U_NAME, pwd_magic_calc (U_NAME, U_PASSWORD, 1) into _owner, _pwd from DB.DBA.SYS_USERS where U_NAME = _owner;
 
---      declare _cluster_id integer;
---      _cluster_id := (select ClusterId from WV.WIKI.CLUSTERS where ClusterName = _cname);
---     update WS.WS.SYS_DAV_COL set COL_PERMS = WV.WIKI.GETDEFAULTPERMS (_cluster_id)
---      	where COL_ID = _res_id;
-      WV.WIKI.UPDATEACL (_path, _writers, 6, _owner, _pwd);
-      WV.WIKI.UPDATEACL (_path, _readers, 4, _owner, _pwd);
-    }
-  else
-    signal ('XXXX', 'path is unknown');
+  WV.WIKI.UPDATEACL (_path, _type, _writers, 6, _owner, _pwd);
+  WV.WIKI.UPDATEACL (_path, _type, _readers, 4, _owner, _pwd);
 }
 ;
   
@@ -1868,14 +1892,14 @@ create procedure WV.WIKI.UPDATEGRANTS_FOR_RES_OR_COL (in _cname varchar, in _res
 -- create all parent collections
 create procedure WV.WIKI.ENSURE_DIR_REC (in _paths any, in _last_index integer)
 {
-  --dbg_obj_princ ('WV.WIKI.ENSURE_DIR_REC ', _paths, _last_index);
   if (_last_index <= 2) -- /DAV
     return 1;
+
   declare _col_id integer;
   declare _full_path varchar;
+
   _full_path := WV.WIKI.STRJOIN ('/', subseq (_paths, 0, _last_index)) || '/';
   _col_id := DAV_SEARCH_ID (_full_path, 'C');
-  --dbg_obj_princ ('col_id: ', _col_id, _full_path);
   if (DAV_HIDE_ERROR(_col_id) is null)
     {
       if (WV.WIKI.ENSURE_DIR_REC (_paths, _last_index - 1) < 0)
@@ -1886,8 +1910,6 @@ create procedure WV.WIKI.ENSURE_DIR_REC (in _paths any, in _last_index integer)
 }
 ;
       
-  
-
 create procedure WV.WIKI.DAV_HOME_CREATE(in user_name varchar) returns varchar
 {
   declare user_id varchar;
@@ -1936,9 +1958,7 @@ error:
 
 create procedure WV.WIKI.CREATECLUSTER (in _cname varchar, in _src_col integer, in _owner integer, in _group integer, in signal_err int:=1)
 {
-  --dbg_obj_print ('1');
   declare exit handler for sqlstate '42WV9' {
-  --dbg_obj_print ('1err');
 	if (signal_err = 1)
 	   resignal;
 	return;
@@ -1950,33 +1970,27 @@ create procedure WV.WIKI.CREATECLUSTER (in _cname varchar, in _src_col integer, 
 -- Preparing user name
   _uname := coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID = _owner and U_IS_ROLE = 0), NULL);
   if (_uname is null)
-    WV.WIKI.APPSIGNAL (11001, 'User ID "&UId;" is invalid; can not create cluster "&ClusterName;"',
-      vector ('UId', _owner, 'ClusterName', _cname) );
-  --dbg_obj_print ('2');
+    WV.WIKI.APPSIGNAL (11001, 'User ID "&UId;" is invalid; can not create cluster "&ClusterName;"', vector ('UId', _owner, 'ClusterName', _cname) );
 
   if (exists (select 1 from DB.DBA.SYS_USERS where U_ID = _owner and U_ACCOUNT_DISABLED <> 0))
-    WV.WIKI.APPSIGNAL (11001, 'Account "&UName;" is disabled; can not create cluster "&ClusterName;"',
-      vector ('UName', _uname, 'ClusterName', _cname) );
-  --dbg_obj_print ('4');
+    WV.WIKI.APPSIGNAL (11001, 'Account "&UName;" is disabled; can not create cluster "&ClusterName;"', vector ('UName', _uname, 'ClusterName', _cname) );
 
   if (exists (select 1 from DB.DBA.SYS_USERS where U_ID = _owner and U_DAV_ENABLE = 0))
-    WV.WIKI.APPSIGNAL (11001, 'Account "&UName;" has no right to use DAV; can not create cluster "&ClusterName;"',
-      vector ('UName', _uname, 'ClusterName', _cname) );	
+    WV.WIKI.APPSIGNAL (11001, 'Account "&UName;" has no right to use DAV; can not create cluster "&ClusterName;"', vector ('UName', _uname, 'ClusterName', _cname) );
+
   _wikiuname := coalesce ((select UserName from WV.WIKI.USERS where UserId = _owner), NULL);
   if (_wikiuname is null)
-    WV.WIKI.APPSIGNAL (11001, 'User "&UserName;" is not a registered Wiki user; can not create cluster "&ClusterName;"',
-      vector ('UserName', _uname, 'ClusterName', _cname) );
+    WV.WIKI.APPSIGNAL (11001, 'User "&UserName;" is not a registered Wiki user; can not create cluster "&ClusterName;"', vector ('UserName', _uname, 'ClusterName', _cname) );
+
 -- Preparing group name
   _gname := coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID = _group and U_IS_ROLE = 1), NULL);
   if (_gname is null)
-    WV.WIKI.APPSIGNAL (11001, 'Group ID "&GId;" is invalid; can not create cluster "&ClusterName;"',
-      vector ('GId', _group, 'ClusterName', _cname) );
-  --dbg_obj_print ('5');
+    WV.WIKI.APPSIGNAL (11001, 'Group ID "&GId;" is invalid; can not create cluster "&ClusterName;"', vector ('GId', _group, 'ClusterName', _cname) );
 
   _wikigname := coalesce ((select GroupName from WV.WIKI.GROUPS where GroupId = _group), NULL);
   if (_wikigname is null)
-    WV.WIKI.APPSIGNAL (11001, 'Group "&UserName;" is not a valid Wiki group; can not create cluster "&ClusterName;"',
-      vector ('GName', _gname, 'ClusterName', _cname) );
+    WV.WIKI.APPSIGNAL (11001, 'Group "&UserName;" is not a valid Wiki group; can not create cluster "&ClusterName;"', vector ('GName', _gname, 'ClusterName', _cname) );
+
 -- Preparing parent for internal files
   _home := (select U_HOME from DB.DBA.SYS_USERS where U_ID = _owner and U_IS_ROLE = 0);
   if (_home is not null)
@@ -1992,11 +2006,8 @@ create procedure WV.WIKI.CREATECLUSTER (in _cname varchar, in _src_col integer, 
 -- Check if a cluster is already registered.
   if (exists (select * from WV.WIKI.CLUSTERS where ClusterName = _cname))
     {
-  --dbg_obj_print ('7');
-
       if (signal_err = 1)
-	WV.WIKI.APPSIGNAL (11001, 'Cluster "&ClusterName;" already exists',
-				 vector ('ClusterName', _cname) );
+        WV.WIKI.APPSIGNAL (11001, 'Cluster "&ClusterName;" already exists', vector ('ClusterName', _cname) );
       else
 	return;
     }
@@ -2004,27 +2015,23 @@ create procedure WV.WIKI.CREATECLUSTER (in _cname varchar, in _src_col integer, 
   if (_src_col <> 0)
     {
       if (DB.DBA.DAV_SEARCH_PATH (_src_col, 'C') < 0)
-	WV.WIKI.APPSIGNAL (11001, 'Invalid DAV collection ID "&ColId;"; can not create cluster "&ClusterName;"',
-	  vector ('ColId', _src_col, 'ClusterName', _cname) );
+        WV.WIKI.APPSIGNAL (11001, 'Invalid DAV collection ID "&ColId;"; can not create cluster "&ClusterName;"', vector ('ColId', _src_col, 'ClusterName', _cname) );
       _main := _src_col;
     }
   else
     {
       _main := WV.WIKI.CREATEDAVCOLLECTION (_parent, _cname, _owner, _group);
     }
-  --dbg_obj_print ('8');
 
   if (__proc_exists('DB.DBA.Versioning_DAV_SEARCH_ID'))
     {
       _histcol := WV.WIKI.CREATEDAVCOLLECTION (_main, 'VVC', _owner, _group);
       DB.DBA.DAV_SET_VERSIONING_CONTROL (DAV_SEARCH_PATH (_main, 'C'), NULL, 'A', 'dav', (select pwd_magic_calc (U_NAME, U_PWD, 1) from WS.WS.SYS_DAV_USER where U_ID = http_dav_uid() ));
     }
-next:
-    --dbg_obj_print ('9');
 
-  -- _xmlcol := WV.WIKI.CREATEDAVCOLLECTION (_main, 'xml', _owner, _group);
-  -- _attachcol := WV.WIKI.CREATEDAVCOLLECTION (_main, 'attach', _owner, _group);
+next:
   declare _cluster_id integer;
+
   _cluster_id := WV.WIKI.NEWCLUSTERID();
   insert into WV.WIKI.CLUSTERS (ClusterId, ClusterName, ColId, ColHistoryId, ColXmlId, ColAttachId, AdminId, C_NEWS_ID)
     values (_cluster_id, _cname, _main, _histcol, _xmlcol, _attachcol, _owner, 'oWiki-' || _cname);
@@ -2044,21 +2051,15 @@ next:
 	NULL,
 	NULL);
     WV.WIKI.GETLOCK (_full_path, 'dav');
-    _res := WV.WIKI.UPLOADPAGE (_col_id, _name, blob_to_string (_content) || ' ',
-       _uname, _cluster_id, 'dav');
---    DB.DBA.DAV_CHECKIN_INT (_full_path, null, null, 0);
+    _res := WV.WIKI.UPLOADPAGE (_col_id, _name, blob_to_string (_content) || ' ', _uname, _cluster_id, 'dav');
     WV.WIKI.RELEASELOCK (_full_path, 'dav');
   }
   WV.WIKI.CREATEROLES (_cname);
-  --dbg_obj_print ('11');
 
-  if ( (_cname <> 'Main') and
-       (_cname <> 'Doc'))
+  if ((_cname <> 'Main') and (_cname <> 'Doc'))
     {
       WV.WIKI.UPDATEGRANTS_FOR_RES_OR_COL (_cname, _main, 'C');
       WV.WIKI.IMPORT(_cname, '/DAV/VAD/wiki/Template/', '/DAV/VAD/wiki/Template/', 'dav');
---      WV.WIKI.CREATEINITIALPAGE ('ClusterSummary.txt', _main, _owner, 'Template');
---      WV.WIKI.CREATEINITIALPAGE ('WelcomeVisitors.txt', _main, _owner, 'Template');
     }
   else
     {
@@ -2070,8 +2071,6 @@ next:
     }
 	  
   WV.WIKI.SETCLUSTERPARAM (_cname, 'creator', _uname);
-  --dbg_obj_print ('12');
-
 }
 ;
 
@@ -2109,15 +2108,16 @@ create procedure WV.WIKI.UPLOADPAGE (
   connection_set ('oWiki_cluster_id', null);
   declare wiki_user varchar;
   declare user_id integer;
+
   user_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = _user);
   wiki_user := WV.WIKI.USER_WIKI_NAME_2 (user_id);
-  update WV.WIKI.TOPIC set AuthorName = 'Main.' || wiki_user 
-  	, AuthorId = user_id
+  update WV.WIKI.TOPIC
+     set AuthorName = 'Main.' || wiki_user,
+         AuthorId = user_id
      where ResId = _res_id;
      
   if (_res_id < 0)
     WV.WIKI.APPSIGNAL (11001, 'Cannot upload content at &path;', vector ('path', _path));
-   --dbg_obj_princ ('perms=', _perms, ' res= ', _res_id);
   return _res_id;
 }
 ;
@@ -2138,19 +2138,15 @@ create procedure WV.WIKI.CREATEINITIALPAGE (in _page varchar,
     {
       declare _fullpath varchar;
       _fullpath := DB.DBA.DAV_SEARCH_PATH (_main, 'C') || _page;
---      WV.WIKI.GETLOCK (_fullpath, 'dav');
       WV.WIKI.UPLOADPAGE (_main, _page, _content, _owner, 0, 'dav', _overwrite);
---      DB.DBA.DAV_CHECKIN_INT (_fullpath, null, null, 0);
---      WV.WIKI.RELEASELOCK (_fullpath, 'dav');
     }
-fin:
-	;
+fin:;
 }
 ;
 
+
 create procedure WV.WIKI.DELETETOPIC (in _id integer)
 {
-  --dbg_obj_princ ('DELETETOPIC: ', _id);
   delete from WV.WIKI.TOPIC where TopicId = _id;
   if (__proc_exists ('DB.DBA.WA_NEW_WIKI_RM'))
      WA_NEW_WIKI_RM (_id);

@@ -42,7 +42,7 @@ WV.WIKI.SET_WIKI_MAIN();
 WV.WIKI.SANITY_CHECK();
 WV.WIKI.CREATEINSTANCE('Main', http_dav_uid(), WV.Wiki.WikiAdminGId(), 0);
 WV.WIKI.CREATEINSTANCE('Doc', http_dav_uid(), WV.Wiki.WikiAdminGId(), 0);
-sioc..fill_comments();
+SIOC..fill_comments();
 WV.WIKI.PUT_NEW_FILES('Main');
 WV.WIKI.PUT_NEW_FILES('Doc',1);
 WV.WIKI.PUT_NEW_FILES('Main',1,'WikiUsers');
@@ -57,7 +57,8 @@ create procedure WV.WIKI.temp ()
   declare _content, _type any;
 
   _topic_id := (select TopicId from WV.Wiki.CLUSTERS a, WV.Wiki.TOPIC b where a.ClusterId = b.ClusterId and a.ClusterName = 'Main' and b.LocalName = 'WMacros');
-  if (not isnull (_topic_id)) {
+  if (not isnull (_topic_id))
+  {
   DB.DBA.DAV_RES_CONTENT_INT (DAV_SEARCH_ID ('/DAV/VAD/wiki/Main/Attachments/WikiMacroSources.sql', 'R'), _content, _type, 0, 0);
   WV.WIKI.ATTACH2 (http_dav_uid(), 'WikiMacroSources.sql', _type, _topic_id, _content, '');
 }
@@ -75,8 +76,24 @@ create procedure WV.WIKI.temp ()
   registry_set ('wiki_services_update', '1');
 }
 ;
-
 WV.WIKI.temp ();
 
+create procedure WV.WIKI.temp ()
+{
+  if (registry_get ('wiki_acl_update') = '1')
+    return;
+
+  for (select ClusterId as _ClusterId, ClusterName as _ClusterName, ColId as _ColId from WV.WIKI.CLUSTERS) do
+  {
+    for (select TopicId as _TopicId, ResId as _ResId from WV.WIKI.TOPIC where ClusterId = _ClusterId) do
+    {
+      WV.WIKI.UPDATEGRANTS_FOR_RES_OR_COL (_ClusterName, _ResId, 'R', 0);
+    }
+    WV.WIKI.UPDATEGRANTS_FOR_RES_OR_COL (_ClusterName, _ColId, 'C', 0);
+  }
+  registry_set ('wiki_acl_update', '1');
+}
+;
+WV.WIKI.temp ();
 
 drop procedure WV.WIKI.temp;

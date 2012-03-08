@@ -278,7 +278,7 @@ create method wa_new_inst (in login varchar) for wa_wikiv {
   --  SIOC service
   declare  graph_iri, iri, w_iri varchar;
   graph_iri := SIOC..get_graph ();
-  iri := sprintf ('http://%s/dataspace/%s/wiki/%s/atom-pub/', SIOC..get_cname(), login, inst_name);
+  iri := sprintf ('http://%s/dataspace/doc/%s/wiki/%s/atom-pub/', SIOC..get_cname(), login, inst_name);
   w_iri := SIOC..wiki_iri (inst_name);
   SIOC..ods_sioc_service (graph_iri, iri, w_iri, null, null, null, iri, 'Atom');
 
