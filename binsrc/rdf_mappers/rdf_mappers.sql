@@ -632,7 +632,6 @@ EXEC_STMT ('create table RDF_SPONGER_QUEUE (
 	PRIMARY KEY (RS_URI))
 create index RDF_SPONGER_QUEUE_STAT on RDF_SPONGER_QUEUE (RS_STATE, RS_QTS)', 0);
 
-RM_UPGRADE_TBL ('DB.DBA.RDF_SPONGER_META_QUEUE', 'MQ_SESSION', 'varchar');
 
 create procedure RM_LOG_REQUEST (in url varchar, in kwd varchar, in proc varchar)
 {
@@ -12034,7 +12033,7 @@ create procedure DB.DBA.RDF_RUN_CARTRIDGES (in graph_iri varchar, in new_origin_
   declare inx, enable_meta any;
   enable_meta := 1;
   RM_LOG_CLEAR ();
-  -- remove bellow to disable get:cartridge processing
+  -- remove below to disable get:cartridge processing
   for (inx := 0; inx < length (options); inx := inx + 2)
     {
       if (options[inx] = 'get:cartridge')
@@ -12044,7 +12043,6 @@ create procedure DB.DBA.RDF_RUN_CARTRIDGES (in graph_iri varchar, in new_origin_
 	  if (options[inx+1] = 'meta')
 	    {
 	      enable_meta := 1;
-	      goto run_meta;
 	    }
 	  if (options[inx+1] = 'extractor')
 	    enable_meta := 0;
