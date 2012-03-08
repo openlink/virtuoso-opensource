@@ -539,6 +539,7 @@
          declare inst_url_local varchar;
          inst_url_local :='not specified';
          inst_url_local := wa_expand_url ((select top 1 WAM_HOME_PAGE from WA_MEMBER where WAM_INST=inst_name), self.login_pars);
+--         inst_url_local:=wa_expand_url (sprintf('/dataspace/%V/%s/%U',uname,app_dataspace,inst_name_org), self.login_pars);
 
          declare insttype_from_xsl varchar;
          insttype_from_xsl:='';

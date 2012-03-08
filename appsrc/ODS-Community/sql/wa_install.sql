@@ -743,6 +743,14 @@ create method apply_custom_settings ( in template_path varchar, in logoimg_path 
   where
     CI_COMMUNITY_ID = self.wa_name;
 
+--  update ODS.COMMUNITY.SYS_COMMUNITY_INFO
+--  set
+--    CI_TEMPLATE=template_path ,
+--    CI_CSS=template_path ||'/default.css'
+--  where
+--    CI_COMMUNITY_ID = self.wa_name;
+
+
   return;
 };
 
