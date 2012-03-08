@@ -106,13 +106,14 @@ create procedure fill_ods_calendar_sioc (
   in _wai_name varchar := null)
 {
   declare id, deadl, cnt integer;
-  declare c_iri, creator_iri, iri varchar;
+  declare acl_graph_iri, c_iri, creator_iri, iri varchar;
 
   {
     -- init services
     SIOC..fill_ods_calendar_services ();
 
     for (select WAI_ID,
+                WAI_IS_PUBLIC,
                 WAI_TYPE_NAME,
                 WAI_NAME,
                 WAI_ACL
@@ -120,9 +121,9 @@ create procedure fill_ods_calendar_sioc (
           where ((_wai_name is null) or (WAI_NAME = _wai_name))
             and WAI_TYPE_NAME = 'Calendar') do
     {
-      graph_iri := SIOC..acl_graph (WAI_TYPE_NAME, WAI_NAME);
-      exec (sprintf ('sparql clear graph <%s>', graph_iri));
-      SIOC..wa_instance_acl_insert (WAI_TYPE_NAME, WAI_NAME, WAI_ACL);
+      acl_graph_iri := SIOC..acl_graph (WAI_TYPE_NAME, WAI_NAME);
+      exec (sprintf ('sparql clear graph <%s>', acl_graph_iri));
+      SIOC..wa_instance_acl_insert (WAI_IS_PUBLIC, WAI_TYPE_NAME, WAI_NAME, WAI_ACL);
       for (select E_DOMAIN_ID, E_ID, E_ACL
              from CAL.WA.EVENTS
             where E_DOMAIN_ID = WAI_ID and E_ACL is not null) do
@@ -201,51 +202,7 @@ create procedure fill_ods_calendar_sioc (
                     E_UPDATED,
                     E_TAGS,
                     E_NOTES);
-	    for (select EC_ID,
-                  EC_DOMAIN_ID,
-                  EC_EVENT_ID,
-                  EC_TITLE,
-                  EC_COMMENT,
-                  EC_UPDATED,
-                  EC_U_NAME,
-                  EC_U_MAIL,
-                  EC_U_URL
-		         from CAL.WA.EVENT_COMMENTS
-		        where EC_EVENT_ID = E_ID) do
-		  {
-		    calendar_comment_insert (graph_iri,
-            		                 c_iri,
-                                 EC_ID,
-                                 EC_DOMAIN_ID,
-                                 EC_EVENT_ID,
-                                 EC_TITLE,
-                                 EC_COMMENT,
-                                 EC_UPDATED,
-                                 EC_U_NAME,
-                                 EC_U_MAIL,
-                                 EC_U_URL);
-      }
-      for (select A_ID,
-                  A_DOMAIN_ID,
-                  A_OBJECT_ID,
-                  A_AUTHOR,
-                  A_BODY,
-                  A_CLAIMS,
-                  A_CREATED,
-                  A_UPDATED
-             from CAL.WA.ANNOTATIONS
-            where A_OBJECT_ID = E_ID) do
-      {
-        cal_annotation_insert (graph_iri,
-                               A_ID,
-                               A_DOMAIN_ID,
-                               A_OBJECT_ID,
-                               A_AUTHOR,
-                               A_BODY,
-                               A_CLAIMS,
-                               A_CREATED,
-                               A_UPDATED);
-      }
+
       cnt := cnt + 1;
       if (mod (cnt, 500) = 0)
       {
@@ -318,6 +275,57 @@ create procedure fill_ods_calendar_services ()
   -- item annotation
   svc_functions := vector ('calendar.annotation.get', 'calendar.annotation.claim', 'calendar.annotation.delete');
   ods_object_services (graph_iri, 'calendar/item/annotation', 'ODS calendar annotation services', svc_functions);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure clean_ods_calendar_sioc (
+  in _wai_name varchar := null,
+  in _access_mode integer := null)
+{
+  declare id, deadl, cnt integer;
+  declare acl_graph_iri, c_iri, creator_iri, iri varchar;
+
+  {
+    id := -1;
+    deadl := 3;
+    cnt := 0;
+    declare exit handler for sqlstate '40001'
+    {
+      if (deadl <= 0)
+	      resignal;
+      rollback work;
+      deadl := deadl - 1;
+      goto L0;
+    };
+  L0:
+
+    for (select E_ID,
+                E_DOMAIN_ID,
+                E_TAGS
+           from DB.DBA.WA_INSTANCE,
+                DB.DBA.WA_MEMBER,
+                CAL.WA.EVENTS
+          where WAM_INST = WAI_NAME
+            and ((WAM_IS_PUBLIC = 1 and _wai_name is null) or WAI_NAME = _wai_name)
+            and E_DOMAIN_ID = WAI_ID
+            and E_PRIVACY = 1
+          order by E_ID) do
+    {
+      event_delete (E_ID,
+                    E_DOMAIN_ID,
+                    E_TAGS);
+
+      cnt := cnt + 1;
+      if (mod (cnt, 500) = 0)
+      {
+  	    commit work;
+  	    id := E_ID;
+      }
+    }
+    commit work;
+  }
 }
 ;
 
@@ -455,6 +463,9 @@ create procedure event_insert (
 
     -- task services
     SIOC..ods_object_services_attach (graph_iri, iri, 'calendar/task');
+
+    SIOC..calendar_comments_insert (graph_iri, c_iri, domain_id, event_id);
+    SIOC..cal_annotations_insert (graph_iri, domain_id, event_id);
   }
   }
 ;
@@ -482,6 +493,9 @@ create procedure event_delete (
   -- event services
   SIOC..ods_object_services_dettach (graph_iri, iri, 'calendar/event');
   SIOC..ods_object_services_dettach (graph_iri, iri, 'calendar/task');
+
+  SIOC..calendar_comments_delete (graph_iri, domain_id, event_id);
+  SIOC..cal_annotations_delete (graph_iri, domain_id, event_id);
 }
 ;
 
@@ -652,6 +666,62 @@ create trigger EVENTS_SIOC_ACL_D before delete on CAL.WA.EVENTS order 100 refere
 
 -------------------------------------------------------------------------------
 --
+create procedure calendar_comments_insert (
+  in graph_iri varchar,
+  in forum_iri varchar,
+  inout domain_id integer,
+  inout master_id integer)
+{
+  for (select EC_ID,
+              EC_DOMAIN_ID,
+              EC_EVENT_ID,
+              EC_TITLE,
+              EC_COMMENT,
+              EC_UPDATED,
+              EC_U_NAME,
+              EC_U_MAIL,
+              EC_U_URL
+         from CAL.WA.EVENT_COMMENTS
+        where EC_EVENT_ID = master_id) do
+  {
+    calendar_comment_insert (graph_iri,
+                             forum_iri,
+                             EC_ID,
+                             EC_DOMAIN_ID,
+                             EC_EVENT_ID,
+                             EC_TITLE,
+                             EC_COMMENT,
+                             EC_UPDATED,
+                             EC_U_NAME,
+                             EC_U_MAIL,
+                             EC_U_URL);
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure calendar_comments_delete (
+  in graph_iri varchar,
+  inout domain_id integer,
+  inout master_id integer)
+{
+  for (select EC_ID,
+              EC_DOMAIN_ID,
+              EC_EVENT_ID
+         from CAL.WA.EVENT_COMMENTS
+        where EC_EVENT_ID = master_id) do
+  {
+    calendar_comment_delete (graph_iri,
+                             EC_DOMAIN_ID,
+                             EC_EVENT_ID,
+                             EC_ID);
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure calendar_comment_insert (
 	in graph_iri varchar,
 	in forum_iri varchar,
@@ -722,7 +792,7 @@ create procedure calendar_comment_delete (
   };
   master_iri := SIOC..calendar_event_iri (domain_id, master_id);
   if (isnull (graph_iri))
-    graph_iri := SIOC..get_graph_new (domain_id, null, master_iri);
+    graph_iri := SIOC..get_graph_new (CAL.WA.domain_is_public (domain_id), master_iri);
 
   if (isnull (graph_iri))
     return;
@@ -785,6 +855,61 @@ create trigger EVENT_COMMENTS_SIOC_D before delete on CAL.WA.EVENT_COMMENTS refe
                              O.EC_DOMAIN_ID,
                              O.EC_EVENT_ID,
                              O.EC_ID);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure cal_annotations_insert (
+  in graph_iri varchar,
+  inout domain_id integer,
+  inout master_id integer)
+{
+  for (select A_ID,
+              A_DOMAIN_ID,
+              A_OBJECT_ID,
+              A_AUTHOR,
+              A_BODY,
+              A_CLAIMS,
+              A_CREATED,
+              A_UPDATED
+         from CAL.WA.ANNOTATIONS
+        where A_OBJECT_ID = master_id) do
+  {
+    cal_annotation_insert (graph_iri,
+                           A_ID,
+                           A_DOMAIN_ID,
+                           A_OBJECT_ID,
+                           A_AUTHOR,
+                           A_BODY,
+                           A_CLAIMS,
+                           A_CREATED,
+                           A_UPDATED);
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure cal_annotations_delete (
+  in graph_iri varchar,
+  inout domain_id integer,
+  inout master_id integer)
+{
+  for (select A_ID,
+              A_DOMAIN_ID,
+              A_OBJECT_ID,
+              A_CLAIMS
+         from CAL.WA.ANNOTATIONS
+        where A_OBJECT_ID = master_id) do
+  {
+    cal_annotation_delete (graph_iri,
+                           A_DOMAIN_ID,
+                           A_OBJECT_ID,
+                           A_ID,
+                           A_CLAIMS
+                          );
+  }
 }
 ;
 

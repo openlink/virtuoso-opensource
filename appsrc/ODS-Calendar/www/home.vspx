@@ -3140,7 +3140,7 @@
               ]]>
             </v:on-post>
           </v:button>
-                <v:button action="simple" name="e_create_new" value="Create and New" enabled="--case when ((self.cScope = 'events') and (self.cAction = 'create')) then 1 else 0 end" xhtml_class="form-button" xhtml_onclick="return validateInputs(this);">
+                <v:button action="simple" name="e_create_new" value="Create and New" enabled="--case when (self.cAction = 'create') then 1 else 0 end" xhtml_class="form-button" xhtml_onclick="return validateInputs(this);">
             <v:on-post>
               <![CDATA[
                 self.saveEvent ();
@@ -3739,7 +3739,7 @@
               ]]>
             </v:on-post>
           </v:button>
-                <v:button action="simple" name="t_create_new" value="Create and New" enabled="--case when ((self.cScope = 'tasks') and (self.cAction = 'create')) then 1 else 0 end" xhtml_class="form-button">
+                <v:button action="simple" name="t_create_new" value="Create and New" enabled="--case when (self.cAction = 'create') then 1 else 0 end" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 self.saveTask ();
@@ -4844,14 +4844,12 @@
                           </th>
                           <td>
                       <v:text name="exc_options_name" xhtml_id="exc_options_name" value="--get_keyword ('name', self.ve_options)" xhtml_size="60" />
-                      <vm:if test="self.cAction not in ('syncmlCreate', 'syncmlUpdate')">
-                        <input type="button" id="exc_options_name_button" value="Browse..." onclick="davBrowse ('exc_options_name');" style="display: <?V case when (get_keyword ('type', self.ve_options, 1) <> 1) then 'none' else '' end ?>;" />
+                      <input type="button" id="exc_options_name_button" value="Browse..." onclick="davBrowse ('exc_options_name', <?V case when (self.cAction in ('syncmlCreate', 'syncmlUpdate')) then 'true' else 'false' end ?>);" style="display: <?V case when (get_keyword ('type', self.ve_options, 1) <> 1) then 'none' else '' end ?>" />
                           <![CDATA[
                   		    <script type="text/javascript">
                             OAT.Loader.load(['dav'], function(){OAT.WebDav.init(davOptions);});
                   		    </script>
                           ]]>
-                      </vm:if>
                           </td>
                         </tr>
                         <tr>
@@ -5800,15 +5798,20 @@
                       ]]>
                     </v:on-post>
                   </v:button>
-                    <v:button name="sp_clear" action="simple" value="Clear" xhtml_class="form-button">
+                    <v:button name="sp_clear" action="simple" value="Clear" xhtml_onclick="javascript: return confirm (\'Do you want to reset settings to default?\');" xhtml_class="form-button">
                     <v:on-post>
                       <![CDATA[
+                          declare tmp any;
+
                           delete from CAL.WA.SETTINGS where S_DOMAIN_ID = self.domain_id;
                           CAL.WA.nntp_update (self.domain_id, null, null, 1, 0);
-
                           commit work;
-                          self.settings := vector ();
-                          self.initData ();
+
+                          self.settings := CAL.WA.settings (self.domain_id);
+                          CAL.WA.settings_init (self.settings);
+                          self.settings := CAL.WA.set_keyword ('app', self.settings, DB.DBA.WA_USER_APP_ENABLE (self.account_id));
+                          tmp := CAL.WA.settings_usedTimeZone (self.domain_id, self.owner_id);
+                          CAL.WA.set_keyword ('usedTimeZone', self.settings, tmp);
 
                 self.vc_data_bind(e);
               ]]>

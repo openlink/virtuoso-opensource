@@ -111,7 +111,7 @@ CAL.WA.exec_no_error ('
 --
 create procedure CAL.WA.my_calendars (
   in domain_id any,
-  in privacy varchar)
+  in privacy integer)
 {
   declare calendar_id, calendar_privacy integer;
 
@@ -475,6 +475,7 @@ CAL.WA.exec_no_error ('
     CAL.WA.upstream_event_update (N.E_DOMAIN_ID, N.E_ID, _uid, N.E_TAGS, \'U\');
     CAL.WA.exchange_event_update (N.E_DOMAIN_ID);
     CAL.WA.syncml_entry_update (N.E_DOMAIN_ID, N.E_ID, _uid, N.E_KIND, \'U\');
+    CAL.WA.domain_ping (N.E_DOMAIN_ID);
   }
 ');
 
@@ -485,8 +486,9 @@ CAL.WA.exec_no_error ('
     delete from CAL.WA.ALARMS where A_EVENT_ID = O.E_ID;
 
     CAL.WA.upstream_event_update (O.E_DOMAIN_ID, O.E_ID, O.E_UID, O.E_TAGS, \'D\');
-    CAL.WA.exchange_event_update (N.E_DOMAIN_ID);
+    CAL.WA.exchange_event_update (O.E_DOMAIN_ID);
     CAL.WA.syncml_entry_update (O.E_DOMAIN_ID, O.E_ID, O.E_UID, O.E_KIND, \'D\');
+    CAL.WA.domain_ping (O.E_DOMAIN_ID);
   }
 ');
 

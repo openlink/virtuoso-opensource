@@ -38,8 +38,8 @@
     {
       if (subAction = 'list')
       {
-        declare id integer;
-        declare cTimeZone, cDateFormat, cTimeFormat varchar;
+        declare id, cTimeZone integer;
+        declare cDateFormat, cTimeFormat varchar;
         declare cTimeNow datetime;
         declare settings, sStream, x any;
 

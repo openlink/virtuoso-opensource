@@ -732,6 +732,11 @@ create procedure CAL.WA.domain_update (
   path := home || 'Calendar' || '/';
   DB.DBA.DAV_MAKE_DIR (path, account_id, null, '110100000N');
   update WS.WS.SYS_DAV_COL set COL_DET = 'Calendar' where COL_ID = DAV_SEARCH_ID (path, 'C');
+
+  path := home || 'calendars' || '/';
+  DB.DBA.DAV_MAKE_DIR (path, account_id, null, '110100000N');
+  update WS.WS.SYS_DAV_COL set COL_DET = 'CalDAV' where COL_ID = DAV_SEARCH_ID (path, 'C');
+
   return 1;
 }
 ;
@@ -882,6 +887,15 @@ create procedure CAL.WA.domain_sioc_url (
 
   S := CAL.WA.iri_fix (CAL.WA.forum_iri (domain_id));
   return CAL.WA.url_fix (S, sid, realm);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.domain_calDav_url (
+  in domain_id integer)
+{
+  return sprintf ('%s/DAV/home/%s/calendars/%s', CAL.WA.host_url (), CAL.WA.domain_owner_name (domain_id), DB.DBA.CalDAV_FIXNAME (CAL.WA.domain_name (domain_id)));
 }
 ;
 
@@ -1751,6 +1765,18 @@ create procedure CAL.WA.strDecode (
     N := N + 1;
   }
   return T;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.isVector (
+  inout aVector any)
+{
+  if (isarray (aVector) and not isstring (aVector))
+    return 1;
+
+  return 0;
 }
 ;
 
@@ -3328,9 +3354,10 @@ create procedure CAL.WA.d_encode (
 create procedure CAL.WA.test_clear (
   in S any)
 {
-  declare N integer;
+  S := substring (S, 1, coalesce (strstr (S, '<>'), length (S)));
+  S := substring (S, 1, coalesce (strstr (S, '\nin'), length (S)));
 
-  return substring (S, 1, coalesce(strstr(S, '<>'), length (S)));
+  return S;
 }
 ;
 
@@ -3494,7 +3521,7 @@ create procedure CAL.WA.validate2 (
     if (isnull (regexp_match('^[^\\\/\?\*\"\'\>\<\:\|]*\$', propertyValue)))
       goto _error;
   } else if ((propertyType = 'uri') or (propertyType = 'anyuri')) {
-    if (isnull (regexp_match('^(ht|f)tp(s?)\:\/\/[0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*(:(0-9)*)*(\/?)([a-zA-Z0-9\-\.\?\,\'\/\\\+&amp;%\$#_=:]*)?\$', propertyValue)))
+    if (isnull (regexp_match('^(ht|f)tp(s?)\:\/\/[0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*(:(0-9)*)*(\/?)([a-zA-Z0-9\-\.\?\,\'\/\\\+&amp;%\$#_=:~]*)?\$', propertyValue)))
       goto _error;
   } else if (propertyType = 'email') {
     if (isnull (regexp_match('^([a-zA-Z0-9_\-])+(\.([a-zA-Z0-9_\-])+)*@((\[(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5]))\]))|((([a-zA-Z0-9])+(([\-])+([a-zA-Z0-9])+)*\.)+([a-zA-Z])+(([\-])+([a-zA-Z0-9])+)*))\$', propertyValue)))
@@ -4194,7 +4221,8 @@ create procedure CAL.WA.event_update_acl (
 {
   update CAL.WA.EVENTS
      set E_ACL = acl
-   where E_ID = id;
+   where E_ID = id
+     and E_PRIVACY = 2;
 }
 ;
 
@@ -5550,18 +5578,26 @@ create procedure CAL.WA.vcal_str2date (
     tzID := cast (xquery_eval (xmlPath || '/TZID', xmlItem, 1) as varchar);
     if (not isnull (tzID))
     {
-      tzObject := dict_get (tzDict, tzID, 0);
+      tzObject := dict_get (tzDict, tzID, null);
+      if (isnull (tzObject))
+        goto _exit;
+
       tzOffset := get_keyword ('standartTo', tzObject);
+      if (isnull (tzOffset))
+        goto _exit;
+
       tzStartRRule := get_keyword ('daylightRRule', tzObject);
-      if (not isnull (tzStartRRule))
-      {
+      if (isnull (tzStartRRule))
+        goto _exit;
+
         tzEndRRule := get_keyword ('standartRRule', tzObject);
         if (CAL.WA.event_daylightCheck (dt, tzStartRRule, tzEndRRule))
           tzOffset := get_keyword ('daylightTo', tzObject);
-      }
+
         dt := dateadd ('minute', tzOffset, dt);
       }
     }
+_exit:;
   return dt;
 }
 ;
@@ -5661,7 +5697,8 @@ create procedure CAL.WA.vcal_datetime2str (
 create procedure CAL.WA.vcal_date2utc (
   in dt datetime)
 {
-  return CAL.WA.dt_format (dateadd ('minute', -timezone (now ()), dt), 'YMDTHNSZ');
+  return CAL.WA.dt_format (dt, 'YMDTHNSZ');
+  --return CAL.WA.dt_format (dateadd ('minute', -timezone (now ()), dt), 'YMDTHNSZ');
 }
 ;
 
@@ -6034,16 +6071,24 @@ create procedure CAL.WA.export_vcal_line (
   inout sStream any)
 {
   declare prefix varchar;
+  declare tmp any;
 
   if (is_empty_or_null (value))
     return;
 
   prefix := '';
-  value := sprintf ('%s:%s', property, replace (cast (value as varchar), '\n', '\\n'));
-  while (length (value) > length (prefix))
+  tmp := CAL.WA.utf2wide(sprintf ('%s:%s', property, replace(replace (cast (value as varchar), '\n', '\\n'), '\r', '')));
+  while (length (tmp) > length (prefix))
   {
-    http (subseq (value, 0, 73) || '\r\n', sStream);
-    value := prefix || subseq (value, 73);
+	http_escape(CAL.WA.wide2utf(subseq (tmp, 0, 60)) || '\r\n', 1, sStream, 1, 1);
+    if (length (tmp) > 60)
+    {
+      tmp := prefix || subseq (tmp, 60);
+    }
+    else
+    {
+      tmp := '';
+    }
     prefix := ' ';
   }
 }
@@ -7042,6 +7087,10 @@ create procedure CAL.WA.syncml_check (
     return 0;
   if (VAD.DBA.version_compare (syncmlVersion, '1.05.75') < 0)
     return 0;
+  if (__proc_exists ('DB.DBA.yac_syncml_version_get') is null)
+    return 0;
+  if (__proc_exists ('DB.DBA.yac_syncml_type_get') is null)
+    return 0;
   if (isnull (syncmlPath))
     return 1;
   if (DB.DBA.yac_syncml_version_get (syncmlPath) = 'N')
@@ -7070,6 +7119,8 @@ create procedure CAL.WA.syncml_entry_update (
   {
     _syncmlPath := get_keyword ('name', _options);
     if (not CAL.WA.syncml_check (_syncmlPath))
+      goto _skip;
+    if ((_event_kind = 0) and (get_keyword ('events', _options, 0) = 0))
       goto _skip;
     if ((_event_kind = 1) and (get_keyword ('tasks', _options, 0) = 0))
       goto _skip;
@@ -7102,17 +7153,15 @@ create procedure CAL.WA.syncml_entry_update_internal (
     _content := CAL.WA.entry2syncml (_domain_id, _event_id);
     _permissions := USER_GET_OPTION (_user, 'PERMISSIONS');
     if (isnull (_permissions))
-    {
       _permissions := '110100000RR';
-    }
+
     connection_set ('__sync_dav_upl', '1');
     connection_set ('__sync_ods', '1');
-    DB.DBA.DAV_RES_UPLOAD_STRSES_INT (_path, _content, 'text/x-vcalendar', _permissions, http_dav_uid (), http_dav_uid () + 1, null, null, 0);
+    DB.DBA.DAV_RES_UPLOAD_STRSES_INT (_path, _content, 'text/x-vcalendar', _permissions, _user, _user, null, null, 0);
     connection_set ('__sync_ods', '0');
     connection_set ('__sync_dav_upl', '0');
   }
-
-  if (_action = 'D')
+  else if (_action = 'D')
   {
     declare _id integer;
 
@@ -7120,7 +7169,7 @@ create procedure CAL.WA.syncml_entry_update_internal (
     if (isinteger(_id) and (_id > 0))
     {
       connection_set ('__sync_ods', '1');
-      DB.DBA.DAV_DELETE (_path, 1, _user, _password);
+      DB.DBA.DAV_DELETE_INT (_path, 1, _user, _password, 0);
       connection_set ('__sync_ods', '0');
     }
   }
@@ -8439,62 +8488,5 @@ create procedure CAL.WA.news_comment_get_cn_type (in f_name varchar)
 	  ext := ((select T_TYPE from WS.WS.SYS_DAV_RES_TYPES where T_EXT = temp));
 
   return ext;
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure CAL.WA.obj2json (
-  in o any,
-  in d integer := 2)
-{
-  declare N, M integer;
-  declare R, T any;
-  declare retValue any;
-
-	if (d = 0)
-	  return '[maximum depth achieved]';
-
-  T := vector ('\b', '\\b', '\t', '\\t', '\n', '\\n', '\f', '\\f',	'\r', '\\r', '"', '\\"', '\\', '\\\\');
-	retValue := '';
-	if (isnumeric (o))
-	{
-		retValue := cast (o as varchar);
-	}
-	else if (isstring (o))
-	{
-		for (N := 0; N < length(o); N := N + 1)
-		{
-			R := chr (o[N]);
-		  for (M := 0; M < length(T); M := M + 2)
-		  {
-				if (R = T[M])
-				  R := T[M+1];
-			}
-			retValue := retValue || R;
-		}
-		retValue := '"' || retValue || '"';
-	}
-	else if (isarray (o))
-	{
-		retValue := '[';
-		for (N := 0; N < length(o); N := N + 1)
-		{
-		  retValue := retValue || CAL.WA.obj2json (o[N], d-1);
-		  if (N <> length(o)-1)
-			  retValue := retValue || ',\n';
-		}
-		retValue := retValue || ']';
-	}
-	return retValue;
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure CAL.WA.json2obj (
-  in o any)
-{
-  return json_parse (o);
 }
 ;

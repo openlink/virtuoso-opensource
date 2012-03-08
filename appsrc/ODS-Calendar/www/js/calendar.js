@@ -826,13 +826,17 @@ function dismissReminder(prefix, mode) {
 	reminderDialog.hide ();
 }
 
-function davBrowse(fld) {
+function davBrowse(fld, folders) {
+	/* load stylesheets */
+	OAT.Style.include("grid.css");
+	OAT.Style.include("webdav.css");
+
 	var options = {
 		mode : 'browser',
-		onConfirmClick : function(path, fname) {
-			$(fld).value = '/DAV' + path + fname;
-		}
+    onConfirmClick: function(path, fname) {$(fld).value = '/DAV' + path + fname;}
                 };
+  if (!folders) {folders = false;}
+  OAT.WebDav.options.foldersOnly = folders;
   OAT.WebDav.open(options);
 }
 

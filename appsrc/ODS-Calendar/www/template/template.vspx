@@ -40,6 +40,7 @@
       http (sprintf('\n    <link rel="alternate" type="application/atom+xml" title="%V Atom" href="%s" />', domainName, CAL.WA.gems_url (self.domain_id)||'Calendar.atom'));
       http (sprintf('\n    <link rel="alternate" type="application/atomserv+xml" title="%V" href="%s/intro" />', domainName, CAL.WA.atom_lpath2 (self.domain_id)));
       http (sprintf('\n    <link rel="alternate" type="text/calendar" title="%V" href="%s/gems/calendar.ics" />', domainName, CAL.WA.domain_sioc_url (self.domain_id)));
+      http (sprintf('\n    <link rel="alternate" type="text/icalendar" title="%V CalDAV" href="%s" />', domainName, CAL.WA.domain_calDav_url (self.domain_id)));
       http (CAL.WA.geo_url (self.domain_id, self.account_id));
 
       SIOC..rdf_links_header (self.rdf_iri);
@@ -67,11 +68,6 @@
           connectionHeaders: {Authorization: '<?V CAL.WA.account_basicAuthorization (self.account_id) ?>'}
         };
         
-      	/* load stylesheets */
-      	OAT.Style.include("grid.css");
-      	OAT.Style.include("webdav.css");
-      	OAT.Style.include("winms.css");
-
         var featureList=["ajax", "json", "anchor", "dialog", "color", "calendar"];
         OAT.Loader.load(featureList);
     </script>
