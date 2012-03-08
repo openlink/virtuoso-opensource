@@ -30,13 +30,7 @@ BEGIN   {
 	}
 	{
 	  fun = $0
-	  # was: gsub ( /\\/, "\\\\", fun)
-	  q = "\\\\"
-	  if (PROCINFO["version"] ~ /^4/)
-	    gsub ( q, q q, fun)
-	  else
-	    gsub ( q, q, fun)
-
+          gsub ( "\\\\", "&&", fun)
 	  gsub ( /"/, "\\\"", fun)
 	  gsub ( /\$/, "\\044", fun)
 	  gsub ( /.*/, "\"&\\n\",", fun)

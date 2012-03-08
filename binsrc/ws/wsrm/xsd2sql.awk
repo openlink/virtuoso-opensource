@@ -54,7 +54,7 @@ BEGIN {
       print "  ses := string_output ();"
     }
   str = $0
-  gsub ( /\\/, "\\\\", str)
+  gsub ( "\\\\", "&&", str)
   gsub ( /'/, "\\'", str)
 
   #

@@ -343,13 +343,7 @@ BEGIN   {
 
                 # does escape the symbols
 		fun = $0
-		q = "\\\\"
-		if (PROCINFO["version"] ~ /^4/)
-		    gsub ( q, q q, fun)
-		else
-		    gsub ( q, q, fun)
-
-	        #WAS: gsub ( /\\/, "\\\\", fun)
+		gsub ("\\\\", "&&", fun)
 
 		# remove whitespace except when there is just a semicolon
 		if ((in_xsl_mode == 0) && (in_xsd_mode == 0))
