@@ -128,7 +128,7 @@
     <xsl:apply-templates select="vm:init"/>
     <v:form name="F1" method="POST" type="simple" action="--ODRIVE.WA.utf2wide (ODRIVE.WA.page_url (self.domain_id))" xhtml_enctype="multipart/form-data">
       <ods:ods-bar app_type='oDrive'/>
-      <div id="app_area" style="clear: right;">
+      <div id="app_area" style="clear: right; min-width: 1008px;">
       <div style="background-color: #fff;">
         <div style="float: left;">
             <?vsp
@@ -516,30 +516,17 @@
     <div id="4" class="tabContent" style="display: none;">
       <table class="form-body" cellspacing="0">
     <tr>
-          <th>
-            <v:label for="dav_oMail_DomainId" value="--'oMail domain'" />
-          </th>
-      <td>
-            <v:text name="dav_oMail_DomainId" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:validator test="regexp" regexp="^[0-9]+$" message="Number is expected" runat="client" />
-              <v:before-data-bind>
-                <![CDATA[
-                  control.ufl_value := self.get_fieldProperty ('dav_oMail_DomainId', self.dav_path, 'virt:oMail-DomainId', '1');
-                ]]>
-              </v:before-data-bind>
-            </v:text>
-          </td>
-        </tr>
-        <tr>
-          <th>
-            <v:label for="dav_oMail_FolderName" value="--'oMail folder name'" />
+          <th width="30%">
+            <v:label for="dav_oMail_FolderName" value="--'WebMail folder name'" />
           </th>
           <td>
             <v:text name="dav_oMail_FolderName" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
               <v:validator test="length" min="1" max="255" message="The input can not be empty." runat="client" />
               <v:before-data-bind>
                 <![CDATA[
-                  control.ufl_value := self.get_fieldProperty ('dav_oMail_FolderName', self.dav_path, 'virt:oMail-FolderName', 'Inbox');
+                  control.ufl_value := self.get_fieldProperty ('dav_oMail_FolderName', self.dav_path, 'virt:oMail-FolderName', 'NULL');
+                  if (control.ufl_value = 'NULL')
+                    control.ufl_value := '';
                 ]]>
               </v:before-data-bind>
             </v:text>
@@ -547,7 +534,7 @@
         </tr>
         <tr>
           <th>
-            <v:label for="dav_oMail_NameFormat" value="--'oMail name format'" />
+            <v:label for="dav_oMail_NameFormat" value="--'WebMail name format'" />
           </th>
           <td>
             <v:text name="dav_oMail_NameFormat" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
@@ -741,15 +728,17 @@
     <div id="8" class="tabContent" style="display: none;">
       <table class="form-body" cellspacing="0">
         <tr>
-          <th>
+          <th width="30%">
             <v:label for="dav_rdfSink_rdfGraph" value="--'Graph name'" />
           </th>
           <td>
-            <v:text name="dav_rdfSink_rdfGraph" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+            <v:text name="dav_rdfSink_rdfGraph" xhtml_id="dav_rdfSink_rdfGraph" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
               <v:validator test="length" min="1" max="255" message="The input can not be empty." runat="client" />
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_rdfSink_rdfGraph', self.dav_path, 'virt:rdf_graph', '');
+                  if ((control.ufl_value = '') and (self.command = 10))
+                    control.ufl_value := ODRIVE.WA.host_url () || rtrim (WS.WS.FIXPATH (ODRIVE.WA.odrive_real_path (self.dav_path)), '/') || '/#this';
                 ]]>
               </v:before-data-bind>
             </v:text>
@@ -760,17 +749,91 @@
             <v:label for="dav_rdfSink_rdfSponger" value="--'Sponger (on/off)'" />
           </th>
           <td>
-            <v:text name="dav_rdfSink_rdfSponger" format="%s" xhtml_disabled="disabled" xhtml_class="field-short">
-              <v:before-data-bind>
-                <![CDATA[
-                  control.ufl_value := self.get_fieldProperty ('dav_rdfSink_rdfSponger', self.dav_path, 'virt:rdf_sponger', '');
-                ]]>
-              </v:before-data-bind>
-            </v:text>
+            <?vsp
+              declare S varchar;
+
+              S := self.get_fieldProperty ('dav_rdfSink_rdfSponger', self.dav_path, 'virt:rdf_sponger', 'off');
+              http (sprintf ('<input type="checkbox" name="dav_rdfSink_rdfSponger" id="dav_rdfSink_rdfSponger" %s disabled="disabled" onchange="javascript: destinationChange(this, {checked: {show: [\'dav_cartridge\', \'dav_metaCartridge\']}, unchecked: {hide: [\'dav_cartridge\', \'dav_metaCartridge\']}});" value="on" />', case when S = 'on' then 'checked="checked"' else '' end));
+            ?>
           </td>
         </tr>
+        <tr id="dav_cartridge" style="display: none;">
+          <th valign="top">Sponger Extractor Cartridges</th>
+          <td>
+            <div style="margin-bottom: 6px; max-height: 200px; overflow: auto;">
+              <?vsp
+                declare N integer;
+                declare cartridges, selectedCartridges any;
+
+                selectedCartridges := self.get_fieldProperty ('dav_rdfSink_rdfCartridges', self.dav_path, 'virt:rdf_cartridges', '');
+                selectedCartridges := split_and_decode (selectedCartridges, 0, '\0\0,');
+                cartridges := ODRIVE.WA.cartridges_get ();
+              ?>
+              <table id="ca_tbl" class="ODS_grid" cellspacing="0">
+                <thead>
+                  <tr>
+                    <th><input type="checkbox" name="ca_select" value="Select All" onclick="selectAllCheckboxes (this, 'ca_item', true)" title="Select All" /></th>
+                    <th width="100%">Cartridge</th>
+                  </tr>
+                </thead>
+                <?vsp
+                  for (N := 0; N < length (cartridges); N := N + 1)
+                  {
+                    http ('<tr>');
+                    http (sprintf ('<td class="checkbox"><input type="checkbox" name="ca_item" value="%d" disabled="disabled" %s /></td>', cartridges[N][0], case when ODRIVE.WA.vector_contains (selectedCartridges, cast (cartridges[N][0] as varchar)) then 'checked="checked"' else '' end));
+                    http (sprintf ('<td>%V</td>', cartridges[N][1]));
+                    http ('</tr>');
+                  }
+                  if (length (cartridges) = 0)
+                    http ('<tr><td colspan="2"><b>No available cartridges</b></td></tr>');
+                ?>
+              </table>
+            </div>
+          </td>
+        </tr>
+        <vm:if test="DB.DBA.wa_check_package ('rdf_mappers')">
+          <tr id="dav_metaCartridge" style="display: none;">
+            <th valign="top">Sponger Meta Cartridges</th>
+            <td>
+              <div style="margin-bottom: 6px; max-height: 200px; overflow: auto;">
+                <?vsp
+                  declare N integer;
+                  declare cartridges, selectedCartridges any;
+
+                  selectedCartridges := self.get_fieldProperty ('dav_rdfSink_rdfMetaCartridges', self.dav_path, 'virt:rdf_metaCartridges', '');
+                  selectedCartridges := split_and_decode (selectedCartridges, 0, '\0\0,');
+                  cartridges := ODRIVE.WA.metaCartridges_get ();
+                ?>
+                <table id="mca_tbl" class="ODS_grid" cellspacing="0">
+                  <thead>
+                    <tr>
+                      <th><input type="checkbox" name="mca_select" value="Select All" onclick="selectAllCheckboxes (this, 'mca_item', true)" title="Select All" /></th>
+                      <th width="100%">Meta Cartridge</th>
+                    </tr>
+                  </thead>
+                  <?vsp
+                    for (N := 0; N < length (cartridges); N := N + 1)
+                    {
+                      http ('<tr>');
+                      http (sprintf ('<td class="checkbox"><input type="checkbox" name="mca_item" value="%d" disabled="disabled" %s /></td>', cartridges[N][0], case when ODRIVE.WA.vector_contains (selectedCartridges, cast (cartridges[N][0] as varchar)) then 'checked="checked"' else '' end));
+                      http (sprintf ('<td>%V</td>', cartridges[N][1]));
+                      http ('</tr>');
+                    }
+                    if (length (cartridges) = 0)
+                      http ('<tr><td colspan="2"><b>No available cartridges</b></td></tr>');
+                  ?>
       </table>
         </div>
+            </td>
+          </tr>
+        </vm:if>
+      </table>
+      <![CDATA[
+  	    <script type="text/javascript">
+          OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('dav_rdfSink_rdfSponger'), {checked: {show: ['dav_cartridge', 'dav_metaCartridge']}})});
+  	    </script>
+  	  ]]>
+  	</div>
   </xsl:template>
 
   <!--=========================================================================-->
@@ -783,10 +846,10 @@
           </th>
           <td>
             <?vsp
-              http (sprintf ('Lock is <b>%s</b>, ', ODRIVE.WA.DAV_GET_INFO (ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'), 'lockState')));
-              http (sprintf ('Version Control is <b>%s</b>, ', ODRIVE.WA.DAV_GET_INFO (ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'), 'vc')));
-              http (sprintf ('Auto Versioning is <b>%s</b>, ', ODRIVE.WA.DAV_GET_INFO (ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'), 'avcState')));
-              http (sprintf ('Version State is <b>%s</b>', ODRIVE.WA.DAV_GET_INFO (ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'), 'vcState')));
+              http (sprintf ('Lock is <b>%s</b>, ', ODRIVE.WA.DAV_GET_INFO (self.dav_path, 'lockState')));
+              http (sprintf ('Version Control is <b>%s</b>, ', ODRIVE.WA.DAV_GET_INFO (self.dav_path, 'vc')));
+              http (sprintf ('Auto Versioning is <b>%s</b>, ', ODRIVE.WA.DAV_GET_INFO (self.dav_path, 'avcState')));
+              http (sprintf ('Version State is <b>%s</b>', ODRIVE.WA.DAV_GET_INFO (self.dav_path, 'vcState')));
             ?>
           </td>
         </tr>
@@ -801,11 +864,12 @@
                   <![CDATA[
                     declare retValue any;
 
+                    dbg_obj_print ('self.dav_path', self.dav_path);
                     if (ODRIVE.WA.DAV_GET (self.dav_item, 'versionControl'))
                     {
-                      retValue := ODRIVE.WA.DAV_REMOVE_VERSION_CONTROL (ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'));
+                      retValue := ODRIVE.WA.DAV_REMOVE_VERSION_CONTROL (self.dav_path);
                     } else {
-                      retValue := ODRIVE.WA.DAV_VERSION_CONTROL (ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'));
+                      retValue := ODRIVE.WA.DAV_VERSION_CONTROL (self.dav_path);
                     }
                     if (ODRIVE.WA.DAV_ERROR(retValue))
                     {
@@ -827,12 +891,12 @@
               File commands
             </th>
             <td>
-              <v:button name="tepmpate_lock" action="simple" value="Lock" enabled="-- case when (ODRIVE.WA.DAV_IS_LOCKED(ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'))) then 0 else 1 end" xhtml_class="button">
+              <v:button name="tepmpate_lock" action="simple" value="Lock" enabled="-- case when (ODRIVE.WA.DAV_IS_LOCKED (self.dav_path)) then 0 else 1 end" xhtml_class="button">
                 <v:on-post>
                   <![CDATA[
                     declare retValue any;
 
-                    retValue := ODRIVE.WA.DAV_LOCK (ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'));
+                    retValue := ODRIVE.WA.DAV_LOCK (self.dav_path);
                     if (ODRIVE.WA.DAV_ERROR(retValue))
                     {
                       self.vc_error_message := ODRIVE.WA.DAV_PERROR(retValue);
@@ -843,12 +907,12 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button name="tepmpate_unlock" action="simple" value="Unlock" enabled="-- case when (ODRIVE.WA.DAV_IS_LOCKED(ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'))) then 1 else 0 end" xhtml_class="button">
+              <v:button name="tepmpate_unlock" action="simple" value="Unlock" enabled="-- case when (ODRIVE.WA.DAV_IS_LOCKED (self.dav_path)) then 1 else 0 end" xhtml_class="button">
                 <v:on-post>
                   <![CDATA[
                     declare retValue any;
 
-                    retValue := ODRIVE.WA.DAV_UNLOCK (ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'));
+                    retValue := ODRIVE.WA.DAV_UNLOCK (self.dav_path);
                     if (ODRIVE.WA.DAV_ERROR(retValue))
                     {
                       self.vc_error_message := ODRIVE.WA.DAV_PERROR(retValue);
@@ -871,8 +935,9 @@
                   <![CDATA[
                     declare retValue any;
 
-                    retValue := ODRIVE.WA.DAV_CHECKIN (ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'));
-                    if (ODRIVE.WA.DAV_ERROR(retValue)) {
+                    retValue := ODRIVE.WA.DAV_CHECKIN (self.dav_path);
+                    if (ODRIVE.WA.DAV_ERROR (retValue))
+                    {
                       self.vc_error_message := ODRIVE.WA.DAV_PERROR(retValue);
                       self.vc_is_valid := 0;
                       return;
@@ -886,7 +951,7 @@
                   <![CDATA[
                     declare retValue any;
 
-                    retValue := ODRIVE.WA.DAV_CHECKOUT (ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'));
+                    retValue := ODRIVE.WA.DAV_CHECKOUT (self.dav_path);
                     if (ODRIVE.WA.DAV_ERROR(retValue))
                     {
                       self.vc_error_message := ODRIVE.WA.DAV_PERROR(retValue);
@@ -902,7 +967,7 @@
                   <![CDATA[
                     declare retValue any;
 
-                    retValue := ODRIVE.WA.DAV_UNCHECKOUT (ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'));
+                    retValue := ODRIVE.WA.DAV_UNCHECKOUT (self.dav_path);
                     if (ODRIVE.WA.DAV_ERROR(retValue))
                     {
                       self.vc_error_message := ODRIVE.WA.DAV_PERROR(retValue);
@@ -920,7 +985,7 @@
               Number of Versions in History
             </th>
             <td>
-              <v:label value="--ODRIVE.WA.DAV_GET_VERSION_COUNT(ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'))" format="%d" />
+              <v:label value="--ODRIVE.WA.DAV_GET_VERSION_COUNT (self.dav_path)" format="%d" />
             </td>
           </tr>
           <tr>
@@ -928,12 +993,12 @@
               Root version
             </th>
             <td>
-              <v:button style="url" action="simple" value="--ODRIVE.WA.DAV_GET_VERSION_ROOT(ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'))" format="%s">
+              <v:button style="url" action="simple" value="--ODRIVE.WA.DAV_GET_VERSION_ROOT (self.dav_path)" format="%s">
                 <v:on-post>
                   <![CDATA[
                     declare path varchar;
 
-                    path := ODRIVE.WA.DAV_GET_VERSION_ROOT(ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath'));
+                    path := ODRIVE.WA.DAV_GET_VERSION_ROOT (self.dav_path);
                     if (ODRIVE.WA.odrive_permission(path) = '')
                     {
                       self.vc_error_message := 'You have not rights to read this folder/file!';
@@ -951,7 +1016,7 @@
             </td>
           </tr>
           <tr>
-            <th>Versions</th>
+            <th valign="top">Versions</th>
             <td>
               <v:data-set name="ds_versions" sql="select rs.* from ODRIVE.WA.DAV_GET_VERSION_SET(rs0)(c0 varchar, c1 integer) rs where rs0 = :p0" nrows="0" scrollable="1">
                 <v:param name="p0" value="--ODRIVE.WA.DAV_GET (self.dav_item, 'fullPath')" />
@@ -997,7 +1062,7 @@
                                 }
 
                                 http_request_status ('HTTP/1.1 302 Found');
-                                http_header (sprintf ('Location: view.vsp?sid=%s&realm=%s&file=%U&mode=download\r\n', self.sid , self.realm, path));
+                                http_header (sprintf ('Location: %s&mode=download&file=%U\r\n', ODRIVE.WA.page_url (self.domain_id, 'view.vsp', self.sid , self.realm), path));
                                 self.vc_data_bind (e);
                               ]]>
                             </v:on-post>
@@ -1136,9 +1201,112 @@
   </xsl:template>
 
   <!--=========================================================================-->
+  <xsl:template match="vm:search-dc-template11">
+    <div id="10" class="tabContent" style="display: none;">
+      <table class="form-body" cellspacing="0">
+        <tr>
+          <th width="30%">SyncML version</th>
+          <td>
+            <select name="syncml_version">
+              <?vsp
+                declare aValues, aValue any;
+                declare N integer;
+
+                aValue := case when (self.command_mode = 0) then 'N' else ODRIVE.WA.syncml_version (self.dav_path) end;
+                aValues := ODRIVE.WA.syncml_versions ();
+                for (N := 2; N < length (aValues); N := N + 2)
+                {
+                  http(sprintf('<option value="%s" %s>%s</option>', aValues[N], select_if(aValue, aValues[N]), aValues[N+1]));
+                }
+              ?>
+            </select>
+          </td>
+        </tr>
+        <tr>
+          <th>SyncML type</th>
+          <td>
+            <select name="syncml_type">
+              <?vsp
+                declare aValues, aValue any;
+                declare N integer;
+
+                aValue := case when (self.command_mode = 0) then 'N' else ODRIVE.WA.syncml_type (self.dav_path) end;
+                aValues := ODRIVE.WA.syncml_types ();
+                for (N := 2; N < length (aValues); N := N + 2)
+                {
+                  http(sprintf('<option value="%s" %s>%s</option>', aValues[N], select_if (aValue, aValues[N]), aValues[N+1]));
+                }
+              ?>
+            </select>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </xsl:template>
+
+  <!--=========================================================================-->
+  <xsl:template match="vm:search-dc-template12">
+    <div id="11" class="tabContent" style="display: none;">
+      <table class="form-body" cellspacing="0">
+        <tr>
+          <th width="30%">Connection Type</th>
+          <td>
+            <select name="dav_IMAP_connection">
+              <?vsp
+                declare aValues, aValue any;
+                declare N integer;
+
+                aValue := self.get_fieldProperty ('dav_IMAP_connection', self.dav_path, 'virt:IMAP-connection', '');
+                aValues := vector ('none', 'None', 'ssl', 'SSL/TSL');
+                for (N := 0; N < length (aValues); N := N + 2)
+                  http (sprintf ('<option value="%s" %s>%s</option>', aValues[N], select_if(aValue, aValues[N]), aValues[N+1]));
+              ?>
+            </select>
+          </td>
+        </tr>
+        <tr>
+          <th>Server Address</th>
+          <td>
+            <v:text name="dav_IMAP_server" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_value := self.get_fieldProperty ('dav_IMAP_server', self.dav_path, 'virt:IMAP-server', '');
+                ]]>
+              </v:before-data-bind>
+            </v:text>
+          </td>
+        </tr>
+        <tr>
+          <th>User Name</th>
+          <td>
+            <v:text name="dav_IMAP_user" format="%s" xhtml_disabled="disabled" xhtml_class="field-short">
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_value := self.get_fieldProperty ('dav_IMAP_user', self.dav_path, 'virt:IMAP-user', '');
+                ]]>
+              </v:before-data-bind>
+            </v:text>
+          </td>
+        </tr>
+        <tr>
+          <th>User Password</th>
+          <td>
+            <v:text type="password" name="dav_IMAP_password" format="%s" xhtml_disabled="disabled" xhtml_class="field-short">
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_value := self.get_fieldProperty ('dav_IMAP_password', self.dav_path, 'virt:IMAP-password', '');
+                ]]>
+              </v:before-data-bind>
+            </v:text>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </xsl:template>
+
+  <!--=========================================================================-->
   <!-- Auto Versioning -->
   <xsl:template match="vm:autoVersion">
-    <vm:if test="self.dav_category = ''">
     <tr id="davRow_version">
       <th>
         <v:label for="dav_autoversion" value="--'Auto Versioning Content'" />
@@ -1150,7 +1318,7 @@
           tmp := '';
           if ((self.dav_type = 'R') and (self.command_mode = 10))
             tmp := 'onchange="javascript: window.document.F1.submit();"';
-          http (sprintf ('<select name="dav_autoversion" %s disabled="disabled">', tmp));
+          http (sprintf ('<select name="dav_autoversion" %s disabled="disabled" class="field-short">', tmp));
 
           tmp := ODRIVE.WA.DAV_GET (self.dav_item, 'autoversion');
           if (isnull(tmp) and (self.dav_type = 'R'))
@@ -1165,7 +1333,6 @@
         ?>
       </td>
     </tr>
-    </vm:if>
   </xsl:template>
 
 </xsl:stylesheet>

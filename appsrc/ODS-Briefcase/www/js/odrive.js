@@ -29,6 +29,46 @@ function setFooter() {
   }
 }
 
+function destinationChange(obj, changes) {
+  function destinationChangeInternal(actions) {
+    if (actions.hide) {
+      var a = actions.hide;
+      for ( var i = 0; i < a.length; i++) {
+        var o = $(a[i])
+        if (o) {
+          OAT.Dom.hide(o);
+        }
+      }
+    }
+    if (actions.show) {
+      var a = actions.show;
+      for ( var i = 0; i < a.length; i++) {
+        var o = $(a[i])
+        if (o) {
+          OAT.Dom.show(o);
+        }
+      }
+    }
+    if (actions.clear) {
+      var a = actions.clear;
+      for ( var i = 0; i < a.length; i++) {
+        var o = $(a[i])
+        if (o && o.value) {
+          o.value = '';
+        }
+      }
+    }
+  }
+  if (!changes)
+    return;
+
+  if (obj.checked && changes.checked)
+    destinationChangeInternal(changes.checked);
+
+  if (!obj.checked && changes.unchecked)
+    destinationChangeInternal(changes.unchecked);
+}
+
 function urlParam(fldName) {
   var O = document.forms[0].elements[fldName];
   if (O && O.value != '')
@@ -184,7 +224,7 @@ function selectAllCheckboxes (obj, prefix, toolbarsFlag) {
   for (var i = 0; i < objForm.elements.length; i++)
   {
     var o = objForm.elements[i];
-    if (o != null && o.type == "checkbox" && !o.disabled && o.name.indexOf (prefix) != -1)
+    if (o != null && o.type == "checkbox" && !o.disabled && o.name.indexOf (prefix) == 0)
     {
       o.checked = (obj.value == 'Select All');
       coloriseRow(getParent(o, 'tr'), o.checked);
@@ -231,7 +271,7 @@ function enableToolbars (objForm, prefix, doc)
   enableElement('tb_delete', 'tb_delete_gray', oCount>0, doc);
 
   enableElement('tb_tag', 'tb_tag_gray', tCount>0, doc);
-  enableElement('tb_properties', 'tb_properties_gray', oCount>0, doc);
+  enableElement('tb_properties', 'tb_properties_gray', oCount>1, doc);
 }
 
 function getParent (o, tag)
@@ -397,19 +437,23 @@ function chkbx(bx1, bx2)
 
 function updateLabel(value)
 {
-  hideLabel(4, 10);
+  hideLabel(4, 11);
   if (value == 'oMail')
     showLabel(4, 4);
-  if (value == 'PropFilter')
+  else if (value == 'PropFilter')
     showLabel(5, 5);
-  if (value == 'S3')
+  else if (value == 'S3')
     showLabel(6, 6);
-  if (value == 'ResFilter')
+  else if (value == 'ResFilter')
     showLabel(7, 7);
-  if (value == 'CatFilter')
+  else if (value == 'CatFilter')
     showLabel(7, 7);
-  if (value == 'rdfSink')
+  else if (value == 'rdfSink')
     showLabel(8, 8);
+  else if (value == 'SyncML')
+    showLabel(10, 10);
+  else if (value == 'IMAP')
+    showLabel(11, 11);
 }
 
 function showLabel(from, to)
@@ -540,9 +584,10 @@ function mailShow(myForm, myPrefix, myPage, width, height)
 }
 
 function coloriseRow(obj, checked) {
-  obj.className = (obj.className).replace('tr_select', '');
   if (checked)
-    obj.className = obj.className + ' ' + 'tr_select';
+    OAT.Dom.addClass(obj, 'selected');
+  else
+    OAT.Dom.removeClass(obj, 'selected');
 }
 
 function coloriseTable(id)
@@ -763,8 +808,9 @@ function hideCell(cell)
 
 function toggleDavRows()
 {
-  if (document.forms['F1'].elements['dav_destination'])
-  {
+  if (!document.forms['F1'].elements['dav_destination'])
+    return;
+
     if (document.forms['F1'].elements['dav_destination'][0].checked == '1')
     {
       showTableRow('davRow_mime');
@@ -777,14 +823,13 @@ function toggleDavRows()
       showTableRow('davRow_tagsPublic');
       showTableRow('davRow_tagsPrivate');
 
-      showTableRow('rdf_store');
-
+    showCell('dav_source_2');
       showCell('label_dav');
       hideCell('label_dav_rdf');
       showCell('dav_name');
       hideCell('dav_name_rdf');
     }
-    if (document.forms['F1'].elements['dav_destination'][1].checked == '1')
+  else if (document.forms['F1'].elements['dav_destination'][1].checked == '1')
     {
       hideCell('davRow_tagsPrivate');
       hideCell('davRow_tagsPublic');
@@ -795,9 +840,11 @@ function toggleDavRows()
       hideCell('davRow_owner');
       hideCell('davRow_version');
       hideCell('davRow_mime');
+    if ($('dav_content_plain'))
+      showCell('davRow_mime');
 
-      hideCell('rdf_store');
-      if (document.forms['F1'].elements['dav_source'][2].checked == '1')
+    hideCell('dav_source_2');
+    if (document.forms['F1'].elements['dav_source'] && (document.forms['F1'].elements['dav_source'][2].checked == '1'))
         document.forms['F1'].elements['dav_source'][0].checked = '1';
 
       hideCell('label_dav');
@@ -805,6 +852,34 @@ function toggleDavRows()
       hideCell('dav_name');
       showCell('dav_name_rdf');
     }
+  toggleDavSource();
+}
+
+function toggleDavSource()
+{
+  if (!document.forms['F1'].elements['dav_source'])
+    return;
+
+  if (document.forms['F1'].elements['dav_source'][0].checked == '1')
+  {
+    $('dav_file_label').innerHTML = 'File';
+    showCell('dav_file');
+    hideCell('dav_url');
+    hideCell('dav_rdf');
+  }
+  else if (document.forms['F1'].elements['dav_source'][1].checked == '1')
+  {
+    $('dav_file_label').innerHTML = 'URL';
+    hideCell('dav_file');
+    showCell('dav_url');
+    hideCell('dav_rdf');
+  }
+  else if (document.forms['F1'].elements['dav_source'][2].checked == '1')
+  {
+    $('dav_file_label').innerHTML = 'Quad Store Named Graph IRI';
+    hideCell('dav_file');
+    hideCell('dav_url');
+    showCell('dav_rdf');
   }
 }
 
@@ -812,7 +887,7 @@ var ODRIVE = new Object();
 
 ODRIVE.forms = new Object();
 ODRIVE.forms['properties'] = {params: {items: true}, width: '900', height: '700', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
-ODRIVE.forms['edit'] = {params: {items: true}, height: '430'};
+ODRIVE.forms['edit'] = {params: {items: true}, height: '430', postActions:['ODRIVE.formSubmit()']};
 ODRIVE.forms['view'] = {params: {items: true}, height: '430'};
 ODRIVE.forms['copy'] = {params: {items: true}, height: '380', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
 ODRIVE.forms['move'] = {params: {items: true}, height: '380', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
@@ -975,6 +1050,10 @@ ODRIVE.resetToolbars = function ()
 
 ODRIVE.formShow = function (action, id, params)
 {
+  var cmd = $('_cmd');
+  if (cmd)
+   cmd.value = '';
+
   var formParams = action.split('/')[0].toLowerCase();
   var form = ODRIVE.forms[formParams];
   if (form)
@@ -1396,20 +1475,29 @@ ODRIVE.searchGetCompares = function (predicate)
 
 ODRIVE.davFolderSelect = function (fld)
 {
+	/* load stylesheets */
+	OAT.Style.include("grid.css");
+	OAT.Style.include("webdav.css");
+
   var options = {
     mode: 'browser',
-    foldersOnly: true,
                   onConfirmClick: function(path) {$(fld).value = '/DAV' + path;}
                 };
+  OAT.WebDav.options.foldersOnly = true;
   OAT.WebDav.open(options);
 }
 
 ODRIVE.davFileSelect = function (fld)
 {
+	/* load stylesheets */
+	OAT.Style.include("grid.css");
+	OAT.Style.include("webdav.css");
+
   var options = {
     mode: 'browser',
     onConfirmClick: function(path, fname) {$(fld).value = '/DAV' + path + fname;}
                 };
+  OAT.WebDav.options.foldersOnly = false;
   OAT.WebDav.open(options);
 }
 
@@ -1430,12 +1518,10 @@ ODRIVE.coloriseTables = function ()
 ODRIVE.aboutDialog = function ()
 {
   var aboutDiv = $('aboutDiv');
-  if (aboutDiv) {OAT.Dom.unlink(aboutDiv);}
-  aboutDiv = OAT.Dom.create('div', {
-    width:'430px',
-    height: '170px',
-    overflow: 'hidden'
-  });
+  if (aboutDiv)
+    OAT.Dom.unlink(aboutDiv);
+
+  aboutDiv = OAT.Dom.create('div', {height: '160px', overflow: 'hidden'});
   aboutDiv.id = 'aboutDiv';
   aboutDialog = new OAT.Dialog('About ODS Briefcase', aboutDiv, {width:445, buttons: 0, resize:0, modal:1});
 	aboutDialog.cancel = aboutDialog.hide;
@@ -1483,4 +1569,15 @@ ODRIVE.toggleEditor = function ()
     oEditor.updateElement();
     $('dav_content_plain').value = $v('dav_content_html');
   }
+}
+
+ODRIVE.updateRdfGraph = function ()
+{
+  if (
+      ($v('dav_rdfSink_rdfGraph') == '') ||
+      ($v('dav_rdfSink_rdfGraph') == ($v('rdfGraph_prefix')+$v('dav_name_save')+'#this'))
+     )
+    $('dav_rdfSink_rdfGraph').value = $v('rdfGraph_prefix') + $v('dav_name') + '#this';
+
+  $('dav_name_save').value = $v('dav_name');
 }

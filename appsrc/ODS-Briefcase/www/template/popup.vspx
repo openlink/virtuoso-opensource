@@ -46,15 +46,6 @@
       <script type="text/javascript" src="js/odrive.js"></script>
       <script type="text/javascript" src="js/tbl.js"></script>
       <script type="text/javascript">
-        function myInit()
-        {
-          OAT.Preferences.imagePath = '/ods/images/oat/';
-          OAT.Preferences.stylePath = '/ods/oat/styles/';
-          OAT.Preferences.showAjax = false;
-
-          ODRIVE.coloriseTables();
-        }
-        OAT.MSG.attach(OAT, 'PAGE_LOADED', myInit);
         window.onload = function(){OAT.MSG.send(OAT, 'PAGE_LOADED');};
       	window.onkeyup = function (event) {
       		if (event.keyCode == 27) {

@@ -96,9 +96,9 @@
               <v:text name="tabNo" xhtml_id="tabNo" type="hidden" value="--self.v_tabNo"/>
         <div id="c1">
           <div class="tabs">
-          <vm:tabCaption tab="1" tabs="3" caption="Main"/>&nbsp;
-          <vm:tabCaption tab="2" tabs="3" caption="Grid"/>&nbsp;
-          <vm:tabCaption tab="3" tabs="3" caption="Mail Settings"/>&nbsp;
+                  <vm:tabCaption tab="1" tabs="3" caption="Main"/>&amp;nbsp;
+                  <vm:tabCaption tab="2" tabs="3" caption="Grid"/>&amp;nbsp;
+                  <vm:tabCaption tab="3" tabs="3" caption="Mail Settings"/>&amp;nbsp;
           </div>
           <div class="contents">
             <div id="1" class="tabContent" style="display: none;">
@@ -114,7 +114,7 @@
                     S := case when (ODRIVE.WA.settings_chars (self.settings) = 0) then 'checked="checked"' else '' end;
                     http(sprintf('<input type="radio" name="r_chars" id="r_chars_0" value="0" %s />', S));
                   ?>
-                  <xsl:call-template name="nbsp"/><vm:label for="r_chars_0" value="--'show everything'" />
+                          &amp;nbsp;<vm:label for="r_chars_0" value="--'show everything'" />
                   </td>
                 </tr>
                 <tr>
@@ -126,9 +126,9 @@
                     S := case when (ODRIVE.WA.settings_chars (self.settings) <> 0) then 'checked="checked"' else '' end;
                     http(sprintf('<input type="radio" name="r_chars" id="r_chars_1" value="1" %s />', S));
                   ?>
-                  <xsl:call-template name="nbsp"/><vm:label for="r_chars_1" value="--'show no more than'" /><xsl:call-template name="nbsp"/>
+                          &amp;nbsp;<vm:label for="r_chars_1" value="--'show no more than'" />&amp;nbsp;
                   <v:text name="f_chars" null-value="--''" value="--ODRIVE.WA.settings_chars (self.settings)" xhtml_size="3"/>
-                  <xsl:call-template name="nbsp"/><vm:label for="r_chars_1" value="--'characters'" /><xsl:call-template name="nbsp"/>
+                          &amp;nbsp;<vm:label for="r_chars_1" value="--'characters'" />&amp;nbsp;
                   </td>
                 </tr>
                 <tr>
@@ -300,11 +300,12 @@
         	    ]]>
         	  </v:on-post>
           </v:button>
-                <v:button action="simple" value="Clear" xhtml_class="form-button">
+                <v:button action="simple" value="Clear" xhtml_onclick="javascript: return confirm (\'Do you want to reset settings to default?\');" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                       delete from ODRIVE.WA.SETTINGS where USER_ID = self.account_id;
-                      self.settings := vector_concat (vector ('app', DB.DBA.WA_USER_APP_ENABLE (self.account_id)), ODRIVE.WA.settings (self.account_id));
+                      self.settings := vector_concat (vector ('app', DB.DBA.WA_USER_APP_ENABLE (self.account_id)), BMK.WA.settings (self.domain_id));
+
                       self.vc_data_bind(e);
         	    ]]>
         	  </v:on-post>

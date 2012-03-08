@@ -57,7 +57,8 @@
       for (i := 0; i < length (self.items); i := i + 2)
       {
         item := ODRIVE.WA.DAV_INIT (self.items[i]);
-
+        if (not ODRIVE.WA.DAV_ERROR (item))
+        {
         http ('    <tr>');
         http (sprintf ('<td nowrap="nowrap"><img src="%s" alt="%s">&nbsp;&nbsp;%s</td>', ODRIVE.WA.ui_image (ODRIVE.WA.DAV_GET (item, 'fullPath'), ODRIVE.WA.DAV_GET (item, 'type'), ODRIVE.WA.DAV_GET (item, 'mimeType')), ODRIVE.WA.ui_alt (ODRIVE.WA.DAV_GET (item, 'name'), ODRIVE.WA.DAV_GET (item, 'type')), self.items[i]));
         http (sprintf ('<td class="number" nowrap="nowrap">%s</td>', ODRIVE.WA.ui_size (ODRIVE.WA.DAV_GET (item, 'length'), ODRIVE.WA.DAV_GET (item, 'type'))));
@@ -70,6 +71,7 @@
         http (sprintf ('<td style="color: red;">%s</td>', self.items[i+1]));
         }
         http ('    </tr>');
+      }
       }
       http ('  </table>');
       http ('</div>');
@@ -267,7 +269,7 @@
 
             -- aci - WebAccess
             item := ODRIVE.WA.DAV_INIT(self.items[I]);
-            if ((ODRIVE.WA.DAV_GET (item, 'type') = 'R') and length (aci_value))
+            if (not ODRIVE.WA.DAV_ERROR (item) and (ODRIVE.WA.DAV_GET (item, 'type') = 'R') and length (aci_value))
             {
               ODRIVE.WA.DAV_PROP_SET (self.items[I], 'virt:aci_meta_n3', aci_value);
             }
@@ -278,10 +280,12 @@
       else if (self.v_form in ('edit', 'view'))
       {
         item := ODRIVE.WA.DAV_INIT (self.v_path);
+        if (not ODRIVE.WA.DAV_ERROR (item))
+        {
         returnData := ODRIVE.WA.DAV_RES_UPLOAD (self.v_path, get_keyword ('f_content', params, ''), ODRIVE.WA.DAV_GET (item, 'mimeType'), ODRIVE.WA.DAV_GET (item, 'permissions'), ODRIVE.WA.DAV_GET (item, 'ownerID'), ODRIVE.WA.DAV_GET (item, 'groupID'));
         if (ODRIVE.WA.DAV_ERROR (returnData))
           signal('TEST', ODRIVE.WA.DAV_PERROR (returnData) || '<>');
-
+        }
         self.v_step := 'end';
       }
       else if (self.v_form = 'rename')
@@ -627,8 +631,13 @@
           <div class="new-form-header">
             <?V initcap (self.v_form) ?> resource <?V self.v_path ?>
           </div>
-          <div style="padding-right: 12px;">
-            <textarea id="f_content" name="f_content" style="width: 100%; height: 360px" disabled="<?V case when self.v_form = 'view' then 'disabled' else 'false' end ?>"><?vsp http (ODRIVE.WA.DAV_RES_CONTENT (self.v_path)); ?></textarea>
+          <div style="padding-right: 6px;">
+            <?vsp
+              declare disabled varchar;
+
+              disabled := case when self.v_form = 'view' then 'disabled="disabled"' else '' end;
+              http (sprintf ('<textarea id="f_content" name="f_content" style="width: 100%%; height: 360px" %s>%V</textarea>', disabled, cast (ODRIVE.WA.DAV_RES_CONTENT (self.v_path) as varchar)));
+            ?>
             <vm:if test="self.mimeType like 'text/html'">
               <![CDATA[
                 <script type="text/javascript" src="/ods/ckeditor/ckeditor.js"></script>

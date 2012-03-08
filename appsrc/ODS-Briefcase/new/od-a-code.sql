@@ -377,7 +377,7 @@ create procedure ODRIVE.WA.dashboard_rs(
   in p0 integer)
 {
   declare account_id, vspxUser any;
-  declare wai_name, link varchar;
+  declare waiName, link varchar;
 
   declare c0 integer;
   declare c1 varchar;
@@ -401,8 +401,8 @@ create procedure ODRIVE.WA.dashboard_rs(
             and substring (RES_PERMS, 7, 1) = '1'
           order by RES_MOD_TIME desc) do
     {
-      wai_name := (select top 1 WAI_NAME from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER where WAI_TYPE_NAME = 'oDrive' and WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = RES_OWNER);
-      link := case when isnull (wai_name) then RES_FULL_PATH else SIOC..post_iri_ex (SIOC..briefcase_iri (wai_name), RES_ID) end;
+      waiName := (select top 1 WAI_NAME from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER where WAI_TYPE_NAME = 'oDrive' and WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = RES_OWNER);
+      link := case when isnull (waiName) then RES_FULL_PATH else SIOC..post_iri_ex (SIOC..briefcase_iri (waiName), RES_ID) end;
       result (RES_ID, RES_NAME, link, RES_MOD_TIME, RES_OWNER);
     }
   }
@@ -440,8 +440,8 @@ create procedure ODRIVE.WA.dashboard_rs(
                 ) sub
           order by RES_MOD_TIME desc) do
     {
-      wai_name := (select top 1 WAI_NAME from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER where WAI_TYPE_NAME = 'oDrive' and WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = RES_OWNER);
-      link := case when isnull (wai_name) then RES_FULL_PATH else SIOC..post_iri_ex (SIOC..briefcase_iri (wai_name), RES_ID) end;
+      waiName := (select top 1 WAI_NAME from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER where WAI_TYPE_NAME = 'oDrive' and WAI_NAME = WAM_INST and WAM_MEMBER_TYPE = 1 and WAM_USER = RES_OWNER);
+      link := case when isnull (waiName) then RES_FULL_PATH else SIOC..post_iri_ex (SIOC..briefcase_iri (waiName), RES_ID) end;
       result (RES_ID, RES_NAME, link, RES_MOD_TIME, RES_OWNER);
     }
   }
@@ -798,13 +798,25 @@ create procedure ODRIVE.WA.xml2string(
 ;
 
 -------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.isVector (
+  inout aVector any)
+{
+  if (isarray (aVector) and not isstring (aVector))
+    return 1;
+
+  return 0;
+}
+;
+
+-------------------------------------------------------------------------------
 --  Returns:
 --    N -  if pAny is in pArray
 --   -1 -  otherwise
 -------------------------------------------------------------------------------
 create procedure ODRIVE.WA.vector_contains (
   inout aVector any,
-  in value varchar)
+  in value any)
 {
   declare N integer;
 
@@ -819,7 +831,7 @@ create procedure ODRIVE.WA.vector_contains (
 --
 create procedure ODRIVE.WA.vector_index (
   inout aVector any,
-  in value varchar)
+  in value any)
 {
   declare N integer;
 
@@ -1310,15 +1322,15 @@ create procedure ODRIVE.WA.odrive_proc(
       {
         if (((item[1] = 'C') or (item[10] like dirFilter)) and (ODRIVE.WA.hiddens_check (dirHiddens, item[10]) = 0))
         {
-          if (user_id <> item[7])
+          if (user_id <> coalesce (item[7], -1))
           {
-            user_id := item[7];
-            user_name := ODRIVE.WA.odrive_user_name(user_id);
+            user_id := coalesce (item[7], -1);
+            user_name := ODRIVE.WA.odrive_user_name (user_id, '');
           }
-          if (group_id <> item[6])
+          if (group_id <> coalesce (item[6], -1))
           {
-            group_id := item[6];
-            group_name := ODRIVE.WA.odrive_user_name(group_id);
+            group_id := coalesce (item[6], -1);
+            group_name := ODRIVE.WA.odrive_user_name (group_id, '');
           }
           tmp := coalesce((select RS_CATNAME from WS.WS.SYS_RDF_SCHEMAS, WS.WS.SYS_MIME_RDFS where RS_URI = MR_RDF_URI and MR_MIME_IDENT = item[9]), '~unknown~');
           result(item[either(gte(dir_mode,2),0,10)], item[1], item[2], left(cast(item[3] as varchar), 19), item[9], user_name, group_name, adm_dav_format_perms(item[5]), item[0], tmp);
@@ -1338,6 +1350,7 @@ create procedure ODRIVE.WA.odrive_effective_permissions (
   declare N, I, nPermission integer;
   declare rc, id, type, item any;
   declare lines, name, pwd, uid, gid, permissions any;
+  declare auth_name varchar;
 
   if (isstring(permission))
     permission := vector(permission);
@@ -1355,9 +1368,6 @@ create procedure ODRIVE.WA.odrive_effective_permissions (
   item := ODRIVE.WA.DAV_INIT(path);
   if (isinteger(item))
     return 0;
-
-  declare uid, gid integer;
-  declare auth_name varchar;
 
   auth_name := ODRIVE.WA.account();
   uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = auth_name);
@@ -1622,7 +1632,7 @@ create procedure ODRIVE.WA.account_iri (
 -------------------------------------------------------------------------------
 --
 create procedure ODRIVE.WA.account_inverse_iri (
-  in account_iri integer)
+  in account_iri varchar)
 {
   declare params any;
 
@@ -1775,6 +1785,7 @@ create procedure ODRIVE.WA.host_url ()
 
       hp := sys_connected_server_address ();
       hpa := split_and_decode ( hp , 0 , '\0\0:');
+      if (hpa [1] <> '80')
       host := host || ':' || hpa [1];
     }
     goto _exit;
@@ -2505,8 +2516,6 @@ create procedure ODRIVE.WA.odrive_sharing_dir_list (
         exec (S, st, msg, vector (), vector ('use_cache', 1), meta, data);
         if (st = '00000' and length (data))
         {
-          declare V any;
-
           for (N := 0; N < length (data); N := N + 1)
           {
             name := '';
@@ -2752,13 +2761,28 @@ create procedure ODRIVE.WA.auto_version_short (
 
 -------------------------------------------------------------------------------
 --
+create procedure ODRIVE.WA.det_type (
+  in path varchar,
+  in type varchar := 'C')
+{
+  declare id any;
+
+  id := DB.DBA.DAV_SEARCH_ID (path, type);
+  if (ODRIVE.WA.DAV_ERROR (id))
+    return '';
+  return cast (coalesce (DB.DBA.DAV_PROP_GET_INT (id, type, ':virtdet', 0), '') as varchar);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODRIVE.WA.det_class(
   in path varchar,
   in type varchar := 'C')
 {
   declare id any;
 
-  id := ODRIVE.WA.DAV_SEARCH_ID (path);
+  id := ODRIVE.WA.DAV_SEARCH_ID (path, type);
   if (not ODRIVE.WA.DAV_ERROR (id) and isarray (id))
       return cast (id[0] as varchar);
   return '';
@@ -2780,41 +2804,6 @@ create procedure ODRIVE.WA.det_category(
       return cast (id[0] as varchar);
     return DB.DBA.DAV_PROP_GET_INT (id, type, ':virtdet', 0);
   }
-;
-
--------------------------------------------------------------------------------
---
-create procedure ODRIVE.WA.det_action_enable(
-  in path varchar,
-  in action varchar)
-{
-  declare retValue integer;
-  declare det_category varchar;
-
-  retValue := 1;
-  det_category := ODRIVE.WA.det_category (path, either (equ (right (path, 1), '/'), 'C', 'R'));
-  if ((det_category <> '') and (action in ('share', 'version')))
-      {
-        retValue := 0;
-      }
-  else if ((det_category = 'Versioning') and (action in ('new', 'upload', 'edit', 'rename', 'version', 'share')))
-      {
-        retValue := 0;
-      }
-  else if ((det_category = 'S3') and (action in ('version', 'rename', 'tag', 'share')))
-      {
-        retValue := 0;
-      }
-  else if ((det_category = 'HostFs') and (action in ('version', 'tag', 'share')))
-    {
-          retValue := 0;
-      }
-  else if ((lcase(det_category) in ('blog', 'omail', 'news3', 'bookmark', 'calendar', 'nntp')) and (action in ('new', 'upload', 'delete', 'rename', 'move', 'version', 'share')))
-      {
-          retValue := 0;
-      }
-  return retValue;
-}
 ;
 
 -------------------------------------------------------------------------------
@@ -3001,7 +2990,7 @@ create procedure ODRIVE.WA.DAV_GET_VERSION_CONTROL (
 -------------------------------------------------------------------------------
 --
 create procedure ODRIVE.WA.path_parent (
-  in path value)
+  in path varchar)
 {
   path := trim(path, '/');
   if (isnull(strrchr(path, '/')))
@@ -3013,7 +3002,7 @@ create procedure ODRIVE.WA.path_parent (
 -------------------------------------------------------------------------------
 --
 create procedure ODRIVE.WA.path_name (
-  in path value)
+  in path varchar)
 {
   path := trim(path, '/');
   if (isnull(strrchr(path, '/')))
@@ -3183,7 +3172,8 @@ create procedure ODRIVE.WA.DAV_INIT_INT (
   in auth_pwd varchar := null)
 {
   declare uid, gid integer;
-  declare permissions, uname, gname varchar;
+  declare uname, gname varchar;
+  declare permissions any;
 
   DB.DBA.DAV_OWNER_ID(ODRIVE.WA.account (), null, uid, gid);
   ODRIVE.WA.DAV_API_PARAMS (uid, gid, uname, gname, auth_name, auth_pwd);
@@ -3267,7 +3257,7 @@ create procedure ODRIVE.WA.DAV_GET (
     return resource[2];
 
   if (property = 'modificationTime')
-    return resource[3];
+    return case when is_empty_or_null (resource[3]) then now () else resource[3] end;
 
   if (property = 'id')
     return resource[4];
@@ -3303,7 +3293,7 @@ create procedure ODRIVE.WA.DAV_GET (
     return ODRIVE.WA.odrive_user_name(resource[7]);
 
   if (property = 'creationTime')
-    return resource[8];
+    return case when is_empty_or_null (resource[8]) then now () else resource[8] end;
 
   if (property = 'mimeType')
     return coalesce(resource[9], '');
@@ -3327,8 +3317,10 @@ create procedure ODRIVE.WA.DAV_GET (
     {
       if (ODRIVE.WA.DAV_PROP_GET (resource[0], 'virt:rdf_graph', '') <> '')
         detType := 'rdfSink';
-      if (ODRIVE.WA.DAV_PROP_GET (resource[0], 'virt:Versioning-History', '') <> '')
+      else if (ODRIVE.WA.DAV_PROP_GET (resource[0], 'virt:Versioning-History', '') <> '')
         detType := 'UnderVersioning';
+      else if (ODRIVE.WA.syncml_detect (resource[0]))
+        detType := 'SyncML';
     }  
     return detType;
   }
@@ -3366,7 +3358,7 @@ create procedure ODRIVE.WA.DAV_GET (
 
   if (property = 'permissions-inheritance')
   {
-    if ((isnull (resource[0])) or (resource[1] = 'R') or isarray(resource[1]))
+    if (isnull (resource[0]) or (resource[1] = 'R') or ODRIVE.WA.isVector (resource[1]))
       return null;
     return (select COL_INHERIT from WS.WS.SYS_DAV_COL where COL_ID = resource[4]);
   }
@@ -3650,9 +3642,28 @@ create procedure ODRIVE.WA.DAV_DELETE (
   in auth_name varchar := null,
   in auth_pwd varchar := null)
 {
-  declare uname, gname varchar;
+  declare id any;
+  declare owner, uname, gname, detType varchar;
 
   ODRIVE.WA.DAV_API_PARAMS (null, null, uname, gname, auth_name, auth_pwd);
+  if (path[length (path)-1] = ascii('/'))
+  {
+    detType := ODRIVE.WA.det_type (path, 'C');
+    if (detType = 'SyncML')
+    {
+      ODRIVE.WA.exec ('delete from DB.DBA.SYNC_COLS_TYPES where CT_COL_ID = ?', vector (DB.DBA.DAV_SEARCH_ID (path, 'C')));
+    }
+    else if (detType = 'IMAP')
+    {
+      id := DB.DBA.DAV_SEARCH_ID (path, 'C');
+      if (not ODRIVE.WA.DAV_ERROR (id) and not isarray(id))
+      {
+        owner := sprintf ('IMAP_%d', id);
+        ODRIVE.WA.exec ('delete from DB.DBA.MAIL_FOLDER where MF_OWN = ?', vector (owner));
+        ODRIVE.WA.exec ('delete from DB.DBA.MAIL_MESSAGE where MM_OWN = ?', vector (owner));
+      }
+    }
+  }
   return DB.DBA.DAV_DELETE(path, silent, auth_name, auth_pwd);
 }
 ;
@@ -3673,6 +3684,24 @@ create procedure ODRIVE.WA.DAV_RES_UPLOAD (
 
   ODRIVE.WA.DAV_API_PARAMS (uid, gid, uname, gname, auth_name, auth_pwd);
   return DB.DBA.DAV_RES_UPLOAD_STRSES(path, content, type, permissions, uid, gid, auth_name, auth_pwd);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.DAV_RDF_UPLOAD (
+  inout content any,
+  in type varchar,
+  in graph varchar)
+{
+  declare retValue integer;
+  declare graph2 varchar;
+
+  graph2 := 'http://local.virt/temp';
+  retValue := DB.DBA.RDF_SINK_UPLOAD ('/temp', content, type, graph, 'on', '', '');
+  SPARQL clear graph ?:graph2;
+
+  return retValue;
 }
 ;
 
@@ -3796,13 +3825,15 @@ create procedure ODRIVE.WA.DAV_PROP_SET (
   in auth_pwd varchar := null,
   in removeBefore integer := 1)
 {
-  -- dbg_obj_princ ('ODRIVE.WA.DAV_PROP_SET (', path, propName, ')');
+  -- dbg_obj_princ ('ODRIVE.WA.DAV_PROP_SET (', path, propName, propValue, ')');
   declare uname, gname varchar;
+  declare retValue any;
 
   ODRIVE.WA.DAV_API_PARAMS (null, null, uname, gname, auth_name, auth_pwd);
   if (removeBefore)
-  DB.DBA.DAV_PROP_REMOVE(path, propname, auth_name, auth_pwd);
-  return DB.DBA.DAV_PROP_SET(path, propname, propvalue, auth_name, auth_pwd);
+    retValue := DB.DBA.DAV_PROP_REMOVE (path, propName, auth_name, auth_pwd);
+
+  return DB.DBA.DAV_PROP_SET (path, propName, propValue, auth_name, auth_pwd);
 }
 ;
 
@@ -3951,7 +3982,10 @@ create procedure ODRIVE.WA.get_rdf (
 create procedure ODRIVE.WA.test_clear (
   in S any)
 {
-  return substring(S, 1, coalesce(strstr(S, '<>'), length(S)));
+  S := substring (S, 1, coalesce (strstr (S, '<>'), length (S)));
+  S := substring (S, 1, coalesce (strstr (S, '\nin'), length (S)));
+
+  return S;
 }
 ;
 
@@ -4022,8 +4056,9 @@ create procedure ODRIVE.WA.test (
     tmp := get_keyword('maxValue', params);
     if (not isnull(tmp) and (value > tmp))
       signal('MAX', cast(tmp as varchar));
-
-  } else if (valueType = 'float') {
+  }
+  else if (valueType = 'float')
+  {
     tmp := get_keyword('minValue', params);
     if (not isnull(tmp) and (value < tmp))
       signal('MIN', cast(tmp as varchar));
@@ -4031,8 +4066,9 @@ create procedure ODRIVE.WA.test (
     tmp := get_keyword('maxValue', params);
     if (not isnull(tmp) and (value > tmp))
       signal('MAX', cast(tmp as varchar));
-
-  } else if (valueType = 'varchar') {
+  }
+  else if (valueType = 'varchar')
+  {
     tmp := get_keyword('minLength', params);
     if (not isnull(tmp) and (length(value) < tmp))
       signal('MINLENGTH', cast(tmp as varchar));
@@ -4226,63 +4262,6 @@ ODRIVE.WA.version_update()
 
 -------------------------------------------------------------------------------
 --
-create procedure ODRIVE.WA.obj2json (
-  in o any,
-  in d integer := 2)
-{
-  declare N, M integer;
-  declare R, T any;
-  declare retValue any;
-
-	if (d = 0)
-	  return '[maximum depth achieved]';
-
-  T := vector ('\b', '\\b', '\t', '\\t', '\n', '\\n', '\f', '\\f',	'\r', '\\r', '"', '\\"', '\\', '\\\\');
-	retValue := '';
-	if (isnumeric (o))
-	{
-		retValue := cast (o as varchar);
-	}
-	else if (isstring (o))
-	{
-		for (N := 0; N < length(o); N := N + 1)
-		{
-			R := chr (o[N]);
-		  for (M := 0; M < length(T); M := M + 2)
-		  {
-				if (R = T[M])
-				  R := T[M+1];
-			}
-			retValue := retValue || R;
-		}
-		retValue := '"' || retValue || '"';
-	}
-	else if (isarray (o))
-	{
-		retValue := '[';
-		for (N := 0; N < length(o); N := N + 1)
-		{
-		  retValue := retValue || ODRIVE.WA.obj2json (o[N], d-1);
-		  if (N <> length(o)-1)
-			  retValue := retValue || ',\n';
-		}
-		retValue := retValue || ']';
-	}
-	return retValue;
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure ODRIVE.WA.json2obj (
-  in o any)
-{
-  return json_parse (o);
-}
-;
-
--------------------------------------------------------------------------------
---
 create procedure ODRIVE.WA.ui_image (
   in itemPath varchar,
   in itemType varchar,
@@ -4290,19 +4269,22 @@ create procedure ODRIVE.WA.ui_image (
 {
   if (itemType = 'C')
   {
-    if (ODRIVE.WA.det_category(itemPath) = 'CatFilter')
+    declare det_type varchar;
+
+    det_type := ODRIVE.WA.det_type (itemPath, itemType);
+    if (det_type = 'CatFilter')
       return 'image/dav/category_16.png';
-    if (ODRIVE.WA.det_category(itemPath) = 'PropFilter')
+    if (det_type = 'PropFilter')
       return 'image/dav/property_16.png';
-    if (ODRIVE.WA.det_category(itemPath) = 'HostFs')
+    if (det_type = 'HostFs')
       return 'image/dav/hostfs_16.png';
-    if (ODRIVE.WA.det_category(itemPath) = 'Versioning')
+    if (det_type = 'Versioning')
       return 'image/dav/versions_16.png';
-    if (ODRIVE.WA.det_category(itemPath) = 'News3')
+    if (det_type = 'News3')
       return 'image/dav/enews_16.png';
-    if (ODRIVE.WA.det_category(itemPath) = 'Blog')
+    if (det_type = 'Blog')
       return 'image/dav/blog_16.png';
-    if (ODRIVE.WA.det_category(itemPath) = 'oMail')
+    if (det_type = 'oMail')
       return 'image/dav/omail_16.png';
     return 'image/dav/foldr_16.png';
   }
@@ -4408,6 +4390,8 @@ create procedure ODRIVE.WA.send_mail (
   {
      _iri := SIOC..briefcase_iri (ODRIVE.WA.domain_name (_instance));
      _what := case when (_path[length (_path)-1] <> ascii('/')) then 'R' else 'C' end;
+     if (_what = 'C')
+       _iri := _iri || '/folder';
      _id := DB.DBA.DAV_SEARCH_ID (_path, _what);
 
     if (exists (select 1 from SYS_USERS where U_ID = _to and U_IS_ROLE = 1))
@@ -4509,9 +4493,19 @@ create procedure ODRIVE.WA.aci_parents (
 create procedure ODRIVE.WA.aci_load (
   in path varchar)
 {
-  declare retValue, graph any;
+  declare id, what, retValue, graph any;
   declare S, st, msg, data, meta any;
 
+  what := case when (path[length (path)-1] <> ascii('/')) then 'R' else 'C' end;
+  id := ODRIVE.WA.DAV_SEARCH_ID (path, what);
+  if (isarray (id))
+  {
+    retValue := ODRIVE.WA.DAV_PROP_GET (path, 'virt:aci_meta');
+    if (ODRIVE.WA.DAV_ERROR (retValue))
+      retValue := vector ();
+  }
+  else
+  {
   retValue := vector ();
 
   graph := WS.WS.DAV_IRI (path);
@@ -4576,6 +4570,27 @@ create procedure ODRIVE.WA.aci_load (
     if (not isnull (V))
       retValue := vector_concat (retValue, vector (V));
   }
+  }
+  return retValue;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.aci_save (
+  in path varchar,
+  inout aci any)
+{
+  declare id, what, retValue, tmp any;
+
+  what := case when (path[length (path)-1] <> ascii('/')) then 'R' else 'C' end;
+  id := ODRIVE.WA.DAV_SEARCH_ID (path, what);
+  if (isarray (id))
+    retValue := ODRIVE.WA.DAV_PROP_SET (path, 'virt:aci_meta', aci);
+
+  if (not isarray (id))
+    retValue := ODRIVE.WA.DAV_PROP_SET (path, 'virt:aci_meta_n3', ODRIVE.WA.aci_n3 (aci));
+
   return retValue;
 }
 ;
@@ -4583,7 +4598,7 @@ create procedure ODRIVE.WA.aci_load (
 -------------------------------------------------------------------------------
 --
 create procedure ODRIVE.WA.aci_params (
-  in params any)
+  inout params any)
 {
   declare N, M integer;
   declare aclNo, retValue, V any;
@@ -4684,5 +4699,120 @@ create procedure ODRIVE.WA.path_normalize (
     }
   }
   return path;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.path2ssl (
+  in path varchar)
+{
+  declare pos any;
+  declare V, sslData, sslPort any;
+
+  sslData := ODS.ODS_API."server.getInfo"('sslPort');
+  if (not isnull (sslData))
+  {
+    sslPort := get_keyword ('sslPort', sslData, 443);
+    V := rfc1808_parse_uri (path);
+    V[0] := 'https';
+
+    pos := strrchr (V[1], ':');
+    if (pos is not null)
+      V[1] := subseq (V[1], 0, pos);
+    V[1] := V[1] || case when sslPort <> 443 then ':' || cast (sslPort as varchar) else '' end;
+    path := DB.DBA.vspx_uri_compose (V);
+
+  }
+  return path;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.syncml_detect (
+  in path varchar)
+{
+  if (__proc_exists ('DB.DBA.yac_syncml_detect') is not null)
+    return DB.DBA.yac_syncml_detect (path);
+
+  return 0;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.syncml_versions ()
+{
+  if (__proc_exists ('DB.DBA.yac_syncml_version') is not null)
+    return DB.DBA.yac_syncml_version ();
+
+  return vector ();
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.syncml_version (
+  in path varchar)
+{
+  if (__proc_exists ('DB.DBA.yac_syncml_version_get') is not null)
+    return DB.DBA.yac_syncml_version_get (path);
+
+  return 'N';
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.syncml_types ()
+{
+  if (__proc_exists ('DB.DBA.yac_syncml_type') is not null)
+    return DB.DBA.yac_syncml_type ();
+
+  return vector ();
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.syncml_type (
+  in path varchar)
+{
+  if (__proc_exists ('DB.DBA.yac_syncml_type_get') is not null)
+    return DB.DBA.yac_syncml_type_get (path);
+
+  return 'N';
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.cartridges_get ()
+{
+  declare retValue any;
+
+  retValue := vector ();
+  for (select RM_ID, RM_DESCRIPTION, ucase (cast (RM_DESCRIPTION as varchar (128))) as RM_SORT from DB.DBA.SYS_RDF_MAPPERS where RM_ENABLED = 1 order by 3) do
+  {
+    retValue := vector_concat (retValue, vector (vector (RM_ID, RM_DESCRIPTION)));
+  }
+  return retValue;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.metaCartridges_get ()
+{
+  declare items, retValue any;
+
+  retValue := vector ();
+  items := ODRIVE.WA.exec ('select MC_ID, MC_DESC, ucase (cast (MC_DESC as varchar (128))) as MC_SORT from DB.DBA.RDF_META_CARTRIDGES where MC_ENABLED = 1 order by 3');
+  foreach (any item in items) do
+  {
+    retValue := vector_concat (retValue, vector (vector (item[0], item[1])));
+  }
+  return retValue;
 }
 ;

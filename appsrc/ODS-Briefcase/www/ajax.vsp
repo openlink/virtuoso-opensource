@@ -71,7 +71,17 @@
     }
     http_rewrite ();
     http_header ('Content-Type: text/plain\r\n');
-    http (ODRIVE.WA.obj2json(returnData, 5));
+    http (ODS..obj2json (returnData, 5));
+    return;
+  }
+  if (action = 'cartridges')
+  {
+    http (ODS..obj2json (ODRIVE.WA.cartridges_get (), 5));
+    return;
+  }
+  if (action = 'metaCartridges')
+  {
+    http (ODS..obj2json (ODRIVE.WA.metaCartridges_get (), 5));
     return;
   }
   if (action = 'about')
