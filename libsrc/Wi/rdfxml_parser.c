@@ -2647,7 +2647,7 @@ xp_mdata_parse_attr_value (xparse_ctx_t *xp, xp_node_t * xn, int attr_id, char *
   if (((NULL != values_ret) ? 1 : 0) != ((MDATA_ATTRSYNTAX_WS_LIST & allowed_syntax) ? 1 : 0))
     GPF_T1 ("xp_" "mdata_parse_attr_value(): bad call (2)");
 #endif
-  if (NULL != values_ret) 
+  if (NULL != values_ret)
     {
       if (NULL == values_ret[0])
         values_ret[0] = dk_alloc_list_zero (1);
@@ -2717,13 +2717,13 @@ next_token:
           values_ret[0] = (caddr_t *)new_buf;
         }
       else if (NULL != values_ret[0][values_count]) /* There's some old garbage to delete */
-        { 
+        {
 #ifdef RDFXML_DEBUG
           GPF_T1 ("xp_" "mdata_parse_attr_value(): garbage?");
 #endif
           dk_free_tree (values_ret[0][values_count]);
           values_ret[0][values_count] = NULL;
-        }   
+        }
     }
   expanded_token = box_dv_short_nchars (token_start, token_end-token_start);
   if (MDATA_ATTRSYNTAX_REL & token_syntax)
@@ -2869,7 +2869,7 @@ mdata_feed_or_keep (xparse_ctx_t *xp, xp_mdata_locals_t *subj_l, caddr_t prop, x
           dt_dtp = DV_TIME;
         if (0 != dt_dtp)
           {
-            dt_obj = box_cast_to ((caddr_t *)(xp->xp_qi), obj, DV_STRING, dt_dtp, 0, 0, &dt_err); 
+            dt_obj = box_cast_to ((caddr_t *)(xp->xp_qi), obj, DV_STRING, dt_dtp, 0, 0, &dt_err);
             if (((dt_dtp == DV_TYPE_OF (dt_obj)) || (DV_DATETIME == DV_TYPE_OF (dt_obj))) && (NULL == dt_err))
               {
                 dk_free_box (obj);
@@ -2895,7 +2895,7 @@ mdata_feed_or_keep (xparse_ctx_t *xp, xp_mdata_locals_t *subj_l, caddr_t prop, x
       }
       default: ;
     }
-  
+
   if (subj_l->xmdatal_subj_is_id || (MDATA_ATTR_ID == obj_type))
     {
       ptrlong new_cvt_bits = MDATA_DANGLING_TRIPLE_CVT_BITS (subj_l->xmdatal_subj_is_id, ((MDATA_ATTR_ID == obj_type) ? 1 : 0));
