@@ -943,6 +943,7 @@ div.working-area
   height: 500px;
   margin-bottom: 5px;
   width: 100%;
+  font-family: monospace;
 }
 #page_help_ctr
 {
