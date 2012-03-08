@@ -78,6 +78,11 @@ else
   myrm=rm
 fi
 
+VOS=0
+if [ -f ../../autogen.sh ]
+then
+    VOS=1
+fi
 
 version_init() 
 {

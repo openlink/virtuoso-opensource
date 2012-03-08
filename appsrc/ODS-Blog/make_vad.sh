@@ -61,7 +61,7 @@ RM="rm -f"
 fi
 
 VOS=0
-if [ -f ../../../autogen.sh ]
+if [ -f ../../autogen.sh ]
 then
     VOS=1
 fi

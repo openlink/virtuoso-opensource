@@ -88,7 +88,7 @@ else
 fi
 
 VOS=0
-if [ -f ../../../autogen.sh ]
+if [ -f ../../autogen.sh ]
 then
     VOS=1
 fi
@@ -284,8 +284,8 @@ sticker_init() {
   echo "<dependencies>" >> $STICKER
   echo "  <require>" >> $STICKER
   echo "    <name package=\"Framework\"/>" >> $STICKER
-  echo "    <versions_later package=\"1.82.42\">" >> $STICKER
-  echo "      <prop name=\"Date\" value=\"2011-06-15 12:00\" />" >> $STICKER
+  echo "    <versions_later package=\"1.85.05\">" >> $STICKER
+  echo "      <prop name=\"Date\" value=\"2011-12-29 12:00\" />" >> $STICKER
   echo "      <prop name=\"Comment\" value=\"An incompatible version of the ODS Framework\" />" >> $STICKER
   echo "    </versions_later>" >> $STICKER
   echo "  </require>" >> $STICKER
@@ -313,6 +313,7 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/AddressBook/sql/ab-a-update.sql', 1, 'report', $ISDAV);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/AddressBook/sql/ab-a-api.sql', 1, 'report', $ISDAV);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/AddressBook/sql/sioc_ab.sql', 1, 'report', $ISDAV);" >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"/AddressBook/sql/DET_CardDAV.sql', 1, 'report', $ISDAV);" >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
   echo "  <sql purpose=\"pre-uninstall\">" >> $STICKER
