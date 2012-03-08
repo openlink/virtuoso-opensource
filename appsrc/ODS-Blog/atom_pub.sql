@@ -288,11 +288,11 @@ atom_req_headers (in req "blogRequest", in what int := 0)
     if (req.user_name is not null)
       {
   b := encode_base64 (req.user_name||':'||req.passwd);
-  return sprintf ('%s: application/x.atom+xml\r\nAuthorization: Basic %s', case when what = 0 then 'Content-Type' else 'Accept' end, b);
+	return sprintf ('%s: application/atom+xml\r\nAuthorization: Basic %s', case when what = 0 then 'Content-Type' else 'Accept' end, b);
       }
     else
       {
-  return sprintf ('%s: application/x.atom+xml', case when what = 0 then 'Content-Type' else 'Accept' end);
+	return sprintf ('%s: application/atom+xml', case when what = 0 then 'Content-Type' else 'Accept' end);
       }
   }
 ;

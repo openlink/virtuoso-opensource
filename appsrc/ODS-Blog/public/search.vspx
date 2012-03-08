@@ -1285,7 +1285,9 @@
           http ('<title>');
           http_value (BLOG..blog_utf2wide(elm[2]));
           http ('</title>');
-          http (sprintf ('<link>http://%s', BLOG.DBA.BLOG_GET_HOST ()));
+          http ('<link>');
+	  if (elm[1] not like '%://%')    
+            http (sprintf ('http://%s', BLOG.DBA.BLOG_GET_HOST ()));
           http_value (elm[1]);
           http ('</link>');
           http ('<pubDate>');

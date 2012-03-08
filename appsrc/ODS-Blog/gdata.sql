@@ -121,8 +121,8 @@ create procedure ATOM.ATOM.gdata
     id := path [5];
 
   ver := null;
-  if (length (path) > 6 and atoi (id) > 0)
-    ver := atoi (path [6]);
+  --if (length (path) > 6 and atoi (id) > 0)
+  --  ver := atoi (path [6]);
 
   if (blogid is null)
     {

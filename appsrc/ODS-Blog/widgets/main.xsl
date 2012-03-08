@@ -653,6 +653,7 @@ else if (length (self.catid))
  self.vc_add_attribute ('xmlns:rdfs', 'http://www.w3.org/2000/01/rdf-schema#');
  self.vc_add_attribute ('xmlns:sioct', 'http://rdfs.org/sioc/types#');
  self.vc_add_attribute ('xmlns:sioc', 'http://rdfs.org/sioc/ns#');
+ self.vc_add_attribute ('xmlns:cert', 'http://www.w3.org/ns/auth/cert#');
       ]]>
       <xsl:if test="//vm:keep-variable">
       self.restore_vars ();
@@ -1279,16 +1280,8 @@ window.onload = function (e)
       <xsl:attribute name="hspace">3</xsl:attribute>
       <xsl:attribute name="src">
 	  <xsl:choose>
-	      <xsl:when test="@image">
-		  &lt;?vsp
-		      http(self.custom_img_loc || '<xsl:value-of select="@image"/>');
-		  ?&gt;
-	      </xsl:when>
-	      <xsl:otherwise>
-		  &lt;?vsp
-		      http(self.custom_img_loc || <xsl:value-of select="$default"/>);
-		  ?&gt;
-	      </xsl:otherwise>
+	      <xsl:when test="@image">&lt;?vsp http(self.custom_img_loc || '<xsl:value-of select="@image"/>'); ?&gt;</xsl:when>
+	      <xsl:otherwise>&lt;?vsp http(self.custom_img_loc || <xsl:value-of select="$default"/>); ?&gt;</xsl:otherwise>
 	  </xsl:choose>
       </xsl:attribute>
   </xsl:template>

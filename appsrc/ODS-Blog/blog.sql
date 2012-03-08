@@ -666,6 +666,7 @@ blog2_exec_no_error ('create table SYS_BLOG_CHANNEL_FEEDS
   CF_PUBDATE datetime,
   CF_COMMENT_API varchar,
   CF_COMMENT_RSS varchar,
+  CF_READ int,
   primary key (CF_CHANNEL_URI, CF_ID)
   )')
 ;
@@ -884,7 +885,7 @@ insert soft SYS_ROUTING_TYPE (RT_ID, RT_NAME, RT_TYPE_DESCRIPTION) values (3, 'd
 insert soft SYS_ROUTING_TYPE (RT_ID, RT_NAME, RT_TYPE_DESCRIPTION) values (4, 'Ping', 'Weblog ping')
 ;
 
---   Routing Procotol Table Structure:
+--   Routing Protocol Table Structure:
 blog2_exec_no_error ('create table SYS_ROUTING_PROTOCOL
 (
    RP_ID  int primary key,
