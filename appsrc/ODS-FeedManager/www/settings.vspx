@@ -212,6 +212,17 @@
       	    ]]>
       	  </v:on-post>
         </v:button>
+        <v:button name="clear" action="simple" value="Clear" xhtml_onclick="javascript: return confirm (\'Do you want to reset settings to default?\');" xhtml_class="form-button">
+          <v:on-post>
+            <![CDATA[
+              delete from ENEWS.WA.SETTINGS where ES_DOMAIN_ID = self.domain_id;
+              ENEWS.WA.nntp_update (self.domain_id, null, null, 1, 0);
+              commit work;
+
+              self.vc_data_bind(e);
+            ]]>
+          </v:on-post>
+        </v:button>
         <v:button action="simple" value="Cancel" xhtml_class="form-button">
           <v:on-post>
             <![CDATA[

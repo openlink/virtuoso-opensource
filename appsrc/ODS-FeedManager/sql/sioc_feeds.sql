@@ -232,7 +232,7 @@ create procedure fill_ods_subscriptions_sioc (in graph_iri varchar, in site_iri 
 --
 create procedure fill_ods_feeds_sioc (in graph_iri varchar, in site_iri varchar, in _wai_name varchar := null)
 {
-  declare iri, m_iri, f_iri, t_iri, u_iri, c_iri varchar;
+  declare acl_graph_iri, iri, m_iri, f_iri, t_iri, u_iri, c_iri varchar;
   declare tags, linksTo any;
   declare id, deadl, cnt any;
 
@@ -241,6 +241,7 @@ create procedure fill_ods_feeds_sioc (in graph_iri varchar, in site_iri varchar,
     fill_ods_feeds_services ();
 
     for (select WAI_ID,
+                WAI_IS_PUBLIC,
                 WAI_TYPE_NAME,
                 WAI_NAME,
                 WAI_ACL
@@ -248,9 +249,9 @@ create procedure fill_ods_feeds_sioc (in graph_iri varchar, in site_iri varchar,
           where ((_wai_name is null) or (WAI_NAME = _wai_name))
             and WAI_TYPE_NAME = 'eNews2') do
     {
-      graph_iri := SIOC..acl_graph (WAI_TYPE_NAME, WAI_NAME);
-      exec (sprintf ('sparql clear graph <%s>', graph_iri));
-      SIOC..wa_instance_acl_insert (WAI_TYPE_NAME, WAI_NAME, WAI_ACL);
+      acl_graph_iri := SIOC..acl_graph (WAI_TYPE_NAME, WAI_NAME);
+      exec (sprintf ('sparql clear graph <%s>', acl_graph_iri));
+      SIOC..wa_instance_acl_insert (WAI_IS_PUBLIC, WAI_TYPE_NAME, WAI_NAME, WAI_ACL);
       for (select EFD_DOMAIN_ID, EFD_FEED_ID, EFD_ACL
              from ENEWS.WA.FEED_DOMAIN
             where EFD_DOMAIN_ID = WAI_ID and EFD_ACL is not null) do

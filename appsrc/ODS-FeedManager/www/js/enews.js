@@ -508,12 +508,10 @@ Feeds.listFavourites = function ()
 Feeds.aboutDialog = function ()
 {
   var aboutDiv = $('aboutDiv');
-  if (aboutDiv) {OAT.Dom.unlink(aboutDiv);}
-  aboutDiv = OAT.Dom.create('div', {
-    width:'430px',
-    height: '170px',
-    overflow: 'hidden'
-  });
+  if (aboutDiv)
+    OAT.Dom.unlink(aboutDiv);
+
+  aboutDiv = OAT.Dom.create('div', {height: '160px', overflow: 'hidden'});
   aboutDiv.id = 'aboutDiv';
   aboutDialog = new OAT.Dialog('About ODS FeedsManager', aboutDiv, {width:445, buttons: 0, resize:0, modal:1});
 	aboutDialog.cancel = aboutDialog.hide;
@@ -1117,7 +1115,8 @@ function checkState()
         setTimeout("checkState()", 1000);
 			} else {
       progressTimer = null;
-        doPost ('F1', 'btn_Stop');
+      $('btn_Stop').value = 'Close';
+      OAT.Dom.hide('btn_Background');
 			}
 	  }
   OAT.AJAX.POST('ajax.vsp', "a=load&sa=state&id="+progressID+urlParams("sid")+urlParams("realm"), x);
@@ -1186,12 +1185,17 @@ function showProgress(progressIndex)
 }
 }
 
-function davBrowse (fld)
-{
+function davBrowse(fld, folders) {
+	/* load stylesheets */
+	OAT.Style.include("grid.css");
+	OAT.Style.include("webdav.css");
+
   var options = {
     mode: 'browser',
     onConfirmClick: function(path, fname){$(fld).value = '/DAV' + path + fname;}
   };
+  if (!folders) {folders = false;}
+  OAT.WebDav.options.foldersOnly = folders;
   OAT.WebDav.open(options);
 }
 

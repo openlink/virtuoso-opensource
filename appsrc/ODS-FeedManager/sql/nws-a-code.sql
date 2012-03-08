@@ -6152,7 +6152,10 @@ create procedure ENEWS.WA.data (
 create procedure ENEWS.WA.test_clear (
   in S any)
 {
-  return substring(S, 1, coalesce(strstr(S, '<>'), length(S)));
+  S := substring (S, 1, coalesce (strstr (S, '<>'), length (S)));
+  S := substring (S, 1, coalesce (strstr (S, '\nin'), length (S)));
+
+  return S;
 }
 ;
 
@@ -6308,7 +6311,7 @@ create procedure ENEWS.WA.validate2 (
     if (isnull(regexp_match('^[^\\\/\?\*\"\'\>\<\:\|]*\$', propertyValue)))
       goto _error;
   } else if ((propertyType = 'uri') or (propertyType = 'anyuri')) {
-    if (isnull(regexp_match('^(ht|f)tp(s?)\:\/\/[0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*(:(0-9)*)*(\/?)([a-zA-Z0-9\-\.\?\,\'\/\\\+&amp;%\$#_=:]*)?\$', propertyValue)))
+    if (isnull (regexp_match('^(ht|f)tp(s?)\:\/\/[0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*(:(0-9)*)*(\/?)([a-zA-Z0-9\-\.\?\,\'\/\\\+&amp;%\$#_=:~]*)?\$', propertyValue)))
       goto _error;
   } else if (propertyType = 'email') {
     if (isnull(regexp_match('^([a-zA-Z0-9_\-])+(\.([a-zA-Z0-9_\-])+)*@((\[(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5]))\]))|((([a-zA-Z0-9])+(([\-])+([a-zA-Z0-9])+)*\.)+([a-zA-Z])+(([\-])+([a-zA-Z0-9])+)*))\$', propertyValue)))
@@ -7463,63 +7466,6 @@ create procedure ENEWS.WA.update_imageUri ()
 ENEWS.WA.update_imageUri();
 
 registry_set ('news_table_version', '1');
-
--------------------------------------------------------------------------------
---
-create procedure ENEWS.WA.obj2json (
-  in o any,
-  in d integer := 2)
-{
-  declare N, M integer;
-  declare R, T any;
-  declare retValue any;
-
-	if (d = 0)
-	  return '[maximum depth achieved]';
-
-  T := vector ('\b', '\\b', '\t', '\\t', '\n', '\\n', '\f', '\\f',	'\r', '\\r', '"', '\\"', '\\', '\\\\');
-	retValue := '';
-	if (isnumeric (o))
-	{
-		retValue := cast (o as varchar);
-	}
-	else if (isstring (o))
-	{
-		for (N := 0; N < length(o); N := N + 1)
-		{
-			R := chr (o[N]);
-		  for (M := 0; M < length(T); M := M + 2)
-		  {
-				if (R = T[M])
-				  R := T[M+1];
-			}
-			retValue := retValue || R;
-		}
-		retValue := '"' || retValue || '"';
-	}
-	else if (isarray (o))
-	{
-		retValue := '[';
-		for (N := 0; N < length(o); N := N + 1)
-		{
-		  retValue := retValue || ENEWS.WA.obj2json (o[N], d-1);
-		  if (N <> length(o)-1)
-			  retValue := retValue || ',\n';
-		}
-		retValue := retValue || ']';
-	}
-	return retValue;
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure ENEWS.WA.json2obj (
-  in o any)
-{
-  return json_parse (o);
-}
-;
 
 -------------------------------------------------------------------------------
 --

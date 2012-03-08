@@ -66,11 +66,6 @@
                           connectionHeaders: {Authorization: '<?V ENEWS.WA.account_basicAuthorization (self.account_id) ?>'}
                         };
 
-      	/* load stylesheets */
-      	OAT.Style.include("grid.css");
-      	OAT.Style.include("webdav.css");
-      	OAT.Style.include("winms.css");
-
         var featureList=["ajax", "json", "anchor", "dialog", "tree", "calendar"];
         OAT.Loader.load(featureList);
       </script>

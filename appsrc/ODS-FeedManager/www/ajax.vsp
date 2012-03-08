@@ -107,7 +107,7 @@
     }
     http_rewrite ();
     http_header ('Content-Type: text/plain\r\n');
-    http (ENEWS.WA.obj2json(returnData, 3));
+    http (ODS..obj2json(returnData, 5));
   }
   else if (action = 'tags')
   {
