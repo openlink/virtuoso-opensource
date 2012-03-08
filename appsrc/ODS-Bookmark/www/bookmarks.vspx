@@ -65,7 +65,7 @@
                   self.tbLabels := cast (get_keyword ('tbLabels', self.settings, '1') as integer);
           
                   self.bNodeAction := '';
-                  if ((get_keyword ('URI', params, '') <> '') and (self.account_rights = 'W'))
+                  if ((get_keyword ('URI', params, '') <> '') and (self.person_rights = 'W'))
                             {
                     self.bNodeAction := 'Bookmark/Create';
                     self.bNodeParams := sprintf('&URI=%U&TITLE=%U', get_keyword ('URI', params, ''), get_keyword ('TITLE', params, ''));
@@ -95,7 +95,7 @@
                             {
                       self.bNode := BMK.WA.make_node ('b', get_keyword ('id', params));
                       self.bNodeAction := 'Bookmark/Edit';
-                      if ((self.account_rights <> 'W') or (grant_id >= 0))
+                      if ((self.person_rights <> 'W') or (grant_id >= 0))
                         self.bNodeAction := 'Bookmark/View';
                     }
                   }
@@ -111,7 +111,7 @@
                       self.bNodePath := BMK.WA.bmk_path2 (BMK.WA.make_node ('f', BD_FOLDER_ID));
                     }
                   }
-                  else if ((get_keyword ('action', params, '') = 'Smart Folder/Create') and (self.account_rights = 'W'))
+                  else if ((get_keyword ('action', params, '') = 'Smart Folder/Create') and (self.person_rights = 'W'))
                             {
                     self.bNodeAction := 'Smart Folder/Create';
                     for (N := 0; N < length (params); N := N + 1)
@@ -143,7 +143,7 @@
                   toolbarWidth := '';
                 ?>
                 <div>
-                  <vm:if test="self.account_rights = 'W'">
+                  <vm:if test="self.person_rights = 'W'">
                   <span class="toolbar" style="cursor: pointer;<?V toolbarWidth ?>" onclick="javascript: BMK.formShow('import');" alt="Import">
                     <img src="image/impt_32.png" border="0" alt="Import" /><?vsp http(self.toolbarLabel('Import'));?>
                   </span>

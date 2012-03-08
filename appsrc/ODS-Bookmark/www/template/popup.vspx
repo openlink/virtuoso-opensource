@@ -83,6 +83,7 @@
         <v:variable persist="0" name="domain_id" type="integer" default="-1"/>
         <v:variable persist="0" name="account_id" type="integer" default="-1"/>
         <v:variable persist="0" name="account_rights" type="varchar" default="''"/>
+      <v:variable persist="0" name="person_rights" type="varchar" default="''" />
         <v:variable persist="0" name="settings" type="any" />
       <v:variable persist="0" name="rdf_iri" type="varchar" default="null" />
       <v:on-init>
@@ -96,7 +97,8 @@
           aSessInfo := BMK.WA.session_restore (params);
           self.domain_id := cast(get_keyword('domain_id', aSessInfo, '-1') as integer);
           self.account_id := cast (get_keyword ('account_id', aSessInfo, '-1') as integer);
-          self.account_rights := get_keyword ('account_rights', aSessInfo, '');
+          self.account_rights := get_keyword ('account_rights', aSessInfo);
+          self.person_rights := get_keyword ('person_rights', aSessInfo);
           self.settings := BMK.WA.settings (self.domain_id);
         ]]>
       </v:on-init>

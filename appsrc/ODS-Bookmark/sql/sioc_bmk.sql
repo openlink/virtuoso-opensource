@@ -111,6 +111,7 @@ create procedure fill_ods_bookmark_sioc2 (
     SIOC..fill_ods_bookmark_services ();
 
     for (select WAI_ID,
+                WAI_IS_PUBLIC,
                 WAI_TYPE_NAME,
                 WAI_NAME,
                 WAI_ACL
@@ -120,7 +121,7 @@ create procedure fill_ods_bookmark_sioc2 (
     {
       graph_iri := SIOC..acl_graph (WAI_TYPE_NAME, WAI_NAME);
       exec (sprintf ('sparql clear graph <%s>', graph_iri));
-      SIOC..wa_instance_acl_insert (WAI_TYPE_NAME, WAI_NAME, WAI_ACL);
+      SIOC..wa_instance_acl_insert (WAI_IS_PUBLIC, WAI_TYPE_NAME, WAI_NAME, WAI_ACL);
       for (select BD_DOMAIN_ID, BD_ID, BD_ACL
              from BMK..BOOKMARK_DOMAIN
             where BD_DOMAIN_ID = WAI_ID and BD_ACL is not null) do
@@ -165,7 +166,7 @@ create procedure fill_ods_bookmark_sioc2 (
           order by BD_ID) do
       {
       bookmark_iri := SIOC..bmk_post_iri (BD_DOMAIN_ID, BD_ID);
-      graph_iri := SIOC..get_graph_new (null, coalesce (_access_mode, WAI_IS_PUBLIC), bookmark_iri);
+      graph_iri := SIOC..get_graph_new (coalesce (_access_mode, WAI_IS_PUBLIC), bookmark_iri);
       forum_iri := SIOC..bmk_iri (coalesce (_wai_name, WAI_NAME));
       creator_iri := SIOC..user_iri (WAM_USER);
 
@@ -222,7 +223,7 @@ create procedure fill_ods_bookmark_services ()
 
 -------------------------------------------------------------------------------
 --
-create procedure clean_ods_bookmark_sioc2 (
+create procedure clean_ods_bookmark_sioc (
   in _wai_name varchar := null,
   in _access_mode integer := null)
 {
@@ -260,9 +261,9 @@ create procedure clean_ods_bookmark_sioc2 (
           order by BD_ID) do
     {
       bookmark_iri := SIOC..bmk_post_iri (BD_DOMAIN_ID, BD_ID);
-      graph_iri := SIOC..get_graph_new (WAI_ID, coalesce (_access_mode, WAI_IS_PUBLIC), bookmark_iri);
+      graph_iri := SIOC..get_graph_new (coalesce (_access_mode, WAI_IS_PUBLIC), bookmark_iri);
 
-      bookmark_domain_delete (graph_iri, BD_DOMAIN_ID, BD_ID);
+      SIOC..bookmark_domain_delete (graph_iri, BD_DOMAIN_ID, BD_ID);
 
       cnt := cnt + 1;
       if (mod (cnt, 500) = 0)
@@ -315,7 +316,7 @@ create procedure bookmark_domain_insert (
           and WAM_INST = WAI_NAME
             and U_ID = WAM_USER) do
   {
-      graph_iri := SIOC..get_graph_new (WAI_ID, WAI_IS_PUBLIC, bookmark_iri);
+      graph_iri := SIOC..get_graph_new (WAI_IS_PUBLIC, bookmark_iri);
       forum_iri := SIOC..bmk_iri (WAI_NAME);
       creator_iri := SIOC..user_iri (WAM_USER);
 
@@ -355,7 +356,7 @@ create procedure bookmark_domain_delete (
   bookmark_iri := SIOC..bmk_post_iri (domain_id, bookmark_id);
   if (isnull (graph_iri))
   {
-    graph_iri := SIOC..get_graph_new (domain_id, null, bookmark_iri);
+    graph_iri := SIOC..get_graph_new (BMK.WA.domain_is_public (domain_id), bookmark_iri);
     if (isnull (graph_iri))
       return;
   }
@@ -588,7 +589,7 @@ create procedure bmk_comment_insert (
   master_iri := SIOC..bmk_post_iri (domain_id, master_id);
 	if (isnull (graph_iri))
 		{
-    graph_iri := get_graph_new (domain_id, null, master_iri);
+    graph_iri := get_graph_new (BMK.WA.domain_is_public (domain_id), master_iri);
     if (isnull (graph_iri))
       return;
 		}
@@ -629,7 +630,7 @@ create procedure bmk_comment_delete (
   master_iri := SIOC..bmk_post_iri (domain_id, master_id);
   if (isnull (graph_iri))
   {
-    graph_iri := SIOC..get_graph_new (domain_id, null, master_iri);
+    graph_iri := SIOC..get_graph_new (BMK.WA.domain_is_public (domain_id), master_iri);
     if (isnull (graph_iri))
       return;
   }
@@ -774,7 +775,7 @@ create procedure bmk_annotation_insert (
   master_iri := SIOC..bmk_post_iri (domain_id, master_id);
 	if (isnull (graph_iri))
 		{
-    graph_iri := get_graph_new (domain_id, null, master_iri);
+    graph_iri := get_graph_new (BMK.WA.domain_is_public (domain_id), master_iri);
     if (isnull (graph_iri))
       return;
 		}
@@ -811,7 +812,7 @@ create procedure bmk_annotation_delete (
   if (isnull (graph_iri))
   {
     master_iri := SIOC..bmk_post_iri (domain_id, master_id);
-    graph_iri := SIOC..get_graph_new (domain_id, null, master_iri);
+    graph_iri := SIOC..get_graph_new (BMK.WA.domain_is_public (domain_id), master_iri);
     if (isnull (graph_iri))
       return;
   }

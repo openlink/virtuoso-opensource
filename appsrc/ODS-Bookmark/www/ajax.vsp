@@ -21,14 +21,13 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
-  declare N, M, id, _domain_id, _account_id integer;
+  declare N, M, _domain_id, _account_id integer;
   declare sid, realm, action, subAction, node, nodePath varchar;
   declare nodes, parts, sessionData, returnData any;
 
   sid := get_keyword ('sid', params, '');
   realm := get_keyword ('realm', params, '');
 
-  id := cast (get_keyword ('id', params, '0') as integer);
   action := get_keyword ('a', params, '');
   subAction := get_keyword ('sa', params, '');
 
@@ -38,6 +37,9 @@
 
   if (action = 'visited')
   {
+    declare id integer;
+
+    id := cast (get_keyword ('id', params, '0') as integer);
     BMK.WA.bookmark_visited_set (_domain_id, id, now ());
   }
   else if (action = 'load')
@@ -150,7 +152,7 @@
     }
     http_rewrite ();
     http_header ('Content-Type: text/plain\r\n');
-    http (BMK.WA.obj2json(returnData, 3));
+    http (ODS..obj2json (returnData, 5));
   }
   else if (action = 'tags')
   {
@@ -204,7 +206,7 @@
           tmp := split_and_decode (trim (params[N+1]), 0, '\0\0,');
           for (M := 0; M < length (tmp); M := M + 1)
           {
-            if (ODRIVE.WA.odrive_user_id (trim (tmp[M])) <> -1)
+            if (not isnull (BMK.WA.account_id (trim (tmp[M]))))
               grants := grants || ',' || tmp[M];
           }
         }
@@ -413,7 +415,7 @@
 	_formExit:;
     http_rewrite ();
     http_header ('Content-Type: text/plain\r\n');
-    http (BMK.WA.obj2json(returnData));
+    http (ODS..obj2json(returnData, 5));
   }
   else if (action = 'about')
   {

@@ -144,7 +144,8 @@ create procedure BMK.WA.session_restore(
   return vector (
                  'domain_id', domain_id,
                  'account_id',   account_id,
-                 'account_rights', account_rights
+                 'account_rights', BMK.WA.account_rights (domain_id, account_id),
+                 'person_rights', BMK.WA.person_rights (domain_id, account_id)
                );
 }
 ;
@@ -219,7 +220,7 @@ create procedure BMK.WA.check_grants (in role_name varchar, in page_name varchar
 
 -------------------------------------------------------------------------------
 --
-create procedure BMK.WA.access_rights (
+create procedure BMK.WA.person_rights (
   in domain_id integer,
   in account_id integer)
 {
@@ -281,6 +282,65 @@ create procedure BMK.WA.access_rights (
 
   if (is_https_ctx () and exists (select 1 from BMK.WA.acl_list (id)(iri varchar) x where x.id = domain_id))
     return '';
+
+  return null;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.account_rights (
+  in domain_id integer,
+  in account_id integer)
+{
+  declare rc varchar;
+
+  if (domain_id = -1)
+    return 'R';
+
+  if (domain_id = -2)
+    return null;
+
+  if (BMK.WA.check_admin (account_id))
+    return 'W';
+
+  if (exists (select 1
+                from SYS_USERS A,
+                     WA_MEMBER B,
+                     WA_INSTANCE C
+               where A.U_ID = account_id
+                 and B.WAM_USER = A.U_ID
+                 and B.WAM_MEMBER_TYPE = 1
+                 and B.WAM_INST = C.WAI_NAME
+                 and C.WAI_ID = domain_id))
+    return 'W';
+
+  if (exists (select 1
+                from SYS_USERS A,
+                     WA_MEMBER B,
+                     WA_INSTANCE C
+               where A.U_ID = account_id
+                 and B.WAM_USER = A.U_ID
+                 and B.WAM_MEMBER_TYPE = 2
+                 and B.WAM_INST = C.WAI_NAME
+                 and C.WAI_ID = domain_id))
+    return 'W';
+
+  if (exists (select 1
+                from SYS_USERS A,
+                     WA_MEMBER B,
+                     WA_INSTANCE C
+               where A.U_ID = account_id
+                 and B.WAM_USER = A.U_ID
+                 and B.WAM_INST = C.WAI_NAME
+                 and C.WAI_ID = domain_id))
+    return 'R';
+
+  if (exists (select 1
+                from DB.DBA.WA_INSTANCE
+               where WAI_ID = domain_id
+                 and WAI_IS_PUBLIC = 1))
+    return 'R';
 
   return null;
 }
@@ -1163,7 +1223,7 @@ create procedure BMK.WA.bookmark_import_atom (
       {
         D := '<div>';
         foreach (any content in contents) do
-          D := concat(D, ENEWS.WA.xml2string(content));
+          D := concat(D, BMK.WA.xml2string(content));
 
         D := concat(D, '</div>');
       }
@@ -1324,16 +1384,19 @@ create procedure BMK.WA.bookmark_export_tmp (
 create procedure BMK.WA.bookmark_rights (
   in domain_id integer,
   in id integer,
-  in access_role varchar)
+  in account_rights varchar,
+  in person_rights varchar)
 {
   declare retValue varchar;
 
   retValue := '';
   if (exists (select 1 from BMK.WA.BOOKMARK_DOMAIN where BD_ID = id and BD_DOMAIN_ID = domain_id))
   {
+    if (account_rights < person_rights)
     retValue := BMK.WA.acl_check (domain_id, id);
+
     if (retValue = '')
-      retValue := access_role;
+      retValue := account_rights;
   }
   return retValue;
 }
@@ -1423,16 +1486,17 @@ create procedure BMK.WA.folder_id(
   declare aPath any;
 
   folder_id := null;
-  if (not is_empty_or_null(folder_name))
+  if (not is_empty_or_null (trim (folder_name)))
   {
     aPath := split_and_decode(trim(folder_name, '/'),0,'\0\0/');
     for (i := 0; i < length(aPath); i := i + 1)
     {
       if (i = 0)
       {
-        if (not exists (select 1 from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and F_NAME = aPath[i] and F_PARENT_ID is null))
-          insert into BMK.WA.FOLDER (F_DOMAIN_ID, F_NAME, F_PATH) values (domain_id, aPath[i], '');
-        folder_id := (select F_ID from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and F_NAME = aPath[i] and F_PARENT_ID is null);
+        if (not exists (select 1 from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and F_NAME = aPath[i] and coalesce (F_PARENT_ID, -1) = -1))
+          insert into BMK.WA.FOLDER (F_DOMAIN_ID, F_PARENT_ID, F_NAME, F_PATH) values (domain_id, -1, aPath[i], '');
+
+        folder_id := (select F_ID from BMK.WA.FOLDER where F_DOMAIN_ID = domain_id and F_NAME = aPath[i] and coalesce (F_PARENT_ID, -1) = -1);
       }
       else
       {
@@ -1449,9 +1513,9 @@ create procedure BMK.WA.folder_id(
 -------------------------------------------------------------------------------
 --
 create procedure BMK.WA.folder_create(
-  inout domain_id varchar,
-  in folder_name any,
-  in folder_id any)
+  inout domain_id integer,
+  in folder_name varchar,
+  in folder_id integer)
 {
   folder_name := trim(folder_name);
   if (folder_name <> '')
@@ -1470,8 +1534,8 @@ create procedure BMK.WA.folder_create(
 -------------------------------------------------------------------------------
 --
 create procedure BMK.WA.folder_create2(
-  in domain_id varchar,
-  in parent_id varchar,
+  in domain_id integer,
+  in parent_id integer,
   in folder_name any)
 {
   declare folder_id integer;
@@ -1686,7 +1750,8 @@ create procedure BMK.WA.sfolder_sql(
   in maxRows varchar := '',
   in nodeType varchar := 'b')
 {
-  declare S, T, tmp, where2, delimiter2 varchar;
+  declare tmp any;
+  declare S, T, where2, delimiter2 varchar;
 
   where2 := ' \n ';
   delimiter2 := '\n and ';
@@ -3207,10 +3272,9 @@ create procedure BMK.WA.xtree_doc (
 create procedure BMK.WA.xml_set(
   in id varchar,
   inout pXml varchar,
-  in value varchar)
+  in value any)
 {
   declare aEntity any;
-
   {
     declare exit handler for SQLSTATE '*' {
       pXml := xtree_doc('<?xml version="1.0" encoding="UTF-8"?><settings />');
@@ -3374,6 +3438,18 @@ create procedure BMK.WA.stringCut (
   if (length(tmp) > L)
     return BMK.WA.wide2utf(concat(subseq(tmp, 0, L-3), '...'));
   return BMK.WA.wide2utf(tmp);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure BMK.WA.isVector (
+  inout aVector any)
+{
+  if (isarray (aVector) and not isstring (aVector))
+    return 1;
+
+  return 0;
 }
 ;
 
@@ -3915,7 +3991,7 @@ create procedure BMK.WA.dt_user2gmt(
 --
 create procedure BMK.WA.dt_value(
   in pDate datetime,
-  in pUser datetime := null)
+  in pUser varchar := null)
 {
   if (isnull(pDate))
     return pDate;
@@ -4015,21 +4091,23 @@ create procedure BMK.WA.dt_deformat(
   d := 0;
   m := 0;
   y := 0;
-  while (N <= length(pFormat)) {
+  while (N <= length (pFormat))
+  {
     ch := upper(substring(pFormat, N, 1));
     if (ch = 'M')
       m := BMK.WA.dt_deformat_tmp(pString, I);
     if (ch = 'D')
       d := BMK.WA.dt_deformat_tmp(pString, I);
-    if (ch = 'Y') {
+    if (ch = 'Y')
+    {
       y := BMK.WA.dt_deformat_tmp(pString, I);
       if (y < 50)
         y := 2000 + y;
       if (y < 100)
         y := 1900 + y;
-    };
+    }
     N := N + 1;
-  };
+  }
   return stringdate(concat(cast(m as varchar), '.', cast(d as varchar), '.', cast(y as varchar)));
 }
 ;
@@ -4038,16 +4116,16 @@ create procedure BMK.WA.dt_deformat(
 --
 create procedure BMK.WA.dt_deformat_tmp(
   in S varchar,
-  inout N varchar)
+  inout N integer)
 {
-  declare
-    V any;
+  declare V any;
 
   V := regexp_parse('[0-9]+', S, N);
-  if (length(V) > 1) {
-    N := aref(V,1);
-    return atoi(subseq(S, aref(V, 0), aref(V,1)));
-  };
+  if (length(V) > 1)
+  {
+    N := V[1];
+    return atoi (subseq (S, V[0], V[1]));
+  }
   N := N + 1;
   return 0;
 }
@@ -4061,7 +4139,8 @@ create procedure BMK.WA.dt_reformat(
   in pOutFormat varchar := 'm.d.Y')
 {
   return BMK.WA.dt_format(BMK.WA.dt_deformat(pString, pInFormat), pOutFormat);
-};
+}
+;
 
 -----------------------------------------------------------------------------------------
 --
@@ -4115,9 +4194,10 @@ create procedure BMK.WA.data (
 create procedure BMK.WA.test_clear (
   in S any)
 {
-  declare N integer;
+  S := substring (S, 1, coalesce (strstr (S, '<>'), length (S)));
+  S := substring (S, 1, coalesce (strstr (S, '\nin'), length (S)));
 
-  return substring(S, 1, coalesce(strstr(S, '<>'), length(S)));
+  return S;
 }
 ;
 
@@ -4128,8 +4208,8 @@ create procedure BMK.WA.test (
   in params any := null)
 {
   declare valueType, valueClass, valueName, valueMessage, tmp any;
-
-  declare exit handler for SQLSTATE '*' {
+  declare exit handler for SQLSTATE '*'
+  {
     if (not is_empty_or_null(valueMessage))
       signal ('TEST', valueMessage);
     if (__SQL_STATE = 'EMPTY')
@@ -4183,7 +4263,7 @@ create procedure BMK.WA.test (
     return value;
   }
 
-  value := OMAIL.WA.validate2 (valueClass, cast (value as varchar));
+  value := BMK.WA.validate2 (valueClass, cast (value as varchar));
   if (valueType = 'integer')
   {
     tmp := get_keyword('minValue', params);
@@ -5115,65 +5195,5 @@ create procedure BMK.WA.news_comment_get_cn_type (in f_name varchar)
 	  ext := ((select T_TYPE from WS.WS.SYS_DAV_RES_TYPES where T_EXT = temp));
 
   return ext;
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure BMK.WA.obj2json (
-  in o any,
-  in d integer := 2)
-{
-  declare N, Nn, M, Mm integer;
-  declare R, T any;
-  declare retValue any;
-
-	if (d = 0)
-	  return '[maximum depth achieved]';
-
-  T := vector ('\b', '\\b', '\t', '\\t', '\n', '\\n', '\f', '\\f',	'\r', '\\r', '"', '\\"', '\\', '\\\\');
-	retValue := '';
-	if (isnumeric (o))
-	{
-		retValue := cast (o as varchar);
-	}
-	else if (isstring (o))
-	{
-		Nn := length(o);
-		for (N := 0; N < Nn; N := N + 1)
-		{
-			R := chr (o[N]);
-		  Mm := length(T);
-		  for (M := 0; M < Mm; M := M + 2)
-		  {
-				if (R = T[M])
-				  R := T[M+1];
-			}
-			retValue := retValue || R;
-		}
-		retValue := '"' || retValue || '"';
-	}
-	else if (isarray (o))
-	{
-		retValue := '[';
-		Nn := length(o);
-		for (N := 0; N < Nn; N := N + 1)
-		{
-		  retValue := retValue || BMK.WA.obj2json (o[N], d-1);
-		  if (N <> length(o)-1)
-			  retValue := retValue || ',';
-		}
-		retValue := retValue || ']';
-	}
-	return retValue;
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure BMK.WA.json2obj (
-  in o any)
-{
-  return json_parse (o);
 }
 ;

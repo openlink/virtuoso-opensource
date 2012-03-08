@@ -138,7 +138,7 @@
         if (maxRows <> '')
           maxRows := 'TOP ' || maxRows;
         sql := replace(sql, '<MAX>', maxRows);
-      sqlParams := vector (self.domain_id, self.account_id, self.account_rights, data, self.v_max);
+      sqlParams := vector (self.domain_id, self.account_id, self.person_rights, data, self.v_max);
       sql := concat(sql, 'order by ', self.v_order, ' ', self.v_direction);
       exec(sql, state, msg, sqlParams, 0, meta, result);
       if (state = '00000')
@@ -668,7 +668,7 @@
               ]]>
             </v:on-post>
           </v:button>
-          <v:button action="simple" value="Save" enabled="-- case when self.account_rights = 'W' then 1 else 0 end" xhtml_class="form-button">
+          <v:button action="simple" value="Save" enabled="-- case when self.person_rights = 'W' then 1 else 0 end" xhtml_class="form-button">
             <v:on-post>
               <![CDATA[
                 self.update_params();

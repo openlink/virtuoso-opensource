@@ -181,7 +181,7 @@
             <?vsp http (BMK.WA.utf2wide (BMK.WA.banner_links (self.domain_id, self.sid, self.realm))); ?>
           </div>
           <div style="float: right; padding-right: 0.5em;">
-            <vm:if test="self.account_rights = 'W'">
+            <vm:if test="self.person_rights = 'W'">
               <a href="<?vsp http (BMK.WA.utf2wide (BMK.WA.page_url (self.domain_id, 'settings.vspx', self.sid, self.realm))); ?>" title="Preferences">Preferences</a>
               |
             </vm:if>
