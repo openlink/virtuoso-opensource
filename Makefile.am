@@ -103,10 +103,6 @@ EXTRA_DIST = \
 	debian/virtuoso-opensource.postrm.debhelper \
 	debian/virtuoso-opensource.prerm.debhelper \
 	debian/virtuoso-opensource.substvars \
-	win32/mkperlenv.pl \
-	win32/mkpythonenv.py \
-	win32/*.bat \
-	win32/*.vcproj \
-	win32/*.sln \
-	win64/*.vcproj \
-	win64/*.sln
+	windows/*.bat \
+	windows/*.sln \
+	windows/*.vcxproj
