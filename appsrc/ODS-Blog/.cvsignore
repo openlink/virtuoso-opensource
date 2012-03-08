@@ -12,3 +12,5 @@ virtuoso.log
 virtuoso.pxa
 virtuoso.tdb
 virtuoso.trx
+version.base
+version.curr

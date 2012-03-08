@@ -13,3 +13,5 @@ make_ods_vad.log
 make_ods_vad.xml
 vad
 *.vad
+version.base
+version.curr

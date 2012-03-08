@@ -8,3 +8,5 @@ vad.trx
 virtuoso.ini
 virtuoso.pxa
 virtuoso.tdb
+version.base
+version.curr
