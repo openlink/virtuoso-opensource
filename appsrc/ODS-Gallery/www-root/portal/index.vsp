@@ -174,7 +174,7 @@
   http(sprintf('<aplus>%d</aplus>',DB.DBA.WA_USER_APP_ENABLE (current_instance.owner_id)),_xml);
   http(sprintf('<instance>%U</instance>', current_instance.name),_xml);
   http(sprintf('<home_url>%s</home_url>',current_instance.home_url),_xml);
-  http(sprintf('<wa_home_title>%s</wa_home_title>',wa_home_title),_xml);
+  http (sprintf ('<wa_home_title>%V</wa_home_title>', wa_home_title), _xml);
   http(sprintf('<wa_home_link>%s</wa_home_link>',wa_home_link),_xml);
   http(sprintf('<gallery_id>%d</gallery_id>',current_instance.gallery_id),_xml);
   http(sprintf('<instance_owner>%s</instance_owner>',current_instance.owner_name),_xml);
