@@ -250,7 +250,7 @@ BEGIN
             VALUE "FileDescription", "Virtuoso OpenSource"
             VALUE "FileVersion", "6, 1, 3, 3127"
             VALUE "InternalName", "Virtuoso"
-            VALUE "LegalCopyright", "Copyright (C) 1998-2011 OpenLink Software"
+            VALUE "LegalCopyright", "Copyright (C) 1998-2012 OpenLink Software"
             VALUE "ProductName", "Virtuoso OpenSource"
             VALUE "ProductVersion", "6, 1, 3, 3127"
         END

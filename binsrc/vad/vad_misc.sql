@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2012 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -86,7 +86,7 @@ create procedure "VAD"."DBA"."HTML_FOOTER_OUT" ( in arr any )
   http ('<TR CLASS="CopyrightBorder"><TD COLSPAN="2"><IMG SRC="/admin/images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>');
   http ('<TR><TD ALIGN="right" COLSPAN="2"><P CLASS="Copyright">Virtuoso Server ');
   http (sys_stat('st_dbms_ver'));
-  http (sprintf (' VAD Interface (%s) - Copyright&copy; 1998-2011 OpenLink Software.</P></TD></TR>',"VAD"."DBA"."VAD_VERSION" ()));
+  http (sprintf (' VAD Interface (%s) - Copyright&copy; 1998-2012 OpenLink Software.</P></TD></TR>',"VAD"."DBA"."VAD_VERSION" ()));
   http ('</TABLE>\n</BODY>');
 }
 ;
