@@ -215,7 +215,7 @@
             ]]>
           </v:on-post>
         </v:button>
-        <v:button action="simple" value="Clear" xhtml_class="form-button">
+        <v:button action="simple" value="Clear"  xhtml_onclick="javascript: return confirm (\'Do you want to reset settings to default?\');" xhtml_class="form-button">
           <v:on-post>
             <![CDATA[
               delete from POLLS.WA.SETTINGS where S_DOMAIN_ID = self.domain_id;

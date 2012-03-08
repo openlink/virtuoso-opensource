@@ -754,14 +754,10 @@ POLLS.trim = function(sString, sChar) {
 
 POLLS.aboutDialog = function() {
   var aboutDiv = $('aboutDiv');
-	if (aboutDiv) {
+  if (aboutDiv)
 		OAT.Dom.unlink(aboutDiv);
-	}
-  aboutDiv = OAT.Dom.create('div', {
-    width:'430px',
-    height: '170px',
-    overflow: 'hidden'
-  });
+
+  aboutDiv = OAT.Dom.create('div', {height: '160px', overflow: 'hidden'});
   aboutDiv.id = 'aboutDiv';
 	aboutDialog = new OAT.Dialog('About ODS Polls', aboutDiv, {width: 445, buttons: 0, resize: 0, modal: 1});
 	aboutDialog.cancel = aboutDialog.hide;
