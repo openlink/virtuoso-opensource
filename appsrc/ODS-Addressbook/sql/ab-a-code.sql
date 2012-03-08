@@ -119,7 +119,7 @@ _end:;
 create procedure AB.WA.session_restore(
   inout params any)
 {
-  declare domain_id, account_id, account_rights any;
+  declare domain_id, account_id any;
 
   domain_id := AB.WA.session_domain (params);
   account_id := -1;
@@ -135,11 +135,11 @@ create procedure AB.WA.session_restore(
   {
     account_id := U_ID;
   }
-  account_rights := AB.WA.access_rights (domain_id, account_id);
   return vector (
                  'domain_id', domain_id,
                  'account_id',   account_id,
-                 'account_rights', account_rights
+                 'account_rights', AB.WA.account_rights (domain_id, account_id),
+                 'person_rights', AB.WA.person_rights (domain_id, account_id)
                );
 }
 ;
@@ -218,7 +218,7 @@ create procedure AB.WA.check_grants (
 
 -------------------------------------------------------------------------------
 --
-create procedure AB.WA.access_rights (
+create procedure AB.WA.person_rights (
   in domain_id integer,
   in account_id integer)
 {
@@ -277,6 +277,62 @@ create procedure AB.WA.access_rights (
 
   if (is_https_ctx () and exists (select 1 from AB.WA.acl_list (id)(iri varchar) x where x.id = domain_id))
     return '';
+
+  return null;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.account_rights (
+  in domain_id integer,
+  in account_id integer)
+{
+  declare rc varchar;
+
+  if (domain_id <= 0)
+    return null;
+
+  if (AB.WA.check_admin (account_id))
+    return 'W';
+
+  if (exists (select 1
+                from SYS_USERS A,
+                     WA_MEMBER B,
+                     WA_INSTANCE C
+               where A.U_ID = account_id
+                 and B.WAM_USER = A.U_ID
+                 and B.WAM_MEMBER_TYPE = 1
+                 and B.WAM_INST = C.WAI_NAME
+                 and C.WAI_ID = domain_id))
+    return 'W';
+
+  if (exists (select 1
+                from SYS_USERS A,
+                     WA_MEMBER B,
+                     WA_INSTANCE C
+               where A.U_ID = account_id
+                 and B.WAM_USER = A.U_ID
+                 and B.WAM_MEMBER_TYPE = 2
+                 and B.WAM_INST = C.WAI_NAME
+                 and C.WAI_ID = domain_id))
+    return 'W';
+
+  if (exists (select 1
+                from SYS_USERS A,
+                     WA_MEMBER B,
+                     WA_INSTANCE C
+               where A.U_ID = account_id
+                 and B.WAM_USER = A.U_ID
+                 and B.WAM_INST = C.WAI_NAME
+                 and C.WAI_ID = domain_id))
+    return 'R';
+
+  if (exists (select 1
+                from DB.DBA.WA_INSTANCE
+               where WAI_ID = domain_id
+                 and WAI_IS_PUBLIC = 1))
+    return 'R';
 
   return null;
 }
@@ -708,6 +764,12 @@ create procedure AB.WA.domain_update (
 {
   AB.WA.domain_gems_delete (domain_id, account_id, 'AddressBook', AB.WA.domain_gems_name (domain_id) || '_Gems');
   AB.WA.domain_gems_create (domain_id, account_id);
+
+  declare home, path varchar;
+  home := AB.WA.dav_home (account_id);
+  path := home || 'addressbooks' || '/';
+  DB.DBA.DAV_MAKE_DIR (path, account_id, null, '110100000N');
+  update WS.WS.SYS_DAV_COL set COL_DET = 'CardDAV' where COL_ID = DAV_SEARCH_ID (path, 'C');
 
   return 1;
 }
@@ -1637,6 +1699,18 @@ create procedure AB.WA.stringCut (
 
 -------------------------------------------------------------------------------
 --
+create procedure AB.WA.isVector (
+  inout aVector any)
+{
+  if (isarray (aVector) and not isstring (aVector))
+    return 1;
+
+  return 0;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure AB.WA.vector_unique(
   inout aVector any,
   in minLength integer := 0)
@@ -2425,9 +2499,10 @@ create procedure AB.WA.dt_iso8601 (
 create procedure AB.WA.test_clear (
   in S any)
 {
-  declare N integer;
+  S := substring (S, 1, coalesce (strstr (S, '<>'), length (S)));
+  S := substring (S, 1, coalesce (strstr (S, '\nin'), length (S)));
 
-  return substring(S, 1, coalesce(strstr(S, '<>'), length(S)));
+  return S;
 }
 ;
 
@@ -2493,7 +2568,7 @@ create procedure AB.WA.test (
     return value;
   }
 
-  value := OMAIL.WA.validate2 (valueClass, cast (value as varchar));
+  value := AB.WA.validate2 (valueClass, cast (value as varchar));
   if (valueType = 'integer')
   {
     tmp := get_keyword('minValue', params);
@@ -2578,7 +2653,7 @@ create procedure AB.WA.validate2 (
     if (isnull (regexp_match('^[^\\\/\?\*\"\'\>\<\:\|]*\$', propertyValue)))
       goto _error;
   } else if ((propertyType = 'uri') or (propertyType = 'anyuri')) {
-    if (isnull (regexp_match('^(ht|f)tp(s?)\:\/\/[0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*(:(0-9)*)*(\/?)([a-zA-Z0-9\-\.\?\,\'\/\\\+&amp;%\$#_=:]*)?\$', propertyValue)))
+    if (isnull (regexp_match('^(ht|f)tp(s?)\:\/\/[0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*(:(0-9)*)*(\/?)([a-zA-Z0-9\-\.\?\,\'\/\\\+&amp;%\$#_=:~]*)?\$', propertyValue)))
       goto _error;
   } else if (propertyType = 'email') {
     if (isnull (regexp_match('^([a-zA-Z0-9_\-])+(\.([a-zA-Z0-9_\-])+)*@((\[(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5]))\]))|((([a-zA-Z0-9])+(([\-])+([a-zA-Z0-9])+)*\.)+([a-zA-Z])+(([\-])+([a-zA-Z0-9])+)*))\$', propertyValue)))
@@ -2762,7 +2837,10 @@ create procedure AB.WA.ab_sparql (
 create procedure AB.WA.ab_graph_delete (
   in graph varchar)
 {
-  AB.WA.ab_sparql (sprintf ('SPARQL clear graph <%s>', graph));
+  if (is_empty_or_null (graph))
+    return;
+
+  SPARQL clear graph ?:graph;
 }
 ;
 
@@ -3168,7 +3246,7 @@ create procedure AB.WA.contact_update2 (
   if (pName = 'P_FULL_NAME')
     update AB.WA.PERSONS set P_FULL_NAME = pValue where P_ID = id;
   if (pName = 'P_GENDER')
-    update AB.WA.PERSONS set P_GENDER = pValue where P_ID = id;
+    update AB.WA.PERSONS set P_GENDER = lcase (pValue) where P_ID = id;
   if (pName = 'P_BIRTHDAY')
     update AB.WA.PERSONS set P_BIRTHDAY = pValue where P_ID = id;
   if (pName = 'P_FOAF')
@@ -3321,12 +3399,11 @@ create procedure AB.WA.contact_update4 (
   if (not isnull (tmp))
   {
     if (length (pFields) = 0)
-      return 0;
+      return vector ();
 
     id := tmp;
   }
-
-  if ((isinteger (id)) and (id = -1))
+  if (isinteger (id) and (id = -1))
   {
     L := length (pFields);
     for (N := 0; N < L; N := N + 1)
@@ -3371,13 +3448,10 @@ create procedure AB.WA.contact_update4 (
     pValues := V;
   }
   if (isinteger (id))
-  {
     id := vector (id);
-  }
+
   for (N := 0; N < length (id); N := N + 1)
-  {
     AB.WA.contact_update3 (id[N], domain_id, pFields, pValues, tags);
-  }
 
   return id;
 }
@@ -3424,10 +3498,11 @@ create procedure AB.WA.contact_validation (
   declare id, st, msg, meta, rows, F, V, T any;
 
   id := null;
-  if (not isnull (validation) and length (validation))
-  {
-    S := sprintf ('select P_ID from AB.WA.PERSONS where P_DOMAIN_ID = %d', domain_id);
-    V := vector ();
+  if (isnull (validation) or (length (validation) = 0))
+    goto _exit;
+
+  S := 'select P_ID from AB.WA.PERSONS where P_DOMAIN_ID = ?';
+  V := vector (domain_id);
     for (N := 0; N < length (validation); N := N + 1)
     {
       M := AB.WA.vector_index (pFields, validation [N]);
@@ -3437,10 +3512,14 @@ create procedure AB.WA.contact_validation (
           V := vector_concat (V, vector (pValues [M]));
         }
       }
+  if (length (V) = 1)
+    goto _exit;
+
       st := '00000';
     exec (S, st, msg, V, vector ('use_cache', 1), meta, rows);
-      if ((st = '00000') and (length (rows) > 0))
-      {
+  if ((st <> '00000') or (length (rows) <> 1))
+    goto _exit;
+
       declare validationMode varchar;
 
       id := vector ();
@@ -3527,8 +3606,8 @@ create procedure AB.WA.contact_validation (
       }
       pFields := F;
       pValues := V;
-    }
-  }
+
+_exit:;
   return id;
 }
 ;
@@ -3538,16 +3617,19 @@ create procedure AB.WA.contact_validation (
 create procedure AB.WA.contact_rights (
   in domain_id integer,
   in id integer,
-  in access_role varchar)
+  in account_rights varchar,
+  in person_rights varchar)
 {
   declare retValue varchar;
 
   retValue := '';
   if (exists (select 1 from AB.WA.PERSONS where P_ID = id and P_DOMAIN_ID = domain_id))
   {
+    if (account_rights < person_rights)
   retValue := AB.WA.acl_check (domain_id, id);
+
     if (retValue = '')
-      retValue := access_role;
+      retValue := account_rights;
   }
     return retValue;
   }
@@ -3845,6 +3927,15 @@ create procedure AB.WA.import (
 
 -------------------------------------------------------------------------------
 --
+create procedure AB.WA.import_vcard_decode (
+  in S varchar)
+{
+  return replace (S, '\\:', ':');
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure AB.WA.import_vcard (
   in domain_id integer,
   in content any,
@@ -3852,9 +3943,9 @@ create procedure AB.WA.import_vcard (
   in validation any := null,
   in progress_id varchar := null)
 {
-  declare L, M, N, nLength, mLength, id integer;
-  declare tmp, uid, data, pFields, pValues, pField, pField2 any;
-  declare xmlData, xmlItems, itemName, Meta, V any;
+  declare M, N, pos, mLength, mGroupLength, id integer;
+  declare tmp, T, uid, data, pFields, pValues, pField any;
+  declare xmlData, xmlItems, xmlSubItems, itemSubName, itemPrefix, itemName, Meta, MetaGroup any;
   declare mode, externalUID, updatedBefore, vcardImported any;
 
   vcardImported := vector ();
@@ -3871,27 +3962,53 @@ create procedure AB.WA.import_vcard (
 
   Meta := vector
     (
-      'P_UID',            null, 'UID/val',
-      'P_NAME',           null, 'NICKNAME/val|N/fld[1]|N/fld[2]|N/val',
-      'P_TITLE',          null, 'N/fld[4]',
-      'P_FIRST_NAME',     null, 'N/fld[2]',
-      'P_MIDDLE_NAME',    null, 'N/fld[3]',
-      'P_LAST_NAME',      null, 'N/fld[1]|N/val',
-      'P_FULL_NAME',      null, 'FN/val',
-      'P_BIRTHDAY',       null, 'BDAY/val',
-      'P_B_ORGANIZATION', null, 'ORG/val|ORG/fld[1]',
-      'P_B_JOB',          null, 'TITLE/val',
-      'P_H_ADDRESS1',     vector ('*', 'P_H_ADDRESS1', 'HOME',     'P_H_ADDRESS1', 'WORK',     'P_B_ADDRESS1'),                'for \044v in ADR/fld[3] return concat (\044v, for \044t in \044v/../TYPE return concat (" @TYPE_", \044t))',
-      'P_H_ADDRESS2',     vector ('*', 'P_H_ADDRESS2', 'HOME',     'P_H_ADDRESS2', 'WORK',     'P_B_ADDRESS2'),                'for \044v in ADR/fld[2] return concat (\044v, for \044t in \044v/../TYPE return concat (" @TYPE_", \044t))',
-      'P_H_CITY',         vector ('*', 'P_H_CITY',     'HOME',     'P_H_CITY',     'WORK',     'P_B_CITY'),                    'for \044v in ADR/fld[4] return concat (\044v, for \044t in \044v/../TYPE return concat (" @TYPE_", \044t))',
-      'P_H_CODE',         vector ('*', 'P_H_CODE',     'HOME',     'P_H_CODE',     'WORK',     'P_B_CODE'),                    'for \044v in ADR/fld[6] return concat (\044v, for \044t in \044v/../TYPE return concat (" @TYPE_", \044t))',
-      'P_H_STATE',        vector ('*', 'P_H_STATE',    'HOME',     'P_H_STATE',    'WORK',     'P_B_STATE'),                   'for \044v in ADR/fld[5] return concat (\044v, for \044t in \044v/../TYPE return concat (" @TYPE_", \044t))',
-      'P_H_COUNTRY',      vector ('*', 'P_H_COUNTRY',  'HOME',     'P_H_COUNTRY',  'WORK',     'P_B_COUNTRY'),                 'for \044v in ADR/fld[7] return concat (\044v, for \044t in \044v/../TYPE return concat (" @TYPE_", \044t))',
-      'P_MAIL',           vector ('*', 'P_MAIL',       'HOME',     'P_H_MAIL',     'WORK',     'P_B_MAIL',  'PREF', 'P_MAIL'), 'for \044v in EMAIL/val return concat (\044v, for \044t in \044v/../TYPE return concat (" @TYPE_", \044t))',
-      'P_H_PHONE',        vector ('*', 'P_H_PHONE',    'HOME,FAX', 'P_H_FAX',      'WORK,FAX', 'P_B_FAX',   'FAX',  'P_H_FAX', 'HOME', 'P_H_PHONE', 'WORK', 'P_B_PHONE', 'CELL', 'P_H_MOBILE'), 'for \044v in TEL/val return concat (\044v, for \044t in \044v/../TYPE return concat (" @TYPE_", \044t))',
-      'P_WEB',            vector ('*', 'P_WEB',        'HOME',     'P_H_WEB',      'WORK',     'P_B_WEB'),                     'for \044v in URL/val return concat (\044v, for \044t in \044v/../TYPE return concat (" @TYPE_", \044t))'
+      'P_UID',            vector ('UID/val'),
+      'P_NAME',           vector ('NICKNAME/val', 'N/fld[1]', 'N/fld[2]', 'N/val'),
+      'P_TITLE',          vector ('N/fld[4]'),
+      'P_FIRST_NAME',     vector ('N/fld[2]'),
+      'P_MIDDLE_NAME',    vector ('N/fld[3]'),
+      'P_LAST_NAME',      vector ('N/fld[1]', 'N/val'),
+      'P_FULL_NAME',      vector ('FN/val'),
+      'P_BIRTHDAY',       vector ('BDAY/val'),
+      'P_GENDER',         vector ('X-GENDER/val'),
+      'P_B_ORGANIZATION', vector ('ORG/val', 'ORG/fld[1]'),
+      'P_B_JOB',          vector ('TITLE/val'),
+      'P_ICQ',            vector ('X-ICQ/val'),
+      'P_MSN',            vector ('X-MSN/val'),
+      'P_AIM',            vector ('X-AIM/val'),
+      'P_YAHOO',          vector ('X-YAHOO/val'),
+      'P_SKYPE',          vector ('X-SKYPE/val'),
+      'P_MAIL',           vector ('EMAIL[TYPE="PREF"]/val'),
+      'P_WEB',            vector ('URL[TYPE="PREF"]/val'),
+      'P_H_ADDRESS1',     vector ('ADR[TYPE="HOME" or TYPE!="WORK"]/fld[3]'),
+      'P_H_ADDRESS2',     vector ('ADR[TYPE="HOME" or TYPE!="WORK"]/fld[2]'),
+      'P_H_CITY',         vector ('ADR[TYPE="HOME" or TYPE!="WORK"]/fld[4]'),
+      'P_H_CODE',         vector ('ADR[TYPE="HOME" or TYPE!="WORK"]/fld[6]'),
+      'P_H_STATE',        vector ('ADR[TYPE="HOME" or TYPE!="WORK"]/fld[5]'),
+      'P_H_COUNTRY',      vector ('ADR[TYPE="HOME" or TYPE!="WORK"]/fld[7]'),
+      'P_H_PHONE',        vector ('TEL[TYPE="HOME" or TYPE!="WORK"]/val'),
+      'P_H_FAX',          vector ('TEL[TYPE="HOME" and TYPE="FAX"]/val'),
+      'P_H_MOBILE',       vector ('TEL[TYPE="MOBILE"]/val'),
+      'P_H_MAIL',         vector ('EMAIL[TYPE="HOME"]/val'),
+      'P_H_WEB',          vector ('URL[TYPE="HOME"]/val'),
+      'P_H_ADDRESS1',     vector ('ADR[TYPE="WORK"]/fld[3]'),
+      'P_H_ADDRESS2',     vector ('ADR[TYPE="WORK"]/fld[2]'),
+      'P_H_CITY',         vector ('ADR[TYPE="WORK"]/fld[4]'),
+      'P_H_CODE',         vector ('ADR[TYPE="WORK"]/fld[6]'),
+      'P_H_STATE',        vector ('ADR[TYPE="WORK"]/fld[5]'),
+      'P_H_COUNTRY',      vector ('ADR[TYPE="WORK"]/fld[7]'),
+      'P_B_PHONE',        vector ('TEL[TYPE="WORK"]/val'),
+      'P_B_FAX',          vector ('TEL[TYPE="WORK" and TYPE="FAX"]/val'),
+      'P_B_MOBILE',       vector ('TEL[TYPE="WORK" and TYPE="MOBILE"]/val'),
+      'P_B_MAIL',         vector ('EMAIL[TYPE="WORK"]/val'),
+      'P_B_WEB',          vector ('URL[TYPE="WORK"]/val')
     );
   mLength := length (Meta);
+  MetaGroup := vector
+    (
+      'P_IRI',            vector ('URL/val', 'X-ABLabel[val="PROFILE"]/val')
+    );
+  mGroupLength := length (MetaGroup);
 
   -- using DAV parser
   if (not isstring (content))
@@ -3902,9 +4019,7 @@ create procedure AB.WA.import_vcard (
   xmlItems := xpath_eval ('/*', xmlData, 0);
   foreach (any xmlItem in xmlItems) do
   {
-    itemName := xpath_eval ('name(.)', xmlItem);
-    if (itemName = 'IMC-VCARD')
-    {
+    xmlItem := xml_cut (xmlItem);
       if (not AB.WA.import_check_progress_id (progress_id))
         return;
 
@@ -3912,54 +4027,55 @@ create procedure AB.WA.import_vcard (
       uid := null;
       pFields := vector ();
       pValues := vector ();
-      for (N := 0; N < mLength; N := N + 3)
+    for (N := 0; N < mLength; N := N + 2)
       {
         pField := Meta [N];
-        tmp := xquery_eval (Meta [N+2], xmlItem, 0);
-        foreach (any T in tmp) do
+      for (M := 0; M < length (Meta[N+1]); M := M + 1)
         {
-          T := cast (T as varchar);
+        T := serialize_to_UTF8_xml (xpath_eval ('/IMC-VCARD/' || Meta[N+1][M] || '/text()', xmlItem, 1));
           if (not is_empty_or_null (T))
           {
-            pField2 := pField;
-            if (pField2 = 'P_UID')
-            {
+          if (pField = 'P_UID')
               uid := T;
-            }
-              if (not isnull (Meta [N+1]))
-              {
-                if (strstr (T, ' @TYPE_') <> 0)
-                {
-                  pField2 := '';
-                  for (M := 0; M < length (Meta [N+1]); M := M + 2)
-                  {
-                    if ((Meta [N+1][M] = '*') and isnull (strstr (T, ' @TYPE_')))
+
+          if (not AB.WA.vector_contains (pFields, pField))
                     {
-                      pField2 := Meta [N+1][M+1];
-            } else {
-                      V := split_and_decode (Meta [N+1][M], 0, '\0\0,');
-                      for (L := 0; L < length (V); L := L + 1)
-                    {
-                        if (isnull (strstr (T, ' @TYPE_' || V[L])))
-                          goto _exit;
-                    }
-                      pField2 := Meta [N+1][M+1];
-                    _exit:;
+            pFields := vector_concat (pFields, vector (pField));
+            pValues := vector_concat (pValues, vector (AB.WA.import_vcard_decode (T)));
                     }
                   }
-                  M := strstr (T, ' @TYPE_');
-                  if (not isnull (M))
-                    T := subseq (T, 0, M);
                 }
               }
-              if (not AB.WA.vector_contains (pFields, pField2))
+    xmlSubItems := xpath_eval ('/IMC-VCARD/*', xmlItem, 0);
+    foreach (any xmlSubItem in xmlSubItems) do
+    {
+      itemSubName := cast (xpath_eval ('name(.)', xmlSubItem) as varchar);
+      pos := strchr (itemSubName, '.');
+      if (pos is not NULL)
               {
-                  pFields := vector_concat (pFields, vector (pField2));
-              pValues := vector_concat (pValues, vector (T));
+        itemName := subseq (itemSubName, pos+1);
+        itemPrefix := subseq (itemSubName, 0, pos);
+        for (N := 0; N < mGroupLength; N := N + 2)
+        {
+          if (strstr (MetaGroup[N+1][0], itemName) = 0)
+          {
+            T := xpath_eval ('/IMC-VCARD/' || itemPrefix || '.' || MetaGroup[N+1][1] || '/text()', xmlItem, 1);
+            if (not isnull (T))
+            {
+              pField := MetaGroup[N];
+              T := serialize_to_UTF8_xml (xpath_eval ('./val/text()', xmlSubItem));
+              if (not AB.WA.vector_contains (pFields, pField))
+              {
+                pFields := vector_concat (pFields, vector (pField));
+                pValues := vector_concat (pValues, vector (AB.WA.import_vcard_decode (T)));
             }
+              goto _1;
           }
         }
       }
+      _1:;
+      }
+    }
       if (isnull (uid) and not isnull (externalUID))
       {
         N := strchr (externalUID, '_');
@@ -3984,7 +4100,6 @@ create procedure AB.WA.import_vcard (
     _skip:;
       AB.WA.import_inc_progress_id (progress_id);
     }
-  }
   return vcardImported;
 }
 ;
@@ -4321,8 +4436,7 @@ create procedure AB.WA.import_foaf_content (
   if (length (Items))
   {
     personIRI := Items[0][0];
-    tmp := replace (Items[N][3], 'mailto:', '');
-    Persons := vector_concat (Persons, vector (vector (1, personIRI,  coalesce (Items[N][2], Items[N][1]), tmp)));
+    Persons := vector_concat (Persons, vector (vector (1, personIRI,  coalesce (Items[0][2], Items[0][1]), replace (Items[0][3], 'mailto:', ''))));
     S := sprintf (' sparql
                     define input:storage ""
                     prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -4355,21 +4469,20 @@ create procedure AB.WA.import_foaf_content (
                            }', contentIRI);
   }
   Items := AB.WA.ab_sparql (S);
-  for (N := 0; N < length (Items); N := N + 1)
-  {
-    if (not isnull (coalesce (Items[N][2], Items[N][1])))
+  foreach (any Item in Items) do
     {
+    if (isnull (coalesce (Item[2], Item[1])))
+      goto _skip;
+
       for (M := 0; M < length (Persons); M := M + 1)
       {
-        if (Persons[M][1] = Items[N][0])
+      if (Persons[M][1] = Item[0])
           goto _skip;
       }
-      tmp := replace (Items[N][3], 'mailto:', '');
-      Persons := vector_concat (Persons, vector (vector (0, Items[N][0], coalesce (Items[N][2], Items[N][1]), tmp)));
+    Persons := vector_concat (Persons, vector (vector (0, Item[0], coalesce (Item[2], Item[1]), replace (Item[3], 'mailto:', ''))));
+
     _skip:;
     }
-  }
-
 _exit:;
   return Persons;
 }
@@ -4632,6 +4745,15 @@ create procedure AB.WA.import_contact_update (
 
 ----------------------------------------------------------------------
 --
+create procedure AB.WA.export_vcard_encode (
+  in S varchar)
+{
+  return replace (S, ':', '\\:');
+}
+;
+
+----------------------------------------------------------------------
+--
 create procedure AB.WA.export_vcard_line (
   in property varchar,
   in value any,
@@ -4640,6 +4762,24 @@ create procedure AB.WA.export_vcard_line (
   if (not is_empty_or_null (value))
   {
     http (sprintf ('%s:%s\r\n', property, cast (value as varchar)), sStream);
+  }
+}
+;
+
+----------------------------------------------------------------------
+--
+create procedure AB.WA.export_vcard_group (
+  in prefix varchar,
+  in property varchar,
+  in value any,
+  in label varchar,
+  in labelValue any,
+  inout sStream any)
+{
+  if (not is_empty_or_null (value))
+  {
+    http (sprintf ('%s:%s\r\n', prefix || '.' || property, AB.WA.export_vcard_encode (cast (value as varchar))), sStream);
+    http (sprintf ('%s:%s\r\n', prefix || '.' || label, cast (labelValue as varchar)), sStream);
   }
 }
 ;
@@ -4668,7 +4808,7 @@ create procedure AB.WA.export_vcard (
     if (AB.WA.tags_exchangeTest (P_TAGS, oTagsInclude, oTagsExclude))
   {
 	  http ('BEGIN:VCARD\r\n', sStream);
-	  http ('VERSION:2.1\r\n', sStream);
+      http ('VERSION:3.0\r\n', sStream);
 
       AB.WA.export_vcard_line ('REV', AB.WA.dt_iso8601 (P_UPDATED), sStream);
 
@@ -4687,6 +4827,7 @@ create procedure AB.WA.export_vcard (
         AB.WA.export_vcard_line ('N', S, sStream);
       }
       AB.WA.export_vcard_line ('BDAY', AB.WA.dt_format (P_BIRTHDAY, 'Y-M-D'), sStream);
+      AB.WA.export_vcard_line ('X-GENDER', initcap (P_GENDER), sStream);
 
 	  -- mail
       AB.WA.export_vcard_line ('EMAIL;TYPE=PREF;TYPE=INTERNET', P_MAIL, sStream);
@@ -4727,6 +4868,14 @@ create procedure AB.WA.export_vcard (
 
       AB.WA.export_vcard_line ('ORG', P_B_ORGANIZATION, sStream);
       AB.WA.export_vcard_line ('TITLE', P_B_JOB, sStream);
+
+      AB.WA.export_vcard_line ('X-ICQ',   P_ICQ, sStream);
+      AB.WA.export_vcard_line ('X-MSN',   P_MSN, sStream);
+      AB.WA.export_vcard_line ('X-AIM',   P_AIM, sStream);
+      AB.WA.export_vcard_line ('X-YAHOO', P_YAHOO, sStream);
+      AB.WA.export_vcard_line ('X-SKYPE', P_SKYPE, sStream);
+
+      AB.WA.export_vcard_group ('item1', 'URL', P_IRI, 'X-ABLabel', 'PROFILE', sStream);
 
 	  http ('END:VCARD\r\n', sStream);
 	}
@@ -5280,6 +5429,10 @@ create procedure AB.WA.syncml_check (
     return 0;
   if (VAD.DBA.version_compare (syncmlVersion, '1.05.75') < 0)
     return 0;
+  if (__proc_exists ('DB.DBA.yac_syncml_version_get') is null)
+    return 0;
+  if (__proc_exists ('DB.DBA.yac_syncml_type_get') is null)
+    return 0;
   if (isnull (syncmlPath))
     return 1;
   if (DB.DBA.yac_syncml_version_get (syncmlPath) = 'N')
@@ -5307,10 +5460,7 @@ create procedure AB.WA.syncml_entry_update (
   for (select deserialize (EX_OPTIONS) as _options from AB.WA.EXCHANGE where EX_DOMAIN_ID = _domain_id and EX_TYPE = 2) do
   {
     _syncmlPath := get_keyword ('name', _options);
-
     if (not AB.WA.syncml_check (_syncmlPath))
-      goto _skip;
-    if (DB.DBA.yac_syncml_type_get (_syncmlPath) not in ('vcard_11', 'vcard_12'))
       goto _skip;
 
     oTagsInclude := null;
@@ -5351,17 +5501,15 @@ create procedure AB.WA.syncml_entry_update_internal (
     _content := AB.WA.entry2syncml (_entry_id);
     _permissions := USER_GET_OPTION (_user, 'PERMISSIONS');
     if (isnull (_permissions))
-    {
       _permissions := '110100000RR';
-    }
+
     connection_set ('__sync_dav_upl', '1');
     connection_set ('__sync_ods', '1');
-    DB.DBA.DAV_RES_UPLOAD_STRSES_INT (_path, _content, 'text/x-vcard', _permissions, http_dav_uid (), http_dav_uid () + 1, null, null, 0);
+    DB.DBA.DAV_RES_UPLOAD_STRSES_INT (_path, _content, 'text/x-vcard', _permissions, _user, _user, null, null, 0);
     connection_set ('__sync_ods', '0');
     connection_set ('__sync_dav_upl', '0');
   }
-
-  if (_action = 'D')
+  else if (_action = 'D')
   {
     declare _id integer;
 
@@ -5369,7 +5517,7 @@ create procedure AB.WA.syncml_entry_update_internal (
     if (isinteger(_id) and (_id > 0))
     {
       connection_set ('__sync_ods', '1');
-      DB.DBA.DAV_DELETE (_path, 1, _user, _password);
+      DB.DBA.DAV_DELETE_INT (_path, 1, _user, _password, 0);
       connection_set ('__sync_ods', '0');
     }
   }

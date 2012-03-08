@@ -51,7 +51,7 @@
         self.v_id := atoi(self.abContact);
         if (self.v_id = -1)
         {
-          if (self.account_rights = 'W')
+          if (self.person_rights = 'W')
           {
             self.abAction := 'create';
             self.v_name := trim (get_keyword ('name', params, ''));
@@ -93,11 +93,11 @@
 
   <v:method name="toolbarEnable" arglist="in cmd varchar">
     <![CDATA[
-      if ((cmd = 'create') and ((self.account_rights <> 'W') or (self.abScope = 'MySharedContacts')))
+      if ((cmd = 'create') and ((self.person_rights <> 'W') or (self.abScope = 'MySharedContacts')))
         return 0;
-      if ((cmd = 'import') and ((self.account_rights <> 'W') or (self.abScope = 'MySharedContacts')))
+      if ((cmd = 'import') and ((self.person_rights <> 'W') or (self.abScope = 'MySharedContacts')))
         return 0;
-      if ((cmd = 'export') and ((self.account_rights <> 'W') or (self.abScope = 'MySharedContacts')))
+      if ((cmd = 'export') and ((self.person_rights <> 'W') or (self.abScope = 'MySharedContacts')))
         return 0;
       return 1;
     ]]>
@@ -247,7 +247,7 @@
          {
            http ('&nbsp;');
          } else {
-           http (sprintf ('<img class="photo" src="%s"/>', fValue));
+        http (sprintf ('<img class="resize" src="%s" />', fValue));
          }
     ]]>
   </v:method>
@@ -641,7 +641,7 @@
             self.abSubAction := '';
             self.abValue := '';
           }
-          if ((self.account_rights <> 'W') and (self.abAction = 'settings'))
+          if ((self.person_rights <> 'W') and (self.abAction = 'settings'))
             self.abAction := 'browse';
             
           self.mode_test();
@@ -1125,7 +1125,7 @@
                         if (not is_empty_or_null (cast (self.abValue as integer)))
                           AB.WA.xml_set('category', data, self.abValue);
                       }
-                        control.ds_sql := AB.WA.search_sql (self.domain_id, self.account_id, self.account_rights, data);
+                        control.ds_sql := AB.WA.search_sql (self.domain_id, self.account_id, self.person_rights, data);
                     }
                     else if (self.abScope = 'MySharedContacts')
                     {
@@ -1181,7 +1181,7 @@
                     <table class="ODS_grid" style="border: 0px;">
                       <thead>
                     <tr>
-                          <v:template name="t2" type="simple" enabled="--case when ((self.account_rights <> 'W') or (self.abScope = 'MySharedContacts')) then 0 else 1 end">
+                          <v:template name="t2" type="simple" enabled="--case when ((self.person_rights <> 'W') or (self.abScope = 'MySharedContacts')) then 0 else 1 end">
                             <th class="checkbox">
                           <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" />
                         </th>
@@ -1200,11 +1200,11 @@
                         declare permissions any;
 
                         id := (control as vspx_row_template).te_column_value('P_ID');
-                        permissions := AB.WA.contact_rights (self.domain_id, id, self.account_rights);
+                        permissions := AB.WA.contact_rights (self.domain_id, id, self.account_rights, self.person_rights);
                       ?>
                   <table>
                     <tr>
-                          <vm:if test="(self.account_rights = 'W') and (self.abScope <> 'MySharedContacts')">
+                          <vm:if test="(self.person_rights = 'W') and (self.abScope <> 'MySharedContacts')">
                             <td class="checkbox" valign="top">
                           <?vsp
                                 if (permissions = 'W')
@@ -2945,7 +2945,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-                <v:button action="simple" name="ab_edit" value="Edit" enabled="--case when (AB.WA.contact_rights (self.domain_id, self.v_id, self.account_rights) = 'W') and (self.abAction = 'view') then 1 else 0 end" xhtml_class="form-button">
+                <v:button action="simple" name="ab_edit" value="Edit" enabled="--case when (AB.WA.contact_rights (self.domain_id, self.v_id, self.account_rights, self.person_rights) = 'W') and (self.abAction = 'view') then 1 else 0 end" xhtml_class="form-button">
                   <v:on-post>
                     <![CDATA[
                       self.abAction := 'edit';
@@ -3510,7 +3510,7 @@
                           self.i_number := AB.WA.import_count (self.i_type, self.i_data);
                         }
                         if (self.i_number = 0)
-                          signal ('TEST', 'No persons founded!<>');
+                          signal ('TEST', 'Import target data not found!<>');
 
                         -- next step
                       if (self.i_type = 0)
@@ -3552,7 +3552,7 @@
                     <thead>
                     <tr>
                         <th class="checkbox">
-                        <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item')" />
+                          <input type="checkbox" name="cb_all" value="Select All" onclick="selectAllCheckboxes(this, 'cb_item', true)" />
                       </th>
                       <th>Name</th>
                       <th>Mail</th>
@@ -3572,7 +3572,7 @@
                       <td class="checkbox">
                       <?vsp
                           if (item[0] = 0)
-                            http (sprintf ('<input type="checkbox" name="cb_item" value="%s" onclick="selectCheck(this, \'cb_item\')" />', item[1]));
+                            http (sprintf ('<input type="checkbox" name="cb_item" value="%s" onclick="selectCheck(this, \'cb_item\', true)" />', item[1]));
                       ?>
               		  </td>
               		  <td>
@@ -4019,7 +4019,7 @@
                               declare N, M integer;
                             declare data, fields any;
 
-                            data := coalesce ((select deserialize (LV_FIELDS) from LDAP..LDAP_VALIDATION where LV_USER_ID = self.account_id), vector());
+                              data := coalesce ((select deserialize (LV_FIELDS) from LDAP..LDAP_VALIDATION where LV_USER_ID = self.account_id), vector('P_NAME', '1'));
                             fields := LDAP..contact_fields ();
                               M := length (fields) / 2;
                               for (N := 0; N < M; N := N + 2)
@@ -4556,12 +4556,13 @@
                       ]]>
                     </v:on-post>
                   </v:button>
-                  <v:button action="simple" value="Clear" xhtml_class="form-button">
+                  <v:button action="simple" value="Clear" xhtml_onclick="javascript: return confirm (\'Do you want to reset settings to default?\');" xhtml_class="form-button">
                     <v:on-post>
                       <![CDATA[
                         delete from AB.WA.SETTINGS where S_ACCOUNT_ID = self.account_id;
                         AB.WA.nntp_update (self.domain_id, null, null, 1, 0);
 
+                        self.settings := vector_concat (vector ('app', DB.DBA.WA_USER_APP_ENABLE (self.account_id)), AB.WA.settings (self.domain_id));
                         self.vc_data_bind(e);
                       ]]>
                     </v:on-post>
@@ -5084,14 +5085,12 @@
                       </th>
                       <td>
                         <v:text name="exc_options_name" xhtml_id="exc_options_name" value="--get_keyword ('name', self.ve_options)" xhtml_size="60" />
-                        <vm:if test="self.abSubAction not in ('syncmlCreate', 'syncmlUpdate')">
-                          <input type="button" id="exc_options_name_button" value="Browse..." onclick="davBrowse ('exc_options_name');" style="display: <?V case when (get_keyword ('type', self.ve_options, 1) <> 1) then 'none' else '' end ?>" />
+                        <input type="button" id="exc_options_name_button" value="Browse..." onclick="davBrowse ('exc_options_name', <?V case when (self.abSubAction in ('syncmlCreate', 'syncmlUpdate')) then 'true' else 'false' end ?>);" style="display: <?V case when (get_keyword ('type', self.ve_options, 1) <> 1) then 'none' else '' end ?>" />
                             <![CDATA[
                     		    <script type="text/javascript">
                               OAT.Loader.load(['dav'], function(){OAT.WebDav.init(davOptions);});
                     		    </script>
                             ]]>
-                        </vm:if>
                       </td>
                     </tr>
                     <tr>
@@ -5371,7 +5370,7 @@
                   </table>
                 </div>
                 <div class="new-form-footer">
-                  <v:button action="simple" value="Sync" name="exc_sync_exec" xhtml_class="form-button">
+                  <v:button action="simple" value="--case when isnull (self.ve_result) then 'Sync' else 'New Sync' end" name="exc_sync_exec" xhtml_class="form-button">
                     <v:on-post>
                       <![CDATA[
                         declare _mode any;
@@ -5383,7 +5382,7 @@
                       ]]>
                     </v:on-post>
                   </v:button>
-                  <v:button action="simple" value="Cancel" name="exc_sync_cancel" xhtml_class="form-button">
+                  <v:button action="simple" value="--case when isnull (self.ve_result) then 'Cancel' else 'Exit' end" name="exc_sync_cancel" xhtml_class="form-button">
                     <v:on-post>
                       <![CDATA[
                         self.abSubAction := 'syncmlBrowse';

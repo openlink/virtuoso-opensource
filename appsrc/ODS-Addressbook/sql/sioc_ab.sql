@@ -120,6 +120,7 @@ create procedure fill_ods_addressbook_sioc2 (
     fill_ods_addressbook_services ();
 
     for (select WAI_ID,
+                WAI_IS_PUBLIC,
                 WAI_TYPE_NAME,
                 WAI_NAME,
                 WAI_ACL
@@ -129,7 +130,7 @@ create procedure fill_ods_addressbook_sioc2 (
     {
       graph_iri := SIOC..acl_graph (WAI_TYPE_NAME, WAI_NAME);
       exec (sprintf ('sparql clear graph <%s>', graph_iri));
-      SIOC..wa_instance_acl_insert (WAI_TYPE_NAME, WAI_NAME, WAI_ACL);
+      SIOC..wa_instance_acl_insert (WAI_IS_PUBLIC, WAI_TYPE_NAME, WAI_NAME, WAI_ACL);
       for (select P_DOMAIN_ID, P_ID, P_ACL
              from AB.WA.PERSONS
             where P_DOMAIN_ID = WAI_ID and P_ACL is not null) do
@@ -216,7 +217,7 @@ create procedure fill_ods_addressbook_sioc2 (
           order by P_ID) do
   {
       contact_iri := SIOC..addressbook_contact_iri (P_DOMAIN_ID, P_ID);
-      graph_iri := SIOC..get_graph_new (null, coalesce (_access_mode, WAI_IS_PUBLIC), contact_iri);
+      graph_iri := SIOC..get_graph_new (coalesce (_access_mode, WAI_IS_PUBLIC), contact_iri);
       addressbook_iri := addressbook_iri (WAI_NAME);
       socialnetwork_iri := socialnetwork_iri (WAI_NAME);
     creator_iri := user_iri (WAM_USER);
@@ -318,7 +319,7 @@ create procedure fill_ods_addressbook_services ()
 
 -------------------------------------------------------------------------------
 --
-create procedure clean_ods_addressbook_sioc2 (
+create procedure clean_ods_addressbook_sioc (
   in _wai_name varchar := null,
   in _access_mode integer := null)
 {
@@ -355,7 +356,7 @@ create procedure clean_ods_addressbook_sioc2 (
           order by P_ID) do
     {
       contact_iri := SIOC..addressbook_contact_iri (P_DOMAIN_ID, P_ID);
-      graph_iri := SIOC..get_graph_new (null, coalesce (_access_mode, WAI_IS_PUBLIC), contact_iri);
+      graph_iri := SIOC..get_graph_new (coalesce (_access_mode, WAI_IS_PUBLIC), contact_iri);
 
       contact_delete (graph_iri,
                       P_DOMAIN_ID,
@@ -456,7 +457,7 @@ create procedure contact_insert (
             and WAI_IS_PUBLIC > 0) do
   {
       iri := addressbook_contact_iri (domain_id, contact_id);
-      graph_iri := SIOC..get_graph_new (domain_id, WAI_IS_PUBLIC, iri);
+      graph_iri := SIOC..get_graph_new (WAI_IS_PUBLIC, iri);
       addressbook_iri := addressbook_iri (WAI_NAME);
       socialnetwork_iri := socialnetwork_iri (WAI_NAME);
     creator_iri := user_iri (WAM_USER);
@@ -706,7 +707,7 @@ create procedure contact_delete (
   iri := SIOC..addressbook_contact_iri (domain_id, contact_id);
   if (isnull (graph_iri))
   {
-    graph_iri := SIOC..get_graph_new (domain_id, null, iri);
+    graph_iri := SIOC..get_graph_new (AB.WA.domain_is_public (domain_id), iri);
     if (isnull (graph_iri))
       return;
   }
@@ -1043,7 +1044,7 @@ create procedure contact_comment_insert (
   master_id := cast (master_id as integer);
   master_iri := SIOC..addressbook_contact_iri (domain_id, master_id);
 	if (isnull (graph_iri))
-    graph_iri := get_graph_new (domain_id, null, master_iri);
+    graph_iri := get_graph_new (AB.WA.domain_is_public (domain_id), master_iri);
 
     if (isnull (graph_iri))
       return;
@@ -1083,7 +1084,7 @@ create procedure contact_comment_delete (
   master_id := cast (master_id as integer);
   master_iri := SIOC..addressbook_contact_iri (domain_id, master_id);
   if (isnull (graph_iri))
-    graph_iri := SIOC..get_graph_new (domain_id, null, master_iri);
+    graph_iri := SIOC..get_graph_new (AB.WA.domain_is_public (domain_id), master_iri);
 
     if (isnull (graph_iri))
       return;
@@ -1231,7 +1232,7 @@ create procedure contact_annotation_insert (
   master_iri := SIOC..addressbook_contact_iri (domain_id, master_id);
 	if (isnull (graph_iri))
 		{
-    graph_iri := get_graph_new (domain_id, null, master_iri);
+    graph_iri := get_graph_new (AB.WA.domain_is_public (domain_id), master_iri);
     if (isnull (graph_iri))
       return;
 		}
@@ -1268,7 +1269,7 @@ create procedure contact_annotation_delete (
   master_iri := SIOC..addressbook_contact_iri (domain_id, master_id);
   if (isnull (graph_iri))
   {
-    graph_iri := SIOC..get_graph_new (domain_id, null, master_iri);
+    graph_iri := SIOC..get_graph_new (AB.WA.domain_is_public (domain_id), master_iri);
     if (isnull (graph_iri))
       return;
   }

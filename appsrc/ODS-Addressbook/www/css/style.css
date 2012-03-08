@@ -28,9 +28,27 @@ body {
   font-size: 9pt;
 }
 
+pre {
+  white-space: pre-wrap;       /* css-3 */
+  white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
+  white-space: -pre-wrap;      /* Opera 4-6 */
+  white-space: -o-pre-wrap;    /* Opera 7 */
+  word-wrap: break-word;       /* Internet Explorer 5.5+ */
+}
+
 form {
   margin: 0;
   padding: 0;
+}
+
+abbr {
+  border: none;
+}
+
+input[type="text"], input[type="password"], select {
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
 }
 
 a {
@@ -71,46 +89,7 @@ a:hover {
   vertical-align: top;
 }
 
-/* Footer */
-
-#FT {
-  width: 100%;
-  position: relative;
-  bottom: 0px;
-  font-size: 8pt;
-  float: left;
-  clear: both;
-  text-align: right;
-  border-top: 2px solid #fff;
-  margin-right: 10px;
-  background-color: #fff;
-  background-image: url(../image/ods_main_footer.png);
-}
-
-#FT_L {
-  float: left;
-  clear: left;
-  margin-top: 10px;
-  margin-left: 8px;
-  border: 1px solid #788;
-}
-
-#FT_R {
-  float: right;
-  clear: right;
-  margin-top: 10px;
-  margin-bottom: 10px;
-  margin-right: 5px;
-  color: #788;
-}
-
-#FT_R a {
-  text-decoration: none;
-  color: inherit;
-}
-
 /* Left side within MT */
-
 .page_head {
   width: 100%;
   background-color: #b0cde4;

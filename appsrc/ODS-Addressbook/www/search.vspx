@@ -91,7 +91,7 @@
 
       state := '00000';
       sqlParams := vector();
-      sql := AB.WA.search_sql (self.domain_id, self.account_id, self.account_rights, data, self.v_max);
+      sql := AB.WA.search_sql (self.domain_id, self.account_id, self.person_rights, data, self.v_max);
       sql := concat (sql, ' order by ', self.v_order, ' ', self.v_direction);
       exec(sql, state, msg, sqlParams, 0, meta, result);
       if (state = '00000')

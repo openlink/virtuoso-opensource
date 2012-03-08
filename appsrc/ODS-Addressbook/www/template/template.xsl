@@ -190,7 +190,7 @@
             <?vsp http (AB.WA.utf2wide (AB.WA.banner_links (self.domain_id, self.sid, self.realm))); ?>
           </div>
           <div style="float: right; padding-right: 0.5em;">
-            <vm:if test="self.account_rights = 'W'">
+            <vm:if test="self.person_rights = 'W'">
               <a href="<?vsp http (AB.WA.utf2wide (AB.WA.page_url (self.domain_id, 'home.vspx?action=settings', self.sid, self.realm))); ?>" title="Preferences">Preferences</a>
               |
             </vm:if>
