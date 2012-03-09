@@ -1,48 +1,65 @@
-Using Virtuoso Open Source Edition CVS Tree
+Using Virtuoso Open Source Edition GIT Tree
 ===========================================
 
 Copyright (C) 1998-2012 OpenLink Software <vos.admin@openlinksw.com>
 
 
-NOTICE
-======
-
-The Virtuoso Open Source development team has decided to stop using
-CVS in favour of GIT. The VOS 6.1.5 version will be the last version
-in CVS tree on sourceforge.net. Users who are tracking the Virtuoso
-Open Source project or want to aid in it's development are encouraged
-to move with us to github via:
-
-  https://github.com/openlink/virtuoso-opensource
-
-For information about GIT see also README.GIT
-
-
 Introduction
 ============
 
-This document describes how to checkout a copy of the CVS tree for
+This document describes how to checkout a copy of the git tree for
 development purposes. It also lists the packages that need to be
 installed prior to generating the necessary scripts and Makefiles to
 build the project.
 
-CVS access is only needed for developers who want to actively track
+Git access is only needed for developers who want to actively track
 progress of the Virtuoso source code and contribute bugfixes or
-enhancements to the project. It requires basic knowledge about the
-general layout of open source and GNU projects, the use of autoconf and
-automake etc, which is beyond the scope of this document. If you have
-any questions, please email us at .
+enhancements to the project. It requires basic knowledge of git
+itself, the general layout of open source and GNU projects, the use
+of autoconf and automake etc, which is beyond the scope of this
+document. 
+
+If you have any questions, please email us at <vos.admin@openlinksw.com>.
 
 
-CVS Archive Server Access
+Git Archive Server Access
 =========================
 
-OpenLink currently provides read-only CVS Archive access through the
-SourceForge.net servers:
+For main development OpenLink will publish the Virtuoso Open Source
+tree to GitHub and encourages everyone who is interested in tracking
+the project, to make an account there.
 
-    $ cvs -d:pserver:anonymous@virtuoso.cvs.sourceforge.net:/cvsroot/virtuoso login
-    (The password is blank)
-    $ cvs -z3 -d:pserver:anonymous@virtuoso.cvs.sourceforge.net:/cvsroot/virtuoso co virtuoso-opensource
+Users who mainly just want to track the code can use the following
+command to get a copy of the tree:
+
+    $ git clone git://github.com/openlink/virtuoso-opensource.git
+
+At this point you can create your own work branch based on any of
+the branches available, create bugfixes and commit them to your own
+branch and then use the 'git format-patch' command to generate the
+appropriate diffs to send to:
+
+    vos.admin@openlinksw.com
+
+
+Developers are encouraged to fork the project using GitHub, create
+their own branches to make enhancements/bugfixes and then send pull
+requests using the excellent GitHub interface for the OpenLink team
+to examine and incorporate the fixes into the master tree for an
+upcoming release.
+
+Github has excellent documentation on how to fork a project, send
+pull requests, track the project etc. on:
+
+    http://help.github.com/
+
+
+OpenLink will continue to use sourceforge.net for the source tarball
+releases and certain binary releases, and for completenes will also
+provides read-only Git Archive access via:
+
+    $ git clone git://virtuoso-opensource.git.sourceforge.net/gitroot/virtuoso-opensource/virtuoso-opensource
+
 
 
 Package Dependencies
@@ -129,18 +146,3 @@ flag is added to configure.
 
 Please read the files INSTALL and README in this directory for further
 information on how to configure the package and install it on your system.
-
-
-Submitting fixes and enhancements
-=================================
-
-Patches and new contributions can be submitted as diffs from the current
-CVS archive by:
-
-    $ cvs add newfiles $ cvs -z3 diff -uN > diffs
-
-Patches and contributions can be send to the OpenLink Virtuoso source
-archive manager at <vos.admin@openlinksw.com> to be included the next
-distribution.  Please provide accompanying documentation on which bugs
-are fixed or new features are introduced.
-
