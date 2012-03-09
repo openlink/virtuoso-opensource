@@ -1547,7 +1547,7 @@ bif_type_set (bif_type_t *bt, state_slot_t *ret, state_slot_t **params)
     return;
   if (bt->bt_func)
     {
-      long dt, sc_ret, sc_prec;
+      long dt = 0, sc_ret = 0, sc_prec = 0;
       bt->bt_func (params, &dt, &sc_prec, &sc_ret, (caddr_t *) &ret->ssl_sqt.sqt_collation);
       ret->ssl_prec = (uint32) sc_prec;
       ret->ssl_scale = (char) sc_ret;
