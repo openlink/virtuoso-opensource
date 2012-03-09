@@ -8519,7 +8519,7 @@ create procedure DB.DBA.RDF_DICT_OF_TRIPLES_TO_THREE_COLS (in dict any, in destr
 --            (select lower (RL_ID) from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = lang_twobyte) ) end;
 --          result (S, P, O, 0, O_DT, O_LANG);
 --        }
-      else
+      else if (S is not null and P is not null and O is not null)
         result (S, P, O --, 0, __xsd_type (O, NULL), NULL
         );
     }
