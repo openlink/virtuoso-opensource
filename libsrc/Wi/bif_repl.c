@@ -65,7 +65,7 @@ sched_do_round_1 (const char * text)
   if (!err)
     err = qr_quick_exec (qr, sched_cli, "", NULL, 0);
   qr_free (qr);
-  if (err && err != SQL_NO_DATA_FOUND)
+  if (err && err != (caddr_t) SQL_NO_DATA_FOUND)
     {
       if (strcmp ("40001", ERR_STATE (err)))
 	log_info ("Scheduler error %s : %s", ERR_STATE (err), ERR_MESSAGE (err));
