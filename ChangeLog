@@ -1,3 +1,44 @@
+2012-03-09 17:33  source
+
+	* Fixed issue with uninitialized variables
+
+2012-03-09 15:07  source
+
+	* Fixed do not output NULL triples
+
+2012-03-09 14:42  source
+
+	* Added README.GIT
+	* Added discontinuation notice to README.CVS
+
+2012-03-09 14:41  source
+
+	* Added information for Mac OS X 10.7
+
+2012-03-09 13:42  source
+
+	* Fixed compiler warnings
+
+2012-03-08 16:22  source
+
+	* Fixed CRLF
+
+2012-03-08 15:52  source
+
+	* Fixed list of files to distribute for Windows build
+
+2012-03-08 13:52  source
+
+	* Fixed use portable method for escaping symbol for gawk 3 and 4
+
+2012-03-08 13:30  source
+
+	* Updated vad_version
+
+2012-03-08 13:25  source
+
+	* Updated version to 6.1.5-rc1
+
 2012-03-08 12:14  source
 
 	* Added CalDAV
