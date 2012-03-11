@@ -1,3 +1,11 @@
+2012-03-11 13:30  source
+
+	* Updated vad version
+
+2012-03-11 13:26  source
+
+	* Fixed use of foaf_check_ssl function
+
 2012-03-09 17:33  source
 
 	* Fixed issue with uninitialized variables
