@@ -162,7 +162,7 @@ create procedure check_authentication_ssl (
   if (isnull (uname))
     return 0;
 
-  return SIOC..foaf_check_ssl2 ();
+  return SIOC..foaf_check_ssl (null);
 }
 ;
 
