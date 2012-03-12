@@ -14,3 +14,4 @@ virtuoso.tdb
 virtuoso.trx
 version.base
 version.curr
+*.log
