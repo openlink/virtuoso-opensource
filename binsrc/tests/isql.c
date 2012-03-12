@@ -9353,10 +9353,6 @@ handle_multipart_form (TCHAR *boundary, FILE * in_fp)
 
   form_boundary = chestrdup (boundary, me);
 
-#ifdef WIN32
-  setmode (fileno (stdin), _O_BINARY);	/* _O_TEXT is ASCII mode. */
-#endif
-
   while (0 != (got_anything = bin_fgets (inpoint, IN_BATCH, in_fp)))
     {
 /*
@@ -9482,6 +9478,9 @@ _tmain (int argc, TCHAR **argv)
     printf ("Can't apply the system locale. "
 	"Possibly wrong setting for LANG environment variable. "
 	"Using the C locale instead.\n");
+#endif
+#ifdef WIN32
+  setmode (fileno (stdin), _O_BINARY);
 #endif
 #ifdef MALLOC_DEBUG
   dbg_malloc_enable();
