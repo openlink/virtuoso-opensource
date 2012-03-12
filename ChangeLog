@@ -1872,7 +1872,7 @@
 2011-12-08 21:15  source
 
 	* Fixed only kill txn when we have the lt, else we should wait
-	 CVS: ----------------------------------------------------------------------
+	 
 
 2011-12-08 21:11  source
 
@@ -2461,7 +2461,6 @@
 	* Fixed check for owl:Class
 	* Fixed label prefs and metadata
 	* Fixed footer
-	*CVS: ----------------------------------------------------------------------
 
 2011-09-23 19:12  source
 
@@ -3348,7 +3347,6 @@
 2011-06-13 09:29  source
 
 	* Added function to backup index to log
-	 CVS: ----------------------------------------------------------------------
 
 2011-06-11 16:41  source
 
@@ -4599,7 +4597,6 @@
 2011-03-31 21:32  source
 
 	* Added check for MacDataSourceSize with default of 20MB
-	 CVS: ----------------------------------------------------------------------
 
 2011-03-29 23:20  source
 
@@ -9210,7 +9207,7 @@
 
 2010-04-14 10:47  source
 
-	* Fixed UI profileCVS: ----------------------------------------------------------------------
+	* Fixed UI profile
 
 2010-04-13 12:19  source
 
@@ -9937,7 +9934,6 @@
 2010-03-07 08:20  source
 
 	* Fixed typo
-	 CVS: ----------------------------------------------------------------------
 
 2010-03-07 08:18  source
 
@@ -17131,7 +17127,7 @@
 
 2009-11-30 23:44  source
 
-	* Added debug log to meta cartridgesCVS: ----------------------------------------------------------------------
+	* Added debug log to meta cartridges
 
 2009-11-30 23:40  source
 

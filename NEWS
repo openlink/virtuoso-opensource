@@ -1,7 +1,61 @@
-Mar 08, 2012, V6.1.5:
+Mar 11, 2012, V6.1.5:
   * Database engine
+    - Added support for SPARQL 1.1 WITH, USING, NAMED
+    - Added support for SPARQL 1.1 Update
+    - Added support for SPARQL 1.1 Functions
+    - Added support for SPARQL Macro Library syntax
+    - Added new Visual Studio 11 project files for both 32bit and 64bit builds
+    - Added support for wide strings in all SPARQL serializers
+    - Added common infrastructure for RDF-specific XML parsers
+    - Added new RDF/XML printer (fater + pretty print)
+    - Added TRIG formatter
+    - Added support for r2rml graph generation
+    - Added support for XHTML+Microdata
+    - Added human-readable HTML output for DESCRIBE (list and table)
+    - Added support for SELECT scalar_expression subqueries without FROM
+      clause to avoid extra lock on fake subqueries
+    - Added DBpedia vad package
+    - Added support for scoping ACL to a virtual dir
+    - Fixed RDF/XML parser to pass w3c tests dated 2003-Nov.
+    - Fixed JSON-LD syntax to match recent draft of the spec
+    - Fixed CONSTRUCT with constant string objects with language
+    - Fixed output of bnodes in RDF/XML format
+    - Fixed support for sparql load <file:///....> i.e. with absolute path
+      from system root
+    - Fixed issue with uninitialized variables
+    - Fixed use portable method for escaping symbol for gawk 3 and 4
+    - Fixed compiler warnings
+    - Fixed memory leaks
+    - Updated documentation
+
   * SPARQL and RDF
+    - Added new cartridges for Angellis. Klout, New York Times Article,
+      Social Statistics and Stackoverflow
+    - Added new ontolgies for Angellis, Cert, Crunchbase, DBpedia
+      Spotlight, NYT, LinkedIn, oplbase, oplweb
+    - Added Linkedin Shares cartridge
+    - Added support for extracting all meta and link head-element data from XHTML documents
+    - Added post-processing script for generating owl:sameAs links for
+      co-reference resolution
+    - Added support for get:soft "add" and get:cartridge
+    - Added support for paging over large collections to FB cartridge
+    - Fixed Amazon cartridge to work with new Product Advertising API
+    - Fixed handling of # in About header
+    - Fixed qualify opl:mentions  with cartridge identifier
+    - Fixed social-profile-url property across social cartridges
+
   * ODS Applications
+    - Added support for WebID 1.0 spec
+    - Added WebID WaterMark
+    - Added support for CalDAV and CardDAV
+    - Added ACL editing for DETs
+    - Added folder selecton for SyncML
+    - Added option to import rdf data from file
+    - Added rule for briefcase folder IRIs
+    - Added VCARD Property Grouping
+    - Added private graphs data
+    - Added option to deactivate user
+
 
 Oct 31, 2011, V6.1.4:
   * Upgrading from previous versions
