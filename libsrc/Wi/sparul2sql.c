@@ -57,7 +57,7 @@ caddr_t
 spar_compose_report_flag (sparp_t *sparp)
 {
   const char *fmtname = sparp->sparp_env->spare_output_format_name; /* Report is always a result-set, so no spare_output_XXX_format name */
-  return t_box_num (((NULL != fmtname) && !strcmp (fmtname, "_JAVA_")) ? 0 : 1);
+  return t_box_num (((NULL != fmtname) && (!strcmp (fmtname, "_JAVA_") || !strcmp (fmtname, "_UDBC_"))) ? 0 : 1);
 }
 
 extern int sparp_ctor_fields_are_disjoin_with_where_fields (sparp_t *sparp, SPART **ctor_fields, SPART **where_fields);

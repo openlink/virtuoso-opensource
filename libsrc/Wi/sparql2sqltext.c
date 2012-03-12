@@ -351,7 +351,7 @@ ssg_find_formatter_by_name_and_subtype (ccaddr_t name, ptrlong subtype,
       case CONSTRUCT_L: case DESCRIBE_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_JSON_MICRODATA"; return;
       default: return;
       }
-  if (!strcmp (name, "_JAVA_"))
+  if (!strcmp (name, "_JAVA_") || !strcmp (name, "_UDBC_"))
     switch (subtype)
       {
       case ASK_L: ret_formatter[0] = "COUNT"; return;
@@ -8532,7 +8532,7 @@ ssg_req_top_needs_rb_complete (spar_sqlgen_t *ssg)
   ssg_valmode_t retvalmode;
   if ((SELECT_L != subtype) && (DISTINCT_L != subtype))
     return 0;
-  if (NULL != tree->_.req_top.formatmode_name && strcmp (tree->_.req_top.formatmode_name, "_JAVA_"))
+  if (NULL != tree->_.req_top.formatmode_name && (strcmp (tree->_.req_top.formatmode_name, "_JAVA_") || strcmp (tree->_.req_top.formatmode_name, "_UDBC_")))
     return 0;
   retvalmode = ssg_find_valmode_by_name (tree->_.req_top.retvalmode_name);
   if ((SSG_VALMODE_SQLVAL != retvalmode) && (NULL != retvalmode))
@@ -8760,7 +8760,7 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
     case CONSTRUCT_L:
     case DESCRIBE_L:
       if ((NULL != tree->_.req_top.formatmode_name) &&
-        !strcmp ("_JAVA_", tree->_.req_top.formatmode_name) )
+        (!strcmp ("_JAVA_", tree->_.req_top.formatmode_name) || !strcmp ("_UDBC_", tree->_.req_top.formatmode_name)))
         {
           ssg_puts (" DB.DBA.RDF_DICT_OF_TRIPLES_TO_THREE_COLS ((");
           three_cols_procedure = 1;
