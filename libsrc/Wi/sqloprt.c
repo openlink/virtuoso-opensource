@@ -332,11 +332,12 @@ sqlo_dfe_print (df_elt_t * dfe, int offset)
 	  }
 	if (DFE_DT == dfe->dfe_type && dfe->_.sub.trans)
 	  sqlo_print (("  dt transitive\n"));
-	for (elt = dfe->_.sub.first->dfe_next; elt; elt = elt->dfe_next)
-	  {
-	    sqlo_dfe_print (elt, offset + OFS_INCR);
-	    sqlo_print (("\n"));
-	  }
+	if (dfe->_.sub.first)
+	  for (elt = dfe->_.sub.first->dfe_next; elt; elt = elt->dfe_next)
+	    {
+	      sqlo_dfe_print (elt, offset + OFS_INCR);
+	      sqlo_print (("\n"));
+	    }
 
 	sqlo_print (("%*.*s", offset, offset, " "));
 	sqlo_print (("}\n"));
