@@ -895,7 +895,7 @@ create procedure CAL.WA.domain_sioc_url (
 create procedure CAL.WA.domain_calDav_url (
   in domain_id integer)
 {
-  return sprintf ('%s/DAV/home/%s/calendars/%s', CAL.WA.host_url (), CAL.WA.domain_owner_name (domain_id), DB.DBA.CalDAV_FIXNAME (CAL.WA.domain_name (domain_id)));
+  return sprintf ('%s/DAV/home/%s/calendars/%s', CAL.WA.host_url (), CAL.WA.domain_owner_name (domain_id), DB.DBA.CalDAV__FIXNAME (CAL.WA.domain_name (domain_id)));
 }
 ;
 
