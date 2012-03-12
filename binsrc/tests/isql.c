@@ -645,7 +645,7 @@ TCHAR *web_query_string = NULL;	/* from environment variable QUERY_STRING */
 int web_mode = 0;		/* Is set to 1 in the beginning of main if used
 			       as a cgi-script */
 int kubl_mode = 1;		/* Currently affects only how MAXROWS are handled. */
-int print_banner_flag = 1, print_types_also = 1, verbose_mode = 1, echo_mode = 0;
+int print_banner_flag = 1, print_types_also = 1, verbose_mode = 1, echo_mode = 0, explain_mode = 0, sparql_translate_mode = 0;
 int flag_newlines_at_eor = 1;	/* By default print one nl at the end of row */
 long int select_max_rows = 0;	/* By default show them all. */
 long int perm_deadlock_retries = 0, vol_deadlock_retries = 0;
@@ -2625,6 +2625,8 @@ add_var_def (_T("FORM_LAST_ENCODING"), (&form_last_encoding), CHARPTR_VAR, NULL)
   add_var_def (_T("BLOBS"), (&print_blobs_flag), INT_FLAG, OFF_ON),
   add_var_def (_T("FOREACH_ERR_BREAK"), (&foreach_err_break), INT_FLAG, OFF_ON),
   add_var_def (_T("ECHO"), (&echo_mode), INT_FLAG, OFF_ON),
+  add_var_def (_T("EXPLAIN"), (&explain_mode), INT_FLAG, OFF_ON),
+  add_var_def (_T("SPARQL_TRANSLATE"), (&sparql_translate_mode), INT_FLAG, OFF_ON),
   add_var_def (_T("HIDDEN_CRS"), (&clear_hidden_crs_flag), INT_FLAG, PRESERVED_CLEARED),
   add_var_def (_T("BINARY_OUTPUT"), (&flag_binary_output), INT_FLAG, OFF_ON),
   add_var_def (_T("BANNER"), (&print_banner_flag), INT_FLAG, OFF_ON),
@@ -5901,9 +5903,32 @@ again_exec:;
 	    );
 
 	  IF_ERR_GO (stmt, error, rc);
+          rc = SQLExecDirect (stmt, UCP (text), SQL_NTS);
 	}
+      else if (explain_mode)
+        {
+	  rc = SQLPrepare (stmt, _T("EXPLAIN(?)"), SQL_NTS);
+	  IF_ERR_GO (stmt, error, rc);
+	  rc = SQLBindParameter (stmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_CHAR, isqlt_tcslen(text), 0, UCP(text), isqlt_tcslen(text), NULL);
+	  IF_ERR_GO (stmt, error, rc);
+	  rc = SQLExecute (stmt);
+	}
+      else if (sparql_translate_mode)
+        {
+          const TCHAR* q = text;
+          if (!strncasecmp (text, _T("SPARQL"), isqlt_tcslen(_T("SPARQL"))))
+            q = text + isqlt_tcslen(_T("SPARQL"));
 
-      rc = SQLExecDirect (stmt, UCP (text), SQL_NTS);
+          rc = SQLPrepare (stmt, _T("SELECT SPARQL_TO_SQL_TEXT(?)"), SQL_NTS);
+          IF_ERR_GO (stmt, error, rc);
+          rc = SQLBindParameter (stmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_CHAR, isqlt_tcslen(q), 0, UCP(q), isqlt_tcslen(q), NULL);
+          IF_ERR_GO (stmt, error, rc);
+          rc = SQLExecute (stmt);
+        }
+      else
+        {
+	  rc = SQLExecDirect (stmt, UCP (text), SQL_NTS);
+	}
     }
   else if (rc == DO_SQL_API_COMMAND_IS_NOT_AVAILABLE)
     {				/* Should we free something? */
