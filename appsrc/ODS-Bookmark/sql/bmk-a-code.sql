@@ -140,7 +140,6 @@ create procedure BMK.WA.session_restore(
   {
     account_id := U_ID;
     }
-  account_rights := BMK.WA.access_rights (domain_id, account_id);
   return vector (
                  'domain_id', domain_id,
                  'account_id',   account_id,
