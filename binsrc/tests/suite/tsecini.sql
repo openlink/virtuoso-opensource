@@ -83,6 +83,7 @@ insert into SEC_TEST_3 values (121, 242, 363);
 insert into SEC_TEST_4 values (1331, 2662, 3993);
 
 delete user U1;
+delete user U1RUS;
 delete user U2;
 delete user U3;
 delete user U4;
@@ -105,6 +106,24 @@ ECHO BOTH ": " $ROWCNT " user(s) named 'U1' after CREATE USER U1;\n";
 ECHO BOTH $IF $EQU $LAST[1] $LAST[2] "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": U_ID (" $LAST[1] ") " $IF $LIF "==" "!=" " U_GROUP (" $LAST[2] ")\n";
+
+--
+-- Now a user named 'U1RUS' is created for tests of "national" passwords:
+--
+
+create user U1RUS;
+select U_ID, U_GROUP from SYS_USERS where U_NAME = 'U1RUS';
+ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $ROWCNT " user(s) named 'U1RUS' after CREATE USER U1RUS;\n";
+user_set_password ('U1RUS', charset_recode ('Абракадабра1', 'UTF-8', '_WIDE_'));
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": User U1RUS got wide password via user_set_password; STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+DB.DBA.USER_CHANGE_PASSWORD ('U1RUS', charset_recode ('Абракадабра1', 'UTF-8', '_WIDE_'), charset_recode ('Абракадабра2', 'UTF-8', '_WIDE_'));
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": User U1RUS got changed wide password via DB.DBA.USER_CHANGE_PASSWORD; STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 --
 -- First check that there is only one user named 'U2' after this command:

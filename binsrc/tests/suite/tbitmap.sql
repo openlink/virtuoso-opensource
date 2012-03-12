@@ -1,5 +1,8 @@
 echo both "Bitmap index tests\n";
 
+--set echo on;
+
+
 drop table tb;
 create table tb (id int primary key, k1 int, k2 int);
 
@@ -11,6 +14,10 @@ create procedure bmck (in n int := 0)
   --return;
   if ((select count (*) from tb table option (index tb)) <> (select count (*) from tb table option (index k1)))
 	signal  ('BMFUP', sprintf ('bm inx out of whack %d', n));
+  if (0 <> (select count (*) from tb a table option (index tb) where not exists (select 1 from tb b table option (loop, index k1) where a.id = b.id and a.k1 = b.k1)))
+    signal ('BMFUP',  'bm inx does not contain pk row');
+  if (0 <> (select count (*) from tb a table option (index k1) where not exists (select 1 from tb b table option (loop, index tb) where a.id = b.id and a.k1 = b.k1)))
+    signal ('BMFUP',  'pk does not contain bm row');
 }
 
 insert into tb values (10, 11, 0);
@@ -102,9 +109,14 @@ select id, k1 from tb a table option (index primary  key) where   id - 1 <> (sel
 echo both $if $equ $rowcnt 704 "PASSED" "***FAILED";
 echo both ": bm select of previous in desc order with lt\n";
 
-select id, k1 from tb a table option (index primary  key) where   id - 1 <> (select b.id from tb b table option (index k1) where b.k1 = a.k1 and b.id < a.id order by b.id + 0 desc);
+select id, k1 from tb a table option (index primary  key) where   id - 1 <> (select b.id from tb b table option (index k1, loop) where b.k1 = a.k1 and b.id < a.id order by b.id + 0 desc);
 echo both $if $equ $rowcnt 704 "PASSED" "***FAILED";
 echo both ": bm select of previous in desc order with lt sorted desc oby\n";
+
+select id, k1 from tb a table option (index primary  key) where   id - 1 <> (select b.id from tb b table option (index k1, hash) where b.k1 = a.k1 and b.id < a.id order by b.id + 0 desc);
+echo both $if $equ $rowcnt 704 "PASSED" "***FAILED";
+echo both ": bm select of previous in desc order with lt sorted desc oby w hash\n";
+
 
 
 select id, k1 from tb a table option (index primary  key) where   id - 1 <> (select b.id from tb b table option (index primary key) where b.k1 = a.k1 and b.id < a.id order by b.id desc);
@@ -248,7 +260,7 @@ bmck (14);
 rollback work;
 
 bmck (15);
-
+exit;
 set autocommit manual;
 update tb set k1 = id;
 bmck (16);

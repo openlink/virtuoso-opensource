@@ -49,7 +49,22 @@ then
   LOG "***ABORTED: tsecini.sql -- Initialization"
   exit 1
 fi
-
+RUN $ISQL $DSN 'U1RUS' 'Абракадабра2' '"EXEC=ECHO BOTH 'Logging in as U1RUS with UTF-8 password set as wide before';"' PROMPT=OFF ERRORS=STDOUT 2> /dev/null
+if test $STATUS -eq 0
+then
+  LOG "PASSED: Lets U1RUS in with an UTF-8 password"
+else
+  LOG "***FAILED: Does not let U1RUS in with an UTF-8 password"
+  exit 1
+fi
+RUN $ISQL $DSN 'U1RUS' 'Абракадабра1' '"EXEC=ECHO BOTH 'Trying to get in as U1RUS with the wrong password';"' PROMPT=OFF ERRORS=STDOUT 2> /dev/null
+if test $STATUS -eq 0
+then
+  LOG "***ABORTED: Lets the U1RUS in with a wrong password"
+  exit 1
+else
+  LOG "PASSED: Does not let U1RUS in with a wrong password"
+fi
 RUN $ISQL $DSN U1 U1 tsecu1-1.sql PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT
 if test $STATUS -ne 0
 then

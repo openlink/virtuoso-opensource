@@ -283,9 +283,9 @@ create procedure s_list (in ctx varchare, in iri varchar, in axis int)
     result (id_to_iri (a[inx]));
 }
 
-sparql clear <g1>;
-sparql clear <g2>;
-sparql clear <g3>;
+sparql clear graph <g1>;
+sparql clear graph <g2>;
+sparql clear graph <g3>;
 sparql insert data in <g1> { <s1> <p> 1; <q> 10 . };                                                           
 sparql insert data in <g2> { <s2> <p> 2; <q> 20 . };
 sparql insert data in <g3> { <s3> <p> 3; <q> 30 . };

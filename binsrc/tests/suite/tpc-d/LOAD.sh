@@ -426,6 +426,6 @@ in
 	    ;;
 
 	z*)
-    	    LOG "usage $0 (tables | indexes | procedures | cleanprocedures | cleantables | cleandata | load | attach )"
+    	    LOG "usage $0 database username password (tables | indexes | procedures | cleanprocedures | cleantables | cleandata | load | attach )"
 	    ;;
 esac

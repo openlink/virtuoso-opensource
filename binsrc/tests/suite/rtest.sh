@@ -92,7 +92,7 @@ then
     exit 1
 fi
 
-../blobs $DS1
+RUN $BLOBS $DS1
 
 RUN $ISQL $DS1 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < rtest1-1.sql
 
@@ -251,7 +251,7 @@ fi
 # NOT AVAILABLE
 
 LOG "Scrolling through the VDB."
-RUN ../scroll $DS2 100 R1 R1
+RUN $SCROLL $DS2 100 R1 R1
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: rtest.sh: scroll"

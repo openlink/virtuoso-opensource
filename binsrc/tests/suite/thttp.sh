@@ -744,8 +744,26 @@ case $1 in
    if [ "$MAKE_VAD" = "yes" ] ; then
        if [ $do_mappers_only -eq 1 ]
        then
-	   (cd ../../../rdf_mappers; make)
-	   cp ../../../rdf_mappers/rdf_mappers_dav.vad ./
+	   LOG "Create RDF mappers Package"
+	   (cd ../../../../binsrc/rdf_mappers && make rdf_mappers_dav.vad)
+	   cp ../../../../binsrc/rdf_mappers/rdf_mappers_dav.vad .
+       elif [ -f ../../../../autogen.sh ]
+       then
+	   LOG "Create RDF mappers Package"
+	   (cd ../../../../binsrc/rdf_mappers && make rdf_mappers_dav.vad)
+	   cp ../../../../binsrc/rdf_mappers/rdf_mappers_dav.vad .
+
+	   LOG "Create ODS Framework VAD Package"
+	   (cd ../../../../appsrc/ODS-Framework && make ods_framework_dav.vad)
+	   cp ../../../../appsrc/ODS-Framework/ods_framework_dav.vad .
+
+	   LOG "Create ODS Blog VAD Package"
+	   (cd ../../../../appsrc/ODS-Blog && make ods_blog_dav.vad)
+	   cp ../../../../appsrc/ODS-Blog/ods_blog_dav.vad .
+
+	   LOG "Create SyncML VAD Package"
+	   (cd ../../../../binsrc/sync && make syncml_dav.vad)
+	   cp ../../../../binsrc/sync/syncml_dav.vad .
        elif [ "x$HOST_OS" = "x" ]
        then
 	   LOG "Create ODS VAD Package"
@@ -1039,6 +1057,68 @@ fi
       LOG "***ABORTED: xhtml1-testcases.sql"
       exit 1
    fi
+
+  LOG 'Now starting graph CRUD tests...'
+rm http/_virtrdf_log*.ttl
+rm http/graphcrud*.log
+
+#
+#  Make sure curl is installed
+#
+RUN curl --version
+
+if test $STATUS -eq 0
+then
+    curl --verbose --url "http://localhost:$HTTPPORT/sparql-graph-crud?graph-uri=http://www.openlinksw.com/schemas/virtrdf%23" > http/_virtrdf_log1.ttl 2> http/graphcrud_get0.log
+    if grep 'virtrdf:' http/_virtrdf_log1.ttl > /dev/null ; then
+      LOG 'PASSED: http/_virtrdf_log1.ttl contains data'
+    else
+      LOG '***FAILED: http/_virtrdf_log1.ttl does not contains virtrdf: string, but it should'
+    fi
+
+    curl --digest --user dba:dba --verbose --url "http://localhost:$HTTPPORT/sparql-graph-crud-auth?graph-uri=http://example.com/crud1" -X DELETE > http/graphcrud_1.log 2>&1
+    if grep 'HTTP/1.1 404' http/graphcrud_1.log > /dev/null ; then
+      LOG 'PASSED: http/graphcrud_1.log contains 404 error for missing graph'
+    else
+      LOG '***FAILED: http/graphcrud_1.log does not contains 404 error for missing graph, but it should'
+    fi
+
+    curl --digest --user dba:dba --verbose --url "http://localhost:$HTTPPORT/sparql-graph-crud-auth?graph-uri=http://example.com/crud1" -T http/_virtrdf_log1.ttl > http/graphcrud_2.log 2>&1
+    if grep  'HTTP/1.1 201' http/graphcrud_2.log > /dev/null ; then
+      LOG 'PASSED: http/graphcrud_2.log contains 201 for newly created graph'
+    else
+      LOG '***FAILED: http/graphcrud_2.log does not contain 201 for newly created graph, but it should'
+    fi
+
+    curl --verbose --url "http://localhost:$HTTPPORT/sparql-graph-crud?graph-uri=http://example.com/crud1" > http/_virtrdf_log2.ttl 2> http/graphcrud_get2.log
+    if grep 'virtrdf:' http/_virtrdf_log2.ttl > /dev/null ; then
+      LOG 'PASSED: http/_virtrdf_log2.ttl contains data'
+    else
+      LOG '***FAILED: http/_virtrdf_log2.ttl does not contains virtrdf: string, but it should'
+    fi
+
+    curl --digest --user dba:dba --verbose --url "http://localhost:$HTTPPORT/sparql-graph-crud-auth?graph-uri=http://example.com/crud1" -T http/_virtrdf_log1.ttl > http/graphcrud_2.log 2>&1
+    if grep  'HTTP/1.1 200' http/graphcrud_2.log > /dev/null ; then
+      LOG 'PASSED: http/graphcrud_2.log contains 200 for recreated graph'
+    else
+      LOG '***FAILED: http/graphcrud_2.log does not contains 200 for newly created graph, but it should'
+    fi
+
+    curl --digest --user dba:dba --verbose --url "http://localhost:$HTTPPORT/sparql-graph-crud-auth?graph-uri=http://example.com/crud1" -X DELETE > http/graphcrud_3.log 2>&1
+    if grep 'HTTP/1.1 200' http/graphcrud_3.log > /dev/null ; then
+      LOG 'PASSED: http/graphcrud_3.log contains 200 for successful graph removal'
+    else
+      LOG '***FAILED: http/graphcrud_3.log does not contain 200 for successful graph removal, but it should'
+    fi
+
+    curl --verbose --url "http://localhost:$HTTPPORT/sparql-graph-crud?graph-uri=http://example.com/crud1" > http/graphcrud_4.log 2>&1
+    if grep 'HTTP/1.1 404' http/graphcrud_4.log > /dev/null ; then
+      LOG 'PASSED: http/graphcrud_4.log contains 404 for deleted graph'
+    else
+      LOG '***FAILED: http/graphcrud_4.log does not contain 404 for deleted graph, but it should'
+    fi
+fi
+
 
    SHUTDOWN_SERVER
 
