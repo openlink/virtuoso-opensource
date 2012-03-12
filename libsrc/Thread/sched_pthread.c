@@ -883,6 +883,11 @@ semaphore_allocate (int entry_count)
 
   sem->sem_entry_count = entry_count;
   sem->sem_handle = (void *) ptm;
+#ifdef SEM_NO_ORDER
+  sem->sem_cv = _alloc_cv ();
+  if (!sem->sem_cv) goto failed;
+  sem->sem_any_signalled = 0;
+#endif
   thread_queue_init (&sem->sem_waiting);
   return sem;
 
@@ -898,6 +903,9 @@ semaphore_free (semaphore_t *sem)
 {
   pthread_mutex_destroy ((pthread_mutex_t*) sem->sem_handle);
   dk_free (sem->sem_handle, sizeof (pthread_mutex_t));
+#ifdef SEM_NO_ORDER
+  dk_free (sem->sem_cv, sizeof (pthread_cond_t));
+#endif
   dk_free (sem, sizeof (semaphore_t));
 }
 
@@ -915,6 +923,7 @@ semaphore_enter (semaphore_t * sem)
     sem->sem_entry_count--;
   else
     {
+#ifndef SEM_NO_ORDER
       thread_queue_to (&sem->sem_waiting, thr);
       _thread_num_wait++;
       thr->thr_status = WAITSEM;
@@ -923,6 +932,20 @@ semaphore_enter (semaphore_t * sem)
 	  rc = pthread_cond_wait ((pthread_cond_t *) thr->thr_cv, (pthread_mutex_t*) sem->sem_handle);
 	  CKRET (rc);
 	} while (thr->thr_status == WAITSEM);
+#else      
+      thread_queue_to (&sem->sem_waiting, thr);
+      _thread_num_wait++;
+      thr->thr_status = WAITSEM;
+      do 
+	{
+	  rc = pthread_cond_wait ((pthread_cond_t *) sem->sem_cv, (pthread_mutex_t*) sem->sem_handle);
+	  CKRET (rc);
+	}
+      while (!sem->sem_any_signalled);
+      thr->thr_status = RUNNING;
+      sem->sem_any_signalled = 0;
+      thread_queue_remove (&sem->sem_waiting, thr);
+#endif
     }
 
   pthread_mutex_unlock ((pthread_mutex_t*) sem->sem_handle);
@@ -988,6 +1011,7 @@ semaphore_leave (semaphore_t *sem)
     sem->sem_entry_count++;
   else
     {
+#ifndef SEM_NO_ORDER
       thr = thread_queue_from (&sem->sem_waiting);
       if (thr)
 	{
@@ -998,6 +1022,16 @@ semaphore_leave (semaphore_t *sem)
 	}
       else
 	sem->sem_entry_count++;
+#else
+      if (sem->sem_waiting.thq_count)
+	{
+	  _thread_num_wait--;
+	  sem->sem_any_signalled = 1;
+	  pthread_cond_signal ((pthread_cond_t *) sem->sem_cv);
+	}
+      else
+	sem->sem_entry_count++;
+#endif
     }
 
   rc = pthread_mutex_unlock ((pthread_mutex_t*) sem->sem_handle);

@@ -38,6 +38,13 @@
 /*#include <Wi/statuslog.h>*/
 #undef _THREAD_INT_HS
 
+#if defined (__APPLE__)
+#include <AvailabilityMacros.h>
+
+# if (MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_7)
+#  define SEM_NO_ORDER 1
+# endif
+#endif
 
 /* Default stack size for the main thread */
 #define MAIN_STACK_SIZE		800000
@@ -178,6 +185,10 @@ struct semaphore_s
     /* simulated threads */
     int			sem_entry_count;
     thread_queue_t	sem_waiting;
+#ifdef SEM_NO_ORDER
+    void *		sem_cv;			/* condition variable */
+    int 		sem_any_signalled;
+#endif
 #ifdef SEM_DEBUG
     int			sem_last_left_line[MAX_SEM_ENT];
     char *		sem_last_left_file[MAX_SEM_ENT];
