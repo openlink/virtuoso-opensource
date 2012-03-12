@@ -24,6 +24,7 @@ Mar 11, 2012, V6.1.5:
       from system root
     - Fixed issue with uninitialized variables
     - Fixed use portable method for escaping symbol for gawk 3 and 4
+    - Fixed issue with semaphores on Mac OS X 10.7
     - Fixed compiler warnings
     - Fixed memory leaks
     - Updated documentation
