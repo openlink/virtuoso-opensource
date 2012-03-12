@@ -3700,6 +3700,7 @@ _social:
 
     if (_WAM_APP_TYPE = 'AddressBook')
     {
+      _WAM_APP_TYPE := 'SocialNetwork';
       forum_iri := forum_iri ('SocialNetwork', _WAM_INST);
       graph_iri := get_graph_new (_WAM_IS_PUBLIC, forum_iri);
       goto _social;

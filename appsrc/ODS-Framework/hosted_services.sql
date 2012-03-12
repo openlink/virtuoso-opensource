@@ -485,6 +485,21 @@ wa_member_upgrade()
 drop procedure wa_member_upgrade
 ;
 
+create procedure wa_instance_upgrade() {
+
+  if (registry_get ('__wa_instance_upgrade') = 'done')
+    return;
+
+  delete from DB.DBA.WA_INSTANCE where wai_name not in (select WAM_INST from  DB.DBA.WA_MEMBER);
+  registry_set ('__wa_instance_upgrade', 'done');
+}
+;
+
+wa_instance_upgrade()
+;
+drop procedure wa_instance_upgrade
+;
+
 
 wa_exec_no_error(
   'CREATE TABLE WA_MEMBER_INSTCOUNT
