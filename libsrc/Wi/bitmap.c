@@ -687,7 +687,8 @@ itc_bm_insert_in_row (it_cursor_t * itc, buffer_desc_t * buf, row_delta_t * rd)
   if (!buf->bd_is_write || buf->bd_readers)
     GPF_T1 ("should have excl buffer in bm ins in row");
   itc_bm_ends (itc, buf, &bm_start, &last, &is_single);
-  if (is_single)
+  row = buf->bd_buffer + buf->bd_content_map->pm_entries[itc->itc_map_pos];
+  if (is_single && !IE_ISSET (row, IEF_DELETE))
     {
       GPF_T1 ("singleton bm not in use");
 #if 0
@@ -728,12 +729,12 @@ itc_bm_insert_in_row (it_cursor_t * itc, buffer_desc_t * buf, row_delta_t * rd)
     }
   /* now the row is a collection of ce's. Insert in there.  If the new value would make a new ce in front, make a singleton row so as not to have to reset the offsets of the c's and maybe splitting just because the start bit no changes.  */
   if (!BITS_IN_RANGE (bm_start, value)
-      || value < bm_start)
+      || value < bm_start
+      || IE_ISSET (row, IEF_DELETE))
     {
       itc_bm_insert_single (itc, buf, rd, DVC_INDEX_END);
       return;
     }
-  row = buf->bd_buffer + buf->bd_content_map->pm_entries[itc->itc_map_pos];
   KEY_PRESENT_VAR_COL (itc->itc_insert_key, itc->itc_row_data, (*key->key_bm_cl), off, len);
   row_reserved = row_length (row, itc->itc_insert_key);
   row_align_len = ROW_ALIGN (off + len);
@@ -1135,7 +1136,11 @@ itc_bm_delete (it_cursor_t * itc, buffer_desc_t ** buf_ret)
   BIT_COL (bm_start, (*buf_ret), itc->itc_row_data, itc->itc_insert_key);
   rc = bm_delete (bm_start, itc->itc_row_data + off, &bm_len, itc->itc_bp.bp_value);
   if (DVC_MATCH != rc)
-    return BM_DEL_DONE; /* the bit was not found, no change */
+    {
+      if (0 == bm_len)
+	GPF_T1("leaving bm with singeleton entry");
+      return BM_DEL_DONE; /* the bit was not found, no change */
+    }
   upd_truncate_row (itc, *buf_ret, off + bm_len);
   CL_SET_LEN (key, key->key_bm_cl, itc->itc_row_data, bm_len);
   itc->itc_bp.bp_is_pos_valid = 1;
