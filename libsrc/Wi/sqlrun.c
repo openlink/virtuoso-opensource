@@ -656,7 +656,7 @@ cli_terminate_in_itc_fail (client_connection_t * cli, it_cursor_t * itc, buffer_
       lt->lt_status = LT_BLOWN_OFF;
       if (itc)
 	itc_bust_this_trx (itc, buf, ITC_BUST_THROW);
-      sqlr_new_error ("S1T00", "{CLI..", "Client cancelled or disconnected");
+      sqlr_new_error ("S1T00", "CLI..", "Client cancelled or disconnected");
     }
 }
 
