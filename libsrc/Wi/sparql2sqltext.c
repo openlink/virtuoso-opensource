@@ -231,11 +231,22 @@ ssg_find_valmode_by_name (ccaddr_t name)
   return NULL; /* to keep compiler happy */
 }
 
+int
+ssg_is_odbc_cli ()
+{
+  client_connection_t * cli = sqlc_client ();
+  if (!cli || !cli->cli_session || cli->cli_ws || cli->cli_is_log)
+    return 0;
+  return 1;
+}
+
 void
 ssg_find_formatter_by_name_and_subtype (ccaddr_t name, ptrlong subtype,
   const char **ret_formatter, const char **ret_agg_formatter, const char **ret_agg_mdata )
 {
   ret_formatter[0] = ret_agg_formatter[0] = ret_agg_mdata[0] = NULL;
+  if (NULL == name && ssg_is_odbc_cli ())
+    name = "_UDBC_";
   if (NULL == name)
     return;
   if (!strncmp (name, "HTTP+", 5))
@@ -8532,7 +8543,8 @@ ssg_req_top_needs_rb_complete (spar_sqlgen_t *ssg)
   ssg_valmode_t retvalmode;
   if ((SELECT_L != subtype) && (DISTINCT_L != subtype))
     return 0;
-  if (NULL != tree->_.req_top.formatmode_name && (strcmp (tree->_.req_top.formatmode_name, "_JAVA_") || strcmp (tree->_.req_top.formatmode_name, "_UDBC_")))
+  if ((NULL == tree->_.req_top.formatmode_name && ssg_is_odbc_cli ()) ||
+     (NULL != tree->_.req_top.formatmode_name && (strcmp (tree->_.req_top.formatmode_name, "_JAVA_") || strcmp (tree->_.req_top.formatmode_name, "_UDBC_"))))
     return 0;
   retvalmode = ssg_find_valmode_by_name (tree->_.req_top.retvalmode_name);
   if ((SSG_VALMODE_SQLVAL != retvalmode) && (NULL != retvalmode))
@@ -8759,8 +8771,8 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
       break;
     case CONSTRUCT_L:
     case DESCRIBE_L:
-      if ((NULL != tree->_.req_top.formatmode_name) &&
-        (!strcmp ("_JAVA_", tree->_.req_top.formatmode_name) || !strcmp ("_UDBC_", tree->_.req_top.formatmode_name)))
+      if ((NULL == tree->_.req_top.formatmode_name && ssg_is_odbc_cli ()) ||
+	  ((NULL != tree->_.req_top.formatmode_name) && (!strcmp ("_JAVA_", tree->_.req_top.formatmode_name) || !strcmp ("_UDBC_", tree->_.req_top.formatmode_name))))
         {
           ssg_puts (" DB.DBA.RDF_DICT_OF_TRIPLES_TO_THREE_COLS ((");
           three_cols_procedure = 1;
