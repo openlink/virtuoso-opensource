@@ -121,6 +121,13 @@ sqlg_dfe_ssl (sqlo_t * so, df_elt_t * dfe)
 
 	  memset (args, 0, box_length (args));
 	  memset (&dummy_arg, 0, sizeof (state_slot_t));
+	  if (!strcmp (dfe->dfe_tree->_.call.name, "_cvt") && ARRAYP (dfe->dfe_tree->_.call.params) &&
+	      BOX_ELEMENTS (dfe->dfe_tree->_.call.params) > 0 && ARRAYP (dfe->dfe_tree->_.call.params[0]) &&
+	      BOX_ELEMENTS (dfe->dfe_tree->_.call.params[0]) > 1)
+	    {
+	      ST *dtp = (ST *) (((caddr_t *) (dfe->dfe_tree->_.call.params[0]))[1]);
+	      dummy_arg.ssl_sqt.sqt_dtp = dtp->type;
+	    }
 	  DO_BOX (df_elt_t *, dfe_arg, inx, dfe->_.call.args)
 	    {
 	      args[inx] = dfe_arg->dfe_ssl ? dfe_arg->dfe_ssl : &dummy_arg;
@@ -128,6 +135,7 @@ sqlg_dfe_ssl (sqlo_t * so, df_elt_t * dfe)
 	  END_DO_BOX;
 	  bif_type_set (bt, dfe->dfe_ssl, args);
 	}
+      goto done;
     }
   if (ST_COLUMN (tree, COL_DOTTED))
     {
