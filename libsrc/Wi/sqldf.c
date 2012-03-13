@@ -1148,7 +1148,7 @@ void
 dfe_loc_result (locus_t * loc_from, df_elt_t * requiring, df_elt_t * required)
 {
   if (!IS_BOX_POINTER (loc_from)
-      || requiring->dfe_locus == required->dfe_locus
+      || (requiring->dfe_locus == required->dfe_locus && required->dfe_type != DFE_CALL) /* can happen it's a standard function in same scope but result required */
       || required->dfe_type == DFE_CONST)
     return;
   {
@@ -1667,6 +1667,32 @@ sqlo_place_control_cols (sqlo_t * so, df_elt_t * super, ST * tree)
     }
 }
 
+int
+sqlo_is_const_call (ST * tree)
+{
+  if (!ARRAYP (tree))
+    return 1;
+  switch (tree->type)
+    {
+      case CALL_STMT:
+	    {
+	      caddr_t * pars = (caddr_t *) tree->_.call.params;
+	      int inx;
+	      DO_BOX (ST *, exp, inx, pars)
+		{
+		  if (!stricmp (tree->_.call.name, "_cvt") && !inx)
+		    continue;
+		  if (!sqlo_is_const_call (exp))
+		    return 0;
+		}
+	      END_DO_BOX;
+	      return 1;
+	    }
+      default:
+	  return 0;
+    }
+  return 1;
+}
 
 int
 sqlo_is_dt_state_func (char * name)
@@ -1876,6 +1902,8 @@ sqlo_place_exp (sqlo_t * so, df_elt_t * super, df_elt_t * dfe)
 	  { /* if this is a remote virtuoso do not pass through scalar functions on proc vars */
 	    pref_loc = LOC_LOCAL;
 	  }
+	if (sqlo_is_const_call (dfe->dfe_tree)) /* call with constant, do it locally and pass as parameter */
+	  pref_loc = LOC_LOCAL;
 
 	if (sqlo_is_dt_state_func (dfe->dfe_tree->_.call.name))
 	  {
