@@ -8496,8 +8496,7 @@ create procedure DB.DBA.RDF_DICT_OF_TRIPLES_TO_THREE_COLS (in dict any, in destr
   declare S, P, O_DT, O_LANG varchar;
   declare O_IS_IRI, dt_twobyte, lang_twobyte integer;
   dict := dict_list_keys (dict, destructive);
-  result_names (S, P, O --, O_IS_IRI, O_DT, O_LANG
-  );
+  exec_result_names (vector (vector ('S', 182, 0, 4072, 1, 0, 1, 0, 0, 0, 0, 0), vector ('P', 182, 0, 4072, 1, 0, 1, 0, 0, 0, 0, 0), vector ('O', 125, 0, 2147483647, 1, 0, 0, 0, 0, 0, 0, 0)));
   len := length (dict);
   for (ctr := 0; ctr < len; ctr := ctr+1)
     {
