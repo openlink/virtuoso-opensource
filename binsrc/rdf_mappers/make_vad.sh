@@ -333,6 +333,11 @@ sticker_init() {
   echo "         result ('ERROR', 'The $VAD_DESC package requires server version $NEED_VERSION or greater'); " >> $STICKER
   echo "	 signal ('FATAL', 'The $VAD_DESC package requires server version $NEED_VERSION or greater'); " >> $STICKER
   echo "      } " >> $STICKER
+  echo "    if (__proc_exists ('__PROC_PARAMS_NUM', 2) is null) " >> $STICKER
+  echo "      { " >> $STICKER
+  echo "         result ('ERROR', 'The $VAD_DESC package requires new server version'); " >> $STICKER
+  echo "         signal ('FATAL', 'The $VAD_DESC package requires new server version'); " >> $STICKER
+  echo "      } " >> $STICKER
   echo "  ]]></sql>" >> $STICKER
   echo "  <sql purpose=\"post-install\">" >> $STICKER
   echo "	; " >> $STICKER

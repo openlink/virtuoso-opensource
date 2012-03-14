@@ -905,16 +905,17 @@ insert replacing DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
     values ('xFolk', '', registry_get ('_rdf_mappers_path_') || 'xslt/main/xfolk2rdf.xsl')
 ;
 
-create procedure DB.DBA.RM_XLAT_CONCAT (in x any, in y any)
+create procedure DB.DBA.RM_XLAT_CONCAT (in x any, in p any, in s_or_o any, in y any)
 {
+    --dbg_obj_print_vars (x, p);
     if (not isstring (x))
-        return x;
+      return x;
     if (registry_get ('__rdf_cartridges_original_doc_uri__') = '1')
+      return x;
+    if (http_mime_type (x) like 'image/%' or (s_or_o = 'o' and p = UNAME'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'))
+      {
         return x;
-    if (http_mime_type (x) like 'image/%')
-    {
-        return x;
-    }
+      }
     return DB.DBA.RDF_PROXY_ENTITY_IRI(x);
 }
 ;
