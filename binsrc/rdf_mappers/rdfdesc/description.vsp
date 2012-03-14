@@ -11,7 +11,7 @@
    declare _G, _S, _S_save, odd_position any;
    declare rdf_link, label, true_label, _subject any;
    declare arr, data, meta, h1, h2, inx, gr, host, pars, cookievec any;
-   declare iri_type, iri_uri, links, langs, dspace, sid, error_message, cookiestr, dsn, ua, sp_mode varchar;
+   declare iri_type, iri_uri, links, langs, dspace, sid, error_message, cookiestr, dsn, ua, sp_mode, accept_mode varchar;
    declare do_sponge, force_clean, do_refresh, local_lookup, sponge_type, proxy_iri_fn, expir int;
 
    set http_charset='utf-8';
@@ -65,12 +65,14 @@
        gr := regexp_substr ( '(.*)([\\?&]@Lookup@=.*)', gr, 1);
      }
    sp_mode := 'add';  
+   accept_mode := null;
    if (gr like '%sponger:%=%')
      {
        declare rq any;
        rq := WS..PARSE_URI (gr); 
        rq := split_and_decode (rq[4]);
        sp_mode := get_keyword ('sponger:get', rq, 'add');
+       accept_mode := get_keyword ('sponger:accept', rq);
        gr := regexp_substr ( '(.*)([\\?&]sponger:(.*)=.*)', gr, 1);
      }
    arr := rfc1808_parse_uri (gr);
@@ -215,7 +217,7 @@
          {
            sparql clear graph ?:_G;
 	 }
-       DB.DBA.RM_DO_SPONGE (_G, sponge_type, do_refresh, sp_mode);
+       DB.DBA.RM_DO_SPONGE (_G, sponge_type, do_refresh, sp_mode, accept_mode);
        commit work;
      }
    else if (_S like 'nodeID://%' or local_lookup = 1)

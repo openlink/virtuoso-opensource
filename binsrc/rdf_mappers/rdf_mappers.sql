@@ -12365,7 +12365,8 @@ DB.DBA.RM_LOAD_ONTOLOGIES ();
 
 drop procedure DB.DBA.RM_LOAD_ONTOLOGIES;
 
-create procedure RM_DO_SPONGE (in _G any, in sp_type varchar := '', in do_refresh int := null, in sp_mode varchar := 'add')
+create procedure RM_DO_SPONGE (in _G any, in sp_type varchar := '', in do_refresh int := null, in sp_mode varchar := 'add', 
+	in accept_mode varchar := null)
 {
   declare dedl int;
   --dbg_obj_print_vars (sp_mode);
@@ -12381,9 +12382,9 @@ create procedure RM_DO_SPONGE (in _G any, in sp_type varchar := '', in do_refres
   };
 again:
   if (do_refresh is null)
-    DB.DBA.RDF_SPONGE_UP (_G, vector ('get:soft',  sp_mode,  'refresh_free_text' ,  0, 'meta-cartridges-mode', sp_type));
+    DB.DBA.RDF_SPONGE_UP (_G, vector ('get:soft',  sp_mode,  'refresh_free_text' ,  0, 'meta-cartridges-mode', sp_type, 'get:accept', accept_mode));
   else
-    DB.DBA.RDF_SPONGE_UP (_G, vector ('get:soft',  sp_mode,  'refresh_free_text' ,  1, 'meta-cartridges-mode', sp_type, 'get:refresh', do_refresh));
+    DB.DBA.RDF_SPONGE_UP (_G, vector ('get:soft',  sp_mode,  'refresh_free_text' ,  1, 'meta-cartridges-mode', sp_type, 'get:refresh', do_refresh, 'get:accept', accept_mode));
 }
 ;
 
