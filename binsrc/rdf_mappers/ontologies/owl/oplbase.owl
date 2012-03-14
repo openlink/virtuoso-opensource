@@ -1,6 +1,6 @@
 <!--
 
-  $Id$
+  oplbase.owl,v 1.1.2.3 2012/03/06 16:48:07 source Exp
 
   This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
   project.
@@ -51,6 +51,20 @@
         <rdfs:label>Blog URL</rdfs:label>
         <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#anyURI"/>
         <rdfs:subPropertyOf rdf:resource="http://www.openlinksw.com/schemas/oplbase#social_profile_url"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/oplbase#native_entity_type">
+        <rdfs:comment>An entity type classifier returned by an entity extraction service</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/oplbase"/>
+        <rdfs:label>native entity type</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/oplbase#relevance_score">
+        <rdfs:comment>A relevance score returned by an entity extraction service</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/oplbase"/>
+        <rdfs:label>relevance score</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
     </owl:DatatypeProperty>
 
     <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/oplbase#social_profile_url">
