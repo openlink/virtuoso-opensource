@@ -47,12 +47,14 @@ EXTRA_DIST = \
 	*.css \
 	*.html \
 	*.js \
+	*.php \
 	*.sql \
 	*.txt \
 	*.vsp \
 	*.vspx \
 	*.xml \
 	*.xsl \
+	ckeditor/*.css \
 	ckeditor/*.html \
 	ckeditor/*.js \
 	ckeditor/images/*.gif \
