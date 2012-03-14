@@ -4,10 +4,12 @@ Mar 11, 2012, V6.1.5:
     - Added support for SPARQL 1.1 Update
     - Added support for SPARQL 1.1 Functions
     - Added support for SPARQL Macro Library syntax
-    - Added new Visual Studio 11 project files for both 32bit and 64bit builds
+    - Added support for SPARQL DESCRIBE modes OBJCBD and SCBD
+    - Added support for SPARQL DESCRIBE/CONSTRUCT to return 3 column
+      resultset when using ODBC/JDBC/.NET by default
     - Added support for wide strings in all SPARQL serializers
     - Added common infrastructure for RDF-specific XML parsers
-    - Added new RDF/XML printer (fater + pretty print)
+    - Added new RDF/XML printer (faster + pretty print)
     - Added TRIG formatter
     - Added support for r2rml graph generation
     - Added support for XHTML+Microdata
@@ -16,6 +18,7 @@ Mar 11, 2012, V6.1.5:
       clause to avoid extra lock on fake subqueries
     - Added DBpedia vad package
     - Added support for scoping ACL to a virtual dir
+    - Added new Visual Studio 11 project files for both 32bit and 64bit builds
     - Fixed RDF/XML parser to pass w3c tests dated 2003-Nov.
     - Fixed JSON-LD syntax to match recent draft of the spec
     - Fixed CONSTRUCT with constant string objects with language
