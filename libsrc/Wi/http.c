@@ -9977,10 +9977,12 @@ http_on_message_ses_dropped (dk_session_t * ses)
 static caddr_t
 bif_http_on_message (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
+  query_instance_t *qi = (query_instance_t *)qst;
   caddr_t *conn = (caddr_t *) bif_arg (qst, args, 0, "http_on_message");
   caddr_t func = bif_string_arg (qst, args, 1, "http_on_message");
   caddr_t cd = bif_arg (qst, args, 2, "http_on_message");
   dk_session_t * ses = NULL;
+  ws_connection_t * ws = qi->qi_client->cli_ws;
 
   if (DV_CONNECTION == DV_TYPE_OF (conn))
     {
@@ -9989,6 +9991,17 @@ bif_http_on_message (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         conn[0] = NULL;
       else
 	ses = NULL;
+    }
+  else if (ws && ws->ws_session)
+    {
+      /* We should mark the session so it will not be disconnected nor freed */
+      if (ws->ws_flushed)
+	sqlr_new_error ("42000", "HT000", "The client session is already flushed");
+      mutex_enter (thread_mtx);
+      ses = qi->qi_client->cli_ws->ws_session;
+      ws->ws_session->dks_ws_status = DKS_WS_CACHED;
+      ws->ws_session->dks_n_threads++;
+      mutex_leave (thread_mtx);
     }
 
   if (ses == NULL)
