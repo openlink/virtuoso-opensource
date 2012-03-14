@@ -3721,7 +3721,7 @@ end_pred_sort: ;
 end_subj_sort: ;
   }
   rowvector_graph_sort (triples, 3, 1);
-  dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_TRIG after sort:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) dbg_obj_princ (triples[tctr]);
+  -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_TRIG after sort:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) dbg_obj_princ (triples[tctr]);
   DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
   for (tctr := 0; (tctr < tcount) and aref_or_default (triples, tctr, 3, null) is null; tctr := tctr + 1)
     {
@@ -8499,6 +8499,434 @@ ret_or_next_iter:
 }
 ;
 
+create procedure DB.DBA.SPARQL_DESC_DICT_OBJCBD (in obj_dict any, in consts any, in good_graphs any, in bad_graphs any, in storage_name any, in options any)
+{
+  declare all_objs, phys_objects, sorted_good_graphs, sorted_bad_graphs, next_iter_objs, res any;
+  declare uid, graphs_listed, g_ctr, good_g_count, bad_g_count, obj_ctr, all_obj_count, phys_obj_count integer;
+  declare gs_app_callback, gs_app_uid, inf_ruleset varchar;
+  declare rdf_type_iid IRI_ID;
+  uid := get_keyword ('uid', options, http_nobody_uid());
+  gs_app_callback := get_keyword ('gs-app-callback', options);
+  if (gs_app_callback is not null)
+    gs_app_uid := get_keyword ('gs-app-uid', options);
+  inf_ruleset := get_keyword ('inference', options);
+  rdf_type_iid := iri_to_id (UNAME'http://www.w3.org/1999/02/22-rdf-syntax-ns#type');
+  res := dict_new ();
+  if (isinteger (consts))
+    return res;
+  foreach (any c in consts) do
+    {
+      if (not isnumeric (c))
+        dict_put (obj_dict, c, 0);
+    }
+  all_objs := dict_list_keys (obj_dict, 0);
+  next_iter_objs := dict_new ();
+  all_obj_count := length (all_objs);
+  if (0 = all_obj_count)
+    return res;
+
+next_iteration:
+  all_obj_count := length (all_objs);
+  gvector_sort (all_objs, 1, 0, 0);
+  -- dbg_obj_princ ('new iteration: all_objs = ', all_objs);
+  if (__tag of integer = __tag (good_graphs))
+    graphs_listed := 0;
+  else
+    {
+      vectorbld_init (sorted_good_graphs);
+      foreach (any g in good_graphs) do
+        {
+          if (is_named_iri_id (g) and
+            __rgs_ack_cbk (g, uid, 1) and
+            (gs_app_callback is null or bit_and (1, call (gs_app_callback) (g, gs_app_uid))) )
+            vectorbld_acc (sorted_good_graphs, g);
+        }
+      vectorbld_final (sorted_good_graphs);
+      good_g_count := length (sorted_good_graphs);
+      if (0 = good_g_count)
+        return res;
+      graphs_listed := 1;
+    }
+  vectorbld_init (sorted_bad_graphs);
+  foreach (any g in bad_graphs) do
+    {
+      if (is_named_iri_id (g))
+        vectorbld_acc (sorted_bad_graphs, g);
+    }
+  vectorbld_final (sorted_bad_graphs);
+  bad_g_count := length (sorted_bad_graphs);
+  vectorbld_init (phys_objects);
+  if (storage_name is null)
+    storage_name := 'http://www.openlinksw.com/schemas/virtrdf#DefaultQuadStorage';
+  else if (('' = storage_name) and (inf_ruleset is null))
+    {
+      for (obj_ctr := 0; obj_ctr < all_obj_count; obj_ctr := obj_ctr + 1)
+        {
+          declare obj, phys_obj any;
+          obj := all_objs [obj_ctr];
+          if (not isnumeric (obj))
+            {
+              if (isiri_id (obj))
+                vectorbld_acc (phys_objects, obj);
+              else
+                {
+                  phys_obj := iri_to_id (obj, 0, 0);
+                  if (not isinteger (phys_obj))
+                    vectorbld_acc (phys_objects, phys_obj);
+                }
+            }
+        }
+      vectorbld_final (phys_objects);
+      goto describe_physical_objects;
+    }
+  -- dbg_obj_princ ('storage_name=',storage_name, ' sorted_good_graphs=', sorted_good_graphs, ' sorted_bad_graphs=', sorted_bad_graphs);
+  for (obj_ctr := 0; obj_ctr < all_obj_count; obj_ctr := obj_ctr + 1)
+    {
+      declare obj, phys_obj, maps any;
+      declare maps_len integer;
+      obj := all_objs [obj_ctr];
+      maps := sparql_quad_maps_for_quad (NULL, NULL, NULL, obj, storage_name, case (graphs_listed) when 0 then vector() else sorted_good_graphs end, sorted_bad_graphs);
+      -- dbg_obj_princ ('obj = ', obj, id_to_iri (obj), ' maps = ', maps);
+      maps_len := length (maps);
+      if ((maps_len > 0) and (inf_ruleset is null) and (maps[maps_len-1][0] = UNAME'http://www.openlinksw.com/schemas/virtrdf#DefaultQuadMap'))
+        {
+          if (not isnumeric (obj))
+            {
+              if (isiri_id (obj))
+                {
+                  phys_obj := obj;
+                  vectorbld_acc (phys_objects, phys_obj);
+                }
+              else
+                {
+                  phys_obj := iri_to_id (obj, 0, 0);
+                  if (not isinteger (phys_obj))
+                    vectorbld_acc (phys_objects, phys_obj);
+                }
+            }
+          maps := subseq (maps, 0, maps_len-1);
+          maps_len := maps_len - 1;
+        }
+      if (maps_len > 0)
+        all_objs [obj_ctr] := vector (obj, maps);
+      else
+        all_objs [obj_ctr] := 0;
+      -- dbg_obj_princ ('obj = ', obj, ' maps = ', maps);
+      -- dbg_obj_princ ('all_objs [', obj_ctr, '] = ', all_objs [obj_ctr]);
+    }
+  vectorbld_final (phys_objects);
+  for (obj_ctr := 0; obj_ctr < all_obj_count; obj_ctr := obj_ctr + 1)
+    {
+      declare s_desc, obj, maps any;
+      declare map_ctr, maps_len integer;
+      declare fname varchar;
+      s_desc := all_objs [obj_ctr];
+      if (isinteger (s_desc))
+        goto end_of_s;
+      obj := s_desc[0];
+      maps := s_desc[1];
+      maps_len := length (maps);
+      fname := sprintf ('SPARQL_DESC_DICT_OBJCBD_QMV1_%U', md5 (storage_name || inf_ruleset || cast (graphs_listed as varchar) || md5_box (maps) || md5_box (sorted_bad_graphs)));
+      if (not exists (select top 1 1 from Db.DBA.SYS_PROCEDURES where P_NAME = 'DB.DBA.' || fname))
+        {
+          declare ses, txt, saved_user any;
+          ses := string_output ();
+          http ('create procedure DB.DBA."' || fname || '" (in obj any, in obj_dict any, in next_iter_objs any, in res any', ses);
+          if (graphs_listed)
+            http (', inout sorted_good_graphs any', ses);
+          http (')\n', ses);
+          http ('{\n', ses);
+          http ('  declare obj_iri varchar;\n', ses);
+          http ('  obj_iri := id_to_iri_nosignal (obj);\n', ses);
+          http ('  for (sparql define output:valmode "LONG" define input:storage <' || storage_name || '> ', ses);
+          foreach (any g in sorted_bad_graphs) do
+            {
+              http ('  define input:named-graph-exclude <' || id_to_iri_nosignal (g) || '>\n', ses);
+            }
+          if (inf_ruleset is not null)
+              http ('  define input:inference <' || inf_ruleset || '>\n', ses);
+          http ('select ?g1 ?p1 ?s1 ?g2 ?st2\n', ses);
+          http ('      where { graph ?g1 {\n', ses);
+          for (map_ctr := 0; map_ctr < maps_len; map_ctr := map_ctr + 1)
+            {
+              if (map_ctr > 0) http ('              union\n', ses);
+              http ('              { quad map <' || maps[map_ctr][0] || '> { ?s1 ?p1 ?:obj_iri } }\n', ses);
+            }
+          http ('            }\n', ses);
+          http ('          optional { graph ?g2 {\n', ses);
+          http ('                  ?st2 a rdf:Statement ; rdf:object ?:obj_iri ; rdf:predicate ?p1 ; rdf:subject ?s1 } }\n', ses);
+          http ('            } ) do {\n', ses);
+          if (graphs_listed)
+            http ('      if (position (__i2idn ("g1"), sorted_good_graphs)) {\n', ses);
+          http ('      dict_bitor_or_put (res, vector ("s1", "p1", obj), 1);\n', ses);
+          http ('      if (is_bnode_iri_id ("s1") and dict_get (obj_dict, "s1") is null)\n', ses);
+          http ('        dict_put (next_iter_objs, "s1", 1);\n', ses);
+          if (graphs_listed)
+            http ('      if (position (__i2idn ("g2"), sorted_good_graphs)) {\n', ses);
+          http ('      if ("st2" is not null and dict_get (obj_dict, "st2") is null)\n', ses);
+          http ('        dict_put (next_iter_objs, "s1", 1);\n', ses);
+          if (graphs_listed)
+            http ('        } }\n', ses);
+          http ('      } }\n', ses);
+          txt := string_output_string (ses);
+          -- dbg_obj_princ ('Procedure text: ', txt);
+	  saved_user := user;
+	  set_user_id ('dba', 1);
+          exec (txt);
+	  set_user_id (saved_user);
+        }
+      if (graphs_listed)
+        {
+          -- dbg_obj_princ ('call (''DB.DBA.', fname, ''')(', obj, obj_dict, next_iter_objs, res, sorted_good_graphs, ')');
+          call ('DB.DBA.' || fname)(obj, obj_dict, next_iter_objs, res, sorted_good_graphs);
+        }
+      else
+        {
+          -- dbg_obj_princ ('call (''DB.DBA.', fname, ''')(', obj, obj_dict, next_iter_objs, res, ')');
+          call ('DB.DBA.' || fname)(obj, obj_dict, next_iter_objs, res);
+        }
+end_of_s: ;
+    }
+
+describe_physical_objects:
+  gvector_sort (phys_objects, 1, 0, 0);
+  phys_obj_count := length (phys_objects);
+  -- dbg_obj_princ ('phys_objects = ', phys_objects);
+  if (0 = phys_obj_count)
+    return res;
+  -- dbg_obj_princ ('sorted_bad_graphs = ', sorted_bad_graphs);
+  if (graphs_listed)
+    {
+      gvector_sort (sorted_good_graphs, 1, 0, 0);
+      -- dbg_obj_princ ('sorted_good_graphs = ', sorted_good_graphs);
+      for (g_ctr := good_g_count - 1; g_ctr >= 0; g_ctr := g_ctr - 1)
+        {
+          declare graph any;
+          graph := sorted_good_graphs [g_ctr];
+          for (obj_ctr := phys_obj_count - 1; obj_ctr >= 0; obj_ctr := obj_ctr - 1)
+            {
+              declare obj any;
+              obj := phys_objects [obj_ctr];
+              for (select P as p1, S as subj1 from DB.DBA.RDF_QUAD where G = graph and O = obj) do
+                {
+                  -- dbg_obj_princ ('found3 ', subj1, p1, obj, ' in ', graph);
+                  dict_bitor_or_put (res, vector (subj1, p1, __rdf_long_of_obj (obj)), 1);
+                  if (is_bnode_iri_id (subj1) and dict_get (obj_dict, subj1) is null)
+                    dict_put (next_iter_objs, subj1, 1);
+                  for (sparql define output:valmode "LONG"
+                    select ?g2 ?st2 where {
+                        graph ?g2 {
+                            ?st2 a rdf:Statement ; rdf:object ?:obj ; rdf:predicate ?:p1 ; rdf:subject ?:subj1 } } ) do
+                    {
+                      if (position ("g2", sorted_good_graphs) and dict_get (obj_dict, "st2") is null)
+                        dict_put (next_iter_objs, "st2", 1);
+                    }
+                }
+            }
+        }
+    }
+  else
+    {
+      for (obj_ctr := phys_obj_count - 1; obj_ctr >= 0; obj_ctr := obj_ctr - 1)
+        {
+          declare obj any;
+          obj := phys_objects [obj_ctr];
+          for (select P as p1, S as subj1 from DB.DBA.RDF_QUAD where
+            0 = position (G, sorted_bad_graphs) and
+            O = obj and
+            __rgs_ack_cbk (G, uid, 1) and
+            (gs_app_callback is null or bit_and (1, call (gs_app_callback) (G, gs_app_uid))) ) do
+            {
+              -- dbg_obj_princ ('found4 ', obj, p1);
+              dict_bitor_or_put (res, vector (subj1, p1, __rdf_long_of_obj (obj)), 1);
+              if (is_bnode_iri_id (subj1) and dict_get (obj_dict, subj1) is null)
+                dict_put (next_iter_objs, subj1, 1);
+              for (sparql define output:valmode "LONG"
+                select ?g2 ?st2 where {
+                    graph ?g2 {
+                        ?st2 a rdf:Statement ; rdf:object ?:obj ; rdf:predicate ?:p1 ; rdf:subject ?:subj1 } } ) do
+                {
+                  if (0 = position ("g2", sorted_bad_graphs) and
+                    dict_get (obj_dict, "st2") is null and
+                    __rgs_ack_cbk ("g2", uid, 1) and
+                    (gs_app_callback is null or bit_and (1, call (gs_app_callback) ("g2", gs_app_uid))) )
+                    dict_put (next_iter_objs, "st2", 1);
+                }
+            }
+        }
+    }
+ret_or_next_iter:
+  if (0 = dict_size (next_iter_objs))
+    {
+      -- dbg_obj_princ ('no new objs, res = ', dict_list_keys (res, 0));
+      return res;
+    }
+  all_objs := dict_list_keys (next_iter_objs, 1);
+  foreach (IRI_ID obj in all_objs) do dict_put (obj_dict, obj, 1);
+  goto next_iteration;
+}
+;
+
+create procedure DB.DBA.SPARQL_DESC_DICT_OBJCBD_PHYSICAL (in obj_dict any, in consts any, in good_graphs any, in bad_graphs any, in storage_name any, in options any)
+{
+  declare all_objs, sorted_good_graphs, sorted_bad_graphs, next_iter_objs, res any;
+  declare uid, graphs_listed, g_ctr, good_g_count, bad_g_count, obj_ctr, all_obj_count integer;
+  declare gs_app_callback, gs_app_uid varchar;
+  declare rdf_type_iid IRI_ID;
+  uid := get_keyword ('uid', options, http_nobody_uid());
+  gs_app_callback := get_keyword ('gs-app-callback', options);
+  if (gs_app_callback is not null)
+    gs_app_uid := get_keyword ('gs-app-uid', options);
+  rdf_type_iid := iri_to_id (UNAME'http://www.w3.org/1999/02/22-rdf-syntax-ns#type');
+  res := dict_new ();
+  if (isinteger (consts))
+    return res;
+  foreach (any c in consts) do
+    {
+      if (not isnumeric (c))
+        dict_put (obj_dict, c, 0);
+    }
+  all_objs := dict_list_keys (obj_dict, 0);
+  next_iter_objs := dict_new ();
+  all_obj_count := length (all_objs);
+  if (0 = all_obj_count)
+    return res;
+
+next_iteration:
+  all_obj_count := length (all_objs);
+  gvector_sort (all_objs, 1, 0, 0);
+  -- dbg_obj_princ ('new iteration: all_objs = ', all_objs);
+  if (__tag of integer = __tag (good_graphs))
+    graphs_listed := 0;
+  else
+    {
+      vectorbld_init (sorted_good_graphs);
+      foreach (any g in good_graphs) do
+        {
+          if (is_named_iri_id (g) and
+            __rgs_ack_cbk (g, uid, 1) and
+            (gs_app_callback is null or bit_and (1, call (gs_app_callback) (g, gs_app_uid))) )
+            vectorbld_acc (sorted_good_graphs, g);
+        }
+      vectorbld_final (sorted_good_graphs);
+      good_g_count := length (sorted_good_graphs);
+      if (0 = good_g_count)
+        return res;
+      graphs_listed := 1;
+    }
+  vectorbld_init (sorted_bad_graphs);
+  foreach (any g in bad_graphs) do
+    {
+      if (isnamed_iri_id (g))
+        vectorbld_acc (sorted_bad_graphs, g);
+    }
+  vectorbld_final (sorted_bad_graphs);
+  bad_g_count := length (sorted_bad_graphs);
+  -- dbg_obj_princ ('all_objs = ', all_objs);
+  if (0 = all_obj_count)
+    return res;
+  -- dbg_obj_princ ('sorted_bad_graphs = ', sorted_bad_graphs);
+  if (graphs_listed)
+    {
+      gvector_sort (sorted_good_graphs, 1, 0, 0);
+      -- dbg_obj_princ ('sorted_good_graphs = ', sorted_good_graphs);
+      for (g_ctr := good_g_count - 1; g_ctr >= 0; g_ctr := g_ctr - 1)
+        {
+          declare graph any;
+          graph := sorted_good_graphs [g_ctr];
+          for (obj_ctr := all_obj_count - 1; obj_ctr >= 0; obj_ctr := obj_ctr - 1)
+            {
+              declare obj any;
+              obj := all_objs [obj_ctr];
+              for (select P as p1, S as subj1 from DB.DBA.RDF_QUAD where G = graph and O = obj) do
+                {
+                  -- dbg_obj_princ ('found3 ', subj1, p1, obj, ' in ', graph);
+                  dict_bitor_or_put (res, vector (subj1, p1, __rdf_long_of_obj (obj)), 1);
+                  if (is_bnode_iri_id (subj1) and dict_get (obj_dict, subj1) is null)
+                    dict_put (next_iter_objs, subj1, 1);
+                  for (sparql define output:valmode "LONG"
+                    select ?g2 ?st2 where {
+                        graph ?g2 {
+                            ?st2 a rdf:Statement ; rdf:object ?:obj ; rdf:predicate ?:p1 ; rdf:subject ?:subj1 } } ) do
+                    {
+                      if (position ("g2", sorted_good_graphs) and dict_get (obj_dict, "st2") is null)
+                        dict_put (next_iter_objs, "st2", 1);
+                    }
+                }
+            }
+        }
+    }
+  else
+    {
+      for (obj_ctr := all_obj_count - 1; obj_ctr >= 0; obj_ctr := obj_ctr - 1)
+        {
+          declare obj any;
+          obj := all_objs [obj_ctr];
+          for (select P as p1, S as subj1 from DB.DBA.RDF_QUAD where
+            0 = position (G, sorted_bad_graphs) and
+            O = obj and
+            __rgs_ack_cbk (G, uid, 1) and
+            (gs_app_callback is null or bit_and (1, call (gs_app_callback) (G, gs_app_uid))) ) do
+            {
+              -- dbg_obj_princ ('found4 ', subj1, p1, obj);
+              dict_bitor_or_put (res, vector (subj1, p1, __rdf_long_of_obj (obj)), 1);
+              if (is_bnode_iri_id (subj1) and dict_get (obj_dict, subj1) is null)
+                dict_put (next_iter_objs, subj1, 1);
+              for (sparql define output:valmode "LONG"
+                select ?g2 ?st2 where {
+                    graph ?g2 {
+                        ?st2 a rdf:Statement ; rdf:object ?:obj ; rdf:predicate ?:p1 ; rdf:subject ?:subj1 } } ) do
+                {
+                  if (0 = position ("g2", sorted_bad_graphs) and
+                    dict_get (obj_dict, "st2") is null and
+                    __rgs_ack_cbk ("g2", uid, 1) and
+                    (gs_app_callback is null or bit_and (1, call (gs_app_callback) ("g2", gs_app_uid))) )
+                    dict_put (next_iter_objs, "st2", 1);
+                }
+            }
+        }
+    }
+
+ret_or_next_iter:
+  if (0 = dict_size (next_iter_objs))
+    {
+      -- dbg_obj_princ ('no new objs, res = ', dict_list_keys (res, 0));
+      return res;
+    }
+  all_objs := dict_list_keys (next_iter_objs, 1);
+  foreach (IRI_ID obj in all_objs) do dict_put (obj_dict, obj, 1);
+  goto next_iteration;
+}
+;
+
+create procedure DB.DBA.SPARQL_DESC_DICT_SCBD (in node_dict any, in consts any, in good_graphs any, in bad_graphs any, in storage_name any, in options any)
+{
+  declare cbd_res, objcbd_res, triples any;
+  cbd_res := DB.DBA.SPARQL_DESC_DICT_CBD (node_dict, consts, good_graphs, bad_graphs, storage_name, options);
+  objcbd_res := DB.DBA.SPARQL_DESC_DICT_OBJCBD (node_dict, consts, good_graphs, bad_graphs, storage_name, options);
+again:
+  triples := dict_destructive_list_rnd_keys (objcbd_res, 80000);
+  if (0 = length (triples))
+    return cbd_res;
+  foreach (any triple in triples) do { dict_put (cbd_res, triple, 1); }
+  goto again;
+}
+;
+
+create procedure DB.DBA.SPARQL_DESC_DICT_SCBD_PHYSICAL (in node_dict any, in consts any, in good_graphs any, in bad_graphs any, in storage_name any, in options any)
+{
+  declare cbd_res, objcbd_res, triples any;
+  cbd_res := DB.DBA.SPARQL_DESC_DICT_CBD_PHYSICAL (node_dict, consts, good_graphs, bad_graphs, storage_name, options);
+  objcbd_res := DB.DBA.SPARQL_DESC_DICT_OBJCBD_PHYSICAL (node_dict, consts, good_graphs, bad_graphs, storage_name, options);
+again:
+  triples := dict_destructive_list_rnd_keys (objcbd_res, 80000);
+  if (0 = length (triples))
+    return cbd_res;
+  foreach (any triple in triples) do { dict_put (cbd_res, triple, 1); }
+  goto again;
+}
+;
+
 --!AWK PUBLIC
 create procedure DB.DBA.RDF_DICT_OF_TRIPLES_TO_THREE_COLS (in dict any, in destructive integer := 0)
 {
@@ -8753,8 +9181,13 @@ create procedure DB.DBA.JSO_LOAD_AND_PIN_SYS_GRAPH (in graphiri varchar := null)
   DB.DBA.JSO_PIN_GRAPH (graphiri);
   for (select P_NAME from SYS_PROCEDURES
     where (
+      (P_NAME > 'DB.DBA.SPARQL_DESC_DICT') and
+      (P_NAME < 'DB.DBA.SPARQL_DESC_DICU') and
+      (
       (P_NAME like 'DB.DBA.SPARQL_DESC_DICT_QMV1_%') or
-      (P_NAME like 'DB.DBA.SPARQL_DESC_DICT_CBD_QMV1_%') )
+        (P_NAME like 'DB.DBA.SPARQL_DESC_DICT_CBD_QMV1_%') or
+        (P_NAME like 'DB.DBA.SPARQL_DESC_DICT_OBJCBD_QMV1_%') or
+        (P_NAME like 'DB.DBA.SPARQL_DESC_DICT_SCBD_QMV1_%') ) )
     for update) do
     {
       exec ('drop procedure DB.DBA."' || subseq (P_NAME, 7) || '"');
@@ -13697,6 +14130,10 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.SPARQL_DESC_DICT_SPO_PHYSICAL to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_DESC_DICT_CBD to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_DESC_DICT_CBD_PHYSICAL to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_DESC_DICT_OBJCBD to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_DESC_DICT_OBJCBD_PHYSICAL to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_DESC_DICT_SCBD to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_DESC_DICT_SCBD_PHYSICAL to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_CONSTRUCT_INIT to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_CONSTRUCT_ACC to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_CONSTRUCT_FIN to SPARQL_SELECT',
