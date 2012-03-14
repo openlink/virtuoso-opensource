@@ -808,6 +808,8 @@ xmla_make_element (in mdta any, in dta any)
       aset (res, i1, mdta[i][0]);
       if (mdta[i][1] = 131 and not isblob(dta[i]))
 	 aset (res, i2, cast (dta[i] as varbinary));
+      else if (mdta[i][1] = 219 and 219 <> __tag (dta[i]))
+	 aset (res, i2, cast (dta[i] as decimal));
       else
          aset (res, i2, dta[i]);
       i := i + 1;
