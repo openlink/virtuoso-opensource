@@ -2863,8 +2863,16 @@ create procedure DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE_XLAT (
   dict := app_env[0];
   xlat_cbk := app_env[1];
   xlat_env := app_env[2];
-  s_xlat := call(xlat_cbk)(s_uri, xlat_env);
-  o_xlat := call(xlat_cbk)(o_uri, xlat_env);
+  if (__proc_params_num (xlat_cbk) = 2)
+    {
+      s_xlat := call(xlat_cbk)(s_uri, xlat_env);
+      o_xlat := call(xlat_cbk)(o_uri, xlat_env);
+    }
+  else
+    {
+      s_xlat := call(xlat_cbk)(s_uri, p_uri, 's', xlat_env);
+      o_xlat := call(xlat_cbk)(o_uri, p_uri, 'o', xlat_env);
+    }
 
   dict_put (dict, vector (iri_to_id (s_xlat), iri_to_id (p_uri), iri_to_id (o_xlat)), 0);
 }
@@ -2881,7 +2889,10 @@ create procedure DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE_L_XLAT (
   dict := app_env[0];
   xlat_cbk := app_env[1];
   xlat_env := app_env[2];
-  s_xlat := call(xlat_cbk)(s_uri, xlat_env);
+  if (__proc_params_num (xlat_cbk) = 2)
+    s_xlat := call(xlat_cbk)(s_uri, xlat_env);
+  else
+    s_xlat := call(xlat_cbk)(s_uri, p_uri, 's', xlat_env);
   dict_put (dict,
     vector (
       iri_to_id (s_xlat),

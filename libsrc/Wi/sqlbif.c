@@ -13368,6 +13368,33 @@ bif_server_id_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NEW_DB_NULL;
 }
 
+caddr_t
+bif_proc_params_num (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_t * proc = NULL;
+  query_instance_t *qi = (query_instance_t *) qst;
+  char *proc_name = bif_string_arg (qst, args, 0, "procedure_params_num");
+  char * full_name;
+
+  proc = sch_proc_def (isp_schema (qi->qi_space), proc_name);
+  if (!proc)
+    {
+      full_name = sch_full_proc_name (isp_schema (qi->qi_space), proc_name,
+	  cli_qual (qi->qi_client), CLI_OWNER (qi->qi_client));
+      if (full_name)
+	proc = sch_proc_def (isp_schema (qi->qi_space), full_name);
+    }
+  if (NULL == proc)
+    return (dk_alloc_box (0, DV_DB_NULL));
+  if (proc->qr_to_recompile)
+    {
+      proc = qr_recompile (proc, err_ret);
+      if (*err_ret)
+	return NULL;
+    }
+  return (box_num (dk_set_length (proc->qr_parms)));
+}
+
 void
 fcache_init ()
 {
@@ -14837,6 +14864,7 @@ sql_bif_init (void)
   bif_define ("__drop_trigger", bif_drop_trigger);
   bif_define ("__drop_proc", bif_drop_proc);
   bif_define ("__proc_exists", bif_proc_exists);
+  bif_define ("__proc_params_num", bif_proc_params_num);
   bif_define_typed ("__copy", bif_copy, &bt_copy);
   bif_define_typed ("exec", bif_exec, &bt_integer);
   bif_define_typed ("exec_metadata", bif_exec_metadata, &bt_integer);
