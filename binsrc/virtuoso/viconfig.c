@@ -1360,7 +1360,7 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "DuplicateCheckpointRemaps", &cpt_remap_recovery) == -1)
     cpt_remap_recovery = 0;
   if (cfg_getlong (pconfig, section, "CheckExtentFreePages", &dbs_check_extent_free_pages) == -1)
-    dbs_check_extent_free_pages = 0;
+    dbs_check_extent_free_pages = 1;
 
 
 #if 0/*obsoleted*/
