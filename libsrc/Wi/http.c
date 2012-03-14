@@ -70,6 +70,9 @@
 #else
 #include <dirent.h>
 #endif
+#ifdef _SSL
+#include "util/sslengine.h"
+#endif
 
 #define XML_VERSION		"1.0"
 
@@ -8183,31 +8186,31 @@ https_cert_verify_callback (int ok, void *_ctx)
   SSL_CTX *ssl_ctx;
   uptrlong ap;
 
-  ctx = (X509_STORE_CTX *)_ctx;
-  ssl  = (SSL *)X509_STORE_CTX_get_app_data(ctx);
+  ctx = (X509_STORE_CTX *) _ctx;
+  ssl = (SSL *) X509_STORE_CTX_get_app_data (ctx);
   ssl_ctx = SSL_get_SSL_CTX (ssl);
   ap = (uptrlong) SSL_CTX_get_app_data (ssl_ctx);
 
-  xs       = X509_STORE_CTX_get_current_cert(ctx);
-  errnum   = X509_STORE_CTX_get_error(ctx);
-  errdepth = X509_STORE_CTX_get_error_depth(ctx);
+  xs = X509_STORE_CTX_get_current_cert (ctx);
+  errnum = X509_STORE_CTX_get_error (ctx);
+  errdepth = X509_STORE_CTX_get_error_depth (ctx);
 
-  cp  = X509_NAME_oneline(X509_get_subject_name(xs), cp_buf, sizeof (cp_buf));
-  cp2 = X509_NAME_oneline(X509_get_issuer_name(xs),  cp2_buf, sizeof (cp2_buf));
+  cp = X509_NAME_oneline (X509_get_subject_name (xs), cp_buf, sizeof (cp_buf));
+  cp2 = X509_NAME_oneline (X509_get_issuer_name (xs), cp2_buf, sizeof (cp2_buf));
 
   verify = (int) ((0xff000000 & ap) >> 24);
-  depth =  (int) (0xffffff & ap);
+  depth = (int) (0xffffff & ap);
 
-  if (( errnum == X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT
+  if ((errnum == X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT
 	|| errnum == X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN
 	|| errnum == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY
 #if OPENSSL_VERSION_NUMBER >= 0x00905000
-	|| errnum == X509_V_ERR_CERT_UNTRUSTED
+	  || errnum == X509_V_ERR_CERT_UNTRUSTED
 #endif
 	|| errnum == X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE)
       && verify == HTTPS_VERIFY_OPTIONAL_NO_CA )
     {
-      SSL_set_verify_result(ssl, X509_V_OK);
+      SSL_set_verify_result (ssl, X509_V_OK);
       ok = 1;
     }
 
@@ -8230,20 +8233,23 @@ https_cert_verify_callback (int ok, void *_ctx)
 int
 ssl_server_set_certificate (SSL_CTX* ssl_ctx, char * cert_name, char * key_name)
 {
-  char err_buf [1024];
+  char err_buf[1024];
+  EVP_PKEY *pkey;
+  X509 *x509;
+
   if (strstr (cert_name, "db:") == cert_name || strstr (key_name, "db:") == key_name)
     {
-      xenc_key_t * k;
-      client_connection_t * cli = GET_IMMEDIATE_CLIENT_OR_NULL;
-      user_t * saved_user;
+      xenc_key_t *k;
+      client_connection_t *cli = GET_IMMEDIATE_CLIENT_OR_NULL;
+      user_t *saved_user;
       if (!cli)
 	{
-	  log_error ("The certificate & key stored in database cannot be accessed.");
+	  log_error ("SSL: The certificate and private key stored in the database cannot be accessed");
 	  return 0;
 	}
       if (strcmp (cert_name, key_name))
 	{
-	  log_error ("The certificate & key stored in database must have same name");
+	  log_error ("SSL: The certificate and private key stored in the database must have the same name");
 	  return 0;
 	}
       saved_user = cli->cli_user;
@@ -8253,42 +8259,37 @@ ssl_server_set_certificate (SSL_CTX* ssl_ctx, char * cert_name, char * key_name)
       cli->cli_user = saved_user;
       if (!k || !k->xek_x509 || !k->xek_evp_private_key)
 	{
-	  log_error ("Invalid stored key %s", key_name);
+	  log_error ("SSL: The stored key '%s' is invalid", key_name);
 	  return 0;
 	}
-      if (SSL_CTX_use_certificate (ssl_ctx, k->xek_x509) <= 0)
-	{
-	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-	  log_error ("Invalid X509 certificate file %s : %s", cert_name, err_buf);
-	  return 0;
-	}
-      if (SSL_CTX_use_PrivateKey (ssl_ctx, k->xek_evp_private_key) <= 0)
-	{
-	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-	  log_error ("Invalid X509 private key file %s : %s", key_name, err_buf);
-	  return 0;
-	}
+      x509 = k->xek_x509;
+      pkey = k->xek_evp_private_key;
     }
   else
     {
-      if (SSL_CTX_use_certificate_file (ssl_ctx, cert_name, SSL_FILETYPE_PEM) <= 0)
+      if ((x509 = ssl_load_x509 (cert_name)) == NULL)
 	{
 	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-	  log_error ("Invalid X509 certificate file %s : %s", cert_name, err_buf);
+	  log_error ("SSL: Unable to load certificate '%s': %s", cert_name, err_buf);
 	  return 0;
 	}
-      if (SSL_CTX_use_PrivateKey_file (ssl_ctx, key_name, SSL_FILETYPE_PEM) <= 0)
+      if ((pkey = ssl_load_privkey (key_name, NULL)) == NULL)
 	{
 	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-	  log_error ("Invalid X509 private key file %s : %s", key_name, err_buf);
+	  log_error ("SSL: Unable to load private key '%s': %s", key_name, err_buf);
 	  return 0;
 	}
     }
-  if (!SSL_CTX_check_private_key (ssl_ctx))
+  if (SSL_CTX_use_certificate (ssl_ctx, x509) <= 0)
     {
       cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-      log_error ("X509 Private key %s does not match the X509 certificate public key %s : %s",
-	  key_name, cert_name, err_buf);
+      log_error ("SSL: Unable to use certificate '%s': %s", cert_name, err_buf);
+      return 0;
+    }
+  if (SSL_CTX_use_PrivateKey (ssl_ctx, pkey) <= 0)
+    {
+      cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+      log_error ("SSL: Unable to use private key '%s': %s", key_name, err_buf);
       return 0;
     }
   return 1;
@@ -8297,15 +8298,15 @@ ssl_server_set_certificate (SSL_CTX* ssl_ctx, char * cert_name, char * key_name)
 int
 http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
 {
-  char err_buf [1024];
-  SSL_CTX* ssl_ctx = NULL;
+  char err_buf[1024];
+  SSL_CTX *ssl_ctx = NULL;
   const SSL_METHOD *ssl_meth = NULL;
-  char * https_cvfile = NULL;
+  char *https_cvfile = NULL;
   char *cert = NULL;
   char *skey = NULL;
   long https_cvdepth = -1;
   int i, len, https_client_verify = -1;
-  ssl_meth = SSLv23_server_method();
+  ssl_meth = SSLv23_server_method ();
   ssl_ctx = SSL_CTX_new (ssl_meth);
 
   /* Initialize the parameters */
@@ -8318,22 +8319,22 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
 
   for (i = 0; i < len; i += 2)
     {
-      if (https_opts [i] && DV_STRINGP (https_opts [i]))
+      if (https_opts[i] && DV_STRINGP (https_opts[i]))
 	{
-	  if (!stricmp (https_opts [i], "https_cv") && DV_STRINGP (https_opts [i + 1])) /* CA file */
-	    https_cvfile = https_opts [i + 1];
-	  else if (!stricmp (https_opts [i], "https_cert") && DV_STRINGP (https_opts [i + 1])) /* x509 cert */
-	    cert = https_opts [i + 1];
-	  else if (!stricmp (https_opts [i], "https_key") && DV_STRINGP (https_opts [i + 1]))  /* private key */
-	    skey = https_opts [i + 1];
-	  else if (!stricmp (https_opts [i], "https_cv_depth")) /* verification depth */
-	    https_cvdepth = unbox(https_opts [i + 1]);
-	  else if (!stricmp (https_opts [i], "https_verify"))   /* verify mode */
-	    https_client_verify = unbox(https_opts [i + 1]);
+	  if (!stricmp (https_opts[i], "https_cv") && DV_STRINGP (https_opts[i + 1]))	/* CA file */
+	    https_cvfile = https_opts[i + 1];
+	  else if (!stricmp (https_opts[i], "https_cert") && DV_STRINGP (https_opts[i + 1]))	/* x509 cert */
+	    cert = https_opts[i + 1];
+	  else if (!stricmp (https_opts[i], "https_key") && DV_STRINGP (https_opts[i + 1]))	/* private key */
+	    skey = https_opts[i + 1];
+	  else if (!stricmp (https_opts[i], "https_cv_depth"))	/* verification depth */
+	    https_cvdepth = unbox (https_opts[i + 1]);
+	  else if (!stricmp (https_opts[i], "https_verify"))	/* verify mode */
+	    https_client_verify = unbox (https_opts[i + 1]);
 	}
     }
 
-  if (https_client_verify < 0 && NULL != https_cvfile) /* compatibility with existing definitions */
+  if (https_client_verify < 0 && NULL != https_cvfile)	/* compatibility with existing definitions */
     https_client_verify = 1;
 
   if (!ssl_ctx)
@@ -8342,6 +8343,9 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
       log_error ("HTTPS: Error allocating SSL context: %s", err_buf);
       goto err_exit;
     }
+
+  if (!ssl_server_set_certificate (ssl_ctx, cert, skey))
+    goto err_exit;
 
   if (https_cvfile)
     {
@@ -8352,8 +8356,6 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
 	  goto err_exit;
 	}
     }
-  if (ssl_server_set_certificate (ssl_ctx, cert, skey) <= 0)
-    goto err_exit;
 
   if (https_client_verify > 0)
     {
@@ -8368,29 +8370,29 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
       SSL_CTX_set_verify_depth (ssl_ctx, https_cvdepth);
       ap = ((0xff & https_client_verify) << 24) | (0xffffff & https_cvdepth);
       SSL_CTX_set_app_data (ssl_ctx, ap);
-      SSL_CTX_set_session_id_context(ssl_ctx, (unsigned char *)&session_id_context, sizeof session_id_context);
+      SSL_CTX_set_session_id_context (ssl_ctx, (unsigned char *) &session_id_context, sizeof session_id_context);
     }
 
   if (https_cvfile)
     {
       int i = 0;
-      STACK_OF(X509_NAME) *skCAList = SSL_load_client_CA_file (https_cvfile);
+      STACK_OF (X509_NAME) * skCAList = SSL_load_client_CA_file (https_cvfile);
 
       SSL_CTX_set_client_CA_list (ssl_ctx, skCAList);
-      skCAList = SSL_CTX_get_client_CA_list(ssl_ctx);
+      skCAList = SSL_CTX_get_client_CA_list (ssl_ctx);
 
-      if (sk_X509_NAME_num(skCAList) == 0)
-	log_warning ("HTTPS Client authentication requested but no CA known for verification");
+      if (sk_X509_NAME_num (skCAList) == 0)
+	log_warning ("HTTPS: Client authentication requested but no CA known for verification");
 
-      for (i = 0; i < sk_X509_NAME_num(skCAList); i++)
+      for (i = 0; i < sk_X509_NAME_num (skCAList); i++)
 	{
 	  char ca_buf[1024];
 	  X509_NAME *ca_name = (X509_NAME *) sk_X509_NAME_value (skCAList, i);
 	  if (X509_NAME_oneline (ca_name, ca_buf, sizeof (ca_buf)))
-	    log_debug ("HTTPS Using X509 Client CA %s", ca_buf);
+	    log_debug ("HTTPS: Using X509 Client CA %s", ca_buf);
 	}
     }
-  tcpses_set_sslctx (listening->dks_session, (void *)ssl_ctx);
+  tcpses_set_sslctx (listening->dks_session, (void *) ssl_ctx);
   return 1;
 err_exit:
   SSL_CTX_free (ssl_ctx);
@@ -10478,6 +10480,8 @@ http_init_part_two ()
   /*    CRYPTO_malloc_init();*/
   SSL_load_error_strings();
   SSLeay_add_ssl_algorithms();
+  if (!https_key) /* when key & certificate are in same file */
+    https_key = https_cert;
   if (https_port && https_cert && https_key)
     {
       char err_buf [1024];
@@ -10489,20 +10493,20 @@ http_init_part_two ()
 	{
 	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
 	  log_error ("HTTPS: Error allocating SSL context: %s", err_buf);
-	  call_exit(-1);
+	  goto init_ssl_exit;
 	}
 
+      if (!ssl_server_set_certificate (ssl_ctx, https_cert, https_key))
+	goto init_ssl_exit;
+
       if (https_client_verify_file)
+	{
 	if (!SSL_CTX_load_verify_locations (ssl_ctx, https_client_verify_file, NULL))
 	  {
 	    cli_ssl_get_error_string (err_buf, sizeof (err_buf));
 	    log_error ("HTTPS: Invalid X509 client CA file %s : %s", https_client_verify_file, err_buf);
-	    call_exit(-1);
+	      goto init_ssl_exit;
 	  }
-
-      if (ssl_server_set_certificate (ssl_ctx, https_cert, https_key) <= 0)
-	{
-	  call_exit(-1);
 	}
 
       if (https_client_verify > 0)
@@ -10521,7 +10525,7 @@ http_init_part_two ()
 	  SSL_CTX_set_session_id_context(ssl_ctx, (unsigned char  *)&session_id_context, sizeof session_id_context);
 	}
 
-      if (NULL != https_client_verify_file)
+      if (https_client_verify_file)
 	{
 	  int i;
 	  STACK_OF(X509_NAME) *skCAList = SSL_load_client_CA_file (https_client_verify_file);
@@ -10529,45 +10533,44 @@ http_init_part_two ()
 	  SSL_CTX_set_client_CA_list (ssl_ctx, skCAList);
 	  skCAList = SSL_CTX_get_client_CA_list (ssl_ctx);
 	  if (sk_X509_NAME_num(skCAList) == 0)
-	    log_warning ("HTTPS Client authentication requested but no CA known for verification");
+	    log_warning ("HTTPS: Client authentication requested but no CA known for verification");
 
 	  for (i = 0; i < sk_X509_NAME_num(skCAList); i++)
 	    {
 	      char ca_buf[1024];
 	      X509_NAME *ca_name = (X509_NAME *) sk_X509_NAME_value (skCAList, i);
               if (X509_NAME_oneline (ca_name, ca_buf, sizeof (ca_buf)))
-		log_debug ("HTTPS Using X509 Client CA %s", ca_buf);
+		log_debug ("HTTPS: Using X509 Client CA %s", ca_buf);
 	    }
 	}
 
       ssl_port = atoi (https_port);
       if (ssl_port <= 0)
 	{
-	  log_error ("SSL port is not valid port number");
-	  call_exit(-1);
+	  log_error ("HTTPS: SSL port is invalid");
+	  goto init_ssl_exit;
 	}
       ssl_listen = dk_session_allocate (SESCLASS_TCPIP);
       tcpses_set_sslctx (ssl_listen->dks_session, (void *)ssl_ctx);
-      SESSION_SCH_DATA (ssl_listen)->sio_default_read_ready_action
-	  = (io_action_func) ws_ready;
+      SESSION_SCH_DATA (ssl_listen)->sio_default_read_ready_action = (io_action_func) ws_ready;
 
       if (SER_SUCC != session_set_address (ssl_listen->dks_session, https_port))
 	{
-	  log_error ("Failed setting the HTTPS listen address at %s.", https_port);
-	  call_exit (-1);
+	  log_error ("HTTPS: Failed setting listen address at %s", https_port);
+	  goto init_ssl_exit;
 	}
 
       session_listen (ssl_listen->dks_session);
-
       if (!SESSTAT_ISSET (ssl_listen->dks_session, SST_LISTENING))
 	{
-	  log_error ("Failed HTTPS listen at %s.", https_port);
-	  call_exit (-1);
-	};
-      log_info ((char *) (https_client_verify ?
-	  "HTTPS/X509 server online at %s" :
-	  "HTTPS server online at %s"),
-	  https_port);
+	  log_error ("HTTPS: Failed listen at %s", https_port);
+	  goto init_ssl_exit;
+	}
+
+      log_info ("HTTPS server online at %s", https_port);
+
+    init_ssl_exit:
+      ;
     }
 #endif
 

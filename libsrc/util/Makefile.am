@@ -24,7 +24,7 @@ noinst_LTLIBRARIES = libutil.la
 noinst_HEADERS		= \
 	dbgmal.h dyntab.h fnmatch.h getdate.h getopt.h itypes.h listmac.h \
 	logmsg.h md5.h mpl.h ncfg.h oplthr.h regexp.h regmagic.h setext.h \
-	startup.h strfuns.h utalloc.h utf8funs.h uuid.h uuidP.h
+	startup.h strfuns.h utalloc.h utf8funs.h uuid.h uuidP.h sslengine.h
 
 libutil_la_CFLAGS  = @VIRT_AM_CFLAGS@
 libutil_la_CFLAGS  += -D_GNU_SOURCE -DIN_LIBUTIL -DGLOBALREF=extern 
@@ -64,6 +64,7 @@ libutil_la_SOURCES = \
 	regsub.c \
 	rtrim.c \
 	setext.c \
+	sslengine.c \
 	startup.c \
 	stpcpy.c \
 	strcpyin.c \

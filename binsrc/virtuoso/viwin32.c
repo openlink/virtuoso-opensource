@@ -1632,3 +1632,14 @@ ApplicationMain (int argc, char **argv)
 
   return NO_ERROR;
 }
+
+
+/* This is here so that OpenSSL can determine if this instance is running
+ * as a windows service. OpenSSL tries to avoid UI when this returns TRUE.
+ * It also affects the random generator which reads the screen at startup.
+ */
+__declspec(dllexport) BOOL __cdecl
+_OPENSSL_isservice (void)
+{
+  return serviceFlag;
+}

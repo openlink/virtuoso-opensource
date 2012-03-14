@@ -30,6 +30,8 @@
 #include "sqlnode.h"
 #include "sqlver.h"
 
+
+#include "util/sslengine.h"
 #include "plugin.h"
 #include "langfunc.h"
 #include "msdtc.h"
@@ -1452,6 +1454,26 @@ cfg_setup (void)
     rdf_shorten_long_iri = 0;
   if (cfg_getlong (pconfig, section, "EnablePstats", &enable_p_stat) == -1)
     enable_p_stat = 1;
+
+ /* Initialize OpenSSL engines */
+  ssl_engine_startup ();
+#if 0
+  if (cfg_find (pconfig, "SSLEngines", NULL) == 0)
+    {
+      while (cfg_nextentry (pconfig) == 0)
+        {
+          if (cfg_section (pconfig))
+            break;
+          if (cfg_define (pconfig) && !cfg_continue (pconfig))
+            {
+              if (ssl_engine_configure (pconfig->value) == -1)
+                {
+                  log_error ("Failed to configure an OpenSSL engine with parameters '%s'", pconfig->value);
+                }
+            }
+        }
+    }
+#endif
 
   /* Now open the HTTP log */
   if (http_log_file)
