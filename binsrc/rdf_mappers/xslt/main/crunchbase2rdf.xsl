@@ -337,24 +337,29 @@
 	<xsl:variable name="nspace">
 	    <xsl:choose>
 		<xsl:when test="$space = 'financial_org'">
-					<xsl:text>Financial-organization</xsl:text>
+					<xsl:text>financial-organization</xsl:text>
 		</xsl:when>
 		<xsl:when test="$space = 'firm' or $space = 'competitor'">
-					<xsl:text>Company</xsl:text>
+					<xsl:text>company</xsl:text>
 		</xsl:when>
 		<xsl:otherwise>
-				    <xsl:variable name="first_letter" select="upper-case(substring($space, 1, 1))"/>
-				    <xsl:variable name="type_name" select="concat($first_letter, substring($space, 2))"/>
-				    <xsl:value-of select="translate ($type_name, '_', '-')"/>
+				    <!--xsl:variable name="first_letter" select="upper-case(substring($space, 1, 1))"/>
+				    <xsl:variable name="type_name" select="concat($first_letter, substring($space, 2))"/-->
+				    <xsl:value-of select="translate ($space, '_', '-')"/>
 		</xsl:otherwise>
 	    </xsl:choose>
 	</xsl:variable>
 
         <xsl:variable name="field_name"/>
-        <xsl:if test="ends-with(name(), 's')" >
-            <xsl:variable name="field_name" select="substring(name(), 1, string-length(name()) - 1)" />
-        </xsl:if>
-		
+        <xsl:choose>
+            <xsl:when test="ends-with(name(), 's')" >
+                <xsl:variable name="field_name" select="substring(name(), 1, string-length(name()) - 1)" />
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:variable name="field_name" select="name()"/>
+            </xsl:otherwise>
+        </xsl:choose>
+        
 	<xsl:choose>
 	    <xsl:when test="$type != ''">
 				<xsl:element namespace="{$ns}" name="{$field_name}">
