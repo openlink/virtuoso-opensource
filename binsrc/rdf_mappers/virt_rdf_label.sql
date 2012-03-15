@@ -120,6 +120,7 @@ oplgp:actor_displayName rdfs:subPropertyOf virtrdf:label .
 oplgp:attachment_displayName rdfs:subPropertyOf virtrdf:label .
 <http://yago-knowledge.org/resource/hasPreferredMeaning> rdfs:subPropertyOf virtrdf:label .
 <http://yago-knowledge.org/resource/hasPreferredName> rdfs:subPropertyOf virtrdf:label .
+<http://www.openlinksw.com/schemas/cert#subject> rdfs:subPropertyOf virtrdf:label .
 
 oplgp:Activity owl:equivalentClass sioc:Post .
 oplgp:ActivityObject owl:equivalentClass sioc:Post .
