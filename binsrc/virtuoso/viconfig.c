@@ -2046,7 +2046,6 @@ new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
 	    }
 	  modifier = toupper (segszstr[strlen (segszstr) - 1]);
 	  /* THIS ASSUMES PAGE_SZ == 4k */
-#   define KILOS_PER_PAGE (PAGE_SZ/1024)
 	  switch (modifier)
 	    {
 	    case 'K':

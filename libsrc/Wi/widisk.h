@@ -48,8 +48,8 @@ typedef uint32 dp_addr_t;	/* must be exactly 32 bits wide */
 
 typedef unsigned char * db_buf_t;
 
-
 #define PAGE_SZ			8192
+#define KILOS_PER_PAGE (PAGE_SZ/1024)
 #define PAGE_DATA_SZ		(PAGE_SZ - DP_DATA)
 
 #define ROW_ALIGN(s) ALIGN_2(s)
