@@ -25,14 +25,15 @@ If you have any questions, please email us at <vos.admin@openlinksw.com>.
 Git Archive Server Access
 =========================
 
-For main development OpenLink will publish the Virtuoso Open Source
-tree to GitHub and encourages everyone who is interested in tracking
-the project, to make an account there.
+For main development OpenLink Software will publish the Virtuoso
+Open Source tree to GitHub and encourage everyone who is interested
+in tracking the project, to make an account there.
 
 Users who mainly just want to track the code can use the following
 command to get a copy of the tree:
 
     $ git clone git://github.com/openlink/virtuoso-opensource.git
+
 
 At this point you can create your own work branch based on any of
 the branches available, create bugfixes and commit them to your own
@@ -54,11 +55,14 @@ pull requests, track the project etc. on:
     http://help.github.com/
 
 
-OpenLink will continue to use sourceforge.net for the source tarball
-releases and certain binary releases, and for completenes will also
-provides read-only Git Archive access via:
+OpenLink Software will continue to use sourceforge.net for the
+source tarball releases and certain binary releases, and for
+completenes will also provides read-only Git Archive access.
 
-    $ git clone git://virtuoso-opensource.git.sourceforge.net/gitroot/virtuoso-opensource/virtuoso-opensource
+For more information read:
+
+   https://sourceforge.net/scm/?type=git&group_id=161622
+
 
 
 
