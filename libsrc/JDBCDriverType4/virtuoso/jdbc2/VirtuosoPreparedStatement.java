@@ -340,7 +340,8 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	     // Build the args array
 	     Object[] args = new Object[2];
 	     args[0] = statid;
-	     args[1] = new Long(VirtuosoTypes.STAT_CLOSE);
+//	     args[1] = new Long(VirtuosoTypes.STAT_CLOSE);
+	     args[1] = new Long(VirtuosoTypes.STAT_DROP);
 	     // Create and get a future for this
 	     future = connection.getFuture(VirtuosoFuture.close,args, this.rpc_timeout);
 	     // Read the answer
