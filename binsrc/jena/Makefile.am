@@ -83,7 +83,7 @@ doc:
 #
 #  Run testsuite if WITH_JDK was found
 #
-if WITH_JDK3
+if WITH_JDK4
 run-tests: virt_jena.jar
 	$(JAVAC) $(JDK_FLAGS) \
 		-classpath "$(JENA_CLASSPATH):./virt_jena.jar" \
