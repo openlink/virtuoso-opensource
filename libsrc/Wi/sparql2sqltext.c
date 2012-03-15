@@ -8852,10 +8852,19 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
           const char *fmname = tree->_.req_top.formatmode_name;
           ssg_puts ("SELECT "); ssg_puts (formatter); ssg_puts (" (");
           ssg_prin_id (ssg, top_selid);
-          ssg_puts (".__ask_retval) AS \"fmtaggret-");
-          if (NULL != fmname)
-            ssg_puts (fmname);
-          ssg_puts ("\" LONG VARCHAR \nFROM (");
+	  if ((NULL == fmname && ssg_is_odbc_cli ()) ||
+	      ((NULL != fmname) && (!strcmp ("_JAVA_", fmname) || !strcmp ("_UDBC_", fmname))))
+	    {
+	      ssg_puts (".__ask_retval) AS __ask_retval");
+	    }
+	  else
+	    {
+	      ssg_puts (".__ask_retval) AS \"fmtaggret-");
+	      if (NULL != fmname)
+		ssg_puts (fmname);
+		  ssg_puts ("\"");
+	    }
+          ssg_puts (" LONG VARCHAR \nFROM (");
           ssg->ssg_indent += 1;
         }
       ssg_puts ("SELECT TOP 1 1 AS __ask_retval");
