@@ -925,10 +925,10 @@ create method xmla_dbschema_foreign_keys () for xmla_discover
   dsn := self.xmla_get_property ('DataSourceInfo', xmla_service_name ());
   dsn := xmla_get_dsn_name (dsn);
 
-  p_cat := self.xmla_get_restriction ('PK_TABLE_CATALOG', 'DB');
+  p_cat := self.xmla_get_restriction ('PK_TABLE_CATALOG', '%');
   p_sch := self.xmla_get_restriction ('PK_TABLE_SCHEMA', '%');
   p_tbl := self.xmla_get_restriction ('PK_TABLE_NAME', '%');
-  f_cat := self.xmla_get_restriction ('FK_TABLE_CATALOG', 'DB');
+  f_cat := self.xmla_get_restriction ('FK_TABLE_CATALOG', '%');
   f_sch := self.xmla_get_restriction ('FK_TABLE_SCHEMA', '%');
   f_tbl := self.xmla_get_restriction ('FK_TABLE_NAME', '%');
 
@@ -937,7 +937,7 @@ create method xmla_dbschema_foreign_keys () for xmla_discover
     if (f_cat is not null)
       p_cat := f_cat;
     else
-      p_cat := 'DB';
+      p_cat := '%';
   }
 
   if (f_cat is null)
@@ -945,7 +945,7 @@ create method xmla_dbschema_foreign_keys () for xmla_discover
     if (p_cat is not null)
       f_cat := p_cat;
     else
-      f_cat := 'DB';
+      f_cat := '%';
   }
 
   if (p_sch is null)
@@ -1028,12 +1028,12 @@ create method xmla_dbschema_primary_keys () for xmla_discover
 
   dsn := self.xmla_get_property ('DataSourceInfo', xmla_service_name ());
   dsn := xmla_get_dsn_name (dsn);
-  cat := self.xmla_get_restriction ('TABLE_CATALOG', 'DB');
+  cat := self.xmla_get_restriction ('TABLE_CATALOG', '%');
   sch := self.xmla_get_restriction ('TABLE_SCHEMA', '%');
   tb := self.xmla_get_restriction ('TABLE_NAME', '%');
 
   if (cat is null)
-    cat := 'DB';
+    cat := '%';
   if (sch is null)
     sch := '%';
   if (tb is null)
