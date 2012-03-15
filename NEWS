@@ -1,4 +1,4 @@
-Mar 11, 2012, V6.1.5:
+Mar 15, 2012, V6.1.5:
   * Database engine
     - Added support for SPARQL 1.1 WITH, USING, NAMED
     - Added support for SPARQL 1.1 Update
