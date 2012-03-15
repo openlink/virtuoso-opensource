@@ -1,3 +1,79 @@
+2012-03-15 16:41  source
+
+	* Fixed labels
+
+2012-03-15 16:41  source
+
+	* Fixed minor issues to xbrl
+
+2012-03-15 16:35  source
+
+	* Fixed minor issues
+
+2012-03-15 14:44  source
+
+	* Fixed column name back to __ask_retval for odbc/jdbc connections
+
+2012-03-15 13:57  source
+
+	* Moved define to more logical place
+
+2012-03-15 13:41  source
+
+	* Fixed set default catalog name to %
+
+2012-03-15 13:06  source
+
+	* Fixed enabled tests to run on jdk4
+
+2012-03-15 12:56  source
+
+	* Removed old _JAVA_ pragma
+
+2012-03-15 12:00  source
+
+	* Fixed unhandled rdf type
+
+2012-03-15 11:48  source
+
+	* Rebuild drivers
+
+2012-03-15 11:17  source
+
+	* Fixed leak with statement handles
+
+2012-03-15 11:08  source
+
+	* Added stub isgeometry so point data can be inserted normally
+
+2012-03-15 10:32  source
+
+	* Fixed check for odbc/jdbc connection
+
+2012-03-14 20:46  source
+
+	* Added missing files to distribution
+
+2012-03-14 19:47  source
+
+	* Fixed meta information on ANY type
+
+2012-03-14 14:12  source
+
+	* Updated documentation
+
+2012-03-14 14:07  source
+
+	* Fixed allow http client session to be put on hold and leave thread free
+
+2012-03-14 13:59  source
+
+	* Updated version to 6.1.5-rc3
+
+2012-03-14 13:58  source
+
+	* Updated SSL support
+
 2012-03-14 12:50  source
 
 	* Fixed compiler warning
