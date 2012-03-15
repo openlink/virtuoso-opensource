@@ -1606,7 +1606,11 @@ bif_this_server (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   return NEW_DB_NULL;
 }
-
+static caddr_t
+bif_is_geometry (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return box_num (0);
+}
 
 void
 sqlbif2_init (void)
@@ -1638,6 +1642,7 @@ sqlbif2_init (void)
   bif_define_typed ("format_number", bif_format_number, &bt_varchar);
   bif_define ("__stop_cpt", bif_stop_cpt);
   bif_define ("repl_this_server", bif_this_server);
+  bif_define ("isgeometry", bif_is_geometry);
   /*sqls_bif_init ();*/
   sqls_bif_init ();
   sqlo_inv_bif_int ();
