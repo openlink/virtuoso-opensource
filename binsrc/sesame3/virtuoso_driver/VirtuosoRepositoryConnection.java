@@ -171,8 +171,8 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	private static Resource nilContext;
 	private Connection quadStoreConnection;
 	protected VirtuosoRepository repository;
-	static final String S_INSERT = "sparql define output:format '_JAVA_'  insert into graph iri(??) { `iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)` }";
-        static final String S_DELETE = "sparql define output:format '_JAVA_' delete from graph iri(??) {`iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)`}";
+	static final String S_INSERT = "sparql insert into graph iri(??) { `iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)` }";
+        static final String S_DELETE = "sparql delete from graph iri(??) {`iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)`}";
 	static final int BATCH_SIZE = 5000;
 	private PreparedStatement psInsert;
 	private int psInsertCount = 0;
@@ -2310,7 +2310,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		try {
 			flushDelayAdd();
 			java.sql.Statement stmt = createStatement();
-			stmt.execute("sparql\n define output:format '_JAVA_'\n " + query);
+			stmt.execute("sparql\n " + query);
 			return stmt.getUpdateCount();
 		}
 		catch (SQLException e) {
@@ -2409,24 +2409,10 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 	private String fixQuery(String query, Dataset dataset, boolean includeInferred, BindingSet bindings) 
 	{
-		StringTokenizer tok = new StringTokenizer(query);
-		String s = "";
 		StringBuffer ret = new StringBuffer("sparql\n ");
-
-		while(tok.hasMoreTokens()) {
-		    s = tok.nextToken().toLowerCase();
-		    if (s.equals("describe") || s.equals("construct") || s.equals("ask")) 
-			break;
-		}
-
-		if (s.equals("describe") || s.equals("construct") || s.equals("ask")) 
-		    ret.append("define output:format '_JAVA_'\n ");
-
 
 		if (includeInferred && repository.ruleSet!=null && repository.ruleSet.length() > 0)
 		  ret.append("define input:inference '"+repository.ruleSet+"'\n ");
-
-		ret.append("define output:format '_JAVA_'\n ");
 
 		if (dataset != null)
 		{

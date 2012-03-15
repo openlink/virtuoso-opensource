@@ -276,19 +276,8 @@ public class VirtuosoQueryExecution  implements QueryExecution
     
     private String getQuery()
     {
-//--	StringBuffer sb = new StringBuffer("sparql\n define output:format '_JAVA_'\n");
 	StringBuffer sb = new StringBuffer("sparql\n ");
-	StringTokenizer tok = new StringTokenizer(virt_query);
-	String s = "";
 
-	while(tok.hasMoreTokens()) {
-	    s = tok.nextToken().toLowerCase();
-	    if (s.equals("describe") || s.equals("construct") || s.equals("ask") || s.equals("select")) 
-		break;
-	}
-	if (s.equals("describe") || s.equals("construct") || s.equals("ask")) 
-	    sb.append("define output:format '_JAVA_'\n ");
-	
 	if (graph.getRuleSet()!= null)
           sb.append(" define input:inference '"+graph.getRuleSet()+"'\n");
 
