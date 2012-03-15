@@ -8543,8 +8543,8 @@ ssg_req_top_needs_rb_complete (spar_sqlgen_t *ssg)
   ssg_valmode_t retvalmode;
   if ((SELECT_L != subtype) && (DISTINCT_L != subtype))
     return 0;
-  if ((NULL == tree->_.req_top.formatmode_name && ssg_is_odbc_cli ()) ||
-     (NULL != tree->_.req_top.formatmode_name && (strcmp (tree->_.req_top.formatmode_name, "_JAVA_") || strcmp (tree->_.req_top.formatmode_name, "_UDBC_"))))
+  if ((NULL == tree->_.req_top.formatmode_name && !ssg_is_odbc_cli ()) ||
+     (NULL != tree->_.req_top.formatmode_name && (strcmp (tree->_.req_top.formatmode_name, "_JAVA_") && strcmp (tree->_.req_top.formatmode_name, "_UDBC_"))))
     return 0;
   retvalmode = ssg_find_valmode_by_name (tree->_.req_top.retvalmode_name);
   if ((SSG_VALMODE_SQLVAL != retvalmode) && (NULL != retvalmode))
