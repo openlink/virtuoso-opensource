@@ -190,7 +190,14 @@
 				</xsl:if>
 				<sioc:has_container rdf:resource="{$contextRef}" />
 				<rdfs:label>
-					<xsl:value-of select="$canonical_name"/>
+				    <xsl:choose>
+				        <xsl:when test="string-length(normalize-space(.)) &gt; 0">
+				            <xsl:value-of select="concat($canonical_label_name, ': ', normalize-space(.))"/>
+				        </xsl:when>
+				        <xsl:otherwise>
+                            <xsl:value-of select="$canonical_label_name"/>
+                        </xsl:otherwise>
+				    </xsl:choose>
 				</rdfs:label>	
 			</rdf:Description>
 
