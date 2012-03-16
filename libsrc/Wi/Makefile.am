@@ -1017,5 +1017,6 @@ EXTRA_DIST = \
 	sql_code_cache_impl.c \
 	sql_to_c.awk \
 	sqlwords.gperf \
+	sparqlwords.gperf \
 	ssl.c \
 	string_tmpl.c
