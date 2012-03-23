@@ -4575,7 +4575,7 @@ xpf_extension (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
     {
       caddr_t retc = (((caddr_t *)lc->lc_proc_ret)[1]);
       caddr_t ent;
-#ifdef DEBUG
+#ifdef XPATH_DEBUG
       dk_check_tree (retc);
 #endif
       switch (DV_TYPE_OF(retc))
@@ -4606,7 +4606,7 @@ err_end:
 #if defined (NO_XPF_EXT_CALL_CACHE)
   qr_free (qr);
 #endif
-#ifdef DEBUG
+#ifdef XPATH_DEBUG
   dk_check_tree (XQI_GET (xqi, tree->_.xp_func.var->_.var.init));
 #endif
   if (err)

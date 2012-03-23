@@ -1242,6 +1242,7 @@ void
 xslt_pop_params (xparse_ctx_t * xp, xqi_binding_t *old_locals)
 {
   xqi_binding_t * xb = xp->xp_locals;
+#ifdef XPATH_DEBUG
 #ifdef MALLOC_DEBUG
   {
     xqi_binding_t * xb1 = xp->xp_locals;
@@ -1266,6 +1267,7 @@ xslt_pop_params (xparse_ctx_t * xp, xqi_binding_t *old_locals)
     if (!hit && (NULL != old_locals))
       GPF_T1 ("Failed xslt_pop_params()");
   }
+#endif
 #endif
   while (xb != old_locals)
     {

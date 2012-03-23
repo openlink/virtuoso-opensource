@@ -844,7 +844,7 @@ xp_make_pred (xpp_t *xpp, XT * expr)
 
 XT * xp_make_flwr (xpp_t *xpp, dk_set_t forlets, XT *where_expn, dk_set_t ordering, XT *return_expn)
 {
-#ifdef DEBUG
+#ifdef XPATH_DEBUG
   XT *raw_return_expn = return_expn;
 #endif
   XT **ordering_array = NULL;
@@ -928,7 +928,7 @@ XT * xp_make_flwr (xpp_t *xpp, dk_set_t forlets, XT *where_expn, dk_set_t orderi
 	default: xp_error (xpp, "internal XQuery error in compilation of FLWR expression");
 	}
     }
-#ifdef DEBUG
+#ifdef XPATH_DEBUG
   dk_check_tree (raw_return_expn);
   dk_check_tree (return_expn);
 #endif
@@ -3924,7 +3924,7 @@ XT *xp_make_module (xpp_t *xpp, caddr_t ns_prefix, caddr_t ns_uri, XT * expn)
   XT **fundefs = (XT **)list_to_array (xpp->xpp_local_fundefs);
   XT **defglobals = (XT **)list_to_array (NCONC (xpp->xpp_global_vars_external, dk_set_nreverse (xpp->xpp_global_vars_preset)));
   XT *res;
-#ifdef MALLOC_DEBUG
+#ifdef XPATH_DEBUG
   dk_check_tree (fundefs);
 #endif
   xpp->xpp_local_fundefs = NULL;
@@ -4528,7 +4528,9 @@ substitute_with_undefined:
 	  res = cart;
 	}
     }
+#ifdef XPATH_DEBUG
   dk_check_tree (res);
+#endif
   return res;
 }
 
