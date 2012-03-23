@@ -8931,17 +8931,18 @@ again:
 create procedure DB.DBA.RDF_DICT_OF_TRIPLES_TO_THREE_COLS (in dict any, in destructive integer := 0)
 {
   declare ctr, len integer;
-  declare O any;
+  declare triples, O any;
   declare S, P, O_DT, O_LANG varchar;
   declare O_IS_IRI, dt_twobyte, lang_twobyte integer;
-  dict := dict_list_keys (dict, destructive);
+  triples := dict_list_keys (dict, destructive);
+  DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
   exec_result_names (vector (vector ('S', 182, 0, 4072, 1, 0, 1, 0, 0, 0, 0, 0), vector ('P', 182, 0, 4072, 1, 0, 1, 0, 0, 0, 0, 0), vector ('O', 125, 0, 2147483647, 1, 0, 0, 0, 0, 0, 0, 0)));
-  len := length (dict);
+  len := length (triples);
   for (ctr := 0; ctr < len; ctr := ctr+1)
     {
-      S := id_to_iri (dict[ctr][0]);
-      P := id_to_iri (dict[ctr][1]);
-      O := dict[ctr][2];
+      S := id_to_iri (triples[ctr][0]);
+      P := id_to_iri (triples[ctr][1]);
+      O := triples[ctr][2];
       if (isiri_id (O))
         {
           result (S, P, id_to_iri (O) --, 1, NULL, NULL
