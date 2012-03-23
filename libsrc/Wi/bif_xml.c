@@ -645,7 +645,7 @@ xp_free (xparse_ctx_t * xp)
   while (xn)
     {
       xp_node_t * next = xn->xn_parent;
-#ifdef MALLOC_DEBUG
+#ifdef XTREE_DEBUG
       dk_check_tree ((caddr_t) xn->xn_attrs);
 #endif
       dk_free_tree ((caddr_t) xn->xn_attrs);
