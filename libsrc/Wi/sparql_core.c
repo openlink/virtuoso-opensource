@@ -3933,7 +3933,7 @@ spar_make_topmost_sparul_sql (sparp_t *sparp, SPART **actions)
   SPART **action_sqls;
   caddr_t volatile err = NULL;
   int action_ctr, action_count = BOX_ELEMENTS (actions);
-  if ((1 == action_count) && (spar_compose_report_flag (sparp)))
+  if ((1 == action_count) && unbox (spar_compose_report_flag (sparp)))
     return actions[0]; /* No need to make grouping around single action. */
 /* First of all, every tree for every action is compiled into string literal containing SQL text. */
   action_sqls = (SPART **)t_alloc_box (action_count * sizeof (SPART *), DV_ARRAY_OF_POINTER);
