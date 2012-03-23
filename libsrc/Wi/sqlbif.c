@@ -8723,6 +8723,9 @@ bif_page_dump (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   }
   END_DO_SET ();
 
+  if (dp < 0 || dp >= wi_inst.wi_master->dbs_n_pages)
+    sqlr_new_error ("22023", "SR...", "The page %ld is out of range", dp);
+
   buf = &buf_auto;
   memset (&buf_auto, 0, sizeof (buf_auto));
   buf->bd_buffer = bd_buffer;
