@@ -2686,13 +2686,13 @@ rdfxml_http_write_ref (dk_session_t *ses, ttl_env_t *env, ttl_iriref_t *ti, int 
     {
       session_buffered_write (ses, prefix_to_use, strlen (prefix_to_use));
       session_buffered_write_char (':', ses);
-      dks_esc_write (ses, ti->loc, box_length (ti->loc) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_TTL_IRI);
+      dks_esc_write (ses, ti->loc, box_length (ti->loc) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_PTEXT);
       if ((prefix_to_use != ti->prefix) && (RDFXML_HTTP_WRITE_REF_P_CLOSE != opcode))
         {
           session_buffered_write (ses, " xmlns:", 7);
           session_buffered_write (ses, prefix_to_use, strlen (prefix_to_use));
           session_buffered_write (ses, "=\"", 2);
-          dks_esc_write (ses, ti->ns, box_length (ti->ns) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_TTL_IRI);
+          dks_esc_write (ses, ti->ns, box_length (ti->ns) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_PTEXT);
           close_attr = 1;
         }
     }
