@@ -441,10 +441,13 @@ create procedure DB.DBA.SPARQL_EVAL (in query varchar, in dflt_graph varchar, in
   if (state <> '00000')
     signal (state, msg);
   -- dbg_obj_princ ('exec metas=', metas);
-  exec_result_names (metas[0]);
-  foreach (any row in rset) do
+  if (metas is not null)
     {
-      exec_result (row);
+      exec_result_names (metas[0]);
+      foreach (any row in rset) do
+	{
+	  exec_result (row);
+	}
     }
 }
 ;
