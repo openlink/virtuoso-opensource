@@ -2749,17 +2749,15 @@ ddl_drop_index (caddr_t * qst, const char *table, const char *name, int log_to_t
       else
 	log_text (qi->qi_trx, temp_tx);
     }
-  dk_free_box(szTheTableName);
-  dk_free_box(szTheIndexName);
-
   if (DO_LOG(LOG_DDL))
     {
-      user_t * usr = ((query_instance_t *)(qst))->qi_client->cli_user;
-
-      if (table)
-	log_info ("DDLC_6 %s Drop index %.*s (%.*s)", GET_USER,
-	    LOG_PRINT_STR_L, name, LOG_PRINT_STR_L, table);
+      client_connection_t * cli = qi->qi_client;
+      LOG_GET
+      log_info ("DDLC_6 %s %s %s Drop index %.*s (%.*s)", user, from, peer,
+	    LOG_PRINT_STR_L, szTheIndexName, LOG_PRINT_STR_L, szTheTableName);
     }
+  dk_free_box(szTheTableName);
+  dk_free_box(szTheIndexName);
 }
 
 
@@ -2950,9 +2948,9 @@ ddl_index_def (query_instance_t * qi, caddr_t name, caddr_t table, caddr_t * col
   atomic_mode (qi, 0, atomic); /* unlock */
   if (DO_LOG(LOG_DDL))
     {
-      user_t * usr = ((query_instance_t *)(qi))->qi_client->cli_user;
-      if (usr && GET_USER)
-	log_info ("DDLC_5 %s Create index %*.s (%*.s)", GET_USER,
+      client_connection_t * cli = qi->qi_client;
+      LOG_GET
+      log_info ("DDLC_5 %s %s %s Create index %.*s (%.*s)", user, from, peer,
 	    LOG_PRINT_STR_L, name, LOG_PRINT_STR_L, table);
     }
 
@@ -3026,8 +3024,8 @@ ddl_rename_table_1 (query_instance_t * qi, char *old, char *new_name, caddr_t *e
   new_tb = sch_name_to_table (wi_inst.wi_schema, new_name);
   if (DO_LOG(LOG_DDL))
     {
-      user_t * usr = ((query_instance_t *)(qi))->qi_client->cli_user;
-      log_info ("DDLC_7 %s Rename table %*.s (%*.s)", GET_USER,
+      LOG_GET
+      log_info ("DDLC_7 %s %s %s Rename table %.*s (%.*s)", user, from, peer,
 	  LOG_PRINT_STR_L, old, LOG_PRINT_STR_L, new_name);
     }
 }
