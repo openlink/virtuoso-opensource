@@ -1,7 +1,0 @@
-virt_handler.c
-.libs
-.deps
-*.lo
-*.la
-Makefile
-Makefile.in
