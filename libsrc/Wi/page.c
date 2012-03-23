@@ -952,10 +952,10 @@ pf_fill_registered (page_fill_t * pf, buffer_desc_t * buf, it_cursor_t * itc)
 	{
 #ifdef NDEBUG
 	  log_error ("Too many cursors: %ld on splitting page.", pf_count_registered (buf));
-	  itc_bust_this_trx (itc, buf, ITC_BUST_THROW);
-#else
-	GPF_T1 ("too many cursors on splitting page.");
+	  itc_bust_this_trx (itc, &buf, ITC_BUST_THROW);
 #endif
+	  /* should never return*/
+	  GPF_T1 ("too many cursors on splitting page.");
 	}
     }
   pf->pf_cr_fill = cr_fill;
