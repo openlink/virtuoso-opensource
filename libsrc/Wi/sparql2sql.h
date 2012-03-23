@@ -635,8 +635,14 @@ extern void sparp_make_common_eqs (sparp_t *sparp);
 /*! Assigns table aliases to all variables in the expression */
 extern void sparp_make_aliases (sparp_t *sparp);
 
+
+typedef struct sparp_label_external_vars_env_s {
+  dk_set_t parent_gps_for_var_search;
+  dk_set_t parent_gps_for_table_subq;
+} sparp_label_external_vars_env_t;
+
 /*! Label variables as EXTERNAL. */
-extern void sparp_label_external_vars (sparp_t *sparp, dk_set_t parent_gps);
+extern void sparp_label_external_vars (sparp_t *sparp, sparp_label_external_vars_env_t *sleve);
 
 /*! Visits all subtres and subqueries of \c tree and places all distinct names of global and external variables to \c set_set[0] */
 extern void sparp_list_external_vars (sparp_t *sparp, SPART *tree, dk_set_t *set_ret);
@@ -762,6 +768,8 @@ extern void ssg_print_tmpl (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, ccad
 extern void sparp_check_tmpl (sparp_t *sparp, ccaddr_t tmpl, int qmv_known, dk_set_t *used_aliases);
 extern caddr_t sparp_patch_tmpl (sparp_t *sparp, ccaddr_t tmpl, dk_set_t alias_replacements);
 
+extern int ssg_is_odbc_cli (void);
+
 /*! This searches for declaration of type by its name. NULL name result in NULL output, unknown name is an error */
 extern ssg_valmode_t ssg_find_valmode_by_name (ccaddr_t name);
 
@@ -800,6 +808,8 @@ typedef struct spar_sqlgen_s
   int			ssg_line_count;		/*!< Number of lines of generated SQL code */
   dk_set_t		ssg_valid_ret_selids;	/*!< stack of selids of GPs that can be safely used to generate SQL code for retvals (i.e. their selids are in current scope) */
   dk_set_t		ssg_valid_ret_tabids;	/*!< stack like ssg_valid_ret_selids, but for tabids */
+  dk_set_t		ssg_outer_valid_ret_selids;	/*!< Initial content of \c ssg_valid_ret_selids. This content is passed to sub-ssgs that make non-scalar subqueries, because they do not access selids of neigbours but can access selids outside some surrounding scalar subquery */
+  dk_set_t		ssg_outer_valid_ret_tabids;	/*!< Initial content of \c ssg_valid_ret_tabids. */
   int			ssg_seealso_enabled;	/*!< Flags if \c ssg_print_fld_var_restrictions_ex() (or the like) should generate calls of RDF_GRAB_SEEALSO; they should for "init" and "iter" of a pview, but not for "final" */
 /* SPARQL-D Codegen temporary values */
   const char *		ssg_sd_service_name;	/*!< Name of the destination endpoint that will receive the fragment that is printed ATM (for error reporting) */

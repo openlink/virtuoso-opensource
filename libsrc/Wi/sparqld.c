@@ -141,7 +141,7 @@ void ssg_sdprint_tree_list (spar_sqlgen_t *ssg, SPART **trees, char delim)
 }
 
 const char *
-ssg_sd_opname (ptrlong opname, int is_op)
+ssg_sd_opname (sparp_t *sparp, ptrlong opname, int is_op)
 {
 
   if (is_op)
@@ -150,6 +150,7 @@ ssg_sd_opname (ptrlong opname, int is_op)
     case BOP_AND: return "&&";
     case BOP_OR: return "||";
     case BOP_NOT: return "!";
+    case SPAR_BOP_EQ: spar_internal_error (sparp, "special assignment can not be rendered in SPARQL text");
     case BOP_EQ: return "=";
     case BOP_NEQ: return "!=";
     case BOP_LT: return "<";
@@ -1002,7 +1003,7 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
             ssg->ssg_indent--;
           }
         ssg_putchar (' ');
-        ssg_puts (ssg_sd_opname (tree_type, 1));
+        ssg_puts (ssg_sd_opname (ssg->ssg_sparp, tree_type, 1));
         ssg_putchar (' ');
         if (SPART_TYPE (tree->_.bin_exp.right) < 1000)
           {

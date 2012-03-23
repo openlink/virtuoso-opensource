@@ -94,7 +94,7 @@ spart_count_specific_elems_by_type (ptrlong type)
     case BOP_NOT:
     case BOP_OR: case BOP_AND:
     case BOP_PLUS: case BOP_MINUS: case BOP_TIMES: case BOP_DIV: case BOP_MOD:
-    case BOP_EQ: case BOP_NEQ: case BOP_LT: case BOP_LTE: case BOP_GT: case BOP_GTE:
+    case BOP_EQ: case SPAR_BOP_EQ: case BOP_NEQ: case BOP_LT: case BOP_LTE: case BOP_GT: case BOP_GTE:
     case BOP_LIKE:		return sizeof (sample._.bin_exp);
     }
   GPF_T;
@@ -2322,6 +2322,10 @@ spar_make_top_or_special_case_from_wm (sparp_t *sparp, ptrlong subtype, SPART **
   SPART **order = wm->_.wm.obys;
   SPART *limit = wm->_.wm.lim;
   SPART *offset = wm->_.wm.ofs;
+  if ((NULL == sparp->sparp_env->spare_output_format_name)
+    && (NULL == sparp->sparp_env->spare_parent_env)
+    && ssg_is_odbc_cli () )
+    sparp->sparp_env->spare_output_format_name = t_box_dv_short_string ("_UDBC_");
 #ifndef NDEBUG
   if (SPAR_WHERE_MODIFS != SPART_TYPE (wm))
     spar_internal_error (sparp, "Ill wm");
@@ -2597,20 +2601,22 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
 #endif
   SPART *subselect_top, *where_gp, *wrapper_gp, *fields[4];
   SPART *subj_var, *obj_var, **retvals;
-  caddr_t subj_vname, obj_vname, retval_selid, gp_selid;
-  int subj_is_plain_var, obj_is_plain_var, retvalctr, fld_ctr;
+  caddr_t subj_alias, obj_alias, subj_vname, obj_vname, retval_selid, gp_selid;
+  int subj_is_plain_var = 0, obj_is_plain_var = 0, retvalctr, fld_ctr;
   int subj_stype = SPART_TYPE (subject);
   int obj_stype = SPART_TYPE (object);
-  if ((SPAR_VARIABLE != subj_stype) && (SPAR_QNAME != subj_stype))
+  if (SPAR_VARIABLE == subj_stype)
+    subj_is_plain_var = SPART_VARNAME_IS_PLAIN(subject->_.var.vname);
+  else if (SPAR_QNAME != subj_stype)
     spar_error (sparp, "Subject of transitive triple pattern should be variable or QName, not literal or blank node");
-  if ((SPAR_VARIABLE != obj_stype) && (SPAR_QNAME != obj_stype) && (SPAR_LIT != obj_stype))
+  if (SPAR_VARIABLE == obj_stype)
+    obj_is_plain_var = SPART_VARNAME_IS_PLAIN(object->_.var.vname);
+  else if ((SPAR_QNAME != obj_stype) && (SPAR_LIT != obj_stype))
     spar_error (sparp, "Object of transitive triple pattern should be variable or QName or literal, not blank node");
-  subj_is_plain_var = ((SPAR_VARIABLE == subj_stype) && (NULL == strchr (subject->_.var.vname, '>')));
-  obj_is_plain_var = ((SPAR_VARIABLE == obj_stype) && (NULL == strchr (object->_.var.vname, '>')));
-  subj_vname = (subj_is_plain_var ? subject->_.var.vname :
-    t_box_sprintf (40, "trans-subj-%.20s", (caddr_t)(sparp->sparp_env->spare_selids->data)) );
-  obj_vname = (obj_is_plain_var ? object->_.var.vname :
-    t_box_sprintf (40, "trans-obj-%.20s", (caddr_t)(sparp->sparp_env->spare_selids->data)) );
+  subj_alias = subj_is_plain_var ? subject->_.var.vname : NULL;
+  obj_alias = subj_is_plain_var ? object->_.var.vname : NULL;
+  subj_vname = t_box_sprintf (40, "trans-subj-%.20s", (caddr_t)(sparp->sparp_env->spare_selids->data));
+  obj_vname = t_box_sprintf (40, "trans-obj-%.20s", (caddr_t)(sparp->sparp_env->spare_selids->data));
   spar_gp_init (sparp, 0);
   spar_env_push (sparp);
   spar_selid_push (sparp);
@@ -2626,15 +2632,24 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
     }
   if (0 == retvalctr)
     retvalctr = 1;
-  retvals = (SPART **)t_alloc_box (retvalctr * sizeof (SPART *), DV_ARRAY_OF_POINTER);
+  retvals = (SPART **)t_alloc_list (retvalctr);
   retval_selid = (caddr_t)(sparp->sparp_env->spare_selids->data);
   retvalctr = 0;
   for (fld_ctr = 0; fld_ctr < 4; fld_ctr++)
     {
+      SPART *rval = NULL;
       switch (SPART_TYPE (fields[fld_ctr]))
         {
-        case SPAR_BLANK_NODE_LABEL: retvals[retvalctr++] = spar_make_blank_node (sparp, fields[fld_ctr]->_.var.vname, 0); break;
-        case SPAR_VARIABLE: retvals[retvalctr++] = spar_make_variable (sparp, fields[fld_ctr]->_.var.vname); break;
+        case SPAR_BLANK_NODE_LABEL: rval = spar_make_blank_node (sparp, fields[fld_ctr]->_.var.vname, 0); break;
+        case SPAR_VARIABLE: rval = spar_make_variable (sparp, fields[fld_ctr]->_.var.vname); break;
+        }
+      if (NULL != rval)
+        {
+          if ((1 == fld_ctr) && (NULL != subj_alias))
+            rval = spartlist (sparp, 4, SPAR_ALIAS, rval, subj_alias, SSG_VALMODE_AUTO);
+          else if ((3 == fld_ctr) && (NULL != obj_alias))
+            rval = spartlist (sparp, 4, SPAR_ALIAS, rval, obj_alias, SSG_VALMODE_AUTO);
+          retvals[retvalctr++] = rval;
         }
     }
   if (0 == retvalctr)
@@ -2651,10 +2666,10 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
     }
   spar_gp_add_triplelike (sparp, graph, subj_var, predicate, obj_var, qm_iri_or_pair, NULL, banned_tricks | SPAR_ADD_TRIPLELIKE_NO_TRANSITIVE);
   sparp_set_option (sparp, &options, T_IN_L,
-    spartlist (sparp, 2, SPAR_LIST, t_list (1, spar_make_variable (sparp, subj_vname))),
+    spartlist (sparp, 2, SPAR_LIST, t_list (1, spar_make_variable (sparp, (NULL != subj_alias) ? subj_alias : subj_vname))),
     SPARP_SET_OPTION_REPLACING );
   sparp_set_option (sparp, &options, T_OUT_L,
-    spartlist (sparp, 2, SPAR_LIST, t_list (1, spar_make_variable (sparp, obj_vname))),
+    spartlist (sparp, 2, SPAR_LIST, t_list (1, spar_make_variable (sparp, (NULL != obj_alias) ? obj_alias : obj_vname))),
     SPARP_SET_OPTION_REPLACING );
   where_gp = spar_gp_finalize (sparp, NULL);
   subselect_top = spar_make_top (sparp, SELECT_L, retvals,
@@ -2667,12 +2682,12 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
   spar_gp_add_member (sparp, wrapper_gp);
   if (!subj_is_plain_var)
     {
-      SPART *eq = spartlist (sparp, 3, BOP_EQ, spar_make_variable (sparp, subj_vname), subject);
+      SPART *eq = spartlist (sparp, 3, BOP_EQ, spar_make_variable (sparp, subj_alias), subject);
       spar_gp_add_filter (sparp, eq);
     }
   if (!obj_is_plain_var)
     {
-      SPART *eq = spartlist (sparp, 3, BOP_EQ, spar_make_variable (sparp, obj_vname), object);
+      SPART *eq = spartlist (sparp, 3, BOP_EQ, spar_make_variable (sparp, obj_alias), object);
       spar_gp_add_filter (sparp, eq);
     }
 #ifdef DEBUG

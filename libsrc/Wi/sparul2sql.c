@@ -53,13 +53,22 @@ extern "C" {
 #define CTOR_DISJOIN_WHERE 1
 #define CTOR_MAY_INTERSECTS_WHERE 0
 
-int ssg_is_odbc_cli ();
-
 caddr_t
 spar_compose_report_flag (sparp_t *sparp)
 {
-  const char *fmtname = sparp->sparp_env->spare_output_format_name; /* Report is always a result-set, so no spare_output_XXX_format name */
-  return t_box_num ((NULL == fmtname && ssg_is_odbc_cli ()) || ((NULL != fmtname) && (!strcmp (fmtname, "_JAVA_") || !strcmp (fmtname, "_UDBC_"))) ? 0 : 1);
+  sparp_env_t *spare = sparp->sparp_env;
+  const char *fmtname;
+  caddr_t res;
+  if (NULL != spare->spare_output_compose_report)
+    return spare->spare_output_compose_report;
+  fmtname = spare->spare_output_format_name; /* Report is always a result-set, so no spare_output_XXX_format name */
+  if ((NULL == spare->spare_output_format_name)
+    && (NULL == sparp->sparp_env->spare_parent_env)
+    && ssg_is_odbc_cli () )
+    fmtname = spare->spare_output_format_name = t_box_dv_short_string ("_UDBC_");
+  res = t_box_num_nonull (((NULL != fmtname) && (!strcmp (fmtname, "_JAVA_") || !strcmp (fmtname, "_UDBC_"))) ? 0 : 1);
+  spare->spare_output_compose_report = res;
+  return res;
 }
 
 extern int sparp_ctor_fields_are_disjoin_with_where_fields (sparp_t *sparp, SPART **ctor_fields, SPART **where_fields);
@@ -99,14 +108,14 @@ sparp_ctor_fields_are_disjoin_with_where_fields (sparp_t *sparp, SPART **ctor_fi
             sparp_equiv_t *src_equiv = sparp_equiv_get_ro (top_eqs, top_eq_count,
               top_gp, ctor_fld, SPARP_EQUIV_GET_NAMESAKES );
             if (NULL != src_equiv) /* src_equiv may be NULL in subqueries */
-              sparp_rvr_tighten (sparp, &rvr, &(src_equiv->e_rvr), ~1);
+              sparp_rvr_tighten (sparp, &rvr, &(src_equiv->e_rvr), ~0);
             break;
           }
         case SPAR_LIT: case SPAR_QNAME:
           {
             rdf_val_range_t tmp;
             sparp_rvr_set_by_constant (sparp, &tmp, NULL, ctor_fld);
-            sparp_rvr_tighten (sparp, &rvr, &tmp, ~1);
+            sparp_rvr_tighten (sparp, &rvr, &tmp, ~0);
             break;
           }
         default: break;
@@ -116,13 +125,13 @@ sparp_ctor_fields_are_disjoin_with_where_fields (sparp_t *sparp, SPART **ctor_fi
       switch (where_fld_type)
         {
         case SPAR_BLANK_NODE_LABEL: case SPAR_VARIABLE:
-          sparp_rvr_tighten (sparp, &rvr, &(where_fld->_.var.rvr), ~1);
+          sparp_rvr_tighten (sparp, &rvr, &(where_fld->_.var.rvr), ~0);
           break;
         case SPAR_LIT: case SPAR_QNAME:
           {
             rdf_val_range_t tmp;
             sparp_rvr_set_by_constant (sparp, &tmp, NULL, where_fld);
-            sparp_rvr_tighten (sparp, &rvr, &tmp, ~1);
+            sparp_rvr_tighten (sparp, &rvr, &tmp, ~0);
             break;
           }
         default: break;

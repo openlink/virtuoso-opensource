@@ -76,6 +76,8 @@ extern "C" {
 #define SPAR_MAX_TREE_TYPE	(ptrlong)1024	/* Don't forget to adjust */
 /* Don't forget to update spart_count_specific_elems_by_type(), sparp_tree_full_clone_int(), sparp_tree_full_copy(), spart_dump() and comments inside typedef struct spar_tree_s */
 
+#define SPAR_BOP_EQ		(ptrlong)1051	/*!< An equality that is not optimized into an equivalence class */
+
 #define SPAR_BIF_ABS		(ptrlong)1101
 #define SPAR_BIF_BNODE		(ptrlong)1102
 #define SPAR_BIF_CEIL		(ptrlong)1103
@@ -253,6 +255,7 @@ typedef struct sparp_env_s
     caddr_t		spare_output_dict_format_name;	/*!< Overrides generic \c spare_output_format_name for "dictionary of triples" result sets, like CONSTRUCT and DESCRIBE */
     caddr_t		spare_output_route_name;	/*!< Name of procedure that makes a decision re. method of writing SPARUL results (quad storage / DAV file / something else) */
     caddr_t		spare_output_storage_name;	/*!< Name of quad_storage_t JSO object to control the use of quad mapping at SPARUL output side */
+    caddr_t		spare_output_compose_report;	/*!< Boxed non-NULL number that indicates wither a verbose report string should be created (value of 1) or just a number of changes (value of 0) */
     caddr_t		spare_output_maxrows;		/*!< boxed maximum expected number of rows to return */
     caddr_t		spare_storage_name;		/*!< Name of quad_storage_t JSO object to control the use of quad mapping at input side and maybe at SPARUL output side */
     caddr_t		spare_inference_name;		/*!< Name of inference rule set to control the expansion of types */
@@ -755,6 +758,7 @@ extern void spart_dump (void *tree_arg, dk_session_t *ses, int indent, const cha
 
 #define SPART_VARNAME_IS_GLOB(varname) (':' == (varname)[0])
 #define SPART_VARNAME_IS_SPECIAL(varname) ('@' == (varname)[0])
+#define SPART_VARNAME_IS_PLAIN(varname) (!SPART_VARNAME_IS_GLOB((varname)) && !SPART_VARNAME_IS_SPECIAL((varname)) && (NULL == strchr ((varname), '>')))
 #define SPART_IRI_IS_NAMED_BNODE(iri) (('_' == (iri)[0]) && (':' == (iri)[1]))
 
 #define SPART_IS_DEFAULT_GRAPH_BLANK(g) ( \

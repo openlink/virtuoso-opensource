@@ -820,6 +820,7 @@ spar_construct_query	/* [6]	ConstructQuery	 ::=  'CONSTRUCT' ConstructTemplate D
                 t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL); }
             spar_ctor_template spar_dataset_clauses_opt
 	    spar_wherebindings_clause spar_solution_modifier spar_bindings_clause_opt {
+		const char *fmt_mode_name;
                 const char *formatter, *agg_formatter, *agg_mdata;
 		SPART *where_gp = spar_gp_finalize (sparp_arg, NULL);
 		SPART *wm = $6;
@@ -827,7 +828,8 @@ spar_construct_query	/* [6]	ConstructQuery	 ::=  'CONSTRUCT' ConstructTemplate D
 		wm->_.wm.where_gp = where_gp;
 		$$ = spar_make_top_or_special_case_from_wm (sparp_arg, CONSTRUCT_L, NULL,
                   retselid, wm );
-                ssg_find_formatter_by_name_and_subtype ($$->_.req_top.formatmode_name, CONSTRUCT_L, &formatter, &agg_formatter, &agg_mdata);
+		fmt_mode_name = $$->_.req_top.formatmode_name;
+		ssg_find_formatter_by_name_and_subtype (fmt_mode_name, CONSTRUCT_L, &formatter, &agg_formatter, &agg_mdata);
                 spar_compose_retvals_of_construct (sparp_arg, $$, $3, formatter, agg_formatter, agg_mdata); }
 	;
 

@@ -323,14 +323,16 @@ void
 sparp_wpar_retvars_in_max (sparp_t *sparp, SPART *query)
 {
   SPART **retvals = query->_.req_top.retvals;
+  const char *formatter, *agg_formatter, *agg_meta;
   caddr_t retvalmode_name, formatmode_name;
   if ((0 == sparp->sparp_query_uses_aggregates) || (0 != BOX_ELEMENTS_0 (query->_.req_top.groupings)))
     return;
   retvalmode_name = query->_.req_top.retvalmode_name;
   formatmode_name = query->_.req_top.formatmode_name;
+  ssg_find_formatter_by_name_and_subtype (formatmode_name, query->_.req_top.subtype, &formatter, &agg_formatter, &agg_meta);
   if (((SELECT_L == query->_.req_top.subtype) ||
     (DISTINCT_L == query->_.req_top.subtype) ) &&
-    (NULL == formatmode_name) &&
+    (NULL == formatter) && (NULL == agg_formatter) &&
     ((NULL == retvalmode_name) ||
     (SSG_VALMODE_SQLVAL == ssg_find_valmode_by_name (retvalmode_name)) ) )
   return;
@@ -654,7 +656,7 @@ sparp_gp_trav_cu_in_retvals (sparp_t *sparp, SPART *curr, sparp_trav_state_t *st
   curr->_.var.tabid = NULL;
   eq = sparp_equiv_get (sparp, top_gp, curr, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_INS_VARIABLE | SPARP_EQUIV_ADD_CONST_READ);
   curr->_.var.equiv_idx = eq->e_own_idx;
-  curr->_.var.rvr.rvrRestrictions |= SPART_VARR_EXPORTED | (curr->_.var.rvr.rvrRestrictions & (SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL));
+  curr->_.var.rvr.rvrRestrictions |= SPART_VARR_EXPORTED /* This is redundand: if these bits are set, why set them again: | (curr->_.var.rvr.rvrRestrictions & (SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL))*/ ;
   sparp_equiv_tighten (sparp, eq, &(curr->_.var.rvr), ~0);
   return 0;
 }
@@ -726,6 +728,7 @@ sparp_rotate_comparisons_by_rank (SPART *filt)
 {
   switch (SPART_TYPE (filt))
     {
+    case SPAR_BOP_EQ: /* no break */
     case BOP_EQ:
     case BOP_NEQ:
     case BOP_LT:
@@ -929,7 +932,7 @@ sparp_optimize_BOP_OR_filter_walk (SPART *filt, so_BOP_OR_filter_ctx_t *ctx)
       if (SPAR_BIF_SAMETERM != filt->_.builtin.btype)
         goto cannot_optimize; /* see below */
       /* no break, try get optimization hints like it is BOP_EQ */
-    case BOP_EQ: /* No break */
+    case BOP_EQ: /* No case for SPAR_BOP_EQ ! */
       sparp_rotate_comparisons_by_rank (filt);
       if (sparp_optimize_BOP_OR_filter_walk_lvar (filt->_.bin_exp.left, ctx))
         goto cannot_optimize; /* see below */
@@ -1122,7 +1125,7 @@ sparp_filter_to_equiv (sparp_t *sparp, SPART *curr, SPART *filt)
 /* Now filters can be processed */
   switch (SPART_TYPE (filt))
     {
-    case BOP_EQ:
+    case BOP_EQ: /* No case for SPAR_BOP_EQ ! Indeed, this is the main reason for introducing SPAR_BOP_EQ at all */
       {
         SPART *l = filt->_.bin_exp.left;
         SPART *r = filt->_.bin_exp.right;
@@ -1697,19 +1700,26 @@ int
 sparp_gp_trav_label_external_vars_gp_in (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   int eqctr;
-  dk_set_t parent_gps = (dk_set_t)common_env;
+  sparp_label_external_vars_env_t *sleve;
   if (SPAR_GP != SPART_TYPE (curr))
     return 0;
-  if (SELECT_L == curr->_.gp.subtype)
-    return SPAR_GPT_NODOWN;
-  if ((NULL == parent_gps) && (NULL == sparp->sparp_env->spare_bindings_vars))
+  sleve = (sparp_label_external_vars_env_t *)common_env;
+  if ((NULL == sleve->parent_gps_for_table_subq) && (NULL == sparp->sparp_env->spare_bindings_vars))
     return SPAR_GPT_ENV_PUSH;
+  if (SELECT_L == curr->_.gp.subtype)
+    {
+      sparp_t *sub_sparp = sparp_down_to_sub (sparp, curr);
+      sparp_label_external_vars_env_t tmp_sleve;
+      tmp_sleve.parent_gps_for_var_search = tmp_sleve.parent_gps_for_table_subq = sleve->parent_gps_for_table_subq;
+      sparp_label_external_vars (sub_sparp, &tmp_sleve);
+      sparp_up_from_sub (sparp, curr, sub_sparp);
+    }
   SPARP_FOREACH_GP_EQUIV (sparp, curr, eqctr, eq)
     {
       int varnamectr;
       DO_BOX_FAST_REV (caddr_t, varname, varnamectr, eq->e_varnames)
         {
-          sparp_equiv_t *external_namesake_eq = sparp_find_external_namesake_eq_of_varname (sparp, varname, parent_gps);
+          sparp_equiv_t *external_namesake_eq = sparp_find_external_namesake_eq_of_varname (sparp, varname, sleve->parent_gps_for_var_search);
           if (NULL == external_namesake_eq)
             continue;
           eq->e_external_src_idx = external_namesake_eq->e_own_idx;
@@ -1727,8 +1737,8 @@ sparp_gp_trav_label_external_vars_expn_in (sparp_t *sparp, SPART *curr, sparp_tr
 {
   if (SPAR_IS_BLANK_OR_VAR (curr))
     {
-      dk_set_t parent_gps = (dk_set_t)common_env;
-      sparp_equiv_t *external_namesake_eq = sparp_find_external_namesake_eq_of_varname (sparp, curr->_.var.vname, parent_gps->next);
+      sparp_label_external_vars_env_t *sleve = (sparp_label_external_vars_env_t *)common_env;
+      sparp_equiv_t *external_namesake_eq = sparp_find_external_namesake_eq_of_varname (sparp, curr->_.var.vname, sleve->parent_gps_for_var_search);
       if (NULL != external_namesake_eq)
         {
           sparp_equiv_t *eq = SPARP_EQUIV (sparp, curr->_.var.equiv_idx);
@@ -1743,37 +1753,41 @@ sparp_gp_trav_label_external_vars_expn_in (sparp_t *sparp, SPART *curr, sparp_tr
 int
 sparp_gp_trav_label_external_vars_expn_subq (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
-  dk_set_t parent_gps = (dk_set_t)common_env;
+  sparp_label_external_vars_env_t *sleve = (sparp_label_external_vars_env_t *)common_env;
   SPART *anc_gp = sts_this->sts_ancestor_gp;
   sparp_t *sub_sparp = sparp_down_to_sub (sparp, curr);
-  if ((NULL != anc_gp) || (NULL != sparp->sparp_env->spare_bindings_vars))
+  if ((NULL != anc_gp) || (NULL != sparp->sparp_env->spare_bindings_vars) || (NULL != sleve->parent_gps_for_var_search))
     {
-      s_node_t tmp_env;
-      tmp_env.data = anc_gp;
-      tmp_env.next = parent_gps;
-      sparp_label_external_vars (sub_sparp, &tmp_env);
+      s_node_t tmp_stack;
+      sparp_label_external_vars_env_t tmp_sleve;
+      tmp_stack.data = anc_gp;
+      tmp_stack.next = sleve->parent_gps_for_var_search;
+      tmp_sleve.parent_gps_for_var_search = tmp_sleve.parent_gps_for_table_subq = &tmp_stack;
+      sparp_label_external_vars (sub_sparp, &tmp_sleve);
     }
-  sparp_label_external_vars (sub_sparp, parent_gps);
   sparp_up_from_sub (sparp, curr, sub_sparp);
   return 0;
 }
 
 void
-sparp_label_external_vars (sparp_t *sparp, dk_set_t parent_gps)
+sparp_label_external_vars (sparp_t *sparp, sparp_label_external_vars_env_t *sleve)
 {
   SPART *top = sparp->sparp_expr;
   SPART *top_pattern = top->_.req_top.pattern;
-  s_node_t tmp_env;
-  tmp_env.data = top_pattern;
-  tmp_env.next = parent_gps;
-  sparp_trav_out_clauses (sparp, top, &tmp_env,
+  sparp_label_external_vars_env_t tmp_sleve;
+  if (NULL == sleve)
+    {
+      tmp_sleve.parent_gps_for_var_search = tmp_sleve.parent_gps_for_table_subq = NULL;
+      sleve = &tmp_sleve;
+    }
+  sparp_trav_out_clauses (sparp, top, sleve,
     NULL, NULL,
-    (((NULL != parent_gps) || (NULL != sparp->sparp_env->spare_bindings_vars)) ?
+    (((NULL != sleve->parent_gps_for_var_search) || (NULL != sparp->sparp_env->spare_bindings_vars)) ?
       sparp_gp_trav_label_external_vars_expn_in : NULL ),
     NULL,
     sparp_gp_trav_label_external_vars_expn_subq,
     NULL );
-  sparp_gp_trav (sparp, top_pattern, parent_gps,
+  sparp_gp_trav (sparp, top_pattern, sleve,
     sparp_gp_trav_label_external_vars_gp_in, NULL,
     NULL, NULL, sparp_gp_trav_label_external_vars_expn_subq,
     NULL );
@@ -2236,7 +2250,7 @@ sparp_gp_trav_eq_restr_to_vars_gp_in (sparp_t *sparp, SPART *curr, sparp_trav_st
 	  if ((SPAR_VARIABLE != SPART_TYPE(var)) && (SPAR_BLANK_NODE_LABEL != SPART_TYPE(var)))
 	    spar_internal_error (sparp, "Not a variable in equiv in sparp_gp_trav_eq_restr_to_vars()");
 #endif
-	  sparp_rvr_tighten (sparp, &(var->_.var.rvr), &(eq->e_rvr), ~0);
+	  sparp_rvr_tighten (sparp, &(var->_.var.rvr), &(eq->e_rvr), ~0 /* not (SPART_VARR_EXTERNAL | SPART_VARR_GLOBAL)*/);
 	  var->_.var.equiv_idx = eq->e_own_idx;
 	}
     } END_SPARP_FOREACH_GP_EQUIV;
@@ -3304,7 +3318,7 @@ sparp_refresh_triple_cases (sparp_t *sparp, SPART *triple)
       sparp_jso_validate_format (sparp, field_valmode);
       triple->_.triple.native_formats[field_ctr] = field_valmode;
       if (SPAR_IS_BLANK_OR_VAR (field_expn))
-        sparp_rvr_tighten (sparp, &(field_expn->_.var.rvr), &acc_rvr, ~0);
+        sparp_rvr_tighten (sparp, &(field_expn->_.var.rvr), &acc_rvr, ~(SPART_VARR_EXTERNAL | SPART_VARR_GLOBAL));
     }
   triple->_.triple.tc_list = new_cases;
 }
@@ -3692,7 +3706,7 @@ sparp_expns_are_equal (sparp_t *sparp, SPART *one, SPART *two)
         sparp_expn_lists_are_equal (sparp, one->_.funcall.argtrees, two->_.funcall.argtrees) );
     case SPAR_GP:
       return !strcmp (one->_.gp.selid, two->_.gp.selid); /*!!!TBD: this check is good enough for TPC-D Q16. Do we need more accurate check? */
-    case BOP_EQ: case BOP_NEQ:
+    case BOP_EQ: case SPAR_BOP_EQ: case BOP_NEQ:
     case BOP_AND: case BOP_OR:
     case BOP_SAME: case BOP_NSAME:
       return (
@@ -3835,7 +3849,7 @@ sparp_make_qm_cases (sparp_t *sparp, SPART *triple, SPART *parent_gp)
                 }
               if (NULL != fld_tc_cuts)
                 sparp_rvr_add_red_cuts (sparp, &(eq->e_rvr), fld_tc_cuts, BOX_ELEMENTS (fld_tc_cuts));
-              sparp_rvr_tighten (sparp, (&new_fld_expn->_.var.rvr), &(eq->e_rvr), ~0);
+              sparp_rvr_tighten (sparp, (&new_fld_expn->_.var.rvr), &(eq->e_rvr), ~0 /* not (SPART_VARR_EXTERNAL | SPART_VARR_GLOBAL)*/);
             }
           else
             new_fld_expn = sparp_tree_full_copy (sparp, fld_expn, NULL);

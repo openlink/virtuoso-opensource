@@ -114,8 +114,8 @@ sparp_gp_trav_int (sparp_t *sparp, SPART *tree,
   int sub_gp_count = 0, sub_expn_count = 0, ctr;
   int tree_cat = 0;
   int in_rescan = 0;
-  sparp_trav_state_t *save_sts_this = BADBEEF_BOX; /* To keep gcc 4.0 happy */
-  SPART *save_ancestor_gp = BADBEEF_BOX; /* To keep gcc 4.0 happy */
+  sparp_trav_state_t *save_sts_this = (sparp_trav_state_t *)(BADBEEF_BOX); /* To keep gcc 4.0 happy */
+  SPART *save_ancestor_gp = (SPART *)(BADBEEF_BOX); /* To keep gcc 4.0 happy */
   int retcode = 0;
 
   if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &sub_gps, 1000))
@@ -192,7 +192,7 @@ scan_for_children:
 	sub_expn_count = BOX_ELEMENTS (sub_expns);
         break;
       }
-    case BOP_EQ: case BOP_NEQ:
+    case BOP_EQ: case SPAR_BOP_EQ: case BOP_NEQ:
     case BOP_LT: case BOP_LTE: case BOP_GT: case BOP_GTE:
     /*case BOP_LIKE: Like is built-in in SPARQL, not a BOP! BTW, 'IN' is also BOP */
     case BOP_SAME: case BOP_NSAME:
@@ -969,7 +969,7 @@ spar_macroprocess_tree (sparp_t *sparp, SPART *tree, spar_mproc_ctx_t *ctx)
       return tree;
     case BOP_OR: case BOP_AND:
     case BOP_PLUS: case BOP_MINUS: case BOP_TIMES: case BOP_DIV: case BOP_MOD:
-    case BOP_EQ: case BOP_NEQ: case BOP_LT: case BOP_LTE: case BOP_GT: case BOP_GTE:
+    case BOP_EQ: case SPAR_BOP_EQ: case BOP_NEQ: case BOP_LT: case BOP_LTE: case BOP_GT: case BOP_GTE:
     case BOP_LIKE:
       tree->_.bin_exp.right = spar_macroprocess_tree (sparp, tree->_.bin_exp.right, ctx);
       /* no break; */
@@ -2980,7 +2980,7 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
         tgt->_.req_top.order = sparp_treelist_full_clone_int (sparp, orig->_.req_top.order, orig_pattern);
         return tgt;
       }
-    case BOP_EQ: case BOP_NEQ:
+    case BOP_EQ: case SPAR_BOP_EQ: case BOP_NEQ:
     case BOP_LT: case BOP_LTE: case BOP_GT: case BOP_GTE:
     /*case BOP_LIKE: Like is built-in in SPARQL, not a BOP! */
     case BOP_SAME: case BOP_NSAME:
@@ -3147,7 +3147,7 @@ sparp_tree_full_copy (sparp_t *sparp, const SPART *orig, const SPART *parent_gp)
       tgt->_.req_top.limit = sparp_tree_full_copy (sparp, orig->_.req_top.limit, parent_gp);
       tgt->_.req_top.offset = sparp_tree_full_copy (sparp, orig->_.req_top.offset, parent_gp);
       return tgt;
-    case BOP_EQ: case BOP_NEQ:
+    case BOP_EQ: case SPAR_BOP_EQ: case BOP_NEQ:
     case BOP_LT: case BOP_LTE: case BOP_GT: case BOP_GTE:
     /*case BOP_LIKE: Like is built-in in SPARQL, not a BOP! */
     case BOP_SAME: case BOP_NSAME:
@@ -3669,11 +3669,7 @@ sparp_find_triple_of_var_or_retval (sparp_t *sparp, SPART *gp, SPART *var, int n
     return NULL;
   if (NULL == gp)
     {
-#if 0
-      gp = sparp_find_gp_by_alias_int (sparp, sparp->sparp_expr->_.req_top.pattern, var->_.var.selid);
-#else
       gp = sparp_find_gp_by_alias (sparp, var->_.var.selid);
-#endif
       if (NULL == gp)
         return NULL;
     }
@@ -3907,6 +3903,8 @@ sparp_find_origin_of_external_var (sparp_t *sparp, SPART *var, int find_exact_sp
       sparp_equiv_t *esub_eq = SPARP_EQUIV (sparp, subeq_idx);
       SPART *esub_gp = esub_eq->e_gp;
       if (SELECT_L != esub_gp->_.gp.subtype)
+        continue;
+      if (esub_eq == eq) /* Are we back to the starting point of the search? No good, ignoring. */
         continue;
       esub_res_eq = esub_eq;
       esub_res_gp = esub_gp;
@@ -4251,6 +4249,7 @@ spart_dump_opname (ptrlong opname, int is_op)
     case BOP_OR: return "boolean operation 'OR'";
     case BOP_NOT: return "boolean operation 'NOT'";
     case BOP_EQ: return "boolean operation '='";
+    case SPAR_BOP_EQ: return "special equality";
     case BOP_NEQ: return "boolean operation '!='";
     case BOP_LT: return "boolean operation '<'";
     case BOP_LTE: return "boolean operation '<='";
@@ -4734,7 +4733,7 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
               spart_dump (tree->_.sinv.defines, ses, indent+2, "DEFINES", -2);
               break;
             }
-	  case BOP_EQ: case BOP_NEQ:
+	  case BOP_EQ: case SPAR_BOP_EQ: case BOP_NEQ:
 	  case BOP_LT: case BOP_LTE: case BOP_GT: case BOP_GTE:
 	  /*case BOP_LIKE: Like is built-in in SPARQL, not a BOP! */
 	  case BOP_SAME: case BOP_NSAME:
