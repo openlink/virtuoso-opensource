@@ -4301,6 +4301,7 @@ spart_dump_opname (ptrlong opname, int is_op)
     case SCORE_L: return "SCORE";
     case SCORE_LIMIT_L: return "SCORE_LIMIT";
     case SELECT_L: return "SELECT result-mode";
+    case SERVICE_L: return "SERVICE gp";
     case SUBJECT_L: return "SUBJECT";
     case true_L: return "true boolean";
     case UNION_L: return "UNION gp";

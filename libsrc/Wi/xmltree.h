@@ -993,6 +993,7 @@ extern caddr_t dbg_box_cast_to_UTF8 (DBG_PARAMS caddr_t * qst, caddr_t data);
 extern caddr_t box_cast_to_UTF8 (caddr_t * qst, caddr_t data);
 #endif
 
+extern caddr_t box_cast_to_UTF8_xsd (caddr_t *qst, caddr_t data);
 extern caddr_t box_cast_to_UTF8_uname (caddr_t *qst, caddr_t raw_name);
 
 #define XQ_SQL_COLUMN_FORMAT "sql:column(%s)"

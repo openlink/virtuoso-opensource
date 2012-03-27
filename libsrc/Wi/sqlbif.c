@@ -5884,9 +5884,10 @@ bif_isfinitenumeric (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       result = _finite (val) ? 1 : 0;
 #else
       double myNAN_d = 0.0/0.0;
+      double myNEGNAN_d = -0.0/0.0;
       double myPOSINF_d = 1.0/0.0;
       double myNEGINF_d = -1.0/0.0;
-      result = (((val == myNAN_d) || (val == myPOSINF_d) || (val == myNEGINF_d)) ? 0 : 1);
+      result = (((val == myNAN_d) || (val == myNEGNAN_d) || (val == myPOSINF_d) || (val == myNEGINF_d)) ? 0 : 1);
 #endif
       break;
     }

@@ -79,6 +79,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "IFP",			IFP_L			, 0
 "IDENTIFIED",		IDENTIFIED_L		, 0
 "IN",			IN_L			, 0
+"INF",			INF_L			, 0
 "INDEX",		INDEX_L			, 0
 "INFERENCE",		INFERENCE_L		, 0
 "INSERT",		INSERT_L		, 0
@@ -111,6 +112,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "MONTH",		SPARQL_BIF		, SPAR_BIF_MONTH
 "MOVE",			MOVE_L			, 0
 "NAMED",		NAMED_L			, 0
+"NAN",			NAN_L			, 0
 "NIL",			NIL_L			, 0
 "NOT",			NOT_L			, 0
 "NOW",			SPARQL_BIF		, SPAR_BIF_NOW

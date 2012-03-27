@@ -2225,25 +2225,55 @@ ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int mode)
       sqlc_wide_string_literal (tmpbuf, buflen, &buffill, (wchar_t *) box);
       break;
     case DV_SINGLE_FLOAT:
-      if (1.0 > ((2 - 1.41484755040568800000e+16) + 1.41484755040568800000e+16))
-        spar_error (ssg->ssg_sparp, "Platform-specific error: this build of Virtuoso does not supports literals of type %s due to rounding errors in math functions", dv_type_title (dtp));
-      buffill = sprintf (tmpbuf, "cast (%lg", (double)(unbox_float (box)));
-      if ((NULL == strchr (tmpbuf, '.')) && (NULL == strchr (tmpbuf, 'E')) && (NULL == strchr (tmpbuf, 'e')))
-        {
-          strcpy (tmpbuf+buffill, ".0");
-          buffill += 2;
-        }
-      strcpy (tmpbuf+buffill, " as float)");
-      buffill += 10;
-      break;
+      {
+        double boxdbl = (double)(unbox_float (box));
+        if (1.0 > ((2 - 1.41484755040568800000e+16) + 1.41484755040568800000e+16))
+          spar_error (ssg->ssg_sparp, "Platform-specific error: this build of Virtuoso does not supports literals of type %s due to rounding errors in math functions", dv_type_title (dtp));
+        buffill = sprintf (tmpbuf, "cast (%lg", boxdbl);
+        if ((NULL == strchr (tmpbuf+6, '.')) && (NULL == strchr (tmpbuf+6, 'E')) && (NULL == strchr (tmpbuf+6, 'e')))
+          {
+            if (isalpha(tmpbuf[6+1]))
+              {
+		double myZERO = 0.0;
+		double myPOSINF_d = 1.0/myZERO;
+		double myNEGINF_d = -1.0/myZERO;
+                if (myPOSINF_d == boxdbl) buffill = sprintf (tmpbuf, "cast ('Inf'");
+                else if (myNEGINF_d == boxdbl) buffill = sprintf (tmpbuf, "cast ('-Inf'");
+                else buffill = sprintf (tmpbuf, "cast ('nan'");
+              }
+            else
+              {
+                strcpy (tmpbuf+buffill, ".0");
+                buffill += 2;
+              }
+          }                   /* 01234567890 */
+        strcpy (tmpbuf+buffill, " as float)");
+        buffill += 10;
+        break;
+      }
     case DV_DOUBLE_FLOAT:
-      buffill = sprintf (tmpbuf, "%lg", unbox_double (box));
-      if ((NULL == strchr (tmpbuf, '.')) && (NULL == strchr (tmpbuf, 'E')) && (NULL == strchr (tmpbuf, 'e')))
-        {
-          strcpy (tmpbuf+buffill, ".0");
-          buffill += 2;
-        }
-      break;
+      {
+        double boxdbl = unbox_double (box);
+        buffill = sprintf (tmpbuf, "%lg", boxdbl);
+        if ((NULL == strchr (tmpbuf, '.')) && (NULL == strchr (tmpbuf, 'E')) && (NULL == strchr (tmpbuf, 'e')))
+          {
+            if (isalpha(tmpbuf[1]))
+              {
+		double myZERO = 0.0;
+		double myPOSINF_d = 1.0/myZERO;
+		double myNEGINF_d = -1.0/myZERO;
+                if (myPOSINF_d == boxdbl) buffill = sprintf (tmpbuf, "cast ('Inf' as double precision)");
+                else if (myNEGINF_d == boxdbl) buffill = sprintf (tmpbuf, "cast ('-Inf' as double precision)");
+                else buffill = sprintf (tmpbuf, "cast ('NaN' as double precision)");
+              }
+            else
+              {
+                strcpy (tmpbuf+buffill, ".0");
+                buffill += 2;
+              }
+          }
+        break;
+      }
     case DV_NUMERIC:
       {
         numeric_t nbox = (numeric_t)box;

@@ -107,6 +107,9 @@ extern int ttlyylex (void *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner);
 %token _AT_of_L		/*:: PUNCT_TTL_LAST("@of") ::*/
 %token _AT_prefix_L	/*:: PUNCT_TTL_LAST("@prefix") ::*/
 %token _AT_this_L	/*:: PUNCT_TTL_LAST("@this") ::*/
+%token _MINUS_INF_L	/*:: PUNCT_TTL_LAST("-INF") ::*/
+%token INF_L		/*:: PUNCT_TTL_LAST("INF") ::*/
+%token NaN_L		/*:: PUNCT_TTL_LAST("NaN") ::*/
 %token false_L		/*:: PUNCT_TTL_LAST("false") ::*/
 %token true_L		/*:: PUNCT_TTL_LAST("true") ::*/
 
@@ -490,6 +493,24 @@ object
 		dk_free_tree (ttlp_arg->ttlp_obj);
 		ttlp_arg->ttlp_obj = $1;
 		ttlp_triple_l_and_inf (ttlp_arg, $1, uname_xmlschema_ns_uri_hash_double, NULL);	}
+	| NaN_L {
+	  	double myZERO = 0.0;
+		double myNAN_d = 0.0/myZERO;
+		dk_free_tree (ttlp_arg->ttlp_obj);
+		ttlp_arg->ttlp_obj = box_double (myNAN_d);
+		ttlp_triple_l_and_inf (ttlp_arg, ttlp_arg->ttlp_obj, uname_xmlschema_ns_uri_hash_double, NULL);	}
+	| INF_L {
+	  	double myZERO = 0.0;
+		double myPOSINF_d = 1.0/myZERO;
+		dk_free_tree (ttlp_arg->ttlp_obj);
+		ttlp_arg->ttlp_obj = box_double (myPOSINF_d);
+		ttlp_triple_l_and_inf (ttlp_arg, ttlp_arg->ttlp_obj, uname_xmlschema_ns_uri_hash_double, NULL);	}
+	| _MINUS_INF_L {
+	  	double myZERO = 0.0;
+		double myNEGINF_d = -1.0/myZERO;
+		dk_free_tree (ttlp_arg->ttlp_obj);
+		ttlp_arg->ttlp_obj = box_double (myNEGINF_d);
+		ttlp_triple_l_and_inf (ttlp_arg, ttlp_arg->ttlp_obj, uname_xmlschema_ns_uri_hash_double, NULL);	}
 	| TURTLE_STRING	{
 		dk_free_tree (ttlp_arg->ttlp_obj);
 		ttlp_arg->ttlp_obj = $1;

@@ -182,6 +182,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token IDENTIFIED_L	/*:: PUNCT("IDENTIFIED"), SPAR, LAST1("IDENTIFIED BY"), LAST1("IDENTIFIED\r\nBY"), LAST1("IDENTIFIED #qq\r\nBY"), ERR("IDENTIFIED"), ERR("IDENTIFIED bad") ::*/
 %token IFP_L		/*:: PUNCT_SPAR_LAST("IFP") ::*/
 %token IN_L		/*:: PUNCT_SPAR_LAST("IN") ::*/
+%token INF_L		/*:: PUNCT_SPAR_LAST("INF") ::*/
 %token INDEX_L		/*:: PUNCT_SPAR_LAST("INDEX") ::*/
 %token INFERENCE_L	/*:: PUNCT_SPAR_LAST("INFERENCE") ::*/
 %token INSERT_L		/*:: PUNCT_SPAR_LAST("INSERT") ::*/
@@ -203,6 +204,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token MODIFY_L		/*:: PUNCT_SPAR_LAST("MODIFY") ::*/
 %token MOVE_L		/*:: PUNCT_SPAR_LAST("MOVE") ::*/
 %token NAMED_L		/*:: PUNCT_SPAR_LAST("NAMED") ::*/
+%token NAN_L		/*:: PUNCT_SPAR_LAST("NAN") ::*/
 %token NIL_L		/*:: PUNCT_SPAR_LAST("NIL") ::*/
 %token NOT_L		/*:: PUNCT_SPAR_LAST("NOT") ::*/
 %token NULL_L		/*:: PUNCT_SPAR_LAST("NULL") ::*/
@@ -1943,6 +1945,12 @@ spar_numeric_literal	/* [59]	NumericLiteral	 ::=  INTEGER | DECIMAL | DOUBLE	*/
 	: SPARQL_INTEGER	{ $$ = spartlist (sparp_arg, 4, SPAR_LIT, $1, uname_xmlschema_ns_uri_hash_integer, NULL); }
 	| SPARQL_DECIMAL	{ $$ = spartlist (sparp_arg, 4, SPAR_LIT, $1, uname_xmlschema_ns_uri_hash_decimal, NULL); }
 	| SPARQL_DOUBLE		{ $$ = spartlist (sparp_arg, 4, SPAR_LIT, $1, uname_xmlschema_ns_uri_hash_double, NULL); }
+	| INF_L			{ double myZERO = 0.0; 
+				  double myPOSINF_d = 1.0/myZERO;
+				  $$ = spartlist (sparp_arg, 4, SPAR_LIT, t_box_double (myPOSINF_d), uname_xmlschema_ns_uri_hash_double, NULL); }
+	| NAN_L			{ double myZERO = 0.0;
+				  double myNAN_d = 0.0/myZERO;
+				  $$ = spartlist (sparp_arg, 4, SPAR_LIT, t_box_double (myNAN_d), uname_xmlschema_ns_uri_hash_double, NULL); }
 	;
 
 spar_rdf_literal	/* [60]	RDFLiteral	 ::=  String ( LANGTAG | ( '^^' IRIref ) )?	*/

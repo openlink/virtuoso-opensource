@@ -205,6 +205,9 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 <INITIAL>"@prefix"			{ return _AT_prefix_L; }
 <INITIAL>"@forAll"			{ ttlyyerror ("Current version of Virtuoso does not support @forAll keyword"); }
 <INITIAL>"@forSome"			{ ttlyyerror ("Current version of Virtuoso does not support @forSome keyword"); }
+<INITIAL>"-INF"				{ return _MINUS_INF_L; }
+<INITIAL>[+]?"INF"			{ return INF_L; }
+<INITIAL>[+-]?"NaN"			{ return NaN_L; }
 <INITIAL>"false"			{ return false_L; }
 <INITIAL>"true"				{ return true_L; }
 

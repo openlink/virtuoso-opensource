@@ -1579,7 +1579,7 @@ bif_rdf_strsqlval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       case DV_DB_NULL:
         return NEW_DB_NULL;
       default:
-        res = box_cast_to_UTF8 (qst, val);
+        res = box_cast_to_UTF8_xsd (qst, val);
         box_flags (res) = ((set_bf_iri & 0x2) ? BF_IRI : BF_UTF8);
         return res;
     }
@@ -1615,7 +1615,7 @@ bif_rdf_long_to_ttl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       break;
     default:
       {
-        caddr_t tmp_utf8_box = box_cast_to_UTF8 (qst, val);
+        caddr_t tmp_utf8_box = box_cast_to_UTF8_xsd (qst, val);
         dks_esc_write (out, tmp_utf8_box, box_length (tmp_utf8_box) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_TTL_DQ);
         dk_free_box (tmp_utf8_box);
         break;
@@ -2242,28 +2242,31 @@ rdf_box_get_lang (query_instance_t * qi, unsigned short lang)
 static void
 http_ttl_or_nt_prepare_obj (query_instance_t *qi, caddr_t obj, dtp_t obj_dtp, ttl_iriref_t *dt_ret)
 {
-  if (DV_RDF == obj_dtp)
+  switch (obj_dtp)
     {
-      rdf_box_t *rb = (rdf_box_t *)obj;
-      if (!rb->rb_is_complete)
-        rb_complete (rb, qi->qi_trx, qi);
-      rb_dt_lang_check(rb);
-      if (RDF_BOX_DEFAULT_TYPE == rb->rb_type)
+    case DV_RDF:
+      {
+        rdf_box_t *rb = (rdf_box_t *)obj;
+        if (!rb->rb_is_complete)
+          rb_complete (rb, qi->qi_trx, qi);
+        rb_dt_lang_check(rb);
+        if (RDF_BOX_DEFAULT_TYPE == rb->rb_type)
+          return;
+        dt_ret->uri = rdf_type_twobyte_to_iri (rb->rb_type);
+        if (dt_ret->uri) /* if by some reason rb_type is wrong */
+          box_flags (dt_ret->uri) |= BF_IRI;
         return;
-      dt_ret->uri = rdf_type_twobyte_to_iri (rb->rb_type);
-      if (dt_ret->uri) /* if by some reason rb_type is wrong */
-        box_flags (dt_ret->uri) |= BF_IRI;
-    }
-  else
-    {
-      if (DV_DATETIME != obj_dtp)
-        return;
+      }
+    case DV_DATETIME:
       switch (DT_DT_TYPE(obj))
         {
-        case DT_TYPE_DATE: dt_ret->uri = uname_xmlschema_ns_uri_hash_date; break;
-        case DT_TYPE_TIME: dt_ret->uri = uname_xmlschema_ns_uri_hash_time; break;
-        default : dt_ret->uri = uname_xmlschema_ns_uri_hash_dateTime; break;
+        case DT_TYPE_DATE: dt_ret->uri = uname_xmlschema_ns_uri_hash_date; return;
+        case DT_TYPE_TIME: dt_ret->uri = uname_xmlschema_ns_uri_hash_time; return;
+        default : dt_ret->uri = uname_xmlschema_ns_uri_hash_dateTime; return;
         }
+    case DV_SINGLE_FLOAT: dt_ret->uri = uname_xmlschema_ns_uri_hash_float; return;
+    case DV_DOUBLE_FLOAT: dt_ret->uri = uname_xmlschema_ns_uri_hash_double; return;
+    default: ;
     }
 }
 
@@ -2367,9 +2370,63 @@ http_ttl_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, cad
     case DV_DB_NULL:
       session_buffered_write (ses, "(NULL)", 6);
       break;
+    case DV_SINGLE_FLOAT:
+      {
+        char tmpbuf[50];
+        int buffill;
+        double boxdbl = (double)(unbox_float (obj_box_value));
+        buffill = sprintf (tmpbuf, "\"%lg", boxdbl);
+        if ((NULL == strchr (tmpbuf+1, '.')) && (NULL == strchr (tmpbuf+1, 'E')) && (NULL == strchr (tmpbuf+1, 'e')))
+          {
+            if (isalpha(tmpbuf[1+1]))
+              {
+		double myZERO = 0.0;
+		double myPOSINF_d = 1.0/myZERO;
+		double myNEGINF_d = -1.0/myZERO;
+                if (myPOSINF_d == boxdbl) buffill = sprintf (tmpbuf, "\"INF\"");
+                else if (myNEGINF_d == boxdbl) buffill = sprintf (tmpbuf, "\"-INF\"");
+                else buffill = sprintf (tmpbuf, "\"NAN\"");
+              }
+            else
+              {
+                strcpy (tmpbuf+buffill, ".0");
+                buffill += 2;
+              }
+          }                   /* .0123456789012 */
+        strcpy (tmpbuf+buffill, "\"^^xsd:float");
+        buffill += 12;
+        session_buffered_write (ses, tmpbuf, buffill);
+        break;
+      }
+    case DV_DOUBLE_FLOAT:
+      {
+        char tmpbuf[50];
+        int buffill;
+        double boxdbl = unbox_double (obj_box_value);
+        buffill = sprintf (tmpbuf, "%lg", boxdbl);
+        if ((NULL == strchr (tmpbuf, '.')) && (NULL == strchr (tmpbuf, 'E')) && (NULL == strchr (tmpbuf, 'e')))
+          {
+            if (isalpha(tmpbuf[1]))
+              {
+		double myZERO = 0.0;
+		double myPOSINF_d = 1.0/myZERO;
+		double myNEGINF_d = -1.0/myZERO;
+                if (myPOSINF_d == boxdbl) buffill = sprintf (tmpbuf, "\"INF\"^^xsd:double");
+                else if (myNEGINF_d == boxdbl) buffill = sprintf (tmpbuf, "\"-INF\"^^xsd:double");
+                else buffill = sprintf (tmpbuf, "\"NAN\"^^xsd:double");
+              }
+            else
+              {
+                strcpy (tmpbuf+buffill, ".0");
+                buffill += 2;
+              }
+          }
+        session_buffered_write (ses, tmpbuf, buffill);
+        break;
+      }
     default:
       {
-        caddr_t tmp_utf8_box = box_cast_to_UTF8 ((caddr_t *)qi, obj_box_value);
+        caddr_t tmp_utf8_box = box_cast_to_UTF8 ((caddr_t *)qi, obj_box_value); /* not box_cast_to_UTF8_xsd(), because float and double are handled above and there are no other differences between xsd and sql so far */
         int need_quotes = ((DV_RDF == obj_dtp) || (DV_BLOB_HANDLE == obj_dtp) || (DV_BLOB_WIDE_HANDLE == obj_dtp));
         if (need_quotes)
           session_buffered_write_char ('"', ses);
@@ -2789,7 +2846,7 @@ http_rdfxml_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, 
       break;
     default:
       {
-        caddr_t tmp_utf8_box = box_cast_to_UTF8 ((caddr_t *)qi, obj_box_value);
+        caddr_t tmp_utf8_box = box_cast_to_UTF8_xsd ((caddr_t *)qi, obj_box_value);
         session_buffered_write (ses, tmp_utf8_box, box_length (tmp_utf8_box) - 1);
         dk_free_box (tmp_utf8_box);
         break;
@@ -3021,7 +3078,7 @@ http_nt_write_obj (dk_session_t *ses, nt_env_t *env, query_instance_t *qi, caddr
     default:
       {
         caddr_t iri = xsd_type_of_box (obj_box_value);
-        caddr_t tmp_utf8_box = box_cast_to_UTF8 ((caddr_t *)qi, obj_box_value);
+        caddr_t tmp_utf8_box = box_cast_to_UTF8_xsd ((caddr_t *)qi, obj_box_value);
         session_buffered_write_char ('"', ses);
         session_buffered_write (ses, tmp_utf8_box, box_length (tmp_utf8_box) - 1);
         dk_free_box (tmp_utf8_box);
