@@ -5426,6 +5426,17 @@ sparp_gp_trav_add_graph_perm_read_filters (sparp_t *sparp, SPART *curr, sparp_tr
     return 0;
   if (SELECT_L == curr->_.gp.subtype)
     return 0;
+  if (sparp->sparp_query_uses_sinvs)
+    { /* Bug 14737 fix: No permission filters should be placed inside service invocations */
+      int sts_idx;
+      if (NULL != sparp_get_option (sparp, curr->_.gp.options, SPAR_SERVICE_INV))
+        return 0;
+      for (sts_idx = 0; NULL != sts_this[sts_idx].sts_ancestor_gp; sts_idx++)
+        {
+          if (NULL != sparp_get_option (sparp, sts_this[sts_idx].sts_ancestor_gp->_.gp.options, SPAR_SERVICE_INV))
+            return 0;
+        }
+    }
   membcount = BOX_ELEMENTS_0 (curr->_.gp.members);
   for (membctr = 0; membctr < membcount; membctr++)
     {
