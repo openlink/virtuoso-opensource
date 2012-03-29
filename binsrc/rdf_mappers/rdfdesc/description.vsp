@@ -129,7 +129,7 @@
    --if (arr[5] <> '')
    --  do_sponge := 0;
    arr[0] := lower (arr[0]);
-   if (arr[0] not in ('http', 'https', 'file', 'feed', 'doi', 'webcal', 'oai', 'acct', 'mailto') and _G not like 'urn:lsid:%')
+   if (arr[0] not in ('http', 'https', 'file', 'feed', 'doi', 'webcal', 'oai', 'acct', 'mailto', 'ftp') and _G not like 'urn:lsid:%')
      {
        do_sponge := 0;
        local_lookup := 1;

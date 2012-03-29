@@ -10037,6 +10037,34 @@ create procedure DB.DBA.SYS_WEBCAL_SPONGE_UP (in local_iri varchar, in get_uri v
 }
 ;
 
+create procedure DB.DBA.SYS_FTP_SPONGE_UP (in local_iri varchar, in get_uri varchar, in options any)
+{
+  declare h, host, remote, local, rc any;
+  declare ses, data_ses, data_addr, content, get_soft any;
+  declare mime_type, tmp, dummy any;
+  h := rfc1808_parse_uri (get_uri);
+  remote := h[2];
+  host := h[1];
+  data_ses := NULL;
+  content := string_output (http_strses_memory_size ());
+  data_addr := FTP_CONNECT (host, 'anonymous', 'user@domain.com', ses, 1);
+  data_ses := ses_connect (data_addr);
+  FTP_COMMAND (ses, concat ('retr ', remote), vector (150,125));
+  FTP_SES_GET (data_addr, content, data_ses);
+  FTP_COMMAND (ses, concat ('quit'), NULL);
+  ses_disconnect (ses);
+  --rc := ftp_get (host, 'anonymous', 'user@domain.com', remote, '/tmp/webilu.html');
+  get_soft := get_keyword_ucase ('get:soft', options, '');
+  tmp := vector ('OK');
+  dummy := vector ();
+  mime_type := null;
+  if (get_soft <> 'add')
+    DB.DBA.RDF_FORGET_HTTP_RESPONSE (local_iri, get_uri, options);
+  DB.DBA.RDF_LOAD_HTTP_RESPONSE (local_iri, get_uri, mime_type, tmp, content, options, dummy);
+  return local_iri;
+}
+;
+
 create procedure DB.DBA.RDF_LOAD_YAHOO_STOCK_DATA (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any, in triple_dict any := null)
 {
