@@ -1391,7 +1391,7 @@ create procedure BMK.WA.bookmark_rights (
   retValue := '';
   if (exists (select 1 from BMK.WA.BOOKMARK_DOMAIN where BD_ID = id and BD_DOMAIN_ID = domain_id))
   {
-    if (account_rights < person_rights)
+    if (isnull (person_rights) or (account_rights < person_rights))
     retValue := BMK.WA.acl_check (domain_id, id);
 
     if (retValue = '')
