@@ -474,6 +474,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS, RM_ENABLED)
     values ('http://.*.nytimes.com/.*', 'URL', 'DB.DBA.RDF_LOAD_NYT_ARTICLE', null, 'NYT Article', null, 0);
 
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_ENABLED)
+	values ('^https?://www.wolframalpha.com/input/.*', 
+	'URL', 'DB.DBA.RDF_LOAD_WOLFRAMALPHA', null, 'Wolfram|Alpha', 0);
+
 update DB.DBA.SYS_RDF_MAPPERS 
     set RM_DESCRIPTION = 'Facebook (Facebook Query Language - FQL)'
 	where RM_HOOK = 'DB.DBA.RDF_LOAD_FQL';
@@ -1301,6 +1305,12 @@ create procedure DB.DBA.XSLT_HTTP_STRING_DATE (in val varchar)
 }
 ;
 
+create procedure DB.DBA.ESCAPEURI (in uri varchar) returns varchar
+{
+    return sprintf('%U', uri);
+}
+;
+
 create procedure DB.DBA.XSLT_TRIM (in val varchar, in tr varchar)
 {
 	if (val is not null and length(val) > 0)
@@ -2067,6 +2077,7 @@ grant execute on DB.DBA.XSLT_SANEURI to public;
 grant execute on DB.DBA.DECODEXML to public;
 grant execute on DB.DBA.DBPEDIA_URL_LABEL to public;
 grant execute on DB.DBA.shtml2text to public;
+grant execute on DB.DBA.escapeURI to public;
 
 xpf_extension_remove ('http://www.openlinksw.com/virtuoso/xslt:getNameByCIK');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_canonical_datatype', fix_identifier_case ('DB.DBA.GET_XBRL_CANONICAL_DATATYPE'));
@@ -2109,6 +2120,7 @@ xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:decodeXML', 'DB.DBA.DEC
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:x509_pub_key', 'DB.DBA.XENC_X509_PUB_KEY');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:dbpedia_url_label', 'DB.DBA.DBPEDIA_URL_LABEL');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:html2text', fix_identifier_case ('DB.DBA.shtml2text'));
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:escapeURI', fix_identifier_case('DB.DBA.ESCAPEURI'));
 
 create procedure DB.DBA.RDF_MAPPER_XSLT (in xslt varchar, inout xt any, in params any := null)
 {
@@ -8096,6 +8108,40 @@ create procedure csv_to_xml (in s any)
     }
   http ('</csv>', ss);
   return ss;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_WOLFRAMALPHA(in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any, in triple_dict any := null)
+{
+  declare xd, xt, urlpart, url, tree, hdr, content, success any;
+
+  declare exit handler for sqlstate '*'
+    {
+      DB.DBA.RM_RDF_SPONGE_ERROR (triple_dict, current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+      return 0;
+    };
+    
+  if(not length(_key)) {
+		log_message (sprintf ('%s: Wolfram|Alpha cartridge needs an API key', current_proc_name()));
+    return 0;
+	}
+
+  urlpart:=regexp_substr('^http://www.wolframalpha.com/input/\?.*i=([^&]*)', new_origin_uri, 1);
+
+	hdr:=null;  
+  url:=sprintf('http://api.wolframalpha.com/v2/query?input=%s&appid=%s', urlpart, _key);
+  
+  DB.DBA.RM_LOG_REQUEST (url, null, current_proc_name ());
+  content := http_get (url, hdr, 'GET', null, null, get_keyword_ucase ('get:proxy', opts));
+  DB.DBA.RM_LOG_RESPONSE (content, hdr);
+  xt := xtree_doc(content);
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/wolfram_alpha2rdf.xsl', xt, vector ('baseUri', new_origin_uri));
+	xd := serialize_to_UTF8_xml (xt);
+	RM_CLEAN_DEST (triple_dict, dest, graph_iri, new_origin_uri, opts);
+	DB.DBA.RM_RDF_LOAD_RDFXML (triple_dict, xd, new_origin_uri, coalesce (dest, graph_iri));
+	DB.DBA.RM_ADD_PRV (triple_dict, current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
+	return 1;
 }
 ;
 
