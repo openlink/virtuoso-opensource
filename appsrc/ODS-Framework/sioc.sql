@@ -4104,10 +4104,7 @@ create procedure SIOC..acl_webid ()
   declare cert, dummy, vtype any;
 
   if (not is_https_ctx ())
-  {
-    webid := null;
-    goto _exit;
-  }
+    return null;
 
   webid := connection_get ('vspx_vebid');
   if (not isnull (webid))
@@ -4120,7 +4117,8 @@ create procedure SIOC..acl_webid ()
   set_user_id ('dba');
   cert := client_attr ('client_certificate');
   dummy := null;
-  DB.DBA.WEBID_AUTH_GEN_2 (cert, 0, null, 1, 0, webid, dummy, 0, vtype);
+  if (not DB.DBA.WEBID_AUTH_GEN_2 (cert, 0, null, 1, 0, webid, dummy, 0, vtype))
+    webid := null;
   connection_set ('vspx_vebid', coalesce (webid, ''));
 
 _exit:;
@@ -4128,25 +4126,21 @@ _exit:;
 }
 ;
 
-create procedure SIOC..acl_check (
+create procedure SIOC..acl_check_internal (
+  in webid varchar,
   in acl_graph_iri varchar,
   in acl_groups_iri varchar,
   in acl_iris any)
 {
-  declare N, M, I integer;
-  declare tmp, rc, foafIRI, acl_iri varchar;
+  declare M, I integer;
+  declare tmp, rc, acl_iri varchar;
   declare IRIs any;
 
   rc := '';
-  foafIRI := SIOC..acl_webID ();
-  if (isnull (foafIRI))
-    goto _exit;
-
   IRIs := vector (vector(), vector(), vector());
-      for (N := 0; N < length (acl_iris); N := N + 1)
+  foreach (any acl_iri in acl_iris) do
       {
     tmp := '';
-    acl_iri := acl_iris[N];
     for ( sparql
           define input:storage ""
           prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -4159,7 +4153,7 @@ create procedure SIOC..acl_check (
                      {
                        ?rule rdf:type acl:Authorization ;
                              acl:accessTo `iri(?:acl_iri)` ;
-                             acl:agent `iri(?:foafIRI)` ;
+                             acl:agent `iri(?:webid)` ;
                              acl:agent ?p1 .
                        OPTIONAL {?rule acl:mode ?mode .} .
                      }
@@ -4187,7 +4181,7 @@ create procedure SIOC..acl_check (
                      graph `iri(?:acl_groups_iri)`
                      {
                        ?p3 rdf:type foaf:Group ;
-                           foaf:member `iri(?:foafIRI)` .
+                           foaf:member `iri(?:webid)` .
                      }
             }
           }
@@ -4227,19 +4221,125 @@ _exit:;
 }
 ;
 
+create procedure SIOC..acl_check (
+  in acl_graph_iri varchar,
+  in acl_groups_iri varchar,
+  in acl_iris any)
+{
+  declare rc, rc2, webid varchar;
+  declare cert, diArray, finger, digest, digestHash any;
+
+  rc := '';
+  webid := SIOC..acl_webID ();
+  if (isnull (webid))
+    goto _exit;
+
+  rc := SIOC..acl_check_internal (webid, acl_graph_iri, acl_groups_iri, acl_iris);
+  if (rc = 'W')
+    goto _exit;
+
+  cert := client_attr ('client_certificate');
+  foreach (any acl_iri in acl_iris) do
+  {
+    -- person
+    for ( sparql
+          define input:storage ""
+          prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+          prefix foaf: <http://xmlns.com/foaf/0.1/>
+          prefix acl: <http://www.w3.org/ns/auth/acl#>
+          select ?di
+           where {
+                   graph `iri(?:acl_graph_iri)`
+                   {
+                     ?rule rdf:type acl:Authorization ;
+                           acl:accessTo `iri(?:acl_iri)` ;
+                           acl:agent ?di ;
+                           acl:mode ?mode .
+                     filter (str(?di) like 'di:%')
+                   }
+                 }
+        ) do
+    {
+      diArray := DB.DBA.WEBID_DI_SPLIT ("di");
+    	foreach (any elm in diArray) do
+  	  {
+  	    digest := elm [0];
+  	    digestHash := elm [1];
+  	    finger := get_certificate_info (6, cert, 0, null, digest);
+  	    finger := lower (replace (finger, ':', ''));
+  	    if (finger = digestHash)
+	      {
+          rc2 := SIOC..acl_check_internal ("di", acl_graph_iri, acl_groups_iri, acl_iris);
+          if (rc2 > rc)
+            rc := rc2;
+          if (rc = 'W')
+            goto _exit;
+        }
+      }
+    }
+    -- group
+    for ( sparql
+          define input:storage ""
+          prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+          prefix foaf: <http://xmlns.com/foaf/0.1/>
+          prefix acl: <http://www.w3.org/ns/auth/acl#>
+          select ?di
+           where {
+                   graph `iri(?:acl_graph_iri)`
+                   {
+                     ?rule rdf:type acl:Authorization ;
+                           acl:accessTo `iri(?:acl_iri)` ;
+                           acl:agentClass ?p3;
+                           acl:mode ?mode .
+                   }
+                   graph `iri(?:acl_groups_iri)`
+                   {
+                     ?p3 rdf:type foaf:Group ;
+                         foaf:member ?di .
+                     filter (str(?di) like 'di:%')
+                   }
+                 }
+        ) do
+    {
+      diArray := DB.DBA.WEBID_DI_SPLIT ("di");
+    	foreach (any elm in diArray) do
+  	  {
+  	    digest := elm [0];
+  	    digestHash := elm [1];
+  	    finger := get_certificate_info (6, cert, 0, null, digest);
+  	    finger := lower (replace (finger, ':', ''));
+  	    if (finger = digestHash)
+        {
+          rc2 := SIOC..acl_check_internal ("di", acl_graph_iri, acl_groups_iri, acl_iris);
+          if (rc2 > rc)
+            rc := rc2;
+          if (rc = 'W')
+            goto _exit;
+        }
+      }
+    }
+  }
+
+_exit:;
+  return rc;
+}
+;
+
 create procedure SIOC..acl_list (
   in acl_graph_iri varchar,
   in acl_groups_iri varchar,
   in acl_iri varchar)
 {
-  declare rc, foafIRI varchar;
+  declare rc, webid varchar;
+  declare cert, diArray, finger, digest, digestHash any;
 
   result_names (rc);
 
-  foafIRI := SIOC..acl_webID ();
-  if (isnull (foafIRI))
+  webid := SIOC..acl_webID ();
+  if (isnull (webid))
     return;
 
+  cert := client_attr ('client_certificate');
   for ( sparql
         define input:storage ""
         prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -4252,7 +4352,7 @@ create procedure SIOC..acl_list (
                    {
                      ?rule rdf:type acl:Authorization ;
                            acl:accessTo ?iri ;
-                           acl:agent `iri(?:foafIRI)` .
+                           acl:agent `iri(?:webid)` .
                      filter (?iri != ?:acl_iri).
                    }
                  }
@@ -4278,13 +4378,122 @@ create procedure SIOC..acl_list (
                    graph `iri(?:acl_groups_iri)`
                    {
                      ?group rdf:type foaf:Group ;
-                         foaf:member `iri(?:foafIRI)` .
+                            foaf:member `iri(?:webid)` .
                    }
                  }
                }
          order by ?iri) do
   {
     result ("iri");
+  }
+  -- person
+  for ( sparql
+        define input:storage ""
+        prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+        prefix foaf: <http://xmlns.com/foaf/0.1/>
+        prefix acl: <http://www.w3.org/ns/auth/acl#>
+        select distinct ?di
+         where {
+                 graph `iri(?:acl_graph_iri)`
+                 {
+                   ?rule rdf:type acl:Authorization ;
+                         acl:accessTo ?iri ;
+                         acl:agent ?di.
+                   filter (?iri != ?:acl_iri).
+                   filter (str(?di) like 'di:%').
+                 }
+               }
+      ) do
+  {
+    diArray := DB.DBA.WEBID_DI_SPLIT ("di");
+  	foreach (any elm in diArray) do
+	  {
+	    digest := elm [0];
+	    digestHash := elm [1];
+	    finger := get_certificate_info (6, cert, 0, null, digest);
+	    finger := lower (replace (finger, ':', ''));
+	    if (finger = digestHash)
+      {
+	declare divar any;
+	divar := "di";
+        for ( sparql
+              define input:storage ""
+              prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+              prefix foaf: <http://xmlns.com/foaf/0.1/>
+              prefix acl: <http://www.w3.org/ns/auth/acl#>
+              select distinct ?iri
+               where {
+                       graph `iri(?:acl_graph_iri)`
+                       {
+                         ?rule rdf:type acl:Authorization ;
+                               acl:accessTo ?iri ;
+                               acl:agent `iri(?:divar)` .
+                         filter (?iri != ?:acl_iri).
+                       }
+                     }
+               order by ?iri) do
+        {
+          result ("iri");
+        }
+      }
+    }
+  }
+  -- group
+  for ( sparql
+        define input:storage ""
+        prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+        prefix foaf: <http://xmlns.com/foaf/0.1/>
+        prefix acl: <http://www.w3.org/ns/auth/acl#>
+        select distinct ?grp ?di
+         where {
+                 graph `iri(?:acl_graph_iri)`
+                 {
+                   ?rule rdf:type acl:Authorization ;
+                         acl:accessTo ?iri ;
+                         acl:agentClass ?grp .
+                   filter (?iri != ?:acl_iri).
+                 }
+                 graph `iri(?:acl_groups_iri)`
+                 {
+                   ?grp rdf:type foaf:Group ;
+                          foaf:member ?di .
+                   filter (str(?di) like 'di:%').
+                 }
+               }
+      ) do
+  {
+    declare grp_var any;
+    grp_var := "grp";
+    diArray := DB.DBA.WEBID_DI_SPLIT ("di");
+  	foreach (any elm in diArray) do
+	  {
+	    digest := elm [0];
+	    digestHash := elm [1];
+	    finger := get_certificate_info (6, cert, 0, null, digest);
+	    finger := lower (replace (finger, ':', ''));
+	    if (finger = digestHash)
+      {
+        for ( sparql
+              define input:storage ""
+              prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+              prefix foaf: <http://xmlns.com/foaf/0.1/>
+              prefix acl: <http://www.w3.org/ns/auth/acl#>
+              select distinct ?iri
+               where {
+                       graph `iri(?:acl_graph_iri)`
+                       {
+                         ?rule rdf:type acl:Authorization ;
+                               acl:accessTo ?iri ;
+                               acl:agentClass `iri(?:grp_var)` .
+                         filter (?iri != ?:acl_iri).
+                       }
+                     }
+               order by ?iri) do
+        {
+          result ("iri");
+        }
+      }
+    }
   }
 }
 ;
