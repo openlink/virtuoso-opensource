@@ -1483,7 +1483,7 @@ create function DB.DBA.RDF_PROXY_GET_HTTP_HOST ()
 }
 ;
 
-EXEC_STMT ('create table DB.DBA.RDF_PROXY_IRI_MAP (RPIM_IRI IRI_ID_8, RPIM_SOURCE_IRI IRI_ID_8, primary key (RPIM_IRI, RPIM_SOURCE_IRI))', 0);
+EXEC_STMT ('create table DB.DBA.RDF_PROXY_IRI_MAP (RPIM_IRI IRI_ID_8, RPIM_SOURCE_IRI IRI_ID_8, primary key (RPIM_IRI))', 0);
 
 create procedure RDF_SPONGE_PROXY_IRI_MAP (in uri_identifier varchar, in graph varchar)
 {
@@ -1491,8 +1491,46 @@ create procedure RDF_SPONGE_PROXY_IRI_MAP (in uri_identifier varchar, in graph v
   cname := DB.DBA.RDF_PROXY_GET_HTTP_HOST ();
   id := bin2hex (cast (decode_base64 (xenc_sha1_digest (uri_identifier)) as varbinary));
   ret := sprintf ('%s://%s/proxy-iri/%s', RDF_SPONGE_IRI_SCH (), cname, id);
+  if (0 = length (graph))
+    graph := null;
   insert soft DB.DBA.RDF_PROXY_IRI_MAP (RPIM_IRI, RPIM_SOURCE_IRI) values (iri_to_id (ret), iri_to_id (graph));
   return ret;
+}
+;
+
+create procedure RDF_SPONGE_PROXY_IRI_GRAPH_BY_ID (in id varchar)
+{
+  declare cname, iid varchar;
+  declare ret any;
+  cname := DB.DBA.RDF_PROXY_GET_HTTP_HOST ();
+  ret := sprintf ('%s://%s/proxy-iri/%s', RDF_SPONGE_IRI_SCH (), cname, id);
+  iid := iri_to_id (ret);
+  ret := (select RPIM_SOURCE_IRI from DB.DBA.RDF_PROXY_IRI_MAP where RPIM_IRI = iid);
+  return id_to_iri (ret);
+}
+;
+
+create procedure RDF_SPONGE_PROXY_IRI_BY_ID (in id varchar)
+{
+  declare cname, ret, iid varchar;
+  cname := DB.DBA.RDF_PROXY_GET_HTTP_HOST ();
+  ret := sprintf ('%s://%s/proxy-iri/%s', RDF_SPONGE_IRI_SCH (), cname, id);
+  return ret;
+}
+;
+
+grant execute on RDF_SPONGE_PROXY_IRI_MAP to public;
+
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:iriMap', fix_identifier_case ('DB.DBA.RDF_SPONGE_PROXY_IRI_MAP'));
+
+create procedure RDF_SPONGE_PROXY_IRI_GET_GRAPH (in iri any)
+{
+  declare iid, ret varchar;
+  iid := iri_to_id (iri);
+  ret := (select RPIM_SOURCE_IRI from DB.DBA.RDF_PROXY_IRI_MAP where RPIM_IRI = iid);
+  if (ret is null)
+    return iri;
+  return id_to_iri (ret);
 }
 ;
 
