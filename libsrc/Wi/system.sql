@@ -5525,6 +5525,10 @@ DB.DBA.SYS_SQL_VAL_PRINT (in v any)
   --no_c_escapes-
   if (isstring (v))
     return sprintf ('\'%S\'', replace (v, '\\', '\\\\'));
+  else if (iswidestring (v))
+    return sprintf ('\'%S\'', replace (charset_recode (v, '_WIDE_', 'UTF-8'), '\\', '\\\\'));
+  else if (__tag (v) = 230)
+    return sprintf ('\'%S\'', replace (serialize_to_UTF8_xml (v), '\\', '\\\\'));
   else if (v is null)
     return 'NULL';
   else if (isinteger (v))
