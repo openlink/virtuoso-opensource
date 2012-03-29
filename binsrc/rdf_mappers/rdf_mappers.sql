@@ -2108,7 +2108,7 @@ xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:saneURI', 'DB.DBA.XSLT_
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:decodeXML', 'DB.DBA.DECODEXML');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:x509_pub_key', 'DB.DBA.XENC_X509_PUB_KEY');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:dbpedia_url_label', 'DB.DBA.DBPEDIA_URL_LABEL');
-xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:html2text', 'DB.DBA.shtml2text');
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:html2text', fix_identifier_case ('DB.DBA.shtml2text'));
 
 create procedure DB.DBA.RDF_MAPPER_XSLT (in xslt varchar, inout xt any, in params any := null)
 {
