@@ -1372,7 +1372,7 @@ create procedure DB.DBA.XSLT_DI_SPLIT (in str varchar)
     http ('<result>', ses);
     while (di := regexp_match ('di:[^ <>]+', str, 1) is not null)
     {
-        dbg_obj_print (di);
+        --dbg_obj_print (di);
         h := WS.WS.PARSE_URI (di);
         dgst := bin2hex (cast (decode_base64 (replace (replace (h[3], '-', '+'), '_', '/')) as varbinary));
         http (sprintf ('<di><dgst>%V</dgst><hash>%V</hash></di>', h[2], dgst), ses);
@@ -7879,7 +7879,7 @@ create procedure DB.DBA.RDF_LOAD_YELP (in graph_iri varchar, in new_origin_uri v
 	}
 	else
 		return 0;
-dbg_obj_princ(url);
+--dbg_obj_princ(url);
 	tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
 	tree := json_parse (tmp);
 	xt := DB.DBA.SOCIAL_TREE_TO_XML (tree);
