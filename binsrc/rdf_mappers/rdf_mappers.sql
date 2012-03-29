@@ -1126,6 +1126,13 @@ create function DB.DBA.html2text(in content long varchar)
   return _ret_body;
 };
 
+create function DB.DBA.shtml2text(in content varchar)
+{
+  declare long_content long varchar;
+  long_content := content;
+  return DB.DBA.html2text(long_content);
+};
+
 create procedure DB.DBA.XSLT_REGEXP_MATCH (in pattern varchar, in val varchar)
 {
   return regexp_match (pattern, val);
@@ -2059,6 +2066,7 @@ grant execute on DB.DBA.XSLT_CRUNCHBASE_MONEYSTRING2DECIMAL to public;
 grant execute on DB.DBA.XSLT_SANEURI to public;
 grant execute on DB.DBA.DECODEXML to public;
 grant execute on DB.DBA.DBPEDIA_URL_LABEL to public;
+grant execute on DB.DBA.shtml2text to public;
 
 xpf_extension_remove ('http://www.openlinksw.com/virtuoso/xslt:getNameByCIK');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_canonical_datatype', fix_identifier_case ('DB.DBA.GET_XBRL_CANONICAL_DATATYPE'));
@@ -2100,6 +2108,7 @@ xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:saneURI', 'DB.DBA.XSLT_
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:decodeXML', 'DB.DBA.DECODEXML');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:x509_pub_key', 'DB.DBA.XENC_X509_PUB_KEY');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:dbpedia_url_label', 'DB.DBA.DBPEDIA_URL_LABEL');
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:html2text', 'DB.DBA.shtml2text');
 
 create procedure DB.DBA.RDF_MAPPER_XSLT (in xslt varchar, inout xt any, in params any := null)
 {
@@ -10866,23 +10875,23 @@ create procedure DB.DBA.RDF_LOAD_MBZ (in graph_iri varchar, in new_origin_uri va
 
 create procedure DB.DBA.RDF_LOAD_LINKEDIN (in graph_iri varchar, in new_origin_uri varchar, in dest varchar, inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any, in triple_dict any := null)
 {
-  declare xt, cnt, xd any;
-  declare linkedin_id, tmp, required_profile_fields varchar;
-  declare is_owner_key integer;
-  declare api_url, url, public_profile_url any;
-  declare consumer_key, consumer_secret, oauth_token, oauth_secret varchar;
+  declare url, public_profile_url any;
+  declare consumer_key, consumer_secret, oauth_token, oauth_secret, accept_lang varchar;
   declare oauth_keys any;
-  declare li_object_type varchar; -- Type of LinkedIn object being handled
+  declare is_owner_key integer;
+  declare li_object_type, li_id varchar; 
 
   declare exit handler for sqlstate '*'
   {
-	DB.DBA.RM_RDF_SPONGE_ERROR (triple_dict, current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+    DB.DBA.RM_RDF_SPONGE_ERROR (triple_dict, current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+    log_message (sprintf ('%s exit handler:\n %s', current_proc_name (), __SQL_MESSAGE));
     return 0;
   };
 
   -- Get cartridge options
   consumer_key := get_keyword ('consumer_key', opts);
   consumer_secret := get_keyword ('consumer_secret', opts);
+  accept_lang := get_keyword ('accept_lang', opts);
 
   if (subseq (new_origin_uri, 0, 5) = 'https')
     new_origin_uri := 'http' || subseq (new_origin_uri, 5);
@@ -10896,12 +10905,34 @@ create procedure DB.DBA.RDF_LOAD_LINKEDIN (in graph_iri varchar, in new_origin_u
     -- Public profile URL
     -- e.g. http://uk.linkedin.com/pub/hugh-williams/0/1a0/559
     public_profile_url := new_origin_uri;
+    li_object_type := 'person';
   }
   else if (new_origin_uri like 'http://%.linkedin.com/in/%')
   {
     -- Public profile URL
     -- e.g. http://www.linkedin.com/in/kidehen
     public_profile_url := new_origin_uri;
+    li_object_type := 'person';
+  }
+  else if (new_origin_uri like 'http://%.linkedin.com/jobs%')
+  {
+    -- Job posting
+    -- e.g. http://www.linkedin.com/jobs?viewJob&jobId=2700841&trk=jobs_share_fb
+    li_id := regexp_substr ('jobId=([[:digit:]]+)', new_origin_uri, 1);
+    if (li_id is null)
+      return 0;
+    public_profile_url := null;
+    li_object_type := 'job';
+  }
+  else if (new_origin_uri like 'http://%.linkedin.com/company/%')
+  {
+    -- Company profile 
+    -- e.g. http://www.linkedin.com/company/27491[?...]
+    li_id := regexp_substr ('company/([[:digit:]]+)', new_origin_uri, 1);
+    if (li_id is null)
+      return 0;
+    public_profile_url := null;
+    li_object_type := 'company';
   }
   else
   {
@@ -10920,7 +10951,32 @@ create procedure DB.DBA.RDF_LOAD_LINKEDIN (in graph_iri varchar, in new_origin_u
     return 0;
   }
 
-  -- Retrieve most data apart from connections
+  if (li_object_type = 'person')
+  {
+    DB.DBA.RDF_LOAD_LINKEDIN_SPONGE_USER (graph_iri, new_origin_uri, dest, opts, triple_dict, 
+	consumer_key, consumer_secret, oauth_token, oauth_secret, is_owner_key, public_profile_url);
+  }
+  else if (li_object_type = 'job' or li_object_type = 'company')
+  {
+    DB.DBA.RDF_LOAD_LINKEDIN_SPONGE_JOB_OR_COMPANY (graph_iri, new_origin_uri, dest, opts, triple_dict, 
+	consumer_key, consumer_secret, oauth_token, oauth_secret, li_id, li_object_type, accept_lang);
+  }
+
+  return 1;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_LINKEDIN_SPONGE_USER (
+  in graph_iri varchar, in new_origin_uri varchar, in dest varchar, in opts any, in triple_dict any,
+  in consumer_key varchar, in consumer_secret varchar, in oauth_token varchar, in oauth_secret varchar, in is_owner_key integer,
+  in public_profile_url any)
+{
+  declare xt, cnt, xd any;
+  declare required_profile_fields varchar;
+  declare api_url, url any;
+  declare li_object_type varchar;
+  
+  -- Retrieve most data apart from a user's connections
   -- LinkedIn rejects the entire request if an attempt is made to retrieve a user's connections with an access token granted by someone-else
   required_profile_fields := 'id,public-profile-url,first-name,last-name,headline,industry,location,num-connections,summary,specialties,associations,interests,honors,positions,num-recommenders,recommendations-received,member-url-resources,picture-url,certifications,date-of-birth,im-accounts,educations,languages,main-address,phone-numbers,publications,skills';
   if (is_owner_key)
@@ -10932,7 +10988,7 @@ create procedure DB.DBA.RDF_LOAD_LINKEDIN (in graph_iri varchar, in new_origin_u
   cnt := http_get (url);
 
   declare person_id any;
-  li_object_type := 'unknown';
+  li_object_type := 'person';
   xd := xtree_doc (cnt);
   person_id := cast (xpath_eval ('/person/id', xd) as varchar);
   
@@ -10951,7 +11007,8 @@ create procedure DB.DBA.RDF_LOAD_LINKEDIN (in graph_iri varchar, in new_origin_u
       url := DB.DBA.sign_request ('GET', sprintf ('http://api.linkedin.com/v1/people/%s/network', person_id), 'type=SHAR&scope=self', consumer_key, consumer_secret, oauth_token, oauth_secret, 1);
       cnt := http_get (url);
       xd := xtree_doc (cnt);
-      xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/linkedin_shares2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'li_object_type', li_object_type));
+      xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/linkedin_shares2rdf.xsl', xd, 
+                vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'li_object_type', li_object_type));
       xd := serialize_to_UTF8_xml (xt);
       DB.DBA.RM_RDF_LOAD_RDFXML (triple_dict, xd, new_origin_uri, coalesce (dest, graph_iri));
       
@@ -10959,19 +11016,56 @@ create procedure DB.DBA.RDF_LOAD_LINKEDIN (in graph_iri varchar, in new_origin_u
       declare st, retrcount integer;
       st:=0; retrcount:=500;
       li_object_type := 'connections';
-      while(retrcount=500) {
+      while (retrcount=500) {
         url := DB.DBA.sign_request ('GET', sprintf ('http://api.linkedin.com/v1/people/%s/connections:(id,public-profile-url,site-public-profile-request,first-name,last-name,headline,industry,location)', person_id), sprintf('start=%d&count=500',st), consumer_key, consumer_secret, oauth_token, oauth_secret, 1);
-        st:=st+500;
+        st := st + 500;
         cnt := http_get (url);
         xd := xtree_doc (cnt);
-        retrcount:=cast(xpath_eval('count(/connections/person)', xd) as integer); 
+        retrcount := cast(xpath_eval('count(/connections/person)', xd) as integer); 
         xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/linkedin2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'li_object_type', li_object_type));
         xd := serialize_to_UTF8_xml (xt);
         DB.DBA.RM_RDF_LOAD_RDFXML (triple_dict, xd, new_origin_uri, coalesce (dest, graph_iri));
       }
     }
-  DB.DBA.RM_ADD_PRV (triple_dict, current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
-  return 1;
+  DB.DBA.RM_ADD_PRV (triple_dict, current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), api_url);
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_LINKEDIN_SPONGE_JOB_OR_COMPANY (
+  in graph_iri varchar, in new_origin_uri varchar, in dest varchar, in opts any, in triple_dict any,
+  in consumer_key varchar, in consumer_secret varchar, in oauth_token varchar, in oauth_secret varchar,
+  in li_id varchar, in li_object_type varchar, in accept_lang varchar)
+{
+  declare xt, cnt, xd any;
+  declare required_fields varchar;
+  declare api_url, url any;
+  
+  if (li_object_type = 'job')
+  {
+    required_fields := 'id,customer-job-code,active,posting-date,expiration-date,posting-timestamp,company:(id,name),position:(title,location,job-functions,industries,job-type,experience-level),skills-and-experience,description-snippet,description,salary,job-poster:(id,first-name,last-name,headline),referral-bonus,site-job-url,location-description';
+    api_url := sprintf ('https://api.linkedin.com/v1/jobs/%s:(%s)', li_id, required_fields);
+  }
+  else if (li_object_type = 'company')
+  {
+    required_fields := 'id,name,universal-name,email-domains,company-type,ticker,website-url,industry,status,logo-url,square-logo-url,blog-rss-url,twitter-id,employee-count-range,specialties,locations:(description,is-headquarters,is-active,address:(street1,street2,city,state,postal-code,country-code,region-code),contact-info:(phone1,phone2,fax)),description,stock-exchange,founded-year,end-year,num-followers';
+    api_url := sprintf ('https://api.linkedin.com/v1/companies/%s:(%s)', li_id, required_fields);
+  }
+
+  url := DB.DBA.sign_request ('GET', api_url, '', consumer_key, consumer_secret, oauth_token, oauth_secret, 1);
+  -- Some job fields may appear in a locale dependent on the server location.
+  -- Accept-Language can be used to force these job fields to the desired locale. e.g. accept_lang ::= { ko-kr | fr-fr | en-us | ... }
+  -- Company and person profiles appear unaffected by these location/locale dependencies and immune to the Accept-Language header setting.
+  if (accept_lang is not null)
+    cnt := http_get (url, null, 'GET', sprintf ('Accept-Language: %s', accept_lang));
+  else
+    cnt := http_get (url);
+  xd := xtree_doc (cnt);
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/linkedin2rdf.xsl', xd, 
+    vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'li_object_type', li_object_type));
+  xd := serialize_to_UTF8_xml (xt);
+  RM_CLEAN_DEST (triple_dict, dest, graph_iri, new_origin_uri, opts);
+  DB.DBA.RM_RDF_LOAD_RDFXML (triple_dict, xd, new_origin_uri, coalesce (dest, graph_iri));
+  DB.DBA.RM_ADD_PRV (triple_dict, current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), api_url);
 }
 ;
 
