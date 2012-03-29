@@ -738,7 +738,7 @@ vsp_auth_get (in realm varchar, in domain varchar,
 
   http_request_status ('HTTP/1.1 401 Unauthorized');
   require_encrypted := sys_stat ('sql_encryption_on_password');
-  if (require_encrypted = 1 or require_encrypted = 2)
+  if (allow_basic and (require_encrypted = 1 or require_encrypted = 2))
     require_encrypted := 0;
   else
     require_encrypted := 1;
