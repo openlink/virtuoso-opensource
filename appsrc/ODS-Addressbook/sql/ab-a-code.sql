@@ -1254,8 +1254,7 @@ _true:;
 create procedure AB.WA.dav_home(
   inout account_id integer) returns varchar
 {
-  declare name, home any;
-  declare cid integer;
+  declare cid, name, home any;
 
   name := coalesce((select U_NAME from DB.DBA.SYS_USERS where U_ID = account_id), -1);
   if (isinteger(name))
@@ -3229,6 +3228,8 @@ create procedure AB.WA.contact_update2 (
   if (id = -1)
     return id;
 
+  if (pName = 'P_UID')
+    update AB.WA.PERSONS set P_UID = pValue where P_ID = id;
   if (pName = 'P_CATEGORY_ID')
     update AB.WA.PERSONS set P_CATEGORY_ID = pValue where P_ID = id;
   if (pName = 'P_KIND')
@@ -3480,6 +3481,7 @@ create procedure AB.WA.contact_delete (
   in domain_id integer)
 {
   delete from AB.WA.PERSONS where P_ID = id and P_DOMAIN_ID = domain_id;
+  return row_count ();
 }
 ;
 
@@ -3625,7 +3627,7 @@ create procedure AB.WA.contact_rights (
   retValue := '';
   if (exists (select 1 from AB.WA.PERSONS where P_ID = id and P_DOMAIN_ID = domain_id))
   {
-    if (account_rights < person_rights)
+    if (isnull (person_rights) or (account_rights < person_rights))
   retValue := AB.WA.acl_check (domain_id, id);
 
     if (retValue = '')

@@ -23,45 +23,6 @@
 use DB
 ;
 
-create function "CardDAV_FIXNAME" (in mailname any) returns varchar
-{
-  return
-    replace (
-    replace (
-    replace (
-    replace (
-    replace (
-    replace (
-    replace (
-    replace (
-    replace (mailname, '/', '_'), '\\', '_'), ':', '_'), '+', '_'), '\"', '_'), '[', '_'), ']', '_'), '''', '_'), ' ', '_');
-}
-;
-
-create function "CardDAV_COMPOSE_ICS_NAME" (in uid varchar) returns varchar
-{
-  return replace(sprintf('%s.vcf', uid), '@', '-');
-}
-;
-
-create function "CardDAV_ACCESS_PARAMS" (
-  in detcol_id any,
-  out access varchar,
-  out gid integer,
-  out uid integer)
-{
-  whenever not found goto ret;
-
-  access := '110000000NN';
-  gid := http_nogroup_gid ();
-  uid := http_nobody_uid ();
-  if (isinteger (detcol_id))
-    select COL_PERMS, COL_GROUP, COL_OWNER into access, gid, uid from WS.WS.SYS_DAV_COL where COL_ID = detcol_id;
-
-  ret: ;
-}
-;
-
 --| This matches DAV_AUTHENTICATE (in id any, in what char(1), in req varchar, in a_uname varchar, in a_pwd varchar, in a_uid integer := null)
 --| The difference is that the DET function should not check whether the pair of name and password is valid; the auth_uid is not a null already.
 create function "CardDAV_DAV_AUTHENTICATE" (
@@ -192,13 +153,21 @@ create function "CardDAV_DAV_COL_MOUNT_HERE" (in parent_id any, in full_mount_pa
 ;
 
 --| When DAV_DELETE_INT calls DET function, authentication and check for lock are passed.
-create function "CardDAV_DAV_DELETE" (in detcol_id any, in path_parts any, in what char(1), in silent integer, in auth_uid integer) returns integer
+create function "CardDAV_DAV_DELETE" (
+  in detcol_id any,
+  in path_parts any,
+  in what char(1),
+  in silent integer,
+  in auth_uid integer) returns integer
 {
   --dbg_obj_princ ('CardDAV_DAV_DELETE (', detcol_id, path_parts, what, silent, auth_uid, ')');
   declare top_id any;
-  declare rc, muser_id, domain_id integer;
+  declare rc, owner_uid, domain_id integer;
 
-  top_id := "CardDAV_DAV_SEARCH_ID_IMPL" (detcol_id, path_parts, 'R', muser_id, domain_id);
+  if ('C' = what)
+    return -20;
+
+  top_id := "CardDAV_DAV_SEARCH_ID_IMPL" (detcol_id, path_parts, 'R', owner_uid, domain_id);
   if (top_id = -1)
     return -20;
 
@@ -211,31 +180,43 @@ create function "CardDAV_DAV_DELETE" (in detcol_id any, in path_parts any, in wh
 --| There's a special problem, known as 'Transaction deadlock after reading from HTTP session'.
 --| The DET function should do only one INSERT of the 'content' into the table and do it as late as possible.
 --| The function should return -29 if deadlocked or otherwise broken after reading blob from HTTP.
-create function "CardDAV_DAV_RES_UPLOAD" (in detcol_id any, in path_parts any, inout content any, in type varchar, in permissions varchar, in uid integer, in gid integer, in auth_uid integer) returns any
+create function "CardDAV_DAV_RES_UPLOAD" (
+  in detcol_id any,
+  in path_parts any,
+  inout content any,
+  in what varchar,
+  in permissions varchar,
+  in uid integer,
+  in gid integer,
+  in auth_uid integer) returns any
 {
-  --dbg_obj_princ ('CardDAV_DAV_RES_UPLOAD (', detcol_id, path_parts, ', [content], ', content, type, permissions, uid, gid, auth_uid, ')');
+  --dbg_obj_princ ('CardDAV_DAV_RES_UPLOAD (', detcol_id, path_parts, ', [content], ', content, what, permissions, uid, gid, auth_uid, ')');
   declare top_id, res any;
-  declare muser_id, domain_id, rc integer;
+  declare owner_uid, domain_id, item_id, rc integer;
 
-  top_id := "CardDAV_DAV_SEARCH_ID_IMPL" (detcol_id, path_parts, 'R', muser_id, domain_id);
-  if (top_id = -1)
+  top_id := "CardDAV_DAV_SEARCH_ID_IMPL" (detcol_id, path_parts, 'R', owner_uid, domain_id);
+  if (top_id <> -1)
   {
-    ;
+    rc := AB.WA.contact_delete (top_id[4], domain_id);
+    if (rc < 1)
+      return -20;
   }
-  else
-  {
-    AB.WA.contact_delete (top_id[4], domain_id);
-  }
-  declare real_content any;
   if (__tag (content) = 126)
   {
+    declare real_content any;
+
     real_content := http_body_read (1);
-    real_content := string_output_string (real_content);  -- check if bellow code can work with string session and if so remove this line
-    content := real_content;
+    content := string_output_string (real_content);  -- check if bellow code can work with string session and if so remove this line
+  }
+  if ((length (content) = 0) and (top_id = -1))
+  {
+    item_id := AB.WA.contact_update2 (-1, domain_id, 'P_NAME', 'UNLOCK');
+    AB.WA.contact_update2 (item_id, domain_id, 'P_UID', path_parts[1]);
+    return vector (CardDAV__UNAME (), detcol_id, uid, domain_id, item_id, 0);
   }
   res := AB.WA.import_vcard (domain_id, content);
   if (length(res) > 0)
-    return vector (UNAME'CardDAV', detcol_id, uid, domain_id, path_parts[1], 0);
+    return vector (CardDAV__UNAME (), detcol_id, uid, domain_id, path_parts[1], 0);
 
   return -20;
 }
@@ -276,16 +257,14 @@ create function "CardDAV_DAV_PROP_SET" (
         return -1;
 
       AB.WA.contact_update2 (item_id, domain_id, 'P_ACL', serialize (propvalue));
-      return 1;
     }
     else
     {
       update DB.DBA.WA_INSTANCE
          set WAI_ACL = serialize (propvalue)
        where WAI_ID = domain_id;
-      return 1;
     }
-    return -16;
+    return 1;
   }
   if (propname[0] = 58)
     return -16;
@@ -325,10 +304,7 @@ create function "CardDAV_DAV_PROP_GET" (
   }
   if (':virtdet' = propname)
   {
-    if ('R' = what)
-      return null;
-
-    return '';
+    return CardDAV__UNAME();
   }
   return -11;
 }
@@ -352,7 +328,7 @@ create function "CardDAV_DAV_DIR_SINGLE" (in id any, in what char(0), in path an
   declare owner_gid, owner_uid integer;
   declare access varchar;
 
-  "CardDAV_ACCESS_PARAMS" (id[1], access, owner_gid, owner_uid);
+  "CardDAV__ACCESS_PARAMS" (id[1], access, owner_gid, owner_uid);
 
   domain_id := id[3];
   if (maxrcvdate is null)
@@ -361,7 +337,7 @@ create function "CardDAV_DAV_DIR_SINGLE" (in id any, in what char(0), in path an
   if (cast (maxrcvdate as integer) = 0)
     maxrcvdate := cast ('1980-01-01' as datetime);
 
-  colname := (select "CardDAV_FIXNAME" (C.WAI_NAME)
+  colname := (select "CardDAV__FIXNAME" (C.WAI_NAME)
                 from SYS_USERS A,
                      WA_MEMBER B,
                      WA_INSTANCE C
@@ -388,8 +364,8 @@ create function "CardDAV_DAV_DIR_SINGLE" (in id any, in what char(0), in path an
 
     return vector (fullpath, 'C', 0, maxrcvdate, id, access, 0, id[2], maxrcvdate, 'dav/unix-directory', colname );
   }
-  for (select "CardDAV_COMPOSE_ICS_NAME"(P_UID) as orig_mname, P_UPDATED from AB.WA.PERSONS where P_ID = id[4]) do
-    return vector (fullpath || orig_mname, 'R', 1024, P_UPDATED, id, access, 0, id[2], P_UPDATED, 'text/vcard', orig_mname);
+  for (select "CardDAV__COMPOSE_ICS_NAME"(P_UID) as orig_mname, P_CREATED, P_UPDATED from AB.WA.PERSONS where P_ID = id[4]) do
+    return vector (fullpath || orig_mname, 'R', 1024, P_UPDATED, id, access, 0, id[2], P_CREATED, 'text/vcard', orig_mname);
 
   return -1;
 }
@@ -411,7 +387,7 @@ create function "CardDAV_DAV_DIR_LIST" (
   declare top_id, descnames any;
   declare what char (1);
 
-  "CardDAV_ACCESS_PARAMS" (detcol_id, access, owner_gid, owner_uid);
+  "CardDAV__ACCESS_PARAMS" (detcol_id, access, owner_gid, owner_uid);
   what := case when ((0 = length (path_parts)) or ('' = path_parts[length (path_parts) - 1])) then 'C' else 'R' end;
   if (isarray (detcol_id) and (recursive = -1))
     return "CardDAV_DAV_DIR_SINGLE" (detcol_id, what, CardDAV_DAV_SEARCH_PATH (detcol_id, what), auth_uid);
@@ -419,7 +395,7 @@ create function "CardDAV_DAV_DIR_LIST" (
   domain_id := 0;
   if ('C' = what and 1 = length(path_parts))
   {
-    top_id := vector (UNAME'CardDAV', detcol_id, owner_uid, 0, 0, 0); -- may be a fake id because top_id[3] may be NULL
+    top_id := vector (CardDAV__UNAME (), detcol_id, owner_uid, 0, 0, 0); -- may be a fake id because top_id[3] may be NULL
   } else {
     top_id := "CardDAV_DAV_SEARCH_ID_IMPL" (detcol_id, path_parts, what, owner_uid, domain_id);
   }
@@ -436,7 +412,7 @@ create function "CardDAV_DAV_DIR_LIST" (
     -- Top level
     if (top_id[3] = 0)
     {
-      for select "CardDAV_FIXNAME"(C.WAI_NAME) as orig_name,
+      for select "CardDAV__FIXNAME"(C.WAI_NAME) as orig_name,
                  C.WAI_ID as dom_id
             from SYS_USERS A,
                  WA_MEMBER B,
@@ -449,20 +425,20 @@ create function "CardDAV_DAV_DIR_LIST" (
       do
       {
          res := vector_concat (res, vector (vector (DAV_CONCAT_PATH (top_davpath, orig_name) || '/', 'C', 0, now(),
-                  vector (UNAME'CardDAV', detcol_id, owner_uid, dom_id, 0, 0),
+                  vector (CardDAV__UNAME (), detcol_id, owner_uid, dom_id, 0, 0),
                   access, owner_gid, owner_uid, now(), 'dav/unix-directory', orig_name) ) );
       }
       return res;
     }
   }
-  for select "CardDAV_COMPOSE_ICS_NAME"(P_UID) as orig_mname, P_ID, P_UPDATED
+  for select "CardDAV__COMPOSE_ICS_NAME"(P_UID) as orig_mname, P_ID, P_CREATED, P_UPDATED
         from AB.WA.PERSONS
        where P_DOMAIN_ID = top_id[3]
   do
   {
     res := vector_concat (res, vector (vector (DAV_CONCAT_PATH (top_davpath, orig_mname), 'R', 1024, P_UPDATED,
-    vector (UNAME'CardDAV', detcol_id, owner_uid, top_id[3], P_ID, 0),
-    access, owner_gid, owner_uid, P_UPDATED, 'text/vcard', orig_mname) ) );
+    vector (CardDAV__UNAME (), detcol_id, owner_uid, top_id[3], P_ID, 0),
+    access, owner_gid, owner_uid, P_CREATED, 'text/vcard', orig_mname) ) );
   }
   return res;
 }
@@ -471,22 +447,22 @@ create function "CardDAV_DAV_DIR_LIST" (
 create procedure "CardDAV_DAV_FC_PRED_METAS" (inout pred_metas any)
 {
   pred_metas := vector(
-    'P_ID',                 vector ('EVENTS'        , 0, 'integer', 'P_ID'   ),
-    'P_DOMAIN_ID',              vector ('EVENTS'        , 0, 'integer', 'P_DOMAIN_ID'   ),
-    'RES_NAME',                 vector ('EVENTS'             , 0, 'varchar'  , '"CardDAV_COMPOSE_ICS_NAME"(_top.P_UID)'),
-    'RES_FULL_PATH',            vector ('EVENTS'     , 0, 'varchar'  , 'concat (DAV_CONCAT_PATH (_param.detcolpath, ''addressbook''), "CardDAV_FIXNAME" (WAI_NAME), ''/'', "CardDAV_COMPOSE_ICS_NAME" (_top.P_UID)'),
-    'RES_TYPE',                 vector ('EVENTS'     , 0, 'varchar'  , '(''text/vcard'')'),
+    'P_ID',             vector ('PERSONS'     , 0, 'integer' ,  'P_ID'   ),
+    'P_DOMAIN_ID',      vector ('PERSONS'     , 0, 'integer' , 'P_DOMAIN_ID'   ),
+    'RES_NAME',         vector ('PERSONS'     , 0, 'varchar' , '"CardDAV__COMPOSE_ICS_NAME"(_top.P_UID)'),
+    'RES_FULL_PATH',    vector ('PERSONS'     , 0, 'varchar' , 'concat (DAV_CONCAT_PATH (_param.detcolpath, ''addressbook''), "CardDAV__FIXNAME" (WAI_NAME), ''/'', "CardDAV__COMPOSE_ICS_NAME" (_top.P_UID)'),
+    'RES_TYPE',         vector ('PERSONS'     , 0, 'varchar' , '(''text/vcard'')'),
     'RES_OWNER_ID',             vector ('SYS_USERS'       , 0, 'integer'  , 'U_ID'        ),
     'RES_OWNER_NAME',           vector ('SYS_USERS'       , 0, 'varchar'  , 'U_NAME'      ),
     'RES_GROUP_ID',             vector ('SYS_USERS'     , 0, 'integer'  , 'http_nogroup_gid()'  ),
     'RES_GROUP_NAME',           vector ('SYS_USERS'     , 0, 'varchar'  , '(''nogroup'')'       ),
-    'RES_COL_FULL_PATH',        vector ('EVENTS'     , 0, 'varchar'  , 'concat (DAV_CONCAT_PATH (_param.detcolpath, ''addressbook''), "CardDAV_FIXNAME" (WAI_NAME), ''/'')'      ),
-    'RES_COL_NAME',             vector ('EVENTS'     , 0, 'varchar'  , '"CardDAV_FIXNAME" (WAI_NAME)'   ),
-    'RES_CR_TIME',              vector ('EVENTS'     , 0, 'datetime' , 'P_UPDATED'        ),
-    'RES_MOD_TIME',             vector ('EVENTS'     , 0, 'datetime' , 'P_UPDATED'  ),
-    'RES_PERMS',                vector ('EVENTS'     , 0, 'varchar'  , '(''110100000RR'')'   ),
-    'RES_CONTENT',              vector ('EVENTS'     , 0, 'text'     , 'P_INTERESTS'   ),
-    'PROP_NAME',        vector ('EVENTS'    , 0, 'varchar'  , '(''P_INTERESTS'')' ),
+    'RES_COL_FULL_PATH',vector ('PERSONS'     , 0, 'varchar' , 'concat (DAV_CONCAT_PATH (_param.detcolpath, ''addressbook''), "CardDAV__FIXNAME" (WAI_NAME), ''/'')'      ),
+    'RES_COL_NAME',     vector ('PERSONS'     , 0, 'varchar' , '"CardDAV__FIXNAME" (WAI_NAME)'   ),
+    'RES_CR_TIME',      vector ('PERSONS'     , 0, 'datetime', 'P_CREATED'        ),
+    'RES_MOD_TIME',     vector ('PERSONS'     , 0, 'datetime', 'P_UPDATED'  ),
+    'RES_PERMS',        vector ('PERSONS'     , 0, 'varchar' , '(''110100000RR'')'   ),
+    'RES_CONTENT',      vector ('PERSONS'     , 0, 'text'    , 'P_INTERESTS'   ),
+    'PROP_NAME',        vector ('PERSONS'     , 0, 'varchar' , '(''P_INTERESTS'')' ),
     'PROP_VALUE',       vector ('SYS_DAV_PROP'  , 1, 'text' , 'P_INTERESTS'   ),
     'RES_TAGS',         vector ('all-tags'  , 0, 'varchar'  , 'P_TAGS'  ), -- 'varchar', not 'text-tag' because there's no free-text on union
     'RES_PUBLIC_TAGS',      vector ('public-tags'   , 0, 'varchar'  , 'P_TAGS'  ), -- 'varchar', not 'text-tag' because there's no free-text in table!
@@ -501,28 +477,13 @@ create procedure "CardDAV_DAV_FC_PRED_METAS" (inout pred_metas any)
 create procedure "CardDAV_DAV_FC_TABLE_METAS" (inout table_metas any)
 {
   table_metas := vector (
-    'PERSONS'             , vector (      ''      ,
-                                        ''      ,
-                                                'P_NAME'    , 'P_NAME'  , '[__quiet] /' ),
-    'WA_INSTANCE'         , vector (      ''      ,
-                                        ''      ,
-                                                'WAI_NAME'     , 'WAI_NAME'   , '[__quiet] /' ),
-    'WA_MEMBER'         , vector (      ''      ,
-                                        ''      ,
-                                                'WAM_INST'     , 'WAM_INST'   , '[__quiet] /' ),
-
-    'SYS_USERS'   , vector (      ''      ,
-                                        ''      ,
-                                                NULL            , NULL          , NULL          ),
-    'public-tags'   , vector (  '  '    ,
-                                    ''  ,
-                        'P_TAGS'    , 'P_TAGS'  , NULL  ),
-    'private-tags'  , vector (  ' ' ,
-                    ' ' ,
-                        'P_TAGS'    , 'P_TAGS'  , NULL  ),
-    'all-tags'      , vector (  ' ' ,
-                    ' ' ,
-                        'P_TAGS'    , 'P_TAGS'  , NULL  ),
+    'PERSONS'     , vector ( '', '', 'P_NAME'  , 'P_NAME'  , '[__quiet] /' ),
+    'WA_INSTANCE' , vector ( '', '', 'WAI_NAME', 'WAI_NAME', '[__quiet] /' ),
+    'WA_MEMBER'   , vector ( '', '', 'WAM_INST', 'WAM_INST', '[__quiet] /' ),
+    'SYS_USERS'   , vector ( '', '', NULL      , NULL      , NULL  ),
+    'public-tags' , vector ( '', '', 'P_TAGS'  , 'P_TAGS'  , NULL  ),
+    'private-tags', vector ( '', '', 'P_TAGS'  , 'P_TAGS'  , NULL  ),
+    'all-tags'    , vector ( '', '', 'P_TAGS'  , 'P_TAGS'  , NULL  ),
     'fake-prop' , vector (  '\n  inner join WS.WS.SYS_DAV_PROP as ^{alias}^ on ((^{alias}^.PROP_PARENT_ID is null) and (^{alias}^.PROP_TYPE = ''R'')^{andpredicates}^)' ,
                     '\n  exists (select 1 from WS.WS.SYS_DAV_PROP as ^{alias}^ where (^{alias}^.PROP_PARENT_ID is null) and (^{alias}^.PROP_TYPE = ''R'')^{andpredicates}^)'    ,
                         'PROP_VALUE'    , 'PROP_VALUE'  , '[__quiet __davprop xmlns:virt="virt"] fakepropthatprobablyneverexists'   )
@@ -557,7 +518,7 @@ create function "CardDAV_DAV_DIR_FILTER" (in detcol_id any, in path_parts any, i
     declare cond_list, execmeta, execrows any;
     declare sub, post_id, condtext, cond_key varchar;
     declare owner_gid, owner_uid, domain_id integer;
-    "CardDAV_ACCESS_PARAMS" (detcol_id, access, owner_gid, owner_uid);
+    "CardDAV__ACCESS_PARAMS" (detcol_id, access, owner_gid, owner_uid);
     vectorbld_init (res);
     sub := null;
     post_id := null;
@@ -580,7 +541,7 @@ create function "CardDAV_DAV_DIR_FILTER" (in detcol_id any, in path_parts any, i
               and B.WAM_MEMBER_TYPE = 1
               and B.WAM_INST = C.WAI_NAME
               and C.WAI_TYPE_NAME = 'AddressBook'
-              and "CardDAV_FIXNAME"(C.WAI_NAME) = path_parts[1]));
+              and "CardDAV__FIXNAME"(C.WAI_NAME) = path_parts[1]));
             if (domain_id is null)
                 goto finalize;
         }
@@ -598,10 +559,10 @@ create function "CardDAV_DAV_DIR_FILTER" (in detcol_id any, in path_parts any, i
       compilation := vector_concat (compilation, vector (cond_key, condtext));
     }
     execstate := '00000';
-        qry_text := 'select concat (DAV_CONCAT_PATH (_param.detcolpath, ''addressbook''), ''/'', "CardDAV_FIXNAME" (WAI_NAME), ''/'', "CardDAV_COMPOSE_ICS_NAME" (_top.P_UID)),
+        qry_text := 'select concat (DAV_CONCAT_PATH (_param.detcolpath, ''addressbook''), ''/'', "CardDAV__FIXNAME" (WAI_NAME), ''/'', "CardDAV__COMPOSE_ICS_NAME" (_top.P_UID)),
         ''R'', 1024, _top.P_UPDATED,
-                vector (UNAME_ADDRESSBOOK(), ?, _users.U_ID, 3, _top.P_DOMAIN_ID, 0, 0, 0, 0),
-                ''110100000RR'', http_nogroup_gid(), _users.U_ID, _top.P_UPDATED, ''text/vcard'', "CardDAV_COMPOSE_ICS_NAME" (_top.P_UID)
+                vector (CardDAV__UNAME (), ?, _users.U_ID, 3, _top.P_DOMAIN_ID, 0, 0, 0, 0),
+                ''110100000RR'', http_nogroup_gid(), _users.U_ID, _top.P_UPDATED, ''text/vcard'', "CardDAV__COMPOSE_ICS_NAME" (_top.P_UID)
         from
         (select top 1 ? as detcolpath from WS.WS.SYS_DAV_COL) as _param,
         AB.WA.PERSONS as _top
@@ -621,25 +582,25 @@ finalize:
 }
 ;
 
-create function UNAME_ADDRESSBOOK () returns any
-{
-  return UNAME'CardDAV';
-}
-;
-
-create function "CardDAV_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts any, in what char(1), inout muser_id integer, inout domain_id integer) returns any
+create function "CardDAV_DAV_SEARCH_ID_IMPL" (
+  in detcol_id any,
+  in path_parts any,
+  in what char(1),
+  inout owner_uid integer,
+  inout domain_id integer) returns any
 {
     --dbg_obj_princ ('CardDAV_DAV_SEARCH_ID_IMPL (', detcol_id, path_parts, what, muser_id, domain_id, ')');
-    declare owner_gid, owner_uid, ctr, len integer;
+  declare owner_gid, ctr, len integer;
     declare hitlist any;
     declare access, colpath varchar;
-    "CardDAV_ACCESS_PARAMS" (detcol_id, access, owner_gid, owner_uid);
-  muser_id := owner_uid;
+
+  "CardDAV__ACCESS_PARAMS" (detcol_id, access, owner_gid, owner_uid);
     if (0 = length(path_parts))
     {
         if ('C' <> what)
             return -1;
-        return vector (UNAME'CardDAV', detcol_id, owner_uid, domain_id, 0, 0);
+
+    return vector (CardDAV__UNAME (), detcol_id, owner_uid, domain_id, 0, 0);
     }
     if ('' = path_parts[length(path_parts) - 1])
     {
@@ -667,7 +628,7 @@ create function "CardDAV_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts an
                       and B.WAM_MEMBER_TYPE = 1
                       and B.WAM_INST = C.WAI_NAME
                       and C.WAI_TYPE_NAME = 'AddressBook'
-                      and "CardDAV_FIXNAME"(C.WAI_NAME) = path_parts[ctr]
+                and "CardDAV__FIXNAME"(C.WAI_NAME) = path_parts[ctr]
             do
             {
                 hitlist := vector_concat (hitlist, vector (D_ID));
@@ -683,28 +644,30 @@ create function "CardDAV_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts an
         ctr := ctr + 1;
     }
     if ('C' = what)
-        return vector (UNAME'CardDAV', detcol_id, owner_uid, domain_id, 0, 0);
+    return vector (CardDAV__UNAME (), detcol_id, owner_uid, domain_id, 0, 0);
+
     hitlist := vector ();
-  for select distinct P_ID
-    from AB.WA.PERSONS
-    where "CardDAV_COMPOSE_ICS_NAME" (P_UID) = path_parts[ctr] and P_DOMAIN_ID = domain_id
-  do
+  for (select distinct P_ID from AB.WA.PERSONS where ("CardDAV__COMPOSE_ICS_NAME" (P_UID) = path_parts[ctr] or P_UID = path_parts[ctr]) and P_DOMAIN_ID = domain_id) do
   {
     hitlist := vector_concat (hitlist, vector (P_ID));
   }
     if (length (hitlist) <> 1)
         return -1;
-    return vector (UNAME'CardDAV', detcol_id, owner_uid, domain_id, hitlist[0], 0);
+
+  return vector (CardDAV__UNAME (), detcol_id, owner_uid, domain_id, hitlist[0], 0);
 }
 ;
 
 --| When DAV_PROP_GET_INT or DAV_DIR_LIST_INT calls DET function, authentication is performed before the call.
-create function "CardDAV_DAV_SEARCH_ID" (in detcol_id any, in path_parts any, in what char(1)) returns any
+create function "CardDAV_DAV_SEARCH_ID" (
+  in detcol_id any,
+  in path_parts any,
+  in what char(1)) returns any
 {
-  declare u_id, domain_id integer;
-  domain_id := 0;
   --dbg_obj_princ ('CardDAV_DAV_SEARCH_ID (', detcol_id, path_parts, what, ')');
-  return "CardDAV_DAV_SEARCH_ID_IMPL" (detcol_id, path_parts, what, u_id, domain_id);
+  declare owner_uid, domain_id integer;
+
+  return "CardDAV_DAV_SEARCH_ID_IMPL" (detcol_id, path_parts, what, owner_uid, domain_id);
 }
 ;
 
@@ -722,13 +685,13 @@ create function "CardDAV_DAV_SEARCH_PATH" (
   if (not exists (select 1 from DB.DBA.WA_INSTANCE where WAI_ID = domain_id))
     return null;
 
-  path := path || "CardDAV_FIXNAME" (AB.WA.domain_name (domain_id)) || '/';
+  path := path || "CardDAV__FIXNAME" (AB.WA.domain_name (domain_id)) || '/';
   if ('C' = what)
     return path;
 
   item_id := id[4];
   for (select P_UID from AB.WA.PERSONS where P_ID = item_id) do
-    return  path || "CardDAV_COMPOSE_ICS_NAME" (P_UID);
+    return  path || "CardDAV__COMPOSE_ICS_NAME" (P_UID);
 
   return null;
 }
@@ -797,37 +760,144 @@ create function "CardDAV_DAV_RESOLVE_PATH" (in detcol_id any, inout reference_it
 ;
 
 --| There's no API function to lock for a while (do we need such?) The "LOCK" DAV method checks that all parameters are valid but does not check for existing locks.
-create function "CardDAV_DAV_LOCK" (in path any, in id any, in type char(1), inout locktype varchar, inout scope varchar, in token varchar, inout owner_name varchar, inout owned_tokens varchar, in depth varchar, in timeout_sec integer, in auth_uid integer) returns any
+create function "CardDAV_DAV_LOCK" (
+  in path any,
+  in id any,
+  in what char(1),
+  inout locktype varchar,
+  inout scope varchar,
+  in token varchar,
+  inout owner_name varchar,
+  inout owned_tokens varchar,
+  in depth varchar,
+  in timeout_sec integer,
+  in auth_uid integer) returns any
 {
-  -- dbg_obj_princ ('CardDAV_DAV_LOCK (', id, type, locktype, scope, token, owner_name, owned_tokens, depth, timeout_sec, owner_name, auth_uid, ')');
-  return -20;
+  -- dbg_obj_princ ('CardDAV_DAV_LOCK (', path, id, what, locktype, scope, token, owner_name, owned_tokens, depth, timeout_sec, auth_uid, ')');
+  declare rc any;
+  declare domain_id, item_id integer;
+
+  if (what = 'C')
+  {
+    rc := -27;
+    goto _exit;
+  }
+
+  domain_id := id[3];
+  item_id := id[4];
+  if (exists (select 1 from AB.WA.PERSONS where P_DOMAIN_ID = domain_id and P_ID = item_id and P_NAME = 'UNLOCK'))
+  {
+    rc := lower (uuid());
+    update AB.WA.PERSONS
+       set P_NAME = 'LOCK',
+           P_FIRST_NAME = rc
+     where P_DOMAIN_ID = domain_id
+       and P_ID = item_id;
+
+    goto _exit;
+}
+
+  rc := -20;
+
+_exit:;
+  return rc;
 }
 ;
 
-
 --| There's no API function to unlock for a while (do we need such?) The "UNLOCK" DAV method checks that all parameters are valid but does not check for existing locks.
-create function "CardDAV_DAV_UNLOCK" (in id any, in type char(1), in token varchar, in auth_uid integer)
+create function "CardDAV_DAV_UNLOCK" (
+  in id any,
+  in what char(1),
+  in token varchar,
+  in auth_uid integer)
 {
-  -- dbg_obj_princ ('CardDAV_DAV_UNLOCK (', id, type, token, auth_uid, ')');
+  -- dbg_obj_princ ('CardDAV_DAV_UNLOCK (', id, what, token, auth_uid, ')');
+  if (isinteger (id) and (id = -1))
+    return 1;
+
   return -27;
 }
 ;
 
 --| The caller does not check if id is valid.
 --| This returns -1 if id is not valid, 0 if all existing locks are listed in owned_tokens whitespace-delimited list, 1 for soft 2 for hard lock.
-create function "CardDAV_DAV_IS_LOCKED" (inout id any, inout type char(1), in owned_tokens varchar) returns integer
+create function "CardDAV_DAV_IS_LOCKED" (
+  inout id any,
+  inout what char(1),
+  in owned_tokens varchar) returns integer
 {
-  -- dbg_obj_princ ('CardDAV_DAV_IS_LOCKED (', id, type, owned_tokens, ')');
-  return 0;
+  -- dbg_obj_princ ('CardDAV_DAV_IS_LOCKED (', id, what, owned_tokens, ')');
+  declare rc, if_token any;
+
+  rc := 0;
+  if (what = 'C')
+    goto _exit;
+
+  for (select P_FIRST_NAME from AB.WA.PERSONS where P_DOMAIN_ID = id[3] and P_ID = id[4] and P_NAME = 'LOCK') do
+  {
+    rc := 2;
+    if (not isnull (strstr (owned_tokens, P_FIRST_NAME)))
+      rc := 0;
+}
+
+_exit:;
+  return rc;
 }
 ;
 
-
 --| The caller does not check if id is valid.
 --| This returns -1 if id is not valid, list of tuples (LOCK_TYPE, LOCK_SCOPE, LOCK_TOKEN, LOCK_TIMEOUT, LOCK_OWNER, LOCK_OWNER_INFO) otherwise.
-create function "CardDAV_DAV_LIST_LOCKS" (in id any, in type char(1), in recursive integer) returns any
+create function "CardDAV_DAV_LIST_LOCKS" (
+  in id any,
+  in what char(1),
+  in recursive integer) returns any
 {
-  -- dbg_obj_princ ('CardDAV_DAV_LIST_LOCKS" (', id, type, recursive);
+  -- dbg_obj_princ ('CardDAV_DAV_LIST_LOCKS" (', id, what, recursive);
   return vector ();
+}
+;
+
+create function CardDAV__UNAME () returns any
+{
+  return UNAME'CardDAV';
+}
+;
+
+create function "CardDAV__FIXNAME" (in mailname any) returns varchar
+{
+  return
+    replace (
+    replace (
+    replace (
+    replace (
+    replace (
+    replace (
+    replace (
+    replace (
+    replace (mailname, '/', '_'), '\\', '_'), ':', '_'), '+', '_'), '\"', '_'), '[', '_'), ']', '_'), '''', '_'), ' ', '_');
+}
+;
+
+create function "CardDAV__COMPOSE_ICS_NAME" (in uid varchar) returns varchar
+{
+  return replace(sprintf('%s.vcf', uid), '@', '-');
+}
+;
+
+create function "CardDAV__ACCESS_PARAMS" (
+  in detcol_id any,
+  out access varchar,
+  out gid integer,
+  out uid integer)
+{
+  whenever not found goto ret;
+
+  access := '110000000NN';
+  gid := http_nogroup_gid ();
+  uid := http_nobody_uid ();
+  if (isinteger (detcol_id))
+    select COL_PERMS, COL_GROUP, COL_OWNER into access, gid, uid from WS.WS.SYS_DAV_COL where COL_ID = detcol_id;
+
+  ret: ;
 }
 ;
