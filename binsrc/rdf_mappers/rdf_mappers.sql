@@ -1146,6 +1146,8 @@ create procedure DB.DBA.XSLT_REGEXP_MATCH (in pattern varchar, in val varchar)
 create procedure DB.DBA.DI_URI (in str varchar)
 {
   declare sha, ret any;
+  if (str is null)
+    return '';
   if (str like 'mailto:%')
     str := subseq (str, 7);
   sha := xenc_sha1_digest (str);
