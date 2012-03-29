@@ -581,6 +581,44 @@ sparp_gp_trav_cu_out_triples_1 (sparp_t *sparp, SPART *curr, sparp_trav_state_t 
 }
 
 int
+sparp_gp_trav_cu_out_triples_1_merge_recvs (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
+{
+  int eq_ctr;
+  sparp_gp_trav_cu_out_triples_1 (sparp, curr, sts_this, common_env);
+  if (SPAR_GP != SPART_TYPE(curr))
+    return 0;
+  if (OPTIONAL_L == curr->_.gp.subtype)
+    return 0;
+  SPARP_FOREACH_GP_EQUIV (sparp, curr, eq_ctr, eq)
+    {
+      int ctr_r1;
+      DO_BOX_FAST_REV (ptrlong, recv1_idx, ctr_r1, eq->e_receiver_idxs)
+        {
+          int ctr_r2;
+          for (ctr_r2 = BOX_ELEMENTS (eq->e_receiver_idxs); --ctr_r2 > ctr_r1; /* no step */)
+            {
+              int recv2_idx = eq->e_receiver_idxs[ctr_r2];
+              SPART *recv_gp;
+              sparp_equiv_t *recv1_eq = SPARP_EQUIV(sparp,recv1_idx);
+              sparp_equiv_t *recv2_eq = SPARP_EQUIV(sparp,recv2_idx);
+              if (recv1_eq == recv2_eq)
+                spar_internal_error (sparp, "sparp_" "gp_trav_cu_out_triples_1_merge_recvs (): duplicate receiver");
+              recv_gp = recv1_eq->e_gp;
+              if (recv_gp != recv2_eq->e_gp)
+                spar_internal_error (sparp, "sparp_" "gp_trav_cu_out_triples_1_merge_recvs (): receivers in different gps");
+              if (UNION_L == recv_gp->_.gp.subtype)
+                return 0;
+              sparp_equiv_merge (sparp, recv1_eq, recv2_eq);
+            }
+        }
+      END_DO_BOX_FAST;
+    }
+  END_SPARP_FOREACH_GP_EQUIV;
+  return 0;
+}
+
+
+int
 sparp_gp_trav_cu_out_triples_2 (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   if (SPAR_GP == SPART_TYPE(curr))
@@ -1648,7 +1686,7 @@ sparp_make_aliases (sparp_t *sparp)
     NULL, NULL, NULL,
     NULL );
   sparp_gp_trav (sparp, top_pattern, NULL,
-    sparp_gp_trav_make_common_aliases_gp_in, sparp_gp_trav_cu_out_triples_1,
+    sparp_gp_trav_make_common_aliases_gp_in, sparp_gp_trav_cu_out_triples_1_merge_recvs,
     NULL, NULL, sparp_gp_trav_make_aliases_expn_subq,
     NULL );
   sparp_gp_trav (sparp, top_pattern, NULL,

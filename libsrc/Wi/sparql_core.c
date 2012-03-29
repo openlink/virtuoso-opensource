@@ -4029,7 +4029,7 @@ spar_var_cmp (caddr_t p_data1, caddr_t p_data2)
   if (0 != res) return res;
   res = strcmp (v1->_.var.vname, v2->_.var.vname);
   if (0 != res) return res;
-  return strcmp (v1->_.var.tabid, v2->_.var.tabid);
+  return strcmp ((NULL != v1->_.var.tabid) ? v1->_.var.tabid : "", (NULL != v2->_.var.tabid) ? v2->_.var.tabid : "");
 }
 
 caddr_t

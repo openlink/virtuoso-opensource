@@ -1675,10 +1675,12 @@ sparp_equiv_merge (sparp_t *sparp, sparp_equiv_t *pri, sparp_equiv_t *sec)
 	}
     }
 #endif
+#if 0 /* I can't recall why did I add these restrictions, probably to cut the amount of testing. Now they're preventing from a bugfixing, but related situations are still not tested entirely */
   if ((pri->e_rvr.rvrRestrictions & SPART_VARR_EXPORTED) && (sec->e_rvr.rvrRestrictions & SPART_VARR_EXPORTED))
     return SPARP_EQUIV_MERGE_ROLLBACK;
   if ((0 != pri->e_subquery_uses) || (0 != sec->e_subquery_uses))
     return SPARP_EQUIV_MERGE_ROLLBACK;
+#endif
   ret = sparp_equiv_restrict_by_constant (sparp, pri, sec->e_rvr.rvrDatatype, (SPART *)(sec->e_rvr.rvrFixedValue));
   if (SPARP_EQUIV_MERGE_ROLLBACK == ret)
     return ret;
@@ -2744,6 +2746,8 @@ sparp_gp_detach_member_int (sparp_t *sparp, SPART *parent_gp, int member_idx, dk
               for (var_ctr = eq->e_var_count; var_ctr--; /* no step */) /* The order is important due to sparp_equiv_remove_var() */
                 {
                   SPART *var = eq->e_vars[var_ctr];
+                  if (NULL == var->_.var.tabid)
+                    continue;
                   if (strcmp (var->_.var.tabid, memb->_.triple.tabid))
                     continue;
                   sparp_equiv_remove_var (sparp, eq, var);

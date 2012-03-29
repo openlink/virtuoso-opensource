@@ -5053,15 +5053,33 @@ ssg_print_service_rset_item (spar_sqlgen_t *ssg, SPART *service_gp, caddr_t seli
 {
   int pos = -1;
   char buf[50];
+  sparp_equiv_t *e_eq;
   SPART *sinv = sparp_get_option (ssg->ssg_sparp, service_gp->_.gp.options, SPAR_SERVICE_INV);
-  DO_BOX_FAST_REV (caddr_t, vname, pos, sinv->_.sinv.rset_varnames)
+/* An optimistic search first: */
+  DO_BOX_FAST_REV (caddr_t, ret_vname, pos, sinv->_.sinv.rset_varnames)
     {
-      if (!strcmp (e_varname, vname))
-break;
+      if (!strcmp (e_varname, ret_vname))
+        goto rset_pos_found; /* see below */
     }
   END_DO_BOX_FAST_REV;
-  if (0 > pos)
-    spar_internal_error (ssg->ssg_sparp, "ssg_" "print_service_rset_item(): service retval not in rset_varnames");
+/* In order to avoid bug 14730, now it's time to check for appropriate synonyms */
+  e_eq = sparp_equiv_get (ssg->ssg_sparp, service_gp, (SPART *)e_varname, SPARP_EQUIV_GET_NAMESAKES);
+  if (NULL != e_eq)
+    {
+      int vnamectr;
+      DO_BOX_FAST_REV (caddr_t, e_eq_varname, vnamectr, e_eq->e_varnames)
+        {
+          DO_BOX_FAST_REV (caddr_t, ret_vname, pos, sinv->_.sinv.rset_varnames)
+            {
+              if (!strcmp (e_eq_varname, ret_vname))
+                goto rset_pos_found; /* see below */
+            }
+          END_DO_BOX_FAST_REV;
+        }
+      END_DO_BOX_FAST_REV;
+    }
+  spar_internal_error (ssg->ssg_sparp, "ssg_" "print_service_rset_item(): service retval not in rset_varnames");
+rset_pos_found:
 #ifdef NDEBUG
   ssg_putchar (' ');
 #else
