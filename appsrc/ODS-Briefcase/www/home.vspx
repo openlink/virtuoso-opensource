@@ -354,7 +354,7 @@
       retValue := 0;
       if (detClass = '')
       {
-        if      (action = 'edit')
+        if      ((action = 'edit') and (detType <> 'Versioning'))
         {
           retValue := 1;
         }
@@ -454,13 +454,17 @@
         {
           retValue := 1;
         }
+        else if (action = 'version')
+        {
+          retValue := 1;
+        }
         else if (action = 'properties')
         {
           retValue := self.fieldRights ('edit');
           if (retValue and not isnull (DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_PROP_GET_INT (ODRIVE.WA.DAV_GET (self.dav_item, 'id'), 'R', 'DAV:checked-in', 0))))
             retValue := 0;
         }
-        else if (action in ('sharing', 'sharing_acl', 'sharing_aci'))
+        else if ((action in ('sharing', 'sharing_acl', 'sharing_aci')) and (detType <> 'Versioning'))
         {
           retValue := 1;
         }
@@ -1803,7 +1807,7 @@
                     </td>
                   </tr>
                 </v:template>
-                <v:template name="tform_12" type="simple" enabled="-- case when (((self.dav_type = 'C') and (self.dav_detType = '') and (self.dav_detClass = '')) or (self.command_mode <> 10)) then 1 else 0 end">
+                <v:template name="tform_12" type="simple" enabled="-- case when (((self.dav_type = 'C') and (self.dav_detType in ('', 'UnderVersioning')) and (self.dav_detClass = '')) or (self.command_mode <> 10)) then 1 else 0 end">
                   <vm:autoVersion />
                 </v:template>
                 <v:template name="tform_13" type="simple" enabled="-- equ(self.dav_type, 'C')">
@@ -2039,11 +2043,11 @@
                                   for (N := 0; N < length (properties); N := N + 1)
                                   {
                                     M := M + 1;
-                                    if (self.dav_enable or self.fieldRights ('sharing_acl'))
+                                    if (self.fieldRights ('properties'))
                                     {
                                       http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("c", null, {fld_1: {mode: 40, value: "%s", className: "_validate_", onbBlur: function(){validateField(this);}}, fld_2: {mode: 0, value: "%s"}});});', properties[N][0], properties[N][1]));
                                     } else {
-                                      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("c", {fld_1: {value: "%s"}, fld_2: {value: "%s"}});});', properties[N][0], properties[N][1]));
+                                      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("c", {fld_1: {value: "%s", tdCssText: "white-space: nowrap;"}, fld_2: {value: "%s", tdCssText: "white-space: nowrap;"}});});', properties[N][0], properties[N][1]));
                                     }
                           }
                         ?>
