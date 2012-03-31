@@ -84,11 +84,11 @@
 		    <xsl:apply-templates  select="/html/body" mode="content"/>
 		</xsl:variable>
 		<!--content:encoded><xsl:value-of select="vi:escape($doc1)" /></content:encoded-->
-	        <xsl:if test="not ($baseUri like 'http://%.nytimes.com/%' and $baseUri like 'http://stackoverflow.com/%')">
+	        <xsl:if test="not ($baseUri like 'http://%.nytimes.com/%' or $baseUri like 'http://stackoverflow.com/%' or $baseUri like 'http://%.stackexchange.com/%')">
 		    <awol:content rdf:resource="{$resourceURL}#content"/>
 		</xsl:if>
       </rdf:Description>
-      <xsl:if test="not ($baseUri like 'http://%.nytimes.com/%')">
+      <xsl:if test="not ($baseUri like 'http://%.nytimes.com/%' or $baseUri like 'http://stackoverflow.com/%' or $baseUri like 'http://%.stackexchange.com/%')">
 	  <rdf:Description rdf:about="{$resourceURL}#content">
 	      <rdf:type rdf:resource="&awol;Content"/>
 	      <awol:src rdf:resource="{$source}"/>

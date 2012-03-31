@@ -164,7 +164,7 @@
 
 	<xsl:template match="rss:link">
 		<sioc:link rdf:resource="{string(.)}" />
-	        <xsl:if test="not ($baseUri like 'http://%.nytimes.com/%')">
+	<xsl:if test="not ($baseUri like 'http://%.nytimes.com/%' and $baseUri like 'http://stackoverflow.com/%' and $baseUri like 'http://%.stackexchange.com/%')">
 		<awol:content>
 		    <awol:Content rdf:ID="content{generate-id()}">
 			<awol:src rdf:resource="{string(.)}"/>
