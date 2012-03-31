@@ -1504,6 +1504,23 @@ _again:
 
 -------------------------------------------------------------------------------
 --
+create procedure CAL.WA.http_error (
+  in _header any,
+  in _silent integer := 0)
+{
+  if (_header[0] like 'HTTP/1._ 4__ %' or _header[0] like 'HTTP/1._ 5__ %')
+  {
+    if (not _silent)
+      signal ('22023', trim (_header[0], '\r\n'));
+
+    return 0;
+  }
+  return 1;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure CAL.WA.xslt_root()
 {
   declare sHost varchar;
@@ -6519,6 +6536,100 @@ create procedure CAL.WA.import_vcal_attendees (
 }
 ;
 
+--------------------------------------------------------------------------------
+--
+create procedure CAL.WA.import_CalDAV (
+  in _domain_id integer,
+  in _name any,
+  in _options any := null)
+{
+  declare _user, _password varchar;
+  declare _page, _body, _bodyTemplate, _resHeader, _reqHeader any;
+  declare _xml, _items, _data any;
+
+  _user := get_keyword ('user', _options);
+  _password := get_keyword ('password', _options);
+  _bodyTemplate :=
+   '<?xml version="1.0" encoding="utf-8" ?>
+    <C:calendar-multiget xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav">
+      <D:prop>
+        <D:getetag/>
+        <C:calendar-data/>
+      </D:prop>
+      <D:href>%s</D:href>
+    </C:calendar-multiget>';
+
+  -- check CalDAV
+  _reqHeader := 'Accept: text/xml\r\nContent-Type: text/xml; charset=utf-8';
+  if (not is_empty_or_null (_user))
+    _reqHeader := _reqHeader || sprintf ('\r\nAuthorization: Basic %s', encode_base64 (_user || ':' || _password));
+
+  _page := http_client_ext (url=>_name, http_method=>'OPTIONS', http_headers=>_reqHeader, headers =>_resHeader, n_redirects=>15);
+  CAL.WA.http_error (_resHeader);
+  if (not (http_request_header (_resHeader, 'DAV') like '%calendar-access%'))
+    signal ('CAL01', 'Bad import/subscription source!<>');
+
+  _body := null;
+  _reqHeader := _reqHeader || '\r\nDepth: 1';
+  _page := http_client_ext (url=>_name, http_method=>'PROPFIND', http_headers=>_reqHeader, headers =>_resHeader, body=>_body, n_redirects=>15);
+  CAL.WA.http_error (_resHeader);
+  {
+    declare exit handler for sqlstate '*'
+    {
+      signal ('CAL01', 'Bad import/subscription source!<>');
+    };
+    _xml := xml_tree_doc (xml_expand_refs (xml_tree (_page)));
+		_items := xpath_eval ('[xmlns:D="DAV:" xmlns="urn:ietf:params:xml:ns:caldav:"] /D:multistatus/D:response/D:href/text()', _xml, 0);
+		foreach (any _item in _items) do
+		{
+      _body := sprintf (_bodyTemplate, cast (_item as varchar));
+      _page := http_client_ext (url=>_name, http_method=>'REPORT', http_headers=>_reqHeader, headers =>_resHeader, body=>_body, n_redirects=>15);
+      CAL.WA.http_error (_resHeader);
+      _xml := xml_tree_doc (xml_expand_refs (xml_tree (_page)));
+		  if (not isnull (xpath_eval ('[xmlns:D="DAV:" xmlns="urn:ietf:params:xml:ns:caldav:"] /D:multistatus/D:response/D:href/text()', _xml, 1)))
+		  {
+		    _data := cast (xpath_eval ('[xmlns:D="DAV:" xmlns="urn:ietf:params:xml:ns:caldav:"] /D:multistatus/D:response/D:propstat/D:prop/calendar-data/text()', _xml, 1) as varchar);
+		    CAL.WA.import_vcal (_domain_id, _data, _options);
+      }
+	  }
+  }
+  return 1;
+}
+;
+
+--------------------------------------------------------------------------------
+--
+create procedure CAL.WA.import_CalDAV_check (
+  in _name any,
+  in _options any,
+  in _silent integer := 0)
+{
+  declare _user, _password varchar;
+  declare _page, _body, _resHeader, _reqHeader any;
+  declare exit handler for sqlstate '*'
+  {
+    return 0;
+  };
+
+  _user := get_keyword ('user', _options);
+  _password := get_keyword ('password', _options);
+
+  -- check CalDAV
+  _reqHeader := 'Accept: text/xml\r\nContent-Type: text/xml; charset=utf-8';
+  if (not is_empty_or_null (_user))
+    _reqHeader := _reqHeader || sprintf ('\r\nAuthorization: Basic %s', encode_base64 (_user || ':' || _password));
+
+  _page := http_client_ext (url=>_name, http_method=>'OPTIONS', http_headers=>_reqHeader, headers =>_resHeader, n_redirects=>15);
+  if (not CAL.WA.http_error (_resHeader, _silent))
+    return 0;
+
+  if (not (http_request_header (_resHeader, 'DAV') like '%calendar-access%'))
+    return 0;
+
+  return 1;
+}
+;
+
 -------------------------------------------------------------------------------
 --
 create procedure CAL.WA.import_feed (
@@ -6874,23 +6985,26 @@ create procedure CAL.WA.exchange_exec_internal (
           }
         }
       }
-    -- subscribe
     else if (_direction = 1)
     {
+      -- subscribe
+
+      if (_type = 3)
+        return CAL.WA.exchange_CalDAV (_id);
+
       if (_type = 1)
-      {
         _name := CAL.WA.host_url () || _name;
-      }
+
       _content := CAL.WA.dav_content (_name, 0, _user, _password);
       if (isnull(_content))
-      {
         signal ('CAL01', 'Bad import/subscription source!<>');
-      }
+
       CAL.WA.import_vcal (_domain_id, _content, _options, _id);
     }
-    -- syncml
     else if (_direction = 2)
     {
+      -- syncml
+
       declare data any;
       declare N, _in, _out, _tmp, _rlog_res_id integer;
       declare _path, _pathID varchar;
@@ -6949,6 +7063,22 @@ create procedure CAL.WA.exchange_exec_internal (
       return vector (_in, _out);
     }
   }
+}
+;
+
+--------------------------------------------------------------------------------
+--
+create procedure CAL.WA.exchange_CalDAV (
+  in _id integer)
+{
+  for (select EX_DOMAIN_ID as _domain_id, EX_TYPE as _direction, deserialize (EX_OPTIONS) as _options from CAL.WA.EXCHANGE where EX_ID = _id) do
+  {
+    if (get_keyword ('type', _options) <> 3)
+       return;
+
+    CAL.WA.import_CalDAV (_domain_id, get_keyword ('name', _options), _options);
+  }
+  return 1;
 }
 ;
 

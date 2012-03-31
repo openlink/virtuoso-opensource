@@ -120,9 +120,21 @@ create function "CalDAV_DAV_AUTHENTICATE_HTTP" (
 ;
 
 --| This matches DAV_GET_PARENT (in id any, in st char(1), in path varchar) returns any
-create function "CalDAV_DAV_GET_PARENT" (in id any, in st char(1), in path varchar) returns any
+create function "CalDAV_DAV_GET_PARENT" (
+  in id any,
+  in what char(1),
+  in path varchar) returns any
 {
-  -- dbg_obj_princ ('CalDAV_DAV_GET_PARENT (', id, st, path, ')');
+  -- dbg_obj_princ ('CalDAV_DAV_GET_PARENT (', id, what, path, ')');
+  if ('R' = what)
+{
+    id[4] := 0;
+
+    return id;
+  }
+  if ('C' = what)
+    return id[1];
+
   return -20;
 }
 ;
@@ -795,6 +807,11 @@ create function "CalDAV_DAV_LOCK" (
   -- dbg_obj_princ ('CalDAV_DAV_LOCK (', path, id, what, locktype, scope, token, owner_name, owned_tokens, depth, timeout_sec, auth_uid, ')');
   declare rc any;
   declare domain_id, item_id integer;
+  declare name, uid varchar;
+
+  rc := 0;
+  domain_id := id[3];
+  item_id := id[4];
 
   if (what = 'C')
   {
@@ -802,8 +819,6 @@ create function "CalDAV_DAV_LOCK" (
     goto _exit;
   }
 
-  domain_id := id[3];
-  item_id := id[4];
   if (exists (select 1 from CAL.WA.EVENTS where E_DOMAIN_ID = domain_id and E_ID = item_id and E_SUBJECT = 'UNLOCK'))
   {
     rc := lower (uuid());
@@ -812,6 +827,26 @@ create function "CalDAV_DAV_LOCK" (
            E_DESCRIPTION = rc
      where E_DOMAIN_ID = domain_id
        and E_ID = item_id;
+
+    goto _exit;
+  }
+
+  if (exists (select 1 from CAL.WA.EVENTS where E_DOMAIN_ID = domain_id and E_ID = item_id and E_SUBJECT = 'LOCK' and dateadd ('second', -1, now()) > E_UPDATED))
+  {
+    rc := lower (uuid());
+    update CAL.WA.EVENTS
+       set E_SUBJECT = 'LOCK',
+           E_DESCRIPTION = rc
+     where E_DOMAIN_ID = domain_id
+       and E_ID = item_id;
+
+    goto _exit;
+  }
+
+  uid := (select E_UID from CAL.WA.EVENTS where E_DOMAIN_ID = domain_id and E_ID = item_id);
+  if (path like ('%' || CalDAV__COMPOSE_ICS_NAME (uid)))
+  {
+    rc := lower (uuid());
 
     goto _exit;
   }
@@ -831,10 +866,26 @@ create function "CalDAV_DAV_UNLOCK" (
   in auth_uid integer)
 {
   -- dbg_obj_princ ('CalDAV_DAV_UNLOCK (', id, what, token, auth_uid, ')');
-  if (isinteger (id) and (id = -1))
-    return 1;
+  declare rc any;
+  declare domain_id, item_id integer;
 
-  return -27;
+  rc := 0;
+  domain_id := id[3];
+  item_id := id[4];
+  if (exists (select 1 from CAL.WA.EVENTS where E_DOMAIN_ID = domain_id and E_ID = item_id and E_SUBJECT = 'LOCK'))
+  {
+    update CAL.WA.EVENTS
+       set E_SUBJECT = 'UNLOCK',
+           E_DESCRIPTION = null
+     where E_DOMAIN_ID = domain_id
+       and E_ID = item_id;
+
+    rc := -27;
+    goto _exit;
+  }
+
+_exit:;
+  return rc;
 }
 ;
 
@@ -846,7 +897,7 @@ create function "CalDAV_DAV_IS_LOCKED" (
   in owned_tokens varchar) returns integer
 {
   -- dbg_obj_princ ('CalDAV_DAV_IS_LOCKED (', id, what, owned_tokens, ')');
-  declare rc, if_token any;
+  declare rc any;
 
   rc := 0;
   if (what = 'C')
