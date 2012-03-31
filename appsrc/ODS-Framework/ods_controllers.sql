@@ -4975,9 +4975,12 @@ _loginIn:
   {
     for (select UC_U_ID, UC_LOGIN from DB.DBA.WA_USER_CERTS where UC_FINGERPRINT = get_certificate_info (6)) do
     {
+      loginName := (select U_NAME from DB.DBA.SYS_USERS where U_ID = UC_U_ID);
+      if (not isnull (loginName))
+      {
       certLogin := 1;
       certLoginEnable := coalesce (UC_LOGIN, 0);
-      loginName := (select U_NAME from DB.DBA.SYS_USERS where U_ID = UC_U_ID);
+      }
   }
   }
   V := ODS.ODS_API.extractFOAFDataArray (personUri, foafGraph);
@@ -5251,11 +5254,14 @@ create procedure ODS.ODS_API."user.getFOAFSSLData" (
   certLoginEnable := 0;
   for (select UC_U_ID, UC_LOGIN from DB.DBA.WA_USER_CERTS where UC_FINGERPRINT = get_certificate_info (6, cert, 0, '')) do
 	{
+    loginName := (select U_NAME from DB.DBA.SYS_USERS where U_ID = UC_U_ID);
+    if (not isnull (loginName))
+    {
 	  certLogin := 1;
     certLoginEnable := coalesce (UC_LOGIN, 0);
-    loginName := (select U_NAME from DB.DBA.SYS_USERS where U_ID = UC_U_ID);
 	  appendProperty (V, 'certLogin', cast (certLogin as varchar));
 	  appendProperty (V, 'certLoginEnable', cast (certLoginEnable as varchar));
+	}
 	}
   if (webidType = 0)
   {

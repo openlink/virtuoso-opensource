@@ -3499,6 +3499,7 @@ create unique index WA_USER_CERTS_FINGERPRINT on WA_USER_CERTS (UC_FINGERPRINT)
 0);
 
 wa_add_col ('DB.DBA.WA_USER_CERTS', 'UC_TS', 'datetime');
+wa_exec_no_error_log ('ALTER TABLE DB.DBA.WA_USER_CERTS ADD FOREIGN KEY (UC_U_ID) REFERENCES DB.DBA.SYS_USERS (U_ID) ON DELETE CASCADE');
 
 create procedure WA_CERTS_UPGRADE ()
 {
@@ -3546,6 +3547,21 @@ create procedure WA_CERTS_UPGRADE ()
     return;
   update WA_USER_CERTS set UC_TS = ODS..cert_date_to_ts (get_certificate_info (4,UC_CERT));
   registry_set ('WA_CERTS_UPGRADE2', '1');
+}
+;
+
+WA_CERTS_UPGRADE ();
+
+create procedure WA_CERTS_UPGRADE ()
+{
+  if (registry_get ('WA_CERTS_UPGRADE3') = '1')
+    return;
+
+  delete
+    from WA_USER_CERTS
+   where UC_U_ID not in (select U_ID from SYS_USERS);
+
+  registry_set ('WA_CERTS_UPGRADE3', '1');
 }
 ;
 
@@ -7781,11 +7797,16 @@ create procedure ods_define_common_vd (in _host varchar, in _lhost varchar, in i
   DB.DBA.VHOST_DEFINE (lhost=>_lhost, vhost=>_host, lpath=>'/mv', ppath=>'/DAV/VAD/wa/', is_dav=>isdav, def_page=>'mv.vsp', vsp_user=>'dba', sec=>_sec, auth_opts=>_opts);
   DB.DBA.VHOST_REMOVE (vhost=>_host, lhost=>_lhost, lpath=>'/mv/data');
   DB.DBA.VHOST_DEFINE (lhost=>_lhost, vhost=>_host, lpath=>'/mv/data', ppath=>'/DAV/VAD/wa/', is_dav=>isdav, def_page=>'', vsp_user=>'SPARQL', opts=>vector ('url_rewrite', 'ods_mv_rule_list_1'), sec=>_sec, auth_opts=>_opts);
-  DB.DBA.URLREWRITE_CREATE_RULELIST ( 'ods_mv_rule_list_1', 1, vector ('ods_mv_rule_1'));
+
+DB.DBA.URLREWRITE_CREATE_RULELIST ( 'ods_mv_rule_list_1', 1, vector ('ods_mv_rule_1', 'ods_mv_rule_2'));
 
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'ods_mv_rule_1', 1, '/mv/data/(.*)\x24', vector ('par_1'), 1,
       '/sparql?query='||ods_mv_desc()||'&format=%U',
-      vector ('par_1', '*accept*'), NULL, NULL, 2, 303, '');
+vector ('par_1', '*accept*'), NULL, '(.*)', 2, 303);
+
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'ods_mv_rule_2', 1, '/mv/data/(.*)\x24', vector ('par_1'), 1, 
+'/describe/?url=http://^{URIQADefaultHost}^/mv/data/%s', 
+vector ('par_1'), NULL, 'text/html', 2, 303);
 
 
   if (exists (select 1 from DB.DBA.HTTP_PATH where HP_HOST = _host and HP_LISTEN_HOST = _lhost and HP_LPATH = '/DAV'))
