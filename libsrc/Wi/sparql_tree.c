@@ -2877,20 +2877,8 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
             }
         }
       if (NULL != orig->_.gp.filters)
-        {
-          tgt->_.gp.filters = (SPART **)t_box_copy ((caddr_t)(orig->_.gp.filters));
-          DO_BOX_FAST_REV (SPART *, filt, filt_ctr, orig->_.gp.filters)
-            {
-              tgt->_.gp.filters [filt_ctr] = sparp_tree_full_clone_int (sparp, filt, orig);
-            }
-          END_DO_BOX_FAST_REV;
-        }
-      tgt->_.gp.members = (SPART **)t_box_copy ((caddr_t)(orig->_.gp.members));
-      DO_BOX_FAST_REV (SPART *, memb, memb_ctr, orig->_.gp.members)
-        {
-          tgt->_.gp.members [memb_ctr] = sparp_tree_full_clone_int (sparp, memb, orig);
-        }
-      END_DO_BOX_FAST_REV;
+        tgt->_.gp.filters = sparp_treelist_full_clone_int (sparp, orig->_.gp.filters, orig);
+      tgt->_.gp.members = sparp_treelist_full_clone_int (sparp, orig->_.gp.members, orig);
       if (NULL != orig->_.gp.subquery)
           tgt->_.gp.subquery = sparp_tree_full_clone_int (sparp, orig->_.gp.subquery, orig);
       if (NULL != orig->_.gp.options)
@@ -4715,15 +4703,13 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
 	          sprintf (buf, " ft predicate %d", (int)(tree->_.triple.ft_type));
 	          SES_PRINT (ses, buf);
                 }
-              if (NULL != tree->_.triple.options)
-                spart_dump (tree->_.triple.options, ses, indent+2, "OPTIONS", -2);
+	      spart_dump (tree->_.triple.options, ses, indent+2, "OPTIONS", -2);
 	      spart_dump (tree->_.triple.tr_graph, ses, indent+2, "GRAPH", -1);
 	      spart_dump (tree->_.triple.tr_subject, ses, indent+2, "SUBJECT", -1);
 	      spart_dump (tree->_.triple.tr_predicate, ses, indent+2, "PREDICATE", -1);
 	      spart_dump (tree->_.triple.tr_object, ses, indent+2, "OBJECT", -1);
 	      spart_dump (tree->_.triple.selid, ses, indent+2, "SELECT ID", 0);
 	      spart_dump (tree->_.triple.tabid, ses, indent+2, "TABLE ID", 0);
-	      spart_dump (tree->_.triple.options, ses, indent+2, "OPTIONS", -2);
 	      break;
 	    }
           case SPAR_SERVICE_INV:

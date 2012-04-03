@@ -1770,6 +1770,8 @@ sparp_gp_trav_label_external_vars_gp_in (sparp_t *sparp, SPART *curr, sparp_trav
   return SPAR_GPT_ENV_PUSH;
 }
 
+/* This makes same labeling as \c sparp_gp_trav_label_external_vars_gp_in() but should be used for retvals.
+Note that it label retval vals whereas sparp_gp_trav_label_external_vars_gp_in() does not. */
 int
 sparp_gp_trav_label_external_vars_expn_in (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
@@ -3620,10 +3622,10 @@ sparp_set_options_selid_and_tabid (sparp_t *sparp, SPART **options, caddr_t new_
               sparp_equiv_t *eq = SPARP_EQUIV (sparp, opt_expn->_.var.equiv_idx);
               sparp_equiv_remove_var (sparp, eq, opt_expn);
             }
-          opt_expn->_.var.selid = t_box_copy (new_selid);
+          opt_expn->_.var.selid = /*t_box_copy*/ (new_selid);
         }
       if (NULL != opt_expn->_.var.tabid)
-        opt_expn->_.var.tabid = t_box_copy (new_tabid);
+        opt_expn->_.var.tabid = /*t_box_copy*/ (new_tabid);
     }
   END_DO_BOX_FAST_REV;
 }
@@ -3648,14 +3650,14 @@ sparp_set_triple_selid_and_tabid (sparp_t *sparp, SPART *triple, caddr_t new_sel
               sparp_equiv_t *eq = SPARP_EQUIV (sparp, fld_expn->_.var.equiv_idx);
               sparp_equiv_remove_var (sparp, eq, fld_expn);
             }
-          fld_expn->_.var.selid = t_box_copy (new_selid);
+          fld_expn->_.var.selid = /*t_box_copy*/ (new_selid);
         }
-      fld_expn->_.var.tabid = t_box_copy (new_tabid);
+      fld_expn->_.var.tabid = /*t_box_copy*/ (new_tabid);
     }
   if (NULL != triple->_.triple.options)
     sparp_set_options_selid_and_tabid (sparp, triple->_.triple.options, new_selid, new_tabid);
-  triple->_.triple.selid = t_box_copy (new_selid);
-  triple->_.triple.tabid = t_box_copy (new_tabid);
+  triple->_.triple.selid = /*t_box_copy*/ (new_selid);
+  triple->_.triple.tabid = /*t_box_copy*/ (new_tabid);
 }
 
 
@@ -3857,7 +3859,7 @@ sparp_make_qm_cases (sparp_t *sparp, SPART *triple, SPART *parent_gp)
       triple_case_t **one_tc = (triple_case_t **)t_list (1, tc);
       mp_box_tag_modify (one_tc, DV_ARRAY_OF_LONG);
       qm_case_triple->_.triple.tc_list = one_tc;
-      qm_case_triple->_.triple.selid = t_box_copy (qm_selid);
+      qm_case_triple->_.triple.selid = /*t_box_copy*/ (qm_selid);
       qm_case_triple->_.triple.tabid = qm_tabid;
       for (field_ctr = SPART_TRIPLE_FIELDS_COUNT; field_ctr--; /*no step*/)
         {
@@ -3871,9 +3873,9 @@ sparp_make_qm_cases (sparp_t *sparp, SPART *triple, SPART *parent_gp)
             {
               sparp_equiv_t *eq;
               new_fld_expn = (SPART *)t_box_copy ((caddr_t)fld_expn);
-              new_fld_expn->_.var.selid = t_box_copy (qm_selid);
-              new_fld_expn->_.var.tabid = t_box_copy (qm_tabid);
-              new_fld_expn->_.var.vname = t_box_copy (fld_expn->_.var.vname);
+              new_fld_expn->_.var.selid = /*t_box_copy*/ (qm_selid);
+              new_fld_expn->_.var.tabid = /*t_box_copy*/ (qm_tabid);
+              new_fld_expn->_.var.vname = /*t_box_copy*/ (fld_expn->_.var.vname);
               new_fld_expn->_.var.equiv_idx = SPART_BAD_EQUIV_IDX;
               sparp_rvr_copy (sparp, &(new_fld_expn->_.var.rvr), &(fld_expn->_.var.rvr));
               eq = sparp_equiv_get (sparp, qm_case_gp, new_fld_expn, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_INS_VARIABLE | SPARP_EQUIV_ADD_GSPO_USE);
