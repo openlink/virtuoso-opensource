@@ -3898,8 +3898,11 @@ sparp_make_qm_cases (sparp_t *sparp, SPART *triple, SPART *parent_gp)
           sparp_jso_validate_format (sparp, native_fmt);
           qm_case_triple->_.triple.native_formats[field_ctr] = native_fmt;
         }
-      if (NULL != qm_case_triple->_.triple.options)
-        sparp_set_options_selid_and_tabid (sparp, qm_case_triple->_.triple.options, qm_selid, qm_tabid);
+      if (NULL != triple->_.triple.options)
+        {
+          qm_case_triple->_.triple.options = sparp_treelist_full_copy (sparp, triple->_.triple.options, parent_gp);
+          sparp_set_options_selid_and_tabid (sparp, qm_case_triple->_.triple.options, qm_selid, qm_tabid);
+        }
       sparp_gp_attach_member (sparp, qm_case_gp, qm_case_triple, 0, NULL);
       if (NULL != ft_cond_to_relocate)
         sparp_gp_attach_filter (sparp, qm_case_gp, sparp_tree_full_copy (sparp, ft_cond_to_relocate, parent_gp), 0, NULL);

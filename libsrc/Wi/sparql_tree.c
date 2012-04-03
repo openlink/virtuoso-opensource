@@ -1111,9 +1111,10 @@ sparp_equiv_get (sparp_t *sparp, SPART *haystack_gp, SPART *needle_var, int flag
     }
   if ((flags & SPARP_EQUIV_INS_VARIABLE) && strcmp (needle_var->_.var.selid, haystack_gp->_.gp.selid))
     {
+/* this masqeraded an error: 
       if (needle_var->_.var.selid == uname_nil)
         needle_var->_.var.selid = haystack_gp->_.gp.selid;
-      else
+      else */
         spar_internal_error (sparp, "sparp_" "equiv_get() with SPARP_EQUIV_INS_VARIABLE and wrong selid");
     }
 #endif
@@ -2753,12 +2754,27 @@ sparp_gp_detach_member_int (sparp_t *sparp, SPART *parent_gp, int member_idx, dk
                   sparp_equiv_remove_var (sparp, eq, var);
                   if (NULL != touched_equivs_set_ptr)
                     t_set_pushnew (touched_equivs_set_ptr, eq);
-                  if (NULL != var->_.var.tabid)
-                    eq->e_gspo_uses--;
-                  var->_.var.selid = uname_nil;
+                  eq->e_gspo_uses--;
+                  /* this masqeraded an error: var->_.var.selid = uname_nil; */
                 }
             }
           END_SPARP_FOREACH_GP_EQUIV;
+#ifdef DEBUG
+          {
+            SPART **opts = memb->_.triple.options;
+            int optctr;
+            for (optctr = BOX_ELEMENTS (opts)-1; 0 < optctr; optctr -= 2)
+              {
+                SPART *var = opts[optctr];
+                if (SPAR_VARIABLE == SPART_TYPE (var))
+                  {
+                    sparp_equiv_t *eq = sparp_equiv_get (sparp, parent_gp, var, 0);
+                    if (NULL != eq)
+                      spar_internal_error (sparp, "sparp_" "gp_detach_member_int (): option var is not removed from equiv");
+                  }
+              }
+          }
+#endif
         }
     }
   return memb;
@@ -2790,7 +2806,7 @@ sparp_treelist_full_clone_int (sparp_t *sparp, SPART **origs, SPART *parent_gp);
 SPART *
 sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
 {
-  int filt_ctr, memb_ctr, eq_ctr, arg_ctr, fld_ctr, eq_idx, cloned_eq_idx;
+  int eq_ctr, arg_ctr, fld_ctr, eq_idx, cloned_eq_idx;
   SPART *tgt;
   switch (SPART_TYPE (orig))
     {
@@ -2835,6 +2851,10 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
           if (NULL != cloned_eq)
             spar_internal_error (sparp, "sparp_" "tree_full_clone_int(): cloned variable is in equiv, original is not");
         }
+#ifdef DEBUG
+      if (strcmp (orig->_.var.selid, parent_gp->_.gp.selid))
+        spar_internal_error (sparp, "sparp_" "tree_full_clone_int(): orig var is not from parent gp");
+#endif
       tgt->_.var.selid = sparp_clone_id (sparp, orig->_.var.selid);
       if (NULL != orig->_.var.tabid)
         tgt->_.var.tabid = sparp_clone_id (sparp, orig->_.var.tabid);
@@ -3268,22 +3288,22 @@ sparp_gp_attach_member_int (sparp_t *sparp, SPART *parent_gp, SPART *memb, dk_se
       if (SPAR_TRIPLE != SPART_TYPE (memb))
         spar_internal_error (sparp, "sparp_" "gp_attach_member(): type of memb is neither SPAR_GP nor SPAR_TRIPLE");
 #endif
+      memb->_.triple.selid = /*t_box_copy*/ (parent_gp->_.gp.selid);
       for (fld_ctr = SPART_TRIPLE_FIELDS_COUNT; fld_ctr--; /*no step*/)
         {
           SPART *field = memb->_.triple.tr_fields [fld_ctr];
           if (SPAR_IS_BLANK_OR_VAR(field))
             {
               sparp_equiv_t *parent_eq;
-              field->_.var.selid = t_box_copy (parent_gp->_.gp.selid);
+              field->_.var.selid = memb->_.triple.selid;
               parent_eq = sparp_equiv_get (sparp, parent_gp, field, SPARP_EQUIV_INS_VARIABLE | SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_ADD_GSPO_USE);
             }
         }
       if (NULL != memb->_.triple.options)
         {
-          sparp_set_options_selid_and_tabid (sparp, memb->_.triple.options, parent_gp->_.gp.selid, memb->_.triple.tabid);
+          sparp_set_options_selid_and_tabid (sparp, memb->_.triple.options, memb->_.triple.selid, memb->_.triple.tabid);
           sparp_gp_trav_cu_in_options (sparp, parent_gp, memb, memb->_.triple.options, NULL);
         }
-      memb->_.triple.selid = t_box_copy (parent_gp->_.gp.selid);
     }
 }
 

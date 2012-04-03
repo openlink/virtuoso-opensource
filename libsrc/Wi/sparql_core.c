@@ -1391,6 +1391,7 @@ void
 spar_gp_init (sparp_t *sparp, ptrlong subtype)
 {
   sparp_env_t *env = sparp->sparp_env;
+  int gp_is_top = ((WHERE_L == subtype) || (CONSTRUCT_L == subtype));
   spar_dbg_printf (("spar_gp_init (..., %ld)\n", (long)subtype));
   if (sparp->sparp_macro_mode)
     {
@@ -1401,13 +1402,13 @@ spar_gp_init (sparp_t *sparp, ptrlong subtype)
         selid = spar_mkid (sparp, "@s");
       spar_selid_push_reused (sparp, selid);
     }
-  else
+  else if (!gp_is_top)
     spar_selid_push (sparp);
   t_set_push (&(env->spare_acc_triples), NULL);
   t_set_push (&(env->spare_acc_filters), NULL);
   t_set_push (&(env->spare_context_gp_subtypes), (caddr_t)subtype);
   t_set_push (&(env->spare_good_graph_varname_sets), env->spare_good_graph_varnames);
-  if ((WHERE_L != subtype) && (CONSTRUCT_L != subtype))
+  if (!gp_is_top)
     t_set_push (&(sparp->sparp_env->spare_propvar_sets), NULL); /* For WHERE_L and CONSTRUCT_L it's done at beginning of the result-set. */
 }
 
@@ -1510,8 +1511,8 @@ check_optionals:
                             continue;
                           t_set_delete (&filts, filt);
                           t_set_push (&left_ft_filts, filt);
-                          /* A cheat use of sparp_set_options_selid_and_tabid for funcall.argtrees isntead of smth.options, looks OK for freetext */
-                          sparp_set_options_selid_and_tabid (sparp, filt->_.funcall.argtrees, env->spare_selids->data, memb->_.triple.tabid);
+                          /* A cheat use of sparp_set_options_selid_and_tabid for funcall.argtrees instead of smth.options, looks OK for freetext */
+                          sparp_set_options_selid_and_tabid (sparp, filt->_.funcall.argtrees, (caddr_t)(env->spare_selids->data), NULL /* why memb->_.triple.tabid ? */);
                           break;
                         }
                       END_DO_SET()
@@ -1538,7 +1539,8 @@ check_optionals:
     NULL,
     orig_selid,
     NULL, (ptrlong)(0), (ptrlong)(0), options );
-  spar_selid_pop (sparp);
+  if (CONSTRUCT_L != subtype) /* CONSTRUCT_L did not push to stack of selids, using one that will be used in WHERE_L */
+    spar_selid_pop (sparp);
   return res;
 }
 
@@ -1675,6 +1677,10 @@ spar_gp_add_filter (sparp_t *sparp, SPART *filt)
               spar_error (sparp, "Invalid argument #%d for %s() special predicate", argctr+1);
             spar_tree_is_var_with_forbidden_ft_name (sparp, arg_value, 1);
             opt_value = (SPART *)t_box_copy_tree ((caddr_t)arg_value);
+#ifdef DEBUG
+            if (strcmp (opt_value->_.var.selid, triple_with_var_obj->_.triple.selid))
+              spar_internal_error (sparp, "spar_" "gp_add_filter(): weird mismatch between selids of opt_value and triple_with_var_obj");
+#endif
             opt_value->_.var.tabid = triple_with_var_obj->_.triple.tabid;
             opt_value->_.var.tr_idx = (ptrlong)args[argctr];
             triple_with_var_obj->_.triple.options = t_spartlist_concat (
