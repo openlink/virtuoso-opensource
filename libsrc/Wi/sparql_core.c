@@ -2619,10 +2619,10 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
     obj_is_plain_var = SPART_VARNAME_IS_PLAIN(object->_.var.vname);
   else if ((SPAR_QNAME != obj_stype) && (SPAR_LIT != obj_stype))
     spar_error (sparp, "Object of transitive triple pattern should be variable or QName or literal, not blank node");
-  subj_alias = subj_is_plain_var ? subject->_.var.vname : NULL;
-  obj_alias = subj_is_plain_var ? object->_.var.vname : NULL;
   subj_vname = t_box_sprintf (40, "trans-subj-%.20s", (caddr_t)(sparp->sparp_env->spare_selids->data));
   obj_vname = t_box_sprintf (40, "trans-obj-%.20s", (caddr_t)(sparp->sparp_env->spare_selids->data));
+  subj_alias = subj_is_plain_var ? subject->_.var.vname : subj_vname;
+  obj_alias = obj_is_plain_var ? object->_.var.vname : obj_vname;
   spar_gp_init (sparp, 0);
   spar_env_push (sparp);
   spar_selid_push (sparp);
@@ -2651,9 +2651,9 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
         }
       if (NULL != rval)
         {
-          if ((1 == fld_ctr) && (NULL != subj_alias))
+          if ((1 == fld_ctr) && subj_is_plain_var)
             rval = spartlist (sparp, 4, SPAR_ALIAS, rval, subj_alias, SSG_VALMODE_AUTO);
-          else if ((3 == fld_ctr) && (NULL != obj_alias))
+          else if ((3 == fld_ctr) && obj_is_plain_var)
             rval = spartlist (sparp, 4, SPAR_ALIAS, rval, obj_alias, SSG_VALMODE_AUTO);
           retvals[retvalctr++] = rval;
         }
@@ -2672,10 +2672,10 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
     }
   spar_gp_add_triplelike (sparp, graph, subj_var, predicate, obj_var, qm_iri_or_pair, NULL, banned_tricks | SPAR_ADD_TRIPLELIKE_NO_TRANSITIVE);
   sparp_set_option (sparp, &options, T_IN_L,
-    spartlist (sparp, 2, SPAR_LIST, t_list (1, spar_make_variable (sparp, (NULL != subj_alias) ? subj_alias : subj_vname))),
+    spartlist (sparp, 2, SPAR_LIST, t_list (1, spar_make_variable (sparp, subj_alias))),
     SPARP_SET_OPTION_REPLACING );
   sparp_set_option (sparp, &options, T_OUT_L,
-    spartlist (sparp, 2, SPAR_LIST, t_list (1, spar_make_variable (sparp, (NULL != obj_alias) ? obj_alias : obj_vname))),
+    spartlist (sparp, 2, SPAR_LIST, t_list (1, spar_make_variable (sparp, obj_alias))),
     SPARP_SET_OPTION_REPLACING );
   where_gp = spar_gp_finalize (sparp, NULL);
   subselect_top = spar_make_top (sparp, SELECT_L, retvals,
