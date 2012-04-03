@@ -1194,7 +1194,7 @@ extern unsigned blob_page_dir_threshold;
 extern int virtuoso_server_initialized;
 extern int dive_pa_mode;
 extern unsigned int bp_hit_ctr;
-extern int c_compress_mode;
+extern int32 c_compress_mode;
 extern int rdf_no_string_inline;
 /* geo.c */
 

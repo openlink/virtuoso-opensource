@@ -85,7 +85,7 @@ int n_oldest_flushable;
 int null_bad_dtp;
 int atomic_dive = 0;
 int dive_pa_mode = PA_READ;
-int c_compress_mode = 0;
+int32 c_compress_mode = 0;
 int default_txn_isolation = ISO_REPEATABLE;
 int prefix_in_result_col_names;
 int disk_no_mt_write;

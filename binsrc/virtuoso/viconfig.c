@@ -181,6 +181,7 @@ extern int32 rdf_shorten_long_iri;
 extern int32 ric_samples_sz;
 extern int32 enable_p_stat;
 extern int aq_max_threads;
+extern int32 c_compress_mode;
 
 char * http_log_file_check (struct tm *now); /* http log name checking */
 
@@ -1012,6 +1013,8 @@ cfg_setup (void)
 
   if (cfg_getlong (pconfig, section, "LogProcOverwrite", &log_proc_overwrite) == -1)
     log_proc_overwrite = 1;
+  if (cfg_getlong (pconfig, section, "PageCompress", &c_compress_mode) == -1)
+    c_compress_mode = 0;
 
 
   {
