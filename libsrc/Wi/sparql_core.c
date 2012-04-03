@@ -1501,7 +1501,7 @@ check_optionals:
               spar_gp_init (sparp, 0);
               for (left_ctr = 0; left_ctr < all_ctr; left_ctr++)
                 {
-                  SPART *memb = t_set_pop (&membs);
+                  SPART *memb = (SPART *)(t_set_pop (&membs));
                   if ((SPAR_TRIPLE == SPART_TYPE(memb)) && (memb->_.triple.ft_type))
                     {
                       DO_SET (SPART *, filt, &filts)
@@ -1518,7 +1518,7 @@ check_optionals:
                     }
                   t_set_push (&left_membs, memb);
                 }
-              spar_gp_replace_selid (sparp, left_membs, orig_selid, env->spare_selids->data);
+              spar_gp_replace_selid (sparp, left_membs, orig_selid, (caddr_t)(env->spare_selids->data));
               env->spare_acc_triples->data = left_membs; /* a revlist is set to a revlist, no reverse needed */
               env->spare_acc_filters->data = left_ft_filts; /* same is true for filters, even if not so important */
               left_group = spar_gp_finalize (sparp, NULL);
@@ -3337,7 +3337,7 @@ sparp_make_graph_precode (sparp_t *sparp, ptrlong subtype, SPART *iriref, SPART 
         spar_error (sparp, "Unsupported parameter '%.30s' in FROM ... (OPTION ...)", param);
       if (NULL != dk_set_getptr_keyword (opts_ptr[0], param))
         spar_error (sparp, "FROM ... (OPTION ... %s ...) conflicts with 'DEFINE %s ...", param, param);
-      (mixed_tail++)[0] = (SPART *)t_full_box_copy_tree (param);
+      (mixed_tail++)[0] = (SPART *)t_full_box_copy_tree ((caddr_t)(param));
       (mixed_tail++)[0] = (SPART *)t_full_box_copy_tree ((caddr_t)(options[ctr + 1]));
     }
   if (!IS_BOX_POINTER (sparp->sparp_env->spare_sql_refresh_free_text))

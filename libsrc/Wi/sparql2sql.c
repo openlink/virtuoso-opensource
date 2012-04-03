@@ -234,7 +234,7 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
             NULL );
           while (NULL != lnar.names)
             {
-              caddr_t varname = t_set_pop (&(lnar.names));
+              caddr_t varname = (caddr_t)t_set_pop (&(lnar.names));
               if (0 > dk_set_position_of_string (names_in_groupings, varname))
                 spar_error (sparp, "Variable ?%.200s is used in the result set outside aggregate and not mentioned in GROUP BY clause", varname);
             }
@@ -243,7 +243,7 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
       t_set_push (&(env->spare_selids), retselid);
       while (NULL != lnar.names)
         {
-          caddr_t varname = t_set_pop (&(lnar.names));
+          caddr_t varname = (caddr_t)t_set_pop (&(lnar.names));
           SPART *var = spar_make_variable (sparp, varname);
           t_set_push (&new_vars, var);
         }
@@ -262,7 +262,7 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
   t_set_push (&(env->spare_selids), retselid);
   while (NULL != lnar.names)
     {
-      caddr_t varname = t_set_pop (&(lnar.names));
+      caddr_t varname = (caddr_t)t_set_pop (&(lnar.names));
       SPART *var = spar_make_variable (sparp, varname);
       t_set_push (&new_vars, var);
     }
@@ -1432,7 +1432,7 @@ sparp_create_eqs_for_dupe_locals (sparp_t *sparp, SPART *curr, dk_set_t *local_v
   dk_set_t vars_to_propagate = NULL;
   while (NULL != local_vars[0])
     {
-      var_name = dk_set_pop (local_vars);
+      var_name = (caddr_t)dk_set_pop (local_vars);
       if (-1 != dk_set_position_of_string (local_vars[0], var_name))
         {
           sparp_equiv_get (sparp, curr, (SPART *)var_name, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_GET_NAMESAKES);
@@ -1536,7 +1536,7 @@ sparp_gp_add_chain_aliases (sparp_t *sparp, SPART *inner_var, sparp_equiv_t *inn
   for (;;)
     {
       sparp_equiv_t *parent_eq;
-      SPART *parent_gp = sts_iter[-1].sts_env;
+      SPART *parent_gp = (SPART *)(sts_iter[-1].sts_env);
       if (NULL == parent_gp)
         break;
       parent_eq = sparp_equiv_get (sparp, parent_gp, inner_var, SPARP_EQUIV_GET_NAMESAKES | SPARP_EQUIV_INS_CLASS);
@@ -1614,7 +1614,7 @@ sparp_gp_trav_make_common_aliases_gp_in (sparp_t *sparp, SPART *curr, sparp_trav
         {
           for (outer_gp_sts = sparp->sparp_stss+1; outer_gp_sts < sts_this; outer_gp_sts++)
             {
-              SPART *outer_gp = outer_gp_sts->sts_env;
+              SPART *outer_gp = (SPART *)(outer_gp_sts->sts_env);
 	      sparp_equiv_t *topmost_eq = sparp_equiv_get (sparp, outer_gp, (SPART *)vname, SPARP_EQUIV_GET_NAMESAKES);
 	      if (NULL != topmost_eq)
 		{
