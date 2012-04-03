@@ -7606,7 +7606,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT (in subj_dict any, in consts any, in go
           http ('      dict_bitor_or_put (res, vector ("s1", "p1", subj), 4); }\n', ses);
           http ('  }\n', ses);
           txt := string_output_string (ses);
-          -- dbg_obj_princ ('Procedure text: ', txt);
+          -- dbg_obj_princ ('Procedure text: ', txt); string_to_file (fname || '.sql', txt || '\n;', -2);
 	  saved_user := user;
 	  set_user_id ('dba', 1);
           exec (txt);
@@ -9283,7 +9283,7 @@ create function DB.DBA.JSO_VECTOR_TO_TTL (inout proplist any) returns any
       p := proplist[ctr][1];
       o := proplist[ctr][2];
       if (obj = prev_obj)
-        http (';\n  ', ses);
+        http (' ;\n  ', ses);
       else
         {
 	  if (prev_obj is null)
@@ -9296,7 +9296,7 @@ create function DB.DBA.JSO_VECTOR_TO_TTL (inout proplist any) returns any
 @prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#> .
 ', ses );
           else
-	    http ('.\n', ses);
+	    http (' .\n', ses);
 	  prev_obj := obj;
 	  DB.DBA.JSO_DUMP_FLD (obj, ses);
           http ('\n  ', ses);
@@ -9306,7 +9306,7 @@ create function DB.DBA.JSO_VECTOR_TO_TTL (inout proplist any) returns any
       DB.DBA.JSO_DUMP_FLD (o, ses);
     }
   if (prev_obj is not null)
-    http ('.\n', ses);
+    http (' .\n', ses);
   return ses;
 }
 ;
