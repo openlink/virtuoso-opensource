@@ -1201,13 +1201,19 @@ spar_graph_gp		/* [23]	GraphGraphPattern	 ::=  'GRAPH' VarOrBlankNodeOrIRIref Gr
 spar_group_or_union_gp	/* [24]	GroupOrUnionGraphPattern	 ::=  GroupGraphPattern ( 'UNION' GroupGraphPattern )*	*/
 	: _LBRA { spar_gp_init (sparp_arg, 0); } spar_group_gp { $$ = $3; }
 	| spar_group_or_union_gp UNION_L _LBRA {
-                sparp_env()->spare_good_graph_varnames = sparp_env()->spare_good_graph_bmk;
-		spar_gp_init (sparp_arg, UNION_L);
-		spar_gp_add_member (sparp_arg, $1);
+		sparp_env()->spare_good_graph_varnames = sparp_env()->spare_good_graph_bmk;
+		if (UNION_L != $1->_.gp.subtype) {
+		    spar_gp_init (sparp_arg, UNION_L);
+		    spar_gp_add_member (sparp_arg, $1); }
 		spar_gp_init (sparp_arg, 0); }
 	    spar_group_gp {
-		spar_gp_add_member (sparp_arg, $5);
-		$$ = spar_gp_finalize (sparp_arg, NULL); }
+		if (UNION_L != $1->_.gp.subtype) {
+		    spar_gp_add_member (sparp_arg, $5);
+		    $$ = spar_gp_finalize (sparp_arg, NULL); }
+		else {
+		    $$->_.gp.members = t_list_concat_tail ($$->_.gp.members, 1, $5);
+		    $$ = $1; }
+		}
 	;
 
 spar_constraint		/* [25]*	Constraint	 ::=  'FILTER' ( ( '(' Expn ')' ) | BuiltInCall | FunctionCall )	*/
