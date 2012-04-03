@@ -8940,8 +8940,15 @@ create procedure DB.DBA.RDF_DICT_OF_TRIPLES_TO_THREE_COLS (in dict any, in destr
   len := length (triples);
   for (ctr := 0; ctr < len; ctr := ctr+1)
     {
-      S := id_to_iri (triples[ctr][0]);
-      P := id_to_iri (triples[ctr][1]);
+      if (isiri_id (triples[ctr][0]))
+        S := id_to_iri (triples[ctr][0]);
+      else
+        S := triples[ctr][0];
+
+      if (isiri_id (triples[ctr][1]))
+        P := id_to_iri (triples[ctr][1]);
+      else
+        P := triples[ctr][1];
       O := triples[ctr][2];
       if (isiri_id (O))
         {
