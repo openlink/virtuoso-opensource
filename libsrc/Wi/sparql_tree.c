@@ -2833,17 +2833,23 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
               break;
           if (0 > var_pos)
             spar_internal_error (sparp, "sparp_" "tree_full_clone_int(): orig var is not in its eq");
+#if 0
           if (var_pos >= BOX_ELEMENTS (cloned_eq->e_vars))
             spar_internal_error (sparp, "sparp_" "tree_full_clone_int(): mismatch of lengths of buffers for variables in orig and clone equivs");
           if (NULL != cloned_eq->e_vars [var_pos])
             spar_internal_error (sparp, "sparp_" "tree_full_clone_int(): cloned variable overwrites an var in cloned equiv");
+          cloned_eq->e_vars [var_pos] = tgt;
+          if (cloned_eq->e_var_count <= var_pos)
+            cloned_eq->e_var_count = var_pos + 1;
+#else
+          if (BOX_ELEMENTS (cloned_eq->e_vars) <= cloned_eq->e_var_count)
+            spar_internal_error (sparp, "sparp_" "tree_full_clone_int(): mismatch of lengths of buffer for variables in clone equiv and the number of variables");
+          cloned_eq->e_vars [cloned_eq->e_var_count++] = tgt;
+#endif
           if (NULL != orig->_.var.tabid)
             cloned_eq->e_gspo_uses += 1;
           else
             cloned_eq->e_const_reads += 1;
-          cloned_eq->e_vars [var_pos] = tgt;
-          if (cloned_eq->e_var_count <= var_pos)
-            cloned_eq->e_var_count = var_pos + 1;
         }
       else
         {
@@ -2946,7 +2952,12 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
                 }
               END_DO_BOX_FAST_REV;
             }
+#if 0 /* old clone, with preserved positions of variables */
           cloned_eq->e_var_count = eq->e_var_count;
+#else
+          if (cloned_eq->e_var_count > eq->e_var_count)
+            spar_internal_error (sparp, "sparp_" "tree_full_clone_int(): mismatching number of cloned variables");
+#endif
           cloned_eq->e_gspo_uses = eq->e_gspo_uses;
           cloned_eq->e_nested_bindings = eq->e_nested_bindings;
           cloned_eq->e_const_reads = eq->e_const_reads;
