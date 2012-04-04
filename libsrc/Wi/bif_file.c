@@ -1899,7 +1899,7 @@ bif_virtuoso_ini_item_value (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
   pszSection = bif_string_arg (qst, args, 0, "virtuoso_ini_item_value");
   pszItemName = bif_string_arg (qst, args, 1, "virtuoso_ini_item_value");
 
-  if (!_bif_pconfig || cfg_refresh (_bif_pconfig) != 0)
+  if (!_bif_pconfig || cfg_refresh (_bif_pconfig) < 0)
     sqlr_new_error ("39000", "FA055", "Could not open %s ", f_config_file);
 
   if (cfg_find (_bif_pconfig, pszSection, pszItemName) == 0)
