@@ -1958,7 +1958,7 @@ http_cli_std_handle_redir (http_cli_ctx * ctx, caddr_t parm, caddr_t ret_val, ca
       ctx->hcctx_ssl_insecure = '\1';
       RELEASE (ctx->hcctx_proxy.hcp_proxy);
     }
-  else
+  else if (!strnicmp (url, "http://", 7))
     {
       ctx->hcctx_pkcs12_file = NULL;
     }
