@@ -1258,17 +1258,23 @@ spar_constraint_exists_int
 
 spar_service_req	/* [Virt]	ServiceRequest ::=  'SERVICE' IRIref ServiceOptionList? GroupGraphPattern	*/
 	: SERVICE_L spar_qm_iriref_const_expn {
+		caddr_t sinv_storage_uri;
 		sparp_arg->sparp_query_uses_sinvs++;
-		$<token_type>$ = sparp_arg->sparp_permitted_syntax;
+		sinv_storage_uri = uname_virtrdf_ns_uri_DefaultServiceStorage /*!!! TBD config */
+		/* if config is added above then tweak the check in sparp_gp_trav_add_graph_perm_read_filters and in SPAR_REQ_TOP case of ssg_sdprint_tree() */;
+		$<boxes>$ = t_list (5, t_box_num(sparp_arg->sparp_permitted_syntax), sparp_arg->sparp_env->spare_storage_name, sparp_arg->sparp_storage, (ptrlong)(sparp_arg->sparp_storage_is_set), sinv_storage_uri);
 		sparp_arg->sparp_permitted_syntax = SSG_SD_GLOBALS; /*!!! TBD config */
+		sparp_arg->sparp_env->spare_storage_name = sinv_storage_uri;
+		sparp_arg->sparp_storage = sparp_find_storage_by_name (sinv_storage_uri);
+		sparp_arg->sparp_storage_is_set = 1;
 		}
 	    spar_service_options_list_opt {
 		$<box>$ = t_alloc (sizeof (sparp_sources_t));
 		memcpy ($<box>$, &(sparp_arg->sparp_env->spare_src), sizeof (sparp_sources_t));
 		memset (&(sparp_arg->sparp_env->spare_src), 0, sizeof (sparp_sources_t)); }
 	    spar_dataset_clauses_opt _LBRA {
+		caddr_t sinv_storage_uri = $<boxes>3[4];
 		SPART **sources;
-		caddr_t sinv_storage_uri = uname_virtrdf_ns_uri_DefaultServiceStorage /*!!! TBD config */;
 		SPART *sinv;
 		if ((NULL == sparp_arg->sparp_env->spare_src.ssrc_default_graphs) && (NULL == sparp_arg->sparp_env->spare_src.ssrc_named_graphs))
 		  memcpy (&(sparp_arg->sparp_env->spare_src), $<box>5, sizeof (sparp_sources_t));
@@ -1278,7 +1284,10 @@ spar_service_req	/* [Virt]	ServiceRequest ::=  'SERVICE' IRIref ServiceOptionLis
 		t_set_push (&(sparp_env()->spare_context_sinvs), sinv);
 		spar_gp_init (sparp_arg, SERVICE_L); }
 	    spar_group_gp {
-		sparp_arg->sparp_permitted_syntax = $<token_type>3;
+		sparp_arg->sparp_permitted_syntax = unbox($<boxes>3[0]);
+		sparp_arg->sparp_env->spare_storage_name = $<boxes>3[1];
+		sparp_arg->sparp_storage = $<boxes>3[2];
+		sparp_arg->sparp_storage_is_set = $<boxes>3[3];
 		$9->_.gp.options = (SPART **)t_list_concat_tail (
 		  (caddr_t)($9->_.gp.options), 2,
 		  SPAR_SERVICE_INV, t_set_pop (&(sparp_env()->spare_context_sinvs)) );

@@ -5472,6 +5472,8 @@ sparp_gp_trav_add_graph_perm_read_filters (sparp_t *sparp, SPART *curr, sparp_tr
   if (sparp->sparp_query_uses_sinvs)
     { /* Bug 14737 fix: No permission filters should be placed inside service invocations */
       int sts_idx;
+      if (sparp->sparp_env->spare_storage_name == uname_virtrdf_ns_uri_DefaultServiceStorage)
+        return 0;
       if (NULL != sparp_get_option (sparp, curr->_.gp.options, SPAR_SERVICE_INV))
         return 0;
       for (sts_idx = 0; NULL != sts_this[sts_idx].sts_ancestor_gp; sts_idx++)

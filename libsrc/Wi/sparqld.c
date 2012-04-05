@@ -739,7 +739,7 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
         int from_count = 0;
         ssg->ssg_sd_single_from = NULL;
         ssg->ssg_sd_graph_gp_nesting = 0;
-        if (NULL != tree->_.req_top.storage_name)
+        if ((NULL != tree->_.req_top.storage_name) && (tree->_.req_top.storage_name != uname_virtrdf_ns_uri_DefaultServiceStorage))
           {
             if (!(SSG_SD_VIRTSPECIFIC & ssg->ssg_sd_flags))
               spar_error (ssg->ssg_sparp, "%.100s does not support Virtuoso-specific extensions (like define input:storage) so SPARQL query can not be composed", ssg->ssg_sd_service_name);
