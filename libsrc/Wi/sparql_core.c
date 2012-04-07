@@ -1542,7 +1542,7 @@ check_optionals:
     NULL,
     orig_selid,
     NULL, (ptrlong)(0), (ptrlong)(0), options );
-  if (CONSTRUCT_L != subtype) /* CONSTRUCT_L did not push to stack of selids, using one that will be used in WHERE_L */
+  if ((CONSTRUCT_L != subtype) && (WHERE_L != subtype)) /* CONSTRUCT_L did not push to stack of selids, using one that will be used in WHERE_L */
     spar_selid_pop (sparp);
   return res;
 }
