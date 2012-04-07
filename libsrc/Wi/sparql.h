@@ -38,6 +38,8 @@ extern "C" {
 
 #ifdef DEBUG
 #define SPARYYDEBUG
+#else
+#undef SPARQL_DEBUG
 #endif
 
 #ifdef SPARQL_DEBUG
@@ -838,9 +840,18 @@ extern caddr_t spar_mkid (sparp_t * sparp, const char *prefix);
 extern void spar_change_sign (caddr_t *lit_ptr);
 
 extern void sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t value);
+#ifdef SPARQL_DEBUG
+#define spar_selid_push(sparp) dbg_spar_selid_push (__FILE__, __LINE__, (sparp))
+#define spar_selid_push_reused(sparp,selid) dbg_spar_selid_push_reused (__FILE__, __LINE__, (sparp), (selid))
+#define spar_selid_pop(sparp) dbg_spar_selid_pop (__FILE__, __LINE__, (sparp))
+extern caddr_t dbg_spar_selid_push (DBG_PARAMS sparp_t *sparp);
+extern caddr_t dbg_spar_selid_push_reused (DBG_PARAMS sparp_t *sparp, caddr_t selid);
+extern caddr_t dbg_spar_selid_pop (DBG_PARAMS sparp_t *sparp);
+#else
 extern caddr_t spar_selid_push (sparp_t *sparp);
 extern caddr_t spar_selid_push_reused (sparp_t *sparp, caddr_t selid);
 extern caddr_t spar_selid_pop (sparp_t *sparp);
+#endif
 
 extern SPART *spar_find_defmacro_by_iri_or_fields (sparp_t *sparp, caddr_t mname, SPART **fields);
 extern void sparp_defmacro_store (sparp_t *sparp, SPART *defm);

@@ -1099,27 +1099,30 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
 }
 
 caddr_t
-spar_selid_push (sparp_t *sparp)
+DBG_NAME(spar_selid_push) (DBG_PARAMS sparp_t *sparp)
 {
   caddr_t selid = spar_mkid (sparp, "s");
   t_set_push (&(sparp->sparp_env->spare_selids), selid );
-  spar_dbg_printf (("spar_selid_push () pushes %s\n", selid));
+  spar_dbg_printf (("spar_selid_push () pushes %s at %s:%d\n", selid, file, line));
   return selid;
 }
 
 caddr_t
-spar_selid_push_reused (sparp_t *sparp, caddr_t selid)
+DBG_NAME(spar_selid_push_reused) (DBG_PARAMS sparp_t *sparp, caddr_t selid)
 {
   t_set_push (&(sparp->sparp_env->spare_selids), selid );
-  spar_dbg_printf (("spar_selid_push_reused () pushes %s\n", selid));
+  spar_dbg_printf (("spar_selid_push_reused () pushes %s at %s:%d\n", selid, file, line));
   return selid;
 }
 
 
-caddr_t spar_selid_pop (sparp_t *sparp)
+caddr_t
+DBG_NAME(spar_selid_pop) (DBG_PARAMS sparp_t *sparp)
 {
   caddr_t selid = (caddr_t)t_set_pop (&(sparp->sparp_env->spare_selids));
-  spar_dbg_printf (("spar_selid_pop () pops %s\n", selid));
+  spar_dbg_printf (("spar_selid_pop () pops %s at %s:%d\n", selid, file, line));
+  if (NULL == selid)
+    spar_internal_error (sparp, "spar_" "selid_pop(): weird state of the stack");
   return selid;
 }
 

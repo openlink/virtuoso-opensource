@@ -21,6 +21,7 @@
  *
  */
 
+#include "sparql.h"
 #include "sparql2sql.h"
 #include "sqlparext.h"
 #include "arith.h"
