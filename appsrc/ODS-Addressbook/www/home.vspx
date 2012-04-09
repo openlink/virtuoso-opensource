@@ -399,6 +399,8 @@
 
       self.i_source := -1;
       self.i_type := -1;
+      self.i_uUser := '';
+      self.i_uPassword := '';
       self.i_lName := '';
       self.i_lHost := '';
       self.i_lPort := '';
@@ -595,6 +597,8 @@
 
       <v:variable name="i_source" type="any" default="-1"/>
       <v:variable name="i_type" type="any" default="-1"/>
+      <v:variable name="i_uUser" type="varchar" default="''" />
+      <v:variable name="i_uPassword" type="varchar" default="''" />
       <v:variable name="i_lName" type="varchar" default="''"/>
       <v:variable name="i_lHost" type="varchar" default="''"/>
       <v:variable name="i_lPort" type="varchar" default="'389'"/>
@@ -3006,6 +3010,17 @@
                         </label>
                         <br />
                         <label>
+                          <v:radio-button name="i_source_5" xhtml_id="i_source_5" group-name="i_source" value="5" xhtml_onchange="javascript: destinationChange(this, {hide: [\'imp_tr_0\', \'imp_tr_1\', \'imp_tr_2\']});">
+                            <v:before-render>
+                              <![CDATA[
+                                control.ufl_selected := either (equ (self.i_source, 5), 1, 0);
+                              ]]>
+                            </v:before-render>
+                          </v:radio-button>
+                          <b>CardDAV</b>
+                        </label>
+                        <br />
+                        <label>
                           <v:radio-button name="i_source_2" xhtml_id="i_source_2" group-name="i_source" value="2" xhtml_onchange="javascript: destinationChange(this, {show: [\'imp_tr_0\', \'imp_tr_1\', \'imp_tr_2\']});">
 	                      <v:before-render>
 	                        <![CDATA[
@@ -3096,6 +3111,11 @@
                         {
                           self.i_source := 4;
                           self.i_type   := 4;
+                        }
+                        else if (self.i_source_5.ufl_selected)
+                        {
+                          self.i_source := 5;
+                          self.i_type   := 5;
                         }
                         else
                         {
@@ -3202,7 +3222,7 @@
                         Select file
 		                  </th>
 		                  <td>
-                        <input type="file" name="f_file" size="40"/>
+                          <input type="file" name="f_file" size="60" />
 		                  </td>
 		                </tr>
                   </vm:if>
@@ -3212,7 +3232,7 @@
 	                      Select WebDAV file
 		                  </th>
 		                  <td>
-                        <v:text name="f_dav" xhtml_id="f_dav" value="" xhtml_size="40" />
+                          <v:text name="f_dav" xhtml_id="f_dav" value="" xhtml_size="60" />
                           <input type="button" value="Browse..." onclick="davBrowse ('f_dav');" />
                        		  <![CDATA[
                     		    <script type="text/javascript">
@@ -3222,7 +3242,7 @@
 		                  </td>
 		                </tr>
                   </vm:if>
-                  <vm:if test="self.i_source = 2">
+                    <vm:if test="self.i_source = 2 or self.i_source = 5">
                     <tr>
 		                  <th width="30%">
                           Select URI
@@ -3231,6 +3251,36 @@
                         <v:text name="f_uri" value="--''" xhtml_size="60" />
                       </td>
                     </tr>
+                      <vm:if test="self.i_source = 5">
+                        <tr>
+                          <th>
+                            User
+                          </th>
+                          <td>
+                            <v:text name="f_uUser" null-value="--self.i_uUser" value="--''" xhtml_size="30">
+                               <v:before-render>
+                                <![CDATA[
+                                  control.ufl_value := self.i_uUser;
+                                ]]>
+                              </v:before-render>
+                            </v:text>
+                          </td>
+                        </tr>
+                        <tr>
+                          <th>
+                            Password
+                          </th>
+                          <td>
+                            <v:text name="f_uPassword" type="password" null-value="--self.i_uPassword" value="--''" xhtml_size="30">
+                               <v:before-render>
+                                <![CDATA[
+                                  control.ufl_value := self.i_uPassword;
+                                ]]>
+                              </v:before-render>
+                            </v:text>
+                          </td>
+                        </tr>
+                      </vm:if>
                       <vm:if test="self.i_type = 1">
                         <tr>
                           <th>
@@ -3485,6 +3535,19 @@
                       	host := 'ldap://' || self.i_lHost || ':' || self.i_lPort;
                         self.i_data := ldap_search (host, 0, self.i_lBase_dn, self.i_lSearch, self.i_lBind_dn, self.i_lPassword);
 	                    }
+                        else if (self.i_source = 5)
+                        {
+                          self.i_uUser := trim (self.f_uUser.ufl_value);
+                          self.i_uPassword := trim (self.f_uPassword.ufl_value);
+                          self.f_uri.ufl_value := trim (self.f_uri.ufl_value);
+                          if (is_empty_or_null (self.f_uri.ufl_value))
+                            signal ('TEST', 'Please select correct URL address!');
+
+                          if (not AB.WA.import_CardDAV_check (self.f_uri.ufl_value, vector ('user', self.i_uUser, 'password', self.i_uPassword), 1))
+                            signal ('TEST', 'Bad CardDAV source!');
+
+                          self.i_data := self.f_uri.ufl_value;
+                        }
 
                         self.i_number := 0;
                         if (self.i_type = 1)
@@ -3505,6 +3568,10 @@
 
                           self.i_number := AB.WA.import_count (self.i_type, self.i_data);
                       }
+                        else if (self.i_type = 5)
+                        {
+                          self.i_number := AB.WA.import_CardDAV_count (self.f_uri.ufl_value, vector ('user', self.i_uUser, 'password', self.i_uPassword), 1);
+                        }
                         else
                         {
                           self.i_number := AB.WA.import_count (self.i_type, self.i_data);
@@ -3513,7 +3580,7 @@
                           signal ('TEST', 'Import target data not found!<>');
 
                         -- next step
-                      if (self.i_type = 0)
+                        if ((self.i_type = 0) or (self.i_type = 5))
                         {
                           self.abStep := '5';
                         }
@@ -3643,7 +3710,9 @@
                             self.abStep := '4';
 
                           AB.WA.push (self.abSteps, '3');
-                      } else {
+                        }
+                        else
+                        {
                           self.resetImport (0);
                           self.abAction := 'import';
                       }
@@ -4135,7 +4204,9 @@
                           if (self.i_source = 2)
                           {
                       options := vector ('tags', self.v_tags, 'mode', 2);
-                          } else {
+                    }
+                    else
+                    {
                       options := vector ('tags', self.v_tags);
                           }
                   }
@@ -4158,6 +4229,11 @@
                   {
                     -- LinkedIn
                     options := vector ('tags', self.v_tags);
+                  }
+                  else if (self.i_type = 5)
+                  {
+                    -- CalDAV
+                    options := vector ('tags', self.v_tags, 'user', self.i_uUser, 'password', self.i_uPassword);
                   }
 
                   if (self.v_grants <> '')
@@ -5048,7 +5124,7 @@
                     </tr>
                     <vm:if test="self.abSubAction not in ('syncmlCreate', 'syncmlUpdate')">
                     <tr>
-                      <th rowspan="2" valign="top">
+                        <th rowspan="3" valign="top">
                         <?V case when (self.abSubAction in ('publishCreate', 'publishUpdate')) then 'Destination' else  'Source' end ?> type
                       </th>
                       <td nowrap="nowarap">
@@ -5067,6 +5143,20 @@
                     <tr>
                       <td nowrap="nowarap">
                         <label>
+                            <v:radio-button name="exc_options_type_3" group-name="exc_options_type" value="3" xhtml_onchange="javascript: destinationChange(this, {hide: [\'exc_options_name_button\'], clear: [\'exc_options_name\']});">
+                              <v:before-render>
+                                <![CDATA[
+                                  control.ufl_selected := either (equ (get_keyword ('type', coalesce (self.ve_options, vector ()), 1), 3), 1, 0);
+                                ]]>
+                              </v:before-render>
+                            </v:radio-button>
+                            <b>CardDAV Path</b>
+                          </label>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td nowrap="nowarap">
+                          <label>
                           <v:radio-button name="exc_options_type_2" group-name="exc_options_type" value="2" xhtml_onchange="javascript: destinationChange(this, {hide: [\'exc_options_name_button\'], clear: [\'exc_options_name\']});">
                             <v:before-render>
                               <![CDATA[
@@ -5218,6 +5308,10 @@
                         {
                           _type := 2;
                         }
+                          else if (self.exc_options_type_3.ufl_selected)
+                          {
+                            _type := 3;
+                          }
                         }
                         _name := trim (self.exc_options_name.ufl_value);
                         if (self.abSubAction in ('syncmlCreate', 'syncmlUpdate'))

@@ -120,9 +120,21 @@ create function "CardDAV_DAV_AUTHENTICATE_HTTP" (
 ;
 
 --| This matches DAV_GET_PARENT (in id any, in st char(1), in path varchar) returns any
-create function "CardDAV_DAV_GET_PARENT" (in id any, in st char(1), in path varchar) returns any
+create function "CardDAV_DAV_GET_PARENT" (
+  in id any,
+  in what char(1),
+  in path varchar) returns any
 {
-  -- dbg_obj_princ ('CardDAV_DAV_GET_PARENT (', id, st, path, ')');
+  -- dbg_obj_princ ('CardDAV_DAV_GET_PARENT (', id, what, path, ')');
+  if ('R' = what)
+{
+    id[4] := 0;
+
+    return id;
+  }
+  if ('C' = what)
+    return id[1];
+
   return -20;
 }
 ;
@@ -184,13 +196,13 @@ create function "CardDAV_DAV_RES_UPLOAD" (
   in detcol_id any,
   in path_parts any,
   inout content any,
-  in what varchar,
+  in type varchar,
   in permissions varchar,
   in uid integer,
   in gid integer,
   in auth_uid integer) returns any
 {
-  --dbg_obj_princ ('CardDAV_DAV_RES_UPLOAD (', detcol_id, path_parts, ', [content], ', content, what, permissions, uid, gid, auth_uid, ')');
+  --dbg_obj_princ ('CardDAV_DAV_RES_UPLOAD (', detcol_id, path_parts, ', [content], ', content, type, permissions, uid, gid, auth_uid, ')');
   declare top_id, res any;
   declare owner_uid, domain_id, item_id, rc integer;
 
@@ -320,8 +332,13 @@ create function "CardDAV_DAV_PROP_LIST" (in id any, in what char(0), in propmask
 ;
 
 --| When DAV_PROP_GET_INT or DAV_DIR_LIST_INT calls DET function, authentication is performed before the call.
-create function "CardDAV_DAV_DIR_SINGLE" (in id any, in what char(0), in path any, in auth_uid integer) returns any
+create function "CardDAV_DAV_DIR_SINGLE" (
+  in id any,
+  in what char(0),
+  in path any,
+  in auth_uid integer) returns any
 {
+  -- dbg_obj_princ ('CardDAV_DAV_DIR_SINGLE (', id, what, path, auth_uid, ')');
   declare domain_id integer;
   declare colname, fullpath, rightcol varchar;
   declare maxrcvdate datetime;
@@ -486,16 +503,19 @@ create procedure "CardDAV_DAV_FC_TABLE_METAS" (inout table_metas any)
     'all-tags'    , vector ( '', '', 'P_TAGS'  , 'P_TAGS'  , NULL  ),
     'fake-prop' , vector (  '\n  inner join WS.WS.SYS_DAV_PROP as ^{alias}^ on ((^{alias}^.PROP_PARENT_ID is null) and (^{alias}^.PROP_TYPE = ''R'')^{andpredicates}^)' ,
                     '\n  exists (select 1 from WS.WS.SYS_DAV_PROP as ^{alias}^ where (^{alias}^.PROP_PARENT_ID is null) and (^{alias}^.PROP_TYPE = ''R'')^{andpredicates}^)'    ,
-                        'PROP_VALUE'    , 'PROP_VALUE'  , '[__quiet __davprop xmlns:virt="virt"] fakepropthatprobablyneverexists'   )
+                             'PROP_VALUE',
+                             'PROP_VALUE',
+                             '[__quiet __davprop xmlns:virt="virt"] fakepropthatprobablyneverexists')
     );
 }
 ;
 
 create function "CardDAV_DAV_FC_PRINT_WHERE" (inout filter any, in param_uid integer) returns varchar
 {
+  -- dbg_obj_princ ('CardDAV_DAV_FC_PRINT_WHERE (', filter, param_uid, ')');
   declare pred_metas, cmp_metas, table_metas any;
   declare used_tables any;
-  -- dbg_obj_princ ('Blog_POST_DAV_FC_PRINT_WHERE (', filter, param_uid, ')');
+
   "CardDAV_DAV_FC_PRED_METAS" (pred_metas);
   DAV_FC_CMP_METAS (cmp_metas);
   "CardDAV_DAV_FC_TABLE_METAS" (table_metas);
@@ -776,7 +796,9 @@ create function "CardDAV_DAV_LOCK" (
   -- dbg_obj_princ ('CardDAV_DAV_LOCK (', path, id, what, locktype, scope, token, owner_name, owned_tokens, depth, timeout_sec, auth_uid, ')');
   declare rc any;
   declare domain_id, item_id integer;
+  declare name, uid varchar;
 
+  rc := 0;
   if (what = 'C')
   {
     rc := -27;
@@ -797,6 +819,26 @@ create function "CardDAV_DAV_LOCK" (
     goto _exit;
 }
 
+  if (exists (select 1 from AB.WA.PERSONS where P_DOMAIN_ID = domain_id and P_ID = item_id and P_NAME = 'LOCK' and dateadd ('second', -1, now()) > P_UPDATED))
+  {
+    rc := lower (uuid());
+    update AB.WA.PERSONS
+       set P_NAME = 'LOCK',
+           P_FIRST_NAME = rc
+     where P_DOMAIN_ID = domain_id
+       and P_ID = item_id;
+
+    goto _exit;
+  }
+
+  uid := (select P_UID from AB.WA.PERSONS where P_DOMAIN_ID = domain_id and P_ID = item_id);
+  if (path like ('%' || CardDAV__COMPOSE_ICS_NAME (uid)))
+  {
+    rc := lower (uuid());
+
+    goto _exit;
+  }
+
   rc := -20;
 
 _exit:;
@@ -812,10 +854,26 @@ create function "CardDAV_DAV_UNLOCK" (
   in auth_uid integer)
 {
   -- dbg_obj_princ ('CardDAV_DAV_UNLOCK (', id, what, token, auth_uid, ')');
-  if (isinteger (id) and (id = -1))
-    return 1;
+  declare rc any;
+  declare domain_id, item_id integer;
 
-  return -27;
+  rc := 0;
+  domain_id := id[3];
+  item_id := id[4];
+  if (exists (select 1 from AB.WA.PERSONS where P_DOMAIN_ID = domain_id and P_ID = item_id and P_NAME = 'LOCK'))
+  {
+    update AB.WA.PERSONS
+       set P_NAME = 'UNLOCK',
+           P_FIRST_NAME = null
+     where P_DOMAIN_ID = domain_id
+       and P_ID = item_id;
+
+    rc := -27;
+    goto _exit;
+  }
+
+_exit:;
+  return rc;
 }
 ;
 
