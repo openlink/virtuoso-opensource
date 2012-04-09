@@ -6582,6 +6582,7 @@ create procedure CAL.WA.import_CalDAV (
 		_items := xpath_eval ('[xmlns:D="DAV:" xmlns="urn:ietf:params:xml:ns:caldav:"] /D:multistatus/D:response/D:href/text()', _xml, 0);
 		foreach (any _item in _items) do
 		{
+		  commit work;
       _body := sprintf (_bodyTemplate, cast (_item as varchar));
       _page := http_client_ext (url=>_name, http_method=>'REPORT', http_headers=>_reqHeader, headers =>_resHeader, body=>_body, n_redirects=>15);
       CAL.WA.http_error (_resHeader);

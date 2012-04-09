@@ -3949,10 +3949,10 @@
           <table cellspacing="0">
             <tr>
                     <th rowspan="4" valign="top" width="30%">
-                  <v:label for="i_file" value="Source type" />
+                      Source type
               </th>
                 <td nowrap="nowarap">
-                      <v:radio-button name="icSource_0" xhtml_id="icSource_0" group-name="icSource" value="0" xhtml_onchange="javascript: destinationChange(this, {show: [\'imp_td_0\'], hide: [\'imp_td_1\', \'imp_td_2\', \'imp_tr_31\', \'imp_tr_32\']});">
+                      <v:radio-button name="icSource_0" xhtml_id="icSource_0" group-name="icSource" value="0" xhtml_onchange="javascript: destinationChange(this, {show: [\'imp_td_0\'], hide: [\'imp_td_1\', \'imp_td_2\', \'imp_tr_31\', \'imp_tr_32\'], exec: [srcImportLabel]});">
                     <v:before-render>
                       <![CDATA[
                         control.ufl_selected := either(lte(self.icSource, 0), 1, 0);
@@ -3965,7 +3965,7 @@
               </tr>
               <tr>
                 <td nowrap="nowarap">
-                      <v:radio-button name="icSource_1" xhtml_id="icSource_1" group-name="icSource" value="1" xhtml_onchange="javascript: destinationChange(this, {show: [\'imp_td_1\', \'imp_tr_31\', \'imp_tr_32\'], hide: [\'imp_td_0\', \'imp_td_2\']});">
+                      <v:radio-button name="icSource_1" xhtml_id="icSource_1" group-name="icSource" value="1" xhtml_onchange="javascript: destinationChange(this, {show: [\'imp_td_1\', \'imp_tr_31\', \'imp_tr_32\'], hide: [\'imp_td_0\', \'imp_td_2\'], exec: [srcImportLabel]});">
                     <v:before-render>
                       <![CDATA[
                         control.ufl_selected := either(equ(self.icSource, 1), 1, 0);
@@ -3978,7 +3978,7 @@
               </tr>
               <tr>
                 <td nowrap="nowarap">
-                      <v:radio-button name="icSource_3" xhtml_id="icSource_3" group-name="icSource" value="3" xhtml_onchange="javascript: destinationChange(this, {show: [\'imp_td_2\', \'imp_tr_31\', \'imp_tr_32\'], hide: [\'imp_td_0\', \'imp_td_1\']});">
+                      <v:radio-button name="icSource_3" xhtml_id="icSource_3" group-name="icSource" value="3" xhtml_onchange="javascript: destinationChange(this, {show: [\'imp_td_2\', \'imp_tr_31\', \'imp_tr_32\'], hide: [\'imp_td_0\', \'imp_td_1\'], exec: [srcImportLabel]});">
                         <v:before-render>
                           <![CDATA[
                             control.ufl_selected := either(equ(self.icSource, 3), 1, 0);
@@ -3986,12 +3986,12 @@
                         </v:before-render>
                       </v:radio-button>
                       &nbsp;
-                      <b><vm:label for="icSource_2" value="--'CalDAV'" /></b>
+                      <b><vm:label for="icSource_3" value="--'CalDAV'" /></b>
                     </td>
                   </tr>
                   <tr>
                     <td nowrap="nowarap">
-                      <v:radio-button name="icSource_2" xhtml_id="icSource_2" group-name="icSource" value="2" xhtml_onchange="javascript: destinationChange(this, {show: [\'imp_td_2\', \'imp_tr_31\', \'imp_tr_32\'], hide: [\'imp_td_0\', \'imp_td_1\']});">
+                      <v:radio-button name="icSource_2" xhtml_id="icSource_2" group-name="icSource" value="2" xhtml_onchange="javascript: destinationChange(this, {show: [\'imp_td_2\', \'imp_tr_31\', \'imp_tr_32\'], hide: [\'imp_td_0\', \'imp_td_1\'], exec: [srcImportLabel]});">
                     <v:before-render>
                       <![CDATA[
                         control.ufl_selected := either(equ(self.icSource, 2), 1, 0);
@@ -4004,7 +4004,7 @@
             </tr>
                 <tr>
                     <th>
-                      Source name
+                      <span id="srcLabel">Local File Name (.ics)</span>
                   </th>
                     <td>
                       <span id="imp_td_0" style="display: <?V case when self.icSource < 1 then '' else 'none' end ?>;">
@@ -4077,6 +4077,14 @@
                     </td>
                   </tr>
           </table>
+                <script type="text/javascript">
+                  <![CDATA[
+                    destinationChange($('icSource_0'), {show: ['imp_td_0'], hide: ['imp_td_1', 'imp_td_2', 'imp_tr_31', 'imp_tr_32'], exec: [srcImportLabel]});
+                    destinationChange($('icSource_1'), {show: ['imp_td_1', 'imp_tr_31', 'imp_tr_32'], hide: ['imp_td_0', 'imp_td_2'], exec: [srcImportLabel]});
+                    destinationChange($('icSource_2'), {show: ['imp_td_2', 'imp_tr_31', 'imp_tr_32'], hide: ['imp_td_0', 'imp_td_1'], exec: [srcImportLabel]});
+                    destinationChange($('icSource_3'), {show: ['imp_td_2', 'imp_tr_31', 'imp_tr_32'], hide: ['imp_td_0', 'imp_td_1'], exec: [srcImportLabel]});
+                  ]]>
+                </script>
         </div>
 
               <div class="form-footer">
@@ -4103,11 +4111,7 @@
                         self.icSource := 0;
                     content := trim(get_keyword ('f_file', self.vc_page.vc_event.ve_params, ''));
                           if (is_empty_or_null (content))
-                          {
-                      self.vc_error_message := 'Please select file from your local file system!';
-                      self.vc_is_valid := 0;
-                      return;
-                    }
+                          signal ('TEST', 'Please select file from your local file system!');
                     }
                       else if (self.icSource_1.ufl_selected)
                       {
@@ -4116,46 +4120,28 @@
                         tmp := http_physical_path_resolve (replace (self.f_dav.ufl_value, ' ', '%20'));
                         content := CAL.WA.dav_content (CAL.WA.host_url () || tmp, 1, self.icUser, self.icPassword);
                           if (isnull(content))
-                          {
-                      self.vc_error_message := 'Bad import source!';
-                      self.vc_is_valid := 0;
-                      return;
-                    }
+                          signal ('TEST', 'Bad import source!');
                       }
                       else if (self.icSource_2.ufl_selected)
                       {
                         self.icSource := 2;
                     self.f_uri.ufl_value := trim(self.f_uri.ufl_value);
                           if (is_empty_or_null (self.f_uri.ufl_value))
-                          {
-                      self.vc_error_message := 'Please select correct URL address!';
-                      self.vc_is_valid := 0;
-                      return;
-                    }
+                          signal ('TEST', 'Please select correct URL address!');
+
                         content := CAL.WA.dav_content (self.f_uri.ufl_value, 1, self.icUser, self.icPassword);
                           if (isnull(content))
-                          {
-                      self.vc_error_message := 'Bad URL source!';
-                      self.vc_is_valid := 0;
-                      return;
-                    }
+                          signal ('TEST', 'Bad URL source!');
                   }
                       else if (self.icSource_3.ufl_selected)
                       {
                         self.icSource := 3;
                         self.f_uri.ufl_value := trim (self.f_uri.ufl_value);
                         if (is_empty_or_null (self.f_uri.ufl_value))
-                        {
-                          self.vc_error_message := 'Please select correct URL address!';
-                          self.vc_is_valid := 0;
-                          return;
-                        }
+                          signal ('TEST', 'Please select correct URL address!');
+
                         if (not CAL.WA.import_CalDAV_check (self.f_uri.ufl_value, vector ('user', self.icUser, 'password', self.icPassword), 1))
-                        {
-                          self.vc_error_message := 'Bad CalDAV source!';
-                          self.vc_is_valid := 0;
-                          return;
-                        }
+                          signal ('TEST', 'Bad CalDAV source!');
                       }
 
                   -- test tags value

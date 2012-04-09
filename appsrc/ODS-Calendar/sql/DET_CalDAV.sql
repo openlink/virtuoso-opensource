@@ -512,7 +512,7 @@ create procedure "CalDAV_DAV_FC_TABLE_METAS" (inout table_metas any)
 
 create function "CalDAV_DAV_FC_PRINT_WHERE" (inout filter any, in param_uid integer) returns varchar
 {
-  -- dbg_obj_princ ('Blog_POST_DAV_FC_PRINT_WHERE (', filter, param_uid, ')');
+  -- dbg_obj_princ ('CalDAV_DAV_FC_PRINT_WHERE (', filter, param_uid, ')');
   declare pred_metas, cmp_metas, table_metas any;
   declare used_tables any;
 
@@ -810,15 +810,14 @@ create function "CalDAV_DAV_LOCK" (
   declare name, uid varchar;
 
   rc := 0;
-  domain_id := id[3];
-  item_id := id[4];
-
   if (what = 'C')
   {
     rc := -27;
     goto _exit;
   }
 
+  domain_id := id[3];
+  item_id := id[4];
   if (exists (select 1 from CAL.WA.EVENTS where E_DOMAIN_ID = domain_id and E_ID = item_id and E_SUBJECT = 'UNLOCK'))
   {
     rc := lower (uuid());
@@ -917,7 +916,10 @@ _exit:;
 
 --| The caller does not check if id is valid.
 --| This returns -1 if id is not valid, list of tuples (LOCK_TYPE, LOCK_SCOPE, LOCK_TOKEN, LOCK_TIMEOUT, LOCK_OWNER, LOCK_OWNER_INFO) otherwise.
-create function "CalDAV_DAV_LIST_LOCKS" (in id any, in what char(1), in recursive integer) returns any
+create function "CalDAV_DAV_LIST_LOCKS" (
+  in id any,
+  in what char(1),
+  in recursive integer) returns any
 {
   -- dbg_obj_princ ('CalDAV_DAV_LIST_LOCKS" (', id, what, recursive);
   return vector ();

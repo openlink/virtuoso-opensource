@@ -885,6 +885,24 @@ function destinationChange(obj, actions) {
 				o.value = '';
 			}
     }
+	if (actions.exec) {
+		var a = actions.exec;
+		for ( var i = 0; i < a.length; i++) {
+			a[i](obj);
+		}
+	}
+}
+
+function srcImportLabel(obj) {
+  var srcLabel = $('srcLabel');
+  if ($('icSource_0').checked)
+    srcLabel.innerHTML = 'Local File Name (.ics)';
+  if ($('icSource_1').checked)
+    srcLabel.innerHTML = 'WebDAV File URL (.ics)';
+  if ($('icSource_3').checked)
+    srcLabel.innerHTML = 'CalDAV URL';
+  if ($('icSource_2').checked)
+    srcLabel.innerHTML = 'File URL (.ics)';
   }
 
 var CAL = new Object();
