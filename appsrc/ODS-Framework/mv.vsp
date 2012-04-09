@@ -28,7 +28,11 @@
      {
        declare mbox, digest, id, mu, https, sender, sid, accept, fmt, cb any;
        accept := http_request_header_full (lines, 'Accept', '*/*');
+       fmt := {?'format'};
+       if (length (fmt) = 0)
+         {
        fmt := DB.DBA.HTTP_RDF_GET_ACCEPT_BY_Q (accept);
+         }
        if (fmt = 'application/json')
          http_header ('Content-Type: application/json\r\n');
        mbox := {?'mbox'};

@@ -48,27 +48,6 @@
 <%@ page import="org.apache.commons.fileupload.*" %>
 <%@ page import="org.apache.commons.fileupload.disk.*" %>
 <%@ page import="org.apache.commons.fileupload.servlet.*" %>
-<html>
-  <head>
-    <title>Virtuoso Web Applications</title>
-    <link rel="stylesheet" type="text/css" href="/ods/users/css/users.css" />
-    <link rel="stylesheet" type="text/css" href="/ods/default.css" />
-    <link rel="stylesheet" type="text/css" href="/ods/nav_framework.css" />
-    <link rel="stylesheet" type="text/css" href="/ods/typeahead.css" />
-    <link rel="stylesheet" type="text/css" href="/ods/ods-bar.css" />
-    <link rel="stylesheet" type="text/css" href="/ods/rdfm.css" />
-    <script type="text/javascript" src="/ods/users/js/users.js"></script>
-    <script type="text/javascript" src="/ods/common.js"></script>
-    <script type="text/javascript" src="/ods/typeahead.js"></script>
-    <script type="text/javascript" src="/ods/tbl.js"></script>
-    <script type="text/javascript" src="/ods/validate.js"></script>
-    <script type="text/javascript">
-      // OAT
-      var toolkitPath="/ods/oat";
-      var featureList = ["ajax", "json", "tab", "combolist", "calendar", "rdfmini", "grid", "graphsvg", "tagcloud", "map", "timeline", "anchor"];
-    </script>
-    <script type="text/javascript" src="/ods/oat/loader.js"></script>
-  </head>
   <%!
     XPathFactory factory = XPathFactory.newInstance();
     XPath xpath = factory.newXPath();
@@ -353,6 +332,9 @@
     String $_formMode = "";
     if (getParameter(items, request, "formMode") != null)
       $_formMode = getParameter(items, request, "formMode");
+  String $_host;
+  String $_hostLinks = "";
+  String $_userLinks = "";
 
     try
     {
@@ -1009,12 +991,63 @@
       {
         $_sid = "";
       }
+
+    $_host = (new URL(request.getScheme(), request.getServerName(), request.getServerPort(), "")).toString();
+    $_hostLinks =
+      "    <link rel=\"openid.server\" title=\"OpenID Server\" href=\"[HOST]/openid\" />\n" +
+      "    <link rel=\"openid2.provider\" title=\"OpenID v2 Server\" href=\"[HOST]/openid\" />";
+    $_hostLinks = $_hostLinks.replace ("[HOST]", $_host);
+
+    if ($_userName != null) {
+      $_userLinks =
+        "    <link rel=\"meta\" type=\"application/rdf+xml\" title=\"SIOC\" href=\"[HOST]/dataspace/[USER]/sioc.rdf\" />\n" +
+        "    <link rel=\"meta\" type=\"application/rdf+xml\" title=\"FOAF\" href=\"[HOST]/dataspace/person/[USER]/foaf.rdf\" />\n" +
+        "    <link rel=\"meta\" type=\"text/rdf+n3\" title=\"FOAF\" href=\"[HOST]/dataspace/person/[USER]/foaf.n3\" />\n" +
+        "    <link rel=\"meta\" type=\"application/json\" title=\"FOAF\" href=\"[HOST]/dataspace/person/[USER]/foaf.json\" />\n" +
+        "    <link rel=\"http://xmlns.com/foaf/0.1/primaryTopic\"  title=\"About\" href=\"[HOST]/dataspace/person/[USER]#this\" />\n" +
+        "    <link rel=\"schema.dc\" href=\"http://purl.org/dc/elements/1.1/\" />\n" +
+        "    <meta name=\"dc.language\" content=\"en\" scheme=\"rfc1766\" />\n" +
+        "    <meta name=\"dc.creator\" content=\"[USER]\" />\n" +
+        "    <meta name=\"dc.description\" content=\"ODS HTML [USER]'s page\" />\n" +
+        "    <meta name=\"dc.title\" content=\"ODS HTML [USER]'s page\" />\n" +
+        "    <link rev=\"describedby\" title=\"About\" href=\"[HOST]/dataspace/person/[USER]#this\" />\n" +
+        "    <link rel=\"schema.geo\" href=\"http://www.w3.org/2003/01/geo/wgs84_pos#\" />\n" +
+        "    <meta http-equiv=\"X-XRDS-Location\" content=\"[HOST]/dataspace/[USER]/yadis.xrds\" />\n" +
+        "    <meta http-equiv=\"X-YADIS-Location\" content=\"[HOST]/dataspace/[USER]/yadis.xrds\" />\n" +
+        "    <link rel=\"meta\" type=\"application/xml+apml\" title=\"APML 0.6\" href=\"[HOST]/dataspace/[USER]/apml.xml\" />\n" +
+        "    <link rel=\"alternate\" type=\"application/atom+xml\" title=\"OpenSocial Friends\" href=\"[HOST]/feeds/people/[USER]/friends\" />";
+      $_userLinks = $_userLinks.replace ("[HOST]", $_host);
+      $_userLinks = $_userLinks.replace ("[USER]", $_userName);
+    }
     }
     catch (Exception e)
     {
       $_error = "Failure: " + e.getMessage();
     }
   %>
+<html>
+  <head>
+    <title>ODS user's pages</title>
+<% out.print($_hostLinks); %>
+<% out.print($_userLinks); %>
+    <link rel="stylesheet" type="text/css" href="/ods/users/css/users.css" />
+    <link rel="stylesheet" type="text/css" href="/ods/default.css" />
+    <link rel="stylesheet" type="text/css" href="/ods/nav_framework.css" />
+    <link rel="stylesheet" type="text/css" href="/ods/typeahead.css" />
+    <link rel="stylesheet" type="text/css" href="/ods/ods-bar.css" />
+    <link rel="stylesheet" type="text/css" href="/ods/rdfm.css" />
+    <script type="text/javascript" src="/ods/users/js/users.js"></script>
+    <script type="text/javascript" src="/ods/common.js"></script>
+    <script type="text/javascript" src="/ods/typeahead.js"></script>
+    <script type="text/javascript" src="/ods/tbl.js"></script>
+    <script type="text/javascript" src="/ods/validate.js"></script>
+    <script type="text/javascript">
+      // OAT
+      var toolkitPath="/ods/oat";
+      var featureList = ["ajax", "json", "tab", "combolist", "calendar", "rdfmini", "grid", "graphsvg", "tagcloud", "map", "timeline", "anchor"];
+    </script>
+    <script type="text/javascript" src="/ods/oat/loader.js"></script>
+  </head>
   <body>
     <form name="page_form" id="page_form" method="post" enctype="<% out.print(($_form.equals("profile") && ($_formTab == 0) && ($_formTab2 == 1))? "multipart/form-data": "application/x-www-form-urlencoded"); %>">
       <input type="hidden" name="mode" id="mode" value="jsp" />

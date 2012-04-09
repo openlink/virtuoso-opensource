@@ -118,6 +118,15 @@ function validateWebID(fld)
   return validateError(fld, 'Invalid URI address');
 }
 
+function validateDigest(fld)
+{
+  var regex = /^di:[^ <>]+$/;
+  if (regex.test(fld.value))
+    return true;
+
+  return validateError(fld, 'Invalid URI address');
+}
+
 function validateField(fld)
 {
   if ((fld.value.length == 0) && OAT.Dom.isClass(fld, '_canEmpty_'))
@@ -138,6 +147,8 @@ function validateField(fld)
     return validateURI(fld);
   if (OAT.Dom.isClass(fld, '_webid_'))
     return validateWebID(fld);
+  if (OAT.Dom.isClass(fld, '_digest_'))
+    return validateDigest(fld);
   if (fld.value.length == 0)
     return validateError(fld, 'Field cannot be empty');
   return true;

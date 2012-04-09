@@ -3665,6 +3665,8 @@ create procedure instance_sioc_data (
     {
       SIOC..private_init ();
       SIOC..private_graph_add (graph_iri);
+      if (not SIOC..private_graph_check (graph_iri))
+        return;
     }
 
     site_iri := get_graph ();
@@ -3678,7 +3680,11 @@ create procedure instance_sioc_data (
 	    call (svc_proc_name) (graph_iri, forum_iri, _WAM_USER, _WAM_INST);
     }
   if (not _WAM_IS_PUBLIC)
+  {
     SIOC..private_user_add (graph_iri, _WAM_USER);
+    if (not SIOC..private_graph_check (graph_iri))
+      return;
+  }
 
   user_iri := user_iri (_WAM_USER);
   role_iri := role_iri_by_name (_WAM_INST, _WAM_USER);
@@ -3872,26 +3878,48 @@ create procedure SIOC..private_graph ()
 
 create procedure SIOC..private_init ()
 {
+  declare exit handler for sqlstate '*' {return 0;};
+
   -- create private graph group (if not exists)
   DB.DBA.RDF_GRAPH_GROUP_CREATE (SIOC..private_graph (), 1);
 
   -- set default rights for private graphs
   DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('nobody', 0, 1);
   DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('dba', 511, 1);
+  return 1;
 }
 ;
 
 create procedure SIOC..private_graph_add (
-  inout graph_iri varchar)
+  in graph_iri varchar)
 {
+  declare exit handler for sqlstate '*' {return 0;};
+
   DB.DBA.RDF_GRAPH_GROUP_INS (SIOC..private_graph (), graph_iri);
+  return 1;
 }
 ;
 
 create procedure SIOC..private_graph_remove (
-  inout graph_iri varchar)
+  in graph_iri varchar)
 {
   DB.DBA.RDF_GRAPH_GROUP_DEL (SIOC..private_graph (), graph_iri);
+}
+;
+
+create procedure SIOC..private_graph_check (
+  in graph_iri varchar)
+{
+  declare private_graph varchar;
+
+  private_graph := SIOC..private_graph ();
+  if (not exists (select top 1 1 from DB.DBA.RDF_GRAPH_GROUP where RGG_IRI = private_graph))
+    return 0;
+
+  if (not exists (select top 1 1 from DB.DBA.RDF_GRAPH_GROUP_MEMBER where RGGM_GROUP_IID = iri_to_id (private_graph) and RGGM_MEMBER_IID = iri_to_id (graph_iri)))
+    return 0;
+
+  return 1;
 }
 ;
 
@@ -3904,7 +3932,9 @@ create procedure SIOC..private_user_add (
 
   if (isinteger (uid))
     uid := (select U_NAME from DB.DBA.SYS_USERS where U_ID = uid);
+  DB.DBA.RDF_GRAPH_GROUP_INS (SIOC..private_graph (), graph_iri);
   DB.DBA.RDF_GRAPH_USER_PERMS_SET (graph_iri, uid, rights);
+  return 1;
 }
 ;
 
@@ -3917,6 +3947,7 @@ create procedure SIOC..private_user_remove (
   if (isinteger (uid))
     uid := (select U_NAME from DB.DBA.SYS_USERS where U_ID = uid);
   DB.DBA.RDF_GRAPH_USER_PERMS_DEL (graph_iri, uid);
+  return 0;
 }
 ;
 
@@ -5555,6 +5586,8 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?person pingback:to ?pb .
 	    ?person pingback:service ?psvc .
 	    ?person foaf:made `iri (bif:sprintf (''http://%%{WSHost}s/ods/describe?uri=%%U'', ?mbox))` .
+	    ?person <http://vocab.deri.ie/void#inDataset> <http://%{URIQADefaultHost}s/dataspace> .
+	    <http://%{URIQADefaultHost}s/dataspace> <http://rdfs.org/ns/void#sparqlEndpoint> <http://%{URIQADefaultHost}s/sparql-auth/> .
 	  }
 	  WHERE
 	  {

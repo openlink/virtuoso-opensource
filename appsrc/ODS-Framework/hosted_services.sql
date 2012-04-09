@@ -487,11 +487,11 @@ drop procedure wa_member_upgrade
 
 create procedure wa_instance_upgrade() {
 
-  if (registry_get ('__wa_instance_upgrade') = 'done')
+  if (registry_get ('__wa_instance_upgrade') = 'done2')
     return;
 
   delete from DB.DBA.WA_INSTANCE where wai_name not in (select WAM_INST from  DB.DBA.WA_MEMBER);
-  registry_set ('__wa_instance_upgrade', 'done');
+  registry_set ('__wa_instance_upgrade', 'done2');
 }
 ;
 

@@ -23,27 +23,6 @@
  -
  -
 -->
-<html>
-  <head>
-    <title>Virtuoso Web Applications</title>
-    <link rel="stylesheet" type="text/css" href="/ods/users/css/users.css" />
-    <link rel="stylesheet" type="text/css" href="/ods/default.css" />
-    <link rel="stylesheet" type="text/css" href="/ods/nav_framework.css" />
-    <link rel="stylesheet" type="text/css" href="/ods/typeahead.css" />
-    <link rel="stylesheet" type="text/css" href="/ods/ods-bar.css" />
-    <link rel="stylesheet" type="text/css" href="/ods/rdfm.css" />
-    <script type="text/javascript" src="/ods/users/js/users.js"></script>
-    <script type="text/javascript" src="/ods/common.js"></script>
-    <script type="text/javascript" src="/ods/typeahead.js"></script>
-    <script type="text/javascript" src="/ods/tbl.js"></script>
-    <script type="text/javascript" src="/ods/validate.js"></script>
-    <script type="text/javascript">
-      // OAT
-      var toolkitPath="/ods/oat";
-      var featureList = ["ajax", "json", "tab", "combolist", "calendar", "rdfmini", "grid", "graphsvg", "tagcloud", "map", "timeline", "anchor"];
-    </script>
-    <script type="text/javascript" src="/ods/oat/loader.js"></script>
-  </head>
   <?php
     function parseUrl($url) {
       // parse the given URL
@@ -150,6 +129,13 @@
       $pageURL .= $_SERVER['SERVER_PORT'] <> '80' ? $_SERVER["SERVER_NAME"].":".$_SERVER["SERVER_PORT"] : $_SERVER['SERVER_NAME'];
       return $pageURL.'/ods/api';
     }
+
+  function hostURL()
+  {
+    $pageURL = $_SERVER['HTTPS'] == 'on' ? 'https://' : 'http://';
+    $pageURL .= $_SERVER['SERVER_PORT'] <> '80' ? $_SERVER["SERVER_NAME"].":".$_SERVER["SERVER_PORT"] : $_SERVER['SERVER_NAME'];
+    return $pageURL;
+  }
 
     function myUrlencode ($S)
     {
@@ -840,7 +826,60 @@
         $_sid = "";
         $_realm = "";
       }
+  $_hostLinks = str_replace (
+    '[HOST]',
+    hostURL(),
+    '    <link rel="openid.server" title="OpenID Server" href="[HOST]/openid" />' .
+    '    <link rel="openid2.provider" title="OpenID v2 Server" href="[HOST]/openid" />'
+  );
+
+  $_userLinks = '';
+  if ($_userName != "")
+  {
+    $_userLinks =
+      '    <link rel="meta" type="application/rdf+xml" title="SIOC" href="[HOST]/dataspace/[USER]/sioc.rdf" />' .
+      '    <link rel="meta" type="application/rdf+xml" title="FOAF" href="[HOST]/dataspace/person/[USER]/foaf.rdf" />' .
+      '    <link rel="meta" type="text/rdf+n3" title="FOAF" href="[HOST]/dataspace/person/[USER]/foaf.n3" />' .
+      '    <link rel="meta" type="application/json" title="FOAF" href="[HOST]/dataspace/person/[USER]/foaf.json" />' .
+      '    <link rel="http://xmlns.com/foaf/0.1/primaryTopic"  title="About" href="[HOST]/dataspace/person/[USER]#this" />' .
+      '    <link rel="schema.dc" href="http://purl.org/dc/elements/1.1/" />' .
+      '    <meta name="dc.language" content="en" scheme="rfc1766" />' .
+      '    <meta name="dc.creator" content="[USER]" />' .
+      '    <meta name="dc.description" content="ODS HTML [USER]\'s page" />' .
+      '    <meta name="dc.title" content="ODS HTML [USER]\'s page" />' .
+      '    <link rev="describedby" title="About" href="[HOST]/dataspace/person/[USER]#this" />' .
+      '    <link rel="schema.geo" href="http://www.w3.org/2003/01/geo/wgs84_pos#" />' .
+      '    <meta http-equiv="X-XRDS-Location" content="[HOST]/dataspace/[USER]/yadis.xrds" />' .
+      '    <meta http-equiv="X-YADIS-Location" content="[HOST]/dataspace/[USER]/yadis.xrds" />' .
+      '    <link rel="meta" type="application/xml+apml" title="APML 0.6" href="[HOST]/dataspace/[USER]/apml.xml" />' .
+      '    <link rel="alternate" type="application/atom+xml" title="OpenSocial Friends" href="[HOST]/feeds/people/[USER]/friends" />';
+    $_userLinks = str_replace ('[HOST]', hostURL(), $_userLinks);
+    $_userLinks = str_replace ('[USER]', $_userName, $_userLinks);
+  }
   ?>
+<html>
+  <head>
+    <title>ODS user's pages</title>
+<?php echo $_hostLinks; ?>
+<?php echo $_userLinks; ?>
+    <link rel="stylesheet" type="text/css" href="/ods/users/css/users.css" />
+    <link rel="stylesheet" type="text/css" href="/ods/default.css" />
+    <link rel="stylesheet" type="text/css" href="/ods/nav_framework.css" />
+    <link rel="stylesheet" type="text/css" href="/ods/typeahead.css" />
+    <link rel="stylesheet" type="text/css" href="/ods/ods-bar.css" />
+    <link rel="stylesheet" type="text/css" href="/ods/rdfm.css" />
+    <script type="text/javascript" src="/ods/users/js/users.js"></script>
+    <script type="text/javascript" src="/ods/common.js"></script>
+    <script type="text/javascript" src="/ods/typeahead.js"></script>
+    <script type="text/javascript" src="/ods/tbl.js"></script>
+    <script type="text/javascript" src="/ods/validate.js"></script>
+    <script type="text/javascript">
+      // OAT
+      var toolkitPath="/ods/oat";
+      var featureList = ["ajax", "json", "tab", "combolist", "calendar", "rdfmini", "grid", "graphsvg", "tagcloud", "map", "timeline", "anchor"];
+    </script>
+    <script type="text/javascript" src="/ods/oat/loader.js"></script>
+  </head>
   <body onunload="myCheckLeave (document.forms['page_form'])">
     <form name="page_form" id="page_form" method="post" enctype="multipart/form-data">
       <input type="hidden" name="mode" id="mode" value="php" />
