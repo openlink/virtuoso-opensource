@@ -1117,7 +1117,7 @@ spar_group_gp		/* [19]*	GroupGraphPattern	 ::=  '{' ( GraphPattern | SelectQuery
 		if (SERVICE_L == $<token_type>$)
 		  spar_gp_init (sparp_arg, SELECT_L);
 		spar_env_push (sparp_arg);
-		spar_selid_push (sparp_arg);
+		sparp_arg->sparp_env->spare_top_retval_selid = spar_selid_push (sparp_arg);
                 t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL);
 		sparp_arg->sparp_allow_aggregates_in_expn <<= 1;
 		sparp_arg->sparp_allow_aggregates_in_expn |= 1; }
@@ -1765,7 +1765,7 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	( 'AS' ( VAR1 | VAR2 ) ) */
 		SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_BI, "scalar subquery");
                 spar_gp_init (sparp_arg, SELECT_L);
 		spar_env_push (sparp_arg);
-		spar_selid_push (sparp_arg);
+		sparp_arg->sparp_env->spare_top_retval_selid = spar_selid_push (sparp_arg);
                 t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL);
 		sparp_arg->sparp_allow_aggregates_in_expn <<= 1;
 		sparp_arg->sparp_allow_aggregates_in_expn |= 1; }
