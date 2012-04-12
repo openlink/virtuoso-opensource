@@ -5199,126 +5199,126 @@ create procedure DB.DBA.RDF_LOAD_MEETUP2(in url varchar, in new_origin_uri varch
 
 create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar, inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any, in triple_dict any := null)
 {
-  declare xd, xt, url, tmp, api_key, hdr, id0, id1, id2, id3, id4, id5, id6 any;
-  declare pos, len int;
-  declare xsl2, what_, base varchar;
-  declare exit handler for sqlstate '*'
-   {
-      DB.DBA.RM_RDF_SPONGE_ERROR (triple_dict, current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
-      return 0;
-    };
-  api_key := _key;
-  base := concat(trim(new_origin_uri, '/'), '/');
-  if (new_origin_uri like 'http://%.meetup.com/%')
-  {
-    tmp := sprintf_inverse (new_origin_uri, 'http://%s.meetup.com/%s/%s/%s/%s/%s', 0);
-    if (tmp is null)
-      tmp := sprintf_inverse (new_origin_uri, 'http://%s.meetup.com/%s/%s/%s/%s', 0);
-    if (tmp is null)
-      tmp := sprintf_inverse (new_origin_uri, 'http://%s.meetup.com/%s/%s/%s', 0);
-    if (tmp is null)
-      tmp := sprintf_inverse (new_origin_uri, 'http://%s.meetup.com/%s/%s', 0);
-    if (tmp is null)
-      tmp := sprintf_inverse (new_origin_uri, 'http://%s.meetup.com/%s', 0);
-    len := length(tmp);
-    if (len > 5)
-      id5 := tmp[5];
-    if (len > 4)
-      id4 := tmp[4];
-    if (len > 3)
-      id3 := tmp[3];
-    if (len > 2)
-      id2 := tmp[2];
-    if (len > 1)
-      id1 := tmp[1];
-    if (len > 0)
-      id0 := tmp[0];
-    if (id0 is null or (id0 = 'www' and id1 is null))
-      return 0;
-    RM_CLEAN_DEST (triple_dict, dest, graph_iri, new_origin_uri, opts);
-    if (id0 = 'www')
-      {
-	if (id1 = 'cities')
-	  {
-	    if (id2 is not null)
-	      {
-		url := concat('http://api.meetup.com/groups.xml/?country=', id2);
-		if (id3 is not null and id4 is not null)
-		  {
-		    url := concat(url, '&state=', id3);
-		    if (id4 is not null and id4 <> 'groups')
-		      {
-			url := concat(url, '&city=', id4);
-		      }
-		  }
-		else if (id3 is not null and (id4 is null or id4 = 'groups'))
-		  {
-		    url := concat(url, '&city=', id3);
-		  }
-		  what_ := 'groups';
-	      }
-	    else
-	      return 0;
-	    url := concat(url, '&key=', api_key );
-	    DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
-	  }
-	if (id1 = 'members' and id2 is not null)
-	  {
-	    base := concat('http://www.meetup.com/members/', id2, '/');
-	    url := concat('http://api.meetup.com/members.xml/?member_id=', id2, '&key=', api_key);
-	    what_ := 'member';
-	    DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
-	  }
-	else
-	  {
-	    base := concat('http://www.meetup.com/', id1, '/');
-	    if (id1 is not null and id2 = 'members')
-	      {
-		url := concat('http://api.meetup.com/members.xml/?group_urlname=', id1, '&key=', api_key);
-		what_ := 'members';
-		DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
-	      }
-	    else if (id1 is not null and id2 = 'calendar')
-	      {
-		if (id3 is null or id3 = '')
-		  {
-		    url := concat('http://api.meetup.com/events.xml/?group_urlname=', id1, '&key=', api_key);
-		    what_ := 'events';
-		    DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
-		  }
-		else
-		  {
-		    url := concat('http://api.meetup.com/events.xml/?id=', id3, '&key=', api_key);
-		    what_ := 'event';
-		    DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
-		  }
-	      }
-	    else if (id1 is not null and id2 = 'photos')
-	      {
-		url := concat('http://api.meetup.com/photos.xml/?group_urlname=', id1, '&key=', api_key);
-		what_ := 'photos';
-		DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
-	      }
-	    else
-	      {
-		url := sprintf('http://api.meetup.com/groups.xml/?group_urlname=%s&key=%s', id1, api_key);
-		what_ := 'groups';
-		DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
-
-		url := concat('http://api.meetup.com/members.xml/?group_urlname=', id1, '&key=', api_key);
-		what_ := 'members';
-		DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
-
-		url := concat('http://api.meetup.com/events.xml/?group_urlname=', id1, '&key=', api_key);
-		what_ := 'events';
-		DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
-
-		url := sprintf('http://api.meetup.com/comments.xml/?group_urlname=%s&key=%s', id1, api_key);
-		what_ := 'comments';
-		DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
-	      }
-	  }
-      }
+	declare xd, xt, url, tmp, api_key, hdr, id0, id1, id2, id3, id4, id5, id6 any;
+	declare pos, len int;
+	declare xsl2, what_, base varchar;
+	declare exit handler for sqlstate '*'
+	{
+	  DB.DBA.RM_RDF_SPONGE_ERROR (triple_dict, current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+	  return 0;
+	};
+	api_key := _key;
+	base := concat(trim(new_origin_uri, '/'), '/');
+	if (new_origin_uri like 'http://%.meetup.com/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://%s.meetup.com/%s/%s/%s/%s/%s', 0);
+		if (tmp is null)
+		  	tmp := sprintf_inverse (new_origin_uri, 'http://%s.meetup.com/%s/%s/%s/%s', 0);
+		if (tmp is null)
+		  	tmp := sprintf_inverse (new_origin_uri, 'http://%s.meetup.com/%s/%s/%s', 0);
+		if (tmp is null)
+		  	tmp := sprintf_inverse (new_origin_uri, 'http://%s.meetup.com/%s/%s', 0);
+		if (tmp is null)
+		  	tmp := sprintf_inverse (new_origin_uri, 'http://%s.meetup.com/%s', 0);
+		len := length(tmp);
+		if (len > 5)
+		  	id5 := tmp[5];
+		if (len > 4)
+		  	id4 := tmp[4];
+		if (len > 3)
+		  	id3 := tmp[3];
+		if (len > 2)
+		  	id2 := tmp[2];
+		if (len > 1)
+		  	id1 := tmp[1];
+		if (len > 0)
+		  	id0 := tmp[0];
+		if (id0 is null or (id0 = 'www' and id1 is null))
+		  	return 0;
+		RM_CLEAN_DEST (triple_dict, dest, graph_iri, new_origin_uri, opts);
+		if (id0 = 'www')
+		{
+			if (id1 = 'cities')
+		  	{
+				if (id2 is not null)
+				{
+					url := concat('http://api.meetup.com/groups.xml/?country=', id2);
+					if (id3 is not null and id4 is not null)
+				  	{
+						url := concat(url, '&state=', id3);
+						if (id4 is not null and id4 <> 'groups')
+					  	{
+							url := concat(url, '&city=', id4);
+					  	}
+				  	}
+					else if (id3 is not null and (id4 is null or id4 = 'groups'))
+				  	{
+						url := concat(url, '&city=', id3);
+				  	}
+				  	what_ := 'groups';
+				}
+				else
+					return 0;
+				url := concat(url, '&key=', api_key );
+				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
+			}
+			if (id1 = 'members' and id2 is not null)
+			{
+				base := concat('http://www.meetup.com/members/', id2, '/');
+				url := concat('http://api.meetup.com/members.xml/?member_id=', id2, '&key=', api_key);
+				what_ := 'member';
+				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
+			}
+			else
+			{
+				base := concat('http://www.meetup.com/', id1, '/');
+				if (id1 is not null and id2 = 'members')
+				{
+					url := concat('http://api.meetup.com/members.xml/?group_urlname=', id1, '&key=', api_key);
+					what_ := 'members';
+					DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
+				}
+				else if (id1 is not null and (id2 = 'calendar' or id2 = 'events'))
+				{
+					if (id3 is null or id3 = '')
+					{
+						url := concat('http://api.meetup.com/events.xml/?group_urlname=', id1, '&key=', api_key);
+						what_ := 'events';
+						DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
+					}
+					else
+					{
+						url := concat('http://api.meetup.com/events.xml/?id=', id3, '&key=', api_key);
+						what_ := 'event';
+						DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
+					}
+				}
+				else if (id1 is not null and id2 = 'photos')
+				{
+					url := concat('http://api.meetup.com/photos.xml/?group_urlname=', id1, '&key=', api_key);
+					what_ := 'photos';
+					DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
+				}
+				else
+				{
+					url := sprintf('http://api.meetup.com/groups.xml/?group_urlname=%s&key=%s', id1, api_key);
+					what_ := 'groups';
+					DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
+			
+					url := concat('http://api.meetup.com/members.xml/?group_urlname=', id1, '&key=', api_key);
+					what_ := 'members';
+					DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
+			
+					url := concat('http://api.meetup.com/events.xml/?group_urlname=', id1, '&key=', api_key);
+					what_ := 'events';
+					DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
+			
+					url := sprintf('http://api.meetup.com/comments.xml/?group_urlname=%s&key=%s', id1, api_key);
+					what_ := 'comments';
+					DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
+				}
+			}
+      	}
     else
       {
 	if (id1 = 'cities')
@@ -7919,7 +7919,6 @@ create procedure DB.DBA.RDF_LOAD_YELP (in graph_iri varchar, in new_origin_uri v
 	}
 	else
 		return 0;
---dbg_obj_princ(url);
 	tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
 	tree := json_parse (tmp);
 	xt := DB.DBA.SOCIAL_TREE_TO_XML (tree);
