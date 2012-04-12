@@ -1369,7 +1369,7 @@ stat_desc_t stat_descs [] =
     {"st_cli_connects", &srv_connect_ctr, NULL},
     {"st_cli_max_connected", &srv_max_clients, NULL},
     {"st_cli_n_current_connections", &st_cli_n_current_connections, NULL},
-    {"st_cli_n_http_threads", &http_threads, NULL},
+    {"st_cli_n_http_threads", &http_threads, SD_INT32},
 
     {"st_rpc_stat", NULL, &st_rpc_stat},
     {"st_inx_pages_changed", &isp_r_delta, NULL},
