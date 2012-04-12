@@ -32,6 +32,7 @@
 #include "numeric.h"
 #include "rdf_core.h"
 #include "security.h"
+#include "sqlbif.h" /* for bif_t and bif_find() */
 #include "sqlcmps.h"
 #include "sparql.h"
 #include "sparql2sql.h"
@@ -3600,7 +3601,14 @@ spar_make_funcall (sparp_t *sparp, int aggregate_mode, const char *funname, SPAR
   if (!(sparp->sparp_allow_aggregates_in_expn & 1))
     spar_error (sparp, "Aggregate function %.100s() is not allowed outside result-set expressions", funname);
 aggr_checked:
-  if (strncmp (funname, "bif:", 4))
+  if (!strncmp (funname, "bif:", 4))
+    {
+      caddr_t bifname = t_sqlp_box_id_upcase (funname+4);
+      bif_t descr = bif_find (bifname);
+      if (NULL == descr)
+        spar_error (sparp, "Unknown function %.100s()", funname);
+    }
+  else
     {
       xpf_metadata_t *metas = NULL;
       caddr_t colonized_funname = spar_colonize_qname_uname (funname);

@@ -9623,7 +9623,7 @@ caddr_t
 bif_cast_internal (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t data = bif_arg (qst, args, 0, "__cast_internal");
-  ST * dtp_st = (ST *) bif_arg (qst, args, 1, "cast_internal");
+  ST * dtp_st = (ST *) bif_arg (qst, args, 1, "__cast_internal");
   dtp_t arg_dtp = DV_TYPE_OF (data);
 
   if (DV_SHORT_STRING == arg_dtp || DV_LONG_STRING == arg_dtp)
@@ -9642,6 +9642,22 @@ bif_cast_internal (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NULL;
 }
 
+caddr_t
+bif_stub_impl (const char *fname)
+{
+  sqlr_new_error ("22023", "SR468", "%.200s() can not be called as plain built-in function, it's a macro handled by SQL compiler");
+  return NULL;
+}
+
+#define BIF_STUB(bifname,fname) caddr_t bifname (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args) { return bif_stub_impl (fname); }
+
+BIF_STUB (bif_stub_ssl_const		, "__ssl_const"		)
+BIF_STUB (bif_stub_coalesce		, "coalesce"		)
+BIF_STUB (bif_stub_exists		, "exists"		)
+BIF_STUB (bif_stub_contains		, "contains"		)
+BIF_STUB (bif_stub_xpath_contains	, "xpath_contains"	)
+BIF_STUB (bif_stub_xquery_contains	, "xquery_contains"	)
+BIF_STUB (bif_stub_xcontains		, "xcontains"		)
 
 
 caddr_t
@@ -14796,6 +14812,14 @@ sql_bif_init (void)
   bif_define ("blob_page", bif_blob_page);
   bif_define_typed ("_cvt", bif_convert, &bt_convert);
   bif_define ("__cast_internal", bif_cast_internal);
+  bif_define ("__ssl_const", bif_stub_ssl_const);
+  bif_define ("coalesce", bif_stub_coalesce);
+  bif_define ("exists", bif_stub_exists);
+  bif_define ("contains", bif_stub_contains);
+  bif_define ("xpath_contains", bif_stub_xpath_contains);
+  bif_define ("xquery_contains", bif_stub_xquery_contains);
+  bif_define ("xcontains", bif_stub_xcontains);
+  bif_define_typed ("exists", bif_stub_exists, &bt_integer);
   st_varchar = (sql_tree_tmp *) list (3, DV_LONG_STRING, 0, 0);
   st_nvarchar = (sql_tree_tmp *) list (3, DV_LONG_WIDE, 0, 0);
 
