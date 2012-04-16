@@ -279,7 +279,7 @@
         <div id="FT" style="display: <?V case when get_keyword ('interface', C, '') = 'js' then 'none' else '' end ?>">
         <div id="FT_L">
           <a href="http://www.openlinksw.com/virtuoso">
-            <img alt="Powered by OpenLink Virtuoso Universal Server" src="image/virt_power_no_border.png" border="0" />
+              <img alt="Powered by OpenLink Virtuoso Universal Server" src="/ods/images/virt_power_no_border.png" border="0" />
           </a>
     </div>
         <div id="FT_R">
@@ -372,7 +372,7 @@
   <!--=========================================================================-->
   <xsl:template name="vm:splash">
     <div style="padding: 1em; font-size: 0.70em;">
-      <a href="http://www.openlinksw.com/virtuoso"><img title="Powered by OpenLink Virtuoso Universal Server" src="image/PoweredByVirtuoso.gif" border="0" /></a>
+      <a href="http://www.openlinksw.com/virtuoso"><img title="Powered by OpenLink Virtuoso Universal Server" src="/ods/images/PoweredByVirtuoso.gif" border="0" /></a>
       <br />
       Server version: <?V sys_stat('st_dbms_ver') ?><br/>
       Server build date: <?V sys_stat('st_build_date') ?><br/>
@@ -716,7 +716,7 @@
       </table>
           </td>
           <td valign="top" nowrap="nowrap" width="1%">
-            <span class="button pointer" onclick="javascript: ODRIVE.searchRowCreate();"><img src="image/add_16.png" border="0" class="button" alt="Add Criteria" title="Add Criteria" /> Add</span><br /><br />
+            <span class="button pointer" onclick="javascript: ODRIVE.searchRowCreate();"><img src="/ods/images/icons/add_16.png" border="0" class="button" alt="Add Criteria" title="Add Criteria" /> Add</span><br /><br />
           </td>
         </tr>
       </table>
@@ -1093,7 +1093,7 @@
                           <v:button name="button_versions_delete" action="simple" style="url" value="Version Delete" enabled="--(control.vc_parent as vspx_row_template).te_column_value('c1')">
                             <v:after-data-bind>
                               <![CDATA[
-                                control.ufl_value := '<img src="image/del_16.png" border="0" alt="Version Delete" title="Version Delete" onclick="javascript: if (!confirm(\'Are you sure you want to delete the chosen version and all previous versions?\')) { event.cancelBubble = true;};" />';
+                                control.ufl_value := '<img src="/ods/images/icons/del_16.png" border="0" alt="Version Delete" title="Version Delete" onclick="javascript: if (!confirm(\'Are you sure you want to delete the chosen version and all previous versions?\')) { event.cancelBubble = true;};" />';
                               ]]>
                             </v:after-data-bind>
                             <v:on-post>

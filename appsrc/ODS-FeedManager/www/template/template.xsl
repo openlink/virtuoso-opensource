@@ -292,7 +292,7 @@
         <div id="FT" style="display: <?V case when get_keyword ('interface', C, '') = 'js' then 'none' else '' end ?>">
         <div id="FT_L">
           <a href="http://www.openlinksw.com/virtuoso">
-              <img alt="Powered by OpenLink Virtuoso Universal Server" src="image/virt_power_no_border.png" border="0" />
+              <img alt="Powered by OpenLink Virtuoso Universal Server" src="/ods/images/virt_power_no_border.png" border="0" />
           </a>
     </div>
         <div id="FT_R">
@@ -427,7 +427,7 @@
   <!--=========================================================================-->
   <xsl:template name="vm:splash">
     <div style="padding: 1em; font-size: 0.70em;">
-      <a href="http://www.openlinksw.com/virtuoso"><img title="Powered by OpenLink Virtuoso Universal Server" src="image/PoweredByVirtuoso.gif" border="0" /></a>
+      <a href="http://www.openlinksw.com/virtuoso"><img title="Powered by OpenLink Virtuoso Universal Server" src="/ods/images/PoweredByVirtuoso.gif" border="0" /></a>
       <br />
       Server version: <?V sys_stat('st_dbms_ver') ?><br/>
       Server build date: <?V sys_stat('st_build_date') ?><br/>

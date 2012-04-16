@@ -544,7 +544,7 @@
                             </table>
                           </td>
                           <td valign="top" nowrap="nowrap">
-                            <span class="button pointer" onclick="javascript: TBL.createRow('c', null, {fld_1: {mode: 40, className: '_validate_', onblur: function(){validateField(this);}}, fld_2: {mode: 0}, fld_3: {mode: 41}});"><img src="image/add_16.png" class="button" alt="Add Property" title="Add Property" /> Add</span><br /><br />
+                            <span class="button pointer" onclick="javascript: TBL.createRow('c', null, {fld_1: {mode: 40, className: '_validate_', onblur: function(){validateField(this);}}, fld_2: {mode: 0}, fld_3: {mode: 41}});"><img src="/ods/images/icons/add_16.png" class="button" alt="Add Property" title="Add Property" /> Add</span><br /><br />
                           </td>
                         </tr>
                       </table>
@@ -571,7 +571,7 @@
                 </table>
                       </td>
                       <td valign="top" nowrap="nowrap">
-                        <span class="button pointer" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 1, cssText: 'width: 88%;', tdCssText: 'white-space: nowrap;'}, fld_2: {mode: 43, value: 1}, fld_3: {mode: 42, value: [1, 1, 0], suffix: '_grant', onclick: function(){TBL.clickCell42(this);}, tdCssText: 'width: 1%; text-align: center;'}, fld_4: {mode: 42,  suffix: '_deny', onclick: function(){TBL.clickCell42(this);}, tdCssText: 'width: 1%; text-align: center;'}});"><img src="image/add_16.png" class="button" alt="Add Security" title="Add Security" /> Add</span><br /><br />
+                        <span class="button pointer" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 1, cssText: 'width: 88%;', tdCssText: 'white-space: nowrap;'}, fld_2: {mode: 43, value: 1}, fld_3: {mode: 42, value: [1, 1, 0], suffix: '_grant', onclick: function(){TBL.clickCell42(this);}, tdCssText: 'width: 1%; text-align: center;'}, fld_4: {mode: 42,  suffix: '_deny', onclick: function(){TBL.clickCell42(this);}, tdCssText: 'width: 1%; text-align: center;'}});"><img src="/ods/images/icons/add_16.png" class="button" alt="Add Security" title="Add Security" /> Add</span><br /><br />
                       </td>
                     </tr>
                   </table>
@@ -593,7 +593,7 @@
                         </table>
                       </td>
                       <td valign="top" nowrap="nowrap">
-                          <span class="button pointer" onclick="javascript: TBL.createRow('f', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: 'F1', tdCssText: 'white-space: nowrap;', className: '_validate_ _uri_'}, fld_3: {mode: 52, value: [1, 0, 0], tdCssText: 'width: 1%; text-align: center;'}});"><img src="image/add_16.png" class="button" alt="Add Security" title="Add Security" /> Add</span><br /><br />
+                          <span class="button pointer" onclick="javascript: TBL.createRow('f', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: 'F1', tdCssText: 'white-space: nowrap;', className: '_validate_ _uri_'}, fld_3: {mode: 52, value: [1, 0, 0], tdCssText: 'width: 1%; text-align: center;'}});"><img src="/ods/images/icons/add_16.png" class="button" alt="Add Security" title="Add Security" /> Add</span><br /><br />
                       </td>
                     </tr>
                   </table>
