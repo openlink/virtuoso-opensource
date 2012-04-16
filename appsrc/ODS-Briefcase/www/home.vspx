@@ -393,6 +393,11 @@
           if ((detType = '') or detType in ('HostFS', 'S3'))
             retValue := 1;
         }
+        else if (action = 'properties')
+        {
+          if (detType = '')
+            retValue := 1;
+        }
         else if (action = 'tag')
         {
           if ((detType = '') or detType in ('CalDAV', 'CardDAV'))
