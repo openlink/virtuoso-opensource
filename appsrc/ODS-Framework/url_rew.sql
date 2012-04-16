@@ -659,7 +659,7 @@ create procedure DB.DBA.ODS_URLREW_HDR (in in_path varchar)
     {
       tmp := path;
     }
-  links := 'Link: ';
+  links := sprintf ('X-RDF-Graph: http://%{WSHost}s/dataspace\r\nX-SPARQL-Endpoint: http://%{WSHost}s/sparql-auth/\r\nLink: ');
   links := links || sprintf ('<http://%s%s>; rel="http://xmlns.com/foaf/0.1/primaryTopic",', host, tmp);
   links := links || sprintf ('\r\n <http://%s%s>; rev="describedby",', host, tmp);
   if (uname is not null)
