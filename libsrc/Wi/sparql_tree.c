@@ -1040,7 +1040,6 @@ spar_macroprocess_tree (sparp_t *sparp, SPART *tree, spar_mproc_ctx_t *ctx)
   
 }
 
-
 /* EQUIVALENCE CLASSES */
 
 sparp_equiv_t *
@@ -1079,6 +1078,31 @@ sparp_equiv_alloc (sparp_t *sparp)
   eqs[eqcount++] = res;
   sparp->sparp_sg->sg_equiv_count = eqcount;
   return res;
+}
+
+void
+sparp_equiv_dbg_gp_print (sparp_t *sparp, SPART *tree)
+{
+  int eq_ctr, eq_count;
+  eq_count = tree->_.gp.equiv_count;
+  SPARP_FOREACH_GP_EQUIV(sparp,tree,eq_ctr,eq)
+    {
+      int varname_count, varname_ctr;
+      spar_dbg_printf ((" ( %d subv (%d bindings), %d recv, %d gspo, %d const, %d opt, %d subq:",
+      BOX_ELEMENTS_INT_0(eq->e_subvalue_idxs), (int)(eq->e_nested_bindings), BOX_ELEMENTS_INT_0(eq->e_receiver_idxs),
+        (int)(eq->e_gspo_uses), (int)(eq->e_const_reads), (int)(eq->e_optional_reads), (int)(eq->e_subquery_uses) ));
+      varname_count = BOX_ELEMENTS (eq->e_varnames);
+      for (varname_ctr = 0; varname_ctr < varname_count; varname_ctr++)
+        {
+          spar_dbg_printf ((" %s", eq->e_varnames[varname_ctr]));
+        }
+      if (SPART_BAD_EQUIV_IDX != eq->e_external_src_idx)
+        {
+          spar_dbg_printf (("; parent #%d", (int)(eq->e_external_src_idx)));
+        }
+      spar_dbg_printf ((")"));
+    } END_SPARP_FOREACH_GP_EQUIV;
+  spar_dbg_printf (("\n"));
 }
 
 sparp_equiv_t *
@@ -1187,7 +1211,7 @@ sparp_equiv_get (sparp_t *sparp, SPART *haystack_gp, SPART *needle_var, int flag
         curr_eq->e_optional_reads++;
     }
 #ifdef SPARQL_DEBUG
-  sparp_dbg_gp_print (sparp, haystack_gp);
+  sparp_equiv_dbg_gp_print (sparp, haystack_gp);
 #endif
   return curr_eq;
 
@@ -1226,7 +1250,7 @@ namesake_found:
   needle_var->_.var.equiv_idx = curr_eq->e_own_idx;
   curr_eq->e_var_count = varcount;
 #ifdef SPARQL_DEBUG
-  sparp_dbg_gp_print (sparp, haystack_gp);
+  sparp_equiv_dbg_gp_print (sparp, haystack_gp);
 #endif
   return curr_eq;
 
@@ -4966,32 +4990,6 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
 printed:
   if (0 == indent)
     session_buffered_write_char ('\n', ses);
-}
-
-
-void
-sparp_dbg_gp_print (sparp_t *sparp, SPART *tree)
-{
-  int eq_ctr, eq_count;
-  eq_count = tree->_.gp.equiv_count;
-  SPARP_FOREACH_GP_EQUIV(sparp,tree,eq_ctr,eq)
-    {
-      int varname_count, varname_ctr;
-      spar_dbg_printf ((" ( %d subv (%d bindings), %d recv, %d gspo, %d const, %d opt, %d subq:",
-      BOX_ELEMENTS_INT_0(eq->e_subvalue_idxs), (int)(eq->e_nested_bindings), BOX_ELEMENTS_INT_0(eq->e_receiver_idxs),
-        (int)(eq->e_gspo_uses), (int)(eq->e_const_reads), (int)(eq->e_optional_reads), (int)(eq->e_subquery_uses) ));
-      varname_count = BOX_ELEMENTS (eq->e_varnames);
-      for (varname_ctr = 0; varname_ctr < varname_count; varname_ctr++)
-        {
-          spar_dbg_printf ((" %s", eq->e_varnames[varname_ctr]));
-        }
-      if (SPART_BAD_EQUIV_IDX != eq->e_external_src_idx)
-        {
-          spar_dbg_printf (("; parent #%d", eq->e_external_src_idx));
-        }
-      spar_dbg_printf ((")"));
-    } END_SPARP_FOREACH_GP_EQUIV;
-  spar_dbg_printf (("\n"));
 }
 
 int sparp_valmode_is_correct (ssg_valmode_t fmt)

@@ -1571,7 +1571,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
   http ('\n</sparql>', ses);
 
 body_complete:
-  if (add_http_headers)
+  if (add_http_headers and strcasestr (http_header_get (), 'Content-Type:') is null)
     http_header (coalesce (http_header_get (), '') || 'Content-Type: ' || ret_mime || '; charset=UTF-8\r\n');
   return ret_mime;
 }
