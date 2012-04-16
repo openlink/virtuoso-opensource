@@ -216,6 +216,11 @@ create procedure oplmail_iri (in s varchar)
   return concat ('http://www.openlinksw.com/schemas/mail#', s);
 };
 
+create procedure oplFilter_iri (in s varchar)
+{
+  return concat ('http://www.openlinksw.com/schema/filter#', s);
+};
+
 create procedure cert_iri (in s varchar)
 {
   return concat ('http://www.w3.org/ns/auth/cert#', s);

@@ -5846,6 +5846,107 @@ ret:
 }
 ;
 
+create procedure ODS.ODS_API.predicates ()
+{
+  return vector (
+    'webIDVerified'  , vector ('Certificate - Verified',           'boolean',     'boolean',  vector ()),
+    'certExpiration' , vector ('Certificate - Expiration Status',  'boolean',     'boolean',  vector ()),
+    'certSerial'     , vector ('Certificate - Serial Number',      'varchar',     'varchar',  vector ()),
+    'webID'          , vector ('Certificate - WebID',              'varchar',     'varchar',  vector ('class', '_validate_ _webid_')),
+    'certMail'       , vector ('Certificate - Mail',               'varchar',     'varchar',  vector ()),
+    'certSubject'    , vector ('Certificate - Subject',            'varchar',     'varchar',  vector ()),
+    'certIssuer'     , vector ('Certificate - Issuer',             'varchar',     'varchar',  vector ()),
+    'certStartDate'  , vector ('Certificate - Issue Date',         'date',        'date',     vector ('size', '10', 'class', '_validate_ _date_', 'onclick', 'datePopup(\'-FIELD-\')', 'button', '<img id="-FIELD-_select" border="0" src="/oMail/i/pick_calendar.gif" onclick="javascript: datePopup(\'-FIELD-\');" />')),
+    'certEndDate'    , vector ('Certificate - Expiry Date',        'date',        'date',     vector ('size', '10', 'class', '_validate_ _date_', 'onclick', 'datePopup(\'-FIELD-\')', 'button', '<img id="-FIELD-_select" border="0" src="/oMail/i/pick_calendar.gif" onclick="javascript: datePopup(\'-FIELD-\');" />')),
+    'certDigest'     , vector ('Certificate - Fingerprint Digest', 'digest',      'varchar',  vector ('class', '_validate_ _digest_'))
+  );
+}
+;
+
+create procedure ODS.ODS_API.compares ()
+{
+  return vector (
+    '=',                      vector ('equal to'                 , vector ('integer', 'date', 'varchar', 'address', 'priority', 'folder', 'boolean', 'sparql', 'digest'), 1, '(^{value}^ = ^{pattern}^)'),
+    '<>',                     vector ('not equal to'             , vector ('integer', 'date', 'varchar', 'address', 'priority', 'folder', 'boolean', 'sparql', 'digest'), 1, '(^{value}^ <> ^{pattern}^)'),
+    '<',                      vector ('less than'                , vector ('integer', 'date', 'priority'), 1, '(^{value}^ < ^{pattern}^)'),
+    '<=',                     vector ('less thanor equal to'     , vector ('integer', 'date', 'priority'), 1, '(^{value}^ <= ^{pattern}^)'),
+    '>',                      vector ('greater than'             , vector ('integer', 'date', 'priority'), 1, '(^{value}^ > ^{pattern}^)'),
+    '>=',                     vector ('greater than or equal to' , vector ('integer', 'date', 'priority'), 1, '(^{value}^ >= ^{pattern}^)'),
+    'contains_substring',     vector ('contains substring'       , vector ('varchar', 'address'), 1, '(strstr (ucase (^{value}^), ucase (^{pattern}^)) is not null)'),
+    'not_contains_substring', vector ('not contains substring'   , vector ('varchar', 'address'), 1, '(strstr (ucase (^{value}^), ucase (^{pattern}^)) is null)'),
+    'starts_with',            vector ('starts with'              , vector ('varchar', 'address'), 1, '(starts_with (ucase (^{value}^), ucase (^{pattern}^)))'),
+    'not_starts_with',        vector ('not starts with'          , vector ('varchar', 'address'), 1, '(not (starts_with (ucase (^{value}^), ucase (^{pattern}^))))'),
+    'ends_with',              vector ('ends with'                , vector ('varchar', 'address'), 1, '(ends_with (ucase (^{value}^), ucase (^{pattern}^)))'),
+    'not_ends_with',          vector ('not ends with'            , vector ('varchar', 'address'), 1, '(not (ends_with (ucase (^{value}^), ucase (^{pattern}^))))'),
+    'is_null',                vector ('is null'                  , vector ('address'), 0, '(DB.DBA.is_empty_or_null (^{value}^) = 1)'),
+    'is_not_null',            vector ('is not null'              , vector ('address'), 0, '(DB.DBA.is_empty_or_null (^{value}^) = 0)'),
+    'contains_text',          vector ('contains'                 , vector ('text'), 1, null)
+  );
+}
+;
+
+create procedure ODS.ODS_API.compareRDFName (
+  in name varchar)
+{
+  return
+    get_keyword (
+      name,
+      vector (
+        '=',                      'flt:eq'           ,
+        '<>',                     'flt:neq'          ,
+        '<',                      'flt:lt'           ,
+        '<=',                     'flt:lte'          ,
+        '>',                      'flt:gt'           ,
+        '>=',                     'flt:gte'          ,
+        'contains_substring',     'flt:contains'     ,
+        'not_contains_substring', 'flt:notContains'  ,
+        'starts_with',            'flt:startsWith'   ,
+        'not_starts_with',        'flt:notStartsWith',
+        'ends_with',              'flt:endsWith'     ,
+        'not_ends_with',          'flt:notEndsWith'  ,
+        'is_null',                'flt:isNull'       ,
+        'is_not_null',            'flt:isNotNull'    ,
+        'contains_text',          'flt:contains'
+      )
+    );
+}
+;
+
+create procedure ODS.ODS_API.compareName (
+  in RDFName varchar)
+{
+  return
+    get_keyword (
+      RDFName,
+      vector (
+        'flt:eq'           , '=',
+        'flt:neq'          , '<>',
+        'flt:lt'           , '<',
+        'flt:lte'          , '<=',
+        'flt:gt'           , '>',
+        'flt:gte'          , '>=',
+        'flt:contains'     , 'contains_substring',
+        'flt:notContains'  , 'not_contains_substring',
+        'flt:startsWith'   , 'starts_with',
+        'flt:notStartsWith', 'not_starts_with',
+        'flt:endsWith'     , 'ends_with',
+        'flt:notEndsWith'  , 'not_ends_with',
+        'fld:isNull'       , 'is_null',
+        'fld:isNotNull'    , 'is_not_null',
+        'fld:contains'     ,  'contains_text'
+      )
+    );
+}
+;
+
+-----------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."filtersData" () __soap_http 'application/json'
+{
+  return obj2json (vector (ODS.ODS_API."predicates" (), ODS.ODS_API."compares" ()));
+}
+;
+
 -- global actions
 
 create procedure ODS.ODS_API."site.search" (in pattern varchar, in options any) __soap_http 'text/xml'
@@ -6006,6 +6107,7 @@ grant execute on ODS.ODS_API."instance.unfreeze" to ODS_API;
 
 grant execute on ODS.ODS_API."site.search" to ODS_API;
 
+grant execute on ODS.ODS_API."filtersData" to ODS_API;
 
 create procedure __user_password (in uname varchar)
 {
