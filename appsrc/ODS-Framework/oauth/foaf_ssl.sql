@@ -416,8 +416,8 @@ create procedure WEBID_DI_SPLIT (in str varchar)
   while (di := regexp_match ('di:[^ <>]+', str, 1) is not null)
     {
       h := WS.WS.PARSE_URI (di);
-      dgst := bin2hex (cast (decode_base64 (replace (replace (h[3], '-', '+'), '_', '/')) as varbinary));
-      ret := vector_concat (ret, vector (vector (h[2], dgst)));
+      dgst := bin2hex (cast (decode_base64 (replace (replace (cast (h[3] as varchar), '-', '+'), '_', '/')) as varbinary));
+      ret := vector_concat (ret, vector (vector (cast (h[2] as varchar), dgst)));
     }
   return ret;
 }
