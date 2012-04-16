@@ -1898,6 +1898,58 @@ new_db_read_cfg (dbe_storage_t * ignore, char *mode)
     i18n_volume_emergency_encoding = &eh__ISO8859_1;
 }
 
+/*
+ * Parses string like "42K" which mean size of DB element (file, stripe etc).
+ * On return sets `size', if stated, `modifier', if stated, and `n_pages', if stated.
+ * returns 0 on success, nonzero on error. 
+ */
+int
+cfg_parse_size_with_modifier (const char *valstr, unsigned long *size, char *modifier, unsigned long *n_pages)
+{
+  unsigned long size_ = 0;
+  char modifier_ = 0;
+  unsigned long n_pages_ = 0;
+
+  if (!valstr)
+    GPF_T;
+
+  size_ = (unsigned long) atol (valstr);
+  if (size_ == 0)
+    {
+      return -1;
+    }
+
+  modifier_ = toupper (valstr[strlen (valstr) - 1]);
+  switch (modifier_)
+    {
+    case 'K':
+      n_pages_ = size_ / KILOS_PER_PAGE;
+      size_ *= 1024;
+      break;
+    case 'M':
+      n_pages_ = (1024 * size_) / KILOS_PER_PAGE;
+      size_ *= 1024 * 1024;
+      break;
+    case 'G':
+      n_pages_ = (1024 * 1024 * size_) / KILOS_PER_PAGE;
+      size_ *= 1024 * 1024 * 1024;
+      break;
+    case 'B':
+      n_pages_ = size_;
+      break;
+    default:
+      if (!isdigit (modifier_))
+	return -1;
+    }
+
+  if (size)
+    *size = size_;
+  if (modifier)
+    *modifier = modifier_;
+  if (n_pages)
+    *n_pages = n_pages_;
+  return 0;
+}
 
 void
 new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
@@ -1947,9 +1999,8 @@ new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
       int nlog_segments;
       char keyname[32];
       char s_name[100];
-      long llen;
+      unsigned long llen;
       log_segment_t **last_log = &c_log_segments;
-      int modifier;
 
       for (nlog_segments = 1;; nlog_segments++)
 	{
@@ -1957,43 +2008,23 @@ new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
 	  if (cfg_find (pconfig, section, keyname) != 0)
 	    break;
 
-	  if (2 == sscanf (pconfig->value, "%s %ld", s_name, &llen))
+	  if (sscanf (pconfig->value, "%s %s", s_name, keyname) != 2)
 	    {
-	      NEW_VARZ (log_segment_t, ls);
-
-	      modifier = toupper (pconfig->value[strlen (pconfig->value) - 1]);
-	      switch (modifier)
-		{
-		case 'K':
-		  llen *= 1024L;
-		  break;
-		case 'M':
-		  llen *= 1024L * 1024L;
-		  break;
-		case 'G':
-		  llen *= 1024L * 1024L * 1024L;
-		  break;
-		default:
-		  if (!isdigit (modifier))
-		    goto invalid_log_entries;
-		  break;
-		case 'B':
-		  llen = llen;
-		  break;
-		}
-
-	      ls->ls_file = box_string (s_name);
-	      ls->ls_bytes = llen;
-	      *last_log = ls;
-	      last_log = &ls->ls_next;
-
-	    }
-	  else
-	    {
-	    invalid_log_entries:;
 	      log_error ("The values for log segment %d are invalid", nlog_segments);
 	      exit (-1);
 	    }
+
+	  if (cfg_parse_size_with_modifier (keyname, &llen, NULL, NULL))
+	    {
+	      log_error ("The values for log segment %d are invalid", nlog_segments);
+	      exit (-1);
+	    }
+
+	  NEW_VARZ (log_segment_t, ls);
+	  ls->ls_file = box_string (s_name);
+	  ls->ls_bytes = llen;
+	  *last_log = ls;
+	  last_log = &ls->ls_next;
 	}
 
       if (nlog_segments == 1)
@@ -2028,9 +2059,9 @@ new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
       char *segszstr;
       unsigned long segszvalue;
       char keyname[32];
-      long n_pages;
+      unsigned long n_pages;
       int n_stripes;
-      int modifier;
+      char modifier;
 
       for (nsegs = 1;; nsegs++)
 	{
@@ -2040,54 +2071,36 @@ new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
 
 	  n_stripes = cslnumentries (pconfig->value) - 1;
 	  segszstr = cslentry (pconfig->value, 1);
-	  segszvalue = atol (segszstr);
-	  if (segszvalue == 0)
+
+	  if (cfg_parse_size_with_modifier (segszstr, &segszvalue, &modifier, &n_pages))
 	    {
-	    invalid_size:;
 	      log_error ("The size for strip segment %d is invalid", nsegs);
+	      free (segszstr);
 	      return;
 	    }
-	  modifier = toupper (segszstr[strlen (segszstr) - 1]);
-	  /* THIS ASSUMES PAGE_SZ == 4k */
-	  switch (modifier)
+	  if (modifier == 'K' && segszvalue % KILOS_PER_PAGE)
 	    {
-	    case 'K':
-	      if (segszvalue % KILOS_PER_PAGE)
-		{
-		  log_error ("The size for stripe segment %d must be a multiple of %d", nsegs, PAGE_SZ);
-		  return;
-		}
-	      n_pages = segszvalue / KILOS_PER_PAGE;
-	      break;
-	    case 'M':
-	      n_pages = (1024 * segszvalue) / KILOS_PER_PAGE;
-	      break;
-	    case 'G':
-	      n_pages = (1024 * 1024 * segszvalue) / KILOS_PER_PAGE;
-	      break;
-	    default:
-	      if (!isdigit (modifier))
-		goto invalid_size;
-	    case 'B':
-	      n_pages = segszvalue;
-	      break;
+	      log_error ("The size for stripe segment %d must be a multiple of %d", nsegs, PAGE_SZ);
+	      free (segszstr);
+	      return;
 	    }
-	  if (n_pages < 0 || (n_pages / n_stripes) > (LONG_MAX / PAGE_SZ))
+	  if ((n_pages / n_stripes) > (LONG_MAX / PAGE_SZ))
 	    {
 #if (!defined (FILE64) && !defined (WIN32))
 	      n_pages = (LONG_MAX / PAGE_SZ) * n_stripes;
 	      log_error ("The size for stripe segment #%d exceeds 2G limit, setting to maximum allowed %d pages", nsegs, n_pages);
 #endif
 	    }
-	  free (segszstr);
 	  if (n_pages % (EXTENT_SZ * n_stripes) != 0)
 	    {
 	      int unit = EXTENT_SZ * n_stripes;
 	      long old_pages = n_pages;
 	      n_pages = ((n_pages / unit) + 1) * unit;
-	      log_warning ("The size for stripe segment %d is %ld pages, not a multiple of %d, will use %d pages", 
+	      log_warning ("The size for stripe segment %d is %ld pages, not a multiple of %d, will use %d pages",
 		  nsegs, old_pages, unit, n_pages);
 	    }
+
+	  free (segszstr);
 
 	  seg = (disk_segment_t *) dk_alloc (sizeof (disk_segment_t));
 	  seg->ds_size = n_pages;
