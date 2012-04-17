@@ -291,7 +291,7 @@ b3s_render_iri_select (inout types_a any,
 {
   declare i int;
 
-  if (length (types_a))
+  if (length (types_a) and isvector (types_a))
     {
       if (sel = -1) sel := length(types_a)-1;
 
