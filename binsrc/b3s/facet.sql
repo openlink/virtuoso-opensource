@@ -900,7 +900,7 @@ fct_literal (in tree any)
   declare val, dtp, lang varchar;
 
   dtp := cast (xpath_eval ('./@datatype', tree) as varchar);
-  lang := cast (xpath_eval ('./@xml:lang', tree) as varchar);
+  lang := cast (xpath_eval ('./@lang', tree) as varchar);
 
   val := cast (xpath_eval ('./@val', tree) as varchar);
   if (0 = val or val is null) val := cast (tree as varchar);
@@ -938,7 +938,7 @@ fct_cond (in tree any, in this_s int, in txt any)
     return fct_cond_range (tree, this_s, txt); -- ranges are handled elsewhere
   }
 
-  if ('in' = cond_t) {
+  if ('in' = cond_t or 'not_in' = cond_t) {
     return fct_cond_in (tree, this_s, txt); -- so is IN
   }
 
@@ -1074,6 +1074,9 @@ fct_cond_in (in tree any, in this_s int, in txt any) {
   declare v any;
   declare v_str varchar;
   declare i int;
+  declare neg any;
+
+  neg := xpath_eval ('./@neg', tree);
 
   v := xpath_eval ('./cond-parm', tree, 0);
 
@@ -1091,7 +1094,10 @@ fct_cond_in (in tree any, in this_s int, in txt any) {
 
   fct_dbg_msg (sprintf ('fct_cond_in: v_str: %s', v_str));
 
-  http (sprintf (' filter (?s%d in (%s)).', this_s, v_str), txt);
+  http (sprintf (' filter (%s?s%d in (%s)).', 
+	case when neg = '1' then '! ' else '' end,
+	this_s, 
+	v_str), txt);
 }
 ;
 

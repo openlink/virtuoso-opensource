@@ -536,6 +536,7 @@
       <option value="neg_range">Not Between</option>
       <option value="contains">Contains</option>
       <option value="in">In</option>
+      <option value="not_in">Not In</option>
     </select>
     <span id="cond_inp_ctr" style="display:none">
       <!--label for="ckb_neg" class="ckb">Negation:</label><input type="checkbox" name="neg" id="ckb_neg"/-->

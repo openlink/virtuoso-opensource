@@ -429,8 +429,10 @@ fct_query_info (in tree any,
         else if ('in' = cond_t)
           {
             declare this_cno int;
+            declare neg varchar;
+            neg := case when (xpath_eval ('./@neg', tree) = '1') then 'NOT ' else '' end;
             this_cno := cno;
-            http (sprintf ('%s %sis IN: ', fct_var_tag (this_s, ctx), prop_qual), txt);
+            http (sprintf ('%s %sis %sIN: ', fct_var_tag (this_s, ctx), prop_qual, neg), txt);
             fct_query_info_1 (tree, this_s, max_s, level, ctx, txt, cno);
             http (sprintf (' <a class="qry_nfo_cmd" href="/fct/facet.vsp?sid=%d&cmd=drop_cond&cno=%d">Drop</a>',
                            connection_get ('sid'),
@@ -2424,6 +2426,11 @@ exec:;
       fct_set_cond_in (tree,
                        sid,
                        http_param('neg'),
+                       http_param('cond_parms'));
+    } else if ('not_in' = cond_t) {
+      fct_set_cond_in (tree,
+                       sid,
+                       1,
                        http_param('cond_parms'));
     } else if ('near' = cond_t) {
       declare i_lat, i_lon, i_loc_trig_sel varchar;
