@@ -2020,11 +2020,13 @@ new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
 	      exit (-1);
 	    }
 
-	  NEW_VARZ (log_segment_t, ls);
-	  ls->ls_file = box_string (s_name);
-	  ls->ls_bytes = llen;
-	  *last_log = ls;
-	  last_log = &ls->ls_next;
+	  {
+	    NEW_VARZ (log_segment_t, ls);
+	    ls->ls_file = box_string (s_name);
+	    ls->ls_bytes = llen;
+	    *last_log = ls;
+	    last_log = &ls->ls_next;
+	  }
 	}
 
       if (nlog_segments == 1)
