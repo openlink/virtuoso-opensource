@@ -91,7 +91,15 @@ create procedure sum_o_p_score (inout o any, inout p any)
 ;
 
 
-create procedure sum_result (inout final any, inout res any, inout text_exp any, inout s varchar, inout start_inx int, inout end_inx int, inout s_rank real, inout lbl any)
+create procedure sum_result (inout final any, 
+                             inout res any, 
+			     inout text_exp any, 
+			     inout s varchar, 
+			     inout start_inx int, 
+			     inout end_inx int, 
+			     inout s_rank real, 
+			     inout lbl any,
+			     inout g any)
 {
   declare sorted, inx, tot, exc, elt, tsum any;
  tsum := 0;
@@ -113,6 +121,7 @@ create procedure sum_result (inout final any, inout res any, inout text_exp any,
 		    xmlelement ('column', xmlattributes ('erank' as "datatype"), cast (s_rank as varchar)),
  		    xmlelement ('column', xmlattributes ('url' as "datatype", fct_short_form (s) as "shortform"), s),
 		    xmlelement ('column', lbl),
+		    xmlelement ('column', xmlattributes ('url' as "datatype", fct_short_form (g) as "shortform"), g),
  		    xmlelement ('column', exc)
 		    );
   xte_nodebld_xmlagg_acc (final, elt);
@@ -128,8 +137,9 @@ create procedure sum_final (inout x any)
 
 create procedure s_sum_page_s (in rows any, in text_exp varchar)
 {
+--  dbg_obj_print (rows);
   /* fill the os and translate the iris and make sums */
-  declare inx, s, prev_s, prev_fill, fill, inx2, n, s_rank, lbl any;
+  declare inx, s, g, prev_s, prev_fill, fill, inx2, n, s_rank, lbl any;
   declare dp, os, res, final any;
   declare lng_pref any;
   lng_pref := connection_get ('langs');
@@ -151,6 +161,7 @@ create procedure s_sum_page_s (in rows any, in text_exp varchar)
       s_rank := rnk_scale (os[0]);
       s := ID_TO_IRI (rows[inx][0]);
       lbl := FCT_LABEL_S (rows[inx][0], 0, 'facets', lng_pref);
+      g := ID_TO_IRI (rows[inx][2]);
       prev_fill := fill;
       for (inx2 := 3; inx2 < os[1] + 3; inx2 := inx2 + 3)
         {
@@ -159,7 +170,7 @@ create procedure s_sum_page_s (in rows any, in text_exp varchar)
 	  res[fill + 2] := os[inx2 + 2];
 	  fill := fill + 3;
 	}
-      sum_result (final, res, text_exp, s, prev_fill, fill, s_rank, lbl);
+      sum_result (final, res, text_exp, s, prev_fill, fill, s_rank, lbl, g);
     }
   return sum_final (final);
 }
@@ -168,17 +179,17 @@ create procedure s_sum_page_s (in rows any, in text_exp varchar)
 create procedure s_sum_page_c (in rows any, in text_exp varchar)
 {
   /* fill the os and translate the iris and make sums */
-  declare inx, s, prev_s, prev_fill, fill, inx2, n, s_rank, lbl any;
+  declare inx, s, g, prev_s, prev_fill, fill, inx2, n, s_rank, lbl any;
   declare dp, os, so, res, final any;
   declare lng_pref any;
   lng_pref := connection_get ('langs');
-  dp := dpipe (1, 'ID_TO_IRI', '__RO2SQ', 'FCT_LABEL_L');
+  dp := dpipe (1, 'ID_TO_IRI', '__RO2SQ', 'FCT_LABEL_L', 'ID_TO_IRI');
   xte_nodebld_init (final);
   for (inx := 0; inx < length (rows); inx := inx + 1)
     {
       os := aref (rows, inx, 1);
       for (inx2 := 3; inx2 < os[1] + 3; inx2 := inx2 + 3)
-        dpipe_input (dp, aref (rows, inx, 0), os[inx2], vector (aref (rows, inx, 0), 0, 'facets', lng_pref));
+        dpipe_input (dp, aref (rows, inx, 0),os[inx2], vector (aref (rows, inx, 0), 0, 'facets', lng_pref), aref (rows, inx, 2));
     }
   n := 3 * dpipe_count (dp);
   --dbg_obj_print ('result length ', n);
@@ -194,13 +205,14 @@ create procedure s_sum_page_c (in rows any, in text_exp varchar)
 	  so := dpipe_next (dp, 0);
 	  --dbg_obj_print ('res ', fill, so);
 	  s := so[0];
+	  g := so[3];
 	  res[fill] := so[1];
 	  res[fill + 1] := os[inx2 + 1];
 	  res[fill + 2] := os[inx2 + 2];
 	  lbl := so[2];
 	  fill := fill + 3;
 	}
-      sum_result (final, res, text_exp, s, prev_fill, fill, s_rank, lbl);
+      sum_result (final, res, text_exp, s, prev_fill, fill, s_rank, lbl, g);
     }
   dpipe_next (dp, 1);
   --sum_result (final, res, text_exp, s, prev_fill, fill, s_rank);
