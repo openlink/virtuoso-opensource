@@ -399,28 +399,6 @@
       <form id="fct_form" action="/fct/facet.vsp" method="get">
 
 <?vsp
-        declare b_txt, b_title varchar;
-
-        b_txt := case when sid then 'Constrain with this Class' else 'Start Facets with this Class' end;
-        b_title := case 
-                     when sid 
-                     then 'Go back to the faceted browser and add a class constraint to current entity' 
-                     else 'Begin a new faceted browser session, starting with entities of this class as a constraint.' 
-                   end;
-        if (sid)
-          { 
-?>
-            <input type="hidden" name="sid" value="<?V sid ?>"/>
-            <input type="hidden" name="cmd" value="set_class"/>
-<?vsp
-          }
-        else
-          {
-?>
-            <input type="hidden" name="cmd" value="new_with_class"/>
-<?vsp
-          }
-
         if (is_class)
           {
 ?>
@@ -434,8 +412,27 @@
 <?vsp
             types_a := b3s_render_iri_select (types_a, 'name="iri" id="c_iri_sel"');
           }
+
+        if (sid)
+          { 
 ?>
-        <button class="fct_sel_as_type" title="<?V b_title ?>"><?V b_txt ?></button>
+            <input type="hidden" name="sid" value="<?V sid ?>"/>
+            <label for="cmd_sel">Command:</label>
+            <select name="cmd" id="cmd_sel">
+              <option value="new_with_class">Start New Facet</option>
+              <option value="set_class">Add To Current Facet</option>
+            </select>
+            <button class="fct_sel_as_type" title="">Go</a>
+<?vsp
+          }
+        else
+          {
+?>
+            <input type="hidden" name="cmd" value="new_with_class"/>
+            <button class="fct_sel_as_type" title="">New Facets Session with This Class</button>
+<?vsp
+          }
+?>
       </form>
 <?vsp    
   }

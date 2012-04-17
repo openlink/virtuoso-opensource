@@ -2277,6 +2277,8 @@ fct_vsp ()
 
   connection_set ('timeout', _to);
 
+  if ('new_with_class' = cmd) goto no_ses;
+
   whenever not found goto no_ses;
 
   fct_dbg_msg ('fct_vsp: select on sid');

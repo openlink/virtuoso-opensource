@@ -680,7 +680,7 @@ fct_xml_wrap (in tree any, in txt any)
                                                                fct_sparql_ser ("c1") as "sparql_ser"),
 							       __ro2sq ("c1")),
 				xmlelement ("column", fct_label_np ("c1", 0, ''facets'' )))))
-	     from (sparql define output:valmode "LONG"', view_type), ntxt);
+	     from (sparql define output:valmode "LONG" ', view_type), ntxt);
   if (n_cols = 3)
     http (sprintf ('select xmlelement ("result", xmlattributes (''%s'' as "type"),
                               xmlagg (xmlelement ("row",
@@ -1469,19 +1469,23 @@ fct_exec (in tree any,
 
 --  dbg_obj_print (qr2);
 
+  set isolation = 'uncommitted';
   exec (qr2, sqls, msg, vector (), 0, md, res);
 
   n_rows := row_count ();
   act := db_activity ();
   set result_timeout = 0;
+
   if (sqls <> '00000' and sqls <> 'S1TAT')
     signal (sqls, msg);
+
   if (not isarray (res) or 0 = length (res) or not isarray (res[0]) or 0 = length (res[0]))
     results[0] := xtree_doc ('<result/>');
   else
     results[0] := res[0][0];
 
   inx := 1;
+
 
   foreach (varchar tp in more) do
     {
