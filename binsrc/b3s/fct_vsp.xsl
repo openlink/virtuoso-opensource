@@ -355,7 +355,7 @@
 	<tr><th></th><th><xsl:value-of select="$t_term"/></th><!--th>Label</th--><th></th><th>Count</th></tr>
       </xsl:when>
       <xsl:when test="$view-type = 'text' or $view-type = 'text-d'">
-	<tr><th></th><th></th><th></th><th><xsl:value-of select="$s_term"/></th><th>Title</th><th>Text excerpt</th></tr>
+	<tr><th></th><th></th><th></th><th><xsl:value-of select="$s_term"/></th><th>Title</th><th>Named Graph</th></tr>
       </xsl:when>
       <xsl:when test="$view-type = 'text' or $view-type = 'propval-list'">
 	<tr><th>Value</th><th>Datatype</th></tr>
@@ -398,6 +398,7 @@
               <!--xsl:message terminate="no">
                 <xsl:value-of select="$query/query/class/@iri"/><xsl:text> | </xsl:text><xsl:value-of select="column[1]"/>
               </xsl:message-->
+
               <xsl:variable name="current_iri" select="column[1]"/>
               <xsl:variable name="use_iri">
                 <xsl:choose>
@@ -459,28 +460,10 @@
                 <xsl:value-of select="column[1]/@datatype"/>
               </td>
             </xsl:if>
-          <!--td>
-            <xsl:choose>
-              <xsl:when test="'' != ./@shortform">
-                <xsl:value-of select="./@shortform"/>
-              </xsl:when>
-              <xsl:otherwise>
-                <xsl:value-of select="column[2]"/>
-              </xsl:otherwise>
-            </xsl:choose>
-          </td-->
             <td>
               <xsl:apply-templates select="column[3]"/>
             </td>
 	  </xsl:when>
-          <!--xsl:when test="$view-type = 'propval-list'">
-          <td class="val">
-            <xsl:value-of select="column[1]" />
-          </td>
-          <td class="val_dt">
-            <xsl:value-of select="column[1]/@datatype" />
-          </td>
-          </xsl:when-->
           <xsl:otherwise> <!-- text matches view -->
             <td class="rnk">
               <xsl:for-each select="column[@datatype='trank' or @datatype='erank']">
@@ -553,6 +536,7 @@
       <option value="neg_range">Not Between</option>
       <option value="contains">Contains</option>
       <option value="in">In</option>
+      <option value="not_in">Not In</option>
     </select>
     <span id="cond_inp_ctr" style="display:none">
       <!--label for="ckb_neg" class="ckb">Negation:</label><input type="checkbox" name="neg" id="ckb_neg"/-->

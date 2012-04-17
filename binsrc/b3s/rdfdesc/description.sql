@@ -165,7 +165,7 @@ b3s_type (in subj varchar,
 
   if (length (subj))
     {
-      exec (sprintf ('sparql select ?l ?tp %s where { <%S> a ?tp . optional { ?tp rdfs:label ?l } }', _from, subj),
+      exec (sprintf ('sparql select ?l ?tp %s where { <%S> a ?tp optional { ?tp rdfs:label ?l } }', _from, subj), 
 	  null, null, vector (), 100, meta, data);
 
       if (length (data))
@@ -187,6 +187,49 @@ b3s_type (in subj varchar,
 }
 ;
 
+-- This is where we should have something smart... instead we return the last one...
+
+create procedure b3s_choose_e_type (inout type_a any)
+{
+    if (not length(type_a))
+      return vector ('http://www.w3.org/2002/07/owl#Thing', 'owl:Thing', 'A Thing');
+
+--    dbg_printf ('type_a length: %d', length(type_a));
+    return (type_a[length(type_a)-1]);
+}
+;
+
+--
+-- Detect if viewing an explicit or implicit class
+--
+
+create procedure b3s_find_class_type (in _s varchar, in _f varchar, inout types_a any) 
+{
+  declare i int;
+
+  for (i := 0; i < length (types_a); i := i + 1) 
+    {
+      if (types_a[i][0] in ('http://www.w3.org/2002/07/owl#Class', 
+                       'http://www.w3.org/2000/01/rdf-schema#Class')) 
+	return 1;
+    }
+
+  declare stmt, st, msg varchar;
+  declare meta,data any;
+  data := null;
+  st := '00000';
+  msg:= '';
+
+  stmt := sprintf ('sparql select ?to %s where {?to a <%S>}', _f, _s);
+
+  exec (stmt, st, msg, vector(), 1, meta, data);
+
+  if (length (data)) return 1;
+
+  return 0;
+}
+;
+
 create procedure b3s_uri_local_part (in uri varchar)
 {
   declare delim integer;
@@ -202,35 +245,67 @@ create procedure b3s_uri_local_part (in uri varchar)
 }
 ;
 
+
+--
+-- vector (vector (<type_iri>, <short_form>, <label or null>), vector (...), ...)
+--
+
 create procedure
-b3s_render_iri_select (in _s varchar,
-                       in _from varchar,
-                       in ins_str varchar := '',
-                       in sel int := -1)
-{
+b3s_get_types (in _s varchar,
+               in _from varchar,
+               in langs any) {
   declare stat, msg, meta, data any;
+  declare t_a any;
   declare i int;
+  declare stmt varchar;
+
+  stmt := sprintf ('sparql select distinct ?tp %s where { <%S> a ?tp }', _from, _s);
+  data := null;
+  t_a := vector();
 
   if (length (_s))
     {
       data := null;
-      exec (sprintf ('sparql select distinct ?tp %s where { <%S> a ?tp .}', _from, _s),
-	             stat, msg, vector (), 100, meta, data);
-      if (length (data))
-	{
-          if (sel = -1) sel := length(data)-1;
+      exec (stmt, stat, msg, vector (), 100, meta, data);
 
-          http (sprintf ('<select %s>', ins_str));
-
-	  for (i := 0; i < length(data); i := i + 1)
+      if (length(data)) 
+        {
+	  for (i := 0;i < length(data); i := i + 1) 
             {
-              http (sprintf ('<option value="%s"%s>%s</option>',
-                             data[i][0],
-                             case when i = sel then 'selected="true"' else '' end,
-                             b3s_uri_curie(data[i][0])));
+--                dbg_printf ('data[%d][0]: %s', i,data[i][0]);
+		t_a := vector_concat (t_a, 
+                                      vector (vector (data[i][0], 
+                                      b3s_uri_curie (data[i][0]),
+                                      b3s_label (data[i][0], langs))));
             }
-          http ('</select>');
         }
+    }
+  return (t_a);
+}                 
+;
+
+create procedure
+b3s_render_iri_select (inout types_a any, 
+                       in ins_str varchar := '',
+                       in sel int := -1)
+{
+  declare i int;
+
+  if (length (types_a) and isvector (types_a))
+    {
+      if (sel = -1) sel := length(types_a)-1;
+
+      http (sprintf ('<select %s>', ins_str));
+
+      for (i := 0; i < length(types_a); i := i + 1) 
+        { 
+          http (sprintf ('<option value="%s" title="%s" %s>%s</option>', 
+                         types_a[i][0],
+                         types_a[i][0],
+                         case when i = sel then 'selected="true"' else '' end,
+                         case when types_a[i][2] <> '' then types_a[i][2] else types_a[i][1] end));
+        } 
+      http ('</select>');
     }
   return i;
 }

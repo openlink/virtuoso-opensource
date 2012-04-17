@@ -51,7 +51,7 @@
   declare inf_parm varchar;
   declare ses_parms varchar;
   declare all_langs, lang_parm any;
-  declare c_iri, iri_type, iri_type_label, iri_uri, _F, _from, topof varchar;
+  declare c_iri, iri_type, iri_type_label, _F, _from, topof varchar;
   declare page, n_per_page, lim, ofs, dis_next int;
   declare vis, printed, _skip, _last int;
   declare all_lang any;
@@ -78,7 +78,7 @@
   white_page := 1;
   sid := null;
   inf := '';
-  iri_type := 'unknown';
+
   sp_mode := 'add';
 
   b3s_handle_ses (path, lines, params);
@@ -205,15 +205,6 @@
   http_header ('Cache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\n');
   label := ''; _subject := '';
 
-  --qry_str := sprintf ('sparql define input:inference "facets" select ?o (lang(?o)) %s where { <%S> virtrdf:label ?o }', _F, _S);
-  --b3s_dbg_out (dbg_out, 'qry: ' || qry_str);
-  --dbg_obj_print (qry_str);
-  --exec (qry_str, null, null, vector (), 0, meta, data);
-
-  --exec ('select __ro2sq (O), DB.DBA.RDF_LANGUAGE_OF_OBJ (__ro2sq (O)) , b3s_lbl_order (P) from RDF_QUAD table option (with ''facets'')
-  --	where S = __i2id (?) and P = __i2id (''http://www.openlinksw.com/schemas/virtrdf#label'', 0) and not is_bnode_iri_id (O)  order by 3',
-  --	null, null, vector (_S), 0, meta, data);
-
   label := b3s_label (_S, langs);
 
   if (iswidestring (label))
@@ -227,11 +218,26 @@
 
   b3s_dbg_out (dbg_out, 'label: "' || vlbl || '"');
 
-  iri_type := b3s_type (_S, _F, iri_uri, c_iri);
-  iri_type_label := b3s_label (c_iri, langs);
-  if (iri_type_label = '') iri_type_label := iri_type;
+  declare types_a any;
+  declare e_type any;
+  declare e_type_label varchar;
+  declare e_type_a any;
 
+--  dbg_printf ('_S:%s', _s); 
+
+  types_a := b3s_get_types (_S, _F, langs);
+
+--  dbg_obj_print (types_a);
+
+  e_type_a := b3s_choose_e_type (types_a);
+
+--  dbg_obj_print (e_type_a);
+
+  e_type := e_type_a[0];
+  e_type_label := e_type_a[1];
+  
   qry_str := sprintf ('sparql %s prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> prefix dc: <http://purl.org/dc/elements/1.1/> select ?o (lang(?o)) %s where { <%S> rdfs:comment ?o }', inf, _F, _S);
+
 --    dbg_obj_print (qry_str);
 
   b3s_dbg_out (dbg_out, 'qry: ' || qry_str);
@@ -380,57 +386,56 @@
     title="Click to generate local descriptor data for this entity"
     id="sp_link" rel="nofollow">Sponge</a>&nbsp;<a class="desc_permalink" href="<?= plink_href ?>">Permalink</a></h2>
       <div class="ds_inf_info">
-	    An Entity of Type : <a href="<?V iri_uri ?>"><?V iri_type_label ?></a>,
-	    within Data Space : <a href="http://<?V host ?>"><?V host ?></a><br/>
+	    An Entity of Type : <a href="<?V e_type ?>"><?V e_type_label ?></a>,
+	    within Data Space : <a href="http://<?V host ?>"><?V host ?></a> associated with source <a href="usage.vsp?g=<?U _S ?><?V ses_parms ?>">dataset(s)</a><br/>
 <?vsp
-  declare _ciri varchar;
-  declare num_types int;
 
-  if (c_iri = 'http://www.w3.org/2000/01/rdf-schema#Class' or c_iri = 'http://www.w3.org/2002/07/owl#Class') {
-    _ciri := page_resource_uri;
-  }
-  else {
-    _ciri := c_iri;
-  }
+  declare is_class int;
+  is_class := b3s_find_class_type (_S, _F, types_a);
 
-  if ('unknown' <> iri_type)
+  if ('http://www.w3.org/2002/07/owl#Thing' <> e_type or is_class) 
     {
 ?>
       <form id="fct_form" action="/fct/facet.vsp" method="get">
-        <label for="c_iri_sel">Type:</label>
-<?vsp
-      if (sid)
-        {
-?>
-          <input type="hidden" name="sid" value="<?V sid ?>"/>
-          <input type="hidden" name="cmd" value="set_class"/>
-<?vsp
-          num_types := b3s_render_iri_select (_S, _F, 'name="iri" id="c_iri_sel"');
-          if (num_types) {
-?>
-          <button class="fct_sel_as_type"
-             title="Add class constraint in current facet session">Constrain facet</button>
 
 <?vsp
-          }
-        }
-      else
-        {
+        if (is_class)
+          {
 ?>
-          <input type="hidden" name="cmd" value="new_with_class"/>
-<?vsp
-          num_types := b3s_render_iri_select (_S, _F, 'name="iri" id="c_iri_sel"');
-          if (num_types) {
+            <input type="hidden" name="iri" value="<?V _S ?>">
+<?vsp   
+          }
+        else 
+          {
 ?>
-          <button class="fct_sel_as_type"
-             title="Start new facet session with type">Start faceted browsing</button>
+            <label for="c_iri_sel">Type:</label>
+<?vsp
+            types_a := b3s_render_iri_select (types_a, 'name="iri" id="c_iri_sel"');
+          }
+
+        if (sid)
+          { 
+?>
+            <input type="hidden" name="sid" value="<?V sid ?>"/>
+            <label for="cmd_sel">Command:</label>
+            <select name="cmd" id="cmd_sel">
+              <option value="new_with_class">Start New Facet</option>
+              <option value="set_class">Add To Current Facet</option>
+            </select>
+            <button class="fct_sel_as_type" title="">Go</a>
 <?vsp
           }
-        }
+        else
+          {
+?>
+            <input type="hidden" name="cmd" value="new_with_class"/>
+            <button class="fct_sel_as_type" title="">New Facets Session with This Class</button>
+<?vsp
+          }
 ?>
       </form>
-<?vsp
-    }
+<?vsp    
+  }
   declare qrimg any;
   qrimg := fct_make_qr_code (fct_make_curie ('http://' || host || b3s_http_url (page_resource_uri), lines));
   if (qrimg is not null and strcasestr (ua, 'Mobile') is null) {
