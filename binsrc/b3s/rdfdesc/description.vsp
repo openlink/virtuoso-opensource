@@ -387,7 +387,7 @@
     id="sp_link" rel="nofollow">Sponge</a>&nbsp;<a class="desc_permalink" href="<?= plink_href ?>">Permalink</a></h2>
       <div class="ds_inf_info">
 	    An Entity of Type : <a href="<?V e_type ?>"><?V e_type_label ?></a>,
-	    within Data Space : <a href="http://<?V host ?>"><?V host ?></a><br/>
+	    within Data Space : <a href="http://<?V host ?>"><?V host ?></a> associated with source <a href="usage.vsp?g=<?U _S ?><?V ses_parms ?>">dataset(s)</a><br/>
 <?vsp
 
   declare is_class int;
