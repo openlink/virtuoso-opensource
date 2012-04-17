@@ -1357,6 +1357,7 @@ caddr_t _br_cstm (caddr_t stmt);
 #define U_ID_WS		4 	/* the WS user is needed to define compatibile WebDAV views */
 #define U_ID_NOBODY	5
 #define U_ID_NOGROUP	6
+#define U_ID_RDF_REPL	7
 #define U_ID_FIRST	100 	/* first free U_ID, let reserve space for a future system accounts */
 
 struct tp_data_s;

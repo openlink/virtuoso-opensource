@@ -4665,6 +4665,12 @@ bif_rgs_ack_cbk (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 caddr_t
+bif_rdf_repl_uid (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
+{
+  return box_num (U_ID_RDF_REPL);
+}
+
+caddr_t
 bif_rdf_graph_is_in_enabled_repl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
     return box_num (0);
@@ -5187,6 +5193,7 @@ rdf_box_init ()
   bif_define ("__rgs_ack", bif_rgs_ack);
   bif_define ("__rgs_ack_cbk", bif_rgs_ack_cbk);
   bif_set_uses_index (bif_rgs_ack_cbk );
+  bif_define_typed ("__rdf_repl_uid", bif_rdf_repl_uid, &bt_integer);
   repl_pub_name = box_dv_short_string ("__rdf_repl");
   text5arg = box_dv_short_string ("__rdf_repl_action (?, ?, ?, ?, ?)");
   text6arg = box_dv_short_string ("__rdf_repl_action (?, ?, ?, ?, ?, ?)");

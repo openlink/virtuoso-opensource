@@ -422,9 +422,9 @@ create procedure DB.DBA.RDF_REPL_START (in quiet integer := 0)
     }
   for (select RGGM_MEMBER_IID from DB.DBA.RDF_GRAPH_GROUP_MEMBER
   where RGGM_GROUP_IID = iri_to_id (UNAME'http://www.openlinksw.com/schemas/virtrdf#rdf_repl_graph_group')
-    and not (bit_and (__rdf_graph_approx_perms (RGGM_MEMBER_IID, http_nobody_uid()), 1)) ) do
+    and not __rgs_ack_cbk (RGGM_MEMBER_IID, __rdf_repl_uid(), 1) ) do
     {
-      signal ('RDF99', 'RDF replication can not be enabled because it will violate security rules for public read access to graph <' || id_to_iri(RGGM_MEMBER_IID) || '>');
+      signal ('RDF99', 'RDF replication can not be enabled because it will violate security rules for read access to graph <' || id_to_iri(RGGM_MEMBER_IID) || '> by __rdf_repl account');
     }
   repl_publish ('__rdf_repl', '__rdf_repl.log');
   repl_text ('__rdf_repl', '__rdf_repl_flush_queue()');
@@ -452,11 +452,7 @@ create procedure DB.DBA.RDF_REPL_GRAPH_INS (in memb_iri varchar)
   declare memb_iid IRI_ID;
   memb_iid := iri_to_id (memb_iri);
   memb_iri := id_to_iri (memb_iid);
-  if (memb_iri = DB.DBA.JSO_SYS_GRAPH())
-    signal ('RDF99', 'Can not enable RDF replication of <' || memb_iri || '> (the system metadata graph)');
   DB.DBA.RDF_GRAPH_GROUP_INS (UNAME'http://www.openlinksw.com/schemas/virtrdf#rdf_repl_graph_group', memb_iri);
-  if (not (bit_and (__rdf_graph_approx_perms (memb_iid, http_nobody_uid()), 1)))
-    signal ('RDF99', 'Can not enable RDF replication of graph <' || memb_iri || '> because it is not readable by public');
 }
 ;
 
@@ -13401,7 +13397,28 @@ create procedure DB.DBA.RDF_GRAPH_GROUP_INS (in group_iri varchar, in memb_iri v
   if (not exists (select top 1 1 from DB.DBA.RDF_GRAPH_GROUP where RGG_IRI = group_iri))
     signal ('RDF99', sprintf ('Graph group <%s> does not exist', group_iri));
   if (group_iri = 'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs')
+    {
     DB.DBA.RDF_GRAPH_CHECK_VISIBILITY_CHANGE (memb_iri, #i8192);
+      if (isstring (registry_get ('DB.DBA.RDF_REPL'))
+        and exists (select top 1 1 from DB.DBA.RDF_GRAPH_GROUP_MEMBER
+          where RGGM_GROUP_IID = iri_to_id (UNAME'http://www.openlinksw.com/schemas/virtrdf#rdf_repl_graph_group') and RGGM_MEMBER_IID = memb_iid)
+        and not exists (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER
+          where RGU_GRAPH_IID = memb_iid and RGU_USER_ID = http_nobody_uid() and bit_and (RGU_PERMISSIONS, 1) )
+        and not exists (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER
+          where RGU_GRAPH_IID = #i8192 and RGU_USER_ID = http_nobody_uid() and bit_and (RGU_PERMISSIONS, 1) )
+        and not exists (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER
+          where RGU_GRAPH_IID = memb_iid and RGU_USER_ID = __rdf_repl_uid() and bit_and (RGU_PERMISSIONS, 1) )
+        and not exists (select RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER
+          where RGU_GRAPH_IID = #i8192 and RGU_USER_ID = __rdf_repl_uid() and bit_and (RGU_PERMISSIONS, 1) ) )
+        signal ('RDF99', 'Can not add graph <' || memb_iri || '> to group of private graphs <' || group_iri || '>; either stop the RDF replication of this graph or grant an explicit read permission to __rdf_repl account');
+    }
+  else if (group_iri = 'http://www.openlinksw.com/schemas/virtrdf#rdf_repl_graph_group')
+    {
+      if (memb_iri = DB.DBA.JSO_SYS_GRAPH())
+        signal ('RDF99', 'Graph group <' || group_iri || '> is for RDF replication; can not enable RDF replication of <' || memb_iri || '> (the system metadata graph)');
+      if (isstring (registry_get ('DB.DBA.RDF_REPL')) and not __rgs_ack_cbk (memb_iid, __rdf_repl_uid(), 1))
+        signal ('RDF99', 'Graph group <' || group_iri || '> is for RDF replication; can not enable RDF replication of graph <' || memb_iri || '> because it is not readable by __rdf_repl account');
+    }
   insert soft DB.DBA.RDF_GRAPH_GROUP_MEMBER (RGGM_GROUP_IID, RGGM_MEMBER_IID)
   values (group_iid, memb_iid);
   commit work;
@@ -13694,11 +13711,11 @@ create procedure DB.DBA.RDF_GRAPH_USER_PERMS_SET (in graph_iri varchar, in uname
     signal ('RDF99', sprintf ('Default permissions of user "%s" on RDF quad store are broader than new permissions on specific graph <%s>', uname, graph_iri));
   if (uname = 'nobody')
     {
-      jso_mark_affected (graph_iri);
       if (isstring (registry_get ('DB.DBA.RDF_REPL')) and not (bit_and (perms, 1)) and
         exists (select top 1 1 from DB.DBA.RDF_GRAPH_GROUP_MEMBER
           where RGGM_GROUP_IID = iri_to_id (UNAME'http://www.openlinksw.com/schemas/virtrdf#rdf_repl_graph_group') and RGGM_MEMBER_IID = graph_iid) )
         signal ('RDF99', 'Can not disable public read access to <' || id_to_iri (graph_iid) || '> while it is included in RDF replication and the replication is enabled');
+      jso_mark_affected (graph_iri);
     }
   else
     {
@@ -13708,6 +13725,10 @@ create procedure DB.DBA.RDF_GRAPH_USER_PERMS_SET (in graph_iri varchar, in uname
         15 );
       if (bit_and (bit_not (perms), common_perms))
         signal ('RDF99', sprintf ('Permissions of unauthenticated user are broader than new permissions of user "%s" on specific graph <%s>', uname, graph_iri));
+      if ((uname = '__rdf_repl') and isstring (registry_get ('DB.DBA.RDF_REPL')) and not (bit_and (perms, 1)) and
+            exists (select top 1 1 from DB.DBA.RDF_GRAPH_GROUP_MEMBER
+              where RGGM_GROUP_IID = iri_to_id (UNAME'http://www.openlinksw.com/schemas/virtrdf#rdf_repl_graph_group') and RGGM_MEMBER_IID = graph_iid) )
+        signal ('RDF99', 'Can not disable read access of __rdf_repl account to <' || id_to_iri (graph_iid) || '> while it is included in RDF replication and the replication is enabled');
     }
   if (not (exists (select top 1 1 from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = #i0 and RGU_USER_ID = 0)))
     DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('dba', 1023);
