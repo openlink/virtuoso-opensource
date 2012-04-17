@@ -355,7 +355,7 @@
 	<tr><th></th><th><xsl:value-of select="$t_term"/></th><!--th>Label</th--><th></th><th>Count</th></tr>
       </xsl:when>
       <xsl:when test="$view-type = 'text' or $view-type = 'text-d'">
-	<tr><th></th><th></th><th></th><th><xsl:value-of select="$s_term"/></th><th>Title</th><th>Graph</th></tr>
+	<tr><th></th><th></th><th></th><th><xsl:value-of select="$s_term"/></th><th>Title</th><th>Named Graph</th></tr>
       </xsl:when>
       <xsl:when test="$view-type = 'text' or $view-type = 'propval-list'">
 	<tr><th>Value</th><th>Datatype</th></tr>
