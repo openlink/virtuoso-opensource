@@ -89,13 +89,16 @@ import org.openrdf.repository.Repository;
 import org.openrdf.repository.RepositoryConnection;
 import org.openrdf.repository.RepositoryException;
 import org.openrdf.repository.RepositoryResult;
+import org.openrdf.rio.ParserConfig;
 import org.openrdf.rio.RDFFormat;
 import org.openrdf.rio.RDFHandler;
 import org.openrdf.rio.RDFHandlerException;
 import org.openrdf.rio.RDFParseException;
 import org.openrdf.rio.RDFParser;
+import org.openrdf.rio.RDFParser.DatatypeHandling;
 import org.openrdf.rio.Rio;
 import org.openrdf.rio.helpers.RDFHandlerBase;
+import org.openrdf.rio.helpers.ParseErrorLogger;
 import org.openrdf.rio.n3.N3ParserFactory;
 import org.openrdf.rio.ntriples.NTriplesParserFactory;
 import org.openrdf.rio.rdfxml.RDFXMLParserFactory;
@@ -160,6 +163,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	private int psInsertCount = 0;
 	private boolean useLazyAdd = false;
 	private int prefetchSize = 200;
+	private volatile ParserConfig parserConfig = new ParserConfig(true, true, false, DatatypeHandling.IGNORE);
 
 
 	public VirtuosoRepositoryConnection(VirtuosoRepository repository, Connection connection) throws RepositoryException {
@@ -180,6 +184,29 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 
 
+	/**
+	 * Set the parser configuration this connection should use for
+	 * RDFParser-based operations.
+	 * 
+	 * @param config
+	 *        a Rio RDF Parser configuration.
+	 */
+	public void setParserConfig(ParserConfig config)
+	{
+		this.parserConfig = parserConfig;
+	}
+
+	/**
+	 * Returns the parser configuration this connection uses for Rio-based
+	 * operations.
+	 * 
+	 * @return a Rio RDF parser configuration.
+	 */
+	public ParserConfig getParserConfig()
+	{
+		return parserConfig;
+	}
+	
 	/**
 	 * Gets a ValueFactory for this RepositoryConnection.
 	 * 
@@ -901,11 +928,10 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 		try {
 			RDFParser parser = Rio.createParser(format, getRepository().getValueFactory());
+		        parser.setParserConfig(getParserConfig());
+		        parser.setParseErrorListener(new ParseErrorLogger());
 
 			// set up a handler for parsing the data from reader
-			parser.setVerifyData(true);
-			parser.setStopAtFirstError(true);
-			parser.setDatatypeHandling(RDFParser.DatatypeHandling.IGNORE);
 			final PreparedStatement ps = prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
 			final Resource[] _contexts = checkDMLContext(contexts);
 
