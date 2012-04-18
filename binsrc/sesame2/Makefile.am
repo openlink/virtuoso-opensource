@@ -53,7 +53,7 @@ SESAME_XSL = \
 SAMPLES_SOURCE= \
 	virtuoso_driver/VirtuosoTest.java
 
-SESAME_CLASSPATH= lib/slf4j-api-1.6.1.jar:lib/slf4j-simple-1.6.1.jar:lib/openrdf-sesame-2.5.6-onejar.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc3.jar
+SESAME_CLASSPATH= lib/slf4j-api-1.6.1.jar:lib/slf4j-simple-1.6.1.jar:lib/openrdf-sesame-2.6.5-onejar.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc3.jar
 
 all-am:	$(TARGETS)
 
