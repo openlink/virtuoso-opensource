@@ -1373,10 +1373,10 @@ fct_query (in tree any, in plain integer := 0)
   fct_text (xpath_eval ('//query', tree), 0, s, txt, pre, post, tree, plain);
 
   http (' where {', pre);
-  if (add_graph) http (' graph ?g { ', pre);
+  if (add_graph) http (' quad map virtrdf:DefaultQuadMap { graph ?g { ', pre);
   http (txt, pre);
   http (' }', pre);
-  if (add_graph) http (' }', pre);
+  if (add_graph) http (' } } ', pre);
   http (post, pre);
 
   return string_output_string (pre);
