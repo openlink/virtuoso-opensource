@@ -1342,7 +1342,7 @@ r2rml_create_dataset (in nth int, in qualifier varchar, in _tbls any, in gen_sta
        pk_text := '';
        for select FKCOLUMN_NAME, PKCOLUMN_NAME from SYS_FOREIGN_KEYS where FK_TABLE = fkt and PK_TABLE = tbl order by KEY_SEQ do
    	 {
-   	   jc := jc || sprintf (' rr:joinCondition [ rr:child "%s" ; rr:parent "%s" ] ;', FKCOLUMN_NAME, PKCOLUMN_NAME); 
+   	   jc := jc || sprintf (' rr:joinCondition [ rr:child "%s" ; rr:parent "%s" ] ;', PKCOLUMN_NAME, FKCOLUMN_NAME);
 	   pk_text := pk_text || sprintf ('/{%s}', FKCOLUMN_NAME);
    	 }
        if (tbl <> fkt)
