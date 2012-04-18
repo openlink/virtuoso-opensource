@@ -76,7 +76,7 @@ _pthread_call_failed (const char *file, int line, int error)
 {
   char msgbuf[200];
 
-  snprintf (msgbuf, sizeof (msgbuf), "pthread operation failed (%d)", error);
+  snprintf (msgbuf, sizeof (msgbuf), "pthread operation failed (%d) %s", error, strerror (error));
 #ifdef MTX_DEBUG
   gpf_notice (file, line, msgbuf);
 #else
