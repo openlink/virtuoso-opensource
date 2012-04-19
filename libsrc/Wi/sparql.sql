@@ -6611,7 +6611,7 @@ create function DB.DBA.SPARUL_CLEAR (in graph_iris any, in inside_sponge integer
       exec (sprintf ('
       delete from DB.DBA.RDF_QUAD
       where G = __i2id (''%S'') ', g_iri));
-      cl_exec ('delete from DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS, index_only, no cluster) where G = ? option (index RDF_QUAD_GS)', vector (g_iid));
+      DB.DBA.CL_EXEC ('delete from DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS, index_only, no cluster) where G = ? option (index RDF_QUAD_GS)', vector (g_iid));
       delete from DB.DBA.RDF_OBJ_RO_FLAGS_WORDS
       where VT_WORD = rdf_graph_keyword (g_iid);
       if (not inside_sponge)
@@ -8964,6 +8964,49 @@ create procedure DB.DBA.RDF_DICT_OF_TRIPLES_TO_THREE_COLS (in dict any, in destr
       else if (S is not null and P is not null and O is not null)
         result (S, P, O --, 0, __xsd_type (O, NULL), NULL
         );
+    }
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.RDF_DICT_OF_TRIPLES_TO_FOUR_COLS (in dict any, in destructive integer := 0)
+{
+  declare ctr, len integer;
+  declare triples, O any;
+  declare S, P, O_DT, O_LANG varchar;
+  declare O_IS_IRI, dt_twobyte, lang_twobyte integer;
+  triples := dict_list_keys (dict, destructive);
+  DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
+  exec_result_names (vector (vector ('S', 182, 0, 4072, 1, 0, 1, 0, 0, 0, 0, 0), vector ('P', 182, 0, 4072, 1, 0, 1, 0, 0, 0, 0, 0), vector ('O', 182, 0, 2147483647, 1, 0, 0, 0, 0, 0, 0, 0), vector ('O_TYPE', 182, 0, 4072, 1, 0, 1, 0, 0, 0, 0, 0)));
+  len := length (triples);
+  for (ctr := 0; ctr < len; ctr := ctr+1)
+    {
+      if (isiri_id (triples[ctr][0]))
+        S := id_to_iri (triples[ctr][0]);
+      else
+        S := triples[ctr][0];	
+      	
+      if (isiri_id (triples[ctr][1]))
+        P := id_to_iri (triples[ctr][1]);
+      else
+        P := triples[ctr][1]; 	
+      O := triples[ctr][2];
+      if (isiri_id (O))
+        {
+          result (S, P, id_to_iri (O), NULL);
+        }
+      else if (is_rdf_box (O))
+        {
+          dt_twobyte := rdf_box_type (O);
+          O_DT := case (dt_twobyte) when 257 then NULL else coalesce (
+            (select id_to_iri (RDT_IID) from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = dt_twobyte) ) end;
+          lang_twobyte := rdf_box_lang (O);
+          --O_LANG := case (lang_twobyte) when 257 then NULL else coalesce (
+          --  (select lower (RL_ID) from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = lang_twobyte) ) end;
+          result (S, P, O, coalesce (O_DT, ''));
+        }
+      else if (S is not null and P is not null and O is not null)
+        result (S, P, O, coalesce (__xsd_type (O, NULL), ''));
     }
 }
 ;
@@ -14881,18 +14924,18 @@ create procedure cl_inx_recov (in force int := 0)
 {
   declare old_mode, tries int;
   if (force)
-    cl_exec ('registry_remove (''__rb_id_only_for_plain_ro_obj'')');
+    DB.DBA.CL_EXEC ('registry_remove (''__rb_id_only_for_plain_ro_obj'')');
   if (registry_get ('__rb_id_only_for_plain_ro_obj') = '1')
     return;
-  cl_exec ('checkpoint_interval (0)');
+  DB.DBA.CL_EXEC ('checkpoint_interval (0)');
   log_message ('Automatic checkpoint is stopped, must enable manually once upgrade finished.');
-  cl_exec ('__dbf_set (''cl_max_keep_alives_missed'', 10000)');
-  cl_exec ('__dbf_set (''cl_non_logged_write_mode'', 1)');
-  cl_exec ('checkpoint');
+  DB.DBA.CL_EXEC ('__dbf_set (''cl_max_keep_alives_missed'', 10000)');
+  DB.DBA.CL_EXEC ('__dbf_set (''cl_non_logged_write_mode'', 1)');
+  DB.DBA.CL_EXEC ('checkpoint');
   old_mode := log_enable (2,1);
-  cl_exec ('exec_from_daq (''cl_tmp_inx_recov_fill ()'')');
+  DB.DBA.CL_EXEC ('exec_from_daq (''cl_tmp_inx_recov_fill ()'')');
 clear_retry:
-  cl_exec ('exec_from_daq (''cl_inx_recov_clean ()'')');
+  DB.DBA.CL_EXEC ('exec_from_daq (''cl_inx_recov_clean ()'')');
   if (
        exists (select 1 from rdf_quad table option (index rdf_quad)) or
        exists (select 1 from rdf_quad table option (index rdf_quad_pogs)) or
@@ -14903,15 +14946,15 @@ clear_retry:
      if (tries > 100)
        {
          log_message ('Quad store can not be cleaned, data reloading is strictly recommended.');
-	 cl_exec ('raw_exit ()');
+	 DB.DBA.CL_EXEC ('raw_exit ()');
        }
      log_message (sprintf ('Quad store is not fully cleaned, will try again [%d]', tries));
      goto clear_retry;
    }
-  cl_exec ('exec_from_daq (''cl_inx_recov_fill_1 ()'')');
-  cl_exec ('registry_set (''__rb_id_only_for_plain_ro_obj'', ''1'')');
+  DB.DBA.CL_EXEC ('exec_from_daq (''cl_inx_recov_fill_1 ()'')');
+  DB.DBA.CL_EXEC ('registry_set (''__rb_id_only_for_plain_ro_obj'', ''1'')');
   if (not force)
-    cl_exec ('checkpoint');
+    DB.DBA.CL_EXEC ('checkpoint');
   log_message ('integrity check (completeness of index RDF_QUAD_POGS of DB.DBA.RDF_QUAD) ...');
   if (exists (select top 1 1 from DB.DBA.RDF_QUAD a table option (index RDF_QUAD) where not exists (select 1 from DB.DBA.RDF_QUAD b table option (loop, index RDF_QUAD_POGS)
 		where a.g = b.g and a.p = b.p and a.o = b.o and a.s = b.s)))
@@ -14922,7 +14965,7 @@ clear_retry:
 	where a.g = b.g and a.p = b.p and a.o = b.o and a.s = b.s)))
     log_message ('** IMPORTANT WARNING: not all rows of DB.DBA.RDF_QUAD are found in RDF_QUAD_POGS, data reloading is strictly recommended.');
   log_enable (old_mode, 1);
-  cl_exec ('__dbf_set (''cl_non_logged_write_mode'', 0)');
+  DB.DBA.CL_EXEC ('__dbf_set (''cl_non_logged_write_mode'', 0)');
   log_message ('Update complete.');
   if (force)
     log_message ('Must do checkpoint to persist the db state.');

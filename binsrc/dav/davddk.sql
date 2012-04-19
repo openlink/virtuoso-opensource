@@ -1129,6 +1129,17 @@ props_done:
     values (http_nobody_uid (), 'nobody','Special account', 'nobody@example.domain', pwd_magic_calc ('nobody', uuid()), http_admin_gid (), '110100000', 1, 0, 1);
   insert soft DB.DBA.SYS_USERS (U_ID, U_NAME, U_FULL_NAME, U_E_MAIL, U_PASSWORD, U_GROUP, U_DEF_PERMS, U_ACCOUNT_DISABLED, U_SQL_ENABLE, U_DAV_ENABLE, U_IS_ROLE)
     values (http_nogroup_gid (), 'nogroup','Special group', 'nobody@example.domain', '', NULL, '110100000', 0, 0, 1, 1);
+  if (not exists (select top 1 1 from DB.DBA.SYS_USERS where U_ID = __rdf_repl_uid()))
+    {
+      declare passwd varchar;
+      passwd := uuid();
+      insert replacing DB.DBA.SYS_USERS (U_ID, U_NAME, U_FULL_NAME, U_E_MAIL, U_PASSWORD, U_GROUP, U_DEF_PERMS, U_ACCOUNT_DISABLED, U_SQL_ENABLE, U_DAV_ENABLE)
+        values (__rdf_repl_uid(), '__rdf_repl','Special account', 'nobody@example.domain', pwd_magic_calc ('__rdf_repl', passwd), http_admin_gid (), '110100000', 1, 1, 1);
+      DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_set_user_struct (?,?,?,?,?,?,?)', vector (
+          '__rdf_repl', passwd, __rdf_repl_uid(), http_admin_gid (), concat ('Q ', 'DB'), 0, NULL, NULL));
+      DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_user_enable (?, ?)', vector ('__rdf_repl', 0));
+    }
+  commit work;
   __atomic (0);
   return;
 }

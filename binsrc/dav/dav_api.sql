@@ -1799,6 +1799,9 @@ DAV_AUTHENTICATE_SSL_WEBID ()
     {
       cert := client_attr ('client_certificate');
       dummy := null;
+      -- !!!
+      -- if (not DB.DBA.WEBID_AUTH_GEN_2 (cert, 0, null, 1, 0, webid, dummy, 0, vtype))
+      --   webid := null;
       DB.DBA.WEBID_AUTH_GEN_2 (cert, 0, null, 1, 0, webid, dummy, 0, vtype);
           }
   return webid;
@@ -4675,7 +4678,7 @@ create procedure WS.WS.WAC_INSERT (
   --dbg_obj_print ('WAC_INSERT', path);
   declare graph varchar;
 
-  graph := WS.WS.DAV_IRI (path);
+  graph := WS.WS.WAC_GRAPH (path);
     aciContent := cast (blob_to_string (aciContent) as varchar);
     if (update_acl)
     {
@@ -4694,7 +4697,7 @@ create procedure WS.WS.WAC_DELETE (
   --dbg_obj_print ('WAC_DELETE', path);
   declare graph, st, msg varchar;
 
-  graph := WS.WS.DAV_IRI (path);
+  graph := WS.WS.WAC_GRAPH (path);
     if (update_acl)
     {
       connection_set ('dav_acl_sync', 1);
@@ -4702,7 +4705,14 @@ create procedure WS.WS.WAC_DELETE (
       connection_set ('dav_acl_sync', null);
     }
   set_user_id ('dba');
-  SPARQL clear graph ?:graph;
+  delete from DB.DBA.RDF_QUAD where G = iri_to_id (graph);
+}
+;
+
+create procedure WS.WS.WAC_GRAPH (
+  in path varchar)
+{
+  return rtrim (WS.WS.DAV_IRI (path), '/') || '/';
   }
 ;
 
@@ -6747,7 +6757,7 @@ DAV_HOME_DIR_UPDATE ()
 {
   if (isstring (registry_get ('DAV_HOME_DIR_UPDATE')))
     return;
-  for (select U_NAME from SYS_USERS where U_DAV_ENABLE = 1 and U_IS_ROLE = 0 and U_NAME <> 'nobody') do
+  for (select U_NAME from SYS_USERS where U_DAV_ENABLE = 1 and U_IS_ROLE = 0 and U_NAME <> 'nobody' and U_NAME <> '__rdf_repl') do
     DAV_HOME_DIR_CREATE (U_NAME);
   registry_set ('DAV_HOME_DIR_UPDATE', 'done');
 }

@@ -779,6 +779,7 @@ extern void sparp_check_tmpl (sparp_t *sparp, ccaddr_t tmpl, int qmv_known, dk_s
 extern caddr_t sparp_patch_tmpl (sparp_t *sparp, ccaddr_t tmpl, dk_set_t alias_replacements);
 
 extern int ssg_is_odbc_cli (void);
+extern int ssg_is_odbc_msaccess_cli (void);
 
 /*! This searches for declaration of type by its name. NULL name result in NULL output, unknown name is an error */
 extern ssg_valmode_t ssg_find_valmode_by_name (ccaddr_t name);
@@ -844,12 +845,23 @@ void ssg_free_internals (spar_sqlgen_t *ssg);
 
 #define ssg_putchar(c) session_buffered_write_char (c, ssg->ssg_out)
 #define ssg_puts(strg) session_buffered_write (ssg->ssg_out, strg, strlen (strg))
+
 #ifdef NDEBUG
 #define ssg_puts_with_comment(strg,cmt) session_buffered_write (ssg->ssg_out, strg, strlen (strg))
 #else
 #define ssg_puts_with_comment(strg,cmt) session_buffered_write (ssg->ssg_out, strg " /* " cmt " */", strlen (strg " /* " cmt " */"))
 #endif
+
+#define ssg_print_asname_tail(cmt,asname) do { \
+  if (NULL != (asname)) { \
+      ssg_puts_with_comment (" AS", cmt); \
+      ssg_putchar (' '); \
+      ssg_prin_id (ssg, (asname)); \
+    } } while (0);
+
 #define ssg_putbuf(buf,bytes) session_buffered_write (ssg->ssg_out, (buf), (bytes))
+
+
 
 #ifdef DEBUG
 extern void spar_sqlprint_error_impl (spar_sqlgen_t *ssg, const char *msg);
@@ -934,7 +946,8 @@ extern void ssg_print_qm_sql (spar_sqlgen_t *ssg, SPART *tree);
 #define SSG_RETVAL_TOPMOST			0x100
 #define SSG_RETVAL_NAME_INSTEAD_OF_TREE		0x200
 #define SSG_RETVAL_DIST_SER_LONG		0x400	/*!< Use DB.DBA.RDF_DIST_SER_LONG wrapper to let DISTINCT work with formatters. */
-#define SSG_RETVAL_OPTIONAL_MAKES_NULLABLE	0x800   /*!< Return value should be printed as nullable because it comes from, say, OPTIONAL sub-gp */
+#define SSG_RETVAL_OPTIONAL_MAKES_NULLABLE	0x800	/*!< Return value should be printed as nullable because it comes from, say, OPTIONAL sub-gp */
+#define SSG_RETVAL_STRICT_TYPES			0x1000	/*!< Every returned expression should either be accomplished with its (known) SQL type or be CAST-ed to the VARCHAR (esp., if it's ANY) */
 /* descend = 0 -- at level, can descend. 1 -- at sublevel, can't descend, -1 -- at level, can't descend */
 extern int ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp,
   sparp_equiv_t *eq, int flags, ssg_valmode_t needed, const char *asname );

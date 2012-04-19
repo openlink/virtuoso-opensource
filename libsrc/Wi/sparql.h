@@ -44,8 +44,12 @@ extern "C" {
 
 #ifdef SPARQL_DEBUG
 #define spar_dbg_printf(x) printf x
+#define SPARQL_DBG_NAME(nm) dbg_##nm
+#define SPARQL_DBG_PARAMS const char *file, int line,
 #else
 #define spar_dbg_printf(x)
+#define SPARQL_DBG_NAME
+#define SPARQL_DBG_PARAMS
 #endif
 
 /*! Number of NULLs should match number of fields in rdf_val_range_t */

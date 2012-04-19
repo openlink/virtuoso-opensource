@@ -5,6 +5,7 @@ endif
 
 .SUFFIXES: .sql .m4
 
+.PHONY: all
 all: test
 
 .m4.sql:

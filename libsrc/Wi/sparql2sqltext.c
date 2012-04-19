@@ -36,6 +36,7 @@
 #include "date.h" /* for DT_DT_TYPE */
 #include "numeric.h"
 #include "rdf_core.h" /* for IRI_TO_ID_WITH_CREATE */
+#include "xml_ecm.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -240,6 +241,19 @@ ssg_is_odbc_cli (void)
   return 1;
 }
 
+int
+ssg_is_odbc_msaccess_cli (void)
+{
+  caddr_t *info;
+  client_connection_t * cli = sqlc_client ();
+  if (!cli || !cli->cli_session || cli->cli_ws || cli->cli_is_log)
+    return 0;
+  info = cli->cli_info;
+  if (NULL == info)
+    return 0;
+  return !strcmp (info[LGID_APP_NAME], "MSACCESS");
+}
+
 void
 ssg_find_formatter_by_name_and_subtype (ccaddr_t name, ptrlong subtype,
   const char **ret_formatter, const char **ret_agg_formatter, const char **ret_agg_mdata )
@@ -367,6 +381,8 @@ ssg_find_formatter_by_name_and_subtype (ccaddr_t name, ptrlong subtype,
       default: return;
       }
   if (!strcmp (name, "_UDBC_"))
+    return;
+  if (!strcmp (name, "_MSACCESS_"))
     return;
   if (!strcmp (name, "ATOM;XML"))
     switch (subtype)
@@ -4043,6 +4059,8 @@ ssg_valmode_t
 sparp_rettype_of_function (sparp_t *sparp, caddr_t name, SPART *tree)
 {
   ssg_valmode_t res = sparp_find_valmode_by_name_prefix (sparp, name, SSG_VALMODE_SQLVAL);
+  const char *xsd_name = NULL;
+  long /* not dtp_t */ ret_dtp;
   if (SSG_VALMODE_SPECIAL == res)
     {
       if (!strcmp (name, "SPECIAL::sql:RDF_MAKE_GRAPH_IIDS_OF_QNAMES"))
@@ -4090,32 +4108,51 @@ sparp_rettype_of_function (sparp_t *sparp, caddr_t name, SPART *tree)
       bif_type_t ** bt = (bif_type_t **) id_hash_get (name_to_bif_type, (char *) &iduqname);
       if (NULL != bt)
         {
-          switch (bt[0]->bt_dtp)
-            {
-              case DV_DOUBLE_FLOAT:
-              case DV_SINGLE_FLOAT:
-              case DV_NUMERIC:
-              case DV_LONG_INT:
-              case DV_DATE:
-              case DV_TIME:
-              case DV_DATETIME: return SSG_VALMODE_NUM;
-              default: return SSG_VALMODE_SQLVAL;
-            }
+          ret_dtp = bt[0]->bt_dtp;
+          goto ret_dtp_found; /* see below */
         }
     }
-  else if (!strncmp (name, XMLSCHEMA_NS_URI, XMLSCHEMA_NS_URI_LEN))
+  else if (!strncmp (name, XMLSCHEMA_NS_URI "#", XMLSCHEMA_NS_URI_LEN + 1))
+    xsd_name = name + XMLSCHEMA_NS_URI_LEN + 1;
+  else if (!strncmp (name, "xpath:" XMLSCHEMA_NS_URI "#:", 6 + XMLSCHEMA_NS_URI_LEN + 2))
+    xsd_name = name + 6 + XMLSCHEMA_NS_URI_LEN + 2;
+  if (NULL != xsd_name)
     {
-      const char *localpart = name + XMLSCHEMA_NS_URI_LEN;
-      if (!strcmp (localpart, uname_xmlschema_ns_uri_hash_boolean + XMLSCHEMA_NS_URI_LEN))	return SSG_VALMODE_BOOL;
-      if (!strcmp (localpart, uname_xmlschema_ns_uri_hash_date + XMLSCHEMA_NS_URI_LEN))		return SSG_VALMODE_LONG;
-      if (!strcmp (localpart, uname_xmlschema_ns_uri_hash_dateTime + XMLSCHEMA_NS_URI_LEN))	return SSG_VALMODE_LONG;
-      if (!strcmp (localpart, uname_xmlschema_ns_uri_hash_decimal + XMLSCHEMA_NS_URI_LEN))	return SSG_VALMODE_NUM;
-      if (!strcmp (localpart, uname_xmlschema_ns_uri_hash_double + XMLSCHEMA_NS_URI_LEN))	return SSG_VALMODE_NUM;
-      if (!strcmp (localpart, uname_xmlschema_ns_uri_hash_float + XMLSCHEMA_NS_URI_LEN))	return SSG_VALMODE_NUM;
-      if (!strcmp (localpart, uname_xmlschema_ns_uri_hash_string + XMLSCHEMA_NS_URI_LEN))	return SSG_VALMODE_LONG;
-      if (!strcmp (localpart, uname_xmlschema_ns_uri_hash_time + XMLSCHEMA_NS_URI_LEN))		return SSG_VALMODE_LONG;
+      if (!strcmp (xsd_name, "boolean"	))	return SSG_VALMODE_BOOL;
+      if (!strcmp (xsd_name, "date"	))	return SSG_VALMODE_NUM;
+      if (!strcmp (xsd_name, "dateTime"	))	return SSG_VALMODE_NUM;
+      if (!strcmp (xsd_name, "decimal"	))	return SSG_VALMODE_NUM;
+      if (!strcmp (xsd_name, "double"	))	return SSG_VALMODE_NUM;
+      if (!strcmp (xsd_name, "float"	))	return SSG_VALMODE_NUM;
+      if (!strcmp (xsd_name, "string"	))	return SSG_VALMODE_LONG;
+      if (!strcmp (xsd_name, "time"	))	return SSG_VALMODE_NUM;
+    }
+  if (!strncmp (name, "xpath:", 6))
+    {
+      char *colonized_funname = name + 6;
+      xpf_metadata_t ** metas_ptr = (xpf_metadata_t **)id_hash_get (xpf_metas, (caddr_t)(&colonized_funname));
+      if (NULL != metas_ptr)
+        {
+          ret_dtp = metas_ptr[0]->xpfm_res_dtp;
+          goto ret_dtp_found; /* see below */
+        }
     }
   return SSG_VALMODE_SQLVAL /* not "return res" */;
+
+ret_dtp_found:
+  switch (ret_dtp)
+    {
+      case DV_DOUBLE_FLOAT:
+      case DV_SINGLE_FLOAT:
+      case DV_NUMERIC:
+      case DV_LONG_INT:
+      case DV_DATE:
+      case DV_TIME:
+      case DV_DATETIME: return SSG_VALMODE_NUM;
+      case XPDV_BOOL: return SSG_VALMODE_BOOL;
+      default: break;
+    }
+  return SSG_VALMODE_SQLVAL;
 }
 
 
@@ -6688,10 +6725,10 @@ ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_va
         int bigtext, arg_ctr, arg_count = BOX_ELEMENTS (tree->_.funcall.argtrees);
         xqf_str_parser_desc_t *parser_desc;
         ssg_valmode_t native = sparp_rettype_of_function (ssg->ssg_sparp, tree->_.funcall.qname, tree);
-        if (((SSG_VALMODE_SHORT_OR_LONG == needed) && (SSG_VALMODE_LONG == native)) ||
-          ((SSG_VALMODE_NUM == needed) && (SSG_VALMODE_SQLVAL == native)) ||
-          ((SSG_VALMODE_SQLVAL == needed) && (SSG_VALMODE_NUM == native)) ||
-          ((SSG_VALMODE_LONG == needed) && (SSG_VALMODE_NUM == native)) )
+        if (((SSG_VALMODE_SHORT_OR_LONG == needed) && ((SSG_VALMODE_LONG == native) || (SSG_VALMODE_NUM == native) || (SSG_VALMODE_BOOL == native))) ||
+          ((SSG_VALMODE_NUM == needed) && ((SSG_VALMODE_SQLVAL == native) || (SSG_VALMODE_BOOL == native))) ||
+          ((SSG_VALMODE_SQLVAL == needed) && ((SSG_VALMODE_NUM == native) || (SSG_VALMODE_BOOL == native))) ||
+          ((SSG_VALMODE_LONG == needed) && ((SSG_VALMODE_NUM == native) || (SSG_VALMODE_BOOL == native))) )
           needed = native;
         else if (needed != native)
           {
@@ -6826,6 +6863,74 @@ print_asname:
     }
 }
 
+const char *
+ssg_sqltype_of_restr (spar_sqlgen_t *ssg, ptrlong restr_bits)
+{
+  if (restr_bits & (SPART_VARR_CONFLICT | SPART_VARR_ALWAYS_NULL))
+    return "INTEGER";
+  if (restr_bits & SPART_VARR_IS_REF)
+    return "VARCHAR";
+  return NULL;
+}
+
+
+static const char *xsd2sql_names[] = {
+  "anyURI"	, "VARCHAR"	,
+  "boolean"	, "INTEGER"	,
+  "byte"	, "INTEGER"	,
+  "char"	, "VARCHAR"	,
+  "date"	, "DATE"	,
+  "dateTime"	, "DATETIME"	,
+  "decimal"	, "DECIMAL"	,
+  "double"	, "DOUBLE PRECISION"	,
+  "float"	, "REAL"	,
+  "int"		, "INTEGER"	,
+  "int16"	, "INTEGER"	,
+  "int32"	, "INTEGER"	,
+  "int64"	, "INTEGER"	,
+  "integer"	, "INTEGER"	,
+  "long"	, "INTEGER"	,
+  "numeric"	, "DECIMAL"	,
+  "string"	, "VARCHAR"	,
+  "time"	, "TIME"	,
+  "unsignedInt"	, "INTEGER"	,
+  "unsignedInt32"	, "INTEGER"	,
+  "unsignedInt64"	, "INTEGER"	,
+  "unsignedLong"	, "INTEGER"	,
+  "unsignedShort"	, "INTEGER"	};
+
+const char *
+ssg_sqltype_of_valmode (spar_sqlgen_t *ssg, ssg_valmode_t vmode)
+{
+  if (IS_BOX_POINTER (vmode))
+    {
+      const char *res;
+      ccaddr_t dt_iri = vmode->qmfValRange.rvrDatatype;
+      if (NULL != dt_iri)
+        {
+          if (!strncmp (dt_iri, uname_xmlschema_ns_uri_hash, strlen (uname_xmlschema_ns_uri_hash)))
+            {
+              int pos = ecm_find_name (dt_iri + strlen (uname_xmlschema_ns_uri_hash), xsd2sql_names, sizeof (xsd2sql_names)/(2*sizeof (caddr_t)), 2*sizeof (caddr_t));
+              if (0 <= pos)
+                return xsd2sql_names[2 * pos + 1];
+            }
+        }
+      if (NULL != vmode->qmfValRange.rvrLanguage)
+        return " VARCHAR"; /* Whitespace before VARCHAR is an intentional trick */
+      res = ssg_sqltype_of_restr (ssg, vmode->qmfValRange.rvrRestrictions);
+      if (NULL != res)
+        return res;
+    }
+  if (SSG_VALMODE_BOOL == vmode)
+    return "INTEGER";
+  if (SSG_VALMODE_NUM == vmode)
+    return "DECIMAL";
+  if (SSG_VALMODE_DATATYPE == vmode)
+    return " VARCHAR";
+  if (SSG_VALMODE_LANGUAGE == vmode)
+    return " VARCHAR";
+  return NULL;
+}
 
 void
 ssg_print_retval_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *ret_column, int col_idx, int flags, SPART *auto_valmode_gp, ssg_valmode_t needed)
@@ -6835,6 +6940,7 @@ ssg_print_retval_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *ret_column, int col
   caddr_t var_name = NULL;
   const char *asname = NULL_ASNAME;
   sparp_equiv_t *eq;
+  char asname_buf[30];
   if (flags & SSG_RETVAL_NAME_INSTEAD_OF_TREE)
     asname = var_name = (caddr_t) ret_column;
   else if (flags & (SSG_RETVAL_USES_ALIAS | SSG_RETVAL_SUPPRESSED_ALIAS))
@@ -6852,18 +6958,46 @@ ssg_print_retval_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *ret_column, int col
         (SPART **) t_list (1, ret_column) );
       var_name = NULL;
     }
+  if ((NULL_ASNAME == asname) && (NULL != var_name) && (flags & SSG_RETVAL_STRICT_TYPES))
+    asname = var_name;
+  else if ((NULL_ASNAME == asname) && (NULL == var_name) && (flags & (SSG_RETVAL_USES_ALIAS | SSG_RETVAL_STRICT_TYPES)))
+    {
+      snprintf (asname_buf, sizeof (asname_buf), "callret-%d", col_idx);
+      asname = asname_buf;
+    }
+  if (flags & SSG_RETVAL_STRICT_TYPES)
+    {
+      ssg_valmode_t ret_vmode = needed;
+      const char *sqltype;
+      if (!IS_BOX_POINTER (ret_vmode))
+        ret_vmode = sparp_expn_native_valmode (ssg->ssg_sparp, ret_column); /* This is a special case of value returned from SPARQL subquery where AUTO valmode is set. */
+      sqltype = ssg_sqltype_of_valmode (ssg, ret_vmode);
+      if (NULL == sqltype)
+        sqltype = ssg_sqltype_of_restr (ssg, sparp_restr_bits_of_expn (ssg->ssg_sparp, ret_column));
+      if ((NULL == sqltype) || (' ' == sqltype[0]))
+        {
+          ssg_puts (" CAST (");
+          ssg->ssg_indent++;
+          ssg_print_retval_simple_expn (ssg, gp, ret_column, needed, NULL);
+          ssg_puts (" AS VARCHAR)");
+          ssg->ssg_indent--;
+          ssg_print_asname_tail ("typed retexpn", asname);
+        }
+      else
+        {
+          ssg_print_retval_simple_expn (ssg, gp, ret_column, needed, NULL);
+          ssg_print_asname_tail ("typed retexpn", asname);
+          ssg_putchar (' ');
+          ssg_puts (sqltype);
+        }
+      return;
+    }
   if (NULL == var_name)
     {
       if (SSG_VALMODE_AUTO == needed)
         needed = sparp_expn_native_valmode (ssg->ssg_sparp, ret_column); /* This is a special case of value returned from SPARQL subquery where AUTO valmode is set. */
       if (SSG_VALMODE_AUTO == needed)
         spar_sqlprint_error ("ssg_" "print_retval_expn(): SSG_VALMODE_AUTO for not a variable and no way to find a type");
-      if ((NULL_ASNAME == asname) && (flags & SSG_RETVAL_USES_ALIAS))
-        {
-          char buf[30];
-          snprintf (buf, sizeof (buf), "callret-%d", col_idx);
-          asname = buf;
-        }
       ssg_print_retval_simple_expn (ssg, gp, ret_column, needed, asname);
       return;
     }
@@ -6883,15 +7017,7 @@ ssg_print_retval_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *ret_column, int col
 #else
       ssg_puts (" 1 /*fake*/");
 #endif
-      if (NULL != asname)
-        {
-#ifdef NDEBUG
-          ssg_puts (" AS ");
-#else
-          ssg_puts (" AS /*retexpn*/ ");
-#endif
-          ssg_prin_id (ssg, asname);
-        }
+      ssg_print_asname_tail ("retexpn", asname);
       return;
     }
   eq = sparp_equiv_get_ro (ssg->ssg_equivs, ssg->ssg_equiv_count, gp, (SPART *)var_name, eq_flags);
@@ -7003,7 +7129,7 @@ ssg_print_retval_list (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int res_l
           ssg_newline (1);
         }
       ssg_print_retval_expn (ssg, gp, ret_column, res_ctr, flags, auto_valmode_gp, needed);
-      if ((NULL != retlist_restr_bits) && (!(retlist_restr_bits[res_ctr] & SPART_VARR_IS_REF)))
+      if ((NULL != retlist_restr_bits) && (!(retlist_restr_bits[res_ctr] & SPART_VARR_IS_REF)) && (!(flags & SSG_RETVAL_STRICT_TYPES)))
         ssg_puts (" ANY");
     }
   ssg->ssg_indent--;
@@ -8630,7 +8756,7 @@ ssg_req_top_needs_rb_complete (spar_sqlgen_t *ssg)
   ssg_valmode_t retvalmode;
   if ((SELECT_L != subtype) && (DISTINCT_L != subtype))
     return 0;
-  if ((NULL != tree->_.req_top.formatmode_name) && (strcmp (tree->_.req_top.formatmode_name, "_JAVA_") && strcmp (tree->_.req_top.formatmode_name, "_UDBC_")))
+  if ((NULL != tree->_.req_top.formatmode_name) && (strcmp (tree->_.req_top.formatmode_name, "_JAVA_") && strcmp (tree->_.req_top.formatmode_name, "_UDBC_") && strcmp (tree->_.req_top.formatmode_name, "_MSACCESS_")))
     return 0;
   retvalmode = ssg_find_valmode_by_name (tree->_.req_top.retvalmode_name);
   if ((SSG_VALMODE_SQLVAL != retvalmode) && (NULL != retvalmode))
@@ -8842,6 +8968,8 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
           ssg->ssg_indent += 1;
           ssg_newline (0);
         }
+      if ((NULL != tree->_.req_top.formatmode_name) && !strcmp ("_MSACCESS_", tree->_.req_top.formatmode_name))
+        top_retval_flags |= SSG_RETVAL_STRICT_TYPES;
       ssg_puts ("SELECT");
       if ((COUNT_DISTINCT_L == tree->_.req_top.subtype) || (DISTINCT_L == tree->_.req_top.subtype))
         ssg_puts (" DISTINCT");
@@ -8857,9 +8985,12 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
       break;
     case CONSTRUCT_L:
     case DESCRIBE_L:
-      if ((NULL != tree->_.req_top.formatmode_name) && (!strcmp ("_JAVA_", tree->_.req_top.formatmode_name) || !strcmp ("_UDBC_", tree->_.req_top.formatmode_name)))
+      if ((NULL != tree->_.req_top.formatmode_name) && (!strcmp ("_JAVA_", tree->_.req_top.formatmode_name) || !strcmp ("_UDBC_", tree->_.req_top.formatmode_name) || !strcmp ("_MSACCESS_", tree->_.req_top.formatmode_name)))
         {
-          ssg_puts (" DB.DBA.RDF_DICT_OF_TRIPLES_TO_THREE_COLS ((");
+          if (!strcmp ("_MSACCESS_", tree->_.req_top.formatmode_name))
+            ssg_puts (" DB.DBA.RDF_DICT_OF_TRIPLES_TO_FOUR_COLS ((");
+          else
+            ssg_puts (" DB.DBA.RDF_DICT_OF_TRIPLES_TO_THREE_COLS ((");
           three_cols_procedure = 1;
         }
       else if ((NULL == formatter) && (NULL == agg_formatter) && ssg->ssg_sparp->sparp_sparqre->sparqre_direct_client_call)
@@ -8938,9 +9069,9 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
           ssg_puts ("SELECT "); ssg_puts (formatter); ssg_puts (" (");
           ssg_prin_id (ssg, top_selid);
 	  if ((NULL == fmname && ssg_is_odbc_cli ()) ||
-	      ((NULL != fmname) && (!strcmp ("_JAVA_", fmname) || !strcmp ("_UDBC_", fmname))))
+	      ((NULL != fmname) && (!strcmp ("_JAVA_", fmname) || !strcmp ("_UDBC_", fmname) || !strcmp ("_MSACCESS_", fmname))))
 	    {
-	      ssg_puts (".__ask_retval) AS __ask_retval");
+	      ssg_puts (".__ask_retval) AS __ask_retval INTEGER");
 	    }
 	  else
 	    {
