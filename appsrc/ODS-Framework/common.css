@@ -154,6 +154,7 @@ table.ANN_grid tr td {
   border-color: #7f94a5;
   background: #99b3c5;
 	cursor: pointer;
+  border-radius: 3px;
   -moz-border-radius: 3px;
   -webkit-border-radius: 3px;
 }
@@ -215,6 +216,7 @@ td.calendar_selected {
 }
 
 .oat_winrect_container {
+  border-radius: 5px;
   -moz-border-radius: 5px;
   -webkit-border-radius: 5px;
 }
@@ -259,6 +261,8 @@ div.ODS_tabLabel {
   border: 1px solid #000;
   border-bottom-width: 0px;
   border-color: #7f94a5;
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px;
   -moz-border-radius-topleft: 3px;
   -moz-border-radius-topright: 3px;
   -webkit-border-top-left-radius: 3px;
@@ -277,8 +281,7 @@ div.ODS_tabLabelActive {
 }
 
 /* Forms */
-.ODS_formHeader
-{
+.ODS_formHeader {
   font-size: 13px;
   font-weight: bold;
   margin: 0 0 8px 0;
@@ -288,8 +291,7 @@ div.ODS_tabLabelActive {
   background-color: #B0CDE4;
 }
 
-.ODS_formFooter
-{
+.ODS_formFooter {
   margin: 6px 0px;
   text-align: center;
   border: solid 1px #7f94a5;
@@ -349,6 +351,14 @@ div.ODS_tabLabelActive {
   border-width: 0px 0px 0px 0px;
   padding: 2px 4px 2px 4px;
   background-color: #FFF;
+}
+
+table.ODS_formList tbody tr:nth-child(odd) {
+  background-color:#fff;
+}
+
+table.ODS_formList tbody tr:nth-child(even) {
+  background-color:#f0f0f0;
 }
 
 /* OAT patches */

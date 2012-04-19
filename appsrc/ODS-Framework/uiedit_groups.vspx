@@ -499,6 +499,7 @@
             <tr>
               <td width="800px">
                 <table id="x_tbl" class="listing" cellspacing="0">
+                  <thead>
                   <tr class="listing_header_row">
                     <th>
                       Personal WebID
@@ -507,6 +508,9 @@
                       Action
                     </th>
                   </tr>
+                  </thead>
+                  <tbody id="x_tbody">
+                    <tr id="x_tr_no"><td colspan="2"><b>No Personal WebIDs</b></td></tr>
             		  <![CDATA[
             		    <script type="text/javascript">
                     <?vsp
@@ -519,12 +523,12 @@
                       for (N := 0; N < length (self.fg_members); N := N + 1)
                       {
                         if (length (self.fg_members[N]))
-                          http (sprintf ('ODSInitArray.push(function(){OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x", null, {fld_1: {mode: 51, className: "_validate_ _uri_", value: "%s"}});});});', self.fg_members[N]));
+                            http (sprintf ('ODSInitArray.push(function(){OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("x", null, {fld_1: {mode: 51, className: "_validate_ _uri_", value: "%s", noAdvanced: true}});});});', self.fg_members[N]));
                       }
                     ?>
             		    </script>
             		  ]]>
-                  <tr id="x_tr_no"><td colspan="2"><b>No Personal WebIDs</b></td></tr>
+                  </tbody>
                 </table>
               </td>
               <td valign="top" nowrap="nowrap">

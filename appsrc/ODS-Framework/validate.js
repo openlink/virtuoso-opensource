@@ -111,10 +111,6 @@ function validateWebID(fld)
   if (regex.test(fld.value))
     return true;
 
-  var regex = /^di:[^ <>]+$/;
-  if (regex.test(fld.value))
-    return true;
-
   return validateError(fld, 'Invalid URI address');
 }
 

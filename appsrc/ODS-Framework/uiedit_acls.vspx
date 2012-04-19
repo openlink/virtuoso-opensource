@@ -52,6 +52,7 @@
               <th width="1%">Action</th>
             </tr>
           </thead>
+          <tbody id="s_tbody">
           <tr id="s_tr_no"><td colspan="4"><b>No WebID Security</b></td></tr>
     		  <![CDATA[
     		    <script type="text/javascript">
@@ -65,6 +66,7 @@
             ?>
     		    </script>
     		  ]]>
+          </tbody>
         </table>
       </td>
       <td valign="top" nowrap="nowrap">
@@ -75,7 +77,7 @@
   <v:button name="btn_acl_update" action="simple" value="Update" xhtml_class="form-button">
     <v:on-post>
       <![CDATA[
-        self.iAcl := DB.DBA.wa_acl_params (e.ve_params);
+        self.iAcl := DB.DBA.wa_aci_params (e.ve_params);
         WA_USER_EDIT (self.u_name, 'WAUI_ACL', serialize (self.iAcl));
 
         self.vc_data_bind(e);

@@ -728,31 +728,3 @@ web_user_password_check (in name varchar, in pass varchar)
 
 use DB;
 
-create procedure WA_USER_OAUTH_UPGRADE ()
-{
-  declare params any;
-
-  if (registry_get ('__WA_USER_OAUTH_UPGRADE') = 'done')
-    return;
-
-  declare exit handler for sqlstate '*' {return; };
-
-  params := (select US_KEY from WA_USER_SVC where US_U_ID = 2 and US_SVC = 'FBKey');
-  if (length (params))
-  {
-    params := replace (params, '\r\n', '&');
-    params := replace (params, '\n', '&');
-    params := split_and_decode (params);
-    if (params is not null and length (trim (get_keyword ('key', params))) > 4 and length (trim (get_keyword ('secret', params))) > 4)
-    {
-      insert into OAUTH..APP_REG (A_OWNER, A_NAME, A_KEY, A_SECRET)
-        values (0, 'Facebook API', trim(get_keyword('key', params)), trim (get_keyword ('secret', params)));
-
-      delete from WA_USER_SVC where US_SVC = 'FBKey';
-    }
-  }
-  registry_set ('__WA_USER_OAUTH_UPGRADE', 'done');
-}
-;
-WA_USER_OAUTH_UPGRADE ();
-

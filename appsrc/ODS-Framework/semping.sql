@@ -105,11 +105,11 @@ create procedure CLI_PING_SRV (in src varchar, in tgt varchar)
   url := WS.WS.VFS_URI_COMPOSE (hf);
   sparql load ?:url into graph ?:gr;
   pserv := (sparql prefix pingback: <http://purl.org/net/pingback/> select ?ps where { graph ?:gr { ?:tgt pingback:service ?ps }});
-  proto := 'REST';  
+  proto := 'RPC';
   if (pserv is null)
     {
       pserv := (sparql prefix pingback: <http://purl.org/net/pingback/> select ?ps where { graph ?:gr { ?:tgt pingback:to ?ps }});
-      proto := 'RPC';  
+      proto := 'REST';
     }
   sparql clear graph ?:gr;
   update CLI_QUEUE set CQ_SERVER = pserv, CQ_PROTO = proto, CQ_STATE = 1 where CQ_SOURCE = src and CQ_TARGET = tgt;
@@ -169,8 +169,27 @@ DB.DBA.VHOST_DEFINE ( lhost=>'*ini*', vhost=>'*ini*', lpath=>'/semping/rest', pp
     );
     
 
-create procedure "semping-rest" (in source varchar, in target varchar) returns varchar __SOAP_HTTP 'text/plain'
+create procedure "semping-rest" (in source varchar := null, in target varchar := null) returns varchar __SOAP_HTTP 'text/plain'
 {
+  if (source is null or target is null)
+    {
+      http_header ('Content-Type: text/html\r\n');
+      http (
+      '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN" "http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd">
+      <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" xmlns:pingback="http://purl.org/net/pingback/">
+      <head> <title>Pingback Service</title> <meta http-equiv="Content-Type" content="text/html;charset=utf-8" /> </head>
+      <body typeof="pingback:Container">
+      <form method="post" action="">
+      <p>source: <input type="text" property="pingback:source" name="source" /></p>
+      <p>target: <input type="text" property="pingback:target" name="target" /></p>
+      <p>comment: <input maxlength="256" type="text" name="comment" /></p>
+      <p><input type="submit" name="submit" value="Send" /></p>
+      </form>
+      </body>
+      </html>'
+      );
+      return '';
+    }
   return "pingback.ping" (source, target);
 }
 ;
@@ -187,8 +206,8 @@ create procedure "pingback.ping" (in source varchar, in target varchar)
       signal ('42000', 'Access denied');
     }
 
-  -- dbg_obj_print ('------------------------------------');
-  -- dbg_obj_print_vars (source, target);
+  dbg_obj_print ('------------------------------------');
+  dbg_obj_print_vars (source, target);
   set_user_id ('dba');
 
   srcgr := 'urn:temp.semping.src:' || uuid ();
@@ -219,7 +238,7 @@ create procedure "pingback.ping" (in source varchar, in target varchar)
     }
   mail := (sparql prefix foaf: <http://xmlns.com/foaf/0.1/> select ?mbox where { graph `iri(?:tgtgr)` { `iri(?:target)` foaf:mbox ?mbox . }}); 
 
-  -- dbg_obj_print_vars (pred, mail);
+  dbg_obj_print_vars (pred, mail);
   sparql clear graph iri(?:srcgr);
   sparql clear graph iri(?:tgtgr);
 

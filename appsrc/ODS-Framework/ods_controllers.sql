@@ -5328,9 +5328,8 @@ create procedure ODS.ODS_API."user.getFacebookData" (
 
   retValue := null;
   if (isnull (fb) and DB.DBA._get_ods_fb_settings (fbOptions))
-  {
     fb := new DB.DBA.Facebook(fbOptions[0], fbOptions[1], http_param (), http_request_header ());
-  }
+
   if (not isnull (fb))
   {
     fbPaths := vector ();
@@ -5339,9 +5338,7 @@ create procedure ODS.ODS_API."user.getFacebookData" (
                       'last_name', 'family_name',
                       'sex', 'gender'
                      );
-    retValue := jsonObject ();
-    retValue := vector_concat (retValue, vector ('api_key', fb.api_key));
-    retValue := vector_concat (retValue, vector ('secret', fb.secret));
+    retValue := vector_concat (jsonObject (), vector ('api_key', fb.api_key, 'secret', fb.secret));
     if (length (fb._user))
     {
       resValue := fb.api_client.users_getInfo(fb._user, fields);
@@ -5355,13 +5352,11 @@ create procedure ODS.ODS_API."user.getFacebookData" (
           tmpPath := '/users_getInfo_response/user/' || get_keyword (V[N], fbPaths, V[N]);
           tmpValue := serialize_to_UTF8_xml (xpath_eval (sprintf ('string(%s)', tmpPath), resValue));
           if (length (tmpValue))
-          {
             retValue := vector_concat (retValue, vector (get_keyword (V[N], fbMaps, V[N]), tmpValue));
           }
         }
       }
     }
-  }
   return case when outputMode then obj2json (retValue) else retValue end;
 }
 ;
@@ -5866,75 +5861,41 @@ create procedure ODS.ODS_API.predicates ()
 create procedure ODS.ODS_API.compares ()
 {
   return vector (
-    '=',                      vector ('equal to'                 , vector ('integer', 'date', 'varchar', 'address', 'priority', 'folder', 'boolean', 'sparql', 'digest'), 1, '(^{value}^ = ^{pattern}^)'),
-    '<>',                     vector ('not equal to'             , vector ('integer', 'date', 'varchar', 'address', 'priority', 'folder', 'boolean', 'sparql', 'digest'), 1, '(^{value}^ <> ^{pattern}^)'),
-    '<',                      vector ('less than'                , vector ('integer', 'date', 'priority'), 1, '(^{value}^ < ^{pattern}^)'),
-    '<=',                     vector ('less thanor equal to'     , vector ('integer', 'date', 'priority'), 1, '(^{value}^ <= ^{pattern}^)'),
-    '>',                      vector ('greater than'             , vector ('integer', 'date', 'priority'), 1, '(^{value}^ > ^{pattern}^)'),
-    '>=',                     vector ('greater than or equal to' , vector ('integer', 'date', 'priority'), 1, '(^{value}^ >= ^{pattern}^)'),
-    'contains_substring',     vector ('contains substring'       , vector ('varchar', 'address'), 1, '(strstr (ucase (^{value}^), ucase (^{pattern}^)) is not null)'),
-    'not_contains_substring', vector ('not contains substring'   , vector ('varchar', 'address'), 1, '(strstr (ucase (^{value}^), ucase (^{pattern}^)) is null)'),
-    'starts_with',            vector ('starts with'              , vector ('varchar', 'address'), 1, '(starts_with (ucase (^{value}^), ucase (^{pattern}^)))'),
-    'not_starts_with',        vector ('not starts with'          , vector ('varchar', 'address'), 1, '(not (starts_with (ucase (^{value}^), ucase (^{pattern}^))))'),
-    'ends_with',              vector ('ends with'                , vector ('varchar', 'address'), 1, '(ends_with (ucase (^{value}^), ucase (^{pattern}^)))'),
-    'not_ends_with',          vector ('not ends with'            , vector ('varchar', 'address'), 1, '(not (ends_with (ucase (^{value}^), ucase (^{pattern}^))))'),
-    'is_null',                vector ('is null'                  , vector ('address'), 0, '(DB.DBA.is_empty_or_null (^{value}^) = 1)'),
-    'is_not_null',            vector ('is not null'              , vector ('address'), 0, '(DB.DBA.is_empty_or_null (^{value}^) = 0)'),
-    'contains_text',          vector ('contains'                 , vector ('text'), 1, null)
+    'eq'           , vector ('equal to'                 , vector ('integer', 'date', 'varchar', 'address', 'priority', 'folder', 'boolean', 'sparql', 'digest'), 1),
+    'neq'          , vector ('not equal to'             , vector ('integer', 'date', 'varchar', 'address', 'priority', 'folder', 'boolean', 'sparql', 'digest'), 1),
+    'lt'           , vector ('less than'                , vector ('integer', 'date', 'priority'), 1),
+    'lte'          , vector ('less thanor equal to'     , vector ('integer', 'date', 'priority'), 1),
+    'gt'           , vector ('greater than'             , vector ('integer', 'date', 'priority'), 1),
+    'gte'          , vector ('greater than or equal to' , vector ('integer', 'date', 'priority'), 1),
+    'contains'     , vector ('contains substring'       , vector ('varchar', 'address'), 1),
+    'notContains'  , vector ('not contains substring'   , vector ('varchar', 'address'), 1),
+    'startsWith'   , vector ('starts with'              , vector ('varchar', 'address'), 1),
+    'notStartsWith', vector ('not starts with'          , vector ('varchar', 'address'), 1),
+    'endsWith'     , vector ('ends with'                , vector ('varchar', 'address'), 1),
+    'notEndsWith'  , vector ('not ends with'            , vector ('varchar', 'address'), 1),
+    'isNull'       , vector ('is null'                  , vector ('address'), 0),
+    'isNotNull'    , vector ('is not null'              , vector ('address'), 0)
   );
 }
 ;
 
-create procedure ODS.ODS_API.compareRDFName (
-  in name varchar)
+create procedure ODS.ODS_API.commands ()
 {
-  return
-    get_keyword (
-      name,
-      vector (
-        '=',                      'flt:eq'           ,
-        '<>',                     'flt:neq'          ,
-        '<',                      'flt:lt'           ,
-        '<=',                     'flt:lte'          ,
-        '>',                      'flt:gt'           ,
-        '>=',                     'flt:gte'          ,
-        'contains_substring',     'flt:contains'     ,
-        'not_contains_substring', 'flt:notContains'  ,
-        'starts_with',            'flt:startsWith'   ,
-        'not_starts_with',        'flt:notStartsWith',
-        'ends_with',              'flt:endsWith'     ,
-        'not_ends_with',          'flt:notEndsWith'  ,
-        'is_null',                'flt:isNull'       ,
-        'is_not_null',            'flt:isNotNull'    ,
-        'contains_text',          'flt:contains'
-      )
-    );
-}
-;
-
-create procedure ODS.ODS_API.compareName (
-  in RDFName varchar)
-{
-  return
-    get_keyword (
-      RDFName,
-      vector (
-        'flt:eq'           , '=',
-        'flt:neq'          , '<>',
-        'flt:lt'           , '<',
-        'flt:lte'          , '<=',
-        'flt:gt'           , '>',
-        'flt:gte'          , '>=',
-        'flt:contains'     , 'contains_substring',
-        'flt:notContains'  , 'not_contains_substring',
-        'flt:startsWith'   , 'starts_with',
-        'flt:notStartsWith', 'not_starts_with',
-        'flt:endsWith'     , 'ends_with',
-        'flt:notEndsWith'  , 'not_ends_with',
-        'fld:isNull'       , 'is_null',
-        'fld:isNotNull'    , 'is_not_null',
-        'fld:contains'     ,  'contains_text'
-      )
+  return vector (
+    'eq'           , '(^{value}^ = ^{pattern}^)',
+    'neq'          , '(^{value}^ <> ^{pattern}^)',
+    'lt'           , '(^{value}^ < ^{pattern}^)',
+    'lte'          , '(^{value}^ <= ^{pattern}^)',
+    'gt'           , '(^{value}^ > ^{pattern}^)',
+    'gte'          , '(^{value}^ >= ^{pattern}^)',
+    'contains'     , '(strstr (ucase (^{value}^), ucase (^{pattern}^)) is not null)',
+    'notContains'  , '(strstr (ucase (^{value}^), ucase (^{pattern}^)) is null)',
+    'startsWith'   , '(starts_with (ucase (^{value}^), ucase (^{pattern}^)))',
+    'notStartsWith', '(not (starts_with (ucase (^{value}^), ucase (^{pattern}^))))',
+    'endsWith'     , '(ends_with (ucase (^{value}^), ucase (^{pattern}^)))',
+    'notEndsWith'  , '(not (ends_with (ucase (^{value}^), ucase (^{pattern}^))))',
+    'isNull'       , '(DB.DBA.is_empty_or_null (^{value}^) = 1)',
+    'isNotNull'    , '(DB.DBA.is_empty_or_null (^{value}^) = 0)'
     );
 }
 ;

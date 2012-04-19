@@ -216,9 +216,9 @@ create procedure oplmail_iri (in s varchar)
   return concat ('http://www.openlinksw.com/schemas/mail#', s);
 };
 
-create procedure oplFilter_iri (in s varchar)
+create procedure oplflt_iri (in s varchar)
 {
-  return concat ('http://www.openlinksw.com/schema/filter#', s);
+  return concat ('http://www.openlinksw.com/schemas/acl/filter#', s);
 };
 
 create procedure cert_iri (in s varchar)
@@ -4073,8 +4073,8 @@ create procedure SIOC..acl_insert (
   inout iri varchar,
   inout acl any)
 {
-  declare acl_iri, clean_iri varchar;
-  declare N, aclArray any;
+  declare acl_iri, clean_iri, filter_iri, criteria_iri varchar;
+  declare N, M, aclArray any;
   declare exit handler for sqlstate '*'
   {
     sioc_log_message (__SQL_MESSAGE);
@@ -4085,7 +4085,7 @@ create procedure SIOC..acl_insert (
   aclArray := deserialize (acl);
   for (N := 0; N < length (aclArray); N := N + 1)
   {
-    acl_iri := clean_iri || sprintf('#acl%d', N);
+    acl_iri := clean_iri || sprintf('#acl_%d', N);
 
     DB.DBA.ODS_QUAD_URI (graph_iri, acl_iri, rdf_iri ('type'), acl_iri ('Authorization'));
     DB.DBA.ODS_QUAD_URI (graph_iri, acl_iri, acl_iri ('accessTo'), iri);
@@ -4100,6 +4100,19 @@ create procedure SIOC..acl_insert (
     else if (aclArray[N][2] = 'public')
     {
       DB.DBA.ODS_QUAD_URI (graph_iri, acl_iri, acl_iri ('agentClass'), foaf_iri('Agent'));
+    }
+    else if (aclArray[N][2] = 'advanced')
+    {
+      filter_iri := clean_iri || sprintf('#filter_%d', N);
+      DB.DBA.ODS_QUAD_URI (graph_iri, acl_iri, oplflt_iri ('hasFilter'), filter_iri);
+      for (M := 0; M < length (aclArray[N][1]); M := M + 1)
+      {
+        criteria_iri := clean_iri || sprintf('#criteria_%d_%d', N, M);
+        DB.DBA.ODS_QUAD_URI (graph_iri, filter_iri, oplflt_iri ('hasCriteria'), criteria_iri);
+        DB.DBA.ODS_QUAD_URI (graph_iri, criteria_iri, oplflt_iri ('operand'), oplflt_iri (aclArray[N][1][M][1]));
+        DB.DBA.ODS_QUAD_URI (graph_iri, criteria_iri, oplflt_iri ('condition'), oplflt_iri (aclArray[N][1][M][2]));
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, criteria_iri, oplflt_iri ('value'), aclArray[N][1][M][3]);
+      }
     }
     if (aclArray[N][3])
       DB.DBA.ODS_QUAD_URI (graph_iri, acl_iri, acl_iri ('mode'), acl_iri('Read'));
@@ -4116,8 +4129,8 @@ create procedure SIOC..acl_delete (
   inout iri varchar,
   inout acl any)
 {
-  declare acl_iri, clean_iri varchar;
-  declare N, aclArray any;
+  declare acl_iri, clean_iri, filter_iri, criteria_iri varchar;
+  declare N, M, aclArray any;
   declare exit handler for sqlstate '*'
   {
     sioc_log_message (__SQL_MESSAGE);
@@ -4130,6 +4143,18 @@ create procedure SIOC..acl_delete (
   {
     acl_iri := clean_iri || sprintf('#acl%d', N);
     delete_quad_s_or_o (graph_iri, acl_iri, acl_iri);
+    acl_iri := clean_iri || sprintf('#acl_%d', N);
+    delete_quad_s_or_o (graph_iri, acl_iri, acl_iri);
+    if (aclArray[N][2] = 'advanced')
+    {
+      filter_iri := clean_iri || sprintf('#filter_%d', N);
+      delete_quad_s_or_o (graph_iri, filter_iri, filter_iri);
+      for (M := 0; M < length (aclArray[N][1]); M := M + 1)
+      {
+        criteria_iri := clean_iri || sprintf('#criteria_%d_%d', N, M);
+        delete_quad_s_or_o (graph_iri, criteria_iri, criteria_iri);
+      }
+    }
   }
 }
 ;
@@ -4153,8 +4178,11 @@ create procedure SIOC..acl_webid ()
   set_user_id ('dba');
   cert := client_attr ('client_certificate');
   dummy := null;
-  if (not DB.DBA.WEBID_AUTH_GEN_2 (cert, 0, null, 1, 0, webid, dummy, 0, vtype))
-    webid := null;
+  -- !!!
+  -- if (not DB.DBA.WEBID_AUTH_GEN_2 (cert, 0, null, 1, 0, webid, dummy, 0, vtype))
+  --   webid := null;
+  DB.DBA.WEBID_AUTH_GEN_2 (cert, 0, null, 1, 0, webid, dummy, 0, vtype);
+  -- dbg_obj_print ('webid: ', webid);
   connection_set ('vspx_vebid', coalesce (webid, ''));
 
 _exit:;
@@ -4169,14 +4197,14 @@ create procedure SIOC..acl_check_internal (
   in acl_iris any)
 {
   declare M, I integer;
-  declare tmp, rc, acl_iri varchar;
-  declare IRIs any;
+  declare rc, acl_iri varchar;
+  declare _cert, _commands, _command any;
+  declare _filterMode, _filterValue, _mode, _filter, _criteria, _operand, _condition, _value, _pattern any;
+  declare _sql, _state, _msg, _params, _meta, _rows any;
 
   rc := '';
-  IRIs := vector (vector(), vector(), vector());
   foreach (any acl_iri in acl_iris) do
       {
-    tmp := '';
     for ( sparql
           define input:storage ""
           prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -4232,12 +4260,6 @@ create procedure SIOC..acl_check_internal (
       else
         goto _skip;
 
-      tmp := coalesce ("p1", coalesce ("p2", "p3"));
-      for (M := 0; M < length (IRIs[I]); M := M + 1)
-      {
-        if (tmp = IRIs[I][M])
-          goto _skip;
-        }
       if ("mode" like '%#Write')
       {
         rc := 'W';
@@ -4246,10 +4268,146 @@ create procedure SIOC..acl_check_internal (
       if ("mode" like '%#Read')
         rc := 'R';
 
-      IRIs[I] := vector_concat (IRIs[I], vector (tmp));
-
     _skip:;
     }
+
+    _cert := client_attr ('client_certificate');
+    _commands := ODS.ODS_API.commands ();
+    _filterMode := '';
+    _filterValue := 1;
+    _filter := '';
+    _criteria := '';
+    for (
+      sparql
+          define input:storage ""
+          prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+          prefix foaf: <http://xmlns.com/foaf/0.1/>
+          prefix acl: <http://www.w3.org/ns/auth/acl#>
+      prefix flt: <http://www.openlinksw.com/schemas/acl/filter#>
+      select ?filter ?criteria ?mode ?operand ?condition ?pattern
+           where {
+               {
+                   graph `iri(?:acl_graph_iri)`
+                   {
+                     ?rule rdf:type acl:Authorization ;
+                           acl:accessTo `iri(?:acl_iri)` ;
+                         acl:mode ?mode ;
+                         flt:hasFilter ?filter .
+                         ?filter flt:hasCriteria ?criteria .
+                         ?criteria flt:operand ?operand ;
+                                   flt:condition ?condition ;
+                                   flt:value ?pattern .
+                   }
+                 }
+             }
+       order by ?filter ?criteria) do
+    {
+      _mode := "mode";
+      _operand := replace ("operand", 'http://www.openlinksw.com/schemas/acl/filter#', '');
+      _condition := replace ("condition", 'http://www.openlinksw.com/schemas/acl/filter#', '');;
+      _pattern := cast ("pattern" as varchar);
+      if (_filter <> "filter")
+  	  {
+        if (_filterValue and (_filter <> ''))
+	      {
+          if (_filterMode <> '')
+            rc := _filterMode;
+          if (rc = 'W')
+            goto _exit;
+        }
+        _filterMode := '';
+        _filterValue := 1;
+        _filter := "filter";
+        _criteria := '';
+      }
+      if (_filterValue and (_criteria <> "criteria"))
+      {
+        _command := get_keyword (_condition, _commands);
+        if (isnull (_command))
+          goto _skip2;
+
+        _value := null;
+        if      (_operand = 'webIDVerified')
+        {
+          _value := '1';
+    }
+        else if (_operand = 'webID')
+                   {
+          _value := webid;
+                   }
+        else if (_operand = 'certExpiration')
+                   {
+          declare _from, _to any;
+
+          _from := X509_STRING_DATE (get_certificate_info (4, _cert));
+          _to := X509_STRING_DATE (get_certificate_info (5, _cert));
+          _value := case when (_to < now () or _from > now ()) then 1 else 0 end;
+                   }
+        else if (_operand = 'certSerial')
+        {
+          _value := get_certificate_info (1, _cert);
+                 }
+        else if (_operand = 'certMail')
+    {
+          _value := get_certificate_info (10, _cert, 0, '', 'emailAddress');
+        }
+        else if (_operand = 'certSubject')
+  	  {
+          _value := get_certificate_info (2, _cert);
+        }
+        else if (_operand = 'certIssuer')
+        {
+          _value := get_certificate_info (3, _cert);
+        }
+        else if (_operand = 'certStartDate')
+        {
+          _value := X509_STRING_DATE (get_certificate_info (4, _cert));
+          _pattern := DAV_AUTHENTICATE_SSL_DATE (_pattern);
+        }
+        else if (_operand = 'certEndDate')
+        {
+          _value := X509_STRING_DATE (get_certificate_info (5, _cert));
+          _pattern := DAV_AUTHENTICATE_SSL_DATE (_pattern);
+        }
+        else if (_operand = 'certDigest')
+        {
+          _value := _cert;
+          _command := sprintf ('(DAV_AUTHENTICATE_SSL_DIGEST_CHECK (^{value}^, ''%s'', ^{pattern}^) = 1)', _condition);
+        }
+
+        _params := vector ();
+        if (strstr (_command, '^{value}^') is not null)
+          _params := vector_concat (_params, vector (_value));
+
+        if (strstr (_command, '^{pattern}^') is not null)
+          _params := vector_concat (_params, vector (_pattern));
+
+        _command := replace (replace (_command, '^{value}^', '?'), '^{pattern}^', '?');
+        _sql := 'select case when ' || _command || ' then 1 else 0 end';
+
+        _state := '00000';
+        exec (_sql, _state, _msg, _params, 0, _meta, _rows);
+        if (_state <> '00000')
+          _filterValue := 0;
+
+        else if (_rows[0][0] = 0)
+          _filterValue := 0;
+        }
+      if (_filterMode <> 'W')
+      {
+        if (_mode like '%#Write')
+          _filterMode := 'W';
+        else if (_mode like '%#Read')
+          _filterMode := 'R';
+      }
+
+    _skip2:;
+      _criteria := "criteria";
+    }
+    if (_filterValue and (_filter <> '') and (_filterMode <> ''))
+      rc := _filterMode;
+
+  _continue:;
   }
 
 _exit:;
@@ -4266,95 +4424,11 @@ create procedure SIOC..acl_check (
   declare cert, diArray, finger, digest, digestHash any;
 
   rc := '';
-  webid := SIOC..acl_webID ();
+  webid := SIOC..acl_webid ();
   if (isnull (webid))
     goto _exit;
 
   rc := SIOC..acl_check_internal (webid, acl_graph_iri, acl_groups_iri, acl_iris);
-  if (rc = 'W')
-    goto _exit;
-
-  cert := client_attr ('client_certificate');
-  foreach (any acl_iri in acl_iris) do
-  {
-    -- person
-    for ( sparql
-          define input:storage ""
-          prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-          prefix foaf: <http://xmlns.com/foaf/0.1/>
-          prefix acl: <http://www.w3.org/ns/auth/acl#>
-          select ?di
-           where {
-                   graph `iri(?:acl_graph_iri)`
-                   {
-                     ?rule rdf:type acl:Authorization ;
-                           acl:accessTo `iri(?:acl_iri)` ;
-                           acl:agent ?di ;
-                           acl:mode ?mode .
-                     filter (str(?di) like 'di:%')
-                   }
-                 }
-        ) do
-    {
-      diArray := DB.DBA.WEBID_DI_SPLIT ("di");
-    	foreach (any elm in diArray) do
-  	  {
-  	    digest := elm [0];
-  	    digestHash := elm [1];
-  	    finger := get_certificate_info (6, cert, 0, null, digest);
-  	    finger := lower (replace (finger, ':', ''));
-  	    if (finger = digestHash)
-	      {
-          rc2 := SIOC..acl_check_internal ("di", acl_graph_iri, acl_groups_iri, acl_iris);
-          if (rc2 > rc)
-            rc := rc2;
-          if (rc = 'W')
-            goto _exit;
-        }
-      }
-    }
-    -- group
-    for ( sparql
-          define input:storage ""
-          prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-          prefix foaf: <http://xmlns.com/foaf/0.1/>
-          prefix acl: <http://www.w3.org/ns/auth/acl#>
-          select ?di
-           where {
-                   graph `iri(?:acl_graph_iri)`
-                   {
-                     ?rule rdf:type acl:Authorization ;
-                           acl:accessTo `iri(?:acl_iri)` ;
-                           acl:agentClass ?p3;
-                           acl:mode ?mode .
-                   }
-                   graph `iri(?:acl_groups_iri)`
-                   {
-                     ?p3 rdf:type foaf:Group ;
-                         foaf:member ?di .
-                     filter (str(?di) like 'di:%')
-                   }
-                 }
-        ) do
-    {
-      diArray := DB.DBA.WEBID_DI_SPLIT ("di");
-    	foreach (any elm in diArray) do
-  	  {
-  	    digest := elm [0];
-  	    digestHash := elm [1];
-  	    finger := get_certificate_info (6, cert, 0, null, digest);
-  	    finger := lower (replace (finger, ':', ''));
-  	    if (finger = digestHash)
-        {
-          rc2 := SIOC..acl_check_internal ("di", acl_graph_iri, acl_groups_iri, acl_iris);
-          if (rc2 > rc)
-            rc := rc2;
-          if (rc = 'W')
-            goto _exit;
-        }
-      }
-    }
-  }
 
 _exit:;
   return rc;
@@ -4371,7 +4445,7 @@ create procedure SIOC..acl_list (
 
   result_names (rc);
 
-  webid := SIOC..acl_webID ();
+  webid := SIOC..acl_webid ();
   if (isnull (webid))
     return;
 

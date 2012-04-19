@@ -592,11 +592,11 @@ create procedure wa_groups_acl_update () {
 wa_groups_acl_update()
 ;
 
-create procedure wa_acl_params (
+create procedure wa_aci_params (
   in params any)
 {
-  declare N, M integer;
-  declare aclNo, retValue, V any;
+  declare N, M, N2, M2 integer;
+  declare aclNo, aclNo2, retValue, V, V2, T any;
 
   M := 1;
   retValue := vector ();
@@ -605,18 +605,68 @@ create procedure wa_acl_params (
     if (params[N] like 's_fld_2_%')
     {
       aclNo := replace (params[N], 's_fld_2_', '');
+      if (aclNo = cast (atoi (replace (params[N], 's_fld_2_', '')) as varchar))
+      {
+        if (get_keyword ('s_fld_1_' || aclNo, params) = 'advanced')
+        {
+          M2 := 1;
+          T := vector ();
+          for (N2 := 0; N2 < length (params); N2 := N2 + 2)
+          {
+            if (params[N2] like (params[N] || '_fld_1_%'))
+            {
+              aclNo2 := replace (params[N2], params[N] || '_fld_1_', '');
+              V2 := vector (M2,
+                            trim (get_keyword (params[N] || '_fld_1_' || aclNo2, params)),
+                            trim (get_keyword (params[N] || '_fld_2_' || aclNo2, params)),
+                            trim (get_keyword (params[N] || '_fld_3_' || aclNo2, params))
+                           );
+              T := vector_concat (T, vector (V2));
+              M2 := M2 + 1;
+            }
+          }
+          if (length (T) = 0)
+            goto _skip;
+        }
+        else
+        {
+          T := trim (params[N+1]);
+          if (is_empty_or_null (T))
+            goto _skip;
+        }
       V := vector (M,
-                   trim (params[N+1]),
-                   get_keyword ('s_fld_1_' || aclNo, params, 'person'),
+                     T,
+                     get_keyword ('s_fld_1_' || aclNo, params),
                    atoi (get_keyword ('s_fld_3_' || aclNo || '_r', params, '0')),
                    atoi (get_keyword ('s_fld_3_' || aclNo || '_w', params, '0')),
                    atoi (get_keyword ('s_fld_3_' || aclNo || '_x', params, '0'))
                   );
       retValue := vector_concat (retValue, vector (V));
       M := M + 1;
+      _skip:;
+      }
     }
   }
   return retValue;
+}
+;
+
+create procedure wa_aci_lines (
+  in _acl any,
+  in _mode varchar := 'view',
+  in _execute varchar := 'false')
+{
+  declare N integer;
+
+  for (N := 0; N < length (_acl); N := N + 1)
+  {
+    if (_mode <> 'view')
+    {
+      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("s", null, {fld_1: {mode: 50, value: "%s", onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: "F1", tdCssText: "white-space: nowrap;", className: "_validate_ _webid_", value: %s, readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], execute: \'%s\', tdCssText: "width: 1%%; text-align: center;"}});});', _acl[N][2], ODS..obj2json (_acl[N][1]), case when _acl[N][2] = 'public' then 'true' else 'false' end, case when _acl[N][2] = 'public' then 'display: none;' else '' end, _acl[N][3], _acl[N][4], _acl[N][5], _execute));
+    } else {
+      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {mode: 50, value: "%s"}, fld_2: {mode: 51, value: %s}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}, fld_4: {value: "Inherited"}});});', _acl[N][2], ODS..obj2json (_acl[N][1]), _acl[N][3], _acl[N][4], _acl[N][5]));
+    }
+  }
 }
 ;
 

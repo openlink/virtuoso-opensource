@@ -177,7 +177,7 @@ TBL.createRow = function (prefix, No, optionObject, viewMode) {
       // actions
       var td = OAT.Dom.create('td');
       td.id = prefix+'_td_'+ No+'_btn';
-      td.style.cssText = 'white-space: nowrap; verical-align: top;';
+      td.style.cssText = 'white-space: nowrap; vertical-align: top;';
       tr.appendChild(td);
       if (options.id) {
       	var fld = OAT.Dom.create("input");
@@ -215,7 +215,9 @@ TBL.createRow = function (prefix, No, optionObject, viewMode) {
 
 TBL.createViewRow = function (prefix, options)
 {
-  var tbl = $(prefix+'_tbl');
+  var tbl = $(prefix+'_tbody');
+  if (!tbl)
+    tbl = $(prefix+'_tbl');
   if (tbl)
   {
     var No = TBL.No(tbl, prefix, options);
@@ -237,7 +239,7 @@ TBL.createViewRow = function (prefix, options)
         tr.appendChild(td);
 
         if (fldOptions.mode) {
-          fldName = prefix + '_' + fld + '_0';
+          fldName = prefix + '_' + fld + '_' + No;
           var fn = TBL["viewCell"+fldOptions.mode];
           if (fn)
         	  fn(td, prefix, fldName, 0, fldOptions);
@@ -309,7 +311,7 @@ TBL.createCellCombolist = function (td, fldValue, fldOptions) {
   return fld;
 }
 
-TBL.createCell0 = function (td, prefix, fldName, No, fldOptions) {
+TBL.createCell0 = function (td, prefix, fldName, No, fldOptions, disabled) {
   var fld = OAT.Dom.create('input');
   fld.type = (fldOptions.type)? (fldOptions.type): 'text';
   fld.id = fldName;
@@ -321,8 +323,15 @@ TBL.createCell0 = function (td, prefix, fldName, No, fldOptions) {
   TBL.createCellOptions(fld, fldOptions);
   fld.style.width = '95%';
 
+  if (disabled)
+    fld.disabled = disabled;
+
   td.appendChild(fld);
   return fld;
+}
+
+TBL.viewCell0 = function (td, prefix, fldName, No, fldOptions) {
+  td.innerHTML = fldOptions.value;
 }
 
 TBL.createCell1 = function (td, prefix, fldName, No, fldOptions) {
@@ -806,6 +815,15 @@ TBL.changeCell50 = function (srcFld) {
   var dstName = srcFld.name.replace('fld_1', 'fld_2');
   var dstFld = $(dstName);
   var dstImg = $(dstName+'_img');
+  if (srcValue == 'advanced') {
+    OAT.Dom.hide(dstFld);
+    OAT.Dom.hide(dstImg);
+    OAT.Dom.removeClass(dstFld, '_validate_');
+    var td = TBL.parent(dstFld, 'td');
+    TBL.showCell51Tbl(td, dstName);
+  } else {
+    OAT.Dom.show(dstFld);
+    OAT.Dom.addClass(dstFld, '_validate_');
   if (srcValue == 'public') {
     dstFld.value = 'foaf:Agent';
     dstFld.readOnly = true;
@@ -819,35 +837,38 @@ TBL.changeCell50 = function (srcFld) {
   } else {
     OAT.Dom.show(dstImg);
   }
+    var dstTbl = $(dstName.replace('_fld', '_tbl'));
+    OAT.Dom.hide(dstTbl);
+  }
 }
 
 TBL.viewCell50 = function (td, prefix, fldName, No, fldOptions) {
-	if (fldOptions.value == "public") {
-	  td.innerHTML = "Public";
-	} else if (fldOptions.value == "group") {
-	  td.innerHTML = "Group";
-	} else {
-	  td.innerHTML = "Personal";
-	}
+  TBL.createCell50(td, prefix, fldName, No, fldOptions, true);
 }
 
-TBL.createCell50 = function (td, prefix, fldName, No, fldOptions) {
+TBL.createCell50 = function (td, prefix, fldName, No, fldOptions, disabled) {
 	var fld = OAT.Dom.create("select");
 	fld.name = fldName;
 	fld.id = fldName;
 	TBL.selectOption(fld, fldOptions.value, "Personal", "person");
 	TBL.selectOption(fld, fldOptions.value, "Group", "group");
 	TBL.selectOption(fld, fldOptions.value, "Public", "public");
+  if (!fldOptions.noAdvanced)
+    TBL.selectOption(fld, fldOptions.value, "Advanced", "advanced");
   if (fldOptions.onchange)
     fld.onclick = fldOptions.onchange;
 
+  if (disabled)
+    fld.disabled = disabled;
+
   td.appendChild(fld);
+  td.style.verticalAlign = 'top';
   return fld;
 }
 
-TBL.createCell51 = function (td, prefix, fldName, No, fldOptions)
-{
+TBL.createCell51 = function (td, prefix, fldName, No, fldOptions) {
   var fld = TBL.createCell0 (td, prefix, fldName, No, fldOptions)
+  var srcFld = $(fld.name.replace('fld_2', 'fld_1'));
 
   td.appendChild(OAT.Dom.text(' '));
   var img = OAT.Dom.image('/ods/images/select.gif');
@@ -858,13 +879,81 @@ TBL.createCell51 = function (td, prefix, fldName, No, fldOptions)
     img.style.cssText = fldOptions.imgCssText;
 
   td.appendChild(img);
+  td.style.verticalAlign = 'top';
 
   var ta = new TypeAhead(fld.id, 'webIDs', {checkMode: 1, userParams: TBL.typeheadProperty});
   fld.setAttribute('autocomplete', 'off');
   fld.form.onsubmit = CheckSubmit;
   taVars[taVars.length] = ta;
 
+  if (srcFld.value == 'advanced') {
+    OAT.Dom.hide(fld);
+    OAT.Dom.hide(img);
+    OAT.Dom.removeClass(fld, '_validate_');
+    TBL.showCell51Tbl(td, fldName, fldOptions);
+  }
+  if (srcFld.value == 'public')
+    OAT.Dom.hide(img);
+
   return fld;
+}
+
+TBL.showCell51Tbl = function (td, fldName, fldOptions, disabled) {
+  OAT.Loader.load(["ajax", "json"], function(){TBL.showCell51TblInternal (td, fldName, fldOptions, disabled);});
+}
+
+TBL.showCell51TblInternal = function (td, fldName, fldOptions, disabled) {
+  var tblName = fldName.replace ('_fld', '_tbl');
+  var tbl = $(tblName);
+  if ($(tbl)) {
+    OAT.Dom.show(tbl);
+  } else {
+    if (!disabled) {
+      tbl = OAT.Dom.create('table', {width: '100%', id: tblName});
+    } else {
+      tbl = OAT.Dom.create('table', {width: '95%', id: tblName});
+    }
+    td.appendChild(tbl);
+    var tr = OAT.Dom.create('tr');
+    tbl.appendChild(tr);
+    var td = OAT.Dom.create('td', {width: '95%', style: 'padding: 0'});
+    tr.appendChild(td);
+    var tbl2 = OAT.Dom.create('table', {width: '100%', class: 'ODS_formList'});
+    td.appendChild(tbl2);
+    var tbody2 = OAT.Dom.create('tbody', {id: fldName+'_tbody'});
+    tbl2.appendChild(tbody2);
+    var tr2 = OAT.Dom.create('tr', {id: fldName+'_tr_no'});
+    tbody2.appendChild(tr2);
+    var td2 = OAT.Dom.create('td', {colspan: '3'});
+    tr2.appendChild(td2);
+    var S = '<b>No Criteria</b>';
+    td2.innerHTML = S.replace(/-TBL-/g, fldName);
+    if (!disabled) {
+      var td2 = OAT.Dom.create('td', {valign: 'top', nowrap: 'nowrap'});
+      tr.appendChild(td2);
+      S = '<img src="/ods/images/icons/add_16.png" border="0" class="button pointer" onclick="javascript: TBL.createRow(\'-TBL-\', null, {fld_1: {mode: 55, tdCssText: \'width: 33%;\', className: \'_validate_\'}, fld_2: {mode: 56, tdCssText: \'width: 33%;\', cssText: \'display: none;\', className: \'_validate_\'}, fld_3: {mode: 57, tdCssText: \'width: 33%;\', cssText: \'display: none;\', className: \'_validate_\'}, btn_1: {mode: 55}});" alt="Add Condition" title="Add Condition" />';
+      td2.innerHTML = S.replace(/-TBL-/g, fldName);
+    }
+    if (fldOptions && fldOptions.value) {
+      for (var i = 0; i < fldOptions.value.length; i = i + 1) {
+        if (disabled) {
+          TBL.createViewRow(fldName, {fld_1: {mode: 55, value: fldOptions.value[i][1], tdCssText: 'width: 33%;'}, fld_2: {mode: 56, value: fldOptions.value[i][2], tdCssText: 'width: 33%;'}, fld_3: {mode: 57, value: fldOptions.value[i][3], tdCssText: 'width: 33%;'}});
+        } else {
+          TBL.createRow(fldName, null, {fld_1: {mode: 55, value: fldOptions.value[i][1], tdCssText: 'width: 33%;', className: '_validate_'}, fld_2: {mode: 56, value: fldOptions.value[i][2], tdCssText: 'width: 33%;', className: '_validate_'}, fld_3: {mode: 57, value: fldOptions.value[i][3], tdCssText: 'width: 33%;', className: '_validate_'}, btn_1: {mode: 55}});
+        }
+      }
+    }
+  }
+  return tbl;
+}
+
+TBL.viewCell51 = function (td, prefix, fldName, No, fldOptions) {
+  var srcFld = $(fldName.replace('fld_2', 'fld_1'));
+  if (srcFld && (srcFld.value == 'advanced')) {
+    TBL.showCell51Tbl(td, fldName, fldOptions, true);
+  } else {
+    TBL.viewCell0(td, prefix, fldName, No, fldOptions);
+  }
 }
 
 TBL.createCell52 = function (td, prefix, fldName, No, fldOptions, disabled) {
@@ -889,6 +978,8 @@ TBL.createCell52 = function (td, prefix, fldName, No, fldOptions, disabled) {
   cb(td, prefix, fldName+'_w'+suffix, No, fldOptions, disabled, 1);
   if (fldOptions.execute)
     cb(td, prefix, fldName+'_x'+suffix, No, fldOptions, disabled, 2);
+
+  td.style.verticalAlign = 'top';
 }
 
 TBL.viewCell52 = function (td, prefix, fldName, No, fldOptions) {
@@ -907,6 +998,159 @@ TBL.clickCell52 = function (fld)
     fldName = fldName.replace('fld_3', 'fld_4');
   }
   $(fldName).checked = false;
+}
+
+TBL.changeCell55 = function (obj)
+{
+  var prefix = obj._prefix;
+  var No = obj._No;
+
+  var td = $(prefix+'_td_'+No+'_2');
+  td.innerHTML = '';
+  TBL.createCell56(td, prefix, prefix+'_fld_2_'+No, No, {className: '_validate_'});
+
+  var td = $(prefix+'_td_'+No+'_3');
+  td.innerHTML = '';
+  TBL.createCell57(td, prefix, prefix+'_fld_3_'+No, No, {className: '_validate_'});
+}
+
+TBL.createCell55 = function (td, prefix, fldName, No, fldOptions, disabled) {
+  var fld = TBL.createCellSelect(fldName, fldOptions);
+  fld._prefix = prefix;
+  fld._No = No;
+  fld.style.width = '95%';
+  OAT.Dom.option('', '', fld);
+  if (!TBL.predicates)
+    TBL.initValues();
+  if (TBL.predicates)
+    for (var i = 0; i < TBL.predicates.length; i = i + 2) {
+      OAT.Dom.option(TBL.predicates[i+1][0], TBL.predicates[i], fld);
+    }
+
+  if (fldOptions.value)
+    fld.value = fldOptions.value;
+
+  if (disabled)
+    fld.disabled = disabled;
+
+  if (!disabled)
+    fld.onchange = function(){TBL.changeCell55(this)};
+
+  td.appendChild(fld);
+
+  return fld;
+}
+
+TBL.changeCell56 = function (obj) {
+  var prefix = obj._prefix;
+  var No = obj._No;
+
+  var td = $(prefix+'_td_'+No+'_3');
+  td.innerHTML = '';
+  TBL.createCell57(td, prefix, prefix+'_fld_3_'+No, No, {className: '_validate_'});
+}
+
+TBL.viewCell55 = function (td, prefix, fldName, No, fldOptions) {
+  TBL.createCell55(td, prefix, fldName, No, fldOptions, true);
+}
+
+TBL.createCell56 = function (td, prefix, fldName, No, fldOptions, disabled)
+{
+  var predicate = TBL.predicateGet(prefix+'_fld_1_'+No);
+  if (!predicate)
+    return;
+
+  var fld = TBL.createCellSelect(fldName, fldOptions);
+  fld._prefix = prefix;
+  fld._No = No;
+  fld.style.width = '95%';
+  OAT.Dom.option('', '', fld);
+  var predicateType = predicate[1];
+  if (TBL.compares)
+    for (var i = 0; i < TBL.compares.length; i = i + 2) {
+      var compareTypes = TBL.compares[i+1][1];
+      for (var j = 0; j < compareTypes.length; j++) {
+        if (compareTypes[j] == predicateType)
+          OAT.Dom.option(TBL.compares[i+1][0], TBL.compares[i], fld);
+      }
+    }
+  if (fldOptions.value)
+    fld.value = fldOptions.value;
+
+  if (disabled)
+    fld.disabled = disabled;
+
+  if (!disabled)
+    fld.onchange = function(){TBL.changeCell56(this)};
+
+  td.appendChild(fld);
+  return fld;
+}
+
+TBL.viewCell56 = function (td, prefix, fldName, No, fldOptions) {
+  TBL.createCell56(td, prefix, fldName, No, fldOptions, true);
+}
+
+TBL.createCell57 = function (td, prefix, fldName, No, fldOptions)
+{
+  var predicate = TBL.predicateGet(prefix+'_fld_1_'+No);
+  if (!predicate)
+    return;
+
+  var fld_2 = $(fldName.replace('fld_3', 'fld_2'));
+  if (!fld_2)
+    return;
+
+  var compare;
+  for (var i = 0; i < TBL.compares.length; i = i + 2) {
+    if (TBL.compares[i] == fld_2.value)
+      compare = TBL.compares[i+1];
+  }
+  if (!compare || (compare[2] == 0))
+    return;
+
+  if ((predicate[1] == 'boolean') || (predicate[1] == 'sparql')) {
+    var fld = OAT.Dom.create("select");
+    OAT.Dom.option('Yes', '1', fld);
+    OAT.Dom.option('No', '0', fld);
+  }
+  else
+  {
+    var fld = OAT.Dom.create("input");
+    fld.type = 'text';
+  }
+  fld.id = fldName;
+  fld.name = fld.id;
+  fld.style.width = '93%';
+  if (fldOptions.value)
+    fld.value = fldOptions.value;
+  if (fldOptions.className)
+    fld.className = fldOptions.className;
+  td.appendChild(fld);
+
+  for (var i = 0; i < predicate[3].length; i += 2) {
+    if (predicate[3][i] == 'size') {
+      fld['size'] = predicate[3][i+1];
+      fld.style.width = null;
+    }
+
+    if (predicate[3][i] == 'class')
+      fld.className = predicate[3][i+1];
+
+    if (predicate[3][i] == 'onclick')
+      OAT.Event.attach(fld, "click", new Function((predicate[3][i+1]).replace(/-FIELD-/g, fld.id)));
+
+    if (predicate[3][i] == 'button') {
+      var span = OAT.Dom.create("span");
+      span.innerHTML = ' ' + (predicate[3][i+1]).replace(/-FIELD-/g, fld.id);
+      td.appendChild(span);
+    }
+  }
+  return fld;
+}
+
+TBL.viewCell57 = function (td, prefix, fldName, No, fldOptions) {
+  TBL.createCell0(td, prefix, fldName, No, fldOptions, true);
 }
 
 TBL.createButton0 = function (td, prefix, fldName, No, fldOptions)
@@ -1079,6 +1323,19 @@ TBL.createButton44 = function (td, prefix, fldName, No, fldOptions)
   }
 }
 
+TBL.createButton55 = function (td, prefix, fldName, No, fldOptions)
+{
+  var img = OAT.Dom.create('img');
+  img.src = '/ods/images/icons/trash_16.png';
+  img.alt = 'Delete row';
+  img.title = img.alt;
+  img.onclick = function(){TBL.deleteRow(prefix, No);};
+  OAT.Dom.addClass(img, 'button');
+
+  td.appendChild(img);
+  return img;
+}
+
 TBL.webidProperty = function(obj)
 {
   var S = 'p';
@@ -1116,4 +1373,27 @@ TBL.windowShow = function(sPage, sPageName, width, height)
     sPage += '&realm=' + document.forms[0].elements['realm'].value;
   win = window.open(sPage, sPageName, "width="+width+",height="+height+",top=100,left=100,status=yes,toolbar=no,menubar=no,scrollbars=yes,resizable=yes");
   win.window.focus();
+}
+
+TBL.initValues = function () {
+  // load filters data
+  var x = function(data) {
+    var o = OAT.JSON.parse(data);
+    TBL.predicates = o[0];
+    TBL.compares = o[1];
+  }
+  OAT.AJAX.GET('/ods/api/filtersData', false, x, {async: false});
+}
+
+TBL.predicateGet = function (fldName) {
+  var fld = $(fldName)
+  if (fld) {
+    if (!TBL.predicates)
+      TBL.initValues();
+    for (var i = 0; i < TBL.predicates.length; i += 2) {
+      if (TBL.predicates[i] == fld.value)
+        return TBL.predicates[i+1];
+    }
+  }
+  return null;
 }
