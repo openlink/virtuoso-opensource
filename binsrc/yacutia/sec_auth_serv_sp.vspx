@@ -153,8 +153,8 @@
 		          }
                       ?>
 		      <?vsp if (DB.DBA.VAD_CHECK_VERSION ('Framework') is not null or DB.DBA.VAD_CHECK_VERSION ('policy_manager') is not null) { ?>
-		      <td class="<?V self.astyle ('SPARQL-SSL') ?>" align="center">
-			<v:url xhtml_style="page_tab" url="sparql_acl.vspx" value="SPARQL-SSL" render-only="1"/>
+		      <td class="<?V self.astyle ('SPARQL-WebID') ?>" align="center">
+			<v:url xhtml_style="page_tab" url="sparql_acl.vspx" value="SPARQL-WebID" render-only="1"/>
 		      </td>
 		      <?vsp } ?>
                         
