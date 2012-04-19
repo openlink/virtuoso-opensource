@@ -79,7 +79,6 @@ create procedure ODRIVE.WA.tmp_upgrade ()
 {
   if (registry_get ('odrive_items_upgrade') = '1')
     return;
-  registry_set ('odrive_items_upgrade', '1');
 
 	declare I, N, M integer;
   declare tmp, oldSearch, newSearch, aXml, aEntity any;
@@ -136,6 +135,33 @@ create procedure ODRIVE.WA.tmp_upgrade ()
 
     ODRIVE.WA.DAV_PROP_SET (COL_FULL_PATH, 'virt:Filter-Params', newSearch, 'dav');
   }
+  registry_set ('odrive_items_upgrade', '1');
+}
+;
+
+ODRIVE.WA.tmp_upgrade ();
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.tmp_upgrade ()
+{
+  declare path, graph any;
+
+  if (registry_get ('odrive_acl_update') = '1')
+    return;
+
+  for (select * from WS.WS.SYS_DAV_PROP where PROP_TYPE = 'R' and PROP_NAME = 'virt:aci_meta_n3') do
+  {
+    path := DB.DBA.DAV_SEARCH_PATH (PROP_PARENT_ID, PROP_TYPE);
+    graph := WS.WS.DAV_IRI (path);
+    delete from DB.DBA.RDF_QUAD where G = iri_to_id (graph);
+    graph := rtrim (WS.WS.DAV_IRI (path), '/') || '/';
+    delete from DB.DBA.RDF_QUAD where G = iri_to_id (graph);
+
+    WS.WS.WAC_INSERT (path, PROP_VALUE, null, null, 0);
+  }
+
+  registry_set ('odrive_acl_upgrade', '1');
 }
 ;
 

@@ -2264,9 +2264,9 @@ create procedure ODRIVE.WA.acl_params (
   }
   for (I := 0; I < length (params); I := I + 2)
   {
-    if (params[I] like 's_fld_1_%')
+    if (params[I] like 'f_fld_1_%')
     {
-      acl_seq := replace (params[I], 's_fld_1_', '');
+      acl_seq := replace (params[I], 'f_fld_1_', '');
       acl_users := split_and_decode (trim (params[I+1]), 0, '\0\0,');
       for (N := 0; N < length (acl_users); N := N + 1)
       {
@@ -2275,21 +2275,21 @@ create procedure ODRIVE.WA.acl_params (
         acl_user := ODRIVE.WA.odrive_user_id (trim (acl_users[N]));
         if (acl_user <> -1)
         {
-          acl_inheritance := atoi (get_keyword ('s_fld_2_' || acl_seq, params));
+          acl_inheritance := atoi (get_keyword ('f_fld_2_' || acl_seq, params));
           if (acl_inheritance <> 3)
           {
           WS.WS.ACL_ADD_ENTRY (acl_value,
                                acl_user,
-                                 bit_shift (atoi (get_keyword ('s_fld_3_' || acl_seq || '_r_grant', params, '0')), 2) +
-                                 bit_shift (atoi (get_keyword ('s_fld_3_' || acl_seq || '_w_grant', params, '0')), 1) +
-                                 atoi (get_keyword ('s_fld_3_' || acl_seq || '_x_grant', params, '0')),
+                                 bit_shift (atoi (get_keyword ('f_fld_3_' || acl_seq || '_r_grant', params, '0')), 2) +
+                                 bit_shift (atoi (get_keyword ('f_fld_3_' || acl_seq || '_w_grant', params, '0')), 1) +
+                                 atoi (get_keyword ('f_fld_3_' || acl_seq || '_x_grant', params, '0')),
                                1,
                                acl_inheritance);
           WS.WS.ACL_ADD_ENTRY (acl_value,
                                acl_user,
-                                 bit_shift (atoi (get_keyword ('s_fld_4_' || acl_seq || '_r_deny', params, '0')), 2) +
-                                 bit_shift (atoi (get_keyword ('s_fld_4_' || acl_seq || '_w_deny', params, '0')), 1) +
-                                 atoi (get_keyword ('s_fld_4_' || acl_seq || '_x_deny', params, '0')),
+                                 bit_shift (atoi (get_keyword ('f_fld_4_' || acl_seq || '_r_deny', params, '0')), 2) +
+                                 bit_shift (atoi (get_keyword ('f_fld_4_' || acl_seq || '_w_deny', params, '0')), 1) +
+                                 atoi (get_keyword ('f_fld_4_' || acl_seq || '_x_deny', params, '0')),
                                0,
                                acl_inheritance);
         }
@@ -4494,7 +4494,7 @@ create procedure ODRIVE.WA.aci_load (
   in path varchar)
 {
   declare id, what, retValue, graph any;
-  declare S, st, msg, data, meta any;
+  declare S, st, msg, meta, rows any;
 
   what := case when (path[length (path)-1] <> ascii('/')) then 'R' else 'C' end;
   id := ODRIVE.WA.DAV_SEARCH_ID (path, what);
@@ -4507,14 +4507,14 @@ create procedure ODRIVE.WA.aci_load (
   else
   {
   retValue := vector ();
-
-  graph := WS.WS.DAV_IRI (path);
+    graph := rtrim (WS.WS.DAV_IRI (path), '/') || '/';
   S := sprintf (' sparql \n' ||
                 ' define input:storage "" \n' ||
                 ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
                 ' prefix foaf: <http://xmlns.com/foaf/0.1/> \n' ||
                 ' prefix acl: <http://www.w3.org/ns/auth/acl#> \n' ||
-                ' select ?rule ?agent ?mode \n' ||
+                  ' prefix flt: <http://www.openlinksw.com/schemas/acl/filter#> \n' ||
+                  ' select distinct ?rule ?agent ?mode ?filter ?criteria ?operand ?condition ?value \n' ||
                 '   from <%s> \n' ||
                 '  where { \n' ||
                 '          { \n' ||
@@ -4530,36 +4530,63 @@ create procedure ODRIVE.WA.aci_load (
                 '            acl:mode ?mode ; \n' ||
                 '            acl:agentClass ?agent. \n' ||
                 '          } \n' ||
+                  '          union \n' ||
+                  '          { \n' ||
+                  '            ?rule rdf:type acl:Authorization ; \n' ||
+                  '                  acl:accessTo <%s> ; \n' ||
+                  '                  acl:mode ?mode ; \n' ||
+                  '                  flt:hasFilter ?filter . \n' ||
+                  '            ?filter flt:hasCriteria ?criteria . \n' ||
+                  '            ?criteria flt:operand ?operand ; \n' ||
+                  '                      flt:condition ?condition ; \n' ||
+                  '                      flt:value ?value . \n' ||
+                  '          } \n' ||
                 '        }\n' ||
-                '  order by ?rule\n',
+                  '  order by ?rule ?filter ?criteria\n',
+                  graph,
                 graph,
                 graph,
                 graph);
   commit work;
   st := '00000';
-  exec (S, st, msg, vector (), 0, meta, data);
-  if (st = '00000' and length (data))
+    exec (S, st, msg, vector (), 0, meta, rows);
+    if (st = '00000')
   {
-    declare N, aclNo, aclRule, aclMode, V any;
+      declare aclNo, aclRule, aclMode, aclCriteria, V, F any;
 
-    V := null;
     aclNo := 0;
     aclRule := '';
-    for (N := 0; N < length (data); N := N + 1)
+      V := null;
+      F := vector ();
+      aclCriteria := '';
+      foreach (any row in rows) do
     {
-      if (aclRule <> data[N][0])
+        if (aclRule <> row[0])
       {
         if (not isnull (V))
           retValue := vector_concat (retValue, vector (V));
+
         aclNo := aclNo + 1;
-        aclRule := data[N][0];
-        V := vector (aclNo, ODS.ODS_API."ontology.normalize" (data[N][1]), 'person', 0, 0, 0);
+          aclRule := row[0];
+          V := vector (aclNo, ODS.ODS_API."ontology.normalize" (row[1]), 'person', 0, 0, 0);
+          F := vector ();
+          aclCriteria := '';
       }
-      if (ODS.ODS_API."ontology.normalize" (data[N][1]) = 'foaf:Agent')
+        if (ODS.ODS_API."ontology.normalize" (row[1]) = 'foaf:Agent')
         V[2] := 'public';
-      if (data[N][1] like SIOC.DBA.get_graph () || '/%/group/%')
+        if (row[1] like SIOC.DBA.get_graph () || '/%/group/%')
         V[2] := 'group';
-      aclMode := ODS.ODS_API."ontology.normalize" (data[N][2]);
+        if (row[3] like (graph || 'filter_%'))
+        {
+          V[2] := 'advanced';
+          if (aclCriteria <> row[4])
+          {
+            F := vector_concat (F, vector (vector (1, replace (row[5], 'flt:', ''), replace (row[6], 'flt:', ''), row[7])));
+            aclCriteria := row[4];
+            V[1] := F;
+          }
+        }
+        aclMode := ODS.ODS_API."ontology.normalize" (row[2]);
       if (aclMode = 'acl:Read')
         V[3] := 1;
       if (aclMode = 'acl:Write')
@@ -4597,40 +4624,10 @@ create procedure ODRIVE.WA.aci_save (
 
 -------------------------------------------------------------------------------
 --
-create procedure ODRIVE.WA.aci_params (
-  inout params any)
-{
-  declare N, M integer;
-  declare aclNo, retValue, V any;
-
-  M := 1;
-  retValue := vector ();
-  for (N := 0; N < length (params); N := N + 2)
-  {
-    if (params[N] like 'f_fld_2_%')
-    {
-      aclNo := replace (params[N], 'f_fld_2_', '');
-      V := vector (M,
-                   trim (params[N+1]),
-                   get_keyword ('f_fld_1_' || aclNo, params, 'person'),
-                   atoi (get_keyword ('f_fld_3_' || aclNo || '_r', params, '0')),
-                   atoi (get_keyword ('f_fld_3_' || aclNo || '_w', params, '0')),
-                   atoi (get_keyword ('f_fld_3_' || aclNo || '_x', params, '0'))
-                  );
-      retValue := vector_concat (retValue, vector (V));
-      M := M + 1;
-    }
-  }
-  return retValue;
-}
-;
-
--------------------------------------------------------------------------------
---
 create procedure ODRIVE.WA.aci_n3 (
   in aciArray any)
 {
-  declare N integer;
+  declare N, M integer;
   declare retValue any;
 
   if (length (aciArray) = 0)
@@ -4638,7 +4635,8 @@ create procedure ODRIVE.WA.aci_n3 (
 
   retValue := ' @prefix acl: <http://www.w3.org/ns/auth/acl#> . \n' ||
               ' @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> . \n' ||
-              ' @prefix foaf: <http://xmlns.com/foaf/0.1/> . \n';
+              '@prefix foaf: <http://xmlns.com/foaf/0.1/> . \n' ||
+              '@prefix flt: <http://www.openlinksw.com/schemas/acl/filter#> . \n';
   for (N := 0; N < length (aciArray); N := N + 1)
   {
     if (length (aciArray[N][1]))
@@ -4656,6 +4654,10 @@ create procedure ODRIVE.WA.aci_n3 (
       {
         retValue := retValue || ';\n   acl:agentClass foaf:Agent';
       }
+      else if (aciArray[N][2] = 'advanced')
+      {
+        retValue := retValue || sprintf (';\n        flt:hasFilter <filter_%d>', aciArray[N][0]);
+      }
       if (aciArray[N][3])
         retValue := retValue || ';\n   acl:mode acl:Read';
       if (aciArray[N][4])
@@ -4663,6 +4665,18 @@ create procedure ODRIVE.WA.aci_n3 (
       if (aciArray[N][5])
         retValue := retValue || ';\n   acl:mode acl:Execute';
       retValue := retValue || '.\n';
+      if (aciArray[N][2] = 'advanced')
+      {
+        retValue := retValue || sprintf ('<filter_%d> rdf:type flt:Filter.', aciArray[N][0]);
+        for (M := 0; M < length (aciArray[N][1]); M := M + 1)
+        {
+          retValue := retValue ||
+                      sprintf ('\n<filter_%d> flt:hasCriteria <criteria_%d_%d>.', aciArray[N][0], aciArray[N][0], aciArray[N][1][M][0]) ||
+                      sprintf ('\n<criteria_%d_%d> flt:operand <flt:%s>;', aciArray[N][0], aciArray[N][1][M][0], aciArray[N][1][M][1]) ||
+                      sprintf ('\n               flt:condition <flt:%s>;', aciArray[N][1][M][2]) ||
+                      sprintf ('\n               flt:value ''%s''.\n', aciArray[N][1][M][3]);
+        }
+      }
     }
   }
   return retValue;
