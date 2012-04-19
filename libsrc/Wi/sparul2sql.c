@@ -65,8 +65,14 @@ spar_compose_report_flag (sparp_t *sparp)
   if ((NULL == spare->spare_output_format_name)
     && (NULL == sparp->sparp_env->spare_parent_env)
     && ssg_is_odbc_cli () )
+    {
+      if (ssg_is_odbc_msaccess_cli ())
+        fmtname = spare->spare_output_format_name = t_box_dv_short_string ("_MSACCESS_");
+      else
+        fmtname = spare->spare_output_format_name = t_box_dv_short_string ("_UDBC_");
+    }
     fmtname = spare->spare_output_format_name = t_box_dv_short_string ("_UDBC_");
-  res = t_box_num_nonull (((NULL != fmtname) && (!strcmp (fmtname, "_JAVA_") || !strcmp (fmtname, "_UDBC_"))) ? 0 : 1);
+  res = t_box_num_nonull (((NULL != fmtname) && (!strcmp (fmtname, "_JAVA_") || !strcmp (fmtname, "_UDBC_") || !strcmp (fmtname, "_MSACCESS_"))) ? 0 : 1);
   spare->spare_output_compose_report = res;
   return res;
 }

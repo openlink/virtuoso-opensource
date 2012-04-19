@@ -2335,7 +2335,12 @@ spar_make_top_or_special_case_from_wm (sparp_t *sparp, ptrlong subtype, SPART **
   if ((NULL == sparp->sparp_env->spare_output_format_name)
     && (NULL == sparp->sparp_env->spare_parent_env)
     && ssg_is_odbc_cli () )
-    sparp->sparp_env->spare_output_format_name = t_box_dv_short_string ("_UDBC_");
+    {
+      if (ssg_is_odbc_msaccess_cli ())
+        sparp->sparp_env->spare_output_format_name = t_box_dv_short_string ("_MSACCESS_");
+      else
+        sparp->sparp_env->spare_output_format_name = t_box_dv_short_string ("_UDBC_");
+    }
 #ifndef NDEBUG
   if (SPAR_WHERE_MODIFS != SPART_TYPE (wm))
     spar_internal_error (sparp, "Ill wm");
