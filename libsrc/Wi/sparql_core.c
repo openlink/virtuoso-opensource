@@ -1100,7 +1100,7 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
 }
 
 caddr_t
-DBG_NAME(spar_selid_push) (DBG_PARAMS sparp_t *sparp)
+SPARQL_DBG_NAME(spar_selid_push) (SPARQL_DBG_PARAMS sparp_t *sparp)
 {
   caddr_t selid = spar_mkid (sparp, "s");
   t_set_push (&(sparp->sparp_env->spare_selids), selid );
@@ -1109,7 +1109,7 @@ DBG_NAME(spar_selid_push) (DBG_PARAMS sparp_t *sparp)
 }
 
 caddr_t
-DBG_NAME(spar_selid_push_reused) (DBG_PARAMS sparp_t *sparp, caddr_t selid)
+SPARQL_DBG_NAME(spar_selid_push_reused) (SPARQL_DBG_PARAMS sparp_t *sparp, caddr_t selid)
 {
   t_set_push (&(sparp->sparp_env->spare_selids), selid );
   spar_dbg_printf (("spar_selid_push_reused () pushes %s at %s:%d\n", selid, file, line));
@@ -1118,7 +1118,7 @@ DBG_NAME(spar_selid_push_reused) (DBG_PARAMS sparp_t *sparp, caddr_t selid)
 
 
 caddr_t
-DBG_NAME(spar_selid_pop) (DBG_PARAMS sparp_t *sparp)
+SPARQL_DBG_NAME(spar_selid_pop) (SPARQL_DBG_PARAMS sparp_t *sparp)
 {
   caddr_t selid = (caddr_t)t_set_pop (&(sparp->sparp_env->spare_selids));
   spar_dbg_printf (("spar_selid_pop () pops %s at %s:%d\n", selid, file, line));
