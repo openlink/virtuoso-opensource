@@ -90,7 +90,7 @@
 			  </td>
           <?vsp } ?>          
 
-		      <?vsp if (DB.DBA.VAD_CHECK_VERSION ('Framework') is not null) { ?>
+		      <?vsp if (DB.DBA.VAD_CHECK_VERSION ('Framework') is not null or DB.DBA.VAD_CHECK_VERSION ('policy_manager') is not null) { ?>
 		      <td class="page_tab_selected" align="center">
 			<v:url xhtml_style="page_tab" url="sparql_acl.vspx" value="SPARQL-SSL" render-only="1"/>
 		      </td>
