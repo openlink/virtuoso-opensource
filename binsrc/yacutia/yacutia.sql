@@ -192,8 +192,9 @@ yacutia_http_log_ui_labels ()
 
 create procedure adm_menu_tree ()
 {
-  declare wa_available, rdf_available integer;
-  wa_available := gt (DB.DBA.VAD_CHECK_VERSION ('Framework'), '1.02.13');
+  declare wa_available, rdf_available, policy_vad integer;
+  wa_available := VAD.DBA.VER_LT ('1.02.13', DB.DBA.VAD_CHECK_VERSION ('Framework'));
+  policy_vad := DB.DBA.VAD_CHECK_VERSION ('policy_manager');
   rdf_available := DB.DBA.VAD_CHECK_VERSION('rdf_mappers');
   return concat (
 '<?xml version="1.0" ?>
@@ -464,7 +465,7 @@ case when 0 and check_package('rdf_mappers') then
      <node name="Schemas" url="rdf_schemas.vspx" id="184" place="1" allowed="yacutia_sparql_page" />
    </node>
    <node name="Namespaces"  url="persistent_xmlns.vspx"  id="183" allowed="yacutia_message" />',
-      case when (wa_available is not null and rdf_available is null) then
+      case when ((wa_available > 0 or policy_vad is not null) and rdf_available is null) then
       ' <node name="Access Control" url="sparql_acl.vspx" id="274" allowed="yacutia_acls">
         <node name="ACL List" url="sec_auth_serv_sp.vspx" id="277" place="1" allowed="yacutia_acls"/>'
       else 
@@ -472,7 +473,7 @@ case when 0 and check_package('rdf_mappers') then
       <node name="ACL List" url="sec_auth_serv_sp.vspx" id="275" place="1" allowed="yacutia_acls"/>' 
       end,      
    ' <node name="ACL Edit" url="sec_acl_edit_sp.vspx" id="276" place="1" allowed="yacutia_acls"/>',
-      case when (wa_available is not null) then
+      case when (wa_available > 0 or policy_vad is not null) then
       '<node name="SPARQL ACL" url="sparql_acl.vspx" id="277" place="1" allowed="yacutia_acls"/>'
       else '' end,
    '</node>     
@@ -484,11 +485,12 @@ case when 0 and check_package('rdf_mappers') then
    <node name="Views" url="db_rdf_view_3.vspx"  id="273" place="1"/>
    <node name="Views" url="db_rdf_view_tb.vspx"  id="273" place="1"/>
    <node name="Views" url="db_rdf_view_cols.vspx"  id="273" place="1"/>
-   <node name="Views" url="db_rdf_view_pk.vspx"  id="273" place="1"/>
-   <node name="R2RML" url="r2rml_import.vspx"  id="273" />
+   <node name="Views" url="db_rdf_view_pk.vspx"  id="273" place="1"/>',
+case when check_package('rdb2rdf') then
+   '<node name="R2RML" url="r2rml_import.vspx"  id="273" />
    <node name="R2RML" url="r2rml_validate.vspx"  id="273" place="1"/>
-   <node name="R2RML" url="r2rml_gen.vspx"  id="273" place="1"/>
-   <node name="Quad Store Upload" url="rdf_import.vspx"  id="271" allowed="rdf_import_page"/>',
+   <node name="R2RML" url="r2rml_gen.vspx"  id="273" place="1"/>' else '' end,
+   '<node name="Quad Store Upload" url="rdf_import.vspx"  id="271" allowed="rdf_import_page"/>',
    case when __proc_exists ('PSH.DBA.cli_subscribe') is not null then 
    '<node name="Subscriptions (PHSB)" url="rdf_psh_subs.vspx"  id="271" allowed="rdf_psh_sub_page"/>'
        else
@@ -672,7 +674,8 @@ adm_db_tree ()
        i := i + 1;
        http (sprintf ('<node name="%V" id="%d">', TABLE_QUAL, i), ses);
          http (sprintf ('<node name="Tables" id="1-%d"/>\n', i), ses);
-         http (sprintf ('<node name="Views" id="2-%d"/>\n', i), ses);
+         http (sprintf ('<node name="Views (SQL)" id="2-%d"/>\n', i), ses);
+         http (sprintf ('<node name="Views (Linked Data)" id="5-%d"/>\n', i), ses);
          http (sprintf ('<node name="Procedures" id="3-%d"/>\n', i), ses);
          http (sprintf ('<node name="User Defined Types" id="4-%d"/>\n', i), ses);
        http ('</node>\n', ses);
