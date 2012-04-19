@@ -372,7 +372,7 @@ create function "CalDAV_DAV_DIR_SINGLE" (
   {
     rightcol := path[length(path) - 2];
     if ('C' = what)
-      return vector (DAV_CONCAT_PATH ('/', path), 'C', 0, maxrcvdate, id, access, 0, id[2], maxrcvdate, 'dav/unix-directory', rightcol );
+      return vector (DAV_CONCAT_PATH ('/', path), 'C', 0, maxrcvdate, id, access, 0, id[2], maxrcvdate, 'text/calendar', rightcol );
   }
   fullpath := DAV_CONCAT_PATH (DAV_SEARCH_PATH (id[1], 'C'), colname || '/');
   if ('C' = what)
@@ -380,7 +380,7 @@ create function "CalDAV_DAV_DIR_SINGLE" (
     if (id[4] > 0)
       return -1;
 
-    return vector (fullpath, 'C', 0, maxrcvdate, id, access, 0, id[2], maxrcvdate, 'dav/unix-directory', colname );
+    return vector (fullpath, 'C', 0, maxrcvdate, id, access, 0, id[2], maxrcvdate, 'text/calendar', colname );
   }
   for (select CalDAV__COMPOSE_ICS_NAME(E_UID) as orig_mname, E_CREATED, E_UPDATED from CAL.WA.EVENTS where E_ID = id[4]) do
     return vector (fullpath || orig_mname, 'R', 1024, E_UPDATED, id, access, 0, id[2], E_CREATED, 'text/calendar', orig_mname);
@@ -444,7 +444,7 @@ create function "CalDAV_DAV_DIR_LIST" (
       {
         res := vector_concat (res, vector (vector (DAV_CONCAT_PATH (top_davpath, orig_name) || '/', 'C', 0, now(),
                 vector (CalDAV__UNAME(), detcol_id, owner_uid, dom_id, 0, 0),
-                access, owner_gid, owner_uid, now(), 'dav/unix-directory', orig_name) ) );
+                access, owner_gid, owner_uid, now(), 'text/calendar', orig_name) ) );
       }
       return res;
     }

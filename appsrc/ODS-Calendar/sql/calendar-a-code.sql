@@ -5599,7 +5599,7 @@ create procedure CAL.WA.vcal_str2date (
       if (isnull (tzObject))
         goto _exit;
 
-      tzOffset := get_keyword ('standartTo', tzObject);
+      tzOffset := get_keyword ('standartFrom', tzObject);
       if (isnull (tzOffset))
         goto _exit;
 
@@ -6152,6 +6152,7 @@ create procedure CAL.WA.export_vcal (
 
   -- start
   http ('BEGIN:VCALENDAR\r\n', sStream);
+  http (sprintf ('PRODID:-//OpenLink Software Ltd//ODS Calendar %s//EN\r\n', registry_get('calendar_version')), sStream);
   http ('VERSION:2.0\r\n', sStream);
   http (sprintf ('X-WR-CALNAME:%s\r\n', CAL.WA.domain_name (domain_id)), sStream);
 

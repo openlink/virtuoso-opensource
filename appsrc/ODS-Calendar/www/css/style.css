@@ -92,6 +92,7 @@ a:hover {
   font-size: 12px;
   background-color: #EFEFEF;
   border: 1px solid #7f94a5;
+  border-radius: 5px;
   -moz-border-radius: 5px;
   -webkit-border-radius: 5px;
   padding: 5px;
@@ -298,6 +299,7 @@ input.button {
   border-color: #7f94a5;
   background: #99b3c5;
 	cursor: pointer;
+  border-radius: 3px;
   -moz-border-radius: 3px;
   -webkit-border-radius: 3px;
 }
@@ -463,6 +465,8 @@ div.tab {
   border: 1px solid #000;
   border-bottom-width: 0px;
   border-color: #7f94a5;
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px;
   -moz-border-radius-topleft: 3px;
   -moz-border-radius-topright: 3px;
   -webkit-border-top-left-radius: 3px;
@@ -508,6 +512,8 @@ a.tab.activeTab {
   border: 1px solid #000;
   border-bottom-width: 0px;
   border-color: #7f94a5;
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px;
   -moz-border-radius-topleft: 3px;
   -moz-border-radius-topright: 3px;
   -webkit-border-top-left-radius: 3px;
@@ -851,6 +857,7 @@ span.button {
   padding: 2px 5px 0px;
   text-decoration:none;
 	cursor: pointer;
+  border-radius: 3px;
   -moz-border-radius: 3px;
   -webkit-border-radius: 3px;
 }
