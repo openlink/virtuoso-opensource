@@ -6757,7 +6757,7 @@ DAV_HOME_DIR_UPDATE ()
 {
   if (isstring (registry_get ('DAV_HOME_DIR_UPDATE')))
     return;
-  for (select U_NAME from SYS_USERS where U_DAV_ENABLE = 1 and U_IS_ROLE = 0 and U_NAME <> 'nobody') do
+  for (select U_NAME from SYS_USERS where U_DAV_ENABLE = 1 and U_IS_ROLE = 0 and U_NAME <> 'nobody' and U_NAME <> '__rdf_repl') do
     DAV_HOME_DIR_CREATE (U_NAME);
   registry_set ('DAV_HOME_DIR_UPDATE', 'done');
 }
