@@ -329,24 +329,24 @@
           http ('<div style="margin-left:12px; white-space: nowrap;">');
         }
         image := 'plus.gif';
-        image2 := 'folder_16.png';
+        image2 := 'image/folder_16.png';
         alt := 'Open Node';
         if (not AB.WA.ab_node_has_childs (domain_id, user_id, nodes[N+1], nodes[N+2]))
         {
           image := 'c.gif';
-          image2 := 'folder_16.png';
+          image2 := 'image/folder_16.png';
         }
         else if (AB.WA.vector_contains(self.abState, nodes[N+2]))
         {
           image := 'minus.gif';
-          image2 := 'folder_open_16.png';
+          image2 := 'image/folder_open_16.png';
           alt := 'Close Node';
         }
 
         if ((AB.WA.node_type(nodes[N+1]) = 'u') and (AB.WA.node_id(nodes[N+1]) = -1))
-          image2 := 'group_16.png';
+          image2 := '/ods/images/icons/group_16.png';
         if ((AB.WA.node_type(nodes[N+1]) = 'u') and (AB.WA.node_id(nodes[N+1]) >= 0))
-          image2 := 'user_16.png';
+          image2 := '/ods/images/icons/user_16.png';
 
         class := 'nolink_b';
         if (nodes[N+2] = self.abPath)
@@ -360,7 +360,7 @@
         } else {
           http(sprintf('<a href="#" name="pt_toggle_%s" onclick="javascript: vspxPost (\'pt_browse\', \'pt_toggle\', \'%s\', \'pt_path\', \'%s\'); return false"><img src="image/%s" border="0" class="nolink" alt="%s" title="%s" /></a>', nodes[N+2], nodes[N+1], nodes[N+2], image, alt, alt));
         }
-        http(sprintf('<a href="#" name="pt_node_%s" onclick="javascript: vspxPost (\'pt_browse\', \'pt_node\', \'%s\', \'pt_path\', \'%s\'); return false" class="nolink3 %s" alt="%s" title="%s" > <img src="image/%s" border="0" alt="" /> %s</a>', nodes[N+2], nodes[N+1], nodes[N+2], class, nodes[N], nodes[N], image2, nodes[N]));
+        http(sprintf('<a href="#" name="pt_node_%s" onclick="javascript: vspxPost (\'pt_browse\', \'pt_node\', \'%s\', \'pt_path\', \'%s\'); return false" class="nolink3 %s" alt="%s" title="%s" > <img src="%s" border="0" alt="" /> %s</a>', nodes[N+2], nodes[N+1], nodes[N+2], class, nodes[N], nodes[N], image2, nodes[N]));
         if (image = 'minus.gif')
           self.showTree(level+1, domain_id, user_id, nodes[N+1], nodes[N+2]);
 
@@ -493,7 +493,7 @@
         }
       }
       self.v_grants := trim (self.v_grants, ',');
-      self.v_acl := serialize (DB.DBA.wa_acl_params (params));
+      self.v_acl := serialize (DB.DBA.wa_aci_params (params));
     ]]>
   </v:method>
 
@@ -1074,7 +1074,7 @@
                   {
                     if (not is_empty_or_null(self.abValue))
                     {
-                  image := 'tag_16.png';
+                      image := 'image/tag_16.png';
                       nodeName := nodeName || ', Tag: ' || self.abValue;
                     }
                   }
@@ -1090,15 +1090,15 @@
                 }
                 if (self.abScope = 'MySharedContacts')
                 {
-                image := 'group_16.png';
+                  image := '/ods/images/icons/group_16.png';
                 if ((AB.WA.node_type (self.abNode) = 'u') and (AB.WA.node_id (self.abNode) >= 0))
-                  image := 'user_16.png';
+                    image := '/ods/images/icons/user_16.png';
                 nodeName := self.abName;
               }
 
               --nodeName := AB.WA.stringCut (coalesce(nodeName, ''), self.chars);
               if (image <> '')
-                image := sprintf ('<img src="image/%s" border="0" alt="" /> ', image);
+                  image := sprintf ('<img src="%s" border="0" alt="" /> ', image);
 
                 http('<div id="ab_header">');
                 if (not is_empty_or_null(nodeName))
@@ -1613,7 +1613,7 @@
                     <table class="form-body n" cellspacing="0">
                       <tr>
                         <th>
-                          <v:label for="ab_foaf" value="Profile Document URL" />
+                          <vm:label for="x_foaf" value="Profile Document URL" />
                         </th>
                         <td>
                           <vm:if test="self.abAction <> 'view'">
@@ -1640,7 +1640,7 @@
                       </vm:if>
                       <tr>
                         <th>
-                          <v:label for="ab_foaf" value="Profile Document URL" />
+                          <vm:label for="ab_foaf" value="Profile Document URL" />
                         </th>
                         <td>
                           <vm:if test="self.abAction <> 'view'">
@@ -1651,7 +1651,7 @@
                       </tr>
                       <tr>
                         <th>
-                          <v:label for="ab_iri" value="WebID" />
+                          <vm:label for="ab_iri" value="WebID" />
                         </th>
                         <td>
                           <vm:if test="self.abAction <> 'view'">
@@ -1662,22 +1662,22 @@
                       </tr>
                       <tr>
                       <th width="25%">
-                        <v:label for="ab_name" value="Name (*)" />
+                          <vm:label for="ab_name" value="Name (*)" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                            <v:text name="ab_name" value="--self.v_name" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
+                            <v:text name="ab_name" xhtml_id="ab_name" value="--self.v_name" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
                           <?vsp self.viewField (self.v_name, 'nickname', null); ?>
                       </td>
                     </tr>
                     <tr class="contactType">
                       <th>
-                        <v:label for="ab_title" value="Title"/>
+                          <vm:label for="ab_title" value="Title" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                          <v:select-list name="ab_title">
+                            <v:select-list name="ab_title" xhtml_id="ab_title">
                           <v:item name="" value=""/>
                           <v:item name="Mr" value="Mr"/>
                           <v:item name="Mrs" value="Mrs"/>
@@ -1697,55 +1697,55 @@
                     </tr>
                     <tr class="contactType">
                       <th>
-                        <v:label for="ab_fName" value="First Name"/>
+                          <vm:label for="ab_fName" value="First Name" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                            <v:text name="ab_fName" value="--self.v_fName" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
+                            <v:text name="ab_fName" xhtml_id="ab_fName" value="--self.v_fName" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
                           <?vsp self.viewField (self.v_fName, 'given-name', null); ?>
                       </td>
                     </tr>
                     <tr class="contactType">
                       <th>
-                        <v:label for="ab_mName" value="Middle Name" />
+                          <vm:label for="ab_mName" value="Middle Name" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                            <v:text name="ab_mName" value="--self.v_mName" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
+                            <v:text name="ab_mName" xhtml_id="ab_mName" value="--self.v_mName" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
                           <?vsp self.viewField (self.v_mName, 'additional-name', null); ?>
                       </td>
                     </tr>
                     <tr class="contactType">
                       <th>
-                        <v:label for="ab_lName" value="Last Name"/>
+                          <vm:label for="ab_lName" value="Last Name" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                            <v:text name="ab_lName" value="--self.v_lName" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
+                            <v:text name="ab_lName" xhtml_id="ab_lName" value="--self.v_lName" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
                           <?vsp self.viewField (self.v_lName, 'family-name', null); ?>
                       </td>
                     </tr>
                     <tr>
                       <th>
-                        <v:label for="ab_fullName" value="Full Name"/>
+                          <vm:label for="ab_fullName" value="Full Name" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                            <v:text name="ab_fullName" value="--self.v_fullName" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
+                            <v:text name="ab_fullName" xhtml_id="ab_fullName" value="--self.v_fullName" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
                           <?vsp self.viewField (self.v_fullName, 'fn', null); ?>
                       </td>
                     </tr>
                     <tr class="contactType">
                       <th>
-                        <v:label for="ab_gender" value="Gender" />
+                          <vm:label for="ab_gender" value="Gender" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                          <v:select-list name="ab_gender">
+                            <v:select-list name="ab_gender" xhtml_id="ab_gender">
                           <v:item name="" value=""/>
                           <v:item name="Male" value="male"/>
                           <v:item name="Female" value="female"/>
@@ -1762,7 +1762,7 @@
                     </tr>
                     <tr class="contactType">
                       <th>
-                          <v:label for="ab_birthday" value="Birthday" />
+                          <vm:label for="ab_birthday" value="Birthday" />
                       </th>
                         <td nowrap="nowrap">
                         <vm:if test="self.abAction <> 'view'">
@@ -1829,7 +1829,7 @@
                         </th>
                         <td class="listing_col" nowrap="nowrap">
                           <vm:if test="self.abAction <> 'view'">
-                            <v:text name="ab_photo" value="--self.v_photo" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
+                            <v:text name="ab_photo" xhtml_id="ab_photo" value="--self.v_photo" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                             <v:button name="ab_photo_preview" value="Preview" action="simple" xhtml_class="button">
                               <v:on-post>
                                 <![CDATA[
@@ -1938,7 +1938,7 @@
                       </vm:if>
                     <tr>
                         <th>
-                          <v:label for="ab_category" value="Category" />
+                          <vm:label for="ab_category_name" value="Category" />
                         </th>
                         <td id="td_cc">
                           <vm:if test="self.abAction <> 'view'">
@@ -1974,11 +1974,11 @@
                         }
                       </script>
                       <th>
-                        <v:label for="ab_tags" value="Tags (comma-separated)" />
+                          <vm:label for="ab_tags" value="Tags (comma-separated)" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                        <v:text name="ab_tags" null-value="''" value="--self.v_tags" xhtml_class="textbox" xhtml_size="60"/>
+                            <v:text name="ab_tags" xhtml_id="ab_tags" null-value="''" value="--self.v_tags" xhtml_class="textbox" xhtml_size="60" />
                           <input type="button" value="Suggest" onclick="javascript: suggestTags();" class="button" />
                           <input type="button" value="Clear" onclick="javascript: document.F1.elements['ab_tags'].value = ''" class="button" />
                         </vm:if>
@@ -1994,77 +1994,77 @@
                   <table class="form-body" cellspacing="0">
                     <tr>
                       <th width="25%">
-                        <v:label for="ab_mail" value="Mail"/>
+                          <vm:label for="ab_mail" value="Mail" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                            <v:text name="ab_mail" value="--self.v_mail" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
+                            <v:text name="ab_mail" xhtml_id="ab_mail" value="--self.v_mail" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
                           <?vsp self.viewField (self.v_mail, 'email:internet, pref', null); ?>
                       </td>
                     </tr>
                     <tr>
                       <th>
-                        <v:label for="ab_web" value="Web"/>
+                          <vm:label for="ab_web" value="Web" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                            <v:text name="ab_web" value="--self.v_web" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
+                            <v:text name="ab_web" xhtml_id="ab_web" value="--self.v_web" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
                           <?vsp self.viewField (self.v_web, 'url:pref', null); ?>
                       </td>
                     </tr>
                     <tr>
                       <th>
-                        <v:label for="ab_icq" value="Icq"/>
+                          <vm:label for="ab_icq" value="Icq" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                            <v:text name="ab_icq" value="--self.v_icq" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
+                            <v:text name="ab_icq" xhtml_id="ab_icq" value="--self.v_icq" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
                           <?vsp self.viewField (self.v_icq, '', null); ?>
                       </td>
                     </tr>
                     <tr>
                       <th>
-                        <v:label for="ab_skype" value="Skype ID"/>
+                          <vm:label for="ab_skype" value="Skype ID" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                            <v:text name="ab_skype" value="--self.v_skype" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
+                            <v:text name="ab_skype" xhtml_id="ab_skype" value="--self.v_skype" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
                           <?vsp self.viewField (self.v_skype, '', null); ?>
                       </td>
                     </tr>
                     <tr>
                       <th>
-                        <v:label for="ab_aim" value="AIM Name"/>
+                          <vm:label for="ab_aim" value="AIM Name" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                            <v:text name="ab_aim" value="--self.v_aim" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
+                            <v:text name="ab_aim" xhtml_id="ab_aim" value="--self.v_aim" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
                           <?vsp self.viewField (self.v_aim, '', null); ?>
                       </td>
                     </tr>
                     <tr>
                       <th>
-                        <v:label for="ab_yahoo" value="Yahoo! ID"/>
+                          <vm:label for="ab_yahoo" value="Yahoo! ID" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                            <v:text name="ab_yahoo" value="--self.v_yahoo" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
+                            <v:text name="ab_yahoo" xhtml_id="ab_yahoo" value="--self.v_yahoo" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
                           <?vsp self.viewField (self.v_yahoo, '', null); ?>
                       </td>
                     </tr>
                     <tr>
                       <th>
-                        <v:label for="ab_msn" value="MSN Messenger"/>
+                          <vm:label for="ab_msn" value="MSN Messenger" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                            <v:text name="ab_msn" value="--self.v_msn" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
+                            <v:text name="ab_msn" xhtml_id="ab_msn" value="--self.v_msn" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
                           <?vsp self.viewField (self.v_msn, '', null); ?>
                       </td>
@@ -2076,7 +2076,7 @@
                   <table class="form-body" cellspacing="0">
                     <tr>
                       <th width="25%">
-                        <v:label for="ab_hCountry" value="Country"/>
+                          <vm:label for="ab_hCountry" value="Country" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
@@ -2087,7 +2087,7 @@
                     </tr>
                     <tr>
                       <th>
-                          <v:label for="ab_hState" value="State/Province" />
+                          <vm:label for="ab_hState" value="State/Province" />
                       </th>
       		            <td>
                         <vm:if test="self.abAction <> 'view'">
@@ -2102,55 +2102,55 @@
                     </tr>
                     <tr>
                       <th>
-                        <v:label for="ab_hCity" value="City/Town"/>
+                          <vm:label for="ab_hCity" value="City/Town" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                            <v:text name="ab_hCity" value="--self.v_hCity" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
+                            <v:text name="ab_hCity" xhtml_id="ab_hCity" value="--self.v_hCity" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
                           <?vsp self.viewField (self.v_hCity, 'locality', null); ?>
                       </td>
                     </tr>
                     <tr>
                       <th>
-                        <v:label for="ab_hCode" value="Zip/Postal Code" />
+                          <vm:label for="ab_hCode" value="Zip/Postal Code" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                            <v:text name="ab_hCode" value="--self.v_hCode" xhtml_size="30" />
+                            <v:text name="ab_hCode" xhtml_id="ab_hCode" value="--self.v_hCode" xhtml_size="30" />
                         </vm:if>
                           <?vsp self.viewField (self.v_hCode, 'postal-code', null); ?>
                       </td>
                     </tr>
                     <tr>
                       <th>
-                        <v:label for="ab_hAddress1" value="Address1"/>
+                          <vm:label for="ab_hAddress1" value="Address1" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                            <v:text name="ab_hAddress1" value="--self.v_hAddress1" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
+                            <v:text name="ab_hAddress1" xhtml_id="ab_hAddress1" value="--self.v_hAddress1" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
                           <?vsp self.viewField (self.v_hAddress1, 'street-address', null); ?>
                       </td>
                     </tr>
                     <tr>
                       <th>
-                        <v:label for="ab_hAddress2" value="Address2"/>
+                          <vm:label for="ab_hAddress2" value="Address2" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                            <v:text name="ab_hAddress2" value="--self.v_hAddress2" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
+                            <v:text name="ab_hAddress2" xhtml_id="ab_hAddress2" value="--self.v_hAddress2" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
                           <?vsp self.viewField (self.v_hAddress2, 'extended-address', null); ?>
                       </td>
                     </tr>
                     <tr>
                       <th>
-                        <v:label for="ab_hTzone" value="Time Zone"/>
+                          <vm:label for="ab_hTzone" value="Time Zone" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                        <v:select-list name="ab_hTzone">
+                            <v:select-list name="ab_hTzone" xhtml_id="ab_hTzone">
                           <v:on-init>
                             <![CDATA[
                               declare x,y any;
@@ -2171,7 +2171,7 @@
                     </tr>
                     <tr>
                       <th>
-                        <v:label for="ab_hLat" value="Latitude"/>
+                          <vm:label for="ab_hLat" value="Latitude" />
                       </th>
 		                  <td>
                         <vm:if test="self.abAction <> 'view'">
@@ -2182,7 +2182,7 @@
 		                </tr>
 		                <tr>
                       <th>
-                        <v:label for="ab_hLng" value="Longitude" />
+                          <vm:label for="ab_hLng" value="Longitude" />
                       </th>
 		                  <td>
                         <vm:if test="self.abAction <> 'view'">
@@ -2193,55 +2193,55 @@
 		                </tr>
                     <tr>
                       <th>
-                        <v:label for="ab_hWeb" value="Web"/>
+                          <vm:label for="ab_hWeb" value="Web" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                            <v:text name="ab_hWeb" value="--self.v_hWeb" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
+                            <v:text name="ab_hWeb" xhtml_id="ab_hWeb" value="--self.v_hWeb" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
                           <?vsp self.viewField (self.v_hWeb, 'url:home', null); ?>
                       </td>
                     </tr>
                     <tr>
                       <th>
-                        <v:label for="ab_hMail" value="Mail"/>
+                          <vm:label for="ab_hMail" value="Mail" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                            <v:text name="ab_hMail" value="--self.v_hMail" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
+                            <v:text name="ab_hMail" xhtml_id="ab_hMail" value="--self.v_hMail" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
                           <?vsp self.viewField (self.v_hMail, 'email:internet', null); ?>
                       </td>
                     </tr>
                     <tr>
                       <th>
-                        <v:label for="ab_hPhone" value="Phone"/>
+                          <vm:label for="ab_hPhone" value="Phone" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                            <v:text name="ab_hPhone" value="--self.v_hPhone" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
+                            <v:text name="ab_hPhone" xhtml_id="ab_hPhone" value="--self.v_hPhone" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
                           <?vsp self.viewField (self.v_hPhone, 'tel:home', null); ?>
                       </td>
                     </tr>
                     <tr>
                       <th>
-                        <v:label for="ab_hMobile" value="Mobile"/>
+                          <vm:label for="ab_hMobile" value="Mobile" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                            <v:text name="ab_hMobile" value="--self.v_hMobile" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
+                            <v:text name="ab_hMobile" xhtml_id="ab_hMobile" value="--self.v_hMobile" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
                           <?vsp self.viewField (self.v_hMobile, 'tel:home,cell', null); ?>
                       </td>
                     </tr>
                     <tr>
                       <th>
-                        <v:label for="ab_hFax" value="Fax" />
+                          <vm:label for="ab_hFax" value="Fax" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                            <v:text name="ab_hFax" value="--self.v_hFax" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
+                            <v:text name="ab_hFax" xhtml_id="ab_hFax" value="--self.v_hFax" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
                           <?vsp self.viewField (self.v_hFax, '', null); ?>
                       </td>
@@ -2253,7 +2253,7 @@
                   <table class="form-body" cellspacing="0">
                     <tr>
                       <th width="25%">
-                        <v:label for="ab_bCountry" value="Country"/>
+                          <vm:label for="ab_bCountry" value="Country" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
@@ -2264,7 +2264,7 @@
                     </tr>
                     <tr>
                       <th>
-                          <v:label for="ab_bState" value="State/Province" />
+                          <vm:label for="ab_bState" value="State/Province" />
                       </th>
       		            <td>
                         <vm:if test="self.abAction <> 'view'">
@@ -2279,55 +2279,55 @@
                     </tr>
                     <tr>
                       <th>
-                        <v:label for="ab_bCity" value="City/Town"/>
+                          <vm:label for="ab_bCity" value="City/Town" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                            <v:text name="ab_bCity" value="--self.v_bCity" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
+                            <v:text name="ab_bCity" xhtml_id="ab_bCity" value="--self.v_bCity" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
                           <?vsp self.viewField (self.v_bCity, 'locality', null); ?>
                       </td>
                     </tr>
                     <tr>
                       <th>
-                        <v:label for="ab_bCode" value="Zip/Postal Code"/>
+                          <vm:label for="ab_bCode" value="Zip/Postal Code" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                            <v:text name="ab_bCode" value="--self.v_bCode" xhtml_size="30" />
+                            <v:text name="ab_bCode" xhtml_id="ab_bCode" value="--self.v_bCode" xhtml_size="30" />
                         </vm:if>
                           <?vsp self.viewField (self.v_bCode, 'postal-code', null); ?>
                       </td>
                     </tr>
                     <tr>
                       <th>
-                        <v:label for="ab_bAddress1" value="Address1"/>
+                          <vm:label for="ab_bAddress1" value="Address1" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                            <v:text name="ab_bAddress1" value="--self.v_bAddress1" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
+                            <v:text name="ab_bAddress1" xhtml_id="ab_bAddress1" value="--self.v_bAddress1" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
                           <?vsp self.viewField (self.v_bAddress1, 'street-address', null); ?>
                       </td>
                     </tr>
                     <tr>
                       <th>
-                        <v:label for="ab_bAddress2" value="Address2"/>
+                          <vm:label for="ab_bAddress2" value="Address2" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                            <v:text name="ab_bAddress2" value="--self.v_bAddress2" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
+                            <v:text name="ab_bAddress2" xhtml_id="ab_bAddress2" value="--self.v_bAddress2" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
                           <?vsp self.viewField (self.v_bAddress2, 'extended-address', null); ?>
                       </td>
                     </tr>
                     <tr>
                       <th>
-                        <v:label for="ab_bTzone" value="Time Zone"/>
+                          <vm:label for="ab_bTzone" value="Time Zone" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                        <v:select-list name="ab_bTzone">
+                            <v:select-list name="ab_bTzone" xhtml_id="ab_bTzone">
                           <v:on-init>
                             <![CDATA[
                               declare x,y any;
@@ -2348,7 +2348,7 @@
                     </tr>
                     <tr>
                       <th>
-                        <v:label for="ab_bLat" value="Latitude"/>
+                          <vm:label for="ab_bLat" value="Latitude" />
                       </th>
 		                  <td>
                         <vm:if test="self.abAction <> 'view'">
@@ -2359,7 +2359,7 @@
 		                </tr>
 		                <tr>
                       <th>
-                        <v:label for="ab_bLng" value="Longitude" />
+                          <vm:label for="ab_bLng" value="Longitude" />
                       </th>
 		                  <td>
                         <vm:if test="self.abAction <> 'view'">
@@ -2370,11 +2370,11 @@
 		                </tr>
                     <tr>
                       <th>
-                        <v:label for="ab_bIndustry" value="Industry"/>
+                          <vm:label for="ab_bIndustry" value="Industry" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                          <v:data-list name="ab_bIndustry" sql="select '' as WI_NAME from WA_INDUSTRY union select WI_NAME from WA_INDUSTRY" key-column="WI_NAME" value-column="WI_NAME">
+                            <v:data-list name="ab_bIndustry" xhtml_id="ab_bIndustry" sql="select '' as WI_NAME from WA_INDUSTRY union select WI_NAME from WA_INDUSTRY" key-column="WI_NAME" value-column="WI_NAME">
 		                      <v:before-data-bind>
 			                      control.ufl_value := self.v_bIndustry;
 		                      </v:before-data-bind>
@@ -2385,88 +2385,88 @@
                     </tr>
                     <tr class="contactType">
                       <th>
-                        <v:label for="ab_bOrganization" value="Organization"/>
+                          <vm:label for="ab_bOrganization" value="Organization" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                            <v:text name="ab_bOrganization" value="--self.v_bOrganization" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
+                            <v:text name="ab_bOrganization" xhtml_id="ab_bOrganization" value="--self.v_bOrganization" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
                           <?vsp self.viewField (self.v_bOrganization, 'org', null); ?>
                       </td>
                     </tr>
                     <tr class="contactType">
                       <th>
-                        <v:label for="ab_bDepartment" value="Department" />
+                          <vm:label for="ab_bDepartment" value="Department" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                            <v:text name="ab_bDepartment" value="--self.v_bDepartment" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
+                            <v:text name="ab_bDepartment" xhtml_id="ab_bDepartment" value="--self.v_bDepartment" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
                           <?vsp self.viewField (self.v_bDepartment, '', null); ?>
                       </td>
                     </tr>
                     <tr class="contactType">
                       <th>
-                        <v:label for="ab_bJob" value="Job Title"/>
+                          <vm:label for="ab_bJob" value="Job Title" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                            <v:text name="ab_bJob" value="--self.v_bJob" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
+                            <v:text name="ab_bJob" xhtml_id="ab_bJob" value="--self.v_bJob" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
                           <?vsp self.viewField (self.v_bJob, 'title', null); ?>
                       </td>
                     </tr>
                     <tr>
                       <th>
-                        <v:label for="ab_bWeb" value="Web"/>
+                          <vm:label for="ab_bWeb" value="Web" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                            <v:text name="ab_bWeb" value="--self.v_bWeb" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
+                            <v:text name="ab_bWeb" xhtml_id="ab_bWeb" value="--self.v_bWeb" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
                           <?vsp self.viewField (self.v_bWeb, 'url:work', null); ?>
                       </td>
                     </tr>
                     <tr>
                       <th>
-                        <v:label for="ab_bMail" value="Mail"/>
+                          <vm:label for="ab_bMail" value="Mail" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                            <v:text name="ab_bMail" value="--self.v_bMail" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
+                            <v:text name="ab_bMail" xhtml_id="ab_bMail" value="--self.v_bMail" fmt-function="AB.WA.utf2wide" xhtml_size="60" />
                         </vm:if>
                           <?vsp self.viewField (self.v_bMail, 'email:internet', null); ?>
                       </td>
                     </tr>
                     <tr>
                       <th>
-                        <v:label for="ab_bPhone" value="Phone"/>
+                          <vm:label for="ab_bPhone" value="Phone" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                            <v:text name="ab_bPhone" value="--self.v_bPhone" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
+                            <v:text name="ab_bPhone" xhtml_id="ab_bPhone" value="--self.v_bPhone" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
                           <?vsp self.viewField (self.v_bPhone, 'tel:work', null); ?>
                       </td>
                     </tr>
                     <tr>
                       <th>
-                        <v:label for="ab_bMobile" value="Mobile"/>
+                          <vm:label for="ab_bMobile" value="Mobile" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                            <v:text name="ab_bMobile" value="--self.v_bMobile" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
+                            <v:text name="ab_bMobile" xhtml_id="ab_bMobile" value="--self.v_bMobile" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
                           <?vsp self.viewField (self.v_bMobile, 'tel:work,cell', null); ?>
                       </td>
                     </tr>
                     <tr>
                       <th>
-                        <v:label for="ab_bFax" value="Fax" />
+                          <vm:label for="ab_bFax" value="Fax" />
                       </th>
                       <td>
                         <vm:if test="self.abAction <> 'view'">
-                            <v:text name="ab_bFax" value="--self.v_bFax" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
+                            <v:text name="ab_bFax" xhtml_id="ab_bFax" value="--self.v_bFax" fmt-function="AB.WA.utf2wide" xhtml_size="30" />
                         </vm:if>
                           <?vsp self.viewField (self.v_bFax, '', null); ?>
                       </td>
@@ -2577,35 +2577,23 @@
                                   <th class="action">Action</th>
                               </tr>
                             </thead>
+                              <tbody id="s_tbody">
+                                <tr id="s_tr_no"><td colspan="4"><b>No Shares</b></td></tr>
                       		  <![CDATA[
                       		    <script type="text/javascript">
                             <?vsp
-                                declare N, L integer;
-                                declare acl, aType, aAccess any;
+                                    declare acl any;
 
-                              L := 0;
                               acl := (select WAI_ACL from DB.DBA.WA_INSTANCE where WAI_ID = self.domain_id);
                               acl := case when isnull (acl) then vector () else deserialize (acl) end;
-                                for (N := 0; N < length (acl); N := N + 1)
-                              {
-                                L := L + 1;
-                                  http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}, fld_4: {value: "Inherited"}});});', acl[N][2], acl[N][1], acl[N][3], acl[N][4], acl[N][5]));
-                              }
+                                    DB.DBA.wa_aci_lines (acl);
+
                               acl := deserialize (self.v_acl);
-                                for (N := 0; N < length (acl); N := N + 1)
-                              {
-                                L := L + 1;
-                                  if (self.abAction <> 'view')
-                                  {
-                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("s", null, {fld_1: {mode: 50, value: "%s", onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: "F1", tdCssText: "white-space: nowrap;", className: "_validate_ _webid_", value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', acl[N][2], acl[N][1], case when acl[N][2] = 'public' then 'true' else 'false' end, case when acl[N][2] = 'public' then 'display: none;' else '' end, acl[N][3], acl[N][4], acl[N][5]));
-                                  } else {
-                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}});});', acl[N][2], acl[N][1], acl[N][3], acl[N][4], acl[N][5]));
-                                  }
-                                }
+                                    DB.DBA.wa_aci_lines (acl, self.abAction);
                            		    ?>
                            		    </script>
                            		  ]]>
-                            <tr id="s_tr_no" style="display: <?V case when L=0 then '' else 'none' end ?>;"><td colspan="<?V case when self.abAction='view' then 3 else 4 end ?>"><b>No Shares</b></td></tr>
+                              </tbody>
                           </table>
                         </td>
                         <vm:if test="self.abAction <> 'view'">
@@ -2653,11 +2641,11 @@
              	        <?vsp } ?>
                       <tr>
                         <th width="25%" valign="top">
-                          <v:label for="ab_Certificate" value="Certificate" />
+                          <vm:label for="ab_Certificate" value="Certificate" />
                         </th>
                         <td>
                           <vm:if test="self.abAction <> 'view'">
-                            <v:textarea name="ab_Certificate" null-value="" value="--self.v_certificate" xhtml_cols="70" xhtml_rows="20" />
+                            <v:textarea name="ab_Certificate" xhtml_id="ab_Certificate" null-value="" value="--self.v_certificate" xhtml_cols="70" xhtml_rows="20" />
                           </vm:if>
                           <?vsp self.viewField (self.v_certificate, null, null); ?>
                         </td>
@@ -2988,7 +2976,7 @@
 	                  </th>
 	                  <td nowrap="nowarap">
                         <label>
-                          <v:radio-button name="i_source_0" xhtml_id="i_source_0" group-name="i_source" value="0" xhtml_onchange="javascript: destinationChange(this, {show: [\'imp_tr_0\', \'imp_tr_1\', \'imp_tr_2\']});">
+                          <v:radio-button name="i_source_0" xhtml_id="i_source_0" group-name="i_source" value="0" xhtml_onchange="javascript: destinationChange(this, {show: [\'imp_tr_0\', \'imp_tr_1\', \'imp_tr_2\'], exec: [iType]});">
 	                      <v:before-render>
 	                        <![CDATA[
 	                          control.ufl_selected := either(lte(self.i_source, 0), 1, 0);
@@ -2999,14 +2987,14 @@
                         </label>
                         <br />
                         <label>
-                          <v:radio-button name="i_source_1" xhtml_id="i_source_1" group-name="i_source" value="1" xhtml_onchange="javascript: destinationChange(this, {show: [\'imp_tr_0\', \'imp_tr_1\', \'imp_tr_2\']});">
+                          <v:radio-button name="i_source_1" xhtml_id="i_source_1" group-name="i_source" value="1" xhtml_onchange="javascript: destinationChange(this, {show: [\'imp_tr_0\', \'imp_tr_1\', \'imp_tr_2\'], exec: [iType]});">
 	                      <v:before-render>
 	                        <![CDATA[
 	                          control.ufl_selected := either(equ(self.i_source, 1), 1, 0);
 	                        ]]>
 	                      </v:before-render>
 	                    </v:radio-button>
-                          <b>WebDAV</b>
+                          <b>WebDAV File Path</b>
                         </label>
                         <br />
                         <label>
@@ -3017,18 +3005,18 @@
                               ]]>
                             </v:before-render>
                           </v:radio-button>
-                          <b>CardDAV</b>
+                          <b>CardDAV Path</b>
                         </label>
                         <br />
                         <label>
-                          <v:radio-button name="i_source_2" xhtml_id="i_source_2" group-name="i_source" value="2" xhtml_onchange="javascript: destinationChange(this, {show: [\'imp_tr_0\', \'imp_tr_1\', \'imp_tr_2\']});">
+                          <v:radio-button name="i_source_2" xhtml_id="i_source_2" group-name="i_source" value="2" xhtml_onchange="javascript: destinationChange(this, {show: [\'imp_tr_0\', \'imp_tr_1\', \'imp_tr_2\'], exec: [iType]});">
 	                      <v:before-render>
 	                        <![CDATA[
 	                          control.ufl_selected := either(equ(self.i_source, 2), 1, 0);
 	                        ]]>
 	                      </v:before-render>
 	                    </v:radio-button>
-                          <b>URI</b>
+                          <b>URL</b>
                         </label>
                         <br />
                         <label>
@@ -3051,7 +3039,7 @@
                                 ]]>
                               </v:before-render>
                             </v:radio-button>
-                            <b>LinkedIn</b>
+                            <b>LinkedIn Account</b>
                           </label>
                         </vm:if>
 	                  </td>
@@ -3096,6 +3084,16 @@
 	                  </td>
 	                </tr>
 	              </table>
+                  <script type="text/javascript">
+                    <![CDATA[
+                      destinationChange($('i_source_0'), {show: ['imp_tr_0', 'imp_tr_1', 'imp_tr_2'], exec: [iType]});
+                      destinationChange($('i_source_1'), {show: ['imp_tr_0', 'imp_tr_1', 'imp_tr_2'], exec: [iType]});
+                      destinationChange($('i_source_5'), {hide: ['imp_tr_0', 'imp_tr_1', 'imp_tr_2']});
+                      destinationChange($('i_source_2'), {show: ['imp_tr_0', 'imp_tr_1', 'imp_tr_2'], exec: [iType]});
+                      destinationChange($('i_source_3'), {hide: ['imp_tr_0', 'imp_tr_1', 'imp_tr_2']});
+                      destinationChange($('i_source_4'), {hide: ['imp_tr_0', 'imp_tr_1', 'imp_tr_2']});
+                    ]]>
+                  </script>
 	            </div>
 
 	            <div class="new-form-footer">
@@ -3219,7 +3217,7 @@
                   <vm:if test="self.i_source = 0">
 		                <tr>
 		                  <th width="30%">
-                        Select file
+                          <label for="f_file">Select file <?V case when self.i_type = 0 then '(.vcf)' when self.i_type = 2 then '(.csv)' end ?></label>
 		                  </th>
 		                  <td>
                           <input type="file" name="f_file" size="60" />
@@ -3229,7 +3227,7 @@
                   <vm:if test="self.i_source = 1">
 		                <tr>
 		                  <th width="30%">
-	                      Select WebDAV file
+                          <label for="f_dav">Select WebDAV file</label>
 		                  </th>
 		                  <td>
                           <v:text name="f_dav" xhtml_id="f_dav" value="" xhtml_size="60" />
@@ -3245,19 +3243,19 @@
                     <vm:if test="self.i_source = 2 or self.i_source = 5">
                     <tr>
 		                  <th width="30%">
-                          Select URI
+                          <label for="f_uri" ><?V case when self.i_source = 2 then 'Select File URL ' else 'Select CalDAV Path' end ?><?V case when self.i_type = 0 then '(.vcf)' when self.i_type = 2 then '(.csv)' end ?></label>
                       </th>
                       <td>
-                        <v:text name="f_uri" value="--''" xhtml_size="60" />
+                          <v:text name="f_uri" xhtml_id="f_uri" value="--''" xhtml_size="60" />
                       </td>
                     </tr>
                       <vm:if test="self.i_source = 5">
                         <tr>
                           <th>
-                            User
+                            <label for="f_uUser">User</label>
                           </th>
                           <td>
-                            <v:text name="f_uUser" null-value="--self.i_uUser" value="--''" xhtml_size="30">
+                            <v:text name="f_uUser" xhtml_id="f_uUser" null-value="--self.i_uUser" value="--''" xhtml_size="30">
                                <v:before-render>
                                 <![CDATA[
                                   control.ufl_value := self.i_uUser;
@@ -3268,10 +3266,10 @@
                         </tr>
                         <tr>
                           <th>
-                            Password
+                            <label for="f_uPassword">Password</label>
                           </th>
                           <td>
-                            <v:text name="f_uPassword" type="password" null-value="--self.i_uPassword" value="--''" xhtml_size="30">
+                            <v:text name="f_uPassword" xhtml_id="f_uPassword" type="password" null-value="--self.i_uPassword" value="--''" xhtml_size="30">
                                <v:before-render>
                                 <![CDATA[
                                   control.ufl_value := self.i_uPassword;
@@ -3284,10 +3282,10 @@
                       <vm:if test="self.i_type = 1">
                         <tr>
                           <th>
-                            Grab Depth
+                            <label for="i_depth">Grab Depth</label>
                           </th>
                           <td>
-                            <v:select-list name="i_depth">
+                            <v:select-list name="i_depth" xhtml_id="i_depth">
                               <v:item value="0" name="0" />
                               <v:item value="1" name="1" />
                               <v:item value="2" name="2" />
@@ -3302,18 +3300,18 @@
                         </tr>
                         <tr>
                           <th>
-                            Maximum Entity Count
+                            <label for="i_limit">Maximum Entity Count</label>
                           </th>
                           <td>
-                            <v:text name="i_limit" value="--self.i_contentLimit" xhtml_size="3" />
+                            <v:text name="i_limit" xhtml_id="i_limit" value="--self.i_contentLimit" xhtml_size="3" />
                           </td>
                         </tr>
                         <tr>
                           <th>
-                            Follow Property
+                            <label for="i_follow">Follow Property</label>
                           </th>
                           <td>
-                            <v:select-list name="i_follow">
+                            <v:select-list name="i_follow" xhtml_id="i_follow">
                               <v:item value="http://xmlns.com/foaf/0.1/knows" name="foaf:knows" />
                               <v:item value="http://www.w3.org/2002/07/owl#sameAs" name="owl:sameAs" />
                               <v:item value="http://www.w3.org/2000/01/rdf-schema#seeAlso" name="rdfs:seeAlso" />
@@ -3333,10 +3331,11 @@
                       <vm:if test="exists (select 1 from LDAP..LDAP_SERVERS where LS_USER_ID = self.account_id)">
                     <tr>
                       <th width="30%">
-                        LDAP server
+                          <label for="f_lName">LDAP server</label>
                       </th>
               	      <td>
               	        <v:data-list name="f_lName"
+                                       xhtml_id="f_lName"
               	                     value="--self.i_lName"
               	                     key-column="LS_NAME"
               	                     value-column="LS_NAME"
@@ -3377,10 +3376,10 @@
                       </vm:if>
                     <tr>
 		                  <th width="30%">
-                        Host URL
+                          <label for="f_lHost">Host URL</label>
                       </th>
                       <td>
-                        <v:text name="f_lHost" null-value="--''" value="" xhtml_size="70">
+                          <v:text name="f_lHost" xhtml_id="f_lHost" null-value="--''" value="" xhtml_size="70">
                    		    <v:before-render>
       		                  <![CDATA[
                   		        control.ufl_value := self.i_lHost;
@@ -3391,10 +3390,10 @@
                     </tr>
                     <tr>
                       <th>
-                        Host port
+                          <label for="f_lPort">Host port</label>
                       </th>
                       <td>
-                        <v:text name="f_lPort" null-value="--''" value="" xhtml_size="10">
+                          <v:text name="f_lPort" xhtml_id="f_lPort" null-value="--''" value="" xhtml_size="10">
                    		    <v:before-render>
       		                  <![CDATA[
                   		        control.ufl_value := self.i_lPort;
@@ -3405,10 +3404,10 @@
                     </tr>
                     <tr>
                       <th>
-                        Base DN
+                          <label for="f_lBase_dn">Base DN</label>
                       </th>
                       <td>
-                        <v:text name="f_lBase_dn" null-value="--''" value="" xhtml_size="70">
+                          <v:text name="f_lBase_dn" xhtml_id="f_lBase_dn" null-value="--''" value="" xhtml_size="70">
                    		    <v:before-render>
       		                  <![CDATA[
                   		        control.ufl_value := self.i_lBase_dn;
@@ -3419,10 +3418,10 @@
                     </tr>
                     <tr>
                       <th>
-                        Bind DN
+                          <label for="f_lBind_dn">Bind DN</label>
                       </th>
                       <td>
-                        <v:text name="f_lBind_dn" null-value="--''" value="" xhtml_size="70">
+                          <v:text name="f_lBind_dn" xhtml_id="f_lBind_dn" null-value="--''" value="" xhtml_size="70">
                    		    <v:before-render>
       		                  <![CDATA[
                   		        control.ufl_value := self.i_lBind_dn;
@@ -3433,10 +3432,10 @@
                     </tr>
                     <tr>
                       <th>
-                        Password
+                          <label for="f_lPassword">Password</label>
                       </th>
                       <td>
-                        <v:text name="f_lPassword" type="password" null-value="--self.i_lPassword" value="--''" xhtml_size="30">
+                          <v:text name="f_lPassword" xhtml_id="f_lPassword" type="password" null-value="--self.i_lPassword" value="--''" xhtml_size="30">
                    		    <v:before-render>
       		                  <![CDATA[
                   		        control.ufl_value := self.i_lPassword;
@@ -3447,10 +3446,10 @@
                     </tr>
                     <tr>
                       <th>
-                        Search string
+                          <label for="f_lSearch">Search string</label>
                       </th>
                       <td>
-                        <v:text name="f_lSearch" null-value="--''" value="--self.i_lSearch" xhtml_size="70"/>
+                          <v:text name="f_lSearch" xhtml_id="f_lSearch" null-value="--''" value="--self.i_lSearch" xhtml_size="70" />
                       </td>
                     </tr>
                   </vm:if>
@@ -4018,33 +4017,29 @@
                           <table class="form-body" cellspacing="0">
                             <tr>
                               <td style="width: 90%; background-color: white;">
-                                <table id="s_tbl" class="ODS_grid">
+                                <table class="ODS_grid">
                                   <thead>
                                     <tr>
                                       <th width="15%">Type</th>
                                       <th>Value</th>
                                       <th width="1%" nowrap="nowrap">ACL: (R)ead, (W)rite</th>
-                                      <th width="50px">Action</th>
+                                      <th class="action">Action</th>
                                     </tr>
                                   </thead>
+                                  <tbody id="s_tbody">
+                                    <tr id="s_tr_no"><td colspan="4"><b>No Shares</b></td></tr>
                             		  <![CDATA[
                             		    <script type="text/javascript">
                                     <?vsp
-                                      declare N, L integer;
-                                      declare acl, aType, aAccess any;
+                                        declare acl any;
 
-                                      L := 0;
                                       acl := (select WAI_ACL from DB.DBA.WA_INSTANCE where WAI_ID = self.domain_id);
                                       acl := case when isnull (acl) then vector () else deserialize (acl) end;
-                                      for (N := 0; N < length (acl); N := N + 1)
-                                      {
-                                        L := L + 1;
-                                        http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}, fld_4: {value: "Inherited"}});});', acl[N][2], acl[N][1], acl[N][3], acl[N][4], acl[N][5]));
-                                      }
+                                        DB.DBA.wa_aci_lines (acl);
                                     ?>
                             		    </script>
                             		  ]]>
-                                  <tr id="s_tr_no" style="display: <?V case when L=0 then '' else 'none' end ?>;"><td colspan="4"><b>No Shares</b></td></tr>
+                                  </tbody>
                             		</table>
                             	</td>
                               <td valign="top" nowrap="nowrap">
@@ -4173,7 +4168,7 @@
                           }
                         }
                         self.v_grants := trim (self.v_grants, ',');
-                        tmp  := DB.DBA.wa_acl_params (params);
+                        tmp  := DB.DBA.wa_aci_params (params);
                         if (length (tmp))
                           self.v_acl := serialize (tmp);
 
@@ -4763,10 +4758,10 @@
                   <table class="form-body" cellspacing="0">
                   <tr>
                     <th width="30%">
-                      Name
+                        <label for="c_name">Name</label>
                     </th>
                     <td>
-                      <v:text name="c_name" value="--self.v_name" xhtml_size="60" />
+                        <v:text name="c_name" xhtml_id="c_name" value="--self.v_name" xhtml_size="60" />
                     </td>
                   </tr>
                 </table>
@@ -5052,10 +5047,10 @@
                   <table cellspacing="0">
                     <tr>
                       <th width="30%">
-                        <v:label for="exc_name" value="Name" />
+                        <vm:label for="exc_name" value="Name" />
                       </th>
                       <td>
-                        <v:text name="exc_name" null-value="--''" value="--self.ve_name" xhtml_size="60" />
+                        <v:text name="exc_name" xhtml_id="exc_name" null-value="--''" value="--self.ve_name" xhtml_size="60" />
                       </td>
                     </tr>
                     <vm:if test="self.abSubAction not in ('syncmlCreate', 'syncmlUpdate')">
@@ -5124,26 +5119,27 @@
                     </tr>
                     <vm:if test="self.abSubAction not in ('syncmlCreate', 'syncmlUpdate')">
                     <tr>
-                        <th rowspan="3" valign="top">
+                        <th rowspan="<?V case when (self.abSubAction in ('subscribeCreate', 'subscribeUpdate')) then 3 else 2 end ?>" valign="top">
                         <?V case when (self.abSubAction in ('publishCreate', 'publishUpdate')) then 'Destination' else  'Source' end ?> type
                       </th>
                       <td nowrap="nowarap">
                         <label>
-                          <v:radio-button name="exc_options_type_1" group-name="exc_options_type" value="1" xhtml_onchange="javascript: destinationChange(this, {show: [\'exc_options_name_button\'], clear: [\'exc_options_name\']});">
+                            <v:radio-button name="exc_options_type_1" xhtml_id="exc_options_type_1" group-name="exc_options_type" value="1" xhtml_onchange="javascript: destinationChange(this, {show: [\'exc_options_name_button\'], clear: [\'exc_options_name\'], exec: [excLabel]});">
                             <v:before-render>
                               <![CDATA[
                                   control.ufl_selected := either (lte (get_keyword ('type', coalesce (self.ve_options, vector ()), 1), 1), 1, 0);
                               ]]>
                             </v:before-render>
                           </v:radio-button>
-                          <b>WebDAV Path</b>
+                            <b>WebDAV File Path</b>
                         </label>
                       </td>
                     </tr>
+                      <vm:if test="self.abSubAction in ('subscribeCreate', 'subscribeUpdate')">
                     <tr>
                       <td nowrap="nowarap">
                         <label>
-                            <v:radio-button name="exc_options_type_3" group-name="exc_options_type" value="3" xhtml_onchange="javascript: destinationChange(this, {hide: [\'exc_options_name_button\'], clear: [\'exc_options_name\']});">
+                              <v:radio-button name="exc_options_type_3" xhtml_id="exc_options_type_3" group-name="exc_options_type" value="3" xhtml_onchange="javascript: destinationChange(this, {hide: [\'exc_options_name_button\'], clear: [\'exc_options_name\'], exec: [excLabel]});">
                               <v:before-render>
                                 <![CDATA[
                                   control.ufl_selected := either (equ (get_keyword ('type', coalesce (self.ve_options, vector ()), 1), 3), 1, 0);
@@ -5154,10 +5150,11 @@
                           </label>
                         </td>
                       </tr>
+                      </vm:if>
                       <tr>
                         <td nowrap="nowarap">
                           <label>
-                          <v:radio-button name="exc_options_type_2" group-name="exc_options_type" value="2" xhtml_onchange="javascript: destinationChange(this, {hide: [\'exc_options_name_button\'], clear: [\'exc_options_name\']});">
+                            <v:radio-button name="exc_options_type_2" xhtml_id="exc_options_type_2" group-name="exc_options_type" value="2" xhtml_onchange="javascript: destinationChange(this, {hide: [\'exc_options_name_button\'], clear: [\'exc_options_name\'], exec: [excLabel]});">
                             <v:before-render>
                               <![CDATA[
                                   control.ufl_selected := either (equ (get_keyword ('type', coalesce (self.ve_options, vector ()), 1), 2), 1, 0);
@@ -5171,7 +5168,12 @@
                     </vm:if>
                     <tr>
                       <th>
-                        <v:label for="sr_chars" value="-- case when (self.abSubAction in ('syncmlCreate', 'syncmlUpdate')) then 'WebDAV SyncML Path' else 'WebDAV Path / URL' end" />
+                        <vm:if test="self.abAction in ('syncmlCreate', 'syncmlUpdate')">
+                          <label for="exc_options_name">WebDAV SyncML Path</label>
+                        </vm:if>
+                        <vm:if test="self.abAction not in ('syncmlCreate', 'syncmlUpdate')">
+                          <label for="exc_options_name"><span id="excLabel">WebDAV File Name (.ics)</span></label>
+                        </vm:if>
                       </th>
                       <td>
                         <v:text name="exc_options_name" xhtml_id="exc_options_name" value="--get_keyword ('name', self.ve_options)" xhtml_size="60" />
@@ -5185,18 +5187,18 @@
                     </tr>
                     <tr>
                       <th>
-                        User
+                        <vm:label for="exc_options_user" value="User" />
                       </th>
                       <td>
-                        <v:text name="exc_options_user" value="--get_keyword ('user', self.ve_options)" null-value="''" />
+                        <v:text name="exc_options_user" xhtml_id="exc_options_user" value="--get_keyword ('user', self.ve_options)" null-value="''" />
                       </td>
                     </tr>
                     <tr>
                       <th>
-                        Password
+                        <vm:label for="exc_options_password" value="Password" />
                       </th>
                       <td>
-                        <v:text name="exc_options_password" type="password"  value="--get_keyword ('password', self.ve_options)" null-value="''" />
+                        <v:text name="exc_options_password" xhtml_id="exc_options_password" type="password"  value="--get_keyword ('password', self.ve_options)" null-value="''" />
                       </td>
                     </tr>
                     <tr>
@@ -5207,10 +5209,10 @@
                     <vm:if test="self.abSubAction in ('syncmlCreate', 'syncmlUpdate')">
                       <tr>
                         <th>
-                          <v:label for="exc_options_mode" value="Sync mode" />
+                          <vm:label for="exc_options_mode" value="Sync mode" />
                         </th>
                         <td>
-                          <v:select-list name="exc_options_mode">
+                          <v:select-list name="exc_options_mode" xhtml_id="exc_options_mode">
                             <v:item value="0" name="Update both" />
                             <v:item value="1" name="Update client" />
                             <v:item value="-1" name="Update SyncML server" />
@@ -5226,20 +5228,20 @@
                     </vm:if>
                     <tr>
                       <th>
-                        <v:label for="exc_tags_include" value="Include with tags (comma-separated)" />
+                        <vm:label for="exc_tags_include" value="Include with tags (comma-separated)" />
                       </th>
                       <td>
-                        <v:text name="exc_tags_include" value="--get_keyword ('tagsInclude', self.ve_options)" xhtml_class="textbox" xhtml_size="60" />
+                        <v:text name="exc_tags_include" xhtml_id="exc_tags_include" value="--get_keyword ('tagsInclude', self.ve_options)" xhtml_class="textbox" xhtml_size="60" />
                         <input type="button" value="Clear" onclick="javascript: document.F1.elements['exc_tags_include'].value = ''" class="button" />
                       </td>
                     </tr>
                     <?vsp self.myTags ('exc_tags_include'); ?>
                     <tr>
                       <th>
-                        <v:label for="exc_tags_exclude" value="Exclude with tags (comma-separated)" />
+                        <vm:label for="exc_tags_exclude" value="Exclude with tags (comma-separated)" />
                       </th>
                       <td>
-                        <v:text name="exc_tags_exclude" value="--get_keyword ('tagsExclude', self.ve_options)" xhtml_class="textbox" xhtml_size="60" />
+                        <v:text name="exc_tags_exclude" xhtml_id="exc_tags_exclude" value="--get_keyword ('tagsExclude', self.ve_options)" xhtml_class="textbox" xhtml_size="60" />
                         <input type="button" value="Clear" onclick="javascript: document.F1.elements['exc_tags_exclude'].value = ''" class="button" />
                       </td>
                     </tr>
@@ -5247,16 +5249,23 @@
                     <vm:if test="self.abSubAction in ('syncmlCreate', 'syncmlUpdate')">
                       <tr>
                         <th>
-                          <v:label for="exc_tags" value="Tags for incoming entries (comma-separated)" />
+                          <vm:label for="exc_tags" value="Tags for incoming entries (comma-separated)" />
                         </th>
                         <td>
-                          <v:text name="exc_tags" value="--get_keyword ('tags', self.ve_options)" xhtml_class="textbox" xhtml_size="60" />
+                          <v:text name="exc_tags" xhtml_id="exc_tags" value="--get_keyword ('tags', self.ve_options)" xhtml_class="textbox" xhtml_size="60" />
                           <input type="button" value="Clear" onclick="javascript: document.F1.elements['exc_tags'].value = ''" class="button" />
                         </td>
                       </tr>
                       <?vsp self.myTags ('exc_tags'); ?>
                     </vm:if>
                   </table>
+                  <script type="text/javascript">
+                    <![CDATA[
+                      destinationChange($('exc_options_type_1'), {show: ['exc_options_name_button'], clear: ['exc_options_name'], exec: [excLabel]});
+                      destinationChange($('exc_options_type_3'), {hide: ['exc_options_name_button'], clear: ['exc_options_name'], exec: [excLabel]});
+                      destinationChange($('exc_options_type_2'), {hide: ['exc_options_name_button'], clear: ['exc_options_name'], exec: [excLabel]});
+                    ]]>
+                  </script>
                 </div>
                 <div class="new-form-footer">
                   <v:button action="simple" value="--case when self.abSubAction in ('publishCreate', 'subscribeCreate', 'syncmlCreate') then 'Create' else 'Update' end" name="exc_save" xhtml_class="form-button">

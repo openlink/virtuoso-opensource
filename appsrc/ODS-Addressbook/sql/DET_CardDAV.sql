@@ -371,7 +371,7 @@ create function "CardDAV_DAV_DIR_SINGLE" (
   {
     rightcol := path[length(path) - 2];
     if ('C' = what)
-      return vector (DAV_CONCAT_PATH ('/', path), 'C', 0, maxrcvdate, id, access, 0, id[2], maxrcvdate, 'dav/unix-directory', rightcol );
+      return vector (DAV_CONCAT_PATH ('/', path), 'C', 0, maxrcvdate, id, access, 0, id[2], maxrcvdate, 'text/vcard', rightcol );
   }
   fullpath := DAV_CONCAT_PATH (DAV_SEARCH_PATH (id[1], 'C'), colname || '/');
   if ('C' = what)
@@ -379,7 +379,7 @@ create function "CardDAV_DAV_DIR_SINGLE" (
     if (id[4] > 0)
       return -1;
 
-    return vector (fullpath, 'C', 0, maxrcvdate, id, access, 0, id[2], maxrcvdate, 'dav/unix-directory', colname );
+    return vector (fullpath, 'C', 0, maxrcvdate, id, access, 0, id[2], maxrcvdate, 'text/vcard', colname );
   }
   for (select "CardDAV__COMPOSE_ICS_NAME"(P_UID) as orig_mname, P_CREATED, P_UPDATED from AB.WA.PERSONS where P_ID = id[4]) do
     return vector (fullpath || orig_mname, 'R', 1024, P_UPDATED, id, access, 0, id[2], P_CREATED, 'text/vcard', orig_mname);
@@ -443,7 +443,7 @@ create function "CardDAV_DAV_DIR_LIST" (
       {
          res := vector_concat (res, vector (vector (DAV_CONCAT_PATH (top_davpath, orig_name) || '/', 'C', 0, now(),
                   vector (CardDAV__UNAME (), detcol_id, owner_uid, dom_id, 0, 0),
-                  access, owner_gid, owner_uid, now(), 'dav/unix-directory', orig_name) ) );
+                  access, owner_gid, owner_uid, now(), 'text/vcard', orig_name) ) );
       }
       return res;
     }
