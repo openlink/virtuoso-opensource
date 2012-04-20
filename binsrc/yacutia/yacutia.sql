@@ -195,7 +195,7 @@ create procedure adm_menu_tree ()
   declare wa_available, rdf_available, policy_vad integer;
   wa_available := VAD.DBA.VER_LT ('1.02.13', DB.DBA.VAD_CHECK_VERSION ('Framework'));
   policy_vad := DB.DBA.VAD_CHECK_VERSION ('policy_manager');
-  rdf_available := DB.DBA.VAD_CHECK_VERSION('rdf_mappers');
+  rdf_available := check_package ('rdf_mappers') + check_package ('cartridges');
   return concat (
 '<?xml version="1.0" ?>
 <adm_menu_tree>
@@ -450,7 +450,7 @@ case when 0 and check_package('rdf_mappers') then
   '<node name="Stylesheets" url="sparql_filters.vspx"  id="190" tip="GRDDL " allowed="yacutia_message">
      <node name="Stylesheets" url="sparql_filters.vspx" id="182" place="1" allowed="yacutia_sparql_page" />
    </node>' else '' end,
-   '<node name="Sponger" url="rdf_filters.vspx"  id="191" tip="RDF Mappers " allowed="yacutia_message">
+   '<node name="Sponger" url="rdf_filters.vspx"  id="191" tip="Linked Data Cartridges " allowed="yacutia_message">
      <node name="Cartridges" url="rdf_filters.vspx" id="192" place="1" allowed="yacutia_sparql_page" />
      <node name="Meta Cartridges" url="rdf_filters_pp.vspx" id="193" place="1" allowed="yacutia_sparql_page" />
      <node name="Stylesheets" url="sparql_filters.vspx" id="182" place="1" allowed="yacutia_sparql_page" />
@@ -465,7 +465,7 @@ case when 0 and check_package('rdf_mappers') then
      <node name="Schemas" url="rdf_schemas.vspx" id="184" place="1" allowed="yacutia_sparql_page" />
    </node>
    <node name="Namespaces"  url="persistent_xmlns.vspx"  id="183" allowed="yacutia_message" />',
-      case when ((wa_available > 0 or policy_vad is not null) and rdf_available is null) then
+      case when ((wa_available > 0 or policy_vad is not null) and rdf_available > 0) then
       ' <node name="Access Control" url="sparql_acl.vspx" id="274" allowed="yacutia_acls">
         <node name="ACL List" url="sec_auth_serv_sp.vspx" id="277" place="1" allowed="yacutia_acls"/>'
       else 

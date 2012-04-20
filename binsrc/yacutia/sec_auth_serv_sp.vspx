@@ -143,7 +143,7 @@
                     <tr>
 
 		      <?vsp
-		        if (vad_check_version ('rdf_mappers') is not null)
+		        if (vad_check_version ('rdf_mappers') is not null or check_package ('cartridges'))
 			  {
 		      ?>
 		      <td class="<?V self.astyle ('Sponger') ?>" align="center">

@@ -65,7 +65,7 @@
                       <td class="page_tab_selected" align="center" nowrap="1">
                         Extractor Cartridges
           		        </td>
-      			          <?vsp if (check_package('rdf_mappers')) { ?>
+      			          <?vsp if (check_package('rdf_mappers') or check_package ('cartridges')) { ?>
                       <td class="page_tab" align="center" nowrap="1">
                         <v:url name="url2" value="Meta Cartridges" format="%s" url="rdf_filters_pp.vspx" xhtml_class="uddi"/>
       		            </td>
