@@ -718,6 +718,8 @@ create procedure WEBID_AUTH_GEN_2 (
   ret:
   if (_gr is null)
     exec (sprintf ('sparql clear graph <%S>', gr), stat, msg);
+  if (0 = ret_code)
+    ag := null;
   commit work;
   return ret_code;
 }
