@@ -886,14 +886,14 @@ function toggleDavSource()
 var ODRIVE = new Object();
 
 ODRIVE.forms = new Object();
-ODRIVE.forms['properties'] = {params: {items: true}, width: '900', height: '700', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
-ODRIVE.forms['edit'] = {params: {items: true}, height: '430', postActions:['ODRIVE.formSubmit()']};
-ODRIVE.forms['view'] = {params: {items: true}, height: '430'};
-ODRIVE.forms['copy'] = {params: {items: true}, height: '380', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
-ODRIVE.forms['move'] = {params: {items: true}, height: '380', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
-ODRIVE.forms['tags'] = {params: {items: true}, height: '360', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
-ODRIVE.forms['rename'] = {params: {items: true}, height: '150', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
-ODRIVE.forms['delete'] = {params: {items: true}, height: '300', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
+ODRIVE.forms['properties'] = {params: {items: true}, width: '900', height: '630', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
+ODRIVE.forms['edit'] = {params: {items: true}, height: '440', postActions:['ODRIVE.formSubmit()']};
+ODRIVE.forms['view'] = {params: {items: true}, height: '440'};
+ODRIVE.forms['copy'] = {params: {items: true}, height: '330', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
+ODRIVE.forms['move'] = {params: {items: true}, height: '330', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
+ODRIVE.forms['tags'] = {params: {items: true}, height: '350', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
+ODRIVE.forms['rename'] = {params: {items: true}, height: '160', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
+ODRIVE.forms['delete'] = {params: {items: true}, height: '290', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
 
 ODRIVE.trim = function (sString, sChar)
 {
@@ -1067,7 +1067,7 @@ ODRIVE.formShow = function (action, id, params)
     if (formDiv) {OAT.Dom.unlink(formDiv);}
     formDiv = OAT.Dom.create('div', {width:dx+'px', height:dy+'px'});
     formDiv.id = 'formDiv';
-    formDialog = new OAT.Dialog('', formDiv, {width:parseInt(dx)+20, buttons: 0, resize: 0, modal: 1, onhide: function(){return false;}});
+    formDialog = new OAT.Dialog('', formDiv, {buttons: 0, resize: 0, modal: 1, onhide: function(){return false;}});
     formDialog.cancel = formDialog.hide;
 
     var s = 'forms.vspx?sa='+encodeURIComponent(action)+ODRIVE.sessionParams();

@@ -459,7 +459,7 @@
                     </td>
                   </tr>
                   <tr>
-                    <th>
+                    <th valign="top">
                       <v:label value="--'Permissions'" />
                     </th>
                     <td>
@@ -527,7 +527,7 @@
                     </td>
                   </tr>
                   <tr>
-                    <th>WebDAV Properties</th>
+                    <th valign="top">WebDAV Properties</th>
                     <td>
                       <table>
                         <tr>
@@ -649,7 +649,7 @@
               <![CDATA[
                 <script type="text/javascript" src="/ods/ckeditor/ckeditor.js"></script>
                 <script type="text/javascript">
-                  var oEditor = CKEDITOR.replace('f_content', {height: '250px'});
+                  var oEditor = CKEDITOR.replace('f_content', {height: '250px', width: '99%'});
                 </script>
               ]]>
             </vm:if>
