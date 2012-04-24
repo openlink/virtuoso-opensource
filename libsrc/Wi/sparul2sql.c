@@ -71,7 +71,6 @@ spar_compose_report_flag (sparp_t *sparp)
       else
         fmtname = spare->spare_output_format_name = t_box_dv_short_string ("_UDBC_");
     }
-    fmtname = spare->spare_output_format_name = t_box_dv_short_string ("_UDBC_");
   res = t_box_num_nonull (((NULL != fmtname) && (!strcmp (fmtname, "_JAVA_") || !strcmp (fmtname, "_UDBC_") || !strcmp (fmtname, "_MSACCESS_"))) ? 0 : 1);
   spare->spare_output_compose_report = res;
   return res;
