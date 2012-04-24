@@ -49,7 +49,7 @@ create trigger PING_RULES_I after insert on PING_RULES referencing new as N
   declare ep varchar;
   if (0 = length (N.PR_GRAPH))
     return;
-  ep := sprintf ('http://%s/semping', sioc..get_cname ());
+  ep := sprintf ('http://%s/semping/rest', sioc..get_cname ());
   sparql insert into graph iri(?:N.PR_GRAPH) { `iri(?:N.PR_IRI)` <http://purl.org/net/pingback/to> `iri(?:ep)` . };
 }
 ;
@@ -59,7 +59,7 @@ create trigger PING_RULES_U after update on PING_RULES referencing old as O, new
   declare ep varchar;
   if (0 = length (N.PR_GRAPH))
     return;
-  ep := sprintf ('http://%s/semping', sioc..get_cname ());
+  ep := sprintf ('http://%s/semping/rest', sioc..get_cname ());
   sparql delete from graph iri(?:O.PR_GRAPH) { `iri(?:O.PR_IRI)` <http://purl.org/net/pingback/to> `iri(?:ep)` . };
   sparql insert into graph iri(?:N.PR_GRAPH) { `iri(?:N.PR_IRI)` <http://purl.org/net/pingback/to> `iri(?:ep)` . };
 }
@@ -70,7 +70,7 @@ create trigger PING_RULES_D after delete on PING_RULES referencing old as O
   declare ep varchar;
   if (0 = length (O.PR_GRAPH))
     return;
-  ep := sprintf ('http://%s/semping', sioc..get_cname ());
+  ep := sprintf ('http://%s/semping/rest', sioc..get_cname ());
   sparql delete from graph iri(?:O.PR_GRAPH) { `iri(?:O.PR_IRI)` <http://purl.org/net/pingback/to> `iri(?:ep)` . };
 }
 ;
