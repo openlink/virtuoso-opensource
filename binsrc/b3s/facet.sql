@@ -879,15 +879,19 @@ fct_view (in tree any, in this_s int, in txt any, in pre any, in post any, in fu
       if (loc = 'any')
 	{
 	  loc := '?anyloc';
-	  http (sprintf ('select distinct ?location as ?c1 ?lat%d as ?c2 ?lng%d as ?c3 ', this_s, this_s, this_s), pre);
+	  http (sprintf ('select distinct ?location as ?c1 ?lat%d as ?c2 ?lng%d as ?c3 ', 
+                         this_s, this_s, this_s), pre);
 	}
       else
-        http (sprintf ('select distinct ?s%d as ?c1 ?lat%d as ?c2 ?lng%d as ?c3 ', this_s, this_s, this_s), pre);
+        http (sprintf ('select distinct ?s%d as ?c1 ?lat%d as ?c2 ?lng%d as ?c3 ', 
+                       this_s, this_s, this_s), pre);
 
       if (length (loc) < 2)
-         http (sprintf (' ?s%d geo:lat ?lat%d ; geo:long ?lng%d .', this_s, this_s, this_s), txt);
+         http (sprintf (' ?s%d geo:lat ?lat%d ; geo:long ?lng%d .', 
+                        this_s, this_s, this_s), txt);
       else
-         http (sprintf (' ?s%d %s ?location . ?location geo:lat ?lat%d ; geo:long ?lng%d .', this_s, loc, this_s, this_s), txt);
+         http (sprintf (' ?s%d %s ?location . ?location geo:lat ?lat%d ; geo:long ?lng%d .', 
+                        this_s, loc, this_s, this_s), txt);
     }
 
   fct_post (tree, post, lim, offs);
@@ -1221,7 +1225,7 @@ fct_text (in tree any,
 
       if (cast (xpath_eval ('./@exclude', tree) as varchar) = 'yes')
 	{
-	  http (sprintf (' filter (!bif:exists ((select (1) where { ?s%d a <%s> } ))) .', this_s, ciri), txt);
+	  http (sprintf (' filter not exists { ?s%d a <%s> } .', this_s, ciri), txt);
 	}
       else if (ciri is null)
         {
@@ -1288,7 +1292,7 @@ fct_text (in tree any,
 
       if (cast (xpath_eval ('./@exclude', tree) as varchar) = 'yes')
 	{
-	  http (sprintf (' filter (!bif:exists ((select (1) where { ?s%d <%s> ?v%d } ))) .', this_s, piri, new_s), txt);
+	  http (sprintf (' filter not exists { ?s%d <%s> ?v%d } .', this_s, piri, new_s), txt);
 	  max_s := max_s - 1;
 	  new_s := max_s;
 	  fct_text_1 (tree, new_s, max_s, txt, pre, post, full_tree, plain);
