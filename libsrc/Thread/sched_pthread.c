@@ -1459,6 +1459,7 @@ mutex_stat ()
 #else
       printf ("%s %p E: %ld W %ld wclk %ld \n", mtx->mtx_name ? mtx->mtx_name : "<?>",  mtx,
 	      mtx->mtx_enters, mtx->mtx_waits, mtx->mtx_wait_clocks);
+      mtx->mtx_enters = mtx->mtx_waits = mtx->mtx_wait_clocks = 0;;
 #endif
     }
   END_DO_SET();
