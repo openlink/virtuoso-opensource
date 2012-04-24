@@ -892,12 +892,17 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
         }
       if (!strcmp (param, "input:storage"))
         {
+          quad_storage_t *old_storage = sparp->sparp_storage;
           if (NULL != sparp->sparp_env->spare_storage_name)
             spar_error (sparp, "'define %.30s' is used more than once", param);
           sparp->sparp_env->spare_storage_name = t_box_dv_uname_string (value);
           sparp->sparp_storage = sparp_find_storage_by_name (sparp->sparp_env->spare_storage_name);
           if ((NULL == sparp->sparp_storage) && ('\0' != value[0]))
             spar_error (sparp, "Quad storage <%.100s> does not exists or is in unusable state", value);
+          if ((sparp->sparp_storage != old_storage)
+            && (NULL != sparp->sparp_env->spare_context_qms)
+            && ((SPART *)((ptrlong)_STAR) != sparp->sparp_env->spare_context_qms->data) )
+            spar_error (sparp, "Can't change quad storage via 'define %.30s' in subqueries inside QUAD MAP group patterns other than 'QUAD MAP * {...}'", param);
           return;
         }
       if (!strcmp (param, "input:macro-lib"))
@@ -4475,8 +4480,10 @@ spar_env_push (sparp_t *sparp)
   ENV_COPY (spare_sql_select_options);
   /* no copy for spare_context_qms */
   ENV_COPY (spare_context_qms);
+#if 0 /* This check is replaced with check for context qms if define input:storage appear */
   if ((NULL != env_copy->spare_context_qms) && ((SPART *)((ptrlong)_STAR) != env_copy->spare_context_qms->data))
     spar_error (sparp, "Subqueries are not allowed inside QUAD MAP group patterns other than 'QUAD MAP * {...}'");
+#endif
   ENV_COPY (spare_context_graphs); /* Do we need this??? */
   /* no copy for spare_context_subjects */
   /* no copy for spare_context_predicates */
