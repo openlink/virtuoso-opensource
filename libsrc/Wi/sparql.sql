@@ -11205,6 +11205,12 @@ create function DB.DBA.RDF_QM_STORE_ATABLES (in qmvid varchar, in atablesid varc
       pair := atables [atablectr];
       alias := pair[0];
       qtable := pair[1];
+      if (starts_with (qtable, '/*[sqlquery[*/'))
+        {
+          qtable := '(' || qtable || ')';
+          inner_id := qmvid || '-atable-' || alias || '-sql-query';
+        }
+      else
       inner_id := qmvid || '-atable-' || alias || '-' || qtable;
       sparql define input:storage ""
       prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
@@ -11338,6 +11344,7 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
  ) */
   declare atables, sqlcols, conds any;
   declare ftextid varchar;
+  declare qry_metas any;
   declare atablectr, atablecount integer;
   declare colctr, colcount, fmtcolcount integer;
   declare condctr, condcount integer;
@@ -11349,6 +11356,7 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
   sqlcols := qmv[2];
   conds := qmv[3];
   ftextid := qmv[4];
+  qry_metas := null;
   atablecount := length (atables);
   colcount := length (sqlcols);
   condcount := length (conds);
@@ -11368,23 +11376,54 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
   for (colctr := 0; colctr < colcount; colctr := colctr + 1)
     {
       declare sqlcol any;
-      declare final_tblname, final_colname varchar;
+      declare alias_msg_txt, final_tblname, final_colname varchar;
       sqlcol := sqlcols [colctr];
-      final_tblname := DB.DBA.SQLQNAME_NOTATION_TO_QNAME (sqlcol[0], 3);
       final_colname := DB.DBA.SQLNAME_NOTATION_TO_NAME (sqlcol[2]);
-      if (not exists (select top 1 1 from DB.DBA.TABLE_COLS where "TABLE" = final_tblname))
-        {
           if (sqlcol[1] is not null)
-            signal ('22023', 'No table ' || sqlcol[0] || ' (alias ' || sqlcol[1] || ') in database, please check spelling and character case');
+        alias_msg_txt := ' (alias ' || sqlcol[1] || ')';
           else
-            signal ('22023', 'No table ' || sqlcol[0] || ' in database, please check spelling and character case');
+        alias_msg_txt := ' (without alias)';
+      if (starts_with (sqlcol[0], '/*[sqlquery[*/'))
+        {
+          declare qry varchar;
+          declare qry_colcount, qry_colctr integer;
+          declare qry_mdata any;
+          qry := sqlcol[0];
+          if (qry_metas is null)
+            qry_metas := dict_new (5);
+          qry_mdata := dict_get (qry_metas, qry, null);
+          if (qry_mdata is null)
+            {
+              declare stat, msg varchar;
+              declare exec_metas any;
+              stat := '00000';
+              exec_metadata (sqlcol[0], stat, msg, exec_metas);
+              if (stat <> '00000')
+                signal ('22023', 'The compilation of SQLQUERY' || alias_msg_txt || ' results in Error ' || stat || ': ' || msg);
+              if (exec_metas[1] <> 1)
+                signal ('R2RML', 'Dangerous DML in SQLQUERY' || alias_msg_txt);
+              exec_metas := exec_metas[0];
+              qry_colcount := length (exec_metas);
+              qry_mdata := make_array (qry_colcount*2, 'any');
+              for (qry_colctr := 0; qry_colctr < qry_colcount; qry_colctr := qry_colctr + 1)
+                {
+                  qry_mdata[qry_colctr*2] := exec_metas[qry_colctr][0];
+                  qry_mdata[qry_colctr*2+1] := exec_metas[qry_colctr];
+                }
+              dict_put (qry_metas, qry, qry_mdata);
+              -- dbg_obj_princ ('DB.DBA.RDF_QM_DEFINE_MAP_VALUE(): storing metadata ', qry_mdata, ' for ', qry);
+            }
+          -- dbg_obj_princ ('DB.DBA.RDF_QM_DEFINE_MAP_VALUE(): final_colname = ', final_colname);
+          if (get_keyword (final_colname, qry_mdata) is null)
+            signal ('22023', 'The result of SQLQUERY' || alias_msg_txt || ' does not contain column ' || sqlcol[2] || ', please check spelling and character case');
         }
-      if (not exists (select top 1 1 from DB.DBA.TABLE_COLS where "TABLE" = final_tblname and "COLUMN" = final_colname))
-        {
-          if (sqlcol[1] is not null)
-            signal ('22023', 'No column ' || sqlcol[2] || ' in table ' || sqlcol[0] || ' (alias ' || sqlcol[1] || ') in database, please check spelling and character case');
           else
-            signal ('22023', 'No column ' || sqlcol[2] || ' in table ' || sqlcol[0] || ' in database, please check spelling and character case');
+        {
+          final_tblname := DB.DBA.SQLQNAME_NOTATION_TO_QNAME (sqlcol[0], 3);
+          if (not exists (select top 1 1 from DB.DBA.TABLE_COLS where "TABLE" = final_tblname))
+            signal ('22023', 'No table ' || sqlcol[0] || alias_msg_txt || ' in database, please check spelling and character case');
+          if (not exists (select top 1 1 from DB.DBA.TABLE_COLS where "TABLE" = final_tblname and "COLUMN" = final_colname))
+            signal ('22023', 'No column ' || sqlcol[2] || ' in table ' || sqlcol[0] || alias_msg_txt || ' in database, please check spelling and character case');
         }
       if (tablename is null)
         tablename := sqlcol[0];
@@ -11400,10 +11439,20 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
       declare coldtp, colnullable integer;
       declare coltype varchar;
       sqlcol := sqlcols [0];
-      final_tblname := DB.DBA.SQLQNAME_NOTATION_TO_QNAME (sqlcol[0], 3);
       final_colname := DB.DBA.SQLNAME_NOTATION_TO_NAME (sqlcol[2]);
+      if (starts_with (sqlcol[0], '/*[sqlquery[*/'))
+        {
+          declare col_mdata any;
+          col_mdata := get_keyword (final_colname, dict_get (qry_metas, sqlcol[0], null));
+          coldtp := col_mdata[1];
+          colnullable := col_mdata[4];
+        }
+      else
+        {
+          final_tblname := DB.DBA.SQLQNAME_NOTATION_TO_QNAME (sqlcol[0], 3);
       select COL_DTP, coalesce (COL_NULLABLE, 1) into coldtp, colnullable
       from DB.DBA.TABLE_COLS where "TABLE" = final_tblname and "COLUMN" = final_colname;
+        }
       coltype := case (coldtp)
         when __tag of long varchar then 'longvarchar'
         when __tag of timestamp then 'datetime' -- timestamp

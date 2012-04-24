@@ -2460,7 +2460,7 @@ spar_qm_from_where_list_opt	/* [Virt]	QmSourceDecl	 ::=  */
 		spar_qm_add_aliased_alias (sparp_arg, $3, $5);
 		sparp_env()->spare_qm_current_table_alias = $5; }
 	| spar_qm_from_where_list_opt FROM_L SQLQUERY_L spar_qm_sqlquery AS_L SPARQL_PLAIN_ID {		/*... | ( 'FROM' 'SQLQUERY' QmSqlQuery 'AS' PLAIN_ID QmTextLiteral* )	*/
-		caddr_t qry = t_box_sprintf (100 + strlen($4), "/*???*/ %s", $4);
+		caddr_t qry = t_box_sprintf (100 + strlen($4), "/*[sqlquery[*/ %s\n/*]sqlquery]*/", $4);
 		spar_qm_add_aliased_table_or_sqlquery (sparp_arg, qry, $6);
 		sparp_env()->spare_qm_current_table_alias = $6; }
 	    spar_qm_text_literal_list_opt {
