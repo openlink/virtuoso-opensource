@@ -1300,6 +1300,23 @@
             </v:text>
           </td>
         </tr>
+        <tr>
+          <th>
+            <v:label for="dav_IMAP_graph" value="--'Graph name'" />
+          </th>
+          <td>
+            <v:text name="dav_IMAP_graph" xhtml_id="dav_IMAP_graph" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+              <v:validator test="length" min="1" max="255" message="The input can not be empty." runat="client" />
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_value := self.get_fieldProperty ('dav_IMAP_graph', self.dav_path, 'virt:rdf_graph', '');
+                  if ((control.ufl_value = '') and (self.command = 10))
+                    control.ufl_value := ODRIVE.WA.host_url () || rtrim (WS.WS.FIXPATH (ODRIVE.WA.odrive_real_path (self.dav_path)), '/') || '#this';
+                ]]>
+              </v:before-data-bind>
+            </v:text>
+          </td>
+        </tr>
       </table>
     </div>
   </xsl:template>
