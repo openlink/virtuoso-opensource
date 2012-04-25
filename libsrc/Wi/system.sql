@@ -5541,6 +5541,8 @@ DB.DBA.SYS_SQL_VAL_PRINT (in v any)
     {
       return concat ('vector (',SYS_SQL_VECTOR_PRINT (v),')');
     }
+  else if (__tag (v) = 255)
+    return '<tag 255>';
   else
     signal ('22023', sprintf('Unsupported type %d', __tag (v)));
 }
