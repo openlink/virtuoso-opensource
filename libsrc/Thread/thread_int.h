@@ -41,7 +41,7 @@
 #if defined (__APPLE__)
 #include <AvailabilityMacros.h>
 
-# if (MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_7)
+# if defined (MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_7)
 #  define SEM_NO_ORDER 1
 # endif
 #endif
