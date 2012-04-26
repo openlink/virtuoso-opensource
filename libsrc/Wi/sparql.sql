@@ -563,21 +563,50 @@ create procedure DB.DBA.RDF_GLOBAL_RESET (in hard integer := 0)
   __atomic (1);
   iri_id_cache_flush ();
   __rdf_obj_ft_rule_zap_all ();
+  dict_zap (__rdf_graph_group_dict(), 2);
+  dict_zap (__rdf_graph_group_of_privates_dict(), 2);
+  dict_zap (__rdf_graph_default_perms_of_user_dict(0), 2);
+  dict_zap (__rdf_graph_default_perms_of_user_dict(1), 2);
+  dict_zap (__rdf_graph_public_perms_dict(), 2);
   for select RS_NAME from DB.DBA.SYS_RDF_SCHEMA do
     rdf_inf_clear (RS_NAME);
   delete from sys_rdf_schema;
   delete from DB.DBA.RDF_QUAD;
   delete from DB.DBA.RDF_OBJ_FT_RULES;
   delete from DB.DBA.RDF_GRAPH_GROUP;
+  for (select __id2i(t.RGU_GRAPH_IID) as graph_iri from (select distinct RGU_GRAPH_IID from DB.DBA.RDF_GRAPH_USER) as t) do
+    {
+      if (graph_iri is not null)
+        {
+          jso_mark_affected (graph_iri);
+          log_text ('jso_mark_affected (?)', graph_iri);
+        }
+    }
+  for (select __id2i(t.RGGM_GROUP_IID) as group_iri from (select distinct RGGM_GROUP_IID from DB.DBA.RDF_GRAPH_GROUP_MEMBER) as t) do
+    {
+      jso_mark_affected (group_iri);
+      log_text ('jso_mark_affected (?)', group_iri);
+    }
+  for (select __id2i(RGGM_MEMBER_IID) as memb_iri from DB.DBA.RDF_GRAPH_GROUP_MEMBER where RGGM_GROUP_IID = __i2id ('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs')) do
+    {
+      jso_mark_affected (memb_iri);
+      log_text ('jso_mark_affected (?)', memb_iri);
+    }
+  for (sparql define input:storage "" select distinct str (?qms) as ?qms_iri from virtrdf: where { ?qms a virtrdf:QuadStorage } ) do
+    {
+      jso_mark_affected ("qms_iri");
+      log_text ('jso_mark_affected (?)', "qms_iri");
+    }
+  jso_mark_affected ('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs');
+  log_text ('jso_mark_affected (?)', 'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs');
+  jso_mark_affected ('http://www.openlinksw.com/schemas/virtrdf#DefaultQuadStorage');
+  log_text ('jso_mark_affected (?)', 'http://www.openlinksw.com/schemas/virtrdf#DefaultQuadStorage');
+  jso_mark_affected ('http://www.openlinksw.com/schemas/virtrdf#DefaultQuadMap');
+  log_text ('jso_mark_affected (?)', 'http://www.openlinksw.com/schemas/virtrdf#DefaultQuadMap');
   delete from DB.DBA.RDF_GRAPH_GROUP_MEMBER;
   delete from DB.DBA.RDF_GRAPH_USER;
   delete from DB.DBA.RDF_LABEL;
   delete from DB.DBA.RDF_GEO;
-  dict_zap (__rdf_graph_group_dict(), 2);
-  dict_zap (__rdf_graph_group_of_privates_dict(), 2);
-  dict_zap (__rdf_graph_default_perms_of_user_dict(0), 2);
-  dict_zap (__rdf_graph_default_perms_of_user_dict(1), 2);
-  dict_zap (__rdf_graph_public_perms_dict(), 2);
   commit work;
   if (hard)
     {
@@ -599,9 +628,9 @@ create procedure DB.DBA.RDF_GLOBAL_RESET (in hard integer := 0)
       sequence_set ('RDF_RO_ID', 1, 0);
       sequence_set ('RDF_DATATYPE_TWOBYTE', 258, 0);
       sequence_set ('RDF_LANGUAGE_TWOBYTE', 258, 0);
-      __atomic (0);
       exec ('checkpoint');
       raw_exit ();
+      __atomic (0);
     }
   sequence_set ('RDF_URL_IID_NAMED', 1000000, 1);
   sequence_set ('RDF_URL_IID_BLANK', iri_id_num (min_bnode_iri_id ()), 1);
@@ -656,8 +685,8 @@ virtrdf:SyncToQuads-UserMaps
   sequence_set ('RDF_RO_ID', 1001, 1);
   iri_id_cache_flush ();
   DB.DBA.SPARQL_RELOAD_QM_GRAPH ();
-  __atomic (0);
   exec ('checkpoint');
+  __atomic (0);
 }
 ;
 
@@ -13360,6 +13389,7 @@ create procedure DB.DBA.RDF_GRAPH_GROUP_CREATE_MEMONLY (in group_iri varchar, in
   dict_put (__rdf_graph_id2iri_dict(), group_iid, __uname(group_iri));
   dict_put (__rdf_graph_group_dict(), group_iid, vector ());
   jso_mark_affected (group_iri);
+  log_text ('jso_mark_affected (?)', group_iri);
   __rdf_cli_mark_qr_to_recompile ();
 }
 ;
@@ -13394,12 +13424,16 @@ create procedure DB.DBA.RDF_GRAPH_GROUP_DROP_MEMONLY (in group_iri varchar, in g
   dict_put (__rdf_graph_group_dict(), group_iid, vector ());
   dict_remove (__rdf_graph_group_dict(), group_iid);
   jso_mark_affected (group_iri);
+  log_text ('jso_mark_affected (?)', group_iri);
   if (group_iri = 'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs')
     {
       declare privates any;
       privates := dict_list_keys (__rdf_graph_group_of_privates_dict(), 2);
       foreach (IRI_ID iid in privates) do
-        jso_mark_affected (id_to_iri (iid));
+        {
+          jso_mark_affected (id_to_iri (iid));
+          log_text ('jso_mark_affected (?)', id_to_iri (iid));
+        }
     }
   __rdf_cli_mark_qr_to_recompile ();
 }
@@ -13469,10 +13503,12 @@ create procedure DB.DBA.RDF_GRAPH_GROUP_INS_MEMONLY (in group_iri varchar, in gr
      where RGGM_GROUP_IID = group_iid
      order by RGGM_MEMBER_IID ) );
   jso_mark_affected (group_iri);
+  log_text ('jso_mark_affected (?)', group_iri);
   if (group_iri = 'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs')
     {
       dict_put (__rdf_graph_group_of_privates_dict(), memb_iid, 1);
       jso_mark_affected (memb_iri);
+      log_text ('jso_mark_affected (?)', memb_iri);
     }
 }
 ;
@@ -13531,10 +13567,12 @@ create procedure DB.DBA.RDF_GRAPH_GROUP_DEL_MEMONLY (in group_iri varchar, in gr
      where RGGM_GROUP_IID = group_iid
      order by RGGM_MEMBER_IID ) );
   jso_mark_affected (group_iri);
+  log_text ('jso_mark_affected (?)', group_iri);
   if (group_iri = 'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs')
     {
       dict_remove (__rdf_graph_group_of_privates_dict(), memb_iid);
       jso_mark_affected (memb_iri);
+      log_text ('jso_mark_affected (?)', memb_iri);
     }
 }
 ;
@@ -13684,7 +13722,10 @@ create procedure DB.DBA.RDF_DEFAULT_USER_PERMS_SET_MEMONLY (in uname varchar, in
   if (uid = http_nobody_uid())
     dict_put (__rdf_graph_public_perms_dict(), special_iid, perms);
   foreach (varchar jso_key in affected_jso) do
-    jso_mark_affected (jso_key);
+    {
+      jso_mark_affected (jso_key);
+      log_text ('jso_mark_affected (?)', jso_key);
+    }
 }
 ;
 
@@ -13773,6 +13814,7 @@ create procedure DB.DBA.RDF_GRAPH_USER_PERMS_SET_MEMONLY (in graph_iri varchar, 
   else
     __rdf_graph_specific_perms_of_user (graph_iid, uid, perms);
   jso_mark_affected (graph_iri);
+  log_text ('jso_mark_affected (?)', graph_iri);
 }
 ;
 
@@ -13808,6 +13850,7 @@ create procedure DB.DBA.RDF_GRAPH_USER_PERMS_SET (in graph_iri varchar, in uname
           where RGGM_GROUP_IID = iri_to_id (UNAME'http://www.openlinksw.com/schemas/virtrdf#rdf_repl_graph_group') and RGGM_MEMBER_IID = graph_iid) )
         signal ('RDF99', 'Can not disable public read access to <' || id_to_iri (graph_iid) || '> while it is included in RDF replication and the replication is enabled');
       jso_mark_affected (graph_iri);
+      log_text ('jso_mark_affected (?)', graph_iri);
     }
   else
     {
@@ -13844,6 +13887,7 @@ create procedure DB.DBA.RDF_GRAPH_USER_PERMS_DEL_MEMONLY (in graph_iri varchar, 
   else
     __rdf_graph_specific_perms_of_user (graph_iid, uid, -1);
   jso_mark_affected (graph_iri);
+  log_text ('jso_mark_affected (?)', graph_iri);
 }
 ;
 
@@ -14801,6 +14845,7 @@ create function rdfs_load_schema (in ri_name varchar, in gn varchar := null) ret
       rules_count := rules_count + length (v);
     }
   jso_mark_affected (ri_name);
+  log_text ('jso_mark_affected (?)', ri_name);
 --  if (not rules_count)
     rdf_inf_dir (ri_name, null, null, 0);
   return rules_count + 1;

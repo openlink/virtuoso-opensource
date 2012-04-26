@@ -4156,7 +4156,7 @@ static caddr_t boxed_8192_iid = NULL;
           mutex_leave (rdf_graph_group_of_privates_dict_htable->ht_mutex);
 /*!!! maybe TBD: add retrieval of permissions of specific user on specific graph */
           mutex_enter (dflt_perms_of_user->ht_mutex);
-      hit = (caddr_t *)id_hash_get (dflt_perms_of_user, (caddr_t)(&(boxed_graph_iid)));
+          hit = (caddr_t *)id_hash_get (dflt_perms_of_user, (caddr_t)(&(boxed_uid /* not boxed_graph_iid */)));
           mutex_leave (dflt_perms_of_user->ht_mutex);
         }
       if (NULL != hit)
