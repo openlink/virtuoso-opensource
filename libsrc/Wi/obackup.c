@@ -1097,8 +1097,8 @@ long ol_backup (const char* prefix, long pages, long timeout, caddr_t* backup_pa
       fclose (obackup_trace);
       obackup_trace = NULL;
     }
+  log_info ("Backed up pages: [%ld]", ctx->octx_page_count - _pages);
 #ifdef DEBUG
-  log_info ("Backed up pages: [%ld]", ctx->octx_page_count);
   log_info ("Log = %s", wi_inst.wi_master->dbs_log_name);
 #endif
 
