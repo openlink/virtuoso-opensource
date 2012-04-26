@@ -8705,7 +8705,7 @@ ssg_print_t_options_of_select (spar_sqlgen_t *ssg)
         case T_NO_CYCLES_L: ssg_puts (" T_NO_CYCLES"); break;
         case T_NO_ORDER_L: ssg_puts (" T_NO_ORDER"); break;
         case T_SHORTEST_ONLY_L: ssg_puts (" T_SHORTEST_ONLY"); break;
-        case T_FINAL_AS_L: spar_error (ssg->ssg_sparp, "Option T_FINAL_AS is not supported is SPARQL in this version of Virtuoso"); break;
+        case T_FINAL_AS_L: spar_error (ssg->ssg_sparp, "Option T_FINAL_AS is not supported in SPARQL in this version of Virtuoso"); break;
         default: break;
         }
     }
