@@ -365,7 +365,7 @@ LOG "Directory init..."
   cp mksearch.sql vad/data/doc/code/.
   cp drop.sql vad/data/doc/code/.
   cp doc_sql_rdf.sql vad/data/doc/code/.
-  cp -f $HOME/binsrc/dav/DET_RDFData.sql vad/data/doc/code/.
+  #cp -f $HOME/binsrc/dav/DET_RDFData.sql vad/data/doc/code/.
 }
 
 sticker_init() {
@@ -410,7 +410,7 @@ sticker_init() {
   echo "      registry_set('_doc_build_', '$PACKDATE');" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH"/doc/code/drop.sql', 1, 'report', $ISDAV);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH"/doc/code/mksearch.sql', 1, 'report', $ISDAV);" >> $STICKER
-  echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH"/doc/code/DET_RDFData.sql', 1, 'report', $ISDAV);" >> $STICKER
+  #echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH"/doc/code/DET_RDFData.sql', 1, 'report', $ISDAV);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH"/doc/code/doc_sql_rdf.sql', 1, 'report', $ISDAV);" >> $STICKER
   echo "      DB.DBA.VHOST_REMOVE(lpath=>'/doc',del_vsps => 1);" >> $STICKER
   echo "      DB.DBA.VHOST_REMOVE(lpath=>'/doc/html',del_vsps => 1);" >> $STICKER
