@@ -2377,6 +2377,7 @@ sqlo_cols_by_pos (sqlo_t *so, df_elt_t * dfe, ptrlong * list)
       t_set_push (&res, t_list (3, COL_DOTTED, dfe->_.sub.ot->ot_new_prefix, sel[pos]->_.as_exp.name));
     }
   END_DO_BOX;
+  res = t_set_nreverse (res);
   return res;
 }
 
@@ -2461,6 +2462,7 @@ sqlo_trans_preds (dk_set_t * cols, dk_set_t preds, dk_set_t * pred_rhs_ret, dk_s
     }
   END_DO_SET();
   *unused_preds_ret = t_set_union (*unused_preds_ret, t_set_diff (preds, used_preds));
+  pred_rhs_ret[0] = t_set_nreverse (pred_rhs_ret[0]);
 }
 
 
@@ -2524,7 +2526,8 @@ sqlo_trans_dt_1_way (sqlo_t * so, df_elt_t * dfe, dk_set_t preds, ptrlong * in_p
       t_set_push (&importable, (void*)pred_dfe);
     }
   END_DO_SET();
-
+  tl->tl_params = t_set_nreverse (tl->tl_params);
+  importable = t_set_nreverse (importable);
   DO_SET (dk_set_t, out_pair, &out)
     {
       dk_set_t rhs = out_pair->next;
@@ -2535,6 +2538,7 @@ sqlo_trans_dt_1_way (sqlo_t * so, df_elt_t * dfe, dk_set_t preds, ptrlong * in_p
       t_set_push (&tl->tl_target, rhs_dfe);
     }
   END_DO_SET();
+  tl->tl_target = t_set_nreverse (tl->tl_target);
   save = dfe->_.sub.ot->ot_trans;
   dfe->_.sub.ot->ot_trans = NULL;
   copy_dfe = sqlo_dt_renamed_copy (so, dfe);
@@ -2645,12 +2649,13 @@ sqlo_place_trans_dt (sqlo_t * so, df_elt_t * dfe, dk_set_t preds)
 	  rhs_dfe = sqlo_df (so, all_eq);
 	  sqlo_place_exp (so, dfe->dfe_super, rhs_dfe);
 	  t_set_push (&tl->tl_params, rhs_dfe);
-
 	  pred = (ST*)in_pair->data;
 	  pred_dfe = sqlo_df (so, pred);
 	  t_set_push (&importable, (void*)pred_dfe);
 	}
       END_DO_SET();
+      tl->tl_params = t_set_nreverse (tl->tl_params);
+      importable = t_set_nreverse (importable);
       save = dfe->_.sub.ot->ot_trans;
       dfe->_.sub.ot->ot_trans = NULL;
       sqlo_place_dt (so, dfe, importable);
@@ -2677,12 +2682,13 @@ sqlo_place_trans_dt (sqlo_t * so, df_elt_t * dfe, dk_set_t preds)
 	  rhs_dfe = sqlo_df (so, all_eq);
 	  sqlo_place_exp (so, dfe->dfe_super, rhs_dfe);
 	  t_set_push (&tl->tl_params, rhs_dfe);
-
 	  pred = (ST*)in_pair->data;
 	  pred_dfe = sqlo_df (so, pred);
 	  t_set_push (&importable, (void*)pred_dfe);
 	}
       END_DO_SET();
+      tl->tl_params = t_set_nreverse (tl->tl_params);
+      importable = t_set_nreverse (importable);
       save = dfe->_.sub.ot->ot_trans;
       dfe->_.sub.ot->ot_trans = NULL;
       sqlo_place_dt (so, dfe, importable);

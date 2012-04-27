@@ -1523,7 +1523,7 @@ sqlg_make_trans_dt  (sqlo_t * so, df_elt_t * dt_dfe, ST **target_names, dk_set_t
 	}
     }
   END_DO_BOX;
-  tn->tn_input = (state_slot_t**)box_copy (trans->_.trans.in);
+  tn->tn_input = (state_slot_t**)box_copy ((caddr_t)(trans->_.trans.in));
   inx = 0;
   DO_SET (df_elt_t *, in, &tl->tl_params)
     {
@@ -1533,7 +1533,7 @@ sqlg_make_trans_dt  (sqlo_t * so, df_elt_t * dt_dfe, ST **target_names, dk_set_t
   END_DO_SET();
   if (tl->tl_target)
     {
-      tn->tn_target = dk_alloc_box_zero (sizeof (caddr_t) * dk_set_length (tl->tl_target), DV_BIN);
+      tn->tn_target = (state_slot_t **)dk_alloc_box_zero (sizeof (caddr_t) * dk_set_length (tl->tl_target), DV_BIN);
       inx = 0;
       DO_SET (df_elt_t *, in, &tl->tl_target)
 	{
@@ -1548,7 +1548,7 @@ sqlg_make_trans_dt  (sqlo_t * so, df_elt_t * dt_dfe, ST **target_names, dk_set_t
   tn->tn_inlined_step->qr_select_node->src_gen.src_input = (qn_input_fn) select_node_input_subq;
   tn->tn_input_pos = (caddr_t*)box_copy_tree ((caddr_t) (TRANS_LR == tl->tl_direction ? trans->_.trans.in : trans->_.trans.out));
   tn->tn_output_pos = (caddr_t*)box_copy_tree ((caddr_t) (TRANS_LR == tl->tl_direction ? trans->_.trans.out : trans->_.trans.in));
-  tn->tn_output = (state_slot_t **) box_copy (trans->_.trans.out);
+  tn->tn_output = (state_slot_t **) box_copy ((caddr_t)(trans->_.trans.out));
   DO_BOX (caddr_t, n, inx, tn->tn_output_pos)
     {
       tn->tn_output[inx] = tn_nth_col (sc, tn, unbox (n));
