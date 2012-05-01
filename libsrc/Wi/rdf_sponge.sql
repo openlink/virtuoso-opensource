@@ -115,7 +115,7 @@ create function DB.DBA.RDF_GRAB_SINGLE (in val any, inout grabbed any, inout env
         'get:error-recovery', get_keyword_ucase ('get:error-recovery', env)
 	 );
       dict_put (grabbed, url, 1);
-      call (get_keyword ('loader', env))(url, opts);
+      call (get_keyword ('loader', env))(url, opts, user);
       commit work;
       dict_put (grabbed, url, coalesce (final_dest, dest));
       -- dbg_obj_princ ('DB.DBA.RDF_GRAB_SINGLE (', val, ',... , ', env, ') has loaded ', url);

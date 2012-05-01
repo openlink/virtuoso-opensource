@@ -1380,7 +1380,8 @@ DB.DBA.FOAF_SSL_LOGIN (inout user_name varchar, in digest varchar, in session_ra
   graph := WS.WS.VFS_URI_COMPOSE (hf);
   qr := sprintf ('sparql load <%S> into graph <%S>', graph, gr);
   stat := '00000';
-  exec (qr, stat, msg);
+  --exec (qr, stat, msg);
+  DB.DBA.SPARUL_LOAD (gr, graph, 0, 1, 0, vector ());
   commit work;
   qr := FOAF_SSL_QRY (gr, agent);
   stat := '00000';
@@ -1404,7 +1405,8 @@ DB.DBA.FOAF_SSL_LOGIN (inout user_name varchar, in digest varchar, in session_ra
     }
   err_ret:
   if (gr is not null)
-    exec (sprintf ('sparql clear graph <%S>', gr), stat, msg);
+    DB.DBA.SPARUL_CLEAR (gr, 0, 0);
+    --exec (sprintf ('sparql clear graph <%S>', gr), stat, msg);
   commit work;
   return rc;
 }
