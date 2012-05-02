@@ -5565,7 +5565,7 @@ create procedure DB.DBA.SPARQL_RESULTS_CSV_WRITE_VALUE (inout _env any, in val a
   if (t = __tag of IRI_ID)
     val := id_to_iri (val);
   http ('"', _env);
-  http (replace (cast (val as varchar), '"', '"""'), _env);
+  http (replace (cast (val as varchar), '"', '""'), _env);
   http ('"', _env);
 }
 ;
