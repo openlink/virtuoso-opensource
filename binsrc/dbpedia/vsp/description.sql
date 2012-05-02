@@ -179,6 +179,11 @@ again:
 	    }
 	}
     }
+   if (__tag of rdf_box = __tag (best_str))
+     {
+       __rdf_box_make_complete (best_str);
+       best_str := rdf_box_data (best_str);
+     }
   return best_str;
 }
 ;
