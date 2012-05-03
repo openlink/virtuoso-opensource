@@ -4114,6 +4114,7 @@ YACUTIA_DAV_DIR_LIST_P (in path varchar := '/DAV/', in recursive integer := 0, i
 }
 ;
 
+yacutia_exec_no_error ('drop view Y_DAV_DIR');
 yacutia_exec_no_error('create procedure view Y_DAV_DIR as YACUTIA_DAV_DIR_LIST_P (path,recursive,auth_uid) (FULL_PATH varchar, TYPE varchar, RLENGTH integer, MOD_TIME datetime, ID integer, PERMS varchar, GRP varchar, OWNER varchar, CR_TIME datetime, MIME_TYPE varchar, NAME varchar)')
 ;
 
