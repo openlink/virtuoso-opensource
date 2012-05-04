@@ -437,7 +437,7 @@
 <?vsp    
   }
   declare qrimg any;
-  qrimg := fct_make_qr_code (fct_make_curie ('http://' || host || b3s_http_url (page_resource_uri), lines));
+  qrimg := fct_make_qr_code (fct_make_curie ('http://' || host || b3s_http_url (page_resource_uri, null, get_keyword ('graph', params)), lines));
   if (qrimg is not null and strcasestr (ua, 'Mobile') is null) {
 ?>
 	  <img id="qrcode" alt="QRcode image" src="data:image/jpg;base64,<?V qrimg ?>"/>
