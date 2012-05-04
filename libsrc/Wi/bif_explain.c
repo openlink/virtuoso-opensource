@@ -759,7 +759,7 @@ node_print (data_source_t * node)
     {
       remote_table_source_t *rts = (remote_table_source_t *) node;
       char *szPtr = rts->rts_text;
-      stmt_printf (("Remote %s ", rts->rts_is_outer ? "OUTER" : ""));
+      stmt_printf (("Remote (%s) %s ", rts->rts_rds->rds_dsn, rts->rts_is_outer ? "OUTER" : ""));
       while (*szPtr)
 	{
 	  int len = (int) strlen (szPtr);

@@ -96,6 +96,7 @@
         else if (soap_method in ('fake#test'))
           {
 	    declare res any;
+	    set_user_id ('SOAP_SRV');
 	    res := soap_server (soap_xml, soap_method, lines, 11, vector ('fake:test', 'DB.DBA.SOAPTEST'));
 	    dbg_obj_print ('vspsoap result', res);
 	    http (res);
