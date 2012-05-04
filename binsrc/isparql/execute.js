@@ -240,6 +240,8 @@ var QueryExec = function(optObj) {
 		this.dom.response = OAT.Dom.create("pre",{className:'ep_response'});
 		this.dom.query =    OAT.Dom.create("pre", {className:'ep_query'});
 
+		this.currentRdfMiniTabIdx = 0;
+
 //	this.dom.select = OAT.Dom.create("select");
 //	OAT.Dom.option("Machine-readable","1",this.dom.select);
 //	OAT.Dom.option("Human-readable","0",this.dom.select);
@@ -576,16 +578,51 @@ var QueryExec = function(optObj) {
 			resUriBase += "&default-graph-uri=" + (opts.defaultGraph ? opts.defaultGraph : "");
 			resUriBase += "&format=";
 
-			$('cxml_raw_lnk').href =   resUriBase + encodeURIComponent("text/cxml");
-			$('csv_raw_lnk').href =    resUriBase + encodeURIComponent("text/csv");
+			var cxml_l_elm = OAT.Dom.create('link');
+			cxml_l_elm.setAttribute('rel','alternate');
+			cxml_l_elm.setAttribute('type','text/cxml');
+			cxml_l_elm.href = $('cxml_raw_lnk').href =   resUriBase + encodeURIComponent("text/cxml");
 
-			$('nt_raw_lnk').href =     resUriBase + encodeURIComponent("text/plain");
-			$('n3_raw_lnk').href =     resUriBase + encodeURIComponent("text/rdf+n3");
-			$('json_raw_lnk').href =   resUriBase + encodeURIComponent("application/rdf+json");
-			$('rdfxml_raw_lnk').href = resUriBase + encodeURIComponent("application/rdf+xml");
+			var csv_l_elm = OAT.Dom.create('link');
+			csv_l_elm.setAttribute('rel','alternate');
+			csv_l_elm.setAttribute('type','text/csv');
+			csv_l_elm.href = $('csv_raw_lnk').href =    resUriBase + encodeURIComponent("text/csv");
+
+			var nt_l_elm = OAT.Dom.create('link');
+			nt_l_elm.setAttribute('rel','alternate');
+			nt_l_elm.setAttribute('type','text/plain');
+			nt_l_elm.href = $('nt_raw_lnk').href =     resUriBase + encodeURIComponent("text/plain");
+
+			var n3_l_elm = OAT.Dom.create('link');
+			n3_l_elm.setAttribute('rel','alternate');
+			n3_l_elm.setAttribute('type','text/rdf+n3');
+			n3_l_elm.href = $('n3_raw_lnk').href =     resUriBase + encodeURIComponent("text/rdf+n3");
+
+			var json_l_elm = OAT.Dom.create('link');
+			json_l_elm.setAttribute('rel','alternate');
+			json_l_elm.setAttribute('type','text/rdf+json');
+			json_l_elm.href = $('json_raw_lnk').href =   resUriBase + encodeURIComponent("application/rdf+json");
+
+			var rdfxml_l_elm = OAT.Dom.create('link');
+			rdfxml_l_elm.setAttribute('rel','alternate');
+			rdfxml_l_elm.setAttribute('type','text/rdf+xml');
+			rdfxml_l_elm.href = $('rdfxml_raw_lnk').href = resUriBase + encodeURIComponent("application/rdf+xml");
 			
-			$('odata_atom_lnk').href = resUriBase + encodeURIComponent("application/atom+xml");
-			$('odata_json_lnk').href = resUriBase + encodeURIComponent("application/odata+json");
+			var atom_l_elm = OAT.Dom.create('link');
+			atom_l_elm.setAttribute('rel','alternate');
+			atom_l_elm.setAttribute('type','application/atom+xml');
+			atom_l_elm.href = $('odata_atom_lnk').href = resUriBase + encodeURIComponent("application/atom+xml");
+
+			var ojson_l_elm = OAT.Dom.create('link');
+			ojson_l_elm.setAttribute('rel','alternate');
+		    ojson_l_elm.setAttribute('type','application/odata+json');
+			ojson_l_elm.href = $('odata_json_lnk').href = resUriBase + encodeURIComponent("application/odata+json");
+
+			var head_elm = document.getElementsByTagName('head')[0];
+
+			OAT.Dom.append([head_elm, cxml_l_elm, csv_l_elm, nt_l_elm, 
+							n3_l_elm, json_l_elm, rdfxml_l_elm, atom_l_elm, 
+							ojson_l_elm]);
 
 			OAT.Dom.show('data_links');
 		}
@@ -732,9 +769,15 @@ var QueryExec = function(optObj) {
 	for (var i=0;i < tabs.length;i++) {
 	    if (rvVal == tabs[i][0]) return i;
 	}
-	return 0;
+		return false;
     };
 
+	this.rdfMiniViewChangeH = function (caller, msg, o) {
+		if (o.tabType != 'map')
+			self.currentRdfMiniTabIdx = o.tabIndex;
+		makeMiniRDFPlinkURI (caller, msg, o);
+	}
+    
     this.RESULT_TYPE = {
 	URI:0,
 	LITERAL:1
@@ -873,7 +916,6 @@ var QueryExec = function(optObj) {
 			iSPARQL.Common.shortenURI (a);
 		
 		OAT.Dom.append([ctr,a, spc]);
-		
     };
 
     this.makeExecPermalink = function (ctr) {
@@ -1196,16 +1238,8 @@ var QueryExec = function(optObj) {
 
 			var ua = navigator.userAgent.toLowerCase();
 		
-/*			if (ua.search ("iphone") || 
-				ua.search ("ipod") ||
-				ua.search ("android") ||
-				ua.search ("symbian") ||
-				ua.search ("S60"))
-*/				
 				map_h = OAT.Dom.getViewport()[1].toString()+'px';
-/*			else 
-				map_h = "600px";
-*/			
+
 			//	generate Result
 			
 			if (item.resType == iSPARQL.ResultType.GRAPH) { // Use RDFMini to show Graphs
@@ -1226,7 +1260,15 @@ var QueryExec = function(optObj) {
                       raw_iris: true}] 
 				];
 
-		    lastIndex = self.parseTabIndex (opts.resultView, tabs);
+				lastIndex = self.parseTabIndex (opts.resultView, tabs); // check if URI contains view def
+
+				if (lastIndex === false) {
+					if (tabs[self.currentRdfMiniTabIdx][0] != 'map')  // sticky last manual choice for view if it's not a map
+						lastIndex = self.currentRdfMiniTabIdx;
+					else
+						lastIndex = 0;
+				}
+
 				var c_i = self.cacheIndex;
 				
 				self.miniplnk = OAT.Dom.create ("div",{id:"rdf_plink_c"});
@@ -1252,6 +1294,7 @@ var QueryExec = function(optObj) {
 				item.mini = new OAT.RDFMini(mini_c,{tabs:tabs,
 													showSearch:false,
 														store: item.store,
+														defaultTab: 0,
 													    raw_iris: true});
 
 				item.mini.processLink = self.processLink;
@@ -1259,11 +1302,11 @@ var QueryExec = function(optObj) {
 				//		self.tab.go(0); // got to do here or maps won't resize properly.
 				//		self.cache[self.cacheIndex].mini.store.addXmlDoc(data);
 				
-				item.mini.select.selectedIndex = lastIndex;
-				item.mini.redraw();
+					item.mini.setTab(lastIndex);
 				
 					self.makeMiniRDFPlinkURI (false,false,{tabIndex:lastIndex});
-					OAT.MSG.attach (item.mini, 'RDFMINI_VIEW_CHANGED', self.makeMiniRDFPlinkURI);
+					OAT.MSG.attach (item.mini, 'RDFMINI_VIEW_CHANGED', self.rdfMiniViewChangeH)
+
 					self.makeDataLinks();
 				
 				} else {
@@ -1324,9 +1367,9 @@ var QueryExec = function(optObj) {
 					'define input:same-as "yes" \n'+
 					'define input:grab-seealso <http://www.w3.org/2002/07/owl#sameAs> \n'+
 		        'DESCRIBE <'+ encodeURI(href) +'> FROM <' + encodeURI(href) + '>';
-//			var q  = 'DESCRIBE <'+href+'>';
 			var bq = 'DESCRIBE <'+ encodeURI(href) +'>';
 			var o = {};
+
 			for (var p in cache.opts) { o[p] = cache.opts[p]; }
 			o.defaultGraph = false;
 
@@ -1417,6 +1460,7 @@ var QueryExec = function(optObj) {
 				window.open(href);
 				break;
 			default:
+				dereferenceRef(event);
 				describeRef(event);
 				break;
 			}
