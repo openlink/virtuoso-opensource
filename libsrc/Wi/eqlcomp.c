@@ -393,6 +393,7 @@ qr_free (query_t * qr)
       dk_free_tree (qr->qr_proc_ret_type);
       dk_free_box (qr->qr_trig_table);
       dk_free_box ((box_t) qr->qr_trig_upd_cols);
+      if (qr->qr_pn) qr->qr_pn->pn_query = NULL;
       proc_name_free (qr->qr_pn);
     }
   dk_free_box ((caddr_t) qr->qr_proc_cost);
