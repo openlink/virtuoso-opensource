@@ -4015,6 +4015,16 @@ create procedure CAL.WA.settings_set (
 -- Events
 --
 -----------------------------------------------------------------------------------------
+create procedure CAL.WA.event_sioc_iri (
+  in domain_id varchar,
+  in event_id integer)
+{
+  return CAL.WA.iri_fix (SIOC..calendar_event_iri (domain_id, event_id));
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
 create procedure CAL.WA.event_kind (
   in id integer)
 {

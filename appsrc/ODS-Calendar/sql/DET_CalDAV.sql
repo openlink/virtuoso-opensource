@@ -1127,3 +1127,57 @@ create procedure CAL.WA.export_rdf_sqlx_for_det (
 }
 ;
 
+create procedure CAL.WA.install_caldav_vhosts()
+{
+    DB.DBA.VHOST_REMOVE (lpath=>'/principals/users/');
+    DB.DBA.VHOST_DEFINE (lpath=>'/principals/users/', ppath => '/!principals/users/', 
+        is_dav => 1, vsp_user => 'dba', opts => vector('noinherit', 1, 'exec_as_get', 1));
+}
+;
+
+CAL.WA.install_caldav_vhosts()
+;
+
+create procedure WS.WS."/!principals/users/" (inout path varchar, inout params any, inout lines any)
+{
+    declare user_id, inst_name varchar;
+    declare command varchar;
+    declare pos integer;
+    declare exit handler for sqlstate '*'
+    {
+        http_request_status ('HTTP/1.1 404 Not Found');
+        return;
+    };
+    whenever not found goto retr;
+    command := lines[0];
+    pos := strcasestr(command, '/principals/users/');
+    if (pos is null)  
+        return;
+    user_id := subseq(command, pos + 18);
+    pos := strcasestr(user_id, 'HTTP/1.1');
+    if (pos is not null)  
+        user_id := subseq(user_id, 0, pos);
+    user_id := trim(user_id, ' /');
+    pos := strchr(user_id, '@');
+    if (pos is not null)  
+        user_id := subseq(user_id, 0, pos);
+    inst_name := (select CalDAV__FIXNAME (C.WAI_NAME)
+        from SYS_USERS A,
+        WA_MEMBER B,
+        WA_INSTANCE C
+        where A.U_NAME = user_id
+        and B.WAM_USER = A.U_ID
+        and B.WAM_MEMBER_TYPE = 1
+        and B.WAM_INST = C.WAI_NAME
+        and C.WAI_TYPE_NAME = 'Calendar');
+    http_request_status ('HTTP/1.1 301 Moved Permanently');
+    http_header (sprintf ('Location: /DAV/home/%s/calendars/%s/\r\n', user_id, inst_name));
+    return;
+retr:
+    http_request_status ('HTTP/1.1 404 Not Found');
+    return;
+}
+;
+
+registry_set ('/!principals/users/', 'no_vsp_recompile')
+;

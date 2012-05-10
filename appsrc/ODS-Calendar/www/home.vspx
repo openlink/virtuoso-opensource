@@ -83,10 +83,9 @@
 
   <v:method name="actionTest" arglist="">
     <![CDATA[
-      declare tmp, kind, params, permissions any;
+      declare tmp, params, permissions any;
 
       params := self.vc_page.vc_event.ve_params;
-
       tmp := get_keyword ('id', params, '');
       if (tmp <> '')
       {
@@ -102,10 +101,10 @@
           {
             self.cAction := 'view';
           }
-          kind := CAL.WA.event_kind (self.v_id);
-          if ((kind = 'event') and (self.cScope in ('tasks', 'search')))
+          self.cSubAction := CAL.WA.event_kind (self.v_id);
+          if ((self.cSubAction = 'event') and (self.cScope not in ('tasks', 'search')))
             self.cScope := 'events';
-          if (kind = 'task')
+          if (self.cSubAction = 'task')
             self.cScope := 'tasks';
         }
       }
@@ -248,9 +247,9 @@
       R := self.showEventSubjectTmp (_id, e_event, e_subject, e_repeat, e_reminder, e_attendees);
       if (e_event = 1)
       {
-        T := sprintf ('<div id="e_%d_%s" class="EV vevent" typeof="sioct:EventCalendar" %s %s about="%V">%s%s%s<span style="display:none;">%s</span>%s</div>', _id, S, color, onclick, SIOC..calendar_event_iri (domain_id, _id), e_continue, showDelete, showAnnotate, self.prepareField (e_start, 'dtstart', null), R);
+        T := sprintf ('<div id="e_%d_%s" class="EV vevent" typeof="sioct:EventCalendar" %s %s about="%V">%s%s%s<span style="display:none;">%s</span>%s</div>', _id, S, color, onclick, CAL.WA.event_sioc_iri (domain_id, _id), e_continue, showDelete, showAnnotate, self.prepareField (e_start, 'dtstart', null), R);
       } else {
-        T := sprintf ('<div id="e_%d_%s" class="EV vevent" typeof="sioct:EventCalendar" %s %s about="%V">%s%s%s<span class="EV_time">%s-%s</span>%s</div>', _id, S, color, onclick, SIOC..calendar_event_iri (domain_id, _id), e_continue, showDelete, showAnnotate, self.prepareField (e_start, 'dtstart', CAL.WA.dt_timestring (e_start)), self.prepareField (e_end, 'dtend', CAL.WA.dt_timestring (e_end)), R);
+        T := sprintf ('<div id="e_%d_%s" class="EV vevent" typeof="sioct:EventCalendar" %s %s about="%V">%s%s%s<span class="EV_time">%s-%s</span>%s</div>', _id, S, color, onclick, CAL.WA.event_sioc_iri (domain_id, _id), e_continue, showDelete, showAnnotate, self.prepareField (e_start, 'dtstart', CAL.WA.dt_timestring (e_start)), self.prepareField (e_end, 'dtend', CAL.WA.dt_timestring (e_end)), R);
       }
       return T;
     ]]>
@@ -352,7 +351,7 @@
       onclick := '';
       if (not DB.DBA.is_empty_or_null (self.sid))
         onclick := sprintf ('onclick="javascript: eView(\'e_%d\'); return false;"', _id);
-      return sprintf ('<a id="e_%d" href="%s" %s class="EVL EVL_subject app" about="%V"> %s%s%s%s</a>', _id, CAL.WA.utf2wide (SIOC..calendar_event_iri(domain_id, _id)), onclick, CAL.WA.utf2wide (SIOC..calendar_event_iri(domain_id, _id)), self.repeatableImage (e_repeat), self.reminderImage (e_reminder), self.attendeesImage (e_attendees), self.prepareField (CAL.WA.show_subject (e_subject), 'summary', null));
+      return sprintf ('<a id="e_%d" href="%s" %s class="EVL EVL_subject app" about="%V"> %s%s%s%s</a>', _id, CAL.WA.utf2wide (CAL.WA.event_sioc_iri (domain_id, _id)), onclick, CAL.WA.utf2wide (CAL.WA.event_sioc_iri(domain_id, _id)), self.repeatableImage (e_repeat), self.reminderImage (e_reminder), self.attendeesImage (e_attendees), self.prepareField (CAL.WA.show_subject (e_subject), 'summary', null));
     ]]>
   </v:method>
 
