@@ -147,6 +147,8 @@
       <v:variable name="sp_add" persist="0" type="int" default="0"/>
       <v:variable name="subtab" persist="0" type="int" default="1"/>
       <v:variable name="xml_desc" persist="0" type="int" default="0"/>
+      <v:variable name="cors" persist="0" type="varchar" default="''" param-name="t_cors"/>
+      <v:variable name="cors_rej" persist="0" type="integer" default="0" param-name="c_cors_rej"/>
     </vm:variables>
     <vm:header caption="Options for Web Service Endpoint"/>
     <vm:pagebody>
@@ -258,6 +260,11 @@
                   self.xmlexec := get_keyword('xml_templates', self.global_opts, NULL);
                 if (self.ovrexec = '' and isarray(self.global_opts) and not mod(length(self.global_opts),2))
                   self.ovrexec := get_keyword('executable', self.global_opts, NULL);
+		if (isarray(self.global_opts) and not mod(length(self.global_opts),2))
+                  {
+                    self.cors := get_keyword ('cors', self.global_opts, '');  
+                    self.cors_rej := get_keyword ('cors_restricted', self.global_opts, 0);  
+		  }
               }
               else if( self.mode = 'add1' )
               {
@@ -410,6 +417,11 @@
         new_tab_switch_button.vc_focus := 1;
         new_tab_switch_button.vc_set_childs_focus (1, e);
         self.vc_event.ve_button := new_tab_switch_button;
+      }
+      else 
+      {
+        self.t_cors.ufl_value := self.cors;
+        self.c_cors_rej.ufl_selected := self.cors_rej;
       }
           ]]>
         </v:script>
@@ -805,6 +817,14 @@
                             </v:browse-button>
                           </td>
                         </tr>
+			<tr>
+			  <td valign="top"><label for="t_cors">Cross-Origin Resource Sharing</label></td>
+			  <td>
+			      <v:text name="t_cors" xhtml_cols="30" xhtml_rows="3" xhtml_size="70" xhtml_id="t_cors"/><br/>
+			    <v:check-box name="c_cors_rej" value="1" xhtml_id="c_cors_rej"/>
+			    <label for="c_cors_rej">Reject Unintended CORs</label>
+			  </td>
+			</tr>
                       </table>
                     </td>
                   </tr>
@@ -2033,6 +2053,12 @@
                           if (self.c_xml_rpc.ufl_selected = 1)
                             self.soap_opt := vector_concat(self.soap_opt, vector('XML-RPC', 'yes'));
                         }
+			--dbg_obj_print_vars (self.cors, self.cors_rej);
+			if (length (self.cors) > 0)
+			  {
+			    self.global_opts := vector ('cors', self.cors, 'cors_restricted', self.cors_rej);
+			  }
+			else   
 			self.global_opts := NULL;
                         commit work;
                         if(exists (select 1 from DB.DBA.HTTP_PATH where HP_HOST = self._httphost and HP_LISTEN_HOST = self._host and HP_LPATH = self.lpath) ) {
