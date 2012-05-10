@@ -437,7 +437,7 @@ function chkbx(bx1, bx2)
 
 function updateLabel(value)
 {
-  hideLabel(4, 11);
+  hideLabel(4, 12);
   if (value == 'oMail')
     showLabel(4, 4);
   else if (value == 'PropFilter')
@@ -454,6 +454,8 @@ function updateLabel(value)
     showLabel(10, 10);
   else if (value == 'IMAP')
     showLabel(11, 11);
+  else if (value == 'GDrive')
+    showLabel(12, 12);
 }
 
 function showLabel(from, to)
@@ -548,19 +550,23 @@ function webidShow(obj) {
   windowShow('/ods/webid_select.vspx?mode='+S.charAt(0)+'&params='+obj.id+':s1;');
 }
 
-function windowShow(sPage, sPageName, width, height) {
+function windowShowInternal(sPage, sPageName, width, height) {
 	if (width == null)
     width = 700;
 	if (height == null)
 		height = 500;
+  win = window.open(sPage, sPageName, "width="+width+",height="+height+",top=100,left=100,status=yes,toolbar=no,menubar=no,scrollbars=yes,resizable=yes");
+  win.window.focus();
+}
+
+function windowShow(sPage, sPageName, width, height) {
   if (sPage.indexOf('form=') == -1)
     sPage += '&form=F1';
   if (sPage.indexOf('sid=') == -1)
     sPage += urlParam('sid');
   if (sPage.indexOf('realm=') == -1)
     sPage += urlParam('realm');
-  win = window.open(sPage, sPageName, "width="+width+",height="+height+",top=100,left=100,status=yes,toolbar=no,menubar=no,scrollbars=yes,resizable=yes");
-  win.window.focus();
+  windowShowInternal(sPage, sPageName, width, height);
 }
 
 function renameShow(myForm, myPrefix, myPage, width, height) {
@@ -755,7 +761,7 @@ function addChecked (form, txt, selectionMsq)
 // Hiddens functions
 function createHidden(frm_name, fld_name, fld_value)
 {
-  createHidden2(document, frm_name, fld_name, fld_value);
+  return createHidden2(document, frm_name, fld_name, fld_value);
 }
 
 function createHidden2(doc, frm_name, fld_name, fld_value)
@@ -774,6 +780,8 @@ function createHidden2(doc, frm_name, fld_name, fld_value)
       doc.forms[frm_name].appendChild(hidden);
     }
     hidden.value = fld_value;
+
+    return hidden;
   }
 }
 
@@ -1586,4 +1594,22 @@ ODRIVE.updateRdfGraph = function ()
     $('dav_IMAP_graph').value = $v('rdfGraph_prefix') + $v('dav_name') + '#this';
 
   $('dav_name_save').value = $v('dav_name');
+}
+
+ODRIVE.oauthParams = function (json)
+{
+  try {
+    params = OAT.JSON.deserialize(unescape(json));
+  } catch (e) { params = null; }
+  var fld = createHidden('F1', 'dav_GDrive_JSON', null);
+  if (!params || params.error) {
+    alert ('Bad authentication!');
+    fld.value = '';
+  } else {
+    var d = new Date();
+    params.access_timestamp = d.format('Y-m-d H:i');
+    fld.value = OAT.JSON.serialize(params);
+    $('dav_GDrive_authentication').innerHTML = 'Authrnticated';
+    $('dav_GDrive_authenticate').value = 'Re-Authenticate';
+  }
 }

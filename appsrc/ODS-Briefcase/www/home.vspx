@@ -506,7 +506,7 @@
     <![CDATA[
       declare N, M, retValue, dav_id, dav_owner, dav_group integer;
       declare dav_detType, dav_mime, dav_name, dav_fullPath, dav_perms, msg, _p varchar;
-      declare properties, c_properties any;
+      declare properties, c_properties, v_properties any;
       declare dav_acl, dav_filename, dav_file, rdf_content any;
       declare params, itemList any;
 
@@ -608,6 +608,7 @@
         {
             -- WebDAV
           -- Action test
+          v_properties := vector ();
             if (self.command_mode = 10)
             {
             self.dav_id := ODRIVE.WA.DAV_GET(self.dav_item, 'id');
@@ -887,8 +888,11 @@
                   foreach (any item in itemList) do
                   {
                   if (item[0] not like ('virt:aci_meta%'))
+                  {
+                    v_properties := vector_concat (v_properties, vector (item[0], item[1]));
                   DB.DBA.DAV_PROP_REMOVE_INT (dav_fullPath, item[0], null, null, 0, 0, 0);
                   }
+                }
                 ODRIVE.WA.exec ('delete from DB.DBA.SYNC_COLS_TYPES where CT_COL_ID = ?', vector (DB.DBA.DAV_SEARCH_ID (self.dav_path, 'C')));
                 }
               }
@@ -990,6 +994,31 @@
                 ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:S3-BucketName', get_keyword ('dav_S3_BucketName', params));
                 ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:S3-AccessKeyID', get_keyword ('dav_S3_AccessKeyID', params));
                 ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:S3-SecretKey', get_keyword ('dav_S3_SecretKey', params));
+              }
+              else if (dav_detType = 'GDrive')
+              {
+                declare tmp any;
+
+                tmp := trim (get_keyword ('dav_GDrive_JSON', params, ''));
+                if (tmp <> '')
+                {
+                  tmp := subseq (ODS..json2obj(tmp), 2);
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-Authentication', 'Yes');
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-access_timestamp', get_keyword ('access_timestamp', tmp, ''));
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-access_token', get_keyword ('access_token', tmp, ''));
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-token_type', get_keyword ('token_type', tmp, ''));
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-expires_in', get_keyword ('expires_in', tmp, ''));
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-refresh_token', get_keyword ('refresh_token', tmp, ''));
+                }
+                else
+                {
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-Authentication', get_keyword ('virt:GDrive-Authentication', v_properties, 'No'));
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-access_timestamp', get_keyword ('virt:GDrive-access_timestamp', v_properties, ''));
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-access_token', get_keyword ('virt:GDrive-access_token', v_properties, ''));
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-token_type', get_keyword ('virt:GDrive-token_type', v_properties, ''));
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-expires_in', get_keyword ('virt:GDrive-expires_in', v_properties, ''));
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-refresh_token', get_keyword ('virt:GDrive-refresh_token', v_properties, ''));
+                }
               }
                 }
           _nextExec_8:;
@@ -1704,26 +1733,27 @@
         </div>
          <div id="c1">
           <div class="tabs">
-            <vm:tabCaption tab="1"   tabs="12" caption="Main" />
+            <vm:tabCaption tab="1"   tabs="13" caption="Main" />
             <v:template name="tform_5" type="simple" enabled="-- case when (equ (self.command_mode, 10) and self.fieldRights ('sharing') and not (equ (self.dav_type, 'R') and (ODRIVE.WA.DAV_GET (self.dav_item, 'name') like '%,acl'))) then 1 else 0 end">
-            <vm:tabCaption tab="2"   tabs="12" caption="Sharing" />
+            <vm:tabCaption tab="2"   tabs="13" caption="Sharing" />
             </v:template>
             <v:template name="tform_6" type="simple" enabled="-- case when (equ (self.command_mode, 10) and self.fieldRights ('metadata')) then 1 else 0 end">
-            <vm:tabCaption tab="3"   tabs="12" caption="Metadata" />
+            <vm:tabCaption tab="3"   tabs="13" caption="Metadata" />
             </v:template>
             <v:template name="tform_7" type="simple" enabled="-- case when (equ (self.command_mode, 10) and equ (self.dav_type, 'R') and self.fieldRights ('version') and not (equ (self.dav_type, 'R') and (ODRIVE.WA.DAV_GET (self.dav_item, 'name') like '%,acl'))) then 1 else 0 end">
-            <vm:tabCaption tab="9"   tabs="12" caption="Versions" />
+            <vm:tabCaption tab="9"   tabs="13" caption="Versions" />
             </v:template>
             <v:template name="tform_8" type="simple" enabled="-- equ(self.dav_type, 'C')">
-            <vm:tabCaption tab="4"   tabs="12" caption="WebMail" />
-            <vm:tabCaption tab="5"   tabs="12" caption="Filter" />
-            <vm:tabCaption tab="6"   tabs="12" caption="S3 Properties" />
-            <vm:tabCaption tab="7"   tabs="12" caption="Criteria" />
-            <vm:tabCaption tab="8"   tabs="12" caption="Linked Data Import" />
+            <vm:tabCaption tab="4"   tabs="13" caption="WebMail" />
+            <vm:tabCaption tab="5"   tabs="13" caption="Filter" />
+            <vm:tabCaption tab="6"   tabs="13" caption="S3 Properties" />
+            <vm:tabCaption tab="7"   tabs="13" caption="Criteria" />
+            <vm:tabCaption tab="8"   tabs="13" caption="Linked Data Import" />
             <v:template name="tform_17" type="simple" enabled="-- case when (isstring (DB.DBA.vad_check_version ('SyncML'))) then 1 else 0 end">
-            <vm:tabCaption tab="10"  tabs="12" caption="SyncML" />
+            <vm:tabCaption tab="10"  tabs="13" caption="SyncML" />
             </v:template>
-            <vm:tabCaption tab="11"  tabs="12" caption="IMAP Account" />
+            <vm:tabCaption tab="11"  tabs="13" caption="IMAP Account" />
+            <vm:tabCaption tab="12"  tabs="13" caption="Google Drive" />
             </v:template>
           </div>
           <div class="contents">
@@ -1845,6 +1875,7 @@
                                           2, 'SyncML',     'SyncML Folder',
                                           1, 'Versioning', 'Version Control Folder',
                                           1, 'S3',         'Amazon S3',
+                                          1, 'GDrive',     'Google Drive',
                                           1, 'CardDAV',    'CardDAV Folder',
                                           1, 'Blog',       'Blog Folder',
                                           1, 'Bookmark',   'Bookmark Folder',
@@ -1861,6 +1892,9 @@
                                 goto _0;
 
                               if ((V[N] = 2) and not isstring (DB.DBA.vad_check_version ('SyncML')))
+                                goto _0;
+
+                              if ((V[N+1] = 'GDrive') and not exists (select 1 from OAUTH..APP_REG where a_name = 'Google API' and a_owner = 0))
                                 goto _0;
 
                               if (self.command_mode = 10)
@@ -2266,6 +2300,7 @@
               <vm:search-dc-template8 />
               <vm:search-dc-template11 />
               <vm:search-dc-template12 />
+              <vm:search-dc-template13 />
             </v:template>
             <v:template type="simple" enabled="-- equ(self.dav_type, 'R')">
               <vm:search-dc-template9 />

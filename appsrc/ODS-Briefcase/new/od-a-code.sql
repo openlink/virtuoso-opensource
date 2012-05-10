@@ -4514,7 +4514,7 @@ create procedure ODRIVE.WA.aci_load (
                 ' prefix foaf: <http://xmlns.com/foaf/0.1/> \n' ||
                 ' prefix acl: <http://www.w3.org/ns/auth/acl#> \n' ||
                   ' prefix flt: <http://www.openlinksw.com/schemas/acl/filter#> \n' ||
-                  ' select distinct ?rule ?agent ?mode ?filter ?criteria ?operand ?condition ?value \n' ||
+                  ' select distinct ?rule ?agent ?mode ?filter ?criteria ?operand ?condition ?pattern ?statement \n' ||
                 '   from <%s> \n' ||
                 '  where { \n' ||
                 '          { \n' ||
@@ -4539,7 +4539,8 @@ create procedure ODRIVE.WA.aci_load (
                   '            ?filter flt:hasCriteria ?criteria . \n' ||
                   '            ?criteria flt:operand ?operand ; \n' ||
                   '                      flt:condition ?condition ; \n' ||
-                  '                      flt:value ?value . \n' ||
+                  '                      flt:value ?pattern . \n' ||
+                  '            OPTIONAL { ?criteria flt:statement ?statement . } \n' ||
                   '          } \n' ||
                 '        }\n' ||
                   '  order by ?rule ?filter ?criteria\n',
@@ -4581,7 +4582,7 @@ create procedure ODRIVE.WA.aci_load (
           V[2] := 'advanced';
           if (aclCriteria <> row[4])
           {
-            F := vector_concat (F, vector (vector (1, replace (row[5], 'flt:', ''), replace (row[6], 'flt:', ''), row[7])));
+            F := vector_concat (F, vector (vector (1, replace (row[5], 'flt:', ''), replace (row[6], 'flt:', ''), row[7], row[8])));
             aclCriteria := row[4];
             V[1] := F;
           }
@@ -4628,58 +4629,65 @@ create procedure ODRIVE.WA.aci_n3 (
   in aciArray any)
 {
   declare N, M integer;
-  declare retValue any;
+  declare stream any;
 
   if (length (aciArray) = 0)
     return null;
 
-  retValue := ' @prefix acl: <http://www.w3.org/ns/auth/acl#> . \n' ||
-              ' @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> . \n' ||
-              '@prefix foaf: <http://xmlns.com/foaf/0.1/> . \n' ||
-              '@prefix flt: <http://www.openlinksw.com/schemas/acl/filter#> . \n';
+
+  stream := string_output ();
+  http ('@prefix acl: <http://www.w3.org/ns/auth/acl#> . \n', stream);
+  http ('@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> . \n', stream);
+  http ('@prefix foaf: <http://xmlns.com/foaf/0.1/> . \n', stream);
+  http ('@prefix flt: <http://www.openlinksw.com/schemas/acl/filter#> . ', stream);
   for (N := 0; N < length (aciArray); N := N + 1)
   {
     if (length (aciArray[N][1]))
     {
-      retValue := retValue || sprintf ('   <aci_%d> rdf:type acl:Authorization ;\n   acl:accessTo <>', aciArray[N][0]);
+      http (sprintf ('\n<aci_%d> rdf:type acl:Authorization ;\n        acl:accessTo <>', aciArray[N][0]), stream);
       if (aciArray[N][2] = 'person')
       {
-        retValue := retValue || sprintf (';\n   acl:agent <%s>', aciArray[N][1]);
+        http (sprintf ('; \n        acl:agent <%s>', aciArray[N][1]), stream);
       }
       else if (aciArray[N][2] = 'group')
       {
-        retValue := retValue || sprintf (';\n   acl:agentClass <%s>', aciArray[N][1]);
+        http (sprintf ('; \n        acl:agentClass <%s>', aciArray[N][1]), stream);
       }
       else if (aciArray[N][2] = 'public')
       {
-        retValue := retValue || ';\n   acl:agentClass foaf:Agent';
+        http (         '; \n        acl:agentClass foaf:Agent', stream);
       }
       else if (aciArray[N][2] = 'advanced')
       {
-        retValue := retValue || sprintf (';\n        flt:hasFilter <filter_%d>', aciArray[N][0]);
+        http (sprintf ('; \n        flt:hasFilter <filter_%d>', aciArray[N][0]), stream);
       }
       if (aciArray[N][3])
-        retValue := retValue || ';\n   acl:mode acl:Read';
+        http ('; \n        acl:mode acl:Read', stream);
       if (aciArray[N][4])
-        retValue := retValue || ';\n   acl:mode acl:Write';
+        http ('; \n        acl:mode acl:Write', stream);
       if (aciArray[N][5])
-        retValue := retValue || ';\n   acl:mode acl:Execute';
-      retValue := retValue || '.\n';
+        http ('; \n        acl:mode acl:Execute', stream);
+
+      http ('. ', stream);
       if (aciArray[N][2] = 'advanced')
       {
-        retValue := retValue || sprintf ('<filter_%d> rdf:type flt:Filter.', aciArray[N][0]);
+        http (sprintf ('\n<filter_%d> rdf:type flt:Filter .', aciArray[N][0]), stream);
         for (M := 0; M < length (aciArray[N][1]); M := M + 1)
         {
-          retValue := retValue ||
-                      sprintf ('\n<filter_%d> flt:hasCriteria <criteria_%d_%d>.', aciArray[N][0], aciArray[N][0], aciArray[N][1][M][0]) ||
-                      sprintf ('\n<criteria_%d_%d> flt:operand <flt:%s>;', aciArray[N][0], aciArray[N][1][M][0], aciArray[N][1][M][1]) ||
-                      sprintf ('\n               flt:condition <flt:%s>;', aciArray[N][1][M][2]) ||
-                      sprintf ('\n               flt:value ''%s''.\n', aciArray[N][1][M][3]);
+          http (sprintf ('\n<filter_%d> flt:hasCriteria <criteria_%d_%d> .', aciArray[N][0], aciArray[N][0], aciArray[N][1][M][0]), stream);
+          http (sprintf ('\n<criteria_%d_%d> flt:operand <flt:%s> ;', aciArray[N][0], aciArray[N][1][M][0], aciArray[N][1][M][1]), stream);
+          http (sprintf ('\n               flt:condition <flt:%s> ;', aciArray[N][1][M][2]), stream);
+          http (         '\n               flt:value ', stream); http_nt_object (aciArray[N][1][M][3], stream);
+          if ((length (aciArray[N][1][M]) > 3) and not DB.DBA.is_empty_or_null (aciArray[N][1][M][4]))
+          {
+          http (         '; \n             flt:statement ', stream); http_nt_object (aciArray[N][1][M][4], stream);
         }
+          http ('. \n', stream);
       }
     }
   }
-  return retValue;
+  }
+  return string_output_string (stream);
 }
 ;
 

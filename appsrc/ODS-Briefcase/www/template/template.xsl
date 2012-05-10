@@ -1322,6 +1322,46 @@
   </xsl:template>
 
   <!--=========================================================================-->
+  <xsl:template match="vm:search-dc-template13">
+    <div id="12" class="tabContent" style="display: none;">
+      <table class="form-body" cellspacing="0">
+        <tr>
+          <th colspan="2" style="text-align: center;" id="dav_GDrive_authentication">
+            <?vsp
+              declare _value any;
+
+              _value := self.get_fieldProperty ('===', self.dav_path, 'virt:GDrive-Authentication', 'No');
+              if (_value = 'No')
+                http ('Not authenticated');
+              if (_value = 'Yes')
+                http ('Authenticated');
+            ?>
+          </th>
+        </tr>
+        <tr>
+          <th colspan="2" style="text-align: center;">
+            <?vsp
+              declare _value, _name, _client_id, _return_url, _url any;
+
+              _value := self.get_fieldProperty ('===', self.dav_path, 'virt:GDrive-Authentication', 'No');
+              if (_value = 'No')
+                _name := 'Authenticate';
+              if (_value = 'Yes')
+                _name := 'Re-Authenticate';
+
+              _client_id := (select a_key from OAUTH..APP_REG where a_name = 'Google API' and a_owner = 0);
+              _return_url := sprintf ('http://%{WSHost}s/ods/google_access.vsp', http_path());
+              _url := sprintf ('https://accounts.google.com/o/oauth2/auth?client_id=%U&redirect_uri=%U&scope=%U&response_type=%U&access_type=%U&state=%U&approval_prompt=%U', _client_id, _return_url, 'https://www.googleapis.com/auth/drive.file', 'code', 'offline', self.sid, 'force');
+              http (sprintf ('<input type="button" id="dav_GDrive_authenticate" value="%s" onclick="javascript: windowShowInternal(\'%s\');" disabled="disabled" class="button" />', _name, _url));
+
+            ?>
+          </th>
+        </tr>
+      </table>
+    </div>
+  </xsl:template>
+
+  <!--=========================================================================-->
   <!-- Auto Versioning -->
   <xsl:template match="vm:autoVersion">
     <tr id="davRow_version">
