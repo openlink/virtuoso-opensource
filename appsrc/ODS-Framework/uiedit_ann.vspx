@@ -60,6 +60,7 @@
 
   <vm:page>
     <vm:header>
+      <script type="text/javascript" src="validate.js">;</script>
       <script type="text/javascript" src="tbl.js">;</script>
       <script type="text/javascript" src="typeahead.js">;</script>
       <link rel="stylesheet" href="typeahead.css" type="text/css" />

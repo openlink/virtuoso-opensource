@@ -259,6 +259,7 @@ create procedure "pingback.ping" (in source varchar, in target varchar)
   aq := async_queue (1);
   aq_request (aq, 'SEMPING.DBA.CLI_NOTIFY', vector ());
 
+  http_status_set (201);
   return 'Success';
 }
 ;
@@ -303,7 +304,7 @@ again:
       if (PR_FLAG = 1)
 	{
           sparql insert into graph iri(?:PR_GRAPH) { `iri(?:tgt)` `iri(?:prop)` `iri(?:src)` };	
-	  insert into DB.DBA.WA_USER_RELATED_RES (WUR_U_ID, WUR_P_IRI, WUR_SEEALSO_IRI) values (PR_U_ID, prop, src);
+	  insert soft DB.DBA.WA_USER_RELATED_RES (WUR_U_ID, WUR_P_IRI, WUR_SEEALSO_IRI) values (PR_U_ID, prop, src);
 	  commit work;
 	}
     }

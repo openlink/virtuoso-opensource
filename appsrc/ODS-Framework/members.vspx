@@ -739,7 +739,7 @@
                     <tr id="s_tr_no"><td colspan="4"><b>No WebID Security</b></td></tr>
               		  <![CDATA[
               		    <script type="text/javascript">
-               		        OAT.Loader.load(["ajax", "json"]);
+               		        OAT.Loader.load(["ajax", "json", "calendar"]);
       <?vsp
                         declare N integer;
 

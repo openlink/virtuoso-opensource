@@ -5853,7 +5853,8 @@ create procedure ODS.ODS_API.predicates ()
     'certIssuer'     , vector ('Certificate - Issuer',             'varchar',     'varchar',  vector ()),
     'certStartDate'  , vector ('Certificate - Issue Date',         'date',        'date',     vector ('size', '10', 'class', '_validate_ _date_', 'onclick', 'datePopup(\'-FIELD-\')', 'button', '<img id="-FIELD-_select" border="0" src="/oMail/i/pick_calendar.gif" onclick="javascript: datePopup(\'-FIELD-\');" />')),
     'certEndDate'    , vector ('Certificate - Expiry Date',        'date',        'date',     vector ('size', '10', 'class', '_validate_ _date_', 'onclick', 'datePopup(\'-FIELD-\')', 'button', '<img id="-FIELD-_select" border="0" src="/oMail/i/pick_calendar.gif" onclick="javascript: datePopup(\'-FIELD-\');" />')),
-    'certDigest'     , vector ('Certificate - Fingerprint Digest', 'digest',      'varchar',  vector ('class', '_validate_ _digest_'))
+    'certDigest'     , vector ('Certificate - Fingerprint Digest', 'digest',      'varchar',  vector ('class', '_validate_ _digest_')),
+    'certSparqlASK'  , vector ('Certificate - SPARQL ASK',         'sparql',      'boolean',  vector ())
   );
 }
 ;

@@ -29,98 +29,107 @@ function validateError(fld, msg)
 
 function validateInt(fld)
 {
-  var regex = /^[0-9]+$/
-  if (!regex.test(fld.value))
-    return validateError(fld, 'Invalid integer value: ' + fld.value);
+  var v = fld.value.trim();
+  var regex = /^[0-9]+$/;
+  if (!regex.test(v))
+    return validateError(fld, 'Invalid integer value: ' + v);
 
   return true;
 }
 
 function validateFloat(fld)
 {
-  var regex = /^[-+]?([0-9]*\.)?[0-9]+([eE][-+]?[0-9]+)?$/
-  if (!regex.test(fld.value))
-    return validateError(fld, 'Invalid float value: ' + fld.value);
+  var v = fld.value.trim();
+  var regex = /^[-+]?([0-9]*\.)?[0-9]+([eE][-+]?[0-9]+)?$/;
+  if (!regex.test(v))
+    return validateError(fld, 'Invalid float value: ' + v);
 
   return true;
 }
 
 function validateDate(fld)
 {
-  var regex = /^((?:19|20)[0-9][0-9])[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])$/
-  if (!regex.test(fld.value))
-    return validateError(fld, 'Invalid date value: ' + fld.value);
+  var v = fld.value.trim();
+  var regex = /^((?:19|20)[0-9][0-9])[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])$/;
+  if (!regex.test(v))
+    return validateError(fld, 'Invalid date value: ' + v);
 
   return true;
 }
 
 function validateDateTime(fld)
 {
-  var regex = /^((?:19|20)[0-9][0-9])[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])( ([01]?[0-9]|[2][0-3])(:[0-5][0-9])?)?$/
-  if (!regex.test(fld.value))
-    return validateError(fld, 'Invalid date value: ' + fld.value);
+  var v = fld.value.trim();
+  var regex = /^((?:19|20)[0-9][0-9])[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])( ([01]?[0-9]|[2][0-3])(:[0-5][0-9])?)?$/;
+  if (!regex.test(v))
+    return validateError(fld, 'Invalid date value: ' + v);
 
   return true;
 }
 
 function validateMail(fld)
 {
-  if ((fld.value.length == 0) || (fld.value.length > 40))
+  var v = fld.value.trim();
+  if ((v.length == 0) || (v.length > 40))
     return validateError(fld, 'E-mail address cannot be empty or longer then 40 chars');
 
   var regex = /^([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
-  if (!regex.test(fld.value))
-    return validateError(fld, 'Invalid E-mail address');
+  if (!regex.test(v))
+    return validateError(fld, 'Invalid E-mail address: ' + v);
 
   return true;
 }
 
 function validateURL(fld)
 {
-  var regex = /^(ftp|http|https):(\/\/)?(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/
-  if (!regex.test(fld.value))
-    return validateError(fld, 'Invalid URL address : ' + fld.value);
+  var v = fld.value.trim();
+  var regex = /^(ftp|http|https):(\/\/)?(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
+  if (!regex.test(v))
+    return validateError(fld, 'Invalid URL address: ' + v);
 
   return true;
 }
 
 function validateURI(fld)
 {
-  var regex = /^([a-z0-9+.-]+):(\/\/)?(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/
+  var v = fld.value.trim();
+  var regex = /^([a-z0-9+.-]+):(\/\/)?(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
   var mail = /^acct:([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
-  if (!regex.test(fld.value) && !mail.test(fld.value))
-    return validateError(fld, 'Invalid URI address : ' + fld.value);
+  if (!regex.test(v) && !mail.test(v))
+    return validateError(fld, 'Invalid URI address: ' + v);
 
   return true;
 }
 
 function validateWebID(fld)
 {
-  if (fld.value == 'foaf:Agent')
+  var v = fld.value.trim();
+  if (v == 'foaf:Agent')
     return true;
 
   var regex = /(http|https):\/\/(\w+:{0,1}\w*@)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%@!\-\/]))?/;
-  if (regex.test(fld.value))
+  if (regex.test(v))
     return true;
 
   var regex  = /^acct:([a-zA-Z0-9_\.\-\+])+\@(([a-zA-Z0-9\-:])+)+\.?([a-zA-Z0-9]{0,4})+$/;
-  if (regex.test(fld.value))
+  if (regex.test(v))
     return true;
 
   var regex = /^acct:([a-zA-Z0-9_\.\-])+\@(([a-zA-Z0-9\-])+\.)+([a-zA-Z0-9]{2,4})+$/;
-  if (regex.test(fld.value))
+  if (regex.test(v))
     return true;
 
-  return validateError(fld, 'Invalid URI address');
+  return validateError(fld, 'Invalid URI address: ' + v);
 }
 
 function validateDigest(fld)
 {
+  var v = fld.value.trim();
   var regex = /^di:[^ <>]+$/;
-  if (regex.test(fld.value))
+  if (regex.test(v))
     return true;
 
-  return validateError(fld, 'Invalid URI address');
+  return validateError(fld, 'Invalid di: scheme value: ' + v);
 }
 
 function validateField(fld)

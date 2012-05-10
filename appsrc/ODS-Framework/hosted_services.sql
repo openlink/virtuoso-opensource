@@ -619,7 +619,8 @@ create procedure wa_aci_params (
               V2 := vector (M2,
                             trim (get_keyword (params[N] || '_fld_1_' || aclNo2, params)),
                             trim (get_keyword (params[N] || '_fld_2_' || aclNo2, params)),
-                            trim (get_keyword (params[N] || '_fld_3_' || aclNo2, params))
+                            trim (get_keyword (params[N] || '_fld_3_' || aclNo2, params)),
+                            trim (get_keyword (params[N] || '_fld_0_' || aclNo2, params, ''))
                            );
               T := vector_concat (T, vector (V2));
               M2 := M2 + 1;
@@ -3923,6 +3924,7 @@ wa_exec_no_error_log(
 )
 ;
 wa_add_col ('DB.DBA.WA_USER_RELATED_RES', 'WUR_P_IRI', 'varchar default \'http://www.w3.org/2000/01/rdf-schema#seeAlso\'');
+wa_exec_no_error ('alter table DB.DBA.WA_USER_RELATED_RES modify primary key (WUR_U_ID, WUR_SEEALSO_IRI, WUR_P_IRI)');
 wa_exec_no_error_log('create unique index WA_USER_RELATED_RES_IX1 on DB.DBA.WA_USER_RELATED_RES (WUR_ID)');
 
 

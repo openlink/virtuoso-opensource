@@ -929,17 +929,18 @@ TBL.showCell51TblInternal = function (td, fldName, fldOptions, disabled) {
     var S = '<b>No Criteria</b>';
     td2.innerHTML = S.replace(/-TBL-/g, fldName);
     if (!disabled) {
-      var td2 = OAT.Dom.create('td', {valign: 'top', nowrap: 'nowrap'});
+      var td2 = OAT.Dom.create('td');
+      td2.style.cssText = 'white-space: nowrap; vertical-align: top;';
       tr.appendChild(td2);
-      S = '<img src="/ods/images/icons/add_16.png" border="0" class="button pointer" onclick="javascript: TBL.createRow(\'-TBL-\', null, {fld_1: {mode: 55, tdCssText: \'width: 33%;\', className: \'_validate_\'}, fld_2: {mode: 56, tdCssText: \'width: 33%;\', cssText: \'display: none;\', className: \'_validate_\'}, fld_3: {mode: 57, tdCssText: \'width: 33%;\', cssText: \'display: none;\', className: \'_validate_\'}, btn_1: {mode: 55}});" alt="Add Condition" title="Add Condition" />';
+      S = '<img src="/ods/images/icons/add_16.png" border="0" class="button pointer" onclick="javascript: TBL.createRow(\'-TBL-\', null, {fld_1: {mode: 55, tdCssText: \'width: 33%; vertical-align: top;\', className: \'_validate_\'}, fld_2: {mode: 56, tdCssText: \'width: 33%; vertical-align: top;\', cssText: \'display: none;\', className: \'_validate_\'}, fld_3: {mode: 57, tdCssText: \'width: 33%; vertical-align: top;\', cssText: \'display: none;\', className: \'_validate_\'}, btn_1: {mode: 55}});" alt="Add Condition" title="Add Condition" />';
       td2.innerHTML = S.replace(/-TBL-/g, fldName);
     }
     if (fldOptions && fldOptions.value) {
       for (var i = 0; i < fldOptions.value.length; i = i + 1) {
         if (disabled) {
-          TBL.createViewRow(fldName, {fld_1: {mode: 55, value: fldOptions.value[i][1], tdCssText: 'width: 33%;'}, fld_2: {mode: 56, value: fldOptions.value[i][2], tdCssText: 'width: 33%;'}, fld_3: {mode: 57, value: fldOptions.value[i][3], tdCssText: 'width: 33%;'}});
+          TBL.createViewRow(fldName, {fld_1: {mode: 55, value: fldOptions.value[i][1], valueExt: fldOptions.value[i][4], tdCssText: 'width: 33%;'}, fld_2: {mode: 56, value: fldOptions.value[i][2], tdCssText: 'width: 33%; vertical-align: top;'}, fld_3: {mode: 57, value: fldOptions.value[i][3], tdCssText: 'width: 33%; vertical-align: top;'}});
         } else {
-          TBL.createRow(fldName, null, {fld_1: {mode: 55, value: fldOptions.value[i][1], tdCssText: 'width: 33%;', className: '_validate_'}, fld_2: {mode: 56, value: fldOptions.value[i][2], tdCssText: 'width: 33%;', className: '_validate_'}, fld_3: {mode: 57, value: fldOptions.value[i][3], tdCssText: 'width: 33%;', className: '_validate_'}, btn_1: {mode: 55}});
+          TBL.createRow(fldName, null, {fld_1: {mode: 55, value: fldOptions.value[i][1], valueExt: fldOptions.value[i][4], tdCssText: 'width: 33%;', className: '_validate_'}, fld_2: {mode: 56, value: fldOptions.value[i][2], tdCssText: 'width: 33%; vertical-align: top;', className: '_validate_'}, fld_3: {mode: 57, value: fldOptions.value[i][3], tdCssText: 'width: 33%; vertical-align: top;', className: '_validate_'}, btn_1: {mode: 55}});
         }
       }
     }
@@ -1005,6 +1006,8 @@ TBL.changeCell55 = function (obj)
   var prefix = obj._prefix;
   var No = obj._No;
 
+  TBL.createCell55Ext(obj);
+
   var td = $(prefix+'_td_'+No+'_2');
   td.innerHTML = '';
   TBL.createCell56(td, prefix, prefix+'_fld_2_'+No, No, {className: '_validate_'});
@@ -1037,8 +1040,44 @@ TBL.createCell55 = function (td, prefix, fldName, No, fldOptions, disabled) {
     fld.onchange = function(){TBL.changeCell55(this)};
 
   td.appendChild(fld);
+  TBL.createCell55Ext(fld, fldOptions, disabled)
 
   return fld;
+}
+
+TBL.createCell55Ext = function (obj, fldOptions, disabled) {
+  var prefix = obj._prefix;
+  var No = obj._No;
+
+  var predicate = TBL.predicateGet(prefix+'_fld_1_'+No);
+  if (!predicate)
+    return;
+
+  var fldName = prefix+'_fld_0_'+No;
+  if (predicate[1] != 'sparql') {
+    OAT.Dom.unlink(fldName);
+    return;
+  }
+
+  if ($(fldName))
+    return;
+
+  if (!fldOptions)
+    fldOptions = {valueExt: 'prefix sioc: <http://rdfs.org/sioc/ns#>\nprefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>\nprefix foaf: <http://xmlns.com/foaf/0.1/>\nASK where {^{webid}^ rdf:type foaf:Person}'};
+
+  var td = TBL.parent(obj, 'td');
+  var fld = OAT.Dom.create('textarea');
+  fld.id = fldName;
+  fld.name = fld.id;
+  fld.style.cssFloat = 'left';
+  fld.style.width = '94%';
+  fld.style.height = '8em';
+  if (fldOptions.valueExt)
+    fld.value = fldOptions.valueExt;
+  if (disabled)
+    fld.disabled = disabled;
+
+  td.appendChild(fld);
 }
 
 TBL.changeCell56 = function (obj) {
