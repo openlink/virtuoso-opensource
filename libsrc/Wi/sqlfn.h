@@ -349,6 +349,8 @@ void ddl_node_input (ddl_node_t * ddl, caddr_t * inst, caddr_t * state);
 
 void read_proc_tables (int remotes);
 void ddl_read_constraints (char *spec_tb_name, caddr_t *qst);
+void read_proc_and_trigger_tables (int remotes);
+void read_utd_method_tables (void);
 
 void ddl_init_schema (void);
 

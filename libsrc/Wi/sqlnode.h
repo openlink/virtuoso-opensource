@@ -1599,6 +1599,7 @@ extern void sqls_define_uddi (void);
 extern void sqls_define_imsg (void);
 extern void sqls_define_auto (void);
 extern void sqls_define_sparql (void);
+extern void sqls_define_sparql_init (void);
 extern void sqls_define_sys (void);
 extern void sqls_define_repl (void);
 extern void sqls_define_ws (void);
