@@ -2073,19 +2073,19 @@ bif_scroll_cr_open (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t params_box_buf[5];
   caddr_t params_box;
   caddr_t **params;
-  stmt_options_t *opts = (stmt_options_t *)  dk_alloc_box_zero (sizeof (stmt_options_t), DV_ARRAY_OF_POINTER);
+  stmt_options_t *opts;
   uint32 inx, n_pars = BOX_ELEMENTS (args) - 1;
 
   BOX_AUTO (params_box, params_box_buf, sizeof (caddr_t), DV_ARRAY_OF_POINTER);
   params = (caddr_t **)params_box;
-
-  opts->so_use_bookmarks = 1;
   params[0] = (caddr_t *) dk_alloc_box_zero (n_pars * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
   for (inx = 0; inx < n_pars; inx++)
     {
       params[0][inx] = box_copy_tree (bif_arg (qst, args, inx + 1, "__scroll_cr_open"));
     }
-  memset (opts, 0, sizeof (opts));
+
+  opts = (stmt_options_t *)  dk_alloc_box_zero (sizeof (stmt_options_t), DV_ARRAY_OF_POINTER);
+  opts->so_use_bookmarks = 1;
   opts->so_concurrency = SQL_CONCUR_LOCK;
   opts->so_cursor_type = stmt->sst_query->qr_cursor_type;
 
