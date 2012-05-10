@@ -793,7 +793,7 @@ node_print (data_source_t * node)
 	}
       if (rts->rts_save_env)
 	{
-	  stmt_printf ((" save env: "));
+	  stmt_printf (("\n save env: "));
 	  ssl_array_print (rts->rts_save_env);
 	}
       stmt_printf (("\n"));
