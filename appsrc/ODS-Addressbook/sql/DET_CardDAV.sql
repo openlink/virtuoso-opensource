@@ -959,3 +959,133 @@ create function "CardDAV__ACCESS_PARAMS" (
   ret: ;
 }
 ;
+
+create procedure DB.DBA.HP_AUTH_DAV_PROTOCOL_CARDDAV (in realm varchar)
+{
+    declare _u_name, _u_password, _perms varchar;
+    declare _u_id, _u_group integer;
+    declare auth any;
+    declare _user, lev varchar;
+    declare our_auth_vec, lines, sec, path, req_perms, cmp_perms, def_page varchar;
+    declare _method, allow_basic, authenticated integer;
+    authenticated := 0;
+    lines := http_request_header ();
+    path := http_physical_path ();
+    sec := http_map_get ('security_level');
+    if (isstring (sec))
+        sec := ucase (sec);
+    if (sec = 'DIGEST')
+        allow_basic := 0;
+    else
+        allow_basic := 1;
+    auth := DB.DBA.vsp_auth_vec (lines);
+    if (0 <> auth)
+    {
+        lev := get_keyword ('authtype', auth, '');
+        if (allow_basic = 0 and 'basic' = lev)
+            goto nf;
+        _user := get_keyword ('username', auth);
+        if (_user = '' or isnull (_user))
+        {
+            goto nf;
+        }
+        whenever not found goto nf;
+        select U_NAME, pwd_magic_calc (U_NAME, U_PWD, 1), U_GROUP, U_ID, U_METHODS, U_DEF_PERMS
+            into _u_name, _u_password, _u_group, _u_id, _method, _perms from WS.WS.SYS_DAV_USER
+            where U_NAME = _user and U_ACCOUNT_DISABLED = 0 with (exclusive, prefetch 1);
+        if (_u_password is null)
+            goto nf;
+        if (DB.DBA.vsp_auth_verify_pass (auth, _u_name,
+            coalesce(get_keyword ('realm', auth), ''),
+            coalesce(get_keyword ('uri', auth), ''),
+            coalesce(get_keyword ('nonce', auth), ''),
+            coalesce(get_keyword ('nc', auth),''),
+            coalesce(get_keyword ('cnonce', auth), ''),
+            coalesce(get_keyword ('qop', auth), ''),
+            _u_password))
+        {
+            update WS.WS.SYS_DAV_USER set U_LOGIN_TIME = now () where U_NAME = _user;
+            if (http_map_get ('persist_ses_vars'))
+            {
+                declare vars any;
+                declare sid varchar;
+                vars := null;
+                sid := http_param ('sid');
+                vars := coalesce ((select deserialize (ASES_VARS) from DB.DBA.ADMIN_SESSION where ASES_ID = sid), null);
+                if (vars is null or isarray (vars))
+                    connection_vars_set (vars);
+                if (connection_get ('sid') is null)
+                    connection_set ('sid', sid);
+            }
+            if (connection_get ('CardDAVUserID') is null or connection_get ('CardDAVUserID') <> _u_id)
+                connection_set ('CardDAVUserID', _user);
+            authenticated := 1;
+        }
+    }
+    else
+        goto nf;
+    -- Check permissions
+    if (authenticated and _u_id = 1)
+        return 1;
+    else if (not authenticated)
+        return -1;
+    else if (authenticated)
+        return (_u_id);
+nf:
+    DB.DBA.vsp_auth_get (realm, '/DAV', md5 (datestring(now())), md5 ('opaakki'), 'false', lines, allow_basic);
+    return 0;
+}
+;
+
+
+create procedure DB.DBA.install_carddav_vhosts()
+{
+    DB.DBA.VHOST_REMOVE (lpath=>'/.well-known/carddav/');
+    DB.DBA.VHOST_DEFINE (lpath=>'/.well-known/carddav/',
+        ppath => '/!well-known/carddav/',
+        is_dav => 1,
+        vsp_user => 'dba',
+        opts => vector('noinherit', 1, 'exec_as_get', 1),
+        auth_fn=>'DB.DBA.HP_AUTH_DAV_PROTOCOL_CARDDAV',
+        realm=>'CardDAVUserID',
+        sec=>'Basic');
+}
+;
+
+DB.DBA.install_carddav_vhosts()
+;
+
+create procedure WS.WS."/!well-known/carddav/" (inout path varchar, inout params any, inout lines any)
+{
+    declare user_id, inst_name varchar;
+    declare command varchar;
+    declare pos integer;
+    declare exit handler for sqlstate '*'
+    {
+        http_request_status ('HTTP/1.1 404 Not Found');
+        return;
+    };
+    whenever not found goto retr;
+    user_id := connection_get ('CardDAVUserID');
+    inst_name := (select CalDAV__FIXNAME (C.WAI_NAME)
+        from SYS_USERS A,
+        WA_MEMBER B,
+        WA_INSTANCE C
+        where A.U_NAME = user_id
+        and B.WAM_USER = A.U_ID
+        and B.WAM_MEMBER_TYPE = 1
+        and B.WAM_INST = C.WAI_NAME
+        and C.WAI_TYPE_NAME = 'AddressBook');
+    if (inst_name is null or length(inst_name) = 0)
+        goto retr;
+    http_request_status ('HTTP/1.1 301 Moved Permanently');
+    http_header (sprintf ('Location: /DAV/home/%s/addressbooks/%s/\r\n', user_id, inst_name));
+    return;
+retr:
+    http_request_status ('HTTP/1.1 404 Not Found');
+    return;
+}
+;
+
+registry_set ('/!well-known/carddav/', 'no_vsp_recompile')
+;
