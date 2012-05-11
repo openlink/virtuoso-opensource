@@ -3261,9 +3261,10 @@ ddl_drop_table (query_instance_t * qi, char *name)
     }
 #endif
 
+
 #ifdef BIF_XML
   del_st = sql_compile_static ("DB.DBA.vt_clear_text_index (?)", cli, &err, SQLC_DEFAULT);
-  if (del_st)
+  if (del_st && !sch_view_def (wi_inst.wi_schema, name))
     {
       AS_DBA (qi, err = qr_rec_exec (del_st, cli, NULL, qi, NULL, 1,
 	  ":0", name, QRP_STR));
