@@ -864,7 +864,6 @@
                   <![CDATA[
                     declare retValue any;
 
-                    dbg_obj_print ('self.dav_path', self.dav_path);
                     if (ODRIVE.WA.DAV_GET (self.dav_item, 'versionControl'))
                     {
                       retValue := ODRIVE.WA.DAV_REMOVE_VERSION_CONTROL (self.dav_path);
@@ -1341,7 +1340,7 @@
         <tr>
           <th colspan="2" style="text-align: center;">
             <?vsp
-              declare _value, _name, _client_id, _return_url, _url any;
+              declare _value, _name, _client_id, _return_url, _scope, _url any;
 
               _value := self.get_fieldProperty ('===', self.dav_path, 'virt:GDrive-Authentication', 'No');
               if (_value = 'No')
@@ -1351,7 +1350,8 @@
 
               _client_id := (select a_key from OAUTH..APP_REG where a_name = 'Google API' and a_owner = 0);
               _return_url := sprintf ('http://%{WSHost}s/ods/google_access.vsp', http_path());
-              _url := sprintf ('https://accounts.google.com/o/oauth2/auth?client_id=%U&redirect_uri=%U&scope=%U&response_type=%U&access_type=%U&state=%U&approval_prompt=%U', _client_id, _return_url, 'https://www.googleapis.com/auth/drive.file', 'code', 'offline', self.sid, 'force');
+              _scope := 'https://docs.google.com/feeds/ https://docs.googleusercontent.com/ https://www.googleapis.com/auth/drive.file';
+              _url := sprintf ('https://accounts.google.com/o/oauth2/auth?client_id=%U&redirect_uri=%U&scope=%U&response_type=%U&access_type=%U&state=%U&approval_prompt=%U', _client_id, _return_url, _scope, 'code', 'offline', self.sid, 'force');
               http (sprintf ('<input type="button" id="dav_GDrive_authenticate" value="%s" onclick="javascript: windowShowInternal(\'%s\');" disabled="disabled" class="button" />', _name, _url));
 
             ?>

@@ -1348,7 +1348,7 @@ create procedure ODRIVE.WA.odrive_effective_permissions (
   in permission varchar := '1__')
 {
   declare N, I, nPermission integer;
-  declare rc, id, type, item any;
+  declare rc, id, what, item any;
   declare lines, name, pwd, uid, gid, permissions any;
   declare auth_name varchar;
 
@@ -1358,10 +1358,11 @@ create procedure ODRIVE.WA.odrive_effective_permissions (
   name := null;
   uid := null;
   gid := null;
-  id := ODRIVE.WA.DAV_SEARCH_ID (path, type);
+  what := case when (path[length (path)-1] <> ascii('/')) then 'R' else 'C' end;
+  id := DB.DBA.DAV_SEARCH_ID (path, what);
   for (N := 0; N < length (permission); N := N + 1)
   {
-    if (DB.DBA.DAV_AUTHENTICATE (id, type, permission[N], name, uid, gid))
+    if (DB.DBA.DAV_AUTHENTICATE (id, what, permission[N], name, uid, gid))
       return 1;
   }
   
@@ -2763,14 +2764,14 @@ create procedure ODRIVE.WA.auto_version_short (
 --
 create procedure ODRIVE.WA.det_type (
   in path varchar,
-  in type varchar := 'C')
+  in what varchar := 'C')
 {
   declare id any;
 
-  id := DB.DBA.DAV_SEARCH_ID (path, type);
+  id := DB.DBA.DAV_SEARCH_ID (path, what);
   if (ODRIVE.WA.DAV_ERROR (id))
     return '';
-  return cast (coalesce (DB.DBA.DAV_PROP_GET_INT (id, type, ':virtdet', 0), '') as varchar);
+  return cast (coalesce (DB.DBA.DAV_PROP_GET_INT (id, what, ':virtdet', 0), '') as varchar);
 }
 ;
 
@@ -2778,11 +2779,14 @@ create procedure ODRIVE.WA.det_type (
 --
 create procedure ODRIVE.WA.det_class(
   in path varchar,
-  in type varchar := 'C')
+  in what varchar := null)
 {
   declare id any;
 
-  id := ODRIVE.WA.DAV_SEARCH_ID (path, type);
+  if (isnull (what))
+    what := case when (path[length (path)-1] <> ascii('/')) then 'R' else 'C' end;
+
+  id := DB.DBA.DAV_SEARCH_ID (path, what);
   if (not ODRIVE.WA.DAV_ERROR (id) and isarray (id))
       return cast (id[0] as varchar);
   return '';
@@ -3216,25 +3220,6 @@ create procedure ODRIVE.WA.DAV_INIT_COLLECTION (
   aset(item, 1, 'C');
   aset(item, 9, 'dav/unix-directory');
   return item;
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure ODRIVE.WA.DAV_SEARCH_ID(
-  in path varchar,
-  out type varchar)
-{
-  declare id any;
-
-  type := 'C';
-  id := DB.DBA.DAV_SEARCH_ID (path, type);
-  if (ODRIVE.WA.DAV_ERROR(id))
-  {
-    type := 'R';
-    return DB.DBA.DAV_SEARCH_ID (path, type);
-  }
-  return id;
 }
 ;
 
@@ -4497,7 +4482,7 @@ create procedure ODRIVE.WA.aci_load (
   declare S, st, msg, meta, rows any;
 
   what := case when (path[length (path)-1] <> ascii('/')) then 'R' else 'C' end;
-  id := ODRIVE.WA.DAV_SEARCH_ID (path, what);
+  id := DB.DBA.DAV_SEARCH_ID (path, what);
   if (isarray (id))
   {
     retValue := ODRIVE.WA.DAV_PROP_GET (path, 'virt:aci_meta');
@@ -4612,7 +4597,7 @@ create procedure ODRIVE.WA.aci_save (
   declare id, what, retValue, tmp any;
 
   what := case when (path[length (path)-1] <> ascii('/')) then 'R' else 'C' end;
-  id := ODRIVE.WA.DAV_SEARCH_ID (path, what);
+  id := DB.DBA.DAV_SEARCH_ID (path, what);
   if (isarray (id))
     retValue := ODRIVE.WA.DAV_PROP_SET (path, 'virt:aci_meta', aci);
 

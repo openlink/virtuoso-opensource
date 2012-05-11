@@ -360,17 +360,17 @@
         }
         else if (action = 'new')
         {
-          if ((detType = '') or detType in ('HostFS', 'S3'))
+          if ((detType = '') or detType in ('HostFS', 'S3', 'GDrive'))
             retValue := 1;
         }
         else if (action = 'create')
         {
-          if ((detType = '') or detType in ('HostFS', 'S3'))
+          if ((detType = '') or detType in ('HostFS', 'S3', 'GDrive'))
             retValue := 1;
         }
         else if (action = 'upload')
         {
-          if ((detType = '') or detType in ('HostFS', 'S3'))
+          if ((detType = '') or detType in ('HostFS', 'S3', 'GDrive'))
             retValue := 1;
         }
         else if (action = 'rename')
@@ -390,7 +390,7 @@
         }
         if      (action = 'delete')
         {
-          if ((detType = '') or detType in ('HostFS', 'S3'))
+          if ((detType = '') or detType in ('HostFS', 'S3', 'GDrive'))
             retValue := 1;
         }
         else if (action = 'properties')
@@ -411,14 +411,24 @@
       }
       else
       {
-        if (action = 'upload')
+        if (action = 'new')
         {
-          if (detType in ('', 'CalDAV', 'CardDAV'))
+          if (detClass in ('GDrive'))
+            retValue := 1;
+        }
+        else if (action = 'create')
+        {
+          if (detClass in ('GDrive'))
+            retValue := 1;
+        }
+        else if (action = 'upload')
+        {
+          if (detType in ('', 'CalDAV', 'CardDAV', 'GDrive'))
             retValue := 1;
         }
         else if (action = 'delete')
         {
-          if (detType in ('', 'CalDAV', 'CardDAV', 'IMAP'))
+          if (detType in ('', 'CalDAV', 'CardDAV', 'IMAP', 'GDrive'))
             retValue := 1;
         }
         else if (action = 'tag')
@@ -476,7 +486,12 @@
       }
       else
       {
-        if (action = 'permissions')
+        if (action = 'edit')
+        {
+          if (detClass in ('GDrive'))
+            retValue := 1;
+        }
+        else if (action = 'permissions')
         {
           if ((detClass not in ('CalDAV', 'CardDAV')) and detType in ('', 'HostFS', 'S3'))
             retValue := 1;
@@ -488,12 +503,12 @@
         }
         else if (action = 'sharing')
         {
-          if (detClass in ('CalDAV', 'CardDAV') or detType in (''))
+          if (detClass in ('CalDAV', 'CardDAV', 'GDrive') or detType in (''))
             retValue := 1;
         }
         else if (action = 'sharing_aci')
         {
-          if (detClass in ('CalDAV', 'CardDAV') or detType in (''))
+          if (detClass in ('CalDAV', 'CardDAV', 'GDrive') or detType in (''))
             retValue := 1;
         }
       }
@@ -889,7 +904,7 @@
                   {
                   if (item[0] not like ('virt:aci_meta%'))
                   {
-                    v_properties := vector_concat (v_properties, vector (item[0], item[1]));
+                    v_properties := vector_concat (v_properties, vector (item));
                   DB.DBA.DAV_PROP_REMOVE_INT (dav_fullPath, item[0], null, null, 0, 0, 0);
                   }
                 }
@@ -1007,17 +1022,16 @@
                   ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-access_timestamp', get_keyword ('access_timestamp', tmp, ''));
                   ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-access_token', get_keyword ('access_token', tmp, ''));
                   ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-token_type', get_keyword ('token_type', tmp, ''));
-                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-expires_in', get_keyword ('expires_in', tmp, ''));
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-expires_in', cast (get_keyword ('expires_in', tmp, '') as varchar));
                   ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-refresh_token', get_keyword ('refresh_token', tmp, ''));
                 }
                 else
                 {
-                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-Authentication', get_keyword ('virt:GDrive-Authentication', v_properties, 'No'));
-                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-access_timestamp', get_keyword ('virt:GDrive-access_timestamp', v_properties, ''));
-                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-access_token', get_keyword ('virt:GDrive-access_token', v_properties, ''));
-                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-token_type', get_keyword ('virt:GDrive-token_type', v_properties, ''));
-                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-expires_in', get_keyword ('virt:GDrive-expires_in', v_properties, ''));
-                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-refresh_token', get_keyword ('virt:GDrive-refresh_token', v_properties, ''));
+                  foreach (any item in v_properties) do
+                  {
+                    if (item[0] like ('virt:GDrive-%'))
+                      ODRIVE.WA.DAV_PROP_SET (self.dav_path, item[0], item[1]);
+                  }
                 }
               }
                 }
@@ -1639,11 +1653,13 @@
       <v:template name="tform_4" type="simple" enabled="-- equ(self.command, 10)">
         <v:before-data-bind>
           <![CDATA[
+            declare parent_path varchar;
             declare params any;
 
             params := self.vc_page.vc_event.ve_params;
             self.search_dc := null;
             self.dav_path := ODRIVE.WA.odrive_real_resource (self.source);
+            parent_path := ODRIVE.WA.odrive_real_path_int (self.dir_path, 1, 'C');
             self.dav_enable := 1;
             if (self.command_mode = 10)
             {
@@ -1655,7 +1671,8 @@
                 return;
               }
               self.dav_type := ODRIVE.WA.DAV_GET (self.dav_item, 'type');
-              self.dav_detClass := coalesce (ODRIVE.WA.det_class (self.dav_path, self.dav_type) , '');
+              self.dav_detClass := ODRIVE.WA.det_class (self.dav_path, self.dav_type);
+              self.dav_detType := coalesce (get_keyword ('dav_det', params, ODRIVE.WA.DAV_GET (self.dav_item, 'detType')), '');
             }
             else if (self.command_mode in (5, 6))
             {
@@ -1667,7 +1684,11 @@
 
               self.dav_item := V;
               self.dav_type := 'R';
-              self.dav_detClass := coalesce (ODRIVE.WA.det_class (ODRIVE.WA.odrive_real_path_int (self.dir_path, 1, 'C'), 'C') , '');
+              self.dav_detClass := ODRIVE.WA.det_class (parent_path, 'C');
+              if (self.dav_detClass = '')
+                self.dav_detClass := ODRIVE.WA.det_type (parent_path, 'C');
+
+              self.dav_detType := coalesce (get_keyword ('dav_det', params, ODRIVE.WA.DAV_GET (self.dav_item, 'detType')), '');
             }
             else
             {
@@ -1676,7 +1697,11 @@
                 params := vector_concat (params, vector ('dav_det', 'ResFilter', 'attr_dav_det', ''));
 
               self.dav_type := 'C';
-              self.dav_detClass := coalesce (ODRIVE.WA.det_class (ODRIVE.WA.odrive_real_path_int (self.dir_path, 1, 'C'), 'C') , '');
+              self.dav_detClass := ODRIVE.WA.det_class (parent_path, 'C');
+              if (self.dav_detClass = '')
+                self.dav_detClass := ODRIVE.WA.det_type (parent_path, 'C');
+
+              self.dav_detType := cast (coalesce (get_keyword ('dav_det', params, ODRIVE.WA.DAV_GET (self.dav_item, 'detType')), '') as varchar);
             }
             self.dav_detType := cast (coalesce (get_keyword ('dav_det', params, ODRIVE.WA.DAV_GET (self.dav_item, 'detType')), '') as varchar);
             if (self.command_mode = 10)
@@ -1753,13 +1778,15 @@
             <vm:tabCaption tab="10"  tabs="13" caption="SyncML" />
             </v:template>
             <vm:tabCaption tab="11"  tabs="13" caption="IMAP Account" />
+            <v:template name="tform_171" type="simple" enabled="-- case when (self.dav_detClass = '') then 1 else 0 end">
             <vm:tabCaption tab="12"  tabs="13" caption="Google Drive" />
+            </v:template>
             </v:template>
           </div>
           <div class="contents">
             <div id="1" class="tabContent">
               <table class="form-body" cellspacing="0">
-                <v:template name="tform_9" type="simple" enabled="-- case when (self.command_mode in (5, 6)) then 1 else 0 end">
+                <v:template name="tform_9" type="simple" enabled="-- case when (self.command_mode in (5, 6)) and (self.dav_detClass = '') then 1 else 0 end">
                   <tr>
                     <th width="30%" valign="top">
                       <vm:label value="--'Destination'" />
@@ -1843,10 +1870,10 @@
                     </td>
                   </tr>
                 </v:template>
-                <v:template name="tform_12" type="simple" enabled="-- case when (((self.dav_type = 'C') and (self.dav_detType in ('', 'UnderVersioning')) and (self.dav_detClass = '')) or (self.command_mode <> 10)) then 1 else 0 end">
+                <v:template name="tform_12" type="simple" enabled="-- case when (((self.dav_type = 'C') and (self.dav_detType in ('', 'UnderVersioning'))) or (self.command_mode <> 10)) and (self.dav_detClass = '') then 1 else 0 end">
                   <vm:autoVersion />
                 </v:template>
-                <v:template name="tform_13" type="simple" enabled="-- equ(self.dav_type, 'C')">
+                <v:template name="tform_13" type="simple" enabled="-- case when (self.dav_type = 'C') then 1 else 0 end">
                   <tr>
                     <th>
                       <v:label for="dav_det" value="--'Folder type'" />
@@ -1858,11 +1885,14 @@
                           {
                             http (self.option_prepare('ResFilter',        'Smart Folder',                  'ResFilter'));
                           }
+                          else if (self.dav_detClass <> '')
+                          {
+                            http (self.option_prepare('', 'Normal', ''));
+                          }
                           else
                           {
                             declare N, M, V any;
 
-                            -- dbg_obj_print ('', self.dav_detType);
                             V := vector (
                                           0, '',           'Normal',
                                           1, 'ResFilter',  'Smart Folder',
