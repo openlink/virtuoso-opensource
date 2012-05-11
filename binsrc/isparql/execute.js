@@ -775,7 +775,7 @@ var QueryExec = function(optObj) {
 	this.rdfMiniViewChangeH = function (caller, msg, o) {
 		if (o.tabType != 'map')
 			self.currentRdfMiniTabIdx = o.tabIndex;
-		makeMiniRDFPlinkURI (caller, msg, o);
+		self.makeMiniRDFPlinkURI (caller, msg, o);
 	}
     
     this.RESULT_TYPE = {
