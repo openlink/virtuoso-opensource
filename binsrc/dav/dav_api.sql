@@ -849,6 +849,18 @@ DAV_SEARCH_ID (in path any, in what char (1)) returns any
       if (not isstring (path))
         path := DAV_CONCAT_PATH (par, null);
       id := coalesce ((select RES_ID from WS.WS.SYS_DAV_RES where RES_FULL_PATH = path), -1);
+      if ((id <> -1) and (connection_get ('dav_store') is null))
+      {
+        declare det, detcol_id any;
+
+        detcol_id := DAV_PROP_GET_INT (id, what, 'virt:DETCOL_ID', 0);
+        if (DAV_HIDE_ERROR (detcol_id) is not null)
+        {
+          det := cast (coalesce ((select COL_DET from WS.WS.SYS_DAV_COL where COL_ID = detcol_id), '') as varchar);
+          if ((det <> '') and __proc_exists ('DB.DBA.' || det || '_DAV_MAKE_ID'))
+            return call (cast (det as varchar) || '_DAV_MAKE_ID') (detcol_id, id, 'R');
+        }
+      }
     }
   else if (what = 'C')
     {
@@ -1086,8 +1098,28 @@ DAV_SEARCH_ID_OR_DET (in path any, in what char (1), out det_ret varchar, out de
       if (not isstring (path))
         path := DAV_CONCAT_PATH (par, null);
       id := coalesce ((select RES_ID from WS.WS.SYS_DAV_RES where RES_FULL_PATH = path), -1);
+      if ((id <> -1) and (connection_get ('dav_store') is null))
+      {
+        detcol_id := cast (DAV_PROP_GET_INT (id, what, 'virt:DETCOL_ID', 0) as integer);
+        if (DAV_HIDE_ERROR (detcol_id) is not null)
+        {
+          det_ret := cast (coalesce ((select COL_DET from WS.WS.SYS_DAV_COL where COL_ID = detcol_id), '') as varchar);
+          if ((det_ret <> '') and __proc_exists ('DB.DBA.' || det_ret || '_DAV_MAKE_ID'))
+          {
+            declare detcol_par any;
+
+            detcol_par := split_and_decode (DAV_SEARCH_PATH (detcol_id, 'C'), 0, '\0\0/');
+            inx := length (detcol_par)-2;
+            detcol_path_parts := subseq (par, 0, inx + 1);
+            par := subseq (par, inx + 1);
+            unreached_path_parts := par;
+            return call (cast (det_ret as varchar) || '_DAV_MAKE_ID') (detcol_id, id, 'R');
+          }
+        }
+      }
       if (id > 0)
         goto found_plain_id;
+
     }
   else if (what = 'C')
     {
@@ -1110,7 +1142,7 @@ descending_col_search:
       cname := aref (par, inx);
       -- dbg_obj_princ ('select, cname =', cname, inx);
       select COL_ID, COL_DET into cur_id, det from WS.WS.SYS_DAV_COL where COL_NAME = cname and COL_PARENT = parent_id;
-      if (det is not NULL)
+      if ((det is not NULL) and (connection_get ('dav_store') is null))
         {
           det_ret := det;
           detcol_id := cur_id;
@@ -2022,7 +2054,7 @@ DAV_COL_CREATE_INT (
 
   if (isarray (pid))
     det := pid[0];
-  else if (pid > 0)
+  else if ((pid > 0) and (connection_get ('dav_store') is null))
     det := coalesce ((select COL_DET from WS.WS.SYS_DAV_COL where COL_ID=pid), NULL);
   else
     det := null;
@@ -2235,7 +2267,7 @@ DAV_RES_UPLOAD_STRSES_INT_INNER (
       if (isarray (pid))
         det := pid[0];
       else if (pid > 0)
-        det := coalesce ((select COL_DET from WS.WS.SYS_DAV_COL where COL_ID=pid), NULL);
+        det := coalesce ((select COL_DET from WS.WS.SYS_DAV_COL where COL_ID=pid and connection_get ('dav_store') is null), NULL);
       else
         {
           -- dbg_obj_princ ('no parent, DAV_RES_UPLOAD_STRSES_INT returns ', pid);
