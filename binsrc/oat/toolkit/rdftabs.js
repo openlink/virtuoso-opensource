@@ -1499,7 +1499,7 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	    }
 
 	if (coords[0] != 0 && coords[1] != 0) {
-	    if (!!window.console) window.console.log ('found coords :' + coords[0] + ' ' + coords[1]);
+	    if (!!window.console && window.oat_debug) window.console.log ('found coords :' + coords[0] + ' ' + coords[1]);
 	    self.attachMarker(coords, item);
 	    return;
 	}
@@ -1509,7 +1509,7 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	}
 	
 	if (!pointResource && locValue) { /* geocode location */
-	    if (!!window.console) window.console.log ('geocoding: '+locValue);
+	    if (!!window.console && window.oat_debug) window.console.log ('geocoding: '+locValue);
 	    self.geoCode(locValue,item);
 		return;
 	    }
@@ -1865,9 +1865,10 @@ OAT.RDFTabs.map = function(parent,optObj) {
 		    note.send(msg, {timeout: 4000});
 		    OAT.MSG.send (self, "MAP_NOTHING_TO_SHOW", false);
 		}
+                clearTimeout (window.tryListTo);
 		self.map.optimalPosition(self.pointList.makePointsArray(false));
  	    } else {
-		setTimeout(tryList,500);
+		window.tryListTo = setTimeout(tryList,500);
 	    }
 	}
 	tryList();

@@ -87,7 +87,7 @@ OAT.Preferences = {
     stylePath: "/DAV/JS/styles/",
     endpointXmla: "/XMLA",
     version: "2.9.3",
-    build: "$Date$",
+    build: "$Date: 2011/11/17 16:38:25 $",
     httpError: 1, /* show http errors */
     allowDefaultResize: 1,
     allowDefaultDrag: 1
