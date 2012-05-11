@@ -7099,6 +7099,8 @@ create procedure DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS (in return_iris integer := 1,
   declare GRAPH_IRI varchar;
   declare GRAPH_IID IRI_ID;
   declare ctr, len integer;
+  if (lim is null)
+    lim := 2000000000;
   if (return_iris)
     result_names (GRAPH_IRI);
   else
@@ -9013,12 +9015,12 @@ create procedure DB.DBA.RDF_DICT_OF_TRIPLES_TO_FOUR_COLS (in dict any, in destru
       if (isiri_id (triples[ctr][0]))
         S := id_to_iri (triples[ctr][0]);
       else
-        S := triples[ctr][0];	
-      	
+        S := triples[ctr][0];
+
       if (isiri_id (triples[ctr][1]))
         P := id_to_iri (triples[ctr][1]);
       else
-        P := triples[ctr][1]; 	
+        P := triples[ctr][1];
       O := triples[ctr][2];
       if (isiri_id (O))
         {
@@ -9260,7 +9262,7 @@ create procedure DB.DBA.JSO_LOAD_AND_PIN_SYS_GRAPH (in graphiri varchar := null)
       (P_NAME > 'DB.DBA.SPARQL_DESC_DICT') and
       (P_NAME < 'DB.DBA.SPARQL_DESC_DICU') and
       (
-      (P_NAME like 'DB.DBA.SPARQL_DESC_DICT_QMV1_%') or
+        (P_NAME like 'DB.DBA.SPARQL_DESC_DICT_QMV1_%') or
         (P_NAME like 'DB.DBA.SPARQL_DESC_DICT_CBD_QMV1_%') or
         (P_NAME like 'DB.DBA.SPARQL_DESC_DICT_OBJCBD_QMV1_%') or
         (P_NAME like 'DB.DBA.SPARQL_DESC_DICT_SCBD_QMV1_%') ) )
@@ -11240,7 +11242,7 @@ create function DB.DBA.RDF_QM_STORE_ATABLES (in qmvid varchar, in atablesid varc
           inner_id := qmvid || '-atable-' || alias || '-sql-query';
         }
       else
-      inner_id := qmvid || '-atable-' || alias || '-' || qtable;
+        inner_id := qmvid || '-atable-' || alias || '-' || qtable;
       sparql define input:storage ""
       prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
       delete from graph <http://www.openlinksw.com/schemas/virtrdf#> { ?s ?p ?o }
@@ -11408,9 +11410,9 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
       declare alias_msg_txt, final_tblname, final_colname varchar;
       sqlcol := sqlcols [colctr];
       final_colname := DB.DBA.SQLNAME_NOTATION_TO_NAME (sqlcol[2]);
-          if (sqlcol[1] is not null)
+      if (sqlcol[1] is not null)
         alias_msg_txt := ' (alias ' || sqlcol[1] || ')';
-          else
+      else
         alias_msg_txt := ' (without alias)';
       if (starts_with (sqlcol[0], '/*[sqlquery[*/'))
         {
@@ -11446,7 +11448,7 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
           if (get_keyword (final_colname, qry_mdata) is null)
             signal ('22023', 'The result of SQLQUERY' || alias_msg_txt || ' does not contain column ' || sqlcol[2] || ', please check spelling and character case');
         }
-          else
+      else
         {
           final_tblname := DB.DBA.SQLQNAME_NOTATION_TO_QNAME (sqlcol[0], 3);
           if (not exists (select top 1 1 from DB.DBA.TABLE_COLS where "TABLE" = final_tblname))
@@ -11479,8 +11481,8 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
       else
         {
           final_tblname := DB.DBA.SQLQNAME_NOTATION_TO_QNAME (sqlcol[0], 3);
-      select COL_DTP, coalesce (COL_NULLABLE, 1) into coldtp, colnullable
-      from DB.DBA.TABLE_COLS where "TABLE" = final_tblname and "COLUMN" = final_colname;
+          select COL_DTP, coalesce (COL_NULLABLE, 1) into coldtp, colnullable
+          from DB.DBA.TABLE_COLS where "TABLE" = final_tblname and "COLUMN" = final_colname;
         }
       coltype := case (coldtp)
         when __tag of long varchar then 'longvarchar'
@@ -13526,7 +13528,7 @@ create procedure DB.DBA.RDF_GRAPH_GROUP_INS (in group_iri varchar, in memb_iri v
     signal ('RDF99', sprintf ('Graph group <%s> does not exist', group_iri));
   if (group_iri = 'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs')
     {
-    DB.DBA.RDF_GRAPH_CHECK_VISIBILITY_CHANGE (memb_iri, #i8192);
+      DB.DBA.RDF_GRAPH_CHECK_VISIBILITY_CHANGE (memb_iri, #i8192);
       if (isstring (registry_get ('DB.DBA.RDF_REPL'))
         and exists (select top 1 1 from DB.DBA.RDF_GRAPH_GROUP_MEMBER
           where RGGM_GROUP_IID = iri_to_id (UNAME'http://www.openlinksw.com/schemas/virtrdf#rdf_repl_graph_group') and RGGM_MEMBER_IID = memb_iid)

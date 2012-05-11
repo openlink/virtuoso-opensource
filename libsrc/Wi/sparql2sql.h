@@ -418,6 +418,10 @@ If not \c find_exact_specimen then an upper-level retval can be returned instead
  */
 extern SPART *sparp_find_origin_of_external_var (sparp_t *sparp, SPART *var, int find_exact_specimen);
 
+/*! This finds a position of a variable or an equivalent of that variable in the result-set array made by a sinv.
+If no suitable item found then -1 is returned */
+extern int sparp_find_sinv_rset_pos_of_varname (sparp_t *sparp, SPART *service_gp, caddr_t e_varname);
+
 /*! This finds a variable or SPAR_ALIAS in \c retvals whose name is equal to \c varname, return the expression or, if \c return_alias, the whole SPAR_ALIAS */
 extern SPART *sparp_find_subexpn_in_retlist (sparp_t *sparp, const char *varname, SPART **retvals, int return_alias);
 
@@ -627,7 +631,6 @@ extern SPART **sparp_make_qm_cases (sparp_t *sparp, SPART *triple, SPART *parent
 /*! Creates a new graph pattern of specified \c subtype as if it is parsed ar \c srcline of source text. */
 extern SPART *sparp_new_empty_gp (sparp_t *sparp, ptrlong subtype, ptrlong srcline);
 
-
 /*! This turns \c gp into a union of zero cases and adjust VARR flags of variables to make them always-NULL */
 extern void sparp_gp_produce_nothing (sparp_t *sparp, SPART *gp);
 
@@ -686,6 +689,9 @@ A special value of SPARP_MULTIPLE_OPTLOOPS tells to run default sequence of few 
 extern int sparp_rewrite_qm_optloop (sparp_t *sparp, int opt_ctr);
 #define SPARP_MULTIPLE_OPTLOOPS -20080327
 
+/*! Tries to propagate the \c outer_limit inside the \c tree */
+extern void spar_propagate_limit_as_option (sparp_t *sparp, SPART *tree, SPART *outer_limit);
+
 /*! Finalization part of sparp_rewrite_qm(), including invocation of whole support of recursive sponge. */
 extern void sparp_rewrite_qm_postopt (sparp_t *sparp);
 
@@ -703,6 +709,9 @@ extern SPART *sparp_get_option (sparp_t *sparp, SPART **options, ptrlong key);
 /*! Returns list of options of a GP or TRIPLE tree */
 extern SPART **sparp_get_options_of_tree (sparp_t *sparp, SPART *tree);
 extern void sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree, SPART **options);
+
+/*! Returns 0 of \c tree is not a req_top or has no LIMIT or OFFSET, 1 if LIMIT and/or OFFSET exist and what exist is plain integer, 2 if at lease one of LIMIT / OFFSET is an expression other than a constant integer */
+extern int sparp_req_top_has_limofs (SPART *tree);
 
 /* PART 3. SQL OUTPUT GENERATOR */
 
@@ -805,7 +814,7 @@ typedef struct spar_sqlgen_s
   SPART			*ssg_tree;		/*!< Select tree to process, of type SPAR_REQ_TOP */
   sparp_equiv_t		**ssg_equivs;		/*!< Shorthand for ssg_sparp->sparp_sg->sg_equivs */
   ptrlong		ssg_equiv_count;	/*!< Shorthand for ssg_sparp->sparp_sg->sg_equiv_count */
-  struct spar_sqlgen_s  *ssg_parent_ssg;	/*!< Ssg that prints outer subquery */
+  struct spar_sqlgen_s	*ssg_parent_ssg;	/*!< Ssg that prints outer subquery */
   struct spar_sqlgen_s	*ssg_nested_ssg;	/*!< Ssg that prints some fragment for the current one, like a text of query to send to a remote service. This is used for GC on abort */
   SPART *		ssg_wrapping_gp;	/*!< Gp of subtype SELECT_L or SERVICE_L that contains the current subquery */
   SPART *		ssg_wrapping_sinv;	/*!< service invocation description of \c ssg_wrapping_p in case of SERVICE_L gp subtype */
@@ -814,7 +823,7 @@ typedef struct spar_sqlgen_s
 /* SQL Codegen temporary values */
   dk_session_t		*ssg_out;		/*!< Output for SQL text */
   int			ssg_where_l_printed;	/*!< Flags what to print before a filter: " WHERE" if 0, " AND" otherwise */
-  const char *          ssg_where_l_text;	/*!< Text to print when (0 == ssg_where_l_printed), usually " WHERE" */
+  const char *		ssg_where_l_text;	/*!< Text to print when (0 == ssg_where_l_printed), usually " WHERE" */
   int			ssg_indent;		/*!< Number of whitespaces to indent. Actually, pairs of whitespaces, not singles */
   int			ssg_line_count;		/*!< Number of lines of generated SQL code */
   dk_set_t		ssg_valid_ret_selids;	/*!< stack of selids of GPs that can be safely used to generate SQL code for retvals (i.e. their selids are in current scope) */
@@ -845,7 +854,6 @@ void ssg_free_internals (spar_sqlgen_t *ssg);
 
 #define ssg_putchar(c) session_buffered_write_char (c, ssg->ssg_out)
 #define ssg_puts(strg) session_buffered_write (ssg->ssg_out, strg, strlen (strg))
-
 #ifdef NDEBUG
 #define ssg_puts_with_comment(strg,cmt) session_buffered_write (ssg->ssg_out, strg, strlen (strg))
 #else
@@ -860,8 +868,6 @@ void ssg_free_internals (spar_sqlgen_t *ssg);
     } } while (0);
 
 #define ssg_putbuf(buf,bytes) session_buffered_write (ssg->ssg_out, (buf), (bytes))
-
-
 
 #ifdef DEBUG
 extern void spar_sqlprint_error_impl (spar_sqlgen_t *ssg, const char *msg);
@@ -911,7 +917,7 @@ extern void sparp_jso_validate_format (sparp_t *sparp, ssg_valmode_t fmt);
 /*! Prints an SQL identifier. 'prin' instead of 'print' because it does not print whitespace or delim before the text */
 extern void ssg_prin_id (spar_sqlgen_t *ssg, const char *name);
 extern void ssg_prin_id_with_suffix (spar_sqlgen_t *ssg, const char *name, const char *suffix);
-#define SQL_ATOM_ASCII_ONLY     10
+#define SQL_ATOM_ASCII_ONLY	10
 #define SQL_ATOM_NARROW_ONLY	11
 #define SQL_ATOM_UTF8_ONLY	12
 #define SQL_ATOM_NARROW_OR_WIDE	13
@@ -935,19 +941,20 @@ extern void ssg_print_filter_expn (spar_sqlgen_t *ssg, SPART *tree);
 extern void ssg_print_retval (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t vmode, const char *asname);
 extern void ssg_print_qm_sql (spar_sqlgen_t *ssg, SPART *tree);
 
-#define SSG_RETVAL_USES_ALIAS			0x01	/*!< Return value can be printed in form 'expn AS alias' if alias name is not NULL */
-#define SSG_RETVAL_SUPPRESSED_ALIAS		0x02	/*!< Return value is not printed in form 'expn AS alias', only 'expn' but alias is known to subtree and let generate names like 'alias~0' */
-#define SSG_RETVAL_MUST_PRINT_SOMETHING		0x04	/*!< The function signals an error instead of returning failure and tries to relax SSG_RETVAL_FROM_GOOD_SELECTED to SSG_RETVAL_FROM_ANY_SELECTED as a last resort */
-#define SSG_RETVAL_CAN_PRINT_NULL		0x08	/*!< The function should print at least NULL but it can not return failure */
-#define SSG_RETVAL_FROM_GOOD_SELECTED		0x10	/*!< Use result-set columns from 'good' (non-optional) subqueries */
-#define SSG_RETVAL_FROM_ANY_SELECTED		0x20	/*!< Use result-set columns from any subqueries, including 'optional' that can make NULL */
-#define SSG_RETVAL_FROM_JOIN_MEMBER		0x40	/*!< The function can print expression like 'tablealias.colname' */
-#define SSG_RETVAL_FROM_FIRST_UNION_MEMBER	0x80
-#define SSG_RETVAL_TOPMOST			0x100
-#define SSG_RETVAL_NAME_INSTEAD_OF_TREE		0x200
-#define SSG_RETVAL_DIST_SER_LONG		0x400	/*!< Use DB.DBA.RDF_DIST_SER_LONG wrapper to let DISTINCT work with formatters. */
-#define SSG_RETVAL_OPTIONAL_MAKES_NULLABLE	0x800	/*!< Return value should be printed as nullable because it comes from, say, OPTIONAL sub-gp */
-#define SSG_RETVAL_STRICT_TYPES			0x1000	/*!< Every returned expression should either be accomplished with its (known) SQL type or be CAST-ed to the VARCHAR (esp., if it's ANY) */
+/* These bitmasks begin with 0x10, not with 0x1, in order to not conflict with SSG_PRINT_UNION_xxx bits; ssg_print_union() can get a mix */
+#define SSG_RETVAL_USES_ALIAS			0x010	/*!< Return value can be printed in form 'expn AS alias' if alias name is not NULL */
+#define SSG_RETVAL_SUPPRESSED_ALIAS		0x020	/*!< Return value is not printed in form 'expn AS alias', only 'expn' but alias is known to subtree and let generate names like 'alias~0' */
+#define SSG_RETVAL_MUST_PRINT_SOMETHING		0x040	/*!< The function signals an error instead of returning failure and tries to relax SSG_RETVAL_FROM_GOOD_SELECTED to SSG_RETVAL_FROM_ANY_SELECTED as a last resort */
+#define SSG_RETVAL_CAN_PRINT_NULL		0x080	/*!< The function should print at least NULL but it can not return failure */
+#define SSG_RETVAL_FROM_GOOD_SELECTED		0x100	/*!< Use result-set columns from 'good' (non-optional) subqueries */
+#define SSG_RETVAL_FROM_ANY_SELECTED		0x200	/*!< Use result-set columns from any subqueries, including 'optional' that can make NULL */
+#define SSG_RETVAL_FROM_JOIN_MEMBER		0x400	/*!< The function can print expression like 'tablealias.colname' */
+#define SSG_RETVAL_FROM_FIRST_UNION_MEMBER	0x800
+#define SSG_RETVAL_TOPMOST			0x1000
+#define SSG_RETVAL_NAME_INSTEAD_OF_TREE		0x2000
+#define SSG_RETVAL_DIST_SER_LONG		0x4000	/*!< Use DB.DBA.RDF_DIST_SER_LONG wrapper to let DISTINCT work with formatters. */
+#define SSG_RETVAL_OPTIONAL_MAKES_NULLABLE	0x8000	/*!< Return value should be printed as nullable because it comes from, say, OPTIONAL sub-gp */
+#define SSG_RETVAL_STRICT_TYPES			0x10000	/*!< Every returned expression should either be accomplished with its (known) SQL type or be CAST-ed to the VARCHAR (esp., if it's ANY) */
 /* descend = 0 -- at level, can descend. 1 -- at sublevel, can't descend, -1 -- at level, can't descend */
 extern int ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp,
   sparp_equiv_t *eq, int flags, ssg_valmode_t needed, const char *asname );
@@ -958,6 +965,8 @@ extern void ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *
 extern void ssg_print_fld_var_restrictions_ex (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *field, caddr_t tabid, SPART *fld_tree, SPART *triple, SPART *fld_if_outer, rdf_val_range_t *rvr);
 extern void ssg_print_fld_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *field, caddr_t tabid, SPART *triple, int fld_idx, int print_outer_filter);
 extern void ssg_print_all_table_fld_restrictions (spar_sqlgen_t *ssg, quad_map_t *qm, caddr_t alias, SPART *triple, int enabled_field_bitmask, int print_outer_filter);
+
+extern void ssg_print_limofs_expn (spar_sqlgen_t *ssg, SPART *lim, SPART *ofs);
 
 #define	SSG_TABLE_SELECT_PASS		1
 #define	SSG_TABLE_WHERE_PASS		2

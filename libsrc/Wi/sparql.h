@@ -139,8 +139,6 @@ extern "C" {
 #define SPARP_MAX_LEXDEPTH 50
 #define SPARP_MAX_SYNTDEPTH SPARP_MAX_LEXDEPTH+10
 
-#define SPARP_MAXLIMIT -1 /*!< Default value for LIMIT clause of SELECT */
-
 #define SPARP_CALLARG	1 /*!< The parser reads the macro call */
 #define SPARP_DEFARG	2 /*!< The parser reads the arglist of a defmacro and remembers variable names as is in order to know what should be substituted in body */
 #define SPARP_DEFBODY	4 /*!< The parser reads the body of a defmacro and remembers positions of variables in argument lists */
@@ -357,7 +355,7 @@ typedef struct sparp_s {
   int sparp_in_precode_expn;		/*!< If nonzero (usually 1) then the parser reads precode-safe expression so it can not contain non-global variables, if bit 2 is set then even global variables are prohibited (like it is in INSERT DATA statement) */
   int sparp_allow_aggregates_in_expn;	/*!< The parser reads result-set expressions, GROUP BY, ORDER BY, or HAVING. Each bit is responsible for one level of nesting. */
   int sparp_query_uses_aggregates;	/*!< Nonzero if there is at least one aggregate in the whole source query, (not in the current SELECT!). This is solely for bypassing expanding top retvals for "plain SPARQL" queries, not for other logic of the compiler */
-  int sparp_query_uses_sinvs;		/*!< Nonzero if there is at least one SERVICE invocation in the whole source query, (not in the current SELECT!). This forces (re) composing of \c sinv.param_varnames and \c sinv.retval_varnames lists */
+  int sparp_query_uses_sinvs;		/*!< Nonzero if there is at least one SERVICE invocation in the whole source query, (not in the current SELECT!). This forces (re) composing of \c sinv.param_varnames and \c sinv.rset_varnames lists */
   int sparp_disable_big_const;		/*!< INSERT DATA requires either an sql_comp_t for ssl or define sql:big-data-const 0. The define sets this value to 1 */
   dk_set_t sparp_created_jsos;		/*!< Get-keyword style list of created JS objects. Object IRIs are keys, types (as free-text const char *) are values. This is solely for early (and incomplete) detection of probable errors. */
 /* Environment of lex */
@@ -397,9 +395,7 @@ typedef struct sparp_s {
   caddr_t sparp_immortal_exec_uname;	/*!< Cached value returned by spar_immortal_exec_uname(). Do not use directly, call spar_immortal_exec_uname() instead! */
   caddr_t sparp_gs_app_callback;	/*!< NULL or name of application-specific callback function */
   caddr_t sparp_gs_app_uid;		/*!< NULL or ID (supposedly app user ID) for application-specific callback */
-#ifdef DEBUG
   int sparp_internal_error_runs_audit;	/*!< Flags whether the sparp_internal_error has called audit so inner sparp_internal_error should not try to re-run audit or signal but should simply report */
-#endif
 } sparp_t;
 
 
@@ -764,6 +760,7 @@ extern void spart_dump (void *tree_arg, dk_session_t *ses, int indent, const cha
 
 #define SPART_VARNAME_IS_GLOB(varname) (':' == (varname)[0])
 #define SPART_VARNAME_IS_SPECIAL(varname) ('@' == (varname)[0])
+#define SPART_VARNAME_IS_BNODE(varname) (('_' == (varname)[0]) && ('_' == (varname)[1]))
 #define SPART_VARNAME_IS_PLAIN(varname) (!SPART_VARNAME_IS_GLOB((varname)) && !SPART_VARNAME_IS_SPECIAL((varname)) && (NULL == strchr ((varname), '>')))
 #define SPART_IRI_IS_NAMED_BNODE(iri) (('_' == (iri)[0]) && (':' == (iri)[1]))
 
@@ -848,9 +845,9 @@ extern void sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_typ
 #define spar_selid_push(sparp) dbg_spar_selid_push (__FILE__, __LINE__, (sparp))
 #define spar_selid_push_reused(sparp,selid) dbg_spar_selid_push_reused (__FILE__, __LINE__, (sparp), (selid))
 #define spar_selid_pop(sparp) dbg_spar_selid_pop (__FILE__, __LINE__, (sparp))
-extern caddr_t dbg_spar_selid_push (DBG_PARAMS sparp_t *sparp);
-extern caddr_t dbg_spar_selid_push_reused (DBG_PARAMS sparp_t *sparp, caddr_t selid);
-extern caddr_t dbg_spar_selid_pop (DBG_PARAMS sparp_t *sparp);
+extern caddr_t dbg_spar_selid_push (const char *file, int line, sparp_t *sparp);
+extern caddr_t dbg_spar_selid_push_reused (const char *file, int line, sparp_t *sparp, caddr_t selid);
+extern caddr_t dbg_spar_selid_pop (const char *file, int line, sparp_t *sparp);
 #else
 extern caddr_t spar_selid_push (sparp_t *sparp);
 extern caddr_t spar_selid_push_reused (sparp_t *sparp, caddr_t selid);

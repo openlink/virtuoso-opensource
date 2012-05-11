@@ -46,7 +46,7 @@ extern "C" {
  (DV_LONG_INT != DV_TYPE_OF (top->_.req_top.offset)) || \
  (DV_LONG_INT != DV_TYPE_OF (top->_.req_top.limit)) || \
  (0 != unbox ((caddr_t)(top->_.req_top.offset))) || \
- ((SPARP_MAXLIMIT != unbox ((caddr_t)(top->_.req_top.limit))) && \
+ ((NULL != top->_.req_top.limit) && \
      ((1 != unbox ((caddr_t)(top->_.req_top.limit))) || \
        (0 != BOX_ELEMENTS (top->_.req_top.pattern->_.gp.members)) ) ) )
 
@@ -161,19 +161,19 @@ sparp_gp_trav_find_isect_with_ctor (sparp_t *sparp, SPART *curr, sparp_trav_stat
       switch (curr->_.gp.subtype)
         {
         case SELECT_L:
-        {
+          {
 #if 1 /*!!! TBD: implement rewriting of ctor fields so that a field that correspond to an alias of subquery's retval is replaced with the expression of the alias. Then use the branch that is currently not in use */
-          return SPAR_GPT_COMPLETED;
-#else
-          int isect_res;
-          sparp_t *sub_sparp = sparp_down_to_sub (sparp, curr);
-          isect_res = sparp_ctor_fields_are_disjoin_with_data_gathering (sub_sparp, (SPART **)common_env, curr->_.gp.subquery, 1);
-          sparp_up_from_sub (sparp, curr, sub_sparp);
-          if (CTOR_MAY_INTERSECTS_WHERE == isect_res)
             return SPAR_GPT_COMPLETED;
-          return SPAR_GPT_NODOWN;
+#else
+            int isect_res;
+            sparp_t *sub_sparp = sparp_down_to_sub (sparp, curr);
+            isect_res = sparp_ctor_fields_are_disjoin_with_data_gathering (sub_sparp, (SPART **)common_env, curr->_.gp.subquery, 1);
+            sparp_up_from_sub (sparp, curr, sub_sparp);
+            if (CTOR_MAY_INTERSECTS_WHERE == isect_res)
+              return SPAR_GPT_COMPLETED;
+            return SPAR_GPT_NODOWN;
 #endif
-        }
+          }
         case SERVICE_L:
           return 0; /* remote triples can not interfere with local data manipulations. This may change in the future if SERVICE group ctor template is added in SPARUL */
         }

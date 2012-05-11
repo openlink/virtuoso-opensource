@@ -280,7 +280,7 @@ ssg_sdprin_varname (spar_sqlgen_t *ssg, ccaddr_t vname)
   if (':' == vname[0])
     {
       if (!(SSG_SD_GLOBALS & ssg->ssg_sd_flags))
-    spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (like external parameters) so SPARQL query can not be composed", ssg->ssg_sd_service_name);
+        spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (like external parameters) so SPARQL query can not be composed", ssg->ssg_sd_service_name);
     }
   else if ((/* strchr (vname, '_') || --- Bug 14613 */ strchr (vname, '"') || strchr (vname, ':')) && !(SSG_SD_BI & ssg->ssg_sd_flags))
     spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (say, SQL-like names of variables) so SPARQL query can not be composed", ssg->ssg_sd_service_name);
@@ -496,7 +496,7 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
               {
                 int argctr, argcount;
                 ssg_puts (" ((");
-                ssg->ssg_indent +=2;
+                ssg->ssg_indent += 2;
                 argcount = BOX_ELEMENTS (tree->_.builtin.args);
                 for (argctr = 1; argctr < argcount; argctr++)
                   {
@@ -514,13 +514,13 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
             {
               const sparp_bif_desc_t *sbd = sparp_bif_descs + tree->_.builtin.desc_ofs;
               ssg_puts (sbd->sbd_name);
-        ssg_putchar ('(');
-        ssg->ssg_indent++;
-        ssg_sdprint_tree_list (ssg, tree->_.builtin.args, ',');
-        ssg_putchar (')');
-        ssg->ssg_indent--;
-        return;
-      }
+              ssg_putchar ('(');
+              ssg->ssg_indent++;
+              ssg_sdprint_tree_list (ssg, tree->_.builtin.args, ',');
+              ssg_putchar (')');
+              ssg->ssg_indent--;
+              return;
+            }
           }
       }
     case SPAR_FUNCALL:
@@ -531,7 +531,7 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
           {
             char *colon = strrchr (fname + 6, ':');
             if (NULL == colon)
-          fname = t_box_dv_short_string (fname + 6);
+              fname = t_box_dv_short_string (fname + 6);
             else
               {
                 colon[0] = '\0';
@@ -540,11 +540,11 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
               }
           }
         ssg_sdprin_qname (ssg, (SPART *)(fname));
-            ssg_putchar ('(');
-            ssg->ssg_indent++;
-            ssg_sdprint_tree_list (ssg, tree->_.funcall.argtrees, ',');
-            ssg_putchar (')');
-            ssg->ssg_indent--;
+        ssg_putchar ('(');
+        ssg->ssg_indent++;
+        ssg_sdprint_tree_list (ssg, tree->_.funcall.argtrees, ',');
+        ssg_putchar (')');
+        ssg->ssg_indent--;
         return;
       }
     case SPAR_GP:
@@ -574,23 +574,23 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
               spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (like nested SELECT) so SPARQL query can not be composed", ssg->ssg_sd_service_name);
             if (NULL == ssg->ssg_sd_outer_gps->data)
               {
-              ssg_puts (" (");
+                ssg_puts (" (");
                 ssg->ssg_indent++;
               }
             else
               {
-              ssg_puts (" {");
+                ssg_puts ("  { ");
                 ssg->ssg_indent += 2;
               }
             ssg_sdprint_tree (ssg, tree->_.gp.subquery);
             if (NULL == ssg->ssg_sd_outer_gps->data)
               {
-              ssg_puts (" )");
+                ssg_puts (" )");
                 ssg->ssg_indent--;
               }
             else
               {
-              ssg_puts (" }");
+                ssg_puts (" }");
                 ssg->ssg_indent -= 2;
               }
             return;
@@ -608,8 +608,8 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
               }
             END_DO_BOX_FAST;
             return;
-          case OPTIONAL_L: ssg_puts (" OPTIONAL "); break;
-          case WHERE_L: ssg_puts (" WHERE "); break;
+          case OPTIONAL_L: ssg_puts (" OPTIONAL"); break;
+          case WHERE_L: ssg_puts (" WHERE"); break;
           case SERVICE_L:
             {
               SPART *sinv = sparp_get_option (ssg->ssg_sparp, tree->_.gp.options, SPAR_SERVICE_INV);
@@ -798,8 +798,6 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
           {
             SPART *lim = tree->_.req_top.limit;
             SPART *ofs = tree->_.req_top.offset;
-            int has_lim = ((NULL != lim) && ((DV_LONG_INT != DV_TYPE_OF (lim)) || (SPARP_MAXLIMIT != unbox ((caddr_t)(lim)))));
-            int has_ofs = ((NULL != ofs) && ((DV_LONG_INT != DV_TYPE_OF (ofs)) || (0 != unbox ((caddr_t)(ofs)))));
             if (0 != BOX_ELEMENTS_0 (tree->_.req_top.groupings))
               {
                 ssg_newline (0);
@@ -812,26 +810,27 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
                 ssg_puts ("HAVING ");
                 ssg_sdprint_tree (ssg, tree->_.req_top.having);
               }
-            if (0 != BOX_ELEMENTS_0 (tree->_.req_top.order) && ((SELECT_L == tree->_.req_top.subtype) || (DISTINCT_L == tree->_.req_top.subtype) || has_lim || has_ofs))
+            if (0 != BOX_ELEMENTS_0 (tree->_.req_top.order)
+              && ((SELECT_L == tree->_.req_top.subtype) || (DISTINCT_L == tree->_.req_top.subtype) || (NULL != lim) || (NULL != ofs)) )
               {
                 ssg_newline (0);
                 ssg_puts ("ORDER BY ");
                 ssg_sdprint_tree_list (ssg, tree->_.req_top.order, ' ');
               }
-            if (has_lim)
+            if (NULL != lim)
               {
                 if ((DV_LONG_INT != DV_TYPE_OF (lim)) && !(SSG_SD_BI & ssg->ssg_sd_flags))
                   spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (like expression in LIMIT clause) so SPARQL query can not be composed", ssg->ssg_sd_service_name);
                 ssg_newline (0);
-                ssg_puts ("LIMIT ");
+                ssg_puts ("LIMIT");
                 ssg_sdprint_tree (ssg, lim);
               }
-            if (has_ofs)
+            if (NULL != ofs)
               {
                 if ((DV_LONG_INT != DV_TYPE_OF (ofs)) && !(SSG_SD_BI & ssg->ssg_sd_flags))
                   spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (like expression in OFFSET clause) so SPARQL query can not be composed", ssg->ssg_sd_service_name);
                 ssg_newline (0);
-                ssg_puts ("OFFSET ");
+                ssg_puts ("OFFSET");
                 ssg_sdprint_tree (ssg, ofs);
               }
           }
@@ -953,7 +952,7 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
             ssg_puts (" ,");
             ssg_newline (0);
           }
-            ssg_sdprint_tree (ssg, tree->_.triple.tr_object);
+        ssg_sdprint_tree (ssg, tree->_.triple.tr_object);
         option_count = BOX_ELEMENTS_0 (tree->_.triple.options);
         if (0 != option_count)
           {
@@ -965,8 +964,8 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
           {
             if (ssg->ssg_sd_forgotten_dot)
               {
-            ssg_puts (" .");
-            ssg->ssg_indent -= 4;
+                ssg_puts (" .");
+                ssg->ssg_indent -= 4;
                 ssg->ssg_sd_forgotten_dot = 0;
               }
             if (place_qm)

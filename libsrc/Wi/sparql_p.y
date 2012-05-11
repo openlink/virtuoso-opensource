@@ -350,11 +350,11 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <backstack> spar_bindvals
 %type <tree> spar_bindval
 %type <tree> spar_solution_modifier
-%type <backstack> spar_group_clause_opt
+%type <trees> spar_group_clause_opt
 %type <backstack> spar_group_expns
 %type <tree> spar_group_expn
 %type <tree> spar_having_clause_opt
-%type <backstack> spar_order_clause_opt
+%type <trees> spar_order_clause_opt
 %type <backstack> spar_order_conditions
 %type <tree> spar_order_condition
 %type <token_type> spar_asc_or_desc_opt
@@ -1018,9 +1018,9 @@ spar_bindval
 
 spar_solution_modifier	/* [14]*	SolutionModifier	 ::=  GroupClause? HavingClause? OrderClause? */
 			/*... ((LimitClause OffsetClause?) | (OffsetClause LimitClause?))?	*/
-	: spar_group_clause_opt spar_having_clause_opt spar_order_clause_opt						{ $$ = spar_make_wm (sparp_arg, NULL, (SPART **)t_revlist_to_array ($1), $2, (SPART **)t_revlist_to_array ($3), (SPART *)t_box_num (SPARP_MAXLIMIT), (SPART *)t_box_num (0)); }
-	| spar_group_clause_opt spar_having_clause_opt spar_order_clause_opt spar_limit_clause spar_offset_clause_opt	{ $$ = spar_make_wm (sparp_arg, NULL, (SPART **)t_revlist_to_array ($1), $2, (SPART **)t_revlist_to_array ($3), $4, $5); }
-	| spar_group_clause_opt spar_having_clause_opt spar_order_clause_opt spar_offset_clause spar_limit_clause_opt	{ $$ = spar_make_wm (sparp_arg, NULL, (SPART **)t_revlist_to_array ($1), $2, (SPART **)t_revlist_to_array ($3), $5, $4); }
+	: spar_group_clause_opt spar_having_clause_opt spar_order_clause_opt						{ $$ = spar_make_wm (sparp_arg, NULL, $1, $2, $3, NULL, (SPART *)t_box_num (0)); }
+	| spar_group_clause_opt spar_having_clause_opt spar_order_clause_opt spar_limit_clause spar_offset_clause_opt	{ $$ = spar_make_wm (sparp_arg, NULL, $1, $2, $3, $4, $5); }
+	| spar_group_clause_opt spar_having_clause_opt spar_order_clause_opt spar_offset_clause spar_limit_clause_opt	{ $$ = spar_make_wm (sparp_arg, NULL, $1, $2, $3, $5, $4); }
 	;
 
 spar_group_clause_opt	/* [Virt]	GroupClause	 ::=  'GROUP' 'BY' GroupExpn+	*/
@@ -1029,7 +1029,7 @@ spar_group_clause_opt	/* [Virt]	GroupClause	 ::=  'GROUP' 'BY' GroupExpn+	*/
 		spar_selid_push_reused (sparp_arg, sparp_arg->sparp_env->spare_top_retval_selid);
 		sparp_arg->sparp_allow_aggregates_in_expn |= 1; }
 	    spar_group_expns	{
-		spar_selid_pop (sparp_arg); $$ = $4;
+		spar_selid_pop (sparp_arg); $$ = (SPART **)t_revlist_to_array ($4);
 		sparp_arg->sparp_allow_aggregates_in_expn &= ~1; }
 	;
 
@@ -1063,7 +1063,7 @@ spar_order_clause_opt	/* [15]	OrderClause	 ::=  'ORDER' 'BY' OrderCondition+	*/
 		spar_selid_push_reused (sparp_arg, sparp_arg->sparp_env->spare_top_retval_selid);
 		sparp_arg->sparp_allow_aggregates_in_expn |= 1; }
 	    spar_order_conditions	{
-		spar_selid_pop (sparp_arg); $$ = $4;
+		spar_selid_pop (sparp_arg); $$ = (SPART **)t_revlist_to_array ($4);
 		sparp_arg->sparp_allow_aggregates_in_expn &= ~1; }
 	;
 
@@ -1089,21 +1089,21 @@ spar_asc_or_desc_opt	/* ::=  ( 'ASC' | 'DESC' )? */
 	;
 
 spar_limit_clause_opt	/* [17]	LimitClause	 ::=  'LIMIT' INTEGER	*/
-	: /* empty */ { $$ = (SPART *)t_box_num (SPARP_MAXLIMIT); }
+	: /* empty */ { $$ = NULL; }
 	| spar_limit_clause
 	;
 
 spar_limit_clause	/* [17*]	LimitClause	 ::=  'LIMIT' PrecodeExpn	*/
-	: LIMIT_L spar_precode_expn { $$ = $2; }
+	: LIMIT_L spar_precode_expn { $$ = ((NULL == $2) ? t_box_num_nonull (0) : $2); }
 	;
 
 spar_offset_clause_opt	/* [18]	OffsetClause	 ::=  'OFFSET' INTEGER	*/
-	: /* empty */ { $$ = (SPART *)t_box_num (0); }
+	: /* empty */ { $$ = NULL; }
 	| spar_offset_clause
 	;
 
 spar_offset_clause	/* [18*]	OffsetClause	 ::=  'OFFSET' PrecodeExpn	*/
-	: OFFSET_L spar_precode_expn { $$ = $2; }
+	: OFFSET_L spar_precode_expn { $$ = ((NULL != $2) ? $2 : ((SPART *)t_box_num_nonull (0))); }
 	;
 
 spar_group_gp		/* [19]*	GroupGraphPattern	 ::=  '{' ( GraphPattern | SelectQuery | ServiceReq ) '}'	*/
@@ -1211,7 +1211,7 @@ spar_group_or_union_gp	/* [24]	GroupOrUnionGraphPattern	 ::=  GroupGraphPattern 
 		    spar_gp_add_member (sparp_arg, $5);
 		    $$ = spar_gp_finalize (sparp_arg, NULL); }
 		else {
-		    $$->_.gp.members = t_list_concat_tail ($$->_.gp.members, 1, $5);
+		    $$->_.gp.members = (SPART **)t_list_concat_tail ((caddr_t)($$->_.gp.members), 1, $5);
 		    $$ = $1; }
 		}
 	;
@@ -1286,8 +1286,8 @@ spar_service_req	/* [Virt]	ServiceRequest ::=  'SERVICE' IRIref ServiceOptionLis
 	    spar_group_gp {
 		sparp_arg->sparp_permitted_syntax = unbox($<boxes>3[0]);
 		sparp_arg->sparp_env->spare_storage_name = $<boxes>3[1];
-		sparp_arg->sparp_storage = $<boxes>3[2];
-		sparp_arg->sparp_storage_is_set = $<boxes>3[3];
+		sparp_arg->sparp_storage = (quad_storage_t *)($<boxes>3[2]);
+		sparp_arg->sparp_storage_is_set = (ptrlong)($<boxes>3[3]);
 		$9->_.gp.options = (SPART **)t_list_concat_tail (
 		  (caddr_t)($9->_.gp.options), 2,
 		  SPAR_SERVICE_INV, t_set_pop (&(sparp_env()->spare_context_sinvs)) );

@@ -367,6 +367,7 @@ sparp_trav_out_clauses_int (sparp_t *sparp, SPART *req_top,
   lists[1] = req_top->_.req_top.retvals;
   lists[2] = req_top->_.req_top.groupings;
   lists[3] = req_top->_.req_top.order;
+  sts_this->sts_parent = sts_this->sts_ancestor_gp = req_top->_.req_top.pattern;
   for (list_ctr = 0; list_ctr <= 4; list_ctr++)
     {
       SPART **list = ((4 == list_ctr) ? &(req_top->_.req_top.having) : lists [list_ctr]);
@@ -1037,7 +1038,7 @@ spar_macroprocess_tree (sparp_t *sparp, SPART *tree, spar_mproc_ctx_t *ctx)
         return tree;
       }
     }
-  
+
 }
 
 /* EQUIVALENCE CLASSES */
@@ -1136,7 +1137,7 @@ sparp_equiv_get (sparp_t *sparp, SPART *haystack_gp, SPART *needle_var, int flag
     }
   if ((flags & SPARP_EQUIV_INS_VARIABLE) && strcmp (needle_var->_.var.selid, haystack_gp->_.gp.selid))
     {
-/* this masqeraded an error: 
+/* this masqeraded an error:
       if (needle_var->_.var.selid == uname_nil)
         needle_var->_.var.selid = haystack_gp->_.gp.selid;
       else */
@@ -1222,7 +1223,7 @@ namesake_found:
         curr_eq->e_subquery_uses++;
       if (SPARP_EQUIV_ADD_OPTIONAL_READ & flags)
         curr_eq->e_optional_reads++;
-    return curr_eq;
+      return curr_eq;
     }
   curr_vars = curr_eq->e_vars;
   varcount = curr_eq->e_var_count;
@@ -3063,6 +3064,15 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
       tgt = (SPART *)t_box_copy ((caddr_t) orig);
       tgt->_.list.items = sparp_treelist_full_clone_int (sparp, orig->_.list.items, parent_gp);
       return tgt;
+    case SPAR_SERVICE_INV:
+      tgt = (SPART *)t_box_copy ((caddr_t) orig);
+      tgt->_.sinv.own_idx = 0; /* will be set by spar_add_service_inv_to_sg() below */
+      /* endpoint, iri_params, syntax, storage_iri, in_list_implicit are not copied --- no need so far */
+      tgt->_.sinv.param_varnames = (caddr_t *)t_box_copy ((caddr_t)(orig->_.sinv.param_varnames));
+      tgt->_.sinv.rset_varnames = (caddr_t *)t_box_copy ((caddr_t)(orig->_.sinv.rset_varnames));
+      tgt->_.sinv.defines = sparp_treelist_full_copy (sparp, orig->_.sinv.defines, parent_gp);
+      spar_add_service_inv_to_sg (sparp, tgt);
+      return tgt;
     case SPAR_DEFMACRO:
       spar_internal_error (sparp, "sparp_" "tree_full_clone_int(): attempt of copying a macro definition");
       return NULL;
@@ -3943,7 +3953,7 @@ sparp_find_origin_of_external_var (sparp_t *sparp, SPART *var, int find_exact_sp
   if (NULL != esub_res)
     {
       if (find_exact_specimen)
-    return esub_res;
+        return esub_res;
       goto make_rv; /* see below */
     }
   DO_BOX_FAST (ptrlong, subeq_idx, subv_ctr, esrc->e_subvalue_idxs)
@@ -3969,6 +3979,38 @@ make_rv:
   rv->_.retval.selid = esub_res_gp->_.gp.selid;
   rv->_.retval.vname = var->_.var.vname;
   return rv;
+}
+
+int
+sparp_find_sinv_rset_pos_of_varname (sparp_t *sparp, SPART *service_gp, caddr_t e_varname)
+{
+  int pos;
+  sparp_equiv_t *e_eq;
+  SPART *sinv = sparp_get_option (sparp, service_gp->_.gp.options, SPAR_SERVICE_INV);
+/* An optimistic search first: */
+  DO_BOX_FAST_REV (caddr_t, ret_vname, pos, sinv->_.sinv.rset_varnames)
+    {
+      if (!strcmp (e_varname, ret_vname))
+        return pos;
+    }
+  END_DO_BOX_FAST_REV;
+/* In order to avoid bug 14730, now it's time to check for appropriate synonyms */
+  e_eq = sparp_equiv_get (sparp, service_gp, (SPART *)e_varname, SPARP_EQUIV_GET_NAMESAKES);
+  if (NULL != e_eq)
+    {
+      int vnamectr;
+      DO_BOX_FAST_REV (caddr_t, e_eq_varname, vnamectr, e_eq->e_varnames)
+        {
+          DO_BOX_FAST_REV (caddr_t, ret_vname, pos, sinv->_.sinv.rset_varnames)
+            {
+              if (!strcmp (e_eq_varname, ret_vname))
+                return pos;
+            }
+          END_DO_BOX_FAST_REV;
+        }
+      END_DO_BOX_FAST_REV;
+    }
+  return -1;
 }
 
 SPART *
@@ -4056,6 +4098,7 @@ sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree, SPART **options)
         {
         case INFERENCE_L: has_inference = 1; continue;
         case OFFBAND_L: case SCORE_L: case SCORE_LIMIT_L: has_ft = 1; continue;
+        case GEO_L: case PRECISION_L: has_geo = 1; continue;
         case IFP_L: case SAME_AS_L: case SAME_AS_O_L: case SAME_AS_P_L: case SAME_AS_S_L: case SAME_AS_S_O_L: has_inference = 1; continue;
         case TABLE_OPTION_L: continue;
         case TRANSITIVE_L: has_transitive = 1; continue;

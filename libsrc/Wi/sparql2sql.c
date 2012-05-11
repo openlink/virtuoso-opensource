@@ -90,7 +90,7 @@ sparp_gp_trav_list_subquery_retvals (sparp_t *sparp, SPART *curr, sparp_trav_sta
     }
   END_DO_BOX_FAST;
   for (ctr = BOX_ELEMENTS_0 (options); 1 < ctr; ctr -= 2)
-        {
+    {
       ptrlong key = ((ptrlong)(options[ctr-2]));
       SPART *val = options[ctr-1];
       caddr_t name = NULL;
@@ -100,7 +100,7 @@ sparp_gp_trav_list_subquery_retvals (sparp_t *sparp, SPART *curr, sparp_trav_sta
         case T_STEP_L: name = val->_.alias.aname; break;
         }
       if ((NULL != name) && !SPART_VARNAME_IS_GLOB(name) && (0 > dk_set_position_of_string (((dk_set_t *)(common_env))[0], name)))
-      t_set_push ((dk_set_t *)(common_env), name);
+        t_set_push ((dk_set_t *)(common_env), name);
     }
   return 0;
 }
@@ -224,7 +224,7 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
         NULL );
       if (0 == lnar.agg_found)
         return;
-      if (0 != BOX_ELEMENTS_0 (query->_.req_top.groupings))
+      if (NULL != query->_.req_top.groupings)
         {
           dk_set_t names_in_groupings = NULL;
           sparp_gp_localtrav_treelist (sparp, query->_.req_top.groupings,
@@ -248,7 +248,7 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
           t_set_push (&new_vars, var);
         }
       t_set_pop (&(env->spare_selids));
-      query->_.req_top.groupings = (SPART **)t_revlist_to_array (new_vars);
+      query->_.req_top.groupings = (SPART **)t_revlist_to_array_or_null (new_vars);
       return;
     }
   {
@@ -815,7 +815,7 @@ typedef struct so_BOP_OR_filter_ctx_s
 {
   sparp_t *bofc_sparp;			/*!< parser/compiler context, to not pass an extra argument */
   SPART *bofc_var_sample;		/*!< Common optimizable variable in question */
-  dk_set_t bofc_strings;	/*!< Collected string values, they may be convert into sprintf format strings to tighten equiv of the common variable */
+  dk_set_t bofc_strings;		/*!< Collected string values, they may be convert into sprintf format strings to tighten equiv of the common variable */
   ptrlong bofc_not_optimizable;		/*!< Teh filter is of complicated form or the variable is not common or global */
   ptrlong bofc_can_be_iri;		/*!< Flag if there's at least equality to a IRI */
   ptrlong bofc_can_be_string;		/*!< Flag if there's at least equality to a literal string */
@@ -857,7 +857,7 @@ sparp_optimize_BOP_OR_filter_walk_rexpn (SPART *rexpn, so_BOP_OR_filter_ctx_t *c
       else
         {
           ctx->bofc_can_be_string++;
-      dk_set_push (&(ctx->bofc_strings), lit_val);
+          dk_set_push (&(ctx->bofc_strings), lit_val);
         }
       return 0;
 /* !!! TBD support for constant expressions here */
@@ -1012,10 +1012,10 @@ sparp_optimize_BOP_OR_filter (sparp_t *sparp, SPART *curr, SPART *filt)
   if (0 == ctx.bofc_can_be_nonstringlit)
     {
       new_rvr.rvrRestrictions |= SPART_VARR_SPRINTFF;
-  new_rvr.rvrSprintffCount = dk_set_length (ctx.bofc_strings);
-  new_rvr.rvrSprintffs = (ccaddr_t *)t_alloc_box (new_rvr.rvrSprintffCount * sizeof(caddr_t), DV_ARRAY_OF_POINTER);
-  for (sff_ctr = new_rvr.rvrSprintffCount; sff_ctr--; /* no step */)
-    new_rvr.rvrSprintffs[sff_ctr] = sprintff_from_strg (dk_set_pop (&(ctx.bofc_strings)), 1);
+      new_rvr.rvrSprintffCount = dk_set_length (ctx.bofc_strings);
+      new_rvr.rvrSprintffs = (ccaddr_t *)t_alloc_box (new_rvr.rvrSprintffCount * sizeof(caddr_t), DV_ARRAY_OF_POINTER);
+      for (sff_ctr = new_rvr.rvrSprintffCount; sff_ctr--; /* no step */)
+        new_rvr.rvrSprintffs[sff_ctr] = sprintff_from_strg (dk_set_pop (&(ctx.bofc_strings)), 1);
     }
   else
     {
@@ -1366,11 +1366,11 @@ select * where { graph <g1> { ?s1 ?p1 ?o1 . filter (?o1 = <const>) } optional { 
             sparp_gp_detach_filter (sparp, curr, fctr, NULL);
           else
             curr->_.gp.filters[fctr] = new_filt;
-            continue;
+          continue;
         }
       ret = sparp_filter_to_equiv (sparp, curr, filt);
       if (0 != ret)
-      sparp_gp_detach_filter (sparp, curr, fctr, NULL);
+        sparp_gp_detach_filter (sparp, curr, fctr, NULL);
     }
   return 0;
 }
@@ -1673,7 +1673,6 @@ sparp_gp_trav_remove_unused_aliases (sparp_t *sparp, SPART *curr, sparp_trav_sta
   return SPAR_GPT_ENV_PUSH;
 }
 
-
 void
 sparp_make_aliases (sparp_t *sparp)
 {
@@ -1796,15 +1795,12 @@ sparp_gp_trav_label_external_vars_expn_subq (sparp_t *sparp, SPART *curr, sparp_
   sparp_label_external_vars_env_t *sleve = (sparp_label_external_vars_env_t *)common_env;
   SPART *anc_gp = sts_this->sts_ancestor_gp;
   sparp_t *sub_sparp = sparp_down_to_sub (sparp, curr);
-  if ((NULL != anc_gp) || (NULL != sparp->sparp_env->spare_bindings_vars) || (NULL != sleve->parent_gps_for_var_search))
-    {
-      s_node_t tmp_stack;
-      sparp_label_external_vars_env_t tmp_sleve;
-      tmp_stack.data = anc_gp;
-      tmp_stack.next = sleve->parent_gps_for_var_search;
-      tmp_sleve.parent_gps_for_var_search = tmp_sleve.parent_gps_for_table_subq = &tmp_stack;
-      sparp_label_external_vars (sub_sparp, &tmp_sleve);
-    }
+  s_node_t tmp_stack;
+  sparp_label_external_vars_env_t tmp_sleve;
+  tmp_stack.data = anc_gp;
+  tmp_stack.next = sleve->parent_gps_for_var_search;
+  tmp_sleve.parent_gps_for_var_search = tmp_sleve.parent_gps_for_table_subq = &tmp_stack;
+  sparp_label_external_vars (sub_sparp, &tmp_sleve);
   sparp_up_from_sub (sparp, curr, sub_sparp);
   return 0;
 }
@@ -5918,8 +5914,8 @@ sparp_fill_sinv_varlists (sparp_t *sparp, SPART *root)
               if (0 > dk_set_position_of_string (used_globals, param_var_name))
                 {
                   if (!sinv->_.sinv.in_list_implicit)
-                spar_error (sparp, "SERVICE <%.200s> (...) declares IN ?%.200s variable but an IN variable should be used both inside and outside the SERVICE clause",
-                  sinv->_.sinv.endpoint, param_var_name );
+                    spar_error (sparp, "SERVICE <%.200s> (...) declares IN ?%.200s variable but an IN variable should be used both inside and outside the SERVICE clause",
+                      sinv->_.sinv.endpoint, param_var_name );
                   param_varnames_ptr[0] = t_list_remove_nth ((caddr_t)(param_varnames_ptr[0]), varctr);
                 }
             }
@@ -5947,6 +5943,7 @@ sparp_fill_sinv_varlists (sparp_t *sparp, SPART *root)
       SPARP_FOREACH_GP_EQUIV (sparp, gp, eqctr, eq)
         {
           int eq_varname_ctr;
+          caddr_t specimen_varname = NULL;
           if (0 == BOX_ELEMENTS_0 (eq->e_receiver_idxs))
             continue; /* The eq is used only internally, no need to return values */
           DO_BOX_FAST_REV (caddr_t, eq_var_name, eq_varname_ctr, eq->e_varnames)
@@ -5957,9 +5954,17 @@ sparp_fill_sinv_varlists (sparp_t *sparp, SPART *root)
                     goto name_from_eq_is_found_in_params; /* see below */
                 }
               END_DO_BOX_FAST_REV;
+              if (SPART_VARNAME_IS_GLOB (eq_var_name))
+                continue;
+              if (SPART_VARNAME_IS_SPECIAL (eq_var_name))
+                continue;
+              if (SPART_VARNAME_IS_BNODE (eq_var_name))
+                continue;
+              specimen_varname = eq_var_name;
             }
           END_DO_BOX_FAST_REV;
-          t_set_push (&rset_varnames, eq->e_varnames[0]);
+          if (NULL != specimen_varname)
+            t_set_push (&rset_varnames, specimen_varname);
 name_from_eq_is_found_in_params: ;
         }
       END_SPARP_FOREACH_GP_EQUIV;
@@ -5994,7 +5999,6 @@ sparp_tweak_order_of_iter (sparp_t *sparp, SPART **obys)
   END_DO_BOX_FAST;
 }
 
-
 int
 sparp_gp_trav_rewrite_qm_postopt (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
@@ -6005,6 +6009,146 @@ sparp_gp_trav_rewrite_qm_postopt (sparp_t *sparp, SPART *curr, sparp_trav_state_
   sparp_rewrite_qm_postopt (sub_sparp);
   sparp_up_from_sub (sparp, curr, sub_sparp);
   return 0;
+}
+
+int
+sparp_req_top_has_limofs (SPART *tree)
+{
+  if (SPAR_REQ_TOP != SPART_TYPE (tree))
+    return 0;
+  if ((DV_LONG_INT == DV_TYPE_OF (tree->_.req_top.limit)) && (DV_LONG_INT == DV_TYPE_OF (tree->_.req_top.offset)))
+    {
+      long lim = unbox ((caddr_t)(tree->_.req_top.limit));
+      long ofs = unbox ((caddr_t)(tree->_.req_top.offset));
+      if ((NULL == tree->_.req_top.limit) && (0 == ofs))
+        return 0;
+      return 1;
+    }
+  return 2;
+}
+
+SPART *
+sparp_limit_for_cutting_inner_limits (sparp_t *sparp, SPART *lim, SPART *ofs)
+{
+  if (NULL == lim)
+    return NULL;
+  if (NULL == ofs)
+    return lim;
+  if ((DV_LONG_INT == DV_TYPE_OF (lim)) && (DV_LONG_INT == DV_TYPE_OF (ofs)))
+    return (SPART *)t_box_num_nonull (unbox ((caddr_t)lim) + ((0 < unbox ((caddr_t)ofs)) ? unbox ((caddr_t)ofs) : 0));
+  return spartlist (sparp, 3, BOP_PLUS, lim,
+      spar_make_funcall (sparp, 0, "bif:__max_notnull", (SPART **)t_list (2, ofs, t_box_num_nonull (0))) );
+}
+
+SPART *
+sparp_cut_inner_limit_with_outer_limit (sparp_t *sparp, SPART *inner_limit, SPART *inner_offset, SPART *outer_limit)
+{
+  if (NULL == outer_limit)
+    return inner_limit;
+  if ((DV_LONG_INT == DV_TYPE_OF (outer_limit)) && (DV_LONG_INT == DV_TYPE_OF (inner_offset)) && (DV_LONG_INT == DV_TYPE_OF (inner_limit)))
+    {
+      boxint val = unbox ((caddr_t)outer_limit) + unbox ((caddr_t)inner_offset);
+      return (unbox ((caddr_t)inner_limit) < val) ? inner_limit : (SPART *)t_box_num_nonull (val);
+    }
+  return spar_make_funcall (sparp, 0, "bif:__min_notnull", (SPART **)t_list (3,
+      inner_limit,
+      spartlist (sparp, 3, BOP_PLUS, outer_limit,
+        spar_make_funcall (sparp, 0, "bif:__max_notnull", (SPART **)t_list (2, inner_offset, t_box_num_nonull (0))) ),
+      t_box_num_nonull (0) ) );
+}
+
+void
+spar_propagate_limit_as_option (sparp_t *sparp, SPART *tree, SPART *outer_limit)
+{
+  switch (SPART_TYPE (tree))
+    {
+    case SPAR_REQ_TOP:
+      tree->_.req_top.limit = sparp_cut_inner_limit_with_outer_limit (sparp, tree->_.req_top.limit, tree->_.req_top.offset, outer_limit);
+      if ((NULL != tree->_.req_top.limit) && (DISTINCT_L != tree->_.req_top.subtype) && (NULL == tree->_.req_top.groupings) && (NULL == tree->_.req_top.having))
+        spar_propagate_limit_as_option (sparp, tree->_.req_top.pattern,
+          sparp_limit_for_cutting_inner_limits (sparp, tree->_.req_top.limit, tree->_.req_top.offset) );
+      return;
+    case SPAR_GP:
+      {
+        int eq_ctr, filt_eq_mask;
+        if (NULL != tree->_.gp.options)
+          {
+            SPART *lim = sparp_get_option (sparp, tree->_.gp.options, LIMIT_L);
+            if (NULL != lim)
+              {
+                outer_limit = sparp_cut_inner_limit_with_outer_limit (sparp, lim, NULL, outer_limit);
+                if (NULL != outer_limit)
+                  sparp_set_option (sparp, &(tree->_.gp.options), LIMIT_L, outer_limit, SPARP_SET_OPTION_REPLACING);
+              }
+          }
+        if (NULL == outer_limit)
+          return;
+        if (0 != BOX_ELEMENTS_0 (tree->_.gp.filters))
+          return;
+        filt_eq_mask = 0;
+        SPARP_FOREACH_GP_EQUIV (sparp, tree, eq_ctr, eq)
+          {
+            if (eq->e_replaces_filter) return;
+          }
+        END_SPARP_FOREACH_GP_EQUIV;
+        switch (tree->_.gp.subtype)
+          {
+          case SELECT_L:
+            spar_propagate_limit_as_option (sparp, tree->_.gp.subquery, outer_limit);
+            return;
+          case UNION_L:
+            {
+              int memb_ctr;
+              DO_BOX_FAST (SPART *, memb, memb_ctr, tree->_.gp.members)
+                {
+                  spar_propagate_limit_as_option (sparp, memb, outer_limit);
+                }
+              END_DO_BOX_FAST;
+              if (NULL != outer_limit)
+                sparp_set_option (sparp, &(tree->_.gp.options), LIMIT_L, outer_limit, SPARP_SET_OPTION_REPLACING);
+              return;
+            }
+          case SERVICE_L:
+            if (NULL != outer_limit)
+              sparp_set_option (sparp, &(tree->_.gp.options), LIMIT_L, outer_limit, SPARP_SET_OPTION_REPLACING);
+            if (DV_LONG_INT != DV_TYPE_OF (outer_limit))
+              return;
+            /* no break */
+          case 0: case WHERE_L:
+            {
+              int memb_ctr, memb_count = BOX_ELEMENTS_0 (tree->_.gp.members);
+              int nonoptional_ctr = 0;
+              if (0 == memb_count)
+                return;
+              for (memb_ctr = 0; memb_ctr < memb_count; memb_ctr++)
+                {
+                  SPART *memb = tree->_.gp.members[memb_ctr];
+                  if ((SPAR_GP != SPART_TYPE (memb)) || (OPTIONAL_L != memb->_.gp.subtype))
+                    nonoptional_ctr++;
+                }
+              if (1 == nonoptional_ctr)
+                {
+                  for (memb_ctr = 0; memb_ctr < memb_count; memb_ctr++)
+                    {
+                      SPART *memb = tree->_.gp.members[memb_ctr];
+                      spar_propagate_limit_as_option (sparp, memb, outer_limit);
+                    }
+                }
+              if ((0 == tree->_.gp.subtype) && (NULL != outer_limit))
+                sparp_set_option (sparp, &(tree->_.gp.options), LIMIT_L, outer_limit, SPARP_SET_OPTION_REPLACING);
+              return;
+            }
+          }
+        return;
+      }
+    case SPAR_TRIPLE:
+      {
+        if (NULL == outer_limit)
+          return;
+        sparp_set_option (sparp, &(tree->_.triple.options), LIMIT_L, outer_limit, SPARP_SET_OPTION_REPLACING);
+        return;
+      }
+    }
 }
 
 void
@@ -6063,6 +6207,7 @@ retry_after_reducing_optionals:
       spar_optimize_retvals_of_modify (sparp, root);
       break;
     }
+  spar_propagate_limit_as_option (sparp, root, NULL);
   if (NULL != sparp->sparp_parent_sparp)
     goto end_of_equiv_checks; /* see below */
   equivs = sparp->sparp_sg->sg_equivs;
@@ -6175,7 +6320,7 @@ sparp_rewrite_grab (sparp_t *sparp)
   sparp_of_seed->sparp_expr->_.req_top.subtype = SELECT_L;
   sparp_of_seed->sparp_expr->_.req_top.retvals = grab_retvals;
   sparp_of_seed->sparp_expr->_.req_top.retvalmode_name = t_box_string ("LONG");
-  sparp_of_seed->sparp_expr->_.req_top.limit = (SPART *)t_box_num (SPARP_MAXLIMIT);
+  sparp_of_seed->sparp_expr->_.req_top.limit = NULL;
   sparp_of_seed->sparp_expr->_.req_top.offset = 0;
   sparp_of_seed->sparp_env->spare_globals_mode = SPARE_GLOBALS_ARE_COLONUMBERED;
   sparp_of_seed->sparp_env->spare_global_num_offset = 1;
@@ -6399,11 +6544,8 @@ ssg_select_known_graphs_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *
   caddr_t formatmode_name	= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #3 */
   caddr_t retname		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #4 */
   caddr_t retselid		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #5 */
-  boxint lim			= unbox ((caddr_t)(spart->_.codegen.args [argctr++]));	/* #6 */
-  boxint ofs			= unbox ((caddr_t)(spart->_.codegen.args [argctr++]));	/* #7 */
-  int has_limofs = 0;
-  char limofs_strg[40] = "";
-  char limplusofs_strg[40] = "";
+  SPART *lim_expn		= spart->_.codegen.args [argctr++];	/* #6 */
+  SPART *ofs_expn		= spart->_.codegen.args [argctr++];	/* #7 */
   SPART	*tree = ssg->ssg_tree;
   ptrlong subtype = tree->_.req_top.subtype;
   const char *formatter, *agg_formatter, *agg_meta;
@@ -6415,14 +6557,6 @@ ssg_select_known_graphs_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *
     retvalmode = ssg_find_valmode_by_name (valmode_name);
   if (((NULL != formatter) || (NULL != agg_formatter)) && (NULL != retvalmode) && (SSG_VALMODE_LONG != retvalmode))
     spar_sqlprint_error ("'output:valmode' declaration conflicts with 'output:format'");
-  if ((SPARP_MAXLIMIT != lim) || (0 != ofs))
-    {
-      has_limofs = 1;
-      if (0 != ofs)
-        snprintf (limofs_strg, sizeof (limofs_strg), " TOP " BOXINT_FMT ", " BOXINT_FMT, ofs, lim);
-      else
-        snprintf (limofs_strg, sizeof (limofs_strg), " TOP " BOXINT_FMT, lim);
-    }
   if (NULL == retvalmode)
     retvalmode = ((NULL != formatter) ? SSG_VALMODE_LONG : SSG_VALMODE_SQLVAL);
   if (NULL != formatter)
@@ -6458,9 +6592,8 @@ ssg_select_known_graphs_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *
       ssg_newline (0);
     }
   ssg_puts ("SELECT");
-  if (has_limofs)
-    ssg_puts (limofs_strg);
-
+  if ((NULL != lim_expn) || (NULL != ofs_expn))
+    ssg_print_limofs_expn (ssg, lim_expn, ofs_expn);
   if (SSG_VALMODE_LONG != retvalmode)
     ssg_puts (" __box_flags_tweak (");
   ssg_prin_id_with_suffix (ssg, retselid, "~pview");
@@ -6477,8 +6610,11 @@ ssg_select_known_graphs_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *
   ssg_puts ((SSG_VALMODE_LONG == retvalmode) ? ".return_iris=0 " : ".return_iris=1 ");
   ssg_puts (" AND ");
   ssg_prin_id_with_suffix (ssg, retselid, "~pview");
-  snprintf (limplusofs_strg, sizeof (limplusofs_strg), ".lim=" BOXINT_FMT, (SPARP_MAXLIMIT == lim) ? SPARP_MAXLIMIT : lim+ofs);
-  ssg_puts (limplusofs_strg);
+  ssg_puts (".lim=");
+  if (NULL != lim_expn)
+    ssg_print_scalar_expn (ssg, spartlist (ssg->ssg_sparp, 3, BOP_PLUS, lim_expn, ofs_expn), SSG_VALMODE_SQLVAL, NULL_ASNAME);
+  else
+    ssg_puts ("NULL");
   if ((NULL != formatter) || (NULL != agg_formatter))
     {
       ssg_puts (") AS ");
