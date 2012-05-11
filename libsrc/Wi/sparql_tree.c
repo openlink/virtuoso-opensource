@@ -4098,7 +4098,6 @@ sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree, SPART **options)
         {
         case INFERENCE_L: has_inference = 1; continue;
         case OFFBAND_L: case SCORE_L: case SCORE_LIMIT_L: has_ft = 1; continue;
-        case GEO_L: case PRECISION_L: has_geo = 1; continue;
         case IFP_L: case SAME_AS_L: case SAME_AS_O_L: case SAME_AS_P_L: case SAME_AS_S_L: case SAME_AS_S_O_L: has_inference = 1; continue;
         case TABLE_OPTION_L: continue;
         case TRANSITIVE_L: has_transitive = 1; continue;
