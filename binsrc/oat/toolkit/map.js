@@ -172,17 +172,26 @@ OAT.Map = function(something, provider, optionsObject, specificOptions) {
 	    self.obj = new OpenLayers.Map(self.elm,opts);
 
 	    /*
-             * classic openlayers map, add special prop
+             * Using OpenStreetMap by default (CC-by-SA attribution shown automatically on map)
              * to enable layer switching
  	     */
-	    var map = new OpenLayers.Layer.WMS("Map","http://labs.metacarta.com/wms/vmap0", {layers: 'basic'} );
+
+	    self.fromProjection = 
+		
+            self.fromProj = new OpenLayers.Projection("EPSG:4326");
+            self.toProj  = new OpenLayers.Projection("EPSG:900913");
+
+	    var map = new OpenLayers.Layer.OSM();
 	    map.OAT_MAP_TYPE = OAT.Map.MAP_MAP;
 	    self.obj.addLayer(map);
 
 	    /* satellite (NASA) */
-	    var sat = new OpenLayers.Layer.WMS("Satellite","http://wms.jpl.nasa.gov/wms.cgi?", {layers: 'BMNG', format: 'image/png'});
-	    sat.OAT_MAP_TYPE = OAT.Map.MAP_ORTO;
-	    self.obj.addLayer(sat);
+//	    var sat = new OpenLayers.Layer.WMS( "NASA Global Mosaic",
+//						"http://wms.jpl.nasa.gov/wms.cgi", 
+//						{layers: "global_mosaic"});
+
+//	    sat.OAT_MAP_TYPE = OAT.Map.MAP_ORTO;
+//	    self.obj.addLayer(sat);
 
 	    /* markers */
 	    self.markersLayer = new OpenLayers.Layer.Markers("Marker Pins");
@@ -322,7 +331,7 @@ OAT.Map = function(something, provider, optionsObject, specificOptions) {
 	    return [p.x,p.y];
 	    break;
 	case OAT.Map.TYPE_OL:
-	    var ll = new OpenLayers.LonLat(geoPosition[1],geoPosition[0]);
+	    var ll = new OpenLayers.LonLat(geoPosition[1],geoPosition[0]).transform(self.fromProj,self.toProj);
 	    var p = self.obj.getPixelFromLonLat(ll);
 	    return [p.x,p.y];
 	    break;
@@ -617,24 +626,16 @@ OAT.Map = function(something, provider, optionsObject, specificOptions) {
 	    break;
 
 	case OAT.Map.TYPE_OL:
-	    var minLat = 180;
-	    var minLon = 180;
-	    var maxLat = -180;
-	    var maxLon = -180;
+	    var bounds = new OpenLayers.Bounds();
 	    for (var i=0;i<points.length;i++) {
 		var lat = points[i][0];
 		var lon = points[i][1];
-		/* resize bounding box */
-		if (lat > maxLat) { maxLat = lat; }
-		if (lat < minLat) { minLat = lat; }
-		if (lon > maxLon) { maxLon = lon; }
-		if (lon < minLon) { minLon = lon; }
+		bounds.extend(new OpenLayers.LonLat(points[i][1], points[i][0]).transform(self.fromProj, self.toProj));
 	    }
-	    var bounds = new OpenLayers.Bounds(minLon,minLat,maxLon,maxLat);
 	    var c = bounds.getCenterLonLat();
 	    var clat = c.lat;
 	    var clon = c.lon;
-	    var autoZoom = self.obj.getZoomForExtent(bounds);
+	    var autoZoom = self.obj.getZoomForExtent(bounds,true);
 	    break;
 	}
 
@@ -707,7 +708,7 @@ OAT.Map = function(something, provider, optionsObject, specificOptions) {
 
 	    OAT.Dom.clear(w.contentDiv);
 	    OAT.Dom.append([w.contentDiv,elm]);
-
+	    w.updateSize();
 	    w.show();
 	    break;
 	}
@@ -850,7 +851,7 @@ OAT.Map = function(something, provider, optionsObject, specificOptions) {
 	} /* for all groups */
 
 	if (self.provider == OAT.Map.TYPE_OL) {  /* redraw markers layer */
-	    self.obj.layers[2].redraw();
+	    self.obj.layers[1].redraw();
 	}
     }
 
@@ -951,28 +952,39 @@ OAT.Map = function(something, provider, optionsObject, specificOptions) {
 	case OAT.Map.TYPE_OL:
 	    /* custom marker icon */
 	    var size = self.options.markerIconSize;
-	    var icon = new OpenLayers.Icon(self.options.markerIcon,new OpenLayers.Size(size[0],size[1]));
+	    var offs = new OpenLayers.Pixel(-(size[0]/2),-size[1]);
+	    var icon = new OpenLayers.Icon(self.options.markerIcon,new OpenLayers.Size(size[0],size[1]),offs);
 
 	    /* marker */
-	    var marker = new OpenLayers.Marker( new OpenLayers.LonLat(lon,lat), icon.clone() );
+	    var marker = 
+		new OpenLayers.Marker(new OpenLayers.LonLat(lon,lat).transform(self.fromProj, self.toProj), 
+				      icon.clone());
+
 	    self.markersLayer.addMarker(marker);
 
 	    /* we need to associate infowin with popup */
-	    marker.__window = new OpenLayers.Popup.AnchoredBubble(null,
+	    marker.__window = new OpenLayers.Popup.Anchored(null,
 								  marker.lonlat,
-								  new OpenLayers.Size(300,50),
+							    new OpenLayers.Size(300,100),
 								  "",
 								  icon,
 								  true,
 								  marker.closeInfoWindow);
+
+	    marker.__window.maxSize = new OpenLayers.Size(self.elm.clientWidth-50,self.elm.clientHeight-50);
 	    marker.__window.hide();
 	    marker.__window.panMapIfOutOfView = true;
+
 	    marker.closeInfoWindow = function() { marker.__window.hide(); }
 
 	    self.obj.addPopup(marker.__window,false);
 
 	    /* callbacks */
 	    OAT.Event.attach(marker.icon.imageDiv,"click",function() {
+		OAT.MSG.send(self,"MAP_MARKER_CLICK",marker);
+	    });
+
+	    OAT.Event.attach(marker.icon.imageDiv,"touchend",function() {
 		OAT.MSG.send(self,"MAP_MARKER_CLICK",marker);
 	    });
 
