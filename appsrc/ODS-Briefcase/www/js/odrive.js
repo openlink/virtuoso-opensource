@@ -415,16 +415,16 @@ function getFileName(obj)
     N = S.indexOf('#');
     S = S.substr(0, N);
   }
-  if (document.F1.dav_destination[1].checked == '1')
-  {
+  if (document.forms['F1'].elements['dav_destination']) {
+    if (document.F1.dav_destination[1].checked == '1') {
     N = S.indexOf('.rdf');
     S = S.substr(0, N);
   }
-  if ((document.F1.dav_destination[0].checked == '1') && (document.F1.dav_source[2].checked == '1'))
-  {
+    if ((document.F1.dav_destination[0].checked == '1') && (document.F1.dav_source[2].checked == '1')) {
     N = S.indexOf('.rdf');
     if (N == -1)
       S = S + '.rdf';
+  }
   }
   document.F1.dav_name.value = S;
 }

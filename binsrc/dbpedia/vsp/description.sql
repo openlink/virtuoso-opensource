@@ -161,8 +161,15 @@ again:
 	    }
 	}
     }
+  if (__tag of rdf_box = __tag (best_str))
+    {
+      __rdf_box_make_complete (best_str);
+      best_str := rdf_box_data (best_str);
+    }
   if (best_str <> '')
-    return best_str;
+    {
+      return best_str;
+    }
   exec (sprintf ('sparql define input:inference "dbprdf-label" '||
   'select ?o (lang(?o)) where { graph <%S> { <%S> virtrdf:label ?o } }', _G, _S), null, null, vector (), 0, meta, data);
   best_str := '';
@@ -179,11 +186,11 @@ again:
 	    }
 	}
     }
-   if (__tag of rdf_box = __tag (best_str))
-     {
-       __rdf_box_make_complete (best_str);
-       best_str := rdf_box_data (best_str);
-     }
+  if (__tag of rdf_box = __tag (best_str))
+    {
+      __rdf_box_make_complete (best_str);
+      best_str := rdf_box_data (best_str);
+    }
   return best_str;
 }
 ;
@@ -221,6 +228,11 @@ create procedure dbp_ldd_type (in gr varchar, in subj varchar, out url varchar, 
 	    ll := dbp_ldd_uri_local_part (data[0][1]);
 	  url := dbp_ldd_get_proxy (data[0][1]);
 	}
+    }
+  if (__tag of rdf_box = __tag (ll))
+    {
+      __rdf_box_make_complete (ll);
+      ll := rdf_box_data (ll);
     }
   return ll;
 }
