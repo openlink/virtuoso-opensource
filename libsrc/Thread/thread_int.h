@@ -187,7 +187,8 @@ struct semaphore_s
     thread_queue_t	sem_waiting;
 #ifdef SEM_NO_ORDER
     void *		sem_cv;			/* condition variable */
-    int 		sem_any_signalled;
+    unsigned long 	sem_n_signalled;
+    unsigned long 	sem_last_signalled;
 #endif
 #ifdef SEM_DEBUG
     int			sem_last_left_line[MAX_SEM_ENT];
