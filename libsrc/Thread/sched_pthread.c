@@ -886,7 +886,8 @@ semaphore_allocate (int entry_count)
 #ifdef SEM_NO_ORDER
   sem->sem_cv = _alloc_cv ();
   if (!sem->sem_cv) goto failed;
-  sem->sem_any_signalled = 0;
+  sem->sem_n_signalled = 0;
+  sem->sem_last_signalled = 0;
 #endif
   thread_queue_init (&sem->sem_waiting);
   return sem;
@@ -941,10 +942,12 @@ semaphore_enter (semaphore_t * sem)
 	  rc = pthread_cond_wait ((pthread_cond_t *) sem->sem_cv, (pthread_mutex_t*) sem->sem_handle);
 	  CKRET (rc);
 	}
-      while (!sem->sem_any_signalled);
+      while (sem->sem_n_signalled == sem->sem_last_signalled); 
+      sem->sem_n_signalled --; /* this one is signalled */
+      sem->sem_last_signalled = sem->sem_n_signalled;
       thr->thr_status = RUNNING;
-      sem->sem_any_signalled = 0;
       thread_queue_remove (&sem->sem_waiting, thr);
+      if (sem->sem_n_signalled < 0) GPF_T1 ("The semaphore counter went wrong");
 #endif
     }
 
@@ -1023,10 +1026,10 @@ semaphore_leave (semaphore_t *sem)
       else
 	sem->sem_entry_count++;
 #else
-      if (sem->sem_waiting.thq_count)
+      if (sem->sem_waiting.thq_count > sem->sem_n_signalled) /* we have a more waiting threads than already signalled */
 	{
 	  _thread_num_wait--;
-	  sem->sem_any_signalled = 1;
+	  sem->sem_n_signalled ++; /* one thread will be released */
 	  pthread_cond_signal ((pthread_cond_t *) sem->sem_cv);
 	}
       else
