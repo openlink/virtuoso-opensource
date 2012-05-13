@@ -1094,7 +1094,7 @@ spar_limit_clause_opt	/* [17]	LimitClause	 ::=  'LIMIT' INTEGER	*/
 	;
 
 spar_limit_clause	/* [17*]	LimitClause	 ::=  'LIMIT' PrecodeExpn	*/
-	: LIMIT_L spar_precode_expn { $$ = ((NULL == $2) ? t_box_num_nonull (0) : $2); }
+	: LIMIT_L spar_precode_expn { $$ = ((NULL != $2) ? $2 : (SPART *)(t_box_num_nonull (0))); }
 	;
 
 spar_offset_clause_opt	/* [18]	OffsetClause	 ::=  'OFFSET' INTEGER	*/
