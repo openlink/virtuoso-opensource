@@ -3129,6 +3129,27 @@ create procedure DB.DBA.RDF_RDFXML_LOAD_DICT (in strg varchar, in base varchar, 
 }
 ;
 
+create procedure DB.DBA.RDFA_LOAD_DICT (in strg varchar, in base varchar, in graph varchar, inout dict any, in xml_parse_mode int := 0)
+{
+  declare app_env any;
+  if (__tag (dict) <> 214)
+    signal ('22023', 'RDFXX', 'The dict argument must be of type dictionary');
+  rdf_load_rdfxml (strg, bit_or (2, bit_shift (xml_parse_mode, 8)), -- 0 rdfxml, 2 rdfa
+    graph,
+    vector (
+      'DB.DBA.RDF_TTL2HASH_EXEC_NEW_GRAPH',
+      'DB.DBA.RDF_TTL2HASH_EXEC_NEW_BLANK',
+      'DB.DBA.RDF_TTL2HASH_EXEC_GET_IID',
+      'DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE',
+      'DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE_L',
+      '',
+      'DB.DBA.TTLP_EV_REPORT_DEFAULT'),
+    dict,
+    base );
+}
+;
+
+
 create procedure DB.DBA.RDFA_LOAD_DICT_XLAT (in strg varchar, in base varchar, in graph varchar, inout dict any, in xml_parse_mode int := 0, in iri_xlate_cbk varchar, in iri_xlate_env any)
 {
   declare app_env any;
