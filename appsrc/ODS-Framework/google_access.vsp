@@ -1,0 +1,32 @@
+<?vsp
+  declare _client_id, _client_secret, _return_url, _code, _url, _reqHeader, _body, _json any;
+
+  _code := get_keyword ('code', params, '');
+  _json := '{\"error\" : \"invalid_request\"}';
+  if (_code <> '')
+  {
+    _client_id := (select a_key from OAUTH..APP_REG where a_name = 'Google API' and a_owner = 0);
+    _client_secret := (select a_secret from OAUTH..APP_REG where a_name = 'Google API' and a_owner = 0);
+    _return_url := sprintf ('http://%{WSHost}s/ods/google_access.vsp', http_path());
+    _url := 'https://accounts.google.com/o/oauth2/token';
+    _reqHeader := 'Content-Type: application/x-www-form-urlencoded\r\n';
+    _body := sprintf ('code=%U&client_id=%U&client_secret=%U&redirect_uri=%U&grant_type=%U', _code, _client_id, _client_secret, _return_url, 'authorization_code');
+    _json := http_client (url=>_url, http_method=>'POST', http_headers=>_reqHeader, body=>_body, n_redirects=>15);
+
+    _json := replace (_json, '\n', '\\n');
+  }
+?>
+<html>
+  <head>
+  </head>
+  <body>
+    <script type="text/javascript">
+      if (window.opener && window.opener.open && !window.opener.closed) {
+        window.opener.ODRIVE.oauthParams('<?vsp http (_json); ?>');
+      } else {
+        alert ('Opener not found');
+      }
+      window.close();
+    </script>
+  </body>
+</html>

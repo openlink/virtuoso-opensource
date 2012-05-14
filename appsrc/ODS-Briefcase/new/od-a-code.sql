@@ -1207,7 +1207,7 @@ create procedure ODRIVE.WA.odrive_proc(
   declare tmp, dirFilter, dirHiddens, dirList, sharedRoot, sharedFilter, sharedPath, sharedList any;
   declare vspx_user, user_name, group_name varchar;
   declare user_id, group_id integer;
-  declare c2 integer;
+  declare c2 any;
   declare c0, c1, c3, c4, c5, c6, c7, c8, c9 varchar;
 
   result_names(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9);

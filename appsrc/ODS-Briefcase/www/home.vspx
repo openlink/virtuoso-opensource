@@ -426,6 +426,11 @@
           if (detType in ('', 'CalDAV', 'CardDAV', 'GDrive'))
             retValue := 1;
         }
+        else if (action = 'edit')
+        {
+          if (detClass in ('GDrive'))
+            retValue := 1;
+        }
         else if (action = 'delete')
         {
           if (detType in ('', 'CalDAV', 'CardDAV', 'IMAP', 'GDrive'))
@@ -2694,12 +2699,21 @@
                             </v:template>
                             <td class="action">
                               <?vsp
+                                declare id any;
+
+                                id := DB.DBA.DAV_SEARCH_ID (rowset[8], rowset[1]);
                                 if (ODRIVE.WA.odrive_read_permission (rowset[8]))
-                                {
                                   http (sprintf( ' <img class="pointer" border="0" alt="Update Properties" title="Update Properties"" src="image/dav/item_prop.png" onclick="javascript: vspxPost(\'action\', \'_cmd\', \'update\', \'_path\', \'%s\');" />', replace (rowset[8], '\'', '\\\'')));
-                                }
-                                if ((__tag (DB.DBA.DAV_SEARCH_ID (rowset[8], rowset[1])) <> 193)
-                                    and (rowset[0] like '%.vsp'
+
+                                if (
+                                     (
+                                       (__tag (id) <> 193)
+                                       or
+                                       (cast (id[0] as varchar) in ('GDrive'))
+                                     )
+                                     and
+                                     (
+                                       rowset[0] like '%.vsp'
 		                                  or rowset[0] like '%.vspx'
 		                                  or rowset[0] like '%.rdf'
 		                                  or rowset[0] like '%.xml'
@@ -2710,7 +2724,8 @@
 		                                  or rowset[0] like '%.htm'
 		                                  or rowset[0] like '%.sql'
 		                                  or rowset[0] like '%.ini'
-		                                  or rowset[4] like 'text/%')
+		                                   or rowset[4] like 'text/%'
+		                                 )
 		                               )
                                 {
                                   declare S varchar;
