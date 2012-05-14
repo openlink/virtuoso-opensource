@@ -268,6 +268,8 @@ aq_wait (async_queue_t * aq, int req_no, caddr_t * err, int wait)
 }
 
 
+int aq_wait_last_first = 1;
+
 caddr_t
 aq_wait_all (async_queue_t * aq, caddr_t * err_ret)
 {
@@ -277,6 +279,24 @@ aq_wait_all (async_queue_t * aq, caddr_t * err_ret)
   ptrlong req_no;
   aq_request_t *aqr;
   mutex_enter (aq->aq_mtx);
+  if (aq_wait_last_first && aq->aq_queue.bsk_data.longval)
+    {
+      aq_request_t * last = aq->aq_queue.bsk_prev->bsk_data.ptrval;
+      if (last && AQR_DONE != last->aqr_state)
+	{
+	  int last_req = last->aqr_req_no;
+	  mutex_leave (aq->aq_mtx);
+	  v = aq_wait (aq, last_req, &err, 1);
+	  dk_free_tree (v);
+	  if (err_ret && err)
+	    {
+	      *err_ret = err;
+	      return NULL;
+	    }
+	  dk_free_tree (err);
+	  mutex_enter (aq->aq_mtx);
+	}
+    }
   do
     {
       dk_hash_iterator (&hit, aq->aq_requests);
