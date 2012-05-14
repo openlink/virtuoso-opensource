@@ -5869,11 +5869,11 @@ create procedure ODS.ODS_API.compares ()
     'gt'           , vector ('greater than'             , vector ('integer', 'date', 'priority'), 1),
     'gte'          , vector ('greater than or equal to' , vector ('integer', 'date', 'priority'), 1),
     'contains'     , vector ('contains substring'       , vector ('varchar', 'address'), 1),
-    'notContains'  , vector ('not contains substring'   , vector ('varchar', 'address'), 1),
+    'notContains'  , vector ('does not contain substring', vector ('varchar', 'address'), 1),
     'startsWith'   , vector ('starts with'              , vector ('varchar', 'address'), 1),
-    'notStartsWith', vector ('not starts with'          , vector ('varchar', 'address'), 1),
+    'notStartsWith', vector ('does not start with'       , vector ('varchar', 'address'), 1),
     'endsWith'     , vector ('ends with'                , vector ('varchar', 'address'), 1),
-    'notEndsWith'  , vector ('not ends with'            , vector ('varchar', 'address'), 1),
+    'notEndsWith'  , vector ('does not end with'         , vector ('varchar', 'address'), 1),
     'isNull'       , vector ('is null'                  , vector ('address'), 0),
     'isNotNull'    , vector ('is not null'              , vector ('address'), 0)
   );
