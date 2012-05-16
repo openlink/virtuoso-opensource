@@ -36,7 +36,7 @@ create table WS.WS.SYS_DAV_COL (
     COL_PERMS           char (11),
     COL_DET             varchar,
     COL_ACL             long varbinary,
-    COL_IID 		IRI_ID,
+    COL_IID 		IRI_ID_8,
     COL_AUTO_VERSIONING char(1),
     COL_FORK 		integer not null default 0,
     COL_INHERIT		char(1) default 'N', 		-- NMR flag denotes, none, members, recursive
@@ -58,7 +58,7 @@ alter table WS.WS.SYS_DAV_COL add COL_ACL long varbinary
 alter table WS.WS.SYS_DAV_COL modify COL_PERMS char (11)
 ;
 
-alter table WS.WS.SYS_DAV_COL add COL_IID IRI_ID
+alter table WS.WS.SYS_DAV_COL add COL_IID IRI_ID_8
 ;
 
 alter table WS.WS.SYS_DAV_COL add COL_INHERIT char(1) default 'N'
@@ -80,7 +80,7 @@ create table WS.WS.SYS_DAV_RES (
     RES_FULL_PATH       varchar,
     ROWGUID             varchar,
     RES_ACL             long varbinary,
-    RES_IID 		IRI_ID,
+    RES_IID 		IRI_ID_8,
     RES_STATUS 		varchar,
     RES_VCR_ID 		integer,
     RES_VCR_CO_VERSION 	integer,
@@ -103,7 +103,7 @@ alter table WS.WS.SYS_DAV_RES add RES_ACL long varbinary
 alter table WS.WS.SYS_DAV_RES modify RES_PERMS char (11)
 ;
 
-alter table WS.WS.SYS_DAV_RES add RES_IID IRI_ID
+alter table WS.WS.SYS_DAV_RES add RES_IID IRI_ID_8
 ;
 --#ENDIF
 
