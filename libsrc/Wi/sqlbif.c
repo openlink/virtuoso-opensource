@@ -9652,7 +9652,7 @@ bif_cast_internal (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_stub_impl (const char *fname)
 {
-  sqlr_new_error ("22023", "SR468", "%.200s() can not be called as plain built-in function, it's a macro handled by SQL compiler");
+  sqlr_new_error ("22023", "SR468", "%.200s() can not be called as plain built-in function, it's a macro handled by SQL compiler", fname);
   return NULL;
 }
 
@@ -13958,9 +13958,9 @@ bif_rdf_strlen_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
     case DV_STRING:
     case DV_UNAME:
-      return (caddr_t)box_num ( wide_char_length_of_utf8_string (arg, box_length(arg)) );
+      return (caddr_t)box_num ( wide_char_length_of_utf8_string ((const unsigned char *)arg, box_length(arg)) );
     case DV_WIDE:
-      return (caddr_t)box_num( virt_wcslen (arg) );
+      return (caddr_t)box_num( virt_wcslen ((wchar_t *)(arg)) );
     case DV_DB_NULL:
       return NEW_DB_NULL;
     default:
@@ -13981,12 +13981,12 @@ t_box_utf8_string (ccaddr_t utf8src, size_t max_chars)
   memset (&state, 0, sizeof(virt_mbstate_t));
   for (inx=0; inx<max_chars && src[max_bytes]; ++inx)
     {
-      max_bytes += virt_mbrlen (src + max_bytes, VIRT_MB_CUR_MAX, &state);
+      max_bytes += virt_mbrlen ((const char *)(src + max_bytes), VIRT_MB_CUR_MAX, &state);
     }
 
   box = dk_alloc_box (max_bytes + 1, DV_STRING);
 
-  strncpy (box,src,max_bytes);
+  strncpy (box, (const char *)(src), max_bytes);
   box[max_bytes] = 0;
   return box;
 }
@@ -14034,7 +14034,7 @@ bif_rdf_substr_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
           {
             pstart += virt_mbrlen (pstart, VIRT_MB_CUR_MAX, &mbstate);
           }
-        str_n_chars = wide_char_length_of_utf8_string (pstart, strlen(pstart));
+        str_n_chars = wide_char_length_of_utf8_string ((const unsigned char *)pstart, strlen(pstart));
 
         if (startl < 1 || !str_n_chars ||
             (BOX_ELEMENTS (args) >= 3 && (lenl < 1 || lenl > str_n_chars)) )
@@ -14050,7 +14050,7 @@ bif_rdf_substr_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       {
 	const wchar_t *pstart;
 	size_t strlength;
-        str_n_chars = virt_wcslen (src);
+        str_n_chars = virt_wcslen ((const wchar_t *)src);
 
         if (startl < 1 || startl > str_n_chars ||
             (BOX_ELEMENTS (args) >= 3 && (lenl < 1 || lenl > str_n_chars - start + 1)) )
@@ -14331,7 +14331,6 @@ caddr_t
 bif_rdf_concat_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t res_strg = bif_concatenate (qst, err_ret, args);
-  query_instance_t *qi = (query_instance_t *)qst;
   int n_args = BOX_ELEMENTS (args), inx;
   unsigned short common_type_twobytes = 0;
   unsigned short common_lang_twobytes = 0;
