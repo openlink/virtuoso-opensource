@@ -1275,6 +1275,7 @@ retry_after_deadlock:
        strstr (ret_content_type, 'application/rdf+n3') is not null or
        strstr (ret_content_type, 'application/rdf+turtle') is not null or
        strstr (ret_content_type, 'application/turtle') is not null or
+       strstr (ret_content_type, 'application/n-triples') is not null or
        strstr (ret_content_type, 'application/x-turtle') is not null )
     {
       whenever sqlstate '*' goto load_grddl_after_error;
