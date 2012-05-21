@@ -8123,14 +8123,18 @@ bif_get_keyword (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   char *me = "get_keyword";
   int n_args = BOX_ELEMENTS (args);
   caddr_t item = bif_arg (qst, args, 0, me);
-  caddr_t arr = (caddr_t) bif_array_arg (qst, args, 1, me);
+  caddr_t arr = (caddr_t) bif_array_or_null_arg (qst, args, 1, me);
   long is_set_0 = (long) ((n_args > 3) ? bif_long_arg (qst, args, 3, me) : 0);
   int inx;
-  dtp_t vectype = DV_TYPE_OF (arr);
-  int boxlen = (is_string_type (vectype)
+  dtp_t vectype;
+  int boxlen, len;
+  if (NULL == arr)
+    return (n_args > 2 ? box_copy_tree (bif_arg (qst, args, 2, me)) : NEW_DB_NULL);
+  vectype = DV_TYPE_OF (arr);
+  boxlen = (is_string_type (vectype)
     ? box_length (arr) - 1
     : box_length (arr));
-  int len = (boxlen / get_itemsize_of_vector (vectype));
+  len = (boxlen / get_itemsize_of_vector (vectype));
 /* Try also lvectors and dvectors.
    if (DV_ARRAY_OF_POINTER != box_tag (arr))
    sqlr_new_error ("42000", "XXX", "get_keyword expects a vector");
@@ -8205,12 +8209,15 @@ bif_get_keyword_ucase (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   char *me = "get_keyword_ucase";
   int n_args = BOX_ELEMENTS (args);
   caddr_t item = bif_string_or_uname_arg (qst, args, 0, me);
-  caddr_t arr = (caddr_t) bif_array_arg (qst, args, 1, me);
+  caddr_t arr = (caddr_t) bif_array_or_null_arg (qst, args, 1, me);
   long is_set_0 = (long) ((n_args > 3) ? bif_long_arg (qst, args, 3, me) : 0);
   int inx;
-  dtp_t vectype = DV_TYPE_OF (arr);
-  int len = BOX_ELEMENTS (arr);
-
+  dtp_t vectype;
+  int len;
+  if (NULL == arr)
+    return (n_args > 2 ? box_copy_tree (bif_arg (qst, args, 2, me)) : NEW_DB_NULL);
+  vectype = DV_TYPE_OF (arr);
+  len = BOX_ELEMENTS (arr);
   if (DV_ARRAY_OF_POINTER != box_tag (arr))
     sqlr_new_error ("22023", "SR058", "get_keyword expects a vector");
 
