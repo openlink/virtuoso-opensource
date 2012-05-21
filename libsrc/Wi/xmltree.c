@@ -9955,8 +9955,8 @@ caddr_t bif_xtree_tridgell32 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
 #endif
 
 #define SUM64(data,lo,med,hi) \
-      end = data + box_length_inline (data) - 1; \
-      for (tail = data; tail < end; tail++) \
+      end = (data) + box_length_inline ((data)) - 1; \
+      for (tail = (data); tail < end; tail++) \
         { lo += tail[0]; med += lo; hi += med; }
 
 static void
@@ -9985,7 +9985,7 @@ xte_sum64_iter (caddr_t *tree, unsigned *lo_ptr, unsigned *med_ptr, unsigned *hi
               caddr_t *items = (caddr_t *)data;
               DO_BOX_FAST (caddr_t, item, item_ctr, items)
                 {
-                  SUM64(item,lon,medn,hin)
+                  SUM64((unsigned char *)(item),lon,medn,hin)
                 }
               END_DO_BOX_FAST;
             }
@@ -10180,7 +10180,7 @@ xml_ent_hash (caddr_t box)
   xml_entity_t *xe = (xml_entity_t *)box;
   int32 chld_hash = 0;
   if (XE_IS_TREE (xe))
-    chld_hash = (int32)(ptrlong)(((xml_tree_ent_t *)(xe))->xte_stack_top->xteb_current);
+    chld_hash = (int32)((ptrlong)(((xml_tree_ent_t *)(xe))->xte_stack_top->xteb_current));
   else if (XE_IS_PERSISTENT (xe))
     chld_hash = (int32)(((xper_entity_t *)(xe))->xper_pos);
 /* No need in "if (XE_IS_LAZY (xe))", because there's no position in not-yet-loaded doc */
