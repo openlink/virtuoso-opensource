@@ -139,6 +139,7 @@ extern dk_hash_t *jso_rttis_of_structs;	/*!< Similar to jso_rttis_of_names but k
 /* Part 2. A small storage of triples that are not preset properties of objects. */
 
 extern caddr_t jso_triple_add (caddr_t * qst, caddr_t jsubj, caddr_t jpred, caddr_t jobj);
+extern caddr_t jso_triples_del (caddr_t * qst, caddr_t jsubj, caddr_t jpred, caddr_t jobj);
 extern caddr_t *jso_triple_get_objs (caddr_t * qst, caddr_t jsubj, caddr_t jpred);
 extern caddr_t *jso_triple_get_subjs (caddr_t * qst, caddr_t jpred, caddr_t jobj);
 
