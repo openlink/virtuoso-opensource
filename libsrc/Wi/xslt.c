@@ -4715,8 +4715,8 @@ bif_rowvector_graph_partition (caddr_t * qst, caddr_t * err_ret, state_slot_t **
   int start_itm_ctr = 0;
   caddr_t prev_g = NULL;
   caddr_t **res;
-  vector_sort_t specs;
 #if 0
+  vector_sort_t specs;
   if (block_elts <= 0)
     sqlr_new_error ("22023", "SR488", "Number of elements in block should be positive integer in call of %s()", funname);
   if (block_elts > MAX_VECTOR_BSORT_BLOCK)
