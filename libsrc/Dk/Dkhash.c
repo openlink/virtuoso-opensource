@@ -586,6 +586,48 @@ maphash3 (maphash3_func func, dk_hash_t * table, void *env)
   HQ_CYCLE3 (0, 0, func, env);
 }
 
+#define HQ_CYCLE_L(k, d) \
+  __k = (void *) k; \
+  __d = (void *) d; \
+  if (data_in_store) \
+    res[ctr++] = key_store; \
+  else \
+    data_in_store = 1; \
+  key_store = __k; \
+  data_store = __d;
+
+void **hash_list_keys (dk_hash_t * table)
+{
+  void **res = (void **)dk_alloc_box (sizeof (void *) * table->ht_count, DV_LONG_INT);
+  int ctr = 0;
+  void *key_store = NULL, *data_store = NULL, *__k, *__d;
+  int data_in_store = 0;
+  uint32 len = table->ht_actual_size;
+  uint32 inx;
+  uint32 init_count = table->ht_count;
+  /* int n_done =0; */
+  if (init_count == 0)
+    return res;
+  for (inx = 0; inx < len; inx++)
+    {
+      hash_elt_t *elt = &table->ht_elements[inx];
+      hash_elt_t *next_elt = elt->next;
+      if (HASH_EMPTY == next_elt)
+	continue;
+      HQ_CYCLE_L (elt->key, elt->data);
+      /* n_done++;  if (n_done >= init_count) goto all_done; */
+      elt = next_elt;
+      while (elt)
+	{
+	  next_elt = elt->next;
+	  HQ_CYCLE_L (elt->key, elt->data);
+	  /* n_done++; if (n_done >= init_count) goto all_done; */
+	  elt = next_elt;
+	}
+    }
+  HQ_CYCLE_L (0, 0);
+  return res;
+}
 
 void
 maphash_no_remhash (maphash_func func, dk_hash_t * table)
