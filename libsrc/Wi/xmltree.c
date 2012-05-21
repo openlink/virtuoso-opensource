@@ -10356,6 +10356,55 @@ bif_xml_get_ns_uri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 caddr_t
+bif_xml_ns_uname (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t pref = bif_string_or_uname_arg (qst, args, 0, "__xml_ns_uname");
+  caddr_t local = bif_string_or_uname_arg (qst, args, 1, "__xml_ns_uname");
+  caddr_t ns_uri = xml_get_ns_uri (((query_instance_t *)qst)->qi_client, pref, 0xffff, 0);
+  caddr_t res;
+  if (NULL == ns_uri)
+    sqlr_new_error ("22023", "SR648", "Unknown XML namespace prefix \"%.50s\"", pref);
+  BOX_DV_UNAME_CONCAT (res, ns_uri, local);
+  dk_free_box (ns_uri);
+  return res;
+}
+
+caddr_t
+bif_xml_ns_iristr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t pref = bif_string_or_uname_arg (qst, args, 0, "__xml_ns_iristr");
+  caddr_t local = bif_string_or_uname_arg (qst, args, 1, "__xml_ns_iristr");
+  caddr_t ns_uri = xml_get_ns_uri (((query_instance_t *)qst)->qi_client, pref, 0xffff, 0);
+  caddr_t res;
+  if (NULL == ns_uri)
+    sqlr_new_error ("22023", "SR648", "Unknown XML namespace prefix \"%.50s\"", pref);
+  res = box_dv_short_concat (ns_uri, local);
+  dk_free_box (ns_uri);
+  box_flags (res) = BF_IRI;
+  return res;
+}
+
+caddr_t
+bif_xml_nsexpand_iristr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t src = bif_string_or_uname_arg (qst, args, 0, "__xml_nsexpand_iristr");
+  const char *colon = strchr (src, ':');
+  caddr_t ns_pref, ns_uri;
+  caddr_t res;
+  if (NULL == colon)
+    sqlr_new_error ("22023", "SR649", "No XML namespace prefix in string \"%.200s\"", src);
+  ns_pref = box_dv_short_nchars (src, colon - src);
+  ns_uri = xml_get_ns_uri (((query_instance_t *)qst)->qi_client, ns_pref, 0xffff, 0);
+  dk_free_box (ns_pref);
+  if (NULL == ns_uri)
+    sqlr_new_error ("22023", "SR648", "Unknown XML namespace prefix in IRI \"%.200s\"", src);
+  res = box_dv_short_strconcat (ns_uri, colon+1);
+  dk_free_box (ns_uri);
+  box_flags (res) = BF_IRI;
+  return res;
+}
+
+caddr_t
 bif_xml_get_all_ns_decls (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   ptrlong persistent = bif_long_arg (qst, args, 0, "__xml_get_all_ns_decls");
@@ -10640,6 +10689,9 @@ xml_tree_init (void)
   bif_define ("__xml_set_ns_decl", bif_xml_set_ns_decl);
   bif_define ("__xml_get_ns_prefix", bif_xml_get_ns_prefix);
   bif_define ("__xml_get_ns_uri", bif_xml_get_ns_uri);
+  bif_define ("__xml_ns_uname", bif_xml_ns_uname);
+  bif_define ("__xml_ns_iristr", bif_xml_ns_iristr);
+  bif_define ("__xml_nsexpand_iristr", bif_xml_nsexpand_iristr);
   bif_define ("__xml_get_all_ns_decls", bif_xml_get_all_ns_decls);
   bif_define ("__xml_remove_ns_by_prefix", bif_xml_remove_ns_by_prefix);
   bif_define ("__xml_clear_all_ns_decls", bif_xml_clear_all_ns_decls);
