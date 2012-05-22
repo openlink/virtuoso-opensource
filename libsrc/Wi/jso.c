@@ -1242,8 +1242,8 @@ jso_triples_del_impl (caddr_t jsubj, caddr_t jpred, caddr_t jobj)
     }
   if ((NULL != jsubj) && (NULL != jpred))
     {
-      jso_objs = (dk_set_t)gethash (jpred, jso_single_subj);
       int res = 0;
+      jso_objs = (dk_set_t)gethash (jpred, jso_single_subj);
       if (NULL == jso_objs)
         return 0;
       remhash (jpred, jso_single_subj);

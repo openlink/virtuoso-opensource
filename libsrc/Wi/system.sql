@@ -1039,20 +1039,22 @@ create procedure ddl_pk_change_1 (in tb varchar, in cols any)
     COL_CHECK,
     deserialize (COL_DEFAULT),
     COL_NTH,
-    COL_NULLABLE from DB.DBA.SYS_COLS
+    COL_NULLABLE,
+    COL_OPTIONS
+    from DB.DBA.SYS_COLS
     where concat ('', "TABLE") = tb order by COL_ID;
     whenever not found goto done;
     open cr;
     while (1)
       {
-	declare _col1, _col2, _col3, _col4, _col5, _col6, _col7, _col8, _col9, _col10 any;
-	fetch cr into  _col3, _col4, _col5, _col6, _col7, _col8, _col9, _col10;
+	declare _col1, _col2, _col3, _col4, _col5, _col6, _col7, _col8, _col9, _col10, _col11 any;
+	fetch cr into  _col3, _col4, _col5, _col6, _col7, _col8, _col9, _col10, _col11;
         _col1 := new_col_id (0);
         _col2 := tname;
 	insert into DB.DBA.SYS_COLS
 	    (COL_ID, "TABLE", "COLUMN", COL_DTP, COL_PREC, COL_SCALE, COL_CHECK, COL_DEFAULT,
-	      		COL_NTH, COL_NULLABLE)
-	    values (_col1, _col2, _col3, _col4, _col5, _col6, _col7, serialize (_col8), _col9, _col10);
+	      		COL_NTH, COL_NULLABLE, COL_OPTIONS)
+	    values (_col1, _col2, _col3, _col4, _col5, _col6, _col7, serialize (_col8), _col9, _col10, _col11);
       }
 done:
   close cr;
