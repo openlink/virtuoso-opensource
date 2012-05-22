@@ -256,6 +256,17 @@ create function "GDrive_DAV_RES_UPLOAD" (
   id := DB.DBA.DAV_SEARCH_ID (path, 'R');
   if (save is null)
   {
+    if (__tag (content) = 126)
+    {
+      declare real_content any;
+
+      real_content := http_body_read (1);
+      content := string_output_string (real_content);  -- check if bellow code can work with string session and if so remove this line
+    }
+    content := blob_to_string (content);
+    if (content = '')
+      content := ' ';
+
     L := length (content);
     if (DAV_HIDE_ERROR (id) is not null)
     {
@@ -389,7 +400,7 @@ create function "GDrive_DAV_RES_UPLOAD" (
   }
 _skip_create:;
   connection_set ('dav_store', 1);
-  retValue := DAV_RES_UPLOAD_STRSES_INT (path, content, type, permissions, DB.DBA.GDrive__user (uid, auth_uid), DB.DBA.GDrive__user (gid, auth_uid), DB.DBA.GDrive__user (http_dav_uid ()), DB.DBA.GDrive__password (http_dav_uid ()), 0);
+  retValue := DAV_RES_UPLOAD_STRSES_INT (path, content, type, permissions, DB.DBA.GDrive__user (uid, auth_uid), DB.DBA.GDrive__user (gid, auth_uid), DB.DBA.GDrive__user (http_dav_uid ()), DB.DBA.GDrive__password (http_dav_uid ()), 0, null, null, null, null, null, 0);
 
 _exit:;
   connection_set ('dav_store', save);
@@ -463,7 +474,7 @@ create function "GDrive_DAV_PROP_GET" (
   -- dbg_obj_princ ('GDrive_DAV_PROP_GET (', id, what, propname, auth_uid, ')');
   declare retValue any;
 
-  retValue := DAV_PROP_GET_INT (id[2], what, propname, 1);
+  retValue := DAV_PROP_GET_INT (id[2], what, propname, 0);
 
   return retValue;
 }
@@ -806,7 +817,21 @@ create function "GDrive_DAV_LOCK" (
   in auth_uid integer) returns any
 {
   -- dbg_obj_princ ('GDrive_DAV_LOCK (', path, id, what, locktype, scope, token, owner_name, owned_tokens, depth, timeout_sec, auth_uid, ')');
-  return -20;
+  declare davId integer;
+  declare retValue, save any;
+  declare exit handler for sqlstate '*'
+  {
+    connection_set ('dav_store', save);
+    resignal;
+  };
+
+  save := connection_get ('dav_store');
+  connection_set ('dav_store', 1);
+  davId := id[2];
+  retValue := DAV_LOCK_INT (path, davId, what, locktype, scope, token, owner_name, owned_tokens, depth, timeout_sec, DB.DBA.GDrive__user (auth_uid), DB.DBA.GDrive__password (auth_uid), auth_uid);
+  connection_set ('dav_store', save);
+
+  return retValue;
 }
 ;
 
@@ -819,7 +844,21 @@ create function "GDrive_DAV_UNLOCK" (
   in auth_uid integer)
 {
   -- dbg_obj_princ ('GDrive_DAV_UNLOCK (', id, what, token, auth_uid, ')');
-  return -27;
+  declare davId integer;
+  declare retValue, save any;
+  declare exit handler for sqlstate '*'
+  {
+    connection_set ('dav_store', save);
+    resignal;
+  };
+
+  save := connection_get ('dav_store');
+  connection_set ('dav_store', 1);
+  davId := id[2];
+  retValue := DAV_UNLOCK_INT (davId, what, token, DB.DBA.GDrive__user (auth_uid), DB.DBA.GDrive__password (auth_uid), auth_uid);
+  connection_set ('dav_store', save);
+
+  return retValue;
 }
 ;
 
@@ -827,11 +866,25 @@ create function "GDrive_DAV_UNLOCK" (
 --| This returns -1 if id is not valid, 0 if all existing locks are listed in owned_tokens whitespace-delimited list, 1 for soft 2 for hard lock.
 create function "GDrive_DAV_IS_LOCKED" (
   inout id any,
-  inout type char(1),
+  inout what char(1),
   in owned_tokens varchar) returns integer
 {
-  -- dbg_obj_princ ('GDrive_DAV_IS_LOCKED (', id, type, owned_tokens, ')');
-  return 0;
+  -- dbg_obj_princ ('GDrive_DAV_IS_LOCKED (', id, what, owned_tokens, ')');
+  declare davId integer;
+  declare retValue, save any;
+  declare exit handler for sqlstate '*'
+  {
+    connection_set ('dav_store', save);
+    resignal;
+  };
+
+  save := connection_get ('dav_store');
+  connection_set ('dav_store', 1);
+  davId := id[2];
+  retValue := DAV_IS_LOCKED_INT (davId, what, owned_tokens);
+  connection_set ('dav_store', save);
+
+  return retValue;
 }
 ;
 
@@ -843,7 +896,21 @@ create function "GDrive_DAV_LIST_LOCKS" (
   in recursive integer) returns any
 {
   -- dbg_obj_princ ('GDrive_DAV_LIST_LOCKS" (', id, what, recursive);
-  return vector ();
+  declare davId integer;
+  declare retValue, save any;
+  declare exit handler for sqlstate '*'
+  {
+    connection_set ('dav_store', save);
+    resignal;
+  };
+
+  save := connection_get ('dav_store');
+  connection_set ('dav_store', 1);
+  davId := id[2];
+  retValue := DAV_LIST_LOCKS_INT (davId, what, recursive);
+  connection_set ('dav_store', save);
+
+  return retValue;
 }
 ;
 
@@ -967,13 +1034,17 @@ create function DB.DBA.GDrive__paramSet (
   in _propName varchar,
   in _propValue any,
   in _serialized integer := 1,
-  in _prefixed integer := 1)
+  in _prefixed integer := 1,
+  in _encrypt integer := 0)
 {
   -- dbg_obj_princ ('DB.DBA.GDrive__paramSet', _propName, _propValue, ')');
   declare retValue any;
 
   if (_serialized)
     _propValue := serialize (_propValue);
+
+  if (_encrypt)
+    _propValue := pwd_magic_calc ('gdrive', _propValue);
 
   if (_prefixed)
     _propName := 'virt:GDrive-' || _propName;
@@ -992,22 +1063,26 @@ create function DB.DBA.GDrive__paramGet (
   in _what varchar,
   in _propName varchar,
   in _serialized integer := 1,
-  in _prefixed integer := 1)
+  in _prefixed integer := 1,
+  in _decrypt integer := 0)
 {
   -- dbg_obj_princ ('DB.DBA.GDrive__paramGet (', _id, _what, _propName, ')');
-  declare paramValue any;
+  declare propValue any;
 
   if (_prefixed)
     _propName := 'virt:GDrive-' || _propName;
 
-  paramValue := DB.DBA.DAV_PROP_GET_INT (DB.DBA.GDrive__davId (_id), _what, _propName, 0);
-  if (isinteger (paramValue))
-    paramValue := null;
+  propValue := DB.DBA.DAV_PROP_GET_INT (DB.DBA.GDrive__davId (_id), _what, _propName, 0);
+  if (isinteger (propValue))
+    propValue := null;
 
-  if (_serialized and not isnull (paramValue))
-    paramValue := deserialize (paramValue);
+  if (_serialized and not isnull (propValue))
+    propValue := deserialize (propValue);
 
-  return paramValue;
+  if (_decrypt and not isnull (propValue))
+    propValue := pwd_magic_calc ('gdrive', propValue, 1);
+
+  return propValue;
 }
 ;
 
@@ -1224,6 +1299,7 @@ create function DB.DBA.GDrive__download (
 
   declare aq any;
 
+  set_user_id ('dba');
   aq := async_queue (1);
   aq_request (aq, 'DB.DBA.GDrive__download_internal', vector (detcol_id, id, what));
 }
@@ -1240,6 +1316,7 @@ create function DB.DBA.GDrive__download_internal (
   declare davEntry any;
   declare retValue, retHeader any;
 
+  set_user_id ('dba');
   davEntry := DB.DBA.GDrive__paramGet (id, what, 'Entry', 0);
   if (DAV_HIDE_ERROR (davEntry) is not null)
   {

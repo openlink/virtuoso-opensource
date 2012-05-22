@@ -437,7 +437,7 @@ function chkbx(bx1, bx2)
 
 function updateLabel(value)
 {
-  hideLabel(4, 12);
+  hideLabel(4, 13);
   if (value == 'oMail')
     showLabel(4, 4);
   else if (value == 'PropFilter')
@@ -456,6 +456,8 @@ function updateLabel(value)
     showLabel(11, 11);
   else if (value == 'GDrive')
     showLabel(12, 12);
+  else if (value == 'Dropbox')
+    showLabel(13, 13);
 }
 
 function showLabel(from, to)
@@ -1609,7 +1611,23 @@ ODRIVE.oauthParams = function (json)
     var d = new Date();
     params.access_timestamp = d.format('Y-m-d H:i');
     fld.value = OAT.JSON.serialize(params);
-    $('dav_GDrive_authentication').innerHTML = 'Authrnticated';
+    $('dav_GDrive_authentication').innerHTML = 'Authenticated';
     $('dav_GDrive_authenticate').value = 'Re-Authenticate';
   }
+}
+
+ODRIVE.dropboxParams = function (sid, display_name, email)
+{
+  createHidden('F1', 'dav_Dropbox_authentication', 'Yes');
+  createHidden('F1', 'dav_Dropbox_sid', sid);
+  createHidden('F1', 'dav_Dropbox_display_name', display_name);
+  createHidden('F1', 'dav_Dropbox_email', email);
+
+  $('th_dav_Dropbox_authentication').innerHTML = 'Authenticated';
+  $('dav_Dropbox_authenticate').value = 'Re-Authenticate';
+
+  OAT.Dom.show('tr_dav_Dropbox_display_name');
+  $('td_dav_Dropbox_display_name').innerHTML = display_name;
+  OAT.Dom.show('tr_dav_Dropbox_email');
+  $('td_dav_Dropbox_email').innerHTML = email;
 }
