@@ -1362,6 +1362,60 @@
   </xsl:template>
 
   <!--=========================================================================-->
+  <xsl:template match="vm:search-dc-template14">
+    <div id="13" class="tabContent" style="display: none;">
+      <?vsp
+        declare _value any;
+
+        _value := self.get_fieldProperty ('===', self.dav_path, 'virt:Dropbox-Authentication', 'No');
+      ?>
+      <table class="form-body" cellspacing="0">
+        <tr>
+          <th colspan="2" style="text-align: center;" id="th_dav_Dropbox_authentication">
+            <?vsp
+              if (_value = 'No')
+                http ('Not authenticated');
+              if (_value = 'Yes')
+                http ('Authenticated');
+            ?>
+          </th>
+        </tr>
+        <tr id="tr_dav_Dropbox_display_name" style="display: <?V case when _value = 'Yes' then '' else 'none' end ?>">
+          <th width="50%">User name</th>
+          <td id="td_dav_Dropbox_display_name">
+            <?vsp
+              http (self.get_fieldProperty ('===', self.dav_path, 'virt:Dropbox-display_name', ''));
+            ?>
+          </td>
+        </tr>
+        <tr id="tr_dav_Dropbox_email" style="display: <?V case when _value = 'Yes' then '' else 'none' end ?>">
+          <th width="50%">User email</th>
+          <td id="td_dav_Dropbox_email">
+            <?vsp
+              http (self.get_fieldProperty ('===', self.dav_path, 'virt:Dropbox-email', ''));
+            ?>
+          </td>
+        </tr>
+        <tr>
+          <th colspan="2" style="text-align: center;">
+            <?vsp
+              declare _name, _client_id, _return_url, _scope, _url any;
+
+              if (_value = 'No')
+                _name := 'Authenticate';
+              if (_value = 'Yes')
+                _name := 'Re-Authenticate';
+
+              _url := '/ods/dropbox_access.vsp';
+              http (sprintf ('<input type="button" id="dav_Dropbox_authenticate" value="%s" onclick="javascript: windowShowInternal(\'%s\');" disabled="disabled" class="button" />', _name, _url));
+            ?>
+          </th>
+        </tr>
+      </table>
+    </div>
+  </xsl:template>
+
+  <!--=========================================================================-->
   <!-- Auto Versioning -->
   <xsl:template match="vm:autoVersion">
     <tr id="davRow_version">
