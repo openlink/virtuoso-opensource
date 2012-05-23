@@ -263,7 +263,7 @@
                           <v:url name="b_url32" value="--'Roles'" format="%s" url="--'accounts_page.vspx?page=2'" xhtml_class="uddi"/>
                         </td>
                         <td class="page_tab" align="center">
-			  <v:url name="b_url14" value="Grants"  url="accounts_page.vspx?page=3" xhtml_class="uddi"/>
+			  <v:url name="b_url14" value="Grants"  url="-- case when self.mode = 'edit' then sprintf ('caps_browser.vspx?mode=edit&user_name=%U', self.user_name) else 'accounts_page.vspx?page=3' end" xhtml_class="uddi"/>
                         </td>
                         <td class="page_tab" align="center">
 			  <v:url name="b_url15" value="LDAP Import"  url="ldap_import.vspx" xhtml_class="uddi"/>
