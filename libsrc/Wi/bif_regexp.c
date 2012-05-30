@@ -806,6 +806,8 @@ bif_regexp_replace_hits_with_template (caddr_t * qst, caddr_t * err_ret, state_s
   return res_strg;
 }
 
+int32 c_match_limit_recursion = 150;
+
 static caddr_t
 get_regexp_code (safe_hash_t * rx_codes, const char *pattern,
     pcre_info_t * pcre_info, int options)
@@ -854,6 +856,11 @@ get_regexp_code (safe_hash_t * rx_codes, const char *pattern,
     }
   else
     *pcre_info = *pcre_info_ref;
+  if (pcre_info->code_x)
+    {
+      pcre_info->code_x->flags |= PCRE_EXTRA_MATCH_LIMIT_RECURSION;
+      pcre_info->code_x->match_limit_recursion = c_match_limit_recursion;
+    }
   RELEASE_OBJECT (rx_codes);
   return NULL;
 }
