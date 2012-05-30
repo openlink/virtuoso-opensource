@@ -6933,6 +6933,26 @@ create function DB.DBA.SPARUL_RUN (in results any, in compose_report integer := 
 }
 ;
 
+-- SPARQL 1.1 BINDINGS
+
+--!AWK PUBLIC
+create procedure DB.DBA.SPARQL_BINDINGS_VIEW_IMP (in dta any)
+{
+  declare rcount, rctr integer;
+  declare BND any;
+  result_names (BND);
+  rcount := length (dta);
+  for (rctr := 0; rctr < rcount; rctr := rctr+1)
+    result (dta[rctr]);
+}
+;
+
+create procedure view DB.DBA.SPARQL_BINDINGS_VIEW as DB.DBA.SPARQL_BINDINGS_VIEW_IMP (dta) (BND any)
+;
+
+grant select on DB.DBA.SPARQL_BINDINGS_VIEW to public
+;
+
 -- SPARQL 1.1 UPDATE functions
 
 create function DB.DBA.SPARQL_INSERT_QUAD_DICT_CONTENT (in dflt_graph_iri any, in quads_dict any, in uid integer, in log_mode integer := null, in compose_report integer := 0) returns any
