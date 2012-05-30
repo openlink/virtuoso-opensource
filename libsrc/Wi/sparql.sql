@@ -2867,6 +2867,10 @@ create procedure DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE_L (
   inout o_val any, inout o_type varchar, inout o_lang varchar,
   inout app_env any )
 {
+  if (not isstring (o_type))
+    o_type := null;
+  if (not isstring (o_lang))
+    o_lang := null;
   dict_put (app_env,
     vector (
       iri_to_id (s_uri),
@@ -3775,7 +3779,7 @@ end_pred_sort: ;
 end_subj_sort: ;
   }
   rowvector_graph_sort (triples, 3, 1);
-  -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_TRIG after sort:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) dbg_obj_princ (triples[tctr]);
+  -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_TRIG after sort:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
   DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
   for (tctr := 0; (tctr < tcount) and aref_or_default (triples, tctr, 3, null) is null; tctr := tctr + 1)
     {
@@ -6207,8 +6211,8 @@ create procedure DB.DBA.RDF_DELETE_TRIPLES (in graph_iri any, in triples any, in
       o_short := DB.DBA.RDF_OBJ_OF_LONG (triples[ctr][2]);
 --      {
 --        whenever sqlstate '*' goto strange_fail;
-        delete from DB.DBA.RDF_QUAD
-        where G = graph_iri and S = triples[ctr][0] and P = triples[ctr][1] and O = o_short;
+          delete from DB.DBA.RDF_QUAD
+          where G = graph_iri and S = triples[ctr][0] and P = triples[ctr][1] and O = o_short;
 --        goto complete;
 --      }
 --strange_fail:
@@ -6747,7 +6751,7 @@ create function DB.DBA.SPARUL_LOAD_SERVICE_DATA (in service_iri any, in proxy_ir
   declare mdta, rows any;
   declare stat, msg varchar;
   __rgs_assert_cbk (service_iri, uid, 2, 'SPARUL LOAD SERVICE DATA');
-  dbg_obj_princ ('DB.DBA.SPARUL_LOAD_SERVICE_DATA (', service_iri, proxy_iri, uid, log_mode, compose_report, options, silent, ')');
+  -- dbg_obj_princ ('DB.DBA.SPARUL_LOAD_SERVICE_DATA (', service_iri, proxy_iri, uid, log_mode, compose_report, options, silent, ')');
   old_log_enable := log_enable (log_mode, 1);
   stat := '00000';
   exec ('DB.DBA.SPARQL_SD_PROBE (?, ?, 0, 0)', stat, msg, vector (service_iri, proxy_iri), 10000, mdta, rows);
@@ -10274,6 +10278,21 @@ create function DB.DBA.RDF_QM_DROP_MAPPING (in storage varchar, in mapname any) 
     }
   else
     {
+      if (not exists (sparql
+        define input:storage ""
+        select ?st where {
+            graph <http://www.openlinksw.com/schemas/virtrdf#> {
+                  { ?st virtrdf:qsUserMaps ?subm .
+                    ?subm ?p `iri(?:qmid)` }
+                union
+                  { ?st virtrdf:qsDefaultMap `iri(?:qmid)` }
+                filter (?st = iri(?:storage))
+              } } ) )
+        {
+          if (silent)
+            return vector (vector ('00000', 'Quad map <' || qmid || '> is not used in storage <' || storage || '>, the DROP statement is ignored due to SILENT option'));
+          signal ('22023', 'Quad map <' || qmid || '> is not used in storage <' || storage || '>');
+        }
       DB.DBA.RDF_QM_DELETE_MAPPING_FROM_STORAGE (storage, NULL, qmid);
       DB.DBA.RDF_QM_GC_MAPPING_SUBTREE (qmid, 1);
       return vector (vector ('00000', 'Quad map <' || qmid || '> is no longer used in storage <' || storage || '>'));
@@ -12161,13 +12180,14 @@ create procedure DB.DBA.RDF_QM_DELETE_MAPPING_FROM_STORAGE (in storage varchar, 
       declare ord integer;
       id := itm[0];
       ord := itm[2];
-      if (iri_to_id (id, 0, 0) <> qmid)
+      if (iri_to_id (id) <> qmid)
         {
           sparql define input:storage ""
           insert in graph <http://www.openlinksw.com/schemas/virtrdf#> {
              `iri(?:lstiri)`
                `iri(bif:sprintf("%s%d", str(rdf:_), ?:ctr))`
                  `iri(?:id)` . };
+          -- dbg_obj_princ ('DB.DBA.RDF_QM_DELETE_MAPPING_FROM_STORAGE: reinsert ', itm, ' in rdf:_', ctr);
           ctr := ctr + 1;
         }
       else
