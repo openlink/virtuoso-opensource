@@ -40,7 +40,7 @@ create procedure rdf_view_tbl_opts (in tbls any, in cols any)
   foreach (varchar t in tbls) do
     {
       declare col_cnt int;
-      col_cnt := (select count(*) from TABLE_COLS where "TABLE" = t);
+      col_cnt := (select count(*) from TABLE_COLS where "TABLE" = t and "COLUMN" <> '_IDN');
       res [inx * 2] := t;
       if (isarray (cols[inx]) and length (cols[inx]) = 2 and isarray (cols[inx][1]) and length (cols[inx][1]) = col_cnt)
         res [(inx * 2) + 1] := cols [inx];
@@ -49,7 +49,7 @@ create procedure rdf_view_tbl_opts (in tbls any, in cols any)
 	  declare newcols, i any;
 	  newcols := make_array (col_cnt, 'any');
           i := 0;
-	  for select "COLUMN", COL_DTP from TABLE_COLS where "TABLE" = t order by COL_ID do
+	  for select "COLUMN", COL_DTP from TABLE_COLS where "TABLE" = t and "COLUMN" <> '_IDN' order by COL_ID do
 	    {
 	      if (COL_DTP <> 131)
 	        newcols [i] := vector (0, null);
@@ -96,7 +96,7 @@ create procedure rdf_view_tbl_pk_cols (inout tbls any, out pkcols any)
 	       foreach (varchar c in tbls [i + 1]) do
 		 {
 		   cols[j] := (select vector (sc."COLUMN", sc."COL_DTP", sc."COL_SCALE", sc."COL_PREC")
-		    from DB.DBA.TABLE_COLS sc where upper (sc."COLUMN") = upper (c) and upper ("TABLE") = upper (tbls[i]));
+		    from DB.DBA.TABLE_COLS sc where upper (sc."COLUMN") = upper (c) and upper ("TABLE") = upper (tbls[i]) and "COLUMN" <> '_IDN');
 		   if (length (cols[j]) = 0)
 		     signal ('22023', sprintf ('Non existing column %s for table %s', c, tbls[i]));
 		   j := j + 1;
@@ -249,7 +249,7 @@ RDF_VIEW_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0, in 
        vname := _tbls[xx]||'Count';
        total_select := total_select || sprintf ('(cnt%d*cnt%d)+', xx*2, (xx*2)+1);
        total_tb := total_tb ||
-       	sprintf ('\n (select count(*) cnt%d from "%I"."%I"."%I") tb%d, \n (select count(*)+1 as cnt%d from DB.DBA.TABLE_COLS where "TABLE" = ''%S'') tb%d,',
+       	sprintf ('\n (select count(*) cnt%d from "%I"."%I"."%I") tb%d, \n (select count(*)+1 as cnt%d from DB.DBA.TABLE_COLS where "TABLE" = ''%S''  and "COLUMN" <> ''_IDN'') tb%d,',
 		xx*2, name_part (_tbls[xx], 0), name_part (_tbls[xx], 1), name_part (_tbls[xx], 2), xx*2, (xx*2)+1, _tbls[xx], (xx*2)+1);
        if (not exists (select 1 from SYS_VIEWS where V_NAME = vname))
 	 {
@@ -471,7 +471,7 @@ rdf_view_create_view (in nth int, in qualifier varchar, in _tbls any, in gen_sta
      ret := ret || rdf_view_sp (6) || sprintf (' a %s ;\n', rdf_view_uri_curie (cols_arr[0]));
 
    inx := 0;
-   for select "COLUMN" from TABLE_COLS where "TABLE" = tbl order by COL_ID do
+   for select "COLUMN" from TABLE_COLS where "TABLE" = tbl and "COLUMN" <> '_IDN' order by COL_ID do
      {
        col_name := lower ("COLUMN");
        if (cols_arr[1][inx][0] = 0 or cols_arr[1][inx][0] = 4)
@@ -500,7 +500,7 @@ rdf_view_create_view (in nth int, in qualifier varchar, in _tbls any, in gen_sta
     ret := trim (ret, ';');
     ret := ret || '.\n';
    inx := 0;
-   for select "COLUMN" from TABLE_COLS where "TABLE" = tbl order by COL_ID do
+   for select "COLUMN" from TABLE_COLS where "TABLE" = tbl and "COLUMN" <> '_IDN' order by COL_ID do
      {
        col_name := lower ("COLUMN");
        if (isstring (cols_arr[1][inx][0]))
@@ -741,7 +741,7 @@ rdf_view_create_class (in decl varchar, in _tbl varchar, in _host varchar, in qu
 		qualifier, tbl_name_l, _host, qualifier, tbl_name_l, sk_str, pk_text);
    cols_arr := get_keyword (_tbl, cols);
    inx := 0;
-   for select "COLUMN" as col from TABLE_COLS where "TABLE" = _tbl order by COL_ID do
+   for select "COLUMN" as col from TABLE_COLS where "TABLE" = _tbl and "COLUMN" <> '_IDN' order by COL_ID do
      {
        if (isstring (cols_arr[1][inx][0]))
 	 {
@@ -844,7 +844,7 @@ RDF_OWL_FROM_TBL (in qual varchar, in _tbls any, in cols any := null)
       cols_arr := get_keyword (tbl, cols);
       if (length (cols_arr[0]))
 	http (sprintf ('%s:%s rdfs:subClassOf %s .\n', qual, cls, rdf_view_uri_curie (cols_arr[0])), ses);
-      for select "COLUMN" as col, COL_DTP as dtp from TABLE_COLS where "TABLE" = tbl order by COL_ID do
+      for select "COLUMN" as col, COL_DTP as dtp from TABLE_COLS where "TABLE" = tbl and "COLUMN" <> '_IDN' order by COL_ID do
 	{
 	  declare xsd, label varchar;
 	  label := col;
@@ -1316,7 +1316,7 @@ r2rml_create_dataset (in nth int, in qualifier varchar, in _tbls any, in gen_sta
    ret := ret || sprintf ('rr:subjectMap [ rr:termtype "IRI"  ; rr:template "http://%s/%s/%s%s"; rr:class %s:%s; %s];\n', uriqa_str, qual, tbl_name_l, pk_text, qualifier, rdf_view_cls_name (tbl_name), graph_def);
 
    inx := 0;
-   for select "COLUMN", COL_DTP from TABLE_COLS where "TABLE" = tbl order by COL_ID do
+   for select "COLUMN", COL_DTP from TABLE_COLS where "TABLE" = tbl and "COLUMN" <> '_IDN' order by COL_ID do
      {
        col_name := "COLUMN";
        if (not exists (select 1 from SYS_FOREIGN_KEYS where FK_TABLE = tbl and FKCOLUMN_NAME = col_name))
