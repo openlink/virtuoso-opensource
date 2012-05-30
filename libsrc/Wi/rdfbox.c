@@ -2938,6 +2938,8 @@ bif_http_rdfxml_triple (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       env->te_prev_subj_loc = tii.s.uri;
       tii.s.uri = NULL;
     }
+  if (tii.p.loc && !tii.p.loc[0])
+    session_buffered_write (ses, "\n    <!--", 9);
                              /* .0123456 */
   session_buffered_write (ses, "\n    <", 6);
   rdfxml_http_write_ref (ses, env, &(tii.p), RDFXML_HTTP_WRITE_REF_P_OPEN);
@@ -2974,6 +2976,8 @@ bif_http_rdfxml_triple (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       rdfxml_http_write_ref (ses, env, &(tii.p), RDFXML_HTTP_WRITE_REF_P_CLOSE);
       session_buffered_write_char ('>', ses);
     }
+  if (tii.p.loc && !tii.p.loc[0])
+    session_buffered_write (ses, "\n    -->", 8);
 fail:
   dk_free_box (tii.s.uri); /*	dk_free_box (tii.s.ns);		dk_free_box (tii.s.loc);	dk_free_box (tii.s.prefix); */
   dk_free_box (tii.p.uri);	dk_free_box (tii.p.ns);		dk_free_box (tii.p.loc);	dk_free_box (tii.p.prefix);
