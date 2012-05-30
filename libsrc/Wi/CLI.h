@@ -306,6 +306,8 @@ struct stmt_descriptor_s {
 # define err_printf(a)
 #endif
 
+#define cli_dbg_printf(a)
+
 
 #define CON(c, cc) \
   cli_connection_t *c = (cli_connection_t *) cc
@@ -436,8 +438,6 @@ SQLLEN col_desc_get_display_size (col_desc_t *cd, int cli_binary_timestamp);
 void dbg_print_box (caddr_t object, FILE * out);
 #endif
 extern int isdts_mode;
-
-#define cli_dbg_printf(a)
 
 
 /*

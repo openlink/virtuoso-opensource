@@ -2032,6 +2032,8 @@ virtodbc__SQLGetInfo (
   int is_short = 0;
   int is_ulen = 0;
 
+  cli_dbg_printf (("SQLGetInfo called.\n"));
+
   switch (fInfoType)
     {
     case SQL_ACTIVE_CONNECTIONS:
