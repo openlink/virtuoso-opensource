@@ -8326,8 +8326,12 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
 	    https_cvfile = https_opts[i + 1];
 	  else if (!stricmp (https_opts[i], "https_cert") && DV_STRINGP (https_opts[i + 1]))	/* x509 cert */
 	    cert = https_opts[i + 1];
+	  else if (!stricmp (https_opts [i], "https_certificate") && DV_STRINGP (https_opts [i + 1])) /* ALIAS x509 cert */
+	    cert = https_opts [i + 1];
 	  else if (!stricmp (https_opts[i], "https_key") && DV_STRINGP (https_opts[i + 1]))	/* private key */
 	    skey = https_opts[i + 1];
+	  else if (!stricmp (https_opts [i], "https_private_key") && DV_STRINGP (https_opts [i + 1]))  /* ALIAS private key */
+	    skey = https_opts [i + 1];
 	  else if (!stricmp (https_opts[i], "https_cv_depth"))	/* verification depth */
 	    https_cvdepth = unbox (https_opts[i + 1]);
 	  else if (!stricmp (https_opts[i], "https_verify"))	/* verify mode */
