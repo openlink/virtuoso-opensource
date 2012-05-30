@@ -1701,6 +1701,7 @@ sparp_make_aliases (sparp_t *sparp)
 sparp_equiv_t *
 sparp_find_external_namesake_eq_of_varname (sparp_t *sparp, caddr_t varname, dk_set_t parent_gps)
 {
+#if 0 /* code for old draft of SPARQL 1.1 */
   if (NULL != sparp->sparp_env->spare_bindings_vars)
     {
       int ctr;
@@ -1712,6 +1713,7 @@ sparp_find_external_namesake_eq_of_varname (sparp_t *sparp, caddr_t varname, dk_
         }
       END_DO_BOX_FAST_REV;
     }
+#endif
   DO_SET (SPART *, parent, &parent_gps)
     {
       sparp_equiv_t *parent_eq = sparp_equiv_get (sparp, parent, (SPART *)varname, SPARP_EQUIV_GET_NAMESAKES);
@@ -1741,7 +1743,7 @@ sparp_gp_trav_label_external_vars_gp_in (sparp_t *sparp, SPART *curr, sparp_trav
   if (SPAR_GP != SPART_TYPE (curr))
     return 0;
   sleve = (sparp_label_external_vars_env_t *)common_env;
-  if ((NULL == sleve->parent_gps_for_table_subq) && (NULL == sparp->sparp_env->spare_bindings_vars))
+  if ((NULL == sleve->parent_gps_for_table_subq) /* && (NULL == sparp->sparp_env->spare_bindings_vars) --- code for old draft of SPARQL 1.1 */)
     return SPAR_GPT_ENV_PUSH;
   if (SELECT_L == curr->_.gp.subtype)
     {
@@ -1818,7 +1820,7 @@ sparp_label_external_vars (sparp_t *sparp, sparp_label_external_vars_env_t *slev
     }
   sparp_trav_out_clauses (sparp, top, sleve,
     NULL, NULL,
-    (((NULL != sleve->parent_gps_for_var_search) || (NULL != sparp->sparp_env->spare_bindings_vars)) ?
+    (((NULL != sleve->parent_gps_for_var_search) /*|| (NULL != sparp->sparp_env->spare_bindings_vars) --- code for old draft of SPARQL 1.1 */) ?
       sparp_gp_trav_label_external_vars_expn_in : NULL ),
     NULL,
     sparp_gp_trav_label_external_vars_expn_subq,
@@ -2495,6 +2497,14 @@ sparp_equiv_audit_all (sparp_t *sparp, int flags)
             (int)(eq->e_own_idx), eq->e_varnames[0],
             (int)(eq->e_nested_bindings), BOX_ELEMENTS_INT_0 (eq->e_subvalue_idxs), (int)(eq->e_optional_reads) );
       gp = eq->e_gp;
+      for (var_ctr = eq->e_var_count; var_ctr--; /*no step*/)
+        {
+          SPART *var = eq->e_vars [var_ctr];
+          if (var->_.var.equiv_idx != eq_ctr)
+            spar_audit_error (sparp, "sparp_" "equiv_audit_all(): var->_.var.equiv_idx != eq_ctr: eq #%d for %s, gp %s, var %s/%s/%s with equiv_idx %d", eq_ctr, eq->e_varnames[0], var->_.var.selid, var->_.var.tabid, var->_.var.vname, var->_.var.equiv_idx);
+        }
+      if (SPAR_GP != gp->type)
+        continue;
       sparp_equiv_audit_gp (sparp, gp, ((SPART_BAD_GP_SUBTYPE == gp->_.gp.subtype) ? 1 : 0), eq);
       for (var_ctr = eq->e_var_count; var_ctr--; /*no step*/)
         {
@@ -6018,7 +6028,7 @@ sparp_req_top_has_limofs (SPART *tree)
     return 0;
   if ((DV_LONG_INT == DV_TYPE_OF (tree->_.req_top.limit)) && (DV_LONG_INT == DV_TYPE_OF (tree->_.req_top.offset)))
     {
-      long lim = unbox ((caddr_t)(tree->_.req_top.limit));
+      /*long lim = unbox ((caddr_t)(tree->_.req_top.limit));*/
       long ofs = unbox ((caddr_t)(tree->_.req_top.offset));
       if ((NULL == tree->_.req_top.limit) && (0 == ofs))
         return 0;

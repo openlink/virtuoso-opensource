@@ -345,6 +345,7 @@ typedef struct sparp_s {
 #endif
   ccaddr_t sparp_text;
   int sparp_permitted_syntax;		/*!< Bitmask of permitted syntax extensions, 0 for default */
+  int sparp_inner_permitted_syntax;	/*!< The value of last define lang:dialect, it will be assigned to sparp_permitted_syntax for the subquery, -1 before set */
   int sparp_unictr;			/*!< Unique counter for objects */
 /* Environment of yacc */
   sparp_env_t * sparp_env;
@@ -577,13 +578,14 @@ typedef struct spar_tree_s
         SPART **orig_retvals;		/*!< Retvals as they were after expanding '*' and wrapping in MAX() */
         SPART **expanded_orig_retvals;	/*!< Retvals as they were after expanding '*' and wrapping in MAX() and adding vars to grab */
         caddr_t retselid;
-        SPART **sources;
-        SPART *pattern;
-        SPART **groupings;
-        SPART *having;
-        SPART **order;
-        SPART *limit;
-        SPART *offset;
+        SPART **sources;		/*!< Ordered list of FROM, FROM NAMED, NOT FROM and NOT FROM NAMED clauses */
+        SPART *pattern;			/*!< Top-level group pattern that comes from WHERE {...} clause */
+        SPART **groupings;		/*!< NULL or array of grouping expressions */
+        SPART *having;			/*!< NULL or HAVING expression */
+        SPART **order;			/*!< NULL or array of column numbers or oby expressions */
+        SPART *limit;			/*!< NULL or limit expression (boxed integer or a precode) */
+        SPART *offset;			/*!< NULL or offset expression (boxed integer or a precode) */
+        SPART *binv;			/*!< NULL or SPAR_BINDINGS_INV */
         sparp_env_t *shared_spare;	/*!< An environment that is shared among all clones of the tree */
       } req_top;
     struct {
@@ -665,6 +667,7 @@ typedef struct spar_tree_s
         SPART **obys;		/*!< Array of ORDER BY criteria */
         SPART *lim;		/*!< Boxed LIMIT value or an expression tree */
         SPART *ofs;		/*!< Boxed OFFSET value or an expression tree */
+        SPART *binv;		/*!< NULL or SPAR_BINDINGS_INV */
       } wm;
     struct {
         /* define SPAR_SERVICE_INV	(ptrlong)1020 */
@@ -894,14 +897,14 @@ extern void spar_optimize_retvals_of_insert_or_delete (sparp_t *sparp, SPART *to
 extern void spar_optimize_retvals_of_modify (sparp_t *sparp, SPART *top);
 extern SPART **spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, SPART *limit, SPART *offset);
 extern void spar_add_rgc_vars_and_consts_from_retvals (sparp_t *sparp, SPART **retvals);
-extern SPART *spar_make_wm (sparp_t *sparp, SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset);
+extern SPART *spar_make_wm (sparp_t *sparp, SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset, SPART *binv);
 /*! Creates SPAR_REQ_TOP tree or a codegen for some special case. A macroexpansion is made before recognizing special cases. */
 extern SPART *spar_make_top_or_special_case_from_wm (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   caddr_t retselid, SPART *wm );
 extern void spar_alloc_fake_equivs_for_bindings_inv (sparp_t *sparp, SPART *binv);
 extern SPART **spar_make_sources_like_top (sparp_t *sparp, ptrlong top_subtype);
 extern SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
-  caddr_t retselid, SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset);
+  caddr_t retselid, SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset, SPART *binv);
 extern SPART *spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri_or_pair, SPART **options);
 extern SPART *spar_make_param_or_variable (sparp_t *sparp, caddr_t name);
 extern SPART *spar_make_variable (sparp_t *sparp, caddr_t name);
@@ -920,6 +923,7 @@ extern SPART *sparp_make_macro_call (sparp_t *sparp, caddr_t funname, int call_i
 extern int sparp_namesake_macro_param (sparp_t *sparp, SPART *dm, caddr_t param_name);
 extern SPART *spar_make_sparul_clear (sparp_t *sparp, SPART *graph_precode, int silent);
 extern SPART *spar_make_sparul_load (sparp_t *sparp, SPART *graph_precode, SPART *src_precode, int silent);
+extern SPART *spar_make_sparul_load_service_data (sparp_t *sparp, SPART *proxy_iri_precode, SPART *service_iri_precode, int silent);
 extern SPART *spar_make_sparul_create (sparp_t *sparp, SPART *graph_precode, int silent);
 extern SPART *spar_make_sparul_drop (sparp_t *sparp, SPART *graph_precode, int silent);
 extern SPART *spar_make_sparul_copymoveadd (sparp_t *sparp, ptrlong opcode, SPART *from_graph_precode, SPART *to_graph_precode, int silent);

@@ -440,16 +440,27 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
     {
     case SPAR_ALIAS:
       {
+        int old_parens = ((SSG_SD_VIRTSPECIFIC & ssg->ssg_sd_flags) && !(SSG_SD_SPARQL11_DRAFT & ssg->ssg_sd_flags));
+        if (!(SSG_SD_BI_OR_SPARQL11_DRAFT & ssg->ssg_sd_flags))
+          {
+            ssg_sdprint_tree (ssg, tree->_.alias.arg);
+            return;
+          }
         ssg_putchar (' ');
         ssg_puts (" (");
         ssg->ssg_indent++;
         ssg_sdprint_tree (ssg, tree->_.alias.arg);
-        ssg_puts (")");
-        ssg->ssg_indent--;
-        if (SSG_SD_BI & ssg->ssg_sd_flags)
+        if (old_parens)
           {
-            ssg_puts (" AS ?");
-            ssg_puts (tree->_.alias.aname);
+            ssg_puts (")");
+            ssg->ssg_indent--;
+          }
+        ssg_puts (" AS ?");
+        ssg_puts (tree->_.alias.aname);
+        if (!old_parens)
+          {
+            ssg_puts (")");
+            ssg->ssg_indent--;
           }
         return;
       }
@@ -526,7 +537,18 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
     case SPAR_FUNCALL:
       {
         caddr_t fname = tree->_.funcall.qname;
-        ssg_putchar (' ');
+        ssg_putchar (' '); /* 01234567890123 */
+        if (!strncmp (fname, "SPECIAL::bif:", 13))
+          {
+static const char *sparql11aggregates[] = { "AVG", "COUNT", "GROUP_CONCAT", "MAX", "MIN", "SAMPLE", "SUM" };
+            if (ECM_MEM_NOT_FOUND != ecm_find_name (fname+13, sparql11aggregates, sizeof (sparql11aggregates)/sizeof (char *), sizeof (char *)))
+              {
+                if (!(SSG_SD_BI_OR_SPARQL11_DRAFT & ssg->ssg_sd_flags))
+                  spar_error (ssg->ssg_sparp, "%.100s does not support %s aggregate function so SPARQL query can not be composed", ssg->ssg_sd_service_name, fname+13);
+                ssg_puts (fname+13);
+                goto fname_printed; /* see below */
+              }
+          }
         if (!strncmp (fname, "xpath:", 6))
           {
             char *colon = strrchr (fname + 6, ':');
@@ -540,6 +562,7 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
               }
           }
         ssg_sdprin_qname (ssg, (SPART *)(fname));
+fname_printed:
         ssg_putchar ('(');
         ssg->ssg_indent++;
         ssg_sdprint_tree_list (ssg, tree->_.funcall.argtrees, ',');

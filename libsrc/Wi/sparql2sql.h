@@ -434,6 +434,8 @@ extern qm_value_t *sparp_find_qmv_of_var_or_retval (sparp_t *sparp, SPART *var_t
 
 extern SPART *sparp_find_gp_by_eq_idx (sparp_t *sparp, ptrlong eq_idx);
 
+extern int sparp_find_language_dialect_by_service (sparp_t *sparp, SPART *service_expn);
+
 /*! This searches for storage by its name. NULL arg means default (or no storage if there's no default loaded), empty UNAME means no storage */
 extern quad_storage_t *sparp_find_storage_by_name (ccaddr_t name);
 
@@ -1001,27 +1003,9 @@ extern void ssg_make_whole_sql_text (spar_sqlgen_t *ssg);
 
 /* PART 4. SPARQL-D ("-DISTRIBUTED") GENERATOR */
 
-/* Flags that are responsible for various serialization features.
-Some features are labeled as "blocking", because if such a feature is required but flag is not set, an error is signaled.
-An occurrence of a non-blocking feature provides some hint to the optimizer of the SPARQL service endpoint; a blocking one alters semantics. */
-#define SSG_SD_QUAD_MAP		0x0001	/*!< Allows the use of QUAD MAP groups in the output */
-#define SSG_SD_OPTION		0x0002	/*!< Allows the use of OPTION keyword in the output */
-#define SSG_SD_BREAKUP		0x0004	/*!< Flags if BREAKUP hint options should be printed, this has no effect w/o SSG_SD_OPTION */
-#define SSG_SD_PKSELFJOIN	0x0008	/*!< Flags if PKSELFJOIN hint options should be printed, this has no effect w/o SSG_SD_OPTION */
-#define SSG_SD_RVR		0x0010	/*!< Flags if RVR hint options should be printed, this has no effect w/o SSG_SD_OPTION */
-#define SSG_SD_IN		0x0020	/*!< Allows the use of IN operator, non-blocking because can be replaced with '=' */
-#define SSG_SD_LIKE		0x0040	/*!< Allows the use of LIKE operator, blocking */
-#define SSG_SD_GLOBALS		0x0080	/*!< Allows the use of global variables (with colon at the front of the name), blocking in most of cases */
-#define SSG_SD_BI		0x0100	/*!< Allows the use of SPARQL-BI extensions, blocking in most of cases */
-#define SSG_SD_VIRTSPECIFIC	0x0200	/*!< Allows the use of Virtuoso-specific features not listed above, say DEFINE, blocking in most of cases */
-#define SSG_SD_VOS_509		0x03FF	/*!< Allows everything that is supported by Virtuoso Open Source 5.0.9 */
-#define SSG_SD_SERVICE		0x0400	/*!< Allows the use of SERVICE extension, blocking */
-#define SSG_SD_VOS_5_LATEST	0x0FFF	/*!< Allows everything that is supported by CVS had of Virtuoso Open Source 5.x.x */
-#define SSG_SD_TRANSIT		0x1000	/*!< Allows the use of transitivity extension, blocking */
-#define SSG_SD_VOS_6		0x1FFF	/*!< Allows everything that is supported by Virtuoso Open Source 6.0.0 */
-#define SSG_SD_VOS_CURRENT	SSG_SD_VOS_6	/*!< Allows everything that is supported by current version of Virtuoso Open Source */
-#define SSG_SD_SPARQL11		0x2000	/*!< Allows the use of SPARQL 1.1 extensions, blocking in most of cases */
-#define SSG_SD_BI_OR_SPARQL11 (SSG_SD_BI | SSG_SD_SPARQL11)
+#define SSG_SD_VOS_CURRENT	(SSG_SD_VOS_6 | SSG_SD_SPARQL11_DRAFT)	/*!< Allows everything that is supported by current version of Virtuoso Open Source */
+#define SSG_SD_SPARQL11		(SSG_SD_SPARQL11_DRAFT | SSG_SD_SPARQL11_FULL)	/*!< Allows the use of SPARQL 1.1 extensions, blocking in most of cases */
+#define SSG_SD_BI_OR_SPARQL11_DRAFT	(SSG_SD_BI | SSG_SD_SPARQL11_DRAFT)
 #define SSG_SD_DEPRECATED_MASK	0x0	/*!< All bits of deprecated flags (none so far) */
 #define SSG_SD_MAXVALUE		(SSG_SD_VOS_CURRENT | SSG_SD_DEPRECATED_MASK)
 

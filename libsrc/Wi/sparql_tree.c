@@ -1177,6 +1177,8 @@ sparp_equiv_get (sparp_t *sparp, SPART *haystack_gp, SPART *needle_var, int flag
     goto retnull;
   curr_eq = sparp_equiv_alloc (sparp);
   curr_eq->e_gp = haystack_gp;
+  if (SPAR_GP != haystack_gp->type)
+    spar_internal_error (sparp, "sparp_" "equiv_get() with non-gp haystack");
   if (BOX_ELEMENTS_INT_0 (eq_idxs) == eqcount)
     {
       size_t new_size = ((NULL == eq_idxs) ? 4 * sizeof (ptrlong) : 2 * box_length (eq_idxs));
@@ -3848,6 +3850,23 @@ SPART *sparp_find_gp_by_eq_idx (sparp_t *sparp, ptrlong eq_idx)
   return NULL;
 }
 
+int
+sparp_find_language_dialect_by_service (sparp_t *sparp, SPART *service_expn)
+{
+  caddr_t service_iri = SPAR_LIT_OR_QNAME_VAL (service_expn);
+  caddr_t *lang_strs;
+  int res;
+  if ((DV_STRING != DV_TYPE_OF (service_iri)) && (DV_UNAME != DV_TYPE_OF (service_iri)))
+    return 0;
+  lang_strs = jso_triple_get_objs ((caddr_t *)(sparp->sparp_sparqre->sparqre_qi), service_iri, uname_virtrdf_ns_uri_dialect);
+  if (1 != BOX_ELEMENTS_0 (lang_strs))
+    return 0;
+  if (1 != sscanf (lang_strs[0], "%08x", &res))
+    return 0;
+  if (0 > res)
+    return 0;
+  return res;
+}
 
 quad_storage_t *
 sparp_find_storage_by_name (ccaddr_t name)
@@ -3903,7 +3922,7 @@ sparp_find_origin_of_external_var (sparp_t *sparp, SPART *var, int find_exact_sp
     }
   if (SPAR_BINDINGS_INV == esrc->e_gp->type) /* An external variable may come from bindings invocation instead of a GP. Binding var is the only choice then. */
     return esrc->e_vars[0];
-  if (UNION_L == esrc->e_gp->type) /* No one specimen from (one branch of) union can reliably represent all cases a union can produce. */
+  if (UNION_L == esrc->e_gp->_.gp.subtype) /* No one specimen from (one branch of) union can reliably represent all cases a union can produce. */
     {
       esub_res_eq = esrc;
       esub_res_gp = esrc->e_gp;
