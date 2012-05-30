@@ -779,7 +779,7 @@ fname_printed:
         DO_BOX_FAST (SPART *, arg, retctr, tree->_.req_top.retvals)
           {
             ptrlong arg_type = SPART_TYPE (arg);
-            if (0 != ctr)
+            if (0 != retctr)
               ssg_newline (0);
             while ((SPAR_ALIAS == arg_type) && !((SSG_SD_BI & ssg->ssg_sd_flags)))
               {
@@ -803,6 +803,16 @@ fname_printed:
               }
           }
         END_DO_BOX_FAST;
+        if ((ASK_L != tree->_.req_top.subtype) && (0 == BOX_ELEMENTS_0 (tree->_.req_top.retvals)))
+          {
+            caddr_t stub_varname = t_box_sprintf (100, "stubvar%d", ssg->ssg_sparp->sparp_unictr++);
+            if (SSG_SD_BI_OR_SPARQL11_DRAFT & ssg->ssg_sd_flags)
+              ssg_sdprint_tree (ssg, spartlist (ssg->ssg_sparp, 4, SPAR_ALIAS, (ptrlong)1, stub_varname, SSG_VALMODE_AUTO));
+            else
+              {
+                ssg_puts (" ?"); ssg_puts (stub_varname);
+              }
+          }
         for (srcctr = 0; srcctr < srccount; srcctr++)
           {
             SPART *src = tree->_.req_top.sources[srcctr];
