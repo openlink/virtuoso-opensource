@@ -715,7 +715,7 @@ g_done:
           prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
           prefix sd: <http://www.w3.org/ns/sparql-service-description#>
           insert in virtrdf: { `iri(?:endpoint)` virtrdf:isEndpointOfService `iri(?:srv_iri)` };
-          DB.DBA.CL_EXEC_AND_LOG ('jso_triple_add (?,?,?)', vector ("endpoint", UNAME'http://www.openlinksw.com/schemas/virtrdf#isEndpointOfService', srv_iri));
+          DB.DBA.SECURITY_CL_EXEC_AND_LOG ('jso_triple_add (?,?,?)', vector ("endpoint", UNAME'http://www.openlinksw.com/schemas/virtrdf#isEndpointOfService', srv_iri));
           result ('00000', 'The IRI <' || endpoint || '> is registered as an web service endpoint of SPARQL service <' || service_iri || '>');
         }
       declare feats any;
@@ -801,9 +801,9 @@ post_done: ;
       prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
       insert in virtrdf: { `iri(?:service_iri)` virtrdf:bestRequestMethod `(?:req_method)` };
       commit work;
-      DB.DBA.CL_EXEC_AND_LOG ('jso_triples_del (?,?,null)', vector (service_iri, UNAME'http://www.openlinksw.com/schemas/virtrdf#bestRequestMethod'));
+      DB.DBA.SECURITY_CL_EXEC_AND_LOG ('jso_triples_del (?,?,null)', vector (service_iri, UNAME'http://www.openlinksw.com/schemas/virtrdf#bestRequestMethod'));
       if (req_method is not null)
-        DB.DBA.CL_EXEC_AND_LOG ('jso_triple_add (?,?,?)', vector (service_iri, UNAME'http://www.openlinksw.com/schemas/virtrdf#bestRequestMethod', req_method));
+        DB.DBA.SECURITY_CL_EXEC_AND_LOG ('jso_triple_add (?,?,?)', vector (service_iri, UNAME'http://www.openlinksw.com/schemas/virtrdf#bestRequestMethod', req_method));
     }
   else
     signal ('22023', 'The service <' || service_iri || '> has no description and the site is not responding as a SPARQL endpoint');
@@ -850,8 +850,8 @@ probe_done:;
   prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
   prefix sd: <http://www.w3.org/ns/sparql-service-description#>
   insert in virtrdf: { `iri(?:service_iri)` virtrdf:dialect ?:lang_bits_hex };
-  DB.DBA.CL_EXEC_AND_LOG ('jso_triples_del (?,?,null)', vector (service_iri, UNAME'http://www.openlinksw.com/schemas/virtrdf#dialect'));
-  DB.DBA.CL_EXEC_AND_LOG ('jso_triple_add (?,?,?)', vector (service_iri, UNAME'http://www.openlinksw.com/schemas/virtrdf#dialect', lang_bits_hex));
+  DB.DBA.SECURITY_CL_EXEC_AND_LOG ('jso_triples_del (?,?,null)', vector (service_iri, UNAME'http://www.openlinksw.com/schemas/virtrdf#dialect'));
+  DB.DBA.SECURITY_CL_EXEC_AND_LOG ('jso_triple_add (?,?,?)', vector (service_iri, UNAME'http://www.openlinksw.com/schemas/virtrdf#dialect', lang_bits_hex));
 }
 ;
 
@@ -4200,6 +4200,7 @@ create procedure DB.DBA.RDF_GRANT_SPARQL_IO ()
     'grant execute on WS.WS."/!sparql-sd/" to "SPARQL"',
     'grant execute on DB.DBA.SPARQL_REFRESH_DYNARES_RESULTS to "SPARQL"',
     'grant execute on DB.DBA.SPARQL_ROUTE_DICT_CONTENT_DAV to SPARQL_UPDATE',
+    'grant execute on DB.DBA.SPARQL_SD_PROBE to SPARQL_SPONGE',
     'grant execute on DB.DBA.SPARQL_SINV_IMP to SPARQL_SPONGE',
     'grant select on DB.DBA.SPARQL_SINV_2 to SPARQL_SPONGE' );
   foreach (varchar cmd in cmds) do
