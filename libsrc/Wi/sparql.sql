@@ -6763,9 +6763,9 @@ create function DB.DBA.SPARUL_LOAD_SERVICE_DATA (in service_iri any, in proxy_ir
   if (compose_report)
     {
       if (length (rows))
-        return sprintf ('Load service <%s> data <%s> -- done. %s', service_iri, rows[length(rows)-1][1]);
+        return sprintf ('Load service <%s> data -- done. %s', service_iri, rows[length(rows)-1][1]);
       else
-        return sprintf ('Load service <%s> data <%s> -- nothing done', service_iri);
+        return sprintf ('Load service <%s> data -- nothing done', service_iri);
     }
   else
     return 1;
@@ -14363,6 +14363,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.SPARUL_ADD to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARUL_CLEAR to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARUL_COPY to SPARQL_UPDATE',
+    'grant execute on SPARUL_LOAD_SERVICE_DATA to SPARQL_SPONGE',
     'grant execute on DB.DBA.SPARUL_CREATE to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARUL_DROP to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARUL_LOAD to SPARQL_UPDATE',
