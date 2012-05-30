@@ -369,13 +369,15 @@ create procedure DB.DBA.XML_LOAD_ALL_NS_DECLS ()
   DB.DBA.XML_SET_NS_DECL (	'rdfdf'	, 'http://www.openlinksw.com/virtrdf-data-formats#'	, 2);
   DB.DBA.XML_SET_NS_DECL (	'rdfs'	, 'http://www.w3.org/2000/01/rdf-schema#'	, 2);
   DB.DBA.XML_SET_NS_DECL (	'sc'	, 'http://purl.org/science/owl/sciencecommons/'		, 2);
+  DB.DBA.XML_SET_NS_DECL (	'sd'	, 'http://www.w3.org/ns/sparql-service-description#'		, 2);
   DB.DBA.XML_SET_NS_DECL (	'sioc'	, 'http://rdfs.org/sioc/ns#'	, 2);
   DB.DBA.XML_SET_NS_DECL (	'skos'	, 'http://www.w3.org/2004/02/skos/core#'	, 2);
   DB.DBA.XML_SET_NS_DECL (	'sql'	, 'sql:'	, 2);
-  DB.DBA.XML_SET_NS_DECL (	'virtrdf'	, 'http://www.openlinksw.com/schemas/virtrdf#'	, 2);
-  DB.DBA.XML_SET_NS_DECL (	'virtcxml'	, 'http://www.openlinksw.com/schemas/virtcxml#'	, 2);
   DB.DBA.XML_SET_NS_DECL (	'vcard'	, 'http://www.w3.org/2001/vcard-rdf/3.0#'	, 2);
   DB.DBA.XML_SET_NS_DECL (	'vcard2006'	, 'http://www.w3.org/2006/vcard/ns#'	, 2);
+  DB.DBA.XML_SET_NS_DECL (	'virtrdf'	, 'http://www.openlinksw.com/schemas/virtrdf#'	, 2);
+  DB.DBA.XML_SET_NS_DECL (	'virtcxml'	, 'http://www.openlinksw.com/schemas/virtcxml#'	, 2);
+  DB.DBA.XML_SET_NS_DECL (	'void'	, 'http://rdfs.org/ns/void#'	, 2);
   DB.DBA.XML_SET_NS_DECL (	'xf'	, 'http://www.w3.org/2004/07/xpath-functions'	, 2);
   DB.DBA.XML_SET_NS_DECL (	'xml'	, 'http://www.w3.org/XML/1998/namespace'	, 2);
   DB.DBA.XML_SET_NS_DECL (	'xsd'	, 'http://www.w3.org/2001/XMLSchema#'	, 2);
@@ -3716,6 +3718,12 @@ print_o:
 }
 ;
 
+create function DB.DBA.RDF_TRIPLES_TO_TTL_ENV (in tcount integer)
+{
+  return vector (dict_new (__min (tcount, 16000)), 0, '', '', '', 0, 0, 0, 0);
+}
+;
+
 create procedure DB.DBA.RDF_TRIPLES_TO_TTL (inout triples any, inout ses any)
 {
   declare env any;
@@ -3727,7 +3735,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_TTL (inout triples any, inout ses any)
       http ('# Empty TURTLE\n', ses);
       return;
     }
-  env := vector (dict_new (__min (tcount, 16000)), 0, '', '', '', 0, 0, 0, 0);
+  env := DB.DBA.RDF_TRIPLES_TO_TTL_ENV (tcount);
   { whenever sqlstate '*' goto end_pred_sort;
     rowvector_subj_sort (triples, 1, 1);
 end_pred_sort: ;
@@ -3757,7 +3765,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_TRIG (inout triples any, inout ses any)
       http ('# Empty TriG\n', ses);
       return;
     }
-  env := vector (dict_new (__min (tcount, 16000)), 0, '', '', '', 0, 0, 0, 0);
+  env := DB.DBA.RDF_TRIPLES_TO_TTL_ENV (tcount);
   { whenever sqlstate '*' goto end_pred_sort;
     rowvector_subj_sort (triples, 1, 1);
 end_pred_sort: ;
@@ -6730,6 +6738,37 @@ fail:
     return sprintf ('Load silent <%s> into graph <%s> -- failed: %s: %s', resource, graph_iri, __SQL_STATE, __SQL_MESSAGE);
   else
     return 0;
+}
+;
+
+create function DB.DBA.SPARUL_LOAD_SERVICE_DATA (in service_iri any, in proxy_iri varchar, in uid integer, in log_mode integer, in compose_report integer, in options any := null, in silent integer := 0) returns any
+{
+  declare old_log_enable integer;
+  declare mdta, rows any;
+  declare stat, msg varchar;
+  __rgs_assert_cbk (service_iri, uid, 2, 'SPARUL LOAD SERVICE DATA');
+  dbg_obj_princ ('DB.DBA.SPARUL_LOAD_SERVICE_DATA (', service_iri, proxy_iri, uid, log_mode, compose_report, options, silent, ')');
+  old_log_enable := log_enable (log_mode, 1);
+  stat := '00000';
+  exec ('DB.DBA.SPARQL_SD_PROBE (?, ?, 0, 0)', stat, msg, vector (service_iri, proxy_iri), 10000, mdta, rows);
+  log_enable (old_log_enable, 1);
+  if (stat <> '00000')
+    {
+      if (not silent) signal (stat, msg);
+      if (compose_report)
+        return sprintf ('Load service <%s> data failed: %s: %s', service_iri, stat, msg);
+      else
+        return 0;
+    }
+  if (compose_report)
+    {
+      if (length (rows))
+        return sprintf ('Load service <%s> data <%s> -- done. %s', service_iri, rows[length(rows)-1][1]);
+      else
+        return sprintf ('Load service <%s> data <%s> -- nothing done', service_iri);
+    }
+  else
+    return 1;
 }
 ;
 
@@ -14059,7 +14098,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
 {
   declare ver varchar;
   declare inx int;
-  ver := '2012-01-26 0002v6g';
+  ver := '2012-05-17 0001v6g';
   if (USER <> 'dba')
     signal ('RDFXX', 'Only DBA can reload quad map metadata');
   if (not exists (sparql define input:storage "" ask where {
@@ -14307,6 +14346,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.SPARUL_CREATE to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARUL_DROP to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARUL_LOAD to SPARQL_UPDATE',
+    'grant execute on DB.DBA.SPARUL_LOAD_SERVICE_DATA to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARUL_MOVE to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARUL_RUN to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS to SPARQL_SELECT',
