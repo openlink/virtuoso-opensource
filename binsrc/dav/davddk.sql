@@ -549,6 +549,12 @@ create procedure WS.WS.COL_PATH (in _id any)
   while (_id > 0)
     {
       select COL_NAME, COL_PARENT into _name, _p_id from WS.WS.SYS_DAV_COL where COL_ID = _id;
+      if (_id = _p_id)
+	{
+	  log_message (sprintf ('DAV collection %d is its own parent', _id));
+	  _path := '**circular**/' || _path;
+	  return _path;
+	}
       _id := _p_id;
       _path := concat ('/', _name, _path);
     }
