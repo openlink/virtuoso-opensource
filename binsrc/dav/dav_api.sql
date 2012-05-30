@@ -2879,6 +2879,12 @@ DAV_DELETE_INT (
   else if (ty = 'C')
     {
       declare rrc integer;
+      declare det varchar;
+
+      det := cast ((select COL_DET from WS.WS.SYS_DAV_COL where COL_ID=id) as varchar);
+      if (det in ('GDrive', 'Dropbox'))
+        connection_set ('dav_store', 1);
+
       for select RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_COL = id do
         {
           rrc := DAV_DELETE_INT (RES_FULL_PATH, silent, auth_uname, auth_pwd, extern);
@@ -4176,7 +4182,11 @@ DAV_PROP_GET_INT (
         {
           if (isarray (id))
             {
+              ret := call (cast (id[0] as varchar) || '_DAV_PROP_GET') (id, what, propname, auth_uid);
+              if (isinteger (ret) and (ret = -20))
               return coalesce ((select COL_ACL from WS.WS.SYS_DAV_COL where COL_ID = id[1]));
+
+              return ret;
             }
           else
             {
