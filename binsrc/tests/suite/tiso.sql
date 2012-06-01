@@ -22,7 +22,7 @@
 --  
 
 
-echo both "Transaction Isolation Tests\n";
+ECHO BOTH "Transaction Isolation Tests\n";
 
 drop table rc_test;
 create table rc_test (id int not null primary key, ctr int default 1, d varchar)
@@ -274,7 +274,7 @@ rct_u (10000, 1000) &
 
 wait_for_children;
 
-echo both "Done rct_u\n";
+ECHO BOTH "Done rct_u\n";
 
 
 rct_s (10000, 1000) &
@@ -282,14 +282,14 @@ rct_s (10000, 1000) &
 rct_s (10000, 1000) &
 rct_s (10000, 1000) &
 wait_for_children;
-echo both "Done rct_s\n";
+ECHO BOTH "Done rct_s\n";
 
 rct_su (10000, 1000) &
 rct_su (10000, 1000) &
 rct_su (10000, 1000) &
 rct_su (10000, 1000) &
 wait_for_children;
-echo both "Done rct_su\n";
+ECHO BOTH "Done rct_su\n";
 
 
 rct_su (10000, 2) &
@@ -297,7 +297,7 @@ rct_su (10000, 2) &
 rct_su (10000, 2) &
 rct_su (10000, 2) &
 wait_for_children;
-echo both "Done rct_u 2\n";
+ECHO BOTH "Done rct_u 2\n";
 
 
 
@@ -307,7 +307,7 @@ rct_r (10000, 1000) &
 rct_r (10000, 1000) &
 rct_r (10000, 1000) &
 wait_for_children;
-echo both "Done rct_r\n";
+ECHO BOTH "Done rct_r\n";
 
 
 rct_c (10000, 1000) &
@@ -315,7 +315,7 @@ rct_c (10000, 1000) &
 rct_c (10000, 1000) &
 rct_c (10000, 1000) &
 wait_for_children;
-echo both "Done rct_c\n";
+ECHO BOTH "Done rct_c\n";
 
 
 
@@ -325,7 +325,7 @@ rct_s_ne (10000, 1000) &
 rct_s_ne (10000, 1000) &
 wait_for_children;
 
-echo both "Done rct_ne\n";
+ECHO BOTH "Done rct_ne\n";
 
 
 
@@ -334,7 +334,7 @@ rct_r (10000, 100) &
 rct_r (10000, 100) &
 rct_r (10000, 100) &
 wait_for_children;
-echo both "Done rct_r 2\n";
+ECHO BOTH "Done rct_r 2\n";
 
 
 

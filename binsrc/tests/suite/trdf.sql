@@ -182,18 +182,18 @@ rdf ('John', 'isa', url ('person'));
 
 select thi.o  from rdf per, rdf thi where thi.s = url ('thing') and thi.p = url ('pred')
   and thi.o = per.s and per.o = url ('person') and per.p = url ('isa') option (sparql);
-echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
-echo both "  inx int of  any and IRI_ID in sparql mode ok 1.\n";
+ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
+ECHO BOTH "  inx int of  any and IRI_ID in sparql mode ok 1.\n";
 
 
 
 select count (*) from sys_keys where key_id = 'qq' option (sparql);
-echo both $if $equ $last[1] 0 "PASSED" "***FAILED";
-echo both " cast error ignore 1.\n";
+ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
+ECHO BOTH " cast error ignore 1.\n";
 
 select count (*) from sys_keys where key_id = 'qq';
-echo both $if $equ $sqlstate 22005   "PASSED" "***FAILED";
-echo both " cast error ignore 2.\n";
+ECHO BOTH $IF $EQU $SQLSTATE 22005   "PASSED" "***FAILED";
+ECHO BOTH " cast error ignore 2.\n";
 
 
 

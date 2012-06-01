@@ -25,7 +25,7 @@
 --  
 --  
 
-echo both "schema integrity \n";
+ECHO BOTH "schema integrity \n";
 
 select * from sys_key_parts;
 select * from sys_cols;
@@ -49,100 +49,100 @@ insert into nt values (5, null);
 -- create index n on nt (a);
 
 select count (*) from nt;
-echo both $if $equ $last[1] 6 "PASSED" "***FAILED";
-echo both ": " $last[1] " in nt\n";
+ECHO BOTH $IF $EQU $LAST[1] 6 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " in nt\n";
 
 select count (*) from nt where a < 2;
-echo both $if $equ $last[1] 1 "PASSED" "***FAILED";
-echo both ": " $last[1] " < 2 in nt\n";
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " < 2 in nt\n";
 
 select count (*) from nt where a > 2;
-echo both $if $equ $last[1] 2 "PASSED" "***FAILED";
-echo both ": " $last[1] " > 2 in nt\n";
+ECHO BOTH $IF $EQU $LAST[1] 2 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " > 2 in nt\n";
 
 select count (*) from nt where a = null;
-echo both $if $equ $last[1] 0 "PASSED" "***FAILED";
-echo both ": " $last[1] " a = null in nt\n";
+ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " a = null in nt\n";
 
 select count (*) from nt where b = null;
-echo both $if $equ $last[1] 0 "PASSED" "***FAILED";
-echo both ": " $last[1] " b = null in nt\n";
+ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " b = null in nt\n";
 
 select count (*) from nt where a is null;
-echo both $if $equ $last[1] 2 "PASSED" "***FAILED";
-echo both ": " $last[1] " a is null in nt\n";
+ECHO BOTH $IF $EQU $LAST[1] 2 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " a is null in nt\n";
 
 select max (a) from nt;
-echo both $if $equ $last[1] 5 "PASSED" "***FAILED";
-echo both ": " $last[1] " max a  in nt\n";
+ECHO BOTH $IF $EQU $LAST[1] 5 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " max a  in nt\n";
 
 select min (a) from nt;
-echo both $if $equ $last[1] 1 "PASSED" "***FAILED";
-echo both ": " $last[1] " min a  in nt\n";
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " min a  in nt\n";
 
 select count (*) from nt where not (a = null);
-echo both $if $equ $last[1] 0 "PASSED" "***FAILED";
-echo both ": " $last[1] " not a = null in nt\n";
+ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " not a = null in nt\n";
 
 select count (*) from nt where a = 2 or a = null;
-echo both $if $equ $last[1] 1 "PASSED" "***FAILED";
-echo both ": " $last[1] " a = null or xx in nt\n";
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " a = null or xx in nt\n";
 
 select count (*) from nt where not (a = 2 or a = null);
-echo both $if $equ $last[1] 0 "PASSED" "***FAILED";
-echo both ": " $last[1] " not (xx or a = null)  in nt\n";
+ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " not (xx or a = null)  in nt\n";
 
 select count (*) from nt where a = 2 and a <> null;
-echo both $if $equ $last[1] 0 "PASSED" "***FAILED";
-echo both ": " $last[1] " a = null and xx in nt\n";
+ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " a = null and xx in nt\n";
 
 select count (*) from nt;
-echo both $if $equ $last[1] 6 "PASSED" "***FAILED";
-echo both ": " $last[1] " count (*)\n";
+ECHO BOTH $IF $EQU $LAST[1] 6 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " count (*)\n";
 
 select count (a) from nt;
-echo both $if $equ $last[1] 4 "PASSED" "***FAILED";
-echo both ": " $last[1] " count (a)\n";
+ECHO BOTH $IF $EQU $LAST[1] 4 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " count (a)\n";
 
 select count (distinct a) from nt;
-echo both $if $equ $last[1] 4 "PASSED" "***FAILED";
-echo both ": " $last[1] " count (a)\n";
+ECHO BOTH $IF $EQU $LAST[1] 4 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " count (a)\n";
 
 select count (*) from (select distinct a from nt) f;
-echo both $if $equ $last[1] 5 "PASSED" "***FAILED";
-echo both ": " $last[1] " count (*) of distinct derived table\n";
+ECHO BOTH $IF $EQU $LAST[1] 5 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " count (*) of distinct derived table\n";
 
 select min (a), max (a), count (a), '--' from nt group by 4;
-echo both $if $equ $last[1] 1 "PASSED" "***FAILED";
-echo both ": " $last[1] " min in group \n";
-echo both $if $equ $last[2] 5 "PASSED" "***FAILED";
-echo both ": " $last[1] " max in group \n";
-echo both $if $equ $last[3] 4 "PASSED" "***FAILED";
-echo both ": " $last[1] " count in group \n";
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " min in group \n";
+ECHO BOTH $IF $EQU $LAST[2] 5 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " max in group \n";
+ECHO BOTH $IF $EQU $LAST[3] 4 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " count in group \n";
 
 
 
 select a + 1 from nt;
-echo both $if $equ $rowcnt 6 "PASSED" "***FAILED";
-echo both ": " $rowcnt " count (*) of distinct derived table\n";
+ECHO BOTH $IF $EQU $ROWCNT 6 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " count (*) of distinct derived table\n";
 
 select sum (a) from nt;
 
 select avg (a) from nt;
-echo both $if $equ $last[1] 2 "PASSED" "***FAILED";
-echo both ": " $last[1] " avg (a)\n";
+ECHO BOTH $IF $EQU $LAST[1] 2 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " avg (a)\n";
 
 select avg (coalesce (a, 0)) from nt;
-echo both $if $equ $last[1] 1 "PASSED" "***FAILED";
-echo both ": " $last[1] " avg (coalesce (a, 0))\n";
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " avg (coalesce (a, 0))\n";
 
 select avg (cast (a as numeric)), '--' from nt group by 2;
-echo both $if $equ $last[1] 2.75 "PASSED" "***FAILED";
-echo both ": " $last[1] " avg ( a) group by const)\n";
+ECHO BOTH $IF $EQU $LAST[1] 2.75 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " avg ( a) group by const)\n";
 
 select sum (cast (a as numeric)) / count (a), '--' from nt group by 2;
-echo both $if $equ $last[1] 2.75 "PASSED" "***FAILED";
-echo both ": " $last[1] " sum/count ( a) group by const)\n";
+ECHO BOTH $IF $EQU $LAST[1] 2.75 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " sum/count ( a) group by const)\n";
 
 
 -- raw_exit ();

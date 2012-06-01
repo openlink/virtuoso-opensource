@@ -215,4 +215,3 @@ XPATH [__view 'pay'] //*;
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": xml view with a large number of columns STATE=" $STATE " MESSAGE=" $MESSAGE " rows\n";
-

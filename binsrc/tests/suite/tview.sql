@@ -114,7 +114,7 @@ ECHO BOTH ": " $LAST[1] " words in words_v with len = 6\n";
 
 select *, 1 from T1 union all select *, 2 from T1 order by ROW_NO;
 ECHO BOTH $IF $EQU $ROWCNT 40 "PASSED" "***FAILED";
-ECHO BOTH ": sorted union all " $rowcnt "  rows\n";
+ECHO BOTH ": sorted union all " $ROWCNT "  rows\n";
 
 drop table TVUPDATE;
 create table TVUPDATE (ROW_NO integer not null primary key, STRING1 varchar, STRING2 varchar);
@@ -137,7 +137,7 @@ ECHO BOTH ": inserted into view  " $ROWCNT "  rows\n";
 delete from TVUPDATE_LOW_10 where R >= 200;
 select * from TVUPDATE_LOW_10;
 ECHO BOTH $IF $EQU $ROWCNT 1  "PASSED" "***FAILED";
-ECHO BOTH ": deld from inserted view, now " $rowcnt "  rows\n";
+ECHO BOTH ": deld from inserted view, now " $ROWCNT "  rows\n";
 
 drop view TVUPDATE;
 select * from TVUPDATE_LOW_10;

@@ -174,5 +174,3 @@ WAIT_FOR_SYNC ('rep1', 'proc', 10);
 select count(*) from p_test;
 ECHO BOTH $IF $EQU $LAST[1] 256 "PASSED" "*** FAILED";
 ECHO BOTH ": " $LAST[1] " entries in test table replicated with 2 calls (one is keyword parameter call)\n";
-
-

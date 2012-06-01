@@ -88,6 +88,3 @@ vt_name);
       __ddl_changed (KEY_TABLE);
     }
 }
-
-
-

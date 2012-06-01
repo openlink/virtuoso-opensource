@@ -83,5 +83,3 @@ ECHO BOTH " Inserted: " $LAST[1] " bytes\n";
 select make_1G('3G', 20000);
 ECHO BOTH $IF $EQU $LAST[1] '3G' "PASSED" "***FAILED";
 ECHO BOTH " Inserted: " $LAST[1] " bytes\n";
-
-

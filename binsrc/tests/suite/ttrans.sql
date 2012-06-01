@@ -3,7 +3,7 @@
 -- transitive dt
 
 
-echo both "SQL Transitivity\n";
+ECHO BOTH "SQL Transitivity\n";
 
 create table knows (p1 int, p2 int, primary key (p1, p2))
 alter index knows on knows partition (p1 int);
@@ -21,54 +21,53 @@ insert into knows values (2, 4);
 
 
 select * from (select transitive t_in (1) t_out (2) t_distinct  p1, p2 from knows) k where k.p1 = 1;
-echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
-echo both ": trans lr\n";
+ECHO BOTH $IF $EQU $ROWCNT 3 "PASSED" "***FAILED";
+ECHO BOTH ": trans lr\n";
 
 select * from (select transitive t_in (1) t_out (2) t_distinct  p1, p2 from knows) k where k.p2 = 1;
-echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
-echo both ": trans lr 2\n";
+ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
+ECHO BOTH ": trans lr 2\n";
 
 
 select * from (select transitive t_in (1) t_out (2) t_distinct  p1, p2 from knows) k where k.p2 = 4;
-echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
-echo both ": trans rl\n";
+ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
+ECHO BOTH ": trans rl\n";
 
 select * from (select transitive t_in (1) t_out (2) t_distinct  p1, p2 from knows) k where p1 = 1 and p2 = 4;
-echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
-echo both ": trans lrrl 1\n";
+ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
+ECHO BOTH ": trans lrrl 1\n";
 
 
 select * from (select transitive t_in (1) t_out (2) t_direction 1 t_distinct  p1, p2 from knows) k where p1 = 1 and p2 = 4;
-echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
-echo both ": trans lrrl 2\n";
+ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
+ECHO BOTH ": trans lrrl 2\n";
 
 select * from (select transitive t_in (1) t_out (2) t_direction 2 t_distinct  p1, p2 from knows) k where p1 = 1 and p2 = 4;
-echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
-echo both ": trans lrrl 3\n";
+ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
+ECHO BOTH ": trans lrrl 3\n";
 
 select * from (select transitive t_in (1) t_out (2) t_direction 3 t_distinct t_shortest_only p1, p2 from knows) k where p1 = 1 and p2 = 4;
-echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
-echo both ": trans lrrl 4\n";
+ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
+ECHO BOTH ": trans lrrl 4\n";
 
 select * from (select transitive t_in (1) t_out (2) t_distinct  p1, p2 from (select p1, p2 from knows union all select p2, p1 from knows) k2) k where k.p2 = 4;
-echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
-echo both ": trans rl union\n";
+ECHO BOTH $IF $EQU $ROWCNT 3 "PASSED" "***FAILED";
+ECHO BOTH ": trans rl union\n";
 
 
 select * from (select transitive t_in (1) t_out (2) t_direction 1 t_distinct  p1, p2, t_step (1) as via, t_step ('path_id') as path , t_step ('step_no') as step from knows) k where p1 = 1 and p2 = 4;
-echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
-echo both ": trans steps d1\n";
+ECHO BOTH $IF $EQU $ROWCNT 3 "PASSED" "***FAILED";
+ECHO BOTH ": trans steps d1\n";
 
 select * from (select transitive t_in (1) t_out (2) t_direction 2 t_distinct  p1, p2, t_step (1) as via, t_step ('path_id') as path , t_step ('step_no') as step from knows) k where p1 = 1 and p2 = 4;
-echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
-echo both ": trans steps d2\n";
+ECHO BOTH $IF $EQU $ROWCNT 3 "PASSED" "***FAILED";
+ECHO BOTH ": trans steps d2\n";
 
 select * from (select transitive t_in (1) t_out (2) t_direction 3 t_distinct t_shortest_only  p1, p2, t_step (1) as via, t_step ('path_id') as path , t_step ('step_no') as step from knows) k where p1 = 1 and p2 = 4;
-echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
-echo both ": trans steps d3\n";
+ECHO BOTH $IF $EQU $ROWCNT 3 "PASSED" "***FAILED";
+ECHO BOTH ": trans steps d3\n";
 
 
 select p2, dist, (select count (*) from knows c where c.p1 = k.p2) from (select transitive t_in (1) t_out (2) t_distinct  p1, p2,  t_step ('step_no') as dist  from knows) k where p1 = 1 order by dist, 3 desc;
-echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
-echo both ": trans order dist, friend count\n";
-
+ECHO BOTH $IF $EQU $ROWCNT 3 "PASSED" "***FAILED";
+ECHO BOTH ": trans order dist, friend count\n";

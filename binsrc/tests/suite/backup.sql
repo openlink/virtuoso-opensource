@@ -41,4 +41,3 @@ wait_for_children;
 cl_exec ('backup \'backup2.log\'');
 wait_for_children;
 ECHO BOTH "COMPLETED: On-Line Backup Test, part 1, recovery check soon follows\n";
-

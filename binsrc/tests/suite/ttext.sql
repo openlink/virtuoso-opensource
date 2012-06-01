@@ -75,4 +75,3 @@ select count (*) from ttt_test where contains (text, '"html" and "body"', 1111);
 select count (*) from ttt_test where contains (text, '"con*ion"');
 
 select count (*) from ttt_test where contains (text, '"con*ion" and not "conf*"', 1111);
-

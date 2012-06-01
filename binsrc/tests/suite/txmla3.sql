@@ -265,4 +265,3 @@ select test_bookmark_suite ('localhost', server_http_port(),
 ;
 ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
 ECHO BOTH ": XMLA Bookmark test 5 : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
-

@@ -88,7 +88,3 @@ stat_fill_counts_2 ();
 
 select sprintf ('%.1f%%', avg ((abs (cc_prec - cc_ex + 0.0) / cc_ex) * 100)) from stat_counts where cc_ex > 1000;
 echo BOTH "Average error = " $LAST[1] "\n";
-
-
-
-

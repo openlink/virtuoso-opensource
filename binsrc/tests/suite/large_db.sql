@@ -96,7 +96,3 @@ ECHO BOTH "traverse all trees";
 backup '/dev/null';
 ECHO BOTH $IF $EQU $STATE OK  "PASSED" "***FAILED";
 ECHO BOTH ": Travers all trees\n"
-
-
-
-

@@ -474,6 +474,5 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": B9948 test case returns " $ROWCNT " cols STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 
-echo both "tschema1 check trees\n";
+ECHO BOTH "tschema1 check trees\n";
 cl_exec ('backup ''/dev/null''');
-

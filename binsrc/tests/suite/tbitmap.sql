@@ -1,4 +1,4 @@
-echo both "Bitmap index tests\n";
+ECHO BOTH "Bitmap index tests\n";
 
 --set echo on;
 
@@ -91,62 +91,61 @@ select top 5 * from tb table option (index k1) where   id > 32900 and id < 82003
 
 select top 5 * from tb table option (index k1) where id < 32800 and k1 = 12 order by id desc;
 select top 5000  * from tb table option (index k1) where   id > 32900 and id < 82003 and k1 = 12 order by id desc;
-echo both $if $equ $rowcnt 722 "PASSED" "***FAILED";
-echo both ": asc order bm range\n";
+ECHO BOTH $IF $EQU $ROWCNT 722 "PASSED" "***FAILED";
+ECHO BOTH ": asc order bm range\n";
 
 select top 5000  * from tb table option (index k1) where   id > 32900 and id < 33000 and k1 = 12 order by id desc;
 
 
 select top 5000  * from tb table option (index k1) where   id > 32900 and id < 82003 and k1 = 12 order by id;
-echo both $if $equ $rowcnt 722 "PASSED" "***FAILED";
-echo both ": desc order bm range\n";
+ECHO BOTH $IF $EQU $ROWCNT 722 "PASSED" "***FAILED";
+ECHO BOTH ": desc order bm range\n";
 
 select id, k1 from tb a table option (index primary  key) where  not exists (select 1 from tb b table option (index k1) where b.k1 = a.k1 and b.id > a.id);
 
 
-
 select id, k1 from tb a table option (index primary  key) where   id - 1 <> (select b.id from tb b table option (index k1) where b.k1 = a.k1 and b.id < a.id order by b.id desc);
-echo both $if $equ $rowcnt 704 "PASSED" "***FAILED";
-echo both ": bm select of previous in desc order with lt\n";
+ECHO BOTH $IF $EQU $ROWCNT 704 "PASSED" "***FAILED";
+ECHO BOTH ": bm select of previous in desc order with lt\n";
 
 select id, k1 from tb a table option (index primary  key) where   id - 1 <> (select b.id from tb b table option (index k1, loop) where b.k1 = a.k1 and b.id < a.id order by b.id + 0 desc);
-echo both $if $equ $rowcnt 704 "PASSED" "***FAILED";
-echo both ": bm select of previous in desc order with lt sorted desc oby\n";
+ECHO BOTH $IF $EQU $ROWCNT 704 "PASSED" "***FAILED";
+ECHO BOTH ": bm select of previous in desc order with lt sorted desc oby\n";
 
 select id, k1 from tb a table option (index primary  key) where   id - 1 <> (select b.id from tb b table option (index k1, hash) where b.k1 = a.k1 and b.id < a.id order by b.id + 0 desc);
-echo both $if $equ $rowcnt 704 "PASSED" "***FAILED";
-echo both ": bm select of previous in desc order with lt sorted desc oby w hash\n";
+ECHO BOTH $IF $EQU $ROWCNT 704 "PASSED" "***FAILED";
+ECHO BOTH ": bm select of previous in desc order with lt sorted desc oby w hash\n";
 
 
 
 select id, k1 from tb a table option (index primary  key) where   id - 1 <> (select b.id from tb b table option (index primary key) where b.k1 = a.k1 and b.id < a.id order by b.id desc);
-echo both $if $equ $rowcnt 704 "PASSED" "***FAILED";
-echo both ": bm select of previous in desc order with lt : double check with pk\n";
+ECHO BOTH $IF $EQU $ROWCNT 704 "PASSED" "***FAILED";
+ECHO BOTH ": bm select of previous in desc order with lt : double check with pk\n";
 
 
 select id, k1 from tb a table option (index primary  key) where   id - 1 <> (select b.id from tb b table option (index k1) where b.k1 = a.k1 and b.id <= a.id - 1 order by b.id desc);
-echo both $if $equ $rowcnt 704 "PASSED" "***FAILED";
-echo both ": bm select of previous in desc order with lte\n";
+ECHO BOTH $IF $EQU $ROWCNT 704 "PASSED" "***FAILED";
+ECHO BOTH ": bm select of previous in desc order with lte\n";
 
 select id, k1 from tb a table option (index primary  key) where   id + 1 <> (select b.id from tb b table option (index k1) where b.k1 = a.k1 and b.id > a.id order by b.id);
-echo both $if $equ $rowcnt 704 "PASSED" "***FAILED";
-echo both ": bm select of next in  order with gt\n";
+ECHO BOTH $IF $EQU $ROWCNT 704 "PASSED" "***FAILED";
+ECHO BOTH ": bm select of next in  order with gt\n";
 
 
 bmck (4);
 
 select id, k1 from tb a table option (index primary  key) where   id + 1 <> (select b.id from tb b table option (index k1) where b.k1 = a.k1 and b.id >= a.id + 1 and b.id < a.id + 10  order by b.id);
-echo both $if $equ $rowcnt 599 "PASSED" "***FAILED";
-echo both ": bm select of next in  order with gte and range\n";
+ECHO BOTH $IF $EQU $ROWCNT 599 "PASSED" "***FAILED";
+ECHO BOTH ": bm select of next in  order with gte and range\n";
 
 
 select top 10 id, k1 from tb a table option (index primary  key) where   id + 1 <> (select b.id from tb b table option (index k1) where b.k1 = a.k1 and b.id >= a.id + 1 and b.id < a.id + 2100000    order by b.id);
-echo both $if $equ $last[1] 30071 "PASSED" "***FAILED";
-echo both ": last of select next in bm order with range.\n";
+ECHO BOTH $IF $EQU $LAST[1] 30071 "PASSED" "***FAILED";
+ECHO BOTH ": last of select next in bm order with range.\n";
 
 select top 10 id, k1 from tb a table option (index primary  key) where   id + 1 <> (select b.id from tb b table option (index k1) where b.k1 = a.k1 and b.id >= a.id + 1     order by b.id);
-echo both $if $equ $last[1] 30061 "PASSED" "***FAILED";
-echo both ": last of select next in bm order.\n";
+ECHO BOTH $IF $EQU $LAST[1] 30061 "PASSED" "***FAILED";
+ECHO BOTH ": last of select next in bm order.\n";
 
 bmck (5);
 
@@ -159,8 +158,8 @@ bmck (6);
 
 update tb set k1 = 20;
 select distinct k1 from tb table option (index k1);
-echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
-echo both ": distinct k1 after update.\n";
+ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
+ECHO BOTH ": distinct k1 after update.\n";
 
 bmck (7);
 rollback work;
@@ -168,8 +167,8 @@ rollback work;
 bmck (9);
 select distinct k1 from tb table option (index k1);
 
---echo both $if $equ $rowcnt 4 "PASSED" "***FAILED";
---echo both ": distinct k1 after rollback.\n";
+--ECHO BOTH $IF $EQU $ROWCNT 4 "PASSED" "***FAILED";
+--ECHO BOTH ": distinct k1 after rollback.\n";
 
 set autocommit off;
 
@@ -189,8 +188,8 @@ create procedure tb1 ()
 }
 
 tb1();
-echo both $if $equ  $sqlstate OK "PASSED" "***FAILED";
-echo both ": bm inx cursor maint over delete\n";
+ECHO BOTH $IF $EQU  $SQLSTATE OK "PASSED" "***FAILED";
+ECHO BOTH ": bm inx cursor maint over delete\n";
 
 create procedure tb2 ()
 {
@@ -209,25 +208,25 @@ create procedure tb2 ()
 }
 
 --tb2();
-echo both $if $equ  $sqlstate OK "PASSED" "***FAILED";
-echo both ": bm inx cursor maint over bm row split\n";
+ECHO BOTH $IF $EQU  $SQLSTATE OK "PASSED" "***FAILED";
+ECHO BOTH ": bm inx cursor maint over bm row split\n";
 
 
 
 bins (100,1024000, 511, 2);
 bins (100,1024000 + 9000, 1, 2);
-echo both $if $equ $sqlstate OK "PASSED" "***FAILED";
-echo both ": ins at end of one less than full array\n";
+ECHO BOTH $IF $EQU $SQLSTATE OK "PASSED" "***FAILED";
+ECHO BOTH ": ins at end of one less than full array\n";
 
 bins (100,1024000 + 8000, 1, 2);
-echo both $if $equ $sqlstate OK "PASSED" "***FAILED";
-echo both ": ins at end of one less than full array 2\n";
+ECHO BOTH $IF $EQU $SQLSTATE OK "PASSED" "***FAILED";
+ECHO BOTH ": ins at end of one less than full array 2\n";
 
 bmck (10);
 
 select count (*) from tb where k1 = 100;
-echo both $if $equ $last[1] 513 "PASSED" "***FAILED";
-echo both ": rows w k1 100\n";
+ECHO BOTH $IF $EQU $LAST[1] 513 "PASSED" "***FAILED";
+ECHO BOTH ": rows w k1 100\n";
 
 bmck (11);
 
@@ -240,12 +239,12 @@ insert into bmdel values (1,1,1);
 insert into bmdel values (2,5,1);
 insert into bmdel values (3,3,1);
 select * from bmdel;
-echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
-echo both " table with bitmap contains " $rowcnt " rows\n";
+ECHO BOTH $IF $EQU $ROWCNT 3 "PASSED" "***FAILED";
+ECHO BOTH ": table with bitmap contains " $ROWCNT " rows\n";
 delete from bmdel where id3 = 1;
 select * from bmdel;
-echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
-echo both " after delete on bitmap index table contains " $rowcnt " rows\n";
+ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
+ECHO BOTH ": after delete on bitmap index table contains " $ROWCNT " rows\n";
 
 
 bmck (12);
@@ -269,8 +268,8 @@ bmck (17);
 rollback work;
 
 bmck (18);
-echo both $if $equ $sqlstate OK "PASSED" "***FAILED";
-echo both ": bm and pk consistency\n";
+ECHO BOTH $IF $EQU $SQLSTATE OK "PASSED" "***FAILED";
+ECHO BOTH ": bm and pk consistency\n";
 
 
 

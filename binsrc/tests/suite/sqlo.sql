@@ -127,8 +127,8 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": where FI3 between 100 and 110  order by STRING1 desc last row FI2=" $LAST[2] "\n";
 
 select STRING1, FI2 from T1 where FI3 between 2000 and 2010  order by STRING1 desc;
-echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
-echo both ": not exists and partitioned sort\n";
+ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
+ECHO BOTH ": not exists and partitioned sort\n";
 
 select top 2 FS1 from T1 order by 1 - ROW_NO;
 ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
@@ -1040,29 +1040,28 @@ create procedure f (in x any)
 select count (*) from t1 a, t1 b where a.fi2 = b.fi2 and f(a.row_no) = f(b.row_no) and  f(b.row_no) < 1000  option (order, hash);
 ECHO BOTH $IF $EQU $LAST[1] 980 "PASSED" "*** FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-echo both ": count with hash j with expression hash  key reused in after join test\n";
+ECHO BOTH ": count with hash j with expression hash  key reused in after join test\n";
 
 
 select count (*) from (select distinct row_no from t1) f where f.row_no is null or f.row_no is null;
 ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "*** FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-echo both ": count of dt with inported false const preds\n";
+ECHO BOTH ": count of dt with inported false const preds\n";
 
 
 select count (*) from (select distinct row_no from t1) f where not (f.row_no is null or f.row_no is null);
 ECHO BOTH $IF $EQU $LAST[1] 1000 "PASSED" "*** FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-echo both ": count of dt with inported true const preds\n";
+ECHO BOTH ": count of dt with inported true const preds\n";
 
 select a.row_no, b.row_no from t1 a, (select top 4 row_no from t1) b where a.row_no = b.row_no option (order) ;
-echo both $if $equ $rowcnt 4 "PASSED" "***FAILED";
-echo both ": dt with top does not import preds\n";
+ECHO BOTH $IF $EQU $ROWCNT 4 "PASSED" "***FAILED";
+ECHO BOTH ": dt with top does not import preds\n";
 
 select __max (__min (1000), count (1)) from sys_users where u_id = 1111;
-echo both $if $equ $last[1] 1000 "PASSED" "***FAILED";
-echo both ": emppty agg with data independent false cond inits data independent exps\n";
+ECHO BOTH $IF $EQU $LAST[1] 1000 "PASSED" "***FAILED";
+ECHO BOTH ": emppty agg with data independent false cond inits data independent exps\n";
 
 
 
 ECHO BOTH "COMPLETED: SQL Optimizer tests (sqlo.sql) WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";
-

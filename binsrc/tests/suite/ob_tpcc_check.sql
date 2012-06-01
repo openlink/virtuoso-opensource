@@ -22,7 +22,7 @@
 --  
 select backup_pages();
 ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
-ECHO BOTH " pages changed since last backup (in checkpoint space) = " $LAST[1] "\n"; 
+ECHO BOTH ": pages changed since last backup (in checkpoint space) = " $LAST[1] "\n"; 
 
 create procedure xcheck (in xname varchar, in xval any)
 {
@@ -42,31 +42,31 @@ select count (*) from xvals;
 
 select xcheck('tax', common_tax());
 ECHO BOTH $IF $EQU $LAST[1] "EQUALS" "PASSED" "***FAILED";
-ECHO BOTH " tax is " $LAST[1] "\n"; 
+ECHO BOTH ": tax is " $LAST[1] "\n"; 
 
 select xcheck('tax2', common_tax_2());
 ECHO BOTH $IF $EQU $LAST[1] "EQUALS" "PASSED" "***FAILED";
-ECHO BOTH " tax2 is " $LAST[1] "\n"; 
+ECHO BOTH ": tax2 is " $LAST[1] "\n"; 
 
 select xcheck('bal', common_bal());
 ECHO BOTH $IF $EQU $LAST[1] "EQUALS" "PASSED" "***FAILED";
-ECHO BOTH " bal is " $LAST[1] "\n"; 
+ECHO BOTH ": bal is " $LAST[1] "\n"; 
 
 --select xcheck('amnt', common_amnt());
 --ECHO BOTH $IF $EQU $LAST[1] "EQUALS" "PASSED" "***FAILED";
---ECHO BOTH " amnt is " $LAST[1] "\n"; 
+--ECHO BOTH ": amnt is " $LAST[1] "\n"; 
 
 --select xcheck('bal2', common_bal2());
 --ECHO BOTH $IF $EQU $LAST[1] "EQUALS" "PASSED" "***FAILED";
---ECHO BOTH " bal2 is " $LAST[1] "\n"; 
+--ECHO BOTH ": bal2 is " $LAST[1] "\n"; 
 
 --select xcheck('quant', common_quant());
 --ECHO BOTH $IF $EQU $LAST[1] "EQUALS" "PASSED" "***FAILED";
---ECHO BOTH " quant is " $LAST[1] "\n"; 
+--ECHO BOTH ": quant is " $LAST[1] "\n"; 
 
 select count (*) from warehouse;
 ECHO BOTH $IF $EQU $LAST[1] 10 "PASSED" "***FAILED";
-ECHO BOTH " count (warehouse) = " $LAST[1] "\n"; 
+ECHO BOTH ": count (warehouse) = " $LAST[1] "\n"; 
 
 
 create procedure check_orders (in cc integer)
@@ -82,13 +82,12 @@ create procedure check_orders (in cc integer)
 ;
 select check_orders (count_orders());
 ECHO BOTH $IF $EQU $LAST[1] "EQUAL" "PASSED" "***FAILED";
-ECHO BOTH " count (orders) = " $LAST[1] "\n"; 
+ECHO BOTH ": count (orders) = " $LAST[1] "\n"; 
 
 select count (*) from item;
 ECHO BOTH $IF $EQU $LAST[1] 100000 "PASSED" "***FAILED";
-ECHO BOTH " count (item) = " $LAST[1] "\n"; 
+ECHO BOTH ": count (item) = " $LAST[1] "\n"; 
 
 select count (*) from stock;
 ECHO BOTH $IF $EQU $LAST[1] 1000000 "PASSED" "***FAILED";
-ECHO BOTH " count (stock) = " $LAST[1] "\n"; 
-
+ECHO BOTH ": count (stock) = " $LAST[1] "\n"; 

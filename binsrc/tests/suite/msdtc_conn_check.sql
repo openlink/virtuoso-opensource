@@ -27,5 +27,5 @@
 -- ECHO BOTH ": mts_connect() : STATE=" $STATE "\n";
 
 select mts_status ('MTS');
-echo both $if $equ $last[1] 'connected' "PASSED" "*** FAILED";
-echo both ": server " $last[1] " to MS DTC\n";
+ECHO BOTH $IF $EQU $LAST[1] 'connected' "PASSED" "***FAILED";
+ECHO BOTH ": server " $LAST[1] " to MS DTC\n";

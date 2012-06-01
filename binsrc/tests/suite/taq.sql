@@ -5,7 +5,7 @@
 --  Test for async queue 
 
 
-echo both "Async Queue Tests\n";
+ECHO BOTH "Async Queue Tests\n";
 
 
 drop table aqi;
@@ -118,6 +118,5 @@ create procedure FIAQ (in i int)
 }
 
 select fiaq (29);
-echo both $if $equ $last[1] 514229 "PASSED" "***FAILED";
-echo both ": aq fi\n";
-
+ECHO BOTH $IF $EQU $LAST[1] 514229 "PASSED" "***FAILED";
+ECHO BOTH ": aq fi\n";

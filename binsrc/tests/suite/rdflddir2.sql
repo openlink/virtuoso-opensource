@@ -348,4 +348,3 @@ create procedure load_grdf (in f varchar)
 -- cl_exec ('set lock_escalation_pct = 110');
 -- cl_exec ('DB.DBA.RDF_LD_SRV (1)') &
 -- cl_exec ('DB.DBA.RDF_LD_SRV (2)') &
-

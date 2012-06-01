@@ -52,11 +52,13 @@ succ:
 ;
 
 SELECT CHECK_UNAUTH_BACKUP_SEC();
-ECHO BOTH "Invoking BACKUP_ONLINE procedure from unauthtorized user test is " $LAST[1] "\n";
+ECHO BOTH $LAST[1];
+ECHO BOTH ": Invoking BACKUP_ONLINE procedure from unauthtorized user test\n";
 
 RECONNECT dba;
 SELECT CHECK_AUTH_BACKUP_SEC();
-ECHO BOTH "Invoking BACKUP_ONLINE procedure from authtorized user test is " $LAST[1] "\n";
+ECHO BOTH $LAST[1];
+ECHO BOTH ": Invoking BACKUP_ONLINE procedure from authtorized user test\n";
 
 
 ADD USER GROUP IMPOSTER "DBA";
@@ -65,7 +67,8 @@ ADD USER GROUP IMPOSTER "DBA";
 RECONNECT "IMPOSTER";
 
 SELECT CHECK_AUTH_BACKUP_SEC();
-ECHO BOTH "Invoking BACKUP_ONLINE procedure from authtorized user test is " $LAST[1] "\n";
+ECHO BOTH $LAST[1];
+ECHO BOTH ": Invoking BACKUP_ONLINE procedure from authtorized user test\n";
 
 BACKUP_ONLINE ('/usr/aaa_#', 150, 200);
 ECHO BOTH $IF $EQU $STATE 42000 "PASSED" "***FAILED";
@@ -131,5 +134,3 @@ create_seqs ('bx', 10000);
 create_seqs ('x', 10000);
 
 backup_online ('vvv', 150);
-
-

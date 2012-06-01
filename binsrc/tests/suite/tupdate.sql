@@ -283,7 +283,7 @@ create procedure LOCK_TT_FILL (in N int)
 
 
 select sys_stat ('tc_pl_split_while_wait');
-echo both " tc_pl_split_while_wait=" $last[1] "\n";
+ECHO BOTH " tc_pl_split_while_wait=" $LAST[1] "\n";
 
 
 drop table trb;
@@ -576,9 +576,9 @@ insert into XX (a) values (2);
 insert into XX (a) values (3);
 
 select * from XX;
-echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
-set argv[$lif] $+ $argv[$lif] 1;
-echo both " " $rowcnt " rows after insert \n";
+ECHO BOTH $IF $EQU $ROWCNT 3 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $ROWCNT " rows after insert \n";
 
 
 update XX set a = a + 2 where a > 1;
@@ -587,24 +587,24 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": update ... where a > 1 : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 select * from XX where a > 3;
-echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
-set argv[$lif] $+ $argv[$lif] 1;
-echo both " " $rowcnt " rows with a > 3 after update with instead of trigger \n";
+ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $ROWCNT " rows with a > 3 after update with instead of trigger \n";
 
 select * from XX_upd_log where dt = 'bu';
-echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
-set argv[$lif] $+ $argv[$lif] 1;
-echo both " " $rowcnt " rows logged to be updated in before update trigger \n";
+ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $ROWCNT " rows logged to be updated in before update trigger \n";
 
 select * from XX_upd_log where dt = 'iu';
-echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
-set argv[$lif] $+ $argv[$lif] 1;
-echo both " " $rowcnt " rows logged to be updated in instead of update trigger \n";
+ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $ROWCNT " rows logged to be updated in instead of update trigger \n";
 
 select * from XX_upd_log where dt = 'au';
-echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
-set argv[$lif] $+ $argv[$lif] 1;
-echo both " " $rowcnt " rows logged to be updated in after update trigger \n";
+ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $ROWCNT " rows logged to be updated in after update trigger \n";
 
 drop trigger XX_U_INST;
 delete from XX_upd_log;
@@ -615,24 +615,24 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": update ... where a > 1 : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 select * from XX where a > 3;
-echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
-set argv[$lif] $+ $argv[$lif] 1;
-echo both " " $rowcnt " rows with a > 3 after update w/o instead of trigger \n";
+ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $ROWCNT " rows with a > 3 after update w/o instead of trigger \n";
 
 select * from XX_upd_log where dt = 'bu';
-echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
-set argv[$lif] $+ $argv[$lif] 1;
-echo both " " $rowcnt " rows logged to be updated in before update trigger \n";
+ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $ROWCNT " rows logged to be updated in before update trigger \n";
 
 select * from XX_upd_log where dt = 'iu';
-echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
-set argv[$lif] $+ $argv[$lif] 1;
-echo both " " $rowcnt " rows logged to be updated in instead of update trigger \n";
+ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $ROWCNT " rows logged to be updated in instead of update trigger \n";
 
 select * from XX_upd_log where dt = 'au';
-echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
-set argv[$lif] $+ $argv[$lif] 1;
-echo both " " $rowcnt " rows logged to be updated in after update trigger \n";
+ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $ROWCNT " rows logged to be updated in after update trigger \n";
 
 delete from XX;
 delete from XX_upd_log;
@@ -642,9 +642,9 @@ insert into XX (a) values (2);
 insert into XX (a) values (3);
 
 select * from XX;
-echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
-set argv[$lif] $+ $argv[$lif] 1;
-echo both " " $rowcnt " rows after insert \n";
+ECHO BOTH $IF $EQU $ROWCNT 3 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $ROWCNT " rows after insert \n";
 
 create trigger XX_U_B before update on XX referencing old as O, new as N {
   dbg_obj_print ('before update - signal', O.a, N.a, N.b);
@@ -660,24 +660,24 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": update ... where a > 1 : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 select * from XX where a > 3;
-echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
-set argv[$lif] $+ $argv[$lif] 1;
-echo both " " $rowcnt " rows with a > 3 after update with signal in before update trigger \n";
+ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $ROWCNT " rows with a > 3 after update with signal in before update trigger \n";
 
 select * from XX_upd_log where dt = 'bu';
-echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
-set argv[$lif] $+ $argv[$lif] 1;
-echo both " " $rowcnt " rows logged to be updated in before update trigger \n";
+ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $ROWCNT " rows logged to be updated in before update trigger \n";
 
 select * from XX_upd_log where dt = 'iu';
-echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
-set argv[$lif] $+ $argv[$lif] 1;
-echo both " " $rowcnt " rows logged to be updated in instead of update trigger \n";
+ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $ROWCNT " rows logged to be updated in instead of update trigger \n";
 
 select * from XX_upd_log where dt = 'au';
-echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
-set argv[$lif] $+ $argv[$lif] 1;
-echo both " " $rowcnt " rows logged to be updated in after update trigger \n";
+ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $ROWCNT " rows logged to be updated in after update trigger \n";
 
 drop trigger XX_U_B;
 create trigger XX_U_B before update on XX referencing old as O, new as N {
@@ -693,9 +693,9 @@ insert into XX (a) values (2);
 insert into XX (a) values (3);
 
 select * from XX;
-echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
-set argv[$lif] $+ $argv[$lif] 1;
-echo both " " $rowcnt " rows after insert \n";
+ECHO BOTH $IF $EQU $ROWCNT 3 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $ROWCNT " rows after insert \n";
 
 create trigger XX_U_A after update on XX referencing old as O, new as N {
   dbg_obj_print ('after update with signal' , O.a, N.a, N.b);
@@ -710,24 +710,24 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": update ... where a > 1 error in after trigger : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 select * from XX where a > 3;
-echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
-set argv[$lif] $+ $argv[$lif] 1;
-echo both " " $rowcnt " rows with a > 3 after update with signal in after update trigger \n";
+ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $ROWCNT " rows with a > 3 after update with signal in after update trigger \n";
 
 select * from XX_upd_log where dt = 'bu';
-echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
-set argv[$lif] $+ $argv[$lif] 1;
-echo both " " $rowcnt " rows logged to be updated in before update trigger \n";
+ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $ROWCNT " rows logged to be updated in before update trigger \n";
 
 select * from XX_upd_log where dt = 'iu';
-echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
-set argv[$lif] $+ $argv[$lif] 1;
-echo both " " $rowcnt " rows logged to be updated in instead of update trigger \n";
+ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $ROWCNT " rows logged to be updated in instead of update trigger \n";
 
 select * from XX_upd_log where dt = 'au';
-echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
-set argv[$lif] $+ $argv[$lif] 1;
-echo both " " $rowcnt " rows logged to be updated in after update trigger \n";
+ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $ROWCNT " rows logged to be updated in after update trigger \n";
 
 delete from XX;
 delete from XX_upd_log;
@@ -739,9 +739,9 @@ insert into XX (a) values (2);
 insert into XX (a) values (3);
 
 select * from XX;
-echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
-set argv[$lif] $+ $argv[$lif] 1;
-echo both " " $rowcnt " rows after insert \n";
+ECHO BOTH $IF $EQU $ROWCNT 3 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $ROWCNT " rows after insert \n";
 
 create trigger XX_U_A after update on XX referencing old as O, new as N {
   dbg_obj_print ('after update - recreated' , O.a, N.a, N.b);

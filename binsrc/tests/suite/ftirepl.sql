@@ -118,42 +118,42 @@ INSERT INTO FTT1 (FILE,DT) values ('/virtdocs.xml',file_to_string ('../docsrc/vi
 INSERT INTO FTT1 (FILE,DT) values ('/ce.xml',file_to_string ('../ce.xml'));
 
 select t from FTT1 where xpath_contains (DT, '//title', t);
-echo both $if $equ $rowcnt 792 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " rows in xpath_contains //title\n";
+ECHO BOTH $IF $EQU $ROWCNT 792 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows in xpath_contains //title\n";
 
 select t from FTT1 where xpath_contains (DT, '//title [. like ''%ISOLATION%'' ]', t);
-echo both $if $equ $rowcnt 4 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " rows in xpath_contains //title [. like '%ISOLATION%' ]\n";
-echo both $if $equ $last[1]  "<title>SQL_TXN_ISOLATION</title>" "PASSED" "*** FAILED";
-echo both ": " $last[1] " last row in xpath_contains //title [. like '%ISOLATION%' ]\n";
+ECHO BOTH $IF $EQU $ROWCNT 4 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows in xpath_contains //title [. like '%ISOLATION%' ]\n";
+ECHO BOTH $IF $EQU $LAST[1]  "<title>SQL_TXN_ISOLATION</title>" "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " last row in xpath_contains //title [. like '%ISOLATION%' ]\n";
 
 select t from FTT1 where xpath_contains (DT, '//title [.=''ISOLATION'' ]', t);
-echo both $if $equ $rowcnt 2 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " rows in xpath_contains //title [.='ISOLATION' ]\n";
+ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows in xpath_contains //title [.='ISOLATION' ]\n";
 
 select t from FTT1 where xpath_contains (DT, '//title [. like ''%ISOLATION%'' ]/ancestor::*/title', t);
-echo both $if $equ $rowcnt 16 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " rows in xpath_contains //title [. like '%ISOLATION%' ]/ancestor::*/title\n";
+ECHO BOTH $IF $EQU $ROWCNT 16 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows in xpath_contains //title [. like '%ISOLATION%' ]/ancestor::*/title\n";
 
 select t from FTT1 where xpath_contains (DT, '//title [.=''ISOLATION'' ]/ancestor::*/title', t);
-echo both $if $equ $rowcnt 7 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " rows in xpath_contains //title [.='ISOLATION' ]/ancestor::*/title\n";
+ECHO BOTH $IF $EQU $ROWCNT 7 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows in xpath_contains //title [.='ISOLATION' ]/ancestor::*/title\n";
 
 select t from FTT1 where xpath_contains (DT, '//chapter/title', t);
-echo both $if $equ $rowcnt 20 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " rows in xpath_contains //chapter/title\n";
+ECHO BOTH $IF $EQU $ROWCNT 20 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows in xpath_contains //chapter/title\n";
 
 select t from FTT1 where xpath_contains (DT, '//chapter/title[position () = 1]', t);
-echo both $if $equ $rowcnt 20 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " rows in xpath_contains //chapter/title[position () = 1]\n";
+ECHO BOTH $IF $EQU $ROWCNT 20 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows in xpath_contains //chapter/title[position () = 1]\n";
 
 select count (*) from FTT1 where xpath_contains (DT, '//chapter//para[position () > 10]', t);
-echo both $if $equ $last[1] 6 "PASSED" "*** FAILED";
-echo both ": " $last[1] " rows in xpath_contains //chapter//para[position () > 10]\n";
+ECHO BOTH $IF $EQU $LAST[1] 6 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " rows in xpath_contains //chapter//para[position () > 10]\n";
 
 select count (*) from FTT1 where xpath_contains (DT, '//chapter/descendant::para[position () > 10]', t);
-echo both $if $equ $last[1] 1630 "PASSED" "*** FAILED";
-echo both ": " $last[1] " rows in xpath_contains //chapter/descendant::para[position () > 10]\n";
+ECHO BOTH $IF $EQU $LAST[1] 1630 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " rows in xpath_contains //chapter/descendant::para[position () > 10]\n";
 
 DROP TABLE FTT2;
 CREATE TABLE FTT2 (ID INTEGER IDENTITY NOT NULL PRIMARY KEY, FILE varchar,  DT LONG VARCHAR IDENTIFIED BY FILE);
@@ -172,42 +172,42 @@ INSERT INTO FTT2 (FILE,DT) values ('/virtdocs.xml', xml_persistent (file_to_stri
 INSERT INTO FTT2 (FILE,DT) values ('/ce.xml', xml_persistent (file_to_string ('../ce.xml')));
 
 select t from FTT2 where xpath_contains (DT, '//title', t);
-echo both $if $equ $rowcnt 792 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " rows in xpath_contains //title\n";
+ECHO BOTH $IF $EQU $ROWCNT 792 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows in xpath_contains //title\n";
 
 select t from FTT2 where xpath_contains (DT, '//title [. like ''%ISOLATION%'' ]', t);
-echo both $if $equ $rowcnt 4 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " rows in xpath_contains //title [. like '%ISOLATION%' ]\n";
-echo both $if $equ $last[1]  "<title>SQL_TXN_ISOLATION</title>" "PASSED" "*** FAILED";
-echo both ": " $last[1] " last row in xpath_contains //title [. like '%ISOLATION%' ]\n";
+ECHO BOTH $IF $EQU $ROWCNT 4 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows in xpath_contains //title [. like '%ISOLATION%' ]\n";
+ECHO BOTH $IF $EQU $LAST[1]  "<title>SQL_TXN_ISOLATION</title>" "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " last row in xpath_contains //title [. like '%ISOLATION%' ]\n";
 
 select t from FTT2 where xpath_contains (DT, '//title [.=''ISOLATION'' ]', t);
-echo both $if $equ $rowcnt 2 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " rows in xpath_contains //title [.='ISOLATION' ]\n";
+ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows in xpath_contains //title [.='ISOLATION' ]\n";
 
 select t from FTT2 where xpath_contains (DT, '//title [. like ''%ISOLATION%'' ]/ancestor::*/title', t);
-echo both $if $equ $rowcnt 16 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " rows in xpath_contains //title [. like '%ISOLATION%' ]/ancestor::*/title\n";
+ECHO BOTH $IF $EQU $ROWCNT 16 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows in xpath_contains //title [. like '%ISOLATION%' ]/ancestor::*/title\n";
 
 select t from FTT2 where xpath_contains (DT, '//title [.=''ISOLATION'' ]/ancestor::*/title', t);
-echo both $if $equ $rowcnt 7 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " rows in xpath_contains //title [.='ISOLATION' ]/ancestor::*/title\n";
+ECHO BOTH $IF $EQU $ROWCNT 7 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows in xpath_contains //title [.='ISOLATION' ]/ancestor::*/title\n";
 
 select t from FTT2 where xpath_contains (DT, '//chapter/title', t);
-echo both $if $equ $rowcnt 20 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " rows in xpath_contains //chapter/title\n";
+ECHO BOTH $IF $EQU $ROWCNT 20 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows in xpath_contains //chapter/title\n";
 
 select t from FTT2 where xpath_contains (DT, '//chapter/title[position () = 1]', t);
-echo both $if $equ $rowcnt 20 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " rows in xpath_contains //chapter/title[position () = 1]\n";
+ECHO BOTH $IF $EQU $ROWCNT 20 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows in xpath_contains //chapter/title[position () = 1]\n";
 
 select count (*) from FTT1 where xpath_contains (DT, '//chapter//para[position () > 10]', t);
-echo both $if $equ $last[1] 6 "PASSED" "*** FAILED";
-echo both ": " $last[1] " rows in xpath_contains //chapter//para[position () > 10]\n";
+ECHO BOTH $IF $EQU $LAST[1] 6 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " rows in xpath_contains //chapter//para[position () > 10]\n";
 
 select count (*) from FTT1 where xpath_contains (DT, '//chapter/descendant::para[position () > 10]', t);
-echo both $if $equ $last[1] 1630 "PASSED" "*** FAILED";
-echo both ": " $last[1] " rows in xpath_contains //chapter/descendant::para[position () > 10]\n";
+ECHO BOTH $IF $EQU $LAST[1] 1630 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " rows in xpath_contains //chapter/descendant::para[position () > 10]\n";
 
 --REPL_UNPUBLISH ('tbl');
 REPL_PUBLISH ('tblx', 'tblx.log');
@@ -294,79 +294,78 @@ ECHO BOTH ": query 'cde' produces offband data member 2 : " $LAST[1] "\n";
 
 
 select t from FTT1 where xpath_contains (DT, '//title', t);
-echo both $if $equ $rowcnt 792 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " rows in xpath_contains //title\n";
+ECHO BOTH $IF $EQU $ROWCNT 792 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows in xpath_contains //title\n";
 
 select t from FTT1 where xpath_contains (DT, '//title [. like ''%ISOLATION%'' ]', t);
-echo both $if $equ $rowcnt 4 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " rows in xpath_contains //title [. like '%ISOLATION%' ]\n";
-echo both $if $equ $last[1]  "<title>SQL_TXN_ISOLATION</title>" "PASSED" "*** FAILED";
-echo both ": " $last[1] " last row in xpath_contains //title [. like '%ISOLATION%' ]\n";
+ECHO BOTH $IF $EQU $ROWCNT 4 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows in xpath_contains //title [. like '%ISOLATION%' ]\n";
+ECHO BOTH $IF $EQU $LAST[1]  "<title>SQL_TXN_ISOLATION</title>" "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " last row in xpath_contains //title [. like '%ISOLATION%' ]\n";
 
 select t from FTT1 where xpath_contains (DT, '//title [.=''ISOLATION'' ]', t);
-echo both $if $equ $rowcnt 2 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " rows in xpath_contains //title [.='ISOLATION' ]\n";
+ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows in xpath_contains //title [.='ISOLATION' ]\n";
 
 select t from FTT1 where xpath_contains (DT, '//title [. like ''%ISOLATION%'' ]/ancestor::*/title', t);
-echo both $if $equ $rowcnt 16 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " rows in xpath_contains //title [. like '%ISOLATION%' ]/ancestor::*/title\n";
+ECHO BOTH $IF $EQU $ROWCNT 16 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows in xpath_contains //title [. like '%ISOLATION%' ]/ancestor::*/title\n";
 
 select t from FTT1 where xpath_contains (DT, '//title [.=''ISOLATION'' ]/ancestor::*/title', t);
-echo both $if $equ $rowcnt 7 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " rows in xpath_contains //title [.='ISOLATION' ]/ancestor::*/title\n";
+ECHO BOTH $IF $EQU $ROWCNT 7 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows in xpath_contains //title [.='ISOLATION' ]/ancestor::*/title\n";
 
 select t from FTT1 where xpath_contains (DT, '//chapter/title', t);
-echo both $if $equ $rowcnt 20 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " rows in xpath_contains //chapter/title\n";
+ECHO BOTH $IF $EQU $ROWCNT 20 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows in xpath_contains //chapter/title\n";
 
 select t from FTT1 where xpath_contains (DT, '//chapter/title[position () = 1]', t);
-echo both $if $equ $rowcnt 20 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " rows in xpath_contains //chapter/title[position () = 1]\n";
+ECHO BOTH $IF $EQU $ROWCNT 20 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows in xpath_contains //chapter/title[position () = 1]\n";
 
 select count (*) from FTT1 where xpath_contains (DT, '//chapter//para[position () > 10]', t);
-echo both $if $equ $last[1] 6 "PASSED" "*** FAILED";
-echo both ": " $last[1] " rows in xpath_contains //chapter//para[position () > 10]\n";
+ECHO BOTH $IF $EQU $LAST[1] 6 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " rows in xpath_contains //chapter//para[position () > 10]\n";
 
 select count (*) from FTT1 where xpath_contains (DT, '//chapter/descendant::para[position () > 10]', t);
-echo both $if $equ $last[1] 1630 "PASSED" "*** FAILED";
-echo both ": " $last[1] " rows in xpath_contains //chapter/descendant::para[position () > 10]\n";
+ECHO BOTH $IF $EQU $LAST[1] 1630 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " rows in xpath_contains //chapter/descendant::para[position () > 10]\n";
 
 
 select t from FTT2 where xpath_contains (DT, '//title', t);
-echo both $if $equ $rowcnt 792 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " rows in xpath_contains //title\n";
+ECHO BOTH $IF $EQU $ROWCNT 792 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows in xpath_contains //title\n";
 
 select t from FTT2 where xpath_contains (DT, '//title [. like ''%ISOLATION%'' ]', t);
-echo both $if $equ $rowcnt 4 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " rows in xpath_contains //title [. like '%ISOLATION%' ]\n";
-echo both $if $equ $last[1]  "<title>SQL_TXN_ISOLATION</title>" "PASSED" "*** FAILED";
-echo both ": " $last[1] " last row in xpath_contains //title [. like '%ISOLATION%' ]\n";
+ECHO BOTH $IF $EQU $ROWCNT 4 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows in xpath_contains //title [. like '%ISOLATION%' ]\n";
+ECHO BOTH $IF $EQU $LAST[1]  "<title>SQL_TXN_ISOLATION</title>" "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " last row in xpath_contains //title [. like '%ISOLATION%' ]\n";
 
 select t from FTT2 where xpath_contains (DT, '//title [.=''ISOLATION'' ]', t);
-echo both $if $equ $rowcnt 2 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " rows in xpath_contains //title [.='ISOLATION' ]\n";
+ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows in xpath_contains //title [.='ISOLATION' ]\n";
 
 select t from FTT2 where xpath_contains (DT, '//title [. like ''%ISOLATION%'' ]/ancestor::*/title', t);
-echo both $if $equ $rowcnt 16 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " rows in xpath_contains //title [. like '%ISOLATION%' ]/ancestor::*/title\n";
+ECHO BOTH $IF $EQU $ROWCNT 16 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows in xpath_contains //title [. like '%ISOLATION%' ]/ancestor::*/title\n";
 
 select t from FTT2 where xpath_contains (DT, '//title [.=''ISOLATION'' ]/ancestor::*/title', t);
-echo both $if $equ $rowcnt 7 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " rows in xpath_contains //title [.='ISOLATION' ]/ancestor::*/title\n";
+ECHO BOTH $IF $EQU $ROWCNT 7 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows in xpath_contains //title [.='ISOLATION' ]/ancestor::*/title\n";
 
 select t from FTT2 where xpath_contains (DT, '//chapter/title', t);
-echo both $if $equ $rowcnt 20 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " rows in xpath_contains //chapter/title\n";
+ECHO BOTH $IF $EQU $ROWCNT 20 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows in xpath_contains //chapter/title\n";
 
 select t from FTT2 where xpath_contains (DT, '//chapter/title[position () = 1]', t);
-echo both $if $equ $rowcnt 20 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " rows in xpath_contains //chapter/title[position () = 1]\n";
+ECHO BOTH $IF $EQU $ROWCNT 20 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows in xpath_contains //chapter/title[position () = 1]\n";
 
 select count (*) from FTT2 where xpath_contains (DT, '//chapter//para[position () > 10]', t);
-echo both $if $equ $last[1] 6 "PASSED" "*** FAILED";
-echo both ": " $last[1] " rows in xpath_contains //chapter//para[position () > 10]\n";
+ECHO BOTH $IF $EQU $LAST[1] 6 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " rows in xpath_contains //chapter//para[position () > 10]\n";
 
 select count (*) from FTT2 where xpath_contains (DT, '//chapter/descendant::para[position () > 10]', t);
-echo both $if $equ $last[1] 1630 "PASSED" "*** FAILED";
-echo both ": " $last[1] " rows in xpath_contains //chapter/descendant::para[position () > 10]\n";
-
+ECHO BOTH $IF $EQU $LAST[1] 1630 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " rows in xpath_contains //chapter/descendant::para[position () > 10]\n";

@@ -40,10 +40,3 @@ ECHO BOTH ": " $LAST[1] " checkpoint remap pages\n";
 
 backup_max_dir_size (300000);
 backup_online ('nwdemo_i_#', 150,0, vector ('nw1', 'nw2', 'nw3', 'nw4', 'nw5'));
-
-
-
-
-
-
-

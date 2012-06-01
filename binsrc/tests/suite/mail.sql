@@ -153,4 +153,3 @@ select pop3_get ('localhost $U{POP3PORT}', 'user1', 'wrong_pwd', 88888, 'UiDL');
 ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": POP3 wrong password check : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
-

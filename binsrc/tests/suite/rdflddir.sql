@@ -194,4 +194,3 @@ create procedure gogo (in coff any)
   dbg_obj_print ('Finish gogo.');
 }
 ;
-

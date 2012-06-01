@@ -32,4 +32,3 @@ ECHO BOTH " TEST table contains " $LAST[1] " rows\n";
 backup '/dev/null';
 ECHO BOTH $IF $EQU $STATE OK  "PASSED" "***FAILED";
 ECHO BOTH ": Travers all trees\n";
-

@@ -415,19 +415,18 @@ ECHO BOTH ": " $LAST [2] " distinct word lengths.\n";
 
 
 select count (*) from words wherre word like 'burro';
-echo both $if $equ $last[1]  "PASSED" "***FAILED";
-echo both " exact like OK.\n";
+ECHO BOTH $IF $EQU $LAST[1]  "PASSED" "***FAILED";
+ECHO BOTH ": exact like OK.\n";
 
 
 select count (*) from words where word like '%';
-echo both $if $equ $last[1]  86061 "PASSED" "***FAILED";
-echo both " % like OK.\n";
+ECHO BOTH $IF $EQU $LAST[1]  86061 "PASSED" "***FAILED";
+ECHO BOTH ": % like OK.\n";
 
 
 select count (*) from words where word like 'bur%';
-echo both $if $equ $last[1]  90  "PASSED" "***FAILED";
-echo both " prefix % like OK.\n";
-
+ECHO BOTH $IF $EQU $LAST[1]  90  "PASSED" "***FAILED";
+ECHO BOTH ": prefix % like OK.\n";
 
 
 ECHO BOTH "COMPLETED WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED: Wordtest\n";

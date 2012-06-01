@@ -26,5 +26,3 @@ create table tpm (t_n_orders int, t_time datetime);
 set autocommit on;
 insert into tpm values ((select sum (d_next_o_id) from district), now  ());
 select * from tpm;
-
-

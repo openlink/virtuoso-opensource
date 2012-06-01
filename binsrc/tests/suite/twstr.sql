@@ -436,4 +436,3 @@ select count (*) from WS_S_5;
 ECHO BOTH $IF $EQU $LAST[1] 3 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": WS-TRUST CHECK RESULT TABLE ROWS = " $LAST[1] "\n";
-

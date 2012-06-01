@@ -18,4 +18,3 @@ create procedure ust1 (in n int, in len int := 10000)
   for (ctr := 0; ctr < n; ctr := ctr + 1)
      update t1 set fs4 = str, fi2 = fi2 + 1 where row_no = 100000;
 }
-
