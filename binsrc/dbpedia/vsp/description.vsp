@@ -112,7 +112,14 @@
    else if (page_resource_uri like 'http://%/class/%')
      rdf_link2 := dbp_ldd_get_proxy (replace (page_resource_uri, '/class/', '/data2/'));
    else if (page_resource_uri like 'http://%/ontology/%')
+     {
+       project_home_page := registry_get('dbp_graph') || '/resource/classes#';
      rdf_link2 := dbp_ldd_get_proxy (replace (page_resource_uri, '/ontology/', '/data3/'));
+       rdf_link := 'http://'|| http_request_header (http_request_header (), 'Host') 
+		||'/sparql?default-graph-uri=http%3A%2F%2F'||replace(registry_get('dbp_graph'),'http://','')||'%2Fresource%2Fclasses%23&query=DESCRIBE+<' ||
+		replace (page_resource_uri, '%', '%25') || '>';
+       gen_rdf_link := rdf_link;
+     }
    else if (page_resource_uri like 'http://%/property/%')
      rdf_link2 := dbp_ldd_get_proxy (replace (page_resource_uri, '/property/', '/data4/'));
    else if (page_resource_uri like 'http://%/meta/%')
@@ -171,7 +178,8 @@
        page_resource_uri := split_and_decode (page_resource_uri)[0];
 --     _resource_:= split_and_decode (_resource_)[0];
      }
-
+   if (dbp_check_if_modified (lines, project_home_page))
+     return;
    -- create iid's
    _G := DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (project_home_page);
    _S := DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (page_resource_uri);
