@@ -660,9 +660,10 @@ dbp_check_if_modified (in lines any, in graph any)
     modified := call (pname) (lines, graph);
   else  
     modified := (select max (LL_DONE) from LOAD_LIST where LL_GRAPH = graph);
-  --dbg_obj_print_vars (since, modified, graph);
+  modified := dt_set_tz (modified, 0);  
+  --dbg_obj_print_vars (since, modified, gt (since, modified), graph);
   if (modified is null) return 0;
-  if (modified < since) return 0;
+  if (modified > since) return 0;
   http_rewrite ();
   http_status_set (304);
   return 1;
