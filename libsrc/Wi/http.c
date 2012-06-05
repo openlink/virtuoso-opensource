@@ -8118,6 +8118,8 @@ bif_http_map_table (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 		    }
 		  map->hm_cors = ht;
 		}
+	      else if (DV_STRINGP (opts[i]) && !stricmp (opts[i],"expiration_function"))
+		map->hm_expiration_fn = box_copy_tree (opts[i+1]);
 	    }
 	  map->hm_opts = (caddr_t *) box_copy_tree ((box_t) opts);
 	}
@@ -8931,6 +8933,8 @@ bif_http_map_get (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
     res = box_num (map->hm_url_rewrite_keep_lpath);
   else if (!strcmp (member, "noinherit"))
     res = box_num (map->hm_no_inherit);
+  else if (!strcmp (member, "expiration_function"))
+    res = box_copy_tree ((box_t) map->hm_expiration_fn);
   return res;
 }
 
