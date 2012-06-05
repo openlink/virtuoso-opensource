@@ -1,18 +1,39 @@
 <?vsp
-  declare info, res, cb, mod, exp, webid, ret_url, cert, ctype, err, dummy, expiry_verify, vtype, md5, sha1, subj any;
+  declare info, res, cb, mod, exp, webid, ret_url, cert, ctype, err, dummy, expiry_verify, vtype, md5, sha1, subj, json_out any;
   cb := {?'callback'};
   cert := {?'certificate'};
   err := '';
+
+  json_out := {?'json'};
+
+  declare acc any;
+  acc := http_request_header (lines, 'Accept', null, '');
+
+  if (json_out = 'yes' or 'application/json' = acc)
+    json_out := 1;
+  else
+    json_out := 0;
+
   dummy := null;
   if (not xenc_key_exists ('id_rsa'))
     {
       err := 'Must configure CA on this host.';
       goto html;
     }
-  if ((length (cb) = 0) or ((length (cert) = 0) and not is_http_ctx ()))
+
+  if (not length(cb)) 
     {
-      goto html;
+      if (json_out) 
+        {
+          http_status_set (400);
+          return;
     }
+      else goto html;
+    }
+  
+  if ((length (cert) = 0) and not is_http_ctx ())
+      goto html;
+
   ctype := 1;
   if (not length (cert))
     {
@@ -65,12 +86,27 @@
      {
        ret_url := sprintf ('%serror=%U', cb, res);
      }
+
    ret_url := ret_url || sprintf ('&ts=%U&md5=%U&sha1=%U&subj=%U', date_iso8601 (now ()), md5, sha1, subj);
    ret_url := ret_url || sprintf ('&signature=%U', xenc_dsig_sign (ret_url, 'id_rsa', xenc_get_key_algo ('id_rsa')));  
+
+  if (not json_out) 
+    {
    http_status_set (302);
    http_header (sprintf ('Location: %s\r\n', ret_url));
    return;
+    }
+  else 
+    {
+      http_header ('Content-Type: application/json\r\n');
+      http (sprintf ('{"result": "%U","webid":"%U","ts":"%U","md5":"%U","sha1":"%U","subj":"%U","url":"%s", "signature":"%U"}',
+                      res, coalesce(webid,''), date_iso8601 (now ()), 
+                      md5, sha1, subj, ret_url, xenc_dsig_sign (ret_url, 'id_rsa', xenc_get_key_algo ('id_rsa'))));
+      return;
+    }
+
 html:
+
 ?>
 <html>
   <head>

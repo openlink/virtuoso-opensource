@@ -1,0 +1,44 @@
+<?vsp
+  declare _params, _client_id, _client_secret, _return_url, _code, _url, _reqHeader, _retHeader, _body, _retValue, _json, _xml any;
+  declare _display_name, _email varchar;
+
+  _code := get_keyword ('code', params, '');
+  _json := '{\"error\" : \"invalid_request\"}';
+  if (_code <> '')
+  {
+    _client_id := (select a_key from OAUTH..APP_REG where a_name = 'SkyDrive API' and a_owner = 0);
+    _client_secret := (select a_secret from OAUTH..APP_REG where a_name = 'SkyDrive API' and a_owner = 0);
+    _return_url := sprintf ('http://%{WSHost}s/ods/access_skydrive.vsp', http_path());
+    _url := 'https://login.live.com/oauth20_token.srf';
+    _reqHeader := 'Content-Type: application/x-www-form-urlencoded\r\n';
+    _body := sprintf ('code=%U&client_id=%U&client_secret=%U&redirect_uri=%U&grant_type=%U', _code, _client_id, _client_secret, _return_url, 'authorization_code');
+    _retValue := http_client (url=>_url, http_method=>'POST', http_headers=>_reqHeader, body=>_body, n_redirects=>15);
+    _json := replace (_retValue, '\n', '\\n');
+    dbg_obj_print ('0', _retValue);
+
+    -- get owner info
+    _params := subseq (ODS..json2obj (_retValue), 2);
+    _url := sprintf ('https://apis.live.net/v5.0/me?access_token=%U', get_keyword ('access_token', _params));
+    _retHeader := null;
+    _retValue := http_client_ext (url=>_url, http_method=>'GET', headers =>_retHeader, n_redirects=>15);
+    if (not ((_retHeader[0] like 'HTTP/1._ 4__ %') or (_retHeader[0] like 'HTTP/1._ 5__ %')))
+    {
+      _params := subseq (ODS..json2obj (_retValue), 2);
+      _display_name := get_keyword ('name', _params);
+    }
+  }
+?>
+<html>
+  <head>
+  </head>
+  <body>
+    <script type="text/javascript">
+      if (window.opener && window.opener.open && !window.opener.closed) {
+        window.opener.ODRIVE.skydriveParams('<?vsp http (_json); ?>', '<?V _display_name ?>');
+      } else {
+        alert ('Opener not found');
+      }
+      window.close();
+    </script>
+  </body>
+</html>

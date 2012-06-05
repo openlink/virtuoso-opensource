@@ -8,7 +8,7 @@
   {
     _client_id := (select a_key from OAUTH..APP_REG where a_name = 'Google API' and a_owner = 0);
     _client_secret := (select a_secret from OAUTH..APP_REG where a_name = 'Google API' and a_owner = 0);
-    _return_url := sprintf ('http://%{WSHost}s/ods/google_access.vsp', http_path());
+    _return_url := sprintf ('http://%{WSHost}s/ods/access_google.vsp', http_path());
     _url := 'https://accounts.google.com/o/oauth2/token';
     _reqHeader := 'Content-Type: application/x-www-form-urlencoded\r\n';
     _body := sprintf ('code=%U&client_id=%U&client_secret=%U&redirect_uri=%U&grant_type=%U', _code, _client_id, _client_secret, _return_url, 'authorization_code');

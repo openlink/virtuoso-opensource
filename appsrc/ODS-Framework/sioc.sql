@@ -739,7 +739,7 @@ create procedure sioc_user (in graph_iri varchar, in iri varchar, in u_name varc
   --!!! ACL   }
 
   DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('account_of'), person_iri);
-  DB.DBA.ODS_QUAD_URI (graph_iri, person_iri, foaf_iri ('holdsAccount'), iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, person_iri, foaf_iri ('account'), iri);
   -- OpenID (new)
   DB.DBA.ODS_QUAD_URI (graph_iri, person_iri, foaf_iri ('openid'), link);
 
@@ -1583,7 +1583,7 @@ create procedure sioc_user_account (in graph_iri varchar, in iri varchar, in nam
   DB.DBA.ODS_QUAD_URI (graph_iri, uri, rdf_iri ('type'), foaf_iri ('OnlineAccount'));
   DB.DBA.ODS_QUAD_URI (graph_iri, uri, foaf_iri ('accountServiceHomepage'), url);
   DB.DBA.ODS_QUAD_URI_L (graph_iri, uri, foaf_iri ('accountName'), name);
-  DB.DBA.ODS_QUAD_URI (graph_iri, pers_iri, foaf_iri ('holdsAccount'), uri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, pers_iri, foaf_iri ('account'), uri);
 };
 
 create procedure sioc_user_account_delete (in graph_iri varchar, in iri varchar, in name varchar, in uri varchar := null)
@@ -5416,7 +5416,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?person foaf:mbox ?mbox .
 	    ?person foaf:mbox_sha1sum ?sha1 .
 	    ?person foaf:name ?full_name .
-	    ?person foaf:holdsAccount ?sioc_user .
+	    ?person foaf:account ?sioc_user .
 	    ?person rdfs:seeAlso ?pers_see_also .
 	    ?sioc_user rdfs:seeAlso ?see_also .
 	    ?sioc_user a sioc:User .
@@ -5455,10 +5455,10 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    graph <%s>
 	    {
 	      {
-	      ?person foaf:holdsAccount <%s/%s#this> ;
+	      ?person foaf:account <%s/%s#this> ;
 	      rdf:type ?type ;
 	      foaf:nick ?nick ;
-	      foaf:holdsAccount ?sioc_user .
+	      foaf:account ?sioc_user .
 	      optional { ?person rdfs:seeAlso ?pers_see_also . } .
 	      optional { ?sioc_user rdfs:seeAlso ?see_also . } .
 	      optional { ?person foaf:mbox ?mbox ; foaf:mbox_sha1sum ?sha1 . } .
@@ -5526,7 +5526,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?event dc:date ?bdate .
 	    ?person bio:keywords ?keywords .
 	    ?person owl:sameAs ?same_as .
-	    ?person foaf:holdsAccount ?oa .
+	    ?person foaf:account ?oa .
 	    ?oa a foaf:OnlineAccount .
 	    ?oa foaf:accountServiceHomepage ?ashp .
 	    ?oa foaf:accountName ?an .
@@ -5542,7 +5542,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    graph <%s>
 	    {
 	      {
-	      ?person foaf:holdsAccount <%s/%s#this> ;
+  	      ?person foaf:account <%s/%s#this> ;
 	      foaf:openid ?oid .
 	      optional { ?person bio:olb ?bio  } .
               optional { ?person bio:event ?event . ?event a bio:Birth ; dc:date ?bdate } .
@@ -5556,7 +5556,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	      	       } .
               optional { ?person bio:keywords ?keywords } .
 	      optional { ?person owl:sameAs ?same_as } .
-			 ?person foaf:holdsAccount ?oa .
+  	      ?person foaf:account ?oa .
 	      optional {
 		         ?oa foaf:accountServiceHomepage ?ashp ; foaf:accountName ?an
 	      	       } .
@@ -5600,7 +5600,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    graph <%s>
 	    {
 	      {
-	      ?person foaf:holdsAccount <%s/%s#this> .
+	        ?person foaf:account <%s/%s#this> .
 		optional { ?person foaf:mbox ?mbox . } .  
 	      optional { ?person foaf:made ?made . ?made dc:identifier ?ident . ?made dc:title ?made_title . optional { ?made a ?made_type . } } .
 	      optional { ?person foaf:interest ?interest } .
@@ -5632,7 +5632,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	  {
 	    graph <%s>
 	    {
-	        ?person foaf:holdsAccount <%s/%s#this> .
+        ?person foaf:account <%s/%s#this> .
         {
           {
             ?container foaf:maker ?person;
@@ -6257,14 +6257,14 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
       if (kind = 0)
 	{
 	  part := sprintf (
-	     ' CONSTRUCT { ?s ?p ?o . ?f foaf:holdsAccount ?ha . ?f rdfs:seeAlso ?sa . '||
+  	     ' CONSTRUCT { ?s ?p ?o . ?f foaf:account ?ha . ?f rdfs:seeAlso ?sa . '||
 	     '  ?frm sioc:scope_of ?role. ?role sioc:function_of ?member. ?frm sioc:type ?ft. ?frm sioc:id ?fid . '||
 	     '  ?frm rdfs:seeAlso ?fsa . ?frm sioc:has_space ?fh .  ?role sioc:has_scope ?frm . ' ||
 	     '  ?frm sioc:has_owner ?member . ?member sioc:owner_of ?frm . } \n' ||
 	     ' FROM <%s> WHERE { \n' ||
 	     '   { ?s ?p ?o . ?s sioc:id "%s" FILTER (?p != "http://www.w3.org/2000/01/rdf-schema#seeAlso" && ' ||
 	     ' 					  ?p != "http://rdfs.org/sioc/ns#creator_of") } union  \n' ||
-	     '   { ?f foaf:nick "%s" ; foaf:holdsAccount ?ha ; rdfs:seeAlso ?sa  } union  \n' ||
+  	     '   { ?f foaf:nick "%s" ; foaf:account ?ha ; rdfs:seeAlso ?sa  } union  \n' ||
 	     '   { ?frm sioc:scope_of ?role . ?role sioc:function_of ?member . '||
 	     '     ?member sioc:id "%s". ?frm sioc:type ?ft; sioc:id ?fid; rdfs:seeAlso ?fsa; sioc:has_space ?fh. '||
              '     OPTIONAL { ?frm sioc:has_owner ?member . } '||
@@ -6280,7 +6280,7 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
 	    ?person foaf:mbox ?mbox .
 	    ?person foaf:mbox_sha1sum ?sha1 .
 	    ?person foaf:name ?full_name .
-	    ?person foaf:holdsAccount ?sioc_user .
+  	    ?person foaf:account ?sioc_user .
 	    ?sioc_user rdfs:seeAlso ?see_also .
 	    ?sioc_user a sioc:User .
 	    ?person foaf:firstName ?fn .
@@ -6329,7 +6329,7 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
 	    {
 	      {
 	      ?person foaf:nick "%s" ;
-	      foaf:holdsAccount ?sioc_user .
+    	      foaf:account ?sioc_user .
 	      ?sioc_user rdfs:seeAlso ?see_also .
 	      optional { ?person foaf:mbox ?mbox ; foaf:mbox_sha1sum ?sha1 . } .
 	      optional {
@@ -6791,6 +6791,17 @@ create procedure SIOC..rdf_links_head (in iri any)
 }
 ;
 
+create procedure ods_account_update ()
+{
+  if (registry_get ('ods_account_update') = '1') return;
+  update_quad_p (get_graph (), foaf_iri ('holdsAccount'), foaf_iri ('account'));
+  registry_set ('ods_account_update', '1');
+}
+;
+
+ods_account_update ()
+;
+
 use DB;
 
 create procedure WA_INTEREST_UPGRADE ()
@@ -6818,9 +6829,7 @@ WA_INTEREST_UPGRADE ()
 
 create procedure ods_object_services_update ()
 {
-  if (registry_get ('ods_services_update') = '1')
-    return;
-
+  if (registry_get ('ods_services_update') = '1') return;
   SIOC..fill_ods_services ();
   registry_set ('ods_services_update', '1');
 }
