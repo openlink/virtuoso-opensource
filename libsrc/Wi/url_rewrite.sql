@@ -1210,7 +1210,7 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
   declare rule_iri, in_path, qstr, meth varchar;
   declare target_vhost_pkey, hf, accept, http_headers any;
   declare result, http_redir, http_tcn_code, tcn_rc, keep_lpath int;
-  declare http_tcn_headers varchar;
+  declare http_tcn_headers, exp_fn varchar;
 
   -- XXX: the path is just path string, no fragment no query no host
   --hf := rfc1808_parse_uri (path);
@@ -1220,12 +1220,14 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
     in_path := '/';
   accept := null;
   qstr := null;
+  exp_fn := null;
   keep_lpath := 0;
   meth := 'GET';
 
   if (is_http_ctx ())
     {
       keep_lpath := http_map_get ('url_rewrite_keep_lpath');
+      exp_fn := http_map_get ('expiration_function');
       lines := http_request_header ();
       if (length (lines))
 	{
@@ -1243,6 +1245,12 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
   else
     {
       lines := vector ();
+    }
+
+  if (isstring (exp_fn) and (__proc_exists (exp_fn) is not null) and (1 = call (exp_fn) (lines, http_map_get ('options'))))
+    {
+      http_body_read ();
+      return 1;
     }
 
   if (length (qstr))
