@@ -3943,7 +3943,7 @@ create procedure DB.DBA.SPARQL_ROUTE_DICT_CONTENT_DAV (
         DB.DBA.RDF_TRIPLES_TO_TTL (triples, out_ses);
       else if ('application/x-trig' = mime)
         DB.DBA.RDF_TRIPLES_TO_TRIG (triples, out_ses);
-      else if ('text/plain' = mime)
+      else if ('text/plain' = mime or 'text/ntriples' = mime)
         DB.DBA.RDF_TRIPLES_TO_NT (triples, out_ses);
       else if (('application/json' = mime) or ('application/rdf+json' = mime) or ('application/x-rdf+json' = mime))
         DB.DBA.RDF_TRIPLES_TO_TALIS_JSON (triples, out_ses);
