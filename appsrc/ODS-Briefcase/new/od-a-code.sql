@@ -2343,6 +2343,35 @@ create procedure ODRIVE.WA.acl_vector (
 }
 ;
 
+-----------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.acl_vector_unique (
+  in acl any)
+{
+  declare N integer;
+  declare retValue any;
+
+  retValue := vector ();
+  for (N := 0; N < length (acl); N := N + 1)
+  {
+    if (exists (select 1 from DB.DBA.SYS_USERS where U_ID = acl[N][0] and U_IS_ROLE = 1))
+    {
+      for (select UG_UID from DB.DBA.SYS_USER_GROUP, DB.DBA.SYS_USERS where UG_GID = acl[N][0] and U_ID = UG_UID and U_IS_ROLE = 0 and U_ACCOUNT_DISABLED = 0) do
+      {
+        if (not ODRIVE.WA.vector_contains (retValue, UG_UID))
+          retValue := vector_concat (retValue, vector (UG_UID));
+      }
+    }
+    else
+    {
+      if (not ODRIVE.WA.vector_contains (retValue, acl[N][0]))
+        retValue := vector_concat (retValue, vector (acl[N][0]));
+    }
+  }
+  return retValue;
+}
+;
+
 -------------------------------------------------------------------------------
 --
 create procedure ODRIVE.WA.odrive_ace_grantee(
@@ -4358,12 +4387,15 @@ create procedure ODRIVE.WA.ui_date (
 create procedure ODRIVE.WA.send_mail (
   in _instance integer,
   in _from integer,
-  in _to integer,
+  in _to any,
+  in _subject varchar,
   in _body varchar,
-  in _path varchar)
+  in _path varchar,
+  in _mode integer := 1)
 {
-  declare N, _id, _what, _iri any;
-  declare _smtp_server, _from_address, _to_address, _toUsers, _toBody, _message any;
+  -- dbg_obj_princ ('ODRIVE.WA.send_mail (', _from, _to, _path, ')');
+  declare _id, _what, _iri, _data any;
+  declare _smtp_server, _from_address, _to_address, _message any;
 
   if ((select max (WS_USE_DEFAULT_SMTP) from WA_SETTINGS) = 1 or (select length (max (WS_SMTP)) from WA_SETTINGS) = 0)
   {
@@ -4377,33 +4409,32 @@ create procedure ODRIVE.WA.send_mail (
      _what := case when (_path[length (_path)-1] <> ascii('/')) then 'R' else 'C' end;
      if (_what = 'C')
        _iri := _iri || '/folder';
-     _id := DB.DBA.DAV_SEARCH_ID (_path, _what);
 
-    if (exists (select 1 from SYS_USERS where U_ID = _to and U_IS_ROLE = 1))
-    {
-      _toUsers := vector ();
-      for (select UG_UID from DB.DBA.SYS_USER_GROUP, DB.DBA.SYS_USERS where UG_GID = _to and U_ID = UG_UID and U_IS_ROLE = 0 and U_ACCOUNT_DISABLED = 0) do
-        _toUsers := vector_concat (_toUsers, vector (UG_UID));
-    } else {
-      _toUsers := vector (_to);
-    }
-    _toBody := _body;
-    for (N := 0; N < length (_toUsers); N := N + 1)
-    {
-      _to := _toUsers[N];
-      _body := _toBody;
+    _id := DB.DBA.DAV_SEARCH_ID (_path, _what);
     _body := replace (_body, '%resource_path%', _path);
-      if (isarray (_id) and (cast (_id[0] as varchar) in ('GDrive', 'Dropbox')))
+    if (isarray (_id) and (cast (_id[0] as varchar) in ('GDrive', 'Dropbox', 'SkyDrive')))
         _id := _id[2];
+
       if (not isarray (_id))
     _body := replace (_body, '%resource_uri%', SIOC..post_iri_ex (_iri, _id));
+
     _body := replace (_body, '%owner_uri%', SIOC..person_iri (SIOC..user_iri (_from)));
     _body := replace (_body, '%owner_name%', ODRIVE.WA.account_name (_from));
+    _from_address := (select U_E_MAIL from SYS_USERS where U_ID = _from);
+    if (_mode)
+    {
     _body := replace (_body, '%user_uri%', SIOC..person_iri (SIOC..user_iri (_to)));
     _body := replace (_body, '%user_name%', ODRIVE.WA.account_name (_to));
-    _message := 'Subject: Sharing notification\r\nContent-Type: text/plain\r\n' || _body;
-    _from_address := (select U_E_MAIL from SYS_USERS where U_ID = _from);
     _to_address := (select U_E_MAIL from SYS_USERS where U_ID = _to);
+    }
+    else
+    {
+      _data := ODS.ODS_API.getFOAFDataArray (_to);
+      _to_address := get_keyword ('mbox', _data);
+      _body := replace (_body, '%user_uri%', _to);
+      _body := replace (_body, '%user_name%', get_keyword ('name', _data, get_keyword ('nick', _data)));
+    }
+    _message := _subject || '\r\nContent-Type: text/plain\r\n' || _body;
     {
       declare exit handler for sqlstate '*'
       {
@@ -4413,7 +4444,6 @@ create procedure ODRIVE.WA.send_mail (
       smtp_send (_smtp_server, _from_address, _to_address, _message);
     }
   }
-}
 }
 ;
 
@@ -4426,33 +4456,77 @@ create procedure ODRIVE.WA.acl_send_mail (
   in _old_acl any,
   in _new_acl any)
 {
-  declare N, M integer;
-  declare oACLs, oACL, nACLs, nACL, settings, text any;
+  declare aq any;
+
+  _old_acl := ODRIVE.WA.acl_vector_unique (ODRIVE.WA.acl_vector (_old_acl));
+  _new_acl := ODRIVE.WA.acl_vector_unique (ODRIVE.WA.acl_vector (_new_acl));
+  aq := async_queue (1);
+  aq_request (aq, 'ODRIVE.WA.acl_send_mail_aq', vector (_instance, _from, _path, _old_acl, _new_acl));
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.acl_send_mail_aq (
+  in _instance integer,
+  in _from integer,
+  in _path varchar,
+  in _old_acl any,
+  in _new_acl any)
+{
+  -- dbg_obj_princ ('ODRIVE.WA.acl_send_mail_aq (', _path, _old_acl, _new_acl, ')');
+  declare N integer;
+  declare settings, subject, text any;
 
   settings := ODRIVE.WA.settings (_from);
+  subject := 'Subject: Sharing notification';
   text := ODRIVE.WA.settings_mailShare (settings);
-  oACLs := ODRIVE.WA.acl_vector (_old_acl);
-  nACLs := ODRIVE.WA.acl_vector (_new_acl);
-  for (N := 0; N < length (nACLs); N := N + 1)
+  for (N := 0; N < length (_new_acl); N := N + 1)
   {
-    for (M := 0; M < length (oACLs); M := M + 1)
-    {
-      if (nACLs[N][0] = oACLs[M][0])
-        goto _skip;
-    }
-    ODRIVE.WA.send_mail (_instance, _from, nACLs[N][0], text, _path);
-  _skip:;
+    if (not ODRIVE.WA.vector_contains (_old_acl, _new_acl[N]))
+      ODRIVE.WA.send_mail (_instance, _from, _new_acl[N], subject, text, _path);
   }
-  for (N := 0; N < length (oACLs); N := N + 1)
+  subject := 'Subject: Unsharing notification';
+  text := ODRIVE.WA.settings_mailUnshare (settings);
+  for (N := 0; N < length (_old_acl); N := N + 1)
+    {
+    if (not ODRIVE.WA.vector_contains (_new_acl, _old_acl[N]))
+      ODRIVE.WA.send_mail (_instance, _from, _old_acl[N], subject, text, _path);
+    }
+  }
+;
+
+-----------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.aci_vector (
+  in aci any)
   {
-    for (M := 0; M < length (nACLs); M := M + 1)
+  declare N, I integer;
+  declare retValue, webIDs any;
+
+  retValue := vector ();
+  for (N := 0; N < length (aci); N := N + 1)
     {
-      if (oACLs[N][0] = nACLs[M][0])
-        goto _skip2;
+    if      (aci[N][2] = 'person')
+    {
+      if (not ODRIVE.WA.vector_contains (retValue, aci[N][1]))
+        retValue := vector_concat (retValue, vector (aci[N][1]));
     }
-    ODRIVE.WA.send_mail (_instance, _from, oACLs[N][0], text, _path);
-  _skip2:;
+    else if (aci[N][2] = 'group')
+    {
+      webIDs := (select WACL_WEBIDS from DB.DBA.WA_GROUPS_ACL where aci[N][1] = SIOC..acl_group_iri (WACL_USER_ID, WACL_NAME));
+      if (not isnull (webIDs))
+      {
+        webIDs := split_and_decode (webIDs, 0, '\0\0\n');
+        for (I := 0; I < length (webIDs); I := I + 1)
+        {
+          if (not ODRIVE.WA.vector_contains (retValue, webIDs[I]))
+            retValue := vector_concat (retValue, vector (webIDs[I]));
+    }
   }
+}
+  }
+  return retValue;
 }
 ;
 
@@ -4486,7 +4560,7 @@ create procedure ODRIVE.WA.aci_load (
 
   what := case when (path[length (path)-1] <> ascii('/')) then 'R' else 'C' end;
   id := DB.DBA.DAV_SEARCH_ID (path, what);
-  if (isarray (id) and (cast (id[0] as varchar) not in ('GDrive', 'Dropbox')))
+  if (isarray (id) and (cast (id[0] as varchar) not in ('GDrive', 'Dropbox', 'SkyDrive')))
   {
     retValue := ODRIVE.WA.DAV_PROP_GET (path, 'virt:aci_meta');
     if (ODRIVE.WA.DAV_ERROR (retValue))
@@ -4601,7 +4675,7 @@ create procedure ODRIVE.WA.aci_save (
 
   what := case when (path[length (path)-1] <> ascii('/')) then 'R' else 'C' end;
   id := DB.DBA.DAV_SEARCH_ID (path, what);
-  if (isarray (id) and (cast (id[0] as varchar) not in ('GDrive', 'Dropbox')))
+  if (isarray (id) and (cast (id[0] as varchar) not in ('GDrive', 'Dropbox', 'SkyDrive')))
     retValue := ODRIVE.WA.DAV_PROP_SET (path, 'virt:aci_meta', aci);
 
   else
@@ -4676,6 +4750,55 @@ create procedure ODRIVE.WA.aci_n3 (
   }
   }
   return string_output_string (stream);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.aci_send_mail (
+  in _instance integer,
+  in _from integer,
+  in _path varchar,
+  in _old_acl any,
+  in _new_acl any)
+{
+  declare aq any;
+
+  _old_acl := ODRIVE.WA.aci_vector (_old_acl);
+  _new_acl := ODRIVE.WA.aci_vector (_new_acl);
+  aq := async_queue (1);
+  aq_request (aq, 'ODRIVE.WA.aci_send_mail_aq', vector (_instance, _from, _path, _old_acl, _new_acl));
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.aci_send_mail_aq (
+  in _instance integer,
+  in _from integer,
+  in _path varchar,
+  in _old_acl any,
+  in _new_acl any)
+{
+  -- dbg_obj_princ ('ODRIVE.WA.aci_send_mail_aq (', _path, _old_acl, _new_acl, ')');
+  declare N integer;
+  declare settings, subject, text any;
+
+  settings := ODRIVE.WA.settings (_from);
+  subject := 'Subject: Sharing notification';
+  text := ODRIVE.WA.settings_mailShare (settings);
+  for (N := 0; N < length (_new_acl); N := N + 1)
+  {
+    if (not ODRIVE.WA.vector_contains (_old_acl, _new_acl[N]))
+      ODRIVE.WA.send_mail (_instance, _from, _new_acl[N], subject, text, _path, 0);
+  }
+  subject := 'Subject: Unsharing notification';
+  text := ODRIVE.WA.settings_mailUnshare (settings);
+  for (N := 0; N < length (_old_acl); N := N + 1)
+  {
+    if (not ODRIVE.WA.vector_contains (_new_acl, _old_acl[N]))
+      ODRIVE.WA.send_mail (_instance, _from, _old_acl[N], subject, text, _path, 0);
+  }
 }
 ;
 
@@ -4826,3 +4949,48 @@ create procedure ODRIVE.WA.metaCartridges_get ()
   return retValue;
 }
 ;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.graph_update (
+  in path varchar,
+  in det varchar,
+  in oldGraph varchar,
+  in newGraph varchar)
+{
+  declare aq any;
+
+  aq := async_queue (1);
+  aq_request (aq, 'ODRIVE.WA.graph_update_aq', vector (path, det, oldGraph, newGraph));
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.graph_update_aq (
+  in path varchar,
+  in det varchar,
+  in oldGraph varchar,
+  in newGraph varchar)
+{
+  declare detcol_id integer;
+
+  detcol_id := DB.DBA.DAV_SEARCH_ID (path, 'C');
+  if ((coalesce (oldGraph, '') <> '') and __proc_exists ('DB.DBA.' || det || '__rdf_delete'))
+  {
+    for (select RES_ID from WS.WS.SYS_DAV_RES where RES_FULL_PATH like (path || '%')) do
+    {
+      call ('DB.DBA.' || det || '__rdf_delete') (detcol_id, RES_ID, 'R', oldGraph);
+    }
+  }
+
+  if ((coalesce (newGraph, '') <> '')  and __proc_exists ('DB.DBA.' || det || '__rdf_insert'))
+  {
+    for (select RES_ID from WS.WS.SYS_DAV_RES where RES_FULL_PATH like (path || '%')) do
+    {
+      call ('DB.DBA.' || det || '__rdf_insert') (detcol_id, RES_ID, 'R', newGraph);
+    }
+  }
+}
+;
+

@@ -62,9 +62,12 @@
     }
     content := res_header[0];
   }
-
   http_rewrite();
-  if ((contentType = 'text/plain') and (mode <> 'download'))
+  if (length (content) = 0)
+  {
+    http_request_status ('HTTP/1.1 204 No Content');
+  }
+  else if ((contentType = 'text/plain') and (mode <> 'download'))
   {
     http_header (sprintf('Content-Type: %s\r\n', 'text/html'));
     http('<html><body><pre>\r\n');

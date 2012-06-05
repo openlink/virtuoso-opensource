@@ -93,7 +93,7 @@ create function "Dropbox_DAV_COL_CREATE" (
   in extern integer := 0) returns any
 {
   -- dbg_obj_princ ('Dropbox_DAV_COL_CREATE (', detcol_id, path_parts, permissions, uid, gid, auth_uid, extern, ')');
-  declare path, dropboxPath, listItem varchar;
+  declare path, listPath, listItem varchar;
   declare url, urlParams any;
   declare retValue, retHeader, result, save any;
   declare exit handler for sqlstate '*'
@@ -106,9 +106,9 @@ create function "Dropbox_DAV_COL_CREATE" (
   path := DB.DBA.Dropbox__path (detcol_id, path_parts);
   if (save is null)
   {
-    dropboxPath := '/' || DB.DBA.DAV_CONCAT_PATH (null, subseq (path_parts, 0, length (path_parts)-1));
+    listPath := '/' || DB.DBA.DAV_CONCAT_PATH (null, subseq (path_parts, 0, length (path_parts)-1));
     url := 'https://api.dropbox.com/1/fileops/create_folder';
-    urlParams := sprintf ('root=%U&path=%U', DB.DBA.Dropbox__root (), dropboxPath);
+    urlParams := sprintf ('root=%U&path=%U', DB.DBA.Dropbox__root (), listPath);
     result := DB.DBA.Dropbox__exec (detcol_id, retHeader, 'GET', url, urlParams);
     if (DAV_HIDE_ERROR (result) is null)
     {
@@ -116,7 +116,7 @@ create function "Dropbox_DAV_COL_CREATE" (
       goto _exit;
     }
     listItem := ODS..json2obj (result);
-    dropboxPath := get_keyword ('path', listItem);
+    listPath := get_keyword ('path', listItem);
   }
   connection_set ('dav_store', 1);
   retValue := DAV_COL_CREATE_INT (path, permissions, DB.DBA.Dropbox__user (uid, auth_uid), DB.DBA.Dropbox__user (gid, auth_uid), DB.DBA.Dropbox__user (http_dav_uid ()), DB.DBA.Dropbox__password (http_dav_uid ()), 1, 0, 1);
@@ -127,8 +127,8 @@ _exit:;
   {
     if (save is null)
     {
-      DB.DBA.Dropbox__paramSet (retValue, 'C', 'Entry', ODS..obj2xml (listItem, 10, 'entry'), 0);
-      DB.DBA.Dropbox__paramSet (retValue, 'C', 'path', dropboxPath, 0);
+      DB.DBA.Dropbox__paramSet (retValue, 'C', 'Entry', DB.DBA.Dropbox__obj2xml (listItem), 0);
+      DB.DBA.Dropbox__paramSet (retValue, 'C', 'path', listPath, 0);
     }
     DB.DBA.Dropbox__paramSet (retValue, 'C', 'virt:DETCOL_ID', cast (detcol_id as varchar), 0, 0);
     retValue := vector (DB.DBA.Dropbox__detName (), detcol_id, retValue, 'C');
@@ -177,7 +177,7 @@ create function "Dropbox_DAV_DELETE" (
   in auth_uid integer) returns integer
 {
   -- dbg_obj_princ ('Dropbox_DAV_DELETE (', detcol_id, path_parts, what, silent, auth_uid, ')');
-  declare path, dropboxPath varchar;
+  declare path, listPath varchar;
   declare retValue, save any;
   declare id, url, urlParams, retHeader any;
   declare exit handler for sqlstate '*'
@@ -188,17 +188,19 @@ create function "Dropbox_DAV_DELETE" (
 
   save := connection_get ('dav_store');
   path := DB.DBA.Dropbox__path (detcol_id, path_parts);
+  id := DB.DBA.DAV_SEARCH_ID (path, what);
   if (save is null)
   {
-    id := DB.DBA.DAV_SEARCH_ID (path, what);
-    dropboxPath := DB.DBA.Dropbox__paramGet (id, what, 'path', 0);
+    listPath := DB.DBA.Dropbox__paramGet (id, what, 'path', 0);
     url := 'https://api.dropbox.com/1/fileops/delete';
-    urlParams := sprintf ('root=%U&path=%U', DB.DBA.Dropbox__root (), dropboxPath);
+    urlParams := sprintf ('root=%U&path=%U', DB.DBA.Dropbox__root (), listPath);
     retValue := DB.DBA.Dropbox__exec (detcol_id, retHeader, 'GET', url, urlParams);
     if (DAV_HIDE_ERROR (retValue) is null)
       goto _exit;
   }
   connection_set ('dav_store', 1);
+  if (what = 'R')
+    DB.DBA.Dropbox__rdf_delete (detcol_id, id, what);
   retValue := DAV_DELETE_INT (path, 1, null, null, 0, 0);
 
 _exit:;
@@ -224,7 +226,7 @@ create function "Dropbox_DAV_RES_UPLOAD" (
 {
   -- dbg_obj_princ ('Dropbox_DAV_RES_UPLOAD (', detcol_id, path_parts, ', [content], ', type, permissions, uid, gid, auth_uid, ')');
   declare L integer;
-  declare name, path, dropboxPath varchar;
+  declare name, path, listPath, rdf_graph varchar;
   declare id any;
   declare url, urlParams any;
   declare retValue, retHeader, result, save, listItem any;
@@ -246,8 +248,8 @@ create function "Dropbox_DAV_RES_UPLOAD" (
       real_content := http_body_read (1);
       content := string_output_string (real_content);  -- check if bellow code can work with string session and if so remove this line
     }
-    dropboxPath := '/' || DB.DBA.DAV_CONCAT_PATH (null, path_parts);
-    url := sprintf ('https://api-content.dropbox.com/1/files_put/%s%s', DB.DBA.Dropbox__root (), DB.DBA.Dropbox__pathU (dropboxPath));
+    listPath := '/' || DB.DBA.DAV_CONCAT_PATH (null, path_parts);
+    url := sprintf ('https://api-content.dropbox.com/1/files_put/%s%s', DB.DBA.Dropbox__root (), DB.DBA.Dropbox__pathU (listPath));
     urlParams := 'override=true';
     result := DB.DBA.Dropbox__exec (detcol_id, retHeader, 'PUT', url, urlParams, '', blob_to_string (content));
     if (DAV_HIDE_ERROR (result) is null)
@@ -256,7 +258,7 @@ create function "Dropbox_DAV_RES_UPLOAD" (
       goto _exit;
     }
     listItem := ODS..json2obj (result);
-    dropboxPath := get_keyword ('path', listItem);
+    listPath := get_keyword ('path', listItem);
   }
   connection_set ('dav_store', 1);
   retValue := DAV_RES_UPLOAD_STRSES_INT (path, content, type, permissions, DB.DBA.Dropbox__user (uid, auth_uid), DB.DBA.Dropbox__user (gid, auth_uid), DB.DBA.Dropbox__user (http_dav_uid ()), DB.DBA.Dropbox__password (http_dav_uid ()), 0, null, null, null, null, null, 0);
@@ -265,10 +267,14 @@ _exit:;
   connection_set ('dav_store', save);
   if (DAV_HIDE_ERROR (retValue) is not null)
   {
+    rdf_graph := DB.DBA.Dropbox__paramGet (detcol_id, 'C', 'graph', 0);
+    if (not DB.DBA.is_empty_or_null (rdf_graph))
+      DB.DBA.Dropbox__rdf (detcol_id, retValue, 'R');
+
     if (save is null)
     {
-      DB.DBA.Dropbox__paramSet (retValue, 'R', 'Entry', ODS..obj2xml (listItem, 10, 'entry'), 0);
-      DB.DBA.Dropbox__paramSet (retValue, 'R', 'path', dropboxPath, 0);
+      DB.DBA.Dropbox__paramSet (retValue, 'R', 'Entry', DB.DBA.Dropbox__obj2xml (listItem), 0);
+      DB.DBA.Dropbox__paramSet (retValue, 'R', 'path', listPath, 0);
     }
     DB.DBA.Dropbox__paramSet (retValue, 'R', 'virt:DETCOL_ID', cast (detcol_id as varchar), 0, 0);
     retValue := vector (DB.DBA.Dropbox__detName (), detcol_id, retValue, 'C');
@@ -388,9 +394,8 @@ create function "Dropbox_DAV_DIR_LIST" (
   declare colId integer;
   declare what, colPath varchar;
   declare retValue, save, colEntry, davPaths any;
-  declare listItems, davItems, davDropbox any;
-  declare _id, _what, _type, _content, _subPath_parts any;
-  declare _propName, _propValue any;
+  declare downloads, listItems, davItems, davDropbox any;
+  declare _id, _what, _type, _content any;
   declare path, hashValue, title varchar;
   declare exit handler for sqlstate '*'
   {
@@ -404,6 +409,7 @@ create function "Dropbox_DAV_DIR_LIST" (
   if ((what = 'R') or (recursive = -1))
     return DB.DBA.Dropbox_DAV_DIR_SINGLE (detcol_id, what, null, auth_uid);
 
+  downloads := vector ();
   colPath := DB.DBA.DAV_CONCAT_PATH (detcol_parts, subPath_parts);
   colId := DB.DBA.DAV_SEARCH_ID (colPath, 'C');
   listItems := DB.DBA.Dropbox__list (detcol_id, detcol_parts, subPath_parts);
@@ -413,6 +419,7 @@ create function "Dropbox_DAV_DIR_LIST" (
   if (isinteger (listItems))
     goto _exit;
 
+  DB.DBA.Dropbox__activity (detcol_id, 'Sync started');
   {
     declare exit handler for sqlstate '*'
     {
@@ -436,23 +443,45 @@ create function "Dropbox_DAV_DIR_LIST" (
         if (path = get_keyword ('path', listItem))
         {
           davDropbox := DB.DBA.Dropbox__paramGet (davItem[4], davItem[1], 'Entry', 0);
-          if (DAV_HIDE_ERROR (davDropbox) is not null)
+          if (davDropbox is not null)
           {
             davPaths := vector_concat (davPaths, vector (path));
             davDropbox := xtree_doc (davDropbox);
-            if (DB.DBA.Dropbox__entryXPath (davDropbox, 'rev') <> get_keyword ('rev', listItem))
+            if (DB.DBA.Dropbox__entryXPath (davDropbox, '/rev', 1) <> get_keyword ('rev', listItem))
             {
-              DB.DBA.Dropbox__paramSet (davItem[4], davItem[1], 'Entry', ODS..obj2xml (listItem, 10, 'entry'), 0);
+              set triggers off;
               DB.DBA.Dropbox__paramSet (davItem[4], davItem[1], ':getlastmodified', DB.DBA.Dropbox__stringdate (get_keyword ('modified', listItem)), 0, 0);
-              DB.DBA.Dropbox__download (detcol_id, davItem[4], davItem[1]);
+              set triggers on;
+              DB.DBA.Dropbox__paramSet (davItem[4], davItem[1], 'Entry', DB.DBA.Dropbox__obj2xml (listItem), 0);
+              if (davItem[1] = 'R')
+              {
+                DB.DBA.Dropbox__paramSet (davItem[4], davItem[1], 'download', '0', 0);
+                downloads := vector_concat (downloads, vector (vector (davItem[4], davItem[1])));
+              }
+            }
+            else
+            {
+              declare downloaded integer;
+
+              downloaded := DB.DBA.Dropbox__paramGet (davItem[4], davItem[1], 'download', 0);
+              if (downloaded is not null)
+              {
+                downloaded := cast (downloaded as integer);
+                if (downloaded <= 5)
+                  downloads := vector_concat (downloads, vector (vector (davItem[4], davItem[1])));
+              }
             }
             goto _continue;
           }
         }
       }
+      if (davItem[1] = 'R')
+        DB.DBA.Dropbox__rdf_delete (detcol_id, davItem[4], davItem[1]);
+
       DAV_DELETE_INT (davItem[0], 1, null, null, 0, 0);
 
     _continue:;
+      commit work;
     }
     foreach (any listItem in listItems) do
     {
@@ -460,8 +489,6 @@ create function "Dropbox_DAV_DIR_LIST" (
       if (not position (path, davPaths))
       {
         title := DB.DBA.Dropbox__title (path);
-        _subPath_parts := subPath_parts;
-        _subPath_parts[length (_subPath_parts)-1] := title;
         connection_set ('dav_store', 1);
         if (get_keyword ('is_dir', listItem) = 1)
         {
@@ -477,20 +504,32 @@ create function "Dropbox_DAV_DIR_LIST" (
         }
         if (DAV_HIDE_ERROR (_id) is not null)
         {
-          DB.DBA.Dropbox__paramSet (_id, _what, 'virt:DETCOL_ID', cast (detcol_id as varchar), 0, 0);
-          DB.DBA.Dropbox__paramSet (_id, _what, 'path', path, 0);
-          DB.DBA.Dropbox__paramSet (_id, _what, 'Entry', ODS..obj2xml (listItem, 10, 'entry'), 0);
+          set triggers off;
           DB.DBA.Dropbox__paramSet (_id, _what, ':creationdate', DB.DBA.Dropbox__stringdate (get_keyword ('client_mtime', listItem)), 0, 0);
           DB.DBA.Dropbox__paramSet (_id, _what, ':getlastmodified', DB.DBA.Dropbox__stringdate (get_keyword ('modified', listItem)), 0, 0);
-          DB.DBA.Dropbox__download (detcol_id, _id, _what);
+          set triggers on;
+          DB.DBA.Dropbox__paramSet (_id, _what, 'virt:DETCOL_ID', cast (detcol_id as varchar), 0, 0);
+          DB.DBA.Dropbox__paramSet (_id, _what, 'path', path, 0);
+          DB.DBA.Dropbox__paramSet (_id, _what, 'Entry', DB.DBA.Dropbox__obj2xml (listItem), 0);
+          if (_what = 'R')
+          {
+            DB.DBA.Dropbox__paramSet (_id, _what, 'download', '0', 0);
+            downloads := vector_concat (downloads, vector (vector (_id, _what)));
         }
       }
+        commit work;
     }
   }
+  }
+  DB.DBA.Dropbox__activity (detcol_id, 'Sync ended');
+
 _exit:
   connection_set ('dav_store', save);
 
-  return DB.DBA.Dropbox__davList (detcol_id, colId);
+  retValue := DB.DBA.Dropbox__davList (detcol_id, colId);
+  DB.DBA.Dropbox__downloads (detcol_id, downloads);
+
+  return retValue;
 }
 ;
 
@@ -558,7 +597,21 @@ create function "Dropbox_DAV_SEARCH_PATH" (
   in what char(1)) returns any
 {
   -- dbg_obj_princ ('Dropbox_DAV_SEARCH_PATH (', id, what, ')');
-  return NULL;
+  declare davId integer;
+  declare retValue, save any;
+  declare exit handler for sqlstate '*'
+  {
+    connection_set ('dav_store', save);
+    resignal;
+  };
+
+  save := connection_get ('dav_store');
+  connection_set ('dav_store', 1);
+  davId := id[2];
+  retValue := DB.DBA.DAV_SEARCH_PATH (davId, what);
+  connection_set ('dav_store', save);
+
+  return retValue;
 }
 ;
 
@@ -772,7 +825,7 @@ create function DB.DBA.Dropbox__root ()
 create function DB.DBA.Dropbox__pathU (
   in path varchar)
 {
-  return replace (sprintf ('%U', path), '%2F', '/');
+  return replace (sprintf ('%U', ODRIVE.WA.utf2wide (path)), '%2F', '/');
 }
 ;
 
@@ -859,7 +912,7 @@ create function DB.DBA.Dropbox__fileDebug (
   in value any,
   in mode integer := -1)
 {
-  string_to_file ('gdrive.txt', cast (value as varchar) || '\r\n', mode);
+  string_to_file ('dropbox.txt', cast (value as varchar) || '\r\n', mode);
 }
 ;
 
@@ -952,11 +1005,19 @@ create function DB.DBA.Dropbox__params (
   declare tmp, params any;
 
   colId := DB.DBA.Dropbox__detcolId (colId);
+  tmp := DB.DBA.Dropbox__paramGet (colId, 'C', 'Authentication', 0);
+  if (tmp = 'Yes')
+  {
   params := vector (
-    'authentication', DB.DBA.Dropbox__paramGet (colId, 'C', 'Authentication', 0),
-    'sid', DB.DBA.Dropbox__paramGet (colId, 'C', 'sid', 0)
+      'authentication', tmp,
+      'sid', DB.DBA.Dropbox__paramGet (colId, 'C', 'sid', 0),
+      'graph', DB.DBA.Dropbox__paramGet (colId, 'C', 'graph', 0)
   );
-
+  }
+  else
+  {
+    params := vector ('authentication', 'No');
+  }
   return params;
 }
 ;
@@ -1023,6 +1084,22 @@ create function DB.DBA.Dropbox__paramGet (
 
 -------------------------------------------------------------------------------
 --
+create function DB.DBA.Dropbox__paramRemove (
+  in _id integer,
+  in _what varchar,
+  in _propName varchar,
+  in _prefixed integer := 1)
+{
+  -- dbg_obj_princ ('DB.DBA.Dropbox__paramRemove (', _id, _what, _propName, ')');
+  if (_prefixed)
+    _propName := 'virt:Dropbox-' || _propName;
+
+  DB.DBA.DAV_PROP_REMOVE_RAW (DB.DBA.Dropbox__davId (_id), _what, _propName, 1, http_dav_uid());
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create function DB.DBA.Dropbox__title (
   in path varchar)
 {
@@ -1039,11 +1116,22 @@ create function DB.DBA.Dropbox__entryXPath (
 {
   declare retValue any;
 
-  retValue := xpath_eval ('[ xmlns="http://www.w3.org/2005/Atom" xmlns:gd="http://schemas.google.com/g/2005" ] //entry' || _xpath, _xml);
   if (_cast)
-    retValue := cast (retValue as varchar);
-
+  {
+    retValue := serialize_to_UTF8_xml (xpath_eval (sprintf ('[ xmlns="http://www.w3.org/2005/Atom" xmlns:gd="http://schemas.google.com/g/2005" ] string (//entry%s)', _xpath), _xml, 1));
+  } else {
+    retValue := xpath_eval ('[ xmlns="http://www.w3.org/2005/Atom" xmlns:gd="http://schemas.google.com/g/2005" ] //entry' || _xpath, _xml, 1);
+  }
   return retValue;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create function DB.DBA.Dropbox__obj2xml (
+  in item any)
+{
+  return '<entry>' || ODS..obj2xml (item, 10) || '</entry>';
 }
 ;
 
@@ -1076,7 +1164,7 @@ create function DB.DBA.Dropbox__exec_code (
 -------------------------------------------------------------------------------
 --
 create function DB.DBA.Dropbox__exec (
-  inout colId integer,
+  inout detcol_id integer,
   inout retHeader varchar,
   in method varchar,
   in url varchar,
@@ -1089,13 +1177,16 @@ create function DB.DBA.Dropbox__exec (
   declare retValue, params any;
   declare exit handler for sqlstate '*'
   {
-    dbg_obj_princ ('Dropbox__exec: ', __SQL_STATE, __SQL_MESSAGE);
+    DB.DBA.Dropbox__activity (detcol_id, 'Exec error: ' || __SQL_MESSAGE);
     return -28;
   };
 
-  params := DB.DBA.Dropbox__params (colId);
+  params := DB.DBA.Dropbox__params (detcol_id);
   if (get_keyword ('authentication', params) <> 'Yes')
+  {
+    DB.DBA.Dropbox__activity (detcol_id, 'Error: Not authenticated');
     return -28;
+  }
 
   sid := get_keyword ('sid', params);
   token := ODS.ODS_API.get_oauth_tok ('Dropbox API');
@@ -1106,9 +1197,11 @@ create function DB.DBA.Dropbox__exec (
   retHeader := null;
   retValue := http_client_ext (url=>callUrl, http_method=>method, http_headers=>header, headers =>retHeader, body=>content, n_redirects=>15);
   -- dbg_obj_print ('retValue', DB.DBA.Dropbox__exec_code (retHeader), url, method);
-  if (not DB.DBA.Dropbox__exec_error (retHeader, 0))
+  if (not DB.DBA.Dropbox__exec_error (retHeader, 1))
+  {
+    DB.DBA.Dropbox__activity (detcol_id, 'HTTP error: ' || retValue);
     return -28;
-
+  }
   return retValue;
 }
 ;
@@ -1173,11 +1266,6 @@ create function DB.DBA.Dropbox__list (
   declare colPath, path, hashValue varchar;
   declare syncTime datetime;
   declare retValue, url, urlParams, retHeader, value, entry any;
-  declare exit handler for sqlstate '*'
-  {
-    dbg_obj_print ('DB.DBA.Dropbox__list', __SQL_STATE, __SQL_MESSAGE);
-    return -28;
-  };
 
   colPath := DB.DBA.DAV_CONCAT_PATH (detcol_parts, subPath_parts);
   colId := DB.DBA.Dropbox__davId (DB.DBA.DAV_SEARCH_ID (colPath, 'C'));
@@ -1215,39 +1303,228 @@ create function DB.DBA.Dropbox__list (
 
 -------------------------------------------------------------------------------
 --
-create function DB.DBA.Dropbox__download (
-  in detcol_id any,
-  in id any,
-  in what varchar)
+create function DB.DBA.Dropbox__activity (
+  in detcol_id integer,
+  in text varchar)
 {
-  if (what <> 'R')
+  -- dbg_obj_princ ('DB.DBA.Dropbox__activity (', detcol_id, text, ')');
+  declare parent_id integer;
+  declare parentPath varchar;
+  declare activity_id integer;
+  declare activity, activityName, activityPath, activityContent, activityType varchar;
+  declare davEntry any;
+  declare _errorCount integer;
+  declare exit handler for sqlstate '*'
+  {
+    if (__SQL_STATE = '40001')
+    {
+      rollback work;
+      if (_errorCount > 5)
+        resignal;
+
+      delay (1);
+      _errorCount := _errorCount + 1;
+      goto _start;
+    }
+    return;
+  };
+
+  _errorCount := 0;
+
+_start:;
+  activity := DB.DBA.Dropbox__paramGet (detcol_id, 'C', 'activity', 0);
+  if (activity is null)
     return;
 
-  declare aq any;
+  if (activity <> 'on')
+    return;
 
-  aq := async_queue (1);
-  aq_request (aq, 'DB.DBA.Dropbox__download_internal', vector (detcol_id, id, what));
+  davEntry := DB.DBA.DAV_DIR_SINGLE_INT (detcol_id, 'C', '', null, null, http_dav_uid ());
+  if (DB.DBA.DAV_HIDE_ERROR (davEntry) is null)
+    return;
+
+  parent_id := DB.DBA.DAV_SEARCH_ID (davEntry[0], 'P');
+  if (DB.DBA.DAV_HIDE_ERROR (parent_id) is null)
+    return;
+
+  parentPath := DB.DBA.DAV_SEARCH_PATH (parent_id, 'C');
+  if (DB.DBA.DAV_HIDE_ERROR (parentPath) is null)
+    return;
+
+  activityContent := '';
+  activityName := davEntry[10] || '_activity.log';
+  activityPath := parentPath || activityName;
+  activity_id := DB.DBA.DAV_SEARCH_ID (activityPath, 'R');
+  if (DB.DBA.DAV_HIDE_ERROR (activity_id) is not null)
+{
+    DB.DBA.DAV_RES_CONTENT_INT (activity_id, activityContent, activityType, 0, 0);
+    if (activityType <> 'text/plain')
+    return;
+
+    activityContent := cast (activityContent as varchar);
+  }
+  activityContent := activityContent || sprintf ('%s %s\r\n', subseq (datestring (now ()), 0, 19), text);
+  activityType := 'text/plain';
+  DB.DBA.DAV_RES_UPLOAD_STRSES_INT (activityPath, activityContent, activityType, '110100000RR', DB.DBA.Dropbox__user (davEntry[6]), DB.DBA.Dropbox__user (davEntry[7]), extern=>0, check_locks=>0);
+  commit work;
 }
 ;
 
 -------------------------------------------------------------------------------
 --
-create function DB.DBA.Dropbox__download_internal (
-  in detcol_id any,
+create function DB.DBA.Dropbox__downloads (
+  in detcol_id integer,
+  in downloads any)
+{
+  declare aq any;
+
+  if (length (downloads) = 0)
+    return;
+
+  aq := async_queue (1);
+  aq_request (aq, 'DB.DBA.Dropbox__downloads_aq', vector (detcol_id, downloads));
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create function DB.DBA.Dropbox__downloads_aq (
+  in detcol_id integer,
+  in downloads any)
+{
+  declare N, downloaded integer;
+  declare url varchar;
+  declare items, listPath any;
+  declare retValue, retHeader any;
+
+  set_user_id ('dba');
+  N := 0;
+  items := vector ();
+  DB.DBA.Dropbox__activity (detcol_id, sprintf ('Downloading %d file(s)', length (downloads)));
+  foreach (any download in downloads) do
+  {
+    downloaded := DB.DBA.Dropbox__paramGet (download[0], download[1], 'download', 0);
+    if (downloaded is null)
+      goto _continue;
+
+    downloaded := cast (downloaded as integer);
+    if (downloaded > 5)
+      goto _continue;
+
+    listPath := DB.DBA.Dropbox__paramGet (download[0], download[1], 'path', 0);
+    if (listPath is null)
+      goto _continue;
+
+    url := sprintf ('https://api-content.dropbox.com/1/files/%s%s', DB.DBA.Dropbox__root (), DB.DBA.Dropbox__pathU (listPath));
+    retValue := DB.DBA.Dropbox__exec (detcol_id, retHeader, 'GET', url);
+    if (DAV_HIDE_ERROR (retValue) is null)
+    {
+      downloaded := downloaded + 1;
+      DB.DBA.Dropbox__paramSet (download[0], download[1], 'download', cast (downloaded as varchar), 0);
+      goto _continue;
+  }
+    update WS.WS.SYS_DAV_RES set RES_CONTENT = retValue where RES_ID = DB.DBA.Dropbox__davId (download[0]);
+    DB.DBA.Dropbox__paramRemove (download[0], download[1], 'download');
+    commit work;
+    items := vector_concat (items, vector (download));
+    N := N + 1;
+
+  _continue:;
+  }
+  DB.DBA.Dropbox__activity (detcol_id, sprintf ('Downloaded %d file(s)', N));
+  foreach (any item in items) do
+  {
+    DB.DBA.Dropbox__rdf_delete (detcol_id, item[0], item[1]);
+    DB.DBA.Dropbox__rdf_insert (detcol_id, item[0], item[1]);
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create function DB.DBA.Dropbox__rdf (
+  in detcol_id integer,
   in id any,
   in what varchar)
 {
-  declare url varchar;
-  declare path any;
-  declare retValue, retHeader any;
+  declare aq any;
 
-  path := DB.DBA.Dropbox__paramGet (id, what, 'path', 0);
-  if (DAV_HIDE_ERROR (path) is not null)
+  aq := async_queue (1);
+  aq_request (aq, 'DB.DBA.Dropbox__rdf_aq', vector (detcol_id, id, what));
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create function DB.DBA.Dropbox__rdf_aq (
+  in detcol_id integer,
+  in id any,
+  in what varchar)
+{
+  DB.DBA.Dropbox__rdf_delete (detcol_id, id, what);
+  DB.DBA.Dropbox__rdf_insert (detcol_id, id, what);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create function DB.DBA.Dropbox__rdf_insert (
+  in detcol_id integer,
+  in id any,
+  in what varchar,
+  in rdf_graph varchar := null)
+{
+  -- dbg_obj_princ ('DB.DBA.Dropbox__rdf_insert (', detcol_id, id, what, rdf_graph, ')');
+  declare rdf_graph2 varchar;
+  declare rdf_sponger, rdf_cartridges, rdf_metaCartridges any;
+  declare path, content, type any;
+  declare exit handler for sqlstate '*'
   {
-    url := sprintf ('https://api-content.dropbox.com/1/files/%s%s', DB.DBA.Dropbox__root (), DB.DBA.Dropbox__pathU (path));
-    retValue := DB.DBA.Dropbox__exec (detcol_id, retHeader, 'GET', url);
-    if (DAV_HIDE_ERROR (retValue) is not null)
-      update WS.WS.SYS_DAV_RES set RES_CONTENT = retValue where RES_ID = DB.DBA.Dropbox__davId (id);
-  }
+    return;
+  };
+
+  if (isnull (rdf_graph))
+    rdf_graph := DB.DBA.Dropbox__paramGet (detcol_id, 'C', 'graph', 0);
+
+  if (DB.DBA.is_empty_or_null (rdf_graph))
+    return;
+
+  id := DB.DBA.Dropbox__davId (id);
+  path := DB.DBA.DAV_SEARCH_PATH (id, what);
+  content := (select RES_CONTENT from WS.WS.SYS_DAV_RES where RES_ID = id);
+  type := (select RES_TYPE from WS.WS.SYS_DAV_RES where RES_ID = id);
+  rdf_sponger := coalesce (DB.DBA.Dropbox__paramGet (detcol_id, 'C', 'sponger', 0), 'on');
+  rdf_cartridges := coalesce (DB.DBA.Dropbox__paramGet (detcol_id, 'C', 'cartridges', 0), '');
+  rdf_metaCartridges := coalesce (DB.DBA.Dropbox__paramGet (detcol_id, 'C', 'metaCartridges', 0), '');
+
+  RDF_SINK_UPLOAD (path, content, type, rdf_graph, rdf_sponger, rdf_cartridges, rdf_metaCartridges);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create function DB.DBA.Dropbox__rdf_delete (
+  in detcol_id integer,
+  in id any,
+  in what varchar,
+  in rdf_graph varchar := null)
+{
+  -- dbg_obj_princ ('DB.DBA.Dropbox__rdf_delete (', detcol_id, id, what, rdf_graph, ')');
+  declare rdf_graph2 any;
+  declare path varchar;
+
+  if (isnull (rdf_graph))
+    rdf_graph := DB.DBA.Dropbox__paramGet (detcol_id, 'C', 'graph', 0);
+
+  if (DB.DBA.is_empty_or_null (rdf_graph))
+    return;
+
+  path := DB.DBA.DAV_SEARCH_PATH (id, what);
+  if (path like '%.gz')
+    path := regexp_replace (path, '\.gz\x24', '');
+
+  rdf_graph2 := 'http://local.virt' || path;
+  SPARQL delete from graph ?:rdf_graph { ?s ?p ?o } where { graph `iri(?:rdf_graph2)` { ?s ?p ?o } };
+  SPARQL clear graph ?:rdf_graph2;
 }
 ;

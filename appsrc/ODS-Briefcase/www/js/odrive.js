@@ -437,7 +437,7 @@ function chkbx(bx1, bx2)
 
 function updateLabel(value)
 {
-  hideLabel(4, 13);
+  hideLabel(4, 14);
   if (value == 'oMail')
     showLabel(4, 4);
   else if (value == 'PropFilter')
@@ -458,6 +458,8 @@ function updateLabel(value)
     showLabel(12, 12);
   else if (value == 'Dropbox')
     showLabel(13, 13);
+  else if (value == 'SkyDrive')
+    showLabel(14, 14);
 }
 
 function showLabel(from, to)
@@ -1595,10 +1597,28 @@ ODRIVE.updateRdfGraph = function ()
      )
     $('dav_IMAP_graph').value = $v('rdfGraph_prefix') + $v('dav_name') + '#this';
 
+  if (
+      ($v('dav_GDrive_graph') == '') ||
+      ($v('dav_GDrive_graph') == ($v('rdfGraph_prefix')+$v('dav_name_save')+'#this'))
+     )
+    $('dav_GDrive_graph').value = $v('rdfGraph_prefix') + $v('dav_name') + '#this';
+
+  if (
+      ($v('dav_Dropbox_graph') == '') ||
+      ($v('dav_Dropbox_graph') == ($v('rdfGraph_prefix')+$v('dav_name_save')+'#this'))
+     )
+    $('dav_Dropbox_graph').value = $v('rdfGraph_prefix') + $v('dav_name') + '#this';
+
+  if (
+      ($v('dav_SkyDrive_graph') == '') ||
+      ($v('dav_SkyDrive_graph') == ($v('rdfGraph_prefix')+$v('dav_name_save')+'#this'))
+     )
+    $('dav_SkyDrive_graph').value = $v('rdfGraph_prefix') + $v('dav_name') + '#this';
+
   $('dav_name_save').value = $v('dav_name');
 }
 
-ODRIVE.oauthParams = function (json)
+ODRIVE.oauthParams = function (json, display_name, email)
 {
   try {
     params = OAT.JSON.deserialize(unescape(json));
@@ -1611,7 +1631,14 @@ ODRIVE.oauthParams = function (json)
     var d = new Date();
     params.access_timestamp = d.format('Y-m-d H:i');
     fld.value = OAT.JSON.serialize(params);
-    $('dav_GDrive_authentication').innerHTML = 'Authenticated';
+    // $('dav_GDrive_authentication').innerHTML = 'Authenticated';
+    createHidden('F1', 'dav_GDrive_display_name', display_name);
+    createHidden('F1', 'dav_GDrive_email', email);
+
+    OAT.Dom.show('tr_dav_GDrive_display_name');
+    $('td_dav_GDrive_display_name').innerHTML = display_name;
+    OAT.Dom.show('tr_dav_GDrive_email');
+    $('td_dav_GDrive_email').innerHTML = email;
     $('dav_GDrive_authenticate').value = 'Re-Authenticate';
   }
 }
@@ -1623,11 +1650,30 @@ ODRIVE.dropboxParams = function (sid, display_name, email)
   createHidden('F1', 'dav_Dropbox_display_name', display_name);
   createHidden('F1', 'dav_Dropbox_email', email);
 
-  $('th_dav_Dropbox_authentication').innerHTML = 'Authenticated';
-  $('dav_Dropbox_authenticate').value = 'Re-Authenticate';
-
   OAT.Dom.show('tr_dav_Dropbox_display_name');
   $('td_dav_Dropbox_display_name').innerHTML = display_name;
   OAT.Dom.show('tr_dav_Dropbox_email');
   $('td_dav_Dropbox_email').innerHTML = email;
+  $('dav_Dropbox_authenticate').value = 'Re-Authenticate';
+}
+
+ODRIVE.skydriveParams = function (json, display_name)
+{
+  try {
+    params = OAT.JSON.deserialize(unescape(json));
+  } catch (e) { params = null; }
+  var fld = createHidden('F1', 'dav_SkyDrive_JSON', null);
+  if (!params || params.error) {
+    alert ('Bad authentication!');
+    fld.value = '';
+  } else {
+    var d = new Date();
+    params.access_timestamp = d.format('Y-m-d H:i');
+    fld.value = OAT.JSON.serialize(params);
+    createHidden('F1', 'dav_SkyDrive_display_name', display_name);
+
+    OAT.Dom.show('tr_dav_SkyDrive_display_name');
+    $('td_dav_SkyDrive_display_name').innerHTML = display_name;
+    $('dav_SkyDrive_authenticate').value = 'Re-Authenticate';
+  }
 }

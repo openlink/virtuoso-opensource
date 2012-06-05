@@ -636,14 +636,14 @@
             ]]>
           </v:before-data-bind>
           <div class="new-form-header">
-            <?V initcap (self.v_form) ?> resource <?V self.v_path ?>
+            <?V initcap (self.v_form) ?> resource <?V ODRIVE.WA.utf2wide (self.v_path) ?>
           </div>
           <div style="padding-right: 6px;">
             <?vsp
               declare disabled varchar;
 
               disabled := case when self.v_form = 'view' then 'disabled="disabled"' else '' end;
-              http (sprintf ('<textarea id="f_content" name="f_content" style="width: 100%%; height: 360px" %s>%V</textarea>', disabled, cast (ODRIVE.WA.DAV_RES_CONTENT (self.v_path) as varchar)));
+              http (sprintf ('<textarea id="f_content" name="f_content" style="width: 100%%; height: 360px" %s>%V</textarea>', disabled, ODRIVE.WA.utf2wide (cast (ODRIVE.WA.DAV_RES_CONTENT (self.v_path) as varchar))));
             ?>
             <vm:if test="self.mimeType like 'text/html'">
               <![CDATA[
