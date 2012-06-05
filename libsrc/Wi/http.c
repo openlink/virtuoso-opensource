@@ -3747,11 +3747,10 @@ vsmx_start:
 
       err = qr_quick_exec (http_call, ws->ws_cli, NULL, NULL, 4,
 			   ":0", p_name, QRP_STR,
-			   ":1", ws->ws_path, QRP_RAW,
+			   ":1", box_copy_tree ((box_t) ws->ws_path), QRP_RAW,
 			   ":2", ws->ws_params, QRP_RAW,
 			   ":3", box_copy_tree ((box_t) ws->ws_lines), QRP_RAW);
 
-      ws->ws_path = NULL;
       ws->ws_params = NULL;
     }
 error_in_procedure:
@@ -3918,6 +3917,8 @@ do_file:
   dk_free_tree ((caddr_t) err);
   dk_free_tree ((box_t) ws->ws_lines);
   ws->ws_lines = NULL;
+  dk_free_tree ((box_t) ws->ws_path);
+  ws->ws_path = NULL;
   dk_free_box (soap_method);
 }
 
