@@ -6195,7 +6195,7 @@ signal_error:
 }
 
 
-#if defined(__APPLE__)
+#if defined(__APPLE__) || defined(__FreeBSD__)
 #define fseeko64 fseeko
 #define ftello64 ftello
 #define fopen64  fopen
