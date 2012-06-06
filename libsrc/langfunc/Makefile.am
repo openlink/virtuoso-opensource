@@ -54,7 +54,7 @@ generate:
 
 .PHONY: rclean
 rclean: clean
-	$(RM) unicode3_*.h
+	rm -f unicode3_*.h
 
 
 # ----------------------------------------------------------------------

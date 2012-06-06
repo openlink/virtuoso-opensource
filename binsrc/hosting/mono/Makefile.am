@@ -109,14 +109,14 @@ sql_code_xslt.c: mono_type.xsl $(top_srcdir)/libsrc/Wi/sql_to_c.awk
 virtclr.dll: virtclr.cs
 	export PATH="$(TOP)/mono/lib/1.0:$(TOP)/mono/bin:$(PATH)"
 	../../../mono/bin/mcs $(CS_FLAGS) -target:library /define:MONO /r:System.Runtime.Serialization.Formatters.Soap /r:System.Management /r:System.Web -out:$@ $<
-	$(RM) tests/virtclr.dll
+	rm -f tests/virtclr.dll
 	cp virtclr.dll tests
 
 
 virt_http.dll: virt_http.cs
 	export PATH="$(TOP)/mono/lib/1.0:$(TOP)/mono/bin:$(PATH)"
 	../../../mono/bin/mcs $(CS_FLAGS) -target:library /define:MONO /r:System.Web /r:System.Windows.Forms -out:$@ $<
-	$(RM) tests/virt_http.dll
+	rm -f tests/virt_http.dll
 	cp virt_http.dll tests
 
 .PHONY: test
