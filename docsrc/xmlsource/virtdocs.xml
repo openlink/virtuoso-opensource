@@ -276,6 +276,7 @@
 <!ENTITY md5_init				SYSTEM "funcref/md5_init.xml">
 <!ENTITY md5_update				SYSTEM "funcref/md5_update.xml">
 <!ENTITY md5_final				SYSTEM "funcref/md5_final.xml">
+<!ENTITY sha1_digest			SYSTEM	"funcref/sha1_digest.xml">
 <!ENTITY mime_body				SYSTEM "funcref/mime_body.xml">
 <!ENTITY mime_part				SYSTEM "funcref/mime_part.xml">
 <!ENTITY mime_tree				SYSTEM "funcref/mime_tree.xml">
@@ -356,6 +357,11 @@
 <!ENTITY iri_split                              SYSTEM  "funcref/iri_split.xml">
 <!ENTITY xml_get_ns_prefix                      SYSTEM  "funcref/xml_get_ns_prefix.xml">
 <!ENTITY xml_get_ns_uri                         SYSTEM  "funcref/xml_get_ns_uri.xml">
+<!ENTITY xml_ns_uname                           SYSTEM  "funcref/xml_ns_uname.xml">
+<!ENTITY xml_ns_iristr                          SYSTEM  "funcref/xml_ns_iristr.xml">
+<!ENTITY xml_nsexpand_iristr                    SYSTEM  "funcref/xml_nsexpand_iristr.xml">
+
+
 
 <!ENTITY sparql_eval                    	SYSTEM "funcref/sparql_eval.xml">
 <!ENTITY sparql_eval_to_array           	SYSTEM "funcref/sparql_eval_to_array.xml">
