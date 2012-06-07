@@ -1921,6 +1921,8 @@ create procedure WS.WS.SPARQL_ENDPOINT_SVC_DESC ()
 create procedure WS.WS.SPARQL_VHOST_RESET ()
 {
   declare gr varchar;
+  declare oopts any;
+  oopts := null;
   if (not exists (select 1 from "DB"."DBA"."SYS_USERS" where U_NAME = 'SPARQL'))
     {
       DB.DBA.USER_CREATE ('SPARQL', uuid(), vector ('DISABLED', 1, 'LOGIN_QUALIFIER', 'SPARQL'));
@@ -1929,34 +1931,45 @@ create procedure WS.WS.SPARQL_VHOST_RESET ()
   if (registry_get ('__SPARQL_VHOST_RESET') >= '20120519')
     return;
   DB.DBA.VHOST_REMOVE (lpath=>'/SPARQL');
-  DB.DBA.VHOST_REMOVE (lpath=>'/sparql');
-  DB.DBA.VHOST_REMOVE (lpath=>'/sparql-auth');
-  DB.DBA.VHOST_REMOVE (lpath=>'/sparql-graph-crud');
-  DB.DBA.VHOST_REMOVE (lpath=>'/sparql-graph-crud-auth');
   DB.DBA.VHOST_REMOVE (lpath=>'/services/sparql-query');
-  DB.DBA.VHOST_REMOVE (lpath=>'/sparql-sd');
-  DB.DBA.VHOST_DEFINE (lpath=>'/sparql/', ppath => '/!sparql/', is_dav => 1, vsp_user => 'dba', opts => vector('noinherit', 1));
-  DB.DBA.VHOST_DEFINE (lpath=>'/sparql-graph-crud/', ppath => '/!sparql-graph-crud/', is_dav => 1, vsp_user => 'dba', opts => vector('noinherit', 1, 'exec_as_get', 1));
+  oopts := (select deserialize (HP_OPTIONS) from HTTP_PATH 
+  	where HP_PPATH = '/!sparql/' and HP_LPATH = '/sparql' and HP_HOST = '*ini*' and HP_LISTEN_HOST = '*ini*');
+  if (oopts is null) oopts := vector ('noinherit', 1);
+  DB.DBA.VHOST_REMOVE (lpath=>'/sparql');
+  DB.DBA.VHOST_DEFINE (lpath=>'/sparql/', ppath => '/!sparql/', is_dav => 1, vsp_user => 'dba', opts => oopts);
+  oopts := (select deserialize (HP_OPTIONS) from HTTP_PATH 
+  	where HP_PPATH = '/!sparql-graph-crud/' and HP_LPATH = '/sparql-graph-crud' and HP_HOST = '*ini*' and HP_LISTEN_HOST = '*ini*');
+  if (oopts is null) oopts := vector ('noinherit', 1, 'exec_as_get', 1);
+  DB.DBA.VHOST_REMOVE (lpath=>'/sparql-graph-crud');
+  DB.DBA.VHOST_DEFINE (lpath=>'/sparql-graph-crud/', ppath => '/!sparql-graph-crud/', is_dav => 1, vsp_user => 'dba', opts => oopts);
+  oopts := (select deserialize (HP_OPTIONS) from HTTP_PATH 
+  	where HP_PPATH = '/!sparql/' and HP_LPATH = '/sparql-auth' and HP_HOST = '*ini*' and HP_LISTEN_HOST = '*ini*');
+  if (oopts is null) oopts := vector ('noinherit', 1);
   DB.DBA.VHOST_REMOVE (lpath=>'/sparql-auth');
   DB.DBA.VHOST_DEFINE (lpath=>'/sparql-auth',
     ppath => '/!sparql/',
     is_dav => 1,
     vsp_user => 'dba',
-    opts => vector('noinherit', 1),
+    opts => oopts,
     auth_fn=>'DB.DBA.HP_AUTH_SPARQL_USER',
     realm=>'SPARQL',
     sec=>'digest');
+  oopts := (select deserialize (HP_OPTIONS) from HTTP_PATH 
+  	where HP_PPATH = '/!sparql-graph-crud/' and HP_LPATH = '/sparql-graph-crud-auth' and HP_HOST = '*ini*' and HP_LISTEN_HOST = '*ini*');
+  if (oopts is null) oopts := vector ('noinherit', 1, 'exec_as_get', 1);
+  DB.DBA.VHOST_REMOVE (lpath=>'/sparql-graph-crud-auth');
   DB.DBA.VHOST_DEFINE (lpath=>'/sparql-graph-crud-auth',
     ppath => '/!sparql-graph-crud/',
     is_dav => 1,
     vsp_user => 'dba',
-    opts => vector('noinherit', 1, 'exec_as_get', 1),
+    opts => oopts,
     auth_fn=>'DB.DBA.HP_AUTH_SPARQL_USER',
     realm=>'SPARQL',
     sec=>'digest');
 --DB.DBA.EXEC_STMT ('grant execute on DB.."querySoap" to "SPARQL", 0);
 --VHOST_DEFINE (lpath=>'/services/sparql-query', ppath=>'/SOAP/', soap_user=>'SPARQL',
 --              soap_opts => vector ('ServiceName', 'XMLAnalysis', 'elementFormDefault', 'qualified'));
+  DB.DBA.VHOST_REMOVE (lpath=>'/sparql-sd');
   DB.DBA.VHOST_DEFINE (lpath=>'/sparql-sd/', ppath => '/!sparql-sd/', is_dav => 1, vsp_user => 'dba', opts => vector('noinherit', 1));
   gr := concat ('http://', registry_get ('URIQADefaultHost'), '/sparql');
   DB.DBA.RDF_LOAD_RDFA (WS.WS.SPARQL_ENDPOINT_SVC_DESC (), gr, gr);
