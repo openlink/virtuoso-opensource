@@ -2016,7 +2016,7 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
     {
       int ctr;
       caddr_t *tmp;
-      tmp = (caddr_t *)list (24*2,
+      tmp = (caddr_t *)list (25*2,
         "text/rdf+n3"				, "TTL"		, /*  0 */
         "text/rdf+ttl"				, "TTL"		, /*  1 */
         "text/rdf+turtle"			, "TTL"		, /*  2 */
@@ -2040,7 +2040,8 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
         "text/cxml+qrcode"			, "CXML"	, /* 20 */
         "text/cxml"				, "CXML"	, /* 21 */
         "text/ntriples"				, "NT"		, /* 22 */
-        "text/csv"				, "CSV" /* 23 Increase count in this list() call when add more MIME types! */ );
+        "text/csv"				, "CSV"		, /* 23 */ 
+        "text/tab-separated-values"				, "TSV" /* 24 Increase count in this list() call when add more MIME types! */ );
       for (ctr = BOX_ELEMENTS (tmp); ctr--; /* no step */)
         tmp[ctr] = box_dv_short_string (tmp[ctr]);
       supp_rset = tmp;
@@ -2049,7 +2050,7 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
     {
       int ctr;
       caddr_t *tmp;
-      tmp = (caddr_t *)list (35*2,
+      tmp = (caddr_t *)list (36*2,
         "application/x-trig"			, "TRIG"		, /*  0 */
         "text/rdf+n3"				, "TTL"			, /*  1 */
         "text/rdf+ttl"				, "TTL"			, /*  2 */
@@ -2084,7 +2085,8 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
         "application/x-json+ld"			, "JSON;LD"		, /* 31 */
         "application/ld+json"			, "JSON;LD"		, /* 32 */
         "text/ntriples"				, "NT"			, /* 33 */
-        "text/csv"				, "CSV" /* 34 Increase count in this list() call when add more MIME types! */ );
+        "text/csv"				, "CSV" 		, /* 34 */
+        "text/tab-separated-values"				, "TSV" /* 35 Increase count in this list() call when add more MIME types! */ );
       for (ctr = BOX_ELEMENTS (tmp); ctr--; /* no step */)
         tmp[ctr] = box_dv_short_string (tmp[ctr]);
       supp_dict = tmp;

@@ -1579,6 +1579,34 @@ create procedure DB.DBA.SPARQL_RESULTS_CSV_WRITE (inout ses any, inout metas any
 }
 ;
 
+create procedure DB.DBA.SPARQL_RESULTS_TSV_WRITE (inout ses any, inout metas any, inout rset any)
+{
+  declare varctr, varcount, resctr, rescount integer;
+  varcount := length (metas[0]);
+  rescount := length (rset);
+  for (varctr := 0; varctr < varcount; varctr := varctr + 1)
+    {
+      if (varctr > 0)
+        http('\t', ses);
+      DB.DBA.SPARQL_RESULTS_CSV_WRITE_VALUE (ses, metas[0][varctr][0]);
+    }
+  http ('\n', ses);
+  for (resctr := 0; resctr < rescount; resctr := resctr + 1)
+    {
+      for (varctr := 0; varctr < varcount; varctr := varctr + 1)
+        {
+          declare val any;
+          val := rset[resctr][varctr];
+          if (varctr > 0)
+            http('\t', ses);
+          if (val is not null)
+            DB.DBA.SPARQL_RESULTS_CSV_WRITE_VALUE (ses, val);
+        }
+      http('\n', ses);
+    }
+}
+;
+
 
 create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, inout rset any, in accept varchar, in add_http_headers integer, in status any := null) returns varchar
 {
@@ -1623,7 +1651,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
           http ('@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n@prefix rs: <http://www.w3.org/2005/sparql-results#> .\n', ses);
           http (sprintf ('[] rdf:type rs:results ; rs:boolean %s .', case (length (rset)) when 0 then 'false' else 'true' end), ses);
         }
-      else if (ret_format = 'CSV')
+      else if (ret_format = 'CSV' or ret_format = 'TSV')
         {
           http (sprintf ('"bool"\n%d\n', case (length (rset)) when 0 then 0 else 1 end), ses);
         }
@@ -1688,6 +1716,8 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
         DB.DBA.RDF_TRIPLES_TO_CXML (triples, ses, accept, add_http_headers, 1, status);
       else if (ret_format = 'CSV')
         DB.DBA.RDF_TRIPLES_TO_CSV (triples, ses);
+      else if (ret_format = 'TSV')
+        DB.DBA.RDF_TRIPLES_TO_TSV (triples, ses);
       else if (ret_format = 'SOAP')
 	{
 	  declare soap_ns, spt_ns varchar;
@@ -1827,6 +1857,12 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
     {
       ret_mime := 'text/csv';
       DB.DBA.SPARQL_RESULTS_CSV_WRITE (ses, metas, rset);
+      goto body_complete;
+    }
+  if (ret_format = 'TSV')
+    {
+      ret_mime := 'text/tab-separated-values';
+      DB.DBA.SPARQL_RESULTS_TSV_WRITE (ses, metas, rset);
       goto body_complete;
     }
   ret_mime := 'application/sparql-results+xml';
@@ -2256,7 +2292,8 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
     http('			format.options[11] = new Option(\'HTML+Microdata\',\'text/html\');\n');
     http('			format.options[12] = new Option(\'Microdata/JSON\',\'application/microdata+json\');\n');
     http('			format.options[13] = new Option(\'CSV\',\'text/csv\');\n');
-    http('			format.options[14] = new Option(\'TriG\',\'application/x-trig\');\n');
+    http('			format.options[14] = new Option(\'TSV\',\'text/tab-separated-values\');\n');
+    http('			format.options[15] = new Option(\'TriG\',\'application/x-trig\');\n');
     if (can_cxml)
       {
 	http('			format.options[15] = new Option(\'CXML (Pivot Collection)\',\'text/cxml\');\n');
@@ -2279,8 +2316,9 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
     http('			format.options[7] = new Option(\'RDF/XML\',\'application/rdf+xml\');\n');
     http('			format.options[8] = new Option(\'N-Triples\',\'text/plain\');\n');
     http('			format.options[9] = new Option(\'CSV\',\'text/csv\');\n');
+    http('			format.options[10] = new Option(\'TSV\',\'text/tab-separated-values\');\n');
     if (can_cxml)
-      http('			format.options[10] = new Option(\'CXML (Pivot Collection)\',\'text/cxml\');\n');
+      http('			format.options[11] = new Option(\'CXML (Pivot Collection)\',\'text/cxml\');\n');
     http('			format.selectedIndex = 1;\n');
     http('			last_format = 1;\n');
     http('		}\n');
@@ -2383,6 +2421,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_FORMAT_OPTS (in can_cxml integer, in can_
 	  vector ('text/html'				, 'HTML+Microdata'	),
 	  vector ('application/microdata+json'		, 'Microdata/JSON'	),
 	  vector ('text/csv'				, 'CSV'			),
+        vector ('text/tab-separated-values'			, 'TSV'			),
 	  vector ('application/x-trig'			, 'TriG'		) );
     }
   else
@@ -2404,6 +2443,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_FORMAT_OPTS (in can_cxml integer, in can_
 	  x[0], case when format = x[0] then 'selected="selected"' else '' end , x[1]));
     }
   http('			<option value="text/csv">CSV</option>\n');
+  http('			<option value="text/tab-separated-values">TSV</option>\n');
   if (can_cxml)
     {
       http('			<option value="text/cxml">CXML (Pivot Collection)</option>\n');

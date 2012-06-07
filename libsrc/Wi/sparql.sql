@@ -4072,6 +4072,28 @@ create procedure DB.DBA.RDF_TRIPLES_TO_CSV (inout triples any, inout ses any)
 }
 ;
 
+create procedure DB.DBA.RDF_TRIPLES_TO_TSV (inout triples any, inout ses any)
+{
+  declare env any;
+  declare tcount, tctr, status integer;
+  http ('"subject","predicate","object"\n', ses);
+  tcount := length (triples);
+  -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_TSV:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
+  { whenever sqlstate '*' goto p_done; rowvector_subj_sort (triples, 1, 1); p_done: ; }
+  { whenever sqlstate '*' goto s_done; rowvector_subj_sort (triples, 0, 1); s_done: ; }
+  DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
+  for (tctr := 0; tctr < tcount; tctr := tctr + 1)
+    {
+      DB.DBA.SPARQL_RESULTS_CSV_WRITE_VALUE (ses, triples[tctr][0]);
+      http ('\t', ses);
+      DB.DBA.SPARQL_RESULTS_CSV_WRITE_VALUE (ses, triples[tctr][1]);
+      http ('\t', ses);
+      DB.DBA.SPARQL_RESULTS_CSV_WRITE_VALUE (ses, triples[tctr][2]);
+      http ('\n', ses);
+    }
+}
+;
+
 create procedure DB.DBA.RDF_TRIPLES_TO_RDFA_XHTML (inout triples any, inout ses any)
 {
   declare env, prev_subj, nsdict, nslist any;
@@ -5649,6 +5671,41 @@ from DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_INIT, DB.DBA.RDF_FORMAT_RESULT_SET_AS_C
 order
 ;
 
+create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_TSV_ACC (inout _env any, inout colvalues any, inout colnames any)
+{
+  declare sol_id varchar;
+  declare col_ctr, col_count integer;
+  declare blank_ids any;
+  col_count := length (colnames);
+  if (185 <> __tag(_env))
+    {
+      _env := string_output ();
+      for (col_ctr := 0; col_ctr < col_count; col_ctr := col_ctr + 1)
+        {
+          if (col_ctr > 0)
+            http('\t', _env);
+          DB.DBA.SPARQL_RESULTS_CSV_WRITE_VALUE (_env, colnames[col_ctr]);
+        }
+      http ('\n', _env);
+    }
+  for (col_ctr := 0; col_ctr < col_count; col_ctr := col_ctr + 1)
+    {
+      declare val any;
+      val := colvalues[col_ctr];
+      if (col_ctr > 0)
+        http('\t', _env);
+      if (val is not null)
+        DB.DBA.SPARQL_RESULTS_CSV_WRITE_VALUE (_env, val);
+    }
+  http('\n', _env);
+}
+;
+
+create aggregate DB.DBA.RDF_FORMAT_RESULT_SET_AS_TSV (in colvalues any, in colnames any) returns long varchar
+from DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_INIT, DB.DBA.RDF_FORMAT_RESULT_SET_AS_TSV_ACC, DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_FIN
+order
+;
+
 create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_CXML_INIT (inout _env any)
 {
   _env := 0;
@@ -5867,6 +5924,21 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_CSV (inout triples_dict any) re
   else
     triples := dict_list_keys (triples_dict, 1);
   DB.DBA.RDF_TRIPLES_TO_CSV (triples, ses);
+  return ses;
+}
+;
+
+create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TSV (inout triples_dict any) returns long varchar
+{
+  declare triples, ses any;
+  ses := string_output ();
+  if (214 <> __tag (triples_dict))
+    {
+      triples := vector ();
+    }
+  else
+    triples := dict_list_keys (triples_dict, 1);
+  DB.DBA.RDF_TRIPLES_TO_TSV (triples, ses);
   return ses;
 }
 ;
@@ -14335,6 +14407,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_TRIPLES_TO_TALIS_JSON to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_JSON_LD to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_CSV to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_TRIPLES_TO_TSV to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_RDFA_XHTML to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_HTML_UL to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_HTML_TR to SPARQL_SELECT',
@@ -14356,6 +14429,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_FIN to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_INIT to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_ACC to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_TSV_ACC to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_FIN to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_CXML_INIT to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_CXML_ACC to SPARQL_SELECT',
@@ -14370,6 +14444,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_MICRODATA to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_JSON_MICRODATA to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_CSV to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TSV to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDFA_XHTML to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_CXML to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_CXML_QRCODE to SPARQL_SELECT',
