@@ -103,6 +103,7 @@ iSPARQL.Defaults = {
 	if (p['maxrows']) iSPARQL.Settings.maxrows = parseInt(p['maxrows']);
 	if (p['timeout']) iSPARQL.Settings.timeout = parseInt(p['timeout']);
 	if (p['amode']) iSPARQL.Settings.anchorMode = parseInt(p['amode']);
+	if (p['raw_iris']) iSPARQL.Settings.raw_iris = ((p['raw_iris'] == 'true')?true:false);
     },
 
     //
