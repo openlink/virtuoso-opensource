@@ -360,7 +360,7 @@ page_box_col (it_cursor_t * itc, buffer_desc_t * buf, db_buf_t row, dbe_col_loc_
       VL;
       str = dk_alloc_box ((int) len + vl2 + 1, DV_LONG_STRING);
       memcpy (str, xx, len);
-      memcpy (str + len, xx2, vl2);
+      if (vl2 > 0) memcpy (str + len, xx2, vl2);
       str[len + vl2 - 1] += offset;
       str[len + vl2] = 0;
       return str;
