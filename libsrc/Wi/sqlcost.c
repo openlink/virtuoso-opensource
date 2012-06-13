@@ -2032,8 +2032,13 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
 	  else
 	    {
 	      /* here we should check if row spec was used to take samples */
-	      col_arity *= p_arity;
-	      col_cost += p_cost * col_arity;
+	      if (!(sqlo_sample_dep_cols &&
+		    (lower ? !sqlo_in_list (lower, NULL, NULL) && pred_const_rhs (lower) : 1) &&
+		    (upper ? !sqlo_in_list (upper, NULL, NULL) && pred_const_rhs (upper) : 1)))
+		{
+		  col_arity *= p_arity;
+		  col_cost += p_cost * col_arity;
+		}
 	    }
 	}
       else
