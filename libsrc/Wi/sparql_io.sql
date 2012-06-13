@@ -536,7 +536,7 @@ create procedure DB.DBA.SPARQL_REXEC (
   in named_graphs any,
   in req_hdr any,
   in maxrows integer,
-  in bnode_dict any
+  in bnode_dict any,
   in options any := null
   )
 {
