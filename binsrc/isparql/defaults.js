@@ -50,6 +50,7 @@ iSPARQL.Defaults = {
     endpoint:     '/sparql',
     pivotInstalled: false,
     addthis_key: false,
+    raw_iris: true,
     locOpts: {             /* XXX all except minAcc not implemented yet */
 	cacheLocTO:  2000, /* Milliseconds timeout to improve non-expired cached location accuracy */
 	coarseLocTO: 2000, /* Milliseconds to wait for coarse loc in last cached location validation attempt */
