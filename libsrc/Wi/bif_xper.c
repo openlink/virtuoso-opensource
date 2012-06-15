@@ -4421,7 +4421,7 @@ xp_string_value_is_nonempty (xml_entity_t * xe)
 	    namelen = (int) skip_string_length (&ptr);
 	    ptr += namelen;
 	    alen = (long) skip_string_length (&ptr);
-	    if (alen);
+	    if (alen)
 	      return 1;
 	    ptr += alen;
 	  }
@@ -4466,7 +4466,7 @@ xp_string_value_is_nonempty (xml_entity_t * xe)
 		      namelen = (int) skip_string_length (&ptr);
 		      ptr += namelen;
 		      alen = (long) skip_string_length (&ptr);
-		      if (alen);
+		      if (alen)
 			return 1;
 		      ptr += alen;
 		    }
