@@ -481,6 +481,13 @@ create index SYS_HTTP_SPONGE_EXPIRATION on DB.DBA.SYS_HTTP_SPONGE (HS_EXPIRATION
 create index SYS_HTTP_SPONGE_FROM_IRI on DB.DBA.SYS_HTTP_SPONGE (HS_FROM_IRI, HS_PARSER) partition (HS_FROM_IRI varchar)
 ;
 
+create table DB.DBA.SYS_HTTP_SPONGE_REFRESH_DEFAULTS (
+  HSRD_DATA_SOURCE_URI_PATTERN varchar not null,
+  HSRD_DEFAULT_REFRESH_INTERVAL_SECS integer,
+  primary key (HSRD_DATA_SOURCE_URI_PATTERN)
+)
+;
+
 --#IF VER=5
 --!AFTER
 alter table DB.DBA.SYS_HTTP_SPONGE add HS_FROM_IRI varchar
@@ -649,7 +656,7 @@ create function DB.DBA.SYS_HTTP_SPONGE_UP (in local_iri varchar, in get_uri varc
   declare get_proxy varchar;
   declare ret_dt_date, ret_dt_last_modified, ret_dt_expires, expiration, min_expiration datetime;
   declare ret_304_not_modified integer;
-  declare parser_rc, max_refresh int;
+  declare parser_rc, max_refresh, default_refresh int;
   declare stat, msg varchar;
 
   -- dbg_obj_princ ('DB.DBA.SYS_HTTP_SPONGE_UP (', local_iri, get_uri, options, ')');
@@ -659,13 +666,22 @@ create function DB.DBA.SYS_HTTP_SPONGE_UP (in local_iri varchar, in get_uri varc
   get_soft := get_keyword_ucase ('get:soft', options, '');
   if (explicit_refresh is null)
     {
-      max_refresh := virtuoso_ini_item_value ('SPARQL', 'MaxCacheExpiration');
-      if (max_refresh is not null)
+      max_refresh := atoi (coalesce (virtuoso_ini_item_value ('SPARQL', 'MaxCacheExpiration'), '-1'));
+      default_refresh := (select HSRD_DEFAULT_REFRESH_INTERVAL_SECS from DB.DBA.SYS_HTTP_SPONGE_REFRESH_DEFAULTS where regexp_match (HSRD_DATA_SOURCE_URI_PATTERN, local_iri) is not null);
+      if (default_refresh is not null)
+	{
+	  if (default_refresh >= 0)
         {
-          max_refresh := atoi (max_refresh);
 	  if (max_refresh >= 0)
+	      explicit_refresh := __min (default_refresh, max_refresh);
+	    else
+	      explicit_refresh := default_refresh;
+	  }
+	  else if (max_refresh >= 0)
 	    explicit_refresh := max_refresh;
 	}
+      else if (max_refresh >= 0)
+	explicit_refresh := max_refresh;
     }
   else if (isstring (explicit_refresh))
     explicit_refresh := atoi (explicit_refresh);
@@ -696,7 +712,7 @@ create function DB.DBA.SYS_HTTP_SPONGE_UP (in local_iri varchar, in get_uri varc
         case (isnull (old_origin_login)) when 0 then sprintf ('login "%.100s"', old_origin_login) else 'anonymous access' end ) );
 
   -- dbg_obj_princ (' old_expiration=', old_expiration, ' old_exp_is_true=', old_exp_is_true, ' old_last_load=', old_last_load);
-  -- dbg_obj_princ ('now()=', now(), ' explicit_refresh=', explicit_refresh);
+  -- dbg_obj_princ ('now()=', now(), ' explicit_refresh=', explicit_refresh, ' max_refresh=', max_refresh, ' default_refresh=', default_refresh,  ' min_expiration=', min_expiration);
   if (eraser is null)
     {
       -- dbg_obj_princ ('will start load w/o expiration check due to NULL eraser (dependant loading)');

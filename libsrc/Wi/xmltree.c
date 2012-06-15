@@ -9725,11 +9725,15 @@ caddr_t bif_XMLAddAttribute (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
       attr_value = attr_xe->_->xe_currattrvalue (attr_xe);
       break;
     default:
-      attr_name = box_dv_uname_string (box_cast_to_UTF8 (qst, raw_attr_name));
-      attr_value = bif_arg (qst, args, 3, "XMLAddAttribute");
-      if (DV_DB_NULL == DV_TYPE_OF (attr_value))
-        return box_num (0);
-      attr_value = box_cast_to_UTF8 (qst, attr_value);
+	{
+	  caddr_t box = box_cast_to_UTF8 (qst, raw_attr_name);
+	  attr_name = box_dv_uname_string (box);
+	  dk_free_box (box);
+	  attr_value = bif_arg (qst, args, 3, "XMLAddAttribute");
+	  if (DV_DB_NULL == DV_TYPE_OF (attr_value))
+	    return box_num (0);
+	  attr_value = box_cast_to_UTF8 (qst, attr_value);
+	}
       break;
     }
   if (('\0' == attr_name[0]) || (' ' == attr_name[0]) || !strncmp (attr_name, "xmlns", 5))

@@ -1518,6 +1518,7 @@ ws_path_and_params (ws_connection_t * ws)
 	      memcpy (new_params, ws->ws_params, box_length (ws->ws_params));
 	      memcpy (new_params + box_length (ws->ws_params), params, box_length (params));
 	      dk_free_box ((caddr_t)(ws->ws_params));
+	      dk_free_box ((caddr_t) params);
 	      ws->ws_params = (caddr_t *)(new_params);
 	    }
 	}
