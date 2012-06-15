@@ -108,7 +108,7 @@ aq_thread_func (aq_thread_t * aqt)
       if (aq->aq_deleted && !aq->aq_n_threads)
 	{
 	  mutex_leave (aq->aq_mtx);
-	  aq_free (aq);
+	  dk_free_box (aq);
 	}
       else
 	mutex_leave (aq->aq_mtx);
@@ -212,6 +212,7 @@ aqr_free (aq_request_t * aqr)
 {
   assert (AQR_DONE == aqr->aqr_state);
   dk_free_tree (aqr->aqr_args);
+  dk_free_tree (aqr->aqr_value);
   dk_free_tree (aqr->aqr_error);
   dk_free ((caddr_t) aqr, sizeof (aq_request_t));
 }
@@ -385,16 +386,16 @@ aq_free (async_queue_t * aq)
 	  mutex_leave (aq->aq_mtx);
 	  return 1;
 	}
-      {
-	dk_hash_iterator_t hit;
-	aq_request_t *aqr;
-	void *reqno;
-	dk_hash_iterator (&hit, aq->aq_requests);
-	while (dk_hit_next (&hit, &reqno, (void **) &aqr))
-	  aqr_free (aqr);
-      }
-      mutex_leave (aq->aq_mtx);
     }
+  {
+    dk_hash_iterator_t hit;
+    aq_request_t *aqr;
+    void *reqno;
+    dk_hash_iterator (&hit, aq->aq_requests);
+    while (dk_hit_next (&hit, &reqno, (void **) &aqr))
+      aqr_free (aqr);
+  }
+  mutex_leave (aq->aq_mtx);
 #ifdef MTX_DEBUG
   aq->aq_requests->ht_required_mtx = NULL;
 #endif
