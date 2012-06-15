@@ -449,13 +449,14 @@ aq_sql_func (caddr_t * av, caddr_t * err_ret)
       cli_qual (cli), CLI_OWNER (cli));
   query_t *proc = full_name ? sch_proc_def (wi_inst.wi_schema, full_name) : NULL;
   dk_free_box (av);
-  dk_free_box (fn);
   if (!proc)
     {
-      dk_free_tree ((caddr_t) params);
       *err_ret = srv_make_new_error ("42001", "AQ...", "undefined procedure %.300s in aq_request()", full_name ? full_name : ((DV_STRING == DV_TYPE_OF (fn)) ? fn : "<no name>"));
+      dk_free_box (fn);
+      dk_free_tree ((caddr_t) params);
       return NULL;
     }
+  dk_free_box (fn);
   if (proc->qr_to_recompile)
     {
       *err_ret = NULL;
