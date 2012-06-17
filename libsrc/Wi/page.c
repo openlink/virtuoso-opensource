@@ -1732,7 +1732,7 @@ pf_rd_refit_1 (page_fill_t * pf, row_delta_t * rd, int recursive)
   db_buf_t row = buf->bd_buffer + pm->pm_entries[rd->rd_map_pos];
   dbe_key_t * key = rd->rd_key->key_versions[IE_KEY_VERSION (row)];
   int inx, rc = 0;
-  int space = row_space_after (buf, rd->rd_map_pos), avail, gap, space_needed = 0, space_before = space;
+  int space = row_space_after (buf, rd->rd_map_pos), avail, gap = 0, space_needed = 0, space_before = space;
   if (!buf->bd_is_write || !buf->bd_is_dirty) GPF_T1 ("refit1 for non excl or non dirty buffer");
   for (inx = 0; inx < rd->rd_n_values; inx++)
     {

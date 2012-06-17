@@ -999,9 +999,9 @@ itc_like_compare (it_cursor_t * itc, buffer_desc_t * buf, caddr_t pattern, searc
   char temp[MAX_ROW_BYTES];
   int res, st = LIKE_ARG_CHAR, pt = LIKE_ARG_CHAR;
   dtp_t dtp2 = DV_TYPE_OF (pattern), dtp1;
-  row_size_t len1, len3;
-  unsigned short offset;
-  db_buf_t dv1, dv3;
+  row_size_t len1 = 0, len3 = 0;
+  unsigned short offset = 0;
+  db_buf_t dv1 = NULL, dv3 = NULL;
   collation_t *collation = spec->sp_collation;
   dbe_col_loc_t * cl = &spec->sp_cl;
   ROW_STR_COL (itc->itc_insert_key, buf, itc->itc_row_data, cl, dv1, len1, dv3, len3, offset);

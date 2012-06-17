@@ -313,10 +313,10 @@ page_box_col (it_cursor_t * itc, buffer_desc_t * buf, db_buf_t row, dbe_col_loc_
   int len;
   int64 ln;
   caddr_t str;
-  unsigned short vl1, vl2, offset;
+  unsigned short vl1 = 0, vl2 = 0, offset = 0;
   row_ver_t rv = IE_ROW_VERSION (row);
   dbe_key_t * row_key = buf->bd_tree->it_key->key_versions[IE_KEY_VERSION (row)];
-  db_buf_t xx, xx2;
+  db_buf_t xx = NULL, xx2 = NULL;
   dtp_t col_dtp;
   if (row[cl->cl_null_flag[rv]] & cl->cl_null_mask[rv])
     return (dk_alloc_box (0, DV_DB_NULL));
