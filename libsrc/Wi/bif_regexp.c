@@ -724,7 +724,7 @@ bif_regexp_replace_hits_with_template (caddr_t * qst, caddr_t * err_ret, state_s
           "Function regexp_replace_hits_with_template() has invalid hit (index %d) in argument 2 (the length of position list is %d, but it is %d for the first hit)", hit_ctr, pos_count, pos_count_in_hits );
       hit_b = HIT_NTH_POS(0);
       hit_e = HIT_NTH_POS(1);
-      if ((hit_b < prev_left_pos) || (hit_e < hit_b) || (hit_e >= src_charcount))
+      if ((hit_b < prev_left_pos) || (hit_e < hit_b) || (hit_e > src_charcount))
         sqlr_new_error ("22023", "SR647",
           "Function regexp_replace_hits_with_template() has invalid hit (index %d) in argument 2 (from %d to %d, limits are %d to %d)",
           hit_ctr, (int)hit_b, (int)hit_e, prev_left_pos, src_charcount );
@@ -741,7 +741,7 @@ bif_regexp_replace_hits_with_template (caddr_t * qst, caddr_t * err_ret, state_s
           prev_left_pos = pos_b;
         }
     }
-/* Now we know that the processing will hot hang so we can go on */
+/* Now we know that the processing will not hang so we can go on */
   src_cs = charset_native_for_box (src, tmpl_syntax_is_xpf ? BF_UTF8 : BF_DEFAULT_SERVER_ENC);
   tmpl_cs = charset_native_for_box (tmpl, tmpl_syntax_is_xpf ? BF_UTF8 : BF_DEFAULT_SERVER_ENC);
   if (src_cs != tmpl_cs)
