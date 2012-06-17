@@ -394,7 +394,7 @@ page_box_col (it_cursor_t * itc, buffer_desc_t * buf, db_buf_t row, dbe_col_loc_
 	VL;
 	str = dk_alloc_box ((int) len + vl2, DV_BIN);
 	memcpy (str, xx, (int) len);
-	memcpy (str + len, xx2, (int) vl2);
+	if (vl2 > 0) memcpy (str + len, xx2, (int) vl2);
 	return str;
       }
 
@@ -550,7 +550,7 @@ page_mp_box_col (it_cursor_t * itc, mem_pool_t * mp, buffer_desc_t * buf, db_buf
       VL;
       str = mp_alloc_box (mp, (int) len + vl2 + 1, DV_LONG_STRING);
       memcpy (str, xx, len);
-      memcpy (str + len, xx2, vl2);
+      if (vl2 > 0) memcpy (str + len, xx2, vl2);
       str[len + vl2 - 1] += offset;
       str[len + vl2] = 0;
       return str;
@@ -578,7 +578,7 @@ page_mp_box_col (it_cursor_t * itc, mem_pool_t * mp, buffer_desc_t * buf, db_buf
 	VL;
 	str = mp_alloc_box (mp, (int) len + vl2, DV_BIN);
 	memcpy (str, xx, (int) len);
-	memcpy (str + len, xx2, (int) vl2);
+	if (vl2 > 0) memcpy (str + len, xx2, (int) vl2);
 	return str;
       }
 
@@ -724,7 +724,7 @@ page_copy_col (buffer_desc_t * buf, db_buf_t row, dbe_col_loc_t * cl, row_delta_
 	VL;
 	str = rd_alloc_box (rd, (int) len + vl2, DV_BIN);
 	memcpy (str, xx, (int) len);
-	memcpy (str + len, xx2, (int) vl2);
+	if (vl2 > 0) memcpy (str + len, xx2, (int) vl2);
 	str[len + vl2 - 1] += offset;
 	return str;
       }
