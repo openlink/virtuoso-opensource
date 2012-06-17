@@ -331,6 +331,9 @@ it_cursor_t *
 dbg_itc_create (const char *file, int line, void * isp, lock_trx_t * trx)
 {
   it_cursor_t * itc = (it_cursor_t*) DBG_NAME (dk_alloc_box) (DBG_ARGS sizeof (it_cursor_t), DV_ITC);
+#ifdef VALGRIND
+  memset (itc, 0, sizeof (it_cursor_t));
+#endif
   ITC_INIT (itc, isp, trx);
   itc->itc_type = ITC_CURSOR;
   itc->itc_is_allocated = 1;
@@ -341,6 +344,9 @@ it_cursor_t *
 itc_create (void * isp, lock_trx_t * trx)
 {
   it_cursor_t * itc = (it_cursor_t*)dk_alloc_box (sizeof (it_cursor_t), DV_ITC);
+#ifdef VALGRIND
+  memset (itc, 0, sizeof (it_cursor_t));
+#endif
   ITC_INIT (itc, isp, trx);
   itc->itc_type = ITC_CURSOR;
   itc->itc_is_allocated = 1;

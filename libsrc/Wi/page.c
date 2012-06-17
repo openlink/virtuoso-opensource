@@ -2437,6 +2437,9 @@ void
 page_apply_s (it_cursor_t * itc, buffer_desc_t * buf, int n_delta, row_delta_t ** delta, int op)
 {
   page_apply_frame_t paf;
+#ifdef VALGRIND
+  memset (&paf, 0, sizeof (page_apply_frame_t));
+#endif
   page_apply_1 (itc, buf, n_delta, delta, op, &paf);
 }
 
