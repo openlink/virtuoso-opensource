@@ -1861,6 +1861,9 @@ buf_disk_write (buffer_desc_t * buf, dp_addr_t phys_dp_to)
   OFF_T rc;
   OFF_T off;
   dp_addr_t dest = (phys_dp_to ? phys_dp_to : buf->bd_physical_page);
+#ifdef VALGRIND
+  memset (c_buf, 0, sizeof (c_buf));
+#endif
 #ifdef O_DIRECT
   if (c_use_o_direct && !IS_IO_ALIGN (buf->bd_buffer))
     GPF_T1 ("buf_disk_write (): The buffer is not io-aligned");

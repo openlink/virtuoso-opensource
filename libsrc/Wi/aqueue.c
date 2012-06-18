@@ -108,7 +108,7 @@ aq_thread_func (aq_thread_t * aqt)
       if (aq->aq_deleted && !aq->aq_n_threads)
 	{
 	  mutex_leave (aq->aq_mtx);
-	  aq_free (aq);
+	  dk_free_box (aq);
 	}
       else
 	mutex_leave (aq->aq_mtx);
@@ -212,6 +212,7 @@ aqr_free (aq_request_t * aqr)
 {
   assert (AQR_DONE == aqr->aqr_state);
   dk_free_tree (aqr->aqr_args);
+  dk_free_tree (aqr->aqr_value);
   dk_free_tree (aqr->aqr_error);
   dk_free ((caddr_t) aqr, sizeof (aq_request_t));
 }
@@ -385,16 +386,16 @@ aq_free (async_queue_t * aq)
 	  mutex_leave (aq->aq_mtx);
 	  return 1;
 	}
-      {
-	dk_hash_iterator_t hit;
-	aq_request_t *aqr;
-	void *reqno;
-	dk_hash_iterator (&hit, aq->aq_requests);
-	while (dk_hit_next (&hit, &reqno, (void **) &aqr))
-	  aqr_free (aqr);
-      }
-      mutex_leave (aq->aq_mtx);
     }
+  {
+    dk_hash_iterator_t hit;
+    aq_request_t *aqr;
+    void *reqno;
+    dk_hash_iterator (&hit, aq->aq_requests);
+    while (dk_hit_next (&hit, &reqno, (void **) &aqr))
+      aqr_free (aqr);
+  }
+  mutex_leave (aq->aq_mtx);
 #ifdef MTX_DEBUG
   aq->aq_requests->ht_required_mtx = NULL;
 #endif
@@ -448,13 +449,14 @@ aq_sql_func (caddr_t * av, caddr_t * err_ret)
       cli_qual (cli), CLI_OWNER (cli));
   query_t *proc = full_name ? sch_proc_def (wi_inst.wi_schema, full_name) : NULL;
   dk_free_box (av);
-  dk_free_box (fn);
   if (!proc)
     {
-      dk_free_tree ((caddr_t) params);
       *err_ret = srv_make_new_error ("42001", "AQ...", "undefined procedure %.300s in aq_request()", full_name ? full_name : ((DV_STRING == DV_TYPE_OF (fn)) ? fn : "<no name>"));
+      dk_free_box (fn);
+      dk_free_tree ((caddr_t) params);
       return NULL;
     }
+  dk_free_box (fn);
   if (proc->qr_to_recompile)
     {
       *err_ret = NULL;

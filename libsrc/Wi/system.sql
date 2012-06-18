@@ -4669,98 +4669,77 @@ returns integer
 --!AWK PLBIF regexp_replace
 create procedure REGEXP_REPLACE (in source_string any, in pattern any,
             in replace_string varchar := '', in position integer := 1,
-	    in occurrence any := 1, in match_parameter integer := null)
+	    in occurrence integer := 0, in match_parameter varchar := null)
 {
+  declare hit_list any;
+  declare res, res_cs varchar;
   if (source_string is null or pattern is null or replace_string is null)
     return source_string;
+  if (match_parameter is null)
+    match_parameter := '';
+  if (iswidestring (source_string) or iswidestring (pattern) or iswidestring (replace_string))
+    {
+      if (iswidestring (source_string))
+        source_string := charset_recode (source_string, '_WIDE_', 'UTF-8');
   else
     {
-      if ((not isstring (source_string)) and (not iswidestring (source_string)))
+          if (isstring (source_string))
+            source_string := charset_recode (source_string, null, 'UTF-8');
+          else
 	source_string := cast (source_string as varchar);
-      if ((not isstring (pattern)) and (not iswidestring (pattern)))
-	pattern := cast (pattern as varchar);
-      if ((not isstring (replace_string)) and (not iswidestring (replace_string)))
-	replace_string := cast (replace_string as varchar);
     }
-
-  if (match_parameter is not null)
-    signal ('22023', 'match_parameter not supported yet', 'SR372');
-  declare cur_pos, copied_up_to, nth integer;
-  declare ret any;
-
-  ret := either (iswidestring (source_string), N'', '');
-  cur_pos := position - 1;
-  copied_up_to := position - 1;
-  nth := 1;
-
-  while (cur_pos < length (source_string))
-    {
-      declare exprs any;
-
-      exprs := regexp_parse (pattern, source_string, cur_pos);
-
-      if (not isarray (exprs))
-	goto done;
-
-      declare start_inx, end_inx integer;
-      start_inx := exprs[0];
-      end_inx := exprs[1];
-
-      if (occurrence is null or occurrence = nth)
-	{
-	  if (start_inx > copied_up_to)
-	    ret := concat (ret, subseq (source_string, copied_up_to, start_inx));
-
-	  if (length (exprs) > 2)
-	    {
-	      declare expr_inx integer;
-	      declare replace_str any;
-	      declare replace_string_tmp any;
-	      replace_string_tmp := replace_string;
-	      expr_inx := 1;
-
-	      while (expr_inx * 2 < length (exprs))
+      if (iswidestring (pattern))
+        pattern := charset_recode (pattern, '_WIDE_', 'UTF-8');
+      else
 		{
-		  declare replace_str_found varchar;
-
-		  if (exprs[expr_inx * 2] >= 0 and exprs[expr_inx * 2 + 1] >= 0)
-		    replace_str_found := subseq (source_string, exprs[expr_inx * 2], exprs [expr_inx * 2 + 1]);
+          if (isstring (pattern))
+            pattern := charset_recode (pattern, null, 'UTF-8');
 		  else
-		    replace_str_found := either (iswidestring (source_string), N'', '');
-
-		  replace_str := sprintf ('\\%d', expr_inx);
-		  if (iswidestring (source_string))
-		    replace_str := cast (replace_str as nvarchar);
-		  replace_string_tmp := replace (replace_string_tmp, replace_str,
-		       replace_str_found);
-		  expr_inx := expr_inx + 1;
+            pattern := cast (pattern as varchar);
 		}
-	      while (expr_inx < 10)
+      if (iswidestring (replace_string))
+        replace_string := charset_recode (replace_string, '_WIDE_', 'UTF-8');
+      else
 		{
-		  replace_str := sprintf ('\\%d', expr_inx);
-		  if (iswidestring (source_string))
-		    replace_str := cast (replace_str as nvarchar);
-		  replace_string_tmp := replace (replace_string_tmp, replace_str,
-		    either (iswidestring (source_string), N'', ''));
-		  expr_inx := expr_inx + 1;
+          if (isstring (replace_string))
+            replace_string := charset_recode (replace_string, null, 'UTF-8');
+          else
+            replace_string := cast (replace_string as varchar);
 		}
-	      ret := concat (ret, replace_string_tmp);
+      if (strchr (match_parameter, 'u') is null and strchr (match_parameter, 'U') is null)
+        match_parameter := match_parameter || 'u';
+      res_cs := '_WIDE_';
 	    }
 	  else
-	    ret := concat (ret, replace_string);
-	  copied_up_to := end_inx;
-	  if (occurrence is not null)
-	    goto done;
-	}
-
-      nth := nth + 1;
-      cur_pos := end_inx;
+    {
+      if (not isstring (source_string))	source_string := cast (source_string as varchar);
+      if (not isstring (pattern)) pattern := cast (pattern as varchar);
+      if (not isstring (replace_string)) replace_string := cast (replace_string as varchar);
+      res_cs := '';
     }
-done:
-  if (copied_up_to < length (source_string))
-    ret := concat (ret, subseq (source_string, copied_up_to, length (source_string)));
-
-  return ret;
+  if (0 = length (source_string))
+    return subseq (source_string, 0, 0);
+  if (occurrence is null)
+    occurrence := 0;
+  if (regexp_parse (pattern, '', 0, match_parameter) is not null)
+    signal ('22023', 'The REGEXP_REPLACE() function can not search for a pattern that can be found even in an empty string');
+  if (0 = occurrence)
+    {
+      hit_list := regexp_parse_list (pattern, source_string, position-1, match_parameter, 2097152);
+      if (0 = length (hit_list))
+        return source_string;
+	}
+  else
+    {
+      hit_list := regexp_parse_list (pattern, source_string, position-1, match_parameter, occurrence);
+      if (length (hit_list) < occurrence)
+        return source_string;
+      hit_list := vector (hit_list[occurrence-1]);
+    }
+  res := regexp_replace_hits_with_template (source_string, replace_string, hit_list, 0);
+  if (res_cs = '_WIDE_')
+    return charset_recode (res, 'UTF-8', '_WIDE_');
+  return res;
 }
 ;
 
