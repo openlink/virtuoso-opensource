@@ -18,6 +18,7 @@
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
 
 /* Aggregate concat */
 
@@ -467,7 +468,10 @@ case when 0 and check_package('rdf_mappers') then
    <node name="Namespaces"  url="persistent_xmlns.vspx"  id="183" allowed="yacutia_message" />',
       case when ((wa_available > 0 or policy_vad is not null) and rdf_available > 0) then
       ' <node name="Access Control" url="sparql_acl.vspx" id="274" allowed="yacutia_acls">
-        <node name="ACL List" url="sec_auth_serv_sp.vspx" id="277" place="1" allowed="yacutia_acls"/>'
+        <node name="ACL List" url="sec_auth_serv_sp.vspx" id="277" place="1" allowed="yacutia_acls"/>
+        <node name="Sponger Groups" url="sec_auth_sponger_1.vspx" id="277" place="1" allowed="yacutia_acls"/>
+        <node name="Sponger ACL" url="sec_auth_sponger_2.vspx" id="277" place="1" allowed="yacutia_acls"/>
+       '
       else 
       '<node name="Access Control" url="sec_auth_serv_sp.vspx" id="274" allowed="yacutia_acls">
       <node name="ACL List" url="sec_auth_serv_sp.vspx" id="275" place="1" allowed="yacutia_acls"/>' 

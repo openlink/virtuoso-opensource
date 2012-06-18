@@ -85,8 +85,14 @@
                   <table cellpadding="0" cellspacing="0" border="0">
                     <tr>
 		      <?vsp if (DB.DBA.VAD_CHECK_VERSION ('rdf_mappers') is not null or check_package ('cartridges')) { ?>
-		      <td class="<?V self.astyle ('Sponger') ?>" align="center">
+		      <!--td class="<?V self.astyle ('Sponger') ?>" align="center">
 			<v:url xhtml_style="page_tab" url="sec_auth_serv_sp.vspx?acl=Sponger" value="Sponger" render-only="1"/>
+		      </td-->
+		      <td class="<?V self.astyle ('Groups') ?>" align="center">
+			<v:url xhtml_style="page_tab" url="sec_auth_sponger_1.vspx" value="Groups" render-only="1"/>
+		      </td>
+		      <td class="<?V self.astyle ('Cartridges') ?>" align="center">
+			<v:url xhtml_style="page_tab" url="sec_auth_sponger_2.vspx" value="Cartridges" render-only="1"/>
 			  </td>
           <?vsp } ?>          
 
