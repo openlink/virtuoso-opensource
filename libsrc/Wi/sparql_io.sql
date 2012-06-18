@@ -3834,6 +3834,24 @@ graph_processing:
             }
           DB.DBA.RDF_LOAD_RDFXML (res_file, full_graph_uri, full_graph_uri);
         }
+      else if (res_content_type = 'text/microdata+html')
+        {
+          if (reqbegin like 'PUT%')
+            {
+              sparql clear graph ?:full_graph_uri;
+              commit work;
+            }
+          DB.DBA.RDF_LOAD_XHTML_MICRODATA (res_file, full_graph_uri /* base */, full_graph_uri /* dest graph */);
+        }
+      else if (res_content_type = 'application/xhtml+xml')
+        {
+          if (reqbegin like 'PUT%')
+            {
+              sparql clear graph ?:full_graph_uri;
+              commit work;
+            }
+          DB.DBA.RDF_LOAD_RDFA (res_file, full_graph_uri /* base */, full_graph_uri /* dest graph */);
+        }
       else
         signal ('22023', 'The PUT request for graph <' || full_graph_uri || '> is rejected: the submitted resource is of unsupported type ' || coalesce (res_content_type, ''));
       if (graph_exists is null)
@@ -4006,7 +4024,7 @@ create procedure DB.DBA.SPARQL_ROUTE_DICT_CONTENT_DAV (
         DB.DBA.RDF_TRIPLES_TO_JSON_LD (triples, out_ses);
       else if ('application/xhtml+xml' = mime)
         DB.DBA.RDF_TRIPLES_TO_RDFA_XHTML (triples, out_ses);
-      else if ('text/html' = mime)
+      else if (('text/html' = mime) or ('text/microdata+html' = mime) or ('text/md+html' = mime))
         DB.DBA.RDF_TRIPLES_TO_HTML_MICRODATA (triples, out_ses);
       else if ('application/microdata+json' = mime)
         DB.DBA.RDF_TRIPLES_TO_JSON_MICRODATA (triples, out_ses);

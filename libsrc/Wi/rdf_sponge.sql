@@ -1034,14 +1034,24 @@ create function DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (in origin_uri varchar, in 
         return 'application/x-trig';
     }
   declare ret_begin, ret_html any;
-  ret_begin := subseq (ret_body, 0, 4096);
+  ret_begin := subseq (ret_body, 0, 65535);
   if (isstring_session (ret_begin))
     ret_begin := string_output_string (ret_begin);
   -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE: ret_begin = ', ret_begin);
   ret_html := xtree_doc (ret_begin, 2);
   -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE: ret_html = ', ret_html);
-  if (xpath_eval ('/html|/xhtml', ret_html) is not null)
+  if (xpath_eval ('[xmlns:xh="http://www.w3.org/1999/xhtml"] /html|/xhtml|/xh:html|/xh:xhtml', ret_html) is not null)
+    {
+      if (xpath_eval ('[xmlns:grddl="http://www.w3.org/2003/g/data-view#"] /*/@grddl:transformation', ret_html) is not null)
+        return 'text/html'; -- GRDDL stylesheet is most authoritative
+      if (xpath_eval ('/*/head/@profile', ret_html) is not null)
+        return 'text/html'; -- GRDDL inline profile is authoritative, too
+      if (xpath_eval ('//*[exists(@itemscope) or exists(@itemprop) or exists(@itemid) or exists(@itemtype)]', ret_html) is not null)
+        return 'text/microdata+html'; -- Microdata are tested before RDFa because metadata with @rel may be wrongly recognised as RDFa
+      if (xpath_eval ('//*[exists(@rel) or exists(@rev) or exists(@typeof) or exists(@property) or exists(@about)]', ret_html) is not null)
+        return 'application/xhtml+xml';
     return 'text/html';
+    }
   if (xpath_eval ('[xmlns:rset="http://www.w3.org/2005/sparql-results#"] /rset:sparql', ret_html) is not null
     or xpath_eval ('[xmlns:rset2="http://www.w3.org/2001/sw/DataAccess/rf1/result2"] /rset2:sparql', ret_html) is not null)
     return 'application/sparql-results+xml';
@@ -1310,13 +1320,25 @@ retry_after_deadlock:
         aq_request (aq, 'DB.DBA.RDF_SW_PING', vector (ps, new_origin_uri));
       return 1;
     }
-  else if (only_rdfa = 1 and strstr (ret_content_type, 'text/html') is not null)
+  else if (strstr (ret_content_type, 'text/microdata+html') is not null)
     {
       whenever sqlstate '*' goto load_grddl;
       --log_enable (2, 1);
-      DB.DBA.RDF_LOAD_RDFA (ret_body, base, coalesce (dest, graph_iri), 2);
+      DB.DBA.RDF_LOAD_XHTML_MICRODATA (ret_body, base, coalesce (dest, graph_iri));
       if (groupdest is not null and groupdest <> coalesce (dest, graph_iri))
-	DB.DBA.RDF_LOAD_RDFA (ret_body, base, groupdest, 2);
+	DB.DBA.RDF_LOAD_XHTML_MICRODATA (ret_body, base, groupdest);
+      --log_enable (saved_log_mode, 1);
+      if (aq is not null)
+        aq_request (aq, 'DB.DBA.RDF_SW_PING', vector (ps, new_origin_uri));
+      return 1;
+    }
+  else if ((only_rdfa = 1 and strstr (ret_content_type, 'text/html') is not null) or (strstr (ret_content_type, 'application/xhtml+xml') is not null))
+    {
+      whenever sqlstate '*' goto load_grddl;
+      --log_enable (2, 1);
+      DB.DBA.RDF_LOAD_RDFA (ret_body, base, coalesce (dest, graph_iri));
+      if (groupdest is not null and groupdest <> coalesce (dest, graph_iri))
+	DB.DBA.RDF_LOAD_RDFA (ret_body, base, groupdest);
       --log_enable (saved_log_mode, 1);
       if (aq is not null)
         aq_request (aq, 'DB.DBA.RDF_SW_PING', vector (ps, new_origin_uri));
