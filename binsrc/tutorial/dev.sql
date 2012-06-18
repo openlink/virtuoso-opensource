@@ -222,7 +222,7 @@ create procedure TUT_generate_files(
 	      subseq(xsl_mountpoint,length(xsl_mountpoint) - 4,length(xsl_mountpoint)) = '.vsp'  or
 	  		subseq(xsl_mountpoint,length(xsl_mountpoint) - 5,length(xsl_mountpoint)) = '.vspx')
 	  		)
-	  	xsl_mountpoint := regexp_replace(xsl_mountpoint,'[^/]*\$','');
+	  	xsl_mountpoint := regexp_replace(xsl_mountpoint,'[^/]+\$','');
 	  xsl_mountpoint := trim(xsl_mountpoint,'/');
 	  if (xsl_mountpoint = '')
 	    xsl_mountpoint := '.';
