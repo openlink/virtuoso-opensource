@@ -2449,7 +2449,14 @@ ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
     value = (caddr_t)lit;
   if (NULL == type)
     type = dt;
+/*
   if ((NULL != lang) && (NULL == type) && (DV_STRING == DV_TYPE_OF (value)))
+    {
+      ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_NARROW_OR_WIDE);
+      return;
+    }
+*/
+  if ((NULL == type) && (NULL == lang))
     {
       ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_NARROW_OR_WIDE);
       return;
@@ -2464,26 +2471,24 @@ ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
           ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_NARROW_OR_WIDE);
           return;
         }
-#ifdef NDEBUG
-      ssg_puts (" __ro2sq(DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS(");
-#else
-      ssg_puts (" /* sqlval of typed literal */ __rdf_sqlval_of_obj (DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (");
-#endif
-      ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_NARROW_OR_WIDE);
-      ssg_putchar (',');
-      if (NULL != type)
-        ssg_print_box_as_sql_atom (ssg, type, SQL_ATOM_UNAME_ALLOWED);
-      else
-        ssg_puts (" NULL");
-      ssg_putchar (',');
-      if (NULL != lang)
-        ssg_print_box_as_sql_atom (ssg, lang, SQL_ATOM_ASCII_ONLY);
-      else
-        ssg_puts (" NULL");
-      ssg_puts ("))");
-      return;
     }
+#ifdef NDEBUG
+  ssg_puts (" __ro2sq(DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS(");
+#else
+  ssg_puts (" /* sqlval of typed literal */ __ro2sq (DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (");
+#endif
   ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_NARROW_OR_WIDE);
+  ssg_putchar (',');
+  if (NULL != type)
+    ssg_print_box_as_sql_atom (ssg, type, SQL_ATOM_UNAME_ALLOWED);
+  else
+    ssg_puts (" NULL");
+  ssg_putchar (',');
+  if (NULL != lang)
+    ssg_print_box_as_sql_atom (ssg, lang, SQL_ATOM_ASCII_ONLY);
+  else
+    ssg_puts (" NULL");
+  ssg_puts ("))");
 }
 
 void
@@ -2540,7 +2545,7 @@ ssg_print_literal_as_long (spar_sqlgen_t *ssg, SPART *lit)
       ssg_putchar (')');
       return;
     }
-  ssg_print_box_as_sql_atom (ssg, value, 0 /* intentionally bad mode to get an error on any cast to string */);
+  ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_ABORT_ON_CAST);
 }
 
 void
@@ -3163,7 +3168,7 @@ vmodes_found:
           if (NULL == split)
             ssg_print_scalar_expn (ssg, right, min_mode, NULL_ASNAME);
           else
-            ssg_print_box_as_sql_atom (ssg, split[0], 0);
+            ssg_print_box_as_sql_atom (ssg, split[0], SQL_ATOM_ABORT_ON_CAST);
         }
       else
         {
@@ -3191,7 +3196,7 @@ vmodes_found:
                       if (NULL == split)
                         ssg_print_scalar_expn (ssg, right, min_mode, asname);
                       else
-                        ssg_print_box_as_sql_atom (ssg, split[prevcolctr], 0);
+                        ssg_print_box_as_sql_atom (ssg, split[prevcolctr], SQL_ATOM_ABORT_ON_CAST);
                       ssg->ssg_indent --; ssg_putchar (')');
                       ssg_puts (" and ");
                     }
@@ -3202,7 +3207,7 @@ vmodes_found:
               if (NULL == split)
                 ssg_print_scalar_expn (ssg, right, min_mode, asname);
               else
-                ssg_print_box_as_sql_atom (ssg, split[colctr], 0);
+                ssg_print_box_as_sql_atom (ssg, split[colctr], SQL_ATOM_ABORT_ON_CAST);
               ssg->ssg_indent --; ssg_putchar (')');
             }
         }
@@ -3218,7 +3223,7 @@ vmodes_found:
           if (NULL == split)
             ssg_print_scalar_expn (ssg, right, min_mode, NULL_ASNAME);
           else
-            ssg_print_box_as_sql_atom (ssg, split[0], 0);
+            ssg_print_box_as_sql_atom (ssg, split[0], SQL_ATOM_ABORT_ON_CAST);
           ssg->ssg_indent --; ssg_putchar (')');
         }
       else
@@ -3247,7 +3252,7 @@ vmodes_found:
                       if (NULL == split)
                         ssg_print_scalar_expn (ssg, right, min_mode, asname);
                       else
-                        ssg_print_box_as_sql_atom (ssg, split[prevcolctr], 0);
+                        ssg_print_box_as_sql_atom (ssg, split[prevcolctr], SQL_ATOM_ABORT_ON_CAST);
                       ssg->ssg_indent --; ssg_putchar (')');
                       ssg_puts (", ");
                     }
@@ -3259,7 +3264,7 @@ vmodes_found:
               if (NULL == split)
                 ssg_print_scalar_expn (ssg, right, min_mode, asname);
               else
-                ssg_print_box_as_sql_atom (ssg, split[colctr], 0);
+                ssg_print_box_as_sql_atom (ssg, split[colctr], SQL_ATOM_ABORT_ON_CAST);
               ssg->ssg_indent --; ssg_putchar (')');
             }
           ssg->ssg_indent --; ssg_putchar (')');
