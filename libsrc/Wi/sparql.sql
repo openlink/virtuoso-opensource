@@ -5763,6 +5763,67 @@ from DB.DBA.RDF_FORMAT_RESULT_SET_AS_CXML_INIT, DB.DBA.RDF_FORMAT_RESULT_SET_AS_
 order
 ;
 
+create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_BINDINGS_INIT (inout _env any)
+{
+  _env := vector (0, 0, string_output());
+}
+;
+
+create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_BINDINGS_ACC (inout _env any, inout colvalues any, inout colnames any)
+{
+  declare col_ctr, col_count integer;
+  declare ses any;
+  declare rowid varchar;
+  declare blank_ids any;
+  if (__tag of vector <> __tag(_env))
+    DB.DBA.RDF_FORMAT_RESULT_SET_AS_BINDINGS_INIT (_env);
+  if (isinteger (_env[1]))
+    {
+      if (185 <> __tag(_env))
+        DB.DBA.RDF_FORMAT_RESULT_SET_AS_BINDINGS_INIT (_env);
+      _env[1] := colnames;
+      ses := aref_set_0 (_env, 2);
+      http ('BINDINGS', ses);
+      foreach (varchar colname in colnames) do { http (' ?' || colname, ses); }
+      http (' {', ses);
+    }
+  else
+    ses := aref_set_0 (_env, 2);
+  http ('\n  (', ses);
+  foreach (any val in colvalues) do
+    {
+      if (val is null)
+        http ('\tUNDEF', ses);
+      else
+        {
+          http ('\t', ses);
+          http_nt_object (val, ses);
+        }
+    }
+  http ('\t)', ses);
+  aset_zap_arg (_env, 2, ses);
+}
+;
+
+create function DB.DBA.RDF_FORMAT_RESULT_SET_AS_BINDINGS_FIN (inout _env any) returns long varchar
+{
+  declare ses any;
+  if (__tag of vector <> __tag(_env))
+    DB.DBA.RDF_FORMAT_RESULT_SET_AS_BINDINGS_INIT (_env);
+  if (isinteger (_env[1]))
+    return 'BINDINGS ?EmptyResultSetStub { }';
+  ses := aref_set_0 (_env, 2);
+  if (not isinteger (_env[1]))
+    http ('\n}', ses);
+  return string_output_string (ses);
+}
+;
+
+create aggregate DB.DBA.RDF_FORMAT_RESULT_SET_AS_BINDINGS (in colvalues any, in colnames any) returns long varchar
+from DB.DBA.RDF_FORMAT_RESULT_SET_AS_BINDINGS_INIT, DB.DBA.RDF_FORMAT_RESULT_SET_AS_BINDINGS_ACC, DB.DBA.RDF_FORMAT_RESULT_SET_AS_BINDINGS_FIN
+order
+;
+
 create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TTL (inout triples_dict any) returns long varchar
 {
   declare triples, ses any;

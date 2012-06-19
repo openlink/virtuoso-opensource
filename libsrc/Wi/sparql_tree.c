@@ -1782,7 +1782,8 @@ rvr_string_fixedvalue (rdf_val_range_t *rvr)
   return NULL;
 }
 
-int sparp_fixedvalues_equal (sparp_t *sparp, SPART *first, SPART *second)
+int
+sparp_fixedvalues_equal (sparp_t *sparp, SPART *first, SPART *second)
 {
   caddr_t first_val, first_language = NULL;
   caddr_t second_val, second_language = NULL;
@@ -1814,6 +1815,52 @@ int sparp_fixedvalues_equal (sparp_t *sparp, SPART *first, SPART *second)
 }
 
 int
+rvr_can_be_tightned (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *add_on, int assume_binv_var_and_eq)
+{
+  if (dest->rvrRestrictions & SPART_VARR_CONFLICT)
+    return 0; /* Can't be tighened --- it's conflict already, no matter how many reasons do we have for that */
+  if (add_on->rvrRestrictions & ~(dest->rvrRestrictions) &
+    ( SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_IS_BLANK | SPART_VARR_IRI_CALC | SPART_VARR_IS_LIT |
+      SPART_VARR_TYPED | SPART_VARR_FIXED | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL | SPART_VARR_ALWAYS_NULL ) )
+    return 1;
+  if ((add_on->rvrRestrictions & SPART_VARR_TYPED) && strcmp (dest->rvrDatatype, add_on->rvrDatatype))
+    return 1; /* Both are typed (if add_on is typed and dest is not then flag diff woud return 1 before), different types would tighten to the conflict */
+  if ( strcmp (
+    ((NULL == dest->rvrLanguage) ? "" : dest->rvrLanguage),
+    ((NULL == add_on->rvrLanguage) ? "" : add_on->rvrLanguage) ) )
+    return 1; /* different languages would tighten to the conflict */
+  if ((add_on->rvrRestrictions & SPART_VARR_FIXED) && !sparp_fixedvalues_equal (sparp, (SPART *)(dest->rvrFixedValue), (SPART *)(add_on->rvrFixedValue)))
+    return 1; /* different fixed values would tighten to the conflict */
+  if (add_on->rvrRestrictions & SPART_VARR_IRI_CALC)
+    {
+      if (assume_binv_var_and_eq)
+        {
+          if (add_on->rvrSprintffCount < dest->rvrSprintffCount)
+            return 1;
+        }
+      else
+        {
+          if ((add_on->rvrSprintffCount != dest->rvrSprintffCount) || memcmp (add_on->rvrSprintffs, dest->rvrSprintffs, add_on->rvrSprintffCount * sizeof (ccaddr_t)))
+            return 1;
+        }
+    }
+  if (add_on->rvrRedCutCount)
+    {
+      if (assume_binv_var_and_eq)
+        {
+          if (add_on->rvrRedCutCount > dest->rvrRedCutCount)
+            return 1;
+        }
+      else
+        {
+          if ((add_on->rvrRedCutCount != dest->rvrRedCutCount) || memcmp (add_on->rvrRedCuts, dest->rvrRedCuts, add_on->rvrRedCutCount * sizeof (ccaddr_t)))
+            return 1;
+        }
+    }
+  return 0;
+}
+
+int
 sparp_equivs_have_same_fixedvalue (sparp_t *sparp, sparp_equiv_t *first_eq, sparp_equiv_t *second_eq)
 {
   if (!(SPART_VARR_FIXED & first_eq->e_rvr.rvrRestrictions))
@@ -1826,7 +1873,6 @@ sparp_equivs_have_same_fixedvalue (sparp_t *sparp, sparp_equiv_t *first_eq, spar
     return 0;
   return sparp_fixedvalues_equal (sparp, (SPART *)(first_eq->e_rvr.rvrFixedValue), (SPART *)(second_eq->e_rvr.rvrFixedValue));
 }
-
 
 void
 sparp_rvr_add_iri_classes (sparp_t *sparp, rdf_val_range_t *rvr, ccaddr_t *add_classes, ptrlong add_count)
@@ -1892,12 +1938,12 @@ next_ctr:
             {
               if (old == addon_superclasses [cmpctr]) /* A superclass is already here */
                 {
-                  dk_free_tree (addon_superclasses);
+                  dk_free_tree ((caddr_t)addon_superclasses);
                   goto skip_addon; /* see below */
                 }
             }
         }
-      dk_free_tree (addon_superclasses);
+      dk_free_tree ((caddr_t)addon_superclasses);
       addon_subclasses = jso_triple_get_subjs ((caddr_t *)(sparp->sparp_sparqre->sparqre_qi), (caddr_t) uname_virtrdf_ns_uri_isSubclassOf, (caddr_t) addon);
       cmpcount = BOX_ELEMENTS (addon_subclasses);
       for (ctr = 0; ctr < len; ctr++)
@@ -1913,7 +1959,7 @@ next_ctr:
                 }
             }
         }
-      dk_free_tree (addon_subclasses);
+      dk_free_tree ((caddr_t)addon_subclasses);
       rvr->rvrIriClasses [len++] = addon;
 skip_addon: ;
     }
@@ -1967,12 +2013,12 @@ next_isectctr:
             {
               if (isect_classes [isectctr] == old_superclasses [cmpctr]) /* Found in isect */
                 {
-                  dk_free_tree (old_superclasses);
+                  dk_free_tree ((caddr_t)old_superclasses);
                   goto test_next_old; /* see below */
                 }
             }
         }
-      dk_free_tree (old_superclasses);
+      dk_free_tree ((caddr_t)old_superclasses);
 /* At this point we know that \c old is out of intersection. Let's remove it. */
       if (ctr < (len-1))
         rvr->rvrIriClasses [ctr] = rvr->rvrIriClasses [len - 1];
@@ -2012,7 +2058,7 @@ next_isectctr:
             }
 test_next_subclass: ;
         }
-      dk_free_tree (old_subclasses);
+      dk_free_tree ((caddr_t)old_subclasses);
 test_next_old: ;
     }
   rvr->rvrIriClassCount = len;
@@ -2182,11 +2228,21 @@ sparp_rvr_set_by_constant (sparp_t *sparp, rdf_val_range_t *dest, ccaddr_t datat
 #endif
           dest->rvrFixedValue = value->_.lit.val;
           dest->rvrRestrictions |= (SPART_VARR_IS_REF | SPART_VARR_FIXED | SPART_VARR_NOT_NULL);
+          /*                              0123456789 */
+          if (!strncmp (value->_.lit.val, "nodeID://", 9))
+            dest->rvrRestrictions |= SPART_VARR_IS_BLANK;
+          else
+            dest->rvrRestrictions |= SPART_VARR_IS_IRI;
         }
       else if (DV_UNAME == DV_TYPE_OF (value))
         {
           dest->rvrFixedValue = (ccaddr_t)value;
           dest->rvrRestrictions |= (SPART_VARR_IS_REF | SPART_VARR_FIXED | SPART_VARR_NOT_NULL);
+          /*                              0123456789 */
+          if (!strncmp ((ccaddr_t)value, "nodeID://", 9))
+            dest->rvrRestrictions |= SPART_VARR_IS_BLANK;
+          else
+            dest->rvrRestrictions |= SPART_VARR_IS_IRI;
         }
       else
         {
@@ -4782,10 +4838,11 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
 	      spart_dump (tree->_.req_top.sources, ses, indent+2, "SOURCES", -2);
 	      spart_dump (tree->_.req_top.pattern, ses, indent+2, "PATTERN", -1);
 	      spart_dump (tree->_.req_top.groupings, ses, indent+2, "GROUPINGS", -2);
-	      spart_dump (tree->_.req_top.having, ses, indent+2, "HAVING", -2);
+	      spart_dump (tree->_.req_top.having, ses, indent+2, "HAVING", -1);
 	      spart_dump (tree->_.req_top.order, ses, indent+2, "ORDER", -2);
 	      spart_dump ((void *)(tree->_.req_top.limit), ses, indent+2, "LIMIT", -1);
 	      spart_dump ((void *)(tree->_.req_top.offset), ses, indent+2, "OFFSET", -1);
+	      spart_dump (tree->_.req_top.binv, ses, indent+2, "BINDINGS", -1);
 	      break;
 	    }
 	  case SPAR_VARIABLE:
@@ -4839,6 +4896,24 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
               spart_dump (tree->_.sinv.param_varnames, ses, indent+2, "PARAM VARNAMES", -2);
               spart_dump (tree->_.sinv.rset_varnames, ses, indent+2, "RSET VARNAMES", -2);
               spart_dump (tree->_.sinv.defines, ses, indent+2, "DEFINES", -2);
+              break;
+            }
+          case SPAR_BINDINGS_INV:
+            {
+              /*int varctr, varcount = BOX_ELEMENTS (tree->_.binv.vars);*/
+              int rowctr, rowcount = BOX_ELEMENTS (tree->_.binv.data_rows);
+              sprintf (buf, "BINDINGS INV (own idx %ld):", (long)(tree->_.binv.own_idx));
+              SES_PRINT (ses, buf);
+              spart_dump (tree->_.binv.vars, ses, indent+2, "VARS", -2);
+              for (rowctr = 0; rowctr < rowcount; rowctr = ((rowctr < 4) || (rowctr >= rowcount - 4)) ? (rowctr + 1) : (rowcount - 4))
+                {
+                  char rowtitle[100];
+                  unsigned int rowmask = tree->_.binv.data_rows_mask[rowctr] - '/';
+                  sprintf (rowtitle, "ROW %d/%d (%s%s)", rowctr, rowcount,
+                    (rowmask ? "disabled via " : "enabled"),
+                    (rowmask ? tree->_.binv.vars[rowmask-1]->_.var.vname : "") );
+                  spart_dump (tree->_.binv.data_rows[rowctr], ses, indent+2, rowtitle, -2);
+                }
               break;
             }
 	  case BOP_EQ: case SPAR_BOP_EQ: case BOP_NEQ:

@@ -428,6 +428,12 @@ ssg_find_formatter_by_name_and_subtype (ccaddr_t name, ptrlong subtype,
       case ASK_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_CSV"; return;
       default: return;
       }
+  if (!strcmp (name, "BINDINGS"))
+    switch (subtype)
+      {
+      case SELECT_L: case COUNT_DISTINCT_L: case DISTINCT_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_RESULT_SET_AS_BINDINGS"; return;
+      default: return;
+      }
   spar_error (NULL, "Unsupported format name '%.40s'", name);
 /*
 bad_ask:
@@ -9280,26 +9286,32 @@ The fix is to avoid printing constant expressions at all, with only exception fo
   if (NULL != bindings_vars)
     {
       int bndctr;
+      SPART ***bindings_rowset = ssg->ssg_sparp->sparp_env->spare_bindings_rowset;
       ssg_puts (" ) AS ");
       ssg_prin_id (ssg, t_box_dv_short_string ("bnd1"));
       ssg->ssg_indent -= 1;
-      ssg_newline (0);
-      ssg_puts (" JOIN DB.DBA.SPARQL_BINDINGS_VIEW as \"bnd2\" ON (");
-      ssg->ssg_indent += 1;
-      ssg_newline (0);
-      ssg_puts (" \"bnd2\".DTA = ");
-      ssg_print_bindings (ssg, ssg->ssg_sparp->sparp_env->spare_bindings_rowset, retvalmode);
-      ssg_newline (0);
-      DO_BOX_FAST (SPART *, bndvar, bndctr, bindings_vars)
+      if (0 == BOX_ELEMENTS (bindings_rowset))
+        ssg_puts (" WHERE (1=0)");
+      else
         {
-          char buf[200];
-          snprintf (buf, sizeof (buf), " AND (\"bnd2\".BND[%d] IS NULL OR (\"bnd2\".BND[%d] = \"%.100s\"))", bndctr, bndctr, bndvar->_.var.vname);
-          ssg_puts (buf);
+          ssg_newline (0);
+          ssg_puts (" JOIN DB.DBA.SPARQL_BINDINGS_VIEW as \"bnd2\" ON (");
+          ssg->ssg_indent += 1;
+          ssg_newline (0);
+          ssg_puts (" \"bnd2\".DTA = ");
+          ssg_print_bindings (ssg, bindings_rowset, retvalmode);
+          ssg_newline (0);
+          DO_BOX_FAST (SPART *, bndvar, bndctr, bindings_vars)
+            {
+              char buf[200];
+              snprintf (buf, sizeof (buf), " AND (\"bnd2\".BND[%d] IS NULL OR (\"bnd2\".BND[%d] = \"%.100s\"))", bndctr, bndctr, bndvar->_.var.vname);
+              ssg_puts (buf);
+            }
+          END_DO_BOX_FAST;
+          ssg_puts (")");
+          ssg->ssg_indent -= 1;
+          ssg_newline (0);
         }
-      END_DO_BOX_FAST;
-      ssg_puts (")");
-      ssg->ssg_indent -= 1;
-      ssg_newline (0);
     }
   if ((COUNT_DISTINCT_L == subtype) || (NULL != formatter) || (NULL != agg_formatter) || (SSG_RETVAL_DIST_SER_LONG & top_retval_flags))
     {

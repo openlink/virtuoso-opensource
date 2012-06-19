@@ -2442,74 +2442,42 @@ spar_make_top_or_special_case_from_wm (sparp_t *sparp, ptrlong subtype, SPART **
   return spar_make_top (sparp, subtype, retvals, retselid, pattern, groupings, having, order, limit, offset, binv);
 }
 
-void
-spar_alloc_fake_equivs_for_bindings_inv (sparp_t *sparp, SPART *binv)
+SPART *
+spar_make_bindings_inv_with_fake_equivs (sparp_t *sparp, SPART **vars, SPART ***data_rows)
 {
+  int varcount = BOX_ELEMENTS (vars);
+  int rowcount = BOX_ELEMENTS (data_rows);
   int varctr, rowctr;
-  DO_BOX_FAST_REV (SPART *, var, varctr, binv->_.binv.vars)
+  char *data_rows_mask = (char *)t_alloc_box (rowcount+1, DV_STRING);
+  ptrlong *counters_of_unbound = (ptrlong *)t_alloc_box (varcount * sizeof (ptrlong), DV_STRING);
+  SPART *binv = spartlist (sparp, 8, SPAR_BINDINGS_INV, 0, vars, data_rows, data_rows_mask, counters_of_unbound, (ptrlong)rowcount, (ptrlong)0);
+  memset (data_rows_mask, '/', rowcount);
+  for (varctr = varcount; varctr--; /* no step */)
     {
-      sparp_equiv_t *eq;
-      int restr_set = SPART_VARR_NOT_NULL | SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_IS_LIT;
-      int restr_drop = 0;
-      var->_.var.rvr.rvrRestrictions = SPART_VARR_CONFLICT;
-      DO_BOX_FAST (SPART **, row, rowctr, binv->_.binv.data_rows)
+      int counter_of_unbound = 0;
+      for (rowctr = rowcount; rowctr--; /* no step */)
         {
-          SPART *datum = row[varctr];
-          if (NULL == datum)
-            restr_drop |= SPART_VARR_NOT_NULL;
-          else
-            switch (SPART_TYPE (datum))
-              {
-              case SPAR_QNAME: restr_drop |= SPART_VARR_IS_LIT; break;
-              case SPAR_LIT: restr_drop |= SPART_VARR_IS_REF | SPART_VARR_IS_IRI; break;
-              }
+          if (NULL == data_rows[rowctr][varctr])
+            counter_of_unbound++;
         }
-      END_DO_BOX_FAST;
-      if (rowctr)
-        var->_.var.rvr.rvrRestrictions = restr_set & ~restr_drop;
-      else
-        var->_.var.rvr.rvrRestrictions = SPART_VARR_CONFLICT;
-      if (1 == rowctr)
-        {
-          SPART *datum = binv->_.binv.data_rows[0][varctr];
-          if (NULL == datum)
-            var->_.var.rvr.rvrRestrictions = SPART_VARR_ALWAYS_NULL;
-          else
-          switch (SPART_TYPE (datum))
-            {
-            case SPAR_QNAME:
-              var->_.var.rvr.rvrRestrictions |= SPART_VARR_FIXED;
-              var->_.var.rvr.rvrFixedValue = datum->_.qname.val;
-              break;
-            case SPAR_LIT:
-              if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (datum))
-                {
-                  if (NULL != datum->_.lit.language)
-                    break;
-                  if (NULL != datum->_.lit.datatype)
-                    break;
-                  var->_.var.rvr.rvrRestrictions |= SPART_VARR_FIXED;
-                  var->_.var.rvr.rvrFixedValue = datum->_.lit.val;
-                  break;
-                }
-              var->_.var.rvr.rvrRestrictions |= SPART_VARR_FIXED;
-              var->_.var.rvr.rvrFixedValue = (ccaddr_t)datum;
-              break;
-            }
-        }
-      eq = sparp_equiv_alloc (sparp);
+      counters_of_unbound[varctr] = counter_of_unbound;
+    }
+  spar_refresh_binv_var_rvrs (sparp, binv);
+  for (varctr = 0; varctr < varcount; varctr++)
+    {
+      SPART *var = vars[varctr];
+      sparp_equiv_t *eq = sparp_equiv_alloc (sparp);
       eq->e_varnames = (caddr_t *)t_list (1, var->_.var.vname);
       eq->e_vars = (SPART **)t_list (1, var);
       eq->e_var_count = 1;
       eq->e_nested_bindings = 1; /* fake, to not reset rvr to conflict */
       eq->e_gp = binv;
       eq->e_const_reads = 1;
-      sparp_equiv_tighten (sparp, eq, &(var->_.var.rvr), ~0);
+      sparp_rvr_copy (sparp, &(eq->e_rvr), &(var->_.var.rvr));
       var->_.var.equiv_idx = eq->e_own_idx;
     }
-  END_DO_BOX_FAST_REV;
+  return binv;
 }
-
 
 SPART **
 spar_make_sources_like_top (sparp_t *sparp, ptrlong top_subtype)

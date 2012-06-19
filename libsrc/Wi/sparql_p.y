@@ -1056,10 +1056,8 @@ spar_bindings_clause		/* [Sparql1.1*]	BindingsClause	 ::=  'BINDINGS' BindingsVa
 		sparp_arg->sparp_env->spare_bindings_vars = (SPART **)t_revlist_to_array ($3); }
 	    spar_bindings_opt _RBRA	{
 		sparp_arg->sparp_env->spare_bindings_rowset = (SPART ***)t_revlist_to_array ($6);
-		$$ = spartlist (sparp_arg, 4, SPAR_BINDINGS_INV, 0,
-			sparp_arg->sparp_env->spare_bindings_vars,
-			sparp_arg->sparp_env->spare_bindings_rowset );
-		spar_alloc_fake_equivs_for_bindings_inv (sparp_arg, $$); }
+		$$ = spar_make_bindings_inv_with_fake_equivs (sparp_arg,
+			sparp_arg->sparp_env->spare_bindings_vars, sparp_arg->sparp_env->spare_bindings_rowset); }
 	;
 
 spar_bindings_vars

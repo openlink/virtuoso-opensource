@@ -2255,6 +2255,61 @@ void
 sparp_eq_restr_from_connected (sparp_t *sparp)
 {
   /*sparp_env_t *env = sparp->sparp_env;*/
+  SPART *binv = sparp->sparp_expr->_.req_top.binv;
+  if (NULL != binv)
+    {
+      int varctr, varcount = BOX_ELEMENTS (binv->_.binv.vars);
+      SPART **retlist = sparp->sparp_expr->_.req_top.retvals;
+      for (varctr = varcount; varctr--; /* no step */)
+        {
+          SPART *var, *ret_expn = NULL;
+          int retctr, ret_expn_type;
+          sparp_equiv_t *var_eq;
+          if (binv->_.binv.counters_of_unbound[varctr])
+            continue;
+          var = binv->_.binv.vars[varctr];
+          var_eq = SPARP_EQUIV (sparp, var->_.var.equiv_idx);
+          for (retctr = BOX_ELEMENTS (retlist); retctr--; /* no step */)
+            {
+              SPART *candidate = retlist[retctr];
+              ret_expn_type = SPART_TYPE (candidate);
+              if (SPAR_VARIABLE == ret_expn_type)
+                {
+                  if (strcmp (candidate->_.var.vname, var->_.var.vname))
+                    continue;
+                  ret_expn = candidate;
+                  break;
+                }
+              if (SPAR_ALIAS == ret_expn_type)
+                {
+                  if (strcmp (candidate->_.alias.aname, var->_.var.vname))
+                    continue;
+                  ret_expn = candidate->_.alias.arg;
+                  ret_expn_type = SPART_TYPE (ret_expn);
+                  break;
+                }
+            }
+          if (NULL == ret_expn)
+            {
+              if (sparp->sparp_env->spare_signal_void_variables)
+                spar_error (sparp, "Variable name '%.100s' is used in then BINDINGS clause but not in the query result set", var->_.var.vname);
+              var_eq->e_rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
+            }
+          else
+            {
+              sparp_equiv_tighten (sparp, var_eq, &(var->_.var.rvr), ~0);
+              if (SPAR_VARIABLE == ret_expn_type)
+                {
+                  sparp_equiv_t *ret_orig_eq = SPARP_EQUIV (sparp, ret_expn->_.var.equiv_idx);
+                  sparp_equiv_tighten (sparp, var_eq, &(ret_orig_eq->e_rvr), ~(SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL));
+                  if (!(sparp_req_top_has_limofs (sparp->sparp_expr) && (NULL != sparp->sparp_expr->_.req_top.order)))
+                    sparp_equiv_tighten (sparp, ret_orig_eq, &(var_eq->e_rvr), ~0);
+                }
+            }
+        }
+      spar_shorten_binv_dataset (sparp, binv);
+      spar_refresh_binv_var_rvrs (sparp, binv);
+    }
   sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, NULL,
     NULL, sparp_gp_trav_eq_restr_from_connected_subvalues_gp_out,
     NULL, NULL, sparp_gp_trav_eq_restr_from_connected_subvalues_expn_subq,
@@ -2492,19 +2547,19 @@ sparp_equiv_audit_all (sparp_t *sparp, int flags)
         continue;
       if (eq->e_own_idx != eq_ctr)
         spar_audit_error (sparp, "sparp_" "equiv_audot_all(): wrong own index, eq #%d for %s has e_own_idx %d", eq_ctr, eq->e_varnames[0], eq->e_own_idx);
-      if (eq->e_nested_bindings != BOX_ELEMENTS_0 (eq->e_subvalue_idxs))
-        printf ("sparp_" "equiv_audit_all(): warning: strange: equiv %d (?%s): e_nested_bindings = %d, %d subvalues in list, e_optional_reads = %d\n",
-            (int)(eq->e_own_idx), eq->e_varnames[0],
-            (int)(eq->e_nested_bindings), BOX_ELEMENTS_INT_0 (eq->e_subvalue_idxs), (int)(eq->e_optional_reads) );
-      gp = eq->e_gp;
       for (var_ctr = eq->e_var_count; var_ctr--; /*no step*/)
         {
           SPART *var = eq->e_vars [var_ctr];
           if (var->_.var.equiv_idx != eq_ctr)
             spar_audit_error (sparp, "sparp_" "equiv_audit_all(): var->_.var.equiv_idx != eq_ctr: eq #%d for %s, gp %s, var %s/%s/%s with equiv_idx %d", eq_ctr, eq->e_varnames[0], var->_.var.selid, var->_.var.tabid, var->_.var.vname, var->_.var.equiv_idx);
         }
+      gp = eq->e_gp;
       if (SPAR_GP != gp->type)
         continue;
+      /*if (eq->e_nested_bindings != BOX_ELEMENTS_0 (eq->e_subvalue_idxs))
+        printf ("sparp_" "equiv_audit_all(): warning: strange: equiv %d (?%s): e_nested_bindings = %d, %d subvalues in list, e_optional_reads = %d\n",
+            (int)(eq->e_own_idx), eq->e_varnames[0],
+            (int)(eq->e_nested_bindings), BOX_ELEMENTS_INT_0 (eq->e_subvalue_idxs), (int)(eq->e_optional_reads) );*/
       sparp_equiv_audit_gp (sparp, gp, ((SPART_BAD_GP_SUBTYPE == gp->_.gp.subtype) ? 1 : 0), eq);
       for (var_ctr = eq->e_var_count; var_ctr--; /*no step*/)
         {
@@ -2666,6 +2721,204 @@ sparp_rewrite_basic (sparp_t *sparp)
 }
 
 /* PART 2. GRAPH PATTERN TERM REWRITING */
+
+void
+spar_invalidate_binv_dataset_row (sparp_t *sparp, SPART *binv, int rowno, int reason_col)
+{
+  int varctr;
+  unsigned mask_byte;
+  if ('/' != binv->_.binv.data_rows_mask[rowno])
+    spar_internal_error (sparp, "double invalidation of a binding");
+  mask_byte = (unsigned)'0' + (unsigned)reason_col;
+  if (0x7f < mask_byte)
+    mask_byte = 0x7f;
+  binv->_.binv.data_rows_mask[rowno] = mask_byte;
+  DO_BOX_FAST (ptrlong, counter_of_unbound, varctr, binv->_.binv.counters_of_unbound)
+    {
+      if (NULL != binv->_.binv.data_rows[rowno][varctr])
+        continue;
+      binv->_.binv.counters_of_unbound[varctr] = counter_of_unbound - 1;
+    }
+  END_DO_BOX_FAST;
+  binv->_.binv.rows_in_use--;
+}
+
+void
+spar_shorten_binv_dataset (sparp_t *sparp, SPART *binv)
+{
+  int varcount, rowcount, varctr, rowctr;
+  int *fmt_use_counters = NULL;
+  int max_sff_count = -1;
+  varcount = BOX_ELEMENTS (binv->_.binv.vars);
+  if (0 == binv->_.binv.rows_in_use)
+    return;
+  varcount = BOX_ELEMENTS (binv->_.binv.vars);
+  rowcount = BOX_ELEMENTS (binv->_.binv.data_rows);
+/* All loops by rows here must be in reverse order. */
+  for (varctr = varcount; varctr--; /* no step */)
+    {
+      SPART *var = binv->_.binv.vars[varctr];
+      sparp_equiv_t *eq = SPARP_EQUIV (sparp, var->_.var.equiv_idx);
+      if (var->_.var.rvr.rvrRestrictions & (SPART_VARR_CONFLICT | SPART_VARR_ALWAYS_NULL))
+        continue;
+      if (eq->e_rvr.rvrRestrictions & (SPART_VARR_CONFLICT | SPART_VARR_ALWAYS_NULL))
+        {
+          for (rowctr = rowcount; rowctr--; /* no step */)
+            {
+              if ('/' != binv->_.binv.data_rows_mask[rowctr])
+                continue;
+              if (NULL == binv->_.binv.data_rows[rowctr][varctr])
+                continue;
+              spar_invalidate_binv_dataset_row (sparp, binv, rowctr, varctr);
+            }
+          continue;
+        }
+      if ((eq->e_rvr.rvrRestrictions & SPART_VARR_SPRINTFF) && (eq->e_rvr.rvrSprintffCount > max_sff_count))
+        max_sff_count = eq->e_rvr.rvrSprintffCount;
+    }
+  if (0 <= max_sff_count)
+    fmt_use_counters = (int *)t_alloc (max_sff_count * sizeof (int));
+  for (varctr = varcount; varctr--; /* no step */)
+    {
+      SPART *var = binv->_.binv.vars[varctr];
+      sparp_equiv_t *eq = SPARP_EQUIV (sparp, var->_.var.equiv_idx);
+      int eq_has_sffs_bit = (eq->e_rvr.rvrRestrictions & SPART_VARR_SPRINTFF);
+      int eq_sff_count = eq->e_rvr.rvrSprintffCount;
+      if (!rvr_can_be_tightned (sparp, &(var->_.var.rvr), &(eq->e_rvr), 1))
+        continue;
+      if (eq->e_rvr.rvrSprintffCount)
+        memset (fmt_use_counters, 0, eq->e_rvr.rvrSprintffCount * sizeof (int));
+      for (rowctr = rowcount; rowctr--; /* no step */)
+        {
+          SPART *datum;
+          rdf_val_range_t tmp;
+          if ('/' != binv->_.binv.data_rows_mask[rowctr])
+            continue;
+          datum = binv->_.binv.data_rows[rowctr][varctr];
+          if (NULL == datum)
+            continue;
+          sparp_rvr_set_by_constant (sparp, &tmp, NULL, datum);
+          eq->e_rvr.rvrRestrictions &= ~SPART_VARR_SPRINTFF;
+          eq->e_rvr.rvrSprintffCount = 0;
+          sparp_rvr_tighten (sparp, &tmp, &(eq->e_rvr), ~0);
+          eq->e_rvr.rvrRestrictions |= eq_has_sffs_bit;
+          eq->e_rvr.rvrSprintffCount = eq_sff_count;
+          if (tmp.rvrRestrictions & SPART_VARR_CONFLICT)
+            {
+              spar_invalidate_binv_dataset_row (sparp, binv, rowctr, varctr);
+              continue;
+            }
+          if (eq_has_sffs_bit)
+            {
+              int sff_ctr;
+              int hit = 0;
+              caddr_t datum_val = SPAR_LIT_OR_QNAME_VAL (datum);
+              dtp_t datum_val_dtp = DV_TYPE_OF (datum_val);
+              if ((DV_STRING == datum_val_dtp) || (DV_UNAME == datum_val_dtp))
+                {
+                  for (sff_ctr = eq->e_rvr.rvrSprintffCount; sff_ctr--; /* no step */)
+                    {
+                      if (!sprintff_like (datum_val, eq->e_rvr.rvrSprintffs[sff_ctr]))
+                        continue;
+                      fmt_use_counters[sff_ctr] += 1;
+                      hit = 1;
+                    }
+                }
+              if (!hit)
+                {
+                  spar_invalidate_binv_dataset_row (sparp, binv, rowctr, varctr);
+                  continue;
+                }
+            }
+        }
+      if (eq_has_sffs_bit && (0 == binv->_.binv.counters_of_unbound[varctr]))
+        {
+          int sff_ctr;
+          for (sff_ctr = eq->e_rvr.rvrSprintffCount; sff_ctr--; /* no step */)
+            {
+              if (0 != fmt_use_counters[sff_ctr])
+                continue;
+              if (sff_ctr < (eq->e_rvr.rvrSprintffCount-1))
+                eq->e_rvr.rvrSprintffs [sff_ctr] = eq->e_rvr.rvrSprintffs [eq->e_rvr.rvrSprintffCount-1];
+              eq->e_rvr.rvrSprintffCount -= 1;
+            }
+          if (0 == eq->e_rvr.rvrSprintffCount)
+            eq->e_rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
+          if (eq->e_rvr.rvrSprintffCount != var->_.var.rvr.rvrSprintffCount)
+            {
+              sparp_rvr_tighten (sparp, &(var->_.var.rvr), &(eq->e_rvr), ~0);
+              var->_.var.rvr.rvrSprintffCount = eq->e_rvr.rvrSprintffCount;
+              var->_.var.rvr.rvrSprintffs = (ccaddr_t *)t_box_copy ((caddr_t)(eq->e_rvr.rvrSprintffs));
+            }
+        }
+    }
+}
+
+void
+spar_refresh_binv_var_rvrs (sparp_t *sparp, SPART *binv)
+{
+  int varcount, rowcount, varctr, rowctr;
+  if (binv->_.binv.rows_in_use == binv->_.binv.rows_last_rvr)
+    return;
+  binv->_.binv.rows_last_rvr = binv->_.binv.rows_in_use; 
+  varcount = BOX_ELEMENTS (binv->_.binv.vars);
+  if (0 == binv->_.binv.rows_in_use)
+    {
+      for (varctr = varcount; varctr--; /* no step */)
+        binv->_.binv.vars[varctr]->_.var.rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
+      return;
+    }
+  rowcount = BOX_ELEMENTS (binv->_.binv.data_rows);
+  if (1 == binv->_.binv.rows_in_use)
+    {
+      rowctr = strchr (binv->_.binv.data_rows_mask, '/') - binv->_.binv.data_rows_mask;
+      if (0 > rowctr)
+        spar_internal_error (sparp, "No used rows but nonzero counter of them");
+      for (varctr = varcount; varctr--; /* no step */)
+        {
+          SPART *var;
+          SPART *datum;
+          if (binv->_.binv.counters_of_unbound[varctr])
+            continue;
+          var = binv->_.binv.vars[varctr];
+          datum = binv->_.binv.data_rows[rowctr][varctr];
+          sparp_rvr_set_by_constant (sparp, &(var->_.var.rvr), NULL, datum);
+        }
+      return;
+    }
+  for (varctr = varcount; varctr--; /* no step */)
+    {
+      SPART *var;
+      int restr_set = SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_IS_BLANK | SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL;
+      if (binv->_.binv.counters_of_unbound[varctr])
+        continue;
+      var = binv->_.binv.vars[varctr];
+      for (rowctr = rowcount; rowctr--; /* no step */)
+        {
+          SPART *datum;
+          if ('/' != binv->_.binv.data_rows_mask[rowctr])
+            continue;
+          datum = binv->_.binv.data_rows[rowctr][varctr];
+          if (NULL == datum)
+            spar_internal_error (sparp, "NULL datum in BINDINGS col without expected unbounds");
+          switch (SPART_TYPE (datum))
+            {
+            case SPAR_QNAME:
+              restr_set &= ~SPART_VARR_IS_LIT;
+              /*                                 0123456789 */
+              if (!strncmp (datum->_.qname.val, "nodeID://", 9))
+                restr_set &= ~SPART_VARR_IS_IRI;
+              else
+                restr_set &= ~SPART_VARR_IS_BLANK;
+              break;
+            case SPAR_LIT:
+              restr_set &= ~(SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_IS_BLANK);
+              break;
+            }
+        }
+      var->_.var.rvr.rvrRestrictions |= restr_set;
+    }
+}
 
 int
 sparp_check_field_mapping_of_cvalue (sparp_t *sparp, SPART *cvalue, rdf_val_range_t *qmv_or_fmt_rvr, rdf_val_range_t *rvr)
@@ -5720,14 +5973,30 @@ sparp_rewrite_qm_optloop (sparp_t *sparp, int opt_ctr)
     GPF_T1 ("sparp_" "rewrite_qm_optloop () for SQL_FUNCALL");
   if (SPARP_MULTIPLE_OPTLOOPS == opt_ctr)
     {
-      int opt_ctr = 0;
-      while (sparp_rewrite_qm_optloop (sparp, opt_ctr))
+      SPART *binv = sparp->sparp_expr->_.req_top.binv;
+      int old_bindings_len = ((NULL != binv) ? BOX_ELEMENTS (binv->_.binv.data_rows) : -1);
+      int optimization_loop_ctr = 0;
+      int optimization_loop_count = 10 + ((NULL != binv) ? 2 * BOX_ELEMENTS (binv->_.binv.vars) : 0);
+      while (sparp_rewrite_qm_optloop (sparp, optimization_loop_ctr))
         {
-          if (opt_ctr++ < 10)
+          if (0 < old_bindings_len)
+            { /* Shortening BINDINGS table can be arbitrarily long but it can't be infinite so optimization_loop_ctr is left intact */
+              int new_bindings_len = BOX_ELEMENTS (binv->_.binv.data_rows);
+              if (new_bindings_len < old_bindings_len)
+                {
+                  old_bindings_len = new_bindings_len;
+                  continue;
+                }
+            }
+          if (++optimization_loop_ctr < optimization_loop_count)
             continue;
-          spar_internal_error (sparp, "SPARQL optimizer performed 10 rounds of query rewriting, this looks like endless loop. Please rephrase the query.");
+#if 0
+          spar_internal_error (sparp, "SPARQL optimizer performed too many rounds of query rewriting, this looks like endless loop. Please rephrase the query.");
+#else
+          break; /* Now our public endpoints are protected with timeouts, we can try SQL garbage */
+#endif
         }
-      return opt_ctr;
+      return optimization_loop_ctr;
     }
   sparp_equiv_audit_all (sparp, 0);
   sparp->sparp_rewrite_dirty = 0;

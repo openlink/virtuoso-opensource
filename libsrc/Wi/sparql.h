@@ -558,7 +558,7 @@ typedef struct spar_tree_s
         caddr_t iri;
         SPART *expn;
       } graph;
-    struct {
+    struct { /* Note that all first members of \c lit case should match to \c qname case */
         /* #define SPAR_LIT		(ptrlong)1009 */
         caddr_t val;
         caddr_t datatype;
@@ -685,8 +685,12 @@ typedef struct spar_tree_s
     struct {
         /* define SPAR_BINDINGS_INV		(ptrlong)1021 */
         ptrlong own_idx;	/*!< Serial of the bindings invocation in the parser */
-        SPART *vars;		/*!< Names of variables that are passed as parameters */
+        SPART **vars;		/*!< Names of variables that are passed as parameters */
         SPART ***data_rows;	/*!< Rows of data. Note that they're not copied from spare_bindings_rowset and not duplicated if enclosing GP is duplicated. */
+        char *data_rows_mask;	/*!< Characters, one per data row, indicating whether the row is in use (char '/') or not in use due to ban by some cell (char '0' + column index or '\x7f', whatever is less, for debugging) */
+        ptrlong *counters_of_unbound;	/*!< Counters of unbound values in columns (rows not in use are excluded from counting). Cheating: This array is allocated as DV_STRING, not DV_ARRAY_OF_POINTER */
+        ptrlong rows_in_use;	/*!< Count of rows still in use */
+        ptrlong rows_last_rvr;	/*!< Count of rows in use when rvrs were refreshed last time */
       } binv;
     struct {
         /* define SPAR_DEFMACRO			(ptrlong)1022 */
@@ -760,6 +764,7 @@ extern void spart_dump (void *tree_arg, dk_session_t *ses, int indent, const cha
 #define SPAR_LIT_OR_QNAME_VAL(tree) \
   ((DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree)) ? ((caddr_t)(tree)) : \
    ((SPAR_LIT == (tree)->type) || (SPAR_QNAME == (tree)->type)/* || (SPAR_QNAME_NS == tree->type)*/) ? (tree)->_.lit.val : NULL )
+/* Cheating above: (tree)->_.lit.val is used both "as is" and as a replacement of (tree)->_.qname.val */
 
 #define SPART_VARNAME_IS_GLOB(varname) (':' == (varname)[0])
 #define SPART_VARNAME_IS_SPECIAL(varname) ('@' == (varname)[0])
@@ -901,7 +906,7 @@ extern SPART *spar_make_wm (sparp_t *sparp, SPART *pattern, SPART **groupings, S
 /*! Creates SPAR_REQ_TOP tree or a codegen for some special case. A macroexpansion is made before recognizing special cases. */
 extern SPART *spar_make_top_or_special_case_from_wm (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   caddr_t retselid, SPART *wm );
-extern void spar_alloc_fake_equivs_for_bindings_inv (sparp_t *sparp, SPART *binv);
+extern SPART *spar_make_bindings_inv_with_fake_equivs (sparp_t *sparp, SPART **vars, SPART ***data_rows);
 extern SPART **spar_make_sources_like_top (sparp_t *sparp, ptrlong top_subtype);
 extern SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   caddr_t retselid, SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset, SPART *binv);

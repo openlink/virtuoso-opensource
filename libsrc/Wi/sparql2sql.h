@@ -261,8 +261,12 @@ Conflict in datatypes or fixed values results in SPART_VARR_CONFLICT to eliminat
 Returns appropriate SPARP_EQUIV_MERGE_xxx */
 extern int sparp_equiv_merge (sparp_t *sparp, sparp_equiv_t *primary, sparp_equiv_t *secondary);
 
-/* Returns whether two given fixedvalue trees are equal (same language and SQL value, no comparison for datatypes) */
+/*! Returns whether two given fixedvalue trees are equal (same language and SQL value, no comparison for datatypes) */
 extern int sparp_fixedvalues_equal (sparp_t *sparp, SPART *first, SPART *second);
+
+/*! Returns 1 if tightening \c dest by \c add_on might give some effect, 0 if that is proven to be no-op.
+Nonzero \c assume_binv_var_and_eq means special policy for binding variable as \c dest an its equiv as \c add_on */
+extern int rvr_can_be_tightned (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *add_on, int assume_binv_var_and_eq);
 
 /*! Returns whether two given equivs have equal restriction by fixedvalue (and fixedtype).
 If any of two are not restricted or they are restricted by two different values then the function returns zero */
@@ -399,6 +403,15 @@ void sparp_rewrite_retvals (sparp_t *sparp, int safely_copy_retvals);
 extern void sparp_rewrite_basic (sparp_t *sparp);
 
 /* PART 2. GRAPH PATTERN TERM REWRITING */
+
+extern void spar_invalidate_binv_dataset_row (sparp_t *sparp, SPART *binv, int rowno, int reason_col);
+
+/*! Removes data rows from \c binv as soon as they conflict with equivs of variables in any single cell. As a side effect, unused sprintf formats are remvoed from equivs. */
+extern void spar_shorten_binv_dataset (sparp_t *sparp, SPART *binv);
+
+/*! Re-calculates common properties of \c binv variables by values in their data columns. Any UNBOUND in column disables the re-calculation. */
+extern void spar_refresh_binv_var_rvrs (sparp_t *sparp, SPART *binv);
+
 
 extern SPART *sparp_find_gp_by_alias (sparp_t *sparp, caddr_t alias);
 
