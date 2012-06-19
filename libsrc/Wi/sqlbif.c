@@ -8317,7 +8317,7 @@ bif_one_of_these (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   char *me = "one_of_these";
   query_instance_t * qi = (query_instance_t *) qst;
   int n_args = BOX_ELEMENTS (args);
-  caddr_t item = bif_arg (qst, args, 0, me);
+  caddr_t item = bif_arg_unrdf (qst, args, 0, me);
   dtp_t item_dtp = DV_TYPE_OF (item);
   int inx;
   caddr_t value;
