@@ -1246,8 +1246,9 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
   declare rc any;
   declare aq, ps any;
   declare xd, xt any;
-  declare saved_log_mode, only_rdfa, retr_count integer;
+  declare saved_log_mode, only_rdfa, retr_count, rdf_fmt integer;
   aq := null;
+  rdf_fmt := 0;
   ps := virtuoso_ini_item_value ('SPARQL', 'PingService');
   if (length (ps))
     {
@@ -1281,6 +1282,7 @@ retry_after_deadlock:
       if (xpath_eval ('[ xmlns:dv="http://www.w3.org/2003/g/data-view#" ] /*[1]/@dv:transformation', xt) is not null)
 	goto load_grddl;
       DB.DBA.RDF_LOAD_RDFXML (ret_body, base, coalesce (dest, graph_iri));
+      rdf_fmt := 1;
       if (groupdest is not null)
         DB.DBA.RDF_LOAD_RDFXML (ret_body, base, groupdest);
       if (exists (select 1 from DB.DBA.SYS_RDF_MAPPERS where RM_TYPE = 'URL' and regexp_match (RM_PATTERN, new_origin_uri) and RM_ENABLED = 1))
@@ -1309,6 +1311,7 @@ retry_after_deadlock:
       --if (dest is null)
       --  DB.DBA.SPARUL_CLEAR (coalesce (dest, graph_iri), 1);
       DB.DBA.TTLP (ret_body, base, coalesce (dest, graph_iri), 255);
+      rdf_fmt := 1;
       if (groupdest is not null)
         DB.DBA.TTLP (ret_body, base, groupdest);
       if (exists (select 1 from DB.DBA.SYS_RDF_MAPPERS where RM_TYPE = 'URL' and regexp_match (RM_PATTERN, new_origin_uri) and RM_ENABLED = 1))
@@ -1325,6 +1328,7 @@ retry_after_deadlock:
       whenever sqlstate '*' goto load_grddl;
       --log_enable (2, 1);
       DB.DBA.RDF_LOAD_XHTML_MICRODATA (ret_body, base, coalesce (dest, graph_iri));
+      rdf_fmt := 1;
       if (groupdest is not null and groupdest <> coalesce (dest, graph_iri))
 	DB.DBA.RDF_LOAD_XHTML_MICRODATA (ret_body, base, groupdest);
       --log_enable (saved_log_mode, 1);
@@ -1337,6 +1341,7 @@ retry_after_deadlock:
       whenever sqlstate '*' goto load_grddl;
       --log_enable (2, 1);
       DB.DBA.RDF_LOAD_RDFA (ret_body, base, coalesce (dest, graph_iri));
+      rdf_fmt := 1;
       if (groupdest is not null and groupdest <> coalesce (dest, graph_iri))
 	DB.DBA.RDF_LOAD_RDFA (ret_body, base, groupdest);
       --log_enable (saved_log_mode, 1);
@@ -1447,6 +1452,10 @@ load_grddl:;
   --      DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, groupdest);
   --    return 1;
   --  }
+  
+  if (rdf_fmt) -- even cartridges didn't extracted anything more, the rdf is already loaded
+    return 1; 
+
   if ((dest is null) and (get_soft is null or (get_soft <> 'add')))
     {
       DB.DBA.SPARUL_CLEAR (graph_iri, 1, 0);
