@@ -4567,6 +4567,33 @@ create procedure ODS.ODS_API."user.certificates.list" () __soap_http 'applicatio
 }
 ;
 
+create procedure ODS.ODS_API."user.instances.list" () __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare _u_id integer;
+  declare retValue any;
+
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+
+  retValue := (select 
+  	xmlelement ('result', 
+	  	xmlagg (
+		  	xmlelement ('instance', 
+			xmlelement ('id', WAI_ID), 
+			xmlelement ('name', WAI_NAME), 
+			xmlelement ('type', DB.DBA.wa_type_to_app (WAI_TYPE_NAME)), 
+			xmlelement ('member_type', WAM_MEMBER_TYPE)))) 
+	from DB.DBA.WA_MEMBER, DB.DBA.WA_INSTANCE where WAM_INST = WAI_NAME and WAM_USER = _u_id);
+  return serialize_to_UTF8_xml (retValue);
+}
+;
+
 create procedure ODS.ODS_API."user.certificates.get" (
   in id integer) __soap_http 'application/json'
 {
@@ -6040,6 +6067,7 @@ grant execute on ODS.ODS_API."user.knows.get" to ODS_API;
 grant execute on ODS.ODS_API."user.knows.new" to ODS_API;
 grant execute on ODS.ODS_API."user.knows.edit" to ODS_API;
 grant execute on ODS.ODS_API."user.knows.delete" to ODS_API;
+grant execute on ODS.ODS_API."user.instances.list" to ODS_API;
 grant execute on ODS.ODS_API."user.certificates.list" to ODS_API;
 grant execute on ODS.ODS_API."user.certificates.get" to ODS_API;
 grant execute on ODS.ODS_API."user.certificates.new" to ODS_API;

@@ -461,19 +461,25 @@ create procedure WEBID_AUTH_GEN_2 (
   declare stat, msg, meta, data, info, qr, hf, graph, fing, gr, modulus, alts, dummy any;
   declare agent varchar;
   declare acc int;
-  declare ret_code, done, is_di int;
+  declare ret_code, done, is_di, deadl int;
   declare agents, di_arr, dgst, dhash, fing_b64u any;
   declare valid_from, valid_to datetime;
 
+again:  
   ret_code := 0;
   acc := 0;
   done := 0;
   is_di := 0;
   ag := null;
+  deadl := 0;
   validation_type := null;
   declare exit handler for sqlstate '*'
     {
       rollback work;
+      deadl := deadl + 1;
+      if (__SQL_STATE = '40001' and deadl < 10)
+	goto again;
+      --log_message (sprintf ('webid main %s %s', cast (__SQL_STATE as varchar), cast (__SQL_MESSAGE as varchar)));
       goto ret;
     }
   ;
@@ -526,12 +532,26 @@ create procedure WEBID_AUTH_GEN_2 (
       graph := DB.DBA.vspx_uri_compose (hf);
       qr := sprintf ('sparql define get:soft "add" define get:uri <%S> select count(*) from <%S> { ?s ?p ?o }', graph, gr);
       stat := '00000';
-      exec (qr, stat, msg);
+      exec (qr, stat, msg, vector (), 0, meta, data);
+      if (stat = '40001')
+	{
+	  deadl := deadl + 1;
+	  goto again;
+	}
+      --if (stat <> '00000')
+	--log_message (sprintf ('webid load %s %s %s', cast (stat as varchar), cast (msg as varchar), sys_sql_val_print (data)));
       commit work;
       qr := FOAF_SSL_QR (gr, agent);    
       stat := '00000';
     --  dbg_printf ('%s', qr);
       exec (qr, stat, msg, vector (), 0, meta, data);
+      if (stat = '40001')
+	{
+	  deadl := deadl + 1;
+	  goto again;
+	}
+      --if (stat <> '00000')
+	--log_message (sprintf ('webid exec %s %s', cast (stat as varchar), cast (msg as varchar)));
       validation_type := 0;
       again_check:; 
       if (stat = '00000' and length (data))

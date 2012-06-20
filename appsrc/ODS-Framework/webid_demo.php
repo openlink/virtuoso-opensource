@@ -74,6 +74,10 @@
     {
       $_url = getRequest (sprintf ("%s/getDefaultHttps", apiURL()));
       $_url = sprintf ('https://%s/ods/webid_verify.vsp?callback=%s', $_url, urlencode(httpURL()));
+      $_expiration = isset ($_REQUEST['expiration']) ? $_REQUEST['expiration'] : '';
+      if ($_expiration == 'true')
+        $_url .= '&expiration=true';
+
       header (sprintf ('Location: %s', $_url));
       return;
     }
@@ -121,10 +125,14 @@
       	<li>* <b>mailto</b>, e.g: <span style="font-size: 80%; color: #1DA237;">mailto:ExampleUser@id.example.com</span></li>
       </ul>
     </div>
+    <div>
+    	<a href="http://ods.openlinksw.com/wiki/ODS/ODSWebIDIdP">Help</a>
+    </div>
     <br/>
     <br/>
     <div>
       <form method="get">
+	      <input type="checkbox" value="true" name="expiration" id="expiration" />  <label for="expiration">Check Certificate Expiration</label><br />
         <input type="submit" name="go" value="Check"/>
       </form>
     </div>

@@ -152,6 +152,9 @@ html:
       	<li>* <b>acct</b>, for e.g: <span style="font-size: 80%; color: #1DA237;">acct:ExampleUser@id.example.com</span></li>
       </ul>
     </div>
+    <div>
+    	<a href="http://ods.openlinksw.com/wiki/ODS/ODSWebIDIdP">Help</a>
+    </div>
     <br/>
     <br/>
     <div>
@@ -162,6 +165,13 @@ html:
     <textarea name="certificate" rows="20" cols="80"></textarea><br/>
     <input type="submit" name="go" value="Verify"/>
     </form>
+    </div>
+    <div>
+	Input parameters:
+	<ul>
+	  <li>callback: return callback URL (mandatory)</li>
+	  <li>certificate: X.509 certificate (optional)</li>
+	</ul>
     </div>
     <div>
 	The return values are:

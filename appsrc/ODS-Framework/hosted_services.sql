@@ -672,6 +672,45 @@ create procedure wa_aci_lines (
 ;
 
 wa_exec_no_error_log(
+'create table WA_PRIVATE_GRAPHS
+ (
+   WAPG_GRAPH varchar,
+   WAPG_TYPE varchar,
+   WAPG_ID any,
+   WAPG_ID2 any,
+
+   primary key (WAPG_GRAPH, WAPG_TYPE, WAPG_ID, WAPG_ID2)
+ )'
+)
+;
+
+create procedure wa_private_graph_add (
+  in _graph varchar,
+  in _type varchar,
+  in _id any,
+  in _id2 any := 0)
+{
+  insert soft WA_PRIVATE_GRAPHS (WAPG_GRAPH, WAPG_TYPE, WAPG_ID, WAPG_ID2)
+    values (_graph, _type, _id, _id2);
+}
+;
+
+create procedure wa_private_graph_remove (
+  in _graph varchar,
+  in _type varchar,
+  in _id any,
+  in _id2 any := 0)
+{
+  delete
+    from WA_PRIVATE_GRAPHS
+   where WAPG_GRAPH = _graph
+     and WAPG_TYPE = _type
+     and WAPG_ID = _id
+     and WAPG_ID2 = _id2;
+}
+;
+
+wa_exec_no_error_log (
 'create table WA_INVITATIONS
  (
    WI_U_ID     int,		-- U_ID

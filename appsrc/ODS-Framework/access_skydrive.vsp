@@ -14,7 +14,6 @@
     _body := sprintf ('code=%U&client_id=%U&client_secret=%U&redirect_uri=%U&grant_type=%U', _code, _client_id, _client_secret, _return_url, 'authorization_code');
     _retValue := http_client (url=>_url, http_method=>'POST', http_headers=>_reqHeader, body=>_body, n_redirects=>15);
     _json := replace (_retValue, '\n', '\\n');
-    dbg_obj_print ('0', _retValue);
 
     -- get owner info
     _params := subseq (ODS..json2obj (_retValue), 2);
