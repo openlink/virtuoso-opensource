@@ -1143,7 +1143,7 @@ create function DB.DBA.GDrive__paramGet (
   if (_prefixed)
     _propName := 'virt:GDrive-' || _propName;
 
-  propValue := DB.DBA.DAV_PROP_GET_INT (DB.DBA.GDrive__davId (_id), _what, _propName, 0);
+  propValue := DB.DBA.DAV_PROP_GET_INT (DB.DBA.GDrive__davId (_id), _what, _propName, 0, DB.DBA.Dropbox__user (http_dav_uid ()), DB.DBA.Dropbox__password (http_dav_uid ()), http_dav_uid ());
   if (isinteger (propValue))
     propValue := null;
 
@@ -1561,7 +1561,7 @@ create function DB.DBA.GDrive__rdf_insert (
   in rdf_graph varchar := null)
 {
   -- dbg_obj_princ ('DB.DBA.GDrive__rdf_insert (', detcol_id, id, what, rdf_graph, ')');
-  declare rdf_graph2 varchar;
+  declare permissions, rdf_graph2 varchar;
   declare rdf_sponger, rdf_cartridges, rdf_metaCartridges any;
   declare path, content, type any;
   declare exit handler for sqlstate '*'
@@ -1574,6 +1574,14 @@ create function DB.DBA.GDrive__rdf_insert (
 
   if (DB.DBA.is_empty_or_null (rdf_graph))
     return;
+
+  permissions := DB.DBA.GDrive__paramGet (detcol_id, 'C', ':virtpermissions', 0, 0);
+  if (permissions[6] = ascii('0'))
+  {
+    -- add to private graphs
+    if (not SIOC..private_graph_check (rdf_graph))
+      return;
+  }
 
   id := DB.DBA.GDrive__davId (id);
   path := DB.DBA.DAV_SEARCH_PATH (id, what);

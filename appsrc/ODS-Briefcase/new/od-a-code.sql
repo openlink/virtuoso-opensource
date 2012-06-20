@@ -4412,7 +4412,7 @@ create procedure ODRIVE.WA.send_mail (
 
     _id := DB.DBA.DAV_SEARCH_ID (_path, _what);
     _body := replace (_body, '%resource_path%', _path);
-    if (isarray (_id) and (cast (_id[0] as varchar) in ('GDrive', 'Dropbox', 'SkyDrive')))
+    if (isarray (_id) and (cast (_id[0] as varchar) in ('GDrive', 'Dropbox', 'SkyDrive', 'Box')))
         _id := _id[2];
 
       if (not isarray (_id))
@@ -4560,7 +4560,7 @@ create procedure ODRIVE.WA.aci_load (
 
   what := case when (path[length (path)-1] <> ascii('/')) then 'R' else 'C' end;
   id := DB.DBA.DAV_SEARCH_ID (path, what);
-  if (isarray (id) and (cast (id[0] as varchar) not in ('GDrive', 'Dropbox', 'SkyDrive')))
+  if (isarray (id) and (cast (id[0] as varchar) not in ('GDrive', 'Dropbox', 'SkyDrive', 'Box')))
   {
     retValue := ODRIVE.WA.DAV_PROP_GET (path, 'virt:aci_meta');
     if (ODRIVE.WA.DAV_ERROR (retValue))
@@ -4675,7 +4675,7 @@ create procedure ODRIVE.WA.aci_save (
 
   what := case when (path[length (path)-1] <> ascii('/')) then 'R' else 'C' end;
   id := DB.DBA.DAV_SEARCH_ID (path, what);
-  if (isarray (id) and (cast (id[0] as varchar) not in ('GDrive', 'Dropbox', 'SkyDrive')))
+  if (isarray (id) and (cast (id[0] as varchar) not in ('GDrive', 'Dropbox', 'SkyDrive', 'Box')))
     retValue := ODRIVE.WA.DAV_PROP_SET (path, 'virt:aci_meta', aci);
 
   else
@@ -4952,6 +4952,49 @@ create procedure ODRIVE.WA.metaCartridges_get ()
 
 -------------------------------------------------------------------------------
 --
+create procedure ODRIVE.WA.graph_private_remove (
+  in path varchar,
+  in what varchar,
+  in graph varchar)
+{
+  -- remove from private graphs
+  if (not DB.DBA.is_empty_or_null (graph))
+  {
+    SIOC..private_graph_remove (graph);
+    DB.DBA.wa_private_graph_remove (graph, 'WebDAV', path, what);
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.graph_private_add (
+  in path varchar,
+  in what varchar,
+  in permissions varchar,
+  in graph varchar)
+{
+  if (not DB.DBA.is_empty_or_null (graph))
+  {
+    if (permissions[6] = ascii('0'))
+    {
+      -- add to private graphs
+      SIOC..private_init ();
+      SIOC..private_graph_add (graph);
+      DB.DBA.wa_private_graph_add (graph, 'WebDAV', path, what);
+    }
+    else
+    {
+      -- remove from private graphs
+      SIOC..private_graph_remove (graph);
+      DB.DBA.wa_private_graph_remove (graph, 'WebDAV', path, what);
+    }
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODRIVE.WA.graph_update (
   in path varchar,
   in det varchar,
@@ -4994,3 +5037,16 @@ create procedure ODRIVE.WA.graph_update_aq (
 }
 ;
 
+-------------------------------------------------------------------------------
+--
+create function DB.DBA.SPARQL_GS_APP_CALLBACK_ODS (
+  in g_iid IRI_ID,
+  in app_uid varchar := null) returns integer
+{
+  dbg_obj_princ ('DB.DBA.SPARQL_GS_APP_CALLBACK_ODS (', id_to_iri (g_iid), ')');
+
+  return 255;
+}
+;
+
+grant execute on DB.DBA.SPARQL_GS_APP_CALLBACK_ODS to public;

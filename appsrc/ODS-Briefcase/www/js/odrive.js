@@ -437,7 +437,7 @@ function chkbx(bx1, bx2)
 
 function updateLabel(value)
 {
-  hideLabel(4, 14);
+  hideLabel(4, 15);
   if (value == 'oMail')
     showLabel(4, 4);
   else if (value == 'PropFilter')
@@ -460,6 +460,8 @@ function updateLabel(value)
     showLabel(13, 13);
   else if (value == 'SkyDrive')
     showLabel(14, 14);
+  else if (value == 'Box')
+    showLabel(15, 15);
 }
 
 function showLabel(from, to)
@@ -1676,4 +1678,15 @@ ODRIVE.skydriveParams = function (json, display_name)
     $('td_dav_SkyDrive_display_name').innerHTML = display_name;
     $('dav_SkyDrive_authenticate').value = 'Re-Authenticate';
   }
+}
+
+ODRIVE.boxParams = function (auth_token, display_name)
+{
+  createHidden('F1', 'dav_Box_authentication', 'Yes');
+  createHidden('F1', 'dav_Box_auth_token', auth_token);
+  createHidden('F1', 'dav_Box_display_name', display_name);
+
+  OAT.Dom.show('tr_dav_Box_display_name');
+  $('td_dav_Box_display_name').innerHTML = display_name;
+  $('dav_Box_authenticate').value = 'Re-Authenticate';
 }

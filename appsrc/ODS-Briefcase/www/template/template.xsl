@@ -1462,6 +1462,7 @@
             <?vsp
               declare _name, _client_id, _return_url, _scope, _url any;
 
+              _name := '';
               if (_value = 'No')
                 _name := 'Authenticate';
               if (_value = 'Yes')
@@ -1627,6 +1628,7 @@
             <?vsp
               declare _name, _url any;
 
+              _name := '';
               if (_value = 'No')
                 _name := 'Authenticate';
               if (_value = 'Yes')
@@ -1781,6 +1783,7 @@
             <?vsp
               declare _name, _client_id, _return_url, _scope, _url any;
 
+              _name := '';
               if (_value = 'No')
                 _name := 'Authenticate';
               if (_value = 'Yes')
@@ -1798,6 +1801,161 @@
       <![CDATA[
   	    <script type="text/javascript">
           OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('dav_SkyDrive_sponger'), {checked: {show: ['dav14_cartridge', 'dav14_metaCartridge']}})});
+  	    </script>
+  	  ]]>
+    </div>
+  </xsl:template>
+
+  <!--=========================================================================-->
+  <xsl:template match="vm:search-dc-template16">
+    <div id="15" class="tabContent" style="display: none;">
+      <?vsp
+        declare _value any;
+
+        _value := self.get_fieldProperty ('===', self.dav_path, 'virt:Box-Authentication', 'No');
+      ?>
+      <table class="form-body" cellspacing="0">
+        <tr>
+          <th width="30%">
+            <v:label for="dav_Box_activity" value="--'Activity manager (on/off)'" />
+          </th>
+          <td>
+            <?vsp
+              declare S varchar;
+
+              S := self.get_fieldProperty ('dav_Box_activity', self.dav_path, 'virt:Box-activity', 'off');
+              http (sprintf ('<input type="checkbox" name="dav_Box_activity" id="dav_Box_activity" %s disabled="disabled" value="on" />', case when S = 'on' then 'checked="checked"' else '' end));
+            ?>
+          </td>
+        </tr>
+        <tr>
+          <th>
+            <v:label for="dav_Box_graph" value="--'Graph name'" />
+          </th>
+          <td>
+            <v:text name="dav_Box_graph" xhtml_id="dav_Box_graph" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_value := self.get_fieldProperty ('dav_Box_graph', self.dav_path, 'virt:Box-graph', '');
+                  if ((control.ufl_value = '') and (self.command = 0))
+                    control.ufl_value := ODRIVE.WA.host_url () || rtrim (WS.WS.FIXPATH (ODRIVE.WA.odrive_real_path (self.dav_path)), '/') || '#this';
+                ]]>
+              </v:before-data-bind>
+            </v:text>
+          </td>
+        </tr>
+        <tr>
+          <th>
+            <v:label for="dav_Box_sponger" value="--'Sponger (on/off)'" />
+          </th>
+          <td>
+            <?vsp
+              declare S varchar;
+
+              S := self.get_fieldProperty ('dav_Box_sponger', self.dav_path, 'virt:Box-sponger', 'off');
+              http (sprintf ('<input type="checkbox" name="dav_Box_sponger" id="dav_Box_sponger" %s disabled="disabled" onchange="javascript: destinationChange(this, {checked: {show: [\'dav15_cartridge\', \'dav15_metaCartridge\']}, unchecked: {hide: [\'dav15_cartridge\', \'dav15_metaCartridge\']}});" value="on" />', case when S = 'on' then 'checked="checked"' else '' end));
+            ?>
+          </td>
+        </tr>
+        <tr id="dav15_cartridge" style="display: none;">
+          <th valign="top">Sponger Extractor Cartridges</th>
+          <td>
+            <div style="margin-bottom: 6px; max-height: 200px; overflow: auto;">
+              <?vsp
+                declare N integer;
+                declare cartridges, selectedCartridges any;
+
+                selectedCartridges := self.get_fieldProperty ('dav_Box_cartridges', self.dav_path, 'virt:Box-cartridges', '');
+                selectedCartridges := split_and_decode (selectedCartridges, 0, '\0\0,');
+                cartridges := ODRIVE.WA.cartridges_get ();
+              ?>
+              <table id="ca15_tbl" class="ODS_grid" cellspacing="0">
+                <thead>
+                  <tr>
+                    <th><input type="checkbox" name="ca15_select" value="Select All" onclick="selectAllCheckboxes (this, 'ca15_item', true)" title="Select All" /></th>
+                    <th width="100%">Cartridge</th>
+                  </tr>
+                </thead>
+                <?vsp
+                  for (N := 0; N < length (cartridges); N := N + 1)
+                  {
+                    http ('<tr>');
+                    http (sprintf ('<td class="checkbox"><input type="checkbox" name="ca15_item" value="%d" disabled="disabled" %s /></td>', cartridges[N][0], case when ODRIVE.WA.vector_contains (selectedCartridges, cast (cartridges[N][0] as varchar)) then 'checked="checked"' else '' end));
+                    http (sprintf ('<td>%V</td>', cartridges[N][1]));
+                    http ('</tr>');
+                  }
+                  if (length (cartridges) = 0)
+                    http ('<tr><td colspan="2"><b>No available cartridges</b></td></tr>');
+                ?>
+              </table>
+            </div>
+          </td>
+        </tr>
+        <vm:if test="DB.DBA.wa_check_package ('cartridges')">
+          <tr id="dav15_metaCartridge" style="display: none;">
+            <th valign="top">Sponger Meta Cartridges</th>
+            <td>
+              <div style="margin-bottom: 6px; max-height: 200px; overflow: auto;">
+                <?vsp
+                  declare N integer;
+                  declare cartridges, selectedCartridges any;
+
+                  selectedCartridges := self.get_fieldProperty ('dav_Box_metaCartridges', self.dav_path, 'virt:Box-metaCartridges', '');
+                  selectedCartridges := split_and_decode (selectedCartridges, 0, '\0\0,');
+                  cartridges := ODRIVE.WA.metaCartridges_get ();
+                ?>
+                <table id="mca15_tbl" class="ODS_grid" cellspacing="0">
+                  <thead>
+                    <tr>
+                      <th><input type="checkbox" name="mca15_select" value="Select All" onclick="selectAllCheckboxes (this, 'mca15_item', true)" title="Select All" /></th>
+                      <th width="100%">Meta Cartridge</th>
+                    </tr>
+                  </thead>
+                  <?vsp
+                    for (N := 0; N < length (cartridges); N := N + 1)
+                    {
+                      http ('<tr>');
+                      http (sprintf ('<td class="checkbox"><input type="checkbox" name="mca15_item" value="%d" disabled="disabled" %s /></td>', cartridges[N][0], case when ODRIVE.WA.vector_contains (selectedCartridges, cast (cartridges[N][0] as varchar)) then 'checked="checked"' else '' end));
+                      http (sprintf ('<td>%V</td>', cartridges[N][1]));
+                      http ('</tr>');
+                    }
+                    if (length (cartridges) = 0)
+                      http ('<tr><td colspan="2"><b>No available cartridges</b></td></tr>');
+                  ?>
+                </table>
+              </div>
+            </td>
+          </tr>
+        </vm:if>
+        <tr id="tr_dav_Box_display_name" style="display: <?V case when _value = 'Yes' then '' else 'none' end ?>">
+          <th>User name</th>
+          <td id="td_dav_Box_display_name">
+            <?vsp
+              http (self.get_fieldProperty ('===', self.dav_path, 'virt:Box-display_name', ''));
+            ?>
+          </td>
+        </tr>
+        <tr>
+          <th></th>
+          <td>
+            <?vsp
+              declare _name, _url any;
+
+              _name := '';
+              if (_value = 'No')
+                _name := 'Authenticate';
+              if (_value = 'Yes')
+                _name := 'Re-Authenticate';
+
+              _url := '/ods/access_box.vsp';
+              http (sprintf ('<input type="button" id="dav_Box_authenticate" value="%s" onclick="javascript: windowShowInternal(\'%s\', \'Box.com access\', 800);" disabled="disabled" class="button" />', _name, _url));
+            ?>
+          </td>
+        </tr>
+      </table>
+      <![CDATA[
+  	    <script type="text/javascript">
+          OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('dav_Box_sponger'), {checked: {show: ['dav15_cartridge', 'dav15_metaCartridge']}})});
   	    </script>
   	  ]]>
     </div>

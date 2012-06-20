@@ -452,7 +452,8 @@ create function "SkyDrive_DAV_DIR_LIST" (
         listID := DB.DBA.SkyDrive__paramGet (davItem[4], davItem[1], 'id', 0);
         foreach (any listItem in listItems) do
         {
-          if (listID = get_keyword ('id', listItem))
+          title := get_keyword ('name', listItem);
+          if ((listID = get_keyword ('id', listItem)) and (title = davItem[10]))
           {
             davEntry := DB.DBA.SkyDrive__paramGet (davItem[4], davItem[1], 'Entry', 0);
             if (davEntry is not null)
@@ -1026,7 +1027,7 @@ create function DB.DBA.SkyDrive__paramGet (
   if (_prefixed)
     _propName := 'virt:SkyDrive-' || _propName;
 
-  propValue := DB.DBA.DAV_PROP_GET_INT (DB.DBA.SkyDrive__davId (_id), _what, _propName, 0);
+  propValue := DB.DBA.DAV_PROP_GET_INT (DB.DBA.SkyDrive__davId (_id), _what, _propName, 0, DB.DBA.Dropbox__user (http_dav_uid ()), DB.DBA.Dropbox__password (http_dav_uid ()), http_dav_uid ());
   if (isinteger (propValue))
     propValue := null;
 
@@ -1445,7 +1446,7 @@ create function DB.DBA.SkyDrive__rdf_insert (
   in rdf_graph varchar := null)
 {
   -- dbg_obj_princ ('DB.DBA.SkyDrive__rdf_insert (', detcol_id, id, what, rdf_graph, ')');
-  declare rdf_graph2 varchar;
+  declare permissions, rdf_graph2 varchar;
   declare rdf_sponger, rdf_cartridges, rdf_metaCartridges any;
   declare path, content, type any;
   declare exit handler for sqlstate '*'
@@ -1458,6 +1459,14 @@ create function DB.DBA.SkyDrive__rdf_insert (
 
   if (DB.DBA.is_empty_or_null (rdf_graph))
     return;
+
+  permissions := DB.DBA.SkyDrive__paramGet (detcol_id, 'C', ':virtpermissions', 0, 0);
+  if (permissions[6] = ascii('0'))
+  {
+    -- add to private graphs
+    if (not SIOC..private_graph_check (rdf_graph))
+      return;
+  }
 
   id := DB.DBA.SkyDrive__davId (id);
   path := DB.DBA.DAV_SEARCH_PATH (id, what);
