@@ -2054,19 +2054,21 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 
   if (0 != strncmp (code, "HTTP/1.1 2", 10) && 0 != strncmp (code, "HTTP/1.1 3", 10) && ws->ws_proto_no < 11)
     ws->ws_try_pipeline = 0;
-  snprintf (tmp, sizeof (tmp), "%.1000s\r\nServer: %.1000s\r\nConnection: %s\r\n",
-	   code,
-	   http_server_id_string,
-	   ws->ws_try_pipeline ? "Keep-Alive" : "close");
 
   memset (&gzctx, 0, sizeof (strses_chunked_out_t));
 
   CATCH_WRITE_FAIL (ws->ws_session)
     {
+      snprintf (tmp, sizeof (tmp), "%.1000s\r\nServer: %.1000s\r\n", code, http_server_id_string);
       SES_PRINT (ws->ws_session, tmp); /* server signature */
+      if (ws->ws_status_code != 101)
+	{
+	  snprintf (tmp, sizeof (tmp), "Connection: %s\r\n", ws->ws_try_pipeline ? "Keep-Alive" : "close");
+	  SES_PRINT (ws->ws_session, tmp);
+	}
 /*      fprintf (stdout, "\nREPLY-----\n%s", tmp); */
       /* mime type */
-      if (!ws->ws_header || (NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Content-Type:")))
+      if (ws->ws_status_code != 101 && (!ws->ws_header || (NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Content-Type:"))))
 	{
 #ifdef BIF_XML
 	  if (media_type)
@@ -2133,6 +2135,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 	    SES_PRINT (ws->ws_session, tmp);
 	}
 
+      if (ws->ws_status_code != 101)
       SES_PRINT (ws->ws_session, "Accept-Ranges: bytes\r\n");
 
       if (ws->ws_header) /* user-defined headers */
@@ -2148,7 +2151,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 	  snprintf (tmp, sizeof (tmp), "Transfer-Encoding: chunked\r\nContent-Encoding: gzip\r\n");
 	  SES_PRINT (ws->ws_session, tmp);
 	}
-      else if (!ws->ws_header || (NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Content-Length:"))) /* plain body */
+      else if (ws->ws_status_code != 101 && (!ws->ws_header || (NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Content-Length:")))) /* plain body */
 	{
 	  snprintf (tmp, sizeof (tmp), "Content-Length: %ld\r\n", len);
 	  SES_PRINT (ws->ws_session, tmp);
@@ -7361,7 +7364,7 @@ bif_http_flush (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       if (ws->ws_xslt_url)
 	sqlr_new_error ("42000", "HT071", "Direct output and http_xslt() not compatible");
-      if (ws->ws_header &&
+      if (ws->ws_header && ws->ws_status_code != 101 &&
 	  NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Content-Length:"))
 	sqlr_new_error ("42000", "HT072", "Direct output requires Content-Length specified by http_header()");
     }
@@ -10002,6 +10005,13 @@ bif_http_on_message (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         conn[0] = NULL;
       else
 	ses = NULL;
+      mutex_enter (thread_mtx);
+      if (ws && ses && ses == ws->ws_session)
+	{
+	  ws->ws_session->dks_ws_status = DKS_WS_CACHED;
+	  ws->ws_session->dks_n_threads++;
+	}
+      mutex_leave (thread_mtx);
     }
   else if (ws && ws->ws_session)
     {

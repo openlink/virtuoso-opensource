@@ -3872,6 +3872,7 @@ ws_http_error_header (int code)
       case 503: ret = "Service Unavailable"; break;
       case 504: ret = "Gateway Timeout"; break;
       case 505: ret = "HTTP Version Not Supported"; break;
+      case 509: ret = "Bandwidth Limit Exceeded"; break;
       default:
 		code = 500;
 		ret = "Internal Server Error";
