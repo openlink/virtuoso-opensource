@@ -136,6 +136,7 @@ typedef struct ws_connection_s
     SSL_CTX *		ws_ssl_ctx;
 #endif
     char  		ws_options[HTTP_MAX_METHOD];
+    char		ws_limited;
   } ws_connection_t;
 
 #define WS_CHARSET(ws, qst) \

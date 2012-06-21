@@ -1678,6 +1678,7 @@ ws_clear (ws_connection_t * ws, int error_cleanup)
   dk_free_tree (ws->ws_store_in_cache);
   ws->ws_store_in_cache = NULL;
   ws->ws_proxy_request = 0;
+  ws->ws_limited = 0;
   http_set_default_options (ws);
 #ifdef _SSL
   ws->ws_ssl_ctx = NULL;
@@ -5205,6 +5206,33 @@ again:
   dk_set_free (killed);
   LEAVE_TXN;
   return NULL;
+}
+
+int32 http_limited;
+
+caddr_t
+bif_http_limited (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t * qi = (query_instance_t *) qst;
+  ws_connection_t * ws;
+  long limited = 0;
+
+  if (!qi->qi_client->cli_ws)
+    sqlr_new_error ("42000", "HT010", "This function is only allowed processing a HTTP request");
+  ws = qi->qi_client->cli_ws;
+  IN_TXN;
+  DO_SET (lock_trx_t *, lt, &all_trxs)
+    {
+      if (lt->lt_client && lt->lt_client->cli_ws && lt->lt_client->cli_ws->ws_limited)
+	limited ++;
+    }
+  END_DO_SET ();
+  LEAVE_TXN;
+  if (limited < http_limited)
+    ws->ws_limited = 1;
+  else
+    sqlr_new_error ("42000", "HTLIM", "The use of restricted HTTP threads is over the limit");
+  return box_num (limited);
 }
 
 caddr_t
@@ -10309,6 +10337,7 @@ http_init_part_one ()
   bif_define("http_flush", bif_http_flush);
   bif_define ("http_pending_req", bif_http_pending_req);
   bif_define ("http_kill", bif_http_kill);
+  bif_define ("http_limited", bif_http_limited);
   bif_define ("http_lock", bif_http_lock);
   bif_define ("http_unlock", bif_http_unlock);
   bif_define ("http_request_header", bif_http_request_header);
@@ -10710,6 +10739,8 @@ http_init_part_two ()
 #endif
 
   http_threads_allocate (http_threads);
+  if (!http_limited)
+    http_limited = http_threads;
 
   PrpcCheckIn (listening);
   dks_housekeeping_session_count_change (1);

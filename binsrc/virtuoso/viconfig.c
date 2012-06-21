@@ -156,6 +156,7 @@ extern char * http_client_id_string;
 extern char * http_soap_client_id_string;
 extern long http_ses_trap;
 extern int http_check_rdf_accept;
+extern int32 http_limited;
 
 extern int vd_use_mts;
 
@@ -1290,6 +1291,9 @@ cfg_setup (void)
 
   if (c_http_threads < 1 && c_http_port)
     c_http_threads = 1;
+
+  if (cfg_getlong (pconfig, section, "MaxRestrictedThreads", &http_limited) == -1)
+    http_limited = c_http_threads;
 
   if (cfg_getlong (pconfig, section,
        "MaxKeepAlives",
