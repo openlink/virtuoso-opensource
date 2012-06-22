@@ -5227,10 +5227,11 @@ bif_http_limited (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	limited ++;
     }
   END_DO_SET ();
-  LEAVE_TXN;
   if (limited < http_limited)
-    ws->ws_limited = 1;
-  else
+    ws->ws_limited = 1; /* must be set inside txn mtx */
+  LEAVE_TXN;
+
+  if (limited >= http_limited)
     sqlr_new_error ("42000", "HTLIM", "The use of restricted HTTP threads is over the limit");
   return box_num (limited);
 }
