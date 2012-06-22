@@ -223,6 +223,7 @@ extern char * http_port;
 extern char * https_port;
 extern char * https_cert;
 extern char * https_key;
+extern char * https_extra;
 extern int32 https_client_verify;
 extern int32 https_client_verify_depth;
 extern char * https_client_verify_file;

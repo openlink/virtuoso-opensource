@@ -39,6 +39,7 @@ char * http_port;
 char * https_port;
 char * https_cert;
 char * https_key;
+char * https_extra;
 int32 https_client_verify = 0;
 int32 https_client_verify_depth = 0;
 char * https_client_verify_file = NULL;

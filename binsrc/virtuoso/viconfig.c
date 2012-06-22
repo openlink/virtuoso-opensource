@@ -119,6 +119,7 @@ extern int32 log_proc_overwrite;
 extern char *https_port;
 extern char *https_cert;
 extern char *https_key;
+extern char *https_extra;
 extern int32 https_client_verify;
 extern int32 https_client_verify_depth;
 extern char * https_client_verify_file;
@@ -1272,6 +1273,9 @@ cfg_setup (void)
 
   if (cfg_getstring (pconfig, section, "SSLCertificate", &c_https_cert) == -1)
     c_https_cert = NULL;
+
+  if (cfg_getstring (pconfig, section, "SSLExtraChainCertificate", &https_extra) == -1)
+      https_extra = NULL;
 
   if (cfg_getstring (pconfig, section, "SSLPrivateKey", &c_https_key) == -1)
     c_https_key = NULL;

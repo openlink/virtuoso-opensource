@@ -8268,7 +8268,7 @@ https_cert_verify_callback (int ok, void *_ctx)
 }
 
 int
-ssl_server_set_certificate (SSL_CTX* ssl_ctx, char * cert_name, char * key_name)
+ssl_server_set_certificate (SSL_CTX* ssl_ctx, char * cert_name, char * key_name, char * extra)
 {
   char err_buf[1024];
   EVP_PKEY *pkey;
@@ -8320,8 +8320,62 @@ ssl_server_set_certificate (SSL_CTX* ssl_ctx, char * cert_name, char * key_name)
   if (SSL_CTX_use_certificate (ssl_ctx, x509) <= 0)
     {
       cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-      log_error ("SSL: Unable to use certificate '%s': %s", cert_name, err_buf);
+	  log_error ("SSL: Unable to use certificate '%s': %s", cert_name, err_buf);
       return 0;
+    }
+  if (extra)
+    {
+      if (strstr (extra, "db:") == extra)
+	{
+	  client_connection_t * cli = GET_IMMEDIATE_CLIENT_OR_NULL;
+	  char *tok_s = NULL, *tok;
+	  caddr_t str = box_dv_short_string (extra + 3);
+	  /* list of key from DB */
+	  user_t * saved_user = cli->cli_user;
+	  if (!cli->cli_user) cli->cli_user = sec_name_to_user ("dba");
+	  tok = strtok_r (str, ",", &tok_s);
+	  while (tok)
+	    {
+	      int r;
+	      xenc_key_t * k;
+	      k = xenc_get_key_by_name (tok, 1);
+	      if (!k || !k->xek_x509)
+		{
+		  log_error ("SSL: The stored key '%s' can not be used as extra chain certificate", tok);
+		  break;
+		}
+	      r = SSL_CTX_add_extra_chain_cert(ssl_ctx, k->xek_x509);
+	      if (!r)
+		{
+		  log_error ("SSL: The stored certificate '%s' can not be used as extra chain certificate", tok);
+		  break;
+		}
+	      CRYPTO_add(&k->xek_x509->references, 1, CRYPTO_LOCK_X509);
+              tok = strtok_r (NULL, ",", &tok_s);		  
+	    }
+	  dk_free_box (str);
+	  cli->cli_user = saved_user;
+	}
+      else /* single file */
+	{
+	  X509 *x = NULL;
+	  BIO *in;
+	  if ((in = BIO_new_file (extra, "r")) != NULL) 
+	    {
+	      while ((x = PEM_read_bio_X509 (in, NULL, NULL, NULL)))
+		{
+		  int r;
+		  r = SSL_CTX_add_extra_chain_cert(ssl_ctx, x);
+		  if (!r)
+		    {
+		      log_error ("SSL: The certificate(s) from file '%s' can not be used as extra chain certificate(s)", extra);
+		      X509_free (x);
+		      break;
+		    }
+		}
+	      BIO_free (in);
+	    }
+	}
     }
   if (SSL_CTX_use_PrivateKey (ssl_ctx, pkey) <= 0)
     {
@@ -8339,7 +8393,7 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
   SSL_CTX *ssl_ctx = NULL;
   const SSL_METHOD *ssl_meth = NULL;
   char *https_cvfile = NULL;
-  char *cert = NULL;
+  char *cert = NULL, *extra = NULL;
   char *skey = NULL;
   long https_cvdepth = -1;
   int i, len, https_client_verify = -1;
@@ -8372,6 +8426,8 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
 	    https_cvdepth = unbox (https_opts[i + 1]);
 	  else if (!stricmp (https_opts[i], "https_verify"))	/* verify mode */
 	    https_client_verify = unbox (https_opts[i + 1]);
+	  else if (!stricmp (https_opts [i], "https_extra_chain_certificates") && DV_STRINGP (https_opts [i + 1]))  /* private key */
+	    extra = https_opts [i + 1];
 	}
     }
 
@@ -8385,7 +8441,7 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
       goto err_exit;
     }
 
-  if (!ssl_server_set_certificate (ssl_ctx, cert, skey))
+  if (!ssl_server_set_certificate (ssl_ctx, cert, skey, extra))
     goto err_exit;
 
   if (https_cvfile)
@@ -10560,7 +10616,7 @@ http_init_part_two ()
 	  goto init_ssl_exit;
 	}
 
-      if (!ssl_server_set_certificate (ssl_ctx, https_cert, https_key))
+      if (!ssl_server_set_certificate (ssl_ctx, https_cert, https_key, https_extra))
 	goto init_ssl_exit;
 
       if (https_client_verify_file)
