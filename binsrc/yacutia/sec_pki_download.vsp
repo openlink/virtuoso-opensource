@@ -1,7 +1,7 @@
 <?vsp
   declare ret any;
-  ret := xenc_pem_export ('id_rsa');
-  http_header ('Content-Type: application/octet-stream\r\nContent-Disposition: attachment; filename=ca.pem\r\n');
+  ret := xenc_pem_export ({?'key'});
+  http_header (sprintf ('Content-Type: application/octet-stream\r\nContent-Disposition: attachment; filename=%U.pem\r\n', {?'key'}));
   http_rewrite ();
   http (ret);
   return;

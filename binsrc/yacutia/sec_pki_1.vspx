@@ -189,7 +189,7 @@
 		</v:button>
 		<v:button action="simple" name="dwncert" value="Download Certificate" enabled="--xenc_key_exists ('id_rsa')">
 		    <v:on-post><![CDATA[
-			self.vc_redirect ('sec_pki_download.vsp');
+			self.vc_redirect ('sec_pki_download.vsp?key=id_rsa');
        ]]></v:on-post>
 		</v:button>
 		   <!-- bottom of security layout -->

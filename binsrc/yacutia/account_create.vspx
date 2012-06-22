@@ -754,7 +754,12 @@
 		<tr>
 		    <td>
 			<input type="checkbox" name="cb_key" value="<?V xenc_key ?>" />
-			<?V xenc_key ?> (<?V xenc_type ?>)
+			<?V xenc_key ?> (<?V xenc_type ?>) 
+		    </td>
+		    <td>
+			<?vsp if (xenc_type = 'X.509') { ?>
+			<v:url name="dwn1" value="Download" render-only="1" url="--sprintf ('sec_pki_download.vsp?key=%U', xenc_key)"/>
+			<?vsp } ?>
 		    </td>
 		</tr>
 		<?vsp
@@ -762,7 +767,7 @@
 		   }
 		if (i = 0)
 	  	  {
-		     http ('<tr><td>~no keys available~</td></tr>');
+		     http ('<tr><td colspan="2">~no keys available~</td></tr>');
 		   }
 		?>
 	    </table>
