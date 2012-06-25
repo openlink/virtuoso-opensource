@@ -336,7 +336,7 @@ xp_rdfxml_locals_t *xp_push_rdf_locals (xparse_ctx_t *xp)
 
 
 caddr_t
-xp_rdfxml_resolved_iid (xparse_ctx_t *xp, const char *avalue, int is_id_attr)
+xp_rdfxml_resolve_iri_avalue (xparse_ctx_t *xp, const char *avalue, int is_id_attr)
 {
   caddr_t err = NULL;
   caddr_t local, res;
@@ -580,8 +580,13 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
             XRL_SET_INHERITABLE (inner, xrl_language, box_dv_short_string (avalue), "Attribute 'xml:lang' is used twice");
           else if (!strcmp (tmp_local, "base"))
             {
-              XRL_SET_INHERITABLE (inner, xrl_base, box_dv_short_string (avalue), "Attribute 'xml:base' is used twice");
-              TF_CHANGE_BASE_AND_DEFAULT_GRAPH(xp->xp_tf,box_dv_short_string (avalue));
+              caddr_t local_base;
+              if ((NULL != inner->xrl_base) && ('\0' != inner->xrl_base))
+                local_base = xp_rdfxml_resolve_iri_avalue (xp, avalue, 0);
+              else
+                local_base = box_dv_short_string (avalue);
+              XRL_SET_INHERITABLE (inner, xrl_base, local_base, "Attribute 'xml:base' is used twice");
+              TF_CHANGE_BASE_AND_DEFAULT_GRAPH(xp->xp_tf, box_copy (local_base));
             }
           else if (0 != strcmp (tmp_local, "space"))
             xmlparser_logprintf (xp->xp_parser, XCFG_WARNING, 200,
@@ -603,7 +608,7 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
                   xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute 'rdf:about' can not appear in element that is supposed to be property name");
                   return;
                 }
-              inner_subj = xp_rdfxml_resolved_iid (xp, avalue, 0);
+              inner_subj = xp_rdfxml_resolve_iri_avalue (xp, avalue, 0);
               XRL_SET_NONINHERITABLE (inner, xrl_subject, inner_subj, "Attribute 'rdf:about' conflicts with other attribute that set the subject");
               inner->xrl_parsetype = XRL_PARSETYPE_PROPLIST;
             }
@@ -615,7 +620,7 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
                   xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute 'rdf:resource' can appear only in element that is supposed to be property name");
                   return;
                 }
-              inner_subj = xp_rdfxml_resolved_iid (xp, avalue, 0);
+              inner_subj = xp_rdfxml_resolve_iri_avalue (xp, avalue, 0);
               XRL_SET_NONINHERITABLE (inner, xrl_subject, inner_subj, "Attribute 'rdf:resource' conflicts with other attribute that set the subject");
               inner->xrl_parsetype = XRL_PARSETYPE_EMPTYPROP;
             }
@@ -636,12 +641,12 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
             {
               if (XRL_PARSETYPE_PROPLIST & outer->xrl_parsetype)
                 {
-                  caddr_t reif_subj = xp_rdfxml_resolved_iid (xp, avalue, 1);
+                  caddr_t reif_subj = xp_rdfxml_resolve_iri_avalue (xp, avalue, 1);
                   XRL_SET_NONINHERITABLE (inner, xrl_reification_id, reif_subj, "Reification ID of the statement is set twice by 'rdf:ID' attribute of a property element");
                 }
               else
                 {
-                  caddr_t inner_subj = xp_rdfxml_resolved_iid (xp, avalue, 1);
+                  caddr_t inner_subj = xp_rdfxml_resolve_iri_avalue (xp, avalue, 1);
                   XRL_SET_NONINHERITABLE (inner, xrl_subject, inner_subj, "Attribute 'rdf:ID' conflicts with other attribute that set node ID");
                   inner->xrl_parsetype = XRL_PARSETYPE_PROPLIST;
                 }
@@ -653,7 +658,7 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
                   xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute 'rdf:datatype' can appear only in property elements");
                   return;
                 }
-              XRL_SET_NONINHERITABLE (inner, xrl_datatype, xp_rdfxml_resolved_iid (xp, avalue, 0),  "Attribute 'rdf:datatype' is used twice");
+              XRL_SET_NONINHERITABLE (inner, xrl_datatype, xp_rdfxml_resolve_iri_avalue (xp, avalue, 0),  "Attribute 'rdf:datatype' is used twice");
               inner->xrl_parsetype = XRL_PARSETYPE_LITERAL;
             }
           else if (!strcmp (tmp_local, "parseType"))
@@ -756,7 +761,7 @@ push_inner_attr_prop:
 #ifdef RECOVER_RDF_VALUE
   if (NULL != rdf_val)
     { /* This preserves semantics */
-      caddr_t resolved_rdf_val = xp_rdfxml_resolved_iid (xp, rdf_val, 0);
+      caddr_t resolved_rdf_val = xp_rdfxml_resolve_iri_avalue (xp, rdf_val, 0);
       xp_rdfxml_triple (xp, inner->xrl_subject, uname_rdf_ns_uri_value, resolved_rdf_val);
       dk_free_box (resolved_rdf_val);
     }
