@@ -566,6 +566,141 @@
     ]]>
   </v:method>
 
+  <v:method name="detSpongerUI" arglist="in det varchar, in ndx integer">
+    <![CDATA[
+      declare S, T varchar;
+      declare N integer;
+      declare cartridges, selectedCartridges any;
+
+      S := self.get_fieldProperty (sprintf ('dav_%s_sponger', det), self.dav_path, sprintf ('virt:%s-sponger', det), 'off');
+      http (sprintf (
+        '<tr>\n' ||
+        '  <th>\n' ||
+        '    <label for="dav_%s_sponger">Sponger (on/off)</label>\n' ||
+        '  </th>\n' ||
+        '  <td>\n' ||
+        '    <input type="checkbox" name="dav_%s_sponger" id="dav_%s_sponger" %s disabled="disabled" onchange="javascript: destinationChange(this, {checked: {show: [''dav%d_cartridge'', ''dav%d_metaCartridge'']}, unchecked: {hide: [''dav%d_cartridge'', ''dav%d_metaCartridge'']}});" value="on" />\n' ||
+        '  </td>\n' ||
+        '</tr>\n',
+        det,
+        det,
+        det,
+        case when S = 'on' then 'checked="checked"' else '' end,
+        ndx,
+        ndx,
+        ndx,
+        ndx
+      ));
+
+      selectedCartridges := self.get_fieldProperty (sprintf ('dav_%s_cartridges', det), self.dav_path, sprintf ('virt:%s-cartridges', det), '');
+      selectedCartridges := split_and_decode (selectedCartridges, 0, '\0\0,');
+      cartridges := ODRIVE.WA.cartridges_get ();
+
+      http (sprintf (
+        '<tr id="dav%d_cartridge" style="display: none;">\n' ||
+        '  <th valign="top">Sponger Extractor Cartridges</th>\n' ||
+        '  <td>\n' ||
+        '    <div style="margin-bottom: 6px; max-height: 200px; overflow: auto;">\n' ||
+        '      <table id="ca%d_tbl" class="ODS_grid" cellspacing="0">\n' ||
+        '        <thead>\n' ||
+        '          <tr>\n' ||
+        '            <th><input type="checkbox" name="ca%d_select" value="Select All" onclick="selectAllCheckboxes (this, ''ca%d_item'', true)" title="Select All" /></th>\n' ||
+        '            <th width="100%%">Cartridge</th>\n' ||
+        '          </tr>\n' ||
+        '        </thead>',
+        ndx,
+        ndx,
+        ndx,
+        ndx
+      ));
+      for (N := 0; N < length (cartridges); N := N + 1)
+      {
+        if (S = 'on')
+        {
+          T := case when ODRIVE.WA.vector_contains (selectedCartridges, cast (cartridges[N][0] as varchar)) then 'checked="checked"' else '' end;
+        } else {
+          T := case when cartridges[N][2] then 'checked="checked"' else '' end;
+        }
+        http (sprintf (
+          '        <tr>\n' ||
+          '          <td class="checkbox"><input type="checkbox" name="ca%d_item" value="%d" disabled="disabled" %s /></td>\n' ||
+          '          <td>%V</td>\n' ||
+          '        </tr>',
+          ndx,
+          cartridges[N][0],
+          T,
+          cartridges[N][1]
+        ));
+      }
+      if (length (cartridges) = 0)
+        http (
+        '        <tr><td colspan="2"><b>No available cartridges</b></td></tr>'
+        );
+
+      http (
+        '      </table>\n' ||
+        '    </div>\n' ||
+        '  </td>\n' ||
+        '</tr>'
+      );
+
+      if (not DB.DBA.wa_check_package ('cartridges'))
+        return;
+
+      selectedCartridges := self.get_fieldProperty (sprintf ('dav_%s_metaCartridges', det), self.dav_path, sprintf ('virt:%s-metaCartridges', det), '');
+      selectedCartridges := split_and_decode (selectedCartridges, 0, '\0\0,');
+      cartridges := ODRIVE.WA.metaCartridges_get ();
+
+      http (sprintf (
+        '<tr id="dav%d_metaCartridge" style="display: none;">\n' ||
+        '  <th valign="top">Sponger Meta Cartridges</th>\n' ||
+        '  <td>\n' ||
+        '    <div style="margin-bottom: 6px; max-height: 200px; overflow: auto;">\n' ||
+        '      <table id="mca%d_tbl" class="ODS_grid" cellspacing="0">\n' ||
+        '        <thead>\n' ||
+        '          <tr>\n' ||
+        '            <th><input type="checkbox" name="mca%d_select" value="Select All" onclick="selectAllCheckboxes (this, ''mca%d_item'', true)" title="Select All" /></th>\n' ||
+        '            <th width="100%%">Meta Cartridge</th>\n' ||
+        '          </tr>\n' ||
+        '        </thead>',
+        ndx,
+        ndx,
+        ndx,
+        ndx
+      ));
+      for (N := 0; N < length (cartridges); N := N + 1)
+      {
+        if (S = 'on')
+        {
+          T := case when ODRIVE.WA.vector_contains (selectedCartridges, cast (cartridges[N][0] as varchar)) then 'checked="checked"' else '' end;
+        } else {
+          T := case when cartridges[N][2] then 'checked="checked"' else '' end;
+        }
+        http (sprintf (
+          '        <tr>\n' ||
+          '          <td class="checkbox"><input type="checkbox" name="mca%d_item" value="%d" disabled="disabled" %s /></td>\n' ||
+          '          <td>%V</td>\n' ||
+          '        </tr>',
+          ndx,
+          cartridges[N][0],
+          T,
+          cartridges[N][1]
+        ));
+      }
+      if (length (cartridges) = 0)
+        http (
+        '        <tr><td colspan="2"><b>No available meta cartridges</b></td></tr>'
+        );
+
+      http (
+        '      </table>\n' ||
+        '    </div>\n' ||
+        '  </td>\n' ||
+        '</tr>'
+      );
+    ]]>
+  </v:method>
+
   <v:on-init>
     <![CDATA[
       declare N, M, retValue, dav_id, dav_owner, dav_group integer;
@@ -1912,9 +2047,9 @@
             <vm:tabCaption tab="11"  tabs="16" caption="IMAP Account" />
             <v:template name="tform_171" type="simple" enabled="-- case when (self.dav_detClass = '') then 1 else 0 end">
             <vm:tabCaption tab="12"  tabs="16" caption="Google Drive" />
-            <vm:tabCaption tab="13"  tabs="16" caption="Dropbox Drive" />
-            <vm:tabCaption tab="14"  tabs="16" caption="SkyDrive Folder" />
-            <vm:tabCaption tab="15"  tabs="16" caption="Box Drive" />
+            <vm:tabCaption tab="13"  tabs="16" caption="Dropbox" />
+            <vm:tabCaption tab="14"  tabs="16" caption="SkyDrive" />
+            <vm:tabCaption tab="15"  tabs="16" caption="Box Net" />
             </v:template>
             </v:template>
           </div>
@@ -2032,25 +2167,25 @@
                                           0, '',           'Normal',
                                           1, 'ResFilter',  'Smart Folder',
                                           1, 'CatFilter',  'Category Folder',
-                                          1, 'PropFilter', 'Property Filter Folder',
-                                          1, 'HostFs',     'Host FS Folders',
+                                          1, 'PropFilter', 'Property Filter',
+                                          1, 'HostFs',     'Host FS',
                                           0, 'rdfSink',    'Linked Data Import',
                                           1, 'RDFData',    'RDF Data',
                                           1, 'DynaRes',    'Dynamic Resources',
-                                          2, 'SyncML',     'SyncML Folder',
-                                          1, 'Versioning', 'Version Control Folder',
+                                          2, 'SyncML',     'SyncML',
+                                          1, 'Versioning', 'Version Control',
                                           1, 'S3',         'Amazon S3',
                                           1, 'GDrive',     'Google Drive',
-                                          1, 'Dropbox',    'Dropbox Drive',
-                                          1, 'SkyDrive',   'SkyDrive Folder',
-                                          1, 'Box',        'Box Folder',
-                                          1, 'CardDAV',    'CardDAV Folder',
-                                          1, 'Blog',       'Blog Folder',
-                                          1, 'Bookmark',   'Bookmark Folder',
-                                          1, 'calendar',   'Calendar Folder',
-                                          1, 'CalDAV',     'CalDAV Folder',
+                                          1, 'Dropbox',    'Dropbox',
+                                          1, 'SkyDrive',   'SkyDrive',
+                                          1, 'Box',        'Box Net',
+                                          1, 'CardDAV',    'CardDAV',
+                                          1, 'Blog',       'Blog',
+                                          1, 'Bookmark',   'Bookmark',
+                                          1, 'calendar',   'Calendar',
+                                          1, 'CalDAV',     'CalDAV',
                                           1, 'News3',      'Feed Subscriptions',
-                                          1, 'oMail',      'WebMail Folders',
+                                          1, 'oMail',      'WebMail',
                                           1, 'IMAP',       'IMAP Mail Account');
 
                             M := 0;

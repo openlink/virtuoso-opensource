@@ -4921,14 +4921,20 @@ create procedure ODRIVE.WA.syncml_type (
 
 -------------------------------------------------------------------------------
 --
+-- DB.DBA.RDF_LOAD_HTML_RESPONSE
+--
 create procedure ODRIVE.WA.cartridges_get ()
 {
+  declare selected integer;
   declare retValue any;
 
   retValue := vector ();
-  for (select RM_ID, RM_DESCRIPTION, ucase (cast (RM_DESCRIPTION as varchar (128))) as RM_SORT from DB.DBA.SYS_RDF_MAPPERS where RM_ENABLED = 1 order by 3) do
+  for (select RM_ID, RM_DESCRIPTION, RM_HOOK, ucase (cast (RM_DESCRIPTION as varchar (128))) as RM_SORT from DB.DBA.SYS_RDF_MAPPERS where RM_ENABLED = 1 order by 4) do
   {
-    retValue := vector_concat (retValue, vector (vector (RM_ID, RM_DESCRIPTION)));
+    selected := 0;
+    if (RM_HOOK in ('DB.DBA.RDF_LOAD_HTML_RESPONSE'))
+      selected := 1;
+    retValue := vector_concat (retValue, vector (vector (RM_ID, RM_DESCRIPTION, selected)));
   }
   return retValue;
 }
@@ -4936,15 +4942,25 @@ create procedure ODRIVE.WA.cartridges_get ()
 
 -------------------------------------------------------------------------------
 --
+-- DB.DBA.RDF_LOAD_CALAIS,
+-- DB.DBA.RDF_LOAD_ZEMANTA
+-- DB.DBA.RDF_LOAD_ALCHEMY_META
+-- DB.DBA.RDF_LOAD_YAHOO_TERM_META
+-- DB.DBA.RDF_LOAD_DBPEDIA_SPOTLIGHT_META
+--
 create procedure ODRIVE.WA.metaCartridges_get ()
 {
+  declare selected integer;
   declare items, retValue any;
 
   retValue := vector ();
-  items := ODRIVE.WA.exec ('select MC_ID, MC_DESC, ucase (cast (MC_DESC as varchar (128))) as MC_SORT from DB.DBA.RDF_META_CARTRIDGES where MC_ENABLED = 1 order by 3');
+  items := ODRIVE.WA.exec ('select MC_ID, MC_DESC, MC_HOOK, ucase (cast (MC_DESC as varchar (128))) as MC_SORT from DB.DBA.RDF_META_CARTRIDGES where MC_ENABLED = 1 order by 4');
   foreach (any item in items) do
   {
-    retValue := vector_concat (retValue, vector (vector (item[0], item[1])));
+    selected := 0;
+    if (item[2] in ('DB.DBA.RDF_LOAD_CALAIS', 'DB.DBA.RDF_LOAD_ZEMANTA', 'DB.DBA.RDF_LOAD_ALCHEMY_META', 'DB.DBA.RDF_LOAD_YAHOO_CONTENT_ANALYSIS_META', 'DB.DBA.RDF_LOAD_DBPEDIA_SPOTLIGHT_META'))
+      selected := 1;
+    retValue := vector_concat (retValue, vector (vector (item[0], item[1], selected)));
   }
   return retValue;
 }

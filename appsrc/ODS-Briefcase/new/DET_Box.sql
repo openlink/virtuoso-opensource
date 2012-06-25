@@ -254,12 +254,12 @@ create function "Box_DAV_RES_UPLOAD" (
     }
     name := path_parts[length (path_parts)-1];
     parentListID := DB.DBA.Box__root ();
-    if (length (path_parts) > 2)
+    if (length (path_parts) > 1)
     {
       parentID := DB.DBA.DAV_SEARCH_ID (DB.DBA.Box__path (detcol_id, path_parts), 'P');
       parentListID := DB.DBA.Box__paramGet (parentID, 'C', 'id', 0);
     }
-    url := 'https://upload.box.com/api/2.0/files/data';
+    url := 'https://api.box.com/2.0/files/data';
     header := 'Content-Type: multipart/form-data; boundary=A300x\r\n';
     body := sprintf (
       '--A300x\r\n' ||
@@ -284,6 +284,19 @@ create function "Box_DAV_RES_UPLOAD" (
     }
     listItem := ODS..json2obj (result);
     listID := get_keyword ('id', listItem);
+    if (isnull (listID) and (get_keyword ('total_count', listItem) = 1))
+    {
+      listItem := get_keyword ('entries', listItem)[0];
+      listID := get_keyword ('id', listItem);
+      url := sprintf ('https://api.box.com/2.0/files/%s', listID);
+      result := DB.DBA.Box__exec (detcol_id, retHeader, 'GET', url);
+      if (DAV_HIDE_ERROR (retValue) is null)
+      {
+        retValue := result;
+        goto _exit;
+      }
+      listItem := ODS..json2obj (result);
+    }
   }
 _skip_create:;
   connection_set ('dav_store', 1);
@@ -483,7 +496,6 @@ create function "Box_DAV_DIR_LIST" (
             title := get_keyword ('name', listItem);
             if ((listID = get_keyword ('id', listItem)) and (title = davItem[10]))
             {
-              if (title <> davItem[10])
               listIds := vector_concat (listIds, vector (listID));
               if (davItem[1] = 'R')
               {
@@ -548,11 +560,14 @@ create function "Box_DAV_DIR_LIST" (
         }
         -- save colItem
         DB.DBA.Box__paramSet (colId, 'C', 'Entry', DB.DBA.Box__obj2xml (boxItem), 0);
+        if (not isinteger (colId))
+        {
         set triggers off;
         DB.DBA.Box__paramSet (colId, 'C', ':creationdate', DB.DBA.Box__stringdate (get_keyword ('created_at', boxItem)), 0, 0);
         DB.DBA.Box__paramSet (colId, 'C', ':getlastmodified', DB.DBA.Box__stringdate (get_keyword ('modified_at', boxItem)), 0, 0);
         set triggers on;
       }
+    }
     }
   _exitSync:
     connection_set ('dav_store', save);
@@ -1258,7 +1273,7 @@ create function DB.DBA.Box__list (
     return -28;
 
   syncTime := DB.DBA.Box__paramGet (colId, 'C', 'syncTime');
-  if (not isnull (syncTime) and (datediff ('second', syncTime, now ()) < 300))
+  if (not isnull (syncTime) and (datediff ('second', syncTime, now ()) < 30))
     return 0;
 
   if (length (subPath_parts) = 1)

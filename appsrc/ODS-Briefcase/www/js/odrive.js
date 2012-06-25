@@ -1617,6 +1617,12 @@ ODRIVE.updateRdfGraph = function ()
      )
     $('dav_SkyDrive_graph').value = $v('rdfGraph_prefix') + $v('dav_name') + '#this';
 
+  if (
+      ($v('dav_Box_graph') == '') ||
+      ($v('dav_Box_graph') == ($v('rdfGraph_prefix')+$v('dav_name_save')+'#this'))
+     )
+    $('dav_Box_graph').value = $v('rdfGraph_prefix') + $v('dav_name') + '#this';
+
   $('dav_name_save').value = $v('dav_name');
 }
 

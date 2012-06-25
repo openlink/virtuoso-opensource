@@ -1357,89 +1357,9 @@
             </v:text>
           </td>
         </tr>
-        <tr>
-          <th>
-            <v:label for="dav_GDrive_sponger" value="--'Sponger (on/off)'" />
-          </th>
-          <td>
-            <?vsp
-              declare S varchar;
-
-              S := self.get_fieldProperty ('dav_GDrive_sponger', self.dav_path, 'virt:GDrive-sponger', 'off');
-              http (sprintf ('<input type="checkbox" name="dav_GDrive_sponger" id="dav_GDrive_sponger" %s disabled="disabled" onchange="javascript: destinationChange(this, {checked: {show: [\'dav12_cartridge\', \'dav12_metaCartridge\']}, unchecked: {hide: [\'dav12_cartridge\', \'dav12_metaCartridge\']}});" value="on" />', case when S = 'on' then 'checked="checked"' else '' end));
-            ?>
-          </td>
-        </tr>
-        <tr id="dav12_cartridge" style="display: none;">
-          <th valign="top">Sponger Extractor Cartridges</th>
-          <td>
-            <div style="margin-bottom: 6px; max-height: 200px; overflow: auto;">
               <?vsp
-                declare N integer;
-                declare cartridges, selectedCartridges any;
-
-                selectedCartridges := self.get_fieldProperty ('dav_GDrive_cartridges', self.dav_path, 'virt:GDrive-cartridges', '');
-                selectedCartridges := split_and_decode (selectedCartridges, 0, '\0\0,');
-                cartridges := ODRIVE.WA.cartridges_get ();
+          self.detSpongerUI ('GDrive', 12);
               ?>
-              <table id="ca12_tbl" class="ODS_grid" cellspacing="0">
-                <thead>
-                  <tr>
-                    <th><input type="checkbox" name="ca12_select" value="Select All" onclick="selectAllCheckboxes (this, 'ca12_item', true)" title="Select All" /></th>
-                    <th width="100%">Cartridge</th>
-                  </tr>
-                </thead>
-                <?vsp
-                  for (N := 0; N < length (cartridges); N := N + 1)
-                  {
-                    http ('<tr>');
-                    http (sprintf ('<td class="checkbox"><input type="checkbox" name="ca12_item" value="%d" disabled="disabled" %s /></td>', cartridges[N][0], case when ODRIVE.WA.vector_contains (selectedCartridges, cast (cartridges[N][0] as varchar)) then 'checked="checked"' else '' end));
-                    http (sprintf ('<td>%V</td>', cartridges[N][1]));
-                    http ('</tr>');
-                  }
-                  if (length (cartridges) = 0)
-                    http ('<tr><td colspan="2"><b>No available cartridges</b></td></tr>');
-                ?>
-              </table>
-            </div>
-          </td>
-        </tr>
-        <vm:if test="DB.DBA.wa_check_package ('cartridges')">
-          <tr id="dav12_metaCartridge" style="display: none;">
-            <th valign="top">Sponger Meta Cartridges</th>
-            <td>
-              <div style="margin-bottom: 6px; max-height: 200px; overflow: auto;">
-                <?vsp
-                  declare N integer;
-                  declare cartridges, selectedCartridges any;
-
-                  selectedCartridges := self.get_fieldProperty ('dav_GDrive_metaCartridges', self.dav_path, 'virt:GDrive-metaCartridges', '');
-                  selectedCartridges := split_and_decode (selectedCartridges, 0, '\0\0,');
-                  cartridges := ODRIVE.WA.metaCartridges_get ();
-                ?>
-                <table id="mca12_tbl" class="ODS_grid" cellspacing="0">
-                  <thead>
-                    <tr>
-                      <th><input type="checkbox" name="mca12_select" value="Select All" onclick="selectAllCheckboxes (this, 'mca12_item', true)" title="Select All" /></th>
-                      <th width="100%">Meta Cartridge</th>
-                    </tr>
-                  </thead>
-                  <?vsp
-                    for (N := 0; N < length (cartridges); N := N + 1)
-                    {
-                      http ('<tr>');
-                      http (sprintf ('<td class="checkbox"><input type="checkbox" name="mca12_item" value="%d" disabled="disabled" %s /></td>', cartridges[N][0], case when ODRIVE.WA.vector_contains (selectedCartridges, cast (cartridges[N][0] as varchar)) then 'checked="checked"' else '' end));
-                      http (sprintf ('<td>%V</td>', cartridges[N][1]));
-                      http ('</tr>');
-                    }
-                    if (length (cartridges) = 0)
-                      http ('<tr><td colspan="2"><b>No available cartridges</b></td></tr>');
-                  ?>
-                </table>
-              </div>
-            </td>
-          </tr>
-        </vm:if>
         <tr id="tr_dav_GDrive_display_name" style="display: <?V case when _value = 'Yes' then '' else 'none' end ?>">
           <th>User name</th>
           <td id="td_dav_GDrive_display_name">
@@ -1523,89 +1443,9 @@
             </v:text>
           </td>
         </tr>
-        <tr>
-          <th>
-            <v:label for="dav_Dropbox_sponger" value="--'Sponger (on/off)'" />
-          </th>
-          <td>
-            <?vsp
-              declare S varchar;
-
-              S := self.get_fieldProperty ('dav_Dropbox_sponger', self.dav_path, 'virt:Dropbox-sponger', 'off');
-              http (sprintf ('<input type="checkbox" name="dav_Dropbox_sponger" id="dav_Dropbox_sponger" %s disabled="disabled" onchange="javascript: destinationChange(this, {checked: {show: [\'dav13_cartridge\', \'dav13_metaCartridge\']}, unchecked: {hide: [\'dav13_cartridge\', \'dav13_metaCartridge\']}});" value="on" />', case when S = 'on' then 'checked="checked"' else '' end));
-            ?>
-          </td>
-        </tr>
-        <tr id="dav13_cartridge" style="display: none;">
-          <th valign="top">Sponger Extractor Cartridges</th>
-          <td>
-            <div style="margin-bottom: 6px; max-height: 200px; overflow: auto;">
-              <?vsp
-                declare N integer;
-                declare cartridges, selectedCartridges any;
-
-                selectedCartridges := self.get_fieldProperty ('dav_Dropbox_cartridges', self.dav_path, 'virt:Dropbox-cartridges', '');
-                selectedCartridges := split_and_decode (selectedCartridges, 0, '\0\0,');
-                cartridges := ODRIVE.WA.cartridges_get ();
-              ?>
-              <table id="ca13_tbl" class="ODS_grid" cellspacing="0">
-                <thead>
-                  <tr>
-                    <th><input type="checkbox" name="ca13_select" value="Select All" onclick="selectAllCheckboxes (this, 'ca13_item', true)" title="Select All" /></th>
-                    <th width="100%">Cartridge</th>
-                  </tr>
-                </thead>
-                <?vsp
-                  for (N := 0; N < length (cartridges); N := N + 1)
-                  {
-                    http ('<tr>');
-                    http (sprintf ('<td class="checkbox"><input type="checkbox" name="ca13_item" value="%d" disabled="disabled" %s /></td>', cartridges[N][0], case when ODRIVE.WA.vector_contains (selectedCartridges, cast (cartridges[N][0] as varchar)) then 'checked="checked"' else '' end));
-                    http (sprintf ('<td>%V</td>', cartridges[N][1]));
-                    http ('</tr>');
-                  }
-                  if (length (cartridges) = 0)
-                    http ('<tr><td colspan="2"><b>No available cartridges</b></td></tr>');
-                ?>
-              </table>
-            </div>
-          </td>
-        </tr>
-        <vm:if test="DB.DBA.wa_check_package ('cartridges')">
-          <tr id="dav13_metaCartridge" style="display: none;">
-            <th valign="top">Sponger Meta Cartridges</th>
-            <td>
-              <div style="margin-bottom: 6px; max-height: 200px; overflow: auto;">
-                <?vsp
-                  declare N integer;
-                  declare cartridges, selectedCartridges any;
-
-                  selectedCartridges := self.get_fieldProperty ('dav_Dropbox_metaCartridges', self.dav_path, 'virt:Dropbox-metaCartridges', '');
-                  selectedCartridges := split_and_decode (selectedCartridges, 0, '\0\0,');
-                  cartridges := ODRIVE.WA.metaCartridges_get ();
-                ?>
-                <table id="mca13_tbl" class="ODS_grid" cellspacing="0">
-                  <thead>
-                    <tr>
-                      <th><input type="checkbox" name="mca13_select" value="Select All" onclick="selectAllCheckboxes (this, 'mca13_item', true)" title="Select All" /></th>
-                      <th width="100%">Meta Cartridge</th>
-                    </tr>
-                  </thead>
                   <?vsp
-                    for (N := 0; N < length (cartridges); N := N + 1)
-                    {
-                      http ('<tr>');
-                      http (sprintf ('<td class="checkbox"><input type="checkbox" name="mca13_item" value="%d" disabled="disabled" %s /></td>', cartridges[N][0], case when ODRIVE.WA.vector_contains (selectedCartridges, cast (cartridges[N][0] as varchar)) then 'checked="checked"' else '' end));
-                      http (sprintf ('<td>%V</td>', cartridges[N][1]));
-                      http ('</tr>');
-                    }
-                    if (length (cartridges) = 0)
-                      http ('<tr><td colspan="2"><b>No available cartridges</b></td></tr>');
+          self.detSpongerUI ('Dropbox', 13);
                   ?>
-                </table>
-              </div>
-            </td>
-        </tr>
-        </vm:if>
         <tr id="tr_dav_Dropbox_display_name" style="display: <?V case when _value = 'Yes' then '' else 'none' end ?>">
           <th>User name</th>
           <td id="td_dav_Dropbox_display_name">
@@ -1686,89 +1526,9 @@
             </v:text>
           </td>
         </tr>
-        <tr>
-          <th>
-            <v:label for="dav_SkyDrive_sponger" value="--'Sponger (on/off)'" />
-          </th>
-          <td>
-            <?vsp
-              declare S varchar;
-
-              S := self.get_fieldProperty ('dav_SkyDrive_sponger', self.dav_path, 'virt:SkyDrive-sponger', 'off');
-              http (sprintf ('<input type="checkbox" name="dav_SkyDrive_sponger" id="dav_SkyDrive_sponger" %s disabled="disabled" onchange="javascript: destinationChange(this, {checked: {show: [\'dav14_cartridge\', \'dav14_metaCartridge\']}, unchecked: {hide: [\'dav14_cartridge\', \'dav14_metaCartridge\']}});" value="on" />', case when S = 'on' then 'checked="checked"' else '' end));
-            ?>
-          </td>
-        </tr>
-        <tr id="dav14_cartridge" style="display: none;">
-          <th valign="top">Sponger Extractor Cartridges</th>
-          <td>
-            <div style="margin-bottom: 6px; max-height: 200px; overflow: auto;">
-              <?vsp
-                declare N integer;
-                declare cartridges, selectedCartridges any;
-
-                selectedCartridges := self.get_fieldProperty ('dav_SkyDrive_cartridges', self.dav_path, 'virt:SkyDrive-cartridges', '');
-                selectedCartridges := split_and_decode (selectedCartridges, 0, '\0\0,');
-                cartridges := ODRIVE.WA.cartridges_get ();
-              ?>
-              <table id="ca14_tbl" class="ODS_grid" cellspacing="0">
-                <thead>
-                  <tr>
-                    <th><input type="checkbox" name="ca14_select" value="Select All" onclick="selectAllCheckboxes (this, 'ca14_item', true)" title="Select All" /></th>
-                    <th width="100%">Cartridge</th>
-                  </tr>
-                </thead>
-                <?vsp
-                  for (N := 0; N < length (cartridges); N := N + 1)
-                  {
-                    http ('<tr>');
-                    http (sprintf ('<td class="checkbox"><input type="checkbox" name="ca14_item" value="%d" disabled="disabled" %s /></td>', cartridges[N][0], case when ODRIVE.WA.vector_contains (selectedCartridges, cast (cartridges[N][0] as varchar)) then 'checked="checked"' else '' end));
-                    http (sprintf ('<td>%V</td>', cartridges[N][1]));
-                    http ('</tr>');
-                  }
-                  if (length (cartridges) = 0)
-                    http ('<tr><td colspan="2"><b>No available cartridges</b></td></tr>');
-                ?>
-              </table>
-            </div>
-          </td>
-        </tr>
-        <vm:if test="DB.DBA.wa_check_package ('cartridges')">
-          <tr id="dav14_metaCartridge" style="display: none;">
-            <th valign="top">Sponger Meta Cartridges</th>
-            <td>
-              <div style="margin-bottom: 6px; max-height: 200px; overflow: auto;">
-                <?vsp
-                  declare N integer;
-                  declare cartridges, selectedCartridges any;
-
-                  selectedCartridges := self.get_fieldProperty ('dav_SkyDrive_metaCartridges', self.dav_path, 'virt:SkyDrive-metaCartridges', '');
-                  selectedCartridges := split_and_decode (selectedCartridges, 0, '\0\0,');
-                  cartridges := ODRIVE.WA.metaCartridges_get ();
-                ?>
-                <table id="mca14_tbl" class="ODS_grid" cellspacing="0">
-                  <thead>
-                    <tr>
-                      <th><input type="checkbox" name="mca14_select" value="Select All" onclick="selectAllCheckboxes (this, 'mca14_item', true)" title="Select All" /></th>
-                      <th width="100%">Meta Cartridge</th>
-                    </tr>
-                  </thead>
                   <?vsp
-                    for (N := 0; N < length (cartridges); N := N + 1)
-                    {
-                      http ('<tr>');
-                      http (sprintf ('<td class="checkbox"><input type="checkbox" name="mca14_item" value="%d" disabled="disabled" %s /></td>', cartridges[N][0], case when ODRIVE.WA.vector_contains (selectedCartridges, cast (cartridges[N][0] as varchar)) then 'checked="checked"' else '' end));
-                      http (sprintf ('<td>%V</td>', cartridges[N][1]));
-                      http ('</tr>');
-                    }
-                    if (length (cartridges) = 0)
-                      http ('<tr><td colspan="2"><b>No available cartridges</b></td></tr>');
+          self.detSpongerUI ('SkyDrive', 14);
                   ?>
-      </table>
-    </div>
-            </td>
-          </tr>
-        </vm:if>
         <tr id="tr_dav_SkyDrive_display_name" style="display: <?V case when _value = 'Yes' then '' else 'none' end ?>">
           <th>User name</th>
           <td id="td_dav_SkyDrive_display_name">
@@ -1793,7 +1553,7 @@
               _return_url := sprintf ('http://%{WSHost}s/ods/access_skydrive.vsp', http_path());
               _scope := 'wl.signin wl.basic wl.offline_access wl.skydrive wl.skydrive_update';
               _url := sprintf ('https://login.live.com/oauth20_authorize.srf?client_id=%U&redirect_uri=%U&scope=%U&response_type=%U', _client_id, _return_url, _scope, 'code');
-              http (sprintf ('<input type="button" id="dav_GDrive_authenticate" value="%s" onclick="javascript: windowShowInternal(\'%s\');" disabled="disabled" class="button" />', _name, _url));
+              http (sprintf ('<input type="button" id="dav_SkyDrive_authenticate" value="%s" onclick="javascript: windowShowInternal(\'%s\');" disabled="disabled" class="button" />', _name, _url));
             ?>
           </td>
         </tr>
@@ -1844,89 +1604,9 @@
             </v:text>
           </td>
         </tr>
-        <tr>
-          <th>
-            <v:label for="dav_Box_sponger" value="--'Sponger (on/off)'" />
-          </th>
-          <td>
-            <?vsp
-              declare S varchar;
-
-              S := self.get_fieldProperty ('dav_Box_sponger', self.dav_path, 'virt:Box-sponger', 'off');
-              http (sprintf ('<input type="checkbox" name="dav_Box_sponger" id="dav_Box_sponger" %s disabled="disabled" onchange="javascript: destinationChange(this, {checked: {show: [\'dav15_cartridge\', \'dav15_metaCartridge\']}, unchecked: {hide: [\'dav15_cartridge\', \'dav15_metaCartridge\']}});" value="on" />', case when S = 'on' then 'checked="checked"' else '' end));
-            ?>
-          </td>
-        </tr>
-        <tr id="dav15_cartridge" style="display: none;">
-          <th valign="top">Sponger Extractor Cartridges</th>
-          <td>
-            <div style="margin-bottom: 6px; max-height: 200px; overflow: auto;">
-              <?vsp
-                declare N integer;
-                declare cartridges, selectedCartridges any;
-
-                selectedCartridges := self.get_fieldProperty ('dav_Box_cartridges', self.dav_path, 'virt:Box-cartridges', '');
-                selectedCartridges := split_and_decode (selectedCartridges, 0, '\0\0,');
-                cartridges := ODRIVE.WA.cartridges_get ();
-              ?>
-              <table id="ca15_tbl" class="ODS_grid" cellspacing="0">
-                <thead>
-                  <tr>
-                    <th><input type="checkbox" name="ca15_select" value="Select All" onclick="selectAllCheckboxes (this, 'ca15_item', true)" title="Select All" /></th>
-                    <th width="100%">Cartridge</th>
-                  </tr>
-                </thead>
-                <?vsp
-                  for (N := 0; N < length (cartridges); N := N + 1)
-                  {
-                    http ('<tr>');
-                    http (sprintf ('<td class="checkbox"><input type="checkbox" name="ca15_item" value="%d" disabled="disabled" %s /></td>', cartridges[N][0], case when ODRIVE.WA.vector_contains (selectedCartridges, cast (cartridges[N][0] as varchar)) then 'checked="checked"' else '' end));
-                    http (sprintf ('<td>%V</td>', cartridges[N][1]));
-                    http ('</tr>');
-                  }
-                  if (length (cartridges) = 0)
-                    http ('<tr><td colspan="2"><b>No available cartridges</b></td></tr>');
-                ?>
-              </table>
-            </div>
-          </td>
-        </tr>
-        <vm:if test="DB.DBA.wa_check_package ('cartridges')">
-          <tr id="dav15_metaCartridge" style="display: none;">
-            <th valign="top">Sponger Meta Cartridges</th>
-            <td>
-              <div style="margin-bottom: 6px; max-height: 200px; overflow: auto;">
-                <?vsp
-                  declare N integer;
-                  declare cartridges, selectedCartridges any;
-
-                  selectedCartridges := self.get_fieldProperty ('dav_Box_metaCartridges', self.dav_path, 'virt:Box-metaCartridges', '');
-                  selectedCartridges := split_and_decode (selectedCartridges, 0, '\0\0,');
-                  cartridges := ODRIVE.WA.metaCartridges_get ();
-                ?>
-                <table id="mca15_tbl" class="ODS_grid" cellspacing="0">
-                  <thead>
-                    <tr>
-                      <th><input type="checkbox" name="mca15_select" value="Select All" onclick="selectAllCheckboxes (this, 'mca15_item', true)" title="Select All" /></th>
-                      <th width="100%">Meta Cartridge</th>
-                    </tr>
-                  </thead>
                   <?vsp
-                    for (N := 0; N < length (cartridges); N := N + 1)
-                    {
-                      http ('<tr>');
-                      http (sprintf ('<td class="checkbox"><input type="checkbox" name="mca15_item" value="%d" disabled="disabled" %s /></td>', cartridges[N][0], case when ODRIVE.WA.vector_contains (selectedCartridges, cast (cartridges[N][0] as varchar)) then 'checked="checked"' else '' end));
-                      http (sprintf ('<td>%V</td>', cartridges[N][1]));
-                      http ('</tr>');
-                    }
-                    if (length (cartridges) = 0)
-                      http ('<tr><td colspan="2"><b>No available cartridges</b></td></tr>');
+          self.detSpongerUI ('Box', 15);
                   ?>
-                </table>
-              </div>
-            </td>
-          </tr>
-        </vm:if>
         <tr id="tr_dav_Box_display_name" style="display: <?V case when _value = 'Yes' then '' else 'none' end ?>">
           <th>User name</th>
           <td id="td_dav_Box_display_name">
