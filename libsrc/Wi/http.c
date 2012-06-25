@@ -1678,7 +1678,9 @@ ws_clear (ws_connection_t * ws, int error_cleanup)
   dk_free_tree (ws->ws_store_in_cache);
   ws->ws_store_in_cache = NULL;
   ws->ws_proxy_request = 0;
+  IN_TXN;
   ws->ws_limited = 0;
+  LEAVE_TXN;
   http_set_default_options (ws);
 #ifdef _SSL
   ws->ws_ssl_ctx = NULL;
