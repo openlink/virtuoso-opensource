@@ -5215,7 +5215,7 @@ bif_http_limited (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t * qi = (query_instance_t *) qst;
   ws_connection_t * ws;
-  long limited = 0;
+  volatile long limited = 0;
 
   if (!qi->qi_client->cli_ws)
     sqlr_new_error ("42000", "HT010", "This function is only allowed processing a HTTP request");
