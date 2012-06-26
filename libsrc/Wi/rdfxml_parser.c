@@ -3375,10 +3375,8 @@ xp_mdata_element_end (void *userdata, const char * name)
   int inner_place_bits = inner->xmdatal_place_bits;
   if (NULL == inner->xmdatal_xn)
     return; /* This happens for elements that are closed outside any "interesting" element */
-  if (xp->xp_current != inner->xmdatal_xn)
+  if ((xp->xp_current != inner->xmdatal_xn) && (MDATA_IN_XMLLITERAL & inner_place_bits))
     {
-      if (!(MDATA_IN_XMLLITERAL & inner_place_bits))
-        GPF_T1 ("xp_" "mdata_element_end(): misaligned stacks");
       xp_element_end (userdata, name);
       return;
     }
