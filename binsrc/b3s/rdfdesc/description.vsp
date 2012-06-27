@@ -52,16 +52,25 @@
   declare ses_parms varchar;
   declare all_langs, lang_parm any;
   declare c_iri, iri_type, iri_type_label, _F, _from, topof varchar;
-  declare page, n_per_page, lim, ofs, dis_next int;
+  declare page, n_per_page, lim, ofs, dis_next, deadl int;
   declare vis, printed, _skip, _last int;
   declare all_lang any;
   declare curr_pred any;
   declare dt1, dt2, count_str, tbinf, tbsas, ua, doc, sp_mode, sp_accept varchar;
   declare c_iri_a any;
 
+  deadl := 0;
+
+  declare exit handler for sqlstate '40001' {
+    rollback work;
+    if (deadl < 5) 
+      goto again;	
+    resignal;
+  };
   declare continue handler for sqlstate 'S1TAT';
   set result_timeout = atoi (registry_get ('fct_timeout_max'));
 
+again:
   n_per_page := 100;
   dis_next := 0;
   dbg_enable := get_keyword ('dbg', params);
