@@ -3044,6 +3044,7 @@ ws_auth_check (ws_connection_t * ws)
   client_connection_t * cli = ws->ws_cli;
   int rc = LTE_OK, retc = 0;
   query_t * proc;
+  user_t * saved_user = NULL;
 
   if (MAINTENANCE)
     return 1;
@@ -3092,6 +3093,8 @@ ws_auth_check (ws_connection_t * ws)
   lt_threads_set_inner (cli->cli_trx, 1);
   LEAVE_TXN;
 
+  saved_user = cli->cli_user;
+  cli->cli_user = sec_name_to_user ("dba");
   err = qr_quick_exec (http_auth_qr, cli, NULL, &lc, 2,
       ":0", auth_proc, QRP_STR,
       ":1", auth_realm, QRP_STR);
@@ -3114,6 +3117,7 @@ ws_auth_check (ws_connection_t * ws)
     }
 
 error_end:
+  cli->cli_user = saved_user;
   if (err && err != (caddr_t)SQL_NO_DATA_FOUND)
     {
       /*log_info ("SQL ERROR in HTTP authentication : State=[%s] Message=[%s]", ERR_STATE(err), ERR_MESSAGE(err));*/
@@ -5225,7 +5229,7 @@ bif_http_limited (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   IN_TXN;
   DO_SET (lock_trx_t *, lt, &all_trxs)
     {
-      if (lt->lt_client && lt->lt_client->cli_ws && lt->lt_client->cli_ws->ws_limited)
+      if ((lt->lt_threads > 0 || lt_has_locks (lt)) && lt->lt_client && lt->lt_client->cli_ws && lt->lt_client->cli_ws->ws_limited)
 	limited ++;
     }
   END_DO_SET ();
