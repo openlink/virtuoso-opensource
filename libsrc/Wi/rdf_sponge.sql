@@ -494,6 +494,13 @@ alter table DB.DBA.SYS_HTTP_SPONGE add HS_FROM_IRI varchar
 ;
 --#ENDIF
 
+create table RDF_WEBID_ACL_GROUPS (
+	AG_WEBID varchar,
+	AG_GROUP varchar,
+primary key (AG_WEBID, AG_GROUP)
+)
+;
+
 create procedure DB.DBA.SYS_HTTP_SPONGE_GET_CACHE_PARAMS
    (
     in explicit_refresh any,
