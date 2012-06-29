@@ -405,13 +405,16 @@ verb
 		}
 	| BLANK_NODE_LABEL
 		{
+		  caddr_t label_copy_for_debug = NULL;
 		  TTLYYERROR_ACTION_COND (TTLP_VERB_MAY_BE_BLANK, "Blank node (written as '_:...' label) can not be used as a predicate");
+		  if (TTLP_DEBUG_BNODES & ttlp_arg->ttlp_flags)
+		    label_copy_for_debug = box_copy ($1);
 		  if (ttlp_arg->ttlp_formula_iid)
 		    $$ = tf_formula_bnode_iid (ttlp_arg, $1);
 		  else
 		    $$ = tf_bnode_iid (ttlp_arg->ttlp_tf, $1);
 		  if (TTLP_DEBUG_BNODES & ttlp_arg->ttlp_flags)
-		    ttlp_triples_for_bnodes_debug (ttlp_arg, $$, ttlp_arg->ttlp_lexlineno, $1);
+		    ttlp_triples_for_bnodes_debug (ttlp_arg, $$, ttlp_arg->ttlp_lexlineno, label_copy_for_debug);
 		}
 	| _LSQBRA
 		{
@@ -541,12 +544,15 @@ object
 blank
 	: BLANK_NODE_LABEL
 		{
+		  caddr_t label_copy_for_debug = NULL;
+		  if (TTLP_DEBUG_BNODES & ttlp_arg->ttlp_flags)
+		    label_copy_for_debug = box_copy ($1);
 		  if (ttlp_arg->ttlp_formula_iid)
 		    $$ = tf_formula_bnode_iid (ttlp_arg, $1);
 		  else
 		    $$ = tf_bnode_iid (ttlp_arg->ttlp_tf, $1);
 		  if (TTLP_DEBUG_BNODES & ttlp_arg->ttlp_flags)
-		    ttlp_triples_for_bnodes_debug (ttlp_arg, $$, ttlp_arg->ttlp_lexlineno, $1);
+		    ttlp_triples_for_bnodes_debug (ttlp_arg, $$, ttlp_arg->ttlp_lexlineno, label_copy_for_debug);
 		}
 	| _LSQBRA_RSQBRA
 		{
