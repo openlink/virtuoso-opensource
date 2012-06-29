@@ -744,7 +744,7 @@ create procedure CAL.WA.domain_update (
 -------------------------------------------------------------------------------
 --
 create procedure CAL.WA.domain_owner_id (
-  inout domain_id integer)
+  in domain_id integer)
 {
   return (select TOP 1 A.WAM_USER from WA_MEMBER A, WA_INSTANCE B where A.WAM_MEMBER_TYPE = 1 and A.WAM_INST = B.WAI_NAME and B.WAI_ID = domain_id);
 }
@@ -753,7 +753,7 @@ create procedure CAL.WA.domain_owner_id (
 -------------------------------------------------------------------------------
 --
 create procedure CAL.WA.domain_owner_name (
-  inout domain_id integer)
+  in domain_id integer)
 {
   return (select TOP 1 C.U_NAME from WA_MEMBER A, WA_INSTANCE B, SYS_USERS C where A.WAM_MEMBER_TYPE = 1 and A.WAM_INST = B.WAI_NAME and B.WAI_ID = domain_id and C.U_ID = A.WAM_USER);
 }

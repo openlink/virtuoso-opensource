@@ -2206,7 +2206,7 @@
                               if ((V[N+1] = 'SkyDrive') and not exists (select 1 from OAUTH..APP_REG where a_name = 'SkyDrive API' and a_owner = 0))
                                 goto _0;
 
-                              if ((V[N+1] = 'Box') and not exists (select 1 from OAUTH..APP_REG where a_name = 'Box API' and a_owner = 0))
+                              if ((V[N+1] = 'Box') and not exists (select 1 from OAUTH..APP_REG where a_name = 'Box Net API' and a_owner = 0))
                                 goto _0;
 
                               if (self.command_mode = 10)

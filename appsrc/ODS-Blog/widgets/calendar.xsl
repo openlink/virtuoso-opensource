@@ -369,7 +369,8 @@
         </v:before-render>
         <v:before-data-bind>
           <![CDATA[
-            declare _editid, _cf_id, _ch_id, _subj, _msg, _from_preview_mode, params any;
+            declare _editid, _editbid, _cf_id, _ch_id, _subj, _msg, _from_preview_mode, params any;
+
             params := self.vc_event.ve_params;
             _editid := get_keyword('editid', params);
             _cf_id := get_keyword('cf_id', params);
@@ -385,10 +386,12 @@
 	      declare meta BLOG.DBA."MTWeblogPost";
               self.text2 := null;
               whenever not found goto endb;
-              select blob_to_string (B_CONTENT), B_TITLE, B_COMMENTS_NO, B_META, B_STATE, B_TS
-                into self.text2, self.mtit1.ufl_value, self.comments_no, meta, self.post_state, self.post_date
+              select blob_to_string (B_CONTENT), B_TITLE, B_COMMENTS_NO, B_META, B_STATE, B_TS, B_BLOG_ID
+                into self.text2, self.mtit1.ufl_value, self.comments_no, meta, self.post_state, self.post_date, _editbid
                 from BLOG.DBA.SYS_BLOGS
-               where (BLOG2_GET_ACCESS (B_BLOG_ID, self.sid, self.realm, 120) in (1, 2)) and B_POST_ID = _editid;
+               where B_POST_ID = _editid;
+	       if (not BLOG2_GET_ACCESS (_editbid, self.sid, self.realm, 120) in (1, 2))
+	         goto endb;
               self.editpost := _editid;
 	      self.mtit1.ufl_value := BLOG..blog_utf2wide(self.mtit1.ufl_value);
 	      if (meta is not null and meta.enclosure is not null)

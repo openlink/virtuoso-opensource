@@ -2793,7 +2793,7 @@ create procedure ODRIVE.WA.auto_version_short (
 --
 create procedure ODRIVE.WA.det_type (
   in path varchar,
-  in what varchar := 'C')
+  in what varchar := 'C') returns varchar
 {
   declare id any;
 
@@ -2808,7 +2808,7 @@ create procedure ODRIVE.WA.det_type (
 --
 create procedure ODRIVE.WA.det_class(
   in path varchar,
-  in what varchar := null)
+  in what varchar := null) returns varchar
 {
   declare id any;
 

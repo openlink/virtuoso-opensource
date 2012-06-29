@@ -39,7 +39,7 @@
     ]]>
   </v:method>
 
-  <v:method name="shareSelect" arglist="in node varchar">
+  <v:method name="shareSelect" arglist="in node any">
     <![CDATA[
       declare grants any;
 

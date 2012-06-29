@@ -2144,7 +2144,7 @@ create procedure AB.WA.ab_path2 (
 --
 create procedure AB.WA.make_node (
   in node_type varchar,
-  in node_id any)
+  in node_id any) returns varchar
 {
   return node_type || '#' || cast(node_id as varchar);
 }
