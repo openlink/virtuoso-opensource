@@ -567,7 +567,7 @@ again:
 		  authenticated:
 		  ag := agent;
 		  --_gr := graph;
-		  uid := coalesce ((select FS_UID from FOAF_SSL_ACL where agent like FS_URI), 'nobody');
+		  uid := coalesce ((select FS_UID from FOAF_SSL_ACL where agent like FS_URI), (select FS_UID from FOAF_SSL_ACL, RDF_WEBID_ACL_GROUPS where AG_GROUP = FS_URI and AG_WEBID = agent), 'nobody');
 		  if ('nobody' = uid and allow_nobody = 0)
 		    goto ret;
 		  connection_set ('SPARQLUserId', uid);

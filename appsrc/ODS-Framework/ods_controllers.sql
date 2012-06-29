@@ -400,6 +400,10 @@ create procedure obj2xml (
   {
     retValue := sprintf ('%V', o);
   }
+  else if (__tag (o) = 211)
+  {
+    retValue := datestring (o);
+  }
   else if (isJsonObject (o))
   {
     for (N := 2; N < length(o); N := N + 2)

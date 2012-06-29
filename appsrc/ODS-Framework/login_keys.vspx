@@ -110,7 +110,7 @@
               </th>
               <td>
                 <v:select-list name="a_name" value="" xhtml_id="a_name" error-glyph="*">
-                  <v:item name="Box API" value="Box API"/>
+                  <v:item name="Box Net API" value="Box Net API"/>
                   <v:item name="Dropbox API" value="Dropbox API"/>
                   <v:item name="Facebook API" value="Facebook API"/>
                   <v:item name="Google API" value="Google API"/>

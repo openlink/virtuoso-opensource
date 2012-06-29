@@ -43,6 +43,16 @@ DB.DBA.EXEC_STMT(
   'create unique index APP_REG_K1 on OAUTH..APP_REG (a_key)'
 , 0);
 
+create procedure APP_REG_UPDATE ()
+{
+  update OAUTH..APP_REG
+     set A_NAME = 'Box Net API'
+   where A_NAME = 'Box API';
+}
+;
+
+APP_REG_UPDATE ();
+
 -- OAuth sessions
 DB.DBA.EXEC_STMT(
 'create table OAUTH..SESSIONS (

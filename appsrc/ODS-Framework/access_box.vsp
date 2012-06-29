@@ -3,7 +3,7 @@
   declare result, resultHeader any;
 
   auth_token := null;
-  token := ODS.ODS_API.get_oauth_tok ('Box API');
+  token := ODS.ODS_API.get_oauth_tok ('Box Net API');
   if ({?'auth_token'} is not null)
   {
     auth_token := get_keyword ('auth_token', params);
