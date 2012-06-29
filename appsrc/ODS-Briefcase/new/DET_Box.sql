@@ -1002,7 +1002,7 @@ create function DB.DBA.Box__params (
     params := vector (
       'authentication', tmp,
       'auth_token',     DB.DBA.Box__paramGet (colId, 'C', 'auth_token', 0, 1, 1),
-      'api_key',        (select a_key from OAUTH..APP_REG where a_name = 'Box API' and a_owner = 0),
+      'api_key',        (select a_key from OAUTH..APP_REG where a_name = 'Box Net API' and a_owner = 0),
       'graph',          DB.DBA.Box__paramGet (colId, 'C', 'graph', 0)
     );
   }
