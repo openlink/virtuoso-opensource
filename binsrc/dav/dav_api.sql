@@ -2882,7 +2882,7 @@ DAV_DELETE_INT (
       declare det varchar;
 
       det := cast ((select COL_DET from WS.WS.SYS_DAV_COL where COL_ID=id) as varchar);
-      if (det in ('GDrive', 'Dropbox', 'SkyDrive', 'Box'))
+      if (det in ('S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box'))
         connection_set ('dav_store', 1);
 
       for select RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_COL = id do
