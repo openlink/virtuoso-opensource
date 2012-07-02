@@ -445,9 +445,16 @@ create procedure dbp_ldd_http_print_l (in p_text any, inout odd_position int, in
    http (sprintf ('<tr class="%s"><td class="property">', either(mod (odd_position, 2), 'odd', 'even')));
    if (rev) http ('is ');
    if (short_p is not null)
-      http (sprintf ('<a class="uri" href="%V"%s><small>%s:</small>%s</a>\n', href, title, p_prefix, short_p));
+      http (sprintf ('<a class="uri" href="%V"%s><small>%V:</small>%V</a>\n', 
+	href,
+	charset_recode (title, 'UTF-8', '_WIDE_'),
+	charset_recode (p_prefix, 'UTF-8', '_WIDE_'),
+	charset_recode (short_p, 'UTF-8', '_WIDE_')));
    else
-      http (sprintf ('<a class="uri" href="%V"%s>%s</a>\n', href, title, p_prefix));
+      http (sprintf ('<a class="uri" href="%V"%s>%V</a>\n', 
+	href,
+	charset_recode (title, 'UTF-8', '_WIDE_'), 
+	charset_recode (p_prefix, 'UTF-8', '_WIDE_')));
    if (rev) http (' of');
    http ('</td><td><ul>\n');
 }
@@ -540,7 +547,7 @@ again:
    else if (__tag (_object) = 182)
      {
        string_type:
-       http (sprintf ('<span %s>%s</span>', rdfa, _object));
+       http (sprintf ('<span %s>%V</span>', rdfa, charset_recode (_object, 'UTF-8', '_WIDE_')));
        lang := '';
      }
    else if (__tag (_object) = 211)
@@ -586,13 +593,18 @@ again:
 
        if (s_t is null)
 	 {
-	   http (sprintf ('<a class="uri" %s href="%s">%s</a>', 
-		 rdfa, case when org then _url else dbp_ldd_get_proxy(_url) end, _url));
+	   http (sprintf ('<a class="uri" %s href="%V">%V</a>', 
+		 rdfa, 
+		charset_recode (case when org then _url else dbp_ldd_get_proxy(_url) end, 'UTF-8', '_WIDE_'), 
+		charset_recode (_url, 'UTF-8', '_WIDE_')));
 	 }
        else
 	 {
-	   http (sprintf ('<a class="uri" %s href="%s"><small>%s</small>:%s</a>',
-		 rdfa, case when org then _url else dbp_ldd_get_proxy (_url) end, p_t, s_t));
+	   http (sprintf ('<a class="uri" %s href="%V"><small>%V</small>:%V</a>',
+		 rdfa, 
+		charset_recode (case when org then _url else dbp_ldd_get_proxy(_url) end, 'UTF-8', '_WIDE_'), 
+		charset_recode (p_t, 'UTF-8', '_WIDE_'),
+		charset_recode (s_t, 'UTF-8', '_WIDE_')));
 	 }
      }
    else if (__tag (_object) = 238)
