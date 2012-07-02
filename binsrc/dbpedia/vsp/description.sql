@@ -445,15 +445,22 @@ create procedure dbp_ldd_http_print_l (in p_text any, inout odd_position int, in
    http (sprintf ('<tr class="%s"><td class="property">', either(mod (odd_position, 2), 'odd', 'even')));
    if (rev) http ('is ');
    if (short_p is not null)
-      http (sprintf ('<a class="uri" href="%V"%s><small>%s:</small>%s</a>\n', href, title, p_prefix, short_p));
+      http (sprintf ('<a class="uri" href="%V"%s><small>%V:</small>%V</a>\n', 
+	href,
+	charset_recode (title, 'UTF-8', '_WIDE_'),
+	charset_recode (p_prefix, 'UTF-8', '_WIDE_'),
+	charset_recode (short_p, 'UTF-8', '_WIDE_')));
    else
-      http (sprintf ('<a class="uri" href="%V"%s>%s</a>\n', href, title, p_prefix));
+      http (sprintf ('<a class="uri" href="%V"%s>%V</a>\n', 
+	href,
+	charset_recode (title, 'UTF-8', '_WIDE_'), 
+	charset_recode (p_prefix, 'UTF-8', '_WIDE_')));
    if (rev) http (' of');
    http ('</td><td><ul>\n');
 }
 ;
 
-create procedure dbp_ldd_rel_print (in val any, in rel any, in obj any, in flag int := 0, in lang varchar := null)
+create procedure dbp_ldd_rel_print (in val any, in rel any, in obj any, in flag int := 0, in lang varchar := null, in nofollow int := 0)
 {
   declare delim, delim1, delim2, delim3 integer;
   declare inx int;
@@ -486,7 +493,7 @@ create procedure dbp_ldd_rel_print (in val any, in rel any, in obj any, in flag 
   if (flag)
     loc := sprintf ('property="%s:%s"', nspref, loc);
   else if (rel)
-    loc := sprintf ('rel="%s:%s"', nspref, loc);
+    loc := sprintf ('rel="%s:%s%s"', nspref, loc, case when nofollow = 1 and loc <> 'sameAs' then ' nofollow' else '' end);
   else
     loc := sprintf ('rev="%s:%s"', nspref, loc);
   --if (obj is not null)
@@ -505,7 +512,7 @@ create procedure dbp_ldd_http_print_r (in _object any, in org int := 0, in label
    lang := DB.DBA.RDF_LANGUAGE_OF_OBJ (_object);
    visible := dbp_ldd_str_lang_check (lang, acc);
    rdfs_type := DB.DBA.RDF_DATATYPE_OF_OBJ (_object);
-   rdfa := dbp_ldd_rel_print (id_to_iri (pred), rel, null, 1, lang);
+   rdfa := dbp_ldd_rel_print (id_to_iri (pred), rel, null, 1, lang, 0);
 
    http (sprintf ('\t<li%s><span class="literal">', case visible when 0 then ' style="display:none;"' else '' end));
 
@@ -540,7 +547,7 @@ again:
    else if (__tag (_object) = 182)
      {
        string_type:
-       http (sprintf ('<span %s>%s</span>', rdfa, _object));
+       http (sprintf ('<span %s>%V</span>', rdfa, charset_recode (_object, 'UTF-8', '_WIDE_')));
        lang := '';
      }
    else if (__tag (_object) = 211)
@@ -577,16 +584,27 @@ again:
        else
 	 dbp_ldd_split_url (_url, p_t, s_t, _label);
 
-       rdfa := dbp_ldd_rel_print (id_to_iri (pred), rel, _url, 0, lang);
+       declare nofollow int;
+       nofollow := 0;
+       if (s_t is null and _url not like registry_get('dbp_domain') || '/%')
+	 nofollow := 1;
+
+       rdfa := dbp_ldd_rel_print (id_to_iri (pred), rel, _url, 0, lang, nofollow);
+
        if (s_t is null)
 	 {
-	   http (sprintf ('<a class="uri" %s href="%s">%s</a>', 
-		 rdfa, case when org then _url else dbp_ldd_get_proxy(_url) end, _url));
+	   http (sprintf ('<a class="uri" %s href="%V">%V</a>', 
+		 rdfa, 
+		charset_recode (case when org then _url else dbp_ldd_get_proxy(_url) end, 'UTF-8', '_WIDE_'), 
+		charset_recode (_url, 'UTF-8', '_WIDE_')));
 	 }
        else
 	 {
-	   http (sprintf ('<a class="uri" %s href="%s"><small>%s</small>:%s</a>',
-		 rdfa, case when org then _url else dbp_ldd_get_proxy (_url) end, p_t, s_t));
+	   http (sprintf ('<a class="uri" %s href="%V"><small>%V</small>:%V</a>',
+		 rdfa, 
+		charset_recode (case when org then _url else dbp_ldd_get_proxy(_url) end, 'UTF-8', '_WIDE_'), 
+		charset_recode (p_t, 'UTF-8', '_WIDE_'),
+		charset_recode (s_t, 'UTF-8', '_WIDE_')));
 	 }
      }
    else if (__tag (_object) = 238)

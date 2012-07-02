@@ -205,7 +205,7 @@
 
 <!-- header -->
 <head profile="http://www.w3.org/1999/xhtml/vocab">
-    <title>About: <?vsp http (sprintf ('%s', label)); ?></title>
+    <title>About: <?vsp http (sprintf ('%V', charset_recode (label, 'UTF-8', '_WIDE_'))); ?></title>
     <link rel="alternate" type="application/rdf+xml" href="<?=rdf_link2?>" title="Structured Descriptor Document (RDF/XML format)" />
     <link rel="alternate" type="text/rdf+n3" href="<?=rdf_link?>" title="Structured Descriptor Document (N3/Turtle format)" />
     <link rel="alternate" type="application/json+rdf" href="<?=rdf_link4?>" title="Structured Descriptor Document (RDF/JSON format)" />
@@ -226,10 +226,10 @@
     <link rev="describedby" href="<?= page_resource_uri ?>"/>
     <script type="text/javascript" src="/statics/script.js"></script>
 </head>
-<body onload="init();" about="<?V page_resource_uri ?>">
+<body onload="init();" about="<?V charset_recode(page_resource_uri, 'UTF-8', '_WIDE_') ?>">
     <div id="header">
       <div id="hd_l">
-	  <h1 id="title">About: <a href="<?vsp http (dbp_ldd_get_proxy (page_resource_uri)); ?>"><?vsp http (sprintf ('%s', label)); ?></a></h1>
+	  <h1 id="title">About: <a href="<?V dbp_ldd_get_proxy (page_resource_uri) ?>"><?V charset_recode(label, 'UTF-8', '_WIDE_') ?></a></h1>
         <div id="homelink">
           <!--?vsp if (white_page = 0) http (txt); ?-->
         </div>
