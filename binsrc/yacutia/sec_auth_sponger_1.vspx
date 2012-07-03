@@ -57,9 +57,9 @@
   </v:method>
   <v:on-init>
     <![CDATA[
-        if (self.edit is not null)
+        if (self.edit is not null and self.vc_event.ve_is_post = 0)
 	  {
-	    self.data := (select vector_agg (AG_WEBID) from RDF_CARTRIDGES_ACL_GROUPS where AG_GROUP = self.edit);
+	    self.data := (select vector_agg (AG_WEBID) from RDF_WEBID_ACL_GROUPS where AG_GROUP = self.edit);
 	  }
       	if (self.wdata is not null)
 	  self.data := deserialize (decode_base64 (self.wdata));
@@ -67,7 +67,7 @@
 	  self.data := vector ();
 	if (self.del is not null)
           {
-	    delete from RDF_CARTRIDGES_ACL_GROUPS where AG_GROUP = self.del;
+	    delete from RDF_WEBID_ACL_GROUPS where AG_GROUP = self.del;
 	    self.del := null;
 	  }
 	if (self.wdel is not null)
@@ -152,7 +152,7 @@
 			    <tr class="listing_header_row"><th>Group URI</th><th><v:url value="Add New" name="uadd" url="sec_auth_sponger_1.vspx?add=1" render-only="1"/></th></tr>
 			    <?vsp 
 			    	declare ctr int;
-			    	for select distinct AG_GROUP from RDF_CARTRIDGES_ACL_GROUPS do { ?>
+			    	for select distinct AG_GROUP from RDF_WEBID_ACL_GROUPS do { ?>
 			    <tr>
 				<td><?V AG_GROUP ?></td>
 				<td>
@@ -200,6 +200,7 @@
 				      }
 				    if (not position (self.wname.ufl_value, self.data))
   				      self.data := vector_concat (self.data, vector (self.wname.ufl_value));
+				    self.wname.ufl_value := '';  
 				</v:on-post>
 			    </v:button>
 			    <br/>
@@ -223,10 +224,10 @@
 					self.vc_error_message := 'Must have at least one WebID per group';
 					return 0;
 				      }
-				    delete from RDF_CARTRIDGES_ACL_GROUPS where AG_GROUP = self.gname.ufl_value;  
+				    delete from RDF_WEBID_ACL_GROUPS where AG_GROUP = self.gname.ufl_value;  
 				    foreach (any w in self.data) do
 				      {
-				        insert soft RDF_CARTRIDGES_ACL_GROUPS (AG_GROUP, AG_WEBID) values (self.gname.ufl_value, w);
+				        insert soft RDF_WEBID_ACL_GROUPS (AG_GROUP, AG_WEBID) values (self.gname.ufl_value, w);
 			      	      } 	      
 				    commit work;
                                     self.vc_redirect ('sec_auth_sponger_1.vspx');

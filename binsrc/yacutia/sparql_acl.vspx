@@ -34,8 +34,8 @@
       <v:variable persist="0" name="acl_name" type="varchar" default="'HTTP'" param-name="acl"/>
 
       <v:variable persist="temp" name="msg_msg" type="varchar" default="''"/>
-      <v:variable name="edit_oauth" type="varchar" default="null" param-name="edit" />
-      <v:variable name="del_oauth" type="varchar" default="null" param-name="del" />
+      <v:variable name="edit_acl" type="varchar" default="null" param-name="edit" />
+      <v:variable name="del_acl" type="varchar" default="null" param-name="del" />
       <v:variable name="u_id" type="int" default="null" />
       <v:variable name="apps" type="any" default="null" persist="temp"/>
     </vm:variables>
@@ -120,24 +120,20 @@
 	  <div class="message"><v:label name="pwd_msg" value="--self.msg_msg" /></div>
 		      <v:form type="simple" method="POST">
 			<table class="listing">
-			  <colgroup>
-			    <col/>
-			    <col/>
-			    <col/>
-			  </colgroup>
 			  <tr class="listing_header_row">
 			    <th>Web ID</th>
 			    <th>Role</th>
+			    <th>User Account</th>
 			    <th>Action</th>
 			  </tr>
-			  <v:data-set name="oauth" sql="select g.U_NAME, FS_URI from FOAF_SSL_ACL left outer join  SYS_USERS u on (u.U_NAME = FS_UID)
+			  <v:data-set name="oauth" sql="select g.U_NAME, FS_URI, FS_UID from FOAF_SSL_ACL left outer join  SYS_USERS u on (u.U_NAME = FS_UID)
 			      	join SYS_USER_GROUP on (u.U_ID = UG_UID) join SYS_USERS g on (g.U_ID = UG_GID)" scrollable="1" editable="1" nrows="1000">
 			    <v:before-data-bind>
-                        if (not e.ve_is_post and self.del_oauth is not null)
+                        if (not e.ve_is_post and self.del_acl is not null)
                         {
 			  declare uid varchar;
-                          uid := (select FS_UID from FOAF_SSL_ACL where FS_URI = self.del_oauth);
-			  delete from FOAF_SSL_ACL where FS_URI = self.del_oauth;
+                          uid := (select FS_UID from FOAF_SSL_ACL where FS_URI = self.del_acl);
+			  delete from FOAF_SSL_ACL where FS_URI = self.del_acl;
 			  if (uid like 'SPUID%')
 			    USER_DROP (uid);
 			  self.vc_redirect ('sparql_acl.vspx');
@@ -150,13 +146,14 @@
 				    </v:template>
                 		    <v:template name="maps_brows" type="browse">
             <v:after-data-bind>
-              if (not e.ve_is_post and control.te_rowset[1] = self.edit_oauth)
+              if (not e.ve_is_post and control.te_rowset[1] = self.edit_acl)
               {
                 self.webid.ufl_value := control.te_rowset[1];
                 self.rol.ufl_value := control.te_rowset[0];
+                self.usr.ufl_value := control.te_rowset[2];
               }
             </v:after-data-bind>
-					<tr class="<?V case when self.edit_oauth = control.te_rowset[1] then 'listing_row_selected'
+					<tr class="<?V case when self.edit_acl = control.te_rowset[1] then 'listing_row_selected'
 					    when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
                 			    <td>
                 				    <v:label name="la2" value="--(control.vc_parent as vspx_row_template).te_rowset[1]"
@@ -167,6 +164,14 @@
                 				    <v:label name="ur1"
                 				      format="%s"
                 				      value="--(control.vc_parent as vspx_row_template).te_rowset[0]"
+                				    />
+                			    </td>
+                			    <td>
+                				    <v:url name="ur2"
+                				      format="%s"
+                				      value="--(control.vc_parent as vspx_row_template).te_rowset[2]"
+						      url="--sprintf ('account_create.vspx?mode=edit&user_name=%U', (control.vc_parent as vspx_row_template).te_rowset[2])"
+						      render-only="1"
                 				    />
                 			    </td>
                 			    <td>
@@ -209,25 +214,28 @@
 				  <v:item name="SELECT" value="SPARQL_SELECT"/>
 				  <v:item name="SPONGE" value="SPARQL_SPONGE"/>
 				  <v:item name="UPDATE" value="SPARQL_UPDATE"/>
-			      </v:select-list>
+			      </v:select-list> <br/>
+			      Use existing User account: <v:data-list name="usr" sql="select U_NAME from (select 'none' as U_NAME) x union all select U_NAME from SYS_USERS where U_SQL_ENABLE = 1"
+				  	key-column="U_NAME" value-column="U_NAME"/> (for new ACL entry, leave none to create a new user)
 			      <!-- SQL Account: <v:text name="acc" value="" xhtml_size="100"/--><br/>
 				  <span class="fm_ctl_btn">
-				      <v:button name="cancel2" value="Cancel" action="simple" enabled="--equ(isnull(self.edit_oauth),0)">
+				      <v:button name="cancel2" value="Cancel" action="simple" enabled="--equ(isnull(self.edit_acl),0)">
 					  <v:on-post>
 
 					      self.webid.ufl_value := null;
 					      self.rol.ufl_value := null;
 
-					      self.edit_oauth := null;
+					      self.edit_acl := null;
 					      self.save1.vc_data_bind (e);
 					      control.vc_enabled := 0;
 					  </v:on-post>
 				      </v:button>
 				  </span>
                  	      <span class="fm_ctl_btn">
-                  		  <v:button name="save1" value="--case when self.edit_oauth is not null then 'Update' else 'Register' end" action="simple">
+                  		  <v:button name="save1" value="--case when self.edit_acl is not null then 'Update' else 'Register' end" action="simple">
 				      <v:on-post><![CDATA[
 					  declare uid, orole varchar;
+					  declare stat, msg any;
 					  self.webid.ufl_value := trim (self.webid.ufl_value);
 					  if (0 = length (self.webid.ufl_value))
 					    {
@@ -242,7 +250,9 @@
                                               self.vc_error_message := 'The WebID is inaccessible or does not contain certificate properties';
 					      return;
 					    }
-					  if (self.edit_oauth is null)
+					  if (self.edit_acl is null)
+                                            {
+					      if (self.usr.ufl_value = 'none')
                                             {
 					      if (exists (select 1 from FOAF_SSL_ACL where FS_URI = self.webid.ufl_value))
 						{
@@ -254,15 +264,26 @@
 					      USER_CREATE (uid, uuid());
 					      USER_GRANT_ROLE (uid, self.rol.ufl_value);
 					      USER_SET_OPTION (uid, 'DISABLED', 1);
+					        }
+					      else 
+					        uid := self.usr.ufl_value;
 					      insert into FOAF_SSL_ACL (FS_URI, FS_UID) values (self.webid.ufl_value, uid);
 					    }
                                           else
 					    {
-					      uid := (select FS_UID from FOAF_SSL_ACL where FS_URI = self.edit_oauth);
+					      if (self.usr.ufl_value = 'none')
+                                                {
+						   self.vc_is_valid := 0;
+						   self.vc_error_message := 'Can not remove users from ACL rules, please select a valid user';
+						   return;
+					        }
+					      uid := (select FS_UID from FOAF_SSL_ACL where FS_URI = self.edit_acl);
 					      orole := (select  g.U_NAME from SYS_USERS u join SYS_USER_GROUP on (u.U_ID = UG_UID)
 					      		join SYS_USERS g on (g.U_ID = UG_GID) where u.U_NAME = uid);
 					      USER_REVOKE_ROLE (uid, orole);
-					      USER_GRANT_ROLE (uid, self.rol.ufl_value);
+					      uid := self.usr.ufl_value;
+					      exec ('DB.DBA.USER_GRANT_ROLE (?,?)', stat, msg, vector (uid, self.rol.ufl_value));
+					      update FOAF_SSL_ACL set FS_UID = uid where FS_URI = self.edit_acl;
 					    }
 
 					  self.vc_redirect ('sparql_acl.vspx');
