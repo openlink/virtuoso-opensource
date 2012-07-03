@@ -128,6 +128,7 @@ extern char * https_client_verify_crl_file;
 extern char *c_ssl_server_port;
 extern char *c_ssl_server_cert;
 extern char *c_ssl_server_key;
+extern char *c_ssl_server_extra_certs;
 extern int32 ssl_server_verify;
 extern int32 ssl_server_verify_depth;
 extern char *ssl_server_verify_file;
@@ -755,6 +756,9 @@ cfg_setup (void)
 
   if (cfg_getstring (pconfig, section, "SSLPrivateKey", &c_ssl_server_key) == -1)
     c_ssl_server_key = NULL;
+
+  if (cfg_getstring (pconfig, section, "SSLExtraChainCertificate", &c_ssl_server_extra_certs) == -1)
+      c_ssl_server_extra_certs = NULL;
 
   if (cfg_getlong (pconfig, section, "X509ClientVerify", &ssl_server_verify) == -1)
     ssl_server_verify = 0;
