@@ -34,6 +34,16 @@
 #include "xslt_impl.h"	/* For vector_sort_t */
 #include "aqueue.h"	/* For aq_allocate() in rdf replication */
 
+#define PRINT_ERR(err) \
+      if (err) \
+	{ \
+	  log_error ("Error compiling a server init statement : %s: %s -- %s:%d", \
+	      ((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING], \
+		     __FILE__, __LINE__); \
+	  dk_free_tree (err); \
+	  err = NULL; \
+	}
+
 void
 rb_complete_1 (rdf_box_t * rb, lock_trx_t * lt, void * /*actually query_instance_t * */ caller_qi_v, int is_local)
 {
@@ -41,8 +51,9 @@ rb_complete_1 (rdf_box_t * rb, lock_trx_t * lt, void * /*actually query_instance
   static query_t *rdf_box_qry_complete_text = NULL;
   static query_t *rdf_box_qry_complete_xml_l;
   static query_t *rdf_box_qry_complete_text_l;
+  query_t *qr;
   query_instance_t *caller_qi = (query_instance_t *)caller_qi_v;
-  caddr_t err;
+  caddr_t err = NULL;
   local_cursor_t *lc;
   dtp_t value_dtp = ((rb->rb_chksum_tail) ? (((rdf_bigbox_t *)rb)->rbb_box_dtp) : DV_TYPE_OF (rb->rb_box));
 #ifdef DEBUG
@@ -56,7 +67,8 @@ rb_complete_1 (rdf_box_t * rb, lock_trx_t * lt, void * /*actually query_instance
  16843009, \
  RO_VAL \
  from DB.DBA.RDF_OBJ table option (no cluster) where RO_ID = ?",
-        bootstrap_cli, NULL, SQLC_DEFAULT );
+        bootstrap_cli, &err, SQLC_DEFAULT );
+      PRINT_ERR(err);
       rdf_box_qry_complete_text_l = sql_compile_static ("select \
  case (isnull (RO_LONG)) \
    when 0 then case (bit_and (RO_FLAGS, 2)) when 2 then xml_tree_doc (__xml_deserialize_packed (RO_LONG)) else blob_to_string (RO_LONG) end \
@@ -64,13 +76,15 @@ rb_complete_1 (rdf_box_t * rb, lock_trx_t * lt, void * /*actually query_instance
  RO_DT_AND_LANG, \
  case (isnull (RO_LONG)) when 0 then RO_VAL else NULL end \
  from DB.DBA.RDF_OBJ table option (no cluster) where RO_ID = ? ",
-        bootstrap_cli, NULL, SQLC_DEFAULT );
+        bootstrap_cli, &err, SQLC_DEFAULT );
+      PRINT_ERR(err);
       rdf_box_qry_complete_xml = sql_compile_static ("select \
  xml_tree_doc (__xml_deserialize_packed (RO_LONG)), \
  16843009, \
  RO_VAL \
  from DB.DBA.RDF_OBJ where RO_ID = ?",
-        bootstrap_cli, NULL, SQLC_DEFAULT );
+        bootstrap_cli, &err, SQLC_DEFAULT );
+      PRINT_ERR(err);
       rdf_box_qry_complete_text = sql_compile_static ("select \
  case (isnull (RO_LONG)) \
    when 0 then case (bit_and (RO_FLAGS, 2)) when 2 then xml_tree_doc (__xml_deserialize_packed (RO_LONG)) else blob_to_string (RO_LONG) end \
@@ -78,12 +92,15 @@ rb_complete_1 (rdf_box_t * rb, lock_trx_t * lt, void * /*actually query_instance
  RO_DT_AND_LANG, \
  case (isnull (RO_LONG)) when 0 then RO_VAL else NULL end \
  from DB.DBA.RDF_OBJ where RO_ID = ?",
-        bootstrap_cli, NULL, SQLC_DEFAULT );
+        bootstrap_cli, &err, SQLC_DEFAULT );
+      PRINT_ERR(err);
     }
-  err = qr_rec_exec (
-		     is_local ? (DV_XML_ENTITY == value_dtp ? rdf_box_qry_complete_xml_l : rdf_box_qry_complete_text_l)
-    : (DV_XML_ENTITY == value_dtp ? rdf_box_qry_complete_xml : rdf_box_qry_complete_text),
-    lt->lt_client, &lc, caller_qi, NULL, 1,
+  qr = is_local ? (DV_XML_ENTITY == value_dtp ? rdf_box_qry_complete_xml_l : rdf_box_qry_complete_text_l)
+    : (DV_XML_ENTITY == value_dtp ? rdf_box_qry_complete_xml : rdf_box_qry_complete_text);
+  if (!qr)
+    sqlr_new_error ("22023", "RDFXX", "RDF integrity issue, rdf box can not be completed");
+
+  err = qr_rec_exec (qr, lt->lt_client, &lc, caller_qi, NULL, 1,
       ":0", box_num(rb->rb_ro_id), QRP_RAW );
   if (NULL != err)
     {
