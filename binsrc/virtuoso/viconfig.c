@@ -752,6 +752,7 @@ cfg_setup (void)
     c_ssl_server_port = NULL;
 
   if (cfg_getstring (pconfig, section, "SSLCertificate", &c_ssl_server_cert) == -1)
+    if (cfg_getstring (pconfig, section, "SSLPublicKey", &c_ssl_server_cert) == -1)
     c_ssl_server_cert = NULL;
 
   if (cfg_getstring (pconfig, section, "SSLPrivateKey", &c_ssl_server_key) == -1)
@@ -1276,6 +1277,7 @@ cfg_setup (void)
     c_https_port = NULL;
 
   if (cfg_getstring (pconfig, section, "SSLCertificate", &c_https_cert) == -1)
+    if (cfg_getstring (pconfig, section, "SSLPublicKey", &c_https_cert) == -1)
     c_https_cert = NULL;
 
   if (cfg_getstring (pconfig, section, "SSLExtraChainCertificate", &https_extra) == -1)
