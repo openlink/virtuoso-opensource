@@ -608,6 +608,19 @@
     <div id="6" class="tabContent" style="display: none;">
       <table class="form-body" cellspacing="0">
         <tr>
+          <th width="30%">
+            <v:label for="dav_S3_activity" value="--'Activity manager (on/off)'" />
+          </th>
+          <td>
+            <?vsp
+              declare S varchar;
+
+              S := self.get_fieldProperty ('dav_S3_activity', self.dav_path, 'virt:S3-activity', 'off');
+              http (sprintf ('<input type="checkbox" name="dav_S3_activity" id="dav_S3_activity" %s disabled="disabled" value="on" />', case when S = 'on' then 'checked="checked"' else '' end));
+            ?>
+          </td>
+        </tr>
+        <tr>
           <th>
             <v:label for="dav_S3_BucketName" value="Bucket Name" />
           </th>
@@ -652,7 +665,31 @@
             </v:text>
           </td>
         </tr>
+        <tr>
+          <th>
+            <v:label for="dav_S3_graph" value="--'Graph name'" />
+          </th>
+          <td>
+            <v:text name="dav_S3_graph" xhtml_id="dav_S3_graph" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_value := self.get_fieldProperty ('dav_S3_graph', self.dav_path, 'virt:S3-graph', '');
+                  if ((control.ufl_value = '') and (self.command = 0))
+                    control.ufl_value := ODRIVE.WA.host_url () || rtrim (WS.WS.FIXPATH (ODRIVE.WA.odrive_real_path (self.dav_path)), '/') || '#this';
+                ]]>
+              </v:before-data-bind>
+            </v:text>
+          </td>
+        </tr>
+        <?vsp
+          self.detSpongerUI ('S3', 6);
+        ?>
       </table>
+      <![CDATA[
+  	    <script type="text/javascript">
+          OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('dav_S3_sponger'), {checked: {show: ['dav6_cartridge', 'dav6_metaCartridge']}})});
+  	    </script>
+  	  ]]>
     </div>
   </xsl:template>
 

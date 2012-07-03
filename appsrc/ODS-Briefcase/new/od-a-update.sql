@@ -193,3 +193,32 @@ ODRIVE.WA.tmp_upgrade ('IMAP');
 ODRIVE.WA.tmp_upgrade ('GDrive');
 ODRIVE.WA.tmp_upgrade ('Dropbox');
 ODRIVE.WA.tmp_upgrade ('SkyDrive');
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.tmp_upgrade ()
+{
+  declare rid, ouid, ogid any;
+
+  if (registry_get ('odrive_nobody_update') = '1')
+    return;
+
+  for (select RES_ID, RES_COL from WS.WS.SYS_DAV_RES where RES_OWNER = -12) do
+  {
+    rid := RES_ID;
+
+    select COL_OWNER, COL_GROUP
+      into ouid, ogid
+      from WS.WS.SYS_DAV_COL
+     where COL_ID = RES_COL;
+
+    update WS.WS.SYS_DAV_RES
+       set RES_OWNER = ouid,
+           RES_GROUP = ogid
+     where RES_ID = rid;
+  }
+  registry_set ('odrive_nobody_update', '1');
+}
+;
+
+ODRIVE.WA.tmp_upgrade ();

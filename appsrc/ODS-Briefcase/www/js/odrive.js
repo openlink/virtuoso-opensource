@@ -1594,6 +1594,12 @@ ODRIVE.updateRdfGraph = function ()
     $('dav_rdfSink_rdfGraph').value = $v('rdfGraph_prefix') + $v('dav_name') + '#this';
 
   if (
+      ($v('dav_S3_graph') == '') ||
+      ($v('dav_S3_graph') == ($v('rdfGraph_prefix')+$v('dav_name_save')+'#this'))
+     )
+    $('dav_S3_graph').value = $v('rdfGraph_prefix') + $v('dav_name') + '#this';
+
+  if (
       ($v('dav_IMAP_graph') == '') ||
       ($v('dav_IMAP_graph') == ($v('rdfGraph_prefix')+$v('dav_name_save')+'#this'))
      )
