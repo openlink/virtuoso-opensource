@@ -504,12 +504,21 @@ again:
     {
       for select VS_UID, VS_STATE from VSPX_SESSION where VS_SID = fing and VS_REALM = 'FOAF+SSL' do
 	{
-	  declare st any;
+	  declare st, uid any;
 	  st := deserialize (VS_STATE);
 	  ag := get_keyword ('agent', st);
+	  uid := coalesce ((select FS_UID from FOAF_SSL_ACL where ag like FS_URI), (select FS_UID from FOAF_SSL_ACL, RDF_WEBID_ACL_GROUPS where AG_GROUP = FS_URI and AG_WEBID = ag), 'nobody');
+	  if (exists (select 1 from SYS_USERS where U_NAME = VS_UID) and VS_UID = uid)
+	    {
 	  validation_type := get_keyword ('vtype', st);
 	  connection_set ('SPARQLUserId', VS_UID);
 	  return 1;
+	}
+	  else
+	    {
+	      uid := VS_UID;
+	      delete from VSPX_SESSION where VS_REALM = 'FOAF+SSL' and VS_UID = uid;
+	    }
 	}
     }
 
