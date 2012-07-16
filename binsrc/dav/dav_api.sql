@@ -1710,7 +1710,10 @@ DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_
       if (rc < 0)
       {
         if (DAV_AUTHENTICATE_SSL (id, what, null, req, a_uid, a_gid, _perms))
+        {
+	  http_rewrite ();
           return a_uid;
+        }
 
           return rc;	
       }
