@@ -4633,7 +4633,7 @@ http_session_arg (caddr_t * qst, state_slot_t ** args, int nth,
       query_instance_t * qi = (query_instance_t *) qst;
       if (!qi->qi_client->cli_http_ses)
 	sqlr_new_error ("37000", "HT006", "http output function outside of http context and no stream specified: %s.", func);
-      res = qi->qi_client->cli_http_ses;
+      res = qi->qi_client->cli_ws->ws_session;
     }
   return res;
 }
