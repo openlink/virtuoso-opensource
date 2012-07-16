@@ -5524,6 +5524,10 @@ DB.DBA.SYS_SQL_VAL_PRINT (in v any)
     }
   else if (__tag (v) = 255)
     return '<tag 255>';
+  else if (__tag (v) = 211)
+    {
+      return sprintf ('stringdate (%s)', SYS_SQL_VAL_PRINT (datestring (v)));
+    }
   else
     signal ('22023', sprintf('Unsupported type %d', __tag (v)));
 }
