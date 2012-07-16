@@ -45,12 +45,11 @@
     <link rel="alternate" type="application/rss+xml" title="Benchmark & Troubleshooting Utilities Screencasts"
 	href="http://support.openlinksw.com/viewlets/utilities_viewlets_rss.vsp" />
     <title></title>
-
   <![CDATA[
   <script type="text/javascript" src="toolkit/loader.js"></script>
   <script type="text/javascript">
     OAT.Preferences.imagePath = "images/";
-    OAT.Loader.load(["combolist", "ajax", "tab"], function(){OAT.MSG.send(OAT, 'PAGE_LOADED');});
+    OAT.Loader.load(["combolist", "ajax", "tab", "json", "calendar"], function(){OAT.MSG.send(OAT, 'PAGE_LOADED');});
   </script>
   ]]>
   </head>
