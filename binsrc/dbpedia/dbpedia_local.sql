@@ -377,14 +377,14 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'dbpl_resource_rule_2', 1, '/resource/([^\
     '(application/rdf.xml)|(text/rdf.n3)|(text/n3)|(application/x-turtle)|(application/rdf.json)|(application/json)|(application/atom.xml)|(application/odata.json)', 2, 303, '^{sql:DB.DBA.DBP_LINK_HDR}^');
 
 delete from DB.DBA.HTTP_VARIANT_MAP where VM_RULELIST = 'dbpl_resource_rule_list';
-DB.DBA.HTTP_VARIANT_ADD ('dbpl_resource_rule_list', '@__@(.*)', '/data/\x241.xml', 'application/rdf+xml', 0.95, location_hook=>null);
-DB.DBA.HTTP_VARIANT_ADD ('dbpl_resource_rule_list', '@__@(.*)', '/data/\x241.n3',  'text/n3', 0.80, location_hook=>null);
-DB.DBA.HTTP_VARIANT_ADD ('dbpl_resource_rule_list', '@__@(.*)', '/data/\x241.nt',  'text/rdf+n3', 0.80, location_hook=>null);
-DB.DBA.HTTP_VARIANT_ADD ('dbpl_resource_rule_list', '@__@(.*)', '/data/\x241.ttl',  'application/x-turtle', 0.70, location_hook=>null);
-DB.DBA.HTTP_VARIANT_ADD ('dbpl_resource_rule_list', '@__@(.*)', '/data/\x241.json',  'application/json', 0.60, location_hook=>null);
-DB.DBA.HTTP_VARIANT_ADD ('dbpl_resource_rule_list', '@__@(.*)', '/data/\x241.jrdf',  'application/rdf+json', 0.60, location_hook=>null);
-DB.DBA.HTTP_VARIANT_ADD ('dbpl_resource_rule_list', '@__@(.*)', '/data/\x241.atom',  'application/atom+xml', 0.50, location_hook=>null);
-DB.DBA.HTTP_VARIANT_ADD ('dbpl_resource_rule_list', '@__@(.*)', '/data/\x241.jsod',  'application/odata+json', 0.50, location_hook=>null);
+DB.DBA.HTTP_VARIANT_ADD ('dbpl_resource_rule_list', '/(.*)@__@(.*)', '/data/\x242.xml', 'application/rdf+xml', 0.95, location_hook=>null);
+DB.DBA.HTTP_VARIANT_ADD ('dbpl_resource_rule_list', '/(.*)@__@(.*)', '/data/\x242.n3',  'text/n3', 0.80, location_hook=>null);
+DB.DBA.HTTP_VARIANT_ADD ('dbpl_resource_rule_list', '/(.*)@__@(.*)', '/data/\x242.nt',  'text/rdf+n3', 0.80, location_hook=>null);
+DB.DBA.HTTP_VARIANT_ADD ('dbpl_resource_rule_list', '/(.*)@__@(.*)', '/data/\x242.ttl',  'application/x-turtle', 0.70, location_hook=>null);
+DB.DBA.HTTP_VARIANT_ADD ('dbpl_resource_rule_list', '/(.*)@__@(.*)', '/data/\x242.json',  'application/json', 0.60, location_hook=>null);
+DB.DBA.HTTP_VARIANT_ADD ('dbpl_resource_rule_list', '/(.*)@__@(.*)', '/data/\x242.jrdf',  'application/rdf+json', 0.60, location_hook=>null);
+DB.DBA.HTTP_VARIANT_ADD ('dbpl_resource_rule_list', '/(.*)@__@(.*)', '/data/\x242.atom',  'application/atom+xml', 0.50, location_hook=>null);
+DB.DBA.HTTP_VARIANT_ADD ('dbpl_resource_rule_list', '/(.*)@__@(.*)', '/data/\x242.jsod',  'application/odata+json', 0.50, location_hook=>null);
 
 -- Wikicompany
 --DB.DBA.VHOST_REMOVE (lpath=>'/wikicompany/resource');
