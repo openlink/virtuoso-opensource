@@ -270,8 +270,10 @@ create procedure ods_xml_item (
   in pTag varchar,
   in pValue any)
 {
+  -- sprintf %V cannot handle UTF-8. We need to convert to wide chars first. Otherwise we end up with double-endoded characters.
+  -- if the input string is already wide nothing is done.
   if (not DB.DBA.is_empty_or_null (pValue))
-    http (sprintf ('<%s>%V</%s>', pTag, cast (pValue as varchar), pTag));
+    http (sprintf ('<%s>%V</%s>', pTag,  charset_recode (cast (pValue as varchar), 'UTF-8', '_WIDE_'), pTag));
 }
 ;
 
