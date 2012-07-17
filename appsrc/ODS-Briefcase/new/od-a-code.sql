@@ -3317,9 +3317,16 @@ create procedure ODRIVE.WA.DAV_GET (
 
   if (property = 'acl')
   {
-    if (isnull(resource[0]))
+    declare path varchar;
+
+    path := resource[0];
+    if (isnull (path))
       return WS.WS.ACL_CREATE();
-    return cast(ODRIVE.WA.DAV_PROP_GET (resource[0], ':virtacl', WS.WS.ACL_CREATE()) as varbinary);
+
+    if (isstring (path) and path like '%,acl')
+      path := regexp_replace (path, ',acl\x24', '');
+
+    return cast (ODRIVE.WA.DAV_PROP_GET (path, ':virtacl', WS.WS.ACL_CREATE()) as varbinary);
   }
 
   if ((property = 'detType') and (not isnull (resource[0])))
@@ -4412,7 +4419,7 @@ create procedure ODRIVE.WA.send_mail (
 
     _id := DB.DBA.DAV_SEARCH_ID (_path, _what);
     _body := replace (_body, '%resource_path%', _path);
-    if (isarray (_id) and (cast (_id[0] as varchar) in ('S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box')))
+    if (isarray (_id) and (cast (_id[0] as varchar) in ('IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box')))
         _id := _id[2];
 
       if (not isarray (_id))
@@ -4558,9 +4565,11 @@ create procedure ODRIVE.WA.aci_load (
   declare id, what, retValue, graph any;
   declare S, st, msg, meta, rows any;
 
+  --return vector ();
   what := case when (path[length (path)-1] <> ascii('/')) then 'R' else 'C' end;
   id := DB.DBA.DAV_SEARCH_ID (path, what);
-  if (isarray (id) and (cast (id[0] as varchar) not in ('S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box')))
+  DB.DBA.DAV_AUTHENTICATE_SSL_ITEM (id, what, path);
+  if (isarray (id) and (cast (id[0] as varchar) not in ('IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box')))
   {
     retValue := ODRIVE.WA.DAV_PROP_GET (path, 'virt:aci_meta');
     if (ODRIVE.WA.DAV_ERROR (retValue))
@@ -4569,7 +4578,7 @@ create procedure ODRIVE.WA.aci_load (
   else
   {
   retValue := vector ();
-    graph := rtrim (WS.WS.DAV_IRI (path), '/') || '/';
+    graph := WS.WS.WAC_GRAPH (path);
   S := sprintf (' sparql \n' ||
                 ' define input:storage "" \n' ||
                 ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
@@ -4675,12 +4684,14 @@ create procedure ODRIVE.WA.aci_save (
 
   what := case when (path[length (path)-1] <> ascii('/')) then 'R' else 'C' end;
   id := DB.DBA.DAV_SEARCH_ID (path, what);
-  if (isarray (id) and (cast (id[0] as varchar) not in ('S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box')))
+  if (isarray (id) and (cast (id[0] as varchar) not in ('IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box')))
+  {
     retValue := ODRIVE.WA.DAV_PROP_SET (path, 'virt:aci_meta', aci);
-
+  }
   else
+  {
     retValue := ODRIVE.WA.DAV_PROP_SET (path, 'virt:aci_meta_n3', ODRIVE.WA.aci_n3 (aci));
-
+  }
   return retValue;
 }
 ;

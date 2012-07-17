@@ -77,7 +77,13 @@ create function "SkyDrive_DAV_GET_PARENT" (
   in path varchar) returns any
 {
   -- dbg_obj_princ ('SkyDrive_DAV_GET_PARENT (', id, what, path, ')');
-  return -20;
+  declare retValue any;
+
+  retValue := DAV_GET_PARENT (id[2], what, path);
+  if (DAV_HIDE_ERROR (retValue) is not null)
+    retValue := vector (DB.DBA.SkyDrive__detName (), id[1], retValue, 'C');
+
+  return retValue;
 }
 ;
 
@@ -294,7 +300,7 @@ _exit:;
       DB.DBA.SkyDrive__paramSet (retValue, 'R', 'id', listID, 0);
     }
     DB.DBA.SkyDrive__paramSet (retValue, 'R', 'virt:DETCOL_ID', cast (detcol_id as varchar), 0, 0);
-    retValue := vector (DB.DBA.SkyDrive__detName (), detcol_id, retValue, 'C');
+    retValue := vector (DB.DBA.SkyDrive__detName (), detcol_id, retValue, 'R');
   }
   return retValue;
 }
@@ -1382,6 +1388,7 @@ create function DB.DBA.SkyDrive__downloads (
   if (length (downloads) = 0)
     return;
 
+  set_user_id ('dba');
   aq := async_queue (1);
   aq_request (aq, 'DB.DBA.SkyDrive__downloads_aq', vector (detcol_id, downloads));
 }
@@ -1453,6 +1460,7 @@ create function DB.DBA.SkyDrive__rdf (
 {
   declare aq any;
 
+  set_user_id ('dba');
   aq := async_queue (1);
   aq_request (aq, 'DB.DBA.SkyDrive__rdf_aq', vector (detcol_id, id, what));
 }
@@ -1465,6 +1473,7 @@ create function DB.DBA.SkyDrive__rdf_aq (
   in id any,
   in what varchar)
 {
+  set_user_id ('dba');
   DB.DBA.SkyDrive__rdf_delete (detcol_id, id, what);
   DB.DBA.SkyDrive__rdf_insert (detcol_id, id, what);
 }

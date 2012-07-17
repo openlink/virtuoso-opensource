@@ -507,7 +507,7 @@
         }
         else if (action = 'sharing')
         {
-          if (detClass in ('CalDAV', 'CardDAV', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box') or detType in (''))
+          if (detClass in ('CalDAV', 'CardDAV', 'IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box') or detType in (''))
             retValue := 1;
         }
         else if (action = 'sharing_acl')
@@ -517,7 +517,7 @@
         }
         else if (action = 'sharing_aci')
         {
-          if (detClass in ('CalDAV', 'CardDAV', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box') or detType in (''))
+          if (detClass in ('CalDAV', 'CardDAV', 'IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box') or detType in (''))
             retValue := 1;
         }
       }
@@ -918,11 +918,14 @@
 
               tmp := get_keyword ('dav_IMAP_server', params);
               ODRIVE.WA.test (tmp, vector('name', 'IMAP Server', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
+              tmp := get_keyword ('dav_IMAP_port', params);
+              ODRIVE.WA.test (tmp, vector ('name', 'IMAP Port', 'class', 'integer', 'minLength', 1, 'maxLength', 4));
               tmp := get_keyword ('dav_IMAP_user', params);
               ODRIVE.WA.test (tmp, vector('name', 'IMAP User', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
               tmp := DB.DBA.IMAP__verify (
                 get_keyword ('dav_IMAP_connection', params),
                 get_keyword ('dav_IMAP_server', params),
+                get_keyword ('dav_IMAP_port', params),
                 get_keyword ('dav_IMAP_user', params),
                 get_keyword ('dav_IMAP_password', params)
               );
@@ -1193,6 +1196,7 @@
                 newGraph := get_keyword ('dav_IMAP_graph', params, '');
                 ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:IMAP-connection', get_keyword ('dav_IMAP_connection', params));
                 ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:IMAP-server', get_keyword ('dav_IMAP_server', params));
+                ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:IMAP-port', get_keyword ('dav_IMAP_port', params));
                 ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:IMAP-user', get_keyword ('dav_IMAP_user', params));
                 ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:IMAP-password', get_keyword ('dav_IMAP_password', params));
                 ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:IMAP-graph', newGraph);
@@ -2040,7 +2044,7 @@
          <div id="c1">
           <div class="tabs">
             <vm:tabCaption tab="1"   tabs="16" caption="Main" />
-            <v:template name="tform_5" type="simple" enabled="-- case when (equ (self.command_mode, 10) and self.fieldRights ('sharing') and not (equ (self.dav_type, 'R') and (ODRIVE.WA.DAV_GET (self.dav_item, 'name') like '%,acl'))) then 1 else 0 end">
+            <v:template name="tform_5" type="simple" enabled="-- case when (equ (self.command_mode, 10) and self.fieldRights ('sharing')) then 1 else 0 end">
             <vm:tabCaption tab="2"   tabs="16" caption="Sharing" />
             </v:template>
             <v:template name="tform_6" type="simple" enabled="-- case when (equ (self.command_mode, 10) and self.fieldRights ('metadata')) then 1 else 0 end">
@@ -2482,7 +2486,7 @@
                 </table>
                       </td>
                       <td valign="top" nowrap="nowrap">
-                          <vm:if test="self.dav_enable or self.fieldRights ('sharing_acl')">
+                          <vm:if test="self.dav_enable and self.fieldRights ('sharing_acl')">
                             <span class="button pointer" onclick="javascript: TBL.createRow('f', null, {fld_1: {mode: 51, formMode: 'u', nrows: <?V ODRIVE.WA.settings_rows (self.settings) ?>, tdCssText: 'white-space: nowrap;', className: '_validate_'}, fld_2: {mode: 43, value: 1, objectType: '<?V self.dav_type ?>'}, fld_3: {mode: 42, value: [1, 1, 0], suffix: '_grant', onclick: function(){TBL.clickCell42(this);}, tdCssText: 'width: 1%; text-align: center;'}, fld_4: {mode: 42,  suffix: '_deny', onclick: function(){TBL.clickCell42(this);}, tdCssText: 'width: 1%; text-align: center;'}});"><img src="/ods/images/icons/add_16.png" border="0" class="button" alt="Add Security" title="Add Security" /> Add</span><br /><br />
                         </vm:if>
                       </td>
@@ -2520,14 +2524,14 @@
                                     DB.DBA.wa_aci_lines (aci_values);
                                 }
                                 aci_values := ODRIVE.WA.aci_load (self.dav_path);
-                                  DB.DBA.wa_aci_lines (aci_values, case when (self.dav_enable or self.fieldRights ('sharing_aci')) then '' else 'view' end, 'true');
+                                  DB.DBA.wa_aci_lines (aci_values, case when ((self.dav_enable or (self.dav_detClass in ('CalDAV', 'CardDAV', 'IMAP'))) and self.fieldRights ('sharing_aci')) then '' else 'view' end, 'true');
                         		    ?>
                         		    </script>
                         		  ]]>
                             </tbody>
                           </table>
                         </td>
-                        <vm:if test="self.dav_enable or self.fieldRights ('sharing_aci')">
+                        <vm:if test="(self.dav_enable or (self.dav_detClass in ('CalDAV', 'CardDAV', 'IMAP'))) and self.fieldRights ('sharing_aci')">
                         <td valign="top" nowrap="nowrap">
                             <span class="button pointer" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, tdCssText: 'white-space: nowrap;', className: '_validate2_ _webid2_'}, fld_3: {mode: 52, value: [1, 0, 0], execute: true, execute: true, tdCssText: 'width: 1%; text-align: center;'}});"><img src="/ods/images/icons/add_16.png" border="0" class="button" alt="Add Security" title="Add Security" /> Add</span><br /><br />
                         </td>

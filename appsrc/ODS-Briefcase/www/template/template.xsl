@@ -1287,7 +1287,7 @@
         <tr>
           <th width="30%">Connection Type</th>
           <td>
-            <select name="dav_IMAP_connection">
+            <select name="dav_IMAP_connection" onchange="javascript: $('dav_IMAP_port').value = (this.value == 'ssl')? '993': '143';">
               <?vsp
                 declare aValues, aValue any;
                 declare N integer;
@@ -1307,6 +1307,18 @@
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_IMAP_server', self.dav_path, 'virt:IMAP-server', '');
+                ]]>
+              </v:before-data-bind>
+            </v:text>
+          </td>
+        </tr>
+        <tr>
+          <th>Server Port</th>
+          <td>
+            <v:text name="dav_IMAP_port" xhtml_id="dav_IMAP_port" format="%s" xhtml_disabled="disabled" xhtml_class="field-short">
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_value := self.get_fieldProperty ('dav_IMAP_port', self.dav_path, 'virt:IMAP-port', '143');
                 ]]>
               </v:before-data-bind>
             </v:text>

@@ -222,3 +222,33 @@ create procedure ODRIVE.WA.tmp_upgrade ()
 ;
 
 ODRIVE.WA.tmp_upgrade ();
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.tmp_upgrade ()
+{
+  declare server, property, propertyValue varchar;
+  declare V any;
+
+  if (registry_get ('odrive_imap_update') = '1')
+    return;
+
+  for (select COL_ID from WS.WS.SYS_DAV_COL where COL_DET = 'IMAP') do
+  {
+    server := DB.DBA.DAV_PROP_GET_INT (COL_ID, 'C', 'virt:IMAP-server', 0);
+    V := sprintf_inverse (server, '%s:%s', 2);
+    property := 'virt:IMAP-server';
+    propertyValue := V[0];
+    if (not isnull (propertyValue))
+      DB.DBA.DAV_PROP_SET_RAW (COL_ID, 'C', property, propertyValue, 1, http_dav_uid ());
+
+    property := 'virt:IMAP-port';
+    propertyValue := V[1];
+    if (not isnull (propertyValue))
+      DB.DBA.DAV_PROP_SET_RAW (COL_ID, 'C', property, propertyValue, 1, http_dav_uid ());
+  }
+  registry_set ('odrive_imap_update', '1');
+}
+;
+
+ODRIVE.WA.tmp_upgrade ();
