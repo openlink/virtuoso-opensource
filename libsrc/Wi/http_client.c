@@ -423,7 +423,7 @@ http_cli_negotiate_socks4 (dk_session_t * ses, char * in_host, char * name, char
   socksreq[8] = 0; /* no name */
   if (name)
     {
-      strncat ((char*)socksreq + 8, name, sizeof(socksreq) - 8);
+      strncat ((char*)socksreq + 8, name, sizeof(socksreq) - 8 - 1);
       socksreq[sizeof (socksreq) - 1] = 0;
       packetsize = 9 + strlen ((char *) socksreq + 8);
     }
