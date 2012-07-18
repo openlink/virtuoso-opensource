@@ -10275,7 +10275,7 @@ line_from_html_file (TCHAR *templatename)
 {
   TCHAR tmp1[2002];
 
-  return (isqlt_fgetts (tmp1, (sizeof (tmp1) - 1), html_infp));
+  return (isqlt_fgetts (tmp1, ((sizeof (tmp1) / sizeof (TCHAR)) - 1), html_infp));
 }
 
 /* Return the whole string in one piece. After that return NULL.
