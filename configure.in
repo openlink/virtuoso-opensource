@@ -200,6 +200,23 @@ case ${VIRTUOSO_LAYOUT} in
 	hostingdir=$libdir/virtuoso/hosting
 	;;
 
+  [[Oo]][[Pp]][[Ee]][[Nn]][[Ss]][[Uu]][[Ss]][[Ee]])	# openSUSE
+	virtuoso_layout=openSUSE
+	if test "x$prefix" = "xNONE"
+	then
+		prefix=/usr
+		localstatedir=/var
+	fi
+	vaddir=$datadir/virtuoso/vad
+	docdir=$datadir/doc/packages/virtuoso
+	htmldocdir=$datadir/doc/packages/virtuoso/html
+	pdfdocdir=$datadir/doc/packages/virtuoso/pdf
+	demodir=$localstatedir/lib/virtuoso/demo
+	dbdir=$localstatedir/lib/virtuoso/db
+	httprootdir=$localstatedir/lib/virtuoso/vsp
+	hostingdir=$libdir/virtuoso/hosting
+	;;
+
   [[Ff]][[Rr]][[Ee]][[Ee]][[Bb]][[Ss]][[Dd]])		# FreeBSD
 	virtuoso_layout=FreeBSD
 	if test "x$prefix" = "xNONE"
