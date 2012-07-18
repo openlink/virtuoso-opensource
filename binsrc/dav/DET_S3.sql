@@ -77,7 +77,13 @@ create function "S3_DAV_GET_PARENT" (
   in path varchar) returns any
 {
   -- dbg_obj_princ ('S3_DAV_GET_PARENT (', id, what, path, ')');
-  return -20;
+  declare retValue any;
+
+  retValue := DAV_GET_PARENT (id[2], what, path);
+  if (DAV_HIDE_ERROR (retValue) is not null)
+    retValue := vector (DB.DBA.S3__detName (), id[1], retValue, 'C');
+
+  return retValue;
 }
 ;
 
@@ -268,7 +274,7 @@ _exit:;
       DB.DBA.S3__paramSet (retValue, 'R', 'path', listID, 0);
     }
     DB.DBA.S3__paramSet (retValue, 'R', 'virt:DETCOL_ID', cast (detcol_id as varchar), 0, 0);
-    retValue := vector (DB.DBA.S3__detName (), detcol_id, retValue, 'C');
+    retValue := vector (DB.DBA.S3__detName (), detcol_id, retValue, 'R');
   }
   return retValue;
 }
@@ -1703,6 +1709,7 @@ create function DB.DBA.S3__downloads (
   if (length (downloads) = 0)
     return;
 
+  set_user_id ('dba');
   aq := async_queue (1);
   aq_request (aq, 'DB.DBA.S3__downloads_aq', vector (detcol_id, downloads));
 }
@@ -1778,6 +1785,7 @@ create function DB.DBA.S3__rdf (
 {
   declare aq any;
 
+  set_user_id ('dba');
   aq := async_queue (1);
   aq_request (aq, 'DB.DBA.S3__rdf_aq', vector (detcol_id, id, what));
 }
@@ -1790,6 +1798,7 @@ create function DB.DBA.S3__rdf_aq (
   in id any,
   in what varchar)
   {
+  set_user_id ('dba');
   DB.DBA.S3__rdf_delete (detcol_id, id, what);
   DB.DBA.S3__rdf_insert (detcol_id, id, what);
 }
