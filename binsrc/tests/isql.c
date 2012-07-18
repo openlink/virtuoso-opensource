@@ -2153,7 +2153,7 @@ unescape_string (TCHAR * _string)
 	    case 'x':		/* There's a hexadecimal char constant \xhh */
 	    case 'X':
 	      {			/* Well, we should check that only max 2 digits are parsed */
-		*res_ptr++ = ((UTCHAR) hextoi (&string, ++string));
+		*res_ptr++ = ((UTCHAR) hextoi (&string, string+1));
 		continue;
 	      }
 /* The following might conflict with some other usage. Commented out. */
