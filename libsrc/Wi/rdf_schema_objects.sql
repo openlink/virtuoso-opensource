@@ -1249,16 +1249,16 @@ RDF_VIEW_SYNC_TO_PHYSICAL (in vgraph varchar, in load_data int := 0, in pgraph v
 -- R2RML generator
 ---------------------
 create procedure
-R2RML_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0, in cols any := null)
+DB.DBA.R2RML_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0, in cols any := null)
 {
    declare create_view_stmt, ns, sns any;
    declare total_select, total_tb, total, qual, pkcols any;
-   declare vname, mask, graph, uriqa_str varchar;
+   declare qual_ns, vname, mask, graph, uriqa_str varchar;
 
    rdf_view_tbl_pk_cols (_tbls, pkcols);
    cols := rdf_view_tbl_opts (_tbls, cols);
-   sns := ns := sprintf ('@prefix rr: <http://www.w3.org/ns/r2rml#> .\n@prefix %s: <http://%s/schemas/%s/> .\n', qualifier, virtuoso_ini_item_value ('URIQA','DefaultHost'), qualifier);
-
+   qual_ns := sprintf ('http://%s/schemas/%s/', virtuoso_ini_item_value ('URIQA','DefaultHost'), qualifier);
+   sns := ns := sprintf ('@prefix rr: <http://www.w3.org/ns/r2rml#> .\n@prefix %s: <%s> .\n', qualifier, qual_ns);
    if (gen_stat)
      {
        ns := ns || sprintf ('@prefix %s-stat: <http://%s/%s/stat#> .\n', lcase (qualifier), virtuoso_ini_item_value ('URIQA','DefaultHost'),
@@ -1275,14 +1275,23 @@ R2RML_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0, in col
    graph := 'http://' || uriqa_str || '/' || qualifier || '#';
    create_view_stmt := ns;
    for (declare inx int, inx := 0; inx < length (_tbls) ; inx := inx + 1)
-      create_view_stmt := create_view_stmt || '\n' || r2rml_create_dataset (inx, qualifier, _tbls, gen_stat, cols, pkcols, graph) || '';
+      create_view_stmt := create_view_stmt || '\n' || DB.DBA.R2RML_CREATE_DATASET (inx, qualifier, qual_ns, _tbls, gen_stat, cols, pkcols, graph) || '';
 
    return create_view_stmt;
 }
 ;
 
 create procedure
-r2rml_create_dataset (in nth int, in qualifier varchar, in _tbls any, in gen_stat int := 0, in cols any, in pkcols any, in graph varchar := null)
+DB.DBA.R2RML_QUAL_NOTATION (in qualifier varchar, in qual_ns varchar, in loc varchar)
+{
+  if (sprintf ('%U', loc) = loc)
+    return concat (qualifier, ':', loc);
+  return sprintf ('<%s:%U>', qual_ns, loc);
+}
+;
+
+create procedure
+DB.DBA.R2RML_CREATE_DATASET (in nth int, in qualifier varchar, in qual_ns varchar, in _tbls any, in gen_stat int := 0, in cols any, in pkcols any, in graph varchar := null)
 {
    declare ret, qual, qual_l, tbl_name, tbl_name_l, pks, pk_text, uriqa_str, graph_def any;
    declare suffix, tname, tbl, own, pref_l any;
@@ -1306,35 +1315,35 @@ r2rml_create_dataset (in nth int, in qualifier varchar, in _tbls any, in gen_sta
    
    pk_text := '';
    for (declare i any, i := 0; i < length (pks) ; i := i + 1)
-      pk_text := pk_text || sprintf ('/{%s}', pks[i][0]);
+      pk_text := pk_text || sprintf ('/%U={%s}', pks[i][0], pks[i][0]);
 
    if (graph is not null)   
      graph_def := sprintf ('rr:graph <%s> ', graph);  
     else 
      graph_def := '';  
-   ret := ret || sprintf ('<#TriplesMap%s> a rr:TriplesMap; rr:logicalTable [ rr:tableSchema "%s" ; rr:tableOwner "%s" ; rr:tableName "%s" ]; \n', tbl_name, qual, own, tbl_name);
-   ret := ret || sprintf ('rr:subjectMap [ rr:termtype "IRI"  ; rr:template "http://%s/%s/%s%s"; rr:class %s:%s; %s];\n', uriqa_str, qual, tbl_name_l, pk_text, qualifier, rdf_view_cls_name (tbl_name), graph_def);
+   ret := ret || sprintf ('<#TriplesMap%U> a rr:TriplesMap; rr:logicalTable [ rr:tableSchema "%s" ; rr:tableOwner "%s" ; rr:tableName "%s" ]; \n',
+     tbl_name, qual, own, tbl_name );
+   ret := ret || sprintf ('rr:subjectMap [ rr:termtype "IRI"  ; rr:template "http://%s/%s/%s%s"; rr:class %s; %s];\n',
+     uriqa_str, qual, tbl_name_l, pk_text, DB.DBA.R2RML_QUAL_NOTATION (qualifier, qual_ns, rdf_view_cls_name (tbl_name)), graph_def );
 
    inx := 0;
    for select "COLUMN", COL_DTP from TABLE_COLS where "TABLE" = tbl and "COLUMN" <> '_IDN' order by COL_ID do
      {
        col_name := "COLUMN";
        if (not exists (select 1 from SYS_FOREIGN_KEYS where FK_TABLE = tbl and FKCOLUMN_NAME = col_name))
-         ret := ret || sprintf ('rr:predicateObjectMap [ rr:predicateMap [ rr:constant %s:%s ] ; rr:objectMap [ rr:column "%s" ]; ] ;\n', 
-	 	qualifier, lower (col_name), col_name);
+         ret := ret || sprintf ('rr:predicateObjectMap [ rr:predicateMap [ rr:constant %s ] ; rr:objectMap [ rr:column "%s" ]; ] ;\n',
+           DB.DBA.R2RML_QUAL_NOTATION (qualifier, qual_ns, lower (col_name)), col_name );
        inx := inx + 1;
      }
    for select distinct PK_TABLE as pkt from SYS_FOREIGN_KEYS where FK_TABLE = tbl and PK_TABLE <> tbl do
      {
        pk_text := '';
        for select FKCOLUMN_NAME from SYS_FOREIGN_KEYS where FK_TABLE = tbl and PK_TABLE = pkt order by KEY_SEQ do
-	 {
-	   pk_text := pk_text || sprintf ('/{%s}', FKCOLUMN_NAME);
+         pk_text := pk_text || sprintf ('/%U={%s}', FKCOLUMN_NAME, FKCOLUMN_NAME);
+       ret := ret || sprintf ('rr:predicateObjectMap [ rr:predicateMap [ rr:constant %s ] ; rr:objectMap [ rr:termtype "IRI" ; rr:template "http://%s/%s/%s%s" ]; ] ;\n',
+         DB.DBA.R2RML_QUAL_NOTATION (qualifier, qual_ns, concat (tbl_name_l, '_has_', lower (name_part (pkt, 3)))),
+         uriqa_str, qual, lower (name_part (pkt, 3)), pk_text );
 	 }
-       ret := ret || sprintf ('rr:predicateObjectMap [ rr:predicateMap [ rr:constant %s:%s_has_%s ] ; rr:objectMap [ rr:termtype "IRI" ; rr:template "http://%s/%s/%s%s" ]; ] ;\n',
-                             qualifier, tbl_name_l, lower (name_part (pkt, 3)), uriqa_str, qual, lower (name_part (pkt, 3)), pk_text);
-     }
- 
    for select distinct FK_TABLE as fkt from SYS_FOREIGN_KEYS where PK_TABLE = tbl and position (FK_TABLE, _tbls)  do
      {
        declare jc varchar;
@@ -1343,17 +1352,19 @@ r2rml_create_dataset (in nth int, in qualifier varchar, in _tbls any, in gen_sta
        for select FKCOLUMN_NAME, PKCOLUMN_NAME from SYS_FOREIGN_KEYS where FK_TABLE = fkt and PK_TABLE = tbl order by KEY_SEQ do
    	 {
    	   jc := jc || sprintf (' rr:joinCondition [ rr:child "%s" ; rr:parent "%s" ] ;', PKCOLUMN_NAME, FKCOLUMN_NAME);
-	   pk_text := pk_text || sprintf ('/{%s}', FKCOLUMN_NAME);
+           pk_text := pk_text || sprintf ('/%U={%s}', FKCOLUMN_NAME, FKCOLUMN_NAME);
    	 }
        if (tbl <> fkt)
 	 { 
-           ret := ret || sprintf ('rr:predicateObjectMap [ rr:predicateMap [ rr:constant %s:%s_of_%s ] ; rr:objectMap [ rr:parentTriplesMap <#TriplesMap%s>; %s ]; ] ;\n',
-                             qualifier, tbl_name_l, lower (name_part (fkt, 3)), name_part (fkt, 3), jc);
+           ret := ret || sprintf ('rr:predicateObjectMap [ rr:predicateMap [ rr:constant %s ] ; rr:objectMap [ rr:parentTriplesMap <#TriplesMap%U>; %s ]; ] ;\n',
+             DB.DBA.R2RML_QUAL_NOTATION (qualifier, qual_ns, concat (tbl_name_l, '_of_', lower (name_part (fkt, 3)))),
+             name_part (fkt, 3), jc );
 	 }
        else
 	 {
-	   ret := ret || sprintf ('rr:predicateObjectMap [ rr:predicateMap [ rr:constant %s:%s_has_%s ] ; rr:objectMap [ rr:termtype "IRI" ; rr:template "http://%s/%s/%s%s" ]; ] ;\n',
-                             qualifier, tbl_name_l, lower (name_part (fkt, 3)), uriqa_str, qual, lower (name_part (fkt, 3)), pk_text);
+           ret := ret || sprintf ('rr:predicateObjectMap [ rr:predicateMap [ rr:constant %s ] ; rr:objectMap [ rr:termtype "IRI" ; rr:template "http://%s/%s/%s%s" ]; ] ;\n',
+             DB.DBA.R2RML_QUAL_NOTATION (qualifier, qual_ns, concat (tbl_name_l, '_has_', lower (name_part (fkt, 3)))),
+             uriqa_str, qual, lower (name_part (fkt, 3)), pk_text );
 	 }
      }
  
