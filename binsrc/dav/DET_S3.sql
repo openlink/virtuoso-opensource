@@ -991,7 +991,7 @@ create function DB.DBA.S3__params (
     'accessCode',     DB.DBA.S3__paramGet (colId, 'C', 'AccessKeyID', 0, 1, 0),
     'secretKey',      DB.DBA.S3__paramGet (colId, 'C', 'SecretKey',   0, 1, 0),
     'graph',          DB.DBA.S3__paramGet (colId, 'C', 'graph', 0)
-                  );
+  );
   return params;
 }
 ;
@@ -1164,6 +1164,7 @@ create function DB.DBA.S3__bucketFromUrl (
   parts := split_and_decode (trim (url, '/'), 0, '\0\0/');
   if (length (parts) <> 0)
     return parts[0];
+
   return '';
 }
 ;
@@ -1178,6 +1179,7 @@ create function DB.DBA.S3__nameFromUrl (
   parts := split_and_decode (trim (url, '/'), 0, '\0\0/');
   if (length (parts) <> 0)
     return parts[length (parts) - 1];
+
   return '';
 }
 ;
@@ -1353,7 +1355,7 @@ create function DB.DBA.S3__listBuckets (
   commit work;
   xt := http_client_ext (
     DB.DBA.S3__makeUrl (path),
-                         http_method=>'GET',
+    http_method=>'GET',
     http_headers=>reqHeader,
     headers=>retHeader
   );
@@ -1378,15 +1380,15 @@ create function DB.DBA.S3__listBuckets (
         vector (
           vector_concat (
             subseq (soap_box_structure ('x', 1), 0, 2),
-                                                 vector ('path', '/' || name || '/',
-                                                         'name', name,
-                                                         'type', 'C',
-                                                         'updated', creationDate,
-                                                         'size', 0
-                                                        )
-                                                )
+            vector ('path', '/' || name || '/',
+                    'name', name,
+                    'type', 'C',
+                    'updated', creationDate,
+                    'size', 0
+                   )
+          )
         )
-                               );
+      );
     }
   }
   return buckets;
@@ -1417,7 +1419,7 @@ create function DB.DBA.S3__listBucket (
   commit work;
   xt := http_client_ext (
     url=>DB.DBA.S3__makeUrl (bucket) || sprintf ('?prefix=%U&marker=%s&delimiter=%s', bucketPath, '', delimiter),
-                         http_method=>'GET',
+    http_method=>'GET',
     http_headers=>reqHeader,
     headers=>retHeader
   );
@@ -1446,11 +1448,11 @@ create function DB.DBA.S3__listBucket (
       vector (
         vector_concat (
           subseq (soap_box_structure ('x', 1), 0, 2),
-                                               vector ('path', itemPath,
-                                                       'name', itemName,
-                                                       'type', itemType,
-                                                       'updated', lastModified,
-                                                       'size', itemSize,
+          vector ('path', itemPath,
+                  'name', itemName,
+                  'type', itemType,
+                  'updated', lastModified,
+                  'size', itemSize,
                   'etag', itemETag
           )
         )
@@ -1481,7 +1483,7 @@ create function DB.DBA.S3__putObject (
 
   workPath := DB.DBA.S3__encode (s3Path);
   if (trim (s3Path, '/') <> DB.DBA.S3__bucketFromUrl (s3Path))
-  workPath := rtrim (workPath, '/') || case when (what = 'C') then '_\$folder\$' end;
+    workPath := rtrim (workPath, '/') || case when (what = 'C') then '_\$folder\$' end;
   S := sprintf ('PUT\n\n%s\n%s\n%s', coalesce (type, ''), dateUTC, workPath);
   authHeader := DB.DBA.S3__makeAWSHeader (params, S);
   reqHeader := sprintf ('Authorization: %s\r\nDate: %s', authHeader, dateUTC);
@@ -1590,7 +1592,7 @@ create function DB.DBA.S3__deleteObject (
     'text/xml',
     length (content)
   );
-    commit work;
+  commit work;
   retValue := http_client_ext (
     url=>DB.DBA.S3__makeUrl (workPath) || '?delete',
     http_method=>'POST',
@@ -1599,14 +1601,14 @@ create function DB.DBA.S3__deleteObject (
     body=>content
   );
   if (not DB.DBA.S3__exec_error (retHeader, 1))
-{
+  {
     DB.DBA.S3__activity (detcol_id, 'HTTP error: ' || retValue);
     return -28;
-}
+  }
 
 _skip:;
   if ((what = 'C') and (trim (s3Path, '/') = DB.DBA.S3__bucketFromUrl (s3Path)))
-{
+  {
     -- delete bucket
     workPath := DB.DBA.S3__encode (s3Path);
     S := sprintf ('DELETE\n\n\n%s\n%s', dateUTC, workPath);
@@ -1618,9 +1620,9 @@ _skip:;
       http_method=>'DELETE',
       http_headers=>reqHeader,
       headers=>retHeader
-  );
+    );
     if (not DB.DBA.S3__exec_error (retHeader, 1))
-  {
+    {
       DB.DBA.S3__activity (detcol_id, 'HTTP error: ' || retValue);
       return -28;
     }
@@ -1762,17 +1764,17 @@ create function DB.DBA.S3__downloads_aq (
       DB.DBA.S3__paramRemove (download[0], download[1], 'download');
       items := vector_concat (items, vector (download));
       N := N + 1;
-}
+    }
     commit work;
 
   _continue:;
-}
+  }
   DB.DBA.S3__activity (detcol_id, sprintf ('Downloaded %d file(s)', N));
   foreach (any item in items) do
-{
+  {
     DB.DBA.S3__rdf_delete (detcol_id, item[0], item[1]);
     DB.DBA.S3__rdf_insert (detcol_id, item[0], item[1]);
-}
+  }
 }
 ;
 
@@ -1797,7 +1799,7 @@ create function DB.DBA.S3__rdf_aq (
   in detcol_id integer,
   in id any,
   in what varchar)
-  {
+{
   set_user_id ('dba');
   DB.DBA.S3__rdf_delete (detcol_id, id, what);
   DB.DBA.S3__rdf_insert (detcol_id, id, what);
@@ -1829,11 +1831,11 @@ create function DB.DBA.S3__rdf_insert (
 
   permissions := DB.DBA.S3__paramGet (detcol_id, 'C', ':virtpermissions', 0, 0);
   if (permissions[6] = ascii('0'))
-{
+  {
     -- add to private graphs
     if (not SIOC..private_graph_check (rdf_graph))
       return;
-}
+  }
 
   id := DB.DBA.S3__davId (id);
   path := DB.DBA.DAV_SEARCH_PATH (id, what);

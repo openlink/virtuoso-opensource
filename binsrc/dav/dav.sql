@@ -25,68 +25,68 @@
 
 create procedure WS.WS."OPTIONS" (in path varchar, inout params varchar, in lines varchar)
 {
-	declare full_path varchar;
-	declare path_id any;
-	full_path := '/' || DAV_CONCAT_PATH (path, '/');
-	path_id := DAV_SEARCH_ID (full_path, 'C');
-	if (isarray(path_id) = 1)
+  declare full_path varchar;
+  declare path_id any;
+  full_path := '/' || DAV_CONCAT_PATH (path, '/');
+  path_id := DAV_SEARCH_ID (full_path, 'C');
+  if (isarray(path_id) = 1)
+    {
+      if (path_id[0] = UNAME'CalDAV')
 	{
-		if (path_id[0] = UNAME'CalDAV')
-		{
-			http_header (concat (
-				'Content-Type: text/xml\r\n',
-				'Allow: OPTIONS, GET, HEAD, POST, PUT, DELETE, TRACE, COPY, MOVE\r\n',
-				'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL\r\n',
-				'DAV: 1, 2, access-control, calendar-access\r\n',
-				'MS-Author-Via: DAV\r\n'));
-			return;
-		}
-		if (path_id[0] = UNAME'CardDAV')
-		{
-			http_header (concat (
-				'Content-Type: text/xml\r\n',
-				'Allow: OPTIONS, GET, HEAD, POST, PUT, DELETE, TRACE, COPY, MOVE\r\n',
-				'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL\r\n',
-				'DAV: 1, 2, 3, access-control, addressbook\r\n',
-				'MS-Author-Via: DAV\r\n'));
-			return;
-		}
+	  http_header (concat (
+	  'Content-Type: text/xml\r\n',
+	  'Allow: OPTIONS, GET, HEAD, POST, PUT, DELETE, TRACE, COPY, MOVE\r\n',
+	  'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL\r\n',
+	  'DAV: 1, 2, access-control, calendar-access\r\n',
+	  'MS-Author-Via: DAV\r\n'));
+	  return;
 	}
-	else
+      if (path_id[0] = UNAME'CardDAV')
 	{
-		declare is_det int;
-		is_det := (select COL_ID from WS.WS.SYS_DAV_COL where COL_ID = path_id and COL_DET = 'CalDAV');
-		if (is_det > 0)
-		{
-			http_header (concat (
-				'Content-Type: text/xml\r\n',
-				'Allow: OPTIONS, GET, HEAD, POST, TRACE\r\n',
-				'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL\r\n',
-				'DAV: 1, 2, access-control, calendar-access\r\n',
-				'MS-Author-Via: DAV\r\n'));
-			return;
-		}
-		is_det := (select COL_ID from WS.WS.SYS_DAV_COL where COL_ID = path_id and COL_DET = 'CardDAV');
-		if (is_det > 0)
-		{
-			http_header (concat (
-				'Content-Type: text/xml\r\n',
-				'Allow: OPTIONS, GET, HEAD, POST, TRACE\r\n',
-				'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL\r\n',
-				'DAV: 1, 2, 3, access-control, addressbook\r\n',
-				'MS-Author-Via: DAV\r\n'));
-			return;
-		}
+	  http_header (concat (
+	  'Content-Type: text/xml\r\n',
+	  'Allow: OPTIONS, GET, HEAD, POST, PUT, DELETE, TRACE, COPY, MOVE\r\n',
+	  'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL\r\n',
+	  'DAV: 1, 2, 3, access-control, addressbook\r\n',
+	  'MS-Author-Via: DAV\r\n'));
+	  return;
 	}
-	declare headers, ctype, msauthor any;
-	http_methods_set ('OPTIONS', 'GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'TRACE', 'PROPFIND', 'PROPPATCH', 'COPY', 'MOVE', 'LOCK', 'UNLOCK');
-	WS.WS.GET (path, params, lines);
-	headers := http_header_array_get ();
-	ctype := http_request_header (headers, 'Content-Type', null, 'text/plain');
-	msauthor := http_request_header (headers, 'MS-Author-Via', null, 'DAV');
-	http_status_set (200);
-	http_rewrite ();
-	http_header (concat (sprintf ('Content-Type: %s\r\n', ctype),
+    }
+  else
+    {
+      declare is_det int;
+      is_det := (select COL_ID from WS.WS.SYS_DAV_COL where COL_ID = path_id and COL_DET = 'CalDAV');
+      if (is_det > 0)
+	{
+	  http_header (concat (
+	  'Content-Type: text/xml\r\n',
+	  'Allow: OPTIONS, GET, HEAD, POST, TRACE\r\n',
+	  'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL\r\n',
+	  'DAV: 1, 2, access-control, calendar-access\r\n',
+	  'MS-Author-Via: DAV\r\n'));
+	  return;
+	}
+	is_det := (select COL_ID from WS.WS.SYS_DAV_COL where COL_ID = path_id and COL_DET = 'CardDAV');
+	if (is_det > 0)
+	  {
+	    http_header (concat (
+	    'Content-Type: text/xml\r\n',
+	    'Allow: OPTIONS, GET, HEAD, POST, TRACE\r\n',
+	    'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL\r\n',
+	    'DAV: 1, 2, 3, access-control, addressbook\r\n',
+	    'MS-Author-Via: DAV\r\n'));
+	    return;
+	  }
+    }
+  declare headers, ctype, msauthor any;
+  http_methods_set ('OPTIONS', 'GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'TRACE', 'PROPFIND', 'PROPPATCH', 'COPY', 'MOVE', 'LOCK', 'UNLOCK');
+  WS.WS.GET (path, params, lines);
+  headers := http_header_array_get ();
+  ctype := http_request_header (headers, 'Content-Type', null, 'text/plain');
+  msauthor := http_request_header (headers, 'MS-Author-Via', null, 'DAV');
+  http_status_set (200);
+  http_rewrite ();
+  http_header (concat (sprintf ('Content-Type: %s\r\n', ctype),
 		'DAV: 1,2,<http://www.openlinksw.com/virtuoso/webdav/1.0>\r\n',
 		sprintf ('MS-Author-Via: %s\r\n', msauthor)));
 }
@@ -648,7 +648,7 @@ next_response:
           found_cprop := 0;
           prop_raw_val := DAV_HIDE_ERROR (DAV_PROP_GET_INT (id, st, prop1, 0), null);
 	  if (strchr (prop1, ':') is not null)
-	    goto skip1;  
+	    goto skip1;
           if (prop_raw_val is not null)
 	    {
               prop_val := deserialize (prop_raw_val);
@@ -704,7 +704,7 @@ next_response:
           prop_raw_val := prp[1];
           prop_val := deserialize (prop_raw_val);
 	  if (strchr (prop1, ':') is not null)
-	    goto skip2;  
+	    goto skip2;
             if (isarray (prop_val))
                 {
                   prop_val := xml_tree_doc (prop_val);
@@ -720,7 +720,7 @@ next_response:
 	      http (concat ('<V:',prop1,'><![CDATA[', prop_raw_val ,']]></V:', prop1,'>\n'));
 	    else
 	      http (concat ('<V:',prop1,'/>\n'));
-	  skip2:  
+	  skip2:
           prop_idx := prop_idx + 1;
         }
     }
@@ -977,7 +977,7 @@ create procedure WS.WS.REPORT (in path varchar, inout params varchar, in lines v
 	http_request_status ('HTTP/1.1 207 Multi-Status');
 	if (is_calendar = 1)
 	{
-		declare urls any; 
+		declare urls any;
 		urls := xpath_eval ('[xmlns:D="DAV:" xmlns="urn:ietf:params:xml:ns:caldav:"] //calendar-multiget/D:href/text()', xml_tree_doc (xml_expand_refs (xml_tree (_body))), 0);
 		http_header ('DAV: 1, calendar-access, calendar-schedule, calendar-proxy\r\nContent-type: application/xml; charset="utf-8"\r\n');
 		http ('<?xml version="1.0" encoding="utf-8"?>\n');
@@ -998,7 +998,7 @@ create procedure WS.WS.REPORT (in path varchar, inout params varchar, in lines v
 	}
 	else if (is_addressbook = 1)
 	{
-		declare urls any; 
+		declare urls any;
 		urls := xpath_eval ('[xmlns:D="DAV:" xmlns="urn:ietf:params:xml:ns:carddav:"] //addressbook-multiget/D:href/text()', xml_tree_doc (xml_expand_refs (xml_tree (_body))), 0);
 		http_header ('DAV: 1, addressbook\r\nContent-type: application/xml; charset="utf-8"\r\n');
 		http ('<?xml version="1.0" encoding="utf-8"?>\n');
@@ -2150,7 +2150,7 @@ again:
 	}
       if (_col_id is null and (rc >= 0))
 	{
-	  if (uid = http_nobody_uid () and gid = http_nogroup_gid ()) 
+	  if (uid = http_nobody_uid () and gid = http_nogroup_gid ())
 	    uid := null;
 	  rc := DAV_AUTHENTICATE_HTTP (tgt_id, tgt_type, '1_1', 0, lines, uname, upwd, uid, gid, perms);
 	  if (rc >= 0)
@@ -2160,31 +2160,31 @@ again:
 
   http_rewrite (0);
 
-  -- execute + webid 
+  -- execute + webid
   auth_opts := http_map_get ('auth_opts');
   if (isvector (auth_opts) and mod (length (auth_opts), 2) = 0)
     webid_check := atoi (get_keyword ('webid_check', auth_opts, '0'));
   else
     webid_check := 0;
-  webid_check_rc := 1;  
+  webid_check_rc := 1;
   if (is_https_ctx () and webid_check and http_map_get ('executable'))
     {
       declare gid, perms, _check_id, _check_type any;
       uid := null;
-      if (isinteger (_res_id)) 
-	{ 
-	  _check_id := _res_id; 
+      if (isinteger (_res_id))
+	{
+	  _check_id := _res_id;
 	  _check_type := 'R';
-	} 
-      else 
-	{ 
-	  _check_id := _col_id; 
+	}
+      else
+	{
+	  _check_id := _col_id;
 	  _check_type := 'C';
-       	} 
+       	}
       webid_check_rc := DAV_AUTHENTICATE_HTTP (_check_id, _check_type, '1__', 1, lines, uname, upwd, uid, gid, perms);
       if ((webid_check_rc < 0) and (webid_check_rc <> -1))
 	return 0;
-    }  
+    }
 
   http_rewrite (0);
 
@@ -2458,21 +2458,21 @@ again:
 	      hdr_str := hdr_str || 'ETag: "' || server_etag || '"\r\n';
 	      if (strcasestr (hdr_str, 'Content-Type:') is null)
 		hdr_str := hdr_str || 'Content-Type: ' || cont_type || '\r\n';
-              if (isinteger (_res_id) and 
+              if (isinteger (_res_id) and
 		exists (select 1 from WS.WS.SYS_DAV_PROP where PROP_NAME = 'virt:aci_meta_n3' and PROP_TYPE = 'R' and PROP_PARENT_ID = _res_id))
 		{
-		  hdr_str := hdr_str || sprintf ('Link: <%s://%s%s,acl>; rel="http://www.w3.org/ns/auth/acl#"; title="Access Control File"\r\n', 
+		  hdr_str := hdr_str || sprintf ('Link: <%s://%s%s,acl>; rel="http://www.w3.org/ns/auth/acl#"; title="Access Control File"\r\n',
 			case when is_https_ctx () then 'https' else 'http' end,
-			http_request_header (lines, 'Host', NULL, NULL), http_path ());	
+			http_request_header (lines, 'Host', NULL, NULL), http_path ());
 		}
-	      rdf_graph := (select PROP_VALUE from WS.WS.SYS_DAV_PROP where 
+	      rdf_graph := (select PROP_VALUE from WS.WS.SYS_DAV_PROP where
 		PROP_PARENT_ID = _col and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdf_graph');
 	      if (rdf_graph is not null)
 	        {
 		  declare rdf_uri varchar;
 		  rdf_uri := rfc1808_expand_uri (DB.DBA.HTTP_REQUESTED_URL (), DAV_RDF_RES_NAME (rdf_graph));
 		  hdr_str := hdr_str || sprintf ('Link: <%s>; rel="alternate"\r\n', rdf_uri);
-                }		  
+                }
   	      http_header (hdr_str);
 	    }
 	  else
@@ -5001,7 +5001,7 @@ create procedure WS.WS.XMLSQL_TO_STRSES (
 create procedure WS.WS."TRACE" (in path varchar, inout params varchar, in lines varchar)
 {
   http_header ('Content-Type: message/http\r\n');
-  http_flush (1); 
+  http_flush (1);
   foreach (varchar l in lines) do
     {
       http (l);
