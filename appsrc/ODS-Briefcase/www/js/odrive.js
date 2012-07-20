@@ -437,7 +437,7 @@ function chkbx(bx1, bx2)
 
 function updateLabel(value)
 {
-  hideLabel(4, 15);
+  hideLabel(4, 16);
   if (value == 'oMail')
     showLabel(4, 4);
   else if (value == 'PropFilter')
@@ -462,6 +462,8 @@ function updateLabel(value)
     showLabel(14, 14);
   else if (value == 'Box')
     showLabel(15, 15);
+  else if (value == 'WebDAV')
+    showLabel(16, 16);
 }
 
 function showLabel(from, to)
@@ -1587,47 +1589,23 @@ ODRIVE.toggleEditor = function ()
 
 ODRIVE.updateRdfGraph = function ()
 {
-  if (
-      ($v('dav_rdfSink_rdfGraph') == '') ||
-      ($v('dav_rdfSink_rdfGraph') == ($v('rdfGraph_prefix')+$v('dav_name_save')+'#this'))
-     )
-    $('dav_rdfSink_rdfGraph').value = $v('rdfGraph_prefix') + $v('dav_name') + '#this';
+  function updateRdfGraphInternal(name) {
+    var graphPrefix;
+    var rdfGraph;
 
-  if (
-      ($v('dav_S3_graph') == '') ||
-      ($v('dav_S3_graph') == ($v('rdfGraph_prefix')+$v('dav_name_save')+'#this'))
-     )
-    $('dav_S3_graph').value = $v('rdfGraph_prefix') + $v('dav_name') + '#this';
-
-  if (
-      ($v('dav_IMAP_graph') == '') ||
-      ($v('dav_IMAP_graph') == ($v('rdfGraph_prefix')+$v('dav_name_save')+'#this'))
-     )
-    $('dav_IMAP_graph').value = $v('rdfGraph_prefix') + $v('dav_name') + '#this';
-
-  if (
-      ($v('dav_GDrive_graph') == '') ||
-      ($v('dav_GDrive_graph') == ($v('rdfGraph_prefix')+$v('dav_name_save')+'#this'))
-     )
-    $('dav_GDrive_graph').value = $v('rdfGraph_prefix') + $v('dav_name') + '#this';
-
-  if (
-      ($v('dav_Dropbox_graph') == '') ||
-      ($v('dav_Dropbox_graph') == ($v('rdfGraph_prefix')+$v('dav_name_save')+'#this'))
-     )
-    $('dav_Dropbox_graph').value = $v('rdfGraph_prefix') + $v('dav_name') + '#this';
-
-  if (
-      ($v('dav_SkyDrive_graph') == '') ||
-      ($v('dav_SkyDrive_graph') == ($v('rdfGraph_prefix')+$v('dav_name_save')+'#this'))
-     )
-    $('dav_SkyDrive_graph').value = $v('rdfGraph_prefix') + $v('dav_name') + '#this';
-
-  if (
-      ($v('dav_Box_graph') == '') ||
-      ($v('dav_Box_graph') == ($v('rdfGraph_prefix')+$v('dav_name_save')+'#this'))
-     )
-    $('dav_Box_graph').value = $v('rdfGraph_prefix') + $v('dav_name') + '#this';
+    graphPrefix = $v('rdfGraph_prefix');
+    rdfGraph = $('dav_'+name+'_graph');
+    if ((rdfGraph.value == '') || (rdfGraph.value == (graphPrefix+$v('dav_name_save')+'#this')))
+      rdfGraph.value = graphPrefix + $v('dav_name') + '#this';
+  }
+  updateRdfGraphInternal('rdfSink');
+  updateRdfGraphInternal('S3');
+  updateRdfGraphInternal('IMAP');
+  updateRdfGraphInternal('GDrive');
+  updateRdfGraphInternal('Dropbox');
+  updateRdfGraphInternal('SkyDrive');
+  updateRdfGraphInternal('Box');
+  updateRdfGraphInternal('WebDAV');
 
   $('dav_name_save').value = $v('dav_name');
 }

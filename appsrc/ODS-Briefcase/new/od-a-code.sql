@@ -4419,7 +4419,7 @@ create procedure ODRIVE.WA.send_mail (
 
     _id := DB.DBA.DAV_SEARCH_ID (_path, _what);
     _body := replace (_body, '%resource_path%', _path);
-    if (isarray (_id) and (cast (_id[0] as varchar) in ('IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box')))
+    if (isarray (_id) and (cast (_id[0] as varchar) in ('IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV')))
         _id := _id[2];
 
       if (not isarray (_id))
@@ -4569,7 +4569,7 @@ create procedure ODRIVE.WA.aci_load (
   what := case when (path[length (path)-1] <> ascii('/')) then 'R' else 'C' end;
   id := DB.DBA.DAV_SEARCH_ID (path, what);
   DB.DBA.DAV_AUTHENTICATE_SSL_ITEM (id, what, path);
-  if (isarray (id) and (cast (id[0] as varchar) not in ('IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box')))
+  if (isarray (id) and (cast (id[0] as varchar) not in ('IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV')))
   {
     retValue := ODRIVE.WA.DAV_PROP_GET (path, 'virt:aci_meta');
     if (ODRIVE.WA.DAV_ERROR (retValue))
@@ -4684,7 +4684,7 @@ create procedure ODRIVE.WA.aci_save (
 
   what := case when (path[length (path)-1] <> ascii('/')) then 'R' else 'C' end;
   id := DB.DBA.DAV_SEARCH_ID (path, what);
-  if (isarray (id) and (cast (id[0] as varchar) not in ('IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box')))
+  if (isarray (id) and (cast (id[0] as varchar) not in ('IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV')))
   {
     retValue := ODRIVE.WA.DAV_PROP_SET (path, 'virt:aci_meta', aci);
   }

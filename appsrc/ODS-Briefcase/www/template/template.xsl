@@ -766,14 +766,14 @@
       <table class="form-body" cellspacing="0">
         <tr>
           <th width="30%">
-            <v:label for="dav_rdfSink_rdfGraph" value="--'Graph name'" />
+            <v:label for="dav_rdfSink_graph" value="--'Graph name'" />
           </th>
           <td>
-            <v:text name="dav_rdfSink_rdfGraph" xhtml_id="dav_rdfSink_rdfGraph" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+            <v:text name="dav_rdfSink_graph" xhtml_id="dav_rdfSink_graph" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
               <v:validator test="length" min="1" max="255" message="The input can not be empty." runat="client" />
               <v:before-data-bind>
                 <![CDATA[
-                  control.ufl_value := self.get_fieldProperty ('dav_rdfSink_rdfGraph', self.dav_path, 'virt:rdf_graph', '');
+                  control.ufl_value := self.get_fieldProperty ('dav_rdfSink_graph', self.dav_path, 'virt:rdf_graph', '');
                   if ((control.ufl_value = '') and (self.command = 10))
                     control.ufl_value := ODRIVE.WA.host_url () || rtrim (WS.WS.FIXPATH (ODRIVE.WA.odrive_real_path (self.dav_path)), '/') || '/#this';
                 ]]>
@@ -1685,6 +1685,93 @@
       <![CDATA[
   	    <script type="text/javascript">
           OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('dav_Box_sponger'), {checked: {show: ['dav15_cartridge', 'dav15_metaCartridge']}})});
+  	    </script>
+  	  ]]>
+    </div>
+  </xsl:template>
+
+  <!--=========================================================================-->
+  <xsl:template match="vm:search-dc-template17">
+    <div id="16" class="tabContent" style="display: none;">
+      <table class="form-body" cellspacing="0">
+        <tr>
+          <th width="30%">
+            <v:label for="dav_WebDAV_activity" value="--'Activity manager (on/off)'" />
+          </th>
+          <td>
+            <?vsp
+              declare S varchar;
+
+              S := self.get_fieldProperty ('dav_WebDAV_activity', self.dav_path, 'virt:WebDAV-activity', 'off');
+              http (sprintf ('<input type="checkbox" name="dav_WebDAV_activity" id="dav_WebDAV_activity" %s disabled="disabled" value="on" />', case when S = 'on' then 'checked="checked"' else '' end));
+            ?>
+          </td>
+        </tr>
+        <tr>
+          <th>
+            <v:label for="dav_WebDAV_path" value="--'WebDAV path'" />
+          </th>
+          <td>
+            <v:text name="dav_WebDAV_path" xhtml_id="dav_WebDAV_path" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_value := self.get_fieldProperty ('dav_WebDAV_path', self.dav_path, 'virt:WebDAV-path', '');
+                ]]>
+              </v:before-data-bind>
+            </v:text>
+          </td>
+        </tr>
+        <tr>
+          <th>
+            <v:label for="dav_WebDAV_user" value="--'User Name'" />
+          </th>
+          <td>
+            <v:text name="dav_WebDAV_user" xhtml_id="dav_WebDAV_user" format="%s" xhtml_disabled="disabled" xhtml_class="field-short">
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_value := self.get_fieldProperty ('dav_WebDAV_user', self.dav_path, 'virt:WebDAV-user', '');
+                ]]>
+              </v:before-data-bind>
+            </v:text>
+          </td>
+        </tr>
+        <tr>
+          <th>
+            <v:label for="dav_WebDAV_password" value="--'User Password'" />
+          </th>
+          <td>
+            <v:text type="password" name="dav_WebDAV_password" xhtml_id="dav_WebDAV_password" format="%s" xhtml_disabled="disabled" xhtml_class="field-short">
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_value := '**********';
+                ]]>
+              </v:before-data-bind>
+            </v:text>
+          </td>
+        </tr>
+        <tr>
+          <th>
+            <v:label for="dav_WebDAV_graph" value="--'Graph name'" />
+          </th>
+          <td>
+            <v:text name="dav_WebDAV_graph" xhtml_id="dav_WebDAV_graph" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_value := self.get_fieldProperty ('dav_WebDAV_graph', self.dav_path, 'virt:WebDAV-graph', '');
+                  if ((control.ufl_value = '') and (self.command = 0))
+                    control.ufl_value := ODRIVE.WA.host_url () || rtrim (WS.WS.FIXPATH (ODRIVE.WA.odrive_real_path (self.dav_path)), '/') || '#this';
+                ]]>
+              </v:before-data-bind>
+            </v:text>
+          </td>
+        </tr>
+        <?vsp
+          self.detSpongerUI ('WebDAV', 16);
+        ?>
+      </table>
+      <![CDATA[
+  	    <script type="text/javascript">
+          OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('dav_WebDAV_sponger'), {checked: {show: ['dav16_cartridge', 'dav16_metaCartridge']}})});
   	    </script>
   	  ]]>
     </div>
