@@ -1249,15 +1249,16 @@ RDF_VIEW_SYNC_TO_PHYSICAL (in vgraph varchar, in load_data int := 0, in pgraph v
 -- R2RML generator
 ---------------------
 create procedure
-DB.DBA.R2RML_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0, in cols any := null)
+DB.DBA.R2RML_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0, in cols any := null, in qual_ns varchar := null)
 {
    declare create_view_stmt, ns, sns any;
    declare total_select, total_tb, total, qual, pkcols any;
-   declare qual_ns, vname, mask, graph, uriqa_str varchar;
+   declare vname, mask, graph, uriqa_str varchar;
 
    rdf_view_tbl_pk_cols (_tbls, pkcols);
    cols := rdf_view_tbl_opts (_tbls, cols);
-   qual_ns := sprintf ('http://%s/schemas/%s/', virtuoso_ini_item_value ('URIQA','DefaultHost'), qualifier);
+   if (qual_ns is null)
+     qual_ns := sprintf ('http://%s/schemas/%s/', virtuoso_ini_item_value ('URIQA','DefaultHost'), qualifier);
    sns := ns := sprintf ('@prefix rr: <http://www.w3.org/ns/r2rml#> .\n@prefix %s: <%s> .\n', qualifier, qual_ns);
    if (gen_stat)
      {
