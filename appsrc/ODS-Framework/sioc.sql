@@ -3896,6 +3896,16 @@ create procedure SIOC..private_init ()
 }
 ;
 
+--!
+-- \brief Make an RDF graph private.
+--
+-- \param graph_iri The IRI of the graph to make private. The graph will be private afterwards.
+-- Without subsequent calls to SIOC..private_user_add nobody can read or write the graph.
+--
+-- \return \p 1 on success, \p 0 otherwise.
+--
+-- \sa SIOC..private_graph_remove, SIOC..private_user_add
+--/
 create procedure SIOC..private_graph_add (
   in graph_iri varchar)
 {
@@ -3906,6 +3916,13 @@ create procedure SIOC..private_graph_add (
 }
 ;
 
+--!
+-- \brief Make an RDF graph public.
+--
+-- \param The IRI of the graph to make public.
+--
+-- \sa SIOC..private_graph_remove, SIOC..private_user_add
+--/
 create procedure SIOC..private_graph_remove (
   in graph_iri varchar)
 {
@@ -3913,6 +3930,18 @@ create procedure SIOC..private_graph_remove (
 }
 ;
 
+--!
+-- \brief Check if an RDF graph is private or not.
+--
+-- Private graphs can still be readable or even writable by certain users,
+-- depending on the configured rights.
+--
+-- \param graph_iri The IRI of the graph to check.
+--
+-- \return \p 1 if the given graph is private, \p 0 otherwise.
+--
+-- \sa SIOC..private_graph_add, SIOC..private_user_add
+--/
 create procedure SIOC..private_graph_check (
   in graph_iri varchar)
 {
@@ -3929,6 +3958,23 @@ create procedure SIOC..private_graph_check (
 }
 ;
 
+--!
+-- \brief Grant access to a private RDF graph.
+--
+-- Grants access to a certain RDF graph. There is no need to call SIOC..private_graph_add before.
+-- The given graph is made private automatically.
+--
+-- \param graph_iri The IRI of the graph to grant access to.
+-- \param uid The numerical or string ID of the SQL user to grant access to \p graph_iri.
+-- \param rights The rights to grant to \p uid:
+-- - \p 1 - Read
+-- - \p 2 - Write
+-- - \p 3 - Read/Write
+--
+-- \return \p 1 on success, \p 0 otherwise.
+--
+-- \sa SIOC..private_graph_add, SIOC..private_user_add
+--/
 create procedure SIOC..private_user_add (
   in graph_iri varchar,
   in uid any,
@@ -3944,6 +3990,14 @@ create procedure SIOC..private_user_add (
 }
 ;
 
+--!
+-- \brief Revoke access to a private RDF graph.
+--
+-- \param graph_iri The IRI of the private graph to revoke access to,
+-- \param uid The numerical or string ID of the SQL user to revoke access from.
+--
+-- \sa SIOC..private_user_add
+--/
 create procedure SIOC..private_user_remove (
   in graph_iri varchar,
   in uid any)

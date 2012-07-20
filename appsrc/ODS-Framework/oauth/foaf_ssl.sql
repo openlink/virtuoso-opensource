@@ -15,6 +15,24 @@ exec_quiet ('create table SPARQL_WEBID_ACL (SWA_RULE varchar references FOAF_SSL
     SWA_ID int, SWA_PROP varchar, SWA_OP varchar, SWA_VAL varchar, SWA_QUERY varchar, 
     primary key (SWA_RULE, SWA_ID))'); 
 
+--!
+-- \ingroup ods_devel_api
+--
+-- \brief Get the SQL user accociated with a WebID.
+--
+-- In ODS each WebID needs to be accociated with an SQL user. This method handles the
+-- mapping.
+--
+-- \param webID The WebID URI to translate to an SQL user.
+-- \param createMode If 1 a new SQL user will be created and accociated with the given
+-- WebID if it does not exist yet.
+--
+-- \return The SQL user account name accociated with the given WebID or an empty string
+-- if it does not exist and was not requested to be created.
+--
+-- FIXME: what about owl_sameAs WebIDs? What if I set a WebID as my owl:sameAs that already
+-- has an accociated SQL user?
+--/
 create procedure FOAF_WEBID_USER (
   inout webID varchar,
   inout createMode integer := 0)
@@ -152,6 +170,16 @@ create procedure WEBID_GEN_ACL_PROC (in rule varchar)
 ;
 
 
+--!
+-- \brief Create query string to fetch a certificate.
+--
+-- This method builds a query that fetches the certificates identified with a given URI.
+--
+-- \param gr The graph to query.
+-- \param uri The URI the certificates should be related to.
+--
+-- \return A query string.
+--/
 create procedure FOAF_SSL_QR (in gr varchar, in uri varchar)
 {
     return sprintf ('sparql
@@ -172,6 +200,11 @@ create procedure FOAF_SSL_QR (in gr varchar, in uri varchar)
 }
 ;
 
+--!
+-- \brief Query string to fetch the certificate by foaf:holdsAccount instead of the WebID directly.
+--
+-- FIXME: Is this backwards-compatibility legacy stuff?
+--/
 create procedure FOAF_SSL_QR_BY_ACCOUNT (in gr varchar, in agent varchar)
 {
   declare qr any;
@@ -187,6 +220,21 @@ create procedure FOAF_SSL_QR_BY_ACCOUNT (in gr varchar, in agent varchar)
 }
 ;
 
+--!
+-- \ingroup ods_devel_api
+--
+-- \brief Extract the first WebID URI from a X.509 certificate.
+--
+-- \param cert An optional certificate to extract the WebID from. By default the current client-provided
+--             certificate is uses.
+-- \param cert_type The optional format of the provided certificate.
+-- - 0 (default) - PEM
+-- - 1 - DER (raw)
+-- - 2 - PKCS#12
+--
+-- \return The WebID embedded in the corresponding extension or \p null in case there is no WebID
+-- extension found in the certificate or an error occurred.
+--/
 create procedure FOAF_SSL_WEBID_GET (in cert any := null, in cert_type int := 0)
 {
   declare agent, alts any;
@@ -203,6 +251,21 @@ create procedure FOAF_SSL_WEBID_GET (in cert any := null, in cert_type int := 0)
 }
 ;
 
+--!
+-- \ingroup ods_devel_api
+--
+-- \brief Extract all WebID URIs from a X.509 certificate.
+--
+-- \param cert An optional certificate to extract the WebID from. By default the current client-provided
+--             certificate is uses.
+-- \param cert_type The optional format of the provided certificate.
+-- - 0 (default) - PEM
+-- - 1 - DER (raw)
+-- - 2 - PKCS#12
+--
+-- \return The WebIDs embedded in the corresponding extension or \p null in case there is no WebID
+-- extension found in the certificate or an error occurred.
+--/
 create procedure FOAF_SSL_WEBID_GET_ALL (in cert any := null, in cert_type int := 0)
 {
   declare agents, agent, tmp, alts any;
@@ -224,6 +287,23 @@ create procedure FOAF_SSL_WEBID_GET_ALL (in cert any := null, in cert_type int :
 }
 ;
 
+--!
+-- \ingroup ods_devel_api
+--
+-- \brief Extract the first EMail address from a X.509 certificate.
+--
+-- The function looks both in the ceritifacte and in the altName extension.
+--
+-- \param cert An optional certificate to extract the WebID from. By default the current client-provided
+--             certificate is uses.
+-- \param cert_type The optional format of the provided certificate.
+-- - 0 (default) - PEM
+-- - 1 - DER (raw)
+-- - 2 - PKCS#12
+--
+-- \return The EMail address embedded in the corresponding extension or \p null in case none is
+-- found in the certificate or an error occurred.
+--/
 create procedure FOAF_SSL_MAIL_GET (in cert any := null, in cert_type int := 0)
 {
   declare alts, mail any;
@@ -242,6 +322,23 @@ create procedure FOAF_SSL_MAIL_GET (in cert any := null, in cert_type int := 0)
 }
 ;
 
+--!
+-- \ingroup ods_devel_api
+--
+-- \brief Extract all EMail addresses from a X.509 certificate.
+--
+-- The function looks both in the ceritifacte and in the altName extension.
+--
+-- \param cert An optional certificate to extract the WebID from. By default the current client-provided
+--             certificate is uses.
+-- \param cert_type The optional format of the provided certificate.
+-- - 0 (default) - PEM
+-- - 1 - DER (raw)
+-- - 2 - PKCS#12
+--
+-- \return The EMail addresss embedded in the corresponding extension or \p null in case none is
+-- found in the certificate or an error occurred.
+--/
 create procedure FOAF_SSL_MAIL_GET_ALL (in cert any := null, in cert_type int := 0)
 {
   declare alts, mail, ret any;
@@ -266,6 +363,26 @@ create procedure FOAF_SSL_MAIL_GET_ALL (in cert any := null, in cert_type int :=
 --
 -- WHEN USE try_loading_webid must clear the graph named as webid
 --
+--!
+-- \ingroup ods_devel_api
+--
+-- \brief Fetches the WebID or WebFinder address for a given certificate.
+--
+-- \param An optional certificate to extract the WebID from. By default the current client-provided
+--        certificate is uses.
+-- \param try_loading_webid If \p 1 the function looks for a WebID in the retrieved WebFinger profile
+--        and returns it instead of the WebFinger address.
+-- \param cert_type The optional format of the provided certificate.
+-- - 0 (default) - PEM
+-- - 1 - DER (raw)
+-- - 2 - PKCS#12
+--
+-- \return The WebID or the WebFinger address based on the value of try_loading_webid and the contents
+-- of the WebFinger profile which matches the given certificate. If no matching profile is found \p null
+-- is returned.
+--
+-- FIXME: Why does this function not clear the WebID graph itself?
+--/
 create procedure FOAF_SSL_WEBFINGER (in cert any := null, in try_loading_webid int := 0, in cert_type int := 0)
 {
   declare mails, webid, domain, host_info, xrd, template, url, h any;
@@ -368,6 +485,7 @@ create procedure WEBID_AUTH_GEN (in cert any, in ctype int, in realm varchar, in
     }
   ;
 
+  -- gr: temporary graph URI for the profile
   gr := uuid ();
   info := get_certificate_info (9, cert, ctype);
   fing := get_certificate_info (6, cert, ctype);
@@ -390,17 +508,24 @@ create procedure WEBID_AUTH_GEN (in cert any, in ctype int, in realm varchar, in
   if (agent is null)
     return 0;
 
+  -- If we already have a session for the given certificate (fingerprint) use it
+  -- FIXME: security risk: in theory a WebID certificate could have been compromised in between
+  -- calls. At that point a third party could login with the old certificate key/fingerprint even
+  -- if the actual owner of the WebID had changed their certificate key in the meantime.
   for select VS_UID from VSPX_SESSION where VS_SID = fing and VS_REALM = 'FOAF+SSL' do
     {
       connection_set ('SPARQLUserId', VS_UID);
       return 1;
     }
 
+  -- additional LDAP URI check: no need to query certificate key if succesful
   if (agent like 'ldap://%' and DB.DBA.FOAF_SSL_LDAP_CHECK_CERT_INT (agent, cert, ctype, dummy))
     goto authenticated;
 
+  -- Resolve the agent URL and remove the SSL 's' from the protocol
   hf := rfc1808_parse_uri (agent);
   hf[5] := '';
+
   graph := DB.DBA.vspx_uri_compose (hf);
   qr := sprintf ('sparql load <%S> into graph <%S>', graph, gr);
   stat := '00000';
@@ -419,6 +544,7 @@ create procedure WEBID_AUTH_GEN (in cert any, in ctype int, in realm varchar, in
     {
       declare arr, uid any;
 	      authenticated:
+              -- FIXME: Here we could allow any WebID that is set as owl:sameAs of a known ODS WebID
 	      uid := coalesce ((select FS_UID from FOAF_SSL_ACL where agent like FS_URI), 'nobody');
       if ('nobody' = uid and allow_nobody = 0)
 	goto err_ret;
@@ -440,10 +566,14 @@ create procedure WEBID_AUTH_GEN (in cert any, in ctype int, in realm varchar, in
       acc := 1;
       goto again_check;
     }
+
+  -- WebID and WebFinger authentication failed
   err_ret:
 --  dbg_obj_print (stat, data);
   exec (sprintf ('sparql clear graph <%S>', gr), stat, msg);
   commit work;
+
+-- FIXME: why is the code below not in a different method? It has nothing to do with WebID!
   {
     declare page, xt, xp varchar;
     declare exit handler for sqlstate '*'
@@ -608,6 +738,37 @@ create procedure WEBID_CHECK_ACL (in ag any, in gr any, in cert any)
 }
 ;
 
+--!
+-- \brief Authenticate via WebID, WebFinger, etc.
+--
+-- \param An optional certificate to extract the WebID from. By default the current client-provided
+--        certificate is uses.
+-- \param ctype The optional format of the provided certificate.
+-- - 0 (default) - PEM
+-- - 1 - DER (raw)
+-- - 2 - PKCS#12
+-- \param realm \p unused
+-- \param allow_nobody If \p 1 authentication is also allowed for WebIDs, WebFingers, and other identifiers without an ODS account.
+-- \param use_session If \p 1 a new authentication session is created for the WebID/WebFinger. FIXME: use_session is ignored for Twitter and friends!
+-- \param ag[out] The detected WebID if any.
+-- \param _gr The graph to load the profile into. If empty a random graph URI will be used.
+-- \param check_expiration If \p 1 the expiration date of the certificate will be checked. And if not valid \0 is returned.
+-- \param validation_type[out] The type of authentication validation that was used:
+-- - 0 - WebID
+-- - 1 - WebFinger
+-- - 2 - DI digest
+-- - 3 - Twitter
+-- - 4 - FIXME: something with the OpenLink cert schema
+-- - 5 - LDAP
+--
+-- FIXME: there is no validation_type for Facebook or LinkedIn. Actually the name of the method suggests that only WebID authentication is supported. This is not the case.
+-- FIXME: Apparently SPARQLUserId is not set for DI, Twitter, Facebook, LinkedIn authentication. So either there is no need to set it in general or there is a bug or bad design.
+--
+-- \return \p 1 on successful authentication, \p 0 otherwise. On success the connection's SPARQLUserId is set to the corresponding
+-- ODS user and an optional authentication session is created.
+--
+-- FIXME: apparently WEBID_AUTH_GEN is not used and can be removed in favor of WEBID_AUTH_GEN_2.
+--/
 create procedure WEBID_AUTH_GEN_2 (
 	in cert any,    		-- certificate
 	in ctype int, 			-- certificate type see get_certificate_info for details 
@@ -664,6 +825,10 @@ again:
     return 0;
   if (use_session)
     {
+      -- If we already have a session for the given certificate (fingerprint) use it
+      -- FIXME: security risk: in theory a WebID certificate could have been compromised in between
+      -- calls. At that point a third party could login with the old certificate key/fingerprint even
+      -- if the actual owner of the WebID had changed their certificate key in the meantime.
       for select VS_UID, VS_STATE from VSPX_SESSION where VS_SID = fing and VS_REALM = 'FOAF+SSL' do
 	{
 	  declare st, uid any;
@@ -916,6 +1081,9 @@ again:
 }
 ;
 
+--!
+-- FIXME: FOAF_SSL_AUTH_GEN seems completely redundant in favor of WEBID_AUTH_GEN_2
+--/
 create procedure FOAF_SSL_AUTH_GEN (in realm varchar, in allow_nobody int := 0, in use_session int := 1)
 {
   declare cert, gr, w, vtype any;
@@ -925,6 +1093,15 @@ create procedure FOAF_SSL_AUTH_GEN (in realm varchar, in allow_nobody int := 0, 
 }
 ;
 
+--!
+-- \ingroup ods_devel_api
+--
+-- \brief Check if a URI is a valid WebID with a certificate.
+--
+-- \param agent The URI to check.
+--
+-- \return \p 1 if the profile accessible at \p agent does contain a certificate public key.
+--/
 create procedure FOAF_CHECK_WEBID (in agent varchar)
 {
   declare stat, msg, meta, data, info, qr, hf, graph, fing, gr any;
