@@ -1287,7 +1287,12 @@ retry_after_deadlock:
     {
       --if (dest is null)
       --  DB.DBA.SPARUL_CLEAR (coalesce (dest, graph_iri), 1);
-      whenever sqlstate '*' goto load_grddl;
+      declare exit handler for sqlstate '*'
+      {
+	if (registry_get ('__sparql_mappers_debug') = '1')
+          dbg_printf ('%s: SQL_MESSAGE: %s', current_proc_name(), __SQL_MESSAGE);
+        goto load_grddl;
+      };
       --log_enable (2, 1);
       xt := xtree_doc (ret_body);
       -- we test for GRDDL inside RDF/XML, if so do it inside mappers, else it will fail because of dv:transformation attr
@@ -1318,7 +1323,12 @@ retry_after_deadlock:
        strstr (ret_content_type, 'application/n-triples') is not null or
        strstr (ret_content_type, 'application/x-turtle') is not null )
     {
-      whenever sqlstate '*' goto load_grddl_after_error;
+      declare exit handler for sqlstate '*'
+      {
+	if (registry_get ('__sparql_mappers_debug') = '1')
+          dbg_printf ('%s: SQL_MESSAGE: %s', current_proc_name(), __SQL_MESSAGE);
+        goto load_grddl_after_error;
+      };
       --log_enable (2, 1);
       --if (dest is null)
       --  DB.DBA.SPARUL_CLEAR (coalesce (dest, graph_iri), 1);
@@ -1337,7 +1347,12 @@ retry_after_deadlock:
     }
   else if (strstr (ret_content_type, 'text/microdata+html') is not null)
     {
-      whenever sqlstate '*' goto load_grddl;
+      declare exit handler for sqlstate '*'
+      {
+	if (registry_get ('__sparql_mappers_debug') = '1')
+          dbg_printf ('%s: SQL_MESSAGE: %s', current_proc_name(), __SQL_MESSAGE);
+        goto load_grddl;
+      };
       --log_enable (2, 1);
       DB.DBA.RDF_LOAD_XHTML_MICRODATA (ret_body, base, coalesce (dest, graph_iri));
       rdf_fmt := 1;
@@ -1350,7 +1365,12 @@ retry_after_deadlock:
     }
   else if ((only_rdfa = 1 and strstr (ret_content_type, 'text/html') is not null) or (strstr (ret_content_type, 'application/xhtml+xml') is not null))
     {
-      whenever sqlstate '*' goto load_grddl;
+      declare exit handler for sqlstate '*'
+      {
+	if (registry_get ('__sparql_mappers_debug') = '1')
+          dbg_printf ('%s: SQL_MESSAGE: %s', current_proc_name(), __SQL_MESSAGE);
+        goto load_grddl;
+      };
       --log_enable (2, 1);
       DB.DBA.RDF_LOAD_RDFA (ret_body, base, coalesce (dest, graph_iri));
       rdf_fmt := 1;
