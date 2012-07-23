@@ -67,7 +67,7 @@
   </refsect1>
   <refsect1 id="examples_xenc_pem_export">
     <title>Examples</title>
-    <example id="ex_xenc_pem_export"><title>Creating a certificate and exporting it in PEM format</title>
+    <example id="ex_xenc_pem_export_1"><title>Creating a certificate and exporting it in PEM format</title>
       <para>The example below imports a client public key, then it creates a certificate and sign it with CA's private key and finally it exports the generated certificate in PEM format.</para>
       <screen><![CDATA[
        kname := xenc_SPKI_read (null, replace (get_keyword ('key', params), '\r\n', ''));
@@ -84,6 +84,22 @@
        cvalue := xenc_pem_export (kname);
 ]]>
 </screen>
+    </example>
+    <example id="ex_xenc_pem_export_2"><title>Export Web Server certificate for Virtuoso HTTPS endpoints</title>
+     <para>This example exports Web Server certificate generated for Virtuoso HTTPS Endpoint:</para>
+     <orderedlist>
+       <listitem><ulink url="http://ods.openlinksw.com/wiki/ODS/ODSSetupSSL#Configure%20an%20HTTPS%20Listener%20for%20handling%20HTTPS%20requests%20from%20HTTP%20user%20agents%20%28clients%29">Configure an HTTPS Listener for handling HTTPS requests from HTTP user agents (clients).</ulink></listitem>
+       <listitem>Suppose the generate certificate from the previous step has name "https_key_localhost"</listitem>
+       <listitem>To export the certificate, execute from iSQL:
+<programlisting><![CDATA[
+SQL> SELECT xenc_pem_export ('https_key_localhost');       	
+]]></programlisting>       	
+         <figure id="srv" float="1">
+           <title>iSQL Export Web Server Sertificate Output</title>
+           <graphic fileref="ui/export_srv_cert.png"/>
+         </figure>
+       </listitem>
+     </orderedlist>
     </example>
   </refsect1>
   <refsect1 id="seealso_xenc_pem_export">

@@ -46,6 +46,7 @@
         <paramdef>in <parameter>accept_pattern</parameter> varchar</paramdef>
         <paramdef>in <parameter>do_not_continue</parameter> integer</paramdef>
         <paramdef>in <parameter>http_redirect_code</parameter> integer</paramdef>
+        <paramdef>in <parameter>http_header_lines</parameter> varchar</paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
@@ -94,6 +95,9 @@ Note that '*Accept*' will return the whole &quot;Accept:&quot; line whereas '*ac
     <refsect2><title><parameter>http_redirect_code</parameter></title>
       <para>NULL or the integer values 301, 302, 303, or 406, are currently allowed. If a 3xx redirect code is given, an HTTP redirect response will be sent back to client. If NULL is specified, the server will process the redirect internally.</para>
     </refsect2>
+    <refsect2><title><parameter>http_header_lines</parameter></title>
+      <para>Additional header lines to be added to the return value.</para>
+    </refsect2>    
   </refsect1>
   <refsect1 id="ret_urlrewrite_create_regex_rule"><title>Return Types</title>
     <para>The return value is not specified.</para>
@@ -106,11 +110,11 @@ Note that '*Accept*' will return the whole &quot;Accept:&quot; line whereas '*ac
 -->
   <refsect1 id="examples_urlrewrite_create_regex_rule">
     <title>Examples</title>
-    <example id="ex_urlrewrite_create_regex_rule"><title></title>
+    <example id="ex_urlrewrite_create_regex_rule1"><title>Example 1</title>
       <para></para>
-      <screen><![CDATA[
+<programlisting><![CDATA[
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
-    'demo_nw_rule2',
+    'demo_nw_rule1',
     1,
     '(/[^#]*)',
     vector('path'),
@@ -122,9 +126,26 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     0,
     null
     );
-
-]]>
-</screen>
+]]></programlisting>
+    </example>
+    <example id="ex_urlrewrite_create_regex_rule2"><title>Example 2</title>
+      <para></para>
+<programlisting><![CDATA[
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+    'demo_nw_rule2',
+    1,
+    '^/~(.*)',
+    vector('uname'),
+    1,
+    '/home/%s',
+    vector('uname'),
+    null, 
+    null,
+     2, 
+     null, 
+     'MS-Author-Via: DAV'
+    );
+]]></programlisting>
     </example>
   </refsect1>
 </refentry>
