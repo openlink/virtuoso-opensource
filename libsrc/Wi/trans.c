@@ -1190,6 +1190,25 @@ tn_results (trans_node_t * tn, caddr_t * inst)
 }
 
 void
+tn_reset (trans_node_t * tn, caddr_t * inst)
+{
+  query_instance_t * qi = (query_instance_t *)inst;
+  cl_op_t * itcl_clo;
+  itc_cluster_t * itcl;
+  id_hash_t * sets;
+
+  QST_INT (inst, tn->clb.clb_fill) = 0;
+  itcl_clo = clo_allocate (CLO_ITCL);
+  itcl_clo->_.itcl.itcl = itcl = itcl_allocate (qi->qi_trx, inst);
+  qst_set (inst, tn->clb.clb_itcl, (caddr_t)itcl_clo);
+  SET_THR_TMP_POOL (itcl->itcl_pool);
+  sets = t_id_hash_allocate (tn->clb.clb_batch_size, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+  QST_BOX (id_hash_t *, inst, tn->tn_input_sets) = sets;
+  QST_INT (inst, tn->clb.clb_nth_set) = -1;
+  QST_INT (inst, tn->tn_nth_cache_result) = 0;
+}
+
+void
 trans_node_start (trans_node_t * tn, caddr_t * inst, caddr_t * state)
 {
   int inx;
@@ -1220,6 +1239,11 @@ trans_node_start (trans_node_t * tn, caddr_t * inst, caddr_t * state)
       QST_INT (inst, tn->clb.clb_nth_set) = -1;
       QST_INT (inst, tn->tn_nth_cache_result) = 0;
       nth = 0;
+      if (tn->tn_complement && tn->tn_is_primary)
+	{
+	  tn_reset (tn->tn_complement, inst);
+	  SET_THR_TMP_POOL (itcl->itcl_pool);
+	}
     }
   else
     {
