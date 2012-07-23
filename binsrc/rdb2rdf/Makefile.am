@@ -19,12 +19,31 @@
 #  
 #  
 
-SUBDIRS = dav mono virtuoso tests rdf_mappers driver maildrop sqldoc hosting bpel b3s tutorial yacutia samples vsp ws sync vspx vad cached_resources virtodbc virtoledb virtuoso_sink xddl VirtuosoClient.Net oat isparql jena sesame sesame2 sesame3 redland hibernate dbpedia rdb2rdf
+TOP=@TOP@
 
+if WITH_RDB2RDF_VAD
+nodist_vad_DATA = rdb2rdf_dav.vad
+endif
+
+noinst_SCRIPTS = make_vad.sh
+CLEANFILES =  \
+	make_vad.output \
+	make_rdb2rdf_vad.output \
+	rdb2rdf_dav.vad
+
+rdb2rdf_dav.vad: $(EXTRA_DIST)
+	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HOST=localhost sh ./make_vad.sh
+
+clean-local:
+	-rm -rf vad
 
 # ----------------------------------------------------------------------
 #
 #  Additional files to distribute
 #
 # ----------------------------------------------------------------------
-EXTRA_DIST = config/ccdefs.c config/libxml.m4
+EXTRA_DIST = \
+	*.sql \
+	*.ttl \
+	*.xml \
+	vad_version

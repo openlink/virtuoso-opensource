@@ -72,6 +72,7 @@ that string.
         <member>7 - return the certificate extension value by OID</member>
 	<member>8 - return the certificate name of the key from current user store</member>
 	<member>9 - return a vector of three elements: the certificate's public key type, exponent and modulus</member>
+	      <member>10 - return attribute value for given attribute name</member>
       </simplelist>
   </refsect2>
   
@@ -126,6 +127,29 @@ that string.
     <para><link linkend=""></link></para>
   </refsect1>
 -->
+   <refsect1 id="examples_get_certificate_info"><title>Examples</title>
+    <example id="ex_get_certificate_info"><title>Simple examples</title>
+<programlisting><![CDATA[
+CREATE PROCEDURE get_mail_example (in cert any := null, in cert_type int := 0)
+{
+  declare alts, mail any;
+  mail := get_certificate_info (10, cert, cert_type, '', 'emailAddress');
+  if (mail is null)
+    {
+      alts := get_certificate_info (7, cert, cert_type, '', '1.10.16.25');
+      if (alts is not null)
+	{
+	  alts := regexp_replace (alts, ',[ ]*', ',', 1, null);
+	  alts := split_and_decode (alts, 0, '\0\0,:');
+	  mail := get_keyword ('email', alts);
+	}
+    }
+  return mail;
+}
+;
+]]></programlisting>
+    </example>
+  </refsect1>
 </refentry>
 
 
