@@ -43,40 +43,54 @@ extern caddr_t spar_strliteral (struct sparp_s *sparp, const char *strg, int str
 extern int json_line;
 %}
 
-%x STRLIT
+%x JSON_SQ
+%x JSON_DQ
 
+JSON_SQ_PLAIN	([^\\''\r\n\t])
+JSON_DQ_PLAIN	([^\\""\r\n\t])
+JSON_ECHAR	([\\]([bfnrt\\""''/]|("u"{HEX}{HEX}{HEX}{HEX})))
+S_NL		((\r\n)|(\n\r)|\n|\r)
 HEX             ([0-9A-Fa-f])
 
 %%
 
-<INITIAL>"{"	{ return OBJ_BEGIN; }
-<INITIAL>"}"	{ return OBJ_END; }
-<INITIAL>"["	{ return ARR_BEGIN; }
-<INITIAL>"]"	{ return ARR_END; }
-<INITIAL>":"	{ return COLON; }
-<INITIAL>","	{ return COMMA; }
-<INITIAL>"\""[^\\\"\n\r\t]*	{ yymore(); BEGIN(STRLIT); }
+<INITIAL>"{"	{ return JSON_OBJ_BEGIN; }
+<INITIAL>"}"	{ return JSON_OBJ_END; }
+<INITIAL>"["	{ return JSON_ARR_BEGIN; }
+<INITIAL>"]"	{ return JSON_ARR_END; }
+<INITIAL>":"	{ return JSON_COLON; }
+<INITIAL>","	{ return JSON_COMMA; }
 
-<INITIAL>"\""[^\\\"\n\r\t]*"\"" 	{
-                   jsonyylval.box = t_box_dv_short_nchars (jsonyytext+1, strlen (jsonyytext)-2);
-		   return STRING;
-		}
+<INITIAL>['']({JSON_SQ_PLAIN}*)[''] 	{ jsonyylval.box = t_box_dv_short_nchars (jsonyytext + 1, jsonyyleng - 2); return JSON_SQSTRING; }
+<INITIAL>[""]({JSON_DQ_PLAIN}*)[""] 	{ jsonyylval.box = t_box_dv_short_nchars (jsonyytext + 1, jsonyyleng - 2); return JSON_DQSTRING; }
 
-<STRLIT>[^\\\"\n\r\t]*"\"" 	{
+<INITIAL>['']({JSON_SQ_PLAIN}*)	{ yymore(); BEGIN(JSON_SQ); }
+<INITIAL>[""]({JSON_DQ_PLAIN}*)	{ yymore(); BEGIN(JSON_DQ); }
+
+<JSON_SQ>({JSON_SQ_PLAIN}*)[''] 	{
 		   BEGIN(INITIAL);
                    jsonyylval.box = spar_strliteral (NULL /* no sparp for JSON_LITERAL */, jsonyytext, 0, 1);
-		   return STRING;
+		   return JSON_SQSTRING;
+		}
+<JSON_DQ>({JSON_DQ_PLAIN}*)[""] 	{
+		   BEGIN(INITIAL);
+		   jsonyylval.box = spar_strliteral (NULL /* no sparp for JSON_LITERAL */, jsonyytext, 0, 1);
+		   return JSON_DQSTRING;
 		}
 
-<STRLIT>"\\"([\\\"bfnrt/]|(u{HEX}{HEX}{HEX}{HEX})) { yymore (); }
-<STRLIT>[^\\\"\n\r\t]* { yymore (); }
-<STRLIT>[\n\r]	{ jsonyyerror ("line break is not allowed in JSON strings"); }
-<STRLIT>"\t"	{ jsonyyerror ("tab character is not allowed in JSON strings"); }
-<STRLIT>"\\"	{ jsonyyerror ("invalid escaping sequence in a string"); }
+<JSON_SQ>{JSON_SQ_PLAIN}+ { yymore (); }
+<JSON_DQ>{JSON_DQ_PLAIN}+ { yymore (); }
 
-<INITIAL>true	{ return TRUE_L; }
-<INITIAL>false	{ return FALSE_L; }
-<INITIAL>null	{ return NULL_L; }
+<JSON_SQ,JSON_DQ>{JSON_ECHAR} { yymore (); }
+<JSON_SQ,JSON_DQ>[\n\r]	{ jsonyyerror ("line break is not allowed in JSON strings"); }
+<JSON_SQ,JSON_DQ>"\t"	{ jsonyyerror ("tab character is not allowed in JSON strings"); }
+<JSON_SQ,JSON_DQ>"\\"	{ jsonyyerror ("invalid escaping sequence in a string"); }
+
+<INITIAL>true	{ return JSON_TRUE_L; }
+<INITIAL>false	{ return JSON_FALSE_L; }
+<INITIAL>null	{ return JSON_NULL_L; }
+<INITIAL>[A-Za-z_]([A-Za-z0-9_]*) { jsonyylval.box = t_box_dv_short_nchars (jsonyytext, jsonyyleng);
+		   return JSON_NAME; }
 
 <INITIAL>"-"?(([1-9][0-9]*)|"0")	{
 		  caddr_t err = NULL;
@@ -87,7 +101,7 @@ HEX             ([0-9A-Fa-f])
                       jsonyyerror ("bad integer constant");
 		    }
                   jsonyylval.box = t_box_num_and_zero (n);
-		  return NUMBER;
+		  return JSON_NUMBER;
 		}
 <INITIAL>"-"?[0-9]+"."[0-9]* |
 <INITIAL>"-"?"."[0-9]+ {
@@ -96,25 +110,25 @@ HEX             ([0-9A-Fa-f])
   if (NUMERIC_STS_SUCCESS == rc)
     {
       jsonyylval.box = (caddr_t) num;
-      return NUMBER;
+      return JSON_NUMBER;
     }
   jsonyylval.box = t_box_double (atof (jsonyytext));
-  return NUMBER;
+  return JSON_NUMBER;
 }
 
 <INITIAL>"-"?[0-9]+[eE][+-]?[0-9]+	|
 <INITIAL>"-"?[0-9]+"."[0-9]+[eE][+-]?[0-9]+ |
 <INITIAL>"-"?"."[0-9]+[eE][+-]?[0-9]+	{
   jsonyylval.box = t_box_double (atof (jsonyytext));
-  return NUMBER;
+  return JSON_NUMBER;
 }
 
 <INITIAL>[+-]?[0-9.eE+-]+ { jsonyyerror ("syntax error in number"); }
 
-<INITIAL>[ \r\t]+
-<INITIAL>"#"([^\n]*)[\n]   { json_line++; }
-<INITIAL>[\n]   { json_line++; }
-<INITIAL>.	{ jsonyyerror ("character outside string"); }
+<INITIAL>[ \t]+
+<INITIAL>"#"([^\r\n]*){S_NL}   { json_line++; }
+<INITIAL>{S_NL}   { json_line++; }
+<INITIAL>.	{ jsonyyerror ("invalid character"); }
 
 
 %%
