@@ -36,6 +36,7 @@
 #include "arith.h"
 #include "security.h"
 #include "sqlo.h"
+#include "remote.h"
 
 
 #define CHECK_OBSERVER(tree_ptr) \
@@ -866,6 +867,7 @@ sqlo_add_table_ref (sqlo_t * so, ST ** tree_ret, dk_set_t *res)
 	view = (ST*) sch_view_def (so->so_sc->sc_cc->cc_schema, tb->tb_name);
 	if (!view || inside_view)
 	  {
+	    remote_table_t * rt = find_remote_table (tb->tb_name, 0);
 	    t_NEW_VARZ (op_table_t, ot);
 	    ot->ot_opts = ST_OPT (tree, caddr_t *, _.table.opts);
 	    ot->ot_prefix = tree->_.table.prefix;
@@ -873,6 +875,7 @@ sqlo_add_table_ref (sqlo_t * so, ST ** tree_ret, dk_set_t *res)
 	    ot->ot_new_prefix = t_box_string (tmp);
 	    tree->_.table.prefix = ot->ot_new_prefix;
 	    ot->ot_table = tb;
+	    ot->ot_rds = rt ? rt->rt_rds : NULL;
 	    ot->ot_u_id = (oid_t) unbox (tree->_.table.u_id);
 	    ot->ot_g_id = (oid_t) unbox (tree->_.table.g_id);
 	    if (ST_P (view, PROC_TABLE))
