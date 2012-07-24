@@ -1401,7 +1401,7 @@ create procedure ODS.ODS_API."user.checkAvailability" (
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
   if (name is null or length (name) < 1 or length (name) > 20)
-    signal ('23023', 'Login name cannot be empty or longer then 20 chars');
+    signal ('23023', 'Login name cannot be empty or longer than 20 chars');
 
   if (regexp_match ('^[A-Za-z0-9_.@-]+\$', name) is null)
     signal ('23023', 'The login name contains invalid characters');
@@ -1531,7 +1531,7 @@ create procedure ODS.ODS_API."user.register" (
     "password" := uuid ();
 	}
   if (name is null or length (name) < 1 or length (name) > 20)
-    signal ('23023', 'Login name cannot be empty or longer then 20 chars');
+    signal ('23023', 'Login name cannot be empty or longer than 20 chars');
 
   if (regexp_match ('^[A-Za-z0-9_.@-]+\$', name) is null)
     signal ('23023', 'The login name contains invalid characters');
