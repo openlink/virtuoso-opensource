@@ -388,12 +388,13 @@ next_response:
     href := href || '/';
   parent_col := DAV_SEARCH_ID (href, 'P');
   http ('<D:response xmlns:D="DAV:" xmlns:lp0="DAV:" xmlns:i0="DAV:" xmlns:V="http://www.openlinksw.com/virtuoso/webdav/1.0/">\n');
-  http ('<D:href>');
-  http_dav_url (
-    charset_recode (
-      href,
-      null, 'UTF-8' ) );
-  http ('</D:href>\n');
+  http (sprintf ('<D:href>%V</D:href>\n', charset_recode (href, 'UTF-8', '_WIDE_')));
+  -- http ('<D:href>');
+  -- http_dav_url (
+  --   charset_recode (
+  --     href,
+  --     null, 'UTF-8' ) );
+  -- http ('</D:href>\n');
   http ('<D:propstat>\n');
   http ('<D:prop>\n');
   ix := 0;
@@ -468,17 +469,17 @@ next_response:
 	}
 	else if (prop = 'urn:ietf:params:xml:ns:caldav:calendar-home-set')
 	{
-		http (concat('<C:calendar-home-set xmlns:C="urn:ietf:params:xml:ns:caldav"><D:href>', lpath, '</D:href></C:calendar-home-set>\n'));
+		http (sprintf ('<C:calendar-home-set xmlns:C="urn:ietf:params:xml:ns:caldav"><D:href>%V</D:href></C:calendar-home-set>\n', charset_recode (lpath, 'UTF-8', '_WIDE_')));
           found_sprop := 1;
 	}
 	else if (prop = 'urn:ietf:params:xml:ns:carddav:addressbook-home-set')
 	{
-		http (concat('<C:addressbook-home-set xmlns:C="urn:ietf:params:xml:ns:carddav"><D:href>', lpath, '</D:href></C:addressbook-home-set>\n'));
+		http (sprintf ('<C:addressbook-home-set xmlns:C="urn:ietf:params:xml:ns:carddav"><D:href>%V</D:href></C:addressbook-home-set>\n', charset_recode (lpath, 'UTF-8', '_WIDE_')));
           found_sprop := 1;
 	}
 	else if (prop = ':principal-URL')
 	{
-		http (concat('<D:principal-URL><D:href>', lpath, '</D:href></D:principal-URL>\n'));
+		http (sprintf ('<D:principal-URL><D:href>%V</D:href></D:principal-URL>\n', charset_recode (lpath, 'UTF-8', '_WIDE_')));
         found_sprop := 1;
 	}
 	else if (prop = ':current-user-privilege-set')
@@ -1140,7 +1141,8 @@ nf:
   http ('<?xml version="1.0"?>\n');
   http ('<D:multistatus xmlns:D="DAV:" xmlns:V="http://www.openlinksw.com/virtuoso/webdav/1.0/">\n');
       http ('<D:response xmlns:lp0="DAV:" xmlns:i0="DAV:">\n');
-          http ('<D:href>'); http_dav_url (lpath); http ('</D:href>\n');
+      -- http ('<D:href>'); http_dav_url (lpath); http ('</D:href>\n');
+      http (sprintf ('<D:href>%V</D:href>\n', charset_recode (lpath, 'UTF-8', '_WIDE_')));
 	    http ('<D:propstat>\n');
 	      http ('<D:prop>\n');
 	      if (_prop = 'propname')
