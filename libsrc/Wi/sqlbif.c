@@ -8317,27 +8317,50 @@ bif_one_of_these (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   char *me = "one_of_these";
   query_instance_t * qi = (query_instance_t *) qst;
   int n_args = BOX_ELEMENTS (args);
-  caddr_t item = bif_arg_unrdf (qst, args, 0, me);
+  caddr_t raw_item = bif_arg /* no _unrdf */ (qst, args, 0, me);
+  dtp_t raw_item_dtp = DV_TYPE_OF (raw_item);
+  caddr_t item = (((DV_RDF == raw_item_dtp) && ((rdf_box_t *)raw_item)->rb_is_complete) ? ((rdf_box_t *)raw_item)->rb_box : raw_item);
   dtp_t item_dtp = DV_TYPE_OF (item);
   int inx;
-  caddr_t value;
-  dtp_t val_dtp;
   int they_match;
-
   for (inx = 1; inx < n_args; inx++)
     {
-      caddr_t values = qst_get (qst, args[inx]);
-      int is_array = DV_ARRAY_OF_POINTER == DV_TYPE_OF (values);
-      int nth, n_values = is_array ? BOX_ELEMENTS (values) : 1;
+      caddr_t raw_values = qst_get (qst, args[inx]);
+      caddr_t *values;
+      int nth, n_values;
+      if (DV_ARRAY_OF_POINTER == DV_TYPE_OF ((caddr_t)raw_values))
+        {
+          values = (caddr_t *)raw_values;
+          n_values = BOX_ELEMENTS (values);
+        }
+      else
+	{
+	  values = (caddr_t *)(&raw_values);
+	  n_values = 1;
+	}
       for (nth = 0; nth < n_values; nth++)
 	{
-	  value = is_array ? ((caddr_t*)values)[nth] : values;
+	  caddr_t value = values[nth];
+	  dtp_t val_dtp = DV_TYPE_OF (value);
+	  if (DV_RDF == val_dtp)
+	    {
+	      if (((rdf_box_t *)value)->rb_is_complete)
+	        {
+	          value = ((rdf_box_t *)value)->rb_box;
 	  val_dtp = DV_TYPE_OF (value);
+	        }
+	      else if (DV_RDF != raw_item_dtp)
+	        continue;
+	      else if (((rdf_box_t *)value)->rb_ro_id != ((rdf_box_t *)raw_item)->rb_ro_id)
+	        continue;
+	      else
+	        return box_bool (1);
+	    }
 	  if (IS_WIDE_STRING_DTP (item_dtp) && IS_STRING_DTP (val_dtp))
 	    {
 	      caddr_t wide = box_narrow_string_as_wide ((unsigned char *) value, NULL, 0, QST_CHARSET (qst), err_ret, 1);
 	      if (*err_ret)
-		return NULL;
+		return box_bool (0);
 	      they_match = boxes_match (item, wide);
 	      dk_free_box (wide);
 	    }
@@ -8345,7 +8368,7 @@ bif_one_of_these (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	    {
 	      caddr_t wide = box_narrow_string_as_wide ((unsigned char *) item, NULL, 0, QST_CHARSET (qst), err_ret, 1);
 	      if (*err_ret)
-		return NULL;
+		return box_bool (0);
 	      they_match = boxes_match (wide, value);
 	      dk_free_box (wide);
 	    }
@@ -8360,7 +8383,7 @@ bif_one_of_these (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 		      *err_ret = NULL;
 		      continue;
 		    }
-		  return NULL;
+		  return box_bool (0);
 		}
 	      else
 		they_match = boxes_match (item, tmp_val);
@@ -8369,10 +8392,10 @@ bif_one_of_these (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  else
 	    they_match = boxes_match (item, value);
 	  if (they_match)
-	    return (box_num (inx));
+	    return  box_bool (1);
 	}
     }
-  return (box_num (0));
+  return box_bool (0);
 }
 
 

@@ -2374,7 +2374,7 @@ ssg_print_literal_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
 #ifdef NDEBUG
           ssg_puts (" __bft(");
 #else
-          ssg_puts (" /* QNAME as sql atom */ __box_flags_tweak (");
+          ssg_puts (" /* QNAME as sql atom */ __bft (");
 #endif
           ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_UTF8_ONLY);
           ssg_puts (", 1)");
@@ -2422,7 +2422,7 @@ ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
 #ifdef NDEBUG
           ssg_puts (" __bft(");
 #else
-          ssg_puts (" /* QName as sqlval */ __box_flags_tweak (");
+          ssg_puts (" /* QName as sqlval */ __bft (");
 #endif
           ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_UTF8_ONLY);
           ssg_puts (", 1)");
@@ -2439,7 +2439,7 @@ ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
 #ifdef NDEBUG
       ssg_puts (" __bft(");
 #else
-      ssg_puts (" /* UNAME as sqlval */ __box_flags_tweak (");
+      ssg_puts (" /* UNAME as sqlval */ __bft (");
 #endif
       ssg_print_box_as_sql_atom (ssg, (ccaddr_t)(lit), SQL_ATOM_UTF8_ONLY);
       ssg_puts (", 1)");
@@ -3688,9 +3688,9 @@ IN_op_fnt_found:
         {
           switch (argctr)
             {
-            case 0: ssg_puts (top_filter_op ? " (" : " position ("); break;
-            case 1: ssg_puts (top_filter_op ? " in (" : ", vector ("); break;
-            default: ssg_puts (" ,");
+            case 0: ssg_puts (top_filter_op ? " (" : " ( one_of_these ("); break;
+            case 1: ssg_puts (top_filter_op ? " in (" : ", "); break;
+            default: ssg_puts (", ");
             }
           ssg_print_scalar_expn (ssg, argN, op_fmt, NULL_ASNAME);
         }
@@ -5015,7 +5015,7 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
 #ifdef NDEBUG
           ssg_puts (" __bft (");
 #else
-          ssg_puts (" __box_flags_tweak (");
+          ssg_puts (" __bft (");
 #endif
           ssg_print_literal_as_sqlval (ssg, NULL, tree);
           ssg_puts (", 1)");
