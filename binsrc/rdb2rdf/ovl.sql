@@ -1,5 +1,4 @@
---  $Id: ovl.sql,v 1.6 2012/04/23 09:09:10 ivan Exp $
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  

@@ -1,8 +1,6 @@
 --
 -- Converter from R2RML graph to SPARQL-BI declaration of RDF Views.
 --
--- $Id: r2rml.sql,v 1.26 2012/07/20 09:33:28 ivan Exp $
---
 -- The implemented version of the spec is "Overview.html,v 1.59 2011/05/24 19:22:21 rcygania2 Exp"
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)

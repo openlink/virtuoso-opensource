@@ -2,7 +2,7 @@
 <!DOCTYPE sticker SYSTEM "vad_sticker.dtd">
 <!--
  -  
- -  $Id: vad_dav.xml,v 1.7 2012/04/12 13:55:20 rtsekova Exp $
+ -  $Id:$
  -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
@@ -45,7 +45,7 @@
     <sql purpose="post-install"></sql>
   </procedures>
   <ddls>
-    <sql purpose="pre-install">if (lt (sys_stat ('st_dbms_ver'), '06.02.3130')) { result ('ERROR', 'The RDB2RDF package requires server version 06.02.3130 or greater'); signal ('FATAL', 'The conductor package requires server version 06.02.3130 or greater'); } </sql>
+    <sql purpose="pre-install">if (lt (sys_stat ('st_dbms_ver'), '06.01.3127')) { result ('ERROR', 'The RDB2RDF package requires server version 06.01.3127 or greater'); signal ('FATAL', 'The conductor package requires server version 06.01.3127 or greater'); } </sql>
     <sql purpose="post-install">
       "DB"."DBA"."VAD_LOAD_SQL_FILE"('/DAV/VAD/rdb2rdf/ovl.sql', 1, 'report', 1);
       "DB"."DBA"."VAD_LOAD_SQL_FILE"('/DAV/VAD/rdb2rdf/r2rml.sql', 1, 'report', 1);

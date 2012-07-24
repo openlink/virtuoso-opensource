@@ -1,4 +1,3 @@
---  $Id: r2rml_validation_metas.sql,v 1.13 2012/06/28 21:53:05 ivan Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
