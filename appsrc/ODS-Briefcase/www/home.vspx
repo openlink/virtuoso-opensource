@@ -1351,6 +1351,9 @@
               }
 
                 rdf_content := dav_file;
+              if (self.dav_detClass = 'S3')
+                connection_set ('amz-server-side-encryption', get_keyword ('dav_S3_encryption', params, 'None'));
+
               retValue := ODRIVE.WA.DAV_RES_UPLOAD(dav_fullPath, dav_file, dav_mime, dav_perms, dav_owner, dav_group);
               if (ODRIVE.WA.DAV_ERROR(retValue))
                 signal('TEST', concat(ODRIVE.WA.DAV_PERROR(retValue), '<>'));
@@ -1461,6 +1464,7 @@
       <v:variable name="dav_tags_private" persist="0" type="varchar" />
       <v:variable name="dav_tags_public" persist="0" type="varchar" />
       <v:variable name="dav_metadata" persist="0" type="varchar" default="null" />
+      <v:variable name="dav_S3_encryption" type="varchar" default="'None'" />
       <v:variable name="chars" type="integer" default="60" />
     </vm:variables>
     <vm:header>
@@ -1575,12 +1579,18 @@
           <v:button name="action" action="simple" style="url" value="Submit">
             <v:on-post>
               <![CDATA[
-                declare _action, _path, _item, params any;
+                declare _action, _path, _item, _det, params any;
 
                 params := e.ve_params;
                 _action := get_keyword ('_cmd', params, '');
 
-                if (_action = 'home')
+                if (_action = 'refresh')
+                {
+                  _det := cast (ODRIVE.WA.DAV_PROP_GET (ODRIVE.WA.odrive_real_path (self.dir_path), ':virtdet') as varchar);
+                  if (__proc_exists (sprintf ('DB.DBA.%s__refresh', _det)) is not null)
+                    call ('DB.DBA.' || _det || '__refresh') (ODRIVE.WA.odrive_real_path (self.dir_path));
+                }
+                else if (_action = 'home')
                 {
                 _home:
                   self.dir_path := ODRIVE.WA.dav_home2 (self.owner_id, self.account_role);
@@ -2036,6 +2046,7 @@
             if (not isnull (get_keyword ('dav_group', params)))
               self.dc_prepare();
 
+            self.dav_S3_encryption := 'None';
             self.rdf_iri := SIOC..briefcase_resource_iri (self.dav_path);
           ]]>
         </v:before-data-bind>
@@ -2148,6 +2159,17 @@
                       <v:template name="tform_11" type="simple" enabled="--self.dav_enable">
                         <input type="button" value="Select" onclick="javascript: windowShow('<?V ODRIVE.WA.page_url (self.domain_id, 'mimes_select.vspx?params=dav_mime:s1;') ?>');" disabled="disabled" class="button" />
                       </v:template>
+                    </td>
+                  </tr>
+                </v:template>
+                <v:template name="tform_10a" type="simple" enabled="-- case when (self.command_mode <> 10) and (self.dav_type = 'R') and (self.dav_detClass = 'S3') then 1 else 0 end">
+                  <tr id="davRow_mime">
+                    <th>
+                      <v:label for="dav_mime" value="--'S3 Server Side Encryption'" />
+                    </th>
+                    <td>
+                      <label><?vsp http (sprintf ('<input type="radio" name="dav_S3_encryption" id="dav_S3_encryption_0" value="None" %s />', case when self.dav_S3_encryption = 'None' then 'checked="checked"' else '' end)); ?> <b>None</b></label>
+                      <label><?vsp http (sprintf ('<input type="radio" name="dav_S3_encryption" id="dav_S3_encryption_1" value="AES256" %s />', case when self.dav_S3_encryption <> 'None' then 'checked="checked"' else '' end)); ?> <b>AES-256</b></label>
                     </td>
                   </tr>
                 </v:template>

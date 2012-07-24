@@ -1578,3 +1578,17 @@ create function DB.DBA.Dropbox__rdf_delete (
   SPARQL clear graph ?:rdf_graph2;
 }
 ;
+
+-------------------------------------------------------------------------------
+--
+create function DB.DBA.Dropbox__refresh (
+  in path varchar)
+{
+  -- dbg_obj_princ ('DB.DBA.Dropbox__refresh (', path, ')');
+  declare colId any;
+
+  colId := DB.DBA.DAV_SEARCH_ID (path, 'C');
+  if (DAV_HIDE_ERROR (colId) is not null)
+    DB.DBA.Dropbox__paramRemove (colId, 'C', 'syncTime');
+}
+;
