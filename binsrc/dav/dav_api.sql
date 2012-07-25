@@ -4732,7 +4732,7 @@ create procedure WS.WS.WAC_INSERT (
   {
     connection_set ('dav_acl_sync', 1);
     what := case when (path[length (path)-1] <> ascii('/')) then 'R' else 'C' end;
-    permissions := DB.DBA.DAV_PROP_GET_INT (DB.DBA.DAV_SEARCH_ID (path, what), what, ':virtpermissions', 0);
+    permissions := DB.DBA.DAV_PROP_GET_INT (DB.DBA.DAV_SEARCH_ID (path, what), what, ':virtpermissions', 0, null, null, http_dav_uid ());
     DAV_RES_UPLOAD_STRSES_INT (rtrim (path, '/') || ',acl', aciContent, 'text/n3', permissions, uid, gid, null, null, 0);
     connection_set ('dav_acl_sync', null);
   }
