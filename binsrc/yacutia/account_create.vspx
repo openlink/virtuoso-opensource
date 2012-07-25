@@ -758,7 +758,8 @@
 		    </td>
 		    <td>
 			<?vsp if (xenc_type = 'X.509') { ?>
-			<v:url name="dwn1" value="Download" render-only="1" url="--sprintf ('sec_pki_download.vsp?key=%U', xenc_key)"/>
+			<v:url name="dwn1" value="Download" render-only="1" 
+			    url="--sprintf ('sec_pki_download.vsp?key=%U&user=%U', xenc_key, self.user_name)"/>
 			<?vsp } ?>
 		    </td>
 		</tr>
