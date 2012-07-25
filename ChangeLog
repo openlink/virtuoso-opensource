@@ -1,3 +1,1001 @@
+2012-07-24  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Updated version to 6.1.6-rc2
+
+	Fixed resource name encoding problem
+
+	Merged DET_S3.sql
+	* Fixed resource server side encryption problem
+	* Fixed file permissions (after file update)
+
+	Merged cutter tool
+	* Added new -KP command-line option
+	* Added new -BE command-line option
+	* Fixed ISQL normalizations
+	* Fixed compiler warnings
+
+	Updated version numbers
+
+	Fixed typos
+
+	Merged Briefcase VAD
+	* Added refresh function
+	* Fixed resource server side encryption problem
+
+	Fixed role binding can be one to many
+
+	Added loading for rdb2rdf vad
+
+	Fixed initialize ot_rds
+
+	Fixed IN operator
+	  Optimization by ssg_print_builtin_expre so that it does not complete
+	  RDF boxes (for IRIs only at right side).
+
+	Fixed disabled accounts can still be used in set_user_id
+
+	Fixed small issues for VOS release
+
+	Added initial support for rdb2rdf VAD
+
+2012-07-23  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Updated documentation
+
+	Fixed file permission
+
+	Fixed date format
+
+	Added optimizations to JSON parser
+
+	Added BIF get_plaintext_row
+
+	Fixed reset both pairs
+
+2012-07-20  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added debug code for sponger
+
+	Merged ODS Framework VAD
+	* Added initial API documentation
+	* Fixed advanced acl settings for sparql or services auth
+
+	Merged ODS Calendar VAD
+	* Added initial API documentation
+
+	Merged ODS Bookmark VAD
+	* Added initial API documentation
+	* Added support for WebDAV DET
+
+	Added initial data for doxify
+
+	Added initial data for doxify
+
+	Merged DBpedia VAD fixes
+	* Usse foaf:isPrimaryTopicOf for dbpedia 3.8 dataset
+	* Fixed use proper encoding for wikipedia link
+
+	Fixed Base URI of DirectMapping R2RML into a configurable param
+
+	Fixed permissions for '*,acl' files
+
+	Fixed indentation
+
+	Fixed ETag calculation
+
+2012-07-19  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed R2RML PK format
+
+2012-07-18  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added WebDAV DET folder type
+
+	Fixed issue editing mounted resources
+
+	Fixed COPYRIGHT to use current address of FSF
+
+	Updated version to 6.1.6-rc1
+
+	Added openSUSE layout
+
+	Fixed buffer overflow when using wide chars
+
+	Fixed potential buffer overwrite
+
+	Fixed compiler warning
+
+	Fixed memset should use sizeof struct, not sizeof pointer to struct
+
+2012-07-17  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merged Framework VAD
+	* Added advanced acl settings for sparql or services authentication
+	* Fixed ACL UI
+	* Fixed UTF-8 problem
+
+	Merged Briefcase VAD
+	* Added ACL for IMAP DET folder
+	* Fixed problem with editing mounted sources
+	* Fixed host and port in IMAP server address
+	* Fixed ACL UI
+	* Fixed '*,acl' files
+
+	Fixed use absolute path to prevent looking for local part
+
+	Added advanced ACL settings for sparql or services authentication
+
+	Added webid protected endpoints template
+
+2012-07-16  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed indentation
+
+	Fixed return HTML body
+
+	Merged S3 DET fixes
+	* Fixed ACL rules update
+	* Fixed property list function
+	* Fixed bad owner in some DET resources
+	* Fixed problem with editing mounted resources
+
+	Fixed removed BOM
+
+	Fixed http_ses_arg is supposed to return ws_session
+
+	Added missing stringdate
+
+	Fixed datetime conversion
+
+2012-07-12  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Removed test for @rel, @rev or @property from application/xhtml+xml
+
+2012-07-04  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merged Framework VAD
+	* Fixed remove session when acl is altered
+	* Fixed check if user exists
+
+	Merged Briefcase VAD
+	* Fixed bad owner in some DET resources
+	* Fixed properties list function
+	* Updated S3 DET folder
+
+	Fixed ACL
+
+2012-07-03  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added alias SSLPublicKey
+
+	Added support for SSL Chain Certificates
+
+	Added error reporting if query compilation fails
+
+2012-07-02  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed XHTML+RDFa validation
+
+	Added support for rel="nofollow" on external links
+
+2012-06-30  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added support for new S3
+
+2012-06-29  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed GPF on TTLP with flag 4096 and named bnodes
+
+	Merged ODS Framework VAD
+	* Update xml creation function
+	* Fixed ACLs
+	* Fixed bad cast
+	* Fixed typos
+
+	Fixed datatypes and missing return types from functions
+
+	Fixed datatypes and missing return types from functions
+
+	Fixed typo in label
+
+	Fixed datatype
+
+2012-06-27  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed run authentication function as dba
+
+	Fixed ACL
+
+	Added missing check for theads or locks
+
+	Added deadlock handler
+
+2012-06-26  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issues loading microdata with namespace decls
+
+2012-06-25  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed missing txn mtx when resetting flag
+
+	Fixed compiler issue
+
+	Added support for nested relative xml:base-s
+
+	Merged briefcase VAD
+	* Added default values for cartridges
+	* Fixed 'Box Net' typo
+	* Fixed folder typo
+	* Fixed SkyDrive authentication button name
+	* Fixed resource uploade
+	* Fixed issues with Box DET
+
+2012-06-23  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added support for maintaining SSL Chain certificates
+
+	Added support for exporting keys
+
+2012-06-22  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added support for loading extra SSL Chain certificates
+
+	Fixed flag must be set inside txn mutex
+
+2012-06-21  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added http_limited() function
+	This restricts certain slow pages from claiming all threads
+
+	Added support for protocol switching e.g. using websockets
+
+2012-06-20  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merged Framework VAD
+	* Added access page and API keys for Box
+	* Added Help links
+	* Added expiration check box
+	* Added support for private graphs
+	* Fixed deadlock handler
+	* Fixed inst list
+	* Fixed input pars
+	* Removed debug info
+
+	Merged Briefcase VAD
+	* Added support for Box
+	* Added box.net folder definition
+	* Added support for private graphs
+	* Fixed permission problem for some DETs
+
+	Fixed missing grant
+
+	Added support for Skydrive and Box DET
+
+2012-06-19  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed do not signal eror when dummy cartridge is installed
+
+	Fixed compare rdfbox with IN values using box value
+
+	Fixed handling of literals with language tag
+	Literals with language are now generated as RDF boxes even for SQL
+	valmode
+
+	Added initial support for SPARQL 1.1 BINDINGS clause
+
+2012-06-18  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added RDFa and MTML+Microdata autodetection
+
+	Merged tutorial VAD
+	* Added note for sparql-ssl endpoint
+	* Fixed regex expression
+	* Fixed RDF DET is in server
+	* Fixed make clean
+
+	Added encoding field
+
+	Added sponger ACL
+
+2012-06-17  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue with regexp_replace
+
+	Fixed check len before calling second memcpy
+
+	Fixed compiler warnings
+
+	Fixed valgrind warnings
+
+2012-06-15  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed check Pls for non-empty string value
+
+	Fixed memory access after free
+
+	Fixed memory leak
+
+	Fixed mime for images
+
+	Updated images
+
+2012-06-14  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed memory leak
+
+2012-06-13  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Use long iris by default
+
+	Fixed check len before calling memcpy
+
+	Fixed typo
+
+	Added support for per datasource default refresh interval
+
+	Fixed check key col is used in sampling before guessing about it
+
+	Fixed memory leak
+
+	Merge remote-tracking branch 'origin/develop/6' into develop/6
+
+
+	Merged iSPARQL vad
+	* Added control for raw URIs in sparql result set view
+	* Added persistence in permalinks
+
+2012-06-07  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Updated documentation
+
+	Updated images
+
+	Remember options on /sparql endpoints upon recreation
+
+	Added support for tab-separated-values (TSV) format in sparql
+
+	Added backtrace in assert
+
+2012-06-06  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed portability issue on freebsd
+
+	Fixed issue with make clean on freebsd
+
+2012-06-05  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added support for text/turtle
+
+	Added support for more patterns
+
+	Merged Framework VAD
+	* Added support for SkyDrive
+	* Added JSON output option for certgen
+	* Updated Google API access
+
+	Merged Briefcase VAD
+	* Added support for SkyDrive
+	* Added mail notification for webid sharing
+	* Fixed file name encoding
+	* Fixed sponge feature
+	* Fixed download problem
+
+	Merged dbpedia vad
+	* Fixed check if modified
+	* Fixed reset timezone
+
+	Fixed if scalar is rdf_box, print as string
+
+	Fixed free path at the end of processing the request
+
+	Added generation of url rewrite rules
+
+	Added expiration_function to http options map
+
+	Fixed json-ld encoding
+
+	Fixed string type support
+
+2012-06-02  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed skip _IDN cols
+
+	Added support for rdf import of gzipped content
+
+	Merged dbpedia vad
+	* Added support for If-Modified-Since
+	* Added registry setting dbp_last_modification to get SP returning last
+	  modified date
+	* Fixed use owl graph for properties
+
+2012-06-01  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Removed temp files
+
+	Small cleanups
+
+2012-05-30  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue with gdrive/dropbox
+
+	Fixed issue with cyclic references
+
+	Added new predicates to load as JSO triples
+
+	Improved error diagnostics for ALTER QUAD STORAGE <> { DROP }
+
+	Fixed ignore _IDN columns
+
+	Fixed recursion limit in order to save runing out of stackspace
+
+	Add xml comment around ill-formed property xml elements
+
+	Fixed ODBC driver
+	* Fixed clear errors on connection handle
+	* Fixed use provided password from connect handle
+	* Fixed debug statements
+
+	Added aliases for ssl key/cert
+
+	FIxed access rights and status for SPARUL_LOAD_SERVICE_DATA
+
+	Fixed grants for SPARQL LOAD SERVICE <...> DATA
+
+	Fixed service SPARQL codegen with zero retvals
+
+	Added procedure view for SPARQL BINDINDS
+
+	Merged SPARQL fixes
+	* Added support for self-description
+	* Fixed SPARQL LOAD SERVICE <...> DATA
+
+	Merged SPARQL fixes
+	* Added support for BINDINGS
+	* Fixed support for SERVICE
+	  (with new SPARQL LOAD SERVICE <...> DATA statement)
+
+2012-05-23  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added option to download ca key
+
+	Fixed jump to individual grants if user is edited
+
+	Merged Briefcase VAD
+	* Added ACL for GDrive and Dropbox
+	* Added Dropbox DET
+
+2012-05-21  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed missing end of LSB comment
+
+	Fixed copy col opts else tables with xml cols cannot be altered
+
+	Fixed code should come after declarations
+
+	Added Dropbox API keys
+
+	Added new function bif_jso_triples_del
+
+	Fixed compiler warnings
+
+	Fixes for date
+	* Adding days to date results in date
+	* Adding seconds to date results in datetime
+	* Fixed debugging
+
+	Added virtrdf:dialect static uname
+
+	Added new mime type application/n-triples
+
+	Fixed compiler warnings
+
+	Changed NULL is treated like 0 element array for bif_get_keyword
+
+	Fixed compiler warning
+
+	Added new BIF functions
+
+	Fixed compiler warnings
+
+	Added better MALLOC_DEBUG handling of box_iri_id
+
+	Added new function hash_list_keys
+
+	Added new aliases
+
+2012-05-16  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed disble repl user login via odbc or dav
+
+	Fixed datatype should be iri_id8
+
+2012-05-14  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added support for Google Drive
+
+	Fixed typo in ACL filters
+
+	Fixed small issue in testsuite
+
+	Added option to wait for last request in an aq first
+
+2012-05-13  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed compiler issue on Solaris
+
+2012-05-11  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed text index is not possible on views at this time
+
+	Added function RDFA_LOAD_DICT
+
+	Fixed bug in regeneration of permalink when RDFMini view changed
+
+	Merged fixes to MAP code
+	* Upgraded MAP support for latest OpenLayers/OpenStreetmap
+	* Disabled dysfunctional NASA blue marble tiles
+
+	Upgraded to OpenLayers v2.12-rc2
+
+	Fixed typo
+
+	Fixed graph name to /DAV/
+
+	Fixed removed missing define
+
+	Merged SPARQL fixes
+	* Added propagation of LIMIT restrictions
+	* Fixed issues with SERVICE
+	* Fixed issues with UNIONs
+
+	Added support for Sparql Service Description
+
+	Merged Briefcase fixes
+	* Added support for Google Drive
+
+	Fixed check lang box
+
+	Fixed issue with semaphores on Mac OS X 10.7
+	When signalled, make sure we do not miss another signal, as signals
+	on a condvar w/o wating thread is a NOOP
+
+	Fixed det resources for google drive
+
+	Fixed formatting
+
+2012-05-10  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merged Framework fixes
+	* Added Google API
+	* Fixed Resource /dataspace/doc/services/user not found error
+	* Fixed interop
+	* Fixed annotation bug - not unique primary key
+
+	Merged Calendar fixes
+	* Fixed WebID write access
+	* Fixed redirect
+
+	Merged Briefcase fixes
+	* Added Google Drive DET folder type create
+
+	Merged Addressbook fixes
+	* Fixed redirect
+
+	Added support for CORS in web services
+
+	Added missing prototypes
+
+	Fixed compiler warning and small code cleanup
+
+2012-05-04  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merged iSPARQL fixes
+	* Added alternate links in HEAD
+	* Added support to remember rdf display/tab
+
+	Added support to remember previous tab
+
+	Fixed do not use DBA as soap user as it takes ages to recompile PL
+
+	Added files to ignore
+
+	Added extra checks for db slices
+
+	Added dsn name to explain output
+
+	Fixed set pn_query to nil to avoid using free mem
+
+2012-05-03  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Updated version of facet browser
+
+	Added graph to qrcode
+
+	Updated version of conductor
+
+	Remove old view before creating newer one
+
+2012-05-02  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue with incomplete box
+
+	Fixed version number
+
+	Added macro t_revlist_to_array_or_null
+
+	Fixed escape chars in CSV output
+
+2012-05-01  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed use internal call to set proper user for exec
+
+2012-04-27  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Removed rdf det as it is already embedded in server itself
+
+	Added missing account in check
+
+	Added mp_set_nreverse and t_set_nreverse
+
+	Fixed multi-column transitivity
+
+	Fixed re-use of "similar" constants of different types
+
+2012-04-26  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed check for MAC_OS_X_VERSION_10_7
+
+	Fixed typo
+
+	Fixed graph level security
+
+	Added indication to log when backup is done
+
+2012-04-25  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added printing of soap struct tags
+
+2012-04-24  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed use proper semping rest endpoint
+
+	Updated IMAP DET options and actions
+
+	Fixed nagation to use SPARQL 1.1 FILTER NOT EXISTS
+
+	Fixed clear variables after report
+
+	Added support for FROM SUBQUERY { .. } in quad map
+
+	Added support for subqueries inside QUAP MAP { .. } groups
+
+	Fixed issue with _UDBC_ always set
+
+2012-04-20  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added support for new name for cartridges vad
+
+	Fixed error reporting
+
+	Fixed if no one is verified to match, return NULL
+
+	Updated CKeditor to version 3.6.3
+
+	Fixed popup forms UI
+
+2012-04-19  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Updated version
+
+	Fixed labels
+
+	Added check for policy_manager vad
+
+	Merged Polls fixes
+	* Added ACL filters
+	* Fixed IE UI
+	* Fixed icons
+
+	Merged Framework fixes
+	* Added ACL filters
+	* Moved common functions to framework
+	* Fixed front page
+	* Fixed rest interface page
+	* Fixed semping protocol
+
+	Merged Feedmanager fixes
+	* Added ACL filters
+	* Fixed icons
+
+	Merged Calendar fixes
+	* Added ACL filters
+	* Fixed daylight savings time on import to calendar
+	* Fixed issue with IE UI
+	* Fixed minor issue with CalDav
+	* Fixed icons
+
+	Merged Briefcase fixes
+	* Added ACL filters
+	* Fixed icons
+
+	Merged Bookmark fixes
+	* Added ACL filters
+	* Fixed icons
+
+	Merged Addressbook fixes
+	* Added ACL filters
+	* Fixed minor problem with CardDav
+	* Fixed icons
+
+	Fixed r2rml
+	* Fixed error handling
+	* Fixed syntax
+	* Fixed validation to report errors with line numbers
+	* Fixed import of R2RML turtle files to provide debugging
+	  information about blank nodes
+
+	Added references view mode
+
+	Fixed VAD checks
+	* Added proper check for vad versions
+	* Fixed show r2rml tab only when rdb2rdf vad is installed
+
+	Disable repl user
+
+	Fixed rdf repl security
+
+	Fixed issue compiling with malloc debug
+
+	Added format for MSACCESS with special column types
+
+2012-04-18  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed swapped pk and fk column
+
+	Fixed error message
+
+	Rebuild driver for Sesame version 2.6.5
+
+	Fixed do not search in rdf views when checking for graphs
+
+	Upgraded driver to use Sesame 2.5.6
+
+	Updated vad version
+
+	Merged FCT fixes
+	* Added NOT IN conditional
+	* Fixed problem in conditional literals with LANG
+
+	Changed Graph column label
+
+	Added start new facet option in description of classes
+
+	Fixed debug code
+
+	Fixed link for dset
+
+	Fixed link for dset
+
+	Added Graph column to the output of text matches
+
+	Fixed problem counting ancestry with nested property, etc. pred.
+
+	Fixed check for vector
+
+	Added making class contraint
+	* When ?S is rdfs:Class or owl:Class, or <something> a ?S
+
+2012-04-17  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed rdf replication security
+
+	Fixed issue mixing declarations and code
+
+	Added support for SOUNDEX and DIFFERENCE
+
+2012-04-16  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added cfg_parse_size_with_modifier to parse stripe size
+
+	Added advanced ACL filters
+
+	Added X -options of foaf response
+
+	Fixed digest split function
+
+	Fixed issue with 'Edit Properties'
+
+	Fixed image path to /ods
+
+	Removed deprecated images
+
+2012-04-12  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed st_cli_n_http_threads should be int32
+
+	Fixed issue with unknown BIF msg in SPARQL compiler error
+
+	Fixed issue with content type if already set by rewrite rule
+
+2012-04-10  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added meetup pattern
+
+	Fixed indentation
+
+	Fixed internal error on spar_selid_pop()
+
+	Merged Framework fixes
+	* Added link tags to user's pages
+	* Fixed private graphs init
+	* Fixed 'Enable Automatic WebID Login' value
+	* Fixed format arg
+	* Fixed void dset
+	* Fixed clean bad application creation
+
+	Merged Calendar fixes
+	* Added CalDAV import
+	* Fixed source labels in imports
+	* Fixed CalDAV DET imports
+	* Updated CalDAV Import
+
+	Merged Addressbook fixes
+	*  Fixed CardDAV DET imports
+	*  Added CalDAV Import
+
+2012-04-09  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue with xsd:dateTime in SPARQL results
+
+2012-04-08  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue with join on Solaris
+
+	Added extra debugging code to SPARQL engine
+
+2012-04-06  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	FIxed issue with box_length
+
+	Fixed issue with graph level security check in SPARQL-FED subquery
+
+	Fixed check for MS SQL Server
+
+2012-04-05  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed keep ssl flag when https redir to https
+
+	Fixed file not found error when virtuoso.ini changed
+
+2012-04-03  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added virtuoso.ini setting to configure page compress mode
+
+	Fixed syntax metadata backups of TTL format
+
+	Fixed possible stack overflow on long UNIONs
+
+	Fixed get string instead of iri_id on cluster
+
+	Fixed issue with transitive query
+
+	Fixed GPF on DBpedia query
+	    select distinct ?ci fn:lang(?la)
+	    where {
+	      ?si dbpedia-owl:country dbpedia:Germany.
+	    } limit 10
+
+	Fixed safe cloning of equivalence classes
+
+	Fixed issues with RDF View, bif:contains and option(?score)
+
+	Fixed allocation of nodes during tree duplication
+
+	Fixed compiler warnings
+
+2012-03-31  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merged Calendar fixes
+	* Added CalDAV import
+	* Added CalDAV, CardDAV DETs and RESTful CRUD
+	* Fixed CalDAV to Subscription options
+
+	Merged Framework fixes
+	* Added foreign key for certificates table
+	* Added html rule for /mv/data
+	* Fixed bad certificate related info
+
+2012-03-29  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added support for slash proxy IRIs
+
+	Fixed iframes and scripts
+
+	Added check if mail actually exists
+
+	Fixed check for null
+
+	Exclude certain sites from iframe
+
+	Removed debug statements
+
+	Added Wolfram|Alpha cartridge
+
+	Added support for sponging of ftp urls
+
+	Fixed using fix_identified_case
+
+	Fixed minor issues
+
+	Fixed LinkedIn cartridge
+	* Added support for sponging job postings and company profiles
+	* Added accept_lang option to override locale sensitive
+	  output in job postings
+
+	Fixed version control properties
+
+	Merged Framework fixes
+	* Added di: scheme
+	* Added check for WebID validation
+	* Fixed quotes on sparql vars
+
+	Fixed CalDAV, CardDAV DETs and RESTful CRUD
+
+	Added di: scheme
+
+	Fixed CalDAV, CardDAV DETs and RESTful CRUD
+
+	Fixed digest mode should not report it accepts basic
+
+	Fixed issue joining two federated queries to the same host
+
+	Fixed debug print of wide strings
+
+2012-03-27  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added REPORT method
+
+	Fixed issue with SPARQL-FED code generation
+
+	Added support for INF, -INF and NaN in SPARQL
+
+2012-03-23  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Set version to 6.1.6-dev to indicate development cycle
+
+	Use .gitignore instead of .cvsignore
+
+	Added check to prevent out of range seek
+
+	Fixed initialization issue
+
+	Added support for long nvarchar
+
+	Fixed check to see if stmt returned a resultset
+
+	Fixed DDL logging
+
+	Fixed missing unbox else check is always true
+
+	Fixed wrong pointer indirection calling itc_bust_this_trx
+
+	Fixed number of issues with _UDBC_
+	* Fixed issue with transitive subqueries
+	* Fixed external vars in table subqueries of scalar subqueries
+	* Fixed print of builtin expressions with multipart alias name
+	* Fixed issue with double "AS" for lang in resultset
+	* Fixed bad code for clear graph <xxxx>
+
+	Fixed issue with RDF_DICT_OF_TRIPLES_TO_THREE_COLS
+
+	Fixed escaping of weird IRIs in RDF/XML output
+
+	Fixed some checks of XPATH from MALLOC_DEBUG to XTREE_DEBUG
+
+	Fixed moved some checks of XPATH from DEBUG to XPATH_DEBUG
+
+	Fixed use of dt encapsulation
+
 2012-03-15 17:16  source
 
 	* Updated version to 6.1.5 for final release
