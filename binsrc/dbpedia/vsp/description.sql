@@ -547,7 +547,9 @@ again:
    else if (__tag (_object) = 182)
      {
        string_type:
-       http (sprintf ('<span %s>%V</span>', rdfa, charset_recode (_object, 'UTF-8', '_WIDE_')));
+       http (sprintf ('<span %s>', rdfa));
+       http_value (charset_recode (_object, 'UTF-8', '_WIDE_'));
+       http ('</span>');
        lang := '';
      }
    else if (__tag (_object) = 211)
