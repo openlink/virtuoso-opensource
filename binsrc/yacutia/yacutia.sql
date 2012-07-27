@@ -6573,3 +6573,37 @@ create procedure construct_table_sql( in tablename varchar ) returns varchar
 }
 ;
 
+
+create procedure vector_to_text_opt (in v any)
+{
+  declare i int;
+  declare r varchar;
+  if (v is null) return '';
+  r := '';
+  for (i := 0; i < length (v); i := i + 2)
+    r := r || v[i] || '=' || v[i+1] || ';\r\n';
+  return r;  
+}
+;
+
+create procedure text_opt_to_vector (in s varchar)
+{
+  declare inx int;
+  declare arr any;
+  s := replace (s, '\n', '');
+  s := replace (s, '\r', '');
+  s := trim (s);
+  s := rtrim (s, ';');
+  s := replace (s, ';', '&');
+  arr := split_and_decode (s);
+  if (0 = length (arr))
+    return NULL;
+  inx := 0;
+  foreach (varchar x in arr) do
+    {
+      arr[inx] := trim (x);
+      inx := inx + 1;
+    } 
+  return arr; 
+}
+;

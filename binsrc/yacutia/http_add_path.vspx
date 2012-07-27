@@ -465,7 +465,7 @@
                             self.xmlexec  := 0;
                             self.vspuser  := 'dba';
                             self.soapuser := '';
-                            self.auth_realm := '';
+                            self.auth_realm := 'GENERIC';
                             self.auth_func := 'DB.DBA.WEBID_AUTH';
                             self.after_func := '';
 			    self.is_dav := 0;
