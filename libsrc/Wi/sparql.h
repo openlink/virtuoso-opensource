@@ -735,7 +735,7 @@ extern SPART **t_spartlist_concat (SPART **list1, SPART **list2);
 #endif
 
 extern sparp_t * sparp_query_parse (const char * str, spar_query_env_t *sparqre, int rewrite_all);
-extern int sparyyparse (void *sparp);
+extern int sparyyparse (sparp_t *sparp_arg);
 /*! Finds storage by name and sets it, it also finds associated macro library (it it is set of the storage) and copies macro defs from the library
 The search for associated macro lib is disabled if the statement contains CREATE MACRO LIBRARY clause */
 extern void sparp_configure_storage_and_macro_libs (sparp_t *sparp);

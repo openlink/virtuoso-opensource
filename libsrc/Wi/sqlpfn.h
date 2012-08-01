@@ -220,23 +220,6 @@ extern size_t get_yyleng (void);
 int scn3_sprint_curr_line_loc (char *buf, size_t max_buf);
 extern int scn3_pragmaline_depth;
 void scn3_set_file_line (char *file, int file_nchars, int line_no);
-#ifdef YYPARSE_PARAM
-# if defined (__STDC__) || defined (__cplusplus)
-int yyparse (void *YYPARSE_PARAM);
-# else
-int yyparse ();
-# endif
-#else /* ! YYPARSE_PARAM */
-#if defined (__STDC__) || defined (__cplusplus)
-int yyparse (void);
-#else
-int yyparse ();
-#endif
-#endif /* ! YYPARSE_PARAM */
-#ifdef __cplusplus
-}
-#endif
-
 int bop_weight (int bop);
 
 extern char *part_tok (char ** place);

@@ -3057,7 +3057,7 @@ void xp_set_encoding_option (xpp_t *xpp, caddr_t enc_name)
 }
 
 
-void xpyyparse (xpp_t *xpp);
+int xpyyparse (xpp_t *xpp);
 void xpyyrestart (FILE *input_file);
 
 

@@ -26,11 +26,11 @@
  */
 
 %pure_parser
+%parse-param {xpp_t * xpp_arg}
+%lex-param {xpp_t * xpp_arg}
 
 %{
 
-#define YYPARSE_PARAM xpp_as_void
-#define YYLEX_PARAM YYPARSE_PARAM
 #include "libutil.h"
 #include "sqlnode.h"
 #include "xpathp_impl.h"
@@ -38,12 +38,10 @@
 #include "sqlpfn.h"
 /*#include "langfunc.h"*/
 
-#define xpp_arg ((xpp_t *)(xpp_as_void))
-
 #ifdef DEBUG
-#define xpyyerror(strg) xpyyerror_impl_1(xpp_arg, NULL, yystate, yyssa, yyssp, (strg))
+#define xpyyerror(xpp_arg, strg) xpyyerror_impl_1(xpp_arg, NULL, yystate, yyssa, yyssp, (strg))
 #else
-#define xpyyerror(strg) xpyyerror_impl(xpp_arg, NULL, (strg))
+#define xpyyerror(xpp_arg, strg) xpyyerror_impl(xpp_arg, NULL, (strg))
 #endif
 
 #ifdef XPYYDEBUG
@@ -89,7 +87,7 @@ int xpyylex_from_xpp_bufs (caddr_t *yylval, xpp_t *xpp)
 #define XPP_PROLOG_SET(field,name,val) \
   do { \
       if (xpp_arg->xpp_xp_env->field) \
-        yyerror ("The prolog contains more than one declaration of " name); \
+        xpyyerror (xpp_arg, "The prolog contains more than one declaration of " name); \
       xpp_arg->xpp_xp_env->field = val; \
     } while (0)
 
@@ -527,11 +525,11 @@ sql
 	  top_xp { xpp_arg->xpp_expr = $$ = $3; }
 	| START_OF_FT_TEXT { xpp_arg->xpp_allowed_options = XP_FREETEXT_OPTS; } top_ft { xpp_arg->xpp_expr = $$ = $3; }
 	| __PUNCT_BEGIN __PUNCT_END __NONPUNCT_START __NONPUNCT_END EXEC_SQL_XPATH { $$ = NULL; /* This never happens and it's here solely to remove warnings */ }
-	| error { yyerror ("(internal SQL processing error) XQuery, XPath or Free-Text mark expected"); }
+	| error { xpyyerror (xpp_arg, "(internal SQL processing error) XQuery, XPath or Free-Text mark expected"); }
 	;
 
 top_xq	/* XQ2003[30] Module, XQ2003[31] MainModule, XQ2003[32] LibraryModule */
-	: END_OF_XPSCN_TEXT	{ yyerror ("The XQuery expression is totally empty"); }
+	: END_OF_XPSCN_TEXT	{ xpyyerror (xpp_arg, "The XQuery expression is totally empty"); }
 	| xq_version_decl_opt xq_prolog xq_expr END_OF_XPSCN_TEXT
 		{
 		  $$ = xp_make_module (xpp_arg, NULL, NULL, $3);
@@ -576,13 +574,13 @@ xq_prolog
 xq_prolog_setters_opt
 	: /* empty */
 	| xq_prolog_setters_opt xq_prolog_setter ';'
-	| xq_prolog_setters_opt xq_prolog_setter error	{ yyerror ("Missing semicolon after prolog (setter) declaration"); }
+	| xq_prolog_setters_opt xq_prolog_setter error	{ xpyyerror (xpp_arg, "Missing semicolon after prolog (setter) declaration"); }
 	;
 
 xq_prolog_decls_opt
 	: /* empty */
 	| xq_prolog_decls_opt xq_prolog_decl
-	| xq_prolog_decls_opt xq_prolog_decl xq_prolog_setter	{ yyerror ("Prolog setter declaration can not appear after a non-setter declaration"); }
+	| xq_prolog_decls_opt xq_prolog_decl xq_prolog_setter	{ xpyyerror (xpp_arg, "Prolog setter declaration can not appear after a non-setter declaration"); }
 	;
 
 xq_prolog_setter
@@ -834,7 +832,7 @@ xq_query_or_dml_stmts
 		  else
 		    $$ = xp_make_call (xpp_arg, "progn", list_to_array (dk_set_nreverse ($1)));
 		}* /
-	| error { yyerror ("A Query or Data Manipulation Statement expected"); }
+	| error { xpyyerror (xpp_arg, "A Query or Data Manipulation Statement expected"); }
 	;
 
 xq_query
@@ -860,67 +858,67 @@ xq_expr_single
 		{
 		  $$ = xp_make_call (xpp_arg, "or", list (2, $1, $3));
 		}
-	| xq_expr_single K_OR error { yyerror ("operand expected after 'OR'"); }
+	| xq_expr_single K_OR error { xpyyerror (xpp_arg, "operand expected after 'OR'"); }
 	| xq_expr_single K_AND xq_expr_single %prec K_AND
 		{
 		  $$ = xp_make_call (xpp_arg, "and", list (2, $1, $3));
 		}
-	| xq_expr_single K_AND error { yyerror ("operand expected after 'AND'"); }
+	| xq_expr_single K_AND error { xpyyerror (xpp_arg, "operand expected after 'AND'"); }
 	| K_NOT xq_expr_single %prec K_NOT
 		{
 		  $$ = xp_make_call (xpp_arg, "not", list (1, $2));
 		}
-	| K_NOT error  %prec K_NOT { yyerror ("operand expected after 'NOT'"); }
+	| K_NOT error  %prec K_NOT { xpyyerror (xpp_arg, "operand expected after 'NOT'"); }
 	| xq_expr_single K2_EQ_L xq_expr_single
 		{
 		  $$ = xp_make_call (xpp_arg, "EQ operator", list (2, $1, $3));
 		}
-	| xq_expr_single K2_EQ_L error		{ yyerror ("operand expected after 'eq'"); }
+	| xq_expr_single K2_EQ_L error		{ xpyyerror (xpp_arg, "operand expected after 'eq'"); }
 	| xq_expr_single K2_GE_L xq_expr_single
 		{
 		  $$ = xp_make_call (xpp_arg, box_dv_uname_string("GE operator"), list (2, $1, $3));
 		}
-	| xq_expr_single K2_GE_L error		{ yyerror ("operand expected after 'ge'"); }
+	| xq_expr_single K2_GE_L error		{ xpyyerror (xpp_arg, "operand expected after 'ge'"); }
 	| xq_expr_single K2_GT_L xq_expr_single
 		{
 		  $$ = xp_make_call (xpp_arg, "GT operator", list (2, $1, $3));
 		}
-	| xq_expr_single K2_GT_L error		{ yyerror ("operand expected after 'gt'"); }
+	| xq_expr_single K2_GT_L error		{ xpyyerror (xpp_arg, "operand expected after 'gt'"); }
 	| xq_expr_single K2_LE_L xq_expr_single
 		{
 		  $$ = xp_make_call (xpp_arg, "LE operator", list (2, $1, $3));
 		}
-	| xq_expr_single K2_LE_L error		{ yyerror ("operand expected after 'le'"); }
+	| xq_expr_single K2_LE_L error		{ xpyyerror (xpp_arg, "operand expected after 'le'"); }
 	| xq_expr_single K2_LT_L xq_expr_single
 		{
 		  $$ = xp_make_call (xpp_arg, "LT operator", list (2, $1, $3));
 		}
-	| xq_expr_single K2_LT_L error		{ yyerror ("operand expected after 'lt'"); }
+	| xq_expr_single K2_LT_L error		{ xpyyerror (xpp_arg, "operand expected after 'lt'"); }
 	| xq_expr_single K2_NE_L xq_expr_single
 		{
 		  $$ = xp_make_call (xpp_arg, "NE operator", list (2, $1, $3));
 		}
-	| xq_expr_single K2_NE_L error		{ yyerror ("operand expected after 'ne'"); }
+	| xq_expr_single K2_NE_L error		{ xpyyerror (xpp_arg, "operand expected after 'ne'"); }
 	| xq_expr_single _LT_LT xq_expr_single
 		{
 		  $$ = xp_make_call (xpp_arg, "BEFORE operator", list (2, $1, $3));
 		}
-	| xq_expr_single _LT_LT error		{ yyerror ("operand expected after '<<'"); }
+	| xq_expr_single _LT_LT error		{ xpyyerror (xpp_arg, "operand expected after '<<'"); }
 	| xq_expr_single BEFORE_L xq_expr_single
 		{
 		  $$ = xp_make_call (xpp_arg, "BEFORE operator", list (2, $1, $3));
 		}
-	| xq_expr_single BEFORE_L error		{ yyerror ("operand expected after 'before'"); }
+	| xq_expr_single BEFORE_L error		{ xpyyerror (xpp_arg, "operand expected after 'before'"); }
 	| xq_expr_single _GT_GT xq_expr_single
 		{
 		  $$ = xp_make_call (xpp_arg, "AFTER operator", list (2, $1, $3));
 		}
-	| xq_expr_single _GT_GT error		{ yyerror ("operand expected after '>>'"); }
+	| xq_expr_single _GT_GT error		{ xpyyerror (xpp_arg, "operand expected after '>>'"); }
 	| xq_expr_single AFTER_L xq_expr_single
 		{
 		  $$ = xp_make_call (xpp_arg, "AFTER operator", list (2, $1, $3));
 		}
-	| xq_expr_single AFTER_L error		{ yyerror ("operand expected after 'after'"); }
+	| xq_expr_single AFTER_L error		{ xpyyerror (xpp_arg, "operand expected after 'after'"); }
 	| xq_expr_flwr_forlets xq_expr_flwr_where_opt xq_expr_flwr_order_opt RETURN_L xq_expr_single
 		{ $$ = xp_make_flwr (xpp_arg, $1, $2, $3, $5); }
 	| IF_LPAR_L xq_expr ')' THEN_L xq_expr_single ELSE_L xq_expr_single
@@ -964,7 +962,7 @@ xq_expr_single
 		{
 		  $$ = xp_make_call (xpp_arg, "IDIV operator", list (2, $1, $3));
 		}
-	| xq_expr_single K_IDIV error			{ yyerror ("operand expected after 'idiv'"); }
+	| xq_expr_single K_IDIV error			{ xpyyerror (xpp_arg, "operand expected after 'idiv'"); }
 	| xq_expr_single K_DIV xq_expr_single		{ XBIN_OP ($$, BOP_DIV, $1, $3); }
 	| xq_expr_single K_MOD xq_expr_single		{ XBIN_OP ($$, BOP_MOD, $1, $3); }
 	| _PLUS xq_expr_single	%prec UPLUS	{ $$ = $2; }
@@ -990,7 +988,7 @@ xq_expr_single
 
 xq_expr_sortby
 	: SORTBY_LPAR_L xq_expr_sort_specs ')' { $$ = $2; }
-	| SORTBY_LPAR_L xq_expr_sort_specs error { yyerror ("')' or ',' expected"); }
+	| SORTBY_LPAR_L xq_expr_sort_specs error { xpyyerror (xpp_arg, "')' or ',' expected"); }
 	;
 
 xq_expr_sort_specs			/* XQ[8] */
@@ -1189,7 +1187,7 @@ xq_path_step_qualif
 
 xq_path_axis				/* Like XQ[37] */
 	: axis_spec
-	| XQNCNAME _COLON_COLON	{ yyerror ("Unknown axis name"); }
+	| XQNCNAME _COLON_COLON	{ xpyyerror (xpp_arg, "Unknown axis name"); }
 	;
 
 /* XQ path expressions -- end */
@@ -1260,9 +1258,9 @@ xq_expr_funcall				/* Like XQ[49] */
 
 xq_expr_syscall				/* Virtuoso extension, like Yukon */
 	: SQL_COLON_COLUMN '(' xq_strg ')'	{ $$ = xp_make_sqlcolumn_ref (xpp_arg, $3); }
-	| SQL_COLON_COLUMN '(' xq_strg error	{ yyerror ("')' expected after column name"); }
-	| SQL_COLON_COLUMN '(' error		{ yyerror ("Column name in sql:column must be a string constant"); }
-	| SQL_COLON_COLUMN error		{ yyerror ("'(' expected after sql:column"); }
+	| SQL_COLON_COLUMN '(' xq_strg error	{ xpyyerror (xpp_arg, "')' expected after column name"); }
+	| SQL_COLON_COLUMN '(' error		{ xpyyerror (xpp_arg, "Column name in sql:column must be a string constant"); }
+	| SQL_COLON_COLUMN error		{ xpyyerror (xpp_arg, "'(' expected after sql:column"); }
 	;
 
 xq_expr_variable
@@ -1472,39 +1470,39 @@ xq_sdml_stmt
 	: xq_sdml_stmt_insert xq_sdml_locator xq_expr { $$ = xtlist (xpp_arg, 3, XQ_INSERT, $1, $2, $3); }
 	| xq_sdml_stmt_move xq_sdml_locator xq_expr { $$ = xtlist (xpp_arg, 3, XQ_MOVE, $1, $2, $3); }
 	| UPSERT xq_expr xq_sdml_stmt_with xq_sdml_locator xq_expr  { $$ = xtlist (xpp_arg, 3, XQ_UPSERT, $2, $3, $4, $5); }
-	| UPSERT error { yyerror ("error in UPSERT DML statement"); }
+	| UPSERT error { xpyyerror (xpp_arg, "error in UPSERT DML statement"); }
 	| DELETE_L xq_expr { $$ = xtlist (xpp_arg, 2, XQ_DELETE, $2); }
-	| DELETE_L error { yyerror ("error in DELETE DML statement"); }
+	| DELETE_L error { xpyyerror (xpp_arg, "error in DELETE DML statement"); }
 	| xq_sdml_stmt_rename TO_L xq_expr { $$ = xtlist (xpp_arg, 3, XQ_RENAME, $1, $3); }
 	| REPLACE xq_expr xq_sdml_stmt_with { $$ = xtlist (xpp_arg, 3, XQ_REPLACE, $2, $3); }
-	| REPLACE error { yyerror ("error in REPLACE DML statement"); }
+	| REPLACE error { xpyyerror (xpp_arg, "error in REPLACE DML statement"); }
 	;
 
 xq_sdml_stmt_insert
 	: INSERT xq_expr	%prec INSERT	{ $$ = $2; }
-	| INSERT error { yyerror ("error in INSERT DML statement"); }
+	| INSERT error { xpyyerror (xpp_arg, "error in INSERT DML statement"); }
 	;
 
 xq_sdml_stmt_move
 	: MOVE xq_expr		%prec MOVE	{ $$ = $2; }
-	| MOVE error { yyerror ("error in MOVE DML statement"); }
+	| MOVE error { xpyyerror (xpp_arg, "error in MOVE DML statement"); }
 	;
 
 xq_sdml_stmt_rename
 	: RENAME xq_expr	%prec RENAME	{ $$ = $2; }
-	| RENAME error { yyerror ("error in RENAME DML statement"); }
+	| RENAME error { xpyyerror (xpp_arg, "error in RENAME DML statement"); }
 	;
 
 xq_sdml_stmt_with
 	: WITH xq_expr		%prec RENAME	{ $$ = $2; }
-	| WITH error { yyerror ("expression expected after WITH in DML statement"); }
+	| WITH error { xpyyerror (xpp_arg, "expression expected after WITH in DML statement"); }
 	;
 
 xq_sdml_locator
 	: INTO { $$ = INTO; }
 	| AFTER { $$ = AFTER; }
 	| BEFORE { $$ = BEFORE; }
-	| error { yyerror ("INTO, AFTER or BEFORE (i.e., a \"DML locator\") expected"); }
+	| error { xpyyerror (xpp_arg, "INTO, AFTER or BEFORE (i.e., a \"DML locator\") expected"); }
 	;
 */
 
@@ -1554,7 +1552,7 @@ xp_options_seq_opt
 
 xp_options_seq
 	: '[' xp_options ']'	{ ; }
-	| '[' xp_options error { yyerror ("']' or option expected"); }
+	| '[' xp_options error { xpyyerror (xpp_arg, "']' or option expected"); }
 	;
 
 xp_options
@@ -1593,7 +1591,7 @@ xp_option
 		if (!strncmp ($1, "xmlns:", 6))
 		  xp_register_namespace_prefix (xpp_arg, $1+6, $3);
 		else
-		  xpyyerror("Only xmlns special namespace may be used in parameter name");
+		  xpyyerror(xpp_arg, "Only xmlns special namespace may be used in parameter name");
 	  }
 	| XMLNS _EQ literal_strg { XPP_PROLOG_SET (xe_dflt_elt_namespace, "default element namespace", $3); }
 	| O_LANG literal_strg { xp_reject_option_if_not_allowed (xpp_arg, XP_FREETEXT_OPTS); xpp_arg->xpp_lang = lh_get_handler ($2); }
@@ -1692,7 +1690,7 @@ axis_name
 	| A_DESCENDANT_OR_SELF	{ $$ = XP_DESCENDANT_OR_SELF; }
 	| A_FOLLOWING		{ $$ = XP_FOLLOWING; }
 	| A_FOLLOWING_SIBLING	{ $$ = XP_FOLLOWING_SIBLING; }
-	| A_NAMESPACE		{ $$ = XP_NAMESPACE; yyerror ("namespace axis not allowed"); }
+	| A_NAMESPACE		{ $$ = XP_NAMESPACE; xpyyerror (xpp_arg, "namespace axis not allowed"); }
 	| A_PARENT		{ $$ = XP_PARENT; }
 	| A_PRECEDING		{ $$ = XP_PRECEDING; }
 	| A_PRECEDING_SIBLING	{ $$ = XP_PRECEDING_SIBLING; }
@@ -1797,5 +1795,5 @@ text_exp
 	| text_exp K_NEAR text_exp		{ TBIN_OP ($$, XP_NEAR, $1, $3); }
 	| '(' text_exp ')' { $$ = $2; }
 	| _LPAR_LSQBRA xp_options ']' text_exp ')' { $$ = $4; }
-	| _LPAR_LSQBRA xp_options error { yyerror ("']' or option expected"); }
+	| _LPAR_LSQBRA xp_options error { xpyyerror (xpp_arg, "']' or option expected"); }
 	;
