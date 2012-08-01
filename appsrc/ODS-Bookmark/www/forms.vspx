@@ -39,7 +39,7 @@
     ]]>
   </v:method>
 
-  <v:method name="shareSelect" arglist="in node varchar">
+  <v:method name="shareSelect" arglist="in node any">
     <![CDATA[
       declare grants any;
 
@@ -1406,35 +1406,23 @@
                             <th class="action">Action</th>
                         </tr>
                       </thead>
+                        <tbody id="s_tbody">
+                          <tr id="s_tr_no"><td colspan="4"><b>No Shares</b></td></tr>
                 		  <![CDATA[
                 		    <script type="text/javascript">
                       <?vsp
-                          declare N, L integer;
-                          declare acl, aType, aAccess any;
+                              declare acl any;
 
-                        L := 0;
                         acl := (select WAI_ACL from DB.DBA.WA_INSTANCE where WAI_ID = self.domain_id);
                         acl := case when isnull (acl) then vector () else deserialize (acl) end;
-                          for (N := 0; N < length (acl); N := N + 1)
-                        {
-                          L := L + 1;
-                            http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}, fld_4: {value: "Inherited"}});});', acl[N][2], acl[N][1], acl[N][3], acl[N][4], acl[N][5]));
-                        }
+                              DB.DBA.wa_aci_lines (acl);
+
                         acl := deserialize (self.v_acl);
-                          for (N := 0; N < length (acl); N := N + 1)
-                        {
-                          L := L + 1;
-                            if (self.v_form <> 'Bookmark/View')
-                            {
-                              http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("s", null, {fld_1: {mode: 50, value: "%s", onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: "F1", tdCssText: "white-space: nowrap;", className: "_validate_ _webid_", value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', acl[N][2], acl[N][1], case when acl[N][2] = 'public' then 'true' else 'false' end, case when acl[N][2] = 'public' then 'display: none;' else '' end, acl[N][3], acl[N][4], acl[N][5]));
-                            } else {
-                              http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}});});', acl[N][2], acl[N][1], acl[N][3], acl[N][4], acl[N][5]));
-                            }
-                          }
+                              DB.DBA.wa_aci_lines (acl, case when self.v_form = 'Bookmark/View' then 'view' else '' end);
                      		    ?>
                      		    </script>
                      		  ]]>
-                      <tr id="s_tr_no" style="display: <?V case when L=0 then '' else 'none' end ?>;"><td colspan="<?V case when self.v_form='Bookmark/View' then 3 else 4 end ?>"><b>No Shares</b></td></tr>
+                        </tbody>
                     </table>
                   </td>
                   <vm:if test="self.v_form <> 'Bookmark/View'">

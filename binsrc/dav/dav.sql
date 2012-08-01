@@ -25,59 +25,59 @@
 
 create procedure WS.WS."OPTIONS" (in path varchar, inout params varchar, in lines varchar)
 {
-	declare full_path varchar;
-	declare path_id any;
-	full_path := '/' || DAV_CONCAT_PATH (path, '/');
-	path_id := DAV_SEARCH_ID (full_path, 'C');
-	if (isarray(path_id) = 1)
+  declare full_path varchar;
+  declare path_id any;
+  full_path := '/' || DAV_CONCAT_PATH (path, '/');
+  path_id := DAV_SEARCH_ID (full_path, 'C');
+  if (isarray(path_id) = 1)
+    {
+      if (path_id[0] = UNAME'CalDAV')
 	{
-		if (path_id[0] = UNAME'CalDAV')
-		{
-			http_header (concat (
-				'Content-Type: text/xml\r\n',
-				'Allow: OPTIONS, GET, HEAD, POST, PUT, DELETE, TRACE, COPY, MOVE\r\n',
-				'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL\r\n',
-				'DAV: 1, 2, access-control, calendar-access\r\n',
-				'MS-Author-Via: DAV\r\n'));
-			return;
-		}
-		if (path_id[0] = UNAME'CardDAV')
-		{
-			http_header (concat (
-				'Content-Type: text/xml\r\n',
-				'Allow: OPTIONS, GET, HEAD, POST, PUT, DELETE, TRACE, COPY, MOVE\r\n',
-				'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL\r\n',
-				'DAV: 1, 2, 3, access-control, addressbook\r\n',
-				'MS-Author-Via: DAV\r\n'));
-			return;
-		}
+	  http_header (concat (
+	  'Content-Type: text/xml\r\n',
+	  'Allow: OPTIONS, GET, HEAD, POST, PUT, DELETE, TRACE, COPY, MOVE\r\n',
+	  'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL\r\n',
+	  'DAV: 1, 2, access-control, calendar-access\r\n',
+	  'MS-Author-Via: DAV\r\n'));
+	  return;
 	}
-	else
+      if (path_id[0] = UNAME'CardDAV')
 	{
-		declare is_det int;
-		is_det := (select COL_ID from WS.WS.SYS_DAV_COL where COL_ID = path_id and COL_DET = 'CalDAV');
-		if (is_det > 0)
-		{
-			http_header (concat (
-				'Content-Type: text/xml\r\n',
-				'Allow: OPTIONS, GET, HEAD, POST, TRACE\r\n',
-				'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL\r\n',
-				'DAV: 1, 2, access-control, calendar-access\r\n',
-				'MS-Author-Via: DAV\r\n'));
-			return;
-		}
-		is_det := (select COL_ID from WS.WS.SYS_DAV_COL where COL_ID = path_id and COL_DET = 'CardDAV');
-		if (is_det > 0)
-		{
-			http_header (concat (
-				'Content-Type: text/xml\r\n',
-				'Allow: OPTIONS, GET, HEAD, POST, TRACE\r\n',
-				'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL\r\n',
-				'DAV: 1, 2, 3, access-control, addressbook\r\n',
-				'MS-Author-Via: DAV\r\n'));
-			return;
-		}
+	  http_header (concat (
+	  'Content-Type: text/xml\r\n',
+	  'Allow: OPTIONS, GET, HEAD, POST, PUT, DELETE, TRACE, COPY, MOVE\r\n',
+	  'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL\r\n',
+	  'DAV: 1, 2, 3, access-control, addressbook\r\n',
+	  'MS-Author-Via: DAV\r\n'));
+	  return;
 	}
+    }
+  else
+    {
+      declare is_det int;
+      is_det := (select COL_ID from WS.WS.SYS_DAV_COL where COL_ID = path_id and COL_DET = 'CalDAV');
+      if (is_det > 0)
+	{
+	  http_header (concat (
+	  'Content-Type: text/xml\r\n',
+	  'Allow: OPTIONS, GET, HEAD, POST, TRACE\r\n',
+	  'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL\r\n',
+	  'DAV: 1, 2, access-control, calendar-access\r\n',
+	  'MS-Author-Via: DAV\r\n'));
+	  return;
+	}
+	is_det := (select COL_ID from WS.WS.SYS_DAV_COL where COL_ID = path_id and COL_DET = 'CardDAV');
+	if (is_det > 0)
+	  {
+	    http_header (concat (
+	    'Content-Type: text/xml\r\n',
+	    'Allow: OPTIONS, GET, HEAD, POST, TRACE\r\n',
+	    'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL\r\n',
+	    'DAV: 1, 2, 3, access-control, addressbook\r\n',
+	    'MS-Author-Via: DAV\r\n'));
+	    return;
+	  }
+    }
   declare headers, ctype, msauthor any;
   http_methods_set ('OPTIONS', 'GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'TRACE', 'PROPFIND', 'PROPPATCH', 'COPY', 'MOVE', 'LOCK', 'UNLOCK');
   WS.WS.GET (path, params, lines);
@@ -87,99 +87,99 @@ create procedure WS.WS."OPTIONS" (in path varchar, inout params varchar, in line
   http_status_set (200);
   http_rewrite ();
   http_header (concat (sprintf ('Content-Type: %s\r\n', ctype),
-	'DAV: 1,2,<http://www.openlinksw.com/virtuoso/webdav/1.0>\r\n',
-	sprintf ('MS-Author-Via: %s\r\n', msauthor)));
+		'DAV: 1,2,<http://www.openlinksw.com/virtuoso/webdav/1.0>\r\n',
+		sprintf ('MS-Author-Via: %s\r\n', msauthor)));
 }
 ;
 
 create procedure WS.WS.PROPFIND (in path varchar, inout params varchar, in lines varchar)
 {
-  declare _mod_time datetime;
-  declare _cr_time datetime;
-  declare _depth integer;
-  declare st, _temp varchar;
-  declare _ms_date integer;
-  declare _lpath, _body, _ses, _props, _ppath, _perms varchar;
-  declare uname, upwd varchar;
-  declare id any;
-  declare _u_id, _g_id, rc integer;
+	declare _mod_time datetime;
+	declare _cr_time datetime;
+	declare _depth integer;
+	declare st, _temp varchar;
+	declare _ms_date integer;
+	declare _lpath, _body, _ses, _props, _ppath, _perms varchar;
+	declare uname, upwd varchar;
+	declare id any;
+	declare _u_id, _g_id, rc integer;
 	--dbg_obj_princ ('WS.WS.PROPFIND (', path, params, lines, ')');
 
-  _ses := aref_set_0 (params, 1);
-  _body := string_output_string (_ses);
-  _lpath := http_path ();
-  _ppath := http_physical_path ();
-  if (_lpath = '')
-    _lpath := '/';
-  id := DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (vector(''), path, vector('')), 'C'));
-  if (id is not null)
-    st := 'C';
-  else
-    {
-      id := DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (vector(''), path), 'R'));
-      if (id is not null)
-	st := 'R';
-      else
-        {
-          http_request_status ('HTTP/1.1 404 Not Found');
-	  return;
-        }
-    }
-  _u_id := null;
-  _g_id := null;
-  if (st = 'C')
-    {
-      rc := DAV_AUTHENTICATE_HTTP (id, st, '1__', 1, lines, uname, upwd, _u_id, _g_id, _perms);
-    }
-  else
-    {
-      rc := DAV_AUTHENTICATE_HTTP (DAV_GET_PARENT (id, st, _ppath), 'C', '1__', 1, lines, uname, upwd, _u_id, _g_id, _perms);
-    }
-  if (rc < 0)
-    {
-      if ((rc = -12) or (rc = -13))
-        {
-	  http_request_status ('HTTP/1.1 403 Forbidden');
-	  return;
-	}
-      return;
-    }
-  if (strstr (WS.WS.FINDPARAM (lines, 'User-Agent:'), 'Microsoft') is not null)
-    _ms_date := 1;
-  else
-    _ms_date := 0;
-
-  _temp := WS.WS.FINDPARAM (lines, 'Depth:');
-  if (_temp <> '' and _temp <> 'infinity')
-    _depth := atoi (_temp);
-  else
-    _depth := -1;
-
-   {
-      declare test_tree any;
-      declare exit handler for sqlstate '*'
+	_ses := aref_set_0 (params, 1);
+	_body := string_output_string (_ses);
+	_lpath := http_path ();
+	_ppath := http_physical_path ();
+	if (_lpath = '')
+		_lpath := '/';
+	id := DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (vector(''), path, vector('')), 'C'));
+	if (id is not null)
+		st := 'C';
+	else
 	{
-          http_request_status ('HTTP/1.1 400 Bad Request');
-	  return;
-        };
-      if (length (_body) > 0)
-	test_tree := xml_tree (_body);
-   }
+		id := DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (vector(''), path), 'R'));
+		if (id is not null)
+			st := 'R';
+		else
+		{
+			http_request_status ('HTTP/1.1 404 Not Found');
+			return;
+		}
+	}
+	_u_id := null;
+	_g_id := null;
+	if (st = 'C')
+	{
+		rc := DAV_AUTHENTICATE_HTTP (id, st, '1__', 1, lines, uname, upwd, _u_id, _g_id, _perms);
+	}
+	else
+	{
+		rc := DAV_AUTHENTICATE_HTTP (DAV_GET_PARENT (id, st, _ppath), 'C', '1__', 1, lines, uname, upwd, _u_id, _g_id, _perms);
+	}
+	if (rc < 0)
+	{
+		if ((rc = -12) or (rc = -13))
+		{
+			http_request_status ('HTTP/1.1 403 Forbidden');
+			return;
+		}
+		return;
+	}
+	if (strstr (WS.WS.FINDPARAM (lines, 'User-Agent:'), 'Microsoft') is not null)
+		_ms_date := 1;
+	else
+		_ms_date := 0;
 
-  if (st = 'C' and aref (_lpath, length (_lpath) - 1) <> ascii ('/'))
-      _lpath := concat (_lpath, '/');
+	_temp := WS.WS.FINDPARAM (lines, 'Depth:');
+	if (_temp <> '' and _temp <> 'infinity')
+		_depth := atoi (_temp);
+	else
+		_depth := -1;
 
-  -- Any properties
-  _props := WS.WS.PROPNAMES (_body);
+	{
+		declare test_tree any;
+		declare exit handler for sqlstate '*'
+		{
+			http_request_status ('HTTP/1.1 400 Bad Request');
+			return;
+		};
+		if (length (_body) > 0)
+			test_tree := xml_tree (_body);
+	}
+
+	if (st = 'C' and aref (_lpath, length (_lpath) - 1) <> ascii ('/'))
+		_lpath := concat (_lpath, '/');
+
+	-- Any properties
+	_props := WS.WS.PROPNAMES (_body);
   if (isarray (_props) and length (_props) = 1 and
        (aref (_props, 0) = 'propname'))
-    {
-	  WS.WS.CUSTOM_PROP (_lpath, _props, _depth, st);
-	  return;
-    }
+	{
+		WS.WS.CUSTOM_PROP (_lpath, _props, _depth, st);
+		return;
+	}
 
 
-  http_request_status ('HTTP/1.1 207 Multi-Status');
+	http_request_status ('HTTP/1.1 207 Multi-Status');
 	declare full_path varchar;
 	declare path_id any;
 	full_path := '/' || DAV_CONCAT_PATH (path, '/');
@@ -191,19 +191,19 @@ create procedure WS.WS.PROPFIND (in path varchar, inout params varchar, in lines
 		if (path_id[0] = UNAME'CardDAV')
 			http_header ('DAV: 1, addressbook\r\nContent-type: application/xml; charset="utf-8"\r\n');
 	}
-  http_header ('Content-type: text/xml; charset="utf-8"\r\n');
-  http ('<?xml version="1.0" encoding="utf-8"?>\n');
-  http ('<D:multistatus xmlns:D="DAV:" xmlns:M="urn:uuid:c2f41010-65b3-11d1-a29f-00aa00c14882/">\n');
-  if (-13 = WS.WS.PROPFIND_RESPONSE (_lpath, _ppath, _depth, st, _ms_date, _props, _u_id))
-    {
-      _u_id := null;
-      _g_id := null;
-      -- This will force 'Unauthorized'
-      http_rewrite ();
-      WS.WS.GET_DAV_AUTH (lines, 0, 1, uname, upwd, _u_id, _g_id, _perms);
-      return;
-    }
-  http ('</D:multistatus>\n');
+	http_header ('Content-type: text/xml; charset="utf-8"\r\n');
+	http ('<?xml version="1.0" encoding="utf-8"?>\n');
+	http ('<D:multistatus xmlns:D="DAV:" xmlns:M="urn:uuid:c2f41010-65b3-11d1-a29f-00aa00c14882/">\n');
+	if (-13 = WS.WS.PROPFIND_RESPONSE (_lpath, _ppath, _depth, st, _ms_date, _props, _u_id))
+	{
+		_u_id := null;
+		_g_id := null;
+		-- This will force 'Unauthorized'
+		http_rewrite ();
+		WS.WS.GET_DAV_AUTH (lines, 0, 1, uname, upwd, _u_id, _g_id, _perms);
+		return;
+	}
+	http ('</D:multistatus>\n');
 }
 ;
 
@@ -211,125 +211,124 @@ create procedure WS.WS.PROPFIND (in path varchar, inout params varchar, in lines
 --!AFTER
 --#ENDIF
 create function WS.WS.PROPFIND_RESPONSE (in lpath varchar,
-                                          in ppath varchar,
-					  in depth integer,
-					  in st char (1),
-					  in ms_date integer,
-					  in propnames any,
-					  in u_id integer) returns integer
+    in ppath varchar,
+	in depth integer,
+	in st char (1),
+	in ms_date integer,
+	in propnames any,
+	in u_id integer) returns integer
 {
-  declare all_prop, ppath_len integer;
-  declare dirlist any;
-  declare add_not_found, _this_col integer;
-  -- dbg_obj_princ ('WS.WS.PROPFIND_RESPONSE (', lpath, ppath, depth, st, ms_date, propnames, u_id, ')');
+	declare all_prop, ppath_len integer;
+	declare dirlist any;
+	declare add_not_found, _this_col integer;
+	--dbg_obj_princ ('WS.WS.PROPFIND_RESPONSE (', lpath, ppath, depth, st, ms_date, propnames, u_id, ')');
+	all_prop := 0;
+	add_not_found := 1;
 
-  all_prop := 0;
-  add_not_found := 1;
+	if (not isstring (lpath) or not isstring (ppath))
+		return -28;
 
-  if (not isstring (lpath) or not isstring (ppath))
-    return -28;
+	if (st = 'C' and aref (ppath, length (ppath) - 1) <> ascii ('/'))
+		ppath := concat (ppath, '/');
+	ppath_len := length (ppath);
 
-  if (st = 'C' and aref (ppath, length (ppath) - 1) <> ascii ('/'))
-    ppath := concat (ppath, '/');
-  ppath_len := length (ppath);
-
-  if (not isarray (propnames))
-    {
-      if (ms_date)
+	if (not isarray (propnames))
 	{
-	  propnames := vector (':getlastmodified', ':creationdate',
-	                      ':lastaccessed', ':getcontentlength', ':resourcetype', ':supportedlock');
-          add_not_found := 0;
+		if (ms_date)
+		{
+			propnames := vector (':getlastmodified', ':creationdate',
+				':lastaccessed', ':getcontentlength', ':resourcetype', ':supportedlock');
+			add_not_found := 0;
+		}
+		else
+			propnames := vector (':getlastmodified', ':getcontentlength', ':resourcetype');
 	}
-      else
-	propnames := vector (':getlastmodified', ':getcontentlength', ':resourcetype');
-    }
-  else if (aref (propnames, 0) = 'allprop')
-    {
-      propnames := vector (':getlastmodified', ':creationdate', ':getetag', ':getcontenttype',
-	                   ':getcontentlength', ':resourcetype', ':lockdiscovery', ':supportedlock');
-      all_prop := 1;
-    }
-
-  dirlist := DAV_DIR_LIST_INT (ppath, -1, '%', null, null, u_id);
-  if (isinteger (dirlist))
-    {
-      if (dirlist = -13)
-        {
-          if (u_id > 0)
-            dirlist := vector ();
-          else
-            return dirlist;
-        }
-      else
-        dirlist := vector (); -- TODO: This is a stub. It should be turned into something better.
-    }
-  if (length (dirlist) = 0)
-    {
-      -- dbg_obj_princ ('SQL_NOT_FOUND in WS.WS.PROPFIND_RESPONSE (', lpath, ppath, depth, st, ms_date, propnames, u_id, ')');
-      return -1;
-    }
-  WS.WS.PROPFIND_RESPONSE_FORMAT (lpath, dirlist, 0, ms_date, propnames, all_prop, add_not_found, 0, u_id);
-
--- Now go deep
-  if (depth = 1 and st = 'C')
-    {
-      dirlist := DAV_DIR_LIST_INT (ppath, 0, '%', null, null, u_id);
-
-  if (isinteger (dirlist))
-    {
-      if (dirlist = -13)
-        {
-          if (u_id > 0)
-            dirlist := vector ();
-          else
-            return dirlist;
-        }
-      else
-        dirlist := vector (); -- TODO: This is a stub. It should be turned into something better.
-    }
-
-      WS.WS.PROPFIND_RESPONSE_FORMAT (lpath, dirlist, 1, ms_date, propnames, all_prop, add_not_found, 0, u_id);
-    }
-  else if (((depth = -1) or (depth > 1)) and (st = 'C'))
-    {
-      dirlist := DAV_DIR_LIST_INT (ppath, 0, '%', null, null, u_id);
-      if (isinteger (dirlist))
+	else if (aref (propnames, 0) = 'allprop')
 	{
-	  if (dirlist = -13)
-	    {
-	      if (u_id > 0)
-		dirlist := vector ();
-	      else
-		return dirlist;
-	    }
-	  else
-	    dirlist := vector (); -- TODO: This is a stub. It should be turned into something better.
+		propnames := vector (':getlastmodified', ':creationdate', ':getetag', ':getcontenttype',
+			':getcontentlength', ':resourcetype', ':lockdiscovery', ':supportedlock');
+		all_prop := 1;
 	}
-      WS.WS.PROPFIND_RESPONSE_FORMAT (lpath, dirlist, case (depth) when -1 then -1 else depth-1 end, ms_date, propnames, all_prop, add_not_found, 1, u_id);
-      foreach (any itm in dirlist) do
-        {
-          if ('C' = itm[1])
-            {
-              if (-13 = WS.WS.PROPFIND_RESPONSE (lpath || itm[10] || '/', ppath || itm[10] || '/', -1, 'C', ms_date, propnames, u_id))
-                return -13;
-            }
-        }
-    }
-  return 0;
+
+	dirlist := DAV_DIR_LIST_INT (ppath, -1, '%', null, null, u_id);
+	if (isinteger (dirlist))
+	{
+		if (dirlist = -13)
+		{
+			if (u_id > 0)
+				dirlist := vector ();
+			else
+				return dirlist;
+		}
+		else
+			dirlist := vector (); -- TODO: This is a stub. It should be turned into something better.
+	}
+	if (length (dirlist) = 0)
+	{
+		-- dbg_obj_princ ('SQL_NOT_FOUND in WS.WS.PROPFIND_RESPONSE (', lpath, ppath, depth, st, ms_date, propnames, u_id, ')');
+		return -1;
+	}
+	WS.WS.PROPFIND_RESPONSE_FORMAT (lpath, dirlist, 0, ms_date, propnames, all_prop, add_not_found, 0, u_id);
+
+	-- Now go deep
+	if (depth = 1 and st = 'C')
+	{
+		dirlist := DAV_DIR_LIST_INT (ppath, 0, '%', null, null, u_id);
+
+		if (isinteger (dirlist))
+		{
+			if (dirlist = -13)
+			{
+				if (u_id > 0)
+					dirlist := vector ();
+				else
+					return dirlist;
+			}
+			else
+				dirlist := vector (); -- TODO: This is a stub. It should be turned into something better.
+		}
+
+		WS.WS.PROPFIND_RESPONSE_FORMAT (lpath, dirlist, 1, ms_date, propnames, all_prop, add_not_found, 0, u_id);
+	}
+	else if (((depth = -1) or (depth > 1)) and (st = 'C'))
+	{
+		dirlist := DAV_DIR_LIST_INT (ppath, 0, '%', null, null, u_id);
+		if (isinteger (dirlist))
+		{
+			if (dirlist = -13)
+			{
+				if (u_id > 0)
+					dirlist := vector ();
+				else
+					return dirlist;
+			}
+			else
+				dirlist := vector (); -- TODO: This is a stub. It should be turned into something better.
+		}
+		WS.WS.PROPFIND_RESPONSE_FORMAT (lpath, dirlist, case (depth) when -1 then -1 else depth-1 end, ms_date, propnames, all_prop, add_not_found, 1, u_id);
+		foreach (any itm in dirlist) do
+		{
+			if ('C' = itm[1])
+			{
+				if (-13 = WS.WS.PROPFIND_RESPONSE (lpath || itm[10] || '/', ppath || itm[10] || '/', -1, 'C', ms_date, propnames, u_id))
+					return -13;
+			}
+		}
+	}
+	return 0;
 }
 ;
 
 
 create procedure WS.WS.PROPFIND_RESPONSE_FORMAT (in lpath varchar,
-					  in dirlist any,
-                                          in append_name_to_href integer,
-					  in ms_date integer,
-					  in propnames any,
-					  in all_prop integer,
-					  in add_not_found integer,
-					  in resources_only integer,
-					  in _u_id integer)
+	in dirlist any,
+	in append_name_to_href integer,
+	in ms_date integer,
+	in propnames any,
+	in all_prop integer,
+	in add_not_found integer,
+	in resources_only integer,
+	in _u_id integer)
 {
   declare dir_len, dir_ctr, ix, len, dt_flag, iso_dt_flag, res_len, parent_col, id, found_cprop, found_sprop, mix integer;
   declare crt, modt datetime;
@@ -387,13 +386,15 @@ next_response:
   href := case append_name_to_href when 0 then lpath else DAV_CONCAT_PATH (lpath, name) end;
   if (st = 'C' and href not like '%/' and href not like '%.ics' and href not like '%.vcf')
     href := href || '/';
+  parent_col := DAV_SEARCH_ID (href, 'P');
   http ('<D:response xmlns:D="DAV:" xmlns:lp0="DAV:" xmlns:i0="DAV:" xmlns:V="http://www.openlinksw.com/virtuoso/webdav/1.0/">\n');
-  http ('<D:href>');
-  http_dav_url (
-    charset_recode (
-      href,
-      null, 'UTF-8' ) );
-  http ('</D:href>\n');
+  http (sprintf ('<D:href>%V</D:href>\n', charset_recode (href, 'UTF-8', '_WIDE_')));
+  -- http ('<D:href>');
+  -- http_dav_url (
+  --   charset_recode (
+  --     href,
+  --     null, 'UTF-8' ) );
+  -- http ('</D:href>\n');
   http ('<D:propstat>\n');
   http ('<D:prop>\n');
   ix := 0;
@@ -401,7 +402,7 @@ next_response:
   while (ix < len)
     {
       prop := aref (propnames, ix);
-      -- dbg_obj_princ ('>PROPERTY: ', prop);
+      --dbg_obj_princ ('>PROPERTY: ', prop);
       if (prop = ':getlastmodified')
 	{
 	  http (concat(sprintf ('<lp0:getlastmodified%s>', dt_ms), soap_print_box (modt, '', dt_flag) , '</lp0:getlastmodified>\n'));
@@ -468,17 +469,17 @@ next_response:
 	}
 	else if (prop = 'urn:ietf:params:xml:ns:caldav:calendar-home-set')
 	{
-		http (concat('<C:calendar-home-set xmlns:C="urn:ietf:params:xml:ns:caldav"><D:href>', lpath, '</D:href></C:calendar-home-set>\n'));
+		http (sprintf ('<C:calendar-home-set xmlns:C="urn:ietf:params:xml:ns:caldav"><D:href>%V</D:href></C:calendar-home-set>\n', charset_recode (lpath, 'UTF-8', '_WIDE_')));
           found_sprop := 1;
 	}
 	else if (prop = 'urn:ietf:params:xml:ns:carddav:addressbook-home-set')
 	{
-		http (concat('<C:addressbook-home-set xmlns:C="urn:ietf:params:xml:ns:carddav"><D:href>', lpath, '</D:href></C:addressbook-home-set>\n'));
+		http (sprintf ('<C:addressbook-home-set xmlns:C="urn:ietf:params:xml:ns:carddav"><D:href>%V</D:href></C:addressbook-home-set>\n', charset_recode (lpath, 'UTF-8', '_WIDE_')));
           found_sprop := 1;
 	}
 	else if (prop = ':principal-URL')
 	{
-		http (concat('<D:principal-URL><D:href>', lpath, '</D:href></D:principal-URL>\n'));
+		http (sprintf ('<D:principal-URL><D:href>%V</D:href></D:principal-URL>\n', charset_recode (lpath, 'UTF-8', '_WIDE_')));
         found_sprop := 1;
 	}
 	else if (prop = ':current-user-privilege-set')
@@ -548,14 +549,14 @@ next_response:
 	}
       else if (prop = ':resourcetype')
 	{
-	  if (st = 'C')
+          if (st = 'C')
           {
 	    if (mime_type = 'text/vcard')
 	      http ('<D:resourcetype><D:collection/><C:addressbook xmlns:C="urn:ietf:params:xml:ns:carddav" /></D:resourcetype>\n');
 		 else if (mime_type = 'text/calendar')
 	      http ('<D:resourcetype><D:collection/><C:calendar xmlns:C="urn:ietf:params:xml:ns:caldav" /></D:resourcetype>\n');
             else
-	    http ('<D:resourcetype><D:collection/></D:resourcetype>\n');
+              http ('<D:resourcetype><D:collection/></D:resourcetype>\n');
           }
 	  else
 	    http ('<D:resourcetype/>\n');
@@ -648,7 +649,7 @@ next_response:
           found_cprop := 0;
           prop_raw_val := DAV_HIDE_ERROR (DAV_PROP_GET_INT (id, st, prop1, 0), null);
 	  if (strchr (prop1, ':') is not null)
-	    goto skip1;  
+	    goto skip1;
           if (prop_raw_val is not null)
 	    {
               prop_val := deserialize (prop_raw_val);
@@ -704,7 +705,7 @@ next_response:
           prop_raw_val := prp[1];
           prop_val := deserialize (prop_raw_val);
 	  if (strchr (prop1, ':') is not null)
-	    goto skip2;  
+	    goto skip2;
             if (isarray (prop_val))
                 {
                   prop_val := xml_tree_doc (prop_val);
@@ -720,7 +721,7 @@ next_response:
 	      http (concat ('<V:',prop1,'><![CDATA[', prop_raw_val ,']]></V:', prop1,'>\n'));
 	    else
 	      http (concat ('<V:',prop1,'/>\n'));
-	  skip2:  
+	  skip2:
           prop_idx := prop_idx + 1;
         }
     }
@@ -790,7 +791,7 @@ create procedure WS.WS.PROPNAMES (in _body varchar)
             ret := vector_concat (ret, vector (name));
 	}
     }
-  -- dbg_obj_princ ('prop: ', prop, ' tree : ', xml_tree (prop) , ' propname: ', propname, ' allprop: ', allprop);
+   --dbg_obj_princ ('prop: ', prop, ' tree : ', xml_tree (prop) , ' propname: ', propname, ' allprop: ', allprop);
   return ret;
 }
 ;
@@ -977,7 +978,7 @@ create procedure WS.WS.REPORT (in path varchar, inout params varchar, in lines v
 	http_request_status ('HTTP/1.1 207 Multi-Status');
 	if (is_calendar = 1)
 	{
-		declare urls any; 
+		declare urls any;
 		urls := xpath_eval ('[xmlns:D="DAV:" xmlns="urn:ietf:params:xml:ns:caldav:"] //calendar-multiget/D:href/text()', xml_tree_doc (xml_expand_refs (xml_tree (_body))), 0);
 		http_header ('DAV: 1, calendar-access, calendar-schedule, calendar-proxy\r\nContent-type: application/xml; charset="utf-8"\r\n');
 		http ('<?xml version="1.0" encoding="utf-8"?>\n');
@@ -998,7 +999,7 @@ create procedure WS.WS.REPORT (in path varchar, inout params varchar, in lines v
 	}
 	else if (is_addressbook = 1)
 	{
-		declare urls any; 
+		declare urls any;
 		urls := xpath_eval ('[xmlns:D="DAV:" xmlns="urn:ietf:params:xml:ns:carddav:"] //addressbook-multiget/D:href/text()', xml_tree_doc (xml_expand_refs (xml_tree (_body))), 0);
 		http_header ('DAV: 1, addressbook\r\nContent-type: application/xml; charset="utf-8"\r\n');
 		http ('<?xml version="1.0" encoding="utf-8"?>\n');
@@ -1140,7 +1141,8 @@ nf:
   http ('<?xml version="1.0"?>\n');
   http ('<D:multistatus xmlns:D="DAV:" xmlns:V="http://www.openlinksw.com/virtuoso/webdav/1.0/">\n');
       http ('<D:response xmlns:lp0="DAV:" xmlns:i0="DAV:">\n');
-          http ('<D:href>'); http_dav_url (lpath); http ('</D:href>\n');
+      -- http ('<D:href>'); http_dav_url (lpath); http ('</D:href>\n');
+      http (sprintf ('<D:href>%V</D:href>\n', charset_recode (lpath, 'UTF-8', '_WIDE_')));
 	    http ('<D:propstat>\n');
 	      http ('<D:prop>\n');
 	      if (_prop = 'propname')
@@ -1176,11 +1178,11 @@ create procedure WS.WS.PROPPATCH (in path varchar, inout params varchar, in line
   declare uname, upwd, st, _perms, _body, _name varchar;
   declare _ses, _set, _del, _tmp, _val any;
   declare rc, acc, _proprc, xtree any;
-  -- dbg_obj_princ ('WS.WS.PROPPATCH (', path, params, lines, ')');
+  --dbg_obj_princ ('WS.WS.PROPPATCH (', path, params, lines, ')');
   is_addressbook := 0;
   is_calendar := 0;
   id := DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (vector(''), path, vector('')), 'C'));
-  if (id is not null)
+	if (id is not null)
 	{
 		if (isarray(id) = 1)
 		{
@@ -1189,7 +1191,7 @@ create procedure WS.WS.PROPPATCH (in path varchar, inout params varchar, in line
 			if (id[0] = UNAME'CardDAV')
 				is_addressbook := 1;
 		}
-    st := 'C';
+		st := 'C';
 	}
   else
     {
@@ -1211,7 +1213,7 @@ create procedure WS.WS.PROPPATCH (in path varchar, inout params varchar, in line
   rc := string_output ();
   _ses := aref_set_0 (params, 1);
   _body := string_output_string (_ses);
-  -- dbg_obj_princ ('PROPPATCH body is ', _body);
+  --dbg_obj_princ ('PROPPATCH body is ', _body);
   xtree := xml_tree (_body, 0);
   if (not isarray (xtree))
     {
@@ -1239,9 +1241,6 @@ create procedure WS.WS.PROPPATCH (in path varchar, inout params varchar, in line
 
 
   prop_set := xpath_eval('//set/prop/*',xtd,0);
-
-
-
   l := length (prop_set);
   if (l > 0)
     {
@@ -1741,7 +1740,6 @@ create procedure WS.WS.PUT (in path varchar, inout params varchar, in lines varc
   declare p_name, p_text, p_comm, stat, msg, p_inc, p_root, inc_name, inc_cont, str, location, inh varchar;
   declare ses any;
   --set isolation = 'serializable';
-
   ses := aref_set_0 (params, 1);
 
   whenever sqlstate '*' goto error_ret;
@@ -1759,9 +1757,9 @@ create procedure WS.WS.PUT (in path varchar, inout params varchar, in lines varc
   _col_parent_id := DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (vector(''), path, vector('')), 'P'));
   if (_col_parent_id is not null)
     {
-      -- dbg_obj_princ ('WS.WS.PUT has _col_parent_id=', _col_parent_id);
+       --dbg_obj_princ ('WS.WS.PUT has _col_parent_id=', _col_parent_id);
       rc := DAV_AUTHENTICATE_HTTP (_col_parent_id, 'C', '11_', 1, lines, uname, upwd, _u_id, _g_id, _perms);
-      -- dbg_obj_princ ('Authentication in WS.WS.PUT gives ', rc, uname, upwd, _u_id, _g_id, _perms);
+       --dbg_obj_princ ('Authentication in WS.WS.PUT gives ', rc, uname, upwd, _u_id, _g_id, _perms);
       if (rc < 0)
         goto error_ret;
     }
@@ -1784,7 +1782,7 @@ create procedure WS.WS.PUT (in path varchar, inout params varchar, in lines varc
     {
       content_type := 'text/html';
     }
-  -- dbg_obj_princ ('content_type=', content_type, ',  _cont_len=', _cont_len);
+   --dbg_obj_princ ('content_type=', content_type, ',  _cont_len=', _cont_len);
 
   if (content_type = 'application/sparql-query')
     {
@@ -1798,7 +1796,7 @@ create procedure WS.WS.PUT (in path varchar, inout params varchar, in lines varc
     uname, null, uname, upwd, 0,
     now(), now(), null,
     _u_id, _g_id, 0 );
-  -- dbg_obj_princ ('DAV_RES_UPLOAD_STRSES_INT returned ', rc, ' of type ', __tag (rc));
+  --dbg_obj_princ ('DAV_RES_UPLOAD_STRSES_INT returned ', rc, ' of type ', __tag (rc));
   if ((not isinteger (rc)) or (rc > 0))
     {
       commit work;
@@ -1814,7 +1812,7 @@ create procedure WS.WS.PUT (in path varchar, inout params varchar, in lines varc
       return;
     }
 error_ret:
-  -- dbg_obj_princ ('PUT get error: ', __SQL_STATE, __SQL_MESSAGE);
+   --dbg_obj_princ ('PUT get error: ', __SQL_STATE, __SQL_MESSAGE);
 
   if (__SQL_STATE = '40001')
     {
@@ -2154,7 +2152,7 @@ again:
 	}
       if (_col_id is null and (rc >= 0))
 	{
-	  if (uid = http_nobody_uid () and gid = http_nogroup_gid ()) 
+	  if (uid = http_nobody_uid () and gid = http_nogroup_gid ())
 	    uid := null;
 	  rc := DAV_AUTHENTICATE_HTTP (tgt_id, tgt_type, '1_1', 0, lines, uname, upwd, uid, gid, perms);
 	  if (rc >= 0)
@@ -2164,31 +2162,31 @@ again:
 
   http_rewrite (0);
 
-  -- execute + webid 
+  -- execute + webid
   auth_opts := http_map_get ('auth_opts');
   if (isvector (auth_opts) and mod (length (auth_opts), 2) = 0)
     webid_check := atoi (get_keyword ('webid_check', auth_opts, '0'));
   else
     webid_check := 0;
-  webid_check_rc := 1;  
+  webid_check_rc := 1;
   if (is_https_ctx () and webid_check and http_map_get ('executable'))
     {
       declare gid, perms, _check_id, _check_type any;
       uid := null;
-      if (isinteger (_res_id)) 
-	{ 
-	  _check_id := _res_id; 
+      if (isinteger (_res_id))
+	{
+	  _check_id := _res_id;
 	  _check_type := 'R';
-	} 
-      else 
-	{ 
-	  _check_id := _col_id; 
+	}
+      else
+	{
+	  _check_id := _col_id;
 	  _check_type := 'C';
-       	} 
+       	}
       webid_check_rc := DAV_AUTHENTICATE_HTTP (_check_id, _check_type, '1__', 1, lines, uname, upwd, uid, gid, perms);
       if ((webid_check_rc < 0) and (webid_check_rc <> -1))
 	return 0;
-    }  
+    }
 
   http_rewrite (0);
 
@@ -2462,22 +2460,22 @@ again:
 	      hdr_str := hdr_str || 'ETag: "' || server_etag || '"\r\n';
 	      if (strcasestr (hdr_str, 'Content-Type:') is null)
 		hdr_str := hdr_str || 'Content-Type: ' || cont_type || '\r\n';
-              if (isinteger (_res_id) and 
+              if (isinteger (_res_id) and
 		exists (select 1 from WS.WS.SYS_DAV_PROP where PROP_NAME = 'virt:aci_meta_n3' and PROP_TYPE = 'R' and PROP_PARENT_ID = _res_id))
 		{
-		  hdr_str := hdr_str || sprintf ('Link: <%s://%s%s,acl>; rel="http://www.w3.org/ns/auth/acl#"; title="Access Control File"\r\n', 
+		  hdr_str := hdr_str || sprintf ('Link: <%s://%s%s,acl>; rel="http://www.w3.org/ns/auth/acl#"; title="Access Control File"\r\n',
 			case when is_https_ctx () then 'https' else 'http' end,
-			http_request_header (lines, 'Host', NULL, NULL), http_path ());	
+			http_request_header (lines, 'Host', NULL, NULL), http_path ());
 		}
-	      rdf_graph := (select PROP_VALUE from WS.WS.SYS_DAV_PROP where 
+	      rdf_graph := (select PROP_VALUE from WS.WS.SYS_DAV_PROP where
 		PROP_PARENT_ID = _col and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdf_graph');
 	      if (rdf_graph is not null)
 	        {
 		  declare rdf_uri varchar;
 		  rdf_uri := rfc1808_expand_uri (DB.DBA.HTTP_REQUESTED_URL (), DAV_RDF_RES_NAME (rdf_graph));
 		  hdr_str := hdr_str || sprintf ('Link: <%s>; rel="alternate"\r\n', rdf_uri);
-                }		  
-	      http_header (hdr_str);
+                }
+  	      http_header (hdr_str);
 	    }
 	  else
 	    http_header (concat ('Content-Type: text/xml\r\nETag: "',server_etag,'"\r\n'));
@@ -3931,7 +3929,7 @@ create procedure WS.WS.UPDCHILD (in col integer, in root_path varchar, in _pflag
       update WS.WS.VFS_URL set VU_ETAG = '' where VU_RES_ID = RES_ID;
       -- drop VSPs
       if (RES_NAME like '%.vsp')
-      WS.WS.DAV_VSP_DEF_REMOVE (RES_FULL_PATH);
+        WS.WS.DAV_VSP_DEF_REMOVE (RES_FULL_PATH);
     }
   -- dbg_obj_princ ('WS.WS.UPDCHILD (', col, root_path, _pflags, repl, ') updates RES_FULL_PATH');
   update WS.WS.SYS_DAV_RES set RES_FULL_PATH = concat (root_path, RES_NAME) where RES_COL = col and ((RES_FULL_PATH <> concat (root_path, RES_NAME)) or RES_FULL_PATH is null);
@@ -4125,8 +4123,8 @@ create procedure WS.WS.EXPAND_INCLUDES (in path varchar, inout stream varchar, i
 	      where RES_NAME = name and RES_COL = col;
 	  if (not http_map_get ('executable'))
 	    {
-	  if (_u_id <> http_dav_uid () or _perms like '____1%' or _perms like '_______1%')
-	    signal ('37000', 'Includes can be owned only by admin & cannot be writable for others', 'DA001');
+	      if (_u_id <> http_dav_uid () or _perms like '____1%' or _perms like '_______1%')
+		signal ('37000', 'Includes can be owned only by admin & cannot be writable for others', 'DA001');
 	    }
 	  if (st is not null and isarray (st))
 	    st := vector_concat (st, vector (path, datestring(modt)));
@@ -5005,7 +5003,7 @@ create procedure WS.WS.XMLSQL_TO_STRSES (
 create procedure WS.WS."TRACE" (in path varchar, inout params varchar, in lines varchar)
 {
   http_header ('Content-Type: message/http\r\n');
-  http_flush (1); 
+  http_flush (1);
   foreach (varchar l in lines) do
     {
       http (l);

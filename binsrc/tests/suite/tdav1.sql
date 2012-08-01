@@ -74,4 +74,3 @@ id_tst ();
 --c_mkcol ('http://$U{HOST}/DAV/TDAV1/');
 ECHO BOTH $IF $EQU $STATE OK  "PASSED" "***FAILED";
 ECHO BOTH ": UNIQUE IDs TEST : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
-

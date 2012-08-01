@@ -40,35 +40,66 @@
         <dc:description>OpenLink schema for Crunchbase objects and properties</dc:description>
         <dc:title>OpenLink schema for Crunchbase</dc:title>
     </owl:Ontology>
-    
-    <owl:Class rdf:about="http://www.openlinksw.com/schemas/crunchbase#Financial-organization">
-        <rdfs:comment>Financial organization</rdfs:comment>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/crunchbase#Acquisition">
+        <rdfs:comment>Acquisition</rdfs:comment>
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
-        <rdfs:label>Financial organization</rdfs:label>
-        <rdfs:subClassOf rdf:resource="http://purl.org/goodrelations/v1#BusinessEntity"/>
+        <rdfs:label>Acquisition</rdfs:label>
     </owl:Class>
 
-    <owl:Class rdf:about="http://www.openlinksw.com/schemas/crunchbase#Company">
-        <rdfs:comment>Company</rdfs:comment>
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/crunchbase#Funding_round">
+        <rdfs:comment>Funding round</rdfs:comment>
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
-        <rdfs:label>Company</rdfs:label>
-        <rdfs:subClassOf rdf:resource="http://purl.org/goodrelations/v1#BusinessEntity"/>
-    </owl:Class>
-    
-    <owl:Class rdf:about="http://www.openlinksw.com/schemas/crunchbase#Screenshots">
-        <rdfs:comment>Screenshots</rdfs:comment>
-        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
-        <rdfs:label>Screenshots</rdfs:label>
-        <rdfs:subClassOf rdf:resource="http://xmlns.com/foaf/0.1/Image"/>
-    </owl:Class>
-    
-    <owl:Class rdf:about="http://www.openlinksw.com/schemas/crunchbase#Relationships">
-        <rdfs:comment>Relationships</rdfs:comment>
-        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
-        <rdfs:label>Relationships</rdfs:label>
-        <rdfs:subClassOf rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+        <rdfs:label>Funding round</rdfs:label>
     </owl:Class>
 
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/crunchbase#Investment">
+        <rdfs:comment>Investment</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
+        <rdfs:label>Investment</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/crunchbase#Milestone">
+        <rdfs:comment>Milestone</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
+        <rdfs:label>Milestone</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/crunchbase#Office">
+        <rdfs:comment>Office</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
+        <rdfs:label>Office</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/crunchbase#Product">
+        <rdfs:comment>Product</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
+        <rdfs:label>Product</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/crunchbase#Providership">
+        <rdfs:comment>Providership</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
+        <rdfs:label>Providership</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/crunchbase#Relationship">
+        <rdfs:comment>Relationship</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
+        <rdfs:label>Relationship</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/crunchbase#Screenshot">
+        <rdfs:comment>Screenshot</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
+        <rdfs:label>Screenshot</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/crunchbase#Video_embed">
+        <rdfs:comment>Video embed</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
+        <rdfs:label>Video embed</rdfs:label>
+    </owl:Class>
 
     <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#acquired_day">
         <rdfs:comment>The day of an acquistion</rdfs:comment>
@@ -102,20 +133,13 @@
         <rdfs:comment>Details of a company acquisition</rdfs:comment>
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
         <rdfs:label>acquisition</rdfs:label>
-        <rdfs:range rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/crunchbase#Acquisition"/>
     </owl:ObjectProperty>
 
     <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#acquisitions">
         <rdfs:comment>Details of a company acquisition</rdfs:comment>
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
-        <rdfs:label>acquisition</rdfs:label>
-        <rdfs:range rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
-    </owl:ObjectProperty>
-    
-    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#acquisition">
-        <rdfs:comment>Details of a company acquisition</rdfs:comment>
-        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
-        <rdfs:label>acquisition</rdfs:label>
+        <rdfs:label>acquisitions</rdfs:label>
         <rdfs:range rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
     </owl:ObjectProperty>
 
@@ -258,13 +282,6 @@
         <rdfs:label>external links</rdfs:label>
         <rdfs:range rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
     </owl:DatatypeProperty>
-    
-    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#external_link">
-        <rdfs:comment>An external link class describing links to other sites with resources relating to this company.</rdfs:comment>
-        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
-        <rdfs:label>external link</rdfs:label>
-        <rdfs:range rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
-    </owl:DatatypeProperty>
 
     <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#external_url">
         <rdfs:comment>A link to another site with resources relating to this company.</rdfs:comment>
@@ -330,38 +347,31 @@
     </owl:DatatypeProperty>
 
     <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#funding_round">
-        <rdfs:comment>Details of a funding round</rdfs:comment>
+        <rdfs:comment>Details of a company funding round</rdfs:comment>
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
         <rdfs:label>funding round</rdfs:label>
-        <rdfs:range rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/crunchbase#Funding_round"/>
     </owl:ObjectProperty>
 
     <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#funding_rounds">
         <rdfs:comment>Details of funding rounds</rdfs:comment>
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
         <rdfs:label>funding rounds</rdfs:label>
-        <rdfs:range rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
-    </owl:ObjectProperty>
-    
-     <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#funding_round">
-        <rdfs:comment>Details of funding rounds</rdfs:comment>
-        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
-        <rdfs:label>funding round</rdfs:label>
-        <rdfs:range rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
-    </owl:ObjectProperty>
-
-    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#investments">
-        <rdfs:comment>Details of an investment in the company</rdfs:comment>
-        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
-        <rdfs:label>investment</rdfs:label>
-        <rdfs:range rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/crunchbase#Funding_round"/>
     </owl:ObjectProperty>
 
     <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#investment">
         <rdfs:comment>Details of an investment in the company</rdfs:comment>
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
         <rdfs:label>investment</rdfs:label>
-        <rdfs:range rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/crunchbase#Investment"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#investments">
+        <rdfs:comment>Details of an investment in the company</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
+        <rdfs:label>investments</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/crunchbase#Investment"/>
     </owl:ObjectProperty>
 
     <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#ipo">
@@ -385,20 +395,20 @@
         <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
     </owl:DatatypeProperty>
 
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#milestone">
+        <rdfs:comment>Milestone in a company's history</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
+        <rdfs:label>milestone</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/crunchbase#Milestone"/>
+    </owl:ObjectProperty>
+
     <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#milestones">
         <rdfs:comment>Milestones in a company's history</rdfs:comment>
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
         <rdfs:label>milestones</rdfs:label>
-        <rdfs:range rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/crunchbase#Milestone"/>
     </owl:ObjectProperty>
 
-    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#milestone">
-        <rdfs:comment>Milestones in a company's history</rdfs:comment>
-        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
-        <rdfs:label>milestone</rdfs:label>
-        <rdfs:range rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
-    </owl:ObjectProperty>
-    
     <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#number_of_employees">
         <rdfs:comment>The number of employees in a company</rdfs:comment>
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
@@ -406,20 +416,20 @@
         <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
     </owl:DatatypeProperty>
 
-    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#offices">
-        <rdfs:comment>Details of a company office</rdfs:comment>
-        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
-        <rdfs:label>offices</rdfs:label>
-        <rdfs:range rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
-    </owl:ObjectProperty>
-
     <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#office">
         <rdfs:comment>Details of a company office</rdfs:comment>
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
         <rdfs:label>office</rdfs:label>
-        <rdfs:range rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/crunchbase#Office"/>
     </owl:ObjectProperty>
-    
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#offices">
+        <rdfs:comment>Details of a company office</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
+        <rdfs:label>offices</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/crunchbase#Office"/>
+    </owl:ObjectProperty>
+
     <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#permalink">
         <rdfs:comment>A permalink to a Crunchbase profile of a company or person</rdfs:comment>
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
@@ -455,39 +465,39 @@
         <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
     </owl:DatatypeProperty>
 
-    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#products">
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#product">
+        <rdfs:comment>Details of one of a company's product</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
+        <rdfs:label>product</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/crunchbase#Product"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#products">
         <rdfs:comment>Details of one of a company's products</rdfs:comment>
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
         <rdfs:label>products</rdfs:label>
-        <rdfs:range rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
-    </owl:DatatypeProperty>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/crunchbase#Product"/>
+    </owl:ObjectProperty>
 
-    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#product">
-        <rdfs:comment>Details of one of a company's products</rdfs:comment>
-        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
-        <rdfs:label>product</rdfs:label>
-        <rdfs:range rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
-    </owl:DatatypeProperty>
-    
     <owl:Class rdf:about="http://www.openlinksw.com/schemas/crunchbase#provider">
         <rdfs:comment>A legal, PR &#38; marketing firms that provides services to this company</rdfs:comment>
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
         <rdfs:label>provider</rdfs:label>
     </owl:Class>
 
-    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#providerships">
-        <rdfs:comment>Providers - legal, PR &#38; marketing firms that provide services to this company</rdfs:comment>
-        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
-        <rdfs:label>providerships</rdfs:label>
-        <rdfs:range rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
-    </owl:DatatypeProperty>
-
-    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#providership">
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#providership">
         <rdfs:comment>Providers - legal, PR &#38; marketing firms that provide services to this company</rdfs:comment>
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
         <rdfs:label>providership</rdfs:label>
-        <rdfs:range rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
-    </owl:DatatypeProperty>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/crunchbase#Providership"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#providerships">
+        <rdfs:comment>Providers - legal, PR &#38; marketing firms that provide services to this company</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
+        <rdfs:label>providerships</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/crunchbase#Providership"/>
+    </owl:ObjectProperty>
 
     <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#raised_amount">
         <rdfs:comment>The amount raised by a funding round</rdfs:comment>
@@ -503,12 +513,19 @@
         <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
     </owl:DatatypeProperty>
 
-    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#relationship">
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#relationship">
         <rdfs:comment>Details of a person associated with a company</rdfs:comment>
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
         <rdfs:label>relationship</rdfs:label>
-        <rdfs:range rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
-    </owl:DatatypeProperty>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/crunchbase#Relationship"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#relationships">
+        <rdfs:comment>Details of a person associated with a company</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
+        <rdfs:label>relationships</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/crunchbase#Relationship"/>
+    </owl:ObjectProperty>
 
     <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#round_code">
         <rdfs:comment>A code describing the type of funding associated with a funding round: angel, seed ...</rdfs:comment>
@@ -517,20 +534,20 @@
         <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
     </owl:DatatypeProperty>
 
-    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#screenshots">
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#screenshot">
+        <rdfs:comment>Screenshot linked to a company profile - typically company logos</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
+        <rdfs:label>screenshot</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/crunchbase#Screenshot"/>
+    </owl:ObjectProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#screenshots">
         <rdfs:comment>Screenshots linked to a company profile - typically company logos</rdfs:comment>
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
         <rdfs:label>screenshots</rdfs:label>
-        <rdfs:range rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
-    </owl:DatatypeProperty>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/crunchbase#Screenshot"/>
+    </owl:ObjectProperty>
 
-    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#screenshot">
-        <rdfs:comment>Screenshots linked to a company profile - typically company logos</rdfs:comment>
-        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
-        <rdfs:label>screenshot</rdfs:label>
-        <rdfs:range rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
-    </owl:DatatypeProperty>
-    
     <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#source_description">
         <rdfs:comment>A description of a milestone event in a company's history.</rdfs:comment>
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
@@ -606,7 +623,6 @@
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
         <rdfs:label>twitter username</rdfs:label>
         <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
-        <owl:equivalentProperty rdf:resource="http://www.openlinksw.com/schemas/twitter#id"/> 
     </owl:DatatypeProperty>
 
     <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#updated_at">
@@ -623,20 +639,20 @@
         <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
     </owl:DatatypeProperty>
 
-    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#video_embeds">
-        <rdfs:comment>An embedded video about a company or individual</rdfs:comment>
-        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
-        <rdfs:label>video embeds</rdfs:label>
-        <rdfs:range rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
-    </owl:ObjectProperty>
-
     <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#video_embed">
         <rdfs:comment>An embedded video about a company or individual</rdfs:comment>
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
         <rdfs:label>video embed</rdfs:label>
-        <rdfs:range rdf:resource="http://www.w3.org/2002/07/owl#Class"/>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/crunchbase#Video_embed"/>
     </owl:ObjectProperty>
-    
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#video_embeds">
+        <rdfs:comment>An embedded video about a company or individual</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
+        <rdfs:label>video embeds</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/crunchbase#Video_embed"/>
+    </owl:ObjectProperty>
+
     <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/crunchbase#zip_code">
         <rdfs:comment>Company address - zip code</rdfs:comment>
         <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/crunchbase"/>
@@ -644,3 +660,4 @@
         <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
     </owl:DatatypeProperty>
 </rdf:RDF>
+

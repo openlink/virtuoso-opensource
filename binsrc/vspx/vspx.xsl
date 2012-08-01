@@ -289,7 +289,7 @@ create type <xsl:value-of select="$vspx_full_class_name" /> under vspx_page
   <xsl:if test="@on-error-redirect or @on-deadlock-retry">
 <xsl:text/>    method vc_error_handler_<xsl:value-of select="$vspx_local_class_name" /> (state any, message any, deadl any) returns any,
   </xsl:if>
-<xsl:text/>    method vc_redirect (url varchar) returns any,
+<xsl:text/>    method vc_redirect (url any) returns any,
 <xsl:text/>    method vc_render_<xsl:value-of select="$vspx_local_class_name" /> (control vspx_page) returns any
 ;
 <!-- The page UDT declaration end -->
@@ -520,7 +520,7 @@ create method vc_error_handler_<xsl:value-of select="$vspx_local_class_name" /> 
 ;
 </xsl:if>
 
-create method vc_redirect (in url varchar) for <xsl:value-of select="$vspx_full_class_name" />
+create method vc_redirect (in url any) for <xsl:value-of select="$vspx_full_class_name" />
 {
   if (length (self.sid))
     url := vspx_uri_add_parameters (url, sprintf ('sid=%s&amp;realm=%s', self.sid, self.realm));

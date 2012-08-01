@@ -420,7 +420,7 @@ ParseOptions (CfgData cfgdata[], TCHAR * s, int clean_up)
     odbcini_usr = path;
     cfg_init (&cfg_odbc_usr, odbcini_usr);
 
-    cli_dbg_printf (("USING %s\n", iniFile));
+    cli_dbg_printf (("USING %s\n", odbcini_usr));
 
     section_narrow = virt_wide_to_ansi (section);
 
@@ -595,6 +595,8 @@ virtodbc__SQLDriverConnect (SQLHDBC hdbc,
   SQLRETURN rc;
   CON (con, hdbc);
   CfgData cfgdata[sizeof (attrs) / sizeof (CfgRecord)];
+
+  cli_dbg_printf (("DriverConnect(%p, ..., %d) called.\n", hdbc, fDriverCompletion));
 
   memset (cfgdata, 0, sizeof (cfgdata));
 

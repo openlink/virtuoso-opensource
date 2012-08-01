@@ -404,9 +404,9 @@ outssl4/virtuoso/javax/%.java: ../../virtuoso/javax/%.java
 # Cleanup
 ###########################################
 clean-local:
-	-$(RM) -f *.class version.h
-	-$(RM) -rf outstd outssl
-	-$(RM) -rf outstd1 outssl1
-	-$(RM) -rf outstd2 outssl2
-	-$(RM) -rf outstd3 outssl3
-	-$(RM) -rf outstd4 outssl4
+	rm -f *.class version.h
+	rm -rf outstd outssl
+	rm -rf outstd1 outssl1
+	rm -rf outstd2 outssl2
+	rm -rf outstd3 outssl3
+	rm -rf outstd4 outssl4

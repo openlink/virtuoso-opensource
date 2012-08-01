@@ -141,7 +141,7 @@
   <xsl:template match="/results/name" mode="people">
     <xsl:if test="contains(/results/kind ,'person')">
       <oplgp:name>
-	<oplgp:Name rdf:about="{concat($resourceURL,'#Name')}">
+	<oplgp:Name rdf:about="{vi:iriMap (concat($resourceURL,'#Name'), $baseUri)}">
 	  <xsl:if test="string-length(familyName) &gt; 0">
 	    <oplgp:familyName>
 	      <xsl:value-of select="familyName"/>
@@ -241,7 +241,7 @@
   <!--
   <xsl:template match="urls" mode="people">
     <oplgp:shared_url>
-      <oplgp:Url rdf:about="{concat($resourceURL,'#Url_', position(.))}">
+      <oplgp:Url rdf:about="{vi:iriMap (concat($resourceURL,'#Url_', position(.)), $baseUri)}">
 	<rdfs:label>
 	  <xsl:choose>
 	    <xsl:when test="primary = '1'">
@@ -290,7 +290,7 @@
 
   <xsl:template match="organizations" mode="people">
     <oplgp:associatedWith>
-      <oplgp:Organization rdf:about="{concat($resourceURL,'#Organization_',position(.))}">
+      <oplgp:Organization rdf:about="{vi:iriMap (concat($resourceURL,'#Organization_',position(.)), $baseUri)}">
         <xsl:if test="string-length(department) &gt; 0">
           <oplgp:department>
             <xsl:value-of select="department"/>
@@ -342,7 +342,7 @@
 
   <xsl:template match="placesLived" mode="people">
     <oplgp:placeLived>
-      <oplgp:PlaceLived rdf:about="{concat($resourceURL,'#PlaceLived_',position(.))}">
+      <oplgp:PlaceLived rdf:about="{vi:iriMap (concat($resourceURL,'#PlaceLived_',position(.)), $baseUri)}">
 	  <rdfs:label>
 	    <xsl:choose>
 	      <!-- 'primary residence' suffix may confuse meta-cartridge lookups?
@@ -375,7 +375,7 @@
        in the course of sponging a Google+ user profile URL -->
   <xsl:template match="items" mode="activity">
     <oplgp:performed_activity>
-      <rdf:Description rdf:about="{concat($resourceURL, '#Activity_', id)}">
+      <rdf:Description rdf:about="{vi:iriMap (concat($resourceURL, '#Activity_', id), $baseUri)}">
 	<xsl:call-template name="activity"/>
       </rdf:Description>
     </oplgp:performed_activity>
@@ -383,7 +383,7 @@
 
   <xsl:template match="access" mode="activity">
     <xsl:variable name="activity_id" select="../id" />
-    <oplgp:Access rdf:about="{concat($resourceURL, '#Access_', $activity_id)}">
+    <oplgp:Access rdf:about="{vi:iriMap (concat($resourceURL, '#Access_', $activity_id), $baseUri)}">
       <xsl:if test="string-length(kind) &gt; 0">
 	<oplgp:access_kind>
 	  <xsl:value-of select="kind"/>
@@ -399,7 +399,7 @@
       </xsl:if>
       <xsl:for-each select="items">
 	<oplgp:access_item>
-	  <oplgp:AccessItem rdf:about="{concat($resourceURL, '#AccessItem_', $activity_id, '_', position())}">
+	  <oplgp:AccessItem rdf:about="{vi:iriMap (concat($resourceURL, '#AccessItem_', $activity_id, '_', position()), $baseUri)}">
 	    <rdfs:label>
 	      <xsl:value-of select="concat('AccessItem (type: ', type, ')')"/>
 	    </rdfs:label>
@@ -418,7 +418,7 @@
   </xsl:template>
 
   <xsl:template match="actor" mode="activity">
-    <oplgp:Actor rdf:about="{concat($resourceURL, '#Actor_', id)}">
+    <oplgp:Actor rdf:about="{vi:iriMap (concat($resourceURL, '#Actor_', id), $baseUri)}">
       <oplgp:id>
 	<xsl:value-of select="id"/>
       </oplgp:id>
@@ -451,7 +451,7 @@
   </xsl:template>
 
   <xsl:template match="object" mode="activity">
-    <oplgp:ActivityObject rdf:about="{concat($resourceURL, '#ActivityObject_', ../id)}">
+    <oplgp:ActivityObject rdf:about="{vi:iriMap (concat($resourceURL, '#ActivityObject_', ../id), $baseUri)}">
       <xsl:if test="id">
         <oplgp:id>
 	  <xsl:value-of select="id"/>
@@ -518,7 +518,7 @@
     <xsl:variable name="activity_id" select="../../id"/>
     <xsl:variable name="attachment_idx" select="position(.)"/>
       <oplgp:attachment>
-	<oplgp:Attachment rdf:about="{concat($resourceURL, '#Attachment_', $activity_id, '_', $attachment_idx)}">
+	<oplgp:Attachment rdf:about="{vi:iriMap (concat($resourceURL, '#Attachment_', $activity_id, '_', $attachment_idx), $baseUri)}">
 	  <xsl:if test="id">
 	    <oplgp:id>
 	      <xsl:value-of select="id"/>
@@ -574,10 +574,10 @@
 
   <xsl:template match="items" mode="comment">
     <xsl:variable name="activity_id" select="inReplyTo/id"/>
-    <xsl:variable name="activity_object_url" select="concat($resourceURL, '#ActivityObject_', $activity_id)"/>
+    <xsl:variable name="activity_object_url" select="vi:iriMap (concat($resourceURL, '#ActivityObject_', $activity_id), $baseUri)"/>
     <rdf:Description rdf:about="{$activity_object_url}">
       <oplgp:has_comment>
-	<oplgp:Comment rdf:about="{concat($resourceURL, '#Comment_', id)}">
+	<oplgp:Comment rdf:about="{vi:iriMap (concat($resourceURL, '#Comment_', id), $baseUri)}">
 	  <rdfs:label>
 	    <xsl:variable name="plain_content">
 	      <xsl:call-template name="strip-HTML">
@@ -615,7 +615,7 @@
 	    <xsl:value-of select="verb"/>
 	  </oplgp:comment_verb>
 	  <oplgp:in_reply_to_object>
-	    <oplgp:InReplyTo rdf:about="{concat($resourceURL, '#InReplyTo_', $activity_id, '_', position(.))}">
+	    <oplgp:InReplyTo rdf:about="{vi:iriMap (concat($resourceURL, '#InReplyTo_', $activity_id, '_', position(.)), $baseUri)}">
 	      <oplgp:activity_replied_to_id>
 		<xsl:value-of select="inReplyTo/id"/>
 	      </oplgp:activity_replied_to_id>
@@ -732,7 +732,7 @@
     <xsl:param name="attachment_idx"/>
     <xsl:for-each select="$fullImage">
       <oplgp:fullImage>
-	<oplgp:FullImage rdf:about="{concat($resourceURL, '#FullImageAttachment_', $activity_id, '_', $attachment_idx)}">
+	<oplgp:FullImage rdf:about="{vi:iriMap (concat($resourceURL, '#FullImageAttachment_', $activity_id, '_', $attachment_idx), $baseUri)}">
 	  <rdfs:label>
 	    <xsl:value-of select="concat ('full image attached to object of activity ', $activity_id)"/>
 	  </rdfs:label>
@@ -757,7 +757,7 @@
     <xsl:param name="attachment_idx"/>
     <xsl:for-each select="$image">
       <oplgp:previewImage>
-	<oplgp:PreviewImage rdf:about="{concat($resourceURL, '#PreviewImageAttachment_', $activity_id, '_', $attachment_idx)}">
+	<oplgp:PreviewImage rdf:about="{vi:iriMap (concat($resourceURL, '#PreviewImageAttachment_', $activity_id, '_', $attachment_idx), $baseUri)}">
 	  <rdfs:label>
 	    <xsl:value-of select="concat ('preview image attached to object of activity ', $activity_id)"/>
 	  </rdfs:label>
@@ -786,7 +786,7 @@
     <xsl:param name="attachment_idx"/>
     <xsl:for-each select="$embed">
       <oplgp:embed>
-	<oplgp:EmbeddableLink rdf:about="{concat($resourceURL, '#EmbedAttachment_', $activity_id, '_', $attachment_idx)}">
+	<oplgp:EmbeddableLink rdf:about="{vi:iriMap (concat($resourceURL, '#EmbedAttachment_', $activity_id, '_', $attachment_idx), $baseUri)}">
 	  <rdfs:label>
 	    <xsl:value-of select="concat ('embeddable link attached to object of activity ', $activity_id)"/>
 	  </rdfs:label>

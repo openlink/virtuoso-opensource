@@ -34,4 +34,3 @@ xml_test ('http://localhost:$U{HTTPPORT}/docsrc/sqlreference.xml');
 xml_test ('http://localhost:$U{HTTPPORT}/docsrc/user.xml');
 xml_test ('http://localhost:$U{HTTPPORT}/docsrc/vdbconcepts.xml');
 xml_test ('http://localhost:$U{HTTPPORT}/docsrc/virtdocs.xml');
-

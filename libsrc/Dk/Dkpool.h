@@ -303,6 +303,10 @@ caddr_t *t_revlist_to_array (dk_set_t list);
 int t_set_delete (dk_set_t * set, void *item);
 dk_set_t t_set_copy (dk_set_t s);
 #endif
+#define mp_set_nreverse(mp,s) dk_set_nreverse((s))
+#define t_set_nreverse(s) dk_set_nreverse((s))
+#define t_revlist_to_array_or_null(list)	((NULL != (list)) ? t_revlist_to_array ((list)) : NULL)
+
 
 #ifdef MALLOC_DEBUG
 void mp_check_tree (mem_pool_t * mp, box_t box);

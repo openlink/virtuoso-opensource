@@ -31,23 +31,12 @@ Flags is a bit mask where 1 means to look in the connection, 2 in the global set
       <para></para>
     </refsect2>
   </refsect1>
-<!--
-  <refsect1 id="ret___xml_get_ns_uri"><title>Return Types</title>
-    <para>The return value is not specified and may be changed in future versions.</para>
+  <refsect1 id="seealso__xml_get_ns_uri"><title>See Also</title>
+    <para>
+      <link linkend="fn_xml_get_ns_prefix"><function>xml_get_ns_prefix</function></link>
+      <link linkend="fn_xml_ns_uname"><function>xml_ns_uname</function></link>                  
+      <link linkend="fn_xml_ns_iristr"><function>xml_ns_iristr</function></link>      
+      <link linkend="fn_xml_nsexpand_iristr"><function>xml_nsexpand_iristr</function></link>            
+    </para>
   </refsect1>
-  <refsect1 id="errors___xml_get_ns_uri">
-    <title>Errors</title>
-    <para>This function can generate the following errors:</para>
-    <errorcode></errorcode>
-  </refsect1>
-
-  <refsect1 id="examples___xml_get_ns_uri">
-    <title>Examples</title>
-    <example id="ex___xml_get_ns_uri"><title></title>
-<para>Sample Example 1</para>
-<screen><![CDATA[
-<para>Sample Example 2</para>
-    </example>
-  </refsect1>
--->
 </refentry>

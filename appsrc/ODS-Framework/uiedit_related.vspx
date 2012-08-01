@@ -127,25 +127,22 @@ if (not e.ve_is_post and control.te_rowset[0] = self.edit_related)
 	          </div>
         <label for="related_url">URI</label>
 		  <br/>
-        <v:text name="related_url" value="" xhtml_id="related_url" xhtml_size="50" xhtml_class="_validate_ _url_ _canEmpty_" xhtml_onblur="javascript: validateField(this);" />
+        <v:text name="related_url" value="" xhtml_id="related_url" xhtml_size="50" xhtml_class="_validate_ _url_" />
 		  <br />
         <label for="related_name">Label</label>
         <br/>
-		  <v:text name="related_name" value="" xhtml_id="related_name" xhtml_size="50" error-glyph="*">
-		      <v:validator test="sql" expression="length(trim(control.ufl_value)) < 2" message="Label can not be empty"/>
-		  </v:text>
+        <v:text name="related_name" value="" xhtml_id="related_name" xhtml_size="50" xhtml_class="_validate_" />
 		  <br/>
 	<v:check-box name="spb" value="1" xhtml_id="spb"/>
 	<label for="spb">Issue Semantic Pingback</label>
         <br/>
 	      <span class="fm_ctl_btn">
-		  <v:button name="related_cancel1" value="Cancel" action="simple" enabled="--equ(isnull(self.edit_related),0)">
+          <v:button name="related_cancel1" value="Cancel" action="simple">
 		      <v:on-post>
 self.related_name.ufl_value := null;
 self.related_url.ufl_value := null;
 self.edit_related := null;
               self.vc_data_bind (e);
-control.vc_enabled := 0;
 		      </v:on-post>
 		  </v:button>
           <v:button name="related_save1" value="--case when self.edit_related is null then 'Add' else 'Update' end" action="simple" xhtml_onclick="return validateInputs(this);">
@@ -156,9 +153,9 @@ declare stat, msg, dta, mdta, qrs any;
 if (not self.vc_is_valid)
   return;
 
-url := self.related_url.ufl_value;
-name := self.related_name.ufl_value;
-pred := get_keyword ('pred', e.ve_params);
+              url := trim (self.related_url.ufl_value);
+              name := trim (self.related_name.ufl_value);
+              pred := trim (get_keyword ('pred', e.ve_params));
 if (not length (url))
   {
     self.vc_is_valid := 0;
@@ -173,13 +170,25 @@ if (not length (pred))
   }
               self.rel_iri := pred;
 pred := ods_iri_expand (pred);
+              if (self.edit_related is null and exists (select 1 from WA_USER_RELATED_RES where WUR_U_ID = self.u_id and WUR_SEEALSO_IRI = url and WUR_P_IRI = pred))
+              {
+                self.vc_is_valid := 0;
+                self.vc_error_message := 'The relation already exists';
+                return;
+              }
+
 if (self.edit_related is null)
   {
-    insert into WA_USER_RELATED_RES (WUR_U_ID,WUR_LABEL,WUR_SEEALSO_IRI, WUR_P_IRI) values (self.u_id, name, url, pred);
+                insert into WA_USER_RELATED_RES (WUR_U_ID, WUR_LABEL, WUR_SEEALSO_IRI, WUR_P_IRI)
+                  values (self.u_id, name, url, pred);
   }
 else
   {
-    update WA_USER_RELATED_RES set WUR_LABEL = name, WUR_SEEALSO_IRI = url, WUR_P_IRI = pred where WUR_ID = self.edit_related;
+                update WA_USER_RELATED_RES
+                   set WUR_LABEL = name,
+                       WUR_SEEALSO_IRI = url,
+                       WUR_P_IRI = pred
+                 where WUR_ID = self.edit_related;
   }
 	      if (self.spb.ufl_selected)
 	        {

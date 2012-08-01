@@ -415,16 +415,16 @@ function getFileName(obj)
     N = S.indexOf('#');
     S = S.substr(0, N);
   }
-  if (document.F1.dav_destination[1].checked == '1')
-  {
+  if (document.forms['F1'].elements['dav_destination']) {
+    if (document.F1.dav_destination[1].checked == '1') {
     N = S.indexOf('.rdf');
     S = S.substr(0, N);
   }
-  if ((document.F1.dav_destination[0].checked == '1') && (document.F1.dav_source[2].checked == '1'))
-  {
+    if ((document.F1.dav_destination[0].checked == '1') && (document.F1.dav_source[2].checked == '1')) {
     N = S.indexOf('.rdf');
     if (N == -1)
       S = S + '.rdf';
+  }
   }
   document.F1.dav_name.value = S;
 }
@@ -437,7 +437,7 @@ function chkbx(bx1, bx2)
 
 function updateLabel(value)
 {
-  hideLabel(4, 11);
+  hideLabel(4, 16);
   if (value == 'oMail')
     showLabel(4, 4);
   else if (value == 'PropFilter')
@@ -454,6 +454,16 @@ function updateLabel(value)
     showLabel(10, 10);
   else if (value == 'IMAP')
     showLabel(11, 11);
+  else if (value == 'GDrive')
+    showLabel(12, 12);
+  else if (value == 'Dropbox')
+    showLabel(13, 13);
+  else if (value == 'SkyDrive')
+    showLabel(14, 14);
+  else if (value == 'Box')
+    showLabel(15, 15);
+  else if (value == 'WebDAV')
+    showLabel(16, 16);
 }
 
 function showLabel(from, to)
@@ -548,19 +558,23 @@ function webidShow(obj) {
   windowShow('/ods/webid_select.vspx?mode='+S.charAt(0)+'&params='+obj.id+':s1;');
 }
 
-function windowShow(sPage, sPageName, width, height) {
+function windowShowInternal(sPage, sPageName, width, height) {
 	if (width == null)
     width = 700;
 	if (height == null)
 		height = 500;
+  win = window.open(sPage, sPageName, "width="+width+",height="+height+",top=100,left=100,status=yes,toolbar=no,menubar=no,scrollbars=yes,resizable=yes");
+  win.window.focus();
+}
+
+function windowShow(sPage, sPageName, width, height) {
   if (sPage.indexOf('form=') == -1)
     sPage += '&form=F1';
   if (sPage.indexOf('sid=') == -1)
     sPage += urlParam('sid');
   if (sPage.indexOf('realm=') == -1)
     sPage += urlParam('realm');
-  win = window.open(sPage, sPageName, "width="+width+",height="+height+",top=100,left=100,status=yes,toolbar=no,menubar=no,scrollbars=yes,resizable=yes");
-  win.window.focus();
+  windowShowInternal(sPage, sPageName, width, height);
 }
 
 function renameShow(myForm, myPrefix, myPage, width, height) {
@@ -755,7 +769,7 @@ function addChecked (form, txt, selectionMsq)
 // Hiddens functions
 function createHidden(frm_name, fld_name, fld_value)
 {
-  createHidden2(document, frm_name, fld_name, fld_value);
+  return createHidden2(document, frm_name, fld_name, fld_value);
 }
 
 function createHidden2(doc, frm_name, fld_name, fld_value)
@@ -774,6 +788,8 @@ function createHidden2(doc, frm_name, fld_name, fld_value)
       doc.forms[frm_name].appendChild(hidden);
     }
     hidden.value = fld_value;
+
+    return hidden;
   }
 }
 
@@ -886,14 +902,14 @@ function toggleDavSource()
 var ODRIVE = new Object();
 
 ODRIVE.forms = new Object();
-ODRIVE.forms['properties'] = {params: {items: true}, width: '900', height: '700', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
-ODRIVE.forms['edit'] = {params: {items: true}, height: '430', postActions:['ODRIVE.formSubmit()']};
-ODRIVE.forms['view'] = {params: {items: true}, height: '430'};
-ODRIVE.forms['copy'] = {params: {items: true}, height: '380', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
-ODRIVE.forms['move'] = {params: {items: true}, height: '380', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
-ODRIVE.forms['tags'] = {params: {items: true}, height: '360', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
-ODRIVE.forms['rename'] = {params: {items: true}, height: '150', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
-ODRIVE.forms['delete'] = {params: {items: true}, height: '300', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
+ODRIVE.forms['properties'] = {params: {items: true}, width: '900', height: '630', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
+ODRIVE.forms['edit'] = {params: {items: true}, height: '440', postActions:['ODRIVE.formSubmit()']};
+ODRIVE.forms['view'] = {params: {items: true}, height: '440'};
+ODRIVE.forms['copy'] = {params: {items: true}, height: '330', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
+ODRIVE.forms['move'] = {params: {items: true}, height: '330', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
+ODRIVE.forms['tags'] = {params: {items: true}, height: '350', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
+ODRIVE.forms['rename'] = {params: {items: true}, height: '160', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
+ODRIVE.forms['delete'] = {params: {items: true}, height: '290', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
 
 ODRIVE.trim = function (sString, sChar)
 {
@@ -1067,7 +1083,7 @@ ODRIVE.formShow = function (action, id, params)
     if (formDiv) {OAT.Dom.unlink(formDiv);}
     formDiv = OAT.Dom.create('div', {width:dx+'px', height:dy+'px'});
     formDiv.id = 'formDiv';
-    formDialog = new OAT.Dialog('', formDiv, {width:parseInt(dx)+20, buttons: 0, resize: 0, modal: 1, onhide: function(){return false;}});
+    formDialog = new OAT.Dialog('', formDiv, {buttons: 0, resize: 0, modal: 1, onhide: function(){return false;}});
     formDialog.cancel = formDialog.hide;
 
     var s = 'forms.vspx?sa='+encodeURIComponent(action)+ODRIVE.sessionParams();
@@ -1573,11 +1589,94 @@ ODRIVE.toggleEditor = function ()
 
 ODRIVE.updateRdfGraph = function ()
 {
-  if (
-      ($v('dav_rdfSink_rdfGraph') == '') ||
-      ($v('dav_rdfSink_rdfGraph') == ($v('rdfGraph_prefix')+$v('dav_name_save')+'#this'))
-     )
-    $('dav_rdfSink_rdfGraph').value = $v('rdfGraph_prefix') + $v('dav_name') + '#this';
+  function updateRdfGraphInternal(name) {
+    var graphPrefix;
+    var rdfGraph;
+
+    graphPrefix = $v('rdfGraph_prefix');
+    rdfGraph = $('dav_'+name+'_graph');
+    if ((rdfGraph.value == '') || (rdfGraph.value == (graphPrefix+$v('dav_name_save')+'#this')))
+      rdfGraph.value = graphPrefix + $v('dav_name') + '#this';
+  }
+  updateRdfGraphInternal('rdfSink');
+  updateRdfGraphInternal('S3');
+  updateRdfGraphInternal('IMAP');
+  updateRdfGraphInternal('GDrive');
+  updateRdfGraphInternal('Dropbox');
+  updateRdfGraphInternal('SkyDrive');
+  updateRdfGraphInternal('Box');
+  updateRdfGraphInternal('WebDAV');
 
   $('dav_name_save').value = $v('dav_name');
+}
+
+ODRIVE.oauthParams = function (json, display_name, email)
+{
+  try {
+    params = OAT.JSON.deserialize(unescape(json));
+  } catch (e) { params = null; }
+  var fld = createHidden('F1', 'dav_GDrive_JSON', null);
+  if (!params || params.error) {
+    alert ('Bad authentication!');
+    fld.value = '';
+  } else {
+    var d = new Date();
+    params.access_timestamp = d.format('Y-m-d H:i');
+    fld.value = OAT.JSON.serialize(params);
+    // $('dav_GDrive_authentication').innerHTML = 'Authenticated';
+    createHidden('F1', 'dav_GDrive_display_name', display_name);
+    createHidden('F1', 'dav_GDrive_email', email);
+
+    OAT.Dom.show('tr_dav_GDrive_display_name');
+    $('td_dav_GDrive_display_name').innerHTML = display_name;
+    OAT.Dom.show('tr_dav_GDrive_email');
+    $('td_dav_GDrive_email').innerHTML = email;
+    $('dav_GDrive_authenticate').value = 'Re-Authenticate';
+  }
+}
+
+ODRIVE.dropboxParams = function (sid, display_name, email)
+{
+  createHidden('F1', 'dav_Dropbox_authentication', 'Yes');
+  createHidden('F1', 'dav_Dropbox_sid', sid);
+  createHidden('F1', 'dav_Dropbox_display_name', display_name);
+  createHidden('F1', 'dav_Dropbox_email', email);
+
+  OAT.Dom.show('tr_dav_Dropbox_display_name');
+  $('td_dav_Dropbox_display_name').innerHTML = display_name;
+  OAT.Dom.show('tr_dav_Dropbox_email');
+  $('td_dav_Dropbox_email').innerHTML = email;
+  $('dav_Dropbox_authenticate').value = 'Re-Authenticate';
+}
+
+ODRIVE.skydriveParams = function (json, display_name)
+{
+  try {
+    params = OAT.JSON.deserialize(unescape(json));
+  } catch (e) { params = null; }
+  var fld = createHidden('F1', 'dav_SkyDrive_JSON', null);
+  if (!params || params.error) {
+    alert ('Bad authentication!');
+    fld.value = '';
+  } else {
+    var d = new Date();
+    params.access_timestamp = d.format('Y-m-d H:i');
+    fld.value = OAT.JSON.serialize(params);
+    createHidden('F1', 'dav_SkyDrive_display_name', display_name);
+
+    OAT.Dom.show('tr_dav_SkyDrive_display_name');
+    $('td_dav_SkyDrive_display_name').innerHTML = display_name;
+    $('dav_SkyDrive_authenticate').value = 'Re-Authenticate';
+  }
+}
+
+ODRIVE.boxParams = function (auth_token, display_name)
+{
+  createHidden('F1', 'dav_Box_authentication', 'Yes');
+  createHidden('F1', 'dav_Box_auth_token', auth_token);
+  createHidden('F1', 'dav_Box_display_name', display_name);
+
+  OAT.Dom.show('tr_dav_Box_display_name');
+  $('td_dav_Box_display_name').innerHTML = display_name;
+  $('dav_Box_authenticate').value = 'Re-Authenticate';
 }

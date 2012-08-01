@@ -30,7 +30,7 @@ AC_REVISION($Id$)
 ##########################################################################
 
 AC_INIT([Virtuoso Open Source Edition],
-	[6.1.5],
+	[6.1.6],
 	[vos.admin@openlinksw.com],
 	[virtuoso-opensource])
 AC_CONFIG_SRCDIR([libsrc/Dk.h])
@@ -194,6 +194,23 @@ case ${VIRTUOSO_LAYOUT} in
 	docdir=$datadir/doc/virtuoso
 	htmldocdir=$datadir/doc/virtuoso/html
 	pdfdocdir=$datadir/doc/virtuoso/pdf
+	demodir=$localstatedir/lib/virtuoso/demo
+	dbdir=$localstatedir/lib/virtuoso/db
+	httprootdir=$localstatedir/lib/virtuoso/vsp
+	hostingdir=$libdir/virtuoso/hosting
+	;;
+
+  [[Oo]][[Pp]][[Ee]][[Nn]][[Ss]][[Uu]][[Ss]][[Ee]])	# openSUSE
+	virtuoso_layout=openSUSE
+	if test "x$prefix" = "xNONE"
+	then
+		prefix=/usr
+		localstatedir=/var
+	fi
+	vaddir=$datadir/virtuoso/vad
+	docdir=$datadir/doc/packages/virtuoso
+	htmldocdir=$datadir/doc/packages/virtuoso/html
+	pdfdocdir=$datadir/doc/packages/virtuoso/pdf
 	demodir=$localstatedir/lib/virtuoso/demo
 	dbdir=$localstatedir/lib/virtuoso/db
 	httprootdir=$localstatedir/lib/virtuoso/vsp
@@ -2233,7 +2250,7 @@ AC_HELP_STRING([--disable-conductor-vad], [disable Conductor vad package])dnl
 
 AC_ARG_ENABLE(dbpedia-vad,
 AC_HELP_STRING([--enable-dbpedia-vad], [enable DBpedia vad package (default)])
-AC_HELP_STRING([--disable-conductor-vad], [disable DBpedia vad package])dnl
+AC_HELP_STRING([--disable-dbpedia-vad], [disable DBpedia vad package])dnl
 ], [
      case "${enableval}" in
        yes)	with_dbpedia_vad="yes";;
@@ -2309,6 +2326,19 @@ AC_HELP_STRING([--disable-rdfmappers-vad], [disable Sparql Demo vad package])dnl
   [ with_rdfmappers_vad="yes" ]
 )
 
+AC_ARG_ENABLE(rdb2rdf-vad,
+AC_HELP_STRING([--enable-rdb2rdf-vad], [enable Rdb2Rdf vad package (default)])
+AC_HELP_STRING([--disable-rdb2rdf-vad], [disable Rdb2Rdf vad package])dnl
+], [
+     case "${enableval}" in
+       yes)	with_rdb2rdf_vad="yes";;
+       no)	with_rdb2rdf_vad="no";;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --enable-rdb2rdf-vad) ;;
+     esac
+  ],
+  [ with_rdb2rdf_vad="yes" ]
+)
+
 AC_ARG_ENABLE(sparqldemo-vad,
 AC_HELP_STRING([--enable-sparqldemo-vad], [enable Sparql Demo vad package (default)])
 AC_HELP_STRING([--disable-sparqldemo-vad], [disable Sparql Demo vad package])dnl
@@ -2370,6 +2400,7 @@ then
     with_fct_vad="no"
     with_isparql_vad="no"
     with_ods_vad="no"
+    with_rdb2rdf_vad="no"
     with_rdfmappers_vad="no"
     with_sparqldemo_vad="no"
     with_syncml_vad="no"
@@ -2383,6 +2414,7 @@ AM_CONDITIONAL(WITH_DEMO_VAD, test "x$with_demo_vad" = "xyes")
 AM_CONDITIONAL(WITH_FCT_VAD, test "x$with_fct_vad" = "xyes")
 AM_CONDITIONAL(WITH_ISPARQL_VAD, test "x$with_isparql_vad" = "xyes")
 AM_CONDITIONAL(WITH_ODS_VAD, test "x$with_ods_vad" = "xyes")
+AM_CONDITIONAL(WITH_RDB2RDF_VAD, test "x$with_rdb2rdf_vad" = "xyes")
 AM_CONDITIONAL(WITH_RDFMAPPERS_VAD, test "x$with_rdfmappers_vad" = "xyes")
 AM_CONDITIONAL(WITH_SPARQLDEMO_VAD, test "x$with_sparqldemo_vad" = "xyes")
 AM_CONDITIONAL(WITH_SYNCML_VAD, test "x$with_syncml_vad" = "xyes")
@@ -2620,6 +2652,7 @@ AC_CONFIG_FILES([
 	binsrc/mono/Makefile
 	binsrc/oat/Makefile
 	binsrc/rdf_mappers/Makefile
+	binsrc/rdb2rdf/Makefile
 	binsrc/redland/Makefile
 	binsrc/samples/demo/Makefile
 	binsrc/samples/hslookup/Makefile

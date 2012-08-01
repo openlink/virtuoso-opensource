@@ -616,6 +616,36 @@ function destinationChange(obj, actions) {
 			}
     }
   }
+	if (actions.exec) {
+		var a = actions.exec;
+		for ( var i = 0; i < a.length; i++) {
+			a[i](obj);
+		}
+	}
+}
+
+function excLabel(obj) {
+  var srcLabel = $('excLabel');
+  if (!srcLabel)
+    return;
+  if ($('exc_options_type_1').checked)
+    srcLabel.innerHTML = 'WebDAV File URL (.ics)';
+  if ($('exc_options_type_3').checked)
+    srcLabel.innerHTML = 'CalDAV URL';
+  if ($('exc_options_type_2').checked)
+    srcLabel.innerHTML = 'File URL (.ics)';
+}
+
+function iType(obj) {
+  var i = -1;
+  if ($('i_type_0').checked)
+    i = 0;
+  if ($('i_type_1').checked)
+    i = 1;
+  if ($('i_type_2').checked)
+    i = 2;
+  if (i < 0)
+    $('i_type_0').checked = true;
 }
 
 function urlParam(fldName)

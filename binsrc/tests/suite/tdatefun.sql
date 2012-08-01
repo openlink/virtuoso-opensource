@@ -1012,8 +1012,8 @@ select LEFT('$U{DATESTRING}',4), $U{YEAR},
                    'Thursday','Friday','Saturday'),$U{DAYOFWEEK}),
         '$U{DAYNAME}',
 
-       one_of_these('$U{DAYNAME}','Sunday','Monday','Tuesday','Wednesday',
-                                  'Thursday','Friday','Saturday'),
+       position ('$U{DAYNAME}', vector ('Sunday','Monday','Tuesday','Wednesday',
+                                  'Thursday','Friday','Saturday')),
         $U{DAYOFWEEK},
 
        aref(vector('No-Zero-Month!','January','February','March','April',

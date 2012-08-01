@@ -413,7 +413,3 @@ create procedure index_batch_test (in start integer, in id2 integer, in flag int
   vt_batch_process (vtb);
   return;
 }
-
-
-
-

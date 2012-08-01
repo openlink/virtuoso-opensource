@@ -1,6 +1,6 @@
 
 
-echo both "Any number collation\n";
+ECHO BOTH "Any number collation\n";
 
 
 drop table tnum;
@@ -57,12 +57,12 @@ create procedure controversy (in exp int)
 }
 
 select controversy (52);
-echo both $if $equ $last[1] 0 "PASSED" "***FAILED";
-echo both ": controversy 52\n";
+ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
+ECHO BOTH ": controversy 52\n";
 
 select controversy (53);
-echo both $if $equ $last[1] 0 "PASSED" "***FAILED";
-echo both ": controversy 53\n";
+ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
+ECHO BOTH ": controversy 53\n";
 
 nfill (100000);
 
@@ -77,12 +77,12 @@ select count (*) from tnum a table option (index primary key), tnum b table opti
 
 
 select __tag (k),  * from tnum a table option (index ii) where not exists (select 1 from tnum b table option (loop, index primary key) where a.k = b.k and a.id = b.id);
-echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
-echo both ": any num coll 1\n";
+ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
+ECHO BOTH ": any num coll 1\n";
 
 select __tag (k),  * from tnum a table option (index primary key) where not exists (select 1 from tnum b table option (loop, index ii) where a.k = b.k and a.id = b.id);
-echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
-echo both ": any num coll 2\n";
+ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
+ECHO BOTH ": any num coll 2\n";
 
 
 

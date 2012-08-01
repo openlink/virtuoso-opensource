@@ -120,9 +120,21 @@ create function "CalDAV_DAV_AUTHENTICATE_HTTP" (
 ;
 
 --| This matches DAV_GET_PARENT (in id any, in st char(1), in path varchar) returns any
-create function "CalDAV_DAV_GET_PARENT" (in id any, in st char(1), in path varchar) returns any
+create function "CalDAV_DAV_GET_PARENT" (
+  in id any,
+  in what char(1),
+  in path varchar) returns any
 {
-  -- dbg_obj_princ ('CalDAV_DAV_GET_PARENT (', id, st, path, ')');
+  -- dbg_obj_princ ('CalDAV_DAV_GET_PARENT (', id, what, path, ')');
+  if ('R' = what)
+{
+    id[4] := 0;
+
+    return id;
+  }
+  if ('C' = what)
+    return id[1];
+
   return -20;
 }
 ;
@@ -192,7 +204,7 @@ create function "CalDAV_DAV_RES_UPLOAD" (
 {
   -- dbg_obj_princ ('CalDAV_DAV_RES_UPLOAD (', detcol_id, path_parts, ', [content], ', content, type, permissions, uid, gid, auth_uid, ')');
   declare top_id, res any;
-  declare owner_uid, domain_id, rc integer;
+  declare owner_uid, domain_id, item_id, rc integer;
 
   top_id := "CalDAV_DAV_SEARCH_ID_IMPL" (detcol_id, path_parts, 'R', owner_uid, domain_id);
   if (top_id <> -1)
@@ -207,6 +219,11 @@ create function "CalDAV_DAV_RES_UPLOAD" (
 
     real_content := http_body_read (1);
     content := string_output_string (real_content);  -- check if bellow code can work with string session and if so remove this line
+  }
+  if ((length (content) = 0) and (top_id = -1))
+  {
+    item_id := CAL.WA.event_update (-1, path_parts[1], domain_id, 'UNLOCK', null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+    return vector (CalDAV__UNAME(), detcol_id, uid, domain_id, item_id, 0);
   }
   res := CAL.WA.import_vcal (domain_id, content);
   if (length (res) > 0)
@@ -355,7 +372,7 @@ create function "CalDAV_DAV_DIR_SINGLE" (
   {
     rightcol := path[length(path) - 2];
     if ('C' = what)
-      return vector (DAV_CONCAT_PATH ('/', path), 'C', 0, maxrcvdate, id, access, 0, id[2], maxrcvdate, 'dav/unix-directory', rightcol );
+      return vector (DAV_CONCAT_PATH ('/', path), 'C', 0, maxrcvdate, id, access, 0, id[2], maxrcvdate, 'text/calendar', rightcol );
   }
   fullpath := DAV_CONCAT_PATH (DAV_SEARCH_PATH (id[1], 'C'), colname || '/');
   if ('C' = what)
@@ -363,10 +380,10 @@ create function "CalDAV_DAV_DIR_SINGLE" (
     if (id[4] > 0)
       return -1;
 
-    return vector (fullpath, 'C', 0, maxrcvdate, id, access, 0, id[2], maxrcvdate, 'dav/unix-directory', colname );
+    return vector (fullpath, 'C', 0, maxrcvdate, id, access, 0, id[2], maxrcvdate, 'text/calendar', colname );
   }
-  for (select CalDAV__COMPOSE_ICS_NAME(E_UID) as orig_mname, E_UPDATED from CAL.WA.EVENTS where E_ID = id[4]) do
-    return vector (fullpath || orig_mname, 'R', 1024, E_UPDATED, id, access, 0, id[2], E_UPDATED, 'text/calendar', orig_mname);
+  for (select CalDAV__COMPOSE_ICS_NAME(E_UID) as orig_mname, E_CREATED, E_UPDATED from CAL.WA.EVENTS where E_ID = id[4]) do
+    return vector (fullpath || orig_mname, 'R', 1024, E_UPDATED, id, access, 0, id[2], E_CREATED, 'text/calendar', orig_mname);
 
   return -1;
 }
@@ -427,18 +444,18 @@ create function "CalDAV_DAV_DIR_LIST" (
       {
         res := vector_concat (res, vector (vector (DAV_CONCAT_PATH (top_davpath, orig_name) || '/', 'C', 0, now(),
                 vector (CalDAV__UNAME(), detcol_id, owner_uid, dom_id, 0, 0),
-                access, owner_gid, owner_uid, now(), 'dav/unix-directory', orig_name) ) );
+                access, owner_gid, owner_uid, now(), 'text/calendar', orig_name) ) );
       }
       return res;
     }
   }
-  for (select CalDAV__COMPOSE_ICS_NAME(E_UID) as orig_mname, E_ID, E_UPDATED
+  for (select CalDAV__COMPOSE_ICS_NAME(E_UID) as orig_mname, E_ID, E_CREATED, E_UPDATED
          from CAL.WA.EVENTS
         where E_DOMAIN_ID = top_id[3]) do
   {
     res := vector_concat (res, vector (vector (DAV_CONCAT_PATH (top_davpath, orig_mname), 'R', 1024, E_UPDATED,
     vector (CalDAV__UNAME(), detcol_id, owner_uid, top_id[3], E_ID, 0),
-    access, owner_gid, owner_uid, E_UPDATED, 'text/calendar', orig_mname) ) );
+    access, owner_gid, owner_uid, E_CREATED, 'text/calendar', orig_mname) ) );
   }
   return res;
 }
@@ -458,7 +475,7 @@ create procedure "CalDAV_DAV_FC_PRED_METAS" (inout pred_metas any)
       'RES_GROUP_NAME',   vector ('SYS_USERS'   , 0, 'varchar'  , '(''nogroup'')'       ),
       'RES_COL_FULL_PATH',vector ('EVENTS'      , 0, 'varchar'  , 'concat (DAV_CONCAT_PATH (_param.detcolpath, ''calendar''), CalDAV__FIXNAME (WAI_NAME), ''/'')'      ),
       'RES_COL_NAME',     vector ('EVENTS'      , 0, 'varchar'  , 'CalDAV__FIXNAME (WAI_NAME)'   ),
-      'RES_CR_TIME',      vector ('EVENTS'      , 0, 'datetime' , 'E_UPDATED'        ),
+    'RES_CR_TIME',      vector ('EVENTS'      , 0, 'datetime' , 'E_CREATED'),
       'RES_MOD_TIME',     vector ('EVENTS'      , 0, 'datetime' , 'E_UPDATED'  ),
       'RES_PERMS',        vector ('EVENTS'      , 0, 'varchar'  , '(''110100000RR'')'   ),
       'RES_CONTENT',      vector ('EVENTS'      , 0, 'text'     , 'E_DESCRIPTION'   ),
@@ -477,38 +494,25 @@ create procedure "CalDAV_DAV_FC_PRED_METAS" (inout pred_metas any)
 create procedure "CalDAV_DAV_FC_TABLE_METAS" (inout table_metas any)
 {
   table_metas := vector (
-    'EVENTS'             , vector (      ''      ,
-                                        ''      ,
-                                                'E_SUBJECT'    , 'E_SUBJECT'  , '[__quiet] /' ),
-    'WA_INSTANCE'         , vector (      ''      ,
-                                        ''      ,
-                                                'WAI_NAME'     , 'WAI_NAME'   , '[__quiet] /' ),
-    'WA_MEMBER'         , vector (      ''      ,
-                                        ''      ,
-                                                'WAM_INST'     , 'WAM_INST'   , '[__quiet] /' ),
-
-    'SYS_USERS'   , vector (      ''      ,
-                                        ''      ,
-                                                NULL            , NULL          , NULL          ),
-    'public-tags'   , vector (  '  '    ,
-                                    ''  ,
-                        'E_TAGS'    , 'E_TAGS'  , NULL  ),
-    'private-tags'  , vector (  ' ' ,
-                    ' ' ,
-                        'E_TAGS'    , 'E_TAGS'  , NULL  ),
-    'all-tags'      , vector (  ' ' ,
-                    ' ' ,
-                        'E_TAGS'    , 'E_TAGS'  , NULL  ),
+    'EVENTS'        , vector (  '', '' , 'E_SUBJECT', 'E_SUBJECT', '[__quiet] /' ),
+    'WA_INSTANCE'   , vector (  '', '' , 'WAI_NAME' , 'WAI_NAME' , '[__quiet] /' ),
+    'WA_MEMBER'     , vector (  '', '' , 'WAM_INST' , 'WAM_INST' , '[__quiet] /' ),
+    'SYS_USERS'     , vector (  '', '' , NULL       , NULL       , NULL          ),
+    'public-tags'   , vector (  '', '' ,'E_TAGS'    , 'E_TAGS'   , NULL          ),
+    'private-tags'  , vector (  '', '' ,'E_TAGS'    , 'E_TAGS'   , NULL          ),
+    'all-tags'      , vector (  '', '' ,'E_TAGS'    , 'E_TAGS'   , NULL          ),
     'fake-prop' , vector (  '\n  inner join WS.WS.SYS_DAV_PROP as ^{alias}^ on ((^{alias}^.PROP_PARENT_ID is null) and (^{alias}^.PROP_TYPE = ''R'')^{andpredicates}^)' ,
                     '\n  exists (select 1 from WS.WS.SYS_DAV_PROP as ^{alias}^ where (^{alias}^.PROP_PARENT_ID is null) and (^{alias}^.PROP_TYPE = ''R'')^{andpredicates}^)'    ,
-                        'PROP_VALUE'    , 'PROP_VALUE'  , '[__quiet __davprop xmlns:virt="virt"] fakepropthatprobablyneverexists'   )
+                                'PROP_VALUE',
+                                'PROP_VALUE',
+                                '[__quiet __davprop xmlns:virt="virt"] fakepropthatprobablyneverexists')
     );
 }
 ;
 
 create function "CalDAV_DAV_FC_PRINT_WHERE" (inout filter any, in param_uid integer) returns varchar
 {
-  -- dbg_obj_princ ('Blog_POST_DAV_FC_PRINT_WHERE (', filter, param_uid, ')');
+  -- dbg_obj_princ ('CalDAV_DAV_FC_PRINT_WHERE (', filter, param_uid, ')');
   declare pred_metas, cmp_metas, table_metas any;
   declare used_tables any;
 
@@ -663,7 +667,7 @@ create function "CalDAV_DAV_SEARCH_ID_IMPL" (
     return vector (CalDAV__UNAME(), detcol_id, owner_uid, domain_id, 0, 0);
 
   hitlist := vector ();
-  for (select distinct E_ID from CAL.WA.EVENTS where CalDAV__COMPOSE_ICS_NAME (E_UID) = path_parts[ctr] and E_DOMAIN_ID = domain_id) do
+  for (select distinct E_ID from CAL.WA.EVENTS where (CalDAV__COMPOSE_ICS_NAME (E_UID) = path_parts[ctr] or E_UID = path_parts[ctr]) and E_DOMAIN_ID = domain_id) do
   {
     hitlist := vector_concat (hitlist, vector (E_ID));
   }
@@ -675,7 +679,10 @@ create function "CalDAV_DAV_SEARCH_ID_IMPL" (
 ;
 
 --| When DAV_PROP_GET_INT or DAV_DIR_LIST_INT calls DET function, authentication is performed before the call.
-create function "CalDAV_DAV_SEARCH_ID" (in detcol_id any, in path_parts any, in what char(1)) returns any
+create function "CalDAV_DAV_SEARCH_ID" (
+  in detcol_id any,
+  in path_parts any,
+  in what char(1)) returns any
 {
   -- dbg_obj_princ ('CalDAV_DAV_SEARCH_ID (', detcol_id, path_parts, what, ')');
   declare owner_uid, domain_id integer;
@@ -728,7 +735,11 @@ create function "CalDAV_DAV_RES_UPLOAD_MOVE" (in detcol_id any, in path_parts an
 
 --| When DAV_RES_CONTENT or DAV_RES_COPY_INT or DAV_RES_MOVE_INT calls DET function, authentication is made.
 --| If content_mode is 1 then content is a valid output stream before the call.
-create function "CalDAV_DAV_RES_CONTENT" (in id any, inout content any, out type varchar, in content_mode integer) returns integer
+create function "CalDAV_DAV_RES_CONTENT" (
+  in id any,
+  inout content any,
+  out type varchar,
+  in content_mode integer) returns integer
 {
   --dbg_obj_princ ('CalDAV_DAV_RES_CONTENT (', id, ', content, type, ', content_mode, ')');
   if (id[4] < 0)
@@ -748,9 +759,8 @@ create function "CalDAV_DAV_RES_CONTENT" (in id any, inout content any, out type
   whenever not found goto endline;
   tz := timezone(now());
   if (id[4] is not null)
-  {
     content := CAL.WA.det_export_vcal (id[3], tz, id[4]);
-  }
+
 endline:
   return 0;
 }
@@ -781,38 +791,137 @@ create function "CalDAV_DAV_RESOLVE_PATH" (in detcol_id any, inout reference_ite
 ;
 
 --| There's no API function to lock for a while (do we need such?) The "LOCK" DAV method checks that all parameters are valid but does not check for existing locks.
-create function "CalDAV_DAV_LOCK" (in path any, in id any, in type char(1), inout locktype varchar, inout scope varchar, in token varchar, inout owner_name varchar, inout owned_tokens varchar, in depth varchar, in timeout_sec integer, in auth_uid integer) returns any
+create function "CalDAV_DAV_LOCK" (
+  in path any,
+  in id any,
+  in what char(1),
+  inout locktype varchar,
+  inout scope varchar,
+  in token varchar,
+  inout owner_name varchar,
+  inout owned_tokens varchar,
+  in depth varchar,
+  in timeout_sec integer,
+  in auth_uid integer) returns any
 {
-  -- dbg_obj_princ ('CalDAV_DAV_LOCK (', path, id, type, locktype, scope, token, owner_name, owned_tokens, depth, timeout_sec, owner_name, auth_uid, ')');
-  if (isinteger (id) and (id = -1))
-    return 1;
+  -- dbg_obj_princ ('CalDAV_DAV_LOCK (', path, id, what, locktype, scope, token, owner_name, owned_tokens, depth, timeout_sec, auth_uid, ')');
+  declare rc any;
+  declare domain_id, item_id integer;
+  declare name, uid varchar;
 
-  return -20;
+  rc := 0;
+  if (what = 'C')
+  {
+    rc := -27;
+    goto _exit;
+  }
+
+  domain_id := id[3];
+  item_id := id[4];
+  if (exists (select 1 from CAL.WA.EVENTS where E_DOMAIN_ID = domain_id and E_ID = item_id and E_SUBJECT = 'UNLOCK'))
+  {
+    rc := lower (uuid());
+    update CAL.WA.EVENTS
+       set E_SUBJECT = 'LOCK',
+           E_DESCRIPTION = rc
+     where E_DOMAIN_ID = domain_id
+       and E_ID = item_id;
+
+    goto _exit;
+  }
+
+  if (exists (select 1 from CAL.WA.EVENTS where E_DOMAIN_ID = domain_id and E_ID = item_id and E_SUBJECT = 'LOCK' and dateadd ('second', -1, now()) > E_UPDATED))
+  {
+    rc := lower (uuid());
+    update CAL.WA.EVENTS
+       set E_SUBJECT = 'LOCK',
+           E_DESCRIPTION = rc
+     where E_DOMAIN_ID = domain_id
+       and E_ID = item_id;
+
+    goto _exit;
+  }
+
+  uid := (select E_UID from CAL.WA.EVENTS where E_DOMAIN_ID = domain_id and E_ID = item_id);
+  if (path like ('%' || CalDAV__COMPOSE_ICS_NAME (uid)))
+  {
+    rc := lower (uuid());
+
+    goto _exit;
+  }
+
+  rc := -20;
+
+_exit:;
+  return rc;
 }
 ;
 
 --| There's no API function to unlock for a while (do we need such?) The "UNLOCK" DAV method checks that all parameters are valid but does not check for existing locks.
-create function "CalDAV_DAV_UNLOCK" (in id any, in type char(1), in token varchar, in auth_uid integer)
+create function "CalDAV_DAV_UNLOCK" (
+  in id any,
+  in what char(1),
+  in token varchar,
+  in auth_uid integer)
 {
-  -- dbg_obj_princ ('CalDAV_DAV_UNLOCK (', id, type, token, auth_uid, ')');
-  return -27;
+  -- dbg_obj_princ ('CalDAV_DAV_UNLOCK (', id, what, token, auth_uid, ')');
+  declare rc any;
+  declare domain_id, item_id integer;
+
+  rc := 0;
+  domain_id := id[3];
+  item_id := id[4];
+  if (exists (select 1 from CAL.WA.EVENTS where E_DOMAIN_ID = domain_id and E_ID = item_id and E_SUBJECT = 'LOCK'))
+  {
+    update CAL.WA.EVENTS
+       set E_SUBJECT = 'UNLOCK',
+           E_DESCRIPTION = null
+     where E_DOMAIN_ID = domain_id
+       and E_ID = item_id;
+
+    rc := -27;
+    goto _exit;
+  }
+
+_exit:;
+  return rc;
 }
 ;
 
 --| The caller does not check if id is valid.
 --| This returns -1 if id is not valid, 0 if all existing locks are listed in owned_tokens whitespace-delimited list, 1 for soft 2 for hard lock.
-create function "CalDAV_DAV_IS_LOCKED" (inout id any, inout type char(1), in owned_tokens varchar) returns integer
+create function "CalDAV_DAV_IS_LOCKED" (
+  inout id any,
+  inout what char(1),
+  in owned_tokens varchar) returns integer
 {
-  -- dbg_obj_princ ('CalDAV_DAV_IS_LOCKED (', id, type, owned_tokens, ')');
-  return 0;
+  -- dbg_obj_princ ('CalDAV_DAV_IS_LOCKED (', id, what, owned_tokens, ')');
+  declare rc any;
+
+  rc := 0;
+  if (what = 'C')
+    goto _exit;
+
+  for (select E_DESCRIPTION from CAL.WA.EVENTS where E_DOMAIN_ID = id[3] and E_ID = id[4] and E_SUBJECT = 'LOCK') do
+  {
+    rc := 2;
+    if (not isnull (strstr (owned_tokens, E_DESCRIPTION)))
+      rc := 0;
+  }
+
+_exit:;
+  return rc;
 }
 ;
 
 --| The caller does not check if id is valid.
 --| This returns -1 if id is not valid, list of tuples (LOCK_TYPE, LOCK_SCOPE, LOCK_TOKEN, LOCK_TIMEOUT, LOCK_OWNER, LOCK_OWNER_INFO) otherwise.
-create function "CalDAV_DAV_LIST_LOCKS" (in id any, in type char(1), in recursive integer) returns any
+create function "CalDAV_DAV_LIST_LOCKS" (
+  in id any,
+  in what char(1),
+  in recursive integer) returns any
 {
-  -- dbg_obj_princ ('CalDAV_DAV_LIST_LOCKS" (', id, type, recursive);
+  -- dbg_obj_princ ('CalDAV_DAV_LIST_LOCKS" (', id, what, recursive);
   return vector ();
 }
 ;
@@ -1018,3 +1127,57 @@ create procedure CAL.WA.export_rdf_sqlx_for_det (
 }
 ;
 
+create procedure CAL.WA.install_caldav_vhosts()
+{
+    DB.DBA.VHOST_REMOVE (lpath=>'/principals/users/');
+    DB.DBA.VHOST_DEFINE (lpath=>'/principals/users/', ppath => '/!principals/users/', 
+        is_dav => 1, vsp_user => 'dba', opts => vector('noinherit', 1, 'exec_as_get', 1));
+}
+;
+
+CAL.WA.install_caldav_vhosts()
+;
+
+create procedure WS.WS."/!principals/users/" (inout path varchar, inout params any, inout lines any)
+{
+    declare user_id, inst_name varchar;
+    declare command varchar;
+    declare pos integer;
+    declare exit handler for sqlstate '*'
+    {
+        http_request_status ('HTTP/1.1 404 Not Found');
+        return;
+    };
+    whenever not found goto retr;
+    command := lines[0];
+    pos := strcasestr(command, '/principals/users/');
+    if (pos is null)  
+        return;
+    user_id := subseq(command, pos + 18);
+    pos := strcasestr(user_id, 'HTTP/1.1');
+    if (pos is not null)  
+        user_id := subseq(user_id, 0, pos);
+    user_id := trim(user_id, ' /');
+    pos := strchr(user_id, '@');
+    if (pos is not null)  
+        user_id := subseq(user_id, 0, pos);
+    inst_name := (select CalDAV__FIXNAME (C.WAI_NAME)
+        from SYS_USERS A,
+        WA_MEMBER B,
+        WA_INSTANCE C
+        where A.U_NAME = user_id
+        and B.WAM_USER = A.U_ID
+        and B.WAM_MEMBER_TYPE = 1
+        and B.WAM_INST = C.WAI_NAME
+        and C.WAI_TYPE_NAME = 'Calendar');
+    http_request_status ('HTTP/1.1 301 Moved Permanently');
+    http_header (sprintf ('Location: /DAV/home/%s/calendars/%s/\r\n', user_id, inst_name));
+    return;
+retr:
+    http_request_status ('HTTP/1.1 404 Not Found');
+    return;
+}
+;
+
+registry_set ('/!principals/users/', 'no_vsp_recompile')
+;

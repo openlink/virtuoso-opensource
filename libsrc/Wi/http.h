@@ -80,6 +80,7 @@ typedef struct ws_http_map_s
     int		hm_url_rewrite_keep_lpath;
     id_hash_t *	hm_cors;
     int 	hm_cors_restricted;
+    caddr_t     hm_expiration_fn;
   } ws_http_map_t;
 #endif
 
@@ -135,6 +136,7 @@ typedef struct ws_connection_s
     SSL_CTX *		ws_ssl_ctx;
 #endif
     char  		ws_options[HTTP_MAX_METHOD];
+    char		ws_limited;
   } ws_connection_t;
 
 #define WS_CHARSET(ws, qst) \
@@ -221,6 +223,7 @@ extern char * http_port;
 extern char * https_port;
 extern char * https_cert;
 extern char * https_key;
+extern char * https_extra;
 extern int32 https_client_verify;
 extern int32 https_client_verify_depth;
 extern char * https_client_verify_file;

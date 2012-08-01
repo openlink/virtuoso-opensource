@@ -2307,7 +2307,7 @@ create procedure ENEWS.WA.channel_delete(
 -------------------------------------------------------------------------------
 --
 create procedure ENEWS.WA.channel_feeds(
-  inout feed_id integer)
+  in feed_id integer)
 {
   return (select count(*) from ENEWS.WA.FEED_ITEM where EFI_FEED_ID = feed_id and coalesce(EFI_DELETE_FLAG, 0) = 0);
 }

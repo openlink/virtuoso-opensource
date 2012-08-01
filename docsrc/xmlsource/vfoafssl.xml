@@ -190,8 +190,8 @@ public data!
   <sect2 id="vfoafsslacl"><title>WebID Protocol ACLs</title>
     <para>You can <link linkend="sparqloauthendpointfoafssl">set WebID Protocol ACLs</link> from the Virtuoso Authentication Server UI. </para>
   </sect2>
-  <sect2 id="sparqloauthendpointfoafsslsparql"><title>SPARQL-SSL based Endpoint</title>
-    <para>See details how to <link linkend="sparqloauthendpointfoafssl">create and use a SPARQL-SSL based Endpoint</link>.</para>
+  <sect2 id="sparqloauthendpointfoafsslsparql"><title>SPARQL-WebID based Endpoint</title>
+    <para>See details how to <link linkend="sparqloauthendpointfoafssl">create and use a SPARQL-WebID based Endpoint</link>.</para>
   </sect2>
   <sect2 id="vfoafsslcacondt"><title>CA Keys Import using Conductor</title>
   <para>The Virtuoso Conductor allows easy import of user-level CA (Certificate Authority) Keys through

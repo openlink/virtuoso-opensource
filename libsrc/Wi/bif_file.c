@@ -1899,7 +1899,7 @@ bif_virtuoso_ini_item_value (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
   pszSection = bif_string_arg (qst, args, 0, "virtuoso_ini_item_value");
   pszItemName = bif_string_arg (qst, args, 1, "virtuoso_ini_item_value");
 
-  if (!_bif_pconfig || cfg_refresh (_bif_pconfig) != 0)
+  if (!_bif_pconfig || cfg_refresh (_bif_pconfig) < 0)
     sqlr_new_error ("39000", "FA055", "Could not open %s ", f_config_file);
 
   if (cfg_find (_bif_pconfig, pszSection, pszItemName) == 0)
@@ -6195,7 +6195,7 @@ signal_error:
 }
 
 
-#if defined(__APPLE__)
+#if defined(__APPLE__) || defined(__FreeBSD__)
 #define fseeko64 fseeko
 #define ftello64 ftello
 #define fopen64  fopen
@@ -6631,6 +6631,85 @@ end:
   return res;
 }
 
+caddr_t
+bif_get_plaintext_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  dk_session_t * ses = (dk_session_t *) bif_strses_arg (qst, args, 0, "get_plaintext_row");
+  char buf_on_stack[4096];
+  char *buf = buf_on_stack;
+  int buf_size = sizeof (buf_on_stack);
+  char *buf_end = buf + buf_size;
+  char *buf_tail = buf;
+  char *read_begin, *eol = NULL;
+  caddr_t res = NULL;
+  int buf_is_allocated = 0;
+  int buf_add_len, new_buf_size;
+  char *new_buf;
+  char c;
+  CATCH_READ_FAIL (ses)
+    {
+/* First, full scan of buffered in hope that the whole line is in session buffer already */
+      read_begin = ses->dks_in_buffer + ses->dks_in_read;
+      eol = (char *)memchr (read_begin, '\n', ses->dks_in_fill - ses->dks_in_read);
+      if (NULL != eol)
+        {
+          res = box_dv_short_nchars (read_begin, eol - read_begin);
+          ses->dks_in_read = eol + 1 - ses->dks_in_buffer;
+          goto res_done; /* see below */
+        }
+/* Now we know that the '\n' is not in buffer so an extra copying is unavoidable */
+  buf_add_len = ses->dks_in_fill - ses->dks_in_read;
+add_portion_to_buf:
+  if (buf_tail + buf_add_len + 1 > buf_end)
+    {
+      new_buf_size = (buf_end + buf_add_len + 1 - buf) * 2;
+      new_buf = (char *)dk_alloc (new_buf_size);
+      memcpy (new_buf, buf, buf_tail - buf);
+      buf_end = new_buf + new_buf_size;
+      buf_tail = new_buf + (buf_tail - buf);
+      if (buf_is_allocated)
+        dk_free (buf, buf_size);
+      buf = new_buf;
+      buf_size = new_buf_size;
+      buf_is_allocated = 1;
+    }
+  memcpy (buf_tail, ses->dks_in_buffer + ses->dks_in_read, buf_add_len);
+  buf_tail += buf_add_len;
+  ses->dks_in_read += buf_add_len;
+  if (NULL != eol)
+    {
+      res = box_dv_short_nchars (buf, (buf_tail - 1) - buf); /* -1 because eol is not included into the result */
+      goto res_done; /* see below */
+    }
+  session_buffered_read (ses, &c, 1);
+  if ('\n' == c)
+    {
+      res = box_dv_short_nchars (buf, buf_tail - buf); /* eol is not in the buffer */
+      goto res_done; /* see below */
+    }
+  (buf_tail++)[0] = c;
+  read_begin = ses->dks_in_buffer + ses->dks_in_read;
+  eol = (char *)memchr (read_begin, '\n', ses->dks_in_fill - ses->dks_in_read);
+  if (NULL != eol)
+    {
+      buf_add_len = (eol + 1) - read_begin;
+      goto add_portion_to_buf; /* see above */
+    }
+  buf_add_len = ses->dks_in_fill - ses->dks_in_read;
+  goto add_portion_to_buf; /* see above */
+res_done: ;
+    }
+  FAILED
+    {
+    }
+  END_READ_FAIL (ses);
+  if (buf_is_allocated)
+    dk_free (buf, buf_size);
+  if (NULL == res)
+    return NEW_DB_NULL;
+  return res;
+}
+
 void
 bif_file_init (void)
 {
@@ -6704,6 +6783,7 @@ bif_file_init (void)
   bif_define_typed ("file_open", bif_file_open, &bt_any);
   bif_define_typed ("gz_file_open", bif_gz_file_open, &bt_any);
   bif_define_typed ("get_csv_row", bif_get_csv_row, &bt_any);
+  bif_define_typed ("get_plaintext_row", bif_get_plaintext_row, &bt_any);
   bif_define_typed ("getenv", bif_getenv, &bt_varchar);
 #ifdef HAVE_BIF_GPF
   bif_define ("__gpf", bif_gpf);

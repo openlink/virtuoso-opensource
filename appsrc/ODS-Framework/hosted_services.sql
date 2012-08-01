@@ -487,11 +487,11 @@ drop procedure wa_member_upgrade
 
 create procedure wa_instance_upgrade() {
 
-  if (registry_get ('__wa_instance_upgrade') = 'done')
+  if (registry_get ('__wa_instance_upgrade') = 'done2')
     return;
 
   delete from DB.DBA.WA_INSTANCE where wai_name not in (select WAM_INST from  DB.DBA.WA_MEMBER);
-  registry_set ('__wa_instance_upgrade', 'done');
+  registry_set ('__wa_instance_upgrade', 'done2');
 }
 ;
 
@@ -592,11 +592,11 @@ create procedure wa_groups_acl_update () {
 wa_groups_acl_update()
 ;
 
-create procedure wa_acl_params (
+create procedure wa_aci_params (
   in params any)
 {
-  declare N, M integer;
-  declare aclNo, retValue, V any;
+  declare N, M, N2, M2 integer;
+  declare aclNo, aclNo2, retValue, V, V2, T any;
 
   M := 1;
   retValue := vector ();
@@ -605,22 +605,112 @@ create procedure wa_acl_params (
     if (params[N] like 's_fld_2_%')
     {
       aclNo := replace (params[N], 's_fld_2_', '');
+      if (aclNo = cast (atoi (replace (params[N], 's_fld_2_', '')) as varchar))
+      {
+        if (get_keyword ('s_fld_1_' || aclNo, params) = 'advanced')
+        {
+          M2 := 1;
+          T := vector ();
+          for (N2 := 0; N2 < length (params); N2 := N2 + 2)
+          {
+            if (params[N2] like (params[N] || '_fld_1_%'))
+            {
+              aclNo2 := replace (params[N2], params[N] || '_fld_1_', '');
+              V2 := vector (M2,
+                            trim (get_keyword (params[N] || '_fld_1_' || aclNo2, params)),
+                            trim (get_keyword (params[N] || '_fld_2_' || aclNo2, params)),
+                            trim (get_keyword (params[N] || '_fld_3_' || aclNo2, params)),
+                            trim (get_keyword (params[N] || '_fld_0_' || aclNo2, params, ''))
+                           );
+              T := vector_concat (T, vector (V2));
+              M2 := M2 + 1;
+            }
+          }
+          if (length (T) = 0)
+            goto _skip;
+        }
+        else
+        {
+          T := trim (params[N+1]);
+          if (is_empty_or_null (T))
+            goto _skip;
+        }
       V := vector (M,
-                   trim (params[N+1]),
-                   get_keyword ('s_fld_1_' || aclNo, params, 'person'),
+                     T,
+                     get_keyword ('s_fld_1_' || aclNo, params),
                    atoi (get_keyword ('s_fld_3_' || aclNo || '_r', params, '0')),
                    atoi (get_keyword ('s_fld_3_' || aclNo || '_w', params, '0')),
                    atoi (get_keyword ('s_fld_3_' || aclNo || '_x', params, '0'))
                   );
       retValue := vector_concat (retValue, vector (V));
       M := M + 1;
+      _skip:;
+      }
     }
   }
   return retValue;
 }
 ;
 
+create procedure wa_aci_lines (
+  in _acl any,
+  in _mode varchar := 'view',
+  in _execute varchar := 'false')
+{
+  declare N integer;
+
+  for (N := 0; N < length (_acl); N := N + 1)
+  {
+    if (_mode <> 'view')
+    {
+      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("s", null, {fld_1: {mode: 50, value: "%s", onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: "F1", tdCssText: "white-space: nowrap;", className: "_validate_ _webid_", value: %s, readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], execute: \'%s\', tdCssText: "width: 1%%; text-align: center;"}});});', _acl[N][2], ODS..obj2json (_acl[N][1]), case when _acl[N][2] = 'public' then 'true' else 'false' end, case when _acl[N][2] = 'public' then 'display: none;' else '' end, _acl[N][3], _acl[N][4], _acl[N][5], _execute));
+    } else {
+      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {mode: 50, value: "%s"}, fld_2: {mode: 51, value: %s}, fld_3: {mode: 52, value: [%d, %d, %d], execute: \'%s\', tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}, fld_4: {value: "Inherited"}});});', _acl[N][2], ODS..obj2json (_acl[N][1]), _acl[N][3], _acl[N][4], _acl[N][5], _execute));
+    }
+  }
+}
+;
+
 wa_exec_no_error_log(
+'create table WA_PRIVATE_GRAPHS
+ (
+   WAPG_GRAPH varchar,
+   WAPG_TYPE varchar,
+   WAPG_ID any,
+   WAPG_ID2 any,
+
+   primary key (WAPG_GRAPH, WAPG_TYPE, WAPG_ID, WAPG_ID2)
+ )'
+)
+;
+
+create procedure wa_private_graph_add (
+  in _graph varchar,
+  in _type varchar,
+  in _id any,
+  in _id2 any := 0)
+{
+  insert soft WA_PRIVATE_GRAPHS (WAPG_GRAPH, WAPG_TYPE, WAPG_ID, WAPG_ID2)
+    values (_graph, _type, _id, _id2);
+}
+;
+
+create procedure wa_private_graph_remove (
+  in _graph varchar,
+  in _type varchar,
+  in _id any,
+  in _id2 any := 0)
+{
+  delete
+    from WA_PRIVATE_GRAPHS
+   where WAPG_GRAPH = _graph
+     and WAPG_TYPE = _type
+     and WAPG_ID = _id
+     and WAPG_ID2 = _id2;
+}
+;
+
+wa_exec_no_error_log (
 'create table WA_INVITATIONS
  (
    WI_U_ID     int,		-- U_ID
@@ -3499,6 +3589,7 @@ create unique index WA_USER_CERTS_FINGERPRINT on WA_USER_CERTS (UC_FINGERPRINT)
 0);
 
 wa_add_col ('DB.DBA.WA_USER_CERTS', 'UC_TS', 'datetime');
+wa_exec_no_error_log ('ALTER TABLE DB.DBA.WA_USER_CERTS ADD FOREIGN KEY (UC_U_ID) REFERENCES DB.DBA.SYS_USERS (U_ID) ON DELETE CASCADE');
 
 create procedure WA_CERTS_UPGRADE ()
 {
@@ -3546,6 +3637,21 @@ create procedure WA_CERTS_UPGRADE ()
     return;
   update WA_USER_CERTS set UC_TS = ODS..cert_date_to_ts (get_certificate_info (4,UC_CERT));
   registry_set ('WA_CERTS_UPGRADE2', '1');
+}
+;
+
+WA_CERTS_UPGRADE ();
+
+create procedure WA_CERTS_UPGRADE ()
+{
+  if (registry_get ('WA_CERTS_UPGRADE3') = '1')
+    return;
+
+  delete
+    from WA_USER_CERTS
+   where UC_U_ID not in (select U_ID from SYS_USERS);
+
+  registry_set ('WA_CERTS_UPGRADE3', '1');
 }
 ;
 
@@ -3857,6 +3963,7 @@ wa_exec_no_error_log(
 )
 ;
 wa_add_col ('DB.DBA.WA_USER_RELATED_RES', 'WUR_P_IRI', 'varchar default \'http://www.w3.org/2000/01/rdf-schema#seeAlso\'');
+wa_exec_no_error ('alter table DB.DBA.WA_USER_RELATED_RES modify primary key (WUR_U_ID, WUR_SEEALSO_IRI, WUR_P_IRI)');
 wa_exec_no_error_log('create unique index WA_USER_RELATED_RES_IX1 on DB.DBA.WA_USER_RELATED_RES (WUR_ID)');
 
 
@@ -7781,11 +7888,16 @@ create procedure ods_define_common_vd (in _host varchar, in _lhost varchar, in i
   DB.DBA.VHOST_DEFINE (lhost=>_lhost, vhost=>_host, lpath=>'/mv', ppath=>'/DAV/VAD/wa/', is_dav=>isdav, def_page=>'mv.vsp', vsp_user=>'dba', sec=>_sec, auth_opts=>_opts);
   DB.DBA.VHOST_REMOVE (vhost=>_host, lhost=>_lhost, lpath=>'/mv/data');
   DB.DBA.VHOST_DEFINE (lhost=>_lhost, vhost=>_host, lpath=>'/mv/data', ppath=>'/DAV/VAD/wa/', is_dav=>isdav, def_page=>'', vsp_user=>'SPARQL', opts=>vector ('url_rewrite', 'ods_mv_rule_list_1'), sec=>_sec, auth_opts=>_opts);
-  DB.DBA.URLREWRITE_CREATE_RULELIST ( 'ods_mv_rule_list_1', 1, vector ('ods_mv_rule_1'));
+
+DB.DBA.URLREWRITE_CREATE_RULELIST ( 'ods_mv_rule_list_1', 1, vector ('ods_mv_rule_1', 'ods_mv_rule_2'));
 
   DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'ods_mv_rule_1', 1, '/mv/data/(.*)\x24', vector ('par_1'), 1,
       '/sparql?query='||ods_mv_desc()||'&format=%U',
-      vector ('par_1', '*accept*'), NULL, NULL, 2, 303, '');
+vector ('par_1', '*accept*'), NULL, '(.*)', 2, 303);
+
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'ods_mv_rule_2', 1, '/mv/data/(.*)\x24', vector ('par_1'), 1, 
+'/describe/?url=http://^{URIQADefaultHost}^/mv/data/%s', 
+vector ('par_1'), NULL, 'text/html', 2, 303);
 
 
   if (exists (select 1 from DB.DBA.HTTP_PATH where HP_HOST = _host and HP_LISTEN_HOST = _lhost and HP_LPATH = '/DAV'))

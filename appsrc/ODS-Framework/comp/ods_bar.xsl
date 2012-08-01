@@ -440,7 +440,7 @@ function showSSLLink()
                    url="--self.odsbar_ods_gpath||'help.vspx'"
                    xhtml_target="_blank"
                    is-local="1"/>
-                <span id="span_ssl_link">&nbsp;</span>
+                <span id="span_ssl_link">&amp;nbsp;</span>
             <script type="text/javascript">
               <![CDATA[
                 ODSInitArray.push(function(){OAT.Loader.load(["ajax", "json"], function(){showSSLLink();});});
@@ -588,7 +588,7 @@ function showSSLLink()
  </div><!-- HD-ODS-BAR -->
  </div>
 
- <p style="font-size: 1pt;margin: 0;padding: 0;" id="ods_bar_sep">&nbsp;</p>
+      <p style="font-size: 1pt;margin: 0;padding: 0;" id="ods_bar_sep">&amp;nbsp;</p>
 
 <script  type="text/javascript">
 <![CDATA[
@@ -1018,7 +1018,7 @@ if(coalesce(self.odsbar_app_type,get_keyword ('app_type', self.odsbar_inout_arr)
 <xsl:template match="vm:odsbar_navigation_level2">
         <ul id="ods_bar_second_lvl">
           <vm:odsbar_instances_menu/>
-      <li>&nbsp;</li>
+      <li>&amp;nbsp;</li>
         </ul>
 </xsl:template>
 

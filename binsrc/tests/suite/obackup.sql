@@ -45,40 +45,32 @@ delete from "Demo.demo.Order_Details";
 
 select count (*) from "Demo.demo.Categories";
 ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
-ECHO BOTH " Categoriess table has " $LAST[1] " entries\n";
+ECHO BOTH ": Categoriess table has " $LAST[1] " entries\n";
 
 select count (*) from "Demo.demo.Shippers";
 ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
-ECHO BOTH " Shippers table has " $LAST[1] " entries\n";
+ECHO BOTH ": Shippers table has " $LAST[1] " entries\n";
 
 select count (*) from "Demo.demo.Suppliers";
 ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
-ECHO BOTH " Suppliers table has " $LAST[1] " entries\n";
+ECHO BOTH ": Suppliers table has " $LAST[1] " entries\n";
 
 select count (*) from "Demo.demo.Products";
 ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
-ECHO BOTH " Products table has " $LAST[1] " entries\n";
+ECHO BOTH ": Products table has " $LAST[1] " entries\n";
 
 select count (*) from "Demo.demo.Customers";
 ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
-ECHO BOTH " Customers table has " $LAST[1] " entries\n";
+ECHO BOTH ": Customers table has " $LAST[1] " entries\n";
 
 select count (*) from "Demo.demo.Employees";
 ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
-ECHO BOTH " Employees table has " $LAST[1] " entries\n";
+ECHO BOTH ": Employees table has " $LAST[1] " entries\n";
 
 select count (*) from "Demo.demo.Orders";
 ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
-ECHO BOTH " Orders table has " $LAST[1] " entries\n";
+ECHO BOTH ": Orders table has " $LAST[1] " entries\n";
 
 select count (*) from "Demo.demo.Order_Details";
 ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
-ECHO BOTH " Ordre_Details table has " $LAST[1] " entries\n";
-
-
-
-
-
-
-
-
+ECHO BOTH ": Ordre_Details table has " $LAST[1] " entries\n";

@@ -1,7 +1,0 @@
-dbpaths
-*.la
-virtodbc32.*
-libvirt.*
-virtodbc32_r.*
-libvirt_r.*
-keyring.ini

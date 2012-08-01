@@ -83,5 +83,8 @@ html:
 	  <li>signature: SHA1 digest over returning URL</li>
 	</ul>
     </div>
+    <div>
+      <a href="http://ods.openlinksw.com/wiki/ODS/ODSWebIDIdpProxy">Help</a>
+    </div>
   </body>
 </html>

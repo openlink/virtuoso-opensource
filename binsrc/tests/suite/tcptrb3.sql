@@ -18,5 +18,4 @@ checkpoint &
 sleep 3;
 commit work;
 
-echo both "cpt rb with multiple registered, on and beside rb'd insert\n";
-
+ECHO BOTH "cpt rb with multiple registered, on and beside rb'd insert\n";

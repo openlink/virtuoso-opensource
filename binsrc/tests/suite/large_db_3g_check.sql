@@ -37,4 +37,3 @@ ECHO BOTH ": Travers all trees\n";
 select check_sum();
 ECHO BOTH $IF $EQU $LAST[1] "373" "PASSED" "***FAILED";
 ECHO BOTH " CHECK SUM:" $LAST[1] "\n"
-

@@ -1896,7 +1896,9 @@ xmla_cursor_stmt_change (in _props any, inout _stmt varchar)
   _left_str_u := ucase (_left_str, 6);
 
   if (_left_str_u = 'SELECT')
-    _stmt := replace (_stmt, _left_str, new_stmpt, 1);
+    _stmt := new_stmpt || ' * FROM (' || _stmt || ') __xml_dt0' ;
+
+    --_stmt := replace (_stmt, _left_str, new_stmpt, 1);
 
 }
 ;

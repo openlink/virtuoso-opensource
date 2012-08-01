@@ -231,7 +231,7 @@
                           };
 
                           update WA_INSTANCE
-                             set WAI_MEMBER_MODEL = self.imodel1.ufl_value,
+                             set WAI_MEMBER_MODEL = atoi (self.imodel1.ufl_value),
                                  WAI_IS_PUBLIC = self.is_public,
                                  WAI_MEMBERS_VISIBLE = self.is_visible,
                                  WAI_INST = inst,

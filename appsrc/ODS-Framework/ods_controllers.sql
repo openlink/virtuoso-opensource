@@ -175,6 +175,9 @@ create procedure normalize_url_like_browser (in x varchar)
 }
 ;
 
+--!
+-- FIXME: get_ses is only used in Gallery!
+--/
 create procedure get_ses (in uname varchar)
 {
   declare params, lines any;
@@ -195,6 +198,9 @@ create procedure get_ses (in uname varchar)
 }
 ;
 
+--!
+-- FIXME: close_ses is only used in Gallery!
+--/
 create procedure close_ses (in sid1 varchar)
 {
   declare params, lines any;
@@ -270,8 +276,10 @@ create procedure ods_xml_item (
   in pTag varchar,
   in pValue any)
 {
+  -- sprintf %V cannot handle UTF-8. We need to convert to wide chars first. Otherwise we end up with double-endoded characters.
+  -- if the input string is already wide nothing is done.
   if (not DB.DBA.is_empty_or_null (pValue))
-    http (sprintf ('<%s>%V</%s>', pTag, cast (pValue as varchar), pTag));
+    http (sprintf ('<%s>%V</%s>', pTag,  charset_recode (cast (pValue as varchar), 'UTF-8', '_WIDE_'), pTag));
 }
 ;
 
@@ -399,6 +407,10 @@ create procedure obj2xml (
   else if (isstring (o))
   {
     retValue := sprintf ('%V', o);
+  }
+  else if (__tag (o) = 211)
+  {
+    retValue := datestring (o);
   }
   else if (isJsonObject (o))
   {
@@ -1348,8 +1360,38 @@ create procedure ODS.ODS_API."address.geoData" (
 ;
 
 -- User account activity
-
-create procedure ODS.ODS_API."user.checkAvalability" (
+--!
+-- \brief Check if a certain user account name is available.
+--
+-- Before creating an account via user.register() this method can be used
+-- to check the availability of the user name and the email address.
+--
+-- Although both parameters are marked as optional reliable results are only
+-- obtained if both parameters are given.
+--
+-- \param name The user account name to check.
+-- \param email The corresponding email address.
+--
+-- \return An error code stating the success of the command execution as detailed in \ref ods_response_format_result_code.
+-- If the account name and email address are available \p 1 is returned. Otherwise an error code and a human readable message
+-- indicating the problem are returned.
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i http://demo.openlinksw.com/ods/api/user.checkAvalability?name=demo2&email=demo2@hello.com
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/06.01.3127 (Linux) x86_64-unknown-linux-gnu
+-- Connection: Keep-Alive
+-- Date: Tue, 17 Apr 2012 15:44:46 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="UTF-8"
+-- Content-Length: 57
+--
+-- <result><code>1</code><message>Success</message></result>
+-- \endverbatim
+--/
+create procedure ODS.ODS_API."user.checkAvailability" (
   in name varchar := null,
 	in email varchar := null) __soap_http 'text/xml'
 {
@@ -1359,7 +1401,7 @@ create procedure ODS.ODS_API."user.checkAvalability" (
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
   if (name is null or length (name) < 1 or length (name) > 20)
-    signal ('23023', 'Login name cannot be empty or longer then 20 chars');
+    signal ('23023', 'Login name cannot be empty or longer than 20 chars');
 
   if (regexp_match ('^[A-Za-z0-9_.@-]+\$', name) is null)
     signal ('23023', 'The login name contains invalid characters');
@@ -1380,10 +1422,59 @@ create procedure ODS.ODS_API."user.checkAvalability" (
 }
 ;
 
---! User registration
---! name: desired user account name
---! password: desired password
---! email: user's e-mail address
+--!
+-- \deprecated Use user.checkAvailability() instead.
+--/
+create procedure ODS.ODS_API."user.checkAvalability" (
+  in name varchar := null,
+    in email varchar := null) __soap_http 'text/xml'
+{
+  return ODS.ODS_API."user.checkAvalability"(name, email);
+}
+;
+
+--!
+-- \brief Register a new user account.
+--
+-- \param name The user name for the new account. Except for \p mode \p 4 and \p 5 (Twitter and LinkedIn) this is mandatory.
+-- \param password The password for the new account. Only used if \p mode is \p 0. Otherwise authentication is done through the specified service without the need
+-- for a specific ODS password.
+-- \param email The email address for the new account. Except for \p mode \p 2 (Facebook) this is mandatory.
+-- \param mode ODS supports different methods of authentication as detailed in \ref ods_authentication. For user registration ODS also supports several methods:
+-- - \p 0 - Default registration via username and password. This is the default.
+-- - \p 1 - Registration via OpenID.
+-- - \p 2 - Registration via Facebook.
+-- - \p 3 - Registration via FOAF+SSL/WebID.
+-- - \p 4 - Registration via Twitter.
+-- - \p 5 - Registration via LinkedIn.
+-- \param data Additional registration details. The format depends on the registration \p mode.
+-- - \p mode = \p 0 (username/password) - \p data is unused.
+-- - \p mode = \p 1 (OpenID) - A JSON stream of profile details. At least \p openid_url and \p openid_server need to be provided. FIXME: why not simply use the OpenID and do the rest internally somehow?
+-- - \p mode = \p 2 (Facebook) - A JSON stream of profile data. At least \p uid - the Facebook UID, needs to be specified.
+-- - \p mode = \p 3 (FOAF+SSL/WebID) - A JSON stream of details. FIXME: why not simply fetch the FOAF via the WebID instead of delegating that work to the client?
+-- - \p mode = \p 4 (Twitter) - An XML stream of user information as for example returned by Twitter's users/lookup API call. FIXME: why not simply use the Twitter ID and do the rest internally?
+-- - \p mode = \p 5 (LinkedIn) - An XML stream of user information from LinkedIn. At least \p /person/public-profile-url needs to be provided. FIXME: why not simply use the linkedin profile URL?
+--
+-- \return On success a new session id is returned which can be used as described in \ref ods_authentication_session_id.
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i "http://demo.openlinksw.com/ods/api/user.register?name=test123&password=1&email=test@yahoo.com"
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/05.12.3041 (Solaris) x86_64-sun-solaris2.10-64  VDB
+-- Connection: Keep-Alive
+-- Date: Mon, 28 Dec 2009 22:18:59 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="ISO-8859-1"
+-- Content-Length: 59
+--
+-- <result>
+--   <code>191</code>
+--   <message>Success</message>
+-- </result>
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."user.register" (
   in name varchar := null,
 	in "password" varchar := null,
@@ -1440,7 +1531,7 @@ create procedure ODS.ODS_API."user.register" (
     "password" := uuid ();
 	}
   if (name is null or length (name) < 1 or length (name) > 20)
-    signal ('23023', 'Login name cannot be empty or longer then 20 chars');
+    signal ('23023', 'Login name cannot be empty or longer than 20 chars');
 
   if (regexp_match ('^[A-Za-z0-9_.@-]+\$', name) is null)
     signal ('23023', 'The login name contains invalid characters');
@@ -1643,8 +1734,51 @@ create procedure ODS.ODS_API.linkedinVerify (
 }
 ;
 
---! Authenticate ODS account using name & password hash
---! Will estabilish a session in VSPX_SESSION table
+--!
+-- \brief Start a new user session.
+--
+-- This method allows to authenticate with one of the supported authentication
+-- methods to create a new user session. The returned session id can be used for
+-- further method calls instead of password hash or OAuth authentication.
+--
+-- ODS supports several methods to authenticate:
+-- - Standard user name and password hash authentication as detailed in \ref ods_authentication_password_hash.
+-- - Authentication via a Facebook UID. The ID needs to be added to the profile of the user for this method to work. FIXME: Does this require the user to be logged into Facebook?
+-- - Authentication via OpenID. FIXME
+-- - Authentication via OAuth: ODS allows to authenticate with Twitter or LinkedIn IDs through OAuth.
+--
+-- A session will timeout after being unused for half an hour.
+--
+-- \param user_name The user name of the account created via user.register(). If specified \p password_hash also needs to be provided.
+-- \param password_hash The password hash as explained in \ref ods_authentication_password_hash. Mandatory if \p user_name is specified.
+-- \param facebookUID The Facebook UID. This is the numerical id contained in the profile URL. The facebook UID needs to be registered
+-- with an account. Every other parameter should be \p null.
+-- \param openIdUrl
+-- \param openIdIdentity
+-- \param oauthMode Can be one of \p twitter or \p linkedin to either login through Twitter or LinkedIn. If specified \p oauthSid, \p oauthVerifier, and \p oauthToken also need
+-- to be specified.
+-- \param oauthSid The OAuth session ID. See \ref ods_authentication_oauth for details.
+-- \param oauthVerifier The OAuth Verifier. See \ref ods_authentication_oauth for details.
+-- \param oauthToken The OAuth token. See \ref ods_authentication_oauth for details.
+--
+-- \return The session id of the newly created session. This session id can then be
+-- used to authenticate other method calls as explained in \ref ods_authentication_session_id.
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i "http://demo.openlinksw.com/ods/api/user.authenticate?user_name=demo&password_hash=49e473da03fbc286f06b5f0bf1f3301b5e4a67fd"
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/06.01.3127 (Linux) x86_64-unknown-linux-gnu
+-- Connection: Keep-Alive
+-- Date: Tue, 17 Apr 2012 09:31:34 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="UTF-8"
+-- Content-Length: 114
+--
+-- <root><sid>1de236f5da2f32d92e8c0cce5053a96e</sid><userName>demo</userName><userId>127</userId><dba>0</dba></root>
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."user.authenticate" (
   in user_name varchar := null,
 	in password_hash varchar := null,
@@ -1775,6 +1909,20 @@ create procedure ODS.ODS_API."user.authenticate" (
 }
 ;
 
+--!
+-- \deprecated Use user.authenticate() instead.
+--
+-- \brief Start a new user session.
+--
+-- Calling this method is similar to calling user.authenticate() with the password hash
+-- method.
+--
+-- \param user_name The user name of the account created via user.register().
+-- \param password_hash The password hash as explained in \ref ods_authentication_password_hash.
+--
+-- \return The session id of the newly created session. This session id can then be
+-- used to authenticate other method calls as explained in \ref ods_authentication_session_id.
+--/
 create procedure ODS.ODS_API."user.login" (
   in user_name varchar,
 	in password_hash varchar) __soap_http 'text/plain'
@@ -1783,6 +1931,15 @@ create procedure ODS.ODS_API."user.login" (
 }
 ;
 
+--!
+-- \brief Validate user authentication credentials.
+--
+-- This method can be used to check user authentication credentials as detailed in
+-- \ref ods_authentication.
+--
+-- \return An error code stating the success of the command execution as detailed in \ref ods_response_format_result_code.
+-- If the authentication credentials are valid \p 1 is returned.
+--/
 create procedure ODS.ODS_API."user.validate" () __soap_http 'text/xml'
 {
   declare uname varchar;
@@ -1799,6 +1956,14 @@ create procedure ODS.ODS_API."user.validate" () __soap_http 'text/xml'
 }
 ;
 
+--!
+-- \brief End a user session.
+--
+-- This method ends a user session created via user.login() or user.authenticate().
+-- The user session needs to be specified via \ref ods_authentication_session_id.
+--
+-- \return An error code stating the success of the command execution as detailed in \ref ods_response_format_result_code.
+--/
 create procedure ODS.ODS_API."user.logout" () __soap_http 'text/plain'
 {
   declare uname varchar;
@@ -1824,6 +1989,108 @@ create procedure ODS.ODS_API."user.logout" () __soap_http 'text/plain'
 }
 ;
 
+--!
+-- \brief Change user profile information.
+--
+-- This method allows to update any key/value pair in the user profile.
+--
+-- \param user_info A comma-separated list of \p key=value pairs identifying
+-- details in the user profile of the authenticated user. The following keys are supported:
+-- - \p WAUI_TITLE
+-- - \p WAUI_FIRST_NAME
+-- - \p WAUI_LAST_NAME
+-- - \p WAUI_FULL_NAME
+-- - \p WAUI_GENDER
+-- - \p WAUI_BIRTHDAY
+-- - \p WAUI_WEBPAGE
+-- - \p WAUI_MSIGNATURE
+-- - \p WAUI_ICQ
+-- - \p WAUI_SKYPE
+-- - \p WAUI_AIM
+-- - \p WAUI_YAHOO
+-- - \p WAUI_MSN
+-- - \p WAUI_HADDRESS1
+-- - \p WAUI_HADDRESS2
+-- - \p WAUI_HCODE
+-- - \p WAUI_HCITY
+-- - \p WAUI_HSTATE
+-- - \p WAUI_HCOUNTRY
+-- - \p WAUI_HTZONE
+-- - \p WAUI_HPHONE
+-- - \p WAUI_HPHONE_EXT
+-- - \p WAUI_HMOBILE
+-- - \p WAUI_BINDUSTRY
+-- - \p WAUI_BORG
+-- - \p WAUI_BJOB
+-- - \p WAUI_BADDRESS1
+-- - \p WAUI_BADDRESS2
+-- - \p WAUI_BCODE
+-- - \p WAUI_BCITY
+-- - \p WAUI_BSTATE
+-- - \p WAUI_BCOUNTRY
+-- - \p WAUI_BTZONE
+-- - \p WAUI_BLAT
+-- - \p WAUI_BLNG
+-- - \p WAUI_BPHONE
+-- - \p WAUI_BPHONE_EXT
+-- - \p WAUI_BMOBILE
+-- - \p WAUI_BREGNO
+-- - \p WAUI_BCAREER
+-- - \p WAUI_BEMPTOTAL
+-- - \p WAUI_BVENDOR
+-- - \p WAUI_BSERVICE
+-- - \p WAUI_BOTHER
+-- - \p WAUI_BNETWORK
+-- - \p WAUI_SUMMARY
+-- - \p WAUI_RESUME
+-- - \p WAUI_SEC_QUESTION
+-- - \p WAUI_SEC_ANSWER
+-- - \p WAUI_PHOTO_URL
+-- - \p WAUI_TEMPLATE
+-- - \p WAUI_LAT
+-- - \p WAUI_LNG
+-- - \p WAUI_LATLNG_VISIBLE
+-- - \p WAUI_USER_SEARCHABLE
+-- - \p WAUI_AUDIO_CLIP
+-- - \p WAUI_FAVORITE_BOOKS
+-- - \p WAUI_FAVORITE_MUSIC
+-- - \p WAUI_FAVORITE_MOVIES
+-- - \p WAUI_SEARCHABLE
+-- - \p WAUI_SHOWACTIVE
+-- - \p WAUI_LATLNG_HBDEF
+-- - \p WAUI_SITE_NAME
+-- - \p WAUI_INTERESTS
+-- - \p WAUI_INTEREST_TOPICS
+-- - \p WAUI_BORG_HOMEPAGE
+-- - \p WAUI_OPENID_URL
+-- - \p WAUI_OPENID_SERVER
+-- - \p WAUI_FACEBOOK_ID
+-- - \p WAUI_IS_ORG
+-- - \p WAUI_APP_ENABLE
+-- - \p WAUI_SPB_ENABLE
+-- - \p WAUI_NICK
+-- - \p WAUI_BICQ
+-- - \p WAUI_BSKYPE
+-- - \p WAUI_BAIM
+-- - \p WAUI_BYAHOO
+-- - \p WAUI_BMSN
+-- - \p WAUI_MESSAGING
+-- - \p WAUI_BMESSAGING
+-- - \p WAUI_CERT_LOGIN
+-- - \p WAUI_CERT_FINGERPRINT
+-- - \p WAUI_CERT
+-- - \p WAUI_ACL - A serialized array of ACLs which is nearly impossible to create as a client since the serialization requires an internal Virtuoso function called serialize().
+-- - \p WAUI_SALMON_KEY
+-- - \p WAUI_SETTINGS
+-- - \p WAUI_JOIN_DATE
+-- - \p WAUI_FOAF
+--
+-- \reqb{The request body should contain a \ref ods_user_profile_resource.}
+--
+-- \return An error code stating the success of the command execution as detailed in \ref ods_response_format_result_code.
+--
+-- \sa user.update.fields()
+--/
 create procedure ODS.ODS_API."user.update" (
 	in user_info any) __soap_http 'text/xml'
 {
@@ -1866,6 +2133,95 @@ create procedure ODS.ODS_API."user.update.field" (
 }
 ;
 
+--!
+-- \brief Change user profile information.
+--
+-- This method allows to update details in the user profile. Any parameter can be omitted which will
+-- result in its value not being touched.
+--
+-- \param nickName The user's nick name. Typically a short name used in chats and such.
+-- \param mail The user's email address.
+-- \param title The user's title. Can be something like "Mr." or "Ms."
+-- \param firstName The user's first name.
+-- \param lastName The user's last name.
+-- \param fullName The user's full name including any middle names.
+-- \param gender The user's gender. Can be either \p "male" or \p "female".
+-- \param birthday The user's birthday. The date format is \p YYYY.MM.DD.
+-- \param homepage The user's homepage.
+-- \param mailSignature The user's mail signature to be attached to each mail written.
+-- \param sumary A piece of text giving a summary of the user. This can be anything. The summary is subject to privacy settings as detailed in \ref ods_user_privacy.
+-- \param appSetting
+-- \param spbEnable
+-- \param Search
+-- \param showActive
+-- \param webIDs
+-- \param interests
+-- \param topicInterests
+-- \param icq
+-- \param skype
+-- \param yahoo
+-- \param aim
+-- \param msn
+-- \param messaging
+-- \param defaultMapLocation
+-- \param homeCountry
+-- \param homeState
+-- \param homeCity
+-- \param homeCode
+-- \param homeAddress1
+-- \param homeAddress2
+-- \param homeTimezone
+-- \param homeLatitude
+-- \param homeLongitude
+-- \param homePhone
+-- \param homePhoneExt
+-- \param homeMobile
+-- \param businessIndustry
+-- \param businessOrganization
+-- \param businessHomePage
+-- \param businessJob
+-- \param businessRegNo
+-- \param businessCareer
+-- \param businessEmployees
+-- \param businessVendor
+-- \param businessService
+-- \param businessOther
+-- \param businessNetwork
+-- \param businessResume
+-- \param businessCountry
+-- \param businessState
+-- \param businessCity
+-- \param businessCode
+-- \param businessAddress1
+-- \param businessAddress2
+-- \param businessTimezone
+-- \param businessLatitude
+-- \param businessLongitude
+-- \param businessPhone
+-- \param businessPhoneExt
+-- \param businessMobile
+-- \param businessIcq
+-- \param businessSkype
+-- \param businessYahoo
+-- \param businessAim
+-- \param businessMsn
+-- \param businessMessaging
+-- \param securityOpenID
+-- \param securityFacebookID
+-- \param securitySecretQuestion
+-- \param securitySecretAnswer
+-- \param securitySiocLimit
+-- \param photo
+-- \param photoContent
+-- \param audio
+-- \param audioContent
+-- \param mode
+-- \param onlineAccounts
+--
+-- \return An error code stating the success of the command execution as detailed in \ref ods_response_format_result_code.
+--
+-- \sa user.update()
+--/
 create procedure ODS.ODS_API."user.update.fields" (
   in nickName varchar := null,
   in mail varchar := null,
@@ -2081,6 +2437,7 @@ create procedure ODS.ODS_API."user.update.fields" (
 }
 ;
 
+-- FIXME: this does not seem to be complete
 create procedure ODS.ODS_API."user.acl.array" ()
 {
   return vector (
@@ -2140,6 +2497,35 @@ create procedure ODS.ODS_API."user.acl.array" ()
 }
 ;
 
+--!
+-- \brief Get privacy information about user profile details.
+--
+-- Almost each detail in a user's profile can have its individual privacy setting as detailed in
+-- \ref ods_user_privacy. This method returns the currently configured privacy settings for the
+-- authenticated user.
+--
+-- \return An XML stream containing one tag for each user profile detail with the following content:
+-- - \p 1 - The detail is public
+-- - \p 2 - The detail is controlled by ACLs. FIXME: see also somewhere
+-- - \p 3 - The detail is private
+--
+-- \sa user.acl.update()
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i "http://demo.openlinksw.com/ods/api/user.acl.info?user_name=demo&password_hash=49e473da03fbf295f06b5f0bf1f3301b5e4a67fc"
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/06.01.3127 (Linux) x86_64-unknown-linux-gnu
+-- Connection: Keep-Alive
+-- Date: Wed, 18 Apr 2012 06:30:48 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="UTF-8"
+-- Content-Length: 1421
+--
+-- <acl><title>1</title><firstName>1</firstName><lastName>1</lastName><fullName>1</fullName><mail>1</mail><gender>1</gender><birthday>2</birthday><homepage>1</homepage><webIDs>1</webIDs><mailSignature>3</mailSignature><icq>1</icq><skype>1</skype><yahoo>1</yahoo><aim>1</aim><msn>1</msn><homeAddress1>1</homeAddress1><homeCountry>1</homeCountry><homeTimezone>1</homeTimezone><homePhone>1</homePhone><businessIndustry>1</businessIndustry><businessOrganization>1</businessOrganization><businessJob>1</businessJob><businessAddress1>1</businessAddress1><businessCountry>1</businessCountry><businessTimezone>1</businessTimezone><businessPhone>1</businessPhone><businessRegNo>1</businessRegNo><businessCareer>1</businessCareer><businessEmployees>1</businessEmployees><businessVendor>1</businessVendor><businessService>1</businessService><businessOther>1</businessOther><businessNetwork>1</businessNetwork><summary>1</summary><businessResume>1</businessResume><photo>1</photo><homeLatitude>1</homeLatitude><audio>1</audio><businessLatitude>1</businessLatitude><interests>1</interests><topicInterests>1</topicInterests><businessIcq>1</businessIcq><businessSkype>1</businessSkype><businessYahoo>1</businessYahoo><businessAim>1</businessAim><businessMsn>1</businessMsn><homeCode>3</homeCode><homeCity>3</homeCity><homeState>3</homeState><businessCode>3</businessCode><businessCity>3</businessCity><businessState>3</businessState></acl>
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."user.acl.info" () __soap_http 'text/xml'
 {
   declare uname varchar;
@@ -2167,6 +2553,93 @@ create procedure ODS.ODS_API."user.acl.info" () __soap_http 'text/xml'
 }
 ;
 
+--!
+-- \brief Change the user profile detail privacy settings.
+--
+-- Almost each detail in a user's profile can have its individual privacy setting as detailed in
+-- \ref ods_user_privacy. This method allows to change these privacy settings.
+--
+-- The following user detail identifier are supported:
+-- - \p title
+-- - \p firstName
+-- - \p lastName
+-- - \p fullName
+-- - \p mail
+-- - \p gender
+-- - \p birthday
+-- - \p homepage
+-- - \p webIDs
+-- - \p mailSignature
+-- - \p icq
+-- - \p skype
+-- - \p yahoo
+-- - \p aim
+-- - \p msn
+-- - \p homeAddress1
+-- - \p homeCountry
+-- - \p homeTimezone
+-- - \p homePhone
+-- - \p businessIndustry
+-- - \p businessOrganization
+-- - \p businessJob
+-- - \p businessAddress1
+-- - \p businessCountry
+-- - \p businessTimezone
+-- - \p businessPhone
+-- - \p businessRegNo
+-- - \p businessCareer
+-- - \p businessEmployees
+-- - \p businessVendor
+-- - \p businessService
+-- - \p businessOther
+-- - \p businessNetwork
+-- - \p summary
+-- - \p businessResume
+-- - \p photo
+-- - \p homeLatitude
+-- - \p audio
+-- - \p businessLatitude
+-- - \p interests
+-- - \p topicInterests
+-- - \p businessIcq
+-- - \p businessSkype
+-- - \p businessYahoo
+-- - \p businessAim
+-- - \p businessMsn
+-- - \p homeCode
+-- - \p homeCity
+-- - \p homeState
+-- - \p businessCode
+-- - \p businessCity
+-- - \p businessState
+--
+-- \param acls A list of URL-parameter style key/value pairs where each key corresponds to one user profile
+-- detail and each value refers to its visibility. A simple example would be \p "gender=1&birthday=3&photo=1"
+-- which would set the gender to be public, the birthday to be controlled by fine grained ACLs, and
+-- the photo to be public, too. The visibility value can be one of the following:
+-- - \p 1 - The detail is public
+-- - \p 2 - The detail is controlled by ACLs. FIXME: see also somewhere
+-- - \p 3 - The detail is private
+--
+-- \return An error code stating the success of the command execution as detailed in \ref ods_response_format_result_code.
+--
+-- \sa user.acl.info()
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i "http://demo.openlinksw.com/ods/api/user.acl.update?user_name=demo&password_hash=49e473da03fbd296f05b5f0bf1f3301b5e4a67fc&acls=gender%3D1%26birthday%3D3%26photo%3D1"
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/06.01.3127 (Linux) x86_64-unknown-linux-gnu
+-- Connection: Keep-Alive
+-- Date: Wed, 18 Apr 2012 09:07:25 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="UTF-8"
+-- Content-Length: 57
+--
+-- <result><code>1</code><message>Success</message></result>
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."user.acl.update" (
   in acls varchar) __soap_http 'text/xml'
 {
@@ -2198,6 +2671,35 @@ create procedure ODS.ODS_API."user.acl.update" (
 }
 ;
 
+--!
+-- \brief Change the password of a user account.
+--
+-- This method allows to change the password on a user account. Since passwords
+-- are transmitted in plain text it is recommended to use an encrypted connection.
+--
+-- \param old_password The old password in plain text.
+-- \param new_password The new password in plain text.
+--
+-- \return An error code stating the success of the command execution as detailed in \ref ods_response_format_result_code.
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i "http://demo.openlinksw.com/ods/api/user.password_change?user_name=test123&password_hash=4674a4b44e89011cfa581ff90967ebc52fd1080d&old_password=1&new_password=2"
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/05.12.3041 (Solaris) x86_64-sun-solaris2.10-64  VDB
+-- Connection: Keep-Alive
+-- Date: Mon, 28 Dec 2009 22:46:56 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="ISO-8859-1"
+-- Content-Length: 57
+--
+-- <result>
+--   <code>1</code>
+--   <message>Success</message>
+-- </result>
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."user.password_change" (
   in old_password varchar,
 	in new_password varchar) __soap_http 'text/xml'
@@ -2235,6 +2737,24 @@ ret:
 }
 ;
 
+--!
+-- \deprecated Use user.update() instead.
+--
+-- \brief Upload binary user data.
+--
+-- The ODS user profile contains an optional user photo and user audio file. These can be
+-- uploaded through this method.
+--
+-- For this purpose an HTTP POST needs to be performed with the following paramters:
+-- - \c pf_photo - The file name of the photo.
+-- - \c pf_photoContent - The content of the photo file (jpg, gif, or png)
+-- - \c pf_audio - The file name of the audio.
+-- - \c pf_audioContent - The content of the audio file.
+--
+-- \return \return An error code stating the success of the command execution as detailed in \ref ods_response_format_result_code.
+--
+-- \sa user.update(), user.update.fields()
+--/
 create procedure ODS.ODS_API."user.upload" () __soap_http 'text/xml'
 {
   declare params any;
@@ -2476,6 +2996,33 @@ create procedure ODS.ODS_API."user.get" (
 }
 ;
 
+--!
+-- \brief Fetch basic information about a user.
+--
+-- This method allows to fetch details about an ODS user. If no user name is given the authenticated
+-- user is returned. This means that user.info() can be used to get user information for an authentication
+-- session (see also \ref ods_authentication_session_id).
+--
+-- \param name The optional ODS user name. Defaults to the authenticated user.
+-- \param short An optional boolean setting. If \p 1 only the most basic information is returned.
+--
+-- \return An XML stream encoding the user details such as uid, name, or the personal URL.
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i "http://demo.openlinksw.com/ods/api/user.info?sid=07e6e4b8da77691c729e6c95e3016ac8&short=1"
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/06.01.3127 (Linux) x86_64-unknown-linux-gnu
+-- Connection: Keep-Alive
+-- Date: Sat, 21 Apr 2012 09:52:46 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="UTF-8"
+-- Content-Length: 157
+--
+-- <user><uid>127</uid><iri>http://demo.openlinksw.com/dataspace/person/demo#this</iri><name>demo</name><nickName>demo</nickName><fullName>Demo User
+-- </fullName></user>
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."user.info" (
   in name varchar := null,
   in "short" varchar := '0') __soap_http 'text/xml'
@@ -2498,7 +3045,7 @@ create procedure ODS.ODS_API."user.info" (
     name := uname;
 
   if (not isnull (uname) and (uname <> name))
-    return ods_serialize_sql_error ('37000', 'Bad  user''s name paramater');
+    return ods_serialize_sql_error ('37000', 'Bad  user''s name parameter');
 
   if (not exists (select 1 from DB.DBA.SYS_USERS where U_NAME = name))
     return ods_serialize_sql_error ('37000', 'The item is not found');
@@ -2630,6 +3177,17 @@ create procedure ODS.ODS_API."user.info" (
 }
 ;
 
+--!
+-- \brief Fetch details about an ODS user based on their WebID.
+--
+-- This method returns public information about an ODS user based on their specific
+-- ODS WebID.
+--
+-- \param webID The WebID of the user to lookup.
+-- \param output The output type. Can be either \p xml or \p json. Defaults to \p xml.
+--
+-- \return The details of the requested user serialized as an xml stream.s
+--/
 create procedure ODS.ODS_API."user.info.webID" (
   in webID varchar,
   in output varchar := 'xml') __soap_http 'text/xml'
@@ -2861,7 +3419,46 @@ create procedure ODS.ODS_API."user.search" (
 
 -- Social Network activity
 
-create procedure ODS.ODS_API."user.invite" (
+--!
+-- \brief Invite someone to join the user's social network.
+--
+-- ODS allows users to be connected in a social network. This requires users to send invitations
+-- to other users. The other users then need to either approve or reject that invitation.
+--
+-- \param friends_email The email address the invitation should be sent to. This can either be
+-- an already registered user or someone that is also invited to create an account with the instance of ODS.
+-- \param custom_message An optional custom message to be sent as part of the autogenerated one. The auto-generated
+-- message is based on a template stored in the DAV file system at \p "/DAV/VAD/wa/tmpl/SN_INV_TEMPLATE" or in the
+-- web server's file structure at \p "wa/tmpl/SN_INV_TEMPLATE". The default template can be seen below.
+-- \verbatim
+-- %invitation%
+--
+-- I've created my own place on %app% and I'd like you to connect to me so we can stay in touch.
+-- You can view my blog, my photos, my news and wiki.
+--
+-- With %app%, you can create your own personal page and blog of your own,
+-- which will can be linked to mine.
+--
+-- To join my network please visit %url%
+--
+-- - %user%
+--
+-- --------------------------------------------------------------------------
+--
+-- Thank you for using Virtuoso Web Applications. Virtuoso Team
+--
+-- -- Powered by Virtuoso  http://virtuoso.openlinksw.com/
+-- \endverbatim
+-- It can easily be replaced by the system administrator. The following placeholders are supported:
+-- - \p %app% - The title of the web service or the server's hostname as a fallback.
+-- - \p %user% - The full name of the user sending the invitation.
+-- - \p %url% - The URL to the login page of this ODS instance. FIXME: This depends on the used UI. It should be provided by the client or be configurable.
+-- - \p %invitation% - The \p custom_message provided as a parameter.
+-- \return An error code stating the success of the command execution as detailed in \ref ods_response_format_result_code.
+--
+-- \sa user.invitation.approve(), user.invitation.list()
+--/
+create procedure ODS.ODS_API."user.invitation.new" (
   in friends_email varchar,
   in custom_message varchar := '') __soap_http 'text/xml'
 {
@@ -2880,6 +3477,7 @@ create procedure ODS.ODS_API."user.invite" (
   if (not ods_check_auth (uname))
     return ods_auth_failed ();
 
+-- FIXME: this URL is UI specific and should be provided by the client rather than being hard-coded here.
   url := WS.WS.EXPAND_URL (HTTP_URL_HANDLER (), 'login.vspx?URL=sn_rec_inv.vspx');
   copy := (select top 1 WS_WEB_TITLE from DB.DBA.WA_SETTINGS);
   if (copy = '' or copy is null)
@@ -2891,9 +3489,13 @@ create procedure ODS.ODS_API."user.invite" (
   sn_id := (select sne_id from DB.DBA.sn_person where sne_name = uname);
   msg := DB.DBA.WA_GET_EMAIL_TEMPLATE ('SN_INV_TEMPLATE', 1);
   msg := replace (msg, '%app%', copy);
+-- FIXME: the template does not contain the '%invitation%' placeholder
   msg := replace (msg, '%invitation%', custom_message);
+-- FIXME: why would the user send a message to themselves. Here the receipiant's name should go. This we only have if the user is already registered or if we invite a WebID which should be possible, too.
   msg := replace (msg, '%user%', DB.DBA.WA_WIDE_TO_UTF8 (_u_full_name));
   msg := replace (msg, '%url%', url);
+
+-- FIXME: %app_action_url%, %service_url%, %app_owner%, %timeout_join% and %service% are never replaced in the msg.
 
   uids := split_and_decode (friends_email, 0, '\0\0,');
 
@@ -2942,7 +3544,33 @@ ret:
 }
 ;
 
-create procedure ODS.ODS_API."user.invitation" (
+--!
+-- \deprecated Use user.invitation.new() instead.
+--/
+create procedure ODS.ODS_API."user.invite" (
+  in friends_email varchar,
+  in custom_message varchar := '') __soap_http 'text/xml'
+{
+  return ODS.ODS_API."user.invitation.new"(friends_email, custom_message);
+}
+;
+
+--!
+-- \brief Approve an invitation from another user.
+--
+-- ODS allows users to be connected in a social network. This requires users to send invitations
+-- to other users. The other users then need to either approve or reject that invitation.
+--
+-- This method allow to approve or reject invitations from other users.
+--
+-- \param invitation_id The id of the invitation as reported by user.invitation.list().
+-- \param approve Either \p 1 or \p 0 to \em approve or \em reject the invitation.
+--
+-- \return An error code stating the success of the command execution as detailed in \ref ods_response_format_result_code.
+--
+-- \sa user.invitation.new(), user.invitation.list()
+--/
+create procedure ODS.ODS_API."user.invitation.approve" (
   in invitation_id int,
   in approve smallint) __soap_http 'text/xml'
 {
@@ -2983,7 +3611,30 @@ ret:
 }
 ;
 
-create procedure ODS.ODS_API."user.invitations.get" () __soap_http 'text/xml'
+--!
+-- \deprecated Use user.invitation.approve() instead.
+--/
+create procedure ODS.ODS_API."user.invitation" (
+  in invitation_id int,
+  in approve smallint) __soap_http 'text/xml'
+{
+  return ODS.ODS_API."user.invitation.approve"(invitation_id, approve);
+}
+;
+
+--!
+-- \brief Get a list of pending invitations.
+--
+-- ODS allows users to be connected in a social network. This requires users to send invitations
+-- to other users. The other users then need to either approve or reject that invitation.
+--
+-- This method lists the invitations other users sent to the authenticated user.
+--
+-- \return FIXME
+--
+-- \sa user.invitation.new(), user.invitation.approve()
+--/
+create procedure ODS.ODS_API."user.invitation.list" () __soap_http 'text/xml'
 {
   declare uname varchar;
   declare rc integer;
@@ -2998,12 +3649,34 @@ create procedure ODS.ODS_API."user.invitations.get" () __soap_http 'text/xml'
     return ods_auth_failed ();
 
   -- XXX: add sparql_exec after RDF data update triggers is done
+-- FIXME: simply return the values from sn_invitation
 ret:
   return ods_serialize_int_res (rc);
 }
 ;
 
-create procedure ODS.ODS_API."user.relation_terminate" (
+--!
+-- \deprecated Use user.invitation.list() instead.
+--/
+create procedure ODS.ODS_API."user.invitations.get" () __soap_http 'text/xml'
+{
+  return ODS.ODS_API."user.invitation.list"();
+}
+;
+
+--!
+-- \brief Delete a connection to another user.
+--
+-- ODS allows users to be connected in a social network. This requires users to send invitations
+-- to other users. The other users then need to either approve or reject that invitation.
+--
+-- This method allows to remove a connection that has been created through an approved invitation.
+--
+-- \return An error code stating the success of the command execution as detailed in \ref ods_response_format_result_code.
+--
+-- \sa user.invitation.new(), user.invitation.list()
+--/
+create procedure ODS.ODS_API."user.relation.delete" (
   in friend varchar) __soap_http 'text/xml'
 {
   declare uname varchar;
@@ -3023,6 +3696,19 @@ create procedure ODS.ODS_API."user.relation_terminate" (
 }
 ;
 
+--!
+-- \deprecated Use user.relation.delete() instead.
+--/
+create procedure ODS.ODS_API."user.relation_terminate" (
+  in friend varchar) __soap_http 'text/xml'
+{
+  return ODS.ODS_API."user.relation.delete"(friend);
+}
+;
+
+--!
+-- \brief Change connection details. FIXME: this does nothing!
+--/
 create procedure ODS.ODS_API."user.relation_update" (
   in friend varchar,
   in relation_details any) __soap_http 'text/xml'
@@ -4567,6 +5253,33 @@ create procedure ODS.ODS_API."user.certificates.list" () __soap_http 'applicatio
 }
 ;
 
+create procedure ODS.ODS_API."user.instances.list" () __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare _u_id integer;
+  declare retValue any;
+
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+
+  retValue := (select 
+  	xmlelement ('result', 
+	  	xmlagg (
+		  	xmlelement ('instance', 
+			xmlelement ('id', WAI_ID), 
+			xmlelement ('name', WAI_NAME), 
+			xmlelement ('type', DB.DBA.wa_type_to_app (WAI_TYPE_NAME)), 
+			xmlelement ('member_type', WAM_MEMBER_TYPE)))) 
+	from DB.DBA.WA_MEMBER, DB.DBA.WA_INSTANCE where WAM_INST = WAI_NAME and WAM_USER = _u_id);
+  return serialize_to_UTF8_xml (retValue);
+}
+;
+
 create procedure ODS.ODS_API."user.certificates.get" (
   in id integer) __soap_http 'application/json'
 {
@@ -4975,9 +5688,12 @@ _loginIn:
   {
     for (select UC_U_ID, UC_LOGIN from DB.DBA.WA_USER_CERTS where UC_FINGERPRINT = get_certificate_info (6)) do
     {
+      loginName := (select U_NAME from DB.DBA.SYS_USERS where U_ID = UC_U_ID);
+      if (not isnull (loginName))
+      {
       certLogin := 1;
       certLoginEnable := coalesce (UC_LOGIN, 0);
-      loginName := (select U_NAME from DB.DBA.SYS_USERS where U_ID = UC_U_ID);
+      }
   }
   }
   V := ODS.ODS_API.extractFOAFDataArray (personUri, foafGraph);
@@ -5180,6 +5896,19 @@ create procedure ODS.ODS_API.extractPersonData (
   }
 ;
 
+--!
+-- \brief Fetch the contents of a FOAF user profile.
+--
+-- \param foafIRI The URL of the FOAF profile to lookup.
+-- \param spongerMode \em unused
+-- \param sslFOAFCheck If set to anything but \p 0 no action will be taken unless the connection is secure.
+-- \param outputMode \em unused
+-- \param sslLoginCheck \em unused
+--
+-- \return The details of the FOAF profile serialized as a JSON stream.
+--
+-- \b FIXME: support CN and fix outputMode.
+--/
 create procedure ODS.ODS_API."user.getFOAFData" (
   in foafIRI varchar,
   in spongerMode integer := 0,
@@ -5227,6 +5956,17 @@ create procedure ODS.ODS_API.SSL_WEBID_GET_2 (
 }
 ;
 
+--!
+-- \brief Fetch the FOAF profile for a WebID certificate.
+--
+-- The client needs to provide the WebID X.509 certificate as an additional context attribute.
+--
+-- \param sslFOAFCheck \em unused
+-- \param outputMode \em unused
+-- \param sslLoginCheck \em unused
+--
+-- \return The details of the FOAF profile serialized as a JSON stream.
+--/
 create procedure ODS.ODS_API."user.getFOAFSSLData" (
   in sslFOAFCheck integer := 0,
   in outputMode integer := 1,
@@ -5251,11 +5991,14 @@ create procedure ODS.ODS_API."user.getFOAFSSLData" (
   certLoginEnable := 0;
   for (select UC_U_ID, UC_LOGIN from DB.DBA.WA_USER_CERTS where UC_FINGERPRINT = get_certificate_info (6, cert, 0, '')) do
 	{
+    loginName := (select U_NAME from DB.DBA.SYS_USERS where U_ID = UC_U_ID);
+    if (not isnull (loginName))
+    {
 	  certLogin := 1;
     certLoginEnable := coalesce (UC_LOGIN, 0);
-    loginName := (select U_NAME from DB.DBA.SYS_USERS where U_ID = UC_U_ID);
 	  appendProperty (V, 'certLogin', cast (certLogin as varchar));
 	  appendProperty (V, 'certLoginEnable', cast (certLoginEnable as varchar));
+	}
 	}
   if (webidType = 0)
   {
@@ -5322,9 +6065,8 @@ create procedure ODS.ODS_API."user.getFacebookData" (
 
   retValue := null;
   if (isnull (fb) and DB.DBA._get_ods_fb_settings (fbOptions))
-  {
     fb := new DB.DBA.Facebook(fbOptions[0], fbOptions[1], http_param (), http_request_header ());
-  }
+
   if (not isnull (fb))
   {
     fbPaths := vector ();
@@ -5333,9 +6075,7 @@ create procedure ODS.ODS_API."user.getFacebookData" (
                       'last_name', 'family_name',
                       'sex', 'gender'
                      );
-    retValue := jsonObject ();
-    retValue := vector_concat (retValue, vector ('api_key', fb.api_key));
-    retValue := vector_concat (retValue, vector ('secret', fb.secret));
+    retValue := vector_concat (jsonObject (), vector ('api_key', fb.api_key, 'secret', fb.secret));
     if (length (fb._user))
     {
       resValue := fb.api_client.users_getInfo(fb._user, fields);
@@ -5349,13 +6089,11 @@ create procedure ODS.ODS_API."user.getFacebookData" (
           tmpPath := '/users_getInfo_response/user/' || get_keyword (V[N], fbPaths, V[N]);
           tmpValue := serialize_to_UTF8_xml (xpath_eval (sprintf ('string(%s)', tmpPath), resValue));
           if (length (tmpValue))
-          {
             retValue := vector_concat (retValue, vector (get_keyword (V[N], fbMaps, V[N]), tmpValue));
           }
         }
       }
     }
-  }
   return case when outputMode then obj2json (retValue) else retValue end;
 }
 ;
@@ -5762,6 +6500,39 @@ create procedure ODS.ODS_API."instance.get" (
 }
 ;
 
+--!
+-- \brief Get the id of an ODS app instance.
+--
+-- Each ODS app has a unique numeric id which is required for almost
+-- all operations. This method allows to determine that id from the
+-- app instance's name (App instance names are oftern something like
+-- "foobar's Calendar").
+--
+-- \param instanceName The name of the app instance.
+--
+-- \return An error code as defined in \ref ods_response_format_result_code which in this case
+-- matches the instance id.
+--
+-- \sa \ref ods_instance_id
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i "http://demo.openlinksw.com/ods/api/instance.get.id?instanceName=Demo%20account%27s%20Briefcase&sid=c198c56e675abd9967b2b264d1119ae2&realm=wa"
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/05.12.3041 (Solaris) x86_64-sun-solaris2.10-64  VDB
+-- Connection: Keep-Alive
+-- Date: Tue, 01 Dec 2009 12:39:19 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="ISO-8859-1"
+-- Content-Length: 57
+--
+-- <result>
+--   <code>6</code>
+--   <message>Success</message>
+-- </result>
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."instance.get.id" (
   in instanceName varchar) __soap_http 'text/xml'
 {
@@ -5840,6 +6611,89 @@ ret:
 }
 ;
 
+create procedure ODS.ODS_API.predicates ()
+{
+  return vector (
+    'webIDVerified'  , vector ('Certificate - Verified',           'boolean',     'boolean',  vector ()),
+    'certExpiration' , vector ('Certificate - Expiration Status',  'boolean',     'boolean',  vector ()),
+    'certSerial'     , vector ('Certificate - Serial Number',      'varchar',     'varchar',  vector ()),
+    'webID'          , vector ('Certificate - WebID',              'varchar',     'varchar',  vector ('class', '_validate_ _webid_')),
+    'certMail'       , vector ('Certificate - Mail',               'varchar',     'varchar',  vector ()),
+    'certSubject'    , vector ('Certificate - Subject',            'varchar',     'varchar',  vector ()),
+    'certIssuer'     , vector ('Certificate - Issuer',             'varchar',     'varchar',  vector ()),
+    'certStartDate'  , vector ('Certificate - Issue Date',         'date',        'date',     vector ('size', '10', 'class', '_validate_ _date_', 'onclick', 'datePopup(\'-FIELD-\')', 'button', '<img id="-FIELD-_select" border="0" src="/oMail/i/pick_calendar.gif" onclick="javascript: datePopup(\'-FIELD-\');" />')),
+    'certEndDate'    , vector ('Certificate - Expiry Date',        'date',        'date',     vector ('size', '10', 'class', '_validate_ _date_', 'onclick', 'datePopup(\'-FIELD-\')', 'button', '<img id="-FIELD-_select" border="0" src="/oMail/i/pick_calendar.gif" onclick="javascript: datePopup(\'-FIELD-\');" />')),
+    'certDigest'     , vector ('Certificate - Fingerprint Digest', 'digest',      'varchar',  vector ('class', '_validate_ _digest_')),
+    'certSparqlASK'  , vector ('Certificate - SPARQL ASK',         'sparql',      'boolean',  vector ())
+  );
+}
+;
+
+create procedure ODS.ODS_API.compares ()
+{
+  return vector (
+    'eq'           , vector ('equal to'                 , vector ('integer', 'date', 'varchar', 'address', 'priority', 'folder', 'boolean', 'sparql', 'digest'), 1),
+    'neq'          , vector ('not equal to'             , vector ('integer', 'date', 'varchar', 'address', 'priority', 'folder', 'boolean', 'sparql', 'digest'), 1),
+    'lt'           , vector ('less than'                , vector ('integer', 'date', 'priority'), 1),
+    'lte'          , vector ('less thanor equal to'     , vector ('integer', 'date', 'priority'), 1),
+    'gt'           , vector ('greater than'             , vector ('integer', 'date', 'priority'), 1),
+    'gte'          , vector ('greater than or equal to' , vector ('integer', 'date', 'priority'), 1),
+    'contains'     , vector ('contains substring'       , vector ('varchar', 'address'), 1),
+    'notContains'  , vector ('does not contain substring', vector ('varchar', 'address'), 1),
+    'startsWith'   , vector ('starts with'              , vector ('varchar', 'address'), 1),
+    'notStartsWith', vector ('does not start with'       , vector ('varchar', 'address'), 1),
+    'endsWith'     , vector ('ends with'                , vector ('varchar', 'address'), 1),
+    'notEndsWith'  , vector ('does not end with'         , vector ('varchar', 'address'), 1),
+    'isNull'       , vector ('is null'                  , vector ('address'), 0),
+    'isNotNull'    , vector ('is not null'              , vector ('address'), 0)
+  );
+}
+;
+
+--!
+-- \brief Mapping of ODS supported comparison commands to SQL expressions.
+--
+-- The returned vector contains a mapping from comparison name (\p eq, \p gt, etc)
+-- to an SQL command which does the actual comparison. The command uses two variables:
+-- - value
+-- - pattern
+--
+-- One example is the \greater \p than command which is encoded as follows:
+-- \verbatim
+--     'gt', '(^{value}^ > ^{pattern}^)'
+-- \endverbatim
+--
+-- This is used by sioc.sql for ACL rule checking only.
+--/
+create procedure ODS.ODS_API.commands ()
+{
+  return vector (
+    'eq'           , '(^{value}^ = ^{pattern}^)',
+    'neq'          , '(^{value}^ <> ^{pattern}^)',
+    'lt'           , '(^{value}^ < ^{pattern}^)',
+    'lte'          , '(^{value}^ <= ^{pattern}^)',
+    'gt'           , '(^{value}^ > ^{pattern}^)',
+    'gte'          , '(^{value}^ >= ^{pattern}^)',
+    'contains'     , '(strstr (ucase (^{value}^), ucase (^{pattern}^)) is not null)',
+    'notContains'  , '(strstr (ucase (^{value}^), ucase (^{pattern}^)) is null)',
+    'startsWith'   , '(starts_with (ucase (^{value}^), ucase (^{pattern}^)))',
+    'notStartsWith', '(not (starts_with (ucase (^{value}^), ucase (^{pattern}^))))',
+    'endsWith'     , '(ends_with (ucase (^{value}^), ucase (^{pattern}^)))',
+    'notEndsWith'  , '(not (ends_with (ucase (^{value}^), ucase (^{pattern}^))))',
+    'isNull'       , '(DB.DBA.is_empty_or_null (^{value}^) = 1)',
+    'isNotNull'    , '(DB.DBA.is_empty_or_null (^{value}^) = 0)'
+    );
+}
+;
+
+-----------------------------------------------------------------------------
+--
+create procedure ODS.ODS_API."filtersData" () __soap_http 'application/json'
+{
+  return obj2json (vector (ODS.ODS_API."predicates" (), ODS.ODS_API."compares" ()));
+}
+;
+
 -- global actions
 
 create procedure ODS.ODS_API."site.search" (in pattern varchar, in options any) __soap_http 'text/xml'
@@ -5893,6 +6747,7 @@ grant execute on ODS.ODS_API."linkedinServer" to ODS_API;
 grant execute on ODS.ODS_API."linkedinVerify" to ODS_API;
 
 grant execute on ODS.ODS_API."user.checkAvalability" to ODS_API;
+grant execute on ODS.ODS_API."user.checkAvailability" to ODS_API;
 grant execute on ODS.ODS_API."user.register" to ODS_API;
 grant execute on ODS.ODS_API."user.authenticate" to ODS_API;
 grant execute on ODS.ODS_API."user.login" to ODS_API;
@@ -5912,6 +6767,10 @@ grant execute on ODS.ODS_API."user.info" to ODS_API;
 grant execute on ODS.ODS_API."user.info.webID" to ODS_API;
 grant execute on ODS.ODS_API."user.certificateUrl" to ODS_API;
 grant execute on ODS.ODS_API."user.search" to ODS_API;
+grant execute on ODS.ODS_API."user.invitation.new" to ODS_API;
+grant execute on ODS.ODS_API."user.invitation.approve" to ODS_API;
+grant execute on ODS.ODS_API."user.invitation.list" to ODS_API;
+grant execute on ODS.ODS_API."user.relation.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.invite" to ODS_API;
 grant execute on ODS.ODS_API."user.invitation" to ODS_API;
 grant execute on ODS.ODS_API."user.invitations.get" to ODS_API;
@@ -5971,6 +6830,7 @@ grant execute on ODS.ODS_API."user.knows.get" to ODS_API;
 grant execute on ODS.ODS_API."user.knows.new" to ODS_API;
 grant execute on ODS.ODS_API."user.knows.edit" to ODS_API;
 grant execute on ODS.ODS_API."user.knows.delete" to ODS_API;
+grant execute on ODS.ODS_API."user.instances.list" to ODS_API;
 grant execute on ODS.ODS_API."user.certificates.list" to ODS_API;
 grant execute on ODS.ODS_API."user.certificates.get" to ODS_API;
 grant execute on ODS.ODS_API."user.certificates.new" to ODS_API;
@@ -6000,6 +6860,7 @@ grant execute on ODS.ODS_API."instance.unfreeze" to ODS_API;
 
 grant execute on ODS.ODS_API."site.search" to ODS_API;
 
+grant execute on ODS.ODS_API."filtersData" to ODS_API;
 
 create procedure __user_password (in uname varchar)
 {

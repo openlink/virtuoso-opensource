@@ -76,4 +76,3 @@ ECHO BOTH " Inserted: " $LAST[1] " bytes\n";
 backup '/dev/null';
 ECHO BOTH $IF $EQU $STATE OK  "PASSED" "***FAILED";
 ECHO BOTH ": Travers all trees\n";
-

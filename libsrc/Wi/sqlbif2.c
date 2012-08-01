@@ -1600,6 +1600,99 @@ bif_format_number (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return res;
 }
 
+static caddr_t
+soundex (caddr_t name)
+{
+#define raw_toupper(C) ((C) & (255-32))
+  char tmp[5] = {'0','0','0','0',0} , current_code = '\0', previous_code = '\0';
+  int inx = 0, i = 0;
+  if (box_length (name) > 1)
+    {
+      while (name[inx] && !isalpha (name[inx])) inx ++;
+      if (name[inx]) tmp[i++] = raw_toupper (name[inx++]);
+      for (; inx < box_length (name) - 1; inx ++)
+	{
+	  char c;
+	  c = raw_toupper (name[inx]);
+	  if (!isalpha (c)) continue;
+	  current_code = '\0';
+	  if (strchr ("BFPV", c))
+	    current_code = '1';
+	  else if (strchr ("CSKGJQXZ", c))
+	    current_code = '2';
+	  else if (strchr ("DT", c))
+	    current_code = '3';
+	  else if (strchr ("L", c))
+	    current_code = '4';
+	  else if (strchr ("MN", c))
+	    current_code = '5';
+	  else if (strchr ("R", c))
+	    current_code = '6';
+	  if (current_code != previous_code && current_code != '\0')
+	    tmp [i++] = current_code;
+	  if (i >= 4) break;
+	  /*if (current_code != '\0')*/
+	  previous_code = current_code;
+	}
+      for (;i < 4; i ++)
+	tmp[i] = '0';
+    }
+  return box_dv_short_string (tmp);
+}
+
+static caddr_t
+bif_soundex (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t name = bif_string_arg (qst, args, 0, "soundex");
+  return soundex (name);
+}
+
+static caddr_t
+bif_difference (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t name1 = bif_string_arg (qst, args, 0, "difference");
+  caddr_t name2 = bif_string_arg (qst, args, 1, "difference");
+  caddr_t soundex1, soundex2;
+  int result = 0;
+  char tmp[3] = {0,0,0};
+  if (box_length (name1) <= 1 || box_length (name2) <= 1)
+    return box_num (0);
+  soundex1 = soundex (name1);
+  soundex2 = soundex (name2);
+  if (!strcmp (soundex1, soundex2))
+    {
+      result = 4;
+      goto ret;
+    }
+  if (soundex1[0] == soundex2[0])
+    result = 1;
+  if (strstr (soundex2, soundex1 + 1)) /* 2,3,4 */
+    {
+      result += 3;
+      goto ret;
+    }
+  if (strstr (soundex2, soundex1 + 2)) /* 3,4 */
+    {
+      result += 2;
+      goto ret;
+    }
+  memcpy (&tmp[0], soundex1 + 1, 2);
+  if (strstr (soundex2, tmp)) /* 2,3 */
+    {
+      result += 2;
+      goto ret;
+    }
+  if (strchr (soundex2, soundex1[1]))
+    result ++;
+  if (strchr (soundex2, soundex1[2]))
+    result ++;
+  if (strchr (soundex2, soundex1[3]))
+    result ++;
+ret:
+  dk_free_box (soundex1);
+  dk_free_box (soundex2);
+  return box_num (result);
+}
 
 static caddr_t
 bif_this_server (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -1641,6 +1734,8 @@ sqlbif2_init (void)
   bif_define ("patch_restricted_xml_chars", bif_patch_restricted_xml_chars);
   bif_define_typed ("format_number", bif_format_number, &bt_varchar);
   bif_define ("__stop_cpt", bif_stop_cpt);
+  bif_define ("soundex", bif_soundex);
+  bif_define ("difference", bif_difference);
   bif_define ("repl_this_server", bif_this_server);
   bif_define ("isgeometry", bif_is_geometry);
   /*sqls_bif_init ();*/

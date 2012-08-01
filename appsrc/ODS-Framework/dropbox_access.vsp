@@ -1,0 +1,59 @@
+<?vsp
+  declare url, sid, token, oauth_token, return_url, display_name, email varchar;
+  declare result, resultHeader, json any;
+
+  token := ODS.ODS_API.get_oauth_tok ('Dropbox API');
+  if ({?'oauth_token'} is not null)
+  {
+    declare header, auth any;
+
+    sid := {?'sid'};
+    url := OAUTH..sign_request ('GET', 'https://api.dropbox.com/1/oauth/access_token', '',	token, sid, 1);
+    -- result := http_get (url);
+    result := http_client_ext (url=>url, http_method=>'GET', headers=>resultHeader, n_redirects=>15);
+    sid := OAUTH..parse_response (sid, token, result);
+
+    url := OAUTH..sign_request ('GET', 'https://api.dropbox.com/1/account/info', '', token, sid, 1);
+    result := http_client_ext (url=>url, http_method=>'GET', headers=>resultHeader, n_redirects=>15);
+    result := subseq (ODS..json2obj(result), 2);
+    display_name := get_keyword ('display_name', result);
+    email := get_keyword ('email', result);
+    -- person := http_get (url);
+  }
+  else
+  {
+    sid := md5 (datestring (now ()));
+    return_url := sprintf ('http://%{WSHost}s%s?sid=%U', http_path(), sid);
+    url := OAUTH..sign_request ('GET', 'https://api.dropbox.com/1/oauth/request_token', '', token, null, 1);
+    result := http_client_ext (url=>url, http_method=>'GET', headers=>resultHeader, n_redirects=>15);
+    sid := OAUTH..parse_response (sid, token, result);
+
+    OAUTH..set_session_data (sid, params);
+    oauth_token := OAUTH..get_auth_token (sid);
+    url := sprintf ('https://www.dropbox.com/1/oauth/authorize?oauth_token=%U&oauth_callback=%U', oauth_token, return_url);
+    http_status_set (302);
+    http_header (sprintf ('Location: %s\r\n', url));
+    return;
+  }
+?>
+<html>
+  <head>
+  </head>
+  <body>
+    <?vsp
+    if ({?'sid'} is not null)
+    {
+    ?>
+    <script type="text/javascript">
+      if (window.opener && window.opener.open && !window.opener.closed) {
+        window.opener.ODRIVE.dropboxParams('<?V sid ?>', '<?V display_name ?>', '<?V email ?>');
+      } else {
+        alert ('Opener not found');
+      }
+      window.close();
+    </script>
+    <?vsp
+    }
+    ?>
+  </body>
+</html>

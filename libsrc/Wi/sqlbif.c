@@ -5884,9 +5884,10 @@ bif_isfinitenumeric (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       result = _finite (val) ? 1 : 0;
 #else
       double myNAN_d = 0.0/0.0;
+      double myNEGNAN_d = -0.0/0.0;
       double myPOSINF_d = 1.0/0.0;
       double myNEGINF_d = -1.0/0.0;
-      result = (((val == myNAN_d) || (val == myPOSINF_d) || (val == myNEGINF_d)) ? 0 : 1);
+      result = (((val == myNAN_d) || (val == myNEGNAN_d) || (val == myPOSINF_d) || (val == myNEGINF_d)) ? 0 : 1);
 #endif
       break;
     }
@@ -8122,14 +8123,18 @@ bif_get_keyword (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   char *me = "get_keyword";
   int n_args = BOX_ELEMENTS (args);
   caddr_t item = bif_arg (qst, args, 0, me);
-  caddr_t arr = (caddr_t) bif_array_arg (qst, args, 1, me);
+  caddr_t arr = (caddr_t) bif_array_or_null_arg (qst, args, 1, me);
   long is_set_0 = (long) ((n_args > 3) ? bif_long_arg (qst, args, 3, me) : 0);
   int inx;
-  dtp_t vectype = DV_TYPE_OF (arr);
-  int boxlen = (is_string_type (vectype)
+  dtp_t vectype;
+  int boxlen, len;
+  if (NULL == arr)
+    return (n_args > 2 ? box_copy_tree (bif_arg (qst, args, 2, me)) : NEW_DB_NULL);
+  vectype = DV_TYPE_OF (arr);
+  boxlen = (is_string_type (vectype)
     ? box_length (arr) - 1
     : box_length (arr));
-  int len = (boxlen / get_itemsize_of_vector (vectype));
+  len = (boxlen / get_itemsize_of_vector (vectype));
 /* Try also lvectors and dvectors.
    if (DV_ARRAY_OF_POINTER != box_tag (arr))
    sqlr_new_error ("42000", "XXX", "get_keyword expects a vector");
@@ -8204,12 +8209,15 @@ bif_get_keyword_ucase (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   char *me = "get_keyword_ucase";
   int n_args = BOX_ELEMENTS (args);
   caddr_t item = bif_string_or_uname_arg (qst, args, 0, me);
-  caddr_t arr = (caddr_t) bif_array_arg (qst, args, 1, me);
+  caddr_t arr = (caddr_t) bif_array_or_null_arg (qst, args, 1, me);
   long is_set_0 = (long) ((n_args > 3) ? bif_long_arg (qst, args, 3, me) : 0);
   int inx;
-  dtp_t vectype = DV_TYPE_OF (arr);
-  int len = BOX_ELEMENTS (arr);
-
+  dtp_t vectype;
+  int len;
+  if (NULL == arr)
+    return (n_args > 2 ? box_copy_tree (bif_arg (qst, args, 2, me)) : NEW_DB_NULL);
+  vectype = DV_TYPE_OF (arr);
+  len = BOX_ELEMENTS (arr);
   if (DV_ARRAY_OF_POINTER != box_tag (arr))
     sqlr_new_error ("22023", "SR058", "get_keyword expects a vector");
 
@@ -8309,27 +8317,50 @@ bif_one_of_these (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   char *me = "one_of_these";
   query_instance_t * qi = (query_instance_t *) qst;
   int n_args = BOX_ELEMENTS (args);
-  caddr_t item = bif_arg (qst, args, 0, me);
+  caddr_t raw_item = bif_arg /* no _unrdf */ (qst, args, 0, me);
+  dtp_t raw_item_dtp = DV_TYPE_OF (raw_item);
+  caddr_t item = (((DV_RDF == raw_item_dtp) && ((rdf_box_t *)raw_item)->rb_is_complete) ? ((rdf_box_t *)raw_item)->rb_box : raw_item);
   dtp_t item_dtp = DV_TYPE_OF (item);
   int inx;
-  caddr_t value;
-  dtp_t val_dtp;
   int they_match;
-
   for (inx = 1; inx < n_args; inx++)
     {
-      caddr_t values = qst_get (qst, args[inx]);
-      int is_array = DV_ARRAY_OF_POINTER == DV_TYPE_OF (values);
-      int nth, n_values = is_array ? BOX_ELEMENTS (values) : 1;
+      caddr_t raw_values = qst_get (qst, args[inx]);
+      caddr_t *values;
+      int nth, n_values;
+      if (DV_ARRAY_OF_POINTER == DV_TYPE_OF ((caddr_t)raw_values))
+        {
+          values = (caddr_t *)raw_values;
+          n_values = BOX_ELEMENTS (values);
+        }
+      else
+	{
+	  values = (caddr_t *)(&raw_values);
+	  n_values = 1;
+	}
       for (nth = 0; nth < n_values; nth++)
 	{
-	  value = is_array ? ((caddr_t*)values)[nth] : values;
+	  caddr_t value = values[nth];
+	  dtp_t val_dtp = DV_TYPE_OF (value);
+	  if (DV_RDF == val_dtp)
+	    {
+	      if (((rdf_box_t *)value)->rb_is_complete)
+	        {
+	          value = ((rdf_box_t *)value)->rb_box;
 	  val_dtp = DV_TYPE_OF (value);
+	        }
+	      else if (DV_RDF != raw_item_dtp)
+	        continue;
+	      else if (((rdf_box_t *)value)->rb_ro_id != ((rdf_box_t *)raw_item)->rb_ro_id)
+	        continue;
+	      else
+	        return box_bool (1);
+	    }
 	  if (IS_WIDE_STRING_DTP (item_dtp) && IS_STRING_DTP (val_dtp))
 	    {
 	      caddr_t wide = box_narrow_string_as_wide ((unsigned char *) value, NULL, 0, QST_CHARSET (qst), err_ret, 1);
 	      if (*err_ret)
-		return NULL;
+		return box_bool (0);
 	      they_match = boxes_match (item, wide);
 	      dk_free_box (wide);
 	    }
@@ -8337,7 +8368,7 @@ bif_one_of_these (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	    {
 	      caddr_t wide = box_narrow_string_as_wide ((unsigned char *) item, NULL, 0, QST_CHARSET (qst), err_ret, 1);
 	      if (*err_ret)
-		return NULL;
+		return box_bool (0);
 	      they_match = boxes_match (wide, value);
 	      dk_free_box (wide);
 	    }
@@ -8352,7 +8383,7 @@ bif_one_of_these (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 		      *err_ret = NULL;
 		      continue;
 		    }
-		  return NULL;
+		  return box_bool (0);
 		}
 	      else
 		they_match = boxes_match (item, tmp_val);
@@ -8361,10 +8392,10 @@ bif_one_of_these (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  else
 	    they_match = boxes_match (item, value);
 	  if (they_match)
-	    return (box_num (inx));
+	    return  box_bool (1);
 	}
     }
-  return (box_num (0));
+  return box_bool (0);
 }
 
 
@@ -8722,6 +8753,9 @@ bif_page_dump (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     ITC_LEAVE_MAP_NC (itc);
   }
   END_DO_SET ();
+
+  if (dp < 0 || dp >= wi_inst.wi_master->dbs_n_pages)
+    sqlr_new_error ("22023", "SR...", "The page %ld is out of range", dp);
 
   buf = &buf_auto;
   memset (&buf_auto, 0, sizeof (buf_auto));
@@ -9619,7 +9653,7 @@ caddr_t
 bif_cast_internal (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t data = bif_arg (qst, args, 0, "__cast_internal");
-  ST * dtp_st = (ST *) bif_arg (qst, args, 1, "cast_internal");
+  ST * dtp_st = (ST *) bif_arg (qst, args, 1, "__cast_internal");
   dtp_t arg_dtp = DV_TYPE_OF (data);
 
   if (DV_SHORT_STRING == arg_dtp || DV_LONG_STRING == arg_dtp)
@@ -9638,6 +9672,22 @@ bif_cast_internal (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NULL;
 }
 
+caddr_t
+bif_stub_impl (const char *fname)
+{
+  sqlr_new_error ("22023", "SR468", "%.200s() can not be called as plain built-in function, it's a macro handled by SQL compiler", fname);
+  return NULL;
+}
+
+#define BIF_STUB(bifname,fname) caddr_t bifname (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args) { return bif_stub_impl (fname); }
+
+BIF_STUB (bif_stub_ssl_const		, "__ssl_const"		)
+BIF_STUB (bif_stub_coalesce		, "coalesce"		)
+BIF_STUB (bif_stub_exists		, "exists"		)
+BIF_STUB (bif_stub_contains		, "contains"		)
+BIF_STUB (bif_stub_xpath_contains	, "xpath_contains"	)
+BIF_STUB (bif_stub_xquery_contains	, "xquery_contains"	)
+BIF_STUB (bif_stub_xcontains		, "xcontains"		)
 
 
 caddr_t
@@ -13931,9 +13981,9 @@ bif_rdf_strlen_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
     case DV_STRING:
     case DV_UNAME:
-      return (caddr_t)box_num ( wide_char_length_of_utf8_string (arg, box_length(arg)) );
+      return (caddr_t)box_num ( wide_char_length_of_utf8_string ((const unsigned char *)arg, box_length(arg)) );
     case DV_WIDE:
-      return (caddr_t)box_num( virt_wcslen (arg) );
+      return (caddr_t)box_num( virt_wcslen ((wchar_t *)(arg)) );
     case DV_DB_NULL:
       return NEW_DB_NULL;
     default:
@@ -13954,12 +14004,12 @@ t_box_utf8_string (ccaddr_t utf8src, size_t max_chars)
   memset (&state, 0, sizeof(virt_mbstate_t));
   for (inx=0; inx<max_chars && src[max_bytes]; ++inx)
     {
-      max_bytes += virt_mbrlen (src + max_bytes, VIRT_MB_CUR_MAX, &state);
+      max_bytes += virt_mbrlen ((const char *)(src + max_bytes), VIRT_MB_CUR_MAX, &state);
     }
 
   box = dk_alloc_box (max_bytes + 1, DV_STRING);
 
-  strncpy (box,src,max_bytes);
+  strncpy (box, (const char *)(src), max_bytes);
   box[max_bytes] = 0;
   return box;
 }
@@ -14007,7 +14057,7 @@ bif_rdf_substr_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
           {
             pstart += virt_mbrlen (pstart, VIRT_MB_CUR_MAX, &mbstate);
           }
-        str_n_chars = wide_char_length_of_utf8_string (pstart, strlen(pstart));
+        str_n_chars = wide_char_length_of_utf8_string ((const unsigned char *)pstart, strlen(pstart));
 
         if (startl < 1 || !str_n_chars ||
             (BOX_ELEMENTS (args) >= 3 && (lenl < 1 || lenl > str_n_chars)) )
@@ -14023,7 +14073,7 @@ bif_rdf_substr_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       {
 	const wchar_t *pstart;
 	size_t strlength;
-        str_n_chars = virt_wcslen (src);
+        str_n_chars = virt_wcslen ((const wchar_t *)src);
 
         if (startl < 1 || startl > str_n_chars ||
             (BOX_ELEMENTS (args) >= 3 && (lenl < 1 || lenl > str_n_chars - start + 1)) )
@@ -14304,7 +14354,6 @@ caddr_t
 bif_rdf_concat_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t res_strg = bif_concatenate (qst, err_ret, args);
-  query_instance_t *qi = (query_instance_t *)qst;
   int n_args = BOX_ELEMENTS (args), inx;
   unsigned short common_type_twobytes = 0;
   unsigned short common_lang_twobytes = 0;
@@ -14792,6 +14841,14 @@ sql_bif_init (void)
   bif_define ("blob_page", bif_blob_page);
   bif_define_typed ("_cvt", bif_convert, &bt_convert);
   bif_define ("__cast_internal", bif_cast_internal);
+  bif_define ("__ssl_const", bif_stub_ssl_const);
+  bif_define ("coalesce", bif_stub_coalesce);
+  bif_define ("exists", bif_stub_exists);
+  bif_define ("contains", bif_stub_contains);
+  bif_define ("xpath_contains", bif_stub_xpath_contains);
+  bif_define ("xquery_contains", bif_stub_xquery_contains);
+  bif_define ("xcontains", bif_stub_xcontains);
+  bif_define_typed ("exists", bif_stub_exists, &bt_integer);
   st_varchar = (sql_tree_tmp *) list (3, DV_LONG_STRING, 0, 0);
   st_nvarchar = (sql_tree_tmp *) list (3, DV_LONG_WIDE, 0, 0);
 

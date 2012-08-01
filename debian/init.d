@@ -18,7 +18,7 @@
 # Description:		Start and stop the primary instance of Virtuoso running
 # 	in /var/lib/virtuoso/db/. The first time this runs, it loads the
 # 	Conductor administrative package.
-###
+### END INIT INFO
 
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin

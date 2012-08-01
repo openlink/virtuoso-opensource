@@ -597,7 +597,7 @@ fct_xml_wrap (in tree any, in txt any)
   declare view_type varchar;
   view_type := fct_get_mode (tree, '//view/@type');
 
-  declare ntxt, texp any;
+  declare ntxt any; -- , texp any;
   ntxt := string_output ();
 
   declare n_cols int;
@@ -606,8 +606,6 @@ fct_xml_wrap (in tree any, in txt any)
   fct_dbg_msg (sprintf ('fct_xml_wrap: view_type: %s', view_type));
   fct_dbg_msg (sprintf ('              n_cols   : %d', n_cols));
 
---  dbg_obj_print (xpath_eval ('//query/text', tree, 1));
-
   if (n_cols = 2)
     {
       if (view_type = 'text')
@@ -615,14 +613,14 @@ fct_xml_wrap (in tree any, in txt any)
 	  http (sprintf ('select xmlelement ("result", xmlattributes (''%s'' as "type"),
                               xmlagg (xmlelement ("row",
                                                   xmlelement ("column",
-                                                              xmlattributes (''trank'' as "datatype"),
+                                                              xmlattributes (''trank'' as "trank"),
                                                               "sc"),
                                                   xmlelement ("column",
-                                                              xmlattributes (''erank'' as "datatype"),
+                                                              xmlattributes (''erank'' as "erank"),
                                                               "rank"),
---                                                  xmlelement ("column",
---                                                              xmlattributes (''g'' as "datatype"),
---                                                              __ro2sq ("g")),
+                                                  xmlelement ("column",
+                                                              xmlattributes (''g'' as "graph"),
+                                                              __ro2sq ("g")),
                                                   xmlelement ("column",
                                                               xmlattributes (fct_lang ("c1") as "xml:lang",
                                                                              fct_dtp ("c1") as "datatype",
@@ -636,7 +634,7 @@ fct_xml_wrap (in tree any, in txt any)
 	}
       else if (view_type = 'text-d')
 	{
-	  texp := cast (xpath_eval ('string (//query/text)', tree, 1) as varchar);
+--	  texp := cast (xpath_eval ('string (//query/text)', tree, 1) as varchar);
 	  http ('select  xmlelement (\'result\',
 	  			     xmlattributes (\'text-d\' as "type"),
 				     "res")
@@ -682,7 +680,7 @@ fct_xml_wrap (in tree any, in txt any)
                                                                fct_sparql_ser ("c1") as "sparql_ser"),
 							       __ro2sq ("c1")),
 				xmlelement ("column", fct_label_np ("c1", 0, ''facets'' )))))
-	     from (sparql define output:valmode "LONG"', view_type), ntxt);
+	     from (sparql define output:valmode "LONG" ', view_type), ntxt);
   if (n_cols = 3)
     http (sprintf ('select xmlelement ("result", xmlattributes (''%s'' as "type"),
                               xmlagg (xmlelement ("row",
@@ -727,7 +725,6 @@ element_split (in val any)
   declare srch_split, el varchar;
   declare k integer;
   declare sall any;
-
 
   --srch_split := '';
   --k := 0;
@@ -785,7 +782,7 @@ fct_view (in tree any, in this_s int, in txt any, in pre any, in post any, in fu
 
   if ('list' = mode or 'propval-list' = mode)
     {
-      http (sprintf ('select distinct ?s%d as ?c1 ', this_s), pre);
+      http (sprintf ('select distinct ?s%d as ?c1 ?g', this_s), pre);
       http (sprintf (' order by desc (<LONG::IRI_RANK> (?s%d)) ', this_s), post);
     }
 
@@ -841,7 +838,7 @@ fct_view (in tree any, in this_s int, in txt any, in pre any, in post any, in fu
 
       exp := cast (xpath_eval ('//text', tree) as varchar);
 
-      http (sprintf ('select ?s%d as ?c1, (bif:search_excerpt (bif:vector (%s), ?o%d)) as ?c2, ?sc, ?rank where {{{ select ?s%d, (?sc * 3e-1) as ?sc, ?o%d, (sql:rnk_scale (<LONG::IRI_RANK> (?s%d))) as ?rank ',
+      http (sprintf ('select ?s%d as ?c1, (bif:search_excerpt (bif:vector (%s), ?o%d)) as ?c2, ?sc, ?rank, ?g where {{{ select ?s%d, (?sc * 3e-1) as ?sc, ?o%d, (sql:rnk_scale (<LONG::IRI_RANK> (?s%d))) as ?rank, ?g',
             this_s,
    	    element_split (exp),
 		     this_s, this_s, this_s, this_s), pre);
@@ -857,9 +854,12 @@ fct_view (in tree any, in this_s int, in txt any, in pre any, in post any, in fu
 
       exp := charset_recode (xpath_eval ('string (//text)', tree), '_WIDE_', 'UTF-8');
 
+--      dbg_obj_print (exp);
+--      dbg_obj_print (element_split(exp));
+
       http (sprintf ('select
-		  	(<sql:s_sum_page> (<sql:vector_agg> (<bif:vector> (?c1, ?sm)), <bif:vector> (%s))) as ?res where { {
-      select (<SHORT_OR_LONG::>(?s%d)) as ?c1,  (<sql:S_SUM> ( <SHORT_OR_LONG::IRI_RANK> (?s%d), <SHORT_OR_LONG::>(?s%dtextp), <SHORT_OR_LONG::>(?o%d), ?sc ) ) as ?sm ', element_split (exp), this_s, this_s, this_s, this_s), pre);
+		  	(<sql:s_sum_page> (<sql:vector_agg> (<bif:vector> (?c1, ?sm, ?g1)), <bif:vector> (%s))) as ?res where { { 
+      select (<SHORT_OR_LONG::>(?s%d)) as ?c1,  (<sql:S_SUM> ( <SHORT_OR_LONG::IRI_RANK> (?s%d), <SHORT_OR_LONG::>(?s%dtextp), <SHORT_OR_LONG::>(?o%d), ?sc ) ) as ?sm, <SHORT_OR_LONG::>(?g) as ?g1', element_split (exp), this_s, this_s, this_s, this_s), pre);
 
       http (sprintf ('order by desc (<sql:sum_rank> ((<sql:S_SUM> ( <SHORT_OR_LONG::IRI_RANK> (?s%d), <SHORT_OR_LONG::>(?s%dtextp), <SHORT_OR_LONG::>(?o%d), ?sc ) ) ) )', this_s, this_s, this_s), post);
       fct_post (tree, post, lim, offs);
@@ -879,15 +879,19 @@ fct_view (in tree any, in this_s int, in txt any, in pre any, in post any, in fu
       if (loc = 'any')
 	{
 	  loc := '?anyloc';
-	  http (sprintf ('select distinct ?location as ?c1 ?lat%d as ?c2 ?lng%d as ?c3 ', this_s, this_s, this_s), pre);
+	  http (sprintf ('select distinct ?location as ?c1 ?lat%d as ?c2 ?lng%d as ?c3 ', 
+                         this_s, this_s, this_s), pre);
 	}
       else
-        http (sprintf ('select distinct ?s%d as ?c1 ?lat%d as ?c2 ?lng%d as ?c3 ', this_s, this_s, this_s), pre);
+        http (sprintf ('select distinct ?s%d as ?c1 ?lat%d as ?c2 ?lng%d as ?c3 ', 
+                       this_s, this_s, this_s), pre);
 
       if (length (loc) < 2)
-         http (sprintf (' ?s%d geo:lat ?lat%d ; geo:long ?lng%d .', this_s, this_s, this_s), txt);
+         http (sprintf (' ?s%d geo:lat ?lat%d ; geo:long ?lng%d .', 
+                        this_s, this_s, this_s), txt);
       else
-         http (sprintf (' ?s%d %s ?location . ?location geo:lat ?lat%d ; geo:long ?lng%d .', this_s, loc, this_s, this_s), txt);
+         http (sprintf (' ?s%d %s ?location . ?location geo:lat ?lat%d ; geo:long ?lng%d .', 
+                        this_s, loc, this_s, this_s), txt);
     }
 
   fct_post (tree, post, lim, offs);
@@ -900,7 +904,7 @@ fct_literal (in tree any)
   declare val, dtp, lang varchar;
 
   dtp := cast (xpath_eval ('./@datatype', tree) as varchar);
-  lang := cast (xpath_eval ('./@xml:lang', tree) as varchar);
+  lang := cast (xpath_eval ('./@lang', tree) as varchar);
 
   val := cast (xpath_eval ('./@val', tree) as varchar);
   if (0 = val or val is null) val := cast (tree as varchar);
@@ -938,7 +942,7 @@ fct_cond (in tree any, in this_s int, in txt any)
     return fct_cond_range (tree, this_s, txt); -- ranges are handled elsewhere
   }
 
-  if ('in' = cond_t) {
+  if ('in' = cond_t or 'not_in' = cond_t) {
     return fct_cond_in (tree, this_s, txt); -- so is IN
   }
 
@@ -1074,6 +1078,9 @@ fct_cond_in (in tree any, in this_s int, in txt any) {
   declare v any;
   declare v_str varchar;
   declare i int;
+  declare neg any;
+
+  neg := xpath_eval ('./@neg', tree);
 
   v := xpath_eval ('./cond-parm', tree, 0);
 
@@ -1091,7 +1098,10 @@ fct_cond_in (in tree any, in this_s int, in txt any) {
 
   fct_dbg_msg (sprintf ('fct_cond_in: v_str: %s', v_str));
 
-  http (sprintf (' filter (?s%d in (%s)).', this_s, v_str), txt);
+  http (sprintf (' filter (%s?s%d in (%s)).', 
+	case when neg = '1' then '! ' else '' end,
+	this_s, 
+	v_str), txt);
 }
 ;
 
@@ -1215,7 +1225,7 @@ fct_text (in tree any,
 
       if (cast (xpath_eval ('./@exclude', tree) as varchar) = 'yes')
 	{
-	  http (sprintf (' filter (!bif:exists ((select (1) where { ?s%d a <%s> } ))) .', this_s, ciri), txt);
+	  http (sprintf (' filter not exists { ?s%d a <%s> } .', this_s, ciri), txt);
 	}
       else if (ciri is null)
         {
@@ -1282,7 +1292,7 @@ fct_text (in tree any,
 
       if (cast (xpath_eval ('./@exclude', tree) as varchar) = 'yes')
 	{
-	  http (sprintf (' filter (!bif:exists ((select (1) where { ?s%d <%s> ?v%d } ))) .', this_s, piri, new_s), txt);
+	  http (sprintf (' filter not exists { ?s%d <%s> ?v%d } .', this_s, piri, new_s), txt);
 	  max_s := max_s - 1;
 	  new_s := max_s;
 	  fct_text_1 (tree, new_s, max_s, txt, pre, post, full_tree, plain);
@@ -1359,16 +1369,18 @@ fct_query (in tree any, in plain integer := 0)
   s := 0;
   add_graph := 0;
 
-  if (xpath_eval ('//view[@type="graphs"]', tree) is not null)
+  if (xpath_eval ('//view[@type="graphs"]', tree) is not null or 
+      xpath_eval ('//view[@type="text"]', tree) is not null or 
+      xpath_eval ('//view[@type="text-d"]', tree) is not null)
     add_graph := 1;
 
   fct_text (xpath_eval ('//query', tree), 0, s, txt, pre, post, tree, plain);
 
   http (' where {', pre);
-  if (add_graph) http (' graph ?g { ', pre);
+  if (add_graph) http (' quad map virtrdf:DefaultQuadMap { graph ?g { ', pre);
   http (txt, pre);
   http (' }', pre);
-  if (add_graph) http (' }', pre);
+  if (add_graph) http (' } } ', pre);
   http (post, pre);
 
   return string_output_string (pre);
@@ -1385,6 +1397,7 @@ fct_test (in str varchar, in timeout int := 0)
 
   tree := xtree_doc (str);
   qr := fct_query (xpath_eval ('//query', tree, 1));
+
   qr2 := fct_xml_wrap (tree, qr);
 
   set result_timeout = timeout;
@@ -1466,19 +1479,23 @@ fct_exec (in tree any,
 
 --  dbg_obj_print (qr2);
 
+  set isolation = 'uncommitted';
   exec (qr2, sqls, msg, vector (), 0, md, res);
 
   n_rows := row_count ();
   act := db_activity ();
   set result_timeout = 0;
+
   if (sqls <> '00000' and sqls <> 'S1TAT')
     signal (sqls, msg);
+
   if (not isarray (res) or 0 = length (res) or not isarray (res[0]) or 0 = length (res[0]))
     results[0] := xtree_doc ('<result/>');
   else
     results[0] := res[0][0];
 
   inx := 1;
+
 
   foreach (varchar tp in more) do
     {
@@ -1487,6 +1504,7 @@ fct_exec (in tree any,
       qr2 := fct_xml_wrap (tree, qr);
       sqls := '00000';
       set result_timeout = __min (timeout, atoi (registry_get ('fct_timeout_max')));
+--      dbg_printf ('qr2: %s', qr2);
       exec (qr2, sqls, msg, vector (), 0, md, res);
       n_rows := row_count ();
       act := db_activity ();
@@ -1515,6 +1533,8 @@ fct_exec (in tree any,
                                results[0], results[1], results[2]);
 
   --String_to_file ('ret.xml', serialize_to_UTF8_xml (res), -2);
+
+--  dbg_obj_print (results[0]);
 
   return res;
 }

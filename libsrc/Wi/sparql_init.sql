@@ -354,6 +354,14 @@ create procedure DB.DBA.JSO_LOAD_AND_PIN_SYS_GRAPH_RO (in graphiri varchar := nu
 }
 ;
 
-DB.DBA.JSO_LOAD_AND_PIN_SYS_GRAPH_RO ()
+create procedure DB.DBA.RDF_INIT_SINGLE_SERVER ()
+{
+  if (1 <> sys_stat ('cl_run_local_only'))
+    return;
+  DB.DBA.JSO_LOAD_AND_PIN_SYS_GRAPH_RO ();
+}
+;
+
+DB.DBA.RDF_INIT_SINGLE_SERVER ()
 ;
 

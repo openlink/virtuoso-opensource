@@ -41,7 +41,7 @@
 #if defined (__APPLE__)
 #include <AvailabilityMacros.h>
 
-# if (MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_7)
+# if defined (MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_7)
 #  define SEM_NO_ORDER 1
 # endif
 #endif
@@ -187,7 +187,8 @@ struct semaphore_s
     thread_queue_t	sem_waiting;
 #ifdef SEM_NO_ORDER
     void *		sem_cv;			/* condition variable */
-    int 		sem_any_signalled;
+    unsigned long 	sem_n_signalled;
+    unsigned long 	sem_last_signalled;
 #endif
 #ifdef SEM_DEBUG
     int			sem_last_left_line[MAX_SEM_ENT];

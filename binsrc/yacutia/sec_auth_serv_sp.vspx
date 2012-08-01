@@ -143,18 +143,24 @@
                     <tr>
 
 		      <?vsp
-		        if (vad_check_version ('rdf_mappers') is not null)
+		        if (vad_check_version ('rdf_mappers') is not null or check_package ('cartridges'))
 			  {
 		      ?>
 		      <td class="<?V self.astyle ('Sponger') ?>" align="center">
 			<v:url xhtml_style="page_tab" url="sec_auth_serv_sp.vspx?acl=Sponger" value="Sponger" render-only="1"/>
 		      </td>
+		      <td class="<?V self.astyle ('Groups') ?>" align="center">
+			<v:url xhtml_style="page_tab" url="sec_auth_sponger_1.vspx" value="Groups" render-only="1"/>
+		      </td>
+		      <td class="<?V self.astyle ('Cartridges') ?>" align="center">
+			<v:url xhtml_style="page_tab" url="sec_auth_sponger_2.vspx" value="Cartridges" render-only="1"/>
+		      </td>
                       <?vsp
 		          }
                       ?>
-		      <?vsp if (DB.DBA.VAD_CHECK_VERSION ('Framework') is not null) { ?>
-		      <td class="<?V self.astyle ('SPARQL-SSL') ?>" align="center">
-			<v:url xhtml_style="page_tab" url="sparql_acl.vspx" value="SPARQL-SSL" render-only="1"/>
+		      <?vsp if (DB.DBA.VAD_CHECK_VERSION ('Framework') is not null or DB.DBA.VAD_CHECK_VERSION ('policy_manager') is not null) { ?>
+		      <td class="<?V self.astyle ('WebID ACLs') ?>" align="center">
+			<v:url xhtml_style="page_tab" url="sparql_acl.vspx" value="WebID ACLs" render-only="1"/>
 		      </td>
 		      <?vsp } ?>
                         

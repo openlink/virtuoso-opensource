@@ -149,6 +149,7 @@ div.app_hdr_cmds_ctr {
 .left_container {
   background-color: #EFEFEF;
   border: 1px solid #7f94a5;
+  border-radius: 5px;
   -moz-border-radius: 5px;
   -webkit-border-radius: 5px;
   padding: 5px;
@@ -514,6 +515,7 @@ input.button {
   border: solid 1px;
   border-color: #7f94a5;
   background: #99b3c5;
+  border-radius: 3px;
   -moz-border-radius: 3px;
   -webkit-border-radius: 3px;
 }
@@ -561,6 +563,7 @@ input.nolink2 {
   border: solid 1px;
   border-color: #7f94a5;
   background: #99b3c5;
+  border-radius: 3px;
   -moz-border-radius: 3px;
   -webkit-border-radius: 3px;
 }
@@ -790,6 +793,8 @@ div.tab {
   border: 1px solid #000;
   border-bottom-width: 0px;
   border-color: #7f94a5;
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px;
   -moz-border-radius-topleft: 3px;
   -moz-border-radius-topright: 3px;
   -webkit-border-top-left-radius: 3px;
@@ -814,6 +819,8 @@ span.tab {
   border: 1px solid #000;
   border-bottom-width: 0px;
   border-color: #7f94a5;
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px;
   -moz-border-radius-topleft: 3px;
   -moz-border-radius-topright: 3px;
   -webkit-border-top-left-radius: 3px;
@@ -979,6 +986,7 @@ font-weight:normal !important;
 span.button {
   background: none repeat scroll 0 0 #99B3C5;
   border: 1px solid #7F94A5;
+  border-radius: 5px;
   -moz-border-radius: 5px;
   -webkit-border-radius: 5px;
   color: #FFFFFF;

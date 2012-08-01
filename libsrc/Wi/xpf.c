@@ -2527,29 +2527,43 @@ void
 xpf_lang (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
   caddr_t lang = xpf_arg (xqi, tree, ctx_xe, DV_C_STRING, 0);
-  xml_entity_t *xe = ctx_xe->_->xe_copy (ctx_xe);
+  ptrlong res = 0;
   caddr_t lang_in_effect = NULL;
-  ptrlong res;
-  XT *test = xtlist (NULL, 4, XP_NAME_EXACT, uname_xml, uname_lang, uname_xml_colon_lang);
-  while (!lang_in_effect)
+  switch (DV_TYPE_OF (ctx_xe))
     {
-      if (XI_NO_ATTRIBUTE == xe->_->xe_attribute (xe, -1, test, &lang_in_effect, NULL))
-	if (XI_AT_END == xe->_->xe_up (xe, (XT *) XP_NODE, 0 /* no XE_UP_MAY_TRANSIT! */))
-	    break;
+    case DV_XML_ENTITY:
+      {
+        xml_entity_t *xe = ctx_xe->_->xe_copy (ctx_xe);
+        XT *test = xtlist (NULL, 4, XP_NAME_EXACT, uname_xml, uname_lang, uname_xml_colon_lang);
+        while (!lang_in_effect)
+          {
+            if (XI_NO_ATTRIBUTE == xe->_->xe_attribute (xe, -1, test, &lang_in_effect, NULL))
+              if (XI_AT_END == xe->_->xe_up (xe, (XT *) XP_NODE, 0 /* no XE_UP_MAY_TRANSIT! */))
+                break;
+          }
+        dk_free_tree ((box_t) xe);
+        dk_free_tree ((box_t) test);
+        break;
+      }
+    case DV_RDF:
+      {
+        rdf_box_t *rb = (rdf_box_t *)ctx_xe;
+        if (!rb->rb_is_complete)
+          rb_complete (rb, xqi->xqi_qi->qi_trx, xqi->xqi_qi);
+        if (RDF_BOX_DEFAULT_LANG != rb->rb_lang)
+          lang_in_effect = rdf_lang_twobyte_to_string (rb->rb_lang);
+        break;
+      }
     }
-  dk_free_tree ((box_t) xe);
   if (DV_STRINGP (lang_in_effect))
     {
       char *minus = strchr (lang_in_effect, '-');
       if (minus)
-	res = 0 == strnicmp (lang, lang_in_effect, lang_in_effect - minus);
+        res = (0 == strnicmp (lang, lang_in_effect, lang_in_effect - minus)) ? 1 : 0;
       else
-	res = 0 == stricmp (lang, lang_in_effect);
+        res = (0 == stricmp (lang, lang_in_effect)) ? 1 : 0;
     }
-  else
-    res = 0;
   dk_free_tree (lang_in_effect);
-  dk_free_tree ((box_t) test);
   XQI_SET (xqi, tree->_.xp_func.res, (caddr_t) res);
 }
 
@@ -4575,7 +4589,7 @@ xpf_extension (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
     {
       caddr_t retc = (((caddr_t *)lc->lc_proc_ret)[1]);
       caddr_t ent;
-#ifdef DEBUG
+#ifdef XPATH_DEBUG
       dk_check_tree (retc);
 #endif
       switch (DV_TYPE_OF(retc))
@@ -4606,7 +4620,7 @@ err_end:
 #if defined (NO_XPF_EXT_CALL_CACHE)
   qr_free (qr);
 #endif
-#ifdef DEBUG
+#ifdef XPATH_DEBUG
   dk_check_tree (XQI_GET (xqi, tree->_.xp_func.var->_.var.init));
 #endif
   if (err)

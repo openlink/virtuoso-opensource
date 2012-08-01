@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2006 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<refentry id="fn___xml_ns_iristr">
+  <refmeta>
+    <refentrytitle>__xml_ns_iristr</refentrytitle>
+    <refmiscinfo>rdf</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>__xml_ns_iristr</refname>
+    <refpurpose>Returns an varchar with box flag set to BF_IRI.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn___xml_ns_iristr">
+      <funcprototype id="fproto___xml_ns_iristr">
+        <funcdef>
+        	<function>__xml_ns_iristr</function>
+        </funcdef>
+	      <paramdef>in <parameter>str1</parameter> varchar</paramdef>
+	      <paramdef>in <parameter>str2</parameter> varchar</paramdef>	      
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc___xml_ns_iristr">
+    <title>Description</title>
+    <para>This function is similar to the <link linkend="fn_xml_ns_uname"><function>xml_ns_uname</function></link> function, 
+    and it returns an varchar with box flag set to BF_IRI.</para>
+  </refsect1>
+  <refsect1 id="params___xml_ns_iristr">
+    <title>Parameters</title>
+    <refsect2><title>str1</title>
+      <para>Namespace prefix</para>
+    </refsect2>
+    <refsect2><title>str2</title>
+      <para>Local part (varchar)</para>
+    </refsect2>    
+  </refsect1>
+ <refsect1 id="examples__xml_ns_iristr"><title>Examples</title>
+    <example id="ex_xml_ns_iristr_1"><title>Simple Example</title>
+      <para>Base64-encode a string</para>
+<programlisting><![CDATA[
+SQL> SELECT __xml_ns_iristr ('foaf', 'knows');
+__xml_ns_iristr
+VARCHAR
+_______________________________________________________________________________
+
+http://xmlns.com/foaf/0.1/knows
+
+1 Rows. -- 1 msec.	
+]]></programlisting>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso__xml_ns_iristr"><title>See Also</title>
+    <para><link linkend="fn_xml_ns_uname"><function>xml_ns_uname</function></link></para>                  
+    <para><link linkend="fn_xml_nsexpand_iristr"><function>xml_nsexpand_iristr</function></link></para>            
+    <para><link linkend="fn_xml_get_ns_prefix"><function>xml_get_ns_prefix</function></link></para>
+    <para><link linkend="fn_xml_get_ns_uri"><function>xml_get_ns_uri</function></link></para>
+  </refsect1>
+</refentry>

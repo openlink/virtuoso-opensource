@@ -1011,7 +1011,7 @@ DBG_NAME (box_num_nonull) (DBG_PARAMS boxint n)
 box_t
 DBG_NAME (box_iri_id) (DBG_PARAMS int64 n)
 {
-  iri_id_t * box = (iri_id_t*) dk_alloc_box (sizeof (iri_id_t), DV_IRI_ID);
+  iri_id_t * box = (iri_id_t*) DBG_NAME (dk_alloc_box) (DBG_ARGS sizeof (iri_id_t), DV_IRI_ID);
   *box = n;
   return (caddr_t) box;
 }

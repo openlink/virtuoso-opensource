@@ -393,6 +393,7 @@ qr_free (query_t * qr)
       dk_free_tree (qr->qr_proc_ret_type);
       dk_free_box (qr->qr_trig_table);
       dk_free_box ((box_t) qr->qr_trig_upd_cols);
+      if (qr->qr_pn) qr->qr_pn->pn_query = NULL;
       proc_name_free (qr->qr_pn);
     }
   dk_free_box ((caddr_t) qr->qr_proc_cost);
@@ -619,6 +620,7 @@ ssl_new_constant (comp_context_t * cc, caddr_t val)
   DO_SET (state_const_slot_t *, ssl, &cc->cc_query->qr_state_map)
     {
       if (SSL_CONSTANT == ssl->ssl_type
+        && (DV_TYPE_OF (val) == DV_TYPE_OF (ssl->ssl_const_val)) /* This check is added due to bug 14773 */
 	  && box_equal (val, ssl->ssl_const_val))
 	return (state_slot_t *)ssl;
     }

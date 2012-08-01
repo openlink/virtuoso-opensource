@@ -65,4 +65,8 @@
 #define hash_table_free_64(ht) \
   id_hash_free (ht)
 
-#endif /* DKHASH64_H */
+#define dk_hash_64_iterator_t id_hash_iterator_t
+#define dk_hash_64_iterator id_hash_iterator
+#define dk_hash_64_hit_next hit_next
+
+#endif

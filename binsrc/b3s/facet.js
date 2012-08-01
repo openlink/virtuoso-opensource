@@ -292,7 +292,7 @@ function prop_val_dt_sel_init () {
 		if (v_h != '' && v_h.match (/\".*\"\^\^\<.*\>/) === null) {
                     if ($v('cond_dt') == '' || $v('cond_dt') == 'http://www.openlinksw.com/schemas/facets/dtp/plainstring')
 			v_h = '"'+ v_h +'"';
-  		    else
+                    else
   			v_h = '"' + v_h + '"^^<' + $v('cond_dt') + '>';
 		}
 		if (v_l != '' && v_l.match (/\".*\"\^\^\<.*\>/) === null) {
@@ -683,6 +683,7 @@ function handle_val_anchor_click (e) {
 	    $('cond_lo').value = val;
 	break;
     case "in":
+    case "not_in":
 	OAT.Event.prevent(e);
         in_ui.add_val (val, dtp, lang);
         break;
@@ -813,6 +814,7 @@ function fct_init_ui ()
 		OAT.Dom.show ('cond_dt');
 		break;
             case "in":
+	    case "not_in":
                 OAT.Dom.hide ('cond_inp_ctr');
                 OAT.Dom.hide ('cond_hi_ctr');
                 in_ui.show();

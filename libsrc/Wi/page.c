@@ -952,10 +952,10 @@ pf_fill_registered (page_fill_t * pf, buffer_desc_t * buf, it_cursor_t * itc)
 	{
 #ifdef NDEBUG
 	  log_error ("Too many cursors: %ld on splitting page.", pf_count_registered (buf));
-	  itc_bust_this_trx (itc, buf, ITC_BUST_THROW);
-#else
-	GPF_T1 ("too many cursors on splitting page.");
+	  itc_bust_this_trx (itc, &buf, ITC_BUST_THROW);
 #endif
+	  /* should never return*/
+	  GPF_T1 ("too many cursors on splitting page.");
 	}
     }
   pf->pf_cr_fill = cr_fill;
@@ -1732,7 +1732,7 @@ pf_rd_refit_1 (page_fill_t * pf, row_delta_t * rd, int recursive)
   db_buf_t row = buf->bd_buffer + pm->pm_entries[rd->rd_map_pos];
   dbe_key_t * key = rd->rd_key->key_versions[IE_KEY_VERSION (row)];
   int inx, rc = 0;
-  int space = row_space_after (buf, rd->rd_map_pos), avail, gap, space_needed = 0, space_before = space;
+  int space = row_space_after (buf, rd->rd_map_pos), avail, gap = 0, space_needed = 0, space_before = space;
   if (!buf->bd_is_write || !buf->bd_is_dirty) GPF_T1 ("refit1 for non excl or non dirty buffer");
   for (inx = 0; inx < rd->rd_n_values; inx++)
     {
@@ -2437,6 +2437,9 @@ void
 page_apply_s (it_cursor_t * itc, buffer_desc_t * buf, int n_delta, row_delta_t ** delta, int op)
 {
   page_apply_frame_t paf;
+#ifdef VALGRIND
+  memset (&paf, 0, sizeof (page_apply_frame_t));
+#endif
   page_apply_1 (itc, buf, n_delta, delta, op, &paf);
 }
 

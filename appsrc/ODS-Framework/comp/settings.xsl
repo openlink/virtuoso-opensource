@@ -599,7 +599,7 @@
                 self.reglastname.ufl_failed := 1;
               }
               if(length(self.reguid.ufl_value) < 1 or length(self.reguid.ufl_value) > 20) {
-                self.reguid.ufl_error := 'Login name cannot be empty or longer then 20 chars';
+                self.reguid.ufl_error := 'Login name cannot be empty or longer than 20 chars';
                 self.vc_is_valid := 0;
                 self.reguid.ufl_failed := 1;
               }

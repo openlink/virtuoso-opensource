@@ -285,7 +285,7 @@ directory_init() {
   cp -f art_vad.sql                                             vad/data/demo/sql
   cp -f uninst.sql                                              vad/data/demo/sql
   cp -f uninst.sql                                              vad/data/demo/sql
-  cp -f $HOME/binsrc/dav/DET_RDFData.sql                        vad/data/demo/sql
+  #cp -f $HOME/binsrc/dav/DET_RDFData.sql                        vad/data/demo/sql
   cp -f $HOME/binsrc/vsp/soapdemo/fishselect.sql                vad/data/demo/sql
   cp -f $HOME/binsrc/vsp/soapdemo/soap_validator.sql            vad/data/demo/sql
   cp -f $HOME/binsrc/vsp/soapdemo/interop-xsd.sql               vad/data/demo/sql
@@ -430,7 +430,7 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/eNews_vad.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/def_vad.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/func_vad.sql', 1, 'report', 1);" >> $STICKER
-  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/DET_RDFData.sql', 1, 'report', 1);" >> $STICKER
+  #echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/DET_RDFData.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/sql_rdf.sql', 1, 'report', 1);" >> $STICKER
   #echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/tpch.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/rd_v_1.sql', 1, 'report', 1);" >> $STICKER  

@@ -161,8 +161,15 @@ again:
 	    }
 	}
     }
+  if (__tag of rdf_box = __tag (best_str))
+    {
+      __rdf_box_make_complete (best_str);
+      best_str := rdf_box_data (best_str);
+    }
   if (best_str <> '')
-    return best_str;
+    {
+      return best_str;
+    }
   exec (sprintf ('sparql define input:inference "dbprdf-label" '||
   'select ?o (lang(?o)) where { graph <%S> { <%S> virtrdf:label ?o } }', _G, _S), null, null, vector (), 0, meta, data);
   best_str := '';
@@ -178,6 +185,11 @@ again:
 	      best_q := q;
 	    }
 	}
+    }
+  if (__tag of rdf_box = __tag (best_str))
+    {
+      __rdf_box_make_complete (best_str);
+      best_str := rdf_box_data (best_str);
     }
   return best_str;
 }
@@ -216,6 +228,11 @@ create procedure dbp_ldd_type (in gr varchar, in subj varchar, out url varchar, 
 	    ll := dbp_ldd_uri_local_part (data[0][1]);
 	  url := dbp_ldd_get_proxy (data[0][1]);
 	}
+    }
+  if (__tag of rdf_box = __tag (ll))
+    {
+      __rdf_box_make_complete (ll);
+      ll := rdf_box_data (ll);
     }
   return ll;
 }
@@ -428,15 +445,22 @@ create procedure dbp_ldd_http_print_l (in p_text any, inout odd_position int, in
    http (sprintf ('<tr class="%s"><td class="property">', either(mod (odd_position, 2), 'odd', 'even')));
    if (rev) http ('is ');
    if (short_p is not null)
-      http (sprintf ('<a class="uri" href="%V"%s><small>%s:</small>%s</a>\n', href, title, p_prefix, short_p));
+      http (sprintf ('<a class="uri" href="%V"%s><small>%V:</small>%V</a>\n', 
+	href,
+	charset_recode (title, 'UTF-8', '_WIDE_'),
+	charset_recode (p_prefix, 'UTF-8', '_WIDE_'),
+	charset_recode (short_p, 'UTF-8', '_WIDE_')));
    else
-      http (sprintf ('<a class="uri" href="%V"%s>%s</a>\n', href, title, p_prefix));
+      http (sprintf ('<a class="uri" href="%V"%s>%V</a>\n', 
+	href,
+	charset_recode (title, 'UTF-8', '_WIDE_'), 
+	charset_recode (p_prefix, 'UTF-8', '_WIDE_')));
    if (rev) http (' of');
    http ('</td><td><ul>\n');
 }
 ;
 
-create procedure dbp_ldd_rel_print (in val any, in rel any, in obj any, in flag int := 0, in lang varchar := null)
+create procedure dbp_ldd_rel_print (in val any, in rel any, in obj any, in flag int := 0, in lang varchar := null, in nofollow int := 0)
 {
   declare delim, delim1, delim2, delim3 integer;
   declare inx int;
@@ -469,7 +493,7 @@ create procedure dbp_ldd_rel_print (in val any, in rel any, in obj any, in flag 
   if (flag)
     loc := sprintf ('property="%s:%s"', nspref, loc);
   else if (rel)
-    loc := sprintf ('rel="%s:%s"', nspref, loc);
+    loc := sprintf ('rel="%s:%s%s"', nspref, loc, case when nofollow = 1 and loc <> 'sameAs' then ' nofollow' else '' end);
   else
     loc := sprintf ('rev="%s:%s"', nspref, loc);
   --if (obj is not null)
@@ -488,7 +512,7 @@ create procedure dbp_ldd_http_print_r (in _object any, in org int := 0, in label
    lang := DB.DBA.RDF_LANGUAGE_OF_OBJ (_object);
    visible := dbp_ldd_str_lang_check (lang, acc);
    rdfs_type := DB.DBA.RDF_DATATYPE_OF_OBJ (_object);
-   rdfa := dbp_ldd_rel_print (id_to_iri (pred), rel, null, 1, lang);
+   rdfa := dbp_ldd_rel_print (id_to_iri (pred), rel, null, 1, lang, 0);
 
    http (sprintf ('\t<li%s><span class="literal">', case visible when 0 then ' style="display:none;"' else '' end));
 
@@ -523,7 +547,9 @@ again:
    else if (__tag (_object) = 182)
      {
        string_type:
-       http (sprintf ('<span %s>%s</span>', rdfa, _object));
+       http (sprintf ('<span %s>', rdfa));
+       http_value (charset_recode (_object, 'UTF-8', '_WIDE_'));
+       http ('</span>');
        lang := '';
      }
    else if (__tag (_object) = 211)
@@ -560,16 +586,27 @@ again:
        else
 	 dbp_ldd_split_url (_url, p_t, s_t, _label);
 
-       rdfa := dbp_ldd_rel_print (id_to_iri (pred), rel, _url, 0, lang);
+       declare nofollow int;
+       nofollow := 0;
+       if (s_t is null and _url not like registry_get('dbp_domain') || '/%')
+	 nofollow := 1;
+
+       rdfa := dbp_ldd_rel_print (id_to_iri (pred), rel, _url, 0, lang, nofollow);
+
        if (s_t is null)
 	 {
-	   http (sprintf ('<a class="uri" %s href="%s">%s</a>', 
-		 rdfa, case when org then _url else dbp_ldd_get_proxy(_url) end, _url));
+	   http (sprintf ('<a class="uri" %s href="%V">%V</a>', 
+		 rdfa, 
+		charset_recode (case when org then _url else dbp_ldd_get_proxy(_url) end, 'UTF-8', '_WIDE_'), 
+		charset_recode (_url, 'UTF-8', '_WIDE_')));
 	 }
        else
 	 {
-	   http (sprintf ('<a class="uri" %s href="%s"><small>%s</small>:%s</a>',
-		 rdfa, case when org then _url else dbp_ldd_get_proxy (_url) end, p_t, s_t));
+	   http (sprintf ('<a class="uri" %s href="%V"><small>%V</small>:%V</a>',
+		 rdfa, 
+		charset_recode (case when org then _url else dbp_ldd_get_proxy(_url) end, 'UTF-8', '_WIDE_'), 
+		charset_recode (p_t, 'UTF-8', '_WIDE_'),
+		charset_recode (s_t, 'UTF-8', '_WIDE_')));
 	 }
      }
    else if (__tag (_object) = 238)
@@ -613,10 +650,10 @@ create procedure dbp_wikipedia_cc_by_sa (in _S any, in _G any)
     _G := id_to_iri (_G);
 
   exec (sprintf ('sparql  '||
-  'select ?o where { graph <%S> { <%S> foaf:page ?o } } LIMIT 1', _G, _S), null, null, vector (), 0, meta, data);
+  'select ?o where { graph <%S> { <%S> foaf:isPrimaryTopicOf ?o } } LIMIT 1', _G, _S), null, null, vector (), 0, meta, data);
 
   if (length (data))
-    wiki_link := data[0][0];
+    wiki_link := charset_recode (data[0][0], 'UTF-8', '_WIDE_');
   else
     wiki_link := 'http://www.wikipedia.org/';
     
@@ -625,4 +662,30 @@ create procedure dbp_wikipedia_cc_by_sa (in _S any, in _G any)
   http (' and is licensed under the ');
   http ('<a href="http://creativecommons.org/licenses/by-sa/3.0/">Creative Commons Attribution-ShareAlike 3.0 Unported License</a>\n');
 } 
+;
+
+create procedure 
+dbp_check_if_modified (in lines any, in graph any)
+{
+  declare since, modified, pname any;
+  declare exit handler for sqlstate '*' 
+    {
+      return 0;
+    };
+  since := http_request_header (lines, 'If-Modified-Since', null, null);
+  if (since is null) return 0;
+  since := http_string_date (since);
+  pname := registry_get ('dbp_last_modification');
+  if (isstring (pname) and __proc_exists (pname) is not null)
+    modified := call (pname) (lines, graph);
+  else  
+    modified := (select max (LL_DONE) from LOAD_LIST where LL_GRAPH = graph);
+  modified := dt_set_tz (modified, 0);  
+  --dbg_obj_print_vars (since, modified, gt (since, modified), graph);
+  if (modified is null) return 0;
+  if (modified > since) return 0;
+  http_rewrite ();
+  http_status_set (304);
+  return 1;
+}
 ;

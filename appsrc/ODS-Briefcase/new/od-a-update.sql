@@ -79,7 +79,6 @@ create procedure ODRIVE.WA.tmp_upgrade ()
 {
   if (registry_get ('odrive_items_upgrade') = '1')
     return;
-  registry_set ('odrive_items_upgrade', '1');
 
 	declare I, N, M integer;
   declare tmp, oldSearch, newSearch, aXml, aEntity any;
@@ -136,6 +135,119 @@ create procedure ODRIVE.WA.tmp_upgrade ()
 
     ODRIVE.WA.DAV_PROP_SET (COL_FULL_PATH, 'virt:Filter-Params', newSearch, 'dav');
   }
+  registry_set ('odrive_items_upgrade', '1');
+}
+;
+
+ODRIVE.WA.tmp_upgrade ();
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.tmp_upgrade ()
+{
+  declare path, graph any;
+
+  if (registry_get ('odrive_acl_update') = '1')
+    return;
+
+  for (select * from WS.WS.SYS_DAV_PROP where PROP_TYPE = 'R' and PROP_NAME = 'virt:aci_meta_n3') do
+  {
+    path := DB.DBA.DAV_SEARCH_PATH (PROP_PARENT_ID, PROP_TYPE);
+    graph := WS.WS.DAV_IRI (path);
+    delete from DB.DBA.RDF_QUAD where G = iri_to_id (graph);
+    graph := rtrim (WS.WS.DAV_IRI (path), '/') || '/';
+    delete from DB.DBA.RDF_QUAD where G = iri_to_id (graph);
+
+    WS.WS.WAC_INSERT (path, PROP_VALUE, null, null, 0);
+  }
+
+  registry_set ('odrive_acl_upgrade', '1');
+}
+;
+
+ODRIVE.WA.tmp_upgrade ();
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.tmp_upgrade (
+  in det varchar)
+{
+  declare path, graph, propName, permissions any;
+
+  if (registry_get ('odrive_graph_update') = '1')
+    return;
+
+  propName := 'virt:' || det || '-graph';
+  for (select * from WS.WS.SYS_DAV_PROP where PROP_TYPE = 'C' and PROP_NAME = propName) do
+  {
+    path := DB.DBA.DAV_SEARCH_PATH (PROP_PARENT_ID, PROP_TYPE);
+    permissions := DB.DBA.DAV_PROP_GET_INT (PROP_PARENT_ID, PROP_TYPE, ':virtpermissions', 0, ODRIVE.WA.account_name (http_dav_uid ()), ODRIVE.WA.account_password (http_dav_uid ()), http_dav_uid ());
+    ODRIVE.WA.graph_private_add (path, 'C', permissions, PROP_VALUE);
+  }
+
+  registry_set ('odrive_graph_update', '1');
+}
+;
+
+ODRIVE.WA.tmp_upgrade ('IMAP');
+ODRIVE.WA.tmp_upgrade ('GDrive');
+ODRIVE.WA.tmp_upgrade ('Dropbox');
+ODRIVE.WA.tmp_upgrade ('SkyDrive');
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.tmp_upgrade ()
+{
+  declare rid, ouid, ogid any;
+
+  if (registry_get ('odrive_nobody_update') = '1')
+    return;
+
+  for (select RES_ID, RES_COL from WS.WS.SYS_DAV_RES where RES_OWNER = -12) do
+  {
+    rid := RES_ID;
+
+    select COL_OWNER, COL_GROUP
+      into ouid, ogid
+      from WS.WS.SYS_DAV_COL
+     where COL_ID = RES_COL;
+
+    update WS.WS.SYS_DAV_RES
+       set RES_OWNER = ouid,
+           RES_GROUP = ogid
+     where RES_ID = rid;
+  }
+  registry_set ('odrive_nobody_update', '1');
+}
+;
+
+ODRIVE.WA.tmp_upgrade ();
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.tmp_upgrade ()
+{
+  declare server, property, propertyValue varchar;
+  declare V any;
+
+  if (registry_get ('odrive_imap_update') = '1')
+    return;
+
+  for (select COL_ID from WS.WS.SYS_DAV_COL where COL_DET = 'IMAP') do
+  {
+    server := DB.DBA.DAV_PROP_GET_INT (COL_ID, 'C', 'virt:IMAP-server', 0);
+    V := sprintf_inverse (server, '%s:%s', 2);
+    property := 'virt:IMAP-server';
+    propertyValue := V[0];
+    if (not isnull (propertyValue))
+      DB.DBA.DAV_PROP_SET_RAW (COL_ID, 'C', property, propertyValue, 1, http_dav_uid ());
+
+    property := 'virt:IMAP-port';
+    propertyValue := V[1];
+    if (not isnull (propertyValue))
+      DB.DBA.DAV_PROP_SET_RAW (COL_ID, 'C', property, propertyValue, 1, http_dav_uid ());
+  }
+  registry_set ('odrive_imap_update', '1');
 }
 ;
 

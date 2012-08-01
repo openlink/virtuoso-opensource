@@ -30,23 +30,23 @@ delete from DB.DBA.URL_REWRITE_RULE_LIST;
 DB.DBA.URLREWRITE_CREATE_SPRINTF_RULE('rule1', 1, '/%s/%s/%d', vector('app_name', 'user_name', 'post_id'), 3, '/app_name=%s&post_id=%d&user_name=%s', vector('app_name', 'post_id', 'user_name'), NULL);
 select URLREWRITE_ENUMERATE_RULES('%rul%')[0];
 ECHO BOTH $IF $EQU $LAST[1] rule1  "PASSED" "***FAILED";
-ECHO BOTH " " $LAST[1] "\n";
+ECHO BOTH ": " $LAST[1] "\n";
 
 DB.DBA.URLREWRITE_CREATE_SPRINTF_RULE('rule2', 1, '/%s/%s/%d', vector('app_name', 'user_name', 'post_id'), 3, '/app_name=%s&post_id=%d&user_name=%s', vector('app_name', 'post_id', 'user_name'), NULL);
 select URLREWRITE_ENUMERATE_RULES('%rul%')[1];
 ECHO BOTH $IF $EQU $LAST[1] rule2  "PASSED" "***FAILED";
-ECHO BOTH " " $LAST[1] "\n";
+ECHO BOTH ": " $LAST[1] "\n";
 
 DB.DBA.URLREWRITE_CREATE_SPRINTF_RULE('rule22', 1, '/%s/%s/%d', vector('app_name', 'user_name', 'post_id'), 3, '/app_name2=%s&post_id2=%d&user_name2=%s', vector('app_name', 'post_id', 'user_name'), NULL);
 select URLREWRITE_ENUMERATE_RULES('%rul%')[2];
 ECHO BOTH $IF $EQU $LAST[1] rule22 "PASSED" "***FAILED";
-ECHO BOTH " " $LAST[1] "\n";
+ECHO BOTH ": " $LAST[1] "\n";
 
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE('rule4', 1, '/\([^/]*\)/\([^/]*\)/\([^/]*\)', vector('app_name', 'user_name', 'post_id'), 3, '/app_name3=%s&post_id3=%s&user_name3=%s', vector('app_name', 'post_id', 'user_name'), NULL);
 select URLREWRITE_ENUMERATE_RULES('%rule4')[0];
 ECHO BOTH $IF $EQU $LAST[1] rule4  "PASSED" "***FAILED";
-ECHO BOTH " " $LAST[1] "\n";
+ECHO BOTH ": " $LAST[1] "\n";
 
 DB.DBA.URLREWRITE_CREATE_RULELIST('rule_list2', 1, vector('rule1', 'rule2'));
 DB.DBA.URLREWRITE_CREATE_RULELIST('rule_list1', 1, vector('rule_list2'));
@@ -54,33 +54,33 @@ DB.DBA.URLREWRITE_CREATE_RULELIST('rule_list22', 1, vector('rule22'));
 
 select DB.DBA.URLREWRITE_ENUMERATE_RULELISTS('%rul%')[0];
 ECHO BOTH $IF $EQU $LAST[1] rule_list1  "PASSED" "***FAILED";
-ECHO BOTH " " $LAST[1] "\n";
+ECHO BOTH ": " $LAST[1] "\n";
 
 select DB.DBA.URLREWRITE_ENUMERATE_RULELISTS('%rul%')[1];
 ECHO BOTH $IF $EQU $LAST[1] rule_list2  "PASSED" "***FAILED";
-ECHO BOTH " " $LAST[1] "\n";
+ECHO BOTH ": " $LAST[1] "\n";
 
 DB.DBA.URLREWRITE_CREATE_SPRINTF_RULE('rule3', 1, '%/%s/%d', vector('app_name', 'user_name', 'post_id'), 3, '/app_name=%s&post_id=%d&user_name=%s', vector('app_name', 'post_id', 'user_name'), NULL);
 select URLREWRITE_ENUMERATE_RULES('%rul%')[2];
 ECHO BOTH $IF $EQU $LAST[1] rule22 "PASSED" "***FAILED";
-ECHO BOTH " " $LAST[1] "\n";
+ECHO BOTH ": " $LAST[1] "\n";
 
 DB.DBA.URLREWRITE_DROP_RULE('rule3');
 select length(URLREWRITE_ENUMERATE_RULES('%rule3'));
 ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
-ECHO BOTH " " $LAST[1] "\n";
+ECHO BOTH ": " $LAST[1] "\n";
 
 DB.DBA.URLREWRITE_CREATE_RULELIST('rule_list4', 1, vector('rule4'));
 
 DB.DBA.URLREWRITE_CREATE_RULELIST('rule_list3', 1, vector('rule_list2', 'rule1'));
 select DB.DBA.URLREWRITE_ENUMERATE_RULELISTS('rule_list3')[0];
 ECHO BOTH $IF $EQU $LAST[1] rule_list3  "PASSED" "***FAILED";
-ECHO BOTH " " $LAST[1] "\n";
+ECHO BOTH ": " $LAST[1] "\n";
 
 DB.DBA.URLREWRITE_DROP_RULELIST('rule_list3');
 select length(DB.DBA.URLREWRITE_ENUMERATE_RULELISTS('rule_list3'));
 ECHO BOTH $IF $EQU $LAST[1] 0  "PASSED" "***FAILED";
-ECHO BOTH " " $LAST[1] "\n";
+ECHO BOTH ": " $LAST[1] "\n";
 
 VHOST_REMOVE ('*ini*', '*ini*', '/weblog');
 VHOST_REMOVE ('*ini*', '*ini*', '/weblog/aziz');
@@ -111,7 +111,7 @@ create procedure DB.DBA.test_sprintf(in  path varchar) returns any
 };
 select DB.DBA.test_sprintf('http://localhost:$U{HTTPPORT}/weblog/aziz/1');
 ECHO BOTH $IF $EQU $LAST[1] '/app_name=weblog&post_id=1&user_name=aziz'  "PASSED" "***FAILED";
-ECHO BOTH " " $LAST[1] "\n";
+ECHO BOTH ": " $LAST[1] "\n";
 
 
 VHOST_REMOVE ('*ini*', '*ini*', '/weblog/aziz');
@@ -120,11 +120,11 @@ DB.DBA.VHOST_DEFINE(lpath=>'/weblog/aziz', ppath=>'/weblog/aziz/', vsp_user=>'db
         opts=>vector ('url_rewrite', 'rule_list22'));
 select DB.DBA.test_sprintf('http://localhost:$U{HTTPPORT}/weblog/aziz/1');
 ECHO BOTH $IF $EQU $LAST[1] '/app_name2=weblog&post_id2=1&user_name2=aziz'  "PASSED" "***FAILED";
-ECHO BOTH " " $LAST[1] "\n";
+ECHO BOTH ": " $LAST[1] "\n";
 
 select DB.DBA.test_sprintf('http://localhost:$U{HTTPPORT}/weblog/aziz');
 ECHO BOTH $IF $EQU $LAST[1] '/app_name2=weblog&user_name2=aziz'  "***FAILED" "PASSED" ;
-ECHO BOTH " " $LAST[1] "\n";
+ECHO BOTH ": " $LAST[1] "\n";
 
 
 VHOST_REMOVE ('*ini*', '*ini*', '/weblog');
@@ -154,16 +154,16 @@ create procedure DB.DBA.test_regexp(in path varchar) returns any
 };
 select DB.DBA.test_regexp('http://localhost:$U{HTTPPORT}/weblog/aziz/1');
 ECHO BOTH $IF $EQU $LAST[1] '/app_name=weblog&post_id=1&user_name=aziz'  "***FAILED" "PASSED";
-ECHO BOTH " " $LAST[1] "\n";
+ECHO BOTH ": " $LAST[1] "\n";
 
 VHOST_REMOVE ('*ini*', '*ini*', '/weblog/aziz');
 select DB.DBA.test_regexp('http://localhost:$U{HTTPPORT}/weblog/aziz/1');
 ECHO BOTH $IF $EQU $LAST[1] '/app_name3=weblog&post_id3=1&user_name3=aziz'  "PASSED" "***FAILED";
-ECHO BOTH " " $LAST[1] "\n";
+ECHO BOTH ": " $LAST[1] "\n";
 
 select DB.DBA.test_regexp('http://localhost:$U{HTTPPORT}/weblog/aziz');
 ECHO BOTH $IF $EQU $LAST[1] '/app_name3=weblog&user_name3=aziz'  "***FAILED" "PASSED";
-ECHO BOTH " " $LAST[1] "\n";
+ECHO BOTH ": " $LAST[1] "\n";
 
 
 create procedure DB.DBA.test_inverse(in rule varchar, in path varchar)
@@ -193,24 +193,23 @@ create procedure DB.DBA.test_inverse(in rule varchar, in path varchar)
 
 select DB.DBA.test_inverse('rule1', 'http://localhost:$U{HTTPPORT}/app_name=weblog&post_id=1&user_name=aziz');
 ECHO BOTH $IF $EQU $LAST[1] 'weblog/aziz/1'  "PASSED" "***FAILED";
-ECHO BOTH " " $LAST[1] "\n";
+ECHO BOTH ": " $LAST[1] "\n";
 
 
 select DB.DBA.test_inverse('rule2', 'http://localhost:$U{HTTPPORT}/app_name=weblog&post_id=1&user_name=aziz');
 ECHO BOTH $IF $EQU $LAST[1] 'weblog/aziz/1'  "PASSED" "***FAILED";
-ECHO BOTH " " $LAST[1] "\n";
+ECHO BOTH ": " $LAST[1] "\n";
 
 
 select DB.DBA.test_inverse('rule4', 'http://localhost:$U{HTTPPORT}/app_name=weblog&post_id=1&user_name=aziz');
 ECHO BOTH $IF $EQU $LAST[1] 'weblog/aziz/1'  "***FAILED" "PASSED";
-ECHO BOTH " " $LAST[1] "\n";
+ECHO BOTH ": " $LAST[1] "\n";
 
 
 select DB.DBA.test_inverse('rule3', 'http://localhost:$U{HTTPPORT}/app_name=weblog&post_id=1&user_name=aziz');
 ECHO BOTH $IF $EQU $LAST[1] 'weblog/aziz/1'  "***FAILED" "PASSED";
-ECHO BOTH " " $LAST[1] "\n";
+ECHO BOTH ": " $LAST[1] "\n";
 
 select DB.DBA.test_inverse('rule22', 'http://localhost:$U{HTTPPORT}/app_name=weblog&post_id=1&user_name=aziz');
 ECHO BOTH $IF $EQU $LAST[1] 'weblog/aziz/1'  "***FAILED" "PASSED";
-ECHO BOTH " " $LAST[1] "\n";
-
+ECHO BOTH ": " $LAST[1] "\n";

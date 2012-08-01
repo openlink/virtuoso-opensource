@@ -255,6 +255,17 @@ create procedure DB.DBA.ODS_URLREW_XRDS (in path varchar)
 }
 ;
 
+create procedure DB.DBA.ODS_SERVICES_PAGE (in par varchar, in fmt varchar, in val varchar)
+{
+  declare ret any;
+
+  if (par = 'part')
+    {
+      ret := sprintf ('http://%s%s/services/%s', SIOC..get_cname (), SIOC..get_base_path (), val);
+    }
+  return sprintf (fmt, ret);
+}
+;
 
 -- Person IRI as HTML
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_person_html', 1,
@@ -659,7 +670,7 @@ create procedure DB.DBA.ODS_URLREW_HDR (in in_path varchar)
     {
       tmp := path;
     }
-  links := 'Link: ';
+  links := sprintf ('X-RDF-Graph: http://%{WSHost}s/dataspace\r\nX-SPARQL-Endpoint: http://%{WSHost}s/sparql-auth/\r\nLink: ');
   links := links || sprintf ('<http://%s%s>; rel="http://xmlns.com/foaf/0.1/primaryTopic",', host, tmp);
   links := links || sprintf ('\r\n <http://%s%s>; rev="describedby",', host, tmp);
   if (uname is not null)
@@ -754,10 +765,20 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_error', 1,
     null,
     2);
 
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_services', 1,
+    '/dataspace/doc/services/([^\\?]*)\x24',
+    vector('part'), 1,
+    '/describe/?url=%U', vector('part'),
+    'DB.DBA.ODS_SERVICES_PAGE',
+    null,
+    2,
+    302);
+
 -- All rules are processed in the order below.
 -- Every rule will be tried and last matching rule will win
 DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_rule_list1', 1,
    	vector(
+	  'ods_services',
 	  'ods_person_html',
 	  'ods_person_yadis',
 	  'ods_apps_html',

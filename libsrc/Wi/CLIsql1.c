@@ -142,6 +142,8 @@ virtodbc__SQLAllocStmt (
 #endif
   NEW_VARZ (cli_stmt_t, stmt);
 
+  set_error (&con->con_error, NULL, NULL, NULL);
+
   memset (opts, 0, sizeof (stmt_options_t));
   *phstmt = (SQLHSTMT) stmt;
   dk_set_push (&con->con_statements, (void *) stmt);
@@ -825,7 +827,7 @@ internal_sql_connect (
 #ifdef _SSL
   /* We need to ensure that SSL error stack is clear before peeking a error */
   ERR_clear_error ();
-#if !defined (WIN32)
+#if 0 /*!defined (WIN32)*/
   {
     char *ssl_usage = con->con_encrypt;
     if (ssl_usage && strlen (ssl_usage) > 0 && atoi (ssl_usage) == 0)

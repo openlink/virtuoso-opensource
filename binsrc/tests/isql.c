@@ -2153,7 +2153,7 @@ unescape_string (TCHAR * _string)
 	    case 'x':		/* There's a hexadecimal char constant \xhh */
 	    case 'X':
 	      {			/* Well, we should check that only max 2 digits are parsed */
-		*res_ptr++ = ((UTCHAR) hextoi (&string, ++string));
+		*res_ptr++ = ((UTCHAR) hextoi (&string, string+1));
 		continue;
 	      }
 /* The following might conflict with some other usage. Commented out. */
@@ -10275,7 +10275,7 @@ line_from_html_file (TCHAR *templatename)
 {
   TCHAR tmp1[2002];
 
-  return (isqlt_fgetts (tmp1, (sizeof (tmp1) - 1), html_infp));
+  return (isqlt_fgetts (tmp1, ((sizeof (tmp1) / sizeof (TCHAR)) - 1), html_infp));
 }
 
 /* Return the whole string in one piece. After that return NULL.

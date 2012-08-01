@@ -93,5 +93,3 @@ vt_batch_update ('DB.DBA.XML_TEXT', 'OFF', 0);
 update xml_text set xt_text = xt_text;
 
 select count (*) from xml_text_xt_text_hit;
-
-

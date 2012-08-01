@@ -1,0 +1,45 @@
+<?vsp
+  declare _params, _client_id, _client_secret, _return_url, _code, _url, _reqHeader, _retHeader, _body, _retValue, _json, _xml any;
+  declare _display_name, _email varchar;
+
+  _code := get_keyword ('code', params, '');
+  _json := '{\"error\" : \"invalid_request\"}';
+  if (_code <> '')
+  {
+    _client_id := (select a_key from OAUTH..APP_REG where a_name = 'Google API' and a_owner = 0);
+    _client_secret := (select a_secret from OAUTH..APP_REG where a_name = 'Google API' and a_owner = 0);
+    _return_url := sprintf ('http://%{WSHost}s/ods/google_access.vsp', http_path());
+    _url := 'https://accounts.google.com/o/oauth2/token';
+    _reqHeader := 'Content-Type: application/x-www-form-urlencoded\r\n';
+    _body := sprintf ('code=%U&client_id=%U&client_secret=%U&redirect_uri=%U&grant_type=%U', _code, _client_id, _client_secret, _return_url, 'authorization_code');
+    _retValue := http_client (url=>_url, http_method=>'POST', http_headers=>_reqHeader, body=>_body, n_redirects=>15);
+    _json := replace (_retValue, '\n', '\\n');
+
+    -- get owner info
+    _params := subseq (ODS..json2obj (_retValue), 2);
+    _url := sprintf ('https://docs.google.com/feeds/default/private/full/%U/contents/-/folder', 'folder:root');
+    _reqHeader := sprintf ('GData-Version: 3.0\r\nAuthorization: %s %s\r\n', get_keyword ('token_type', _params), get_keyword ('access_token', _params));
+    _retHeader := null;
+    _retValue := http_client_ext (url=>_url, http_method=>'GET', http_headers=>_reqHeader, headers =>_retHeader, n_redirects=>15);
+    if (not ((_retHeader[0] like 'HTTP/1._ 4__ %') or (_retHeader[0] like 'HTTP/1._ 5__ %')))
+    {
+      _xml := xtree_doc (_retValue);
+      _display_name := cast (xpath_eval ('[ xmlns="http://www.w3.org/2005/Atom" xmlns:gd="http://schemas.google.com/g/2005" ] /feed/author/name', _xml) as varchar);
+      _email := cast (xpath_eval ('[ xmlns="http://www.w3.org/2005/Atom" xmlns:gd="http://schemas.google.com/g/2005" ] /feed/author/email', _xml) as varchar);
+    }
+  }
+?>
+<html>
+  <head>
+  </head>
+  <body>
+    <script type="text/javascript">
+      if (window.opener && window.opener.open && !window.opener.closed) {
+        window.opener.ODRIVE.oauthParams('<?vsp http (_json); ?>', '<?V _display_name ?>', '<?V _email ?>');
+      } else {
+        alert ('Opener not found');
+      }
+      window.close();
+    </script>
+  </body>
+</html>

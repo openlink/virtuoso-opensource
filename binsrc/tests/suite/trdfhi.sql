@@ -63,8 +63,7 @@ SPARQL
  WHERE {  ?s ?p <http://xmlns.com/foaf/0.1/Person>.
  OPTIONAL { ?s rss:title  ?rss_title }}
 ;
-echo both $if $equ $state OK "PASSED" "***FAILED";
-echo both ": distict with long string\n";
+ECHO BOTH $if $equ $state OK "PASSED" "***FAILED";
+ECHO BOTH ": distict with long string\n";
 
 select hic_set_memcache_size (100000);
-

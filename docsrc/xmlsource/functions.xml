@@ -151,7 +151,7 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &make_array; &make_string; &md5; &md5_init; &md5_update;
 &md5_final; &mime_body; &mime_part; &mime_tree; &minute; &mod; &month;
 &monthname; &msec_time; &mts_connect; &mts_get_timeout;
-&mts_set_timeout; &mts_status;
+&mts_set_timeout; &mts_status; &sha1_digest;
 
 &name_part; &nntp_auth_get; &nntp_auth_post; &nntp_get; &nntp_post; &now;
 
@@ -178,7 +178,7 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 
 <!--
 - Uncommented for Virtuoso 6 Release-->
-&iri_split;&xml_get_ns_prefix;&xml_get_ns_uri;
+&iri_split;&xml_get_ns_prefix;&xml_get_ns_uri;&xml_ns_uname;&xml_ns_iristr;&xml_nsexpand_iristr;
 
 
 

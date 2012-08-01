@@ -3,7 +3,7 @@
 -- test cluster partitioned group by + order by
 
 
-echo both "Cluster partitioned oby and gby/oby\n";
+ECHO BOTH "Cluster partitioned oby and gby/oby\n";
 
 
 __dbf_set ('enable_setp_partition', 1);
@@ -15,28 +15,28 @@ cl_exec ('__dbf_set (''cl_res_buffer_bytes'', 100)');
 __dbf_set ('enable_setp_partition', 1);
 
 select row_no, string2 from t1 table option (index str2) where row_no < 1100 order by row_no + 1;
-echo both $if $equ $last[1] 121 "PASSED" "***FAILED";
-echo both ": single partitioned oby\n";
+ECHO BOTH $IF $EQU $LAST[1] 121 "PASSED" "***FAILED";
+ECHO BOTH ": single partitioned oby\n";
 
 
 
 select a.fi2, b.fi2 from t1 a, (select fi2 from t1 order by fi2 + 1) b where b.fi2 between a.fi2 - 2 and a.fi2 + 2 and a.fi2 < 30 option (order);
-echo both $if $equ $rowcnt 47 "PASSED" "***FAILED";
-echo both ": partitioned oby in dt\n";
+ECHO BOTH $IF $EQU $ROWCNT 47 "PASSED" "***FAILED";
+ECHO BOTH ": partitioned oby in dt\n";
 
 select a.fi2, b.fi2, dfi2 from t1 a, (select c.fi2, d.fi2 as dfi2 from t1 c, t1 d where d.fi2 = c.fi2 - 1  order by fi2 + 1) b where b.fi2 between a.fi2 - 2 and a.fi2 + 2 and a.fi2 < 30 option (order);
-echo both $if $equ $rowcnt 44 "PASSED" "***FAILED";
-echo both ": partitioned oby in dfg dt\n";
+ECHO BOTH $IF $EQU $ROWCNT 44 "PASSED" "***FAILED";
+ECHO BOTH ": partitioned oby in dfg dt\n";
 
 -- the 2 below commented out since dt changed not to import join preds inside a top dt 
 select a.fi2, b.fi2 from t1 a, (select top 3 fi2 from t1 order by fi2 + 1) b where b.fi2 between a.fi2 - 2 and a.fi2 + 2 and a.fi2 < 30 option (order);
---echo both $if $equ $rowcnt 30 "PASSED" "***FAILED";
---echo both ": partitioned oby in top dt\n";
+--ECHO BOTH $IF $EQU $ROWCNT 30 "PASSED" "***FAILED";
+--ECHO BOTH ": partitioned oby in top dt\n";
 
 
 select a.fi2, b.fi2, dfi2 from t1 a, (select top 4 c.fi2, d.fi2 as dfi2 from t1 c, t1 d where d.fi2 = c.fi2 - 1  order by fi2 + 1) b where b.fi2 between a.fi2 - 2 and a.fi2 + 2 and a.fi2 < 30 option (order);
---echo both $if $equ $rowcnt 37 "PASSED" "***FAILED";
---echo both ": partitioned oby in top dfg dt\n";
+--ECHO BOTH $IF $EQU $ROWCNT 37 "PASSED" "***FAILED";
+--ECHO BOTH ": partitioned oby in top dfg dt\n";
 
 
 
@@ -137,32 +137,32 @@ update t1 set fs4 = sprintf ('fs4 - %d', row_no);
 explain ('select fi6, strconc (fs4) from t1 group by fi6');
 
 select fi6, strconc (fs4) from t1 group by fi6;
-echo both $if $equ $rowcnt 11 "PASSED" "***FAILED";
-echo both ": ua with gb\n";
+ECHO BOTH $IF $EQU $ROWCNT 11 "PASSED" "***FAILED";
+ECHO BOTH ": ua with gb\n";
 
 select fi6, strconc (fs4) from t1 group by fi6 order by length (strconc (fs4)) desc;
-echo both $if $equ $rowcnt 11 "PASSED" "***FAILED";
-echo both ": ua with gb and oby\n";
+ECHO BOTH $IF $EQU $ROWCNT 11 "PASSED" "***FAILED";
+ECHO BOTH ": ua with gb and oby\n";
 
 select top 5 fi6, strconc (fs4) from t1 group by fi6 order by length (strconc (fs4)) desc;
-echo both $if $equ $rowcnt 5 "PASSED" "***FAILED";
-echo both ": ua with gb and top oby\n";
+ECHO BOTH $IF $EQU $ROWCNT 5 "PASSED" "***FAILED";
+ECHO BOTH ": ua with gb and top oby\n";
 
 
 
 select fi6, strconc (fs4 || make_string (500)) from t1 group by fi6 order by length (strconc (fs4)) desc;
-echo both $if $equ $sqlstate 22026 "PASSED" "***FAILED";
-echo both ": row too long in ua temp\n";
+ECHO BOTH $IF $EQU $SQLSTATE 22026 "PASSED" "***FAILED";
+ECHO BOTH ": row too long in ua temp\n";
 
 select fi6, strconc (fs4) from t1 table option (index str1) where fi2 <  0 group by fi6 order by length (strconc (fs4)) desc;
-echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
-echo both ": part ua, no rows\n";
+ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
+ECHO BOTH ": part ua, no rows\n";
 
 
 -- validate the result of the next
 select count (*) from (select a.fi6, b.fi6 from t1 a, (select distinct fi6 from t1) b where b.fi6 between a.fi6 - 1 and a.fi6 + 1) q;
-echo both $if $equ $last[1] 292 "PASSED" "***FAILED";
-echo both ": 292 for fi6 x distinct fi6 range\n";
+ECHO BOTH $IF $EQU $LAST[1] 292 "PASSED" "***FAILED";
+ECHO BOTH ": 292 for fi6 x distinct fi6 range\n";
 
 
 
@@ -170,16 +170,16 @@ select a.fi6, b.fi6, ff
 from t1 a, (select fi6, strconc (fs4) as ff from t1 table option (index str1) group by fi6 order by (strconc (fs4)) || ' ' desc) b
 where b.fi6 between a.fi6 - 1 and a.fi6 + 1 option (order);
 
-echo both $if $equ $rowcnt 292 "PASSED" "***FAILED";
-echo both ": part ua,multistate dfg dt with gb/oby\n";
+ECHO BOTH $IF $EQU $ROWCNT 292 "PASSED" "***FAILED";
+ECHO BOTH ": part ua,multistate dfg dt with gb/oby\n";
 
 update t1 set fi6 = row_no;
 select a.fi6, b.fi6, ff 
 from t1 a, (select fi6, strconc (fs4) as ff from t1 table option (index str1) group by fi6 order by  (strconc (fs4)) || ' '  desc) b
 where b.fi6 between a.fi6 - 1 and a.fi6 + 1 option (order);
 
-echo both $if $equ $rowcnt 299 "PASSED" "***FAILED";
-echo both ": part ua,multistate dfg dt with gb/oby - 2\n";
+ECHO BOTH $IF $EQU $ROWCNT 299 "PASSED" "***FAILED";
+ECHO BOTH ": part ua,multistate dfg dt with gb/oby - 2\n";
 
 
 

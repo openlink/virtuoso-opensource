@@ -339,8 +339,8 @@
       tmp := get_keyword (formFieldName, params);
       if (not isnull (tmp))
         return tmp;
-      if (get_keyword ('formRight', params) <> '')
-        return tmp;
+      if (get_keyword ('formRight', params, '') <> '')
+        return case when formFieldName = '===' then coalesce (tmp, '') else tmp end;
       if ((self.command = 10) and (self.command_mode in (0, 5, 6)))
         return defaultValue;
       return ODRIVE.WA.DAV_PROP_GET (path, davPropertyName, defaultValue);
@@ -354,43 +354,48 @@
       retValue := 0;
       if (detClass = '')
       {
-        if      (action = 'edit')
+        if      ((action = 'edit') and (detType <> 'Versioning'))
         {
           retValue := 1;
         }
         else if (action = 'new')
         {
-          if ((detType = '') or detType in ('HostFS', 'S3'))
+          if ((detType = '') or detType in ('HostFS', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV'))
             retValue := 1;
         }
         else if (action = 'create')
         {
-          if ((detType = '') or detType in ('HostFS', 'S3'))
+          if ((detType = '') or detType in ('HostFS', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV'))
             retValue := 1;
         }
         else if (action = 'upload')
         {
-          if ((detType = '') or detType in ('HostFS', 'S3'))
+          if ((detType = '') or detType in ('HostFS', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV'))
             retValue := 1;
         }
         else if (action = 'rename')
         {
-          if ((detType = '') or detType in ('HostFS', 'S3'))
+          if ((detType = '') or detType in ('HostFS'))
             retValue := 1;
         }
         else if (action = 'copy')
         {
-          if ((detType = '') or detType in ('HostFS', 'S3'))
+          if ((detType = '') or detType in ('HostFS'))
             retValue := 1;
         }
         else if (action = 'move')
         {
-          if ((detType = '') or detType in ('HostFS', 'S3'))
+          if ((detType = '') or detType in ('HostFS'))
             retValue := 1;
         }
         if      (action = 'delete')
         {
-          if ((detType = '') or detType in ('HostFS', 'S3'))
+          if ((detType = '') or detType in ('HostFS', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV'))
+            retValue := 1;
+        }
+        else if (action = 'properties')
+        {
+          if (detType = '')
             retValue := 1;
         }
         else if (action = 'tag')
@@ -406,14 +411,29 @@
       }
       else
       {
-        if (action = 'upload')
+        if (action = 'new')
         {
-          if (detType in ('', 'CalDAV', 'CardDAV'))
+          if (detClass in ('S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV'))
             retValue := 1;
         }
         else if (action = 'create')
         {
-          if (detType in ('', 'CalDAV', 'CardDAV'))
+          if (detClass in ('S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV'))
+            retValue := 1;
+        }
+        else if (action = 'upload')
+        {
+          if (detType in ('', 'CalDAV', 'CardDAV', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV'))
+            retValue := 1;
+        }
+        else if (action = 'edit')
+        {
+          if (detClass in ('S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV'))
+            retValue := 1;
+        }
+        else if (action = 'delete')
+        {
+          if (detType in ('', 'CalDAV', 'CardDAV', 'IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV'))
             retValue := 1;
         }
         else if (action = 'tag')
@@ -447,10 +467,13 @@
         }
         else if (action = 'metadata')
         {
-          if ((detType = '') and ODRIVE.WA.dav_rdf_has_metadata (self.dav_path))
-            retValue := 1;
+          retValue := 0;
         }
         else if (action = 'permissions')
+        {
+          retValue := 1;
+        }
+        else if (action = 'version')
         {
           retValue := 1;
         }
@@ -460,31 +483,41 @@
           if (retValue and not isnull (DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_PROP_GET_INT (ODRIVE.WA.DAV_GET (self.dav_item, 'id'), 'R', 'DAV:checked-in', 0))))
             retValue := 0;
         }
-        else if (action in ('sharing', 'sharing_acl', 'sharing_aci'))
+        else if ((action in ('sharing', 'sharing_acl', 'sharing_aci')) and (detType <> 'Versioning'))
         {
           retValue := 1;
         }
       }
       else
       {
-        if (action = 'permissions')
+        if (action = 'edit')
         {
-          if ((detClass not in ('CalDAV', 'CardDAV')) and detType in ('', 'HostFS', 'S3'))
+          if (detClass in ('S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV'))
+            retValue := 1;
+        }
+        else if (action = 'permissions')
+        {
+          if ((detClass not in ('CalDAV', 'CardDAV')) and detType in ('', 'HostFS', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV'))
             retValue := 1;
         }
         else if (action = 'tag')
         {
-          if (detClass in ('CalDAV', 'CardDAV'))
+          if (detClass in ('CalDAV', 'CardDAV', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV'))
             retValue := 1;
         }
         else if (action = 'sharing')
         {
-          if (detClass in ('CalDAV', 'CardDAV') or detType in (''))
+          if (detClass in ('CalDAV', 'CardDAV', 'IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV') or detType in (''))
+            retValue := 1;
+        }
+        else if (action = 'sharing_acl')
+        {
+          if (detClass in ('S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV') or detType in (''))
             retValue := 1;
         }
         else if (action = 'sharing_aci')
         {
-          if (detClass in ('CalDAV', 'CardDAV') or detType in (''))
+          if (detClass in ('CalDAV', 'CardDAV', 'IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV') or detType in (''))
             retValue := 1;
         }
       }
@@ -493,12 +526,187 @@
     ]]>
   </v:method>
 
+  <v:method name="detSponger" arglist="in params any, in permissions varchar, in det varchar, in ndx integer">
+    <![CDATA[
+      declare N integer;
+      declare tmp any;
+      declare oldGraph, newGraph varchar;
+      declare cartridges, metaCartridges varchar;
+      declare ca_item, mca_item varchar;
+
+      cartridges := '';
+      metaCartridges := '';
+      tmp := get_keyword (sprintf ('dav_%s_sponger', det), params, 'off');
+      if (tmp = 'on')
+      {
+        ca_item := sprintf ('ca%d_item', ndx);
+        mca_item := sprintf ('mca%d_item', ndx);
+        for (N := 0; N < length (params); N := N + 2)
+        {
+          if (params[N] = ca_item)
+            cartridges := cartridges || ',' || trim (params[N+1]);
+          else if (params[N] = mca_item)
+            metaCartridges := metaCartridges || ',' || trim (params[N+1]);
+        }
+        cartridges := ltrim (cartridges, ',');
+        metaCartridges := ltrim (metaCartridges, ',');
+      }
+      oldGraph := ODRIVE.WA.DAV_PROP_GET (self.dav_path, sprintf ('virt:%s-graph', det), '');
+      newGraph := get_keyword (sprintf ('dav_%s_graph', det), params, '');
+      ODRIVE.WA.DAV_PROP_SET (self.dav_path, sprintf ('virt:%s-graph', det), newGraph);
+      ODRIVE.WA.DAV_PROP_SET (self.dav_path, sprintf ('virt:%s-sponger', det), tmp);
+      ODRIVE.WA.DAV_PROP_SET (self.dav_path, sprintf ('virt:%s-cartridges', det), cartridges);
+      ODRIVE.WA.DAV_PROP_SET (self.dav_path, sprintf ('virt:%s-metaCartridges', det), metaCartridges);
+      ODRIVE.WA.graph_private_remove (self.dav_path, 'C', oldGraph);
+      ODRIVE.WA.graph_private_add (self.dav_path, 'C', permissions, newGraph);
+      if (oldGraph <> newGraph)
+        ODRIVE.WA.graph_update (self.dav_path, det, oldGraph, newGraph);
+
+      ODRIVE.WA.DAV_PROP_SET (self.dav_path, sprintf ('virt:%s-activity', det), get_keyword (sprintf ('dav_%s_activity', det), params, 'off'));
+    ]]>
+  </v:method>
+
+  <v:method name="detSpongerUI" arglist="in det varchar, in ndx integer">
+    <![CDATA[
+      declare S, T varchar;
+      declare N integer;
+      declare cartridges, selectedCartridges any;
+
+      S := self.get_fieldProperty (sprintf ('dav_%s_sponger', det), self.dav_path, sprintf ('virt:%s-sponger', det), 'off');
+      http (sprintf (
+        '<tr>\n' ||
+        '  <th>\n' ||
+        '    <label for="dav_%s_sponger">Sponger (on/off)</label>\n' ||
+        '  </th>\n' ||
+        '  <td>\n' ||
+        '    <input type="checkbox" name="dav_%s_sponger" id="dav_%s_sponger" %s disabled="disabled" onchange="javascript: destinationChange(this, {checked: {show: [''dav%d_cartridge'', ''dav%d_metaCartridge'']}, unchecked: {hide: [''dav%d_cartridge'', ''dav%d_metaCartridge'']}});" value="on" />\n' ||
+        '  </td>\n' ||
+        '</tr>\n',
+        det,
+        det,
+        det,
+        case when S = 'on' then 'checked="checked"' else '' end,
+        ndx,
+        ndx,
+        ndx,
+        ndx
+      ));
+
+      selectedCartridges := self.get_fieldProperty (sprintf ('dav_%s_cartridges', det), self.dav_path, sprintf ('virt:%s-cartridges', det), '');
+      selectedCartridges := split_and_decode (selectedCartridges, 0, '\0\0,');
+      cartridges := ODRIVE.WA.cartridges_get ();
+
+      http (sprintf (
+        '<tr id="dav%d_cartridge" style="display: none;">\n' ||
+        '  <th valign="top">Sponger Extractor Cartridges</th>\n' ||
+        '  <td>\n' ||
+        '    <div style="margin-bottom: 6px; max-height: 200px; overflow: auto;">\n' ||
+        '      <table id="ca%d_tbl" class="ODS_grid" cellspacing="0">\n' ||
+        '        <thead>\n' ||
+        '          <tr>\n' ||
+        '            <th><input type="checkbox" name="ca%d_select" value="Select All" onclick="selectAllCheckboxes (this, ''ca%d_item'', true)" title="Select All" /></th>\n' ||
+        '            <th width="100%%">Cartridge</th>\n' ||
+        '          </tr>\n' ||
+        '        </thead>',
+        ndx,
+        ndx,
+        ndx,
+        ndx
+      ));
+      for (N := 0; N < length (cartridges); N := N + 1)
+      {
+        if (S = 'on')
+        {
+          T := case when ODRIVE.WA.vector_contains (selectedCartridges, cast (cartridges[N][0] as varchar)) then 'checked="checked"' else '' end;
+        } else {
+          T := case when cartridges[N][2] then 'checked="checked"' else '' end;
+        }
+        http (sprintf (
+          '        <tr>\n' ||
+          '          <td class="checkbox"><input type="checkbox" name="ca%d_item" value="%d" disabled="disabled" %s /></td>\n' ||
+          '          <td>%V</td>\n' ||
+          '        </tr>',
+          ndx,
+          cartridges[N][0],
+          T,
+          cartridges[N][1]
+        ));
+      }
+      if (length (cartridges) = 0)
+        http (
+        '        <tr><td colspan="2"><b>No available cartridges</b></td></tr>'
+        );
+
+      http (
+        '      </table>\n' ||
+        '    </div>\n' ||
+        '  </td>\n' ||
+        '</tr>'
+      );
+
+      if (not DB.DBA.wa_check_package ('cartridges'))
+        return;
+
+      selectedCartridges := self.get_fieldProperty (sprintf ('dav_%s_metaCartridges', det), self.dav_path, sprintf ('virt:%s-metaCartridges', det), '');
+      selectedCartridges := split_and_decode (selectedCartridges, 0, '\0\0,');
+      cartridges := ODRIVE.WA.metaCartridges_get ();
+
+      http (sprintf (
+        '<tr id="dav%d_metaCartridge" style="display: none;">\n' ||
+        '  <th valign="top">Sponger Meta Cartridges</th>\n' ||
+        '  <td>\n' ||
+        '    <div style="margin-bottom: 6px; max-height: 200px; overflow: auto;">\n' ||
+        '      <table id="mca%d_tbl" class="ODS_grid" cellspacing="0">\n' ||
+        '        <thead>\n' ||
+        '          <tr>\n' ||
+        '            <th><input type="checkbox" name="mca%d_select" value="Select All" onclick="selectAllCheckboxes (this, ''mca%d_item'', true)" title="Select All" /></th>\n' ||
+        '            <th width="100%%">Meta Cartridge</th>\n' ||
+        '          </tr>\n' ||
+        '        </thead>',
+        ndx,
+        ndx,
+        ndx,
+        ndx
+      ));
+      for (N := 0; N < length (cartridges); N := N + 1)
+      {
+        if (S = 'on')
+        {
+          T := case when ODRIVE.WA.vector_contains (selectedCartridges, cast (cartridges[N][0] as varchar)) then 'checked="checked"' else '' end;
+        } else {
+          T := case when cartridges[N][2] then 'checked="checked"' else '' end;
+        }
+        http (sprintf (
+          '        <tr>\n' ||
+          '          <td class="checkbox"><input type="checkbox" name="mca%d_item" value="%d" disabled="disabled" %s /></td>\n' ||
+          '          <td>%V</td>\n' ||
+          '        </tr>',
+          ndx,
+          cartridges[N][0],
+          T,
+          cartridges[N][1]
+        ));
+      }
+      if (length (cartridges) = 0)
+        http (
+        '        <tr><td colspan="2"><b>No available meta cartridges</b></td></tr>'
+        );
+
+      http (
+        '      </table>\n' ||
+        '    </div>\n' ||
+        '  </td>\n' ||
+        '</tr>'
+      );
+    ]]>
+  </v:method>
+
   <v:on-init>
     <![CDATA[
       declare N, M, retValue, dav_id, dav_owner, dav_group integer;
       declare dav_detType, dav_mime, dav_name, dav_fullPath, dav_perms, msg, _p varchar;
-      declare properties, c_properties any;
-      declare dav_acl, dav_filename, dav_file, rdf_content any;
+      declare properties, c_properties, v_properties any;
+      declare dav_acl, dav_aci, old_dav_aci, dav_filename, dav_file, rdf_content any;
       declare params, itemList any;
 
       params := self.vc_page.vc_event.ve_params;
@@ -599,6 +807,7 @@
         {
             -- WebDAV
           -- Action test
+          v_properties := vector ();
             if (self.command_mode = 10)
             {
             self.dav_id := ODRIVE.WA.DAV_GET(self.dav_item, 'id');
@@ -709,8 +918,19 @@
 
               tmp := get_keyword ('dav_IMAP_server', params);
               ODRIVE.WA.test (tmp, vector('name', 'IMAP Server', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
+              tmp := get_keyword ('dav_IMAP_port', params);
+              ODRIVE.WA.test (tmp, vector ('name', 'IMAP Port', 'class', 'integer', 'minLength', 1, 'maxLength', 4));
               tmp := get_keyword ('dav_IMAP_user', params);
               ODRIVE.WA.test (tmp, vector('name', 'IMAP User', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
+              tmp := DB.DBA.IMAP__verify (
+                get_keyword ('dav_IMAP_connection', params),
+                get_keyword ('dav_IMAP_server', params),
+                get_keyword ('dav_IMAP_port', params),
+                get_keyword ('dav_IMAP_user', params),
+                get_keyword ('dav_IMAP_password', params)
+              );
+              if (tmp <> '')
+                signal('TEST', tmp);
             }
           }
             if (self.command_mode = 5)
@@ -843,7 +1063,7 @@
             -- ACL
             dav_acl := ODRIVE.WA.DAV_GET (self.dav_item, 'acl');
             self.dav_acl := ODRIVE.WA.acl_params (params, dav_acl);
-            if ((dav_acl <> self.dav_acl) and not ODRIVE.WA.DAV_ERROR (ODRIVE.WA.DAV_SET (self.dav_path, 'acl', self.dav_acl)))
+            if (not ODRIVE.WA.DAV_ERROR (ODRIVE.WA.DAV_SET (self.dav_path, 'acl', self.dav_acl)))
                 ODRIVE.WA.acl_send_mail (self.domain_id, self.account_id, self.dav_path, dav_acl, self.dav_acl);
 
           _nextExec_6:;
@@ -851,7 +1071,10 @@
               goto _nextExec_7;
 
             -- ACI (Web Access)
-            ODRIVE.WA.aci_save (dav_fullPath, ODRIVE.WA.aci_params (params));
+            old_dav_aci := ODRIVE.WA.aci_load (self.dav_path);
+            dav_aci := DB.DBA.wa_aci_params (params);
+            ODRIVE.WA.aci_save (self.dav_path, dav_aci);
+            ODRIVE.WA.aci_send_mail (self.domain_id, self.account_id, self.dav_path, old_dav_aci, dav_aci);
 
           _nextExec_7:;
           }
@@ -878,8 +1101,11 @@
                   foreach (any item in itemList) do
                   {
                   if (item[0] not like ('virt:aci_meta%'))
+                  {
+                    v_properties := vector_concat (v_properties, vector (item));
                   DB.DBA.DAV_PROP_REMOVE_INT (dav_fullPath, item[0], null, null, 0, 0, 0);
                   }
+                }
                 ODRIVE.WA.exec ('delete from DB.DBA.SYNC_COLS_TYPES where CT_COL_ID = ?', vector (DB.DBA.DAV_SEARCH_ID (self.dav_path, 'C')));
                 }
               }
@@ -931,7 +1157,7 @@
                 cartridges := ltrim (cartridges, ',');
                 metaCartridges := ltrim (metaCartridges, ',');
               }
-              ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:rdf_graph', get_keyword('dav_rdfSink_rdfGraph', params));
+              ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:rdf_graph', get_keyword ('dav_rdfSink_graph', params));
               ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:rdf_sponger', tmp);
               ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:rdf_cartridges', cartridges);
               ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:rdf_metaCartridges', metaCartridges);
@@ -964,10 +1190,18 @@
               }
               else if (dav_detType = 'IMAP')
               {
+                declare oldGraph, newGraph varchar;
+
+                oldGraph := ODRIVE.WA.DAV_PROP_GET (self.dav_path, 'virt:IMAP-graph', '');
+                newGraph := get_keyword ('dav_IMAP_graph', params, '');
                 ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:IMAP-connection', get_keyword ('dav_IMAP_connection', params));
                 ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:IMAP-server', get_keyword ('dav_IMAP_server', params));
+                ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:IMAP-port', get_keyword ('dav_IMAP_port', params));
                 ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:IMAP-user', get_keyword ('dav_IMAP_user', params));
                 ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:IMAP-password', get_keyword ('dav_IMAP_password', params));
+                ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:IMAP-graph', newGraph);
+                ODRIVE.WA.graph_private_remove (self.dav_path, 'C', oldGraph);
+                ODRIVE.WA.graph_private_add (self.dav_path, 'C', dav_perms, newGraph);
               }
               else if (dav_detType = 'PropFilter')
                 {
@@ -977,9 +1211,126 @@
               }
               else if (dav_detType = 'S3')
               {
+                foreach (any item in v_properties) do
+                {
+                  if (item[0] like ('virt:S3-%'))
+                    ODRIVE.WA.DAV_PROP_SET (self.dav_path, item[0], item[1]);
+                }
                 ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:S3-BucketName', get_keyword ('dav_S3_BucketName', params));
                 ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:S3-AccessKeyID', get_keyword ('dav_S3_AccessKeyID', params));
                 ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:S3-SecretKey', get_keyword ('dav_S3_SecretKey', params));
+                self.detSponger (params, dav_perms, 'S3', 6);
+              }
+              else if (dav_detType = 'GDrive')
+              {
+                declare tmp any;
+
+                tmp := trim (get_keyword ('dav_GDrive_JSON', params, ''));
+                if (tmp <> '')
+                {
+                  tmp := subseq (ODS..json2obj(tmp), 2);
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-Authentication', 'Yes');
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-access_timestamp', get_keyword ('access_timestamp', tmp, ''));
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-access_token', get_keyword ('access_token', tmp, ''));
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-token_type', get_keyword ('token_type', tmp, ''));
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-expires_in', cast (get_keyword ('expires_in', tmp, '') as varchar));
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-refresh_token', get_keyword ('refresh_token', tmp, ''));
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-display_name', get_keyword ('dav_GDrive_display_name', params, ''));
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-email', get_keyword ('dav_GDrive_email', params, ''));
+                }
+                else
+                {
+                  foreach (any item in v_properties) do
+                  {
+                    if (item[0] like ('virt:GDrive-%'))
+                      ODRIVE.WA.DAV_PROP_SET (self.dav_path, item[0], item[1]);
+                  }
+                }
+                self.detSponger (params, dav_perms, 'GDrive', 12);
+              }
+              else if (dav_detType = 'Dropbox')
+              {
+                declare tmp any;
+
+                tmp := get_keyword ('dav_Dropbox_authentication', params);
+                if (tmp = 'Yes')
+                {
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:Dropbox-Authentication', tmp);
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:Dropbox-sid', get_keyword ('dav_Dropbox_sid', params, ''));
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:Dropbox-display_name', get_keyword ('dav_Dropbox_display_name', params, ''));
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:Dropbox-email', get_keyword ('dav_Dropbox_email', params, ''));
+                }
+                else
+                {
+                  foreach (any item in v_properties) do
+                  {
+                    if (item[0] like ('virt:Dropbox-%'))
+                      ODRIVE.WA.DAV_PROP_SET (self.dav_path, item[0], item[1]);
+                  }
+                }
+                self.detSponger (params, dav_perms, 'Dropbox', 13);
+              }
+              else if (dav_detType = 'SkyDrive')
+              {
+                declare tmp any;
+
+                tmp := trim (get_keyword ('dav_SkyDrive_JSON', params, ''));
+                if (tmp <> '')
+                {
+                  tmp := subseq (ODS..json2obj(tmp), 2);
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:SkyDrive-Authentication', 'Yes');
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:SkyDrive-access_timestamp', get_keyword ('access_timestamp', tmp, ''));
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:SkyDrive-scope', get_keyword ('scope', tmp, ''));
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:SkyDrive-access_token', pwd_magic_calc ('skydrive', get_keyword ('access_token', tmp, '')));
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:SkyDrive-token_type', get_keyword ('token_type', tmp, ''));
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:SkyDrive-expires_in', cast (get_keyword ('expires_in', tmp, '') as varchar));
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:SkyDrive-refresh_token', pwd_magic_calc ('skydrive', get_keyword ('refresh_token', tmp, '')));
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:SkyDrive-authentication_token', pwd_magic_calc ('skydrive', get_keyword ('authentication_token', tmp, '')));
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:SkyDrive-display_name', get_keyword ('dav_SkyDrive_display_name', params, ''));
+                }
+                else
+                {
+                  foreach (any item in v_properties) do
+                  {
+                    if (item[0] like ('virt:SkyDrive-%'))
+                      ODRIVE.WA.DAV_PROP_SET (self.dav_path, item[0], item[1]);
+                  }
+                }
+                self.detSponger (params, dav_perms, 'SkyDrive', 14);
+              }
+              else if (dav_detType = 'Box')
+                {
+                declare tmp any;
+
+                tmp := trim (get_keyword ('dav_Box_auth_token', params, ''));
+                if (tmp <> '')
+                  {
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:Box-Authentication', 'Yes');
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:Box-auth_token', pwd_magic_calc ('box', tmp));
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:Box-display_name', get_keyword ('dav_Box_display_name', params, ''));
+                  }
+                else
+                {
+                  foreach (any item in v_properties) do
+                  {
+                    if (item[0] like ('virt:Box-%'))
+                      ODRIVE.WA.DAV_PROP_SET (self.dav_path, item[0], item[1]);
+                }
+                }
+                self.detSponger (params, dav_perms, 'Box', 15);
+              }
+              else if (dav_detType = 'WebDAV')
+              {
+                foreach (any item in v_properties) do
+                {
+                  if (item[0] like ('virt:WebDAV-%'))
+                    ODRIVE.WA.DAV_PROP_SET (self.dav_path, item[0], item[1]);
+                }
+                ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:WebDAV-path', get_keyword ('dav_WebDAV_path', params, ''));
+                ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:WebDAV-user', get_keyword ('dav_WebDAV_user', params, ''));
+                if (get_keyword ('dav_WebDAV_password', params, '') <> '**********')
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:WebDAV-password', pwd_magic_calc ('webdav', get_keyword ('dav_WebDAV_password', params, '')));
+                self.detSponger (params, dav_perms, 'WebDAV', 16);
               }
                 }
           _nextExec_8:;
@@ -1000,6 +1351,9 @@
               }
 
                 rdf_content := dav_file;
+              if (self.dav_detClass = 'S3')
+                connection_set ('amz-server-side-encryption', get_keyword ('dav_S3_encryption', params, 'None'));
+
               retValue := ODRIVE.WA.DAV_RES_UPLOAD(dav_fullPath, dav_file, dav_mime, dav_perms, dav_owner, dav_group);
               if (ODRIVE.WA.DAV_ERROR(retValue))
                 signal('TEST', concat(ODRIVE.WA.DAV_PERROR(retValue), '<>'));
@@ -1110,6 +1464,7 @@
       <v:variable name="dav_tags_private" persist="0" type="varchar" />
       <v:variable name="dav_tags_public" persist="0" type="varchar" />
       <v:variable name="dav_metadata" persist="0" type="varchar" default="null" />
+      <v:variable name="dav_S3_encryption" type="varchar" default="'None'" />
       <v:variable name="chars" type="integer" default="60" />
     </vm:variables>
     <vm:header>
@@ -1224,12 +1579,18 @@
           <v:button name="action" action="simple" style="url" value="Submit">
             <v:on-post>
               <![CDATA[
-                declare _action, _path, _item, params any;
+                declare _action, _path, _item, _det, params any;
 
                 params := e.ve_params;
                 _action := get_keyword ('_cmd', params, '');
 
-                if (_action = 'home')
+                if (_action = 'refresh')
+                {
+                  _det := cast (ODRIVE.WA.DAV_PROP_GET (ODRIVE.WA.odrive_real_path (self.dir_path), ':virtdet') as varchar);
+                  if (__proc_exists (sprintf ('DB.DBA.%s__refresh', _det)) is not null)
+                    call ('DB.DBA.' || _det || '__refresh') (ODRIVE.WA.odrive_real_path (self.dir_path));
+                }
+                else if (_action = 'home')
                 {
                 _home:
                   self.dir_path := ODRIVE.WA.dav_home2 (self.owner_id, self.account_role);
@@ -1600,11 +1961,13 @@
       <v:template name="tform_4" type="simple" enabled="-- equ(self.command, 10)">
         <v:before-data-bind>
           <![CDATA[
+            declare parent_path varchar;
             declare params any;
 
             params := self.vc_page.vc_event.ve_params;
             self.search_dc := null;
             self.dav_path := ODRIVE.WA.odrive_real_resource (self.source);
+            parent_path := ODRIVE.WA.odrive_real_path_int (self.dir_path, 1, 'C');
             self.dav_enable := 1;
             if (self.command_mode = 10)
             {
@@ -1616,7 +1979,8 @@
                 return;
               }
               self.dav_type := ODRIVE.WA.DAV_GET (self.dav_item, 'type');
-              self.dav_detClass := coalesce (ODRIVE.WA.det_class (self.dav_path, self.dav_type) , '');
+              self.dav_detClass := ODRIVE.WA.det_class (self.dav_path, self.dav_type);
+              self.dav_detType := coalesce (get_keyword ('dav_det', params, ODRIVE.WA.DAV_GET (self.dav_item, 'detType')), '');
             }
             else if (self.command_mode in (5, 6))
             {
@@ -1628,7 +1992,11 @@
 
               self.dav_item := V;
               self.dav_type := 'R';
-              self.dav_detClass := coalesce (ODRIVE.WA.det_class (ODRIVE.WA.odrive_real_path_int (self.dir_path, 1, 'C'), 'C') , '');
+              self.dav_detClass := ODRIVE.WA.det_class (parent_path, 'C');
+              if (self.dav_detClass = '')
+                self.dav_detClass := ODRIVE.WA.det_type (parent_path, 'C');
+
+              self.dav_detType := coalesce (get_keyword ('dav_det', params, ODRIVE.WA.DAV_GET (self.dav_item, 'detType')), '');
             }
             else
             {
@@ -1637,7 +2005,11 @@
                 params := vector_concat (params, vector ('dav_det', 'ResFilter', 'attr_dav_det', ''));
 
               self.dav_type := 'C';
-              self.dav_detClass := coalesce (ODRIVE.WA.det_class (ODRIVE.WA.odrive_real_path_int (self.dir_path, 1, 'C'), 'C') , '');
+              self.dav_detClass := ODRIVE.WA.det_class (parent_path, 'C');
+              if (self.dav_detClass = '')
+                self.dav_detClass := ODRIVE.WA.det_type (parent_path, 'C');
+
+              self.dav_detType := cast (coalesce (get_keyword ('dav_det', params, ODRIVE.WA.DAV_GET (self.dav_item, 'detType')), '') as varchar);
             }
             self.dav_detType := cast (coalesce (get_keyword ('dav_det', params, ODRIVE.WA.DAV_GET (self.dav_item, 'detType')), '') as varchar);
             if (self.command_mode = 10)
@@ -1674,6 +2046,7 @@
             if (not isnull (get_keyword ('dav_group', params)))
               self.dc_prepare();
 
+            self.dav_S3_encryption := 'None';
             self.rdf_iri := SIOC..briefcase_resource_iri (self.dav_path);
           ]]>
         </v:before-data-bind>
@@ -1694,37 +2067,44 @@
         </div>
          <div id="c1">
           <div class="tabs">
-            <vm:tabCaption tab="1"   tabs="12" caption="Main" />
-            <v:template name="tform_5" type="simple" enabled="-- case when (equ (self.command_mode, 10) and self.fieldRights ('sharing') and not (equ (self.dav_type, 'R') and (ODRIVE.WA.DAV_GET (self.dav_item, 'name') like '%,acl'))) then 1 else 0 end">
-            <vm:tabCaption tab="2"   tabs="12" caption="Sharing" />
+            <vm:tabCaption tab="1"   tabs="17" caption="Main" />
+            <v:template name="tform_5" type="simple" enabled="-- case when (equ (self.command_mode, 10) and self.fieldRights ('sharing')) then 1 else 0 end">
+            <vm:tabCaption tab="2"   tabs="17" caption="Sharing" />
             </v:template>
             <v:template name="tform_6" type="simple" enabled="-- case when (equ (self.command_mode, 10) and self.fieldRights ('metadata')) then 1 else 0 end">
-            <vm:tabCaption tab="3"   tabs="12" caption="Metadata" />
+            <vm:tabCaption tab="3"   tabs="17" caption="Metadata" />
             </v:template>
             <v:template name="tform_7" type="simple" enabled="-- case when (equ (self.command_mode, 10) and equ (self.dav_type, 'R') and self.fieldRights ('version') and not (equ (self.dav_type, 'R') and (ODRIVE.WA.DAV_GET (self.dav_item, 'name') like '%,acl'))) then 1 else 0 end">
-            <vm:tabCaption tab="9"   tabs="12" caption="Versions" />
+            <vm:tabCaption tab="9"   tabs="17" caption="Versions" />
             </v:template>
             <v:template name="tform_8" type="simple" enabled="-- equ(self.dav_type, 'C')">
-            <vm:tabCaption tab="4"   tabs="12" caption="WebMail" />
-            <vm:tabCaption tab="5"   tabs="12" caption="Filter" />
-            <vm:tabCaption tab="6"   tabs="12" caption="S3 Properties" />
-            <vm:tabCaption tab="7"   tabs="12" caption="Criteria" />
-            <vm:tabCaption tab="8"   tabs="12" caption="Linked Data Import" />
+            <vm:tabCaption tab="4"   tabs="17" caption="WebMail" />
+            <vm:tabCaption tab="5"   tabs="176" caption="Filter" />
+            <vm:tabCaption tab="6"   tabs="176" caption="S3 Properties" />
+            <vm:tabCaption tab="7"   tabs="176" caption="Criteria" />
+            <vm:tabCaption tab="8"   tabs="17" caption="Linked Data Import" />
             <v:template name="tform_17" type="simple" enabled="-- case when (isstring (DB.DBA.vad_check_version ('SyncML'))) then 1 else 0 end">
-            <vm:tabCaption tab="10"  tabs="12" caption="SyncML" />
+            <vm:tabCaption tab="10"  tabs="17" caption="SyncML" />
             </v:template>
-            <vm:tabCaption tab="11"  tabs="12" caption="IMAP Account" />
+            <vm:tabCaption tab="11"  tabs="17" caption="IMAP Account" />
+            <v:template name="tform_171" type="simple" enabled="-- case when (self.dav_detClass = '') then 1 else 0 end">
+            <vm:tabCaption tab="12"  tabs="17" caption="Google Drive" />
+            <vm:tabCaption tab="13"  tabs="17" caption="Dropbox" />
+            <vm:tabCaption tab="14"  tabs="17" caption="SkyDrive" />
+            <vm:tabCaption tab="15"  tabs="17" caption="Box Net" />
+            <vm:tabCaption tab="16"  tabs="17" caption="WebDAV" />
+            </v:template>
             </v:template>
           </div>
           <div class="contents">
             <div id="1" class="tabContent">
               <table class="form-body" cellspacing="0">
-                <v:template name="tform_9" type="simple" enabled="-- case when (self.command_mode in (5, 6)) then 1 else 0 end">
+                <v:template name="tform_9" type="simple" enabled="-- case when (self.command_mode in (5, 6)) and (self.dav_detClass = '') then 1 else 0 end">
                   <tr>
                     <th width="30%" valign="top">
-                      <vm:label for="dav_file" value="--'Destination'" />
+                      <vm:label value="--'Destination'" />
                     </th>
-                    <td style="padding-left: 4px">
+                    <td>
                       <label><?vsp http (sprintf ('<input type="radio" name="dav_destination" id="dav_destination_0" value="0" %s onchange="javascript: toggleDavRows();" title="WebDAV" />', case when self.dav_destination = 0 then 'checked="checked"' else '' end)); ?> <b>WebDAV</b></label><br />
                       <label><?vsp http (sprintf ('<input type="radio" name="dav_destination" id="dav_destination_1" value="1" %s onchange="javascript: toggleDavRows();" title="WebDAV" />', case when self.dav_destination = 1 then 'checked="checked"' else '' end)); ?> <b>Quad Store</b></label>
                 		  <![CDATA[
@@ -1738,7 +2118,7 @@
                 <v:template name="tform_9_1" type="simple" enabled="-- equ (self.command_mode, 5)">
                   <tr>
                     <th valign="top">
-                      <v:label for="dav_source" value="--'Source'" />
+                      <v:label value="--'Source'" />
                     </th>
                     <td>
                       <label id="dav_source_0"><?vsp http (sprintf ('<input type="radio" name="dav_source" value="0" %s onchange="javascript: toggleDavSource();" title="File" />', case when self.dav_source = 0 then 'checked="checked"' else '' end)); ?><b>File</b></label><br />
@@ -1782,6 +2162,17 @@
                     </td>
                   </tr>
                 </v:template>
+                <v:template name="tform_10a" type="simple" enabled="-- case when (self.command_mode <> 10) and (self.dav_type = 'R') and (self.dav_detClass = 'S3') then 1 else 0 end">
+                  <tr id="davRow_mime">
+                    <th>
+                      <v:label for="dav_mime" value="--'S3 Server Side Encryption'" />
+                    </th>
+                    <td>
+                      <label><?vsp http (sprintf ('<input type="radio" name="dav_S3_encryption" id="dav_S3_encryption_0" value="None" %s />', case when self.dav_S3_encryption = 'None' then 'checked="checked"' else '' end)); ?> <b>None</b></label>
+                      <label><?vsp http (sprintf ('<input type="radio" name="dav_S3_encryption" id="dav_S3_encryption_1" value="AES256" %s />', case when self.dav_S3_encryption <> 'None' then 'checked="checked"' else '' end)); ?> <b>AES-256</b></label>
+                    </td>
+                  </tr>
+                </v:template>
                 <v:template name="tform_90" type="simple" enabled="-- equ(self.command_mode, 6)">
                   <tr>
                     <th valign="top">
@@ -1803,10 +2194,10 @@
                     </td>
                   </tr>
                 </v:template>
-                <v:template name="tform_12" type="simple" enabled="-- case when (((self.dav_type = 'C') and (self.dav_detType = '') and (self.dav_detClass = '')) or (self.command_mode <> 10)) then 1 else 0 end">
+                <v:template name="tform_12" type="simple" enabled="-- case when (((self.dav_type = 'C') and (self.dav_detType in ('', 'UnderVersioning'))) or (self.command_mode <> 10)) and (self.dav_detClass = '') then 1 else 0 end">
                   <vm:autoVersion />
                 </v:template>
-                <v:template name="tform_13" type="simple" enabled="-- equ(self.dav_type, 'C')">
+                <v:template name="tform_13" type="simple" enabled="-- case when (self.dav_type = 'C') then 1 else 0 end">
                   <tr>
                     <th>
                       <v:label for="dav_det" value="--'Folder type'" />
@@ -1818,30 +2209,38 @@
                           {
                             http (self.option_prepare('ResFilter',        'Smart Folder',                  'ResFilter'));
                           }
+                          else if (self.dav_detClass <> '')
+                          {
+                            http (self.option_prepare('', 'Normal', ''));
+                          }
                           else
                           {
                             declare N, M, V any;
 
-                            -- dbg_obj_print ('', self.dav_detType);
                             V := vector (
                                           0, '',           'Normal',
                                           1, 'ResFilter',  'Smart Folder',
                                           1, 'CatFilter',  'Category Folder',
-                                          1, 'PropFilter', 'Property Filter Folder',
-                                          1, 'HostFs',     'Host FS Folders',
+                                          1, 'PropFilter', 'Property Filter',
+                                          1, 'HostFs',     'Host FS',
                                           0, 'rdfSink',    'Linked Data Import',
                                           1, 'RDFData',    'RDF Data',
                                           1, 'DynaRes',    'Dynamic Resources',
-                                          2, 'SyncML',     'SyncML Folder',
-                                          1, 'Versioning', 'Version Control Folder',
+                                          2, 'SyncML',     'SyncML',
+                                          1, 'Versioning', 'Version Control',
                                           1, 'S3',         'Amazon S3',
-                                          1, 'CardDAV',    'CardDAV Folder',
-                                          1, 'Blog',       'Blog Folder',
-                                          1, 'Bookmark',   'Bookmark Folder',
-                                          1, 'calendar',   'Calendar Folder',
-                                          1, 'CalDAV',     'CalDAV Folder',
+                                          1, 'GDrive',     'Google Drive',
+                                          1, 'Dropbox',    'Dropbox',
+                                          1, 'SkyDrive',   'SkyDrive',
+                                          1, 'Box',        'Box Net',
+                                          1, 'WebDAV',     'WebDAV',
+                                          1, 'CardDAV',    'CardDAV',
+                                          1, 'Blog',       'Blog',
+                                          1, 'Bookmark',   'Bookmark',
+                                          1, 'calendar',   'Calendar',
+                                          1, 'CalDAV',     'CalDAV',
                                           1, 'News3',      'Feed Subscriptions',
-                                          1, 'oMail',      'WebMail Folders',
+                                          1, 'oMail',      'WebMail',
                                           1, 'IMAP',       'IMAP Mail Account');
 
                             M := 0;
@@ -1851,6 +2250,18 @@
                                 goto _0;
 
                               if ((V[N] = 2) and not isstring (DB.DBA.vad_check_version ('SyncML')))
+                                goto _0;
+
+                              if ((V[N+1] = 'GDrive') and not exists (select 1 from OAUTH..APP_REG where a_name = 'Google API' and a_owner = 0))
+                                goto _0;
+
+                              if ((V[N+1] = 'Dropbox') and not exists (select 1 from OAUTH..APP_REG where a_name = 'Dropbox API' and a_owner = 0))
+                                goto _0;
+
+                              if ((V[N+1] = 'SkyDrive') and not exists (select 1 from OAUTH..APP_REG where a_name = 'SkyDrive API' and a_owner = 0))
+                                goto _0;
+
+                              if ((V[N+1] = 'Box') and not exists (select 1 from OAUTH..APP_REG where a_name = 'Box Net API' and a_owner = 0))
                                 goto _0;
 
                               if (self.command_mode = 10)
@@ -2030,6 +2441,7 @@
                                   <th>Action</th>
                           </vm:if>
                         </tr>
+                              <tbody id="c_tbody">
                           		  <![CDATA[
                           		    <script type="text/javascript">
                         <?vsp
@@ -2039,22 +2451,23 @@
                                   for (N := 0; N < length (properties); N := N + 1)
                                   {
                                     M := M + 1;
-                                    if (self.dav_enable or self.fieldRights ('sharing_acl'))
+                                    if (self.fieldRights ('properties'))
                                     {
                                       http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("c", null, {fld_1: {mode: 40, value: "%s", className: "_validate_", onbBlur: function(){validateField(this);}}, fld_2: {mode: 0, value: "%s"}});});', properties[N][0], properties[N][1]));
                                     } else {
-                                      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("c", {fld_1: {value: "%s"}, fld_2: {value: "%s"}});});', properties[N][0], properties[N][1]));
+                                      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("c", {fld_1: {value: "%s", tdCssText: "white-space: nowrap;"}, fld_2: {value: "%s", tdCssText: "white-space: nowrap;"}});});', properties[N][0], properties[N][1]));
                                     }
                           }
                         ?>
                         		    </script>
                         		  ]]>
                               <tr id="c_tr_no" style="display: <?V case when M=0 then '' else 'none' end ?>;"><td colspan="<?V (2 + self.fieldRights ('properties')) ?>"><b>No Properties</b></td></tr>
+                              </tbody>
                             </table>
                             </td>
                           <vm:if test="self.fieldRights ('properties')">
                             <td valign="top" nowrap="nowrap">
-                              <span class="button pointer" onclick="javascript: TBL.createRow('c', null, {fld_1: {mode: 40, className: '_validate_', onblur: function(){validateField(this);}}, fld_2: {mode: 0}});"><img src="image/add_16.png" border="0" class="button" alt="Add Property" title="Add Property" /> Add</span><br /><br />
+                              <span class="button pointer" onclick="javascript: TBL.createRow('c', null, {fld_1: {mode: 40, className: '_validate_', onblur: function(){validateField(this);}}, fld_2: {mode: 0}});"><img src="/ods/images/icons/add_16.png" border="0" class="button" alt="Add Property" title="Add Property" /> Add</span><br /><br />
                               </td>
                             </vm:if>
                           </tr>
@@ -2067,13 +2480,13 @@
 
             <v:template name="tform_20" type="simple" enabled="-- gte(self.command_mode, 10)">
               <div id="2" class="tabContent">
-                <vm:if test='not isnull (ODS.ODS_API."server.getInfo"(&apos;sslPort&apos;)) and self.fieldRights (&apos;sharing_acl&apos;)'>
+                <vm:if test='self.fieldRights (&apos;sharing_acl&apos;)'>
                 <fieldset>
                   <legend><b>ODS users/groups</b></legend>
                     <table width="100%">
                     <tr>
                       <td width="100%">
-                        <table id="s_tbl" class="form-list" style="width: 100%;"  cellspacing="0">
+                          <table id="f_tbl" class="ODS_formList" style="width: 100%;" cellspacing="0">
                   <tr>
                             <th nowrap="nowrap">User/Group (WebID)</th>
                             <th width="1%">Inheritance</th>
@@ -2081,6 +2494,8 @@
                             <th width="1%" align="center" nowrap="nowrap">Deny<br />(R)ead, (W)rite, e(X)ecute</th>
                             <th width="1%">Action</th>
                   </tr>
+                            <tbody id="f_tbody">
+                              <tr id="f_tr_no"><td colspan="5"><b>No Security</b></td></tr>
               		  <![CDATA[
               		    <script type="text/javascript">
                   <?vsp
@@ -2096,20 +2511,20 @@
                       acl := acl_values[N];
                                 if (self.dav_enable and (acl[1] <> 3))
                                 {
-                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("s", null, {fld_1: {mode: 51, value: "%s", formMode: "u", nrows: %d, tdCssText: "white-space: nowrap;", className: "_validate_"}, fld_2: {mode: 43, value: %d, tdCssText: "white-space: nowrap;", objectType: "%s"}, fld_3: {mode: 42, value: [%d, %d, %d], suffix: "_grant", onclick: function(){TBL.clickCell42(this);}, tdCssText: "width: 1%%; text-align: center;"}, fld_4: {mode: 42, value: [%d, %d, %d], suffix: "_deny", onclick: function(){TBL.clickCell42(this);}, tdCssText: "width: 1%%; text-align: center;"}});});', ODRIVE.WA.account_iri (acl[0]), ODRIVE.WA.settings_rows (self.settings), acl[1], self.dav_type, bit_and (acl[2], 4), bit_and (acl[2], 2), bit_and (acl[2], 1), bit_and (acl[3], 4), bit_and (acl[3], 2), bit_and (acl[3], 1)));
+                                      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("f", null, {fld_1: {mode: 51, value: "%s", formMode: "u", nrows: %d, tdCssText: "white-space: nowrap;", className: "_validate_"}, fld_2: {mode: 43, value: %d, tdCssText: "white-space: nowrap;", objectType: "%s"}, fld_3: {mode: 42, value: [%d, %d, %d], suffix: "_grant", onclick: function(){TBL.clickCell42(this);}, tdCssText: "width: 1%%; text-align: center;"}, fld_4: {mode: 42, value: [%d, %d, %d], suffix: "_deny", onclick: function(){TBL.clickCell42(this);}, tdCssText: "width: 1%%; text-align: center;"}});});', ODRIVE.WA.account_iri (acl[0]), ODRIVE.WA.settings_rows (self.settings), acl[1], self.dav_type, bit_and (acl[2], 4), bit_and (acl[2], 2), bit_and (acl[2], 1), bit_and (acl[3], 4), bit_and (acl[3], 2), bit_and (acl[3], 1)));
                                 } else {
-                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {value: "%s"}, fld_2: {value: "%s", tdCssText: "white-space: nowrap;"}, fld_3: {mode: 42, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}, fld_4: {mode: 42, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', ODRIVE.WA.account_iri (acl[0]), get_keyword (acl[1], V, ''), bit_and (acl[2], 4), bit_and (acl[2], 2), bit_and (acl[2], 1), bit_and (acl[3], 4), bit_and (acl[3], 2), bit_and (acl[3], 1)));
+                                      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("f", {fld_1: {value: "%s"}, fld_2: {value: "%s", tdCssText: "white-space: nowrap;"}, fld_3: {mode: 42, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}, fld_4: {mode: 42, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', ODRIVE.WA.account_iri (acl[0]), get_keyword (acl[1], V, ''), bit_and (acl[2], 4), bit_and (acl[2], 2), bit_and (acl[2], 1), bit_and (acl[3], 4), bit_and (acl[3], 2), bit_and (acl[3], 1)));
                                 }
                   }
                   ?>
               		    </script>
               		  ]]>
-                          <tr id="s_tr_no" style="display: <?V case when M=0 then '' else 'none' end ?>;"><td colspan="<?V case when self.dav_enable then 4 else 5 end ?>"><b>No Security</b></td></tr>
+                            </tbody>
                 </table>
                       </td>
                       <td valign="top" nowrap="nowrap">
-                          <vm:if test="self.dav_enable or self.fieldRights ('sharing_acl')">
-                          <span class="button pointer" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 51, formMode: 'u', nrows: <?V ODRIVE.WA.settings_rows (self.settings) ?>, tdCssText: 'white-space: nowrap;', className: '_validate_'}, fld_2: {mode: 43, value: 1, objectType: '<?V self.dav_type ?>'}, fld_3: {mode: 42, value: [1, 1, 0], suffix: '_grant', onclick: function(){TBL.clickCell42(this);}, tdCssText: 'width: 1%; text-align: center;'}, fld_4: {mode: 42,  suffix: '_deny', onclick: function(){TBL.clickCell42(this);}, tdCssText: 'width: 1%; text-align: center;'}});"><img src="image/add_16.png" border="0" class="button" alt="Add Security" title="Add Security" /> Add</span><br /><br />
+                          <vm:if test="self.dav_enable and self.fieldRights ('sharing_acl')">
+                            <span class="button pointer" onclick="javascript: TBL.createRow('f', null, {fld_1: {mode: 51, formMode: 'u', nrows: <?V ODRIVE.WA.settings_rows (self.settings) ?>, tdCssText: 'white-space: nowrap;', className: '_validate_'}, fld_2: {mode: 43, value: 1, objectType: '<?V self.dav_type ?>'}, fld_3: {mode: 42, value: [1, 1, 0], suffix: '_grant', onclick: function(){TBL.clickCell42(this);}, tdCssText: 'width: 1%; text-align: center;'}, fld_4: {mode: 42,  suffix: '_deny', onclick: function(){TBL.clickCell42(this);}, tdCssText: 'width: 1%; text-align: center;'}});"><img src="/ods/images/icons/add_16.png" border="0" class="button" alt="Add Security" title="Add Security" /> Add</span><br /><br />
                         </vm:if>
                       </td>
                     </tr>
@@ -2122,47 +2537,40 @@
                     <table width="100%">
                       <tr>
                         <td width="100%">
-                          <table id="f_tbl" class="form-list" style="width: 100%;" cellspacing="0">
+                          <table id="s_tbl" class="ODS_formList" style="width: 100%;" cellspacing="0">
+                            <thead>
                             <tr>
                               <th width="1%" nowrap="nowrap">Access Type</th>
                               <th nowrap="nowrap">WebID</th>
                               <th width="1%" align="center" nowrap="nowrap">Allow<br />(R)ead, (W)rite, e(X)ecute</th>
                               <th width="1%" >Action</th>
                             </tr>
+                            </thead>
+                            <tbody id="s_tbody">
+                              <tr id="s_tr_no"><td colspan="4"><b>No WebID Security</b></td></tr>
                         		  <![CDATA[
                         		    <script type="text/javascript">
                         		    <?vsp
-                                declare N, L integer;
+                                  declare L integer;
                                 declare aci_values, aci_parents any;
 
                                 aci_parents := ODRIVE.WA.aci_parents (self.dav_path);
                                 for (L := 0; L < length (aci_parents); L := L + 1)
                                 {
                                   aci_values := ODRIVE.WA.aci_load (aci_parents[L]);
-                                  for (N := 0; N < length (aci_values); N := N + 1)
-                                  {
-                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("f", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], execute: true, tdCssText: "width: 1%%; text-align: center;"}, fld_4: {value: "Inherited"}});});', aci_values[N][2], aci_values[N][1], aci_values[N][3], aci_values[N][4], aci_values[N][5]));
-                                  }
+                                    DB.DBA.wa_aci_lines (aci_values);
                                 }
                                 aci_values := ODRIVE.WA.aci_load (self.dav_path);
-                                for (N := 0; N < length (aci_values); N := N + 1)
-                                {
-                                  if (self.dav_enable or self.fieldRights ('sharing_aci'))
-                                  {
-                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("f", null, {fld_1: {mode: 50, value: "%s", onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, value: "%s", tdCssText: "white-space: nowrap;", className: "_validate_ _webid_", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], execute: true, tdCssText: "width: 1%%; text-align: center;"}});});', aci_values[N][2], aci_values[N][1], case when aci_values[N][2] = 'public' then 'true' else 'false' end, case when aci_values[N][2] = 'public' then 'display: none;' else '' end, aci_values[N][3], aci_values[N][4], aci_values[N][5]));
-                                  } else {
-                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("f", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], execute: true, tdCssText: "width: 1%%; text-align: center;"}});});', aci_values[N][2], aci_values[N][1], aci_values[N][3], aci_values[N][4], aci_values[N][5]));
-                                  }
-                                  }
+                                  DB.DBA.wa_aci_lines (aci_values, case when ((self.dav_enable or (self.dav_detClass in ('CalDAV', 'CardDAV', 'IMAP'))) and self.fieldRights ('sharing_aci')) then '' else 'view' end, 'true');
                         		    ?>
                         		    </script>
                         		  ]]>
-                            <tr id="f_tr_no"><td colspan="4"><b>No WebID Security</b></td></tr>
+                            </tbody>
                           </table>
                         </td>
-                        <vm:if test="self.dav_enable or self.fieldRights ('sharing_aci')">
+                        <vm:if test="(self.dav_enable or (self.dav_detClass in ('CalDAV', 'CardDAV', 'IMAP'))) and self.fieldRights ('sharing_aci')">
                         <td valign="top" nowrap="nowrap">
-                            <span class="button pointer" onclick="javascript: TBL.createRow('f', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, tdCssText: 'white-space: nowrap;', className: '_validate_ _webid_'}, fld_3: {mode: 52, value: [1, 0, 0], execute: true, tdCssText: 'width: 1%; text-align: center;'}});"><img src="image/add_16.png" border="0" class="button" alt="Add Security" title="Add Security" /> Add</span><br /><br />
+                            <span class="button pointer" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, tdCssText: 'white-space: nowrap;', className: '_validate2_ _webid2_'}, fld_3: {mode: 52, value: [1, 0, 0], execute: true, execute: true, tdCssText: 'width: 1%; text-align: center;'}});"><img src="/ods/images/icons/add_16.png" border="0" class="button" alt="Add Security" title="Add Security" /> Add</span><br /><br />
                         </td>
                         </vm:if>
                       </tr>
@@ -2259,6 +2667,11 @@
               <vm:search-dc-template8 />
               <vm:search-dc-template11 />
               <vm:search-dc-template12 />
+              <vm:search-dc-template13 />
+              <vm:search-dc-template14 />
+              <vm:search-dc-template15 />
+              <vm:search-dc-template16 />
+              <vm:search-dc-template17 />
             </v:template>
             <v:template type="simple" enabled="-- equ(self.dav_type, 'R')">
               <vm:search-dc-template9 />
@@ -2292,7 +2705,7 @@
         <div class="boxHeader">
           <b><v:label for="path" value="' Path '" /></b>
           <v:text name="path" value="--ODRIVE.WA.utf2wide(ODRIVE.WA.path_show (self.dir_path))" xhtml_onkeypress="return submitEnter(event, \'F1\', \'action\', \'go\')" xhtml_id="path" xhtml_size="60" />
-          <img class="pointer" border="0" alt="Browse Path" title="Browse Path" src="image/go_16.png" onclick="javascript: vspxPost('action', '_cmd', 'go');" />
+          <img class="pointer" border="0" alt="Browse Path" title="Browse Path" src="/ods/images/icons/go_16.png" onclick="javascript: vspxPost('action', '_cmd', 'go');" />
           <b><v:label for="list_type" value="' View '" /></b>
           <v:select-list name="list_type" value="--self.dir_details" xhtml_onchange="javascript: doPost(\'F1\', \'reload\'); return false">
             <v:item name="Details" value="0" />
@@ -2301,8 +2714,8 @@
           <v:template type="simple" enabled="-- case when ((self.command in (0)) and (self.command_mode in (0,1))) then 1 else 0 end">
             <b><v:label for="filter" value="--' Filter Pattern '" /></b>
             <v:text name="filter" xhtml_id="filter" value="--self.search_filter" type="simple" />
-            <img class="pointer" border="0" alt="Filter" title="Filter" src="image/filter_16.png" onclick="javascript: vspxPost('action', '_cmd', 'filter');" />
-            <img class="pointer" border="0" alt="Cancel Filter" title="Cancel Filter" src="image/cancl_16.png" onclick="javascript: vspxPost('action', '_cmd', 'cancelFilter');" />
+            <img class="pointer" border="0" alt="Filter" title="Filter" src="/ods/images/icons/filter_16.png" onclick="javascript: vspxPost('action', '_cmd', 'filter');" />
+            <img class="pointer" border="0" alt="Cancel Filter" title="Cancel Filter" src="/ods/images/icons/close_16.png" onclick="javascript: vspxPost('action', '_cmd', 'cancelFilter');" />
           </v:template>
         </div>
       </v:template>
@@ -2432,12 +2845,12 @@
                 http (sprintf ('<a href="export.vspx?sid=%s&realm=%s&output=rss%s"><img src="image/rss-icon-16.gif" border="0" title="RSS 2.0" alt="RSS 2.0" /> RSS</a>&nbsp;&nbsp;', self.sid, self.realm, self.do_url()));
                 if (ODRIVE.WA.settings_atomVersion (self.settings) = '1.0')
                 {
-                  http (sprintf ('<a href="export.vspx?sid=%s&realm=%s&output=atom10%s"><img src="image/blue-icon-16.gif" border="0" title="Atom 1.0" alt="Atom 1.0" /> Atom</a>&nbsp;&nbsp;', self.sid, self.realm, self.do_url()));
+                  http (sprintf ('<a href="export.vspx?sid=%s&realm=%s&output=atom10%s"><img src="/ods/images/blue-icon-16.gif" border="0" title="Atom 1.0" alt="Atom 1.0" /> Atom</a>&nbsp;&nbsp;', self.sid, self.realm, self.do_url()));
                 } else {
-                  http (sprintf ('<a href="export.vspx?sid=%s&realm=%s&output=atom03%s"><img src="image/blue-icon-16.gif" border="0" title="Atom 0.3" alt="Atom 0.3" /> Atom</a>&nbsp;&nbsp;', self.sid, self.realm, self.do_url()));
+                  http (sprintf ('<a href="export.vspx?sid=%s&realm=%s&output=atom03%s"><img src="/ods/images/blue-icon-16.gif" border="0" title="Atom 0.3" alt="Atom 0.3" /> Atom</a>&nbsp;&nbsp;', self.sid, self.realm, self.do_url()));
                 }
-                http (sprintf ('<a href="export.vspx?sid=%s&realm=%s&output=rdf%s"><img src="image/rdf-icon-16.gif" border="0" title="RDF 1.0" alt="RDF 1.0" /> RDF</a>&nbsp;&nbsp;', self.sid, self.realm, self.do_url()));
-                http (sprintf ('<a href="export.vspx?sid=%s&realm=%s&output=xbel%s"><img src="image/blue-icon-16.gif" border="0" title="XBEL" alt="XBEL" /> XBEL</a>&nbsp;&nbsp;', self.sid, self.realm, self.do_url()));
+                http (sprintf ('<a href="export.vspx?sid=%s&realm=%s&output=rdf%s"><img src="/ods/images/rdf-icon-16.gif" border="0" title="RDF 1.0" alt="RDF 1.0" /> RDF</a>&nbsp;&nbsp;', self.sid, self.realm, self.do_url()));
+                http (sprintf ('<a href="export.vspx?sid=%s&realm=%s&output=xbel%s"><img src="/ods/images/blue-icon-16.gif" border="0" title="XBEL" alt="XBEL" /> XBEL</a>&nbsp;&nbsp;', self.sid, self.realm, self.do_url()));
               ?>
             </div>
           </v:template>
@@ -2622,12 +3035,21 @@
                             </v:template>
                             <td class="action">
                               <?vsp
+                                declare id any;
+
+                                id := DB.DBA.DAV_SEARCH_ID (rowset[8], rowset[1]);
                                 if (ODRIVE.WA.odrive_read_permission (rowset[8]))
-                                {
                                   http (sprintf( ' <img class="pointer" border="0" alt="Update Properties" title="Update Properties"" src="image/dav/item_prop.png" onclick="javascript: vspxPost(\'action\', \'_cmd\', \'update\', \'_path\', \'%s\');" />', replace (rowset[8], '\'', '\\\'')));
-                                }
-                                if ((__tag (DB.DBA.DAV_SEARCH_ID (rowset[8], rowset[1])) <> 193)
-                                    and (rowset[0] like '%.vsp'
+
+                                if (
+                                     (
+                                       (__tag (id) <> 193)
+                                       or
+                                       (cast (id[0] as varchar) in ('S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV'))
+                                     )
+                                     and
+                                     (
+                                       rowset[0] like '%.vsp'
 		                                  or rowset[0] like '%.vspx'
 		                                  or rowset[0] like '%.rdf'
 		                                  or rowset[0] like '%.xml'
@@ -2638,7 +3060,8 @@
 		                                  or rowset[0] like '%.htm'
 		                                  or rowset[0] like '%.sql'
 		                                  or rowset[0] like '%.ini'
-		                                  or rowset[4] like 'text/%')
+		                                   or rowset[4] like 'text/%'
+		                                 )
 		                               )
                                 {
                                   declare S varchar;

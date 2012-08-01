@@ -59,8 +59,6 @@
 		        hours);
        cvalue := xenc_pem_export (kname);
        login := 1;
-       if (exists (select 1 from WA_USER_CERTS where UC_U_ID = uid and UC_LOGIN = 1))
-         login := 0;
        insert into WA_USER_CERTS (UC_U_ID, UC_CERT, UC_FINGERPRINT, UC_LOGIN, UC_TS)
 		         values (uid, cvalue, get_certificate_info (6, cvalue, 0, ''), login, now ());
        http_rewrite ();

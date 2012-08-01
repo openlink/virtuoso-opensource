@@ -85,6 +85,7 @@
 char *http_methods[] = { "NONE", "GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS", /* HTTP/1.1 */
   			 "PROPFIND", "PROPPATCH", "COPY", "MOVE", "LOCK", "UNLOCK", "MKCOL",  /* WebDAV */
 			 "MGET", "MPUT", "MDELETE", 	/* URIQA */
+			 "REPORT", /* CalDAV */
 			 "TRACE", NULL };
 resource_t *ws_dbcs;
 basket_t ws_queue;
@@ -1517,6 +1518,7 @@ ws_path_and_params (ws_connection_t * ws)
 	      memcpy (new_params, ws->ws_params, box_length (ws->ws_params));
 	      memcpy (new_params + box_length (ws->ws_params), params, box_length (params));
 	      dk_free_box ((caddr_t)(ws->ws_params));
+	      dk_free_box ((caddr_t) params);
 	      ws->ws_params = (caddr_t *)(new_params);
 	    }
 	}
@@ -1676,6 +1678,9 @@ ws_clear (ws_connection_t * ws, int error_cleanup)
   dk_free_tree (ws->ws_store_in_cache);
   ws->ws_store_in_cache = NULL;
   ws->ws_proxy_request = 0;
+  IN_TXN;
+  ws->ws_limited = 0;
+  LEAVE_TXN;
   http_set_default_options (ws);
 #ifdef _SSL
   ws->ws_ssl_ctx = NULL;
@@ -2052,19 +2057,21 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 
   if (0 != strncmp (code, "HTTP/1.1 2", 10) && 0 != strncmp (code, "HTTP/1.1 3", 10) && ws->ws_proto_no < 11)
     ws->ws_try_pipeline = 0;
-  snprintf (tmp, sizeof (tmp), "%.1000s\r\nServer: %.1000s\r\nConnection: %s\r\n",
-	   code,
-	   http_server_id_string,
-	   ws->ws_try_pipeline ? "Keep-Alive" : "close");
 
   memset (&gzctx, 0, sizeof (strses_chunked_out_t));
 
   CATCH_WRITE_FAIL (ws->ws_session)
     {
+      snprintf (tmp, sizeof (tmp), "%.1000s\r\nServer: %.1000s\r\n", code, http_server_id_string);
       SES_PRINT (ws->ws_session, tmp); /* server signature */
+      if (ws->ws_status_code != 101)
+	{
+	  snprintf (tmp, sizeof (tmp), "Connection: %s\r\n", ws->ws_try_pipeline ? "Keep-Alive" : "close");
+	  SES_PRINT (ws->ws_session, tmp);
+	}
 /*      fprintf (stdout, "\nREPLY-----\n%s", tmp); */
       /* mime type */
-      if (!ws->ws_header || (NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Content-Type:")))
+      if (ws->ws_status_code != 101 && (!ws->ws_header || (NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Content-Type:"))))
 	{
 #ifdef BIF_XML
 	  if (media_type)
@@ -2131,6 +2138,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 	    SES_PRINT (ws->ws_session, tmp);
 	}
 
+      if (ws->ws_status_code != 101)
       SES_PRINT (ws->ws_session, "Accept-Ranges: bytes\r\n");
 
       if (ws->ws_header) /* user-defined headers */
@@ -2146,7 +2154,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 	  snprintf (tmp, sizeof (tmp), "Transfer-Encoding: chunked\r\nContent-Encoding: gzip\r\n");
 	  SES_PRINT (ws->ws_session, tmp);
 	}
-      else if (!ws->ws_header || (NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Content-Length:"))) /* plain body */
+      else if (ws->ws_status_code != 101 && (!ws->ws_header || (NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Content-Length:")))) /* plain body */
 	{
 	  snprintf (tmp, sizeof (tmp), "Content-Length: %ld\r\n", len);
 	  SES_PRINT (ws->ws_session, tmp);
@@ -3036,6 +3044,7 @@ ws_auth_check (ws_connection_t * ws)
   client_connection_t * cli = ws->ws_cli;
   int rc = LTE_OK, retc = 0;
   query_t * proc;
+  user_t * saved_user = NULL;
 
   if (MAINTENANCE)
     return 1;
@@ -3084,6 +3093,8 @@ ws_auth_check (ws_connection_t * ws)
   lt_threads_set_inner (cli->cli_trx, 1);
   LEAVE_TXN;
 
+  saved_user = cli->cli_user;
+  cli->cli_user = sec_name_to_user ("dba");
   err = qr_quick_exec (http_auth_qr, cli, NULL, &lc, 2,
       ":0", auth_proc, QRP_STR,
       ":1", auth_realm, QRP_STR);
@@ -3106,6 +3117,7 @@ ws_auth_check (ws_connection_t * ws)
     }
 
 error_end:
+  cli->cli_user = saved_user;
   if (err && err != (caddr_t)SQL_NO_DATA_FOUND)
     {
       /*log_info ("SQL ERROR in HTTP authentication : State=[%s] Message=[%s]", ERR_STATE(err), ERR_MESSAGE(err));*/
@@ -3746,11 +3758,10 @@ vsmx_start:
 
       err = qr_quick_exec (http_call, ws->ws_cli, NULL, NULL, 4,
 			   ":0", p_name, QRP_STR,
-			   ":1", ws->ws_path, QRP_RAW,
+			   ":1", box_copy_tree ((box_t) ws->ws_path), QRP_RAW,
 			   ":2", ws->ws_params, QRP_RAW,
 			   ":3", box_copy_tree ((box_t) ws->ws_lines), QRP_RAW);
 
-      ws->ws_path = NULL;
       ws->ws_params = NULL;
     }
 error_in_procedure:
@@ -3917,6 +3928,8 @@ do_file:
   dk_free_tree ((caddr_t) err);
   dk_free_tree ((box_t) ws->ws_lines);
   ws->ws_lines = NULL;
+  dk_free_tree ((box_t) ws->ws_path);
+  ws->ws_path = NULL;
   dk_free_box (soap_method);
 }
 
@@ -4620,7 +4633,7 @@ http_session_arg (caddr_t * qst, state_slot_t ** args, int nth,
       query_instance_t * qi = (query_instance_t *) qst;
       if (!qi->qi_client->cli_http_ses)
 	sqlr_new_error ("37000", "HT006", "http output function outside of http context and no stream specified: %s.", func);
-      res = qi->qi_client->cli_http_ses;
+      res = qi->qi_client->cli_ws->ws_session;
     }
   return res;
 }
@@ -5199,6 +5212,34 @@ again:
   dk_set_free (killed);
   LEAVE_TXN;
   return NULL;
+}
+
+int32 http_limited;
+
+caddr_t
+bif_http_limited (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t * qi = (query_instance_t *) qst;
+  ws_connection_t * ws;
+  volatile long limited = 0;
+
+  if (!qi->qi_client->cli_ws)
+    sqlr_new_error ("42000", "HT010", "This function is only allowed processing a HTTP request");
+  ws = qi->qi_client->cli_ws;
+  IN_TXN;
+  DO_SET (lock_trx_t *, lt, &all_trxs)
+    {
+      if ((lt->lt_threads > 0 || lt_has_locks (lt)) && lt->lt_client && lt->lt_client->cli_ws && lt->lt_client->cli_ws->ws_limited)
+	limited ++;
+    }
+  END_DO_SET ();
+  if (limited < http_limited)
+    ws->ws_limited = 1; /* must be set inside txn mtx */
+  LEAVE_TXN;
+
+  if (limited >= http_limited)
+    sqlr_new_error ("42000", "HTLIM", "The use of restricted HTTP threads is over the limit");
+  return box_num (limited);
 }
 
 caddr_t
@@ -7358,7 +7399,7 @@ bif_http_flush (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       if (ws->ws_xslt_url)
 	sqlr_new_error ("42000", "HT071", "Direct output and http_xslt() not compatible");
-      if (ws->ws_header &&
+      if (ws->ws_header && ws->ws_status_code != 101 &&
 	  NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Content-Length:"))
 	sqlr_new_error ("42000", "HT072", "Direct output requires Content-Length specified by http_header()");
     }
@@ -8117,6 +8158,8 @@ bif_http_map_table (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 		    }
 		  map->hm_cors = ht;
 		}
+	      else if (DV_STRINGP (opts[i]) && !stricmp (opts[i],"expiration_function"))
+		map->hm_expiration_fn = box_copy_tree (opts[i+1]);
 	    }
 	  map->hm_opts = (caddr_t *) box_copy_tree ((box_t) opts);
 	}
@@ -8231,7 +8274,7 @@ https_cert_verify_callback (int ok, void *_ctx)
 }
 
 int
-ssl_server_set_certificate (SSL_CTX* ssl_ctx, char * cert_name, char * key_name)
+ssl_server_set_certificate (SSL_CTX* ssl_ctx, char * cert_name, char * key_name, char * extra)
 {
   char err_buf[1024];
   EVP_PKEY *pkey;
@@ -8283,8 +8326,62 @@ ssl_server_set_certificate (SSL_CTX* ssl_ctx, char * cert_name, char * key_name)
   if (SSL_CTX_use_certificate (ssl_ctx, x509) <= 0)
     {
       cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-      log_error ("SSL: Unable to use certificate '%s': %s", cert_name, err_buf);
+	  log_error ("SSL: Unable to use certificate '%s': %s", cert_name, err_buf);
       return 0;
+    }
+  if (extra)
+    {
+      if (strstr (extra, "db:") == extra)
+	{
+	  client_connection_t * cli = GET_IMMEDIATE_CLIENT_OR_NULL;
+	  char *tok_s = NULL, *tok;
+	  caddr_t str = box_dv_short_string (extra + 3);
+	  /* list of key from DB */
+	  user_t * saved_user = cli->cli_user;
+	  if (!cli->cli_user) cli->cli_user = sec_name_to_user ("dba");
+	  tok = strtok_r (str, ",", &tok_s);
+	  while (tok)
+	    {
+	      int r;
+	      xenc_key_t * k;
+	      k = xenc_get_key_by_name (tok, 1);
+	      if (!k || !k->xek_x509)
+		{
+		  log_error ("SSL: The stored key '%s' can not be used as extra chain certificate", tok);
+		  break;
+		}
+	      r = SSL_CTX_add_extra_chain_cert(ssl_ctx, k->xek_x509);
+	      if (!r)
+		{
+		  log_error ("SSL: The stored certificate '%s' can not be used as extra chain certificate", tok);
+		  break;
+		}
+	      CRYPTO_add(&k->xek_x509->references, 1, CRYPTO_LOCK_X509);
+              tok = strtok_r (NULL, ",", &tok_s);		  
+	    }
+	  dk_free_box (str);
+	  cli->cli_user = saved_user;
+	}
+      else /* single file */
+	{
+	  X509 *x = NULL;
+	  BIO *in;
+	  if ((in = BIO_new_file (extra, "r")) != NULL) 
+	    {
+	      while ((x = PEM_read_bio_X509 (in, NULL, NULL, NULL)))
+		{
+		  int r;
+		  r = SSL_CTX_add_extra_chain_cert(ssl_ctx, x);
+		  if (!r)
+		    {
+		      log_error ("SSL: The certificate(s) from file '%s' can not be used as extra chain certificate(s)", extra);
+		      X509_free (x);
+		      break;
+		    }
+		}
+	      BIO_free (in);
+	    }
+	}
     }
   if (SSL_CTX_use_PrivateKey (ssl_ctx, pkey) <= 0)
     {
@@ -8302,7 +8399,7 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
   SSL_CTX *ssl_ctx = NULL;
   const SSL_METHOD *ssl_meth = NULL;
   char *https_cvfile = NULL;
-  char *cert = NULL;
+  char *cert = NULL, *extra = NULL;
   char *skey = NULL;
   long https_cvdepth = -1;
   int i, len, https_client_verify = -1;
@@ -8325,12 +8422,18 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
 	    https_cvfile = https_opts[i + 1];
 	  else if (!stricmp (https_opts[i], "https_cert") && DV_STRINGP (https_opts[i + 1]))	/* x509 cert */
 	    cert = https_opts[i + 1];
+	  else if (!stricmp (https_opts [i], "https_certificate") && DV_STRINGP (https_opts [i + 1])) /* ALIAS x509 cert */
+	    cert = https_opts [i + 1];
 	  else if (!stricmp (https_opts[i], "https_key") && DV_STRINGP (https_opts[i + 1]))	/* private key */
 	    skey = https_opts[i + 1];
+	  else if (!stricmp (https_opts [i], "https_private_key") && DV_STRINGP (https_opts [i + 1]))  /* ALIAS private key */
+	    skey = https_opts [i + 1];
 	  else if (!stricmp (https_opts[i], "https_cv_depth"))	/* verification depth */
 	    https_cvdepth = unbox (https_opts[i + 1]);
 	  else if (!stricmp (https_opts[i], "https_verify"))	/* verify mode */
 	    https_client_verify = unbox (https_opts[i + 1]);
+	  else if (!stricmp (https_opts [i], "https_extra_chain_certificates") && DV_STRINGP (https_opts [i + 1]))  /* private key */
+	    extra = https_opts [i + 1];
 	}
     }
 
@@ -8344,7 +8447,7 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
       goto err_exit;
     }
 
-  if (!ssl_server_set_certificate (ssl_ctx, cert, skey))
+  if (!ssl_server_set_certificate (ssl_ctx, cert, skey, extra))
     goto err_exit;
 
   if (https_cvfile)
@@ -8926,6 +9029,8 @@ bif_http_map_get (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
     res = box_num (map->hm_url_rewrite_keep_lpath);
   else if (!strcmp (member, "noinherit"))
     res = box_num (map->hm_no_inherit);
+  else if (!strcmp (member, "expiration_function"))
+    res = box_copy_tree ((box_t) map->hm_expiration_fn);
   return res;
 }
 
@@ -9991,6 +10096,13 @@ bif_http_on_message (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         conn[0] = NULL;
       else
 	ses = NULL;
+      mutex_enter (thread_mtx);
+      if (ws && ses && ses == ws->ws_session)
+	{
+	  ws->ws_session->dks_ws_status = DKS_WS_CACHED;
+	  ws->ws_session->dks_n_threads++;
+	}
+      mutex_leave (thread_mtx);
     }
   else if (ws && ws->ws_session)
     {
@@ -10288,6 +10400,7 @@ http_init_part_one ()
   bif_define("http_flush", bif_http_flush);
   bif_define ("http_pending_req", bif_http_pending_req);
   bif_define ("http_kill", bif_http_kill);
+  bif_define ("http_limited", bif_http_limited);
   bif_define ("http_lock", bif_http_lock);
   bif_define ("http_unlock", bif_http_unlock);
   bif_define ("http_request_header", bif_http_request_header);
@@ -10509,7 +10622,7 @@ http_init_part_two ()
 	  goto init_ssl_exit;
 	}
 
-      if (!ssl_server_set_certificate (ssl_ctx, https_cert, https_key))
+      if (!ssl_server_set_certificate (ssl_ctx, https_cert, https_key, https_extra))
 	goto init_ssl_exit;
 
       if (https_client_verify_file)
@@ -10689,6 +10802,8 @@ http_init_part_two ()
 #endif
 
   http_threads_allocate (http_threads);
+  if (!http_limited)
+    http_limited = http_threads;
 
   PrpcCheckIn (listening);
   dks_housekeeping_session_count_change (1);

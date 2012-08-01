@@ -20,22 +20,13 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
-
-  -- declare exit handler for SQLSTATE '*'
-  -- {
-  -- 	dbg_obj_print ('', __SQL_STATE, __SQL_MESSAGE);
-  -- };
-
   declare N integer;
   declare auth_uid, auth_pwd, mode, file, uri, saveUri, req_header, res_header, content, contentType varchar;
 
   mode := get_keyword('mode', params, '');
   file := get_keyword('file', params);
   auth_uid := ODRIVE.WA.session_user(params);
-  auth_pwd := coalesce((SELECT U_PWD FROM WS.WS.SYS_DAV_USER WHERE U_NAME = auth_uid), '');
-  if (auth_pwd[0] = 0)
-    auth_pwd := pwd_magic_calc(auth_uid, auth_pwd, 1);
-
+  auth_pwd := ODRIVE.WA.account_password (ODRIVE.WA.account_id (auth_uid));
   uri := ODRIVE.WA.http_escape (ODRIVE.WA.dav_url(file), 7);
   if (auth_uid = '')
   {
@@ -44,32 +35,21 @@
     http_header (sprintf ('Location: %s\r\n', uri));
     return;
   }
-  req_header := 'Accept-Charset: UTF-8,*\n'     ||
-                'Keep-Alive: 300\n'             ||
-                'Connection: keep-alive\n'      ||
-                'Accept: image/png,*/*;q=0.5\n' ||
-                sprintf('Authorization: Basic %s\n', encode_base64(concat(auth_uid, ':', auth_pwd)));
-
-  N := 0;
-_again:
-  N := N + 1;
-  saveUri := uri;
   commit work;
-  content := http_client_ext (url=>uri,
+  req_header :=
+    'Accept-Charset: UTF-8,*\r\n'     ||
+    'Keep-Alive: 300\r\n'             ||
+    'Connection: keep-alive\r\n'      ||
+    'Accept: image/png,*/*;q=0.5\r\n' ||
+    sprintf('Authorization: Basic %s\r\n', encode_base64(concat(auth_uid, ':', auth_pwd)));
+  content := http_client_ext (
+    url=>uri,
                               http_method=>'GET',
                               http_headers=>req_header,
-                              headers=>res_header);
-
+    headers=>res_header,
+    n_redirects=>15
+  );
   contentType := http_request_header (res_header, 'Content-Type');
-  if (res_header[0] like 'HTTP/1._ 30_%')
-  {
-    uri := http_request_header (res_header, 'Location');
-    uri := WS.WS.EXPAND_URL (saveUri, uri);
-    if (N > 15)
-      return 'Too many redirects or redirect loops back, please specify the correct URL.';
-    if (uri <> saveUri)
-      goto _again;
-  }
   if (res_header[0] like 'HTTP/1._ 4__%' or res_header[0] like 'HTTP/1._ 5__%')
   {
     if (is_https_ctx ())
@@ -82,9 +62,12 @@ _again:
     }
     content := res_header[0];
   }
-
   http_rewrite();
-  if ((contentType = 'text/plain') and (mode <> 'download'))
+  if (length (content) = 0)
+  {
+    http_request_status ('HTTP/1.1 204 No Content');
+  }
+  else if ((contentType = 'text/plain') and (mode <> 'download'))
   {
     http_header (sprintf('Content-Type: %s\r\n', 'text/html'));
     http('<html><body><pre>\r\n');

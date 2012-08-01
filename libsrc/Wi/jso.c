@@ -1123,8 +1123,8 @@ bif_jso_dbg_dump_rtti (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   sec_check_dba ((query_instance_t *)qst, "jso_dbg_dump_rtti");
 #ifdef DEBUG
   rtti = ((jso_rtti_t *)((void *)bif_arg (qst, args, 0, "jso_dbg_dump_rtti")))->jrtti_loop;
-  rtti_of_name = gethash (rtti->jrtti_inst_iri, jso_rttis_of_names);
-  rtti_of_self = gethash (rtti->jrtti_self, jso_rttis_of_structs);
+  rtti_of_name = (jso_rtti_t *)gethash (rtti->jrtti_inst_iri, jso_rttis_of_names);
+  rtti_of_self = (jso_rtti_t *)gethash (rtti->jrtti_self, jso_rttis_of_structs);
   res = box_sprintf (1000,
     "DV_CUSTOM (rtti STATUS=%s(%d), %s, self %s, IRI=%.300s, CLASS=%.300s)",
     jso_status_string (rtti->jrtti_status), rtti->jrtti_status,
@@ -1151,28 +1151,28 @@ jso_triple_add (caddr_t * qst, caddr_t jsubj, caddr_t jpred, caddr_t jobj)
   new_jsubj = jsubj = box_cast_to_UTF8_uname (qst, jsubj);
   new_jpred = jpred = box_cast_to_UTF8_uname (qst, jpred);
   new_jobj = jobj = box_cast_to_UTF8_uname (qst, jobj);
-  jso_single_subj = gethash (jsubj, jso_triple_subjs);
+  jso_single_subj = (dk_hash_t *)gethash (jsubj, jso_triple_subjs);
   if (NULL == jso_single_subj)
     {
       jso_single_subj = hash_table_allocate (13);
       sethash (new_jsubj, jso_triple_subjs, jso_single_subj);
       new_jsubj = NULL;
     }
-  jso_single_pred = gethash (jpred, jso_triple_preds);
+  jso_single_pred = (dk_hash_t *)gethash (jpred, jso_triple_preds);
   if (NULL == jso_single_pred)
     {
       jso_single_pred = hash_table_allocate (251);
       sethash (new_jpred, jso_triple_preds, jso_single_pred);
       new_jpred = NULL;
     }
-  jso_single_obj = gethash (jobj, jso_triple_objs);
+  jso_single_obj = (dk_hash_t *)gethash (jobj, jso_triple_objs);
   if (NULL == jso_single_obj)
     {
       jso_single_obj = hash_table_allocate (13);
       sethash (new_jobj, jso_triple_objs, jso_single_obj);
       new_jobj = NULL;
     }
-  jso_objs = gethash (jpred, jso_single_subj);
+  jso_objs = (dk_set_t)gethash (jpred, jso_single_subj);
 #ifdef DEBUG
   if (jso_objs != gethash (jsubj, jso_single_pred))
     GPF_T1 ("jso_triple_add(): gethash (jpred, gethash (jsubj, jso_triple_subjs)) != gethash (jsubj, gethash (jpred, jso_triple_preds))");
@@ -1186,7 +1186,7 @@ jso_triple_add (caddr_t * qst, caddr_t jsubj, caddr_t jpred, caddr_t jobj)
       sethash (jpred, jso_single_subj, jso_objs);
       sethash (jsubj, jso_single_pred, jso_objs);
     }
-  jso_subjs = gethash (jpred, jso_single_obj);
+  jso_subjs = (dk_set_t)gethash (jpred, jso_single_obj);
   if (NULL == dk_set_member (jso_subjs, jsubj))
     {
       if (NULL == new_jsubj)
@@ -1201,6 +1201,105 @@ jso_triple_add (caddr_t * qst, caddr_t jsubj, caddr_t jpred, caddr_t jobj)
   return 0;
 }
 
+
+int
+jso_triples_del_impl (caddr_t jsubj, caddr_t jpred, caddr_t jobj)
+{
+  dk_hash_t *jso_single_subj = NULL;
+  dk_hash_t *jso_single_pred = NULL;
+  dk_hash_t *jso_single_obj = NULL;
+  dk_set_t jso_objs;
+  dk_set_t jso_subjs;
+  if (NULL != jsubj)
+    {
+      jso_single_subj = (dk_hash_t *)gethash (jsubj, jso_triple_subjs);
+      if (NULL == jso_single_subj)
+        return 0;
+    }
+  if (NULL != jpred)
+    {
+      jso_single_pred = (dk_hash_t *)gethash (jpred, jso_triple_preds);
+      if (NULL == jso_single_pred)
+        return 0;
+    }
+  if (NULL != jobj)
+    {
+      jso_single_obj = (dk_hash_t *)gethash (jobj, jso_triple_objs);
+      if (NULL == jso_single_obj)
+        return 0;
+    }
+  if ((NULL != jsubj) && (NULL != jpred) && (NULL != jobj))
+    {
+      jso_objs = (dk_set_t)gethash (jpred, jso_single_subj);
+      if (!dk_set_delete (&jso_objs, jobj))
+        return 0;
+      sethash (jpred, jso_single_subj, jso_objs);
+      sethash (jsubj, jso_single_pred, jso_objs);
+      jso_subjs = (dk_set_t)gethash (jpred, jso_single_obj);
+      dk_set_delete (&jso_objs, jobj);
+      sethash (jpred, jso_single_obj, jso_subjs);
+      return 1;
+    }
+  if ((NULL != jsubj) && (NULL != jpred))
+    {
+      int res = 0;
+      jso_objs = (dk_set_t)gethash (jpred, jso_single_subj);
+      if (NULL == jso_objs)
+        return 0;
+      remhash (jpred, jso_single_subj);
+      remhash (jsubj, jso_single_pred);
+      while (NULL != (jobj = (caddr_t)dk_set_pop (&jso_objs)))
+        {
+          jso_single_obj = (dk_hash_t *)gethash (jobj, jso_triple_objs);
+          jso_subjs = (dk_set_t)gethash (jpred, jso_single_obj);
+          dk_set_delete (&jso_objs, jobj);
+          sethash (jpred, jso_single_obj, jso_subjs);
+          res++;
+        }
+      return res;
+    }
+  if (((NULL != jsubj) || (NULL != jobj)) && (NULL == jpred))
+    {
+      int ctr, res = 0;
+      caddr_t *preds = (caddr_t *)hash_list_keys ((NULL != jsubj) ? jso_single_subj :  jso_single_obj);
+      DO_BOX_FAST (caddr_t, p, ctr, preds)
+        {
+          res += jso_triples_del_impl (jsubj, p, jobj);
+        }
+      END_DO_BOX_FAST;
+      dk_free_box ((caddr_t)preds);
+      return res;
+    }
+  if (NULL != jpred)
+    {
+      int ctr, res = 0;
+      caddr_t *subjs = (caddr_t *)hash_list_keys (jso_single_pred);
+      DO_BOX_FAST (caddr_t, s, ctr, subjs)
+        {
+          res += jso_triples_del_impl (s, jpred, jobj);
+        }
+      END_DO_BOX_FAST;
+      dk_free_box ((caddr_t)subjs);
+      return res;
+    }
+  return -1; /* For combinations that are not yet supported */
+}
+
+caddr_t
+jso_triples_del (caddr_t * qst, caddr_t jsubj, caddr_t jpred, caddr_t jobj)
+{
+  int res;
+  caddr_t tmp_jsubj = ((NULL == jsubj) ? NULL : box_cast_to_UTF8_uname (qst, jsubj));
+  caddr_t tmp_jpred = ((NULL == jpred) ? NULL : box_cast_to_UTF8_uname (qst, jpred));
+  caddr_t tmp_jobj = ((NULL == jobj) ? NULL : box_cast_to_UTF8_uname (qst, jobj));
+  res = jso_triples_del_impl (tmp_jsubj, tmp_jpred, tmp_jobj);
+  dk_free_box (tmp_jsubj);
+  dk_free_box (tmp_jpred);
+  dk_free_box (tmp_jobj);
+  return ((0 > res) ? NEW_DB_NULL : box_num (res));
+}
+
+
 caddr_t *
 jso_triple_get_objs_impl (caddr_t * qst, caddr_t jsubj, caddr_t jpred, dk_hash_t *top_hash)
 {
@@ -1209,14 +1308,14 @@ jso_triple_get_objs_impl (caddr_t * qst, caddr_t jsubj, caddr_t jpred, dk_hash_t
   caddr_t *res;
   int ctr, len;
   jsubj = box_cast_to_UTF8_uname (qst, jsubj);
-  jso_single_subj = gethash (jsubj, top_hash);
+  jso_single_subj = (dk_hash_t *)gethash (jsubj, top_hash);
   if (NULL == jso_single_subj)
     {
       dk_free_box (jsubj);
       return (caddr_t *)list (0);
     }
   jpred = box_cast_to_UTF8_uname (qst, jpred);
-  jso_objs = gethash (jpred, jso_single_subj);
+  jso_objs = (dk_set_t)gethash (jpred, jso_single_subj);
   if (NULL == jso_objs)
     {
       dk_free_box (jsubj);
@@ -1228,7 +1327,7 @@ jso_triple_get_objs_impl (caddr_t * qst, caddr_t jsubj, caddr_t jpred, dk_hash_t
   ctr = 0;
   while (NULL != jso_objs)
     {
-      res[ctr++] = box_copy (jso_objs->data);
+      res[ctr++] = box_copy ((caddr_t)(jso_objs->data));
       jso_objs = jso_objs->next;
     }
   return res;
@@ -1254,6 +1353,15 @@ bif_jso_triple_add (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t jpred = bif_string_or_wide_or_uname_arg (qst, args, 1, "jso_triple_add");
   caddr_t jobj = bif_string_or_wide_or_uname_arg (qst, args, 2, "jso_triple_add");
   return jso_triple_add (qst, jsubj, jpred, jobj);
+}
+
+caddr_t
+bif_jso_triples_del (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t jsubj = bif_string_or_uname_or_wide_or_null_arg (qst, args, 0, "jso_triples_del");
+  caddr_t jpred = bif_string_or_uname_or_wide_or_null_arg (qst, args, 1, "jso_triples_del");
+  caddr_t jobj = bif_string_or_uname_or_wide_or_null_arg (qst, args, 2, "jso_triples_del");
+  return jso_triples_del (qst, jsubj, jpred, jobj);
 }
 
 caddr_t
@@ -1445,6 +1553,7 @@ void jso_init ()
   bif_define ("jso_proplist", bif_jso_proplist);
   bif_define ("jso_dbg_dump_rtti", bif_jso_dbg_dump_rtti);
   bif_define ("jso_triple_add", bif_jso_triple_add);
+  bif_define ("jso_triples_del", bif_jso_triples_del);
   bif_define ("jso_triple_get_objs", bif_jso_triple_get_objs);
   bif_define ("jso_triple_get_subjs", bif_jso_triple_get_subjs);
   bif_define ("jso_triple_list", bif_jso_triple_list);

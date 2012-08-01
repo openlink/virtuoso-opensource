@@ -474,6 +474,10 @@ insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DES
 insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_OPTIONS, RM_ENABLED)
     values ('http://.*.nytimes.com/.*', 'URL', 'DB.DBA.RDF_LOAD_NYT_ARTICLE', null, 'NYT Article', null, 0);
 
+insert soft DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_DESCRIPTION, RM_ENABLED)
+	values ('^https?://www.wolframalpha.com/input/.*', 
+	'URL', 'DB.DBA.RDF_LOAD_WOLFRAMALPHA', null, 'Wolfram|Alpha', 0);
+
 update DB.DBA.SYS_RDF_MAPPERS 
     set RM_DESCRIPTION = 'Facebook (Facebook Query Language - FQL)'
 	where RM_HOOK = 'DB.DBA.RDF_LOAD_FQL';
@@ -1126,6 +1130,13 @@ create function DB.DBA.html2text(in content long varchar)
   return _ret_body;
 };
 
+create function DB.DBA.shtml2text(in content varchar)
+{
+  declare long_content long varchar;
+  long_content := content;
+  return DB.DBA.html2text(long_content);
+};
+
 create procedure DB.DBA.XSLT_REGEXP_MATCH (in pattern varchar, in val varchar)
 {
   return regexp_match (pattern, val);
@@ -1135,6 +1146,8 @@ create procedure DB.DBA.XSLT_REGEXP_MATCH (in pattern varchar, in val varchar)
 create procedure DB.DBA.DI_URI (in str varchar)
 {
   declare sha, ret any;
+  if (str is null)
+    return '';
   if (str like 'mailto:%')
     str := subseq (str, 7);
   sha := xenc_sha1_digest (str);
@@ -1294,6 +1307,12 @@ create procedure DB.DBA.XSLT_HTTP_STRING_DATE (in val varchar)
 }
 ;
 
+create procedure DB.DBA.ESCAPEURI (in uri varchar) returns varchar
+{
+    return sprintf('%U', uri);
+}
+;
+
 create procedure DB.DBA.XSLT_TRIM (in val varchar, in tr varchar)
 {
 	if (val is not null and length(val) > 0)
@@ -1355,7 +1374,7 @@ create procedure DB.DBA.XSLT_DI_SPLIT (in str varchar)
     http ('<result>', ses);
     while (di := regexp_match ('di:[^ <>]+', str, 1) is not null)
     {
-        dbg_obj_print (di);
+        --dbg_obj_print (di);
         h := WS.WS.PARSE_URI (di);
         dgst := bin2hex (cast (decode_base64 (replace (replace (h[3], '-', '+'), '_', '/')) as varbinary));
         http (sprintf ('<di><dgst>%V</dgst><hash>%V</hash></di>', h[2], dgst), ses);
@@ -1464,7 +1483,7 @@ create function DB.DBA.RDF_PROXY_GET_HTTP_HOST ()
 }
 ;
 
-EXEC_STMT ('create table DB.DBA.RDF_PROXY_IRI_MAP (RPIM_IRI IRI_ID_8, RPIM_SOURCE_IRI IRI_ID_8, primary key (RPIM_IRI, RPIM_SOURCE_IRI))', 0);
+EXEC_STMT ('create table DB.DBA.RDF_PROXY_IRI_MAP (RPIM_IRI IRI_ID_8, RPIM_SOURCE_IRI IRI_ID_8, primary key (RPIM_IRI))', 0);
 
 create procedure RDF_SPONGE_PROXY_IRI_MAP (in uri_identifier varchar, in graph varchar)
 {
@@ -1472,8 +1491,46 @@ create procedure RDF_SPONGE_PROXY_IRI_MAP (in uri_identifier varchar, in graph v
   cname := DB.DBA.RDF_PROXY_GET_HTTP_HOST ();
   id := bin2hex (cast (decode_base64 (xenc_sha1_digest (uri_identifier)) as varbinary));
   ret := sprintf ('%s://%s/proxy-iri/%s', RDF_SPONGE_IRI_SCH (), cname, id);
+  if (0 = length (graph))
+    graph := null;
   insert soft DB.DBA.RDF_PROXY_IRI_MAP (RPIM_IRI, RPIM_SOURCE_IRI) values (iri_to_id (ret), iri_to_id (graph));
   return ret;
+}
+;
+
+create procedure RDF_SPONGE_PROXY_IRI_GRAPH_BY_ID (in id varchar)
+{
+  declare cname, iid varchar;
+  declare ret any;
+  cname := DB.DBA.RDF_PROXY_GET_HTTP_HOST ();
+  ret := sprintf ('%s://%s/proxy-iri/%s', RDF_SPONGE_IRI_SCH (), cname, id);
+  iid := iri_to_id (ret);
+  ret := (select RPIM_SOURCE_IRI from DB.DBA.RDF_PROXY_IRI_MAP where RPIM_IRI = iid);
+  return id_to_iri (ret);
+}
+;
+
+create procedure RDF_SPONGE_PROXY_IRI_BY_ID (in id varchar)
+{
+  declare cname, ret, iid varchar;
+  cname := DB.DBA.RDF_PROXY_GET_HTTP_HOST ();
+  ret := sprintf ('%s://%s/proxy-iri/%s', RDF_SPONGE_IRI_SCH (), cname, id);
+  return ret;
+}
+;
+
+grant execute on RDF_SPONGE_PROXY_IRI_MAP to public;
+
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:iriMap', fix_identifier_case ('DB.DBA.RDF_SPONGE_PROXY_IRI_MAP'));
+
+create procedure RDF_SPONGE_PROXY_IRI_GET_GRAPH (in iri any)
+{
+  declare iid, ret varchar;
+  iid := iri_to_id (iri);
+  ret := (select RPIM_SOURCE_IRI from DB.DBA.RDF_PROXY_IRI_MAP where RPIM_IRI = iid);
+  if (ret is null)
+    return iri;
+  return id_to_iri (ret);
 }
 ;
 
@@ -2059,6 +2116,8 @@ grant execute on DB.DBA.XSLT_CRUNCHBASE_MONEYSTRING2DECIMAL to public;
 grant execute on DB.DBA.XSLT_SANEURI to public;
 grant execute on DB.DBA.DECODEXML to public;
 grant execute on DB.DBA.DBPEDIA_URL_LABEL to public;
+grant execute on DB.DBA.shtml2text to public;
+grant execute on DB.DBA.escapeURI to public;
 
 xpf_extension_remove ('http://www.openlinksw.com/virtuoso/xslt:getNameByCIK');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:xbrl_canonical_datatype', fix_identifier_case ('DB.DBA.GET_XBRL_CANONICAL_DATATYPE'));
@@ -2100,6 +2159,8 @@ xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:saneURI', 'DB.DBA.XSLT_
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:decodeXML', 'DB.DBA.DECODEXML');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:x509_pub_key', 'DB.DBA.XENC_X509_PUB_KEY');
 xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:dbpedia_url_label', 'DB.DBA.DBPEDIA_URL_LABEL');
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:html2text', fix_identifier_case ('DB.DBA.shtml2text'));
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:escapeURI', fix_identifier_case('DB.DBA.ESCAPEURI'));
 
 create procedure DB.DBA.RDF_MAPPER_XSLT (in xslt varchar, inout xt any, in params any := null)
 {
@@ -5138,126 +5199,126 @@ create procedure DB.DBA.RDF_LOAD_MEETUP2(in url varchar, in new_origin_uri varch
 
 create procedure DB.DBA.RDF_LOAD_MEETUP (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar, inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any, in triple_dict any := null)
 {
-  declare xd, xt, url, tmp, api_key, hdr, id0, id1, id2, id3, id4, id5, id6 any;
-  declare pos, len int;
-  declare xsl2, what_, base varchar;
-  declare exit handler for sqlstate '*'
-   {
-      DB.DBA.RM_RDF_SPONGE_ERROR (triple_dict, current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
-      return 0;
-    };
-  api_key := _key;
-  base := concat(trim(new_origin_uri, '/'), '/');
-  if (new_origin_uri like 'http://%.meetup.com/%')
-  {
-    tmp := sprintf_inverse (new_origin_uri, 'http://%s.meetup.com/%s/%s/%s/%s/%s', 0);
-    if (tmp is null)
-      tmp := sprintf_inverse (new_origin_uri, 'http://%s.meetup.com/%s/%s/%s/%s', 0);
-    if (tmp is null)
-      tmp := sprintf_inverse (new_origin_uri, 'http://%s.meetup.com/%s/%s/%s', 0);
-    if (tmp is null)
-      tmp := sprintf_inverse (new_origin_uri, 'http://%s.meetup.com/%s/%s', 0);
-    if (tmp is null)
-      tmp := sprintf_inverse (new_origin_uri, 'http://%s.meetup.com/%s', 0);
-    len := length(tmp);
-    if (len > 5)
-      id5 := tmp[5];
-    if (len > 4)
-      id4 := tmp[4];
-    if (len > 3)
-      id3 := tmp[3];
-    if (len > 2)
-      id2 := tmp[2];
-    if (len > 1)
-      id1 := tmp[1];
-    if (len > 0)
-      id0 := tmp[0];
-    if (id0 is null or (id0 = 'www' and id1 is null))
-      return 0;
-    RM_CLEAN_DEST (triple_dict, dest, graph_iri, new_origin_uri, opts);
-    if (id0 = 'www')
-      {
-	if (id1 = 'cities')
-	  {
-	    if (id2 is not null)
-	      {
-		url := concat('http://api.meetup.com/groups.xml/?country=', id2);
-		if (id3 is not null and id4 is not null)
-		  {
-		    url := concat(url, '&state=', id3);
-		    if (id4 is not null and id4 <> 'groups')
-		      {
-			url := concat(url, '&city=', id4);
-		      }
-		  }
-		else if (id3 is not null and (id4 is null or id4 = 'groups'))
-		  {
-		    url := concat(url, '&city=', id3);
-		  }
-		  what_ := 'groups';
-	      }
-	    else
-	      return 0;
-	    url := concat(url, '&key=', api_key );
-	    DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
-	  }
-	if (id1 = 'members' and id2 is not null)
-	  {
-	    base := concat('http://www.meetup.com/members/', id2, '/');
-	    url := concat('http://api.meetup.com/members.xml/?member_id=', id2, '&key=', api_key);
-	    what_ := 'member';
-	    DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
-	  }
-	else
-	  {
-	    base := concat('http://www.meetup.com/', id1, '/');
-	    if (id1 is not null and id2 = 'members')
-	      {
-		url := concat('http://api.meetup.com/members.xml/?group_urlname=', id1, '&key=', api_key);
-		what_ := 'members';
-		DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
-	      }
-	    else if (id1 is not null and id2 = 'calendar')
-	      {
-		if (id3 is null or id3 = '')
-		  {
-		    url := concat('http://api.meetup.com/events.xml/?group_urlname=', id1, '&key=', api_key);
-		    what_ := 'events';
-		    DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
-		  }
-		else
-		  {
-		    url := concat('http://api.meetup.com/events.xml/?id=', id3, '&key=', api_key);
-		    what_ := 'event';
-		    DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
-		  }
-	      }
-	    else if (id1 is not null and id2 = 'photos')
-	      {
-		url := concat('http://api.meetup.com/photos.xml/?group_urlname=', id1, '&key=', api_key);
-		what_ := 'photos';
-		DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
-	      }
-	    else
-	      {
-		url := sprintf('http://api.meetup.com/groups.xml/?group_urlname=%s&key=%s', id1, api_key);
-		what_ := 'groups';
-		DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
-
-		url := concat('http://api.meetup.com/members.xml/?group_urlname=', id1, '&key=', api_key);
-		what_ := 'members';
-		DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
-
-		url := concat('http://api.meetup.com/events.xml/?group_urlname=', id1, '&key=', api_key);
-		what_ := 'events';
-		DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
-
-		url := sprintf('http://api.meetup.com/comments.xml/?group_urlname=%s&key=%s', id1, api_key);
-		what_ := 'comments';
-		DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
-	      }
-	  }
-      }
+	declare xd, xt, url, tmp, api_key, hdr, id0, id1, id2, id3, id4, id5, id6 any;
+	declare pos, len int;
+	declare xsl2, what_, base varchar;
+	declare exit handler for sqlstate '*'
+	{
+	  DB.DBA.RM_RDF_SPONGE_ERROR (triple_dict, current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+	  return 0;
+	};
+	api_key := _key;
+	base := concat(trim(new_origin_uri, '/'), '/');
+	if (new_origin_uri like 'http://%.meetup.com/%')
+	{
+		tmp := sprintf_inverse (new_origin_uri, 'http://%s.meetup.com/%s/%s/%s/%s/%s', 0);
+		if (tmp is null)
+		  	tmp := sprintf_inverse (new_origin_uri, 'http://%s.meetup.com/%s/%s/%s/%s', 0);
+		if (tmp is null)
+		  	tmp := sprintf_inverse (new_origin_uri, 'http://%s.meetup.com/%s/%s/%s', 0);
+		if (tmp is null)
+		  	tmp := sprintf_inverse (new_origin_uri, 'http://%s.meetup.com/%s/%s', 0);
+		if (tmp is null)
+		  	tmp := sprintf_inverse (new_origin_uri, 'http://%s.meetup.com/%s', 0);
+		len := length(tmp);
+		if (len > 5)
+		  	id5 := tmp[5];
+		if (len > 4)
+		  	id4 := tmp[4];
+		if (len > 3)
+		  	id3 := tmp[3];
+		if (len > 2)
+		  	id2 := tmp[2];
+		if (len > 1)
+		  	id1 := tmp[1];
+		if (len > 0)
+		  	id0 := tmp[0];
+		if (id0 is null or (id0 = 'www' and id1 is null))
+		  	return 0;
+		RM_CLEAN_DEST (triple_dict, dest, graph_iri, new_origin_uri, opts);
+		if (id0 = 'www')
+		{
+			if (id1 = 'cities')
+		  	{
+				if (id2 is not null)
+				{
+					url := concat('http://api.meetup.com/groups.xml/?country=', id2);
+					if (id3 is not null and id4 is not null)
+				  	{
+						url := concat(url, '&state=', id3);
+						if (id4 is not null and id4 <> 'groups')
+					  	{
+							url := concat(url, '&city=', id4);
+					  	}
+				  	}
+					else if (id3 is not null and (id4 is null or id4 = 'groups'))
+				  	{
+						url := concat(url, '&city=', id3);
+				  	}
+				  	what_ := 'groups';
+				}
+				else
+					return 0;
+				url := concat(url, '&key=', api_key );
+				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
+			}
+			if (id1 = 'members' and id2 is not null)
+			{
+				base := concat('http://www.meetup.com/members/', id2, '/');
+				url := concat('http://api.meetup.com/members.xml/?member_id=', id2, '&key=', api_key);
+				what_ := 'member';
+				DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
+			}
+			else
+			{
+				base := concat('http://www.meetup.com/', id1, '/');
+				if (id1 is not null and id2 = 'members')
+				{
+					url := concat('http://api.meetup.com/members.xml/?group_urlname=', id1, '&key=', api_key);
+					what_ := 'members';
+					DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
+				}
+				else if (id1 is not null and (id2 = 'calendar' or id2 = 'events'))
+				{
+					if (id3 is null or id3 = '')
+					{
+						url := concat('http://api.meetup.com/events.xml/?group_urlname=', id1, '&key=', api_key);
+						what_ := 'events';
+						DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
+					}
+					else
+					{
+						url := concat('http://api.meetup.com/events.xml/?id=', id3, '&key=', api_key);
+						what_ := 'event';
+						DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
+					}
+				}
+				else if (id1 is not null and id2 = 'photos')
+				{
+					url := concat('http://api.meetup.com/photos.xml/?group_urlname=', id1, '&key=', api_key);
+					what_ := 'photos';
+					DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
+				}
+				else
+				{
+					url := sprintf('http://api.meetup.com/groups.xml/?group_urlname=%s&key=%s', id1, api_key);
+					what_ := 'groups';
+					DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
+			
+					url := concat('http://api.meetup.com/members.xml/?group_urlname=', id1, '&key=', api_key);
+					what_ := 'members';
+					DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
+			
+					url := concat('http://api.meetup.com/events.xml/?group_urlname=', id1, '&key=', api_key);
+					what_ := 'events';
+					DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
+			
+					url := sprintf('http://api.meetup.com/comments.xml/?group_urlname=%s&key=%s', id1, api_key);
+					what_ := 'comments';
+					DB.DBA.RDF_LOAD_MEETUP2(url, new_origin_uri, dest, graph_iri, what_, base, opts, triple_dict);
+				}
+			}
+      	}
     else
       {
 	if (id1 = 'cities')
@@ -7858,7 +7919,6 @@ create procedure DB.DBA.RDF_LOAD_YELP (in graph_iri varchar, in new_origin_uri v
 	}
 	else
 		return 0;
-dbg_obj_princ(url);
 	tmp := http_client (url, proxy=>get_keyword_ucase ('get:proxy', opts));
 	tree := json_parse (tmp);
 	xt := DB.DBA.SOCIAL_TREE_TO_XML (tree);
@@ -8087,6 +8147,40 @@ create procedure csv_to_xml (in s any)
     }
   http ('</csv>', ss);
   return ss;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_WOLFRAMALPHA(in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
+    inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any, in triple_dict any := null)
+{
+  declare xd, xt, urlpart, url, tree, hdr, content, success any;
+
+  declare exit handler for sqlstate '*'
+    {
+      DB.DBA.RM_RDF_SPONGE_ERROR (triple_dict, current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+      return 0;
+    };
+    
+  if(not length(_key)) {
+		log_message (sprintf ('%s: Wolfram|Alpha cartridge needs an API key', current_proc_name()));
+    return 0;
+	}
+
+  urlpart:=regexp_substr('^http://www.wolframalpha.com/input/\?.*i=([^&]*)', new_origin_uri, 1);
+
+	hdr:=null;  
+  url:=sprintf('http://api.wolframalpha.com/v2/query?input=%s&appid=%s', urlpart, _key);
+  
+  DB.DBA.RM_LOG_REQUEST (url, null, current_proc_name ());
+  content := http_get (url, hdr, 'GET', null, null, get_keyword_ucase ('get:proxy', opts));
+  DB.DBA.RM_LOG_RESPONSE (content, hdr);
+  xt := xtree_doc(content);
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/wolfram_alpha2rdf.xsl', xt, vector ('baseUri', new_origin_uri));
+	xd := serialize_to_UTF8_xml (xt);
+	RM_CLEAN_DEST (triple_dict, dest, graph_iri, new_origin_uri, opts);
+	DB.DBA.RM_RDF_LOAD_RDFXML (triple_dict, xd, new_origin_uri, coalesce (dest, graph_iri));
+	DB.DBA.RM_ADD_PRV (triple_dict, current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
+	return 1;
 }
 ;
 
@@ -10028,6 +10122,34 @@ create procedure DB.DBA.SYS_WEBCAL_SPONGE_UP (in local_iri varchar, in get_uri v
 }
 ;
 
+create procedure DB.DBA.SYS_FTP_SPONGE_UP (in local_iri varchar, in get_uri varchar, in options any)
+{
+  declare h, host, remote, local, rc any;
+  declare ses, data_ses, data_addr, content, get_soft any;
+  declare mime_type, tmp, dummy any;
+  h := rfc1808_parse_uri (get_uri);
+  remote := h[2];
+  host := h[1];
+  data_ses := NULL;
+  content := string_output (http_strses_memory_size ());
+  data_addr := FTP_CONNECT (host, 'anonymous', 'user@domain.com', ses, 1);
+  data_ses := ses_connect (data_addr);
+  FTP_COMMAND (ses, concat ('retr ', remote), vector (150,125));
+  FTP_SES_GET (data_addr, content, data_ses);
+  FTP_COMMAND (ses, concat ('quit'), NULL);
+  ses_disconnect (ses);
+  --rc := ftp_get (host, 'anonymous', 'user@domain.com', remote, '/tmp/webilu.html');
+  get_soft := get_keyword_ucase ('get:soft', options, '');
+  tmp := vector ('OK');
+  dummy := vector ();
+  mime_type := null;
+  if (get_soft <> 'add')
+    DB.DBA.RDF_FORGET_HTTP_RESPONSE (local_iri, get_uri, options);
+  DB.DBA.RDF_LOAD_HTTP_RESPONSE (local_iri, get_uri, mime_type, tmp, content, options, dummy);
+  return local_iri;
+}
+;
+
 create procedure DB.DBA.RDF_LOAD_YAHOO_STOCK_DATA (in graph_iri varchar, in new_origin_uri varchar,  in dest varchar,
     inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any, in triple_dict any := null)
 {
@@ -10866,23 +10988,23 @@ create procedure DB.DBA.RDF_LOAD_MBZ (in graph_iri varchar, in new_origin_uri va
 
 create procedure DB.DBA.RDF_LOAD_LINKEDIN (in graph_iri varchar, in new_origin_uri varchar, in dest varchar, inout _ret_body any, inout aq any, inout ps any, inout _key any, inout opts any, in triple_dict any := null)
 {
-  declare xt, cnt, xd any;
-  declare linkedin_id, tmp, required_profile_fields varchar;
-  declare is_owner_key integer;
-  declare api_url, url, public_profile_url any;
-  declare consumer_key, consumer_secret, oauth_token, oauth_secret varchar;
+  declare url, public_profile_url any;
+  declare consumer_key, consumer_secret, oauth_token, oauth_secret, accept_lang varchar;
   declare oauth_keys any;
-  declare li_object_type varchar; -- Type of LinkedIn object being handled
+  declare is_owner_key integer;
+  declare li_object_type, li_id varchar; 
 
   declare exit handler for sqlstate '*'
   {
-	DB.DBA.RM_RDF_SPONGE_ERROR (triple_dict, current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+    DB.DBA.RM_RDF_SPONGE_ERROR (triple_dict, current_proc_name (), graph_iri, dest, __SQL_MESSAGE); 	
+    log_message (sprintf ('%s exit handler:\n %s', current_proc_name (), __SQL_MESSAGE));
     return 0;
   };
 
   -- Get cartridge options
   consumer_key := get_keyword ('consumer_key', opts);
   consumer_secret := get_keyword ('consumer_secret', opts);
+  accept_lang := get_keyword ('accept_lang', opts);
 
   if (subseq (new_origin_uri, 0, 5) = 'https')
     new_origin_uri := 'http' || subseq (new_origin_uri, 5);
@@ -10896,12 +11018,34 @@ create procedure DB.DBA.RDF_LOAD_LINKEDIN (in graph_iri varchar, in new_origin_u
     -- Public profile URL
     -- e.g. http://uk.linkedin.com/pub/hugh-williams/0/1a0/559
     public_profile_url := new_origin_uri;
+    li_object_type := 'person';
   }
   else if (new_origin_uri like 'http://%.linkedin.com/in/%')
   {
     -- Public profile URL
     -- e.g. http://www.linkedin.com/in/kidehen
     public_profile_url := new_origin_uri;
+    li_object_type := 'person';
+  }
+  else if (new_origin_uri like 'http://%.linkedin.com/jobs%')
+  {
+    -- Job posting
+    -- e.g. http://www.linkedin.com/jobs?viewJob&jobId=2700841&trk=jobs_share_fb
+    li_id := regexp_substr ('jobId=([[:digit:]]+)', new_origin_uri, 1);
+    if (li_id is null)
+      return 0;
+    public_profile_url := null;
+    li_object_type := 'job';
+  }
+  else if (new_origin_uri like 'http://%.linkedin.com/company/%')
+  {
+    -- Company profile 
+    -- e.g. http://www.linkedin.com/company/27491[?...]
+    li_id := regexp_substr ('company/([[:digit:]]+)', new_origin_uri, 1);
+    if (li_id is null)
+      return 0;
+    public_profile_url := null;
+    li_object_type := 'company';
   }
   else
   {
@@ -10920,7 +11064,32 @@ create procedure DB.DBA.RDF_LOAD_LINKEDIN (in graph_iri varchar, in new_origin_u
     return 0;
   }
 
-  -- Retrieve most data apart from connections
+  if (li_object_type = 'person')
+  {
+    DB.DBA.RDF_LOAD_LINKEDIN_SPONGE_USER (graph_iri, new_origin_uri, dest, opts, triple_dict, 
+	consumer_key, consumer_secret, oauth_token, oauth_secret, is_owner_key, public_profile_url);
+  }
+  else if (li_object_type = 'job' or li_object_type = 'company')
+  {
+    DB.DBA.RDF_LOAD_LINKEDIN_SPONGE_JOB_OR_COMPANY (graph_iri, new_origin_uri, dest, opts, triple_dict, 
+	consumer_key, consumer_secret, oauth_token, oauth_secret, li_id, li_object_type, accept_lang);
+  }
+
+  return 1;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_LINKEDIN_SPONGE_USER (
+  in graph_iri varchar, in new_origin_uri varchar, in dest varchar, in opts any, in triple_dict any,
+  in consumer_key varchar, in consumer_secret varchar, in oauth_token varchar, in oauth_secret varchar, in is_owner_key integer,
+  in public_profile_url any)
+{
+  declare xt, cnt, xd any;
+  declare required_profile_fields varchar;
+  declare api_url, url any;
+  declare li_object_type varchar;
+  
+  -- Retrieve most data apart from a user's connections
   -- LinkedIn rejects the entire request if an attempt is made to retrieve a user's connections with an access token granted by someone-else
   required_profile_fields := 'id,public-profile-url,first-name,last-name,headline,industry,location,num-connections,summary,specialties,associations,interests,honors,positions,num-recommenders,recommendations-received,member-url-resources,picture-url,certifications,date-of-birth,im-accounts,educations,languages,main-address,phone-numbers,publications,skills';
   if (is_owner_key)
@@ -10932,7 +11101,7 @@ create procedure DB.DBA.RDF_LOAD_LINKEDIN (in graph_iri varchar, in new_origin_u
   cnt := http_get (url);
 
   declare person_id any;
-  li_object_type := 'unknown';
+  li_object_type := 'person';
   xd := xtree_doc (cnt);
   person_id := cast (xpath_eval ('/person/id', xd) as varchar);
   
@@ -10951,7 +11120,8 @@ create procedure DB.DBA.RDF_LOAD_LINKEDIN (in graph_iri varchar, in new_origin_u
       url := DB.DBA.sign_request ('GET', sprintf ('http://api.linkedin.com/v1/people/%s/network', person_id), 'type=SHAR&scope=self', consumer_key, consumer_secret, oauth_token, oauth_secret, 1);
       cnt := http_get (url);
       xd := xtree_doc (cnt);
-      xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/linkedin_shares2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'li_object_type', li_object_type));
+      xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/linkedin_shares2rdf.xsl', xd, 
+                vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'li_object_type', li_object_type));
       xd := serialize_to_UTF8_xml (xt);
       DB.DBA.RM_RDF_LOAD_RDFXML (triple_dict, xd, new_origin_uri, coalesce (dest, graph_iri));
       
@@ -10959,19 +11129,56 @@ create procedure DB.DBA.RDF_LOAD_LINKEDIN (in graph_iri varchar, in new_origin_u
       declare st, retrcount integer;
       st:=0; retrcount:=500;
       li_object_type := 'connections';
-      while(retrcount=500) {
+      while (retrcount=500) {
         url := DB.DBA.sign_request ('GET', sprintf ('http://api.linkedin.com/v1/people/%s/connections:(id,public-profile-url,site-public-profile-request,first-name,last-name,headline,industry,location)', person_id), sprintf('start=%d&count=500',st), consumer_key, consumer_secret, oauth_token, oauth_secret, 1);
-        st:=st+500;
+        st := st + 500;
         cnt := http_get (url);
         xd := xtree_doc (cnt);
-        retrcount:=cast(xpath_eval('count(/connections/person)', xd) as integer); 
+        retrcount := cast(xpath_eval('count(/connections/person)', xd) as integer); 
         xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/linkedin2rdf.xsl', xd, vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'li_object_type', li_object_type));
         xd := serialize_to_UTF8_xml (xt);
         DB.DBA.RM_RDF_LOAD_RDFXML (triple_dict, xd, new_origin_uri, coalesce (dest, graph_iri));
       }
     }
-  DB.DBA.RM_ADD_PRV (triple_dict, current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), url);
-  return 1;
+  DB.DBA.RM_ADD_PRV (triple_dict, current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), api_url);
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_LINKEDIN_SPONGE_JOB_OR_COMPANY (
+  in graph_iri varchar, in new_origin_uri varchar, in dest varchar, in opts any, in triple_dict any,
+  in consumer_key varchar, in consumer_secret varchar, in oauth_token varchar, in oauth_secret varchar,
+  in li_id varchar, in li_object_type varchar, in accept_lang varchar)
+{
+  declare xt, cnt, xd any;
+  declare required_fields varchar;
+  declare api_url, url any;
+  
+  if (li_object_type = 'job')
+  {
+    required_fields := 'id,customer-job-code,active,posting-date,expiration-date,posting-timestamp,company:(id,name),position:(title,location,job-functions,industries,job-type,experience-level),skills-and-experience,description-snippet,description,salary,job-poster:(id,first-name,last-name,headline),referral-bonus,site-job-url,location-description';
+    api_url := sprintf ('https://api.linkedin.com/v1/jobs/%s:(%s)', li_id, required_fields);
+  }
+  else if (li_object_type = 'company')
+  {
+    required_fields := 'id,name,universal-name,email-domains,company-type,ticker,website-url,industry,status,logo-url,square-logo-url,blog-rss-url,twitter-id,employee-count-range,specialties,locations:(description,is-headquarters,is-active,address:(street1,street2,city,state,postal-code,country-code,region-code),contact-info:(phone1,phone2,fax)),description,stock-exchange,founded-year,end-year,num-followers';
+    api_url := sprintf ('https://api.linkedin.com/v1/companies/%s:(%s)', li_id, required_fields);
+  }
+
+  url := DB.DBA.sign_request ('GET', api_url, '', consumer_key, consumer_secret, oauth_token, oauth_secret, 1);
+  -- Some job fields may appear in a locale dependent on the server location.
+  -- Accept-Language can be used to force these job fields to the desired locale. e.g. accept_lang ::= { ko-kr | fr-fr | en-us | ... }
+  -- Company and person profiles appear unaffected by these location/locale dependencies and immune to the Accept-Language header setting.
+  if (accept_lang is not null)
+    cnt := http_get (url, null, 'GET', sprintf ('Accept-Language: %s', accept_lang));
+  else
+    cnt := http_get (url);
+  xd := xtree_doc (cnt);
+  xt := DB.DBA.RDF_MAPPER_XSLT (registry_get ('_rdf_mappers_path_') || 'xslt/main/linkedin2rdf.xsl', xd, 
+    vector ('baseUri', RDF_SPONGE_DOC_IRI (dest, graph_iri), 'li_object_type', li_object_type));
+  xd := serialize_to_UTF8_xml (xt);
+  RM_CLEAN_DEST (triple_dict, dest, graph_iri, new_origin_uri, opts);
+  DB.DBA.RM_RDF_LOAD_RDFXML (triple_dict, xd, new_origin_uri, coalesce (dest, graph_iri));
+  DB.DBA.RM_ADD_PRV (triple_dict, current_proc_name (), new_origin_uri, coalesce (dest, graph_iri), api_url);
 }
 ;
 

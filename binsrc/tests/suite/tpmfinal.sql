@@ -25,4 +25,3 @@ select now ();
 
 select ((select sum (d_next_o_id) from district) - (select t_n_orders from tpm))
   /  datediff ('minute', now (), (select  t_time from tpm));
-

@@ -401,4 +401,3 @@ create procedure csv_loader_run (in max_files integer := null, in log_enable int
   return;
 }
 ;
-

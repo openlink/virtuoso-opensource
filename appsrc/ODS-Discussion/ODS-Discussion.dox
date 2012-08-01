@@ -1,0 +1,5 @@
+/**
+\defgroup ods_module_discussion ODS Discussion API
+
+The ODS Community App does not provide a REST API yet.
+*/

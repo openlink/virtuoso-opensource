@@ -875,8 +875,8 @@ function init()
 
     pfTabInit('pf_tab_2_', $v('formTab2'));
 	}
-  if (!startForm) {
     var userName;
+  if (!startForm) {
     if (typeof (uriParams['userName']) != 'undefined' && uriParams['userName'] != '')
       userName = uriParams['userName'];
 
@@ -892,8 +892,73 @@ function init()
     if (validateSession || userName)
       selectProfile(userName);
   }
+	if ($v('mode') == 'html') {
+	  var host = document.location.protocol + '//' + document.location.host;
+    $('hostTag_1').href = host + $('hostTag_1').getAttribute("href");
+    $('hostTag_2').href = host + $('hostTag_2').getAttribute("href");
+
+    if (userName) {
+      // add link & meta tags
+      var S =
+        '<link id="userTag_1"  rel="meta" type="application/rdf+xml" title="SIOC" href="[HOST]/dataspace/[USER]/sioc.rdf" />\n' +
+        '<link id="userTag_2"  rel="meta" type="application/rdf+xml" title="FOAF" href="[HOST]/dataspace/person/[USER]/foaf.rdf" />\n' +
+        '<link id="userTag_3"  rel="meta" type="text/rdf+n3" title="FOAF" href="[HOST]/dataspace/person/[USER]/foaf.n3" />\n' +
+        '<link id="userTag_4"  rel="meta" type="application/json" title="FOAF" href="[HOST]/dataspace/person/[USER]/foaf.json" />\n' +
+        '<link id="userTag_5"  rel="http://xmlns.com/foaf/0.1/primaryTopic"  title="About" href="[HOST]/dataspace/person/[USER]#this" />\n' +
+        '<link id="userTag_6"  rel="schema.dc" href="http://purl.org/dc/elements/1.1/" />\n' +
+        '<meta id="userTag_7"  name="dc.language" content="en" scheme="rfc1766" />\n' +
+        '<meta id="userTag_8"  name="dc.creator" content="[USER]" />\n' +
+        '<meta id="userTag_9"  name="dc.description" content="ODS HTML [USER]s page" />\n' +
+        '<meta id="userTag_10" name="dc.title" content="ODS HTML [USER]s page" />\n' +
+        '<link id="userTag_11" rev="describedby" title="About" href="[HOST]/dataspace/person/[USER]#this" />\n' +
+        '<link id="userTag_12" rel="schema.geo" href="http://www.w3.org/2003/01/geo/wgs84_pos#" />\n' +
+        '<meta id="userTag_13" http-equiv="X-XRDS-Location" content="[HOST]/dataspace/[USER]/yadis.xrds" />\n' +
+        '<meta id="userTag_14" http-equiv="X-YADIS-Location" content="[HOST]/dataspace/[USER]/yadis.xrds" />\n' +
+        '<link id="userTag_15" rel="meta" type="application/xml+apml" title="APML 0.6" href="[HOST]/dataspace/[USER]/apml.xml" />\n' +
+        '<link id="userTag_16" rel="alternate" type="application/atom+xml" title="OpenSocial Friends" href="[HOST]/feeds/people/[USER]/friends" />';
+      S = S.replace ('[HOST]', host);
+      S = S.replace ('[USER]', userName);
+      var tag_1  = OAT.Dom.create('link', {id: 'userTag_1',  rel: 'meta', type: 'application/rdf+xml', title: 'SIOC', href: userHref('[HOST]/dataspace/[USER]/sioc.rdf', host, userName)});
+      var tag_2  = OAT.Dom.create('link', {id: 'userTag_2',  rel: 'meta', type: 'application/rdf+xml', title: 'FOAF', href: userHref('[HOST]/dataspace/person/[USER]/foaf.rdf', host, userName)});
+      var tag_3  = OAT.Dom.create('link', {id: 'userTag_3',  rel: 'meta', type: 'text/rdf+n3', title: 'FOAF', href: userHref('[HOST]/dataspace/person/[USER]/foaf.n3', host, userName)});
+      var tag_4  = OAT.Dom.create('link', {id: 'userTag_4',  rel: 'meta', type: 'application/json', title: 'FOAF', href: userHref('[HOST]/dataspace/person/[USER]/foaf.json', host, userName)});
+      var tag_5  = OAT.Dom.create('link', {id: 'userTag_5',  rel: 'http://xmlns.com/foaf/0.1/primaryTopic', title: 'About', href: userHref('[HOST]/dataspace/person/[USER]#this', host, userName)});
+      var tag_6  = OAT.Dom.create('link', {id: 'userTag_6',  rel: 'schema.dc', href: userHref('http://purl.org/dc/elements/1.1/', host, userName)});
+      var tag_7  = OAT.Dom.create('meta', {id: 'userTag_7',  name: 'dc.language', content: 'en', scheme: 'rfc1766'});
+      var tag_8  = OAT.Dom.create('meta', {id: 'userTag_8',  name: 'dc.creator', content: userHref('[USER]', host, userName)});
+      var tag_9  = OAT.Dom.create('meta', {id: 'userTag_9',  name: 'dc.description', content: userHref('ODS HTML [USER]\'s page', host, userName)});
+      var tag_10 = OAT.Dom.create('meta', {id: 'userTag_10', name: 'dc.title', content: userHref('ODS HTML [USER]\'s page', host, userName)});
+      var tag_11 = OAT.Dom.create('link', {id: 'userTag_11', rev: 'describedby', title: 'About', href: userHref('[HOST]/dataspace/person/[USER]#this', host, userName)});
+      var tag_12 = OAT.Dom.create('link', {id: 'userTag_12', rel: 'schema.geo', href: userHref('http://www.w3.org/2003/01/geo/wgs84_pos#', host, userName)});
+      var tag_13 = OAT.Dom.create('meta', {id: 'userTag_13', "http-equiv": 'X-XRDS-Location', content: userHref('[HOST]/dataspace/[USER]/yadis.xrds', host, userName)});
+      var tag_14 = OAT.Dom.create('meta', {id: 'userTag_14', "http-equiv": 'X-YADIS-Location', content: userHref('[HOST]/dataspace/[USER]/yadis.xrds', host, userName)});
+      var tag_15 = OAT.Dom.create('link', {id: 'userTag_15', rel: 'meta', type: 'application/xml+apml', title: 'APML 0.6', href: userHref('[HOST]/dataspace/[USER]/apml.xml', host, userName)});
+      var tag_16 = OAT.Dom.create('link', {id: 'userTag_16', rel: 'alternate', type: 'application/atom+xml', title: 'OpenSocial Friends', href: userHref('[HOST]/feeds/people/[USER]/friends', host, userName)});
+      $('hostTag_2').parentNode.insertBefore(tag_1, $('hostTag_2').nextSibling);
+      tag_1.parentNode.insertBefore (tag_2 , tag_1.nextSibling);
+      tag_2.parentNode.insertBefore (tag_3 , tag_1.nextSibling);
+      tag_3.parentNode.insertBefore (tag_4 , tag_1.nextSibling);
+      tag_4.parentNode.insertBefore (tag_5 , tag_1.nextSibling);
+      tag_5.parentNode.insertBefore (tag_6 , tag_1.nextSibling);
+      tag_6.parentNode.insertBefore (tag_7 , tag_1.nextSibling);
+      tag_7.parentNode.insertBefore (tag_8 , tag_1.nextSibling);
+      tag_8.parentNode.insertBefore (tag_9 , tag_1.nextSibling);
+      tag_9.parentNode.insertBefore (tag_10, tag_1.nextSibling);
+      tag_10.parentNode.insertBefore(tag_11, tag_1.nextSibling);
+      tag_11.parentNode.insertBefore(tag_12, tag_1.nextSibling);
+      tag_12.parentNode.insertBefore(tag_13, tag_1.nextSibling);
+      tag_13.parentNode.insertBefore(tag_14, tag_1.nextSibling);
+      tag_14.parentNode.insertBefore(tag_15, tag_1.nextSibling);
+      tag_15.parentNode.insertBefore(tag_16, tag_1.nextSibling);
+	  }
+	}
 
   OAT.MSG.send(OAT, 'PAGE_LOADED');
+}
+
+function userHref(S, host, userName)
+{
+  return (S.replace ('[HOST]', host)).replace ('[USER]', userName);
 }
 
 function lfCallback(oldIndex, newIndex)

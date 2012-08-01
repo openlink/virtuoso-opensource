@@ -87,8 +87,11 @@
                       <v:on-post>
 			  <![CDATA[
 			 declare stat, msg, meta, data, source any;
+                         stat := '00000';
 			 exec ('sparql ' || self.cr_view.ufl_value, stat, msg, vector (), 0, meta, data);
 			 self.exec_ret := data;
+			 if (stat <> '00000') 
+			   self.exec_ret := vector (vector (stat, msg));
 			 source := self.graph;
 			 if (self.rdb_sync.ufl_selected)
 			   {

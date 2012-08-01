@@ -34,6 +34,16 @@
 #include "xslt_impl.h"	/* For vector_sort_t */
 #include "aqueue.h"	/* For aq_allocate() in rdf replication */
 
+#define PRINT_ERR(err) \
+      if (err) \
+	{ \
+	  log_error ("Error compiling a server init statement : %s: %s -- %s:%d", \
+	      ((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING], \
+		     __FILE__, __LINE__); \
+	  dk_free_tree (err); \
+	  err = NULL; \
+	}
+
 void
 rb_complete_1 (rdf_box_t * rb, lock_trx_t * lt, void * /*actually query_instance_t * */ caller_qi_v, int is_local)
 {
@@ -41,8 +51,9 @@ rb_complete_1 (rdf_box_t * rb, lock_trx_t * lt, void * /*actually query_instance
   static query_t *rdf_box_qry_complete_text = NULL;
   static query_t *rdf_box_qry_complete_xml_l;
   static query_t *rdf_box_qry_complete_text_l;
+  query_t *qr;
   query_instance_t *caller_qi = (query_instance_t *)caller_qi_v;
-  caddr_t err;
+  caddr_t err = NULL;
   local_cursor_t *lc;
   dtp_t value_dtp = ((rb->rb_chksum_tail) ? (((rdf_bigbox_t *)rb)->rbb_box_dtp) : DV_TYPE_OF (rb->rb_box));
 #ifdef DEBUG
@@ -56,7 +67,8 @@ rb_complete_1 (rdf_box_t * rb, lock_trx_t * lt, void * /*actually query_instance
  16843009, \
  RO_VAL \
  from DB.DBA.RDF_OBJ table option (no cluster) where RO_ID = ?",
-        bootstrap_cli, NULL, SQLC_DEFAULT );
+        bootstrap_cli, &err, SQLC_DEFAULT );
+      PRINT_ERR(err);
       rdf_box_qry_complete_text_l = sql_compile_static ("select \
  case (isnull (RO_LONG)) \
    when 0 then case (bit_and (RO_FLAGS, 2)) when 2 then xml_tree_doc (__xml_deserialize_packed (RO_LONG)) else blob_to_string (RO_LONG) end \
@@ -64,13 +76,15 @@ rb_complete_1 (rdf_box_t * rb, lock_trx_t * lt, void * /*actually query_instance
  RO_DT_AND_LANG, \
  case (isnull (RO_LONG)) when 0 then RO_VAL else NULL end \
  from DB.DBA.RDF_OBJ table option (no cluster) where RO_ID = ? ",
-        bootstrap_cli, NULL, SQLC_DEFAULT );
+        bootstrap_cli, &err, SQLC_DEFAULT );
+      PRINT_ERR(err);
       rdf_box_qry_complete_xml = sql_compile_static ("select \
  xml_tree_doc (__xml_deserialize_packed (RO_LONG)), \
  16843009, \
  RO_VAL \
  from DB.DBA.RDF_OBJ where RO_ID = ?",
-        bootstrap_cli, NULL, SQLC_DEFAULT );
+        bootstrap_cli, &err, SQLC_DEFAULT );
+      PRINT_ERR(err);
       rdf_box_qry_complete_text = sql_compile_static ("select \
  case (isnull (RO_LONG)) \
    when 0 then case (bit_and (RO_FLAGS, 2)) when 2 then xml_tree_doc (__xml_deserialize_packed (RO_LONG)) else blob_to_string (RO_LONG) end \
@@ -78,12 +92,15 @@ rb_complete_1 (rdf_box_t * rb, lock_trx_t * lt, void * /*actually query_instance
  RO_DT_AND_LANG, \
  case (isnull (RO_LONG)) when 0 then RO_VAL else NULL end \
  from DB.DBA.RDF_OBJ where RO_ID = ?",
-        bootstrap_cli, NULL, SQLC_DEFAULT );
+        bootstrap_cli, &err, SQLC_DEFAULT );
+      PRINT_ERR(err);
     }
-  err = qr_rec_exec (
-		     is_local ? (DV_XML_ENTITY == value_dtp ? rdf_box_qry_complete_xml_l : rdf_box_qry_complete_text_l)
-    : (DV_XML_ENTITY == value_dtp ? rdf_box_qry_complete_xml : rdf_box_qry_complete_text),
-    lt->lt_client, &lc, caller_qi, NULL, 1,
+  qr = is_local ? (DV_XML_ENTITY == value_dtp ? rdf_box_qry_complete_xml_l : rdf_box_qry_complete_text_l)
+    : (DV_XML_ENTITY == value_dtp ? rdf_box_qry_complete_xml : rdf_box_qry_complete_text);
+  if (!qr)
+    sqlr_new_error ("22023", "RDFXX", "RDF integrity issue, rdf box can not be completed");
+
+  err = qr_rec_exec (qr, lt->lt_client, &lc, caller_qi, NULL, 1,
       ":0", box_num(rb->rb_ro_id), QRP_RAW );
   if (NULL != err)
     {
@@ -1579,7 +1596,7 @@ bif_rdf_strsqlval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       case DV_DB_NULL:
         return NEW_DB_NULL;
       default:
-        res = box_cast_to_UTF8 (qst, val);
+        res = box_cast_to_UTF8_xsd (qst, val);
         box_flags (res) = ((set_bf_iri & 0x2) ? BF_IRI : BF_UTF8);
         return res;
     }
@@ -1615,7 +1632,7 @@ bif_rdf_long_to_ttl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       break;
     default:
       {
-        caddr_t tmp_utf8_box = box_cast_to_UTF8 (qst, val);
+        caddr_t tmp_utf8_box = box_cast_to_UTF8_xsd (qst, val);
         dks_esc_write (out, tmp_utf8_box, box_length (tmp_utf8_box) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_TTL_DQ);
         dk_free_box (tmp_utf8_box);
         break;
@@ -2016,7 +2033,7 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
     {
       int ctr;
       caddr_t *tmp;
-      tmp = (caddr_t *)list (23*2,
+      tmp = (caddr_t *)list (25*2,
         "text/rdf+n3"				, "TTL"		, /*  0 */
         "text/rdf+ttl"				, "TTL"		, /*  1 */
         "text/rdf+turtle"			, "TTL"		, /*  2 */
@@ -2039,7 +2056,9 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
         "text/plain"				, "NT"		, /* 19 */
         "text/cxml+qrcode"			, "CXML"	, /* 20 */
         "text/cxml"				, "CXML"	, /* 21 */
-        "text/csv"				, "CSV" /* 22 Increase count in this list() call when add more MIME types! */ );
+        "text/ntriples"				, "NT"		, /* 22 */
+        "text/csv"				, "CSV"		, /* 23 */ 
+        "text/tab-separated-values"				, "TSV" /* 24 Increase count in this list() call when add more MIME types! */ );
       for (ctr = BOX_ELEMENTS (tmp); ctr--; /* no step */)
         tmp[ctr] = box_dv_short_string (tmp[ctr]);
       supp_rset = tmp;
@@ -2048,7 +2067,7 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
     {
       int ctr;
       caddr_t *tmp;
-      tmp = (caddr_t *)list (34*2,
+      tmp = (caddr_t *)list (36*2,
         "application/x-trig"			, "TRIG"		, /*  0 */
         "text/rdf+n3"				, "TTL"			, /*  1 */
         "text/rdf+ttl"				, "TTL"			, /*  2 */
@@ -2082,7 +2101,9 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
         "application/microdata+json"		, "JSON;MICRODATA"	, /* 30 */
         "application/x-json+ld"			, "JSON;LD"		, /* 31 */
         "application/ld+json"			, "JSON;LD"		, /* 32 */
-        "text/csv"				, "CSV" /* 33 Increase count in this list() call when add more MIME types! */ );
+        "text/ntriples"				, "NT"			, /* 33 */
+        "text/csv"				, "CSV" 		, /* 34 */
+        "text/tab-separated-values"				, "TSV" /* 35 Increase count in this list() call when add more MIME types! */ );
       for (ctr = BOX_ELEMENTS (tmp); ctr--; /* no step */)
         tmp[ctr] = box_dv_short_string (tmp[ctr]);
       supp_dict = tmp;
@@ -2242,28 +2263,31 @@ rdf_box_get_lang (query_instance_t * qi, unsigned short lang)
 static void
 http_ttl_or_nt_prepare_obj (query_instance_t *qi, caddr_t obj, dtp_t obj_dtp, ttl_iriref_t *dt_ret)
 {
-  if (DV_RDF == obj_dtp)
+  switch (obj_dtp)
     {
-      rdf_box_t *rb = (rdf_box_t *)obj;
-      if (!rb->rb_is_complete)
-        rb_complete (rb, qi->qi_trx, qi);
-      rb_dt_lang_check(rb);
-      if (RDF_BOX_DEFAULT_TYPE == rb->rb_type)
+    case DV_RDF:
+      {
+        rdf_box_t *rb = (rdf_box_t *)obj;
+        if (!rb->rb_is_complete)
+          rb_complete (rb, qi->qi_trx, qi);
+        rb_dt_lang_check(rb);
+        if (RDF_BOX_DEFAULT_TYPE == rb->rb_type)
+          return;
+        dt_ret->uri = rdf_type_twobyte_to_iri (rb->rb_type);
+        if (dt_ret->uri) /* if by some reason rb_type is wrong */
+          box_flags (dt_ret->uri) |= BF_IRI;
         return;
-      dt_ret->uri = rdf_type_twobyte_to_iri (rb->rb_type);
-      if (dt_ret->uri) /* if by some reason rb_type is wrong */
-        box_flags (dt_ret->uri) |= BF_IRI;
-    }
-  else
-    {
-      if (DV_DATETIME != obj_dtp)
-        return;
+      }
+    case DV_DATETIME:
       switch (DT_DT_TYPE(obj))
         {
-        case DT_TYPE_DATE: dt_ret->uri = uname_xmlschema_ns_uri_hash_date; break;
-        case DT_TYPE_TIME: dt_ret->uri = uname_xmlschema_ns_uri_hash_time; break;
-        default : dt_ret->uri = uname_xmlschema_ns_uri_hash_dateTime; break;
+        case DT_TYPE_DATE: dt_ret->uri = uname_xmlschema_ns_uri_hash_date; return;
+        case DT_TYPE_TIME: dt_ret->uri = uname_xmlschema_ns_uri_hash_time; return;
+        default : dt_ret->uri = uname_xmlschema_ns_uri_hash_dateTime; return;
         }
+    case DV_SINGLE_FLOAT: dt_ret->uri = uname_xmlschema_ns_uri_hash_float; return;
+    case DV_DOUBLE_FLOAT: dt_ret->uri = uname_xmlschema_ns_uri_hash_double; return;
+    default: ;
     }
 }
 
@@ -2367,9 +2391,63 @@ http_ttl_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, cad
     case DV_DB_NULL:
       session_buffered_write (ses, "(NULL)", 6);
       break;
+    case DV_SINGLE_FLOAT:
+      {
+        char tmpbuf[50];
+        int buffill;
+        double boxdbl = (double)(unbox_float (obj_box_value));
+        buffill = sprintf (tmpbuf, "\"%lg", boxdbl);
+        if ((NULL == strchr (tmpbuf+1, '.')) && (NULL == strchr (tmpbuf+1, 'E')) && (NULL == strchr (tmpbuf+1, 'e')))
+          {
+            if (isalpha(tmpbuf[1+1]))
+              {
+		double myZERO = 0.0;
+		double myPOSINF_d = 1.0/myZERO;
+		double myNEGINF_d = -1.0/myZERO;
+                if (myPOSINF_d == boxdbl) buffill = sprintf (tmpbuf, "\"INF\"");
+                else if (myNEGINF_d == boxdbl) buffill = sprintf (tmpbuf, "\"-INF\"");
+                else buffill = sprintf (tmpbuf, "\"NAN\"");
+              }
+            else
+              {
+                strcpy (tmpbuf+buffill, ".0");
+                buffill += 2;
+              }
+          }                   /* .0123456789012 */
+        strcpy (tmpbuf+buffill, "\"^^xsd:float");
+        buffill += 12;
+        session_buffered_write (ses, tmpbuf, buffill);
+        break;
+      }
+    case DV_DOUBLE_FLOAT:
+      {
+        char tmpbuf[50];
+        int buffill;
+        double boxdbl = unbox_double (obj_box_value);
+        buffill = sprintf (tmpbuf, "%lg", boxdbl);
+        if ((NULL == strchr (tmpbuf, '.')) && (NULL == strchr (tmpbuf, 'E')) && (NULL == strchr (tmpbuf, 'e')))
+          {
+            if (isalpha(tmpbuf[1]))
+              {
+		double myZERO = 0.0;
+		double myPOSINF_d = 1.0/myZERO;
+		double myNEGINF_d = -1.0/myZERO;
+                if (myPOSINF_d == boxdbl) buffill = sprintf (tmpbuf, "\"INF\"^^xsd:double");
+                else if (myNEGINF_d == boxdbl) buffill = sprintf (tmpbuf, "\"-INF\"^^xsd:double");
+                else buffill = sprintf (tmpbuf, "\"NAN\"^^xsd:double");
+              }
+            else
+              {
+                strcpy (tmpbuf+buffill, ".0");
+                buffill += 2;
+              }
+          }
+        session_buffered_write (ses, tmpbuf, buffill);
+        break;
+      }
     default:
       {
-        caddr_t tmp_utf8_box = box_cast_to_UTF8 ((caddr_t *)qi, obj_box_value);
+        caddr_t tmp_utf8_box = box_cast_to_UTF8 ((caddr_t *)qi, obj_box_value); /* not box_cast_to_UTF8_xsd(), because float and double are handled above and there are no other differences between xsd and sql so far */
         int need_quotes = ((DV_RDF == obj_dtp) || (DV_BLOB_HANDLE == obj_dtp) || (DV_BLOB_WIDE_HANDLE == obj_dtp));
         if (need_quotes)
           session_buffered_write_char ('"', ses);
@@ -2686,13 +2764,13 @@ rdfxml_http_write_ref (dk_session_t *ses, ttl_env_t *env, ttl_iriref_t *ti, int 
     {
       session_buffered_write (ses, prefix_to_use, strlen (prefix_to_use));
       session_buffered_write_char (':', ses);
-      dks_esc_write (ses, ti->loc, box_length (ti->loc) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_TTL_IRI);
+      dks_esc_write (ses, ti->loc, box_length (ti->loc) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_PTEXT);
       if ((prefix_to_use != ti->prefix) && (RDFXML_HTTP_WRITE_REF_P_CLOSE != opcode))
         {
           session_buffered_write (ses, " xmlns:", 7);
           session_buffered_write (ses, prefix_to_use, strlen (prefix_to_use));
           session_buffered_write (ses, "=\"", 2);
-          dks_esc_write (ses, ti->ns, box_length (ti->ns) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_TTL_IRI);
+          dks_esc_write (ses, ti->ns, box_length (ti->ns) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_PTEXT);
           close_attr = 1;
         }
     }
@@ -2789,7 +2867,7 @@ http_rdfxml_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, 
       break;
     default:
       {
-        caddr_t tmp_utf8_box = box_cast_to_UTF8 ((caddr_t *)qi, obj_box_value);
+        caddr_t tmp_utf8_box = box_cast_to_UTF8_xsd ((caddr_t *)qi, obj_box_value);
         session_buffered_write (ses, tmp_utf8_box, box_length (tmp_utf8_box) - 1);
         dk_free_box (tmp_utf8_box);
         break;
@@ -2881,6 +2959,8 @@ bif_http_rdfxml_triple (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       env->te_prev_subj_loc = tii.s.uri;
       tii.s.uri = NULL;
     }
+  if (tii.p.loc && !tii.p.loc[0])
+    session_buffered_write (ses, "\n    <!--", 9);
                              /* .0123456 */
   session_buffered_write (ses, "\n    <", 6);
   rdfxml_http_write_ref (ses, env, &(tii.p), RDFXML_HTTP_WRITE_REF_P_OPEN);
@@ -2917,6 +2997,8 @@ bif_http_rdfxml_triple (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       rdfxml_http_write_ref (ses, env, &(tii.p), RDFXML_HTTP_WRITE_REF_P_CLOSE);
       session_buffered_write_char ('>', ses);
     }
+  if (tii.p.loc && !tii.p.loc[0])
+    session_buffered_write (ses, "\n    -->", 8);
 fail:
   dk_free_box (tii.s.uri); /*	dk_free_box (tii.s.ns);		dk_free_box (tii.s.loc);	dk_free_box (tii.s.prefix); */
   dk_free_box (tii.p.uri);	dk_free_box (tii.p.ns);		dk_free_box (tii.p.loc);	dk_free_box (tii.p.prefix);
@@ -3021,7 +3103,7 @@ http_nt_write_obj (dk_session_t *ses, nt_env_t *env, query_instance_t *qi, caddr
     default:
       {
         caddr_t iri = xsd_type_of_box (obj_box_value);
-        caddr_t tmp_utf8_box = box_cast_to_UTF8 ((caddr_t *)qi, obj_box_value);
+        caddr_t tmp_utf8_box = box_cast_to_UTF8_xsd ((caddr_t *)qi, obj_box_value);
         session_buffered_write_char ('"', ses);
         session_buffered_write (ses, tmp_utf8_box, box_length (tmp_utf8_box) - 1);
         dk_free_box (tmp_utf8_box);
@@ -4608,6 +4690,12 @@ bif_rgs_ack_cbk (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 caddr_t
+bif_rdf_repl_uid (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
+{
+  return box_num (U_ID_RDF_REPL);
+}
+
+caddr_t
 bif_rdf_graph_is_in_enabled_repl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
     return box_num (0);
@@ -5130,6 +5218,7 @@ rdf_box_init ()
   bif_define ("__rgs_ack", bif_rgs_ack);
   bif_define ("__rgs_ack_cbk", bif_rgs_ack_cbk);
   bif_set_uses_index (bif_rgs_ack_cbk );
+  bif_define_typed ("__rdf_repl_uid", bif_rdf_repl_uid, &bt_integer);
   repl_pub_name = box_dv_short_string ("__rdf_repl");
   text5arg = box_dv_short_string ("__rdf_repl_action (?, ?, ?, ?, ?)");
   text6arg = box_dv_short_string ("__rdf_repl_action (?, ?, ?, ?, ?, ?)");

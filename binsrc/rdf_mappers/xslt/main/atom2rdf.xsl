@@ -129,9 +129,15 @@
 </xsl:template>
 
 <xsl:template match="a:author">
-    <dc:creator><xsl:value-of select="a:name" /> &lt;<xsl:value-of select="a:email" />&gt;</dc:creator>
+	<dc:creator><xsl:value-of select="a:name" /> 
+	<xsl:if test="a:email">
+	    &lt;<xsl:value-of select="a:email" />&gt;
+	</xsl:if>
+	</dc:creator>
+	<xsl:if test="a:email">
     <foaf:mbox rdf:resource="mailto:{a:email}"/>
 	<opl:email_address_digest rdf:resource="{vi:di-uri (a:email)}"/>
+	</xsl:if>
 </xsl:template>
 
 <xsl:template match="a:entry" mode="li">

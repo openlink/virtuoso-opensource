@@ -84,4 +84,3 @@ create procedure ld_meter_run (in s_delay int)
 	}
     }
 }
-

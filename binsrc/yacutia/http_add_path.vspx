@@ -122,6 +122,7 @@
       <v:variable name="auth_opt" persist="0" type="varchar" default="''" />
       <v:variable name="global_opts" persist="0" type="varchar" default="''" />
       <v:variable name="is_dav" persist="0" type="integer" default="0" />
+      <v:variable name="is_https" persist="0" type="integer" default="0" />
       <v:variable name="cors" persist="0" type="varchar" default="''" />
       <v:variable name="cors_rej" persist="0" type="integer" default="0" />
     </vm:variables>
@@ -201,6 +202,8 @@
               self.vspuser := '';
               self.soapuser := '';
             }
+	  if (exists (select 1 from HTTP_PATH where HP_HOST = self._httphost and HP_LISTEN_HOST = self._host and HP_SECURITY = 'SSL'))
+            self.is_https := 1;
           ]]>
         </v:script>
       </v:before-data-bind>
@@ -283,6 +286,13 @@
                   <v:item name="Proxy server" value="3" />
                   <v:item name="SOAP access point" value="4" />
                   <v:item name="SPARQL access point" value="5" />
+		  <v:after-data-bind>
+		      if (self.is_https and __proc_exists ('DB.DBA.WEBID_AUTH') is not null)
+		        {
+		          control.vsl_items := vector_concat (control.vsl_items, vector ('WebID protection'));
+		          control.vsl_item_values := vector_concat (control.vsl_item_values, vector ('6'));
+		        }
+		  </v:after-data-bind>
                 </v:select-list>
               </td>
             </tr>
@@ -445,6 +455,22 @@
                             self.after_func := '';
 			    self.is_dav := 1;
 			    self.noinherit := 'yes';
+                          }
+                          else if (t_mode = '6')
+                          {
+                            self.lpath := '';
+                            self.ppath := '/';
+                            self.defpage := '';
+                            self.dirbrowsing  := 0;
+                            self.xmlexec  := 0;
+                            self.vspuser  := 'dba';
+                            self.soapuser := '';
+                            self.auth_realm := 'GENERIC';
+                            self.auth_func := 'DB.DBA.WEBID_AUTH';
+                            self.after_func := '';
+			    self.is_dav := 0;
+			    self.security := 'SSL';
+			    self.auth_opt := (select deserialize (HP_AUTH_OPTIONS) from HTTP_PATH where HP_HOST = self._httphost and HP_LISTEN_HOST = self._host and HP_SECURITY = 'SSL' and HP_LPATH = '/');
                           }
                         }
                         self.mode := 'add2';

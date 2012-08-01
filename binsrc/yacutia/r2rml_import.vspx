@@ -139,7 +139,7 @@ declare _file, _graph, is_ttl, is_xml any;
 
     if (self.del.ufl_selected)
       {
-        sparql clear iri(?:_graph);
+        sparql clear graph iri(?:_graph);
       }
 
     is_ttl := 1;
@@ -148,7 +148,7 @@ declare _file, _graph, is_ttl, is_xml any;
 	{
 	  is_ttl := 0;
 	};
-      DB.DBA.TTLP (_file, _graph, _graph);
+      DB.DBA.TTLP (_file, _graph, _graph, 4096);
     }
     is_xml := 0;
     if (not is_ttl)

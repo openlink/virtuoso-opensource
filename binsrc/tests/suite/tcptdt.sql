@@ -30,16 +30,16 @@ ECHO BOTH $IF $EQU $ROWCNT 90000  "PASSED" "***FAILED";
 ECHO BOTH ": " $ROWCNT" rows in t1 after cpt recov\n";
 
 select count (distinct length (fs5)) from t1;
-echo both $if $equ $last[1] 15 "PASSED" "***FAILED";
-echo both ": " $last[1] " distinct lengths of fs5 after cpt rb and restart.\n";
+ECHO BOTH $if $equ $last[1] 15 "PASSED" "***FAILED";
+ECHO BOTH ": " $last[1] " distinct lengths of fs5 after cpt rb and restart.\n";
 
 select count (distinct fi2) from t1;
-echo both $if $equ $last[1] 2 "PASSED" "***FAILED";
-echo both ": " $last[1] " distinct numbers in fi2 after cpt rb and restart.\n";
+ECHO BOTH $if $equ $last[1] 2 "PASSED" "***FAILED";
+ECHO BOTH ": " $last[1] " distinct numbers in fi2 after cpt rb and restart.\n";
 
 select distinct fs5 from t1 where row_no > 70000 and mod (row_no, 20) = 2;
-echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
-echo both ": " $rowcnt " rows in pre cpt update.\n";
+ECHO BOTH $if $equ $rowcnt 1 "PASSED" "***FAILED";
+ECHO BOTH ": " $rowcnt " rows in pre cpt update.\n";
 
 delete from T2 where ROW_NO > 50; -- 50 left
 
@@ -48,12 +48,12 @@ set autocommit manual;
 delete from T2 where ROW_NO <= 50; -- empty
 
 delete from T1 where row_no > 60000 and mod (row_no, 20) = 0;
-echo both $if $equ $rowcnt 2000 "PASSED" "***FAILED";
-echo both ": count of deld pre cpt rows=" $rowcnt " where ropw_no mod 20 = 0.\n";
+ECHO BOTH $if $equ $rowcnt 2000 "PASSED" "***FAILED";
+ECHO BOTH ": count of deld pre cpt rows=" $rowcnt " where ropw_no mod 20 = 0.\n";
 
 update t1 set fs5 = 'que pasa' where  row_no > 70000 and mod (row_no, 20) = 2;
-echo both $if $equ $rowcnt 1500 "PASSED" "***FAILED";
-echo both ": " $rowcnt " rows in pre cpt update.\n";
+ECHO BOTH $if $equ $rowcnt 1500 "PASSED" "***FAILED";
+ECHO BOTH ": " $rowcnt " rows in pre cpt update.\n";
 
 delete from T1 where row_no > 90000; -- 78000 left
 

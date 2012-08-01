@@ -138,7 +138,8 @@ typedef void * SQLHANDLE;
 		   strstr (rds_get_info (rds, SQL_DBMS_NAME), "S Q L   S e r v e r") \
 		  ) && \
 		  !(strstr (rds_get_info (rds, SQL_DBMS_NAME), "Microsoft") || \
-		   strstr (rds_get_info (rds, SQL_DBMS_NAME), "M i c r o s o f t") \
+		   strstr (rds_get_info (rds, SQL_DBMS_NAME), "M i c r o s o f t") || \
+		   strstr (rds_get_info (rds, SQL_DBMS_NAME), "MS SQL Server") \
 		  ) \
 		)
 #define IS_VIRTUOSO_RDS(rds) (strstr (rds_get_info (rds, SQL_DBMS_NAME), "Virtuoso") != NULL)

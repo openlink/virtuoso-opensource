@@ -64,10 +64,10 @@ select a.row_no, b.row_no, c.row_no from t1 a left join (t1 b join t1 c on c.row
 select a.row_no, b.row_no, c.row_no from t1 a left join (t1 b left join t1 c on c.row_no = b.row_no + 5) on b.row_no = a.row_no + 5;
 
 select count (a.row_no), count (b.row_no), count (c.row_no) from t1 a left join (t1 b  join t1 c on c.row_no = b.row_no + 5) on b.row_no = a.row_no + 5;
-echo both $if $equ $last[1] 20 "PASSED" "***FAILED";
-echo both ": a left (b join c)\n";
-echo both $if $equ $last[2] 10 "PASSED" "***FAILED";
-echo both ": a left (b join c) 2\n";
+ECHO BOTH $IF $EQU $LAST[1] 20 "PASSED" "***FAILED";
+ECHO BOTH ": a left (b join c)\n";
+ECHO BOTH $IF $EQU $LAST[2] 10 "PASSED" "***FAILED";
+ECHO BOTH ": a left (b join c) 2\n";
 
 
 --
@@ -527,8 +527,8 @@ ECHO BOTH ": null in blob hash temp col : " $ROWCNT " rows\n";
 
 update t1 set fi2 = row_no;
 select case when b.fi2 in (100,110,111) then 1 else 0 end from t1 a, t1 b where case when b.fi2 in (100,110,111) then 1 else 0 end = 1 and a.row_no = b.row_no option (hash, order);
-echo both $if $equ $last[1] 1 "PASSED" "***FAILED";
-echo both ": cond exp shared between filter of hash filler and result set\n";
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+ECHO BOTH ": cond exp shared between filter of hash filler and result set\n";
 
 explain ('sparql define input:storage ""
 PREFIX conversion: <http://purl.org/twc/vocab/conversion/>
@@ -692,4 +692,3 @@ OPTIONAL
 ECHO BOTH $IF $EQU $LAST[2] descriminator "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": bug 14207-6 keep all optionals LAST=" $LAST[2] "\n";
-

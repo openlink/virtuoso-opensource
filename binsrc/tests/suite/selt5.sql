@@ -34,4 +34,3 @@ create procedure p (in q int)
 set autocommit on;
 select * from t1 order by p (fi2);
 commit work;
-

@@ -404,7 +404,7 @@ sticker_init() {
   echo "    )" >> $STICKER
   echo "    ;" >> $STICKER
   echo "    DB.DBA.VAD_LOAD_SQL_FILE ('$BASE_PATH/tutorial/setup_search.sql', 1, 'report', $ISDAV);" >> $STICKER
-  echo "    DB.DBA.VAD_LOAD_SQL_FILE ('$BASE_PATH/tutorial/DET_RDFData.sql', 1, 'report', $ISDAV);" >> $STICKER
+  #echo "    DB.DBA.VAD_LOAD_SQL_FILE ('$BASE_PATH/tutorial/DET_RDFData.sql', 1, 'report', $ISDAV);" >> $STICKER
   echo "    DB.DBA.VAD_LOAD_SQL_FILE ('$BASE_PATH/tutorial/fill_search.sql', 1, 'report', $ISDAV);" >> $STICKER
   echo "    DB.DBA.VAD_LOAD_SQL_FILE ('$BASE_PATH/tutorial/sql_rdf.sql', 1, 'report', $ISDAV);" >> $STICKER
 	echo "    exec('UPDATE DB.DBA.TUT_SEARCH set TS_PHPATH  = ''$BASE_PATH/tutorial/'' || TS_PATH');" >> $STICKER

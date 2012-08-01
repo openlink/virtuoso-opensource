@@ -44,6 +44,7 @@ clean-local:
 	-rm -rf vad
 
 EXTRA_DIST = \
+	*.dox \
 	make_vad.sh \
 	new/*.sql \
 	schemas/*.rdf \

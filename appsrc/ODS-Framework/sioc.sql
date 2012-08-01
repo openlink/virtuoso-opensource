@@ -216,6 +216,11 @@ create procedure oplmail_iri (in s varchar)
   return concat ('http://www.openlinksw.com/schemas/mail#', s);
 };
 
+create procedure oplflt_iri (in s varchar)
+{
+  return concat ('http://www.openlinksw.com/schemas/acl/filter#', s);
+};
+
 create procedure cert_iri (in s varchar)
 {
   return concat ('http://www.w3.org/ns/auth/cert#', s);
@@ -734,7 +739,7 @@ create procedure sioc_user (in graph_iri varchar, in iri varchar, in u_name varc
   --!!! ACL   }
 
   DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('account_of'), person_iri);
-  DB.DBA.ODS_QUAD_URI (graph_iri, person_iri, foaf_iri ('holdsAccount'), iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, person_iri, foaf_iri ('account'), iri);
   -- OpenID (new)
   DB.DBA.ODS_QUAD_URI (graph_iri, person_iri, foaf_iri ('openid'), link);
 
@@ -1578,7 +1583,7 @@ create procedure sioc_user_account (in graph_iri varchar, in iri varchar, in nam
   DB.DBA.ODS_QUAD_URI (graph_iri, uri, rdf_iri ('type'), foaf_iri ('OnlineAccount'));
   DB.DBA.ODS_QUAD_URI (graph_iri, uri, foaf_iri ('accountServiceHomepage'), url);
   DB.DBA.ODS_QUAD_URI_L (graph_iri, uri, foaf_iri ('accountName'), name);
-  DB.DBA.ODS_QUAD_URI (graph_iri, pers_iri, foaf_iri ('holdsAccount'), uri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, pers_iri, foaf_iri ('account'), uri);
 };
 
 create procedure sioc_user_account_delete (in graph_iri varchar, in iri varchar, in name varchar, in uri varchar := null)
@@ -2544,7 +2549,8 @@ create procedure fill_ods_sioc (in doall int := 0)
   for select * from SEMPING.DBA.PING_RULES where PR_GRAPH = graph_iri do
     {
       sparql insert into graph iri(?:PR_GRAPH) { `iri(?:PR_IRI)` <http://purl.org/net/pingback/to> `iri(?:ep2)` . };
-      sparql insert into graph iri(?:PR_GRAPH) { `iri(?:PR_IRI)` <http://purl.org/net/pingback/service> `iri(?:ep)` . };
+      -- XXX: obsolete
+      --sparql insert into graph iri(?:PR_GRAPH) { `iri(?:PR_IRI)` <http://purl.org/net/pingback/service> `iri(?:ep)` . };
     }
 
   {
@@ -3665,6 +3671,8 @@ create procedure instance_sioc_data (
     {
       SIOC..private_init ();
       SIOC..private_graph_add (graph_iri);
+      if (not SIOC..private_graph_check (graph_iri))
+        return;
     }
 
     site_iri := get_graph ();
@@ -3678,7 +3686,11 @@ create procedure instance_sioc_data (
 	    call (svc_proc_name) (graph_iri, forum_iri, _WAM_USER, _WAM_INST);
     }
   if (not _WAM_IS_PUBLIC)
+  {
     SIOC..private_user_add (graph_iri, _WAM_USER);
+    if (not SIOC..private_graph_check (graph_iri))
+      return;
+  }
 
   user_iri := user_iri (_WAM_USER);
   role_iri := role_iri_by_name (_WAM_INST, _WAM_USER);
@@ -3872,29 +3884,97 @@ create procedure SIOC..private_graph ()
 
 create procedure SIOC..private_init ()
 {
+  declare exit handler for sqlstate '*' {return 0;};
+
   -- create private graph group (if not exists)
   DB.DBA.RDF_GRAPH_GROUP_CREATE (SIOC..private_graph (), 1);
 
   -- set default rights for private graphs
   DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('nobody', 0, 1);
   DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('dba', 511, 1);
+  return 1;
 }
 ;
 
+--!
+-- \brief Make an RDF graph private.
+--
+-- \param graph_iri The IRI of the graph to make private. The graph will be private afterwards.
+-- Without subsequent calls to SIOC..private_user_add nobody can read or write the graph.
+--
+-- \return \p 1 on success, \p 0 otherwise.
+--
+-- \sa SIOC..private_graph_remove, SIOC..private_user_add
+--/
 create procedure SIOC..private_graph_add (
-  inout graph_iri varchar)
+  in graph_iri varchar)
 {
+  declare exit handler for sqlstate '*' {return 0;};
+
   DB.DBA.RDF_GRAPH_GROUP_INS (SIOC..private_graph (), graph_iri);
+  return 1;
 }
 ;
 
+--!
+-- \brief Make an RDF graph public.
+--
+-- \param The IRI of the graph to make public.
+--
+-- \sa SIOC..private_graph_remove, SIOC..private_user_add
+--/
 create procedure SIOC..private_graph_remove (
-  inout graph_iri varchar)
+  in graph_iri varchar)
 {
   DB.DBA.RDF_GRAPH_GROUP_DEL (SIOC..private_graph (), graph_iri);
 }
 ;
 
+--!
+-- \brief Check if an RDF graph is private or not.
+--
+-- Private graphs can still be readable or even writable by certain users,
+-- depending on the configured rights.
+--
+-- \param graph_iri The IRI of the graph to check.
+--
+-- \return \p 1 if the given graph is private, \p 0 otherwise.
+--
+-- \sa SIOC..private_graph_add, SIOC..private_user_add
+--/
+create procedure SIOC..private_graph_check (
+  in graph_iri varchar)
+{
+  declare private_graph varchar;
+
+  private_graph := SIOC..private_graph ();
+  if (not exists (select top 1 1 from DB.DBA.RDF_GRAPH_GROUP where RGG_IRI = private_graph))
+    return 0;
+
+  if (not exists (select top 1 1 from DB.DBA.RDF_GRAPH_GROUP_MEMBER where RGGM_GROUP_IID = iri_to_id (private_graph) and RGGM_MEMBER_IID = iri_to_id (graph_iri)))
+    return 0;
+
+  return 1;
+}
+;
+
+--!
+-- \brief Grant access to a private RDF graph.
+--
+-- Grants access to a certain RDF graph. There is no need to call SIOC..private_graph_add before.
+-- The given graph is made private automatically.
+--
+-- \param graph_iri The IRI of the graph to grant access to.
+-- \param uid The numerical or string ID of the SQL user to grant access to \p graph_iri.
+-- \param rights The rights to grant to \p uid:
+-- - \p 1 - Read
+-- - \p 2 - Write
+-- - \p 3 - Read/Write
+--
+-- \return \p 1 on success, \p 0 otherwise.
+--
+-- \sa SIOC..private_graph_add, SIOC..private_user_add
+--/
 create procedure SIOC..private_user_add (
   in graph_iri varchar,
   in uid any,
@@ -3904,10 +3984,20 @@ create procedure SIOC..private_user_add (
 
   if (isinteger (uid))
     uid := (select U_NAME from DB.DBA.SYS_USERS where U_ID = uid);
+  DB.DBA.RDF_GRAPH_GROUP_INS (SIOC..private_graph (), graph_iri);
   DB.DBA.RDF_GRAPH_USER_PERMS_SET (graph_iri, uid, rights);
+  return 1;
 }
 ;
 
+--!
+-- \brief Revoke access to a private RDF graph.
+--
+-- \param graph_iri The IRI of the private graph to revoke access to,
+-- \param uid The numerical or string ID of the SQL user to revoke access from.
+--
+-- \sa SIOC..private_user_add
+--/
 create procedure SIOC..private_user_remove (
   in graph_iri varchar,
   in uid any)
@@ -3917,6 +4007,7 @@ create procedure SIOC..private_user_remove (
   if (isinteger (uid))
     uid := (select U_NAME from DB.DBA.SYS_USERS where U_ID = uid);
   DB.DBA.RDF_GRAPH_USER_PERMS_DEL (graph_iri, uid);
+  return 0;
 }
 ;
 
@@ -4037,8 +4128,8 @@ create procedure SIOC..acl_insert (
   inout iri varchar,
   inout acl any)
 {
-  declare acl_iri, clean_iri varchar;
-  declare N, aclArray any;
+  declare acl_iri, clean_iri, filter_iri, criteria_iri varchar;
+  declare N, M, aclArray any;
   declare exit handler for sqlstate '*'
   {
     sioc_log_message (__SQL_MESSAGE);
@@ -4049,7 +4140,7 @@ create procedure SIOC..acl_insert (
   aclArray := deserialize (acl);
   for (N := 0; N < length (aclArray); N := N + 1)
   {
-    acl_iri := clean_iri || sprintf('#acl%d', N);
+    acl_iri := clean_iri || sprintf('#acl_%d', N);
 
     DB.DBA.ODS_QUAD_URI (graph_iri, acl_iri, rdf_iri ('type'), acl_iri ('Authorization'));
     DB.DBA.ODS_QUAD_URI (graph_iri, acl_iri, acl_iri ('accessTo'), iri);
@@ -4064,6 +4155,21 @@ create procedure SIOC..acl_insert (
     else if (aclArray[N][2] = 'public')
     {
       DB.DBA.ODS_QUAD_URI (graph_iri, acl_iri, acl_iri ('agentClass'), foaf_iri('Agent'));
+    }
+    else if (aclArray[N][2] = 'advanced')
+    {
+      filter_iri := clean_iri || sprintf('#filter_%d', N);
+      DB.DBA.ODS_QUAD_URI (graph_iri, acl_iri, oplflt_iri ('hasFilter'), filter_iri);
+      for (M := 0; M < length (aclArray[N][1]); M := M + 1)
+      {
+        criteria_iri := clean_iri || sprintf('#criteria_%d_%d', N, M);
+        DB.DBA.ODS_QUAD_URI (graph_iri, filter_iri, oplflt_iri ('hasCriteria'), criteria_iri);
+        DB.DBA.ODS_QUAD_URI (graph_iri, criteria_iri, oplflt_iri ('operand'), oplflt_iri (aclArray[N][1][M][1]));
+        DB.DBA.ODS_QUAD_URI (graph_iri, criteria_iri, oplflt_iri ('condition'), oplflt_iri (aclArray[N][1][M][2]));
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, criteria_iri, oplflt_iri ('value'), aclArray[N][1][M][3]);
+        if ((length (aclArray[N][1][M]) > 3) and not DB.DBA.is_empty_or_null (aclArray[N][1][M][4]))
+          DB.DBA.ODS_QUAD_URI_L (graph_iri, criteria_iri, oplflt_iri ('statement'), aclArray[N][1][M][4]);
+      }
     }
     if (aclArray[N][3])
       DB.DBA.ODS_QUAD_URI (graph_iri, acl_iri, acl_iri ('mode'), acl_iri('Read'));
@@ -4080,8 +4186,8 @@ create procedure SIOC..acl_delete (
   inout iri varchar,
   inout acl any)
 {
-  declare acl_iri, clean_iri varchar;
-  declare N, aclArray any;
+  declare acl_iri, clean_iri, filter_iri, criteria_iri varchar;
+  declare N, M, aclArray any;
   declare exit handler for sqlstate '*'
   {
     sioc_log_message (__SQL_MESSAGE);
@@ -4094,20 +4200,30 @@ create procedure SIOC..acl_delete (
   {
     acl_iri := clean_iri || sprintf('#acl%d', N);
     delete_quad_s_or_o (graph_iri, acl_iri, acl_iri);
+    acl_iri := clean_iri || sprintf('#acl_%d', N);
+    delete_quad_s_or_o (graph_iri, acl_iri, acl_iri);
+    if (aclArray[N][2] = 'advanced')
+    {
+      filter_iri := clean_iri || sprintf('#filter_%d', N);
+      delete_quad_s_or_o (graph_iri, filter_iri, filter_iri);
+      for (M := 0; M < length (aclArray[N][1]); M := M + 1)
+      {
+        criteria_iri := clean_iri || sprintf('#criteria_%d_%d', N, M);
+        delete_quad_s_or_o (graph_iri, criteria_iri, criteria_iri);
+      }
+    }
   }
 }
 ;
 
-create procedure SIOC..acl_webid ()
+create procedure SIOC..acl_webid (
+  inout webid varchar,
+  inout graph varchar := null)
 {
-  declare webid varchar;
-  declare cert, dummy, vtype any;
+  declare cert, vtype any;
 
   if (not is_https_ctx ())
-  {
-    webid := null;
-    goto _exit;
-  }
+    return null;
 
   webid := connection_get ('vspx_vebid');
   if (not isnull (webid))
@@ -4119,8 +4235,8 @@ create procedure SIOC..acl_webid ()
 
   set_user_id ('dba');
   cert := client_attr ('client_certificate');
-  dummy := null;
-  DB.DBA.WEBID_AUTH_GEN_2 (cert, 0, null, 1, 0, webid, dummy, 0, vtype);
+  if (not DB.DBA.WEBID_AUTH_GEN_2 (cert, 0, null, 1, 0, webid, graph, 0, vtype))
+    webid := null;
   connection_set ('vspx_vebid', coalesce (webid, ''));
 
 _exit:;
@@ -4128,25 +4244,51 @@ _exit:;
 }
 ;
 
-create procedure SIOC..acl_check (
+create procedure SIOC..acl_prepare_sql (
+  inout _sql varchar,
+  inout _sqlParams any,
+  in _params any)
+{
+  declare _name, _value, _pattern, _char varchar;
+  declare V any;
+
+  _char := '?';
+  if (_sql like 'sparql%')
+    _char := '??';
+
+  _pattern := '\\^\\{([a-zA-Z0-9])+\\}\\^';
+  while (1)
+  {
+    V := regexp_parse (_pattern, _sql, 0);
+    if (isnull (V))
+      goto _exit;
+
+    _name := subseq (_sql, V[0]+2, V[1]-2);
+    _value := get_keyword (_name, _params);
+    _sqlParams := vector_concat (_sqlParams, vector (_value));
+    _sql := regexp_replace (_sql, _pattern, _char);
+  }
+_exit:;
+  return;
+}
+;
+
+create procedure SIOC..acl_check_internal (
+  in webid varchar,
+  in webidGraph varchar,
   in acl_graph_iri varchar,
   in acl_groups_iri varchar,
   in acl_iris any)
 {
-  declare N, M, I integer;
-  declare tmp, rc, foafIRI, acl_iri varchar;
-  declare IRIs any;
+  declare M, I integer;
+  declare rc, acl_iri varchar;
+  declare _cert, _commands, _command any;
+  declare _filterMode, _filterValue, _mode, _filter, _criteria, _operand, _condition, _pattern, _statement, _params any;
+  declare _sql, _state, _msg, _sqlParams, _meta, _rows any;
 
   rc := '';
-  foafIRI := SIOC..acl_webID ();
-  if (isnull (foafIRI))
-    goto _exit;
-
-  IRIs := vector (vector(), vector(), vector());
-      for (N := 0; N < length (acl_iris); N := N + 1)
+  foreach (any acl_iri in acl_iris) do
       {
-    tmp := '';
-    acl_iri := acl_iris[N];
     for ( sparql
           define input:storage ""
           prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -4159,7 +4301,7 @@ create procedure SIOC..acl_check (
                      {
                        ?rule rdf:type acl:Authorization ;
                              acl:accessTo `iri(?:acl_iri)` ;
-                             acl:agent `iri(?:foafIRI)` ;
+                             acl:agent `iri(?:webid)` ;
                              acl:agent ?p1 .
                        OPTIONAL {?rule acl:mode ?mode .} .
                      }
@@ -4187,7 +4329,7 @@ create procedure SIOC..acl_check (
                      graph `iri(?:acl_groups_iri)`
                      {
                        ?p3 rdf:type foaf:Group ;
-                           foaf:member `iri(?:foafIRI)` .
+                           foaf:member `iri(?:webid)` .
                      }
             }
           }
@@ -4202,12 +4344,6 @@ create procedure SIOC..acl_check (
       else
         goto _skip;
 
-      tmp := coalesce ("p1", coalesce ("p2", "p3"));
-      for (M := 0; M < length (IRIs[I]); M := M + 1)
-      {
-        if (tmp = IRIs[I][M])
-          goto _skip;
-        }
       if ("mode" like '%#Write')
       {
         rc := 'W';
@@ -4216,13 +4352,172 @@ create procedure SIOC..acl_check (
       if ("mode" like '%#Read')
         rc := 'R';
 
-      IRIs[I] := vector_concat (IRIs[I], vector (tmp));
-
     _skip:;
     }
+
+    _cert := client_attr ('client_certificate');
+    _commands := ODS.ODS_API.commands ();
+    _filterMode := '';
+    _filterValue := 1;
+    _filter := '';
+    _criteria := '';
+    for (
+      sparql
+          define input:storage ""
+          prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+          prefix foaf: <http://xmlns.com/foaf/0.1/>
+          prefix acl: <http://www.w3.org/ns/auth/acl#>
+      prefix flt: <http://www.openlinksw.com/schemas/acl/filter#>
+      select ?filter ?criteria ?mode ?operand ?condition ?pattern ?statement
+           where {
+               {
+                   graph `iri(?:acl_graph_iri)`
+                   {
+                     ?rule rdf:type acl:Authorization ;
+                           acl:accessTo `iri(?:acl_iri)` ;
+                         acl:mode ?mode ;
+                         flt:hasFilter ?filter .
+                         ?filter flt:hasCriteria ?criteria .
+                         ?criteria flt:operand ?operand ;
+                                   flt:condition ?condition ;
+                                   flt:value ?pattern .
+                         OPTIONAL { ?criteria flt:statement ?statement . }
+                   }
+                 }
+             }
+       order by ?filter ?criteria) do
+    {
+      _mode := "mode";
+      _operand := replace ("operand", 'http://www.openlinksw.com/schemas/acl/filter#', '');
+      _condition := replace ("condition", 'http://www.openlinksw.com/schemas/acl/filter#', '');;
+      _pattern := cast ("pattern" as varchar);
+      _statement := cast ("statement" as varchar);
+      if (_filter <> "filter")
+  	  {
+        if (_filterValue and (_filter <> ''))
+	      {
+          if (_filterMode <> '')
+            rc := _filterMode;
+          if (rc = 'W')
+            goto _exit;
+        }
+        _filterMode := '';
+        _filterValue := 1;
+        _filter := "filter";
+        _criteria := '';
+      }
+      if (_filterValue and (_criteria <> "criteria"))
+      {
+        _command := get_keyword (_condition, _commands);
+        if (isnull (_command))
+          goto _skip2;
+
+        _sql := 'select case when ' || _command || ' then 1 else 0 end';
+        _sqlParams := vector ();
+        _params := vector ('pattern', _pattern);
+        if      (_operand = 'webIDVerified')
+        {
+          ODS.ODS_API.set_keyword ('value', _params, '1');
+    }
+        else if (_operand = 'webID')
+                   {
+          ODS.ODS_API.set_keyword ('value', _params, webid);
+                   }
+        else if (_operand = 'certExpiration')
+                   {
+          declare _from, _to any;
+
+          _from := DB.DBA.X509_STRING_DATE (get_certificate_info (4, _cert));
+          _to := DB.DBA.X509_STRING_DATE (get_certificate_info (5, _cert));
+          ODS.ODS_API.set_keyword ('value', _params, case when (_to < now () or _from > now ()) then '1' else '0' end);
+                   }
+        else if (_operand = 'certSerial')
+        {
+          ODS.ODS_API.set_keyword ('value', _params, get_certificate_info (1, _cert));
+                 }
+        else if (_operand = 'certMail')
+    {
+          ODS.ODS_API.set_keyword ('value', _params, get_certificate_info (10, _cert, 0, '', 'emailAddress'));
+        }
+        else if (_operand = 'certSubject')
+  	  {
+          ODS.ODS_API.set_keyword ('value', _params, get_certificate_info (2, _cert));
+        }
+        else if (_operand = 'certIssuer')
+        {
+          ODS.ODS_API.set_keyword ('value', _params, get_certificate_info (3, _cert));
+        }
+        else if (_operand = 'certStartDate')
+        {
+          ODS.ODS_API.set_keyword ('value', _params, DB.DBA.X509_STRING_DATE (get_certificate_info (4, _cert)));
+          ODS.ODS_API.set_keyword ('pattern', _params, DB.DBA.DAV_AUTHENTICATE_SSL_DATE (_pattern));
+        }
+        else if (_operand = 'certEndDate')
+        {
+          ODS.ODS_API.set_keyword ('value', _params, DB.DBA.X509_STRING_DATE (get_certificate_info (5, _cert)));
+          ODS.ODS_API.set_keyword ('pattern', _params, DB.DBA.DAV_AUTHENTICATE_SSL_DATE (_pattern));
+        }
+        else if (_operand = 'certDigest')
+        {
+          ODS.ODS_API.set_keyword ('value', _params, _cert);
+          _sql := 'select case when ' || sprintf ('(DB.DBA.DAV_AUTHENTICATE_SSL_DIGEST_CHECK (^{value}^, ''%s'', ^{pattern}^) = 1)', _condition) || ' then 1 else 0 end';
+        }
+        else if (_operand = 'certSparqlASK')
+        {
+          ODS.ODS_API.set_keyword ('webid', _params, webid);
+          ODS.ODS_API.set_keyword ('value', _params, webid);
+          ODS.ODS_API.set_keyword ('graph', _params, webidGraph);
+          _sql := 'sparql ' || _statement;
+        }
+
+        _state := '00000';
+        SIOC..acl_prepare_sql (_sql, _sqlParams, _params);
+        exec (_sql, _state, _msg, _sqlParams, 0, _meta, _rows);
+        if (_state <> '00000')
+          _filterValue := 0;
+
+        else if (_rows[0][0] = 0)
+          _filterValue := 0;
+        }
+      if (_filterMode <> 'W')
+      {
+        if (_mode like '%#Write')
+          _filterMode := 'W';
+        else if (_mode like '%#Read')
+          _filterMode := 'R';
+      }
+
+    _skip2:;
+      _criteria := "criteria";
+    }
+    if (_filterValue and (_filter <> '') and (_filterMode <> ''))
+      rc := _filterMode;
+
+  _continue:;
   }
 
 _exit:;
+  return rc;
+}
+;
+
+create procedure SIOC..acl_check (
+  in acl_graph_iri varchar,
+  in acl_groups_iri varchar,
+  in acl_iris any)
+{
+  declare rc, webid, webidGraph varchar;
+
+  rc := '';
+  webidGraph := ODS.ODS_API.graph_create ();
+  SIOC..acl_webid (webid, webidGraph);
+  if (isnull (webid))
+    goto _exit;
+
+  rc := SIOC..acl_check_internal (webid, webidGraph, acl_graph_iri, acl_groups_iri, acl_iris);
+
+_exit:;
+  ODS.ODS_API.graph_clear (webidGraph);
   return rc;
 }
 ;
@@ -4232,14 +4527,17 @@ create procedure SIOC..acl_list (
   in acl_groups_iri varchar,
   in acl_iri varchar)
 {
-  declare rc, foafIRI varchar;
+  declare rc, webid, webidGraph varchar;
+  declare cert, diArray, finger, digest, digestHash any;
 
   result_names (rc);
 
-  foafIRI := SIOC..acl_webID ();
-  if (isnull (foafIRI))
+  webidGraph := null;
+  SIOC..acl_webid (webid, webidGraph);
+  if (isnull (webid))
     return;
 
+  cert := client_attr ('client_certificate');
   for ( sparql
         define input:storage ""
         prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -4252,7 +4550,7 @@ create procedure SIOC..acl_list (
                    {
                      ?rule rdf:type acl:Authorization ;
                            acl:accessTo ?iri ;
-                           acl:agent `iri(?:foafIRI)` .
+                           acl:agent `iri(?:webid)` .
                      filter (?iri != ?:acl_iri).
                    }
                  }
@@ -4278,7 +4576,7 @@ create procedure SIOC..acl_list (
                    graph `iri(?:acl_groups_iri)`
                    {
                      ?group rdf:type foaf:Group ;
-                         foaf:member `iri(?:foafIRI)` .
+                            foaf:member `iri(?:webid)` .
                    }
                  }
                }
@@ -5066,9 +5364,10 @@ create procedure foaf_check_friend (in iri varchar, in agent varchar)
 }
 ;
 
-create procedure foaf_check_ssl (in iri varchar)
+create procedure foaf_check_ssl (
+  in iri varchar)
     {
-  declare arr, groups_iri, msg, webid varchar;
+  declare arr, groups_iri, msg, webid, webidGraph varchar;
 
   set_user_id ('dba');
   if (iri is not null)
@@ -5082,7 +5381,8 @@ create procedure foaf_check_ssl (in iri varchar)
   if (SIOC..acl_check (SIOC..acl_clean_iri (iri) || '/webaccess', groups_iri, vector (iri)) = '')
     return 0;
   }
-  webid := SIOC..acl_webid ();
+  webidGraph := null;
+  SIOC..acl_webid (webid, webidGraph);
   commit work;
   if (isnull (webid))
     return 0;
@@ -5170,7 +5470,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?person foaf:mbox ?mbox .
 	    ?person foaf:mbox_sha1sum ?sha1 .
 	    ?person foaf:name ?full_name .
-	    ?person foaf:holdsAccount ?sioc_user .
+	    ?person foaf:account ?sioc_user .
 	    ?person rdfs:seeAlso ?pers_see_also .
 	    ?sioc_user rdfs:seeAlso ?see_also .
 	    ?sioc_user a sioc:User .
@@ -5209,10 +5509,10 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    graph <%s>
 	    {
 	      {
-	      ?person foaf:holdsAccount <%s/%s#this> ;
+	      ?person foaf:account <%s/%s#this> ;
 	      rdf:type ?type ;
 	      foaf:nick ?nick ;
-	      foaf:holdsAccount ?sioc_user .
+	      foaf:account ?sioc_user .
 	      optional { ?person rdfs:seeAlso ?pers_see_also . } .
 	      optional { ?sioc_user rdfs:seeAlso ?see_also . } .
 	      optional { ?person foaf:mbox ?mbox ; foaf:mbox_sha1sum ?sha1 . } .
@@ -5280,7 +5580,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?event dc:date ?bdate .
 	    ?person bio:keywords ?keywords .
 	    ?person owl:sameAs ?same_as .
-	    ?person foaf:holdsAccount ?oa .
+	    ?person foaf:account ?oa .
 	    ?oa a foaf:OnlineAccount .
 	    ?oa foaf:accountServiceHomepage ?ashp .
 	    ?oa foaf:accountName ?an .
@@ -5296,7 +5596,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    graph <%s>
 	    {
 	      {
-	      ?person foaf:holdsAccount <%s/%s#this> ;
+  	      ?person foaf:account <%s/%s#this> ;
 	      foaf:openid ?oid .
 	      optional { ?person bio:olb ?bio  } .
               optional { ?person bio:event ?event . ?event a bio:Birth ; dc:date ?bdate } .
@@ -5310,7 +5610,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	      	       } .
               optional { ?person bio:keywords ?keywords } .
 	      optional { ?person owl:sameAs ?same_as } .
-			 ?person foaf:holdsAccount ?oa .
+  	      ?person foaf:account ?oa .
 	      optional {
 		         ?oa foaf:accountServiceHomepage ?ashp ; foaf:accountName ?an
 	      	       } .
@@ -5346,13 +5646,15 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?person pingback:to ?pb .
 	    ?person pingback:service ?psvc .
 	    ?person foaf:made `iri (bif:sprintf (''http://%%{WSHost}s/ods/describe?uri=%%U'', ?mbox))` .
+	    ?person <http://vocab.deri.ie/void#inDataset> <http://%{URIQADefaultHost}s/dataspace> .
+	    <http://%{URIQADefaultHost}s/dataspace> <http://rdfs.org/ns/void#sparqlEndpoint> <http://%{URIQADefaultHost}s/sparql-auth/> .
 	  }
 	  WHERE
 	  {
 	    graph <%s>
 	    {
 	      {
-	      ?person foaf:holdsAccount <%s/%s#this> .
+	        ?person foaf:account <%s/%s#this> .
 		optional { ?person foaf:mbox ?mbox . } .  
 	      optional { ?person foaf:made ?made . ?made dc:identifier ?ident . ?made dc:title ?made_title . optional { ?made a ?made_type . } } .
 	      optional { ?person foaf:interest ?interest } .
@@ -5384,7 +5686,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	  {
 	    graph <%s>
 	    {
-	        ?person foaf:holdsAccount <%s/%s#this> .
+        ?person foaf:account <%s/%s#this> .
         {
           {
             ?container foaf:maker ?person;
@@ -6009,14 +6311,14 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
       if (kind = 0)
 	{
 	  part := sprintf (
-	     ' CONSTRUCT { ?s ?p ?o . ?f foaf:holdsAccount ?ha . ?f rdfs:seeAlso ?sa . '||
+  	     ' CONSTRUCT { ?s ?p ?o . ?f foaf:account ?ha . ?f rdfs:seeAlso ?sa . '||
 	     '  ?frm sioc:scope_of ?role. ?role sioc:function_of ?member. ?frm sioc:type ?ft. ?frm sioc:id ?fid . '||
 	     '  ?frm rdfs:seeAlso ?fsa . ?frm sioc:has_space ?fh .  ?role sioc:has_scope ?frm . ' ||
 	     '  ?frm sioc:has_owner ?member . ?member sioc:owner_of ?frm . } \n' ||
 	     ' FROM <%s> WHERE { \n' ||
 	     '   { ?s ?p ?o . ?s sioc:id "%s" FILTER (?p != "http://www.w3.org/2000/01/rdf-schema#seeAlso" && ' ||
 	     ' 					  ?p != "http://rdfs.org/sioc/ns#creator_of") } union  \n' ||
-	     '   { ?f foaf:nick "%s" ; foaf:holdsAccount ?ha ; rdfs:seeAlso ?sa  } union  \n' ||
+  	     '   { ?f foaf:nick "%s" ; foaf:account ?ha ; rdfs:seeAlso ?sa  } union  \n' ||
 	     '   { ?frm sioc:scope_of ?role . ?role sioc:function_of ?member . '||
 	     '     ?member sioc:id "%s". ?frm sioc:type ?ft; sioc:id ?fid; rdfs:seeAlso ?fsa; sioc:has_space ?fh. '||
              '     OPTIONAL { ?frm sioc:has_owner ?member . } '||
@@ -6032,7 +6334,7 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
 	    ?person foaf:mbox ?mbox .
 	    ?person foaf:mbox_sha1sum ?sha1 .
 	    ?person foaf:name ?full_name .
-	    ?person foaf:holdsAccount ?sioc_user .
+  	    ?person foaf:account ?sioc_user .
 	    ?sioc_user rdfs:seeAlso ?see_also .
 	    ?sioc_user a sioc:User .
 	    ?person foaf:firstName ?fn .
@@ -6081,7 +6383,7 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
 	    {
 	      {
 	      ?person foaf:nick "%s" ;
-	      foaf:holdsAccount ?sioc_user .
+    	      foaf:account ?sioc_user .
 	      ?sioc_user rdfs:seeAlso ?see_also .
 	      optional { ?person foaf:mbox ?mbox ; foaf:mbox_sha1sum ?sha1 . } .
 	      optional {
@@ -6543,6 +6845,17 @@ create procedure SIOC..rdf_links_head (in iri any)
 }
 ;
 
+create procedure ods_account_update ()
+{
+  if (registry_get ('ods_account_update') = '1') return;
+  update_quad_p (get_graph (), foaf_iri ('holdsAccount'), foaf_iri ('account'));
+  registry_set ('ods_account_update', '1');
+}
+;
+
+ods_account_update ()
+;
+
 use DB;
 
 create procedure WA_INTEREST_UPGRADE ()
@@ -6570,9 +6883,7 @@ WA_INTEREST_UPGRADE ()
 
 create procedure ods_object_services_update ()
 {
-  if (registry_get ('ods_services_update') = '1')
-    return;
-
+  if (registry_get ('ods_services_update') = '1') return;
   SIOC..fill_ods_services ();
   registry_set ('ods_services_update', '1');
 }

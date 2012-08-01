@@ -645,7 +645,7 @@ xp_free (xparse_ctx_t * xp)
   while (xn)
     {
       xp_node_t * next = xn->xn_parent;
-#ifdef MALLOC_DEBUG
+#ifdef XTREE_DEBUG
       dk_check_tree ((caddr_t) xn->xn_attrs);
 #endif
       dk_free_tree ((caddr_t) xn->xn_attrs);
@@ -3770,6 +3770,40 @@ DBG_NAME(box_cast_to_UTF8) (DBG_PARAMS caddr_t * qst, caddr_t data)
 
 
 caddr_t
+box_cast_to_UTF8_xsd (caddr_t *qst, caddr_t data)
+{
+  char tmpbuf[50];
+  int buffill;
+  double boxdbl;
+  switch (DV_TYPE_OF (data))
+    {
+    case DV_SINGLE_FLOAT: boxdbl = (double)(unbox_float (data)); goto make_double; /* see below */
+    case DV_DOUBLE_FLOAT: boxdbl = unbox_double (data); goto make_double; /* see below */
+    default: return box_cast_to_UTF8 (qst, data);
+    }
+make_double:
+  buffill = sprintf (tmpbuf, "%lg", boxdbl);
+  if ((NULL == strchr (tmpbuf, '.')) && (NULL == strchr (tmpbuf, 'E')) && (NULL == strchr (tmpbuf, 'e')))
+    {
+      if (isalpha(tmpbuf[1+1]))
+        {
+	  double myZERO = 0.0;
+          double myPOSINF_d = 1.0/myZERO;
+          double myNEGINF_d = -1.0/myZERO;
+          if (myPOSINF_d == boxdbl) return box_dv_short_string ("INF");
+          else if (myNEGINF_d == boxdbl) return box_dv_short_string ("-INF");
+          else return box_dv_short_string ("NAN");
+        }
+      else
+        {
+          strcpy (tmpbuf+buffill, ".0");
+          buffill += 2;
+        }
+    }
+  return box_dv_short_nchars (tmpbuf, buffill);
+}
+
+caddr_t
 box_cast_to_UTF8_uname (caddr_t *qst, caddr_t raw_name)
 {
   switch (DV_TYPE_OF (raw_name))
@@ -3787,6 +3821,7 @@ box_cast_to_UTF8_uname (caddr_t *qst, caddr_t raw_name)
     }
   return NULL; /* never reached */
 }
+
 
 caddr_t
 bif_xte_head (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)

@@ -1,3 +1,148 @@
+Jul 30, 2012, V6.1.6:
+  * Database engine
+    - Added support for Sparql Service Description
+    - Added support for SOUNDEX and DIFFERENCE
+    - Added support for FROM SUBQUERY { .. } in quad map
+    - Added optimizations to JSON parser
+    - Added support for SSL Chain Certificates
+    - Added webid protected endpoints template
+    - Added error reporting if query compilation fails
+    - Added extra checks for db slices
+    - Added dsn name to explain output
+    - Added support for CORS in web services
+    - Added propagation of LIMIT restrictions
+    - Added support for protocol switching e.g. using websockets
+    - Added generation of url rewrite rules
+    - Fixed ETag calculation
+    - Fixed bad code for clear graph <xxxx>
+    - Fixed buffer overflow when using wide chars
+    - Fixed check to prevent out of range seek
+    - Fixed clear errors on ODBC connection handle
+    - Fixed compiler warnings
+    - Fixed datetime conversion
+    - Fixed external vars in table subqueries of scalar subqueries
+    - Fixed http_ses_arg is supposed to return ws_session
+    - Fixed issue with content type if already set by rewrite rule
+    - Fixed issue with transitive subqueries
+    - Fixed issue with unknown BIF msg in SPARQL compiler error
+    - Fixed issue with Bison 2.6 code generation
+    - Fixed issue with SERVICE
+    - Fixed issue with UNIONs
+    - Fixed issue with incomplete rdf box
+    - Fixed memory leaks
+    - Fixed multi-column transitivity
+    - Fixed portability issues on FreeBSD, Solaris and Mac OS X
+    - Fixed print of builtin expressions with multipart alias name
+    - Fixed use provided password from ODBC connect handle
+    - Fixed valgrind warnings
+    - Updated documentation
+
+  * SPARQL and RDF
+    - Added RDFa and MTML+Microdata autodetection
+    - Added REPORT method
+    - Added WebDAV DET folder type
+    - Added Wolfram|Alpha cartridge
+    - Added debug code for sponger
+    - Added di: scheme
+    - Added extra debugging code to SPARQL engine
+    - Added new mime type application/n-triples
+    - Added procedure view for SPARQL BINDINDS
+    - Added rdb2rdf VAD
+    - Added support for INF, -INF and NaN
+    - Added support for SPARQL 1.1 BINDINGS
+    - Added support for self-description
+    - Added support for slash proxy IRIs
+    - Added support for sponging of ftp urls
+    - Added support for subqueries inside QUAP MAP { .. } groups
+    - Added support for tab-separated-values (TSV) format in sparql
+    - Added support for text/turtle
+    - Fixed SPARQL LOAD SERVICE <...> DATA
+    - Fixed access rights and status for SPARUL_LOAD_SERVICE_DATA
+    - Fixed escaping of weird IRIs in RDF/XML output
+    - Fixed grants for SPARQL LOAD SERVICE <...> DATA
+    - Fixed issue joining two federated queries to the same host
+    - Fixed issue with double "AS" for lang in resultset
+    - Fixed issue with RDF View, bif:contains and option(?score)
+    - Fixed issue with SPARQL-FED code generation
+    - Fixed issue with graph level security check in SPARQL-FED subquery
+    - Fixed issue with transitive query
+    - Fixed issue with xsd:dateTime in SPARQL results
+    - Fixed issues loading microdata with namespace decls
+    - Fixed negation to use SPARQL 1.1 FILTER NOT EXISTS
+    - Fixed possible stack overflow on long UNIONs
+    - Fixed resource name encoding problem
+    - Fixed service SPARQL codegen with zero retvals
+    - Fixed support for SERVICE
+    - Improved error diagnostics for ALTER QUAD STORAGE <> { DROP }
+    - Removed test for @rel, @rev or @property from application/xhtml+xml
+    - Upgraded sesame driver to use Sesame 2.5.6
+
+    - Merged DBpedia VAD fixes
+      + Added registry setting dbp_last_modification to get SP returning last modified date
+      + Added support for If-Modified-Since
+      + Added support for rel="nofollow" on external links
+      + Fixed XHTML+RDFa validation
+      + Fixed check if modified
+      + Fixed reset timezone
+      + Fixed use owl graph for properties
+
+    - Merged iSPARQL vad
+      + Added control for raw URIs in sparql result set view
+      + Added persistence in permalinks
+      + Added alternate links in HEAD
+      + Added support to remember rdf display/tab
+      + Added support to remember previous tab
+      + Upgraded MAP support for latest OpenLayers/OpenStreetmap
+      + Disabled dysfunctional NASA blue marble tiles
+
+  * ODS Applications
+    - Added initial API documentation + doxify templates
+    - Added advanced ACL settings for sparql or services authentication
+    - Added ACL filters
+    - Added support for Box, Google Drive and Skydrive + ACLs
+    - Added support for private graphs
+    - Fixed redirect
+
+    - Merged ODS Addressbook fixes
+      + Added CalDAV Import
+
+    - Merged ODS Bookmark VAD
+      + Added box.net folder definition
+      + Added default values for cartridges
+      + Added support for WebDAV DET
+      + Added support for private graphs
+      + Fixed bad owner in some DET resources
+      + Fixed permission problem for some DETs
+      + Updated S3 DET folder
+
+    - Merged ODS Briefcase VAD
+      + Added ACL for IMAP DET folder
+      + Added mail notification for webid sharing
+      + Fixed ' -,acl' files
+      + Fixed problem with editing mounted sources
+      + Fixed resource server side encryption problem
+      + Fixed sponge feature
+
+    - Merged ODS Calendar VAD
+      + Added CalDAV, CardDAV DETs and RESTful CRUD
+      + Fixed WebID write access
+      + Fixed daylight savings time on import to calendar
+
+    - Merged ODS Framework VAD
+      + Added Help links
+      + Added JSON output option for certgen
+      + Added link tags to user's pages
+      + Fixed 'Enable Automatic WebID Login' value
+      + Fixed private graphs init
+      + Fixed quotes on sparql vars
+      + Fixed remove session when acl is altered
+      + Fixed rest interface page
+      + Fixed semping protocol
+      + Fixed typos
+      + Fixed void dset
+      + Updated CKeditor to version 3.6.3
+
+
 Mar 15, 2012, V6.1.5:
   * Database engine
     - Added support for SPARQL 1.1 WITH, USING, NAMED

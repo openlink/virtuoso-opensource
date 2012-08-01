@@ -385,6 +385,9 @@ create procedure DB.DBA.SOAPTEST ()
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "*** FAILED";
 ECHO BOTH ": creating VSP SOAP server procedure STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
+create user SOAP_SRV;
+grant execute on DB.DBA.SOAPTEST to SOAP_SRV;
+
 soap_call ('localhost:$U{HTTPPORT}', '/vspsoap.vsp', 'fake', 'test', vector(), 11);
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "*** FAILED";
 ECHO BOTH ": calling the VSP SOAP server with fake#test STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
@@ -402,6 +405,8 @@ create module DB.DBA.SOAPMOD {
   procedure SOAPMOD2(inout par2 int) { return par2 + 1; };
   procedure SOAPMOD3() { return 14; };
 };
+
+GRANT EXECUTE ON DB.DBA.SOAPMOD TO SOAP_SRV;
 
 select xml_tree_doc (soap_sdl ('DB.DBA.SOAPMOD', 'URL'));
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "*** FAILED";

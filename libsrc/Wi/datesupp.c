@@ -613,7 +613,7 @@ GMTimestamp_struct_to_dt (GMTIMESTAMP_STRUCT * ts, char *dt)
   DT_SET_SECOND (dt, ts->second);
   DT_SET_FRACTION (dt, ts->fraction);
   DT_SET_TZ (dt, 0);
-  DT_SET_DT_TYPE (dt, DT_TYPE_DATETIME);
+  DT_SET_DT_TYPE_NOAUDIT (dt, DT_TYPE_DATETIME);
 }
 
 void
@@ -1350,6 +1350,7 @@ and MUST be assumed when reading the asctime format. */
       GMTimestamp_struct_to_dt (ts, dt);
       DT_SET_TZ (dt, tz_min);
     }
+  DT_AUDIT_FIELDS (dt);
   return 1;
 }
 
@@ -1448,7 +1449,7 @@ dt_audit_fields (char *dt)
       if (0 != f) GPF_T1 ("nonzero fraction in DT_TYPE_DATE dt_audit_fields()");
       break;
     case DT_TYPE_TIME:
-      if (DAY_ZERO != d) GPF_T1 ("DAY_ZERO in DT_TYPE_TIME dt_audit_fields()");
+      if (DAY_ZERO != d) GPF_T1 ("non-DAY_ZERO in DT_TYPE_TIME dt_audit_fields()");
       break;
     default:
         GPF_T1 ("Wrong DT_DT_TYPE in dt_audit_fields()");

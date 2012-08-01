@@ -724,7 +724,7 @@ bif_regexp_replace_hits_with_template (caddr_t * qst, caddr_t * err_ret, state_s
           "Function regexp_replace_hits_with_template() has invalid hit (index %d) in argument 2 (the length of position list is %d, but it is %d for the first hit)", hit_ctr, pos_count, pos_count_in_hits );
       hit_b = HIT_NTH_POS(0);
       hit_e = HIT_NTH_POS(1);
-      if ((hit_b < prev_left_pos) || (hit_e < hit_b) || (hit_e >= src_charcount))
+      if ((hit_b < prev_left_pos) || (hit_e < hit_b) || (hit_e > src_charcount))
         sqlr_new_error ("22023", "SR647",
           "Function regexp_replace_hits_with_template() has invalid hit (index %d) in argument 2 (from %d to %d, limits are %d to %d)",
           hit_ctr, (int)hit_b, (int)hit_e, prev_left_pos, src_charcount );
@@ -741,7 +741,7 @@ bif_regexp_replace_hits_with_template (caddr_t * qst, caddr_t * err_ret, state_s
           prev_left_pos = pos_b;
         }
     }
-/* Now we know that the processing will hot hang so we can go on */
+/* Now we know that the processing will not hang so we can go on */
   src_cs = charset_native_for_box (src, tmpl_syntax_is_xpf ? BF_UTF8 : BF_DEFAULT_SERVER_ENC);
   tmpl_cs = charset_native_for_box (tmpl, tmpl_syntax_is_xpf ? BF_UTF8 : BF_DEFAULT_SERVER_ENC);
   if (src_cs != tmpl_cs)
@@ -806,6 +806,8 @@ bif_regexp_replace_hits_with_template (caddr_t * qst, caddr_t * err_ret, state_s
   return res_strg;
 }
 
+int32 c_match_limit_recursion = 150;
+
 static caddr_t
 get_regexp_code (safe_hash_t * rx_codes, const char *pattern,
     pcre_info_t * pcre_info, int options)
@@ -854,6 +856,11 @@ get_regexp_code (safe_hash_t * rx_codes, const char *pattern,
     }
   else
     *pcre_info = *pcre_info_ref;
+  if (pcre_info->code_x)
+    {
+      pcre_info->code_x->flags |= PCRE_EXTRA_MATCH_LIMIT_RECURSION;
+      pcre_info->code_x->match_limit_recursion = c_match_limit_recursion;
+    }
   RELEASE_OBJECT (rx_codes);
   return NULL;
 }

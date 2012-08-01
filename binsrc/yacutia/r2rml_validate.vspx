@@ -56,7 +56,10 @@
 	      </tr>
 	      <?vsp
 	      declare stat, msg, data, meta any;
+	      stat := '00000';
 	      exec ('DB.DBA.OVL_VALIDATE (?, ''http://www.w3.org/ns/r2rml#OVL'')', stat, msg, vector (self.graph), 0, meta, data);
+	      if (stat <> '00000')
+	      	data := vector (vector ('', stat, msg));
 	      foreach (any _row in data) do
                 {
 	      ?>

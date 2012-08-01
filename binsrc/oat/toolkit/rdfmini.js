@@ -33,7 +33,8 @@ OAT.RDFMini = function(div,optObj) {
 		imagePath:OAT.Preferences.imagePath,
 	endpoint:"/sparql?query=",
 	store: false,
-	sel_ctr: false // optional place view selector in custom place
+	sel_ctr: false, // optional place view selector in custom place
+	defaultTab: 2
 	}
 
 	for (var p in optObj) { this.options[p] = optObj[p]; }
@@ -42,6 +43,7 @@ OAT.RDFMini = function(div,optObj) {
 	this.content = OAT.Dom.create("div",{className:"rdf_mini"});
 	this.tabs = [];
 	this.select = false;
+    this.curTabIdx = this.lastTabIdx = self.options.defaultTab;
 
 	this.executeSparql = function(template,replace) {
 		var str = template;
@@ -52,6 +54,30 @@ OAT.RDFMini = function(div,optObj) {
 		var url = self.options.endpoint+encodeURIComponent(str)+"&format=rdf";
 		self.open(url);
 	}
+
+    this.getCurrentTabType = function () {
+	return (self.options.tabs[self.curTabIdx][0]);
+    }
+
+    this.getCurrentTab = function () {
+	return (self.select.selectedIndex);
+    }
+
+    this.setTab = function (i) {
+	if (i < self.select.options.length) {
+	    self.lastTabIdx = self.curTabIdx;
+	    self.curTabIdx = self.select.selectedIndex = i;
+	    self.redraw();
+	}
+    }
+
+    this.setDefaultTab = function () {
+	self.setTab (self.options.defaultTab);
+    }
+
+    this.setLastTab = function () {
+	self.setTab (self.lastTabIdx);
+    }
 
 	this.search = function(str) {
 		var s = (str ? str : $v(self.searchInput));
@@ -103,7 +129,7 @@ OAT.RDFMini = function(div,optObj) {
 				self.tabs.push(obj);
 				OAT.Dom.option(t[1],t[1],s);
 			}
-			OAT.Event.attach(s,"change",self.redraw);
+	    OAT.Event.attach(s, "change", self.tabSelChangeH);
 			self.select = s;
 
 	    var sel_ctr;
@@ -123,7 +149,11 @@ OAT.RDFMini = function(div,optObj) {
 			self.tabs.push(obj);
 		}
 
-	OAT.MSG.attach ("*","MAP_NOTHING_TO_SHOW", function (_s,_m,_e) { s.selectedIndex = 0;self.redraw() })
+	OAT.MSG.attach ("*","MAP_NOTHING_TO_SHOW", 
+			function (_s,_m,_e) { 
+			    self.setLastTab();
+			    self.redraw() 
+			});
 	
 	var ua = navigator.userAgent;
 
@@ -142,6 +172,11 @@ OAT.RDFMini = function(div,optObj) {
 		self.parent.appendChild(self.content);
 	}
 
+    this.tabSelChangeH = function (e) {
+	self.setTab(e.target.selectedIndex);
+	self.redraw();
+    }
+    
 	this.redraw = function() { /* change vis */
 	    var index = 0;
 	    if (self.select) { index = self.select.selectedIndex; }
@@ -151,6 +186,7 @@ OAT.RDFMini = function(div,optObj) {
 	    self.tabs[index].redraw();
 	    var et = {};
 	    et.tabIndex = index;
+	et.tabType = self.options.tabs[index][0];
 	    OAT.MSG.send (self,"RDFMINI_VIEW_CHANGED",et);
 	}
 

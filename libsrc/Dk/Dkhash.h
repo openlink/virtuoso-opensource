@@ -157,6 +157,7 @@ void hash_table_destroy (dk_hash_t * ht);
 extern void *gethash (const void *key, dk_hash_t * ht);
 extern void maphash (maphash_func func, dk_hash_t * table);
 extern void maphash3 (maphash3_func func, dk_hash_t * table, void *env);
+extern void **hash_list_keys (dk_hash_t * table);
 extern void maphash_no_remhash (maphash_func func, dk_hash_t * table);
 extern void dk_hash_iterator (dk_hash_iterator_t * hit, dk_hash_t * ht);
 extern int dk_hit_next (dk_hash_iterator_t * hit, void **key, void **data);

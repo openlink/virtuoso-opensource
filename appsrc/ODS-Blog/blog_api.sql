@@ -598,5 +598,6 @@ grant execute on ODS.ODS_API."weblog.upstreaming.get" to ODS_API;
 grant execute on ODS.ODS_API."weblog.upstreaming.remove" to ODS_API;
 grant execute on ODS.ODS_API."weblog.tagging.set" to ODS_API;
 grant execute on ODS.ODS_API."weblog.tagging.retag" to ODS_API;
+grant execute on DB.DBA.XML_URI_GET_STRING_OR_ENT to ODS_API;
 
 use DB;

@@ -9725,11 +9725,15 @@ caddr_t bif_XMLAddAttribute (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
       attr_value = attr_xe->_->xe_currattrvalue (attr_xe);
       break;
     default:
-      attr_name = box_dv_uname_string (box_cast_to_UTF8 (qst, raw_attr_name));
-      attr_value = bif_arg (qst, args, 3, "XMLAddAttribute");
-      if (DV_DB_NULL == DV_TYPE_OF (attr_value))
-        return box_num (0);
-      attr_value = box_cast_to_UTF8 (qst, attr_value);
+	{
+	  caddr_t box = box_cast_to_UTF8 (qst, raw_attr_name);
+	  attr_name = box_dv_uname_string (box);
+	  dk_free_box (box);
+	  attr_value = bif_arg (qst, args, 3, "XMLAddAttribute");
+	  if (DV_DB_NULL == DV_TYPE_OF (attr_value))
+	    return box_num (0);
+	  attr_value = box_cast_to_UTF8 (qst, attr_value);
+	}
       break;
     }
   if (('\0' == attr_name[0]) || (' ' == attr_name[0]) || !strncmp (attr_name, "xmlns", 5))
@@ -9955,8 +9959,8 @@ caddr_t bif_xtree_tridgell32 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
 #endif
 
 #define SUM64(data,lo,med,hi) \
-      end = data + box_length_inline (data) - 1; \
-      for (tail = data; tail < end; tail++) \
+      end = (data) + box_length_inline ((data)) - 1; \
+      for (tail = (data); tail < end; tail++) \
         { lo += tail[0]; med += lo; hi += med; }
 
 static void
@@ -9985,7 +9989,7 @@ xte_sum64_iter (caddr_t *tree, unsigned *lo_ptr, unsigned *med_ptr, unsigned *hi
               caddr_t *items = (caddr_t *)data;
               DO_BOX_FAST (caddr_t, item, item_ctr, items)
                 {
-                  SUM64(item,lon,medn,hin)
+                  SUM64((unsigned char *)(item),lon,medn,hin)
                 }
               END_DO_BOX_FAST;
             }
@@ -10180,7 +10184,7 @@ xml_ent_hash (caddr_t box)
   xml_entity_t *xe = (xml_entity_t *)box;
   int32 chld_hash = 0;
   if (XE_IS_TREE (xe))
-    chld_hash = (int32)(ptrlong)(((xml_tree_ent_t *)(xe))->xte_stack_top->xteb_current);
+    chld_hash = (int32)((ptrlong)(((xml_tree_ent_t *)(xe))->xte_stack_top->xteb_current));
   else if (XE_IS_PERSISTENT (xe))
     chld_hash = (int32)(((xper_entity_t *)(xe))->xper_pos);
 /* No need in "if (XE_IS_LAZY (xe))", because there's no position in not-yet-loaded doc */
@@ -10353,6 +10357,55 @@ bif_xml_get_ns_uri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   ptrlong persistent = bif_long_arg (qst, args, 1, "__xml_get_ns_uri");
   caddr_t res = xml_get_ns_uri (((query_instance_t *)qst)->qi_client, pref, persistent, 0);
   return ((NULL == res) ? NEW_DB_NULL : res);
+}
+
+caddr_t
+bif_xml_ns_uname (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t pref = bif_string_or_uname_arg (qst, args, 0, "__xml_ns_uname");
+  caddr_t local = bif_string_or_uname_arg (qst, args, 1, "__xml_ns_uname");
+  caddr_t ns_uri = xml_get_ns_uri (((query_instance_t *)qst)->qi_client, pref, 0xffff, 0);
+  caddr_t res;
+  if (NULL == ns_uri)
+    sqlr_new_error ("22023", "SR648", "Unknown XML namespace prefix \"%.50s\"", pref);
+  BOX_DV_UNAME_CONCAT (res, ns_uri, local);
+  dk_free_box (ns_uri);
+  return res;
+}
+
+caddr_t
+bif_xml_ns_iristr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t pref = bif_string_or_uname_arg (qst, args, 0, "__xml_ns_iristr");
+  caddr_t local = bif_string_or_uname_arg (qst, args, 1, "__xml_ns_iristr");
+  caddr_t ns_uri = xml_get_ns_uri (((query_instance_t *)qst)->qi_client, pref, 0xffff, 0);
+  caddr_t res;
+  if (NULL == ns_uri)
+    sqlr_new_error ("22023", "SR648", "Unknown XML namespace prefix \"%.50s\"", pref);
+  res = box_dv_short_concat (ns_uri, local);
+  dk_free_box (ns_uri);
+  box_flags (res) = BF_IRI;
+  return res;
+}
+
+caddr_t
+bif_xml_nsexpand_iristr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t src = bif_string_or_uname_arg (qst, args, 0, "__xml_nsexpand_iristr");
+  const char *colon = strchr (src, ':');
+  caddr_t ns_pref, ns_uri;
+  caddr_t res;
+  if (NULL == colon)
+    sqlr_new_error ("22023", "SR649", "No XML namespace prefix in string \"%.200s\"", src);
+  ns_pref = box_dv_short_nchars (src, colon - src);
+  ns_uri = xml_get_ns_uri (((query_instance_t *)qst)->qi_client, ns_pref, 0xffff, 0);
+  dk_free_box (ns_pref);
+  if (NULL == ns_uri)
+    sqlr_new_error ("22023", "SR648", "Unknown XML namespace prefix in IRI \"%.200s\"", src);
+  res = box_dv_short_strconcat (ns_uri, colon+1);
+  dk_free_box (ns_uri);
+  box_flags (res) = BF_IRI;
+  return res;
 }
 
 caddr_t
@@ -10640,6 +10693,9 @@ xml_tree_init (void)
   bif_define ("__xml_set_ns_decl", bif_xml_set_ns_decl);
   bif_define ("__xml_get_ns_prefix", bif_xml_get_ns_prefix);
   bif_define ("__xml_get_ns_uri", bif_xml_get_ns_uri);
+  bif_define ("__xml_ns_uname", bif_xml_ns_uname);
+  bif_define ("__xml_ns_iristr", bif_xml_ns_iristr);
+  bif_define ("__xml_nsexpand_iristr", bif_xml_nsexpand_iristr);
   bif_define ("__xml_get_all_ns_decls", bif_xml_get_all_ns_decls);
   bif_define ("__xml_remove_ns_by_prefix", bif_xml_remove_ns_by_prefix);
   bif_define ("__xml_clear_all_ns_decls", bif_xml_clear_all_ns_decls);

@@ -108,7 +108,7 @@ aq_thread_func (aq_thread_t * aqt)
       if (aq->aq_deleted && !aq->aq_n_threads)
 	{
 	  mutex_leave (aq->aq_mtx);
-	  aq_free (aq);
+	  dk_free_box (aq);
 	}
       else
 	mutex_leave (aq->aq_mtx);
@@ -212,6 +212,7 @@ aqr_free (aq_request_t * aqr)
 {
   assert (AQR_DONE == aqr->aqr_state);
   dk_free_tree (aqr->aqr_args);
+  dk_free_tree (aqr->aqr_value);
   dk_free_tree (aqr->aqr_error);
   dk_free ((caddr_t) aqr, sizeof (aq_request_t));
 }
@@ -268,6 +269,8 @@ aq_wait (async_queue_t * aq, int req_no, caddr_t * err, int wait)
 }
 
 
+int aq_wait_last_first = 1;
+
 caddr_t
 aq_wait_all (async_queue_t * aq, caddr_t * err_ret)
 {
@@ -277,6 +280,24 @@ aq_wait_all (async_queue_t * aq, caddr_t * err_ret)
   ptrlong req_no;
   aq_request_t *aqr;
   mutex_enter (aq->aq_mtx);
+  if (aq_wait_last_first && aq->aq_queue.bsk_data.longval)
+    {
+      aq_request_t * last = aq->aq_queue.bsk_prev->bsk_data.ptrval;
+      if (last && AQR_DONE != last->aqr_state)
+	{
+	  int last_req = last->aqr_req_no;
+	  mutex_leave (aq->aq_mtx);
+	  v = aq_wait (aq, last_req, &err, 1);
+	  dk_free_tree (v);
+	  if (err_ret && err)
+	    {
+	      *err_ret = err;
+	      return NULL;
+	    }
+	  dk_free_tree (err);
+	  mutex_enter (aq->aq_mtx);
+	}
+    }
   do
     {
       dk_hash_iterator (&hit, aq->aq_requests);
@@ -365,16 +386,16 @@ aq_free (async_queue_t * aq)
 	  mutex_leave (aq->aq_mtx);
 	  return 1;
 	}
-      {
-	dk_hash_iterator_t hit;
-	aq_request_t *aqr;
-	void *reqno;
-	dk_hash_iterator (&hit, aq->aq_requests);
-	while (dk_hit_next (&hit, &reqno, (void **) &aqr))
-	  aqr_free (aqr);
-      }
-      mutex_leave (aq->aq_mtx);
     }
+  {
+    dk_hash_iterator_t hit;
+    aq_request_t *aqr;
+    void *reqno;
+    dk_hash_iterator (&hit, aq->aq_requests);
+    while (dk_hit_next (&hit, &reqno, (void **) &aqr))
+      aqr_free (aqr);
+  }
+  mutex_leave (aq->aq_mtx);
 #ifdef MTX_DEBUG
   aq->aq_requests->ht_required_mtx = NULL;
 #endif
@@ -428,13 +449,14 @@ aq_sql_func (caddr_t * av, caddr_t * err_ret)
       cli_qual (cli), CLI_OWNER (cli));
   query_t *proc = full_name ? sch_proc_def (wi_inst.wi_schema, full_name) : NULL;
   dk_free_box (av);
-  dk_free_box (fn);
   if (!proc)
     {
-      dk_free_tree ((caddr_t) params);
       *err_ret = srv_make_new_error ("42001", "AQ...", "undefined procedure %.300s in aq_request()", full_name ? full_name : ((DV_STRING == DV_TYPE_OF (fn)) ? fn : "<no name>"));
+      dk_free_box (fn);
+      dk_free_tree ((caddr_t) params);
       return NULL;
     }
+  dk_free_box (fn);
   if (proc->qr_to_recompile)
     {
       *err_ret = NULL;

@@ -263,7 +263,7 @@
                           <v:url name="b_url32" value="--'Roles'" format="%s" url="--'accounts_page.vspx?page=2'" xhtml_class="uddi"/>
                         </td>
                         <td class="page_tab" align="center">
-			  <v:url name="b_url14" value="Grants"  url="accounts_page.vspx?page=3" xhtml_class="uddi"/>
+			  <v:url name="b_url14" value="Grants"  url="-- case when self.mode = 'edit' then sprintf ('caps_browser.vspx?mode=edit&user_name=%U', self.user_name) else 'accounts_page.vspx?page=3' end" xhtml_class="uddi"/>
                         </td>
                         <td class="page_tab" align="center">
 			  <v:url name="b_url15" value="LDAP Import"  url="ldap_import.vspx" xhtml_class="uddi"/>
@@ -754,7 +754,13 @@
 		<tr>
 		    <td>
 			<input type="checkbox" name="cb_key" value="<?V xenc_key ?>" />
-			<?V xenc_key ?> (<?V xenc_type ?>)
+			<?V xenc_key ?> (<?V xenc_type ?>) 
+		    </td>
+		    <td>
+			<?vsp if (xenc_type = 'X.509') { ?>
+			<v:url name="dwn1" value="Download" render-only="1" 
+			    url="--sprintf ('sec_pki_download.vsp?key=%U&user=%U', xenc_key, self.user_name)"/>
+			<?vsp } ?>
 		    </td>
 		</tr>
 		<?vsp
@@ -762,7 +768,7 @@
 		   }
 		if (i = 0)
 	  	  {
-		     http ('<tr><td>~no keys available~</td></tr>');
+		     http ('<tr><td colspan="2">~no keys available~</td></tr>');
 		   }
 		?>
 	    </table>

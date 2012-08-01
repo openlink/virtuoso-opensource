@@ -38,12 +38,18 @@ extern "C" {
 
 #ifdef DEBUG
 #define SPARYYDEBUG
+#else
+#undef SPARQL_DEBUG
 #endif
 
 #ifdef SPARQL_DEBUG
 #define spar_dbg_printf(x) printf x
+#define SPARQL_DBG_NAME(nm) dbg_##nm
+#define SPARQL_DBG_PARAMS const char *file, int line,
 #else
 #define spar_dbg_printf(x)
+#define SPARQL_DBG_NAME
+#define SPARQL_DBG_PARAMS
 #endif
 
 /*! Number of NULLs should match number of fields in rdf_val_range_t */
@@ -75,6 +81,8 @@ extern "C" {
 #define SPAR_MIN_TREE_TYPE	(ptrlong)1001
 #define SPAR_MAX_TREE_TYPE	(ptrlong)1024	/* Don't forget to adjust */
 /* Don't forget to update spart_count_specific_elems_by_type(), sparp_tree_full_clone_int(), sparp_tree_full_copy(), spart_dump() and comments inside typedef struct spar_tree_s */
+
+#define SPAR_BOP_EQ		(ptrlong)1051	/*!< An equality that is not optimized into an equivalence class */
 
 #define SPAR_BIF_ABS		(ptrlong)1101
 #define SPAR_BIF_BNODE		(ptrlong)1102
@@ -130,8 +138,6 @@ extern "C" {
 
 #define SPARP_MAX_LEXDEPTH 50
 #define SPARP_MAX_SYNTDEPTH SPARP_MAX_LEXDEPTH+10
-
-#define SPARP_MAXLIMIT -1 /*!< Default value for LIMIT clause of SELECT */
 
 #define SPARP_CALLARG	1 /*!< The parser reads the macro call */
 #define SPARP_DEFARG	2 /*!< The parser reads the arglist of a defmacro and remembers variable names as is in order to know what should be substituted in body */
@@ -253,6 +259,7 @@ typedef struct sparp_env_s
     caddr_t		spare_output_dict_format_name;	/*!< Overrides generic \c spare_output_format_name for "dictionary of triples" result sets, like CONSTRUCT and DESCRIBE */
     caddr_t		spare_output_route_name;	/*!< Name of procedure that makes a decision re. method of writing SPARUL results (quad storage / DAV file / something else) */
     caddr_t		spare_output_storage_name;	/*!< Name of quad_storage_t JSO object to control the use of quad mapping at SPARUL output side */
+    caddr_t		spare_output_compose_report;	/*!< Boxed non-NULL number that indicates wither a verbose report string should be created (value of 1) or just a number of changes (value of 0) */
     caddr_t		spare_output_maxrows;		/*!< boxed maximum expected number of rows to return */
     caddr_t		spare_storage_name;		/*!< Name of quad_storage_t JSO object to control the use of quad mapping at input side and maybe at SPARUL output side */
     caddr_t		spare_inference_name;		/*!< Name of inference rule set to control the expansion of types */
@@ -338,6 +345,7 @@ typedef struct sparp_s {
 #endif
   ccaddr_t sparp_text;
   int sparp_permitted_syntax;		/*!< Bitmask of permitted syntax extensions, 0 for default */
+  int sparp_inner_permitted_syntax;	/*!< The value of last define lang:dialect, it will be assigned to sparp_permitted_syntax for the subquery, -1 before set */
   int sparp_unictr;			/*!< Unique counter for objects */
 /* Environment of yacc */
   sparp_env_t * sparp_env;
@@ -348,7 +356,7 @@ typedef struct sparp_s {
   int sparp_in_precode_expn;		/*!< If nonzero (usually 1) then the parser reads precode-safe expression so it can not contain non-global variables, if bit 2 is set then even global variables are prohibited (like it is in INSERT DATA statement) */
   int sparp_allow_aggregates_in_expn;	/*!< The parser reads result-set expressions, GROUP BY, ORDER BY, or HAVING. Each bit is responsible for one level of nesting. */
   int sparp_query_uses_aggregates;	/*!< Nonzero if there is at least one aggregate in the whole source query, (not in the current SELECT!). This is solely for bypassing expanding top retvals for "plain SPARQL" queries, not for other logic of the compiler */
-  int sparp_query_uses_sinvs;		/*!< Nonzero if there is at least one SERVICE invocation in the whole source query, (not in the current SELECT!). This forces (re) composing of \c sinv.param_varnames and \c sinv.retval_varnames lists */
+  int sparp_query_uses_sinvs;		/*!< Nonzero if there is at least one SERVICE invocation in the whole source query, (not in the current SELECT!). This forces (re) composing of \c sinv.param_varnames and \c sinv.rset_varnames lists */
   int sparp_disable_big_const;		/*!< INSERT DATA requires either an sql_comp_t for ssl or define sql:big-data-const 0. The define sets this value to 1 */
   dk_set_t sparp_created_jsos;		/*!< Get-keyword style list of created JS objects. Object IRIs are keys, types (as free-text const char *) are values. This is solely for early (and incomplete) detection of probable errors. */
 /* Environment of lex */
@@ -388,9 +396,7 @@ typedef struct sparp_s {
   caddr_t sparp_immortal_exec_uname;	/*!< Cached value returned by spar_immortal_exec_uname(). Do not use directly, call spar_immortal_exec_uname() instead! */
   caddr_t sparp_gs_app_callback;	/*!< NULL or name of application-specific callback function */
   caddr_t sparp_gs_app_uid;		/*!< NULL or ID (supposedly app user ID) for application-specific callback */
-#ifdef DEBUG
   int sparp_internal_error_runs_audit;	/*!< Flags whether the sparp_internal_error has called audit so inner sparp_internal_error should not try to re-run audit or signal but should simply report */
-#endif
 } sparp_t;
 
 
@@ -552,7 +558,7 @@ typedef struct spar_tree_s
         caddr_t iri;
         SPART *expn;
       } graph;
-    struct {
+    struct { /* Note that all first members of \c lit case should match to \c qname case */
         /* #define SPAR_LIT		(ptrlong)1009 */
         caddr_t val;
         caddr_t datatype;
@@ -572,13 +578,14 @@ typedef struct spar_tree_s
         SPART **orig_retvals;		/*!< Retvals as they were after expanding '*' and wrapping in MAX() */
         SPART **expanded_orig_retvals;	/*!< Retvals as they were after expanding '*' and wrapping in MAX() and adding vars to grab */
         caddr_t retselid;
-        SPART **sources;
-        SPART *pattern;
-        SPART **groupings;
-        SPART *having;
-        SPART **order;
-        SPART *limit;
-        SPART *offset;
+        SPART **sources;		/*!< Ordered list of FROM, FROM NAMED, NOT FROM and NOT FROM NAMED clauses */
+        SPART *pattern;			/*!< Top-level group pattern that comes from WHERE {...} clause */
+        SPART **groupings;		/*!< NULL or array of grouping expressions */
+        SPART *having;			/*!< NULL or HAVING expression */
+        SPART **order;			/*!< NULL or array of column numbers or oby expressions */
+        SPART *limit;			/*!< NULL or limit expression (boxed integer or a precode) */
+        SPART *offset;			/*!< NULL or offset expression (boxed integer or a precode) */
+        SPART *binv;			/*!< NULL or SPAR_BINDINGS_INV */
         sparp_env_t *shared_spare;	/*!< An environment that is shared among all clones of the tree */
       } req_top;
     struct {
@@ -660,6 +667,7 @@ typedef struct spar_tree_s
         SPART **obys;		/*!< Array of ORDER BY criteria */
         SPART *lim;		/*!< Boxed LIMIT value or an expression tree */
         SPART *ofs;		/*!< Boxed OFFSET value or an expression tree */
+        SPART *binv;		/*!< NULL or SPAR_BINDINGS_INV */
       } wm;
     struct {
         /* define SPAR_SERVICE_INV	(ptrlong)1020 */
@@ -677,8 +685,12 @@ typedef struct spar_tree_s
     struct {
         /* define SPAR_BINDINGS_INV		(ptrlong)1021 */
         ptrlong own_idx;	/*!< Serial of the bindings invocation in the parser */
-        SPART *vars;		/*!< Names of variables that are passed as parameters */
+        SPART **vars;		/*!< Names of variables that are passed as parameters */
         SPART ***data_rows;	/*!< Rows of data. Note that they're not copied from spare_bindings_rowset and not duplicated if enclosing GP is duplicated. */
+        char *data_rows_mask;	/*!< Characters, one per data row, indicating whether the row is in use (char '/') or not in use due to ban by some cell (char '0' + column index or '\x7f', whatever is less, for debugging) */
+        ptrlong *counters_of_unbound;	/*!< Counters of unbound values in columns (rows not in use are excluded from counting). Cheating: This array is allocated as DV_STRING, not DV_ARRAY_OF_POINTER */
+        ptrlong rows_in_use;	/*!< Count of rows still in use */
+        ptrlong rows_last_rvr;	/*!< Count of rows in use when rvrs were refreshed last time */
       } binv;
     struct {
         /* define SPAR_DEFMACRO			(ptrlong)1022 */
@@ -723,7 +735,7 @@ extern SPART **t_spartlist_concat (SPART **list1, SPART **list2);
 #endif
 
 extern sparp_t * sparp_query_parse (const char * str, spar_query_env_t *sparqre, int rewrite_all);
-extern int sparyyparse (void *sparp);
+extern int sparyyparse (sparp_t *sparp_arg);
 /*! Finds storage by name and sets it, it also finds associated macro library (it it is set of the storage) and copies macro defs from the library
 The search for associated macro lib is disabled if the statement contains CREATE MACRO LIBRARY clause */
 extern void sparp_configure_storage_and_macro_libs (sparp_t *sparp);
@@ -752,9 +764,12 @@ extern void spart_dump (void *tree_arg, dk_session_t *ses, int indent, const cha
 #define SPAR_LIT_OR_QNAME_VAL(tree) \
   ((DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree)) ? ((caddr_t)(tree)) : \
    ((SPAR_LIT == (tree)->type) || (SPAR_QNAME == (tree)->type)/* || (SPAR_QNAME_NS == tree->type)*/) ? (tree)->_.lit.val : NULL )
+/* Cheating above: (tree)->_.lit.val is used both "as is" and as a replacement of (tree)->_.qname.val */
 
 #define SPART_VARNAME_IS_GLOB(varname) (':' == (varname)[0])
 #define SPART_VARNAME_IS_SPECIAL(varname) ('@' == (varname)[0])
+#define SPART_VARNAME_IS_BNODE(varname) (('_' == (varname)[0]) && ('_' == (varname)[1]))
+#define SPART_VARNAME_IS_PLAIN(varname) (!SPART_VARNAME_IS_GLOB((varname)) && !SPART_VARNAME_IS_SPECIAL((varname)) && (NULL == strchr ((varname), '>')))
 #define SPART_IRI_IS_NAMED_BNODE(iri) (('_' == (iri)[0]) && (':' == (iri)[1]))
 
 #define SPART_IS_DEFAULT_GRAPH_BLANK(g) ( \
@@ -834,9 +849,18 @@ extern caddr_t spar_mkid (sparp_t * sparp, const char *prefix);
 extern void spar_change_sign (caddr_t *lit_ptr);
 
 extern void sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t value);
+#ifdef SPARQL_DEBUG
+#define spar_selid_push(sparp) dbg_spar_selid_push (__FILE__, __LINE__, (sparp))
+#define spar_selid_push_reused(sparp,selid) dbg_spar_selid_push_reused (__FILE__, __LINE__, (sparp), (selid))
+#define spar_selid_pop(sparp) dbg_spar_selid_pop (__FILE__, __LINE__, (sparp))
+extern caddr_t dbg_spar_selid_push (const char *file, int line, sparp_t *sparp);
+extern caddr_t dbg_spar_selid_push_reused (const char *file, int line, sparp_t *sparp, caddr_t selid);
+extern caddr_t dbg_spar_selid_pop (const char *file, int line, sparp_t *sparp);
+#else
 extern caddr_t spar_selid_push (sparp_t *sparp);
 extern caddr_t spar_selid_push_reused (sparp_t *sparp, caddr_t selid);
 extern caddr_t spar_selid_pop (sparp_t *sparp);
+#endif
 
 extern SPART *spar_find_defmacro_by_iri_or_fields (sparp_t *sparp, caddr_t mname, SPART **fields);
 extern void sparp_defmacro_store (sparp_t *sparp, SPART *defm);
@@ -878,14 +902,14 @@ extern void spar_optimize_retvals_of_insert_or_delete (sparp_t *sparp, SPART *to
 extern void spar_optimize_retvals_of_modify (sparp_t *sparp, SPART *top);
 extern SPART **spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, SPART *limit, SPART *offset);
 extern void spar_add_rgc_vars_and_consts_from_retvals (sparp_t *sparp, SPART **retvals);
-extern SPART *spar_make_wm (sparp_t *sparp, SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset);
+extern SPART *spar_make_wm (sparp_t *sparp, SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset, SPART *binv);
 /*! Creates SPAR_REQ_TOP tree or a codegen for some special case. A macroexpansion is made before recognizing special cases. */
 extern SPART *spar_make_top_or_special_case_from_wm (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   caddr_t retselid, SPART *wm );
-extern void spar_alloc_fake_equivs_for_bindings_inv (sparp_t *sparp, SPART *binv);
+extern SPART *spar_make_bindings_inv_with_fake_equivs (sparp_t *sparp, SPART **vars, SPART ***data_rows);
 extern SPART **spar_make_sources_like_top (sparp_t *sparp, ptrlong top_subtype);
 extern SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
-  caddr_t retselid, SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset);
+  caddr_t retselid, SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset, SPART *binv);
 extern SPART *spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri_or_pair, SPART **options);
 extern SPART *spar_make_param_or_variable (sparp_t *sparp, caddr_t name);
 extern SPART *spar_make_variable (sparp_t *sparp, caddr_t name);
@@ -904,6 +928,7 @@ extern SPART *sparp_make_macro_call (sparp_t *sparp, caddr_t funname, int call_i
 extern int sparp_namesake_macro_param (sparp_t *sparp, SPART *dm, caddr_t param_name);
 extern SPART *spar_make_sparul_clear (sparp_t *sparp, SPART *graph_precode, int silent);
 extern SPART *spar_make_sparul_load (sparp_t *sparp, SPART *graph_precode, SPART *src_precode, int silent);
+extern SPART *spar_make_sparul_load_service_data (sparp_t *sparp, SPART *proxy_iri_precode, SPART *service_iri_precode, int silent);
 extern SPART *spar_make_sparul_create (sparp_t *sparp, SPART *graph_precode, int silent);
 extern SPART *spar_make_sparul_drop (sparp_t *sparp, SPART *graph_precode, int silent);
 extern SPART *spar_make_sparul_copymoveadd (sparp_t *sparp, ptrlong opcode, SPART *from_graph_precode, SPART *to_graph_precode, int silent);

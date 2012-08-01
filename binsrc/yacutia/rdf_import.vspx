@@ -128,7 +128,13 @@ declare _file, _graph, is_ttl, is_xml any;
       exec (sprintf ('sparql load "%s" into <%s>', uri, _graph));
       goto end_post;
     }
-
+    declare magic any;
+    if (length (_file) > 2)
+      {
+        magic := subseq (_file, 0, 2);
+	if (magic[0] = 0hex1f and magic[1] = 0hex8b)
+	  _file := gzip_uncompress (_file);
+      }
     is_ttl := 1;
     {
       declare continue handler for SQLSTATE '*'

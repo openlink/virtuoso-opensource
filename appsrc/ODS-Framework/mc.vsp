@@ -44,7 +44,7 @@
        digest := sha1_digest (mbox);
        id := sprintf ('http://%{URIQADefaultHost}s/mv/data/') || bin2hex (cast (decode_base64 (digest) as varbinary));
        mu := 'mailto:' || mbox;
-       ep := sprintf ('http://%{URIQADefaultHost}s/sparql/');
+       ep := sprintf ('http://%{URIQADefaultHost}s/sparql-auth/');
        sparql insert into graph iri ('http://localhost/mv') 
 	  { 
              `iri (?:id)` <http://vocab.deri.ie/void#inDataset> <http://localhost/mv> .

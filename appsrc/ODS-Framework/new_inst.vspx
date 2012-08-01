@@ -335,12 +335,12 @@
       }
       self.ilic := self.ilic1.ufl_value;
       update WA_INSTANCE
-         set WAI_MEMBER_MODEL = self.imodel1.ufl_value,
+         set WAI_MEMBER_MODEL = atoi(self.imodel1.ufl_value),
              WAI_IS_PUBLIC = self.is_public,
              WAI_MEMBERS_VISIBLE = self.is_visible,
-             WAI_NAME = self.inst.wa_name,
-	           WAI_DESCRIPTION = self.idesc1.ufl_value,
-	           WAI_LICENSE = self.ilic1.ufl_value
+             WAI_NAME = cast (self.inst.wa_name as varchar),
+	           WAI_DESCRIPTION = cast (self.idesc1.ufl_value as varchar),
+	           WAI_LICENSE = cast (self.ilic1.ufl_value as varchar)
              where WAI_ID = id;
       -- VD creation
       {

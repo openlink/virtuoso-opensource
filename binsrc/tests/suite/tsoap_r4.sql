@@ -380,4 +380,3 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": echoVoidSoapHeader : " $LAST[1] "\n";
 
 ECHO BOTH "COMPLETED WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED: SOAP Interop IV tests\n";
-

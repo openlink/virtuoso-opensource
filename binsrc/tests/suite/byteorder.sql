@@ -97,5 +97,3 @@ ECHO BOTH ": BACKUP STATE: " $STATE "\n";
 select check_dav_blobs ('factbook.xml',                                                                      4222646);
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 ECHO BOTH ": BACKUP STATE: " $STATE "\n";
-
-

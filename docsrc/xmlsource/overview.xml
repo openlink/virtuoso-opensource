@@ -918,7 +918,7 @@ SPARQL ALTER QUAD STORAGE virtrdf:DefaultQuadStorage . . .
       <para>Virtuoso supports graph-level security, as described <link linkend="rdfgraphsecurity">here</link> 
       but not subject-level or predicate-level. When exposing data that needs protected access, triples 
       should be confined to private  name graphs which are protected by ACLs using WebID.</para>
-      <para>Note, how you can use <ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtAuthPolicyFOAFSSL">WebID to protect Virtuoso SPARQL endpoints</ulink>.</para>  
+      <para>Note, how you can use <ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSPARQLSecurityWebID">WebID to protect Virtuoso SPARQL endpoints</ulink>.</para>  
       <tip><title>See Also:</title>
         <para><link linkend="rdfgraphsecurity">RDF Graphs Security</link></para>
       </tip>
@@ -1181,34 +1181,85 @@ specific patch.
       <title>How Can I define graph with virt:rdf_sponger option set to "on"?</title>                    
       <para>Suppose we have the following scenario:</para>
       <orderedlist>
-        <listitem>Create Virtuoso user using Conductor.</listitem>
-        <listitem>Create for the user a RDF Sink folder.</listitem>        
-        <listitem>In the properties of the RDF sink folder add the following 
-          <emphasis>virt:rdf_graph</emphasis> option: 
+        <listitem>Create Virtuoso user using Conductor for ex. with name "john" and pwd 1.</listitem>
+        <listitem>Create for the user a RDF Sink folder for ex. with name "MySinkFolder" from type 
+        	"RDF Upload Folder" or use the <emphasis>rdf_sink</emphasis> folder created automatically 
+        	for your user.</listitem> 
+        <listitem>In the properties page of the RDF sink folder add in the WebDAV section this 
+        	property <emphasis>virt:rdf_graph</emphasis> with value: 
 <programlisting><![CDATA[
-http://localhost:8080/DAV/home/dba/rdf_sink/	
+http://host:port/DAV/home/<user-name>/<rdf-sink-folder>/
+
+-- So in our example it should be:
+http://localhost:8890/DAV/home/john/MySinkFolder/
 ]]></programlisting>
         </listitem>
-        <listitem>Set <emphasis>virt:rdf_sponger</emphasis> to "on".</listitem>
-        <listitem>Upload RDF files to the RDF Sink folder.</listitem>        
-        <listitem>As result the RDF data should be stored in graph 
-        	for ex. (depending on your folder name etc.): 
-<programlisting><![CDATA[
-http://local.virt/DAV/home/wa_sink/rdf_sink/wa_address_agents.rdf	
-]]></programlisting>
+        <listitem>Add another property virt:rdf_sponger with value "on". 
+          <figure id="sink1" float="1">
+            <title></title>
+            <graphic fileref="ui/sink1.png"/>
+          </figure>        	
         </listitem>
-        <listitem>In order to define any graph you want with the option from above, you should execute:
+        <listitem>Upload RDF files to the RDF Sink folder "MySinkFolder", for ex. upload file with name 
+        	"data.rdf":
+          <figure id="sink2" float="1">
+            <title></title>
+            <graphic fileref="ui/sink2.png"/>
+          </figure>         	
+        </listitem>        
+        <listitem>As result the RDF data should be stored in graph depending on your folder name etc.: 
 <programlisting><![CDATA[
-SQL>DAV_PROP_SET (davLocation,  'virt:rdf_graph', iri, _uid, _pwd);	
+http:///local.virt/DAV/home/<user-name>/<rdf-sink-folder>/<resource>
+
+-- So in our example it will be:
+http:///local.virt/DAV/home/john/MySinkFolder/data.rdf
+]]></programlisting>
+          <orderedlist>
+            <listitem>Go to http://host:port/sparql ; </listitem>
+            <listitem>Execute simple query to view the graph triples: 
+<programlisting><![CDATA[
+SELECT  * 
+FROM <http://local.virt/DAV/home/john/MySinkFolder/data.rdf>
+WHERE 
+  {
+    ?s ?p ?o
+  }	
+]]></programlisting>
+              <figure id="sink3" float="1">
+                <title></title>
+                <graphic fileref="ui/sink3.png"/>
+              </figure> 
+              <figure id="sink4" float="1">
+                <title></title>
+                <graphic fileref="ui/sink4.png"/>
+              </figure> 
+        </listitem>
+          </orderedlist>     
+        </listitem>
+        <listitem>In order to define any graph you want with the options from above, you should execute: 
+<programlisting><![CDATA[
+SQL> DAV_PROP_SET ('/DAV/home/<user-name>/<rdf-sink-folder>/',  'virt:rdf_graph', iri, <user-name>, <password>);
+
+-- So in our example it should be:
+SQL> DAV_PROP_SET ('/DAV/home/john/MySinkFolder/',  'virt:rdf_graph', 'http://mydata.com', 'john', '1');
 ]]></programlisting>
           <itemizedlist mark="bullet">
-            <listitem>Calling this function uses the given IRI as the graph IRI when sponging stuff 
-            	put in the rdf_sink/ collection davLocation.</listitem>
+            <listitem>Note: calling this function uses the given IRI as the graph IRI when sponging 
+            	stuff put in &lt;your-rdf-sink-folder&gt;.</listitem>
           </itemizedlist>            
         </listitem>
         <listitem>Finally you should execute the following command to get the RDF data from the new graph:
 <programlisting><![CDATA[
-SQL>SELECT DAV_PPROP_GET ('/DAV/home/dba/rdf_sink/', 'virt:rdf_graph','dba', 'dba');	
+SQL> SELECT DAV_PROP_GET ('/DAV/home/<user-name>/<your-rdf-sink-folder>/', 'virt:rdf_graph',<user-name>, <password>);
+
+-- So in our example it should be:
+SQL> SELECT DAV_PROP_GET ('/DAV/home/john/MySinkFolder/', 'virt:rdf_graph','john', '1');
+
+Query result:
+DAV_PROP_GET
+http://localhost:8890/DAV/home/john/MySinkFolder/
+
+No. of rows in result: 1 
 ]]></programlisting>
         </listitem>
         </orderedlist>
@@ -3139,7 +3190,7 @@ http://www.openlinksw.com/virtrdf-data-formats#sql-nvarchar-lang       20
       <title>What SPARQL Endpoint Protection Methods can I use?</title>	   
       <para>Virtuoso supports the following SPARQL Endpoint protection methods:</para>
       <orderedlist>
-        <listitem><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtAuthPolicyFOAFSSL">Secure SPARQL Endpoint Guide using WebID Protocol</ulink></listitem>
+        <listitem><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSPARQLSecurityWebID">Secure SPARQL Endpoint Guide using WebID Protocol</ulink></listitem>
         <listitem><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtOAuthSPARQL">Secure SPARQL Endpoint Guide via OAuth</ulink></listitem>
         <listitem><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSPARQLProtectSQLDigestAuthentication">Secure SPARQL Endpoint Guide via SQL Accounts -- usage path digest authentication</ulink></listitem>
       </orderedlist>

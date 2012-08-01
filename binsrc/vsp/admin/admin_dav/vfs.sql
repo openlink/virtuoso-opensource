@@ -2129,7 +2129,7 @@ create procedure WS.WS.SITEMAP_RDF_STORE (in _host varchar, in _url varchar, in 
     }
   if (url_ck like '%.rdf' or _c_type = 'application/rdf+xml')
     {
-      DB.DBA.RDF_LOAD_RDFXML (_content, base, graph, 3);
+      DB.DBA.RDF_LOAD_RDFXML (_content, base, graph, 0, 3);
     }
   else if (url_ck like '%.n3' or url_ck like '%.ttl' or url_ck like '%.nt' or _c_type = 'text/n3' or _c_type = 'text/rdf+n3')
     {

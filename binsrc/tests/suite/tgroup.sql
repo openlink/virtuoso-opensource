@@ -25,7 +25,7 @@
 --
 --
 
-echo both "Group By test\n";
+ECHO BOTH "Group By test\n";
 
 select count (word), LEFT (word, 2) from words group by 2 order by count (word);
 ECHO BOTH $IF $EQU $ROWCNT 379 "PASSED" "***FAILED";
@@ -56,68 +56,68 @@ ECHO BOTH $IF $EQU $ROWCNT 20 "PASSED" "***FAILED";
 ECHO BOTH ": " $ROWCNT " rows T1, gb ob exp\n";
 
 select top 500 word from words order by 1 desc;
-echo both $if $equ $last[1] "zootécnico" "PASSED" "*** FAILED";
-echo both ": 500th from end is " $last[1] "\n";
+ECHO BOTH $IF $EQU $LAST[1] "zootécnico" "PASSED" "***FAILED";
+ECHO BOTH ": 500th from end is " $LAST[1] "\n";
 
 select top 500 concat (word) from words order by 1 desc;
-echo both $if $equ $last[1] "zootécnico" "PASSED" "*** FAILED";
-echo both ": 500th from end sorted is " $last[1] "\n";
+ECHO BOTH $IF $EQU $LAST[1] "zootécnico" "PASSED" "***FAILED";
+ECHO BOTH ": 500th from end sorted is " $LAST[1] "\n";
 
 select top (100 + 400) word from words order by 1 desc;
-echo both $if $equ $last[1] "zootécnico" "PASSED" "*** FAILED";
-echo both ": plus exp top 500 is " $last[1] "\n";
+ECHO BOTH $IF $EQU $LAST[1] "zootécnico" "PASSED" "***FAILED";
+ECHO BOTH ": plus exp top 500 is " $LAST[1] "\n";
 
 select top ('500') word from words order by 1 desc;
-echo both $if $equ $last[1] "zootécnico" "PASSED" "*** FAILED";
-echo both ": cast exp end 500 is " $last[1] "\n";
+ECHO BOTH $IF $EQU $LAST[1] "zootécnico" "PASSED" "***FAILED";
+ECHO BOTH ": cast exp end 500 is " $LAST[1] "\n";
 
 select top ('500') concat (word) from words order by 1 desc;
-echo both $if $equ $last[1] "zootécnico" "PASSED" "*** FAILED";
-echo both ": cast sorted exp end 500 is " $last[1] "\n";
+ECHO BOTH $IF $EQU $LAST[1] "zootécnico" "PASSED" "***FAILED";
+ECHO BOTH ": cast sorted exp end 500 is " $LAST[1] "\n";
 
 select top -1 word from words;
-echo both $if $NEQ $STATE OK "PASSED" "*** FAILED";
-echo both ": negative top yelds STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": negative top yelds STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 select top -1,1 word from words;
-echo both $if $NEQ $STATE OK "PASSED" "*** FAILED";
-echo both ": negative skip part yelds STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": negative skip part yelds STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 select top 1,-2 word from words;
-echo both $if $NEQ $STATE OK "PASSED" "*** FAILED";
-echo both ": negative top part yelds STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": negative top part yelds STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 select top (-2) word from words;
-echo both $if $NEQ $STATE OK "PASSED" "*** FAILED";
-echo both ": negative calc top yelds STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": negative calc top yelds STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 select top (-1,1) word from words;
-echo both $if $NEQ $STATE OK "PASSED" "*** FAILED";
-echo both ": negative calc skip part yelds STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": negative calc skip part yelds STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 select top (1,-2) word from words;
-echo both $if $NEQ $STATE OK "PASSED" "*** FAILED";
-echo both ": negative calc top part yelds STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": negative calc top part yelds STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 select top 1,1 word from words order by 1 desc;
-echo both $if $equ $last[1] "úvea" "PASSED" "*** FAILED";
-echo both ": 2nd from end is " $last[1] "\n";
+ECHO BOTH $IF $EQU $LAST[1] "úvea" "PASSED" "***FAILED";
+ECHO BOTH ": 2nd from end is " $LAST[1] "\n";
 
 select top 1,1 concat (word) from words order by 1 desc;
-echo both $if $equ $last[1] "úvea" "PASSED" "*** FAILED";
-echo both ": 2nd from end sorted is " $last[1] "\n";
+ECHO BOTH $IF $EQU $LAST[1] "úvea" "PASSED" "***FAILED";
+ECHO BOTH ": 2nd from end sorted is " $LAST[1] "\n";
 
 select top 1,1 concat (word) from words order by word;
-echo both $if $equ $last[1] "aarónica" "PASSED" "*** FAILED";
-echo both ": 2nd skip exp from start " $last[1] "\n";
+ECHO BOTH $IF $EQU $LAST[1] "aarónica" "PASSED" "***FAILED";
+ECHO BOTH ": 2nd skip exp from start " $LAST[1] "\n";
 
 
 select top 5 len, word from words order by 1 desc;
 
 -- XXX: with ties sorted oby not supported
 --select top 5 with ties len, word from words order by 1 desc;
---echo both $if $equ $rowcnt 304 "PASSED" "*** FAILED";
---echo both ": " $rowcnt " top 5 length desc with ties\n";
+--ECHO BOTH $IF $EQU $ROWCNT 304 "PASSED" "***FAILED";
+--ECHO BOTH ": " $ROWCNT " top 5 length desc with ties\n";
 
 -- suite for bug 2094
 DROP TABLE B2094;

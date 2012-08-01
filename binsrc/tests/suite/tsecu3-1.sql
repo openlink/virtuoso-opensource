@@ -268,24 +268,24 @@ ECHO BOTH ": Granting privileges WITHOUT permission: STATE=" $STATE " MESSAGE=" 
 ECHO BOTH "COMPLETED WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED: " $ARGV[4] "  -- Privileges of user " $ARGV[2] ", part 1\n";
 
 select ROW_NO from U1_T1;
-echo both $if $equ $rowcnt 20 "PASSED" "***FAILED";
-echo both ": U1_T1 view granted to U3\n";
+ECHO BOTH $IF $EQU $ROWCNT 20 "PASSED" "***FAILED";
+ECHO BOTH ": U1_T1 view granted to U3\n";
 
 select * from U1_T2;
-echo both $if $equ $rowcnt 13 "PASSED" "***FAILED";
-echo both ": U1_T2 view granted to U3\n";
+ECHO BOTH $IF $EQU $ROWCNT 13 "PASSED" "***FAILED";
+ECHO BOTH ": U1_T2 view granted to U3\n";
 
 
 update U1_T1_V set STRING1 = concat ('--', STRING1);
-echo both $if $equ $rowcnt 20 "PASSED" "***FAILED";
-echo both $rowcnt " update of U1_T1_V by U3 \n";
+ECHO BOTH $IF $EQU $ROWCNT 20 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " update of U1_T1_V by U3 \n";
 
 update SEC_T1 set STRING1 = '111';
-echo both $if $equ $state 42000 "PASSED" "***FAILED";
-echo both $state " for ungranted update of SEC_T1\n";
+ECHO BOTH $IF $EQU $STATE 42000 "PASSED" "***FAILED";
+ECHO BOTH ": " $STATE " for ungranted update of SEC_T1\n";
 
 update u1_tt set d = 31;
 
 select d2 from u1_tt;
-echo both $if $equ $last[1] 31 "PASSED" "***FAILED";
-echo both ": u1 granted update on non-granted trigger action = " $last[1] "\n";
+ECHO BOTH $IF $EQU $LAST[1] 31 "PASSED" "***FAILED";
+ECHO BOTH ": u1 granted update on non-granted trigger action = " $LAST[1] "\n";

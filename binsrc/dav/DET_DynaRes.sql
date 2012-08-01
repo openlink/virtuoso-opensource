@@ -122,7 +122,7 @@ create function "DynaRes_DAV_AUTHENTICATE_HTTP" (in id any, in what char(1), in 
           return a_uid;
 
         return rc;
-    }
+      }
     }
   if (isinteger (a_uid))
     {
@@ -494,13 +494,13 @@ create function "DynaRes_DAV_SEARCH_ID" (in detcol_id any, in path_parts any, in
 create function "DynaRes_DAV_SEARCH_PATH" (in id any, in what char(1)) returns any
 {
   -- dbg_obj_princ ('DynaRes_DAV_SEARCH_PATH (', id, what, ')');
-  if (what <> 'R')    
-  return NULL;
+  if (what <> 'R')
+    return NULL;
   for select DR_NAME from WS.WS.DYNA_RES where DR_RES_ID = id[3] and DR_DETCOL_ID = id[1] do
     {
       return concat (DAV_SEARCH_PATH (id[1], 'C'), DR_NAME);
-    }  
-  return null;  
+    }
+  return null;
 }
 ;
 

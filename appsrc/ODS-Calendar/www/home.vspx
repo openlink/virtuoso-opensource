@@ -83,10 +83,9 @@
 
   <v:method name="actionTest" arglist="">
     <![CDATA[
-      declare tmp, kind, params, permissions any;
+      declare tmp, params, permissions any;
 
       params := self.vc_page.vc_event.ve_params;
-
       tmp := get_keyword ('id', params, '');
       if (tmp <> '')
       {
@@ -102,10 +101,10 @@
           {
             self.cAction := 'view';
           }
-          kind := CAL.WA.event_kind (self.v_id);
-          if ((kind = 'event') and (self.cScope in ('tasks', 'search')))
+          self.cSubAction := CAL.WA.event_kind (self.v_id);
+          if ((self.cSubAction = 'event') and (self.cScope not in ('tasks', 'search')))
             self.cScope := 'events';
-          if (kind = 'task')
+          if (self.cSubAction = 'task')
             self.cScope := 'tasks';
         }
       }
@@ -248,9 +247,9 @@
       R := self.showEventSubjectTmp (_id, e_event, e_subject, e_repeat, e_reminder, e_attendees);
       if (e_event = 1)
       {
-        T := sprintf ('<div id="e_%d_%s" class="EV vevent" typeof="sioct:EventCalendar" %s %s about="%V">%s%s%s<span style="display:none;">%s</span>%s</div>', _id, S, color, onclick, SIOC..calendar_event_iri (domain_id, _id), e_continue, showDelete, showAnnotate, self.prepareField (e_start, 'dtstart', null), R);
+        T := sprintf ('<div id="e_%d_%s" class="EV vevent" typeof="sioct:EventCalendar" %s %s about="%V">%s%s%s<span style="display:none;">%s</span>%s</div>', _id, S, color, onclick, CAL.WA.event_sioc_iri (domain_id, _id), e_continue, showDelete, showAnnotate, self.prepareField (e_start, 'dtstart', null), R);
       } else {
-        T := sprintf ('<div id="e_%d_%s" class="EV vevent" typeof="sioct:EventCalendar" %s %s about="%V">%s%s%s<span class="EV_time">%s-%s</span>%s</div>', _id, S, color, onclick, SIOC..calendar_event_iri (domain_id, _id), e_continue, showDelete, showAnnotate, self.prepareField (e_start, 'dtstart', CAL.WA.dt_timestring (e_start)), self.prepareField (e_end, 'dtend', CAL.WA.dt_timestring (e_end)), R);
+        T := sprintf ('<div id="e_%d_%s" class="EV vevent" typeof="sioct:EventCalendar" %s %s about="%V">%s%s%s<span class="EV_time">%s-%s</span>%s</div>', _id, S, color, onclick, CAL.WA.event_sioc_iri (domain_id, _id), e_continue, showDelete, showAnnotate, self.prepareField (e_start, 'dtstart', CAL.WA.dt_timestring (e_start)), self.prepareField (e_end, 'dtend', CAL.WA.dt_timestring (e_end)), R);
       }
       return T;
     ]]>
@@ -352,7 +351,7 @@
       onclick := '';
       if (not DB.DBA.is_empty_or_null (self.sid))
         onclick := sprintf ('onclick="javascript: eView(\'e_%d\'); return false;"', _id);
-      return sprintf ('<a id="e_%d" href="%s" %s class="EVL EVL_subject app" about="%V"> %s%s%s%s</a>', _id, CAL.WA.utf2wide (SIOC..calendar_event_iri(domain_id, _id)), onclick, CAL.WA.utf2wide (SIOC..calendar_event_iri(domain_id, _id)), self.repeatableImage (e_repeat), self.reminderImage (e_reminder), self.attendeesImage (e_attendees), self.prepareField (CAL.WA.show_subject (e_subject), 'summary', null));
+      return sprintf ('<a id="e_%d" href="%s" %s class="EVL EVL_subject app" about="%V"> %s%s%s%s</a>', _id, CAL.WA.utf2wide (CAL.WA.event_sioc_iri (domain_id, _id)), onclick, CAL.WA.utf2wide (CAL.WA.event_sioc_iri(domain_id, _id)), self.repeatableImage (e_repeat), self.reminderImage (e_reminder), self.attendeesImage (e_attendees), self.prepareField (CAL.WA.show_subject (e_subject), 'summary', null));
     ]]>
   </v:method>
 
@@ -405,7 +404,7 @@
     <![CDATA[
       if (coalesce (eAttendees, -1) <= 0)
         return '';
-      return '<img border="0" width="11" height="11" title="Has Attendees" alt="Has Attendees" src="image/group_16.png" /> ';
+      return '<img border="0" width="11" height="11" title="Has Attendees" alt="Has Attendees" src="/ods/images/icons/group_16.png" /> ';
     ]]>
   </v:method>
 
@@ -749,7 +748,7 @@
         }
       }
       self.v_grants := trim (self.v_grants, ',');
-      self.v_acl := serialize (DB.DBA.wa_acl_params (params));
+      self.v_acl := serialize (DB.DBA.wa_aci_params (params));
 
       CAL.WA.test (self.v_subject, vector('name', 'Name', 'class', 'varchar', 'minLength', 0, 'maxLength', 255));
       CAL.WA.test (self.v_location, vector('name', 'Location', 'class', 'varchar', 'minLength', 0, 'maxLength', 255));
@@ -933,7 +932,7 @@
         }
       }
       self.v_grants := trim (self.v_grants, ',');
-      self.v_acl := serialize (DB.DBA.wa_acl_params (params));
+      self.v_acl := serialize (DB.DBA.wa_aci_params (params));
 
       CAL.WA.test (self.v_subject, vector('name', 'Name', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
       CAL.WA.test (self.v_tags, vector ('name', 'Tags', 'class', 'tags'));
@@ -1517,7 +1516,7 @@
             <table cellspacing="0">
               <tr>
                 <th width="30%">
-                  <v:label for="" value="Space delimited keyword list" />
+                        <vm:label for="" value="Space delimited keyword list" />
                 </th>
                 <td>
                         <v:text name="s_keywords" value="--CAL.WA.xml_get ('keywords', self.cSearch)" fmt-function="CAL.WA.utf2wide" xhtml_class="textbox" xhtml_size="60" />
@@ -2374,7 +2373,7 @@
               <table class="form-body" cellspacing="0">
             <tr>
                   <th width="25%">
-                    <v:label for="e_subject" value="Name" />
+                          <vm:label for="e_subject" value="Name" />
               </th>
               <td>
                           <v:text name="e_subject" xhtml_id="e_subject" null-value="''" value="--self.v_subject" fmt-function="CAL.WA.utf2wide" xhtml_class="textbox" xhtml_size="60" />
@@ -2487,7 +2486,7 @@
             </tr>
             <tr>
                   <th valign="top">
-                <v:label for="e_description" value="Description"/>
+                          <vm:label for="e_description" value="Description" />
               </th>
               <td>
                           <v:textarea name="e_description" xhtml_id="e_description" null-value="--''" value="--self.v_description" fmt-function="CAL.WA.utf2wide" xhtml_cols="45" xhtml_rows="6" />
@@ -2495,10 +2494,10 @@
             </tr>
             <tr>
               <th>
-                <v:label for="e_location" value="Location"/>
+                          <vm:label for="e_location" value="Location" />
               </th>
               <td>
-                          <v:text name="e_location" null-value="''" value="--self.v_location" fmt-function="CAL.WA.utf2wide" xhtml_class="textbox" xhtml_size="60" />
+                          <v:text name="e_location" xhtml_id="e_location" null-value="''" value="--self.v_location" fmt-function="CAL.WA.utf2wide" xhtml_class="textbox" xhtml_size="60" />
               </td>
             </tr>
             <tr>
@@ -2506,7 +2505,7 @@
                     <vm:label for="e_reminder" value="--'Reminder'" />
                   </th>
                   <td>
-                      <v:select-list name="e_reminder">
+                          <v:select-list name="e_reminder" xhtml_id="e_reminder">
                         <v:on-init>
                           <![CDATA[
                             declare N integer;
@@ -2532,7 +2531,7 @@
                           <vm:label for="e_privacy" value="--'Privacy'" />
                         </th>
                         <td>
-                            <v:select-list name="e_privacy" xhtml_onchange="javascript: (this.value == \'2\')? OAT.Dom.show(\'e_tab_3\'): OAT.Dom.hide(\'e_tab_3\');">
+                            <v:select-list name="e_privacy" xhtml_id="e_privacy" xhtml_onchange="javascript: (this.value == \'2\')? OAT.Dom.show(\'e_tab_3\'): OAT.Dom.hide(\'e_tab_3\');">
                             <v:item value="0" name="Private" />
                               <v:item value="2" name="ACL" />
                             <v:item value="1" name="Public" />
@@ -2547,10 +2546,10 @@
                       </vm:if>
                       <tr>
                         <th valign="top">
-                          <v:label for="e_attendees" value="Attendees" />
+                          <vm:label for="e_attendees" value="Attendees" />
                         </th>
                         <td valign="top">
-                          <v:textarea name="e_attendees" null-value="--''" value="--self.v_attendees" fmt-function="CAL.WA.utf2wide" xhtml_cols="45" xhtml_rows="6" />
+                          <v:textarea name="e_attendees" xhtml_id="e_attendees" null-value="--''" value="--self.v_attendees" fmt-function="CAL.WA.utf2wide" xhtml_cols="45" xhtml_rows="6" />
                           <?vsp
                             if (CAL.WA.instance_check (self.account_id, 'AddressBook'))
                               http (self.windowOpen('contacts.vspx?dst=mc&params=e_attendees:s1;', 'Select', 'Select', 'button'));
@@ -2561,10 +2560,10 @@
                       </tr>
                       <tr>
                   <th>
-                    <v:label for="e_tags" value="Tags (comma-separated)" />
+                          <vm:label for="e_tags" value="Tags (comma-separated)" />
                   </th>
                   <td>
-                      <v:text name="e_tags" null-value="''" value="--self.v_tags" xhtml_class="textbox" xhtml_size="60" />
+                          <v:text name="e_tags" xhtml_id="e_tags" null-value="''" value="--self.v_tags" xhtml_class="textbox" xhtml_size="60" />
                           <?vsp if (CAL.WA.tag_rule_exists (self.account_id)) { ?>
                             <input type="button" value="Suggest" onclick="javascript: tagsShow('<?V CAL.WA.page_url (self.domain_id, 'tags.vspx?fld=e_tags') ?>', 'e');" class="button" />
                           <?vsp } ?>
@@ -2578,7 +2577,7 @@
               <table class="form-body" cellspacing="0">
                 <tr>
                   <th width="25%" valign="top">
-                <v:label for="e_repeat" value="Repeats"/>
+                          Repeats
               </th>
               <td>
                 <table>
@@ -3084,35 +3083,23 @@
                                   <th class="action">Action</th>
                               </tr>
                             </thead>
+                              <tbody id="s_tbody">
+                                <tr id="s_tr_no"><td colspan="4"><b>No Shares</b></td></tr>
                       		  <![CDATA[
                       		    <script type="text/javascript">
                             <?vsp
-                                declare N, L integer;
-                                declare acl, aType, aAccess any;
+                                    declare acl any;
 
-                              L := 0;
                               acl := (select WAI_ACL from DB.DBA.WA_INSTANCE where WAI_ID = self.domain_id);
                               acl := case when isnull (acl) then vector () else deserialize (acl) end;
-                                for (N := 0; N < length (acl); N := N + 1)
-                              {
-                                L := L + 1;
-                                  http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}, fld_4: {value: "Inherited"}});});', acl[N][2], acl[N][1], acl[N][3], acl[N][4], acl[N][5]));
-                              }
+                                    DB.DBA.wa_aci_lines (acl);
+
                               acl := deserialize (self.v_acl);
-                                for (N := 0; N < length (acl); N := N + 1)
-                              {
-                                L := L + 1;
-                                  if (self.cAction <> 'view')
-                                  {
-                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("s", null, {fld_1: {mode: 50, value: "%s", onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: "F1", tdCssText: "white-space: nowrap;", className: "_validate_ _webid_", value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', acl[N][2], acl[N][1], case when acl[N][2] = 'public' then 'true' else 'false' end, case when acl[N][2] = 'public' then 'display: none;' else '' end, acl[N][3], acl[N][4], acl[N][5]));
-                                  } else {
-                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}});});', acl[N][2], acl[N][1], acl[N][3], acl[N][4], acl[N][5]));
-                                  }
-                                }
+                                    DB.DBA.wa_aci_lines (acl, self.cAction);
                            		    ?>
                            		    </script>
                            		  ]]>
-                            <tr id="s_tr_no" style="display: <?V case when L=0 then '' else 'none' end ?>;"><td colspan="<?V case when self.cAction='view' then 3 else 4 end ?>"><b>No Shares</b></td></tr>
+                              </tbody>
                           </table>
                         </td>
                         <vm:if test="self.cAction <> 'view'">
@@ -3429,7 +3416,7 @@
               <table class="form-body" cellspacing="0">
             <tr>
                   <th width="25%">
-                    <v:label for="t_subject" value="Name" />
+                          <vm:label for="t_subject" value="Name" />
               </th>
               <td>
                           <v:text name="t_subject" xhtml_id="t_subject" null-value="''" value="--self.v_subject" fmt-function="CAL.WA.utf2wide" xhtml_class="textbox" xhtml_size="60" />
@@ -3437,7 +3424,7 @@
             </tr>
             <tr>
               <th>
-                <v:label for="t_eventEndDate" value="Start Date"/>
+                          <vm:label for="t_eventStartDate" value="Start Date" />
               </th>
               <td>
                           <input type="hidden" name="t_eventStartDate_save" id="t_eventStartDate_save" value="<?V CAL.WA.dt_datestring (self.v_eventStart, self.cDateFormat) ?>" />
@@ -3449,7 +3436,7 @@
             </tr>
             <tr>
               <th>
-                <v:label for="t_eventEndDate" value="Due Date"/>
+                          <vm:label for="t_eventEndDate" value="Due Date" />
               </th>
               <td>
                           <v:text name="t_eventEndDate" xhtml_id="t_eventEndDate" null-value="--''" value="--CAL.WA.dt_datestring (self.v_eventEnd, self.cDateFormat)" xhtml_onclick="--sprintf ('datePopup(\'t_eventEndDate\', \'%s\');', self.cDateFormat)" xhtml_onchange="dateUpdate(\'t_eventEndDate\', [\'t_eventStartDate\']);" xhtml_class="textbox" xhtml_size="10" />
@@ -3460,10 +3447,10 @@
             </tr>
             <tr>
               <th>
-                <v:label for="t_priority" value="Priority"/>
+                          <vm:label for="t_priority" value="Priority" />
               </th>
               <td>
-                <v:select-list name="t_priority">
+                          <v:select-list name="t_priority" xhtml_id="t_priority">
                   <v:on-init>
                     <![CDATA[
                       declare N integer;
@@ -3493,7 +3480,7 @@
             </tr>
             <tr>
               <th>
-                <v:label for="t_status" value="Status"/>
+                          <vm:label for="t_status" value="Status" />
               </th>
               <td>
                           <v:select-list name="t_status" xhtml_id="t_status" xhtml_onchange="javascript: changeComplete(this);">
@@ -3517,7 +3504,7 @@
             </tr>
             <tr>
               <th>
-                          <v:label for="t_completed" value="Completed" />
+                          <vm:label for="t_completed" value="Completed" />
                         </th>
                         <td>
                           <v:text name="t_completed" xhtml_id="t_completed" null-value="--''" value="--CAL.WA.dt_datestring (self.v_completed, self.cDateFormat)" xhtml_onclick="--sprintf ('datePopup(\'t_completed\', \'%s\'); changeComplete(this);', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" xhtml_onchange="javascript: changeComplete(this);"/>
@@ -3528,7 +3515,7 @@
                       </tr>
                       <tr>
                         <th>
-                          <v:label for="t_complete" value="Complete (%)" />
+                          <vm:label for="t_complete" value="Complete (%)" />
               </th>
               <td>
                           <v:select-list name="t_complete" xhtml_id="t_complete" xhtml_onchange="javascript: changeComplete(this);">
@@ -3552,7 +3539,7 @@
             </tr>
             <tr>
                   <th valign="top">
-                <v:label for="t_description" value="Description"/>
+                          <vm:label for="t_description" value="Description" />
               </th>
               <td>
                           <v:textarea name="t_description" xhtml_id="t_description" null-value="--''" value="--self.v_description" fmt-function="CAL.WA.utf2wide" xhtml_cols="45" xhtml_rows="6" />
@@ -3564,7 +3551,7 @@
                           <vm:label for="t_privacy" value="--'Privacy'" />
                         </th>
                         <td>
-                            <v:select-list name="t_privacy" xhtml_onchange="javascript: (this.value == \'2\')? OAT.Dom.show(\'t_tab_2\'): OAT.Dom.hide(\'t_tab_2\');">
+                            <v:select-list name="t_privacy" xhtml_id="t_privacy" xhtml_onchange="javascript: (this.value == \'2\')? OAT.Dom.show(\'t_tab_2\'): OAT.Dom.hide(\'t_tab_2\');">
                             <v:item value="0" name="Private" />
                               <v:item value="2" name="ACL" />
                             <v:item value="1" name="Public" />
@@ -3579,10 +3566,10 @@
                       </vm:if>
             <tr>
                         <th valign="top">
-                          <v:label for="t_attendees" value="Attendees" />
+                          <vm:label for="t_attendees" value="Attendees" />
                         </th>
                         <td>
-                          <v:textarea name="t_attendees" null-value="--''" value="--self.v_attendees" fmt-function="CAL.WA.utf2wide" xhtml_cols="45" xhtml_rows="6" />
+                          <v:textarea name="t_attendees" xhtml_id="t_attendees" null-value="--''" value="--self.v_attendees" fmt-function="CAL.WA.utf2wide" xhtml_cols="45" xhtml_rows="6" />
                           <?vsp
                             if (CAL.WA.instance_check (self.account_id, 'AddressBook'))
                               http (self.windowOpen('contacts.vspx?dst=mc&params=t_attendees:s1;', 'Select', 'Select', 'button'));
@@ -3593,10 +3580,10 @@
                       </tr>
                       <tr>
               <th>
-                <v:label for="t_tags" value="Tags (comma-separated)" />
+                          <vm:label for="t_tags" value="Tags (comma-separated)" />
               </th>
               <td>
-                  <v:text name="t_tags" null-value="''" value="--self.v_tags" xhtml_class="textbox" xhtml_size="60" />
+                          <v:text name="t_tags" xhtml_id="t_tags" null-value="''" value="--self.v_tags" xhtml_class="textbox" xhtml_size="60" />
                           <?vsp if (CAL.WA.tag_rule_exists (self.account_id)) { ?>
                             <input type="button" value="Suggest" onclick="javascript: tagsShow('<?V CAL.WA.page_url (self.domain_id, 'tags.vspx?fld=t_tags') ?>', 't');" class="button" />
                           <?vsp } ?>
@@ -3610,7 +3597,7 @@
               <table class="form-body" cellspacing="0">
                 <tr>
                   <th width="20%" valign="top">
-                    Notes
+                          <vm:label for="t_notes" value="Notes" />
                   </th>
                   <td>
                           <textarea id="t_notes" name="t_notes" style="width: 400; height: 170"><?vsp http (coalesce (self.v_notes, '')); ?></textarea>
@@ -3683,35 +3670,24 @@
                                   <th class="action">Action</th>
                               </tr>
                             </thead>
+                              <tbody id="s_tbody">
+                                <tr id="s_tr_no"><td colspan="4"><b>No Shares</b></td></tr>
                       		  <![CDATA[
                       		    <script type="text/javascript">
                             <?vsp
-                                declare N, L integer;
-                                declare acl, aType, aAccess any;
+                                    declare acl any;
 
-                              L := 0;
+                                    -- inherited
                               acl := (select WAI_ACL from DB.DBA.WA_INSTANCE where WAI_ID = self.domain_id);
                               acl := case when isnull (acl) then vector () else deserialize (acl) end;
-                                for (N := 0; N < length (acl); N := N + 1)
-                              {
-                                L := L + 1;
-                                  http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}, fld_4: {value: "Inherited"}});});', acl[N][2], acl[N][1], acl[N][3], acl[N][4], acl[N][5]));
-                              }
+                                    DB.DBA.wa_aci_lines (acl);
+
                               acl := deserialize (self.v_acl);
-                                for (N := 0; N < length (acl); N := N + 1)
-                              {
-                                L := L + 1;
-                                  if (self.cAction <> 'view')
-                                  {
-                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("s", null, {fld_1: {mode: 50, value: "%s", onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: "F1", tdCssText: "white-space: nowrap;", className: "_validate_ _uri_", value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', acl[N][2], acl[N][1], case when acl[N][2] = 'public' then 'true' else 'false' end, case when acl[N][2] = 'public' then 'display: none;' else '' end, acl[N][3], acl[N][4], acl[N][5]));
-                                  } else {
-                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}});});', acl[N][2], acl[N][1], acl[N][3], acl[N][4], acl[N][5]));
-                                  }
-                                }
+                                    DB.DBA.wa_aci_lines (acl, self.cAction);
                            		    ?>
                            		    </script>
                            		  ]]>
-                            <tr id="s_tr_no" style="display: <?V case when L=0 then '' else 'none' end ?>;"><td colspan="<?V case when self.cAction='view' then 3 else 4 end ?>"><b>No Shares</b></td></tr>
+                              </tbody>
                           </table>
                         </td>
                         <vm:if test="self.cAction <> 'view'">
@@ -3948,11 +3924,11 @@
         <div class="new-form-body">
           <table cellspacing="0">
             <tr>
-                    <th rowspan="3" valign="top" width="30%">
-                  <v:label for="i_file" value="Source type" />
+                    <th rowspan="4" valign="top" width="30%">
+                      Source type
               </th>
                 <td nowrap="nowarap">
-                      <v:radio-button name="icSource_0" xhtml_id="icSource_0" group-name="icSource" value="0" xhtml_onchange="javascript: destinationChange(this, {show: [\'imp_td_0\'], hide: [\'imp_td_1\', \'imp_td_2\', \'imp_tr_31\', \'imp_tr_32\']});">
+                      <v:radio-button name="icSource_0" xhtml_id="icSource_0" group-name="icSource" value="0" xhtml_onchange="javascript: destinationChange(this, {show: [\'imp_td_0\'], hide: [\'imp_td_1\', \'imp_td_2\', \'imp_tr_31\', \'imp_tr_32\'], exec: [srcImportLabel]});">
                     <v:before-render>
                       <![CDATA[
                         control.ufl_selected := either(lte(self.icSource, 0), 1, 0);
@@ -3965,7 +3941,7 @@
               </tr>
               <tr>
                 <td nowrap="nowarap">
-                      <v:radio-button name="icSource_1" xhtml_id="icSource_1" group-name="icSource" value="1" xhtml_onchange="javascript: destinationChange(this, {show: [\'imp_td_1\', \'imp_tr_31\', \'imp_tr_32\'], hide: [\'imp_td_0\', \'imp_td_2\']});">
+                      <v:radio-button name="icSource_1" xhtml_id="icSource_1" group-name="icSource" value="1" xhtml_onchange="javascript: destinationChange(this, {show: [\'imp_td_1\', \'imp_tr_31\', \'imp_tr_32\'], hide: [\'imp_td_0\', \'imp_td_2\'], exec: [srcImportLabel]});">
                     <v:before-render>
                       <![CDATA[
                         control.ufl_selected := either(equ(self.icSource, 1), 1, 0);
@@ -3978,7 +3954,20 @@
               </tr>
               <tr>
                 <td nowrap="nowarap">
-                      <v:radio-button name="icSource_2" xhtml_id="icSource_2" group-name="icSource" value="2" xhtml_onchange="javascript: destinationChange(this, {show: [\'imp_td_2\', \'imp_tr_31\', \'imp_tr_32\'], hide: [\'imp_td_0\', \'imp_td_1\']});">
+                      <v:radio-button name="icSource_3" xhtml_id="icSource_3" group-name="icSource" value="3" xhtml_onchange="javascript: destinationChange(this, {show: [\'imp_td_2\', \'imp_tr_31\', \'imp_tr_32\'], hide: [\'imp_td_0\', \'imp_td_1\'], exec: [srcImportLabel]});">
+                        <v:before-render>
+                          <![CDATA[
+                            control.ufl_selected := either(equ(self.icSource, 3), 1, 0);
+                          ]]>
+                        </v:before-render>
+                      </v:radio-button>
+                      &nbsp;
+                      <b><vm:label for="icSource_3" value="--'CalDAV'" /></b>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td nowrap="nowarap">
+                      <v:radio-button name="icSource_2" xhtml_id="icSource_2" group-name="icSource" value="2" xhtml_onchange="javascript: destinationChange(this, {show: [\'imp_td_2\', \'imp_tr_31\', \'imp_tr_32\'], hide: [\'imp_td_0\', \'imp_td_1\'], exec: [srcImportLabel]});">
                     <v:before-render>
                       <![CDATA[
                         control.ufl_selected := either(equ(self.icSource, 2), 1, 0);
@@ -3991,7 +3980,7 @@
             </tr>
                 <tr>
                     <th>
-                      Source name
+                      <span id="srcLabel">Local File Name (.ics)</span>
                   </th>
                     <td>
                       <span id="imp_td_0" style="display: <?V case when self.icSource < 1 then '' else 'none' end ?>;">
@@ -4006,42 +3995,42 @@
                   		    </script>
               			    ]]>
                       </span>
-                      <span id="imp_td_2" style="display: <?V case when self.icSource = 2 then '' else 'none' end ?>;">
+                      <span id="imp_td_2" style="display: <?V case when self.icSource > 1 then '' else 'none' end ?>;">
                         <v:text name="f_uri" value="--get_keyword ('f_uri', self.vc_page.vc_event.ve_params, '')" xhtml_size="60" />
                       </span>
                     </td>
                 </tr>
                   <tr id="imp_tr_31" style="<?V case when self.icSource < 1 then 'display: none;' else '' end ?>;">
                     <th>
-                      User
+                      <label for="i_user">User</label>
                   </th>
                   <td>
-                      <v:text name="i_user" value="--self.icUser" null-value="''" xhtml_class="" />
+                      <v:text name="i_user" xhtml_id="i_user" value="--self.icUser" null-value="''" xhtml_class="" />
                     </td>
                   </tr>
                   <tr id="imp_tr_32" style="<?V case when self.icSource < 1 then 'display: none;' else '' end ?>;">
                     <th>
-                      Password
+                      <label for="i_password">Password</label>
                     </th>
                     <td>
-                      <v:text name="i_password" type="password" value="--''" null-value="''" xhtml_class="" />
+                      <v:text name="i_password" xhtml_id="i_password" type="password" value="--''" null-value="''" xhtml_class="" />
                   </td>
                 </tr>
               <tr>
                 <th>
-                  <v:label for="i_tags" value="Tags (comma-separated)" />
+                      <label for="i_tags">Tags (comma-separated)</label>
                 </th>
                 <td>
-                  <v:text name="i_tags" value="--self.v_tags" xhtml_class="textbox" xhtml_size="60" />
+                      <v:text name="i_tags" xhtml_id="i_tags" value="--self.v_tags" xhtml_class="textbox" xhtml_size="60" />
                 </td>
               </tr>
               <?vsp self.myTags ('i_tags'); ?>
                   <tr>
                     <th>
-                      Mails to attendees
+                      <label for="i_attendees">Mails to attendees</label>
                     </th>
                     <td>
-                      <v:select-list name="i_attendees">
+                      <v:select-list name="i_attendees" xhtml_id="i_attendees">
                         <v:item value="0" name="No action" />
                         <v:item value="1" name="Reset mail status" />
                         <v:item value="2" name="No mails" />
@@ -4064,6 +4053,14 @@
                     </td>
                   </tr>
           </table>
+                <script type="text/javascript">
+                  <![CDATA[
+                    destinationChange($('icSource_0'), {show: ['imp_td_0'], hide: ['imp_td_1', 'imp_td_2', 'imp_tr_31', 'imp_tr_32'], exec: [srcImportLabel]});
+                    destinationChange($('icSource_1'), {show: ['imp_td_1', 'imp_tr_31', 'imp_tr_32'], hide: ['imp_td_0', 'imp_td_2'], exec: [srcImportLabel]});
+                    destinationChange($('icSource_2'), {show: ['imp_td_2', 'imp_tr_31', 'imp_tr_32'], hide: ['imp_td_0', 'imp_td_1'], exec: [srcImportLabel]});
+                    destinationChange($('icSource_3'), {show: ['imp_td_2', 'imp_tr_31', 'imp_tr_32'], hide: ['imp_td_0', 'imp_td_1'], exec: [srcImportLabel]});
+                  ]]>
+                </script>
         </div>
 
               <div class="form-footer">
@@ -4090,11 +4087,7 @@
                         self.icSource := 0;
                     content := trim(get_keyword ('f_file', self.vc_page.vc_event.ve_params, ''));
                           if (is_empty_or_null (content))
-                          {
-                      self.vc_error_message := 'Please select file from your local file system!';
-                      self.vc_is_valid := 0;
-                      return;
-                    }
+                          signal ('TEST', 'Please select file from your local file system!');
                     }
                       else if (self.icSource_1.ufl_selected)
                       {
@@ -4103,30 +4096,29 @@
                         tmp := http_physical_path_resolve (replace (self.f_dav.ufl_value, ' ', '%20'));
                         content := CAL.WA.dav_content (CAL.WA.host_url () || tmp, 1, self.icUser, self.icPassword);
                           if (isnull(content))
-                          {
-                      self.vc_error_message := 'Bad import source!';
-                      self.vc_is_valid := 0;
-                      return;
-                    }
+                          signal ('TEST', 'Bad import source!');
                       }
                       else if (self.icSource_2.ufl_selected)
                       {
                         self.icSource := 2;
                     self.f_uri.ufl_value := trim(self.f_uri.ufl_value);
                           if (is_empty_or_null (self.f_uri.ufl_value))
-                          {
-                      self.vc_error_message := 'Please select correct URL address!';
-                      self.vc_is_valid := 0;
-                      return;
-                    }
+                          signal ('TEST', 'Please select correct URL address!');
+
                         content := CAL.WA.dav_content (self.f_uri.ufl_value, 1, self.icUser, self.icPassword);
                           if (isnull(content))
-                          {
-                      self.vc_error_message := 'Bad URL source!';
-                      self.vc_is_valid := 0;
-                      return;
-                    }
+                          signal ('TEST', 'Bad URL source!');
                   }
+                      else if (self.icSource_3.ufl_selected)
+                      {
+                        self.icSource := 3;
+                        self.f_uri.ufl_value := trim (self.f_uri.ufl_value);
+                        if (is_empty_or_null (self.f_uri.ufl_value))
+                          signal ('TEST', 'Please select correct URL address!');
+
+                        if (not CAL.WA.import_CalDAV_check (self.f_uri.ufl_value, vector ('user', self.icUser, 'password', self.icPassword), 1))
+                          signal ('TEST', 'Bad CalDAV source!');
+                      }
 
                   -- test tags value
                   self.v_tags := trim (self.i_tags.ufl_value);
@@ -4136,7 +4128,12 @@
                   self.v_tags := CAL.WA.vector2tags (tmp);
 
                   -- vCard
+                      if (self.icSource = 3)
+                      {
+                        CAL.WA.import_CalDAV (self.domain_id, self.f_uri.ufl_value, vector ('user', self.icUser, 'password', self.icPassword, 'tags', self.v_tags, 'events', 1, 'tasts', 1, 'sync', self.i_sync.ufl_selected, 'mailAttendees', self.i_attendees.ufl_value));
+                      } else {
                       CAL.WA.import_vcal (self.domain_id, content, vector ('tags', self.v_tags, 'events', 1, 'tasts', 1, 'sync', self.i_sync.ufl_selected, 'mailAttendees', self.i_attendees.ufl_value));
+                      }
 
                       commit work;
                   self.cAction := 'browse';
@@ -4735,10 +4732,10 @@
                 <table cellspacing="0">
                 <tr>
                   <th width="30%">
-                      <v:label for="exc_name" value="Name" />
+                      <label for="exc_name">Name</label>
                   </th>
                   <td>
-                      <v:text name="exc_name" null-value="--''" value="--self.ve_name" xhtml_size="60" />
+                      <v:text name="exc_name" xhtml_id="exc_name" null-value="--''" value="--self.ve_name" xhtml_size="60" />
                   </td>
                 </tr>
                   <vm:if test="self.cAction not in ('syncmlCreate', 'syncmlUpdate')">
@@ -4807,26 +4804,42 @@
                 </tr>
                   <vm:if test="self.cAction not in ('syncmlCreate', 'syncmlUpdate')">
                 <tr>
-                    <th rowspan="2" valign="top">
+                      <th rowspan="<?V case when (self.cAction in ('subscribeCreate', 'subscribeUpdate')) then 3 else 2 end ?>" valign="top">
                       <?V case when (self.cAction in ('publishCreate', 'publishUpdate')) then 'Destination' else  'Source' end ?> type
                           </th>
                     <td nowrap="nowarap">
                       <label>
-                        <v:radio-button name="exc_options_type_1" group-name="exc_options_type" value="1" xhtml_onchange="javascript: destinationChange(this, {show: [\'exc_options_name_button\'], clear: [\'exc_options_name\']});">
+                          <v:radio-button name="exc_options_type_1" xhtml_id="exc_options_type_1" group-name="exc_options_type" value="1" xhtml_onchange="javascript: destinationChange(this, {show: [\'exc_options_name_button\'], clear: [\'exc_options_name\'], exec: [excLabel]});">
                           <v:before-render>
                             <![CDATA[
                                 control.ufl_selected := either (lte (get_keyword ('type', coalesce (self.ve_options, vector ()), 1), 1), 1, 0);
                             ]]>
                           </v:before-render>
                         </v:radio-button>
-                        <b>WebDAV Path</b>
+                          <b>WebDAV File URL</b>
                       </label>
                           </td>
                         </tr>
+                    <vm:if test="self.cAction in ('subscribeCreate', 'subscribeUpdate')">
                         <tr>
                     <td nowrap="nowarap">
                       <label>
-                        <v:radio-button name="exc_options_type_2" group-name="exc_options_type" value="2" xhtml_onchange="javascript: destinationChange(this, {hide: [\'exc_options_name_button\'], clear: [\'exc_options_name\']});">
+                            <v:radio-button name="exc_options_type_3" xhtml_id="exc_options_type_3" group-name="exc_options_type" value="3" xhtml_onchange="javascript: destinationChange(this, {hide: [\'exc_options_name_button\'], clear: [\'exc_options_name\'], exec: [excLabel]});">
+                            <v:before-render>
+                              <![CDATA[
+                                control.ufl_selected := either (equ (get_keyword ('type', coalesce (self.ve_options, vector ()), 1), 3), 1, 0);
+                              ]]>
+                            </v:before-render>
+                          </v:radio-button>
+                          <b>CalDAV Path</b>
+                        </label>
+                      </td>
+                    </tr>
+                    </vm:if>
+                    <tr>
+                      <td nowrap="nowarap">
+                        <label>
+                          <v:radio-button name="exc_options_type_2" xhtml_id="exc_options_type_2" group-name="exc_options_type" value="2" xhtml_onchange="javascript: destinationChange(this, {hide: [\'exc_options_name_button\'], clear: [\'exc_options_name\'], exec: [excLabel]});">
                           <v:before-render>
                             <![CDATA[
                                 control.ufl_selected := either (equ (get_keyword ('type', coalesce (self.ve_options, vector ()), 1), 2), 1, 0);
@@ -4840,7 +4853,12 @@
                   </vm:if>
                         <tr>
                     <th>
-                      <v:label for="sr_chars" value="-- case when (self.cAction in ('syncmlCreate', 'syncmlUpdate')) then 'WebDAV SyncML Path' else 'WebDAV Path / URL' end" />
+                      <vm:if test="self.cAction in ('syncmlCreate', 'syncmlUpdate')">
+                        <label for="exc_options_name">WebDAV SyncML Path</label>
+                      </vm:if>
+                      <vm:if test="self.cAction not in ('syncmlCreate', 'syncmlUpdate')">
+                        <label for="exc_options_name"><span id="excLabel">WebDAV File Name (.ics)</span></label>
+                      </vm:if>
                           </th>
                           <td>
                       <v:text name="exc_options_name" xhtml_id="exc_options_name" value="--get_keyword ('name', self.ve_options)" xhtml_size="60" />
@@ -4854,18 +4872,18 @@
                         </tr>
                         <tr>
                     <th>
-                      User
+                      <label for="exc_options_user">User</label>
                     </th>
                           <td>
-                      <v:text name="exc_options_user" value="--get_keyword ('user', self.ve_options)" null-value="''" />
+                      <v:text name="exc_options_user" xhtml_id="exc_options_user" value="--get_keyword ('user', self.ve_options)" null-value="''" />
                           </td>
                         </tr>
                         <tr>
                     <th>
-                      Password
+                      <label for="exc_options_password">Password</label>
                     </th>
                           <td>
-                      <v:text name="exc_options_password" type="password"  value="--get_keyword ('password', self.ve_options)" null-value="''" />
+                      <v:text name="exc_options_password" xhtml_id="exc_options_password" type="password"  value="--get_keyword ('password', self.ve_options)" null-value="''" />
                           </td>
                         </tr>
                         <tr>
@@ -4875,10 +4893,10 @@
                         </tr>
                   <tr>
                     <th>
-                      Mails to attendees
+                      <label for="exc_options_attendees">Mails to attendees</label>
                     </th>
                     <td>
-                      <v:select-list name="exc_options_attendees">
+                      <v:select-list name="exc_options_attendees" xhtml_id="exc_options_attendees">
                         <v:item value="0" name="No action" />
                         <v:item value="1" name="Reset mail status" />
                         <v:item value="2" name="No mails" />
@@ -4894,10 +4912,10 @@
                   <vm:if test="self.cAction in ('syncmlCreate', 'syncmlUpdate')">
                     <tr>
                       <th>
-                        <v:label for="exc_options_mode" value="Sync mode" />
+                        <label for="exc_options_mode">Sync mode</label>
                       </th>
                       <td>
-                        <v:select-list name="exc_options_mode">
+                        <v:select-list name="exc_options_mode" xhtml_id="exc_options_mode">
                           <v:item value="0" name="Update both" />
                           <v:item value="1" name="Update client" />
                           <v:item value="-1" name="Update SyncML server" />
@@ -4917,17 +4935,36 @@
                     </th>
                           <td>
                       <label>
-                        <v:check-box name="exc_options_events" is-boolean="1" true-value="1" false-value="0" value="--get_keyword ('events', coalesce (self.ve_options, vector ()), 1)" />
+                        <v:check-box name="exc_options_events" is-boolean="1" true-value="1" false-value="0">
+                          <v:before-render>
+                            <![CDATA[
+                              control.ufl_selected := get_keyword ('events', coalesce (self.ve_options, vector ()), 1);
+                            ]]>
+                          </v:before-render>
+                        </v:check-box>
                         Events
                       </label>
                       <br />
                       <label>
-                        <v:check-box name="exc_options_tasks" is-boolean="1" true-value="1" false-value="0" value="--get_keyword ('tasks', coalesce (self.ve_options, vector ()), 1)" />
+                        <v:check-box name="exc_options_tasks" is-boolean="1" true-value="1" false-value="0">
+                          <v:before-render>
+                            <![CDATA[
+                              control.ufl_selected := get_keyword ('tasks', coalesce (self.ve_options, vector ()), 1);
+                            ]]>
+                          </v:before-render>
+                        </v:check-box>
                         Tasks
                       </label>
                           </td>
                         </tr>
                       </table>
+                <script type="text/javascript">
+                  <![CDATA[
+                    destinationChange($('exc_options_type_1'), {show: ['exc_options_name_button'], clear: ['exc_options_name'], exec: [excLabel]});
+                    destinationChange($('exc_options_type_3'), {hide: ['exc_options_name_button'], clear: ['exc_options_name'], exec: [excLabel]});
+                    destinationChange($('exc_options_type_2'), {hide: ['exc_options_name_button'], clear: ['exc_options_name'], exec: [excLabel]});
+                  ]]>
+                </script>
                     </div>
               <div class="form-footer">
                 <v:button action="simple" name="exc_save" value="--case when self.cAction in ('publishCreate', 'subscribeCreate', 'syncmlCreate') then 'Create' else 'Update' end" xhtml_class="form-button">
@@ -4979,6 +5016,10 @@
                     {
                       _type := 2;
                     }
+                        else if (self.exc_options_type_3.ufl_selected)
+                        {
+                          _type := 3;
+                        }
                       }
                     _name := trim (self.exc_options_name.ufl_value);
                       if (self.cAction in ('syncmlCreate', 'syncmlUpdate'))

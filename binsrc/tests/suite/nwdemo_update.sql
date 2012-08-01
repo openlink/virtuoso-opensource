@@ -30,4 +30,3 @@ UPDATE "Demo"."demo"."Products" SET "ProductName" = 'updated';
 UPDATE "Demo"."demo"."Customers" SET "ContactTitle" = 'updated';
 UPDATE "Demo"."demo"."Employees" SET "Address" = 'updated';
 UPDATE "Demo"."demo"."Orders" SET "ShipName" = 'updated';
-

@@ -44,6 +44,7 @@ clean-local:
 	-rm -rf vad
 
 EXTRA_DIST = \
+	*.dox \
 	make_vad.sh \
 	sql/*.sql \
 	vad_version \

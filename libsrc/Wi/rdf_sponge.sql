@@ -115,7 +115,7 @@ create function DB.DBA.RDF_GRAB_SINGLE (in val any, inout grabbed any, inout env
         'get:error-recovery', get_keyword_ucase ('get:error-recovery', env)
 	 );
       dict_put (grabbed, url, 1);
-      call (get_keyword ('loader', env))(url, opts);
+      call (get_keyword ('loader', env))(url, opts, user);
       commit work;
       dict_put (grabbed, url, coalesce (final_dest, dest));
       -- dbg_obj_princ ('DB.DBA.RDF_GRAB_SINGLE (', val, ',... , ', env, ') has loaded ', url);
@@ -441,10 +441,13 @@ create procedure DB.DBA.SPARQL_EVAL (in query varchar, in dflt_graph varchar, in
   if (state <> '00000')
     signal (state, msg);
   -- dbg_obj_princ ('exec metas=', metas);
-  exec_result_names (metas[0]);
-  foreach (any row in rset) do
+  if (metas is not null)
     {
-      exec_result (row);
+      exec_result_names (metas[0]);
+      foreach (any row in rset) do
+	{
+	  exec_result (row);
+	}
     }
 }
 ;
@@ -478,11 +481,25 @@ create index SYS_HTTP_SPONGE_EXPIRATION on DB.DBA.SYS_HTTP_SPONGE (HS_EXPIRATION
 create index SYS_HTTP_SPONGE_FROM_IRI on DB.DBA.SYS_HTTP_SPONGE (HS_FROM_IRI, HS_PARSER) partition (HS_FROM_IRI varchar)
 ;
 
+create table DB.DBA.SYS_HTTP_SPONGE_REFRESH_DEFAULTS (
+  HSRD_DATA_SOURCE_URI_PATTERN varchar not null,
+  HSRD_DEFAULT_REFRESH_INTERVAL_SECS integer,
+  primary key (HSRD_DATA_SOURCE_URI_PATTERN)
+)
+;
+
 --#IF VER=5
 --!AFTER
 alter table DB.DBA.SYS_HTTP_SPONGE add HS_FROM_IRI varchar
 ;
 --#ENDIF
+
+create table RDF_WEBID_ACL_GROUPS (
+	AG_WEBID varchar,
+	AG_GROUP varchar,
+primary key (AG_WEBID, AG_GROUP)
+)
+;
 
 create procedure DB.DBA.SYS_HTTP_SPONGE_GET_CACHE_PARAMS
    (
@@ -646,7 +663,7 @@ create function DB.DBA.SYS_HTTP_SPONGE_UP (in local_iri varchar, in get_uri varc
   declare get_proxy varchar;
   declare ret_dt_date, ret_dt_last_modified, ret_dt_expires, expiration, min_expiration datetime;
   declare ret_304_not_modified integer;
-  declare parser_rc, max_refresh int;
+  declare parser_rc, max_refresh, default_refresh int;
   declare stat, msg varchar;
 
   -- dbg_obj_princ ('DB.DBA.SYS_HTTP_SPONGE_UP (', local_iri, get_uri, options, ')');
@@ -656,13 +673,22 @@ create function DB.DBA.SYS_HTTP_SPONGE_UP (in local_iri varchar, in get_uri varc
   get_soft := get_keyword_ucase ('get:soft', options, '');
   if (explicit_refresh is null)
     {
-      max_refresh := virtuoso_ini_item_value ('SPARQL', 'MaxCacheExpiration');
-      if (max_refresh is not null)
+      max_refresh := atoi (coalesce (virtuoso_ini_item_value ('SPARQL', 'MaxCacheExpiration'), '-1'));
+      default_refresh := (select HSRD_DEFAULT_REFRESH_INTERVAL_SECS from DB.DBA.SYS_HTTP_SPONGE_REFRESH_DEFAULTS where regexp_match (HSRD_DATA_SOURCE_URI_PATTERN, local_iri) is not null);
+      if (default_refresh is not null)
+	{
+	  if (default_refresh >= 0)
         {
-          max_refresh := atoi (max_refresh);
 	  if (max_refresh >= 0)
+	      explicit_refresh := __min (default_refresh, max_refresh);
+	    else
+	      explicit_refresh := default_refresh;
+	  }
+	  else if (max_refresh >= 0)
 	    explicit_refresh := max_refresh;
 	}
+      else if (max_refresh >= 0)
+	explicit_refresh := max_refresh;
     }
   else if (isstring (explicit_refresh))
     explicit_refresh := atoi (explicit_refresh);
@@ -693,7 +719,7 @@ create function DB.DBA.SYS_HTTP_SPONGE_UP (in local_iri varchar, in get_uri varc
         case (isnull (old_origin_login)) when 0 then sprintf ('login "%.100s"', old_origin_login) else 'anonymous access' end ) );
 
   -- dbg_obj_princ (' old_expiration=', old_expiration, ' old_exp_is_true=', old_exp_is_true, ' old_last_load=', old_last_load);
-  -- dbg_obj_princ ('now()=', now(), ' explicit_refresh=', explicit_refresh);
+  -- dbg_obj_princ ('now()=', now(), ' explicit_refresh=', explicit_refresh, ' max_refresh=', max_refresh, ' default_refresh=', default_refresh,  ' min_expiration=', min_expiration);
   if (eraser is null)
     {
       -- dbg_obj_princ ('will start load w/o expiration check due to NULL eraser (dependant loading)');
@@ -1015,14 +1041,25 @@ create function DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (in origin_uri varchar, in 
         return 'application/x-trig';
     }
   declare ret_begin, ret_html any;
-  ret_begin := subseq (ret_body, 0, 4096);
+  ret_begin := subseq (ret_body, 0, 65535);
   if (isstring_session (ret_begin))
     ret_begin := string_output_string (ret_begin);
   -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE: ret_begin = ', ret_begin);
   ret_html := xtree_doc (ret_begin, 2);
   -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE: ret_html = ', ret_html);
-  if (xpath_eval ('/html|/xhtml', ret_html) is not null)
+  if (xpath_eval ('[xmlns:xh="http://www.w3.org/1999/xhtml"] /html|/xhtml|/xh:html|/xh:xhtml', ret_html) is not null)
+    {
+      if (xpath_eval ('[xmlns:grddl="http://www.w3.org/2003/g/data-view#"] /*/@grddl:transformation', ret_html) is not null)
+        return 'text/html'; -- GRDDL stylesheet is most authoritative
+      if (xpath_eval ('/*/head/@profile', ret_html) is not null)
+        return 'text/html'; -- GRDDL inline profile is authoritative, too
+      if (xpath_eval ('//*[exists(@itemscope) or exists(@itemprop) or exists(@itemid) or exists(@itemtype)]', ret_html) is not null)
+        return 'text/microdata+html'; -- Microdata are tested before RDFa because metadata with @rel may be wrongly recognised as RDFa
+      -- if (xpath_eval ('//*[exists(@rel) or exists(@rev) or exists(@typeof) or exists(@property) or exists(@about)]', ret_html) is not null)
+      if (xpath_eval ('//*[exists(@typeof) or exists(@about)]', ret_html) is not null)
+        return 'application/xhtml+xml';
     return 'text/html';
+    }
   if (xpath_eval ('[xmlns:rset="http://www.w3.org/2005/sparql-results#"] /rset:sparql', ret_html) is not null
     or xpath_eval ('[xmlns:rset2="http://www.w3.org/2001/sw/DataAccess/rf1/result2"] /rset2:sparql', ret_html) is not null)
     return 'application/sparql-results+xml';
@@ -1217,8 +1254,9 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
   declare rc any;
   declare aq, ps any;
   declare xd, xt any;
-  declare saved_log_mode, only_rdfa, retr_count integer;
+  declare saved_log_mode, only_rdfa, retr_count, rdf_fmt integer;
   aq := null;
+  rdf_fmt := 0;
   ps := virtuoso_ini_item_value ('SPARQL', 'PingService');
   if (length (ps))
     {
@@ -1226,6 +1264,10 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
     }
   -- dbg_obj_princ ('DB.DBA.RDF_LOAD_HTTP_RESPONSE (', graph_iri, new_origin_uri, ret_content_type, ret_hdr, ret_body, options, req_hdr_arr, ')');
   --!!!TBD: proper calculation of new_expiration, using data from HTTP header of the response
+  declare l any;
+  l := ret_body;
+  if (length (l) > 3 and l[0] = 0hexEF and l[1] = 0hexBB and l[2] = 0hexBF) -- remove BOM
+    ret_body := subseq (ret_body, 3);
   ret_content_type := DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (new_origin_uri, ret_content_type, ret_body);
   -- dbg_obj_princ ('ret_content_type is ', ret_content_type);
   dest := get_keyword_ucase ('get:destination', options);
@@ -1245,13 +1287,19 @@ retry_after_deadlock:
     {
       --if (dest is null)
       --  DB.DBA.SPARUL_CLEAR (coalesce (dest, graph_iri), 1);
-      whenever sqlstate '*' goto load_grddl;
+      declare exit handler for sqlstate '*'
+      {
+	if (registry_get ('__sparql_mappers_debug') = '1')
+          dbg_printf ('%s: SQL_MESSAGE: %s', current_proc_name(), __SQL_MESSAGE);
+        goto load_grddl;
+      };
       --log_enable (2, 1);
       xt := xtree_doc (ret_body);
       -- we test for GRDDL inside RDF/XML, if so do it inside mappers, else it will fail because of dv:transformation attr
       if (xpath_eval ('[ xmlns:dv="http://www.w3.org/2003/g/data-view#" ] /*[1]/@dv:transformation', xt) is not null)
 	goto load_grddl;
       DB.DBA.RDF_LOAD_RDFXML (ret_body, base, coalesce (dest, graph_iri));
+      rdf_fmt := 1;
       if (groupdest is not null)
         DB.DBA.RDF_LOAD_RDFXML (ret_body, base, groupdest);
       if (exists (select 1 from DB.DBA.SYS_RDF_MAPPERS where RM_TYPE = 'URL' and regexp_match (RM_PATTERN, new_origin_uri) and RM_ENABLED = 1))
@@ -1272,13 +1320,20 @@ retry_after_deadlock:
        strstr (ret_content_type, 'application/rdf+n3') is not null or
        strstr (ret_content_type, 'application/rdf+turtle') is not null or
        strstr (ret_content_type, 'application/turtle') is not null or
+       strstr (ret_content_type, 'application/n-triples') is not null or
        strstr (ret_content_type, 'application/x-turtle') is not null )
     {
-      whenever sqlstate '*' goto load_grddl_after_error;
+      declare exit handler for sqlstate '*'
+      {
+	if (registry_get ('__sparql_mappers_debug') = '1')
+          dbg_printf ('%s: SQL_MESSAGE: %s', current_proc_name(), __SQL_MESSAGE);
+        goto load_grddl_after_error;
+      };
       --log_enable (2, 1);
       --if (dest is null)
       --  DB.DBA.SPARUL_CLEAR (coalesce (dest, graph_iri), 1);
       DB.DBA.TTLP (ret_body, base, coalesce (dest, graph_iri), 255);
+      rdf_fmt := 1;
       if (groupdest is not null)
         DB.DBA.TTLP (ret_body, base, groupdest);
       if (exists (select 1 from DB.DBA.SYS_RDF_MAPPERS where RM_TYPE = 'URL' and regexp_match (RM_PATTERN, new_origin_uri) and RM_ENABLED = 1))
@@ -1290,13 +1345,37 @@ retry_after_deadlock:
         aq_request (aq, 'DB.DBA.RDF_SW_PING', vector (ps, new_origin_uri));
       return 1;
     }
-  else if (only_rdfa = 1 and strstr (ret_content_type, 'text/html') is not null)
+  else if (strstr (ret_content_type, 'text/microdata+html') is not null)
     {
-      whenever sqlstate '*' goto load_grddl;
+      declare exit handler for sqlstate '*'
+      {
+	if (registry_get ('__sparql_mappers_debug') = '1')
+          dbg_printf ('%s: SQL_MESSAGE: %s', current_proc_name(), __SQL_MESSAGE);
+        goto load_grddl;
+      };
       --log_enable (2, 1);
-      DB.DBA.RDF_LOAD_RDFA (ret_body, base, coalesce (dest, graph_iri), 2);
+      DB.DBA.RDF_LOAD_XHTML_MICRODATA (ret_body, base, coalesce (dest, graph_iri));
+      rdf_fmt := 1;
       if (groupdest is not null and groupdest <> coalesce (dest, graph_iri))
-	DB.DBA.RDF_LOAD_RDFA (ret_body, base, groupdest, 2);
+	DB.DBA.RDF_LOAD_XHTML_MICRODATA (ret_body, base, groupdest);
+      --log_enable (saved_log_mode, 1);
+      if (aq is not null)
+        aq_request (aq, 'DB.DBA.RDF_SW_PING', vector (ps, new_origin_uri));
+      return 1;
+    }
+  else if ((only_rdfa = 1 and strstr (ret_content_type, 'text/html') is not null) or (strstr (ret_content_type, 'application/xhtml+xml') is not null))
+    {
+      declare exit handler for sqlstate '*'
+      {
+	if (registry_get ('__sparql_mappers_debug') = '1')
+          dbg_printf ('%s: SQL_MESSAGE: %s', current_proc_name(), __SQL_MESSAGE);
+        goto load_grddl;
+      };
+      --log_enable (2, 1);
+      DB.DBA.RDF_LOAD_RDFA (ret_body, base, coalesce (dest, graph_iri));
+      rdf_fmt := 1;
+      if (groupdest is not null and groupdest <> coalesce (dest, graph_iri))
+	DB.DBA.RDF_LOAD_RDFA (ret_body, base, groupdest);
       --log_enable (saved_log_mode, 1);
       if (aq is not null)
         aq_request (aq, 'DB.DBA.RDF_SW_PING', vector (ps, new_origin_uri));
@@ -1405,6 +1484,10 @@ load_grddl:;
   --      DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, groupdest);
   --    return 1;
   --  }
+  
+  if (rdf_fmt) -- even cartridges didn't extracted anything more, the rdf is already loaded
+    return 1; 
+
   if ((dest is null) and (get_soft is null or (get_soft <> 'add')))
     {
       DB.DBA.SPARUL_CLEAR (graph_iri, 1, 0);

@@ -41,7 +41,7 @@ create procedure TDAV_RDF_QUAD_CHECK (in resname varchar, in propuri varchar, in
   full_res_uri := DB.DBA.DAV_FULL_PATH_TO_IRI (new_dav_graph, '/DAV/tdav_meta_home/zip_samples/' || resname);
   dbg_obj_princ ('TDAV_RDF_QUAD_CHECK: ', full_res_uri, propuri, encoded_propval);
   if (crop <> 0)
-    return
+    return;
   if (exists (sparql ask where { graph ?:new_dav_graph {
           ?:full_res_uri ?:propuri ?:propval } } ))
     actual := 1;

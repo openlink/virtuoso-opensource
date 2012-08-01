@@ -128,4 +128,3 @@ make_wwwroot ()
 
 make_user_blog_and_posts ()
 ;
-

@@ -36,4 +36,3 @@ load rtest2-1.sql;
 select count (*) from T1 A where exists (select *, *, *, *, *, *, *, *, *, *, *, *, *, * from R1..T1 B where B.ROW_NO > A.ROW_NO - 2900  );
 ECHO BOTH $IF $EQU $LAST[1] 999 "PASSED" "***FAILED";
 ECHO BOTH ": " $LAST[1] " rows in remote select close timing test\n";
-

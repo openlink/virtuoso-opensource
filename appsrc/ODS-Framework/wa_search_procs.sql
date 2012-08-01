@@ -1110,30 +1110,26 @@ create function WA_SEARCH_APP (in max_rows integer, in current_user_id integer,
 --exec('
 wa_exec_no_error('
 create function WA_SEARCH_OMAIL_GET_EXCERPT_HTML (
-        in current_user_id integer,
+  in uname varchar,
 	in words any,
         in _MSG_ID integer,
-        in _DOMAIN_ID integer,
         in _TDATA any,
         in _SUBJECT varchar,
         in _FOLDER_ID integer) returns varchar
 {
   declare res varchar;
 
-  declare _U_NAME varchar;
   declare _NAME varchar;
 
-  select U_NAME into _U_NAME from DB.DBA.SYS_USERS where U_ID = current_user_id;
-  select NAME into _NAME from OMAIL.WA.FOLDERS where FOLDER_ID = _FOLDER_ID;
+  select MF_NAME into _NAME from DB.DBA.MAIL_FOLDER where MF_OWN = uname and MF_ID = _FOLDER_ID;
 
   res := sprintf (
     ''<span><img src="%s"/> %s / %s : %s<br />%s</span>'',
        DB.DBA.WA_SEARCH_ADD_APATH (''images/icons/mail_16.png''),
-       _U_NAME,
+       uname,
        _NAME,
        _SUBJECT,
        _TDATA);
-       --search_excerpt (words, subseq (coalesce (_TDATA, ''''), 0, 200000)));
   return res;
 }
 ')
@@ -1168,57 +1164,55 @@ create aggregate WA_SEARCH_OMAIL_AGG (in _val varchar, in words any) returns var
   from WA_SEARCH_OMAIL_AGG_init, WA_SEARCH_OMAIL_AGG_acc, WA_SEARCH_OMAIL_AGG_final;
 
 
-create function WA_SEARCH_OMAIL (in max_rows integer, in current_user_id integer,
-   in str varchar, in _words_vector varchar) returns varchar
+create function WA_SEARCH_OMAIL (
+  in _max integer,
+  in _user_id integer,
+  in _str varchar,
+  in _words_vector varchar) returns varchar
 {
-  declare ret varchar;
+  declare ret, _uname varchar;
 
-  if (str is null)
+  _uname := (select U_NAME from DB.DBA.SYS_USERS where U_ID = _user_id);
+  if (_str is null)
     {
       ret := sprintf (
 	     'select top %d \n' ||
-	     '  DB.DBA.WA_SEARCH_OMAIL_GET_EXCERPT_HTML (q.USER_ID, %s, \n' ||
-	     '     q.MSG_ID, q.DOMAIN_ID, _TDATA, M.SUBJECT, M.FOLDER_ID) AS EXCERPT, \n' ||
+	     '       DB.DBA.WA_SEARCH_OMAIL_GET_EXCERPT_HTML (M.MM_OWN, %s, M.MM_ID, MA._CONTENT, M.MM_SUBJ, M.MM_FLD_ID) AS EXCERPT, \n' ||
 	     '  encode_base64 (serialize (vector (''OMAIL''))) as TAG_TABLE_FK, \n' ||
 	     '  _SCORE, \n' ||
 	     '  M.RCV_DATE as _DATE \n' ||
-	     ' from OMAIL.WA.MESSAGES M, (\n' ||
-	     ' select \n' ||
-	     '   MP.DOMAIN_ID, \n' ||
-	     '   MP.USER_ID, \n' ||
-	     '   MP.MSG_ID, \n' ||
-	     '   DB.DBA.WA_SEARCH_OMAIL_AGG (TDATA, %s) as _TDATA long varchar, \n' ||
+	     '  from DB.DBA.MAIL_MESSAGE M, \n' ||
+	     '       (select MA_M_OWN, \n' ||
+	     '               MA_M_ID, \n' ||
+	     '               DB.DBA.WA_SEARCH_OMAIL_AGG (MA_CONTENT, %s) as _CONTENT long varchar, \n' ||
 	     '   0 as _SCORE \n' ||
-	     ' from OMAIL.WA.MSG_PARTS MP\n' ||
-	     ' where \n' ||
-	     '  MP.USER_ID = %d\n' ||
-	     '  group by MP.DOMAIN_ID, MP.USER_ID, MP.MSG_ID) q \n' ||
-	     ' where M.MSG_ID = q.MSG_ID and M.USER_ID = q.USER_ID and M.DOMAIN_ID = q.DOMAIN_ID',
-	max_rows, _words_vector, _words_vector, current_user_id);
+	     '          from DB.DBA.MAIL_ATTACHMENT \n' ||
+	     '         where MA_M_OWN = ''%s''\n' ||
+	     '         group by MA_M_OWN, MA_M_ID) MA \n' ||
+	     '   where M.MM_OWN = MA.MA_M_OWN \n' ||
+	     '     and M.MM_ID = MA.MA_M_ID ',
+	     _max, _words_vector, _words_vector, _uname);
     }
   else
     {
       ret := sprintf (
 	     'select top %d \n' ||
-	     '  DB.DBA.WA_SEARCH_OMAIL_GET_EXCERPT_HTML (q.USER_ID, %s, \n' ||
-	     '     q.MSG_ID, q.DOMAIN_ID, _TDATA, M.SUBJECT, M.FOLDER_ID) AS EXCERPT, \n' ||
+	     '       DB.DBA.WA_SEARCH_OMAIL_GET_EXCERPT_HTML (M.MM_OWN, %s, M.MM_ID, MA._CONTENT, M.MM_SUBJ, M.MM_FLD_ID) AS EXCERPT, \n' ||
 	     '  encode_base64 (serialize (vector (''OMAIL''))) as TAG_TABLE_FK, \n' ||
 	     '  _SCORE, \n' ||
 	     '  M.RCV_DATE as _DATE \n' ||
-	     ' from OMAIL.WA.MESSAGES M, (\n' ||
-	     ' select \n' ||
-	     '   MP.DOMAIN_ID, \n' ||
-	     '   MP.USER_ID, \n' ||
-	     '   MP.MSG_ID, \n' ||
-	     '   DB.DBA.WA_SEARCH_OMAIL_AGG (TDATA, %s) as _TDATA long varchar, \n' ||
+	     '  from DB.DBA.MAIL_MESSAGE M, \n' ||
+	     '       (select MA_M_OWN, \n' ||
+	     '               MA_M_ID, \n' ||
+	     '               DB.DBA.WA_SEARCH_OMAIL_AGG (MA_CONTENT, %s) as _CONTENT long varchar, \n' ||
 	     '   MAX(SCORE) as _SCORE \n' ||
-	     ' from OMAIL.WA.MSG_PARTS MP\n' ||
-	     ' where \n' ||
-	     '  contains (MP.TDATA, ''[__lang "x-ViDoc" __enc "UTF-8"] %S'') \n' ||
-	     '  and MP.USER_ID = %d\n' ||
-	     '  group by MP.DOMAIN_ID, MP.USER_ID, MP.MSG_ID) q \n' ||
-	     ' where M.MSG_ID = q.MSG_ID and M.USER_ID = q.USER_ID and M.DOMAIN_ID = q.DOMAIN_ID',
-	max_rows, _words_vector, _words_vector, str, current_user_id);
+	     '          from DB.DBA.MAIL_ATTACHMENT \n' ||
+	     '         where MA_M_OWN = ''%s''\n' ||
+	     '           and contains (MA_CONTENT, ''[__lang "x-ViDoc" __enc "UTF-8"] %s'') \n' ||
+	     '         group by MA_M_OWN, MA_M_ID) MA \n' ||
+	     '   where M.MM_OWN = MA.MA_M_OWN \n' ||
+	     '     and M.MM_ID = MA.MA_M_ID ',
+	     _max, _words_vector, _words_vector, _uname, _str);
     }
 
   return ret;

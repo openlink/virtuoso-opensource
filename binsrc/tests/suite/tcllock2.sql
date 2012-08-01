@@ -22,8 +22,8 @@ cl_exec ('registry_set (''kill_id'', ?)', vector (sprintf ('%ld', __cl_txn_id ()
 cl_exec ('__cl_kill_txn  (atod (registry_get (''kill_id'')))', delay => 0.3, hosts => vector (2, 3)) &
 delay (0.1);
 commit work;
-echo both $if $equ $sqlstate "40004" "PASSED" "***FAILED";
-echo both ": async deadlock kill in mid 2pc\n";
+ECHO BOTH $IF $EQU $SQLSTATE "40004" "PASSED" "***FAILED";
+ECHO BOTH ": async deadlock kill in mid 2pc\n";
 
 
 -- out of log
@@ -34,8 +34,8 @@ update tblob b1 set b1 = (select b1 from tblob b2 where b2.k = b1.k + 1) where k
 
 cl_exec ('__dbf_set (''dbf_log_no_disk'', 1)', hosts => vector (2, 3));
 commit work;
-echo both $if $equ $sqlstate "40004" "PASSED" "***FAILED";
-echo both ": log out of disk\n";
+ECHO BOTH $IF $EQU $SQLSTATE "40004" "PASSED" "***FAILED";
+ECHO BOTH ": log out of disk\n";
 
 
 cl_exec ('__dbf_set (''dbf_log_no_disk'', 0)', hosts => vector (2, 3));
@@ -50,8 +50,8 @@ update tblob b1 set b1 = (select b1 from tblob b2 where b2.k = b1.k + 1) where k
 cl_exec ('checkpoint', delay => 0.5) &
 delay (0.2);
 commit work;
-echo both $if $equ $sqlstate OK "PASSED" "***FAILED";
-echo both ": checkpoint in mid 2pc\n";
+ECHO BOTH $IF $EQU $SQLSTATE OK "PASSED" "***FAILED";
+ECHO BOTH ": checkpoint in mid 2pc\n";
 
 -- 2pc recov cycle with blobs.  Ends with committed 
 
@@ -64,8 +64,8 @@ update tblob b1 set b1 = (select b1 from tblob b2 where b2.k = b1.k + 1) where k
 cl_exec ('raw_exit ()', delay => 1.5, hosts => vector (2, 3)) &
 delay (0.2);
 commit work;
-echo both $if $equ $sqlstate OK "PASSED" "***FAILED";
-echo both ": OK for 2pc commit with branch failure after prepare.  Recov cycle will say committed\n";
+ECHO BOTH $IF $EQU $SQLSTATE OK "PASSED" "***FAILED";
+ECHO BOTH ": OK for 2pc commit with branch failure after prepare.  Recov cycle will say committed\n";
 
 
 -- 2pc recov cycle with blobs.  Ends with not committed 
@@ -83,5 +83,3 @@ cl_exec ('raw_exit ()', delay => 1.7, hosts => vector (1)) &
 
 delay (0.15);
 commit work;
-
-

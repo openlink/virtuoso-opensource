@@ -18,6 +18,7 @@
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
 
 /* Aggregate concat */
 
@@ -192,9 +193,10 @@ yacutia_http_log_ui_labels ()
 
 create procedure adm_menu_tree ()
 {
-  declare wa_available, rdf_available integer;
-  wa_available := gt (DB.DBA.VAD_CHECK_VERSION ('Framework'), '1.02.13');
-  rdf_available := DB.DBA.VAD_CHECK_VERSION('rdf_mappers');
+  declare wa_available, rdf_available, policy_vad integer;
+  wa_available := VAD.DBA.VER_LT ('1.02.13', DB.DBA.VAD_CHECK_VERSION ('Framework'));
+  policy_vad := DB.DBA.VAD_CHECK_VERSION ('policy_manager');
+  rdf_available := check_package ('rdf_mappers') + check_package ('cartridges');
   return concat (
 '<?xml version="1.0" ?>
 <adm_menu_tree>
@@ -449,7 +451,7 @@ case when 0 and check_package('rdf_mappers') then
   '<node name="Stylesheets" url="sparql_filters.vspx"  id="190" tip="GRDDL " allowed="yacutia_message">
      <node name="Stylesheets" url="sparql_filters.vspx" id="182" place="1" allowed="yacutia_sparql_page" />
    </node>' else '' end,
-   '<node name="Sponger" url="rdf_filters.vspx"  id="191" tip="RDF Mappers " allowed="yacutia_message">
+   '<node name="Sponger" url="rdf_filters.vspx"  id="191" tip="Linked Data Cartridges " allowed="yacutia_message">
      <node name="Cartridges" url="rdf_filters.vspx" id="192" place="1" allowed="yacutia_sparql_page" />
      <node name="Meta Cartridges" url="rdf_filters_pp.vspx" id="193" place="1" allowed="yacutia_sparql_page" />
      <node name="Stylesheets" url="sparql_filters.vspx" id="182" place="1" allowed="yacutia_sparql_page" />
@@ -464,15 +466,18 @@ case when 0 and check_package('rdf_mappers') then
      <node name="Schemas" url="rdf_schemas.vspx" id="184" place="1" allowed="yacutia_sparql_page" />
    </node>
    <node name="Namespaces"  url="persistent_xmlns.vspx"  id="183" allowed="yacutia_message" />',
-      case when (wa_available is not null and rdf_available is null) then
+      case when ((wa_available > 0 or policy_vad is not null) and rdf_available > 0) then
       ' <node name="Access Control" url="sparql_acl.vspx" id="274" allowed="yacutia_acls">
-        <node name="ACL List" url="sec_auth_serv_sp.vspx" id="277" place="1" allowed="yacutia_acls"/>'
+        <node name="ACL List" url="sec_auth_serv_sp.vspx" id="277" place="1" allowed="yacutia_acls"/>
+        <node name="Sponger Groups" url="sec_auth_sponger_1.vspx" id="277" place="1" allowed="yacutia_acls"/>
+        <node name="Sponger ACL" url="sec_auth_sponger_2.vspx" id="277" place="1" allowed="yacutia_acls"/>
+       '
       else 
       '<node name="Access Control" url="sec_auth_serv_sp.vspx" id="274" allowed="yacutia_acls">
       <node name="ACL List" url="sec_auth_serv_sp.vspx" id="275" place="1" allowed="yacutia_acls"/>' 
       end,      
    ' <node name="ACL Edit" url="sec_acl_edit_sp.vspx" id="276" place="1" allowed="yacutia_acls"/>',
-      case when (wa_available is not null) then
+      case when (wa_available > 0 or policy_vad is not null) then
       '<node name="SPARQL ACL" url="sparql_acl.vspx" id="277" place="1" allowed="yacutia_acls"/>'
       else '' end,
    '</node>     
@@ -484,11 +489,12 @@ case when 0 and check_package('rdf_mappers') then
    <node name="Views" url="db_rdf_view_3.vspx"  id="273" place="1"/>
    <node name="Views" url="db_rdf_view_tb.vspx"  id="273" place="1"/>
    <node name="Views" url="db_rdf_view_cols.vspx"  id="273" place="1"/>
-   <node name="Views" url="db_rdf_view_pk.vspx"  id="273" place="1"/>
-   <node name="R2RML" url="r2rml_import.vspx"  id="273" />
+   <node name="Views" url="db_rdf_view_pk.vspx"  id="273" place="1"/>',
+case when check_package('rdb2rdf') then
+   '<node name="R2RML" url="r2rml_import.vspx"  id="273" />
    <node name="R2RML" url="r2rml_validate.vspx"  id="273" place="1"/>
-   <node name="R2RML" url="r2rml_gen.vspx"  id="273" place="1"/>
-   <node name="Quad Store Upload" url="rdf_import.vspx"  id="271" allowed="rdf_import_page"/>',
+   <node name="R2RML" url="r2rml_gen.vspx"  id="273" place="1"/>' else '' end,
+   '<node name="Quad Store Upload" url="rdf_import.vspx"  id="271" allowed="rdf_import_page"/>',
    case when __proc_exists ('PSH.DBA.cli_subscribe') is not null then 
    '<node name="Subscriptions (PHSB)" url="rdf_psh_subs.vspx"  id="271" allowed="rdf_psh_sub_page"/>'
        else
@@ -672,7 +678,8 @@ adm_db_tree ()
        i := i + 1;
        http (sprintf ('<node name="%V" id="%d">', TABLE_QUAL, i), ses);
          http (sprintf ('<node name="Tables" id="1-%d"/>\n', i), ses);
-         http (sprintf ('<node name="Views" id="2-%d"/>\n', i), ses);
+         http (sprintf ('<node name="Views (SQL)" id="2-%d"/>\n', i), ses);
+         http (sprintf ('<node name="Views (Linked Data)" id="5-%d"/>\n', i), ses);
          http (sprintf ('<node name="Procedures" id="3-%d"/>\n', i), ses);
          http (sprintf ('<node name="User Defined Types" id="4-%d"/>\n', i), ses);
        http ('</node>\n', ses);
@@ -4111,6 +4118,7 @@ YACUTIA_DAV_DIR_LIST_P (in path varchar := '/DAV/', in recursive integer := 0, i
 }
 ;
 
+yacutia_exec_no_error ('drop view Y_DAV_DIR');
 yacutia_exec_no_error('create procedure view Y_DAV_DIR as YACUTIA_DAV_DIR_LIST_P (path,recursive,auth_uid) (FULL_PATH varchar, TYPE varchar, RLENGTH integer, MOD_TIME datetime, ID integer, PERMS varchar, GRP varchar, OWNER varchar, CR_TIME datetime, MIME_TYPE varchar, NAME varchar)')
 ;
 
@@ -5895,7 +5903,7 @@ create procedure yac_vec_add (in k varchar, in v varchar, inout opts any)
 
 
 create procedure
-yac_set_ssl_key (in k varchar, in v varchar, inout opts any)
+yac_set_ssl_key (in k varchar, in v varchar, in extra varchar, inout opts any)
 {
   if (k = 'none' or not length (k))
     {
@@ -5903,7 +5911,7 @@ yac_set_ssl_key (in k varchar, in v varchar, inout opts any)
       new_opts := vector ();
       for (declare i, l int, i := 0, l := length (opts); i < l; i := i + 2)
         {
-	  if (opts[i] not in ('https_cert', 'https_key', 'https_verify', 'https_cv_depth'))
+	  if (opts[i] not in ('https_cert', 'https_key', 'https_verify', 'https_cv_depth', 'https_extra_chain_certificates'))
 	    new_opts := vector_concat (new_opts, vector (opts[i], opts[i+1]));
 	}
       opts := new_opts;
@@ -5912,6 +5920,7 @@ yac_set_ssl_key (in k varchar, in v varchar, inout opts any)
     {
       yac_vec_add ('https_cert', 'db:'||k, opts);
       yac_vec_add ('https_key',  'db:'||k, opts);
+      yac_vec_add ('https_extra_chain_certificates', extra, opts);
       yac_vec_add ('https_verify', cast (v as int), opts);
       yac_vec_add ('https_cv_depth', 10, opts);
     }
@@ -6564,3 +6573,37 @@ create procedure construct_table_sql( in tablename varchar ) returns varchar
 }
 ;
 
+
+create procedure vector_to_text_opt (in v any)
+{
+  declare i int;
+  declare r varchar;
+  if (v is null) return '';
+  r := '';
+  for (i := 0; i < length (v); i := i + 2)
+    r := r || v[i] || '=' || v[i+1] || ';\r\n';
+  return r;  
+}
+;
+
+create procedure text_opt_to_vector (in s varchar)
+{
+  declare inx int;
+  declare arr any;
+  s := replace (s, '\n', '');
+  s := replace (s, '\r', '');
+  s := trim (s);
+  s := rtrim (s, ';');
+  s := replace (s, ';', '&');
+  arr := split_and_decode (s);
+  if (0 = length (arr))
+    return NULL;
+  inx := 0;
+  foreach (varchar x in arr) do
+    {
+      arr[inx] := trim (x);
+      inx := inx + 1;
+    } 
+  return arr; 
+}
+;

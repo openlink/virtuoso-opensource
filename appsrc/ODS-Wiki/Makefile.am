@@ -55,6 +55,7 @@ clean-local:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST =  \
+	*.dox \
 	*.sql \
 	generate_drop_proc.sh \
 	http/*.css \

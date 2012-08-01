@@ -157,6 +157,7 @@ dk_hash_t *pending_futures;
 char *c_ssl_server_port;
 char *c_ssl_server_cert;
 char *c_ssl_server_key;
+char *c_ssl_server_extra_certs;
 #endif
 #endif /* GSTATE */
 
@@ -4331,6 +4332,24 @@ PrpcConnect2 (char *address, int sesclass, char *ssl_usage, char *pass, char *ca
 	      SSL_set_verify_depth (ssl, -1);
 	      SSL_CTX_set_session_id_context (ssl_ctx, (unsigned char *) &session_id_context, sizeof session_id_context);
 	    }
+	  else if (ca_list)
+	    {
+	      int session_id_context = 12;
+	      if (SSL_CTX_load_verify_locations (ssl_ctx, ca_list, NULL) <= 0)
+		{
+		  SSL_free (ssl);
+		  SSL_CTX_free (ssl_ctx);
+		  SESSTAT_CLR (session->dks_session, SST_OK);
+		  SESSTAT_SET (session->dks_session, SST_BROKEN_CONNECTION);
+		  return session;
+		}
+#if 0
+	      SSL_set_verify (ssl, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT | SSL_VERIFY_CLIENT_ONCE, NULL);
+	      SSL_set_verify_depth (ssl, -1);
+#endif
+	      SSL_CTX_set_session_id_context (ssl_ctx, (unsigned char *) &session_id_context, sizeof session_id_context);
+	    }
+
 	  ssl_err = SSL_connect (ssl);
 	  if (ssl_err != 1)
 	    {
@@ -4841,7 +4860,7 @@ dk_ssl_free (void *old)
 #endif
 
 #if defined (_SSL) && !defined (NO_THREAD)
-int ssl_server_set_certificate (SSL_CTX* ssl_ctx, char * cert_name, char * key_name);
+int ssl_server_set_certificate (SSL_CTX* ssl_ctx, char * cert_name, char * key_name, char * extra);
 
 static int 
 ssl_server_key_setup ()
@@ -4852,7 +4871,7 @@ ssl_server_key_setup ()
       return 0;
     }
 
-  if (!ssl_server_set_certificate (ssl_server_ctx, c_ssl_server_cert, c_ssl_server_key))
+  if (!ssl_server_set_certificate (ssl_server_ctx, c_ssl_server_cert, c_ssl_server_key, c_ssl_server_extra_certs))
     return 0;
 
   if (ssl_server_verify)

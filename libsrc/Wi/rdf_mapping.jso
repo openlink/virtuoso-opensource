@@ -50,6 +50,28 @@ JSO_CONST virtrdf SPART_QM_SOFT_EXCLUSIVE	0x0010	--!< The quad map is either exc
 JSO_CONST virtrdf SPART_QS_NO_IMPLICIT_USER_QM	0x0001	--!< The quad storage disables user quad maps for triple patterns with unbound graph
 JSO_CONST virtrdf SPART_QS_BLOCK_DEFAULT_QM	0x0002	--!< The quad storage disables the use of default quad map and signals an error if no other qm matches
 
+-- Flags that are responsible for various serialization features.
+-- Some features are labeled as "blocking", because if such a feature is required but flag is not set, an error is signaled.
+-- An occurrence of a non-blocking feature provides some hint to the optimizer of the SPARQL service endpoint; a blocking one alters semantics.
+JSO_CONST virtrdf SSG_SD_QUAD_MAP			0x0001	--!< Allows the use of QUAD MAP groups in the output
+JSO_CONST virtrdf SSG_SD_OPTION				0x0002	--!< Allows the use of OPTION keyword in the output
+JSO_CONST virtrdf SSG_SD_BREAKUP			0x0004	--!< Flags if BREAKUP hint options should be printed, this has no effect w/o SSG_SD_OPTION
+JSO_CONST virtrdf SSG_SD_PKSELFJOIN			0x0008	--!< Flags if PKSELFJOIN hint options should be printed, this has no effect w/o SSG_SD_OPTION
+JSO_CONST virtrdf SSG_SD_RVR				0x0010	--!< Flags if RVR hint options should be printed, this has no effect w/o SSG_SD_OPTION
+JSO_CONST virtrdf SSG_SD_IN				0x0020	--!< Allows the use of IN operator, non-blocking because can be replaced with '='
+JSO_CONST virtrdf SSG_SD_LIKE				0x0040	--!< Allows the use of LIKE operator, blocking
+JSO_CONST virtrdf SSG_SD_GLOBALS			0x0080	--!< Allows the use of global variables (with colon at the front of the name), blocking in most of cases
+JSO_CONST virtrdf SSG_SD_BI				0x0100	--!< Allows the use of SPARQL-BI extensions, blocking in most of cases
+JSO_CONST virtrdf SSG_SD_VIRTSPECIFIC			0x0200	--!< Allows the use of Virtuoso-specific features not listed above, say DEFINE, blocking in most of cases
+JSO_CONST virtrdf SSG_SD_VOS_509			0x03FF	--!< Allows everything that is supported by Virtuoso Open Source 5.0.9
+JSO_CONST virtrdf SSG_SD_SERVICE			0x0400	--!< Allows the use of SERVICE extension, blocking
+JSO_CONST virtrdf SSG_SD_VOS_5_LATEST			0x0FFF	--!< Allows everything that is supported by CVS head of Virtuoso Open Source 5.x.x
+JSO_CONST virtrdf SSG_SD_TRANSIT			0x1000	--!< Allows the use of transitivity extension, blocking
+JSO_CONST virtrdf SSG_SD_VOS_6				0x1FFF	--!< Allows everything that is supported by Virtuoso Open Source 6.0.0
+JSO_CONST virtrdf SSG_SD_SPARQL11_DRAFT			0x2000	--!< Allows the use of SPARQL 1.1 aggregates, BINDINGS, new built-in functions, MINUS, EXISTS syntax
+JSO_CONST virtrdf SSG_SD_SPARQL11_MORE			0x4000	--!< Allows the use of SPARQL 1.1 BIND, path expressions, entilement
+
+
 JSO_STRUCT_BEGIN rdf_val_range virtrdf ValRange		--!< Description of set of possible values of a variable or a format or an pattern item
 JSO_SCALAR rvrRestrictions BITMASK OPTIONAL		--!< Natural restrictions on values stored at the field
 JSO_SCALAR rvrDatatype ANY_URI OPTIONAL			--!< Datatype of stored values, if fixed

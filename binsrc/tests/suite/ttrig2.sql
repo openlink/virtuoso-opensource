@@ -68,8 +68,8 @@ create procedure tv_upd ()
 tv_upd ();
 
 select * from tt;
-echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
-echo both " test with constant col in view with instead of triggers.\n";
+ECHO BOTH $IF $EQU $ROWCNT 3 "PASSED" "***FAILED";
+ECHO BOTH ": test with constant col in view with instead of triggers.\n";
 
 
 

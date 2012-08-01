@@ -36,11 +36,11 @@ create procedure numbers ()
 
 select n, n2 from numbers () (n int, n2 int) f;
 ECHO BOTH $IF $EQU $ROWCNT 10 "PASSED" "***FAILED";
-ECHO BOTH ": proc table no params " $rowcnt " rows\n";
+ECHO BOTH ": proc table no params " $ROWCNT " rows\n";
 
 select 3*n, n2, n3, __tag (n3)  from numbers () (n int, n2 int, n3 int) f;
 ECHO BOTH $IF $EQU $ROWCNT 10 "PASSED" "***FAILED";
-ECHO BOTH ": proc table no params with calculations " $rowcnt " rows\n";
+ECHO BOTH ": proc table no params with calculations " $ROWCNT " rows\n";
 
 
 
@@ -61,7 +61,7 @@ create procedure n_range (in first integer, in  last integer)
 
 select n, n2 from n_range (first, last) (n int, n2 int) n where first = 2 and last = 12;
 ECHO BOTH $IF $EQU $ROWCNT 10 "PASSED" "***FAILED";
-ECHO BOTH ": proc params " $rowcnt " rows\n";
+ECHO BOTH ": proc params " $ROWCNT " rows\n";
 
 select n, n2 from n_range (first, last) (n int, n2 int) n where first = 2 and last = 12 and last = 13;
 
@@ -69,7 +69,7 @@ select n, n2 from n_range (first, last) (n int, n2 int) n where first = 2 and la
 
 select a.n, b.n from n_range (first, last) (n int, n2 int) a, n_range (f2, l2) (n int, n2 int) b where first = 2 and last = 12 and f2 = a.n - 2 and l2 = a.n + 2;
 ECHO BOTH $IF $EQU $ROWCNT 40 "PASSED" "***FAILED";
-ECHO BOTH ": proc derived table " $rowcnt " rows\n";
+ECHO BOTH ": proc derived table " $ROWCNT " rows\n";
 
 
 
@@ -80,11 +80,11 @@ create procedure view n_range as n_range (first, last) (n1 int, n2 int);
 
 select * from n_range where first = 1 and n_range.last = 11 ;
 ECHO BOTH $IF $EQU $ROWCNT 10 "PASSED" "***FAILED";
-ECHO BOTH ": proc view " $rowcnt " rows\n";
+ECHO BOTH ": proc view " $ROWCNT " rows\n";
 
 select * from n_range a, n_range b where a.first = 1 and a.last = 11  and b.last = a.n1 + 2 and b.first = a.n1 - 2;
 ECHO BOTH $IF $EQU $ROWCNT 40 "PASSED" "***FAILED";
-ECHO BOTH ": 2 proc views  " $rowcnt " rows\n";
+ECHO BOTH ": 2 proc views  " $ROWCNT " rows\n";
 
 
 
@@ -120,22 +120,22 @@ create procedure BIGTABLE_P(in PARAM_VALUE varchar)
 -- Call stored procedure
 call BIGTABLE_P(null);
 ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
-ECHO BOTH ": 2 rows procedure call with BLOB result columns" $rowcnt " rows\n";
+ECHO BOTH ": 2 rows procedure call with BLOB result columns" $ROWCNT " rows\n";
 
 call BIGTABLE_P(1700);
 ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
-ECHO BOTH ": first row procedure call with BLOB result columns" $rowcnt " rows\n";
+ECHO BOTH ": first row procedure call with BLOB result columns" $ROWCNT " rows\n";
 
 call BIGTABLE_P(2000);
 ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
-ECHO BOTH ": second row procedure call with BLOB result columns" $rowcnt " rows\n";
+ECHO BOTH ": second row procedure call with BLOB result columns" $ROWCNT " rows\n";
 
 create procedure view BIGTABLE_V as BIGTABLE_P(PVALUE)(NAME varchar, VALUE long varchar, NVALUE long nvarchar, BVALUE long varbinary);
 
 -- Perform query tests
 select * from BIGTABLE_V;
 ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
-ECHO BOTH ": 2 rows procedure view select with BLOB result columns" $rowcnt " rows\n";
+ECHO BOTH ": 2 rows procedure view select with BLOB result columns" $ROWCNT " rows\n";
 
 select NAME,
 	length (VALUE), dv_type_title (__tag (VALUE)),
@@ -143,7 +143,7 @@ select NAME,
 	length (BVALUE), dv_type_title (__tag (BVALUE))
   from BIGTABLE_V where PVALUE = 1700;
 ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
-ECHO BOTH ": first row procedure view select with BLOB result columns" $rowcnt " rows\n";
+ECHO BOTH ": first row procedure view select with BLOB result columns" $ROWCNT " rows\n";
 
 ECHO BOTH $IF $EQU $LAST[2] 1700 "PASSED" "***FAILED";
 ECHO BOTH ": length of a LONG VARCHAR BLOB from a procedure view select = " $LAST[2] " chars\n";
@@ -506,7 +506,7 @@ create procedure B4000P (in first integer, in last integer)
 };
 select n, n2 from B4000P (first, last) (n int, n2 int) n where first = 2 and last = 12;
 ECHO BOTH $IF $EQU $ROWCNT 10 "PASSED" "***FAILED";
-ECHO BOTH ": BUG4000: proc table w/ end_result returned " $rowcnt " rows\n";
+ECHO BOTH ": BUG4000: proc table w/ end_result returned " $ROWCNT " rows\n";
 
 
 drop view B1499_HASH_V2;

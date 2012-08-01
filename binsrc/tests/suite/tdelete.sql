@@ -149,23 +149,23 @@ ECHO BOTH $IF $EQU $LAST[1] 76469 "PASSED" "***FAILED";
 ECHO BOTH ": " $LAST[1] " rows_1 in words_2 after delete\n";
 
 delete from words table option (index primary key) where len > 7 option (index len);
-echo both $if $equ $state 42000 "PASSED" "***FAILED";
-echo both ": error with different inx for single key del and the search\n";
+ECHO BOTH $IF $EQU $STATE 42000 "PASSED" "***FAILED";
+ECHO BOTH ": error with different inx for single key del and the search\n";
 
 
 set autocommit manual;
 
 delete from words table option (index len, no cluster) where len > 7 option (index len);
-echo both $if $equ $sqlstate OK "PASSED" "***FAILED";
-echo both ": del single key\n";
+ECHO BOTH $IF $EQU $SQLSTATE OK "PASSED" "***FAILED";
+ECHO BOTH ": del single key\n";
 select (select count (*) from words table option (index primary key)) - (select count (*) from words table option (index len));
-echo both $if $neq $last[1] 0 "PASSED" "***FAILED";
-echo both ": count after single key del\n";
+ECHO BOTH $IF $NEQ $LAST[1] 0 "PASSED" "***FAILED";
+ECHO BOTH ": count after single key del\n";
 
 
 select count (*) from words table option (index primary key);
-echo both $if $equ $last[1] 76469 "PASSED" "***FAILED";
-echo both ": pk count after single key del\n";
+ECHO BOTH $IF $EQU $LAST[1] 76469 "PASSED" "***FAILED";
+ECHO BOTH ": pk count after single key del\n";
 
 rollback work;
 set autocommit off;

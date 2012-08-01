@@ -1207,7 +1207,7 @@ create procedure ODRIVE.WA.odrive_proc(
   declare tmp, dirFilter, dirHiddens, dirList, sharedRoot, sharedFilter, sharedPath, sharedList any;
   declare vspx_user, user_name, group_name varchar;
   declare user_id, group_id integer;
-  declare c2 integer;
+  declare c2 any;
   declare c0, c1, c3, c4, c5, c6, c7, c8, c9 varchar;
 
   result_names(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9);
@@ -1348,7 +1348,7 @@ create procedure ODRIVE.WA.odrive_effective_permissions (
   in permission varchar := '1__')
 {
   declare N, I, nPermission integer;
-  declare rc, id, type, item any;
+  declare rc, id, what, item any;
   declare lines, name, pwd, uid, gid, permissions any;
   declare auth_name varchar;
 
@@ -1358,10 +1358,11 @@ create procedure ODRIVE.WA.odrive_effective_permissions (
   name := null;
   uid := null;
   gid := null;
-  id := ODRIVE.WA.DAV_SEARCH_ID (path, type);
+  what := case when (path[length (path)-1] <> ascii('/')) then 'R' else 'C' end;
+  id := DB.DBA.DAV_SEARCH_ID (path, what);
   for (N := 0; N < length (permission); N := N + 1)
   {
-    if (DB.DBA.DAV_AUTHENTICATE (id, type, permission[N], name, uid, gid))
+    if (DB.DBA.DAV_AUTHENTICATE (id, what, permission[N], name, uid, gid))
       return 1;
   }
   
@@ -2264,9 +2265,9 @@ create procedure ODRIVE.WA.acl_params (
   }
   for (I := 0; I < length (params); I := I + 2)
   {
-    if (params[I] like 's_fld_1_%')
+    if (params[I] like 'f_fld_1_%')
     {
-      acl_seq := replace (params[I], 's_fld_1_', '');
+      acl_seq := replace (params[I], 'f_fld_1_', '');
       acl_users := split_and_decode (trim (params[I+1]), 0, '\0\0,');
       for (N := 0; N < length (acl_users); N := N + 1)
       {
@@ -2275,21 +2276,21 @@ create procedure ODRIVE.WA.acl_params (
         acl_user := ODRIVE.WA.odrive_user_id (trim (acl_users[N]));
         if (acl_user <> -1)
         {
-          acl_inheritance := atoi (get_keyword ('s_fld_2_' || acl_seq, params));
+          acl_inheritance := atoi (get_keyword ('f_fld_2_' || acl_seq, params));
           if (acl_inheritance <> 3)
           {
           WS.WS.ACL_ADD_ENTRY (acl_value,
                                acl_user,
-                                 bit_shift (atoi (get_keyword ('s_fld_3_' || acl_seq || '_r_grant', params, '0')), 2) +
-                                 bit_shift (atoi (get_keyword ('s_fld_3_' || acl_seq || '_w_grant', params, '0')), 1) +
-                                 atoi (get_keyword ('s_fld_3_' || acl_seq || '_x_grant', params, '0')),
+                                 bit_shift (atoi (get_keyword ('f_fld_3_' || acl_seq || '_r_grant', params, '0')), 2) +
+                                 bit_shift (atoi (get_keyword ('f_fld_3_' || acl_seq || '_w_grant', params, '0')), 1) +
+                                 atoi (get_keyword ('f_fld_3_' || acl_seq || '_x_grant', params, '0')),
                                1,
                                acl_inheritance);
           WS.WS.ACL_ADD_ENTRY (acl_value,
                                acl_user,
-                                 bit_shift (atoi (get_keyword ('s_fld_4_' || acl_seq || '_r_deny', params, '0')), 2) +
-                                 bit_shift (atoi (get_keyword ('s_fld_4_' || acl_seq || '_w_deny', params, '0')), 1) +
-                                 atoi (get_keyword ('s_fld_4_' || acl_seq || '_x_deny', params, '0')),
+                                 bit_shift (atoi (get_keyword ('f_fld_4_' || acl_seq || '_r_deny', params, '0')), 2) +
+                                 bit_shift (atoi (get_keyword ('f_fld_4_' || acl_seq || '_w_deny', params, '0')), 1) +
+                                 atoi (get_keyword ('f_fld_4_' || acl_seq || '_x_deny', params, '0')),
                                0,
                                acl_inheritance);
         }
@@ -2339,6 +2340,35 @@ create procedure ODRIVE.WA.acl_vector (
   }
   }
   return aTmp;
+}
+;
+
+-----------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.acl_vector_unique (
+  in acl any)
+{
+  declare N integer;
+  declare retValue any;
+
+  retValue := vector ();
+  for (N := 0; N < length (acl); N := N + 1)
+  {
+    if (exists (select 1 from DB.DBA.SYS_USERS where U_ID = acl[N][0] and U_IS_ROLE = 1))
+    {
+      for (select UG_UID from DB.DBA.SYS_USER_GROUP, DB.DBA.SYS_USERS where UG_GID = acl[N][0] and U_ID = UG_UID and U_IS_ROLE = 0 and U_ACCOUNT_DISABLED = 0) do
+      {
+        if (not ODRIVE.WA.vector_contains (retValue, UG_UID))
+          retValue := vector_concat (retValue, vector (UG_UID));
+      }
+    }
+    else
+    {
+      if (not ODRIVE.WA.vector_contains (retValue, acl[N][0]))
+        retValue := vector_concat (retValue, vector (acl[N][0]));
+    }
+  }
+  return retValue;
 }
 ;
 
@@ -2763,14 +2793,14 @@ create procedure ODRIVE.WA.auto_version_short (
 --
 create procedure ODRIVE.WA.det_type (
   in path varchar,
-  in type varchar := 'C')
+  in what varchar := 'C') returns varchar
 {
   declare id any;
 
-  id := DB.DBA.DAV_SEARCH_ID (path, type);
+  id := DB.DBA.DAV_SEARCH_ID (path, what);
   if (ODRIVE.WA.DAV_ERROR (id))
     return '';
-  return cast (coalesce (DB.DBA.DAV_PROP_GET_INT (id, type, ':virtdet', 0), '') as varchar);
+  return cast (coalesce (DB.DBA.DAV_PROP_GET_INT (id, what, ':virtdet', 0), '') as varchar);
 }
 ;
 
@@ -2778,11 +2808,14 @@ create procedure ODRIVE.WA.det_type (
 --
 create procedure ODRIVE.WA.det_class(
   in path varchar,
-  in type varchar := 'C')
+  in what varchar := null) returns varchar
 {
   declare id any;
 
-  id := ODRIVE.WA.DAV_SEARCH_ID (path, type);
+  if (isnull (what))
+    what := case when (path[length (path)-1] <> ascii('/')) then 'R' else 'C' end;
+
+  id := DB.DBA.DAV_SEARCH_ID (path, what);
   if (not ODRIVE.WA.DAV_ERROR (id) and isarray (id))
       return cast (id[0] as varchar);
   return '';
@@ -3221,25 +3254,6 @@ create procedure ODRIVE.WA.DAV_INIT_COLLECTION (
 
 -------------------------------------------------------------------------------
 --
-create procedure ODRIVE.WA.DAV_SEARCH_ID(
-  in path varchar,
-  out type varchar)
-{
-  declare id any;
-
-  type := 'C';
-  id := DB.DBA.DAV_SEARCH_ID (path, type);
-  if (ODRIVE.WA.DAV_ERROR(id))
-  {
-    type := 'R';
-    return DB.DBA.DAV_SEARCH_ID (path, type);
-  }
-  return id;
-}
-;
-
--------------------------------------------------------------------------------
---
 create procedure ODRIVE.WA.DAV_GET (
   inout resource any,
   in property varchar)
@@ -3303,9 +3317,16 @@ create procedure ODRIVE.WA.DAV_GET (
 
   if (property = 'acl')
   {
-    if (isnull(resource[0]))
+    declare path varchar;
+
+    path := resource[0];
+    if (isnull (path))
       return WS.WS.ACL_CREATE();
-    return cast(ODRIVE.WA.DAV_PROP_GET (resource[0], ':virtacl', WS.WS.ACL_CREATE()) as varbinary);
+
+    if (isstring (path) and path like '%,acl')
+      path := regexp_replace (path, ',acl\x24', '');
+
+    return cast (ODRIVE.WA.DAV_PROP_GET (path, ':virtacl', WS.WS.ACL_CREATE()) as varbinary);
   }
 
   if ((property = 'detType') and (not isnull (resource[0])))
@@ -4373,12 +4394,15 @@ create procedure ODRIVE.WA.ui_date (
 create procedure ODRIVE.WA.send_mail (
   in _instance integer,
   in _from integer,
-  in _to integer,
+  in _to any,
+  in _subject varchar,
   in _body varchar,
-  in _path varchar)
+  in _path varchar,
+  in _mode integer := 1)
 {
-  declare N, _id, _what, _iri any;
-  declare _smtp_server, _from_address, _to_address, _toUsers, _toBody, _message any;
+  -- dbg_obj_princ ('ODRIVE.WA.send_mail (', _from, _to, _path, ')');
+  declare _id, _what, _iri, _data any;
+  declare _smtp_server, _from_address, _to_address, _message any;
 
   if ((select max (WS_USE_DEFAULT_SMTP) from WA_SETTINGS) = 1 or (select length (max (WS_SMTP)) from WA_SETTINGS) = 0)
   {
@@ -4392,30 +4416,32 @@ create procedure ODRIVE.WA.send_mail (
      _what := case when (_path[length (_path)-1] <> ascii('/')) then 'R' else 'C' end;
      if (_what = 'C')
        _iri := _iri || '/folder';
-     _id := DB.DBA.DAV_SEARCH_ID (_path, _what);
 
-    if (exists (select 1 from SYS_USERS where U_ID = _to and U_IS_ROLE = 1))
-    {
-      _toUsers := vector ();
-      for (select UG_UID from DB.DBA.SYS_USER_GROUP, DB.DBA.SYS_USERS where UG_GID = _to and U_ID = UG_UID and U_IS_ROLE = 0 and U_ACCOUNT_DISABLED = 0) do
-        _toUsers := vector_concat (_toUsers, vector (UG_UID));
-    } else {
-      _toUsers := vector (_to);
-    }
-    _toBody := _body;
-    for (N := 0; N < length (_toUsers); N := N + 1)
-    {
-      _to := _toUsers[N];
-      _body := _toBody;
+    _id := DB.DBA.DAV_SEARCH_ID (_path, _what);
     _body := replace (_body, '%resource_path%', _path);
+    if (isarray (_id) and (cast (_id[0] as varchar) in ('IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV')))
+        _id := _id[2];
+
+      if (not isarray (_id))
     _body := replace (_body, '%resource_uri%', SIOC..post_iri_ex (_iri, _id));
+
     _body := replace (_body, '%owner_uri%', SIOC..person_iri (SIOC..user_iri (_from)));
     _body := replace (_body, '%owner_name%', ODRIVE.WA.account_name (_from));
+    _from_address := (select U_E_MAIL from SYS_USERS where U_ID = _from);
+    if (_mode)
+    {
     _body := replace (_body, '%user_uri%', SIOC..person_iri (SIOC..user_iri (_to)));
     _body := replace (_body, '%user_name%', ODRIVE.WA.account_name (_to));
-    _message := 'Subject: Sharing notification\r\nContent-Type: text/plain\r\n' || _body;
-    _from_address := (select U_E_MAIL from SYS_USERS where U_ID = _from);
     _to_address := (select U_E_MAIL from SYS_USERS where U_ID = _to);
+    }
+    else
+    {
+      _data := ODS.ODS_API.getFOAFDataArray (_to);
+      _to_address := get_keyword ('mbox', _data);
+      _body := replace (_body, '%user_uri%', _to);
+      _body := replace (_body, '%user_name%', get_keyword ('name', _data, get_keyword ('nick', _data)));
+    }
+    _message := _subject || '\r\nContent-Type: text/plain\r\n' || _body;
     {
       declare exit handler for sqlstate '*'
       {
@@ -4425,7 +4451,6 @@ create procedure ODRIVE.WA.send_mail (
       smtp_send (_smtp_server, _from_address, _to_address, _message);
     }
   }
-}
 }
 ;
 
@@ -4438,33 +4463,77 @@ create procedure ODRIVE.WA.acl_send_mail (
   in _old_acl any,
   in _new_acl any)
 {
-  declare N, M integer;
-  declare oACLs, oACL, nACLs, nACL, settings, text any;
+  declare aq any;
+
+  _old_acl := ODRIVE.WA.acl_vector_unique (ODRIVE.WA.acl_vector (_old_acl));
+  _new_acl := ODRIVE.WA.acl_vector_unique (ODRIVE.WA.acl_vector (_new_acl));
+  aq := async_queue (1);
+  aq_request (aq, 'ODRIVE.WA.acl_send_mail_aq', vector (_instance, _from, _path, _old_acl, _new_acl));
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.acl_send_mail_aq (
+  in _instance integer,
+  in _from integer,
+  in _path varchar,
+  in _old_acl any,
+  in _new_acl any)
+{
+  -- dbg_obj_princ ('ODRIVE.WA.acl_send_mail_aq (', _path, _old_acl, _new_acl, ')');
+  declare N integer;
+  declare settings, subject, text any;
 
   settings := ODRIVE.WA.settings (_from);
+  subject := 'Subject: Sharing notification';
   text := ODRIVE.WA.settings_mailShare (settings);
-  oACLs := ODRIVE.WA.acl_vector (_old_acl);
-  nACLs := ODRIVE.WA.acl_vector (_new_acl);
-  for (N := 0; N < length (nACLs); N := N + 1)
+  for (N := 0; N < length (_new_acl); N := N + 1)
   {
-    for (M := 0; M < length (oACLs); M := M + 1)
-    {
-      if (nACLs[N][0] = oACLs[M][0])
-        goto _skip;
-    }
-    ODRIVE.WA.send_mail (_instance, _from, nACLs[N][0], text, _path);
-  _skip:;
+    if (not ODRIVE.WA.vector_contains (_old_acl, _new_acl[N]))
+      ODRIVE.WA.send_mail (_instance, _from, _new_acl[N], subject, text, _path);
   }
-  for (N := 0; N < length (oACLs); N := N + 1)
+  subject := 'Subject: Unsharing notification';
+  text := ODRIVE.WA.settings_mailUnshare (settings);
+  for (N := 0; N < length (_old_acl); N := N + 1)
+    {
+    if (not ODRIVE.WA.vector_contains (_new_acl, _old_acl[N]))
+      ODRIVE.WA.send_mail (_instance, _from, _old_acl[N], subject, text, _path);
+    }
+  }
+;
+
+-----------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.aci_vector (
+  in aci any)
   {
-    for (M := 0; M < length (nACLs); M := M + 1)
+  declare N, I integer;
+  declare retValue, webIDs any;
+
+  retValue := vector ();
+  for (N := 0; N < length (aci); N := N + 1)
     {
-      if (oACLs[N][0] = nACLs[M][0])
-        goto _skip2;
+    if      (aci[N][2] = 'person')
+    {
+      if (not ODRIVE.WA.vector_contains (retValue, aci[N][1]))
+        retValue := vector_concat (retValue, vector (aci[N][1]));
     }
-    ODRIVE.WA.send_mail (_instance, _from, oACLs[N][0], text, _path);
-  _skip2:;
+    else if (aci[N][2] = 'group')
+    {
+      webIDs := (select WACL_WEBIDS from DB.DBA.WA_GROUPS_ACL where aci[N][1] = SIOC..acl_group_iri (WACL_USER_ID, WACL_NAME));
+      if (not isnull (webIDs))
+      {
+        webIDs := split_and_decode (webIDs, 0, '\0\0\n');
+        for (I := 0; I < length (webIDs); I := I + 1)
+        {
+          if (not ODRIVE.WA.vector_contains (retValue, webIDs[I]))
+            retValue := vector_concat (retValue, vector (webIDs[I]));
+    }
   }
+}
+  }
+  return retValue;
 }
 ;
 
@@ -4494,11 +4563,13 @@ create procedure ODRIVE.WA.aci_load (
   in path varchar)
 {
   declare id, what, retValue, graph any;
-  declare S, st, msg, data, meta any;
+  declare S, st, msg, meta, rows any;
 
+  --return vector ();
   what := case when (path[length (path)-1] <> ascii('/')) then 'R' else 'C' end;
-  id := ODRIVE.WA.DAV_SEARCH_ID (path, what);
-  if (isarray (id))
+  id := DB.DBA.DAV_SEARCH_ID (path, what);
+  DB.DBA.DAV_AUTHENTICATE_SSL_ITEM (id, what, path);
+  if (isarray (id) and (cast (id[0] as varchar) not in ('IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV')))
   {
     retValue := ODRIVE.WA.DAV_PROP_GET (path, 'virt:aci_meta');
     if (ODRIVE.WA.DAV_ERROR (retValue))
@@ -4507,14 +4578,14 @@ create procedure ODRIVE.WA.aci_load (
   else
   {
   retValue := vector ();
-
-  graph := WS.WS.DAV_IRI (path);
+    graph := WS.WS.WAC_GRAPH (path);
   S := sprintf (' sparql \n' ||
                 ' define input:storage "" \n' ||
                 ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
                 ' prefix foaf: <http://xmlns.com/foaf/0.1/> \n' ||
                 ' prefix acl: <http://www.w3.org/ns/auth/acl#> \n' ||
-                ' select ?rule ?agent ?mode \n' ||
+                  ' prefix flt: <http://www.openlinksw.com/schemas/acl/filter#> \n' ||
+                  ' select distinct ?rule ?agent ?mode ?filter ?criteria ?operand ?condition ?pattern ?statement \n' ||
                 '   from <%s> \n' ||
                 '  where { \n' ||
                 '          { \n' ||
@@ -4530,36 +4601,64 @@ create procedure ODRIVE.WA.aci_load (
                 '            acl:mode ?mode ; \n' ||
                 '            acl:agentClass ?agent. \n' ||
                 '          } \n' ||
+                  '          union \n' ||
+                  '          { \n' ||
+                  '            ?rule rdf:type acl:Authorization ; \n' ||
+                  '                  acl:accessTo <%s> ; \n' ||
+                  '                  acl:mode ?mode ; \n' ||
+                  '                  flt:hasFilter ?filter . \n' ||
+                  '            ?filter flt:hasCriteria ?criteria . \n' ||
+                  '            ?criteria flt:operand ?operand ; \n' ||
+                  '                      flt:condition ?condition ; \n' ||
+                  '                      flt:value ?pattern . \n' ||
+                  '            OPTIONAL { ?criteria flt:statement ?statement . } \n' ||
+                  '          } \n' ||
                 '        }\n' ||
-                '  order by ?rule\n',
+                  '  order by ?rule ?filter ?criteria\n',
+                  graph,
                 graph,
                 graph,
                 graph);
   commit work;
   st := '00000';
-  exec (S, st, msg, vector (), 0, meta, data);
-  if (st = '00000' and length (data))
+    exec (S, st, msg, vector (), 0, meta, rows);
+    if (st = '00000')
   {
-    declare N, aclNo, aclRule, aclMode, V any;
+      declare aclNo, aclRule, aclMode, aclCriteria, V, F any;
 
-    V := null;
     aclNo := 0;
     aclRule := '';
-    for (N := 0; N < length (data); N := N + 1)
+      V := null;
+      F := vector ();
+      aclCriteria := '';
+      foreach (any row in rows) do
     {
-      if (aclRule <> data[N][0])
+        if (aclRule <> row[0])
       {
         if (not isnull (V))
           retValue := vector_concat (retValue, vector (V));
+
         aclNo := aclNo + 1;
-        aclRule := data[N][0];
-        V := vector (aclNo, ODS.ODS_API."ontology.normalize" (data[N][1]), 'person', 0, 0, 0);
+          aclRule := row[0];
+          V := vector (aclNo, ODS.ODS_API."ontology.normalize" (row[1]), 'person', 0, 0, 0);
+          F := vector ();
+          aclCriteria := '';
       }
-      if (ODS.ODS_API."ontology.normalize" (data[N][1]) = 'foaf:Agent')
+        if (ODS.ODS_API."ontology.normalize" (row[1]) = 'foaf:Agent')
         V[2] := 'public';
-      if (data[N][1] like SIOC.DBA.get_graph () || '/%/group/%')
+        if (row[1] like SIOC.DBA.get_graph () || '/%/group/%')
         V[2] := 'group';
-      aclMode := ODS.ODS_API."ontology.normalize" (data[N][2]);
+        if (row[3] like (graph || 'filter_%'))
+        {
+          V[2] := 'advanced';
+          if (aclCriteria <> row[4])
+          {
+            F := vector_concat (F, vector (vector (1, replace (row[5], 'flt:', ''), replace (row[6], 'flt:', ''), row[7], row[8])));
+            aclCriteria := row[4];
+            V[1] := F;
+          }
+        }
+        aclMode := ODS.ODS_API."ontology.normalize" (row[2]);
       if (aclMode = 'acl:Read')
         V[3] := 1;
       if (aclMode = 'acl:Write')
@@ -4584,42 +4683,14 @@ create procedure ODRIVE.WA.aci_save (
   declare id, what, retValue, tmp any;
 
   what := case when (path[length (path)-1] <> ascii('/')) then 'R' else 'C' end;
-  id := ODRIVE.WA.DAV_SEARCH_ID (path, what);
-  if (isarray (id))
-    retValue := ODRIVE.WA.DAV_PROP_SET (path, 'virt:aci_meta', aci);
-
-  if (not isarray (id))
-    retValue := ODRIVE.WA.DAV_PROP_SET (path, 'virt:aci_meta_n3', ODRIVE.WA.aci_n3 (aci));
-
-  return retValue;
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure ODRIVE.WA.aci_params (
-  inout params any)
-{
-  declare N, M integer;
-  declare aclNo, retValue, V any;
-
-  M := 1;
-  retValue := vector ();
-  for (N := 0; N < length (params); N := N + 2)
+  id := DB.DBA.DAV_SEARCH_ID (path, what);
+  if (isarray (id) and (cast (id[0] as varchar) not in ('IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV')))
   {
-    if (params[N] like 'f_fld_2_%')
-    {
-      aclNo := replace (params[N], 'f_fld_2_', '');
-      V := vector (M,
-                   trim (params[N+1]),
-                   get_keyword ('f_fld_1_' || aclNo, params, 'person'),
-                   atoi (get_keyword ('f_fld_3_' || aclNo || '_r', params, '0')),
-                   atoi (get_keyword ('f_fld_3_' || aclNo || '_w', params, '0')),
-                   atoi (get_keyword ('f_fld_3_' || aclNo || '_x', params, '0'))
-                  );
-      retValue := vector_concat (retValue, vector (V));
-      M := M + 1;
-    }
+    retValue := ODRIVE.WA.DAV_PROP_SET (path, 'virt:aci_meta', aci);
+  }
+  else
+  {
+    retValue := ODRIVE.WA.DAV_PROP_SET (path, 'virt:aci_meta_n3', ODRIVE.WA.aci_n3 (aci));
   }
   return retValue;
 }
@@ -4630,42 +4701,115 @@ create procedure ODRIVE.WA.aci_params (
 create procedure ODRIVE.WA.aci_n3 (
   in aciArray any)
 {
-  declare N integer;
-  declare retValue any;
+  declare N, M integer;
+  declare stream any;
 
   if (length (aciArray) = 0)
     return null;
 
-  retValue := ' @prefix acl: <http://www.w3.org/ns/auth/acl#> . \n' ||
-              ' @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> . \n' ||
-              ' @prefix foaf: <http://xmlns.com/foaf/0.1/> . \n';
+
+  stream := string_output ();
+  http ('@prefix acl: <http://www.w3.org/ns/auth/acl#> . \n', stream);
+  http ('@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> . \n', stream);
+  http ('@prefix foaf: <http://xmlns.com/foaf/0.1/> . \n', stream);
+  http ('@prefix flt: <http://www.openlinksw.com/schemas/acl/filter#> . ', stream);
   for (N := 0; N < length (aciArray); N := N + 1)
   {
     if (length (aciArray[N][1]))
     {
-      retValue := retValue || sprintf ('   <aci_%d> rdf:type acl:Authorization ;\n   acl:accessTo <>', aciArray[N][0]);
+      http (sprintf ('\n<aci_%d> rdf:type acl:Authorization ;\n        acl:accessTo <>', aciArray[N][0]), stream);
       if (aciArray[N][2] = 'person')
       {
-        retValue := retValue || sprintf (';\n   acl:agent <%s>', aciArray[N][1]);
+        http (sprintf ('; \n        acl:agent <%s>', aciArray[N][1]), stream);
       }
       else if (aciArray[N][2] = 'group')
       {
-        retValue := retValue || sprintf (';\n   acl:agentClass <%s>', aciArray[N][1]);
+        http (sprintf ('; \n        acl:agentClass <%s>', aciArray[N][1]), stream);
       }
       else if (aciArray[N][2] = 'public')
       {
-        retValue := retValue || ';\n   acl:agentClass foaf:Agent';
+        http (         '; \n        acl:agentClass foaf:Agent', stream);
+      }
+      else if (aciArray[N][2] = 'advanced')
+      {
+        http (sprintf ('; \n        flt:hasFilter <filter_%d>', aciArray[N][0]), stream);
       }
       if (aciArray[N][3])
-        retValue := retValue || ';\n   acl:mode acl:Read';
+        http ('; \n        acl:mode acl:Read', stream);
       if (aciArray[N][4])
-        retValue := retValue || ';\n   acl:mode acl:Write';
+        http ('; \n        acl:mode acl:Write', stream);
       if (aciArray[N][5])
-        retValue := retValue || ';\n   acl:mode acl:Execute';
-      retValue := retValue || '.\n';
+        http ('; \n        acl:mode acl:Execute', stream);
+
+      http ('. ', stream);
+      if (aciArray[N][2] = 'advanced')
+      {
+        http (sprintf ('\n<filter_%d> rdf:type flt:Filter .', aciArray[N][0]), stream);
+        for (M := 0; M < length (aciArray[N][1]); M := M + 1)
+        {
+          http (sprintf ('\n<filter_%d> flt:hasCriteria <criteria_%d_%d> .', aciArray[N][0], aciArray[N][0], aciArray[N][1][M][0]), stream);
+          http (sprintf ('\n<criteria_%d_%d> flt:operand <flt:%s> ;', aciArray[N][0], aciArray[N][1][M][0], aciArray[N][1][M][1]), stream);
+          http (sprintf ('\n               flt:condition <flt:%s> ;', aciArray[N][1][M][2]), stream);
+          http (         '\n               flt:value ', stream); http_nt_object (aciArray[N][1][M][3], stream);
+          if ((length (aciArray[N][1][M]) > 3) and not DB.DBA.is_empty_or_null (aciArray[N][1][M][4]))
+          {
+          http (         '; \n             flt:statement ', stream); http_nt_object (aciArray[N][1][M][4], stream);
+        }
+          http ('. \n', stream);
+      }
     }
   }
-  return retValue;
+  }
+  return string_output_string (stream);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.aci_send_mail (
+  in _instance integer,
+  in _from integer,
+  in _path varchar,
+  in _old_acl any,
+  in _new_acl any)
+{
+  declare aq any;
+
+  _old_acl := ODRIVE.WA.aci_vector (_old_acl);
+  _new_acl := ODRIVE.WA.aci_vector (_new_acl);
+  aq := async_queue (1);
+  aq_request (aq, 'ODRIVE.WA.aci_send_mail_aq', vector (_instance, _from, _path, _old_acl, _new_acl));
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.aci_send_mail_aq (
+  in _instance integer,
+  in _from integer,
+  in _path varchar,
+  in _old_acl any,
+  in _new_acl any)
+{
+  -- dbg_obj_princ ('ODRIVE.WA.aci_send_mail_aq (', _path, _old_acl, _new_acl, ')');
+  declare N integer;
+  declare settings, subject, text any;
+
+  settings := ODRIVE.WA.settings (_from);
+  subject := 'Subject: Sharing notification';
+  text := ODRIVE.WA.settings_mailShare (settings);
+  for (N := 0; N < length (_new_acl); N := N + 1)
+  {
+    if (not ODRIVE.WA.vector_contains (_old_acl, _new_acl[N]))
+      ODRIVE.WA.send_mail (_instance, _from, _new_acl[N], subject, text, _path, 0);
+  }
+  subject := 'Subject: Unsharing notification';
+  text := ODRIVE.WA.settings_mailUnshare (settings);
+  for (N := 0; N < length (_old_acl); N := N + 1)
+  {
+    if (not ODRIVE.WA.vector_contains (_new_acl, _old_acl[N]))
+      ODRIVE.WA.send_mail (_instance, _from, _old_acl[N], subject, text, _path, 0);
+  }
 }
 ;
 
@@ -4788,14 +4932,20 @@ create procedure ODRIVE.WA.syncml_type (
 
 -------------------------------------------------------------------------------
 --
+-- DB.DBA.RDF_LOAD_HTML_RESPONSE
+--
 create procedure ODRIVE.WA.cartridges_get ()
 {
+  declare selected integer;
   declare retValue any;
 
   retValue := vector ();
-  for (select RM_ID, RM_DESCRIPTION, ucase (cast (RM_DESCRIPTION as varchar (128))) as RM_SORT from DB.DBA.SYS_RDF_MAPPERS where RM_ENABLED = 1 order by 3) do
+  for (select RM_ID, RM_DESCRIPTION, RM_HOOK, ucase (cast (RM_DESCRIPTION as varchar (128))) as RM_SORT from DB.DBA.SYS_RDF_MAPPERS where RM_ENABLED = 1 order by 4) do
   {
-    retValue := vector_concat (retValue, vector (vector (RM_ID, RM_DESCRIPTION)));
+    selected := 0;
+    if (RM_HOOK in ('DB.DBA.RDF_LOAD_HTML_RESPONSE'))
+      selected := 1;
+    retValue := vector_concat (retValue, vector (vector (RM_ID, RM_DESCRIPTION, selected)));
   }
   return retValue;
 }
@@ -4803,16 +4953,127 @@ create procedure ODRIVE.WA.cartridges_get ()
 
 -------------------------------------------------------------------------------
 --
+-- DB.DBA.RDF_LOAD_CALAIS,
+-- DB.DBA.RDF_LOAD_ZEMANTA
+-- DB.DBA.RDF_LOAD_ALCHEMY_META
+-- DB.DBA.RDF_LOAD_YAHOO_TERM_META
+-- DB.DBA.RDF_LOAD_DBPEDIA_SPOTLIGHT_META
+--
 create procedure ODRIVE.WA.metaCartridges_get ()
 {
+  declare selected integer;
   declare items, retValue any;
 
   retValue := vector ();
-  items := ODRIVE.WA.exec ('select MC_ID, MC_DESC, ucase (cast (MC_DESC as varchar (128))) as MC_SORT from DB.DBA.RDF_META_CARTRIDGES where MC_ENABLED = 1 order by 3');
+  items := ODRIVE.WA.exec ('select MC_ID, MC_DESC, MC_HOOK, ucase (cast (MC_DESC as varchar (128))) as MC_SORT from DB.DBA.RDF_META_CARTRIDGES where MC_ENABLED = 1 order by 4');
   foreach (any item in items) do
   {
-    retValue := vector_concat (retValue, vector (vector (item[0], item[1])));
+    selected := 0;
+    if (item[2] in ('DB.DBA.RDF_LOAD_CALAIS', 'DB.DBA.RDF_LOAD_ZEMANTA', 'DB.DBA.RDF_LOAD_ALCHEMY_META', 'DB.DBA.RDF_LOAD_YAHOO_CONTENT_ANALYSIS_META', 'DB.DBA.RDF_LOAD_DBPEDIA_SPOTLIGHT_META'))
+      selected := 1;
+    retValue := vector_concat (retValue, vector (vector (item[0], item[1], selected)));
   }
   return retValue;
 }
 ;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.graph_private_remove (
+  in path varchar,
+  in what varchar,
+  in graph varchar)
+{
+  -- remove from private graphs
+  if (not DB.DBA.is_empty_or_null (graph))
+  {
+    SIOC..private_graph_remove (graph);
+    DB.DBA.wa_private_graph_remove (graph, 'WebDAV', path, what);
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.graph_private_add (
+  in path varchar,
+  in what varchar,
+  in permissions varchar,
+  in graph varchar)
+{
+  if (not DB.DBA.is_empty_or_null (graph))
+  {
+    if (permissions[6] = ascii('0'))
+    {
+      -- add to private graphs
+      SIOC..private_init ();
+      SIOC..private_graph_add (graph);
+      DB.DBA.wa_private_graph_add (graph, 'WebDAV', path, what);
+    }
+    else
+    {
+      -- remove from private graphs
+      SIOC..private_graph_remove (graph);
+      DB.DBA.wa_private_graph_remove (graph, 'WebDAV', path, what);
+    }
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.graph_update (
+  in path varchar,
+  in det varchar,
+  in oldGraph varchar,
+  in newGraph varchar)
+{
+  declare aq any;
+
+  aq := async_queue (1);
+  aq_request (aq, 'ODRIVE.WA.graph_update_aq', vector (path, det, oldGraph, newGraph));
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.graph_update_aq (
+  in path varchar,
+  in det varchar,
+  in oldGraph varchar,
+  in newGraph varchar)
+{
+  declare detcol_id integer;
+
+  detcol_id := DB.DBA.DAV_SEARCH_ID (path, 'C');
+  if ((coalesce (oldGraph, '') <> '') and __proc_exists ('DB.DBA.' || det || '__rdf_delete'))
+  {
+    for (select RES_ID from WS.WS.SYS_DAV_RES where RES_FULL_PATH like (path || '%')) do
+    {
+      call ('DB.DBA.' || det || '__rdf_delete') (detcol_id, RES_ID, 'R', oldGraph);
+    }
+  }
+
+  if ((coalesce (newGraph, '') <> '')  and __proc_exists ('DB.DBA.' || det || '__rdf_insert'))
+  {
+    for (select RES_ID from WS.WS.SYS_DAV_RES where RES_FULL_PATH like (path || '%')) do
+    {
+      call ('DB.DBA.' || det || '__rdf_insert') (detcol_id, RES_ID, 'R', newGraph);
+    }
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create function DB.DBA.SPARQL_GS_APP_CALLBACK_ODS (
+  in g_iid IRI_ID,
+  in app_uid varchar := null) returns integer
+{
+  dbg_obj_princ ('DB.DBA.SPARQL_GS_APP_CALLBACK_ODS (', id_to_iri (g_iid), ')');
+
+  return 255;
+}
+;
+
+grant execute on DB.DBA.SPARQL_GS_APP_CALLBACK_ODS to public;

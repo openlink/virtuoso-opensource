@@ -1254,8 +1254,7 @@ _true:;
 create procedure AB.WA.dav_home(
   inout account_id integer) returns varchar
 {
-  declare name, home any;
-  declare cid integer;
+  declare cid, name, home any;
 
   name := coalesce((select U_NAME from DB.DBA.SYS_USERS where U_ID = account_id), -1);
   if (isinteger(name))
@@ -1517,6 +1516,23 @@ _again:
     return null;
 
   return (cont);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure AB.WA.http_error (
+  in _header any,
+  in _silent integer := 0)
+{
+  if (_header[0] like 'HTTP/1._ 4__ %' or _header[0] like 'HTTP/1._ 5__ %')
+  {
+    if (not _silent)
+      signal ('22023', trim (_header[0], '\r\n'));
+
+    return 0;
+  }
+  return 1;
 }
 ;
 
@@ -2128,7 +2144,7 @@ create procedure AB.WA.ab_path2 (
 --
 create procedure AB.WA.make_node (
   in node_type varchar,
-  in node_id any)
+  in node_id any) returns varchar
 {
   return node_type || '#' || cast(node_id as varchar);
 }
@@ -3229,6 +3245,8 @@ create procedure AB.WA.contact_update2 (
   if (id = -1)
     return id;
 
+  if (pName = 'P_UID')
+    update AB.WA.PERSONS set P_UID = pValue where P_ID = id;
   if (pName = 'P_CATEGORY_ID')
     update AB.WA.PERSONS set P_CATEGORY_ID = pValue where P_ID = id;
   if (pName = 'P_KIND')
@@ -3480,6 +3498,7 @@ create procedure AB.WA.contact_delete (
   in domain_id integer)
 {
   delete from AB.WA.PERSONS where P_ID = id and P_DOMAIN_ID = domain_id;
+  return row_count ();
 }
 ;
 
@@ -3625,7 +3644,7 @@ create procedure AB.WA.contact_rights (
   retValue := '';
   if (exists (select 1 from AB.WA.PERSONS where P_ID = id and P_DOMAIN_ID = domain_id))
   {
-    if (account_rights < person_rights)
+    if (isnull (person_rights) or (account_rights < person_rights))
   retValue := AB.WA.acl_check (domain_id, id);
 
     if (retValue = '')
@@ -3741,6 +3760,39 @@ create procedure AB.WA.value2str (
 }
 ;
 
+--------------------------------------------------------------------------------
+--
+create procedure AB.WA.import_CardDAV_check (
+  in _name any,
+  in _options any,
+  in _silent integer := 0)
+{
+  declare _user, _password varchar;
+  declare _page, _body, _resHeader, _reqHeader any;
+  declare exit handler for sqlstate '*'
+  {
+    return 0;
+  };
+
+  _user := get_keyword ('user', _options);
+  _password := get_keyword ('password', _options);
+
+  -- check CardDAV
+  _reqHeader := 'Accept: text/xml\r\nContent-Type: text/xml; charset=utf-8';
+  if (not is_empty_or_null (_user))
+    _reqHeader := _reqHeader || sprintf ('\r\nAuthorization: Basic %s', encode_base64 (_user || ':' || _password));
+
+  _page := http_client_ext (url=>_name, http_method=>'OPTIONS', http_headers=>_reqHeader, headers =>_resHeader, n_redirects=>15);
+  if (not AB.WA.http_error (_resHeader, _silent))
+    return 0;
+
+  if (not (http_request_header (_resHeader, 'DAV') like '%addressbook%'))
+    return 0;
+
+  return 1;
+}
+;
+
 -------------------------------------------------------------------------------
 --
 create procedure AB.WA.import_count (
@@ -3766,6 +3818,10 @@ create procedure AB.WA.import_count (
   -- LinkedIn
   if (type = 4)
     return AB.WA.import_linkedin_count (data);
+
+  -- CardDAV
+  if (type = 5)
+    return AB.WA.import_CardDAV_count (data);
 }
 ;
 
@@ -3856,6 +3912,49 @@ create procedure AB.WA.import_linkedin_count (
 
 -------------------------------------------------------------------------------
 --
+create procedure AB.WA.import_CardDav_count (
+  in _name any,
+  in _options any,
+  in _silent integer := 0)
+{
+  declare _user, _password varchar;
+  declare _page, _body, _resHeader, _reqHeader any;
+  declare _xml, _items any;
+  declare exit handler for sqlstate '*'
+  {
+    return 0;
+  };
+
+  _user := get_keyword ('user', _options);
+  _password := get_keyword ('password', _options);
+
+  -- check CardDAV
+  _reqHeader := 'Accept: text/xml\r\nContent-Type: text/xml; charset=utf-8';
+  if (not is_empty_or_null (_user))
+    _reqHeader := _reqHeader || sprintf ('\r\nAuthorization: Basic %s', encode_base64 (_user || ':' || _password));
+
+  _page := http_client_ext (url=>_name, http_method=>'OPTIONS', http_headers=>_reqHeader, headers =>_resHeader, n_redirects=>15);
+  if (not AB.WA.http_error (_resHeader, _silent))
+    return 0;
+
+  if (not (http_request_header (_resHeader, 'DAV') like '%addressbook%'))
+    return 0;
+
+  _body := null;
+  _reqHeader := _reqHeader || '\r\nDepth: 1';
+  _page := http_client_ext (url=>_name, http_method=>'PROPFIND', http_headers=>_reqHeader, headers =>_resHeader, body=>_body, n_redirects=>15);
+  if (not AB.WA.http_error (_resHeader, _silent))
+    return 0;
+
+  _xml := xml_tree_doc (xml_expand_refs (xml_tree (_page)));
+  _items := xpath_eval ('[xmlns:D="DAV:" xmlns="urn:ietf:params:xml:ns:carddav:"] /D:multistatus/D:response/D:href/text()', _xml, 0);
+
+  return length (_items)-1;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure AB.WA.import_check_progress_id (
   in progress_id any)
 {
@@ -3921,6 +4020,11 @@ create procedure AB.WA.import (
   {
     -- LinkedIn
     AB.WA.import_linkedin (domain_id, data, options, validation, progress_id);
+  }
+  else if (type = 5)
+  {
+    -- CardDAV
+    AB.WA.import_CardDAV (domain_id, data, options, validation, progress_id);
   }
 }
 ;
@@ -4019,9 +4123,13 @@ create procedure AB.WA.import_vcard (
   xmlItems := xpath_eval ('/*', xmlData, 0);
   foreach (any xmlItem in xmlItems) do
   {
-    xmlItem := xml_cut (xmlItem);
       if (not AB.WA.import_check_progress_id (progress_id))
         return;
+
+    if (xpath_eval ('name(.)', xmlItem) <> 'IMC-VCARD')
+      goto _skip;
+
+    xmlItem := xml_cut (xmlItem);
 
       id := -1;
       uid := null;
@@ -4624,6 +4732,74 @@ create procedure AB.WA.import_linkedin (
 
     AB.WA.import_inc_progress_id (progress_id);
   }
+}
+;
+
+--------------------------------------------------------------------------------
+--
+create procedure AB.WA.import_CardDAV (
+  in domain_id integer,
+  in name any,
+  in options any := null,
+  in validation any := null,
+  in progress_id varchar := null)
+{
+  declare _user, _password any;
+  declare _page, _body, _bodyTemplate, _resHeader, _reqHeader any;
+  declare _xml, _xml2, _items, _data any;
+
+  _user := get_keyword ('user', options);
+  _password := get_keyword ('password', options);
+  _bodyTemplate :=
+   '<?xml version="1.0" encoding="utf-8" ?>
+    <C:addressbook-multiget xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:carddav">
+      <D:prop>
+        <D:getetag/>
+        <C:address-data/>
+      </D:prop>
+      <D:href>%s</D:href>
+    </C:addressbook-multiget>';
+
+  -- check CardDAV
+  _reqHeader := 'Accept: text/xml\r\nContent-Type: text/xml; charset=utf-8';
+  if (not is_empty_or_null (_user))
+    _reqHeader := _reqHeader || sprintf ('\r\nAuthorization: Basic %s', encode_base64 (_user || ':' || _password));
+
+  _page := http_client_ext (url=>name, http_method=>'OPTIONS', http_headers=>_reqHeader, headers =>_resHeader, n_redirects=>15);
+  AB.WA.http_error (_resHeader);
+  if (not (http_request_header (_resHeader, 'DAV') like '%addressbook%'))
+    signal ('AB001', 'Bad import/subscription source!<>');
+
+  _body := null;
+  _reqHeader := _reqHeader || '\r\nDepth: 1';
+  _page := http_client_ext (url=>name, http_method=>'PROPFIND', http_headers=>_reqHeader, headers =>_resHeader, body=>_body, n_redirects=>15);
+  AB.WA.http_error (_resHeader);
+  {
+    declare exit handler for sqlstate '*'
+    {
+      signal ('AB001', 'Bad import/subscription source!<>');
+    };
+    _xml := xml_tree_doc (xml_expand_refs (xml_tree (_page)));
+		_items := xpath_eval ('[xmlns:D="DAV:" xmlns="urn:ietf:params:xml:ns:carddav:"] /D:multistatus/D:response/D:href/text()', _xml, 0);
+		foreach (any _item in _items) do
+		{
+      if (not AB.WA.import_check_progress_id (progress_id))
+        return;
+
+      _body := sprintf (_bodyTemplate, cast (_item as varchar));
+
+      commit work;
+      _page := http_client_ext (url=>name, http_method=>'REPORT', http_headers=>_reqHeader, headers =>_resHeader, body=>_body, n_redirects=>15);
+      AB.WA.http_error (_resHeader);
+      _xml2 := xml_tree_doc (xml_expand_refs (xml_tree (_page)));
+		  if (not isnull (xpath_eval ('[xmlns:D="DAV:" xmlns="urn:ietf:params:xml:ns:carddav:"] /D:multistatus/D:response/D:href/text()', _xml2, 1)))
+		  {
+		    _data := cast (xpath_eval ('[xmlns:D="DAV:" xmlns="urn:ietf:params:xml:ns:carddav:"] /D:multistatus/D:response/D:propstat/D:prop/address-data/text()', _xml2, 1) as varchar);
+		    AB.WA.import_vcard (domain_id, _data, options, validation, progress_id);
+      }
+	  }
+  }
+  return 1;
 }
 ;
 
@@ -5249,15 +5425,16 @@ create procedure AB.WA.exchange_exec_internal (
     -- subscribe
     else if (_direction = 1)
     {
+      if (_type = 3)
+        return AB.WA.exchange_CardDAV (_id);
+
       if (_type = 1)
-      {
         _name := AB.WA.host_url () || _name;
-      }
+
       _content := AB.WA.dav_content (_name, _user, _password);
       if (isnull(_content))
-      {
         signal ('AB001', 'Bad import/subscription source!<>');
-      }
+
       AB.WA.import_vcard (_domain_id, _content, _options);
     }
     -- syncml
@@ -5309,6 +5486,27 @@ create procedure AB.WA.exchange_exec_internal (
       return vector (_in, _out);
     }
   }
+}
+;
+
+--------------------------------------------------------------------------------
+--
+create procedure AB.WA.exchange_CardDAV (
+  in _id integer)
+{
+  for (select EX_DOMAIN_ID as _domain_id, EX_TYPE as _direction, deserialize (EX_OPTIONS) as _options from AB.WA.EXCHANGE where EX_ID = _id) do
+  {
+    declare _type, _name, _pName, _user, _password any;
+    declare _page, _body, _bodyTemplate, _resHeader, _reqHeader any;
+    declare _xml, _items, _data any;
+
+    _type := get_keyword ('type', _options);
+    if (_type <> 3)
+       return 0;
+
+    AB.WA.import_CardDAV (_domain_id, get_keyword ('name', _options), _options);
+  }
+  return 1;
 }
 ;
 

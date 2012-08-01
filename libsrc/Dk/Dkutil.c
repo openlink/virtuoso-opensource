@@ -27,12 +27,34 @@
 
 #include "Dk.h"
 
+#if defined(linux) || defined (__APPLE__)
+#include <execinfo.h>
+
+void
+print_trace (void)
+{
+#define N_FRAMES 100 
+  void *array[N_FRAMES];
+  size_t size, i;
+  char **strings;
+
+  size = backtrace (array, N_FRAMES);
+  strings = backtrace_symbols (array, size);
+  for (i = 0; i < size; i++)
+    log_info ("%s\n", strings[i]);
+  free (strings);
+}
+#else
+void print_trace (void) { }
+#endif 
+
 int
 gpf_notice (const char *file, int line, const char *text)
 {
 #ifdef DEBUG
   FILE *core_reason;
 #endif
+  print_trace ();
 #if defined (PMN_LOG) && defined (NOT_DEFINED)
   /* XXX - first resolve libutil conflicts */
   if (text)

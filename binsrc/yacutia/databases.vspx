@@ -42,6 +42,7 @@
     <v:variable name="db_tree_state" persist="session" type="any" default="null" />
     <v:variable name="db_ds_state" persist="session" type="any" default="null" />
     <v:variable name="last_bmk" persist="session" type="varchar" default="null" />
+    <v:variable name="rdf_obj" persist="temp" type="varchar" default="null" param-name="rdf_obj"/>
   </vm:variables>
   <vm:menu>
     <vm:menuitem value="Schema Objects Management"/>
@@ -477,7 +478,7 @@ ORDER BY sch_name"
         </td>
       </tr>
     </v:template>
-    <v:template name="tp_views" type="simple" instantiate="--self.open_tmpl (control.vc_parent, 'Views')">
+    <v:template name="tp_views" type="simple" instantiate="--self.open_tmpl (control.vc_parent, 'Views (SQL)')">
       <tr>
 	<td>
 	</td>
@@ -602,6 +603,92 @@ ORDER BY sch_name"
             </v:template>
 	  </v:data-set>
 	</div>
+        </td>
+      </tr>
+    </v:template>
+    <v:template name="tp_views_ld" type="simple" instantiate="--self.open_tmpl (control.vc_parent, 'Views (Linked Data)') * isnull (self.rdf_obj)">
+      <tr>
+	<td>
+	</td>
+	<td align="left">
+	    <div class="scroll_area">
+              <table class="listing" rules="groups">
+                <thead>
+                  <tr class="listing_row_odd">
+                     <th>References</th>
+                  </tr>
+                </thead>
+		<?vsp 
+		   declare cat, have_one any;
+                   have_one := 0;
+		   cat := sprintf ('"%s".%%', self.browse_cat);
+		   for select "o" from (sparql select distinct ?o where 
+		      { ?s virtrdf:qmTableName ?tb_name ; 
+		      virtrdf:qmPredicateRange-rvrFixedValue ?ref .  
+		      ?ref <http://www.w3.org/2000/01/rdf-schema#domain> ?o . 
+			filter (?tb_name like ?:cat ) }) x do 
+			{
+			  declare obj any;
+			  obj := "o";
+			  have_one := 1;
+			  ?>
+			  <tr>
+			      <td>
+				  <v:url render-only="1" name="rlink" value="--obj"  url="--sprintf ('databases.vspx?rdf_obj=%U', obj)"/> 
+			      </td>
+			  </tr>
+			<?vsp 
+			}
+	          if (have_one = 0)
+  		    {		  
+		?>
+                  <tr>
+                    <td class="Attention">No linked data views defined</td>
+                  </tr>
+		<?vsp 
+                    }
+		?>
+              </table>
+	 </div>
+        </td>
+      </tr>
+    </v:template>
+    <v:template name="tp_views_ld2" type="simple" instantiate="--self.open_tmpl (control.vc_parent, 'Views (Linked Data)') * equ (isnull (self.rdf_obj), 0)">
+      <tr>
+	<td>
+	</td>
+	<td align="left">
+	    <div class="scroll_area">
+              <table class="listing" rules="groups">
+                <thead>
+                  <tr class="listing_row_odd">
+                     <th>S</th>
+                     <th>P</th>
+                     <th>O</th>
+                  </tr>
+                </thead>
+		<?vsp 
+		   declare stat, msg, data, meta any;
+		   exec (sprintf ('SPARQL define output:format "_UDBC_" define sql:describe-mode "SCBD"  DESCRIBE <%s>', self.rdf_obj), stat, msg, vector (), 0, meta, data);
+		   --dbg_obj_print (data);
+		   foreach (any row in data) do
+			{
+			  ?>
+			  <tr>
+			      <td> <v:url render-only="1" name="rlink" value="--row[0]"  url="--sprintf ('databases.vspx?rdf_obj=%U', row[0])"/> </td>
+			      <td> <v:url render-only="1" name="rlink" value="--row[1]"  url="--sprintf ('databases.vspx?rdf_obj=%U', row[1])"/> </td>
+			      <?vsp if (__box_flags (row[2])) { ?>
+			      <td> <v:url render-only="1" name="rlink" value="--row[2]"  url="--sprintf ('databases.vspx?rdf_obj=%U', row[2])"/> </td>
+			      <?vsp } else { ?>
+			      <td> <v:label render-only="1" name="rlink" value="--row[2]" /> </td>
+			      <?vsp } ?>
+			  </tr>
+			<?vsp 
+			}
+
+		?>
+              </table>
+	 </div>
         </td>
       </tr>
     </v:template>
