@@ -86,7 +86,7 @@ EXTRA_DIST = \
 	amiga/Makefile.sas \
 	contrib/ada/*.txt \
 	contrib/ada/*.adb \
-	contrib/ada/zlib.ads \
+	contrib/ada/*.ads \
 	contrib/ada/zlib.gpr \
 	contrib/amd64/*.S \
 	contrib/asm686/*.S \
@@ -184,6 +184,7 @@ EXTRA_DIST = \
 	contrib/vstudio/vc9/zlibvc.sln \
 	contrib/vstudio/vc9/zlibvc.vcproj \
 	doc/*.txt \
+	example.c \
 	examples/*.c \
 	examples/*.h \
 	examples/*.html \
