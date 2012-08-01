@@ -1078,7 +1078,7 @@ create procedure DB.DBA.SPARQL_RESULTS_XML_WRITE_ROW (inout ses any, in mdta any
 	  if (__tag (sql_val) = __tag of varchar) -- UTF-8 value kept in a DV_STRING box
 	    sql_val := charset_recode (sql_val, 'UTF-8', '_WIDE_');
 	  if (is_xml_lit) http ('<![CDATA[', ses);
-	  http_value (__rdf_strsqlval (sql_val), 0, ses);
+	  http_value (sql_val, 0, ses);
 	  if (is_xml_lit) http (']]>', ses);
           http ('</literal></binding>', ses);
         }
