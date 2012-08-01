@@ -37,12 +37,11 @@ One tab before end of single-line BNF comment.
 Whitespaces in all other places, including two whitespaces after "::=" in BNF comments */
 
 %pure_parser
+%parse-param {sparp_t * sparp_arg}
+%lex-param {sparp_t * sparp_arg}
 %expect 7
 
 %{
-
-#define YYPARSE_PARAM sparp_as_void
-#define YYLEX_PARAM YYPARSE_PARAM
 #include "libutil.h"
 #include "sqlnode.h"
 #include "sqlparext.h"
@@ -51,12 +50,11 @@ Whitespaces in all other places, including two whitespaces after "::=" in BNF co
 #include "xmltree.h"
 /*#include "langfunc.h"*/
 
-#define sparp_arg ((sparp_t *)(sparp_as_void))
 
 #ifdef DEBUG
-#define sparyyerror(strg) sparyyerror_impl_1(sparp_arg, NULL, yystate, yyssa, yyssp, (strg))
+#define sparyyerror(sparp_arg, strg) sparyyerror_impl_1(sparp_arg, NULL, yystate, yyssa, yyssp, (strg))
 #else
-#define sparyyerror(strg) sparyyerror_impl(sparp_arg, NULL, (strg))
+#define sparyyerror(sparp_arg, strg) sparyyerror_impl(sparp_arg, NULL, (strg))
 #endif
 
 #ifdef XPYYDEBUG
@@ -569,7 +567,7 @@ sparql	/* [1]*	Query		 ::=  Prolog (	*/
 	| START_OF_SPARQL_TEXT spar_prolog spar_qm_stmts spar_opt_dot_and_end {
 		$$ = spar_make_topmost_qm_sql (sparp_arg);
 		sparp_arg->sparp_expr = $$; }
-	| error { sparyyerror ("(internal SPARQL processing error) SPARQL mark expected"); }
+	| error { sparyyerror (sparp_arg, "(internal SPARQL processing error) SPARQL mark expected"); }
 	;
 
 /* PART 1. Standard SPARQL as described by W3C, with Virtuoso extensions for expressions. */
@@ -618,9 +616,9 @@ spar_base_decl_opt	/* [3]	BaseDecl	 ::=  'BASE' Q_IRI_REF	*/
 	: /* empty */		{ ; }
 	| BASE_L Q_IRI_REF	{
 		if (NULL != sparp_env()->spare_base_uri)
-		  sparyyerror ("Only one base declaration is allowed");
+		  sparyyerror (sparp_arg, "Only one base declaration is allowed");
 		sparp_env()->spare_base_uri = $2; }
-	| BASE_L error { sparyyerror ("Missing <iri-string> after BASE keyword"); }
+	| BASE_L error { sparyyerror (sparp_arg, "Missing <iri-string> after BASE keyword"); }
 	;
 
 spar_prefix_decls_opt	/* ::=  PrefixDecl*	*/
@@ -631,18 +629,18 @@ spar_prefix_decls_opt	/* ::=  PrefixDecl*	*/
 spar_prefix_decl	/* [4]	PrefixDecl	 ::=  'PREFIX' QNAME_NS Q_IRI_REF	*/
 	: PREFIX_L QNAME_NS Q_IRI_REF	{
 		if ((!strcmp ("sql:", $2) && strcmp ("sql:", $3)) || (!strcmp ("bif:", $2) && strcmp ("bif:", $3)))
-		  sparyyerror ("Prefixes 'sql:' and 'bif:' are reserved for SQL names");
+		  sparyyerror (sparp_arg, "Prefixes 'sql:' and 'bif:' are reserved for SQL names");
 		t_set_push (&(sparp_env()->spare_namespace_prefixes), sparp_expand_q_iri_ref (sparp_arg, $3));
 		t_set_push (&(sparp_env()->spare_namespace_prefixes), t_box_dv_short_nchars ($2, box_length ($2)-2)); }
-	| PREFIX_L QNAME_NS { sparyyerror ("Missing <namespace-iri-string> in PREFIX declaration"); }
-	| PREFIX_L error { sparyyerror ("Missing namespace prefix after PREFIX keyword"); }
+	| PREFIX_L QNAME_NS { sparyyerror (sparp_arg, "Missing <namespace-iri-string> in PREFIX declaration"); }
+	| PREFIX_L error { sparyyerror (sparp_arg, "Missing namespace prefix after PREFIX keyword"); }
 	;
 
 spar_create_macro_lib_opt	/* [Virt]	CreateMacroLib	 ::=  'CREATE' 'MACRO' 'LIBRARY' IRIref '{' Defmacro* '}'	*/
 	: /* empty */
 	| CREATE_L MACRO_L LIBRARY_L spar_iriref {
 		if (sparp_arg->sparp_macro_def_count)
-		  sparyyerror ("Some macro are defined before CREATE MACRO LIBRARY");
+		  sparyyerror (sparp_arg, "Some macro are defined before CREATE MACRO LIBRARY");
 		sparp_arg->sparp_macrolib_to_create = $4->_.qname.val;
 		sparp_arg->sparp_disable_storage_macro_lib = 2; }
 	    _LBRA spar_defmacros_opt _RBRA
@@ -690,7 +688,7 @@ spar_dm_args_and_body
 		sparp_arg->sparp_macro_mode = SPARP_DEFBODY;
 		spar_gp_init (sparp_arg, DEFMACRO_L); }
 	    spar_gp _RBRA { $$ = spar_gp_finalize (sparp_arg, NULL); }
-	| error { sparyyerror ("List of arguments or template is expected after macro name"); }
+	| error { sparyyerror (sparp_arg, "List of arguments or template is expected after macro name"); }
 	;
 
 spar_dm_match_template	/* [Virt]	DefmacroPattern	 ::=  (( 'GRAPH' PatternItemGorS ) | ( 'DEFAULT' 'GRAPH' ))?	*/
@@ -775,7 +773,7 @@ spar_dm_gp_or_expn
 		spar_gp_init (sparp_arg, DEFMACRO_L); }
 	    spar_gp _RBRA { $$ = spar_gp_finalize (sparp_arg, NULL); }
 	| spar_expn
-	| error { sparyyerror ("Graph group pattern or expression is expected as the body of the macro"); }
+	| error { sparyyerror (sparp_arg, "Graph group pattern or expression is expected as the body of the macro"); }
 	;
 
 
@@ -886,7 +884,7 @@ spar_dataset_clause	/* [9]*	DatasetClause	 ::=   |	*/
 spar_dataset_clause_subtype
 	: spar_dataset_clause_subtype_from {
 		if (NULL != sparp_arg->sparp_env->spare_src.ssrc_graph_set_by_with)
-		  sparyyerror ("FROM can not be used in combination with WITH, use either consistent SPARUL syntax or SPARQL 1.1 syntax, not a mix");
+		  sparyyerror (sparp_arg, "FROM can not be used in combination with WITH, use either consistent SPARUL syntax or SPARQL 1.1 syntax, not a mix");
 		$$ = $1; }
 	| spar_dataset_clause_subtype_using {
 		SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_SPARQL11_DRAFT, "USING keyword");
@@ -1047,9 +1045,9 @@ spar_bindings_clause_opt
 spar_bindings_clause		/* [Sparql1.1*]	BindingsClause	 ::=  'BINDINGS' BindingsVar+ '{' Binding* '}'	*/
 	: BINDINGS_L	{
 		if (NULL != sparp_arg->sparp_env->spare_bindings_vars)
-		  sparyyerror ("Only one BINDINGS clause per query is allowed");
+		  sparyyerror (sparp_arg, "Only one BINDINGS clause per query is allowed");
 		if (sparp_arg->sparp_macro_mode)
-		  sparyyerror ("BINDINGS can not be used inside macro");
+		  sparyyerror (sparp_arg, "BINDINGS can not be used inside macro");
 		spar_selid_push (sparp_arg); }
 	    spar_bindings_vars _LBRA	{
 		spar_selid_pop (sparp_arg);
@@ -1067,7 +1065,7 @@ spar_bindings_vars
 
 spar_bindings_var		/* [Sparql1.1*]	BindingsVar	 ::=  VAR1 | VAR2 | GlobalVar	*/
 	: QD_VARNAME		{ ; }
-	| spar_global_var	{ sparyyerror ("Global variable can not be used in the header of BINDINGS"); }
+	| spar_global_var	{ sparyyerror (sparp_arg, "Global variable can not be used in the header of BINDINGS"); }
 	;
 
 spar_bindings_opt
@@ -1084,7 +1082,7 @@ spar_binding			/* [Sparql1.1]	Binding	 ::=  '(' ( IRIref | RDFLiteral | NumericL
 	: _LPAR spar_bindvals _RPAR {
 		$$ = (SPART **)t_revlist_to_array ($2);
 		if (BOX_ELEMENTS ($$) != BOX_ELEMENTS (sparp_arg->sparp_env->spare_bindings_vars))
-		  sparyyerror ("Number of values in a binding does not match number of variables to bind"); }
+		  sparyyerror (sparp_arg, "Number of values in a binding does not match number of variables to bind"); }
 	;
 
 spar_bindvals
@@ -1098,7 +1096,7 @@ spar_bindval
 	| spar_rdf_literal
 	| spar_boolean_literal
 	| spar_blank_node
-	| UNBOUND_L		{ sparyyerror ("UNBOUND in BINDINGS is deprecated, use UNDEF instead"); $$ = NULL; }
+	| UNBOUND_L		{ sparyyerror (sparp_arg, "UNBOUND in BINDINGS is deprecated, use UNDEF instead"); $$ = NULL; }
 	| UNDEF_L		{$$ = NULL; }
 	;
 
@@ -1160,7 +1158,7 @@ spar_gp			/* [20]	GraphPattern	 ::=  Triples? ( GraphPatternNotTriples '.'? Grap
 		    spar_gp_add_member (sparp_arg, mpu);
 		  }
 		else
-		  sparyyerror ("Ill formed triple pattern or macro pattern variable outside a macro body"); }
+		  sparyyerror (sparp_arg, "Ill formed triple pattern or macro pattern variable outside a macro body"); }
 	;
 
 spar_gp_not_triples	/* [21]*	GraphPatternNotTriples	 ::=  */
@@ -1174,7 +1172,7 @@ spar_gp_not_triples	/* [21]*	GraphPatternNotTriples	 ::=  */
 
 spar_optional_gp	/* [22]	OptionalGraphPattern	 ::=  'OPTIONAL' GroupGraphPattern	*/
 	: OPTIONAL_L _LBRA { spar_gp_init (sparp_arg, OPTIONAL_L); } spar_group_gp { $$ = $4; }
-	| OPTIONAL_L error { sparyyerror ("Missing '{' after OPTIONAL keyword"); }
+	| OPTIONAL_L error { sparyyerror (sparp_arg, "Missing '{' after OPTIONAL keyword"); }
 	;
 
 spar_quad_map_gp		/* [Virt]	QuadMapGraphPattern	 ::=  'QUAD' 'MAP' ( IRIref | '*' ) GroupGraphPattern	*/
@@ -1312,7 +1310,7 @@ spar_service_option
 		if (!strcmp (defname, "lang:dialect"))
 		  {
 		    if ((NULL == defvals) || (NULL != defvals->next) || (SPARQL_INTEGER != ((ptrlong *)(defvals->data))[0]))
-		      sparyyerror ("define lang:dialect needs an integer");
+		      sparyyerror (sparp_arg, "define lang:dialect needs an integer");
 		    sparp_arg->sparp_inner_permitted_syntax = unbox (((caddr_t *)(defvals->data))[1]) | SSG_SD_GLOBALS;
 		  }
 		$$ = (SPART **)t_list (2, (SPART *)((ptrlong)DEFINE_L), t_list (2, defname, t_revlist_to_array(defvals))); }
@@ -1389,7 +1387,7 @@ spar_props_opt		/* [30]	PropertyList	 ::=  PropertyListNotEmpty?	*/
 	: /* empty */	{ }
 	| spar_props	{ }
 	/*| spar_props _SEMI	{ }
-	| spar_props _SEMI _DOT	{ sparyyerror ("Dot immediately after semicolon is permitted in pure SPARQL but not in SPARQL-BI"); }*/
+	| spar_props _SEMI _DOT	{ sparyyerror (sparp_arg, "Dot immediately after semicolon is permitted in pure SPARQL but not in SPARQL-BI"); }*/
 	;
 
 spar_props		/* [31]	PropertyListNotEmpty	 ::=  Verb ObjectList ( ';' PropertyList )?	*/
@@ -1398,18 +1396,18 @@ spar_props		/* [31]	PropertyListNotEmpty	 ::=  Verb ObjectList ( ';' PropertyLis
 	| spar_props _SEMI
 	    spar_verb { t_set_push (&(sparp_env()->spare_context_predicates), $3); }
 	    spar_objects { t_set_pop (&(sparp_env()->spare_context_predicates)); }
-	| spar_props _SEMI _DOT	{ sparyyerror ("Dot immediately after semicolon is permitted in pure SPARQL but not in SPARQL-BI"); }
-	| spar_props _SEMI error { sparyyerror ("Predicate expected after semicolon"); }
-	| error { sparyyerror ("Predicate expected"); }
+	| spar_props _SEMI _DOT	{ sparyyerror (sparp_arg, "Dot immediately after semicolon is permitted in pure SPARQL but not in SPARQL-BI"); }
+	| spar_props _SEMI error { sparyyerror (sparp_arg, "Predicate expected after semicolon"); }
+	| error { sparyyerror (sparp_arg, "Predicate expected"); }
 	;
 
 spar_objects		/* [32]*	ObjectList	 ::=  ObjGraphNode ( ',' ObjectList )?	*/
 	: spar_ograph_node { }
 	| spar_objects _COMMA spar_ograph_node { }
-	| spar_objects _COMMA _SEMI { sparyyerror ("Semicolon immediately after colon is permitted in pure SPARQL but not in SPARQL-BI"); }
-	| spar_objects _COMMA _DOT { sparyyerror ("Dot immediately after colon is permitted in pure SPARQL but not in SPARQL-BI"); }
-	| spar_objects _COMMA error { sparyyerror ("Object expected after comma"); }
-	| error { sparyyerror ("Object expected"); }
+	| spar_objects _COMMA _SEMI { sparyyerror (sparp_arg, "Semicolon immediately after colon is permitted in pure SPARQL but not in SPARQL-BI"); }
+	| spar_objects _COMMA _DOT { sparyyerror (sparp_arg, "Dot immediately after colon is permitted in pure SPARQL but not in SPARQL-BI"); }
+	| spar_objects _COMMA error { sparyyerror (sparp_arg, "Object expected after comma"); }
+	| error { sparyyerror (sparp_arg, "Object expected"); }
 	;
 
 spar_ograph_node	/* [Virt]	ObjGraphNode	 ::=  GraphNode TripleOptions?	*/
@@ -1421,7 +1419,7 @@ spar_triple_optionlist_opt	/* [Virt]	TripleOptions	 ::=  'OPTION' '(' TripleOpti
 	: /* empty */	{ $$ = NULL; }
 	| OPTION_L _LPAR {
 		if (CONSTRUCT_L == SPARP_ENV_CONTEXT_GP_SUBTYPE(sparp_arg))
-		  sparyyerror ("Triple options are not allowed in constructor template");
+		  sparyyerror (sparp_arg, "Triple options are not allowed in constructor template");
 		SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_OPTION, "OPTION () triple matching configuration"); }
 	    spar_triple_option_commalist _RPAR { $$ = (SPART **)t_revlist_to_array ($4); }
 	;
@@ -1482,7 +1480,7 @@ spar_same_as_option
 spar_verb		/* [33]	Verb		 ::=  VarOrBlankNodeOrIRIref | 'a'	*/
 	: spar_var_or_iriref_or_backquoted
 	| a_L { $$ = spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_type); }
-	| error { sparyyerror ("Predicate expected (i.e., variable or IRI ref or a backquoted expn or 'a' keyword)"); }
+	| error { sparyyerror (sparp_arg, "Predicate expected (i.e., variable or IRI ref or a backquoted expn or 'a' keyword)"); }
 	;
 
 spar_triples_node	/* [34]	TriplesNode	 ::=  Collection | BlankNodePropertyList	*/
@@ -1701,11 +1699,11 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	( 'AS' ( VAR1 | VAR2 ) ) */
 	| spar_expn _GE spar_expn	{ SPAR_BIN_OP ($$, BOP_LTE, $3, $1); }
 	| spar_expn _PLUS spar_expn {	/* [49]	AdditiveExpn	 ::=  MultiplicativeExpn ( ('+'|'-') MultiplicativeExpn )*	*/
 		if (sparp_arg->sparp_rset_lexdepth_plus_1 == $2 + 1)
-		  sparyyerror ("Ambiguous (unary or binary) plus operator in result list, please add \"(\" and \")\"");
+		  sparyyerror (sparp_arg, "Ambiguous (unary or binary) plus operator in result list, please add \"(\" and \")\"");
 		  SPAR_BIN_OP ($$, BOP_PLUS, $1, $3); }
 	| spar_expn _MINUS spar_expn	{
 		if (sparp_arg->sparp_rset_lexdepth_plus_1 == $2 + 1)
-		  sparyyerror ("Ambiguous (unary or binary) minus operator in result list, please add \"(\" and \")\"");
+		  sparyyerror (sparp_arg, "Ambiguous (unary or binary) minus operator in result list, please add \"(\" and \")\"");
 		SPAR_BIN_OP ($$, BOP_MINUS, $1, $3); }
 	| spar_expn _STAR spar_expn {	/* [50]	MultiplicativeExpn	 ::=  UnaryExpn ( ('*'|'/') UnaryExpn )*	*/
 		  SPAR_BIN_OP ($$, BOP_TIMES, $1, $3); }
@@ -1789,9 +1787,9 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	( 'AS' ( VAR1 | VAR2 ) ) */
 	| spar_ret_agg_call {
 		$$ = $1;
 		if (sparp_arg->sparp_in_precode_expn)
-		  sparyyerror ("Aggregates are not allowed in 'precode' expressions that should be calculated before the result-set of the query");
+		  sparyyerror (sparp_arg, "Aggregates are not allowed in 'precode' expressions that should be calculated before the result-set of the query");
 		if (!(sparp_arg->sparp_allow_aggregates_in_expn & 1))
-		  sparyyerror ("Aggregates are allowed only in result sets"); }
+		  sparyyerror (sparp_arg, "Aggregates are allowed only in result sets"); }
 	| spar_built_in_call
 	| spar_iriref {			/* [55*]	IRIrefOrFunctionOrMacro	 ::=  (( IRIref ArgList? ) | ( 'MACRO' IRIref ArgList ))	*/
 		SPART *mdef;
@@ -1802,7 +1800,7 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	( 'AS' ( VAR1 | VAR2 ) ) */
 		if (NULL != mdef)
 		  {
 		    if ((SPARP_DEFBODY & sparp_arg->sparp_macro_mode) && (sparp_arg->sparp_current_macro == mdef))
-		      sparyyerror ("The macro is recursively used in its own definition");
+		      sparyyerror (sparp_arg, "The macro is recursively used in its own definition");
 		    sparp_arg->sparp_macro_mode |= SPARP_CALLARG;
 		  } }
 	     spar_arg_list_opt {
@@ -1871,7 +1869,7 @@ spar_function_call	/* [54]	FunctionCall	 ::=  IRIref ArgList	*/
 		if (NULL != mdef)
 		  {
 		    if ((SPARP_DEFBODY & sparp_arg->sparp_macro_mode) && (sparp_arg->sparp_current_macro == mdef))
-		      sparyyerror ("The macro is recursively used in its own definition");
+		      sparyyerror (sparp_arg, "The macro is recursively used in its own definition");
 		    sparp_arg->sparp_macro_mode |= SPARP_CALLARG;
 		  } }
 	    spar_arg_list	{
@@ -1898,9 +1896,9 @@ spar_macro_call	/* [Virt]	MacroCall	 ::=  'MACRO' IRIref MacroArgList?	*/
 		  sparp_configure_storage_and_macro_libs (sparp_arg);
 		mdef = spar_find_defmacro_by_iri_or_fields (sparp_arg, $2->_.qname.val, NULL);
 		if (NULL == mdef)
-		  sparyyerror ("Undefined macro IRI");
+		  sparyyerror (sparp_arg, "Undefined macro IRI");
 		if ((SPARP_DEFBODY & sparp_arg->sparp_macro_mode) && (sparp_arg->sparp_current_macro == mdef))
-		  sparyyerror ("The macro is recursively used in its own definition");
+		  sparyyerror (sparp_arg, "The macro is recursively used in its own definition");
 		$<token_type>$ = sparp_arg->sparp_macro_mode;
 		sparp_arg->sparp_macro_mode |= SPARP_CALLARG; }
 	    spar_macro_arg_list_opt {
@@ -1927,8 +1925,8 @@ spar_arg_list		/* [56]*	ArgList	 ::=  '(' Expns? ')'	*/
 spar_expns		/* [Virt]	Expns	 ::=  Expn ( ',' Expn )*	*/
 	: spar_expn			{ $$ = NULL; t_set_push (&($$), $1); }
 	| spar_expns _COMMA spar_expn   { $$ = $1; t_set_push (&($$), $3); }
-	| spar_expns _COMMA error { sparyyerror ("Argument expected after comma"); }
-	| spar_expns error { sparyyerror ("Comma or ')' expected after function argument"); }
+	| spar_expns _COMMA error { sparyyerror (sparp_arg, "Argument expected after comma"); }
+	| spar_expns error { sparyyerror (sparp_arg, "Comma or ')' expected after function argument"); }
 	;
 
 spar_macro_arg_list_opt	/* ::=  ArgList?	*/
@@ -1945,8 +1943,8 @@ spar_macro_arg_list		/* [Virt]	MacroArgList	 ::=  '(' ExpnOrGgps? ')'	*/
 spar_expn_or_ggps		/* [Virt]	ExpnOrGgps	 ::=  ExpnOrGgp ( ',' ExpnOrGgp )*	*/
 	: spar_expn_or_ggp			{ $$ = NULL; t_set_push (&($$), $1); }
 	| spar_expn_or_ggps _COMMA spar_expn_or_ggp   { $$ = $1; t_set_push (&($$), $3); }
-	| spar_expn_or_ggps _COMMA error { sparyyerror ("Macro argument (an expression or a group pattern) expected after comma"); }
-	| spar_expn_or_ggps error { sparyyerror ("Comma or ')' expected after macro argument"); }
+	| spar_expn_or_ggps _COMMA error { sparyyerror (sparp_arg, "Macro argument (an expression or a group pattern) expected after comma"); }
+	| spar_expn_or_ggps error { sparyyerror (sparp_arg, "Comma or ')' expected after macro argument"); }
 	;
 
 spar_expn_or_ggp			/* [Virt]	ExpnOrGgp	 ::=  Expn | GroupGraphPattern	*/
@@ -2003,7 +2001,7 @@ spar_arrow_iriref
 		$$ = (SPART **) t_list ( 4, $1,
 		  spartlist (sparp_arg, 2, SPAR_QNAME, sparp_expand_qname_prefix (sparp_arg, $2)),
 		  QNAME_NS, $2); }
-	| spar_arrow error { sparyyerror ("IRI reference expected after *> or +> operator"); }
+	| spar_arrow error { sparyyerror (sparp_arg, "IRI reference expected after *> or +> operator"); }
 	;
 
 spar_iriref		/* [63]	IRIref		 ::=  Q_IRI_REF | QName	*/
@@ -2680,7 +2678,7 @@ spar_qm_prop		/* [Virt]	QmProp		 ::=  QmVerb QmObjField ( ',' QmObjField )*	*/
 		  ((NULL != $1) ? ((SPART *)($1)) : spar_qm_get_local (sparp_arg, PREDICATE_L, 1)),
 		  0 ); }
 	    spar_qm_obj_field_commalist {}
-        | error { sparyyerror ("Description of predicate field is expected here"); }
+	| error { sparyyerror (sparp_arg, "Description of predicate field is expected here"); }
 	;
 
 spar_qm_obj_field_commalist	/* ::=  QmObjField QmIdSuffix? ( ',' QmObjField QmIdSuffix? )* */
@@ -2706,7 +2704,7 @@ spar_qm_obj_field	/* [Virt]	QmObjField	 ::=  QmFieldOrBlank QmCondition* QmOptio
 	    spar_qm_where_list_opt {
 		spar_qm_push_local (sparp_arg, WHERE_L, (SPART *)t_revlist_to_array ($7), 0); }
 	    spar_qm_options_opt { $$ = $9; }
-        | error { sparyyerror ("Description of object field is expected here"); }
+	| error { sparyyerror (sparp_arg, "Description of object field is expected here"); }
 	;
 
 spar_qm_as_id_opt	/* [Virt]	QmIdSuffix	 ::=  'AS' QmIRIrefConst	*/
@@ -2717,7 +2715,7 @@ spar_qm_as_id_opt	/* [Virt]	QmIdSuffix	 ::=  'AS' QmIRIrefConst	*/
 spar_qm_obj_datatype_opt
 	: /* empty */ { $$ = NULL; }
 	| DATATYPE_L spar_iriref { $$ = (SPART *)$2->_.lit.val; }
-	| DATATYPE_L IRI_L _LPAR SPARQL_STRING _RPAR { sparyyerror ("Datatype of object field should be either constant IRI or table field, not template IRI (string)"); }
+	| DATATYPE_L IRI_L _LPAR SPARQL_STRING _RPAR { sparyyerror (sparp_arg, "Datatype of object field should be either constant IRI or table field, not template IRI (string)"); }
 	| DATATYPE_L spar_qm_sqlcol { $$ = spar_make_qm_col_desc (sparp_arg, $2); }
 	;
 
