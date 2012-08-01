@@ -28,7 +28,6 @@
 EXTRA_DIST = \
 	README \
 	harness/AssemblyInfo.cs \
-	harness/.cvsignore \
 	harness/Makefile \
 	harness/Makefile.mono \
 	harness/OpenLink/Testing/Framework/ComparisonException.cs \
@@ -55,7 +54,6 @@ EXTRA_DIST = \
 	VirtuosoClientSuite/CommandBuilderTest.cs \
 	VirtuosoClientSuite/CommandTest.cs \
 	VirtuosoClientSuite/ConnectionTest.cs \
-	VirtuosoClientSuite/.cvsignore \
 	VirtuosoClientSuite/DtcTest.cs \
 	VirtuosoClientSuite/Makefile \
 	VirtuosoClientSuite/Makefile.mono \
