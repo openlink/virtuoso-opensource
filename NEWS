@@ -25,9 +25,10 @@ Jul 30, 2012, V6.1.6:
     - Fixed issue with content type if already set by rewrite rule
     - Fixed issue with transitive subqueries
     - Fixed issue with unknown BIF msg in SPARQL compiler error
-    - Fixed issues with SERVICE
-    - Fixed issues with UNIONs
-    - Fixed issues with incomplete rdf box
+    - Fixed issue with Bison 2.6 code generation
+    - Fixed issue with SERVICE
+    - Fixed issue with UNIONs
+    - Fixed issue with incomplete rdf box
     - Fixed memory leaks
     - Fixed multi-column transitivity
     - Fixed portability issues on FreeBSD, Solaris and Mac OS X

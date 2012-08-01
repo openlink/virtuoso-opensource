@@ -1,3 +1,13 @@
+2012-08-01  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed issue with Bison 2.6 code generation
+
+	* Updated Changelog
+
+	* Updated NEWS
+
+	* Fixed files for distribution
+
 2012-07-30  VOS Maintainer  <vos.admin@openlinksw.com>
 
 	* Updated version number to 6.1.6 for final release
