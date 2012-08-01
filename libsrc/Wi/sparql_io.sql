@@ -1206,7 +1206,7 @@ create procedure DB.DBA.SPARQL_RESULTS_RDFXML_WRITE_ROW (inout ses any, in mdta 
 	      _val := __rdf_sqlval_of_obj (_val, 1);
 	      if (__tag (_val) = __tag of varchar) -- UTF-8 value kept in a DV_STRING box
 		_val := charset_recode (_val, 'UTF-8', '_WIDE_');
-	      http_value (__rdf_strsqlval (_val), 0, ses);
+	      http_value (_val, 0, ses);
 	    }
           http ('</res:value></res:binding>', ses);
         }
