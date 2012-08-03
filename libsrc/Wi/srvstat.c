@@ -1095,7 +1095,7 @@ status_report (const char * mode, query_instance_t * qi)
 	    {
 	      if (DV_TYPE_OF (data) == DV_C_STRING)
 
-		rep_printf ("%.80s\n", data);
+		rep_printf ("%s\n", data);
 	      else
 		rep_printf ("%12ld ", unbox (data));
 	      dk_free_box (data);
