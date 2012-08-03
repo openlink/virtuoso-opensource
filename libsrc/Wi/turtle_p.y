@@ -719,5 +719,14 @@ q_complete
 		  ttlp_arg->ttlp_last_complete_uri = ttlp_expand_qname_prefix (ttlp_arg, ttlp_arg->ttlp_last_complete_uri);
 		  TTLP_URI_RESOLVE_IF_NEEDED(ttlp_arg->ttlp_last_complete_uri);
 		}
+	| _COLON
+		{
+		  if (NULL != ttlp_arg->ttlp_last_complete_uri)
+		    ttlyyerror_action ("Internal error: proven memory leak");
+		  if (NULL == ttlp_arg->ttlp_default_ns_uri)
+		    ttlyyerror_action ("Default namespace prefix is not defined, so standalone ':' can not be used as an identifier.");
+		  ttlp_arg->ttlp_last_complete_uri = box_copy_tree (ttlp_arg->ttlp_default_ns_uri);
+		  TTLP_URI_RESOLVE_IF_NEEDED(ttlp_arg->ttlp_last_complete_uri);
+		}
 	;
 
