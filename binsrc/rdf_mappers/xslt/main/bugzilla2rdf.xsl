@@ -53,7 +53,7 @@
   xmlns:sioc="&sioc;"
   xmlns:owl="&owl;"
   xmlns:xsd="&xsd;"
-  xmlns:opl="http://www.openlinksw.com/schemas/attribution#"
+  xmlns:opl="http://www.openlinksw.com/schema/attribution#"
   version="1.0">
     <xsl:output method="xml" indent="yes"/>
     <xsl:param name="baseUri" />

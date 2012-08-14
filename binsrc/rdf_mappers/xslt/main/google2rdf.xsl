@@ -54,7 +54,7 @@
 	xmlns:m="&m;"
     xmlns:d="&d;"
     xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
-    xmlns:opl="http://www.openlinksw.com/schemas/attribution#"
+    xmlns:opl="http://www.openlinksw.com/schema/attribution#"
     version="1.0">
 
     <xsl:output method="xml" encoding="utf-8" indent="yes"/>

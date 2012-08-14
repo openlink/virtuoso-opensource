@@ -66,7 +66,7 @@
   xmlns:ff="&ff;"
     xmlns:dcterms="&dcterms;"
   xmlns:foaf="&foaf;"
-    xmlns:opl="http://www.openlinksw.com/schemas/attribution#"
+    xmlns:opl="http://www.openlinksw.com/schema/attribution#"
   version="1.0">
 
 <xsl:output indent="yes" cdata-section-elements="content:encoded" />
