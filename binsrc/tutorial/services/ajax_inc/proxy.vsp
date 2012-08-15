@@ -57,7 +57,7 @@
       _xsl_path := _xsl_path || '/wsdl2js_udt.xsl';
     }
 
-    _mime_type := 'application/x-javascript';
+    _mime_type := 'application/javascript';
 
     xslt_stale(_xsl_path);
 
