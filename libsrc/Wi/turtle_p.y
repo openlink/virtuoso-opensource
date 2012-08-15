@@ -396,6 +396,9 @@ verb
 	| _AT_a_L	{ $$ = uname_rdf_ns_uri_type; }
 	| _EQ		{ $$ = box_dv_uname_string ("http://www.w3.org/2002/07/owl#sameAs"); }
 	| _EQ_GT	{ $$ = box_dv_uname_string ("http://www.w3.org/2000/10/swap/log#implies"); }
+	| _AT_has_L q_complete	{ $$ = ttlp_arg->ttlp_last_complete_uri; ttlp_arg->ttlp_last_complete_uri = NULL; }
+	| _AT_has_L VARIABLE	{ $$ = $2; }
+	| _AT_has_L  error { ttlyyerror_action ("Only predicate is allowed after \"has\" keyword"); }
 	| _LSQBRA_RSQBRA
 		{
 		  TTLYYERROR_ACTION_COND (TTLP_VERB_MAY_BE_BLANK, "Blank node (written as '[]') can not be used as a predicate");
