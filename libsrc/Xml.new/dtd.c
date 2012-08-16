@@ -1158,11 +1158,20 @@ int replace_entity_rec (vxml_parser_t* parser)
 
 int replace_entity_common (vxml_parser_t* parser, int is_ge, xml_def_4_entity_t* repl, buf_ptr_t rem, int log_syntax_error)
 {
-  id_hash_t* hash = (is_ge ?
+  id_hash_t* hash;
+  buf_ptr_t name_beg;
+  dtd_dbg_printf(("\nreplace entity..."));
+  if (parser->entity_nesting >= MAX_ENTITY_NESTING_DEPTH)
+    {
+      if (log_syntax_error)
+        xmlparser_logprintf (parser, XCFG_FATAL, ECM_MESSAGE_LEN, "Too many entities inside names of other entities"); /* unexpected input */
+      return 0;
+    }
+  parser->entity_nesting++;
+  hash = (is_ge ?
     parser->validator.dv_dtd->ed_generics :
     parser->validator.dv_dtd->ed_params );
-  buf_ptr_t name_beg = parser->pptr;
-  dtd_dbg_printf(("\nreplace entity..."));
+  name_beg = parser->pptr;
   if ((is_ge && test_char (parser, '#')) ||
       (test_class_str(parser, XML_CLASS_NMSTART)))
     {
@@ -1180,6 +1189,7 @@ int replace_entity_common (vxml_parser_t* parser, int is_ge, xml_def_4_entity_t*
 	  name_range.end = parser->pptr;
 	  brcpy (&name_buf, &name_range);
 	  c = is_ge ? dtd_char_ref(parser, name_buf.lm_memblock, name_buf.lm_length) : -1;
+	  parser->entity_nesting--;
 	  if (-1 != c)
 	    {
 /* Trick! The fact is used that &..; notation is longer than UTF8 encoding for all standard charrefs,
@@ -1223,6 +1233,7 @@ thus the length of output is no larger than the length if input. */
 	}
 
     }
+  parser->entity_nesting--;
   if ((NULL != parser->inner_tag) && (NULL != parser->inner_tag->ot_descr) && parser->inner_tag->ot_descr->htmltd_is_script)
     return 0;
   if (log_syntax_error)
