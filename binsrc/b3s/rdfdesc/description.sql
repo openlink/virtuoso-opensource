@@ -302,7 +302,7 @@ b3s_render_iri_select (inout types_a any,
           http (sprintf ('<option value="%s" title="%s" %s>%s</option>', 
                          types_a[i][0],
                          types_a[i][0],
-                         case when i = sel then 'selected="true"' else '' end,
+                         case when i = sel then 'selected="selected"' else '' end,
                          case when types_a[i][2] <> '' then types_a[i][2] else types_a[i][1] end));
         } 
       http ('</select>');
@@ -354,7 +354,7 @@ create procedure
 b3s_sas_selected ()
 {
   if (connection_get ('sas') = 'yes')
-    return ' checked="true" ';
+    return ' checked="selected" ';
   else
     return '';
 }
@@ -793,7 +793,7 @@ again:
 	   whenever not found goto usual_iri;
 	   select id_to_iri (O) into src from DB.DBA.RDF_QUAD where
 	   	S = iri_to_id (_object, 0) and P = iri_to_id ('http://bblfish.net/work/atom-owl/2006-06-06/#src', 0);
-	   http (sprintf ('<div id="x_content"><iframe src="%s" width="100%%" height="100%% frameborder="0"><p>Your browser does not support iframes.</p></iframe></div><br/>', src));
+	   http (sprintf ('<div id="x_content"><iframe src="%s" width="100%%" height="100%%" frameborder="0"><p>Your browser does not support iframes.</p></iframe></div><br/>', src));
 	 }
        else if (http_mime_type (_url) like 'image/%' or http_mime_type (_url) = 'application/x-openlink-photo')
 	 http (sprintf ('<a class="uri" %s href="%s"><img src="%s" height="160" style="border-width:0" alt="External Image" /></a>', rdfa, b3s_http_url (_url, sid, _from), _url));
@@ -814,7 +814,7 @@ again:
 	   http (sprintf ('</a>'));
 	 }
        --if (registry_get ('fct_sponge') = '1' and _url like 'http://%' or _url like 'https://%')
-       --	 http (sprintf ('&nbsp;<a class="uri" href="%s&sp=1"><img src="/fct/images/goout.gif" title="Sponge" border="0"/></a>',
+       --	 http (sprintf ('&nbsp;<a class="uri" href="%s&sp=1"><img src="/fct/images/goout.gif" alt="Sponge" title="Sponge" border="0"/></a>', 
        --	       b3s_http_url (_url, sid)));
 
      }

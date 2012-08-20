@@ -406,6 +406,7 @@ again:
     {
 ?>
       <form id="fct_form" action="/fct/facet.vsp" method="get">
+      <div>
 
 <?vsp
         if (is_class)
@@ -431,7 +432,7 @@ again:
               <option value="new_with_class">Start New Facet</option>
               <option value="set_class">Add To Current Facet</option>
             </select>
-            <button class="fct_sel_as_type" title="">Go</a>
+            <button class="fct_sel_as_type" title="">Go</button>
 <?vsp
           }
         else
@@ -442,6 +443,7 @@ again:
 <?vsp
           }
 ?>
+      </div>
       </form>
 <?vsp    
   }
