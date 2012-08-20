@@ -740,8 +740,16 @@ create function DB.DBA.SYS_HTTP_SPONGE_UP (in local_iri varchar, in get_uri varc
     }
   else -- either other loading is in progress or an recorded error
     {
+      if (datediff ('hour', old_last_load, now()) >= 1)
+        {
+          -- dbg_obj_princ ('assuming previous sponge of this resource over 1 hour ago failed part way through');
+	  ;
+	}
+      else
+        {
       -- dbg_obj_princ ('collision in the air, return');
       return local_iri; -- Nobody promised to resolve collisions in the air.
+    }
     }
 
 update_old_origin:
