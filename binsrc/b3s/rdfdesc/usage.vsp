@@ -233,7 +233,8 @@
 		   {
 		     declare dset_link, grvar any;
 	             grvar := data[0];
-		     dset_link := (sparql select ?dset where { ?dset a <http://rdfs.org/ns/void#Dataset> ; ?p `iri (?:grvar)` . });
+		     dset_link := (sparql select ?dset where { ?dset a <http://rdfs.org/ns/void#Dataset> ; ?p `iri (?:grvar)` . filter ( ?p != rdf:type ) });
+	             --dbg_obj_print (dset_link);
 		     --for (declare i, l int, i := 0, l := length (data); i < l; i := i + 1)
 		     --	{
 		     --	  http_value (data[i], 'td');
