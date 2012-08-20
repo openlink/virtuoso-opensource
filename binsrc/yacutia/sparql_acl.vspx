@@ -262,10 +262,11 @@
                         if (not e.ve_is_post and self.del_acl is not null)
                         {
 			  declare uid varchar;
+		    declare stat, msg any;
                           uid := (select FS_UID from FOAF_SSL_ACL where FS_URI = self.del_acl and FS_REALM = self.edit_realm);
 			  delete from FOAF_SSL_ACL where FS_URI = self.del_acl and FS_REALM = self.edit_realm;
 			  if (uid like 'SPUID%')
-			    USER_DROP (uid);
+			    exec ('DB.DBA.USER_DROP (?)', stat, msg, vector (uid));
 			  self.vc_redirect ('sparql_acl.vspx');
                         }
                 		  </v:before-data-bind>
@@ -507,17 +508,21 @@
 						   self.vc_error_message := 'Can not remove users from ACL rules, please select a valid user';
 						   return;
 					        }
-					      uid := (select FS_UID from FOAF_SSL_ACL where FS_URI = self.edit_acl);
+					      uid := (select FS_UID from FOAF_SSL_ACL where FS_URI = self.edit_acl and FS_REALM = self.edit_realm);
 
 					      orole := (select  g.U_NAME from SYS_USERS u join SYS_USER_GROUP on (u.U_ID = UG_UID)
 					      		join SYS_USERS g on (g.U_ID = UG_GID) where u.U_NAME = uid and g.U_NAME like 'SPARQL_%');
 
+					      if (uid like 'SPUID%')
+			                        {		      
 					      if (orole is not null)		
 					        USER_REVOKE_ROLE (uid, orole);
 					      uid := self.usr.ufl_value;
 					      if (self.rol.ufl_value <> 'none')
 					        exec ('DB.DBA.USER_GRANT_ROLE (?,?)', stat, msg, vector (uid, self.rol.ufl_value));
-				              update FOAF_SSL_ACL set FS_UID = uid, FS_REALM = self.app_realm.ufl_value, FS_APP_DATA = opts,
+					        }
+					      uid := self.usr.ufl_value;
+				              update FOAF_SSL_ACL set FS_TYPE = tp, FS_UID = uid, FS_REALM = self.app_realm.ufl_value, FS_APP_DATA = opts,
                                                 FS_PRIORITY = self.priority.ufl_value
 						where FS_URI = self.edit_acl and FS_REALM = self.edit_realm;
 					      delete from SPARQL_WEBID_ACL where SWA_RULE = self.edit_acl and SWA_REALM = self.edit_realm;

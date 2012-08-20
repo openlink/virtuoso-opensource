@@ -444,7 +444,7 @@ TBL.createCell55Ext = function (obj, fldOptions, disabled) {
     return;
 
   var fldName = prefix+'_fld_0_'+No;
-  if (predicate[1] != 'sparql') {
+  if ((predicate[1] != 'sparql') && (predicate[1] != 'triplet')) {
     OAT.Dom.unlink(fldName);
     return;
   }
@@ -452,6 +452,7 @@ TBL.createCell55Ext = function (obj, fldOptions, disabled) {
   if ($(fldName))
     return;
 
+  if (predicate[1] == 'sparql') {
   if (!fldOptions)
     fldOptions = {valueExt: 'prefix sioc: <http://rdfs.org/sioc/ns#>\nprefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>\nprefix foaf: <http://xmlns.com/foaf/0.1/>\nASK where {^{webid}^ rdf:type foaf:Person}'};
 
@@ -468,6 +469,23 @@ TBL.createCell55Ext = function (obj, fldOptions, disabled) {
     fld.disabled = disabled;
 
   td.appendChild(fld);
+}
+  else if (predicate[1] == 'triplet') {
+    var td = TBL.parent(obj, 'td');
+    if (!fldOptions)
+      fldOptions = {valueExt: ''};
+
+    var fld = TBL.createCellCombolist(td, fldOptions.valueExt, {name: fldName});
+    fld.input.style.width = "95%";
+
+    if (!TBL.triplets)
+      TBL.initValues();
+
+    for (i = 0; i < TBL.triplets.length; i++)
+      fld.addOption(TBL.triplets[i]);
+
+    td.appendChild(fld.div);
+  }
 }
 
 TBL.changeCell56 = function (obj) {
@@ -621,6 +639,7 @@ TBL.initValues = function () {
     var o = OAT.JSON.parse(data);
     TBL.predicates = o[0];
     TBL.compares = o[1];
+    TBL.triplets = o[2];
   }
   OAT.AJAX.GET('/ods/api/filtersData', false, x, {async: false});
 }

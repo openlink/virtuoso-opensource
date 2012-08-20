@@ -42,6 +42,13 @@ table
     font-family: Arial, Helvetica, Helv, sans-serif;
     font-size: 10pt;
 }
+
+input[type="text"], input[type="password"], select {
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+}
+
 /* Main page segments */
 
 /* Main banner */
