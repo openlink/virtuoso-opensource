@@ -179,18 +179,18 @@
 <!-- proptable -->
     <div id="TAB_ROW">
       <div class="tab <?vsp http (case when tp = 1 then ' tab_selected' else '' end); ?>">
-        <a href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=1<?V ses_parms ?>">Source Graphs</a>
+        <a href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=1<?V ses_parms ?>">Source Documents</a>
       </div>
       <div class="tab <?vsp http (case when tp = 2 then ' tab_selected' else '' end); ?>">
-        <a href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=2<?V ses_parms ?>">Referenced by Graphs</a>
+        <a href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=2<?V ses_parms ?>">Referenced by Documents</a>
       </div>
       <div class="tab <?vsp http (case when tp = 3 then ' tab_selected' else '' end); ?>">
         <a title="A list of other identifiers for the current entity."
-           href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=3<?V ses_parms ?>">Direct coreferences</a>
+           href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=3<?V ses_parms ?>">Explicit Coreferences</a>
       </div>
       <div class="tab <?vsp http (case when tp = 4 then ' tab_selected' else '' end); ?>">
         <a title="A list of indirect identifiers for the current entity based on Inverse Functional Property values."
-           href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=4<?V ses_parms ?>">Indirect coreferences</a>
+           href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=4<?V ses_parms ?>">Implicit Coreferences</a>
       </div>
     </div> <!-- TAB_ROW -->
 
