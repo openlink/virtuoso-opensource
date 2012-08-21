@@ -1299,7 +1299,7 @@ retry_after_deadlock:
       {
 	if (registry_get ('__sparql_mappers_debug') = '1')
           dbg_printf ('%s: SQL_MESSAGE: %s', current_proc_name(), __SQL_MESSAGE);
-        goto load_grddl;
+        goto load_grddl_after_error;
       };
       --log_enable (2, 1);
       xt := xtree_doc (ret_body);
@@ -1359,7 +1359,7 @@ retry_after_deadlock:
       {
 	if (registry_get ('__sparql_mappers_debug') = '1')
           dbg_printf ('%s: SQL_MESSAGE: %s', current_proc_name(), __SQL_MESSAGE);
-        goto load_grddl;
+        goto load_grddl_after_error;
       };
       --log_enable (2, 1);
       DB.DBA.RDF_LOAD_XHTML_MICRODATA (ret_body, base, coalesce (dest, graph_iri));
@@ -1377,7 +1377,7 @@ retry_after_deadlock:
       {
 	if (registry_get ('__sparql_mappers_debug') = '1')
           dbg_printf ('%s: SQL_MESSAGE: %s', current_proc_name(), __SQL_MESSAGE);
-        goto load_grddl;
+        goto load_grddl_after_error;
       };
       --log_enable (2, 1);
       DB.DBA.RDF_LOAD_RDFA (ret_body, base, coalesce (dest, graph_iri));
