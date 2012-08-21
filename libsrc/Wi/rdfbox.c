@@ -4545,7 +4545,7 @@ rdf_graph_user_perm_title (int perm)
 #define RGU_ASSERT 2
 
 caddr_t
-bif_rgs_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, const char *fname, int mode, int bif_uses_index)
+bif_rgs_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, const char *fname, int mode, int bif_can_use_index)
 {
   query_instance_t *qi = (query_instance_t *)qst;
   user_t *u = NULL;
@@ -4561,7 +4561,7 @@ bif_rgs_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, const char
   const char *user_type = "database";
   if (DV_IRI_ID == DV_TYPE_OF (graph))
     graph_boxed_iid = graph;
-  else if (bif_uses_index && (((DV_STRING == DV_TYPE_OF (graph)) /*&& (BF_IRI & box_flags(graph))*/) || (DV_UNAME == DV_TYPE_OF (graph))))
+  else if (bif_can_use_index && (((DV_STRING == DV_TYPE_OF (graph)) /*&& (BF_IRI & box_flags(graph))*/) || (DV_UNAME == DV_TYPE_OF (graph))))
     {
       caddr_t err = NULL;
       graph_boxed_iid = iri_to_id (qst, graph, IRI_TO_ID_WITH_CREATE, &err);
@@ -4574,7 +4574,7 @@ bif_rgs_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, const char
   else
     return NEW_DB_NULL;
 /* Now we know that the graph is OK so it's time to get user */
-  if (bif_uses_index)
+  if (bif_can_use_index)
     {
       caddr_t *user_and_cbk = (caddr_t *)bif_arg (qst, args, 1, fname);
       if ((DV_STRING == DV_TYPE_OF (user_and_cbk)) || (DV_LONG_INT == DV_TYPE_OF (user_and_cbk)))
@@ -4638,7 +4638,7 @@ assertion_failed:
       iri_id_t graph_iid = unbox_iri_id (graph_boxed_iid);
       if ((min_bnode_iri_id () <= graph_iid) && (min_named_bnode_iri_id () > graph_iid))
         graph_iri = BNODE_IID_TO_LABEL(graph_iid);
-      else if (bif_uses_index)
+      else if (bif_can_use_index)
         graph_iri = key_id_to_iri (qi, graph_iid);
       else
         {
