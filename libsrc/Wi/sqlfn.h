@@ -79,10 +79,6 @@ typedef struct scn3_paren_s {
   char sp_close_paren;	/*!< The character that should be used to close it (e.g. '}' if '{' is opened */
 } scn3_paren_t;
 
-extern int scn3_lineno;	/*!< Throughout counter of lines in the source text */
-extern int scn3_plineno;	/*!< Physical counter of lines in the source text - used for the PL debugger */
-extern int scn3_lineno_increment;	/*!< This is zero for 'macroexpanded' fragments of SQL text, to prevent from confusing when a long text is inserted instead of a single line */
-extern int scn3_lexdepth;	/*!< Number of opened parenthesis */
 
 extern dk_set_t scn3_namespaces; /*!< List of namespace prefixes and URIs */
 
@@ -137,10 +133,6 @@ extern void scn3_pragma_line (char *text);
 extern void scn3_pragma_line_push (void);
 extern void scn3_pragma_line_pop (void);
 extern void scn3_pragma_line_reset (void);
-extern int scn3_sprint_curr_line_loc (char *buf, size_t max_buf);
-extern int scn3_get_lineno (void);
-extern char *scn3_get_file_name (void);
-extern void scn3_set_file_line (char *file, int file_nchars, int line_no);
 extern void scn3_sparp_inline_subselect (spar_query_env_t *sparqre, const char * tail_sql_text, scn3_include_fragment_t *outer);
 extern void sparp_compile_subselect (spar_query_env_t *sparqre);
 
