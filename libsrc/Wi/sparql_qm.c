@@ -716,8 +716,8 @@ spar_qm_make_mapping_impl (sparp_t *sparp, int is_real, caddr_t qm_id, SPART **o
       END_DO_SET()
       while (all_atables != sub_atables)
         {
-          caddr_t alias = t_set_pop (&all_atables);
-          caddr_t atbl = t_set_pop (&all_atables);
+          caddr_t alias = (caddr_t)t_set_pop (&all_atables);
+          caddr_t atbl = (caddr_t)t_set_pop (&all_atables);
           t_set_push (&final_atables,
             spar_make_vector_qm_sql (sparp, (SPART **)t_list (2, alias, atbl)) );
         }
