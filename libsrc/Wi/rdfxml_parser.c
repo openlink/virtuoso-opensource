@@ -713,19 +713,7 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
           continue;
         }
       else if (!stricmp (tmp_nsuri, "xml"))
-        {
-/*
-   	  XXX: moved above
-          if (!strcmp (tmp_local, "lang"))
-            XRL_SET_INHERITABLE (inner, xrl_language, box_dv_short_string (avalue), "Attribute 'xml:lang' is used twice");
-          else if (!strcmp (tmp_local, "base"))
-            XRL_SET_INHERITABLE (inner, xrl_base, box_dv_short_string (avalue), "Attribute 'xml:base' is used twice");
-          else if (0 != strcmp (tmp_local, "space"))
-            xmlparser_logprintf (xp->xp_parser, XCFG_WARNING, 200,
-              "Unsupported 'xml:...' attribute, only 'xml:lang', 'xml:base' and 'xml:space' are supported" );
-*/
           continue;
-        }
 push_inner_attr_prop:
       dk_set_push (&inner_attr_props, avalue);
       dk_set_push (&inner_attr_props, tmp_local);
