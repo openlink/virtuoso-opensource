@@ -207,6 +207,12 @@ ptr += 4
 	    for (inx = 0; inx < __max_##inx; inx ++) \
 	      {
 
+#define _DO_BOX_FAST_STEP2(inx, arr) \
+	do { \
+	    long __max_##inx = (long)((arr) ? BOX_ELEMENTS(arr) : 0); \
+	    for (inx = 0; inx < __max_##inx; inx += 2) \
+	      {
+
 #else
 
 #define _DO_BOX(inx, arr) \
@@ -217,6 +223,12 @@ ptr += 4
 	do { \
 	    uint32 __max_##inx = ((arr) ? BOX_ELEMENTS(arr) : 0); \
 	    for (inx = 0; inx < __max_##inx; inx ++) \
+	      {
+
+#define _DO_BOX_FAST_STEP2(inx, arr) \
+	do { \
+	    uint32 __max_##inx = ((arr) ? BOX_ELEMENTS(arr) : 0); \
+	    for (inx = 0; inx < __max_##inx; inx += 2) \
 	      {
 
 #endif
@@ -238,6 +250,14 @@ ptr += 4
 	    dtp v = (dtp) (((void **)(arr)) [inx]);
 
 #define END_DO_BOX_FAST \
+	  }} while (0)
+
+#define DO_BOX_FAST_STEP2(dtp1, v1, dtp2, v2, inx, arr) \
+	_DO_BOX_FAST_STEP2(inx, (arr)) \
+	    dtp1 v1 = (dtp1) (((void **)(arr)) [inx]); \
+	    dtp2 v2 = (dtp2) (((void **)(arr)) [inx+1]);
+
+#define END_DO_BOX_FAST_STEP2 \
 	  }} while (0)
 
 #define DO_BOX_FAST_REV(dtp, v, inx, arr) \
