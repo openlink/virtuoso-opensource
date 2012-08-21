@@ -704,7 +704,10 @@ g_done:
         select ?srv where { graph `iri(?:g_iri)` { ?srv sd:endpoint `iri (?:service_iri)` } }
         order by desc (str (?srv)) limit 1 );
       if (srv_iri is null)
-        signal ('22023', 'The resource <' || g_iri || '> is loaded but it does not contain metadata related to <' || service_iri || '> as a SPARQL web service endpoint');
+        {
+          result ('22023', 'The resource <' || g_iri || '> is loaded but it does not contain metadata related to <' || service_iri || '> as a SPARQL web service endpoint');
+          goto get_and_post_checks;
+        }
       for (sparql define input:storage ""
         prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
         prefix sd: <http://www.w3.org/ns/sparql-service-description#>
@@ -762,6 +765,7 @@ g_done:
           else if ('GET' = mtd) get_is_ok := 1;
         }
     }
+get_and_post_checks:
   if (get_is_ok is null and post_is_ok is null)
     {
       {
