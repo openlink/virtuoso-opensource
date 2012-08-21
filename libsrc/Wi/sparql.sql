@@ -2261,15 +2261,15 @@ create function DB.DBA.rdf_replace_impl (in src varchar, in needle varchar, in r
       rpl_tag := __tag (rpl);
     }
   if (__tag of nvarchar = src_tag)
-    src := charset_recode (src, '_WIDE_', '_UTF8_');
+    src := charset_recode (src, '_WIDE_', 'UTF-8');
   else if (__tag of varchar <> src_tag)
     src := cast (src as varchar);
   if (__tag of nvarchar = needle_tag)
-    needle := charset_recode (needle, '_WIDE_', '_UTF8_');
+    needle := charset_recode (needle, '_WIDE_', 'UTF-8');
   else if (__tag of varchar <> needle_tag)
     needle := cast (needle as varchar);
   if (__tag of nvarchar = rpl_tag)
-    rpl := charset_recode (rpl, '_WIDE_', '_UTF8_');
+    rpl := charset_recode (rpl, '_WIDE_', 'UTF-8');
   else if (__tag of varchar <> rpl_tag)
     rpl := cast (rpl as varchar);
   if (__tag of varchar <> __tag (opts))
