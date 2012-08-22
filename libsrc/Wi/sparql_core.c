@@ -2613,8 +2613,8 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
     obj_is_plain_var = SPART_VARNAME_IS_PLAIN(object->_.var.vname);
   else if ((SPAR_QNAME != obj_stype) && (SPAR_LIT != obj_stype))
     spar_error (sparp, "Object of transitive triple pattern should be variable or QName or literal, not blank node");
-  subj_vname = t_box_sprintf (40, "trans-subj-%.20s", (caddr_t)(sparp->sparp_env->spare_selids->data));
-  obj_vname = t_box_sprintf (40, "trans-obj-%.20s", (caddr_t)(sparp->sparp_env->spare_selids->data));
+  subj_vname = t_box_sprintf (40, "trans_subj_%.20s", (caddr_t)(sparp->sparp_env->spare_selids->data));
+  obj_vname = t_box_sprintf (40, "trans_obj_%.20s", (caddr_t)(sparp->sparp_env->spare_selids->data));
   subj_alias = subj_is_plain_var ? subject->_.var.vname : subj_vname;
   obj_alias = obj_is_plain_var ? object->_.var.vname : obj_vname;
   spar_gp_init (sparp, 0);
@@ -4730,8 +4730,13 @@ bif_sparql_lex_analyze (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return spar_query_lex_analyze (str, QST_CHARSET(qst));
 }
 
+#define SPAR_ML_SAFEST			0
+#define SPAR_ML_MAKE_BNODE_IF_NULL	1
+#define SPAR_ML_MAKE_VAR_IF_NULL	2
+#define SPAR_ML_RESULT_FROM_SANDBOX	3
+
 SPART *
-spar_make_literal_from_sql_box (sparp_t * sparp, caddr_t box, int make_bnode_if_null)
+spar_make_literal_from_sql_box (sparp_t * sparp, caddr_t box, int mode)
 {
   switch (DV_TYPE_OF (box))
     {
@@ -4771,14 +4776,26 @@ spar_make_literal_from_sql_box (sparp_t * sparp, caddr_t box, int make_bnode_if_
           spar_internal_error (sparp, "spar_" "make_literal_from_sql_box() does not support rdf boxes other than complete untyped strings, sorry");
         return spartlist (sparp, 4, SPAR_LIT, t_box_copy (box), NULL, NULL);
       }
-    case DV_STRING: spartlist (sparp, 4, SPAR_LIT, t_box_copy (box), NULL, NULL);
+    case DV_STRING:
+      if (BF_IRI & box_flags (box))
+        {
+          if (SPAR_ML_RESULT_FROM_SANDBOX == mode)
+            return spartlist (sparp, 2, SPAR_QNAME, t_box_copy (box));
+          spar_internal_error (sparp, "spar_" "make_literal_from_sql_box(): a string has BF_IRI");
+        }
+      return spartlist (sparp, 4, SPAR_LIT, t_box_copy (box), NULL, NULL);
     case DV_DB_NULL:
-      if (make_bnode_if_null)
-        return spar_make_blank_node (sparp, spar_mkid (sparp, "_:sqlbox"), 1);
-      else
-        return spar_make_variable (sparp, t_box_dv_uname_string ("_:sqlbox"));
+      switch (mode)
+        {
+        case SPAR_ML_MAKE_BNODE_IF_NULL: return spar_make_blank_node (sparp, spar_mkid (sparp, "_:sqlbox"), 1);
+        case SPAR_ML_MAKE_VAR_IF_NULL: return spar_make_variable (sparp, t_box_dv_uname_string ("_:sqlbox"));
+        case SPAR_ML_RESULT_FROM_SANDBOX: return NULL;
+        }
       break;
-    default: spar_internal_error (sparp, "spar_" "make_literal_from_sql_box(): unsupported box type");
+    default:
+      if (SPAR_ML_RESULT_FROM_SANDBOX == mode)
+        return NULL;
+      spar_internal_error (sparp, "spar_" "make_literal_from_sql_box(): unsupported box type");
   }
   return NULL; /* to keep compiler happy */
 }
@@ -4839,20 +4856,21 @@ bif_sparql_quad_maps_for_quad_impl (caddr_t * qst, caddr_t * err_ret, state_slot
       triple_case_t **cases;
       int src_idx, case_count, case_ctr;
       int src_total_count = 0;
+      int ml_make_mode = ((flags & 1) ? SPAR_ML_MAKE_BNODE_IF_NULL : SPAR_ML_MAKE_VAR_IF_NULL);
       if (DV_STRING == DV_TYPE_OF (storage_name))
         storage_name = t_box_dv_uname_string (storage_name);
       sparp.sparp_storage = sparp_find_storage_by_name (storage_name);
       t_set_push (&(spare.spare_selids), t_box_dv_short_string (fname));
       t_set_push (&(spare.spare_context_gp_subtypes), (caddr_t)((ptrlong)WHERE_L));
       triple = spar_make_plain_triple (&sparp,
-        spar_make_literal_from_sql_box (&sparp, sqlvals[SPART_TRIPLE_GRAPH_IDX]		, (int)(flags & 1)),
-        spar_make_literal_from_sql_box (&sparp, sqlvals[SPART_TRIPLE_SUBJECT_IDX]	, (int)(flags & 1)),
-        spar_make_literal_from_sql_box (&sparp, sqlvals[SPART_TRIPLE_PREDICATE_IDX]	, (int)(flags & 1)),
-        spar_make_literal_from_sql_box (&sparp, sqlvals[SPART_TRIPLE_OBJECT_IDX]	, (int)(flags & 1)),
+        spar_make_literal_from_sql_box (&sparp, sqlvals[SPART_TRIPLE_GRAPH_IDX]		, ml_make_mode),
+        spar_make_literal_from_sql_box (&sparp, sqlvals[SPART_TRIPLE_SUBJECT_IDX]	, ml_make_mode),
+        spar_make_literal_from_sql_box (&sparp, sqlvals[SPART_TRIPLE_PREDICATE_IDX]	, ml_make_mode),
+        spar_make_literal_from_sql_box (&sparp, sqlvals[SPART_TRIPLE_OBJECT_IDX]	, ml_make_mode),
         (caddr_t)(_STAR), NULL );
       DO_BOX_FAST (caddr_t, itm, src_idx, good_sources_val)
         {
-          SPART *expn = spar_make_literal_from_sql_box (&sparp, itm, 0);
+          SPART *expn = spar_make_literal_from_sql_box (&sparp, itm, SPAR_ML_SAFEST);
           if (SPAR_QNAME == SPART_TYPE (expn))
             sources [src_total_count++] = spartlist (&sparp, 4, SPAR_GRAPH,
              SPART_GRAPH_FROM, expn->_.qname.val, expn );
@@ -4860,7 +4878,7 @@ bif_sparql_quad_maps_for_quad_impl (caddr_t * qst, caddr_t * err_ret, state_slot
       END_DO_BOX_FAST;
       DO_BOX_FAST (caddr_t, itm, src_idx, bad_sources_val)
         {
-          SPART *expn = spar_make_literal_from_sql_box (&sparp, itm, 0);
+          SPART *expn = spar_make_literal_from_sql_box (&sparp, itm, SPAR_ML_SAFEST);
           if (SPAR_QNAME == SPART_TYPE (expn))
             sources [src_total_count++] = spartlist (&sparp, 4, SPAR_GRAPH,
              SPART_GRAPH_NOT_FROM, expn->_.qname.val, expn );

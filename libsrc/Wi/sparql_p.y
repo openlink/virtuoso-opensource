@@ -388,6 +388,9 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <trees> spar_triple_optionlist_opt
 %type <backstack> spar_triple_option_commalist
 %type <trees> spar_triple_option
+%type <trees> spar_triple_inference_option
+%type <trees> spar_triple_freetext_option
+%type <trees> spar_triple_transit_option
 %type <backstack> spar_triple_option_var_commalist
 %type <token_type> spar_same_as_option
 %type <tree> spar_verb
@@ -1429,9 +1432,25 @@ spar_triple_option_commalist
 	| spar_triple_option_commalist _COMMA spar_triple_option	{ $$ = $1;  t_set_push (&($$), ((SPART **)($3))[0]); t_set_push (&($$), ((SPART **)($3))[1]); }
 	;
 
-spar_triple_option	/* [Virt]	TripleOption	 ::=  'INFERENCE' ( QNAME | Q_IRI_REF | SPARQL_STRING )	*/
-	: IFP_L				{ $$ = (SPART **)t_list (2, (ptrlong)IFP_L, (ptrlong)1); }
-	| INFERENCE_L SPARQL_PLAIN_ID {
+spar_triple_option	/* [Virt]	TripleOption	 ::=  'TABLE_OPTION' SPARQL_STRING	*/
+	: TABLE_OPTION_L SPARQL_STRING	{
+		SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_VIRTSPECIFIC, "TABLE OPTION hint for SQL optimizer");
+		$$ = (SPART **)t_list (2, (ptrlong)TABLE_OPTION_L, $2); }
+	| spar_triple_inference_option	{
+		SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_VIRTSPECIFIC, "inference option");
+		$$ = $1; }
+	| spar_triple_freetext_option	{
+		SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_VIRTSPECIFIC, "free-text option");
+		$$ = $1; }
+	| spar_triple_transit_option	{
+		SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_TRANSIT, "TRANSITIVE and related options");
+		$$ = $1; }
+	;
+
+spar_triple_inference_option
+	: IFP_L				{	/*... | 'IFP'	*/
+		$$ = (SPART **)t_list (2, (ptrlong)IFP_L, (ptrlong)1); }
+	| INFERENCE_L SPARQL_PLAIN_ID	{	/*... | 'INFERENCE' ( QNAME | Q_IRI_REF | SPARQL_STRING )	*/
 		if (strcasecmp ($2, "none"))
 		  $$ = (SPART **)t_list (2, (ptrlong)INFERENCE_L, $2);
 		else
@@ -1440,28 +1459,52 @@ spar_triple_option	/* [Virt]	TripleOption	 ::=  'INFERENCE' ( QNAME | Q_IRI_REF 
 		  $$ = (SPART **)t_list (2, (ptrlong)INFERENCE_L, sparp_expand_qname_prefix (sparp_arg, $2)); }
         | INFERENCE_L Q_IRI_REF		{ $$ = (SPART **)t_list (2, (ptrlong)INFERENCE_L, sparp_expand_q_iri_ref (sparp_arg, $2)); }
 	| INFERENCE_L SPARQL_STRING	{ $$ = (SPART **)t_list (2, (ptrlong)INFERENCE_L, $2); }
-	| OFFBAND_L spar_var		{ $$ = (SPART **)t_list (2, (ptrlong)OFFBAND_L, $2); }
-	| SCORE_L spar_var		{ $$ = (SPART **)t_list (2, (ptrlong)SCORE_L, $2); }
-	| SCORE_LIMIT_L spar_expn	{ $$ = (SPART **)t_list (2, (ptrlong)SCORE_LIMIT_L, $2); }
-	| TABLE_OPTION_L SPARQL_STRING	{ $$ = (SPART **)t_list (2, (ptrlong)TABLE_OPTION_L, $2); }
-	| T_CYCLES_ONLY_L		{ $$ = (SPART **)t_list (2, (ptrlong)T_CYCLES_ONLY_L, (ptrlong)1); }
-	| T_DIRECTION_L	SPARQL_INTEGER	{ $$ = (SPART **)t_list (2, (ptrlong)T_DIRECTION_L, $2); }
-	| T_DISTINCT_L			{ $$ = (SPART **)t_list (2, (ptrlong)T_DISTINCT_L, (ptrlong)1); }
-	| T_END_FLAG_L SPARQL_INTEGER	{ $$ = (SPART **)t_list (2, (ptrlong)T_END_FLAG_L, $2); }
-	| T_EXISTS_L			{ $$ = (SPART **)t_list (2, (ptrlong)T_EXISTS_L, (ptrlong)1); }
-	| T_FINAL_AS_L spar_var		{ $$ = (SPART **)t_list (2, (ptrlong)T_FINAL_AS_L, $2); }
-	| T_IN_L _LPAR spar_triple_option_var_commalist _RPAR	{ $$ = (SPART **)t_list (2, (ptrlong)T_IN_L, spartlist (sparp_arg, 2, SPAR_LIST, t_revlist_to_array ($3))); }
-	| T_MIN_L spar_expn		{ $$ = (SPART **)t_list (2, (ptrlong)T_MIN_L, $2); }
-	| T_MAX_L spar_expn		{ $$ = (SPART **)t_list (2, (ptrlong)T_MAX_L, $2); }
-	| T_NO_CYCLES_L			{ $$ = (SPART **)t_list (2, (ptrlong)T_NO_CYCLES_L, (ptrlong)1); }
-	| T_NO_ORDER_L			{ $$ = (SPART **)t_list (2, (ptrlong)T_NO_ORDER_L, (ptrlong)1); }
-	| T_OUT_L _LPAR spar_triple_option_var_commalist _RPAR	{ $$ = (SPART **)t_list (2, (ptrlong)T_OUT_L, spartlist (sparp_arg, 2, SPAR_LIST, t_revlist_to_array ($3))); }
-	| T_SHORTEST_ONLY_L		{ $$ = (SPART **)t_list (2, (ptrlong)T_SHORTEST_ONLY_L, (ptrlong)1); }
-	| T_STEP_L _LPAR spar_var _RPAR AS_L spar_var		{ $$ = (SPART **)t_list (2, (ptrlong)T_STEP_L, spartlist (sparp_arg, 4, SPAR_ALIAS, $3, $6->_.var.vname, SSG_VALMODE_AUTO)); }
-	| T_STEP_L _LPAR SPARQL_STRING _RPAR AS_L spar_var	{ $$ = (SPART **)t_list (2, (ptrlong)T_STEP_L, spartlist (sparp_arg, 4, SPAR_ALIAS, $3, $6->_.var.vname, SSG_VALMODE_AUTO)); }
-	| TRANSITIVE_L			{ $$ = (SPART **)t_list (2, (ptrlong)TRANSITIVE_L, (ptrlong)1); }
-	| spar_same_as_option _LPAR spar_expns _RPAR	{ $$ = (SPART **)t_list (2, $1, spartlist (sparp_arg, 2, SPAR_LIST, t_revlist_to_array ($3))); }
+	| spar_same_as_option _LPAR spar_expns _RPAR	{	/*... | ( 'SAME_AS' | 'SAME_AS_O' | 'SAME_AS_P_L' | 'SAME_AS_S' | 'SAME_AS_S_O_L' ) ( '(' Expns ')' )?	*/
+		$$ = (SPART **)t_list (2, $1, spartlist (sparp_arg, 2, SPAR_LIST, t_revlist_to_array ($3))); }
 	| spar_same_as_option		{ $$ = (SPART **)t_list (2, $1, (ptrlong)1); }
+	;
+
+spar_triple_freetext_option
+	: OFFBAND_L spar_var		{	/*... | 'OFFBAND' Var	*/
+		$$ = (SPART **)t_list (2, (ptrlong)OFFBAND_L, $2); }
+	| SCORE_L spar_var		{	/*... | 'SCORE' Var	*/
+		$$ = (SPART **)t_list (2, (ptrlong)SCORE_L, $2); }
+	| SCORE_LIMIT_L spar_expn	{	/*... | 'SCORE_LIMIT' Expn	*/
+		$$ = (SPART **)t_list (2, (ptrlong)SCORE_LIMIT_L, $2); }
+	;
+
+spar_triple_transit_option
+	: T_CYCLES_ONLY_L		{	/*... | 'T_CYCLES_ONLY'	*/
+		$$ = (SPART **)t_list (2, (ptrlong)T_CYCLES_ONLY_L, (ptrlong)1); }
+	| T_DIRECTION_L	SPARQL_INTEGER	{	/*... | 'T_DIRECTION' SPARQL_INTEGER	*/
+		$$ = (SPART **)t_list (2, (ptrlong)T_DIRECTION_L, $2); }
+	| T_DISTINCT_L			{	/*... | 'T_DISTINCT'	*/
+		$$ = (SPART **)t_list (2, (ptrlong)T_DISTINCT_L, (ptrlong)1); }
+	| T_END_FLAG_L SPARQL_INTEGER	{	/*... | ''	*/
+		$$ = (SPART **)t_list (2, (ptrlong)T_END_FLAG_L, $2); }
+	| T_EXISTS_L			{	/*... | 'T_EXISTS'	*/
+		$$ = (SPART **)t_list (2, (ptrlong)T_EXISTS_L, (ptrlong)1); }
+	| T_FINAL_AS_L spar_var		{	/*... | 'T_FINAL_AS' Var	*/
+		$$ = (SPART **)t_list (2, (ptrlong)T_FINAL_AS_L, $2); }
+	| T_IN_L _LPAR spar_triple_option_var_commalist _RPAR	{	/*... | 'T_IN' '(' Var ( ',' Var )* ')'	*/
+		$$ = (SPART **)t_list (2, (ptrlong)T_IN_L, spartlist (sparp_arg, 2, SPAR_LIST, t_revlist_to_array ($3))); }
+	| T_MIN_L spar_expn		{	/*... | 'T_MIN' Expn	*/
+		$$ = (SPART **)t_list (2, (ptrlong)T_MIN_L, $2); }
+	| T_MAX_L spar_expn		{	/*... | 'T_MAX' Expn	*/
+		$$ = (SPART **)t_list (2, (ptrlong)T_MAX_L, $2); }
+	| T_NO_CYCLES_L			{	/*... | 'T_NO_CYCLES'	*/
+		$$ = (SPART **)t_list (2, (ptrlong)T_NO_CYCLES_L, (ptrlong)1); }
+	| T_NO_ORDER_L			{	/*... | 'T_NO_ORDER'	*/
+		$$ = (SPART **)t_list (2, (ptrlong)T_NO_ORDER_L, (ptrlong)1); }
+	| T_OUT_L _LPAR spar_triple_option_var_commalist _RPAR	{	/*... | 'T_OUT' '(' Var ( ',' Var )* ')'	*/
+		$$ = (SPART **)t_list (2, (ptrlong)T_OUT_L, spartlist (sparp_arg, 2, SPAR_LIST, t_revlist_to_array ($3))); }
+	| T_SHORTEST_ONLY_L		{	/*... | 'T_SHORTEST_ONLY'	*/
+		$$ = (SPART **)t_list (2, (ptrlong)T_SHORTEST_ONLY_L, (ptrlong)1); }
+	| T_STEP_L _LPAR spar_var _RPAR AS_L spar_var		{	/*... | 'T_STEP' '(' ( Var | SPARQL_STRING ) ')' 'AS' Var	*/
+		$$ = (SPART **)t_list (2, (ptrlong)T_STEP_L, spartlist (sparp_arg, 4, SPAR_ALIAS, $3, $6->_.var.vname, SSG_VALMODE_AUTO)); }
+	| T_STEP_L _LPAR SPARQL_STRING _RPAR AS_L spar_var	{ $$ = (SPART **)t_list (2, (ptrlong)T_STEP_L, spartlist (sparp_arg, 4, SPAR_ALIAS, $3, $6->_.var.vname, SSG_VALMODE_AUTO)); }
+	| TRANSITIVE_L			{	/*... | 'TRANSITIVE'	*/
+		$$ = (SPART **)t_list (2, (ptrlong)TRANSITIVE_L, (ptrlong)1); }
 	;
 
 spar_triple_option_var_commalist

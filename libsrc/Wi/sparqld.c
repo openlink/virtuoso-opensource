@@ -183,7 +183,9 @@ ssg_sd_opname (sparp_t *sparp, ptrlong opname, int is_op)
     case FILTER_L: return "FILTER";
     /* case FROM_L: return "FROM"; */
     /* case GRAPH_L: return "GRAPH"; */
+    case IFP_L: return "IFP";
     case IN_L: return "IN";
+    case INFERENCE_L: return "INFERENCE";
     case IRI_L: return "IRI";
     case LANG_L: return "LANG";
     case LIKE_L: return "LIKE";
@@ -201,7 +203,27 @@ ssg_sd_opname (sparp_t *sparp, ptrlong opname, int is_op)
     case SCORE_LIMIT_L: return "SCORE_LIMIT";
     case SELECT_L: return "SELECT";
     /* case SUBJECT_L: return "SUBJECT"; */
+    case T_CYCLES_ONLY_L: return "T_CYCLES_ONLY";
+    case T_DIRECTION_L: return "T_DIRECTORY";
+    case T_DISTINCT_L: return "T_DISTINCT";
+    case T_END_FLAG_L: return "T_END_FLAG";
+    case T_EXISTS_L: return "T_EXISTS";
+    case T_FINAL_AS_L: return "T_FINAL_AS";
+    case T_IN_L: return "T_IN";
+    case T_MIN_L: return "T_MIN";
+    case T_MAX_L: return "T_MAX";
+    case T_NO_CYCLES_L: return "T_NO_CYCLES";
+    case T_NO_ORDER_L: return "T_NO_ORDER";
+    case T_OUT_L: return "T_OUT";
+    case T_SHORTEST_ONLY_L: return "T_SHORTEST_ONLY";
+    case T_STEP_L: return "T_STEP";
+    case TRANSITIVE_L: return "TRANSITIVE";
     case true_L: return "true";
+    case SAME_AS_L: return "SAME_AS";
+    case SAME_AS_O_L: return "SAME_AS_O";
+    case SAME_AS_P_L: return "SAME_AS_P";
+    case SAME_AS_S_L: return "SAME_AS_S";
+    case SAME_AS_S_O_L: return "SAME_AS_S_O";
     case UNION_L: return "UNION";
     /* case WHERE_L: return "WHERE"; */
 
@@ -256,6 +278,13 @@ ssg_sdprin_varname (spar_sqlgen_t *ssg, ccaddr_t vname)
           char buf[20];
           if (strcmp (vname, param_vname))
             continue;
+          if (ssg->ssg_inside_t_inouts)
+            {
+              t_set_push (&(ssg->ssg_param_t_inouts), (caddr_t)vname);
+              ssg_putchar ('?');
+              ssg_puts (vname);
+              return;
+            }
           if (SSG_SD_GLOBALS & ssg->ssg_sd_flags)
             {
               sprintf (buf, "?:%d", paramctr+1);
@@ -274,11 +303,15 @@ ssg_sdprin_varname (spar_sqlgen_t *ssg, ccaddr_t vname)
     }
   if (('_' == vname[0]) && ':' == vname[1])
     {
+      if (ssg->ssg_inside_t_inouts)
+        spar_error (ssg->ssg_sparp, "Bnode %.100s should not appear in T_IN or T_OUT variable lists", vname);
       ssg_puts (vname);
       return;
     }
   if (':' == vname[0])
     {
+      if (ssg->ssg_inside_t_inouts)
+        spar_error (ssg->ssg_sparp, "External parameter ?%.100s should not appear in T_IN or T_OUT variable lists", vname);
       if (!(SSG_SD_GLOBALS & ssg->ssg_sd_flags))
         spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (like external parameters) so SPARQL query can not be composed", ssg->ssg_sd_service_name);
     }
@@ -423,7 +456,59 @@ end_builtin_checks:
     }
 }
 
-void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
+void
+ssg_sdprint_option_list (spar_sqlgen_t *ssg, SPART **options)
+{
+  int inside_option_list = 0;
+  int option_ctr;
+  dk_set_t old_param_t_inouts = ssg->ssg_param_t_inouts;
+  DO_BOX_FAST_STEP2 (ptrlong, opt_id, SPART *, opt_val, option_ctr, options)
+    {
+      switch (opt_id)
+        {
+        case LIMIT_L: continue; /* It's only a hint, not a requirement, and it's put sometimes via other parts of codegen, but not always */
+        case SPAR_SERVICE_INV: continue; /* It's printed via dedicated code */
+        }
+      if (!(SSG_SD_OPTION & ssg->ssg_sd_flags))
+        spar_error (ssg->ssg_sparp, "%.100s does not support OPTION (...) clause for triples so SPARQL query can not be composed", ssg->ssg_sd_service_name);
+      if (inside_option_list)
+        ssg_puts (", ");
+      else
+        {
+          inside_option_list = 1;
+          ssg_puts (" OPTION ( ");
+        }
+      switch (opt_id)
+        {
+        case T_CYCLES_ONLY_L: case T_DISTINCT_L: case T_EXISTS_L: case T_NO_CYCLES_L:
+        case T_NO_ORDER_L: case T_SHORTEST_ONLY_L: case TRANSITIVE_L: case IFP_L:
+          ssg_puts (ssg_sd_opname (ssg->ssg_sparp, opt_id, 0));
+          break;
+        case T_STEP_L:
+          ssg_puts (" T_STEP ("); ssg_sdprint_tree (ssg, opt_val->_.alias.arg);
+          ssg_puts (") AS ?"); ssg_puts (opt_val->_.alias.aname);
+          break;
+        case T_IN_L: case T_OUT_L:
+          if (NULL != old_param_t_inouts)
+            spar_error (ssg->ssg_sparp, "Unsupported combination of transitive subqueries (transitive subquery in options of other transitive subquery?)");
+          ssg->ssg_inside_t_inouts = 1;
+          ssg_puts (ssg_sd_opname (ssg->ssg_sparp, opt_id, 0));
+          ssg_sdprint_tree (ssg, opt_val);
+          ssg->ssg_inside_t_inouts = 0;
+          break;
+        default:
+          ssg_puts (ssg_sd_opname (ssg->ssg_sparp, opt_id, 0));
+          ssg_sdprint_tree (ssg, opt_val);
+          break;
+        }
+    }
+  END_DO_BOX_FAST_STEP2;
+  if (inside_option_list)
+    ssg_putchar (')');
+}
+
+void
+ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
 {
   int ctr = 0, count;
   int tree_type;
@@ -610,11 +695,23 @@ fname_printed:
               {
                 ssg_puts (" )");
                 ssg->ssg_indent--;
+                if (BOX_ELEMENTS_0 (tree->_.gp.options))
+                  spar_internal_error (ssg->ssg_sparp, "OPTION() clause is not allowed for invocation of scalar subquery");
               }
             else
               {
                 ssg_puts (" }");
                 ssg->ssg_indent -= 2;
+                ssg_sdprint_option_list (ssg, tree->_.gp.options);
+                while (NULL != ssg->ssg_param_t_inouts)
+                  {
+                    ccaddr_t vname = (ccaddr_t)t_set_pop (&(ssg->ssg_param_t_inouts));
+                    ssg_puts (" FILTER (?");
+                    ssg_puts (vname);
+                    ssg_puts (" = ");
+                    ssg_sdprin_varname (ssg, vname);
+                    ssg_puts (")");
+                  }
               }
             return;
           case UNION_L:
@@ -738,7 +835,7 @@ fname_printed:
         t_set_pop (&(ssg->ssg_sd_outer_gps));
         ssg_puts (" }");
         ssg->ssg_indent -= 2;
-/*!!!TBD print tree->_.gp.options */
+        ssg_sdprint_option_list (ssg, tree->_.gp.options);
         return;
       }
     case SPAR_LIT:
@@ -876,7 +973,6 @@ fname_printed:
         SPART *curr_graph = tree->_.triple.tr_graph;
         int new_g_is_dflt = 0;
         int should_close_graph, need_new_graph, place_qm;
-        int option_count;
         if (ssg->ssg_sd_graph_gp_nesting <= ssg->ssg_sd_forgotten_graph)
           {
             switch (SPART_TYPE (curr_graph))
@@ -986,13 +1082,7 @@ fname_printed:
             ssg_newline (0);
           }
         ssg_sdprint_tree (ssg, tree->_.triple.tr_object);
-        option_count = BOX_ELEMENTS_0 (tree->_.triple.options);
-        if (0 != option_count)
-          {
-            if (!(SSG_SD_OPTION & ssg->ssg_sd_flags))
-              spar_error (ssg->ssg_sparp, "%.100s does not support OPTION (...) clause for triples so SPARQL query can not be composed", ssg->ssg_sd_service_name);
-/*@@@*/
-          }
+        ssg_sdprint_option_list (ssg, tree->_.triple.options);
         if (place_qm || (OPTIONAL_L == tree->_.triple.subtype))
           {
             if (ssg->ssg_sd_forgotten_dot)
@@ -1093,14 +1183,23 @@ fname_printed:
         ssg_sdprin_qname (ssg, (SPART *)(tree->_.graph.iri));
         return;
       }
-#if 0
     case SPAR_LIST:
       {
-        ssg_puts ("LIST:");
-        SES_PRINT (ses, buf);
-        spart_dump (tree->_.list.items, ses, indent+2, "ITEMS", -2);
+        int ctr;
+        ssg_puts (" (");
+        ssg->ssg_indent++;
+        DO_BOX_FAST (SPART *, itm, ctr, tree->_.list.items)
+          {
+            if (ctr)
+              ssg_puts (", ");
+            ssg_sdprint_tree (ssg, itm);
+          }
+        END_DO_BOX_FAST;
+        ssg_putchar (')');
+        ssg->ssg_indent--;
         break;
       }
+#if 0
     default:
       {
         sprintf (buf, "NODE OF TYPE %ld (", (ptrlong)(tree->type));

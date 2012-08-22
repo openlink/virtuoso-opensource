@@ -859,6 +859,8 @@ typedef struct spar_sqlgen_s
   caddr_t		ssg_sd_single_from;	/*!< The IRI in FROM clause, if there's only one FROM clause, NULL otherwise */
   int			ssg_sd_graph_gp_nesting;	/*!< Count of GRAPH {...} gps that are opened but not yet closed */
   dk_set_t		ssg_param_pos_set;	/*!< revlist of byte offsets of params in text and numbers of params in question, for sinv templates with unsupported named params */
+  int			ssg_inside_t_inouts;	/*!< The list of T_IN or T_OUT values is being printed */
+  dk_set_t		ssg_param_t_inouts;	/*!< list of variables that are used in T_IN and T_OUT options but passed as parameters to a remote, so the option should use internal name and a separate FILTER should appear later */
 /* RDB2RDF Codegen temporary values */
   const char *		ssg_alias_to_search;	/*!< Alias to select for search-and-replace (say, to replace "main alias" with prefixes for old or new columns) */
   const char *		ssg_alias_to_replace;	/*!< Replacing alias for search-and-replace */

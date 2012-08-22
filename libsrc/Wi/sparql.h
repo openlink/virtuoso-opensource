@@ -916,6 +916,13 @@ extern SPART *spar_make_variable (sparp_t *sparp, caddr_t name);
 extern SPART *spar_make_macropu (sparp_t *sparp, caddr_t name, ptrlong pos);
 extern SPART *spar_make_blank_node (sparp_t *sparp, caddr_t name, int bracketed);
 extern SPART *spar_make_fake_blank_node (sparp_t *sparp); /*!< Not for use in real parse trees! */
+
+#define SPAR_ML_SAFEST			0
+#define SPAR_ML_MAKE_BNODE_IF_NULL	1
+#define SPAR_ML_MAKE_VAR_IF_NULL	2
+#define SPAR_ML_RESULT_FROM_SANDBOX	3
+extern SPART *spar_make_literal_from_sql_box (sparp_t * sparp, caddr_t box, int mode);
+
 extern SPART *spar_make_typed_literal (sparp_t *sparp, caddr_t strg, caddr_t type, caddr_t lang);
 extern void sparp_make_and_push_new_graph_source (sparp_t *sparp, ptrlong subtype, SPART *iri_expn, SPART **options);
 extern SPART *sparp_make_graph_precode (sparp_t *sparp, ptrlong subtype, SPART *iriref, SPART **options);
