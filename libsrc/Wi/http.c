@@ -4796,6 +4796,8 @@ dks_sqlval_esc_write (caddr_t *qst, dk_session_t *out, caddr_t val, wcharset_t *
   dtp_t dtp = DV_TYPE_OF (val);
   if (DV_STRINGP (val))
     {
+      if (box_flags (val) & BF_UTF8) /* if string is in UTF-8 do not even try to use some default */
+	src_charset = CHARSET_UTF8;
       dks_esc_write (out, val, box_length (val) - 1, tgt_charset, src_charset, dks_esc_mode);
     }
   else if (IS_WIDE_STRING_DTP (dtp))
