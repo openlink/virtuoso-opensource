@@ -175,6 +175,7 @@ again:
   page_resource_uri := replace (page_resource_uri, '%23', '#');
   page_resource_uri := replace (page_resource_uri, ' ', '%20');
   page_resource_uri := replace (page_resource_uri, '"', '%22');
+  __box_flags_set (page_resource_uri, 2);
 
   _S := page_resource_uri;
   proxy_iri := page_resource_uri;
@@ -255,7 +256,8 @@ again:
 
   _subject := b3s_label_get (data, langs);
 
-  rdf_link := sprintf ('/sparql?query=%U', sprintf ('define sql:describe-mode "LOD" %s DESCRIBE <%s>', b3s_render_inf_clause(), _S));
+  rdf_link := sprintf ('/sparql?query=%U', __box_flags_tweak (sprintf ('define sql:describe-mode "LOD" %s DESCRIBE <%s>', b3s_render_inf_clause(), _S), 2)); 
+  __box_flags_set (rdf_link, 2);
 
   declare __res_desc, qs, qv, best_variant, accept varchar;
   declare best_q, curr float;
