@@ -166,7 +166,7 @@ OMAIL.WA.res_mime_create(30280,'application/x-gtar','')
 ;
 OMAIL.WA.res_mime_create(30290,'application/x-hdf','')
 ;
-OMAIL.WA.res_mime_create(30300,'application/x-javascript', '')
+OMAIL.WA.res_mime_create(30300,'application/javascript', '')
 ;
 OMAIL.WA.res_mime_create(30310,'application/x-koan', '')
 ;

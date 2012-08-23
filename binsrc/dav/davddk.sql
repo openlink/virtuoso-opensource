@@ -1331,7 +1331,7 @@ insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/x-gtar',
 ;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/x-hdf','hdf')
 ;
-insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/x-javascript','js')
+insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/javascript','js')
 ;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/x-koan','skp')
 ;
