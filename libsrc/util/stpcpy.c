@@ -26,6 +26,7 @@
  *  
 */
 
+#ifndef HAVE_STPCPY
 char *
 stpcpy (char *dst, const char *src)
 {
@@ -33,3 +34,4 @@ stpcpy (char *dst, const char *src)
     ;
   return --dst;
 }
+#endif
