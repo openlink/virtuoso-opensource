@@ -595,7 +595,10 @@ spar_macroprocess_define_list (sparp_t *sparp, SPART **trees, spar_mproc_ctx_t *
 SPART **
 spar_macroprocess_treelist (sparp_t *sparp, SPART **trees, int begin_with, spar_mproc_ctx_t *ctx)
 {
-  int ctr, len = BOX_ELEMENTS_0 (trees);
+  int ctr, len;
+  if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (trees))
+    return trees;
+  len = BOX_ELEMENTS_0 (trees);
   for (ctr = begin_with; ctr < len; ctr++)
     trees[ctr] = spar_macroprocess_tree (sparp, trees[ctr], ctx);
   return trees;
