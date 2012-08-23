@@ -59,7 +59,7 @@
   xmlns:owl="http://www.w3.org/2002/07/owl#"
   xmlns:bibo="&bibo;"
   xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
-  xmlns:dcterms="http://purl.org/dc/terms"
+  xmlns:dcterms="http://purl.org/dc/terms/"
   version="1.0">
 
 <xsl:output indent="yes" />

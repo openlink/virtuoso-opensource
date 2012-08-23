@@ -66,7 +66,7 @@
 	xmlns:awol="&awol;"
 	xmlns:d="&d;"
 	xmlns:m="&m;"	
-    xmlns:opl="http://www.openlinksw.com/schemas/attribution#"
+    xmlns:opl="http://www.openlinksw.com/schema/attribution#"
 	version="1.0">
 	<xsl:output indent="yes" />
 	<xsl:param name="baseUri" />

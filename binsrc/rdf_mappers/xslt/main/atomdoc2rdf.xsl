@@ -68,7 +68,7 @@
   xmlns:foaf="&foaf;"
   xmlns:dcterms="&dcterms;"
   xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
-  xmlns:opl="http://www.openlinksw.com/schemas/attribution#"
+  xmlns:opl="http://www.openlinksw.com/schema/attribution#"
   version="1.0">
 
 <xsl:output indent="yes" cdata-section-elements="content:encoded" />
