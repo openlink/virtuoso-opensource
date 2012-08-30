@@ -1255,10 +1255,158 @@ create procedure DB.DBA.RDF_PROC_COLS (in pname varchar)
 }
 ;
 
+create function DB.DBA.RDF_PROXY_GET_HTTP_HOST ()
+{
+    declare default_host, cname, xhost varchar;
+    xhost := connection_get ('http_host');
+    if (isstring (xhost))
+      return xhost;
+    if (is_http_ctx ())
+        default_host := http_request_header(http_request_header (), 'Host', null, null);
+    else if (connection_get ('__http_host') is not null)
+        default_host := connection_get ('__http_host');
+    else
+        default_host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+    if (default_host is not null)
+        cname := default_host;
+    else
+    {
+        cname := sys_stat ('st_host_name');
+        if (server_http_port () <> '80')
+            cname := cname ||':'|| server_http_port ();
+    }
+    return cname;
+}
+;
+
+create procedure DB.DBA.RDF_SPONGE_IRI_SCH ()
+{
+  declare xproto any;
+  xproto := connection_get ('http_proto');
+  if (isstring (xproto))
+    return xproto;
+  if (is_https_ctx ())
+    return 'https';
+  return 'http';
+}
+;
+
+--
+-- # this one is used to make proxy IRI for primary topic (entity)
+--
+create procedure DB.DBA.RDF_PROXY_ENTITY_IRI (in uri varchar := '', in login varchar := '', in frag varchar := 'this')
+{
+    declare cname any;
+    declare ret any;
+    declare url_sch, local_prx varchar;
+    declare ua any;
+    cname := DB.DBA.RDF_PROXY_GET_HTTP_HOST ();
+    if (frag = 'this' or frag = '#this') -- comment out to do old behaviour
+        frag := '';
+    if (length (frag) and frag[0] <> '#'[0])
+    {
+        frag := '#' || sprintf ('%U', frag);
+    }
+    if (strchr (uri, '#') is not null)
+        frag := '';
+    --if (http_mime_type (uri) like 'image/%')
+    --  return uri;
+    local_prx := sprintf ('%s://%s/about/id/entity/%%', RDF_SPONGE_IRI_SCH (), cname);
+    if (uri like local_prx)
+        return uri;
+    ua := rfc1808_parse_uri (uri);
+    url_sch := ua[0];
+    ua [0] := '';
+    uri := vspx_uri_compose (ua);
+    uri := ltrim (uri, '/');
+    ret := sprintf ('%s://%s/about/id/entity/%s/%s%s', RDF_SPONGE_IRI_SCH (), cname, url_sch, uri, frag);
+    return ret;
+}
+;
+
+--
+-- # this is used to make proxy IRI of the document
+--
+
+--!AWK PUBLIC
+create procedure DB.DBA.RDF_SPONGE_PROXY_IRI(in uri varchar := '', in login varchar := '', in frag varchar := 'this')
+{
+    declare cname any;
+    declare ret any;
+    declare url_sch varchar;
+    declare ua any;
+    cname := DB.DBA.RDF_PROXY_GET_HTTP_HOST ();
+    if (frag = 'this' or frag = '#this') -- comment out to do old behaviour
+        frag := '';
+    if (length (frag) and frag[0] <> '#'[0])
+        frag := '#' || sprintf ('%U', frag);
+    if (strchr (uri, '#') is not null)
+        frag := '';
+    --if (http_mime_type (uri) like 'image/%')
+    --return uri;
+    ua := rfc1808_parse_uri (uri);
+    url_sch := ua[0];
+    ua [0] := '';
+    uri := vspx_uri_compose (ua);
+    uri := ltrim (uri, '/');
+    if (length (login))
+        ret := sprintf ('%s://%s/about/rdf/%s/%U/%s%s', RDF_SPONGE_IRI_SCH (), cname, url_sch, login, uri, frag);
+    else
+        ret := sprintf ('%s://%s/about/id/%s/%s%s', RDF_SPONGE_IRI_SCH (), cname, url_sch, uri, frag);
+    return ret;
+}
+;
+
+--Postprocessing for sponging pure RDF sources
+create procedure DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC(in contents varchar, in base varchar, in graph varchar)
+{
+  declare proxyiri, ntriples varchar;
+  declare innerentities any;
+  declare qr, state, message, meta, data any;
+
+  proxyiri:=DB.DBA.RDF_PROXY_ENTITY_IRI(graph);
+  qr:=sprintf('sparql select distinct ?s from <%s> where {?s ?p ?o .}', graph);
+  state := '00000';
+  meta:=vector();
+  data:=vector();
+	exec(qr, state, message, vector (), 0, meta, data);
+	innerentities:=vector();
+  if (state = '00000' and length(data) > 0) {
+    foreach (any rec in data) do {
+    	innerentities:=vector_concat(innerentities, vector(cast(rec[0] as varchar)));
+    	}
+
+		ntriples:='';
+		ntriples:=ntriples||'@prefix opl:  <http://www.openlinksw.com/schema/attribution#> .\n';
+		ntriples:=ntriples||'@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\n';
+		ntriples:=ntriples||'@prefix ore:  <http://www.openarchives.org/ore/terms/> .\n';
+		ntriples:=ntriples||'@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n';
+		ntriples:=ntriples||'@prefix foaf: <http://xmlns.com/foaf/0.1/> .\n';
+		ntriples:=ntriples||'@prefix void: <http://vocab.deri.ie/void#> .\n';
+		ntriples:=ntriples||'@prefix wdrs: <http://www.w3.org/2007/05/powder-s#> .\n';
+
+		ntriples:=ntriples||sprintf('<%s> void:inDataset <%s> . \n', proxyiri, graph);
+		ntriples:=ntriples||sprintf('<%s> rdf:type foaf:Document \n. ', proxyiri);
+
+		if (registry_get ('__rdf_cartridges_add_spongetime__') = '1')
+			ntriples:=ntriples||sprintf('<%s> opl:sponge_time "%s"^^<http://www.w3.org/2001/XMLSchema#dateTime>  .\n', proxyiri, date_iso8601 (now()));
+
+		foreach(any e in innerentities) do {
+			if(lower(e) not like 'http%')
+				e:=WS.WS.EXPAND_URL(base, e);
+			ntriples:=ntriples||sprintf('<%s> foaf:topic <%s> . \n', proxyiri, e);
+			ntriples:=ntriples||sprintf('<%s> wdrs:describedby <%s> . \n', e, proxyiri);
+		}
+		DB.DBA.TTLP(ntriples, base, graph);
+	}
+}
+;
+
+
 -- /* Load the document in triple store. returns 1 if the document is an RDF , otherwise if it has links etc. it returns 0 */
 create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_origin_uri varchar, inout ret_content_type varchar, inout ret_hdr any, inout ret_body any, inout options any, inout req_hdr_arr any)
 {
-  declare dest, groupdest, get_soft, cset, base, first_stat, first_msg varchar;
+  declare dest, extra, groupdest, get_soft, cset, base, first_stat, first_msg varchar;
   declare rc any;
   declare aq, ps any;
   declare xd, xt any;
@@ -1280,6 +1428,7 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
   -- dbg_obj_princ ('ret_content_type is ', ret_content_type);
   dest := get_keyword_ucase ('get:destination', options);
   groupdest := get_keyword_ucase ('get:group-destination', options);
+  extra := get_keyword_ucase ('get:extra', options, '0');
   base := get_keyword ('http-redirect-to', options, new_origin_uri);
   get_soft := get_keyword_ucase ('get:soft', options);
   if (get_keyword_ucase ('get:strategy', options, 'default') = 'rdfa-only')
@@ -1307,9 +1456,14 @@ retry_after_deadlock:
       if (xpath_eval ('[ xmlns:dv="http://www.w3.org/2003/g/data-view#" ] /*[1]/@dv:transformation', xt) is not null)
 	goto load_grddl;
       DB.DBA.RDF_LOAD_RDFXML (ret_body, base, coalesce (dest, graph_iri));
+      if(extra<>'0')
+				DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC(ret_body, base, coalesce (dest, graph_iri));
       rdf_fmt := 1;
-      if (groupdest is not null)
+      if (groupdest is not null) {
         DB.DBA.RDF_LOAD_RDFXML (ret_body, base, groupdest);
+				if(extra<>'0')
+					DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC(ret_body, base, groupdest);
+			}
       if (exists (select 1 from DB.DBA.SYS_RDF_MAPPERS where RM_TYPE = 'URL' and regexp_match (RM_PATTERN, new_origin_uri) and RM_ENABLED = 1))
 	goto load_grddl;
       if (__proc_exists ('DB.DBA.RDF_LOAD_POST_PROCESS') and only_rdfa = 0) -- optional step, by default skip
@@ -1341,9 +1495,14 @@ retry_after_deadlock:
       --if (dest is null)
       --  DB.DBA.SPARUL_CLEAR (coalesce (dest, graph_iri), 1);
       DB.DBA.TTLP (ret_body, base, coalesce (dest, graph_iri), 255);
+      if(extra<>'0')
+				DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC(ret_body, base, coalesce (dest, graph_iri));
       rdf_fmt := 1;
-      if (groupdest is not null)
+      if (groupdest is not null) {
         DB.DBA.TTLP (ret_body, base, groupdest);
+        if(extra<>'0')
+					DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC(ret_body, base, groupdest);
+        }
       if (exists (select 1 from DB.DBA.SYS_RDF_MAPPERS where RM_TYPE = 'URL' and regexp_match (RM_PATTERN, new_origin_uri) and RM_ENABLED = 1))
 	goto load_grddl;
       if (__proc_exists ('DB.DBA.RDF_LOAD_POST_PROCESS') and only_rdfa = 0) -- optional step, by default skip
@@ -1776,3 +1935,10 @@ create procedure DB.DBA.RDF_GRANT_SPONGE ()
 --!AFTER __PROCEDURE__ DB.DBA.USER_CREATE !
 DB.DBA.RDF_GRANT_SPONGE ()
 ;
+
+insert soft DB.DBA.SYS_XPF_EXTENSIONS (XPE_NAME, XPE_PNAME) values ('http://www.openlinksw.com/virtuoso/xslt/:docproxyIRI','DB.DBA.RDF_SPONGE_PROXY_IRI')
+;
+
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:docproxyIRI', 'DB.DBA.RDF_SPONGE_PROXY_IRI', 0)
+;
+
