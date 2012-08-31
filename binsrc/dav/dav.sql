@@ -386,7 +386,7 @@ next_response:
   href := case append_name_to_href when 0 then lpath else DAV_CONCAT_PATH (lpath, name) end;
   if (st = 'C' and href not like '%/' and href not like '%.ics' and href not like '%.vcf')
     href := href || '/';
-  parent_col := DAV_SEARCH_ID (href, 'P');
+  --parent_col := DAV_SEARCH_ID (href, 'P');
   http ('<D:response xmlns:D="DAV:" xmlns:lp0="DAV:" xmlns:i0="DAV:" xmlns:V="http://www.openlinksw.com/virtuoso/webdav/1.0/">\n');
   http (sprintf ('<D:href>%V</D:href>\n', charset_recode (href, 'UTF-8', '_WIDE_')));
   -- http ('<D:href>');
