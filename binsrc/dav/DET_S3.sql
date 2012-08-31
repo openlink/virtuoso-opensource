@@ -194,7 +194,7 @@ create function "S3_DAV_DELETE" (
   id := DB.DBA.DAV_SEARCH_ID (path, what);
   if (save is null)
   {
-    retValue := DB.DBA.S3__deleteObject (detcol_id, path, id, what);
+    retValue := DB.DBA.S3__deleteObject (detcol_id, id, what);
     if (DAV_HIDE_ERROR (retValue) is null)
       goto _exit;
   }
@@ -645,7 +645,59 @@ create function "S3_DAV_RES_UPLOAD_MOVE" (
   in auth_uid integer) returns any
 {
   -- dbg_obj_princ ('S3_DAV_RES_UPLOAD_MOVE (', detcol_id, path_parts, source_id, what, overwrite_flags, auth_uid, ')');
-  return -20;
+  declare listID, oldName, newName varchar;
+  declare url, header, body any;
+  declare srcEntry, listItem any;
+  declare retValue, retHeader, result, save any;
+
+  retValue := -20;
+  srcEntry := DB.DBA.DAV_DIR_SINGLE_INT (source_id, what, '', null, null, http_dav_uid ());
+  if (DB.DBA.DAV_HIDE_ERROR (srcEntry) is null)
+    return;
+
+  oldName := srcEntry[10];
+  newName := case when what = 'C' then path_parts[length (path_parts)-2] else path_parts[length (path_parts)-1] end;
+  if (oldName <> newName)
+  {
+    declare exit handler for sqlstate '*'
+    {
+      connection_set ('dav_store', save);
+      resignal;
+    };
+
+    save := connection_get ('dav_store');
+    if (save is null)
+    {
+      result := DB.DBA.S3__moveObject (detcol_id, path_parts, source_id, what);
+      if (DAV_HIDE_ERROR (result) is null)
+      {
+        retValue := result;
+        goto _exit;
+      }
+      listItem := result;
+      listID := get_keyword ('path', listItem);
+    }
+    connection_set ('dav_store', 1);
+    if (what = 'C')
+    {
+      update WS.WS.SYS_DAV_COL set COL_NAME = newName, COL_MOD_TIME = now () where COL_ID = source_id[2];
+    } else {
+      update WS.WS.SYS_DAV_RES set RES_NAME = newName, RES_MOD_TIME = now () where RES_ID = source_id[2];
+    }
+    retValue := source_id;
+
+  _exit:;
+    connection_set ('dav_store', save);
+    if (DAV_HIDE_ERROR (retValue) is not null)
+    {
+      if (save is null)
+      {
+        DB.DBA.S3__paramSet (retValue, what, 'Entry', DB.DBA.S3__obj2xml (listItem), 0);
+        DB.DBA.S3__paramSet (retValue, what, 'path', listID, 0);
+      }
+    }
+  }
+  return retValue;
 }
 ;
 
@@ -1240,21 +1292,55 @@ create function DB.DBA.S3__pathFromUrl (
 --
 create function DB.DBA.S3__makeAWSHeader (
   in params any,
-  in authHeader varchar,
-  in authMode integer := 0)
+  in HTTPVerb varchar := null,
+	in ContentMD5 varchar := null,
+	in ContentType varchar := null,
+	in RequestDate varchar := null,
+	in CanonicalizedAmzHeaders any := null,
+	in Encryption any := null,
+	in CanonicalizedResource varchar := null)
 {
-  declare S, T, hmacKey, secretKey, accessCode varchar;
+  declare S, hmacKey, secretKey, accessCode varchar;
+  declare reqHeader, authHeader varchar;
+
+  authHeader := '';
+  authHeader := authHeader || coalesce (HTTPVerb, '') || '\n';
+  authHeader := authHeader || coalesce (ContentMD5, '') || '\n';
+  authHeader := authHeader || coalesce (ContentType, '') || '\n';
+  authHeader := authHeader || coalesce (RequestDate, '') || '\n';
+  if (not isnull (CanonicalizedAmzHeaders))
+  {
+    foreach (any amz in CanonicalizedAmzHeaders) do
+      authHeader := authHeader || coalesce (amz, '') || '\n';
+  }
+  Encryption := coalesce (Encryption, 'None');
+  if (Encryption = 'AES256')
+    authHeader := authHeader || sprintf ('x-amz-server-side-encryption:%s\n', encryption);
+
+  authHeader := authHeader || coalesce (CanonicalizedResource, '');
 
   accessCode := get_keyword ('accessCode', params);
   secretKey := get_keyword ('secretKey', params);
   hmacKey := xenc_key_RAW_read (null, encode_base64 (secretKey));
   S := xenc_hmac_sha1_digest (authHeader, hmacKey);
   xenc_key_remove (hmacKey);
-  T := sprintf ('AWS %s:%s', accessCode, S);
-  if (authMode)
-    T := 'Authorization:' || T;
 
-  return T;
+  reqHeader := sprintf ('Authorization: AWS %s:%s\r\nDate: %s\r\n', accessCode, S, RequestDate);
+  if (not isnull (ContentMD5))
+    reqHeader := reqHeader|| sprintf ('Content-MD5: %s\r\n', ContentMD5);
+
+  if (not isnull (ContentType))
+    reqHeader := reqHeader || sprintf ('Content-Type: %s\r\n', ContentType);
+
+  if (not isnull (CanonicalizedAmzHeaders))
+  {
+    foreach (any amz in CanonicalizedAmzHeaders) do
+      reqHeader := reqHeader || coalesce (amz, '') || '\r\n' ;
+  }
+  if (Encryption = 'AES256')
+    reqHeader := reqHeader || sprintf ('x-amz-server-side-encryption: %s\r\n', encryption);
+
+  return reqHeader;
 }
 ;
 
@@ -1385,11 +1471,9 @@ create function DB.DBA.S3__listBuckets (
 
   path := '/';
   dateUTC := date_rfc1123 (now());
-  S := sprintf ('GET\n\n\n%s\n%s', dateUTC, path);
-  authHeader := DB.DBA.S3__makeAWSHeader (params, S);
-  reqHeader := sprintf ('Authorization: %s\r\nDate: %s', authHeader, dateUTC);
 
   commit work;
+  reqHeader := DB.DBA.S3__makeAWSHeader (params, 'GET', null, null, dateUTC, null, null, path);
   xt := http_client_ext (
     DB.DBA.S3__makeUrl (path),
     http_method=>'GET',
@@ -1449,11 +1533,9 @@ create function DB.DBA.S3__listBucket (
   bucket := '/' || DB.DBA.S3__bucketFromUrl (url) || '/';
   bucketPath := DB.DBA.S3__pathFromUrl (url);
   dateUTC := date_rfc1123 (now());
-  S := sprintf ('GET\n\n\n%s\n%s', dateUTC, bucket);
-  authHeader := DB.DBA.S3__makeAWSHeader (params, S);
-  reqHeader := sprintf ('Authorization: %s\r\nDate: %s', authHeader, dateUTC);
 
   commit work;
+  reqHeader := DB.DBA.S3__makeAWSHeader (params, 'GET', null, null, dateUTC, null, null, bucket);
   xt := http_client_ext (
     url=>DB.DBA.S3__makeUrl (bucket) || sprintf ('?prefix=%U&marker=%s&delimiter=%s', bucketPath, '', delimiter),
     http_method=>'GET',
@@ -1515,7 +1597,7 @@ create function DB.DBA.S3__putObject (
   declare dateUTC, authHeader, S, path, s3Path, workPath varchar;
   declare reqHeader, retHeader, retValue, acl varchar;
   declare params, item any;
-  declare path, what, encryption varchar;
+  declare encryption varchar;
   declare id, davEntry any;
 
   params := DB.DBA.S3__params (detcol_id);
@@ -1527,10 +1609,8 @@ create function DB.DBA.S3__putObject (
     workPath := rtrim (workPath, '/') || case when (what = 'C') then '_\$folder\$' end;
 
   -- get ACL
-  S := sprintf ('GET\n\n\n%s\n%s', dateUTC, workPath || '?acl');
-  authHeader := DB.DBA.S3__makeAWSHeader (params, S);
-  reqHeader := sprintf ('Authorization: %s\r\nDate: %s', authHeader, dateUTC);
   commit work;
+  reqHeader := DB.DBA.S3__makeAWSHeader (params, 'GET', null, null, dateUTC, null, null, workPath || '?acl');
   acl := http_client_ext (
     url=>DB.DBA.S3__makeUrl (workPath) || '?acl',
     http_method=>'GET',
@@ -1557,25 +1637,12 @@ create function DB.DBA.S3__putObject (
       }
     }
   }
-  if (coalesce (encryption, '') = 'AES256')
-  {
-    encryption := sprintf ('x-amz-server-side-encryption:%s', encryption);
-    S := sprintf ('PUT\n\n%s\n%s\n%s\n%s', coalesce (type, ''), dateUTC, encryption, workPath);
-  } else {
-    encryption := '';
-  S := sprintf ('PUT\n\n%s\n%s\n%s', coalesce (type, ''), dateUTC, workPath);
-  }
-  authHeader := DB.DBA.S3__makeAWSHeader (params, S);
-  reqHeader := sprintf ('Authorization: %s\r\nDate: %s', authHeader, dateUTC);
-  if (not isnull (type))
-    reqHeader := sprintf ('%s\r\nContent-Type: %s', reqHeader, type);
-  if (not isnull (content))
-    reqHeader := sprintf ('%s\r\nContent-Length: %d', reqHeader, length (content));
-
-  if (coalesce (encryption, '') <> '')
-    reqHeader := sprintf ('%s\r\n%s', reqHeader, encryption);
 
   commit work;
+  reqHeader := DB.DBA.S3__makeAWSHeader (params, 'PUT', null, type, dateUTC, null, encryption, workPath);
+  if (not isnull (content))
+    reqHeader := reqHeader || sprintf ('Content-Length: %d\r\n', length (content));
+
   retValue := http_client_ext (
     url=>DB.DBA.S3__makeUrl (workPath),
     http_method=>'PUT',
@@ -1592,10 +1659,8 @@ create function DB.DBA.S3__putObject (
   -- put ACL
   if (not isnull (acl))
   {
-    S := sprintf ('PUT\n\n\n%s\n%s', dateUTC, workPath || '?acl');
-    authHeader := DB.DBA.S3__makeAWSHeader (params, S);
-    reqHeader := sprintf ('Authorization: %s\r\nDate: %s', authHeader, dateUTC);
     commit work;
+    reqHeader := DB.DBA.S3__makeAWSHeader (params, 'PUT', null, null, dateUTC, null, null, workPath || '?acl');
     acl := http_client_ext (
       url=>DB.DBA.S3__makeUrl (workPath) || '?acl',
       http_method=>'PUT',
@@ -1606,10 +1671,8 @@ create function DB.DBA.S3__putObject (
   }
 
   -- get object info
-  S := sprintf ('HEAD\n\n\n%s\n%s', dateUTC, workPath);
-  authHeader := DB.DBA.S3__makeAWSHeader (params, S);
-  reqHeader := sprintf ('Authorization: %s\r\nDate: %s', authHeader, dateUTC);
   commit work;
+  reqHeader := DB.DBA.S3__makeAWSHeader (params, 'HEAD', null, null, dateUTC, null, null, workPath);
   retValue := http_client_ext (
     url=>DB.DBA.S3__makeUrl (workPath),
     http_method=>'HEAD',
@@ -1642,15 +1705,146 @@ create function DB.DBA.S3__putObject (
 
 -------------------------------------------------------------------------------
 --
+create function DB.DBA.S3__copyObject (
+  in detcol_id any,
+  in path_parts any,
+  in source_id any,
+  in what varchar)
+{
+  -- dbg_obj_princ ('DB.DBA.S3__moveObject (', detcol_id, path_parts, what, ')');
+  declare dateUTC, s3Path, srcPath, dstPath varchar;
+  declare reqHeader, retHeader, retValue, acl varchar;
+  declare params, item, davEntry any;
+  declare encryption varchar;
+
+  params := DB.DBA.S3__params (detcol_id);
+  dateUTC := date_rfc1123 (now());
+  s3Path := DB.DBA.S3__parts2path (get_keyword ('bucket', params), path_parts, what);
+
+  dstPath := DB.DBA.S3__encode (s3Path);
+  if (trim (s3Path, '/') <> DB.DBA.S3__bucketFromUrl (s3Path))
+    dstPath := rtrim (dstPath, '/') || case when (what = 'C') then '_\$folder\$' end;
+
+  srcPath := DB.DBA.S3__paramGet (source_id, what, 'path', 0);
+
+  -- acl
+  commit work;
+  reqHeader := DB.DBA.S3__makeAWSHeader (params, 'GET', null, null, dateUTC, null, null, srcPath || '?acl');
+  acl := http_client_ext (
+    url=>DB.DBA.S3__makeUrl (srcPath) || '?acl',
+    http_method=>'GET',
+    http_headers=>reqHeader,
+    headers=>retHeader
+  );
+  if (not DB.DBA.S3__exec_error (retHeader, 1))
+    acl := null;
+
+  -- encryption
+  encryption := connection_get ('amz-server-side-encryption');
+  if (isnull (encryption))
+  {
+    davEntry := DB.DBA.S3__paramGet (source_id, what, 'Entry', 0);
+    if (davEntry is not null)
+    {
+      davEntry := xtree_doc (davEntry);
+      encryption := DB.DBA.S3__entryXPath (davEntry, '/amz-server-side-encryption', 1);
+    }
+  }
+
+  -- copy
+  commit work;
+  reqHeader := DB.DBA.S3__makeAWSHeader (params, 'PUT', null, null, dateUTC, vector (sprintf ('x-amz-copy-source:%s', srcPath)), encryption, dstPath);
+  retValue := http_client_ext (
+    url=>DB.DBA.S3__makeUrl (dstPath),
+    http_method=>'PUT',
+    http_headers=>reqHeader,
+    headers=>retHeader
+  );
+  if (not DB.DBA.S3__exec_error (retHeader, 1))
+  {
+    DB.DBA.S3__activity (detcol_id, 'HTTP error: ' || retValue);
+    return -28;
+  }
+
+  -- put ACL
+  if (not isnull (acl))
+  {
+    commit work;
+    reqHeader := DB.DBA.S3__makeAWSHeader (params, 'PUT', null, null, dateUTC, null, null, dstPath || '?acl');
+    acl := http_client_ext (
+      url=>DB.DBA.S3__makeUrl (dstPath) || '?acl',
+      http_method=>'PUT',
+      http_headers=>reqHeader,
+      headers=>retHeader,
+      body=>acl
+    );
+  }
+
+  -- get object info
+  commit work;
+  reqHeader := DB.DBA.S3__makeAWSHeader (params, 'HEAD', null, null, dateUTC, null, null, dstPath);
+  retValue := http_client_ext (
+    url=>DB.DBA.S3__makeUrl (dstPath),
+    http_method=>'HEAD',
+    http_headers=>reqHeader,
+    headers=>retHeader
+  );
+  if (not DB.DBA.S3__exec_error (retHeader, 1))
+  {
+    DB.DBA.S3__activity (detcol_id, 'HTTP error: ' || retValue);
+    return -28;
+  }
+  item := vector_concat (
+    subseq (soap_box_structure ('x', 1), 0, 2),
+    vector ('path', s3Path,
+            'name', DB.DBA.S3__nameFromUrl (s3Path),
+            'type', what,
+            'etag', http_request_header (retHeader, 'ETag'),
+            'size', cast (http_request_header (retHeader, 'Content-Length') as integer),
+            'mimeType', http_request_header (retHeader, 'Content-Type'),
+            'updated', http_string_date (coalesce (http_request_header (retHeader, 'Last-Modified', null, null), http_request_header (retHeader, 'Date', null, null))),
+            'storage', 'STANDARD',
+            'amz-server-side-encryption', http_request_header (retHeader, 'x-amz-server-side-encryption', null, null),
+            'amz-request-id', http_request_header (retHeader, 'x-amz-request-id', null, null),
+            'amz-id-2', http_request_header (retHeader, 'x-amz-id-2', null, null)
+           )
+  );
+  return item;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create function DB.DBA.S3__moveObject (
+  in detcol_id any,
+  in path_parts any,
+  in source_id any,
+  in what varchar)
+{
+  -- dbg_obj_princ ('DB.DBA.S3__moveObject (', detcol_id, path_parts, what, ')');
+  declare retValue any;
+
+  if (what = 'C')
+    return -20;
+
+  retValue := DB.DBA.S3__copyObject (detcol_id, path_parts, source_id, what);
+  if (DAV_HIDE_ERROR (retValue) is not null)
+    DB.DBA.S3__deleteObject (detcol_id, source_id, what);
+
+  return retValue;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create function DB.DBA.S3__deleteObject (
   in detcol_id any,
-  in path varchar,
   in id any,
   in what varchar)
 {
   -- dbg_obj_princ ('DB.DBA.S3__deleteObject (', accessCode, secretKey, s3Path, ')');
   declare N integer;
-  declare dateUTC, authHeader, S, s3Path, workPath varchar;
+  declare dateUTC, authHeader, S, path, s3Path, workPath varchar;
   declare reqHeader, retHeader, retValue, content varchar;
   declare params any;
 
@@ -1667,6 +1861,7 @@ create function DB.DBA.S3__deleteObject (
   }
   if (what = 'C')
   {
+    path := DB.DBA.DAV_SEARCH_PATH (id, what);
     for (select COL_ID from WS.WS.SYS_DAV_COL where WS.WS.COL_PATH (COL_ID) like path || '%' and WS.WS.COL_PATH (COL_ID) <> path) do
     {
       N := N + 1;
@@ -1682,22 +1877,10 @@ create function DB.DBA.S3__deleteObject (
   if (N = 0)
     goto _skip;
 
-  workPath := DB.DBA.S3__encode ('/' || DB.DBA.S3__bucketFromUrl (s3Path) || '/');
-  S := sprintf ('POST\n%s\n%s\n%s\n%s', DB.DBA.S3__md5 (content), 'text/xml', dateUTC, workPath || '?delete');
-  authHeader := DB.DBA.S3__makeAWSHeader (params, S);
-  reqHeader := sprintf (
-    'Authorization: %s\r\n' ||
-    'Date: %s\r\n' ||
-    'Content-MD5: %s\r\n' ||
-    'Content-Type: %s\r\n' ||
-    'Content-Length: %d\r\n',
-    authHeader,
-    dateUTC,
-    DB.DBA.S3__md5 (content),
-    'text/xml',
-    length (content)
-  );
   commit work;
+  workPath := DB.DBA.S3__encode ('/' || DB.DBA.S3__bucketFromUrl (s3Path) || '/');
+  reqHeader := DB.DBA.S3__makeAWSHeader (params, 'POST', DB.DBA.S3__md5 (content), 'text/xml', dateUTC, null, null, workPath || '?delete');
+  reqHeader := reqHeader || sprintf ('Content-Length: %d\r\n', length (content));
   retValue := http_client_ext (
     url=>DB.DBA.S3__makeUrl (workPath) || '?delete',
     http_method=>'POST',
@@ -1715,11 +1898,9 @@ _skip:;
   if ((what = 'C') and (trim (s3Path, '/') = DB.DBA.S3__bucketFromUrl (s3Path)))
   {
     -- delete bucket
-    workPath := DB.DBA.S3__encode (s3Path);
-    S := sprintf ('DELETE\n\n\n%s\n%s', dateUTC, workPath);
-    authHeader := DB.DBA.S3__makeAWSHeader (params, S);
-    reqHeader := sprintf ('Authorization: %s\r\nDate: %s', authHeader, dateUTC);
     commit work;
+    workPath := DB.DBA.S3__encode (s3Path);
+    reqHeader := DB.DBA.S3__makeAWSHeader (params, 'DELETE', null, null, dateUTC, null, null, workPath);
     retValue := http_client_ext (
       url=>DB.DBA.S3__makeUrl (workPath),
       http_method=>'DELETE',
@@ -1856,9 +2037,9 @@ create function DB.DBA.S3__downloads_aq (
 
     path := DB.DBA.S3__encode (listID);
     dateUTC := date_rfc1123 (now());
-    S := sprintf ('GET\n\n\n%s\n%s', dateUTC, path);
-    authHeader := DB.DBA.S3__makeAWSHeader (params, S);
-    reqHeader := sprintf ('Authorization: %s\r\nDate: %s', authHeader, dateUTC);
+
+    commit work;
+    reqHeader := DB.DBA.S3__makeAWSHeader (params, 'GET', null, null, dateUTC, null, null, path);
     retValue := http_client_ext (url=>DB.DBA.S3__makeUrl (path),
                                  http_method=>'GET',
                                  http_headers=>reqHeader,
