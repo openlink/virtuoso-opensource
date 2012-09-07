@@ -316,6 +316,7 @@ rdf_loader_run (in max_files integer := null, in log_enable int := 2)
       if (0 = arr)
 	goto looks_empty;
       log_enable (ld_mode, 1);
+      set isolation = 'committed';
 
       for (inx := 0; inx < 100; inx := inx + 1)
 	{
