@@ -42,13 +42,15 @@ extern "C" {
 #endif
 #include "xml_ecm.h"
 
+/* The name becomes misleading because "limofs" subquery can now be used for CONSTRUCT {...} WHERE {...} GROUP BY..., not only for LIMIT...OFFSET... */
 #define CTOR_NEEDS_LIMOFS_TRICK(top) ( \
  (DV_LONG_INT != DV_TYPE_OF (top->_.req_top.offset)) || \
  (DV_LONG_INT != DV_TYPE_OF (top->_.req_top.limit)) || \
  (0 != unbox ((caddr_t)(top->_.req_top.offset))) || \
  ((NULL != top->_.req_top.limit) && \
      ((1 != unbox ((caddr_t)(top->_.req_top.limit))) || \
-       (0 != BOX_ELEMENTS (top->_.req_top.pattern->_.gp.members)) ) ) )
+       (0 != BOX_ELEMENTS (top->_.req_top.pattern->_.gp.members)) ) ) || \
+ (NULL != top->_.req_top.groupings) )
 
 #define CTOR_DISJOIN_WHERE 1
 #define CTOR_MAY_INTERSECTS_WHERE 0

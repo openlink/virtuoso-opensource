@@ -8958,6 +8958,7 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
 {
   int gby_ctr, oby_ctr;
   int has_limofs = 0;	/* 0 = no limit/offset clause in the output, 1 = it is in limofs_strg, 2 = should be printed in place */
+  int has_ctor_over_groups = 0; /* Flags whether CONSTRUCT {...} WHERE {...} GROUP BY... requires a nested subquery trick identical to one for has_limofs */
   int three_cols_procedure = 0;
   caddr_t limofs_alias = NULL;
   SPART	*tree = ssg->ssg_tree;
@@ -8997,6 +8998,14 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
   if (((NULL != formatter) || (NULL != agg_formatter)) && (NULL != retvalmode) && (SSG_VALMODE_LONG != retvalmode))
     spar_sqlprint_error ("'output:valmode' declaration conflicts with 'output:format'");
   has_limofs = sparp_req_top_has_limofs (tree);
+  switch (subtype)
+    {
+    case CONSTRUCT_L: case DESCRIBE_L: case INSERT_L: case DELETE_L: case MODIFY_L:
+      if (NULL != tree->_.req_top.groupings)
+        has_ctor_over_groups = 1;
+      break;
+    default: ;
+    }
   switch (subtype)
     {
     case SELECT_L:
@@ -9132,7 +9141,7 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
           top_retval_flags &= ~SSG_RETVAL_USES_ALIAS;
         }
       retvalmode = SSG_VALMODE_SQLVAL;
-      if (has_limofs)
+      if (has_limofs || has_ctor_over_groups)
         {
           /*top_retval_flags |= SSG_RETVAL_FROM_LIMOFS;
           limofs_alias = t_box_sprintf (100, "%s_limofs", tree->_.req_top.pattern->_.gp.selid);*/
@@ -9153,7 +9162,7 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
         }
       if (NULL != bindings_vars)
         spar_sqlprint_error ("BINDINGS is not supported at top level for queries other than SELECT");
-      if (has_limofs)
+      if (has_limofs || has_ctor_over_groups)
         {
           ssg_newline (0);
           ssg_puts ("FROM (SELECT");
@@ -9249,7 +9258,7 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
 #endif
       ssg->ssg_indent--;
     }
-  if ((0 < BOX_ELEMENTS_INT_0 (tree->_.req_top.order)) && ((SELECT_L == tree->_.req_top.subtype) || (DISTINCT_L == tree->_.req_top.subtype) || has_limofs))
+  if ((0 < BOX_ELEMENTS_INT_0 (tree->_.req_top.order)) && ((SELECT_L == tree->_.req_top.subtype) || (DISTINCT_L == tree->_.req_top.subtype) || has_limofs || has_ctor_over_groups))
     {
 /* Bug 14357 had shown a funny problem. If one of ORDER BY expressions can be opimized to an integer
 and thus the integer is printed instead of the original expression then the generated SQL has wrong meaning.
