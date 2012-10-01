@@ -1294,6 +1294,7 @@ create procedure DB.DBA.RDF_SPONGE_IRI_SCH ()
 --
 -- # this one is used to make proxy IRI for primary topic (entity)
 --
+--!AWK PUBLIC
 create procedure DB.DBA.RDF_PROXY_ENTITY_IRI (in uri varchar := '', in login varchar := '', in frag varchar := 'this')
 {
     declare cname any;
