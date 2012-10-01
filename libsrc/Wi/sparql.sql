@@ -14857,7 +14857,7 @@ create procedure DB.DBA.RDF_QUAD_FT_UPGRADE ()
          where gm.RGGM_GROUP_IID = g.RGG_IID order by gm.RGGM_MEMBER_IID ) ) )
     from DB.DBA.RDF_GRAPH_GROUP as g );
   fake := (select count (dict_put (__rdf_graph_group_of_privates_dict(), RGGM_MEMBER_IID, 1))
-    from DB.DBA.RDF_GRAPH_GROUP_MEMBER where RGGM_GROUP_IID = iri_to_id('PrivateGraphs'));
+    from DB.DBA.RDF_GRAPH_GROUP_MEMBER where RGGM_GROUP_IID = iri_to_id('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs'));
   fake := (select count (dict_put (__rdf_graph_default_perms_of_user_dict(0), RGU_USER_ID, RGU_PERMISSIONS))
     from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = #i0 );
   fake := (select count (dict_put (__rdf_graph_default_perms_of_user_dict(1), RGU_USER_ID, RGU_PERMISSIONS))
