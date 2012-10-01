@@ -1577,6 +1577,10 @@ retry_after_deadlock:
       rdf_fmt := 1;
       if (groupdest is not null and groupdest <> coalesce (dest, graph_iri))
         DB.DBA.RDF_LOAD_XHTML_MICRODATA (ret_body, base, groupdest);
+      if (exists (select 1 from DB.DBA.SYS_RDF_MAPPERS where RM_TYPE = 'URL' and regexp_match (RM_PATTERN, new_origin_uri) and RM_ENABLED = 1))
+        goto load_grddl;
+      if (__proc_exists ('DB.DBA.RDF_LOAD_POST_PROCESS') and only_rdfa = 0) -- optional step, by default skip
+        call ('DB.DBA.RDF_LOAD_POST_PROCESS') (graph_iri, new_origin_uri, dest, ret_body, ret_content_type, options);
       --log_enable (saved_log_mode, 1);
       if (aq is not null)
         aq_request (aq, 'DB.DBA.RDF_SW_PING', vector (ps, new_origin_uri));
