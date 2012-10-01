@@ -3260,7 +3260,7 @@ bif_http_nquad (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int obj_is_iri = 0;
   dtp_t obj_dtp = 0;
   nq_iriref_items_t tii;
-  memset (&tii,0, sizeof (ttl_iriref_items_t));
+  memset (&tii,0, sizeof (nq_iriref_items_t));
   if (DV_ARRAY_OF_POINTER != DV_TYPE_OF ((caddr_t)env) ||
     (sizeof (nt_env_t) != box_length ((caddr_t)env)) )	
     sqlr_new_error ("22023", "SR601", "Argument 1 of http_nt_triple() should be an array of special format");
