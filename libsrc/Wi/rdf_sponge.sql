@@ -1025,10 +1025,92 @@ create function DB.DBA.SYS_FILE_SPONGE_UP (in local_iri varchar, in get_uri varc
   return local_iri;
 }
 ;
--- /* guess the content type */
 
+create function DB.DBA.RDF_SPONGE_TRY_TTL (in mode integer, inout txt varchar) returns varchar
+{
+  declare msg varchar;
+  declare app_env any;
+  declare cr_pos integer;
+  -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_TRY_TTL (', mode, txt, ')');
+  whenever sqlstate '*' goto err;
+  DB.DBA.TTLP_VALIDATE (txt, '', null, mode);
+  -- dbg_obj_princ ('-- no error');
+  return '';
+err:
+  msg := __SQL_STATE || __SQL_MESSAGE;
+  -- dbg_obj_princ ('--', msg);
+  cr_pos := strchr (msg, '\n');
+  if (cr_pos is null)
+    return msg;
+  return subseq (msg, 0, cr_pos);
+}
+;
+
+create function DB.DBA.RDF_SPONGE_GUESS_TTL_CONTENT_TYPE (in origin_uri varchar, in ret_content_type varchar, inout ret_body any, inout ret_begin any) returns varchar
+{
+  declare shorter_ret_begin varchar;
+  declare last_cr_pos integer;
+  declare ctr integer;
+  declare msg, s_msg varchar;
+  shorter_ret_begin := ret_begin;
+  for (ctr := 0; ctr < 3; ctr := ctr+1)
+    {
+      last_cr_pos := strrchr (shorter_ret_begin, 0hexA);
+      if (last_cr_pos is null)
+        goto no_cr;
+      shorter_ret_begin := subseq (shorter_ret_begin, 0, last_cr_pos);
+    }
+no_cr:
+  -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_GUESS_TTL_CONTENT_TYPE: shorter_ret_begin=', shorter_ret_begin);
+  msg := DB.DBA.RDF_SPONGE_TRY_TTL (0, ret_begin);
+  if ('' = msg)
+    return 'text/rdf+n3';
+  if (last_cr_pos is not null and DB.DBA.RDF_SPONGE_TRY_TTL (0, shorter_ret_begin) <> msg)
+    return 'text/rdf+n3';
+  msg := DB.DBA.RDF_SPONGE_TRY_TTL (512, ret_begin);
+  if ('' = msg)
+    return 'text/x-nquads';
+  if (last_cr_pos is not null and DB.DBA.RDF_SPONGE_TRY_TTL (512, shorter_ret_begin) <> msg)
+    return 'text/x-nquads';
+  msg := DB.DBA.RDF_SPONGE_TRY_TTL (256, ret_begin);
+  if ('' = msg)
+    return 'application/x-trig';
+  if (last_cr_pos is not null and DB.DBA.RDF_SPONGE_TRY_TTL (256, shorter_ret_begin) <> msg)
+    return 'application/x-trig';
+  if (ret_content_type is null or
+    strstr (ret_content_type, 'text/plain') is not null or
+    strstr (ret_content_type, 'application/octet-stream') is not null )
+    {
+      declare ret_lines any;
+      declare ret_lcount, ret_lctr integer;
+      ret_lines := split_and_decode (ret_begin, 0, '\0\t\n');
+      ret_lcount := length (ret_lines);
+      for (ret_lctr := 0; ret_lctr < ret_lcount; ret_lctr := ret_lctr + 1)
+        {
+          declare l varchar;
+          l := rtrim (replace (ret_lines [ret_lctr], '\r', ''));
+          -- dbg_obj_princ ('l = ', l);
+          if (("LEFT" (l, 7) = '@prefix') or ("LEFT" (l, 5) = '@base') or ("LEFT" (l, 8) = '@keyword'))
+            return 'text/rdf+n3';
+          if ((("LEFT" (l, 1) = '<') or ("LEFT" (l, 1) = '[')) and 
+            (
+             "RIGHT" (origin_uri, 4) in ('.ttl', '.TTL') or
+             "RIGHT" (origin_uri, 3) in ('.n3', '.N3', '.nt', '.NT')
+            ))
+            return 'text/rdf+n3';
+          if (not ((l like '#%') or (l='')))
+            return 'text/plain';
+        }
+    }
+  return null;
+}
+;
+
+
+-- /* guess the content type */
 create function DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (in origin_uri varchar, in ret_content_type varchar, inout ret_body any) returns varchar
 {
+  declare guessed_ret_type varchar;
   -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (', origin_uri, ret_content_type, '...)');
   if (ret_content_type is not null)
     {
@@ -1047,6 +1129,8 @@ create function DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (in origin_uri varchar, in 
         return 'text/rdf+n3';
       if (strstr (ret_content_type, 'application/x-trig') is not null)
         return 'application/x-trig';
+      if (strstr (ret_content_type, 'text/x-nquads') is not null)
+        return 'text/x-nquads';
     }
   declare ret_begin, ret_html any;
   ret_begin := subseq (ret_body, 0, 65535);
@@ -1076,31 +1160,9 @@ create function DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (in origin_uri varchar, in 
   if (strstr (ret_begin, '<html>') is not null or
     strstr (ret_begin, '<xhtml>') is not null )
     return 'text/html';
-  if (ret_content_type is null or
-    strstr (ret_content_type, 'text/plain') is not null or
-    strstr (ret_content_type, 'application/octet-stream') is not null )
-    {
-      declare ret_lines any;
-      declare ret_lcount, ret_lctr integer;
-      ret_lines := split_and_decode (ret_begin, 0, '\0\t\n');
-      ret_lcount := length (ret_lines);
-      for (ret_lctr := 0; ret_lctr < ret_lcount; ret_lctr := ret_lctr + 1)
-        {
-          declare l varchar;
-          l := rtrim (replace (ret_lines [ret_lctr], '\r', ''));
-          -- dbg_obj_princ ('l = ', l);
-          if (("LEFT" (l, 7) = '@prefix') or ("LEFT" (l, 5) = '@base') or ("LEFT" (l, 8) = '@keyword'))
-            return 'text/rdf+n3';
-          if ((("LEFT" (l, 1) = '<') or ("LEFT" (l, 1) = '[')) and
-	      (
-	       "RIGHT" (origin_uri, 4) in ('.ttl', '.TTL') or
-	       "RIGHT" (origin_uri, 3) in ('.n3', '.N3', '.nt', '.NT')
-	      ))
-            return 'text/rdf+n3';
-          if (not ((l like '#%') or (l='')))
-            return 'text/plain';
-        }
-    }
+  guessed_ret_type := DB.DBA.RDF_SPONGE_GUESS_TTL_CONTENT_TYPE (origin_uri, ret_content_type, ret_body, ret_begin);
+  if (guessed_ret_type is not null)
+    return guessed_ret_type;
   return ret_content_type;
 }
 ;
@@ -1312,8 +1374,8 @@ create procedure DB.DBA.RDF_PROXY_ENTITY_IRI (in uri varchar := '', in login var
         frag := '';
     --if (http_mime_type (uri) like 'image/%')
     --  return uri;
-    local_prx := sprintf ('%s://%s/about/id/entity/%%', RDF_SPONGE_IRI_SCH (), cname);
-    if (uri like local_prx)
+    local_prx := sprintf ('%s://%s/about/id/entity/', RDF_SPONGE_IRI_SCH (), cname);
+    if (starts_with (uri, local_prx))
         return uri;
     ua := rfc1808_parse_uri (uri);
     url_sch := ua[0];
@@ -1358,60 +1420,38 @@ create procedure DB.DBA.RDF_SPONGE_PROXY_IRI(in uri varchar := '', in login varc
 }
 ;
 
---Postprocessing for sponging pure RDF sources
-create procedure DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC(in contents varchar, in base varchar, in graph varchar)
+-- Postprocessing for sponging pure RDF sources 
+create procedure DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC (in contents varchar, in base varchar, in graph varchar)
 {
   declare proxyiri, ntriples varchar;
   declare innerentities any;
   declare qr, state, message, meta, data any;
-
-  proxyiri:=DB.DBA.RDF_PROXY_ENTITY_IRI(graph);
-  qr:=sprintf('sparql select distinct ?s from <%s> where {?s ?p ?o .}', graph);
-  state := '00000';
-  meta:=vector();
-  data:=vector();
-	exec(qr, state, message, vector (), 0, meta, data);
-	innerentities:=vector();
-  if (state = '00000' and length(data) > 0) {
-    foreach (any rec in data) do {
-    	innerentities:=vector_concat(innerentities, vector(cast(rec[0] as varchar)));
-    	}
-
-		ntriples:='';
-		ntriples:=ntriples||'@prefix opl:  <http://www.openlinksw.com/schema/attribution#> .\n';
-		ntriples:=ntriples||'@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\n';
-		ntriples:=ntriples||'@prefix ore:  <http://www.openarchives.org/ore/terms/> .\n';
-		ntriples:=ntriples||'@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n';
-		ntriples:=ntriples||'@prefix foaf: <http://xmlns.com/foaf/0.1/> .\n';
-		ntriples:=ntriples||'@prefix void: <http://vocab.deri.ie/void#> .\n';
-		ntriples:=ntriples||'@prefix wdrs: <http://www.w3.org/2007/05/powder-s#> .\n';
-
-		ntriples:=ntriples||sprintf('<%s> void:inDataset <%s> . \n', proxyiri, graph);
-		ntriples:=ntriples||sprintf('<%s> rdf:type foaf:Document \n. ', proxyiri);
-
-		if (registry_get ('__rdf_cartridges_add_spongetime__') = '1')
-			ntriples:=ntriples||sprintf('<%s> opl:sponge_time "%s"^^<http://www.w3.org/2001/XMLSchema#dateTime>  .\n', proxyiri, date_iso8601 (now()));
-
-		foreach(any e in innerentities) do {
-			if(lower(e) not like 'http%')
-				e:=WS.WS.EXPAND_URL(base, e);
-			ntriples:=ntriples||sprintf('<%s> foaf:topic <%s> . \n', proxyiri, e);
-			ntriples:=ntriples||sprintf('<%s> wdrs:describedby <%s> . \n', e, proxyiri);
-		}
-		DB.DBA.TTLP(ntriples, base, graph);
-	}
+  proxyiri := DB.DBA.RDF_PROXY_ENTITY_IRI (graph);
+  -- dbg_obj_princ (string_output_string((
+  sparql define input:storage "" insert in iri(?:graph)
+    { `iri(?:proxyiri)` <http://xmlns.com/foaf/0.1/topic> `iri(sql:XML_URI_RESOLVE_LIKE_GET(?:base, ?s))` .
+      `iri(sql:XML_URI_RESOLVE_LIKE_GET(?:base, ?s))` <http://www.w3.org/2007/05/powder-s#describedby> `iri(?:proxyiri)` }
+  where { { select distinct ?s where { graph `iri(?:graph)` { ?s ?p ?o . } } } };
+  if (row_count())
+    {
+      if (registry_get ('__rdf_cartridges_add_spongetime__') = '1')
+        sparql define input:storage "" insert in graph iri(?:graph)
+          { `iri(?:proxyiri)` <http://www.openlinksw.com/schema/attribution#sponge_time> `bif:now()` . };
+      sparql define input:storage "" insert in graph iri(?:graph)
+          { `iri(?:proxyiri)` a <http://xmlns.com/foaf/0.1/document> ;
+              <http://vocab.deri.ie/void#inDataset> `iri(?:graph)` . };
+    }
 }
 ;
 
-
--- /* Load the document in triple store. returns 1 if the document is an RDF , otherwise if it has links etc. it returns 0 */
+--! Load the document in triple store. returns 1 if the document is an RDF, otherwise if it has links etc. it returns 0
 create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_origin_uri varchar, inout ret_content_type varchar, inout ret_hdr any, inout ret_body any, inout options any, inout req_hdr_arr any)
 {
   declare dest, extra, groupdest, get_soft, cset, base, first_stat, first_msg varchar;
   declare rc any;
   declare aq, ps any;
   declare xd, xt any;
-  declare saved_log_mode, only_rdfa, retr_count, rdf_fmt integer;
+  declare saved_log_mode, ttl_mode, only_rdfa, retr_count, rdf_fmt integer;
   aq := null;
   rdf_fmt := 0;
   ps := virtuoso_ini_item_value ('SPARQL', 'PingService');
@@ -1447,7 +1487,7 @@ retry_after_deadlock:
       --  DB.DBA.SPARUL_CLEAR (coalesce (dest, graph_iri), 1);
       declare exit handler for sqlstate '*'
       {
-	if (registry_get ('__sparql_mappers_debug') = '1')
+        if (registry_get ('__sparql_mappers_debug') = '1')
           dbg_printf ('%s: SQL_MESSAGE: %s', current_proc_name(), __SQL_MESSAGE);
         goto load_grddl_after_error;
       };
@@ -1455,59 +1495,70 @@ retry_after_deadlock:
       xt := xtree_doc (ret_body);
       -- we test for GRDDL inside RDF/XML, if so do it inside mappers, else it will fail because of dv:transformation attr
       if (xpath_eval ('[ xmlns:dv="http://www.w3.org/2003/g/data-view#" ] /*[1]/@dv:transformation', xt) is not null)
-	goto load_grddl;
+        goto load_grddl;
       DB.DBA.RDF_LOAD_RDFXML (ret_body, base, coalesce (dest, graph_iri));
-      if(extra<>'0')
-				DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC(ret_body, base, coalesce (dest, graph_iri));
+      if (extra <> '0')
+        DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC(ret_body, base, coalesce (dest, graph_iri));
       rdf_fmt := 1;
-      if (groupdest is not null) {
-        DB.DBA.RDF_LOAD_RDFXML (ret_body, base, groupdest);
-				if(extra<>'0')
-					DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC(ret_body, base, groupdest);
-			}
+      if (groupdest is not null)
+        {
+          DB.DBA.RDF_LOAD_RDFXML (ret_body, base, groupdest);
+          if (extra <> '0')
+            DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC(ret_body, base, groupdest);
+        }
       if (exists (select 1 from DB.DBA.SYS_RDF_MAPPERS where RM_TYPE = 'URL' and regexp_match (RM_PATTERN, new_origin_uri) and RM_ENABLED = 1))
-	goto load_grddl;
+        goto load_grddl;
       if (__proc_exists ('DB.DBA.RDF_LOAD_POST_PROCESS') and only_rdfa = 0) -- optional step, by default skip
-	call ('DB.DBA.RDF_LOAD_POST_PROCESS') (graph_iri, new_origin_uri, dest, ret_body, ret_content_type, options);
+        call ('DB.DBA.RDF_LOAD_POST_PROCESS') (graph_iri, new_origin_uri, dest, ret_body, ret_content_type, options);
       --log_enable (saved_log_mode, 1);
       if (aq is not null)
         aq_request (aq, 'DB.DBA.RDF_SW_PING', vector (ps, new_origin_uri));
       return 1;
     }
+  ttl_mode := null;
+  if (
+    strstr (ret_content_type, 'text/rdf+n3') is not null or
+    strstr (ret_content_type, 'text/n3') is not null or
+    strstr (ret_content_type, 'text/rdf+ttl') is not null or
+    strstr (ret_content_type, 'text/rdf+turtle') is not null or
+    strstr (ret_content_type, 'text/turtle') is not null or
+    strstr (ret_content_type, 'application/rdf+n3') is not null or
+    strstr (ret_content_type, 'application/rdf+turtle') is not null or
+    strstr (ret_content_type, 'application/turtle') is not null or
+    strstr (ret_content_type, 'application/n-triples') is not null or
+    strstr (ret_content_type, 'application/x-turtle') is not null )
+    ttl_mode := 255;
   else if (
-       strstr (ret_content_type, 'text/rdf+n3') is not null or
-       strstr (ret_content_type, 'text/n3') is not null or
-       strstr (ret_content_type, 'text/rdf+ttl') is not null or
-       strstr (ret_content_type, 'text/rdf+turtle') is not null or
-       strstr (ret_content_type, 'text/turtle') is not null or
-       strstr (ret_content_type, 'application/rdf+n3') is not null or
-       strstr (ret_content_type, 'application/rdf+turtle') is not null or
-       strstr (ret_content_type, 'application/turtle') is not null or
-       strstr (ret_content_type, 'application/n-triples') is not null or
-       strstr (ret_content_type, 'application/x-turtle') is not null )
+    strstr (ret_content_type, 'application/x-trig') is not null)
+    ttl_mode := 256+255;
+  else if (
+    strstr (ret_content_type, 'text/x-nquads') is not null)
+    ttl_mode := 512+255;
+  if (ttl_mode is not null)
     {
       declare exit handler for sqlstate '*'
       {
-	if (registry_get ('__sparql_mappers_debug') = '1')
+        if (registry_get ('__sparql_mappers_debug') = '1')
           dbg_printf ('%s: SQL_MESSAGE: %s', current_proc_name(), __SQL_MESSAGE);
         goto load_grddl_after_error;
       };
       --log_enable (2, 1);
       --if (dest is null)
       --  DB.DBA.SPARUL_CLEAR (coalesce (dest, graph_iri), 1);
-      DB.DBA.TTLP (ret_body, base, coalesce (dest, graph_iri), 255);
+      DB.DBA.TTLP (ret_body, base, coalesce (dest, graph_iri), ttl_mode);
       if(extra<>'0')
-				DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC(ret_body, base, coalesce (dest, graph_iri));
+        DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC(ret_body, base, coalesce (dest, graph_iri));
       rdf_fmt := 1;
-      if (groupdest is not null) {
-        DB.DBA.TTLP (ret_body, base, groupdest);
-        if(extra<>'0')
-					DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC(ret_body, base, groupdest);
+      if (groupdest is not null)
+        {
+          DB.DBA.TTLP (ret_body, base, groupdest);
+          if(extra<>'0')
+            DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC(ret_body, base, groupdest);
         }
       if (exists (select 1 from DB.DBA.SYS_RDF_MAPPERS where RM_TYPE = 'URL' and regexp_match (RM_PATTERN, new_origin_uri) and RM_ENABLED = 1))
-	goto load_grddl;
+        goto load_grddl;
       if (__proc_exists ('DB.DBA.RDF_LOAD_POST_PROCESS') and only_rdfa = 0) -- optional step, by default skip
-	call ('DB.DBA.RDF_LOAD_POST_PROCESS') (graph_iri, new_origin_uri, dest, ret_body, ret_content_type, options);
+        call ('DB.DBA.RDF_LOAD_POST_PROCESS') (graph_iri, new_origin_uri, dest, ret_body, ret_content_type, options);
       --log_enable (saved_log_mode, 1);
       if (aq is not null)
         aq_request (aq, 'DB.DBA.RDF_SW_PING', vector (ps, new_origin_uri));
@@ -1517,7 +1568,7 @@ retry_after_deadlock:
     {
       declare exit handler for sqlstate '*'
       {
-	if (registry_get ('__sparql_mappers_debug') = '1')
+        if (registry_get ('__sparql_mappers_debug') = '1')
           dbg_printf ('%s: SQL_MESSAGE: %s', current_proc_name(), __SQL_MESSAGE);
         goto load_grddl_after_error;
       };
@@ -1525,7 +1576,7 @@ retry_after_deadlock:
       DB.DBA.RDF_LOAD_XHTML_MICRODATA (ret_body, base, coalesce (dest, graph_iri));
       rdf_fmt := 1;
       if (groupdest is not null and groupdest <> coalesce (dest, graph_iri))
-	DB.DBA.RDF_LOAD_XHTML_MICRODATA (ret_body, base, groupdest);
+        DB.DBA.RDF_LOAD_XHTML_MICRODATA (ret_body, base, groupdest);
       --log_enable (saved_log_mode, 1);
       if (aq is not null)
         aq_request (aq, 'DB.DBA.RDF_SW_PING', vector (ps, new_origin_uri));
@@ -1535,7 +1586,7 @@ retry_after_deadlock:
     {
       declare exit handler for sqlstate '*'
       {
-	if (registry_get ('__sparql_mappers_debug') = '1')
+        if (registry_get ('__sparql_mappers_debug') = '1')
           dbg_printf ('%s: SQL_MESSAGE: %s', current_proc_name(), __SQL_MESSAGE);
         goto load_grddl_after_error;
       };
@@ -1543,7 +1594,7 @@ retry_after_deadlock:
       DB.DBA.RDF_LOAD_RDFA (ret_body, base, coalesce (dest, graph_iri));
       rdf_fmt := 1;
       if (groupdest is not null and groupdest <> coalesce (dest, graph_iri))
-	DB.DBA.RDF_LOAD_RDFA (ret_body, base, groupdest);
+        DB.DBA.RDF_LOAD_RDFA (ret_body, base, groupdest);
       --log_enable (saved_log_mode, 1);
       if (aq is not null)
         aq_request (aq, 'DB.DBA.RDF_SW_PING', vector (ps, new_origin_uri));
