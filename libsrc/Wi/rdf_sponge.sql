@@ -1288,7 +1288,7 @@ create procedure DB.DBA.RDF_SW_PING (in endp varchar, in url varchar)
   xt := null;
   if (virtuoso_ini_item_value ('SPARQL', 'RestPingService') = '1')
     {
-      rc := http_get (endp||sprintf ('?url=%U', url));
+      rc := http_client (url=>endp||sprintf ('?url=%U', url), timeout=>10);
       xt := xtree_doc (rc);
     }
   else
