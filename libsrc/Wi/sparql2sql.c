@@ -2055,7 +2055,7 @@ sparp_restr_of_join_eq_from_connected_subvalues (sparp_t *sparp, sparp_equiv_t *
 void
 sparp_find_best_join_eq_for_optional (sparp_t *sparp, SPART *parent, int pos_of_curr_memb, sparp_equiv_t *eq, sparp_equiv_t **ret_parent_eq, SPART **ret_tree_in_parent, SPART **ret_source_in_parent)
 {
-  SPART *curr = NULL, *prev = NULL;
+  SPART *prev = NULL;
   int varname_ctr, ctr;
   int pos_of_prev_memb;
   int good_is_gp = 0;
@@ -2073,7 +2073,6 @@ sparp_find_best_join_eq_for_optional (sparp_t *sparp, SPART *parent, int pos_of_
   ret_source_in_parent[0] = NULL;
   if (0 == pos_of_curr_memb)
     return;
-  curr = parent->_.gp.members[pos_of_curr_memb];
   for (pos_of_prev_memb = 0; pos_of_prev_memb < pos_of_curr_memb; pos_of_prev_memb++)
     {
       prev = parent->_.gp.members[pos_of_prev_memb];
@@ -6349,7 +6348,7 @@ spar_propagate_limit_as_option (sparp_t *sparp, SPART *tree, SPART *outer_limit)
       return;
     case SPAR_GP:
       {
-        int eq_ctr, filt_eq_mask;
+        int eq_ctr;
         if (NULL != tree->_.gp.options)
           {
             SPART *lim = sparp_get_option (sparp, tree->_.gp.options, LIMIT_L);
@@ -6364,7 +6363,6 @@ spar_propagate_limit_as_option (sparp_t *sparp, SPART *tree, SPART *outer_limit)
           return;
         if (0 != BOX_ELEMENTS_0 (tree->_.gp.filters))
           return;
-        filt_eq_mask = 0;
         SPARP_FOREACH_GP_EQUIV (sparp, tree, eq_ctr, eq)
           {
             if (eq->e_replaces_filter) return;
@@ -6566,10 +6564,12 @@ sparp_rewrite_grab (sparp_t *sparp)
   sparp_t *sub_sparps[3];
   caddr_t sql_texts[3];
   SPART **grab_retvals;
+  SPART *ret_limit_expn;
   caddr_t retselid;
   ptrlong top_subtype;
   dk_set_t new_vars = NULL;
   dk_set_t sa_graphs = NULL;
+  dk_set_t grab_params = NULL;
   sql_comp_t sc;
   int sub_sparp_ctr;
   ptrlong rgc_flags = 0;
@@ -6650,25 +6650,42 @@ sparp_rewrite_grab (sparp_t *sparp)
     }
   if (rgc->rgc_intermediate)
     rgc_flags |= 0x0001;
-  sparp->sparp_expr = spartlist (sparp, 21, SPAR_CODEGEN, /* #0 */
-    t_box_num ((ptrlong)(ssg_grabber_codegen)),
-    sparp_treelist_full_copy (sparp, sparp->sparp_expr->_.req_top.retvals, NULL),	/* #2 */
-    t_box_dv_short_string ("sql:RDF_GRAB"),	/* #3 */
-    sql_texts[0], sql_texts[1], sql_texts[2], /* #4-#6 */
-    sparp_tree_full_copy (sparp, sparp->sparp_expr->_.req_top.limit, NULL),	/* #7 */
+#define PUSH_GRAB_PARAM(n,v) do { t_set_push (&grab_params, t_box_dv_short_string ((n))); t_set_push (&grab_params, (v)); } while (0)
+  if (NULL != sa_graphs)
+    PUSH_GRAB_PARAM ("sa_graphs", spar_make_vector_qm_sql (sparp, (SPART **)(t_revlist_to_array (sa_graphs))));
+  if (NULL != rgc->rgc_sa_preds)
+    PUSH_GRAB_PARAM ("sa_preds", spar_make_vector_qm_sql (sparp, (SPART **)(t_revlist_to_array (rgc->rgc_sa_preds))));
+  if (NULL != rgc->rgc_limit)
+    PUSH_GRAB_PARAM ("doc_limit", t_box_copy (rgc->rgc_limit));
+  PUSH_GRAB_PARAM ("base_iri", t_box_copy (rgc->rgc_base));
+  PUSH_GRAB_PARAM ("get:destination", t_box_copy (rgc->rgc_destination)); /* NULL should be passed because presense of NULL and absence of value may have different meaning */
+  if (NULL != rgc->rgc_group_destination)
+    PUSH_GRAB_PARAM ("get:group-destination", t_box_copy (rgc->rgc_group_destination));
+  if (NULL != rgc->rgc_resolver_name)
+    PUSH_GRAB_PARAM ("resolver", t_box_copy (rgc->rgc_resolver_name));
+  if (NULL != rgc->rgc_loader_name)
+    PUSH_GRAB_PARAM ("loader", t_box_copy (rgc->rgc_loader_name));
+  PUSH_GRAB_PARAM ("refresh_free_text", /* no copy here, pass by ref */ sparp->sparp_env->spare_sql_refresh_free_text);
+  PUSH_GRAB_PARAM ("flags", t_box_num_nonull (rgc_flags));
+  DO_KEYWORD_SET (optname, SPART *, optvalue, &(sparp->sparp_env->spare_src.ssrc_common_sponge_options))
+    {
+      if (!strcmp (optname, "get:uri"))
+        continue;
+      PUSH_GRAB_PARAM (optname, sparp_tree_full_copy (sparp, optvalue, NULL));
+    } END_DO_SET()
+  ret_limit_expn = sparp->sparp_expr->_.req_top.limit;
+  ret_limit_expn = ((NULL == ret_limit_expn) ? (SPART *)t_NEW_DB_NULL : sparp_tree_full_copy (sparp, ret_limit_expn, NULL));
+  sparp->sparp_expr = spartlist (sparp, 21, SPAR_CODEGEN,					/* #0 */
+    t_box_num ((ptrlong)(ssg_grabber_codegen)),							/* #1 */
+    sparp_treelist_full_copy (sparp, sparp->sparp_expr->_.req_top.retvals, NULL),		/* #2 */
+    t_box_dv_short_string ("sql:RDF_GRAB"),							/* #3 */
+    spar_make_vector_qm_sql (sparp, (SPART **)(t_revlist_to_array (grab_params))),		/* #4 */
+    sql_texts[0], sql_texts[1], sql_texts[2],							/* #5-#7 */
+    ret_limit_expn,										/* #8 */
     ((NULL == rgc->rgc_consts) ? NULL :
-      spar_make_vector_qm_sql (sparp, (SPART **)(t_revlist_to_array (rgc->rgc_consts))) ), /* #8 */
-    ((NULL == sa_graphs) ? NULL :
-      spar_make_vector_qm_sql (sparp, (SPART **)(t_revlist_to_array (sa_graphs))) ), /* #9 */
-    ((NULL == rgc->rgc_sa_preds) ? NULL :
-      spar_make_vector_qm_sql (sparp, (SPART **)(t_revlist_to_array (rgc->rgc_sa_preds))) ), /* #10 */
-    t_box_copy (rgc->rgc_depth), t_box_copy (rgc->rgc_limit), /* #11-#12 */
-    t_box_copy (rgc->rgc_base),	/* #13 */
-    t_box_copy (rgc->rgc_destination), t_box_copy (rgc->rgc_group_destination),	/* #14-#15 */
-    t_box_copy (rgc->rgc_resolver_name), t_box_copy (rgc->rgc_loader_name),	/* #16-#17 */
-    /* no copy here, pass by ref */ sparp->sparp_env->spare_sql_refresh_free_text, /* #18 */
-    (ptrlong)use_plain_return,	/* #19 */
-    t_box_num (rgc_flags) );	/* #20 */
+      spar_make_vector_qm_sql (sparp, (SPART **)(t_revlist_to_array (rgc->rgc_consts))) ),	/* #9 */
+    t_box_copy (rgc->rgc_depth),									/* #10 */
+    (ptrlong)use_plain_return );								/* #11 */
     /* Note that the uid is not in the list of codegen arguments! */
 }
 
@@ -6679,47 +6696,22 @@ ssg_grabber_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...)
 /* The order of declarations is important: side effect on init */
   SPART **retvals		= (SPART **)(spart->_.codegen.args [argctr++]);	/* #2 */
   caddr_t procedure_name	= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #3 */
-  caddr_t seed_sql_text		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #4 */
-  caddr_t iter_sql_text		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #5 */
-  caddr_t final_sql_text	= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #6 */
-  caddr_t ret_limit		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #7 */
-  SPART *const_vector_expn	= (SPART *)(spart->_.codegen.args [argctr++]);	/* #8 */
-  SPART *sa_graphs_vector_expn	= (SPART *)(spart->_.codegen.args [argctr++]);	/* #9 */
-  SPART *sa_preds_vector_expn	= (SPART *)(spart->_.codegen.args [argctr++]);	/* #10 */
-  caddr_t depth			= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #11 */
-  caddr_t grab_limit		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #12 */
-  caddr_t base			= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #13 */
-  caddr_t destination		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #14 */
-  caddr_t group_destination	= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #15 */
-  caddr_t resolver_name		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #16 */
-  caddr_t loader_name		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #17 */
-  caddr_t refresh_free_text	= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #18 */
-  int use_plain_return		= (ptrlong)(spart->_.codegen.args [argctr++]);	/* #19 */
-  caddr_t rgc_flags		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #20 */
+  caddr_t grab_prms_vector_expn	= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #4 */
+  caddr_t seed_sql_text		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #5 */
+  caddr_t iter_sql_text		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #6 */
+  caddr_t final_sql_text	= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #7 */
+  caddr_t ret_limit		= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #8 */
+  SPART *const_vector_expn	= (SPART *)(spart->_.codegen.args [argctr++]);	/* #9 */
+  caddr_t depth			= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #10 */
+  int use_plain_return		= (ptrlong)(spart->_.codegen.args [argctr++]);	/* #11 */
   int varctr, varcount = BOX_ELEMENTS (retvals);
   int need_comma;
   caddr_t call_alias = t_box_sprintf (0x100, "grabber-t%d", ssg->ssg_sparp->sparp_key_gen);
   ssg->ssg_sparp->sparp_key_gen += 1;
   if (NULL == const_vector_expn)
     const_vector_expn = (SPART *)t_NEW_DB_NULL;
-  if (NULL == sa_graphs_vector_expn)
-    sa_graphs_vector_expn = (SPART *)t_NEW_DB_NULL;
-  if (NULL == sa_preds_vector_expn)
-    sa_preds_vector_expn = (SPART *)t_NEW_DB_NULL;
   if (NULL == depth)
     depth = (caddr_t)1L;
-  if (NULL == grab_limit)
-    grab_limit = t_box_num (MAX_BOX_ELEMENTS);
-  if (NULL == base)
-    base = t_NEW_DB_NULL;
-  if (NULL == destination)
-    destination = t_NEW_DB_NULL;
-  if (NULL == group_destination)
-    group_destination = t_NEW_DB_NULL;
-  if (NULL == resolver_name)
-    resolver_name = t_box_dv_short_string ("DB.DBA.RDF_GRAB_RESOLVER_DEFAULT");
-  if (NULL == loader_name)
-    loader_name = t_box_dv_short_string ("DB.DBA.RDF_SPONGE_UP");
   if (use_plain_return)
     {
       ssg_puts ("SELECT TOP 1 ");
@@ -6751,10 +6743,10 @@ ssg_grabber_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...)
       ssg_newline (0);
       ssg_puts ("FROM ");
       ssg_prin_function_name (ssg, procedure_name);
-      ssg_puts (" (_grabber_params, _grabber_seed, _grabber_iter, _grabber_final, _grabber_ret_limit, _grabber_consts, _grabber_sa_graphs, _grabber_sa_preds, _grabber_depth, _grabber_doc_limit, _grabber_base, _grabber_destination, _grabber_group_destination, _grabber_resolver, _grabber_loader, _refresh_free_text, _plain_ret, _grabber_flags, _uid) (rset any) ");
+      ssg_puts (" (_grabber_app_params, _grabber_params, _grabber_seed, _grabber_iter, _grabber_final, _grabber_ret_limit, _grabber_consts, _grabber_depth, _plain_ret, _uid) (rset any) ");
       ssg_prin_id (ssg, call_alias);
       ssg_newline (0);
-      ssg_puts ("WHERE _grabber_params = ");
+      ssg_puts ("WHERE _grabber_app_params = ");
     }
   need_comma = 0;
   ssg_puts ("vector (");
@@ -6785,23 +6777,14 @@ ssg_grabber_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...)
       } \
     ssg_print_scalar_expn (ssg, (SPART *)(var), SSG_VALMODE_SQLVAL, NULL_ASNAME); \
     } while (0)
+  PROC_PARAM_EQ_SPART ("_grabber_params", grab_prms_vector_expn);
   PROC_PARAM_EQ_SPART ("_grabber_seed", seed_sql_text);
   PROC_PARAM_EQ_SPART ("_grabber_iter", iter_sql_text);
   PROC_PARAM_EQ_SPART ("_grabber_final", final_sql_text);
   PROC_PARAM_EQ_SPART ("_grabber_ret_limit", ret_limit);
   PROC_PARAM_EQ_SPART ("_grabber_consts", const_vector_expn);
-  PROC_PARAM_EQ_SPART ("_grabber_sa_graphs", sa_graphs_vector_expn);
-  PROC_PARAM_EQ_SPART ("_grabber_sa_preds", sa_preds_vector_expn);
   PROC_PARAM_EQ_SPART ("_grabber_depth", depth);
-  PROC_PARAM_EQ_SPART ("_grabber_doc_limit", grab_limit);
-  PROC_PARAM_EQ_SPART ("_grabber_base", base);
-  PROC_PARAM_EQ_SPART ("_grabber_destination", destination);
-  PROC_PARAM_EQ_SPART ("_grabber_group_destination", group_destination);
-  PROC_PARAM_EQ_SPART ("_grabber_resolver", resolver_name);
-  PROC_PARAM_EQ_SPART ("_grabber_loader", loader_name);
-  PROC_PARAM_EQ_SPART ("_refresh_free_text", refresh_free_text);
   PROC_PARAM_EQ_SPART ("_plain_ret", ((ptrlong) use_plain_return));
-  PROC_PARAM_EQ_SPART ("_grabber_flags", rgc_flags);
   PROC_PARAM_EQ_SPART ("_uid", spar_exec_uid_and_gs_cbk (ssg->ssg_sparp)); /* uid is not in the list of passed arguments! */
 #undef PROC_PARAM_EQ_SPART
   if (use_plain_return)

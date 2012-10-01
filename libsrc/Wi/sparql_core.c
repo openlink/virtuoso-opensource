@@ -2496,10 +2496,12 @@ spar_make_sources_like_top (sparp_t *sparp, ptrlong top_subtype)
     }
   END_DO_SET()
   sources = (SPART **)t_revlist_to_array (src);
+#if 0
   if ((0 == BOX_ELEMENTS (sources)) &&
     (NULL != (env->spare_src.ssrc_common_sponge_options)) &&
     (LOAD_L != top_subtype) )
     spar_error (sparp, "Retrieval options for source graphs (e.g., '%s') may be useless if the query does not contain 'FROM' or 'FROM NAMED'", env->spare_src.ssrc_common_sponge_options->data);
+#endif
   return sources;
 }
 

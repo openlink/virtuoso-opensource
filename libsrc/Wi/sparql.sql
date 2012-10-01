@@ -6847,7 +6847,6 @@ create function DB.DBA.SPARUL_LOAD (in graph_iri any, in resource varchar, in ui
   grab_params := vector_concat (vector (
       'base_iri', resource,
       'get:destination', graph_iri,
-      'resolver', 'DB.DBA.RDF_GRAB_RESOLVER_DEFAULT', 'loader', 'DB.DBA.RDF_SPONGE_UP',
       'get:soft', get_keyword ('get:soft', options, 'replacing'),
       'get:refresh', get_keyword ('get:refresh', options, -1),
       'get:error-recovery', get_keyword ('get:error-recovery', options, 'signal'),
