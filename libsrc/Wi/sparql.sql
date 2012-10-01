@@ -7561,8 +7561,7 @@ create procedure DB.DBA.SPARQL_CONSTRUCT_ACC (inout _env any, in opcodes any, in
               else if (2 <> fld_ctr)
                 signal ('RDF01',
                   sprintf ('Bad variable value in CONSTRUCT: "%.100s" (tag %d box flags %d) is not a valid %s, only object of a triple can be a literal',
-                    __tag (i), __box_flags (i),
-                    __rdf_strsqlval (i),
+                    __rdf_strsqlval (i), __tag (i), __box_flags (i),
                     case (fld_ctr) when 1 then 'predicate' else 'subject' end ) );
               triple_vec[fld_ctr] := i;
             }
@@ -7595,8 +7594,7 @@ create procedure DB.DBA.SPARQL_CONSTRUCT_ACC (inout _env any, in opcodes any, in
               else if (2 <> fld_ctr)
                 signal ('RDF01',
                   sprintf ('Bad const value in CONSTRUCT: "%.100s" (tag %d box flags %d) is not a valid %s, only object of a triple can be a literal',
-                    __tag (arg), __box_flags (arg),
-                    __rdf_strsqlval (arg),
+                    __rdf_strsqlval (arg), __tag (arg), __box_flags (arg),
                     case (fld_ctr) when 1 then 'predicate' else 'subject' end ) );
               else if (__tag of vector = __tag (arg))
                 arg := DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (arg[0], arg[1], arg[2]);
