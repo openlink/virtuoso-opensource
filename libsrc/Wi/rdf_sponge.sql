@@ -1425,24 +1425,27 @@ create procedure DB.DBA.RDF_SPONGE_PROXY_IRI(in uri varchar := '', in login varc
 -- Postprocessing for sponging pure RDF sources 
 create procedure DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC (in contents varchar, in base varchar, in graph varchar)
 {
-  declare proxyiri, ntriples varchar;
-  declare innerentities any;
-  declare qr, state, message, meta, data any;
+  declare proxyiri, docproxyiri varchar;
   proxyiri := DB.DBA.RDF_PROXY_ENTITY_IRI (graph);
-  -- dbg_obj_princ (string_output_string((
+  docproxyiri := DB.DBA.RDF_SPONGE_PROXY_IRI (graph);
   sparql define input:storage "" insert in iri(?:graph)
     { `iri(?:proxyiri)` <http://xmlns.com/foaf/0.1/topic> `iri(sql:XML_URI_RESOLVE_LIKE_GET(?:base, ?s))` .
       `iri(sql:XML_URI_RESOLVE_LIKE_GET(?:base, ?s))` <http://www.w3.org/2007/05/powder-s#describedby> `iri(?:proxyiri)` }
   where { { select distinct ?s where { graph `iri(?:graph)` { ?s ?p ?o . } } } };
-  if (row_count())
-    {
-      if (registry_get ('__rdf_cartridges_add_spongetime__') = '1')
+
+  sparql define input:storage "" insert in graph iri(?:graph)
+      { `iri(?:docproxyiri)` a <http://purl.org/ontology/bibo/Document> ;
+              <http://vocab.deri.ie/void#inDataset> `iri(?:graph)` ; 
+              <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://rdfs.org/sioc/ns#Container> , <http://purl.org/ontology/bibo/Document> ;
+              <http://rdfs.org/sioc/ns#container_of> `iri(?:proxyiri)` ;
+              <http://xmlns.com/foaf/0.1/primaryTopic> `iri(?:proxyiri)` .
+      };
+
+  if (registry_get ('__rdf_cartridges_add_spongetime__') = '1')
+  {
         sparql define input:storage "" insert in graph iri(?:graph)
           { `iri(?:proxyiri)` <http://www.openlinksw.com/schema/attribution#sponge_time> `bif:now()` . };
-      sparql define input:storage "" insert in graph iri(?:graph)
-          { `iri(?:proxyiri)` a <http://xmlns.com/foaf/0.1/document> ;
-              <http://vocab.deri.ie/void#inDataset> `iri(?:graph)` . };
-    }
+  }
 }
 ;
 
