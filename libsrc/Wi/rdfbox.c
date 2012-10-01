@@ -1846,6 +1846,10 @@ typedef struct ttl_iriref_items_s {
   ttl_iriref_t s, p, o, dt;
 } ttl_iriref_items_t;
 
+typedef struct nq_iriref_items_s {
+  ttl_iriref_t s, p, o, dt, g;
+} nq_iriref_items_t;
+
 int
 iri_cast_and_split_ttl_qname (query_instance_t *qi, caddr_t iri, caddr_t *ns_prefix_ret, caddr_t *local_ret, ptrlong *is_bnode_ret)
 {
@@ -3239,6 +3243,66 @@ bif_http_nt_object (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 fail:
   dk_free_box (tii.o.uri);
   dk_free_box (tii.dt.uri);
+  return (caddr_t)(ptrlong)(status);
+}
+
+caddr_t
+bif_http_nquad (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t *qi = (query_instance_t *)qst;
+  nt_env_t *env = (nt_env_t *)bif_arg (qst, args, 0, "http_nquad");
+  caddr_t subj = bif_arg (qst, args, 1, "http_nquad");
+  caddr_t pred = bif_arg (qst, args, 2, "http_nquad");
+  caddr_t obj = bif_arg (qst, args, 3, "http_nquad");
+  caddr_t graph = bif_arg (qst, args, 4, "http_nquad");
+  dk_session_t *ses = http_session_no_catch_arg (qst, args, 5, "http_nquad");
+  int status = 0;
+  int obj_is_iri = 0;
+  dtp_t obj_dtp = 0;
+  nq_iriref_items_t tii;
+  memset (&tii,0, sizeof (ttl_iriref_items_t));
+  if (DV_ARRAY_OF_POINTER != DV_TYPE_OF ((caddr_t)env) ||
+    (sizeof (nt_env_t) != box_length ((caddr_t)env)) )	
+    sqlr_new_error ("22023", "SR601", "Argument 1 of http_nt_triple() should be an array of special format");
+  if (!iri_cast_nt_absname (qi, subj, &tii.s.uri, &tii.s.is_bnode))
+    goto fail; /* see below */
+  if (!iri_cast_nt_absname (qi, pred, &tii.p.uri, &tii.p.is_bnode))
+    goto fail; /* see below */
+  if (!iri_cast_nt_absname (qi, graph, &tii.g.uri, &tii.g.is_bnode))
+    goto fail; /* see below */
+  obj_dtp = DV_TYPE_OF (obj);
+  switch (obj_dtp)
+    {
+    case DV_UNAME: case DV_IRI_ID: case DV_IRI_ID_8: obj_is_iri = 1; break;
+    case DV_STRING: obj_is_iri = (BF_IRI & box_flags (obj)) ? 1 : 0; break;
+    default: obj_is_iri = 0; break;
+    }
+  if (obj_is_iri)
+    {
+      if (!iri_cast_nt_absname (qi, obj, &tii.o.uri, &tii.o.is_bnode))
+        goto fail; /* see below */
+    }
+  else
+    {
+      http_ttl_or_nt_prepare_obj (qi, obj, obj_dtp, &tii.dt);
+    }
+  nt_http_write_ref (ses, env, &(tii.s), subj);
+  session_buffered_write_char ('\t', ses);
+  nt_http_write_ref (ses, env, &(tii.p), pred);
+  session_buffered_write_char ('\t', ses);
+  if (obj_is_iri)
+    nt_http_write_ref (ses, env, &(tii.o), obj);
+  else
+    http_nt_write_obj (ses, env, qi, obj, obj_dtp, &tii.dt, DKS_ESC_TTL_DQ);
+  session_buffered_write_char ('\t', ses);
+  nt_http_write_ref (ses, env, &(tii.g), graph);
+  SES_PRINT (ses, " .\n");
+fail:
+  dk_free_box (tii.s.uri);
+  dk_free_box (tii.p.uri);
+  dk_free_box (tii.o.uri);
+  dk_free_box (tii.dt.uri);
+  dk_free_box (tii.g.uri);
   return (caddr_t)(ptrlong)(status);
 }
 
@@ -5179,6 +5243,8 @@ rdf_box_init ()
   bif_set_uses_index (bif_http_ttl_triple);
   bif_define ("http_nt_triple", bif_http_nt_triple);
   bif_set_uses_index (bif_http_nt_triple);
+  bif_define ("http_nquad", bif_http_nquad);
+  bif_set_uses_index (bif_http_nquad);
   bif_define ("http_rdfxml_p_ns", bif_http_rdfxml_p_ns);
   bif_set_uses_index (bif_http_rdfxml_p_ns);
   bif_define ("http_rdfxml_triple", bif_http_rdfxml_triple);
