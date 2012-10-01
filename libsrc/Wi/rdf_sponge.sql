@@ -1586,7 +1586,7 @@ retry_after_deadlock:
         aq_request (aq, 'DB.DBA.RDF_SW_PING', vector (ps, new_origin_uri));
       return 1;
     }
-  else if ((only_rdfa = 1 and strstr (ret_content_type, 'text/html') is not null) or (strstr (ret_content_type, 'application/xhtml+xml') is not null))
+  else if (only_rdfa = 1 and (strstr (ret_content_type, 'text/html') is not null or strstr (ret_content_type, 'application/xhtml+xml') is not null))
     {
       declare exit handler for sqlstate '*'
       {
