@@ -2404,17 +2404,17 @@ create procedure WS.WS.SPARQL_ENDPOINT_FORMAT_OPTS (in can_cxml integer, in can_
   {
     format := (
       case lower(format)
-        when 'json'		then 'application/sparql-results+json'
-        when 'js'		then 'application/javascript'
-        when 'html'		then 'text/html'
-        when 'sparql'		then 'application/sparql-results+xml'
-        when 'xml'		then 'application/sparql-results+xml'
-        when 'rdf'		then 'application/rdf+xml'
-        when 'n3'		then 'text/rdf+n3'
+        when 'csv'		then 'text/csv'
         when 'cxml'		then 'text/cxml'
         when 'cxml+qrcode'	then 'text/cxml+qrcode'
-        when 'csv'		then 'text/csv'
-	when 'json-ld'		then 'application/ld+json'
+        when 'html'		then 'text/html'
+        when 'js'		then 'application/javascript'
+        when 'json'		then 'application/sparql-results+json'
+        when 'json-ld'		then 'application/ld+json'
+        when 'n3'		then 'text/rdf+n3'
+        when 'rdf'		then 'application/rdf+xml'
+        when 'sparql'		then 'application/sparql-results+xml'
+        when 'xml'		then 'application/sparql-results+xml'
         else format
       end);
   }
@@ -2452,7 +2452,8 @@ create procedure WS.WS.SPARQL_ENDPOINT_FORMAT_OPTS (in can_cxml integer, in can_
 	  vector ('application/sparql-results+json'	, 'JSON'		),
 	  vector ('application/javascript'		, 'Javascript'		),
 	  vector ('text/plain'				, 'NTriples'		),
-	  vector ('application/rdf+xml'			, 'RDF/XML'		) );
+        vector ('application/rdf+xml',		'RDF/XML')
+        );
     }
   foreach (any x in opts) do
     {
@@ -2465,7 +2466,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_FORMAT_OPTS (in can_cxml integer, in can_
     {
       http('			<option value="text/cxml">CXML (Pivot Collection)</option>\n');
       if (can_qrcode)
-	http('			<option value="text/cxml+qrcode">CXML (Pivot Collection with QRcode)</option>\n');
+        http('			<option value="text/cxml+qrcode">CXML (Pivot Collection with QRcode)</option>\n');
     }
 }
 ;
@@ -4016,7 +4017,7 @@ create procedure DB.DBA.SPARQL_ROUTE_DICT_CONTENT_DAV (
             order by (str(?s)) (str(?p)) ) as sub );
       if ('application/rdf+xml' = mime)
         DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT (triples, 1, out_ses);
-      else if (('text/rdf+n3' = mime) or ('text/rdf+ttl' = mime) or ('text/rdf+turtle' = mime) or ('text/turtle' = mime) or ('text/n3' = mime))
+      else if (('text/rdf+n3' = mime) or ('text/rdf+ttl' = mime) or ('text/rdf+turtle' = mime) or ('text/turtle' = mime) or ('text/n3' = mime) or ('text/x-nquads' = mime))
         DB.DBA.RDF_TRIPLES_TO_TTL (triples, out_ses);
       else if ('application/x-trig' = mime)
         DB.DBA.RDF_TRIPLES_TO_TRIG (triples, out_ses);
@@ -4094,6 +4095,7 @@ DB.DBA.http_rq_file_handler (in content any, in params any, in lines any, inout 
       strcasestr (accept, 'text/rdf+ttl') is not null or
       strcasestr (accept, 'text/rdf+turtle') is not null or
       strcasestr (accept, 'text/turtle') is not null or
+      strcasestr (accept, 'application/x-nquads') is not null or
       strcasestr (accept, 'application/x-trig') is not null or
       strcasestr (accept, 'application/rdf+xml') is not null or
       strcasestr (accept, 'application/javascript') is not null or
