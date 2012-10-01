@@ -928,7 +928,7 @@ extern void sparp_make_and_push_new_graph_source (sparp_t *sparp, ptrlong subtyp
 extern SPART *sparp_make_graph_precode (sparp_t *sparp, ptrlong subtype, SPART *iriref, SPART **options);
 extern SPART *spar_default_sparul_target (sparp_t *sparp, const char *clause_type, int may_return_null);
 extern SPART *spar_make_regex_or_like_or_eq (sparp_t *sparp, SPART *strg, SPART *regexpn);
-extern void spar_verify_funcall_security (sparp_t *sparp, ccaddr_t fname, SPART **args);
+extern void spar_verify_funcall_security (sparp_t *sparp, int *is_agg_ret, ccaddr_t *fname_ptr, SPART **args);
 extern SPART *spar_make_funcall (sparp_t *sparp, int aggregate_mode, const char *funname, SPART **arguments);
 extern SPART *sparp_make_builtin_call (sparp_t *sparp, ptrlong bif_id, SPART **arguments);
 extern SPART *sparp_make_macro_call (sparp_t *sparp, caddr_t funname, int call_is_explicit, SPART **arguments);

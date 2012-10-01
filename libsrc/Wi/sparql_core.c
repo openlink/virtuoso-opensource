@@ -3442,9 +3442,10 @@ bad_regex:
 }
 
 void
-spar_verify_funcall_security (sparp_t *sparp, ccaddr_t fname, SPART **args)
+spar_verify_funcall_security (sparp_t *sparp, int *is_agg_ret, ccaddr_t *fname_ptr, SPART **args)
 {
-  int uid, need_check_for_infection_chars = 0;
+  ccaddr_t fname = fname_ptr[0];
+  int uid, need_check_for_sparql11_agg = 0, need_check_for_infection_chars = 0;
   const char *tail;
   const char *c;
   char buf[30];
@@ -3511,6 +3512,14 @@ spar_verify_funcall_security (sparp_t *sparp, ccaddr_t fname, SPART **args)
     "REGISTRY_SET_ALL",
     "STRING_TO_FILE",
     "SYSTEM" };
+  const char *sparql11_agg_names[] = {
+    "AVG",		"SPECIAL::bif:AVG",
+    "COUNT",		"SPECIAL::bif:COUNT",
+    "GROUP_CONCAT",	"sql:GROUP_CONCAT",
+    "MAX",		"SPECIAL::bif:MAX",
+    "MIN",		"SPECIAL::bif:MIN",
+    "SAMPLE",		"sql:SAMPLE",
+    "SUM",		"SPECIAL::bif:SUM" };
   tail = strstr (fname, "::");
   if (NULL == tail)
     tail = fname;
@@ -3519,29 +3528,42 @@ spar_verify_funcall_security (sparp_t *sparp, ccaddr_t fname, SPART **args)
   if (NULL == sparp->sparp_boxed_exec_uid)
     spar_boxed_exec_uid (sparp);
   uid = unbox (sparp->sparp_boxed_exec_uid);
-  if (U_ID_DBA != uid)
+  if (!strncmp (tail, "sql:", 4))
     {
       strncpy (buf, tail+4, sizeof(buf)-1);
       buf[sizeof(buf)-1] = '\0';
       strupr (buf);
-    }
-  if (!strncmp (tail, "sql:", 4))
-    {
       if ((U_ID_DBA != uid) && (ECM_MEM_NOT_FOUND != ecm_find_name (buf, unsafe_sql_names,
           sizeof (unsafe_sql_names)/sizeof(unsafe_sql_names[0]), sizeof (caddr_t) ) ) )
         goto restricted; /* see below */
+      need_check_for_sparql11_agg = 1;
       need_check_for_infection_chars = 1;
     }
   else
   if (!strncmp (tail, "bif:", 4))
     {
+      strncpy (buf, tail+4, sizeof(buf)-1);
+      buf[sizeof(buf)-1] = '\0';
+      strupr (buf);
       if ((U_ID_DBA != uid) && (ECM_MEM_NOT_FOUND != ecm_find_name (buf, unsafe_sql_names,
           sizeof (unsafe_sql_names)/sizeof(unsafe_sql_names[0]), sizeof (caddr_t) ) ) )
         goto restricted; /* see below */
       if ((U_ID_DBA != uid) && (ECM_MEM_NOT_FOUND != ecm_find_name (buf, unsafe_bif_names,
           sizeof (unsafe_bif_names)/sizeof(unsafe_bif_names[0]), sizeof (caddr_t) ) ) )
         goto restricted; /* see below */
+      need_check_for_sparql11_agg = 1;
       need_check_for_infection_chars = 1;
+    }
+  if (need_check_for_sparql11_agg)
+    {
+      int agg_idx = ecm_find_name (buf, sparql11_agg_names,
+        sizeof (sparql11_agg_names)/(2 * sizeof(ccaddr_t)), 2 * sizeof (caddr_t) );
+      if (ECM_MEM_NOT_FOUND != agg_idx)
+        {
+          fname_ptr[0] = sparql11_agg_names [agg_idx*2 + 1];
+          is_agg_ret[0] = 1;
+          return;
+        }
     }
   if (need_check_for_infection_chars)
     for (c = tail+4; '\0' != c[0]; c++)

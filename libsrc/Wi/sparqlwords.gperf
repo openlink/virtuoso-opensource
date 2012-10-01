@@ -74,6 +74,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "HOURS",		SPARQL_BIF		, SPAR_BIF_HOURS
 "GRAPH",		GRAPH_L			, 0
 "GROUP",		GROUP_L			, 0
+"GROUP_CONCAT",		GROUP_CONCAT_L		, 0
 "HAVING",		HAVING_L		, 0
 "IF",			SPARQL_BIF		, SPAR_BIF_IF
 "IFP",			IFP_L			, 0
@@ -142,6 +143,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "SAME_AS_S",		SAME_AS_S_L		, 0
 "SAME_AS_S_O",		SAME_AS_S_O_L		, 0
 "SAMETERM",		SPARQL_BIF		, SPAR_BIF_SAMETERM
+"SAMPLE",		SAMPLE_L		, 0
 "SECONDS",		SPARQL_BIF		, SPAR_BIF_SECONDS
 "SELECT",		SELECT_L		, 0
 "SERVICE",		SERVICE_L		, 0

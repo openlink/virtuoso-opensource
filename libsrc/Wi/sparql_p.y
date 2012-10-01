@@ -176,6 +176,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token FUNCTION_L	/*:: PUNCT_SPAR_LAST("FUNCTION") ::*/
 %token GRAPH_L		/*:: PUNCT_SPAR_LAST("GRAPH") ::*/
 %token GROUP_L		/*:: PUNCT_SPAR_LAST("GROUP") ::*/
+%token GROUP_CONCAT_L	/*:: PUNCT_SPAR_LAST("GROUP_CONCAT") ::*/
 %token HAVING_L		/*:: PUNCT_SPAR_LAST("HAVING") ::*/
 %token IDENTIFIED_L	/*:: PUNCT("IDENTIFIED"), SPAR, LAST1("IDENTIFIED BY"), LAST1("IDENTIFIED\r\nBY"), LAST1("IDENTIFIED #qq\r\nBY"), ERR("IDENTIFIED"), ERR("IDENTIFIED bad") ::*/
 %token IFP_L		/*:: PUNCT_SPAR_LAST("IFP") ::*/
@@ -223,6 +224,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token SAME_AS_P_L	/*:: PUNCT_SPAR_LAST("SAME_AS_P") ::*/
 %token SAME_AS_S_L	/*:: PUNCT_SPAR_LAST("SAME_AS_S") ::*/
 %token SAME_AS_S_O_L	/*:: PUNCT_SPAR_LAST("SAME_AS_S_O") ::*/
+%token SAMPLE_L		/*:: PUNCT_SPAR_LAST("SAMPLE") ::*/
 %token SCORE_L		/*:: PUNCT_SPAR_LAST("SCORE") ::*/
 %token SCORE_LIMIT_L	/*:: PUNCT_SPAR_LAST("SCORE_LIMIT") ::*/
 %token SELECT_L		/*:: PUNCT_SPAR_LAST("SELECT") ::*/
@@ -407,6 +409,8 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <tree> spar_ret_agg_call
 %type <box> spar_agg_name
 %type <box> spar_agg_name_int
+%type <box> spar_group_concat_begin
+%type <box> spar_group_concat_begin_int
 %type <tree> spar_var
 %type <tree> spar_global_var
 %type <tree> spar_global_var_int
@@ -1618,6 +1622,19 @@ spar_ret_agg_call	/* [Virt]	RetAggCall	 ::=  AggName '(', ( '*' | ( 'DISTINCT'? 
 	: spar_agg_name spar_expn _RPAR	{ $$ = spar_make_funcall (sparp_arg, 1, $1, (SPART **)t_list (1, $2)); }
 	| spar_agg_name _STAR _RPAR	{ $$ = spar_make_funcall (sparp_arg, 1, $1, (SPART **)t_list (1, (ptrlong)1)); }
         | spar_agg_name DISTINCT_L spar_expn _RPAR	{ $$ = spar_make_funcall (sparp_arg, DISTINCT_L, $1, (SPART **)t_list (1, $3)); }
+	| SAMPLE_L _LPAR spar_expn _RPAR	{
+		SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_SPARQL11_DRAFT, "SAMPLE aggregate function call");
+		$$ = spar_make_funcall (sparp_arg, 1, t_box_dv_uname_string ("sql:SAMPLE"), (SPART **)t_list (1, $3)); }
+	| SAMPLE_L _LPAR DISTINCT_L spar_expn _RPAR	{
+		SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_SPARQL11_DRAFT, "SAMPLE aggregate function call");
+		$$ = spar_make_funcall (sparp_arg, 1, t_box_dv_uname_string ("sql:SAMPLE"), (SPART **)t_list (1, $4)); }
+	| spar_group_concat_begin spar_expn _RPAR	{ $$ = spar_make_funcall (sparp_arg, 1, $1, (SPART **)t_list (1, $2)); }
+	| spar_group_concat_begin spar_expn _COMMA spar_expn _RPAR	{ $$ = spar_make_funcall (sparp_arg, 1, $1, (SPART **)t_list (2, $2, $4)); }
+	| spar_group_concat_begin spar_expn _SEMI SPARQL_PLAIN_ID _EQ spar_expn _RPAR	{
+		if (stricmp ($4, "SEPARATOR"))
+		  spar_error (sparp_arg, "The GROUP_CONCAT contains unsupported parameter '%.100s', only 'SEPARATOR' is supported",
+		    $4 );
+		$$ = spar_make_funcall (sparp_arg, 1, $1, (SPART **)t_list (2, $2, $6)); }
 	;
 
 spar_agg_name	/* [Virt]	AggName	 ::=  'COUNT' | 'AVG' | 'MIN' | 'MAX' | 'SUM'	*/
@@ -1626,10 +1643,18 @@ spar_agg_name	/* [Virt]	AggName	 ::=  'COUNT' | 'AVG' | 'MIN' | 'MAX' | 'SUM'	*/
 
 spar_agg_name_int
 	: COUNT_LPAR	{ $$ = t_box_dv_uname_string ("SPECIAL::bif:COUNT"); }
-	| AVG_L	_LPAR	{ $$ = t_box_dv_uname_string ("SPECIAL::bif:AVG"); }
-	| MIN_L	_LPAR	{ $$ = t_box_dv_uname_string ("SPECIAL::bif:MIN"); }
-	| MAX_L	_LPAR	{ $$ = t_box_dv_uname_string ("SPECIAL::bif:MAX"); }
-	| SUM_L	_LPAR	{ $$ = t_box_dv_uname_string ("SPECIAL::bif:SUM"); }
+	| AVG_L _LPAR	{ $$ = t_box_dv_uname_string ("SPECIAL::bif:AVG"); }
+	| MIN_L _LPAR	{ $$ = t_box_dv_uname_string ("SPECIAL::bif:MIN"); }
+	| MAX_L _LPAR	{ $$ = t_box_dv_uname_string ("SPECIAL::bif:MAX"); }
+	| SUM_L _LPAR	{ $$ = t_box_dv_uname_string ("SPECIAL::bif:SUM"); }
+	;
+
+spar_group_concat_begin
+	: spar_group_concat_begin_int	{ SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_SPARQL11_DRAFT, "GROUP_CONCAT aggregate function call"); $$ = $1; }
+
+spar_group_concat_begin_int
+	:  GROUP_CONCAT_L _LPAR			{ $$ = t_box_dv_uname_string ("sql:GROUP_CONCAT"); }
+	|  GROUP_CONCAT_L _LPAR DISTINCT_L	{ $$ = t_box_dv_uname_string ("sql:GROUP_CONCAT_DISTINCT"); }
 	;
 
 spar_var		/* [41]*	Var	 ::=  VAR1 | VAR2 | GlobalVar | ( Var ( '+>' | '*>' ) IRIref )	*/
@@ -1863,8 +1888,9 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	( 'AS' ( VAR1 | VAR2 ) ) */
 		      }
 		    else
 		      {
-                      spar_verify_funcall_security (sparp_arg, fname, args);
-		      $$ = spar_make_funcall (sparp_arg, 0, fname, args);
+		        int is_agg = 0;
+		        spar_verify_funcall_security (sparp_arg, &is_agg, &fname, args);
+		        $$ = spar_make_funcall (sparp_arg, is_agg, fname, args);
 		      } } }
 	| spar_rdf_literal		{ $$ = (SPART *)($1); }
 	| spar_numeric_literal		{ $$ = (SPART *)($1); }
@@ -1927,8 +1953,9 @@ spar_function_call	/* [54]	FunctionCall	 ::=  IRIref ArgList	*/
 		  }
 		else
 		  {
-                  spar_verify_funcall_security (sparp_arg, fname, args);
-		    $$ = spar_make_funcall (sparp_arg, 0, fname, args);
+		    int is_agg = 0;
+		    spar_verify_funcall_security (sparp_arg, &is_agg, &fname, args);
+		    $$ = spar_make_funcall (sparp_arg, is_agg, fname, args);
 		  } }
 	;
 
