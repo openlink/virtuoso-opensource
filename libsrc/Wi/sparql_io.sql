@@ -1936,17 +1936,17 @@ create procedure WS.WS.SPARQL_VHOST_RESET ()
     return;
   DB.DBA.VHOST_REMOVE (lpath=>'/SPARQL');
   DB.DBA.VHOST_REMOVE (lpath=>'/services/sparql-query');
-  oopts := (select deserialize (HP_OPTIONS) from HTTP_PATH 
+  oopts := (select deserialize (HP_OPTIONS) from HTTP_PATH
   	where HP_PPATH = '/!sparql/' and HP_LPATH = '/sparql' and HP_HOST = '*ini*' and HP_LISTEN_HOST = '*ini*');
   if (oopts is null) oopts := vector ('noinherit', 1);
   DB.DBA.VHOST_REMOVE (lpath=>'/sparql');
   DB.DBA.VHOST_DEFINE (lpath=>'/sparql/', ppath => '/!sparql/', is_dav => 1, vsp_user => 'dba', opts => oopts);
-  oopts := (select deserialize (HP_OPTIONS) from HTTP_PATH 
+  oopts := (select deserialize (HP_OPTIONS) from HTTP_PATH
   	where HP_PPATH = '/!sparql-graph-crud/' and HP_LPATH = '/sparql-graph-crud' and HP_HOST = '*ini*' and HP_LISTEN_HOST = '*ini*');
   if (oopts is null) oopts := vector ('noinherit', 1, 'exec_as_get', 1);
   DB.DBA.VHOST_REMOVE (lpath=>'/sparql-graph-crud');
   DB.DBA.VHOST_DEFINE (lpath=>'/sparql-graph-crud/', ppath => '/!sparql-graph-crud/', is_dav => 1, vsp_user => 'dba', opts => oopts);
-  oopts := (select deserialize (HP_OPTIONS) from HTTP_PATH 
+  oopts := (select deserialize (HP_OPTIONS) from HTTP_PATH
   	where HP_PPATH = '/!sparql/' and HP_LPATH = '/sparql-auth' and HP_HOST = '*ini*' and HP_LISTEN_HOST = '*ini*');
   if (oopts is null) oopts := vector ('noinherit', 1);
   DB.DBA.VHOST_REMOVE (lpath=>'/sparql-auth');
@@ -1958,7 +1958,7 @@ create procedure WS.WS.SPARQL_VHOST_RESET ()
     auth_fn=>'DB.DBA.HP_AUTH_SPARQL_USER',
     realm=>'SPARQL',
     sec=>'digest');
-  oopts := (select deserialize (HP_OPTIONS) from HTTP_PATH 
+  oopts := (select deserialize (HP_OPTIONS) from HTTP_PATH
   	where HP_PPATH = '/!sparql-graph-crud/' and HP_LPATH = '/sparql-graph-crud-auth' and HP_HOST = '*ini*' and HP_LISTEN_HOST = '*ini*');
   if (oopts is null) oopts := vector ('noinherit', 1, 'exec_as_get', 1);
   DB.DBA.VHOST_REMOVE (lpath=>'/sparql-graph-crud-auth');
@@ -2641,22 +2641,20 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
     declare user_id varchar;
     user_id := connection_get ('SPARQLUserId', 'SPARQL');
 
-    declare save_dir varchar;
-    declare save_dir_id any;
-    save_dir := coalesce ((select U_HOME from DB.DBA.SYS_USERS where U_NAME = user_id and U_DAV_ENABLE));
-    if (DAV_HIDE_ERROR (DAV_SEARCH_ID (save_dir, 'C')) is null)
-	save_dir := null;
-    else
+    declare path, save_dir varchar;
+    declare parts any;
+    save_dir := null;
+    for (select COL_ID from WS.WS.SYS_DAV_COL where COL_DET = 'DynaRes' and WS.WS.COL_PATH (COL_PARENT) like '/DAV/home/%') do
     {
-	save_dir := save_dir || 'saved-sparql-results/';
-	save_dir_id := DAV_SEARCH_ID (save_dir, 'C');
-	if (DAV_HIDE_ERROR (save_dir_id) is null)
-	    save_dir := null;
-    }
+      path := WS.WS.COL_PATH (COL_ID);
+      parts := split_and_decode (path, 0, '\0\0/');
+      if (exists (select 1 from DB.DBA.SYS_USERS where U_NAME = parts[3] and U_DAV_ENABLE));
+	      save_dir := path;
+	  }
 
     http_header ('Content-Type: text/html; charset=UTF-8\r\n');
     if (http_request_get ('REQUEST_METHOD') = 'OPTIONS')
-	http_header (http_header_get () || 'MS-Author-Via: SPARQL\r\n');
+	    http_header (http_header_get () || 'MS-Author-Via: SPARQL\r\n');
 
     WS.WS.SPARQL_ENDPOINT_HTML_DOCTYPE();
 
@@ -2677,7 +2675,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
     http('	| <a href="/sparql?nsdecl">Namespace Prefixes</a>\n');
     http('	| <a href="/sparql?rdfinf">Inference rules</a>\n');
     if (DB.DBA.VAD_CHECK_VERSION('iSPARQL') is not null)
-	http('	| <a href="/isparql">iSPARQL</a>\n');
+	    http('	| <a href="/isparql">iSPARQL</a>\n');
     http('    </div>\n\n');
 
     http('    <div id="main">\n');
@@ -2695,14 +2693,14 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
     http('		<br /><br />\n');
     if (can_sponge)
     {
-	http('		<label for="should-sponge" class="n">Sponging</label>\n');
-	http('		<select name="should-sponge" id="should-sponge">\n');
-	WS.WS.SPARQL_ENDPOINT_SPONGE_OPTS (params);
-	http('		</select>\n');
+    	http('		<label for="should-sponge" class="n">Sponging</label>\n');
+    	http('		<select name="should-sponge" id="should-sponge">\n');
+    	WS.WS.SPARQL_ENDPOINT_SPONGE_OPTS (params);
+    	http('		</select>\n');
     }
     else
     {
-	http('		<span class="info"><i>(Security restrictions of this server do not allow you to retrieve remote RDF data, see <a href="/sparql?help=enable_sponge">details</a>.)</i></span>\n');
+	    http('		<span class="info"><i>(Security restrictions of this server do not allow you to retrieve remote RDF data, see <a href="/sparql?help=enable_sponge">details</a>.)</i></span>\n');
     }
 
     http('		<br />\n');
@@ -2712,20 +2710,20 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
     http('		</select>\n');
     if (sys_stat('st_has_vdb'))
     {
-	if (not can_cxml)
-	    http('		<span class="info"><i>(The CXML output is disabled, see <a href="/sparql?help=enable_cxml">details</a>)</i></span>\n');
-	else if (not can_qrcode)
-	    http('		<span class="info"><i>(The QRCODE output is disabled, see <a href="/sparql?help=enable_cxml">details</a>)</i></span>\n');
+	    if (not can_cxml)
+	      http('		<span class="info"><i>(The CXML output is disabled, see <a href="/sparql?help=enable_cxml">details</a>)</i></span>\n');
+	    else if (not can_qrcode)
+	      http('		<span class="info"><i>(The QRCODE output is disabled, see <a href="/sparql?help=enable_cxml">details</a>)</i></span>\n');
     }
     http('		<br />\n');
 
     if (can_cxml)
     {
-	http ('		<fieldset id="cxml">\n');
-	WS.WS.SPARQL_ENDPOINT_CXML_OPTION (can_pivot, params, 'CXML_redir_for_subjs');
+    	http ('		<fieldset id="cxml">\n');
+    	WS.WS.SPARQL_ENDPOINT_CXML_OPTION (can_pivot, params, 'CXML_redir_for_subjs');
 
-	WS.WS.SPARQL_ENDPOINT_CXML_OPTION (can_pivot, params, 'CXML_redir_for_hrefs');
-	http ('		</fieldset>\n');
+    	WS.WS.SPARQL_ENDPOINT_CXML_OPTION (can_pivot, params, 'CXML_redir_for_hrefs');
+    	http ('		</fieldset>\n');
     }
 
     http('		<label for="timeout" class="n">Execution timeout</label>\n');
@@ -2747,15 +2745,27 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
 
     if (save_dir is not null)
     {
-	http('		<br />\n');
-	http('		<input name="save" id="save" onclick="savedav_change(this)" type="checkbox"' || case when (save_mode is null) then '' else ' checked="checked"' end || ' />\n');
-	http('		<label for="save" class="ckb">Save resultset to WebDAV folder on the server</label>\n');
-	http('		<fieldset id="savefs">\n');
-	http('		    <label for="fname">File name:</label>\n');
-	http('		    <input type="text" id="fname" name="fname" />\n');
-	http('		    <input type="checkbox" name="dav_refresh" id="dav_refresh"' || case when (dav_refresh is null) then '' else ' checked="checked"' end || ' />\n');
-	http('		    <label class="ckb" for="dav_refresh">Refresh periodically</label>\n');
-	http('		</fieldset>\n');
+    	http('		<br />\n');
+    	http('		<input name="save" id="save" onclick="savedav_change(this)" type="checkbox"' || case when (save_mode is null) then '' else ' checked="checked"' end || ' />\n');
+    	http('		<label for="save" class="ckb">Save resultset to WebDAV folder on the server</label>\n');
+    	http('		<span id="savefs">\n');
+    	http('		  <label for="dname">Dynamic resource collection:</label>\n');
+    	http('		  <select id="dname" name="dname" >\n');
+      for (select COL_ID from WS.WS.SYS_DAV_COL where COL_DET = 'DynaRes' and WS.WS.COL_PATH (COL_PARENT) like '/DAV/home/%') do
+      {
+        path := WS.WS.COL_PATH (COL_ID);
+        parts := split_and_decode (path, 0, '\0\0/');
+        if (exists (select 1 from DB.DBA.SYS_USERS where U_NAME = parts[3] and U_DAV_ENABLE));
+        	http(sprintf('<option>%s</option>\n', path));
+  	  }
+    	http('		  </select>\n');
+    	http('		  <br />\n');
+    	http('		  <label for="fname">File name:</label>\n');
+    	http('		  <input type="text" id="fname" name="fname" />\n');
+    	http('		  <br />\n');
+    	http('		  <input type="checkbox" name="dav_refresh" id="dav_refresh"' || case when (dav_refresh is null) then '' else ' checked="checked"' end || ' />\n');
+    	http('		  <label class="ckb" for="dav_refresh">Refresh periodically</label>\n');
+    	http('		</span>\n');
     }
 
     http('		</fieldset>\n');
@@ -2763,8 +2773,8 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
 
     if (save_dir is null)
     {
-	http('		<span class="info"><i>(The result can only be sent back to browser, not saved on the server, see <a href="/sparql?help=enable_det">details</a>)</i></span>\n');
-        http('		<br />\n');
+    	http('		<span class="info"><i>(The result can only be sent back to browser, not saved on the server, see <a href="/sparql?help=enable_det">details</a>)</i></span>\n');
+      http('		<br />\n');
     }
 
     http('		<br />\n');
@@ -2781,7 +2791,6 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
     return;
 }
 ;
-
 
 -- Web service endpoint.
 
@@ -2861,6 +2870,10 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   def_max := atoi (coalesce (virtuoso_ini_item_value ('SPARQL', 'ResultSetMaxRows'), '-1'));
   -- if timeout specified and it's over 1 second
 
+  save_dir := trim (get_keyword ('dname', params, ''));
+  save_dir_id := DAV_SEARCH_ID (save_dir, 'C');
+  if (DAV_HIDE_ERROR (save_dir_id) is null)
+  	save_dir := null;
 
   fname := trim (get_keyword ('fname', params, ''));
   if (fname = '')
@@ -3322,17 +3335,6 @@ host_found:
   metas := null;
   rset := null;
 
-  save_dir := coalesce ((select U_HOME from DB.DBA.SYS_USERS where U_NAME = user_id and U_DAV_ENABLE));
-  if (DAV_HIDE_ERROR (DAV_SEARCH_ID (save_dir, 'C')) is null)
-    save_dir := null;
-  else
-    {
-      save_dir := save_dir || 'saved-sparql-results/';
-      save_dir_id := DAV_SEARCH_ID (save_dir, 'C');
-      if (DAV_HIDE_ERROR (save_dir_id) is null)
-	save_dir := null;
-    }
-
   -- dbg_obj_princ ('accept = ', accept);
   -- dbg_obj_princ ('format = ', format);
   -- dbg_obj_princ ('full_query = ', full_query);
@@ -3444,7 +3446,7 @@ write_results:
           declare sparql_uid integer;
           declare refresh_sec, ttl_sec integer;
           declare full_uri varchar;
-          sparql_uid := (SELECT U_ID from DB.DBA.SYS_USERS where U_NAME = user_id);
+          sparql_uid := (SELECT COL_OWNER from WS.WS.SYS_DAV_COL where COL_ID = save_dir_id);
           if (fname is null)
             {
               if (save_mode = 'tmpstatic')
