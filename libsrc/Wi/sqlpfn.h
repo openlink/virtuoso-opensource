@@ -195,9 +195,6 @@ ST * sqlp_wrapper_sqlxml_assign (ST * tree);
 
 int sqlp_tree_has_fun_ref (ST *tree);
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 extern int scn3_lineno;			/*!< Throughout counter of lines in the source text */
 extern int scn3_plineno;		/*!< Physical counter of lines in the source text - used for the PL debugger */
 extern int scn3_lineno_increment;	/*!< This is zero for 'macroexpanded' fragments of SQL text, to prevent from confusing when a long text is inserted instead of a single line */
