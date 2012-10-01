@@ -14184,12 +14184,12 @@ create function DB.DBA.RDF_GRAPH_GROUP_LIST_GET (in group_iri any, in extra_grap
   perms_dict := __rdf_graph_default_perms_of_user_dict(0);
   world_perms := coalesce (
     dict_get (perms_dict, uid, NULL),
-    dict_get (perms_dict, 0, NULL),
+    dict_get (perms_dict, http_nobody_uid(), NULL),
     15 );
   perms_dict := __rdf_graph_default_perms_of_user_dict(1);
   private_perms := coalesce (
     dict_get (perms_dict, uid, NULL),
-    dict_get (perms_dict, 0, NULL),
+    dict_get (perms_dict, http_nobody_uid(), NULL),
     15 );
   if (gs_app_cbk is not null)
     {
