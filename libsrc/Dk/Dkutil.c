@@ -42,7 +42,9 @@ print_trace (void)
   strings = backtrace_symbols (array, size);
   for (i = 0; i < size; i++)
     log_info ("%s\n", strings[i]);
+#ifndef MALLOC_DEBUG
   free (strings);
+#endif
 }
 #else
 void print_trace (void) { }
