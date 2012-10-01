@@ -184,7 +184,7 @@ extern long tc_read_aside;
 extern int32 em_ra_window;
 extern int32 em_ra_threshold;
 extern int enable_mem_hash_join;
-extern int enable_dfg;
+extern int32 enable_dfg;
 extern int enable_setp_partition;
 extern int enable_min_card;
 extern int enable_dfg_print;
@@ -196,6 +196,7 @@ extern long strses_file_reads;
 extern long strses_file_seeks;
 extern long strses_file_writes;
 extern long strses_file_wait_msec;
+extern int enable_g_replace_log;
 
 long  tft_random_seek;
 long  tft_seq_seek;
@@ -262,7 +263,7 @@ extern int32 cl_max_keep_alives_missed;
 extern int32 cl_non_logged_write_mode;
 extern int32 cl_dead_w_interval;
 extern int32 cl_stage;
-
+extern int enable_distinct_key_dup_no_lock;
 void trset_start (caddr_t * qst);
 void trset_printf (const char *str, ...);
 void trset_end ();
@@ -1495,6 +1496,9 @@ stat_desc_t dbf_descs [] =
     {"c_use_aio", &c_use_aio, SD_INT32},
     {"callstack_on_exception", &callstack_on_exception},
     {"sqlo_sample_dep_cols", &sqlo_sample_dep_cols, SD_INT32},
+    {"lock_escalation_pct", &lock_escalation_pct, SD_INT32},
+    {"enable_distinct_key_dup_no_lock", &enable_distinct_key_dup_no_lock, SD_INT32},
+    {"enable_g_replace_log", &enable_g_replace_log, SD_INT32},
     {NULL, NULL, NULL}
   };
 

@@ -370,6 +370,7 @@ struct dbe_key_s
   char			key_is_bitmap;
   char			key_simple_compress;
   key_ver_t		key_version;
+  char			key_no_dependent;
   char			key_is_col; /* column-wise layout */
   char		key_no_pk_ref; /* the key does not ref the main row */
   char		key_distinct; /* if no pk ref, do not put duplicates */

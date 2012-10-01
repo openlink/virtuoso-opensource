@@ -167,6 +167,7 @@ ld_file (in f varchar, in graph varchar)
     return;
   };
 
+  connection_set ('ld_file', f);
   if (graph like 'sql:%')
     {
       exec (subseq (graph, 4), null, null, vector (f), vector ('max_rows', 0, 'use_cache', 1));

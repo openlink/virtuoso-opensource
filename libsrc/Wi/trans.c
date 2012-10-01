@@ -47,11 +47,6 @@
 #define TN_RESULTS 3
 
 
-#define LC_INIT 0
-#define LC_ROW 1
-#define LC_AT_END 2
-#define LC_ERROR 3
-
 
 void
 ht_free_no_content (id_hash_t * ht)
@@ -112,6 +107,8 @@ lc_exec (srv_stmt_t * lc, caddr_t * row, caddr_t last, int is_exec)
     {
       if (is_exec)
 	{
+	  if (lc->sst_query->qr_select_node)
+	    lc->sst_query->qr_select_node->src_gen.src_input = (qn_input_fn)select_node_input_subq;
 	  qn_input (lc->sst_query->qr_head_node, lc->sst_qst, lc->sst_qst);
 	  if (1 == lc->sst_batch_size)
 	    {

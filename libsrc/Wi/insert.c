@@ -603,6 +603,7 @@ itc_insert_dv (it_cursor_t * it, buffer_desc_t ** buf_ret, row_delta_t * rd,
   page_apply (it, *buf_ret, 1, &rd, PA_MODIFY);
 }
 
+int enable_distinct_key_dup_no_lock = 0;
 
 int
 itc_insert_unq_ck (it_cursor_t * it, row_delta_t * rd, buffer_desc_t ** unq_buf)
@@ -637,6 +638,13 @@ itc_insert_unq_ck (it_cursor_t * it, row_delta_t * rd, buffer_desc_t ** unq_buf)
   buf = itc_reset (it);
   res = itc_search (it, &buf);
  searched:
+  if (it->itc_insert_key->key_distinct && DVC_MATCH == res && enable_distinct_key_dup_no_lock)
+    {
+      /* if key is distinct values only hitting a duplicate does nothing and returns success */
+      page_leave_outside_map (buf);
+      return DVC_LESS;
+    }
+
   if (NO_WAIT != itc_insert_lock (it, buf, &res))
     goto reset_search;
   if (it->itc_insert_key->key_distinct && DVC_MATCH == res)

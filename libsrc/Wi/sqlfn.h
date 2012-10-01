@@ -1283,4 +1283,15 @@ void itc_assert_no_reg (it_cursor_t * itc);
 caddr_t * itc_bm_array (it_cursor_t * itc, buffer_desc_t * buf);
 extern int32 log_proc_overwrite;
 
+
+srv_stmt_t * qr_multistate_lc (query_t * qr, query_instance_t * caller);
+int lc_exec (srv_stmt_t * lc, caddr_t * row, caddr_t last, int is_exec);
+
+#define LC_INIT 0
+#define LC_ROW 1
+#define LC_AT_END 2
+#define LC_ERROR 3
+caddr_t * lc_t_row (srv_stmt_t * lc);
+
+
 #endif /* _SQLFN_H */
