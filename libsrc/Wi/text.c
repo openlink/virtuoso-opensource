@@ -3340,6 +3340,7 @@ txs_input (text_node_t * txs, caddr_t * inst, caddr_t *state)
 void
 txs_free (text_node_t * txs)
 {
+  dk_free_box (txs->txs_offband);
 }
 
 caddr_t

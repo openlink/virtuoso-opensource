@@ -3520,6 +3520,7 @@ rd_outline_1 (query_instance_t * qi, row_delta_t * rd, dbe_col_loc_t * cl)
   outlined = dk_alloc_box (DV_BLOB_LEN + 1, DV_STRING);
   ITC_OWNS_PARAM (rd->rd_itc, outlined);
   itc_set_blob_col (itc, (db_buf_t)outlined,  str, NULL, BLOB_IN_UPDATE, &cl->cl_sqt);
+  dk_free_box (str);
   rd->rd_values[cl->cl_nth] = outlined;
 }
 

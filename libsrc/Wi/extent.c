@@ -1377,6 +1377,7 @@ em_free (extent_map_t * em)
   mutex_free (em->em_mtx);
   hash_table_free (em->em_dp_to_ext);
   hash_table_free (em->em_read_history);
+  hash_table_free (em->em_uninitialized);
   dk_mutex_destroy (&em->em_read_history_mtx);
   dk_free ((caddr_t) em, sizeof (extent_map_t));
 }

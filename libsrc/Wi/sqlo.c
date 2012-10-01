@@ -1600,7 +1600,10 @@ sqlo_check_ft_offband (sqlo_t * so, op_table_t * ot, ST ** args, char type)
 	  inx + 1, sqlo_spec_predicate_name(type), arg );
     }
   if (off)
-    ot->ot_text_offband = (op_virt_col_t **) list_to_array (off);
+    {
+      ot->ot_text_offband = (op_virt_col_t **) t_list_to_array (off);
+      dk_set_free (off);
+    }
 }
 
 
