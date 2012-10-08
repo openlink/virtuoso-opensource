@@ -14290,6 +14290,351 @@ create function DB.DBA.RDF_GRAPH_GROUP_LIST_GET (in group_iri any, in extra_grap
 }
 ;
 
+create procedure DB.DBA.RDF_GRAPH_SECURITY_AUDIT (in recovery integer)
+{
+  declare SEVERITY, GRAPH_IRI, USER_NAME, MESSAGE varchar;
+  declare GRAPH_IID IRI_ID;
+  declare USER_ID integer;
+  result_names (SEVERITY, GRAPH_IID, GRAPH_IRI, USER_ID, USER_NAME, MESSAGE);
+  declare mem_dict, mem_dict_inv, pg_mem_dict, mem_vec, mem_vec_inv, fake any;
+  declare mem_ctr, mem_count, pg_count, err_bad_count, err_recoverable_count, err_recoverable_count_total, err_count_total integer;
+  err_recoverable_count_total := 0; err_count_total := 0;
+
+  result ('', null, null, null, null, 'Inspecting caches of IRI_IDs of IRIs mentioned in security data...');
+  err_bad_count := 0;
+  err_recoverable_count := 0;
+  mem_dict := __rdf_graph_iri2id_dict();
+  mem_dict_inv := __rdf_graph_id2iri_dict();
+  if (dict_size (mem_dict_inv) <> dict_size (mem_dict))
+    {
+      result ('ERROR', null, null, null, null,
+        sprintf ('Cache of IRI_IDs of IRIs contains %d items, but cache of IRIs of IRI_IDs contains %d items, mismatch',
+        dict_size (mem_dict_inv), dict_size (mem_dict) ) );
+      err_recoverable_count := err_recoverable_count + 1;
+    }
+  mem_vec := dict_to_vector (mem_dict, 0);
+  mem_vec_inv := dict_to_vector (mem_dict_inv, 0);
+  mem_count := length (mem_vec);
+  for (mem_ctr := 0; mem_ctr < mem_count; mem_ctr := mem_ctr + 2)
+    {
+      declare iri varchar;
+      declare iid IRI_ID;
+      iri := mem_vec[mem_ctr];
+      iid := mem_vec[mem_ctr+1];
+      if ((__tag (iri) <> 217 /* __tag of UNAME */) or (__tag (iid) <> __tag of IRI_ID))
+        {
+          result ('ERROR', null, null, null, null,
+            sprintf ('Unexpected datatypes: tag of IRI "%.300s" is %d, tag of IRI_ID "%.300s" is %d; should be %d and %d',
+              cast (iri as varchar), __tag (iri),
+              cast (iid as varchar), __tag (iid),
+              217 /* __tag of UNAME */, __tag of IRI_ID ) );
+          err_recoverable_count := err_recoverable_count + 1;
+          if (recovery)
+            dict_remove (mem_dict, iri);
+        }
+      else if (iri_to_id (iri) <> iid)
+        {
+          result ('ERROR', null, null, null, null,
+            sprintf ('Cached IRI_IDs of IRI <%.300s> is %s, actual is %s, mismatch',
+              cast (iri as varchar), cast (iid as varchar), cast (iri_to_id (iri) as varchar) ) );
+          err_recoverable_count := err_recoverable_count + 1;
+          if (recovery)
+            {
+              iid := iri_to_id_nosignal (iri);
+              if (iid is not null)
+                {
+                  dict_put (mem_dict, iri, iid);
+                  dict_put (mem_dict_inv, iid, iri);
+                }
+              else
+                dict_remove (mem_dict, iri);
+            }
+        }
+    }
+  mem_count := length (mem_vec_inv);
+  for (mem_ctr := 0; mem_ctr < mem_count; mem_ctr := mem_ctr + 2)
+    {
+      declare iid IRI_ID;
+      declare iri varchar;
+      iid := mem_vec_inv[mem_ctr];
+      iri := mem_vec_inv[mem_ctr+1];
+      if ((__tag (iid) <> __tag of IRI_ID) or (__tag (iri) <> 217 /* __tag of UNAME */))
+        {
+          result ('ERROR', null, null, null, null,
+            sprintf ('Unexpected datatypes: tag of IRI_ID "%.300s" is %d, tag of IRI "%.300s" is %d; should be %d and %d',
+              cast (iid as varchar), __tag (iid),
+              cast (iri as varchar), __tag (iri),
+              __tag of IRI_ID, 217 /* __tag of UNAME */ ) );
+          err_recoverable_count := err_recoverable_count + 1;
+          if (recovery)
+            dict_remove (mem_dict_inv, iid);
+        }
+      else if (__uname (id_to_iri (iid)) <> iri)
+        {
+          result ('ERROR', null, null, null, null,
+            sprintf ('Cached IRI of IRI_ID %s is <%.300s>, actual is <%.300s>, mismatch',
+              cast (iid as varchar), cast (iri as varchar), cast (id_to_iri (iid) as varchar) ) );
+          err_recoverable_count := err_recoverable_count + 1;
+          if (recovery)
+            {
+              iri := id_to_iri_nosignal (iid);
+              if (iri is not null)
+                {
+                  iri := __uname (iri);
+                  dict_put (mem_dict_inv, iid, iri);
+                  dict_put (mem_dict, iri, iid);
+                }
+              else
+                dict_remove (mem_dict_inv, iid);
+            }
+        }
+    }
+  if (err_recoverable_count)
+    {
+      if (not recovery)
+        {
+          result ('FATAL', null, null, null, null,
+            sprintf ('%d errors need urgent recovery, the rest of security audit has little sence while these errors persist',
+              err_recoverable_count ) );
+          return;
+        }
+      else
+        {
+          if (dict_size (mem_dict_inv) <> dict_size (mem_dict))
+            {
+              result ('FATAL', null, null, null, null,
+                sprintf ('Cache of IRI_IDs of IRIs contains %d items, but cache of IRIs of IRI_IDs contains %d items, mismatch even after recovery',
+                dict_size (mem_dict_inv), dict_size (mem_dict) ) );
+              err_bad_count := err_bad_count + 1;
+            }
+        }
+    }
+  err_count_total := err_count_total + err_recoverable_count + err_bad_count;
+  err_recoverable_count_total := err_recoverable_count_total + err_recoverable_count;
+
+  result ('', null, null, null, null, 'Inspecting completeness of IRI cache for graph groups...');
+  err_bad_count := 0;
+  err_recoverable_count := 0;
+  for (select RGG_IID from DB.DBA.RDF_GRAPH_GROUP where dict_get (__rdf_graph_id2iri_dict(), RGG_IID, null) is null
+    union select RGGM_GROUP_IID from DB.DBA.RDF_GRAPH_GROUP_MEMBER where dict_get (__rdf_graph_id2iri_dict(), RGGM_GROUP_IID, null) is null
+    for update ) do
+    {
+      if (id_to_iri_nosignal (RGG_IID) is null)
+        result ('ERROR', RGG_IID, null, null, null,
+          sprintf ('The IRI_ID %s of a graph group does not correspond to any IRI',
+            RGG_IID ) );
+      else
+        result ('ERROR', RGG_IID, id_to_iri_nosignal (RGG_IID), null, null,
+          sprintf ('The IRI <%.300s> of graph group IRI_ID %s is not cached',
+            id_to_iri_nosignal (RGG_IID), RGG_IID ) );
+      err_recoverable_count := err_recoverable_count + 1;
+    }
+  if (err_recoverable_count and recovery)
+    {
+      delete from DB.DBA.RDF_GRAPH_GROUP where id_to_iri_nosignal (RGG_IID) is null;
+      delete from DB.DBA.RDF_GRAPH_GROUP_MEMBER where id_to_iri_nosignal (RGGM_GROUP_IID) is null;
+      commit work;
+      fake := (select
+          count (dict_put (__rdf_graph_iri2id_dict(), __uname (id_to_iri (RGG_IID)), RGG_IID)) +
+          count (dict_put (__rdf_graph_id2iri_dict(), RGG_IID, __uname (id_to_iri (RGG_IID))))
+          from DB.DBA.RDF_GRAPH_GROUP );
+      fake := (select
+          count (dict_put (__rdf_graph_iri2id_dict(), __uname (id_to_iri (RGGM_GROUP_IID)), RGGM_GROUP_IID)) +
+          count (dict_put (__rdf_graph_id2iri_dict(), RGGM_GROUP_IID, __uname (id_to_iri (RGGM_GROUP_IID))))
+          from DB.DBA.RDF_GRAPH_GROUP_MEMBER );
+    }
+  err_count_total := err_count_total + err_recoverable_count + err_bad_count;
+  err_recoverable_count_total := err_recoverable_count_total + err_recoverable_count;
+
+  result ('', null, null, null, null, 'Inspecting completeness of IRI cache for graph group members...');
+  err_bad_count := 0;
+  err_recoverable_count := 0;
+  for (select RGGM_MEMBER_IID, min (RGGM_GROUP_IID) as SAMPLE_GROUP_IID from DB.DBA.RDF_GRAPH_GROUP_MEMBER where dict_get (__rdf_graph_id2iri_dict(), RGGM_MEMBER_IID, null) is null group by RGGM_MEMBER_IID for update) do
+    {
+      if (id_to_iri_nosignal (RGGM_MEMBER_IID) is null)
+        result ('ERROR', RGGM_MEMBER_IID, null, null, null,
+          sprintf ('The IRI_ID %s of a member of a graph group <%.300s> does not correspond to any IRI',
+            RGGM_MEMBER_IID, id_to_iri_nosignal (SAMPLE_GROUP_IID) ) );
+      else
+        result ('ERROR', RGGM_MEMBER_IID, id_to_iri_nosignal (RGGM_MEMBER_IID), null, null,
+          sprintf ('The IRI <%.300s> of IRI_ID %s of the member of a graph group <%.300s> is not cached',
+            id_to_iri_nosignal (RGGM_MEMBER_IID), RGGM_MEMBER_IID, id_to_iri_nosignal (SAMPLE_GROUP_IID) ) );
+      err_recoverable_count := err_recoverable_count + 1;
+    }
+  if (err_recoverable_count and recovery)
+    {
+      delete from DB.DBA.RDF_GRAPH_GROUP_MEMBER where id_to_iri_nosignal (RGGM_MEMBER_IID) is null;
+      commit work;
+      fake := (select
+          count (dict_put (__rdf_graph_iri2id_dict(), __uname (id_to_iri (RGGM_MEMBER_IID)), RGGM_MEMBER_IID)) +
+          count (dict_put (__rdf_graph_id2iri_dict(), RGGM_MEMBER_IID, __uname (id_to_iri (RGGM_MEMBER_IID))))
+          from DB.DBA.RDF_GRAPH_GROUP_MEMBER );
+    }
+  err_count_total := err_count_total + err_recoverable_count + err_bad_count;
+  err_recoverable_count_total := err_recoverable_count_total + err_recoverable_count;
+
+  result ('', null, null, null, null, 'Check for mismatches between graph group IRIs and graph group IRI_IDs...');
+  err_bad_count := 0;
+  err_recoverable_count := 0;
+  for (select RGG_IID, id_to_iri_nosignal (RGG_IID) as actual_iri, RGG_IRI from DB.DBA.RDF_GRAPH_GROUP where id_to_iri_nosignal (RGG_IID) <> RGG_IRI) do
+    {
+      if (actual_iri is not null)
+        {
+          result ('ERROR', RGG_IID, actual_iri, null, null,
+            sprintf ('The IRI_ID %s of a graph group is the IRI_ID of <%.300s> IRI whereas the group declaration states it is supposed to be <%.300s>',
+              RGG_IID, actual_iri, RGG_IRI ) );
+          err_recoverable_count := err_recoverable_count + 1;
+        }
+    }
+  for (select RGG_IID, id_to_iri_nosignal (RGG_IID) as actual_iri, RGG_IRI from DB.DBA.RDF_GRAPH_GROUP
+    where (id_to_iri_nosignal (RGG_IID) <> RGG_IRI)
+    and (id_to_iri_nosignal (RGG_IID) = 'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs' or RGG_IRI = 'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs') ) do
+    {
+      result ('FATAL', RGG_IID, actual_iri, null, null,
+        sprintf ('The IRI_ID and IRI of a virtrdf:PrivateGraphs graph group does not match to each other, it means that some application has made a security hole. You may wish to disable any access to the database while the error is not fixed.',
+          RGG_IID, actual_iri, RGG_IRI ) );
+      return;
+    }
+  for (select distinct RGGM_GROUP_IID as new_group_iid, iri_to_id_nosignal (RGGM_GROUP_IID) as new_group_iri from DB.DBA.RDF_GRAPH_GROUP_MEMBER
+    where not exists (select 1 from DB.DBA.RDF_GRAPH_GROUP where RGG_IID = RGGM_GROUP_IID) for update) do
+    {
+      if (new_group_iri is null)
+        {
+          result ('ERROR', new_group_iid, new_group_iri, null, null,
+            sprintf ('Garbage in list of members of all groups: the group does not exists and group IRI ID is invalid') );
+          err_recoverable_count := err_recoverable_count + 1;
+          if (recovery)
+            {
+              delete from DB.DBA.RDF_GRAPH_GROUP_MEMBER where RGGM_GROUP_IID = new_group_iid;
+              commit work;
+            }
+        }
+      else if (exists (select 1 from DB.DBA.RDF_GRAPH_GROUP where RGG_IRI = new_group_iri))
+        {
+          result ('ERROR', new_group_iid, new_group_iri, null, null,
+            sprintf ('Conflicting data in list of groups: the group does not exists, the group IRI is used in a currupted group record') );
+          err_recoverable_count := err_recoverable_count + 1;
+          if (recovery)
+            {
+              delete from DB.DBA.RDF_GRAPH_GROUP_MEMBER where RGGM_GROUP_IID = new_group_iid;
+              commit work;
+            }
+        }
+      else
+        {
+          result ('ERROR', new_group_iid, new_group_iri, null, null,
+            sprintf ('The record about graph group does not exist but there exists a list of members') );
+          err_recoverable_count := err_recoverable_count + 1;
+          if (recovery)
+            {
+              insert soft DB.DBA.RDF_GRAPH_GROUP (RGG_IID, RGG_IRI, RGG_MEMBER_PATTERN, RGG_COMMENT)
+              values (new_group_iid, new_group_iri, NULL, sprintf ('Group created %s by DB.DBA.RDF_GRAPH_SECURITY_AUDIT()', cast (now() as varchar)));
+              commit work;
+            }
+        }
+    }
+  err_count_total := err_count_total + err_recoverable_count + err_bad_count;
+  err_recoverable_count_total := err_recoverable_count_total + err_recoverable_count;
+
+  result ('', null, null, null, null, 'Inspecting caching of list of private graphs...');
+  err_bad_count := 0;
+  err_recoverable_count := 0;
+
+  pg_mem_dict := mem_dict := __rdf_graph_group_of_privates_dict();
+  pg_count := (select count (1) from DB.DBA.RDF_GRAPH_GROUP_MEMBER where RGGM_GROUP_IID = iri_to_id ('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs'));
+  if (dict_size (mem_dict) <> pg_count)
+    {
+      result ('ERROR', null, null, null, null,
+        sprintf ('Cache of list of private graphs contains %d items, but virtrdf:PrivateGraphs group contains %d members, mismatch',
+        dict_size (mem_dict), pg_count ) );
+      err_recoverable_count := err_recoverable_count + 1;
+    }
+  mem_vec := dict_list_keys (mem_dict, 0);
+  mem_count := length (mem_vec);
+  for (mem_ctr := 0; mem_ctr < mem_count; mem_ctr := mem_ctr + 1)
+    {
+      declare mem_iid IRI_ID;
+      mem_iid := mem_vec[mem_ctr];
+      if (not exists (select 1 from DB.DBA.RDF_GRAPH_GROUP_MEMBER
+        where RGGM_GROUP_IID = iri_to_id ('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs')
+        and RGGM_MEMBER_IID = mem_iid ) )
+        {
+          result ('ERROR', mem_iid, id_to_iri_nosignal (mem_iid), null, null,
+            sprintf ('Cache of list of private graphs contains IRI_ID %s for graph IRI <%.300s> but virtrdf:PrivateGraphs group does not contain it',
+              cast (mem_iid as varchar), id_to_iri_nosignal (mem_iid) ) );
+          err_recoverable_count := err_recoverable_count + 1;
+          if (recovery)
+            {
+              insert soft DB.DBA.RDF_GRAPH_GROUP_MEMBER (RGGM_GROUP_IID, RGGM_MEMBER_IID)
+              values (iri_to_id ('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs'), mem_iid);
+              commit work;
+            }
+        }
+    }
+  for (select RGGM_MEMBER_IID from DB.DBA.RDF_GRAPH_GROUP_MEMBER
+    where RGGM_GROUP_IID = iri_to_id ('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs') ) do
+    {
+      if (not dict_get (mem_dict, RGGM_MEMBER_IID, 0))
+        {
+          result ('ERROR', RGGM_MEMBER_IID, id_to_iri_nosignal (RGGM_MEMBER_IID), null, null,
+            sprintf ('Cache of list of private graphs does not contain IRI_ID %s of graph IRI <%.300s> but virtrdf:PrivateGraphs group contains it',
+              cast (RGGM_MEMBER_IID as varchar), id_to_iri_nosignal (RGGM_MEMBER_IID) ) );
+          err_recoverable_count := err_recoverable_count + 1;
+          if (recovery)
+            dict_put (mem_dict, RGGM_MEMBER_IID, 1);
+        }
+    }
+  err_count_total := err_count_total + err_recoverable_count + err_bad_count;
+  err_recoverable_count_total := err_recoverable_count_total + err_recoverable_count;
+
+  result ('', null, null, null, null, 'Inspecting permissions of users...');
+  err_bad_count := 0;
+  err_recoverable_count := 0;
+  for (select special.RGU_GRAPH_IID as s_g_iid, special.RGU_USER_ID as s_userid, special.RGU_PERMISSIONS as s_perms,
+    common.RGU_GRAPH_IID as c_g_iid, common.RGU_USER_ID as c_userid, common.RGU_PERMISSIONS as c_p
+    from DB.DBA.RDF_GRAPH_USER special, DB.DBA.RDF_GRAPH_USER common
+    where (common.RGU_GRAPH_IID = special.RGU_GRAPH_IID
+      and common.RGU_USER_ID = http_nobody_uid() and special.RGU_USER_ID <> http_nobody_uid()
+      and bit_and (common.RGU_PERMISSIONS, special.RGU_PERMISSIONS) < common.RGU_PERMISSIONS )
+    or (common.RGU_GRAPH_IID = #i8192 and dict_get (pg_mem_dict, special.RGU_GRAPH_IID, 0)
+      and common.RGU_USER_ID = http_nobody_uid() and special.RGU_USER_ID <> http_nobody_uid()
+      and bit_and (common.RGU_PERMISSIONS, special.RGU_PERMISSIONS) < common.RGU_PERMISSIONS )
+    or (common.RGU_GRAPH_IID = #i0 and special.RGU_GRAPH_IID <> #i8192 and not dict_get (pg_mem_dict, special.RGU_GRAPH_IID, 0)
+      and common.RGU_USER_ID = http_nobody_uid() and special.RGU_USER_ID <> http_nobody_uid()
+      and bit_and (common.RGU_PERMISSIONS, special.RGU_PERMISSIONS) < common.RGU_PERMISSIONS )
+    or (common.RGU_GRAPH_IID = #i8192 and dict_get (pg_mem_dict, special.RGU_GRAPH_IID, 0)
+      and common.RGU_USER_ID = special.RGU_USER_ID
+      and bit_and (common.RGU_PERMISSIONS, special.RGU_PERMISSIONS) < common.RGU_PERMISSIONS )
+    or (common.RGU_GRAPH_IID = #i0 and special.RGU_GRAPH_IID <> #i8192 and not dict_get (pg_mem_dict, special.RGU_GRAPH_IID, 0)
+      and common.RGU_USER_ID = special.RGU_USER_ID
+      and bit_and (common.RGU_PERMISSIONS, special.RGU_PERMISSIONS) < common.RGU_PERMISSIONS )
+    order by c_userid, c_g_iid ) do
+    {
+      declare c_g_iri_txt varchar;
+      c_g_iri_txt := case (c_g_iid) when #i0 then 'default public graph' when #i8192 then 'default private graph' else sprintf ('graph <%.300s>', id_to_iri_nosignal (c_g_iid)) end;
+      result ('ERROR', s_g_iid, id_to_iri_nosignal (s_g_iid), s_userid, (select U_NAME from DB.DBA.SYS_USERS where U_ID = s_userid),
+         sprintf ('Specific permissions %x are smaller than %s permissions %x of user %s',
+           s_perms, c_g_iri_txt, c_p, (select U_NAME from DB.DBA.SYS_USERS where U_ID = c_userid) ) );
+      err_bad_count := err_bad_count + 1;
+    }
+  err_count_total := err_count_total + err_recoverable_count + err_bad_count;
+  err_recoverable_count_total := err_recoverable_count_total + err_recoverable_count;
+
+  if (0 = err_count_total)
+    result ('', null, null, null, null,
+      sprintf ('No errors found in RDF security', err_count_total) );
+  else if (recovery)
+    result ('', null, null, null, null,
+      sprintf ('%d security errors were found, DB.DBA.RDF_GRAPH_SECURITY_AUDIT (0) will list errors that may remain unfixed', err_count_total) );
+  else if (err_recoverable_count_total)
+    result ('', null, null, null, null,
+      sprintf ('%d security errors found, you may wish to run DB.DBA.RDF_GRAPH_SECURITY_AUDIT (1) to repair', err_count_total) );
+  else
+    result ('', null, null, null, null,
+      sprintf ('%d security errors found and none of them can be repaired by DB.DBA.RDF_GRAPH_SECURITY_AUDIT (1)', err_count_total) );
+}
+;
+
 -----
 -- Loading default set of quad map metadata.
 
