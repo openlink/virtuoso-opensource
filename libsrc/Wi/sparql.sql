@@ -15188,13 +15188,17 @@ create procedure DB.DBA.RDF_QUAD_FT_UPGRADE ()
       count (dict_put (__rdf_graph_id2iri_dict(), RGG_IID, __uname (id_to_iri (RGG_IID))))
       from DB.DBA.RDF_GRAPH_GROUP );
   fake := (select
+      count (dict_put (__rdf_graph_iri2id_dict(), __uname (id_to_iri (RGGM_GROUP_IID)), RGGM_GROUP_IID)) +
+      count (dict_put (__rdf_graph_id2iri_dict(), RGGM_GROUP_IID, __uname (id_to_iri (RGGM_GROUP_IID))))
+      from DB.DBA.RDF_GRAPH_GROUP_MEMBER );
+  fake := (select
       count (dict_put (__rdf_graph_iri2id_dict(), __uname (id_to_iri (RGGM_MEMBER_IID)), RGGM_MEMBER_IID)) +
       count (dict_put (__rdf_graph_id2iri_dict(), RGGM_MEMBER_IID, __uname (id_to_iri (RGGM_MEMBER_IID))))
       from DB.DBA.RDF_GRAPH_GROUP_MEMBER );
   fake := (select
       count (dict_put (__rdf_graph_iri2id_dict(), __uname (id_to_iri (RGU_GRAPH_IID)), RGU_GRAPH_IID)) +
       count (dict_put (__rdf_graph_id2iri_dict(), RGU_GRAPH_IID, __uname (id_to_iri (RGU_GRAPH_IID))))
-      from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID <> #i8192 );
+      from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID <> #i8192 and RGU_GRAPH_IID <> #i0 );
   fake := (select count (dict_put (__rdf_graph_group_dict(), g.RGG_IID,
       (select DB.DBA.VECTOR_AGG (RGGM_MEMBER_IID) from DB.DBA.RDF_GRAPH_GROUP_MEMBER as gm
          where gm.RGGM_GROUP_IID = g.RGG_IID order by gm.RGGM_MEMBER_IID ) ) )
