@@ -61,8 +61,8 @@ struct s_node_s
 	    { \
 	      _keyvar = (_type) (_iter->data); \
 	      _nxt = _iter->next; \
-	      _valuevar = (_type) (_iter->data); \
-	      _nxt = _iter->next;
+	      _valuevar = (_type) (_nxt->data); \
+	      _nxt = _nxt->next;
 
 #define DO_SET_WRITABLE(_type, _var, _iter, _set) \
 	{ \
@@ -92,6 +92,19 @@ struct s_node_s
 	    { \
 	      var = (type) (iter->data); \
 	      nxt = iter->next;
+
+#define DO_KEYWORD_SET(keyvar, type, valuevar, set) \
+	{ \
+	  ccaddr_t keyvar; \
+	  type valuevar; \
+	  s_node_t *iter = *(set); \
+	  s_node_t *nxt; \
+	  for ( ; (NULL != iter); iter = nxt) \
+	    { \
+	      keyvar = (ccaddr_t) (iter->data); \
+	      nxt = iter->next; \
+	      valuevar = (type) (nxt->data); \
+	      nxt = nxt->next;
 
 #define DO_SET_WRITABLE(type, var, iter, set) \
 	{ \
