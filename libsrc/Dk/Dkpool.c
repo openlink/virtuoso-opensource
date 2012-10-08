@@ -252,7 +252,54 @@ DBG_NAME (mp_alloc_box) (DBG_PARAMS mem_pool_t * mp, size_t len1, dtp_t dtp)
   return ((caddr_t) ptr);
 }
 
-
+caddr_t
+mp_alloc_sized (mem_pool_t * mp, size_t len1)
+{
+#ifdef LACERATED_POOL
+  return mp_alloc_box (mp, len1, DV_NON_BOX);
+#else
+  dtp_t *ptr;
+  size_t len = ALIGN_8 (len1);
+  mem_block_t *mb = NULL;
+  mem_block_t *f = mp->mp_first;
+  size_t hlen = ALIGN_8 ((sizeof (mem_block_t)));	/* we can have a doubles so structure also must be aligned */
+  if (!f || f->mb_size - f->mb_fill < len)
+    {
+      if (len > mp->mp_block_size - hlen)
+	{
+	  mb = (mem_block_t *) dk_alloc (hlen + len);
+	  mb->mb_size = len + hlen;
+	  mb->mb_fill = hlen;
+	  if (f)
+	    {
+	      mb->mb_next = f->mb_next;
+	      f->mb_next = mb;
+	    }
+	  else
+	    {
+	      mb->mb_next = NULL;
+	      mp->mp_first = mb;
+	    }
+	  mp->mp_bytes += mb->mb_size;
+	}
+      else
+	{
+	  mb = (mem_block_t *) dk_alloc (mp->mp_block_size);
+	  mb->mb_size = mp->mp_block_size;
+	  mb->mb_fill = hlen;
+	  mb->mb_next = mp->mp_first;
+	  mp->mp_first = mb;
+	  mp->mp_bytes += mb->mb_size;
+	}
+    }
+  else
+    mb = f;
+  ptr = ((dtp_t *) mb) + mb->mb_fill;
+  mb->mb_fill += len;
+  memset (ptr, 0, len1);
+  return ((caddr_t) ptr);
+#endif
+}
 caddr_t
 DBG_NAME (mp_box_string) (DBG_PARAMS mem_pool_t * mp, const char *str)
 {

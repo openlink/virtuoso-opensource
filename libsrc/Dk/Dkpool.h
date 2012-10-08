@@ -122,6 +122,7 @@ EXE_EXPORT (caddr_t, mp_box_copy_tree, (mem_pool_t * mp, caddr_t box));
 EXE_EXPORT (caddr_t, mp_full_box_copy_tree, (mem_pool_t * mp, caddr_t box));
 EXE_EXPORT (caddr_t, mp_box_num, (mem_pool_t * mp, boxint num));
 #endif
+caddr_t mp_alloc_sized (mem_pool_t * mp, size_t len);
 
 #ifdef LACERATED_POOL
 void mp_alloc_box_assert (mem_pool_t * mp, caddr_t box);
