@@ -958,14 +958,14 @@ create function rdf_geo_add (in v any)
       ser := null;
     }
   set isolation = 'committed';
-  id := (select ro_id, ro_val, ro_long from rdf_obj where ro_val = h and ro_dt_and_lang = 0hex1000101 and case when ro_long is not null then eq (blob_to_string (ro_long),  ser) else 1 end );
+  id := (select ro_id, ro_val, ro_long from rdf_obj where ro_val = h and ro_dt_and_lang = 0hex1000101 and case when ro_long is not null then equ (blob_to_string (ro_long),  ser) else 1 end );
   if (id is not null)
     {
       rdf_box_set_ro_id (v, id);
       return v;
     }
   set isolation = 'serializable';
-  id := (select ro_id, ro_val, ro_long from rdf_obj where ro_val = h and ro_dt_and_lang = 0hex1000101 and case when ro_long is not null then eq (blob_to_string (ro_long),  ser) else 1 end for update);
+  id := (select ro_id, ro_val, ro_long from rdf_obj where ro_val = h and ro_dt_and_lang = 0hex1000101 and case when ro_long is not null then equ (blob_to_string (ro_long),  ser) else 1 end for update);
   if (id is not null)
     {
       rdf_box_set_ro_id (v, id);
@@ -1002,7 +1002,7 @@ create function rdf_geo_set_id (inout v any)
     }
   set isolation = 'committed';
   id := (select RO_ID from RDF_OBJ where RO_VAL = h and RO_DT_AND_LANG = 0hex1000101
-  	and case when RO_LONG is not null then eq (blob_to_string (RO_LONG),  ser) else 1 end );
+  	and case when RO_LONG is not null then equ (blob_to_string (RO_LONG),  ser) else 1 end );
   if (id is not null)
     {
       rdf_box_set_ro_id (v, id);
