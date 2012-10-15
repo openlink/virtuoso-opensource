@@ -10693,7 +10693,7 @@ xml_tree_init (void)
   dk_mem_hooks (DV_XML_ENTITY, xe_make_copy, xe_destroy, 0);
   box_tmp_copier[DV_XML_ENTITY] = xe_mp_copy;
   dk_mem_hooks (DV_XQI, box_non_copiable, xqi_destroy, 0);
-  dk_mem_hooks (DV_XPATH_QUERY, xqr_addref, xqr_release, 0);
+  dk_mem_hooks (DV_XPATH_QUERY, xqr_addref, xqr_release, 1);
   PrpcSetWriter (DV_XML_ENTITY, (ses_write_func) xe_serialize);
   PrpcSetWriter (DV_XPATH_QUERY, (ses_write_func) xqr_serialize);
   rt = get_readtable ();
