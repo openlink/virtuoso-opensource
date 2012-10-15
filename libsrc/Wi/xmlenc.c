@@ -1402,10 +1402,7 @@ xenc_key_t * xenc_key_create_from_x509_cert (char * name, char * certificate, ch
   if (b_priv)
     {
 #if OPENSSL_VERSION_NUMBER >= 0x00908000L
-      private_key = (EVP_PKEY*)PEM_ASN1_read_bio ((d2i_of_void *)d2i_PrivateKey,
-					     PEM_STRING_EVP_PKEY,
-					     b_priv,
-					     NULL, pass_cb, (void *) private_key_passwd);
+      private_key = PEM_read_bio_PrivateKey(b_priv, NULL, pass_cb, (void *) private_key_passwd);
 #else
       private_key = (EVP_PKEY*)PEM_ASN1_read_bio ((char *(*)())d2i_PrivateKey,
 					     PEM_STRING_EVP_PKEY,
@@ -1413,7 +1410,17 @@ xenc_key_t * xenc_key_create_from_x509_cert (char * name, char * certificate, ch
 					     NULL, pass_cb, (void *) private_key_passwd);
 #endif
       if (!private_key)
+	{
+#if 0
+	  unsigned long err;
+	  while ((err = ERR_peek_error()) != 0)
+	    {
+	      log_error ("%s", ERR_reason_error_string(err));
+	      ERR_get_error();
+	    }
+#endif
 	goto finish;
+    }
     }
 
   memset (tpass, 0, sizeof (tpass));
@@ -1799,11 +1806,11 @@ caddr_t bif_xenc_key_rsa_create (caddr_t * qst, caddr_t * err_r, state_slot_t **
   k->xek_private_rsa = rsa;
   k->ki.rsa.pad = RSA_PKCS1_PADDING;
 
-  if ((pk=EVP_PKEY_new()) != NULL)
-    {
-      if (EVP_PKEY_assign_RSA (pk,rsa))
-	k->xek_evp_private_key =  pk;
-    }
+  k->xek_evp_private_key = EVP_PKEY_new();
+  if (k->xek_evp_private_key) EVP_PKEY_assign_RSA (k->xek_evp_private_key, k->xek_private_rsa);
+
+  k->xek_evp_key = EVP_PKEY_new();
+  if (k->xek_evp_key) EVP_PKEY_assign_RSA (k->xek_evp_key, k->xek_rsa);
 
   mutex_leave (xenc_keys_mtx);
   return NULL;
@@ -2267,6 +2274,13 @@ bif_xenc_key_rsa_read (caddr_t * qst, caddr_t * err_r, state_slot_t ** args)
   k->xek_private_rsa = r;
   k->xek_rsa = p;
   k->ki.rsa.pad = RSA_PKCS1_PADDING;
+  if (r)
+    {
+      k->xek_evp_private_key = EVP_PKEY_new();
+      if (k->xek_evp_private_key) EVP_PKEY_assign_RSA (k->xek_evp_private_key, k->xek_private_rsa);
+    }
+  k->xek_evp_key = EVP_PKEY_new();
+  if (k->xek_evp_key) EVP_PKEY_assign_RSA (k->xek_evp_key, k->xek_rsa);
   mutex_leave (xenc_keys_mtx);
   return box_dv_short_string (k->xek_name);
 }
@@ -2305,6 +2319,13 @@ bif_xenc_key_rsa_construct (caddr_t * qst, caddr_t * err_r, state_slot_t ** args
   k->xek_private_rsa = pk;
   k->xek_rsa = p;
   k->ki.rsa.pad = RSA_PKCS1_PADDING;
+  k->xek_evp_key = EVP_PKEY_new ();
+  EVP_PKEY_assign_RSA (k->xek_evp_key, k->xek_rsa);
+  if (pk)
+    {
+      k->xek_evp_private_key = EVP_PKEY_new ();
+      EVP_PKEY_assign_RSA (k->xek_evp_private_key, k->xek_private_rsa);
+    }
   mutex_leave (xenc_keys_mtx);
   return box_dv_short_string (k->xek_name);
 }
@@ -7264,6 +7285,28 @@ bif_xenc_SPKI_read (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_dv_short_string (k->xek_name);
 }
 
+static caddr_t
+bif_xenc_x509_verify (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  char * me = "x509_verify";
+  caddr_t cert_name = bif_string_arg (qst, args, 0, me);
+  caddr_t key_name  = bif_string_arg (qst, args, 1, me);
+  xenc_key_t * cert = xenc_get_key_by_name (cert_name, 1);
+  xenc_key_t * key = xenc_get_key_by_name (key_name, 1);
+  int rc = 0;
+  EVP_PKEY * k;
+
+  if (!key)
+    SQLR_NEW_KEY_ERROR (key_name);
+  if (!cert)
+    SQLR_NEW_KEY_ERROR (cert_name);
+  if (!cert->xek_x509)
+    sqlr_new_error ("22023", ".....", "The certificate key does not have x509 assigned.");
+  if (!key->xek_evp_key)
+    sqlr_new_error ("22023", ".....", "The key is incomplete.");
+  rc = X509_verify (cert->xek_x509, key->xek_evp_key);
+  return box_num (rc);
+}
 
 void bif_xmlenc_init ()
 {
@@ -7415,6 +7458,7 @@ void bif_xmlenc_init ()
   bif_define ("xenc_bn2dec", bif_xenc_bn2dec);
   bif_define ("xenc_dsig_sign", bif_xenc_dsig_signature);
   bif_define ("xenc_dsig_verify", bif_xenc_dsig_verify);
+  bif_define ("x509_verify", bif_xenc_x509_verify);
 
   xenc_cert_X509_idx = ecm_find_name ("X.509", (void*)xenc_cert_types, xenc_cert_types_len,
 					 sizeof (xenc_cert_type_t));
