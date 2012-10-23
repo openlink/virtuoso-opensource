@@ -70,7 +70,7 @@ DB.DBA.RDF_MAKE_IID_OF_QNAME_COMP (null)
 DB.DBA.RDF_QNAME_OF_IID (null)
 ;
 
---create trigger RDF_QUAD_O_AUDIT before insert on DB.DBA.RDF_QUAD
+--create trigger DB.DBA.RDF_QUAD_O_AUDIT before insert on DB.DBA.RDF_QUAD
 --{
 --  if (not rdf_box_is_storeable (O))
 --    signal ('RDFXX', 'non-storeable O');
@@ -1610,29 +1610,6 @@ create function DB.DBA.RDF_OBJ_OF_LONG (in longobj any) returns any
   return DB.DBA.RDF_OBJ_ADD (257, longobj, 257);
 }
 ;
-
--- The below is a duplicated code with different signature
---create function DB.DBA.RDF_OBJ_OF_LONG (in longobj any, in g_iid IRI_ID, inout old_g_iid IRI_ID, in ro_id_dict any := null) returns any
---{
---  declare t int;
---  t := __tag (longobj);
---  if (__tag of rdf_box <> t)
---    {
---      if (not (t in (__tag of varchar, 126, 217, __tag of nvarchar)))
---        return longobj;
---      if (__tag of nvarchar = t)
---        longobj := charset_recode (longobj, '_WIDE_', 'UTF-8');
---      else if (t in (126, 217))
---        longobj := cast (longobj as varchar);
---      else if (bit_and (1, __box_flags (longobj)))
---        return iri_to_id (longobj);
---      return DB.DBA.RDF_OBJ_ADD (257, longobj, 257);
---    }
---  if (0 = rdf_box_needs_digest (longobj))
---    return longobj;
---  return DB.DBA.RDF_OBJ_ADD (257, longobj, 257);
---}
---;
 
 create function DB.DBA.RDF_OBJ_OF_SQLVAL (in v any) returns any
 {
@@ -9174,13 +9151,40 @@ again:
 --!AWK PUBLIC
 create procedure DB.DBA.RDF_DICT_OF_TRIPLES_TO_THREE_COLS (in dict any, in destructive integer := 0)
 {
-  declare ctr, len integer;
-  declare triples, O any;
+  declare ctr, len, max_batch_sz integer;
+  declare editable_dict, triples, O any;
   declare S, P, O_DT, O_LANG varchar;
   declare O_IS_IRI, dt_twobyte, lang_twobyte integer;
-  triples := dict_list_keys (dict, destructive);
+  result_names (S, P, O);
+  max_batch_sz := __min (sys_stat ('dc_max_batch_sz'), 1000000);
+  editable_dict := null;
+  if (not destructive and dict_size (dict) > max_batch_sz)
+    editable_dict := dict_duplicate (dict);
+next_batch:
+  if (editable_dict is not null)
+    {
+      if (dict_size (editable_dict))
+        triples := dict_destructive_list_rnd_keys (editable_dict, max_batch_sz);
+      else
+        return;
+    }
+  else
+    {
+      if (dict_size (dict))
+        {
+          if (dict_size (dict) > max_batch_sz)
+            triples := dict_destructive_list_rnd_keys (dict, max_batch_sz);
+          else
+            {
+              triples := dict_list_keys (dict, destructive);
+              dict := null;
+            }
+        }
+      else
+        return;
+    }
   DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
-  exec_result_names (vector (vector ('S', 182, 0, 4072, 1, 0, 1, 0, 0, 0, 0, 0), vector ('P', 182, 0, 4072, 1, 0, 1, 0, 0, 0, 0, 0), vector ('O', 125, 0, 2147483647, 1, 0, 0, 0, 0, 0, 0, 0)));
+--  exec_result_names (vector (vector ('S', 182, 0, 4072, 1, 0, 1, 0, 0, 0, 0, 0), vector ('P', 182, 0, 4072, 1, 0, 1, 0, 0, 0, 0, 0), vector ('O', 125, 0, 2147483647, 1, 0, 0, 0, 0, 0, 0, 0)));
   len := length (triples);
   for (ctr := 0; ctr < len; ctr := ctr+1)
     {
@@ -9213,6 +9217,7 @@ create procedure DB.DBA.RDF_DICT_OF_TRIPLES_TO_THREE_COLS (in dict any, in destr
         result (S, P, O --, 0, __xsd_type (O, NULL), NULL
         );
     }
+  goto next_batch;
 }
 ;
 
@@ -14933,6 +14938,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_PROC_COLS to "SPARQL"',
     'grant execute on DB.DBA.RDF_GRAPH_USER_PERMS_ACK to SPARQL_SELECT', -- DEPRECATED
     'grant execute on DB.DBA.RDF_GRAPH_USER_PERMS_ASSERT to SPARQL_SELECT', -- DEPRECATED
+    'grant execute on DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_GRAPH_GROUP_LIST_GET to SPARQL_SELECT' );
   foreach (varchar cmd in cmds) do
     {
@@ -15178,7 +15184,7 @@ create procedure DB.DBA.RDF_QUAD_FT_UPGRADE ()
   declare stat, msg varchar;
   declare fake integer;
   if (USER <> 'dba')
-    signal ('RDFXX', 'Only DBA can alter RDF_QUAD schema or initialize RDF storage');
+    signal ('RDFXX', 'Only DBA can alter DB.DBA.RDF_QUAD schema or initialize RDF storage');
   rdf_geo_init ();
 
   fake := (select count (rdf_cache_id ('t', RDT_QNAME, RDT_TWOBYTE)) from DB.DBA.RDF_DATATYPE);

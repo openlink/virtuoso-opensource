@@ -255,6 +255,7 @@ long dbf_cpt_rb;
 long dbf_cl_blob_autosend_limit = 2000000;
 long dbf_no_sample_timeout = 0;
 extern int enable_hash_join;
+int32 dc_max_batch_sz = 1000000; /* this is stub before V7 really introdices this value in sqlvrun.c */
 extern int32 c_cluster_threads;
 extern int32 cl_msg_drop_rate;
 extern int32 cl_con_drop_rate;
@@ -1495,6 +1496,7 @@ stat_desc_t dbf_descs [] =
     {"ha_rehash_pct", &ha_rehash_pct, SD_INT32},
     {"c_use_aio", &c_use_aio, SD_INT32},
     {"callstack_on_exception", &callstack_on_exception},
+    {"dc_max_batch_sz", &dc_max_batch_sz, SD_INT32},
     {"sqlo_sample_dep_cols", &sqlo_sample_dep_cols, SD_INT32},
     {"lock_escalation_pct", &lock_escalation_pct, SD_INT32},
     {"enable_distinct_key_dup_no_lock", &enable_distinct_key_dup_no_lock, SD_INT32},
@@ -1507,7 +1509,9 @@ caddr_t
 bif_sys_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t name = bif_string_arg (qst, args, 0, "sys_stat");
-  stat_desc_t *sd = &stat_descs[0];
+  stat_desc_t *sd_arrays[] = {stat_descs, dbf_descs, NULL};
+  stat_desc_t **sd_arrays_tail;
+  stat_desc_t *sd;
   my_thread_num_total = _thread_num_total;
   my_thread_num_wait = _thread_num_wait;
   my_thread_num_dead = _thread_num_dead;
@@ -1526,20 +1530,23 @@ bif_sys_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (0 == strcmp ("backup_last_date", name))
     return (bp_curr_date ());
 
-  while (sd->sd_name)
+  for (sd_arrays_tail = sd_arrays; NULL != sd_arrays_tail[0]; sd_arrays_tail++)
     {
-      if (0 == strcmp (sd->sd_name, name))
-	{
-	  if (SD_INT32 == sd->sd_str_value)
-	    return box_num (*(int32*)sd->sd_value);
-	  if (SD_INT64 == sd->sd_str_value)
-	    return box_num (*(int64*)sd->sd_value);
-	  else if (sd->sd_value)
-	    return (box_num (*(sd->sd_value)));
-	  else if (sd->sd_str_value)
-	    return (box_dv_short_string (*(sd->sd_str_value)));
-	}
-      sd++;
+      stat_desc_t *sd;
+      for (sd = sd_arrays_tail[0]; NULL != sd->sd_name; sd++)
+        {
+          if (0 == strcmp (sd->sd_name, name))
+            {
+              if (SD_INT32 == (char *) sd->sd_str_value)
+                return box_num (*(int32*)sd->sd_value);
+              if (SD_INT64 == (char *) sd->sd_str_value)
+                return box_num (*(int64*)sd->sd_value);
+              else if (sd->sd_value)
+                return (box_num (*(sd->sd_value)));
+              else if (sd->sd_str_value)
+                return (box_dv_short_string (*(sd->sd_str_value)));
+            }
+        }
     }
   sqlr_new_error ("42S22", "SR242", "No system status variable %s", name);
   return NULL; /*dummy*/
