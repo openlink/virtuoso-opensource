@@ -24,17 +24,12 @@
 #include "sparql2sql.h"
 #include "sqlparext.h"
 #include "arith.h"
+#include "sqlbif.h"
 #include "sqlcmps.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
 #include "sparql_p.h"
-#ifdef __cplusplus
-}
-#endif
-#ifdef __cplusplus
-extern "C" {
-#endif
 #include "xmlparser.h"
 #include "xmlparser_impl.h"
 #ifdef __cplusplus
@@ -642,17 +637,32 @@ int
 sparp_gp_trav_cu_in_expns (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   SPART *gp = sts_this->sts_ancestor_gp;
-  sparp_equiv_t *eq;
   switch (SPART_TYPE(curr))
     {
-    case SPAR_VARIABLE: break;
-    case SPAR_BLANK_NODE_LABEL: break;
-    default: return 0;
+    case SPAR_BOP_EQNAMES:
+      {
+        sparp_equiv_t *eq_l = sparp_equiv_get (sparp, gp, (SPART *)(curr->_.bin_exp.left->_.var.vname), SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_GET_NAMESAKES);
+        sparp_equiv_t *eq_r = sparp_equiv_get (sparp, gp, (SPART *)(curr->_.bin_exp.right->_.var.vname), SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_GET_NAMESAKES);
+        if ((eq_l == eq_r) || (SPARP_EQUIV_MERGE_OK == sparp_equiv_merge (sparp, eq_l, eq_r)))
+          {
+            eq_l->e_replaces_filter |= SPART_VARR_EQ_VAR;
+            sts_this->sts_curr_array[sts_this->sts_ofs_of_curr_in_array] = SPAR_MAKE_BOOL_LITERAL(sparp, 1);
+            sparp->sparp_rewrite_dirty++;
+          }
+        else
+          curr->type = BOP_EQ;
+        return 0;
+      }
+    case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL:
+      {
+        sparp_equiv_t *eq = sparp_equiv_get (sparp, gp, curr,
+          SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_INS_VARIABLE |
+          ((NULL == curr->_.var.tabid) ? SPARP_EQUIV_ADD_CONST_READ : SPARP_EQUIV_ADD_GSPO_USE) );
+        eq->e_rvr.rvrRestrictions |= (curr->_.var.rvr.rvrRestrictions & (SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL)); /* sparp_equiv_tighten (sparp, eq, &(curr->_.var.rvr), ~0); A variable in an expression can not bring knowledge by itself */
+        return 0;
+      }
+    default: ;
     }
-  eq = sparp_equiv_get (sparp, gp, curr,
-    SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_INS_VARIABLE |
-    ((NULL == curr->_.var.tabid) ? SPARP_EQUIV_ADD_CONST_READ : SPARP_EQUIV_ADD_GSPO_USE) );
-  eq->e_rvr.rvrRestrictions |= (curr->_.var.rvr.rvrRestrictions & (SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL)); /* sparp_equiv_tighten (sparp, eq, &(curr->_.var.rvr), ~0); A variable in an expression can not bring knowledge by itself */
   return 0;
 }
 
@@ -766,7 +776,8 @@ sparp_rotate_comparisons_by_rank (SPART *filt)
 {
   switch (SPART_TYPE (filt))
     {
-    case SPAR_BOP_EQ: /* no break */
+    case SPAR_BOP_EQ_NONOPT: /* no break */
+    case SPAR_BOP_EQNAMES: /* no break */
     case BOP_EQ:
     case BOP_NEQ:
     case BOP_LT:
@@ -970,7 +981,7 @@ sparp_optimize_BOP_OR_filter_walk (SPART *filt, so_BOP_OR_filter_ctx_t *ctx)
       if (SPAR_BIF_SAMETERM != filt->_.builtin.btype)
         goto cannot_optimize; /* see below */
       /* no break, try get optimization hints like it is BOP_EQ */
-    case BOP_EQ: /* No case for SPAR_BOP_EQ ! */
+     case BOP_EQ: case SPAR_BOP_EQNAMES: /* No case for SPAR_BOP_EQ_NONOPT ! */
       sparp_rotate_comparisons_by_rank (filt);
       if (sparp_optimize_BOP_OR_filter_walk_lvar (filt->_.bin_exp.left, ctx))
         goto cannot_optimize; /* see below */
@@ -1163,7 +1174,7 @@ sparp_filter_to_equiv (sparp_t *sparp, SPART *curr, SPART *filt)
 /* Now filters can be processed */
   switch (SPART_TYPE (filt))
     {
-    case BOP_EQ: /* No case for SPAR_BOP_EQ ! Indeed, this is the main reason for introducing SPAR_BOP_EQ at all */
+    case BOP_EQ: case SPAR_BOP_EQNAMES: /* No case for SPAR_BOP_EQ_NONOPT ! Indeed, this is the main reason for introducing SPAR_BOP_EQ_NONOPT at all */
       {
         SPART *l = filt->_.bin_exp.left;
         SPART *r = filt->_.bin_exp.right;
@@ -1755,15 +1766,21 @@ sparp_gp_trav_label_external_vars_gp_in (sparp_t *sparp, SPART *curr, sparp_trav
     }
   SPARP_FOREACH_GP_EQUIV (sparp, curr, eqctr, eq)
     {
-      int varnamectr;
+      int varnamectr, varctr;
       DO_BOX_FAST_REV (caddr_t, varname, varnamectr, eq->e_varnames)
         {
           sparp_equiv_t *external_namesake_eq = sparp_find_external_namesake_eq_of_varname (sparp, varname, sleve->parent_gps_for_var_search);
           if (NULL == external_namesake_eq)
             continue;
-          eq->e_external_src_idx = external_namesake_eq->e_own_idx;
+          if (external_namesake_eq->e_own_idx < eq->e_external_src_idx)
+            eq->e_external_src_idx = external_namesake_eq->e_own_idx;
           eq->e_rvr.rvrRestrictions |= SPART_VARR_EXTERNAL;
-          break;
+          for (varctr = eq->e_var_count; varctr--; /* no step */)
+            {
+              SPART *var = eq->e_vars[varctr];
+              if (var->_.var.vname == varname)
+                var->_.var.rvr.rvrRestrictions |= SPART_VARR_EXTERNAL;
+            }
         }
       END_DO_BOX_FAST_REV;
     }
@@ -1783,7 +1800,8 @@ sparp_gp_trav_label_external_vars_expn_in (sparp_t *sparp, SPART *curr, sparp_tr
       if (NULL != external_namesake_eq)
         {
           sparp_equiv_t *eq = SPARP_EQUIV (sparp, curr->_.var.equiv_idx);
-          eq->e_external_src_idx = external_namesake_eq->e_own_idx;
+          if (external_namesake_eq->e_own_idx < eq->e_external_src_idx)
+            eq->e_external_src_idx = external_namesake_eq->e_own_idx;
           eq->e_rvr.rvrRestrictions |= SPART_VARR_EXTERNAL;
           curr->_.var.rvr.rvrRestrictions |= SPART_VARR_EXTERNAL;
         }
@@ -2291,7 +2309,7 @@ sparp_eq_restr_from_connected (sparp_t *sparp)
           if (NULL == ret_expn)
             {
               if (sparp->sparp_env->spare_signal_void_variables)
-                spar_error (sparp, "Variable name '%.100s' is used in then BINDINGS clause but not in the query result set", var->_.var.vname);
+                spar_error (sparp, "Variable name '%.100s' is used in the BINDINGS clause but not in the query result set", var->_.var.vname);
               var_eq->e_rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
             }
           else
@@ -2342,7 +2360,11 @@ sparp_gp_trav_eq_restr_to_vars_gp_in (sparp_t *sparp, SPART *curr, sparp_trav_st
 	  if ((SPAR_VARIABLE != SPART_TYPE(var)) && (SPAR_BLANK_NODE_LABEL != SPART_TYPE(var)))
 	    spar_internal_error (sparp, "Not a variable in equiv in sparp_gp_trav_eq_restr_to_vars()");
 #endif
+#if 0 /* It's not clear for me what to do with externals that have no external namespakes */
 	  sparp_rvr_tighten (sparp, &(var->_.var.rvr), &(eq->e_rvr), ~0 /* not (SPART_VARR_EXTERNAL | SPART_VARR_GLOBAL)*/);
+#else
+	  sparp_rvr_tighten (sparp, &(var->_.var.rvr), &(eq->e_rvr), ~(SPART_VARR_EXTERNAL | SPART_VARR_GLOBAL));
+#endif
 	  var->_.var.equiv_idx = eq->e_own_idx;
 	}
     } END_SPARP_FOREACH_GP_EQUIV;
@@ -2711,9 +2733,9 @@ sparp_rewrite_basic (sparp_t *sparp)
   sparp_audit_mem (sparp);
   sparp_make_common_eqs (sparp);
   sparp_make_aliases (sparp);
+  sparp_label_external_vars (sparp, NULL); /* This is now before sparp_eq_restr_from_connected() to prevent wrong SPART_VARR_ALWAYS_NULL for external vars that are used solely in const reads */
   sparp_eq_restr_from_connected (sparp);
   sparp_eq_restr_to_vars (sparp);
-  sparp_label_external_vars (sparp, NULL);
   sparp_remove_totally_useless_equivs (sparp);
   sparp_remove_redundant_connections (sparp, 0);
   sparp_audit_mem (sparp);
@@ -2845,7 +2867,7 @@ spar_shorten_binv_dataset (sparp_t *sparp, SPART *binv)
             eq->e_rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
           if (eq->e_rvr.rvrSprintffCount != var->_.var.rvr.rvrSprintffCount)
             {
-              sparp_rvr_tighten (sparp, &(var->_.var.rvr), &(eq->e_rvr), ~0);
+              sparp_rvr_tighten (sparp, &(var->_.var.rvr), &(eq->e_rvr), ~(SPART_VARR_EXTERNAL | SPART_VARR_GLOBAL));
               var->_.var.rvr.rvrSprintffCount = eq->e_rvr.rvrSprintffCount;
               var->_.var.rvr.rvrSprintffs = (ccaddr_t *)t_box_copy ((caddr_t)(eq->e_rvr.rvrSprintffs));
             }
@@ -4004,7 +4026,7 @@ sparp_expns_are_equal (sparp_t *sparp, SPART *one, SPART *two)
         sparp_expn_lists_are_equal (sparp, one->_.funcall.argtrees, two->_.funcall.argtrees) );
     case SPAR_GP:
       return !strcmp (one->_.gp.selid, two->_.gp.selid); /*!!!TBD: this check is good enough for TPC-D Q16. Do we need more accurate check? */
-    case BOP_EQ: case SPAR_BOP_EQ: case BOP_NEQ:
+     case BOP_EQ: case SPAR_BOP_EQNAMES: case SPAR_BOP_EQ_NONOPT: case BOP_NEQ:
     case BOP_AND: case BOP_OR:
     case BOP_SAME: case BOP_NSAME:
       return (
@@ -4147,7 +4169,11 @@ sparp_make_qm_cases (sparp_t *sparp, SPART *triple, SPART *parent_gp)
                 }
               if (NULL != fld_tc_cuts)
                 sparp_rvr_add_red_cuts (sparp, &(eq->e_rvr), fld_tc_cuts, BOX_ELEMENTS (fld_tc_cuts));
+#if 0
               sparp_rvr_tighten (sparp, (&new_fld_expn->_.var.rvr), &(eq->e_rvr), ~0 /* not (SPART_VARR_EXTERNAL | SPART_VARR_GLOBAL)*/);
+#else
+              sparp_rvr_tighten (sparp, (&new_fld_expn->_.var.rvr), &(eq->e_rvr), ~(SPART_VARR_EXTERNAL | SPART_VARR_GLOBAL));
+#endif
             }
           else
             new_fld_expn = sparp_tree_full_copy (sparp, fld_expn, NULL);

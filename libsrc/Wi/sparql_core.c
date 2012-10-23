@@ -96,7 +96,7 @@ spart_count_specific_elems_by_type (ptrlong type)
     case BOP_NOT:
     case BOP_OR: case BOP_AND:
     case BOP_PLUS: case BOP_MINUS: case BOP_TIMES: case BOP_DIV: case BOP_MOD:
-    case BOP_EQ: case SPAR_BOP_EQ: case BOP_NEQ: case BOP_LT: case BOP_LTE: case BOP_GT: case BOP_GTE:
+    case BOP_EQ: case SPAR_BOP_EQNAMES: case SPAR_BOP_EQ_NONOPT: case BOP_NEQ: case BOP_LT: case BOP_LTE: case BOP_GT: case BOP_GTE:
     case BOP_LIKE:		return sizeof (sample._.bin_exp);
     }
   GPF_T;
@@ -2566,7 +2566,7 @@ spar_gp_add_union_of_triple_and_inverses (sparp_t *sparp, SPART *graph, SPART *s
   spar_gp_add_member (sparp, gp);
   while (NULL != inv_props)
     {
-      caddr_t inv_p_name = t_box_dv_uname_string (t_set_pop (&inv_props));
+      caddr_t inv_p_name = t_box_dv_uname_string ((ccaddr_t)t_set_pop (&inv_props));
       spar_gp_init (sparp, 0);
       triple = spar_gp_add_triplelike (sparp,
         (SPART *)t_full_box_copy_tree ((caddr_t)graph),
@@ -2592,6 +2592,22 @@ spar_gp_add_union_of_triple_and_inverses (sparp_t *sparp, SPART *graph, SPART *s
   return union_gp;
 }
 
+static void
+spar_gp_add_transitive_triple_anchor_filter (sparp_t *sparp, caddr_t fld_vname, SPART *orig_fld, int orig_fld_is_plain_var)
+{
+  SPART *filt;
+  if (!orig_fld_is_plain_var)
+    filt = spartlist (sparp, 3, BOP_EQ, spar_make_variable (sparp, fld_vname), orig_fld);
+  else
+#if 0
+    filt = spar_make_funcall (sparp, 0, "sparql_only:args_in_same_eq",
+      (SPART **)t_list (2, spar_make_variable (sparp, fld_vname), spar_make_variable (sparp, orig_fld->_.var.vname)) );
+#else
+    filt = spartlist (sparp, 3, SPAR_BOP_EQNAMES, spar_make_variable (sparp, fld_vname), spar_make_variable (sparp, orig_fld->_.var.vname));
+#endif
+  spar_gp_add_filter (sparp, filt);
+}
+
 SPART *
 spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri_or_pair, SPART **options, int banned_tricks)
 {
@@ -2603,7 +2619,7 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
 #endif
   SPART *subselect_top, *where_gp, *wrapper_gp, *fields[4];
   SPART *subj_var, *obj_var, **retvals;
-  caddr_t subj_alias, obj_alias, subj_vname, obj_vname, retval_selid, gp_selid;
+  caddr_t subj_vname, obj_vname, retval_selid, gp_selid;
   int subj_is_plain_var = 0, obj_is_plain_var = 0, retvalctr, fld_ctr;
   int subj_stype = SPART_TYPE (subject);
   int obj_stype = SPART_TYPE (object);
@@ -2617,8 +2633,6 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
     spar_error (sparp, "Object of transitive triple pattern should be variable or QName or literal, not blank node");
   subj_vname = t_box_sprintf (40, "trans_subj_%.20s", (caddr_t)(sparp->sparp_env->spare_selids->data));
   obj_vname = t_box_sprintf (40, "trans_obj_%.20s", (caddr_t)(sparp->sparp_env->spare_selids->data));
-  subj_alias = subj_is_plain_var ? subject->_.var.vname : subj_vname;
-  obj_alias = obj_is_plain_var ? object->_.var.vname : obj_vname;
   spar_gp_init (sparp, 0);
   spar_env_push (sparp);
   spar_selid_push (sparp);
@@ -2646,13 +2660,7 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
         case SPAR_VARIABLE: rval = spar_make_variable (sparp, fields[fld_ctr]->_.var.vname); break;
         }
       if (NULL != rval)
-        {
-          if ((1 == fld_ctr) && subj_is_plain_var)
-            rval = spartlist (sparp, 4, SPAR_ALIAS, rval, subj_alias, SSG_VALMODE_AUTO);
-          else if ((3 == fld_ctr) && obj_is_plain_var)
-            rval = spartlist (sparp, 4, SPAR_ALIAS, rval, obj_alias, SSG_VALMODE_AUTO);
-          retvals[retvalctr++] = rval;
-        }
+        retvals[retvalctr++] = rval;
     }
   if (0 == retvalctr)
     retvals[0] = (SPART *)t_box_num_nonull (1);
@@ -2668,10 +2676,10 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
     }
   spar_gp_add_triplelike (sparp, graph, subj_var, predicate, obj_var, qm_iri_or_pair, NULL, banned_tricks | SPAR_ADD_TRIPLELIKE_NO_TRANSITIVE);
   sparp_set_option (sparp, &options, T_IN_L,
-    spartlist (sparp, 2, SPAR_LIST, t_list (1, spar_make_variable (sparp, subj_alias))),
+    spartlist (sparp, 2, SPAR_LIST, t_list (1, spar_make_variable (sparp, subj_vname))),
     SPARP_SET_OPTION_REPLACING );
   sparp_set_option (sparp, &options, T_OUT_L,
-    spartlist (sparp, 2, SPAR_LIST, t_list (1, spar_make_variable (sparp, obj_alias))),
+    spartlist (sparp, 2, SPAR_LIST, t_list (1, spar_make_variable (sparp, obj_vname))),
     SPARP_SET_OPTION_REPLACING );
   where_gp = spar_gp_finalize (sparp, NULL);
   subselect_top = spar_make_top (sparp, SELECT_L, retvals,
@@ -2682,16 +2690,8 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
   t_check_tree (options);
   wrapper_gp = spar_gp_finalize_with_subquery (sparp, options, subselect_top);
   spar_gp_add_member (sparp, wrapper_gp);
-  if (!subj_is_plain_var)
-    {
-      SPART *eq = spartlist (sparp, 3, BOP_EQ, spar_make_variable (sparp, subj_alias), subject);
-      spar_gp_add_filter (sparp, eq);
-    }
-  if (!obj_is_plain_var)
-    {
-      SPART *eq = spartlist (sparp, 3, BOP_EQ, spar_make_variable (sparp, obj_alias), object);
-      spar_gp_add_filter (sparp, eq);
-    }
+  spar_gp_add_transitive_triple_anchor_filter (sparp, subj_vname, subject, subj_is_plain_var);
+  spar_gp_add_transitive_triple_anchor_filter (sparp, obj_vname, object, obj_is_plain_var);
 #ifdef DEBUG
   if (saved_env != sparp->sparp_env)
     spar_internal_error (sparp, "spar_" "gp_add_transitive_triple(): mismatch in env");
@@ -3594,8 +3594,10 @@ spar_make_funcall (sparp_t *sparp, int aggregate_mode, const char *funname, SPAR
   const char *sql_colon;
   caddr_t proc_full_name;
   query_t *proc;
+  int argcount;
   if (NULL == args)
     args = (SPART **)t_list (0);
+  argcount = BOX_ELEMENTS (args);
   if (0 != aggregate_mode)
     goto aggr_checked; /* see below */
   sql_colon = strstr (funname, "sql:");
@@ -3662,7 +3664,7 @@ xpf_checked:
       else
         sparp->sparp_query_uses_aggregates++;
     }
-  return spartlist (sparp, 4, SPAR_FUNCALL, t_box_dv_short_string (funname), args, (ptrlong)aggregate_mode);
+  return spartlist (sparp, 4, SPAR_FUNCALL, t_box_dv_uname_string (funname), args, (ptrlong)aggregate_mode);
 }
 
 const sparp_bif_desc_t sparp_bif_descs[] = {

@@ -25,6 +25,7 @@
 #define __SPARQL2SQL_H
 #include "sparql.h"
 #include "rdf_mapping_jso.h"
+#include "rdf_core.h"
 
 extern ptrdiff_t qm_field_map_offsets[SPART_TRIPLE_FIELDS_COUNT];
 extern ptrdiff_t qm_field_constants_offsets[SPART_TRIPLE_FIELDS_COUNT];
@@ -423,12 +424,19 @@ otherwise a triple should contain a field whose selid, tabid, name and tr_idx ma
 The \c var may b blank node or retval as well, but retval has no meaning if \c need_strong_match is set */
 extern SPART *sparp_find_triple_of_var_or_retval (sparp_t *sparp, SPART *gp, SPART *var, int need_strong_match);
 
-/*! This finds a variable that is a source of value of a given VARR_EXTERNAL variable \c var or an appropriate retval.
+/*! This finds a variable that is a source of value of a given variable name \c varname in equiv class \c eq.
+If there is no such a source variable (e.g. if the source is a UNION, not a triple pattern) then an appropriate retval is returned.
 If \c find_exact_specimen then the function will try return a variable from origin eq or its subequivs
 that will provide as many restrictions and valmode preferences as possible, but may be unusable for direct use in the codegen
 because it can be nested too deep in subqueries and its alias will not be visible at the location of \c var.
-If not \c find_exact_specimen then an upper-level retval can be returned instead of deeply buried origin var.
- */
+If not \c find_exact_specimen then an upper-level retval can be returned instead of deeply buried origin var. */
+extern SPART *sparp_find_origin_of_external_varname_in_eq (sparp_t *sparp, sparp_equiv_t *eq, caddr_t varname, int find_exact_specimen, int null_result_allowed);
+
+/*! This is similar to \c sparp_find_origin_of_external_varname_in_eq() but it tries to find an appropriate variable name automatically */
+extern SPART *sparp_find_origin_of_some_external_varname_in_eq (sparp_t *sparp, sparp_equiv_t *eq, int find_exact_specimen);
+
+/*! This is a wrapper for \c sparp_find_origin_of_external_varname_in_eq() that gets a single variable \c var
+instead of a pair of the equivalence class of \c var and the name of \c var */
 extern SPART *sparp_find_origin_of_external_var (sparp_t *sparp, SPART *var, int find_exact_specimen);
 
 /*! This finds a position of a variable or an equivalent of that variable in the result-set array made by a sinv.
@@ -848,7 +856,7 @@ typedef struct spar_sqlgen_s
   int			ssg_seealso_enabled;	/*!< Flags if \c ssg_print_fld_var_restrictions_ex() (or the like) should generate calls of RDF_GRAB_SEEALSO; they should for "init" and "iter" of a pview, but not for "final" */
 /* SPARQL-D Codegen temporary values */
   const char *		ssg_sd_service_name;	/*!< Name of the destination endpoint that will receive the fragment that is printed ATM (for error reporting) */
-  int			ssg_sd_flags;		/*!< Bitmask of SPARP_SPARQLD_xxx flags, see below */
+  int			ssg_sd_flags;		/*!< Bitmask of SSG_SD_xxx flags, see rdf_mapping.jso */
   id_hash_t		*ssg_sd_used_namespaces;	/*!< Dictionary of namespaces used for prettyprinting of IRIs */
   dk_set_t		ssg_sd_outer_gps;	/*!< Parent GP of the current tree */
   int			ssg_sd_forgotten_graph;	/*!< Flags that a '}' is not printed after the last triple (in hope that the next member of a group is a triple with same graph so '} GRAPH ... {' is not required */

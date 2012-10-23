@@ -82,7 +82,8 @@ extern "C" {
 #define SPAR_MAX_TREE_TYPE	(ptrlong)1024	/* Don't forget to adjust */
 /* Don't forget to update spart_count_specific_elems_by_type(), sparp_tree_full_clone_int(), sparp_tree_full_copy(), spart_dump() and comments inside typedef struct spar_tree_s */
 
-#define SPAR_BOP_EQ		(ptrlong)1051	/*!< An equality that is not optimized into an equivalence class */
+#define SPAR_BOP_EQ_NONOPT		(ptrlong)1051	/*!< An equality that is not optimized into an equivalence class */
+#define SPAR_BOP_EQNAMES		(ptrlong)1052	/*!< A special "equality": arguments are variables whose names are merged into one equivalence class */
 
 #define SPAR_BIF_ABS		(ptrlong)1101
 #define SPAR_BIF_BNODE		(ptrlong)1102

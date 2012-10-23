@@ -150,7 +150,8 @@ ssg_sd_opname (sparp_t *sparp, ptrlong opname, int is_op)
     case BOP_AND: return "&&";
     case BOP_OR: return "||";
     case BOP_NOT: return "!";
-    case SPAR_BOP_EQ: spar_internal_error (sparp, "special assignment can not be rendered in SPARQL text");
+    case SPAR_BOP_EQ_NONOPT: spar_internal_error (sparp, "special assignment can not be rendered in SPARQL text");
+    case SPAR_BOP_EQNAMES: spar_internal_error (sparp, "equivalence of names can not be rendered in SPARQL text");
     case BOP_EQ: return "=";
     case BOP_NEQ: return "!=";
     case BOP_LT: return "<";
@@ -432,7 +433,7 @@ ssg_sdprint_equiv_restrs (spar_sqlgen_t *ssg, sparp_equiv_t *eq)
   else if ((SPART_VARR_IS_BLANK & eq->e_rvr.rvrRestrictions) && !(SPART_VARR_IS_BLANK & mixed_field_restr))
     builtin_name = "isBLANK";
   else if ((SPART_VARR_IS_REF & eq->e_rvr.rvrRestrictions) && !(SPART_VARR_IS_REF & mixed_field_restr))
-    builtin_name = "!isLITERAL";
+    builtin_name = ((ssg->ssg_sd_flags & (SSG_SD_BI | SSG_SD_VIRTSPECIFIC)) ? "isREF" : "!isLITERAL");
   else if ((SPART_VARR_NOT_NULL & eq->e_rvr.rvrRestrictions) && !(SPART_VARR_NOT_NULL & mixed_field_restr))
     builtin_name = "BOUND";
   if (NULL != builtin_name)
