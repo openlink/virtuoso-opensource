@@ -39,7 +39,7 @@ Whitespaces in all other places, including two whitespaces after "::=" in BNF co
 %pure_parser
 %parse-param {sparp_t * sparp_arg}
 %lex-param {sparp_t * sparp_arg}
-%expect 7
+%expect 6
 
 %{
 #include "libutil.h"
@@ -205,7 +205,12 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token NAMED_L		/*:: PUNCT_SPAR_LAST("NAMED") ::*/
 %token NAN_L		/*:: PUNCT_SPAR_LAST("NAN") ::*/
 %token NIL_L		/*:: PUNCT_SPAR_LAST("NIL") ::*/
-%token NOT_L		/*:: PUNCT_SPAR_LAST("NOT") ::*/
+%token NOT_L		/*:: PUNCT("NOT") ::*/
+%token NOT_EXISTS_L	/*:: PUNCT("NOT EXISTS"), SPARP, LAST("NOT EXISTS") ::*/
+%token NOT_FROM_L	/*:: PUNCT("NOT FROM"), SPARP, LAST("NOT FROM") ::*/
+%token NOT_IN_L		/*:: PUNCT("NOT IN"), SPARP, LAST("NOT IN") ::*/
+%token NOT_NULL_L	/*:: PUNCT("NOT NULL"), SPARP, LAST("NOT NULL") ::*/
+%token NOT_USING_L	/*:: PUNCT("NOT USING"), SPARP, LAST("NOT USING") ::*/
 %token NULL_L		/*:: PUNCT_SPAR_LAST("NULL") ::*/
 %token OBJECT_L		/*:: PUNCT_SPAR_LAST("OBJECT") ::*/
 %token OF_L		/*:: PUNCT_SPAR_LAST("OF") ::*/
@@ -545,7 +550,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %left _AMP_AMP
 %nonassoc _BANG NOT_L
 %nonassoc _EQ _NOT_EQ
-%nonassoc IN_L LIKE_L
+%nonassoc IN_L NOT_IN_L LIKE_L
 %nonassoc _LT _LE _GT _GE
 %left _PLUS _MINUS
 %left _SLASH _STAR
@@ -901,15 +906,15 @@ spar_dataset_clause_subtype
 spar_dataset_clause_subtype_from
 	: FROM_L		{ $$ = SPART_GRAPH_FROM; }
 	| FROM_L NAMED_L	{ $$ = SPART_GRAPH_NAMED; }
-	| NOT_L FROM_L		{ $$ = SPART_GRAPH_NOT_FROM; }
-	| NOT_L FROM_L NAMED_L	{ $$ = SPART_GRAPH_NOT_NAMED; }
+	| NOT_FROM_L		{ $$ = SPART_GRAPH_NOT_FROM; }
+	| NOT_FROM_L NAMED_L	{ $$ = SPART_GRAPH_NOT_NAMED; }
 	;
 
 spar_dataset_clause_subtype_using
 	: USING_L		{ $$ = SPART_GRAPH_FROM; }
 	| USING_L NAMED_L	{ $$ = SPART_GRAPH_NAMED; }
-	| NOT_L USING_L		{ $$ = SPART_GRAPH_NOT_FROM; }
-	| NOT_L USING_L NAMED_L	{ $$ = SPART_GRAPH_NOT_NAMED; }
+	| NOT_USING_L		{ $$ = SPART_GRAPH_NOT_FROM; }
+	| NOT_USING_L NAMED_L	{ $$ = SPART_GRAPH_NOT_NAMED; }
 	;
 
 spar_sponge_optionlist_opt	/* [Virt]	SpongeOptionList	 ::=  'OPTION' '(' ( SpongeOption ( ',' SpongeOption )* )? ')'	*/
@@ -1233,7 +1238,7 @@ spar_constraint		/* [25]*	Constraint	 ::=  'FILTER' ( ( '(' Expn ')' ) | BuiltIn
 
 spar_exists_or_not_exists
 	: EXISTS_L		{ $$ = 1; }
-	| NOT_L EXISTS_L	{ $$ = 0; }
+	| NOT_EXISTS_L	{ $$ = 0; }
 	;
 
 spar_constraint_exists_int
@@ -1761,6 +1766,22 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	( 'AS' ( VAR1 | VAR2 ) ) */
 		        (SPART **)t_list_to_array (args) /* NOT t_revlist_to_array (args), note special first element pushed */ );
                     }
 		}
+	| spar_expn NOT_IN_L	{ SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_IN, "NOT IN operator"); }
+	    _LPAR spar_expns _RPAR	{	/* Virtuoso-specific extension of [47] */
+		  dk_set_t args = $5;
+		  if (1 == dk_set_length (args))
+		    {
+		      SPAR_BIN_OP ($$, BOP_NEQ, $1, args->data);
+		    }
+		  else
+		    {
+		      SPART *in_call;
+		      t_set_push (&args, $1);
+		      in_call = sparp_make_builtin_call (sparp_arg, IN_L,
+		        (SPART **)t_list_to_array (args) /* NOT t_revlist_to_array (args), note special first element pushed */ );
+		      SPAR_BIN_OP ($$, BOP_NOT, in_call, NULL);
+		    }
+		}
 	| spar_expn _LT spar_expn	{ SPAR_BIN_OP ($$, BOP_LT, $1, $3); }
 	| spar_expn _GT spar_expn	{ SPAR_BIN_OP ($$, BOP_LT, $3, $1); }
 	| spar_expn _LE spar_expn	{ SPAR_BIN_OP ($$, BOP_LTE, $1, $3); }
@@ -2043,8 +2064,8 @@ spar_rdf_literal	/* [60]	RDFLiteral	 ::=  String ( LANGTAG | ( '^^' IRIref ) )?	
 	;
 
 spar_boolean_literal	/* [61]	BooleanLiteral	 ::=  'true' | 'false'	*/
-	: true_L		{ $$ = spartlist (sparp_arg, 4, SPAR_LIT, (ptrlong)1, uname_xmlschema_ns_uri_hash_boolean, NULL); }
-	| false_L		{ $$ = spartlist (sparp_arg, 4, SPAR_LIT, (ptrlong)0, uname_xmlschema_ns_uri_hash_boolean, NULL); }
+	: true_L		{ $$ = SPAR_MAKE_BOOL_LITERAL(sparp_arg, 1); }
+	| false_L		{ $$ = SPAR_MAKE_BOOL_LITERAL(sparp_arg, 0); }
 	;
 
 spar_iriref_or_star_or_default
@@ -2904,7 +2925,7 @@ spar_qm_sqlfunc_arg	/* [Virt]	QmSqlfuncArg	 ::=  ('IN' | QmSqlId) QmSqlId QmSqlt
 
 spar_qm_sqltype		/* [Virt]	QmSqltype	 ::=  QmSqlId ( 'NOT' 'NULL' )?	*/
 	: spar_qm_sql_id		{ $$ = t_list (2, $1, (ptrlong)0); }
-	| spar_qm_sql_id NOT_L NULL_L	{ $$ = t_list (2, $1, (ptrlong)1); }
+	| spar_qm_sql_id NOT_NULL_L	{ $$ = t_list (2, $1, (ptrlong)1); }
 	;
 
 spar_qm_sql_in_out_inout	/* ::=  ('IN' | QmSqlId)	*/

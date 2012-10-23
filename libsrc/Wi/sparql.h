@@ -923,6 +923,8 @@ extern SPART *spar_make_fake_blank_node (sparp_t *sparp); /*!< Not for use in re
 #define SPAR_ML_RESULT_FROM_SANDBOX	3
 extern SPART *spar_make_literal_from_sql_box (sparp_t * sparp, caddr_t box, int mode);
 
+#define SPAR_MAKE_BOOL_LITERAL(sparp,v) (spartlist ((sparp), 4, SPAR_LIT, (SPART *)t_box_num_nonull((v)?1:0), uname_xmlschema_ns_uri_hash_boolean, NULL))
+
 extern SPART *spar_make_typed_literal (sparp_t *sparp, caddr_t strg, caddr_t type, caddr_t lang);
 extern void sparp_make_and_push_new_graph_source (sparp_t *sparp, ptrlong subtype, SPART *iri_expn, SPART **options);
 extern SPART *sparp_make_graph_precode (sparp_t *sparp, ptrlong subtype, SPART *iriref, SPART **options);
