@@ -6139,6 +6139,7 @@ ssg_print_equivalences (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, dk_set
   dk_set_t ghost_varnames = NULL;
   SPART *sample_var = NULL;
   SPART *sample_global_rv = NULL;
+  caddr_t sample_nonlocal_varname_from_subv = NULL; /* last resort to get a sample var, like for ?a in SparqlDawgR2 algebra/join-combo-1.rq */
   if (!print_inner_filter_conds)
     goto print_cross_equs; /* see below */;
   /* A special case exists: if the equiv replaces NOT NULL filter then it should be checked for the output of every OPTIONAL subq. */
@@ -6199,6 +6200,7 @@ ssg_print_equivalences (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, dk_set
 ghost variable can be used as a sample variable only in absence of plain vars */
   DO_BOX_FAST_REV (caddr_t, varname, varname_ctr, eq->e_varnames)
     {
+      int subv_idx_ctr;
       for (var_ctr = 0; var_ctr < eq->e_var_count; var_ctr++)
         {
           SPART *var = eq->e_vars[var_ctr];
@@ -6206,8 +6208,23 @@ ghost variable can be used as a sample variable only in absence of plain vars */
           if (NULL == tabid)
             continue;
           if (varname == eq->e_vars[var_ctr]->_.var.vname)
-            goto name_is_non_ghost;
+            goto name_is_non_ghost; /* see below */
         }
+      DO_BOX_FAST_REV (ptrlong, subv_idx, subv_idx_ctr, eq->e_subvalue_idxs)
+        {
+          sparp_equiv_t *sub_eq = ssg->ssg_equivs[subv_idx];
+          int sub_vname_ctr;
+          DO_BOX_FAST_REV (caddr_t, sub_vname, sub_vname_ctr, sub_eq->e_varnames)
+            {
+              if (varname == sub_vname)
+                {
+                  sample_nonlocal_varname_from_subv = varname;
+                  goto name_is_non_ghost; /* see below */
+                }
+            }
+          END_DO_BOX_FAST_REV;
+        }
+      END_DO_BOX_FAST_REV;
       t_set_push (&ghost_varnames, varname);
 name_is_non_ghost: ;
     }
@@ -6230,6 +6247,8 @@ name_is_non_ghost: ;
               caddr_t name = (caddr_t)t_set_pop (&ghost_varnames);
               sample_var = ssg_sample_of_ghost_variable (ssg, eq, name);
             }
+          else if (NULL != sample_nonlocal_varname_from_subv)
+            sample_var = ssg_sample_of_ghost_variable (ssg, eq, sample_nonlocal_varname_from_subv);
           else
             spar_internal_error (ssg->ssg_sparp, "ssg_" "print_equivalences(): bad equiv for sample var");
         }
@@ -6405,7 +6424,7 @@ name_is_non_ghost: ;
 	  if (SSG_VALMODE_LONG == common_native)
             ssg_puts (" /* note SSG_VALMODE_LONG: */");
 #endif
-          if (IS_BOX_POINTER (common_native) || (SSG_VALMODE_AUTO == common_native))
+          if (( IS_BOX_POINTER (common_native) || (SSG_VALMODE_AUTO == common_native)) && !SPART_VARNAME_IS_GLOB(sample_global_rv->_.retval.vname))
             { /* Note special zeropart case below */
               qm_value_t *qmv = sparp_find_qmv_of_var_or_retval (ssg->ssg_sparp, NULL, sample_global_rv_gp, sample_global_rv);
               col_count = BOX_ELEMENTS (qmv->qmvColumns);
@@ -6467,7 +6486,7 @@ name_is_non_ghost: ;
           sub_native = sparp_equiv_native_valmode (ssg->ssg_sparp, sub_gp, sub_eq);
           common_native = ssg_largest_eq_valmode (sample_var_native, sub_native);
 #ifdef DEBUG
-	  if (SSG_VALMODE_LONG == common_native)
+          if (SSG_VALMODE_LONG == common_native)
             ssg_puts (" /* note SSG_VALMODE_LONG: */");
 #endif
           if (IS_BOX_POINTER (common_native) || (SSG_VALMODE_AUTO == common_native))

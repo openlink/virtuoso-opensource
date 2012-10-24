@@ -2678,7 +2678,7 @@ sparp_audit_mem (sparp_t *sparp)
 
 int sparp_gp_trav_check_if_local (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
-  if (SPAR_VARIABLE == curr->type)
+  if ((SPAR_VARIABLE == curr->type) || (SPAR_RETVAL == curr->type))
     {
       caddr_t varname = curr->_.var.vname;
       if (!SPART_VARNAME_IS_GLOB(varname))

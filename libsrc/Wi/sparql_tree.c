@@ -152,31 +152,32 @@ scan_for_children:
       }
     case SPAR_BLANK_NODE_LABEL:
     case SPAR_VARIABLE:
+    case SPAR_RETVAL:
       {
-	tree_cat = 1;
-	break;
+        tree_cat = 1;
+        break;
       }
     case SPAR_BUILT_IN_CALL:
       {
         tree_cat = 1;
         sub_expns = tree->_.builtin.args;
-	sub_expn_count = BOX_ELEMENTS_0 (sub_expns);
+        sub_expn_count = BOX_ELEMENTS_0 (sub_expns);
         break;
       }
     case SPAR_FUNCALL:
       {
         tree_cat = 1;
         sub_expns = tree->_.funcall.argtrees;
-	sub_expn_count = BOX_ELEMENTS (sub_expns);
+        sub_expn_count = BOX_ELEMENTS (sub_expns);
         break;
       }
     case SPAR_GP:
       {
         tree_cat = 0;
         sub_gps = tree->_.gp.members;
-	sub_gp_count = BOX_ELEMENTS (sub_gps);
+        sub_gp_count = BOX_ELEMENTS (sub_gps);
         sub_expns = tree->_.gp.filters;
-	sub_expn_count = BOX_ELEMENTS (sub_expns);
+        sub_expn_count = BOX_ELEMENTS (sub_expns);
         break;
       }
     case SPAR_REQ_TOP:
@@ -185,13 +186,13 @@ scan_for_children:
       {
         tree_cat = 0;
         sub_expns = tree->_.triple.tr_fields;
-	sub_expn_count = SPART_TRIPLE_FIELDS_COUNT;
+        sub_expn_count = SPART_TRIPLE_FIELDS_COUNT;
         break;
       }
     case SPAR_LIST:
       {
         sub_expns = tree->_.list.items;
-	sub_expn_count = BOX_ELEMENTS (sub_expns);
+        sub_expn_count = BOX_ELEMENTS (sub_expns);
         break;
       }
     case BOP_EQ: case SPAR_BOP_EQNAMES: case SPAR_BOP_EQ_NONOPT: case BOP_NEQ:
@@ -210,7 +211,7 @@ scan_for_children:
       {
         tree_cat = 1;
         sub_expns = &(tree->_.bin_exp.left);
-	sub_expn_count = 1;
+        sub_expn_count = 1;
         break;
       }
     case ORDER_L:
@@ -233,20 +234,20 @@ cat_recognized:
     {
     case 0:
       if (gp_in_cbk)
-	retcode = gp_in_cbk (sparp, tree, sts_this, common_env);
+        retcode = gp_in_cbk (sparp, tree, sts_this, common_env);
       else
         retcode = 0;
       break;
     case 1:
       if (expn_in_cbk)
-	retcode = expn_in_cbk (sparp, tree, sts_this, common_env);
+        retcode = expn_in_cbk (sparp, tree, sts_this, common_env);
       else
         retcode = 0;
       break;
     case 2:
       if (literal_cbk)
         {
-	  retcode = literal_cbk (sparp, tree, sts_this, common_env);
+          retcode = literal_cbk (sparp, tree, sts_this, common_env);
           return retcode;
         }
       return 0;
@@ -326,7 +327,7 @@ end_process_children:
     {
     case 0:
       if (gp_out_cbk)
-	retcode = gp_out_cbk (sparp, tree, save_sts_this, common_env);
+        retcode = gp_out_cbk (sparp, tree, save_sts_this, common_env);
       else
         retcode = 0;
 #ifndef NDEBUG
@@ -336,7 +337,7 @@ end_process_children:
       break;
     case 1:
       if (expn_out_cbk)
-	retcode = expn_out_cbk (sparp, tree, save_sts_this, common_env);
+        retcode = expn_out_cbk (sparp, tree, save_sts_this, common_env);
       else
         retcode = 0;
 #ifndef NDEBUG
