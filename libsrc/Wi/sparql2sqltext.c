@@ -6377,8 +6377,13 @@ name_is_non_ghost: ;
                 ssg_print_tr_var_expn (ssg, var, SSG_VALMODE_DATATYPE, NULL_ASNAME);
               else
                 ssg_print_scalar_expn (ssg, var, SSG_VALMODE_DATATYPE, NULL_ASNAME);
-              ssg_puts (" =");
-              ssg_print_literal_as_sqlval (ssg, NULL, (SPART *)(eq->e_rvr.rvrDatatype));
+              if (NULL != eq->e_rvr.rvrDatatype)
+                {
+                  ssg_puts (" =");
+                  ssg_print_literal_as_sqlval (ssg, NULL, (SPART *)(eq->e_rvr.rvrDatatype));
+                }
+              else
+                ssg_puts (" IS NULL");
             }
         }
     }
