@@ -326,6 +326,7 @@ aq_wait_all (async_queue_t * aq, caddr_t * err_ret)
 	  dk_free_tree (err);
 	  waited = 1;
 	  mutex_enter (aq->aq_mtx);
+	  break;
 	}
     }
   while (waited);
