@@ -206,11 +206,11 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token NAN_L		/*:: PUNCT_SPAR_LAST("NAN") ::*/
 %token NIL_L		/*:: PUNCT_SPAR_LAST("NIL") ::*/
 %token NOT_L		/*:: PUNCT("NOT") ::*/
-%token NOT_EXISTS_L	/*:: PUNCT("NOT EXISTS"), SPARP, LAST("NOT EXISTS") ::*/
-%token NOT_FROM_L	/*:: PUNCT("NOT FROM"), SPARP, LAST("NOT FROM") ::*/
-%token NOT_IN_L		/*:: PUNCT("NOT IN"), SPARP, LAST("NOT IN") ::*/
-%token NOT_NULL_L	/*:: PUNCT("NOT NULL"), SPARP, LAST("NOT NULL") ::*/
-%token NOT_USING_L	/*:: PUNCT("NOT USING"), SPARP, LAST("NOT USING") ::*/
+%token NOT_EXISTS_L	/*:: PUNCT("NOT EXISTS"), SPAR, LAST("NOT EXISTS") ::*/
+%token NOT_FROM_L	/*:: PUNCT("NOT FROM"), SPAR, LAST("NOT FROM") ::*/
+%token NOT_IN_L		/*:: PUNCT("NOT IN"), SPAR, LAST("NOT IN") ::*/
+%token NOT_NULL_L	/*:: PUNCT("NOT NULL"), SPAR, LAST("NOT NULL") ::*/
+%token NOT_USING_L	/*:: PUNCT("NOT USING"), SPAR, LAST("NOT USING") ::*/
 %token NULL_L		/*:: PUNCT_SPAR_LAST("NULL") ::*/
 %token OBJECT_L		/*:: PUNCT_SPAR_LAST("OBJECT") ::*/
 %token OF_L		/*:: PUNCT_SPAR_LAST("OF") ::*/
