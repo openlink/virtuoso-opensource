@@ -630,9 +630,9 @@ create procedure DB.DBA.RDF_GLOBAL_RESET (in hard integer := 0)
       sequence_set ('RDF_RO_ID', 1, 0);
       sequence_set ('RDF_DATATYPE_TWOBYTE', 258, 0);
       sequence_set ('RDF_LANGUAGE_TWOBYTE', 258, 0);
+      __atomic (0);
       exec ('checkpoint');
       raw_exit ();
-      __atomic (0);
     }
   sequence_set ('RDF_URL_IID_NAMED', 1000000, 1);
   sequence_set ('RDF_URL_IID_BLANK', iri_id_num (min_bnode_iri_id ()), 1);
@@ -687,8 +687,8 @@ virtrdf:SyncToQuads-UserMaps
   sequence_set ('RDF_RO_ID', 1001, 1);
   iri_id_cache_flush ();
   DB.DBA.SPARQL_RELOAD_QM_GRAPH ();
-  exec ('checkpoint');
   __atomic (0);
+  exec ('checkpoint');
 }
 ;
 
@@ -13958,9 +13958,17 @@ create function DB.DBA.RDF_GRAPH_USER_PERMS_ASSERT (in graph_iri varchar, in uid
 
 create procedure DB.DBA.RDF_DEFAULT_USER_PERMS_SET_MEMONLY (in uname varchar, in uid integer, in perms integer, in special_iid IRI_ID, in set_private integer, in affected_jso any)
 {
-  dict_put (__rdf_graph_default_perms_of_user_dict (set_private), uid, perms);
+  if (perms is null)
+    dict_remove (__rdf_graph_default_perms_of_user_dict (set_private), uid);
+  else
+    dict_put (__rdf_graph_default_perms_of_user_dict (set_private), uid, perms);
   if (uid = http_nobody_uid())
-    dict_put (__rdf_graph_public_perms_dict(), special_iid, perms);
+    {
+      if (perms is null)
+        dict_remove (__rdf_graph_public_perms_dict(), special_iid);
+      else
+        dict_put (__rdf_graph_public_perms_dict(), special_iid, perms);
+    }
   foreach (varchar jso_key in affected_jso) do
     {
       jso_mark_affected (jso_key);
@@ -13975,7 +13983,12 @@ create procedure DB.DBA.RDF_DEFAULT_USER_PERMS_SET (in uname varchar, in perms i
   declare special_iid IRI_ID;
   declare affected_jso any;
   -- dbg_obj_princ ('gs_hist.sql'); string_to_file ('gs_hist.sql', sprintf ('-- DB.DBA.RDF_DEFAULT_USER_PERMS_SET (''%s'', %d, %d);\n', uname, perms, set_private), -1);
-  uid := ((select U_ID from DB.DBA.SYS_USERS where U_NAME = uname and (U_NAME='nobody' or (U_SQL_ENABLE and not U_ACCOUNT_DISABLED))));
+  if (perms is null)
+    {
+      DB.DBA.RDF_DEFAULT_USER_PERMS_DEL (uname, set_private);
+      return;
+    }
+  uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname and (U_NAME='nobody' or (U_SQL_ENABLE and not U_ACCOUNT_DISABLED)));
   set isolation = 'serializable';
   commit work;
   if (uid is null)
@@ -14068,6 +14081,32 @@ create procedure DB.DBA.RDF_DEFAULT_USER_PERMS_SET (in uname varchar, in perms i
 }
 ;
 
+create procedure DB.DBA.RDF_DEFAULT_USER_PERMS_DEL (in uname varchar, in set_private integer := 0)
+{
+  declare uid integer;
+  declare special_iid IRI_ID;
+  declare affected_jso any;
+  -- dbg_obj_princ ('gs_hist.sql'); string_to_file ('gs_hist.sql', sprintf ('-- DB.DBA.RDF_DEFAULT_USER_PERMS_DEL (''%s'', %d);\n', uname, set_private), -1);
+  if (uname in ('nobody', 'dba'))
+    signal ('RDF99', sprintf ('Default permissions of "%s" can be changed but can not be deleted', uname));
+  uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  set isolation = 'serializable';
+  commit work;
+  if (uid is null)
+    signal ('RDF99', sprintf ('No user "%s" found, can not delete its default permissions on RDF quad storage', uname));
+  if (set_private)
+    special_iid := #i8192;
+  else
+    special_iid := #i0;
+  delete from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = special_iid and RGU_USER_ID = uid;
+  -- dbg_obj_princ ('gs_hist.sql'); string_to_file ('gs_hist.sql', sprintf ('delete from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = %s and RGU_USER_ID = %d', cast (special_iid as varchar), uid), -1);
+  commit work;
+  affected_jso := vector (uname);
+  commit work;
+  DB.DBA.SECURITY_CL_EXEC_AND_LOG ('DB.DBA.RDF_DEFAULT_USER_PERMS_SET_MEMONLY (?,?,null,?,?,?)', vector (uname, uid, special_iid, set_private, affected_jso));
+}
+;
+
 create procedure DB.DBA.RDF_GRAPH_USER_PERMS_SET_MEMONLY (in graph_iri varchar, in graph_iid IRI_ID, in uid integer, in perms integer)
 {
   graph_iri := cast (graph_iri as varchar);
@@ -14088,6 +14127,11 @@ create procedure DB.DBA.RDF_GRAPH_USER_PERMS_SET (in graph_iri varchar, in uname
   declare uid, graph_is_private, common_perms integer;
   declare special_iid IRI_ID;
   -- dbg_obj_princ ('gs_hist.sql'); string_to_file ('gs_hist.sql', sprintf ('-- DB.DBA.RDF_GRAPH_USER_PERMS_SET (''%s'', ''%s'', %d);\n', graph_iri, uname, perms), -1);
+  if (perms is null)
+    {
+      RDF_GRAPH_USER_PERMS_DEL (graph_iri, uname);
+      return;
+    }
   graph_iid := iri_to_id (graph_iri);
   uid := ((select U_ID from DB.DBA.SYS_USERS where U_NAME = uname and (U_NAME='nobody' or (U_SQL_ENABLE and not U_ACCOUNT_DISABLED))));
   set isolation = 'serializable';
@@ -14164,15 +14208,65 @@ create procedure DB.DBA.RDF_GRAPH_USER_PERMS_DEL (in graph_iri varchar, in uname
   declare special_iid IRI_ID;
   -- dbg_obj_princ ('gs_hist.sql'); string_to_file ('gs_hist.sql', sprintf ('-- DB.DBA.RDF_GRAPH_USER_PERMS_SET (''%s'', ''%s'', %d);\n', graph_iri, uname, perms), -1);
   graph_iid := iri_to_id (graph_iri);
-  uid := ((select U_ID from DB.DBA.SYS_USERS where U_NAME = uname and (U_NAME='nobody' or (U_SQL_ENABLE and not U_ACCOUNT_DISABLED))));
+  uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
   set isolation = 'serializable';
   commit work;
   if (uid is null)
-    signal ('RDF99', sprintf ('No active SQL user "%s" found, can not change its permissions on graph <%s>', uname, graph_iri));
+    signal ('RDF99', sprintf ('No user "%s" found, can not change its permissions on graph <%s>', uname, graph_iri));
   delete from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = graph_iid and RGU_USER_ID = uid;
   -- dbg_obj_princ ('gs_hist.sql'); string_to_file ('gs_hist.sql', sprintf ('delete from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = %s and RGU_USER_ID = %d;\n', cast (graph_iid as varchar), uid), -1);
   commit work;
   DB.DBA.SECURITY_CL_EXEC_AND_LOG ('DB.DBA.RDF_GRAPH_USER_PERMS_DEL_MEMONLY (?,?,?)', vector (graph_iri, graph_iid, uid));
+}
+;
+
+create procedure DB.DBA.RDF_ALL_USER_PERMS_DEL (in uname varchar, in uid integer := null)
+{
+  declare special_iid IRI_ID;
+  declare graphs any;
+  declare graphs_count, graphs_ctr integer;
+  -- dbg_obj_princ ('gs_hist.sql'); string_to_file ('gs_hist.sql', sprintf ('-- DB.DBA.RDF_ALL_USER_PERMS_DEL (''%s'', %s);\n', uname, case (isnotnull (uid)) when 0 then 'null' else cast (uid as varchar) end), -1);
+  set isolation = 'serializable';
+  commit work;
+  if (uid is null)
+    {
+      uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+      if (uid is null)
+        signal ('RDF99', sprintf ('No user "%s" found, can not change its permissions on RDF graphs', uname));
+    }
+  if (uname is null)
+    uname := (select U_NAME from DB.DBA.SYS_USERS where U_ID = uid);
+  if (uid = http_nobody_uid() or uid = 0)
+    {
+      graphs := (select DB.DBA.VECTOR_AGG (RGU_GRAPH_IID) from DB.DBA.RDF_GRAPH_USER where RGU_USER_ID = uid and not (RGU_GRAPH_IID in (#i0, #i8192)));
+      delete from DB.DBA.RDF_GRAPH_USER where RGU_USER_ID = uid and not (RGU_GRAPH_IID in (#i0, #i8192));
+    }
+  else
+    {
+      graphs := (select DB.DBA.VECTOR_AGG (RGU_GRAPH_IID) from DB.DBA.RDF_GRAPH_USER where RGU_USER_ID = uid);
+      delete from DB.DBA.RDF_GRAPH_USER where RGU_USER_ID = uid;
+    }
+  gvector_digit_sort (graphs, 1, 0, 1);
+  -- dbg_obj_princ ('graphs=', graphs);
+  graphs_count := length (graphs);
+  for (graphs_ctr := graphs_count-1; graphs_ctr >= 0; graphs_ctr := graphs_ctr-1)
+    {
+      declare g_iid IR_ID;
+      g_iid := graphs [graphs_ctr];
+      if (g_iid = #i0 or g_iid = #i8192)
+        {
+          declare affected_jso any;
+          if (uname is null)
+            affected_jso := vector ();
+          else
+            affected_jso := vector (uname);
+          DB.DBA.SECURITY_CL_EXEC_AND_LOG ('DB.DBA.RDF_DEFAULT_USER_PERMS_SET_MEMONLY (?,?,null,?,?,?)',
+            vector (uname, uid, g_iid, case (g_iid) when #i8192 then 1 else 0 end, affected_jso));
+        }
+      else
+        DB.DBA.SECURITY_CL_EXEC_AND_LOG ('DB.DBA.RDF_GRAPH_USER_PERMS_DEL_MEMONLY (?,?,?)', vector (id_to_iri_nosignal (g_iid), g_iid, uid));
+    }
+  commit work;
 }
 ;
 
@@ -14303,7 +14397,10 @@ create procedure DB.DBA.RDF_GRAPH_SECURITY_AUDIT (in recovery integer)
   result_names (SEVERITY, GRAPH_IID, GRAPH_IRI, USER_ID, USER_NAME, MESSAGE);
   declare mem_dict, mem_dict_inv, pg_mem_dict, mem_vec, mem_vec_inv, fake any;
   declare mem_ctr, mem_count, pg_count, err_bad_count, err_recoverable_count, err_recoverable_count_total, err_count_total integer;
+  declare sparql_u_id integer;
+  declare user_sparql_half_protects_from_extra_access integer;
   err_recoverable_count_total := 0; err_count_total := 0;
+  sparql_u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME='SPARQL');
 
   result ('', null, null, null, null, 'Inspecting caches of IRI_IDs of IRIs mentioned in security data...');
   err_bad_count := 0;
@@ -14595,6 +14692,17 @@ create procedure DB.DBA.RDF_GRAPH_SECURITY_AUDIT (in recovery integer)
   result ('', null, null, null, null, 'Inspecting permissions of users...');
   err_bad_count := 0;
   err_recoverable_count := 0;
+
+  for (select RGU_USER_ID
+    from (select distinct RGU_USER_ID from DB.DBA.RDF_GRAPH_USER rgu) dist_rgu
+    where not exists (select 1 from DB.DBA.SYS_USERS where U_ID = RGU_USER_ID) ) do
+    {
+      result ('ERROR', NULL, NULL, RGU_USER_ID, null,
+         sprintf ('Garbage in table DB.DBA.RDF_GRAPH_USER: permissions are specified for nonexisting user ID') );
+      err_recoverable_count := err_recoverable_count + 1;
+      if (recovery)
+        DB.DBA.RDF_ALL_USER_PERMS_DEL (null, RGU_USER_ID);
+    }
   for (select special.RGU_GRAPH_IID as s_g_iid, special.RGU_USER_ID as s_userid, special.RGU_PERMISSIONS as s_perms,
     common.RGU_GRAPH_IID as c_g_iid, common.RGU_USER_ID as c_userid, common.RGU_PERMISSIONS as c_p
     from DB.DBA.RDF_GRAPH_USER special, DB.DBA.RDF_GRAPH_USER common
@@ -14621,6 +14729,48 @@ create procedure DB.DBA.RDF_GRAPH_SECURITY_AUDIT (in recovery integer)
          sprintf ('Specific permissions %x are smaller than %s permissions %x of user %s',
            s_perms, c_g_iri_txt, c_p, (select U_NAME from DB.DBA.SYS_USERS where U_ID = c_userid) ) );
       err_bad_count := err_bad_count + 1;
+      if (s_g_iid = sparql_u_id)
+        {
+          user_sparql_half_protects_from_extra_access := 1;
+          result ('ERROR', s_g_iid, id_to_iri_nosignal (s_g_iid), s_userid, (select U_NAME from DB.DBA.SYS_USERS where U_ID = s_userid),
+            'Note that The fix of above error by removal of all SPARQL''s permissions can give more access rights to users of ill applications that re-used "SPARQL" account' );
+        }
+    }
+  err_count_total := err_count_total + err_recoverable_count + err_bad_count;
+  err_recoverable_count_total := err_recoverable_count_total + err_recoverable_count;
+
+  result ('', null, null, null, null, 'Inspecting SPARQL user...');
+  err_bad_count := 0;
+  err_recoverable_count := 0;
+  if (sparql_u_id is null)
+    {
+      result ('WARNING', null, null, sparql_u_id, 'SPARQL', 'The "SPARQL" user does not exist. It is not a security issue (no account --- no related leaks), just unusual');
+    }
+  else
+    {
+      if (exists (select 1 from DB.DBA.SYS_USERS where U_NAME='SPARQL' and not U_ACCOUNT_DISABLED))
+        {
+          result ('ERROR', null, null, sparql_u_id, 'SPARQL', 'The "SPARQL" user should be disabled. Applications should create separate accounts and grant SPARQL_SELECT etc., the account "SPARQL" is for system purposes only');
+          err_recoverable_count := err_recoverable_count + 1;
+          if (recovery)
+            {
+              update DB.DBA.SYS_USERS set U_ACCOUNT_DISABLED = 1 where U_NAME='SPARQL';
+              commit work;
+            }
+        }
+      if (not user_sparql_half_protects_from_extra_access)
+        {
+          declare user_sparql_has_perms integer;
+          user_sparql_has_perms := 0;
+          for (select RGU_GRAPH_IID from DB.DBA.RDF_GRAPH_USER where RGU_USER_ID = sparql_u_id) do
+            {
+              result ('ERROR', RGU_GRAPH_IID, id_to_iri_nosignal (RGU_GRAPH_IID), sparql_u_id, 'SPARQL', 'The "SPARQL" user has got some specific permissions. That''s strange and redundand, at best, it may also mislead somebody');
+              err_recoverable_count := err_recoverable_count + 1;
+              user_sparql_has_perms := 1;
+            }
+          if (user_sparql_has_perms and recovery)
+            DB.DBA.RDF_ALL_USER_PERMS_DEL ('SPARQL');
+        }
     }
   err_count_total := err_count_total + err_recoverable_count + err_bad_count;
   err_recoverable_count_total := err_recoverable_count_total + err_recoverable_count;
