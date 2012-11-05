@@ -3868,10 +3868,9 @@ skip_insertion:
 caddr_t
 bif_dict_zap (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  id_hash_iterator_t hit, *hit1 = bif_dict_iterator_or_null_arg (qst, args, 0, "dict_zap", 0);
+  id_hash_iterator_t *hit1 = bif_dict_iterator_or_null_arg (qst, args, 0, "dict_zap", 0);
   long destructive = bif_long_range_arg (qst, args, 1, "dict_zap", 1, 3);
   id_hash_t *ht;
-  caddr_t *keyp, *valp;
   long len;
   if (NULL == hit1)
     return box_num (0);
@@ -3879,19 +3878,24 @@ bif_dict_zap (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (ht->ht_mutex)
     mutex_enter (ht->ht_mutex);
   len = ht->ht_inserts - ht->ht_deletes;
-  id_hash_iterator (&hit, ht);
   if ((1 != ht->ht_dict_refctr) && !(destructive &= ~1))
     {
       if (ht->ht_mutex)
         mutex_leave (ht->ht_mutex);
       sqlr_new_error ("22023", "SR632", "dict_zap() can not zap a dictionary that is used in many places, if second parameter is 0 or 1");
     }
-  while (hit_next (&hit, (char **)&keyp, (char **)&valp))
+  if (len)
     {
-       dk_free_tree (keyp[0]);
-       dk_free_tree (valp[0]);
+      id_hash_iterator_t hit;
+      caddr_t *keyp, *valp;
+      id_hash_iterator (&hit, ht);
+      while (hit_next (&hit, (char **)&keyp, (char **)&valp))
+        {
+           dk_free_tree (keyp[0]);
+           dk_free_tree (valp[0]);
+        }
+      id_hash_clear (ht);
     }
-  id_hash_clear (ht);
   ht->ht_dict_version++;
   ht->ht_dict_mem_in_use = 0;
   if (ht->ht_mutex)
