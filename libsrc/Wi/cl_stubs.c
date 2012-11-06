@@ -285,3 +285,15 @@ cluster_init ()
   dk_mem_hooks (DV_CLOP, box_non_copiable, (box_destr_f) clo_destroy, 0);
 }
 
+
+void
+dpipe_define_1_bif_define (void)
+{
+  return;
+}
+
+void
+partition_def_bif_define (void)
+{
+  return;
+}

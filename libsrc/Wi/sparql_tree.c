@@ -373,9 +373,11 @@ sparp_trav_out_clauses_int (sparp_t *sparp, SPART *req_top,
     {
       SPART **list = ((4 == list_ctr) ? &(req_top->_.req_top.having) : lists [list_ctr]);
       int ctr, list_len = ((4 == list_ctr) ? 1 : BOX_ELEMENTS_0 (list));
+      sts_this->sts_curr_array = list;
       for (ctr = 0; ctr < list_len; ctr++)
         {
           SPART *expn = list[ctr];
+          sts_this->sts_ofs_of_curr_in_array = ctr;
           if (SPAR_GP == SPART_TYPE (expn))
             retcode = ((NULL != expn_subq_cbk) ? expn_subq_cbk (sparp, expn, sts_this, common_env) : 0);
           else retcode = sparp_gp_trav_int (sparp, expn, sts_this, common_env,
@@ -512,12 +514,15 @@ sparp_up_from_sub (sparp_t *sparp, SPART *subq_gp_wrapper, sparp_t *sub_sparp)
 }
 
 void
-sparp_continue_gp_trav_in_sub (sparp_t *sparp, SPART *subq_gp_wrapper, void *common_env)
+sparp_continue_gp_trav_in_sub (sparp_t *sparp, SPART *subq_gp_wrapper, void *common_env, int trav_in_out_clauses)
 {
   sparp_trav_params_t *stp = sparp->sparp_stp; /* This is done before sparp_down_to_sub() because it suspends and move the sparp_stp to spare */
   sparp_t *sub_sparp = sparp_down_to_sub (sparp, subq_gp_wrapper);
   sparp_gp_trav (sub_sparp, subq_gp_wrapper->_.gp.subquery->_.req_top.pattern, common_env,
     SPARP_GP_TRAV_CALLBACK_ARGS(stp[0]) );
+  if (trav_in_out_clauses)
+    sparp_trav_out_clauses (sub_sparp, subq_gp_wrapper->_.gp.subquery, common_env,
+      SPARP_GP_TRAV_CALLBACK_ARGS(stp[0]) );
   sparp_up_from_sub (sparp, subq_gp_wrapper, sub_sparp);
 }
 
@@ -1771,6 +1776,32 @@ sparp_equiv_merge (sparp_t *sparp, sparp_equiv_t *pri, sparp_equiv_t *sec)
     }
   sparp_equiv_remove (sparp, sec);
   return ret;
+}
+
+void
+sparp_equiv_forget_var (sparp_t *sparp, SPART *var)
+{
+  int ctr;
+  sparp_equiv_t *eq;
+  if (SPART_BAD_EQUIV_IDX == var->_.var.equiv_idx)
+    return;
+  eq = SPARP_EQUIV (sparp, var->_.var.equiv_idx);
+  for (ctr = eq->e_var_count; ctr--; /* no step */)
+    {
+      if (eq->e_vars[ctr] != var)
+        continue;
+      eq->e_vars[ctr] = eq->e_vars[--eq->e_var_count];
+      eq->e_vars[eq->e_var_count] = NULL;
+      if (NULL != var->_.var.tabid)
+        {
+          eq->e_gspo_uses--;
+          eq->e_nested_bindings--;
+        }
+      else
+        eq->e_const_reads--;
+      return;
+    }
+  spar_internal_error (sparp, "sparp_" "equiv_forget_var (): var not in eq");
 }
 
 caddr_t

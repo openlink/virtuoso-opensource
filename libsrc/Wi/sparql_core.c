@@ -32,7 +32,7 @@
 #include "numeric.h"
 #include "rdf_core.h"
 #include "security.h"
-#include "sqlbif.h" /* for bif_t and bif_find() */
+#include "sqlbif.h" /* for bif_metadata_t */
 #include "sqlcmps.h"
 #include "sparql.h"
 #include "sparql2sql.h"
@@ -3589,6 +3589,60 @@ spar_colonize_qname_uname (const char *strg)
 }
 
 SPART *
+spar_run_pure_bif_in_sandbox (sparp_t *sparp, const char *funname, SPART **args, int argcount, bif_metadata_t *bmd, int *trouble_ret)
+{
+  int argctr;
+  caddr_t *sqlargs;
+  caddr_t err = NULL;
+  caddr_t ret_val;
+  for (argctr = argcount; argctr--; /* no step */)
+    {
+      SPART *arg = args[argctr];
+      int argtype = SPART_TYPE (arg);
+      switch (argtype)
+        {
+          case SPAR_QNAME: continue;
+          case SPAR_LIT:
+            {
+              if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (arg))
+                continue;
+              if ((NULL == arg->_.lit.language) &&
+                ((NULL == arg->_.lit.datatype) || (xsd_type_of_box (arg->_.lit.val) == arg->_.lit.datatype)) )
+                continue;
+              trouble_ret[0] = 2;
+              return NULL; /* Cases that require rdf box are excluded because making rdf box from IRI strings is not pure by itself (it requires at least IRI_IDs) */
+            }
+        }
+      trouble_ret[0] = 1;
+      return NULL;
+    }
+  sqlargs = (caddr_t *)t_alloc_list (argcount);
+  for (argctr = argcount; argctr--; /* no step */)
+    sqlargs[argctr] = SPAR_LIT_OR_QNAME_VAL (args[argctr]); /* complicated cases like unusually typed literal or a literal with language are excluded in the check above, so this is safe */
+  ret_val = sqlr_run_bif_in_sandbox (bmd, sqlargs, &err);
+  if (NULL == err)
+    {
+      SPART *lit = spar_make_literal_from_sql_box (sparp, ret_val, SPAR_ML_RESULT_FROM_SANDBOX);
+      dk_free_box (ret_val);
+      if (NULL != lit)
+        {
+          trouble_ret[0] = 0;
+          return lit;
+        }
+    }
+  else
+    {
+      trouble_ret[0] = 0;
+      return spartlist (sparp, 5, SPAR_FUNCALL, t_box_dv_uname_string ("bif:signal"), t_list (2,
+          spar_make_literal_from_sql_box (sparp, ERR_STATE (err), SPAR_ML_SAFEST),
+          spar_make_literal_from_sql_box (sparp, ERR_MESSAGE (err), SPAR_ML_SAFEST) ),
+        (ptrlong)0, (ptrlong)0 );
+    }
+  trouble_ret[0] = 2;
+  return NULL; /* Some nontrivial cast is needed, so can execute but anyway can not optimize */
+}
+
+SPART *
 spar_make_funcall (sparp_t *sparp, int aggregate_mode, const char *funname, SPART **args)
 {
   const char *sql_colon;
@@ -3619,42 +3673,48 @@ spar_make_funcall (sparp_t *sparp, int aggregate_mode, const char *funname, SPAR
 aggr_checked:
   if (!strncmp (funname, "bif:", 4))
     {
-      caddr_t bifname = t_sqlp_box_id_upcase (funname+4);
-      bif_t descr = bif_find (bifname);
-      if (NULL == descr)
+      bif_metadata_t *bmd = find_bif_metadata_by_raw_name (funname+4);
+      if (NULL == bmd)
         spar_error (sparp, "Unknown function %.100s()", funname);
+      if (bmd->bmd_is_pure)
+        {
+          int trouble = 0;
+          SPART * optimized = spar_run_pure_bif_in_sandbox (sparp, funname, args, argcount, bmd, &trouble);
+          if (!trouble)
+            return optimized;
+        }
     }
   else
     {
       xpf_metadata_t *metas = NULL;
       caddr_t colonized_funname = spar_colonize_qname_uname (funname);
       xpf_metadata_t ** metas_ptr = (xpf_metadata_t **)id_hash_get (xpf_metas, (caddr_t)(&colonized_funname));
-      int param_count;
+      char namebuf[110];
       if (NULL == metas_ptr)
         {
           dk_free_box (colonized_funname);
           goto xpf_checked; /* see below */
         }
-      param_count = BOX_ELEMENTS (args);
       metas = metas_ptr[0];
-      if (metas->xpfm_min_arg_no > param_count)
+      if (metas->xpfm_min_arg_no > argcount)
         spar_error (sparp, "The XPATH function %.200s() requires %d arguments but the call contains only %d",
-          funname, (int)(metas->xpfm_min_arg_no), param_count );
-      if (metas->xpfm_main_arg_no < param_count)
+          funname, (int)(metas->xpfm_min_arg_no), argcount );
+      if (metas->xpfm_main_arg_no < argcount)
         {
           if (0 == metas->xpfm_tail_arg_no)
             spar_error (sparp, "The XPATH function %.200s() can handle only %d arguments but the call provides %d",
-              funname, (int)(metas->xpfm_main_arg_no), param_count );
+              funname, (int)(metas->xpfm_main_arg_no), argcount );
           else
             {
-              int tail_mod = (param_count - metas->xpfm_main_arg_no) % metas->xpfm_tail_arg_no;
+              int tail_mod = (argcount - metas->xpfm_main_arg_no) % metas->xpfm_tail_arg_no;
               if (tail_mod)
                 spar_error (sparp, "The XPATH function %.200s() can handle %d, %d, %d etc. arguments but the call provides %d",
                   funname, (int)(metas->xpfm_main_arg_no), (int)(metas->xpfm_main_arg_no + metas->xpfm_tail_arg_no), (int)(metas->xpfm_main_arg_no + 2 * metas->xpfm_tail_arg_no),
-                  param_count );
+                  argcount );
             }
         }
-      return spartlist (sparp, 4, SPAR_FUNCALL, t_box_sprintf (100, "xpath:%.90s", colonized_funname), args, (ptrlong) 0);
+      sprintf (namebuf, "xpath:%.90s", colonized_funname);
+      return spartlist (sparp, 5, SPAR_FUNCALL, t_box_dv_uname_string (namebuf), args, (ptrlong)0, (ptrlong)0);
     }
 xpf_checked:
   if (aggregate_mode)
@@ -3664,7 +3724,7 @@ xpf_checked:
       else
         sparp->sparp_query_uses_aggregates++;
     }
-  return spartlist (sparp, 4, SPAR_FUNCALL, t_box_dv_uname_string (funname), args, (ptrlong)aggregate_mode);
+  return spartlist (sparp, 5, SPAR_FUNCALL, t_box_dv_uname_string (funname), args, (ptrlong)aggregate_mode, (ptrlong)0);
 }
 
 const sparp_bif_desc_t sparp_bif_descs[] = {
@@ -5281,6 +5341,9 @@ end_of_test:
 
 extern caddr_t bif_sparql_rdb2rdf_codegen (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 extern caddr_t bif_sparql_rdb2rdf_list_tables (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
+extern bif_t bif_isnotnull;
+
+extern void sparql_init_bif_optimizers (void);
 
 void
 sparql_init (void)
@@ -5304,4 +5367,5 @@ sparql_init (void)
 #ifdef DEBUG
   bif_define ("sparql_lex_test", bif_sparql_lex_test);
 #endif
+  sparql_init_bif_optimizers ();
 }

@@ -125,7 +125,7 @@ extern sparp_t *sparp_down_to_sub (sparp_t *sparp, SPART *subq_gp_wrapper);
 /*!< Reverts the effect of \c sparp_down_to_sub() by copying changes from \c sub_sparp to \c sparp and resuming the traversal */
 extern void sparp_up_from_sub (sparp_t *sparp, SPART *subq_gp_wrapper, sparp_t *sub_sparp);
 /*!< Continues the current traversal in the given gp with subquery */
-extern void sparp_continue_gp_trav_in_sub (sparp_t *sparp, SPART *subq_gp_wrapper, void *common_env);
+extern void sparp_continue_gp_trav_in_sub (sparp_t *sparp, SPART *subq_gp_wrapper, void *common_env, int trav_in_out_clauses);
 
 extern SPART **spar_macroexpand_treelist (sparp_t *sparp, SPART **trees, int begin_with);
 /*!< Do nothing or macroexpand a single tree, returns the result, destroying and/or reusing the original */
@@ -261,6 +261,9 @@ and \c secondary is replaced with \c primary (or removed as dupe) from lists of 
 Conflict in datatypes or fixed values results in SPART_VARR_CONFLICT to eliminate never-happen graph pattern later.
 Returns appropriate SPARP_EQUIV_MERGE_xxx */
 extern int sparp_equiv_merge (sparp_t *sparp, sparp_equiv_t *primary, sparp_equiv_t *secondary);
+
+/*! Removes the given veriable from its equiv. This is useful for <sparql-only:args_in_same_eq> and similar internal tricks */
+extern void sparp_equiv_forget_var (sparp_t *sparp, SPART *var);
 
 /*! Returns whether two given fixedvalue trees are equal (same language and SQL value, no comparison for datatypes) */
 extern int sparp_fixedvalues_equal (sparp_t *sparp, SPART *first, SPART *second);
@@ -400,8 +403,28 @@ extern void sparp_count_usages (sparp_t *sparp, dk_set_t *optvars_ret);
 /*!< Changes and expands lists of return values to handle recursive graph traversal and DESCRIBE. */
 void sparp_rewrite_retvals (sparp_t *sparp, int safely_copy_retvals);
 
-/*! Performs all basic term rewritings of the query tree. */
+/*! Performs all basic term rewritings of the query tree, except simplification of all expressions, that can be made by sparp_simplify_expns().
+sparp_rewrite_basic() should not call sparp_simplify_expns() directly or indirectly due to the danger of infinite recursion. */
 extern void sparp_rewrite_basic (sparp_t *sparp);
+
+/*! Tries to calculate the range of values returned by a \c tree and fill in the structure under \c rvr_ret.
+if \c return_independent_copy is zero then the filled structure should remain static, otherwise it gets its own copy of list of formats and can be edited
+(however literals should not be edited in any case) */
+extern void sparp_get_expn_rvr (sparp_t *sparp, SPART *tree, rdf_val_range_t *rvr_ret, int return_independent_copy);
+
+typedef char sparp_bool4way_t; /* Four-way "boolean" value, 'T' for true, 'F' for false, 'U' for unset, always NULL or conflict, '?' for value that may wary */
+
+/*! Returns boolean value common for the given value range */
+extern sparp_bool4way_t sparp_cast_rvr_to_bool4way (sparp_t *sparp, rdf_val_range_t *rvr);
+/*! Returns boolean value common for the given literal or variable */
+extern sparp_bool4way_t sparp_cast_var_or_lit_to_bool4way (sparp_t *sparp, SPART *tree);
+
+
+/*! Performs calculation of "pure math" subexpressions and runs custom bif-specific optimizers.
+This should be done after at least one sparp_rewrite_basic() on same query tree.
+This also should be done at least once before check for sql:signal-void-variable because it may eliminate branches of IF and the like, eliminating "conditionally void" variables.
+In case of success, i.e., if some expression is really rewritten, the function ends its execution with sparp_rewrite_basic(). */
+extern void sparp_simplify_expns (sparp_t *sparp);
 
 /* PART 2. GRAPH PATTERN TERM REWRITING */
 

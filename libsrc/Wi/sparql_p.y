@@ -1799,8 +1799,6 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	( 'AS' ( VAR1 | VAR2 ) ) */
 	| spar_expn _SLASH spar_expn	{ SPAR_BIN_OP ($$, BOP_DIV, $1, $3); }
 	| _BANG spar_expn {		/* [51]*	UnaryExpn	 ::=   ('!'|'NOT'|'+'|'-')? PrimaryExpn */
 		SPAR_BIN_OP ($$, BOP_NOT, $2, NULL); }
-	| NOT_L spar_expn {
-		SPAR_BIN_OP ($$, BOP_NOT, $2, NULL); }
 	| _PLUS	spar_expn	%prec UPLUS	{
 		SPAR_BIN_OP ($$, BOP_PLUS,
 		  spartlist (sparp_arg, 4, SPAR_LIT, (SPART *) t_box_num_nonull(0), uname_xmlschema_ns_uri_hash_integer, NULL), $2); }

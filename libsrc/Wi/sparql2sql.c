@@ -1389,7 +1389,7 @@ select * where { graph <g1> { ?s1 ?p1 ?o1 . filter (?o1 = <const>) } optional { 
 int
 sparp_gp_trav_restrict_by_simple_filters_expn_subq (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
-  sparp_continue_gp_trav_in_sub (sparp, curr, common_env);
+  sparp_continue_gp_trav_in_sub (sparp, curr, common_env, 0);
   return 0;
 }
 
@@ -2213,7 +2213,7 @@ sparp_gp_trav_eq_restr_from_connected_subvalues_gp_out (sparp_t *sparp, SPART *c
 int
 sparp_gp_trav_eq_restr_from_connected_subvalues_expn_subq (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
-  sparp_continue_gp_trav_in_sub (sparp, curr, common_env);
+  sparp_continue_gp_trav_in_sub (sparp, curr, common_env, 0);
   return 0;
 }
 
@@ -2264,7 +2264,7 @@ sparp_gp_trav_eq_restr_from_connected_receivers_gp_in (sparp_t *sparp, SPART *cu
 int
 sparp_gp_trav_eq_restr_from_connected_receivers_expn_subq (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
-  sparp_continue_gp_trav_in_sub (sparp, curr, common_env);
+  sparp_continue_gp_trav_in_sub (sparp, curr, common_env, 0);
   return 0;
 }
 
@@ -2374,7 +2374,7 @@ sparp_gp_trav_eq_restr_to_vars_gp_in (sparp_t *sparp, SPART *curr, sparp_trav_st
 int
 sparp_gp_trav_eq_restr_to_vars_expn_subq (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
-  sparp_continue_gp_trav_in_sub (sparp, curr, common_env);
+  sparp_continue_gp_trav_in_sub (sparp, curr, common_env, 0);
   return 0;
 }
 
@@ -2721,6 +2721,680 @@ sparp_expn_reads_equiv (sparp_t *sparp, SPART *expn, sparp_equiv_t *eq)
   return (SPAR_GPT_COMPLETED & res);
 }
 
+SPART *
+bifsparqlopt_special_bif_agg (sparp_t *sparp, int bif_opt_opcode, SPART *tree, bif_metadata_t *bmd, void *more)
+{
+  switch (bif_opt_opcode)
+    {
+    case BIF_OPT_SIMPLIFY: return tree;
+    case BIF_OPT_RET_TYPE:
+      {
+        rdf_val_range_t *rvr_ret = (rdf_val_range_t *)more;
+        caddr_t qname = tree->_.funcall.qname;
+        if (!strcmp (qname, "SPECIAL::bif:COUNT"))
+          {
+            memset (rvr_ret, 0, sizeof (rdf_val_range_t));
+            rvr_ret->rvrRestrictions = SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL | SPART_VARR_NOT_NULL;
+            break;
+          }
+        if (1 == BOX_ELEMENTS (tree->_.funcall.argtrees))
+          sparp_get_expn_rvr (sparp, tree->_.funcall.argtrees[0], rvr_ret, 1 /*return_independent_copy*/);
+        else
+          memset (rvr_ret, 0, sizeof (rdf_val_range_t));
+        if ((!strcmp (qname, "SPECIAL::bif:MAX") || !strcmp (qname, "SPECIAL::bif:MIN")) )
+          {
+            rvr_ret->rvrRestrictions &= ~SPART_VARR_NOT_NULL;
+            break;
+          }
+        if (!strcmp (qname, "SPECIAL::bif:AVG"))
+          {
+            rvr_ret->rvrRestrictions &= ~SPART_VARR_NOT_NULL;
+            rvr_ret->rvrRestrictions |= SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL;
+            break;
+          }
+        if (!strcmp (qname, "SPECIAL::bif:SUM"))
+          {
+            rvr_ret->rvrRestrictions &= ~(SPART_VARR_NOT_NULL | SPART_VARR_FIXED);
+            rvr_ret->rvrRestrictions |= SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL;
+            break;
+          }
+        GPF_T;
+      }
+    }
+  return NULL;
+}
+
+#if 0
+SPART *
+bifsparqlopt_args_in_same_eq (sparp_t *sparp, int bif_opt_opcode, SPART *tree, bif_metadata_t *bmd, void *more)
+{
+  int answer = 0;
+  SPART *arg0 = tree->_.funcall.argtrees[0];
+  SPART *arg1 = tree->_.funcall.argtrees[1];
+  SPART *arg0_to_forget = NULL;
+  SPART *arg1_to_forget = NULL;
+  sparp_equiv_t *eq0 = NULL, *eq1 = NULL;
+  if (SPAR_IS_BLANK_OR_VAR (arg0))
+    {
+      eq0 = SPARP_EQUIV (sparp, arg0->_.var.equiv_idx);
+      arg0_to_forget = arg0;
+    }
+  if (SPAR_QNAME == SPART_TYPE (arg1) && (NULL != eq0))
+    {
+      eq1 = sparp_equiv_get (sparp, eq0->e_gp, (SPART *)(arg1->_.qname.val), SPARP_EQUIV_INS_CLASS);
+      if (0 == BOX_LENGTH_0 ((caddr_t)(eq1->e_receiver_idxs)))
+        {
+          SPART *external_orig = sparp_find_origin_of_external_varname_in_eq (sparp, eq1, arg1->_.qname.val, 0);
+        }
+    }
+  if (SPAR_IS_BLANK_OR_VAR (arg1))
+    {
+      eq1 = SPARP_EQUIV (sparp, arg1->_.var.equiv_idx);
+      arg1_to_forget = arg1;
+    }
+  if ((NULL != eq0) && (NULL != eq1))
+    {
+      if (SPARP_EQUIV_MERGE_OK == sparp_equiv_merge (sparp, eq0, eq1))
+        {
+          eq0->e_replaces_filter |= SPART_VARR_EQ_VAR;
+          if (NULL != arg0_to_forget)
+            sparp_equiv_forget_var (sparp, arg0_to_forget);
+          if (NULL != arg1_to_forget)
+            sparp_equiv_forget_var (sparp, arg1_to_forget);
+        }
+      answer = 1;
+    }
+  switch (bif_opt_opcode)
+    {
+    case BIF_OPT_SIMPLIFY:
+      return SPAR_MAKE_BOOL_LITERAL (sparp, answer);
+    case BIF_OPT_RET_TYPE:
+      {
+        rdf_val_range_t *rvr_ret = (rdf_val_range_t *)more;
+        rvr_ret->rvrRestrictions = SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_TYPED | SPART_VARR_FIXED;
+        rvr_ret->rvrDatatype = uname_xmlschema_ns_uri_hash_boolean;
+        rvr_ret->rvrFixedValue = (caddr_t)SPAR_MAKE_BOOL_LITERAL (sparp, answer);
+      }
+    }
+  return NULL;
+}
+;
+#endif
+
+SPART *
+bifsparqlopt_args_in_same_eq (sparp_t *sparp, int bif_opt_opcode, SPART *tree, bif_metadata_t *bmd, void *more)
+{
+  int answer = 0;
+  SPART *arg0 = tree->_.funcall.argtrees[0];
+  SPART *arg1 = tree->_.funcall.argtrees[1];
+  sparp_equiv_t *eq0 = NULL, *eq1 = NULL;
+  if (SPAR_IS_BLANK_OR_VAR (arg0))
+    eq0 = SPARP_EQUIV (sparp, arg0->_.var.equiv_idx);
+  if (SPAR_IS_BLANK_OR_VAR (arg1))
+    eq1 = SPARP_EQUIV (sparp, arg1->_.var.equiv_idx);
+  if ((NULL != eq0) && (NULL != eq1))
+    {
+      if (SPARP_EQUIV_MERGE_OK == sparp_equiv_merge (sparp, eq0, eq1))
+        {
+          eq0->e_replaces_filter |= SPART_VARR_EQ_VAR;
+          sparp_equiv_forget_var (sparp, arg0);
+          sparp_equiv_forget_var (sparp, arg1);
+          answer = 1;
+        }
+    }
+  switch (bif_opt_opcode)
+    {
+    case BIF_OPT_SIMPLIFY:
+      if (answer)
+        return SPAR_MAKE_BOOL_LITERAL (sparp, answer);
+      return spartlist (sparp, 3, BOP_EQ, arg0, arg1);
+    case BIF_OPT_RET_TYPE:
+      {
+        rdf_val_range_t *rvr_ret = (rdf_val_range_t *)more;
+        rvr_ret->rvrRestrictions = SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_TYPED | SPART_VARR_FIXED;
+        rvr_ret->rvrDatatype = uname_xmlschema_ns_uri_hash_boolean;
+        rvr_ret->rvrFixedValue = (caddr_t)SPAR_MAKE_BOOL_LITERAL (sparp, answer);
+      }
+    }
+  return NULL;
+}
+;
+
+
+SPART *
+bifsparqlopt_arg_is_local_var (sparp_t *sparp, int bif_opt_opcode, SPART *tree, bif_metadata_t *bmd, void *more)
+{
+  int answer = 0;
+  SPART *arg0 = tree->_.funcall.argtrees[0];
+  if (SPAR_IS_BLANK_OR_VAR (arg0))
+    {
+      sparp_equiv_t *eq = SPARP_EQUIV (sparp, arg0->_.var.equiv_idx);
+      while (eq->e_deprecated)
+        eq = SPARP_EQUIV (sparp, eq->e_merge_dest_idx);
+      answer = !(eq->e_rvr.rvrRestrictions & SPART_VARR_EXTERNAL);
+    }
+  switch (bif_opt_opcode)
+    {
+    case BIF_OPT_SIMPLIFY:
+      return SPAR_MAKE_BOOL_LITERAL (sparp, answer);
+    case BIF_OPT_RET_TYPE:
+      {
+        rdf_val_range_t *rvr_ret = (rdf_val_range_t *)more;
+        rvr_ret->rvrRestrictions = SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_TYPED | SPART_VARR_FIXED;
+        rvr_ret->rvrDatatype = uname_xmlschema_ns_uri_hash_boolean;
+        rvr_ret->rvrFixedValue = (caddr_t)SPAR_MAKE_BOOL_LITERAL (sparp, answer);
+      }
+    }
+  return NULL;
+}
+;
+
+void
+sparql_init_bif_optimizers (void)
+{
+  bif_define_ex ("SPECIAL::bif:COUNT"		, NULL, BMD_SPARQL_OPTIMIZER_IMPL, bifsparqlopt_special_bif_agg		, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_RET_TYPE, &bt_integer	, BMD_SPARQL_ONLY, BMD_DONE);
+  bif_define_ex ("SPECIAL::bif:MAX"		, NULL, BMD_SPARQL_OPTIMIZER_IMPL, bifsparqlopt_special_bif_agg		, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1				, BMD_SPARQL_ONLY, BMD_DONE);
+  bif_define_ex ("SPECIAL::bif:MIN"		, NULL, BMD_SPARQL_OPTIMIZER_IMPL, bifsparqlopt_special_bif_agg		, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1				, BMD_SPARQL_ONLY, BMD_DONE);
+  bif_define_ex ("SPECIAL::bif:AVG"		, NULL, BMD_SPARQL_OPTIMIZER_IMPL, bifsparqlopt_special_bif_agg		, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1				, BMD_SPARQL_ONLY, BMD_DONE);
+  bif_define_ex ("SPECIAL::bif:SUM"		, NULL, BMD_SPARQL_OPTIMIZER_IMPL, bifsparqlopt_special_bif_agg		, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1				, BMD_SPARQL_ONLY, BMD_DONE);
+  bif_define_ex ("sparql_only:args_in_same_eq"	, NULL, BMD_SPARQL_OPTIMIZER_IMPL, bifsparqlopt_args_in_same_eq		, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2, BMD_RET_TYPE, &bt_integer	, BMD_SPARQL_ONLY, BMD_DONE);
+  bif_define_ex ("sparql_only:arg_is_local_var"	, NULL, BMD_SPARQL_OPTIMIZER_IMPL, bifsparqlopt_arg_is_local_var	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_RET_TYPE, &bt_integer	, BMD_SPARQL_ONLY, BMD_DONE);
+}
+
+void
+sparp_get_expn_rvr (sparp_t *sparp, SPART *tree, rdf_val_range_t *rvr_ret, int return_independent_copy)
+{
+  switch (SPART_TYPE (tree))
+    {
+    case SPAR_ALIAS:
+      sparp_get_expn_rvr (sparp, tree->_.alias.arg, rvr_ret, return_independent_copy);
+      return;
+    case SPAR_BLANK_NODE_LABEL: case SPAR_VARIABLE: case SPAR_RETVAL:
+      if (return_independent_copy)
+        sparp_rvr_copy (sparp, rvr_ret, &(tree->_.var.rvr));
+      else
+        memcpy (rvr_ret, &(tree->_.var.rvr), sizeof (rdf_val_range_t));
+      return;
+    case SPAR_LIT: case SPAR_QNAME: /* case SPAR_QNAME_NS: */
+      sparp_rvr_set_by_constant (sparp, rvr_ret, NULL, tree);
+      return;
+    case ORDER_L:
+    case SPAR_GRAPH:
+    case SPAR_TRIPLE:
+    case SPAR_REQ_TOP:
+    case SPAR_QM_SQL_FUNCALL:
+    case SPAR_LIST:
+    case SPAR_SERVICE_INV:
+    case SPAR_DEFMACRO:
+    case SPAR_MACROCALL:
+    case SPAR_MACROPU:
+      spar_internal_error (sparp, "sparp_" "get_expn_rvr(): non-expression tree");
+      return;
+    case SPAR_GP: /* This is possible if a scalar subquery is argument of BOP_XXX, SPAR_ALIAS and the like. */
+      memset (rvr_ret, 0, sizeof (rdf_val_range_t)); /*!!!TBD: inherit one from rvr of the first retval */
+      return;
+    case SPAR_BUILT_IN_CALL:
+      memset (rvr_ret, 0, sizeof (rdf_val_range_t));
+      return; /* !!!TBD */
+    case SPAR_FUNCALL:
+      {
+        caddr_t qname = tree->_.funcall.qname;
+        bif_metadata_t *bmd = NULL;
+        if (!strncmp (qname, "bif:", 4))
+          {
+            caddr_t iduqname = sqlp_box_id_upcase (qname+4);
+            bmd = find_bif_metadata_by_name (iduqname);
+            dk_free_box (iduqname);
+          }
+        else
+          bmd = (bif_metadata_t *)gethash (qname, name_to_bif_sparql_only_metadata_hash);
+        memset (rvr_ret, 0, sizeof (rdf_val_range_t));
+        if (NULL != bmd)
+          {
+            bif_type_t * bt = bmd->bmd_ret_type;
+            bif_sparql_optimizer_t *bso = bmd->bmd_sparql_optimizer_impl;
+            if (NULL != bt)
+              rvr_ret->rvrRestrictions = sparp_restr_bits_of_dtp (bt->bt_dtp) & ~SPART_VARR_NOT_NULL;
+            if (NULL != bso)
+              bso (sparp, BIF_OPT_RET_TYPE, tree, bmd, rvr_ret);
+          }
+        return; /* !!! TBD better output */
+      }
+     case BOP_EQ: case SPAR_BOP_EQNAMES: case SPAR_BOP_EQ_NONOPT: case BOP_NEQ:
+    case BOP_LT: case BOP_LTE: case BOP_GT: case BOP_GTE:
+    /*case BOP_LIKE: Like is built-in in SPARQL, not a BOP! */
+    case BOP_SAME: case BOP_NSAME:
+    case BOP_AND: case BOP_OR: case BOP_NOT:
+      memset (rvr_ret, 0, sizeof (rdf_val_range_t));
+      rvr_ret->rvrRestrictions = SPART_VARR_TYPED | SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL;
+      rvr_ret->rvrDatatype = uname_xmlschema_ns_uri_hash_boolean;
+      return;
+    case BOP_PLUS: case BOP_MINUS: case BOP_TIMES: case BOP_DIV: case BOP_MOD:
+      memset (rvr_ret, 0, sizeof (rdf_val_range_t));
+      rvr_ret->rvrRestrictions = SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL;
+      return;
+    }
+  spar_internal_error (sparp, "sparp_" "get_expn_rvr(): unsupported type of expression");
+}
+
+static sparp_bool4way_t
+sparp_cast_fv_dt_to_bool4way (ccaddr_t fv, ccaddr_t dt)
+{
+  if ((uname_xmlschema_ns_uri_hash_string == dt) || (NULL == dt))
+    return (((DV_STRING == DV_TYPE_OF (fv)) && (1 < box_length (fv))) ? 'T' : 'F');
+  if ((uname_xmlschema_ns_uri_hash_boolean == dt) || (uname_xmlschema_ns_uri_hash_integer == dt))
+    return (((DV_LONG_INT == DV_TYPE_OF (fv)) && (0 != unbox (fv))) ? 'T' : 'F');
+  if (uname_xmlschema_ns_uri_hash_double == dt)
+    return (((DV_DOUBLE_FLOAT == DV_TYPE_OF (fv)) && (0 != unbox_double (fv))) ? 'T' : 'F');
+  if (uname_xmlschema_ns_uri_hash_float == dt)
+    return (((DV_SINGLE_FLOAT == DV_TYPE_OF (fv)) && (0 != unbox_float (fv))) ? 'T' : 'F');
+  return '?';
+}
+
+sparp_bool4way_t
+sparp_cast_rvr_to_bool4way (sparp_t *sparp, rdf_val_range_t *rvr)
+{
+  if (rvr->rvrRestrictions & (SPART_VARR_ALWAYS_NULL | SPART_VARR_CONFLICT))
+    return 'U';
+  if (!(rvr->rvrRestrictions & SPART_VARR_NOT_NULL))
+    return '?';
+  if (rvr->rvrRestrictions & SPART_VARR_IS_REF)
+    return 'F'; /* proper EBV would be type error */
+  if (NULL != rvr->rvrLanguage)
+    return 'F'; /* proper EBV would be type error */
+  if (rvr->rvrRestrictions & SPART_VARR_FIXED)
+    {
+      ccaddr_t fv = SPAR_LIT_OR_QNAME_VAL ((SPART *)(rvr->rvrFixedValue));
+      ccaddr_t dt = rvr->rvrDatatype;
+      return sparp_cast_fv_dt_to_bool4way (fv, dt);
+    }
+  return '?';
+}
+
+sparp_bool4way_t
+sparp_cast_var_or_lit_to_bool4way (sparp_t *sparp, SPART *tree)
+{
+  if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree))
+    return sparp_cast_fv_dt_to_bool4way ((ccaddr_t)tree, NULL);
+  switch (tree->type)
+    {
+    case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL:
+      return sparp_cast_rvr_to_bool4way (sparp, &(tree->_.var.rvr));
+    case SPAR_QNAME:
+      return 'F'; /* proper EBV would be type error */
+    case SPAR_LIT:
+      if (NULL != tree->_.lit.language)
+        return 'F'; /* proper EBV would be type error */
+      return sparp_cast_fv_dt_to_bool4way (tree->_.lit.val, tree->_.lit.datatype);
+    }
+  return '?';
+}
+
+int
+sparp_calc_bop_of_fixed_vals (sparp_t *sparp, ptrlong bop_type, rdf_val_range_t *left, rdf_val_range_t *right, SPART **res_ret)
+{
+  switch (bop_type)
+    {
+    case BOP_SAME: case BOP_NSAME:
+      if (!sparp_expns_are_equal (sparp, (SPART *)(left->rvrLanguage), (SPART *)(right->rvrLanguage))
+        || !sparp_expns_are_equal (sparp, (SPART *)(left->rvrDatatype), (SPART *)(right->rvrDatatype)) )
+        {
+          if (BOP_SAME == bop_type)
+            goto res_bool_false; /* see below */
+          if (BOP_NSAME == bop_type)
+            goto res_bool_true; /* see below */
+        }
+      /* no break */
+     case BOP_EQ: case SPAR_BOP_EQNAMES: case SPAR_BOP_EQ_NONOPT: case BOP_NEQ:
+    case BOP_LT: case BOP_LTE: case BOP_GT: case BOP_GTE:
+      {
+        int cb = cmp_boxes_safe (left->rvrFixedValue, right->rvrFixedValue, NULL, NULL);
+        switch (cb)
+          {
+          case DVC_MATCH:
+            if ((BOP_EQ == bop_type) || (BOP_LTE == bop_type) || (BOP_GTE == bop_type) || (BOP_SAME == bop_type))
+              goto res_bool_true; /* see below */
+            goto res_bool_false; /* see below */
+          case DVC_LESS:
+            if ((BOP_NEQ == bop_type) || (BOP_LT == bop_type) || (BOP_LTE == bop_type) || (BOP_NSAME == bop_type))
+              goto res_bool_true; /* see below */
+            goto res_bool_false; /* see below */
+          case DVC_GREATER:
+            if ((BOP_NEQ == bop_type) || (BOP_GT == bop_type) || (BOP_GTE == bop_type) || (BOP_NSAME == bop_type))
+              goto res_bool_true; /* see below */
+            goto res_bool_false; /* see below */
+          default:
+            if ((BOP_NEQ == bop_type) || (BOP_NSAME == bop_type))
+              goto res_bool_true; /* see below */
+            goto res_bool_false; /* see below */
+          }
+      }
+    case BOP_PLUS: case BOP_MINUS: case BOP_TIMES: case BOP_DIV: case BOP_MOD:
+      {
+        caddr_t left_val, right_val;
+        if ((NULL != left->rvrLanguage) || (NULL != right->rvrLanguage))
+          return 2;
+        left_val = SPAR_LIT_OR_QNAME_VAL ((SPART *)(left->rvrFixedValue));
+        right_val = SPAR_LIT_OR_QNAME_VAL ((SPART *)(right->rvrFixedValue));
+        if ((uname_xmlschema_ns_uri_hash_integer == left->rvrDatatype) && (DV_LONG_INT == DV_TYPE_OF (left_val))
+          && (uname_xmlschema_ns_uri_hash_integer == right->rvrDatatype) && (DV_LONG_INT == DV_TYPE_OF (right_val)) )
+          {
+            boxint l_int = unbox (left_val);
+            boxint r_int = unbox (right_val);
+            boxint res_int = 0;
+            switch (bop_type)
+              {
+              case BOP_PLUS: res_int = l_int + r_int; break;
+              case BOP_MINUS: res_int = l_int - r_int; break;
+              case BOP_TIMES: res_int = l_int * r_int; break;
+              case BOP_DIV: if (0 == r_int) return 3; res_int = l_int / r_int; break;
+              case BOP_MOD: if (0 == r_int) return 3; res_int = l_int % r_int; break;
+              }
+            res_ret[0] = spartlist (sparp, 4, SPAR_LIT, (SPART *)t_box_num_nonull(res_int), uname_xmlschema_ns_uri_hash_integer, NULL);
+          }
+        return 1; /* !!!TBD add arithmetics for other datatypes and their combinations */
+      }
+    }
+  return 1;
+res_bool_true:
+  res_ret[0] = SPAR_MAKE_BOOL_LITERAL(sparp, 1);
+  return 0;
+res_bool_false:
+  res_ret[0] = SPAR_MAKE_BOOL_LITERAL(sparp, 0);
+  return 0;
+}
+
+SPART *
+sparp_simplify_builtin (sparp_t *sparp, SPART *tree, int *trouble_ret)
+{
+  SPART *arg1 = tree->_.builtin.args[0];
+  SPART *res;
+  switch (tree->_.builtin.btype)
+    {
+    case SPAR_BIF_ABS: break;
+    case SPAR_BIF_BNODE: break;
+    case SPAR_BIF_CEIL: break;
+    case SPAR_BIF_COALESCE: break;
+    case SPAR_BIF_CONCAT: break;
+    case SPAR_BIF_CONTAINS: break;
+    case SPAR_BIF_DAY: break;
+    case SPAR_BIF_ENCODE_FOR_URI: break;
+    case SPAR_BIF_FLOOR: break;
+    case SPAR_BIF_HOURS: break;
+    case SPAR_BIF_IF:
+      {
+        sparp_bool4way_t b4w_arg1 = sparp_cast_var_or_lit_to_bool4way (sparp, arg1);
+        if ('T' == b4w_arg1)
+          { trouble_ret[0] = 0; return tree->_.builtin.args[1]; }
+        if ('F' == b4w_arg1)
+          { trouble_ret[0] = 0; return tree->_.builtin.args[2]; }
+        break;
+      }
+    case SPAR_BIF_ISBLANK: break;
+    case SPAR_BIF_ISIRI: break;
+    case SPAR_BIF_ISLITERAL:
+      {
+        switch (SPART_TYPE (arg1))
+          {
+          case SPAR_QNAME: goto res_bool_false; /* see below */
+          case SPAR_LIT: goto res_bool_true; /* see below */
+          case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL:
+            if (arg1->_.var.rvr.rvrRestrictions & SPART_VARR_CONFLICT)
+              break;
+            if (arg1->_.var.rvr.rvrRestrictions & SPART_VARR_NOT_NULL)
+              {
+                if (arg1->_.var.rvr.rvrRestrictions & SPART_VARR_IS_LIT)
+                  goto res_bool_true; /* see below */
+                else if (arg1->_.var.rvr.rvrRestrictions & SPART_VARR_IS_REF)
+                  goto res_bool_false; /* see below */
+              }
+          }
+        goto trouble_now; /* see below */
+      }
+    case SPAR_BIF_ISNUMERIC: break;
+    case SPAR_BIF_ISREF:
+      {
+        switch (SPART_TYPE (arg1))
+          {
+          case SPAR_QNAME: goto res_bool_true; /* see below */
+          case SPAR_LIT: goto res_bool_false; /* see below */
+          case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL:
+            if (arg1->_.var.rvr.rvrRestrictions & SPART_VARR_CONFLICT)
+              break;
+            if (arg1->_.var.rvr.rvrRestrictions & SPART_VARR_NOT_NULL)
+              {
+                if (arg1->_.var.rvr.rvrRestrictions & SPART_VARR_IS_LIT)
+                  goto res_bool_false; /* see below */
+                else if (arg1->_.var.rvr.rvrRestrictions & SPART_VARR_IS_REF)
+                  goto res_bool_true; /* see below */
+              }
+          }
+        goto trouble_now; /* see below */
+      }
+    case SPAR_BIF_ISURI: break;
+    case SPAR_BIF_LANGMATCHES: break;
+    case SPAR_BIF_LCASE: break;
+    case SPAR_BIF_MD5: break;
+    case SPAR_BIF_MINUTES: break;
+    case SPAR_BIF_MONTH: break;
+    case SPAR_BIF_NOW: break;
+    case SPAR_BIF_RAND: break;
+    case SPAR_BIF_REGEX: break;
+    case SPAR_BIF_REPLACE: break;
+    case SPAR_BIF_ROUND: break;
+    case SPAR_BIF_SAMETERM: break;
+    case SPAR_BIF_SECONDS: break;
+    case SPAR_BIF_SHA1: break;
+    case SPAR_BIF_SHA224: break;
+    case SPAR_BIF_SHA256: break;
+    case SPAR_BIF_SHA384: break;
+    case SPAR_BIF_SHA512: break;
+    case SPAR_BIF_STR: break;
+    case SPAR_BIF_STRDT: break;
+    case SPAR_BIF_STRENDS: break;
+    case SPAR_BIF_STRLANG: break;
+    case SPAR_BIF_STRLEN: break;
+    case SPAR_BIF_STRSTARTS: break;
+    case SPAR_BIF_SUBSTR: break;
+    case SPAR_BIF_TIMEZONE: break;
+    case SPAR_BIF_TZ: break;
+    case SPAR_BIF_UCASE: break;
+    case SPAR_BIF_URI: break;
+    case SPAR_BIF_YEAR: break;
+    default: break;
+    }
+  trouble_ret[0] = 2;
+  return NULL;
+trouble_now:
+  trouble_ret[0] = 1;
+  return NULL;
+res_bool_true:
+  trouble_ret[0] = 0;
+  return SPAR_MAKE_BOOL_LITERAL(sparp, 1);
+res_bool_false:
+  trouble_ret[0] = 0;
+  return SPAR_MAKE_BOOL_LITERAL(sparp, 0);
+}
+
+int
+sparp_gp_trav_simplify_expn_out (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
+{
+  ptrlong curr_type = SPART_TYPE (curr);
+  sparp_bool4way_t b4w_res;
+  SPART *res = (SPART *)BADBEEF_BOX;
+  switch (curr_type)
+    {
+    case SPAR_ALIAS:
+    case SPAR_BLANK_NODE_LABEL: case SPAR_VARIABLE:
+    case ORDER_L:
+      return 0;
+    case SPAR_GRAPH:
+    case SPAR_GP:
+    case SPAR_LIT: case SPAR_QNAME: /* case SPAR_QNAME_NS: */
+    case SPAR_TRIPLE:
+    case SPAR_REQ_TOP:
+    case SPAR_QM_SQL_FUNCALL:
+    case SPAR_LIST:
+    case SPAR_SERVICE_INV:
+    case SPAR_DEFMACRO:
+    case SPAR_MACROCALL:
+    case SPAR_MACROPU:
+      spar_internal_error (sparp, "sparp_" "gp_trav_simplify_expn_out(): the expn_out callback should not get this type of subtree");
+      return 0;
+    case SPAR_BUILT_IN_CALL:
+      {
+        SPART *arg1 = curr->_.builtin.args[0];
+        if (SPAR_IS_LIT_OR_QNAME (arg1))
+          {
+            int trouble = 0;
+            res = sparp_simplify_builtin (sparp, curr, &trouble);
+            if (!trouble)
+              goto res_done; /* see below */
+          }
+        if (SPAR_IS_BLANK_OR_VAR (arg1))
+          {
+            int trouble = 0;
+            res = sparp_simplify_builtin (sparp, curr, &trouble);
+            if (!trouble)
+              goto res_done; /* see below */
+          }
+      }
+      return 0; /* !!!TBD */
+    case SPAR_FUNCALL:
+      {
+        caddr_t qname = curr->_.funcall.qname;
+        bif_metadata_t *bmd = NULL;
+        if (!strncmp (qname, "bif:", 4))
+          {
+            caddr_t iduqname = sqlp_box_id_upcase (qname+4);
+            bmd = find_bif_metadata_by_name (iduqname);
+            dk_free_box (iduqname);
+          }
+        else
+          bmd = (bif_metadata_t *)gethash (qname, name_to_bif_sparql_only_metadata_hash);
+        if (NULL != bmd)
+          {
+            bif_sparql_optimizer_t *bso;
+            if (bmd->bmd_is_pure && !(curr->_.funcall.disabled_optimizations & 0x1))
+              {
+                int trouble = 0;
+                res = spar_run_pure_bif_in_sandbox (sparp, qname, curr->_.funcall.argtrees, BOX_ELEMENTS (curr->_.funcall.argtrees), bmd, &trouble);
+                if (!trouble)
+                  goto res_done; /* see below */
+                if (2 == trouble)
+                  curr->_.funcall.disabled_optimizations |= 0x1;
+              }
+            bso = bmd->bmd_sparql_optimizer_impl;
+            if (NULL != bso)
+              {
+                res = bso (sparp, BIF_OPT_SIMPLIFY, curr, bmd, NULL);
+                goto res_done; /* see below */
+              }
+          }
+        return 0;
+      }
+     case BOP_EQ: case SPAR_BOP_EQNAMES: case SPAR_BOP_EQ_NONOPT: case BOP_NEQ:
+    case BOP_LT: case BOP_LTE: case BOP_GT: case BOP_GTE:
+    /*case BOP_LIKE: Like is built-in in SPARQL, not a BOP! */
+    case BOP_SAME: case BOP_NSAME:
+    case BOP_PLUS: case BOP_MINUS: case BOP_TIMES: case BOP_DIV: case BOP_MOD:
+      {
+        SPART *l_arg = curr->_.bin_exp.left;
+        SPART *r_arg = curr->_.bin_exp.right;
+        rdf_val_range_t l_rvr;
+        rdf_val_range_t r_rvr;
+        sparp_get_expn_rvr (sparp, l_arg, &l_rvr, 0);
+        if (l_rvr.rvrRestrictions & (SPART_VARR_ALWAYS_NULL | SPART_VARR_CONFLICT))
+          {
+            res = l_arg;
+            goto res_done; /* see below */
+          }
+        if (!(l_rvr.rvrRestrictions & SPART_VARR_NOT_NULL))
+          return 0;
+        if (!(l_rvr.rvrRestrictions & (SPART_VARR_TYPED | SPART_VARR_FIXED)))
+          return 0;
+        sparp_get_expn_rvr (sparp, r_arg, &r_rvr, 0);
+        if (r_rvr.rvrRestrictions & (SPART_VARR_ALWAYS_NULL | SPART_VARR_CONFLICT))
+          {
+            res = r_arg;
+            goto res_done; /* see below */
+          }
+        if (!(l_rvr.rvrRestrictions & SPART_VARR_NOT_NULL))
+          return 0;
+        if (!(r_rvr.rvrRestrictions & (SPART_VARR_TYPED | SPART_VARR_FIXED)))
+          return 0;
+        if (l_rvr.rvrRestrictions & r_rvr.rvrRestrictions & SPART_VARR_FIXED)
+          {
+            int errcode = sparp_calc_bop_of_fixed_vals (sparp, curr_type, &l_rvr, &r_rvr, &res);
+            if (0 == errcode)
+              goto res_done; /* see below */
+          }
+        return 0;
+      }
+    case BOP_NOT:
+      {
+        SPART *l_arg = curr->_.bin_exp.left;
+        rdf_val_range_t l_rvr;
+        sparp_get_expn_rvr (sparp, l_arg, &l_rvr, 0);
+        b4w_res = sparp_cast_rvr_to_bool4way (sparp, &l_rvr);
+        b4w_res = (('T' == b4w_res) ? 'F' : (('F' == b4w_res) ? 'T' : b4w_res));
+        goto b4w_res_done; /* see below */
+      }
+    case BOP_AND:
+      {
+        SPART *l_arg = curr->_.bin_exp.left;
+        rdf_val_range_t l_rvr;
+        sparp_get_expn_rvr (sparp, l_arg, &l_rvr, 0);
+        b4w_res = sparp_cast_rvr_to_bool4way (sparp, &l_rvr);
+        if ('T' == b4w_res)
+          {
+            res = curr->_.bin_exp.right;
+            goto res_done; /* see below */
+          }
+        if (('F' == b4w_res) || ('U' == b4w_res))
+          goto b4w_res_done; /* see below */
+        return 0;
+      }
+    case BOP_OR:
+      {
+        SPART *l_arg = curr->_.bin_exp.left;
+        rdf_val_range_t l_rvr;
+        sparp_get_expn_rvr (sparp, l_arg, &l_rvr, 0);
+        b4w_res = sparp_cast_rvr_to_bool4way (sparp, &l_rvr);
+        if ('F' == b4w_res)
+          {
+            res = curr->_.bin_exp.right;
+            goto res_done; /* see below */
+          }
+        if (('T' == b4w_res) || ('U' == b4w_res))
+          goto b4w_res_done; /* see below */
+        return 0;
+      }
+    }
+  spar_internal_error (sparp, "sparp_" "tree_full_copy(): unsupported type of expression");
+  return 0; /* to keep C compiler happy */
+
+b4w_res_done:
+  if ('T' == b4w_res) res = SPAR_MAKE_BOOL_LITERAL(sparp, 1);
+  else if ('F' == b4w_res) res = SPAR_MAKE_BOOL_LITERAL(sparp, 0);
+  /*else if ('U' == b4w_res) res = (SPART *)t_NEW_DB_NULL;*/
+  else return 0;
+  goto res_done; /* see below */
+
+res_done:
+  sts_this->sts_curr_array[sts_this->sts_ofs_of_curr_in_array] = res;
+  sparp->sparp_rewrite_dirty++;
+  return 0;
+}
+
+int
+sparp_gp_trav_simplify_expn_subq (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
+{
+  sparp_continue_gp_trav_in_sub (sparp, curr, common_env, 1);
+  return 0;
+}
+
+
 /* Main rewriting functions */
 
 void
@@ -2740,6 +3414,27 @@ sparp_rewrite_basic (sparp_t *sparp)
   sparp_remove_redundant_connections (sparp, 0);
   sparp_audit_mem (sparp);
 }
+
+void
+sparp_simplify_expns (sparp_t *sparp)
+{
+  int saved_sparp_dirty = sparp->sparp_rewrite_dirty;
+  int local_dirty;
+  sparp->sparp_rewrite_dirty = 0;
+  local_dirty = sparp->sparp_rewrite_dirty;
+  sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, NULL,
+    NULL, NULL,
+    NULL, sparp_gp_trav_simplify_expn_out, sparp_gp_trav_simplify_expn_subq,
+    NULL );
+  sparp_trav_out_clauses (sparp, sparp->sparp_expr, NULL,
+    NULL, NULL,
+    NULL, sparp_gp_trav_simplify_expn_out, sparp_gp_trav_simplify_expn_subq,
+    NULL );
+  sparp->sparp_rewrite_dirty += saved_sparp_dirty;
+  if (local_dirty)
+    sparp_rewrite_basic (sparp);
+}
+
 
 /* PART 2. GRAPH PATTERN TERM REWRITING */
 
@@ -5943,6 +6638,8 @@ sparp_rewrite_qm_preopt (sparp_t *sparp, int safely_copy_retvals)
 
 retry_preopt:
   sparp_rewrite_basic (sparp);
+  if (sparp->sparp_env->spare_signal_void_variables)
+    sparp_simplify_expns (sparp);
   equivs = sparp->sparp_sg->sg_equivs;
   equiv_count = sparp->sparp_sg->sg_equiv_count;
   for (equiv_ctr = sparp->sparp_first_equiv_idx; equiv_ctr < equiv_count; equiv_ctr++)
@@ -6056,6 +6753,7 @@ sparp_rewrite_qm_optloop (sparp_t *sparp, int opt_ctr)
     NULL, NULL, NULL,
     NULL );
   sparp_equiv_audit_all (sparp, 0);
+  sparp_simplify_expns (sparp);
   sparp_rewrite_basic (sparp);
   sparp_equiv_audit_all (sparp, 0);
   if (!(opt_ctr % 2)) /* Do this not in every loop because it's costly and it almost never give a result after first loop */

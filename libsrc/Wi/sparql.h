@@ -539,7 +539,8 @@ typedef struct spar_tree_s
         /* #define SPAR_FUNCALL		(ptrlong)1005 */
         caddr_t qname;
         SPART **argtrees;
-        ptrlong agg_mode;
+        ptrlong agg_mode;		/*!< Zero for non-aggreagetes */
+        ptrlong disabled_optimizations;	/*!< So far only bit 1 is used, meaning that the run of a function in the sandbox will never be possible */
       } funcall;
     struct {
         /* #define SPAR_GP			(ptrlong)1006 */
@@ -932,6 +933,13 @@ extern SPART *sparp_make_graph_precode (sparp_t *sparp, ptrlong subtype, SPART *
 extern SPART *spar_default_sparul_target (sparp_t *sparp, const char *clause_type, int may_return_null);
 extern SPART *spar_make_regex_or_like_or_eq (sparp_t *sparp, SPART *strg, SPART *regexpn);
 extern void spar_verify_funcall_security (sparp_t *sparp, int *is_agg_ret, ccaddr_t *fname_ptr, SPART **args);
+
+/*! Tries to run a BIF \c funname in a sandbox with \c argcount number of arguments from \c args.
+The function should be pure, at least for the given arguments (but there is no check for bmd->bmd_is_pure inside it)
+\c trouble_ret is to return the sort of the problem: 0 means that a result literal (or bif:signal call) is calculated and returned;
+1 means non-literal argument, that may change after future optimizations;
+2 means weird litaral argument or weird type of the result, that will not be changed by any optimization, no need to re-try. */
+extern SPART *spar_run_pure_bif_in_sandbox (sparp_t *sparp, const char *funname, SPART **args, int argcount, struct bif_metadata_s *bmd, int *trouble_ret);
 extern SPART *spar_make_funcall (sparp_t *sparp, int aggregate_mode, const char *funname, SPART **arguments);
 extern SPART *sparp_make_builtin_call (sparp_t *sparp, ptrlong bif_id, SPART **arguments);
 extern SPART *sparp_make_macro_call (sparp_t *sparp, caddr_t funname, int call_is_explicit, SPART **arguments);

@@ -44,7 +44,6 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
-extern id_hash_t *name_to_bif_type; /* from sqlbif.c */
 
 /* Description of RDF datasources */
 
@@ -2117,11 +2116,12 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
         if (!strncmp (qname, "bif:", 4))
           {
             caddr_t iduqname = sqlp_box_id_upcase (qname+4);
-            bif_type_t ** bt = (bif_type_t **) id_hash_get (name_to_bif_type, (char *) &iduqname);
+            bif_metadata_t *bmd = find_bif_metadata_by_name (iduqname);
+            bif_type_t * bt = ((NULL == bmd) ? NULL : bmd->bmd_ret_type);
             dk_free_box (iduqname);
             if (NULL == bt)
               return 0;
-            return sparp_restr_bits_of_dtp (bt[0]->bt_dtp) & ~SPART_VARR_NOT_NULL;
+            return sparp_restr_bits_of_dtp (bt->bt_dtp) & ~SPART_VARR_NOT_NULL;
           }
         return 0; /* !!! TBD better output */
       }
@@ -4128,10 +4128,11 @@ sparp_rettype_of_function (sparp_t *sparp, caddr_t name, SPART *tree)
   if (!strncmp (name, "bif:", 4))
     {
       caddr_t iduqname = t_sqlp_box_id_upcase (name+4);
-      bif_type_t ** bt = (bif_type_t **) id_hash_get (name_to_bif_type, (char *) &iduqname);
+      bif_metadata_t *bmd = find_bif_metadata_by_name (iduqname);
+      bif_type_t *bt = ((NULL == bmd) ? NULL : bmd->bmd_ret_type);
       if (NULL != bt)
         {
-          ret_dtp = bt[0]->bt_dtp;
+          ret_dtp = bt->bt_dtp;
           goto ret_dtp_found; /* see below */
         }
     }
