@@ -370,7 +370,9 @@ thread_create (
   if (thr == (thread_t *) &_deadq.thq_head)
     {
 #ifndef OLD_PTHREADS
+#if defined(HAVE_PTHREAD_ATTR_GETSTACKSIZE)
       size_t os_stack_size = stack_size;
+#endif
 #endif
       thr = thread_alloc ();
       thr->thr_initial_function = initial_function;
