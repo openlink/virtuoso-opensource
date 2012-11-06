@@ -70,6 +70,9 @@ static char _ev_never;
 #endif
 
 dk_mutex_t * all_mtxs_mtx;
+#ifdef MTX_METER
+dk_hash_t * all_mtxs = NULL;
+#endif
 
 static void
 _pthread_call_failed (const char *file, int line, int error)
@@ -107,6 +110,8 @@ _sched_init (void)
 #endif
 #ifdef MTX_METER
   all_mtxs_mtx = mutex_allocate ();
+  all_mtxs = hash_table_allocate (10000);
+  all_mtxs->ht_rehash_threshold = 2;
 #endif
 }
 
@@ -1051,9 +1056,6 @@ failed:
  *
  ******************************************************************************/
 
-#ifdef MTX_METER
-dk_set_t all_mtxs = NULL;
-#endif
 
 dk_mutex_t *
 mutex_allocate_typed (int type)
@@ -1097,10 +1099,11 @@ mutex_allocate_typed (int type)
 #endif
 #ifdef MTX_METER
   if (all_mtxs_mtx)
-    mutex_enter (all_mtxs_mtx);
-  dk_set_push (&all_mtxs, (void*)mtx);
-  if (all_mtxs_mtx)
-    mutex_leave (all_mtxs_mtx);
+    {
+      mutex_enter (all_mtxs_mtx);
+      sethash ((void*)mtx, all_mtxs, (void*)1);
+      mutex_leave (all_mtxs_mtx);
+    }
 #endif
   return mtx;
 
@@ -1154,10 +1157,11 @@ dk_mutex_init (dk_mutex_t * mtx, int type)
 #endif
 #ifdef MTX_METER
   if (all_mtxs_mtx)
-    mutex_enter (all_mtxs_mtx);
-  dk_set_push (&all_mtxs, (void*)mtx);
-  if (all_mtxs_mtx)
-    mutex_leave (all_mtxs_mtx);
+    {
+      mutex_enter (all_mtxs_mtx);
+      sethash ((void*)mtx, all_mtxs, (void*)1);
+      mutex_leave (all_mtxs_mtx);
+    }
 #endif
   return;
  failed: ;
@@ -1189,7 +1193,7 @@ mutex_free (dk_mutex_t *mtx)
 #endif
 #ifdef MTX_METER
   mutex_enter (all_mtxs_mtx);
-  dk_set_delete (&all_mtxs, (void*) mtx);
+  remhash ((void*) mtx, all_mtxs);
   mutex_leave (all_mtxs_mtx);
 #endif
   dk_free (mtx, sizeof (dk_mutex_t));
@@ -1214,7 +1218,7 @@ dk_mutex_destroy (dk_mutex_t *mtx)
 #endif
 #ifdef MTX_METER
   mutex_enter (all_mtxs_mtx);
-  dk_set_delete (&all_mtxs, (void*) mtx);
+  remhash ((void*) mtx, all_mtxs);
   mutex_leave (all_mtxs_mtx);
 #endif
 }
@@ -1454,7 +1458,7 @@ void
 mutex_stat ()
 {
   #ifdef MTX_METER
-  DO_SET (dk_mutex_t *, mtx, &all_mtxs)
+  DO_HT (dk_mutex_t *, mtx, void*, ign, all_mtxs)
     {
 #ifdef APP_SPIN
       printf ("%s %p E: %ld W %ld  spinw: %ld spin: %d\n", mtx->mtx_name ? mtx->mtx_name : "<?>",  mtx,

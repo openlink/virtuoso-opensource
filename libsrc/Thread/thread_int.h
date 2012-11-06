@@ -243,6 +243,13 @@ struct mutex_s
     int			mtx_type;
   };
 
+#ifdef MTX_METER
+#define MTX_TS_T(m) long m;
+#define MTX_TS_SET(m, mtx) m = mtx->mtx_enters
+#else
+#define MTX_TS_T(m)
+#define MTX_TS_SET(m, mtx)
+#endif
 /* thread_queue.c */
 void thread_queue_init (thread_queue_t *thq);
 void thread_queue_to (thread_queue_t *thq, thread_t *thr);
