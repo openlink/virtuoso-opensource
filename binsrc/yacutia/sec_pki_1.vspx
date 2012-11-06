@@ -50,17 +50,27 @@
 	      {
                 declare tmp, arr any;
 		tmp := get_certificate_info (2, decode_base64 (xenc_X509_certificate_serialize ('id_rsa')), 1);
-		if (tmp is not null) {
-		arr := split_and_decode (tmp, 0, '\0\0/=');
-		self.c1 := get_keyword ('C', arr, '');
-		self.st1 := get_keyword ('ST', arr, '');
-		self.o1 := get_keyword ('O', arr, '');
-		self.ou1 := get_keyword ('OU', arr, '');
-		self.name1 := get_keyword ('CN', arr, '');
-		self.email1 := get_keyword ('emailAddress', arr, '');
-		self.uri1 := get_certificate_info (7, 'id_rsa', 3, '', '2.5.29.17');
-		if (self.uri1 is null) self.uri1 := '';
-	      }
+		if (tmp is not null) 
+		  {
+		    arr := split_and_decode (tmp, 0, '\0\0/=');
+		    self.c1 := get_keyword ('C', arr, '');
+		    self.st1 := get_keyword ('ST', arr, '');
+		    self.o1 := get_keyword ('O', arr, '');
+		    self.ou1 := get_keyword ('OU', arr, '');
+		    self.name1 := get_keyword ('CN', arr, '');
+		    self.email1 := get_keyword ('emailAddress', arr, '');
+		    self.uri1 := get_certificate_info (7, 'id_rsa', 3, '', '2.5.29.17');
+		    if (self.uri1 is null) self.uri1 := '';
+		    if (self.uri1 = '')
+		      {
+			declare rc, res, gr any;
+			res := make_cert_iri ('id_rsa');
+			gr := sprintf ('http://%{WSHost}s/pki');
+			rc := coalesce ((sparql ask where { graph `iri(?:gr)` { `iri(?:res)` ?p ?o }}), 0);
+			if (rc)
+			  self.uri1 := res;
+		      }
+		  }
 	      }
 	     else
 	       self.uri1 := make_cert_iri ('id_rsa');  
@@ -194,7 +204,15 @@
        control.vc_enabled := 0;
        self.delcert.vc_enabled := 1;
        self.nxt.vc_enabled := 1;
+       self.mgr.vc_enabled := 1;
        ]]></v:on-post>
+		</v:button>
+		<v:button action="simple" name="mgr" value="Create Issuer Graph" enabled="--case when xenc_key_exists ('id_rsa') and length (self.uri1) = 0 then 1 else 0 end ">
+		    <v:on-post><![CDATA[
+		    exec (make_cert_stmt ('id_rsa'));
+		    commit work;
+		    self.vc_redirect ('sec_pki_1.vspx');
+		]]></v:on-post>
 		</v:button>
 		<v:button action="simple" name="nxt" value="Configure HTTPS Listeners" enabled="--xenc_key_exists ('id_rsa')">
 		    <v:on-post><![CDATA[
