@@ -6663,7 +6663,7 @@ make_cert_stmt (in key_name varchar, in digest_type varchar := 'sha1')
   declare cert_fingerprint, cert_modulus, cert_exponent varchar;
   declare info any;
   declare cert_serial, cert_subject, cert_issuer, cert_val_not_before, cert_val_not_after varchar;
-  declare tag varchar;
+  declare tag, san, ian varchar;
   declare stmt varchar;
 
   cert_serial         := get_certificate_info (1, key_name, 3);
@@ -6673,6 +6673,10 @@ make_cert_stmt (in key_name varchar, in digest_type varchar := 'sha1')
   cert_val_not_after  := get_certificate_info (5, key_name, 3);
   cert_fingerprint    := get_certificate_info (6, key_name, 3, null, digest_type);
   info := get_certificate_info (9, key_name, 3);
+  san := get_certificate_info (7, key_name, 3, '', '2.5.29.17');
+  ian := get_certificate_info (7, key_name, 3, '', '2.5.29.18');
+  if (san is null) san := make_cert_iri (key_name);
+  if (ian is null) ian := make_cert_iri (key_name);
 
   cert_exponent    := info[1];
   cert_modulus     := bin2hex(info[2]);
@@ -6690,10 +6694,12 @@ PREFIX rsa: <http://www.w3.org/ns/auth/rsa#>
 PREFIX cert: <http://www.w3.org/ns/auth/cert#>
 PREFIX oplcert: <http://www.openlinksw.com/schemas/cert#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 INSERT 
 INTO GRAPH <http://%{WSHost}s/pki>
  {  
-    <%s>       cert:key <%s> .		
+    <%s>       cert:key <%s> ;
+    	       a foaf:Agent .		
     <%s>       a cert:RSAPublicKey ;  
                cert:modulus "%s"^^xsd:hexBinary ;    
                cert:exponent "%d"^^xsd:int .   
@@ -6708,13 +6714,19 @@ INTO GRAPH <http://%{WSHost}s/pki>
                oplcert:notAfter "%s"^^xsd:dateTime ; 	 
                oplcert:serial "%s" ;
 	       oplcert:digestURI <%s> ;
+	       %s
+    	       %s		   
 	       oplcert:hasPublicKey <%s> .
  }
 ',  webid, key_iri,
     key_iri, cert_modulus, cert_exponent,
     webid, cer_iri,
     cer_iri, cert_fingerprint, digest_type, cert_subject, cert_issuer, 
-    DB..date_iso8601 (DB..X509_STRING_DATE (cert_val_not_before)), DB..date_iso8601 (DB..X509_STRING_DATE (cert_val_not_after)), cert_serial, tag, key_iri);
+    DB..date_iso8601 (DB..X509_STRING_DATE (cert_val_not_before)), DB..date_iso8601 (DB..X509_STRING_DATE (cert_val_not_after)), 
+    cert_serial, tag, 
+    case when san is not null then sprintf ('oplcert:subjectAltName <%s> ; ', san) else '' end,
+    case when ian is not null then sprintf ('oplcert:issuerAltName <%s> ;', ian) else '' end,
+    key_iri);
 
 --  dbg_printf ('%s', stmt);
 
