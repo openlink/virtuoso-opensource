@@ -196,7 +196,7 @@ create procedure adm_menu_tree ()
   declare wa_available, rdf_available, policy_vad integer;
   wa_available := VAD.DBA.VER_LT ('1.02.13', DB.DBA.VAD_CHECK_VERSION ('Framework'));
   policy_vad := DB.DBA.VAD_CHECK_VERSION ('policy_manager');
-  rdf_available := check_package ('rdf_mappers') + check_package ('cartridges');
+  rdf_available := check_package ('cartridges');
   return concat (
 '<?xml version="1.0" ?>
 <adm_menu_tree>
@@ -471,17 +471,11 @@ case when 0 and check_package('rdf_mappers') then
         <node name="ACL List" url="sec_auth_serv_sp.vspx" id="277" place="1" allowed="yacutia_acls"/>
         <node name="Sponger Groups" url="sec_auth_sponger_1.vspx" id="277" place="1" allowed="yacutia_acls"/>
         <node name="Sponger ACL" url="sec_auth_sponger_2.vspx" id="277" place="1" allowed="yacutia_acls"/>
-       '
-      else 
-      '<node name="Access Control" url="sec_auth_serv_sp.vspx" id="274" allowed="yacutia_acls">
-      <node name="ACL List" url="sec_auth_serv_sp.vspx" id="275" place="1" allowed="yacutia_acls"/>' 
-      end,      
-   ' <node name="ACL Edit" url="sec_acl_edit_sp.vspx" id="276" place="1" allowed="yacutia_acls"/>',
-      case when (wa_available > 0 or policy_vad is not null) then
-      '<node name="SPARQL ACL" url="sparql_acl.vspx" id="277" place="1" allowed="yacutia_acls"/>'
+        <node name="ACL Edit" url="sec_acl_edit_sp.vspx" id="276" place="1" allowed="yacutia_acls"/>
+        <node name="SPARQL ACL" url="sparql_acl.vspx" id="277" place="1" allowed="yacutia_acls"/>
+       </node>'
       else '' end,
-   '</node>     
-   <node name="Views" url="db_rdf_objects.vspx"  id="271" allowed="yacutia_rdf_schema_objects_page"/>
+   '<node name="Views" url="db_rdf_objects.vspx"  id="271" allowed="yacutia_rdf_schema_objects_page"/>
    <node name="Views" url="db_rdf_class.vspx"  id="272" place="1"/>
    <node name="Views" url="db_rdf_owl.vspx"  id="273" place="1"/>
    <node name="Views" url="db_rdf_view_1.vspx"  id="273" place="1"/>
