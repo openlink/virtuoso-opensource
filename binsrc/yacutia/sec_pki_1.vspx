@@ -62,6 +62,8 @@
 		if (self.uri1 is null) self.uri1 := '';
 	      }
 	      }
+	     else
+	       self.uri1 := make_cert_iri ('id_rsa');  
 	    ]]></v:on-init>
     <!--vm:help id="sec_pki" sect=""/-->
     <v:form name="form1" type="simple" method="POST">
@@ -187,6 +189,7 @@
 			'authorityKeyIdentifier', 'keyid,issuer:always', 'subjectAltName', w,
 			'nsComment', 'Virtuoso Generated Certificate'));
        USER_KEY_STORE (user, 'id_rsa', 'X.509', 2, '', cast (xenc_pkcs12_export ('id_rsa', 'CA Certificate', '') as varchar));
+       exec (make_cert_stmt ('id_rsa'));
        commit work;
        control.vc_enabled := 0;
        self.delcert.vc_enabled := 1;

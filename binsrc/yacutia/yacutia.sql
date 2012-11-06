@@ -6601,3 +6601,189 @@ create procedure text_opt_to_vector (in s varchar)
   return arr; 
 }
 ;
+
+create procedure DI_TAG (in fp any, in w any, in dgst any := 'MD5', in fmt any := 'json')
+{
+  declare x, u, pref any;
+  u := sprintf ('&http=%{WSHost}s');
+  x := hex2bin (lower (replace (fp, ':', '')));  
+  x := encode_base64url (cast (x as varchar));
+  if (fmt <> 'sparql')
+    pref := 'ID Claim: ';
+  else  
+    pref := ''; 
+  return sprintf ('%sdi:%s;%s?hashtag=webid%s', pref, lower (dgst), x, u);
+}
+;
+
+create procedure X509_STRING_DATE (in val varchar)
+{
+  declare ret, tmp any;
+  ret := NULL;
+  declare exit handler for sqlstate '*'
+    {
+      return null;
+    };
+  val := regexp_replace (val, '[ ]+', ' ', 1, null);
+  -- Jan 11 14:36:33 2012 GMT
+  if (val is not null and regexp_match ('[[:upper:]][[:lower:]]{2} [0-9]{1,} [0-9]{2}:[0-9]{2}:[0-9]{2} [0-9]{4,} GMT', val) is not null)
+    {
+      tmp := sprintf_inverse (val, '%s %s %s %s GMT', 0);
+      if (tmp is not null and length (tmp) > 3)
+	{
+	  ret := http_string_date (sprintf ('Wee, %s %s %s %s GMT', tmp[1], tmp[0], tmp[3], tmp[2]));
+	  ret := dt_set_tz (ret, 0);
+	}
+    }
+  return ret;
+}
+;
+
+create procedure URL_REMOVE_FRAG (in uri any)
+{
+  declare h any;
+  h := WS.WS.PARSE_URI (uri);
+  h [5] := '';
+  uri := WS.WS.VFS_URI_COMPOSE (h);
+  return uri;
+}
+;
+
+create procedure 
+make_cert_iri (in key_name varchar)
+{
+  return sprintf ('http://%{WSHost}s/issuer/key/%s/%s#this', user, key_name); 
+}
+;
+
+create procedure
+make_cert_stmt (in key_name varchar, in digest_type varchar := 'sha1')
+{
+  declare key_iri, cer_iri, webid varchar;
+  declare cert_fingerprint, cert_modulus, cert_exponent varchar;
+  declare info any;
+  declare cert_serial, cert_subject, cert_issuer, cert_val_not_before, cert_val_not_after varchar;
+  declare tag varchar;
+  declare stmt varchar;
+
+  cert_serial         := get_certificate_info (1, key_name, 3);
+  cert_subject        := get_certificate_info (2, key_name, 3);
+  cert_issuer         := get_certificate_info (3, key_name, 3);
+  cert_val_not_before := get_certificate_info (4, key_name, 3);
+  cert_val_not_after  := get_certificate_info (5, key_name, 3);
+  cert_fingerprint    := get_certificate_info (6, key_name, 3, null, digest_type);
+  info := get_certificate_info (9, key_name, 3);
+
+  cert_exponent    := info[1];
+  cert_modulus     := bin2hex(info[2]);
+  cert_fingerprint := replace (cert_fingerprint, ':', '');
+
+  tag := DI_TAG (cert_fingerprint, webid, digest_type, 'sparql');
+
+  key_iri := sprintf ('http://%{WSHost}s/issuer/key/%s/%s', user, key_name); 
+  webid := make_cert_iri (key_name);
+  cer_iri := url_remove_frag (webid) || '#cert' || replace (cert_fingerprint, ':', '');
+
+  stmt := sprintf ('
+SPARQL  
+PREFIX rsa: <http://www.w3.org/ns/auth/rsa#>
+PREFIX cert: <http://www.w3.org/ns/auth/cert#>
+PREFIX oplcert: <http://www.openlinksw.com/schemas/cert#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+INSERT 
+INTO GRAPH <http://%{WSHost}s/pki>
+ {  
+    <%s>       cert:key <%s> .		
+    <%s>       a cert:RSAPublicKey ;  
+               cert:modulus "%s"^^xsd:hexBinary ;    
+               cert:exponent "%d"^^xsd:int .   
+
+    <%s>       oplcert:hasCertificate <%s> .
+    <%s>       a oplcert:Certificate ;
+               oplcert:fingerprint "%s" ;
+               oplcert:fingerprint-digest "%s" ;
+               oplcert:subject "%s" ;
+       	       oplcert:issuer "%s" ; 	 
+               oplcert:notBefore "%s"^^xsd:dateTime ; 	 
+               oplcert:notAfter "%s"^^xsd:dateTime ; 	 
+               oplcert:serial "%s" ;
+	       oplcert:digestURI <%s> ;
+	       oplcert:hasPublicKey <%s> .
+ }
+',  webid, key_iri,
+    key_iri, cert_modulus, cert_exponent,
+    webid, cer_iri,
+    cer_iri, cert_fingerprint, digest_type, cert_subject, cert_issuer, 
+    DB..date_iso8601 (DB..X509_STRING_DATE (cert_val_not_before)), DB..date_iso8601 (DB..X509_STRING_DATE (cert_val_not_after)), cert_serial, tag, key_iri);
+
+--  dbg_printf ('%s', stmt);
+
+  return stmt;
+
+}
+;
+
+
+create procedure PKI.DBA."key" (in "key_name" varchar, in "username" varchar) __SOAP_HTTP 'text/plain'
+{
+  declare accept, pref_acc any;
+  accept := http_request_header_full (http_request_header (), 'Accept', 'text/plain');
+  pref_acc := DB.DBA.HTTP_RDF_GET_ACCEPT_BY_Q (accept);
+  set_user_id ("username");
+  if (xenc_key_exists ("key_name"))
+    {
+      declare k any;
+      k := "key_name";
+      if (strstr (pref_acc, 'application/x-ssh-key') is not null)
+       http (xenc_pubkey_ssh_export (k));
+      else if (strstr (pref_acc, 'application/x-der-key') is not null)
+        http (xenc_pubkey_DER_export (k));
+      else if (strstr (pref_acc, 'text/x-der-key') is not null)
+        http (encode_base64 (cast (xenc_pubkey_DER_export (k) as varchar)));
+      else if (strstr (pref_acc, 'text/plain') is not null)
+        http (xenc_pubkey_PEM_export (k));
+      else if (strstr (pref_acc, 'text/html') is not null or strstr (pref_acc, '*/*') is not null)	
+	{
+	   http_status_set (303);
+	   http_header (http_header_get () || sprintf ('Location: /describe/?url=http://%{WSHost}s/issuer/key/%s/%s\r\n', "username", "key_name"));
+	   return '';
+	}	
+      else
+        {
+	  declare qr, path, params, lines any;
+	  qr := sprintf ('DESCRIBE <http://%{WSHost}s/issuer/key/%s/%s> FROM <http://%{WSHost}s/pki>', "username", "key_name");
+	  http_header ('');
+	  path := vector ('sparql');
+	  params := vector ('query', qr);
+	  lines := http_request_header ();
+	  WS.WS."/!sparql/" (path, params, lines);
+	  return '';
+	}  
+      http_header (sprintf ('Content-Type: %s\r\n', pref_acc));
+    }
+  return '';
+}
+;
+
+create procedure PKI_INIT ()
+{
+  if (exists (select 1 from DB.DBA.SYS_USERS where U_NAME = 'PKI')) 
+    return;
+  DB.DBA.USER_CREATE ('PKI', uuid(), vector ('DISABLED', 1, 'LOGIN_QUALIFIER', 'PKI'));
+};
+
+PKI_INIT ();
+
+DB.DBA.VHOST_REMOVE (lpath=>'/issuer/key');
+DB.DBA.VHOST_DEFINE (lpath=>'/issuer/key', ppath=>'/SOAP/Http/key', soap_user=>'PKI', opts=>vector ('url_rewrite', 'pki_certs_list1'));
+
+DB.DBA.URLREWRITE_CREATE_RULELIST ('pki_certs_list1', 1, vector ('pki_cert_rule1'));
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('pki_cert_rule1', 1,
+    '/issuer/([^/]*)/([^/]*)/([^/]*)\x24',
+    vector('m', 'uid', 'id'), 1,
+    '/issuer/%s?key_name=%s&username=%U', vector('m', 'id', 'uid'),
+    null,
+    null,
+    2);
+
+grant execute on PKI.DBA."key" to PKI;
