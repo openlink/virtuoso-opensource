@@ -478,7 +478,7 @@
 					      if (exists (select 1 from FOAF_SSL_ACL where FS_URI = self.webid.ufl_value))
 						{
 						  self.vc_is_valid := 0;
-						  self.vc_error_message := 'This Web ID is alredy registered';
+						      self.vc_error_message := 'This Web ID is already registered';
 						  return;
 						}
 					      uid := sprintf ('SPUID%d', sequence_next ('__SPUID'));
