@@ -311,10 +311,11 @@ nntp_get (char *host, char *user, char *pass, char *mode, char *group, caddr_t *
 
 	  if (!STRSES_CAN_BE_STRING (msg))
 	    {
-	      strcpy_ck (resp, "More that the allowed limit stored into a string session");
-	      goto error_end;
+	      dk_set_push (ret_val, list (2, box_num (num), msg));
+	      msg = strses_allocate ();
 	    }
-	  dk_set_push (ret_val, list (2, box_num (num), strses_string (msg)));
+	  else
+	    dk_set_push (ret_val, list (2, box_num (num), strses_string (msg)));
 	}
     }
 

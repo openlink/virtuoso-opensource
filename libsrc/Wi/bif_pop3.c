@@ -294,12 +294,11 @@ pop3_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 		}
 	      if (!STRSES_CAN_BE_STRING (msg))
 		{
-		  strcpy_ck (err_text, "Server error in storing data into a string session");
-		  strcpy_ck (err_code, "PO010");
-		  SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
-		  goto error_end;
+		  dk_set_push (ret_v, list (2, my_list[inx-1], msg));
+		  msg = strses_allocate ();
 		}
-	      dk_set_push (ret_v, list (2, my_list[inx - 1], strses_string (msg)));
+	      else
+		dk_set_push (ret_v, list (2, my_list[inx - 1], strses_string (msg)));
 	      my_list[inx - 1] = NULL;
 	    }
 	  FAILED
