@@ -5234,7 +5234,7 @@ virtodbc__SQLGetData (
       int is_nts = (fCType == SQL_C_CHAR);
       int is_wnts = (fCType == SQL_C_WCHAR);
       col_binding_t *cb = stmt_nth_col (stmt, icol);
-      size_t length = bh->bh_length - cb->cb_read_up_to;
+      size_t length = bh->bh_length >= cb->cb_read_up_to ? bh->bh_length - cb->cb_read_up_to : 0; /* it may get negative turned to uint64  */
 
       if (0 == length)
 	{
