@@ -72,7 +72,7 @@ isql_CFLAGS  = $(AM_CFLAGS) -DOPSYS=\"@OPSYS@\"
 isql_LDADD   = $(client_libs) @LIBRDL@
 
 isqlw_SOURCES = isql.c time.c isql_wfuncs.c
-isqlw_CFLAGS  = $(AM_CFLAGS) -DUNICODE -D_UNICODE 
+isqlw_CFLAGS  = $(AM_CFLAGS) -DOPSYS=\"@OPSYS@\" -DUNICODE -D_UNICODE 
 isqlw_LDADD   = $(client_libs) @LIBRDL@
 
 paramstats_LDADD = $(client_libs)
@@ -131,14 +131,20 @@ isql_iodbc_SOURCES = $(isql_SOURCES)
 isql_iodbc_CFLAGS  = $(isql_CFLAGS) $(iODBC_CFLAGS)
 isql_iodbc_LDADD   = \
 	@iodbc_LDFLAGS@ \
+	$(top_builddir)/libsrc/Dk/libdk1t.la \
+	$(top_builddir)/libsrc/Thread/libthrs.la \
 	$(top_builddir)/libsrc/util/libutil.la \
+	@clntlibs@ \
 	@LIBRDL@
 
 isqlw_iodbc_SOURCES = $(isqlw_SOURCES)
 isqlw_iodbc_CFLAGS  = $(isqlw_CFLAGS) $(iODBC_CFLAGS)
 isqlw_iodbc_LDADD   = \
 	@iodbc_LDFLAGS@ \
+	$(top_builddir)/libsrc/Dk/libdk1t.la \
+	$(top_builddir)/libsrc/Thread/libthrs.la \
 	$(top_builddir)/libsrc/util/libutil.la \
+	@clntlibs@ \
 	@LIBRDL@
 
 scroll_iodbc_SOURCES = $(scroll_SOURCES)
