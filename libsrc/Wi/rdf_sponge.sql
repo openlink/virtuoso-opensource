@@ -115,7 +115,8 @@ create function DB.DBA.RDF_GRAB_SINGLE (in val any, inout grabbed any, inout env
         'get:destination', final_dest,
         'get:group-destination', final_gdest,
         'get:strategy', get_keyword_ucase ('get:strategy', env),
-        'get:error-recovery', get_keyword_ucase ('get:error-recovery', env) );
+        'get:error-recovery', get_keyword_ucase ('get:error-recovery', env),
+        'get:note', get_keyword_ucase ('get:note', env) );
       dict_put (grabbed, url, 1);
       call (get_keyword ('loader', env, 'DB.DBA.RDF_SPONGE_UP'))(url, opts, user);
       commit work;
@@ -470,11 +471,15 @@ create table DB.DBA.SYS_HTTP_SPONGE (
   HS_SQL_MESSAGE varchar,
   HS_FROM_IRI varchar,
   HS_QUALITY double precision,
+  HS_NOTE varchar,
   primary key (HS_LOCAL_IRI, HS_PARSER)
 )
 alter index SYS_HTTP_SPONGE on DB.DBA.SYS_HTTP_SPONGE partition (HS_LOCAL_IRI varchar)
 create index SYS_HTTP_SPONGE_EXPIRATION on DB.DBA.SYS_HTTP_SPONGE (HS_EXPIRATION desc) partition (HS_LOCAL_IRI varchar)
 create index SYS_HTTP_SPONGE_FROM_IRI on DB.DBA.SYS_HTTP_SPONGE (HS_FROM_IRI, HS_PARSER) partition (HS_FROM_IRI varchar)
+;
+
+alter table DB.DBA.SYS_HTTP_SPONGE add HS_NOTE varchar
 ;
 
 create table DB.DBA.SYS_HTTP_SPONGE_REFRESH_DEFAULTS (
@@ -653,6 +658,7 @@ create function DB.DBA.SYS_HTTP_SPONGE_UP (in local_iri varchar, in get_uri varc
     new_download_size, explicit_refresh, max_sz integer;
   declare get_method varchar;
   declare get_soft varchar;
+  declare get_note varchar;
   declare ret_hdr, immg, req_hdr_arr any;
   declare req_hdr varchar;
   declare ret_body, ret_content_type, ret_etag, ret_last_modified, ret_date, ret_last_modif, ret_expires varchar;
@@ -667,6 +673,7 @@ create function DB.DBA.SYS_HTTP_SPONGE_UP (in local_iri varchar, in get_uri varc
   new_origin_login := cast (get_keyword_ucase ('get:login', options) as varchar);
   explicit_refresh := get_keyword_ucase ('get:refresh', options);
   get_soft := get_keyword_ucase ('get:soft', options, '');
+  get_note := get_keyword_ucase ('get:note', options);
   if (explicit_refresh is null)
     {
       max_refresh := atoi (coalesce (virtuoso_ini_item_value ('SPARQL', 'MaxCacheExpiration'), '-1'));
@@ -728,7 +735,7 @@ create function DB.DBA.SYS_HTTP_SPONGE_UP (in local_iri varchar, in get_uri varc
         {
           -- dbg_obj_princ ('not expired, return');
           update DB.DBA.SYS_HTTP_SPONGE
-          set HS_LAST_READ = now(), HS_READ_COUNT = old_read_count + 1
+          set HS_LAST_READ = now(), HS_READ_COUNT = old_read_count + 1, HS_NOTE = get_note
           where HS_LOCAL_IRI = local_iri and HS_LAST_READ < now();
           commit work;
 	  return local_iri;
@@ -755,7 +762,7 @@ update_old_origin:
     HS_EXP_IS_TRUE = 0, HS_EXPIRATION = NULL, HS_LAST_MODIFIED = NULL,
     HS_DOWNLOAD_SIZE = NULL, HS_DOWNLOAD_MSEC_TIME = NULL,
     HS_READ_COUNT = 0,
-    HS_SQL_STATE = NULL, HS_SQL_MESSAGE = NULL
+    HS_SQL_STATE = NULL, HS_SQL_MESSAGE = NULL, HS_NOTE = get_note
   where
     HS_LOCAL_IRI = local_iri and HS_PARSER = parser;
   commit work;
@@ -766,8 +773,8 @@ add_new_origin:
   old_origin_uri := NULL; old_origin_login := NULL; old_last_load := NULL; old_last_etag := NULL;
   old_expiration := NULL; old_download_size := NULL; old_download_msec_time := NULL;
   old_exp_is_true := 0; old_read_count := 0;
-  insert into DB.DBA.SYS_HTTP_SPONGE (HS_LOCAL_IRI, HS_PARSER, HS_ORIGIN_URI, HS_ORIGIN_LOGIN, HS_LAST_LOAD)
-  values (local_iri, parser, new_origin_uri, new_origin_login, now());
+  insert into DB.DBA.SYS_HTTP_SPONGE (HS_LOCAL_IRI, HS_PARSER, HS_ORIGIN_URI, HS_ORIGIN_LOGIN, HS_LAST_LOAD, HS_NOTE)
+  values (local_iri, parser, new_origin_uri, new_origin_login, now(), get_note);
   commit work;
   goto perform_actual_load;
 
@@ -849,7 +856,8 @@ perform_actual_load:
 	      set HS_SQL_STATE = 'RDFXX',
 	      HS_SQL_MESSAGE = sprintf ('Unable to retrieve RDF data from "%.500s": %.500s', new_origin_uri, ret_hdr[0]),
 	      HS_EXPIRATION = now (),
-	      HS_EXP_IS_TRUE = 0
+	      HS_EXP_IS_TRUE = 0,
+	      HS_NOTE = get_note
 		  where
 		  HS_LOCAL_IRI = local_iri and HS_PARSER = parser;
 	  commit work;
@@ -882,7 +890,7 @@ resp_received:
         HS_DOWNLOAD_SIZE = old_download_size,
         HS_DOWNLOAD_MSEC_TIME = old_download_msec_time,
         HS_READ_COUNT = old_read_count + 1,
-        HS_SQL_STATE = NULL, HS_SQL_MESSAGE = NULL
+        HS_SQL_STATE = NULL, HS_SQL_MESSAGE = NULL, HS_NOTE = get_note
       where
         HS_LOCAL_IRI = local_iri;
       commit work;
@@ -895,7 +903,7 @@ resp_received:
 	  set HS_SQL_STATE = 'RDFXX',
 	  HS_SQL_MESSAGE = sprintf ('Unable to retrieve RDF data from "%.500s": %.500s', new_origin_uri, ret_hdr[0]),
 	  HS_EXPIRATION = now (),
-	  HS_EXP_IS_TRUE = 0
+	  HS_EXP_IS_TRUE = 0, HS_NOTE = get_note
 	      where
 	      HS_LOCAL_IRI = local_iri and HS_PARSER = parser;
       commit work;
@@ -913,7 +921,7 @@ resp_received:
 	  set HS_SQL_STATE = 'RDFXX',
 	  HS_SQL_MESSAGE = sprintf ('Content length %d is over the limit %d', new_download_size, max_sz),
 	  HS_EXPIRATION = now (),
-	  HS_EXP_IS_TRUE = 0
+	  HS_EXP_IS_TRUE = 0, HS_NOTE = get_note
 	      where
 	      HS_LOCAL_IRI = local_iri and HS_PARSER = parser;
       commit work;
@@ -967,7 +975,7 @@ resp_received:
     HS_DOWNLOAD_SIZE = new_download_size,
     HS_DOWNLOAD_MSEC_TIME = load_end_msec - load_begin_msec,
     HS_READ_COUNT = 1,
-    HS_SQL_STATE = NULL, HS_SQL_MESSAGE = NULL
+    HS_SQL_STATE = NULL, HS_SQL_MESSAGE = NULL, HS_NOTE = get_note
   where
     HS_LOCAL_IRI = local_iri and HS_PARSER = parser;
   commit work;
@@ -989,7 +997,8 @@ error_during_load:
   set HS_SQL_STATE = stat,
     HS_SQL_MESSAGE = msg,
     HS_EXPIRATION = coalesce (ret_dt_expires, new_expiration, now()),
-    HS_EXP_IS_TRUE = case (isnull (ret_dt_expires)) when 1 then 0 else 1 end
+    HS_EXP_IS_TRUE = case (isnull (ret_dt_expires)) when 1 then 0 else 1 end,
+    HS_NOTE = get_note
   where
     HS_LOCAL_IRI = local_iri and HS_PARSER = parser;
   commit work;
