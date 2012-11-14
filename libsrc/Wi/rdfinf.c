@@ -1016,9 +1016,10 @@ bif_rdf_inf_set_ifp_list (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
   caddr_t * arr = bif_array_of_pointer_arg (qst, args, 1, "rdf_inf_set_ifp_list");
   int dirt;
   caddr_t * grps;
+  dk_set_t ifp_rel_acc = NULL;
+
   sec_check_dba ((query_instance_t *)qst, "rdf_inf_set_ifp_list");
   grps = box_copy /*_tree*/ (arr);
-  dk_set_t ifp_rel_acc = NULL;
   ctx->ric_ifp_list = box_copy_tree ((caddr_t)arr);
   ifp_count = BOX_ELEMENTS_0 (arr);
   if (ctx->ric_iid_to_rel_ifp->ht_inserts != ctx->ric_iid_to_rel_ifp->ht_deletes)
