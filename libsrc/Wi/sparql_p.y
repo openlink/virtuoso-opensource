@@ -39,7 +39,7 @@ Whitespaces in all other places, including two whitespaces after "::=" in BNF co
 %pure_parser
 %parse-param {sparp_t * sparp_arg}
 %lex-param {sparp_t * sparp_arg}
-%expect 6
+%expect 72
 
 %{
 #include "libutil.h"
@@ -110,7 +110,9 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token _AMP_AMP		/*:: PUNCT_SPAR_LAST("&&") ::*/
 %token _BACKQUOTE	/*:: PUNCT_SPAR_LAST("`") ::*/
 %token _BANG		/*:: PUNCT_SPAR_LAST("!") ::*/
+%token _BAR		/*:: PUNCT_SPAR_LAST("|") ::*/
 %token _BAR_BAR		/*:: PUNCT_SPAR_LAST("||") ::*/
+%token _CARET		/*:: PUNCT_SPAR_LAST("^") ::*/
 %token _CARET_CARET	/*:: PUNCT_SPAR_LAST("^^") ::*/
 %token _COMMA		/*:: PUNCT_SPAR_LAST(",") ::*/
 %token _DOT		/*:: PUNCT_SPAR_LAST(".") ::*/
@@ -126,6 +128,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token _NOT_EQ		/*:: PUNCT_SPAR_LAST("!=") ::*/
 %token<token_type> _PLUS		/*:: PUNCT_SPAR_LAST("+") ::*/
 %token _PLUS_GT		/*:: PUNCT_SPAR_LAST("+>") ::*/
+%token _QMARK		/*:: PUNCT_SPAR_LAST("?") ::*/
 %token _RBRA		/*:: PUNCT_SPAR_LAST("{ }") ::*/
 %token _RPAR		/*:: PUNCT_SPAR_LAST("( )") ::*/
 %token _RSQBRA		/*:: PUNCT_SPAR_LAST("[ ]") ::*/
@@ -401,6 +404,10 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <backstack> spar_triple_option_var_commalist
 %type <token_type> spar_same_as_option
 %type <tree> spar_verb
+%type <tree> spar_ppath
+%type <tree> spar_ppath_seq
+%type <tree> spar_ppath_fwd_or_inv
+%type <tree> spar_ppath_leaf_or_sub
 %type <tree> spar_triples_node
 %type <nothing> spar_cons_collection
 %type <tree> spar_graph_node
@@ -408,7 +415,6 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <backstack> spar_var_or_iriref_or_pexpn_or_backquoteds
 %type <tree> spar_var_or_blank_node_or_iriref_or_backquoted
 %type <tree> spar_var_or_iriref_or_pexpn_or_backquoted
-%type <tree> spar_var_or_iriref_or_backquoted
 %type <backstack> spar_retcol_commalist
 %type <backstack> spar_retcols
 %type <tree> spar_ret_agg_call
@@ -552,10 +558,15 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %nonassoc _EQ _NOT_EQ
 %nonassoc IN_L NOT_IN_L LIKE_L
 %nonassoc _LT _LE _GT _GE
-%left _PLUS _MINUS
-%left _SLASH _STAR
-%nonassoc UMINUS
-%nonassoc UPLUS
+%left MATH_PLUS MATH_MINUS
+%left MATH_SLASH MATH_STAR
+%nonassoc MATH_UMINUS
+%nonassoc MATH_UPLUS
+%left PPATH_ALTERNATIVE
+%left PPATH_SEQUENCE
+%nonassoc PPATH_CARET
+%nonassoc PPATH_MOD
+%nonassoc PPATH_BANG
 %left _LSQBRA _RSQBRA _LPAR _RPAR
 
 %%
@@ -769,8 +780,8 @@ spar_dm_patitem_o	/* [Virt]	PatternItemO	 ::=  VAR1 | VAR2 | IRIref	*/
 			/*... | RDFLiteral | ( '-' | '+' )? NumericLiteral | BooleanLiteral | NIL	*/
 	: QD_VARNAME { $$ = spar_make_param_or_variable (sparp_arg, $1); }
 	| spar_numeric_literal
-	| _PLUS spar_numeric_literal	{ $$ = $2; }
-	| _MINUS spar_numeric_literal	{ $$ = $2; spar_change_sign (&($2->_.lit.val)); }
+	| _PLUS spar_numeric_literal	%prec MATH_UPLUS	{ $$ = $2; }
+	| _MINUS spar_numeric_literal	%prec MATH_UMINUS	{ $$ = $2; spar_change_sign (&($2->_.lit.val)); }
 	| NIL_L				{ $$ = (SPART *)t_box_dv_uname_string ("http://www.w3.org/1999/02/22-rdf-syntax-ns#nil"); }
 	| spar_rdf_literal
 	| spar_boolean_literal
@@ -1529,10 +1540,42 @@ spar_same_as_option
 	| SAME_AS_S_O_L	{ $$ = SAME_AS_S_O_L; }
 	;
 
-spar_verb		/* [33]	Verb		 ::=  VarOrBlankNodeOrIRIref | 'a'	*/
-	: spar_var_or_iriref_or_backquoted
-	| a_L { $$ = spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_type); }
-	| error { sparyyerror (sparp_arg, "Predicate expected (i.e., variable or IRI ref or a backquoted expn or 'a' keyword)"); }
+spar_verb		/* Verb		 ::=  Var | Backquoted | PPath	*/
+	: spar_var
+	| spar_ppath
+	| spar_backquoted
+	| error { sparyyerror (sparp_arg, "Predicate expected (i.e., variable or a backquoted expn or IRI ref or 'a' keyword or some property path)"); }
+	;
+
+spar_ppath
+	: spar_ppath_seq			{ $$ = $1; }
+	| spar_ppath _BAR spar_ppath_seq	{ $$ = spar_make_ppath (sparp_arg, '|', $1, $3, 0, 0); }
+	;
+
+spar_ppath_seq
+	: spar_ppath_fwd_or_inv			{ $$ = $1; }
+	| spar_ppath_seq _SLASH spar_ppath_fwd_or_inv	{ $$ = spar_make_ppath (sparp_arg, '/', $1, $3, 0, 0); }
+	;
+
+spar_ppath_fwd_or_inv
+	: _CARET spar_ppath_leaf_or_sub _QMARK	{ $$ = spar_make_ppath (sparp_arg, '*', spar_make_ppath (sparp_arg, '^', $2, NULL, 0, 0), NULL, 0, 1); }
+	| _CARET spar_ppath_leaf_or_sub _STAR	{ $$ = spar_make_ppath (sparp_arg, '*', spar_make_ppath (sparp_arg, '^', $2, NULL, 0, 0), NULL, 0, -1); }
+	| _CARET spar_ppath_leaf_or_sub _PLUS	{ $$ = spar_make_ppath (sparp_arg, '*', spar_make_ppath (sparp_arg, '^', $2, NULL, 0, 0), NULL, 1, -1); }
+	| _CARET spar_ppath_leaf_or_sub		{ $$ = spar_make_ppath (sparp_arg, '^', $2, NULL, 0, 0); }
+	| spar_ppath_leaf_or_sub _QMARK		{ $$ = spar_make_ppath (sparp_arg, '*', $1, NULL, 0, 1); }
+	| spar_ppath_leaf_or_sub _STAR		{ $$ = spar_make_ppath (sparp_arg, '*', $1, NULL, 0, -1); }
+	| spar_ppath_leaf_or_sub _PLUS		{ $$ = spar_make_ppath (sparp_arg, '*', $1, NULL, 1, -1); }
+	| spar_ppath_leaf_or_sub		{ $$ = $1; }
+	;
+
+spar_ppath_leaf_or_sub
+	: DISTINCT_L _LPAR spar_ppath _RPAR	{ $$ = spar_make_ppath (sparp_arg, 'D', $3, NULL, 0, 0); }
+	| _LPAR spar_ppath _RPAR		{ $$ = $2; }
+	| _BANG _LPAR spar_ppath _RPAR		{ $$ = spar_make_ppath (sparp_arg, '!', $3, NULL, 0, 0); }
+	| _BANG spar_iriref			{ $$ = spar_make_ppath (sparp_arg, '!', $2, NULL, 0, 0); }
+	| _BANG a_L				{ $$ = spar_make_ppath (sparp_arg, '!', spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_type), NULL, 0, 0); }
+	| spar_iriref				{ $$ = $1; }
+	| a_L					{ $$ = spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_type); }
 	;
 
 spar_triples_node	/* [34]	TriplesNode	 ::=  Collection | BlankNodePropertyList	*/
@@ -1598,12 +1641,6 @@ spar_var_or_iriref_or_pexpn_or_backquoted
 	| spar_iriref
 	| spar_backquoted
 	| _LPAR spar_expn _RPAR	{ $$ = $2; }
-	;
-
-spar_var_or_iriref_or_backquoted	/* [39]*	VarOrIRIrefOrBackquoted	 ::=  Var | IRIref | Backquoted	*/
-	: spar_var
-	| spar_iriref
-	| spar_backquoted
 	;
 
 spar_var_or_blank_node_or_iriref_or_backquoted	/* [40]*	VarOrBlankNodeOrIRIrefOrBackquoted	 ::=  Var | BlankNode | IRIref | Backquoted	*/
@@ -1707,8 +1744,8 @@ spar_graph_term		/* [42]*	GraphTerm	 ::=  IRIref | RDFLiteral | ( '-' | '+' )? N
 	: spar_iriref
 	| spar_rdf_literal
 	| spar_numeric_literal
-	| _PLUS spar_numeric_literal	{ $$ = $2; }
-	| _MINUS spar_numeric_literal	{ $$ = $2; spar_change_sign (&($2->_.lit.val)); }
+	| _PLUS spar_numeric_literal	%prec MATH_UPLUS	{ $$ = $2; }
+	| _MINUS spar_numeric_literal	%prec MATH_UMINUS	{ $$ = $2; spar_change_sign (&($2->_.lit.val)); }
 	| spar_boolean_literal
 	| spar_blank_node
 	| NIL_L				{ $$ = (SPART *)t_box_dv_uname_string ("http://www.w3.org/1999/02/22-rdf-syntax-ns#nil"); }
@@ -1786,23 +1823,23 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	( 'AS' ( VAR1 | VAR2 ) ) */
 	| spar_expn _GT spar_expn	{ SPAR_BIN_OP ($$, BOP_LT, $3, $1); }
 	| spar_expn _LE spar_expn	{ SPAR_BIN_OP ($$, BOP_LTE, $1, $3); }
 	| spar_expn _GE spar_expn	{ SPAR_BIN_OP ($$, BOP_LTE, $3, $1); }
-	| spar_expn _PLUS spar_expn {	/* [49]	AdditiveExpn	 ::=  MultiplicativeExpn ( ('+'|'-') MultiplicativeExpn )*	*/
+	| spar_expn _PLUS spar_expn	%prec MATH_PLUS	{	/* [49]	AdditiveExpn	 ::=  MultiplicativeExpn ( ('+'|'-') MultiplicativeExpn )*	*/
 		if (sparp_arg->sparp_rset_lexdepth_plus_1 == $2 + 1)
 		  sparyyerror (sparp_arg, "Ambiguous (unary or binary) plus operator in result list, please add \"(\" and \")\"");
 		  SPAR_BIN_OP ($$, BOP_PLUS, $1, $3); }
-	| spar_expn _MINUS spar_expn	{
+	| spar_expn _MINUS spar_expn	%prec MATH_MINUS	{
 		if (sparp_arg->sparp_rset_lexdepth_plus_1 == $2 + 1)
 		  sparyyerror (sparp_arg, "Ambiguous (unary or binary) minus operator in result list, please add \"(\" and \")\"");
 		SPAR_BIN_OP ($$, BOP_MINUS, $1, $3); }
-	| spar_expn _STAR spar_expn {	/* [50]	MultiplicativeExpn	 ::=  UnaryExpn ( ('*'|'/') UnaryExpn )*	*/
+	| spar_expn _STAR spar_expn	%prec MATH_STAR {	/* [50]	MultiplicativeExpn	 ::=  UnaryExpn ( ('*'|'/') UnaryExpn )*	*/
 		  SPAR_BIN_OP ($$, BOP_TIMES, $1, $3); }
-	| spar_expn _SLASH spar_expn	{ SPAR_BIN_OP ($$, BOP_DIV, $1, $3); }
+	| spar_expn _SLASH spar_expn	%prec MATH_SLASH	{ SPAR_BIN_OP ($$, BOP_DIV, $1, $3); }
 	| _BANG spar_expn {		/* [51]*	UnaryExpn	 ::=   ('!'|'NOT'|'+'|'-')? PrimaryExpn */
 		SPAR_BIN_OP ($$, BOP_NOT, $2, NULL); }
-	| _PLUS	spar_expn	%prec UPLUS	{
+	| _PLUS	spar_expn	%prec MATH_UPLUS	{
 		SPAR_BIN_OP ($$, BOP_PLUS,
 		  spartlist (sparp_arg, 4, SPAR_LIT, (SPART *) t_box_num_nonull(0), uname_xmlschema_ns_uri_hash_integer, NULL), $2); }
-	| _MINUS spar_expn	%prec UMINUS	{
+	| _MINUS spar_expn	%prec MATH_UMINUS	{
 		caddr_t *val_ptr = NULL;
 		if (DV_ARRAY_OF_POINTER == DV_TYPE_OF ($2)) {
 		    if (SPAR_LIT == $2->type)

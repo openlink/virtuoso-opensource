@@ -381,7 +381,9 @@ SPAR_PARAMNAME	(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQL
 <SPARQL>"&&"		{ return _AMP_AMP	; }
 <SPARQL>"`"		{ return _BACKQUOTE	; }
 <SPARQL>"!"		{ return _BANG		; }
+<SPARQL>"|"		{ return _BAR		; }
 <SPARQL>"||"		{ return _BAR_BAR	; }
+<SPARQL>"^"		{ return _CARET		; }
 <SPARQL>"^^"		{ return _CARET_CARET	; }
 <SPARQL>","		{ return _COMMA		; }
 <SPARQL>"."		{ return _DOT		; }
@@ -394,6 +396,7 @@ SPAR_PARAMNAME	(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQL
 <SPARQL>"!="		{ return _NOT_EQ	; }
 <SPARQL>"+"		{ sparyylval.token_type = sparp->sparp_lexdepth; return _PLUS		; }
 <SPARQL>"+>"		{ return _PLUS_GT	; }
+<SPARQL>"?"		{ return _QMARK		; }
 <SPARQL>";"		{ return _SEMI		; }
 <SPARQL>"/"		{ return _SLASH		; }
 <SPARQL>"*"		{ return _STAR		; }

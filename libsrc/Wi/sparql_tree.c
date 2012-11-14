@@ -139,6 +139,7 @@ scan_for_children:
     case SPAR_LIT:
     case SPAR_QNAME:
     /*case SPAR_QNAME_NS:*/
+    case SPAR_PPATH:
       {
         tree_cat = 2;
         break;
@@ -1027,6 +1028,17 @@ spar_macroprocess_tree (sparp_t *sparp, SPART *tree, spar_mproc_ctx_t *ctx)
         spar_add_service_inv_to_sg (sparp, tree);
         return tree;
       }
+    case SPAR_PPATH:
+      switch (tree->_.ppath.subtype)
+        {
+        case '*': case '/': case '|': case 'D':
+          DO_BOX_FAST (SPART *, part, ctr, tree->_.ppath.parts)
+            {
+              tree->_.ppath.parts[ctr] = spar_macroprocess_tree (sparp, part, ctx);
+            }
+          END_DO_BOX_FAST;
+        }
+      return tree;
     default:
       {
         GPF_T;
@@ -3193,6 +3205,12 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
       tgt = (SPART *)t_box_copy ((caddr_t) orig);
       /*tgt->_.macropu.pname = t_box_copy (orig->_.macropu.pname);*/
       return tgt;
+    case SPAR_PPATH:
+      tgt = (SPART *)t_box_copy ((caddr_t) orig);
+      tgt->_.ppath.parts = sparp_treelist_full_clone_int (sparp, orig->_.ppath.parts, parent_gp);
+      tgt->_.ppath.minrepeat = t_box_copy (orig->_.ppath.minrepeat);
+      tgt->_.ppath.maxrepeat = t_box_copy (orig->_.ppath.maxrepeat);
+      return tgt;
 /* Add more cases right above this line when introducing more SPAR_nnn constants */
     default: break; /* No need to copy names and literals because we will never change them in-place. */
     }
@@ -3360,6 +3378,12 @@ sparp_tree_full_copy (sparp_t *sparp, const SPART *orig, const SPART *parent_gp)
       return tgt;
     case SPAR_MACROPU:
       tgt = (SPART *)t_box_copy ((caddr_t) orig);
+      return tgt;
+    case SPAR_PPATH:
+      tgt = (SPART *)t_box_copy ((caddr_t) orig);
+      tgt->_.ppath.parts = sparp_treelist_full_copy (sparp, orig->_.ppath.parts, parent_gp);
+      tgt->_.ppath.minrepeat = t_box_copy (orig->_.ppath.minrepeat);
+      tgt->_.ppath.maxrepeat = t_box_copy (orig->_.ppath.maxrepeat);
       return tgt;
 /* Add more cases right above this line when introducing more SPAR_nnn constants */
     default: break; /* No need to copy names and literals because we will never change them in-place. */
@@ -4133,6 +4157,7 @@ sparp_find_origin_of_some_external_varname_in_eq (sparp_t *sparp, sparp_equiv_t 
     }
   END_DO_BOX_FAST_REV;
   spar_internal_error (sparp, "sparp_" "find_origin_of_some_external_varname_in_eq(): external source equiv share no common names with the give equiv");
+  return NULL; /* to keep the compiler happy */
 }
 
 SPART *
@@ -5097,6 +5122,28 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
             {
               sprintf (buf, "MACRO PARAM %s (#%ld), type %ld\n", tree->_.macropu.pname, (long)(tree->_.macropu.pindex), (long)(tree->_.macropu.pumode));
               SES_PRINT (ses, buf);
+              break;
+            }
+          case SPAR_PPATH:
+            {
+              char subt_buf[20];
+              const char *part_title;
+              subt_buf[0] = tree->_.ppath.subtype;
+              if (subt_buf[0]) subt_buf[1] = 0; else strcpy (subt_buf, "\\0");
+              sprintf (buf, "PROPERTY PATH, type '%s', min %ld, max %ld, inv %ld\n", subt_buf, (long)(unbox (tree->_.ppath.minrepeat)), (long)(unbox (tree->_.ppath.maxrepeat)), (long)(tree->_.ppath.num_of_invs));
+              SES_PRINT (ses, buf);
+              switch (tree->_.ppath.subtype)
+                {
+                case '/':	part_title = "SEQUENCE STEP"	; break;
+                case '*':	part_title = "TRANSITIVE BODY"	; break;
+                case '!':	part_title = "NEGATIVE"		; break;
+                default:	part_title = "VARIANT"		; break;
+                }
+              DO_BOX_FAST (SPART *, part, ctr, tree->_.ppath.parts)
+                {
+                  spart_dump (part, ses, indent+2, part_title, 0);
+                }
+              END_DO_BOX_FAST;
               break;
             }
 	  default:

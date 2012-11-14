@@ -3937,7 +3937,16 @@ field_sff_isects_qmv_sff: ;
         }
       return SSG_QM_PROVEN_MATCH;
     }
-  GPF_T1("ssg_check_field_mapping_spo(): field is neither variable nor literal?");
+  else if (SPAR_PPATH == field_type)
+    {
+      rdf_val_range_t *some_map_rvr = ((NULL != qmv_or_fmt_rvr) ? qmv_or_fmt_rvr : rvr);
+      if (SPART_VARR_IS_LIT & some_map_rvr->rvrRestrictions)
+        spar_error (sparp, "Bad quap map: its declaration states that the prodicate is literal");
+      if ((SPART_VARR_FIXED | SPART_VARR_SPRINTFF) & some_map_rvr->rvrRestrictions)
+        spar_error (sparp, "Property path can not be used if service uses quad map rules for some specific predicates");
+      return SSG_QM_APPROX_MATCH; /* This may be true or not, we can't make anything better for a property path on a remote service. Let it be the problem of the service. */
+    }
+  spar_internal_error (sparp, "sparp_" "check_field_mapping_spo(): field is neither variable nor literal?");
   return SSG_QM_NO_MATCH;
 }
 

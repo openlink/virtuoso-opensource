@@ -60,7 +60,7 @@ extern "C" {
 #define SPAR_BUILT_IN_CALL	(ptrlong)1003
 #define SPAR_CONV		(ptrlong)1004	/*!< Tree type for temporary use in SQL printer (conversion from one format to other) */
 #define SPAR_FUNCALL		(ptrlong)1005
-#define SPAR_GP			(ptrlong)1006
+#define SPAR_GP			(ptrlong)1006	/*!< Tree type for group graph pattern, the subtype could be 0 for plain group, graph group or ctor, SELECT_L for subquery, WHERE_L for top-level, UNION_L for unions, OPTIONAL_L for optionals */
 #define SPAR_REQ_TOP		(ptrlong)1007
 #define SPAR_RETVAL		(ptrlong)1008	/*!< Tree type for temporary use in SQL printer; this is similar to variable but does not search for field via equiv */
 #define SPAR_LIT		(ptrlong)1009
@@ -77,9 +77,10 @@ extern "C" {
 #define SPAR_BINDINGS_INV	(ptrlong)1021	/*!< Tree type for details of bindings associated with gp */
 #define SPAR_DEFMACRO		(ptrlong)1022
 #define SPAR_MACROCALL		(ptrlong)1023
-#define SPAR_MACROPU		(ptrlong)1024	/*!< Macro parameter usage --- the occurence of a variable name in a macro body */
+#define SPAR_MACROPU		(ptrlong)1024	/*!< Tree type for macro parameter usage --- the occurence of a variable name in a macro body */
+#define SPAR_PPATH		(ptrlong)1025	/*!< Tree type for property path */
 #define SPAR_MIN_TREE_TYPE	(ptrlong)1001
-#define SPAR_MAX_TREE_TYPE	(ptrlong)1024	/* Don't forget to adjust */
+#define SPAR_MAX_TREE_TYPE	(ptrlong)1025	/* Don't forget to adjust */
 /* Don't forget to update spart_count_specific_elems_by_type(), sparp_tree_full_clone_int(), sparp_tree_full_copy(), spart_dump() and comments inside typedef struct spar_tree_s */
 
 #define SPAR_BOP_EQ_NONOPT		(ptrlong)1051	/*!< An equality that is not optimized into an equivalence class */
@@ -719,6 +720,14 @@ typedef struct spar_tree_s
         ptrlong pindex;
         ptrlong pumode;
       } macropu;
+    struct {
+        /* #define SPAR_PPATH		(ptrlong)1025 */
+        ptrlong subtype;	/*!< Node subtype: '/', '|', 'D' or '*' for non-leafs ('D' is union of path with T_DISTINCT), 0 or '!' for plain or negative leafs. Leafs are '|' of iris and ^iris */
+        SPART **parts;		/*!< Descendants of type SPAR_PPATH for non-leafs, QNames for leafs. For '|' subtype, the (only) 0 or '!' part is always first */
+        caddr_t minrepeat;	/*!< Minimal number of repetitions for '*' non-leaf node: 0 for '?' and '*' operators, 1 for '+', an M integer for {M,N} modifier */
+        caddr_t maxrepeat;	/*!< Maximal number of repetitions for '*' non-leaf node: 1 for '?', an N integer for {M,N} modifier however it is NEGATIVE for infinity */
+        ptrlong num_of_invs;	/*!< Number of inverted predicates in a leaf. All inverted predicates are always after all forward predicates */
+      } ppath;
   } _;
 } sparp_tree_t;
 
@@ -875,9 +884,9 @@ extern void spar_gp_init (sparp_t *sparp, ptrlong subtype);
 extern SPART *spar_gp_finalize (sparp_t *sparp, SPART **options);
 extern SPART *spar_gp_finalize_with_subquery (sparp_t *sparp, SPART **options, SPART *subquery);
 extern void spar_gp_add_member (sparp_t *sparp, SPART *memb);
-#define SPAR_ADD_TRIPLELIKE_NO_TRANSITIVE	0x1 /*!< ignore transitivity in inf rules or options */
-#define SPAR_ADD_TRIPLELIKE_NO_INV_UNION	0x2 /*!< ignore inverse props */
-#define SPAR_ADD_TRIPLELIKE_NO_MACRO		0x4 /*!< ignore macro */
+#define SPAR_TRIPLE_TRICK_TRANSITIVE	0x1 /*!< Make transitive subquery or a repeating property path, due to transitivity in inference rules or options */
+#define SPAR_TRIPLE_TRICK_INV_UNION	0x2 /*!< Make union gp or property path leaf with '^', due to inverse properties in inference rules */
+#define SPAR_TRIPLE_TRICK_MACRO		0x4 /*!< Check triple pattern for matchong to macro signatures and make macro invocation instead of a triple */
 /*! Makes and adds a triple or a macro call or a filter like CONTAINS or a SELECT group for transitive prop or a UNION prop with inverse props or combination of few, with optional filter on graph.
 \c banned tricks is a bitmask that is 0 by default, SPAR_ADD_TRIPLELIKE_NO_xxx */
 extern SPART *spar_gp_add_triplelike (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri, SPART **options, int banned_tricks);
@@ -913,6 +922,7 @@ extern SPART **spar_make_sources_like_top (sparp_t *sparp, ptrlong top_subtype);
 extern SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   caddr_t retselid, SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset, SPART *binv);
 extern SPART *spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri_or_pair, SPART **options);
+extern SPART *spar_make_ppath (sparp_t *sparp, char subtype, SPART *part1, SPART *part2, ptrlong mincount, ptrlong maxcount);
 extern SPART *spar_make_param_or_variable (sparp_t *sparp, caddr_t name);
 extern SPART *spar_make_variable (sparp_t *sparp, caddr_t name);
 extern SPART *spar_make_macropu (sparp_t *sparp, caddr_t name, ptrlong pos);

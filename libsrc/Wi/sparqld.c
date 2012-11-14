@@ -1051,7 +1051,7 @@ fname_printed:
         if (place_qm)
           {
             quad_map_t *qm = tree->_.triple.tc_list[0]->tc_qm;
-            jso_rtti_t *qm_rtti = gethash (qm, jso_rttis_of_structs);
+            jso_rtti_t *qm_rtti = (jso_rtti_t *)gethash (qm, jso_rttis_of_structs);
             if (NULL == qm_rtti)
               spar_internal_error (ssg->ssg_sparp, "bad quad map JSO instance");
             ssg_puts (" QUAD MAP ");
@@ -1200,6 +1200,58 @@ fname_printed:
         ssg->ssg_indent--;
         break;
       }
+    case SPAR_PPATH:
+      {
+      int ctr, count = BOX_ELEMENTS (tree->_.ppath.parts);
+      switch (tree->_.ppath.subtype)
+        {
+        case '!':
+          ssg_puts (" !");
+          /* no break */
+        case 0:
+          if (1 != count) ssg_puts (" (");
+          for (ctr = 0; ctr < count; ctr++)
+            {
+              if (0 < ctr) ssg_puts (" |");
+              if ((count - tree->_.ppath.num_of_invs) <= ctr) ssg_puts (" ^");
+              ssg_sdprint_tree (ssg, tree->_.ppath.parts[ctr]);
+            }
+          if (1 != count) ssg_puts (" )");
+          return;
+        case 'D':
+          ssg_puts (" DISTINCT");
+          /* no break */
+        case '|':
+          ssg_puts (" (");
+          for (ctr = 0; ctr < count; ctr++)
+            {
+              if (0 < ctr) ssg_puts (" |");
+              ssg_sdprint_tree (ssg, tree->_.ppath.parts[ctr]);
+            }
+          ssg_puts (" )");
+          return;
+        case '/':
+          ssg_puts (" (");
+          for (ctr = 0; ctr < count; ctr++)
+            {
+              if (0 < ctr) ssg_puts (" /");
+              ssg_sdprint_tree (ssg, tree->_.ppath.parts[ctr]);
+            }
+          ssg_puts (" )");
+          return;
+        case '*':
+          {
+            boxint minrepeat = unbox (tree->_.ppath.minrepeat);
+            boxint maxrepeat = unbox (tree->_.ppath.maxrepeat);
+            ssg_sdprint_tree (ssg, tree->_.ppath.parts[0]);
+            if ((0 == minrepeat) && (-1 == maxrepeat)) ssg_putchar ('*');
+            else if ((1 == minrepeat) && (-1 == maxrepeat)) ssg_putchar ('+');
+            else if ((0 == minrepeat) && (1 == maxrepeat)) ssg_putchar ('?');
+            else spar_error (ssg->ssg_sparp, "%.100s can not handle property path with {m,n} modifier in the loop", ssg->ssg_sd_service_name);
+            return;
+          }
+        }
+      }
 #if 0
     default:
       {
@@ -1209,7 +1261,7 @@ fname_printed:
         sprintf (buf, ") with %d children:\n", childrens-SPART_HEAD);
         SES_PRINT (ses, buf);
         for (ctr = SPART_HEAD; ctr < childrens; ctr++)
-	spart_dump (((void **)(tree))[ctr], ses, indent+2, NULL, 0);
+          spart_dump (((void **)(tree))[ctr], ses, indent+2, NULL, 0);
         return;
       }
 #endif
