@@ -6489,7 +6489,7 @@ create procedure DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (inout _env any, in graph_ir
           declare dict any;
           dict := _env[3];
           dict_put (dict, triple_vec, 1);
-          if (80000 < dict_size (dict))
+          if (80000 <= dict_size (dict))
             DB.DBA.RDF_DELETE_TRIPLES_AGG (_env[0], dict_list_keys (dict, 2), _env[5]);
         }
       else
@@ -6499,7 +6499,7 @@ create procedure DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (inout _env any, in graph_ir
           declare dict any;
           dict := _env[4];
           dict_put (dict, triple_vec, 1);
-          if (80000 < dict_size (dict))
+          if (80000 <= dict_size (dict))
             DB.DBA.RDF_INSERT_TRIPLES (_env[0], dict_list_keys (dict, 2), _env[5]);
         }
       action_ctr := action_ctr + 1;
@@ -15527,7 +15527,11 @@ create function rdfs_load_schema (in ri_name varchar, in gn varchar := null) ret
           { ?s a <http://www.w3.org/2002/07/owl#FunctionalProperty> , <http://www.w3.org/2002/07/owl#SymmetricProperty> }
         union
           { ?s1 a <http://www.w3.org/2002/07/owl#FunctionalProperty> .
-	    ?s <http://www.w3.org/2002/07/owl#inverseOf> ?s1 } }
+            ?s <http://www.w3.org/2002/07/owl#inverseOf> ?s1 }
+        union
+          { ?s1 a <http://www.w3.org/2002/07/owl#FunctionalProperty> .
+            ?s1 <http://www.w3.org/2002/07/owl#inverseOf> ?s }
+ }
     ) sub option (QUIETCAST)',
     from_text );
   exec (txt, null, null, vector (), 0, meta, res);
