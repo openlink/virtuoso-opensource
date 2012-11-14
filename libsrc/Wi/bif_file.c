@@ -3883,6 +3883,19 @@ bif_mime_header (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return result ? result : NEW_DB_NULL;
 }
 
+static caddr_t 
+bif_mime_tree_ses (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  dk_session_t *ses = (dk_session_t *) bif_strses_arg (qst, args, 0, "mime_tree");
+  int rfc822 = 1;
+  caddr_t result = NULL;
+
+  if (BOX_ELEMENTS (args) > 1)
+    rfc822 = (int) bif_long_arg (qst, args, 1, "mime_tree");
+  result = mime_stream_get_part (rfc822, ses, strses_length (ses), ses, strses_length (ses));
+  return result;
+}
+
 static voidpf
 zlib_dk_alloc (voidpf opaque, uInt items, uInt size)
 {
@@ -6746,6 +6759,7 @@ bif_file_init (void)
   bif_define_typed ("run_executable", bif_run_executable, &bt_integer);
   bif_define_typed ("mime_tree", bif_mime_tree, &bt_any);
   bif_define_typed ("mime_header", bif_mime_header, &bt_any);
+  bif_define_typed ("mime_tree_ses", bif_mime_tree_ses, &bt_any);
   bif_define_typed ("gz_compress", bif_gz_compress, &bt_varchar);
   bif_define_typed ("string_output_gz_compress",
       bif_string_output_gz_compress, &bt_integer);
