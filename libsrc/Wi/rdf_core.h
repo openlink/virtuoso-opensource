@@ -221,6 +221,11 @@ extern caddr_t rdf_load_turtle (
 typedef void* yyscan_t;
 #endif
 
+#define TTL_MAX_IRI_LEN 8000
+#define TTL_MAX_KEYWORD_LEN 100
+#define TTL_MAX_LANGNAME_LEN 64
+#define TTL_MAX_LITERAL_LEN 10000000
+
 extern int ttlyyparse (ttlp_t *ttlp_arg, yyscan_t scanner);
 extern int nqyyparse (ttlp_t *ttlp_arg, yyscan_t scanner);
 extern void ttlyyerror_impl (ttlp_t *ttlp_arg, const char *raw_text, const char *strg);

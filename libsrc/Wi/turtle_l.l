@@ -230,11 +230,15 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 <INITIAL>"}"				{ ttlp_arg[0].ttlp_lexdepth--; return _RBRA; }
 
 <INITIAL>"<"([^\\>\001-\040])*">"	{
+    if (TTL_MAX_IRI_LEN <= yyleng)
+      TTLYYERROR_OR_RECOVER("The \"relative IRI\" (angle-bracketed) notation is too long");
     ttlyylval.box = box_dv_short_nchars (yytext + 1, yyleng - 2);
     return Q_IRI_REF;
   }
 
 <INITIAL>"<"(([^\\>\001-\040])|{SPAR_ECHAR}|"\\>")*">"	{
+    if (TTL_MAX_IRI_LEN <= yyleng)
+      TTLYYERROR_OR_RECOVER("The \"relative IRI\" (angle-bracketed) notation is too long");
     ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_LTGT, '>');
     return Q_IRI_REF;
   }
@@ -242,6 +246,8 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 <INITIAL>"<"([^<>\001-\037]|"\t")*">"	{
     if (!(ttlp_arg[0].ttlp_flags & TTLP_ACCEPT_DIRTY_NAMES))
       TTLYYERROR_OR_RECOVER ("Invalid characters in angle-bracketed name; this error can be suppressed by parser flags");
+    if (TTL_MAX_IRI_LEN <= yyleng)
+      TTLYYERROR_OR_RECOVER("The \"relative IRI\" (angle-bracketed) notation is too long");
     tf_report (ttlp_arg[0].ttlp_tf, 'W', NULL, NULL, "Invalid characters in angle-bracketed name");
     ttlyylval.box = box_dv_short_nchars (yytext + 1, yyleng - 2);
     return Q_IRI_REF;
@@ -250,6 +256,8 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 <INITIAL>"<"([^<>\001-\037]|"\t")+{S_NL}([^<>.;,\[\]{}\'\"\\\001-\037]|"\t")*">"	{
     if (!(ttlp_arg[0].ttlp_flags & TTLP_ACCEPT_DIRTY_NAMES))
       TTLYYERROR_OR_RECOVER ("Line break in angle-bracketed name; this error can be suppressed by parser flags");
+    if (TTL_MAX_IRI_LEN <= yyleng)
+      TTLYYERROR_OR_RECOVER("The \"relative IRI\" (angle-bracketed) notation is too long");
     tf_report (ttlp_arg[0].ttlp_tf, 'W', NULL, NULL, "Line break in angle-bracketed name");
     ttlyylval.box = box_dv_short_nchars (yytext + 1, yyleng - 2);
     ttlp_arg[0].ttlp_lexlineno++;
@@ -284,12 +292,16 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
     TTL_TOKBOX_Q(0,VARIABLE,"variable name"); }
 
 <INITIAL>"@"([a-zA-Z]+)(("-"([a-zA-Z0-9]+))*)	{
+    if (TTL_MAX_KEYWORD_LEN <= yyleng)
+      TTLYYERROR_OR_RECOVER("The @-keyword is too long");
     ttlyylval.box = box_dv_short_nchars (yytext + 1, yyleng - 1);
     return KEYWORD;
   }
 
 <TURTLE_AT_AFTER_QUOTED>{SPAR_LANGTAG}	{
     BEGIN INITIAL;
+    if (TTL_MAX_LANGNAME_LEN <= yyleng)
+      TTLYYERROR_OR_RECOVER("The language identifier after \"@\" mark is too long");
     ttlyylval.box = box_dv_short_nchars (yytext, yyleng);
     return LANGTAG;
   }
@@ -299,6 +311,8 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
     BEGIN INITIAL;
     if (!(ttlp_arg[0].ttlp_flags & TTLP_ACCEPT_DIRTY_NAMES))
       TTLYYERROR_OR_RECOVER ("Obsolete format of language; this error can be recovered if proper parser flags are set");
+    if (TTL_MAX_LANGNAME_LEN <= yyleng)
+      TTLYYERROR_OR_RECOVER("The language identifier after \"@\" mark is too long");
     tf_report (ttlp_arg[0].ttlp_tf, 'W', NULL, NULL, "Obsolete format of language");
     ttlyylval.box = box_dv_short_nchars (yytext, yyleng);
     for (tail = ttlyylval.box + (yyleng); tail >= ttlyylval.box; tail--)
@@ -313,11 +327,15 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 
 
 <INITIAL>([""][^""\\\n]*[""])|([''][^''\\\n]*['']) {
+    if (TTL_MAX_LITERAL_LEN <= yyleng)
+      TTLYYERROR_OR_RECOVER("The double-quoted string is too long");
     ttlyylval.box = box_dv_short_nchars (yytext+1, yyleng - 2);
     return TURTLE_STRING;
   }
 
 <INITIAL>(([""][^""\\\n]*[""])|([''][^''\\\n]*['']))"@" {
+    if (TTL_MAX_LITERAL_LEN <= yyleng)
+      TTLYYERROR_OR_RECOVER("The double-quoted string is too long");
     ttlyylval.box = box_dv_short_nchars (yytext+1, yyleng - 3);
     BEGIN TURTLE_AT_AFTER_QUOTED;
     return TURTLE_STRING;
@@ -325,12 +343,12 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 
 <INITIAL>['']['']['']		{ yymore(); BEGIN TURTLE_SSSQ; }
 <INITIAL>[""][""][""]		{ yymore(); BEGIN TURTLE_DDDQ; }
-<TURTLE_SSSQ>[''][''](['']+)	{ ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT, '\''); BEGIN INITIAL; return TURTLE_STRING; }
-<TURTLE_DDDQ>[""][""]([""]+)	{ ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT, '\"'); BEGIN INITIAL; return TURTLE_STRING; }
-<TURTLE_SSSQ>['']['']['']"@"	{ ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT_AT, '\''); BEGIN TURTLE_AT_AFTER_QUOTED; return TURTLE_STRING; }
-<TURTLE_DDDQ>[""][""][""]"@"	{ ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT_AT, '\"'); BEGIN TURTLE_AT_AFTER_QUOTED; return TURTLE_STRING; }
-<TURTLE_SSSQ>(([''](['']?))?{S_NL})		{ ttlp_arg[0].ttlp_lexlineno++; yymore(); }
-<TURTLE_DDDQ>(([""]([""]?))?{S_NL})		{ ttlp_arg[0].ttlp_lexlineno++; yymore(); }
+<TURTLE_SSSQ>[''][''](['']+)	{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The triple-single-quoted string is too long"); ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT, '\''); BEGIN INITIAL; return TURTLE_STRING; }
+<TURTLE_DDDQ>[""][""]([""]+)	{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The triple-double-quoted string is too long"); ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT, '\"'); BEGIN INITIAL; return TURTLE_STRING; }
+<TURTLE_SSSQ>['']['']['']"@"	{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The triple-single-quoted string is too long"); ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT_AT, '\''); BEGIN TURTLE_AT_AFTER_QUOTED; return TURTLE_STRING; }
+<TURTLE_DDDQ>[""][""][""]"@"	{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The triple-double-quoted string is too long"); ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT_AT, '\"'); BEGIN TURTLE_AT_AFTER_QUOTED; return TURTLE_STRING; }
+<TURTLE_SSSQ>(([''](['']?))?{S_NL})		{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The triple-single-quoted string is too long"); ttlp_arg[0].ttlp_lexlineno++; yymore(); }
+<TURTLE_DDDQ>(([""]([""]?))?{S_NL})		{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The triple-double-quoted string is too long"); ttlp_arg[0].ttlp_lexlineno++; yymore(); }
 <TURTLE_SSSQ>((([''](['']?))?({SPAR_SQ_PLAIN}|{SPAR_ECHAR}))+)		{ yymore(); }
 <TURTLE_DDDQ>((([""]([""]?))?({SPAR_DQ_PLAIN}|{SPAR_ECHAR}))+)		{ yymore(); }
 <TURTLE_SSSQ>[\\]		{ ttlyyerror ("Bad escape sequence in a long single-quoted string"); }
@@ -343,10 +361,10 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 
 <INITIAL>['']		{ yymore(); BEGIN TURTLE_SQ; }
 <INITIAL>[""]		{ yymore(); BEGIN TURTLE_DQ; }
-<TURTLE_SQ>['']		{ ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_QUOT, '\''); BEGIN INITIAL; return TURTLE_STRING; }
-<TURTLE_DQ>[""]		{ ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_QUOT, '\"'); BEGIN INITIAL; return TURTLE_STRING; }
-<TURTLE_SQ>['']"@"	{ ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_QUOT_AT, '\''); BEGIN TURTLE_AT_AFTER_QUOTED; return TURTLE_STRING; }
-<TURTLE_DQ>[""]"@"	{ ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_QUOT_AT, '\"'); BEGIN TURTLE_AT_AFTER_QUOTED; return TURTLE_STRING; }
+<TURTLE_SQ>['']		{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The single-quoted string is too long"); ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_QUOT, '\''); BEGIN INITIAL; return TURTLE_STRING; }
+<TURTLE_DQ>[""]		{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The double-quoted string is too long"); ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_QUOT, '\"'); BEGIN INITIAL; return TURTLE_STRING; }
+<TURTLE_SQ>['']"@"	{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The single-quoted string is too long"); ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_QUOT_AT, '\''); BEGIN TURTLE_AT_AFTER_QUOTED; return TURTLE_STRING; }
+<TURTLE_DQ>[""]"@"	{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The double-quoted string is too long"); ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_QUOT_AT, '\"'); BEGIN TURTLE_AT_AFTER_QUOTED; return TURTLE_STRING; }
 <TURTLE_SQ>{S_NL}	{
     if (!(TTLP_STRING_MAY_CONTAIN_CRLF & ttlp_arg[0].ttlp_flags))
       {
