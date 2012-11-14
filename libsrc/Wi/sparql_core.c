@@ -2631,8 +2631,8 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
     obj_is_plain_var = SPART_VARNAME_IS_PLAIN(object->_.var.vname);
   else if ((SPAR_QNAME != obj_stype) && (SPAR_LIT != obj_stype))
     spar_error (sparp, "Object of transitive triple pattern should be variable or QName or literal, not blank node");
-  subj_vname = t_box_sprintf (40, "trans_subj_%.20s", (caddr_t)(sparp->sparp_env->spare_selids->data));
-  obj_vname = t_box_sprintf (40, "trans_obj_%.20s", (caddr_t)(sparp->sparp_env->spare_selids->data));
+  subj_vname = t_box_sprintf (40, "_::trans_subj_%.20s", (caddr_t)(sparp->sparp_env->spare_selids->data));
+  obj_vname = t_box_sprintf (40, "_::trans_obj_%.20s", (caddr_t)(sparp->sparp_env->spare_selids->data));
   spar_gp_init (sparp, 0);
   spar_env_push (sparp);
   spar_selid_push (sparp);
@@ -3254,13 +3254,16 @@ spar_make_ppath_pred_or_predinf (sparp_t *sparp, SPART *predicate)
       inv_names = NULL;
       tricks = spar_inf_tricks_for_pred (sparp, predicate->_.qname.val, inf_ctx, 0, &inv_names);
     }
-  if (SPAR_TRIPLE_TRICK_INV_UNION & tricks)
+  if ((SPAR_TRIPLE_TRICK_INV_UNION & tricks) && (NULL != inv_names))
     {
       SPART **all_names;
-      t_set_push (&inv_names, predicate);
-      all_names = (SPART **)t_list_to_array (inv_names);
-      leaf = spartlist (sparp, 6, SPAR_PPATH, (ptrlong)0, all_names, (ptrlong)0, (ptrlong)0, (ptrlong)0);
-      leaf->_.ppath.num_of_invs = BOX_ELEMENTS (all_names) - 1;
+      int ctr, inv_count;
+      inv_count = dk_set_length (inv_names);
+      all_names = (SPART **)t_alloc_list (1 + inv_count);
+      all_names[0] = predicate;
+      for (ctr = inv_count; ctr--; /* no step */)
+        all_names [1+ctr] = spartlist (sparp, 2, SPAR_QNAME, t_box_copy ((caddr_t)(t_set_pop (&inv_names))));
+      leaf = spartlist (sparp, 6, SPAR_PPATH, (ptrlong)0, all_names, (ptrlong)0, (ptrlong)0, (ptrlong)(inv_count));
     }
   else
     leaf = spartlist (sparp, 6, SPAR_PPATH, (ptrlong)0, (SPART **)t_list (1, predicate), (ptrlong)0, (ptrlong)0, (ptrlong)0);

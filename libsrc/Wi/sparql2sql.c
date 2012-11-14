@@ -40,6 +40,13 @@ extern "C" {
 
 /* PART 1. EXPRESSION TERM REWRITING */
 
+#define SPART_VARNAME_IS_NICE_RETVAL(name,known) ( \
+  (NULL != (name))						/* no name --- no return column */ \
+  && !SPART_VARNAME_IS_GLOB((name))				/* Query run-time env or external query param? -- not in result-set */ \
+  && !SPART_VARNAME_IS_BNODE((name))				/* An automatically generated name in a transitive triple patterns or a property paths? -- not in result-set */ \
+  && (0 > dk_set_position_of_string ((known), (name))) )	/* Known already? --- not in the result-set for a second time */
+
+
 /* Composing list of retvals instead of '*'.
 \c trav_env_this is not used.
 \c common_env points to dk_set_t of collected distinct variable names. */
@@ -50,14 +57,8 @@ sparp_gp_trav_list_expn_retvals (sparp_t *sparp, SPART *curr, sparp_trav_state_t
   if (SPAR_VARIABLE != curr->type)
     return 0;
   varname = curr->_.var.vname;
-  if (SPART_VARNAME_IS_GLOB(varname)) /* Query run-time env or external query param ? -- not in result-set */
+  if (!SPART_VARNAME_IS_NICE_RETVAL (varname, ((dk_set_t *)(common_env))[0]))
     return SPAR_GPT_NODOWN;
-  DO_SET (caddr_t, listed, (dk_set_t *)(common_env))
-    {
-      if (!strcmp (listed, varname))
-        return SPAR_GPT_NODOWN;
-    }
-  END_DO_SET()
   t_set_push ((dk_set_t *)(common_env), varname);
   return SPAR_GPT_NODOWN;
 }
@@ -80,7 +81,7 @@ sparp_gp_trav_list_subquery_retvals (sparp_t *sparp, SPART *curr, sparp_trav_sta
           case SPAR_ALIAS: name = retval->_.alias.aname; break;
           default: name = NULL;
         }
-      if ((NULL != name) && !SPART_VARNAME_IS_GLOB(name) && (0 > dk_set_position_of_string (((dk_set_t *)(common_env))[0], name)))
+      if (SPART_VARNAME_IS_NICE_RETVAL (name, ((dk_set_t *)(common_env))[0]))
         t_set_push ((dk_set_t *)(common_env), name);
     }
   END_DO_BOX_FAST;
@@ -94,7 +95,7 @@ sparp_gp_trav_list_subquery_retvals (sparp_t *sparp, SPART *curr, sparp_trav_sta
         case OFFBAND_L: case SCORE_L: name = val->_.var.vname; break;
         case T_STEP_L: name = val->_.alias.aname; break;
         }
-      if ((NULL != name) && !SPART_VARNAME_IS_GLOB(name) && (0 > dk_set_position_of_string (((dk_set_t *)(common_env))[0], name)))
+      if (SPART_VARNAME_IS_NICE_RETVAL (name, ((dk_set_t *)(common_env))[0]))
         t_set_push ((dk_set_t *)(common_env), name);
     }
   return 0;
@@ -114,6 +115,7 @@ sparp_gp_trav_list_nonaggregate_retvals (sparp_t *sparp, SPART *curr, sparp_trav
       {
         caddr_t varname;
         varname = curr->_.var.vname;
+        if (SPART_VARNAME_IS_NICE_RETVAL (varname, ((dk_set_t *)(common_env))[0]))
         if (SPART_VARNAME_IS_GLOB(varname)) /* Query run-time env or external query param ? -- not in result-set */
           return SPAR_GPT_NODOWN;
         DO_SET (caddr_t, listed, (dk_set_t *)(common_env))

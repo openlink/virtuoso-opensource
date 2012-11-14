@@ -15609,7 +15609,12 @@ create function rdfs_load_schema (in ri_name varchar, in gn varchar := null) ret
 -- Loading bitmask properties of functions
   txt := sprintf ('select DB.DBA.VECTOR_CONCAT_AGG (vector (sub."s", 1)) from
   (sparql define input:storage "" select ?s %s where {
-    ?s a <http://www.w3.org/2002/07/owl#TransitiveProperty> }) sub option (QUIETCAST)',
+        { ?s a <http://www.w3.org/2002/07/owl#TransitiveProperty> }
+      union
+        { ?s <http://www.w3.org/2002/07/owl#inverseOf> [ a <http://www.w3.org/2002/07/owl#TransitiveProperty> ] }
+      union
+        { [ a <http://www.w3.org/2002/07/owl#TransitiveProperty> ] <http://www.w3.org/2002/07/owl#inverseOf> ?s }
+    } ) sub option (QUIETCAST)',
     from_text );
   exec (txt, null, null, vector (), 0, meta, res);
   v := res[0][0];

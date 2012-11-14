@@ -779,7 +779,7 @@ extern void spart_dump (void *tree_arg, dk_session_t *ses, int indent, const cha
 
 #define SPART_VARNAME_IS_GLOB(varname) (':' == (varname)[0])
 #define SPART_VARNAME_IS_SPECIAL(varname) ('@' == (varname)[0])
-#define SPART_VARNAME_IS_BNODE(varname) (('_' == (varname)[0]) && ('_' == (varname)[1]))
+#define SPART_VARNAME_IS_BNODE(varname) (('_' == (varname)[0]) && (':' == (varname)[1]))
 #define SPART_VARNAME_IS_PLAIN(varname) (!SPART_VARNAME_IS_GLOB((varname)) && !SPART_VARNAME_IS_SPECIAL((varname)) && (NULL == strchr ((varname), '>')))
 #define SPART_IRI_IS_NAMED_BNODE(iri) (('_' == (iri)[0]) && (':' == (iri)[1]))
 
