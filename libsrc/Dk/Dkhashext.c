@@ -582,33 +582,63 @@ id_hash_set_rehash_pct (id_hash_t * ht, uint32 pct)
 /* Original signatures should exist for exe-exported functions */
 #ifdef MALLOC_DEBUG
 #undef id_hash_allocate
-id_hash_t *
-id_hash_allocate (id_hashed_key_t buckets, int keybytes, int databytes, hash_func_t hf, cmp_func_t cf)
-{
-  return dbg_id_hash_allocate (__FILE__, __LINE__, buckets, keybytes, databytes, hf, cf);
-}
-
-
+id_hash_t * id_hash_allocate (id_hashed_key_t buckets, int keybytes, int databytes, hash_func_t hf, cmp_func_t cf) { return dbg_id_hash_allocate (__FILE__, __LINE__, buckets, keybytes, databytes, hf, cf); }
 #undef id_hash_set
-void
-id_hash_set (id_hash_t * ht, caddr_t key, caddr_t data)
-{
-  dbg_id_hash_set (__FILE__, __LINE__, ht, key, data);
-}
-
-
+void id_hash_set (id_hash_t * ht, caddr_t key, caddr_t data) { dbg_id_hash_set (__FILE__, __LINE__, ht, key, data); }
 #undef id_hash_add_new
-caddr_t
-id_hash_add_new (id_hash_t * ht, caddr_t key, caddr_t data)
-{
-  return dbg_id_hash_add_new (__FILE__, __LINE__, ht, key, data);
-}
-
-
+caddr_t id_hash_add_new (id_hash_t * ht, caddr_t key, caddr_t data) { return dbg_id_hash_add_new (__FILE__, __LINE__, ht, key, data); }
 #undef id_hash_set_with_hash_number
-void
-id_hash_set_with_hash_number (id_hash_t * ht, caddr_t key, caddr_t data, id_hashed_key_t inx)
-{
-  dbg_id_hash_set_with_hash_number (__FILE__, __LINE__, ht, key, data, inx);
-}
+void id_hash_set_with_hash_number (id_hash_t * ht, caddr_t key, caddr_t data, id_hashed_key_t inx) { dbg_id_hash_set_with_hash_number (__FILE__, __LINE__, ht, key, data, inx); }
+#undef box_dv_dict_hashtable
+caddr_t box_dv_dict_hashtable (id_hashed_key_t buckets) { return dbg_box_dv_dict_hashtable (__FILE__, __LINE__, buckets); }
+#undef box_dv_dict_iterator
+caddr_t box_dv_dict_iterator (caddr_t ht) { return dbg_box_dv_dict_iterator (__FILE__, __LINE__, ht); }
+#undef id_hash_free
+void id_hash_free (id_hash_t * hash) { dbg_id_hash_free (__FILE__, __LINE__, hash); }
+#undef id_hash_clear
+void id_hash_clear (id_hash_t * hash) { dbg_id_hash_clear (__FILE__, __LINE__, hash); }
+#undef id_hash_rehash
+void id_hash_rehash (id_hash_t * ht, uint32 new_sz) { dbg_id_hash_rehash (__FILE__, __LINE__, ht, new_sz); }
+#undef id_hash_remove
+int id_hash_remove (id_hash_t * ht, caddr_t key) { return dbg_id_hash_remove (__FILE__, __LINE__, ht, key); }
+#undef id_hash_get_and_remove
+int id_hash_get_and_remove (id_hash_t * ht, caddr_t key, caddr_t found_key, caddr_t found_data) { return dbg_id_hash_get_and_remove (__FILE__, __LINE__, ht, key, found_key, found_data); }
+#undef id_hash_remove_rnd 
+int id_hash_remove_rnd (id_hash_t * ht, int inx, caddr_t key, caddr_t data) { return dbg_id_hash_remove_rnd (__FILE__, __LINE__, ht, inx, key, data); }
+#undef id_str_hash_create
+id_hash_t * id_str_hash_create (id_hashed_key_t buckets) { return dbg_id_str_hash_create (__FILE__, __LINE__, buckets); }
+#undef id_strcase_hash_create
+id_hash_t * id_strcase_hash_create (id_hashed_key_t buckets) { return dbg_id_strcase_hash_create (__FILE__, __LINE__, buckets); }
+#undef id_hash_copy
+void id_hash_copy (id_hash_t * to, id_hash_t * from) { dbg_id_hash_copy (__FILE__, __LINE__, to, from); }
+#undef id_tree_hash_create
+id_hash_t * id_tree_hash_create (id_hashed_key_t buckets) { return dbg_id_tree_hash_create (__FILE__, __LINE__, buckets); }
+#undef t_id_hash_allocate
+id_hash_t * t_id_hash_allocate (id_hashed_key_t buckets, int keybytes, int databytes, hash_func_t hf, cmp_func_t cf) { return dbg_t_id_hash_allocate (__FILE__, __LINE__, buckets, keybytes, databytes, hf, cf); }
+#undef t_id_hash_set
+void t_id_hash_set (id_hash_t * ht, caddr_t key, caddr_t data) { dbg_t_id_hash_set (__FILE__, __LINE__, ht, key, data); }
+#undef t_id_hash_add_new
+caddr_t t_id_hash_add_new (id_hash_t * ht, caddr_t key, caddr_t data) { return dbg_t_id_hash_add_new (__FILE__, __LINE__, ht, key, data); }
+#undef t_id_hash_set_with_hash_number
+void t_id_hash_set_with_hash_number (id_hash_t * ht, caddr_t key, caddr_t data, id_hashed_key_t inx) { dbg_t_id_hash_set_with_hash_number (__FILE__, __LINE__, ht, key, data, inx); }
+#undef t_id_hash_free
+void t_id_hash_free (id_hash_t * hash) { dbg_t_id_hash_free (__FILE__, __LINE__, hash); }
+#undef t_id_hash_clear
+void t_id_hash_clear (id_hash_t * hash) { dbg_t_id_hash_clear (__FILE__, __LINE__, hash); }
+#undef t_id_hash_rehash
+void t_id_hash_rehash (id_hash_t * ht, uint32 new_sz) { dbg_t_id_hash_rehash (__FILE__, __LINE__, ht, new_sz); }
+#undef t_id_hash_remove
+int t_id_hash_remove (id_hash_t * ht, caddr_t key) { return dbg_t_id_hash_remove (__FILE__, __LINE__, ht, key); }
+#undef t_id_hash_get_and_remove
+int t_id_hash_get_and_remove (id_hash_t * ht, caddr_t key, caddr_t found_key, caddr_t found_data) { return dbg_t_id_hash_get_and_remove (__FILE__, __LINE__, ht, key, found_key, found_data); }
+#undef t_id_hash_remove_rnd 
+int t_id_hash_remove_rnd (id_hash_t * ht, int inx, caddr_t key, caddr_t data) { return dbg_t_id_hash_remove_rnd (__FILE__, __LINE__, ht, inx, key, data); }
+#undef t_id_str_hash_create
+id_hash_t * t_id_str_hash_create (id_hashed_key_t buckets) { return dbg_t_id_str_hash_create (__FILE__, __LINE__, buckets); }
+#undef t_id_strcase_hash_create
+id_hash_t * t_id_strcase_hash_create (id_hashed_key_t buckets) { return dbg_t_id_strcase_hash_create (__FILE__, __LINE__, buckets); }
+#undef t_id_hash_copy
+void t_id_hash_copy (id_hash_t * to, id_hash_t * from) { dbg_t_id_hash_copy (__FILE__, __LINE__, to, from); }
+#undef t_id_tree_hash_create
+id_hash_t * t_id_tree_hash_create (id_hashed_key_t buckets) { return dbg_t_id_tree_hash_create (__FILE__, __LINE__, buckets); }
 #endif

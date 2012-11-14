@@ -132,6 +132,18 @@ EXE_EXPORT (id_hash_t *, id_hash_allocate, (id_hashed_key_t buckets, int keybyte
 EXE_EXPORT (void, id_hash_set, (id_hash_t * ht, caddr_t key, caddr_t data));
 EXE_EXPORT (void, id_hash_set_with_hash_number, (id_hash_t * ht, caddr_t key, caddr_t data, id_hashed_key_t inx));
 EXE_EXPORT (caddr_t, id_hash_add_new, (id_hash_t * ht, caddr_t key, caddr_t data));
+EXE_EXPORT (caddr_t, box_dv_dict_hashtable, (id_hashed_key_t buckets));
+EXE_EXPORT (caddr_t, box_dv_dict_iterator, (caddr_t ht));
+EXE_EXPORT (void, id_hash_free, (id_hash_t * hash));
+EXE_EXPORT (void, id_hash_clear, (id_hash_t * hash));
+EXE_EXPORT (void, id_hash_rehash, (id_hash_t * ht, uint32 new_sz));
+EXE_EXPORT (int, id_hash_remove, (id_hash_t * ht, caddr_t key));
+EXE_EXPORT (int, id_hash_get_and_remove, (id_hash_t * ht, caddr_t key, caddr_t found_key, caddr_t found_data));
+EXE_EXPORT (int, id_hash_remove_rnd, (id_hash_t * ht, int inx, caddr_t key, caddr_t data));
+EXE_EXPORT (id_hash_t *, id_str_hash_create, (id_hashed_key_t buckets));
+EXE_EXPORT (id_hash_t *, id_strcase_hash_create, (id_hashed_key_t buckets));
+EXE_EXPORT (void, id_hash_copy, (id_hash_t * to, id_hash_t * from));
+EXE_EXPORT (id_hash_t *, id_tree_hash_create, (id_hashed_key_t buckets));
 
 #ifdef MALLOC_DEBUG
 caddr_t dbg_box_dv_dict_hashtable (const char *file, int line, id_hashed_key_t buckets);
@@ -150,6 +162,8 @@ int dbg_id_hash_remove_rnd (const char *file, int line, id_hash_t * ht, int inx,
 id_hash_t *dbg_id_strcase_hash_create (const char *file, int line, id_hashed_key_t buckets);
 void dbg_id_hash_copy (const char *file, int line, id_hash_t * to, id_hash_t * from);
 id_hash_t *dbg_id_tree_hash_create (const char *file, int line, id_hashed_key_t buckets);
+#ifndef _USRDLL
+#ifndef EXPORT_GATE
 #define box_dv_dict_hashtable(BS)		dbg_box_dv_dict_hashtable (__FILE__, __LINE__, (BS))
 #define box_dv_dict_iterator(HT)		dbg_box_dv_dict_iterator (__FILE__, __LINE__, (HT))
 #define id_hash_allocate(BS,KB,DB,HF,CF)	dbg_id_hash_allocate (__FILE__, __LINE__, (BS),(KB),(DB),(HF),(CF))
@@ -166,21 +180,23 @@ id_hash_t *dbg_id_tree_hash_create (const char *file, int line, id_hashed_key_t 
 #define id_strcase_hash_create(BS)		dbg_id_strcase_hash_create (__FILE__, __LINE__, (BS))
 #define id_hash_copy(TO,FROM)			dbg_id_hash_copy (__FILE__, __LINE__, (TO), (FROM))
 #define id_tree_hash_create(BS)			dbg_id_tree_hash_create (__FILE__, __LINE__, (BS))
-#else
-caddr_t box_dv_dict_hashtable (id_hashed_key_t buckets);
-caddr_t box_dv_dict_iterator (caddr_t ht);
-void id_hash_free (id_hash_t * hash);
-void id_hash_clear (id_hash_t * hash);
-void id_hash_rehash (id_hash_t * ht, uint32 new_sz);
-int id_hash_remove (id_hash_t * ht, caddr_t key);
-int id_hash_get_and_remove (id_hash_t * ht, caddr_t key, caddr_t found_key, caddr_t found_data);
-int id_hash_remove_rnd (id_hash_t * ht, int inx, caddr_t key, caddr_t data);
-id_hash_t *id_str_hash_create (id_hashed_key_t buckets);
-id_hash_t *id_strcase_hash_create (id_hashed_key_t buckets);
-void id_hash_copy (id_hash_t * to, id_hash_t * from);
-id_hash_t *id_tree_hash_create (id_hashed_key_t buckets);
+#endif
+#endif
 #endif
 
+EXE_EXPORT (id_hash_t *, t_id_hash_allocate, (id_hashed_key_t buckets, int keybytes, int databytes, hash_func_t hf, cmp_func_t cf));
+EXE_EXPORT (void, t_id_hash_free, (id_hash_t * hash));
+EXE_EXPORT (void, t_id_hash_clear, (id_hash_t * hash));
+EXE_EXPORT (void, t_id_hash_set, (id_hash_t * ht, caddr_t key, caddr_t data));
+EXE_EXPORT (void, t_id_hash_set_with_hash_number, (id_hash_t * ht, caddr_t key, caddr_t data, id_hashed_key_t inx));
+EXE_EXPORT (caddr_t, t_id_hash_add_new, (id_hash_t * ht, caddr_t key, caddr_t data));
+EXE_EXPORT (void, t_id_hash_rehash, (id_hash_t * ht, uint32 new_sz));
+EXE_EXPORT (int, t_id_hash_remove, (id_hash_t * ht, caddr_t key));
+EXE_EXPORT (int, t_id_hash_get_and_remove, (id_hash_t * ht, caddr_t key, caddr_t found_key, caddr_t found_data));
+EXE_EXPORT (id_hash_t *, t_id_str_hash_create, (id_hashed_key_t buckets));
+EXE_EXPORT (id_hash_t *, t_id_strcase_hash_create, (id_hashed_key_t buckets));
+EXE_EXPORT (void, t_id_hash_copy, (id_hash_t * to, id_hash_t * from));
+EXE_EXPORT (id_hash_t *,t_id_tree_hash_create, (id_hashed_key_t buckets));
 #ifdef MALLOC_DEBUG
 id_hash_t *dbg_t_id_hash_allocate (const char *file, int line, id_hashed_key_t buckets, int keybytes, int databytes, hash_func_t hf, cmp_func_t cf);
 void dbg_t_id_hash_free (const char *file, int line, id_hash_t * hash);
@@ -195,6 +211,8 @@ id_hash_t *dbg_t_id_str_hash_create (const char *file, int line, id_hashed_key_t
 id_hash_t *dbg_t_id_strcase_hash_create (const char *file, int line, id_hashed_key_t buckets);
 void dbg_t_id_hash_copy (const char *file, int line, id_hash_t * to, id_hash_t * from);
 id_hash_t *dbg_t_id_tree_hash_create (const char *file, int line, id_hashed_key_t buckets);
+#ifndef _USRDLL
+#ifndef EXPORT_GATE
 #define t_id_hash_allocate(BS,KB,DB,HF,CF)	dbg_t_id_hash_allocate (__FILE__, __LINE__, (BS),(KB),(DB),(HF),(CF))
 #define t_id_hash_free(HASH)			dbg_t_id_hash_free (__FILE__, __LINE__, (HASH))
 #define t_id_hash_clear(HASH)			dbg_t_id_hash_clear (__FILE__, __LINE__, (HASH))
@@ -208,20 +226,8 @@ id_hash_t *dbg_t_id_tree_hash_create (const char *file, int line, id_hashed_key_
 #define t_id_strcase_hash_create(BS)		dbg_t_id_strcase_hash_create (__FILE__, __LINE__, (BS))
 #define t_id_hash_copy(TO,FROM)			dbg_t_id_hash_copy (__FILE__, __LINE__, (TO), (FROM))
 #define t_id_tree_hash_create(BS)		dbg_t_id_tree_hash_create (__FILE__, __LINE__, (BS))
-#else
-id_hash_t *t_id_hash_allocate (id_hashed_key_t buckets, int keybytes, int databytes, hash_func_t hf, cmp_func_t cf);
-void t_id_hash_free (id_hash_t * hash);
-void t_id_hash_clear (id_hash_t * hash);
-void t_id_hash_set (id_hash_t * ht, caddr_t key, caddr_t data);
-void t_id_hash_set_with_hash_number (id_hash_t * ht, caddr_t key, caddr_t data, id_hashed_key_t inx);
-caddr_t t_id_hash_add_new (id_hash_t * ht, caddr_t key, caddr_t data);
-void t_id_hash_rehash (id_hash_t * ht, uint32 new_sz);
-int t_id_hash_remove (id_hash_t * ht, caddr_t key);
-int t_id_hash_get_and_remove (id_hash_t * ht, caddr_t key, caddr_t found_key, caddr_t found_data);
-id_hash_t *t_id_str_hash_create (id_hashed_key_t buckets);
-id_hash_t *t_id_strcase_hash_create (id_hashed_key_t buckets);
-void t_id_hash_copy (id_hash_t * to, id_hash_t * from);
-id_hash_t *t_id_tree_hash_create (id_hashed_key_t buckets);
+#endif
+#endif
 #endif
 
 caddr_t box_dict_hashtable_copy_hook (caddr_t orig_dict);
@@ -232,11 +238,11 @@ int box_dict_iterator_destr_hook (caddr_t iter);
 EXE_EXPORT (caddr_t, id_hash_get, (id_hash_t * ht, caddr_t key));
 EXE_EXPORT (caddr_t, id_hash_get_with_hash_number, (id_hash_t * ht, caddr_t key, id_hashed_key_t inx));
 EXE_EXPORT (caddr_t, id_hash_get_with_ctx, (id_hash_t * ht, caddr_t key, void *ctx));
-caddr_t id_hash_get_key (id_hash_t * ht, caddr_t key);
-caddr_t id_hash_get_key_by_place (id_hash_t * ht, caddr_t place);
-void id_hash_iterator (id_hash_iterator_t * hit, id_hash_t * ht);
-void id_hash_set_rehash_pct (id_hash_t * ht, uint32 pct);
-int hit_next (id_hash_iterator_t * hit, char **key, char **data);
+EXE_EXPORT (caddr_t, id_hash_get_key, (id_hash_t * ht, caddr_t key));
+EXE_EXPORT (caddr_t, id_hash_get_key_by_place, (id_hash_t * ht, caddr_t place));
+EXE_EXPORT (void, id_hash_iterator, (id_hash_iterator_t * hit, id_hash_t * ht));
+EXE_EXPORT (void, id_hash_set_rehash_pct, (id_hash_t * ht, uint32 pct));
+EXE_EXPORT (int, hit_next, (id_hash_iterator_t * hit, char **key, char **data));
 EXE_EXPORT (id_hashed_key_t, strhash, (char *strp));
 id_hashed_key_t strhashcase (char *strp);
 EXE_EXPORT (int, strhashcmp, (char *x, char *y));
@@ -248,8 +254,8 @@ int treehashcmp (char *x, char *y);
 id_hashed_key_t voidptrhash (char *voidp);	/* For keys like pointer to subtree of XML tree entity */
 int voidptrhashcmp (char *x, char *y);	/* For keys like pointer to subtree of XML tree entity */
 id_hashed_key_t box_hash (caddr_t box);
-id_hashed_key_t boxint_hash (char *x);
-int boxint_hashcmp (char *x, char *y);
+EXE_EXPORT (id_hashed_key_t, boxint_hash, (char *x));
+EXE_EXPORT (int, boxint_hashcmp, (char *x, char *y));
 
 
 #define DO_IDHASH(tk, key, td, data, ht) \

@@ -81,13 +81,22 @@ struct mem_pool_s
 };
 #endif
 
-
+EXE_EXPORT (mem_pool_t *, mem_pool_alloc, (void));
 #if defined (DEBUG) || defined (MALLOC_DEBUG)
 extern mem_pool_t *dbg_mem_pool_alloc (const char *file, int line);
 #define mem_pool_alloc() dbg_mem_pool_alloc (__FILE__, __LINE__)
-#else
-extern mem_pool_t *mem_pool_alloc (void);
 #endif
+
+EXE_EXPORT (caddr_t, mp_alloc_box, (mem_pool_t * mp, size_t len, dtp_t dtp));
+EXE_EXPORT (caddr_t, mp_box_string, (mem_pool_t * mp, const char *str));
+EXE_EXPORT (caddr_t, mp_box_substr, (mem_pool_t * mp, ccaddr_t str, int n1, int n2));
+EXE_EXPORT (box_t, mp_box_dv_short_nchars, (mem_pool_t * mp, const char *str, size_t len));
+EXE_EXPORT (caddr_t, mp_box_dv_uname_string, (mem_pool_t * mp, const char *str));
+EXE_EXPORT (box_t, mp_box_dv_uname_nchars, (mem_pool_t * mp, const char *str, size_t len));
+EXE_EXPORT (caddr_t, mp_box_copy, (mem_pool_t * mp, caddr_t box));
+EXE_EXPORT (caddr_t, mp_box_copy_tree, (mem_pool_t * mp, caddr_t box));
+EXE_EXPORT (caddr_t, mp_full_box_copy_tree, (mem_pool_t * mp, caddr_t box));
+EXE_EXPORT (caddr_t, mp_box_num, (mem_pool_t * mp, boxint num));
 
 #ifdef MALLOC_DEBUG
 extern caddr_t dbg_mp_alloc_box (const char *file, int line, mem_pool_t * mp, size_t len, dtp_t dtp);
@@ -100,6 +109,8 @@ extern caddr_t dbg_mp_box_copy (const char *file, int line, mem_pool_t * mp, cad
 extern caddr_t dbg_mp_box_copy_tree (const char *file, int line, mem_pool_t * mp, caddr_t box);
 extern caddr_t dbg_mp_full_box_copy_tree (const char *file, int line, mem_pool_t * mp, caddr_t box);
 extern caddr_t dbg_mp_box_num (const char *file, int line, mem_pool_t * mp, boxint num);
+#ifndef _USRDLL
+#ifndef EXPORT_GATE
 #define mp_alloc_box(mp,len,dtp) dbg_mp_alloc_box (__FILE__, __LINE__, (mp), (len), (dtp))
 #define mp_box_string(mp, str) dbg_mp_box_string (__FILE__, __LINE__, (mp), (str))
 #define mp_box_substr(mp, str, n1, n2) dbg_mp_box_substr (__FILE__, __LINE__, (mp), (str), (n1), (n2))
@@ -110,17 +121,8 @@ extern caddr_t dbg_mp_box_num (const char *file, int line, mem_pool_t * mp, boxi
 #define mp_box_copy_tree(mp, box) dbg_mp_box_copy_tree (__FILE__, __LINE__, (mp), (box))
 #define mp_full_box_copy_tree(mp, box) dbg_mp_full_box_copy_tree (__FILE__, __LINE__, (mp), (box))
 #define mp_box_num(mp, num) dbg_mp_box_num (__FILE__, __LINE__, (mp), (num))
-#else
-extern caddr_t mp_alloc_box (mem_pool_t * mp, size_t len, dtp_t dtp);
-extern caddr_t mp_box_string (mem_pool_t * mp, const char *str);
-extern caddr_t mp_box_substr (mem_pool_t * mp, ccaddr_t str, int n1, int n2);
-extern box_t mp_box_dv_short_nchars (mem_pool_t * mp, const char *str, size_t len);
-extern caddr_t mp_box_dv_uname_string (mem_pool_t * mp, const char *str);
-extern box_t mp_box_dv_uname_nchars (mem_pool_t * mp, const char *str, size_t len);
-extern caddr_t mp_box_copy (mem_pool_t * mp, caddr_t box);
-extern caddr_t mp_box_copy_tree (mem_pool_t * mp, caddr_t box);
-extern caddr_t mp_full_box_copy_tree (mem_pool_t * mp, caddr_t box);
-extern caddr_t mp_box_num (mem_pool_t * mp, boxint num);
+#endif
+#endif
 #endif
 caddr_t mp_alloc_sized (mem_pool_t * mp, size_t len);
 
