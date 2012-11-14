@@ -1425,20 +1425,30 @@ create procedure DB.DBA.RDF_SPONGE_PROXY_IRI(in uri varchar := '', in login varc
 -- Postprocessing for sponging pure RDF sources 
 create procedure DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC (in contents varchar, in base varchar, in graph varchar)
 {
-  declare proxyiri, docproxyiri varchar;
+  declare proxyiri, docproxyiri, dociri varchar;
   proxyiri := DB.DBA.RDF_PROXY_ENTITY_IRI (graph);
   docproxyiri := DB.DBA.RDF_SPONGE_PROXY_IRI (graph);
-  sparql define input:storage "" insert in iri(?:graph)
-    { `iri(?:proxyiri)` <http://xmlns.com/foaf/0.1/topic> `iri(sql:XML_URI_RESOLVE_LIKE_GET(?:base, ?s))` .
-      `iri(sql:XML_URI_RESOLVE_LIKE_GET(?:base, ?s))` <http://www.w3.org/2007/05/powder-s#describedby> `iri(?:proxyiri)` }
-  where { { select distinct ?s where { graph `iri(?:graph)` { ?s ?p ?o . } } } };
+  dociri:=DB.DBA.RM_SPONGE_DOC_IRI(graph);
+  
+  sparql define input:storage "" 
+  	insert in iri(?:graph) { 
+  		`iri(?:proxyiri)` <http://xmlns.com/foaf/0.1/topic> `iri(sql:XML_URI_RESOLVE_LIKE_GET(?:base, ?s))` .
+      `iri(sql:XML_URI_RESOLVE_LIKE_GET(?:base, ?s))` <http://www.w3.org/2007/05/powder-s#describedby> `iri(?:proxyiri)` 
+      }
+  where { { select distinct ?s 
+  	where { graph `iri(?:graph)` { ?s ?p ?o .
+				filter( iri(sql:XML_URI_RESOLVE_LIKE_GET(?:base, ?s)) != iri(?:graph))
+				}
+  	}
+  	}
+  	};
 
   sparql define input:storage "" insert in graph iri(?:graph)
       { `iri(?:docproxyiri)` a <http://purl.org/ontology/bibo/Document> ;
               <http://vocab.deri.ie/void#inDataset> `iri(?:graph)` ; 
               <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://rdfs.org/sioc/ns#Container> , <http://purl.org/ontology/bibo/Document> ;
-              <http://rdfs.org/sioc/ns#container_of> `iri(?:proxyiri)` ;
-              <http://xmlns.com/foaf/0.1/primaryTopic> `iri(?:proxyiri)` .
+              <http://rdfs.org/sioc/ns#container_of> `iri(?:proxyiri)` .
+        `iri(?:dociri)` <http://www.w3.org/2002/07/owl#sameAs> `iri(?:proxyiri)` . 
       };
 
   if (registry_get ('__rdf_cartridges_add_spongetime__') = '1')
