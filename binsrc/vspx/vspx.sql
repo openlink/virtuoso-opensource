@@ -6332,11 +6332,23 @@ create procedure DB.DBA.sys_save_http_history(in vdir any, in vres any)
   content := http_full_request (0);
   if (registry_get ('__save_http_history_on_disk') = '1')
     {
+      declare ip varchar;
+      declare use_ip int;
+      if (registry_get ('__save_http_history_use_ip') = '1')
+	use_ip := 1;
+      else
+        use_ip := 0; 	
+      ip := http_client_ip ();
       if (file_stat ('./sys_http_recording') = 0)
 	signal ('VSPX9', 'Can not upload resource into sys_http_recording/ directory');
       if (length (name) > 200)
 	name := subseq (name, 0, 200);
-      string_to_file ('./sys_http_recording/' || name, content, -2);
+      if (use_ip and file_stat ('./sys_http_recording/' || ip) = 0)
+	sys_mkdir ('./sys_http_recording/' || ip);
+      if (use_ip)
+	string_to_file ('./sys_http_recording/' || ip || '/' || name, content, -2);
+      else
+	string_to_file ('./sys_http_recording/' || name, content, -2);
     }
   else
     {
