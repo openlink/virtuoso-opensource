@@ -846,8 +846,8 @@ again:
        vlbl := charset_recode (_object, 'UTF-8', '_WIDE_');
        if (vlbl = 0)
          vlbl := charset_recode (_object, current_charset (), '_WIDE_');
-       if (vlbl = 0)
-       http (_object);
+       if (vlbl = 0 or _object like '<object%')
+         http (_object);
        else
          http_value (vlbl);
        http ('</span>');
