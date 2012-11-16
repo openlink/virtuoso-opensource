@@ -1136,3 +1136,26 @@ create procedure b3s_lbl_order (in p any, in lbl_order_pref_id int := 0)
   return r;
 }
 ;
+
+create procedure b3s_gs_check_needed ()
+{
+  declare gs_user_id integer;
+  gs_user_id := get_user_id (1);
+  if ( bit_and (1,
+      coalesce (
+        dict_get (__rdf_graph_default_perms_of_user_dict(0), gs_user_id, null),
+        dict_get (__rdf_graph_default_perms_of_user_dict(0), http_nobody_uid(), 1023) ) )
+    and bit_and (1,
+      coalesce (
+        dict_get (__rdf_graph_default_perms_of_user_dict(1), gs_user_id, null),
+        dict_get (__rdf_graph_default_perms_of_user_dict(1), http_nobody_uid(), 1023) ) ) )
+  {
+    -- dbg_obj_princ ('gs sec check not needed');
+    return 0;
+  }
+  -- dbg_obj_princ ('gs sec check is needed');
+  return 1;
+}
+;
+
+grant execute on b3s_gs_check_needed to public;
