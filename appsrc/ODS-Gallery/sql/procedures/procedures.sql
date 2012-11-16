@@ -1215,7 +1215,7 @@ create procedure PHOTO.WA.instance_delete (
 -------------------------------------------------------------------------------
 --
 create procedure PHOTO.WA.utf2wide (
-  inout S any)
+  inout S any) returns any
 {
   if (isstring (S))
     return charset_recode (S, 'UTF-8', '_WIDE_');
@@ -1226,7 +1226,7 @@ create procedure PHOTO.WA.utf2wide (
 -------------------------------------------------------------------------------
 --
 create procedure PHOTO.WA.wide2utf (
-  inout S any)
+  inout S any) returns any
 {
   if (iswidestring (S))
     return charset_recode (S, '_WIDE_', 'UTF-8' );
