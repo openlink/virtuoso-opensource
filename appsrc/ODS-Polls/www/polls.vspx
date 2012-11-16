@@ -1121,7 +1121,7 @@
                       };
 
                       params := self.vc_page.vc_event.ve_params;
-                      self.v_name := POLLS.WA.test(self.p_name.ufl_value, vector('name', either(equ(self.v_mode, 'S'), 'Question', 'Poll Name'), 'class', 'varchar', 'type', 'varchar', 'minLength', 1, 'maxLength', 255));
+                      self.v_name := POLLS.WA.testv(self.p_name.ufl_value, vector('name', either(equ(self.v_mode, 'S'), 'Question', 'Poll Name'), 'class', 'varchar', 'type', 'varchar', 'minLength', 1, 'maxLength', 255));
                       self.v_tags := trim(self.p_tags.ufl_value);
                       POLLS.WA.test(self.v_tags, vector('name', 'Tags', 'class', 'tags'));
                       tmp := POLLS.WA.tags2vector(self.v_tags);
@@ -1141,6 +1141,8 @@
                       {
                         POLLS.WA.test(self.v_date_end, vector('name', 'Poll closing date', 'class', 'date', 'type', 'date', 'canEmpty', 0));
                       }
+                      -- validate ACL rules
+                      DB.DBA.wa_aci_validate (DB.DBA.wa_aci_params (params));
 
                       self.v_number := 1;
                       if (self.v_mode = 'S')
