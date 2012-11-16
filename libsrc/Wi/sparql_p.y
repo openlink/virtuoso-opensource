@@ -39,7 +39,7 @@ Whitespaces in all other places, including two whitespaces after "::=" in BNF co
 %pure_parser
 %parse-param {sparp_t * sparp_arg}
 %lex-param {sparp_t * sparp_arg}
-%expect 72
+%expect 8
 
 %{
 #include "libutil.h"
@@ -558,10 +558,9 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %nonassoc _EQ _NOT_EQ
 %nonassoc IN_L NOT_IN_L LIKE_L
 %nonassoc _LT _LE _GT _GE
-%left MATH_PLUS MATH_MINUS
-%left MATH_SLASH MATH_STAR
-%nonassoc MATH_UMINUS
-%nonassoc MATH_UPLUS
+%left _PLUS _MINUS
+%left _STAR _SLASH
+%nonassoc MATH_UPLUS MATH_UMINUS
 %left PPATH_ALTERNATIVE
 %left PPATH_SEQUENCE
 %nonassoc PPATH_CARET
@@ -1823,17 +1822,17 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	( 'AS' ( VAR1 | VAR2 ) ) */
 	| spar_expn _GT spar_expn	{ SPAR_BIN_OP ($$, BOP_LT, $3, $1); }
 	| spar_expn _LE spar_expn	{ SPAR_BIN_OP ($$, BOP_LTE, $1, $3); }
 	| spar_expn _GE spar_expn	{ SPAR_BIN_OP ($$, BOP_LTE, $3, $1); }
-	| spar_expn _PLUS spar_expn	%prec MATH_PLUS	{	/* [49]	AdditiveExpn	 ::=  MultiplicativeExpn ( ('+'|'-') MultiplicativeExpn )*	*/
+	| spar_expn _PLUS spar_expn	{	/* [49]	AdditiveExpn	 ::=  MultiplicativeExpn ( ('+'|'-') MultiplicativeExpn )*	*/
 		if (sparp_arg->sparp_rset_lexdepth_plus_1 == $2 + 1)
 		  sparyyerror (sparp_arg, "Ambiguous (unary or binary) plus operator in result list, please add \"(\" and \")\"");
 		  SPAR_BIN_OP ($$, BOP_PLUS, $1, $3); }
-	| spar_expn _MINUS spar_expn	%prec MATH_MINUS	{
+	| spar_expn _MINUS spar_expn	{
 		if (sparp_arg->sparp_rset_lexdepth_plus_1 == $2 + 1)
 		  sparyyerror (sparp_arg, "Ambiguous (unary or binary) minus operator in result list, please add \"(\" and \")\"");
 		SPAR_BIN_OP ($$, BOP_MINUS, $1, $3); }
-	| spar_expn _STAR spar_expn	%prec MATH_STAR {	/* [50]	MultiplicativeExpn	 ::=  UnaryExpn ( ('*'|'/') UnaryExpn )*	*/
+	| spar_expn _STAR spar_expn	{	/* [50]	MultiplicativeExpn	 ::=  UnaryExpn ( ('*'|'/') UnaryExpn )*	*/
 		  SPAR_BIN_OP ($$, BOP_TIMES, $1, $3); }
-	| spar_expn _SLASH spar_expn	%prec MATH_SLASH	{ SPAR_BIN_OP ($$, BOP_DIV, $1, $3); }
+	| spar_expn _SLASH spar_expn	{ SPAR_BIN_OP ($$, BOP_DIV, $1, $3); }
 	| _BANG spar_expn {		/* [51]*	UnaryExpn	 ::=   ('!'|'NOT'|'+'|'-')? PrimaryExpn */
 		SPAR_BIN_OP ($$, BOP_NOT, $2, NULL); }
 	| _PLUS	spar_expn	%prec MATH_UPLUS	{
