@@ -153,6 +153,19 @@ static void bm_alloc (bufmem_t *buf, size_t len)
   buf->bm_memblock = wlex_alloc (buf->bm_length);
 }
 
+void wikilexdone ()
+{
+  wlex_state_t * st = STATEPTR;
+  if (st->wikiwordbuf.bm_memblock != NULL)
+    wlex_free (st->wikiwordbuf.bm_memblock, -1);
+  if (st->hrefbuf.bm_memblock != NULL)
+    wlex_free (st->hrefbuf.bm_memblock, -1);
+  if (st->titlebuf.bm_memblock != NULL)
+    wlex_free (st->titlebuf.bm_memblock, -1);
+  if (st->predicatebuf.bm_memblock != NULL)
+    wlex_free (st->predicatebuf.bm_memblock, -1);
+}
+
 static char *strdigit (char *str)
 {
   while ('\0' != *str)
