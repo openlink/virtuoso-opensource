@@ -3370,7 +3370,7 @@ create procedure BMK.WA.normalize_space(
 -------------------------------------------------------------------------------
 --
 create procedure BMK.WA.utfClear(
-  inout S varchar)
+  in S varchar)
 {
   declare N integer;
   declare retValue varchar;
@@ -3390,7 +3390,7 @@ create procedure BMK.WA.utfClear(
 -------------------------------------------------------------------------------
 --
 create procedure BMK.WA.utf2wide (
-  inout S any)
+  in S any)
 {
   declare retValue any;
 

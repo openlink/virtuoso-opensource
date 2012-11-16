@@ -223,6 +223,9 @@
       tmp := BMK.WA.tags2vector (tags);
       tmp := BMK.WA.vector_unique (tmp);
       tags := BMK.WA.vector2tags (tmp);
+      -- validate ACL rules
+      DB.DBA.wa_aci_validate (DB.DBA.wa_aci_params (params));
+
       acl := serialize (DB.DBA.wa_aci_params (params));
       folder_id := BMK.WA.folder_create (_domain_id, folder_name, folder_id);
       id := BMK.WA.bookmark_update (id, _domain_id, uri, name, description, tags, folder_id, null, acl);
