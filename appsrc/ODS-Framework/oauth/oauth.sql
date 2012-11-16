@@ -249,7 +249,7 @@ create procedure OAUTH..request_token (
 
   declare exit handler for not found {
     http_header ('Content-Type: text/plain\r\n');
-    return 'Can\'t verify request, missing oauth_consumer_key or oauth_token\n';
+    return 'Cannot verify request, missing oauth_consumer_key or oauth_token\n';
   };
 
   declare exit handler for sqlstate '*' {
@@ -336,7 +336,7 @@ create procedure OAUTH..access_token (
 
   declare exit handler for not found {
     http_header ('Content-Type: text/plain\r\n');
-    return 'Can\'t verify request, missing oauth_consumer_key or oauth_token\n';
+    return 'Cannot verify request, missing oauth_consumer_key or oauth_token\n';
   };
 
   declare exit handler for sqlstate '*' {
@@ -500,7 +500,7 @@ create procedure OAUTH..check_authentication_by_name (in inparams any, in lines 
   oauth_client_ip := get_keyword ('oauth_client_ip', params, http_client_ip ());
 
   declare exit handler for not found {
-    signal ('22023', 'Can\'t verify request, missing oauth_consumer_key or oauth_token');
+    signal ('22023', 'Cannot verify request, missing oauth_consumer_key or oauth_token');
   };
 
   declare exit handler for sqlstate '*' {
@@ -618,7 +618,7 @@ create procedure OAUTH..sign_request (in meth varchar := 'GET', in url varchar, 
                  		 nonce);
   oauth_token := get_auth_token (sid);
   if (length (oauth_token))
-    params := params || sprintf ('&oauth_token=%s', oauth_token);
+    params := params || sprintf ('&oauth_token=%U', oauth_token);
   url := OAUTH..normalize_url (url, vector ());
   params := OAUTH..normalize_params (params);
 
@@ -733,6 +733,44 @@ web_user_password_check (in name varchar, in pass varchar)
     }
   commit work;
   return rc;
+}
+;
+
+--!
+-- Step 1 for each OAuth 1.0 workflow: get the URL to direct the user to for login.
+-- \param clientKey The client key as stored in OAUTH..APP_REG
+-- \param reqTokenUrl The URL to get a request token as provided by the service documentation.
+-- \param authorizeUrl The URL to direct the user to for login as provided by the service documentation.
+-- \param callbackUrl The callbackUrl to send to the service.
+--/
+create procedure
+OAUTH.DBA.ods_oauth_one_authentication_url (
+  in clientKey varchar,
+  in reqTokenUrl varchar,
+  in authorizeUrl varchar,
+  in callbackUrl varchar,
+  in method varchar := 'GET')
+{
+  declare result, url, sid, oauth_token, return_url, body any;
+  declare header any;
+  body := null;
+
+  sid := md5 (datestring (now ()));
+  return_url := sprintf ('%s&sid=%U', callbackUrl, sid);
+  url := OAUTH.DBA.sign_request (method, reqTokenUrl, sprintf ('oauth_callback=%U', return_url), clientKey, null, 1);
+  if (method = 'POST')
+  {
+    body := url;
+    url := reqTokenUrl;
+  }
+
+  result := http_get (url, header, method, null, body);
+  sid := OAUTH.DBA.parse_response (sid, clientKey, result);
+
+  OAUTH.DBA.set_session_data (sid, vector());
+  oauth_token := OAUTH.DBA.get_auth_token (sid);
+
+  return sprintf ('%s?oauth_token=%U&oauth_callback=%U', authorizeUrl, oauth_token, return_url);
 }
 ;
 

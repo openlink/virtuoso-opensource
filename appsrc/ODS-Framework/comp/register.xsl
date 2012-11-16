@@ -104,17 +104,18 @@
               User Registration <img id="rf_throbber" src="/ods/images/oat/Ajax_throbber.gif" style="float: right; margin-right: 10px; display: none" />
         </div>
             <ul id="rf_tabs" class="tabs">
-              <li id="rf_tab_0" title="Digest">Digest</li>
+              <li id="rf_tab_0" title="Digest" style="display: none;">Digest</li>
               <li id="rf_tab_3" title="WebID" style="display: none;">WebID</li>
               <li id="rf_tab_1" title="OpenID" style="display: none;">OpenID</li>
               <li id="rf_tab_2" title="Facebook" style="display: none;">Facebook</li>
               <li id="rf_tab_4" title="Twitter" style="display: none;">Twitter</li>
               <li id="rf_tab_5" title="LinkedIn" style="display: none;">LinkedIn</li>
+              <li id="rf_tab_6" style="display: none;"></li>
             </ul>
             <div style="min-height: 135px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
               <div id="rf_content">.
         </div>
-              <div id="rf_page_0" class="tabContent">
+              <div id="rf_page_0" class="tabContent" style="display: none;">
                 <table id="rf_table_0" class="form" cellspacing="5">
                   <tr>
                     <th width="20%">
@@ -171,7 +172,6 @@
                       <span id="rf_facebookData" style="min-height: 20px;">.</span>
                       <br />
                     <![CDATA[
-                        <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
                         <fb:login-button autologoutlink="true" xmlns:fb="http://www.facebook.com/2008/fbml"></fb:login-button>
                     ]]>
                 </td>
@@ -211,6 +211,15 @@
                       <span id="rf_linkedin" style="min-height: 20px;"></span>
                       <br />
                       <img id="rf_linkedinButton" src="/ods/images/linkedin-large.png" border="0"/>
+                    </td>
+                  </tr>
+                </table>
+              </div>
+              <div id="rf_page_6" class="tabContent" style="display: none;">
+                <table id="rf_table_6" class="form" cellspacing="5" width="100%">
+                  <tr>
+                    <td style="text-align: center;">
+                      <b>The registration is not allowed!</b>
                     </td>
                   </tr>
                 </table>

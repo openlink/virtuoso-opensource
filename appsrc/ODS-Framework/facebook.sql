@@ -20,6 +20,8 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
+use DB;
+
 wa_exec_no_error('drop type DB.DBA.FacebookRestClient');
 wa_exec_no_error('drop type Facebook');
 

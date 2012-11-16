@@ -34,6 +34,12 @@ form {
   margin: 0;
   padding: 0}
 
+input[type="text"], input[type="password"], select {
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+}
+
 h1 { font-size: 22px}
 h2 { font-size: 18px}
 h3 { font-size: 16px}

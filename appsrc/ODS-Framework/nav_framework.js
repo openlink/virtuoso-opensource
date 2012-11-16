@@ -1942,8 +1942,8 @@ ODS.Nav = function(navOptions) {
       try {
         self.regData = OAT.JSON.parse(data);
       } catch (e) { self.regData = {}; }
-      if (!lsRegData)
-        lsRegData = self.regData;
+      if (!regData)
+        regData = self.regData;
     }
     OAT.AJAX.GET ('/ods/api/server.getInfo?info=regData', false, x, {async: false});
 
@@ -2622,8 +2622,8 @@ ODS.Nav = function(navOptions) {
 
       var session = self.session;
       session.sid = OAT.Xml.textValue(xml.getElementsByTagName('sid')[0]);
-			session.userName = OAT.Xml.textValue(xml.getElementsByTagName('userName')[0]);
-			session.userId = OAT.Xml.textValue(xml.getElementsByTagName('userId')[0]);
+			session.userName = OAT.Xml.textValue(xml.getElementsByTagName('uname')[0]);
+			session.userId = OAT.Xml.textValue(xml.getElementsByTagName('uid')[0]);
 			session.userIsDba = OAT.Xml.textValue(xml.getElementsByTagName('dba')[0]);
 		  OAT.MSG.send(session, "WA_SES_VALIDBIND", {});
     } else {

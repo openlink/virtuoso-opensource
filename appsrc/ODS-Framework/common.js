@@ -589,6 +589,85 @@ function accountDisable(userName)
   OAT.AJAX.GET(S, '', x);
 }
 
+function destinationChange(obj, changes) {
+  function destinationChangeInternal(actions) {
+    if (!obj)
+      return;
+
+    if (actions.hide) {
+      var a = actions.hide;
+      for ( var i = 0; i < a.length; i++) {
+        var o = $(a[i])
+        if (o) {
+          OAT.Dom.hide(o);
+        }
+      }
+    }
+    if (actions.show) {
+      var a = actions.show;
+      for ( var i = 0; i < a.length; i++) {
+        var o = $(a[i])
+        if (o) {
+          OAT.Dom.show(o);
+        }
+      }
+    }
+    if (actions.clear) {
+      var a = actions.clear;
+      for ( var i = 0; i < a.length; i++) {
+        var o = $(a[i])
+        if (o && o.value) {
+          o.value = '';
+        }
+      }
+    }
+  }
+  if (!changes)
+    return;
+
+  if (obj.checked && changes.checked)
+    destinationChangeInternal(changes.checked);
+
+  if (!obj.checked && changes.unchecked)
+    destinationChangeInternal(changes.unchecked);
+}
+
+function swapRows(newIndex)
+{
+  var row_0 = $('pf_tabs_0_row_' + ((newIndex < 6)? '1': '0'));
+  var row_1 = $('pf_tabs_0_row_' + ((newIndex < 6)? '0': '1'));
+  if (!row_0.nextElementSibling)
+    swapNodes(row_0, row_1);
+}
+
+function swapNodes(node1, node2)
+{
+  if (!node1) return;
+  if (!node2) return;
+  var tmp = node1.cloneNode(1);
+  var parent = node1.parentNode;
+  node2 = parent.replaceChild(tmp, node2);
+  parent.replaceChild(node2, node1);
+  parent.replaceChild(node1, tmp);
+  tmp = null;
+}
+
+function loginChange(login, register)
+{
+  var l = $(login);
+  var r = $(register);
+  if (!l.checked)
+    r.checked = false;
+}
+
+function registerChange(login, register)
+{
+  var l = $(login);
+  var r = $(register);
+  if (r.checked)
+    l.checked = true;
+}
+
 // RDF Relations
 // ---------------------------------------------------------------------------
 var rdfDialog

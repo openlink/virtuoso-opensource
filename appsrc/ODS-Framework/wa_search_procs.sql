@@ -2175,22 +2175,6 @@ create function WA_SEARCH_CHECK_FT_QUERY (in text varchar, in is_tags integer :=
 }
 ;
 
-
-create procedure  WA_USER_TAG_FT_UPGRADE ()
-{
-  if (registry_get ('__WA_USER_TAG_FT_UPGRADE') = 'done')
-    return;
-  exec ('drop table WA_USER_TAG_WAUTG_TAGS_WORDS');
-  DB.DBA.vt_create_text_index ('WA_USER_TAG', 'WAUTG_TAGS', 'WAUTG_FT_ID', 2, 0, vector ('WAUTG_TAG_ID', 'WAUTG_U_ID'), 1, 'x-ViDoc', 'UTF-8');
-
-  registry_set ('__WA_USER_TAG_FT_UPGRADE', 'done');
-}
-;
-
-WA_USER_TAG_FT_UPGRADE ()
-;
-
-
 create procedure WA_SEARCH_FOAF (in sne any, in uids any)
 {
   declare _u_name, _u_full_name, arr varchar;

@@ -178,77 +178,12 @@ grant execute on sessionEnd to GDATA_ODS;
 create procedure sessionValidateX509 (
   in redirect integer := 2)
 {
-  declare retValue any;
-  declare fingerPrint, info, agent any;
-  declare st, msg, meta, data, S, hf, graph, gr, vec, loc_idn any;
-
-  retValue := null;
-  graph := null;
-  if (not is_https_ctx ())
-    goto _exit;
-
-  set_user_id ('dba');
-  fingerPrint := get_certificate_info (6);
-  for (select cast (UC_CERT as varchar) cert,
-              U_NAME uName
-         from DB.DBA.WA_USER_CERTS,
-              DB.DBA.SYS_USERS
-        where UC_U_ID = U_ID
-          and UC_FINGERPRINT = fingerPrint
-          and (((UC_LOGIN = 1) and (redirect = 1)) or (redirect = 2))) do
-  {
-    info := get_certificate_info (9, cert);
-    if (not isarray (info))
-      return NULL;
-    agent := ODS.ODS_API.SSL_WEBID_GET ();
-    if (agent is null)
-      {
-	agent := DB.DBA.FOAF_SSL_WEBFINGER ();
-	if (agent is not null)
-	  goto authenticated;
-	agent := ODS..FINGERPOINT_WEBID_GET ();
-	if (agent is null)
+  declare uname varchar;
+  if (check_authentication_ssl(uname))
+    return vector(uname);
+  else
 	  return NULL;
       }
-    declare exit handler for sqlstate '*'
-    {
-      rollback work;
-      goto _exit;
-    };
-
-    hf := rfc1808_parse_uri (agent);
-    vec := hf;
-    hf[5] := '';
-    gr := DB.DBA.vspx_uri_compose (hf);
-    graph := uuid ();
-    S := sprintf ('sparql load <%s> into graph <%s>', gr, graph);
-    exec (S, st, msg);
-    commit work;
-    loc_idn := agent;
-    if (is_https_ctx () and cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DynamicLocal') = '1' and vec [1] = registry_get ('URIQADefaultHost'))
-      {
-	vec [0] := 'local';
-	vec [1] := '';
-	loc_idn := db.dba.vspx_uri_compose (vec);
-      }
-    S := DB.DBA.FOAF_SSL_QR (graph, loc_idn);
-    st := '00000';
-    exec (S, st, msg, vector (), 0, meta, data);
-    if ((st <> '00000') or (length (data) = 0))
-      goto _exit;
-
-    if (graph is not null)
-      exec (sprintf ('SPARQL clear graph <%s>', graph), st, msg);
-    commit work;
-    authenticated:
-    retValue := vector (uName);
-  }
-_exit:;
-  if (graph is not null)
-    exec (sprintf ('SPARQL clear graph <%s>', graph), st, msg);
-  commit work;
-  return retValue;
-}
 ;
 
 create procedure sessionValidate (
@@ -1646,25 +1581,26 @@ _err:
 ;
 grant execute on userMessageStatusSet to GDATA_ODS;
 
-create procedure openIdServer (
-  in openIdUrl varchar) __SOAP_HTTP 'text/xml'
+--!
+-- \brief Fetch server details from an OpenId.
+--
+-- Used by the ODS SOAP service openIdServer() and the ODS API function user.openid.authenticationUrl()
+--/
+create procedure getOpenIdServer (
+  in openIdUrl varchar,
+  out oi_srv varchar,
+  out oi_version varchar,
+  out oi_identity varchar,
+  out oi_delegate varchar,
+  out oi_params varchar)
 {
-  declare errCode integer;
-  declare errMsg varchar;
-  declare resXml any;
   declare profilePage varchar;
 
-  resXml  := string_output ();
-  errCode := 0;
-  errMsg  := '';
-
   declare hdr, xt, loc any;
-  declare url, xrds_url, cnt, oi_version, oi_srv, oi2_srv, oi_delegate, oi_params, oi_priority, webid varchar;
+  declare url, xrds_url, cnt, oi2_srv, oi_priority, webid varchar;
   declare exit handler for sqlstate '*'
   {
-    errCode:=501;
-    errMsg := 'Invalid OpenID URL';
-    goto _end;
+    signal('501', 'Invalid OpenID URL');
   };
 
   oi_version := '1.0';
@@ -1681,6 +1617,8 @@ create procedure openIdServer (
       if (webid is not null)
 	  openIdUrl := normalize_url_like_browser (webid);
 	}
+
+  oi_identity := openIdUrl;
 
     url := openIdUrl;
 again:
@@ -1748,12 +1686,36 @@ again:
     if (not isnull (xpath_eval (sprintf ('/XRDS/XRD/Service[@priority = "%s"]/Type[text() = "http://openid.net/srv/ax/1.0"]/text()', oi_priority), xt)))
       oi_params := 'ax';
   }
+}
+;
+
+create procedure openIdServer (
+  in openIdUrl varchar) __SOAP_HTTP 'text/xml'
+{
+  declare errCode integer;
+  declare errMsg varchar;
+  declare resXml any;
+
+  resXml  := string_output ();
+  errCode := 0;
+  errMsg  := '';
+
+  declare oi_identity, oi_version, oi_srv, oi_delegate, oi_params varchar;
+  declare exit handler for sqlstate '*'
+  {
+    errCode:=501;
+    errMsg := 'Invalid OpenID URL';
+    goto _end;
+  };
+
+  oi_identity := openIdUrl;
+  getOpenIdServer(openIdUrl, oi_srv, oi_version, oi_identity, oi_delegate, oi_params);
 
 _exit:;
   http('<version>'||oi_version||'</version>',resXml);
   http('<server>'||oi_srv||'</server>',resXml);
   http('<delegate>'||oi_delegate||'</delegate>',resXml);
-  http('<identity>'||openIdUrl||'</identity>',resXml);
+  http('<identity>'||oi_identity||'</identity>',resXml);
   http('<params>'||oi_params||'</params>',resXml);
 
 _end:

@@ -20,11 +20,11 @@
  *
  */
 
+var regData;
+var facebookData;
 var lfTab;
 var lfHeigh = 280;
-var lsRegData;
 var lfSslData;
-var lfFacebookData;
 var lfOptions;
 var lfAjaxs = 0;
 var lfNotReturn = true;
@@ -132,31 +132,48 @@ function lfInit() {
   if (!$("lf")) {return;}
 
   lfOptrions = {onstart: lfStart, onend: lfEnd};
-  if (!lsRegData) {
+  if (!regData) {
     var x = function (data) {
       try {
-        lsRegData = OAT.JSON.parse(data);
-      } catch (e) { lsRegData = {}; }
+        regData = OAT.JSON.parse(data);
+      } catch (e) { regData = {}; }
     }
     OAT.AJAX.GET ('/ods/api/server.getInfo?info=regData', false, x, {async: false});
   }
 
   lfTab = new OAT.Tab("lf_content", {goCallback: lfCallback});
   lfTab.add("lf_tab_0", "lf_page_0");
-  if (lsRegData.openidEnable)
-    OAT.Dom.show('lf_tab_1');
   lfTab.add("lf_tab_1", "lf_page_1");
   lfTab.add("lf_tab_2", "lf_page_2");
-  if (lsRegData.sslEnable)
-    OAT.Dom.show('lf_tab_3');
   lfTab.add("lf_tab_3", "lf_page_3");
-  if (lsRegData.twitterEnable)
-    OAT.Dom.show('lf_tab_4');
   lfTab.add("lf_tab_4", "lf_page_4");
-  if (lsRegData.linkedinEnable)
-    OAT.Dom.show('lf_tab_5');
   lfTab.add("lf_tab_5", "lf_page_5");
-  lfTab.go(0);
+  var N = null;
+  if (regData.login) {
+    if (N == null) N = 0;
+    OAT.Dom.show('lf_tab_0');
+  }
+  if (regData.loginSslEnable) {
+    if (N == null) N = 3;
+    OAT.Dom.show('lf_tab_3');
+  }
+  if (regData.loginOpenidEnable) {
+    if (N == null) N = 1;
+    OAT.Dom.show('lf_tab_1');
+  }
+  if (regData.loginTwitterEnable) {
+    if (N == null) N = 4;
+    OAT.Dom.show('lf_tab_4');
+  }
+  if (regData.loginLinkedinEnable) {
+    if (N == null) N = 5;
+    OAT.Dom.show('lf_tab_5');
+  }
+  if (N != null) {
+    lfTab.go(N);
+  } else {
+    lfTab.add("lf_tab_6", "lf_page_6");
+  }
   var uriParams = OAT.Dom.uriParams();
   if (uriParams['oid-form'] == 'lf') {
     OAT.Dom.show('lf');
@@ -177,21 +194,7 @@ function lfInit() {
     }
   }
 
-  if (lsRegData.facebookEnable) {
-    lfLoadFacebookData(function() {
-      if (lfFacebookData)
-        FB.init(lfFacebookData.api_key, "/ods/fb_dummy.vsp", {
-          ifUserConnected : function() {
-            lfShowFacebookData();
-          },
-          ifUserNotConnected : function() {
-            lfHideFacebookData();
-          }
-        });
-    });
-  }
-
-  if (lsRegData.sslEnable) {
+  if (regData.loginSslEnable) {
     var x1 = function(data) {
       if (!lfSslData)
         try {
@@ -203,7 +206,7 @@ function lfInit() {
       var tbl = $(prefix+'_table_3');
       if (tbl) {
         OAT.Dom.unlink(prefix+'_table_3_throbber');
-        if (lfSslData && lfSslData.iri) {
+        if (lfSslData && (lfSslData.certFilterCheck == '1') && lfSslData.iri) {
           OAT.Dom.show(prefix+"_tab_3");
           lfRowValue(tbl, 'WebID', lfSslData.iri);
           if (lfSslData.depiction)
@@ -228,6 +231,8 @@ function lfInit() {
           lfTab.go(3);
         } else {
           lfRowText(tbl, 'You must have cerificate with WebID to use this option', 'font-weight: bold;', 17);
+          if (document.location.protocol == 'https:')
+            $('lf_login').disabled = true;
         }
       }
     }
@@ -270,6 +275,14 @@ function lfInit() {
       }
     }
     OAT.AJAX.GET ('/ods/api/server.getInfo?info=sslPort', false, x2);
+  }
+  if (regData.loginFacebookEnable) {
+    (function() {
+      var e = document.createElement('script');
+      e.src = document.location.protocol + '//connect.facebook.net/en_US/all.js';
+      e.async = true;
+      document.getElementById('fb-root').appendChild(e);
+    }());
   }
 }
 
@@ -338,10 +351,10 @@ function lfLoginSubmit(cb) {
       return false;
     }
   } else if (mode == 2) {
-    if (!lfFacebookData || !lfFacebookData.uid)
-      return showError('Invalid Facebook UserID');
+    if (!facebookData || (!facebookData.id && !facebookData.link))
+      return showError('Invalid Facebook User');
 
-    q += '&facebookUID=' + lfFacebookData.uid;
+    q += '&facebookUID=' + ((facebookData.link)? facebookData.link: facebookData.id);
   } else if (mode == 3) {
   } else if (mode == 4) {
     var uriParams = OAT.Dom.uriParams();
@@ -492,44 +505,4 @@ function linkedinAuthenticate(prefix) {
     document.location = data;
   }
   OAT.AJAX.POST ("/ods/api/linkedinServer?hostUrl="+encodeURIComponent(thisPage), null, x);
-}
-
-function lfLoadFacebookData(cb) {
-  var x = function(data) {
-    try {
-      lfFacebookData = OAT.JSON.parse(data);
-    } catch (e) {
-      lfFacebookData = null;
-    }
-
-    if (lfFacebookData)
-      OAT.Dom.show("lf_tab_2");
-
-    if (cb) {cb()};
-  }
-  OAT.AJAX.GET('/ods/api/user.getFacebookData?fields=uid,name,first_name,last_name,sex,birthday', '', x);
-}
-
-function lfShowFacebookData(skip) {
-  var lfLabel = $('lf_facebookData');
-  if (lfLabel) {
-    lfLabel.innerHTML = '';
-    if (lfFacebookData && lfFacebookData.name) {
-      lfLabel.innerHTML = 'Connected as <b><i>' + lfFacebookData.name + '</i></b></b>';
-    } else if (!skip) {
-      lfLoadFacebookData(function() {lfShowFacebookData(true);});
-    }
-  }
-}
-
-function lfHideFacebookData() {
-  var label = $('lf_facebookData');
-  if (label)
-    label.innerHTML = '';
-  if (lfFacebookData) {
-    var o = {}
-    o.api_key = lfFacebookData.api_key;
-    o.secret = lfFacebookData.secret;
-    lfFacebookData = o;
-  }
 }

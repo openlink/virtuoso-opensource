@@ -61,7 +61,7 @@
 
               for (N := 0; N < length (self.iAcl); N := N + 1)
               {
-                http (sprintf ('ODSInitArray.push(function(){TBL.createRow("s", null, {fld_1: {mode: 50, value: "%s", onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, className: "_validate_ _webid_", value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', self.iacl[N][2], self.iacl[N][1], case when self.iacl[N][2] = 'public' then 'true' else 'false' end, case when self.iacl[N][2] = 'public' then 'display: none;' else '' end, self.iacl[N][3], self.iacl[N][4], self.iacl[N][5]));
+                  http (sprintf ('ODSInitArray.push(function(){TBL.createRow("s", null, {fld_1: {mode: 50, value: "%s", onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, className: "_validate_ _webid_", value: %s, readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', self.iacl[N][2], ODS..obj2json (self.iacl[N][1]), case when self.iacl[N][2] = 'public' then 'true' else 'false' end, case when self.iacl[N][2] = 'public' then 'display: none;' else '' end, self.iacl[N][3], self.iacl[N][4], self.iacl[N][5]));
               }
             ?>
     		    </script>
@@ -77,6 +77,21 @@
   <v:button name="btn_acl_update" action="simple" value="Update" xhtml_class="form-button">
     <v:on-post>
       <![CDATA[
+        declare exit handler for SQLSTATE '*'
+        {
+          -- dbg_obj_print ('__SQL_MESSAGE', __SQL_MESSAGE);
+          if (__SQL_STATE = 'TEST')
+          {
+            self.vc_error_message := ODRIVE.WA.test_clear (__SQL_MESSAGE);
+            self.vc_is_valid := 0;
+            return;
+          }
+          resignal;
+        };
+
+        -- validate ACL rules
+        DB.DBA.wa_aci_validate (DB.DBA.wa_aci_params (e.ve_params));
+
         self.iAcl := DB.DBA.wa_aci_params (e.ve_params);
         WA_USER_EDIT (self.u_name, 'WAUI_ACL', serialize (self.iAcl));
 

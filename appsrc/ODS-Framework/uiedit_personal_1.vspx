@@ -257,7 +257,13 @@
       self.storePersonal_1();
       WA_USER_EDIT (self.u_name, 'WAUI_INTEREST_TOPICS', self.interestTopics);
       WA_USER_EDIT (self.u_name, 'WAUI_INTERESTS', self.interests);
-      WA_USER_EDIT (self.u_name, 'WAUI_FOAF', self.efoaf);
+
+      delete from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_NAME = 'webid' and WUO_TYPE = 'P' and WUO_U_ID = self.u_id;
+      for (select _iri, _public from DB.DBA.WA_USER_INTERESTS (txt) (_iri varchar, _public varchar) P where txt = self.efoaf) do
+      {
+        insert into DB.DBA.WA_USER_OL_ACCOUNTS (WUO_U_ID, WUO_TYPE, WUO_NAME, WUO_URL, WUO_URI, WUO_PUBLIC)
+          values (self.u_id, 'P', 'webid', _iri, _iri, _public);
+      }
 
       WA_USER_EDIT (self.u_name, 'WAUI_APP_ENABLE', atoi (self.app_enable.ufl_value));
       WA_USER_EDIT (self.u_name, 'WAUI_SPB_ENABLE', self.spb_enable.ufl_selected);
@@ -319,7 +325,6 @@
              WAUI_GENDER,
              WAUI_BIRTHDAY,
              WAUI_WEBPAGE,
-             WAUI_FOAF,
              wa_utf8_to_wide (WAUI_MSIGNATURE),
              wa_utf8_to_wide (WAUI_SUMMARY),
              WAUI_PHOTO_URL,
@@ -339,7 +344,6 @@
              self.gender,
              self.bdate,
              self.wpage,
-             self.efoaf,
              self.msign,
              self.summ,
              self.photo,
@@ -359,6 +363,12 @@
 
       if (length (self.wpage) = 0)
         self.wpage := SIOC..person_iri (SIOC..user_obj_iri (self.u_name), '');
+
+      self.efoaf := '';
+      for (select WUO_URL, WUO_PUBLIC from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_NAME = 'webid' and WUO_TYPE = 'P' and WUO_U_ID = self.u_id) do
+      {
+        self.efoaf := self.efoaf || WUO_URL || ';' || cast (WUO_PUBLIC as varchar)  || '\n';
+      }
 
       declare tmp any;
 
@@ -446,7 +456,7 @@
         <tr id="pers_1" class="initial_hidden">
           <th><label for="regtitle">Title</label></th>
           <td class="listing_col" nowrap="1">
-            <v:select-list name="regtitle">
+            <v:select-list name="regtitle" xhtml_id="regtitle">
               <v:item name="" value="" />
               <v:item name="Mr" value="Mr" />
               <v:item name="Mrs" value="Mrs" />

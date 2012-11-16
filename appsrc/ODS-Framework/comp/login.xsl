@@ -65,17 +65,18 @@
                   Please identify yourself <img id="lf_throbber" src="/ods/images/oat/Ajax_throbber.gif" style="float: right; margin-right: 10px; display: none" />
                 </div>
                 <ul id="lf_tabs" class="tabs">
-                  <li id="lf_tab_0" title="Digest">Digest</li>
+                  <li id="lf_tab_0" title="Digest" style="display: none;">Digest</li>
                   <li id="lf_tab_3" title="WebID" style="display: none;">WebID</li>
                   <li id="lf_tab_1" title="OpenID" style="display: none;">OpenID</li>
                   <li id="lf_tab_2" title="Facebook" style="display: none;">Facebook</li>
                   <li id="lf_tab_4" title="Twitter" style="display: none;">Twitter</li>
                   <li id="lf_tab_5" title="LinkedIn" style="display: none;">LinkedIn</li>
+                  <li id="lf_tab_6" style="display: none;"></li>
                 </ul>
                 <div style="min-height: 120px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                   <div id="lf_content">&nbsp;
                   </div>
-                  <div id="lf_page_0" class="tabContent" >
+                  <div id="lf_page_0" class="tabContent" style="display: none;">
                     <table class="form" cellspacing="5">
                       <tr>
                         <th width="20%">
@@ -117,7 +118,6 @@
                           <span id="lf_facebookData" style="min-height: 20px;">&nbsp;</span>
                   <br />
 <![CDATA[
-                            <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
                             <fb:login-button autologoutlink="true" xmlns:fb="http://www.facebook.com/2008/fbml"></fb:login-button>
 ]]>
                         </td>
@@ -160,6 +160,16 @@
                           <span id="lf_linkedin" style="min-height: 20px;"></span>
                           <br />
                           <img id="lf_linkedinButton" src="/ods/images/linkedin-large.png" border="0"/>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+
+                  <div id="lf_page_6" class="tabContent" style="display: none;">
+                    <table id="lf_table_6" class="form" cellspacing="5" width="100%">
+                      <tr>
+                        <td style="text-align: center;">
+                          <b>The login is not allowed!</b>
                         </td>
                       </tr>
                     </table>

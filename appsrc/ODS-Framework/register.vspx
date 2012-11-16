@@ -32,9 +32,11 @@
     <vm:header>
       <vm:title>Sign Up</vm:title>
     </vm:header>
-    <vm:pagewrapper>
+    <vm:pagewrapper vm_facebook="true">
       <vm:rawheader caption="Account Registration"/>
       <vm:body default-input="reguid">
+        <div id="fb-root">
+        </div>
         <div style="margin-left: 20px;">
           <h1 class="page_title">
             <?vsp

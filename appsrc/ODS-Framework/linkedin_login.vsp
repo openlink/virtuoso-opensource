@@ -11,9 +11,8 @@
       ret_url := sprintf ('http://%{WSHost}s%s?sid=%U', http_path(), sid);
       url := OAUTH..sign_request ('GET', 'https://api.linkedin.com/uas/oauth/requestToken', sprintf ('oauth_callback=%U', ret_url), tok, null, 1); 
       res := http_get (url);
-      dbg_obj_print_vars (url, res);
+      -- dbg_obj_print_vars (url, res);
       sid := OAUTH..parse_response (sid, tok, res);
-
       OAUTH..set_session_data (sid, params);
       oauth_tok := OAUTH..get_auth_token (sid);
       url := sprintf ('https://www.linkedin.com/uas/oauth/authenticate?oauth_token=%U', oauth_tok);
@@ -24,19 +23,18 @@
   else if ({?'oauth_verifier'} is not null)
     {
       declare header, auth any;
-      dbg_obj_print (params);
+      -- dbg_obj_print (params);
       url := OAUTH..sign_request ('GET', 'https://api.linkedin.com/uas/oauth/accessToken', 
 		sprintf ('oauth_token=%U&oauth_verifier=%U', {?'oauth_token'}, {?'oauth_verifier'}), 
 			tok, sid, 1);
-      dbg_obj_print (url);
+      -- dbg_obj_print (url);
       res := http_get (url);
-      dbg_obj_print (res);
+      -- dbg_obj_print (res);
       sid := OAUTH..parse_response (sid, tok, res);
-
       url := OAUTH..sign_request ('GET', 'https://api.linkedin.com/v1/people/~:(id,first-name,last-name,industry,public-profile-url,date-of-birth)', '', tok, sid, 1);
-      dbg_obj_print_vars (url);
+      -- dbg_obj_print_vars (url);
       res := http_get (url);
-      dbg_printf ('%s', res);
+      -- dbg_printf ('%s', res);
       profile_url := cast (xpath_eval ('/person/public-profile-url', xtree_doc (res)) as varchar);
       OAUTH..session_terminate (sid); 
     }
@@ -52,8 +50,7 @@
            if (exists (select 1 from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_URL = profile_url))
              {
                declare uname varchar;
-               uname := (select U_NAME from SYS_USERS, WA_USER_OL_ACCOUNTS where WUO_U_ID = U_ID and 
-			WUO_URL = profile_url);
+              uname := (select U_NAME from SYS_USERS, WA_USER_OL_ACCOUNTS where WUO_U_ID = U_ID and WUO_URL = profile_url);
 	       http_value (sprintf ('You are logged in as ODS account: %s', uname), 'b');
                sid := vspx_sid_generate ();
                insert into VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY, VS_STATE) 

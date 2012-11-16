@@ -1,5 +1,6 @@
 <?vsp
-  declare info, res, cb, mod, exp, webid, ret_url, cert, ctype, err, dummy, expiry_verify, vtype, md5, sha1, subj, json_out any;
+  declare info, res, cb, mod, exp, webid, ret_url, cert, ctype, err, dummy, expiry_verify, ian_verify, vtype, md5, sha1, subj, json_out, st any;
+  st := msec_time ();
   cb := {?'callback'};
   cert := {?'certificate'};
   err := '';
@@ -51,6 +52,10 @@
     expiry_verify := 1;
   else 
     expiry_verify := 0;
+  if ({?'ian'} = 'true')
+    ian_verify := 1;
+  else 
+    ian_verify := 0;
 
   if (strchr (cb, '?') is null)
     cb := cb || '?';
@@ -65,7 +70,7 @@
       info := get_certificate_info (9, cert, ctype);
       if (info is null)
         res := 'noCert';
-      else if (WEBID_AUTH_GEN_2 (cert, ctype, null, 1, 0, webid, dummy, expiry_verify, vtype))
+      else if (WEBID_AUTH_GEN_2 (cert, ctype, null, 1, 0, webid, dummy, expiry_verify, vtype, ian_verify))
 	res := 'success';
       else
 	res := 'noVerified';
@@ -86,8 +91,8 @@
      {
        ret_url := sprintf ('%serror=%U', cb, res);
      }
-
-   ret_url := ret_url || sprintf ('&ts=%U&md5=%U&sha1=%U&subj=%U', date_iso8601 (now ()), md5, sha1, subj);
+   st := msec_time () - st;
+   ret_url := ret_url || sprintf ('&ts=%U&md5=%U&sha1=%U&subj=%U&elapsed=%d', date_iso8601 (now ()), md5, sha1, subj, st);
    ret_url := ret_url || sprintf ('&signature=%U', xenc_dsig_sign (ret_url, 'id_rsa', xenc_get_key_algo ('id_rsa')));  
 
   if (not json_out) 

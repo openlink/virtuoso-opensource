@@ -26,7 +26,7 @@
   <?vsp
     declare N integer;
   declare vHost, vHostUrl, vUrl, vParams, vResult, vRequest, vRespond any;
-    declare tmp, suffix, vValidate, vSid, vRealm, vUserName, vError, vForm, vFormTab, vFormTab2, vFormTab3, vFormMode, vXml, vAcl, xAcl, vLists, vList, items any;
+  declare tmp, suffix, vValidate, vSid, vRealm, vUserName, vError, vForm, vFormTab, vFormTab2, vFormMode, vXml, vAcl, xAcl, vLists, vList, items any;
   declare vHostLinks, vUserLinks any;
 
   vUserLinks := '';
@@ -105,7 +105,6 @@
     }
     vFormTab := atoi(get_keyword ('formTab', params, '0'));
     vFormTab2 := atoi(get_keyword ('formTab2', params, '0'));
-    vFormTab3 := atoi(get_keyword ('formTab3', params, '0'));
     vFormMode := get_keyword ('formMode', params, '');
     xAcl := vector ('public', '1', 'acl', '2', 'private', '3');
 
@@ -390,6 +389,14 @@
       }
       else if (get_keyword ('pf_update26', params, '') <> '')
       {
+      if (get_keyword ('pf26_importFile', params, '0') = '0')
+      {
+        tmp := get_keyword ('pf26_certificate', params, '');
+      }
+      else
+      {
+        tmp := get_keyword ('pf26_file', params, '');
+      }
         vUrl := sprintf (
                          '%s/user.certificates.%s?sid=%U&realm=%U&id=%U&certificate=%U&enableLogin=%U',
                          vHostUrl,
@@ -397,7 +404,7 @@
                          vSid,
                          vRealm,
                          get_keyword ('pf26_id', params, ''),
-                         get_keyword ('pf26_certificate', params, ''),
+                       tmp,
                          get_keyword ('pf26_enableLogin', params, '0')
                         );
         commit work;
@@ -462,7 +469,7 @@
               {
                 suffix := replace (params [N], prefix||'_fld_1_', '');
                 vUrl := vHostUrl || '/user.onlineAccounts.new?sid=' || vSid || '&realm=' || vRealm || '&type=' || accountType ||
-                        sprintf ('&name=%U&url=%U', trim (params [N+1]), trim (get_keyword (prefix||'_fld_2_'||suffix, params, '')));
+                      sprintf ('&name=%U&url=%U&uri=%U', trim (params [N+1]), trim (get_keyword (prefix||'_fld_2_'||suffix, params, '')), trim (get_keyword (prefix||'_fld_3_'||suffix, params, '')));
                 commit work;
                 vResult := http_client_ext (vUrl, http_method=>'GET', http_headers=>vRequest, headers=>vRespond);
                 if (vRespond[0] like 'HTTP/1._ 4__ %' or vRespond[0] like 'HTTP/1._ 5__ %')
@@ -606,6 +613,18 @@
                 vParams := vParams || sprintf ('&homeLongitude=%U', get_keyword ('i_homelng', params, ''));
               if (get_keyword ('cb_item_i_homePhone', params, '') = '1')
                 vParams := vParams || sprintf ('&homePhone=%U', get_keyword ('i_homePhone', params, ''));
+            if (get_keyword ('cb_item_i_homeCountry', params, '') = '1')
+              vParams := vParams || sprintf ('&homeCountry=%U', get_keyword ('i_homeCountry', params, ''));
+            if (get_keyword ('cb_item_i_homeState', params, '') = '1')
+              vParams := vParams || sprintf ('&homeState=%U', get_keyword ('i_homeState', params, ''));
+            if (get_keyword ('cb_item_i_homeCity', params, '') = '1')
+              vParams := vParams || sprintf ('&homeCity=%U', get_keyword ('i_homeCity', params, ''));
+            if (get_keyword ('cb_item_i_homeCode', params, '') = '1')
+              vParams := vParams || sprintf ('&homeCode=%U', get_keyword ('i_homeCode', params, ''));
+            if (get_keyword ('cb_item_i_homeAddress1', params, '') = '1')
+              vParams := vParams || sprintf ('&homeAddress1=%U', get_keyword ('i_homeAddress1', params, ''));
+            if (get_keyword ('cb_item_i_homeAddress2', params, '') = '1')
+              vParams := vParams || sprintf ('&homeAddress2=%U', get_keyword ('i_homeAddress2', params, ''));
               if (get_keyword ('cb_item_i_businessOrganization', params, '') = '1')
                 vParams := vParams || sprintf ('&businessOrganization=%U', get_keyword ('i_businessOrganization', params, ''));
               if (get_keyword ('cb_item_i_businessHomePage', params, '') = '1')
@@ -782,7 +801,7 @@
               vParams := vParams || '&securityOpenID=' || sprintf ('%U', get_keyword ('pf_openID', params, ''));
 
             -- Limits
-            if (vFormTab2 = 4)
+          if (vFormTab2 = 3)
               vParams := vParams || '&securitySiocLimit=' || sprintf ('%U', get_keyword ('pf_securitySiocLimit', params, ''));
 
           }
@@ -844,7 +863,7 @@
           vFormTab2 := vFormTab2 + 1;
           if (
               ((vFormTab = 1) and (vFormTab2 > 3)) or
-              ((vFormTab = 2) and (vFormTab2 > 6))
+            ((vFormTab = 2) and (vFormTab2 > 5))
              )
           {
             vFormTab := vFormTab + 1;
@@ -988,16 +1007,17 @@
   ?>
 <html>
   <head>
+    <meta charset="utf-8" />
     <title>ODS user's pages</title>
 <?vsp http (vHostLinks); ?><?vsp http (vUserLinks); ?>
     <link rel="stylesheet" type="text/css" href="/ods/users/css/users.css" />
     <link rel="stylesheet" type="text/css" href="/ods/default.css" />
-    <link rel="stylesheet" type="text/css" href="/ods/nav_framework.css" />
     <link rel="stylesheet" type="text/css" href="/ods/typeahead.css" />
     <link rel="stylesheet" type="text/css" href="/ods/ods-bar.css" />
     <link rel="stylesheet" type="text/css" href="/ods/rdfm.css" />
     <script type="text/javascript" src="/ods/users/js/users.js"></script>
     <script type="text/javascript" src="/ods/common.js"></script>
+    <script type="text/javascript" src="/ods/facebook.js"></script>
     <script type="text/javascript" src="/ods/typeahead.js"></script>
     <script type="text/javascript" src="/ods/tbl.js"></script>
     <script type="text/javascript" src="/ods/validate.js"></script>
@@ -1009,6 +1029,7 @@
     <script type="text/javascript" src="/ods/oat/loader.js"></script>
   </head>
   <body onunload="myCheckLeave (document.forms['page_form'])">
+    <div id="fb-root"></div>
     <form name="page_form" id="page_form" method="post" enctype="multipart/form-data">
       <input type="hidden" name="mode" id="mode" value="vsp" />
       <input type="hidden" name="sid" id="sid" value="<?V vSid ?>" />
@@ -1016,7 +1037,6 @@
       <input type="hidden" name="form" id="form" value="<?V vForm ?>" />
       <input type="hidden" name="formTab" id="formTab" value="<?V vFormTab ?>" />
       <input type="hidden" name="formTab2" id="formTab2" value="<?V vFormTab2 ?>" />
-      <input type="hidden" name="formTab3" id="formTab3" value="<?V vFormTab3 ?>" />
       <input type="hidden" name="formMode" id="formMode" value="<?V vFormMode ?>" />
       <input type="hidden" name="items" id="items" value="" />
       <input type="hidden" name="securityNo" id="securityNo" value="" />
@@ -1069,16 +1089,17 @@
                   Please identify yourself
                 </div>
                 <ul id="lf_tabs" class="tabs">
-                  <li id="lf_tab_0" title="Digest">Digest</li>
+                  <li id="lf_tab_0" title="Digest" style="display: none;">Digest</li>
                   <li id="lf_tab_3" title="WebID" style="display: none;">WebID</li>
                   <li id="lf_tab_1" title="OpenID" style="display: none;">OpenID</li>
                   <li id="lf_tab_2" title="Facebook" style="display: none;">Facebook</li>
                   <li id="lf_tab_4" title="Twitter" style="display: none;">Twitter</li>
                   <li id="lf_tab_5" title="LinkedIn" style="display: none;">LinkedIn</li>
+                  <li id="lf_tab_6" style="display: none;"></li>
                 </ul>
                 <div style="min-height: 120px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                   <div id="lf_content"></div>
-                  <div id="lf_page_0" class="tabContent" >
+                  <div id="lf_page_0" class="tabContent" style="display: none;">
                 <table class="form" cellspacing="5">
                   <tr>
                         <th width="20%">
@@ -1098,7 +1119,7 @@
                   </tr>
                     </table>
                   </div>
-                  <div id="lf_page_1" class="tabContent" style="display: none">
+                  <div id="lf_page_1" class="tabContent" style="display: none;">
                     <table class="form" cellspacing="5">
                   <tr>
                         <th width="20%">
@@ -1110,7 +1131,7 @@
                   </tr>
                     </table>
                   </div>
-                  <div id="lf_page_2" class="tabContent" style="display: none">
+                  <div id="lf_page_2" class="tabContent" style="display: none;">
                     <table class="form" cellspacing="5">
                   <tr>
                         <th width="20%">
@@ -1118,13 +1139,12 @@
                         <td>
                           <span id="lf_facebookData" style="min-height: 20px;"></span>
                           <br />
-                          <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
-                          <fb:login-button autologoutlink="true"></fb:login-button>
+                          <fb:login-button autologoutlink="true" xmlns:fb="http://www.facebook.com/2008/fbml"></fb:login-button>
                     </td>
                   </tr>
                 </table>
                   </div>
-                  <div id="lf_page_3" class="tabContent" style="display: none">
+                  <div id="lf_page_3" class="tabContent" style="display: none;">
                     <table id="lf_table_3" class="form" cellspacing="5">
                       <tr id="lf_table_3_throbber">
                         <th width="20%">
@@ -1135,7 +1155,7 @@
                       </tr>
                     </table>
                   </div>
-                  <div id="lf_page_4" class="tabContent" style="display: none">
+                  <div id="lf_page_4" class="tabContent" style="display: none;">
                     <table id="lf_table_4" class="form" cellspacing="5">
                       <tr>
                         <th width="20%">
@@ -1161,6 +1181,15 @@
                       </tr>
                     </table>
                   </div>
+                  <div id="lf_page_6" class="tabContent" style="display: none;">
+                    <table id="lf_table_6" class="form" cellspacing="5" width="100%">
+                      <tr>
+                        <td style="text-align: center;">
+                          <b>The login is not allowed!</b>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
                 </div>
                 <div class="footer">
                   <input type="submit" name="lf_login" value="Login" id="lf_login" onclick="javascript: return lfLoginSubmit();" />
@@ -1177,16 +1206,17 @@
                   User Registration
                 </div>
                 <ul id="rf_tabs" class="tabs">
-                  <li id="rf_tab_0" title="Digest">Digest</li>
+                  <li id="rf_tab_0" title="Digest" style="display: none;">Digest</li>
                   <li id="rf_tab_3" title="WebID" style="display: none;">WebID</li>
                   <li id="rf_tab_1" title="OpenID" style="display: none;">OpenID</li>
                   <li id="rf_tab_2" title="Facebook" style="display: none;">Facebook</li>
                   <li id="rf_tab_4" title="Twitter" style="display: none;">Twitter</li>
                   <li id="rf_tab_5" title="LinkedIn" style="display: none;">LinkedIn</li>
+                  <li id="rf_tab_6" style="display: none;"></li>
                 </ul>
                 <div style="min-height: 140px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                   <div id="rf_content"></div>
-                  <div id="rf_page_0" class="tabContent" >
+                  <div id="rf_page_0" class="tabContent" style="display: none;">
                     <table id="rf_table_0" class="form" cellspacing="5">
                       <tr>
                         <th width="20%">
@@ -1222,7 +1252,7 @@
                       </tr>
                     </table>
                   </div>
-                  <div id="rf_page_1" class="tabContent" style="display: none">
+                  <div id="rf_page_1" class="tabContent" style="display: none;">
                     <table id="rf_table_1" class="form" cellspacing="5">
                       <tr>
                         <th width="20%">
@@ -1234,7 +1264,7 @@
                       </tr>
                     </table>
                   </div>
-                  <div id="rf_page_2" class="tabContent" style="display: none">
+                  <div id="rf_page_2" class="tabContent" style="display: none;">
                     <table id="rf_table_2" class="form" cellspacing="5">
                       <tr>
                         <th width="20%">
@@ -1242,13 +1272,12 @@
                         <td>
                           <span id="rf_facebookData" style="min-height: 20px;"></span>
                           <br />
-                          <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
-                          <fb:login-button autologoutlink="true"></fb:login-button>
+                          <fb:login-button autologoutlink="true" xmlns:fb="http://www.facebook.com/2008/fbml"></fb:login-button>
                         </td>
                       </tr>
                     </table>
                   </div>
-                  <div id="rf_page_3" class="tabContent" style="display: none">
+                  <div id="rf_page_3" class="tabContent" style="display: none;">
                     <table id="rf_table_3" class="form" cellspacing="5">
                       <tr id="rf_table_3_throbber">
                         <th width="20%">
@@ -1259,7 +1288,7 @@
                       </tr>
                     </table>
                   </div>
-                  <div id="rf_page_4" class="tabContent" style="display: none">
+                  <div id="rf_page_4" class="tabContent" style="display: none;">
                     <table id="rf_table_4" class="form" cellspacing="5">
                       <tr>
                         <th width="20%">
@@ -1281,6 +1310,15 @@
                           <span id="rf_linkedin" style="min-height: 20px;"></span>
                           <br />
                           <img id="rf_linkedinButton" src="/ods/images/linkedin-large.png" border="0"/>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+                  <div id="rf_page_6" class="tabContent" style="display: none;">
+                    <table id="rf_table_6" class="form" cellspacing="5" width="100%">
+                      <tr>
+                        <td style="text-align: center;">
+                          <b>The registration is not allowed!</b>
                         </td>
                       </tr>
                     </table>
@@ -1361,12 +1399,23 @@
                   ?>
                   <div id="pf_page_0" class="tabContent" style="display:none;">
                     <ul id="pf_tabs_0" class="tabs">
+                      <div id="pf_tabs_0_row_0" style="margin-top: 4px;">
                       <li id="pf_tab_0_0">Profile Import</li>
                       <li id="pf_tab_0_1">Main</li>
                       <li id="pf_tab_0_2">Address</li>
                       <li id="pf_tab_0_3">Online Accounts</li>
                       <li id="pf_tab_0_4">Messaging Services</li>
-                      <li id="pf_tab_0_5">Others</li>
+                      <li id="pf_tab_0_5">Biographical Events</li>
+                      </div>
+                      <div id="pf_tabs_0_row_1" style="margin-top: 4px;">
+                      <li id="pf_tab_0_6">Owns</li>
+                      <li id="pf_tab_0_7">Favorite Things</li>
+                      <li id="pf_tab_0_8">Creator Of</li>
+                      <li id="pf_tab_0_9">My Offers</li>
+                      <li id="pf_tab_0_10">Offers I Seek</li>
+                      <li id="pf_tab_0_11">Likes & DisLikes</li>
+                      <li id="pf_tab_0_12">Social Network</li>
+                      </div>
                     </ul>
                     <div style="min-height: 180px; min-width: 650px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                         <?vsp
@@ -1382,7 +1431,7 @@
                             <td>
                               <input type="text" name="pf_foaf" value="" id="pf_foaf" style="width: 400px;" />
                               <input type="button" value="Import" onclick="javascript: pfGetFOAFData($v('pf_foaf')); return false;" class="button" />
-                              <img id="pf_import_image" alt="Import FOAF Data" src="/ods/images/oat/Ajax_throbber.gif" style="display: none" />
+                              <img id="pf_import_image" alt="Import FOAF Data" src="/ods/images/oat/Ajax_throbber.gif" style="display: none;" />
                             </td>
                           </tr>
                         </table>
@@ -2130,22 +2179,6 @@
                       {
                         ?>
                       <div id="pf_page_0_5" class="tabContent" style="display:none;">
-                        <ul id="pf_tabs_0_5" class="tabs">
-                          <li id="pf_tab_0_5_0">Biographical Events</li>
-                          <li id="pf_tab_0_5_1">Owns</li>
-                          <li id="pf_tab_0_5_2">Favorite Things</li>
-                          <li id="pf_tab_0_5_3">Creator Of</li>
-                          <li id="pf_tab_0_5_4">My Offers</li>
-                          <li id="pf_tab_0_5_5">Offers I Seek</li>
-                          <li id="pf_tab_0_5_6">Likes & DisLikes</li>
-                          <li id="pf_tab_0_5_7">Social Network</li>
-                        </ul>
-                        <div style="min-height: 180px; min-width: 650px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
-                        <?vsp
-                          if (vFormTab3 = 0)
-                        {
-                        ?>
-                          <div id="pf_page_0_5_0" class="tabContent" style="display:none;">
                         <table class="form" cellspacing="5">
                           <tr>
                             <td width="600px">
@@ -2180,10 +2213,10 @@
                           </div>
                         <?vsp
                         }
-                          if (vFormTab3 = 1)
+                      if (vFormTab2 = 6)
                           {
                           ?>
-                          <div id="pf_page_0_5_1" class="tabContent" style="display:none;">
+                      <div id="pf_page_0_6" class="tabContent" style="display:none;">
                             <h3>Owns</h3>
                             <?vsp
                               if (vFormMode = '')
@@ -2276,10 +2309,10 @@
                           </div>
                           <?vsp
                           }
-                          if (vFormTab3 = 2)
+                      if (vFormTab2 = 7)
                         {
                       ?>
-                          <div id="pf_page_0_5_2" class="tabContent" style="display:none;">
+                      <div id="pf_page_0_7" class="tabContent" style="display:none;">
                         <h3>Favorites</h3>
                         <?vsp
                           if (vFormMode = '')
@@ -2366,10 +2399,10 @@
                       </div>
                       <?vsp
                         }
-                          if (vFormTab3 = 3)
+                      if (vFormTab2 = 8)
                         {
                       ?>
-                          <div id="pf_page_0_5_3" class="tabContent" style="display:none;">
+                      <div id="pf_page_0_8" class="tabContent" style="display:none;">
                         <h3>Creator Of</h3>
                         <?vsp
                           if (vFormMode = '')
@@ -2460,10 +2493,10 @@
                       </div>
                       <?vsp
                         }
-                          if (vFormTab3 = 4)
+                      if (vFormTab2 = 9)
                         {
                       ?>
-                          <div id="pf_page_0_5_4" class="tabContent" style="display:none;">
+                      <div id="pf_page_0_9" class="tabContent" style="display:none;">
                         <h3>My Offers</h3>
                         <?vsp
                           if (vFormMode = '')
@@ -2574,10 +2607,10 @@
                       </div>
                       <?vsp
                         }
-                          if (vFormTab3 = 5)
+                      if (vFormTab2 = 10)
                         {
                       ?>
-                          <div id="pf_page_0_5_5" class="tabContent" style="display:none;">
+                      <div id="pf_page_0_10" class="tabContent" style="display:none;">
                         <h3>Offers I Seek</h3>
                         <?vsp
                           if (vFormMode = '')
@@ -2688,10 +2721,10 @@
                       </div>
                       <?vsp
                         }
-                          if (vFormTab3 = 6)
+                      if (vFormTab2 = 11)
                         {
                       ?>
-                          <div id="pf_page_0_5_6" class="tabContent" style="display:none;">
+                      <div id="pf_page_0_11" class="tabContent" style="display:none;">
                         <h3>Likes & DisLikes</h3>
                         <?vsp
                           if (vFormMode = '')
@@ -2822,10 +2855,10 @@
                           </div>
                           <?vsp
                           }
-                          if (vFormTab3 = 7)
+                      if (vFormTab2 = 12)
                           {
                           ?>
-                          <div id="pf_page_0_5_7" class="tabContent" style="display:none;">
+                      <div id="pf_page_0_12" class="tabContent" style="display:none;">
                             <h3>Social Network</h3>
                             <?vsp
                               if (vFormMode = '')
@@ -2957,10 +2990,7 @@
                           }
                           ?>
                         </div>
-                      </div>
-                    </div>
                     <?vsp
-                    }
                     if (vFormTab2 < 5)
                     {
                       ?>
@@ -3543,10 +3573,9 @@
                       <li id="pf_tab_2_0" title="Password">Password</li>
                       <li id="pf_tab_2_1" title="Password Recovery">Password Recovery</li>
                       <li id="pf_tab_2_2" title="OpenID">OpenID</li>
-                      <li id="pf_tab_2_3" title="Facebook" style="display:none;">Facebook</li>
-                      <li id="pf_tab_2_4" title="Limits">Limits</li>
-                      <li id="pf_tab_2_5" title="Certificate Generator" style="display:none;">Certificate Generator</li>
-                      <li id="pf_tab_2_6" title="X.509 Certificates">X.509 Certificates</li>
+                      <li id="pf_tab_2_3" title="Limits">Limits</li>
+                      <li id="pf_tab_2_4" title="Certificate Generator" style="display:none;">Certificate Generator</li>
+                      <li id="pf_tab_2_5" title="X.509 Certificates">X.509 Certificates</li>
                     </ul>
                     <div style="min-height: 180px; min-width: 650px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                       <?vsp
@@ -3664,13 +3693,6 @@
                       {
                       ?>
                       <div id="pf_page_2_3" class="tabContent" style="display:none;">
-                      </div>
-                      <?vsp
-                      }
-                      if (vFormTab2 = 4)
-                      {
-                      ?>
-                      <div id="pf_page_2_4" class="tabContent" style="display:none;">
                         <table class="form" cellspacing="5">
                       <tr>
                         <th>
@@ -3684,20 +3706,20 @@
                       </div>
                       <?vsp
                       }
-                      if (vFormTab2 = 5)
+                      if (vFormTab2 = 4)
                       {
                       ?>
-                      <div id="pf_page_2_5" class="tabContent" style="display:none;">
+                      <div id="pf_page_2_4" class="tabContent" style="display:none;">
             	          <iframe id="cert" src="/ods/cert.vsp?sid=<?V vSid ?>" width="650" height="270" frameborder="0" scrolling="no">
             	            <p>Your browser does not support iframes.</p>
             	          </iframe>
                       </div>
                       <?vsp
                       }
-                      if (vFormTab2 = 6)
+                      if (vFormTab2 = 5)
                       {
                       ?>
-                      <div id="pf_page_2_6" class="tabContent" style="display:none;">
+                      <div id="pf_page_2_5" class="tabContent" style="display:none;">
                         <h3>X.509 Certificates</h3>
                         <?vsp
                           if (vFormMode = '')
@@ -3764,7 +3786,24 @@
             	          }
             	        ?>
                       <tr>
-                        <th valign="top">
+                              <th width="15%"></th>
+                              <td>
+                                <label>
+                                  <input type="checkbox" name="pf26_importFile" id="pf26_importFile" value="1" onclick="destinationChange(this, {checked: {show: ['pf26_form_3'], hide: ['pf26_form_4']}, unchecked: {hide: ['pf26_form_3'], show: ['pf26_form_4']}});" />
+                                  <b>Import from local file</b>
+                                </label>
+                              </td>
+                            </tr>
+                            <tr id="pf26_form_3" style="display: none;">
+                              <th width="15%">
+                                <label for="pf26_file">File to import</label>
+                              </th>
+                              <td align="left">
+                                <input type="file" name="pf26_file" id="pf26_file" />
+                              </td>
+                            </tr>
+                            <tr id="pf26_form_4">
+                              <th width="15%" valign="top">
                                 <label for="pf26_certificate">Certificate</label>
                         </th>
                         <td>
@@ -3776,7 +3815,7 @@
                         <td>
                           <label>
                                   <input type="checkbox" name="pf26_enableLogin" id="pf26_enableLogin" value="1"/>
-                            Enable Automatic WebID Login
+                                  <b>Enable Automatic WebID Login</b>
                           </label>
                         </td>
                       </tr>
@@ -3795,7 +3834,7 @@
                       </div>
                       <?vsp
                         }
-                      if (vFormTab2 < 5)
+                      if (vFormTab2 < 4)
                         {
                       ?>
                     <div class="footer">

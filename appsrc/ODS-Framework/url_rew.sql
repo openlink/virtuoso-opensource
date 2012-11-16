@@ -168,6 +168,25 @@ create procedure DB.DBA.ODS_PHOTO_ITEM_PAGE (in par varchar, in fmt varchar, in 
 }
 ;
 
+create procedure DB.DBA.ODS_MAIL_ITEM_PAGE (in par varchar, in fmt varchar, in val varchar)
+{
+  declare ret, ufname any;
+
+  if (par = 'ufname')
+    {
+      connection_set ('ufname', val);
+      ret := '';
+    }
+  else if (par = 'post')
+    {
+      ufname := connection_get ('ufname');
+      ret := (select TOP 1 WAI_ID from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS where U_NAME = ufname and U_ID = WAM_USER and WAM_APP_TYPE = 'oMail' and WAM_MEMBER_TYPE = 1 and WAI_NAME = WAM_INST);
+      ret := sprintf ('%d/open.vsp?op=%s,1', ret, val);
+    }
+  return sprintf (fmt, ret);
+}
+;
+
 create procedure DB.DBA.ODS_PHOTO_GEMS_PAGE (in par varchar, in fmt varchar, in val varchar)
 {
 
@@ -184,6 +203,19 @@ create procedure DB.DBA.ODS_PHOTO_GEMS_PAGE (in par varchar, in fmt varchar, in 
     }
   return sprintf (fmt, ret);
 
+}
+;
+
+create procedure DB.DBA.ODS_FOLDER_PAGE (in par varchar, in fmt varchar, in val varchar)
+{
+  declare ret any;
+  if (par = 'item')
+    {
+      ret := DB.DBA.DAV_SEARCH_PATH (atoi (val), 'C');
+      if (isinteger (ret))
+        ret := '';
+    }
+  return sprintf (fmt, ret);
 }
 ;
 
@@ -416,8 +448,8 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_item_html', 1,
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_item_briefcase_html', 1,
     '/dataspace/doc/([^/]*)/(briefcase)/([^/]*)/folder/([^/\\?]*)',
     vector('uname', 'app', 'inst', 'item'), 3,
-    '%s?id=%s&what=c', vector('inst', 'item'),
-    'DB.DBA.ODS_ITEM_PAGE',
+    '%s', vector('item'),
+    'DB.DBA.ODS_FOLDER_PAGE',
     NULL,
     2);
 
@@ -524,6 +556,15 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_discussion_item_html', 1,
     vector('grp', 'post'), 1,
     '/nntpf/nntpf_disp_article.vspx?id=%U', vector('post'),
     'DB.DBA.ODS_DISC_ITEM_ID',
+    NULL,
+    2);
+
+-- A discussion item page
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_mail_item_html', 1,
+    '/dataspace/([^/]*)/mail/([\\d]+)',
+    vector ('ufname', 'post'), 2,
+    '/oMail/%s%s', vector('ufname', 'post'),
+    'DB.DBA.ODS_MAIL_ITEM_PAGE',
     NULL,
     2);
 
@@ -812,6 +853,7 @@ DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_rule_list1', 1,
 	  'ods_apps_gems_html',
 	  'ods_apps_tags_html',
 	  'ods_discussion_item_html',
+	  'ods_mail_item_html',
 	  'ods_blog_tag',
 	  'ods_main',
 	  'ods_space_html',

@@ -423,7 +423,7 @@ create procedure wa_abs_date (in  dt datetime)
     }
   else if (ddiff = 1)
     {
-      ret := sprintf ('Yesterday at %d:%d', hour(dt), minute(dt));
+      ret := sprintf ('Yesterday at %02d:%02d', hour(dt), minute(dt));
     }
   else if (ddiff < 7)
     {

@@ -616,6 +616,8 @@ create procedure wa_aci_params (
             if (params[N2] like (params[N] || '_fld_1_%'))
             {
               aclNo2 := replace (params[N2], params[N] || '_fld_1_', '');
+              if (not DB.DBA.is_empty_or_null (get_keyword (params[N] || '_fld_1_' || aclNo2, params)))
+              {
               V2 := vector (M2,
                             trim (get_keyword (params[N] || '_fld_1_' || aclNo2, params)),
                             trim (get_keyword (params[N] || '_fld_2_' || aclNo2, params)),
@@ -625,6 +627,7 @@ create procedure wa_aci_params (
               T := vector_concat (T, vector (V2));
               M2 := M2 + 1;
             }
+          }
           }
           if (length (T) = 0)
             goto _skip;
@@ -649,6 +652,71 @@ create procedure wa_aci_params (
     }
   }
   return retValue;
+}
+;
+
+create procedure wa_aci_validate (
+  in aci any,
+  in silent integer := 0)
+{
+  declare N, M integer;
+  declare sqlStatement varchar;
+  declare retValue, criteria, sqlTree any;
+
+  retValue := vector ();
+  for (N := 0; N < length (aci); N := N + 1)
+  {
+    if (aci[N][2] = 'advanced')
+    {
+      criteria := aci[N][1];
+      for (M := 0; M < length (criteria); M := M + 1)
+      {
+        if (criteria[M][1] = 'certSparqlASK')
+        {
+		      declare exit handler for sqlstate '*' {
+		        if (not silent)
+		          signal('TEST', WA_CLEAR ('Bad criteria: ' || __SQL_MESSAGE));
+
+		        return 0;
+		      };
+
+          sqlStatement := criteria[M][4];
+          sqlStatement := regexp_replace (sqlStatement, '\\^\\{([a-zA-Z0-9])+\\}\\^', '??');
+		      sqlTree := sql_parse ('sparql ' || sqlStatement);
+        }
+        else if (criteria[M][1] = 'certSparqlTriplet')
+        {
+          declare command, commands any;
+		      declare exit handler for sqlstate '*' {
+		        if (not silent)
+		          signal('TEST', WA_CLEAR ('Bad criteria: ' || __SQL_MESSAGE));
+
+		        return 0;
+		      };
+
+          commands := ODS.ODS_API.commands ();
+          command := get_keyword (criteria[M][2], commands);
+          command := replace (command, ' <> ', ' != ');
+          command := replace (command, '^{value}^', 'str (?v)');
+          sqlStatement := sprintf (
+            'prefix sioc: <http://rdfs.org/sioc/ns#> \n' ||
+            'prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n' ||
+            'prefix foaf: <http://xmlns.com/foaf/0.1/> \n' ||
+            'ASK \n' ||
+            'WHERE \n' ||
+            '  { \n' ||
+            '    <urn:demo> %s ?v. \n' ||
+            '    FILTER (%s). \n' ||
+            '  }',
+            criteria[M][4],
+            command);
+          sqlStatement := regexp_replace (sqlStatement, '\\^\\{([a-zA-Z0-9])+\\}\\^', '??');
+		      sqlTree := sql_parse ('sparql ' || sqlStatement);
+        }
+      }
+    }
+  }
+  return 1;
 }
 ;
 
@@ -731,7 +799,6 @@ wa_exec_no_error(
 'create table WA_SETTINGS
  (
    WS_ID integer identity primary key,
-   WS_REGISTER int,
    WS_MAIL_VERIFY int,
    WS_VERIFY_TIP int,
    WS_REGISTRATION_EMAIL_EXPIRY int default 24,
@@ -749,17 +816,52 @@ wa_exec_no_error(
    WS_DISCLAIMER varchar,
    WS_DEFAULT_MAIL_DOMAIN varchar,
    WS_HTTPS integer default 0,
+   WS_LOGIN integer default 1,
+   WS_LOGIN_OPENID integer default 1,
+   WS_LOGIN_BROWSERID integer default 1,
+   WS_LOGIN_FACEBOOK integer default 1,
+   WS_LOGIN_TWITTER integer default 1,
+   WS_LOGIN_LINKEDIN integer default 1,
+   WS_LOGIN_GOOGLE integer default 1,
+   WS_LOGIN_WINLIVE integer default 1,
+   WS_LOGIN_WORDPRESS integer default 1,
+   WS_LOGIN_TUMBLR integer default 1,
+   WS_LOGIN_YAHOO integer default 1,
+   WS_LOGIN_DISQUS integer default 1,
+   WS_LOGIN_INSTAGRAM integer default 1,
+   WS_LOGIN_BITLY integer default 1,
+   WS_LOGIN_FOURSQUARE integer default 1,
+   WS_LOGIN_DROPBOX integer default 1,
+   WS_LOGIN_GITHUB integer default 1,
+   WS_LOGIN_SSL integer default 1,
+   WS_REGISTER integer default 1,
    WS_REGISTER_OPENID integer default 1,
+   WS_REGISTER_BROWSERID integer default 1,
    WS_REGISTER_FACEBOOK integer default 1,
    WS_REGISTER_TWITTER integer default 1,
    WS_REGISTER_LINKEDIN integer default 1,
+   WS_REGISTER_GOOGLE integer default 1,
+   WS_REGISTER_WINLIVE integer default 1,
+   WS_REGISTER_WORDPRESS integer default 1,
+   WS_REGISTER_TUMBLR integer default 1,
+   WS_REGISTER_YAHOO integer default 1,
+   WS_REGISTER_DISQUS integer default 1,
+   WS_REGISTER_INSTAGRAM integer default 1,
+   WS_REGISTER_BITLY integer default 1,
+   WS_REGISTER_FOURSQUARE integer default 1,
+   WS_REGISTER_DROPBOX integer default 1,
+   WS_REGISTER_GITHUB integer default 1,
    WS_REGISTER_SSL integer default 1,
+   WS_REGISTER_SSL_FILTER integer default 0,
+   WS_REGISTER_SSL_RULE varchar default \'ODS_REGISTRATION_RULE\',
+   WS_REGISTER_SSL_REALM varchar default \'ODS\',
    WS_REGISTER_AUTOMATIC_SSL integer default 1,
    WS_FEEDS_UPDATE_PERIOD varchar default \'hourly\',
    WS_FEEDS_UPDATE_FREQ integer default 1,
    WS_FEEDS_HUB varchar default null,
    WS_FEEDS_HUB_CALLBACK integer default 1,
-   WS_CERT_GEN_URL varchar default null
+   WS_CERT_GEN_URL varchar default null,
+   WS_CERT_EXPIRATION_PERIOD integer default 365
  )
 ')
 ;
@@ -824,6 +926,9 @@ wa_add_col('DB.DBA.WA_SETTINGS', 'WS_FEEDS_HUB', 'varchar default null')
 wa_add_col('DB.DBA.WA_SETTINGS', 'WS_CERT_GEN_URL', 'varchar default null')
 ;
 
+wa_add_col ('DB.DBA.WA_SETTINGS', 'WS_CERT_EXPIRATION_PERIOD', 'integer default 365')
+;
+
 wa_add_col('DB.DBA.WA_SETTINGS', 'WS_FEEDS_HUB_CALLBACK', 'integer default 1')
 ;
 
@@ -833,10 +938,76 @@ wa_add_col('DB.DBA.WA_SETTINGS', 'WS_STORE_DAYS', 'integer default 30')
 wa_add_col('DB.DBA.WA_SETTINGS', 'WS_HTTPS', 'integer default 0')
 ;
 
+wa_add_col ('DB.DBA.WA_SETTINGS', 'WS_LOGIN', 'integer default 1')
+;
+
+wa_add_col ('DB.DBA.WA_SETTINGS', 'WS_LOGIN_OPENID', 'integer default 1')
+;
+
+wa_add_col ('DB.DBA.WA_SETTINGS', 'WS_LOGIN_BROWSERID', 'integer default 1')
+;
+
+wa_add_col ('DB.DBA.WA_SETTINGS', 'WS_LOGIN_FACEBOOK', 'integer default 1')
+;
+
+wa_add_col ('DB.DBA.WA_SETTINGS', 'WS_LOGIN_TWITTER', 'integer default 1')
+;
+
+wa_add_col ('DB.DBA.WA_SETTINGS', 'WS_LOGIN_LINKEDIN', 'integer default 1')
+;
+
+wa_add_col ('DB.DBA.WA_SETTINGS', 'WS_LOGIN_GOOGLE', 'integer default 1')
+;
+
+wa_add_col ('DB.DBA.WA_SETTINGS', 'WS_LOGIN_WINLIVE', 'integer default 1')
+;
+
+wa_add_col ('DB.DBA.WA_SETTINGS', 'WS_LOGIN_WORDPRESS', 'integer default 1')
+;
+
+wa_add_col ('DB.DBA.WA_SETTINGS', 'WS_LOGIN_TUMBLR', 'integer default 1')
+;
+
+wa_add_col ('DB.DBA.WA_SETTINGS', 'WS_LOGIN_YAHOO', 'integer default 1')
+;
+
+wa_add_col ('DB.DBA.WA_SETTINGS', 'WS_LOGIN_DISQUS', 'integer default 1')
+;
+
+wa_add_col ('DB.DBA.WA_SETTINGS', 'WS_LOGIN_INSTAGRAM', 'integer default 1')
+;
+
+wa_add_col ('DB.DBA.WA_SETTINGS', 'WS_LOGIN_BITLY', 'integer default 1')
+;
+
+wa_add_col ('DB.DBA.WA_SETTINGS', 'WS_LOGIN_FOURSQUARE', 'integer default 1')
+;
+
+wa_add_col ('DB.DBA.WA_SETTINGS', 'WS_LOGIN_DROPBOX', 'integer default 1')
+;
+
+wa_add_col ('DB.DBA.WA_SETTINGS', 'WS_LOGIN_GITHUB', 'integer default 1')
+;
+
+wa_add_col ('DB.DBA.WA_SETTINGS', 'WS_LOGIN_SSL', 'integer default 1')
+;
+
 wa_add_col('DB.DBA.WA_SETTINGS', 'WS_REGISTER_OPENID', 'integer default 1')
 ;
 
+wa_add_col ('DB.DBA.WA_SETTINGS', 'WS_REGISTER_BROWSERID', 'integer default 1')
+;
+
 wa_add_col('DB.DBA.WA_SETTINGS', 'WS_REGISTER_FACEBOOK', 'integer default 1')
+;
+
+wa_add_col ('DB.DBA.WA_SETTINGS', 'WS_REGISTER_WORDPRESS', 'integer default 1')
+;
+
+wa_add_col ('DB.DBA.WA_SETTINGS', 'WS_REGISTER_TUMBLR', 'integer default 1')
+;
+
+wa_add_col ('DB.DBA.WA_SETTINGS', 'WS_REGISTER_YAHOO', 'integer default 1')
 ;
 
 wa_add_col('DB.DBA.WA_SETTINGS', 'WS_REGISTER_TWITTER', 'integer default 1')
@@ -845,7 +1016,43 @@ wa_add_col('DB.DBA.WA_SETTINGS', 'WS_REGISTER_TWITTER', 'integer default 1')
 wa_add_col('DB.DBA.WA_SETTINGS', 'WS_REGISTER_LINKEDIN', 'integer default 1')
 ;
 
+wa_add_col ('DB.DBA.WA_SETTINGS', 'WS_REGISTER_DISQUS', 'integer default 1')
+;
+
+wa_add_col ('DB.DBA.WA_SETTINGS', 'WS_REGISTER_INSTAGRAM', 'integer default 1')
+;
+
+wa_add_col ('DB.DBA.WA_SETTINGS', 'WS_REGISTER_BITLY', 'integer default 1')
+;
+
+wa_add_col ('DB.DBA.WA_SETTINGS', 'WS_REGISTER_FOURSQUARE', 'integer default 1')
+;
+
+wa_add_col ('DB.DBA.WA_SETTINGS', 'WS_REGISTER_DROPBOX', 'integer default 1')
+;
+
+wa_add_col ('DB.DBA.WA_SETTINGS', 'WS_REGISTER_GITHUB', 'integer default 1')
+;
+
+wa_add_col ('DB.DBA.WA_SETTINGS', 'WS_REGISTER_SSL', 'integer default 1')
+;
+
+wa_add_col ('DB.DBA.WA_SETTINGS', 'WS_REGISTER_SSL_FILTER', 'integer default 0')
+;
+
+wa_add_col ('DB.DBA.WA_SETTINGS', 'WS_REGISTER_GOOGLE', 'integer default 1')
+;
+
+wa_add_col ('DB.DBA.WA_SETTINGS', 'WS_REGISTER_WINLIVE', 'integer default 1')
+;
+
 wa_add_col('DB.DBA.WA_SETTINGS', 'WS_REGISTER_SSL', 'integer default 1')
+;
+
+wa_add_col ('DB.DBA.WA_SETTINGS', 'WS_REGISTER_SSL_RULE', 'varchar default \'ODS_REGISTRATION_RULE\'')
+;
+
+wa_add_col ('DB.DBA.WA_SETTINGS', 'WS_REGISTER_SSL_REALM', 'varchar default \'ODS\'')
 ;
 
 wa_add_col('DB.DBA.WA_SETTINGS', 'WS_REGISTER_AUTOMATIC_SSL', 'integer default 1')
@@ -1880,6 +2087,10 @@ create procedure
 web_user_password_check (in name varchar, in pass varchar)
 {
   declare rc int;
+
+  if (coalesce ((select TOP 1 WS_LOGIN from DB.DBA.WA_SETTINGS), 1) = 0)
+    return 0;
+
   if (length (name))
     {
       declare exit handler for sqlstate '*' {
@@ -1894,14 +2105,12 @@ web_user_password_check (in name varchar, in pass varchar)
     }
     }
   rc := 0;
-  if (exists (select 1 from SYS_USERS where U_NAME = name and U_DAV_ENABLE = 1 and U_IS_ROLE = 0 and
-        pwd_magic_calc (U_NAME, U_PASSWORD, 1) = pass and U_ACCOUNT_DISABLED = 0))
+  if (exists (select 1 from SYS_USERS where U_NAME = name and U_DAV_ENABLE = 1 and U_IS_ROLE = 0 and pwd_magic_calc (U_NAME, U_PASSWORD, 1) = pass and U_ACCOUNT_DISABLED = 0))
     {
-      update WS.WS.SYS_DAV_USER set U_LOGIN_TIME = now () where U_NAME = name
-	  and (U_LOGIN_TIME is null or U_LOGIN_TIME < dateadd ('minute', -2, now ()));
+    update WS.WS.SYS_DAV_USER set U_LOGIN_TIME = now () where U_NAME = name and (U_LOGIN_TIME is null or U_LOGIN_TIME < dateadd ('minute', -2, now ()));
+    commit work;
       rc := 1;
     }
-  commit work;
   return rc;
 }
 ;
@@ -2145,12 +2354,21 @@ create procedure INIT_SERVER_SETTINGS ()
   {
     insert soft WA_SETTINGS
   	  (
+  	   WS_LOGIN,
+       WS_LOGIN_OPENID,
+       WS_LOGIN_FACEBOOK,
+       WS_LOGIN_TWITTER,
+       WS_LOGIN_LINKEDIN,
+       WS_LOGIN_SSL,
   	   WS_REGISTER,
        WS_REGISTER_OPENID,
        WS_REGISTER_FACEBOOK,
        WS_REGISTER_TWITTER,
        WS_REGISTER_LINKEDIN,
        WS_REGISTER_SSL,
+       WS_REGISTER_SSL_FILTER,
+       WS_REGISTER_SSL_RULE,
+       WS_REGISTER_SSL_REALM,
        WS_REGISTER_AUTOMATIC_SSL,
   	   WS_MAIL_VERIFY,
   	   WS_REGISTRATION_EMAIL_EXPIRY,
@@ -2175,6 +2393,15 @@ create procedure INIT_SERVER_SETTINGS ()
 	     1,
 	     1,
 	     1,
+	     1,
+	     1,
+	     1,
+	     1,
+	     1,
+	     1,
+	     0,
+       'ODS_REGISTRATION_RULE',
+       'ODS',
 	     1,
 	     0,
 	     24,
@@ -2251,6 +2478,26 @@ create procedure wa_register_upgrade() {
          WS_REGISTER_AUTOMATIC_SSL = 1;
 
   registry_set ('__wa_register_upgrade', 'done');
+}
+;
+
+wa_register_upgrade()
+;
+
+create procedure wa_register_upgrade() {
+
+  if (registry_get ('__wa_register_upgrade2') = 'done')
+    return;
+
+  update WA_SETTINGS
+  	 set WS_LOGIN = WS_REGISTER,
+  	     WS_LOGIN_OPENID = WS_REGISTER_OPENID,
+         WS_LOGIN_FACEBOOK = WS_REGISTER_FACEBOOK,
+  	     WS_LOGIN_TWITTER = WS_REGISTER_TWITTER,
+  	     WS_LOGIN_LINKEDIN = WS_REGISTER_LINKEDIN,
+         WS_LOGIN_SSL = WS_REGISTER_SSL;
+
+  registry_set ('__wa_register_upgrade2', 'done');
 }
 ;
 
@@ -3395,7 +3642,7 @@ wa_exec_no_error_log(
     WAUI_GENDER VARCHAR(10),       -- 5
     WAUI_BIRTHDAY DATETIME,        -- 6
     WAUI_WEBPAGE VARCHAR(255),     -- 7
-    WAUI_FOAF VARCHAR(50),         -- 8 colum type changed below
+    WAUI_FOAF VARCHAR(50),              -- 8 colum type changed below -- XXX: obsolete, see WA_USER_OL_ACCOUNTS
     WAUI_MSIGNATURE VARCHAR(255),  -- 9
     WAUI_ICQ VARCHAR(50),          -- 10
     WAUI_SKYPE VARCHAR(50),        -- 11
@@ -3867,9 +4114,21 @@ wa_add_col('DB.DBA.WA_USER_OL_ACCOUNTS', 'WUO_OAUTH_SID', 'varchar');
 
 wa_exec_no_error_log('ALTER TABLE DB.DBA.WA_USER_OL_ACCOUNTS ADD FOREIGN KEY (WUO_U_ID) REFERENCES DB.DBA.SYS_USERS (U_ID) ON DELETE CASCADE');
 
+--!
+-- Creates old-style Facebook URIs.
+--/
 create procedure WA_USER_OL_ACCOUNTS_FACEBOOK (in ID integer)
 {
-  return sprintf ('http://facebook.com/profile.php?id=%s', cast (ID as varchar));
+  return sprintf ('http://www.facebook.com/profile.php?id=%s', cast (ID as varchar));
+}
+;
+
+--!
+-- Creates new-style Facebook URIs.
+--/
+create procedure WA_USER_OL_ACCOUNTS_FACEBOOK_URI (in username varchar)
+{
+  return sprintf ('http://www.facebook.com/%U', username);
 }
 ;
 
@@ -3929,11 +4188,33 @@ create procedure WA_USER_OL_ACCOUNTS_SET_UP ()
   {
     if (not exists (select 1 from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_U_ID = WAUI_U_ID and WUO_TYPE = 'P' and lcase (WUO_NAME) = 'facebook'))
     {
-      url := WA_USER_OL_ACCOUNTS_FACEBOOK (WAUI_FACEBOOK_ID);
+      url := WA_USER_OL_ACCOUNTS_FACEBOOK_URI (WAUI_FACEBOOK_ID);
       insert into DB.DBA.WA_USER_OL_ACCOUNTS (WUO_U_ID, WUO_TYPE,  WUO_NAME, WUO_URL, WUO_URI)
         values (WAUI_U_ID, 'P', 'Facebook', url, ODS.ODS_API."user.onlineAccounts.uri" (url));
     }
   }
+};
+WA_USER_OL_ACCOUNTS_SET_UP ();
+
+create procedure WA_USER_OL_ACCOUNTS_SET_UP ()
+{
+  declare url varchar;
+
+  if (registry_get ('__WA_USER_OL_ACCOUNTS_SET_UP4') = 'done')
+    return;
+
+  update DB.DBA.WA_USER_OL_ACCOUNTS set WUO_PUBLIC = 1;
+  for (select WAUI_U_ID as _id, WAUI_FOAF as _foaf from DB.DBA.WA_USER_INFO) do
+  {
+    delete from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_U_ID = _id and WUO_TYPE = 'P' and WUO_NAME = 'webid';
+    for (select _iri, _public from DB.DBA.WA_USER_INTERESTS (txt) (_iri varchar, _public varchar) P where txt = _foaf) do
+    {
+      if (not exists (select 1 from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_URL = _iri))
+      insert into DB.DBA.WA_USER_OL_ACCOUNTS (WUO_U_ID, WUO_TYPE, WUO_NAME, WUO_URL, WUO_URI, WUO_PUBLIC)
+        values (_id, 'P', 'webid', _iri, _iri, _public);
+    }
+  }
+  registry_set ('__WA_USER_OL_ACCOUNTS_SET_UP4', 'done');
 };
 WA_USER_OL_ACCOUNTS_SET_UP ();
 
@@ -4282,7 +4563,20 @@ create procedure WA_USER_TAG_WAUTG_TAGS_UNINDEX_HOOK (inout vtb any, inout d_id 
 }
 ;
 
-DB.DBA.vt_create_text_index ('WA_USER_TAG', 'WAUTG_TAGS', 'WAUTG_FT_ID', 2, 0, vector ('WAUTG_TAG_ID', 'WAUTG_U_ID'), 1, 'x-ViDoc', 'UTF-8')
+create procedure  WA_USER_TAG_FT_UPGRADE ()
+{
+  if (registry_get ('__WA_USER_TAG_FT_UPGRADE') = 'done')
+    return;
+
+  wa_exec_no_error_log ('drop table DB.DBA.WA_USER_TAG_WAUTG_TAGS_WORDS');
+  wa_exec_no_error_log ('drop table DB.DBA.VTLOG_DB_DBA_WA_USER_TAG');
+  DB.DBA.vt_create_text_index ('WA_USER_TAG', 'WAUTG_TAGS', 'WAUTG_FT_ID', 2, 0, vector ('WAUTG_TAG_ID', 'WAUTG_U_ID'), 1, 'x-ViDoc', 'UTF-8');
+
+  registry_set ('__WA_USER_TAG_FT_UPGRADE', 'done');
+}
+;
+
+WA_USER_TAG_FT_UPGRADE ()
 ;
 
 
@@ -4365,8 +4659,8 @@ create procedure WA_USER_EDIT (in _name varchar, in _key varchar, in _data any)
     }
   else if (_key = 'WAUI_GENDER')
     UPDATE WA_USER_INFO SET WAUI_GENDER = _data WHERE WAUI_U_ID = _uid;
-  else if (_key = 'WAUI_FOAF')
-    UPDATE WA_USER_INFO SET WAUI_FOAF = _data WHERE WAUI_U_ID = _uid;
+  --else if (_key = 'WAUI_FOAF')
+  --  UPDATE WA_USER_INFO SET WAUI_FOAF = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_MSIGNATURE')
     UPDATE WA_USER_INFO SET WAUI_MSIGNATURE = _data WHERE WAUI_U_ID = _uid;
   else if (_key = 'WAUI_SUMMARY')
@@ -4560,8 +4854,11 @@ create procedure WA_USER_SETTING_SET (in _name varchar, in _key varchar, in _dat
   if (isnull (_settings))
     _settings := vector ();
 
+  if (isstring (_settings))
+    _settings := vector ();
+
   ODS.ODS_API.set_keyword (_key, _settings, _data);
-  WA_USER_EDIT (_name, 'WAUI_SETTINGS', serialize (_data));
+  WA_USER_EDIT (_name, 'WAUI_SETTINGS', serialize (_settings));
 }
 ;
 
@@ -4573,6 +4870,9 @@ create procedure WA_USER_SETTING_GET (in _name varchar, in _key varchar)
   _uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = _name);
   _settings := (select deserialize (WAUI_SETTINGS) from DB.DBA.WA_USER_INFO where WAUI_U_ID = _uid);
   if (isnull(_settings))
+    return null;
+
+  if (isstring (_settings))
     return null;
 
   return get_keyword (_key, _settings);
@@ -4982,7 +5282,10 @@ create procedure WA_USER_IS_TAGGED (in uid integer, in tagee integer)
 create procedure WA_CLEAR (
   in S any)
 {
-  return substring(S, 1, coalesce (strstr(S, '<>'), length (S)));
+  S := substring (S, 1, coalesce (strstr (S, '<>'), length (S)));
+  S := substring (S, 1, coalesce (strstr (S, '\nin'), length (S)));
+
+  return S;
 }
 ;
 
@@ -7627,7 +7930,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_user_home_rule',
     '^/~(.*)',
     vector('uname'),
     1,
-    '/home/%s',
+    '/public_home/%s',
     vector('uname'),
     null, null, 2, null, 'MS-Author-Via: DAV'
     );
@@ -7642,20 +7945,23 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_user_public_home_rule',
     null, null, 2, null, 'MS-Author-Via: DAV'
     );
 
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
-    'ods_root_rule', 1,
-      '/\x24',
-      vector (),
-      0,
-      '/index.html',
-      vector (),
-      NULL, NULL, 2, 0,
-      'Link: <^{DynamicLocalFormat}^/sparql?default-graph-uri=^{DynamicLocalFormat}^/dataspace>;'||
-      ' title="Public SPARQL Service"; rel="http://ontologi.es/sparql#fingerpoint"'
-      );
+-- XXX: the root must be setup by admin
+--DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+--    'ods_root_rule', 1,
+--      '^/\x24',
+--      vector (),
+--      0,
+--      '/index.html',
+--      vector (),
+--      NULL, NULL, 2, 0,
+--      'Link: <^{DynamicLocalFormat}^/sparql?default-graph-uri=^{DynamicLocalFormat}^/dataspace>;'||
+--      ' title="Public SPARQL Service"; rel="http://ontologi.es/sparql#fingerpoint"'
+--      );
 
 
-DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_user_home_rulelist', 1, vector ('ods_user_home_rule', 'ods_user_public_home_rule', 'ods_root_rule'));
+DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_user_home_rulelist', 1, vector ('ods_user_home_rule', 'ods_user_public_home_rule'
+      --, 'ods_root_rule'
+      ));
 
 create procedure ods_mv_desc ()
 {
@@ -7900,7 +8206,8 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'ods_mv_rule_2', 1, '/mv/data/(.*)\x24', v
 vector ('par_1'), NULL, 'text/html', 2, 303);
 
 
-  if (exists (select 1 from DB.DBA.HTTP_PATH where HP_HOST = _host and HP_LISTEN_HOST = _lhost and HP_LPATH = '/DAV'))
+  -- XXX: the bellow code can break existing root vd , so do not try to guess setting it up
+  if (0 and exists (select 1 from DB.DBA.HTTP_PATH where HP_HOST = _host and HP_LISTEN_HOST = _lhost and HP_LPATH = '/DAV'))
     {
   if (not (exists (select 1 from DB.DBA.HTTP_PATH where HP_HOST = _host and HP_LISTEN_HOST = _lhost and HP_LPATH = '/')))
     {
@@ -8450,4 +8757,62 @@ create procedure wa_webid_users (
     }
   }
 }
+;
+
+--!
+-- \brief Table containing registered clients.
+--
+-- Clients that want to access all functionality of ODS need to be
+-- registered with the ODS instance via admin.client.add(). This is the
+-- table these clients are stored in.
+--
+-- The first usage of the client registration is the authentication via
+-- OAuth performed in user.authenticate.authenticationUrl().
+--
+-- \sa ods_check_client_url()
+--/
+wa_exec_no_error_log(
+  'CREATE TABLE WA_CLIENT_REG
+  (
+    CLIENT_ID int not null identity,  -- Numeric ID
+    CLIENT_NAME varchar,              -- The name of the client, can be anything
+    CLIENT_URL varchar not null,      -- The client URL prefix, this is the important part
+    primary key (CLIENT_ID)
+  )'
+)
+;
+
+--!
+-- \brief Table containing authentication confirmation sessions.
+--
+-- The ODS authentication methods which also handle registration and
+-- online account connection allow to optionally have the user confirm the
+-- action. This requires a temporary session to be created which is stored
+-- in this table.
+--
+-- \sa user.authenticate.callback(), user.authenticate.browserid(), user.authenticate.webid()
+--/
+wa_exec_no_error_log(
+  'CREATE TABLE DB.DBA.WA_AUTH_CONFIRM_SESS
+  (
+    AUTH_SESS_CID varchar not null,       -- The session ID
+    AUTH_SESS_CLIENT_IP varchar not null, -- The IP of the calling client
+    AUTH_SESS_SERVICE varchar,            -- The service type (facebook, openid, webid, ...) in case this auth session is connected to any online account
+    AUTH_SESS_SERVICE_ID varchar,         -- The service ID in case this auth session is connected to any online account
+    AUTH_SESS_TIMESTAMP datetime,         -- The creation time of this session, for auto-cleanup
+    primary key (AUTH_SESS_CID)
+  )'
+)
+;
+
+create procedure DB.DBA.WA_AUTH_CONFIRM_SESS_EXPIRE()
+{
+  delete from DB.DBA.WA_AUTH_CONFIRM_SESS where AUTH_SESS_TIMESTAMP is null;
+  delete from DB.DBA.WA_AUTH_CONFIRM_SESS where datediff ('minute', AUTH_SESS_TIMESTAMP, now()) > 10;
+}
+;
+
+-- Clean up old confirm sessions every 10 minutes
+insert soft "DB"."DBA"."SYS_SCHEDULED_EVENT" (SE_INTERVAL, SE_LAST_COMPLETED, SE_NAME, SE_SQL, SE_START)
+  values (10, NULL, 'WA_AUTH_CONFIRM_SESS_EXPIRE', 'DB.DBA.WA_AUTH_CONFIRM_SESS_EXPIRE ()', now())
 ;

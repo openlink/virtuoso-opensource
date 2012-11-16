@@ -729,7 +729,7 @@
                   <table id="s_tbl" class="ODS_grid">
                     <thead>
                       <tr>
-                        <th width="15%">Type</th>
+                        <th width="1%">Type</th>
                         <th>Value</th>
                         <th width="1%" nowrap="nowrap">ACL: (R)ead, (W)rite</th>
                         <th class="action">Action</th>
@@ -739,7 +739,7 @@
                     <tr id="s_tr_no"><td colspan="4"><b>No WebID Security</b></td></tr>
               		  <![CDATA[
               		    <script type="text/javascript">
-               		        OAT.Loader.load(["ajax", "json", "calendar"]);
+               		        OAT.Loader.load(["ajax", "json", "calendar", "combolist"]);
       <?vsp
                         declare N integer;
 
@@ -764,6 +764,21 @@
             <v:button name="btn_acl_update" action="simple" value="Update" xhtml_class="form-button">
               <v:on-post>
                 <![CDATA[
+                  declare exit handler for SQLSTATE '*'
+                  {
+                    -- dbg_obj_print ('__SQL_MESSAGE', __SQL_MESSAGE);
+                    if (__SQL_STATE = 'TEST')
+                    {
+                      self.vc_error_message := ODRIVE.WA.test_clear (__SQL_MESSAGE);
+                      self.vc_is_valid := 0;
+                      return;
+                    }
+                    resignal;
+                  };
+
+                  -- validate ACL rules
+                  DB.DBA.wa_aci_validate (DB.DBA.wa_aci_params (e.ve_params));
+
                   self.iacl := DB.DBA.wa_aci_params (e.ve_params);
                   update DB.DBA.WA_INSTANCE
                      set WAI_ACL = serialize (self.iacl)
