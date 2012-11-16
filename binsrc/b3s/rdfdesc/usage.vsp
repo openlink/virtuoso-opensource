@@ -129,7 +129,7 @@
 
 <!-- header -->
 <head>
-    <base href="http://<?V host ?>/fct/rdfdesc/" />
+    <base href="http<?V case is_https_ctx () when 1 then 's' else '' end ?>://<?V host ?>/fct/rdfdesc/" />
     <title>Metadata about: <?vsp http (sprintf ('%s', label)); ?></title>
     <link rel="alternate" type="application/rdf+xml" href="<?=rdf_link?>" title="RDF" />
     <link rel="stylesheet" type="text/css" href="styles/default.css" charset="utf-8" />
@@ -306,7 +306,7 @@
 	var g_plusone_id = document.getElementById('g_plusone_id');
 	if (g_plusone_id) g_plusone_id.setAttribute('g:plusone:size', 'medium');
     </script>
-    <script type="text/javascript" src="http://s7.addthis.com/js/250/addthis_widget.js#pubid=<?=_addthis_key?>"></script>
+    <script type="text/javascript" src="http<?V case is_https_ctx () when 1 then 's' else '' end ?>://s7.addthis.com/js/250/addthis_widget.js#pubid=<?=_addthis_key?>"></script>
     <!-- AddThis Button END -->
   </div><!-- ft_s -->
 <?vsp } ?>

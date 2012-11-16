@@ -26,7 +26,7 @@
 
 ?>
 <head>
-  <base href="http://<?V host ?>/fct/rdfdesc/" />
+  <base href="http<?V case is_https_ctx () when 1 then 's' else '' end ?>://<?V host ?>/fct/rdfdesc/" />
   <title>Settings</title>
 
   <link rel="stylesheet" type="text/css" href="styles/default.css"  charset="utf-8" />
