@@ -48,7 +48,7 @@ VAD_NAME_RELEASE="$VAD_PKG_NAME"_dav.vad
 NEED_VERSION=06.00.3117
 DSN="$HOST:$PORT"
 SQLDEPS="ns.sql virt_rdf_label.sql facet.sql complete_ddl.sql"
-EXCEPT="b3sq.sql facet_test.sql fct_inx.sql srank.sql srank_1.sql srank23.sql complete_cl.sql complete_single.sql"
+EXCEPT="b3sq.sql facet_test.sql fct_inx.sql srank.sql srank_1.sql srank23.sql complete_cl.sql complete_single.sql grants.sql"
 
 HOST_OS=`uname -s | grep WIN`
 if [ "x$HOST_OS" != "x" ]
@@ -367,6 +367,7 @@ fi
 #  echo "        	vsp_user=>'dba', def_page=>'install.html'); " >> $STICKER
 #  echo "        result ('00000', 'Cannot complete installation, read instructions at http://host:port/fct');" >> $STICKER
 #  echo "    } " >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/grants.sql', 0, 'report', $ISDAV); " >> $STICKER
 
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
