@@ -5373,7 +5373,7 @@ create procedure ENEWS.WA.normalize_space(
 -------------------------------------------------------------------------------
 --
 create procedure ENEWS.WA.utf2wide (
-  inout S any)
+  in S any)
 {
   declare retValue any;
 

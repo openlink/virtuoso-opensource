@@ -547,6 +547,8 @@
                     return;
                   }
                 }
+                -- validate ACL rules
+                DB.DBA.wa_aci_validate (DB.DBA.wa_aci_params (params));
 
                 -- feed
                 if (isAdmin)
