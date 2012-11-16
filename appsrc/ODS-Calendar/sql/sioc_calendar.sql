@@ -24,7 +24,7 @@ use SIOC;
 -------------------------------------------------------------------------------
 --
 create procedure calendar_event_iri_internal (
-  in domain_id varchar,
+  in domain_id integer,
   in event_id integer)
 {
   declare kind integer;
@@ -51,7 +51,7 @@ create procedure calendar_event_iri_internal (
 -------------------------------------------------------------------------------
 --
 create procedure calendar_event_iri (
-  in domain_id varchar,
+  in domain_id integer,
   in event_id integer)
 {
 	declare c_iri varchar;
@@ -67,7 +67,7 @@ create procedure calendar_event_iri (
 -------------------------------------------------------------------------------
 --
 create procedure calendar_comment_iri (
-  in domain_id varchar,
+  in domain_id integer,
   in event_id integer,
   in comment_id integer)
 {
@@ -84,7 +84,7 @@ create procedure calendar_comment_iri (
 -------------------------------------------------------------------------------
 --
 create procedure calendar_annotation_iri (
-  in domain_id varchar,
+  in domain_id integer,
   in event_id integer,
   in annotation_id integer)
 {

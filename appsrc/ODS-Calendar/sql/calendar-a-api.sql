@@ -22,72 +22,64 @@
 
 use ODS;
 
--------------------------------------------------------------------------------
---
 --!
---  * \brief Change a configuration setting on the Calendar app
---  */
--- create procedure ODS.ODS_API.calendar_setting_set (
---   inout settings any,
---   inout options any,
---   in settingName varchar,
---   in settingTest any := null)
--- {
--- 	declare aValue any;
+-- \brief Change a configuration setting on the Calendar app
+--/
+create procedure ODS.ODS_API.calendar_setting_set (
+  inout settings any,
+  inout options any,
+  in settingName varchar,
+  in settingTest any := null)
+{
+	declare aValue any;
+
+  aValue := get_keyword (settingName, options, get_keyword (settingName, settings));
+  if (not isnull (settingTest))
+    CAL.WA.test (cast (aValue as varchar), settingTest);
+  CAL.WA.set_keyword (settingName, settings, aValue);
+}
+;
+
+--!
+-- \brief A Calendar setting encoded as XML.
 --
---   aValue := get_keyword (settingName, options, get_keyword (settingName, settings));
---   if (not isnull (settingTest))
---     CAL.WA.test (cast (aValue as varchar), settingTest);
---   CAL.WA.set_keyword (settingName, settings, aValue);
--- }
--- ;
---
--- -------------------------------------------------------------------------------
--- --
--- /**
---  * \brief A Calendar setting encoded as XML.
---  *
---  * \param settings
---  * \param settingName
---  */
--- create procedure ODS.ODS_API.calendar_setting_xml (
---   in settings any,
---   in settingName varchar)
--- {
---   return sprintf ('<%s>%s</%s>', settingName, cast (get_keyword (settingName, settings) as varchar), settingName);
--- }
--- ;
---
--- -------------------------------------------------------------------------------
--- --
--- create procedure ODS.ODS_API.calendar_type_check (
---   in inType varchar,
---   in inSource varchar)
--- {
---   declare outType integer;
---
---   if (isnull (inType))
---     inType := case when (inSource like 'http://%') then 'url' else 'webdav' end;
---
--- 	if (lcase (inType) = 'webdav')
--- 	{
--- 		outType := 1;
--- 	}
--- 	else if (lcase (inType) = 'url')
--- 	{
--- 		outType := 2;
--- 	}
--- 	else
--- 	{
--- 		signal ('CAL106', 'The source type must be WebDAV or URL.');
--- 	}
--- 	return outType;
--- }
--- ;
---
--- -------------------------------------------------------------------------------
--- --
--- /**
+-- \param settings
+-- \param settingName
+--/
+create procedure ODS.ODS_API.calendar_setting_xml (
+  in settings any,
+  in settingName varchar)
+{
+  return sprintf ('<%s>%s</%s>', settingName, cast (get_keyword (settingName, settings) as varchar), settingName);
+}
+;
+
+create procedure ODS.ODS_API.calendar_type_check (
+  in inType varchar,
+  in inSource varchar)
+{
+  declare outType integer;
+
+  if (isnull (inType))
+    inType := case when (inSource like 'http://%') then 'url' else 'webdav' end;
+
+	if (lcase (inType) = 'webdav')
+	{
+		outType := 1;
+	}
+	else if (lcase (inType) = 'url')
+	{
+		outType := 2;
+	}
+	else
+	{
+		signal ('CAL106', 'The source type must be WebDAV or URL.');
+	}
+	return outType;
+}
+;
+
+--!
 -- \brief Get the details of a specific event or task.
 --
 -- \param event_id The id of the event or task. Event ids are unque across calendar instances.

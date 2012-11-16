@@ -746,11 +746,11 @@ create function "CalDAV_DAV_RES_CONTENT" (
   {
     type := 'text/xml';
     if (id[4] = -1)
-      content := CAL.WA.export_rss_sqlx_for_det (id[3], id[2]);
+      content := CAL.WA.export_rss_sqlx (id[3], id[2]);
     if (id[4] = -2)
-      content := CAL.WA.export_atom_sqlx_for_det (id[3], id[2]);
+      content := CAL.WA.export_atom_sqlx (id[3], id[2]);
     if (id[4] = -3)
-      content := CAL.WA.export_rdf_sqlx_for_det (id[3], id[2]);
+      content := CAL.WA.export_rdf_sqlx (id[3], id[2]);
     return 0;
   }
   declare tz integer;
@@ -759,8 +759,7 @@ create function "CalDAV_DAV_RES_CONTENT" (
   whenever not found goto endline;
   tz := timezone(now());
   if (id[4] is not null)
-    content := CAL.WA.det_export_vcal (id[3], tz, id[4]);
-
+    content := CAL.WA.export_vcal (id[3], vector (id[4]));
 endline:
   return 0;
 }
@@ -970,160 +969,6 @@ create function CalDAV__ACCESS_PARAMS (
     select COL_PERMS, COL_GROUP, COL_OWNER into access, gid, uid from WS.WS.SYS_DAV_COL where COL_ID = detcol_id;
 
 ret: ;
-}
-;
-
-create procedure CAL.WA.det_export_vcal(
-  in domain_id integer,
-  in tz integer,
-  in event_id integer)
-{
-  declare S, url, tzID, tzName varchar;
-  declare sStream any;
-
-  tzID := sprintf ('GMT%s%04d', case when cast (tz as integer) < 0 then '-' else '+' end,  tz);
-  tzName := sprintf ('GMT %s%02d:00', case when cast (tz as integer) < 0 then '-' else '+' end,  abs(floor (tz / 60)));
-  sStream := string_output();
-  -- start
-  http ('BEGIN:VCALENDAR\r\n', sStream);
-  http ('PRODID:-//OpenLink Software//OpenLink ODS Calendar 0.1//EN\r\n', sStream);
-  http ('VERSION:2.0\r\n', sStream);
-  http ('CALSCALE:GREGORIAN\r\n', sStream);
-  http ('BEGIN:VTIMEZONE\r\n', sStream);
-  http (sprintf ('TZID:%s\r\n', tzID), sStream);
-  http ('BEGIN:STANDARD\r\n', sStream);
-  http (sprintf ('TZOFFSETTO:%s\r\n', CAL.WA.tz_string (tz)), sStream);
-  http (sprintf ('TZNAME:%s\r\n', tzName), sStream);
-  http ('END:STANDARD\r\n', sStream);
-  http ('END:VTIMEZONE\r\n', sStream);
-  -- events
-  for (select * from CAL.WA.EVENTS where E_DOMAIN_ID = domain_id and E_KIND = 0 and E_ID = event_id) do
-  {
-    http ('BEGIN:VEVENT\r\n', sStream);
-    url := sprintf ('http://%s%s/%U/calendar/%U/Event/', SIOC.DBA.get_cname(), SIOC.DBA.get_base_path (), CAL.WA.domain_owner_name (domain_id), CAL.WA.domain_name (domain_id));
-    CAL.WA.export_vcal_line ('UID', cast (E_UID as varchar), sStream);
-    --CAL.WA.export_vcal_line ('URL', url || cast (E_ID as varchar), sStream);
-    CAL.WA.export_vcal_line ('DTSTAMP', CAL.WA.vcal_date2utc (now ()), sStream);
-    CAL.WA.export_vcal_line ('CREATED', CAL.WA.vcal_date2utc (E_CREATED), sStream);
-    CAL.WA.export_vcal_line ('LAST-MODIFIED', CAL.WA.vcal_date2utc (E_UPDATED), sStream);
-    CAL.WA.export_vcal_line ('SUMMARY', E_SUBJECT, sStream);
-    CAL.WA.export_vcal_line ('DESCRIPTION', E_DESCRIPTION, sStream);
-    CAL.WA.export_vcal_line ('LOCATION', E_LOCATION, sStream);
-    --CAL.WA.export_vcal_line ('CATEGORIES', replace (E_TAGS, ',', ';'), sStream);
-    if (E_EVENT_START is not null)
-      CAL.WA.export_vcal_line ('DTSTART', CAL.WA.vcal_date2utc (E_EVENT_START), sStream);
-    if (E_EVENT_END is not null)
-      CAL.WA.export_vcal_line ('DTEND', CAL.WA.vcal_date2utc (E_EVENT_END), sStream);
-    CAL.WA.export_vcal_line ('RRULE', CAL.WA.vcal_recurrence2str (E_REPEAT, E_REPEAT_PARAM1, E_REPEAT_PARAM2, E_REPEAT_PARAM3, E_REPEAT_UNTIL), sStream);
-    --CAL.WA.export_vcal_line ('DALARM', CAL.WA.vcal_reminder2str (E_REMINDER), sStream);
-    http ('END:VEVENT\r\n', sStream);
-  }
-  -- tasks
-  for (select * from CAL.WA.EVENTS where E_DOMAIN_ID = domain_id and E_KIND = 1 and E_ID = event_id) do
-  {
-    http ('BEGIN:VTODO\r\n', sStream);
-    url := sprintf ('http://%s%s/%U/calendar/%U/Task/', SIOC.DBA.get_cname(), SIOC.DBA.get_base_path (), CAL.WA.domain_owner_name (domain_id), CAL.WA.domain_name (domain_id));
-    CAL.WA.export_vcal_line ('UID', cast (E_UID as varchar), sStream);
-    --CAL.WA.export_vcal_line ('URL', url || cast (E_ID as varchar), sStream);
-    CAL.WA.export_vcal_line ('DTSTAMP', CAL.WA.vcal_date2utc (now ()), sStream);
-    CAL.WA.export_vcal_line ('CREATED', CAL.WA.vcal_date2utc (E_CREATED), sStream);
-    CAL.WA.export_vcal_line ('LAST-MODIFIED', CAL.WA.vcal_date2utc (E_UPDATED), sStream);
-    CAL.WA.export_vcal_line ('SUMMARY', E_SUBJECT, sStream);
-    CAL.WA.export_vcal_line ('DESCRIPTION', E_DESCRIPTION, sStream);
-    --CAL.WA.export_vcal_line ('CATEGORIES', replace (E_TAGS, ',', ';'), sStream);
-    if (E_EVENT_START is not null)
-      CAL.WA.export_vcal_line ('DTSTART', CAL.WA.vcal_date2utc (E_EVENT_START), sStream);
-    if (E_EVENT_END is not null)
-      CAL.WA.export_vcal_line ('DTEND', CAL.WA.vcal_date2utc (E_EVENT_END), sStream);
-    CAL.WA.export_vcal_line ('PRIORITY', E_PRIORITY, sStream);
-    CAL.WA.export_vcal_line ('STATUS', E_STATUS, sStream);
-    http ('END:VTODO\r\n', sStream);
-  }
-  -- end
-  http ('END:VCALENDAR\r\n', sStream);
-  return string_output_string(sStream);
-}
-;
-
-create procedure CAL.WA.export_rss_sqlx_for_det (
-  in domain_id integer,
-  in account_id integer)
-{
-  declare retValue any;
-  declare qry_text any;
-  retValue := string_output ();
-
-  http ('<?xml version ="1.0" encoding="UTF-8"?>\n', retValue);
-  http ('<rss version="2.0">\n', retValue);
-  http ('<channel>\n', retValue);
-
-  qry_text := (select
-   XMLELEMENT('title', CAL.WA.utf2wide(CAL.WA.domain_name (domain_id))),
-   XMLELEMENT('description', CAL.WA.utf2wide(CAL.WA.domain_description (domain_id))),
-   XMLELEMENT('managingEditor', U_E_MAIL),
-   XMLELEMENT('pubDate', CAL.WA.dt_rfc1123(now ())),
-   XMLELEMENT('generator', 'Virtuoso Universal Server ' || sys_stat('st_dbms_ver')),
-   XMLELEMENT('webMaster', U_E_MAIL),
-   XMLELEMENT('link', CAL.WA.CalDAV_url (domain_id))
-  from DB.DBA.SYS_USERS where U_ID = account_id);
-
-  http (serialize_to_UTF8_xml(qry_text), retValue);
-
-  qry_text := (select
-   XMLAGG(XMLELEMENT('item',
-     XMLELEMENT('title', CAL.WA.utf2wide (E_SUBJECT)),
-     XMLELEMENT('description', CAL.WA.utf2wide (E_DESCRIPTION)),
-     XMLELEMENT('guid', E_ID),
-     XMLELEMENT('link', CAL.WA.event_url (domain_id, E_ID)),
-     XMLELEMENT('pubDate', CAL.WA.dt_rfc1123 (E_UPDATED)),
-     (select XMLAGG (XMLELEMENT ('category', TV_TAG)) from CAL..TAGS_VIEW where tags = E_TAGS),
-     XMLELEMENT('http://www.openlinksw.com/ods/:modified', CAL.WA.dt_iso8601 (E_UPDATED))))
- from (select top 15
-         E_SUBJECT,
-         E_DESCRIPTION,
-         E_UPDATED,
-         E_TAGS,
-         E_ID
-       from
-         CAL.WA.EVENTS
-       where E_DOMAIN_ID = domain_id
-       order by E_UPDATED desc) x );
-
-  http (serialize_to_UTF8_xml(qry_text), retValue);
-
-  http ('</channel>\n', retValue);
-  http ('</rss>\n', retValue);
-
-  retValue := string_output_string (retValue);
-  return retValue;
-}
-;
-
-create procedure CAL.WA.export_atom_sqlx_for_det (
-  in domain_id integer,
-  in account_id integer)
-{
-  declare xml_entity, xsltTemplate any;
-  xsltTemplate := CAL.WA.xslt_full ('rss2atom03.xsl');
-  if (CAL.WA.settings_atomVersion (CAL.WA.settings (account_id)) = '1.0')
-    xsltTemplate := CAL.WA.xslt_full ('rss2atom.xsl');
-
-  xml_entity := xtree_doc(CAL.WA.export_rss_sqlx_for_det (domain_id, account_id));
-
-  xml_entity := xslt(xsltTemplate, xml_entity);
-  return serialize_to_UTF8_xml(xml_entity);
-}
-;
-
-create procedure CAL.WA.export_rdf_sqlx_for_det (
-  in domain_id integer,
-  in account_id integer)
-{
-  declare xml_entity, xsltTemplate any;
-  xsltTemplate := CAL.WA.xslt_full ('rss2rdf.xsl');
-  xml_entity := xtree_doc(CAL.WA.export_rss_sqlx_for_det (domain_id, account_id));
-  xml_entity := xslt(xsltTemplate, xml_entity);
-  return serialize_to_UTF8_xml(xml_entity);
 }
 ;
 

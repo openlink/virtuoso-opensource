@@ -495,7 +495,7 @@ CAL.WA.exec_no_error ('
 -------------------------------------------------------------------------------
 --
 create procedure CAL.WA.tags_update (
-  inout domain_id integer,
+  in domain_id integer,
   in oTags any,
   in nTags any)
 {
