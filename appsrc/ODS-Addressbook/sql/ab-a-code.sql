@@ -1641,7 +1641,7 @@ create procedure AB.WA.normalize_space(
 -------------------------------------------------------------------------------
 --
 create procedure AB.WA.utfClear(
-  inout S varchar)
+  in S varchar)
 {
   declare N integer;
   declare retValue varchar;
@@ -1663,7 +1663,7 @@ create procedure AB.WA.utfClear(
 -------------------------------------------------------------------------------
 --
 create procedure AB.WA.utf2wide (
-  inout S any)
+  in S any)
 {
   declare retValue any;
 
@@ -1680,7 +1680,7 @@ create procedure AB.WA.utf2wide (
 -------------------------------------------------------------------------------
 --
 create procedure AB.WA.wide2utf (
-  inout S any)
+  in S any)
 {
   declare retValue any;
 
