@@ -129,30 +129,22 @@
 
   <v:method name="toolbarEnable" arglist="in cmd varchar">
     <![CDATA[
-      if (cmd = 'refresh')
-      {
+      if (cmd in ('refresh', 'bookmarklet', 'home'))
         return 1;
-      }
-      if (cmd = 'bookmarklet')
-      {
-        return 1;
-      }
-      if (cmd = 'home')
-      {
-        return 1;
-      }
+
       if (cmd = 'shared')
       {
+        if (self.account_role = 'public')
+          return 0;
+
         return 1;
       }
       if (is_empty_or_null(self.dir_path))
-      {
         return 0;
-      }
+
       if (self.dir_path = ODRIVE.WA.shared_name())
-      {
         return 0;
-      }
+
       if (not (((self.command = 0) and (self.command_mode <> 3)) or ((self.command = 0) and (self.command_mode = 3) and (not isnull(self.search_advanced)))))
         return 0;
 
@@ -160,10 +152,6 @@
       {
         if (not (self.command_mode in (0,1)))
           return 0;
-      }
-      if ((cmd = 'shared') and (self.account_role = 'public'))
-      {
-        return 0;
       }
       if (cmd = 'up')
       {
@@ -179,13 +167,11 @@
           return 0;
       }
       if (not self.commandRights (ODRIVE.WA.det_type (ODRIVE.WA.odrive_real_path (self.dir_path)), ODRIVE.WA.det_class (ODRIVE.WA.odrive_real_path (self.dir_path)), cmd))
-      {
         return 0;
-      }
+
       if ((cmd = 'new') and (not ODRIVE.WA.odrive_write_permission(ODRIVE.WA.odrive_real_path(self.dir_path))))
-      {
         return 0;
-      }
+
       return 1;
     ]]>
   </v:method>
@@ -360,17 +346,17 @@
         }
         else if (action = 'new')
         {
-          if ((detType = '') or detType in ('HostFS', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV'))
+          if (detType in ('', 'HostFS', 'IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE'))
             retValue := 1;
         }
         else if (action = 'create')
         {
-          if ((detType = '') or detType in ('HostFS', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV'))
+          if ((detType = '') or detType in ('HostFS', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE'))
             retValue := 1;
         }
         else if (action = 'upload')
         {
-          if ((detType = '') or detType in ('HostFS', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV'))
+          if ((detType = '') or detType in ('HostFS', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE'))
             retValue := 1;
         }
         else if (action = 'rename')
@@ -390,12 +376,12 @@
         }
         if      (action = 'delete')
         {
-          if ((detType = '') or detType in ('HostFS', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV'))
+          if (detType in ('', 'HostFS', 'DynaRes', 'IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE'))
             retValue := 1;
         }
         else if (action = 'properties')
         {
-          if (detType = '')
+          if (detType in ('', 'HostFS', 'DynaRes', 'IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE'))
             retValue := 1;
         }
         else if (action = 'tag')
@@ -413,27 +399,32 @@
       {
         if (action = 'new')
         {
-          if (detClass in ('S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV'))
+          if (detClass in ('IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE'))
             retValue := 1;
         }
         else if (action = 'create')
         {
-          if (detClass in ('S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV'))
+          if (detClass in ('S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE'))
             retValue := 1;
         }
         else if (action = 'upload')
         {
-          if (detType in ('', 'CalDAV', 'CardDAV', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV'))
+          if (detType in ('', 'CalDAV', 'CardDAV', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE'))
             retValue := 1;
         }
         else if (action = 'edit')
         {
-          if (detClass in ('S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV'))
+          if (detClass in ('S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE'))
             retValue := 1;
         }
         else if (action = 'delete')
         {
-          if (detType in ('', 'CalDAV', 'CardDAV', 'IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV'))
+          if (detType in ('', 'HostFS', 'DynaRes', 'CalDAV', 'CardDAV', 'IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE'))
+            retValue := 1;
+        }
+        else if (action = 'properties')
+        {
+          if (detType in ('', 'HostFS', 'DynaRes', 'CalDAV', 'CardDAV', 'IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE'))
             retValue := 1;
         }
         else if (action = 'tag')
@@ -473,6 +464,10 @@
         {
           retValue := 1;
         }
+        else if (action = 'flags')
+        {
+          retValue := 1;
+        }
         else if (action = 'version')
         {
           retValue := 1;
@@ -492,32 +487,37 @@
       {
         if (action = 'edit')
         {
-          if (detClass in ('S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV'))
-            retValue := 1;
-        }
-        else if (action = 'permissions')
-        {
-          if ((detClass not in ('CalDAV', 'CardDAV')) and detType in ('', 'HostFS', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV'))
+          if (detClass in ('S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE'))
             retValue := 1;
         }
         else if (action = 'tag')
         {
-          if (detClass in ('CalDAV', 'CardDAV', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV'))
+          if (detClass in ('CalDAV', 'CardDAV', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE'))
+            retValue := 1;
+        }
+        else if (action = 'permissions')
+        {
+          if ((detClass not in ('CalDAV', 'CardDAV')) and detType in ('', 'HostFS', 'DynaRes', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE'))
+            retValue := 1;
+        }
+        else if (action = 'flags')
+        {
+          if (detClass in ('S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE') or detType in (''))
             retValue := 1;
         }
         else if (action = 'sharing')
         {
-          if (detClass in ('CalDAV', 'CardDAV', 'IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV') or detType in (''))
+          if (detClass in ('DynaRes', 'CalDAV', 'CardDAV', 'IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE') or detType in (''))
             retValue := 1;
         }
         else if (action = 'sharing_acl')
         {
-          if (detClass in ('S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV') or detType in (''))
+          if (detClass in ('S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE') or detType in (''))
             retValue := 1;
         }
         else if (action = 'sharing_aci')
         {
-          if (detClass in ('CalDAV', 'CardDAV', 'IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV') or detType in (''))
+          if (detClass in ('DynaRes', 'CalDAV', 'CardDAV', 'IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE') or detType in (''))
             retValue := 1;
         }
       }
@@ -701,6 +701,16 @@
     ]]>
   </v:method>
 
+  <v:method name="virtPropertiesRestore" arglist="in _properties any, in _pattern varchar">
+    <![CDATA[
+      foreach (any _property in _properties) do
+      {
+        if (_property[0] like _pattern)
+          ODRIVE.WA.DAV_PROP_SET (self.dav_path, _property[0], _property[1]);
+      }
+    ]]>
+  </v:method>
+
   <v:on-init>
     <![CDATA[
       declare N, M, retValue, dav_id, dav_owner, dav_group integer;
@@ -828,8 +838,11 @@
           if (strchr(dav_name, '/') is not null or strchr(dav_name, '\\') is not null)
             signal('TEST', 'The folder/file name should not contain slash or back-slash symbols!<>');
 
-          if ((self.command_mode = 5) and (self.dav_type = 'R') and (dav_name like '%,acl'))
+          if ((self.command_mode in (5, 6)) and (self.dav_type = 'R') and (dav_name like '%,acl'))
             signal('TEST', 'The file names like ''*,acl'' are used for system purposes!<>');
+
+          if ((self.command_mode in (5, 6)) and (self.dav_type = 'R') and (self.dav_detClass = 'SkyDrive') and not DB.DBA.SkyDrive__validateName (dav_name))
+            signal('TEST', 'The SkyDrive file names must have an extension. The extension must be one of: .3g2, .3gp, .ai, .bmp, .chm, .doc, .docm, .docx, .dot, .dotx, .epub, .gif, .jpeg, .jpg, .mp4, .one, .pdf, .png, .pot, .potm, .potx, .pps, .ppsm, .ppsx, .ppt, .pptm, .pptx, .psd, .tif, .tiff, .txt, .xls, .xlsb, .xlsm, .xlsx, .wav, .webp, .wmv!');
 
         _nextTest_1:;
           if ((self.command_mode = 10) and not self.fieldRights ('tag'))
@@ -932,6 +945,28 @@
               if (tmp <> '')
                 signal('TEST', tmp);
             }
+            else if (dav_detType = 'S3')
+            {
+              declare tmp varchar;
+
+              tmp := get_keyword ('dav_S3_BucketName', params);
+              ODRIVE.WA.test (tmp, vector ('name', 'S3 Bucker Name', 'class', 'varchar', 'minLength', 0, 'maxLength', 63));
+              tmp := get_keyword ('dav_S3_AccessKeyID', params);
+              ODRIVE.WA.test (tmp, vector ('name', 'S3 Access Key', 'class', 'varchar', 'minLength', 1, 'maxLength', 20));
+              tmp := get_keyword ('dav_S3_SecretKey', params);
+              ODRIVE.WA.test (tmp, vector ('name', 'S3 Secret Key', 'class', 'varchar', 'minLength', 1, 'maxLength', 40));
+            }
+            else if (dav_detType = 'RACKSPACE')
+            {
+              declare tmp varchar;
+
+              tmp := get_keyword ('dav_RACKSPACE_User', params);
+              ODRIVE.WA.test (tmp, vector ('name', 'Rackspace Account Name', 'class', 'varchar', 'minLength', 1, 'maxLength', 40));
+              tmp := get_keyword ('dav_RACKSPACE_API_Key', params);
+              ODRIVE.WA.test (tmp, vector ('name', 'Rackspace API Key', 'class', 'varchar', 'minLength', 1, 'maxLength', 32));
+              tmp := get_keyword ('dav_RACKSPACE_Container', params);
+              ODRIVE.WA.test (tmp, vector ('name', 'Rackspace Container Name', 'class', 'varchar', 'minLength', 0, 'maxLength', 256));
+            }
           }
             if (self.command_mode = 5)
             {
@@ -1015,6 +1050,16 @@
           -- changing properties
           c_properties := ODRIVE.WA.prop_params (params, self.account_id);
 
+        _nextTest_10:;
+          if (not self.fieldRights ('sharing_aci'))
+            goto _nextTest_11;
+
+            -- ACI (Web Access)
+          dav_aci := DB.DBA.wa_aci_params (params);
+          DB.DBA.wa_aci_validate (dav_aci);
+
+        _nextTest_11:;
+
           -- Action execute
           -- Update
             if (self.command_mode = 10)
@@ -1072,7 +1117,6 @@
 
             -- ACI (Web Access)
             old_dav_aci := ODRIVE.WA.aci_load (self.dav_path);
-            dav_aci := DB.DBA.wa_aci_params (params);
             ODRIVE.WA.aci_save (self.dav_path, dav_aci);
             ODRIVE.WA.aci_send_mail (self.domain_id, self.account_id, self.dav_path, old_dav_aci, dav_aci);
 
@@ -1094,6 +1138,9 @@
               if (get_keyword ('dav_recursive', params, '') <> '')
                 ODRIVE.WA.DAV_SET_RECURSIVE (self.dav_path, dav_perms, dav_owner, dav_group);
 
+              dav_id := DB.DBA.DAV_SEARCH_ID (dav_fullPath, 'C');
+              if (not ODRIVE.WA.DAV_ERROR (dav_id) and isinteger (dav_id))
+              {
                 if (dav_detType <> 'Versioning')
                 {
                   -- clear old properties
@@ -1109,6 +1156,7 @@
                 ODRIVE.WA.exec ('delete from DB.DBA.SYNC_COLS_TYPES where CT_COL_ID = ?', vector (DB.DBA.DAV_SEARCH_ID (self.dav_path, 'C')));
                 }
               }
+            }
             ODRIVE.WA.DAV_SET (dav_fullPath, 'permissions-inheritance', get_keyword('dav_permissions_inheritance', params, 'N'));
 
             if (not self.fieldRights ('edit'))
@@ -1194,11 +1242,13 @@
 
                 oldGraph := ODRIVE.WA.DAV_PROP_GET (self.dav_path, 'virt:IMAP-graph', '');
                 newGraph := get_keyword ('dav_IMAP_graph', params, '');
+                ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:IMAP-activity', get_keyword ('dav_IMAP_activity', params, 'off'));
                 ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:IMAP-connection', get_keyword ('dav_IMAP_connection', params));
                 ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:IMAP-server', get_keyword ('dav_IMAP_server', params));
                 ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:IMAP-port', get_keyword ('dav_IMAP_port', params));
                 ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:IMAP-user', get_keyword ('dav_IMAP_user', params));
                 ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:IMAP-password', get_keyword ('dav_IMAP_password', params));
+                ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:IMAP-folder', trim (trim (get_keyword ('dav_IMAP_folder', params), '.'), '/'));
                 ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:IMAP-graph', newGraph);
                 ODRIVE.WA.graph_private_remove (self.dav_path, 'C', oldGraph);
                 ODRIVE.WA.graph_private_add (self.dav_path, 'C', dav_perms, newGraph);
@@ -1211,11 +1261,8 @@
               }
               else if (dav_detType = 'S3')
               {
-                foreach (any item in v_properties) do
-                {
-                  if (item[0] like ('virt:S3-%'))
-                    ODRIVE.WA.DAV_PROP_SET (self.dav_path, item[0], item[1]);
-                }
+                self.virtPropertiesRestore (v_properties, 'virt:S3-%');
+
                 ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:S3-BucketName', get_keyword ('dav_S3_BucketName', params));
                 ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:S3-AccessKeyID', get_keyword ('dav_S3_AccessKeyID', params));
                 ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:S3-SecretKey', get_keyword ('dav_S3_SecretKey', params));
@@ -1240,11 +1287,7 @@
                 }
                 else
                 {
-                  foreach (any item in v_properties) do
-                  {
-                    if (item[0] like ('virt:GDrive-%'))
-                      ODRIVE.WA.DAV_PROP_SET (self.dav_path, item[0], item[1]);
-                  }
+                  self.virtPropertiesRestore (v_properties, 'virt:GDrive-%');
                 }
                 self.detSponger (params, dav_perms, 'GDrive', 12);
               }
@@ -1262,11 +1305,7 @@
                 }
                 else
                 {
-                  foreach (any item in v_properties) do
-                  {
-                    if (item[0] like ('virt:Dropbox-%'))
-                      ODRIVE.WA.DAV_PROP_SET (self.dav_path, item[0], item[1]);
-                  }
+                  self.virtPropertiesRestore (v_properties, 'virt:Dropbox-%');
                 }
                 self.detSponger (params, dav_perms, 'Dropbox', 13);
               }
@@ -1290,11 +1329,7 @@
                 }
                 else
                 {
-                  foreach (any item in v_properties) do
-                  {
-                    if (item[0] like ('virt:SkyDrive-%'))
-                      ODRIVE.WA.DAV_PROP_SET (self.dav_path, item[0], item[1]);
-                  }
+                  self.virtPropertiesRestore (v_properties, 'virt:SkyDrive-%');
                 }
                 self.detSponger (params, dav_perms, 'SkyDrive', 14);
               }
@@ -1311,26 +1346,44 @@
                   }
                 else
                 {
-                  foreach (any item in v_properties) do
-                  {
-                    if (item[0] like ('virt:Box-%'))
-                      ODRIVE.WA.DAV_PROP_SET (self.dav_path, item[0], item[1]);
-                }
+                  self.virtPropertiesRestore (v_properties, 'virt:Box-%');
                 }
                 self.detSponger (params, dav_perms, 'Box', 15);
               }
               else if (dav_detType = 'WebDAV')
               {
-                foreach (any item in v_properties) do
-                {
-                  if (item[0] like ('virt:WebDAV-%'))
-                    ODRIVE.WA.DAV_PROP_SET (self.dav_path, item[0], item[1]);
-                }
+                declare tmp any;
+
+                self.virtPropertiesRestore (v_properties, 'virt:WebDAV-%');
+
                 ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:WebDAV-path', get_keyword ('dav_WebDAV_path', params, ''));
+                tmp := get_keyword ('dav_WebDAV_authenticationType', params, 'Digest');
+                ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:WebDAV-authenticationType', tmp);
+                if (tmp = 'Digest')
+                {
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:WebDAV-key', '');
                 ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:WebDAV-user', get_keyword ('dav_WebDAV_user', params, ''));
                 if (get_keyword ('dav_WebDAV_password', params, '') <> '**********')
                   ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:WebDAV-password', pwd_magic_calc ('webdav', get_keyword ('dav_WebDAV_password', params, '')));
+                }
+                else
+                {
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:WebDAV-key', get_keyword ('dav_WebDAV_key', params, ''));
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:WebDAV-keyOwner', ODRIVE.WA.account_name (self.account_id));
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:WebDAV-user', '');
+                  ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:WebDAV-password', '');
+                }
                 self.detSponger (params, dav_perms, 'WebDAV', 16);
+              }
+              else if (dav_detType = 'RACKSPACE')
+              {
+                self.virtPropertiesRestore (v_properties, 'virt:RACKSPACE-%');
+
+                ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:RACKSPACE-Type', get_keyword ('dav_RACKSPACE_Type', params));
+                ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:RACKSPACE-User', get_keyword ('dav_RACKSPACE_User', params));
+                ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:RACKSPACE-Container', get_keyword ('dav_RACKSPACE_Container', params));
+                ODRIVE.WA.DAV_PROP_SET (self.dav_path, 'virt:RACKSPACE-API_Key', get_keyword ('dav_RACKSPACE_API_Key', params));
+                self.detSponger (params, dav_perms, 'RACKSPACE', 17);
               }
                 }
           _nextExec_8:;
@@ -1980,7 +2033,6 @@
               }
               self.dav_type := ODRIVE.WA.DAV_GET (self.dav_item, 'type');
               self.dav_detClass := ODRIVE.WA.det_class (self.dav_path, self.dav_type);
-              self.dav_detType := coalesce (get_keyword ('dav_det', params, ODRIVE.WA.DAV_GET (self.dav_item, 'detType')), '');
             }
             else if (self.command_mode in (5, 6))
             {
@@ -1995,8 +2047,6 @@
               self.dav_detClass := ODRIVE.WA.det_class (parent_path, 'C');
               if (self.dav_detClass = '')
                 self.dav_detClass := ODRIVE.WA.det_type (parent_path, 'C');
-
-              self.dav_detType := coalesce (get_keyword ('dav_det', params, ODRIVE.WA.DAV_GET (self.dav_item, 'detType')), '');
             }
             else
             {
@@ -2008,8 +2058,6 @@
               self.dav_detClass := ODRIVE.WA.det_class (parent_path, 'C');
               if (self.dav_detClass = '')
                 self.dav_detClass := ODRIVE.WA.det_type (parent_path, 'C');
-
-              self.dav_detType := cast (coalesce (get_keyword ('dav_det', params, ODRIVE.WA.DAV_GET (self.dav_item, 'detType')), '') as varchar);
             }
             self.dav_detType := cast (coalesce (get_keyword ('dav_det', params, ODRIVE.WA.DAV_GET (self.dav_item, 'detType')), '') as varchar);
             if (self.command_mode = 10)
@@ -2067,32 +2115,33 @@
         </div>
          <div id="c1">
           <div class="tabs">
-            <vm:tabCaption tab="1"   tabs="17" caption="Main" />
+            <vm:tabCaption tab="1"   tabs="18" caption="Main" />
             <v:template name="tform_5" type="simple" enabled="-- case when (equ (self.command_mode, 10) and self.fieldRights ('sharing')) then 1 else 0 end">
-            <vm:tabCaption tab="2"   tabs="17" caption="Sharing" />
+            <vm:tabCaption tab="2"   tabs="18" caption="Sharing" />
             </v:template>
             <v:template name="tform_6" type="simple" enabled="-- case when (equ (self.command_mode, 10) and self.fieldRights ('metadata')) then 1 else 0 end">
-            <vm:tabCaption tab="3"   tabs="17" caption="Metadata" />
+            <vm:tabCaption tab="3"   tabs="18" caption="Metadata" />
             </v:template>
             <v:template name="tform_7" type="simple" enabled="-- case when (equ (self.command_mode, 10) and equ (self.dav_type, 'R') and self.fieldRights ('version') and not (equ (self.dav_type, 'R') and (ODRIVE.WA.DAV_GET (self.dav_item, 'name') like '%,acl'))) then 1 else 0 end">
-            <vm:tabCaption tab="9"   tabs="17" caption="Versions" />
+            <vm:tabCaption tab="9"   tabs="18" caption="Versions" />
             </v:template>
             <v:template name="tform_8" type="simple" enabled="-- equ(self.dav_type, 'C')">
-            <vm:tabCaption tab="4"   tabs="17" caption="WebMail" />
-            <vm:tabCaption tab="5"   tabs="176" caption="Filter" />
-            <vm:tabCaption tab="6"   tabs="176" caption="S3 Properties" />
-            <vm:tabCaption tab="7"   tabs="176" caption="Criteria" />
-            <vm:tabCaption tab="8"   tabs="17" caption="Linked Data Import" />
+            <vm:tabCaption tab="4"   tabs="18" caption="WebMail" hide="1" />
+            <vm:tabCaption tab="5"   tabs="18" caption="Filter" hide="1" />
+            <vm:tabCaption tab="6"   tabs="18" caption="S3 Properties" hide="1" />
+            <vm:tabCaption tab="7"   tabs="18" caption="Criteria" hide="1" />
+            <vm:tabCaption tab="8"   tabs="18" caption="Linked Data Import" hide="1" />
             <v:template name="tform_17" type="simple" enabled="-- case when (isstring (DB.DBA.vad_check_version ('SyncML'))) then 1 else 0 end">
-            <vm:tabCaption tab="10"  tabs="17" caption="SyncML" />
+            <vm:tabCaption tab="10"  tabs="18" caption="SyncML" hide="1" />
             </v:template>
-            <vm:tabCaption tab="11"  tabs="17" caption="IMAP Account" />
+            <vm:tabCaption tab="11"  tabs="18" caption="IMAP Account" hide="1" />
             <v:template name="tform_171" type="simple" enabled="-- case when (self.dav_detClass = '') then 1 else 0 end">
-            <vm:tabCaption tab="12"  tabs="17" caption="Google Drive" />
-            <vm:tabCaption tab="13"  tabs="17" caption="Dropbox" />
-            <vm:tabCaption tab="14"  tabs="17" caption="SkyDrive" />
-            <vm:tabCaption tab="15"  tabs="17" caption="Box Net" />
-            <vm:tabCaption tab="16"  tabs="17" caption="WebDAV" />
+            <vm:tabCaption tab="12"  tabs="18" caption="Google Drive" hide="1" />
+            <vm:tabCaption tab="13"  tabs="18" caption="Dropbox" hide="1" />
+            <vm:tabCaption tab="14"  tabs="18" caption="SkyDrive" hide="1" />
+            <vm:tabCaption tab="15"  tabs="18" caption="Box Net" hide="1" />
+            <vm:tabCaption tab="16"  tabs="18" caption="WebDAV" hide="1" />
+            <vm:tabCaption tab="17"  tabs="18" caption="Rackspace" hide="1" />
             </v:template>
             </v:template>
           </div>
@@ -2139,8 +2188,8 @@
                 </v:template>
                 <tr id="davRow_name">
                   <th width="30%">
-                    <span id="label_dav"><v:label for="dav_name" value="--either(equ(self.dav_type, 'R'), 'File name (*)', 'Folder name (*)')" /></span>
-                    <span id="label_dav_rdf" style="display: none;"><v:label for="label_dav_rdf" value="--'RDF graph name'" /></span>
+                    <span id="label_dav"><vm:label for="dav_name" value="--either (equ (self.dav_type, 'R'), 'File name (*)', 'Folder name (*)')" /></span>
+                    <span id="label_dav_rdf" style="display: none;"><vm:label for="label_dav_rdf" value="--'RDF graph name'" /></span>
                   </th>
                   <td>
                     <v:text name="rdfGraph_prefix" xhtml_id="rdfGraph_prefix" type="hidden" value="--ODRIVE.WA.host_url () || WS.WS.FIXPATH (ODRIVE.WA.odrive_real_path (self.dir_path))" />
@@ -2152,7 +2201,7 @@
                 <v:template name="tform_10" type="simple" enabled="-- equ(self.dav_type, 'R')">
                   <tr id="davRow_mime">
                     <th>
-                      <v:label for="dav_mime" value="--'File Mime Type'" />
+                      <vm:label for="dav_mime" value="--'File Mime Type'" />
                     </th>
                     <td>
                       <v:text name="dav_mime" xhtml_id="dav_mime" value="--get_keyword ('dav_mime', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET (self.dav_item, 'mimeType'))" format="%s" xhtml_disabled="disabled" xhtml_class="field-short" xhtml_onchange="javascript: ODRIVE.toggleEditor();" />
@@ -2165,7 +2214,7 @@
                 <v:template name="tform_10a" type="simple" enabled="-- case when (self.command_mode <> 10) and (self.dav_type = 'R') and (self.dav_detClass = 'S3') then 1 else 0 end">
                   <tr id="davRow_mime">
                     <th>
-                      <v:label for="dav_mime" value="--'S3 Server Side Encryption'" />
+                      <vm:label for="dav_S3_encryption" value="--'S3 Server Side Encryption'" />
                     </th>
                     <td>
                       <label><?vsp http (sprintf ('<input type="radio" name="dav_S3_encryption" id="dav_S3_encryption_0" value="None" %s />', case when self.dav_S3_encryption = 'None' then 'checked="checked"' else '' end)); ?> <b>None</b></label>
@@ -2200,10 +2249,10 @@
                 <v:template name="tform_13" type="simple" enabled="-- case when (self.dav_type = 'C') then 1 else 0 end">
                   <tr>
                     <th>
-                      <v:label for="dav_det" value="--'Folder type'" />
+                      <vm:label for="dav_det" value="--'Folder type'" />
                     </th>
                     <td>
-                      <select name="dav_det" onchange="javascript: updateLabel (this.options[this.selectedIndex].value);" disabled="disabled">
+                      <select name="dav_det" id="dav_det" onchange="javascript: updateLabel (this.options[this.selectedIndex].value);" disabled="disabled">
                         <?vsp
                           if (self.command_mode = 1)
                           {
@@ -2234,6 +2283,7 @@
                                           1, 'SkyDrive',   'SkyDrive',
                                           1, 'Box',        'Box Net',
                                           1, 'WebDAV',     'WebDAV',
+                                          1, 'RACKSPACE',  'Rackspace Cloud Files',
                                           1, 'CardDAV',    'CardDAV',
                                           1, 'Blog',       'Blog',
                                           1, 'Bookmark',   'Bookmark',
@@ -2289,10 +2339,10 @@
                 </v:template>
                 <tr id="davRow_owner">
                   <th>
-                    <v:label for="dav_owner" value="--'Owner'" />
+                    <vm:label for="dav_owner" value="--'Owner'" />
                   </th>
                   <td>
-                    <v:text name="dav_owner" value="--get_keyword ('dav_owner', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET (self.dav_item, 'ownerName'))" format="%s" xhtml_disabled="disabled" xhtml_class="field-short">
+                    <v:text name="dav_owner" xhtml_id="dav_owner" value="--get_keyword ('dav_owner', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET (self.dav_item, 'ownerName'))" format="%s" xhtml_disabled="disabled" xhtml_class="field-short">
                       <v:after-data-bind>
                         <![CDATA[
                           if (not ODRIVE.WA.check_admin (self.account_id))
@@ -2307,10 +2357,10 @@
                 </tr>
                 <tr id="davRow_group">
                   <th>
-                    <v:label for="dav_group" value="--'Group'" />
+                    <vm:label for="dav_group" value="--'Group'" />
                   </th>
                   <td>
-                    <v:text name="dav_group" value="--get_keyword ('dav_group', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET (self.dav_item, 'groupName'))" format="%s" xhtml_disabled="disabled" xhtml_class="field-short" />
+                    <v:text name="dav_group" xhtml_id="dav_group" value="--get_keyword ('dav_group', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET (self.dav_item, 'groupName'))" format="%s" xhtml_disabled="disabled" xhtml_class="field-short" />
                     <vm:if test="self.dav_enable">
                       <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=g&amp;params=dav_group:s1;&nrows=<?V ODRIVE.WA.settings_rows (self.settings) ?>')" disabled="disabled" class="button" />
                     </vm:if>
@@ -2318,7 +2368,7 @@
                 </tr>
                 <tr id="davRow_perms">
                   <th valign="top">
-                    <v:label for="dav_group" value="--'Permissions'" />
+                    <vm:label value="--'Permissions'" />
                   </th>
                   <td>
                     <table class="permissions-list" cellspacing="0" style="width: 250px;">
@@ -2347,13 +2397,13 @@
                     </table>
                   </td>
                 </tr>
-                <v:template name="tform_120" type="simple" enabled="-- case when not length (self.dav_detClass) then 1 else 0 end">
+                <v:template name="tform_120" type="simple" enabled="--self.fieldRights ('flags')">
                 <tr id="davRow_text">
                   <th>
                     <vm:label for="dav_index" value="--'Full Text Search'" />
                   </th>
                   <td>
-                    <v:select-list name="dav_index" value="-- get_keyword ('dav_index', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET (self.dav_item, 'freeText'))" xhtml_disabled="disabled">
+                      <v:select-list name="dav_index" xhtml_id="dav_index" value="-- get_keyword ('dav_index', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET (self.dav_item, 'freeText'))" xhtml_disabled="disabled">
                       <v:item name="Off" value="N" />
                       <v:item name="Direct members" value="T" />
                       <v:item name="Recursively" value="R" />
@@ -2366,7 +2416,7 @@
                       <vm:label for="dav_permissions_inheritance" value="--'Permissions Inheritance'" />
                     </th>
                     <td>
-                      <v:select-list name="dav_permissions_inheritance" value="-- get_keyword ('dav_permissions_inheritance', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET (self.dav_item, 'permissions-inheritance'))" xhtml_disabled="disabled">
+                        <v:select-list name="dav_permissions_inheritance" xhtml_id="dav_permissions_inheritance" value="-- get_keyword ('dav_permissions_inheritance', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET (self.dav_item, 'permissions-inheritance'))" xhtml_disabled="disabled">
                         <v:item name="Off" value="N" />
                         <v:item name="Direct members" value="T" />
                         <v:item name="Recursively" value="R" />
@@ -2379,7 +2429,7 @@
                     <vm:label for="dav_metagrab" value="--'Metadata Retrieval'" />
                   </th>
                   <td>
-                    <v:select-list name="dav_metagrab" value="--get_keyword ('dav_metagrab', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET (self.dav_item, 'metaGrab'))" xhtml_disabled="disabled">
+                      <v:select-list name="dav_metagrab" xhtml_id="dav_metagrab" value="--get_keyword ('dav_metagrab', self.vc_page.vc_event.ve_params, ODRIVE.WA.DAV_GET (self.dav_item, 'metaGrab'))" xhtml_disabled="disabled">
                       <v:item name="Off" value="N" />
                       <v:item name="Direct members" value="M" />
                       <v:item name="Recursively" value="R" />
@@ -2387,22 +2437,22 @@
                   </td>
                 </tr>
                 </v:template>
-                <v:template name="tform_16" type="simple" enabled="--case when ((self.dav_type = 'C') and (self.command_mode = 10) and not length (self.dav_detClass)) then 1 else 0 end">
+                <v:template name="tform_16" type="simple" enabled="--case when ((self.dav_type = 'C') and (self.command_mode = 10) and self.fieldRights ('flags')) then 1 else 0 end">
                   <tr>
                     <th> </th>
                     <td>
-                      <input type="checkbox" name="dav_recursive" disabled="disabled" title="Recursive" />
-                      <b><v:label for="dav_recursive" value="--'Apply changes to all subfolders and resources'" /></b>
+                      <input type="checkbox" name="dav_recursive" xhtml_id="dav_recursive" disabled="disabled" title="Recursive" />
+                      <b><vm:label for="dav_recursive" value="--'Apply changes to all subfolders and resources'" /></b>
                     </td>
                   </tr>
                 </v:template>
                 <v:template name="tform_18" type="simple" enabled="--case when ((self.dav_type = 'R') and (self.command_mode = 10)) then 1 else 0 end">
                   <tr id="davRow_tagsPublic">
                     <th>
-                      <v:label for="f_tags_public" value="Public tags (comma-separated)"/>
+                      <vm:label for="f_tags_public" value="--'Public tags (comma-separated)'" />
                     </th>
                     <td>
-                      <v:text name="f_tags_public" value="--self.dav_tags_public" xhtml_id="f_tags_public" xhtml_class="field-short" xhtml_disabled="disabled" />&amp;nbsp;
+                      <v:text name="f_tags_public" xhtml_id="f_tags_public" value="--self.dav_tags_public" xhtml_class="field-short" xhtml_disabled="disabled" />&amp;nbsp;
                       <v:template name="tform_18_1" type="simple" enabled="--self.dav_enable">
                       <input type="button" value="Clear" onclick="javascript: $('f_tags_public').value = ''" class="button" />
                       </v:template>
@@ -2410,10 +2460,10 @@
                   </tr>
                   <tr id="davRow_tagsPrivate">
                     <th>
-                      <v:label for="f_tags_private" value="Private tags (comma-separated)"/>
+                      <vm:label for="f_tags_private" value="--'Private tags (comma-separated)'"/>
                     </th>
                     <td>
-                      <v:text name="f_tags_private" value="--self.dav_tags_private" xhtml_id="f_tags_private" xhtml_class="field-short" xhtml_disabled="disabled" />&amp;nbsp;
+                      <v:text name="f_tags_private" xhtml_id="f_tags_private" value="--self.dav_tags_private" xhtml_class="field-short" xhtml_disabled="disabled" />&amp;nbsp;
                       <v:template name="tform_18_2" type="simple" enabled="--self.dav_enable">
                       <input type="button" value="Clear" onclick="javascript: $('f_tags_private').value = ''" class="button" />
                       </v:template>
@@ -2561,14 +2611,21 @@
                                     DB.DBA.wa_aci_lines (aci_values);
                                 }
                                 aci_values := ODRIVE.WA.aci_load (self.dav_path);
-                                  DB.DBA.wa_aci_lines (aci_values, case when ((self.dav_enable or (self.dav_detClass in ('CalDAV', 'CardDAV', 'IMAP'))) and self.fieldRights ('sharing_aci')) then '' else 'view' end, 'true');
+                                  if (self.dav_path like '%,acl')
+                                  {
+                                    DB.DBA.wa_aci_lines (aci_values);
+                                  }
+                                  else
+                                  {
+                                    DB.DBA.wa_aci_lines (aci_values, case when ((self.dav_enable or (self.dav_detClass in ('DynaRes', 'CalDAV', 'CardDAV', 'IMAP'))) and self.fieldRights ('sharing_aci')) then '' else 'view' end, 'true');
+                                  }
                         		    ?>
                         		    </script>
                         		  ]]>
                             </tbody>
                           </table>
                         </td>
-                        <vm:if test="(self.dav_enable or (self.dav_detClass in ('CalDAV', 'CardDAV', 'IMAP'))) and self.fieldRights ('sharing_aci')">
+                        <vm:if test="(self.dav_enable or (self.dav_detClass in ('DynaRes', 'CalDAV', 'CardDAV', 'IMAP'))) and self.fieldRights ('sharing_aci') and not (self.dav_path like '%,acl')">
                         <td valign="top" nowrap="nowrap">
                             <span class="button pointer" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, tdCssText: 'white-space: nowrap;', className: '_validate2_ _webid2_'}, fld_3: {mode: 52, value: [1, 0, 0], execute: true, execute: true, tdCssText: 'width: 1%; text-align: center;'}});"><img src="/ods/images/icons/add_16.png" border="0" class="button" alt="Add Security" title="Add Security" /> Add</span><br /><br />
                         </td>
@@ -2662,16 +2719,33 @@
             <v:template type="simple" enabled="-- equ(self.dav_type, 'C')">
               <vm:search-dc-template4 />
               <vm:search-dc-template5 />
+              <v:template name="src_6" type="simple" enabled="--case when (self.command_mode <> 10) or (self.dav_detType = 'S3') then 1 else 0 end">
               <vm:search-dc-template6 />
+              </v:template>
               <vm:search-dc-template7 />
               <vm:search-dc-template8 />
               <vm:search-dc-template11 />
+              <v:template name="src_12" type="simple" enabled="--case when (self.command_mode <> 10) or (self.dav_detType = 'IMAP') then 1 else 0 end">
               <vm:search-dc-template12 />
+              </v:template>
+              <v:template name="src_13" type="simple" enabled="--case when (self.command_mode <> 10) or (self.dav_detType = 'GDrive') then 1 else 0 end">
               <vm:search-dc-template13 />
+              </v:template>
+              <v:template name="src_14" type="simple" enabled="--case when (self.command_mode <> 10) or (self.dav_detType = 'Dropbox') then 1 else 0 end">
               <vm:search-dc-template14 />
+              </v:template>
+              <v:template name="src_15" type="simple" enabled="--case when (self.command_mode <> 10) or (self.dav_detType = 'SkyDrive') then 1 else 0 end">
               <vm:search-dc-template15 />
+              </v:template>
+              <v:template name="src_16" type="simple" enabled="--case when (self.command_mode <> 10) or (self.dav_detType = 'Box') then 1 else 0 end">
               <vm:search-dc-template16 />
+              </v:template>
+              <v:template name="src_17" type="simple" enabled="--case when (self.command_mode <> 10) or (self.dav_detType = 'WebDAV') then 1 else 0 end">
               <vm:search-dc-template17 />
+            </v:template>
+              <v:template name="src_18" type="simple" enabled="--case when (self.command_mode <> 10) or (self.dav_detType = 'RACKSPACE') then 1 else 0 end">
+                <vm:search-dc-template18 />
+              </v:template>
             </v:template>
             <v:template type="simple" enabled="-- equ(self.dav_type, 'R')">
               <vm:search-dc-template9 />
@@ -2681,6 +2755,7 @@
         </div>
         <div class="new-form-footer">
           <v:button action="simple" name="cCreate" value="--case when (self.command_mode >= 10) then 'Update' else case when (self.command_mode = 5) then 'Upload' else 'Create' end end" enabled="--case when (self.dav_enable or self.fieldRights ('sharing')) then 1 else 0 end" xhtml_onclick="return validateInputs(this);"/>
+          <v:button action="simple" name="cVerify" xhtml_id="cVerify" value="Verify" xhtml_onclick="ODRIVE.verifyDialog(); return false;" xhtml_style="display: none;"/>
           <v:button action="simple" name="cCancel" value="Cancel" >
             <v:on-post>
               <![CDATA[
@@ -3015,7 +3090,7 @@
                             </v:template>
                             <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#6')) then 1 else 0 end;">
                               <td nowrap="nowrap">
-                                <v:label value="--either(equ((((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[1], 'R'), (((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[9], ' ')" />
+                                <v:label value="--(((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[9]" />
                               </td>
                             </v:template>
                             <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#7')) then 1 else 0 end;">
@@ -3045,7 +3120,9 @@
                                      (
                                        (__tag (id) <> 193)
                                        or
-                                       (cast (id[0] as varchar) in ('S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV'))
+                                       (cast (id[0] as varchar) in ('S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE'))
+                                       or
+		                                   (rowset[0] like '%,acl')
                                      )
                                      and
                                      (

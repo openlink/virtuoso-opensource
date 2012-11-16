@@ -103,7 +103,7 @@ create function "GDrive_DAV_COL_CREATE" (
   declare parent_id, parent_path any;
   declare name, parentResourceId, resourceId varchar;
   declare url, header, body, params any;
-  declare retValue, retHeader, result, save, xmlEntry any;
+  declare retValue, retHeader, result, save, xmlItem any;
   declare exit handler for sqlstate '*'
   {
     connection_set ('dav_store', save);
@@ -138,8 +138,8 @@ create function "GDrive_DAV_COL_CREATE" (
       retValue := result;
       goto _exit;
     }
-    xmlEntry := xtree_doc (result);
-    resourceId := DB.DBA.GDrive__entryXPath (xmlEntry, '/gd:resourceId', 1);
+    xmlItem := xtree_doc (result);
+    resourceId := DB.DBA.GDrive__entryXPath (xmlItem, '/gd:resourceId', 1);
   }
   connection_set ('dav_store', 1);
   DB.DBA.GDrive__owner (detcol_id, path_parts, DB.DBA.GDrive__user (uid, auth_uid), DB.DBA.GDrive__user (gid, auth_uid), ouid, ogid);
@@ -151,7 +151,7 @@ _exit:;
   {
     if (save is null)
     {
-      DB.DBA.GDrive__paramSet (retValue, 'C', 'Entry', DB.DBA.GDrive__xml2string (xmlEntry), 0);
+      DB.DBA.GDrive__paramSet (retValue, 'C', 'Entry', DB.DBA.GDrive__xml2string (xmlItem), 0);
       DB.DBA.GDrive__paramSet (retValue, 'C', 'resourceId', resourceId, 0);
     }
     DB.DBA.GDrive__paramSet (retValue, 'C', 'virt:DETCOL_ID', cast (detcol_id as varchar), 0, 0);
@@ -203,7 +203,7 @@ create function "GDrive_DAV_DELETE" (
   -- dbg_obj_princ ('GDrive_DAV_DELETE (', detcol_id, path_parts, what, silent, auth_uid, ')');
   declare path, resourceId varchar;
   declare retValue, save any;
-  declare id, url, header, retHeader, params any;
+  declare id, id_acl, url, header, retHeader any;
   declare exit handler for sqlstate '*'
   {
     connection_set ('dav_store', save);
@@ -221,6 +221,15 @@ create function "GDrive_DAV_DELETE" (
     retValue := DB.DBA.GDrive__exec (detcol_id, retHeader, 'DELETE', url, header);
     if (DAV_HIDE_ERROR (retValue) is null)
       goto _exit;
+
+    id_acl := DB.DBA.DAV_SEARCH_ID (path || ',acl', 'R');
+    if (DAV_HIDE_ERROR (id_acl) is not null)
+    {
+      resourceId := DB.DBA.GDrive__paramGet (id_acl, 'R', 'resourceId', 0);
+      url := sprintf ('https://docs.google.com/feeds/default/private/full/%U', resourceId);
+      header := 'If-Match: *\n\r';
+      retValue := DB.DBA.GDrive__exec (detcol_id, retHeader, 'DELETE', url, header);
+    }
   }
   connection_set ('dav_store', 1);
   if (what = 'R')
@@ -254,7 +263,7 @@ create function "GDrive_DAV_RES_UPLOAD" (
   declare name, path, rdf_graph varchar;
   declare id any;
   declare url, header, body, params any;
-  declare retValue, retHeader, retCode, result, save, xmlEntry any;
+  declare retValue, retHeader, retCode, result, save, xmlItem any;
   declare resourceId, parent_id any;
   declare exit handler for sqlstate '*'
   {
@@ -290,16 +299,15 @@ create function "GDrive_DAV_RES_UPLOAD" (
       if (DAV_HIDE_ERROR (result) is null)
         goto _create;
 
-      xmlEntry := xtree_doc (result);
+      xmlItem := xtree_doc (result);
 
       -- update resource
-
       -- meatdata
-      url := DB.DBA.GDrive__entryXPath (xmlEntry, '/link[@rel="edit"]/@href', 1);
+      url := DB.DBA.GDrive__entryXPath (xmlItem, '/link[@rel="edit"]/@href', 1);
 
       -- update content
       -- new session
-      url := DB.DBA.GDrive__entryXPath (xmlEntry, '/link[@rel="http://schemas.google.com/g/2005#resumable-edit-media"]/@href', 1);
+      url := DB.DBA.GDrive__entryXPath (xmlItem, '/link[@rel="http://schemas.google.com/g/2005#resumable-edit-media"]/@href', 1);
       if (isnull (url))
         goto _exit_1;
 
@@ -350,12 +358,12 @@ create function "GDrive_DAV_RES_UPLOAD" (
     if (length (path_parts) > 1)
     {
       parent_id := DB.DBA.DAV_SEARCH_ID (DB.DBA.GDrive__path (detcol_id, path_parts), 'P');
-      xmlEntry := DB.DBA.GDrive__paramGet (parent_id, 'C', 'Entry', 0);
-      if (DAV_HIDE_ERROR (xmlEntry) is null)
+      xmlItem := DB.DBA.GDrive__paramGet (parent_id, 'C', 'Entry', 0);
+      if (DAV_HIDE_ERROR (xmlItem) is null)
         goto _exit_1;
 
-      xmlEntry := xtree_doc (xmlEntry);
-      url := DB.DBA.GDrive__entryXPath (xmlEntry, '/link[@rel="http://schemas.google.com/g/2005#resumable-create-media"]/@href', 1);
+      xmlItem := xtree_doc (xmlItem);
+      url := DB.DBA.GDrive__entryXPath (xmlItem, '/link[@rel="http://schemas.google.com/g/2005#resumable-create-media"]/@href', 1);
       if (isnull (url))
         goto _exit_1;
     }
@@ -406,8 +414,8 @@ create function "GDrive_DAV_RES_UPLOAD" (
     if (retCode <> '201')
       goto _exit_1;
 
-    xmlEntry := xtree_doc (result);
-    resourceId := DB.DBA.GDrive__entryXPath (xmlEntry, '/gd:resourceId', 1);
+    xmlItem := xtree_doc (result);
+    resourceId := DB.DBA.GDrive__entryXPath (xmlItem, '/gd:resourceId', 1);
   }
 _skip_create:;
   connection_set ('dav_store', 1);
@@ -424,9 +432,9 @@ _exit:;
 
     if (save is null)
     {
-      DB.DBA.GDrive__paramSet (retValue, 'R', 'Entry', DB.DBA.GDrive__xml2string (xmlEntry), 0);
-      DB.DBA.GDrive__paramSet (retValue, 'R', ':creationdate', DB.DBA.GDrive__entryXPath (xmlEntry, sprintf ('/published', resourceId), 1), 0, 0);
-      DB.DBA.GDrive__paramSet (retValue, 'R', ':getlastmodified', DB.DBA.GDrive__entryXPath (xmlEntry, sprintf ('/updated', resourceId), 1), 0, 0);
+      DB.DBA.GDrive__paramSet (retValue, 'R', 'Entry', DB.DBA.GDrive__xml2string (xmlItem), 0);
+      DB.DBA.GDrive__paramSet (retValue, 'R', ':creationdate', DB.DBA.GDrive__entryXPath (xmlItem, '/published', 1), 0, 0);
+      DB.DBA.GDrive__paramSet (retValue, 'R', ':getlastmodified', DB.DBA.GDrive__entryXPath (xmlItem, '/updated', 1), 0, 0);
       DB.DBA.GDrive__paramSet (retValue, 'R', 'resourceId', resourceId, 0);
     }
     DB.DBA.GDrive__paramSet (retValue, 'R', 'virt:DETCOL_ID', cast (detcol_id as varchar), 0, 0);
@@ -551,7 +559,7 @@ create function "GDrive_DAV_DIR_LIST" (
   -- dbg_obj_princ ('GDrive_DAV_DIR_LIST (', detcol_id, subPath_parts, detcol_parts, name_mask, recursive, auth_uid, ')');
   declare colId integer;
   declare what, colPath varchar;
-  declare retValue, save, downloads, davItems, entries, colEntry, xmlItems, xmlEntries, xmlEntry, davEntry, davResouresId any;
+  declare retValue, save any;
   declare exit handler for sqlstate '*'
   {
     connection_set ('dav_store', save);
@@ -567,132 +575,8 @@ create function "GDrive_DAV_DIR_LIST" (
   colPath := DB.DBA.DAV_CONCAT_PATH (detcol_parts, subPath_parts);
   colId := DB.DBA.DAV_SEARCH_ID (colPath, 'C');
 
-  downloads := vector ();
-  entries := DB.DBA.GDrive__list (detcol_id, detcol_parts, subPath_parts);
-  if (DAV_HIDE_ERROR (entries) is null)
-    goto _exit;
-
-  if (isinteger (entries))
-    goto _exit;
-
-  DB.DBA.GDrive__activity (detcol_id, 'Sync started');
-  {
-    declare _id, _what, _type, _content any;
-    declare resourceId, ETag, title varchar;
-    {
-      declare exit handler for sqlstate '*'
-      {
-        DB.DBA.GDrive__activity (detcol_id, 'Exec error: ' || __SQL_MESSAGE);
-        goto _exitSync;
-      };
-
-      connection_set ('dav_store', 1);
-      colEntry := DB.DBA.DAV_DIR_SINGLE_INT (colId, 'C', '', null, null, http_dav_uid ());
-      davResouresId := vector ();
-      xmlEntries := xtree_doc (entries);
-      davItems := DB.DBA.GDrive__davList (detcol_id, colId);
-      foreach (any davItem in davItems) do
-      {
-        connection_set ('dav_store', 1);
-        resourceId := DB.DBA.GDrive__paramGet (davItem[4], davItem[1], 'resourceId', 0);
-        if (resourceId is not null)
-        {
-          xmlEntry := DB.DBA.GDrive__entryXPath (xmlEntries, sprintf ('[gd:resourceId = "%s"]', resourceId));
-          if (xmlEntry is not null)
-          {
-            xmlEntry := xml_cut (xmlEntry);
-            ETag := DB.DBA.GDrive__entryXPath (xmlEntries, sprintf ('[gd:resourceId = "%s"]/@gd:etag', resourceId), 1);
-            davEntry := DB.DBA.GDrive__paramGet (davItem[4], davItem[1], 'Entry', 0);
-            if (DAV_HIDE_ERROR (davEntry) is not null)
-            {
-              davResouresId := vector_concat (davResouresId, vector (resourceId));
-              davEntry := xtree_doc (davEntry);
-              if (ETag <> DB.DBA.GDrive__entryXPath (davEntry, '/@gd:etag', 1))
-              {
-                set triggers off;
-                DB.DBA.GDrive__paramSet (davItem[4], davItem[1], ':getlastmodified', DB.DBA.GDrive__entryXPath (xmlEntry, sprintf ('/updated', resourceId), 1), 0, 0);
-                set triggers on;
-                DB.DBA.GDrive__paramSet (davItem[4], davItem[1], 'Entry', DB.DBA.GDrive__xml2string (xmlEntry), 0);
-                if (davItem[1] = 'R')
-                {
-                  DB.DBA.GDrive__paramSet (davItem[4], davItem[1], 'download', '0', 0);
-                  downloads := vector_concat (downloads, vector (vector (davItem[4], davItem[1])));
-                }
-              }
-              else
-              {
-                declare downloaded integer;
-
-                downloaded := DB.DBA.GDrive__paramGet (davItem[4], davItem[1], 'download', 0);
-                if (downloaded is not null)
-                {
-                  downloaded := cast (downloaded as integer);
-                  if (downloaded <= 5)
-                    downloads := vector_concat (downloads, vector (vector (davItem[4], davItem[1])));
-                }
-              }
-              goto _continue;
-            }
-          }
-        }
-        if (davItem[1] = 'R')
-          DB.DBA.GDrive__rdf_delete (detcol_id, davItem[4], davItem[1]);
-        DAV_DELETE_INT (davItem[0], 1, null, null, 0, 0);
-
-      _continue:;
-        commit work;
-      }
-      xmlItems := xpath_eval ('/feed/entry', xmlEntries, 0);
-      foreach (any xmlItem in xmlItems) do
-      {
-        xmlItem := xml_cut(xmlItem);
-        resourceId := DB.DBA.GDrive__entryXPath (xmlItem, '/gd:resourceId', 1);
-        if (not position (resourceId, davResouresId))
-        {
-          title := DB.DBA.GDrive__entryXPath (xmlItem, '/title', 1);
-          connection_set ('dav_store', 1);
-          if (resourceId like 'folder%')
-          {
-            _id := DB.DBA.DAV_COL_CREATE (colPath || title || '/',  colEntry[5], colEntry[7], colEntry[6], DB.DBA.GDrive__user (http_dav_uid ()), DB.DBA.GDrive__password (http_dav_uid ()));
-            _what := 'C';
-          }
-          else
-          {
-            if (DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_ID (colPath || title, 'R')) is not null)
-              title := sprintf ('%s - %s', title, DB.DBA.GDrive__cleanResourceId (resourceId));
-
-            _content := '';
-            _type := DB.DBA.GDrive__entryXPath (xmlItem, '/content/@type', 1);
-            _id := DB.DBA.DAV_RES_UPLOAD (colPath || title,  _content, _type, colEntry[5], colEntry[7], colEntry[6], DB.DBA.GDrive__user (http_dav_uid ()), DB.DBA.GDrive__password (http_dav_uid ()));
-            _what := 'R';
-          }
-          if (DAV_HIDE_ERROR (_id) is not null)
-          {
-            set triggers off;
-            DB.DBA.GDrive__paramSet (_id, _what, ':creationdate', DB.DBA.GDrive__entryXPath (xmlItem, sprintf ('/published', resourceId), 1), 0, 0);
-            DB.DBA.GDrive__paramSet (_id, _what, ':getlastmodified', DB.DBA.GDrive__entryXPath (xmlItem, sprintf ('/updated', resourceId), 1), 0, 0);
-            set triggers on;
-            DB.DBA.GDrive__paramSet (_id, _what, 'virt:DETCOL_ID', cast (detcol_id as varchar), 0, 0);
-            DB.DBA.GDrive__paramSet (_id, _what, 'resourceId', resourceId, 0);
-            DB.DBA.GDrive__paramSet (_id, _what, 'Entry', DB.DBA.GDrive__xml2string (xmlItem), 0);
-            if (_what = 'R')
-            {
-              DB.DBA.GDrive__paramSet (_id, _what, 'download', '0', 0);
-              downloads := vector_concat (downloads, vector (vector (_id, _what)));
-          }
-        }
-          commit work;
-        }
-      }
-    }
-  _exitSync:
-    connection_set ('dav_store', save);
-  }
-  DB.DBA.GDrive__activity (detcol_id, 'Sync ended');
-
-_exit:;
+  DB.DBA.GDrive__load (detcol_id, subPath_parts, detcol_parts);
   retValue := DB.DBA.GDrive__davList (detcol_id, colId);
-  DB.DBA.GDrive__downloads (detcol_id, downloads);
 
   return retValue;
 }
@@ -807,7 +691,86 @@ create function "GDrive_DAV_RES_UPLOAD_MOVE" (
   in auth_uid integer) returns any
 {
   -- dbg_obj_princ ('GDrive_DAV_RES_UPLOAD_MOVE (', detcol_id, path_parts, source_id, what, overwrite_flags, auth_uid, ')');
-  return -20;
+  declare resourceId, ETag, oldName, newName varchar;
+  declare url, header, body any;
+  declare srcEntry, xmlItem any;
+  declare retValue, retHeader, result, save any;
+
+  retValue := -20;
+  srcEntry := DB.DBA.DAV_DIR_SINGLE_INT (source_id, what, '', null, null, http_dav_uid ());
+  if (DB.DBA.DAV_HIDE_ERROR (srcEntry) is null)
+    return;
+
+  oldName := srcEntry[10];
+  newName := case when what = 'C' then path_parts[length (path_parts)-2] else path_parts[length (path_parts)-1] end;
+  if (oldName <> newName)
+  {
+    declare exit handler for sqlstate '*'
+    {
+      connection_set ('dav_store', save);
+      resignal;
+    };
+
+    save := connection_get ('dav_store');
+    if (save is null)
+    {
+      resourceId := DB.DBA.GDrive__paramGet (source_id, 'R', 'resourceId', 0);
+      if (DAV_HIDE_ERROR (resourceId) is null)
+      {
+        retValue := result;
+        goto _exit;
+      }
+
+      url := sprintf ('https://docs.google.com/feeds/default/private/full/%U', resourceId);
+      result := DB.DBA.GDrive__exec (detcol_id, retHeader, 'GET', url);
+      if (DAV_HIDE_ERROR (result) is null)
+      {
+        retValue := result;
+        goto _exit;
+      }
+
+      xmlItem := xtree_doc (result);
+      url := DB.DBA.GDrive__entryXPath (xmlItem, '/link[@rel="edit"]/@href', 1);
+      ETag := DB.DBA.GDrive__entryXPath (xmlItem, '/@gd:etag', 1);
+      body := sprintf (
+        '<?xml version="1.0" encoding="UTF-8"?>' ||
+        '<entry xmlns="http://www.w3.org/2005/Atom" xmlns:gd="http://schemas.google.com/g/2005" gd:etag="%V">' ||
+        '  <title>%V</title>' ||
+        '</entry>',
+        ETag,
+        newName);
+      header := sprintf (
+        'Content-Length: %d\r\n' ||
+        'Content-Type: application/atom+xml\r\n',
+        length (body));
+      result := DB.DBA.GDrive__exec (detcol_id, retHeader, 'PUT', url, header, body);
+      if (DAV_HIDE_ERROR (result) is null)
+      {
+        retValue := result;
+        goto _exit;
+      }
+      xmlItem := xtree_doc (result);
+    }
+    connection_set ('dav_store', 1);
+    if (what = 'C')
+    {
+      update WS.WS.SYS_DAV_COL set COL_NAME = newName, COL_MOD_TIME = now () where COL_ID = source_id[2];
+    } else {
+      update WS.WS.SYS_DAV_RES set RES_NAME = newName, RES_MOD_TIME = now () where RES_ID = source_id[2];
+    }
+    retValue := source_id;
+
+  _exit:;
+    connection_set ('dav_store', save);
+    if (DAV_HIDE_ERROR (retValue) is not null)
+    {
+      if (save is null)
+      {
+        DB.DBA.GDrive__paramSet (retValue, what, 'Entry', DB.DBA.GDrive__xml2string (xmlItem), 0);
+      }
+    }
+  }
+  return retValue;
 }
 ;
 
@@ -975,6 +938,43 @@ create function "GDrive_DAV_LIST_LOCKS" (
   connection_set ('dav_store', save);
 
   return retValue;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create function "GDrive_DAV_SCHEDULER" (
+  in queue_id integer)
+{
+  -- dbg_obj_princ ('DB.DBA.GDrive_DAV_SCHEDULER (', queue_id, ')');
+  declare detcol_parts any;
+
+  for (select COL_ID from WS.WS.SYS_DAV_COL where COL_DET = cast (DB.DBA.GDrive__detName () as varchar)) do
+  {
+    detcol_parts := split_and_decode (WS.WS.COL_PATH (COL_ID), 0, '\0\0/');
+    DB.DBA.GDrive_DAV_SCHEDULER_FOLDER (queue_id, COL_ID, detcol_parts, COL_ID, vector (''));
+  }
+  DB.DBA.DAV_QUEUE_UPDATE_STATE (queue_id, 2);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create function "GDrive_DAV_SCHEDULER_FOLDER" (
+  in queue_id integer,
+  in detcol_id integer,
+  in detcol_parts any,
+  in cid integer,
+  in path_parts any)
+{
+  -- dbg_obj_princ ('DB.DBA.GDrive_DAV_SCHEDULER_FOLDER (', queue_id, detcol_id, detcol_parts, cid, path_parts, ')');
+
+  DB.DBA.GDrive__load (detcol_id, path_parts, detcol_parts);
+
+  for (select COL_ID, COL_NAME from WS.WS.SYS_DAV_COL where COL_PARENT = cid) do
+  {
+    DB.DBA.GDrive_DAV_SCHEDULER_FOLDER (queue_id, detcol_id, detcol_parts, COL_ID, vector_concat (subseq (path_parts, 0, length (path_parts)-1), vector (COL_NAME, '')));
+  }
 }
 ;
 
@@ -1182,7 +1182,7 @@ create function DB.DBA.GDrive__paramGet (
   if (_prefixed)
     _propName := 'virt:GDrive-' || _propName;
 
-  propValue := DB.DBA.DAV_PROP_GET_INT (DB.DBA.GDrive__davId (_id), _what, _propName, 0, DB.DBA.Dropbox__user (http_dav_uid ()), DB.DBA.Dropbox__password (http_dav_uid ()), http_dav_uid ());
+  propValue := DB.DBA.DAV_PROP_GET_INT (DB.DBA.GDrive__davId (_id), _what, _propName, 0, DB.DBA.GDrive__user (http_dav_uid ()), DB.DBA.GDrive__password (http_dav_uid ()), http_dav_uid ());
   if (isinteger (propValue))
     propValue := null;
 
@@ -1376,25 +1376,177 @@ create function DB.DBA.GDrive__davList (
 
 -------------------------------------------------------------------------------
 --
-create function DB.DBA.GDrive__list (
-  inout detcol_id any,
-  inout detcol_parts varchar,
-  inout subPath_parts varchar)
+create function DB.DBA.GDrive__load (
+  in detcol_id any,
+  in subPath_parts any,
+  in detcol_parts varchar) returns any
 {
-  -- dbg_obj_princ ('DB.DBA.GDrive__list (', detcol_id, detcol_parts, subPath_parts, ')');
+  -- dbg_obj_princ ('DB.DBA.GDrive__load (', detcol_id, subPath_parts, detcol_parts, name_mask, recursive, auth_uid, ')');
   declare colId integer;
-  declare colPath, resourceId varchar;
+  declare colPath varchar;
+  declare retValue, save, downloads, davItems, entries, colEntry, xmlItems, xmlEntries, xmlItem, davEntry, davResouresId any;
   declare syncTime datetime;
-  declare retValue, retHeader, value, entry any;
+  declare exit handler for sqlstate '*'
+  {
+    connection_set ('dav_store', save);
+    resignal;
+  };
+
+  save := connection_get ('dav_store');
+  downloads := vector ();
 
   colPath := DB.DBA.DAV_CONCAT_PATH (detcol_parts, subPath_parts);
-  colId := DB.DBA.GDrive__davId (DB.DBA.DAV_SEARCH_ID (colPath, 'C'));
+  colId := DB.DBA.DAV_SEARCH_ID (colPath, 'C');
   if (DAV_HIDE_ERROR (colId) is null)
-    return -28;
+    goto _exit;
 
   syncTime := DB.DBA.GDrive__paramGet (colId, 'C', 'syncTime');
   if (not isnull (syncTime) and (datediff ('second', syncTime, now ()) < 300))
-    return 0;
+    goto _exit;
+
+  entries := DB.DBA.GDrive__list (detcol_id, detcol_parts, colId, subPath_parts);
+  if (DAV_HIDE_ERROR (entries) is null)
+    goto _exit;
+
+  if (isinteger (entries))
+    goto _exit;
+
+  DB.DBA.GDrive__activity (detcol_id, 'Sync started');
+  {
+    declare _id, _what, _type, _content any;
+    declare resourceId, ETag, title varchar;
+    {
+      declare exit handler for sqlstate '*'
+      {
+        DB.DBA.GDrive__activity (detcol_id, 'Exec error: ' || __SQL_MESSAGE);
+        goto _exitSync;
+      };
+
+      connection_set ('dav_store', 1);
+      colEntry := DB.DBA.DAV_DIR_SINGLE_INT (colId, 'C', '', null, null, http_dav_uid ());
+      davResouresId := vector ();
+      xmlEntries := xtree_doc (entries);
+      davItems := DB.DBA.GDrive__davList (detcol_id, colId);
+      foreach (any davItem in davItems) do
+      {
+        connection_set ('dav_store', 1);
+        resourceId := DB.DBA.GDrive__paramGet (davItem[4], davItem[1], 'resourceId', 0);
+        if (resourceId is not null)
+        {
+          xmlItem := DB.DBA.GDrive__entryXPath (xmlEntries, sprintf ('[gd:resourceId = "%s"]', resourceId));
+          if (xmlItem is not null)
+          {
+            xmlItem := xml_cut (xmlItem);
+            if (davItem[10] = DB.DBA.GDrive__entryXPath (xmlItem, '/title', 1))
+            {
+              ETag := DB.DBA.GDrive__entryXPath (xmlEntries, sprintf ('[gd:resourceId = "%s"]/@gd:etag', resourceId), 1);
+              davEntry := DB.DBA.GDrive__paramGet (davItem[4], davItem[1], 'Entry', 0);
+              if (DAV_HIDE_ERROR (davEntry) is not null)
+              {
+                davResouresId := vector_concat (davResouresId, vector (resourceId));
+                davEntry := xtree_doc (davEntry);
+                if (ETag <> DB.DBA.GDrive__entryXPath (davEntry, '/@gd:etag', 1))
+                {
+                  set triggers off;
+                  DB.DBA.GDrive__paramSet (davItem[4], davItem[1], ':getlastmodified', DB.DBA.GDrive__entryXPath (xmlItem, '/updated', 1), 0, 0);
+                  set triggers on;
+                  DB.DBA.GDrive__paramSet (davItem[4], davItem[1], 'Entry', DB.DBA.GDrive__xml2string (xmlItem), 0);
+                  if (davItem[1] = 'R')
+                  {
+                    DB.DBA.GDrive__paramSet (davItem[4], davItem[1], 'download', '0', 0);
+                    downloads := vector_concat (downloads, vector (vector (davItem[4], davItem[1])));
+                  }
+                }
+                else
+                {
+                  declare downloaded integer;
+
+                  downloaded := DB.DBA.GDrive__paramGet (davItem[4], davItem[1], 'download', 0);
+                  if (downloaded is not null)
+                  {
+                    downloaded := cast (downloaded as integer);
+                    if (downloaded <= 5)
+                      downloads := vector_concat (downloads, vector (vector (davItem[4], davItem[1])));
+                  }
+                }
+                goto _continue;
+              }
+            }
+          }
+        }
+        if (davItem[1] = 'R')
+          DB.DBA.GDrive__rdf_delete (detcol_id, davItem[4], davItem[1]);
+
+        connection_set ('dav_store', 1);
+        DAV_DELETE_INT (davItem[0], 1, null, null, 0, 0);
+
+      _continue:;
+        commit work;
+      }
+      xmlItems := xpath_eval ('/feed/entry', xmlEntries, 0);
+      foreach (any xmlItem in xmlItems) do
+      {
+        xmlItem := xml_cut(xmlItem);
+        resourceId := DB.DBA.GDrive__entryXPath (xmlItem, '/gd:resourceId', 1);
+        if (not position (resourceId, davResouresId))
+        {
+          title := DB.DBA.GDrive__entryXPath (xmlItem, '/title', 1);
+          connection_set ('dav_store', 1);
+          if (resourceId like 'folder%')
+          {
+            _id := DB.DBA.DAV_COL_CREATE (colPath || title || '/',  colEntry[5], colEntry[7], colEntry[6], DB.DBA.GDrive__user (http_dav_uid ()), DB.DBA.GDrive__password (http_dav_uid ()));
+            _what := 'C';
+          }
+          else
+          {
+            if (DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_ID (colPath || title, 'R')) is not null)
+              title := sprintf ('%s - %s', title, DB.DBA.GDrive__cleanResourceId (resourceId));
+
+            _content := '';
+            _type := DB.DBA.GDrive__entryXPath (xmlItem, '/content/@type', 1);
+            _id := DB.DBA.DAV_RES_UPLOAD (colPath || title,  _content, _type, colEntry[5], colEntry[7], colEntry[6], DB.DBA.GDrive__user (http_dav_uid ()), DB.DBA.GDrive__password (http_dav_uid ()));
+            _what := 'R';
+          }
+          if (DAV_HIDE_ERROR (_id) is not null)
+          {
+            set triggers off;
+            DB.DBA.GDrive__paramSet (_id, _what, ':creationdate', DB.DBA.GDrive__entryXPath (xmlItem, '/published', 1), 0, 0);
+            DB.DBA.GDrive__paramSet (_id, _what, ':getlastmodified', DB.DBA.GDrive__entryXPath (xmlItem, '/updated', 1), 0, 0);
+            set triggers on;
+            DB.DBA.GDrive__paramSet (_id, _what, 'virt:DETCOL_ID', cast (detcol_id as varchar), 0, 0);
+            DB.DBA.GDrive__paramSet (_id, _what, 'resourceId', resourceId, 0);
+            DB.DBA.GDrive__paramSet (_id, _what, 'Entry', DB.DBA.GDrive__xml2string (xmlItem), 0);
+            if (_what = 'R')
+            {
+              DB.DBA.GDrive__paramSet (_id, _what, 'download', '0', 0);
+              downloads := vector_concat (downloads, vector (vector (_id, _what)));
+            }
+          }
+          commit work;
+        }
+      }
+    }
+  _exitSync:
+    connection_set ('dav_store', save);
+  }
+  DB.DBA.GDrive__activity (detcol_id, 'Sync ended');
+
+_exit:;
+  DB.DBA.GDrive__downloads (detcol_id, downloads);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create function DB.DBA.GDrive__list (
+  inout detcol_id any,
+  inout detcol_parts varchar,
+  inout col_id any,
+  inout subPath_parts varchar)
+{
+  -- dbg_obj_princ ('DB.DBA.GDrive__list (', detcol_id, detcol_parts, subPath_parts, ')');
+  declare resourceId varchar;
+  declare retValue, retHeader any;
 
   if (length (subPath_parts) = 1)
   {
@@ -1402,15 +1554,13 @@ create function DB.DBA.GDrive__list (
   }
   else
   {
-    resourceId := DB.DBA.GDrive__paramGet (colId, 'C', 'resourceId', 0);
+    resourceId := DB.DBA.GDrive__paramGet (col_id, 'C', 'resourceId', 0);
     if (isnull (resourceId))
       return -28;
   }
   retValue := DB.DBA.GDrive__exec (detcol_id, retHeader, 'GET', sprintf ('https://docs.google.com/feeds/default/private/full/%U/contents', resourceId));
-  --DB.DBA.GDrive__activity (detcol_id, retValue);
-  -- dbg_obj_print ('retValue', retValue);
   if (not isinteger (retValue))
-    DB.DBA.GDrive__paramSet (colId, 'C', 'syncTime', now ());
+    DB.DBA.GDrive__paramSet (col_id, 'C', 'syncTime', now ());
 
   return retValue;
 }
@@ -1656,12 +1806,7 @@ create function DB.DBA.GDrive__rdf_delete (
     return;
 
   path := DB.DBA.DAV_SEARCH_PATH (id, what);
-  if (path like '%.gz')
-    path := regexp_replace (path, '\.gz\x24', '');
-
-  rdf_graph2 := 'http://local.virt' || path;
-  SPARQL delete from graph ?:rdf_graph { ?s ?p ?o } where { graph `iri(?:rdf_graph2)` { ?s ?p ?o } };
-  SPARQL clear graph ?:rdf_graph2;
+  DB.DBA.RDF_SINK_CLEAR (path, rdf_graph);
 }
 ;
 

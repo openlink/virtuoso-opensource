@@ -145,9 +145,9 @@ DAV_REGISTER_MIME_TYPE ('text/x-vCard', 'vCard (Business Cards)', 'vcf', null, '
 DAV_REGISTER_MIME_TYPE ('text/calendar', 'Calendar data (iCal etc)', 'ics', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('text/html', 'Web pages (HTML etc)', 'html', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('text/eml', 'Email files', 'eml', null, 'replacing');
-DAV_REGISTER_MIME_TYPE ('text/wiki', 'Wiki files', 'txt', null, 'replacing');
+DAV_REGISTER_MIME_TYPE ('text/wiki', 'Wiki files', 'wiki', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('application/xbrl+xml', 'Business Reports', 'xbrl', null, 'replacing');
-DAV_REGISTER_MIME_TYPE ('text/rdf+ttl', 'RDF Data (RDF-XML, N3, Turtle)', 'ttl', null, 'replacing');
+DAV_REGISTER_MIME_TYPE ('text/turtle', 'RDF Data (RDF-XML, N3, Turtle)', 'ttl', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('text/rdf+n3', 'RDF Data (RDF-XML, N3, Turtle)', 'n3', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('application/doap+rdf', 'DOAP Projects', 'doap', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('application/license', 'OpenLink License', 'lic', null, 'replacing');
@@ -160,6 +160,9 @@ DAV_REGISTER_MIME_TYPE ('audio/x-mp3', 'MP3 Format Sound', 'mp3', null, 'replaci
 DAV_REGISTER_MIME_TYPE ('audio/x-m4a', 'M4A Format Sound', 'm4a', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('audio/x-m4p', 'M4P Format Sound', 'm4p', null, 'replacing');
 DAV_REGISTER_MIME_TYPE ('application/ogg', 'OGG Media', 'ogg', null, 'replacing');
+
+select count(*) from WS.WS.SYS_DAV_RES_TYPES where http_mime_type_add (T_EXT, T_TYPE)
+;
 
 -- register relations - RDF <-> MIME
 --
@@ -196,7 +199,7 @@ DAV_REGISTER_MIME_RDF('application/zip', 'http://www.openlinksw.com/schemas/Arch
 DAV_REGISTER_MIME_RDF('application/x-openlinksw-vad', 'http://www.openlinksw.com/schemas/VAD#');
 DAV_REGISTER_MIME_RDF('application/x-openlinksw-vsp', 'http://www.openlinksw.com/schemas/VSPX#');
 DAV_REGISTER_MIME_RDF('application/x-openlinksw-vspx+xml', 'http://www.openlinksw.com/schemas/VSPX#');
-DAV_REGISTER_MIME_RDF('text/rdf+ttl', 'http://www.openlinksw.com/schemas/RDF#');
+DAV_REGISTER_MIME_RDF('text/turtle', 'http://www.openlinksw.com/schemas/RDF#');
 DAV_REGISTER_MIME_RDF('text/rdf+n3', 'http://www.openlinksw.com/schemas/RDF#');
 DAV_REGISTER_MIME_RDF('text/x-vCard', 'http://www.w3.org/2001/vcard-rdf/3.0#');
 DAV_REGISTER_MIME_RDF('text/calendar', 'http://www.openlinksw.com/schemas/ICS#');

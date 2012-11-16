@@ -466,6 +466,9 @@
   <!--=========================================================================-->
   <xsl:template match="vm:tabCaption">
     <div>
+      <xsl:if test="@hide">
+        <xsl:attribute name="style">display: none;</xsl:attribute>
+      </xsl:if>
       <xsl:attribute name="id"><xsl:value-of select="concat('tab_', @tab)"/></xsl:attribute>
       <xsl:attribute name="class">tab <xsl:if test="@activeTab = @tab">activeTab</xsl:if></xsl:attribute>
       <xsl:attribute name="onclick">javascript:showTab(<xsl:value-of select="@tab"/>, <xsl:value-of select="@tabs"/>)</xsl:attribute>
@@ -625,8 +628,7 @@
             <v:label for="dav_S3_BucketName" value="Bucket Name" />
           </th>
           <td>
-            <v:text name="dav_S3_BucketName" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:validator test="length" min="0" max="63" message="The input can not be empty." runat="client" />
+            <v:text name="dav_S3_BucketName" xhtml_id="dav_S3_BucketName" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_S3_BucketName', self.dav_path, 'virt:S3-BucketName', '');
@@ -640,8 +642,7 @@
             <v:label for="dav_S3_AccessKey" value="Access Key ID (*)" />
           </th>
           <td>
-            <v:text name="dav_S3_AccessKeyID" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:validator test="length" min="20" max="20" message="The input must be 20 characters long." runat="client" />
+            <v:text name="dav_S3_AccessKeyID" xhtml_id="dav_S3_AccessKeyID" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_S3_AccessKeyID', self.dav_path, 'virt:S3-AccessKeyID', '');
@@ -655,8 +656,7 @@
             <v:label for="dav_S3_SecretKey" value="Secret Key (*)" />
           </th>
           <td>
-            <v:text name="dav_S3_SecretKey" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:validator test="length" min="40" max="40" message="The input must be 40 characters long." runat="client" />
+            <v:text name="dav_S3_SecretKey" xhtml_id="dav_S3_SecretKey" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_S3_SecretKey', self.dav_path, 'virt:S3-SecretKey', '');
@@ -1284,10 +1284,30 @@
   <xsl:template match="vm:search-dc-template12">
     <div id="11" class="tabContent" style="display: none;">
       <table class="form-body" cellspacing="0">
+        <tr id="tr_ssl" style="display: none;">
+          <th style="text-align: center; font-size: 1.2em; background-color: #EAEAEE; color: red;" colspan="2">
+            Use SSL connection to secure your personal data
+          </th>
+        </tr>
         <tr>
-          <th width="30%">Connection Type</th>
+          <th width="30%">
+            <v:label for="dav_IMAP_activity" value="--'Activity manager (on/off)'" />
+          </th>
           <td>
-            <select name="dav_IMAP_connection" onchange="javascript: $('dav_IMAP_port').value = (this.value == 'ssl')? '993': '143';">
+            <?vsp
+              declare S varchar;
+
+              S := self.get_fieldProperty ('dav_IMAP_activity', self.dav_path, 'virt:IMAP-activity', 'off');
+              http (sprintf ('<input type="checkbox" name="dav_IMAP_activity" id="dav_IMAP_activity" %s disabled="disabled" value="on" />', case when S = 'on' then 'checked="checked"' else '' end));
+            ?>
+          </td>
+        </tr>
+        <tr>
+          <th>
+            <vm:label for="dav_IMAP_connection" value="Connection Type" />
+          </th>
+          <td>
+            <select name="dav_IMAP_connection" id="dav_IMAP_connection" onblur="javascript: ODRIVE.loadIMAPFolders();" onchange="javascript: $('dav_IMAP_port').value = (this.value == 'ssl')? '993': '143';">
               <?vsp
                 declare aValues, aValue any;
                 declare N integer;
@@ -1301,9 +1321,11 @@
           </td>
         </tr>
         <tr>
-          <th>Server Address</th>
+          <th>
+            <vm:label for="dav_IMAP_server" value="Server Address" />
+          </th>
           <td>
-            <v:text name="dav_IMAP_server" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+            <v:text name="dav_IMAP_server" xhtml_id="dav_IMAP_server" format="%s" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_onblur="javascript: ODRIVE.loadIMAPFolders();" >
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_IMAP_server', self.dav_path, 'virt:IMAP-server', '');
@@ -1313,9 +1335,11 @@
           </td>
         </tr>
         <tr>
-          <th>Server Port</th>
+          <th>
+            <vm:label for="dav_IMAP_port" value="Server Port" />
+          </th>
           <td>
-            <v:text name="dav_IMAP_port" xhtml_id="dav_IMAP_port" format="%s" xhtml_disabled="disabled" xhtml_class="field-short">
+            <v:text name="dav_IMAP_port" xhtml_id="dav_IMAP_port" format="%s" xhtml_disabled="disabled" xhtml_class="field-short" xhtml_onblur="javascript: ODRIVE.loadIMAPFolders();">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_IMAP_port', self.dav_path, 'virt:IMAP-port', '143');
@@ -1325,9 +1349,11 @@
           </td>
         </tr>
         <tr>
-          <th>User Name</th>
+          <th>
+            <vm:label for="dav_IMAP_user" value="User Name" />
+          </th>
           <td>
-            <v:text name="dav_IMAP_user" format="%s" xhtml_disabled="disabled" xhtml_class="field-short">
+            <v:text name="dav_IMAP_user" xhtml_id="dav_IMAP_user" format="%s" xhtml_disabled="disabled" xhtml_class="field-short" xhtml_onblur="javascript: ODRIVE.loadIMAPFolders();">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_IMAP_user', self.dav_path, 'virt:IMAP-user', '');
@@ -1337,9 +1363,11 @@
           </td>
         </tr>
         <tr>
-          <th>User Password</th>
+          <th>
+            <vm:label for="dav_IMAP_password" value="User Password" />
+          </th>
           <td>
-            <v:text type="password" name="dav_IMAP_password" format="%s" xhtml_disabled="disabled" xhtml_class="field-short">
+            <v:text type="password" name="dav_IMAP_password" xhtml_id="dav_IMAP_password" format="%s" xhtml_disabled="disabled" xhtml_class="field-short" xhtml_onblur="javascript: ODRIVE.loadIMAPFolders();">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_IMAP_password', self.dav_path, 'virt:IMAP-password', '');
@@ -1350,7 +1378,30 @@
         </tr>
         <tr>
           <th>
-            <v:label for="dav_IMAP_graph" value="--'Graph name'" />
+            <vm:label for="dav_IMAP_folder" value="Folder Path" />
+          </th>
+          <td id="td_dav_IMAP_folder">
+            <script type="text/javascript">
+              <![CDATA[
+                function dav_IMAP_folderInit ()
+                {
+                  var fld = new OAT.Combolist([], "<?V self.get_fieldProperty ('dav_IMAP_folder', self.dav_path, 'virt:IMAP-folder', '') ?>");
+                  fld.input.name = 'dav_IMAP_folder';
+                  fld.input.id = 'dav_IMAP_folder';
+                  fld.input.className = 'field-short';
+                  fld.input.comboList = fld;
+                  fld.list.style.width = '250px';
+                  $("td_dav_IMAP_folder").appendChild(fld.div);
+                  ODRIVE.loadIMAPFolders();
+                }
+                OAT.Loader.load(["ajax", "json", "combolist"], dav_IMAP_folderInit);
+              ]]>
+            </script>
+          </td>
+        </tr>
+        <tr>
+          <th>
+            <vm:label for="dav_IMAP_graph" value="--'Graph name'" />
           </th>
           <td>
             <v:text name="dav_IMAP_graph" xhtml_id="dav_IMAP_graph" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
@@ -1365,6 +1416,10 @@
           </td>
         </tr>
       </table>
+      <script type="text/javascript">
+        if (document.location.protocol != 'https:')
+          OAT.Dom.show('tr_ssl');
+      </script>
     </div>
   </xsl:template>
 
@@ -1693,6 +1748,11 @@
   <!--=========================================================================-->
   <xsl:template match="vm:search-dc-template17">
     <div id="16" class="tabContent" style="display: none;">
+      <?vsp
+        declare _value any;
+
+        _value := self.get_fieldProperty ('===', self.dav_path, 'virt:WebDAV-authenticationType', 'Digest');
+      ?>
       <table class="form-body" cellspacing="0">
         <tr>
           <th width="30%">
@@ -1723,6 +1783,44 @@
         </tr>
         <tr>
           <th>
+            <v:label for="dav_WebDAV_authenticationType" value="--'Authentication Type'" />
+          </th>
+          <td>
+            <?vsp
+              if (ODRIVE.WA.keys_exist (ODRIVE.WA.account_name (self.account_id)))
+              {
+                http (sprintf ('<label><input type="radio" name="dav_WebDAV_authenticationType" id="dav_WebDAV_authenticationType_0" value="Digest" %s onchange="javascript: destinationChange(this, {checked: {show: [''tr_dav_WebDAV_user'', ''tr_dav_WebDAV_password''], hide: [''tr_dav_WebDAV_key'']}});" title="Digest" /> <b>Digest</b></label>', case when _value = 'Digest' then 'checked="checked"' else '' end));
+                http (sprintf ('<label><input type="radio" name="dav_WebDAV_authenticationType" id="dav_WebDAV_authenticationType_1" value="WebID" %s onchange="javascript: destinationChange(this, {checked: {hide: [''tr_dav_WebDAV_user'', ''tr_dav_WebDAV_password''], show: [''tr_dav_WebDAV_key'']}});" title="WebID" /> <b>WebID</b></label>', case when _value <> 'Digest' then 'checked="checked"' else '' end));
+              }
+              else
+              {
+                http ('<b>Digest</b>');
+              }
+            ?>
+          </td>
+        </tr>
+        <tr id="tr_dav_WebDAV_key" style="display: none;">
+          <th>
+            <v:label for="dav_WebDAV_key" value="--'User''s Key '" />
+          </th>
+          <td>
+            <select name="dav_WebDAV_key" id="dav_WebDAV_key">
+              <?vsp
+                declare _key varchar;
+                declare _keys any;
+
+                _key := self.get_fieldProperty ('dav_WebDAV_key', self.dav_path, 'virt:WebDAV-key', '');
+                _keys := ODRIVE.WA.keys_list (ODRIVE.WA.account_name (self.account_id));
+                foreach (any _k in _keys) do
+                {
+                  http (self.option_prepare(_k, _k, _key));
+                }
+              ?>
+            </select>
+          </td>
+        </tr>
+        <tr id="tr_dav_WebDAV_user">
+          <th>
             <v:label for="dav_WebDAV_user" value="--'User Name'" />
           </th>
           <td>
@@ -1735,7 +1833,7 @@
             </v:text>
           </td>
         </tr>
-        <tr>
+        <tr id="tr_dav_WebDAV_password">
           <th>
             <v:label for="dav_WebDAV_password" value="--'User Password'" />
           </th>
@@ -1772,6 +1870,110 @@
       <![CDATA[
   	    <script type="text/javascript">
           OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('dav_WebDAV_sponger'), {checked: {show: ['dav16_cartridge', 'dav16_metaCartridge']}})});
+          OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('dav_WebDAV_authenticationType_0'), {checked: {show: ['tr_dav_WebDAV_user', 'tr_dav_WebDAV_password'], hide: ['tr_dav_WebDAV_key']}, unchecked: {hide: ['tr_dav_WebDAV_user', 'tr_dav_WebDAV_password'], show: ['tr_dav_WebDAV_key']}})});
+  	    </script>
+  	  ]]>
+    </div>
+  </xsl:template>
+
+  <!--=========================================================================-->
+  <xsl:template match="vm:search-dc-template18">
+    <div id="17" class="tabContent" style="display: none;">
+      <table class="form-body" cellspacing="0">
+        <tr>
+          <th width="30%">
+            <v:label for="dav_RACKSPACE_activity" value="--'Activity manager (on/off)'" />
+          </th>
+          <td>
+            <?vsp
+              declare S varchar;
+
+              S := self.get_fieldProperty ('dav_RACKSPACE_activity', self.dav_path, 'virt:RACKSPACE-activity', 'off');
+              http (sprintf ('<input type="checkbox" name="dav_RACKSPACE_activity" id="dav_RACKSPACE_activity" %s disabled="disabled" value="on" />', case when S = 'on' then 'checked="checked"' else '' end));
+            ?>
+          </td>
+        </tr>
+        <tr>
+          <th>
+            <v:label for="dav_RACKSPACE_Type" value="Account type" />
+          </th>
+          <td>
+            <v:select-list name="dav_RACKSPACE_Type" xhtml_id="dav_RACKSPACE_Type" xhtml_disabled="disabled">
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_value := self.get_fieldProperty ('dav_RACKSPACE_Type', self.dav_path, 'virt:RACKSPACE-Type', '');
+                ]]>
+              </v:before-data-bind>
+              <v:item name="US Account" value="USA" />
+              <v:item name="UK Account" value="UK" />
+            </v:select-list>
+          </td>
+        </tr>
+        <tr>
+          <th>
+            <v:label for="dav_RACKSPACE_User" value="Account name (*)" />
+          </th>
+          <td>
+            <v:text name="dav_RACKSPACE_User" xhtml_id="dav_RACKSPACE_User" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_value := self.get_fieldProperty ('dav_RACKSPACE_User', self.dav_path, 'virt:RACKSPACE-User', '');
+                ]]>
+              </v:before-data-bind>
+            </v:text>
+          </td>
+        </tr>
+        <tr>
+          <th>
+            <v:label for="dav_RACKSPACE_API_Key" value="API Key (*)" />
+          </th>
+          <td>
+            <v:text name="dav_RACKSPACE_API_Key" xhtml_id="dav_RACKSPACE_API_Key" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_value := self.get_fieldProperty ('dav_RACKSPACE_API_Key', self.dav_path, 'virt:RACKSPACE-API_Key', '');
+                ]]>
+              </v:before-data-bind>
+            </v:text>
+          </td>
+        </tr>
+        <tr>
+          <th>
+            <v:label for="dav_RACKSPACE_Container" value="Container Name" />
+          </th>
+          <td>
+            <v:text name="dav_RACKSPACE_Container" xhtml_id="dav_RACKSPACE_Container" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_value := self.get_fieldProperty ('dav_RACKSPACE_Container', self.dav_path, 'virt:RACKSPACE-Container', '');
+                ]]>
+              </v:before-data-bind>
+            </v:text>
+          </td>
+        </tr>
+        <tr>
+          <th>
+            <v:label for="dav_RACKSPACE_graph" value="Graph name" />
+          </th>
+          <td>
+            <v:text name="dav_RACKSPACE_graph" xhtml_id="dav_RACKSPACE_graph" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_value := self.get_fieldProperty ('dav_RACKSPACE_graph', self.dav_path, 'virt:RACKSPACE-graph', '');
+                  if ((control.ufl_value = '') and (self.command = 0))
+                    control.ufl_value := ODRIVE.WA.host_url () || rtrim (WS.WS.FIXPATH (ODRIVE.WA.odrive_real_path (self.dav_path)), '/') || '#this';
+                ]]>
+              </v:before-data-bind>
+            </v:text>
+          </td>
+        </tr>
+        <?vsp
+          self.detSpongerUI ('RACKSPACE', 17);
+        ?>
+      </table>
+      <![CDATA[
+  	    <script type="text/javascript">
+          OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('dav_RACKSPACE_sponger'), {checked: {show: ['dav17_cartridge', 'dav17_metaCartridge']}})});
   	    </script>
   	  ]]>
     </div>
@@ -1782,7 +1984,7 @@
   <xsl:template match="vm:autoVersion">
     <tr id="davRow_version">
       <th>
-        <v:label for="dav_autoversion" value="--'Auto Versioning Content'" />
+        <vm:label for="dav_autoversion" value="--'Auto Versioning Content'" />
       </th>
       <td>
         <?vsp
@@ -1791,7 +1993,7 @@
           tmp := '';
           if ((self.dav_type = 'R') and (self.command_mode = 10))
             tmp := 'onchange="javascript: window.document.F1.submit();"';
-          http (sprintf ('<select name="dav_autoversion" %s disabled="disabled" class="field-short">', tmp));
+          http (sprintf ('<select name="dav_autoversion" id="dav_autoversion" %s disabled="disabled" class="field-short">', tmp));
 
           tmp := ODRIVE.WA.DAV_GET (self.dav_item, 'autoversion');
           if (isnull(tmp) and (self.dav_type = 'R'))

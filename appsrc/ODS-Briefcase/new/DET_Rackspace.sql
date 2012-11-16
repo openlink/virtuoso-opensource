@@ -1,5 +1,5 @@
 --
---  $Id: DET_WebDAV.sql,v 1.1 2012/07/18 12:45:29 ddimitrov Exp $
+--  $Id: DET_Rackspace.sql,v 1.7 2012/11/02 17:57:25 ddimitrov Exp $
 --
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -25,7 +25,7 @@ use DB
 
 --| This matches DAV_AUTHENTICATE (in id any, in what char(1), in req varchar, in a_uname varchar, in a_pwd varchar, in a_uid integer := null)
 --| The difference is that the DET function should not check whether the pair of name and password is valid; the auth_uid is not a null already.
-create function "WebDAV_DAV_AUTHENTICATE" (
+create function "RACKSPACE_DAV_AUTHENTICATE" (
   in id any,
   in what char(1),
   in req varchar,
@@ -33,7 +33,7 @@ create function "WebDAV_DAV_AUTHENTICATE" (
   in auth_pwd varchar,
   in auth_uid integer)
 {
-  -- dbg_obj_princ ('WebDAV_DAV_AUTHENTICATE (', id, what, req, auth_uname, auth_pwd, auth_uid, ')');
+  -- dbg_obj_princ ('RACKSPACE_DAV_AUTHENTICATE (', id, what, req, auth_uname, auth_pwd, auth_uid, ')');
   declare retValue any;
 
   retValue := DAV_AUTHENTICATE (id[2], what, req, auth_uname, auth_pwd, auth_uid);
@@ -47,7 +47,7 @@ create function "WebDAV_DAV_AUTHENTICATE" (
 --| Unlike DAV_AUTHENTICATE, user name passed to DAV_AUTHENTICATE_HTTP header may not match real DAV user.
 --| If DET call is successful, DAV_AUTHENTICATE_HTTP checks whether the user have read permission on mount point collection.
 --| Thus even if DET function allows anonymous access, the whole request may fail if mountpoint is not readable by public.
-create function "WebDAV_DAV_AUTHENTICATE_HTTP" (
+create function "RACKSPACE_DAV_AUTHENTICATE_HTTP" (
   in id any,
   in what char(1),
   in req varchar,
@@ -59,7 +59,7 @@ create function "WebDAV_DAV_AUTHENTICATE_HTTP" (
   inout a_gid integer,
   inout _perms varchar) returns integer
 {
-  -- dbg_obj_princ ('WebDAV_DAV_AUTHENTICATE_HTTP (', id[2], what, req, can_write_http, a_lines, a_uname, a_pwd, a_uid, a_gid, _perms, ')');
+  -- dbg_obj_princ ('RACKSPACE_DAV_AUTHENTICATE_HTTP (', id[2], what, req, can_write_http, a_lines, a_uname, a_pwd, a_uid, a_gid, _perms, ')');
   declare retValue any;
 
   retValue := DAV_AUTHENTICATE_HTTP (id[2], what, req, can_write_http, a_lines, a_uname, a_pwd, a_uid, a_gid, _perms);
@@ -71,17 +71,17 @@ create function "WebDAV_DAV_AUTHENTICATE_HTTP" (
 --| This should return ID of the collection that contains resource or collection with given ID,
 --| Possible ambiguity (such as symlinks etc.) should be resolved by using path.
 --| This matches DAV_GET_PARENT (in id any, in st char(1), in path varchar) returns any
-create function "WebDAV_DAV_GET_PARENT" (
+create function "RACKSPACE_DAV_GET_PARENT" (
   in id any,
   in what char(1),
   in path varchar) returns any
 {
-  -- dbg_obj_princ ('WebDAV_DAV_GET_PARENT (', id, what, path, ')');
+  -- dbg_obj_princ ('RACKSPACE_DAV_GET_PARENT (', id, what, path, ')');
   declare retValue any;
 
   retValue := DAV_GET_PARENT (id[2], what, path);
   if (DAV_HIDE_ERROR (retValue) is not null)
-    retValue := vector (DB.DBA.WebDAV__detName (), id[1], retValue, 'C');
+    retValue := vector (DB.DBA.RACKSPACE__detName (), id[1], retValue, 'C');
 
   return retValue;
 }
@@ -89,7 +89,7 @@ create function "WebDAV_DAV_GET_PARENT" (
 
 --| When DAV_COL_CREATE_INT calls DET function, authentication, check for lock and check for overwrite are passed, uid and gid are translated from strings to IDs.
 --| Check for overwrite, but the deletion of previously existing collection should be made by DET function.
-create function "WebDAV_DAV_COL_CREATE" (
+create function "RACKSPACE_DAV_COL_CREATE" (
   in detcol_id any,
   in path_parts any,
   in permissions varchar,
@@ -98,11 +98,10 @@ create function "WebDAV_DAV_COL_CREATE" (
   in auth_uid integer,
   in extern integer := 0) returns any
 {
-  -- dbg_obj_princ ('WebDAV_DAV_COL_CREATE (', detcol_id, path_parts, permissions, uid, gid, auth_uid, extern, ')');
+  -- dbg_obj_princ ('RACKSPACE_DAV_COL_CREATE (', detcol_id, path_parts, permissions, uid, gid, auth_uid, extern, ')');
   declare ouid, ogid integer;
-  declare path, title, parentID, parentListHref, listHref, listItem varchar;
-  declare url any;
-  declare V, retValue, retHeader, result, save any;
+  declare path, serverPath, container, listItem varchar;
+  declare retValue, retHeader, header, result, save any;
   declare exit handler for sqlstate '*'
   {
     connection_set ('dav_store', save);
@@ -110,36 +109,21 @@ create function "WebDAV_DAV_COL_CREATE" (
   };
 
   save := connection_get ('dav_store');
-  path := DB.DBA.WebDAV__path (detcol_id, path_parts);
+  path := DB.DBA.RACKSPACE__path (detcol_id, path_parts);
   if (save is null)
   {
-    title := path_parts[length (path_parts)-2];
-    url := DB.DBA.WebDAV__paramGet (detcol_id, 'C', 'path', 0);
-    listHref := '/' || title;
-    if (length (path_parts) > 2)
-    {
-      parentID := DB.DBA.DAV_SEARCH_ID (path, 'P');
-      parentListHref := DB.DBA.WebDAV__paramGet (parentID, 'C', 'href', 0);
-      if (isnull (parentListHref))
-        return -28;
+    serverPath := DB.DBA.RACKSPACE__serverPath (detcol_id, path_parts);
+    container := DB.DBA.RACKSPACE__paramGet (detcol_id, 'C', 'Container', 0);
+    if (not DB.DBA.is_empty_or_null (container) or (length (path_parts) <> 2))
+      header := 'Content-Length: 0\r\nContent-Type: dav/unix-directory\r\n';
 
-      V := rfc1808_parse_uri (url);
-      V[2] := parentListHref;
-      url := DB.DBA.vspx_uri_compose (V);
-    }
-    else
-    {
-      V := rfc1808_parse_uri (url);
-    }
-    listHref := rtrim (V[2], '/') || '/' || title || '/';
-    url := rtrim (url) || '/' || sprintf ('%U', title) || '/';
-    result := DB.DBA.WebDAV__exec (detcol_id, retHeader, 'MKCOL', url);
+    result := DB.DBA.RACKSPACE__exec (detcol_id, retHeader, 'PUT', serverPath, header);
     if (DAV_HIDE_ERROR (result) is null)
     {
       retValue := result;
       goto _exit;
     }
-    listItem := DB.DBA.WebDAV__resource (detcol_id, url);
+    listItem := DB.DBA.RACKSPACE__resource (detcol_id, serverPath);
     if (DAV_HIDE_ERROR (listItem) is null)
     {
       retValue := listItem;
@@ -147,20 +131,18 @@ create function "WebDAV_DAV_COL_CREATE" (
     }
   }
   connection_set ('dav_store', 1);
-  DB.DBA.WebDAV__owner (detcol_id, path_parts, DB.DBA.WebDAV__user (uid, auth_uid), DB.DBA.WebDAV__user (gid, auth_uid), ouid, ogid);
-  retValue := DAV_COL_CREATE_INT (path, permissions, DB.DBA.WebDAV__user (uid, auth_uid), DB.DBA.WebDAV__user (gid, auth_uid), DB.DBA.WebDAV__user (http_dav_uid ()), DB.DBA.WebDAV__password (http_dav_uid ()), 1, 0, 1, ouid, ogid);
+  DB.DBA.RACKSPACE__owner (detcol_id, path_parts, DB.DBA.RACKSPACE__user (uid, auth_uid), DB.DBA.RACKSPACE__user (gid, auth_uid), ouid, ogid);
+  retValue := DAV_COL_CREATE_INT (path, permissions, DB.DBA.RACKSPACE__user (uid, auth_uid), DB.DBA.RACKSPACE__user (gid, auth_uid), DB.DBA.RACKSPACE__user (http_dav_uid ()), DB.DBA.RACKSPACE__password (http_dav_uid ()), 1, 0, 1, ouid, ogid);
 
 _exit:;
   connection_set ('dav_store', save);
   if (DAV_HIDE_ERROR (retValue) is not null)
   {
     if (save is null)
-    {
-      DB.DBA.WebDAV__paramSet (retValue, 'C', 'Entry', listItem, 0);
-      DB.DBA.WebDAV__paramSet (retValue, 'C', 'href', listHref, 0);
-    }
-    DB.DBA.WebDAV__paramSet (retValue, 'C', 'virt:DETCOL_ID', cast (detcol_id as varchar), 0, 0);
-    retValue := vector (DB.DBA.WebDAV__detName (), detcol_id, retValue, 'C');
+      DB.DBA.RACKSPACE__paramSet (retValue, 'C', 'Entry', DB.DBA.RACKSPACE__obj2xml (listItem), 0);
+
+    DB.DBA.RACKSPACE__paramSet (retValue, 'C', 'virt:DETCOL_ID', cast (detcol_id as varchar), 0, 0);
+    retValue := vector (DB.DBA.RACKSPACE__detName (), detcol_id, retValue, 'C');
   }
 
   return retValue;
@@ -168,7 +150,7 @@ _exit:;
 ;
 
 --| It looks like that this is redundant and should be removed at all.
-create function "WebDAV_DAV_COL_MOUNT" (
+create function "RACKSPACE_DAV_COL_MOUNT" (
   in detcol_id any,
   in path_parts any,
   in full_mount_path varchar,
@@ -178,13 +160,13 @@ create function "WebDAV_DAV_COL_MOUNT" (
   in gid integer,
   in auth_uid integer) returns any
 {
-  -- dbg_obj_princ ('WebDAV_DAV_COL_MOUNT (', detcol_id, path_parts, full_mount_path, mount_det, permissions, uid, gid, auth_uid, ')');
+  -- dbg_obj_princ ('RACKSPACE_DAV_COL_MOUNT (', detcol_id, path_parts, full_mount_path, mount_det, permissions, uid, gid, auth_uid, ')');
   return -20;
 }
 ;
 
 --| It looks like that this is redundant and should be removed at all.
-create function "WebDAV_DAV_COL_MOUNT_HERE" (
+create function "RACKSPACE_DAV_COL_MOUNT_HERE" (
   in parent_id any,
   in full_mount_path varchar,
   in permissions varchar,
@@ -192,23 +174,24 @@ create function "WebDAV_DAV_COL_MOUNT_HERE" (
   in gid integer,
   in auth_uid integer) returns any
 {
-  -- dbg_obj_princ ('WebDAV_DAV_COL_MOUNT_HERE (', parent_id, full_mount_path, permissions, uid, gid, auth_uid, ')');
+  -- dbg_obj_princ ('RACKSPACE_DAV_COL_MOUNT_HERE (', parent_id, full_mount_path, permissions, uid, gid, auth_uid, ')');
   return -20;
 }
 ;
 
 --| When DAV_DELETE_INT calls DET function, authentication and check for lock are passed.
-create function "WebDAV_DAV_DELETE" (
+create function "RACKSPACE_DAV_DELETE" (
   in detcol_id any,
   in path_parts any,
   in what char(1),
   in silent integer,
   in auth_uid integer) returns integer
 {
-  -- dbg_obj_princ ('WebDAV_DAV_DELETE (', detcol_id, path_parts, what, silent, auth_uid, ')');
-  declare path, listHref varchar;
-  declare V, retValue, save any;
-  declare id, id_acl, url, header, retHeader any;
+  -- dbg_obj_princ ('RACKSPACE_DAV_DELETE (', detcol_id, path_parts, what, silent, auth_uid, ')');
+  declare container, path, serverPath varchar;
+  declare retValue, save any;
+  declare id, id_acl, retHeader any;
+  declare detcol_parts, server_parts, listItems any;
   declare exit handler for sqlstate '*'
   {
     connection_set ('dav_store', save);
@@ -216,40 +199,44 @@ create function "WebDAV_DAV_DELETE" (
   };
 
   save := connection_get ('dav_store');
-  path := DB.DBA.WebDAV__path (detcol_id, path_parts);
+  path := DB.DBA.RACKSPACE__path (detcol_id, path_parts);
   id := DB.DBA.DAV_SEARCH_ID (path, what);
   if (save is null)
   {
-    listHref := DB.DBA.WebDAV__paramGet (id, what, 'href', 0);
-    if (listHref is null)
-      goto _exit;
+    if (what = 'C')
+    {
+      container := DB.DBA.RACKSPACE__paramGet (detcol_id, 'C', 'Container', 0);
+      if (DB.DBA.is_empty_or_null (container))
+        container := path_parts[0];
 
-    url := DB.DBA.WebDAV__paramGet (detcol_id, 'C', 'path', 0);
-    V := rfc1808_parse_uri (url);
-    V[2] := listHref;
-    url := DB.DBA.vspx_uri_compose (V);
-
-    retValue := DB.DBA.WebDAV__exec (detcol_id, retHeader, 'DELETE', url);
+      detcol_parts := split_and_decode (rtrim (DB.DBA.DAV_SEARCH_PATH (detcol_id, 'C'), '/'), 0, '\0\0/');
+      listItems := DB.DBA.RACKSPACE__list (detcol_id, detcol_parts, id, path_parts, '');
+      foreach (any listItem in listItems) do
+      {
+        server_parts := split_and_decode (get_keyword ('name', listItem), 0, '\0\0/');
+        serverPath := '/' || container || DB.DBA.RACKSPACE__serverPath (detcol_id, server_parts);
+        retValue := DB.DBA.RACKSPACE__exec (detcol_id, retHeader, 'DELETE', serverPath);
+        if (DAV_HIDE_ERROR (retValue) is null)
+          goto _exit;
+      }
+    }
+    serverPath := DB.DBA.RACKSPACE__serverPath (detcol_id, path_parts);
+    retValue := DB.DBA.RACKSPACE__exec (detcol_id, retHeader, 'DELETE', serverPath);
     if (DAV_HIDE_ERROR (retValue) is null)
       goto _exit;
 
     id_acl := DB.DBA.DAV_SEARCH_ID (path || ',acl', 'R');
-    if (DAV_HIDE_ERROR (id_acl) is not null)
+    if ((DAV_HIDE_ERROR (id_acl) is not null) and length (path_parts))
     {
-      listHref := DB.DBA.WebDAV__paramGet (id_acl, 'R', 'href', 0);
-      if (listHref is null)
-        goto _exit;
-
-      url := DB.DBA.WebDAV__paramGet (detcol_id, 'C', 'path', 0);
-      V := rfc1808_parse_uri (url);
-      V[2] := listHref;
-      url := DB.DBA.vspx_uri_compose (V);
-      DB.DBA.WebDAV__exec (detcol_id, retHeader, 'DELETE', url);
+      path_parts[length (path_parts) - 1] := path_parts[length (path_parts) - 1] || ',acl';
+      serverPath := DB.DBA.RACKSPACE__serverPath (detcol_id, path_parts);
+      DB.DBA.RACKSPACE__exec (detcol_id, retHeader, 'DELETE', serverPath);
     }
   }
   connection_set ('dav_store', 1);
   if (what = 'R')
-    DB.DBA.WebDAV__rdf_delete (detcol_id, id, what);
+    DB.DBA.RACKSPACE__rdf_delete (detcol_id, id, what);
+
   retValue := DAV_DELETE_INT (path, 1, null, null, 0, 0);
 
 _exit:;
@@ -263,7 +250,7 @@ _exit:;
 --| There's a special problem, known as 'Transaction deadlock after reading from HTTP session'.
 --| The DET function should do only one INSERT of the 'content' into the table and do it as late as possible.
 --| The function should return -29 if deadlocked or otherwise broken after reading blob from HTTP.
-create function "WebDAV_DAV_RES_UPLOAD" (
+create function "RACKSPACE_DAV_RES_UPLOAD" (
   in detcol_id any,
   in path_parts any,
   inout content any,
@@ -273,11 +260,11 @@ create function "WebDAV_DAV_RES_UPLOAD" (
   in gid integer,
   in auth_uid integer) returns any
 {
-  -- dbg_obj_princ ('WebDAV_DAV_RES_UPLOAD (', detcol_id, path_parts, ', [content], ', type, permissions, uid, gid, auth_uid, ')');
+  -- dbg_obj_princ ('RACKSPACE_DAV_RES_UPLOAD (', detcol_id, path_parts, ', [content], ', type, permissions, uid, gid, auth_uid, ')');
   declare ouid, ogid integer;
-  declare title, path, parentID, parentListHref, listHref, listItem, rdf_graph varchar;
-  declare url, header, body, params any;
-  declare V, retValue, retHeader, result, save any;
+  declare path, serverPath, rdf_graph varchar;
+  declare header any;
+  declare V, retValue, retHeader, result, listItem, save any;
   declare exit handler for sqlstate '*'
   {
     connection_set ('dav_store', save);
@@ -285,7 +272,7 @@ create function "WebDAV_DAV_RES_UPLOAD" (
   };
 
   save := connection_get ('dav_store');
-  path := DB.DBA.WebDAV__path (detcol_id, path_parts);
+  path := DB.DBA.RACKSPACE__path (detcol_id, path_parts);
   if (save is null)
   {
     if (__tag (content) = 126)
@@ -295,37 +282,21 @@ create function "WebDAV_DAV_RES_UPLOAD" (
       real_content := http_body_read (1);
       content := string_output_string (real_content);  -- check if bellow code can work with string session and if so remove this line
     }
-    title := path_parts[length (path_parts)-1];
-    url := DB.DBA.WebDAV__paramGet (detcol_id, 'C', 'path', 0);
-    if (length (path_parts) > 1)
-    {
-      parentID := DB.DBA.DAV_SEARCH_ID (path, 'P');
-      parentListHref := DB.DBA.WebDAV__paramGet (parentID, 'C', 'href', 0);
-      if (isnull (parentListHref))
-        return -28;
-
-      V := rfc1808_parse_uri (url);
-      V[2] := parentListHref;
-      url := DB.DBA.vspx_uri_compose (V);
-    }
-    else
-    {
-      V := rfc1808_parse_uri (url);
-    }
-    listHref := rtrim (V[2], '/') || '/' || title;
+    serverPath := DB.DBA.RACKSPACE__serverPath (detcol_id, path_parts);
     header := sprintf (
       'Content-Length: %d\r\n' ||
-      'Content-Type: %s\r\n',
+      'Content-Type: %s\r\n' ||
+      'ETag: %s\r\n',
       length (content),
-      type);
-    url := rtrim (url) || '/' || sprintf ('%U', title);
-    result := DB.DBA.WebDAV__exec (detcol_id, retHeader, 'PUT', url, header, blob_to_string (content));
+      type,
+      md5 (content));
+    result := DB.DBA.RACKSPACE__exec (detcol_id, retHeader, 'PUT', serverPath, header, blob_to_string (content));
     if (DAV_HIDE_ERROR (result) is null)
     {
       retValue := result;
       goto _exit;
     }
-    listItem := DB.DBA.WebDAV__resource (detcol_id, url);
+    listItem := DB.DBA.RACKSPACE__resource (detcol_id, serverPath);
     if (DAV_HIDE_ERROR (listItem) is null)
     {
       retValue := listItem;
@@ -334,24 +305,22 @@ create function "WebDAV_DAV_RES_UPLOAD" (
   }
 _skip_create:;
   connection_set ('dav_store', 1);
-  DB.DBA.WebDAV__owner (detcol_id, path_parts, DB.DBA.WebDAV__user (uid, auth_uid), DB.DBA.WebDAV__user (gid, auth_uid), ouid, ogid);
-  retValue := DAV_RES_UPLOAD_STRSES_INT (path, content, type, permissions, DB.DBA.WebDAV__user (uid, auth_uid), DB.DBA.WebDAV__user (gid, auth_uid), DB.DBA.WebDAV__user (http_dav_uid ()), DB.DBA.WebDAV__password (http_dav_uid ()), 0, ouid=>ouid, ogid=>ogid, check_locks=>0);
+  DB.DBA.RACKSPACE__owner (detcol_id, path_parts, DB.DBA.RACKSPACE__user (uid, auth_uid), DB.DBA.RACKSPACE__user (gid, auth_uid), ouid, ogid);
+  retValue := DAV_RES_UPLOAD_STRSES_INT (path, content, type, permissions, DB.DBA.RACKSPACE__user (uid, auth_uid), DB.DBA.RACKSPACE__user (gid, auth_uid), DB.DBA.RACKSPACE__user (http_dav_uid ()), DB.DBA.RACKSPACE__password (http_dav_uid ()), 0, ouid=>ouid, ogid=>ogid, check_locks=>0);
 
 _exit:;
   connection_set ('dav_store', save);
   if (DAV_HIDE_ERROR (retValue) is not null)
   {
-    rdf_graph := DB.DBA.WebDAV__paramGet (detcol_id, 'C', 'graph', 0);
+    rdf_graph := DB.DBA.RACKSPACE__paramGet (detcol_id, 'C', 'graph', 0);
     if (not DB.DBA.is_empty_or_null (rdf_graph))
-      DB.DBA.WebDAV__rdf (detcol_id, retValue, 'R');
+      DB.DBA.RACKSPACE__rdf (detcol_id, retValue, 'R');
 
     if (save is null)
-    {
-      DB.DBA.WebDAV__paramSet (retValue, 'R', 'Entry', listItem, 0);
-      DB.DBA.WebDAV__paramSet (retValue, 'R', 'href', listHref, 0);
-    }
-    DB.DBA.WebDAV__paramSet (retValue, 'R', 'virt:DETCOL_ID', cast (detcol_id as varchar), 0, 0);
-    retValue := vector (DB.DBA.WebDAV__detName (), detcol_id, retValue, 'R');
+      DB.DBA.RACKSPACE__paramSet (retValue, 'R', 'Entry', DB.DBA.RACKSPACE__obj2xml (listItem), 0);
+
+    DB.DBA.RACKSPACE__paramSet (retValue, 'R', 'virt:DETCOL_ID', cast (detcol_id as varchar), 0, 0);
+    retValue := vector (DB.DBA.RACKSPACE__detName (), detcol_id, retValue, 'R');
   }
   return retValue;
 }
@@ -360,14 +329,14 @@ _exit:;
 --| When DAV_PROP_REMOVE_INT calls DET function, authentication and check for locks are performed before the call.
 --| The check whether it's a system name or not (when an error in returned if name is system) is _not_ permitted.
 --| It should delete any dead property even if the name looks like system name.
-create function "WebDAV_DAV_PROP_REMOVE" (
+create function "RACKSPACE_DAV_PROP_REMOVE" (
   in id any,
   in what char(0),
   in propname varchar,
   in silent integer,
   in auth_uid integer) returns integer
 {
-  -- dbg_obj_princ ('WebDAV_DAV_PROP_REMOVE (', id, what, propname, silent, auth_uid, ')');
+  -- dbg_obj_princ ('RACKSPACE_DAV_PROP_REMOVE (', id, what, propname, silent, auth_uid, ')');
   declare retValue any;
 
   retValue := DAV_PROP_REMOVE_RAW (id[2], what, propname, silent, auth_uid);
@@ -378,7 +347,7 @@ create function "WebDAV_DAV_PROP_REMOVE" (
 
 --| When DAV_PROP_SET_INT calls DET function, authentication and check for locks are performed before the call.
 --| The check whether it's a system property or not is _not_ permitted and the function should return -16 for live system properties.
-create function "WebDAV_DAV_PROP_SET" (
+create function "RACKSPACE_DAV_PROP_SET" (
   in id any,
   in what char(0),
   in propname varchar,
@@ -386,7 +355,7 @@ create function "WebDAV_DAV_PROP_SET" (
   in overwrite integer,
   in auth_uid integer) returns any
 {
-  -- dbg_obj_princ ('WebDAV_DAV_PROP_SET (', id, what, propname, propvalue, overwrite, auth_uid, ')');
+  -- dbg_obj_princ ('RACKSPACE_DAV_PROP_SET (', id, what, propname, propvalue, overwrite, auth_uid, ')');
   declare retValue any;
 
   id := id[2];
@@ -397,13 +366,13 @@ create function "WebDAV_DAV_PROP_SET" (
 ;
 
 --| When DAV_PROP_GET_INT calls DET function, authentication and check whether it's a system property are performed before the call.
-create function "WebDAV_DAV_PROP_GET" (
+create function "RACKSPACE_DAV_PROP_GET" (
   in id any,
   in what char(0),
   in propname varchar,
   in auth_uid integer)
 {
-  -- dbg_obj_princ ('WebDAV_DAV_PROP_GET (', id, what, propname, auth_uid, ')');
+  -- dbg_obj_princ ('RACKSPACE_DAV_PROP_GET (', id, what, propname, auth_uid, ')');
   declare retValue any;
 
   retValue := DAV_PROP_GET_INT (id[2], what, propname, 0);
@@ -414,13 +383,13 @@ create function "WebDAV_DAV_PROP_GET" (
 
 --| When DAV_PROP_LIST_INT calls DET function, authentication is performed before the call.
 --| The returned list should contain only user properties.
-create function "WebDAV_DAV_PROP_LIST" (
+create function "RACKSPACE_DAV_PROP_LIST" (
   in id any,
   in what char(0),
   in propmask varchar,
   in auth_uid integer)
 {
-  -- dbg_obj_princ ('WebDAV_DAV_PROP_LIST (', id, what, propmask, auth_uid, ')');
+  -- dbg_obj_princ ('RACKSPACE_DAV_PROP_LIST (', id, what, propmask, auth_uid, ')');
   declare retValue any;
 
   retValue := DAV_PROP_LIST_INT (id[2], what, propmask, 0);
@@ -430,13 +399,13 @@ create function "WebDAV_DAV_PROP_LIST" (
 ;
 
 --| When DAV_PROP_GET_INT or DAV_DIR_LIST_INT calls DET function, authentication is performed before the call.
-create function "WebDAV_DAV_DIR_SINGLE" (
+create function "RACKSPACE_DAV_DIR_SINGLE" (
   in id any,
   in what char(0),
   in path any,
   in auth_uid integer) returns any
 {
-  -- dbg_obj_princ ('WebDAV_DAV_DIR_SINGLE (', id, what, path, auth_uid, ')');
+  -- dbg_obj_princ ('RACKSPACE_DAV_DIR_SINGLE (', id, what, path, auth_uid, ')');
   declare retValue, save any;
   declare exit handler for sqlstate '*'
   {
@@ -446,17 +415,17 @@ create function "WebDAV_DAV_DIR_SINGLE" (
 
   save := connection_get ('dav_store');
   connection_set ('dav_store', 1);
-  retValue := DAV_DIR_SINGLE_INT (id[2], what, null, DB.DBA.WebDAV__user (http_dav_uid ()), DB.DBA.WebDAV__password (http_dav_uid ()), http_dav_uid ());
+  retValue := DAV_DIR_SINGLE_INT (id[2], what, null, DB.DBA.RACKSPACE__user (http_dav_uid ()), DB.DBA.RACKSPACE__password (http_dav_uid ()), http_dav_uid ());
   connection_set ('dav_store', save);
   if ((DAV_HIDE_ERROR (retValue) is not null) and (save is null))
-    retValue[4] := vector (DB.DBA.WebDAV__detName (), id[1], retValue[4], what);
+    retValue[4] := vector (DB.DBA.RACKSPACE__detName (), id[1], retValue[4], what);
 
   return retValue;
 }
 ;
 
 --| When DAV_PROP_GET_INT or DAV_DIR_LIST_INT calls DET function, authentication is performed before the call.
-create function "WebDAV_DAV_DIR_LIST" (
+create function "RACKSPACE_DAV_DIR_LIST" (
   in detcol_id any,
   in subPath_parts any,
   in detcol_parts varchar,
@@ -464,7 +433,7 @@ create function "WebDAV_DAV_DIR_LIST" (
   in recursive integer,
   in auth_uid integer) returns any
 {
-  -- dbg_obj_princ ('WebDAV_DAV_DIR_LIST (', detcol_id, subPath_parts, detcol_parts, name_mask, recursive, auth_uid, ')');
+  -- dbg_obj_princ ('RACKSPACE_DAV_DIR_LIST (', detcol_id, subPath_parts, detcol_parts, name_mask, recursive, auth_uid, ')');
   declare colId integer;
   declare what, colPath varchar;
   declare retValue, save any;
@@ -477,20 +446,20 @@ create function "WebDAV_DAV_DIR_LIST" (
   save := connection_get ('dav_store');
   what := case when ((length (subPath_parts) = 0) or (subPath_parts[length (subPath_parts) - 1] = '')) then 'C' else 'R' end;
   if ((what = 'R') or (recursive = -1))
-    return DB.DBA.WebDAV_DAV_DIR_SINGLE (detcol_id, what, null, auth_uid);
+    return DB.DBA.RACKSPACE_DAV_DIR_SINGLE (detcol_id, what, null, auth_uid);
 
   colPath := DB.DBA.DAV_CONCAT_PATH (detcol_parts, subPath_parts);
   colId := DB.DBA.DAV_SEARCH_ID (colPath, 'C');
 
-  DB.DBA.WebDAV__load (detcol_id, subPath_parts, detcol_parts);
-  retValue := DB.DBA.WebDAV__davList (detcol_id, colId);
+  DB.DBA.RACKSPACE__load (detcol_id, subPath_parts, detcol_parts);
+  retValue := DB.DBA.RACKSPACE__davList (detcol_id, colId);
 
   return retValue;
 }
 ;
 
 --| When DAV_DIR_FILTER_INT calls DET function, authentication is performed before the call and compilation is initialized.
-create function "WebDAV_DAV_DIR_FILTER" (
+create function "RACKSPACE_DAV_DIR_FILTER" (
   in detcol_id any,
   in subPath_parts any,
   in detcol_parts varchar,
@@ -498,18 +467,18 @@ create function "WebDAV_DAV_DIR_FILTER" (
   in recursive integer,
   in auth_uid integer) returns any
 {
-  -- dbg_obj_princ ('WebDAV_DAV_DIR_FILTER (', detcol_id, subPath_parts, detcol_parts, compilation, recursive, auth_uid, ')');
+  -- dbg_obj_princ ('RACKSPACE_DAV_DIR_FILTER (', detcol_id, subPath_parts, detcol_parts, compilation, recursive, auth_uid, ')');
   return vector();
 }
 ;
 
 --| When DAV_PROP_GET_INT or DAV_DIR_LIST_INT calls DET function, authentication is performed before the call.
-create function "WebDAV_DAV_SEARCH_ID" (
+create function "RACKSPACE_DAV_SEARCH_ID" (
   in detcol_id any,
   in path_parts any,
   in what char(1)) returns any
 {
-  -- dbg_obj_princ ('WebDAV_DAV_SEARCH_ID (', detcol_id, path_parts, what, ')');
+  -- dbg_obj_princ ('RACKSPACE_DAV_SEARCH_ID (', detcol_id, path_parts, what, ')');
   declare retValue, save any;
   declare exit handler for sqlstate '*'
   {
@@ -519,12 +488,12 @@ create function "WebDAV_DAV_SEARCH_ID" (
 
   save := connection_get ('dav_store');
   connection_set ('dav_store', 1);
-  retValue := DAV_SEARCH_ID (DB.DBA.WebDAV__path (detcol_id, path_parts), what);
+  retValue := DAV_SEARCH_ID (DB.DBA.RACKSPACE__path (detcol_id, path_parts), what);
   connection_set ('dav_store', save);
   if ((DAV_HIDE_ERROR (retValue) is not null))
   {
     if (isinteger (retValue) and (save is null))
-      retValue := vector (DB.DBA.WebDAV__detName (), detcol_id, retValue, what);
+      retValue := vector (DB.DBA.RACKSPACE__detName (), detcol_id, retValue, what);
 
     else if (isarray (retValue) and (save = 1))
       retValue := retValue[2];
@@ -533,26 +502,26 @@ create function "WebDAV_DAV_SEARCH_ID" (
 }
 ;
 
-create function "WebDAV_DAV_MAKE_ID" (
+create function "RACKSPACE_DAV_MAKE_ID" (
   in detcol_id any,
   in id any,
   in what char(1)) returns any
 {
-  -- dbg_obj_princ ('WebDAV_DAV_MAKE_ID (', id, what, ')');
+  -- dbg_obj_princ ('RACKSPACE_DAV_MAKE_ID (', id, what, ')');
   declare retValue any;
 
-  retValue := vector (DB.DBA.WebDAV__detName (), detcol_id, id, what);
+  retValue := vector (DB.DBA.RACKSPACE__detName (), detcol_id, id, what);
 
   return retValue;
 }
 ;
 
 --| When DAV_SEARCH_PATH_INT calls DET function, authentication is performed before the call.
-create function "WebDAV_DAV_SEARCH_PATH" (
+create function "RACKSPACE_DAV_SEARCH_PATH" (
   in id any,
   in what char(1)) returns any
 {
-  -- dbg_obj_princ ('WebDAV_DAV_SEARCH_PATH (', id, what, ')');
+  -- dbg_obj_princ ('RACKSPACE_DAV_SEARCH_PATH (', id, what, ')');
   declare davId integer;
   declare retValue, save any;
   declare exit handler for sqlstate '*'
@@ -572,7 +541,7 @@ create function "WebDAV_DAV_SEARCH_PATH" (
 ;
 
 --| When DAV_COPY_INT calls DET function, authentication and check for locks are performed before the call, but no check for existing/overwrite.
-create function "WebDAV_DAV_RES_UPLOAD_COPY" (
+create function "RACKSPACE_DAV_RES_UPLOAD_COPY" (
   in detcol_id any,
   in path_parts any,
   in source_id any,
@@ -583,13 +552,13 @@ create function "WebDAV_DAV_RES_UPLOAD_COPY" (
   in gid integer,
   in auth_uid integer) returns any
 {
-  -- dbg_obj_princ ('WebDAV_DAV_RES_UPLOAD_COPY (', detcol_id, path_parts, source_id, what, overwrite_flags, permissions, uid, gid, auth_uid, ')');
+  -- dbg_obj_princ ('RACKSPACE_DAV_RES_UPLOAD_COPY (', detcol_id, path_parts, source_id, what, overwrite_flags, permissions, uid, gid, auth_uid, ')');
   return -20;
 }
 ;
 
 --| When DAV_COPY_INT calls DET function, authentication and check for locks are performed before the call, but no check for existing/overwrite.
-create function "WebDAV_DAV_RES_UPLOAD_MOVE" (
+create function "RACKSPACE_DAV_RES_UPLOAD_MOVE" (
   in detcol_id any,
   in path_parts any,
   in source_id any,
@@ -597,11 +566,11 @@ create function "WebDAV_DAV_RES_UPLOAD_MOVE" (
   in overwrite_flags integer,
   in auth_uid integer) returns any
 {
-  -- dbg_obj_princ ('WebDAV_DAV_RES_UPLOAD_MOVE (', detcol_id, path_parts, source_id, what, overwrite_flags, auth_uid, ')');
-  declare oldHref, oldName, newHref, newName varchar;
-  declare url, header, body any;
-  declare V, srcEntry, listItem any;
-  declare retValue, retHeader, result, save any;
+  -- dbg_obj_princ ('RACKSPACE_DAV_RES_UPLOAD_MOVE (', detcol_id, path_parts, source_id, what, overwrite_flags, auth_uid, ')');
+  declare oldName, newName varchar;
+  declare header any;
+  declare srcEntry, container, davPath, detPath, detcol_parts, sourcePath, source_parts, targetPath, sourcePath2, source_parts2, targetPath2, listItems any;
+  declare retValue, retHeader, save any;
 
   retValue := -20;
   srcEntry := DB.DBA.DAV_DIR_SINGLE_INT (source_id, what, '', null, null, http_dav_uid ());
@@ -621,35 +590,35 @@ create function "WebDAV_DAV_RES_UPLOAD_MOVE" (
     save := connection_get ('dav_store');
     if (save is null)
     {
-      oldHref := DB.DBA.WebDAV__paramGet (source_id, what, 'href', 0);
-      V := split_and_decode (oldHref, 0, '\0\0/');
-      if (V[length (V)-1] = '')
+      container := DB.DBA.RACKSPACE__paramGet (detcol_id, 'C', 'Container', 0);
+      detPath := DB.DBA.DAV_SEARCH_PATH (detcol_id, 'C');
+      davPath := DB.DBA.DAV_SEARCH_PATH (source_id, what);
+      sourcePath := subseq (davPath, length (detPath)-1);
+      source_parts := split_and_decode (ltrim (sourcePath, '/'), 0, '\0\0/');
+      if (not DB.DBA.is_empty_or_null (container))
+        sourcePath := '/' || container || sourcePath;
+
+      targetPath := DB.DBA.RACKSPACE__serverPath (detcol_id, path_parts);
+      if (what = 'C')
       {
-        V[length (V)-2] := newName;
-      } else {
-        V[length (V)-1] := newName;
+        if (DB.DBA.is_empty_or_null (container))
+          container := path_parts[0];
+
+        detcol_parts := split_and_decode (rtrim (detPath, '/'), 0, '\0\0/');
+        listItems := DB.DBA.RACKSPACE__list (detcol_id, detcol_parts, source_id, source_parts, '');
+        foreach (any listItem in listItems) do
+        {
+          source_parts2 := split_and_decode (get_keyword ('name', listItem), 0, '\0\0/');
+          sourcePath2 := '/' || container || DB.DBA.RACKSPACE__serverPath (detcol_id, source_parts2);
+          targetPath2 := targetPath || subseq (sourcePath2, length (sourcePath));
+          retValue := DB.DBA.RACKSPACE__rename (detcol_id, sourcePath2, targetPath2);
+          if (DAV_HIDE_ERROR (retValue) is null)
+            goto _exit;
+        }
       }
-      newHref := DB.DBA.DAV_CONCAT_PATH (null, V);
-      url := DB.DBA.WebDAV__paramGet (detcol_id, 'C', 'path', 0);
-      V := rfc1808_parse_uri (url);
-      V[2] := oldHref;
-      url := DB.DBA.vspx_uri_compose (V);
-      header := sprintf ('Destination: %s\r\nOverwrite: T\r\n', newHref);
-      result := DB.DBA.WebDAV__exec (detcol_id, retHeader, 'MOVE', url, header);
-      if (DAV_HIDE_ERROR (result) is null)
-      {
-        retValue := result;
+      retValue := DB.DBA.RACKSPACE__rename (detcol_id, sourcePath, targetPath);
+      if (DAV_HIDE_ERROR (retValue) is null)
         goto _exit;
-      }
-      V := rfc1808_parse_uri (url);
-      V[2] := newHref;
-      url := DB.DBA.vspx_uri_compose (V);
-      listItem := DB.DBA.WebDAV__resource (detcol_id, url);
-      if (DAV_HIDE_ERROR (listItem) is null)
-      {
-        retValue := listItem;
-        goto _exit;
-      }
     }
     connection_set ('dav_store', 1);
     if (what = 'C')
@@ -662,14 +631,6 @@ create function "WebDAV_DAV_RES_UPLOAD_MOVE" (
 
   _exit:;
     connection_set ('dav_store', save);
-    if (DAV_HIDE_ERROR (retValue) is not null)
-    {
-      if (save is null)
-      {
-        DB.DBA.WebDAV__paramSet (retValue, what, 'Entry', listItem, 0);
-        DB.DBA.WebDAV__paramSet (retValue, what, 'href', newHref, 0);
-      }
-    }
   }
   return retValue;
 }
@@ -677,13 +638,13 @@ create function "WebDAV_DAV_RES_UPLOAD_MOVE" (
 
 --| When DAV_RES_CONTENT or DAV_RES_COPY_INT or DAV_RES_MOVE_INT calls DET function, authentication is made.
 --| If content_mode is 1 then content is a valid output stream before the call.
-create function "WebDAV_DAV_RES_CONTENT" (
+create function "RACKSPACE_DAV_RES_CONTENT" (
   in id any,
   inout content any,
   out type varchar,
   in content_mode integer) returns integer
 {
-  -- dbg_obj_princ ('WebDAV_DAV_RES_CONTENT (', id, ', [content], [type], ', content_mode, ')');
+  -- dbg_obj_princ ('RACKSPACE_DAV_RES_CONTENT (', id, ', [content], [type], ', content_mode, ')');
   declare retValue any;
 
   retValue := DAV_RES_CONTENT_INT (id[2], content, type, content_mode, 0);
@@ -693,7 +654,7 @@ create function "WebDAV_DAV_RES_CONTENT" (
 ;
 
 --| This adds an extra access path to the existing resource or collection.
-create function "WebDAV_DAV_SYMLINK" (
+create function "RACKSPACE_DAV_SYMLINK" (
   in detcol_id any,
   in path_parts any,
   in source_id any,
@@ -703,35 +664,35 @@ create function "WebDAV_DAV_SYMLINK" (
   in gid integer,
   in auth_uid integer) returns any
 {
-  -- dbg_obj_princ ('WebDAV_DAV_SYMLINK (', detcol_id, path_parts, source_id, overwrite, uid, gid, auth_uid, ')');
+  -- dbg_obj_princ ('RACKSPACE_DAV_SYMLINK (', detcol_id, path_parts, source_id, overwrite, uid, gid, auth_uid, ')');
   return -20;
 }
 ;
 
 --| This gets a list of resources and/or collections as it is returned by DAV_DIR_LIST and and writes the list of quads (old_id, 'what', old_full_path, dereferenced_id, dereferenced_full_path).
-create function "WebDAV_DAV_DEREFERENCE_LIST" (
+create function "RACKSPACE_DAV_DEREFERENCE_LIST" (
   in detcol_id any,
   inout report_array any) returns any
 {
-  -- dbg_obj_princ ('WebDAV_DAV_DEREFERENCE_LIST (', detcol_id, report_array, ')');
+  -- dbg_obj_princ ('RACKSPACE_DAV_DEREFERENCE_LIST (', detcol_id, report_array, ')');
   return -20;
 }
 ;
 
 --| This gets one of reference quads returned by ..._DAV_REREFERENCE_LIST() and returns a record (new_full_path, new_dereferenced_full_path, name_may_vary).
-create function "WebDAV_DAV_RESOLVE_PATH" (
+create function "RACKSPACE_DAV_RESOLVE_PATH" (
   in detcol_id any,
   inout reference_item any,
   inout old_base varchar,
   inout new_base varchar) returns any
 {
-  -- dbg_obj_princ ('WebDAV_DAV_RESOLVE_PATH (', detcol_id, reference_item, old_base, new_base, ')');
+  -- dbg_obj_princ ('RACKSPACE_DAV_RESOLVE_PATH (', detcol_id, reference_item, old_base, new_base, ')');
   return -20;
 }
 ;
 
 --| There's no API function to lock for a while (do we need such?) The "LOCK" DAV method checks that all parameters are valid but does not check for existing locks.
-create function "WebDAV_DAV_LOCK" (
+create function "RACKSPACE_DAV_LOCK" (
   in path any,
   in id any,
   in what char(1),
@@ -744,7 +705,7 @@ create function "WebDAV_DAV_LOCK" (
   in timeout_sec integer,
   in auth_uid integer) returns any
 {
-  -- dbg_obj_princ ('WebDAV_DAV_LOCK (', path, id, what, locktype, scope, token, owner_name, owned_tokens, depth, timeout_sec, auth_uid, ')');
+  -- dbg_obj_princ ('RACKSPACE_DAV_LOCK (', path, id, what, locktype, scope, token, owner_name, owned_tokens, depth, timeout_sec, auth_uid, ')');
   declare davId integer;
   declare retValue, save any;
   declare exit handler for sqlstate '*'
@@ -756,7 +717,7 @@ create function "WebDAV_DAV_LOCK" (
   save := connection_get ('dav_store');
   connection_set ('dav_store', 1);
   davId := id[2];
-  retValue := DAV_LOCK_INT (path, davId, what, locktype, scope, token, owner_name, owned_tokens, depth, timeout_sec, DB.DBA.WebDAV__user (auth_uid), DB.DBA.WebDAV__password (auth_uid), auth_uid);
+  retValue := DAV_LOCK_INT (path, davId, what, locktype, scope, token, owner_name, owned_tokens, depth, timeout_sec, DB.DBA.RACKSPACE__user (auth_uid), DB.DBA.RACKSPACE__password (auth_uid), auth_uid);
   connection_set ('dav_store', save);
 
   return retValue;
@@ -764,13 +725,13 @@ create function "WebDAV_DAV_LOCK" (
 ;
 
 --| There's no API function to unlock for a while (do we need such?) The "UNLOCK" DAV method checks that all parameters are valid but does not check for existing locks.
-create function "WebDAV_DAV_UNLOCK" (
+create function "RACKSPACE_DAV_UNLOCK" (
   in id any,
   in what char(1),
   in token varchar,
   in auth_uid integer)
 {
-  -- dbg_obj_princ ('WebDAV_DAV_UNLOCK (', id, what, token, auth_uid, ')');
+  -- dbg_obj_princ ('RACKSPACE_DAV_UNLOCK (', id, what, token, auth_uid, ')');
   declare davId integer;
   declare retValue, save any;
   declare exit handler for sqlstate '*'
@@ -782,7 +743,7 @@ create function "WebDAV_DAV_UNLOCK" (
   save := connection_get ('dav_store');
   connection_set ('dav_store', 1);
   davId := id[2];
-  retValue := DAV_UNLOCK_INT (davId, what, token, DB.DBA.WebDAV__user (auth_uid), DB.DBA.WebDAV__password (auth_uid), auth_uid);
+  retValue := DAV_UNLOCK_INT (davId, what, token, DB.DBA.RACKSPACE__user (auth_uid), DB.DBA.RACKSPACE__password (auth_uid), auth_uid);
   connection_set ('dav_store', save);
 
   return retValue;
@@ -791,12 +752,12 @@ create function "WebDAV_DAV_UNLOCK" (
 
 --| The caller does not check if id is valid.
 --| This returns -1 if id is not valid, 0 if all existing locks are listed in owned_tokens whitespace-delimited list, 1 for soft 2 for hard lock.
-create function "WebDAV_DAV_IS_LOCKED" (
+create function "RACKSPACE_DAV_IS_LOCKED" (
   inout id any,
   inout what char(1),
   in owned_tokens varchar) returns integer
 {
-  -- dbg_obj_princ ('WebDAV_DAV_IS_LOCKED (', id, what, owned_tokens, ')');
+  -- dbg_obj_princ ('RACKSPACE_DAV_IS_LOCKED (', id, what, owned_tokens, ')');
   declare davId integer;
   declare retValue, save any;
   declare exit handler for sqlstate '*'
@@ -817,12 +778,12 @@ create function "WebDAV_DAV_IS_LOCKED" (
 
 --| The caller does not check if id is valid.
 --| This returns -1 if id is not valid, list of tuples (LOCK_TYPE, LOCK_SCOPE, LOCK_TOKEN, LOCK_TIMEOUT, LOCK_OWNER, LOCK_OWNER_INFO) otherwise.
-create function "WebDAV_DAV_LIST_LOCKS" (
+create function "RACKSPACE_DAV_LIST_LOCKS" (
   in id any,
   in what char(1),
   in recursive integer) returns any
 {
-  -- dbg_obj_princ ('WebDAV_DAV_LIST_LOCKS" (', id, what, recursive);
+  -- dbg_obj_princ ('RACKSPACE_DAV_LIST_LOCKS" (', id, what, recursive);
   declare davId integer;
   declare retValue, save any;
   declare exit handler for sqlstate '*'
@@ -843,16 +804,16 @@ create function "WebDAV_DAV_LIST_LOCKS" (
 
 -------------------------------------------------------------------------------
 --
-create function "WebDAV_DAV_SCHEDULER" (
+create function "RACKSPACE_DAV_SCHEDULER" (
   in queue_id integer)
 {
-  -- dbg_obj_princ ('DB.DBA.WebDAV_DAV_SCHEDULER (', queue_id, ')');
+  -- dbg_obj_princ ('DB.DBA.RACKSPACE_DAV_SCHEDULER (', queue_id, ')');
   declare detcol_parts any;
 
-  for (select COL_ID from WS.WS.SYS_DAV_COL where COL_DET = cast (DB.DBA.WebDAV__detName () as varchar)) do
+  for (select COL_ID from WS.WS.SYS_DAV_COL where COL_DET = cast (DB.DBA.RACKSPACE__detName () as varchar)) do
   {
     detcol_parts := split_and_decode (WS.WS.COL_PATH (COL_ID), 0, '\0\0/');
-    DB.DBA.WebDAV_DAV_SCHEDULER_FOLDER (queue_id, COL_ID, detcol_parts, COL_ID, vector (''));
+    DB.DBA.RACKSPACE_DAV_SCHEDULER_FOLDER (queue_id, COL_ID, detcol_parts, COL_ID, vector (''));
   }
   DB.DBA.DAV_QUEUE_UPDATE_STATE (queue_id, 2);
 }
@@ -860,45 +821,37 @@ create function "WebDAV_DAV_SCHEDULER" (
 
 -------------------------------------------------------------------------------
 --
-create function "WebDAV_DAV_SCHEDULER_FOLDER" (
+create function "RACKSPACE_DAV_SCHEDULER_FOLDER" (
   in queue_id integer,
   in detcol_id integer,
   in detcol_parts any,
   in cid integer,
   in path_parts any)
 {
-  -- dbg_obj_princ ('DB.DBA.WebDAV_DAV_SCHEDULER_FOLDER (', queue_id, detcol_id, detcol_parts, cid, path_parts, ')');
+  -- dbg_obj_princ ('DB.DBA.RACKSPACE_DAV_SCHEDULER_FOLDER (', queue_id, detcol_id, detcol_parts, cid, path_parts, ')');
 
-  DB.DBA.WebDAV__load (detcol_id, path_parts, detcol_parts);
+  DB.DBA.RACKSPACE__load (detcol_id, path_parts, detcol_parts);
 
   for (select COL_ID, COL_NAME from WS.WS.SYS_DAV_COL where COL_PARENT = cid) do
   {
-    DB.DBA.WebDAV_DAV_SCHEDULER_FOLDER (queue_id, detcol_id, detcol_parts, COL_ID, vector_concat (subseq (path_parts, 0, length (path_parts)-1), vector (COL_NAME, '')));
+    DB.DBA.RACKSPACE_DAV_SCHEDULER_FOLDER (queue_id, detcol_id, detcol_parts, COL_ID, vector_concat (subseq (path_parts, 0, length (path_parts)-1), vector (COL_NAME, '')));
   }
 }
 ;
 
 -------------------------------------------------------------------------------
 --
-create function DB.DBA.WebDAV__root ()
-{
-  return 'me/webdav';
-}
-;
-
--------------------------------------------------------------------------------
---
-create function DB.DBA.WebDAV__fileDebug (
+create function DB.DBA.RACKSPACE__fileDebug (
   in value any,
   in mode integer := -1)
 {
-  string_to_file ('webdav.txt', cast (value as varchar) || '\r\n', mode);
+  string_to_file ('rackspace.txt', cast (value as varchar) || '\r\n', mode);
 }
 ;
 
 -------------------------------------------------------------------------------
 --
-create function DB.DBA.WebDAV__detcolId (
+create function DB.DBA.RACKSPACE__detcolId (
   in id any)
 {
   if (isinteger (id))
@@ -910,7 +863,7 @@ create function DB.DBA.WebDAV__detcolId (
 
 -------------------------------------------------------------------------------
 --
-create function DB.DBA.WebDAV__davId (
+create function DB.DBA.RACKSPACE__davId (
   in id any)
 {
   if (isinteger (id))
@@ -922,47 +875,7 @@ create function DB.DBA.WebDAV__davId (
 
 -------------------------------------------------------------------------------
 --
-create function DB.DBA.WebDAV__stringdate (
-  in dt varchar)
-{
-	declare _arr, months, rs, tzone_z, tzone_h, tzone_m any;
-	declare d, m, y, hms, tzone varchar;
-
-	_arr := split_and_decode (trim (dt), 0, '\0\0 ');
-	if (length(_arr) = 5)
-	  _arr := vector_concat (vector (''), _arr);
-
-	if (length(_arr) = 6)
-	{
-	  months := vector ('JAN', '01', 'FEB', '02', 'MAR', '03', 'APR', '04', 'MAY', '05', 'JUN', '06', 'JUL', '07', 'AUG', '08', 'SEP', '09', 'OCT', '10', 'NOV', '11', 'DEC', '12');
-		d   := _arr[1];
-		m   := get_keyword (upper(_arr[2]), months);
-		y   := _arr[3];
-		hms := _arr[4];
-		tzone   := _arr[5];
-		tzone_z := substring (tzone, 1, 1);
-		tzone_h := atoi (substring (tzone, 2, 2));
-		tzone_m := atoi (substring (tzone, 4, 2));
-	  if (tzone_z = '+')
-	  {
-	    tzone_h := tzone_h - 2 * tzone_h;
-	    tzone_m := tzone_m - 2 * tzone_m;
-		}
-	  rs := stringdate (sprintf ('%s.%s.%s %s', m, d, y, hms));
-	  rs := dateadd ('hour',   tzone_h, rs);
-	  rs := dateadd ('minute', tzone_m, rs);
-	}
-	else
-	{
-	  rs := stringdate ('1900.01.01 00:00:00'); -- set system date
-	}
-	return rs;
-}
-;
-
--------------------------------------------------------------------------------
---
-create function DB.DBA.WebDAV__user (
+create function DB.DBA.RACKSPACE__user (
   in user_id integer,
   in default_id integer := null)
 {
@@ -972,7 +885,7 @@ create function DB.DBA.WebDAV__user (
 
 -------------------------------------------------------------------------------
 --
-create function DB.DBA.WebDAV__password (
+create function DB.DBA.RACKSPACE__password (
   in user_id integer)
 {
   return coalesce ((select pwd_magic_calc(U_NAME, U_PWD, 1) from WS.WS.SYS_DAV_USER where U_ID = user_id), '');
@@ -981,7 +894,7 @@ create function DB.DBA.WebDAV__password (
 
 -------------------------------------------------------------------------------
 --
-create function DB.DBA.WebDAV__owner (
+create function DB.DBA.RACKSPACE__owner (
   in detcol_id any,
   in subPath_parts any,
   in uid any,
@@ -995,7 +908,7 @@ create function DB.DBA.WebDAV__owner (
   DB.DBA.DAV_OWNER_ID (uid, gid, ouid, ogid);
   if ((ouid = -12) or (ouid = 5))
   {
-    path := DB.DBA.WebDAV__path (detcol_id, subPath_parts);
+    path := DB.DBA.RACKSPACE__path (detcol_id, subPath_parts);
     id := DB.DBA.DAV_SEARCH_ID (path, 'P');
     if (DAV_HIDE_ERROR (id))
     {
@@ -1010,15 +923,15 @@ create function DB.DBA.WebDAV__owner (
 
 -------------------------------------------------------------------------------
 --
-create function DB.DBA.WebDAV__detName ()
+create function DB.DBA.RACKSPACE__detName ()
 {
-  return UNAME'WebDAV';
+  return UNAME'RACKSPACE';
 }
 ;
 
 -------------------------------------------------------------------------------
 --
-create function DB.DBA.WebDAV__xml2string (
+create function DB.DBA.RACKSPACE__xml2string (
   in _xml any)
 {
   declare stream any;
@@ -1031,7 +944,7 @@ create function DB.DBA.WebDAV__xml2string (
 
 -------------------------------------------------------------------------------
 --
-create function DB.DBA.WebDAV__path (
+create function DB.DBA.RACKSPACE__path (
   in detcol_id any,
   in subPath_parts any)
 {
@@ -1048,31 +961,57 @@ create function DB.DBA.WebDAV__path (
 
 -------------------------------------------------------------------------------
 --
-create function DB.DBA.WebDAV__title (
+create function DB.DBA.RACKSPACE__serverPath (
+  in detcol_id any,
+  in subPath_parts any)
+{
+  declare N integer;
+  declare path, container varchar;
+
+  path := '/' || DB.DBA.DAV_CONCAT_PATH (null, subPath_parts);
+  container := DB.DBA.RACKSPACE__paramGet (detcol_id, 'C', 'Container', 0);
+  if (not DB.DBA.is_empty_or_null (container))
+    path := '/' || container || path;
+
+  return path;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create function DB.DBA.RACKSPACE__title (
   in path varchar)
 {
-  path := trim (path, '/');
+  path := rtrim (path, '/');
+  if (isnull (strrchr (path, '/')))
+    return path;
+
   return subseq (path, strrchr (path, '/')+1);
 }
 ;
 
 -------------------------------------------------------------------------------
 --
-create function DB.DBA.WebDAV__params (
+create function DB.DBA.RACKSPACE__params (
   in colId integer)
 {
-  declare params any;
+  declare tmp, params any;
 
-  colId := DB.DBA.WebDAV__detcolId (colId);
+  colId := DB.DBA.RACKSPACE__detcolId (colId);
+  tmp :=  DB.DBA.RACKSPACE__paramGet (colId, 'C', 'access_timestamp', 0);
+  if (not isnull (tmp))
+    tmp := stringdate (tmp);
   params := vector (
-    'authentication', 'Yes',
-    'path',           DB.DBA.WebDAV__paramGet (colId, 'C', 'path', 0),
-    'authenticationType', DB.DBA.WebDAV__paramGet (colId, 'C', 'authenticationType', 0),
-    'key',                DB.DBA.WebDAV__paramGet (colId, 'C', 'key', 0),
-    'keyOwner',           DB.DBA.WebDAV__paramGet (colId, 'C', 'keyOwner', 0),
-    'user',           DB.DBA.WebDAV__paramGet (colId, 'C', 'user', 0),
-    'password',       DB.DBA.WebDAV__paramGet (colId, 'C', 'password', 0, 1, 1),
-    'graph',          DB.DBA.WebDAV__paramGet (colId, 'C', 'graph', 0)
+    'authentication',     'Yes',
+    'type',             DB.DBA.RACKSPACE__paramGet (colId, 'C', 'Type', 0),
+    'user',             DB.DBA.RACKSPACE__paramGet (colId, 'C', 'User', 0),
+    'key',              DB.DBA.RACKSPACE__paramGet (colId, 'C', 'API_Key', 0),
+    'container',        DB.DBA.RACKSPACE__paramGet (colId, 'C', 'Container', 0),
+    'graph',            DB.DBA.RACKSPACE__paramGet (colId, 'C', 'graph', 0),
+    'storageUrl',       DB.DBA.RACKSPACE__paramGet (colId, 'C', 'storageUrl', 0),
+    'managementUrl',    DB.DBA.RACKSPACE__paramGet (colId, 'C', 'managementUrl', 0),
+    'access_token',     DB.DBA.RACKSPACE__paramGet (colId, 'C', 'access_token', 0),
+    'access_timestamp', tmp
   );
   return params;
 }
@@ -1080,7 +1019,7 @@ create function DB.DBA.WebDAV__params (
 
 -------------------------------------------------------------------------------
 --
-create function DB.DBA.WebDAV__paramSet (
+create function DB.DBA.RACKSPACE__paramSet (
   in _id any,
   in _what varchar,
   in _propName varchar,
@@ -1089,19 +1028,19 @@ create function DB.DBA.WebDAV__paramSet (
   in _prefixed integer := 1,
   in _encrypt integer := 0)
 {
-  -- dbg_obj_princ ('DB.DBA.WebDAV__paramSet', _propName, _propValue, ')');
+  -- dbg_obj_princ ('DB.DBA.RACKSPACE__paramSet', _propName, _propValue, ')');
   declare retValue any;
 
   if (_serialized)
     _propValue := serialize (_propValue);
 
   if (_encrypt)
-    _propValue := pwd_magic_calc ('webdav', _propValue);
+    _propValue := pwd_magic_calc ('rackspace', _propValue);
 
   if (_prefixed)
-    _propName := 'virt:WebDAV-' || _propName;
+    _propName := 'virt:RACKSPACE-' || _propName;
 
-  _id := DB.DBA.WebDAV__davId (_id);
+  _id := DB.DBA.RACKSPACE__davId (_id);
   retValue := DB.DBA.DAV_PROP_SET_RAW (_id, _what, _propName, _propValue, 1, http_dav_uid ());
 
   return retValue;
@@ -1110,7 +1049,7 @@ create function DB.DBA.WebDAV__paramSet (
 
 -------------------------------------------------------------------------------
 --
-create function DB.DBA.WebDAV__paramGet (
+create function DB.DBA.RACKSPACE__paramGet (
   in _id any,
   in _what varchar,
   in _propName varchar,
@@ -1118,13 +1057,13 @@ create function DB.DBA.WebDAV__paramGet (
   in _prefixed integer := 1,
   in _decrypt integer := 0)
 {
-  -- dbg_obj_princ ('DB.DBA.WebDAV__paramGet (', _id, _what, _propName, ')');
+  -- dbg_obj_princ ('DB.DBA.RACKSPACE__paramGet (', _id, _what, _propName, ')');
   declare propValue any;
 
   if (_prefixed)
-    _propName := 'virt:WebDAV-' || _propName;
+    _propName := 'virt:RACKSPACE-' || _propName;
 
-  propValue := DB.DBA.DAV_PROP_GET_INT (DB.DBA.WebDAV__davId (_id), _what, _propName, 0, DB.DBA.WebDAV__user (http_dav_uid ()), DB.DBA.WebDAV__password (http_dav_uid ()), http_dav_uid ());
+  propValue := DB.DBA.DAV_PROP_GET_INT (DB.DBA.RACKSPACE__davId (_id), _what, _propName, 0, DB.DBA.RACKSPACE__user (http_dav_uid ()), DB.DBA.RACKSPACE__password (http_dav_uid ()), http_dav_uid ());
   if (isinteger (propValue))
     propValue := null;
 
@@ -1132,7 +1071,7 @@ create function DB.DBA.WebDAV__paramGet (
     propValue := deserialize (propValue);
 
   if (_decrypt and not isnull (propValue))
-    propValue := pwd_magic_calc ('webdav', propValue, 1);
+    propValue := pwd_magic_calc ('rackspace', propValue, 1);
 
   return propValue;
 }
@@ -1140,23 +1079,23 @@ create function DB.DBA.WebDAV__paramGet (
 
 -------------------------------------------------------------------------------
 --
-create function DB.DBA.WebDAV__paramRemove (
+create function DB.DBA.RACKSPACE__paramRemove (
   in _id any,
   in _what varchar,
   in _propName varchar,
   in _prefixed integer := 1)
 {
-  -- dbg_obj_princ ('DB.DBA.WebDAV__paramRemove (', _id, _what, _propName, ')');
+  -- dbg_obj_princ ('DB.DBA.RACKSPACE__paramRemove (', _id, _what, _propName, ')');
   if (_prefixed)
-    _propName := 'virt:WebDAV-' || _propName;
+    _propName := 'virt:RACKSPACE-' || _propName;
 
-  DB.DBA.DAV_PROP_REMOVE_RAW (DB.DBA.WebDAV__davId (_id), _what, _propName, 1, http_dav_uid());
+  DB.DBA.DAV_PROP_REMOVE_RAW (DB.DBA.RACKSPACE__davId (_id), _what, _propName, 1, http_dav_uid());
 }
 ;
 
 -------------------------------------------------------------------------------
 --
-create function DB.DBA.WebDAV__obj2xml (
+create function DB.DBA.RACKSPACE__obj2xml (
   in item any)
 {
   return '<entry>' || ODS..obj2xml (item, 10) || '</entry>';
@@ -1165,7 +1104,7 @@ create function DB.DBA.WebDAV__obj2xml (
 
 -------------------------------------------------------------------------------
 --
-create function DB.DBA.WebDAV__entryXPath (
+create function DB.DBA.RACKSPACE__entryXPath (
   in _xml any,
   in _xpath varchar,
   in _cast integer := 0)
@@ -1174,9 +1113,9 @@ create function DB.DBA.WebDAV__entryXPath (
 
   if (_cast)
   {
-    retValue := serialize_to_UTF8_xml (xpath_eval (sprintf ('[__enc "UTF-8" xmlns:D="DAV:"] string (//D:response/%s)', _xpath), _xml, 1));
+    retValue := serialize_to_UTF8_xml (xpath_eval (sprintf ('[ xmlns="http://www.w3.org/2005/Atom" xmlns:gd="http://schemas.google.com/g/2005" ] string (//entry%s)', _xpath), _xml, 1));
   } else {
-    retValue := xpath_eval ('[__enc "UTF-8" xmlns:D="DAV:"] //D:response' || _xpath, _xml, 1);
+    retValue := xpath_eval ('[ xmlns="http://www.w3.org/2005/Atom" xmlns:gd="http://schemas.google.com/g/2005" ] //entry' || _xpath, _xml, 1);
   }
   return retValue;
 }
@@ -1184,7 +1123,7 @@ create function DB.DBA.WebDAV__entryXPath (
 
 -------------------------------------------------------------------------------
 --
-create function DB.DBA.WebDAV__propertyXPath (
+create function DB.DBA.RACKSPACE__propertyXPath (
   in _xml any,
   in _xpath varchar,
   in _cast integer := 0)
@@ -1203,7 +1142,7 @@ create function DB.DBA.WebDAV__propertyXPath (
 
 -------------------------------------------------------------------------------
 --
-create function DB.DBA.WebDAV__exec_error (
+create function DB.DBA.RACKSPACE__exec_error (
   in _header any,
   in _silent integer := 0)
 {
@@ -1220,7 +1159,7 @@ create function DB.DBA.WebDAV__exec_error (
 
 -------------------------------------------------------------------------------
 --
-create function DB.DBA.WebDAV__exec_code (
+create function DB.DBA.RACKSPACE__exec_code (
   in _header any)
 {
   return subseq (_header[0], 9, 12);
@@ -1229,58 +1168,76 @@ create function DB.DBA.WebDAV__exec_code (
 
 -------------------------------------------------------------------------------
 --
-create function DB.DBA.WebDAV__exec (
+create function DB.DBA.RACKSPACE__exec (
   inout detcol_id integer,
   inout retHeader varchar,
   in method varchar,
-  in url varchar,
+  in path varchar := '',
   in header varchar := '',
   in content varchar := '')
 {
-  -- dbg_obj_princ ('DB.DBA.WebDAV__exec', detcol_id, method, url, header, ')');
+  -- dbg_obj_princ ('DB.DBA.RACKSPACE__exec', detcol_id, method, path, header, ')');
   declare retValue, params any;
+  declare _expires_in, _refreshed integer;
+  declare _type, _url varchar;
+  declare _access_timestamp datetime;
   declare _reqHeader, _resHeader any;
-  declare _key, _keyOwner varchar;
   declare exit handler for sqlstate '*'
   {
-    DB.DBA.WebDAV__activity (detcol_id, 'Exec error: ' || __SQL_MESSAGE);
+    DB.DBA.RACKSPACE__activity (detcol_id, 'Exec error: ' || __SQL_MESSAGE);
     return -28;
   };
 
-  params := DB.DBA.WebDAV__params (detcol_id);
+  params := DB.DBA.RACKSPACE__params (detcol_id);
   if (get_keyword ('authentication', params) <> 'Yes')
   {
-    DB.DBA.WebDAV__activity (detcol_id, 'Error: Not authenticated');
+    DB.DBA.RACKSPACE__activity (detcol_id, 'Error: Not authenticated');
     return -28;
   }
 
-  retHeader := null;
-  if (get_keyword ('authenticationType', params) = 'Digest')
+  _type := get_keyword ('type', params);
+  _expires_in := 24 * 3600;
+  _refreshed := 0;
+  _access_timestamp := get_keyword ('access_timestamp', params);
+  if (isnull (_access_timestamp) or (dateadd ('second', _expires_in, _access_timestamp) < now ()))
   {
-  _reqHeader := sprintf ('Authorization: Basic %s\r\n', encode_base64 (get_keyword ('user', params) || ':' || get_keyword ('password', params)));
+  _refresh:
+    -- refresh token first
+
+    _url := case when (_type = 'USA') then 'https://auth.api.rackspacecloud.com/v1.0' else 'https://lon.auth.api.rackspacecloud.com/v1.0' end;
+    _reqHeader := sprintf (
+      'X-Auth-User: %s\r\n' ||
+      'X-Auth-Key: %s\r\n',
+      get_keyword ('user', params),
+      get_keyword ('key', params)
+    );
+    _resHeader := null;
+    http_client_ext (url=>_url, http_method=>'GET', http_headers=>_reqHeader, headers =>_resHeader, n_redirects=>15);
+    if (not DB.DBA.RACKSPACE__exec_error (_resHeader, 1))
+      return -28;
+
+    _refreshed := 1;
+    DB.DBA.RACKSPACE__paramSet (detcol_id, 'C', 'storageUrl', http_request_header (_resHeader, 'X-Storage-Url', null, null), 0);
+    DB.DBA.RACKSPACE__paramSet (detcol_id, 'C', 'managementUrl', http_request_header (_resHeader, 'X-CDN-Management-Url', null, null), 0);
+    DB.DBA.RACKSPACE__paramSet (detcol_id, 'C', 'access_token', http_request_header (_resHeader, 'X-Auth-Token', null, null), 0);
+    DB.DBA.RACKSPACE__paramSet (detcol_id, 'C', 'access_timestamp', datestring (now ()), 0);
+    params := DB.DBA.RACKSPACE__params (detcol_id);
+  }
+
+  _reqHeader := sprintf ('X-Auth-Token: %s\r\n', get_keyword ('access_token', params));
   if (header <> '')
     _reqHeader :=  _reqHeader || header;
 
-  retValue := http_client_ext (url=>url, http_method=>method, http_headers=>_reqHeader, headers =>retHeader, body=>content, n_redirects=>15);
-  }
-  else
-  {
-    _keyOwner := get_keyword ('keyOwner', params);
-    if (isnull (_keyOwner))
-      return -28;
-
-    set_user_id (_keyOwner);
-    _reqHeader := null;
-    if (header <> '')
-      _reqHeader :=  header;
-
-    _key := 'db:' || get_keyword ('key', params, '');
-    retValue := http_client_ext (url=>url, http_method=>method, cert_file=>_key, insecure=>1, http_headers=>_reqHeader, headers =>retHeader, body=>content, n_redirects=>15);
-  }
+  _url := get_keyword ('storageUrl', params) || path;
+  retHeader := null;
+  retValue := http_client_ext (url=>_url, http_method=>method, http_headers=>_reqHeader, headers =>retHeader, body=>content, n_redirects=>15);
   -- dbg_obj_print ('retHeader', retHeader);
-  if (not DB.DBA.WebDAV__exec_error (retHeader, 1))
+  if ((DB.DBA.RACKSPACE__exec_code (retHeader) = '401') and (_refreshed = 0))
+    goto _refresh;
+
+  if (not DB.DBA.RACKSPACE__exec_error (retHeader, 1))
   {
-    DB.DBA.WebDAV__activity (detcol_id, 'HTTP error: ' || retValue);
+    DB.DBA.RACKSPACE__activity (detcol_id, 'HTTP error: ' || retValue);
     return -28;
   }
   return retValue;
@@ -1289,7 +1246,7 @@ create function DB.DBA.WebDAV__exec (
 
 -------------------------------------------------------------------------------
 --
-create function DB.DBA.WebDAV__davList (
+create function DB.DBA.RACKSPACE__davList (
   inout detcol_id integer,
   inout colId integer)
 {
@@ -1300,7 +1257,7 @@ create function DB.DBA.WebDAV__davList (
                       'R',
                       length (RES_CONTENT),
                       RES_MOD_TIME,
-                      vector (DB.DBA.WebDAV__detName (), detcol_id, RES_ID, 'R'),
+                      vector (DB.DBA.RACKSPACE__detName (), detcol_id, RES_ID, 'R'),
                       RES_PERMS,
                       RES_GROUP,
                       RES_OWNER,
@@ -1308,7 +1265,7 @@ create function DB.DBA.WebDAV__davList (
                       RES_TYPE,
                       RES_NAME ) as I
          from WS.WS.SYS_DAV_RES
-        where RES_COL = DB.DBA.WebDAV__davId (colId)) do
+        where RES_COL = DB.DBA.RACKSPACE__davId (colId)) do
   {
     vectorbld_acc (retValue, i);
   }
@@ -1317,7 +1274,7 @@ create function DB.DBA.WebDAV__davList (
                       'C',
                       0,
                       COL_MOD_TIME,
-                      vector (DB.DBA.WebDAV__detName (), detcol_id, COL_ID, 'C'),
+                      vector (DB.DBA.RACKSPACE__detName (), detcol_id, COL_ID, 'C'),
                       COL_PERMS,
                       COL_GROUP,
                       COL_OWNER,
@@ -1325,7 +1282,7 @@ create function DB.DBA.WebDAV__davList (
                       'dav/unix-directory',
                       COL_NAME) as I
         from WS.WS.SYS_DAV_COL
-       where COL_PARENT = DB.DBA.WebDAV__davId (colId)) do
+       where COL_PARENT = DB.DBA.RACKSPACE__davId (colId)) do
   {
     vectorbld_acc (retValue, i);
   }
@@ -1337,15 +1294,15 @@ create function DB.DBA.WebDAV__davList (
 
 -------------------------------------------------------------------------------
 --
-create function DB.DBA.WebDAV__load (
+create function DB.DBA.RACKSPACE__load (
   in detcol_id any,
   in subPath_parts any,
   in detcol_parts varchar) returns any
 {
-  -- dbg_obj_princ ('DB.DBA.WebDAV__load (', detcol_id, subPath_parts, detcol_parts, ')');
+  -- dbg_obj_princ ('DB.DBA.RACKSPACE__load (', detcol_id, subPath_parts, detcol_parts, ')');
   declare colId integer;
-  declare colPath, colHref varchar;
-  declare tmp, retValue, save, downloads, listItems, davItems, colEntry, xmlItems, davEntry, listHrefs, listHref any;
+  declare what, colPath, colHref, modified varchar;
+  declare retValue, save, downloads, listIDs, listID, listItems, davItems, colEntry, davEntry any;
   declare syncTime datetime;
   declare exit handler for sqlstate '*'
   {
@@ -1361,84 +1318,69 @@ create function DB.DBA.WebDAV__load (
   if (DAV_HIDE_ERROR (colId) is null)
     goto _exit;
 
-  syncTime := DB.DBA.WebDAV__paramGet (colId, 'C', 'syncTime');
+  syncTime := DB.DBA.RACKSPACE__paramGet (colId, 'C', 'syncTime');
   if (not isnull (syncTime) and (datediff ('second', syncTime, now ()) < 300))
     goto _exit;
 
-  listItems := DB.DBA.WebDAV__list (detcol_id, detcol_parts, colId, subPath_parts);
+  listItems := DB.DBA.RACKSPACE__list (detcol_id, detcol_parts, colId, subPath_parts);
   if (DAV_HIDE_ERROR (listItems) is null)
     goto _exit;
 
   if (isinteger (listItems))
     goto _exit;
 
-  DB.DBA.WebDAV__activity (detcol_id, 'Sync started');
+  DB.DBA.RACKSPACE__activity (detcol_id, 'Sync started');
   {
     declare _id, _what, _type, _content any;
     declare title varchar;
     {
       declare exit handler for sqlstate '*'
       {
-        DB.DBA.WebDAV__activity (detcol_id, 'Exec error: ' || __SQL_MESSAGE);
+        DB.DBA.RACKSPACE__activity (detcol_id, 'Exec error: ' || __SQL_MESSAGE);
         goto _exitSync;
       };
 
       connection_set ('dav_store', 1);
       colEntry := DB.DBA.DAV_DIR_SINGLE_INT (colId, 'C', '', null, null, http_dav_uid ());
-      colHref := null;
-      if (length (subPath_parts) = 1)
-      {
-        tmp := DB.DBA.WebDAV__paramGet (detcol_id, 'C', 'path', 0);
-        tmp := rfc1808_parse_uri (tmp);
-        colHRef := tmp[2];
-      }
-      else
-      {
-        colHref := DB.DBA.WebDAV__paramGet (colId, 'C', 'href', 0);
-      }
-      if (colHref is null)
-        goto _exit;
 
-      connection_set ('dav_store', 1);
-      listItems := xml_tree_doc (xml_expand_refs (xml_tree (listItems)));
-      listHrefs := vector ();
-      davItems := DB.DBA.WebDAV__davList (detcol_id, colId);
+      listIds := vector ();
+      davItems := DB.DBA.RACKSPACE__davList (detcol_id, colId);
       foreach (any davItem in davItems) do
       {
-        listHref := DB.DBA.WebDAV__paramGet (davItem[4], davItem[1], 'href', 0);
-        if ((listHref <> colHref) and not position (listHref, listHrefs))
+        connection_set ('dav_store', 1);
+        davEntry := DB.DBA.RACKSPACE__paramGet (davItem[4], davItem[1], 'Entry', 0);
+        if (davEntry is not null)
         {
-          declare listItem any;
-
-          listItem := DB.DBA.WebDAV__entryXPath (listItems, sprintf ('[D:href = "%s"]', listHref), 0);
-          if (listItem is not null)
+          davEntry := xtree_doc (davEntry);
+          foreach (any listItem in listItems) do
           {
-            listItem := xml_cut (listItem);
-            davEntry := DB.DBA.WebDAV__paramGet (davItem[4], davItem[1], 'Entry', 0);
-            if ((davEntry is not null) and (DB.DBA.WebDAV__title (listHref) = davItem[10]))
+            listID := get_keyword ('name', listItem);
+            if (isnull (listID))
             {
-              listHrefs := vector_concat (listHrefs, vector (listHref));
-              davEntry := xtree_doc (davEntry);
-              if (
-                  (DB.DBA.WebDAV__propertyXPath (davEntry, '/D:getlastmodified', 1) <> DB.DBA.WebDAV__propertyXPath (listItem, '/D:getlastmodified', 1)) or
-                  (DB.DBA.WebDAV__propertyXPath (davEntry, '/D:getetag', 1) <> DB.DBA.WebDAV__propertyXPath (listItem, '/D:getetag', 1))
-                 )
+              listID := get_keyword ('subdir', listItem);
+              listItem := vector_concat (ODS..jsonObject (), vector ('name', listID));
+            }
+            if (DB.DBA.RACKSPACE__entryXPath (davEntry, '/name', 1) = listID)
+            {
+              listIds := vector_concat (listIds, vector (listID));
+              if (DB.DBA.RACKSPACE__entryXPath (davEntry, '/hash', 1) <> get_keyword ('hash', listItem))
               {
+                modified := get_keyword ('last_modified', listItem, datestring (now ()));
                 set triggers off;
-                DB.DBA.WebDAV__paramSet (davItem[4], davItem[1], ':getlastmodified', DB.DBA.WebDAV__stringdate (DB.DBA.WebDAV__propertyXPath (listItem, '/D:getlastmodified', 1)), 0, 0);
+                DB.DBA.RACKSPACE__paramSet (davItem[4], davItem[1], ':getlastmodified', stringdate (modified), 0, 0);
                 set triggers on;
-                DB.DBA.WebDAV__paramSet (davItem[4], davItem[1], 'Entry', DB.DBA.WebDAV__xml2string (listItem), 0);
+                DB.DBA.RACKSPACE__paramSet (davItem[4], davItem[1], 'Entry', DB.DBA.RACKSPACE__obj2xml (listItem), 0);
                 if (davItem[1] = 'R')
                 {
-                  DB.DBA.WebDAV__paramSet (davItem[4], davItem[1], 'download', '0', 0);
+                  DB.DBA.RACKSPACE__paramSet (davItem[4], davItem[1], 'download', '0', 0);
                   downloads := vector_concat (downloads, vector (vector (davItem[4], davItem[1])));
                 }
               }
-              else
+              else if (davItem[1] = 'R')
               {
                 declare downloaded integer;
 
-                downloaded := DB.DBA.WebDAV__paramGet (davItem[4], davItem[1], 'download', 0);
+                downloaded := DB.DBA.RACKSPACE__paramGet (davItem[4], davItem[1], 'download', 0);
                 if (downloaded is not null)
                 {
                   downloaded := cast (downloaded as integer);
@@ -1451,7 +1393,7 @@ create function DB.DBA.WebDAV__load (
           }
         }
         if (davItem[1] = 'R')
-          DB.DBA.WebDAV__rdf_delete (detcol_id, davItem[4], davItem[1]);
+          DB.DBA.RACKSPACE__rdf_delete (detcol_id, davItem[4], davItem[1]);
 
         connection_set ('dav_store', 1);
         DAV_DELETE_INT (davItem[0], 1, null, null, 0, 0);
@@ -1459,41 +1401,41 @@ create function DB.DBA.WebDAV__load (
       _continue:;
         commit work;
       }
-      listItems := xpath_eval ('[xmlns:D="DAV:"] /D:multistatus/D:response', listItems, 0);
       foreach (any listItem in listItems) do
       {
-        listItem := xml_cut(listItem);
-        listHref := DB.DBA.WebDAV__entryXPath (listItem, '/D:href', 1);
-        if ((listHref <> colHref) and not position (listHref, listHrefs))
+        connection_set ('dav_store', 1);
+        listID := get_keyword ('name', listItem);
+        if (isnull (listID))
+          listID := get_keyword ('subdir', listItem);
+        if (not position (listID, listIDs))
         {
-          title := DB.DBA.WebDAV__title (listHref);
+          title := DB.DBA.RACKSPACE__title (listID);
           connection_set ('dav_store', 1);
-          if (not isnull (DB.DBA.WebDAV__propertyXPath (listItem, '/D:resourcetype/D:collection', 0)))
+          if ((listID[length (listID)-1] = ascii('/')) or not isnull (get_keyword ('count', listItem)))
           {
-            _id := DB.DBA.DAV_COL_CREATE (colPath || title || '/',  colEntry[5], colEntry[7], colEntry[6], DB.DBA.WebDAV__user (http_dav_uid ()), DB.DBA.WebDAV__password (http_dav_uid ()));
+            _id := DB.DBA.DAV_COL_CREATE (colPath || title || '/',  colEntry[5], colEntry[7], colEntry[6], DB.DBA.RACKSPACE__user (http_dav_uid ()), DB.DBA.RACKSPACE__password (http_dav_uid ()));
             _what := 'C';
           }
           else
           {
             _content := '';
-            _type := DB.DBA.WebDAV__propertyXPath (listItem, '/D:getcontenttype', 1);
-            if (DB.DBA.is_empty_or_null (_type))
+            _type := get_keyword ('content_type', listItem);
+            if (isnull (_type))
               _type := http_mime_type (title);
-            _id := DB.DBA.DAV_RES_UPLOAD (colPath || title,  _content, _type, colEntry[5], colEntry[7], colEntry[6], DB.DBA.WebDAV__user (http_dav_uid ()), DB.DBA.WebDAV__password (http_dav_uid ()));
+            _id := DB.DBA.DAV_RES_UPLOAD (colPath || title,  _content, _type, colEntry[5], colEntry[7], colEntry[6], DB.DBA.RACKSPACE__user (http_dav_uid ()), DB.DBA.RACKSPACE__password (http_dav_uid ()));
             _what := 'R';
           }
           if (DAV_HIDE_ERROR (_id) is not null)
           {
             set triggers off;
-            DB.DBA.WebDAV__paramSet (_id, _what, ':creationdate', stringdate (DB.DBA.WebDAV__propertyXPath (listItem, '/D:creationdate', 1)), 0, 0);
-            DB.DBA.WebDAV__paramSet (_id, _what, ':getlastmodified', DB.DBA.WebDAV__stringdate (DB.DBA.WebDAV__propertyXPath (listItem, '/D:getlastmodified', 1)), 0, 0);
+            DB.DBA.RACKSPACE__paramSet (_id, _what, ':creationdate', get_keyword ('last_modified', listItem, now ()), 0, 0);
+            DB.DBA.RACKSPACE__paramSet (_id, _what, ':getlastmodified', get_keyword ('last_modified', listItem, now ()), 0, 0);
             set triggers on;
-            DB.DBA.WebDAV__paramSet (_id, _what, 'virt:DETCOL_ID', cast (detcol_id as varchar), 0, 0);
-            DB.DBA.WebDAV__paramSet (_id, _what, 'href', listHref, 0);
-            DB.DBA.WebDAV__paramSet (_id, _what, 'Entry', DB.DBA.WebDAV__xml2string (listItem), 0);
+            DB.DBA.RACKSPACE__paramSet (_id, _what, 'virt:DETCOL_ID', cast (detcol_id as varchar), 0, 0);
+            DB.DBA.RACKSPACE__paramSet (_id, _what, 'Entry', DB.DBA.RACKSPACE__obj2xml (listItem), 0);
             if (_what = 'R')
             {
-              DB.DBA.WebDAV__paramSet (_id, _what, 'download', '0', 0);
+              DB.DBA.RACKSPACE__paramSet (_id, _what, 'download', '0', 0);
               downloads := vector_concat (downloads, vector (vector (_id, _what)));
             }
           }
@@ -1504,93 +1446,166 @@ create function DB.DBA.WebDAV__load (
   _exitSync:
     connection_set ('dav_store', save);
   }
-  DB.DBA.WebDAV__activity (detcol_id, 'Sync ended');
+  DB.DBA.RACKSPACE__activity (detcol_id, 'Sync ended');
 
 _exit:;
-  DB.DBA.WebDAV__downloads (detcol_id, downloads);
+  DB.DBA.RACKSPACE__downloads (detcol_id, downloads);
 }
 ;
 
 -------------------------------------------------------------------------------
 --
-create function DB.DBA.WebDAV__list (
+create function DB.DBA.RACKSPACE__list (
   inout detcol_id any,
   inout detcol_parts varchar,
   inout col_id any,
-  inout subPath_parts varchar)
+  inout subPath_parts varchar,
+  in delimiter varchar := '/')
 {
-  -- dbg_obj_princ ('DB.DBA.WebDAV__list (', detcol_id, detcol_parts, subPath_parts, ')');
-  declare url, href, header, body varchar;
-  declare V, retValue, retHeader any;
+  -- dbg_obj_princ ('DB.DBA.RACKSPACE__list (', detcol_id, detcol_parts, col_id, subPath_parts, ')');
+  declare path, prefix, header varchar;
+  declare listID, listItems any;
+  declare container, V, retValue, retHeader any;
 
-  url := DB.DBA.WebDAV__paramGet (detcol_id, 'C', 'path', 0);
-  if (length (subPath_parts) <> 1)
+  container := DB.DBA.RACKSPACE__paramGet (detcol_id, 'C', 'Container', 0);
+  path := '';
+  V := vector ();
+  if (not DB.DBA.is_empty_or_null (container))
   {
-    href := DB.DBA.WebDAV__paramGet (col_id, 'C', 'href', 0);
-    if (isnull (href))
-      return -28;
-
-    V := rfc1808_parse_uri (url);
-    V[2] := href;
-    url := DB.DBA.vspx_uri_compose (V);
+    path := '/' || container;
+    if (length (subPath_parts) > 1)
+      V := subPath_parts;
   }
-  body :=
-    '<?xml version="1.0" encoding="utf-8" ?>' ||
-    '<D:propfind xmlns:D="DAV:">' ||
-    '  <D:prop>' ||
-    '    <D:getlastmodified />' ||
-    '    <D:creationdate />' ||
-    '    <D:getetag />' ||
-    '    <D:getcontenttype />' ||
-    '    <D:getcontentlength />' ||
-    '    <D:resourcetype />' ||
-    '  </D:prop>' ||
-    '</D:propfind>';
-  header := sprintf ('Depth: 1\r\nContent-Type: application/xml; charset="utf-8"\r\nContent-Length: %d\r\n', length (body));
-  retValue := DB.DBA.WebDAV__exec (detcol_id, retHeader, 'PROPFIND', url, header, body);
-  -- dbg_obj_print ('retValue', retValue);
+  else if (length (subPath_parts) > 1)
+  {
+    path := '/' || subPath_parts[0];
+    V := subseq (subPath_parts, 1);
+  }
+  prefix := '';
+  path := path || '?format=json';
+  if (delimiter <> '')
+    path := path || '&delimiter=' || delimiter;
+  if (length (V))
+  {
+    prefix := ltrim (DB.DBA.DAV_CONCAT_PATH (null, V), '/');
+    path := path || sprintf ('&prefix=%s', prefix);
+  }
+
+  retValue := DB.DBA.RACKSPACE__exec (detcol_id, retHeader, 'GET', path);
   if (not isinteger (retValue))
-    DB.DBA.WebDAV__paramSet (col_id, 'C', 'syncTime', now ());
+  {
+    if (delimiter = '/')
+      DB.DBA.RACKSPACE__paramSet (col_id, 'C', 'syncTime', now ());
 
+    listItems := ODS..json2obj (retValue);
+    if (prefix <> '')
+    {
+      retValue := vector ();
+      foreach (any listItem in listItems) do
+      {
+        connection_set ('dav_store', 1);
+        listID := get_keyword ('name', listItem);
+        if (isnull (listID))
+          listID := get_keyword ('subdir', listItem);
+
+        if (listID <> prefix)
+          retValue := vector_concat (retValue, vector (listItem));
+      }
+    }
+    else
+    {
+      retValue := listItems;
+    }
+  }
+  -- dbg_obj_print ('retValue', retValue);
   return retValue;
 }
 ;
 
 -------------------------------------------------------------------------------
 --
-create function DB.DBA.WebDAV__resource (
+create function DB.DBA.RACKSPACE__resource (
   inout detcol_id any,
-  inout url any)
+  inout path any)
 {
-  -- dbg_obj_princ ('DB.DBA.WebDAV__resource (', detcol_id, path, ')');
-  declare header, body, retValue, retHeader any;
+  -- dbg_obj_princ ('DB.DBA.RACKSPACE__resource (', detcol_id, path, ')');
+  declare tmp, retValue, retHeader any;
 
-  body :=
-    '<?xml version="1.0" encoding="utf-8" ?>' ||
-    '<D:propfind xmlns:D="DAV:">' ||
-    '  <D:prop>' ||
-    '    <D:getlastmodified />' ||
-    '    <D:creationdate />' ||
-    '    <D:getetag />' ||
-    '    <D:getcontenttype />' ||
-    '    <D:getcontentlength />' ||
-    '    <D:resourcetype />' ||
-    '  </D:prop>' ||
-    '</D:propfind>';
-  header := sprintf ('Depth: 0\r\nContent-Type: application/xml; charset="utf-8"\r\nContent-Length: %d\r\n', length (body));
-  retValue := DB.DBA.WebDAV__exec (detcol_id, retHeader, 'PROPFIND', url, header, body);
+  retValue := DB.DBA.RACKSPACE__exec (detcol_id, retHeader, 'HEAD', path);
+  if (DAV_HIDE_ERROR (retValue) is not null)
+  {
+    tmp := ltrim (path, '/');
+    if (not isnull (strchr (tmp, '/')))
+       tmp := subseq (tmp, strchr (tmp, '/')+1);
 
+    retValue := vector_concat (
+      ODS..jsonObject (),
+      vector
+      (
+        'name', tmp,
+        'hash', http_request_header (retHeader, 'ETag'),
+        'size', cast (http_request_header (retHeader, 'Content-Length') as integer),
+        'content_type', http_request_header (retHeader, 'Content-Type'),
+        'last_modified', http_string_date (coalesce (http_request_header (retHeader, 'Last-Modified', null, null), http_request_header (retHeader, 'Date', null, null)))
+      )
+    );
+  }
   return retValue;
 }
 ;
 
 -------------------------------------------------------------------------------
 --
-create function DB.DBA.WebDAV__activity (
+create function DB.DBA.RACKSPACE__rename (
+  in detcol_id any,
+  in sourcePath varchar,
+  in targetPath varchar)
+{
+  -- dbg_obj_princ ('DB.DBA.RACKSPACE__rename (', detcol_id, sourcePath, targetPath, ')');
+  declare source_id any;
+  declare container, detcolPath, what varchar;
+  declare header any;
+  declare retValue, retHeader, source_parts any;
+
+  header := sprintf ('Destination: %s\r\n', targetPath);
+  retValue := DB.DBA.RACKSPACE__exec (detcol_id, retHeader, 'COPY', sourcePath, header);
+  if (DAV_HIDE_ERROR (retValue) is null)
+    goto _exit;
+
+  retValue := DB.DBA.RACKSPACE__exec (detcol_id, retHeader, 'DELETE', sourcePath);
+  if (DAV_HIDE_ERROR (retValue) is null)
+    goto _exit;
+
+  detcolPath := DB.DBA.DAV_SEARCH_PATH (detcol_id, 'C');
+  container := DB.DBA.RACKSPACE__paramGet (detcol_id, 'C', 'Container', 0);
+  sourcePath := ltrim (sourcePath, '/');
+  if (not DB.DBA.is_empty_or_null (container))
+    sourcePath := subseq (sourcePath, length (container)+1);
+
+  sourcePath := detcolPath || sourcePath;
+  what := case when (sourcePath[length (sourcePath)-1] <> ascii('/')) then 'R' else 'C' end;
+  source_id := DB.DBA.DAV_SEARCH_ID (sourcePath, what);
+  if (DAV_HIDE_ERROR (source_id) is not null)
+  {
+    retValue := DB.DBA.RACKSPACE__resource (detcol_id, targetPath);
+    if (DAV_HIDE_ERROR (retValue) is null)
+      goto _exit;
+
+    DB.DBA.RACKSPACE__paramSet (source_id, what, 'Entry', DB.DBA.RACKSPACE__obj2xml (retValue), 0);
+  }
+
+_exit:;
+  return retValue;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create function DB.DBA.RACKSPACE__activity (
   in detcol_id integer,
   in text varchar)
 {
-  -- dbg_obj_princ ('DB.DBA.WebDAV__activity (', detcol_id, text, ')');
+  -- dbg_obj_princ ('DB.DBA.RACKSPACE__activity (', detcol_id, text, ')');
   declare parentId integer;
   declare parentPath varchar;
   declare activity_id integer;
@@ -1615,7 +1630,7 @@ create function DB.DBA.WebDAV__activity (
   _errorCount := 0;
 
 _start:;
-  activity := DB.DBA.WebDAV__paramGet (detcol_id, 'C', 'activity', 0);
+  activity := DB.DBA.RACKSPACE__paramGet (detcol_id, 'C', 'activity', 0);
   if (activity is null)
     return;
 
@@ -1648,14 +1663,14 @@ _start:;
   }
   activityContent := activityContent || sprintf ('%s %s\r\n', subseq (datestring (now ()), 0, 19), text);
   activityType := 'text/plain';
-  DB.DBA.DAV_RES_UPLOAD_STRSES_INT (activityPath, activityContent, activityType, '110100000RR', DB.DBA.WebDAV__user (davEntry[6]), DB.DBA.WebDAV__user (davEntry[7]), extern=>0, check_locks=>0);
+  DB.DBA.DAV_RES_UPLOAD_STRSES_INT (activityPath, activityContent, activityType, '110100000RR', DB.DBA.RACKSPACE__user (davEntry[6]), DB.DBA.RACKSPACE__user (davEntry[7]), extern=>0, check_locks=>0);
   commit work;
 }
 ;
 
 -------------------------------------------------------------------------------
 --
-create function DB.DBA.WebDAV__downloads (
+create function DB.DBA.RACKSPACE__downloads (
   in detcol_id integer,
   in downloads any)
 {
@@ -1666,29 +1681,33 @@ create function DB.DBA.WebDAV__downloads (
 
   set_user_id ('dba');
   aq := async_queue (1);
-  aq_request (aq, 'DB.DBA.WebDAV__downloads_aq', vector (detcol_id, downloads));
+  aq_request (aq, 'DB.DBA.RACKSPACE__downloads_aq', vector (detcol_id, downloads));
 }
 ;
 
 -------------------------------------------------------------------------------
 --
-create function DB.DBA.WebDAV__downloads_aq (
+create function DB.DBA.RACKSPACE__downloads_aq (
   in detcol_id integer,
   in downloads any)
 {
-  -- dbg_obj_princ ('DB.DBA.WebDAV__downloads_aq (', detcol_id, downloads, ')');
+  -- dbg_obj_princ ('DB.DBA.RACKSPACE__downloads_aq (', detcol_id, downloads, ')');
   declare N, downloaded integer;
-  declare url, listHref varchar;
+  declare path, container, davPath, detPath varchar;
   declare items any;
-  declare V, retValue, retHeader any;
+  declare retValue, retHeader any;
 
   set_user_id ('dba');
+
+  detPath := WS.WS.COL_PATH (detcol_id);
+  container := DB.DBA.RACKSPACE__paramGet (detcol_id, 'C', 'Container', 0);
+
   N := 0;
   items := vector ();
-  DB.DBA.WebDAV__activity (detcol_id, sprintf ('Downloading %d file(s)', length (downloads)));
+  DB.DBA.RACKSPACE__activity (detcol_id, sprintf ('Downloading %d file(s)', length (downloads)));
   foreach (any download in downloads) do
   {
-    downloaded := DB.DBA.WebDAV__paramGet (download[0], download[1], 'download', 0);
+    downloaded := DB.DBA.RACKSPACE__paramGet (download[0], download[1], 'download', 0);
     if (downloaded is null)
       goto _continue;
 
@@ -1696,24 +1715,21 @@ create function DB.DBA.WebDAV__downloads_aq (
     if (downloaded > 5)
       goto _continue;
 
-    listHref := DB.DBA.WebDAV__paramGet (download[0], download[1], 'href', 0);
-    if (listHref is null)
-      goto _continue;
+    davPath := DB.DBA.DAV_SEARCH_PATH (download[0], download[1]);
+    path := subseq (davpath, length (detPath)-1);
+    if (not DB.DBA.is_empty_or_null (container))
+      path := '/' || container || path;
 
-    url := DB.DBA.WebDAV__paramGet (detcol_id, 'C', 'path', 0);
-    V := rfc1808_parse_uri (url);
-    V[2] := listHref;
-    url := DB.DBA.vspx_uri_compose (V);
-    retValue := DB.DBA.WebDAV__exec (detcol_id, retHeader, 'GET', url);
+    retValue := DB.DBA.RACKSPACE__exec (detcol_id, retHeader, 'GET', path);
     if (DAV_HIDE_ERROR (retValue) is null)
     {
       downloaded := downloaded + 1;
-      DB.DBA.WebDAV__paramSet (download[0], download[1], 'download', cast (downloaded as varchar), 0);
+      DB.DBA.RACKSPACE__paramSet (download[0], download[1], 'download', cast (downloaded as varchar), 0);
     }
     else
     {
-      update WS.WS.SYS_DAV_RES set RES_CONTENT = retValue where RES_ID = DB.DBA.WebDAV__davId (download[0]);
-      DB.DBA.WebDAV__paramRemove (download[0], download[1], 'download');
+      update WS.WS.SYS_DAV_RES set RES_CONTENT = retValue where RES_ID = DB.DBA.RACKSPACE__davId (download[0]);
+      DB.DBA.RACKSPACE__paramRemove (download[0], download[1], 'download');
       items := vector_concat (items, vector (download));
       N := N + 1;
     }
@@ -1721,18 +1737,18 @@ create function DB.DBA.WebDAV__downloads_aq (
 
   _continue:;
   }
-  DB.DBA.WebDAV__activity (detcol_id, sprintf ('Downloaded %d file(s)', N));
+  DB.DBA.RACKSPACE__activity (detcol_id, sprintf ('Downloaded %d file(s)', N));
   foreach (any item in items) do
   {
-    DB.DBA.WebDAV__rdf_delete (detcol_id, item[0], item[1]);
-    DB.DBA.WebDAV__rdf_insert (detcol_id, item[0], item[1]);
+    DB.DBA.RACKSPACE__rdf_delete (detcol_id, item[0], item[1]);
+    DB.DBA.RACKSPACE__rdf_insert (detcol_id, item[0], item[1]);
   }
 }
 ;
 
 -------------------------------------------------------------------------------
 --
-create function DB.DBA.WebDAV__rdf (
+create function DB.DBA.RACKSPACE__rdf (
   in detcol_id integer,
   in id any,
   in what varchar)
@@ -1741,32 +1757,32 @@ create function DB.DBA.WebDAV__rdf (
 
   set_user_id ('dba');
   aq := async_queue (1);
-  aq_request (aq, 'DB.DBA.WebDAV__rdf_aq', vector (detcol_id, id, what));
+  aq_request (aq, 'DB.DBA.RACKSPACE__rdf_aq', vector (detcol_id, id, what));
 }
 ;
 
 -------------------------------------------------------------------------------
 --
-create function DB.DBA.WebDAV__rdf_aq (
+create function DB.DBA.RACKSPACE__rdf_aq (
   in detcol_id integer,
   in id any,
   in what varchar)
 {
   set_user_id ('dba');
-  DB.DBA.WebDAV__rdf_delete (detcol_id, id, what);
-  DB.DBA.WebDAV__rdf_insert (detcol_id, id, what);
+  DB.DBA.RACKSPACE__rdf_delete (detcol_id, id, what);
+  DB.DBA.RACKSPACE__rdf_insert (detcol_id, id, what);
 }
 ;
 
 -------------------------------------------------------------------------------
 --
-create function DB.DBA.WebDAV__rdf_insert (
+create function DB.DBA.RACKSPACE__rdf_insert (
   in detcol_id integer,
   in id any,
   in what varchar,
   in rdf_graph varchar := null)
 {
-  -- dbg_obj_princ ('DB.DBA.WebDAV__rdf_insert (', detcol_id, id, what, rdf_graph, ')');
+  -- dbg_obj_princ ('DB.DBA.RACKSPACE__rdf_insert (', detcol_id, id, what, rdf_graph, ')');
   declare permissions, rdf_graph2 varchar;
   declare rdf_sponger, rdf_cartridges, rdf_metaCartridges any;
   declare path, content, type any;
@@ -1776,12 +1792,12 @@ create function DB.DBA.WebDAV__rdf_insert (
   };
 
   if (isnull (rdf_graph))
-    rdf_graph := DB.DBA.WebDAV__paramGet (detcol_id, 'C', 'graph', 0);
+    rdf_graph := DB.DBA.RACKSPACE__paramGet (detcol_id, 'C', 'graph', 0);
 
   if (DB.DBA.is_empty_or_null (rdf_graph))
     return;
 
-  permissions := DB.DBA.WebDAV__paramGet (detcol_id, 'C', ':virtpermissions', 0, 0);
+  permissions := DB.DBA.RACKSPACE__paramGet (detcol_id, 'C', ':virtpermissions', 0, 0);
   if (permissions[6] = ascii('0'))
   {
     -- add to private graphs
@@ -1789,13 +1805,13 @@ create function DB.DBA.WebDAV__rdf_insert (
       return;
   }
 
-  id := DB.DBA.WebDAV__davId (id);
+  id := DB.DBA.RACKSPACE__davId (id);
   path := DB.DBA.DAV_SEARCH_PATH (id, what);
   content := (select RES_CONTENT from WS.WS.SYS_DAV_RES where RES_ID = id);
   type := (select RES_TYPE from WS.WS.SYS_DAV_RES where RES_ID = id);
-  rdf_sponger := coalesce (DB.DBA.WebDAV__paramGet (detcol_id, 'C', 'sponger', 0), 'on');
-  rdf_cartridges := coalesce (DB.DBA.WebDAV__paramGet (detcol_id, 'C', 'cartridges', 0), '');
-  rdf_metaCartridges := coalesce (DB.DBA.WebDAV__paramGet (detcol_id, 'C', 'metaCartridges', 0), '');
+  rdf_sponger := coalesce (DB.DBA.RACKSPACE__paramGet (detcol_id, 'C', 'sponger', 0), 'on');
+  rdf_cartridges := coalesce (DB.DBA.RACKSPACE__paramGet (detcol_id, 'C', 'cartridges', 0), '');
+  rdf_metaCartridges := coalesce (DB.DBA.RACKSPACE__paramGet (detcol_id, 'C', 'metaCartridges', 0), '');
 
   RDF_SINK_UPLOAD (path, content, type, rdf_graph, rdf_sponger, rdf_cartridges, rdf_metaCartridges);
 }
@@ -1803,18 +1819,18 @@ create function DB.DBA.WebDAV__rdf_insert (
 
 -------------------------------------------------------------------------------
 --
-create function DB.DBA.WebDAV__rdf_delete (
+create function DB.DBA.RACKSPACE__rdf_delete (
   in detcol_id integer,
   in id any,
   in what varchar,
   in rdf_graph varchar := null)
 {
-  -- dbg_obj_princ ('DB.DBA.WebDAV__rdf_delete (', detcol_id, id, what, rdf_graph, ')');
+  -- dbg_obj_princ ('DB.DBA.RACKSPACE__rdf_delete (', detcol_id, id, what, rdf_graph, ')');
   declare rdf_graph2 varchar;
   declare path varchar;
 
   if (isnull (rdf_graph))
-    rdf_graph := DB.DBA.WebDAV__paramGet (detcol_id, 'C', 'graph', 0);
+    rdf_graph := DB.DBA.RACKSPACE__paramGet (detcol_id, 'C', 'graph', 0);
 
   if (DB.DBA.is_empty_or_null (rdf_graph))
     return;
@@ -1826,14 +1842,14 @@ create function DB.DBA.WebDAV__rdf_delete (
 
 -------------------------------------------------------------------------------
 --
-create function DB.DBA.WebDAV__refresh (
+create function DB.DBA.RACKSPACE__refresh (
   in path varchar)
 {
-  -- dbg_obj_princ ('DB.DBA.WebDAV__refresh (', path, ')');
+  -- dbg_obj_princ ('DB.DBA.RACKSPACE__refresh (', path, ')');
   declare colId any;
 
   colId := DB.DBA.DAV_SEARCH_ID (path, 'C');
   if (DAV_HIDE_ERROR (colId) is not null)
-    DB.DBA.WebDAV__paramRemove (colId, 'C', 'syncTime');
+    DB.DBA.RACKSPACE__paramRemove (colId, 'C', 'syncTime');
 }
 ;

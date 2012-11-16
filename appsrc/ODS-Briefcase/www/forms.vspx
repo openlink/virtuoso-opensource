@@ -158,6 +158,10 @@
             self.vc_is_valid := 0;
             return;
           }
+
+        -- validate ACL rules
+        DB.DBA.wa_aci_validate (DB.DBA.wa_aci_params (params));
+
         prop_mime  := trim (get_keyword ('prop_mime', params, ''));
         prop_owner := ODRIVE.WA.odrive_user_id (trim(get_keyword ('prop_owner', params, '')));
         prop_group := ODRIVE.WA.odrive_user_id (trim(get_keyword ('prop_group', params, '')));
@@ -191,7 +195,7 @@
           item := ODRIVE.WA.DAV_INIT(self.items[I]);
           if (not ODRIVE.WA.DAV_ERROR (item))
           {
-            if (('' <> prop_mime) and (ODRIVE.WA.DAV_GET (item, 'type') = 'R') and (ODRIVE.WA.DAV_GET (item, 'mimeType') <> prop_mime))
+            if (('' <> prop_mime) and ('Do not change' <> prop_mime) and (ODRIVE.WA.DAV_GET (item, 'type') = 'R') and (ODRIVE.WA.DAV_GET (item, 'mimeType') <> prop_mime))
             {
               ODRIVE.WA.DAV_SET (self.items[I], 'mimeType', prop_mime);
             }
@@ -424,19 +428,19 @@
                 <table class="form-body" cellspacing="0">
                   <tr>
                     <th>
-                      <v:label for="prop_mime" value="--'File Mime Type'" />
+                      <vm:label for="prop_mime" value="--'File Mime Type'" />
                     </th>
                     <td>
-                      <input type="text" name="prop_mime" class="field-short" />
+                      <v:text name="prop_mime" xhtml_id="prop_mime" value="--'Do not change'" format="%s" xhtml_class="field-short" />
                       <input type="button" value="Select" onclick="javascript: windowShow('<?V ODRIVE.WA.page_url (self.domain_id, 'mimes_select.vspx?params=prop_mime:s1;') ?>');" class="button" />
                     </td>
                   </tr>
                   <tr>
                     <th>
-                      <v:label for="prop_owner" value="--'Owner'" />
+                      <vm:label for="prop_owner" value="--'Owner'" />
                     </th>
                     <td>
-                      <v:text name="prop_owner" value="--'Do not change'" format="%s" xhtml_class="field-short">
+                      <v:text name="prop_owner" xhtml_id="prop_owner" value="--'Do not change'" format="%s" xhtml_class="field-short">
                         <v:after-data-bind>
                           <![CDATA[
                             if (not ODRIVE.WA.check_admin (self.account_id))
@@ -451,16 +455,16 @@
                   </tr>
                   <tr>
                     <th>
-                      <v:label for="prop_group" value="--'Group'" />
+                      <vm:label for="prop_group" value="--'Group'" />
                     </th>
                     <td>
-                      <v:text name="prop_group" value="--'Do not change'" format="%s" xhtml_class="field-short" />
+                      <v:text name="prop_group" xhtml_id="prop_group" value="--'Do not change'" format="%s" xhtml_class="field-short" />
                       <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=g&amp;params=prop_group:s1;')" class="button" />
                     </td>
                   </tr>
                   <tr>
                     <th valign="top">
-                      <v:label value="--'Permissions'" />
+                      <vm:label value="--'Permissions'" />
                     </th>
                     <td>
                       <table class="permissions-list" cellspacing="0">
@@ -481,8 +485,6 @@
                         <tr>
                           <td class="bottom">Remove</td>
                           <?vsp
-                            declare i integer;
-                            declare S varchar;
                             for (i := 0; i < 9; i := i + 1)
                             {
                               S := case when (i = 8) then 'class="right bottom"' else 'class="bottom"' end;
@@ -495,10 +497,10 @@
                   </tr>
                   <tr>
                     <th>
-                      <v:label for="prop_index" value="--'Full Text Search'" />
+                      <vm:label for="prop_index" value="--'Full Text Search'" />
                     </th>
                     <td>
-                      <v:select-list name="prop_index">
+                      <v:select-list name="prop_index" xhtml_id="prop_index" >
                         <v:item name="Do not change" value="*" />
                         <v:item name="Off" value="N" />
                         <v:item name="Direct members" value="T" />
@@ -508,10 +510,10 @@
                   </tr>
                   <tr>
                     <th>
-                      <v:label for="prop_metagrab" value="--'Metadata Retrieval'" />
+                      <vm:label for="prop_metagrab" value="--'Metadata Retrieval'" />
                     </th>
                     <td>
-                      <v:select-list name="prop_metagrab">
+                      <v:select-list name="prop_metagrab" xhtml_id="prop_metagrab" >
                         <v:item name="Do not change" value="*" />
                         <v:item name="Off" value="N" />
                         <v:item name="Direct members" value="M" />
@@ -523,7 +525,7 @@
                     <th />
                     <td valign="center">
                       <input type="checkbox" name="prop_recursive" id="prop_recursive" title="Recursive" />
-                      <v:label for="prop_recursive" value="--'Recursive'" />
+                      <vm:label for="prop_recursive" value="--'Recursive'" />
                     </td>
                   </tr>
                   <tr>

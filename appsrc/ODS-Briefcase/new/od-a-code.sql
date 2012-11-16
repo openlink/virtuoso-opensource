@@ -946,7 +946,7 @@ create procedure ODRIVE.WA.str2vector(
 -------------------------------------------------------------------------------
 --
 create procedure ODRIVE.WA.utf2wide (
-  inout S any)
+  in S any)
 {
   declare retValue any;
 
@@ -963,7 +963,7 @@ create procedure ODRIVE.WA.utf2wide (
 -------------------------------------------------------------------------------
 --
 create procedure ODRIVE.WA.wide2utf (
-  inout S any)
+  in S any)
 {
   declare retValue any;
 
@@ -1332,7 +1332,16 @@ create procedure ODRIVE.WA.odrive_proc(
             group_id := coalesce (item[6], -1);
             group_name := ODRIVE.WA.odrive_user_name (group_id, '');
           }
-          tmp := coalesce((select RS_CATNAME from WS.WS.SYS_RDF_SCHEMAS, WS.WS.SYS_MIME_RDFS where RS_URI = MR_RDF_URI and MR_MIME_IDENT = item[9]), '~unknown~');
+          if (item[1] = 'C')
+          {
+            tmp := ' ';
+            if (isinteger (item[4]))
+              tmp := ODRIVE.WA.det_type_name ( ODRIVE.WA.det_type (item[0], 'C'));
+          }
+          else
+          {
+            tmp := coalesce ((select RS_CATNAME from WS.WS.SYS_RDF_SCHEMAS, WS.WS.SYS_MIME_RDFS where RS_URI = MR_RDF_URI and MR_MIME_IDENT = item[9]), ' ');
+          }
           result(item[either(gte(dir_mode,2),0,10)], item[1], item[2], left(cast(item[3] as varchar), 19), item[9], user_name, group_name, adm_dav_format_perms(item[5]), item[0], tmp);
         }
     }
@@ -1740,16 +1749,25 @@ create procedure ODRIVE.WA.odrive_user_initialize(
   cid := DB.DBA.DAV_SEARCH_ID(user_home, 'C');
   if (not ODRIVE.WA.DAV_ERROR (cid))
   {
-    if ((select count(*) from WS.WS.SYS_DAV_COL where COL_PARENT = cid and COL_DET = 'CatFilter') = 0)
+    if (not exists (select 1 from WS.WS.SYS_DAV_COL where COL_PARENT = cid and COL_DET = 'CatFilter'))
     {
       new_folder := concat(user_home, 'Items/');
       cid := DB.DBA.DAV_SEARCH_ID(new_folder, 'C');
       if (ODRIVE.WA.DAV_ERROR(cid))
         cid := DB.DBA.DAV_MAKE_DIR (new_folder, uid, gid, '110100100R');
+
       if (ODRIVE.WA.DAV_ERROR(cid))
         signal ('BRF02', concat('User''s category folder ''Items'' can not be created. ', ODRIVE.WA.DAV_PERROR(cid)));
+
+      {
+        declare continue handler for sqlstate '*'
+        {
+          goto _skip;
+        };
       retCode := ODRIVE.WA.CatFilter_CONFIGURE_INT(new_folder, user_home, vector());
     }
+    }
+  _skip:;
     new_folder := concat(user_home, 'Public/');
     cid := DB.DBA.DAV_SEARCH_ID(new_folder, 'C');
     if (ODRIVE.WA.DAV_ERROR(cid))
@@ -1845,8 +1863,8 @@ create procedure ODRIVE.WA.geo_url (
 create procedure ODRIVE.WA.dav_url (
   in path varchar)
 {
-  if (path[length (path)-1] <> ascii('/'))
-    path := subseq (path, 4);
+  --if (path[length (path)-1] <> ascii('/'))
+  --  path := subseq (path, 4);
   return ODRIVE.WA.host_url() || path;
 }
 ;
@@ -2806,6 +2824,43 @@ create procedure ODRIVE.WA.det_type (
 
 -------------------------------------------------------------------------------
 --
+create procedure ODRIVE.WA.det_type_name (
+  in det_type varchar) returns varchar
+{
+  declare det_names any;
+
+  det_names := vector (
+    'ResFilter',  'Smart Folder',
+    'CatFilter',  'Category Folder',
+    'PropFilter', 'Property Filter',
+    'HostFs',     'Host FS',
+    'rdfSink',    'Linked Data Import',
+    'RDFData',    'RDF Data',
+    'DynaRes',    'Dynamic Resources',
+    'SyncML',     'SyncML',
+    'Versioning', 'Version Control',
+    'S3',         'Amazon S3',
+    'GDrive',     'Google Drive',
+    'Dropbox',    'Dropbox',
+    'SkyDrive',   'SkyDrive',
+    'Box',        'Box Net',
+    'WebDAV',     'WebDAV',
+    'RACKSPACE',  'Rackspace Cloud Files',
+    'CardDAV',    'CardDAV',
+    'Blog',       'Blog',
+    'Bookmark',   'Bookmark',
+    'calendar',   'Calendar',
+    'CalDAV',     'CalDAV',
+    'News3',      'Feed Subscriptions',
+    'oMail',      'WebMail',
+    'IMAP',       'IMAP Mail Account');
+
+  return get_keyword (det_type, det_names, '');
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODRIVE.WA.det_class(
   in path varchar,
   in what varchar := null) returns varchar
@@ -3334,7 +3389,7 @@ create procedure ODRIVE.WA.DAV_GET (
     declare detType any;
     
     detType := ODRIVE.WA.DAV_PROP_GET (resource[0], ':virtdet');
-    if (isnull (detType) and (ODRIVE.WA.DAV_GET (resource, 'type') = 'C'))
+    if (ODRIVE.WA.DAV_ERROR (detType) and (ODRIVE.WA.DAV_GET (resource, 'type') = 'C'))
     {
       if (ODRIVE.WA.DAV_PROP_GET (resource[0], 'virt:rdf_graph', '') <> '')
         detType := 'rdfSink';
@@ -3343,6 +3398,9 @@ create procedure ODRIVE.WA.DAV_GET (
       else if (ODRIVE.WA.syncml_detect (resource[0]))
         detType := 'SyncML';
     }  
+    if (ODRIVE.WA.DAV_ERROR (detType) and isarray (resource[4]))
+      detType := cast (resource[4][0] as varchar);
+
     return detType;
   }
 
@@ -3381,6 +3439,8 @@ create procedure ODRIVE.WA.DAV_GET (
   {
     if (isnull (resource[0]) or (resource[1] = 'R') or ODRIVE.WA.isVector (resource[1]))
       return null;
+
+    if (isinteger (resource[4]))
     return (select COL_INHERIT from WS.WS.SYS_DAV_COL where COL_ID = resource[4]);
   }
 
@@ -3664,7 +3724,7 @@ create procedure ODRIVE.WA.DAV_DELETE (
   in auth_pwd varchar := null)
 {
   declare id any;
-  declare owner, uname, gname, detType varchar;
+  declare owner, uname, gname, detType, proc, graph varchar;
 
   ODRIVE.WA.DAV_API_PARAMS (null, null, uname, gname, auth_name, auth_pwd);
   if (path[length (path)-1] = ascii('/'))
@@ -3674,14 +3734,27 @@ create procedure ODRIVE.WA.DAV_DELETE (
     {
       ODRIVE.WA.exec ('delete from DB.DBA.SYNC_COLS_TYPES where CT_COL_ID = ?', vector (DB.DBA.DAV_SEARCH_ID (path, 'C')));
     }
-    else if (detType = 'IMAP')
+    else
     {
       id := DB.DBA.DAV_SEARCH_ID (path, 'C');
       if (not ODRIVE.WA.DAV_ERROR (id) and not isarray(id))
       {
+        if (detType = 'IMAP')
+        {
         owner := sprintf ('IMAP_%d', id);
         ODRIVE.WA.exec ('delete from DB.DBA.MAIL_FOLDER where MF_OWN = ?', vector (owner));
         ODRIVE.WA.exec ('delete from DB.DBA.MAIL_MESSAGE where MM_OWN = ?', vector (owner));
+      }
+        if (detType in ('S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE'))
+        {
+          proc := sprintf ('DB.DBA.%s__paramGet', detType);
+          if (__proc_exists (proc))
+          {
+            graph := call (proc) (id, 'C', 'graph', 0);
+            if (not DB.DBA.is_empty_or_null (graph))
+              ODRIVE.WA.graph_clear (path, detType, graph);
+          }
+        }
       }
     }
   }
@@ -4413,13 +4486,16 @@ create procedure ODRIVE.WA.send_mail (
   if (_smtp_server <> 0)
   {
      _iri := SIOC..briefcase_iri (ODRIVE.WA.domain_name (_instance));
+    if (_mode = 0)
+      _iri := ODRIVE.WA.iri2ssl (_iri);
+
      _what := case when (_path[length (_path)-1] <> ascii('/')) then 'R' else 'C' end;
      if (_what = 'C')
        _iri := _iri || '/folder';
 
     _id := DB.DBA.DAV_SEARCH_ID (_path, _what);
     _body := replace (_body, '%resource_path%', _path);
-    if (isarray (_id) and (cast (_id[0] as varchar) in ('IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV')))
+    if (isarray (_id) and (cast (_id[0] as varchar) in ('DynaRes', 'IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE')))
         _id := _id[2];
 
       if (not isarray (_id))
@@ -4569,7 +4645,7 @@ create procedure ODRIVE.WA.aci_load (
   what := case when (path[length (path)-1] <> ascii('/')) then 'R' else 'C' end;
   id := DB.DBA.DAV_SEARCH_ID (path, what);
   DB.DBA.DAV_AUTHENTICATE_SSL_ITEM (id, what, path);
-  if (isarray (id) and (cast (id[0] as varchar) not in ('IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV')))
+  if (isarray (id) and (cast (id[0] as varchar) not in ('DynaRes', 'IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE')))
   {
     retValue := ODRIVE.WA.DAV_PROP_GET (path, 'virt:aci_meta');
     if (ODRIVE.WA.DAV_ERROR (retValue))
@@ -4684,7 +4760,7 @@ create procedure ODRIVE.WA.aci_save (
 
   what := case when (path[length (path)-1] <> ascii('/')) then 'R' else 'C' end;
   id := DB.DBA.DAV_SEARCH_ID (path, what);
-  if (isarray (id) and (cast (id[0] as varchar) not in ('IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV')))
+  if (isarray (id) and (cast (id[0] as varchar) not in ('DynaRes', 'IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE')))
   {
     retValue := ODRIVE.WA.DAV_PROP_SET (path, 'virt:aci_meta', aci);
   }
@@ -4874,6 +4950,25 @@ create procedure ODRIVE.WA.path2ssl (
 
 -------------------------------------------------------------------------------
 --
+create procedure ODRIVE.WA.iri2ssl (
+  in iri varchar)
+{
+  declare V, ssl any;
+
+  ssl := ODS.ODS_API.getDefaultHttps ();
+  if (ssl is not null)
+  {
+    V := rfc1808_parse_uri (iri);
+    V[0] := 'https';
+    V[1] := ssl;
+    iri := DB.DBA.vspx_uri_compose (V);
+  }
+  return iri;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODRIVE.WA.syncml_detect (
   in path varchar)
 {
@@ -5024,14 +5119,14 @@ create procedure ODRIVE.WA.graph_private_add (
 --
 create procedure ODRIVE.WA.graph_update (
   in path varchar,
-  in det varchar,
+  in detType varchar,
   in oldGraph varchar,
   in newGraph varchar)
 {
   declare aq any;
 
   aq := async_queue (1);
-  aq_request (aq, 'ODRIVE.WA.graph_update_aq', vector (path, det, oldGraph, newGraph));
+  aq_request (aq, 'ODRIVE.WA.graph_update_aq', vector (path, detType, oldGraph, newGraph));
 }
 ;
 
@@ -5039,26 +5134,26 @@ create procedure ODRIVE.WA.graph_update (
 --
 create procedure ODRIVE.WA.graph_update_aq (
   in path varchar,
-  in det varchar,
+  in detType varchar,
   in oldGraph varchar,
   in newGraph varchar)
 {
   declare detcol_id integer;
 
   detcol_id := DB.DBA.DAV_SEARCH_ID (path, 'C');
-  if ((coalesce (oldGraph, '') <> '') and __proc_exists ('DB.DBA.' || det || '__rdf_delete'))
+  if ((coalesce (oldGraph, '') <> '') and __proc_exists ('DB.DBA.' || detType || '__rdf_delete'))
   {
     for (select RES_ID from WS.WS.SYS_DAV_RES where RES_FULL_PATH like (path || '%')) do
     {
-      call ('DB.DBA.' || det || '__rdf_delete') (detcol_id, RES_ID, 'R', oldGraph);
+      call ('DB.DBA.' || detType || '__rdf_delete') (detcol_id, RES_ID, 'R', oldGraph);
     }
   }
 
-  if ((coalesce (newGraph, '') <> '')  and __proc_exists ('DB.DBA.' || det || '__rdf_insert'))
+  if ((coalesce (newGraph, '') <> '')  and __proc_exists ('DB.DBA.' || detType || '__rdf_insert'))
   {
     for (select RES_ID from WS.WS.SYS_DAV_RES where RES_FULL_PATH like (path || '%')) do
     {
-      call ('DB.DBA.' || det || '__rdf_insert') (detcol_id, RES_ID, 'R', newGraph);
+      call ('DB.DBA.' || detType || '__rdf_insert') (detcol_id, RES_ID, 'R', newGraph);
     }
   }
 }
@@ -5066,14 +5161,72 @@ create procedure ODRIVE.WA.graph_update_aq (
 
 -------------------------------------------------------------------------------
 --
-create function DB.DBA.SPARQL_GS_APP_CALLBACK_ODS (
-  in g_iid IRI_ID,
-  in app_uid varchar := null) returns integer
+create procedure ODRIVE.WA.graph_clear (
+  in path varchar,
+  in detType varchar,
+  in graph varchar)
 {
-  dbg_obj_princ ('DB.DBA.SPARQL_GS_APP_CALLBACK_ODS (', id_to_iri (g_iid), ')');
+  declare paths, aq any;
 
-  return 255;
+  if ((coalesce (graph, '') = '') or not __proc_exists ('DB.DBA.' || detType || '__rdf_clear'))
+    return;
+
+  paths := vector ();
+  for (select RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_FULL_PATH like (path || '%')) do
+    paths := vector_concat (paths, vector (RES_FULL_PATH));
+
+  if (exists (select top 1 1 from DB.DBA.RDF_GRAPH_GROUP where RGG_IRI = 'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs'))
+    DB.DBA.RDF_GRAPH_GROUP_DEL ('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', graph);
+
+  aq := async_queue (1);
+  aq_request (aq, 'ODRIVE.WA.graph_clear_aq', vector (paths, graph));
 }
 ;
 
-grant execute on DB.DBA.SPARQL_GS_APP_CALLBACK_ODS to public;
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.graph_clear_aq (
+  in paths any,
+  in graph varchar)
+{
+  foreach (any path in paths) do
+  {
+    DB.DBA.RDF_SINK_CLEAR (path, graph);
+  }
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+-- Certificates
+--
+-----------------------------------------------------------------------------------------
+create procedure ODRIVE.WA.keys_exist (
+  in _user varchar)
+{
+  if (exists (select 1 from DB.DBA.ods_user_keys (username) (xenc_key varchar) x where username = _user))
+    return 1;
+
+  return 0;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.keys_list (
+  in _user varchar)
+{
+  declare retValue any;
+
+  retValue := vector ();
+  for (select x.xenc_key, x.xenc_type
+         from DB.DBA.ods_user_keys (username) (xenc_key varchar, xenc_type varchar) x
+        where username = _user) do
+  {
+    retValue := vector_concat (retvalue, vector (xenc_key));
+  }
+
+  return retValue;
+}
+;
+

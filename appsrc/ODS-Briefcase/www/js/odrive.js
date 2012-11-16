@@ -31,6 +31,9 @@ function setFooter() {
 
 function destinationChange(obj, changes) {
   function destinationChangeInternal(actions) {
+    if (!obj)
+      return;
+
     if (actions.hide) {
       var a = actions.hide;
       for ( var i = 0; i < a.length; i++) {
@@ -437,7 +440,7 @@ function chkbx(bx1, bx2)
 
 function updateLabel(value)
 {
-  hideLabel(4, 16);
+  hideLabel(4, 17);
   if (value == 'oMail')
     showLabel(4, 4);
   else if (value == 'PropFilter')
@@ -464,6 +467,14 @@ function updateLabel(value)
     showLabel(15, 15);
   else if (value == 'WebDAV')
     showLabel(16, 16);
+  else if (value == 'RACKSPACE')
+    showLabel(17, 17);
+
+  if (value == 'IMAP')
+    OAT.Dom.show('cVerify');
+  else
+    OAT.Dom.hide('cVerify');
+
 }
 
 function showLabel(from, to)
@@ -1022,7 +1033,12 @@ ODRIVE.init = function ()
 
 ODRIVE.initFilter = function ()
 {
-  if (ODRIVE.searchPredicates) {return;}
+  if (ODRIVE.searchPredicates)
+    return;
+
+  if (!OAT.AJAX)
+    return;
+
   var x = function(data) {
     var o = OAT.JSON.parse(data);
     ODRIVE.searchPredicates = o[0];
@@ -1606,6 +1622,7 @@ ODRIVE.updateRdfGraph = function ()
   updateRdfGraphInternal('SkyDrive');
   updateRdfGraphInternal('Box');
   updateRdfGraphInternal('WebDAV');
+  updateRdfGraphInternal('RACKSPACE');
 
   $('dav_name_save').value = $v('dav_name');
 }
@@ -1679,4 +1696,114 @@ ODRIVE.boxParams = function (auth_token, display_name)
   OAT.Dom.show('tr_dav_Box_display_name');
   $('td_dav_Box_display_name').innerHTML = display_name;
   $('dav_Box_authenticate').value = 'Re-Authenticate';
+}
+
+ODRIVE.verifyDialog = function ()
+{
+  var verifyDiv = $('verifyDiv');
+  if (verifyDiv)
+    OAT.Dom.unlink(verifyDiv);
+
+  verifyDiv = OAT.Dom.create('div', {height: '160px', overflow: 'hidden'});
+  verifyDiv.id = 'verifyDiv';
+  verifyDialog = new OAT.Dialog('Verify External Account', verifyDiv, {width:475, buttons: 0, resize:0, modal:1});
+	verifyDialog.cancel = verifyDialog.hide;
+  verifyDiv.innerHTML = '<img src="/ods/images/oat/Ajax_throbber.gif" style="margin: 80px 220px;" />';
+  verifyDialog.show();
+
+  var x = function (txt) {
+    if (txt != "")
+    {
+      var verifyDiv = $("verifyDiv");
+      if (verifyDiv)
+      {
+        verifyDiv.innerHTML = txt;
+        verifyDialog.show();
+      }
+    }
+  }
+  var params = '&connection=' + encodeURIComponent($v('dav_IMAP_connection'))
+             + '&server='     + encodeURIComponent($v('dav_IMAP_server'))
+             + '&port='       + encodeURIComponent($v('dav_IMAP_port'))
+             + '&user='       + encodeURIComponent($v('dav_IMAP_user'))
+             + '&password='   + encodeURIComponent($v('dav_IMAP_password'));
+  OAT.AJAX.GET(ODRIVE.httpsLink('ajax.vsp')+'?a=mailVerify'+params, '', x, {type:OAT.AJAX.TYPE_TEXT, onstart:function(){}, onerror:function(){}});
+}
+
+var dav_IMAP_connection;
+var dav_IMAP_server;
+var dav_IMAP_port;
+var dav_IMAP_user;
+var dav_IMAP_password;
+var dav_IMAP_seqNo = 0;;
+ODRIVE.loadIMAPFolders = function ()
+{
+  var needLoad = false;
+  if (!dav_IMAP_connection || (dav_IMAP_connection != $v('dav_IMAP_connection').trim())) {
+    dav_IMAP_connection = $v('dav_IMAP_connection').trim();
+    needLoad = true;
+  }
+  if (!dav_IMAP_server || (dav_IMAP_server != $v('dav_IMAP_server').trim())) {
+    dav_IMAP_server = $v('dav_IMAP_server').trim();
+    needLoad = true;
+  }
+  if (!dav_IMAP_port || (dav_IMAP_port != $v('dav_IMAP_port').trim())) {
+    dav_IMAP_port = $v('dav_IMAP_port').trim();
+    needLoad = true;
+  }
+  if (!dav_IMAP_user || (dav_IMAP_user != $v('dav_IMAP_user').trim())) {
+    dav_IMAP_user = $v('dav_IMAP_user').trim();
+    needLoad = true;
+  }
+  if (!dav_IMAP_password || (dav_IMAP_password != $v('dav_IMAP_password').trim())) {
+    dav_IMAP_password = $v('dav_IMAP_password').trim();
+    needLoad = true;
+  }
+  if (needLoad) {
+    var x = function(seqNo, data) {
+      if (seqNo < dav_IMAP_seqNo)
+        return;
+
+      var o = OAT.JSON.parse(data);
+      var dav_IMAP_folder = $('dav_IMAP_folder');
+      var cl = dav_IMAP_folder.comboList;
+      if (cl) {
+        cl.clearOpts();
+        var founded = false;
+        for (var i = 0; i < o.length; i++) {
+          cl.addOption(o[i]);
+          if (o[i] == dav_IMAP_folder.value)
+            founded = true;
+        }
+        if (!founded)
+          dav_IMAP_folder.value = '';
+
+        dav_IMAP_time = new Date();
+      }
+    }
+    var params = '&connection=' + encodeURIComponent(dav_IMAP_connection)
+               + '&server='     + encodeURIComponent(dav_IMAP_server)
+               + '&port='       + encodeURIComponent(dav_IMAP_port)
+               + '&user='       + encodeURIComponent(dav_IMAP_user)
+               + '&password='   + encodeURIComponent(dav_IMAP_password);
+    dav_IMAP_seqNo += 1;
+    var seqNo = dav_IMAP_seqNo;
+    OAT.AJAX.GET(ODRIVE.httpsLink('ajax.vsp')+'?a=mailFolders'+params, '', function(data){x(seqNo, data);});
+  }
+}
+
+ODRIVE.httpsLink = function (page) {
+  return page;
+
+  if (!ODRIVE.sslData)
+    return page;
+
+  var href =
+    'https://' +
+		document.location.hostname +
+		((ODRIVE.sslData.sslPort != '443')? ':' + ODRIVE.sslData.sslPort: '') +
+		document.location.pathname +
+		'/' +
+		page;
+  return href;
 }

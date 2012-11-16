@@ -79,6 +79,16 @@
           // Init ODRIVE object
           ODRIVE.init();
 
+          // SSL data
+          OAT.Loader.load(["ajax", "json"], function() {
+            var x = function (data) {
+              try {
+                ODRIVE.sslData = OAT.JSON.parse(data);
+              } catch (e) { ODRIVE.sslData = null; }
+            }
+            OAT.AJAX.GET ('/ods/api/server.getInfo?info=sslPort', false, x, {async: false});
+          });
+
           setFooter();
           window.onresize = function() {setFooter();}
           OAT.MSG.send(OAT, 'PAGE_LOADED');
