@@ -93,6 +93,7 @@ spart_count_specific_elems_by_type (ptrlong type)
     case SPAR_MACROCALL:	return sizeof (sample._.macrocall);
     case SPAR_MACROPU:		return sizeof (sample._.macropu);
     case ORDER_L:		return sizeof (sample._.oby);
+    case SPAR_PPATH:		return sizeof (sample._.ppath);
     case BOP_NOT:
     case BOP_OR: case BOP_AND:
     case BOP_PLUS: case BOP_MINUS: case BOP_TIMES: case BOP_DIV: case BOP_MOD:
@@ -2688,6 +2689,7 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
   sparp_expand_top_retvals (sparp, subselect_top, 1 /* safely_copy_all_vars */);
   spar_env_pop (sparp);
   t_check_tree (options);
+  sparp_set_options_selid_and_tabid (sparp, options, (caddr_t)(sparp->sparp_env->spare_selids->data), NULL);
   wrapper_gp = spar_gp_finalize_with_subquery (sparp, options, subselect_top);
   spar_gp_add_member (sparp, wrapper_gp);
   spar_gp_add_transitive_triple_anchor_filter (sparp, subj_vname, subject, subj_is_plain_var);
@@ -2868,6 +2870,8 @@ spar_gp_add_ppath_triples (sparp_t *sparp, SPART *graph, SPART *subject, SPART *
             t_set_push (&opts, box_copy (pp->_.ppath.minrepeat));
             t_set_push (&opts, (caddr_t)((ptrlong)T_MIN_L));
           }
+        t_set_push (&opts, (caddr_t)((ptrlong)1));
+        t_set_push (&opts, (caddr_t)((ptrlong)T_NO_CYCLES_L));
         t_set_push (&opts, (caddr_t)((ptrlong)1));
         t_set_push (&opts, (caddr_t)((ptrlong)TRANSITIVE_L));
         if (wrapper_gp_needed)

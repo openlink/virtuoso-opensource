@@ -2473,6 +2473,13 @@ sparp_gp_trav_equiv_audit_retvals (sparp_t *sparp, SPART *curr, sparp_trav_state
     case SPAR_BLANK_NODE_LABEL: break;
     default: return 0;
     }
+  if (SPART_BAD_EQUIV_IDX == curr->_.var.equiv_idx)
+    {
+      eq = sparp_equiv_get (sparp, top_gp, curr, SPARP_EQUIV_GET_NAMESAKES);
+      if ((NULL != eq) && (0 != curr->_.var.rvr.rvrRestrictions))
+        spar_audit_error (sparp, "sparp_" "gp_trav_equiv_audit_retvals(): variable out of eq but there is an eq for its namesakes");
+      return;
+    }
   eq = sparp_equiv_get (sparp, top_gp, curr, SPARP_EQUIV_GET_ASSERT | SPARP_EQUIV_GET_NAMESAKES);
   if (eq->e_own_idx != curr->_.var.equiv_idx)
     spar_audit_error (sparp, "sparp_" "gp_trav_equiv_audit_retvals(): eq idx mismatch");
@@ -4599,19 +4606,25 @@ sparp_set_options_selid_and_tabid (sparp_t *sparp, SPART **options, caddr_t new_
   int ctr;
   DO_BOX_FAST_REV (SPART *, opt_expn, ctr, options)
     {
-      if (!SPAR_IS_BLANK_OR_VAR (opt_expn))
-        continue;
-      if (strcmp (opt_expn->_.var.selid, new_selid)) /* weird re-location */
+      switch (SPART_TYPE (opt_expn))
         {
-          if (SPART_BAD_EQUIV_IDX != opt_expn->_.var.equiv_idx)
+        case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL:
+          if (strcmp (opt_expn->_.var.selid, new_selid)) /* weird re-location */
             {
-              sparp_equiv_t *eq = SPARP_EQUIV (sparp, opt_expn->_.var.equiv_idx);
-              sparp_equiv_remove_var (sparp, eq, opt_expn);
+              if (SPART_BAD_EQUIV_IDX != opt_expn->_.var.equiv_idx)
+                {
+                  sparp_equiv_t *eq = SPARP_EQUIV (sparp, opt_expn->_.var.equiv_idx);
+                  sparp_equiv_remove_var (sparp, eq, opt_expn);
+                }
+              opt_expn->_.var.selid = /*t_box_copy*/ (new_selid);
             }
-          opt_expn->_.var.selid = /*t_box_copy*/ (new_selid);
+          if (NULL != opt_expn->_.var.tabid)
+            opt_expn->_.var.tabid = /*t_box_copy*/ (new_tabid);
+          break;
+        case SPAR_LIST:
+          sparp_set_options_selid_and_tabid (sparp, opt_expn->_.list.items, new_selid, new_tabid);
+          break;
         }
-      if (NULL != opt_expn->_.var.tabid)
-        opt_expn->_.var.tabid = /*t_box_copy*/ (new_tabid);
     }
   END_DO_BOX_FAST_REV;
 }
