@@ -15230,8 +15230,10 @@ bif_uses_index (bif_t bif)
   bmd = find_bif_metadata_by_bif (bif);
   if (NULL == bmd)
     {
+#ifdef DEBUG
       print_trace ();
       log_info ("bif_uses_index () with unregistered %p\n", bif);
+#endif
       return 0;
     }
   return bmd->bmd_uses_index;
@@ -15243,8 +15245,10 @@ bif_is_aggregate (bif_t bif)
   bif_metadata_t *bmd = find_bif_metadata_by_bif (bif);
   if (NULL == bmd)
     {
+#ifdef DEBUG
       print_trace ();
       log_info ("bif_is_aggregate () with unregistered %p\n", bif);
+#endif
       return 0;
     }
   return bmd->bmd_is_aggregate;
@@ -15257,8 +15261,10 @@ bif_is_no_cluster (bif_t bif)
   bif_metadata_t *bmd = find_bif_metadata_by_bif (bif);
   if (NULL == bmd)
     {
+#ifdef DEBUG
       print_trace ();
       log_info ("bif_is_no_cluster () with unregistered %p\n", bif);
+#endif
       return 0;
     }
   return bmd->bmd_no_cluster;
