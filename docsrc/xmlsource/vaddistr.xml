@@ -410,6 +410,9 @@ elements may not be part of some other package, hence no package uninstall
 would be available leading the DBA to drop them with the appropriate
 SQL commands.</para>
 
+<para>To enable automatic vads updates on server startup, set the VADInstallDir parameter in the 
+	<link linkend="ini_Parameters">[Parameters] ini section</link> with path the folder containg 
+	the vads files.</para>
 </sect3>
 
 <sect3 id="vadpackageoverlap"><title>Package Overlap</title>

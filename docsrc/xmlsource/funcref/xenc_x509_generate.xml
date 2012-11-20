@@ -40,6 +40,7 @@
 	<paramdef>in <parameter>validity</parameter> integer</paramdef>
 	<paramdef>in <parameter>subject</parameter> vector</paramdef>
 	<paramdef>in <parameter>extensions</parameter> vector</paramdef>
+	<paramdef><optional>in <parameter>hours</parameter> integer</optional></paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
@@ -66,6 +67,11 @@
     </refsect2>
     <refsect2><title>extensions</title>
 	<para>An array of name/value pairs to add as X.509v3 extensions to certificate</para>
+    </refsect2>
+    <refsect2><title>hours</title>
+	<para>If specified it is added to the days which allows a more fine-grained control over 
+		the expiration date.
+  </para>
     </refsect2>
   </refsect1>
   <refsect1 id="ret_xenc_x509_generate"><title>Return Types</title>

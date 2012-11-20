@@ -387,7 +387,8 @@ create procedure WS.WS.SITEMAP_BB_STORE (
   </listitem>    
 </itemizedlist>  	
   </listitem>
-  <listitem>Hatch "Ask for RDF"
+  <listitem>Optionally you can select "Convert Link" to make all HREFs in the local stored content relative.</listitem>
+  <listitem>Hatch "Accept RDF"
     <figure id="cr16" float="1">
       <title>Setting up a Content Crawler Job to Retrieve Semantic Sitemap content</title>
       <graphic fileref="ui/cr16.png"/>
@@ -396,12 +397,13 @@ create procedure WS.WS.SITEMAP_BB_STORE (
       <title>Setting up a Content Crawler Job to Retrieve Semantic Sitemap content</title>
       <graphic fileref="ui/cr17.png"/>
     </figure>    
+  </listitem>  
+  <listitem>Optionally you can hatch "Store metadata *" and specify which RDF Cartridges to be included from the Sponger: 
     <figure id="cr17a" float="1">
       <title>Setting up a Content Crawler Job to Retrieve Semantic Sitemap content</title>
       <graphic fileref="ui/cr17a.png"/>
     </figure>        
   </listitem>
-  <listitem>Optionally you can select "Convert Link" to make all HREFs in the local stored content relative.</listitem>
   <listitem>Click the button "Create". 
     <figure id="cr18" float="1">
       <title>Setting up a Content Crawler Job to Retrieve Semantic Sitemap content</title>

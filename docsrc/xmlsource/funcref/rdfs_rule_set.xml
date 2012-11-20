@@ -63,10 +63,24 @@ of the Virtuoso instance.</para>
     <title>Examples</title>
     <example id="ex_rdfs_rule_set">
       <title>Simple example</title>
-      <para>Create rule set:</para>
-      <screen>
+      <para>Create rule set and  verify rule's existence:</para>
+<programlisting><![CDATA[
         SQL> rdfs_rule_set('myset', 'http://mygraph.com');
-      </screen>
+Done. -- 15 msec.
+SQL> SELECT * FROM DB.DBA.SYS_RDF_SCHEMA ;
+RS_NAME                              RS_URI                                                         RS_G
+VARCHAR NOT NULL                     VARCHAR NOT NULL                                               VARCHAR
+_______________________________________________________________________________                    
+                                                                                                   
+http://localhost:8890/dataspace      http://localhost:8890/dataspace/inf                            NULL
+http://www.w3.org/2002/07/owl#       http://www.w3.org/2002/07/owl#                                 NULL
+myset                                http://mygraph.com                                             NULL
+virtrdf-ifp                          virtrdf-ifp                                                    NULL
+virtrdf-label                        virtrdf-label                                                  NULL
+virtrdf-meta-entity-class            http://www.openlinksw.com/schemas/virtrdf-meta-entity-class    NULL
+
+7 Rows. -- 0 msec.
+]]></programlisting>      
     </example>
   </refsect1>
   <refsect1 id="seealso_rdfs_rule_set">

@@ -164,11 +164,13 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &quarter; &quote_dotted;
 
 &randomize; &rclose; &regexp_match; &regexp_parse; &regexp_substr;
-&rdf_audit_metadata; &rdf_backup_metadata; &rdf_void_store;
+&rdf_audit_metadata;&rdf_graph_security_audit; &rdf_default_user_perms_set; &rdf_default_user_perms_del;
+&rdf_backup_metadata; &rdf_void_store;
 <!-- TBD: &rdf_load_turtle; -->
 &rdf_restore_metadata; &rdf_load_rdfxml_mt; &rdf_load_rdfxml; &rdf_load_rdfa; &ld_dir; &ttlp; &ttlp_mt; &ttlp_mt_local_file; &rdf_datatype_of_obj; 
 &rdf_triples_to_rdf_xml_text; &rdf_triples_to_ttl; &rdf_64bit_upgrade; &rdf_view_sync_to_physical;
-&rdf_convert_rdfxml_to_ttl; &rdf_graph_group_create; &rdf_graph_group_ins; &rdfs_rule_set;
+&rdf_convert_rdfxml_to_ttl; &rdf_graph_group_create; &rdf_graph_group_ins; &rdf_graph_user_perms_set; 
+&rdf_graph_user_perms_del; &rdf_all_user_perms_del; &rdfs_rule_set;
 &rdf_graph_collect_fp_list; &rdf_graph_diff; &rdf_suo_apply_patch;
 &rdf_suo_diff_ttl; &sparql_rdb2rdf_codegen; &sparql_rdb2rdf_list_tables; &sparql_select_known_graphs;
 &rowvector_digit_sort; <!-- &rowvector_subj_sort; -->

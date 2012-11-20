@@ -139,7 +139,7 @@
 	  <sect4 id="rdfadmaclsponger"><title>Sponger</title>
 	    <para>Manage Sponger rules by adding new ones, deleting, re-ordering, etc.</para>
 		  <para>This tab is available only when the 
-	    <ulink url="http://s3.amazonaws.com/opldownload/uda/vad-packages/6.1/virtuoso/rdf_mappers_dav.vad">rdf_mappers_dav.vad</ulink> 
+	    <ulink url="http://s3.amazonaws.com/opldownload/uda/vad-packages/6.3/virtuoso/cartridges_dav.vad">cartridges_dav.vad</ulink> 
 	    is installed.</para>	
 	    <figure id="adminuirdf15" float="1">
         <title>RDF</title>

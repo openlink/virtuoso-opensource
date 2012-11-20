@@ -615,6 +615,14 @@ OS directories denied for file operations.  See <link linkend="acl">Virtuoso
 ACL's</link> for information on functions that are restricted.</para>
 					</formalpara>
 				</listitem>
+				<listitem id="ini_Parameters_VADInstallDir">
+					<formalpara>
+						<title>VADInstallDir=&lt;path&gt;</title>
+						<para>&lt;path&gt; := &lt;absolute_path&gt; or &lt;relative_path&gt; OS directory containig 
+						VADs files. When set, enables automatic update of vads on server startup. On Windows use in 
+						the path "\". </para>
+					</formalpara>
+				</listitem>
 				<listitem id="ini_Parameters_SSLServerPort">
 					<formalpara>
 						<title>SSLServerPort</title>

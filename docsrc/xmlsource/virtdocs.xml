@@ -314,10 +314,16 @@
 <!ENTITY randomize				SYSTEM "funcref/randomize.xml">
 <!ENTITY rclose					SYSTEM "funcref/rclose.xml">
 <!ENTITY rdf_audit_metadata     		SYSTEM "funcref/rdf_audit_metadata.xml">
+<!ENTITY rdf_graph_security_audit               SYSTEM  "funcref/rdf_graph_security_audit.xml">
+<!ENTITY rdf_default_user_perms_set             SYSTEM  "funcref/rdf_default_user_perms_set.xml">
+<!ENTITY rdf_default_user_perms_del             SYSTEM  "funcref/rdf_default_user_perms_del.xml">
 <!ENTITY rdf_void_store                         SYSTEM  "funcref/rdf_void_store.xml">
 <!ENTITY rdf_backup_metadata    		SYSTEM "funcref/rdf_backup_metadata.xml">
 <!ENTITY rdf_graph_group_create                 SYSTEM  "funcref/rdf_graph_group_create.xml">
 <!ENTITY rdf_graph_group_ins                    SYSTEM  "funcref/rdf_graph_group_ins.xml">
+<!ENTITY rdf_graph_user_perms_set               SYSTEM  "funcref/rdf_graph_user_perms_set.xml">
+<!ENTITY rdf_graph_user_perms_del               SYSTEM  "funcref/rdf_graph_user_perms_del.xml">
+<!ENTITY rdf_all_user_perms_del                 SYSTEM  "funcref/rdf_all_user_perms_del.xml">
 <!ENTITY rdfs_rule_set                          SYSTEM  "funcref/rdfs_rule_set.xml">
 <!ENTITY rdf_view_sync_to_physical              SYSTEM  "funcref/rdf_view_sync_to_physical.xml">
 

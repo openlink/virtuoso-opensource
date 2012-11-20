@@ -2825,7 +2825,7 @@ an RDF representation of the target. When transforming to RDF, the RDF format (R
 or by content negotiation.
 </para>
 <para>
-When the rdf_mappers_dav.vad package is installed, Virtuoso reserves the path '/about/[id|html|data|rdf]/http/' for the RDF
+When the cartridges_dav.vad package is installed, Virtuoso reserves the path '/about/[id|html|data|rdf]/http/' for the RDF
 proxy service. In the current implementation, Virtuoso defines virtual directories for HTTP requests that
 come to the port specified as 'ServerPort' in the '[HTTPServer]' section of Virtuoso configuration file
 and refer to the above path string. So, if the Virtuoso installation on host example.com listens for HTTP
@@ -2833,7 +2833,7 @@ requests on port 8080, client applications should use the 'service endpoint' str
 'http://example.com:8080/about/[id|html|data|rdf]/http/'.
 </para>
 <para>
-If the rdf_mappers_dav.vad VAD package is not installed, then the path '/proxy/rdf/' is used for the Sponger Proxy URI Service.
+If the cartridges_dav.vad VAD package is not installed, then the path '/proxy/rdf/' is used for the Sponger Proxy URI Service.
 </para>
 <para>
 The old pattern for the Sponger Proxy URI Service, '/proxy/', is now deprecated.
@@ -4039,6 +4039,7 @@ _______________________________________________________________________________
       <itemizedlist mark="bullet">
         <listitem><link linkend="rdfpredicatessparqlexamples">Example filtering RDF objects triples by a given predicate</link></listitem>
         <listitem><link linkend="rdfsparqlendpointexamples6">Example with extraction part of literal as variable</link></listitem>
+        <listitem><link linkend="rdfsparulexamples25">Example for Usage of Expressions inside CONSTRUCT, INSERT and DELETE {...} Templates</link></listitem>
         <listitem><link linkend="rdfsparulexamples5">Example for various expressions usage</link></listitem>
         <listitem><link linkend="rdfsparulexamples8">Example for generating RDF information resource URI</link></listitem>
       </itemizedlist>
@@ -6996,6 +6997,157 @@ nodeID://b10007  p        o2b
          before doing <code>bif:iri_id_XXX</code> tricks.
          </para>
        </sect4>
+       <sect4 id="rdfsparulexamples25"><title>Example usage of expressions inside CONSTRUCT, INSERT and DELETE {...} Templates</title>
+         <para>When one wants to use expressions inside CONSTRUCT {...}, INSERT {...} or DELETE {...} 
+         	construction templates, the expressions should be in back-quotes i.e:
+         </para>	
+<programlisting><![CDATA[
+`expression`
+]]></programlisting>
+           <sect5 id="rdfsparulexamples25what"><title>What?</title>
+             <para>How to construct RDF triples via SPARQL CONSTRUCT queries that include expressions.</para>
+           </sect5>           
+           <sect5 id="rdfsparulexamples25why"><title>Why?</title>
+             <para>The are times when you need to post-process existing RDF triples en route to creating enhanced data views. For instance, enhancing the literal values associated with annotation properties such as rdfs:label and rdfs:comment .</para>
+           </sect5>           
+           <sect5 id="rdfsparulexamples25how"><title>Why?</title>
+             <para>Here some SPARQL 1.1 Update Language examples showcasing how this is achieved using Virtuoso.</para>
+             <sect6 id="rdfsparulexamples25howex1"><title>Example usage of expression inside CONSTRUCT</title>             
+<programlisting><![CDATA[
+CONSTRUCT 
+  {
+    ?inst  rdfs:label `bif:concat ( ?inst_label, 
+                                    " Instance with up to ", 
+                                    str(?core_val), 
+                                    " logical processor cores and " , 
+                                    str(?sess_val) , " concurrent ODBC sessions from licensed host" )`
+  }
+FROM <http://uda.openlinksw.com/pricing/>
+WHERE 
+  {
+    ?inst a gr:Individual, oplweb:ProductLicense ;
+                          rdfs:label ?inst_label ;
+           oplweb:hasMaximumProcessorCores ?core ;
+                        oplweb:hasSessions ?sess .
+    
+    ?core a gr:QuantitativeValueInteger ;
+        gr:hasMaxValueInteger ?core_val .
+             
+    ?sess a gr:QuantitativeValueInteger ;
+                  gr:hasValue ?sess_val .
+}	
+]]></programlisting>     
+               <para>See <ulink url="http://uriburner.com/c/MBGD7Y">live results</ulink> of the query.</para>        
+             </sect6>             
+             <sect6 id="rdfsparulexamples25howex2"><title>Example usage of expression inside INSERT</title>             
+<programlisting><![CDATA[
+SPARQL 
+INSERT INTO GRAPH <urn:mygraph> 
+  {
+    ?inst  rdfs:label `bif:concat ( ?inst_label, 
+                                    " Instance with up to ", 
+                                    str(?core_val), 
+                                    " logical processor cores and " , 
+                                    str(?sess_val) , 
+                                    " concurrent ODBC sessions from licensed host" )`
+  }
+FROM <http://uda.openlinksw.com/pricing/>
+WHERE 
+  {
+    ?inst a gr:Individual, oplweb:ProductLicense ;
+                          rdfs:label ?inst_label ;
+           oplweb:hasMaximumProcessorCores ?core ;
+                        oplweb:hasSessions ?sess .
+    
+    ?core a gr:QuantitativeValueInteger ;
+        gr:hasMaxValueInteger ?core_val .
+             
+    ?sess a gr:QuantitativeValueInteger ;
+                  gr:hasValue ?sess_val .
+};
+
+Done. -- 406 msec.
+
+
+SQL> SPARQL 
+SELECT ?label 
+FROM <urn:mygraph> 
+WHERE 
+  {
+    ?inst  rdfs:label ?label
+  };
+
+
+label
+VARCHAR
+_______________________________________________________________________________
+
+ODBC Driver (Single-Tier Lite Express Edition) Instance with up to 16 logical processor cores and 5 concurrent ODBC sessions from licensed host
+ODBC Driver (Single-Tier Lite Express Edition) Instance with up to 16 logical processor cores and 5 concurrent ODBC sessions from licensed host
+ODBC Driver (Single-Tier Lite Edition) Instance with up to 16 logical processor cores and 5 concurrent ODBC sessions from licensed host
+ODBC Driver (Single-Tier Lite Edition) Instance with up to 16 logical processor cores and 5 concurrent ODBC sessions from licensed host
+ODBC Driver (Single-Tier Lite Edition) Instance with up to 16 logical processor cores and 5 concurrent ODBC sessions from licensed host
+ODBC Driver (Single-Tier Lite Edition) Instance with up to 16 logical processor cores and 5 concurrent ODBC sessions from licensed host
+JDBC Driver (Single-Tier Lite Edition) Instance with up to 16 logical processor cores and 5 concurrent ODBC sessions from licensed host
+OLEDB Driver (Single-Tier Lite Edition) Instance with up to 16 logical processor cores and 5 concurrent ODBC sessions from licensed host
+ADO.NET Driver (Single-Tier Lite Edition) Instance with up to 16 logical processor cores and 5 concurrent ODBC sessions from licensed host
+
+9 Rows. -- 31 msec.	
+]]></programlisting>             
+             </sect6>             
+             <sect6 id="rdfsparulexamples25howex3"><title>Example usage of expression inside DELETE</title>             
+<programlisting><![CDATA[
+SPARQL 
+DELETE FROM GRAPH <urn:mygraph> 
+{ ?inst rdfs:label `bif:concat ( "JDBC Driver (Single-Tier Lite Edition) Instance with up to ", str(?core_val), " logical processor cores and " , str(?sess_val) , " concurrent ODBC sessions from licensed host" )` } 
+FROM <http://uda.openlinksw.com/pricing/> 
+WHERE 
+{
+    ?inst a gr:Individual, oplweb:ProductLicense ;
+                          rdfs:label ?inst_label ;
+           oplweb:hasMaximumProcessorCores ?core ;
+                        oplweb:hasSessions ?sess .
+    filter (regex(?inst_label,"JDBC Driver")) .                     
+    
+    ?core a gr:QuantitativeValueInteger ;
+        gr:hasMaxValueInteger ?core_val .
+             
+    ?sess a gr:QuantitativeValueInteger ;
+                  gr:hasValue ?sess_val .
+}
+;
+
+
+Done. -- 32 msec.
+
+
+SQL> SPARQL 
+SELECT ?label 
+FROM <urn:mygraph> 
+WHERE 
+  {
+    ?inst  rdfs:label ?label
+  };
+
+
+label
+VARCHAR
+_______________________________________________________________________________
+
+ODBC Driver (Single-Tier Lite Express Edition) Instance with up to 16 logical ...
+ODBC Driver (Single-Tier Lite Express Edition) Instance with up to 16 logical ...
+ODBC Driver (Single-Tier Lite Edition) Instance with up to 16 logical processor ...
+ODBC Driver (Single-Tier Lite Edition) Instance with up to 16 logical processor ...
+ODBC Driver (Single-Tier Lite Edition) Instance with up to 16 logical processor ...
+ODBC Driver (Single-Tier Lite Edition) Instance with up to 16 logical processor ...
+OLEDB Driver (Single-Tier Lite Edition) Instance with up to 16 logical processor ...
+ADO.NET Driver (Single-Tier Lite Edition) Instance with up to 16 logical processor ...
+
+8 Rows. -- 16 msec.	
+]]></programlisting>             
+             </sect6>                                       
+           </sect5>           
+       </sect4>
    </sect3>
    </sect2>
 <sect2 id="sparqlbi"><title>Business Intelligence Extensions for SPARQL</title>
@@ -7767,69 +7919,338 @@ set automatically.</para>
 </orderedlist>
 </sect3>
 <sect3 id="rdfgraphsecurityintex"><title>Example: Blogs and Resource Sharing</title>
+
+  <para>The following example demonstrates usage of the following functions:</para>
+
+  <itemizedlist mark="bullet">
+    <listitem><link linkend="fn_rdf_default_user_perms_set"><function>DB.DBA.RDF_DEFAULT_USER_PERMS_SET (uname, permissions, set_private)</function></link> ;</listitem>
+    <listitem><link linkend="fn_rdf_default_user_perms_del"><function>DB.DBA.RDF_DEFAULT_USER_PERMS_DEL (uname, set_private)</function></link> ;</listitem>
+    <listitem><link linkend="fn_rdf_graph_user_perms_set"><function>DB.DBA.RDF_GRAPH_USER_PERMS_SET (graph_iri, uname, permissions)</function></link> ;</listitem>  
+    <listitem><link linkend="fn_rdf_graph_user_perms_del"><function>DB.DBA.RDF_GRAPH_USER_PERMS_DEL (graph_iri, uname)</function></link> ;</listitem>  
+    <listitem><link linkend="fn_rdf_all_user_perms_del"><function>DB.DBA.RDF_ALL_USER_PERMS_DEL (uname, uid)</function></link> ;</listitem>  
+    <listitem></listitem>
+  </itemizedlist>
+  
 <para>Consider a "groupware" application that let users create personal resources with access policies.</para>
 
 <programlisting><![CDATA[
 -- First, create few users, in alphabetical order.
-DB.DBA.USER_CREATE ('Anna', 'Anna');
-DB.DBA.USER_CREATE ('Brad', 'Brad');
-DB.DBA.USER_CREATE ('Carl', 'Carl');
-grant SPARQL_UPDATE to "Anna";
-grant SPARQL_UPDATE to "Brad";
-grant SPARQL_UPDATE to "Carl";
+SQL> DB.DBA.USER_CREATE ('Anna', 'Anna');
+Done. -- 0 msec.
+SQL> DB.DBA.USER_CREATE ('Brad', 'Brad');
+Done. -- 0 msec.
+SQL> DB.DBA.USER_CREATE ('Carl', 'Carl');
+Done. -- 16 msec.
+SQL> GRANT SPARQL_UPDATE to "Anna";
+Done. -- 0 msec.
+SQL> GRANT SPARQL_UPDATE to "Brad";
+Done. -- 0 msec.
+SQL> GRANT SPARQL_UPDATE to "Carl";
+Done. -- 0 msec.
 
 -- At least some data are supposed to be confidential, thus the whole storage becomes confidential.
-DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('nobody', 0);
+SQL> DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('nobody', 0);
+Done. -- 16 msec.
 
 -- Moreover, no one of created users have access to all graphs (even for reading).
-DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('Anna', 0);
-DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('Brad', 0);
-DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('Carl', 0);
+SQL> DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('Anna', 0);
+Done. -- 0 msec.
+SQL> DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('Brad', 0);
+Done. -- 0 msec.
+SQL> DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('Carl', 0);
+Done. -- 0 msec.
+
+
+-- Add Anna's and Brad's private graph to the group http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs:
+SQL> DB.DBA.RDF_GRAPH_GROUP_INS ('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', 'http://example.com/Anna/private');
+SQL> DB.DBA.RDF_GRAPH_GROUP_INS ('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', 'http://example.com/Brad/private');
+
+-- Anna's graphs:
+--insert simple data in Anna's personal system graph:
+SQL> SPARQL INSERT IN <http://example.com/Anna/system> { <Anna-system> a <secret> };   
+Done. -- 31 msec.
+
+--insert simple data in Anna's private graph:
+SQL> SPARQL INSERT IN <http://example.com/Anna/private> { <Anna-private> a <secret> };
+Done. -- 0 msec.
+
 
 -- Anna can only read her personal system data graph.
-DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Anna/system', 'Anna', 1);
+SQL> DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Anna/system', 'Anna', 1);
+Done. -- 0 msec
 
 -- Anna can read and write her private data graph.
-DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Anna/private', 'Anna', 3);
+SQL> DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Anna/private', 'Anna', 3);
+Done. -- 0 msec
 
--- Anna and Bred are friends and can read each others notes for friends.
-DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Anna/friends', 'Anna', 3);
-DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Anna/friends', 'Brad', 1);
-DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Brad/friends', 'Brad', 3);
-DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Brad/friends', 'Anna', 1);
+-- Brad's graphs:
+-- insert simple data in Brad's personal system graph:
+SQL> SPARQL INSERT IN <http://example.com/Brad/system> { <Brad-system> a <secret> };   
+Done. -- 0 msec
+
+-- insert simple data in Brad's private graph:
+SQL> SPARQL INSERT IN <http://example.com/Brad/private> { <Brad-private> a <secret> };
+Done. -- 0 msec
+
+-- Brad can only read his personal system data graph.
+SQL> DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Brad/system', 'Brad', 1);
+Done. -- 0 msec
+
+-- Brad can read and write his private data graph.
+SQL> DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Brad/private', 'Brad', 3);
+Done. -- 0 msec
+
+
+-- Friends graphs:
+SQL> SPARQL INSERT IN <http://example.com/Anna/friends> { <Anna-friends> foaf:knows 'Brad' };   
+Done. -- 14 msec
+SQL> SPARQL INSERT IN <http://example.com/Brad/friends> { <Brad-friends> foaf:knows 'Anna' };   
+Done. -- 15 msec
+
+-- Anna and Brad are friends and can read each others notes for friends.
+SQL> DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Anna/friends', 'Anna', 3);
+SQL> DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Anna/friends', 'Brad', 1);
+SQL> DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Brad/friends', 'Brad', 3);
+SQL> DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Brad/friends', 'Anna', 1);
+
+-- BubbleSortingServicesInc graph 
+SQL> SPARQL INSERT IN <http://example.com/BubbleSortingServicesInc> { <BubbleSortingServicesInc-info> a <info> };   
+Done. -- 31 msec
 
 -- Brad and Carl share write access to graph of his company.
-DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/BubbleSortingServicesInc', 'Brad', 3);
-DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/BubbleSortingServicesInc', 'Carl', 3);
+SQL> DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/BubbleSortingServicesInc', 'Brad', 3);
+SQL> DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/BubbleSortingServicesInc', 'Carl', 3);
+
+-- Anna's blog
+SQL> SPARQL INSERT IN <http://example.com/Anna/blog> { <Anna-blog> a <my-blog> };   
 
 -- Anna writes a blog for public.
-DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Anna/blog', 'Anna', 3);
-DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Anna/blog', 'nobody', 1);
+SQL> DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Anna/blog', 'Anna', 3);
+SQL> DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Anna/blog', 'nobody', 1);
 
 -- DBpedia is public read and local discussion wiki is readable and writable.
-DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://dbpedia.org/', 'nobody', 1);
-DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/wiki', 'nobody', 3);
-DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/publicB', 'nobody', 3);
+SQL> DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://dbpedia.org/', 'nobody', 1);
+SQL> DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/wiki', 'nobody', 3);
+SQL> DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/public', 'nobody', 3);
 
 -- Graph groups have its own security.
-DB.DBA.RDF_GRAPH_GROUP_CREATE ('http://example.com/Personal', 1);
-DB.DBA.RDF_GRAPH_GROUP_INS ('http://example.com/Personal', 'http://example.com/Anna/system');
-DB.DBA.RDF_GRAPH_GROUP_INS ('http://example.com/Personal', 'http://example.com/Anna/private');
-DB.DBA.RDF_GRAPH_GROUP_INS ('http://example.com/Personal', 'http://example.com/Brad/system');
-DB.DBA.RDF_GRAPH_GROUP_INS ('http://example.com/Personal', 'http://example.com/Brad/private');
-DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Personal', 'Anna', 8);
-DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Personal', 'Brad', 8);
-]]></programlisting>
+SQL> DB.DBA.RDF_GRAPH_GROUP_CREATE ('http://example.com/Personal', 1);
+SQL> DB.DBA.RDF_GRAPH_GROUP_INS ('http://example.com/Personal', 'http://example.com/Anna/system');
+SQL> DB.DBA.RDF_GRAPH_GROUP_INS ('http://example.com/Personal', 'http://example.com/Anna/private');
+SQL> DB.DBA.RDF_GRAPH_GROUP_INS ('http://example.com/Personal', 'http://example.com/Brad/system');
+SQL> DB.DBA.RDF_GRAPH_GROUP_INS ('http://example.com/Personal', 'http://example.com/Brad/private');
+SQL> DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Personal', 'Anna', 8);
+SQL> DB.DBA.RDF_GRAPH_USER_PERMS_SET ('http://example.com/Personal', 'Brad', 8);
 
-<para>If Anna and Brad execute same</para>
-
-<programlisting><![CDATA[
+-- See as dba user what is in the <http://example.com/Personal> graph:
+SQL> SPARQL 
 SELECT *
 FROM <http://example.com/Personal>
-WHERE { ?s ?p ?o }
-]]></programlisting>
+WHERE { ?s ?p ?o } ;
+s               p                                                  o
+VARCHAR         VARCHAR                                            VARCHAR
+_______________________________________________________________________________
 
-<para>then results will be totally different: users will not get access to each others data.</para>
+Anna-system     http://www.w3.org/1999/02/22-rdf-syntax-ns#type    secret
+Anna-private    http://www.w3.org/1999/02/22-rdf-syntax-ns#type    secret
+Brad-system     http://www.w3.org/1999/02/22-rdf-syntax-ns#type    secret
+Brad-private    http://www.w3.org/1999/02/22-rdf-syntax-ns#type    secret
+
+4 Rows. -- 32 msec.
+
+-- See as Anna user what is in the <http://example.com/Personal> graph:
+SQL> reconnect Anna;
+Connected to OpenLink Virtuoso
+Driver: 06.04.3132 OpenLink Virtuoso ODBC Driver
+
+SQL> SPARQL 
+SELECT *
+FROM <http://example.com/Personal>
+WHERE { ?s ?p ?o };
+s               p                                                  o
+VARCHAR         VARCHAR                                            VARCHAR
+_______________________________________________________________________________
+
+Anna-system     http://www.w3.org/1999/02/22-rdf-syntax-ns#type    secret
+Anna-private    http://www.w3.org/1999/02/22-rdf-syntax-ns#type    secret
+
+
+-- See as Brad user what is in the <http://example.com/Personal> graph:
+SQL> reconnect Brad;
+Connected to OpenLink Virtuoso
+Driver: 06.04.3132 OpenLink Virtuoso ODBC Driver
+
+SQL> SPARQL SELECT *
+FROM <http://example.com/Personal>
+WHERE { ?s ?p ?o };
+s               p                                                  o
+VARCHAR         VARCHAR                                            VARCHAR
+_______________________________________________________________________________
+
+Brad-system     http://www.w3.org/1999/02/22-rdf-syntax-ns#type    secret
+Brad-private    http://www.w3.org/1999/02/22-rdf-syntax-ns#type    secret
+
+-- See as Anna user what is in Brad's friends graph <http://example.com/Brad/friends>:
+SQL> reconnect Anna;
+Connected to OpenLink Virtuoso
+
+SQL> SPARQL SELECT *
+FROM <http://example.com/Brad/friends>
+WHERE { ?s ?p ?o };
+s              p                                 o
+VARCHAR        VARCHAR                           VARCHAR
+_________________________________________________________
+
+Brad-friends   http://xmlns.com/foaf/0.1/knows   Anna
+1 Rows. -- 0 msec.
+
+-- Remove Anna's read permissions on Brad's notes:
+SQL> reconnect dba;
+SQL> RDF_GRAPH_USER_PERMS_DEL('http://example.com/Brad/friends','Anna');
+
+-- See again as Anna user what is in Brad's friends graph <http://example.com/Brad/friends>:
+SQL> reconnect Anna;
+Connected to OpenLink Virtuoso
+
+SQL> SPARQL SELECT *
+FROM <http://example.com/Brad/friends>
+WHERE { ?s ?p ?o };
+s              p                                 o
+VARCHAR        VARCHAR                           VARCHAR
+_________________________________________________________
+
+0 Rows. -- 0 msec.
+
+SQL> SPARQL 
+SELECT *
+FROM <http://example.com/Anna/blog>
+WHERE { ?s ?p ?o } ;
+
+s             p                                                o
+VARCHAR       VARCHAR                                          VARCHAR
+_______________________________________________________________________________
+
+Anna-blog     http://www.w3.org/1999/02/22-rdf-syntax-ns#type  my-blog
+
+1 Rows. -- 16 msec.
+
+SQL> SPARQL 
+SELECT *
+FROM <http://example.com/Anna/friends>
+WHERE { ?s ?p ?o } ;
+
+s             p                                o
+VARCHAR       VARCHAR                          VARCHAR
+_______________________________________________________________________________
+
+Anna-friends  http://xmlns.com/foaf/0.1/knows  Brad
+1 Rows. -- 16 msec.
+
+
+-- Remove all the setting of Brad's permissions, both default permissions and 
+-- permissions on specific graphs.
+-- Note: 142 is example id of Brads U_ID in DB.DBA.SYS_USERS table
+
+SQL> reconnect dba;
+Connected to OpenLink Virtuoso
+Driver: 06.04.3132 OpenLink Virtuoso ODBC Driver
+
+SQL> DB.DBA.RDF_ALL_USER_PERMS_DEL('Brad',142);
+Done. -- 0 msec.
+
+SQL> reconnect Brad;
+Connected to OpenLink Virtuoso
+Driver: 06.04.3132 OpenLink Virtuoso ODBC Driver
+
+SQL> SPARQL 
+SELECT *
+FROM <http://example.com/Anna/friends>
+WHERE { ?s ?p ?o } ;
+s          p          o
+VARCHAR    VARCHAR    VARCHAR
+_______________________________________________________________________________
+
+0 Rows. -- 16 msec.
+
+
+-- Check what Carl can see --
+SQL> reconnect Carl;
+Connected to OpenLink Virtuoso
+Driver: 06.04.3132 OpenLink Virtuoso ODBC Driver
+
+SQL> SPARQL 
+SELECT *
+FROM <http://example.com/BubbleSortingServicesInc>
+WHERE { ?s ?p ?o } ;
+
+s                              p                                                o
+VARCHAR                        VARCHAR                                          VARCHAR
+_______________________________________________________________________________
+
+BubbleSortingServicesInc-info  http://www.w3.org/1999/02/22-rdf-syntax-ns#type  info
+
+1 Rows. -- 0 msec.
+
+
+SQL> SPARQL 
+SELECT *
+FROM <http://example.com/Anna/private>
+WHERE { ?s ?p ?o } ;
+s               p                                                  o
+VARCHAR         VARCHAR                                            VARCHAR
+_______________________________________________________________________________
+
+0 Rows. -- 16 msec.
+
+
+-- let Carl read everything:
+SQL> reconnect dba;
+Connected to OpenLink Virtuoso
+Driver: 06.04.3132 OpenLink Virtuoso ODBC Driver
+
+SQL> DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('Carl', 1, 1);
+Done. -- 0 msec
+
+SQL> reconnect Carl;
+Enter password for Carl :
+Connected to OpenLink Virtuoso
+Driver: 06.04.3132 OpenLink Virtuoso ODBC Driver
+
+SQL> SPARQL 
+SELECT *
+FROM <http://example.com/Anna/private>
+WHERE { ?s ?p ?o } ;
+s               p                                                  o
+VARCHAR         VARCHAR                                            VARCHAR
+_______________________________________________________________________________
+
+Anna-private    http://www.w3.org/1999/02/22-rdf-syntax-ns#type    secret
+
+1 Rows. -- 16 msec.
+
+-- Remove Carl's default permissions:
+SQL> reconnect dba;
+Connected to OpenLink Virtuoso
+Driver: 06.04.3132 OpenLink Virtuoso ODBC Driver
+
+SQL> DB.DBA.RDF_DEFAULT_USER_PERMS_DEL('Carl', 1);
+Done. -- 0 msec.
+
+SQL> reconnect Carl;
+Enter password for Carl :
+Connected to OpenLink Virtuoso
+Driver: 06.04.3132 OpenLink Virtuoso ODBC Driver
+
+SQL> SPARQL 
+SELECT *
+FROM <http://example.com/Anna/private>
+WHERE { ?s ?p ?o } ;
+s               p                                                  o
+VARCHAR         VARCHAR                                            VARCHAR
+_______________________________________________________________________________
+
+0 Rows. -- 16 msec.
+]]></programlisting>
 </sect3>
 </sect2>
 <sect2 id="rdfgraphsecurityappcallb"><title>Application Callbacks for Graph Level Security</title>
@@ -10729,7 +11150,7 @@ into graph <http://www.openlinksw.com/> -- done</callret-0>
 		<graphic fileref="linked_data_gen_opts3.png"/>
         </figure>
 <para>
-Architecturally, the Sponger is comprised of a number of RDF Mappers two types of cartridges: Extractor 
+Architecturally, the Sponger is comprised of a number of Cartridges two types of cartridges: Extractor 
 and Meta Cartridges. Extractor Cartridges focus on data extraction and transformation services while 
 the Meta Cartridges provide lookups and joins across other linked data spaces and Web 2.0 APIs. Both 
 cartridge types are themselves comprised of a data extractors and RDF Schema/Ontology Mapper 
@@ -10737,7 +11158,7 @@ components.</para>
 <para>Cartridges are is highly customizable. Custom cartridges can be developed using any language 
 	supported by the Virtuoso Server Extensions API enabling structured linked data generation from 
 	resource types not available in the default Sponger Cartridge collection bundled -- as part of 
-	the Virtuoso Sponger VAD package (rdf_mappers_dav.vad).
+	the Virtuoso <ulink url="http://s3.amazonaws.com/opldownload/uda/vad-packages/6.3/virtuoso/cartridges_dav.vad">Cartridges VAD package</ulink>.
 </para>
     <figure id="virtuosospongerdiagram" float="1">
   	  <title>Virtuoso metadata extraction &amp; RDF structured data generation</title>
@@ -10786,7 +11207,7 @@ local cache invalidation is driven by an assessment of current time relative to 
 </para>
 <para>To manage the cache expiration, set the <emphasis>MinExpiration</emphasis> parameter in 
 your Virtuoso.ini file.</para>
-<para>Read full description of the parameter in the <link linkend="ini_SPARQL">[SPARQL] ini seciton</link>.</para>
+<para>Read full description of the parameter in the <link linkend="ini_SPARQL">[SPARQL] ini section</link>.</para>
 <para>Designed with a pluggable architecture, the Sponger's core functionality is provided by Cartridges.
 Each cartridge includes Data Extractors which extract data from one or more data sources, and Ontology
 Mappers which map the extracted data to one or more ontologies/schemas, and route to producing RDF
@@ -10809,16 +11230,16 @@ Examples of custom resolvers include:
 
 <sect2 id="virtuosospongerinstall"><title>Installation Steps</title>
 <orderedlist>
-  <listitem>Download the <ulink url="http://s3.amazonaws.com/opldownload/uda/vad-packages/6.1/virtuoso/rdf_mappers_dav.vad">rdf_mappers_dav.vad</ulink> package.</listitem>
-  <listitem>Install the rdf_mappers_dav.vad package by using the Conductor UI or by using iSQL:
+  <listitem>Download the <ulink url="http://s3.amazonaws.com/opldownload/uda/vad-packages/6.3/virtuoso/cartridges_dav.vad">Cartridges VAD package</ulink>.</listitem>
+  <listitem>Install the cartridges_dav.vad package by using the Conductor UI or by using iSQL:
 <programlisting><![CDATA[
-SQL> DB.DBA.VAD_INSTALL('tmp/rdf_mappers_dav.vad',0);
+SQL> DB.DBA.VAD_INSTALL('tmp/cartridges_dav.vad',0);
 SQL_STATE  SQL_MESSAGE
 VARCHAR  VARCHAR
 _______________________________________________________________________________
 
 00000    No errors detected
-00000    Installation of "RDF Mappers" is complete.
+00000    Installation of "Linked Data Cartridges" is complete.
 00000    Now making a final checkpoint.
 00000    Final checkpoint is made.
 00000    SUCCESS
@@ -11928,7 +12349,7 @@ a later section.</para>
       <sect4 id="virtuosospongercatrbundledrdfvad">
         <title>Cartridges VAD</title>
         <para>Virtuoso supplies a number of prewritten cartridges for extracting RDF data from a
-variety of popular Web resources and file types. The cartridges are bundled as part of the rdf_mappers_dav 
+variety of popular Web resources and file types. The cartridges are bundled as part of the cartridges_dav 
 VAD (Virtuoso Application Distribution).</para>
         <para>To see which cartridges are available, look at the 'Linked Data' screen in 
         	Conductor. This can be reached through the Linked Data -&gt; Sponger -&gt; Extractor 
@@ -13009,7 +13430,7 @@ single string or serialized array, generally can be used as mapper specific data
 </itemizedlist>
 </sect5>
 <sect5 id="virtuosospongerrdfmapperspackage"><title>Cartridges package content</title>
-<para>The Virtuoso supply as a <ulink url="http://s3.amazonaws.com/opldownload/uda/vad-packages/6.3/virtuoso/rdf_mappers_dav.vad">rdf_mappers_dav.vad</ulink> VAD package a cartridge for extracting RDF data
+<para>The Virtuoso supply as a <ulink url="http://s3.amazonaws.com/opldownload/uda/vad-packages/6.3/virtuoso/cartridges_dav.vad">cartridges_dav.vad</ulink> VAD package a cartridge for extracting RDF data
 from certain popular Web resources and file types. It can be installed (if not already) using
 VAD_INSTALL function, see the VAD chapter in documentation on how to do that.</para>
 <para><emphasis>HTTP-in-RDF</emphasis></para>
@@ -13083,7 +13504,7 @@ needs Virtuoso unzip plugin to be configured on the server.</para>
 Aperture framework (http://aperture.sourceforge.net/). This mapper needs Virtuoso with Java hosting
 support, Aperture framework and MetaExtractor.class installed on the host system in order to work.</para>
 <para>The Aperture framework &amp; MetaExtractor.class must be installed on the system before to
-install the <ulink url="http://s3.amazonaws.com/opldownload/uda/vad-packages/6.3/virtuoso/rdf_mappers_dav.vad">Cartridges VAD package</ulink>. 
+install the <ulink url="http://s3.amazonaws.com/opldownload/uda/vad-packages/6.3/virtuoso/cartridges_dav.vad">Cartridges VAD package</ulink>. 
 If the package is already installed, then to activate this mapper
 you can just re-install the VAD.</para>
 <para><emphasis>Setting-up Virtuoso with Java hosting to run Aperture framework</emphasis></para>
@@ -17818,20 +18239,27 @@ Other RDF Schema or OWL information is not taken into account.
 </para>
 </sect2>
 <sect2 id="rdfsparqlrulemake"><title>Making Rule Sets</title>
-<para>Since RDF Schema and OWL schemas are RDF graphs, these can be loaded into the triple store. Thus, in order to use
-such a schema as query context, one first loads the corresponding document into the triple store using <emphasis>ttlp</emphasis> or
-<emphasis>rdf_load_rdfxml</emphasis> or related functions. After the schema document is loaded, one can add the assertions therein
-into an inference context with the <emphasis>rdfs_rule_set</emphasis> function. This function specifies a logical name for the rule
-set plus a graph URI. It is possible to combine multiple schema graphs into a single rule set. A single schema
-graph may also independently participate in multiple rule sets.
-</para>
-<programlisting>
-rdfs_rule_set (in name varchar, in uri varchar, in remove int := 0)
-</programlisting>
-<para>This function adds the applicable facts of the graph into a rule set. The graph URI must correspond
-to the graph IRI of a graph stored in the triple store of the Virtuoso instance. If the remove argument
-is true, the specified graph is removed from the rule set instead.
-</para>
+  <para>Since RDF Schema and OWL schemas are RDF graphs, these can be loaded into the triple store. 
+  	Thus, in order to use such a schema as query context, one first loads the corresponding document 
+  	into the triple store using <link linkend="ttlp">ttlp()</link> or 
+  	<link linkend="rdf_load_rdfxml">rdf_load_rdfxml()</link> or related functions. After the schema 
+  	document is loaded, one can add the assertions there into an inference context with the 
+  	<link linkend="rdfs_rule_set">rdfs_rule_set()</link> function. This function specifies a logical 
+  	name for the rule set plus a graph URI. It is possible to combine multiple schema graphs into a 
+  	single rule set. A single schema graph may also independently participate in multiple rule sets.
+  </para>
+  <para>The <emphasis>DB.DBA.SYS_RDF_SCHEMA</emphasis> table contains information for all 
+  RDF rule sets in a Virtuoso instance. This table may be queried to, for instance, verify 
+  <link linkend="rdfs_rule_set">rdfs_rule_set()</link> activity:
+  </para>
+<programlisting><![CDATA[
+CREATE TABLE DB.DBA.SYS_RDF_SCHEMA (
+  RS_NAME VARCHAR,  -- The name of the rdf rule set 
+  RS_URI  VARCHAR,  -- The name of the graph 
+  RS_G    VARCHAR,  -- Column for system usage only 
+  PRIMARY KEY (RS_NAME, RS_URI))
+)
+]]></programlisting>  
 </sect2>
 <sect2 id="rdfsparqlrulechange"><title>Changing Rule Sets</title>
 <para>Changing a rule set affects queries made after the change. Some queries may have been previously
@@ -18364,7 +18792,7 @@ No. of rows in result: 10
 ]]></programlisting>
 </sect3>
 </sect2>
-<sect2 id="rdfsparqlruleintro"><title>Implementation</title>
+<sect2 id="rdfsparqlruleimpl"><title>Implementation</title>
 <para>Triples entailed by subclass or subproperty statements in an inference context are not physically stored.
 Such triples are added to the result set by the query run time as needed. Also queries involving subclass or subproperty
 rules are not rewritten into unions of all the possible triple patterns that might imply the pattern that is requested.
@@ -18375,7 +18803,7 @@ also takes subclasses and subproperties into account when determining the approx
 all implied triples but rather looks for the basic facts implying these triples at query evaluation time.
 </para>
 </sect2>
-<sect2 id="rdfsparqlruleintro"><title>Enabling Inferencing</title>
+<sect2 id="rdfsparqlruleenableinfr"><title>Enabling Inferencing</title>
 <para>In a SPARQL query, the define input:inference clause is used to instruct the compiler to use the rules in the named rule set. For example:
 </para>
 <programlisting>
@@ -19087,7 +19515,7 @@ rdfs_rule_set ('urn:owl.tests', 'http://vocab.org/relationship') ;
 
 ## Verify Rule's existence
 
-SELECT * FROM sys_rdf_schema ;
+SELECT * FROM SYS_RDF_SCHEMA ;
 ]]></programlisting>
     </sect3>
     <sect3 id="rdfsparqlruleowlrelationexample2"><title>Example 2</title>
@@ -19189,6 +19617,50 @@ WHERE
     </sect3>
     <sect3 id="rdfsparqlruleowlrelationexample6"><title>Example 6</title>
 <para>Example based on Relationship Vocab and SKOS</para>
+<para>Assume the following test10.rdf file:</para>
+<programlisting><![CDATA[
+<?xml version="1.0" encoding="UTF-8"?>
+<rdf:RDF
+	xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+	xmlns:daml="http://www.daml.org/2001/03/daml+oil#"
+	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+	xmlns:skos="http://www.w3.org/2004/02/skos/core#"
+	xmlns:owl="http://www.w3.org/2002/07/owl#"
+	xmlns:turnguard="http://www.turnguard.com#"
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+	xmlns:sea="http://www.2sea.org/"
+	xmlns:foaf="http://xmlns.com/foaf/0.1/"
+	xmlns:dct="http://purl.org/dc/terms/">
+
+<rdf:Description rdf:about="http://www.turnguard.com/Music">
+	<rdf:type rdf:resource="http://www.w3.org/2004/02/skos/core#Concept"/>
+	<skos:prefLabel xml:lang="en">Music</skos:prefLabel>
+	<skos:narrower rdf:resource="http://www.turnguard.com/Pop" />
+</rdf:Description>
+<rdf:Description rdf:about="http://www.turnguard.com/Pop">
+      <rdf:type rdf:resource="http://www.w3.org/2004/02/skos/core#Concept"/>
+		<skos:prefLabel xml:lang="en">POP</skos:prefLabel>		
+      <skos:narrower rdf:resource="http://www.turnguard.com/TechnoPop" />
+</rdf:Description>
+<rdf:Description rdf:about="http://www.turnguard.com/TechnoPop">
+        <rdf:type rdf:resource="http://www.w3.org/2004/02/skos/core#Concept"/>
+        <skos:prefLabel xml:lang="en">TECHNOPOP</skos:prefLabel>
+        <skos:narrower rdf:resource="http://www.turnguard.com/ElectroPop" />
+</rdf:Description>
+
+<rdf:Description rdf:about="http://www.turnguard.com/ElectroPop">
+        <rdf:type rdf:resource="http://www.w3.org/2004/02/skos/core#Concept"/>
+        <skos:prefLabel xml:lang="en">ELECTROPOP</skos:prefLabel>
+</rdf:Description>
+<rdf:Description rdf:about="http://www.turnguard.com/KrautRock">
+        <rdf:type rdf:resource="http://www.w3.org/2004/02/skos/core#Concept"/>
+        <skos:prefLabel xml:lang="en">KrautRock</skos:prefLabel>
+	<skos:related rdf:resource="http://www.turnguard.com/ElectroPop" />
+</rdf:Description>
+</rdf:RDF>
+
+]]></programlisting>
+<para>Execute the following steps:</para>
 <programlisting><![CDATA[
 ## Graph Cleanup
 CLEAR GRAPH <urn:owl.test2.tbox>
@@ -19212,7 +19684,7 @@ DB.DBA.RDF_LOAD_RDFXML
   );
 DB.DBA.RDF_LOAD_RDFXML
   (
-    http_get ('http://turnguard.com/virtuoso/test10.rdf'),
+    file_to_string ('test10.rdf'),
     'no',
     'http://turnguard.com/virtuoso/test10.rdf'
   );
@@ -19256,7 +19728,69 @@ WHERE
   </sect2>
 </sect1>
 
-
+<!--
+<sect1 id="rdfreplication"><title>RDF Replication</title>
+<para>
+Tables of RDF storage, such as DB.DBA.RDF_QUAD and DB.DBA.RDF_OBJ, can not be replicated in a usual way,
+because it's content is cached in memory in special ways and synchronized with values outside these tables,
+such as current values of special sequence objects.
+Moreover, same IRI may have different internal IRI_IDs on different boxes, because the assigned IDs vary if new IRIs appear in data in different order.
+Similarly, there will be different IDs of RDF literal, datatypes and languages, blocking any attempt of one-to-one replication between RDF storages.</para>
+<para>
+However, a special asynchronous RDF replication makes it possible to configure a "publisher" Virtuoso instance to keep the log of changes in some RDF graphs
+and subscribe some Virtuoso instances to replay all these changes.</para>
+<para>
+Configuration functions are quite straightforward.</para>
+<para>
+RDF graphs to replicate are all members of &lt;http://www.openlinksw.com/schemas/virtrdf#rdf_repl_graph_group&gt; graph group.
+That group can be filled in with graphs like any other graph group, but it is better to get the advantage of proper security check made by
+</para>
+<funcprototype id="fproto_DB.DBA.RDF_REPL_GRAPH_INS">
+  <funcdef>procedure <function>DB.DBA.RDF_REPL_GRAPH_INS</function></funcdef>
+  <paramdef>in <parameter>memb_iri</parameter> varchar</paramdef>
+</funcprototype>
+<para>
+that inserts a graph to the group and</para>
+<funcprototype id="fproto_DB.DBA.RDF_REPL_GRAPH_DEL">
+  <funcdef>procedure <function>DB.DBA.RDF_REPL_GRAPH_DEL</function></funcdef>
+  <paramdef>in <parameter>memb_iri</parameter> varchar</paramdef>
+</funcprototype>
+<para>
+that removes a graph from the group.
+Only publicly readable graphs can be replicated, an error is signalled otherwise, and it is better to know about a security issue as early as possible.</para>
+<funcprototype id="fproto_DB.DBA.RDF_REPL_START">
+  <funcdef>procedure <function>DB.DBA.RDF_REPL_START</function></funcdef>
+  <paramdef>in <parameter>quiet</parameter> integer := 0</paramdef>
+</funcprototype>
+<para>
+starts the RDF replication at the publishing side.
+It creates replication "publication" named '__rdf_repl' and makes a log file '__rdf_repl.log' to record changes in replicated graphs.
+If the replication has been started before then an error is signalled; passing value 1 for parameter "quiet" elimintaes the error so the incorrect call has no effect at all.
+If the replication is enabled then the value of registry variable 'DB.DBA.RDF_REPL' indicates the moment of replication start.</para>
+<para>
+<function>DB.DBA.RDF_REPL_START</function>() performs a security check before starting the replication to check.</para>
+<funcprototype id="fproto_DB.DBA.RDF_REPL_STOP">
+  <funcdef>procedure <function>DB.DBA.RDF_REPL_STOP</function></funcdef>
+  <paramdef> in <parameter>quiet</parameter> integer := 0</paramdef>
+</funcprototype>
+<para>
+stops the RDF replication at the publishing side.
+It calls <function><link linkend="fn_repl_unpublish">repl_unpublish</link></function> but does not make empty reates replication "publication" named '__rdf_repl' and makes a log file '__rdf_repl.log' to record changes in replicated graphs.</para>
+<para>
+Replication is asynchronous and the order of insertion and removal operations at the subscriber's side may not match the order at the publisher.
+As a result, it is not recommended to make few subscriptions that writes changes of few publishers into one common graph.
+A client-side application can force the synchronuzation by calling</para>
+<funcprototype id="fproto_DB.DBA.RDF_REPL_SYNC">
+  <funcdef>procedure <function>DB.DBA.RDF_REPL_SYNC</function></funcdef>
+  <paramdef>in <parameter>publisher</parameter> varchar</paramdef>
+  <paramdef>in <parameter>user</parameter> varchar</paramdef>
+  <paramdef>in <parameter>pwd</parameter> varchar</paramdef>
+</funcprototype>
+<para>
+that acts like <function><link linkend="fn_repl_sync">repl_sync</link></function> but for an RDF subscription.
+<function>DB.DBA.RDF_REPL_SYNC</function> will not only initial synchronisation but also wait for the end of subscription to guarantee that the total effect of INSERT and DELETE operations is correct even if these operations were made in an order that differs from the original one.</para>
+</sect1>
+-->
 <sect1 id="rdfperformancetuning"><title>RDF Performance Tuning</title>
 <para>For RDF query performance, we have the following possible questions:</para>
 <itemizedlist mark="bullet" spacing="compact">
@@ -19266,7 +19800,7 @@ WHERE
 <listitem>Are there patterns where only a predicate is given?</listitem>
 <listitem>Is there a bad query plan because of cost model error?</listitem>
 </itemizedlist>
-<sect2 id="rdfperfgeneral"><title>General</title>
+    <sect2 id="rdfperfgeneral"><title>General</title>
 	    <para>When running with large data sets, one should configure the Virtuoso process to use between 2/3 
 		to 3/5 of system RAM and to stripe storage on all available disks. 
 		See <link linkend="VIRTINI">NumberOfBuffers</link>, 
@@ -19411,85 +19945,10 @@ significant space savings resulting in better working set. Typically this layout
 60-70% of the space of a layout with 4 full indices.
 </para>
     </sect2>
-    <sect2 id="rdfperfindexes"><title>Index Scheme Selection</title>
-      <para>The indexes in place on the RDF_QUAD table can greatly affect the performance of 
-      	SPARQL queries, as can be determined by running the STATISTICS command on the table as follows:
-      </para>	
-<programlisting><![CDATA[
-SQL> STATISTICS DB.DBA.RDF_QUAD;
-Showing SQLStatistics of table(s) 'DB.DBA.RDF_QUAD'
-TABLE_QUALIFIER  TABLE_OWNER      TABLE_NAME       NON_UNIQUE  INDEX_QUALIFIER  INDEX_NAME       TYPE        SEQ_IN_INDEX  COLUMN_NAME      COLLATION  CARDINALITY  PAGES       FILTER_CONDITION
-VARCHAR          VARCHAR          VARCHAR          SMALLINT    VARCHAR          VARCHAR          SMALLINT    SMALLINT    VARCHAR          VARCHAR  INTEGER     INTEGER     VARCHAR
-_______________________________________________________________________________
-
-DB               DBA              RDF_QUAD         NULL        NULL             NULL             0           NULL        NULL             NULL     NULL        NULL        NULL
-DB               DBA              RDF_QUAD         0           DB               RDF_QUAD         3           1           P                NULL     NULL        NULL        NULL
-DB               DBA              RDF_QUAD         0           DB               RDF_QUAD         3           2           S                NULL     NULL        NULL        NULL
-DB               DBA              RDF_QUAD         0           DB               RDF_QUAD         3           3           O                NULL     NULL        NULL        NULL
-DB               DBA              RDF_QUAD         0           DB               RDF_QUAD         3           4           G                NULL     NULL        NULL        NULL
-DB               DBA              RDF_QUAD         1           DB               RDF_QUAD_GS      3           1           G                NULL     NULL        NULL        NULL
-DB               DBA              RDF_QUAD         1           DB               RDF_QUAD_GS      3           2           S                NULL     NULL        NULL        NULL
-DB               DBA              RDF_QUAD         1           DB               RDF_QUAD_OP      3           1           O                NULL     NULL        NULL        NULL
-DB               DBA              RDF_QUAD         1           DB               RDF_QUAD_OP      3           2           P                NULL     NULL        NULL        NULL
-DB               DBA              RDF_QUAD         1           DB               RDF_QUAD_POGS    3           1           P                NULL     NULL        NULL        NULL
-DB               DBA              RDF_QUAD         1           DB               RDF_QUAD_POGS    3           2           O                NULL     NULL        NULL        NULL
-DB               DBA              RDF_QUAD         1           DB               RDF_QUAD_POGS    3           3           G                NULL     NULL        NULL        NULL
-DB               DBA              RDF_QUAD         1           DB               RDF_QUAD_POGS    3           4           S                NULL     NULL        NULL        NULL
-DB               DBA              RDF_QUAD         1           DB               RDF_QUAD_SP      3           1           S                NULL     NULL        NULL        NULL
-DB               DBA              RDF_QUAD         1           DB               RDF_QUAD_SP      3           2           P                NULL     NULL        NULL        NULL
-
-15 Rows. -- 24 msec.
-SQL> 	
-]]></programlisting>      
-<para>With only one index (OGPS) created by default, if the graph is always given, as with one or more 
-	<emphasis>FROM</emphasis> or <emphasis>FROM NAMED</emphasis> clauses, and there are no patterns where 
-	only graph and predicate are given, then the default indices should be sufficient. If predicate and 
-	graph are given but subject is not, then it is sometimes useful to add:</para>
-<programlisting><![CDATA[
-CREATE BITMAP INDEX RDF_QUAD_PGOS
-  ON DB.DBA.RDF_QUAD (G, P, O, S) 
-  PARTITION (O VARCHAR (-1, 0hexffff));
-]]></programlisting>
-
-<note><para>Note: If the server version is pre-5.0.7, leave out the partitioning clause.</para></note>
-
-<para>Making the PGOS index can help in some cases even if it is not readily apparent from the queries 
-	that one is needed. This is so, for example, if the predicate by itself is selective, i.e. there is 
-	a predicate that occurs in only a few triples.</para>
-<para>If the graph itself is not given in the queries, then the default index scheme will be unworkable.
-For this, the appropriate scheme is:</para>
-
-<programlisting><![CDATA[
-CREATE TABLE RDF_QUAD
-  ( 
-    G IRI_ID_8, 
-    S IRI_ID_8, 
-    P IRI_ID_8, 
-    O ANY, 
-    PRIMARY KEY (S, P, O, G)
-  )
-ALTER INDEX RDF_QUAD 
-  ON RDF_QUAD 
-  PARTITION (S INT (0hexffff00));
-
-CREATE BITMAP INDEX RDF_QUAD_OPGS
-  ON DB.DBA.RDF_QUAD (O, P, G, S) 
-  PARTITION (O VARCHAR (-1, 0hexffff));
-
-CREATE BITMAP INDEX RDF_QUAD_POGS
-  ON DB.DBA.RDF_QUAD (P, O, G, S)
-  PARTITION (O VARCHAR (-1, 0hexffff));
-
-CREATE BITMAP INDEX RDF_QUAD_GPOS 
-  ON DB.DBA.RDF_QUAD (G, P, O, S)
-  PARTITION (O VARCHAR (-1, 0hexffff));
-]]></programlisting>
-
-<note><para>Note: If the server version is pre-5.0.7, leave out the <emphasis>PARTITION</emphasis> 
-clauses and the <emphasis>ALTER INDEX</emphasis> statement.</para></note>
-
+    <sect2 id="rdfperfindexes"><title>Manage Public Web Service Endpoints</title>
+    
 <para>Public web service endpoints are proven to be sources of especially bad queries. While local
-application develpers can obtain instructions from database administrator and use ISQL access to
+application developers can obtain instructions from database administrator and use ISQL access to
 the database in order to tune execution plans, &quot;external&quot; clients do not know details of
 configuration and/or lacks appropriate skills. The most common problem is that public endpoints usually
 get requests that does not mention the required graph, because that queries were initially written for
@@ -19782,16 +20241,158 @@ UPDATE DB.DBA.RDF_GRAPH_GROUP
 ]]></programlisting>   
 </sect2>
 <sect2 id="rdfperfdumpandreloadgraphs"><title>Dump and Reload Graphs</title>
-In order to dump all graphs with extension exclude those graphs of a certain type by using a
-sparql ask query, you may use the following script sequence:
+  <sect3 id="rdfperfdumpandreloadgraphswhat"><title>What?</title>
+    <para>How to export RDF model data from Virtuoso's Quad Store.</para>
+  </sect3>
+  <sect3 id="rdfperfdumpandreloadgraphswhy"><title>Why?</title>
+    <para>Every DBMS needs to offer a mechanism for bulk export and import of data.</para>
+    <para>Virtuoso supports dumping and reloading graph model data (e.g., RDF), as well as 
+    	relational data (e.g., SQL) (discussed elsewhere).</para>
+  </sect3>
+  <sect3 id="rdfperfdumpandreloadgraphshow"><title>How?</title>
+    <para>We have created stored procedures for the task. The dump procedures leverage SPARQL to 
+    	facilitate selective data dump(s) from one or more Named Graphs, each denoted by an IRI.
+    </para>	
+    <sect4 id="rdfperfdumpandreloadgraphdumponegraph"><title>Dump One Graph</title>
+      <sect5 id="rdfperfdumpandreloadgraphdumponegraphparams"><title>Parameters</title>
+        <para>The procedure dump_one_graph has the following parameters:</para>
+        <itemizedlist mark="bullet">
+          <listitem>IN <emphasis>srcgraph</emphasis> VARCHAR -- source graph</listitem>
+          <listitem>IN <emphasis>out_file</emphasis> VARCHAR -- output file </listitem>
+          <listitem>IN <emphasis>file_length_limit</emphasis> INTEGER -- maximum length of dump files</listitem>          
+        </itemizedlist>
+      </sect5>
+      <sect5 id="rdfperfdumpandreloadgraphdumponegraphsource"><title>Source</title>
+        <para>The procedure <emphasis>dump_one_graph</emphasis> has the following source:</para>
+<programlisting><![CDATA[
+CREATE PROCEDURE dump_one_graph 
+  ( IN  srcgraph           VARCHAR  , 
+    IN  out_file           VARCHAR  , 
+    IN  file_length_limit  INTEGER  := 1000000000
+  )
+  {
+    DECLARE  file_name     VARCHAR;
+    DECLARE  env, 
+             ses           ANY;
+    DECLARE  ses_len, 
+             max_ses_len, 
+             file_len, 
+             file_idx      INTEGER;
+    SET ISOLATION = 'uncommitted';
+    max_ses_len  := 10000000;
+    file_len     := 0;
+    file_idx     := 1;
+    file_name    := sprintf ('%s%06d.ttl', out_file, file_idx);
+    string_to_file ( file_name || '.graph', 
+                     srcgraph, 
+                     -2
+                   );
+    string_to_file ( file_name, 
+                     sprintf ( '# Dump of graph <%s>, as of %s\n', 
+                               srcgraph, 
+                               CAST (NOW() AS VARCHAR)
+                             ), 
+                     -2
+                   );
+    env := vector (dict_new (16000), 0, '', '', '', 0, 0, 0, 0);
+    ses := string_output ();
+    FOR (SELECT * FROM ( SPARQL DEFINE input:storage "" 
+                         SELECT ?s ?p ?o { GRAPH `iri(?:srcgraph)` { ?s ?p ?o } } 
+                       ) AS sub OPTION (LOOP)) DO
+      {
+        http_ttl_triple (env, "s", "p", "o", ses);
+        ses_len := length (ses);
+        IF (ses_len > max_ses_len)
+          {
+            file_len := file_len + ses_len;
+            IF (file_len > file_length_limit)
+              {
+                http (' .\n', ses);
+                string_to_file (file_name, ses, -1);
+                file_len := 0;
+                file_idx := file_idx + 1;
+                file_name := sprintf ('%s%06d.ttl', out_file, file_idx);
+                string_to_file ( file_name, 
+                                 sprintf ( '# Dump of graph <%s>, as of %s (part %d)\n', 
+                                           srcgraph, 
+                                           CAST (NOW() AS VARCHAR), 
+                                           file_idx), 
+                                 -2
+                               );
+                 env := VECTOR (dict_new (16000), 0, '', '', '', 0, 0, 0, 0);
+              }
+            ELSE
+              string_to_file (file_name, ses, -1);
+            ses := string_output ();
+          }
+      }
+    IF (LENGTH (ses))
+      {
+        http (' .\n', ses);
+        string_to_file (file_name, ses, -1);
+      }
+  }
+;	
+]]></programlisting>        
+      </sect5>
+      <sect5 id="rdfperfdumpandreloadgraphdumponegraphex"><title>Example</title>
+        <orderedlist>
+          <listitem>Call the <emphasis>dump_one_graph</emphasis> procedure with appropriate arguments:
+<programlisting><![CDATA[
+
+$ pwd 
+/Applications/OpenLink Virtuoso/Virtuoso 6.1/database
+
+$ grep DirsAllowed virtuoso.ini
+DirsAllowed              = ., ../vad, ./dumps
+
+$ /opt/virtuoso/bin/isql 1111
+Connected to OpenLink Virtuoso
+Driver: 06.01.3127 OpenLink Virtuoso ODBC Driver
+OpenLink Interactive SQL (Virtuoso), version 0.9849b.
+Type HELP; for help and EXIT; to exit.
+SQL> dump_one_graph ('http://daas.openlinksw.com/data#', './data_', 1000000000); 
+Done. -- 1438 msec.	
+]]></programlisting>          
+          </listitem>
+          <listitem>As a result, a dump of the graph will be found in the files data_XX (located in your Virtuoso db folder): 
+<programlisting><![CDATA[
+<verbatim>
+$ ls dumps
+data_000001.ttl
+data_000002.ttl
+....
+data_000001.ttl.graph	
+]]></programlisting>          	
+          </listitem>
+        </orderedlist>
+      </sect5>
+    </sect4>
+    <sect4 id="rdfperfdumpandreloadgraphdumpmlpgraph"><title>Dump Multiple Graphs</title>
+      <para>The <emphasis>dump_graphs</emphasis> procedure can be used to dump all the graphs in a Virtuoso server to 
+      	a set of turtle (.ttl) data files in the specified dump directory.
+      </para>	
+      <sect5 id="rdfperfdumpandreloadgraphdumpmlpgraphparams"><title>Parameters</title>
+        <para>The procedure dump_graphs has the following parameters:</para>
+        <itemizedlist mark="bullet">
+          <listitem>IN <emphasis>dir</emphasis> VARCHAR -- dump directory</listitem>
+          <listitem>IN <emphasis>file_length_limit</emphasis> INTEGER -- maximum length of dump files</listitem>          
+        </itemizedlist>
+        <para><i>Note: The dump directory must be included in the DirsAllowed parameter of the Virtuoso 
+        configuration file (virtuoso.ini), or the Virtuoso server will not be able to create or access 
+        the data files.</i>
+        </para>	
+      </sect5>
+      <sect5 id="rdfperfdumpandreloadgraphdumpmlpgraphsource"><title>Source</title>
+        <para>The procedure <emphasis>dump_graphs</emphasis> has the following source:</para>
 <programlisting><![CDATA[
 CREATE PROCEDURE dump_graphs 
   ( IN  dir               VARCHAR  :=  'dumps'   , 
     IN  file_length_limit INTEGER  :=  1000000000
   )
-{
+  {
     DECLARE inx INT;
-  inx := 1;
+    inx := 1;
     SET ISOLATION = 'uncommitted';
     FOR ( SELECT * 
             FROM ( SPARQL DEFINE input:storage "" 
@@ -19804,92 +20405,80 @@ CREATE PROCEDURE dump_graphs
                          sprintf ('%s/graph%06d_', dir, inx), 
                          file_length_limit
                        );
-      inx := inx + 1;
-    }
-}
+        inx := inx + 1;
+      }
+  }
 ;
+]]></programlisting>        
+      </sect5>
+      <sect5 id="rdfperfdumpandreloadgraphdumpmlpgraphex"><title>Example</title>
+        <orderedlist>
+          <listitem>Call the <emphasis>dump_graphs </emphasis> procedure:
+<programlisting><![CDATA[
+$ pwd
+/Applications/OpenLink Virtuoso/Virtuoso 6.1/database
 
+$ grep DirsAllowed virtuoso.ini
+DirsAllowed              = ., ../vad, ./dumps
 
-CREATE PROCEDURE dump_one_graph 
-  ( IN  srcgraph           VARCHAR  , 
-    IN  out_file           VARCHAR  , 
-    IN  file_length_limit  INTEGER  := 1000000000
-  )
+$ /opt/virtuoso/bin/isql 1111
+Connected to OpenLink Virtuoso
+Driver: 06.01.3127 OpenLink Virtuoso ODBC Driver
+OpenLink Interactive SQL (Virtuoso), version 0.9849b.
+Type HELP; for help and EXIT; to exit.
+SQL> dump_graphs();
+
+Done. -- 998 msec.
+SQL> quit;
+]]></programlisting>          
+          </listitem>
+          <listitem>As a result, a dump of the graph will be found in the files dumps/data_XX (located in your Virtuoso db folder): 
+<programlisting><![CDATA[
+<verbatim>
+$ ls dumps
+graph000001_000001.ttl		graph000005_000001.ttl
+graph000001_000001.ttl.graph	graph000005_000001.ttl.graph
+graph000002_000001.ttl		graph000006_000001.ttl
+graph000002_000001.ttl.graph	graph000006_000001.ttl.graph
+graph000003_000001.ttl		graph000007_000001.ttl
+graph000003_000001.ttl.graph	graph000007_000001.ttl.graph
+graph000004_000001.ttl		graph000008_000001.ttl
+graph000004_000001.ttl.graph	graph000008_000001.ttl.graph
+]]></programlisting>          	
+          </listitem>
+        </orderedlist>
+      </sect5>
+    </sect4>
+    <sect4 id="rdfperfdumpandreloadgraphloadgraph"><title>Load Graphs</title>
+      <para>The stored procedure <emphasis>load_graphs</emphasis> procedure performs a bulk 
+      load from a file.
+      </para>	
+      <sect5 id="rdfperfdumpandreloadgraphloadgraphparams"><title>Parameters</title>
+        <para>The procedure load_graphs has the following parameters:</para>
+        <itemizedlist mark="bullet">
+          <listitem>IN <emphasis>dir</emphasis> VARCHAR -- dump directory</listitem>
+        </itemizedlist>
+        <para><i>Note: The dump directory must be included in the DirsAllowed parameter of the Virtuoso 
+        configuration file (virtuoso.ini), or the Virtuoso server will not be able to create or access 
+        the data files.</i>
+        </para>	
+      </sect5>
+      <sect5 id="rdfperfdumpandreloadgraphloadgraphsource"><title>Source</title>
+        <para>The procedure <emphasis>load_graphs</emphasis> has the following source:</para>
+<programlisting><![CDATA[
+CREATE PROCEDURE load_graphs 
+  ( IN  dir  VARCHAR := 'dumps/' )
 {
-    DECLARE  file_name  varchar;
-    DECLARE  env, ses      any;
-    DECLARE  ses_len, 
-             max_ses_len, 
-             file_len, 
-             file_idx      integer;
-    SET ISOLATION = 'uncommitted';
-  max_ses_len := 10000000;
-  file_len := 0;
-  file_idx := 1;
-    file_name := sprintf ('%s%06d.ttl', out_file, file_idx);
-    string_to_file ( file_name || '.graph', 
-                     srcgraph, 
-                     -2
-                   );
-    string_to_file ( file_name, 
-                     sprintf ( '# Dump of graph <%s>, as of %s\n', 
-                               srcgraph, 
-                               CAST (NOW() AS VARCHAR)
-                             ), 
-                     -2
-                   );
-  env := vector (dict_new (16000), 0, '', '', '', 0, 0, 0, 0);
-  ses := string_output ();
-    FOR (SELECT * FROM ( SPARQL DEFINE input:storage "" 
-                         SELECT ?s ?p ?o { GRAPH `iri(?:srcgraph)` { ?s ?p ?o } } 
-                       ) AS sub OPTION (LOOP)) DO
-    {
-      http_ttl_triple (env, "s", "p", "o", ses);
-      ses_len := length (ses);
-        IF (ses_len > max_ses_len)
-        {
-          file_len := file_len + ses_len;
-            IF (file_len > file_length_limit)
-            {
-              http (' .\n', ses);
-              string_to_file (file_name, ses, -1);
-              file_len := 0;
-              file_idx := file_idx + 1;
-                file_name := sprintf ('%s%06d.ttl', out_file, file_idx);
-                string_to_file ( file_name, 
-                                 sprintf ( '# Dump of graph <%s>, as of %s (part %d)\n', 
-                                           srcgraph, 
-                                           CAST (NOW() AS VARCHAR), 
-                                           file_idx), 
-                                 -2
-                               );
-	      env := vector (dict_new (16000), 0, '', '', '', 0, 0, 0, 0);
-            }
-            ELSE
-            string_to_file (file_name, ses, -1);
-          ses := string_output ();
-        }
-    }
-    IF (LENGTH (ses))
-    {
-      http (' .\n', ses);
-      string_to_file (file_name, ses, -1);
-    }
-}
-;
-
-create procedure load_graphs (in dir varchar := 'dumps/')
-{
-  declare arr any;
-  declare g varchar;
+  DECLARE arr ANY;
+  DECLARE g VARCHAR;
 
   arr := sys_dirlist (dir, 1);
   log_enable (2, 1);
-  foreach (varchar f in arr) do
+  FOREACH (VARCHAR f IN arr) DO
     {
-      if (f like '*.ttl')
+      IF (f LIKE '*.ttl')
 	{
-	  declare continue handler for sqlstate '*'
+	  DECLARE CONTINUE HANDLER FOR SQLSTATE '*'
 	    {
 	      log_message (sprintf ('Error in %s', f));
 	    };
@@ -19897,14 +20486,113 @@ create procedure load_graphs (in dir varchar := 'dumps/')
 	  DB.DBA.TTLP_MT (file_open (dir || '/' || f), g, g, 255);
 	}
     }
-  exec ('checkpoint');
+  EXEC ('CHECKPOINT');
 }
 ;
-]]></programlisting>
-   <sect3 id="rdfperfdumpandreloadgraphsexamples"><title>Examples for Dump and Reload Graphs</title>
-SQL>dump_one_graph ('http://daas.openlinksw.com/data#', './bbc_data_', 1000000000);
-SQL>dump_one_graph ('http://daas.openlinksw.com/data#', './bbc_data_');
-   </sect3>
+]]></programlisting>        
+      </sect5>
+      <sect5 id="rdfperfdumpandreloadgraphloadgraphex"><title>Example</title>
+<programlisting><![CDATA[
+$ /opt/virtuoso/bin/isql 1112
+Connected to OpenLink Virtuoso
+Driver: 06.01.3127 OpenLink Virtuoso ODBC Driver
+OpenLink Interactive SQL (Virtuoso), version 0.9849b.
+Type HELP; for help and EXIT; to exit.
+SQL> load_graphs();
+
+Done. -- 2392 msec.
+SQL> 
+]]></programlisting>          
+      </sect5>
+    </sect4>
+  </sect3>  
+</sect2>
+<sect2 id="rdfperfdumpintonquads"><title>RDF dumps from Virtuoso Quad store hosted data into NQuad dumps</title>
+  <sect3 id="rdfperfdumpintonquadswhat"><title>What?</title>
+    <para>How to export RDF model data from Virtuoso's Quad Store in NQuad format.</para>
+  </sect3>
+  <sect3 id="rdfperfdumpintonquadswhy"><title>Why?</title>
+    <para>When exporting RDF model data from Virtuoso's Quad Store, having the ability to 
+    retain and reflect Named Graph IRI based data partitioning is provide significant value to 
+    a variety of application profiles.
+    </para>
+  </sect3>
+  <sect3 id="rdfperfdumpintonquadshow"><title>How?</title>
+    <para>We have created stored procedures for the task. The dump procedure <emphasis>dump_nquads</emphasis> 
+    leverage SPARQL to facilitate data dump(s) for all graphs excluding the predefined "virtrdf:" one.
+    </para>	
+    <sect4 id="rdfperfdumpintonquadsprc"><title>Dump NQuads</title>
+      <sect5 id="rdfperfdumpintonquadsprcparams"><title>Parameters</title>
+        <para>The procedure <emphasis>dump_nquads</emphasis> has the following parameters:</para>
+        <itemizedlist mark="bullet">
+          <listitem>IN <emphasis>dir</emphasis> VARCHAR -- folder where the dumps will be stored </listitem>
+          <listitem>IN <emphasis>outstart_fromfile</emphasis> INTEGER  -- output start from number n</listitem>
+          <listitem>IN <emphasis>file_length_limit</emphasis> INTEGER -- maximum length of dump files</listitem>          
+          <listitem>IN <emphasis>comp</emphasis> INTEGER -- when set to 0, then no gzip will be done. By default is set to 1.</listitem>          
+        </itemizedlist>
+      </sect5>
+      <sect5 id="rdfperfdumpintonquadsprcsource"><title>Source</title>
+        <para>The procedure <emphasis>dump_nquads</emphasis> has the following source:</para>
+<programlisting><![CDATA[
+create procedure dump_nquads (in dir varchar := 'dumps', in start_from int := 1, in file_length_limit integer := 100000000, in comp int := 1)
+{
+  declare inx, ses_len int;
+  declare file_name varchar;
+  declare env, ses any;
+
+  inx := start_from;
+  set isolation = 'uncommitted';
+  env := vector (0,0,0);
+  ses := string_output (10000000);
+  for (select * from (sparql define input:storage "" select ?s ?p ?o ?g { graph ?g { ?s ?p ?o } . filter ( ?g != virtrdf: ) } ) as sub option (loop)) do
+    {
+      declare exit handler for sqlstate '22023' 
+	{
+	  goto next;
+	};
+      http_nquad (env, "s", "p", "o", "g", ses);
+      ses_len := length (ses);
+      if (ses_len >= file_length_limit)
+	{
+	  file_name := sprintf ('%s/output%06d.nq', dir, inx);
+	  string_to_file (file_name, ses, -2);
+	  if (comp)
+	    {
+	      gz_compress_file (file_name, file_name||'.gz');
+	      file_delete (file_name);
+	    }
+	  inx := inx + 1;
+	  env := vector (0,0,0);
+	  ses := string_output (10000000);
+	}
+      next:;
+    }
+  if (length (ses))
+    {
+      file_name := sprintf ('%s/output%06d.nq', dir, inx);
+      string_to_file (file_name, ses, -2);
+      if (comp)
+	{
+	  gz_compress_file (file_name, file_name||'.gz');
+	  file_delete (file_name);
+	}
+      inx := inx + 1;
+      env := vector (0,0,0);
+    }
+}
+;
+]]></programlisting>        
+      </sect5>
+      <sect5 id="rdfperfdumpintonquadsprcex"><title>Example</title>
+        <para>This example demonstrates calling the <emphasis>dump_nquads</emphasis> procedure in order to dump all graphs 
+        in a compressed nquad dumps, each uncompressed with length 10Mb (./dumps/output000001.nq.gz) :
+        </para>
+<programlisting><![CDATA[
+SQL> dump_nquads ('dumps', 1, 10000000, 1);
+]]></programlisting>          
+      </sect5>
+    </sect4>
+  </sect3>  
 </sect2>
 <sect2 id="rdfperfdumpandreloadgraphsn3"><title>Dump Linked Data View Graph to n3</title>
 <para>The RDF_QM_TREE_DUMP procedure and its associated procedures below are used 
@@ -20307,14 +20995,14 @@ cl_exec ('checkpoint');
   <listitem>Execute the file:
 <programlisting><![CDATA[
 --
---  $Id$
+--  $Id: rdfandsparql.xml,v 1.400 2012/11/01 10:38:13 rtsekova Exp $
 --
 --  Alternate RDF index scheme for cases where G unspecified
 --
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2012 OpenLink Software
+--  Copyright (C) 1998-2009 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -20426,7 +21114,7 @@ DefaultIsolation = 2
 	<title>Tip:</title>
 <para>Thus after loading all data you may wish to shutdown, tweak and start server again.
 If you have ext2fs or ext3fs filesystem, then it's better to have enough free space on disk not to
-make it more than 80% full.  When it's almost full it may allocate database file badly, resulting
+make it more than 80% full. When it's almost full it may allocate database file badly, resulting
 in measurable loss of disk access speed. That is not Virtuoso-specific fact, but a common hint
 for all database-like applications with random access to big files.</para>
 </tip>
@@ -20537,10 +21225,10 @@ LOAD_FILE ()
 	DOSQL "ttlp_mt (file_to_string_output ('$f'), '', '$g', 17); checkpoint;" > $LOGF
 
 	if [ $? != 0 ]
-    then
+	then
 	    echo "An error occurred, please check $LOGF"
 	    exit 1
-    fi
+	fi
 	line_no=`grep Error $LOGF | awk '{ match ($0, /line [0-9]+/, x) ; match (x[0], /[0-9]+/, y); print y[0] }'`
 	inx=`expr $inx + 1`
     done
@@ -20779,9 +21467,9 @@ SELECT ?film1 ?actor1 ?film2 ?actor2
 FROM <http://dbpedia.org>
 WHERE
   {
-  ?film1 p:starring <http://dbpedia.org/resource/Kevin_Bacon> .
-  ?film1 p:starring ?actor1 .
-  ?film2 p:starring ?actor1 .
+    ?film1 p:starring <http://dbpedia.org/resource/Kevin_Bacon> .
+    ?film1 p:starring ?actor1 .
+    ?film2 p:starring ?actor1 .
     ?film2 p:starring ?actor2 .
 };
 
@@ -20801,8 +21489,8 @@ SELECT ?artist ?artwork ?museum ?director
 FROM <http://dbpedia.org>
 WHERE
   {
-  ?artwork p:artist ?artist .
-  ?artwork p:museum ?museum .
+    ?artwork p:artist ?artist .
+    ?artwork p:museum ?museum .
     ?museum p:director ?director
   };
 
@@ -20826,16 +21514,16 @@ SELECT ?s ?homepage
 FROM <http://dbpedia.org>
 WHERE
   {
-   <http://dbpedia.org/resource/Berlin> geo:lat ?berlinLat .
-   <http://dbpedia.org/resource/Berlin> geo:long ?berlinLong .
-   ?s geo:lat ?lat .
-   ?s geo:long ?long .
-   ?s foaf:homepage ?homepage .
-   FILTER (
-     ?lat        <=     ?berlinLat + 0.03190235436 &&
-     ?long       >=     ?berlinLong - 0.08679199218 &&
-     ?lat        >=     ?berlinLat - 0.03190235436 &&
-     ?long       <=     ?berlinLong + 0.08679199218) };
+    <http://dbpedia.org/resource/Berlin> geo:lat ?berlinLat .
+    <http://dbpedia.org/resource/Berlin> geo:long ?berlinLong .
+    ?s geo:lat ?lat .
+    ?s geo:long ?long .
+    ?s foaf:homepage ?homepage .
+    FILTER (
+      ?lat        <=     ?berlinLat + 0.03190235436 &&
+      ?long       >=     ?berlinLong - 0.08679199218 &&
+      ?lat        >=     ?berlinLat - 0.03190235436 &&
+      ?long       <=     ?berlinLong + 0.08679199218) };
 
 s                                                                                 homepage
 VARCHAR                                                                           VARCHAR
@@ -20861,17 +21549,17 @@ SELECT ?s ?a ?homepage
 FROM <http://dbpedia.org>
 WHERE
   {
-   <http://dbpedia.org/resource/New_York_City> geo:lat ?nyLat .
-   <http://dbpedia.org/resource/New_York_City> geo:long ?nyLong .
-   ?s geo:lat ?lat .
-   ?s geo:long ?long .
-   ?s p:architect ?a .
-   ?a foaf:homepage ?homepage .
-   FILTER (
-     ?lat        <=     ?nyLat + 0.3190235436 &&
-     ?long       >=     ?nyLong - 0.8679199218 &&
-     ?lat        >=     ?nyLat - 0.3190235436 &&
-     ?long       <=     ?nyLong + 0.8679199218) };
+    <http://dbpedia.org/resource/New_York_City> geo:lat ?nyLat .
+    <http://dbpedia.org/resource/New_York_City> geo:long ?nyLong .
+    ?s geo:lat ?lat .
+    ?s geo:long ?long .
+    ?s p:architect ?a .
+    ?a foaf:homepage ?homepage .
+    FILTER (
+      ?lat        <=     ?nyLat + 0.3190235436 &&
+      ?long       >=     ?nyLong - 0.8679199218 &&
+      ?lat        >=     ?nyLat - 0.3190235436 &&
+      ?long       <=     ?nyLong + 0.8679199218) };
 s                                                                                 a               homepage
 VARCHAR                                                                           VARCHAR              VARCHAR
 _______________________________________________________________________________
@@ -20982,9 +21670,9 @@ SPARQL define output:valmode "LONG"
 SELECT (<LONG::sql:VECTOR_AGG(?s)) 
 FROM <my-ontology-graph>
 WHERE 
-  { 
+       {
     ?s a owl:functionalProperty 
-  }
+       }
 ]]></programlisting>
 <para>Inverse functional properties could be retrieved by a similar query, but unfortunately the 
 	ontology may mention so called NULL values that can be property values for many subjects. Current 
@@ -21188,7 +21876,7 @@ sparql alter quad storage virtrdf:SyncToQuads {
 </para>
 <programlisting><![CDATA[
 create procedure DB.DBA.RDB2RDF_COPY_ALL_RDF_VIEWS_TO_SYNC ()
-{
+       {
   for (sparql define input:storage ""
     select (bif:aref(bif:sprintf_inverse (str(?idx), bif:concat (str(rdf:_), "%d"), 0), 0)) ?qm
     from virtrdf:
@@ -21242,7 +21930,7 @@ create procedure DB.DBA.RDB2RDF_EXEC_CODEGEN1_FOR_TABLE
    in tbl varchar, 
    in dump_id any, 
    in txt any )
-{
+   {
   declare fname varchar;
   declare stat, msg varchar;
   if (isinteger (dump_id))
@@ -21273,22 +21961,22 @@ create procedure DB.DBA.RDB2RDF_EXEC_CODEGEN1_FOR_TABLE
 
 -- This creates and loads all triggers, init procedure and debug dump related to one table.
 create procedure DB.DBA.RDB2RDF_PREPARE_TABLE (in dump_prefix varchar, in tbl varchar)
-{
+   {
   declare ctr integer;
   for (ctr := 0; ctr <= 4; ctr := ctr+1 )
     DB.DBA.RDB2RDF_EXEC_CODEGEN1_FOR_TABLE (dump_prefix, tbl, ctr, sparql_rdb2rdf_codegen (tbl, ctr));
-}
+   }
 ;
 
 -- This creates and loads all triggers, init procedure and debug dump related to all tables used by and Linked Data View.
 create procedure DB.DBA.RDB2RDF_PREPARE_ALL_TABLES (in dump_prefix varchar)
-{
+   {
   declare tbl_list any;
   tbl_list := sparql_rdb2rdf_list_tables (0);
   foreach (varchar tbl in tbl_list) do
     {
       DB.DBA.RDB2RDF_PREPARE_TABLE (dump_prefix, tbl);
-    }
+   }
 }
 ;
 ]]></programlisting>
@@ -21313,7 +22001,7 @@ WHERE
  	  { ?s ?p ?o } 
  };
 ]]></programlisting>
-</sect2>  
+</sect2>	
 </sect1>
 
 
@@ -21436,7 +22124,7 @@ java VirtuosoSPARQLExample6
       <listitem><link linkend="rdfnativestorageprovidersjenaexamples7">VirtuosoSPARQLExample7</link> demonstrates the use of the graph.getBulkUpdateHandler method, with the following command:
 <programlisting><![CDATA[
 java VirtuosoSPARQLExample7
-]]></programlisting>
+]]></programlisting>   
       </listitem>
       <listitem><link linkend="rdfnativestorageprovidersjenaexamples8">VirtuosoSPARQLExample8</link> demonstrates how to insert triples into a graph, with the following command:
 <programlisting><![CDATA[
@@ -21446,14 +22134,14 @@ java VirtuosoSPARQLExample8
       <listitem><link linkend="rdfnativestorageprovidersjenaexamples9">VirtuosoSPARQLExample9</link> demonstrates the use of the <emphasis>CONSTRUCT, DESCRIBE,</emphasis> and <emphasis>ASK</emphasis> SPARQL query forms, with the following command:
 <programlisting><![CDATA[
 java VirtuosoSPARQLExample9
-]]></programlisting>
+]]></programlisting>  
      </listitem>
     </orderedlist>
     </sect4>
     </sect3>
     <sect3 id="rdfnativestorageprovidersjenaexamples"><title>Examples</title>
     <sect4 id="rdfnativestorageprovidersjenaexamples1"><title>VirtJenaSPARQLExample1</title>
-<programlisting><![CDATA[
+<programlisting><![CDATA[  
 import com.hp.hpl.jena.query.*;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 
@@ -21559,7 +22247,7 @@ public class VirtuosoSPARQLExample2 {
 		System.out.println("graph.getCount() = " + graph.getCount());
 	}
 }
-]]></programlisting>
+]]></programlisting>   
     </sect4>
     <sect4 id="rdfnativestorageprovidersjenaexamples3"><title>VirtJenaSPARQLExample3</title>
 <programlisting><![CDATA[
@@ -21712,7 +22400,7 @@ import com.hp.hpl.jena.graph.Triple;
 import virtuoso.jena.driver.*;
 
 public class VirtuosoSPARQLExample5
-{
+	{
 
     public static void main(String[] args)
     {
@@ -21768,7 +22456,7 @@ public class VirtuosoSPARQLExample5
 
 	graph.clear ();
 
-    }
+	    }
 }
 ]]></programlisting>
     </sect4>
@@ -21784,10 +22472,10 @@ import com.hp.hpl.jena.graph.Triple;
 import virtuoso.jena.driver.*;
 
 public class VirtuosoSPARQLExample6
-{
+	    {
 
     public static void main(String[] args)
-    {
+	    {
 	String url;
 	if(args.length == 0)
 	    url = "jdbc:virtuoso://localhost:1111";
@@ -21859,8 +22547,8 @@ public class VirtuosoSPARQLExample6
 	graph.clear ();
 	System.out.println("\nCLEAR graph <Example6>");
 
-    }
-}
+	    }
+        }
 
 
 ]]></programlisting>
@@ -21994,7 +22682,7 @@ System.out.println("\nexecute: SELECT * FROM <http://test1> WHERE { ?s ?p ?o }")
 		    RDFNode p = rs.get("p");
 		    RDFNode o = rs.get("o");
 		    System.out.println(" { " + s + " " + p + " " + o + " . }");
-    }
+		}
 
 
 System.out.println("\nexecute: DELETE FROM GRAPH <http://test1> { <aa> <bb> 'cc' }");
@@ -22011,10 +22699,10 @@ System.out.println("\nexecute: SELECT * FROM <http://test1> WHERE { ?s ?p ?o }")
 		    RDFNode p = rs.get("p");
 		    RDFNode o = rs.get("o");
 		    System.out.println(" { " + s + " " + p + " " + o + " . }");
-    }
+		}
 
 
-}
+	}
 }
 ]]></programlisting>
     </sect4>
@@ -22067,7 +22755,7 @@ public class VirtuosoSPARQLExample9 {
 		    RDFNode p = rs.get("p");
 		    RDFNode o = rs.get("o");
 		    System.out.println(" { " + s + " " + p + " " + o + " . }");
-}
+		}
 
 		sparql = QueryFactory.create("DESCRIBE <http://aa> FROM <http://test1>");
 		vqe = VirtuosoQueryExecutionFactory.create (sparql, set);
@@ -22076,12 +22764,12 @@ public class VirtuosoSPARQLExample9 {
  	        Graph g = model.getGraph();
                 System.out.println("\nDESCRIBE results:");
 	        for (Iterator i = g.find(Node.ANY, Node.ANY, Node.ANY); i.hasNext();)
-{
+  { 
 	              Triple t = (Triple)i.next();
 		      System.out.println(" { " + t.getSubject() + " " +
 		      				 t.getPredicate() + " " +
 		      				 t.getObject() + " . }");
-	        }
+  }
 
 
 
@@ -22092,7 +22780,7 @@ public class VirtuosoSPARQLExample9 {
  	        g = model.getGraph();
                 System.out.println("\nCONSTRUCT results:");
 	        for (Iterator i = g.find(Node.ANY, Node.ANY, Node.ANY); i.hasNext();)
-    {
+  {
 	              Triple t = (Triple)i.next();
 		      System.out.println(" { " + t.getSubject() + " " +
 		      				 t.getPredicate() + " " +
@@ -22107,36 +22795,36 @@ public class VirtuosoSPARQLExample9 {
                 System.out.println("\nASK results: "+res);
 
 
-    }
-}
+	}
+  }
 ]]></programlisting>
     </sect4>
-    </sect3>
+</sect3>
     <sect3 id="rdfnativestorageprovidersjenajavadoc"><title>Javadoc API Documentation</title>
     <para><ulink url="http://docs.openlinksw.com/jena/">Jena Provider Javadoc API Documentation</ulink> is available enabling the complete set of classes, interfaces and methods implemented for the provider to be viewed.
 </para>
     </sect3>
-</sect2>  
+  </sect2>
   <sect2 id="rdfnativestorageproviderssesame"><title>Virtuoso Sesame Provider</title>
     <sect3 id="rdfnativestorageproviderssesamewhatis"><title>What is Sesame</title>
       <para>Sesame is an open source Java framework for storing, querying and reasoning with RDF and RDF Schema. It can be used as a database for RDF and RDF Schema, or as a Java library for applications that need to work with RDF internally. For example, suppose you need to read a big RDF file, find the relevant information for your application, and use that information. Sesame provides you with the necessary tools to parse, interpret, query and store all this information, embedded in your own application if you want, or, if you prefer, in a separate database or even on a remote server. More generally: Sesame provides an application developer a toolbox that contains useful hammers screwdrivers etc. for doing 'Do-It-Yourself' with RDF.
-    </para>
+</para>
     </sect3>
     <sect3 id="rdfnativestorageproviderssesamewhatisvirtuososesameprovider"><title>What is the Virtuoso Sesame Provider</title>
     <para>The Virtuoso Sesame Provider is a fully operational Native Graph Model Storage Providers for the Sesame Framework, allowing users of Virtuoso to leverage the Sesame framework for modifying, querying, and reasoning with the Virtuoso quad store using the Java language. The Sesame Repository API offers a central access point for connecting to the Virtuoso quad store. Its purpose is to provides a java-friendly access point to Virtuoso. It offers various methods for querying and updating the data, while abstracting the details of the underlying machinery. The Provider has been tested against the <ulink url="http://sourceforge.net/project/showfiles.php?group_id=46509&amp;package_id=168413">Sesame 2.1.2</ulink> version currently available.
-    </para>
+</para>
     <figure id="rdfnativestorageproviderssesame1" float="1">
       <title>Fig. 1 Sesame Component Stack</title>
       <graphic fileref="ui/VirtSesame2Provider.png"/>
     </figure>
     <para>If you need more information about how to set up your environment for working with the Sesame APIs, take a look at Chapter 4 of the Sesame User Guide, <ulink url="http://www.openrdf.org/doc/sesame2/users/RDF">Setting up to use the Sesame libraries</ulink>.
-    </para>
+</para>
     </sect3>
     <sect3 id="rdfnativestorageproviderssesamesetup"><title>Setup</title>
     <sect4 id="rdfnativestorageproviderssesamereqfiles"><title>Required Files</title>
     <para>This tutorial assumes you have Virtuoso server installed and that the database is accessible at "localhost:1111". In addition, you will need the latest version of the Virtuoso Sesame Provider, and Sesame 2 or greater installed.
     <para>You should download the Virtuoso Sesame 2 Provider JAR archive, Virtuoso JDBC Driver, Sesame Framework and associated classes and sample programs from our <ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VOSDownload">download page</ulink></para>
-    </para>
+</para>
     </sect4>
     <sect4 id="rdfnativestorageproviderssesamecmppr"><title>Compiling Sesame Sample Program</title>
     <orderedlist>
@@ -22154,7 +22842,7 @@ public class VirtuosoSPARQLExample9 {
 javac VirtuosoTest.java
 ]]></programlisting>
       <para>Note: to use utf-8 and to use row auto commit is recommended to add the following to the connect string: 
-      </para>
+</para>
 <programlisting><![CDATA[
 "/charset=UTF-8/log_enable=2"
 -- i.e. in VirtuosoTest.java the line:
@@ -22285,17 +22973,17 @@ PASSED:18 FAILED:0
     </sect3>
     <sect3 id="rdfnativestorageproviderssesamegettingstarted"><title>Getting Started</title>
     <para>This section covers the essentials for connecting to and manipulating data stored in a Virtuoso repository using the Sesame API. More information on the Sesame Framework, including extended examples on how to use the API, can be found in Chapter 8 of the Sesame User's guide, 
-<ulink url="http://www.openrdf.org/doc/sesame2/2.1.2/users/ch08.html#d0e833">the RepositoryConnection API</ulink>.
-    </para>
+    	<ulink url="http://www.openrdf.org/doc/sesame2/2.1.2/users/ch08.html#d0e833">the RepositoryConnection API</ulink>.
+</para>
     <para>The interfaces for the Repository API can be found in packages virtuoso.sesame2.driver and org.openrdf.repository. Several implementations for these interface exist in the Virtuoso Provider download package. The 
     	<ulink url="http://www.openrdf.org/doc/sesame2/2.1.2/apidocs/">Javadoc reference for the Sesame API</ulink>
 is available online and can also be found in the doc directory of the download.
-    </para>
-    <sect4 id="rdfnativestorageproviderssesamegettingstartedcrrep"><title>Creating a VirtuosoRepositoryRDF object</title>
+</para>
+    <sect4 id="rdfnativestorageproviderssesamegettingstartedcrrep"><title>Creating a Virtuoso Repository RDF object</title>
       <para>The first step to connecting to Virtuoso through the Sesame API is to create a Repository for it. The Repository object operates on (stacks of) Sail object(s) for storage and retrieval of RDF data.
-      </para>
+</para>
       <para>One of the simplest configurations is a repository that just stores RDF data in main memory without applying any inference or whatsoever. This is also by far the fastest type of repository that can be used. The following code creates and initialize a non-inferencing main-memory repository:
-      </para>
+</para>
 <programlisting><![CDATA[
 import virtuoso.sesame2.driver.VirtuosoRepository;
 
@@ -22304,32 +22992,32 @@ Repository myRepository = VirtuosoRepository("jdbc:virtuoso://localhost:1111”,”d
 myRepository.initialize();
 ]]></programlisting>
       <para>The constructor of the VirtuosoRepository class accepts the JDBC URL of the Virtuoso engine (the default port is 1111), the username and password of an authorized user. Following this example, the repository needs to be initialized to prepare the Sail(s) that it operates on, which includes operations such as restoring previously stored data, setting up connections to a relational database, etc.
-      </para>
+</para>
       <para>The repository that is created by the above code is volatile: its contents are lost when the object is garbage collected or when the program is shut down. This is fine for cases where, for example, the repository is used as a means for manipulating an RDF model in memory.
-      </para>
+</para>
     </sect4>
     <sect4 id="rdfnativestorageproviderssesamegettingstartedrdfvirtcr"><title>Creating a Virtuoso Repository Connection</title>
       <para>Now that we have created a VirtuosoRepository object instance, we want to do something 
       	with it. This is achieved through the use of the VirtuosoRepositoryConnection class, which 
       	can be created by the VirtuosoRepository class.
-      </para>
+</para>
       <para>A VirtuosoRepositoryConnection represents - as the name suggests - a connection to the 
       	actual Virtuoso quad store. We can issue operations over this connection, and close it when 
       	we are done to make sure we are not keeping resources unnecessarily occupied.
-      </para>
+</para>
       <para>In the following sections, we will show some examples of basic operations using the Northwind dataset.
-      </para>
+</para>
     </sect4>
     <sect4 id="rdfnativestorageproviderssesamegettingstartedrdfvirt"><title>Adding RDF to Virtuoso</title>
       <para>The Repository implements the Sesame Repository API offers various methods for adding data to a repository. Data can be added pro grammatically by specifying the location of a file that contains RDF data, and statements can be added individually or in collections.
-      </para>
+</para>
       <para>We perform operations on the repository by requesting a RepositoryConnection from the 
       	repository, which returns a VirtuosoRepositoryConnection object. On this 
       	VirtuosoRepositoryConnection object we can perform the various operations, such as query 
       	evaluation, getting, adding, or removing statements, etc.
-      </para>
+</para>
       <para>The following example code adds two files, one local and one located on the WWW, to a repository:
-      </para>
+</para>
 <programlisting><![CDATA[
 import org.openrdf.repository.RepositoryException;
 
@@ -22361,7 +23049,7 @@ try {
 
       con.add(url, url.toString(), RDFFormat.RDFXML);
 
-	}
+   }
 
    finally {
 
@@ -22381,33 +23069,33 @@ catch (java.io.IOEXception e) {
 
    // handle io exception
 
-    }
+}
 ]]></programlisting>
       <para>More information on other available methods can be found in the javadoc
 reference of the RepositoryConnection interface.
-      </para>
+</para>
     </sect4>
     <sect4 id="rdfnativestorageproviderssesamegettingstartedqr"><title>Querying Virtuoso</title>
       <para>The Repository API has a number of methods for creating and evaluating queries. Three types of queries are distinguished: tuple queries, graph queries and boolean queries. The query types differ in the type of results that they produce.
-      </para>
+</para>
       <para><emphasis>Select Query:</emphasis> The result of a select query is a set of tuples (or 
       variable bindings), where each tuple represents a solution of a query. This type of query is 
       commonly used to get specific values (URIs, blank nodes, literals) from the stored RDF data. 
       The method QueryFactory.executeQuery() returns a Value [ ][ ] for sparql “SELECT” queries. 
-The method QueryFactory.executeQuery() also calls the QueryFactory.setResult() which populates
-a set of tuples for SPARQL "SELECT" queries. The graph can be retrieved using
-QueryFactory.getBooleanResult().
-      </para>
+      The method QueryFactory.executeQuery() also calls the QueryFactory.setResult() which populates 
+      a set of tuples for SPARQL "SELECT" queries. The graph can be retrieved using 
+      QueryFactory.getBooleanResult().
+</para>
       <para><emphasis>Graph Query:</emphasis> The result of graph queries is an RDF graph (or set of statements). This type of query is very useful for extracting sub-graphs from the stored RDF data, which can then be queried further, serialized to an RDF document, etc. The method QueryFactory.executeQuery() calls the QueryFactory.setGraphResult() which populates a graph for SPARQL “DESCRIBE” and “CONSTRUCT” queries. The graph can be retrieved using QueryFactory.getGraphResult().
-      </para>
+</para>
       <para><emphasis>Boolean Query:</emphasis> The result of boolean queries is a simple boolean value, i.e. true of false. This type of query can be used to check if a repository contains specific information. The method QueryFactory.executeQuery() calls the QueryFactory.setBooleanResult() which sets a boolean value for sparql "ASK" queries. The value can be retrieved using QueryFactory.getBooleanResult().
-      </para>
+</para>
       <para>Note: Although Sesame 2 currently supports two query languages: SeRQL and SPARQL, the Virtuoso provider only supports the W3C SPARQL specification. 
-      </para>
+</para>
     </sect4>
     <sect4 id="rdfnativestorageproviderssesamegettingstartevq"><title>Evaluating a SELECT Query</title>
       <para>To evaluate a tuple query we simply do the following:
-      </para>
+</para>
 <programlisting><![CDATA[
 import java.util.List;
 
@@ -22447,9 +23135,9 @@ try {
 
          result.close();
 
-    }
+      }
 
-}
+   }
 
    finally {
 
@@ -22468,9 +23156,9 @@ catch (RepositoryException e) {
       <para>This evaluates a SPARQL query and returns a TupleQueryResult, which consists of a sequence 
       	of BindingSet objects. Each BindingSet contains a set of pairs called Binding objects. A 
       	Binding object represents a name/value pair for each variable in the query's projection.
-      </para>
+</para>
       <para>We can use the TupleQueryResult to iterate over all results and get each individual result for x and y:
-      </para>
+</para>
 <programlisting><![CDATA[
 while (result.hasNext()) {
 
@@ -22485,7 +23173,7 @@ while (result.hasNext()) {
 }
 ]]></programlisting>
       <para>As you can see, we retrieve values by name rather than by an index. The names used should be the names of variables as specified in your query. The TupleQueryResult.getBindingNames() method returns a list of binding names, in the order in which they were specified in the query. To process the bindings in each binding set in the order specified by the projection, you can do the following:
-      </para>
+</para>
 <programlisting><![CDATA[
 List bindingNames = result.getBindingNames();
 
@@ -22507,16 +23195,16 @@ while (result.hasNext()) {
       	frees up these resources. Do not forget that iterating over a result may cause exceptions! 
       	The best way to make sure no connections are kept open unnecessarily is to invoke close() 
       	in the finally clause.
-      </para>
+</para>
       <para>An alternative to producing a TupleQueryResult is to supply an object that implements the 
       	TupleQueryResultHandler interface to the query's evaluate() method. The main difference is 
       	that when using a return object, the caller has control over when the next answer is retrieved, 
       	whereas with the use of a handler, the connection simply pushes answers to the handler object 
       	as soon as it has them available.
-      </para>
-      <para>As an example we will use SPARQLResultsXMLWriter, which is a TupleQueryResultHandler
-implementation that writes SPARQL Results XML documents to an output stream or to a writer:
-      </para>
+</para>
+      <para>As an example we will use SPARQLResultsXMLWriter, which is a TupleQueryResultHandler 
+      	implementation that writes SPARQL Results XML documents to an output stream or to a writer:
+</para>
 <programlisting><![CDATA[
 import org.openrdf.query.resultio.sparqlxml.SPARQLResultsXMLWriter;
 
@@ -22538,15 +23226,15 @@ try {
 
       tupleQuery.evaluate(sparqlWriter);
 
-   }
+}
 
    finally {
 
       con.close();
 
-   }
-
 }
+
+    }
 
 finally {
 
@@ -22556,15 +23244,15 @@ finally {
 ]]></programlisting>
       <para>You can just as easily supply your own application-specific implementation of TupleQueryResultHandler though.
       </para>
-      <para>Lastly, an important warning: as soon as you are done with the RepositoryConnection
-object, you should close it. Notice that during processing of the TupleQueryResult object
+      <para>Lastly, an important warning: as soon as you are done with the RepositoryConnection 
+      	object, you should close it. Notice that during processing of the TupleQueryResult object 
       	(for example, when iterating over its contents), the RepositoryConnection should still be 
       	open. We can invoke con.close() after we have finished with the result. 
       </para>
     </sect4>
     <sect4 id="rdfnativestorageproviderssesamegettingstartevcnq"><title>Evaluating a CONSTRUCT query</title>
       <para>The following code evaluates a graph query on a repository:
-      </para>
+</para>
 <programlisting><![CDATA[
 import org.openrdf.query.GraphQueryResult;
 
@@ -22575,7 +23263,7 @@ GraphQueryResult graphResult = con.prepareGraphQuery(
       <para> A GraphQueryResult is similar to TupleQueryResult in that is an object that 
       	iterates over the query results. However, for graph queries the query results are RDF 
       	statements, so a GraphQueryResult iterates over Statement objects:
-      </para>
+</para>
 <programlisting><![CDATA[
 while (graphResult.hasNext()) {
 
@@ -22586,11 +23274,11 @@ while (graphResult.hasNext()) {
 
 }
 ]]></programlisting>
-      <para>The TupleQueryResultHandler equivalent for graph queries is org.openrdf.rio.RDFHandler.
+      <para>The TupleQueryResultHandler equivalent for graph queries is org.openrdf.rio.RDFHandler. 
       	Again, this is a generic interface, each object implementing it can process the reported RDF 
       	statements in any way it wants.
       </para>
-      <para>All writers from Rio (such as the RDFXMLWriter, TurtleWriter, TriXWriter, etc.) implement
+      <para>All writers from Rio (such as the RDFXMLWriter, TurtleWriter, TriXWriter, etc.) implement 
       	the RDFHandler interface. This allows them to be used in combination with querying quite easily. 
       	In the following example, we use a TurtleWriter to write the result of a SPARQL graph query to 
       	standard output in Turtle format:
@@ -22608,7 +23296,7 @@ try {
 
    con.prepareGraphQuery(QueryLanguage.SPARQL, "CONSTRUCT * FROM  WHERE {x} p {y}").evaluate(turtleWriter);
 
-    }
+}
 
 finally {
 
@@ -22617,7 +23305,7 @@ finally {
 }
 ]]></programlisting>
       <para>Again, note that as soon as we are done with the result of the query (either after iterating over the contents of the GraphQueryResult? or after invoking the RDFHandler), we invoke con.close() to close the connection and free resources.
-      </para>
+    </para>
     </sect4>
     <sect4 id="rdfnativestorageproviderssesamegettingstartevcnqapi"><title>Javadoc API Documentation</title>
       <para><ulink url="http://docs.openlinksw.com/sesame/">Sesame Provider Javadoc API Documentation</ulink> is available enabling the complete set of classes, interfaces and methods implemented for the provider to be viewed.</para>
@@ -22629,7 +23317,7 @@ finally {
 database for RDF and RDF Schema, or as a Java library for applications that need to work with RDF internally. The Sesame HTTP
 repository serves as a proxy for a RDF store hosted on a remote Sesame server, enabling the querying of the RDF store using
 the Sesame HTTP protocol.
-</para>
+    </para>
       </sect4>
       <sect4 id="rdfnativestorageproviderssesamestpandtestingwhy"><title>Why</title>
 <para>The Sesame HTTP repository endpoint provides users with the greater flexibility for manipulating the RDF store via a common
@@ -22649,18 +23337,18 @@ the specified values, which produces the required configuration data.
 <para>This section details the steps required for configuring and testing a Virtuoso Sesame
 Repository, both using the HTTP and Console Sesame repositories.</para>
       <sect5 id="rdfnativestorageproviderssesamestpandtestingreq"><title>Requirements</title>
-<itemizedlist mark="bullet">
+    <itemizedlist mark="bullet">
   <listitem><ulink url="http://www.openrdf.org/download.jsp">Sesame 2.3.1</ulink> or higher</listitem>
   <listitem><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSesame2HttpRepository/virt_sesame2.jar">Virtuoso Sesame 2 Provider </ulink> (virt_sesame2.jar)</listitem>
   <listitem><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSesame2HttpRepository/virtjdbc3.jar">Virtuoso JDBC Driver</ulink> (virtjdbc3.jar)</listitem>
   <listitem><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSesame2HttpRepository/create.xsl">Sesame System Repository config file</ulink> (create.xsl)</listitem>
   <listitem><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSesame2HttpRepository/create-virtuoso.xsl">Sesame Virtuoso Repository config file </ulink> (create-virtuoso.xsl)</listitem>
   <listitem><ulink url="http://tomcat.apache.org/download-60.cgi">Apache Tomcat</ulink> version 5 or 6</listitem>
-</itemizedlist>
+    </itemizedlist>
       </sect5>
       <sect5 id="rdfnativestorageproviderssesamestpandtestinghttprep"><title>Setup Sesame HTTP Repository</title>
 <para>This section details the steps required for configuring and testing a Virtuoso HTTP Sesame Repository.</para>
-<orderedlist>
+    <orderedlist>
   <listitem>Install <ulink url="http://tomcat.apache.org/tomcat-6.0-doc/index.html">Apache Tomcat</ulink> web server</listitem>
   <listitem>From the Sesame 2.3.1 or higher "lib" directory copy the "openrdf-sesame.war" and "openrdf-worbbench.war" files to the
 tomcat "webapps" directory where they will automatically be deployed creating two new sub directories "openrdf-sesame" and
@@ -22675,7 +23363,7 @@ use by the Sesame HTTP Repository for accessing the Virtuoso RDF repository.</li
 http://localhost:8080/openrdf-sesame
 http://localhost:8080/openrdf-workbench
 ]]></programlisting>
-</listitem>
+         </listitem>
    <listitem>The Sesame OpenRDF Workbench is used for accessing the Sesame HTTP Repositories, loading
 "<ulink url="http://localhost:8080/openrdf-workbench">http://localhost:8080/openrdf-workbench</ulink>" will enable the
 default "SYSTEM" repository to be accessed.
@@ -22683,63 +23371,63 @@ default "SYSTEM" repository to be accessed.
        <title>Virtuoso Sesame HTTP Repository Configuration and Usage</title>
        <graphic fileref="ui/ss1.png"/>
      </figure>
-  </listitem>
+         </listitem>
    <listitem>Click on the "New Repository" link in the left frame to create a new Sesame Repository.
      <figure id="ss2" float="1">
        <title>Virtuoso Sesame HTTP Repository Configuration and Usage</title>
        <graphic fileref="ui/ss2.png"/>
      </figure>
-  </listitem>
+         </listitem>
    <listitem>Select the "Virtuoso RDF Store" from the "Type" drop down list box presented.
      <figure id="ss3" float="1">
        <title>Virtuoso Sesame HTTP Repository Configuration and Usage</title>
        <graphic fileref="ui/ss3.png"/>
      </figure>
-  </listitem>
+      </listitem>
    <listitem>Choose suitable repository "ID" and "Title" for the Virtuoso repository to be created and click "Next".
      <figure id="ss4" float="1">
        <title>Virtuoso Sesame HTTP Repository Configuration and Usage</title>
        <graphic fileref="ui/ss4.png"/>
      </figure>
-  </listitem>
+      </listitem>
    <listitem>Fill in the connection parameters for the target Virtuoso sever the repository is to be created for and
 click the "create" button. The minimum required are the hostname, port number, username and password of the Virtuoso Server.
      <figure id="ss5" float="1">
        <title>Virtuoso Sesame HTTP Repository Configuration and Usage</title>
        <graphic fileref="ui/ss5.png"/>
      </figure>
-  </listitem>
+      </listitem>
    <listitem>The new Virtuoso respository will be created and its summary page displayed.
      <figure id="ss6" float="1">
        <title>Virtuoso Sesame HTTP Repository Configuration and Usage</title>
        <graphic fileref="ui/ss6.png"/>
      </figure>
-  </listitem>
+      </listitem>
    <listitem>Click on the "Namespaces" link in the left frame to obtain a list of the available namespaces in the Virtuoso repository.
      <figure id="ss7" float="1">
        <title>Virtuoso Sesame HTTP Repository Configuration and Usage</title>
        <graphic fileref="ui/ss7.png"/>
      </figure>
-  </listitem>
+      </listitem>
    <listitem>Click on the "Context" link in the left frame to obtain a list of the available contexts in the Virtuoso repository.
      <figure id="ss8" float="1">
        <title>Virtuoso Sesame HTTP Repository Configuration and Usage</title>
        <graphic fileref="ui/ss8.png"/>
      </figure>
-  </listitem>
+      </listitem>
    <listitem>Click on the "Types" link in the left frame to obtain a list of the available types in the Virtuoso repository.
      <figure id="ss9" float="1">
        <title>Virtuoso Sesame HTTP Repository Configuration and Usage</title>
        <graphic fileref="ui/ss9.png"/>
      </figure>
-  </listitem>
+</listitem>
    <listitem>Click on the "Query" link in the left frame, enter a suitable SPARQL query to execute against the Virtuoso repository
 and click the "execute" button.
      <figure id="ss10" float="1">
        <title>Virtuoso Sesame HTTP Repository Configuration and Usage</title>
        <graphic fileref="ui/ss10.png"/>
      </figure>
-  </listitem>
+      </listitem>
    <listitem>The results of the SPARQL query are returned.
      <figure id="ss11" float="1">
        <title>Virtuoso Sesame HTTP Repository Configuration and Usage</title>
@@ -22774,7 +23462,7 @@ Commands end with '.' at the end of a line
 Type 'help.' for help
 exit.
 ]]></programlisting>
-</listitem>
+      </listitem>
   <listitem>This will create the necessary sesame application data directories as detailed in the sesame
 <ulink url="http://www.openrdf.org/doc/sesame2/2.3.1/users/userguide.html#chapter-datadir-config">data directory configuration</ulink> documentation.
 <programlisting><![CDATA[
@@ -22782,14 +23470,14 @@ Windows - C:\Documents and Settings\LocalService\Application Data\Aduna\
 Mac OS X - /Users/myuser/Library/Application Support/Aduna/
 Linux - $HOME/.aduna/
 ]]></programlisting>
-</listitem>
+      </listitem>
   <listitem>If you do not want to use the default sesame data directory location the Sesame console application can be started by
 specifying a custom data directory location with the "-d" option. Note in this case the directory "OpenRDF Sesame console" always
 has to be manually appended to the directory as Sesame assumes the data file will reside in a sub directory of this name.
 <programlisting><![CDATA[
 $ sh console.sh -d /Users/myuser/OpenRDF Sesame console
 ]]></programlisting>
-</listitem>
+      </listitem>
   <listitem>Start the sesame console application with the required data directory location and create a Virtuoso repository as
 detailed in the steps below, the key parameters to be specified being the target Virtuoso server hostname, port number,
 username, password and a unique "Repository ID".
@@ -22861,8 +23549,8 @@ myvirt> show n .
 +----------
 exit.
 ]]></programlisting>
-</listitem>
-</orderedlist>
+     </listitem>
+    </orderedlist>
       </sect5>
       <sect5 id="rdfnativestorageproviderssesamestpandtestinghttpcons"><title>Connection to Sesame HTTP repository from Console repository</title>
 <para>The Sesame Console repository can connect to a Sesame HTTP repository and vice-versa, enabling access to remote Sesame
@@ -22957,7 +23645,7 @@ language APIs providing RDF manipulation and storage and requires the
 <ulink url="http://librdf.org/raptor/">Raptor</ulink> RDF parser and <ulink url="http://librdf.org/rasqal/">Rasqal</ulink>
 RDF syntax and query library
 for its use.
-      </para>
+    </para>
     </sect3>
     <sect3 id="rdfnativestorageproviderredlandwhatisv"><title>What is the Virtuoso Redland Provider</title>
     <para>The Virtuoso Redland RDF Provider is an implementation of the Storage API, Model and Query
@@ -22994,12 +23682,12 @@ the open source project to become part of the standard distribution available fo
 <ulink url="http://librdf.org/INSTALL.html">download</ulink>. Until this
 submission has been accepted and committed into the available Redland release a tar ball created by
 OpenLink Software and a diff for application to a Redland 1.0.8 tree can be obtained from:
-    </para>
-    <itemizedlist mark="bullet">
+      </para>
+      <itemizedlist mark="bullet">
         <listitem><ulink url="ftp://download.openlinksw.com/support/vos/redland-vos-1.0.8.tar.gz"></ulink>Redland 1.0.8 tar ball with Virtuoso storage support</listitem>
         <listitem><ulink url="ftp://download.openlinksw.com/support/vos/redland-vos.diff">Redland 1.0.8 Diff file of changes made for Virtuoso storage support</ulink></listitem>
       </itemizedlist>
-      </sect4>
+    </sect4>
       <sect4 id="rdfnativestorageprovidersredlandcmsmpr"><title>Compiling Redland with Virtuoso storage support</title>
         <itemizedlist mark="bullet">
           <listitem><ulink url="http://svn.librdf.org/">Download Redland</ulink>, extract and apply diff
@@ -23177,7 +23865,7 @@ PASSED: 20  FAILED:  0
 ]]></programlisting>
           </listitem>
         </itemizedlist>
-      </sect4>
+    </sect4>
       <sect4 id="rdfnativestorageprovidersredlandcp"><title>Connection Parameters</title>
         <para>The Virtuoso provider has the following connection parameters available fro use:</para>
         <itemizedlist mark="bullet">
@@ -23186,7 +23874,7 @@ PASSED: 20  FAILED:  0
           <listitem><emphasis>password</emphasis> - password of database server</listitem>
           <listitem><emphasis>host</emphasis> - hostname:portno of the database server</listitem>
           <listitem><emphasis>charset</emphasis> - database charset to use</listitem>
-    </itemizedlist>
+        </itemizedlist>
         <para>NOTE: Take care exposing the password as for example, program arguments or environment
 variables. The rdfproc utility can help this by reading the password from standard input. Inside programs,
 one way to prevent storing the password in a string is to construct a Redland hash of the storage options
@@ -23219,17 +23907,1891 @@ with the above options.
   librdf_hash_put_strings(options, "password", user_password);
   storage=librdf_new_storage_with_options(world, "virtuoso", "http://red3", options);
 ]]></programlisting>
-    </sect4>
+      </sect4>
     </sect3>
     <sect3 id="rdfnativestorageprovidersredlandref"><title>References</title>
-    <itemizedlist mark="bullet">
+      <itemizedlist mark="bullet">
         <listitem><ulink url="http://librdf.org/docs/api/redland-storage.html">RedLand Triple 
         Store</ulink></listitem>
         <listitem><ulink url="http://librdf.org/docs/api/redland-storage-modules.html">RedLand 
         Storage Modules</ulink></listitem>
-   </itemizedlist>
+      </itemizedlist>
     </sect3>
   </sect2>
 </sect1>
 
+<sect1 id="rdfgraphreplication"><title>RDF Graph Replication</title>
+<para>The following section demonstrates how to replicate graphs from one Virtuoso 
+	instance to (an)other Virtuoso instance(s), using the RDF Replication Feature.</para>
+<para>Terms used in this section:</para> 
+<itemizedlist mark="bullet">
+  <listitem><emphasis>Host Virtuoso Instance</emphasis>, aka the publisher: the instance where we 
+  will insert RDF data into a Named Graph; then create a publication of this graph.</listitem>
+  <listitem><emphasis>Destination Virtuoso Instance</emphasis>, aka the subscriber: the instance 
+  which will subscribe to the publication from the Host Virtuoso Instance.</listitem>
+</itemizedlist>
+  <tip><title>See Also:</title>
+     <para><link linkend="fn_rdf_repl_start"><function>DB.DBA.RDF_REPL_START()</function></link></para>  
+     <para><link linkend="fn_rdf_repl_graph_ins"><function>DB.DBA.RDF_REPL_GRAPH_INS()</function></link></para>  
+     <para><link linkend="fn_rdf_repl_graph_del"><function>DB.DBA.RDF_RDF_REPL_GRAPH_DEL()</function></link></para>            
+  </tip>
+<para>The basic outline:</para>
+<itemizedlist mark="bullet">
+   <listitem>First, use the Virtuoso Conductor on a Host Virtuoso Instance to publish a named 
+   	graph.</listitem>
+   <listitem>Then, use the Virtuoso Conductor on a Destination Virtuoso Instance to subscribe 
+   	to deltas from the published graph.</listitem>
+   <listitem>Finally, see how a change in the publisher's graph will appear in the subscriber's 
+   	graph.</listitem>
+</itemizedlist>
+  <sect2 id="rdfgraphreplicationscenr"><title>Replication Scenarios</title>
+     <figure id="topo_scenario" float="1">
+      <title></title>
+      <graphic fileref="ui/topo-scenario.png"/>
+    </figure> 
+    <sect3 id="rdfgraphreplicationscenrint"><title>Introduction</title>
+      <para>In this section we will examine a proposed setup for a back-end server called MASTER which 
+      	publishes a number of graphs to a set of front-end machines called FARM-1 .. FARM-n and discuss 
+      	a couple of common scenarios like adding an extra machine to the farm, or replacing a broken 
+      	instance of MASTER.</para>    
+      <para>In this example we will assume each virtuoso instance running on its own machine, so they can 
+      	use the same port numbers for both the main server (default 1111) as well as the http port 
+      	(default 8890) as each machine has an unique IP addresses. In the example we use MASTER-IP and 
+      	FARM-x-IP which should be replaced by either the real IP address or the DNS name of the machine 
+      	in question.</para>      
+      <para>Since there will be a reverse-proxy service in front of the farm, all virtuoso instances 
+      	should have the URIQA Default host set to the outside name for this service. In this example 
+      	we will use http://test.example.com as the web service we are trying to setup.</para>            
+    </sect3> 
+    <sect3 id="rdfgraphreplicationscenrsup"><title>Setup</title>
+      <sect4 id="rdfgraphreplicationscenrsupinstv"><title>Installing Virtuoso</title>
+        <para>All machines in this setup should be installed with similar installation paths like:</para>
+        <itemizedlist mark="bullet">
+          <listitem>/opt/virtuoso</listitem>
+          <listitem>/dbs/virtuoso</listitem>
+          <listitem>/virtuoso</listitem>
+          <listitem>...</listitem>          
+        </itemizedlist>        
+        <para>The partition should be big enough to have room for the Virtuoso binaries and libraries, 
+        	the transaction logs, backups and, if you do not want to use the striping feature of Virtuoso, 
+        	it will need to have room for the main database files as well.</para>
+        <para>Here are the quick installation steps:</para>                
+        <orderedlist>
+          <listitem>Login as root.</listitem>
+          <listitem>Create local user called virtuoso using the chosen installation path as home 
+          	direcotory.</listitem>
+          <listitem>Login as virtuoso.</listitem>
+          <listitem>Extract virtuoso-universal-server-6.1.tar in home directory.</listitem>
+          <listitem>Run sh install.sh to install Virtuoso.</listitem>
+          <listitem>Remove the file install.sh virtuoso-universal-server-6.1.tar virtuoso-server.taz if 
+          	not otherwise needed.</listitem>
+          <listitem>Run bin/virtuoso-stop.sh to shutdown this Virtuoso instance.</listitem>
+          <listitem>Install virtuoso.lic for this system in $HOME/bin directory.</listitem>
+        </orderedlist>        
+        <para>As the replication process needs to make an ODBC connection to the MASTER machine, all 
+        	machines should have the following information in the $HOME/bin/odbc.ini:</para>
+<programlisting><![CDATA[
+[ODBC Data Sources]
+..
+MASTER_DSN = OpenLink Virtuoso
+
+..
+[MASTER_DSN]
+Driver = OpenLink Virtuoso
+Address = MASTER_IP:1111	
+]]></programlisting>        	        
+      </sect4>    
+      <sect4 id="rdfgraphreplicationscenrsupinstm"><title>Setting up MASTER</title>
+        <para>The MASTER machine is the back-end server machine. Various applications feed SPARQL data 
+        	into this machine it publishes a set of graphs using RDF Replication.</para>      
+        <para>The MASTER machine should ideally be equipped with multiple redundant disks in RAID-1 
+        	or RAID-6 mode to minimize the risk that a single bad disk takes down the system. From a 
+        	Virtuoso point of view we will use a combination of online backups combined with checkpoint 
+        	audit trail to backup the content of the database in a safe way. The online backups, the 
+        	checkpoint audit trail as well as the replication logs can also be copied to secondary 
+        	storage using the rsync command and can be easily scripted as a cron job.</para>   
+        <para>Changes to database/virtuoso.ini:</para>   
+<programlisting><![CDATA[
+...
+[Parameters]
+SchedulerInterval    = 1     ; run the internal scheduler every minute
+CheckpointAuditTrail = 1     ; enable audit trail on transaction logs
+CheckpointInterval   = 60    ; perform an automated checkpoint every 60 minutes
+...
+[URIQA]
+DefaultHost = test.example.com
+...  
+[Replication]
+ServerName   = MASTER
+ServerEnable = 1 
+QueueMax     = 5000000
+...
+]]></programlisting>        
+        <para>Once the MASTER is started using the bin/virtuoso-start.sh script we must enable RDF 
+        	replication before we start add data to the graphs we wish to replicate, so every record is 
+        	accounted for by the replication process. If there is existing data in the graphs to be 
+        	published, then this data would need to be added to a subscriber manually since the 
+        	replication process creates a delta set of changes since publishing was enabled.</para>   
+        <para>To enable publishing of the graph we use the isql program to connect to the MASTER 
+        	instance:</para>            
+<programlisting><![CDATA[
+$ isql MASTER-IP:1111
+
+-- and run the following commands:
+
+-- enable this instance as a publisher
+rdf_repl_start();
+
+-- add graphs to replication list
+rdf_repl_graph_ins('http://test.example.com');
+]]></programlisting>        	
+        <para>Next we create a backup directory inside the database directory and setup the online 
+        	backup, again using the isql program:</para>   
+<programlisting><![CDATA[
+$ cd database
+$ mkdir backup
+$ isql MASTER_IP:1111
+
+-- and run the following commands:
+
+-- clear any previous context
+backup_context_clear();
+
+-- start the backup
+backup_online ('bkup-#', 1000000, 0, vector ('backup'));
+
+]]></programlisting>
+        <para>The following files can now be backed up using rsync or similar tool to another machine:</para> 
+<table><title>Files that can be backed up using rsync or similar tool to another machine</title>
+<tgroup cols="2">
+<thead><row>
+<entry>Files</entry><entry>Description</entry>
+</row></thead>
+<tbody>
+<row><entry>database/backup/*.bp</entry><entry>	the incremental backup files</entry></row>
+<row><entry>database/virtuoso.trx</entry><entry>	the main transaction log containing the most recent updates to the database that have not been checkpointed into the database</entry></row>
+<row><entry>database/virtuosoTIMESTAMP.trx</entry><entry>all the previous transaction logs which can be used to reconstruct the database</entry></row>
+<row><entry>database/__rdf_repl*.log</entry><entry>all the replication logs containing the changes to the published graph</entry></row>
+</tbody>
+</tgroup>
+</table>        
+        <para>NOTE: Since the database is constantly modified during operation, it is of NO use to 
+        	backup the virtuoso.db using an rsync script unless the virtuoso instance was shutdown 
+        	beforehand, or certain extra precautions are taken which we will explain later on.</para>   
+      </sect4>     
+      <sect4 id="rdfgraphreplicationscenrsupinstp"><title>Setup SPARE master</title>
+        <para>The SPARE machine is a replica of the MASTER machine. This machine subscribes to the 
+        	publication of the MASTER to keep an exact match of the RDF graphs, but also publishes 
+        	this data without any initial subscribers.</para>      
+        <para>The SPARE machine should ideally be equipped similar to the MASTER machine, with multiple 
+        	redundant disks in RAID-1 or RAID-6 mode to minimize the risk that a single bad disk takes down 
+        	the system. From a Virtuoso point of view we will use a combination of online backups combined 
+        	with checkpoint audit trail to backup the content of the database in a safe way. The online 
+        	backups, the checkpoint audit trail as well as the replication logs can also be copied to 
+        	secondary storage using the rsync command and can be easily scripted as a cron job.</para>   
+        <para>Changes to database/virtuoso.ini:</para>                                                
+<programlisting><![CDATA[
+...
+[Parameters]
+SchedulerInterval    = 1     ; run the internal scheduler every minute
+CheckpointAuditTrail = 1     ; enable audit trail on transaction logs
+CheckpointInterval   = 60    ; perform an automated checkpoint every 60 minutes
+...
+[URIQA]
+DefaultHost = test.example.com
+...  
+[Replication]
+ServerName   = SPARE
+ServerEnable = 1 
+QueueMax     = 5000000
+...
+]]></programlisting>        
+        <para>We must enable RDF replication before we start add data to the graphs we wish to 
+        	replicate, so every record is accounted for by the replication process. If there is 
+        	existing data in the graphs to be published, then this data would need to be added 
+        	to a subscriber manually since the replication process creates a delta set of changes 
+        	since publishing was enabled.</para>                                                
+        <para>To enable publishing of the graph, as well as subscribing to the MASTER, we first start 
+        	up this Virtuoso instance with bin/virtuoso-start.sh and then use the isql program to connect 
+        	to the SPARE instance:</para>                                                
+<programlisting><![CDATA[
+$ bin/virtuoso-start.sh
+$ isql SPARE-IP:1111
+
+-- and run the following commands:
+
+-- enable this instance as a publisher
+rdf_repl_start();
+
+-- add graphs to replication list
+rdf_repl_graph_ins('http://test.example.com');
+
+-- connect to master
+repl_server ('MASTER', 'MASTER_DSN');
+
+-- start subscribing to __rdf_repl
+repl_subscribe ('MASTER', '__rdf_repl', 'dav', 'dav', 'dba', 'dba');
+
+-- start initial replication
+repl_sync_all ();
+
+-- add subscription to scheduler
+DB.DBA.SUB_SCHEDULE ('MASTER', '__rdf_repl', 1);
+]]></programlisting>        	
+        <para>Next we create a backup directory inside the database directory and setup the online backup, 
+        	again using the isql program:</para>    
+<programlisting><![CDATA[
+$ cd database
+$ mkdir backup
+$ isql SPARE_IP:1111
+
+--and run the following commands:
+
+-- clear any previous context
+backup_context_clear();
+
+-- start the backup
+backup_online ('bkup-#', 1000000, 0, vector ('backup'));
+]]></programlisting>        	                                            
+        <para>The following files can now be backed up using rsync or similar tool to another machine:</para> 
+<table><title>Files that can be backed up using rsync or similar tool to another machine</title>
+<tgroup cols="2">
+<thead><row>
+<entry>Files</entry><entry>Description</entry>
+</row></thead>
+<tbody>
+<row><entry>database/backup/*.bp</entry><entry>	the incremental backup files</entry></row>
+<row><entry>database/virtuoso.trx</entry><entry>the main transaction log containing the most recent updates to the database that have not been checkpointed into the database</entry></row>
+<row><entry>database/virtuosoTIMESTAMP.trx</entry><entry>all the previous transaction logs which can be used to reconstruct the database</entry></row>
+<row><entry>database/__rdf_repl*.log</entry><entry>all the replication logs containing the changes to the published graph</entry></row>
+</tbody>
+</tgroup>
+</table>          
+        <para>Note: Since the database is constantly modified during operation, it is of NO use to 
+        	backup the virtuoso.db using an rsync script unless the virtuoso instance was shutdown 
+        	beforehand, or certain extra precautions are taken which we will explain later on.</para>
+      </sect4>      
+      <sect4 id="rdfgraphreplicationscenrsupinstpf"><title>Setup FARM-1</title>
+        <para>The FARM-1 machine is the first front-end server machine. It subscribes to the publication 
+        	of the MASTER instance to keep up-to-date.</para>   
+        <para>The FARM-1 machine can be run on simpler hardware than the MASTER instance.It does not 
+        	require the same level of redundancy in terms of hard disks etc, as there are a number of 
+        	these machines running in parallel each capable of returning results to the proxy. If one 
+        	FARM machine dies, it can simply be taken from the reverse-proxy list, repaired or replaced 
+        	with a fresh machine before it is added to the list of servers in the reverse proxy. As such 
+        	it does not need to be backed up separately, although we could make a backup of this 
+        	installation to quickly install the rest of the identical FARM boxes.</para>
+        <para>Change the database/virtuoso.ini file:</para>
+<programlisting><![CDATA[
+...
+[Parameters]
+SchedulerInterval    = 1     ; run the internal scheduler every minute
+CheckpointAuditTrail = 0     ; disable audit trail on transaction logs
+CheckpointInterval   = 60    ; perform an automated checkpoint every 60 minutes
+...
+[URIQA]
+DefaultHost = test.example.com
+...  
+[Replication]
+ServerName   = FARM-1        ; each FARM machine needs to have a unique replication name
+ServerEnable = 1 
+QueueMax     = 5000000
+...
+]]></programlisting>        
+        <para>Next we start up the Virtuoso instance using the bin/virtuoso-start.sh command and 
+        	use the isql program to subscribe to the MASTER:</para>            
+<programlisting><![CDATA[
+$ bin/virtuoso-start.sh
+$ isql FARM-1-IP:1111
+
+-- connect to master
+repl_server ('MASTER', 'MASTER_DSN');
+
+-- start subscribing to __rdf_repl
+repl_subscribe ('MASTER', '__rdf_repl', 'dav', 'dav', 'dba', 'dba');
+
+-- start initial replication
+repl_sync_all ();
+
+-- add subscription to scheduler
+DB.DBA.SUB_SCHEDULE ('MASTER', '__rdf_repl', 1);
+]]></programlisting>        	
+        <para>At this point we can shutdown this Virtuoso instance using the bin/virtuoso-stop.sh 
+        	command and make a copy of the whole virtuoso installation as a blueprint to copy to 
+        	another FARM-x machine.</para>            
+      </sect4>    
+      <sect4 id="rdfgraphreplicationscenrsupinstpfs"><title>Setup FARM-2 from scratch</title>
+        <para>We can repeat the same steps we did for the FARM-1 machine, and just make sure we use 
+        	FARM-2 as the replication name in the database/virtuoso.ini file and use FARM-2-IP:1111 as 
+        	an argument to the isql program.</para>      
+        <para>Change bin/virtuoso.ini:</para>            
+<programlisting><![CDATA[
+[Replication]
+ServerName = FARM-2	
+]]></programlisting>        
+      </sect4>
+      <sect4 id="rdfgraphreplicationscenrsupinstpfsi"><title>Setup FARM-3 using blueprint from FARM-1 installation</title>
+        <para>Extract the tarred/zipped copy of the installation made at the end of the setup of FARM-1.</para>  
+        <para>Before starting up the instance, we only need to give this instance a unique name for 
+        	replication:</para>            
+        <para>Change bin/virtuoso.ini:</para>            
+<programlisting><![CDATA[
+[Replication]
+ServerName = FARM-3	
+]]></programlisting>        
+        <para>Next we start up the Virtuoso instance using the bin/virtuoso-start.sh command and since 
+        	the subscription records and schedule are already performed in the previous step, we just 
+        	use the isql program to perform a sync against the MASTER:</para>                                                            
+<programlisting><![CDATA[
+$ bin/virtuoso-start.sh
+$ isql FARM-3-IP:1111
+
+-- change replication name
+DB.DBA.REPL_SERVER_RENAME ('FARM-1', 'FARM-3')
+
+-- sync against master
+repl_sync_all();
+]]></programlisting>        	
+      </sect4>     
+      <sect4 id="rdfgraphreplicationscenrsupinstpfsc"><title>Setup FARM-4 using clone of FARM-1</title>
+        <para>If the system has been running for some time, it may not be practical to do a replication 
+        	from start, so there is an alternative way to setup a new FARM-4 machine.</para>      
+        <para>We can either restore the blue-print backup we make at the end of FARM-1 installation, 
+        	or we do a fresh installation of virtuoso on the FARM-4 machine.</para>              
+        <para>In both cases we shutdown the virtuoso instance and remove the database, as we are going 
+        	to replace this.</para>      
+<programlisting><![CDATA[
+$ bin/virtuoso-stop.sh
+$ cd database
+$ rm virtuoso.db virtuoso.trx virtuoso.log virtuoso.pxa	
+]]></programlisting>        	
+        <para>Change the database/virtuoso.ini file:</para>      
+<programlisting><![CDATA[
+...
+[Parameters]
+SchedulerInterval    = 1     ; run the internal scheduler every minute
+CheckpointAuditTrail = 0     ; disable audit trail on transaction logs
+CheckpointInterval   = 60    ; perform an automated checkpoint every 60 minutes
+...
+[URIQA]
+DefaultHost = test.example.com
+...  
+[Replication]
+ServerName   = FARM-4        ; each FARM machine needs to have a unique replication name
+ServerEnable = 1 
+QueueMax     = 5000000
+...
+]]></programlisting>        
+        <para>Next we are going to temporarily disable checkpointing on FARM-1 machine so 
+        	we can copy its database without risking corruption: </para>            
+<programlisting><![CDATA[
+$ isql FARM-1-IP:1111
+
+-- disable automatic checkpointing
+checkpoint_interval (-1);
+
+-- and do an explicit checkpoint
+checkpoint;	
+]]></programlisting>        	
+        <para>It is now safe to copy the database across using the rsync command:</para> 
+<programlisting><![CDATA[
+$ rsync -avz virtuoso@FARM-1-IP:/path/to/virtuoso/database/virtuoso.db database/virtuoso.db
+]]></programlisting>        
+        <para>Next we re-enable checkpoint interval on FARM-1:</para> 
+<programlisting><![CDATA[
+$ isql FARM-1-IP:1111
+
+-- re-enable checkpointing
+checkpoint_interval(60);	
+]]></programlisting>        
+        <para>The last step is to start the database:</para>                                           
+<programlisting><![CDATA[
+$ bin/virtuoso-start.sh
+$ isql FARM-4-IP:1111
+
+-- change replication name
+DB.DBA.REPL_SERVER_RENAME ('FARM-1', 'FARM-4')
+
+-- sync against master
+repl_sync_all();	
+]]></programlisting>
+    </sect4>
+    </sect3>
+</sect2>  
+  <sect2 id="rdfgraphreplicationtopl"><title>Replication Topologies</title>
+<para>Typical replication topologies are Chains, Stars and Bi-directional. They can be achieved with 
+	Virtuoso, by repeating the "Publish" and/or "Subscribe" steps on each relevant node.</para>
+	  <sect3 id="rdfgraphreplicationtoplstar"><title>Star Replication Topology</title> 
+	     <para>In a Star, there is one Publisher, and many Subscribers.</para>
+	     <figure id="star1" float="1">
+         <title>Star Replication Topology</title>
+         <graphic fileref="ui/topo-star.png"/>
+    </figure>
+       <para>To set up a Star, follow the scenario:</para>
+    <orderedlist>
+         <listitem>Configure Instance #1 to Publish.</listitem>
+         <listitem>Configure Instance #2 to Subscribe to #1.</listitem>
+         <listitem>Repeat as necessary.</listitem>
+       </orderedlist>
+       <sect4 id="rdfgraphreplicationtoplstarex"><title>Star Replication Topology Example</title> 
+         <para>The following How-To walks you through setting up Virtuoso RDF Graph Replication in a Star Topology.</para>
+         <sect5 id="rdfgraphreplicationtoplstarexpr"><title>Prerequisites</title> 
+           <sect6 id="rdfgraphreplicationtoplstarexprini"><title>Database INI Parameters</title> 
+             <para>Suppose there are 3 Virtuoso instances respectively with the following ini parameters values:</para>
+             <orderedlist>
+               <listitem>virtuoso1.ini:
+<programlisting><![CDATA[
+...
+[Database]
+DatabaseFile    = virtuoso1.db
+TransactionFile = virtuoso1.trx
+ErrorLogFile     = virtuoso1.log
+...
+[Parameters]
+ServerPort               = 1111
+SchedulerInterval        = 1
+...
+[HTTPServer]
+ServerPort                  = 8891
+...
+[URIQA]
+DefaultHost = localhost:8891
+...
+[Replication]
+ServerName   = db1
+...
+	
+]]></programlisting>
+      </listitem>
+               <listitem>virtuoso2.ini:
+<programlisting><![CDATA[
+...
+[Database]
+DatabaseFile    = virtuoso2.db
+TransactionFile = virtuoso2.trx
+ErrorLogFile     = virtuoso2.log
+...
+[Parameters]
+ServerPort               = 1112
+SchedulerInterval        = 1
+...
+[HTTPServer]
+ServerPort                  = 8892
+...
+[URIQA]
+DefaultHost = localhost:8892
+...
+[Replication]
+ServerName   = db2
+...	
+]]></programlisting>
+               </listitem>             	
+               <listitem>virtuoso3.ini:
+<programlisting><![CDATA[
+...
+[Database]
+DatabaseFile    = virtuoso3.db
+TransactionFile = virtuoso3.trx
+ErrorLogFile     = virtuoso3.log
+...
+[Parameters]
+ServerPort               = 1113
+SchedulerInterval        = 1
+...
+[HTTPServer]
+ServerPort                  = 8893
+...
+[URIQA]
+DefaultHost = localhost:8893
+...
+[Replication]
+ServerName   = db3
+...
+]]></programlisting>
+      </listitem>
+    </orderedlist>
+           </sect6> 
+           <sect6 id="rdfgraphreplicationtoplstarexprdsn"><title>Database DSNs</title> 
+             <para>Use the ODBC Administrator on your Virtuoso host (e.g., on Windows, Start menu -> Control Panel -> Administrative Tools -> Data Sources (ODBC); on Mac OS X, /Applications/Utilities/OpenLink ODBC Administrator.app) to create a System DSN for each of db1, db2, db3, with names db1, db2 and db3, respectively.</para>
+           </sect6>   
+           <sect6 id="rdfgraphreplicationtoplstarexprcnd"><title>Install Conductor package</title> 
+             <para>On each of the 3 Virtuoso instances install the <ulink url="http://s3.amazonaws.com/opldownload/uda/vad-packages/6.1/virtuoso/conductor_dav.vad">conductor_dav.vad</ulink> package.</para>
+           </sect6>                            
+         </sect5> 
+         <sect5 id="rdfgraphreplicationtoplstarexprph"><title>Create a Publication on the Host Virtuoso Instance db1</title> 
+    <orderedlist>
+   <listitem>Go to Conductor -> Replication -> Transactional -> Publications 
+     <figure id="star2" float="1">
+       <title>Star Replication Topology</title>
+       <graphic fileref="ui/r6.png"/>
+     </figure>
+  </listitem>
+   <listitem>Click Enable RDF Publishing</listitem>
+    <listitem>A publication with the name RDF Publication should be created: 
+     <figure id="star3" float="1">
+       <title>Star Replication Topology</title>
+       <graphic fileref="ui/r7.png"/>
+     </figure>
+  </listitem>
+    <listitem>Click the link which is the publication name.</listitem>
+    <listitem>You will be shown the publication items page: 
+     <figure id="star4" float="1">
+       <title>Star Replication Topology</title>
+       <graphic fileref="ui/r8.png"/>
+     </figure>
+  </listitem>
+    <listitem>Enter for Graph IRI:
+<programlisting><![CDATA[
+http://example.org	
+]]></programlisting>    	 
+     <figure id="star5" float="1">
+       <title>Star Replication Topology</title>
+       <graphic fileref="ui/r9.png"/>
+     </figure>
+  </listitem>
+    <listitem>Click Add New</listitem>
+    <listitem>The item will be created and shown in the list of items for the currently viewed publication. 
+     <figure id="star6" float="1">
+       <title>Star Replication Topology</title>
+       <graphic fileref="ui/r10.png"/>
+     </figure>
+  </listitem>    
+</orderedlist>
+         </sect5> 
+         <sect5 id="rdfgraphreplicationtoplstarexprih"><title>Insert Data into a Named Graph on the Host 
+         Virtuoso Instance</title> 
+           <para>There are several ways to insert data into a Virtuoso Named Graph. In this example, we 
+           	will use the Virtuoso Conductor's Import RDF feature:</para>
+<orderedlist>
+  <listitem>In the Virtuoso Conductor, go to Linked Data -&gt; Quad Store Upload:
+     <figure id="star7" float="1">
+       <title>Replication Topology</title>
+       <graphic fileref="ui/uc1.png"/>
+     </figure>
+  </listitem> 
+  <listitem>In the form: 
+    <itemizedlist mark="bullet">
+  <listitem>Tick the box for Resource URL and enter your resource URL, for e.g.: 
+<programlisting><![CDATA[
+http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this	
+]]></programlisting>  	
+  </listitem>
+  <listitem>Enter for Named Graph IRI:
+<programlisting><![CDATA[
+http://example.org	
+]]></programlisting>  	
+</listitem>
+    </itemizedlist>
+     <figure id="star8" float="1">
+       <title>Replication Topology</title>
+       <graphic fileref="ui/r2.png"/>
+     </figure>
+      </listitem>
+  <listitem>Click Upload</listitem> 
+  <listitem>A successful upload will result in this message: 
+     <figure id="star9" float="1">
+       <title>Star Replication Topology</title>
+       <graphic fileref="ui/r3.png"/>
+     </figure>
+  </listitem> 
+  <listitem>Check the inserted triples by executing a query like the following against the SPARQL endpoint, http://cname:port/sparql:
+<programlisting><![CDATA[
+SELECT * 
+  FROM <http://example.org>
+ WHERE { ?s ?p ?o }
+]]></programlisting>
+     <figure id="star10" float="1">
+       <title>Star Replication Topology</title>
+       <graphic fileref="ui/r4.png"/>
+     </figure>
+      </listitem>
+  <listitem>See how many triples have been inserted in your graph: 
+<programlisting><![CDATA[
+SELECT COUNT(*) 
+  FROM <http://example.org>
+ WHERE { ?s ?p ?o }	
+]]></programlisting>  	
+     <figure id="star11" float="1">
+       <title>Star Replication Topology</title>
+       <graphic fileref="ui/r5.png"/>
+     </figure>
+  </listitem> 
+</orderedlist>
+         </sect5> 
+         <sect5 id="rdfgraphreplicationtoplstarexprsp"><title>Subscribe to the Publication on the a 
+         Destination Virtuoso Instance db2, db3, etc.</title> 
+<orderedlist>
+  <listitem>Go to Conductor -> Replication -> Transactional -> Subscriptions 
+     <figure id="star12" float="1">
+       <title>Star Replication Topology</title>
+       <graphic fileref="ui/r11.png"/>
+     </figure>
+  </listitem> 
+  <listitem>Click New Subscription 
+     <figure id="star13" float="1">
+       <title>Star Replication Topology</title>
+       <graphic fileref="ui/r12.png"/>
+     </figure>
+  </listitem> 
+  <listitem>Specify a new Data Source Enter or selected target data source from the available connected Data Sources: 
+     <figure id="star14" float="1">
+       <title>Star Replication Topology</title>
+       <graphic fileref="ui/r13.png"/>
+     </figure>
+     <figure id="star15" float="1">
+       <title>Star Replication Topology</title>
+       <graphic fileref="ui/r13a.png"/>
+     </figure>
+  </listitem> 
+  <listitem>Click Publications list
+     <figure id="star16" float="1">
+       <title>Star Replication Topology</title>
+       <graphic fileref="ui/r15.png"/>
+     </figure>
+  </listitem> 
+  <listitem>Select the RDF Publication and click List Items 
+     <figure id="star17" float="1">
+       <title>Star Replication Topology</title>
+       <graphic fileref="ui/r16.png"/>
+     </figure>
+  </listitem> 
+  <listitem>Click Subscribe</listitem> 
+  <listitem>The subscription will be created 
+     <figure id="star18" float="1">
+       <title>Star Replication Topology</title>
+       <graphic fileref="ui/r18.png"/>
+     </figure>
+  </listitem> 
+  <listitem>Click Sync</listitem>       
+  <listitem>Check the retrieved triples by executing the following query 
+<programlisting><![CDATA[
+SELECT * 
+  FROM <http://example.org>
+ WHERE {?s ?p ?o}	
+]]></programlisting>  	
+     <figure id="star19" float="1">
+       <title>Star Replication Topology</title>
+       <graphic fileref="ui/r19.png"/>
+     </figure>
+  </listitem>
+  <listitem>See how many triples have been inserted into your graph by executing the following query: 
+<programlisting><![CDATA[
+SELECT COUNT(*) 
+  FROM <http://example.org>
+ WHERE {?s ?p ?o}	
+]]></programlisting>  	
+     <figure id="star20" float="1">
+       <title>Star Replication Topology</title>
+       <graphic fileref="ui/r5.png"/>
+     </figure>
+  </listitem>  
+</orderedlist>   
+<para>These steps may be repeated for any number of Subscriber.</para>
+         </sect5> 
+         <sect5 id="rdfgraphreplicationtoplstarexprch"><title>Insert Triples into the Host Virtuoso 
+         Instance Graph and check availability at Destination Virtuoso Instance Graph</title> 
+<orderedlist>
+  <listitem>To check the starting count, on the Destination Virtuoso Instance SPARQL Endpoint, execute:
+<programlisting><![CDATA[
+SELECT COUNT(*) 
+  FROM <http://example.org>
+ WHERE { ?s ?p ?o }	
+]]></programlisting>  	
+  </listitem>
+  <listitem>On the Host Virtuoso Instance go to Conductor -> Database -> Interactive SQL and execute the following statement:
+<programlisting><![CDATA[
+SPARQL INSERT INTO GRAPH <http://example.org> 
+  { 
+     <http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this>
+     <http://xmlns.com/foaf/0.1/interest>
+     <http://dbpedia.org/resource/Web_Services> 
+  } ;
+SPARQL INSERT INTO GRAPH <http://example.org> 
+  { 
+    <http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this>  	
+    <http://xmlns.com/foaf/0.1/interest>  	
+    <http://dbpedia.org/resource/Web_Clients> 
+  } ;
+SPARQL INSERT INTO GRAPH <http://example.org> 
+  { 
+    <http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this>  	
+    <http://xmlns.com/foaf/0.1/interest>  	
+    <http://dbpedia.org/resource/SPARQL> 
+  } ;	
+]]></programlisting> 
+     <figure id="star21" float="1">
+       <title>Star Replication Topology</title>
+       <graphic fileref="ui/r22.png"/>
+     </figure> 	
+     <figure id="star22" float="1">
+       <title>Star Replication Topology</title>
+       <graphic fileref="ui/r23.png"/>
+     </figure>     
+  </listitem>
+  <listitem>To confirm that the triple count has increased by the number of inserted triples, execute the following on the Destination Virtuoso Instance SPARQL Endpoint: 
+<programlisting><![CDATA[
+SELECT COUNT(*) 
+  FROM <http://example.org>
+ WHERE { ?s ?p ?o }	
+]]></programlisting>
+     <figure id="star23" float="1">
+       <title>Star Replication Topology</title>
+       <graphic fileref="ui/r24.png"/>
+     </figure> 	
+      </listitem>
+    </orderedlist>
+         </sect5>                                     
+    </sect4>
+    </sect3>
+	  <sect3 id="rdfgraphreplicationtoplchain"><title>Chain Replication Topology</title> 
+      <para>In a Chain, there is one original Publisher, to which there is only one Subscriber. That 
+      	Subscriber may also serve as a Publisher, again with only one Subscriber. The chain ends with 
+      	a Subscriber which does not Publish.</para>	  
+     <figure id="chain1" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/topo-chain.png"/>
+     </figure>   
+     <para>To set up a Chain, follow the scenario:</para>   	
+<orderedlist>
+   <listitem>Configure Instance #1 to Publish.</listitem>
+   <listitem>Configure Instance #2 to Subscribe to #1.</listitem>
+   <listitem>Configure Instance #2 to Publish.</listitem>
+   <listitem>Configure Instance #3 to Subscribe to #2.</listitem>
+   <listitem>Repeat as necessary.</listitem>
+</orderedlist>
+       <sect4 id="rdfgraphreplicationtoplchainex"><title>Chain Replication Topology Example</title> 
+         <para>The following How-To walks you through setting up Virtuoso RDF Graph Replication in a 
+         	Chain Topology.</para>
+         <sect5 id="rdfgraphreplicationtoplchainexpr"><title>Prerequisites</title> 
+           <sect6 id="rdfgraphreplicationtoplchainexprini"><title>Database INI Parameters</title> 
+<para>Suppose there are 3 Virtuoso instances respectively with the following ini parameters values:</para>
+             <orderedlist>
+               <listitem>virtuoso1.ini:
+<programlisting><![CDATA[
+...
+[Database]
+DatabaseFile    = virtuoso1.db
+TransactionFile = virtuoso1.trx
+ErrorLogFile     = virtuoso1.log
+...
+[Parameters]
+ServerPort               = 1111
+SchedulerInterval        = 1
+...
+[HTTPServer]
+ServerPort                  = 8891
+...
+[URIQA]
+DefaultHost = localhost:8891
+...
+[Replication]
+ServerName   = db1
+...
+
+]]></programlisting>
+               </listitem>
+               <listitem>virtuoso2.ini:
+<programlisting><![CDATA[
+...
+[Database]
+DatabaseFile    = virtuoso2.db
+TransactionFile = virtuoso2.trx
+ErrorLogFile     = virtuoso2.log
+...
+[Parameters]
+ServerPort               = 1112
+SchedulerInterval        = 1
+...
+[HTTPServer]
+ServerPort                  = 8892
+...
+[URIQA]
+DefaultHost = localhost:8892
+...
+[Replication]
+ServerName   = db2
+...	
+]]></programlisting>
+               </listitem>             	
+               <listitem>virtuoso3.ini:
+<programlisting><![CDATA[
+...
+[Database]
+DatabaseFile    = virtuoso3.db
+TransactionFile = virtuoso3.trx
+ErrorLogFile     = virtuoso3.log
+...
+[Parameters]
+ServerPort               = 1113
+SchedulerInterval        = 1
+...
+[HTTPServer]
+ServerPort                  = 8893
+...
+[URIQA]
+DefaultHost = localhost:8893
+...
+[Replication]
+ServerName   = db3
+...
+]]></programlisting>
+               </listitem>               	
+             </orderedlist>           
+           </sect6> 
+           <sect6 id="rdfgraphreplicationtoplchainexprdsn"><title>Database DSNs</title> 
+             <para>Use the ODBC Administrator on your Virtuoso host (e.g., on Windows, Start menu -> Control Panel -> Administrative Tools -> Data Sources (ODBC); on Mac OS X, /Applications/Utilities/OpenLink ODBC Administrator.app) to create a System DSN for each of db1, db2, db3, with names db1, db2 and db3, respectively.</para>           
+           </sect6>   
+           <sect6 id="rdfgraphreplicationtoplchainexprcnd"><title>Install Conductor package</title> 
+             <para>On each of the 3 Virtuoso instances install the <ulink url="http://s3.amazonaws.com/opldownload/uda/vad-packages/6.1/virtuoso/conductor_dav.vad">conductor_dav.vad</ulink> package.</para>           
+           </sect6>                            
+         </sect5> 
+         <sect5 id="rdfgraphreplicationtoplchainexpr"><title>Create Publication on db1</title> 
+<orderedlist>
+  <listitem>Go to http://localhost:8891/conductor and log in as dba</listitem> 
+  <listitem>Go to Conductor - &gt; Replication - &gt; Transactional - &gt; Publications
+     <figure id="chain2" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m1.png"/>
+     </figure>
+  </listitem>    
+  <listitem>Click <emphasis>Enable RDF Publishing</emphasis></listitem> 
+  <listitem>As result publication with the name <emphasis>RDF Publication</emphasis> should be created
+     <figure id="chain3" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m2.png"/>
+     </figure>
+   </listitem>   
+  <listitem>Click the link which is the publication name. </listitem> 
+  <listitem>You will be shown the publication items page
+     <figure id="chain4" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m3.png"/>
+     </figure>
+  </listitem>    
+  <listitem>Enter for Graph IRI:
+<programlisting><![CDATA[
+http://example.org
+]]></programlisting>
+     <figure id="chain5" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m4.png"/>
+     </figure>
+  </listitem>    
+  <listitem>Click Add New</listitem> 
+  <listitem>The item will be created and shown in the list of items for the currently viewed publication. 
+     <figure id="chain6" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m5.png"/>
+     </figure>
+  </listitem>    
+</orderedlist>
+         </sect5> 
+         <sect5 id="rdfgraphreplicationtoplchainexpr"><title>Create subscription from db2 to db1's Publication</title> 
+<orderedlist>
+  <listitem>Log in at http://localhost:8892/conductor</listitem> 
+  <listitem>Go to Replication - &gt; Transactional - &gt; Subscriptions 
+     <figure id="chain7" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m6.png"/>
+     </figure>
+  </listitem>   
+  <listitem>Click <emphasis>New Subscription</emphasis>
+     <figure id="chain8" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m7.png"/>
+     </figure>
+  </listitem>      
+  <listitem>From the list of "Specify new data source" select Data Source db1
+     <figure id="chain9" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m8.png"/>
+     </figure>
+  </listitem>    
+  <listitem>Enter for db1 dba user credentials
+     <figure id="chain10" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m9.png"/>
+     </figure>
+  </listitem>    
+  <listitem>Click "Add Data Source"</listitem> 
+  <listitem>As result <emphasis>db1</emphasis> will be shown in the "Connected Data Sources" list. 
+     <figure id="chain11" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m10.png"/>
+     </figure>
+  </listitem>    
+  <listitem>Select <emphasis>db1</emphasis> the "Connected Data Sources" list and click "Publications list"
+     <figure id="chain12" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m11.png"/>
+     </figure>
+  </listitem>    
+  <listitem>As result will be shown the list of available publications for the selected data source. Select the one with name "RDF Publication" and click "List Items".
+     <figure id="chain13" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m12.png"/>
+     </figure>
+  </listitem>    
+  <listitem>As result will be shown the "Confirm subscription" page. 
+     <figure id="chain14" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m13.png"/>
+     </figure>
+  </listitem>    
+  <listitem>The sync interval by default is 10 minutes. For the testing purposes, we will change it to 1 minute.
+     <figure id="chain15" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m14.png"/>
+     </figure>
+  </listitem>    
+  <listitem>Click "Subscribe"</listitem> 
+  <listitem>The subscription will be created. 
+     <figure id="chain16" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m15.png"/>
+     </figure>
+  </listitem>   
+</orderedlist>
+         </sect5> 
+         <sect5 id="rdfgraphreplicationtoplchainexpr"><title>Create Publication on db2</title> 
+         <orderedlist>
+  <listitem>Go to http://localhost:8892/conductor and log in as dba</listitem> 
+  <listitem>Go to Conductor - &gt; Replication - &gt; Transactional - &gt; Publications
+     <figure id="chain17" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m16.png"/>
+     </figure>
+  </listitem>   
+  <listitem>Click <emphasis>Enable RDF Publishing</emphasis></listitem> 
+  <listitem>As result publication with the name <emphasis>RDF Publication</emphasis> should be created
+     <figure id="chain18" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m17.png"/>
+     </figure>
+  </listitem>    
+  <listitem>Click the link which is the publication name.</listitem>   
+  <listitem>You will be shown the publication items page
+     <figure id="chain19" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m18.png"/>
+     </figure>
+  </listitem>    
+  <listitem>Enter for Graph IRI:
+<programlisting><![CDATA[
+http://example.org
+]]></programlisting>
+     <figure id="chain20" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m19.png"/>
+     </figure>
+  </listitem>   
+  <listitem>Click Add New</listitem> 
+  <listitem>The item will be created and shown in the list of items for the currently viewed publication. 
+     <figure id="chain21" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m20.png"/>
+     </figure>
+  </listitem>    
+</orderedlist>
+         </sect5> 
+         <sect5 id="rdfgraphreplicationtoplchainexpr"><title>Create subscription from db3 to db2's Publication</title> 
+         <orderedlist>
+  <listitem>Log in at http://localhost:8893/conductor</listitem> 
+  <listitem>Go to Replication - &gt; Transactional - &gt; Subscriptions 
+     <figure id="chain22" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m21.png"/>
+     </figure>
+  </listitem>    
+  <listitem>Click <emphasis>New Subscription</emphasis>
+     <figure id="chain23" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m22.png"/>
+     </figure>
+  </listitem>    
+  <listitem>From the list of "Specify new data source" select Data Source db2
+     <figure id="chain24" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m23.png"/>
+     </figure>
+  </listitem>    
+  <listitem>Enter for db2 dba user credentials
+     <figure id="chain25" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m24.png"/>
+     </figure>
+  </listitem>    
+  <listitem>Click "Add Data Source"
+     <figure id="chain26" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m25.png"/>
+     </figure>
+  </listitem>    
+  <listitem>As result <emphasis>db2</emphasis> will be shown in the "Connected Data Sources" list. Select it and click "Publications list"
+     <figure id="chain27" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m26.png"/>
+     </figure>
+  </listitem>    
+  <listitem>As result will be shown the list of available publications for the selected data source. Select the one with name "RDF Publication" and click "List Items".
+     <figure id="chain28" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m27.png"/>
+     </figure>
+  </listitem>    
+  <listitem>As result will be shown the "Confirm subscription" page.  
+     <figure id="chain29" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m28.png"/>
+     </figure>
+  </listitem>    
+  <listitem>The sync interval by default is 10 minutes. For the testing purposes, we will change it to 1 minute.
+     <figure id="chain30" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m29.png"/>
+     </figure>
+  </listitem>    
+  <listitem>Click "Subscribe"</listitem>
+  <listitem>The subscription will be created. 
+     <figure id="chain31" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m30.png"/>
+     </figure>
+  </listitem>    
+</orderedlist>
+         </sect5>  
+         <sect5 id="rdfgraphreplicationtoplchainind"><title>Insert Data into a Named Graph on the db1 Virtuoso Instance</title>                                    
+<orderedlist>
+  <listitem>Log in at http://localhost:8891/conductor</listitem> 
+  <listitem>Go to Linked Data -&gt; Quad Store Upload:
+     <figure id="chain32" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/uc1.png"/>
+     </figure>
+  </listitem>    
+  <listitem>In the shown form:
+      <orderedlist>
+     <listitem>Tick the box for <emphasis>Resource URL</emphasis> and enter your resource URL, e.g.:
+<programlisting><![CDATA[
+http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this
+]]></programlisting>
+     </listitem> 
+     <listitem>Enter for Named Graph IRI:
+<programlisting><![CDATA[
+http://example.org
+]]></programlisting>
+     <figure id="chain33" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m32.png"/>
+     </figure>
+     </listitem> 
+      </orderedlist>
+  </listitem>     
+  <listitem>Click Upload</listitem> 
+  <listitem>A successful upload will result in a shown message.
+     <figure id="chain34" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m33.png"/>
+     </figure>
+  </listitem>    
+  <listitem>Check the count of the inserted triples by executing a query like the following against the SPARQL endpoint, 
+http://localhost:8891/sparql:
+<programlisting><![CDATA[
+SELECT COUNT(*) 
+   FROM <http://example.org>
+WHERE { ?s ?p ?o }
+]]></programlisting>
+     <figure id="chain35" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m34.png"/>
+     </figure>
+  </listitem>    
+  <listitem>Should return <emphasis>57</emphasis> as total.
+     <figure id="chain36" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m35.png"/>
+     </figure>
+  </listitem>    
+</orderedlist>
+         </sect5>           
+         <sect5 id="rdfgraphreplicationtoplchainexcdd"><title>Check data on the Destination instances db2 and db3</title>                                    
+<orderedlist>
+  <listitem>To check the starting count, on each of the Destination Virtuoso Instances db2 and db3 from  SPARQL Endpoint execute:
+<programlisting><![CDATA[
+SELECT COUNT(*) 
+   FROM <http://example.org>
+WHERE { ?s ?p ?o }
+]]></programlisting>
+  </listitem> 
+  <listitem>Should return <emphasis>57</emphasis> as total.
+     <figure id="chain37" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m35.png"/>
+     </figure>
+  </listitem>    
+</orderedlist>
+         </sect5>  
+         <sect5 id="rdfgraphreplicationtoplchainexadd"><title>Add new data on db1</title>                                    
+<orderedlist>
+  <listitem>Disconnect db2 and db3.</listitem> 
+  <listitem>On the Host Virtuoso Instance db1 go to Conductor - &gt; Database - &gt; Interactive SQL enter the following statement:
+<programlisting><![CDATA[
+SPARQL INSERT INTO GRAPH <http://example.org> 
+  { 
+     <http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this>
+     <http://xmlns.com/foaf/0.1/interest>
+     <http://dbpedia.org/resource/Web_Services> 
+  } ;
+SPARQL INSERT INTO GRAPH <http://example.org> 
+  { 
+    <http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this>  	
+    <http://xmlns.com/foaf/0.1/interest>  	
+    <http://dbpedia.org/resource/Web_Clients> 
+  } ;
+SPARQL INSERT INTO GRAPH <http://example.org> 
+  { 
+    <http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this>  	
+    <http://xmlns.com/foaf/0.1/interest>  	
+    <http://dbpedia.org/resource/SPARQL> 
+  } ;
+]]></programlisting>
+     <figure id="chain38" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m36.png"/>
+     </figure>
+  </listitem>    
+  <listitem>Click "Execute"</listitem> 
+  <listitem>As result the triples will be inserted
+     <figure id="chain39" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m36a.png"/>
+     </figure>
+  </listitem>    
+  <listitem>Check the count of the destination instance graph's triples by executing the following query like against the SPARQL endpoint, 
+http://localhost:8891/sparql:
+<programlisting><![CDATA[
+SELECT COUNT(*) 
+   FROM <http://example.org>
+WHERE { ?s ?p ?o }
+]]></programlisting>
+  </listitem>  
+  <listitem>Should return <emphasis>60</emphasis> as total.
+     <figure id="chain40" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m38.png"/>
+     </figure>
+  </listitem>    
+</orderedlist>
+         </sect5>  
+         <sect5 id="rdfgraphreplicationtoplchainexchki"><title>Check data on the Destination instances db2 and db3</title>                                    
+         <orderedlist> 
+  <listitem>Start instances db2 and db3</listitem> 
+  <listitem>To confirm that the triple count has increased by the number of inserted triples, execute the following on the Destination Virtuoso Instance db2 and db3 SPARQL Endpoint:
+<programlisting><![CDATA[
+SELECT COUNT(*) 
+   FROM <http://example.org>
+WHERE { ?s ?p ?o }
+]]></programlisting>
+  </listitem>  
+  <listitem>Should return <emphasis>60</emphasis> as total.
+     <figure id="chain41" float="1">
+       <title>Chain Replication Topology</title>
+       <graphic fileref="ui/m38.png"/>
+     </figure>
+  </listitem>    
+</orderedlist>
+         </sect5>                             
+    </sect4>
+    </sect3>
+	  <sect3 id="rdfgraphreplicationtoplbid"><title>Bi-directional Replication Topology</title> 
+       <sect4 id="rdfgraphreplicationtoplbidex"><title>Bi-directional Replication Topology Example</title> 
+         <para>The following How-To walks you through setting up Virtuoso RDF Graph Replication in a 
+         Bi-directional Topology.</para>
+<programlisting><![CDATA[
+db1 <---- db2
+db1 ----> db2
+]]></programlisting>
+         <sect5 id="rdfgraphreplicationtoplbidexpr"><title>Prerequisites</title> 
+           <sect6 id="rdfgraphreplicationtoplbidexprini"><title>Database INI Parameters</title> 
+<para>Suppose there are 2 Virtuoso instances respectively with the following ini parameters values:</para>
+             <orderedlist>
+               <listitem>virtuoso1.ini:
+<programlisting><![CDATA[
+...
+[Database]
+DatabaseFile    = virtuoso1.db
+TransactionFile = virtuoso1.trx
+ErrorLogFile     = virtuoso1.log
+...
+[Parameters]
+ServerPort               = 1111
+SchedulerInterval        = 1
+...
+[HTTPServer]
+ServerPort                  = 8891
+...
+[URIQA]
+DefaultHost = localhost:8891
+...
+[Replication]
+ServerName   = db1
+...
+	
+]]></programlisting>
+               </listitem>
+               <listitem>virtuoso2.ini:
+<programlisting><![CDATA[
+...
+[Database]
+DatabaseFile    = virtuoso2.db
+TransactionFile = virtuoso2.trx
+ErrorLogFile     = virtuoso2.log
+...
+[Parameters]
+ServerPort               = 1112
+SchedulerInterval        = 1
+...
+[HTTPServer]
+ServerPort                  = 8892
+...
+[URIQA]
+DefaultHost = localhost:8892
+...
+[Replication]
+ServerName   = db2
+...	
+]]></programlisting>
+               </listitem>             	
+             </orderedlist>           
+           </sect6> 
+           <sect6 id="rdfgraphreplicationtoplbidexprdsn"><title>Database DSNs</title> 
+           <para>Use the ODBC Administrator on your Virtuoso host (e.g., on Windows, Start menu -> Control Panel -> Administrative Tools -> Data Sources (ODBC); on Mac OS X, /Applications/Utilities/OpenLink ODBC Administrator.app) to create a System DSN for db1 and db2 with names db1 and db2 respectively.</para>
+           </sect6>   
+           <sect6 id="rdfgraphreplicationtoplbidexprcnd"><title>Install Conductor package</title> 
+             <para>On each of the 2 Virtuoso instances install the <ulink url="http://s3.amazonaws.com/opldownload/uda/vad-packages/6.1/virtuoso/conductor_dav.vad">conductor_dav.vad</ulink> package.</para>
+           </sect6>                            
+      </sect5>
+         
+         <sect5 id="rdfgraphreplicationtoplbidexprcph"><title>Create Publication on db2</title> 
+<orderedlist>
+  <listitem>Go to http://localhost:8892/conductor and log in as dba</listitem>
+  <listitem>Go to Conductor -&gt; Replication -&gt; Transactional -&gt; Publications
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd1.png"/>
+     </figure>
+  </listitem>   
+  <listitem>Click <emphasis>Enable RDF Publishing</emphasis></listitem>
+  <listitem>As result publication with the name <emphasis>RDF Publication</emphasis> should be created
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd2.png"/>
+     </figure>
+  </listitem>   
+  <listitem>Click the link which is the publication name.</listitem> 
+  <listitem>You will be shown the publication items page
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd3.png"/>
+     </figure>
+  </listitem>
+  <listitem>Enter for Graph IRI:
+<programlisting><![CDATA[
+http://example.org
+]]></programlisting>
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd4.png"/>
+     </figure>
+</listitem>
+  <listitem>Click Add New
+  </listitem>
+  <listitem>The item will be created and shown in the list of items for the currently viewed publication. 
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd5.png"/>
+     </figure>
+  </listitem>
+</orderedlist>         
+         </sect5> 
+         <sect5 id="rdfgraphreplicationtoplbidexprcs"><title>Create subscription from db1 to db2's Publication</title> 
+<orderedlist>
+  <listitem>Log in at http://localhost:8891/conductor
+  </listitem>
+  <listitem>Go to Replication -&gt; Transactional -&gt; Subscriptions 
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd6.png"/>
+     </figure>
+  </listitem>
+  <listitem>Click <emphasis>New Subscription</emphasis>
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd7.png"/>
+     </figure>
+  </listitem>
+  <listitem>From the list of "Specify new data source" select Data Source db2
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd8.png"/>
+     </figure>
+  </listitem>
+  <listitem>Enter for db2 dba user credentials
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd9.png"/>
+     </figure>
+  </listitem>
+  <listitem>Click "Add Data Source"
+  </listitem>
+  <listitem>As result <emphasis>db2</emphasis> will be shown in the "Connected Data Sources" list. 
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd10.png"/>
+     </figure>
+  </listitem>
+  <listitem>Select <emphasis>db2</emphasis> the "Connected Data Sources" list and click "Publications list"
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd11.png"/>
+     </figure>
+  </listitem>
+  <listitem>As result will be shown the list of available publications for the selected data source. Select the one with name "RDF Publication" and click "List Items".
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd12.png"/>
+     </figure>
+  </listitem>
+  <listitem>As result will be shown the "Confirm subscription" page. 
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd13.png"/>
+     </figure>
+  </listitem>
+  <listitem>The sync interval by default is 10 minutes. For the testing purposes, we will change it to 1 minute.
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd14.png"/>
+     </figure>
+  </listitem>
+  <listitem>Click "Subscribe"
+  </listitem>
+  <listitem>The subscription will be created. 
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd15.png"/>
+     </figure>
+  </listitem>
+</orderedlist>
+         </sect5> 
+         <sect5 id="rdfgraphreplicationtoplbidexprcpd"><title>Create Publication on db1</title> 
+<orderedlist>
+  <listitem>Go to http://localhost:8891/conductor and log in as dba
+  </listitem>
+  <listitem>Go to Conductor -&gt; Replication -&gt; Transactional -&gt; Publications
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd16.png"/>
+     </figure>
+  </listitem>
+  <listitem>Click <emphasis>Enable RDF Publishing</emphasis>
+  </listitem>
+  <listitem>As result publication with the name <emphasis>RDF Publication</emphasis> should be created
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd17.png"/>
+     </figure>
+  </listitem>
+  <listitem>Click the link which is the publication name. 
+  </listitem>
+  <listitem>You will be shown the publication items page
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd18.png"/>
+     </figure>
+  </listitem>
+  <listitem>Enter for Graph IRI:
+<programlisting><![CDATA[
+http://example.org
+]]></programlisting>
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd19.png"/>
+     </figure>
+  </listitem>
+  <listitem>Click Add New
+  </listitem>
+  <listitem>The item will be created and shown in the list of items for the currently viewed publication. 
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd20.png"/>
+     </figure>
+  </listitem>
+</orderedlist>
+      </sect5>
+         <sect5 id="rdfgraphreplicationtoplbidexprcsh"><title>Create subscription from db2 to db1's Publication</title> 
+<orderedlist>
+  <listitem>Log in at http://localhost:8892/conductor
+  </listitem>
+  <listitem>Go to Replication -&gt; Transactional -&gt; Subscriptions 
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd21.png"/>
+     </figure>
+  </listitem>
+  <listitem>Click <emphasis>New Subscription</emphasis>
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd22.png"/>
+     </figure>
+  </listitem>
+  <listitem>From the list of "Specify new data source" select Data Source db1
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd23.png"/>
+     </figure>
+  </listitem>
+  <listitem>Enter for db1 dba user credentials
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd24.png"/>
+     </figure>
+  </listitem>
+  <listitem>Click "Add Data Source"
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd25.png"/>
+     </figure>
+  </listitem>
+  <listitem>As result <emphasis>db1</emphasis> will be shown in the "Connected Data Sources" list. Select it and click "Publications list"
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd26.png"/>
+     </figure>
+  </listitem>
+  <listitem>As result will be shown the list of available publications for the selected data source. Select the one with name "RDF Publication" and click "List Items".
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd27.png"/>
+     </figure>
+  </listitem>
+  <listitem>As result will be shown the "Confirm subscription" page.  
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd28.png"/>
+     </figure>
+  </listitem>
+  <listitem>The sync interval by default is 10 minutes. For the testing purposes, we will change it to 1 minute.
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd29.png"/>
+     </figure>
+  </listitem>
+  <listitem>Click "Subscribe"
+  </listitem>
+  <listitem>The subscription will be created. 
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd30.png"/>
+     </figure>
+  </listitem>
+</orderedlist>  
+         </sect5> 
+         <sect5 id="rdfgraphreplicationtoplbidexprinsh"><title>Insert Data into a Named Graph on the db2 Virtuoso Instance</title> 
+<orderedlist>
+  <listitem>Log in at http://localhost:8892/conductor
+  </listitem>
+  <listitem>Go to Linked Data -&gt; Quad Store Upload:
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/uc1.png"/>
+     </figure>
+  </listitem>
+  <listitem>In the shown form:
+     </listitem>
+  <listitem>Tick the box for <emphasis>Resource URL</emphasis> and enter your resource URL, e.g.:
+<programlisting><![CDATA[
+http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this
+]]></programlisting>
+</listitem>
+  <listitem>Enter for Named Graph IRI:
+<programlisting><![CDATA[
+http://example.org
+]]></programlisting>
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd32.png"/>
+     </figure>
+</listitem>
+  <listitem>Click Upload
+  </listitem>
+  <listitem>A successful upload will result in a shown message.
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/m33.png"/>
+     </figure>
+  </listitem>
+  <listitem>Check the count of the inserted triples by executing a query like the following against the SPARQL endpoint, 
+http://localhost:8892/sparql:
+<programlisting><![CDATA[
+SELECT COUNT(*) 
+   FROM <http://example.org>
+WHERE { ?s ?p ?o }
+]]></programlisting>
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd34.png"/>
+     </figure>
+  </listitem>
+  <listitem>Should return <emphasis>57</emphasis> as total.
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd35.png"/>
+     </figure>
+  </listitem>
+</orderedlist>
+         </sect5> 
+         <sect5 id="rdfgraphreplicationtoplbidexprcdin"><title>Check data on the Destination instance db1</title> 
+<orderedlist>
+  <listitem>To check the starting count, execute from db1's SPARQL Endpoint:
+<programlisting><![CDATA[
+SELECT COUNT(*) 
+   FROM <http://example.org>
+WHERE { ?s ?p ?o }
+]]></programlisting>
+  </listitem>
+  <listitem>Should return <emphasis>57</emphasis> as total.
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd35.png"/>
+     </figure>
+  </listitem>
+</orderedlist>       
+         </sect5> 
+         <sect5 id="rdfgraphreplicationtoplbidexprinsd"><title>Add new data on db2</title> 
+<orderedlist>
+  <listitem>Disconnect db1.
+  </listitem>
+  <listitem>On the Host Virtuoso Instance db2 go to Conductor -&gt; Database -&gt; Interactive SQL enter the following statement:
+<programlisting><![CDATA[
+SPARQL INSERT INTO GRAPH <http://example.org> 
+  { 
+     <http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this>
+     <http://xmlns.com/foaf/0.1/interest>
+     <http://dbpedia.org/resource/Web_Services> 
+  } ;
+]]></programlisting>
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd36.png"/>
+     </figure>
+  </listitem>
+  <listitem>Click "Execute"
+  </listitem>
+  <listitem>As result the triples will be inserted
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd37.png"/>
+     </figure>
+  </listitem>
+  <listitem>Check the count of the destination instance graph's triples by executing the following query like against the SPARQL endpoint, 
+http://localhost:8892/sparql:
+<programlisting><![CDATA[
+SELECT COUNT(*) 
+   FROM <http://example.org>
+WHERE { ?s ?p ?o }
+]]></programlisting>
+</listitem>
+  <listitem>Should return <emphasis>58</emphasis> as total.
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd38.png"/>
+     </figure>
+  </listitem>
+</orderedlist>  
+         </sect5> 
+         <sect5 id="rdfgraphreplicationtoplbidexprcddi"><title>Check data on the Destination instance db1</title> 
+<orderedlist> 
+  <listitem>Start instance db1
+  </listitem>
+  <listitem>To confirm that the triple count has increased by the number of inserted triples, execute the following statement on db1's SPARQL Endpoint:
+<programlisting><![CDATA[
+SELECT COUNT(*) 
+   FROM <http://example.org>
+WHERE { ?s ?p ?o }
+]]></programlisting>
+</listitem>
+  <listitem>Should return <emphasis>58</emphasis> as total.
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd38.png"/>
+     </figure>
+  </listitem>
+</orderedlist>
+      </sect5>
+         <sect5 id="rdfgraphreplicationtoplbidexprinsah"><title>Add new data on db1</title> 
+<orderedlist>
+  <listitem>Disconnect db2.
+  </listitem>
+  <listitem>On the Host Virtuoso Instance db1 go to Conductor -&gt; Database -&gt; Interactive SQL enter the following statement:
+<programlisting><![CDATA[
+SPARQL INSERT INTO GRAPH <http://example.org> 
+  { 
+    <http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this>  	
+    <http://xmlns.com/foaf/0.1/interest>  	
+    <http://dbpedia.org/resource/Web_Clients> 
+  } ;
+SPARQL INSERT INTO GRAPH <http://example.org> 
+  { 
+    <http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this>  	
+    <http://xmlns.com/foaf/0.1/interest>  	
+    <http://dbpedia.org/resource/SPARQL> 
+  } ;
+]]></programlisting>
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd39.png"/>
+     </figure>
+</listitem>
+  <listitem>Click "Execute"
+  </listitem>
+  <listitem>As result the triples will be inserted
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd40.png"/>
+     </figure>
+  </listitem>
+  <listitem>Check the count of the destination instance graph's triples by executing the following query like against the SPARQL endpoint, 
+http://localhost:8891/sparql:
+<programlisting><![CDATA[
+SELECT COUNT(*) 
+   FROM <http://example.org>
+WHERE { ?s ?p ?o }
+]]></programlisting>
+  </listitem>
+  <listitem>Should return <emphasis>60</emphasis> as total.
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd41.png"/>
+     </figure>
+</listitem>
+</orderedlist>
+       </sect5>
+         <sect5 id="rdfgraphreplicationtoplbidexprcdadi"><title>Check data on the Destination instance db2</title> 
+<orderedlist> 
+  <listitem>Start instance db2
+  </listitem>
+  <listitem>To confirm that the triple count has increased by the number of inserted triples, execute the following statement on db2's SPARQL Endpoint:
+<programlisting><![CDATA[
+SELECT COUNT(*) 
+   FROM <http://example.org>
+WHERE { ?s ?p ?o }
+]]></programlisting>
+          </listitem>
+  <listitem>Should return <emphasis>60</emphasis> as total.
+     <figure id="bid1" float="1">
+        <title>Bi-directional Replication Topology</title>
+        <graphic fileref="ui/bd41.png"/>
+     </figure>
+  </listitem>
+</orderedlist>                
+         </sect5> 
+       </sect4> 
+	  </sect3> 
+  </sect2> 
+  <sect2 id="rdfgraphreplicationsql"><title>Set up RDF Replication via procedure calls</title>
+   <sect3 id="rdfgraphreplicationsqlex"><title>Example</title> 
+         <para>The following example shows how to use SQL procedures to set up Virtuoso RDF Graph Replication in a Chain Topology.</para>
+         <figure id="chain1" float="1">
+           <title>Chain Replication Topology</title>
+           <graphic fileref="ui/topo-chain.png"/>
+         </figure> 
+         <para>This can also be done <link linkend="rdfgraphreplicationtoplchainex">through the HTTP-based Virtuoso Conductor</link>.</para>
+         <sect4 id="rdfgraphreplicationsqlexprx"><title>Prerequisites</title> 
+           <sect5 id="rdfgraphreplicationsqlexprxini"><title>Database INI Parameters</title> 
+             <para>Suppose there are 3 Virtuoso instances on the same machine.</para>
+             <para>The first instance holds the master copy of the data and publishes its changes to all other instances that subscribe to this master.</para>             
+             <para>The second instance subscribes to the publication of the master copy, but also publishes all of these changes to any instance that subscribes to it.</para>
+             <para>The third instance only subscribes to the publication of the second instance.</para>
+             <para>Each of these 3 servers need unique ports and ServerName, DefaultHost for this replication scheme to work properly. Although not needed, this example also sets separate names for the database and related files. This results in the following ini parameters values (only changes are shown, the rest can remain default):</para>
+             <orderedlist>
+               <listitem>repl1/virtuoso.ini:
+<programlisting><![CDATA[
+...
+[Database]
+DatabaseFile    = virtuoso1.db
+TransactionFile = virtuoso1.trx
+ErrorLogFile     = virtuoso1.log
+...
+[Parameters]
+ServerPort               = 1111
+SchedulerInterval        = 1
+...
+[HTTPServer]
+ServerPort                  = 8891
+...
+[URIQA]
+DefaultHost = localhost:8891
+...
+[Replication]
+ServerName   = db1-r
+...
+]]></programlisting>
+          </listitem>
+               <listitem>repl2/virtuoso.ini:
+<programlisting><![CDATA[
+...
+[Database]
+DatabaseFile    = virtuoso2.db
+TransactionFile = virtuoso2.trx
+ErrorLogFile     = virtuoso2.log
+...
+[Parameters]
+ServerPort               = 1112
+SchedulerInterval        = 1
+...
+[HTTPServer]
+ServerPort                  = 8892
+...
+[URIQA]
+DefaultHost = localhost:8892
+...
+[Replication]
+ServerName   = db2-r
+...
+]]></programlisting>
+          </listitem>
+               <listitem>repl3/virtuoso.ini:
+<programlisting><![CDATA[
+
+...
+[Database]
+DatabaseFile    = virtuoso3.db
+TransactionFile = virtuoso3.trx
+ErrorLogFile     = virtuoso3.log
+...
+[Parameters]
+ServerPort               = 1113
+SchedulerInterval        = 1
+...
+[HTTPServer]
+ServerPort                  = 8893
+...
+[URIQA]
+DefaultHost = localhost:8893
+...
+[Replication]
+ServerName   = db3-r
+...
+]]></programlisting>
+          </listitem>
+             </orderedlist>
+           </sect5> 
+           
+           <sect5 id="rdfgraphreplicationsqlexprxdsn"><title>Database DSNs</title> 
+             <para>Use the ODBC Administrator on your Virtuoso host (e.g., on Windows, Start menu -> Control Panel -> Administrative Tools -> Data Sources (ODBC); on Mac OS X, /Applications/Utilities/OpenLink ODBC Administrator.app) to create a System DSN for each of db1, db2, db3, with names db1, db2 and db3, respectively.</para>
+           </sect5>   
+         </sect4>
+         
+         <sect4 id="rdfgraphreplicationsqlcrb"><title>Configure Publishers and Subscribers</title> 
+<orderedlist>
+   <listitem>Run the databases by starting start.sh, which has the following content:
+<programlisting><![CDATA[
+cd repl1
+virtuoso -f &
+cd ../repl2
+virtuoso -f &
+cd ../repl3
+virtuoso -f &
+cd ..	
+]]></programlisting>
+          </listitem>
+   <listitem>Use the <emphasis>isql</emphasis> command to execute the following rep.sql file:
+<programlisting><![CDATA[
+--
+--  connect to the first database which is only a publisher
+--
+set DSN=localhost:1111;
+reconnect;
+
+--
+-- start publishing the graph http://test.org
+---
+DB.DBA.RDF_REPL_START();
+DB.DBA.RDF_REPL_GRAPH_INS ('http://test.org');
+
+
+
+--
+--  connect to the second database in the chain, which is both a publisher and a subscriber
+--
+set DSN=localhost:1112;
+reconnect;
+
+--
+--  start publishing the graph http://test.org
+--
+DB.DBA.RDF_REPL_START();
+DB.DBA.RDF_REPL_GRAPH_INS ('http://test.org');
+
+--
+--  contact the first database 
+--
+repl_server ('db1-r', 'db1', 'localhost:1111');
+
+--
+--  subscribe to its RDF publication(s)
+--
+repl_subscribe ('db1-r', '__rdf_repl', 'dav', 'dav', 'dba', 'dba');
+
+--
+--  bring the replication service online
+--
+repl_sync_all();
+
+--
+--  and set scheduler to check every minute
+--
+DB.DBA.SUB_SCHEDULE ('db1-r', '__rdf_repl', 1);
+
+
+
+--
+--  connect to the third database in the chain, which is only a subscriber
+--
+set DSN=localhost:1113;
+reconnect;
+
+--
+-- uncomment next 2 commands if this database should also be a publisher
+--
+--DB.DBA.RDF_REPL_START();
+--DB.DBA.RDF_REPL_GRAPH_INS ('http://test.org');
+
+--
+--  contact second database
+--
+repl_server ('db2-r', 'db2', 'localhost:1112');
+
+--
+--  subscribe to its RDF publication(s)
+--
+repl_subscribe ('db2-r', '__rdf_repl', 'dav', 'dav', 'dba', 'dba');
+
+--
+--  bring the replication service online
+--
+repl_sync_all();
+
+--
+--  and set schedule to check every minute
+--
+DB.DBA.SUB_SCHEDULE ('db2-r', '__rdf_repl', 1);
+]]></programlisting>
+</listitem>
+</orderedlist>
+    </sect4>
+    </sect3>
+  </sect2>
+</sect1>
 </chapter>
