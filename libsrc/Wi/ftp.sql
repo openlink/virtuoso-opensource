@@ -1026,7 +1026,7 @@ create procedure FTP_NOR_DIR (in dir1 varchar, inout dir2 varchar)
 
 create procedure FTP_GET (in _server varchar, in _user varchar, in _pass varchar,
 			  in _file varchar, in _local varchar, in is_pasv integer := 1,
-			  in dav_user varchar := NULL, in dav_pass varchar := NULL)
+			  in dav_user varchar := NULL, in dav_pass varchar := NULL, in ret_ses int := 0)
 {
   declare ses, listen, data_ses, data_addr, all_at any;
 
@@ -1055,6 +1055,9 @@ create procedure FTP_GET (in _server varchar, in _user varchar, in _pass varchar
 
   FTP_COMMAND (ses, concat ('quit'), NULL);
   ses_disconnect (ses);
+
+  if (ret_ses)
+    return all_at;
 
   if (length (_local) >= 7 and "LEFT" (_local, 7) = 'virt://')
     return FTP_PUT_IN_DAV (_local, all_at, dav_user, dav_pass);
@@ -1169,7 +1172,7 @@ create procedure FTP_COMMAND (inout ses any, in cmd varchar, in is_ok any)
 		 code := 0;
 
 	    if (FTP_IF_CODE_OK (code, is_ok))
-	      return;
+	      return code;
 
             if (code and not FTP_IF_CODE_OK (code, is_ok))
 	      signal ('42000', _in);
@@ -1205,7 +1208,7 @@ create procedure FTP_SES_GET (in new_addr varchar, inout all_at any, inout data_
 create procedure FTP_CONNECT (in _server varchar, in _user varchar, in _pass varchar,
 			      inout ses any, in pasv integer)
 {
-
+  declare rc any;
   if (strstr (_server, ':') is NULL)
     _server := concat (_server, ':21');
 
@@ -1215,8 +1218,9 @@ create procedure FTP_CONNECT (in _server varchar, in _user varchar, in _pass var
   ses := ses_connect (_server);
 
   FTP_COMMAND (ses, NULL, vector (220));
-  FTP_COMMAND (ses, _user, vector (331));
-  FTP_COMMAND (ses, _pass, vector (230));
+  rc := FTP_COMMAND (ses, _user, vector (331, 230));
+  if (rc <> 230)
+    FTP_COMMAND (ses, _pass, vector (230));
   FTP_COMMAND (ses, 'type i', vector (200));
 
   if (pasv)
