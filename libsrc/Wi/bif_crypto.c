@@ -1622,6 +1622,28 @@ bif_get_certificate_info (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
 	ret = list_to_array (dk_set_nreverse (set));
 	break;
       }
+    case 12:
+      {
+	const unsigned char *s;
+	int i, n;
+	const ASN1_STRING *sig = cert->signature;
+	X509_ALGOR *sigalg = cert->sig_alg;
+	char buf[80];
+	caddr_t val;
+
+        i2t_ASN1_OBJECT(buf,sizeof (buf), sigalg->algorithm);
+
+	n = sig->length;
+	s = sig->data;
+	val = dk_alloc_box ((n * 2) + 1, DV_SHORT_STRING);
+	for (i = 0; i < n; i ++)
+	  {
+	    sprintf (&(val[i * 2]), "%02x", s[i]);
+	  }
+	val[n * 2] = 0;
+	ret = list (2, box_dv_short_string (buf), val);
+	break;
+      }
     default:
       {
 	if (!internal)
