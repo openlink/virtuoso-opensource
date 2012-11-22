@@ -437,6 +437,15 @@ DBG_NAME (mp_box_copy) (DBG_PARAMS mem_pool_t * mp, caddr_t box)
     case DV_XPATH_QUERY:
       return box;
 
+#ifdef MALLOC_DEBUG
+    case DV_WIDE:
+      {
+        int len = box_length (box);
+        if ((len % sizeof (wchar_t)) || (0 != ((wchar_t *)box)[len/sizeof (wchar_t) - 1]))
+          GPF_T1 ("mp_box_copy of a damaged wide string");
+        /* no break */
+      }
+#endif
     default:
       {
 	caddr_t cp;
