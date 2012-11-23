@@ -288,8 +288,16 @@ create procedure DB.DBA.DBP_LINK_HDR (in in_path varchar)
       p := replace (p, '/data/', '/page/');
       alt := alt || sprintf ('<http://%s%s>; rel="alternate"; type="text/html"; title="XHTML+RDFa", ', host, p);
       p := replace (p, '/page/', '/resource/');
-      alt := alt || sprintf ('<http://%s%s>; rev="http://xmlns.com/foaf/0.1/primaryTopic", ', host, p);
-      alt := alt || sprintf ('<http://%s%s>; rel="describedby", ', host, p);
+      if (in_path not like '/data/%')
+	{
+	  alt := alt || sprintf ('<http://%s%s>; rel="http://xmlns.com/foaf/0.1/primaryTopic", ', host, p);
+	  alt := alt || sprintf ('<http://%s%s>; rev="describedby", ', host, p);
+	}
+      else
+	{
+	  alt := alt || sprintf ('<http://%s%s>; rev="http://xmlns.com/foaf/0.1/primaryTopic", ', host, p);
+	  alt := alt || sprintf ('<http://%s%s>; rel="describedby", ', host, p);
+	}
       if (registry_get ('dbp_pshb_hub') <> 0)
 	alt := alt || sprintf ('<%s>; rel="hub", ', registry_get ('dbp_pshb_hub'));
       exp := sprintf ('Expires: %s\r\n', date_rfc1123 (dateadd ('day', 7, now ())));
