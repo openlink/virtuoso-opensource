@@ -1432,7 +1432,7 @@ create procedure DB.DBA.RDF_SPONGE_PROXY_IRI(in uri varchar := '', in login varc
 ;
 
 -- Postprocessing for sponging pure RDF sources 
-create procedure DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC (in contents varchar, in base varchar, in graph varchar)
+create procedure DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC (in contents varchar, in base varchar, in graph varchar, in mimetype varchar :='text/html')
 {
   declare proxyiri, docproxyiri, dociri varchar;
   proxyiri := DB.DBA.RDF_PROXY_ENTITY_IRI (graph);
@@ -1454,6 +1454,7 @@ create procedure DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC (in contents varchar, in base
 
   sparql define input:storage "" insert in graph iri(?:graph)
       { `iri(?:docproxyiri)` a <http://purl.org/ontology/bibo/Document> ;
+      				<http://www.w3.org/ns/formats/media_type> `?:mimetype` ;
               <http://vocab.deri.ie/void#inDataset> `iri(?:graph)` ; 
               <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://rdfs.org/sioc/ns#Container> , <http://purl.org/ontology/bibo/Document> ;
               <http://rdfs.org/sioc/ns#container_of> `iri(?:proxyiri)` .
@@ -1522,13 +1523,13 @@ retry_after_deadlock:
         goto load_grddl;
       DB.DBA.RDF_LOAD_RDFXML (ret_body, base, coalesce (dest, graph_iri));
       if (extra <> '0')
-        DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC(ret_body, base, coalesce (dest, graph_iri));
+        DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC(ret_body, base, coalesce (dest, graph_iri), ret_content_type);
       rdf_fmt := 1;
       if (groupdest is not null)
         {
           DB.DBA.RDF_LOAD_RDFXML (ret_body, base, groupdest);
           if (extra <> '0')
-            DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC(ret_body, base, groupdest);
+            DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC(ret_body, base, groupdest, ret_content_type);
         }
         goto load_grddl;
       if (__proc_exists ('DB.DBA.RDF_LOAD_POST_PROCESS') and only_rdfa = 0) -- optional step, by default skip
@@ -1570,13 +1571,13 @@ retry_after_deadlock:
       --  DB.DBA.SPARUL_CLEAR (coalesce (dest, graph_iri), 1);
       DB.DBA.TTLP (ret_body, base, coalesce (dest, graph_iri), ttl_mode);
       if(extra<>'0')
-        DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC(ret_body, base, coalesce (dest, graph_iri));
+        DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC(ret_body, base, coalesce (dest, graph_iri), ret_content_type);
       rdf_fmt := 1;
       if (groupdest is not null)
         {
           DB.DBA.TTLP (ret_body, base, groupdest);
           if(extra<>'0')
-            DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC(ret_body, base, groupdest);
+            DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC(ret_body, base, groupdest, ret_content_type);
         }
       if (exists (select 1 from DB.DBA.SYS_RDF_MAPPERS where RM_TYPE = 'URL' and regexp_match (RM_PATTERN, new_origin_uri) and RM_ENABLED = 1))
         goto load_grddl;
