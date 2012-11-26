@@ -350,14 +350,14 @@ void ddl_init_proc (void);
 
 void ddl_standard_procs (void);
 
-void ddl_commit (query_instance_t * qi);
+EXE_EXPORT (void, ddl_commit, (query_instance_t * qi));
 
 void sql_ddl_node_input (ddl_node_t * ddl, caddr_t * inst, caddr_t * state);
 
 void srv_global_init (char * mode);
 
-client_connection_t * client_connection_create (void);
-void client_connection_reset (client_connection_t * cli);
+EXE_EXPORT (client_connection_t *, client_connection_create, (void));
+EXE_EXPORT (void, client_connection_reset, (client_connection_t * cli));
 
 typedef dk_session_t * (*client_connection_reset_hook_type) (dk_session_t *);
 
@@ -385,9 +385,8 @@ EXE_EXPORT (caddr_t, srv_make_new_error, (const char *code, const char *virt_cod
 caddr_t srv_make_new_error (const char *code, const char *virt_code, const char *msg,...) __attribute__ ((format (printf, 3, 4)));
 #endif
 #endif
-void qi_enter (query_instance_t * qi);
-
-void qi_leave (query_instance_t * qi);
+EXE_EXPORT (void, qi_enter, (query_instance_t * qi));
+EXE_EXPORT (void, qi_leave, (query_instance_t * qi));
 
 int lt_close (lock_trx_t * lt, int fcommit);
 
@@ -440,8 +439,8 @@ int lt_leave_real (lock_trx_t * lt);
 #define lt_leave(lt) \
     (LT_THREADS_REPORT (lt, "LT_LEAVE"), lt_leave_real(lt))
 #else
-int lt_enter (lock_trx_t * lt);
-int lt_leave (lock_trx_t * lt);
+EXE_EXPORT (int, lt_enter, (lock_trx_t * lt));
+EXE_EXPORT (int, lt_leave, (lock_trx_t * lt));
 #endif
 int lt_enter_anyway (lock_trx_t * lt);
 
@@ -743,10 +742,10 @@ void pl_source_free (pl_source_t * pls);
 
 int err_is_state (caddr_t err, char * state);
 
-void local_commit (client_connection_t * cli);
-void local_start_trx (client_connection_t * cli);
-void local_commit_end_trx (client_connection_t * cli);
-void local_rollback_end_trx (client_connection_t * cli);
+EXE_EXPORT (void, local_commit, (client_connection_t * cli));
+EXE_EXPORT (void, local_start_trx, (client_connection_t * cli));
+EXE_EXPORT (void, local_commit_end_trx, (client_connection_t * cli));
+EXE_EXPORT (void, local_rollback_end_trx, (client_connection_t * cli));
 
 caddr_t code_vec_run_1 (code_vec_t code_vec, caddr_t * qst, int offset);
 #define code_vec_run(c, i) code_vec_run_1 (c, i, 0)
