@@ -270,7 +270,7 @@ extern int sparp_fixedvalues_equal (sparp_t *sparp, SPART *first, SPART *second)
 
 /*! Returns 1 if tightening \c dest by \c add_on might give some effect, 0 if that is proven to be no-op.
 Nonzero \c assume_binv_var_and_eq means special policy for binding variable as \c dest an its equiv as \c add_on */
-extern int rvr_can_be_tightned (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *add_on, int assume_binv_var_and_eq);
+extern int rvr_can_be_tightened (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *add_on, int assume_binv_var_and_eq);
 
 /*! Returns whether two given equivs have equal restriction by fixedvalue (and fixedtype).
 If any of two are not restricted or they are restricted by two different values then the function returns zero */
@@ -399,6 +399,9 @@ extern int sparp_expn_reads_equiv (sparp_t *sparp, SPART *expn, sparp_equiv_t *e
 
 /*!< Adds variables to equivalence classes and set counters of usages */
 extern void sparp_count_usages (sparp_t *sparp, dk_set_t *optvars_ret);
+
+/*!< Given set \c binds of \c SPAR_ALIAS expressions and a poitner to an expression to edit, replaces all bound variables with \c alias.arg expressions from alias expressions */
+extern void sparp_expand_binds_like_macro (sparp_t *sparp, SPART **expr_ptr, dk_set_t binds, SPART *parent_gp);
 
 /*!< Changes and expands lists of return values to handle recursive graph traversal and DESCRIBE. */
 void sparp_rewrite_retvals (sparp_t *sparp, int safely_copy_retvals);
@@ -723,6 +726,9 @@ extern void sparp_find_best_join_eq_for_optional (sparp_t *sparp, SPART *parent,
 /*! Convert a query with grab vars into a select with procedure view with seed/iter/final sub-SQLs as arguments. */
 extern void sparp_rewrite_grab (sparp_t *sparp);
 
+/*! Scans the query with its subqueries and replaces vars made by binds with expressions from that binds. Members of UNION gp that have BINDs inside become subqueries. BINDs of subquery are added to the resultset of the subquery. */
+extern void sparp_expand_binds (sparp_t *sparp);
+
 /*! Finds all mappings of all triples, then performs all graph pattern term rewritings of the query tree */
 extern void sparp_rewrite_qm (sparp_t *sparp);
 
@@ -743,7 +749,7 @@ extern void sparp_rewrite_qm_postopt (sparp_t *sparp);
 
 /*! Expand '*' retval list into actual list of variables, add MAX around non-grouped variables etc.
 This also edits ORDER BY ?top-resultset-alias and replaces it with appropriate ORDER BY <int> */
-extern void sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars);
+extern void sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars, dk_set_t binds_revlist);
 
 #define SPARP_SET_OPTION_NEW		0	/*!< Set an option only if it do not exists yet */
 #define SPARP_SET_OPTION_REPLACING	1	/*!< Set an option, overwriting any existing value */

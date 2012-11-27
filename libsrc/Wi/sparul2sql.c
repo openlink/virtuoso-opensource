@@ -469,7 +469,7 @@ args_ready:
       (SPART **)t_list (4, arg1, var_vector_arg, arg3, t_box_num_nonull (use_limits)) );
   if (cve->cve_limofs_var_alias)
     {
-      SPART *alias = spartlist (sparp, 4, SPAR_ALIAS, var_vector_expn, cve->cve_limofs_var_alias, SSG_VALMODE_AUTO);
+      SPART *alias = spartlist (sparp, 5, SPAR_ALIAS, var_vector_expn, cve->cve_limofs_var_alias, SSG_VALMODE_AUTO, (ptrlong)0);
       retvals[0] = (SPART **)t_list (2, ctor_call, alias);
     }
   else

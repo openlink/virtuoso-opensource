@@ -39,7 +39,7 @@ Whitespaces in all other places, including two whitespaces after "::=" in BNF co
 %pure_parser
 %parse-param {sparp_t * sparp_arg}
 %lex-param {sparp_t * sparp_arg}
-%expect 8
+%expect 9
 
 %{
 #include "libutil.h"
@@ -97,6 +97,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
   caddr_t box;
   caddr_t *boxes;
   ptrlong token_type;
+  ptrlong nonboxed_int;
   SPART *tree;
   SPART **trees;
   dk_set_t list;
@@ -148,6 +149,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token AVG_L		/*:: PUNCT_SPAR_LAST("AVG") ::*/
 %token BASE_L		/*:: PUNCT_SPAR_LAST("BASE") ::*/
 %token BIJECTION_L	/*:: PUNCT_SPAR_LAST("BIJECTION") ::*/
+%token BIND_L		/*:: PUNCT_SPAR_LAST("BIND") ::*/
 %token BINDINGS_L	/*:: PUNCT_SPAR_LAST("BINDINGS") ::*/
 %token BOUND_L		/*:: PUNCT_SPAR_LAST("BOUND") ::*/
 %token BY_L		/*:: PUNCT("BY"), SPAR, LAST("BY"), LAST("IDENTIFIED BY") ::*/
@@ -377,6 +379,8 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <tree> spar_graph_gp
 %type <tree> spar_quad_map_gp
 %type <tree> spar_group_or_union_gp
+%type <backstack> spar_binds
+%type <tree> spar_bind
 %type <tree> spar_constraint
 %type <tree> spar_constraint_exists_int
 %type <token_type> spar_exists_or_not_exists
@@ -813,7 +817,7 @@ spar_select_query	/* [5]*	SelectQuery	 ::=  'SELECT' ( 'DISTINCT' | 'REDUCED' )?
 		wm->_.wm.where_gp = where_gp;
 		$$ = spar_make_top_or_special_case_from_wm (sparp_arg, $1, $3, retselid, wm );
 		if (SPAR_REQ_TOP == $$->type)
-		  sparp_expand_top_retvals (sparp_arg, $$, 0 /* never cloned, hence 0 == safely_copy_all_vars */); }
+		  sparp_expand_top_retvals (sparp_arg, $$, 0 /* never cloned, hence 0 == safely_copy_all_vars */, NULL); }
 	;
 
 spar_select_query_mode	/* ::=  'SELECT' ( 'DISTINCT' | 'REDUCED' ) ?	*/
@@ -870,7 +874,7 @@ spar_describe_query	/* [7]*	DescribeQuery	 ::=  'DESCRIBE' ( ( Var | IRIref | Ba
 		$$ = spar_make_top_or_special_case_from_wm (sparp_arg, DESCRIBE_L, $3,
                   retselid, wm );
 		if (((SPART **)_STAR == $3) && (SPAR_REQ_TOP == $$->type))
-		  sparp_expand_top_retvals (sparp_arg, $$, 0 /* never cloned, hence 0 == safely_copy_all_vars */); }
+		  sparp_expand_top_retvals (sparp_arg, $$, 0 /* never cloned, hence 0 == safely_copy_all_vars */, NULL); }
 	;
 
 spar_describe_rset	/* ::=  ( ( Var | IRIref | Backquoted | ( '(' Expn ')' ) )+ | '*' )	*/
@@ -1151,7 +1155,7 @@ spar_group_gp		/* [19]*	GroupGraphPattern	 ::=  '{' ( GraphPattern | SelectQuery
 		subselect_top = spar_make_top_or_special_case_from_wm (sparp_arg,
 		  $1, $3, retselid, wm );
 		if (SPAR_REQ_TOP == subselect_top->type)
-		  sparp_expand_top_retvals (sparp_arg, subselect_top, 1 /* safely_copy_all_vars */);
+		  sparp_expand_top_retvals (sparp_arg, subselect_top, 1 /* safely_copy_all_vars */, NULL);
 		spar_env_pop (sparp_arg);
 		res = spar_gp_finalize_with_subquery (sparp_arg, $8, subselect_top);
 		if (SERVICE_L == $<token_type>2)
@@ -1189,6 +1193,7 @@ spar_gp_not_triples	/* [21]*	GraphPatternNotTriples	 ::=  */
 	| spar_group_or_union_gp { spar_gp_add_member (sparp_arg, $1); }	/*... | GroupOrUnionGraphPattern	*/
 	| spar_graph_gp { spar_gp_add_member (sparp_arg, $1); }	/*... | GraphGraphPattern	*/
 	| spar_service_req { spar_gp_add_member (sparp_arg, $1); }	/*... | ServiceRequest	*/
+	| spar_binds { spar_gp_finalize_binds (sparp_arg, $1); }	/*... | Bind	*/
 	| spar_constraint { spar_gp_add_filter (sparp_arg, $1); }	/*... | Constraint	*/
 	;
 
@@ -1230,6 +1235,18 @@ spar_group_or_union_gp	/* [24]	GroupOrUnionGraphPattern	 ::=  GroupGraphPattern 
 		    $$->_.gp.members = (SPART **)t_list_concat_tail ((caddr_t)($$->_.gp.members), 1, $5);
 		    $$ = $1; }
 		}
+	;
+
+spar_binds
+	: spar_bind		{ $$ = NULL; t_set_push (&($$), $1); }
+	| spar_binds spar_bind	{ t_set_push (&($$), $2); }
+	;
+
+spar_bind
+	: BIND_L { $<nonboxed_int>$ = sparp_arg->sparp_scalar_subq_count; }
+	    _LPAR spar_expn _RPAR	{
+		int bind_has_scalar_subqs = ($<nonboxed_int>2 == sparp_arg->sparp_scalar_subq_count);
+		$$ = spar_bind_prepare (sparp_arg, $4, bind_has_scalar_subqs); }
 	;
 
 spar_constraint		/* [25]*	Constraint	 ::=  'FILTER' ( ( '(' Expn ')' ) | BuiltInCall | FunctionCall )	*/
@@ -1520,8 +1537,8 @@ spar_triple_transit_option
 	| T_SHORTEST_ONLY_L		{	/*... | 'T_SHORTEST_ONLY'	*/
 		$$ = (SPART **)t_list (2, (ptrlong)T_SHORTEST_ONLY_L, (ptrlong)1); }
 	| T_STEP_L _LPAR spar_var _RPAR AS_L spar_var		{	/*... | 'T_STEP' '(' ( Var | SPARQL_STRING ) ')' 'AS' Var	*/
-		$$ = (SPART **)t_list (2, (ptrlong)T_STEP_L, spartlist (sparp_arg, 4, SPAR_ALIAS, $3, $6->_.var.vname, SSG_VALMODE_AUTO)); }
-	| T_STEP_L _LPAR SPARQL_STRING _RPAR AS_L spar_var	{ $$ = (SPART **)t_list (2, (ptrlong)T_STEP_L, spartlist (sparp_arg, 4, SPAR_ALIAS, $3, $6->_.var.vname, SSG_VALMODE_AUTO)); }
+		$$ = (SPART **)t_list (2, (ptrlong)T_STEP_L, spartlist (sparp_arg, 5, SPAR_ALIAS, $3, $6->_.var.vname, SSG_VALMODE_AUTO, (ptrlong)0)); }
+	| T_STEP_L _LPAR SPARQL_STRING _RPAR AS_L spar_var	{ $$ = (SPART **)t_list (2, (ptrlong)T_STEP_L, spartlist (sparp_arg, 5, SPAR_ALIAS, $3, $6->_.var.vname, SSG_VALMODE_AUTO, (ptrlong)0)); }
 	| TRANSITIVE_L			{	/*... | 'TRANSITIVE'	*/
 		$$ = (SPART **)t_list (2, (ptrlong)TRANSITIVE_L, (ptrlong)1); }
 	;
@@ -1774,7 +1791,7 @@ spar_backquoted		/* [Virt]	Backquoted	 ::=  '`' Expn '`'	*/
 	;
 
 spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	( 'AS' ( VAR1 | VAR2 ) ) */
-	: spar_expn AS_L QD_VARNAME		{ $$ = spartlist (sparp_arg, 4, SPAR_ALIAS, $1, $3, SSG_VALMODE_AUTO); }
+	: spar_expn AS_L QD_VARNAME		{ $$ = spartlist (sparp_arg, 5, SPAR_ALIAS, $1, $3, SSG_VALMODE_AUTO, (ptrlong)0); }
 	| spar_expn _BAR_BAR spar_expn { /* [44]	ConditionalOrExpn	 ::=  ConditionalAndExpn ( '||' ConditionalAndExpn )*	*/
 		  SPAR_BIN_OP ($$, BOP_OR, $1, $3); }
 	| spar_expn _AMP_AMP spar_expn { /* [45]	ConditionalAndExpn	 ::=  ValueLogical ( '&&' ValueLogical )*	*/
@@ -1903,7 +1920,7 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	( 'AS' ( VAR1 | VAR2 ) ) */
 		subselect_top = spar_make_top_or_special_case_from_wm (sparp_arg,
 		  $2, $4, retselid, wm );
 		if (SPAR_REQ_TOP == subselect_top->type)
-		  sparp_expand_top_retvals (sparp_arg, subselect_top, 1 /* safely_copy_all_vars */);
+		  sparp_expand_top_retvals (sparp_arg, subselect_top, 1 /* safely_copy_all_vars */, NULL);
 		spar_env_pop (sparp_arg);
 		$$ = spar_gp_finalize_with_subquery (sparp_arg, $8, subselect_top);
 		sparp_arg->sparp_allow_aggregates_in_expn >>= 1; }
@@ -1950,7 +1967,7 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	( 'AS' ( VAR1 | VAR2 ) ) */
 	| spar_rdf_literal		{ $$ = (SPART *)($1); }
 	| spar_numeric_literal		{ $$ = (SPART *)($1); }
 	| spar_boolean_literal		{ $$ = (SPART *)($1); }
-	| spar_blank_node
+	| spar_blank_node   { sparyyerror (sparp_arg, "Blank node labels can not be used in expressions, only in triple patterns"); }
 	| spar_var
 	| spar_macro_call
 	;
@@ -2140,7 +2157,12 @@ spar_qname		/* [64]	QName		 ::=  QNAME | QNAME_NS	*/
 	;
 
 spar_blank_node		/* [65]*	BlankNode	 ::=  BLANK_NODE_LABEL | ( '[' ']' )	*/
-	: BLANK_NODE_LABEL	{ $$ = spar_make_blank_node (sparp_arg, $1, 0); }
+	: BLANK_NODE_LABEL	{
+		if (0 < dk_set_position (sparp_arg->sparp_sg->sg_invalidated_bnode_labels, $1))
+		  spar_error (sparp_arg, "Blank node label %s can not be used in two different basic graph patterns", $1);
+		if (NULL != sparp_arg->sparp_sg->sg_bnode_label_sets)
+		  t_set_pushnew ((dk_set_t *)(&(sparp_arg->sparp_sg->sg_bnode_label_sets->data)), $1);
+		$$ = spar_make_blank_node (sparp_arg, $1, 0); }
 	| _LSQBRA _RSQBRA	{ $$ = spar_make_blank_node (sparp_arg, spar_mkid (sparp_arg, "_:anon"), 1); }
 	;
 

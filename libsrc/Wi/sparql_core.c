@@ -437,7 +437,7 @@ sparp_expand_qname_prefix (sparp_t * sparp, caddr_t qname)
 {
   char *lname = strchr (qname, ':');
   dk_set_t ns_dict;
-  caddr_t ns_pref, ns_uri, res;
+  caddr_t ns_pref, ns_uri, res, res_uname, res_t_uname;
   int ns_uri_len, local_len, res_len;
   if (NULL == lname)
     return qname;
@@ -446,7 +446,7 @@ sparp_expand_qname_prefix (sparp_t * sparp, caddr_t qname)
   lname++;
   do
     {
-      ns_uri = dk_set_get_keyword (ns_dict, ns_pref, NULL);
+      ns_uri = (caddr_t)dk_set_get_keyword (ns_dict, ns_pref, NULL);
       if (NULL != ns_uri)
 	break;
       if (!strcmp (ns_pref, "rdf"))
@@ -487,7 +487,13 @@ sparp_expand_qname_prefix (sparp_t * sparp, caddr_t qname)
   memcpy (res, ns_uri, ns_uri_len);
   memcpy (res + ns_uri_len, lname, local_len);
   res[res_len] = '\0';
-  return box_dv_uname_from_ubuf (res);
+  res_uname = box_dv_uname_from_ubuf (res);
+#ifdef SPARQL_DEBUG
+  dk_check_tree (res_uname);
+#endif
+  res_t_uname = t_box_copy (res_uname);
+  dk_free_box (res_uname);
+  return res_t_uname;
 }
 
 caddr_t
@@ -1420,7 +1426,8 @@ spar_gp_init (sparp_t *sparp, ptrlong subtype)
   t_set_push (&(env->spare_context_gp_subtypes), (caddr_t)subtype);
   t_set_push (&(env->spare_good_graph_varname_sets), env->spare_good_graph_varnames);
   if (!gp_is_top)
-    t_set_push (&(sparp->sparp_env->spare_propvar_sets), NULL); /* For WHERE_L and CONSTRUCT_L it's done at beginning of the result-set. */
+    t_set_push (&(env->spare_propvar_sets), NULL); /* For WHERE_L and CONSTRUCT_L it's done at beginning of the result-set. */
+  t_set_push (&(sparp->sparp_sg->sg_bnode_label_sets), NULL);
 }
 
 void
@@ -1462,6 +1469,9 @@ spar_gp_finalize (sparp_t *sparp, SPART **options)
   SPART *res;
   subtype = (ptrlong)(env->spare_context_gp_subtypes->data);
   spar_dbg_printf (("spar_gp_finalize (..., %ld)\n", (long)subtype));
+  sparp->sparp_sg->sg_invalidated_bnode_labels = dk_set_conc (
+    (dk_set_t)t_set_pop (&(sparp->sparp_sg->sg_bnode_label_sets)), 
+    sparp->sparp_sg->sg_invalidated_bnode_labels );
   if (CONSTRUCT_L != subtype) /* CONSTRUCT_L did not push to spare_propvar_sets, using one that will be used in WHERE_L */
     {
 /* Create triple patterns for distinct '+>' propvars and OPTIONAL triple patterns for distinct '*>' propvars */
@@ -1489,7 +1499,7 @@ spar_gp_finalize (sparp_t *sparp, SPART **options)
   membs = dk_set_nreverse (membs);
   filts = (dk_set_t) t_set_pop (&(env->spare_acc_filters));
   t_set_pop (&(env->spare_context_gp_subtypes));
-  env->spare_good_graph_bmk = t_set_pop (&(env->spare_good_graph_varname_sets));
+  env->spare_good_graph_bmk = (dk_set_t)t_set_pop (&(env->spare_good_graph_varname_sets));
 /* The following 'if' does not mention UNIONs because UNIONs are handled right in .y file
    For OPTIONAL GP we roll back spare_good_graph_vars at bookmarked level
    For other sorts the content of stack is naturally inherited by the parent:
@@ -1543,8 +1553,7 @@ check_optionals:
     }
   END_DO_SET()
 /* Plain composing of SPAR_GP tree node */
-  res = spartlist (sparp, 10,
-    SPAR_GP, subtype,
+  res = spartlist (sparp, 10, SPAR_GP, subtype,
     t_list_to_array (membs),
     t_revlist_to_array (filts),
     NULL,
@@ -1625,6 +1634,30 @@ spar_tree_is_var_with_forbidden_ft_name (sparp_t *sparp, SPART *tree, int report
   if (report_error)
     spar_error (sparp, "Free-text triple pattern uses variable name '%s'; this name has special meaning in free-text SQL; please rename it to avoid unexpected effects", vname);
   return 1;
+}
+
+void
+spar_gp_finalize_binds (sparp_t *sparp, dk_set_t bind_revlist)
+{
+  SPART *inner_gp, *wrapper_gp;
+  int type_of_gp_to_resume;
+  SPART *subselect_top;
+  inner_gp = spar_gp_finalize (sparp, NULL);
+  type_of_gp_to_resume = inner_gp->_.gp.subtype;
+  inner_gp->_.gp.subtype = WHERE_L;
+  spar_env_push (sparp);
+  spar_selid_push (sparp);
+  subselect_top = spar_make_top (sparp, SELECT_L, (SPART **)_STAR,
+    spar_selid_pop (sparp), inner_gp,
+    (SPART **)NULL, (SPART *)NULL, (SPART **)NULL, (SPART *)NULL /* i.e., no limit */, (SPART *)t_box_num_nonull (0), NULL);
+  sparp_expand_top_retvals (sparp, subselect_top, 1 /* safely_copy_all_vars */, bind_revlist);
+  spar_env_pop (sparp);
+  spar_gp_init (sparp, type_of_gp_to_resume);
+  spar_selid_push (sparp);
+  spar_gp_init (sparp, SELECT_L);
+  spar_selid_push (sparp);
+  wrapper_gp = spar_gp_finalize_with_subquery (sparp, NULL, subselect_top);
+  spar_gp_add_member (sparp, wrapper_gp);
 }
 
 void
@@ -2269,7 +2302,7 @@ spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, SPART *limit_expn, SP
         opts_arg ) );
   if (need_limofs_trick)
     return (SPART **)t_list (2, descr_call,
-      spartlist (sparp, 4, SPAR_ALIAS, var_vector_expn, t_box_dv_short_string ("describe-1"), SSG_VALMODE_AUTO) );
+      spartlist (sparp, 5, SPAR_ALIAS, var_vector_expn, t_box_dv_short_string ("describe-1"), SSG_VALMODE_AUTO, (ptrlong)0) );
   else
     return (SPART **)t_list (1, descr_call);
 }
@@ -2686,7 +2719,7 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
   subselect_top = spar_make_top (sparp, SELECT_L, retvals,
     spar_selid_pop (sparp), where_gp,
     (SPART **)NULL, (SPART *)NULL, (SPART **)NULL, (SPART *)NULL /* i.e., no limit */, (SPART *)t_box_num_nonull (0), NULL);
-  sparp_expand_top_retvals (sparp, subselect_top, 1 /* safely_copy_all_vars */);
+  sparp_expand_top_retvals (sparp, subselect_top, 1 /* safely_copy_all_vars */, NULL);
   spar_env_pop (sparp);
   t_check_tree (options);
   sparp_set_options_selid_and_tabid (sparp, options, (caddr_t)(sparp->sparp_env->spare_selids->data), NULL);
@@ -3244,6 +3277,7 @@ spar_inverse_ppath (sparp_t *sparp, SPART *tree)
       }
     }
   spar_internal_error (sparp, "Unsupported type of property path to inverse by '^'");
+  return NULL; /* to make compiler happy */
 }
 
 SPART *
@@ -3452,6 +3486,15 @@ spar_make_ppath (sparp_t *sparp, char subtype, SPART *part1, SPART *part2, ptrlo
 ierr:
   spar_internal_error (sparp, "Unsupported type of property path to make");
   return NULL;
+}
+
+SPART *
+spar_bind_prepare (sparp_t *sparp, SPART *expn, int bind_has_scalar_subqs)
+{
+  if (SPAR_ALIAS != SPART_TYPE (expn))
+    spar_error (sparp, "BIND (...) requires an expression of form x AS ?y");
+  expn->_.alias.reruns_may_vary = bind_has_scalar_subqs ? 1 : 0;
+  return expn;
 }
 
 SPART *
@@ -3869,7 +3912,7 @@ bad_regex:
 }
 
 void
-spar_verify_funcall_security (sparp_t *sparp, int *is_agg_ret, ccaddr_t *fname_ptr, SPART **args)
+spar_verify_funcall_security (sparp_t *sparp, int *is_agg_ret, caddr_t *fname_ptr, SPART **args)
 {
   ccaddr_t fname = fname_ptr[0];
   int uid, need_check_for_sparql11_agg = 0, need_check_for_infection_chars = 0;

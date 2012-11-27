@@ -35,6 +35,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "ATTACH",		ATTACH_L		, 0
 "AVG",			AVG_L			, 0
 "BASE",			BASE_L			, 0
+"BIND",			BIND_L			, 0
 "BINDINGS",		BINDINGS_L		, 0
 "BIJECTION",		BIJECTION_L		, 0
 "BNODE",		SPARQL_BIF		, SPAR_BIF_BNODE

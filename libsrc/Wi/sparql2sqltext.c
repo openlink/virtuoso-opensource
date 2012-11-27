@@ -8052,7 +8052,7 @@ failed_single_subq_optimization: ;
     {
       caddr_t stub_varname = t_box_sprintf (100, "stubvar%d", ssg->ssg_sparp->sparp_unictr++);
       if (SSG_SD_BI_OR_SPARQL11_DRAFT & ssg->ssg_sd_flags)
-        ssg_sdprint_tree (ssg, spartlist (ssg->ssg_sparp, 4, SPAR_ALIAS, (ptrlong)1, stub_varname, SSG_VALMODE_AUTO));
+        ssg_sdprint_tree (ssg, spartlist (ssg->ssg_sparp, 5, SPAR_ALIAS, (ptrlong)1, stub_varname, SSG_VALMODE_AUTO, (ptrlong)0));
       else
         {
           ssg_puts (" ?"); ssg_puts (stub_varname);

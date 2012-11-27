@@ -289,6 +289,7 @@ typedef struct sparp_env_s
     dk_set_t		spare_context_gp_subtypes;	/*!< Subtypes of not-yet-completed graph patterns */
     dk_set_t		spare_acc_triples;		/*!< Sets of accumulated triples of GPs */
     dk_set_t		spare_acc_filters;		/*!< Sets of accumulated filters of GPs */
+    dk_set_t		spare_acc_bgp_varnames;		/*!< Sets of used BGP names of GPs, sets of children are merged into sets of parent on each pop from the stack */
     int			spare_ctor_dflt_g_tmpl_count;	/*!< For CONSTRUCT and the like --- count of triple templates in the default graph, should be reset to zero after ctor to deal with DELETE{...} INSERT{...} */
     int			spare_ctor_g_grp_count;		/*!< For CONSTRUCT and the like --- count of graph {...} groups of triple templates, should be reset to zero after ctor to deal with DELETE{...} INSERT{...} */
     SPART **		spare_bindings_vars;		/*!< List of variables enumerated in local BINDINGS Var+ list */
@@ -327,6 +328,8 @@ typedef struct sparp_globals_s {
   ptrlong sg_cloning_serial;		/*!< The pointer to the serial used for current \c sparp_gp_full_clone() operation */
   struct spar_tree_s **sg_sinvs;	/*!< All descriptions of service invocations, in pointer to a growing buffer */
   ptrlong sg_sinv_count;		/*!< A count of used items in the beginning of \c sg_sinvs buffer */
+  dk_set_t sg_invalidated_bnode_labels;	/*!< All blank name labels used in basic graph patterns of that are now closed (in the query and all its subqueries) */
+  dk_set_t sg_bnode_label_sets;		/*!< A stack of dk_set_t-s of blank name labels in not-yet-closed basic graph patterns */
 } sparp_globals_t;
 
 typedef struct sparp_s {
@@ -357,6 +360,7 @@ typedef struct sparp_s {
   spar_lexbmk_t sparp_curr_lexem_bmk;
   int sparp_in_precode_expn;		/*!< If nonzero (usually 1) then the parser reads precode-safe expression so it can not contain non-global variables, if bit 2 is set then even global variables are prohibited (like it is in INSERT DATA statement) */
   int sparp_allow_aggregates_in_expn;	/*!< The parser reads result-set expressions, GROUP BY, ORDER BY, or HAVING. Each bit is responsible for one level of nesting. */
+  int sparp_scalar_subq_count;		/*!< Counter of scalar subqueries. It's primary purpose is to track whether BIND expression contain scalar subqueries and hence is non-repeatable. */
   int sparp_query_uses_aggregates;	/*!< Nonzero if there is at least one aggregate in the whole source query, (not in the current SELECT!). This is solely for bypassing expanding top retvals for "plain SPARQL" queries, not for other logic of the compiler */
   int sparp_query_uses_sinvs;		/*!< Nonzero if there is at least one SERVICE invocation in the whole source query, (not in the current SELECT!). This forces (re) composing of \c sinv.param_varnames and \c sinv.rset_varnames lists */
   int sparp_disable_big_const;		/*!< INSERT DATA requires either an sql_comp_t for ssl or define sql:big-data-const 0. The define sets this value to 1 */
@@ -519,7 +523,8 @@ typedef struct spar_tree_s
         /* #define SPAR_ALIAS		(ptrlong)1001 */
         SPART *arg;
         caddr_t aname;
-        ssg_valmode_t native;	/*!< temporary use in SQL printer */
+        ssg_valmode_t native;		/*!< temporary use in SQL printer */
+        ptrlong reruns_may_vary;	/*!< nonzero for BIND aliases that have scalar subqueries in \c arg so there is no warranty that \c arg will repeatedly return same value */
       } alias; /*!< only for use in top-level result-set list */
     struct {
         SPART *left;
@@ -892,6 +897,7 @@ extern void spar_gp_add_member (sparp_t *sparp, SPART *memb);
 extern SPART *spar_gp_add_triplelike (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri, SPART **options, int banned_tricks);
 /*! Checks if the given \c filt is a freetext filter. If it is so and \c base_triple is not NULL then it additionally checks if var name matches */
 extern int spar_filter_is_freetext (sparp_t *sparp, SPART *filt, SPART *base_triple);
+extern void spar_gp_finalize_binds (sparp_t *sparp, dk_set_t bind_revlist);
 extern void spar_gp_add_filter (sparp_t *sparp, SPART *filt);
 extern void spar_gp_add_filters_for_graph (sparp_t *sparp, SPART *graph_expn, int graph_is_named, int suppress_filters_for_good_names);
 extern void spar_gp_add_filters_for_named_graph (sparp_t *sparp);
@@ -923,6 +929,7 @@ extern SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   caddr_t retselid, SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset, SPART *binv);
 extern SPART *spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri_or_pair, SPART **options);
 extern SPART *spar_make_ppath (sparp_t *sparp, char subtype, SPART *part1, SPART *part2, ptrlong mincount, ptrlong maxcount);
+extern SPART *spar_bind_prepare (sparp_t *sparp, SPART *expn, int bind_has_scalar_subqs);
 extern SPART *spar_make_param_or_variable (sparp_t *sparp, caddr_t name);
 extern SPART *spar_make_variable (sparp_t *sparp, caddr_t name);
 extern SPART *spar_make_macropu (sparp_t *sparp, caddr_t name, ptrlong pos);
@@ -942,7 +949,7 @@ extern void sparp_make_and_push_new_graph_source (sparp_t *sparp, ptrlong subtyp
 extern SPART *sparp_make_graph_precode (sparp_t *sparp, ptrlong subtype, SPART *iriref, SPART **options);
 extern SPART *spar_default_sparul_target (sparp_t *sparp, const char *clause_type, int may_return_null);
 extern SPART *spar_make_regex_or_like_or_eq (sparp_t *sparp, SPART *strg, SPART *regexpn);
-extern void spar_verify_funcall_security (sparp_t *sparp, int *is_agg_ret, ccaddr_t *fname_ptr, SPART **args);
+extern void spar_verify_funcall_security (sparp_t *sparp, int *is_agg_ret, caddr_t *fname_ptr, SPART **args);
 
 /*! Tries to run a BIF \c funname in a sandbox with \c argcount number of arguments from \c args.
 The function should be pure, at least for the given arguments (but there is no check for bmd->bmd_is_pure inside it)

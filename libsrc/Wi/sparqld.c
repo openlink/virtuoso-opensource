@@ -796,6 +796,14 @@ fname_printed:
             ssg->ssg_sd_graph_gp_nesting--;
           }
         t_set_push (&(ssg->ssg_sd_outer_gps), NULL);
+        /*
+        DO_BOX_FAST (SPART *, bind, ctr, tree->_.gp.binds)
+          {
+            ssg_puts (" BIND ");
+            ssg_sdprint_tree (ssg, bind);
+          }
+        END_DO_BOX_FAST;
+        */
         SPARP_FOREACH_GP_EQUIV (ssg->ssg_sparp, tree, ctr, eq)
           {
             ssg_sdprint_equiv_restrs (ssg, eq);
@@ -816,7 +824,7 @@ fname_printed:
           }
         if (OPTIONAL_L == tree->_.gp.subtype)
           {
-            SPART *outer_gp = ssg->ssg_sd_outer_gps->data;
+            SPART *outer_gp = (SPART *)(ssg->ssg_sd_outer_gps->data);
             if (NULL != outer_gp)
               {
                 count = BOX_ELEMENTS (outer_gp->_.gp.filters);
@@ -905,7 +913,7 @@ fname_printed:
           {
             caddr_t stub_varname = t_box_sprintf (100, "stubvar%d", ssg->ssg_sparp->sparp_unictr++);
             if (SSG_SD_BI_OR_SPARQL11_DRAFT & ssg->ssg_sd_flags)
-              ssg_sdprint_tree (ssg, spartlist (ssg->ssg_sparp, 4, SPAR_ALIAS, (ptrlong)1, stub_varname, SSG_VALMODE_AUTO));
+              ssg_sdprint_tree (ssg, spartlist (ssg->ssg_sparp, 5, SPAR_ALIAS, (ptrlong)1, stub_varname, SSG_VALMODE_AUTO, (ptrlong)0));
             else
               {
                 ssg_puts (" ?"); ssg_puts (stub_varname);

@@ -857,6 +857,7 @@ spar_macroprocess_tree (sparp_t *sparp, SPART *tree, spar_mproc_ctx_t *ctx)
               break;
             }
           }
+        /*tree->_.gp.binds = spar_macroprocess_treelist (sparp, tree->_.gp.binds, 0, ctx);*/
         tree->_.gp.filters = spar_macroprocess_treelist (sparp, tree->_.gp.filters, 0, ctx);
         ctx->smpc_defbody_currselid = saved_defbody_curselid;
         ctx->smpc_context_gp = saved_gp;
@@ -1864,7 +1865,7 @@ sparp_fixedvalues_equal (sparp_t *sparp, SPART *first, SPART *second)
 }
 
 int
-rvr_can_be_tightned (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *add_on, int assume_binv_var_and_eq)
+rvr_can_be_tightened (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *add_on, int assume_binv_var_and_eq)
 {
   if (dest->rvrRestrictions & SPART_VARR_CONFLICT)
     return 0; /* Can't be tighened --- it's conflict already, no matter how many reasons do we have for that */
@@ -1872,7 +1873,10 @@ rvr_can_be_tightned (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *add
     ( SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_IS_BLANK | SPART_VARR_IRI_CALC | SPART_VARR_IS_LIT |
       SPART_VARR_TYPED | SPART_VARR_FIXED | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL | SPART_VARR_ALWAYS_NULL ) )
     return 1;
-  if ((add_on->rvrRestrictions & SPART_VARR_TYPED) && strcmp (dest->rvrDatatype, add_on->rvrDatatype))
+  if ((add_on->rvrRestrictions & SPART_VARR_TYPED) &&
+    strcmp (
+      (NULL == dest->rvrDatatype) ? "" : dest->rvrDatatype,
+      (NULL == add_on->rvrDatatype) ? "" : add_on->rvrDatatype ) )
     return 1; /* Both are typed (if add_on is typed and dest is not then flag diff woud return 1 before), different types would tighten to the conflict */
   if ( strcmp (
     ((NULL == dest->rvrLanguage) ? "" : dest->rvrLanguage),
@@ -3047,6 +3051,8 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
               cloned_eq->e_receiver_idxs = (ptrlong *)t_list (0);
             }
         }
+      /*if (NULL != orig->_.gp.binds)
+        tgt->_.gp.binds = sparp_treelist_full_clone_int (sparp, orig->_.gp.binds, orig);*/
       if (NULL != orig->_.gp.filters)
         tgt->_.gp.filters = sparp_treelist_full_clone_int (sparp, orig->_.gp.filters, orig);
       tgt->_.gp.members = sparp_treelist_full_clone_int (sparp, orig->_.gp.members, orig);
@@ -3287,6 +3293,7 @@ sparp_tree_full_copy (sparp_t *sparp, const SPART *orig, const SPART *parent_gp)
     case SPAR_GP:
       tgt = (SPART *)t_box_copy ((caddr_t) orig);
       tgt->_.gp.members = sparp_treelist_full_copy (sparp, orig->_.gp.members, (SPART *) orig);
+      /*tgt->_.gp.binds = sparp_treelist_full_copy (sparp, orig->_.gp.binds, (SPART *) orig);*/
       tgt->_.gp.filters = sparp_treelist_full_copy (sparp, orig->_.gp.filters, (SPART *) orig);
       tgt->_.gp.subquery = sparp_tree_full_copy (sparp, orig->_.gp.subquery, (SPART *) orig);
       tgt->_.gp.equiv_indexes = (ptrlong *)t_box_copy ((caddr_t)(orig->_.gp.equiv_indexes));
@@ -4327,7 +4334,7 @@ sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree, SPART **options)
                     v->_.var.vname, ((T_IN_L == key) ? "T_IN" : "T_OUT") );
                 ret = subq_orig_retvals [pos1_ret-1];
                 if (SPAR_ALIAS != SPART_TYPE (ret))
-                  subq_orig_retvals [pos1_ret-1] = spartlist (sparp, 4, SPAR_ALIAS, ret, v->_.var.vname, SSG_VALMODE_AUTO);
+                  subq_orig_retvals [pos1_ret-1] = spartlist (sparp, 5, SPAR_ALIAS, ret, v->_.var.vname, SSG_VALMODE_AUTO, (ptrlong)0);
               }
             END_DO_BOX_FAST;
             continue;
@@ -4894,6 +4901,7 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
 	      spart_dump_long ((void *)(tree->_.gp.subtype), ses, -1);
 	      spart_dump (tree->_.gp.members, ses, indent+2, "MEMBERS", -2);
 	      spart_dump (tree->_.gp.subquery, ses, indent+2, "SUBQUERY", -1);
+	      /*spart_dump (tree->_.gp.binds, ses, indent+2, "BINDS", -2);*/
 	      spart_dump (tree->_.gp.filters, ses, indent+2, "FILTERS", -2);
 	      spart_dump (tree->_.gp.selid, ses, indent+2, "SELECT ID", 0);
 	      spart_dump (tree->_.gp.options, ses, indent+2, "OPTIONS", -2);
