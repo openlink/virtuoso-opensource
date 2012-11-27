@@ -265,6 +265,9 @@ box_read_long_wide_string (dk_session_t *session, dtp_t macro)
     }
   else
     { /* no wide chars at all */
+#ifdef MALLOC_DEBUG
+      w_array[CHUNK_SIZE - 1] = 0;
+#endif
       dk_free_box ((box_t) w_array);
       return NULL;
     }
