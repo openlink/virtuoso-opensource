@@ -200,7 +200,7 @@ box_read_long_wide_string (dk_session_t *session, dtp_t macro)
 {
   long utf8_len, wide_len = 0;
   dk_set_t string_set = NULL;
-  wchar_t *array, *ptr;
+  wchar_t *w_array, *ptr;
   virt_mbstate_t state;
   wchar_t tmp[1];
   char read;
@@ -208,17 +208,17 @@ box_read_long_wide_string (dk_session_t *session, dtp_t macro)
 
   utf8_len = read_long (session);
   memset (&state, 0, sizeof (virt_mbstate_t));
-  MARSH_CHECK_BOX (ptr = array = (wchar_t *) dk_try_alloc_box (CHUNK_SIZE * sizeof (wchar_t), DV_WIDE));
+  MARSH_CHECK_BOX (ptr = w_array = (wchar_t *) dk_try_alloc_box (CHUNK_SIZE * sizeof (wchar_t), DV_WIDE));
   while (utf8_len-- > 0)
     {
       read = session_buffered_read_char (session);
       rc = (int) virt_mbrtowc (tmp, (unsigned char *) &read, 1, &state);
       if (rc > 0)
 	{
-	  if (ptr - array == CHUNK_SIZE)
+	  if (ptr - w_array == CHUNK_SIZE)
 	    {
-	      dk_set_push (&string_set, array);
-	      MARSH_CHECK_BOX (ptr = array = (wchar_t *) dk_try_alloc_box (CHUNK_SIZE * sizeof (wchar_t), DV_WIDE));
+	      dk_set_push (&string_set, w_array);
+	      MARSH_CHECK_BOX (ptr = w_array = (wchar_t *) dk_try_alloc_box (CHUNK_SIZE * sizeof (wchar_t), DV_WIDE));
 	      MARSH_CHECK_LENGTH ((wide_len + 1) * sizeof (wchar_t));
 	    }
 	  *ptr++ = tmp[0];
@@ -228,7 +228,12 @@ box_read_long_wide_string (dk_session_t *session, dtp_t macro)
 	{ /* an error occurred */
 	  caddr_t chunk_ptr;
 	  while (NULL != (chunk_ptr = (caddr_t) dk_set_pop (&string_set)))
-	    dk_free_box (chunk_ptr);
+            {
+#ifdef MALLOC_DEBUG
+              ((wchar_t *)chunk_ptr)[CHUNK_SIZE - 1] = 0;
+#endif
+	      dk_free_box (chunk_ptr);
+            }
 	  return NULL;
 	}
     }
@@ -241,20 +246,26 @@ box_read_long_wide_string (dk_session_t *session, dtp_t macro)
       while (NULL != (chunk_ptr = (caddr_t) dk_set_pop (&string_set)))
 	{
 	  memcpy (box_ptr, chunk_ptr, CHUNK_SIZE * sizeof (wchar_t));
+#ifdef MALLOC_DEBUG
+          ((wchar_t *)chunk_ptr)[CHUNK_SIZE - 1] = 0;
+#endif
 	  dk_free_box (chunk_ptr);
 	  box_ptr += CHUNK_SIZE * sizeof (wchar_t);
 	}
-      if (ptr - array > 0)
+      if (ptr - w_array > 0)
 	{
-	  memcpy (box_ptr, array, (ptr - array) * sizeof (wchar_t));
-	  dk_free_box ((box_t) array);
+	  memcpy (box_ptr, w_array, (ptr - w_array) * sizeof (wchar_t));
+#ifdef MALLOC_DEBUG
+          w_array[CHUNK_SIZE - 1] = 0;
+#endif
+	  dk_free_box ((box_t) w_array);
 	}
-      *((wchar_t *)(box_ptr + (((long)(ptr - array)) * sizeof (wchar_t)))) = L'\0';
+      *((wchar_t *)(box_ptr + (((long)(ptr - w_array)) * sizeof (wchar_t)))) = L'\0';
       return box;
     }
   else
     { /* no wide chars at all */
-      dk_free_box ((box_t) array);
+      dk_free_box ((box_t) w_array);
       return NULL;
     }
 }
