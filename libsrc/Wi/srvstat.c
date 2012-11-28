@@ -1504,11 +1504,9 @@ stat_desc_t dbf_descs [] =
     {NULL, NULL, NULL}
   };
 
-
 caddr_t
-bif_sys_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+sys_stat_impl (const char *name)
 {
-  caddr_t name = bif_string_arg (qst, args, 0, "sys_stat");
   stat_desc_t *sd_arrays[] = {stat_descs, dbf_descs, NULL};
   stat_desc_t **sd_arrays_tail;
   stat_desc_t *sd;
@@ -1523,7 +1521,7 @@ bif_sys_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  "%s %.500s Server", PRODUCT_DBMS, build_special_server_model);
 
   if (0 == strcmp ("backup_pages", name))
-    return (box_num (dbs_count_incbackup_pages (wi_inst.wi_master)));
+    return (box_num_nonull (dbs_count_incbackup_pages (wi_inst.wi_master)));
 
   if (0 == strcmp ("backup_time_stamp", name))
     return (bp_curr_timestamp ());
@@ -1538,18 +1536,27 @@ bif_sys_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
           if (0 == strcmp (sd->sd_name, name))
             {
               if (SD_INT32 == (char *) sd->sd_str_value)
-                return box_num (*(int32*)sd->sd_value);
+                return box_num_nonull (*(int32*)sd->sd_value);
               if (SD_INT64 == (char *) sd->sd_str_value)
-                return box_num (*(int64*)sd->sd_value);
+                return box_num_nonull (*(int64*)sd->sd_value);
               else if (sd->sd_value)
-                return (box_num (*(sd->sd_value)));
+                return (box_num_nonull (*(sd->sd_value)));
               else if (sd->sd_str_value)
                 return (box_dv_short_string (*(sd->sd_str_value)));
             }
         }
     }
+  return NULL;
+}
+
+caddr_t
+bif_sys_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t name = bif_string_arg (qst, args, 0, "sys_stat");
+  caddr_t res = sys_stat_impl (name);
+  if (NULL == res)
   sqlr_new_error ("42S22", "SR242", "No system status variable %s", name);
-  return NULL; /*dummy*/
+  return res;
 }
 
 

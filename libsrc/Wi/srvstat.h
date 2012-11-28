@@ -26,7 +26,8 @@
  */
 
 #ifndef _SRVSTAT_H
-# define _SRVSTAT_H
+#define _SRVSTAT_H
+#include "Dk.h"
 
 /* disk.c */
 extern long disk_reads;
@@ -66,4 +67,7 @@ extern char *product_version_string (void);
 extern time_t st_started_since;
 
 extern long first_id;
+
+EXE_EXPORT (caddr_t, sys_stat_impl, (const char *name));
+
 #endif /* _SRVSTAT_H */
