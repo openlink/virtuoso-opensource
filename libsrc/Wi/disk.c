@@ -550,6 +550,22 @@ it_temp_tree (index_tree_t * it)
 
 
 void
+buf_unregister_itcs (buffer_desc_t * buf)
+{
+  it_cursor_t * reg = buf->bd_registered;
+  while (reg)
+    {
+      it_cursor_t * next = reg->itc_next_on_page;
+      reg->itc_buf_registered = NULL;
+      reg->itc_is_registered = 0;
+      reg->itc_next_on_page = NULL;
+      reg = next;
+    }
+  buf->bd_registered = NULL;
+}
+
+
+void
 it_temp_free (index_tree_t * it)
 {
   /* free a temp tree */
@@ -616,6 +632,7 @@ it_temp_free (index_tree_t * it)
       buf->bd_is_dirty = 0;
       buf->bd_page = 0;
       buf->bd_physical_page = 0;
+      buf_unregister_itcs (buf);
     }
       clrhash (&itm->itm_dp_to_buf);
       ITC_LEAVE_MAPS (itc);
