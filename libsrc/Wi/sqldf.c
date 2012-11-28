@@ -70,6 +70,7 @@ sql_tree_hash_1 (ST * st)
 	if (len > 10)
 	  {
 	    int d = len / 2;
+	    d &= ~7L;
 	    len -= d;
 	    str += d;
 	  }
