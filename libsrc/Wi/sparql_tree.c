@@ -365,12 +365,14 @@ sparp_trav_out_clauses_int (sparp_t *sparp, SPART *req_top,
   int retcode = 0;
   if (SPAR_REQ_TOP != SPART_TYPE (req_top))
     GPF_T1 ("sparp_" "trav_out_clauses_int(): bad req_top");
+#if 0
   lists[0] = req_top->_.req_top.orig_retvals;
+#endif
   lists[1] = req_top->_.req_top.retvals;
   lists[2] = req_top->_.req_top.groupings;
   lists[3] = req_top->_.req_top.order;
   sts_this->sts_parent = sts_this->sts_ancestor_gp = req_top->_.req_top.pattern;
-  for (list_ctr = 0; list_ctr <= 4; list_ctr++)
+  for (list_ctr = 1; list_ctr <= 4; list_ctr++)
     {
       SPART **list = ((4 == list_ctr) ? &(req_top->_.req_top.having) : lists [list_ctr]);
       int ctr, list_len = ((4 == list_ctr) ? 1 : BOX_ELEMENTS_0 (list));
@@ -501,7 +503,7 @@ sparp_down_to_sub (sparp_t *sparp, SPART *subq_gp_wrapper)
   sparp_gp_trav_suspend (sparp);
   sub_sparp = (sparp_t *)t_box_copy ((caddr_t)sparp);
   sub_sparp->sparp_expr = subq;
-  sub_sparp->sparp_env = subq->_.req_top.shared_spare;
+  sub_sparp->sparp_env = (void *)unbox (subq->_.req_top.shared_spare_box);
   sub_sparp->sparp_parent_sparp = sparp;
   sub_sparp->sparp_first_equiv_idx = sparp->sparp_sg->sg_equiv_count;
   return sub_sparp;
@@ -751,7 +753,9 @@ spar_macroprocess_tree (sparp_t *sparp, SPART *tree, spar_mproc_ctx_t *ctx)
             {
               SPART *subq = tree->_.gp.subquery;
               spar_macro_xlate_selid (sparp, &(subq->_.req_top.retselid), ctx);
+#if 0
               subq->_.req_top.orig_retvals = spar_macroprocess_treelist (sparp, subq->_.req_top.orig_retvals, 0, ctx);
+#endif
               subq->_.req_top.retvals = spar_macroprocess_treelist (sparp, subq->_.req_top.retvals, 0, ctx);
               subq->_.req_top.pattern = spar_macroprocess_tree (sparp, subq->_.req_top.pattern, ctx);
               subq->_.req_top.groupings = spar_macroprocess_treelist (sparp, subq->_.req_top.groupings, 0, ctx);
@@ -3146,7 +3150,9 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
         tgt = (SPART *)t_box_copy ((caddr_t) orig);
         tgt->_.req_top.pattern = sparp_tree_full_clone_int (sparp, orig->_.req_top.pattern, parent_gp); /* Should be before everything else to clone equivs */
         tgt->_.req_top.retvals = sparp_treelist_full_clone_int (sparp, orig->_.req_top.retvals, orig_pattern);
+#if 0
         tgt->_.req_top.orig_retvals = sparp_treelist_full_clone_int (sparp, orig->_.req_top.orig_retvals, orig_pattern);
+#endif
         tgt->_.req_top.expanded_orig_retvals = sparp_treelist_full_clone_int (sparp, orig->_.req_top.expanded_orig_retvals, orig_pattern);
         /* !!! TBD something with retselid :) */
         tgt->_.req_top.groupings = sparp_treelist_full_clone_int (sparp, orig->_.req_top.groupings, orig_pattern);
@@ -3327,7 +3333,9 @@ sparp_tree_full_copy (sparp_t *sparp, const SPART *orig, const SPART *parent_gp)
         spar_internal_error (sparp, "sparp_tree_full_copy() is used to copy req_top with nonzero equiv_count");
       tgt = (SPART *)t_box_copy ((caddr_t) orig);
       tgt->_.req_top.retvals = sparp_treelist_full_copy (sparp, orig->_.req_top.retvals, parent_gp);
+#if 0
       tgt->_.req_top.orig_retvals = sparp_treelist_full_copy (sparp, orig->_.req_top.orig_retvals, parent_gp);
+#endif
       tgt->_.req_top.expanded_orig_retvals = sparp_treelist_full_copy (sparp, orig->_.req_top.expanded_orig_retvals, parent_gp);
       tgt->_.req_top.sources = sparp_treelist_full_copy (sparp, orig->_.req_top.sources, parent_gp);
       tgt->_.req_top.pattern = sparp_tree_full_copy (sparp, orig->_.req_top.pattern, parent_gp);
@@ -4288,7 +4296,7 @@ sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree, SPART **options)
   if (NULL == options)
     return;
   if ((SPAR_GP == ttype) && (SELECT_L == tree->_.gp.subtype))
-    subq_orig_retvals = tree->_.gp.subquery->_.req_top.orig_retvals;
+    subq_orig_retvals = tree->_.gp.subquery->_.req_top./*orig_*/retvals;
   for (idx = BOX_ELEMENTS_0 (options) - 2; idx >= 0; idx -= 2)
     {
       ptrlong key = ((ptrlong)(options [idx]));

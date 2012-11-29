@@ -189,7 +189,7 @@ int
 sparp_ctor_fields_are_disjoin_with_data_gathering (sparp_t *sparp, SPART **ctor_fields, SPART *req, int the_query_is_topmost)
 {
   int res;
-  SPART **saved_orig_retvals = NULL;
+  /*SPART **saved_orig_retvals = NULL;*/
   SPART **saved_retvals = NULL;
   res = sparp_gp_trav (sparp, req->_.req_top.pattern, ctor_fields,
     sparp_gp_trav_find_isect_with_ctor, NULL,
@@ -199,8 +199,8 @@ sparp_ctor_fields_are_disjoin_with_data_gathering (sparp_t *sparp, SPART **ctor_
     return CTOR_MAY_INTERSECTS_WHERE;
   if (the_query_is_topmost)
     {
-      saved_orig_retvals = req->_.req_top.orig_retvals;
-      req->_.req_top.orig_retvals = NULL;
+      /*saved_orig_retvals = req->_.req_top.orig_retvals;
+      req->_.req_top.orig_retvals = NULL;*/
       saved_retvals = req->_.req_top.retvals;
       req->_.req_top.retvals = NULL;
     }
@@ -210,7 +210,7 @@ sparp_ctor_fields_are_disjoin_with_data_gathering (sparp_t *sparp, SPART **ctor_
     NULL );
   if (the_query_is_topmost)
     {
-      req->_.req_top.orig_retvals = saved_orig_retvals;
+      /*req->_.req_top.orig_retvals = saved_orig_retvals;*/
       req->_.req_top.retvals = saved_retvals;
     }
   if (res & SPAR_GPT_COMPLETED)

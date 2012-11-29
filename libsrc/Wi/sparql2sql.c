@@ -191,10 +191,12 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
   lnar.names = NULL;
   if (IS_BOX_POINTER (retvals))
     {
+#if 0
       if (safely_copy_all_vars)
         query->_.req_top.orig_retvals = sparp_treelist_full_copy (sparp, retvals, query->_.req_top.pattern); /* No cloning equivs here but no equivs at this moment at all */
       else
         query->_.req_top.orig_retvals = (SPART **) t_box_copy ((box_t) retvals);
+#endif
       if (0 == sparp->sparp_query_uses_aggregates)
         return;
       sparp_gp_localtrav_treelist (sparp, retvals,
@@ -279,10 +281,12 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
             t_box_num (1), t_box_dv_short_string ("_star_fake"), SSG_VALMODE_AUTO, (ptrlong)0 ) );
         }
       query->_.req_top.retvals = retvals = (SPART **)t_list_to_array (new_vars);
+#if 0
       if (safely_copy_all_vars)
         query->_.req_top.orig_retvals = sparp_treelist_full_copy (sparp, retvals, query->_.req_top.pattern); /* No cloning equivs here but no equivs at this moment at all */
       else
         query->_.req_top.orig_retvals = (SPART **) t_box_copy ((box_t) retvals);
+#endif
     }
 /*  else if ((SPART **)COUNT_L == old_retvals)
     {
@@ -648,14 +652,14 @@ sparp_gp_trav_cu_in_triples (sparp_t *sparp, SPART *curr, sparp_trav_state_t *st
           sparp_t *sub_sparp = sparp_down_to_sub (sparp, curr);
           sparp_rewrite_all (sub_sparp, 1);
           sparp_up_from_sub (sparp, curr, sub_sparp);
-          DO_BOX_FAST (SPART *, retval, ctr, curr->_.gp.subquery->_.req_top.orig_retvals)
+          DO_BOX_FAST (SPART *, retval, ctr, curr->_.gp.subquery->_.req_top./*orig_*/retvals)
             {
               caddr_t name;
               switch (SPART_TYPE (retval))
                 {
                   case SPAR_VARIABLE:
                     name = retval->_.var.vname;
-                    curr->_.gp.subquery->_.req_top.orig_retvals[ctr] =
+                    curr->_.gp.subquery->_.req_top./*orig_*/retvals[ctr] =
                       retval = spartlist (sparp, 5, SPAR_ALIAS, retval, name, SSG_VALMODE_AUTO, (ptrlong)0);
                     break;
                   case SPAR_ALIAS:
@@ -2123,7 +2127,7 @@ sparp_restr_of_select_eq_from_connected_subvalues (sparp_t *sparp, sparp_equiv_t
 {
   SPART *gp = eq->e_gp;
   caddr_t vname = eq->e_varnames[0];
-  SPART *sub_expn = sparp_find_subexpn_in_retlist (sparp, vname, gp->_.gp.subquery->_.req_top.orig_retvals, 0);
+  SPART *sub_expn = sparp_find_subexpn_in_retlist (sparp, vname, gp->_.gp.subquery->_.req_top./*orig_*/retvals, 0);
   if (NULL != sub_expn)
     {
       if (SPAR_IS_BLANK_OR_VAR(sub_expn))
@@ -7224,9 +7228,9 @@ sparp_tweak_order_of_iter (sparp_t *sparp, SPART **obys)
       if (DV_LONG_INT != DV_TYPE_OF (lit_val))
         continue;
       col_idx = unbox (lit_val);
-      if ((0 >= col_idx) && (col_idx > BOX_ELEMENTS (sparp->sparp_expr->_.req_top.orig_retvals)))
+      if ((0 >= col_idx) && (col_idx > BOX_ELEMENTS (sparp->sparp_expr->_.req_top./*orig_*/retvals)))
         continue;
-      tree = sparp->sparp_expr->_.req_top.orig_retvals [col_idx-1];
+      tree = sparp->sparp_expr->_.req_top./*orig_*/retvals [col_idx-1];
       while (SPAR_ALIAS == SPART_TYPE (tree))
         tree = tree->_.alias.arg;
       tree_copy = sparp_tree_full_copy (sparp, tree, sparp->sparp_expr->_.req_top.pattern);
@@ -7553,7 +7557,7 @@ sparp_rewrite_grab (sparp_t *sparp)
 /* Making subqueries: seed */
   sub_sparps[0] = sparp_of_seed = sparp_clone_for_variant (sparp, 0);
   sparp_of_seed->sparp_expr = sparp_tree_full_copy (sparp_of_seed, sparp->sparp_expr, NULL);
-  sparp_of_seed->sparp_expr->_.req_top.shared_spare = sparp_of_seed->sparp_env;
+  sparp_of_seed->sparp_expr->_.req_top.shared_spare_box = t_box_num ((ptrlong)(sparp_of_seed->sparp_env));
   sparp_of_seed->sparp_expr->_.req_top.subtype = SELECT_L;
   sparp_of_seed->sparp_expr->_.req_top.retvals = grab_retvals;
   sparp_of_seed->sparp_expr->_.req_top.retvalmode_name = t_box_string ("LONG");
@@ -7568,7 +7572,7 @@ sparp_rewrite_grab (sparp_t *sparp)
 /* Making subqueries: iter */
   sub_sparps[1] = sparp_of_iter = sparp_clone_for_variant (sparp_of_seed, 0);
   sparp_of_iter->sparp_expr = sparp_tree_full_copy (sparp_of_seed, sparp_of_seed->sparp_expr, NULL);
-  sparp_of_iter->sparp_expr->_.req_top.shared_spare = sparp_of_iter->sparp_env;
+  sparp_of_iter->sparp_expr->_.req_top.shared_spare_box = t_box_num ((ptrlong)(sparp_of_iter->sparp_env));
   if (NULL != sparp_of_iter->sparp_expr->_.req_top.order)
     sparp_tweak_order_of_iter (sparp_of_iter, sparp_of_iter->sparp_expr->_.req_top.order);
   sparp_of_iter->sparp_env->spare_globals_mode = SPARE_GLOBALS_ARE_COLONUMBERED;
@@ -7583,7 +7587,7 @@ sparp_rewrite_grab (sparp_t *sparp)
 /* Making subqueries: final */
   sub_sparps[2] = sparp_of_final = sparp_clone_for_variant (sparp, 1);
   sparp_of_final->sparp_expr = sparp_tree_full_copy (sparp_of_seed, sparp->sparp_expr, NULL);
-  sparp_of_final->sparp_expr->_.req_top.shared_spare = sparp_of_final->sparp_env;
+  sparp_of_final->sparp_expr->_.req_top.shared_spare_box = t_box_num ((ptrlong)(sparp_of_final->sparp_env));
   sparp_of_final->sparp_env->spare_globals_mode = SPARE_GLOBALS_ARE_COLONUMBERED;
   sparp_of_final->sparp_env->spare_global_num_offset = 0;
 /*!!! TBD: relax graph conditions in sparp_of_final */

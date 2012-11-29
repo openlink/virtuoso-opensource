@@ -1546,7 +1546,7 @@ sparp_equiv_native_valmode (sparp_t *sparp, SPART *gp, sparp_equiv_t *eq)
   if (SELECT_L == gp->_.gp.subtype)
     {
       caddr_t varname = eq->e_varnames[0];
-      SPART *retval = sparp_find_subexpn_in_retlist (sparp, varname, gp->_.gp.subquery->_.req_top.orig_retvals, 1);
+      SPART *retval = sparp_find_subexpn_in_retlist (sparp, varname, gp->_.gp.subquery->_.req_top./*orig_*/retvals, 1);
       if (NULL != retval)
         return sparp_expn_native_valmode (sparp, retval);
       if (NULL != gp->_.gp.options)
@@ -1562,7 +1562,7 @@ sparp_equiv_native_valmode (sparp_t *sparp, SPART *gp, sparp_equiv_t *eq)
                     return val->_.alias.native;
                   if (SPAR_VARIABLE == SPART_TYPE (expn))
                     {
-                      retval = sparp_find_subexpn_in_retlist (sparp, expn->_.var.vname, gp->_.gp.subquery->_.req_top.orig_retvals, 1);
+                      retval = sparp_find_subexpn_in_retlist (sparp, expn->_.var.vname, gp->_.gp.subquery->_.req_top./*orig_*/retvals, 1);
                       if (NULL == retval)
                         spar_internal_error (sparp, "sparp_" "equiv_native_valmode(): no retval for T_STEP variable");
                       val->_.alias.native = sparp_expn_native_valmode (sparp, retval);
@@ -1897,7 +1897,7 @@ sparp_expn_native_valmode (sparp_t *sparp, SPART *tree)
           break;
         sub_sparp = (sparp_t *)t_box_copy ((caddr_t)sparp);
         sub_sparp->sparp_expr = subq;
-        sub_sparp->sparp_env = subq->_.req_top.shared_spare;
+        sub_sparp->sparp_env = (void *)unbox (subq->_.req_top.shared_spare_box);
         sub_sparp->sparp_parent_sparp = sparp;
         res = sparp_expn_native_valmode (sub_sparp, subq->_.req_top.retvals[0]);
         if ((SSG_VALMODE_NUM == res) || (SSG_VALMODE_LONG == res) || (SSG_VALMODE_SQLVAL == res))
@@ -1928,7 +1928,7 @@ sparp_set_valmodes_of_t_inouts (sparp_t *sparp, sparp_t *sub_sparp, SPART *wrapp
     return;
   t_in_vars = sparp_get_option (sparp, wrapping_gp->_.gp.options, T_IN_L)->_.list.items;
   t_out_vars = sparp_get_option (sparp, wrapping_gp->_.gp.options, T_OUT_L)->_.list.items;
-  retvals = wrapping_gp->_.gp.subquery->_.req_top.orig_retvals;
+  retvals = wrapping_gp->_.gp.subquery->_.req_top./*orig_*/retvals;
   for (v_ctr = BOX_ELEMENTS_0 (t_in_vars); v_ctr--; /*no step*/)
     {
       caddr_t in_vname, out_vname;
@@ -7928,7 +7928,7 @@ ssg_print_subquery_table_exp (spar_sqlgen_t *ssg, SPART *wrapping_gp)
   subq_ssg->ssg_tree = sub_sparp->sparp_expr = wrapping_gp->_.gp.subquery;
   subq_ssg->ssg_wrapping_gp = wrapping_gp;
   sub_sparp->sparp_parent_sparp = ssg->ssg_sparp; /* not a scalar subquery -- no searches in surrounding query, EXCEPT deeper nesting: for table subquery C of scalar subquery B of query A, access to A can be important. For this exception, the value assigned is ssg->ssg_sparp, not NULL */
-  sub_sparp->sparp_env = wrapping_gp->_.gp.subquery->_.req_top.shared_spare;
+  sub_sparp->sparp_env = (void *)unbox (wrapping_gp->_.gp.subquery->_.req_top.shared_spare_box);
   subq_ssg->ssg_sources = subq_ssg->ssg_tree->_.req_top.sources;
   subq_ssg->ssg_out = ssg->ssg_out;
   /* For scalar subq, both ...outer_valid_ret... and ...valid_ret... of subq_ssg are set to ...valid_ret... of ssg, for table subq they are both set to ...outer_valid_ret... of ssg */
@@ -8278,7 +8278,7 @@ ssg_print_scalar_subquery_exp (spar_sqlgen_t *ssg, SPART *sub_req_top, SPART *wr
   subq_ssg->ssg_sparp = sub_sparp;
   subq_ssg->ssg_tree = sub_sparp->sparp_expr = wrapping_gp->_.gp.subquery;
   sub_sparp->sparp_parent_sparp = ssg->ssg_sparp;
-  sub_sparp->sparp_env = wrapping_gp->_.gp.subquery->_.req_top.shared_spare;
+  sub_sparp->sparp_env = (void *)unbox (wrapping_gp->_.gp.subquery->_.req_top.shared_spare_box);
   subq_ssg->ssg_sources = subq_ssg->ssg_tree->_.req_top.sources;
   subq_ssg->ssg_out = ssg->ssg_out;
   /* For scalar subq, both ...outer_valid_ret... and ...valid_ret... of subq_ssg are set to ...valid_ret... of ssg, for table subq they are both set to ...outer_valid_ret... of ssg */
@@ -8964,7 +8964,7 @@ ssg_print_t_options_of_select (spar_sqlgen_t *ssg)
           ssg_puts (((T_IN_L == key) ? " T_IN" : " T_OUT"));
           DO_BOX_FAST (SPART *, v, vctr, val->_.list.items)
             {
-              int pos = sparp_subexpn_position1_in_retlist (ssg->ssg_sparp, v->_.var.vname, tree->_.req_top.orig_retvals);
+              int pos = sparp_subexpn_position1_in_retlist (ssg->ssg_sparp, v->_.var.vname, tree->_.req_top./*orig_*/retvals);
               sprintf (buf, "%c%d", vctr ? ',': '(', pos);
               ssg_puts (buf);
             }
@@ -9016,7 +9016,7 @@ ssg_print_t_steps_of_select (spar_sqlgen_t *ssg)
           ssg_puts ("");
           if (SPAR_VARIABLE == SPART_TYPE (val->_.alias.arg))
             {
-              int pos = sparp_subexpn_position1_in_retlist (ssg->ssg_sparp, val->_.alias.arg->_.var.vname, tree->_.req_top.orig_retvals);
+              int pos = sparp_subexpn_position1_in_retlist (ssg->ssg_sparp, val->_.alias.arg->_.var.vname, tree->_.req_top./*orig_*/retvals);
               sprintf (buf, ", T_STEP(%d) AS ", pos);
               ssg_puts (buf);
             }

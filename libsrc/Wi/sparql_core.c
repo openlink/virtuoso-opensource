@@ -2569,13 +2569,13 @@ spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
       else
         limit = spar_make_funcall (sparp, 0, "bif:__max", (SPART **)t_list (2, limit, t_box_num_nonull (hard_lim)));
     }
-  return spartlist (sparp, 18, SPAR_REQ_TOP, subtype,
+  return spartlist (sparp, 17, SPAR_REQ_TOP, subtype,
     env->spare_output_valmode_name,
     final_output_format_name,
     t_box_copy (env->spare_storage_name),
-    retvals, NULL /* orig_retvals */, NULL /* expanded_orig_retvals */, retselid,
+    retvals, /* NULL, orig_retvals */ NULL /* expanded_orig_retvals */, retselid,
     sources, pattern, groupings, having, order,
-    limit, offset, binv, env );
+    limit, offset, binv, t_box_num ((ptrlong)(env)) );
 }
 
 SPART *
@@ -4933,7 +4933,7 @@ sparp_query_parse (const char * str, spar_query_env_t *sparqre, int rewrite_all)
   END_QR_RESET
   if (NULL != sparp->sparp_macrolib_to_create && !sparp->sparp_macrolib_ignore_create)
     sparp->sparp_expr = spar_make_create_macro_lib (sparp);
-#ifndef NDEBUG
+#if 0 /*ndef NDEBUG*/
   t_check_tree (sparp->sparp_expr);
 #endif
   return sparp;

@@ -583,7 +583,9 @@ typedef struct spar_tree_s
         caddr_t formatmode_name;
         caddr_t storage_name;
         SPART **retvals;
+#if 0
         SPART **orig_retvals;		/*!< Retvals as they were after expanding '*' and wrapping in MAX() */
+#endif
         SPART **expanded_orig_retvals;	/*!< Retvals as they were after expanding '*' and wrapping in MAX() and adding vars to grab */
         caddr_t retselid;
         SPART **sources;		/*!< Ordered list of FROM, FROM NAMED, NOT FROM and NOT FROM NAMED clauses */
@@ -594,7 +596,7 @@ typedef struct spar_tree_s
         SPART *limit;			/*!< NULL or limit expression (boxed integer or a precode) */
         SPART *offset;			/*!< NULL or offset expression (boxed integer or a precode) */
         SPART *binv;			/*!< NULL or SPAR_BINDINGS_INV */
-        sparp_env_t *shared_spare;	/*!< An environment that is shared among all clones of the tree */
+        caddr_t shared_spare_box;	/*!< An environment that is shared among all clones of the tree, the pointer to it is wrapped into DV_LONG_INT */
       } req_top;
     struct {
         /* #define SPAR_TRIPLE		(ptrlong)1014 */
