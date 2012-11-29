@@ -25,8 +25,8 @@
  *
  */
 
-#ifndef DKHASH64_H
-#define DKHASH64_H
+#ifndef _DKHASH64_H
+#define _DKHASH64_H
 
 #define dk_hash_64_t 			id_hash_t
 

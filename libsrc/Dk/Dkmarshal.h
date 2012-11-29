@@ -1,5 +1,5 @@
 /*
- *  nmarsh.h
+ *  Dkmarshal.h
  *
  *  $Id$
  *
@@ -24,6 +24,9 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
+
+#ifndef _DKMARSHAL_H
+#define _DKMARSHAL_H
 
 typedef void *(*macro_char_func) (dk_session_t * session, dtp_t macro);
 typedef int (*ses_write_func) (void *obj, dk_session_t * session);
@@ -94,3 +97,5 @@ void *box_read_error (dk_session_t * session, dtp_t dtp);
 
 
 extern int (*box_flags_serial_test_hook) (dk_session_t * ses);
+
+#endif

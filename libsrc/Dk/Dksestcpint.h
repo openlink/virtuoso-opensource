@@ -25,6 +25,8 @@
  *
  */
 
+#ifndef _DKSESTCPINT_H
+#define _DKSESTCPINT_H
 
 #ifdef _SSL
 #include <openssl/rsa.h>
@@ -78,3 +80,5 @@ struct connectionstruct
 #endif
   void *	con_gzfile;
 };
+
+#endif

@@ -25,6 +25,9 @@
  *
  */
 
+#ifndef _DKPARAM_H
+#define _DKPARAM_H
+
 #define MAX_NESTED_FUTURES		20
 #define MAX_INTERRUPTS			20
 #define MAX_THREADS			4096			   /* 512 */
@@ -38,3 +41,5 @@
 #define DKSES_OUT_BUFFER_LENGTH		(4096 * 8)
 
 #define ATOMIC_TIMEOUT			2
+
+#endif

@@ -24,8 +24,8 @@
  *
 */
 
-#ifndef _HASHEXT_H
-#define _HASHEXT_H
+#ifndef _DKHASHEXT_H
+#define _DKHASHEXT_H
 #include "Dk.h"
 
 /* id_hashed_key_t is an unsigned 31-bit integer.

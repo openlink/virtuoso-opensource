@@ -23,7 +23,8 @@
  *
  */
 
-#ifndef DKWORD_H
+#ifndef _DKWORD_H
+#define _DKWORD_H
 
 #define LONG_SET_NA(place, l) \
   (((unsigned char *) (place))[0] = (unsigned char) ((l) >> 24), \

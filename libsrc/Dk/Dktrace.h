@@ -25,6 +25,9 @@
  *
  */
 
+#ifndef _DKTRACE_H
+#define _DKTRACE_H
+
 #define GPF_T \
 	gpf_notice (__FILE__, __LINE__, NULL)
 
@@ -137,3 +140,5 @@ BEGIN_CPLUSPLUS
 int gpf_notice (const char *file, int line, const char *text);
 
 END_CPLUSPLUS
+
+#endif
