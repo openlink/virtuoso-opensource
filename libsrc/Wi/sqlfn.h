@@ -1094,6 +1094,7 @@ caddr_t box_to_any (caddr_t data, caddr_t * err_ret);
 caddr_t box_to_any_1 (caddr_t data, caddr_t * err_ret, auto_pool_t *ap, int ser_flags);
 #define DKS_TO_OBY_KEY 2 /*!< flag to indicate that an rdf box with text should be stored with the text, not just id */
 #define DKS_TO_HA_DISK_ROW 4 /*!< flag to indicate that the destination is a temp table with no sorting and box_to_any_1 serialization in a column */
+#define DKS_REPLICATION 8
 
 caddr_t box_to_shorten_any (caddr_t data, caddr_t * err_ret);
 char* __get_column_name (oid_t col_id, dbe_key_t *key);

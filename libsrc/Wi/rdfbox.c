@@ -839,7 +839,8 @@ rb_serialize (caddr_t x, dk_session_t * ses)
    * flags is or of 1. outlined 2. complete 4 has lang 8 has type 0x10 chksum+dtp 0x20 if id 8 bytes */
   client_connection_t *cli = DKS_DB_DATA (ses);
   int with_content = DKS_DB_DATA (ses) != NULL || DKS_CL_DATA (ses) != NULL
-    || ((DKS_TO_CLUSTER | DKS_TO_OBY_KEY) & ses->dks_cluster_flags);
+    || ((DKS_TO_CLUSTER | DKS_TO_OBY_KEY | DKS_REPLICATION) & ses->dks_cluster_flags);
+  int repl = (DKS_REPLICATION & ses->dks_cluster_flags);
   rdf_box_t * rb = (rdf_box_t *) x;
   rdf_box_audit (rb);
   if ((RDF_BOX_DEFAULT_TYPE != rb->rb_type) && (RDF_BOX_DEFAULT_LANG != rb->rb_lang))
@@ -960,9 +961,9 @@ rb_serialize (caddr_t x, dk_session_t * ses)
       if (rb->rb_ro_id)
 	{
 	  if (rb->rb_ro_id > INT32_MAX)
-	    print_int64_no_tag (rb->rb_ro_id, ses);
+	    print_int64_no_tag (repl ? 0 : rb->rb_ro_id, ses);
 	  else
-	    print_long (rb->rb_ro_id, ses);
+	    print_long (repl ? 0 : rb->rb_ro_id, ses);
 	}
       if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
 	print_short (rb->rb_type, ses);
