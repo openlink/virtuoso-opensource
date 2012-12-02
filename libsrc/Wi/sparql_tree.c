@@ -496,7 +496,7 @@ sparp_down_to_sub (sparp_t *sparp, SPART *subq_gp_wrapper)
   SPART *subq;
   sparp_t *sub_sparp;
   if ((SPAR_GP != SPART_TYPE (subq_gp_wrapper)) || (SELECT_L != subq_gp_wrapper->_.gp.subtype))
-    GPF_T1("sparp_" "down_to_sub (): bad subq_gp_wrapper");
+    spar_internal_error (sparp, "sparp_" "down_to_sub (): bad subq_gp_wrapper");
   subq = subq_gp_wrapper->_.gp.subquery;
   if (SPAR_REQ_TOP != SPART_TYPE (subq))
     spar_internal_error (sparp, "sparp_" "down_to_sub() gets strange subquery");

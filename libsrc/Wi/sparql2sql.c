@@ -438,7 +438,7 @@ sparp_gp_trav_expand_binds_expn_subq (sparp_t *sparp, SPART *curr, sparp_trav_st
 {
   sparp_expand_binds_env_t *e = (sparp_expand_binds_env_t *)common_env;
   sparp_t *sub_sparp = sparp_down_to_sub (sparp, curr);
-  sparp_expand_binds_like_macro (sub_sparp, &(sub_sparp->sparp_expr), e->binds, sub_sparp->sparp_expr->_.req_top.pattern);
+  sparp_expand_binds_like_macro (sub_sparp, &(curr->_.gp.subquery), e->binds, curr->_.gp.subquery->_.req_top.pattern);
   sparp_up_from_sub (sparp, curr, sub_sparp);
   return 0;
 }
@@ -478,6 +478,17 @@ sparp_expand_binds_like_macro (sparp_t *sparp, SPART **expr_ptr, dk_set_t binds,
         if (NULL == prev_bind)
           return;
         expr_ptr[0] = spartlist (sparp, 5, SPAR_ALIAS, sparp_tree_full_copy (sparp, prev_bind->_.alias.arg, parent_gp), vname, SSG_VALMODE_AUTO, (ptrlong)0);
+        return;
+      }
+    case SPAR_GP:
+      {
+        sparp_expand_binds_env_t e;
+        e.binds = binds;
+        e.parent_gp = parent_gp;
+        sparp_gp_trav (sparp, expr_ptr[0], &e,
+          sparp_gp_trav_expand_binds_gp_in, NULL,
+          sparp_gp_trav_expand_binds_expn_in, NULL, sparp_gp_trav_expand_binds_expn_subq,
+          NULL );
         return;
       }
     case SPAR_ALIAS:
