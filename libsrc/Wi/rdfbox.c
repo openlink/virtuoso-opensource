@@ -884,7 +884,7 @@ rb_serialize (caddr_t x, dk_session_t * ses)
 	flags |= RBS_HAS_TYPE;
       if (rb->rb_chksum_tail)
 	flags |= RBS_CHKSUM;
-      if (rb->rb_is_complete && (cli || !(rb->rb_ro_id)))
+      if (rb->rb_is_complete && (cli || !(rb->rb_ro_id) || repl))
         {
 	  flags |= RBS_COMPLETE;
           flags &= ~RBS_CHKSUM;
@@ -898,9 +898,9 @@ rb_serialize (caddr_t x, dk_session_t * ses)
           if (rb->rb_ro_id)
             {
               if (rb->rb_ro_id > INT32_MAX)
-                print_int64_no_tag (rb->rb_ro_id, ses);
+                print_int64_no_tag (repl ? 0 : rb->rb_ro_id, ses);
               else
-                print_long (rb->rb_ro_id, ses);
+                print_long (repl ? 0 : rb->rb_ro_id, ses);
             }
           if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
             print_short (rb->rb_type, ses);
