@@ -2226,11 +2226,8 @@ qi_alloc (query_t * qr, stmt_options_t * opts, caddr_t * auto_qi,
   int len = qr->qr_instance_length;
   if (qr->qr_select_node)
     {
-      if (opts)
-	{
-	  if (opts->so_prefetch > 0)
+      if (opts && opts->so_prefetch > 0)
 	    len += (int) (opts->so_prefetch * sizeof (caddr_t));
-	}
       else
 	len += SELECT_PREFETCH_QUOTA * sizeof (caddr_t);
     }
