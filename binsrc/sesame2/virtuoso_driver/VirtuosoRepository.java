@@ -349,6 +349,17 @@ public class VirtuosoRepository implements Repository {
 		initialized = true;
 	}
 
+        /**
+         * Indicates if the Repository has been initialized. Note that the
+         * initialization status may change if the Repository is shut down.
+         * 
+         * @return true iff the repository has been initialized.
+         */
+        public boolean isInitialized() {
+                return initialized;
+        }
+    
+
 	/**
 	 * Checks whether this repository is writable, i.e. if the data contained in
 	 * this repository can be changed. The writability of the repository is
