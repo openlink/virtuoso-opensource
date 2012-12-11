@@ -4760,10 +4760,28 @@ bif_rdf_repl_uid (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
   return box_num (U_ID_RDF_REPL);
 }
 
+int
+rdf_graph_is_in_enabled_repl (caddr_t * qst, caddr_t * err_ret, iri_id_t q_iid)
+{
+  return 0;
+}
+
 caddr_t
 bif_rdf_graph_is_in_enabled_repl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
+  int ret;
+  iri_id_t q_iid;
+  caddr_t reg = NULL;
+  sec_check_dba ((query_instance_t *)qst, "__rdf_graph_in_enabled_repl");
+  q_iid = bif_iri_id_arg (qst, args, 0, "__rdf_graph_in_enabled_repl");
+  IN_TXN;
+  reg = registry_get ("DB.DBA.RDF_REPL");
+  LEAVE_TXN;
+  if (!reg)
     return box_num (0);
+  dk_free_box (reg);
+  ret = rdf_graph_is_in_enabled_repl (qst, err_ret, q_iid);
+  return box_num (ret);
 }
 
 #define RDF_REPL_QUAD_INS_PLAIN_LIT	80
