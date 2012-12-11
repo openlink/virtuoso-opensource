@@ -1441,12 +1441,12 @@ create procedure DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC (in contents varchar, in base
   
   sparql define input:storage "" 
   	insert in iri(?:graph) { 
-  		`iri(?:proxyiri)` <http://xmlns.com/foaf/0.1/topic> `iri(sql:XML_URI_RESOLVE_LIKE_GET(?:base, ?s))` .
+  		`iri(?:graph)` <http://xmlns.com/foaf/0.1/topic> `iri(sql:XML_URI_RESOLVE_LIKE_GET(?:base, ?s))` .
       `iri(sql:XML_URI_RESOLVE_LIKE_GET(?:base, ?s))` <http://www.w3.org/2007/05/powder-s#describedby> `iri(?:proxyiri)` 
       }
   where { { select distinct ?s 
   	where { graph `iri(?:graph)` { ?s ?p ?o .
-				filter( iri(sql:XML_URI_RESOLVE_LIKE_GET(?:base, ?s)) != iri(?:graph))
+                                filter (iri(sql:XML_URI_RESOLVE_LIKE_GET(?:base, ?s)) != iri(?:graph) && !(regex (?s, '#this$') || regex (?s, '/about/id/http') || regex (?s, '/about/id/entity/http')))
 				}
   	}
   	}
