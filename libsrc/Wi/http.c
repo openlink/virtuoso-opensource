@@ -3849,7 +3849,7 @@ do_file:
 	      dk_free_tree ((box_t) ws->ws_p_path); ws->ws_p_path = NULL; path1 = "";
 	      ws_set_phy_path (ws, 0, ws->ws_path_string);
 
-	      ws_connection_vars_clear (cli);
+	      /*ws_connection_vars_clear (cli);*/
 	      if (err && err != (caddr_t)SQL_NO_DATA_FOUND)
 		{
 		  ws->ws_params = (caddr_t *) list (4,
