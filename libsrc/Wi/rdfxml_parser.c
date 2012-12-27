@@ -432,7 +432,7 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
   inner = xp_push_rdf_locals (xp);
   xn = xp->xp_free_list;
   if (NULL == xn)
-    xn = dk_alloc (sizeof (xp_node_t));
+    xn = (xp_node_t *)dk_alloc (sizeof (xp_node_t));
   else
     xp->xp_free_list = xn->xn_parent;
   memset (xn, 0, sizeof (xp_node_t));
@@ -2490,7 +2490,7 @@ xp_rdfa_entity (void *userdata, const char * refname, int reflen, int isparam, c
   xparse_ctx_t *xp = (xparse_ctx_t *) userdata;
   xp_rdfa_locals_t *inner = xp->xp_rdfa_locals;
   if (RDFA_IN_XMLLITERAL & inner->xrdfal_place_bits)
-    xp_entity (userdata, refname, reflen, isparam, edef);
+    xp_entity ((vxml_parser_t *)userdata, refname, reflen, isparam, edef);
   else if (RDFA_IN_STRLITERAL & inner->xrdfal_place_bits)
     xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Entities are not supported in string literal object");
 }
@@ -2501,7 +2501,7 @@ xp_rdfa_pi (void *userdata, const char *target, const char *data)
   xparse_ctx_t *xp = (xparse_ctx_t *) userdata;
   xp_rdfa_locals_t *inner = xp->xp_rdfa_locals;
   if (RDFA_IN_XMLLITERAL & inner->xrdfal_place_bits)
-    xp_pi (userdata, target, data);
+    xp_pi ((vxml_parser_t *)userdata, target, data);
 }
 
 void
@@ -2510,7 +2510,7 @@ xp_rdfa_comment (void *userdata, const char *text)
   xparse_ctx_t *xp = (xparse_ctx_t *) userdata;
   xp_rdfa_locals_t *inner = xp->xp_rdfa_locals;
   if (RDFA_IN_XMLLITERAL & inner->xrdfal_place_bits)
-    xp_comment (userdata, text);
+    xp_comment ((vxml_parser_t *)userdata, text);
 }
 
 /* Part 3. Microdata parser */
@@ -2907,12 +2907,17 @@ mdata_feed_or_keep (xparse_ctx_t *xp, xp_mdata_locals_t *subj_l, caddr_t prop, x
           dk_free_tree ((caddr_t)triple);
         }
     }
-  else
+  else if (NULL != subj_l->xmdatal_subj)
     {
       if (obj_is_iri)
         tf_triple (xp->xp_tf, subj_l->xmdatal_subj, prop, obj);
       else
         tf_triple_l (xp->xp_tf, subj_l->xmdatal_subj, prop, obj, obj_datatype, obj_lang);
+      dk_free_box (prop);
+      dk_free_box (obj);
+    }
+  else
+    {
       dk_free_box (prop);
       dk_free_box (obj);
     }
@@ -3233,7 +3238,7 @@ xp_mdata_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
     }
   else if (NULL != avalues[MDATA_ATTR_ITEMREF])
     xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute itemref in an opening tag that has no itemscope attribute");
-  if (outer->xmdatal_prop_count && (NULL != outer->xmdatal_subj) && ((NULL != avalues[MDATA_ATTR_ITEMSCOPE]) || (NULL != avalues[MDATA_ATTR_ID])))
+  if (outer->xmdatal_prop_count && (NULL != outer->xmdatal_subj) && (NULL != inner->xmdatal_subj) && ((NULL != avalues[MDATA_ATTR_ITEMSCOPE]) || (NULL != avalues[MDATA_ATTR_ID])))
     {
       int prop_ctr;
       for (prop_ctr = 0; prop_ctr < outer->xmdatal_prop_count; prop_ctr++)
@@ -3258,9 +3263,12 @@ xp_mdata_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
           dk_free_tree (itemtype);
           xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "The subject '%.200s' has more than one itemtype definition", inner->xmdatal_subj);
         }
-      mdata_feed_or_keep (xp, inner, uname_rdf_ns_uri_type, inner, box_copy (itemtype), MDATA_ATTR_ITEMSCOPE);
-      itemid = box_copy (itemid);
-      id_hash_set (xpt->xpt_subj2type, (caddr_t)(&itemid), (caddr_t)(&itemtype));
+      else
+        {
+          mdata_feed_or_keep (xp, inner, uname_rdf_ns_uri_type, inner, box_copy (itemtype), MDATA_ATTR_ITEMSCOPE);
+          itemid = box_copy (itemid);
+          id_hash_set (xpt->xpt_subj2type, (caddr_t)(&itemid), (caddr_t)(&itemtype));
+        }
     }
   if ((NULL != avalues[MDATA_ATTR_ITEMPROP]) && !props_connect_local_id_to_local_itemscope)
     {
@@ -3440,7 +3448,7 @@ xp_mdata_entity (void *userdata, const char * refname, int reflen, int isparam, 
   xparse_ctx_t *xp = (xparse_ctx_t *) userdata;
   xp_mdata_locals_t *inner = xp->xp_mdata_locals;
   if (MDATA_IN_XMLLITERAL & inner->xmdatal_place_bits)
-    xp_entity (userdata, refname, reflen, isparam, edef);
+    xp_entity ((vxml_parser_t *)userdata, refname, reflen, isparam, edef);
   else if (MDATA_IN_STRLITERAL & inner->xmdatal_place_bits)
     xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Entities are not supported in string literal object");
 }
@@ -3451,7 +3459,7 @@ xp_mdata_pi (void *userdata, const char *target, const char *data)
   xparse_ctx_t *xp = (xparse_ctx_t *) userdata;
   xp_mdata_locals_t *inner = xp->xp_mdata_locals;
   if (MDATA_IN_XMLLITERAL & inner->xmdatal_place_bits)
-    xp_pi (userdata, target, data);
+    xp_pi ((vxml_parser_t *)userdata, target, data);
 }
 
 void
@@ -3460,7 +3468,7 @@ xp_mdata_comment (void *userdata, const char *text)
   xparse_ctx_t *xp = (xparse_ctx_t *) userdata;
   xp_mdata_locals_t *inner = xp->xp_mdata_locals;
   if (MDATA_IN_XMLLITERAL & inner->xmdatal_place_bits)
-    xp_comment (userdata, text);
+    xp_comment ((vxml_parser_t *)userdata, text);
 }
 
 /* Part 4. Common parser invocation routine */
