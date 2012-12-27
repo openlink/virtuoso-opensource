@@ -1578,6 +1578,14 @@ spar_gp_finalize_with_subquery (sparp_t *sparp, SPART **options, SPART *subquery
   return gp;
 }
 
+SPART *
+spar_gp_finalize_with_inline_data (sparp_t *sparp, SPART **vars, SPART ***rows)
+{
+  SPART *gp = spar_gp_finalize (sparp, NULL);
+  SPART *binv = spar_make_bindings_inv_with_fake_equivs (sparp, vars, rows, gp);
+  gp->_.gp.subquery = binv;
+}
+
 void spar_gp_add_member (sparp_t *sparp, SPART *memb)
 {
   dk_set_t *set_ptr;
@@ -2124,7 +2132,6 @@ spar_make_service_inv (sparp_t *sparp, caddr_t endpoint, dk_set_t all_options, p
   return sinv;
 }
 
-
 int
 spar_describe_restricted_by_physical (sparp_t *sparp, SPART **retvals)
 {
@@ -2477,7 +2484,7 @@ spar_make_top_or_special_case_from_wm (sparp_t *sparp, ptrlong subtype, SPART **
 }
 
 SPART *
-spar_make_bindings_inv_with_fake_equivs (sparp_t *sparp, SPART **vars, SPART ***data_rows)
+spar_make_bindings_inv_with_fake_equivs (sparp_t *sparp, SPART **vars, SPART ***data_rows, SPART *wrapper_gp)
 {
   int varcount = BOX_ELEMENTS (vars);
   int rowcount = BOX_ELEMENTS (data_rows);
@@ -2497,6 +2504,11 @@ spar_make_bindings_inv_with_fake_equivs (sparp_t *sparp, SPART **vars, SPART ***
       counters_of_unbound[varctr] = counter_of_unbound;
     }
   spar_refresh_binv_var_rvrs (sparp, binv);
+  if (NULL != wrapper_gp)
+    {
+      wrapper_gp->_.gp.equiv_indexes = (ptrlong *)t_alloc_box (varcount * sizeof (ptrlong), DV_ARRAY_OF_LONG);
+      wrapper_gp->_.gp.equiv_count = varcount;
+    }
   for (varctr = 0; varctr < varcount; varctr++)
     {
       SPART *var = vars[varctr];
@@ -2505,10 +2517,18 @@ spar_make_bindings_inv_with_fake_equivs (sparp_t *sparp, SPART **vars, SPART ***
       eq->e_vars = (SPART **)t_list (1, var);
       eq->e_var_count = 1;
       eq->e_nested_bindings = 1; /* fake, to not reset rvr to conflict */
-      eq->e_gp = binv;
-      eq->e_const_reads = 1;
       sparp_rvr_copy (sparp, &(eq->e_rvr), &(var->_.var.rvr));
       var->_.var.equiv_idx = eq->e_own_idx;
+      if (NULL == wrapper_gp)
+        {
+          eq->e_gp = binv;
+          eq->e_const_reads = 1;
+        }
+      else
+        {
+          eq->e_gp = wrapper_gp;
+          wrapper_gp->_.gp.equiv_indexes[varctr] = eq->e_own_idx;
+        }
     }
   return binv;
 }

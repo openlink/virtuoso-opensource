@@ -1777,6 +1777,7 @@ sparp_equiv_merge (sparp_t *sparp, sparp_equiv_t *pri, sparp_equiv_t *sec)
       sparp_equiv_disconnect (sparp, recv_eq, sec);
       sparp_equiv_connect (sparp, recv_eq, pri, 1);
     }
+  pri->e_nested_bindings = ((VALUES_L == pri->e_gp->_.gp.subtype) ? 1 : 0);
   pri->e_nested_bindings = 0;
   DO_BOX_FAST_REV (ptrlong, sub_idx, ctr1, pri->e_subvalue_idxs)
     {
@@ -4189,6 +4190,40 @@ sparp_find_origin_of_external_var (sparp_t *sparp, SPART *var, int find_exact_sp
 }
 
 int
+sparp_find_binv_rset_pos_of_varname (sparp_t *sparp, SPART *wrapping_gp, SPART *binv, caddr_t e_varname)
+{
+  int pos;
+  sparp_equiv_t *e_eq;
+/* An optimistic search first: */
+  DO_BOX_FAST_REV (SPART *, ret_var, pos, binv->_.binv.vars)
+    {
+      if (!strcmp (e_varname, ret_var->_.var.vname))
+        return pos;
+    }
+  END_DO_BOX_FAST_REV;
+  if (NULL != wrapping_gp)
+    {
+    /* In order to avoid bug similar to 14730, now it's time to check for appropriate synonyms */
+      e_eq = sparp_equiv_get (sparp, wrapping_gp, (SPART *)e_varname, SPARP_EQUIV_GET_NAMESAKES);
+      if (NULL != e_eq)
+        {
+          int vnamectr;
+          DO_BOX_FAST_REV (caddr_t, e_eq_varname, vnamectr, e_eq->e_varnames)
+            {
+              DO_BOX_FAST_REV (SPART *, ret_var, pos, binv->_.binv.vars)
+                {
+                  if (!strcmp (e_eq_varname, ret_var->_.var.vname))
+                    return pos;
+                }
+              END_DO_BOX_FAST_REV;
+            }
+          END_DO_BOX_FAST_REV;
+        }
+    }
+  return -1;
+}
+
+int
 sparp_find_sinv_rset_pos_of_varname (sparp_t *sparp, SPART *service_gp, caddr_t e_varname)
 {
   int pos;
@@ -4603,6 +4638,7 @@ spart_dump_opname (ptrlong opname, int is_op)
     case SUBJECT_L: return "SUBJECT";
     case true_L: return "true boolean";
     case UNION_L: return "UNION gp";
+    case VALUES_L: return "VALUES gp";
     case WHERE_L: return "WHERE gp";
 
     case SPAR_BLANK_NODE_LABEL: return "blank node label";
@@ -5045,7 +5081,7 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
                   unsigned int rowmask = tree->_.binv.data_rows_mask[rowctr] - '/';
                   sprintf (rowtitle, "ROW %d/%d (%s%s)", rowctr, rowcount,
                     (rowmask ? "disabled via " : "enabled"),
-                    (rowmask ? tree->_.binv.vars[rowmask-1]->_.var.vname : "") );
+                    ((0 < rowmask) ? tree->_.binv.vars[rowmask-1]->_.var.vname : ((0 > rowmask) ? "LIMIT" : "")) );
                   spart_dump (tree->_.binv.data_rows[rowctr], ses, indent+2, rowtitle, -2);
                 }
               break;

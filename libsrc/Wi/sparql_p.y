@@ -269,6 +269,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token UNDEF_L		/*:: PUNCT_SPAR_LAST("UNDEF") ::*/
 %token UNION_L		/*:: PUNCT_SPAR_LAST("UNION") ::*/
 %token USING_L		/*:: PUNCT_SPAR_LAST("USING") ::*/
+%token VALUES_L		/*:: PUNCT_SPAR_LAST("VALUES") ::*/
 %token WHERE_L		/*:: PUNCT("WHERE"), SPAR, LAST1("WHERE {"), LAST1("WHERE ("), LAST1("WHERE #cmt\n{"), LAST1("WHERE\r\n("), ERR("WHERE"), ERR("WHERE bad") ::*/
 %token WITH_L		/*:: PUNCT_SPAR_LAST("WITH") ::*/
 %token XML_L	/*:: PUNCT_SPAR_LAST("XML") ::*/
@@ -381,6 +382,14 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <tree> spar_group_or_union_gp
 %type <backstack> spar_binds
 %type <tree> spar_bind
+%type <tree> spar_inline_data
+%type <tree> spar_inline_data_tail
+%type <backstack> spar_inline_data_vars_opt
+%type <box> spar_inline_data_var
+%type <backstack> spar_inline_data_rows_opt
+%type <trees> spar_inline_data_row
+%type <backstack> spar_inline_data_values_opt
+%type <tree> spar_inline_data_value
 %type <tree> spar_constraint
 %type <tree> spar_constraint_exists_int
 %type <token_type> spar_exists_or_not_exists
@@ -1081,7 +1090,7 @@ spar_bindings_clause		/* [Sparql1.1*]	BindingsClause	 ::=  'BINDINGS' BindingsVa
 	    spar_bindings_opt _RBRA	{
 		sparp_arg->sparp_env->spare_bindings_rowset = (SPART ***)t_revlist_to_array ($6);
 		$$ = spar_make_bindings_inv_with_fake_equivs (sparp_arg,
-			sparp_arg->sparp_env->spare_bindings_vars, sparp_arg->sparp_env->spare_bindings_rowset); }
+			sparp_arg->sparp_env->spare_bindings_vars, sparp_arg->sparp_env->spare_bindings_rowset, NULL); }
 	;
 
 spar_bindings_vars
@@ -1194,6 +1203,7 @@ spar_gp_not_triples	/* [21]*	GraphPatternNotTriples	 ::=  */
 	| spar_graph_gp { spar_gp_add_member (sparp_arg, $1); }	/*... | GraphGraphPattern	*/
 	| spar_service_req { spar_gp_add_member (sparp_arg, $1); }	/*... | ServiceRequest	*/
 	| spar_binds { spar_gp_finalize_binds (sparp_arg, $1); }	/*... | Bind	*/
+	| spar_inline_data { spar_gp_add_member (sparp_arg, $1); }	/*... | InlineData	*/
 	| spar_constraint { spar_gp_add_filter (sparp_arg, $1); }	/*... | Constraint	*/
 	;
 
@@ -1248,6 +1258,65 @@ spar_bind
 		int bind_has_scalar_subqs = ($<nonboxed_int>2 == sparp_arg->sparp_scalar_subq_count);
 		$$ = spar_bind_prepare (sparp_arg, $4, bind_has_scalar_subqs); }
 	;
+
+spar_inline_data
+	: VALUES_L {
+		spar_gp_init (sparp_arg, VALUES_L); }
+	    spar_inline_data_tail { $$ = $3; }
+	;
+
+spar_inline_data_tail
+	: spar_inline_data_var _LBRA spar_inline_data_values_opt _RBRA	{
+		SPART **mtrx = (SPART **)t_revlist_to_array ($3);
+		int ctr = BOX_ELEMENTS (mtrx);
+		while (ctr--) mtrx[ctr] = (SPART *)t_list (1, mtrx[ctr]);
+		$$ = spar_gp_finalize_with_inline_data (sparp_arg, t_list (1, spar_make_variable (sparp_arg, $1)), mtrx); }
+	| _LPAR spar_inline_data_vars_opt _RPAR {
+		sparp_arg->sparp_env->spare_inline_data_colcount = dk_set_length ($2); }
+	    _LBRA spar_inline_data_rows_opt _RBRA	{
+		$$ = spar_gp_finalize_with_inline_data (sparp_arg, t_revlist_to_array ($2), t_revlist_to_array ($6)); }
+	;
+
+
+spar_inline_data_vars_opt
+	: /*empty*/			{ $$ = NULL; }
+	| spar_inline_data_vars_opt spar_inline_data_var	{ $$ = $1; t_set_push (&($$), spar_make_variable (sparp_arg, $2)); }
+	;
+
+spar_inline_data_var		/* [Sparql1.1*]	InlineDataVar	 ::=  VAR1 | VAR2	*/
+	: QD_VARNAME		{ $$ = $1; }
+	| spar_global_var	{ sparyyerror (sparp_arg, "Global variable can not be used in the header of VALUES"); }
+	;
+
+spar_inline_data_rows_opt
+	: /* empty */		{ $$ = NULL; }
+	| spar_inline_data_rows_opt spar_inline_data_row	{ $$ = $1; t_set_push (&($$), $2); }
+	;
+
+spar_inline_data_row			/* [Sparql1.1]	Binding	 ::=  '(' ( IRIref | RDFLiteral | NumericLiteral | BooleanLiteral | BlankNode | 'UNBOUND' )+ ')'	*/
+	: _LPAR spar_inline_data_values_opt _RPAR {
+		$$ = (SPART **)t_revlist_to_array ($2);
+		if (BOX_ELEMENTS ($$) != sparp_arg->sparp_env->spare_inline_data_colcount)
+		  sparyyerror (sparp_arg, "Number of values in an inline data row does not match number of variables in the list after VALUES"); }
+	;
+
+spar_inline_data_values_opt
+	: /* empty */				{$$ = NULL; }
+	| spar_inline_data_values_opt spar_inline_data_value	{$$ = $1; t_set_push (&($$), $2); }
+	;
+
+spar_inline_data_value
+	: spar_iriref		
+	| spar_numeric_literal
+	| spar_rdf_literal
+	| spar_boolean_literal
+	| spar_blank_node
+	| UNBOUND_L		{ sparyyerror (sparp_arg, "UNBOUND in VALUES is deprecated, use UNDEF instead"); $$ = NULL; }
+	| UNDEF_L		{$$ = NULL; }
+	;
+
+
+
 
 spar_constraint		/* [25]*	Constraint	 ::=  'FILTER' ( ( '(' Expn ')' ) | BuiltInCall | FunctionCall )	*/
 	: FILTER_L _LPAR spar_expn _RPAR	{ $$ = $3; }

@@ -178,6 +178,8 @@ sparp_gp_trav_find_isect_with_ctor (sparp_t *sparp, SPART *curr, sparp_trav_stat
           }
         case SERVICE_L:
           return 0; /* remote triples can not interfere with local data manipulations. This may change in the future if SERVICE group ctor template is added in SPARUL */
+        case VALUES_L:
+          return 0; /* no variables --- no interference */
         }
       break;
     }

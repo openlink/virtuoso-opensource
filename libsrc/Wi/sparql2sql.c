@@ -70,33 +70,44 @@ sparp_gp_trav_list_subquery_retvals (sparp_t *sparp, SPART *curr, sparp_trav_sta
   SPART **options = curr->_.gp.options;
   if (SPAR_GP != curr->type)
     return 0;
-  if (SELECT_L != curr->_.gp.subtype)
-    return 0;
-  DO_BOX_FAST (SPART *, retval, ctr, curr->_.gp.subquery->_.req_top.retvals)
+  if (SELECT_L == curr->_.gp.subtype)
     {
-      caddr_t name;
-      switch (SPART_TYPE (retval))
+      DO_BOX_FAST (SPART *, retval, ctr, curr->_.gp.subquery->_.req_top.retvals)
         {
-          case SPAR_VARIABLE: name = retval->_.var.vname; break;
-          case SPAR_ALIAS: name = retval->_.alias.aname; break;
-          default: name = NULL;
+          caddr_t name;
+          switch (SPART_TYPE (retval))
+            {
+              case SPAR_VARIABLE: name = retval->_.var.vname; break;
+              case SPAR_ALIAS: name = retval->_.alias.aname; break;
+              default: name = NULL;
+            }
+          if (SPART_VARNAME_IS_NICE_RETVAL (name, ((dk_set_t *)(common_env))[0]))
+            t_set_push ((dk_set_t *)(common_env), name);
         }
-      if (SPART_VARNAME_IS_NICE_RETVAL (name, ((dk_set_t *)(common_env))[0]))
-        t_set_push ((dk_set_t *)(common_env), name);
+      END_DO_BOX_FAST;
+      for (ctr = BOX_ELEMENTS_0 (options); 1 < ctr; ctr -= 2)
+        {
+          ptrlong key = ((ptrlong)(options[ctr-2]));
+          SPART *val = options[ctr-1];
+          caddr_t name = NULL;
+          switch (key)
+            {
+            case OFFBAND_L: case SCORE_L: name = val->_.var.vname; break;
+            case T_STEP_L: name = val->_.alias.aname; break;
+            }
+          if (SPART_VARNAME_IS_NICE_RETVAL (name, ((dk_set_t *)(common_env))[0]))
+            t_set_push ((dk_set_t *)(common_env), name);
+        }
     }
-  END_DO_BOX_FAST;
-  for (ctr = BOX_ELEMENTS_0 (options); 1 < ctr; ctr -= 2)
+  if (VALUES_L == curr->_.gp.subtype)
     {
-      ptrlong key = ((ptrlong)(options[ctr-2]));
-      SPART *val = options[ctr-1];
-      caddr_t name = NULL;
-      switch (key)
+      DO_BOX_FAST (SPART *, retval, ctr, curr->_.gp.subquery->_.binv.vars)
         {
-        case OFFBAND_L: case SCORE_L: name = val->_.var.vname; break;
-        case T_STEP_L: name = val->_.alias.aname; break;
+          caddr_t name = retval->_.var.vname;
+          if (SPART_VARNAME_IS_NICE_RETVAL (name, ((dk_set_t *)(common_env))[0]))
+            t_set_push ((dk_set_t *)(common_env), name);
         }
-      if (SPART_VARNAME_IS_NICE_RETVAL (name, ((dk_set_t *)(common_env))[0]))
-        t_set_push ((dk_set_t *)(common_env), name);
+      END_DO_BOX_FAST;
     }
   return 0;
 }
@@ -745,7 +756,7 @@ sparp_gp_trav_cu_out_triples_1 (sparp_t *sparp, SPART *curr, sparp_trav_state_t 
       SPARP_FOREACH_GP_EQUIV (sparp, curr, eq_ctr, eq)
         {
           int sub_ctr;
-          eq->e_nested_bindings = 0;
+          eq->e_nested_bindings = ((VALUES_L == curr->_.gp.subtype) ? 1 : 0);
           DO_BOX_FAST_REV (ptrlong, sub_idx, sub_ctr, eq->e_subvalue_idxs)
             {
               sparp_equiv_t *sub_eq = SPARP_EQUIV(sparp,sub_idx);
@@ -2430,7 +2441,7 @@ sparp_gp_trav_eq_restr_from_connected_receivers_gp_in (sparp_t *sparp, SPART *cu
              SPART_VARR_IS_LIT | SPART_VARR_IS_REF |
              SPART_VARR_TYPED | SPART_VARR_FIXED |
              SPART_VARR_SPRINTFF | SPART_VARR_LONG_EQ_SQL );
-         if (NULL == var->_.var.tabid)
+         if ((NULL == var->_.var.tabid) && (VALUES_L != curr->_.gp.subtype))
            continue;
          sparp_rvr_tighten (sparp, &(var->_.var.rvr), &(eq->e_rvr), changeable);
          for (sts_iter = sts_this;
@@ -2445,6 +2456,12 @@ sparp_gp_trav_eq_restr_from_connected_receivers_gp_in (sparp_t *sparp, SPART *cu
            }
        }
     } END_SPARP_FOREACH_GP_EQUIV;
+  if (VALUES_L == curr->_.gp.subtype)
+    {
+      SPART *binv = curr->_.gp.subquery;
+      spar_shorten_binv_dataset (sparp, binv);
+      spar_refresh_binv_var_rvrs (sparp, binv);
+    }
   return SPAR_GPT_ENV_PUSH;
 }
 
@@ -2602,7 +2619,7 @@ sparp_gp_trav_equiv_audit_inner_vars (sparp_t *sparp, SPART *curr, sparp_trav_st
           END_DO_BOX_FAST;
         }
       END_SPARP_FOREACH_GP_EQUIV;
-      if (NULL != curr->_.gp.subquery)
+      if (SPAR_REQ_TOP == SPART_TYPE (curr->_.gp.subquery))
         {
           sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
           memset (stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
@@ -2766,7 +2783,7 @@ sparp_equiv_audit_all (sparp_t *sparp, int flags)
         {
           SPART *var = eq->e_vars [var_ctr];
           if (var->_.var.equiv_idx != eq_ctr)
-            spar_audit_error (sparp, "sparp_" "equiv_audit_all(): var->_.var.equiv_idx != eq_ctr: eq #%d for %s, gp %s, var %s/%s/%s with equiv_idx %d", eq_ctr, eq->e_varnames[0], var->_.var.selid, var->_.var.tabid, var->_.var.vname, var->_.var.equiv_idx);
+            spar_audit_error (sparp, "sparp_" "equiv_audit_all(): var->_.var.equiv_idx != eq_ctr: eq #%d for %s, gp %s, var %s/%s/%s with equiv_idx %d", eq_ctr, eq->e_varnames[0], eq->e_gp->_.gp.selid, var->_.var.selid, var->_.var.tabid, var->_.var.vname, var->_.var.equiv_idx);
         }
       gp = eq->e_gp;
       if (SPAR_GP != gp->type)
@@ -4645,7 +4662,7 @@ sparp_flatten_join (sparp_t *sparp, SPART *parent_gp)
 #ifdef DEBUG
   if (SPAR_GP != SPART_TYPE (parent_gp))
     spar_internal_error (sparp, "sparp_" "flatten_join(): parent_gp is not a GP");
-  if ((UNION_L == parent_gp->_.gp.subtype) || (SELECT_L == parent_gp->_.gp.subtype))
+  if ((UNION_L == parent_gp->_.gp.subtype) || (SELECT_L == parent_gp->_.gp.subtype) || (VALUES_L == parent_gp->_.gp.subtype))
     spar_internal_error (sparp, "sparp_" "flatten_join(): parent_gp is not a join");
 #endif
   for (memb_ctr = BOX_ELEMENTS (parent_gp->_.gp.members); memb_ctr--; /*no step*/)
@@ -5227,7 +5244,7 @@ int sparp_gp_trav_multiqm_to_unions (sparp_t *sparp, SPART *curr, sparp_trav_sta
   END_DO_BOX_FAST_REV;
   if (UNION_L == curr->_.gp.subtype)
     sparp_flatten_union (sparp, curr);
-  else if (SELECT_L != curr->_.gp.subtype)
+  else if ((SELECT_L != curr->_.gp.subtype) && (VALUES_L != curr->_.gp.subtype))
     sparp_flatten_join (sparp, curr);
   return 0;
 }
@@ -5241,7 +5258,7 @@ int sparp_gp_trav_detach_conflicts_out (sparp_t *sparp, SPART *curr, sparp_trav_
     return 0;
   if (UNION_L == curr->_.gp.subtype)
     sparp_flatten_union (sparp, curr);
-  else if (SELECT_L != curr->_.gp.subtype)
+  else if ((SELECT_L != curr->_.gp.subtype) && (VALUES_L != curr->_.gp.subtype))
     sparp_flatten_join (sparp, curr);
   return 0;
 }
@@ -5313,6 +5330,7 @@ sparp_gp_trav_localize_filters (sparp_t *sparp, SPART *curr, sparp_trav_state_t 
               break;
             case SELECT_L: subval_count --; break;  /*!!!TBD now HAVING is supported so filter can be moved inside subselect if there's no LIMIT/OFFSET */
             case SERVICE_L: subval_count --; break;
+            case VALUES_L: subval_count --; break; /* can't localize inside procedure view */
             case OPTIONAL_L:
               {
                 if (!(SPART_VARR_NOT_NULL & sv_eq->e_rvr.rvrRestrictions))
@@ -5346,6 +5364,7 @@ sparp_gp_trav_localize_filters (sparp_t *sparp, SPART *curr, sparp_trav_state_t 
               break;
             case SELECT_L: continue; /*!!!TBD see comment above */
             case SERVICE_L: continue;
+            case VALUES_L: continue;
             case OPTIONAL_L:
               {
                 if (!(SPART_VARR_NOT_NULL & sv_eq->e_rvr.rvrRestrictions))
@@ -7345,6 +7364,27 @@ spar_propagate_limit_as_option (sparp_t *sparp, SPART *tree, SPART *outer_limit)
           {
           case SELECT_L:
             spar_propagate_limit_as_option (sparp, tree->_.gp.subquery, outer_limit);
+            return;
+          case VALUES_L:
+            if (DV_LONG_INT == DV_TYPE_OF (outer_limit))
+              {
+                boxint olimit_val = unbox ((caddr_t)outer_limit);
+                SPART *subbinv = tree->_.gp.subquery;
+                boxint rows_in_use = subbinv->_.binv.rows_in_use;
+                if (olimit_val < rows_in_use)
+                  {
+                    int rowcount = BOX_ELEMENTS (subbinv->_.binv.data_rows);
+                    int rowctr;
+                    for (rowctr = rowcount; rowctr--; /* no step */)
+                      {
+                        if ('/' != subbinv->_.binv.data_rows_mask[rowctr])
+                          continue;
+                        spar_invalidate_binv_dataset_row (sparp, subbinv, rowctr, -2);
+                        if (olimit_val >= --rows_in_use)
+                          break;
+                      }
+                  }
+              }
             return;
           case UNION_L:
             {

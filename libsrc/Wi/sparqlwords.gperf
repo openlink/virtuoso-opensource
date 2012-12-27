@@ -195,6 +195,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "UNION",		UNION_L			, 0
 "URI",			SPARQL_BIF		, SPAR_BIF_URI
 "USING",		USING_L			, 0
+"VALUES",		VALUES_L		, 0
 "WHERE",		WHERE_L			, 0
 "WITH",			WITH_L			, 0
 "XML",			XML_L			, 0

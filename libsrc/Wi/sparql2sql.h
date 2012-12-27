@@ -465,6 +465,10 @@ extern SPART *sparp_find_origin_of_some_external_varname_in_eq (sparp_t *sparp, 
 instead of a pair of the equivalence class of \c var and the name of \c var */
 extern SPART *sparp_find_origin_of_external_var (sparp_t *sparp, SPART *var, int find_exact_specimen);
 
+/*! This finds a position of a variable or an equivalent of that variable in the result-set array made by a binv (an external, with NULL \c wrapping_gp or a VALUES_L nested into \c wrapping_gp).
+If no suitable item found then -1 is returned */
+extern int sparp_find_binv_rset_pos_of_varname (sparp_t *sparp, SPART *wrapping_gp, SPART *binv, caddr_t e_varname);
+
 /*! This finds a position of a variable or an equivalent of that variable in the result-set array made by a sinv.
 If no suitable item found then -1 is returned */
 extern int sparp_find_sinv_rset_pos_of_varname (sparp_t *sparp, SPART *service_gp, caddr_t e_varname);
@@ -868,8 +872,8 @@ typedef struct spar_sqlgen_s
   ptrlong		ssg_equiv_count;	/*!< Shorthand for ssg_sparp->sparp_sg->sg_equiv_count */
   struct spar_sqlgen_s	*ssg_parent_ssg;	/*!< Ssg that prints outer subquery */
   struct spar_sqlgen_s	*ssg_nested_ssg;	/*!< Ssg that prints some fragment for the current one, like a text of query to send to a remote service. This is used for GC on abort */
-  SPART *		ssg_wrapping_gp;	/*!< Gp of subtype SELECT_L or SERVICE_L that contains the current subquery */
-  SPART *		ssg_wrapping_sinv;	/*!< service invocation description of \c ssg_wrapping_p in case of SERVICE_L gp subtype */
+  SPART *		ssg_wrapping_gp;	/*!< A gp of subtype SELECT_L or SERVICE_L that contains the current subquery */
+  SPART *		ssg_wrapping_sinv;	/*!< Service invocation description of \c ssg_wrapping_p in case of SERVICE_L gp subtype */
 /* Run-time environment */
   SPART			**ssg_sources;		/*!< Data sources from ssg_tree->_.req_top.sources and/or environment */
 /* SQL Codegen temporary values */

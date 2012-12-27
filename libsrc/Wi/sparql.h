@@ -292,6 +292,7 @@ typedef struct sparp_env_s
     dk_set_t		spare_acc_bgp_varnames;		/*!< Sets of used BGP names of GPs, sets of children are merged into sets of parent on each pop from the stack */
     int			spare_ctor_dflt_g_tmpl_count;	/*!< For CONSTRUCT and the like --- count of triple templates in the default graph, should be reset to zero after ctor to deal with DELETE{...} INSERT{...} */
     int			spare_ctor_g_grp_count;		/*!< For CONSTRUCT and the like --- count of graph {...} groups of triple templates, should be reset to zero after ctor to deal with DELETE{...} INSERT{...} */
+    int			spare_inline_data_colcount;	/*!< Number of variables in VALUES (...) {...} clause, not set for single-variable syntax because it's used only to check the width of data rows */
     SPART **		spare_bindings_vars;		/*!< List of variables enumerated in local BINDINGS Var+ list */
     SPART ***		spare_bindings_rowset;		/*!< Array of arrays of values in BINDINGS {...} */
     dk_set_t		spare_good_graph_varnames;	/*!< Varnames found in non-optional triples before or outside, (including non-optional inside previous non-optional siblings), but not after or inside */
@@ -890,6 +891,7 @@ extern void spar_gp_init (sparp_t *sparp, ptrlong subtype);
 #define SPARP_ENV_CONTEXT_GP_SUBTYPE(sparp) ((ptrlong)((sparp)->sparp_env->spare_context_gp_subtypes->data))
 extern SPART *spar_gp_finalize (sparp_t *sparp, SPART **options);
 extern SPART *spar_gp_finalize_with_subquery (sparp_t *sparp, SPART **options, SPART *subquery);
+extern SPART *spar_gp_finalize_with_inline_data (sparp_t *sparp, SPART **vars, SPART ***rows);
 extern void spar_gp_add_member (sparp_t *sparp, SPART *memb);
 #define SPAR_TRIPLE_TRICK_TRANSITIVE	0x1 /*!< Make transitive subquery or a repeating property path, due to transitivity in inference rules or options */
 #define SPAR_TRIPLE_TRICK_INV_UNION	0x2 /*!< Make union gp or property path leaf with '^', due to inverse properties in inference rules */
@@ -925,7 +927,7 @@ extern SPART *spar_make_wm (sparp_t *sparp, SPART *pattern, SPART **groupings, S
 /*! Creates SPAR_REQ_TOP tree or a codegen for some special case. A macroexpansion is made before recognizing special cases. */
 extern SPART *spar_make_top_or_special_case_from_wm (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   caddr_t retselid, SPART *wm );
-extern SPART *spar_make_bindings_inv_with_fake_equivs (sparp_t *sparp, SPART **vars, SPART ***data_rows);
+extern SPART *spar_make_bindings_inv_with_fake_equivs (sparp_t *sparp, SPART **vars, SPART ***data_rows, SPART *wrapper_gp);
 extern SPART **spar_make_sources_like_top (sparp_t *sparp, ptrlong top_subtype);
 extern SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   caddr_t retselid, SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset, SPART *binv);

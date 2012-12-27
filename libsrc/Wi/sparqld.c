@@ -764,6 +764,31 @@ fname_printed:
               ssg_puts (") ");
               break;
             }
+          case VALUES_L:
+            {
+              SPART *binv = tree->_.gp.subquery;
+              int colctr, colcount = BOX_ELEMENTS (binv->_.binv.vars);
+              int rowctr, rowcount = BOX_ELEMENTS (binv->_.binv.data_rows);
+              ssg_puts (" VALUES (");
+              ssg->ssg_indent++;
+              for (colctr = 0; colctr < colcount; colctr++) ssg_sdprint_tree (ssg, binv->_.binv.vars[colctr]);
+              ssg_puts (") {");
+              for (rowctr = 0; rowctr < rowcount; rowctr++)
+                {
+                  if ('/' != binv->_.binv.data_rows_mask[rowctr])
+                    continue;
+                  ssg_newline (0);
+                  ssg_puts (" (");
+                  ssg->ssg_indent++;
+                  for (colctr = 0; colctr < colcount; colctr++) ssg_sdprint_tree (ssg, binv->_.binv.data_rows[rowctr][colctr]);
+                  ssg_puts (" )");
+                  ssg->ssg_indent--;
+                }
+              ssg_puts (" }");
+              ssg->ssg_indent--;
+              ssg_newline (0);
+              return;
+            }
           case 0: ssg_putchar (' '); break;
           }
         ssg_puts (" { ");
