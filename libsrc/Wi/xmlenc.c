@@ -6221,6 +6221,21 @@ bif_xenc_hmac_sha256_digest (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
 #endif
 
 static caddr_t
+bif_xenc_rsa_sha1_digest (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  char * me = "xenc_rsa_sha1_digest";
+  char * text = bif_string_arg (qst, args, 0, me);
+  caddr_t name = bif_string_arg (qst, args, 1, me);
+  xenc_key_t * key = xenc_get_key_by_name (name, 1);
+  dk_session_t * ses = strses_allocate ();
+  caddr_t res = NULL;
+  session_buffered_write (ses, text, box_length (text) - 1);
+  dsig_rsa_sha1_digest (ses, strses_length (ses), key, &res);
+  dk_free_box (ses);
+  return res;
+}
+
+static caddr_t
 bif_xenc_dsig_signature (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   char * me = "xenc_dsig_signature";
@@ -7451,6 +7466,7 @@ void bif_xmlenc_init ()
   bif_define ("xenc_sha256_digest", bif_xenc_sha256_digest);
   bif_define ("xenc_hmac_sha256_digest", bif_xenc_hmac_sha256_digest);
 #endif
+  bif_define ("xenc_rsa_sha1_digest", bif_xenc_rsa_sha1_digest);
   bif_define ("xenc_key_DH_create", bif_xenc_key_DH_create);
   bif_define ("xenc_DH_get_params", bif_xenc_DH_get_params);
   bif_define ("xenc_DH_compute_key", bif_xenc_DH_compute_key);
