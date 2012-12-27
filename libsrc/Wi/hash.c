@@ -1675,7 +1675,7 @@ itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsigned l
   END_FAIL (itc);
 
   if (ha_rehash_pct &&  hi->hi_count > (hi->hi_size / 100) * ha_rehash_pct
-      && HI_NEXT_SIZE (hi) < HI_MAX_SIZE)
+      && HI_NEXT_SIZE (hi) < (int64)HI_MAX_SIZE)
     ha_rehash (qst, ha, tree);
 #endif
   ret->ihfr_disk_buf = itc->itc_hash_buf;
