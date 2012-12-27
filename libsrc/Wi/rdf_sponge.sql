@@ -1497,7 +1497,7 @@ create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_ori
   extra := get_keyword_ucase ('get:extra', options, '0');
   base := get_keyword ('http-redirect-to', options, new_origin_uri);
   get_soft := get_keyword_ucase ('get:soft', options);
-  if (get_keyword_ucase ('get:strategy', options, 'default') = 'rdfa-only')
+  if (get_keyword_ucase ('get:strategy', options, 'default') = 'rdfa-only' or get_soft = 'no-sponge')
     only_rdfa := 1;
   else
     only_rdfa := 0;
@@ -1630,6 +1630,9 @@ retry_after_deadlock:
       return 1;
     }
 
+  if (get_soft = 'no-sponge')
+    goto no_cart;
+
   --if (dest is null)
   --  {
   --    DB.DBA.SPARUL_CLEAR (graph_iri, 1);
@@ -1733,6 +1736,8 @@ load_grddl:;
   --    return 1;
   --  }
   
+no_cart:
+
   if (rdf_fmt) -- even cartridges didn't extracted anything more, the rdf is already loaded
     return 1; 
 
@@ -1888,7 +1893,7 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
       -- dbg_obj_princ ('Does not exists, continue despite get:soft=soft');
     }
   else
-    if (('replacing' = get_soft) or ('replace' = get_soft) or ('add' = get_soft))
+    if (('replacing' = get_soft) or ('replace' = get_soft) or ('add' = get_soft) or ('no-sponge' = get_soft))
       {
         -- dbg_obj_princ ('get:soft=', get_soft);
         ;
