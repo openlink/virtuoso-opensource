@@ -2645,7 +2645,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
     declare path, save_dir varchar;
     declare parts any;
     save_dir := null;
-    for (select COL_ID from WS.WS.SYS_DAV_COL where COL_DET = 'DynaRes' and WS.WS.COL_PATH (COL_PARENT) like '/DAV/home/%') do
+    for (select COL_ID from WS.WS.SYS_DAV_COL where COL_DET = 'DynaRes' and WS.WS.COL_PATH (COL_PARENT) like sprintf ('/DAV/home/%s%%', user_id)) do
     {
       path := WS.WS.COL_PATH (COL_ID);
       parts := split_and_decode (path, 0, '\0\0/');
