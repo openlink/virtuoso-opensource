@@ -1029,7 +1029,7 @@ generic_tails:
 int
 sprintff_like (ccaddr_t s1, ccaddr_t f2)
 {
-  int s1_chk_pos, f2_chk_pos, s1_strlen;
+  int s1_chk_pos, f2_chk_pos /* s1_strlen */;
 /* Very basic check for disjoint beginnings. */
   s1_chk_pos = f2_chk_pos = 0;
   for (;;)
@@ -1052,7 +1052,7 @@ sprintff_like (ccaddr_t s1, ccaddr_t f2)
       s1_chk_pos++; f2_chk_pos++;
     }
 /* Here we start actual calculation of a new result, starting from s1_chk_pos and f2_chk_pos offset. Then we cache it and return */
-  s1_strlen = s1_chk_pos + strlen (s1 + s1_chk_pos);
+  /* s1_strlen = s1_chk_pos + strlen (s1 + s1_chk_pos); */
   if (SFF_ISECT_OK == sff_dislike (s1 + s1_chk_pos, f2 + f2_chk_pos))
     return 1;
   return 0;
@@ -1181,9 +1181,8 @@ skip_save_f12: ;
   if (oldsize < res_count)
     {
       int newsize = oldsize ? oldsize : 1;
-      ccaddr_t *new_buf;
       do newsize *= 2; while (newsize < max_reslen);
-      new_buf = rvr->rvrSprintffs = (ccaddr_t *)t_alloc_box (newsize * sizeof (caddr_t), DV_ARRAY_OF_LONG);
+      rvr->rvrSprintffs = (ccaddr_t *)t_alloc_box (newsize * sizeof (caddr_t), DV_ARRAY_OF_LONG);
     }
 #ifdef MALLOC_DEBUG
   memset (rvr->rvrSprintffs, 0, box_length (rvr->rvrSprintffs));

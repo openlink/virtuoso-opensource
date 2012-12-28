@@ -147,8 +147,8 @@ typedef struct sparp_equiv_s
     ptrlong e_const_reads;	/*!< Number of constant-read uses in filters and in 'graph' of members */
     ptrlong e_optional_reads;	/*!< Number of uses in scalar subqueries of filters; both local and member filter are counted */
     ptrlong e_subquery_uses;	/*!< Number of all local uses in subquery (0 for plain queries, 1 in groups of subtype SELECT_L) */
-    ptrlong e_replaces_filter;	/*!< Bitmask of SPART_RVR_XXX bits, nonzero if a filter has been replaced (and removed) by tightening of this equiv or by merging this and some other equiv */
-    rdf_val_range_t e_rvr;	/*!< Restrictions that are common for all variables */
+    ptrlong e_replaces_filter;	/*!< Bitmask of SPART_RVR_XXX bits, nonzero if a filter has been replaced (and removed) by tightening of this equiv or by merging this and some other equiv, so the equiv is the only bearer of knowledge about the restriction. */
+    rdf_val_range_t e_rvr;	/*!< Restrictions that are common for all variables. They are combined from rvrs of variables and subvalues, however rvrs of variables can be tightened by ancestor equivs, making the dependencies circular. */
     ptrlong *e_subvalue_idxs;	/*!< Subselects where values of these variables come from */
     ptrlong *e_receiver_idxs;	/*!< Aliases of surrounding query where values of variables from this equiv are used */
     ptrlong e_clone_idx;	/*!< Index of the current clone of the equiv */
@@ -230,6 +230,9 @@ Using the function outside gp cloning may need fake increment of \c sparp_gp_clo
 extern sparp_equiv_t *sparp_equiv_clone (sparp_t *sparp, sparp_equiv_t *orig, SPART *cloned_gp);
 
 extern void spart_dump_eq (int eq_ctr, sparp_equiv_t *eq, dk_session_t *ses);
+
+#define SPARP_VAR_SELID_MISMATCHES_GP(var_to_check,parent_gp) (\
+  (NULL != (var_to_check)->_.var.selid) && ('(' != (var_to_check)->_.var.selid[0]) && strcmp ((var_to_check)->_.var.selid, (parent_gp)->_.gp.selid) )
 
 #if 0
 /*! Makes an exact copy of equiv without changing indexes.
@@ -1069,6 +1072,7 @@ extern void ssg_make_whole_sql_text (spar_sqlgen_t *ssg);
 extern void ssg_sdprin_literal (spar_sqlgen_t *ssg, SPART *tree);
 extern void ssg_sdprin_qname (spar_sqlgen_t *ssg, SPART *tree);
 extern void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree);
+extern void ssg_sdprin_local_varname (spar_sqlgen_t *ssg, ccaddr_t vname);
 extern void ssg_sdprin_varname (spar_sqlgen_t *ssg, ccaddr_t vname);
 extern void ssg_sdprint_equiv_restrs (spar_sqlgen_t *ssg, sparp_equiv_t *eq);
 extern void sparp_make_sparqld_text (spar_sqlgen_t *ssg);

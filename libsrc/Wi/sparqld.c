@@ -268,6 +268,34 @@ ssg_fields_are_equal (SPART *tree1, SPART *tree2)
   return 0;
 }
 
+
+void
+ssg_sdprin_local_varname (spar_sqlgen_t *ssg, ccaddr_t vname)
+{
+  if ('_' == vname[0] && ':' == vname[1])
+    {
+      if (':' == vname[2])
+        {
+          ssg_puts ("?TmpBN");
+          ssg_puts (vname+3);
+          return;
+        }
+      if (ssg->ssg_inside_t_inouts)
+        spar_error (ssg->ssg_sparp, "Bnode %.100s should not appear in T_IN or T_OUT variable lists", vname);
+    }
+  else if (':' == vname[0])
+    {
+      if (ssg->ssg_inside_t_inouts)
+        spar_error (ssg->ssg_sparp, "External parameter ?%.100s should not appear in T_IN or T_OUT variable lists", vname);
+      if (!(SSG_SD_GLOBALS & ssg->ssg_sd_flags))
+        spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (like external parameters) so SPARQL query can not be composed", ssg->ssg_sd_service_name);
+    }
+  else if ((/* strchr (vname, '_') || --- Bug 14613 */ strchr (vname, '"') || strchr (vname, ':')) && !(SSG_SD_BI & ssg->ssg_sd_flags))
+    spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (say, SQL-like names of variables) so SPARQL query can not be composed", ssg->ssg_sd_service_name);
+  ssg_putchar ('?');
+  ssg_puts (vname);
+}
+
 void
 ssg_sdprin_varname (spar_sqlgen_t *ssg, ccaddr_t vname)
 {
@@ -282,8 +310,7 @@ ssg_sdprin_varname (spar_sqlgen_t *ssg, ccaddr_t vname)
           if (ssg->ssg_inside_t_inouts)
             {
               t_set_push (&(ssg->ssg_param_t_inouts), (caddr_t)vname);
-              ssg_putchar ('?');
-              ssg_puts (vname);
+              ssg_sdprin_local_varname (ssg, vname);
               return;
             }
           if (SSG_SD_GLOBALS & ssg->ssg_sd_flags)
@@ -302,25 +329,7 @@ ssg_sdprin_varname (spar_sqlgen_t *ssg, ccaddr_t vname)
         }
       END_DO_BOX_FAST;
     }
-  if (('_' == vname[0]) && ':' == vname[1])
-    {
-      if (ssg->ssg_inside_t_inouts)
-        spar_error (ssg->ssg_sparp, "Bnode %.100s should not appear in T_IN or T_OUT variable lists", vname);
-      ssg_puts (vname);
-      return;
-    }
-  if (':' == vname[0])
-    {
-      if (ssg->ssg_inside_t_inouts)
-        spar_error (ssg->ssg_sparp, "External parameter ?%.100s should not appear in T_IN or T_OUT variable lists", vname);
-      if (!(SSG_SD_GLOBALS & ssg->ssg_sd_flags))
-        spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (like external parameters) so SPARQL query can not be composed", ssg->ssg_sd_service_name);
-    }
-  else if ((/* strchr (vname, '_') || --- Bug 14613 */ strchr (vname, '"') || strchr (vname, ':')) && !(SSG_SD_BI & ssg->ssg_sd_flags))
-    spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (say, SQL-like names of variables) so SPARQL query can not be composed", ssg->ssg_sd_service_name);
-  ssg_putchar ('?');
-  ssg_puts (vname);
-  return;
+  ssg_sdprin_local_varname (ssg, vname);
 }
 
 int ssg_filter_is_default_graph_condition (SPART *filt)
@@ -487,7 +496,7 @@ ssg_sdprint_option_list (spar_sqlgen_t *ssg, SPART **options)
           break;
         case T_STEP_L:
           ssg_puts (" T_STEP ("); ssg_sdprint_tree (ssg, opt_val->_.alias.arg);
-          ssg_puts (") AS ?"); ssg_puts (opt_val->_.alias.aname);
+          ssg_puts (") AS "); ssg_sdprin_local_varname (ssg, opt_val->_.alias.aname);
           break;
         case T_IN_L: case T_OUT_L:
           if (NULL != old_param_t_inouts)
@@ -527,6 +536,46 @@ ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
     case SPAR_ALIAS:
       {
         int old_parens = ((SSG_SD_VIRTSPECIFIC & ssg->ssg_sd_flags) && !(SSG_SD_SPARQL11_DRAFT & ssg->ssg_sd_flags));
+        if (SPAR_VARIABLE == SPART_TYPE (tree->_.alias.arg))
+          {
+            int alias_is_needed = 0;
+            caddr_t varname = tree->_.alias.arg->_.var.vname;
+            if (strcmp (varname, tree->_.alias.aname))
+              alias_is_needed = 1;
+            if (!alias_is_needed && (NULL != ssg->ssg_wrapping_sinv))
+              {
+                int paramctr;
+                DO_BOX_FAST (caddr_t, param_vname, paramctr, ssg->ssg_wrapping_sinv->_.sinv.param_varnames)
+                  {
+                    if (strcmp (varname, param_vname))
+                      continue;
+                    alias_is_needed = 1;
+                    break;
+                  }
+                END_DO_BOX_FAST;
+              }
+            if (!alias_is_needed)
+              {
+                ssg_putchar (' ');
+                ssg_sdprin_local_varname (ssg, tree->_.alias.aname);
+                return;
+              }
+          }
+        else if (SPAR_BLANK_NODE_LABEL == SPART_TYPE (tree->_.alias.arg))
+          {
+            int alias_is_needed = 0;
+            caddr_t varname = tree->_.alias.arg->_.var.vname;
+            if (strcmp (varname, tree->_.alias.aname))
+              alias_is_needed = 1;
+            if (!alias_is_needed && !(('_' == varname[0]) && (':' == varname[1]) && (':' == varname[2])))
+              alias_is_needed = 1;
+            if (!alias_is_needed)
+              {
+                ssg_putchar (' ');
+                ssg_sdprin_local_varname (ssg, tree->_.alias.aname);
+                return;
+              }
+          }
         if (!(SSG_SD_BI_OR_SPARQL11_DRAFT & ssg->ssg_sd_flags))
           {
             ssg_sdprint_tree (ssg, tree->_.alias.arg);
@@ -541,8 +590,8 @@ ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
             ssg_puts (")");
             ssg->ssg_indent--;
           }
-        ssg_puts (" AS ?");
-        ssg_puts (tree->_.alias.aname);
+        ssg_puts (" AS ");
+        ssg_sdprin_local_varname (ssg, tree->_.alias.aname);
         if (!old_parens)
           {
             ssg_puts (")");
@@ -707,8 +756,8 @@ fname_printed:
                 while (NULL != ssg->ssg_param_t_inouts)
                   {
                     ccaddr_t vname = (ccaddr_t)t_set_pop (&(ssg->ssg_param_t_inouts));
-                    ssg_puts (" FILTER (?");
-                    ssg_puts (vname);
+                    ssg_puts (" FILTER (");
+                    ssg_sdprin_local_varname (ssg, vname);
                     ssg_puts (" = ");
                     ssg_sdprin_varname (ssg, vname);
                     ssg_puts (")");
@@ -941,7 +990,7 @@ fname_printed:
               ssg_sdprint_tree (ssg, spartlist (ssg->ssg_sparp, 5, SPAR_ALIAS, (ptrlong)1, stub_varname, SSG_VALMODE_AUTO, (ptrlong)0));
             else
               {
-                ssg_puts (" ?"); ssg_puts (stub_varname);
+                ssg_putchar (' '); ssg_sdprin_varname (ssg, stub_varname);
               }
           }
         for (srcctr = 0; srcctr < srccount; srcctr++)

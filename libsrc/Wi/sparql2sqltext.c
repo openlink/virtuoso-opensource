@@ -2365,14 +2365,14 @@ ssg_print_literal_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
 {
   caddr_t value;
   caddr_t dt = NULL;
-  caddr_t lang = NULL;
+  /* caddr_t lang = NULL; */
   if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (lit))
     {
       if (SPAR_LIT == lit->type)
         {
           value = lit->_.lit.val;
           dt = lit->_.lit.datatype;
-          lang = lit->_.lit.language;
+          /* lang = lit->_.lit.language; */
         }
       else if ((SPAR_QNAME == lit->type)/* || (SPAR_QNAME_NS == lit->type)*/)
         {
@@ -3941,7 +3941,7 @@ IN_op_fnt_found:
             else if ((SSG_VALMODE_LONG == arg1_native) || (SSG_VALMODE_SQLVAL == arg1_native) || (SSG_VALMODE_AUTO == arg1_native) || (SSG_VALMODE_NUM == arg1_native))
               tmpl = " __rdf_strsqlval (^{tree}^, 0)"; /* SSG_VALMODE_AUTO is here as a fallback for a query optimized down to an empty select */
             else if (SSG_VALMODE_BOOL == arg1_native)
-              tmpl = " case (^{tree}^) when 0 then 'false' else 'true' end";
+              tmpl = " case (^{tree}^) when NULL then NULL when 0 then 'false' else 'true' end";
             else
               spar_sqlprint_error ("ssg_" "print_builtin_expn(): bad native type for STR()");
             ssg_print_tmpl (ssg, arg1_native, tmpl, NULL, NULL, arg1, NULL_ASNAME);
@@ -6076,10 +6076,10 @@ ssg_print_nice_equality_for_var_and_eq_fixed_val (spar_sqlgen_t *ssg, rdf_val_ra
 SPART *
 ssg_sample_of_ghost_variable (spar_sqlgen_t *ssg, sparp_equiv_t *eq, caddr_t name)
 {
-  SPART *sample_var = spartlist (ssg->ssg_sparp, 6 + (sizeof (rdf_val_range_t) / sizeof (caddr_t)),
+  SPART *sample_var = spartlist (ssg->ssg_sparp, 7 + (sizeof (rdf_val_range_t) / sizeof (caddr_t)),
     SPAR_VARIABLE, name,
     eq->e_gp->_.gp.selid, NULL,
-    (ptrlong)(0), SPART_BAD_EQUIV_IDX, SPART_RVR_LIST_OF_NULLS );
+    (ptrlong)(0), SPART_BAD_EQUIV_IDX, SPART_RVR_LIST_OF_NULLS, (ptrlong)(0x0) );
   if (SPART_VARNAME_IS_GLOB(name))
     sample_var->_.var.rvr.rvrRestrictions |= SPART_VARR_GLOBAL;
   else if (SPART_BAD_EQUIV_IDX != eq->e_external_src_idx)
@@ -6334,7 +6334,7 @@ name_is_non_ghost: ;
       if (((SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL) & mixed_restrictions) && (NULL != tabid))
         {
           ssg_valmode_t vmode;
-          SPART_buf var_rv_buf, glob_rv_buf;
+          SPART_buf var_rv_buf;
           SPART *var_rv;
           int col_ctr, col_count;
           SPART_AUTO (var_rv, var_rv_buf, SPAR_RETVAL);
@@ -6534,8 +6534,12 @@ name_is_non_ghost: ;
 
 print_cross_equs:
   /* Printing cross-equalities, i.e. join conditions (what can be placed in ON (...) after join */
-  if (SPARP_EQ_IS_ASSIGNED_EXTERNALLY (eq))
+  if (SPARP_EQ_IS_ASSIGNED_BY_CONTEXT (eq))
     return; /* As soon as all are equal to globals, no need in cross-equalities */
+/* Before, te check was "if (SPARP_EQ_IS_ASSIGNED_EXTERNALLY (eq)) return". Now it is replaced with more accurate combination of check for globals here
+and checks for SPARP_FIXED_AND_NOT_NULL (...restr_of_col) inside,
+to recognise cases when "fixed" and "not null" comes from different parts of the query and "blended" in eq
+or when only one source of eq is fixed and not null but the join with other sources is still required because they're not fixed */
   if (!print_cross_join_conds)
     {
       if (!print_inner_filter_conds)
@@ -6560,6 +6564,10 @@ print_cross_equs:
           int col_ctr, col_count, is_good;
           if (NULL == tabid2)
             continue;
+          if (SPARP_FIXED_AND_NOT_NULL (var->_.var.restr_of_col)
+            && SPARP_FIXED_AND_NOT_NULL (var2->_.var.restr_of_col)
+            && !(SPART_VARR_CONFLICT & eq->e_rvr.rvrRestrictions) )
+            continue; /* No need to write an equality of two constants */
           if (NULL != jright_alias)
             { /* Note that left_var is not set if both vars are from jright_alias */
               if (!strcmp (jright_alias, tabid))
@@ -6657,6 +6665,10 @@ print_cross_equs:
           int col_ctr, col_count, var_is_left = -1, is_good, sub2_is_nullable_inline;
           if (!SPARP_EQ_IS_ASSIGNED_LOCALLY (sub2_eq))
             continue;
+          if (SPARP_FIXED_AND_NOT_NULL (var->_.var.restr_of_col)
+            && SPARP_EQ_IS_FIXED_AND_NOT_NULL(sub2_eq)
+            && !(SPART_VARR_CONFLICT & eq->e_rvr.rvrRestrictions) )
+            continue; /* No need to write an equality of two constants */
           if (NULL != jright_alias)
             {
               if (!strcmp (sub2_gp->_.gp.selid, jright_alias) &&
@@ -6773,6 +6785,10 @@ print_sub_eq_sub:
             continue;
           if (!print_cross_join_conds && (sub_gp != sub2_gp))
             continue;
+          if (SPARP_EQ_IS_FIXED_AND_NOT_NULL(sub_eq)
+            && SPARP_EQ_IS_FIXED_AND_NOT_NULL(sub2_eq)
+            && !(SPART_VARR_CONFLICT & eq->e_rvr.rvrRestrictions) )
+            continue; /* No need to write an equality of two constants */
           if (NULL != jright_alias)
             { /* Note that left_sub_gp is not set if both subs are from jright_alias */
               if (!strcmp (jright_alias, sub_selid))
@@ -7614,7 +7630,7 @@ ssg_print_fake_self_join_subexp (spar_sqlgen_t *ssg, SPART *gp, SPART ***tree_se
         {
           qm_format_t *fmt;
           qm_value_t *qmv;
-          SPART *var;
+          /*SPART *var;*/
           ccaddr_t asname = NULL_ASNAME;
           ccaddr_t colcode;
           fmt = tree->_.triple.native_formats[fld_ctr];
@@ -7622,7 +7638,7 @@ ssg_print_fake_self_join_subexp (spar_sqlgen_t *ssg, SPART *gp, SPART ***tree_se
           qmv = JSO_FIELD_ACCESS(qm_value_t *, qm, qm_field_map_offsets[fld_ctr])[0];
           if (NULL == qmv)
             continue;
-          var = tree->_.triple.tr_fields [fld_ctr];
+          /*var = tree->_.triple.tr_fields [fld_ctr];*/
           ssg_collect_aliases_tables_and_conds (qmv->qmvATables, qmv->qmvConds,
             &ata_aliases, &ata_tables, &queued_row_filters );
           if (0 == BOX_ELEMENTS_0 (qmv->qmvColumns))
@@ -8306,10 +8322,10 @@ ssg_print_sinv_table_exp (spar_sqlgen_t *ssg, SPART *gp, int pass)
               if (!SPART_VARNAME_IS_GLOB(varname))
                 goto param_value_cant_be_printed; /* see below */
               /* dirty hack here */
-              new_var = spartlist (sparp, 6 + (sizeof (rdf_val_range_t) / sizeof (caddr_t)),
+              new_var = spartlist (sparp, 7 + (sizeof (rdf_val_range_t) / sizeof (caddr_t)),
                 SPAR_VARIABLE, varname,
                 gp->_.gp.selid, NULL,
-                (ptrlong)(0), SPART_BAD_EQUIV_IDX, SPART_RVR_LIST_OF_NULLS );
+                (ptrlong)(0), SPART_BAD_EQUIV_IDX, SPART_RVR_LIST_OF_NULLS, (ptrlong)(0x0) );
               new_var->_.var.rvr.rvrRestrictions |= SPART_VARR_GLOBAL;
               local_eq = sparp_equiv_get (sparp, gp, new_var, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_INS_VARIABLE); /* Better late than never */
               ssg_print_scalar_expn (ssg, local_eq->e_vars[0], SSG_VALMODE_LONG, NULL_ASNAME); /*!!!TBD better print for typed/lang literals */
@@ -8701,7 +8717,7 @@ ssg_print_union_member_item (spar_sqlgen_t *ssg, SPART *member, int *itm_idx_ptr
   const char *save_where_l_text;
   ccaddr_t itm_alias;
   int itm_is_opt = ((SPAR_GP == itm->type) && (OPTIONAL_L == itm->_.gp.subtype));
-  int itm_is_binv = ((SPAR_GP == itm->type) && (VALUES_L == itm->_.gp.subtype));
+  /* int itm_is_binv = ((SPAR_GP == itm->type) && (VALUES_L == itm->_.gp.subtype)); */
   int itm_is_sinv = ((SPAR_GP == itm->type) && (SERVICE_L == itm->_.gp.subtype));
   itm_alias = ssg_id_of_gp_or_triple (itm);
 #if 0

@@ -711,8 +711,8 @@ spar_emulate_ctor_field (sparp_t *sparp, SPART *opcode, SPART *oparg, SPART **va
       {
         if (NULL == bnode_emulation)
 #ifdef DEBUG
-          bnode_emulation = (SPART *)box_copy_tree ((caddr_t)spartlist (sparp, 7 + (sizeof (rdf_val_range_t) / sizeof (caddr_t)), SPAR_BLANK_NODE_LABEL,
-            NULL, NULL, NULL, NULL, NULL, SPART_RVR_LIST_OF_NULLS, NULL ) );
+          bnode_emulation = (SPART *)box_copy_tree ((caddr_t)spartlist (sparp, 8 + (sizeof (rdf_val_range_t) / sizeof (caddr_t)), SPAR_BLANK_NODE_LABEL,
+            NULL, NULL, NULL, NULL, NULL, SPART_RVR_LIST_OF_NULLS, (ptrlong)(0x0), NULL ) );
 #else
           bnode_emulation = box_copy_tree (spartlist (sparp, 1, SPAR_BLANK_NODE_LABEL));
 #endif
@@ -802,7 +802,7 @@ spar_optimize_delete_of_single_triple_pattern (sparp_t *sparp, SPART *top)
   SPART **retvals = top->_.req_top.retvals;
   int retvals_count = BOX_ELEMENTS (retvals);
   SPART **var_triples, **args;
-  SPART *arg0, *graph_expn, *ctor, *uid_expn, *log_mode_expn, *good_ctor_call, *compose_report_expn;
+  SPART *arg0, *graph_expn, *ctor, *uid_expn, *log_mode_expn, *good_ctor_call /* unused?? *compose_report_expn */;
   if (NULL != sparp->sparp_env->spare_output_route_name)
     return 0; /* If an output may go outside the default storage then there's no way of avoiding the complete filling of the result dictionary */
   triple = spar_find_single_physical_triple_pattern (sparp, top->_.req_top.pattern);
@@ -816,7 +816,7 @@ spar_optimize_delete_of_single_triple_pattern (sparp_t *sparp, SPART *top)
   ctor			= arg0->_.funcall.argtrees[1];
   uid_expn		= arg0->_.funcall.argtrees[2];
   log_mode_expn		= arg0->_.funcall.argtrees[3];
-  compose_report_expn	= arg0->_.funcall.argtrees[4];
+  /* unused?? compose_report_expn	= arg0->_.funcall.argtrees[4]; */
   dbg_assert ((SPAR_FUNCALL == SPART_TYPE (ctor)) && (4 == BOX_ELEMENTS (ctor->_.funcall.argtrees)));
   dbg_assert (DELETE_L == top->_.req_top.subtype);
   var_triples = ctor->_.funcall.argtrees[0]->_.funcall.argtrees;
@@ -874,7 +874,7 @@ spar_optimize_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top)
   dk_set_t bad_triples = NULL;
   int all_triple_count, bad_triple_count, tctr;
   const char *fname;
-  SPART *arg0, *graph_expn, *ctor, *uid_expn, *log_mode_expn, *good_ctor_call, *compose_report_expn;
+  SPART *arg0, *graph_expn, *ctor, *uid_expn, *log_mode_expn, *good_ctor_call /* unused?? *compose_report_expn */;
   if (NULL != sparp->sparp_env->spare_output_route_name)
     return; /* If an output may go outside the default storage then there's no way of avoiding the complete filling of the result dictionary */
   arg0 = spar_dealias (sparp, retvals[0], SPAR_FUNCALL);
@@ -885,7 +885,7 @@ spar_optimize_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top)
   ctor			= arg0->_.funcall.argtrees[1];
   uid_expn		= arg0->_.funcall.argtrees[2];
   log_mode_expn		= arg0->_.funcall.argtrees[3];
-  compose_report_expn	= arg0->_.funcall.argtrees[4];
+  /* unused?? compose_report_expn	= arg0->_.funcall.argtrees[4]; */
   dbg_assert ((SPAR_FUNCALL == SPART_TYPE (ctor)) && (4 == BOX_ELEMENTS (ctor->_.funcall.argtrees)));
   var_triples = ctor->_.funcall.argtrees[0]->_.funcall.argtrees;
   all_triple_count = bad_triple_count = BOX_ELEMENTS (var_triples);
@@ -963,7 +963,7 @@ spar_optimize_retvals_of_modify (sparp_t *sparp, SPART *top)
   dk_set_t bad_ins_triples = NULL;
   int all_del_triple_count, bad_del_triple_count, del_const_count, del_tctr;
   int all_ins_triple_count, bad_ins_triple_count, ins_tctr;
-  SPART *arg0, *graph_expn, *del_ctor, *ins_ctor, *uid_expn, *log_mode_expn, *good_ctor_call, *compose_report_expn;
+  SPART *arg0, *graph_expn, *del_ctor, *ins_ctor, *uid_expn, *log_mode_expn, *good_ctor_call /* unused?? *compose_report_expn */;
   if (NULL != sparp->sparp_env->spare_output_route_name)
     return; /* If an output may go outside the default storage then there's no way of avoiding the complete filling of the result dictionary */
   arg0 = spar_dealias (sparp, retvals[0], SPAR_FUNCALL);
@@ -975,7 +975,7 @@ spar_optimize_retvals_of_modify (sparp_t *sparp, SPART *top)
   ins_ctor		= arg0->_.funcall.argtrees[2];
   uid_expn		= arg0->_.funcall.argtrees[3];
   log_mode_expn		= arg0->_.funcall.argtrees[4];
-  compose_report_expn	= arg0->_.funcall.argtrees[5];
+  /* unused?? compose_report_expn	= arg0->_.funcall.argtrees[5]; */
   dbg_assert ((SPAR_FUNCALL == SPART_TYPE (del_ctor)) && (4 == BOX_ELEMENTS (del_ctor->_.funcall.argtrees)));
   dbg_assert ((SPAR_FUNCALL == SPART_TYPE (ins_ctor)) && (4 == BOX_ELEMENTS (ins_ctor->_.funcall.argtrees)));
   del_var_triples = del_ctor->_.funcall.argtrees[0]->_.funcall.argtrees;

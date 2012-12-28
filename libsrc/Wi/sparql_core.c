@@ -1112,35 +1112,6 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
   spar_error (sparp, "Unsupported parameter '%.30s' in 'define'", param);
 }
 
-caddr_t
-SPARQL_DBG_NAME(spar_selid_push) (SPARQL_DBG_PARAMS sparp_t *sparp)
-{
-  caddr_t selid = spar_mkid (sparp, "s");
-  t_set_push (&(sparp->sparp_env->spare_selids), selid );
-  spar_dbg_printf (("spar_selid_push () pushes %s at %s:%d\n", selid, file, line));
-  return selid;
-}
-
-caddr_t
-SPARQL_DBG_NAME(spar_selid_push_reused) (SPARQL_DBG_PARAMS sparp_t *sparp, caddr_t selid)
-{
-  t_set_push (&(sparp->sparp_env->spare_selids), selid );
-  spar_dbg_printf (("spar_selid_push_reused () pushes %s at %s:%d\n", selid, file, line));
-  return selid;
-}
-
-
-caddr_t
-SPARQL_DBG_NAME(spar_selid_pop) (SPARQL_DBG_PARAMS sparp_t *sparp)
-{
-  caddr_t selid = (caddr_t)t_set_pop (&(sparp->sparp_env->spare_selids));
-  spar_dbg_printf (("spar_selid_pop () pops %s at %s:%d\n", selid, file, line));
-  if (NULL == selid)
-    spar_internal_error (sparp, "spar_" "selid_pop(): weird state of the stack");
-  return selid;
-}
-
-
 void
 sparp_configure_storage_and_macro_libs (sparp_t *sparp)
 {
@@ -1292,7 +1263,7 @@ spar_triple_matches_macro_quad_pattern (sparp_t *sparp, SPART *defm, SPART *grap
 }
 
 SPART *
-spar_find_defmacro_by_iri_or_fields (sparp_t *sparp, caddr_t mname, SPART **fields)
+spar_find_defmacro_by_iri_or_fields (sparp_t *sparp, const char *mname, SPART **fields)
 {
   int ctr;
 #define spar_return_if_macro_matches(sparp,mname,fields,defm) do { \
@@ -1410,17 +1381,6 @@ spar_gp_init (sparp_t *sparp, ptrlong subtype)
   sparp_env_t *env = sparp->sparp_env;
   int gp_is_top = ((WHERE_L == subtype) || (CONSTRUCT_L == subtype));
   spar_dbg_printf (("spar_gp_init (..., %ld)\n", (long)subtype));
-  if (sparp->sparp_macro_mode)
-    {
-      caddr_t selid;
-      if (DEFMACRO_L == subtype)
-        selid = sparp->sparp_current_macro->_.defmacro.selid;
-      else
-        selid = spar_mkid (sparp, "@s");
-      spar_selid_push_reused (sparp, selid);
-    }
-  else if (!gp_is_top)
-    spar_selid_push (sparp);
   t_set_push (&(env->spare_acc_triples), NULL);
   t_set_push (&(env->spare_acc_filters), NULL);
   t_set_push (&(env->spare_context_gp_subtypes), (caddr_t)subtype);
@@ -1461,14 +1421,22 @@ SPART *
 spar_gp_finalize (sparp_t *sparp, SPART **options)
 {
   sparp_env_t *env = sparp->sparp_env;
-  caddr_t orig_selid = (caddr_t)(env->spare_selids->data);
+  caddr_t orig_selid;
   dk_set_t membs;
   int all_ctr, opt_ctr;
   dk_set_t filts;
-  ptrlong subtype;
+  ptrlong subtype = (ptrlong)(env->spare_context_gp_subtypes->data);
   SPART *res;
-  subtype = (ptrlong)(env->spare_context_gp_subtypes->data);
-  spar_dbg_printf (("spar_gp_finalize (..., %ld)\n", (long)subtype));
+  if (sparp->sparp_macro_mode)
+    {
+      if (DEFMACRO_L == subtype)
+        orig_selid = sparp->sparp_current_macro->_.defmacro.selid;
+      else
+        orig_selid = spar_mkid (sparp, "@s");
+    }
+  else
+    orig_selid = spar_mkid (sparp, "s");
+  spar_dbg_printf (("spar_gp_finalize (..., %ld), orig_selid %s\n", (long)subtype, orig_selid));
   sparp->sparp_sg->sg_invalidated_bnode_labels = dk_set_conc (
     (dk_set_t)t_set_pop (&(sparp->sparp_sg->sg_bnode_label_sets)), 
     sparp->sparp_sg->sg_invalidated_bnode_labels );
@@ -1532,15 +1500,12 @@ check_optionals:
                             continue;
                           t_set_delete (&filts, filt);
                           t_set_push (&left_ft_filts, filt);
-                          /* A cheat use of sparp_set_options_selid_and_tabid for funcall.argtrees instead of smth.options, looks OK for freetext */
-                          sparp_set_options_selid_and_tabid (sparp, filt->_.funcall.argtrees, (caddr_t)(env->spare_selids->data), NULL /* why memb->_.triple.tabid ? */);
                           break;
                         }
                       END_DO_SET()
                     }
                   t_set_push (&left_membs, memb);
                 }
-              spar_gp_replace_selid (sparp, left_membs, orig_selid, (caddr_t)(env->spare_selids->data));
               env->spare_acc_triples->data = left_membs; /* a revlist is set to a revlist, no reverse needed */
               env->spare_acc_filters->data = left_ft_filts; /* same is true for filters, even if not so important */
               left_group = spar_gp_finalize (sparp, NULL);
@@ -1548,6 +1513,11 @@ check_optionals:
               goto check_optionals; /* see above */
             }
           opt_ctr++;
+        }
+      else if (SPAR_TRIPLE == SPART_TYPE (memb))
+        {
+          memb->_.triple.selid = orig_selid;
+          memb->_.triple.tabid = t_box_sprintf (100, "%s_t%d", orig_selid, sparp->sparp_key_gen++);
         }
       all_ctr++;
     }
@@ -1559,8 +1529,6 @@ check_optionals:
     NULL,
     orig_selid,
     NULL, (ptrlong)(0), (ptrlong)(0), options );
-  if ((CONSTRUCT_L != subtype) && (WHERE_L != subtype)) /* CONSTRUCT_L did not push to stack of selids, using one that will be used in WHERE_L */
-    spar_selid_pop (sparp);
   return res;
 }
 
@@ -1584,6 +1552,7 @@ spar_gp_finalize_with_inline_data (sparp_t *sparp, SPART **vars, SPART ***rows)
   SPART *gp = spar_gp_finalize (sparp, NULL);
   SPART *binv = spar_make_bindings_inv_with_fake_equivs (sparp, vars, rows, gp);
   gp->_.gp.subquery = binv;
+  return gp;
 }
 
 void spar_gp_add_member (sparp_t *sparp, SPART *memb)
@@ -1654,16 +1623,13 @@ spar_gp_finalize_binds (sparp_t *sparp, dk_set_t bind_revlist)
   type_of_gp_to_resume = inner_gp->_.gp.subtype;
   inner_gp->_.gp.subtype = WHERE_L;
   spar_env_push (sparp);
-  spar_selid_push (sparp);
   subselect_top = spar_make_top (sparp, SELECT_L, (SPART **)_STAR,
-    spar_selid_pop (sparp), inner_gp,
+    inner_gp,
     (SPART **)NULL, (SPART *)NULL, (SPART **)NULL, (SPART *)NULL /* i.e., no limit */, (SPART *)t_box_num_nonull (0), NULL);
   sparp_expand_top_retvals (sparp, subselect_top, 1 /* safely_copy_all_vars */, bind_revlist);
   spar_env_pop (sparp);
   spar_gp_init (sparp, type_of_gp_to_resume);
-  spar_selid_push (sparp);
   spar_gp_init (sparp, SELECT_L);
-  spar_selid_push (sparp);
   wrapper_gp = spar_gp_finalize_with_subquery (sparp, NULL, subselect_top);
   spar_gp_add_member (sparp, wrapper_gp);
 }
@@ -2139,7 +2105,7 @@ spar_describe_restricted_by_physical (sparp_t *sparp, SPART **retvals)
   SPART *dflt_s = NULL;
   SPART *triple;
   int s_ctr;
-  spar_selid_push_reused (sparp, uname__ref);
+  /*spar_selid_push_reused (sparp, uname__ref);*/
   t_set_push (&(sparp->sparp_env->spare_context_gp_subtypes), (caddr_t)((ptrlong)WHERE_L));
   triple = spar_make_plain_triple (sparp,
     spar_make_fake_blank_node (sparp),
@@ -2147,7 +2113,7 @@ spar_describe_restricted_by_physical (sparp_t *sparp, SPART **retvals)
     spar_make_fake_blank_node (sparp),
     spar_make_fake_blank_node (sparp),
     (caddr_t)(_STAR), NULL );
-  spar_selid_pop (sparp);
+  /*spar_selid_pop (sparp);*/
   t_set_pop (&(sparp->sparp_env->spare_context_gp_subtypes));
   DO_BOX_FAST (SPART *, s, s_ctr, retvals)
     {
@@ -2379,8 +2345,7 @@ sparp_gp_trav_rename_for_having (sparp_t *sparp, SPART *curr, sparp_trav_state_t
 }
 
 SPART *
-spar_make_top_or_special_case_from_wm (sparp_t *sparp, ptrlong subtype, SPART **retvals,
-  caddr_t retselid, SPART *wm)
+spar_make_top_or_special_case_from_wm (sparp_t *sparp, ptrlong subtype, SPART **retvals, SPART *wm)
 {
   SPART *pattern = wm->_.wm.where_gp;
   SPART **groupings = wm->_.wm.groupings;
@@ -2475,12 +2440,12 @@ spar_make_top_or_special_case_from_wm (sparp_t *sparp, ptrlong subtype, SPART **
       sparp->sparp_env->spare_output_valmode_name,	/* #2 */
       sparp->sparp_env->spare_output_format_name,	/* #3 */
       retname,					/* #4 */
-      retselid,					/* #5 */
+      NULL /* retselid */,			/* #5 */
       limit,					/* #6 */
       offset );					/* #7 */
     } while (0);
 /* The default is, of course, a plain query */
-  return spar_make_top (sparp, subtype, retvals, retselid, pattern, groupings, having, order, limit, offset, binv);
+  return spar_make_top (sparp, subtype, retvals, pattern, groupings, having, order, limit, offset, binv);
 }
 
 SPART *
@@ -2527,6 +2492,7 @@ spar_make_bindings_inv_with_fake_equivs (sparp_t *sparp, SPART **vars, SPART ***
       else
         {
           eq->e_gp = wrapper_gp;
+          eq->e_vars[0]->_.var.selid = wrapper_gp->_.gp.selid;
           wrapper_gp->_.gp.equiv_indexes[varctr] = eq->e_own_idx;
         }
     }
@@ -2561,10 +2527,11 @@ spar_make_sources_like_top (sparp_t *sparp, ptrlong top_subtype)
 
 SPART *
 spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
-  caddr_t retselid, SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset, SPART *binv)
+  SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset, SPART *binv)
 {
   sparp_env_t *env = sparp->sparp_env;
   caddr_t final_output_format_name;
+  caddr_t orig_selid;
   SPART **sources = spar_make_sources_like_top (sparp, subtype);
   switch (subtype)
     {
@@ -2589,11 +2556,12 @@ spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
       else
         limit = spar_make_funcall (sparp, 0, "bif:__max", (SPART **)t_list (2, limit, t_box_num_nonull (hard_lim)));
     }
+  orig_selid = pattern->_.gp.selid;
   return spartlist (sparp, 17, SPAR_REQ_TOP, subtype,
     env->spare_output_valmode_name,
     final_output_format_name,
     t_box_copy (env->spare_storage_name),
-    retvals, /* NULL, orig_retvals */ NULL /* expanded_orig_retvals */, retselid,
+    retvals, /* NULL, orig_retvals */ NULL /* expanded_orig_retvals */, orig_selid,
     sources, pattern, groupings, having, order,
     limit, offset, binv, t_box_num ((ptrlong)(env)) );
 }
@@ -2613,7 +2581,6 @@ spar_gp_add_union_of_triple_and_inverses (sparp_t *sparp, SPART *graph, SPART *s
   if (SPAR_TRIPLE != SPART_TYPE (triple))
     spar_error (sparp, "Property name \"%.200s\" has special meaning that conflicts with its declaration in inference rules \"%.200s\" as a property with inverse",
       predicate->_.qname.val, sparp->sparp_env->spare_inference_name );
-  sparp_set_triple_selid_and_tabid (sparp, triple, (caddr_t)(sparp->sparp_env->spare_selids->data), spar_mkid (sparp, "t"));
   if (NULL != options)
     sparp_validate_options_of_tree (sparp, triple, options);
   gp = spar_gp_finalize (sparp, NULL);
@@ -2636,7 +2603,6 @@ spar_gp_add_union_of_triple_and_inverses (sparp_t *sparp, SPART *graph, SPART *s
       triple->_.triple.tr_predicate->_.qname.val = inv_p_name;
       if (SPAR_IS_BLANK_OR_VAR (triple->_.triple.tr_object))
         triple->_.triple.tr_object->_.var.rvr.rvrRestrictions &= ~SPART_VARR_IS_REF;
-      sparp_set_triple_selid_and_tabid (sparp, triple, (caddr_t)(sparp->sparp_env->spare_selids->data), spar_mkid (sparp, "t"));
       gp = spar_gp_finalize (sparp, NULL);
       spar_gp_add_member (sparp, gp);
     }
@@ -2667,13 +2633,12 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
 {
 #ifdef DEBUG
   sparp_env_t *saved_env = sparp->sparp_env;
-  dk_set_t selid_stack = sparp->sparp_env->spare_selids;
   dk_set_t filters_stack = sparp->sparp_env->spare_acc_filters;
   dk_set_t members_stack = sparp->sparp_env->spare_acc_triples;
 #endif
   SPART *subselect_top, *where_gp, *wrapper_gp, *fields[4];
   SPART *subj_var, *obj_var, **retvals;
-  caddr_t subj_vname, obj_vname, retval_selid, gp_selid;
+  caddr_t subj_vname, obj_vname;
   int subj_is_plain_var = 0, obj_is_plain_var = 0, retvalctr, fld_ctr;
   int subj_stype = SPART_TYPE (subject);
   int obj_stype = SPART_TYPE (object);
@@ -2685,11 +2650,10 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
     obj_is_plain_var = SPART_VARNAME_IS_PLAIN(object->_.var.vname);
   else if ((SPAR_QNAME != obj_stype) && (SPAR_LIT != obj_stype))
     spar_error (sparp, "Object of transitive triple pattern should be variable or QName or literal, not blank node");
-  subj_vname = t_box_sprintf (40, "_::trans_subj_%.20s", (caddr_t)(sparp->sparp_env->spare_selids->data));
-  obj_vname = t_box_sprintf (40, "_::trans_obj_%.20s", (caddr_t)(sparp->sparp_env->spare_selids->data));
+  subj_vname = spar_mkid (sparp, "_::trans_subj");
+  obj_vname = spar_mkid (sparp, "_::trans_obj");
   spar_gp_init (sparp, 0);
   spar_env_push (sparp);
-  spar_selid_push (sparp);
   fields[0] = graph;
   fields[1] = spar_make_variable (sparp, subj_vname);
   fields[2] = predicate;
@@ -2703,7 +2667,6 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
   if (0 == retvalctr)
     retvalctr = 1;
   retvals = (SPART **)t_alloc_list (retvalctr);
-  retval_selid = (caddr_t)(sparp->sparp_env->spare_selids->data);
   retvalctr = 0;
   for (fld_ctr = 0; fld_ctr < 4; fld_ctr++)
     {
@@ -2720,14 +2683,8 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
     retvals[0] = (SPART *)t_box_num_nonull (1);
   t_set_push (&(sparp->sparp_env->spare_propvar_sets), NULL);
   spar_gp_init (sparp, WHERE_L);
-  gp_selid = (caddr_t)(sparp->sparp_env->spare_selids->data);
   subj_var = spar_make_variable (sparp, subj_vname);
   obj_var = spar_make_variable (sparp, obj_vname);
-  for (fld_ctr = 0; fld_ctr < 4; fld_ctr++)
-    {
-      if (SPAR_IS_BLANK_OR_VAR (fields[fld_ctr]))
-        fields[fld_ctr]->_.var.selid = gp_selid;
-    }
   spar_gp_add_triplelike (sparp, graph, subj_var, predicate, obj_var, qm_iri_or_pair, NULL, banned_tricks | SPAR_TRIPLE_TRICK_TRANSITIVE);
   sparp_set_option (sparp, &options, T_IN_L,
     spartlist (sparp, 2, SPAR_LIST, t_list (1, spar_make_variable (sparp, subj_vname))),
@@ -2737,12 +2694,11 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
     SPARP_SET_OPTION_REPLACING );
   where_gp = spar_gp_finalize (sparp, NULL);
   subselect_top = spar_make_top (sparp, SELECT_L, retvals,
-    spar_selid_pop (sparp), where_gp,
+    where_gp,
     (SPART **)NULL, (SPART *)NULL, (SPART **)NULL, (SPART *)NULL /* i.e., no limit */, (SPART *)t_box_num_nonull (0), NULL);
   sparp_expand_top_retvals (sparp, subselect_top, 1 /* safely_copy_all_vars */, NULL);
   spar_env_pop (sparp);
   t_check_tree (options);
-  sparp_set_options_selid_and_tabid (sparp, options, (caddr_t)(sparp->sparp_env->spare_selids->data), NULL);
   wrapper_gp = spar_gp_finalize_with_subquery (sparp, options, subselect_top);
   spar_gp_add_member (sparp, wrapper_gp);
   spar_gp_add_transitive_triple_anchor_filter (sparp, subj_vname, subject, subj_is_plain_var);
@@ -2750,8 +2706,6 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
 #ifdef DEBUG
   if (saved_env != sparp->sparp_env)
     spar_internal_error (sparp, "spar_" "gp_add_transitive_triple(): mismatch in env");
-  if (selid_stack != sparp->sparp_env->spare_selids)
-    spar_internal_error (sparp, "spar_" "gp_add_transitive_triple(): mismatch in selid");
   if (filters_stack != sparp->sparp_env->spare_acc_filters)
     spar_internal_error (sparp, "spar_" "gp_add_transitive_triple(): mismatch in filters");
   if (members_stack != sparp->sparp_env->spare_acc_triples)
@@ -2798,17 +2752,12 @@ g_found:
 SPART *
 spar_gp_add_ppath_leaf (sparp_t *sparp,  SPART **parts, int part_count, int pp_makes_union, int pp_subtype, SPART *graph, SPART *subject, SPART *object, caddr_t qm_iri_or_pair, int banned_tricks)
 {
-  caddr_t ctx_selid;
   SPART *res;
   graph = (SPART *)t_box_copy_tree ((caddr_t)graph);
   subject = (SPART *)t_box_copy_tree ((caddr_t)subject);
   object = (SPART *)t_box_copy_tree ((caddr_t)object);
   if (pp_makes_union)
     spar_gp_init (sparp, 0);
-  ctx_selid = (caddr_t)(sparp->sparp_env->spare_selids->data);
-  if (SPAR_IS_BLANK_OR_VAR (graph)) graph->_.var.selid = /*t_box_copy*/ctx_selid;
-  if (SPAR_IS_BLANK_OR_VAR (subject)) subject->_.var.selid = /*t_box_copy*/ctx_selid;
-  if (SPAR_IS_BLANK_OR_VAR (object)) object->_.var.selid = /*t_box_copy*/ctx_selid;
   if ((0 == pp_subtype) && (1 == part_count))
     res = spar_gp_add_triplelike (sparp, graph, subject, parts[0], object, qm_iri_or_pair, NULL, banned_tricks);
   else
@@ -2895,7 +2844,6 @@ spar_gp_add_ppath_triples (sparp_t *sparp, SPART *graph, SPART *subject, SPART *
     case '|': case 'D':
       {
         int union_needed = ((UNION_L != parent_gp_subtype) || ('D' == pp->_.ppath.subtype));
-        SPART *wrap_gp;
         if (union_needed)
           spar_gp_init (sparp, UNION_L);
         for (part_ctr = 0; part_ctr < part_count; part_ctr++)
@@ -2920,7 +2868,7 @@ spar_gp_add_ppath_triples (sparp_t *sparp, SPART *graph, SPART *subject, SPART *
           }
         if (1 != unbox (pp->_.ppath.minrepeat))
           {
-            t_set_push (&opts, box_copy (pp->_.ppath.minrepeat));
+            t_set_push (&opts, (NULL == pp->_.ppath.minrepeat) ? t_box_num_nonull (0) : box_copy (pp->_.ppath.minrepeat));
             t_set_push (&opts, (caddr_t)((ptrlong)T_MIN_L));
           }
         t_set_push (&opts, (caddr_t)((ptrlong)1));
@@ -3185,8 +3133,6 @@ spar_gp_add_triplelike (sparp_t *sparp, SPART *graph, SPART *subject, SPART *pre
 
 mcall_not_found: ;
 plain_triple_in_ctor:
-  if (SPAR_IS_BLANK_OR_VAR (graph))
-    graph->_.var.selid = env->spare_selids->data;
   if (graph_can_bring_filters)
     spar_gp_add_filters_for_graph (sparp, graph, 0, 0);
   if (NULL != graph_eq_from_option_expn)
@@ -3203,15 +3149,12 @@ SPART *
 spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri_or_pair, SPART **options)
 {
   sparp_env_t *env = sparp->sparp_env;
-  caddr_t key;
   int fctr;
   SPART *triple;
-  key = t_box_sprintf (0x100, "%s-t%d", env->spare_selids->data, sparp->sparp_key_gen);
-  sparp->sparp_key_gen += 1;
   triple = spartlist (sparp, 17, SPAR_TRIPLE,
     (ptrlong)0,
     graph, subject, predicate, object, qm_iri_or_pair,
-    env->spare_selids->data, key, NULL,
+    NULL /*selid*/, NULL /*tabid*/, NULL,
     NULL, NULL, NULL, NULL,
     options, (ptrlong)0, (ptrlong)((sparp->sparp_unictr)++) );
   if (CONSTRUCT_L == SPARP_ENV_CONTEXT_GP_SUBTYPE(sparp))
@@ -3223,7 +3166,6 @@ spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *pre
       if ((SPAR_VARIABLE == ft) || (SPAR_BLANK_NODE_LABEL == ft))
         {
           fld->_.var.rvr.rvrRestrictions |= sparp_tr_usage_natural_restrictions[fctr];
-          fld->_.var.tabid = key;
           fld->_.var.tr_idx = fctr;
           if (!(SPART_VARR_GLOBAL & fld->_.var.rvr.rvrRestrictions))
             t_set_push_new_string (&(env->spare_good_graph_varnames), fld->_.var.vname);
@@ -3503,7 +3445,6 @@ spar_make_ppath (sparp_t *sparp, char subtype, SPART *part1, SPART *part2, ptrlo
         }
       return spartlist (sparp, 6, SPAR_PPATH, (ptrlong)subtype, (SPART **)t_list (1, part1), t_box_num (mincount), t_box_num (maxcount), (ptrlong)0);
     }
-ierr:
   spar_internal_error (sparp, "Unsupported type of property path to make");
   return NULL;
 }
@@ -3531,7 +3472,6 @@ spar_make_param_or_variable (sparp_t *sparp, caddr_t name)
 SPART *
 spar_make_variable (sparp_t *sparp, caddr_t name)
 {
-  sparp_env_t *env = sparp->sparp_env;
   SPART *res;
   int is_global = SPART_VARNAME_IS_GLOB(name);
   caddr_t selid = NULL;
@@ -3551,18 +3491,19 @@ spar_make_variable (sparp_t *sparp, caddr_t name)
       else if (!is_global)
         spar_error (sparp, "non-global variable '%.100s' can not be used outside any group pattern or result-set list", name);
     }
-  if (NULL != env->spare_selids)
-    selid = env->spare_selids->data;
-  else if (is_global) /* say, 'insert in graph ?:someglobalvariable {...} where {...} */
+  if (is_global) /* say, 'insert in graph ?:someglobalvariable {...} where {...} */
     selid = t_box_dv_uname_string ("(global)");
   else if (SPART_VARNAME_IS_SPECIAL(name)) /* say, '@"limofs"."describe-1"' */
     selid = t_box_dv_uname_string ("(special)");
+  /*!!! TBD finda replacement for
   else
-    spar_internal_error (sparp, "non-global variable outside any group pattern or result-set list");
-  res = spartlist (sparp, 6 + (sizeof (rdf_val_range_t) / sizeof (caddr_t)),
+    spar_internal_error (sparp, "non-global variable outside any group pattern or result-set list"); */
+  else
+    selid = NULL;
+  res = spartlist (sparp, 7 + (sizeof (rdf_val_range_t) / sizeof (caddr_t)),
       SPAR_VARIABLE, name,
       selid, NULL,
-      (ptrlong)(SPART_VAR_OUTSIDE_TRIPLE), SPART_BAD_EQUIV_IDX, SPART_RVR_LIST_OF_NULLS );
+      (ptrlong)(SPART_VAR_OUTSIDE_TRIPLE), SPART_BAD_EQUIV_IDX, SPART_RVR_LIST_OF_NULLS, (ptrlong)(0x0) );
   res->_.var.rvr.rvrRestrictions = (is_global ? SPART_VARR_GLOBAL : 0);
   return res;
 }
@@ -3576,16 +3517,15 @@ spar_make_macropu (sparp_t *sparp, caddr_t name, ptrlong pos)
 
 SPART *spar_make_blank_node (sparp_t *sparp, caddr_t name, int bracketed)
 {
-  sparp_env_t *env = sparp->sparp_env;
   SPART *res;
   if ((sparp->sparp_in_precode_expn) && !(bracketed & 0x2))
     spar_error (sparp, "Blank node '%.100s' is not allowed in a constant clause", name);
-  if (NULL == env->spare_selids)
-    spar_error (sparp, "Blank nodes (e.g., '%.100s') can not be used outside any group pattern or result-set list", name);
-  res = spartlist (sparp, 7 + (sizeof (rdf_val_range_t) / sizeof (caddr_t)),
+  /*if (NULL == env->spare_selids)
+    spar_error (sparp, "Blank nodes (e.g., '%.100s') can not be used outside any group pattern or result-set list", name);*/
+  res = spartlist (sparp, 8 + (sizeof (rdf_val_range_t) / sizeof (caddr_t)),
       SPAR_BLANK_NODE_LABEL, name,
-      env->spare_selids->data, NULL,
-      (ptrlong)SPART_VAR_OUTSIDE_TRIPLE, SPART_BAD_EQUIV_IDX, SPART_RVR_LIST_OF_NULLS, (ptrlong)bracketed );
+      NULL, NULL,
+      (ptrlong)SPART_VAR_OUTSIDE_TRIPLE, SPART_BAD_EQUIV_IDX, SPART_RVR_LIST_OF_NULLS, (ptrlong)(0x0), (ptrlong)bracketed );
   res->_.var.rvr.rvrRestrictions = /*SPART_VARR_IS_REF | SPART_VARR_IS_BLANK |*/ SPART_VARR_NOT_NULL;
   return res;
 }
@@ -3593,10 +3533,10 @@ SPART *spar_make_blank_node (sparp_t *sparp, caddr_t name, int bracketed)
 SPART *spar_make_fake_blank_node (sparp_t *sparp)
 {
   SPART *res;
-  res = spartlist (sparp, 7 + (sizeof (rdf_val_range_t) / sizeof (caddr_t)),
+  res = spartlist (sparp, 8 + (sizeof (rdf_val_range_t) / sizeof (caddr_t)),
       SPAR_BLANK_NODE_LABEL, uname__ref,
       uname__ref, NULL,
-      (ptrlong)(0), SPART_BAD_EQUIV_IDX, SPART_RVR_LIST_OF_NULLS, (ptrlong)0x2 );
+      (ptrlong)(0), SPART_BAD_EQUIV_IDX, SPART_RVR_LIST_OF_NULLS, (ptrlong)(0x0), (ptrlong)0x2 );
   res->_.var.rvr.rvrRestrictions = /*SPART_VARR_IS_REF | SPART_VARR_IS_BLANK |*/ SPART_VARR_NOT_NULL;
   return res;
 }
@@ -3932,7 +3872,7 @@ bad_regex:
 }
 
 void
-spar_verify_funcall_security (sparp_t *sparp, int *is_agg_ret, caddr_t *fname_ptr, SPART **args)
+spar_verify_funcall_security (sparp_t *sparp, int *is_agg_ret, const char **fname_ptr, SPART **args)
 {
   ccaddr_t fname = fname_ptr[0];
   int uid, need_check_for_sparql11_agg = 0, need_check_for_infection_chars = 0;
@@ -4297,7 +4237,7 @@ ofs_found:
 }
 
 SPART *
-sparp_make_macro_call (sparp_t *sparp, caddr_t mname, int call_is_explicit, SPART **args)
+sparp_make_macro_call (sparp_t *sparp, const char *mname, int call_is_explicit, SPART **args)
 {
   SPART *mdecl = spar_find_defmacro_by_iri_or_fields (sparp, mname, NULL);
   SPART *g_ctx, *res;
@@ -4345,13 +4285,11 @@ spar_make_create_macro_lib (sparp_t *sparp)
 {
   SPART *fake_sol;
   SPART *call, *top;
-  spar_selid_push (sparp);
   fake_sol = spar_make_fake_action_solution (sparp);
   call = spar_make_funcall (sparp, 0, t_box_dv_short_string ("sql:RDF_SML_CREATE"),
     (SPART **)t_list (2, sparp->sparp_macrolib_to_create, t_box_dv_short_string (sparp->sparp_text)) );
   top = spar_make_top_or_special_case_from_wm (sparp, SPAR_SML_CREATE,
-    (SPART **)t_list (1, call),
-    spar_selid_pop (sparp), fake_sol );
+    (SPART **)t_list (1, call), fake_sol );
   return top;
 }
 
@@ -4360,13 +4298,11 @@ spar_make_drop_macro_lib (sparp_t *sparp, SPART *sml_precode, int silent)
 {
   SPART *fake_sol;
   SPART *call, *top;
-  spar_selid_push (sparp);
   fake_sol = spar_make_fake_action_solution (sparp);
   call = spar_make_funcall (sparp, 0, t_box_dv_short_string ("sql:RDF_SML_DROP"),
     (SPART **)t_list (2, sml_precode, t_box_num_nonull (silent)) );
   top = spar_make_top_or_special_case_from_wm (sparp, SPAR_SML_DROP,
-    (SPART **)t_list (1, call),
-    spar_selid_pop (sparp), fake_sol );
+    (SPART **)t_list (1, call), fake_sol );
   return top;
 }
 
@@ -4376,7 +4312,6 @@ spar_make_sparul_mdw (sparp_t *sparp, ptrlong subtype, const char *opname, SPART
   SPART *fake_sol;
   SPART *call, *top, **options = NULL, *options_vector_call;
   caddr_t log_mode = sparp->sparp_env->spare_sparul_log_mode;
-  spar_selid_push (sparp);
   fake_sol = spar_make_fake_action_solution (sparp);
   if (NULL == log_mode)
     log_mode = t_NEW_DB_NULL;
@@ -4412,8 +4347,7 @@ spar_make_sparul_mdw (sparp_t *sparp, ptrlong subtype, const char *opname, SPART
       spar_exec_uid_and_gs_cbk (sparp), log_mode, spar_compose_report_flag (sparp), options_vector_call,
       (SPART *)t_box_num_nonull (silent) ) );
   top = spar_make_top_or_special_case_from_wm (sparp, subtype,
-    (SPART **)t_list (1, call),
-    spar_selid_pop (sparp), fake_sol );
+    (SPART **)t_list (1, call), fake_sol );
   return top;
 }
 
@@ -4570,11 +4504,9 @@ spar_make_topmost_sparul_sql (sparp_t *sparp, SPART **actions)
   END_DO_BOX_FAST;
   sparp->sparp_env->spare_output_format_name = saved_format_name;
   sparp->sparp_env->spare_output_valmode_name = saved_valmode_name;
-  spar_selid_push (sparp);
   fake_sol = spar_make_fake_action_solution (sparp);
   top = spar_make_top_or_special_case_from_wm (sparp, SPARUL_RUN_SUBTYPE,
-    (SPART **)t_list (1, spar_make_funcall (sparp, 0, "sql:SPARUL_RUN", action_sqls)),
-    spar_selid_pop (sparp), fake_sol );
+    (SPART **)t_list (1, spar_make_funcall (sparp, 0, "sql:SPARUL_RUN", action_sqls)), fake_sol );
   return top;
 }
 
@@ -5054,7 +4986,6 @@ spar_env_push (sparp_t *sparp)
   ENV_COPY (spare_good_graph_varnames);
   ENV_COPY (spare_good_graph_varname_sets);
   ENV_COPY (spare_good_graph_bmk);
-  /* no copy for spare_selids */
   ENV_COPY (spare_global_var_names);
   ENV_COPY (spare_globals_mode);
   ENV_COPY (spare_global_num_offset);
@@ -5436,7 +5367,6 @@ bif_sparql_quad_maps_for_quad_impl (caddr_t * qst, caddr_t * err_ret, state_slot
       if (DV_STRING == DV_TYPE_OF (storage_name))
         storage_name = t_box_dv_uname_string (storage_name);
       sparp.sparp_storage = sparp_find_storage_by_name (storage_name);
-      t_set_push (&(spare.spare_selids), t_box_dv_short_string (fname));
       t_set_push (&(spare.spare_context_gp_subtypes), (caddr_t)((ptrlong)WHERE_L));
       triple = spar_make_plain_triple (&sparp,
         spar_make_literal_from_sql_box (&sparp, sqlvals[SPART_TRIPLE_GRAPH_IDX]		, ml_make_mode),
@@ -5475,7 +5405,7 @@ bif_sparql_quad_maps_for_quad_impl (caddr_t * qst, caddr_t * err_ret, state_slot
           for (case_ctr = case_count; case_ctr--; /* no step */)
             {
               triple_case_t *tc = cases [case_ctr];
-              jso_rtti_t *sub = gethash (tc->tc_qm, jso_rttis_of_structs);
+              jso_rtti_t *sub = (jso_rtti_t *)gethash (tc->tc_qm, jso_rttis_of_structs);
               caddr_t qm_name;
               if (NULL == sub)
                 spar_internal_error (&sparp, "corrupted metadata: PointerToCorrupted");
@@ -5492,7 +5422,7 @@ bif_sparql_quad_maps_for_quad_impl (caddr_t * qst, caddr_t * err_ret, state_slot
               {
                 triple_case_t *tc = cases [case_ctr];
                 int fld_ctr;
-                int unique_bij_fld = -1;
+                /* int unique_bij_fld = -1; */
                 for (fld_ctr = SPART_TRIPLE_FIELDS_COUNT; fld_ctr--; /* no step */)
                   {
                     int col_ctr, col_count;
@@ -5510,8 +5440,8 @@ bif_sparql_quad_maps_for_quad_impl (caddr_t * qst, caddr_t * err_ret, state_slot
                     qmv = SPARP_FIELD_QMV_OF_QM (tc->tc_qm, fld_ctr);
                     if ((NULL == qmv) || (!qmv->qmvFormat->qmfIsBijection && !qmv->qmvFormat->qmfDerefFlags))
                       continue;
-                    if (qmv->qmvColumnsFormKey)
-                      unique_bij_fld = fld_ctr;
+                    /* if (qmv->qmvColumnsFormKey)
+                      unique_bij_fld = fld_ctr; */
                     col_count = BOX_ELEMENTS (qmv->qmvColumns);
                     col_descs = (caddr_t **)dk_alloc_list (col_count);
                     alias_count = BOX_ELEMENTS_0 (qmv->qmvATables);

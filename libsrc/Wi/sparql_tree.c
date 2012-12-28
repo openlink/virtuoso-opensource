@@ -777,7 +777,6 @@ spar_macroprocess_tree (sparp_t *sparp, SPART *tree, spar_mproc_ctx_t *ctx)
               SPART **membs = tree->_.gp.members;
               SPART **filts = tree->_.gp.filters;
               int memb_ctr, memb_count = BOX_ELEMENTS (membs);
-              int filt_count = BOX_ELEMENTS_0 (filts);
               for (memb_ctr = 0; memb_ctr < memb_count; memb_ctr++)
                 {
                   SPART *memb = membs[memb_ctr];
@@ -816,7 +815,6 @@ spar_macroprocess_tree (sparp_t *sparp, SPART *tree, spar_mproc_ctx_t *ctx)
                             tree->_.gp.filters = filts = t_spartlist_concat (tree->_.gp.filters, ctx->smpc_ins_filts);
                             ctx->smpc_ins_filts = NULL;
                           }
-                        filt_count = BOX_ELEMENTS (filts);
                         break;
                       }
                     case SPAR_MACROPU:
@@ -838,10 +836,7 @@ spar_macroprocess_tree (sparp_t *sparp, SPART *tree, spar_mproc_ctx_t *ctx)
                         memb_count = BOX_ELEMENTS (membs);
                         memb_ctr--;
                         if (BOX_ELEMENTS_0 (arg_copy->_.gp.filters))
-                          {
-                            tree->_.gp.filters = filts = t_spartlist_concat (tree->_.gp.filters, arg_copy->_.gp.filters);
-                            filt_count = BOX_ELEMENTS (filts);
-                          }
+                          tree->_.gp.filters = filts = t_spartlist_concat (tree->_.gp.filters, arg_copy->_.gp.filters);
                         break;
                       }
                     default:
@@ -853,7 +848,6 @@ spar_macroprocess_tree (sparp_t *sparp, SPART *tree, spar_mproc_ctx_t *ctx)
                               tree->_.gp.filters = filts = t_spartlist_concat (tree->_.gp.filters, ctx->smpc_ins_filts);
                               ctx->smpc_ins_filts = NULL;
                             }
-                          filt_count = BOX_ELEMENTS (filts);
                         }
                       break;
                     }
@@ -898,9 +892,7 @@ spar_macroprocess_tree (sparp_t *sparp, SPART *tree, spar_mproc_ctx_t *ctx)
               default:
                 {
                   SPART *local_bnode1, *local_bnode2, *eq_bop;
-                  spar_selid_push_reused (sparp, tree->_.triple.selid);
                   local_bnode1 = spar_make_blank_node (sparp, spar_mkid (sparp, "_:mcall"), 1);
-                  spar_selid_pop (sparp);
                   tree->_.triple.tr_fields[ctr] = local_bnode1;
                   local_bnode1->_.var.tr_idx = ctr;
                   local_bnode1->_.var.tabid = tree->_.triple.tabid;
@@ -1110,8 +1102,7 @@ sparp_equiv_alloc (sparp_t *sparp)
 void
 sparp_equiv_dbg_gp_print (sparp_t *sparp, SPART *tree)
 {
-  int eq_ctr, eq_count;
-  eq_count = tree->_.gp.equiv_count;
+  int eq_ctr;
   SPARP_FOREACH_GP_EQUIV(sparp,tree,eq_ctr,eq)
     {
       int varname_count, varname_ctr;
@@ -1145,7 +1136,7 @@ sparp_equiv_get (sparp_t *sparp, SPART *haystack_gp, SPART *needle_var, int flag
 
   eqcount = haystack_gp->_.gp.equiv_count;
   eq_idxs = haystack_gp->_.gp.equiv_indexes;
-#ifdef DEBUG
+#ifndef NDEBUG
   if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &sparp, 1000))
     spar_internal_error (NULL, "sparp_equiv_get(): stack overflow");
   switch (SPART_TYPE(needle_var))
@@ -1161,14 +1152,8 @@ sparp_equiv_get (sparp_t *sparp, SPART *haystack_gp, SPART *needle_var, int flag
         break;
     default: spar_internal_error (sparp, "sparp_" "equiv_get() with non-variable SPART *needle_var"); break;
     }
-  if ((flags & SPARP_EQUIV_INS_VARIABLE) && strcmp (needle_var->_.var.selid, haystack_gp->_.gp.selid))
-    {
-/* this masqeraded an error:
-      if (needle_var->_.var.selid == uname_nil)
-        needle_var->_.var.selid = haystack_gp->_.gp.selid;
-      else */
-        spar_internal_error (sparp, "sparp_" "equiv_get() with SPARP_EQUIV_INS_VARIABLE and wrong selid");
-    }
+  if ((flags & SPARP_EQUIV_INS_VARIABLE) && SPARP_VAR_SELID_MISMATCHES_GP(needle_var,haystack_gp))
+    spar_internal_error (sparp, "sparp_" "equiv_get() with SPARP_EQUIV_INS_VARIABLE and wrong selid");
 #endif
   needle_var_name = (
     ((DV_STRING == DV_TYPE_OF (needle_var)) || (DV_UNAME == DV_TYPE_OF (needle_var))) ?
@@ -1177,7 +1162,7 @@ sparp_equiv_get (sparp_t *sparp, SPART *haystack_gp, SPART *needle_var, int flag
   if (!IS_BOX_POINTER (needle_var_name))
     GPF_T;
 #endif
-#ifdef DEBUG
+#ifndef NDEBUG
   if (BOX_ELEMENTS_INT_0 (eq_idxs) < eqcount)
     spar_internal_error (sparp, "gp.equivs overflow");
 #endif
@@ -1220,6 +1205,7 @@ sparp_equiv_get (sparp_t *sparp, SPART *haystack_gp, SPART *needle_var, int flag
     {
       curr_eq->e_vars = (SPART **)t_list (2, needle_var, NULL);
       needle_var->_.var.equiv_idx = curr_eq->e_own_idx;
+      needle_var->_.var.selid = haystack_gp->_.gp.selid;
       curr_eq->e_var_count = 1;
       if (SPARP_EQUIV_ADD_GSPO_USE & flags)
         curr_eq->e_gspo_uses++;
@@ -1277,6 +1263,7 @@ namesake_found:
     curr_eq->e_const_reads++;
   curr_vars[varcount++] = needle_var;
   needle_var->_.var.equiv_idx = curr_eq->e_own_idx;
+  needle_var->_.var.selid = haystack_gp->_.gp.selid;
   curr_eq->e_var_count = varcount;
 #ifdef SPARQL_DEBUG
   sparp_equiv_dbg_gp_print (sparp, haystack_gp);
@@ -2318,7 +2305,7 @@ sparp_rvr_set_by_constant (sparp_t *sparp, rdf_val_range_t *dest, ccaddr_t datat
             }
           else
             {
-              dest->rvrDatatype = xsd_type_of_box (value);
+              dest->rvrDatatype = xsd_type_of_box ((caddr_t)value);
               if (uname_xmlschema_ns_uri_hash_string == dest->rvrDatatype)
                 dest->rvrDatatype = NULL;
             }
@@ -2939,6 +2926,10 @@ sparp_clone_id (sparp_t *sparp, caddr_t orig_name)
 {
   int orig_len = strlen (orig_name);
   char buf[100];
+  if (NULL == orig_name)
+    return NULL;
+  if ('(' == orig_name[0])
+    return orig_name;
   if (orig_len > 20)
     {
       int hash;
@@ -2987,19 +2978,9 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
               break;
           if (0 > var_pos)
             spar_internal_error (sparp, "sparp_" "tree_full_clone_int(): orig var is not in its eq");
-#if 0
-          if (var_pos >= BOX_ELEMENTS (cloned_eq->e_vars))
-            spar_internal_error (sparp, "sparp_" "tree_full_clone_int(): mismatch of lengths of buffers for variables in orig and clone equivs");
-          if (NULL != cloned_eq->e_vars [var_pos])
-            spar_internal_error (sparp, "sparp_" "tree_full_clone_int(): cloned variable overwrites an var in cloned equiv");
-          cloned_eq->e_vars [var_pos] = tgt;
-          if (cloned_eq->e_var_count <= var_pos)
-            cloned_eq->e_var_count = var_pos + 1;
-#else
           if (BOX_ELEMENTS (cloned_eq->e_vars) <= cloned_eq->e_var_count)
             spar_internal_error (sparp, "sparp_" "tree_full_clone_int(): mismatch of lengths of buffer for variables in clone equiv and the number of variables");
           cloned_eq->e_vars [cloned_eq->e_var_count++] = tgt;
-#endif
           if (NULL != orig->_.var.tabid)
             cloned_eq->e_gspo_uses += 1;
           else
@@ -3012,10 +2993,11 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
             spar_internal_error (sparp, "sparp_" "tree_full_clone_int(): cloned variable is in equiv, original is not");
         }
 #ifdef DEBUG
-      if (strcmp (orig->_.var.selid, parent_gp->_.gp.selid))
+      if (SPARP_VAR_SELID_MISMATCHES_GP(orig, parent_gp))
         spar_internal_error (sparp, "sparp_" "tree_full_clone_int(): orig var is not from parent gp");
 #endif
-      tgt->_.var.selid = sparp_clone_id (sparp, orig->_.var.selid);
+      if (NULL != orig->_.var.selid)
+        tgt->_.var.selid = sparp_clone_id (sparp, orig->_.var.selid);
       if (NULL != orig->_.var.tabid)
         tgt->_.var.tabid = sparp_clone_id (sparp, orig->_.var.tabid);
       /* tgt->_.var.vname = t_box_copy (orig->_.var.vname); */
@@ -3278,7 +3260,7 @@ sparp_gp_full_clone (sparp_t *sparp, SPART *gp)
 SPART *
 sparp_tree_full_copy (sparp_t *sparp, const SPART *orig, const SPART *parent_gp)
 {
-  int defctr, defcount, fld_ctr, eq_idx;
+  int defctr, defcount, fld_ctr;
   SPART *tgt;
   switch (SPART_TYPE (orig))
     {
@@ -3289,7 +3271,6 @@ sparp_tree_full_copy (sparp_t *sparp, const SPART *orig, const SPART *parent_gp)
       return tgt;
     case SPAR_BLANK_NODE_LABEL: case SPAR_VARIABLE:
       tgt = (SPART *)t_box_copy ((caddr_t) orig);
-      eq_idx = orig->_.var.equiv_idx;
       tgt->_.var.vname = t_box_copy (orig->_.var.vname);
       sparp_rvr_copy (sparp, &(tgt->_.var.rvr), (rdf_val_range_t *) &(orig->_.var.rvr));
       return tgt;
@@ -3487,9 +3468,9 @@ sparp_gp_attach_member_int (sparp_t *sparp, SPART *parent_gp, SPART *memb, dk_se
           SPART *field = memb->_.triple.tr_fields [fld_ctr];
           if (SPAR_IS_BLANK_OR_VAR(field))
             {
-              sparp_equiv_t *parent_eq;
+              /*sparp_equiv_t *parent_eq;*/
               field->_.var.selid = memb->_.triple.selid;
-              parent_eq = sparp_equiv_get (sparp, parent_gp, field, SPARP_EQUIV_INS_VARIABLE | SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_ADD_GSPO_USE);
+              /*parent_eq =*/ sparp_equiv_get (sparp, parent_gp, field, SPARP_EQUIV_INS_VARIABLE | SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_ADD_GSPO_USE);
             }
         }
       if (NULL != memb->_.triple.options)
@@ -4832,7 +4813,7 @@ spart_dump_eq (int eq_ctr, sparp_equiv_t *eq, dk_session_t *ses)
     {
       SPART *var = eq->e_vars[var_ctr];
       SES_PRINT (ses, " ");
-      SES_PRINT (ses, ((NULL != var->_.var.tabid) ? var->_.var.tabid : var->_.var.selid));
+      SES_PRINT (ses, ((NULL != var->_.var.tabid) ? var->_.var.tabid : (NULL != var->_.var.selid) ? var->_.var.selid : "[no selid]"));
     }
   SES_PRINT (ses, ";"); spart_dump_rvr (ses, &(eq->e_rvr), eq->e_replaces_filter);
   if (SPART_BAD_EQUIV_IDX != eq->e_external_src_idx)

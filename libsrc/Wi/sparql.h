@@ -33,7 +33,7 @@ extern "C" {
 }
 #endif
 #include "shuric.h"
-
+#include "sqlbif.h"
 #include "rdf_mapping_jso.h"
 
 #ifdef DEBUG
@@ -298,8 +298,6 @@ typedef struct sparp_env_s
     dk_set_t		spare_good_graph_varnames;	/*!< Varnames found in non-optional triples before or outside, (including non-optional inside previous non-optional siblings), but not after or inside */
     dk_set_t		spare_good_graph_varname_sets;	/*!< Pointers to the spare_known_gspo_varnames stack, to pop */
     dk_set_t		spare_good_graph_bmk;		/*!< Varnames found in non-optional triples before or outside, (including non-optional inside previous non-optional siblings), but not after or inside */
-    dk_set_t		spare_selids;			/*!< Select IDs of GPs */
-    caddr_t		spare_top_retval_selid;		/*!< Select ID for variables in result set and ORDER BY clauses */
     dk_set_t		spare_global_var_names;		/*!< List of all distinct global names used in the query, to know what should be passed to 'rdf grab' procedure view */
     int			spare_globals_mode;		/*!< Flags if all global parameters are translated into ':N' because they're passed via 'params' argument of exec() inside a procedure view, */
     int			spare_global_num_offset;	/*!< If \c spare_globals_mode is set to \c SPARE_GLOBALS_ARE_COLONUMBERED then numbers of 'app-specific' global parameters starts from spare_global_num_offset up, some number of first params are system-specific. */
@@ -621,6 +619,7 @@ typedef struct spar_tree_s
         ptrlong tr_idx;		/*!< Index in quad (0 = graph ... 3 = obj) */
         ptrlong equiv_idx;
         rdf_val_range_t rvr;
+        ptrlong restr_of_col;	/*!< Bitmask that indicate which bits of rvr.rvrRestrictions are set by used qmv(s) or actual values of BINDINGS/VALUES */
       } var;
     struct { /* Note that all first members of \c retval and bnode cases should match to \c var case */
         /* #define SPAR_BLANK_NODE_LABEL	(ptrlong)1002 */
@@ -631,6 +630,7 @@ typedef struct spar_tree_s
         ptrlong tr_idx;		/*!< Index in quad (0 = graph ... 3 = obj) */
         ptrlong equiv_idx;
         rdf_val_range_t rvr;
+        ptrlong restr_of_col;	/*!< Bitmask that indicate which bits of rvr.rvrRestrictions are set by used qmv(s) or actual values of BINDINGS/VALUES */
         ptrlong bracketed;  /*!< 0 for plain, 1 for [...], 2 for fake and bnodes made for default graphs */
       } bnode;
     struct { /* Note that all first members of \c retval and bnode cases should match to \c var case */
@@ -641,6 +641,7 @@ typedef struct spar_tree_s
         ptrlong tr_idx;		/*!< Index in quad (0 = graph ... 3 = obj) */
         ptrlong equiv_idx;
         rdf_val_range_t rvr;
+        ptrlong restr_of_col;	/*!< Bitmask that indicate which bits of rvr.rvrRestrictions are set by used qmv(s) or actual values of BINDINGS/VALUES */
         SPART *gp;
         SPART *triple;
         ptrlong optional_makes_nullable;
@@ -868,20 +869,8 @@ extern caddr_t spar_mkid (sparp_t * sparp, const char *prefix);
 extern void spar_change_sign (caddr_t *lit_ptr);
 
 extern void sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t value);
-#ifdef SPARQL_DEBUG
-#define spar_selid_push(sparp) dbg_spar_selid_push (__FILE__, __LINE__, (sparp))
-#define spar_selid_push_reused(sparp,selid) dbg_spar_selid_push_reused (__FILE__, __LINE__, (sparp), (selid))
-#define spar_selid_pop(sparp) dbg_spar_selid_pop (__FILE__, __LINE__, (sparp))
-extern caddr_t dbg_spar_selid_push (const char *file, int line, sparp_t *sparp);
-extern caddr_t dbg_spar_selid_push_reused (const char *file, int line, sparp_t *sparp, caddr_t selid);
-extern caddr_t dbg_spar_selid_pop (const char *file, int line, sparp_t *sparp);
-#else
-extern caddr_t spar_selid_push (sparp_t *sparp);
-extern caddr_t spar_selid_push_reused (sparp_t *sparp, caddr_t selid);
-extern caddr_t spar_selid_pop (sparp_t *sparp);
-#endif
 
-extern SPART *spar_find_defmacro_by_iri_or_fields (sparp_t *sparp, caddr_t mname, SPART **fields);
+extern SPART *spar_find_defmacro_by_iri_or_fields (sparp_t *sparp, const char *mname, SPART **fields);
 extern void sparp_defmacro_store (sparp_t *sparp, SPART *defm);
 extern SPART *sparp_defmacro_init (sparp_t *sparp, caddr_t mname);
 extern void sparp_make_defmacro_paramnames_from_template (sparp_t *sparp, SPART *defm);
@@ -925,12 +914,11 @@ extern SPART **spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, SPART 
 extern void spar_add_rgc_vars_and_consts_from_retvals (sparp_t *sparp, SPART **retvals);
 extern SPART *spar_make_wm (sparp_t *sparp, SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset, SPART *binv);
 /*! Creates SPAR_REQ_TOP tree or a codegen for some special case. A macroexpansion is made before recognizing special cases. */
-extern SPART *spar_make_top_or_special_case_from_wm (sparp_t *sparp, ptrlong subtype, SPART **retvals,
-  caddr_t retselid, SPART *wm );
+extern SPART *spar_make_top_or_special_case_from_wm (sparp_t *sparp, ptrlong subtype, SPART **retvals, SPART *wm );
 extern SPART *spar_make_bindings_inv_with_fake_equivs (sparp_t *sparp, SPART **vars, SPART ***data_rows, SPART *wrapper_gp);
 extern SPART **spar_make_sources_like_top (sparp_t *sparp, ptrlong top_subtype);
 extern SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
-  caddr_t retselid, SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset, SPART *binv);
+  SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset, SPART *binv);
 extern SPART *spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri_or_pair, SPART **options);
 extern SPART *spar_make_ppath (sparp_t *sparp, char subtype, SPART *part1, SPART *part2, ptrlong mincount, ptrlong maxcount);
 extern SPART *spar_bind_prepare (sparp_t *sparp, SPART *expn, int bind_has_scalar_subqs);
@@ -953,17 +941,17 @@ extern void sparp_make_and_push_new_graph_source (sparp_t *sparp, ptrlong subtyp
 extern SPART *sparp_make_graph_precode (sparp_t *sparp, ptrlong subtype, SPART *iriref, SPART **options);
 extern SPART *spar_default_sparul_target (sparp_t *sparp, const char *clause_type, int may_return_null);
 extern SPART *spar_make_regex_or_like_or_eq (sparp_t *sparp, SPART *strg, SPART *regexpn);
-extern void spar_verify_funcall_security (sparp_t *sparp, int *is_agg_ret, caddr_t *fname_ptr, SPART **args);
+extern void spar_verify_funcall_security (sparp_t *sparp, int *is_agg_ret, const char **fname_ptr, SPART **args);
 
 /*! Tries to run a BIF \c funname in a sandbox with \c argcount number of arguments from \c args.
 The function should be pure, at least for the given arguments (but there is no check for bmd->bmd_is_pure inside it)
 \c trouble_ret is to return the sort of the problem: 0 means that a result literal (or bif:signal call) is calculated and returned;
 1 means non-literal argument, that may change after future optimizations;
 2 means weird litaral argument or weird type of the result, that will not be changed by any optimization, no need to re-try. */
-extern SPART *spar_run_pure_bif_in_sandbox (sparp_t *sparp, const char *funname, SPART **args, int argcount, struct bif_metadata_s *bmd, int *trouble_ret);
+extern SPART *spar_run_pure_bif_in_sandbox (sparp_t *sparp, const char *funname, SPART **args, int argcount, bif_metadata_ptr_t bmd, int *trouble_ret);
 extern SPART *spar_make_funcall (sparp_t *sparp, int aggregate_mode, const char *funname, SPART **arguments);
 extern SPART *sparp_make_builtin_call (sparp_t *sparp, ptrlong bif_id, SPART **arguments);
-extern SPART *sparp_make_macro_call (sparp_t *sparp, caddr_t funname, int call_is_explicit, SPART **arguments);
+extern SPART *sparp_make_macro_call (sparp_t *sparp, const char * funname, int call_is_explicit, SPART **arguments);
 extern int sparp_namesake_macro_param (sparp_t *sparp, SPART *dm, caddr_t param_name);
 extern SPART *spar_make_sparul_clear (sparp_t *sparp, SPART *graph_precode, int silent);
 extern SPART *spar_make_sparul_load (sparp_t *sparp, SPART *graph_precode, SPART *src_precode, int silent);

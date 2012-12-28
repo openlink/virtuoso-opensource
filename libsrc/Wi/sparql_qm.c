@@ -264,17 +264,15 @@ spar_make_qm_value (sparp_t *sparp, caddr_t format_name, SPART **cols)
   if (NULL != sparp->sparp_env->spare_qm_ft_indexes_of_columns)
     { /* If there exist 'TEXT LITERAL...' declarations then there might be freetext-specific properties */
       caddr_t ft_alias;
-      dk_set_t ft_map_aliases = NULL;
       dk_set_t ft_cond_tmpls = NULL;
       caddr_t qmft_key = spar_qm_collist_crc (cols, "ftcols-", 0);
-      spar_qm_ft_t *ft = dk_set_get_keyword (sparp->sparp_env->spare_qm_ft_indexes_of_columns, qmft_key, NULL);
+      spar_qm_ft_t *ft = (spar_qm_ft_t *)dk_set_get_keyword (sparp->sparp_env->spare_qm_ft_indexes_of_columns, qmft_key, NULL);
       if (NULL == ft)
         goto end_of_free_text; /* see below */
       ft_alias = ft->sparqft_ft_sqlcol->_.qm_sqlcol.alias;
       if (0 > dk_set_position_of_string (map_aliases, ft_alias))
         { /* If free-text alias is not one of qmv aliases then it may have additional join/where conditions */
           dk_set_t all_tmpls = NULL;
-          ft_map_aliases = map_aliases;
           t_set_push (&map_aliases, ft_alias);
           spar_qm_find_all_conditions (sparp, map_aliases, &all_tmpls);
           DO_SET (caddr_t, tmpl, &all_tmpls)

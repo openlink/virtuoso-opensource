@@ -193,7 +193,6 @@ void
 sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars, dk_set_t binds_revlist)
 {
   sparp_env_t *env = sparp->sparp_env;
-  caddr_t retselid = query->_.req_top.retselid;
   list_nonaggregate_retvals_t lnar;
   dk_set_t new_vars = NULL;
   SPART **retvals = query->_.req_top.retvals;
@@ -250,14 +249,12 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
             }
           return;
         }
-      t_set_push (&(env->spare_selids), retselid);
       while (NULL != lnar.names)
         {
           caddr_t varname = (caddr_t)t_set_pop (&(lnar.names));
           SPART *var = spar_make_variable (sparp, varname);
           t_set_push (&new_vars, var);
         }
-      t_set_pop (&(env->spare_selids));
       query->_.req_top.groupings = (SPART **)t_revlist_to_array_or_null (new_vars);
       return;
     }
@@ -275,14 +272,12 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
     {
       t_set_push (&new_vars, sparp_tree_full_copy (sparp, (SPART *)(t_set_pop (&binds_revlist)), query->_.req_top.pattern));
     }
-  t_set_push (&(env->spare_selids), retselid);
   while (NULL != lnar.names)
     {
       caddr_t varname = (caddr_t)t_set_pop (&(lnar.names));
       SPART *var = spar_make_variable (sparp, varname);
       t_set_push (&new_vars, var);
     }
-  t_set_pop (&(env->spare_selids));
   
   if ((SPART **)_STAR == retvals)
     {
@@ -461,20 +456,16 @@ sparp_expand_binds_like_macro (sparp_t *sparp, SPART **expr_ptr, dk_set_t binds,
     {
     case SPAR_REQ_TOP:
       {
-        int ctr;
+        int ctr, count;
         sparp_expand_binds_like_macro (sparp, &(expr_ptr[0]->_.req_top.pattern), binds, parent_gp);
-        DO_BOX_FAST (SPART *, gby, ctr, expr_ptr[0]->_.req_top.groupings)
-          {
-            sparp_expand_binds_like_macro (sparp, expr_ptr[0]->_.req_top.groupings + ctr, binds, parent_gp);
-          }
-        END_DO_BOX_FAST;
+        count = BOX_ELEMENTS_0 (expr_ptr[0]->_.req_top.groupings);
+        for (ctr = 0; ctr < count; ctr++)
+          sparp_expand_binds_like_macro (sparp, expr_ptr[0]->_.req_top.groupings + ctr, binds, parent_gp);
         if (NULL != expr_ptr[0]->_.req_top.having)
           sparp_expand_binds_like_macro (sparp, &(expr_ptr[0]->_.req_top.having), binds, parent_gp);
-        DO_BOX_FAST (SPART *, rval, ctr, expr_ptr[0]->_.req_top.retvals)
-          {
-            sparp_expand_binds_like_macro (sparp, expr_ptr[0]->_.req_top.retvals + ctr, binds, parent_gp);
-          }
-        END_DO_BOX_FAST;
+        count = BOX_ELEMENTS (expr_ptr[0]->_.req_top.retvals);
+        for (ctr = 0; ctr < count; ctr++)
+          sparp_expand_binds_like_macro (sparp, expr_ptr[0]->_.req_top.retvals + ctr, binds, parent_gp);
         DO_BOX_FAST (SPART *, oby, ctr, expr_ptr[0]->_.req_top.order)
           {
             sparp_expand_binds_like_macro (sparp, &(oby->_.oby.expn), binds, parent_gp);
@@ -717,6 +708,7 @@ ignore_retval_name: ;
           if (OPTIONAL_L == curr->_.triple.subtype)
             continue;
           eq = sparp_equiv_get (sparp, gp, fld, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_INS_VARIABLE | SPARP_EQUIV_ADD_GSPO_USE);
+          fld->_.var.tabid = curr->_.triple.tabid;
           sparp_equiv_tighten (sparp, eq, &(fld->_.var.rvr), ~0);
         }
       if (NULL != curr->_.triple.options)
@@ -3319,7 +3311,6 @@ SPART *
 sparp_simplify_builtin (sparp_t *sparp, SPART *tree, int *trouble_ret)
 {
   SPART *arg1;
-  SPART *res;
   if (0 == BOX_ELEMENTS_0 (tree->_.builtin.args))
     {
       trouble_ret[0] = 2;
@@ -4562,7 +4553,14 @@ sparp_refresh_triple_cases (sparp_t *sparp, SPART *triple)
       sparp_jso_validate_format (sparp, field_valmode);
       triple->_.triple.native_formats[field_ctr] = field_valmode;
       if (SPAR_IS_BLANK_OR_VAR (field_expn))
-        sparp_rvr_tighten (sparp, &(field_expn->_.var.rvr), &acc_rvr, ~(SPART_VARR_EXTERNAL | SPART_VARR_GLOBAL));
+        {
+          sparp_rvr_tighten (sparp, &(field_expn->_.var.rvr), &acc_rvr, ~(SPART_VARR_EXTERNAL | SPART_VARR_GLOBAL));
+/* var.restr_of_col is set with "=", not "|=" or "&=" because it may come from only one qmv or a union of qmvs.
+No "history" or "derived properties" here.
+The specific purpose of the field is a differentiation of what should be tested somewhere in the resulting SQL query
+and what is a natural property of the data source. */
+          field_expn->_.var.restr_of_col = acc_rvr.rvrRestrictions & ~(SPART_VARR_EXTERNAL | SPART_VARR_GLOBAL);
+        }
     }
   triple->_.triple.tc_list = new_cases;
 }
@@ -6650,10 +6648,10 @@ restoring filters is a preorder one, the postorder needs a complete stack of thi
       if (missing_restrictions & SPART_VARR_FIXED)
         {
           SPART *l = NULL, *r, *filt;
-          l = spartlist (sparp, 6 + (sizeof (rdf_val_range_t) / sizeof (caddr_t)),
+          l = spartlist (sparp, 7 + (sizeof (rdf_val_range_t) / sizeof (caddr_t)),
             SPAR_VARIABLE, eq->e_varnames[0],
             parent_gp->_.gp.selid, NULL,
-            (ptrlong)(0), SPART_BAD_EQUIV_IDX, SPART_RVR_LIST_OF_NULLS );
+            (ptrlong)(0), SPART_BAD_EQUIV_IDX, SPART_RVR_LIST_OF_NULLS, (ptrlong)(0x0) );
             memcpy (&(l->_.var.rvr.rvrRestrictions), &(subq_eq->e_rvr), sizeof (rdf_val_range_t));
           if (eq->e_rvr.rvrRestrictions & SPART_VARR_IS_REF)
             r = spartlist (sparp, 2, SPAR_QNAME, eq->e_rvr.rvrFixedValue);
@@ -7578,7 +7576,6 @@ sparp_rewrite_grab (sparp_t *sparp)
   caddr_t sql_texts[3];
   SPART **grab_retvals;
   SPART *ret_limit_expn;
-  caddr_t retselid;
   ptrlong top_subtype;
   dk_set_t new_vars = NULL;
   dk_set_t sa_graphs = NULL;
@@ -7587,10 +7584,8 @@ sparp_rewrite_grab (sparp_t *sparp)
   int sub_sparp_ctr;
   ptrlong rgc_flags = 0;
   int use_plain_return;
-  retselid = sparp->sparp_expr->_.req_top.retselid;
   top_subtype = sparp->sparp_expr->_.req_top.subtype;
   use_plain_return = (((CONSTRUCT_L == top_subtype) || (DESCRIBE_L == top_subtype)) ? 1 : 0);
-  t_set_push (&(env->spare_selids), retselid);
   DO_SET (caddr_t, grab_name, &(rgc->rgc_vars))
     {
       t_set_push (&new_vars, spar_make_variable (sparp, grab_name));
@@ -7600,7 +7595,6 @@ sparp_rewrite_grab (sparp_t *sparp)
     t_set_push (&sa_graphs, spar_make_qm_sql (sparp, "iri_to_id", (SPART **)t_list (1, rgc->rgc_destination), NULL));
   if (NULL != rgc->rgc_group_destination)
     t_set_push (&sa_graphs, spar_make_qm_sql (sparp, "iri_to_id", (SPART **)t_list (1, rgc->rgc_group_destination), NULL));
-  t_set_pop (&(env->spare_selids));
   if (NULL != new_vars)
     grab_retvals = (SPART **)t_revlist_to_array (new_vars);
   else
