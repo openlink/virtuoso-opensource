@@ -52,11 +52,12 @@ void sql_bif_init (void);
 #define BIF_OPT_SIMPLIFY	1	/*!< The function-specific optimizer gets compiler as context, pointer to a tree made by parser (and, incase of SPARQL, enriched with at least equivalence classes), returns the pointer to the unchanged or patched tree */
 #define BIF_OPT_RET_TYPE	2	/*!< The optimizer gets compiler as context, pointer to a tree made by SQL parser, return NULL, improves data under \c more taht is a pointer to bif_type_t (SQL) or rdf_val_range_t (SPARQL) */
 
-struct bif_metadata_s;
-struct sparp_s;
+typedef struct bif_metadata_s *bif_metadata_ptr_t;
+typedef struct sql_comp_s *sql_comp_ptr_t;
+typedef struct sparp_s *sparp_ptr_t;
 
-typedef struct sql_tree_s *bif_sql_optimizer_t (struct sql_comp_s *sqlc, int bif_opt_opcode, struct sql_tree_s *tree, struct bif_metadata_s *bmd, void *more);
-typedef struct spar_tree_s *bif_sparql_optimizer_t (struct sparp_s *sparp, int bif_opt_opcode, struct spar_tree_s *tree, struct bif_metadata_s *bmd, void *more);
+typedef struct sql_tree_s *bif_sql_optimizer_t (sql_comp_ptr_t sqlc, int bif_opt_opcode, struct sql_tree_s *tree, bif_metadata_ptr_t bmd, void *more);
+typedef struct spar_tree_s *bif_sparql_optimizer_t (sparp_ptr_t sparp, int bif_opt_opcode, struct spar_tree_s *tree, bif_metadata_ptr_t bmd, void *more);
 
 #define BMD_DONE			12053	/*!< The value in arglist of bif_define_ex that indicates the end of arglist */
 #define BMD_VECTOR_IMPL			2	/*!< Flags that the BIF has a vectored variant, the pointer to the vectored implementation is the value */
