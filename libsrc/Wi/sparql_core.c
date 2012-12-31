@@ -1695,10 +1695,6 @@ spar_gp_add_filter (sparp_t *sparp, SPART *filt)
               spar_error (sparp, "Invalid argument #%d for %s() special predicate", argctr+1);
             spar_tree_is_var_with_forbidden_ft_name (sparp, arg_value, 1);
             opt_value = (SPART *)t_box_copy_tree ((caddr_t)arg_value);
-#ifdef DEBUG
-            if (strcmp (opt_value->_.var.selid, triple_with_var_obj->_.triple.selid))
-              spar_internal_error (sparp, "spar_" "gp_add_filter(): weird mismatch between selids of opt_value and triple_with_var_obj");
-#endif
             opt_value->_.var.tabid = triple_with_var_obj->_.triple.tabid;
             opt_value->_.var.tr_idx = (ptrlong)args[argctr];
             triple_with_var_obj->_.triple.options = t_spartlist_concat (

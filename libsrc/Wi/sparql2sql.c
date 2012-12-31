@@ -593,6 +593,7 @@ void
 sparp_gp_trav_cu_in_options (sparp_t *sparp, SPART *gp, SPART *curr, SPART **options, void *common_env)
 {
   int ctr;
+  int set_tabid = (SPAR_TRIPLE == curr->type);
   for (ctr = BOX_ELEMENTS (options); 1 < ctr; ctr -= 2)
     {
       ptrlong key = ((ptrlong)(options[ctr-2]));
@@ -600,8 +601,13 @@ sparp_gp_trav_cu_in_options (sparp_t *sparp, SPART *gp, SPART *curr, SPART **opt
       switch (key)
         {
         case OFFBAND_L: case SCORE_L:
-          { if (SPART_VARR_GLOBAL & val->_.var.rvr.rvrRestrictions) spar_error (sparp, "Only plain variables can be used in OFFBAND_L or SCORE_L options, not parameters like ?%.50s", val->_.var.vname);
+          {
+            if (SPART_VARR_GLOBAL & val->_.var.rvr.rvrRestrictions)
+              spar_error (sparp, "Only plain variables can be used in OFFBAND_L or SCORE_L options, not parameters like ?%.50s", val->_.var.vname);
             sparp_equiv_get (sparp, gp, val, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_INS_VARIABLE | SPARP_EQUIV_ADD_GSPO_USE);
+            if (!set_tabid)
+              spar_internal_error (sparp, "sparp_" "gp_trav_cu_in_optionssparp(): OFFBAND_L or SCORE_L not in triple");
+            val->_.var.tabid = curr->_.triple.tabid;
             break;
           }
         case T_STEP_L:
@@ -610,9 +616,12 @@ sparp_gp_trav_cu_in_options (sparp_t *sparp, SPART *gp, SPART *curr, SPART **opt
             sparp_equiv_get (sparp, gp, (SPART *)name, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_GET_NAMESAKES | SPARP_EQUIV_ADD_SUBQUERY_USE);
             break;
           }
+        case SAME_AS_L: case SAME_AS_O_L: case SAME_AS_P_L: case SAME_AS_S_L:  case SAME_AS_S_O_L:
         case SCORE_LIMIT_L: case T_MIN_L: case T_MAX_L:
           {
             sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
+            if (!IS_BOX_POINTER (val))
+              break;
             memset (stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
             stss[1].sts_ancestor_gp = gp;
             sparp_gp_trav_int (sparp, val, stss+1, common_env,
@@ -633,18 +642,6 @@ sparp_gp_trav_cu_in_options (sparp_t *sparp, SPART *gp, SPART *curr, SPART **opt
                 pos1_ptr[0] = 1+v_ctr;
               }
             END_DO_BOX_FAST;
-            break;
-          }
-        case SAME_AS_L: case SAME_AS_O_L: case SAME_AS_P_L: case SAME_AS_S_L:  case SAME_AS_S_O_L:
-          {
-            sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
-            if (!IS_BOX_POINTER (val))
-              break;
-            memset (stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
-            stss[1].sts_ancestor_gp = gp;
-            sparp_gp_trav_int (sparp, val, stss+1, common_env,
-              sparp_gp_trav_cu_in_triples, sparp_gp_trav_cu_out_triples_1,
-              sparp_gp_trav_cu_in_expns, NULL, sparp_gp_trav_cu_in_subq, NULL );
             break;
           }
         }
@@ -694,48 +691,23 @@ ignore_retval_name: ;
     case SPAR_TRIPLE: break;
     default: return 0;
     }
-  if (UNION_L != gp->_.gp.subtype)
+  for (fctr = 0; fctr < SPART_TRIPLE_FIELDS_COUNT; fctr++)
     {
-      for (fctr = 0; fctr < SPART_TRIPLE_FIELDS_COUNT; fctr++)
+      SPART *fld = curr->_.triple.tr_fields[fctr];
+      sparp_equiv_t *eq;
+      switch (SPART_TYPE(fld))
         {
-          SPART *fld = curr->_.triple.tr_fields[fctr];
-          sparp_equiv_t *eq;
-          switch (SPART_TYPE(fld))
-            {
-              case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL: break;
-              default: continue;
-            }
-          if (OPTIONAL_L == curr->_.triple.subtype)
-            continue;
-          eq = sparp_equiv_get (sparp, gp, fld, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_INS_VARIABLE | SPARP_EQUIV_ADD_GSPO_USE);
-          fld->_.var.tabid = curr->_.triple.tabid;
-          sparp_equiv_tighten (sparp, eq, &(fld->_.var.rvr), ~0);
+          case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL: break;
+          default: continue;
         }
-      if (NULL != curr->_.triple.options)
-        sparp_gp_trav_cu_in_options (sparp, gp, curr, curr->_.triple.options, common_env);
+      if (OPTIONAL_L == curr->_.triple.subtype)
+        continue;
+      eq = sparp_equiv_get (sparp, gp, fld, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_INS_VARIABLE | SPARP_EQUIV_ADD_GSPO_USE);
+      fld->_.var.tabid = curr->_.triple.tabid;
+      sparp_equiv_tighten (sparp, eq, &(fld->_.var.rvr), ~0);
     }
-  if (UNION_L == gp->_.gp.subtype)
-    {
-      int eq_ctr;
-      SPARP_FOREACH_GP_EQUIV (sparp, gp, eq_ctr, eq)
-        {
-          if ((0 < eq->e_gspo_uses) && (0 == eq->e_rvr.rvrRestrictions))
-            {
-	      int varctr;
-              rdf_val_range_t acc;
-              memset (&acc, 0, sizeof (rdf_val_range_t));
-              acc.rvrRestrictions = SPART_VARR_CONFLICT;
-              for (varctr = eq->e_var_count; varctr--; /*no step*/)
-                {
-                  SPART *var = eq->e_vars[varctr];
-                  sparp_rvr_loose (sparp, &acc, &(var->_.var.rvr), ~SPART_VARR_NOT_NULL);
-                  eq->e_rvr.rvrRestrictions |= (var->_.var.rvr.rvrRestrictions & (SPART_VARR_EXPORTED | SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL));
-                }
-              sparp_equiv_tighten (sparp, eq, &acc, ~0);
-            }
-        }
-      END_SPARP_FOREACH_GP_EQUIV;
-    }
+  if (NULL != curr->_.triple.options)
+    sparp_gp_trav_cu_in_options (sparp, gp, curr, curr->_.triple.options, common_env);
   return SPAR_GPT_NODOWN;
 }
 

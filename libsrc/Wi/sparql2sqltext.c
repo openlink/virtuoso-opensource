@@ -448,16 +448,15 @@ void
 sparp_jso_push_affected (sparp_t *sparp, ccaddr_t inst_iri)
 {
   dk_set_t *set_ptr = &(sparp->sparp_env->spare_qm_affected_jso_iris);
-  if (0 > dk_set_position_of_string (set_ptr[0], inst_iri))
-    t_set_push (set_ptr, (caddr_t)inst_iri);
+  t_set_push_new_string (set_ptr, (caddr_t)inst_iri);
 }
 
 void
 sparp_jso_push_deleted (sparp_t *sparp, ccaddr_t class_iri, ccaddr_t inst_iri)
 {
   dk_set_t *set_ptr = &(sparp->sparp_env->spare_qm_deleted);
-  t_set_push (set_ptr, (caddr_t)class_iri);
-  t_set_push (set_ptr, (caddr_t)inst_iri);
+  t_set_push_new_string (set_ptr, (caddr_t)class_iri);
+  t_set_push_new_string (set_ptr, (caddr_t)inst_iri);
 }
 
 void
