@@ -15,7 +15,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2012 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -684,7 +684,7 @@ if (_subject <> '') {
 
         ?>
 	Data on this page belongs to its respective rights holders.<br/>
-        Virtuoso Faceted Browser Copyright &copy; 2009-2012 OpenLink Software
+        Virtuoso Faceted Browser Copyright &copy; 2009-2013 OpenLink Software
       </div> <!-- #ft_b -->
     </div> <!-- #FT -->
     </div> <!-- #PG -->

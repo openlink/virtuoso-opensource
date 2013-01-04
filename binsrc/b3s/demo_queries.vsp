@@ -120,7 +120,7 @@ function get_and_encode_query (q_elm)
         <img alt="Linked Data" src="/fct/images/LoDLogo.gif"/>
       </a>
       <br/>
-      <span class="copyright">Copyright © 2009-2012 OpenLink Software</span>
+      <span class="copyright">Copyright © 2009-2013 OpenLink Software</span>
       <div id="FT_L"/>
       <div id="FT_R"/>
     </div> <!-- #FT -->
