@@ -2436,7 +2436,7 @@ spar_make_top_or_special_case_from_wm (sparp_t *sparp, ptrlong subtype, SPART **
       sparp->sparp_env->spare_output_valmode_name,	/* #2 */
       sparp->sparp_env->spare_output_format_name,	/* #3 */
       retname,					/* #4 */
-      NULL /* retselid */,			/* #5 */
+      pattern->_.gp.selid,			/* #5 */
       limit,					/* #6 */
       offset );					/* #7 */
     } while (0);
