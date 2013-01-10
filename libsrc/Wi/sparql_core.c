@@ -2635,6 +2635,8 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
   SPART *subselect_top, *where_gp, *wrapper_gp, *fields[4];
   SPART *subj_var, *obj_var, **retvals;
   caddr_t subj_vname, obj_vname;
+  char t_in_preset_fld = '\0';
+  char t_out_preset_fld = '\0';
   int subj_is_plain_var = 0, obj_is_plain_var = 0, retvalctr, fld_ctr;
   int subj_stype = SPART_TYPE (subject);
   int obj_stype = SPART_TYPE (object);
@@ -2682,12 +2684,68 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
   subj_var = spar_make_variable (sparp, subj_vname);
   obj_var = spar_make_variable (sparp, obj_vname);
   spar_gp_add_triplelike (sparp, graph, subj_var, predicate, obj_var, qm_iri_or_pair, NULL, banned_tricks | SPAR_TRIPLE_TRICK_TRANSITIVE);
-  sparp_set_option (sparp, &options, T_IN_L,
-    spartlist (sparp, 2, SPAR_LIST, t_list (1, spar_make_variable (sparp, subj_vname))),
-    SPARP_SET_OPTION_REPLACING );
-  sparp_set_option (sparp, &options, T_OUT_L,
-    spartlist (sparp, 2, SPAR_LIST, t_list (1, spar_make_variable (sparp, obj_vname))),
-    SPARP_SET_OPTION_REPLACING );
+  if (NULL != options)
+    {
+      int idx;
+      for (idx = BOX_ELEMENTS_0 (options) - 2; idx >= 0; idx -= 2)
+        {
+          ptrlong key = ((ptrlong)(options [idx]));
+          SPART *val = options [idx+1];
+          switch (key)
+            {
+            case T_IN_L: case T_OUT_L:
+              {
+                char *t_x_preset_fld_ptr = ((T_IN_L == key) ? &t_in_preset_fld : &t_out_preset_fld);
+                SPART *v;
+                if (1 != BOX_ELEMENTS (val->_.list.items))
+                  spar_error (sparp, "T_IN and T_OUT options of a triple pattern should contain only single variables");
+                v = val->_.list.items[0];
+                if (subj_is_plain_var && !strcmp (subject->_.var.vname, v->_.var.vname))
+                  {
+                    val->_.list.items[0] = spar_make_variable (sparp, subj_vname);
+                    t_x_preset_fld_ptr[0] = 'S';
+                  }
+                else if (obj_is_plain_var && !strcmp (object->_.var.vname, v->_.var.vname))
+                  {
+                    val->_.list.items[0] = spar_make_variable (sparp, obj_vname);
+                    t_x_preset_fld_ptr[0] = 'O';
+                  }
+                else
+                  spar_error (sparp, "T_IN and T_OUT options of a triple pattern should contain only subject/object variables of the triple pattern, not something else");
+                continue;
+              }
+            case T_STEP_L:
+              {
+                SPART *arg = val->_.alias.arg;
+                if (SPAR_VARIABLE == SPART_TYPE (arg))
+                  {
+                    caddr_t vname = arg->_.var.vname;
+                    if (subj_is_plain_var && !strcmp (subject->_.var.vname, vname))
+                      val->_.alias.arg = spar_make_variable (sparp, subj_vname);
+                    else if (obj_is_plain_var && !strcmp (object->_.var.vname, vname))
+                      val->_.alias.arg = spar_make_variable (sparp, obj_vname);
+                  }
+                continue;
+              }
+            }
+        }
+    }
+  if ((('\0' != t_in_preset_fld) ? 1 : 0) != (('\0' != t_out_preset_fld) ? 1 : 0))
+    spar_error (sparp, "T_IN and T_OUT options of a transitive triple pattern should be either both set or both not set");
+  if ('\0' != t_in_preset_fld)
+    {
+      if (t_in_preset_fld == t_out_preset_fld)
+        spar_error (sparp, "T_IN and T_OUT options of a transitive triple points to same field, but one should point to subject and another one to the object");
+    }
+  else
+    {
+      sparp_set_option (sparp, &options, T_IN_L,
+        spartlist (sparp, 2, SPAR_LIST, t_list (1, spar_make_variable (sparp, subj_vname))),
+        SPARP_SET_OPTION_REPLACING );
+      sparp_set_option (sparp, &options, T_OUT_L,
+        spartlist (sparp, 2, SPAR_LIST, t_list (1, spar_make_variable (sparp, obj_vname))),
+        SPARP_SET_OPTION_REPLACING );
+    }
   where_gp = spar_gp_finalize (sparp, NULL);
   subselect_top = spar_make_top (sparp, SELECT_L, retvals,
     where_gp,
