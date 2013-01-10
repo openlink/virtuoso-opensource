@@ -1257,6 +1257,7 @@ ws_url_rewrite (ws_connection_t *ws)
   ws->ws_cli->cli_ws = ws;
 
   IN_TXN;
+  lt_wait_checkpoint ();
   lt_threads_set_inner (cli->cli_trx, 1);
   LEAVE_TXN;
 
@@ -2924,6 +2925,7 @@ ws_post_process (ws_connection_t * ws)
   p_proc = proc->qr_proc_name;
 
   IN_TXN;
+  lt_wait_checkpoint ();
   lt_threads_set_inner (cli->cli_trx, 1);
   LEAVE_TXN;
 
@@ -3090,6 +3092,7 @@ ws_auth_check (ws_connection_t * ws)
     }
 
   IN_TXN;
+  lt_wait_checkpoint ();
   lt_threads_set_inner (cli->cli_trx, 1);
   LEAVE_TXN;
 
@@ -3239,6 +3242,7 @@ ws_check_rdf_accept (ws_connection_t *ws)
     qr = sql_compile_static ("DB.DBA.HTTP_RDF_ACCEPT (?, ?, ?, ?)", bootstrap_cli, &err, SQLC_DEFAULT);
 
   IN_TXN;
+  lt_wait_checkpoint ();
   lt_threads_set_inner (cli->cli_trx, 1);
   LEAVE_TXN;
 
@@ -3355,6 +3359,8 @@ request_do_again:
     }
   strses_flush (ws->ws_strses);
   IN_TXN;
+  if (!cli->cli_trx->lt_threads)
+    lt_wait_checkpoint ();
   lt_threads_set_inner (cli->cli_trx, 1);
   LEAVE_TXN;
 
@@ -10016,6 +10022,8 @@ ws_serve_client_connection (ws_connection_t * ws)
   conn[0] = (caddr_t) ses;
 
   IN_TXN;
+  if (!cli->cli_trx->lt_threads)
+    lt_wait_checkpoint ();
   lt_threads_set_inner (cli->cli_trx, 1);
   LEAVE_TXN;
 
