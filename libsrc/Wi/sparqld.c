@@ -282,6 +282,9 @@ ssg_sdprin_local_varname (spar_sqlgen_t *ssg, ccaddr_t vname)
         }
       if (ssg->ssg_inside_t_inouts)
         spar_error (ssg->ssg_sparp, "Bnode %.100s should not appear in T_IN or T_OUT variable lists", vname);
+      ssg_puts ("?OrgnBN");
+      ssg_puts (vname+2);
+      return;
     }
   else if (':' == vname[0])
     {
