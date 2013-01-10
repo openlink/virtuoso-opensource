@@ -3250,14 +3250,16 @@ bif_http_ttl_value (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   if (obj_is_iri)
     {
-      int cache_ok;
       if (!iri_cast_and_split_ttl_qname (qi, obj, &tii.o.ns, &tii.o.loc, &tii.o.is_bnode))
         goto fail; /* see below */
-      cache_ok = ttl_try_to_cache_new_prefix (qst, ses, env, &(env->te_ns_count_s_o), &(tii.o));
-      if (cache_ok)
+      if (!(tii.o.is_bnode))
         {
-          err = srv_make_new_error ("22023", "SR601", "Argument 1 of http_ttl_value() needs a namespace declaration, use http_ttl_prefixes() in advance");
-          goto fail;
+          int cache_ok = ttl_try_to_cache_new_prefix (qst, ses, env, &(env->te_ns_count_s_o), &(tii.o));
+          if (cache_ok)
+            {
+              err = srv_make_new_error ("22023", "SR601", "Argument 1 of http_ttl_value() needs a namespace declaration, use http_ttl_prefixes() in advance");
+              goto fail;
+            }
         }
     }
   else
