@@ -47,22 +47,25 @@ extern int key_id_to_namespace_and_local (query_instance_t *qi, iri_id_t iid, ca
 extern caddr_t xsd_type_of_box (caddr_t arg);
 /*! Casts \c new_val to some datatype appropriate for XPATH/XSLT and stores in an XSLT variable value or XQI slot passed as an address to free and set */
 extern void rb_cast_to_xpath_safe (query_instance_t *qi, caddr_t new_val, caddr_t *retval_ptr);
-#define BNODE_IID_TO_LABEL_BUFFER(buf,iid) (((iid) >= MIN_64BIT_BNODE_IRI_ID) ? \
-  sprintf (buf, "nodeID://b" BOXINT_FMT, (boxint)((iid)-MIN_64BIT_BNODE_IRI_ID)) : \
-  sprintf (buf, "nodeID://" BOXINT_FMT, (boxint)(iid)) )
-#define BNODE_IID_TO_LABEL(iid) (((iid) >= MIN_64BIT_BNODE_IRI_ID) ? \
-  box_sprintf (30, "nodeID://b" BOXINT_FMT, (boxint)((iid)-MIN_64BIT_BNODE_IRI_ID)) : \
-  box_sprintf (30, "nodeID://" BOXINT_FMT, (boxint)(iid)) )
-#define BNODE_IID_TO_LABEL_LOCAL(iid) (((iid) >= MIN_64BIT_BNODE_IRI_ID) ? \
-  box_sprintf (30, "b" BOXINT_FMT, (boxint)((iid)-MIN_64BIT_BNODE_IRI_ID)) : \
-  box_sprintf (30, BOXINT_FMT, (boxint)(iid)) )
-#define BNODE_IID_TO_TTL_LABEL_LOCAL(iid) (((iid) >= MIN_64BIT_BNODE_IRI_ID) ? \
-  box_sprintf (30, "vb" BOXINT_FMT, (boxint)((iid)-MIN_64BIT_BNODE_IRI_ID)) : \
-  box_sprintf (30, "v" BOXINT_FMT, (boxint)(iid)) )
-#define BNODE_IID_TO_TALIS_JSON_LABEL(iid) (((iid) >= MIN_64BIT_BNODE_IRI_ID) ? \
-  box_sprintf (30, "_:vb" BOXINT_FMT, (boxint)((iid)-MIN_64BIT_BNODE_IRI_ID)) : \
-  box_sprintf (30, "_:v" BOXINT_FMT, (boxint)(iid)) )
+extern boxint bnode_t_treshold;
+#ifndef NDEBUG
+#define BNODE_FMT_IMPL(fn,arg1,pfx,iid) (((iid) >= bnode_t_treshold) ? \
+  (fn) ((arg1), pfx "t" BOXINT_FMT, (boxint)((iid)-bnode_t_treshold)) : \
+  (((iid) >= MIN_64BIT_BNODE_IRI_ID) ? \
+    (fn) ((arg1), pfx "b" BOXINT_FMT, (boxint)((iid)-MIN_64BIT_BNODE_IRI_ID)) : \
+    (fn) ((arg1), pfx BOXINT_FMT, (boxint)(iid)) ) )
+#else
+#define BNODE_FMT_IMPL(fn,arg1,pfx,iid) (((iid) >= MIN_64BIT_BNODE_IRI_ID) ? \
+  (fn) ((arg1), pfx "b" BOXINT_FMT, (boxint)((iid)-MIN_64BIT_BNODE_IRI_ID)) : \
+  (fn) ((arg1), pfx BOXINT_FMT, (boxint)(iid)) )
+#endif
 
+
+#define BNODE_IID_TO_LABEL_BUFFER(buf,iid) BNODE_FMT_IMPL(sprintf,buf,"nodeID://",iid)
+#define BNODE_IID_TO_LABEL(iid) BNODE_FMT_IMPL(box_sprintf,30,"nodeID://",iid)
+#define BNODE_IID_TO_LABEL_LOCAL(iid) BNODE_FMT_IMPL(box_sprintf,30,"",iid)
+#define BNODE_IID_TO_TTL_LABEL_LOCAL(iid) BNODE_FMT_IMPL(box_sprintf,30,"v",iid)
+#define BNODE_IID_TO_TALIS_JSON_LABEL(iid) BNODE_FMT_IMPL(box_sprintf,30,"_:v",iid)
 
 /* Set of callback to accept the stream of RDF quads that are grouped by graph and share blank node IDs */
 
