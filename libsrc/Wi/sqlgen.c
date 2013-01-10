@@ -1604,6 +1604,8 @@ sqlg_make_trans_dt  (sqlo_t * so, df_elt_t * dt_dfe, ST **target_names, dk_set_t
       tn->tn_complement->tn_is_primary = 0;
       tn->tn_complement->tn_complement = tn;
     }
+  if (dt_dfe->_.sub.after_join_test)
+    tn->src_gen.src_after_test = sqlg_pred_body (so, dt_dfe->_.sub.after_join_test);
   sc->sc_order = old_order;
   sc->sc_trans = prev_trans;
   return ((data_source_t *) tn);
