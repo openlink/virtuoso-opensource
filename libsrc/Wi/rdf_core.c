@@ -2380,8 +2380,19 @@ again:
     {
       unsigned char *tail = (unsigned char *)(name + 9);
       int64 acc = 0;
-      int b_first = 0;
-      if ('b' == tail[0]) { b_first = 1; tail++; }
+      int64 prefix_base = 0;
+      if ('b' == tail[0]) { prefix_base = MIN_64BIT_BNODE_IRI_ID; tail++; }
+      else if ('t' == tail[0])
+        {
+          if (bnode_t_treshold == ~((boxint)0))
+            {
+              err_ret[0] = srv_make_new_error ("RDFXX", ".....",
+                "Bad argument to iri_to_id (), '%.100s' is not supported while __rdf_set_bnode_t_treshold() is not called", name );
+              goto return_error; /* see below */
+            }
+          prefix_base = bnode_t_treshold;
+          tail++;
+        }
       while (isdigit (tail[0]))
         acc = acc * 10 + ((tail++)[0] - '0');
       if ('\0' != tail[0])
@@ -2390,7 +2401,7 @@ again:
             "Bad argument to iri_to_id (), '%.100s' is not valid bnode IRI", name );
           goto return_error; /* see below */
         }
-      if (b_first) acc += MIN_64BIT_BNODE_IRI_ID;
+      acc += prefix_base;
       if ((acc > (2 * min_bnode_iri_id())) || (acc < min_bnode_iri_id()))
         {
           if ((bnode_iri_ids_are_huge) || (acc < 0))
