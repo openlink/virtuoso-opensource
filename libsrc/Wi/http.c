@@ -3276,6 +3276,8 @@ error_end:
 #endif
 }
 
+#define IS_DAV_METHOD(ws) (IS_DAV_DOMAIN(ws, "")  && 0 != strstr ("PROPFIND PROPPATCH LOCK UNLOCK COPY MOVE MKCOL", ws->ws_method_name))
+
 int soap_get_opt_flag (caddr_t * opts, char *opt_name);
 
 void
@@ -3827,7 +3829,7 @@ do_file:
 	}
       THR_DBG_PAGE_CHECK;
 
-      if (!ws_check_rdf_accept (ws))
+      if (!ws_check_rdf_accept (ws) && !IS_DAV_METHOD (ws)) /* check if WebDAV */
 	{
 	  snprintf (page_opt_name, sizeof (page_opt_name), "%3d_page", ws->ws_status_code);
 	  if (NULL != (text = ws_get_opt (ws->ws_map->hm_opts, page_opt_name, NULL)))
