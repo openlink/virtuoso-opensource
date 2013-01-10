@@ -4369,7 +4369,7 @@ sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree, SPART **options)
             if (SPAR_VARIABLE == SPART_TYPE (arg))
               {
                 caddr_t vname = arg->_.var.vname;
-                if (NULL == sparp_find_subexpn_in_retlist (sparp, vname, subq_orig_retvals, 1))
+                if (0 == sparp_subexpn_position1_in_retlist (sparp, vname, subq_orig_retvals))
                   spar_error (sparp, "Variable ?%.100s is used in T_STEP option but not in the result-set of a subquery",
                     vname );
               }
