@@ -34,6 +34,16 @@
 #include "xslt_impl.h"	/* For vector_sort_t */
 #include "aqueue.h"	/* For aq_allocate() in rdf replication */
 
+boxint bnode_t_treshold = ~((boxint)0);
+
+caddr_t
+bif_rdf_set_bnode_t_treshold (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  sec_check_dba ((query_instance_t *)qst, "__rdf_set_bnode_t_treshold");
+  bnode_t_treshold = sequence_next ("RDF_URL_IID_BLANK", 0);
+  return box_iri_id (bnode_t_treshold);
+}
+
 #define PRINT_ERR(err) \
       if (err) \
 	{ \
@@ -3209,6 +3219,77 @@ fail:
 }
 
 caddr_t
+bif_http_ttl_value (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t *qi = (query_instance_t *)qst;
+  ttl_env_t *env = (ttl_env_t *)bif_arg (qst, args, 0, "http_ttl_value");
+  caddr_t obj = bif_arg (qst, args, 1, "http_ttl_value");
+  long pos = bif_long_arg (qst, args, 2, "http_ttl_value");
+  dk_session_t *ses = http_session_no_catch_arg (qst, args, 3, "http_ttl_value");
+  int obj_is_iri = 0;
+  dtp_t obj_dtp = 0;
+  ttl_iriref_items_t tii;
+  caddr_t err = NULL;
+  memset (&tii,0, sizeof (ttl_iriref_items_t));
+  if (DV_ARRAY_OF_POINTER != DV_TYPE_OF ((caddr_t)env) ||
+    (sizeof (ttl_env_t) != box_length ((caddr_t)env)) ||
+    (DV_DICT_ITERATOR != DV_TYPE_OF (env->te_used_prefixes)) ||
+    (((DV_STRING == DV_TYPE_OF (env->te_prev_subj_ns)) || (DV_UNAME == DV_TYPE_OF (env->te_prev_subj_ns))) &&
+      ((DV_STRING != DV_TYPE_OF (env->te_prev_subj_loc)) ||	
+        ((DV_STRING != DV_TYPE_OF (env->te_prev_pred_ns)) && (DV_UNAME != DV_TYPE_OF (env->te_prev_pred_ns))) ||
+        (DV_STRING != DV_TYPE_OF (env->te_prev_pred_loc)) ) ) ||
+    (DV_LONG_INT != DV_TYPE_OF (env->te_ns_count_s_o)) ||	
+    (DV_LONG_INT != DV_TYPE_OF (env->te_ns_count_p_dt)) )	
+    sqlr_new_error ("22023", "SR601", "Argument 1 of http_ttl_value() should be an array of special format");
+  obj_dtp = DV_TYPE_OF (obj);
+  switch (obj_dtp)
+    {
+    case DV_UNAME: case DV_IRI_ID: case DV_IRI_ID_8: obj_is_iri = 1; break;
+    case DV_STRING: obj_is_iri = (BF_IRI & box_flags (obj)) ? 1 : 0; break;
+    default: obj_is_iri = 0; break;
+    }
+  if (obj_is_iri)
+    {
+      int cache_ok;
+      if (!iri_cast_and_split_ttl_qname (qi, obj, &tii.o.ns, &tii.o.loc, &tii.o.is_bnode))
+        goto fail; /* see below */
+      cache_ok = ttl_try_to_cache_new_prefix (qst, ses, env, &(env->te_ns_count_s_o), &(tii.o));
+      if (cache_ok)
+        {
+          err = srv_make_new_error ("22023", "SR601", "Argument 1 of http_ttl_value() needs a namespace declaration, use http_ttl_prefixes() in advance");
+          goto fail;
+        }
+    }
+  else
+    {
+      if (2 != pos)
+        sqlr_new_error ("22023", "SR601", "Argument 2 of http_ttl_value() is literal but not in object position");
+      http_ttl_or_nt_prepare_obj (qi, obj, obj_dtp, &tii.dt);
+      if (NULL != tii.dt.uri)
+        {
+          int cache_ok;
+          iri_split_ttl_qname (tii.dt.uri, &(tii.dt.ns), &(tii.dt.loc), 1);
+          cache_ok = ttl_try_to_cache_new_prefix (qst, ses, env, &(env->te_ns_count_p_dt), &(tii.dt));
+          if (cache_ok)
+            {
+              err = srv_make_new_error ("22023", "SR601", "Argument 1 of http_ttl_value() needs a namespace declaration for the type of the literal, use http_ttl_prefixes() in advance");
+              goto fail;
+            }
+        }
+    }
+  if (obj_is_iri)
+    ttl_http_write_ref (ses, env, &(tii.o));
+  else
+    http_ttl_write_obj (ses, env, qi, obj, obj_dtp, &tii.dt);
+fail:
+  dk_free_box (tii.o.uri);	dk_free_box (tii.o.ns);		dk_free_box (tii.o.loc);	dk_free_box (tii.o.prefix);
+  dk_free_box (tii.dt.uri);	dk_free_box (tii.dt.ns);	dk_free_box (tii.dt.loc);	dk_free_box (tii.dt.prefix);
+  if (NULL != err)
+    sqlr_resignal (err);
+  return (caddr_t)((ptrlong)(0));
+}
+
+caddr_t
 bif_http_nt_object (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t *qi = (query_instance_t *)qst;
@@ -3960,7 +4041,7 @@ bif_sparql_rset_nt_write_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
       ttl_iriref_t *col_ti = env->ne_cols + colctr;
       caddr_t obj = row[colctr];
       dtp_t obj_dtp = DV_TYPE_OF (obj);
-      int obj_is_iri, iri_is_ok;
+      int obj_is_iri;
       switch (obj_dtp)
         {
         case DV_DB_NULL: continue;
@@ -3971,7 +4052,7 @@ bif_sparql_rset_nt_write_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
       col_ti->is_iri = obj_is_iri;
       if (obj_is_iri)
         {
-          iri_is_ok = iri_cast_nt_absname (qi, obj, &(col_ti->uri), &(col_ti->is_bnode));
+          /* iri_is_ok = */ iri_cast_nt_absname (qi, obj, &(col_ti->uri), &(col_ti->is_bnode));
           if (col_ti->loc == obj)
             col_ti->loc = NULL; /* If obj is used unchanged so there was no memory allocation then col_ti->uri is unused in order to avoid double free at signalled error. */
         }
@@ -5217,6 +5298,8 @@ rdf_box_init ()
   MAKE_RDF_GRAPH_DICT(rdf_graph_group_of_privates_dict);
   MAKE_RDF_GRAPH_DICT(rdf_graph_default_world_perms_of_user_dict);
   MAKE_RDF_GRAPH_DICT(rdf_graph_default_private_perms_of_user_dict);
+  bif_define_typed ("__rdf_set_bnode_t_treshold", bif_rdf_set_bnode_t_treshold, &bt_integer);
+  bif_set_uses_index (bif_rdf_set_bnode_t_treshold);
   bif_define ("rdf_box", bif_rdf_box);
   bif_define ("ro_digest_from_parts", bif_ro_digest_from_parts);
   bif_define_typed ("is_rdf_box", bif_is_rdf_box, &bt_integer);
@@ -5272,6 +5355,8 @@ rdf_box_init ()
   bif_set_uses_index (bif_http_talis_json_triple);
   bif_define ("http_ld_json_triple", bif_http_ld_json_triple);
   bif_set_uses_index (bif_http_ld_json_triple);
+  bif_define ("http_ttl_value", bif_http_ttl_value);
+  bif_set_uses_index (bif_http_ttl_value);
   bif_define ("http_nt_object", bif_http_nt_object);
   bif_set_uses_index (bif_http_nt_object);
   bif_define ("http_rdf_object", bif_http_rdf_object);
