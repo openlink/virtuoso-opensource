@@ -497,7 +497,7 @@ sparp_expand_binds_like_macro (sparp_t *sparp, SPART **expr_ptr, dk_set_t binds,
       {
         SPART *prev_bind = sparp_find_bind_in_dk_set_by_alias (binds, expr_ptr[0]->_.alias.aname);
         if (NULL != prev_bind)
-          spar_error (sparp, "Alias ?%.200d is defined twice");
+          spar_error (sparp, "Alias ?%.200s is defined twice", expr_ptr[0]->_.alias.aname);
         expr_ptr = &(expr_ptr[0]->_.alias.arg);
         /* no break */
       }
