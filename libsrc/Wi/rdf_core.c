@@ -2316,6 +2316,8 @@ bif_iri_id_new (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_iri_id (id);
 }
 
+extern boxint bnode_t_treshold;
+
 int
 iri_canonicalize (query_instance_t *qi, caddr_t name, int mode, caddr_t *res_ret, caddr_t *err_ret)
 {
