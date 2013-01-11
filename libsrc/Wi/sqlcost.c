@@ -1838,23 +1838,62 @@ sqlo_rdf_col_card (sqlo_t * so, df_elt_t * tb_dfe, df_elt_t * dfe)
 }
 
 
+dbe_column_t *
+key_find_col (dbe_key_t * key, char * name)
+{
+  DO_SET (dbe_column_t *, col, &key->key_parts)
+    if (!CASEMODESTRCMP (col->col_name, name))
+      return col;
+  END_DO_SET();
+  return NULL;
+}
+
+int enable_pg_card = 1;
 
 int
-sqlo_use_p_stat (df_elt_t * dfe, df_elt_t ** lowers, int inx_const_fill, int64 est, float *inx_arity)
+sqlo_use_p_stat (df_elt_t * dfe, df_elt_t ** lowers, int inx_const_fill, int64 est, float *inx_arity, float *col_arity)
 {
   /* if there is a sample with leading constant p and the rest variable, consult the key_p_stat for the p in question */
   caddr_t p;
   float * place;
   dbe_key_t * key = dfe->_.table.key;
   df_elt_t * so_dfe, * g_dfe;
+  df_elt_t * lower3 = NULL, * upper3 = NULL;
+  dbe_column_t * col2, * col3 = NULL;
   if (!enable_p_stat || 1 != inx_const_fill)
     return 0;
   if (!key->key_p_stat || 0 != strcmp (((dbe_column_t*)key->key_parts->data)->col_name, "P")
       || !strstr (key->key_table->tb_name, "RDF_QUAD"))
     return 0;
-  so_dfe = sqlo_key_part_best ((dbe_column_t*)key->key_parts->next->data, dfe->_.table.col_preds, 0);
-  g_dfe = NULL; /*sqlo_key_part_best (g_col,  dfe->_.table.col_preds, 0); */
-  if (!so_dfe || BOP_EQ != so_dfe->_.bin.op)
+  col2 = (dbe_column_t*)key->key_parts->next->data;
+  so_dfe = sqlo_key_part_best (col2, dfe->_.table.col_preds, 0);
+  if ('S'== col2->col_name[0])
+    col3 = key_find_col (key, "O");
+  else
+    col3 = key_find_col (key, "S");
+  g_dfe = NULL;
+  if (col3)
+    {
+      lower3 = sqlo_key_part_best (col3, dfe->_.table.col_preds, 0);
+       upper3 = sqlo_key_part_best (col3, dfe->_.table.col_preds, 1);
+    }
+
+  if ((!so_dfe || BOP_EQ != so_dfe->_.bin.op) && !lower3 && enable_pg_card)
+    {
+      /* there is only p and g, no s or o */
+      dbe_column_t * g_col = key_find_col (dfe->_.table.key,  "G");
+      if (!g_col)
+	return 0;
+      g_dfe = sqlo_key_part_best (g_col,  dfe->_.table.col_preds, 0);
+      if (!g_dfe)
+	return 0;
+      /* if p and g are given, do not guess under 1 because if used together not in error there must be at least one.  Moore common will estimate higher */
+      if (!est)
+	return 0;
+      *col_arity = arity_scale (*col_arity);
+      return 1;
+    }
+  if (!so_dfe)
     return 0;
   p = dfe_iri_const (lowers[0]->_.bin.right);
   if (!p)
@@ -1869,18 +1908,12 @@ sqlo_use_p_stat (df_elt_t * dfe, df_elt_t ** lowers, int inx_const_fill, int64 e
     }
   *inx_arity = est / place[1];
   mutex_leave (alt_ts_mtx);
-  if (key->key_parts->next->next)
+  if (lower3 || upper3)
     {
-      dbe_column_t * p3 = (dbe_column_t*)key->key_parts->next->next->data;
-      df_elt_t * lower = sqlo_key_part_best (p3, dfe->_.table.col_preds, 0);
-      df_elt_t * upper = sqlo_key_part_best (p3, dfe->_.table.col_preds, 1);
       float p_cost, p_arity;
-      if (lower || upper)
-	{
-	  sqlo_pred_unit (lower, upper, &p_cost, &p_arity);
+      sqlo_pred_unit (lower3, upper3, &p_cost, &p_arity);
 	  *inx_arity *= p_arity;
 	}
-    }
   return 1;
 }
 
@@ -2085,7 +2118,7 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
 	goto no_sample;
       else if (0 == inx_sample)
 	inx_arity = 0.01;
-      else if (sqlo_use_p_stat (dfe, inx_lowers, inx_const_fill, inx_sample, &inx_arity))
+      else if (sqlo_use_p_stat (dfe, inx_lowers, inx_const_fill, inx_sample, &inx_arity, &col_arity))
 	p_stat = 1;
       else
 	inx_arity = inx_sample * inx_arity / (inx_arity_guess_for_const_parts != -1 ? inx_arity_guess_for_const_parts : inx_arity);
