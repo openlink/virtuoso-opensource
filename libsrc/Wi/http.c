@@ -5860,7 +5860,7 @@ http_proxy (ws_connection_t * ws, char * host, caddr_t * req, caddr_t * body, dk
 	  session_buffered_write (ws->ws_session, "0\r\n\r\n", 5); /* Write last zero chunk */
 	  session_flush_1 (ws->ws_session);
 	}
-      else if (len != -1 || close) /* If have content length or connection should be closed by peer */
+      else if (len > 0 || (close && len == -1)) /* If have content length or connection should be closed by peer */
 	{
 	  char tmp [4096], c;
 	  int to_read = len, to_read_len = sizeof (tmp), readed = 0;
