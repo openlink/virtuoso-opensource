@@ -5329,6 +5329,7 @@ rdf_box_init ()
   bif_set_uses_index (bif_rdf_box_make_complete);
   bif_define_typed ("__rdf_sqlval_of_obj", bif_rdf_sqlval_of_obj, &bt_any);
   bif_set_uses_index (bif_rdf_sqlval_of_obj);
+  bif_set_no_cluster ("__rdf_sqlval_of_obj");
   bif_define_typed ("__rdf_strsqlval", bif_rdf_strsqlval, &bt_varchar);
   bif_set_uses_index (bif_rdf_strsqlval);
   bif_define_typed ("__rdf_long_to_ttl", bif_rdf_long_to_ttl, &bt_any);
@@ -5374,7 +5375,10 @@ rdf_box_init ()
   bif_define ("sparql_iri_split_rdfa_qname", bif_sparql_iri_split_rdfa_qname);
   /* Short aliases for use in generated SQL text: */
   bif_define ("__ro2lo", bif_rdf_long_of_obj);
+  bif_set_no_cluster ("__ro2lo");
   bif_define_typed ("__ro2sq", bif_rdf_sqlval_of_obj, &bt_any);
+  bif_set_uses_index (bif_rdf_sqlval_of_obj);
+  bif_set_no_cluster ("__ro2sq");
   bif_define ("__rdf_graph_id2iri_dict", bif_rdf_graph_id2iri_dict);
   bif_define ("__rdf_graph_iri2id_dict", bif_rdf_graph_iri2id_dict);
   bif_define ("__rdf_graph_group_dict", bif_rdf_graph_group_dict);
