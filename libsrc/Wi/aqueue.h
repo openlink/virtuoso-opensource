@@ -74,4 +74,4 @@ caddr_t aq_wait_all (async_queue_t * aq, caddr_t * err_ret);
 async_queue_t *  aq_allocate (client_connection_t * cli, int n_threads);
 void aq_init ();
 
-#define AQ_NO_REQUEST ((caddr_t)3)
+#define AQ_NO_REQUEST ((caddr_t)100)
