@@ -1464,7 +1464,7 @@ create procedure DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC (in contents varchar, in base
   if (registry_get ('__rdf_cartridges_add_spongetime__') = '1')
   {
         sparql define input:storage "" insert in graph iri(?:graph)
-          { `iri(?:proxyiri)` <http://www.openlinksw.com/schema/attribution#sponge_time> `bif:now()` . };
+          { `iri(?:graph)` <http://www.openlinksw.com/schema/attribution#sponge_time> `bif:now()` . };
   }
 }
 ;
