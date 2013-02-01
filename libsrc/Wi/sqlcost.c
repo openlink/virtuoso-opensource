@@ -1877,7 +1877,8 @@ sqlo_use_p_stat (df_elt_t * dfe, df_elt_t ** lowers, int inx_const_fill, int64 e
       lower3 = sqlo_key_part_best (col3, dfe->_.table.col_preds, 0);
        upper3 = sqlo_key_part_best (col3, dfe->_.table.col_preds, 1);
     }
-
+  if (so_dfe && BOP_EQ!= so_dfe->_.bin.op)
+    so_dfe = NULL;
   if ((!so_dfe || BOP_EQ != so_dfe->_.bin.op) && !lower3 && enable_pg_card)
     {
       /* there is only p and g, no s or o */
@@ -1890,6 +1891,7 @@ sqlo_use_p_stat (df_elt_t * dfe, df_elt_t ** lowers, int inx_const_fill, int64 e
       /* if p and g are given, do not guess under 1 because if used together not in error there must be at least one.  Moore common will estimate higher */
       if (!est)
 	return 0;
+      *inx_arity = est;
       *col_arity = arity_scale (*col_arity);
       return 1;
     }
