@@ -6751,6 +6751,7 @@ bif_file_init (void)
   bif_define_typed ("md5_final", bif_md5_final, &bt_varchar);
   bif_define_typed ("__vector_sort", bif_vector_sort, &bt_any);
   bif_define ("uuid", bif_uuid);
+  bif_define ("rdf_struuid_impl", bif_uuid);
   bif_define ("dime_compose", bif_dime_compose);
   bif_define ("dime_tree", bif_dime_tree);
   bif_define_typed ("file_stat", bif_file_stat, &bt_any);
