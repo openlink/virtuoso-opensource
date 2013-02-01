@@ -164,6 +164,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "STRLANG",		SPARQL_BIF		, SPAR_BIF_STRLANG
 "STRLEN",		SPARQL_BIF		, SPAR_BIF_STRLEN
 "STRSTARTS",		SPARQL_BIF		, SPAR_BIF_STRSTARTS
+"STRUUID",		SPARQL_BIF		, SPAR_BIF_STRUUID
 "SUBCLASS",		SUBCLASS_L		, 0
 "SUBJECT",		SUBJECT_L		, 0
 "SUBSTR",		SPARQL_BIF		, SPAR_BIF_SUBSTR
@@ -195,6 +196,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "UNION",		UNION_L			, 0
 "URI",			SPARQL_BIF		, SPAR_BIF_URI
 "USING",		USING_L			, 0
+"UUID",			SPARQL_BIF		, SPAR_BIF_UUID
 "VALUES",		VALUES_L		, 0
 "WHERE",		WHERE_L			, 0
 "WITH",			WITH_L			, 0

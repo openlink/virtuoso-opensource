@@ -1713,7 +1713,7 @@ sparp_gp_add_chain_aliases (sparp_t *sparp, SPART *inner_var, sparp_equiv_t *inn
       if (NULL == parent_gp)
         break;
       parent_eq = sparp_equiv_get (sparp, parent_gp, inner_var, SPARP_EQUIV_GET_NAMESAKES | SPARP_EQUIV_INS_CLASS);
-      sparp_equiv_connect (sparp, parent_eq, curr_eq, 1);
+      sparp_equiv_connect_outer_to_inner (sparp, parent_eq, curr_eq, 1);
       if (parent_gp == top_gp)
         break;
       curr_eq = parent_eq;
@@ -1838,7 +1838,7 @@ sparp_gp_trav_remove_unused_aliases (sparp_t *sparp, SPART *curr, sparp_trav_sta
       for (sub_ctr = BOX_ELEMENTS_INT_0 (eq->e_subvalue_idxs); sub_ctr--; /* no step */)
         {
           sparp_equiv_t *sub_eq = SPARP_EQUIV(sparp, eq->e_subvalue_idxs[sub_ctr]);
-          sparp_equiv_disconnect (sparp, eq, sub_eq);
+          sparp_equiv_disconnect_outer_from_inner (sparp, eq, sub_eq);
         }
       sparp_equiv_remove (sparp, eq);
     }
@@ -1935,7 +1935,7 @@ sparp_gp_trav_label_external_vars_gp_in (sparp_t *sparp, SPART *curr, sparp_trav
           if (NULL == external_namesake_eq)
             continue;
           if (external_namesake_eq->e_own_idx < eq->e_external_src_idx)
-            eq->e_external_src_idx = external_namesake_eq->e_own_idx;
+            sparp_equiv_connect_param_to_external (sparp, eq, external_namesake_eq);
           eq->e_rvr.rvrRestrictions |= SPART_VARR_EXTERNAL;
           for (varctr = eq->e_var_count; varctr--; /* no step */)
             {
@@ -1963,7 +1963,7 @@ sparp_gp_trav_label_external_vars_expn_in (sparp_t *sparp, SPART *curr, sparp_tr
         {
           sparp_equiv_t *eq = SPARP_EQUIV (sparp, curr->_.var.equiv_idx);
           if (external_namesake_eq->e_own_idx < eq->e_external_src_idx)
-            eq->e_external_src_idx = external_namesake_eq->e_own_idx;
+            sparp_equiv_connect_param_to_external (sparp, eq, external_namesake_eq);
           eq->e_rvr.rvrRestrictions |= SPART_VARR_EXTERNAL;
           curr->_.var.rvr.rvrRestrictions |= SPART_VARR_EXTERNAL;
         }
@@ -2028,7 +2028,7 @@ again:
         continue;
       DO_BOX_FAST_REV (ptrlong, recv_idx, recv_ctr, eq->e_receiver_idxs)
         {
-          sparp_equiv_disconnect (sparp, SPARP_EQUIV (sparp, recv_idx), eq);
+          sparp_equiv_disconnect_outer_from_inner (sparp, SPARP_EQUIV (sparp, recv_idx), eq);
         }
       END_DO_BOX_FAST_REV;
       if (WHERE_L != eq->e_gp->_.gp.subtype)
@@ -2095,7 +2095,7 @@ sparp_remove_redundant_connections (sparp_t *sparp, ptrlong flags)
           else if (sparp_equivs_have_same_fixedvalue (sparp, eq, sub_eq) && (0 != eq->e_gspo_uses))
             can_unlink = 1;
           if (can_unlink)
-            sparp_equiv_disconnect (sparp, eq, sub_eq);
+            sparp_equiv_disconnect_outer_from_inner (sparp, eq, sub_eq);
         }
     }
 
@@ -2957,7 +2957,7 @@ bifsparqlopt_args_in_same_eq (sparp_t *sparp, int bif_opt_opcode, SPART *tree, b
   if (SPAR_QNAME == SPART_TYPE (arg1) && (NULL != eq0))
     {
       eq1 = sparp_equiv_get (sparp, eq0->e_gp, (SPART *)(arg1->_.qname.val), SPARP_EQUIV_INS_CLASS);
-      if (0 == BOX_LENGTH_0 ((caddr_t)(eq1->e_receiver_idxs)))
+      if (0 == BOX_ELEMENTS_0 ((caddr_t)(eq1->e_receiver_idxs)))
         {
           SPART *external_orig = sparp_find_origin_of_external_varname_in_eq (sparp, eq1, arg1->_.qname.val, 0);
         }
@@ -3044,8 +3044,6 @@ bifsparqlopt_arg_is_local_var (sparp_t *sparp, int bif_opt_opcode, SPART *tree, 
   if (SPAR_IS_BLANK_OR_VAR (arg0))
     {
       sparp_equiv_t *eq = SPARP_EQUIV (sparp, arg0->_.var.equiv_idx);
-      while (eq->e_deprecated)
-        eq = SPARP_EQUIV (sparp, eq->e_merge_dest_idx);
       answer = !(eq->e_rvr.rvrRestrictions & SPART_VARR_EXTERNAL);
     }
   switch (bif_opt_opcode)
@@ -3375,11 +3373,13 @@ sparp_simplify_builtin (sparp_t *sparp, SPART *tree, int *trouble_ret)
     case SPAR_BIF_STRLANG: break;
     case SPAR_BIF_STRLEN: break;
     case SPAR_BIF_STRSTARTS: break;
+    case SPAR_BIF_STRUUID: break;
     case SPAR_BIF_SUBSTR: break;
     case SPAR_BIF_TIMEZONE: break;
     case SPAR_BIF_TZ: break;
     case SPAR_BIF_UCASE: break;
     case SPAR_BIF_URI: break;
+    case SPAR_BIF_UUID: break;
     case SPAR_BIF_YEAR: break;
     default: break;
     }
@@ -5125,7 +5125,7 @@ sparp_gp_produce_nothing (sparp_t *sparp, SPART *curr)
           sparp_equiv_t *recv_eq = SPARP_EQUIV (sparp, recv_eq_idx);
           if ((UNION_L != recv_eq->e_gp->_.gp.subtype) && (OPTIONAL_L != curr->_.gp.subtype))
             recv_eq->e_rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
-          sparp_equiv_disconnect (sparp, recv_eq, eq);
+          sparp_equiv_disconnect_outer_from_inner (sparp, recv_eq, eq);
         }
       END_DO_BOX_FAST;
       eq->e_replaces_filter = 0;
@@ -6254,7 +6254,7 @@ there was no receiver equiv outside and hence no propagation took place. So let'
               if (0 == BOX_ELEMENTS_0 (eq->e_receiver_idxs))
                 {
                   sparp_equiv_t *outer_eq = sparp_equiv_get (sparp, curr, (SPART *)(eq->e_varnames[0]), SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_GET_NAMESAKES);
-                  sparp_equiv_connect (sparp, outer_eq, eq, 1);
+                  sparp_equiv_connect_outer_to_inner (sparp, outer_eq, eq, 1);
                   sparp_restr_of_join_eq_from_connected_subvalue (sparp, outer_eq, eq);
                 }
             }
@@ -6636,7 +6636,7 @@ restoring filters is a preorder one, the postorder needs a complete stack of thi
           if (NULL == recv_eq)
             {
               recv_eq = SPARP_EQUIV (sparp, l->_.var.equiv_idx);
-              sparp_equiv_connect (sparp, recv_eq, eq, 1);
+              sparp_equiv_connect_outer_to_inner (sparp, recv_eq, eq, 1);
             }
           recv_eq->e_rvr.rvrRestrictions &= ~SPART_VARR_FIXED;
           eq->e_rvr.rvrRestrictions &= ~SPART_VARR_FIXED;

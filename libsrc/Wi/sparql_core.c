@@ -1619,6 +1619,8 @@ spar_gp_finalize_binds (sparp_t *sparp, dk_set_t bind_revlist)
   SPART *inner_gp, *wrapper_gp;
   int type_of_gp_to_resume;
   SPART *subselect_top;
+  dk_set_t filters_of_gp_to_resume = (dk_set_t)(sparp->sparp_env->spare_acc_filters->data);
+  sparp->sparp_env->spare_acc_filters->data = NULL;
   inner_gp = spar_gp_finalize (sparp, NULL);
   type_of_gp_to_resume = inner_gp->_.gp.subtype;
   inner_gp->_.gp.subtype = WHERE_L;
@@ -1629,6 +1631,7 @@ spar_gp_finalize_binds (sparp_t *sparp, dk_set_t bind_revlist)
   sparp_expand_top_retvals (sparp, subselect_top, 1 /* safely_copy_all_vars */, bind_revlist);
   spar_env_pop (sparp);
   spar_gp_init (sparp, type_of_gp_to_resume);
+  sparp->sparp_env->spare_acc_filters->data = filters_of_gp_to_resume;
   spar_gp_init (sparp, SELECT_L);
   wrapper_gp = spar_gp_finalize_with_subquery (sparp, NULL, subselect_top);
   spar_gp_add_member (sparp, wrapper_gp);
@@ -2648,6 +2651,8 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
     obj_is_plain_var = SPART_VARNAME_IS_PLAIN(object->_.var.vname);
   else if ((SPAR_QNAME != obj_stype) && (SPAR_LIT != obj_stype))
     spar_error (sparp, "Object of transitive triple pattern should be variable or QName or literal, not blank node");
+  if ((NULL == graph) && (NULL != sparp->sparp_env->spare_context_graphs))
+    graph = (SPART *)t_box_copy_tree ((caddr_t)(sparp->sparp_env->spare_context_graphs->data));
   subj_vname = spar_mkid (sparp, "_::trans_subj");
   obj_vname = spar_mkid (sparp, "_::trans_obj");
   spar_gp_init (sparp, 0);
@@ -2915,14 +2920,16 @@ spar_gp_add_ppath_triples (sparp_t *sparp, SPART *graph, SPART *subject, SPART *
         SPART *part0 = pp->_.ppath.parts[0];
         SPART *res;
         dk_set_t opts = NULL;
-        if (-1 != unbox (pp->_.ppath.maxrepeat))
+        boxint minrepeat_num = unbox (pp->_.ppath.minrepeat);
+        boxint maxrepeat_num = unbox (pp->_.ppath.maxrepeat);
+        if (-1 != maxrepeat_num)
           {
-            t_set_push (&opts, box_copy (pp->_.ppath.maxrepeat));
+            t_set_push (&opts, t_box_num_nonull (maxrepeat_num));
             t_set_push (&opts, (caddr_t)((ptrlong)T_MAX_L));
           }
-        if (1 != unbox (pp->_.ppath.minrepeat))
+        if (1 != minrepeat_num)
           {
-            t_set_push (&opts, (NULL == pp->_.ppath.minrepeat) ? t_box_num_nonull (0) : box_copy (pp->_.ppath.minrepeat));
+            t_set_push (&opts, t_box_num_nonull (minrepeat_num));
             t_set_push (&opts, (caddr_t)((ptrlong)T_MIN_L));
           }
         t_set_push (&opts, (caddr_t)((ptrlong)1));
@@ -2986,6 +2993,55 @@ spar_inf_tricks_for_pred (sparp_t *sparp, caddr_t p_name, rdf_inf_ctx_t *inf_ctx
         }
     }
   return res;
+}
+
+SPART *
+spar_gp_make_graph_field_from_context (sparp_t *sparp, SPART **ret_graph_eq_from_option_expn, int *ret_graph_can_bring_filters)
+{
+  sparp_env_t *env = sparp->sparp_env;
+  SPART *graph;
+  ret_graph_eq_from_option_expn[0] = NULL;
+  ret_graph_can_bring_filters[0] = 0;
+  for (;;)
+    {
+      dk_set_t dflts;
+      if (env->spare_context_graphs)
+        {
+          graph = (SPART *)t_box_copy_tree ((caddr_t)(env->spare_context_graphs->data));
+          return graph;
+        }
+      dflts = env->spare_src.ssrc_default_graphs;
+      if ((NULL == dflts) && (NULL != env->spare_src.ssrc_named_graphs))
+        { /* Special case: if no FROM clauses specified but there are some FROM NAMED then default graph is totally empty */
+          graph = spar_make_blank_node (sparp, spar_mkid (sparp, "_::default"), 2);
+          graph->_.var.rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
+          return graph;
+        }
+      if ((NULL != dflts) && (SPART_GRAPH_FROM == ((SPART *)(dflts->data))->_.graph.subtype) &&
+         ((NULL == dflts->next) || (SPART_GRAPH_MIN_NEGATION <= ((SPART *)(dflts->next->data))->_.graph.subtype)) )
+        { /* If there's only one default graph then we can cheat and optimize the query a little bit by adding a restriction to the variable */
+          SPART *single_dflt = (SPART *)(dflts->data);
+          if (!SPAR_IS_LIT_OR_QNAME (single_dflt->_.graph.expn))	 /* FROM iriref OPTION (...) case */
+            {
+              caddr_t iri_arg = single_dflt->_.graph.iri;
+              graph = spar_make_blank_node (sparp, spar_mkid (sparp, "_::default"), 2);
+              ret_graph_eq_from_option_expn[0] = spartlist (sparp, 3, BOP_EQ, sparp_tree_full_copy (sparp, graph, NULL), sparp_tree_full_copy (sparp, single_dflt->_.graph.expn, NULL));
+              if (NULL != iri_arg)
+                {
+                  graph->_.var.rvr.rvrRestrictions |= SPART_VARR_FIXED | SPART_VARR_IS_REF | SPART_VARR_NOT_NULL;
+                  graph->_.var.rvr.rvrFixedValue = t_box_copy (iri_arg);
+                }
+            }
+          else /* Single FROM iriref without sponge options */
+            graph = sparp_tree_full_copy (sparp, single_dflt->_.graph.expn, NULL);
+          if (NULL == dflts->next) /* There's only one source and it is reflected in the value of graph */
+            return graph;
+        }
+      else
+        graph = spar_make_blank_node (sparp, spar_mkid (sparp, "_::default"), 2);
+      ret_graph_can_bring_filters[0] = 1;
+      return graph;
+    }
 }
 
 SPART *
@@ -3112,48 +3168,8 @@ spar_gp_add_triplelike (sparp_t *sparp, SPART *graph, SPART *subject, SPART *pre
         }
       dk_free_tree ((caddr_t)spec_pred_names);
     }
-  for (;;)
-    {
-      dk_set_t dflts;
-      if (NULL != graph)
-        break;
-      if (env->spare_context_graphs)
-        {
-          graph = (SPART *)t_box_copy_tree ((caddr_t)(env->spare_context_graphs->data));
-          break;
-        }
-      dflts = env->spare_src.ssrc_default_graphs;
-      if ((NULL == dflts) && (NULL != env->spare_src.ssrc_named_graphs))
-        { /* Special case: if no FROM clauses specified but there are some FROM NAMED then default graph is totally empty */
-          graph = spar_make_blank_node (sparp, spar_mkid (sparp, "_::default"), 2);
-          graph->_.var.rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
-          break;
-        }
-      if ((NULL != dflts) && (SPART_GRAPH_FROM == ((SPART *)(dflts->data))->_.graph.subtype) &&
-         ((NULL == dflts->next) || (SPART_GRAPH_MIN_NEGATION <= ((SPART *)(dflts->next->data))->_.graph.subtype)) )
-        { /* If there's only one default graph then we can cheat and optimize the query a little bit by adding a restriction to the variable */
-          SPART *single_dflt = (SPART *)(dflts->data);
-          if (!SPAR_IS_LIT_OR_QNAME (single_dflt->_.graph.expn))	 /* FROM iriref OPTION (...) case */
-            {
-              caddr_t iri_arg = single_dflt->_.graph.iri;
-              graph = spar_make_blank_node (sparp, spar_mkid (sparp, "_::default"), 2);
-              graph_eq_from_option_expn = spartlist (sparp, 3, BOP_EQ, sparp_tree_full_copy (sparp, graph, NULL), sparp_tree_full_copy (sparp, single_dflt->_.graph.expn, NULL));
-              if (NULL != iri_arg)
-                {
-                  graph->_.var.rvr.rvrRestrictions |= SPART_VARR_FIXED | SPART_VARR_IS_REF | SPART_VARR_NOT_NULL;
-                  graph->_.var.rvr.rvrFixedValue = t_box_copy (iri_arg);
-                }
-            }
-          else /* Single FROM iriref without sponge options */
-            graph = sparp_tree_full_copy (sparp, single_dflt->_.graph.expn, NULL);
-          if (NULL == dflts->next) /* There's only one source and it is reflected in the value of graph */
-            break;
-        }
-      else
-        graph = spar_make_blank_node (sparp, spar_mkid (sparp, "_::default"), 2);
-      graph_can_bring_filters = 1;
-      break;
-    }
+  if (NULL == graph)
+    graph = spar_gp_make_graph_field_from_context (sparp, &graph_eq_from_option_expn, &graph_can_bring_filters);
   if (!(banned_tricks & SPAR_TRIPLE_TRICK_MACRO))
     {
       int ctr, argctr;
@@ -4212,59 +4228,61 @@ xpf_checked:
 }
 
 const sparp_bif_desc_t sparp_bif_descs[] = {
-/*  sbd_name		| sbd_subtype			, impl	| sbd_required_syntax		| min-/maxargs	| ret_valmode		| sbd_arg_valmodes					| sbd_result_restr_bits		*/
-  { ""			, 0				, '-'	, 0				, 0	, 0	, NULL			, { SSG_VALMODE_SQLVAL, NULL, NULL}			, 0	},
+/*  sbd_name		| sbd_subtype			, impl	| sbd_required_syntax	| min-/maxargs	| ret_valmode		| sbd_arg_valmodes					| sbd_result_restr_bits		*/
+  { ""			, 0				, '-'	, 0			, 0	, 0	, NULL			, { SSG_VALMODE_SQLVAL, NULL, NULL}			, 0	},
   { "abs"		, SPAR_BIF_ABS			, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_NUM	, { SSG_VALMODE_NUM, NULL, NULL}			, 0	},
   { "bnode"		, SPAR_BIF_BNODE		, '-'	, SSG_SD_SPARQL11_DRAFT	, 0	, 1	, SSG_VALMODE_LONG	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_BLANK | SPART_VARR_IS_REF	},
-  { "bound"		, BOUND_L			, '-'	, 0				, 1	, 1	, SSG_VALMODE_BOOL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
+  { "bound"		, BOUND_L			, '-'	, 0			, 1	, 1	, SSG_VALMODE_BOOL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
   { "ceil"		, SPAR_BIF_CEIL			, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_NUM	, { SSG_VALMODE_NUM, NULL, NULL}			, 0	},
   { "coalesce"		, SPAR_BIF_COALESCE		, '-'	, SSG_SD_SPARQL11_DRAFT	, 0	, 0xFFF	, NULL			, { SSG_VALMODE_SQLVAL, NULL, NULL}			, 0	},
-  { "concat"		, SPAR_BIF_CONCAT		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 0	, 0xFFF	, NULL			, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL	},
+  { "concat"		, SPAR_BIF_CONCAT		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 0	, 0xFFF	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL	},
   { "contains"		, SPAR_BIF_CONTAINS		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 2	, 2	, SSG_VALMODE_BOOL	, { SSG_VALMODE_LONG, SSG_VALMODE_LONG, NULL}		, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
-  { "datatype"		, DATATYPE_L			, '-'	, 0				, 1	, 1	, SSG_VALMODE_LONG	, { SSG_VALMODE_LONG, NULL, NULL}			, SPART_VARR_IS_IRI | SPART_VARR_IS_REF	},
+  { "datatype"		, DATATYPE_L			, '-'	, 0			, 1	, 1	, SSG_VALMODE_LONG	, { SSG_VALMODE_LONG, NULL, NULL}			, SPART_VARR_IS_IRI | SPART_VARR_IS_REF	},
   { "day"		, SPAR_BIF_DAY			, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_NUM	, { SSG_VALMODE_NUM, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
   { "encode_for_uri"	, SPAR_BIF_ENCODE_FOR_URI	, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL	},
   { "floor"		, SPAR_BIF_FLOOR		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_NUM	, { SSG_VALMODE_NUM, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
   { "hours"		, SPAR_BIF_HOURS		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_NUM	, { SSG_VALMODE_NUM, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
   { "if"		, SPAR_BIF_IF			, '-'	, SSG_SD_SPARQL11_DRAFT	, 3	, 3	, NULL			, { SSG_VALMODE_BOOL, NULL, NULL}			, 0	},
-  { "in operator"	, IN_L				, '-'	, 0				, 1	, 0xFFF	, SSG_VALMODE_BOOL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
+  { "in operator"	, IN_L				, '-'	, 0			, 1	, 0xFFF	, SSG_VALMODE_BOOL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
   { "iri"		, IRI_L				, '-'	, SSG_SD_BI_OR_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_LONG	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_IRI | SPART_VARR_IS_REF | SPART_VARR_NOT_NULL	},
-  { "isblank"		, SPAR_BIF_ISBLANK		, '-'	, 0				, 1	, 1	, SSG_VALMODE_BOOL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
-  { "isiri"		, SPAR_BIF_ISIRI		, '-'	, 0				, 1	, 1	, SSG_VALMODE_BOOL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
-  { "isliteral"		, SPAR_BIF_ISLITERAL		, '-'	, 0				, 1	, 1	, SSG_VALMODE_BOOL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
+  { "isblank"		, SPAR_BIF_ISBLANK		, '-'	, 0			, 1	, 1	, SSG_VALMODE_BOOL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
+  { "isiri"		, SPAR_BIF_ISIRI		, '-'	, 0			, 1	, 1	, SSG_VALMODE_BOOL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
+  { "isliteral"		, SPAR_BIF_ISLITERAL		, '-'	, 0			, 1	, 1	, SSG_VALMODE_BOOL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
   { "isnumeric"		, SPAR_BIF_ISNUMERIC		, '-'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_BOOL	, { SSG_VALMODE_NUM, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
-  { "isref"		, SPAR_BIF_ISREF		, '-'	, SSG_SD_BI			, 1	, 1	, SSG_VALMODE_BOOL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
-  { "isuri"		, SPAR_BIF_ISURI		, '-'	, 0				, 1	, 1	, SSG_VALMODE_BOOL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
-  { "lang"		, LANG_L			, '-'	, 0				, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_LONG, NULL, NULL}			, SPART_VARR_IS_LIT	},
-  { "langmatches"	, SPAR_BIF_LANGMATCHES		, '-'	, 0				, 2	, 2	, SSG_VALMODE_BOOL	, { SSG_VALMODE_LONG, SSG_VALMODE_SQLVAL, NULL}		, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
-  { "like operator"	, LIKE_L			, '-'	, 0				, 2	, 2	, SSG_VALMODE_BOOL	, { SSG_VALMODE_SQLVAL, SSG_VALMODE_SQLVAL, NULL}	, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
+  { "isref"		, SPAR_BIF_ISREF		, '-'	, SSG_SD_BI		, 1	, 1	, SSG_VALMODE_BOOL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
+  { "isuri"		, SPAR_BIF_ISURI		, '-'	, 0			, 1	, 1	, SSG_VALMODE_BOOL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
+  { "lang"		, LANG_L			, '-'	, 0			, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_LONG, NULL, NULL}			, SPART_VARR_IS_LIT	},
+  { "langmatches"	, SPAR_BIF_LANGMATCHES		, '-'	, 0			, 2	, 2	, SSG_VALMODE_BOOL	, { SSG_VALMODE_LONG, SSG_VALMODE_SQLVAL, NULL}		, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
+  { "like operator"	, LIKE_L			, '-'	, 0			, 2	, 2	, SSG_VALMODE_BOOL	, { SSG_VALMODE_SQLVAL, SSG_VALMODE_SQLVAL, NULL}	, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
   { "lcase"		, SPAR_BIF_LCASE		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_LONG	, { SSG_VALMODE_LONG, NULL, NULL}			, SPART_VARR_IS_LIT	},
   { "md5"		, SPAR_BIF_MD5			, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL	},
   { "minutes"		, SPAR_BIF_MINUTES		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_NUM	, { SSG_VALMODE_NUM, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
   { "month"		, SPAR_BIF_MONTH		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_NUM	, { SSG_VALMODE_NUM, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
   { "now"		, SPAR_BIF_NOW			, 'B'	, SSG_SD_SPARQL11_DRAFT	, 0	, 0	, SSG_VALMODE_NUM	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
   { "rand"		, SPAR_BIF_RAND			, 'B'	, SSG_SD_SPARQL11_DRAFT	, 0	, 1	, SSG_VALMODE_NUM	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
-  { "regex"		, SPAR_BIF_REGEX		, 'B'	, 0				, 2	, 3	, SSG_VALMODE_BOOL	, { SSG_VALMODE_SQLVAL, SSG_VALMODE_SQLVAL, SSG_VALMODE_SQLVAL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
+  { "regex"		, SPAR_BIF_REGEX		, 'B'	, 0			, 2	, 3	, SSG_VALMODE_BOOL	, { SSG_VALMODE_SQLVAL, SSG_VALMODE_SQLVAL, SSG_VALMODE_SQLVAL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
   { "replace"		, SPAR_BIF_REPLACE		, 'S'	, SSG_SD_SPARQL11_DRAFT	, 3	, 4	, SSG_VALMODE_LONG	, { SSG_VALMODE_LONG, SSG_VALMODE_SQLVAL, SSG_VALMODE_SQLVAL}	, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL	},
   { "round"		, SPAR_BIF_ROUND		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_NUM	, { SSG_VALMODE_NUM, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
-  { "sameterm"		, SPAR_BIF_SAMETERM		, '-'	, 0				, 2	, 2	, SSG_VALMODE_BOOL	, { SSG_VALMODE_LONG, SSG_VALMODE_LONG, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
+  { "sameterm"		, SPAR_BIF_SAMETERM		, '-'	, 0			, 2	, 2	, SSG_VALMODE_BOOL	, { SSG_VALMODE_LONG, SSG_VALMODE_LONG, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
   { "seconds"		, SPAR_BIF_SECONDS		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_NUM	, { SSG_VALMODE_NUM, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
   { "sha1"		, SPAR_BIF_SHA1			, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL	},
   { "sha224"		, SPAR_BIF_SHA224		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL	},
   { "sha256"		, SPAR_BIF_SHA256		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL	},
   { "sha384"		, SPAR_BIF_SHA384		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL	},
   { "sha512"		, SPAR_BIF_SHA512		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL	},
-  { "str"		, SPAR_BIF_STR			, '-'	, 0				, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT	},
+  { "str"		, SPAR_BIF_STR			, '-'	, 0			, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT	},
   { "strdt"		, SPAR_BIF_STRDT		, 'S'	, SSG_SD_SPARQL11_DRAFT	, 2	, 2	, SSG_VALMODE_LONG	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT	},
   { "strends"		, SPAR_BIF_STRENDS		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 2	, 2	, SSG_VALMODE_BOOL	, { SSG_VALMODE_LONG, SSG_VALMODE_LONG, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
   { "strlang"		, SPAR_BIF_STRLANG		, 'S'	, SSG_SD_SPARQL11_DRAFT	, 2	, 2	, SSG_VALMODE_LONG	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT	},
   { "strlen"		, SPAR_BIF_STRLEN		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_NUM	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
   { "strstarts"		, SPAR_BIF_STRSTARTS		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 2	, 2	, SSG_VALMODE_BOOL	, { SSG_VALMODE_LONG, SSG_VALMODE_LONG, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
+  { "struuid"		, SPAR_BIF_STRUUID		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 0	, 0	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_LONG, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL	},
   { "substr"		, SPAR_BIF_SUBSTR		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 2	, 3	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_LONG, SSG_VALMODE_NUM, SSG_VALMODE_NUM}			, SPART_VARR_IS_LIT	},
   { "timezone"		, SPAR_BIF_TIMEZONE		, 'S'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_NUM	, { SSG_VALMODE_NUM, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
   { "tz"		, SPAR_BIF_TZ			, 'S'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_NUM, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
   { "ucase"		, SPAR_BIF_UCASE		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_LONG	, { SSG_VALMODE_LONG, NULL, NULL}			, SPART_VARR_IS_LIT	},
   { "uri"		, SPAR_BIF_URI			, '-'	, SSG_SD_BI_OR_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_LONG	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_IRI | SPART_VARR_IS_REF	},
+  { "uuid"		, SPAR_BIF_UUID			, 'S'	, SSG_SD_SPARQL11_DRAFT	, 0	, 0	, SSG_VALMODE_LONG	, { SSG_VALMODE_LONG, NULL, NULL}			, SPART_VARR_IS_IRI | SPART_VARR_NOT_NULL	},
   { "year"		, SPAR_BIF_YEAR			, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_NUM	, { SSG_VALMODE_NUM, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
 };
 
@@ -5030,7 +5048,7 @@ spar_env_push (sparp_t *sparp)
   if ((NULL != env_copy->spare_context_qms) && ((SPART *)((ptrlong)_STAR) != env_copy->spare_context_qms->data))
     spar_error (sparp, "Subqueries are not allowed inside QUAD MAP group patterns other than 'QUAD MAP * {...}'");
 #endif
-  ENV_COPY (spare_context_graphs); /* Do we need this??? */
+  ENV_COPY (spare_context_graphs);
   /* no copy for spare_context_subjects */
   /* no copy for spare_context_predicates */
   /* no copy for spare_context_objects */
@@ -5172,8 +5190,27 @@ bif_sparql_explain (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     eq_count = sparp->sparp_sg->sg_equiv_count;
     for (eq_ctr = 0; eq_ctr < eq_count; eq_ctr++)
       {
-        sparp_equiv_t *eq = sparp->sparp_sg->sg_equivs[eq_ctr];
-        spart_dump_eq (eq_ctr, eq, res);
+        char buf[50];
+        sparp_equiv_t *eq;
+        eq = sparp->sparp_sg->sg_equivs[eq_ctr];
+        if (NULL == eq)
+          {
+#ifdef SPARQL_DEBUG
+            eq = sparp->sparp_sg->sg_removed_equivs[eq_ctr];
+            sprintf (buf, "\n#%d: merged into #%d and destroyed", eq_ctr, (int)(eq->e_dbg_merge_dest));
+            SES_PRINT (res, buf);
+            spart_dump_eq (eq, res);
+#else
+            sprintf (buf, "\n#%d: merged and destroyed", eq_ctr);
+            SES_PRINT (res, buf);
+#endif
+          }
+        else
+          {
+            sprintf (buf, "\n#%d:", eq_ctr);
+            SES_PRINT (res, buf);
+            spart_dump_eq (eq, res);
+          }
       }
   }
 #endif

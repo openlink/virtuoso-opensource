@@ -699,6 +699,73 @@ spar_compose_retvals_of_modify (sparp_t *sparp, SPART *top, SPART *graph_to_patc
         spar_exec_uid_and_gs_cbk (sparp), log_mode, spar_compose_report_flag (sparp) ) );
 }
 
+void
+spar_compose_ctor_triples_from_where_gp (sparp_t *sparp, SPART *gp, SPART *g, dk_set_t *ret_tmpls)
+{
+  int memb_ctr;
+  if (SPAR_GP != SPART_TYPE (gp))
+    spar_error (sparp, "Cannot convert a pattern into constructor template, DELETE WHERE wors only for simple quad templates");
+  if ((0 != gp->_.gp.subtype) && (WHERE_L != gp->_.gp.subtype) && (OPTIONAL_L != gp->_.gp.subtype))
+    spar_error (sparp, "DELETE WHERE wors only for simple quad templates, only basic group patterns and OPTIONAL are allowed");
+  /*if (0 != BOX_ELEMENTS_0 (gp->_.gp.filters))
+    spar_error (sparp, "DELETE WHERE does not support FILTER");*/
+  DO_BOX_FAST (SPART *, memb, memb_ctr, gp->_.gp.members)
+    {
+      SPART *tmpl;
+      if (SPAR_TRIPLE != SPART_TYPE (memb))
+        {
+          spar_compose_ctor_triples_from_where_gp (sparp, memb, g, ret_tmpls);
+          continue;
+        }
+      if (0 < BOX_ELEMENTS_0 (memb->_.triple.options))
+        spar_error (sparp, "DELETE WHERE does not support OPTION () clauses of triples and related features, such as transitivity");
+      if (SPART_IS_DEFAULT_GRAPH_BLANK (memb->_.triple.tr_graph) && (NULL == g))
+        spar_error (sparp, "DELETE WHERE requires default graph but it is not provided");
+      tmpl = sparp_tree_full_copy (sparp, memb, gp);
+      t_set_push (ret_tmpls, tmpl);
+    }
+  END_DO_BOX_FAST;
+}
+
+void
+spar_compose_retvals_of_delete_from_wm (sparp_t *sparp, SPART *tree, SPART *graph_to_patch)
+{
+  SPART *gtp = spar_simplify_graph_to_patch (sparp, graph_to_patch);
+  SPART *pat = tree->_.req_top.pattern;
+  SPART *tmpl_gp;
+  dk_set_t tmpls = NULL;
+  caddr_t prev_fixed_graph = NULL;
+  int g_grp_count = 0;
+  spar_compose_ctor_triples_from_where_gp (sparp, pat, gtp, &tmpls);
+  DO_SET (SPART *, triple, &tmpls)
+    {
+      SPART *g = triple->_.triple.tr_graph;
+      if (SPART_IS_DEFAULT_GRAPH_BLANK (g))
+        g = gtp;
+      if ((SPAR_LIT != SPART_TYPE (g)) && (SPAR_QNAME != SPART_TYPE (g)))
+        g_grp_count++;
+      else
+        {
+          caddr_t g_val = SPAR_LIT_OR_QNAME_VAL (g);
+          if ((DV_STRING == DV_TYPE_OF (g_val)) || (DV_UNAME == DV_TYPE_OF (g_val)))
+            {
+              if ((NULL == prev_fixed_graph) || strcmp (prev_fixed_graph, g_val))
+                g_grp_count++;
+              prev_fixed_graph = g_val;
+            }
+          else
+            g_grp_count++;
+        }
+    }
+  END_DO_SET()
+  tmpl_gp = (SPART *)(t_box_copy ((caddr_t)pat)); /* Dirty hack here, indeed, however we need only a box with type and proper length, nothing else */
+  tmpl_gp->_.gp.members = (SPART **)t_revlist_to_array (tmpls);
+  tmpl_gp->_.gp.options = NULL;
+  if (1 < g_grp_count)
+    tmpl_gp->_.gp.options = (SPART **)t_list (2, (SPART *)((ptrlong)QUAD_L), t_box_num_nonull (g_grp_count));
+  spar_compose_retvals_of_insert_or_delete (sparp, tree, graph_to_patch, tmpl_gp);
+}
+
 SPART *
 spar_emulate_ctor_field (sparp_t *sparp, SPART *opcode, SPART *oparg, SPART **vars)
 {

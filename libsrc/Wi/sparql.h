@@ -126,12 +126,14 @@ extern "C" {
 #define SPAR_BIF_STRLANG	(ptrlong)1138
 #define SPAR_BIF_STRLEN		(ptrlong)1139
 #define SPAR_BIF_STRSTARTS	(ptrlong)1140
-#define SPAR_BIF_SUBSTR		(ptrlong)1141
-#define SPAR_BIF_TIMEZONE	(ptrlong)1142
-#define SPAR_BIF_TZ		(ptrlong)1143
-#define SPAR_BIF_UCASE		(ptrlong)1144
-#define SPAR_BIF_URI		(ptrlong)1145
-#define SPAR_BIF_YEAR		(ptrlong)1146
+#define SPAR_BIF_STRUUID	(ptrlong)1141
+#define SPAR_BIF_SUBSTR		(ptrlong)1142
+#define SPAR_BIF_TIMEZONE	(ptrlong)1143
+#define SPAR_BIF_TZ		(ptrlong)1144
+#define SPAR_BIF_UCASE		(ptrlong)1145
+#define SPAR_BIF_URI		(ptrlong)1146
+#define SPAR_BIF_UUID		(ptrlong)1147
+#define SPAR_BIF_YEAR		(ptrlong)1148
 
 #define SPAR_SML_CREATE		(ptrlong)1201
 #define SPAR_SML_DROP		(ptrlong)1202
@@ -323,6 +325,9 @@ typedef struct sparp_env_s
 
 typedef struct sparp_globals_s {
   struct sparp_equiv_s **sg_equivs;	/*!< All variable equivalences made for the tree, in pointer to a growing buffer */
+#ifdef SPARQL_DEBUG
+  struct sparp_equiv_s **sg_removed_equivs;	/*!< Deleted equivalences, in pointer to a growing buffer of size equal to \c sg_equivs */
+#endif
   ptrlong sg_equiv_count;		/*!< A count of used items in the beginning of \c sg_equivs buffer */
   ptrlong sg_cloning_serial;		/*!< The pointer to the serial used for current \c sparp_gp_full_clone() operation */
   struct spar_tree_s **sg_sinvs;	/*!< All descriptions of service invocations, in pointer to a growing buffer */
@@ -751,7 +756,7 @@ typedef unsigned char SPART_buf[sizeof (sparp_tree_t) + BOX_AUTO_OVERHEAD];
 #ifndef NDEBUG
 extern SPART **t_spartlist_concat (SPART **list1, SPART **list2);
 #else
-#define t_spartlist_concat(list1,list2) ((SPART **)(t_list_concat((SPART **)(list1), (SPART **)(list2))))
+#define t_spartlist_concat(list1,list2) ((SPART **)(t_list_concat((caddr_t)((SPART **)(list1)), (caddr_t)((SPART **)(list2)))))
 #endif
 
 extern sparp_t * sparp_query_parse (const char * str, spar_query_env_t *sparqre, int rewrite_all);
@@ -811,6 +816,7 @@ typedef struct spar_mproc_ctx_s {
   caddr_t smpc_context_selid;		/*!< Selid of gp where the macroexpansion takes place. If notnull. */
   caddr_t smpc_defbody_topselid;	/*!< The topmost selid of a defbody. it is replaced with smpc_context_selid when the body is instantiated. */
   caddr_t smpc_defbody_currselid;	/*!< The current selid inside a defbody. It is replaced with concatenation of smpc_context_selid and itself when the body is instantiated. */
+  caddr_t smpc_defbody_currtabid;	/*!< The current tabid inside a defbody, it can be NULL. It is used for variables that would get tabid later but needs it right now. */
   SPART *smpc_defm;			/*!< The defmacro that is being instantiated ATM */
   SPART *smpc_mcall;			/*!< The macro call that should be replaced with the instantiated \c smpc_defm */
   SPART **smpc_ins_membs;		/*!< Members made by the instantiation of gp macro that should be placed to the end of list of members of the context */
@@ -907,6 +913,7 @@ extern SPART *spar_simplify_graph_to_patch (sparp_t *sparp, SPART *g);
 extern void spar_compose_retvals_of_construct (sparp_t *sparp, SPART *top, SPART *ctor_gp, const char *formatter, const char *agg_formatter, const char *agg_mdata);
 extern void spar_compose_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top, SPART *graph_to_patch, SPART *ctor_gp);
 extern void spar_compose_retvals_of_modify (sparp_t *sparp, SPART *top, SPART *graph_to_patch, SPART *del_ctor_gp, SPART *ins_ctor_gp);
+extern void spar_compose_retvals_of_delete_from_wm (sparp_t *sparp, SPART *tree, SPART *graph_to_patch);
 extern int spar_optimize_delete_of_single_triple_pattern (sparp_t *sparp, SPART *top);
 extern void spar_optimize_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top);
 extern void spar_optimize_retvals_of_modify (sparp_t *sparp, SPART *top);

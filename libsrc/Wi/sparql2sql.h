@@ -140,6 +140,7 @@ typedef struct sparp_equiv_s
     ptrlong e_own_idx;		/*!< Index of this instance (in \c req_top.equivs) */
     SPART *e_gp;		/*!< Graph pattern where these variable resides */
     caddr_t *e_varnames;	/*!< Array of distinct names of equivalent variables. Usually one element, if there's no ?x=?y in FILTER */
+    caddr_t e_front_varname;	/*!< it may be ambiguous how to name a result column of an equiv if the equiv is printed as SELECT, this name is treated as preferable */
     SPART **e_vars;		/*!< Array of all equivalent variables, including different occurrences of same name in different triples */
     ptrlong e_var_count;	/*!< Number of used items in e_vars. This can be zero if equiv passes top-level var from alias to alias without local uses */
     ptrlong e_gspo_uses;	/*!< Number of all local uses in members (+1 for each in G, P, S or O in triples) */
@@ -149,17 +150,18 @@ typedef struct sparp_equiv_s
     ptrlong e_subquery_uses;	/*!< Number of all local uses in subquery (0 for plain queries, 1 in groups of subtype SELECT_L) */
     ptrlong e_replaces_filter;	/*!< Bitmask of SPART_RVR_XXX bits, nonzero if a filter has been replaced (and removed) by tightening of this equiv or by merging this and some other equiv, so the equiv is the only bearer of knowledge about the restriction. */
     rdf_val_range_t e_rvr;	/*!< Restrictions that are common for all variables. They are combined from rvrs of variables and subvalues, however rvrs of variables can be tightened by ancestor equivs, making the dependencies circular. */
-    ptrlong *e_subvalue_idxs;	/*!< Subselects where values of these variables come from */
-    ptrlong *e_receiver_idxs;	/*!< Aliases of surrounding query where values of variables from this equiv are used */
+    ptrlong *e_subvalue_idxs;	/*!< Subselects where values of these variables come from, as array of indexes of equivs */
+    ptrlong *e_receiver_idxs;	/*!< Aliases of surrounding query where values of variables from this equiv are used, as array of indexes of equivs */
     ptrlong e_clone_idx;	/*!< Index of the current clone of the equiv */
     ptrlong e_cloning_serial;	/*!< The serial used when \c e_clone_idx is set, should be equal to \c sparp->sparp_sg->sg_cloning_serial */
     ptrlong e_external_src_idx;	/*!< Index in \c req_top.equivs of the binding of external variable at ancestor of scalar subquery */
-    ptrlong e_merge_dest_idx;	/*!< After the merge of equiv into some destination equiv, e_merge_dest_idx keeps destination */
+    ptrlong *e_uses_as_params;	/*!< Equivs where the given equiv is used as an external source, as array of indexes of equivs */
     ptrlong e_deprecated;	/*!< The equivalence class belongs to a gp that is no longer usable */
     ptrlong e_pos1_t_in;	/*!< 1-based position of variable in T_IN list */
     ptrlong e_pos1_t_out;	/*!< 1-based position of variable in T_OUT list */
 #ifdef DEBUG
-    SPART **e_dbg_saved_gp;	/*!< \c e_gp that is boxed as ptrlong, to same the pointer after \c e_gp is set to NULL */
+    ptrlong e_dbg_merge_dest;	/*!< After the merge of equiv into some destination equiv, \c e_dbg_merge_dest keeps destination */
+    SPART **e_dbg_saved_gp;	/*!< \c e_gp that is boxed as ptrlong, to save the pointer after \c e_gp is set to NULL */
 #endif
   } sparp_equiv_t;
 
@@ -215,10 +217,16 @@ The returned value is actually boolean but the real value of "true" can be used 
 extern void *sparp_tree_uses_var_of_eq (sparp_t *sparp, SPART *tree, sparp_equiv_t *equiv);
 
 /*! Returns 2 if connection exists, 1 if did not exist but added, 0 if not exists and not added. GPFs if tries to add the second up */
-extern int sparp_equiv_connect (sparp_t *sparp, sparp_equiv_t *outer, sparp_equiv_t *inner, int add_if_missing);
+extern int sparp_equiv_connect_outer_to_inner (sparp_t *sparp, sparp_equiv_t *outer, sparp_equiv_t *inner, int add_if_missing);
 
 /*! Returns 1 if connection existed and removed. */
-extern int sparp_equiv_disconnect (sparp_t *sparp, sparp_equiv_t *outer, sparp_equiv_t *inner);
+extern int sparp_equiv_disconnect_outer_from_inner (sparp_t *sparp, sparp_equiv_t *outer, sparp_equiv_t *inner);
+
+/*! Returns 2 if connection exists, 1 if did not exist but added, 0 if not exists and not added. Old ext src is silently replaced with new one */
+extern int sparp_equiv_connect_param_to_external (sparp_t *sparp, sparp_equiv_t *param, sparp_equiv_t *ext_src);
+
+/*! Returns 1 if connection existed and removed. */
+extern int sparp_equiv_disconnect_param_from_external (sparp_t *sparp, sparp_equiv_t *param);
 
 /*! Removes a variable from equiv class. The \c var must belong to \c eq, internal error signaled otherwise.
 The call does not decrement \c eq_gspo_uses or \c eq_const_reads, do it by a separate operation. */
@@ -229,7 +237,7 @@ An error is signaled if the \c orig has been cloned during current cloning on gp
 Using the function outside gp cloning may need fake increment of \c sparp_gp_cloning_serial to avoid the signal. */
 extern sparp_equiv_t *sparp_equiv_clone (sparp_t *sparp, sparp_equiv_t *orig, SPART *cloned_gp);
 
-extern void spart_dump_eq (int eq_ctr, sparp_equiv_t *eq, dk_session_t *ses);
+extern void spart_dump_eq (sparp_equiv_t *eq, dk_session_t *ses);
 
 #define SPARP_VAR_SELID_MISMATCHES_GP(var_to_check,parent_gp) (\
   (NULL != (var_to_check)->_.var.selid) && ('(' != (var_to_check)->_.var.selid[0]) && strcmp ((var_to_check)->_.var.selid, (parent_gp)->_.gp.selid) )
@@ -1004,19 +1012,20 @@ extern void ssg_print_retval (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t vmo
 extern void ssg_print_qm_sql (spar_sqlgen_t *ssg, SPART *tree);
 
 /* These bitmasks begin with 0x10, not with 0x1, in order to not conflict with SSG_PRINT_UNION_xxx bits; ssg_print_union() can get a mix */
-#define SSG_RETVAL_USES_ALIAS			0x010	/*!< Return value can be printed in form 'expn AS alias' if alias name is not NULL */
-#define SSG_RETVAL_SUPPRESSED_ALIAS		0x020	/*!< Return value is not printed in form 'expn AS alias', only 'expn' but alias is known to subtree and let generate names like 'alias~0' */
-#define SSG_RETVAL_MUST_PRINT_SOMETHING		0x040	/*!< The function signals an error instead of returning failure and tries to relax SSG_RETVAL_FROM_GOOD_SELECTED to SSG_RETVAL_FROM_ANY_SELECTED as a last resort */
-#define SSG_RETVAL_CAN_PRINT_NULL		0x080	/*!< The function should print at least NULL but it can not return failure */
-#define SSG_RETVAL_FROM_GOOD_SELECTED		0x100	/*!< Use result-set columns from 'good' (non-optional) subqueries */
-#define SSG_RETVAL_FROM_ANY_SELECTED		0x200	/*!< Use result-set columns from any subqueries, including 'optional' that can make NULL */
-#define SSG_RETVAL_FROM_JOIN_MEMBER		0x400	/*!< The function can print expression like 'tablealias.colname' */
-#define SSG_RETVAL_FROM_FIRST_UNION_MEMBER	0x800
-#define SSG_RETVAL_TOPMOST			0x1000
-#define SSG_RETVAL_NAME_INSTEAD_OF_TREE		0x2000
-#define SSG_RETVAL_DIST_SER_LONG		0x4000	/*!< Use DB.DBA.RDF_DIST_SER_LONG wrapper to let DISTINCT work with formatters. */
-#define SSG_RETVAL_OPTIONAL_MAKES_NULLABLE	0x8000	/*!< Return value should be printed as nullable because it comes from, say, OPTIONAL sub-gp */
-#define SSG_RETVAL_STRICT_TYPES			0x10000	/*!< Every returned expression should either be accomplished with its (known) SQL type or be CAST-ed to the VARCHAR (esp., if it's ANY) */
+#define SSG_RETVAL_SET_ALIAS_BY_EQUIV		0x00010	/*!< If alias name is NULL, set it by the "default" varname of equiv */
+#define SSG_RETVAL_USES_ALIAS			0x00020	/*!< Return value can be printed in form 'expn AS alias' if alias name is not NULL */
+#define SSG_RETVAL_SUPPRESSED_ALIAS		0x00040	/*!< Return value is not printed in form 'expn AS alias', only 'expn' but alias is known to subtree and let generate names like 'alias~0' */
+#define SSG_RETVAL_MUST_PRINT_SOMETHING		0x00080	/*!< The function signals an error instead of returning failure and tries to relax SSG_RETVAL_FROM_GOOD_SELECTED to SSG_RETVAL_FROM_ANY_SELECTED as a last resort */
+#define SSG_RETVAL_CAN_PRINT_NULL		0x00100	/*!< The function should print at least NULL but it can not return failure */
+#define SSG_RETVAL_FROM_GOOD_SELECTED		0x00200	/*!< Use result-set columns from 'good' (non-optional) subqueries */
+#define SSG_RETVAL_FROM_ANY_SELECTED		0x00400	/*!< Use result-set columns from any subqueries, including 'optional' that can make NULL */
+#define SSG_RETVAL_FROM_JOIN_MEMBER		0x00800	/*!< The function can print expression like 'tablealias.colname' */
+#define SSG_RETVAL_FROM_FIRST_UNION_MEMBER	0x01000	/*!< The function can print the value from the first member of UNION, because if the gp is union then other members will be printed later */
+#define SSG_RETVAL_TOPMOST			0x02000	/*!< Top-level result list is printed, so __dummy_retval is renamed to __ask_retval (and there may be more renames in future) */
+#define SSG_RETVAL_EQUIV_INSTEAD_OF_TREE	0x04000	/*!< The name is passed to the function, not an SPART * with retval */
+#define SSG_RETVAL_DIST_SER_LONG		0x08000	/*!< Use DB.DBA.RDF_DIST_SER_LONG wrapper to let DISTINCT work with formatters. */
+#define SSG_RETVAL_OPTIONAL_MAKES_NULLABLE	0x10000	/*!< Return value should be printed as nullable because it comes from, say, OPTIONAL sub-gp */
+#define SSG_RETVAL_STRICT_TYPES			0x20000	/*!< Every returned expression should either be accomplished with its (known) SQL type or be CAST-ed to the VARCHAR (esp., if it's ANY) */
 /* descend = 0 -- at level, can descend. 1 -- at sublevel, can't descend, -1 -- at level, can't descend */
 extern int ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp,
   sparp_equiv_t *eq, int flags, ssg_valmode_t needed, const char *asname );

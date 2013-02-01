@@ -409,9 +409,9 @@ create procedure DB.DBA.SPARQL_EVAL_TO_ARRAY (in query varchar, in dflt_graph va
   declare state, msg varchar;
   declare metas, rset any;
   if (dflt_graph is not null)
-    query := concat ('sparql define input:default-graph-uri <', dflt_graph, '> ', query);
+    query := concat ('sparql { define input:default-graph-uri <', dflt_graph, '> ', query, '\n}');
   else
-    query := concat ('sparql ', query);
+    query := concat ('sparql { ', query, '\n}');
   state := '00000';
   metas := null;
   rset := null;
@@ -428,9 +428,9 @@ create procedure DB.DBA.SPARQL_EVAL (in query varchar, in dflt_graph varchar, in
   declare sqltext, state, msg varchar;
   declare metas, rset any;
   if (dflt_graph is not null)
-    query := concat ('sparql define input:default-graph-uri <', dflt_graph, '> ', query);
+    query := concat ('sparql { define input:default-graph-uri <', dflt_graph, '> ', query, '\n}');
   else
-    query := concat ('sparql ', query);
+    query := concat ('sparql { ', query, '\n}');
   state := '00000';
   metas := null;
   rset := null;

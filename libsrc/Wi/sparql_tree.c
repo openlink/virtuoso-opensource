@@ -866,6 +866,7 @@ spar_macroprocess_tree (sparp_t *sparp, SPART *tree, spar_mproc_ctx_t *ctx)
       {
         int ctr;
         spar_macro_xlate_selid (sparp, &(tree->_.triple.selid), ctx);
+        ctx->smpc_defbody_currtabid = tree->_.triple.tabid;
         if (NULL != tree->_.triple.tabid)
           spar_macro_xlate_selid (sparp, &(tree->_.triple.tabid), ctx);
         for (ctr = 0; ctr < SPART_TRIPLE_FIELDS_COUNT; ctr++)
@@ -909,13 +910,16 @@ spar_macroprocess_tree (sparp_t *sparp, SPART *tree, spar_mproc_ctx_t *ctx)
           {
             tree->_.triple.options[ctr] = spar_macroprocess_tree (sparp, tree->_.triple.options[ctr], ctx);
           }
+        ctx->smpc_defbody_currtabid = NULL;
         return tree;
       }
     case SPAR_VARIABLE:
     case SPAR_BLANK_NODE_LABEL:
+#if 0 /* Selids and tabids of variables are now set at first traversal of the tree in the optimizer */
       spar_macro_xlate_selid (sparp, &(tree->_.var.selid), ctx);
       if (NULL != tree->_.var.tabid)
         spar_macro_xlate_selid (sparp, &(tree->_.var.tabid), ctx);
+#endif
       if (NULL != ctx->smpc_defm)
         tree->_.var.vname = spar_macro_sign_inner_varname (sparp, tree->_.var.vname, ctx);
       return tree;
@@ -1066,6 +1070,9 @@ sparp_equiv_alloc (sparp_t *sparp)
 {
   ptrlong eqcount = sparp->sparp_sg->sg_equiv_count;
   sparp_equiv_t **eqs = sparp->sparp_sg->sg_equivs;
+#ifdef SPARQL_DEBUG
+  sparp_equiv_t **removed_eqs = sparp->sparp_sg->sg_removed_equivs;
+#endif
   sparp_equiv_t *res;
   if (eqcount >= 0x10000)
     {
@@ -1080,19 +1087,32 @@ sparp_equiv_alloc (sparp_t *sparp)
     {
       size_t new_size = ((NULL == eqs) ? 4 * sizeof (sparp_equiv_t *) : 2 * box_length (eqs));
       sparp_equiv_t **new_eqs = (sparp_equiv_t **)t_alloc_box (new_size, DV_ARRAY_OF_POINTER);
-      if (NULL != eqs)
-        memcpy (new_eqs, eqs, box_length (eqs));
-#ifdef DEBUG
-      if (NULL != eqs)
-        memset (eqs, -1, box_length (eqs));
+#ifdef SPARQL_DEBUG
+      sparp_equiv_t **new_removed_eqs = (sparp_equiv_t **)t_alloc_box (new_size, DV_ARRAY_OF_POINTER);
 #endif
+      if (NULL != eqs)
+        {
+          memcpy (new_eqs, eqs, box_length (eqs));
+#ifdef DEBUG
+          memset (eqs, -1, box_length (eqs));
+#endif
+#ifdef SPARQL_DEBUG
+          memcpy (new_removed_eqs, removed_eqs, box_length (eqs));
+          memset (removed_eqs, -1, box_length (eqs));
+#endif
+        }
       sparp->sparp_sg->sg_equivs = eqs = new_eqs;
+#ifdef SPARQL_DEBUG
+      sparp->sparp_sg->sg_removed_equivs = removed_eqs = new_removed_eqs;
+#endif
     }
   res->e_own_idx = eqcount;
 #ifdef DEBUG
   res->e_clone_idx = (SPART_BAD_EQUIV_IDX-1);
 #endif
-  res->e_merge_dest_idx = SPART_BAD_EQUIV_IDX;
+#ifdef SPARQL_DEBUG
+  res->e_dbg_merge_dest = SPART_BAD_EQUIV_IDX;
+#endif
   res->e_external_src_idx = SPART_BAD_EQUIV_IDX;
   eqs[eqcount++] = res;
   sparp->sparp_sg->sg_equiv_count = eqcount;
@@ -1422,7 +1442,7 @@ sparp_tree_uses_var_of_eq (sparp_t *sparp, SPART *tree, sparp_equiv_t *equiv)
 
 /* Returns 1 if connection exists (or added), 0 otherwise. GPFs if tries to add the second up */
 int
-sparp_equiv_connect (sparp_t *sparp, sparp_equiv_t *outer, sparp_equiv_t *inner, int add_if_missing)
+sparp_equiv_connect_outer_to_inner (sparp_t *sparp, sparp_equiv_t *outer, sparp_equiv_t *inner, int add_if_missing)
 {
   int i_ctr, i_count;
   int o_listed_in_i = 0;
@@ -1472,7 +1492,7 @@ sparp_equiv_connect (sparp_t *sparp, sparp_equiv_t *outer, sparp_equiv_t *inner,
 
 /* Returns 1 if connection existed and removed. */
 int
-sparp_equiv_disconnect (sparp_t *sparp, sparp_equiv_t *outer, sparp_equiv_t *inner)
+sparp_equiv_disconnect_outer_from_inner (sparp_t *sparp, sparp_equiv_t *outer, sparp_equiv_t *inner)
 {
   int o_ctr, o_count, i_ctr, i_count;
   int o_listed_in_i = -1;
@@ -1513,6 +1533,73 @@ sparp_equiv_disconnect (sparp_t *sparp, sparp_equiv_t *outer, sparp_equiv_t *inn
     outer->e_nested_bindings -= 1;
   return 1;
 }
+
+int
+sparp_equiv_connect_param_to_external (sparp_t *sparp, sparp_equiv_t *param, sparp_equiv_t *external)
+{
+#ifdef DEBUG
+  int uses_ctr, uses_count;
+  int p_listed_in_e = -1;
+  uses_count = BOX_ELEMENTS_0 (external->e_uses_as_params);
+  for (uses_ctr = uses_count; uses_ctr--; /* no step */)
+    {
+      if (external->e_uses_as_params[uses_ctr] == param->e_own_idx)
+        {
+          p_listed_in_e = uses_ctr;
+	  break;
+	}
+    }
+#endif
+  if (param->e_external_src_idx == external->e_own_idx)
+    {
+#ifdef DEBUG
+      if (-1 == p_listed_in_e)
+        spar_internal_error (sparp, "sparp_" "equiv_connect_param_to_external(): unidirectional link (1) ?");
+#endif
+      return 2;
+    }
+#ifdef DEBUG
+  if (-1 != p_listed_in_e)
+    spar_internal_error (sparp, "sparp_" "equiv_connect_param_to_external(): unidirectional link (2) ?");
+#endif
+  if (SPART_BAD_EQUIV_IDX != param->e_external_src_idx)
+    sparp_equiv_disconnect_param_from_external (sparp, param);
+  external->e_uses_as_params = (ptrlong *)t_list_concat_tail ((caddr_t)(external->e_uses_as_params), 1, (ptrlong)(param->e_own_idx));
+  param->e_external_src_idx = external->e_own_idx;
+  external->e_optional_reads += 1;
+  return 1;
+}
+
+
+/* Returns 1 if connection existed and removed. */
+int
+sparp_equiv_disconnect_param_from_external (sparp_t *sparp, sparp_equiv_t *param)
+{
+  int uses_ctr, uses_count;
+  int p_listed_in_e = -1;
+  sparp_equiv_t *external;
+  if (SPART_BAD_EQUIV_IDX == param->e_external_src_idx)
+    return 0;
+  external = SPARP_EQUIV (sparp, param->e_external_src_idx);
+  uses_count = BOX_ELEMENTS_0 (external->e_uses_as_params);
+  for (uses_ctr = uses_count; uses_ctr--; /* no step */)
+    {
+      if (external->e_uses_as_params[uses_ctr] == param->e_own_idx)
+        {
+          p_listed_in_e = uses_ctr;
+	  break;
+	}
+    }
+#ifdef DEBUG
+  if (-1 == p_listed_in_e)
+    spar_internal_error (sparp, "sparp_" "equiv_disconnect_param_from_external(): unidirectional link (2) ?");
+#endif
+  external->e_uses_as_params = (ptrlong *)t_list_remove_nth ((caddr_t)(external->e_uses_as_params), p_listed_in_e);
+  param->e_external_src_idx = SPART_BAD_EQUIV_IDX;
+  external->e_optional_reads -= 1;
+  return 1;
+}
+
 
 void
 sparp_equiv_remove_var (sparp_t *sparp, sparp_equiv_t *eq, SPART *var)
@@ -1601,18 +1688,10 @@ sparp_equiv_clone (sparp_t *sparp, sparp_equiv_t *orig, SPART *cloned_gp)
   if (SPART_BAD_EQUIV_IDX != orig->e_external_src_idx)
     {
       sparp_equiv_t *esrc = SPARP_EQUIV(sparp, orig->e_external_src_idx);
-      while (SPART_BAD_EQUIV_IDX != esrc->e_merge_dest_idx)
-        {
-          sparp_equiv_t *merged_esrc = SPARP_EQUIV(sparp, esrc->e_merge_dest_idx);
-          esrc = merged_esrc;
-        }
       if (esrc->e_cloning_serial == sparp->sparp_sg->sg_cloning_serial)
-         tgt->e_external_src_idx = orig->e_external_src_idx;
+        sparp_equiv_connect_param_to_external (sparp, tgt, esrc);
     }
-  tgt->e_merge_dest_idx = orig->e_merge_dest_idx;
-#ifdef DEBUG
-  /* no copying for e_dbg_saved_gp */
-#endif
+  /* no copying for e_dbg_saved_gp and e_dbg_merge_dest */
   /* Add more lines here when more fields added to struct sparp_equiv_s. */
   return tgt;
 }
@@ -1665,9 +1744,9 @@ sparp_equiv_remove (sparp_t *sparp, sparp_equiv_t *eq)
     eq->e_replaces_filter ||
     (0 != BOX_ELEMENTS_INT_0 (eq->e_receiver_idxs)) ||
     (0 != BOX_ELEMENTS_INT_0 (eq->e_subvalue_idxs)) ||
+    (0 != BOX_ELEMENTS_0 (eq->e_uses_as_params)) ||
     (SPART_VARR_EXPORTED & eq->e_rvr.rvrRestrictions) )
     spar_internal_error (sparp, "sparp_" "equiv_remove (): can't remove equiv that is still in use");
-  memset (eq, -1, sizeof (sparp_equiv_t));
 #endif
   for (ctr1 = len = eq_gp->_.gp.equiv_count; ctr1--; /* no step */)
     {
@@ -1681,7 +1760,16 @@ sparp_equiv_remove (sparp_t *sparp, sparp_equiv_t *eq)
   spar_internal_error (sparp, "sparp_" "equiv_remove (): failed to remove eq from its gp");
 
 found_in_gp:
+  if (SPART_BAD_EQUIV_IDX != eq->e_external_src_idx)
+    sparp_equiv_disconnect_param_from_external (sparp, eq);
   sparp->sparp_sg->sg_equivs[eq_own_idx] = NULL;
+#ifdef SPARQL_DEBUG
+  sparp->sparp_sg->sg_removed_equivs[eq_own_idx] = eq;
+#else
+#ifndef NDEBUG
+  memset (eq, -1, sizeof (sparp_equiv_t));
+#endif
+#endif
   eq_gp->_.gp.equiv_count = len;
 }
 
@@ -1691,13 +1779,13 @@ sparp_equiv_merge (sparp_t *sparp, sparp_equiv_t *pri, sparp_equiv_t *sec)
   int ctr1, ret;
 #ifdef DEBUG
   int ctr2;
-#endif
   SPART *sec_gp;
+#endif
   if (pri == sec)
     return SPARP_EQUIV_MERGE_DUPE;
   sparp_equiv_audit_all (sparp, 0);
-  sec_gp = sec->e_gp;
 #ifdef DEBUG
+  sec_gp = sec->e_gp;
   if (pri->e_gp != sec_gp)
     spar_internal_error (sparp, "sparp_" "equiv_merge () can not merge equivs from two different gps");
   for (ctr1 = BOX_ELEMENTS_INT_0 (sec->e_varnames); ctr1--; /* no step*/)
@@ -1743,8 +1831,16 @@ sparp_equiv_merge (sparp_t *sparp, sparp_equiv_t *pri, sparp_equiv_t *sec)
   pri->e_replaces_filter |= sec->e_replaces_filter;
   sec->e_replaces_filter = 0;
   sparp_rvr_tighten (sparp, &(pri->e_rvr), &(sec->e_rvr), ~0); /* Note that there's no need filtering for SPART_VARR_EXTERNAL or SPART_VARR_GLOBAL, note an if() in next two lines */
-  if ((SPART_BAD_EQUIV_IDX == pri->e_external_src_idx) && (SPART_BAD_EQUIV_IDX != sec->e_external_src_idx))
-    pri->e_external_src_idx = sec->e_external_src_idx;
+  if (SPART_BAD_EQUIV_IDX != sec->e_external_src_idx)
+    {
+      if (SPART_BAD_EQUIV_IDX == pri->e_external_src_idx)
+        sparp_equiv_connect_param_to_external (sparp, pri, SPARP_EQUIV (sparp, sec->e_external_src_idx));
+    }
+  while (BOX_ELEMENTS_0 (sec->e_uses_as_params))
+    {
+      sparp_equiv_t *p = SPARP_EQUIV (sparp, sec->e_uses_as_params[0]);
+      sparp_equiv_connect_param_to_external (sparp, p, pri);
+    }
   pri->e_gspo_uses += sec->e_gspo_uses;
   sec->e_gspo_uses = 0;
   sec->e_nested_bindings = 0;
@@ -1754,15 +1850,15 @@ sparp_equiv_merge (sparp_t *sparp, sparp_equiv_t *pri, sparp_equiv_t *sec)
     {
       ptrlong sub_idx = sec->e_subvalue_idxs[0];
       sparp_equiv_t *sub_eq = SPARP_EQUIV(sparp,sub_idx);
-      sparp_equiv_disconnect (sparp, sec, sub_eq);
-      sparp_equiv_connect (sparp, pri, sub_eq, 1);
+      sparp_equiv_disconnect_outer_from_inner (sparp, sec, sub_eq);
+      sparp_equiv_connect_outer_to_inner (sparp, pri, sub_eq, 1);
     }
   while (BOX_ELEMENTS_INT_0 (sec->e_receiver_idxs))
     {
       ptrlong recv_idx = sec->e_receiver_idxs[0];
       sparp_equiv_t *recv_eq = SPARP_EQUIV(sparp,recv_idx);
-      sparp_equiv_disconnect (sparp, recv_eq, sec);
-      sparp_equiv_connect (sparp, recv_eq, pri, 1);
+      sparp_equiv_disconnect_outer_from_inner (sparp, recv_eq, sec);
+      sparp_equiv_connect_outer_to_inner (sparp, recv_eq, pri, 1);
     }
   pri->e_nested_bindings = ((VALUES_L == pri->e_gp->_.gp.subtype) ? 1 : 0);
   pri->e_nested_bindings = 0;
@@ -1773,7 +1869,9 @@ sparp_equiv_merge (sparp_t *sparp, sparp_equiv_t *pri, sparp_equiv_t *sec)
         pri->e_nested_bindings += 1;
     }
   END_DO_BOX_FAST;
-  sec->e_merge_dest_idx = pri->e_own_idx;
+#ifdef SPARQL_DEBUG
+  sec->e_dbg_merge_dest = pri->e_own_idx;
+#endif
   if (SPART_VARR_EXPORTED & sec->e_rvr.rvrRestrictions)
     {
       pri->e_rvr.rvrRestrictions |= SPART_VARR_EXPORTED;
@@ -2337,7 +2435,13 @@ sparp_rvr_tighten (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *addon
       else
         {
           ccaddr_t isect_dt = sparp_largest_intersect_superdatatype (sparp, dest->rvrDatatype, addon->rvrDatatype);
-          dest->rvrDatatype = isect_dt;
+          if ((NULL != isect_dt)
+            && (uname_xmlschema_ns_uri_hash_any != isect_dt)
+            && !((uname_xmlschema_ns_uri_hash_anyURI == isect_dt) && (new_restr & SPART_VARR_IS_REF)) )
+            {
+              dest->rvrDatatype = isect_dt;
+              new_restr |= SPART_VARR_TYPED;
+            }
         }
     }
   if (addon->rvrRestrictions & changeable_flags & SPART_VARR_FIXED)
@@ -2444,7 +2548,7 @@ end_of_sff_processing:
   do {
       dk_session_t *ses = strses_allocate ();
       caddr_t strg;
-      spart_dump_rvr (ses, dest, 0);
+      spart_dump_rvr (ses, dest, 0, '!');
       strg = strses_string (ses);
       printf ("Nice tighten op: %s\n", strg);
       dk_free_box ((caddr_t)ses);
@@ -2613,7 +2717,7 @@ end_of_sff_processing:
   do {
       dk_session_t *ses = strses_allocate ();
       caddr_t strg;
-      spart_dump_rvr (ses, dest, 0);
+      spart_dump_rvr (ses, dest, 0, '!');
       strg = strses_string (ses);
       printf ("Nice tighten op: %s\n", strg);
       dk_free_box ((caddr_t)ses);
@@ -2835,7 +2939,7 @@ sparp_gp_detach_member_int (sparp_t *sparp, SPART *parent_gp, int member_idx, dk
           while (BOX_ELEMENTS_0 (eq->e_receiver_idxs))
             {
               sparp_equiv_t *recv_eq = SPARP_EQUIV (sparp, eq->e_receiver_idxs[0]);
-              sparp_equiv_disconnect (sparp, recv_eq, eq);
+              sparp_equiv_disconnect_outer_from_inner (sparp, recv_eq, eq);
               if (NULL != touched_equivs_set_ptr)
                 t_set_pushnew (touched_equivs_set_ptr, recv_eq);
             }
@@ -3449,7 +3553,7 @@ sparp_gp_attach_member_int (sparp_t *sparp, SPART *parent_gp, SPART *memb, dk_se
             {
               sparp_equiv_t *parent_eq;
               parent_eq = sparp_equiv_get (sparp, parent_gp, (SPART *)varname, SPARP_EQUIV_GET_NAMESAKES | SPARP_EQUIV_INS_CLASS);
-              sparp_equiv_connect (sparp, parent_eq, eq, 1);
+              sparp_equiv_connect_outer_to_inner (sparp, parent_eq, eq, 1);
             }
           END_DO_BOX_FAST;
         }
@@ -3780,6 +3884,10 @@ sparp_gp_deprecate (sparp_t *sparp, SPART *gp, int suppress_eq_check)
         spar_internal_error (sparp, "sparp_" "gp_deprecate(): equiv re-deprecation");
       if (eq->e_replaces_filter && !suppress_eq_check)
         spar_internal_error (sparp, "sparp_" "gp_deprecate(): equiv replaces filter but under deprecation");
+      while (0 != BOX_ELEMENTS_0 (eq->e_uses_as_params))
+        sparp_equiv_disconnect_param_from_external (sparp, SPARP_EQUIV (sparp, eq->e_uses_as_params[0]));
+      if (SPART_BAD_EQUIV_IDX != eq->e_external_src_idx)
+        sparp_equiv_disconnect_param_from_external (sparp, eq);
       eq->e_deprecated = 1;
     }
   END_SPARP_FOREACH_GP_EQUIV;
@@ -4034,11 +4142,6 @@ sparp_find_origin_of_external_varname_in_eq (sparp_t *sparp, sparp_equiv_t *eq, 
   SPART *rv;
   int vctr, subv_ctr;
   esrc = SPARP_EQUIV(sparp, eq->e_external_src_idx);
-  while (SPART_BAD_EQUIV_IDX != esrc->e_merge_dest_idx)
-    {
-      sparp_equiv_t *merged_esrc = SPARP_EQUIV(sparp, esrc->e_merge_dest_idx);
-      esrc = merged_esrc;
-    }
   if (SPAR_BINDINGS_INV == esrc->e_gp->type) /* An external variable may come from bindings invocation instead of a GP. Binding var is the only choice then. */
     {
       SPART *bnd = esrc->e_vars[0];
@@ -4115,7 +4218,13 @@ sparp_find_origin_of_external_varname_in_eq (sparp_t *sparp, sparp_equiv_t *eq, 
 null_or_error:
   if (null_result_allowed)
     return NULL;
+#if 1
   spar_internal_error (sparp, "sparp_" "find_origin_of_external_var(): external source equiv is found, external source var is not");
+#else
+  esub_res_eq = esrc;
+  esub_res_gp = esrc->e_gp;
+  goto make_rv; /* see below */
+#endif
 make_rv:
   rv = (SPART *)t_alloc_box (sizeof (SPART), DV_ARRAY_OF_POINTER);
   rv->type = SPAR_RETVAL;
@@ -4136,11 +4245,6 @@ sparp_find_origin_of_some_external_varname_in_eq (sparp_t *sparp, sparp_equiv_t 
   if (SPART_BAD_EQUIV_IDX == eq->e_external_src_idx)
     spar_internal_error (sparp, "sparp_" "find_origin_of_some_external_varname_in_eq(): bad e_external_src_idx");
   esrc = SPARP_EQUIV(sparp, eq->e_external_src_idx);
-  while (SPART_BAD_EQUIV_IDX != esrc->e_merge_dest_idx)
-    {
-      sparp_equiv_t *merged_esrc = SPARP_EQUIV(sparp, esrc->e_merge_dest_idx);
-      esrc = merged_esrc;
-    }
   eq_varnames = eq->e_varnames;
   esrc_varnames = esrc->e_varnames;
   DO_BOX_FAST_REV (caddr_t, evname, evctr, eq_varnames)
@@ -4671,7 +4775,7 @@ void spart_dump_long (void *addr, dk_session_t *ses, int is_op)
   }
 }
 
-void spart_dump_varr_bits (dk_session_t *ses, int varr_bits, int replaces_filters_bits)
+void spart_dump_varr_bits (dk_session_t *ses, int varr_bits, int hot_bits, char hot_sign)
 {
   char buf[200];
   char *tail = buf;
@@ -4680,7 +4784,7 @@ void spart_dump_varr_bits (dk_session_t *ses, int varr_bits, int replaces_filter
       if (varr_bits & (b)) { \
           const char *t = (txt); \
           while ('\0' != (tail[0] = (t++)[0])) tail++; \
-          if (replaces_filters_bits & (b)) { (tail++)[0] = '!'; } \
+          if (hot_bits & (b)) { (tail++)[0] = hot_sign; } \
         } \
     } while (0);
   VARR_BIT (SPART_VARR_CONFLICT, " CONFLICT");
@@ -4700,7 +4804,7 @@ void spart_dump_varr_bits (dk_session_t *ses, int varr_bits, int replaces_filter
   session_buffered_write (ses, buf, tail-buf);
 }
 
-void spart_dump_rvr (dk_session_t *ses, rdf_val_range_t *rvr, int replaces_filters_bits)
+void spart_dump_rvr (dk_session_t *ses, rdf_val_range_t *rvr, int hot_bits, char hot_sign)
 {
   char buf[300];
   char *tail = buf;
@@ -4708,7 +4812,7 @@ void spart_dump_rvr (dk_session_t *ses, rdf_val_range_t *rvr, int replaces_filte
   int varr_bits = rvr->rvrRestrictions;
   ccaddr_t fixed_dt = rvr->rvrDatatype;
   ccaddr_t fixed_val = rvr->rvrFixedValue;
-  spart_dump_varr_bits (ses, varr_bits, replaces_filters_bits);
+  spart_dump_varr_bits (ses, varr_bits, hot_bits, hot_sign);
   if (varr_bits & SPART_VARR_TYPED)
     {
       len = sprintf (tail, "; dt=%.100s", fixed_dt);
@@ -4786,18 +4890,11 @@ void spart_dump_rvr (dk_session_t *ses, rdf_val_range_t *rvr, int replaces_filte
 }
 
 void
-spart_dump_eq (int eq_ctr, sparp_equiv_t *eq, dk_session_t *ses)
+spart_dump_eq (sparp_equiv_t *eq, dk_session_t *ses)
 {
   int varname_count, varname_ctr, var_ctr;
   char buf[100];
-  session_buffered_write_char ('\n', ses);
-  if (NULL == eq)
-    {
-      sprintf (buf, "#%d: merged and destroyed", eq_ctr);
-      SES_PRINT (ses, buf);
-      return;
-    }
-  sprintf (buf, "#%d: %s( %d subv (%d bindings), %d recv, %d gspo, %d const, %d opt, %d subq:", eq_ctr,
+  sprintf (buf, " %s( %d subv (%d bindings), %d recv, %d gspo, %d const, %d opt, %d subq:",
   (eq->e_deprecated ? "deprecated " : ""),
     BOX_ELEMENTS_INT_0(eq->e_subvalue_idxs), (int)(eq->e_nested_bindings), BOX_ELEMENTS_INT_0(eq->e_receiver_idxs),
     (int)(eq->e_gspo_uses), (int)(eq->e_const_reads), (int)(eq->e_optional_reads), (int)(eq->e_subquery_uses) );
@@ -4815,7 +4912,7 @@ spart_dump_eq (int eq_ctr, sparp_equiv_t *eq, dk_session_t *ses)
       SES_PRINT (ses, " ");
       SES_PRINT (ses, ((NULL != var->_.var.tabid) ? var->_.var.tabid : (NULL != var->_.var.selid) ? var->_.var.selid : "[no selid]"));
     }
-  SES_PRINT (ses, ";"); spart_dump_rvr (ses, &(eq->e_rvr), eq->e_replaces_filter);
+  SES_PRINT (ses, ";"); spart_dump_rvr (ses, &(eq->e_rvr), eq->e_replaces_filter, '!');
   if (SPART_BAD_EQUIV_IDX != eq->e_external_src_idx)
     {
       sprintf (buf, "; parent #%d", (int)(eq->e_external_src_idx));
@@ -5000,7 +5097,7 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
 	    {
 	      sprintf (buf, "VARIABLE:");
 	      SES_PRINT (ses, buf);
-              spart_dump_rvr (ses, &(tree->_.var.rvr), 0);
+              spart_dump_rvr (ses, &(tree->_.var.rvr), tree->_.var.restr_of_col, '+');
               if (NULL != tree->_.var.tabid)
                 {
                   ptrlong tr_idx = tree->_.var.tr_idx;

@@ -2316,6 +2316,11 @@ create function DB.DBA.regexp_xfn_replace (in src varchar, in needle varchar, in
 }
 ;
 
+create function DB.DBA.rdf_uuid_impl ()
+{
+  return iri_to_id ('urn:uuid:' || uuid());
+}
+;
 
 --!AWK PUBLIC
 create function DB.DBA.rdf_timezone_impl (in dt datetime)
@@ -7360,7 +7365,7 @@ create function DB.DBA.SPARUL_RUN (in results any, in compose_report integer := 
       ses := string_output ();
       foreach (varchar r in results) do
         {
-          http (r || '\n', ses);
+          http (cast (r as varchar) || '\n', ses);
         }
       http ('Commit -- done\n', ses);
       return string_output_string (ses);
@@ -15287,6 +15292,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_LONG_OF_SQLVAL to SPARQL_SELECT',
     'grant execute on DB.DBA.rdf_strdt_impl to SPARQL_SELECT',
     'grant execute on DB.DBA.rdf_strlang_impl to SPARQL_SELECT',
+    'grant execute on DB.DBA.rdf_uuid_impl to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_QUAD_URI to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_QUAD_URI_L to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_QUAD_URI_L_TYPED to SPARQL_UPDATE',
