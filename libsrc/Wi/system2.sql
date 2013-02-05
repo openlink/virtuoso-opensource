@@ -839,3 +839,35 @@ create procedure X509_ROOT_CA_CERTS ()
   return ret;
 }
 ;
+
+create procedure uptime ()
+{
+  declare y,m,d,h,mn int;
+  declare y1,m1,d1,h1,mn1, delta int;
+  declare y2,m2,d2,h2,mn2 int;
+  declare s, dt, meta, data any;
+  declare uptime varchar;
+  result_names (uptime);
+  if (sys_stat ('st_started_since_year') = 0)
+    exec ('status ()', null, null, vector (), 0, meta, data);
+
+  y := sys_stat ('st_started_since_year'); 
+  m := sys_stat ('st_started_since_month'); 
+  d := sys_stat ('st_started_since_day'); 
+  h := sys_stat ('st_started_since_hour'); 
+  mn := sys_stat ('st_started_since_minute'); 
+
+  dt := stringdate (sprintf ('%d-%d-%d %d:%d', y,m,d,h,mn));
+  delta := datediff ('minute', dt, now ());
+
+  mn2 := mod (delta, 60);
+  h2 := mod (delta / 60, 24);
+  d2 := delta / 60 / 24;
+
+  s := '';
+  if (d2) s := s || cast (d2 as varchar) || ' day(s), '; 
+  if (h2 or d2) s := s || cast (h2 as varchar) || ' hour(s), '; 
+  s := s || cast (mn2 as varchar) || ' minute(s)'; 
+  result (s);
+}
+;
