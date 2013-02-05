@@ -1233,11 +1233,12 @@ create procedure DB.DBA.RDF_HTTP_URL_GET (inout url any, in base any, inout hdr 
 	in meth any := 'GET', in req_hdr varchar := null, in cnt any := null, in proxy any := null, in sig int := 1)
 {
   declare content varchar;
-  declare olduri varchar;
+  declare olduri, req_hdr_orig varchar;
   --declare hdr any;
   declare redirects, is_https int;
   -- dbg_obj_princ ('DB.DBA.RDF_HTTP_URL_GET (', url, base, ')');
 
+  req_hdr_orig := req_hdr;
   hdr := null;
   redirects := 15;
   url := WS.WS.EXPAND_URL (base, url);
@@ -1265,7 +1266,12 @@ create procedure DB.DBA.RDF_HTTP_URL_GET (inout url any, in base any, inout hdr 
 	  url := http_request_header (hdr, 'Location');
 	  if (isstring (url))
 	    {
+	      declare cookie_hdr varchar;
 	      url := WS.WS.EXPAND_URL (olduri, url);
+	      req_hdr := req_hdr_orig;
+	      cookie_hdr := DB.DBA.COOKIE_HDR (olduri, hdr, url);
+	      if (length (cookie_hdr))
+	        req_hdr := req_hdr || '\r\n' || cookie_hdr;
 	      goto again;
 	    }
 	}
@@ -1276,6 +1282,77 @@ create procedure DB.DBA.RDF_HTTP_URL_GET (inout url any, in base any, inout hdr 
     }
   -- dbg_obj_princ ('DB.DBA.RDF_HTTP_URL_GET (', url, base, ') downloaded ', url);
   return content;
+}
+;
+
+-- Extracts Set-Cookie: headers from a source URL's response and builds a corresponding 
+-- Cookie: request header for the URL being redirected to
+create procedure DB.DBA.COOKIE_HDR (in src_url any, in resp_hdrs any, in dest_url any)
+{
+  declare ua_src, ua_dest, cookies, resp_cookie, cookie_attrs any;
+  declare ua_src_domain, ua_src_path, ua_dest_domain, ua_dest_path, req_cookie_hdr, cookie_domain, cookie_path varchar;
+  declare valid integer;
+
+  declare exit handler for sqlstate '*'
+  {
+    return null;
+  };
+
+  ua_src := rfc1808_parse_uri (src_url);
+  ua_src_domain := ua_src[1];
+  if (strcontains (ua_src_domain, ':'))
+    ua_src_domain := subseq (ua_src_domain, 0, strchr (ua_src_domain, ':'));
+  ua_src_path := ua_src[2];
+
+  ua_dest := rfc1808_parse_uri (dest_url);
+  ua_dest_domain := ua_dest[1];
+  if (strcontains (ua_dest_domain, ':'))
+    ua_dest_domain := subseq (ua_dest_domain, 0, strchr (ua_dest_domain, ':'));
+  ua_dest_path := ua_dest[2];
+
+  req_cookie_hdr := null;
+  if (length (resp_hdrs) = 0)
+    goto done;
+
+  cookies := vector();
+  foreach (varchar hdr in resp_hdrs) do
+  {
+    if (starts_with (hdr, 'Set-Cookie: '))
+    {
+      resp_cookie := regexp_replace (hdr, 'Set-Cookie: (.+)\r\n', '\\1');
+      resp_cookie := regexp_replace (resp_cookie, '; ', ';');
+      cookie_attrs := split_and_decode (resp_cookie, 0, '\0\0;=');
+      cookies := vector_concat (cookies, vector(cookie_attrs));
+    }
+  }
+
+  if (length (cookies) = 0)
+    goto done;
+    
+  req_cookie_hdr := '';
+  foreach (any cookie in cookies) do
+  {
+    -- Assume any expiring cookies are still valid, they've only just been set. 
+    -- Check the cookies apply to the domain + path being redirected to
+    valid := 1;
+    cookie_domain := get_keyword ('domain', cookie, ua_src_domain);
+    cookie_path :=  get_keyword ('path', cookie, ua_src_path);
+    if (length (cookie_domain) and not ends_with (ua_dest_domain, cookie_domain))
+      valid := 0;
+    if (length (cookie_path) and not starts_with (ua_dest_path, cookie_path))
+      valid := 0;
+    if (valid)
+      req_cookie_hdr := sprintf ('%s %s=%s;', req_cookie_hdr, cookie[0], cookie[1]);
+  }
+
+  if (length (req_cookie_hdr))
+  {
+    req_cookie_hdr := 'Cookie:' || req_cookie_hdr;
+    req_cookie_hdr := rtrim (req_cookie_hdr, ';');
+  }
+
+done:
+  return req_cookie_hdr;
 }
 ;
 
