@@ -1217,7 +1217,7 @@ virtodbc__SQLSetConnectOption (
 	  con->con_defs.cdef_no_char_c_escape = ((int) vParam) != 0;
 
 	  rc = virtodbc__SQLExecDirect (stmt,
-	      (SQLCHAR *) (((int) vParam) ? "set NO_CHAR_C_ESCAPE OFF" : "set NO_CHAR_C_ESCAPE ON"), SQL_NTS);
+	      (SQLCHAR *) (((int) vParam) ? "set NO_CHAR_C_ESCAPE ON" : "set NO_CHAR_C_ESCAPE OFF"), SQL_NTS);
 
 	  virtodbc__SQLFreeStmt (stmt, SQL_DROP);
 
