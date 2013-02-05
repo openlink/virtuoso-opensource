@@ -229,7 +229,8 @@ typedef struct ctor_var_enumerator_s
   SPART *cve_limofs_var;		/*!< Variable that is passed from limit-offset subselect */
   caddr_t cve_limofs_var_alias;		/*!< Alias used for cve_limofs_var */
   int cve_make_quads;			/*!< Contructor should make quads */
-  SPART *cve_default_graph;		/*!< An expression for the dafult graph */
+  SPART *cve_default_graph;		/*!< An expression for the default graph. It is not used in the results ATM because we can generate a mix of triples and quads. */
+  int cve_graphs_should_be_set;		/*!< If \c cve_default_graph is NULL and \c cve_graphs_should_be_set is true and a ctor tmpl has no explicit graph then an error should be signalled */
 }
 ctor_var_enumerator_t;
 
@@ -301,7 +302,10 @@ spar_compose_retvals_of_ctor (sparp_t *sparp, SPART *ctor_gp, const char *funnam
           SPART *triple = ctor_gp->_.gp.members[triple_ctr];
           SPART *g = triple->_.triple.tr_fields[SPART_TRIPLE_GRAPH_IDX];
           int g_is_default = !cve->cve_make_quads || SPART_IS_DEFAULT_GRAPH_BLANK (g);
-          caddr_t *args = (g_is_default ?
+          caddr_t *args;
+          if (g_is_default && cve->cve_graphs_should_be_set && (NULL == cve->cve_default_graph))
+            spar_error (sparp, "The default target graph is not specified and constructor template has some triple without GRAPH ... {...} aroud it");
+          args = (g_is_default ?
             (caddr_t *)list (6,
               (ptrlong)CTOR_OPCODE_CONST_OR_EXPN, NULL,
               (ptrlong)CTOR_OPCODE_CONST_OR_EXPN, NULL,
@@ -362,7 +366,7 @@ bnode_found_or_added_for_big_ssl:
         {
           caddr_t *new_consts = (caddr_t *)dk_alloc_box ((ssl_count + 1) * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
           memcpy (new_consts, ssl_consts_ptr[0], ssl_count * sizeof (caddr_t));
-          dk_free_box (ssl_consts_ptr[0]);
+          dk_free_box ((caddr_t)(ssl_consts_ptr[0]));
           ssl_consts_ptr[0] = new_consts;
         }
       ssl_consts_ptr[0][ssl_count] = (caddr_t)list_to_array (list_of_triples);
@@ -585,9 +589,12 @@ spar_compose_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top, SPART *gra
     cve.cve_bnodes_are_prohibited = 1;
   cve.cve_make_quads = ((NULL != multigraph) ? 1 : 0);
   cve.cve_default_graph = graph_to_patch;
+  cve.cve_graphs_should_be_set = 1;
   spar_compose_retvals_of_ctor (sparp, ctor_gp, "sql:SPARQL_CONSTRUCT", sc_for_big_ssl_const, NULL, NULL,
     &(top->_.req_top.retvals), &cve, NULL, NULL, NULL, 0 );
   rv = top->_.req_top.retvals;
+  if (NULL == graph_to_patch)
+    graph_to_patch = uname_virtrdf_ns_uri_DefaultSparul11Target;
   if (NULL != sparp->sparp_env->spare_output_route_name)
     {
       top_fname = t_box_sprintf (200, "sql:SPARQL_ROUTE_DICT_CONTENT_%.100s", sparp->sparp_env->spare_output_route_name);

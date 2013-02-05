@@ -2387,7 +2387,7 @@ spar_action_solution
 	;
 
 spar_in_graph_precode_opt
-	: /* empty */	{ $$ = NULL; }
+	: /* empty */	{ $$ = spar_default_sparul_target (sparp_arg, "IN clause", 1); }
 	| spar_in_graph_precode	{ $$ = $1; }
 	;
 
@@ -2396,7 +2396,7 @@ spar_in_graph_precode
 	;
 
 spar_from_graph_precode_opt
-	: /* empty */	{ $$ = NULL; }
+	: /* empty */	{ $$ = spar_default_sparul_target (sparp_arg, "FROM clause", 1); }
 	| spar_from_graph_precode	{ $$ = $1; }
 	;
 
