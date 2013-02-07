@@ -1800,8 +1800,8 @@ new_db_read_cfg (dbe_storage_t * ignore, char *mode)
   default_txn_isolation = c_default_txn_isolation;
   c_use_aio = c_c_use_aio; 
   aq_max_threads = c_aq_max_threads;
-  if (aq_max_threads > 100)
-    aq_max_threads = 100;
+  if (aq_max_threads > 1000)
+    aq_max_threads = 1000;
   if (aq_max_threads < 10 && aq_max_threads > 0)
     aq_max_threads = 10;
 #ifdef _SSL
