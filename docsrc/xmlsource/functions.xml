@@ -129,7 +129,7 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &getdate; &gvector_sort; &gvector_digit_sort; &gz_compress; &gz_uncompress;
 
 &hour; &http; &http_lock; &http_unlock; &http_acl_set; &http_acl_get; &http_acl_remove; &http_body_read; &http_client; &http_client_ext; &http_client_ip;
-&http_debug_log; &http_enable_gz; &http_file; &http_flush;
+&http_debug_log; &http_enable_gz; &http_file; &http_flush; &http_internal_redirect;
 &http_get; &http_header; &http_header_get; &http_kill; &http_listen_host; &http_map_table;
 &http_map_get; &http_param; &http_path; &http_pending_req; &http_physical_path; &http_proxy;
 &http_request_header; &http_request_header_full; &http_request_status; &http_request_get; &http_rewrite; &http_root; &http_value; &json_parse;

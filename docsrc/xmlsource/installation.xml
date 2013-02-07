@@ -5873,13 +5873,17 @@ $
   <listitem>Backup every node using <link linkend="fn_backup_online"><function>back_online</function></link>
     <para><emphasis>For example, for every cluster in its backup folder execute:</emphasis></para>
 <programlisting><![CDATA[
-backup_online ('dbp', 10000000, 0, 'backup');
+SQL> backup_online('dbp',10000000,0,vector('backup')); 
+
+Done. -- 272 msec.
 ]]></programlisting>
 </listitem>
   <listitem>Make backup of all nodes at once using
 <link linkend="clusteroperationadmclexec"><function>cl_exec</function></link>. For example, execute:
 <programlisting><![CDATA[
-cl_exec ('backup_online (''dbp'', 10000000, 0,  vector (''backup''))');
+SQL> cl_exec ('backup_online (''dbp'', 10000000, 0,  vector (''backup''))');
+
+Done. -- 573 msec.
 ]]></programlisting>
 </listitem>
 </orderedlist>

@@ -199,6 +199,7 @@
 <!ENTITY http_enable_gz 			SYSTEM "funcref/http_enable_gz.xml">
 <!ENTITY http_file				SYSTEM "funcref/http_file.xml">
 <!ENTITY http_flush				SYSTEM "funcref/http_flush.xml">
+<!ENTITY http_internal_redirect         SYSTEM	"funcref/http_internal_redirect.xml">
 <!ENTITY http_get				SYSTEM "funcref/http_get.xml">
 <!ENTITY http_header				SYSTEM "funcref/http_header.xml">
 <!ENTITY http_header_get			SYSTEM "funcref/http_header_get.xml">
