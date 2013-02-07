@@ -790,10 +790,10 @@ fname_printed:
               ssg_puts (" SERVICE ");
               ssg_sdprin_qname (ssg, (SPART *)(sinv->_.sinv.endpoint));
               ssg_puts (" (");
-              DO_BOX_FAST (SPART *, var, ctr, sinv->_.sinv.param_varnames)
+              DO_BOX_FAST (caddr_t, varname, ctr, sinv->_.sinv.param_varnames)
                 {
                   ssg_puts (" IN ");
-                  ssg_sdprint_tree (ssg, var);
+                  ssg_sdprin_local_varname (ssg, varname);
                 }
               END_DO_BOX_FAST;
               count = BOX_ELEMENTS_0 (sinv->_.sinv.defines);
