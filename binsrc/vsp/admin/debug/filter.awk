@@ -37,6 +37,7 @@ BEGIN {
           }
         }
         is_post=0
+	host_done=0
       }
 
 /GET.*/ {
@@ -51,6 +52,9 @@ BEGIN {
          }
 	 
 /Host:.*/ {
+            if (host_done)
+	      print $0 	
+            host_done=1
             next
           }
 	 
