@@ -3713,7 +3713,7 @@ create procedure WS.WS."/!sparql-graph-crud/" (inout path varchar, inout params 
   set http_charset='utf-8';
   user_id := connection_get ('SPARQLUserId', 'SPARQL');
   reqbegin := lines[0];
-  graph_uri := trim(get_keyword ('graph-uri', params, ''));
+  graph_uri := trim(coalesce (get_keyword ('graph', params, null), get_keyword ('graph-uri', params, null), ''));
   if (isstring (get_keyword ('default', params)))
     {
       declare req_hosts varchar;
