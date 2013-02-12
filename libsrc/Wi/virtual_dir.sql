@@ -1450,14 +1450,14 @@ xslt_sheet ('http://local.virt/dir_output', xml_tree_doc ('
     <xsl:template match="PATH">
 	<xsl:variable name="path"><xsl:value-of select="@dir_name"/></xsl:variable>
 	&lt;!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN"&gt;
-	&lt;HTML&gt;
-	&lt;TITLE&gt;Directory listing of <xsl:value-of select="\044path"/>&lt;/TITLE&gt;
-	&lt;BODY bgcolor="#FFFFFF" fgcolor="#000000"&gt;
-	&lt;H4&gt;Index of <xsl:value-of select="\044path"/>&lt;/H4&gt;
-	  &lt;TABLE&gt;
-	    &lt;tr&gt;&lt;td colspan=2 align="center"&gt;Name&lt;/td&gt;
+	&lt;html&gt;
+	&lt;title&gt;Directory listing of <xsl:value-of select="\044path"/>&lt;/title&gt;
+	&lt;body bgcolor="#FFFFFF" fgcolor="#000000"&gt;
+	&lt;h4&gt;Index of <xsl:value-of select="\044path"/>&lt;/h4&gt;
+	  &lt;table&gt;
+	    &lt;tr&gt;&lt;td colspan="2" align="center"&gt;Name&lt;/td&gt;
 	    &lt;td align="center"&gt;Last modified&lt;/td&gt;&lt;td align="center"&gt;Size&lt;/td&gt;&lt;/tr&gt;
-	    &lt;tr&gt;&lt;td colspan=5&gt;&lt;HR /&gt;&lt;/td&gt;&lt;/tr&gt;
+	    &lt;tr&gt;&lt;td colspan="4"&gt;&lt;HR /&gt;&lt;/td&gt;&lt;/tr&gt;
 
 	<xsl:apply-templates select="DIRS">
 	  <xsl:with-param name="f_path" select="\044path"/>
@@ -1467,16 +1467,16 @@ xslt_sheet ('http://local.virt/dir_output', xml_tree_doc ('
 	  <xsl:with-param name="f_path" select="\044path"/>
 	</xsl:apply-templates>
 
-	     &lt;tr&gt;&lt;td colspan=5&gt;&lt;HR /&gt;&lt;/td&gt;&lt;/tr&gt;
-	  &lt;/TABLE&gt;
-	&lt;/BODY&gt;
-	&lt;/HTML&gt;
+	     &lt;tr&gt;&lt;td colspan="4"&gt;&lt;HR /&gt;&lt;/td&gt;&lt;/tr&gt;
+	  &lt;/table&gt;
+	&lt;/body&gt;
+	&lt;/html&gt;
     </xsl:template>
 
     <xsl:template match="SUBDIR">
 	 <xsl:param name="f_path" />
     	&lt;tr&gt;
-	   &lt;td&gt;&lt;img src="/conductor/images/dav_browser/foldr_16.png" alt="folder"&gt;&lt;/td&gt;
+	   &lt;td&gt;&lt;img src="/conductor/dav/image/dav/foldr_16.png" alt="folder"&gt;&lt;/td&gt;
 	   &lt;td&gt;&lt;a href="<xsl:value-of select="\044f_path"/><xsl:value-of select="@name"/>/"&gt;<xsl:value-of select="@name"/>&lt;/a&gt;&lt;/td&gt;
 	   &lt;td&gt;<xsl:value-of select="@modify"/>&lt;/td&gt;&lt;td align="right"&gt;-&lt;/td&gt;
 	&lt;/tr&gt;
@@ -1485,7 +1485,7 @@ xslt_sheet ('http://local.virt/dir_output', xml_tree_doc ('
     <xsl:template match="FILE">
 	 <xsl:param name="f_path" />
     	&lt;tr&gt;
-	   &lt;td&gt;&lt;img src="/conductor/images/dav_browser/file_gen_16.png" alt="file"&gt;&lt;/td&gt;
+	   &lt;td&gt;&lt;img src="/conductor/dav/image/dav/generic_file.png" alt="file"&gt;&lt;/td&gt;
 	   &lt;td&gt;&lt;a href="<xsl:value-of select="\044f_path"/><xsl:value-of select="@name"/>"&gt;<xsl:value-of select="@name"/>&lt;/a&gt;&lt;/td&gt;
 	   &lt;td&gt;<xsl:value-of select="@modify"/>&lt;/td&gt;&lt;td align="right"&gt;<xsl:value-of select="@hs"/>&lt;/td&gt;
 	&lt;/tr&gt;
