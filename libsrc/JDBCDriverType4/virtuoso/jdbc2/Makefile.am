@@ -42,11 +42,18 @@ JDK4=@ac_jdk4_path@
 JDK4_FLAGS=-O -g:none #-Xlint:deprecation -Xlint:unchecked
 endif
 
+if WITH_JDK4_1
+CLASSPATH4=$(CLASSPATH4)
+JDK4_1=@ac_jdk4_1_path@
+JDK4_1_FLAGS=-O -g:none #-Xlint:deprecation -Xlint:unchecked
+endif
+
 
 jdbc1_defs = -DJDK_VER=11 '-DVIRT_JDBC_VER="1.x"' -Djdbc2=jdbc
 jdbc2_defs = -DJDK_VER=13 '-DVIRT_JDBC_VER="2.x"'
 jdbc3_defs = -DJDK_VER=14 -Djdbc2=jdbc3 '-DVIRT_JDBC_VER="3.x"'
 jdbc4_defs = -DJDK_VER=16 -Djdbc2=jdbc4 '-DVIRT_JDBC_VER="4.x"'
+jdbc4_1_defs = -DJDK_VER=17 -Djdbc2=jdbc4 '-DVIRT_JDBC_VER="4.1"'
 
 
 ###########################################
@@ -401,6 +408,101 @@ outssl4/virtuoso/javax/%.java: ../../virtuoso/javax/%.java
 
 
 ###########################################
+# JDBC 4.1
+###########################################
+std4_1javafiles = \
+        $(utilfiles:%.java=outstd4_1/openlink/util/%.java) \
+        $(sqlfiles:%.java=outstd4_1/virtuoso/sql/%.java) \
+        $(util3files:%.java=outstd4_1/openlink/util/%.java) \
+        $(util4files:%.java=outstd4_1/openlink/util/%.java) \
+    	$(in3files:%.java=outstd4_1/virtuoso/jdbc4/%.java) \
+    	$(in4files:%.java=outstd4_1/virtuoso/jdbc4/%.java) \
+    	$(infiles:%.java=outstd4_1/virtuoso/jdbc4/%.java) \
+        $(javaxfiles:%.java=outstd4_1/virtuoso/javax/%.java)
+
+
+.PHONY: doc4_1
+doc4_1: ../../virtjdbc4_1.jar
+	@cd outstd4_1 ; $(JDK4_1)/javadoc -d ../../../doc/virtjdbc4_1 -classpath . virtuoso/jdbc4/*.java openlink/util/*.java virtuoso/javax/*.java virtuoso/sql/*.java
+	
+
+
+.PHONY: std4_1
+std4_1: ../../virtjdbc4_1.jar
+
+../../virtjdbc4_1.jar: outstd4_1 $(std4_1javafiles)
+	@echo jdbc4_1 ssl javac $(JDK4_1_FLAGS)
+	@cd outstd4_1 ; $(JDK4_1)/javac $(JDK4_1_FLAGS) -classpath . virtuoso/jdbc4/*.java openlink/util/*.java virtuoso/javax/*.java virtuoso/sql/*.java
+	@cd outstd4_1 ; $(JDK4_1)/jar cfm ../../../virtjdbc4_1.jar ../../../manifest4.main virtuoso/jdbc4/*.class openlink/util/*.class virtuoso/javax/*.class virtuoso/sql/*.class
+	@echo "............. Virtuoso pure Java 4.1 built"
+
+outstd4_1:
+	@mkdir outstd4_1
+	@mkdir outstd4_1/virtuoso
+	@mkdir outstd4_1/virtuoso/jdbc4
+	@mkdir outstd4_1/virtuoso/sql
+	@mkdir outstd4_1/openlink
+	@mkdir outstd4_1/openlink/util
+	@mkdir outstd4_1/virtuoso/javax
+
+outstd4_1/virtuoso/jdbc4/%.java: %.java
+	$(CPP) -P $(JCPPOPTS) $(jdbc4_1_defs) $< >$@
+
+outstd4_1/openlink/util/%.java: ../../openlink/util/%.java
+	$(CPP) -P $(JCPPOPTS) $(jdbc4_1_defs) $< >$@
+
+outstd4_1/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
+	cd outstd4_1/virtuoso/sql; cp ../../../$< .
+
+outstd4_1/virtuoso/javax/%.java: ../javax/%.java
+	$(CPP) -P $(JCPPOPTS) $(jdbc4_1_defs) $< >$@
+
+
+###########################################
+# JDBC 4.1 (SSL)
+###########################################
+ssl4_1javafiles = \
+        $(utilfiles:%.java=outssl4_1/openlink/util/%.java) \
+        $(sqlfiles:%.java=outssl4_1/virtuoso/sql/%.java) \
+        $(util3files:%.java=outssl4_1/openlink/util/%.java) \
+        $(util4files:%.java=outssl4_1/openlink/util/%.java) \
+    	$(in3files:%.java=outssl4_1/virtuoso/jdbc4/%.java) \
+    	$(in4files:%.java=outssl4_1/virtuoso/jdbc4/%.java) \
+    	$(infiles:%.java=outssl4_1/virtuoso/jdbc4/%.java) \
+        $(javaxfiles:%.java=outssl4_1/virtuoso/javax/%.java)
+
+.PHONY: ssl4_1
+ssl4_1: ../../virtjdbc4_1ssl.jar
+
+../../virtjdbc4_1ssl.jar: outssl4_1 $(ssl4_1javafiles)
+	@echo jdbc4_1 ssl javac $(JDK4_1_FLAGS)
+	@cd outssl4_1 ; $(JDK4_1)/javac $(JDK4_1_FLAGS) -classpath . virtuoso/jdbc4/*.java openlink/util/*.java virtuoso/javax/*.java virtuoso/sql/*.java
+	@cd outssl4_1 ; $(JDK4_1)/jar cfm ../../../virtjdbc4_1ssl.jar ../../../manifest4.main virtuoso/jdbc4/*.class openlink/util/*.class virtuoso/javax/*.class virtuoso/sql/*.class
+	@echo "............. Virtuoso pure Java SSL 4.1 built"
+
+outssl4_1:
+	@mkdir outssl4_1
+	@mkdir outssl4_1/virtuoso
+	@mkdir outssl4_1/virtuoso/jdbc4
+	@mkdir outssl4_1/virtuoso/sql
+	@mkdir outssl4_1/openlink
+	@mkdir outssl4_1/openlink/util
+	@mkdir outssl4_1/virtuoso/javax
+
+outssl4_1/virtuoso/jdbc4/%.java: %.java
+	$(CPP) -P $(JCPPOPTS) -DSSL $(jdbc4_1_defs) $< >$@
+
+outssl4_1/openlink/util/%.java: ../../openlink/util/%.java
+	$(CPP) -P $(JCPPOPTS) -DSSL $(jdbc4_1_defs) $< >$@
+
+outssl4_1/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
+	cd outssl4_1/virtuoso/sql; cp ../../../$< .
+
+outssl4_1/virtuoso/javax/%.java: ../../virtuoso/javax/%.java
+	$(CPP) -P $(JCPPOPTS) -DSSL $(jdbc4_1_defs) $< >$@
+
+
+###########################################
 # Cleanup
 ###########################################
 clean-local:
@@ -410,3 +512,4 @@ clean-local:
 	rm -rf outstd2 outssl2
 	rm -rf outstd3 outssl3
 	rm -rf outstd4 outssl4
+	rm -rf outstd4_1 outssl4_1

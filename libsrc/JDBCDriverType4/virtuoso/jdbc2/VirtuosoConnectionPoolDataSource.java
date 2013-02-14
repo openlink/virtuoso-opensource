@@ -746,7 +746,7 @@ public class VirtuosoConnectionPoolDataSource
           pooledConn = (VirtuosoPooledConnection)iterator.next();
           if (pooledConn.hashConnURL == _hashKey && pooledConn.connURL.equals(_Key)) {
             iterator.remove();
-	    if (pooledConn.isConnectionLost()) {
+	    if (pooledConn.isConnectionLost(1)) {
 	      synchronized(this) {              
                 if (cacheSize > 1) 
                   --cacheSize;

@@ -42,123 +42,6 @@ class VirtuosoInputStream extends BufferedInputStream
    private VirtuosoConnection connection;
    private byte[] tmp = new byte[16];
 
-   // -------------------- A new BufferedInputStream design -----------------
-   // Some methods used to design a InputBufferedStream without
-   // the java official implementation. It's more efficient.
-   // The buffer
-/*
-   private byte[] buffer;
-
-   private int count;
-
-   private int pos;
-
-   private InputStream in;
-
-   private void fill() throws IOException
-   {
-      try {
-      	count = pos = 0;
-        while(in.available() > 0 && pos>=count && count<=buffer.length)
-   	{
-           int j = in.read(buffer,count,buffer.length-count<in.available() ? buffer.length-count : in.available());
-           if(j != -1) count = count+j;
-	}
-      } catch(Exception e) {
-           if(e instanceof IOException) throw (IOException)e;
-        }
-   }
-   public int read() throws IOException
-   {
-      long timeout = System.currentTimeMillis();
-      while(pos >= count)
-      {
-         fill();
-         if(pos >= count)
-	 {
-	    if(connection.getTimeout() != 0 &&
-	       System.currentTimeMillis()-timeout>=connection.getTimeout()*1000)
-	      {
-		if (VirtuosoFuture.rpc_log != null)
-		  {
-		    synchronized (VirtuosoFuture.rpc_log)
-		      {
-			VirtuosoFuture.rpc_log.println ("(conn " + connection.hashCode() + ") *** TIMEOUT in read");
-		      }
-		  }
-		throw new IOException("Read: Time out expired");
-	      }
-            try {
-	      new Thread().sleep(20);
-	    } catch(InterruptedException e) { }
-         }
-      }
-      return buffer[pos++] & 0xff;
-   }
-
-   public int read(byte b[]) throws IOException
-   {
-      return this.read(b, 0, b.length);
-   }
-   public int read(byte b[], int off, int len) throws IOException
-   {
-      if(len >= (count-pos))
-      {
-         try {
-            int n = count - pos, m;
-            System.arraycopy(buffer, pos, b, off, n);
-            pos = count;
-            m = in.read(b,off+n,len-n);
-            if(m != -1) n = n+m;
-            return n;
-          } catch(Exception e) {
-               if(e instanceof IOException) throw (IOException)e;
-            }
-      }
-      System.arraycopy(buffer,pos,b,off,len);
-      pos += len;
-      return len;
-   }
-
-   public long skip(long n) throws IOException
-   {
-      if(n < 0)
-         return 0;
-      long avail = count - pos;
-      if(avail >= n)
-      {
-         pos += n;
-         return n;
-      }
-      pos += avail;
-      return avail + in.skip(n - avail);
-   }
-
-   public int available() throws IOException
-   {
-      return (count - pos) + in.available();
-   }
-
-   public boolean markSupported()
-   {
-      return false;
-   }
-
-   public void reset() throws IOException
-   {
-      in.reset();
-      pos = 0;
-      count = 0;
-   }
-
-   public void close() throws IOException
-   {
-      in.close();
-      buffer = null;
-   }
-*/
-
-   // End of the InputBufferedStram design
 
     public int read () throws IOException
       {
@@ -587,7 +470,9 @@ class VirtuosoInputStream extends BufferedInputStream
                  e.printStackTrace(VirtuosoFuture.rpc_log);
                }
            }
-         throw new Error (e.getClass().getName() + ":" + e.getMessage());
+//         throw new Error (e.getClass().getName() + ":" + e.getMessage());
+           throw new VirtuosoException(e.getClass().getName() + ":" + e.getMessage(),VirtuosoException.IOERROR);
+
        }
    }
 
@@ -617,29 +502,31 @@ class VirtuosoInputStream extends BufferedInputStream
                 case 12: case 13:
                     /* 110x xxxx   10xx xxxx*/
                     count += 2;
-                    if (count > utflen)
-                        throw new UTFDataFormatException(
-                            "malformed input: partial character at end");
-                    c2 = (int) data[count-1];
-                    if ((c2 & 0xC0) != 0x80)
-                        throw new UTFDataFormatException(
-                            "malformed input around byte " + count);
-                    c_arr[ch_count++]=(char)(((c & 0x1F) << 6) | (c2 & 0x3F));
+                    if (count > utflen) {
+                        c_arr[ch_count++]=(char)c;
+                    } else {
+                        c2 = (int) data[count-1];
+                        if ((c2 & 0xC0) != 0x80)
+                            throw new UTFDataFormatException(
+                                "malformed input around byte " + count);
+                        c_arr[ch_count++]=(char)(((c & 0x1F) << 6) | (c2 & 0x3F));
+                    }
                     break;
                 case 14:
                     /* 1110 xxxx  10xx xxxx  10xx xxxx */
                     count += 3;
-                    if (count > utflen)
-                        throw new UTFDataFormatException(
-                            "malformed input: partial character at end");
-                    c2 = (int) data[count-2];
-                    c3 = (int) data[count-1];
-                    if (((c2 & 0xC0) != 0x80) || ((c3 & 0xC0) != 0x80))
-                        throw new UTFDataFormatException(
-                            "malformed input around byte " + (count-1));
-                    c_arr[ch_count++]=(char)(((c & 0x0F) << 12) |
-                                                ((c2 & 0x3F) << 6)  |
-                                                ((c3 & 0x3F) << 0));
+                    if (count > utflen) {
+                        c_arr[ch_count++]=(char)c;
+                    } else {
+                        c2 = (int) data[count-2];
+                        c3 = (int) data[count-1];
+                        if (((c2 & 0xC0) != 0x80) || ((c3 & 0xC0) != 0x80))
+                            throw new UTFDataFormatException(
+                                "malformed input around byte " + (count-1));
+                        c_arr[ch_count++]=(char)(((c & 0x0F) << 12) |
+                                                    ((c2 & 0x3F) << 6)  |
+                                                    ((c3 & 0x3F) << 0));
+                    }
                     break;
                 default:
                     /* 10xx xxxx,  1111 xxxx */

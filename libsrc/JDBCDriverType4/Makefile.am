@@ -37,14 +37,20 @@ JDK4_TEST = jdk4-test
 JDK4_DOC = jdk4-doc
 endif
 
-JDK_TESTS = $(JDK2_TEST) $(JDK3_TEST) $(JDK4_TEST)
+if WITH_JDK4_1
+JDK4_1_TARGETS = jdk4_1-target
+JDK4_1_TEST = jdk4_1-test
+JDK4_1_DOC = jdk4_1-doc
+endif
+
+JDK_TESTS = $(JDK2_TEST) $(JDK3_TEST) $(JDK4_TEST) $(JDK4_1_TEST)
 
 SUBDIRS	= . virtuoso testsuite_2.0 testsuite_3.0 testsuite_4.0
 
 
-all-am: $(JDK2_TARGETS) $(JDK3_TARGETS) $(JDK4_TARGETS)
+all-am: $(JDK2_TARGETS) $(JDK3_TARGETS) $(JDK4_TARGETS) $(JDK4_1_TARGETS)
 
-doc:	$(JDK2_DOC) $(JDK3_DOC) $(JDK4_DOC)
+doc:	$(JDK2_DOC) $(JDK3_DOC) $(JDK4_DOC) $(JDK4_1_DOC)
 
 run-tests:
 	$(MAKE) $(JDK_TESTS)
@@ -86,7 +92,7 @@ jdk3-test:
 .PHONY: jdk3-doc
 jdk3-doc:
 	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) doc3
-	
+
 
 #
 #  JDK 1.6 / JDBC 4.0
@@ -103,20 +109,40 @@ jdk4-test:
 .PHONY: jdk4-doc
 jdk4-doc:
 	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) doc4
+
+
+#
+#  JDK 1.7 / JDBC 4.1
+#
+.PHONY: jdk4_1-target
+jdk4_1-target:
+	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) std4_1
+	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) ssl4_1
+
+.PHONY: jdk4_1-test
+jdk4_1-test:
+	env "JDK4_1=@ac_jdk4_1_path@" $(SHELL) ./test4.sh "jdbc:virtuoso://localhost:$(PORT)/"
+
+.PHONY: jdk4_1-doc
+jdk4_1-doc:
+	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) doc4_1
 	
 
 install-data-local:
 	-$(MKDIR_P) "$(DESTDIR)${libdir}/jdbc-2.0"
 	-$(MKDIR_P) "$(DESTDIR)${libdir}/jdbc-3.0"
 	-$(MKDIR_P) "$(DESTDIR)${libdir}/jdbc-4.0"
+	-$(MKDIR_P) "$(DESTDIR)${libdir}/jdbc-4.1"
 	-cp virtjdbc2.jar "$(DESTDIR)${libdir}/jdbc-2.0"
 	-cp virtjdbc3.jar virtjdbc3ssl.jar "$(DESTDIR)${libdir}/jdbc-3.0"
 	-cp virtjdbc4.jar virtjdbc4ssl.jar "$(DESTDIR)${libdir}/jdbc-4.0"
+	-cp virtjdbc4_1.jar virtjdbc4ssl.jar "$(DESTDIR)${libdir}/jdbc-4.1"
 
 uninstall-local:
 	-rm -rf "$(DESTDIR)${libdir}/jdbc-2.0"
 	-rm -rf "$(DESTDIR)${libdir}/jdbc-3.0"
 	-rm -rf "$(DESTDIR)${libdir}/jdbc-4.0"
+	-rm -rf "$(DESTDIR)${libdir}/jdbc-4.1"
 
 MAINTAINERCLEANFILES = *.jar
 clean-local:
@@ -141,4 +167,6 @@ EXTRA_DIST = \
 	virtjdbc3.jar \
 	virtjdbc3ssl.jar \
 	virtjdbc4.jar \
-	virtjdbc4ssl.jar
+	virtjdbc4ssl.jar \
+	virtjdbc4_1.jar \
+	virtjdbc4_1ssl.jar

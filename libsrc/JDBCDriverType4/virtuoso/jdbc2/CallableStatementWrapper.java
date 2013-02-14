@@ -1302,6 +1302,32 @@ public class CallableStatementWrapper
     }
   }
 
+#if JDK_VER >= 17
+    //--------------------------JDBC 4.1 -----------------------------
+  public <T> T getObject(int parameterIndex, Class<T> type) throws SQLException
+  {
+    check_close();
+    try {
+      return ((CallableStatement)stmt).getObject(parameterIndex, type);
+    } catch (SQLException ex) {
+      exceptionOccurred(ex);
+      throw ex;
+    }
+  }
+
+  public <T> T getObject(String parameterName, Class<T> type) throws SQLException
+  {
+    check_close();
+    try {
+      return ((CallableStatement)stmt).getObject(parameterName, type);
+    } catch (SQLException ex) {
+      exceptionOccurred(ex);
+      throw ex;
+    }
+  }
+
+#endif
+
 #endif
 #endif
 

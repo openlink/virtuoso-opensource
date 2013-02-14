@@ -887,8 +887,12 @@ public class VirtuosoResultSet implements ResultSet
       // Search in the hash table of meta data
       Integer i = (Integer)(metaData.hcolumns.get(
 	    new VirtuosoColumn(name, VirtuosoTypes.DV_STRING, statement.connection)));
+
+      if (i == null)
+         throw new VirtuosoException("findColumn() can't found column with name '"+name+"' in resultSet", "S0022", VirtuosoException.MISCERROR);
+      
       // Return column's number
-      return (i == null) ? 0 : i.intValue() + 1;
+      return i.intValue() + 1;
    }
 
    /**
@@ -2149,6 +2153,13 @@ public class VirtuosoResultSet implements ResultSet
          rows.removeAllElements();
          //rows = null;
       }
+#if JDK_VER >= 17
+      if (statement != null && isLastResult && statement.closeOnCompletion)
+      {
+         statement.close();
+         statement = null;
+      }
+#endif
       row = null;
       cursorName = null;
    }
@@ -4973,6 +4984,129 @@ public class VirtuosoResultSet implements ResultSet
     // This works for classes that aren't actually wrapping anything
     return iface.isInstance(this);
   }
+
+
+#if JDK_VER >= 17
+    //------------------------- JDBC 4.1 -----------------------------------
+
+
+    /**
+     *<p>Retrieves the value of the designated column in the current row
+     * of this <code>ResultSet</code> object and will convert from the
+     * SQL type of the column to the requested Java data type, if the
+     * conversion is supported. If the conversion is not
+     * supported  or null is specified for the type, a
+     * <code>SQLException</code> is thrown.
+     *<p>
+     * At a minimum, an implementation must support the conversions defined in
+     * Appendix B, Table B-3 and conversion of appropriate user defined SQL
+     * types to a Java type which implements {@code SQLData}, or {@code Struct}.
+     * Additional conversions may be supported and are vendor defined.
+     *
+     * @param columnIndex the first column is 1, the second is 2, ...
+     * @param type Class representing the Java data type to convert the designated
+     * column to.
+     * @return an instance of {@code type} holding the column value
+     * @throws SQLException if conversion is not supported, type is null or
+     *         another error occurs. The getCause() method of the
+     * exception may provide a more detailed exception, for example, if
+     * a conversion error occurs
+     * @throws SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.7
+     */
+  public <T> T getObject(int columnIndex, Class<T> type) throws SQLException
+  {
+    if (type == null) {
+      throw new VirtuosoException ("Type parameter can not be null", 
+                    "S1009", VirtuosoException.BADPARAM);
+    }
+		
+    if (type.equals(String.class)) {
+      return (T) getString(columnIndex);
+    } else if (type.equals(BigDecimal.class)) {
+      return (T) getBigDecimal(columnIndex);
+    } else if (type.equals(Boolean.class) || type.equals(Boolean.TYPE)) {
+      return (T) Boolean.valueOf(getBoolean(columnIndex));
+    } else if (type.equals(Integer.class) || type.equals(Integer.TYPE)) {
+      return (T) Integer.valueOf(getInt(columnIndex));
+    } else if (type.equals(Long.class) || type.equals(Long.TYPE)) {
+      return (T) Long.valueOf(getLong(columnIndex));
+    } else if (type.equals(Float.class) || type.equals(Float.TYPE)) {
+      return (T) Float.valueOf(getFloat(columnIndex));
+    } else if (type.equals(Double.class) || type.equals(Double.TYPE)) {
+      return (T) Double.valueOf(getDouble(columnIndex));
+    } else if (type.equals(byte[].class)) {
+      return (T) getBytes(columnIndex);
+    } else if (type.equals(java.sql.Date.class)) {
+      return (T) getDate(columnIndex);
+    } else if (type.equals(Time.class)) {
+      return (T) getTime(columnIndex);
+    } else if (type.equals(Timestamp.class)) {
+      return (T) getTimestamp(columnIndex);
+    } else if (type.equals(Clob.class)) {
+      return (T) getClob(columnIndex);
+    } else if (type.equals(Blob.class)) {
+      return (T) getBlob(columnIndex);
+    } else if (type.equals(Array.class)) {
+      return (T) getArray(columnIndex);
+    } else if (type.equals(Ref.class)) {
+      return (T) getRef(columnIndex);
+    } else if (type.equals(java.net.URL.class)) {
+      return (T) getURL(columnIndex);
+//		} else if (type.equals(Struct.class)) {
+//				
+//			} 
+//		} else if (type.equals(RowId.class)) {
+//			
+//		} else if (type.equals(NClob.class)) {
+//			
+//		} else if (type.equals(SQLXML.class)) {
+			
+    } else {
+      try {
+        return (T) getObject(columnIndex);
+      } catch (ClassCastException cce) {
+         throw new VirtuosoException ("Conversion not supported for type " + type.getName(), 
+                    "S1009", VirtuosoException.BADPARAM);
+      }
+    }
+  }
+
+
+    /**
+     *<p>Retrieves the value of the designated column in the current row
+     * of this <code>ResultSet</code> object and will convert from the
+     * SQL type of the column to the requested Java data type, if the
+     * conversion is supported. If the conversion is not
+     * supported  or null is specified for the type, a
+     * <code>SQLException</code> is thrown.
+     *<p>
+     * At a minimum, an implementation must support the conversions defined in
+     * Appendix B, Table B-3 and conversion of appropriate user defined SQL
+     * types to a Java type which implements {@code SQLData}, or {@code Struct}.
+     * Additional conversions may be supported and are vendor defined.
+     *
+     * @param columnLabel the label for the column specified with the SQL AS clause.
+     * If the SQL AS clause was not specified, then the label is the name
+     * of the column
+     * @param type Class representing the Java data type to convert the designated
+     * column to.
+     * @return an instance of {@code type} holding the column value
+     * @throws SQLException if conversion is not supported, type is null or
+     *         another error occurs. The getCause() method of the
+     * exception may provide a more detailed exception, for example, if
+     * a conversion error occurs
+     * @throws SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.7
+     */
+  public <T> T getObject(String columnLabel, Class<T> type) throws SQLException
+  {
+    return getObject(findColumn(columnLabel), type);
+  }
+
+#endif
 
 #endif
 #endif

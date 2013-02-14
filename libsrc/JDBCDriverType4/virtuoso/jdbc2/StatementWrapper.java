@@ -566,6 +566,31 @@ public class StatementWrapper implements Statement, Closeable {
     }
   }
 
+#if JDK_VER >= 17
+    //--------------------------JDBC 4.1 -----------------------------
+  public void closeOnCompletion() throws SQLException
+  {
+    check_close();
+    try {
+      stmt.closeOnCompletion();
+    } catch (SQLException ex) {
+      exceptionOccurred(ex);
+      throw ex;
+    }
+  }
+
+  public boolean isCloseOnCompletion() throws SQLException
+  {
+    check_close();
+    try {
+      return stmt.isCloseOnCompletion();
+    } catch (SQLException ex) {
+      exceptionOccurred(ex);
+      throw ex;
+    }
+  }
+#endif
+
 #endif
 #endif
 

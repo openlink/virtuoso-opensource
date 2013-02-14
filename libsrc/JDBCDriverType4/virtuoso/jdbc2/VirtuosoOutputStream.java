@@ -41,68 +41,7 @@ class VirtuosoOutputStream extends BufferedOutputStream
    // The connection attached to this stream
    private VirtuosoConnection connection;
    private byte[] tmp = new byte[16];
-/*
-   // -------------------- A new BufferedOutputStream design -----------------
-   // The buffer
-   private byte[] buffer;
 
-   private int count;
-
-   private int pos;
-
-   private OutputStream out;
-
-   private void flushBuffer() throws IOException
-   {
-      //System.out.println("OutputStream:flushBuffer : "+this);
-      if(count > 0)
-      {
-         out.write(buffer,0,count);
-         count = 0;
-      }
-   }
-
-   public void write(int b) throws IOException
-   {
-      //System.out.println("OutputStream:write(int) : "+this);
-      if(count >= buffer.length)
-         flushBuffer();
-      buffer[count++] = (byte)b;
-   }
-
-   public void write(byte b[]) throws IOException
-   {
-      this.write(b, 0, b.length);
-   }
-
-   public void write(byte b[], int off, int len) throws IOException
-   {
-      //System.out.println("OutputStream:write(b,off,len) : "+this);
-      if(len >= (buffer.length-count))
-      {
-         flushBuffer();
-         out.write(b,off,len);
-         return;
-      }
-      System.arraycopy(b,off,buffer,count,len);
-      count += len;
-   }
-
-   public void flush() throws IOException
-   {
-      //System.out.println("OutputStream:flush : "+this);
-      flushBuffer();
-      out.flush();
-   }
-
-   public void close() throws IOException
-   {
-      flush();
-      out.close();
-      buffer = null;
-   }
-*/
-   // End of the OutputBufferedStram design
    private static final int DefaultBufferSize = 2048;
    /**
     * Constructs a VirtuosoOutputStream using a OutputStream from

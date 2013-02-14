@@ -754,6 +754,66 @@ public class ConnectionWrapper implements java.sql.Connection {
     }
   }
 
+
+#if JDK_VER >= 17
+   //--------------------------JDBC 4.1 -----------------------------
+  public void setSchema(String schema) throws java.sql.SQLException 
+  {
+    try {
+      check_conn();
+      rconn.setSchema(schema);
+    } catch (SQLException ex) {
+      exceptionOccurred(ex);
+      throw ex;
+    }
+  }
+
+  public String getSchema() throws java.sql.SQLException
+  {
+    try {
+      check_conn();
+      return rconn.getSchema();
+    } catch (SQLException ex) {
+      exceptionOccurred(ex);
+      throw ex;
+    }
+  }
+
+  public void abort(java.util.concurrent.Executor executor) throws java.sql.SQLException
+  {
+    try {
+      check_conn();
+      rconn.abort(executor);
+    } catch (SQLException ex) {
+      exceptionOccurred(ex);
+      throw ex;
+    }
+  }
+
+  public void setNetworkTimeout(java.util.concurrent.Executor executor, 
+  			 final int milliseconds) throws java.sql.SQLException
+  {
+    try {
+      check_conn();
+      rconn.setNetworkTimeout(executor, milliseconds);
+    } catch (SQLException ex) {
+      exceptionOccurred(ex);
+      throw ex;
+    }
+  }
+
+  public int getNetworkTimeout() throws java.sql.SQLException
+  {
+    try {
+      check_conn();
+      return rconn.getNetworkTimeout();
+    } catch (SQLException ex) {
+      exceptionOccurred(ex);
+      throw ex;
+    }
+  }
+#endif
+
 #endif
 #endif
 

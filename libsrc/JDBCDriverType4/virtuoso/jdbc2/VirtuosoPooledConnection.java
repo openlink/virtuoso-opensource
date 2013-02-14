@@ -261,12 +261,12 @@ public class VirtuosoPooledConnection implements PooledConnection, Cloneable {
     return conn;
   }
 
-  public boolean isConnectionLost()
+  public boolean isConnectionLost(int timeout_sec)
   {
     if (conn == null) {
        return true;
     }
-    return conn.isClosed() || conn.isConnectionLost();
+    return conn.isClosed() || conn.isConnectionLost(timeout_sec);
   }
 
 #if JDK_VER >= 16
