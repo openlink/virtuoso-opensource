@@ -50,7 +50,6 @@ AM_INIT_AUTOMAKE([1.9 tar-ustar])
 
 AM_MAINTAINER_MODE
 
-
 ##########################################################################
 ##									##
 ##  Check system type							##
@@ -2040,6 +2039,31 @@ AC_HELP_STRING([--with-jdk4=DIR], [use the Sun JDK 1.6.x at the specified locati
 AC_MSG_RESULT(done)
 
 
+ac_jdk4_1_path="none"
+AC_ARG_WITH(jdk4_1, [dnl
+AC_HELP_STRING([--with-jdk4_1=DIR], [use the Oracle JDK 1.7.x at the specified location])dnl
+], [
+    case "${withval}" in
+      yes)
+          AC_MSG_ERROR("You need to specify a directory")
+	  ;;
+
+      no)
+	  ac_jdk4_1_path="none"
+	  ;;
+
+      *)
+	  if test -d "${withval}" ; then
+	      ac_jdk4_1_path="${withval}"
+	  else
+	      AC_MSG_ERROR("Directory specified with --with-jdk4_1 does not exist")
+	  fi
+	  ;;
+    esac
+    ])
+AC_MSG_RESULT(done)
+
+
 #AC_PROG_JAVA_WORKS (jdk_path, min_acceptable_ver, max_acceptable_ver)
 
 AC_DEFUN([AC_PROG_JAVA_WORKS], [
@@ -2112,8 +2136,16 @@ ac_jdk4_path="$ac_jw_jdk"
 AM_CONDITIONAL(WITH_JDK4, test "x$ac_jdk4_works" = "xyes")
 AC_SUBST(ac_jdk4_path)
 
+AC_PROG_JAVA_WORKS($ac_jdk4_1_path, 7, 7)
+ac_jdk4_1_works="$ac_cv_prog_java_works"
+ac_jdk4_1_path="$ac_jw_jdk"
+AM_CONDITIONAL(WITH_JDK4_1, test "x$ac_jdk4_1_works" = "xyes")
+AC_SUBST(ac_jdk4_1_path)
+
 ac_integ_jdk=""
-if test "x$ac_jdk4_works" = "xyes" ; then
+if test "x$ac_jdk4_1_works" = "xyes" ; then
+  ac_integ_jdk="$ac_jdk4_1_path/.."
+elif test "x$ac_jdk4_works" = "xyes" ; then
   ac_integ_jdk="$ac_jdk4_path/.."
 elif test "x$ac_jdk3_works" = "xyes" ; then
   ac_integ_jdk="$ac_jdk3_path/.."
