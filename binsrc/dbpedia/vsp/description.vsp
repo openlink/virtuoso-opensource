@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN" "http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" 
-    xmlns:dbpprop="http://dbpedia.org/property/" 
+    xmlns:prop="http://dbpedia.org/property/" 
     xmlns:foaf="http://xmlns.com/foaf/0.1/" 
-    version="XHTML+RDFa 1.0" xml:lang="en">
+    version="XHTML+RDFa 1.0" xml:lang="<?= registry_get('dbp_lang')?>">
 <?vsp
 --
 --  $Id$
@@ -69,13 +69,13 @@
    -- add domain prefix
    _resource_ := replace (_resource_, '/resource_vsp/', '', 1);
    if (_resource_ not like 'nodeID:%') 
-     {
-       -- if rousource use custom domain, else use http://dbpedia.org
-       if (_resource_ like '/page/%')
-         _resource_ := registry_get('dbp_domain') || _resource_;
-       else
-         _resource_ := 'http://dbpedia.org' || _resource_;
-     }
+   {
+      -- if rousource use custom domain, else use http://dbpedia.org
+      if (_resource_ like '/page/%' OR _resource_ like '/property/%')
+        _resource_ := registry_get('dbp_domain') || _resource_;
+      else
+        _resource_ := 'http://dbpedia.org' || _resource_;
+   }
 
    host := http_request_header (http_request_header (), 'Host');  
    project_name := 'dbpedia.org';
@@ -94,16 +94,16 @@
    -- HACK properties !!!
 
    if (strstr (page_resource_uri, registry_get('dbp_domain') || '/resource/property') = 0)
-     {	   
-       page_resource_uri := replace (page_resource_uri,
-       registry_get('dbp_domain') || '/resource/property', registry_get('dbp_domain') || '/property');
-     }
+   {
+     page_resource_uri := replace (page_resource_uri,
+     registry_get('dbp_domain') || '/resource/property', registry_get('dbp_domain') || '/property');
+   }
 
    -- setup rdf alternative links
 
-   rdf_link := 'http://'|| http_request_header (http_request_header (), 'Host') 
-   		||'/sparql?default-graph-uri=http%3A%2F%2F'||replace(registry_get('dbp_graph'),'http://','')||'&query=DESCRIBE+<' ||
-		replace (page_resource_uri, '%', '%25') || '>';
+   rdf_link := 'http://'|| http_request_header (http_request_header (), 'Host') ||
+               '/sparql?default-graph-uri='|| registry_get('dbp_graph_decoded') || 
+               '&query=DESCRIBE+<' || replace (page_resource_uri, '%', '%25') || '>';
    gen_rdf_link := rdf_link;
    csv_link := rdf_link||'&format=text%2Fcsv'; 
    cxml_link := rdf_link||'&format=text%2Fcxml'; 
@@ -112,14 +112,14 @@
    else if (page_resource_uri like 'http://%/class/%')
      rdf_link2 := dbp_ldd_get_proxy (replace (page_resource_uri, '/class/', '/data2/'));
    else if (page_resource_uri like 'http://%/ontology/%')
-     {
-       project_home_page := registry_get('dbp_graph') || '/resource/classes#';
+   {
+     project_home_page := registry_get('dbp_graph') || '/resource/classes#';
      rdf_link2 := dbp_ldd_get_proxy (replace (page_resource_uri, '/ontology/', '/data3/'));
-       rdf_link := 'http://'|| http_request_header (http_request_header (), 'Host') 
-		||'/sparql?default-graph-uri=http%3A%2F%2F'||replace(registry_get('dbp_graph'),'http://','')||'%2Fresource%2Fclasses%23&query=DESCRIBE+<' ||
-		replace (page_resource_uri, '%', '%25') || '>';
-       gen_rdf_link := rdf_link;
-     }
+     rdf_link := 'http://'|| http_request_header (http_request_header (), 'Host') ||
+                 '/sparql?default-graph-uri=' || registry_get('dbp_graph_decoded') || '%2Fresource%2Fclasses%23&query=DESCRIBE+<' ||
+                 replace (page_resource_uri, '%', '%25') || '>';
+     gen_rdf_link := rdf_link;
+   }
    else if (page_resource_uri like 'http://%/property/%')
      rdf_link2 := dbp_ldd_get_proxy (replace (page_resource_uri, '/property/', '/data4/'));
    else if (page_resource_uri like 'http://%/meta/%')
@@ -205,20 +205,20 @@
 
 <!-- header -->
 <head profile="http://www.w3.org/1999/xhtml/vocab">
-    <title>About: <?vsp http (sprintf ('%V', charset_recode (label, 'UTF-8', '_WIDE_'))); ?></title>
+    <title>About: <?vsp http (sprintf ('%' || registry_get('dbp_decode_param_U'),  charset_recode (label, 'UTF-8', '_WIDE_'))); ?></title>
     <link rel="alternate" type="application/rdf+xml" href="<?=rdf_link2?>" title="Structured Descriptor Document (RDF/XML format)" />
     <link rel="alternate" type="text/rdf+n3" href="<?=rdf_link?>" title="Structured Descriptor Document (N3/Turtle format)" />
     <link rel="alternate" type="application/json+rdf" href="<?=rdf_link4?>" title="Structured Descriptor Document (RDF/JSON format)" />
     <link rel="alternate" type="application/json" href="<?=rdf_link3?>" title="Structured Descriptor Document (RDF/JSON format)" />
     <link rel="alternate" type="application/atom+xml" href="<?= atom_link ?>" title="OData (Atom+Feed format)" />
     <link rel="alternate" type="text/plain" href="<?= ntriples ?>" title="Structured Descriptor Document (N-Triples format)" />
-    <link rel="alternate" href="<?V csv_link ?>" type="text/csv" title="Structured Descriptor Document (CSV format)" />
+    <link rel="alternate" href="<?= csv_link ?>" type="text/csv" title="Structured Descriptor Document (CSV format)" />
     <?vsp if (__proc_exists ('DB.DBA.RDF_TRIPLES_TO_CXML') is not null) { ?>
-    <link rel="alternate" href="<?V cxml_link ?>" type="text/cxml" title="Structured Descriptor Document (CXML format)" />
+    <link rel="alternate" href="<?= cxml_link ?>" type="text/cxml" title="Structured Descriptor Document (CXML format)" />
     <?vsp } ?>
-    <link rel="alternate" href="<?V gen_rdf_link || sprintf ('&output=%U', 'application/microdata+json') ?>" type="application/microdata+json" 	title="Structured Descriptor Document (Microdata/JSON format)" />
-    <link rel="alternate" href="<?V gen_rdf_link || sprintf ('&output=%U', 'text/html') ?>" 		     type="text/html" 			title="Structured Descriptor Document (Microdata/HTML format)" />
-    <link rel="alternate" href="<?V gen_rdf_link || sprintf ('&output=%U', 'application/ld+json') ?>"      type="application/ld+json" 	title="Structured Descriptor Document (JSON-LD format)" />
+    <link rel="alternate" href="<?= gen_rdf_link || sprintf ('&output=%U', 'application/microdata+json') ?>" type="application/microdata+json" 	title="Structured Descriptor Document (Microdata/JSON format)" />
+    <link rel="alternate" href="<?= gen_rdf_link || sprintf ('&output=%U', 'text/html') ?>" type="text/html" title="Structured Descriptor Document (Microdata/HTML format)" />
+    <link rel="alternate" href="<?= gen_rdf_link || sprintf ('&output=%U', 'application/ld+json') ?>" type="application/ld+json" title="Structured Descriptor Document (JSON-LD format)" />
     <link rel="timegate" type="text/html" href="http://mementoarchive.lanl.gov/dbpedia/timegate/<?= _resource_ ?>" title="Time Machine" />
     <link rel="stylesheet" type="text/css" href="/statics/<?=either (white_page, 'style_w.css', 'style.css')?>" />
     <link href="/statics/highlighter.css" type="text/css" rel="stylesheet" charset="utf-8" />
@@ -226,17 +226,17 @@
     <link rev="describedby" href="<?= page_resource_uri ?>"/>
     <script type="text/javascript" src="/statics/script.js"></script>
 </head>
-<body onload="init();" about="<?V charset_recode(page_resource_uri, 'UTF-8', '_WIDE_') ?>">
+<body onload="init();" about="<?= charset_recode(page_resource_uri, 'UTF-8', '_WIDE_') ?>">
     <div id="header">
       <div id="hd_l">
-	  <h1 id="title">About: <a href="<?V dbp_ldd_get_proxy (page_resource_uri) ?>"><?V charset_recode(label, 'UTF-8', '_WIDE_') ?></a></h1>
+	  <h1 id="title">About: <a href="<?= dbp_ldd_get_proxy (page_resource_uri) ?>"><?= charset_recode(label, 'UTF-8', '_WIDE_') ?></a></h1>
         <div id="homelink">
           <!--?vsp if (white_page = 0) http (txt); ?-->
         </div>
 	<div class="page-resource-uri">
 	    An Entity of Type : <a href="<?= iri_uri ?>"><?= iri_type ?></a>, 
-	    from Named Graph : <a href="<?V project_home_page ?>"><?V project_home_page ?></a>, 
-	    within Data Space : <a href="http://<?V host ?>"><?V host ?></a>
+	    from Named Graph : <a href="<?= project_home_page ?>"><?= project_home_page ?></a>, 
+	    within Data Space : <a href="http://<?= host ?>"><?V host ?></a>
         </div>
       </div> <!-- hd_l -->
       <div id="hd_r">
@@ -247,7 +247,7 @@
     </div> <!-- header -->
     <div id="content">
 
-      <p><?vsp http (sprintf ('%s', _subject)); ?></p>
+      <p><?vsp http (sprintf ('%'||registry_get('dbp_decode_param_V'), _subject)); ?></p>
 <!-- proptable -->
       <table class="description"><tr><th>Property</th><th>Value</th></tr>
 
@@ -331,26 +331,25 @@
     <div id="footer">
       <div id="ft_t">
         Browse using:
-	<a href="http://linkeddata.uriburner.com/ode/?uri=<?vsp http_url (page_resource_uri); ?>">OpenLink Data Explorer</a> |
+        <a href="http://linkeddata.uriburner.com/ode/?uri=<?vsp http_url (page_resource_uri); ?>">OpenLink Data Explorer</a> |
         <a href="http://dataviewer.zitgist.com/?uri=<?vsp http_url (page_resource_uri); ?>">Zitgist Data Viewer</a> |
         <a href="http://beckr.org/marbles?uri=<?vsp http_url (page_resource_uri); ?>">Marbles</a> |
         <a href="http://www4.wiwiss.fu-berlin.de/rdf_browser/?browse_uri=<?vsp http_url (page_resource_uri); ?>">DISCO</a> |
         <a href="http://dig.csail.mit.edu/2005/ajar/release/tabulator/0.8/tab.html?uri=<?vsp http_url (page_resource_uri); ?>" >Tabulator</a>
         &nbsp; &nbsp; Raw Data in:
-	<?vsp if (__proc_exists ('DB.DBA.RDF_TRIPLES_TO_CXML') is not null) { ?>
-	<a href="<?= cxml_link ?>">CXML</a> |
-	<?vsp } ?>
+        <?vsp if (__proc_exists ('DB.DBA.RDF_TRIPLES_TO_CXML') is not null) { ?>
+          <a href="<?= cxml_link ?>">CXML</a> |
+        <?vsp } ?>
         <a href="<?= csv_link ?>">CSV</a> | RDF (
         <a href="<?= ntriples ?>">N-Triples</a> 
         <a href="<?= rdf_link ?>">N3/Turtle</a> 
-	<a href="<?= rdf_link3 ?>">JSON</a> 
+        <a href="<?= rdf_link3 ?>">JSON</a> 
         <a href="<?= rdf_link2 ?>">XML</a> ) | OData (
-	<a href="<?= atom_link ?>">Atom</a> 
-	<a href="<?= jsod ?>">JSON</a> )| Microdata (
-	<a href="<?= gen_rdf_link || sprintf ('&output=%U', 'application/microdata+json') ?>">JSON</a>
+        <a href="<?= atom_link ?>">Atom</a> 
+        <a href="<?= jsod ?>">JSON</a> )| Microdata (
+        <a href="<?= gen_rdf_link || sprintf ('&output=%U', 'application/microdata+json') ?>">JSON</a>
         <a href="<?= gen_rdf_link || sprintf ('&output=%U', 'text/html') ?>">HTML</a>) |  
         <a href="<?= gen_rdf_link || sprintf ('&output=%U', 'application/ld+json')?>">JSON-LD</a> 
-
         &nbsp; &nbsp;<a href="<?=registry_get('dbp_imprint') ?>">About</a>&nbsp; &nbsp;
       </div> <!-- #ft_t -->
       <div id="ft_b">
