@@ -135,8 +135,8 @@ executable, depending on platform and options.
 Generate build files
 ====================
 
-To generate the configure script and all related build files, use use
-the supplied script in your CVS checkout directory:
+To (re)generate the configure script and all related build files,
+use use the supplied script in your working directory:
 
     $ ./autogen.sh
 
