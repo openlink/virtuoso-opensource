@@ -703,7 +703,7 @@ create procedure b3s_label (in _S any, in langs any, in lbl_order_pref_id int :=
   --exec (sprintf ('sparql define input:inference "facets" '||
   --'select ?o (lang(?o)) where { <%S> virtrdf:label ?o }', _S), stat, msg, vector (), 0, meta, data);
   exec (sprintf ('select __ro2sq (O), DB.DBA.RDF_LANGUAGE_OF_OBJ (__ro2sq (O)) , cast (b3s_lbl_order (P, %d) as int) from RDF_QUAD table option (with ''facets'')
-	where S = __i2id (?) and P = __i2id (''http://www.openlinksw.com/schemas/virtrdf#label'', 0) and not is_bnode_iri_id (O) order by 3', lbl_order_pref_id),
+	where S = __i2id (?) and P = __i2id (''http://www.openlinksw.com/schemas/virtrdf#label'', 0) and not is_bnode_iri_id (O) order by 3 option (same_as)', lbl_order_pref_id), 
 	stat, msg, vector (_S), 0, meta, data);
   if (stat <> '00000')
     return '';
