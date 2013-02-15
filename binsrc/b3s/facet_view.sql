@@ -2431,7 +2431,8 @@ exec:;
 		      http_param ('iri'),
 		      http_param ('lang'),
 		      http_param ('datatype'),
-		      http_param ('op'));
+		      'eq' --http_param ('op')
+		      );
     fct_dbg_msg (sprintf ('select_value: iri=%s, val=%s',
                           cast (http_param('iri') as varchar),
                           cast (http_param('val') as varchar)));
