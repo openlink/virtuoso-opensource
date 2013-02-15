@@ -357,7 +357,7 @@ fct_query_info (in tree any,
                        fct_s_term (),
                        new_s), txt);
 
-      fct_query_info_1 (tree, new_s, max_s, ctx, level, txt, cno);
+      fct_query_info_1 (tree, new_s, max_s, level, ctx, txt, cno);
       http ('</li>\n', txt);
     }
   if ('value' = n)
