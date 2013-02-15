@@ -5663,7 +5663,9 @@ sqlo_trans_placeable (sqlo_t * so, op_table_t * ot, df_elt_t * dfe, int * any_tr
   if (!in_cols)
     flag |= TN_FWD;
   if (!out_cols)
-    flag |= TN_FWD;
+    flag |= TN_BWD;
+  if (3 == trans->_.trans.direction   && flag != (TN_FWD | TN_BWD))
+    return 0;
   return flag;
 }
 
