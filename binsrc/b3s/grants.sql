@@ -52,4 +52,4 @@ grant execute on DB.DBA.DAV_SEARCH_PATH to "SPARQL_SELECT";
 grant execute on DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ to "SPARQL_SELECT";
 grant execute on DB.DBA.fct_do_desc_rset to "SPARQL_SELECT";
 grant execute on b3s_lbl_order to "SPARQL_SELECT";
-grant execute on RDF_SPONGE_AUTH to "SPARQL_SELECT";
+grant execute on DB.DBA.RDF_SPONGE_AUTH to "SPARQL_SELECT";

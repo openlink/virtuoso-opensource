@@ -159,11 +159,11 @@
         </cond-range>
       </xsl:if>
 
-      <xsl:if test="$op = 'cond' and
+      <xsl:if test="$op = 'cond' and 
 	            $pos = count (./ancestor::*[name () = 'query' or
 		                                name () = 'property' or
 			                        name () = 'property-of']) +
-                           count (./preceding::*[name () = 'query' or
+                           count (./ancestor-or-self::*/preceding-sibling::*/descendant-or-self::*[name () = 'query' or
 			                         name () = 'property' or
 				                 name () = 'property-of'])">
         <xsl:choose>
