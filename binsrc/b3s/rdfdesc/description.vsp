@@ -186,12 +186,22 @@ again:
   sp_accept := get_keyword ('sponger:accept', params, '');
   if (length (sp_accept))
     sp_accept := 'define get:accept "' || sp_accept || '"';
+  -- check ACL
+  if (get_keyword ('sp', params) = '1' or get_keyword ('sr', params) is not null or get_keyword ('sponger:get', params) is not null)
+    if (__proc_exists ('DB.DBA.RDF_SPONGE_AUTH') is not null and 0 = DB.DBA.RDF_SPONGE_AUTH ('Virtuoso Sponger'))
+      {
+        http_rewrite ();
+        http_status_set (403);
+        http ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">');
+        http (sprintf ('<html><body>Use of this service is not allowed for your current WebID: %V</body></html>', connection_get ('WebID', '<none>')));
+        return;  
+      } 
   if (get_keyword ('sp', params) = '1' and 0 = length (_F))
     {
       EXEC (sprintf ('sparql define input:storage "" define get:soft "add" SELECT * from <%S> where { ?x ?y ?z . }', doc));
       DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
     }
-  else if ((get_keyword ('sr', params) is not null or get_keyword ('sponger:get', params) is not null or length (sp_accept) > 0) and 0 = length (_F))
+  else if ((get_keyword ('sr', params) is not null or get_keyword ('sponger:get', params) is not null) and 0 = length (_F))
     {
       declare refr varchar;
       if (get_keyword ('sr', params, '') = 'clean')
