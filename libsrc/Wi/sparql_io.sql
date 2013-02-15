@@ -1380,9 +1380,31 @@ create procedure DB.DBA.SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, ino
             }
           http(newline || '    <td>', ses);
           if (isiri_id (val))
-            http_escape (id_to_iri (val), esc_mode, ses, 1, 1);
+            {
+              if (is_js or is_bnode_iri_id (val))
+                http_escape (id_to_iri (val), esc_mode, ses, 1, 1);
+              else
+                {
+                  http ('<a href="', ses);
+                  http_escape (id_to_iri (val), 3, ses, 1, 1);
+                  http ('">', ses);
+                  http_escape (id_to_iri (val), esc_mode, ses, 1, 1);
+                  http ('</a>', ses);
+                }
+            }
           else if (isstring (val) and (1 = __box_flags (val)))
-            http_escape (val, esc_mode, ses, 1, 1);
+            {
+              if (is_js or val='' or (val[0]=95) or (val like 'nodeID://%'))
+                http_escape (val, esc_mode, ses, 1, 1);
+              else
+                {
+                  http ('<a href="', ses);
+                  http_escape (val, 3, ses, 1, 1);
+                  http ('">', ses);
+                  http_escape (val, esc_mode, ses, 1, 1);
+                  http ('</a>', ses);
+                }
+            }
           else if (__tag of varchar = __tag (val))
             {
               http_escape (val, esc_mode, ses, 1, 1);
