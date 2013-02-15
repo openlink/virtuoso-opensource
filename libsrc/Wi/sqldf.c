@@ -340,6 +340,9 @@ sqlo_select_deps (sqlo_t * so, df_elt_t * from_dfe)
 	  df_elt_t *dt_dfe = sqlo_df (so, ot->ot_dt);
 	  set = t_set_union (dt_dfe->dfe_tables, set);
 	}
+      DO_SET (df_elt_t *, jp, &ot->ot_join_preds)
+	set = t_set_union (set, jp->dfe_tables);
+      END_DO_SET();
     }
   END_DO_SET();
   set = t_set_diff (set, ot->ot_from_ots);
