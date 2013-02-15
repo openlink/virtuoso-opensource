@@ -648,7 +648,7 @@ b3s_trunc_uri (in s varchar, in maxlen int := 80)
 create procedure
 b3s_http_url (in url varchar, in sid varchar := null, in _from varchar := null)
 {
-  declare host, pref, more, i varchar;
+  declare host, pref, more, i, wurl varchar;
 
 --  more := '';
 
@@ -660,8 +660,8 @@ b3s_http_url (in url varchar, in sid varchar := null, in _from varchar := null)
   i := b3s_render_ses_params();
   if (length (_from))
     i := sprintf ('%s&graph=%U', i, _from);
-
-  return sprintf ('/describe/?url=%U%s', url, i);
+  wurl := charset_recode (url, 'UTF-8', '_WIDE_');
+  return sprintf ('/describe/?url=%U%s', case when wurl <> 0 then wurl else url end, i);
 };
 
 create procedure
