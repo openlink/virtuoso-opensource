@@ -188,7 +188,7 @@ declare exit handler for sqlstate '*'
 
   http('  </div>\n');
   http('  </div>\n');
-  http('  <div class="btn_bar"><button onclick="document.location=''/fct/facet.vsp?qq=ww''">New Search</button></div>\n');
+  http('  <div class="btn_bar"><button onclick="document.location=''/fct/facet.vsp''">New Search</button></div>\n');  
   http('</div>\n');
 
   goto footer;

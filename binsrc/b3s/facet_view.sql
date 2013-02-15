@@ -853,7 +853,7 @@ fct_pretty_sparql (in q varchar, in lev int := 0)
 create procedure
 fct_web (in tree any)
 {
-  declare sqls, msg, tp varchar;
+  declare sqls, msg, tp, agg, agg_qr, agg_res varchar;
   declare start_time int;
   declare reply, md, res, qr, qr2, txt any;
   declare p_qry varchar;
@@ -878,6 +878,24 @@ fct_web (in tree any)
 
   p_qry := fct_query (tree, 1); -- get "plain" query text
   p_qry := fct_pretty_sparql (p_qry);
+  agg := cast (xpath_eval('/query/@agg', tree) as varchar);
+
+  agg_res := null;
+  if (length (agg))
+    {
+      declare state, message, dta any;
+      agg_qr := 'sparql ' || fct_agg_query (tree, agg);
+      state := '00000';
+      exec (agg_qr, state, message, vector (), 0, null, dta);
+      dbg_obj_print (dta);
+      if (state = '00000') agg_res := dta[0][0];
+      else -- wrong query
+        {
+	  tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_agg.xsl', tree, vector ('agg', ''));
+	  update fct_state set fct_state = tree where fct_sid = connection_get ('sid');
+	  commit work;
+	}
+    }
 
 --  dbg_obj_print (reply);
 
@@ -947,7 +965,9 @@ fct_web (in tree any)
                             'addthis_key',
                             _addthis_key,
                             'tree',
-                            tree
+                            tree,
+			    'agg_res',
+			    agg_res
 			    )),
 	      null, txt);
 
@@ -1228,6 +1248,8 @@ fct_set_class (in tree any,
 {
   declare pos int;
 
+  pos := fct_view_pos (tree);
+
   fct_dbg_msg (sprintf ('fct_set_class: sid: %d, iri: %s, pos: %d', sid, iri, pos));
 
   tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl',
@@ -1486,7 +1508,7 @@ fct_create_ses ()
 
   sid := sequence_next ('fct_seq');
   new_tree := xtree_doc('<?xml version="1.0" encoding="UTF-8"?>\n' ||
-                        '<query inference="" same-as="" view3="" s-term="" c-term=""/>');
+                        '<query inference="" same-as="" view3="" s-term="" c-term="" agg=""/>');
 
   insert into fct_state (fct_sid, fct_state)
          values (sid, new_tree);
@@ -1775,6 +1797,18 @@ fct_open_iri (in tree any, in sid int, in iri varchar)
 create procedure
 fct_refresh (in tree any)
 {
+  fct_web (tree);
+}
+;
+
+create procedure 
+fct_set_agg (in tree any, in sid varchar)
+{
+  declare agg any;
+  agg := http_param ('agg');
+  tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_agg.xsl', tree, vector ('agg', agg));
+  update fct_state set fct_state = tree where fct_sid = sid;
+  commit work;
   fct_web (tree);
 }
 ;
@@ -2389,6 +2423,8 @@ exec:;
     }
   else if ('set_inf' = cmd)
     fct_set_inf (tree, sid);
+  else if ('set_agg' = cmd)
+    fct_set_agg (tree, sid);
   else if ('select_value' = cmd) {
     fct_select_value (tree,
     		      sid,

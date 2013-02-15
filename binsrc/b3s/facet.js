@@ -826,6 +826,9 @@ function fct_init_ui ()
                 geo_ui.show(); */
 	    }
         });
+	OAT.Event.attach('agg_type', 'change', function (e) {
+	  $('agg_form').submit();
+	});
     }
 }
 

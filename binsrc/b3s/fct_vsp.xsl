@@ -43,6 +43,7 @@
 <xsl:param name="tree"/>
 <xsl:param name="addthis_key"/>
 <xsl:param name="type"/>
+<xsl:param name="agg_res"/>
 
 <xsl:variable name="view-type">
   <xsl:choose>
@@ -547,6 +548,19 @@
     <div id="in_ctr" style="display:none"></div>
     <div id="geo_ctr" style="display:none"></div>
   </form>
+  <form id="agg_form">
+      <input type="hidden" name="sid"><xsl:attribute name="value"><xsl:value-of select="$sid"/></xsl:attribute></input>
+    <input type="hidden" name="cmd" value="set_agg" id="set_agg"/>
+      Show aggregate: 
+    <select id="agg_type" name="agg">
+      <option value="">None</option>
+      <option value="SUM"><xsl:if test="$tree//query/@agg = 'SUM'"><xsl:attribute name="selected">1</xsl:attribute></xsl:if>Sum</option>
+      <option value="AVG"><xsl:if test="$tree//query/@agg = 'AVG'"><xsl:attribute name="selected">1</xsl:attribute></xsl:if>Avg</option>
+      <option value="MIN"><xsl:if test="$tree//query/@agg = 'MIN'"><xsl:attribute name="selected">1</xsl:attribute></xsl:if>Min</option>
+      <option value="MAX"><xsl:if test="$tree//query/@agg = 'MAX'"><xsl:attribute name="selected">1</xsl:attribute></xsl:if>Max</option>
+    </select>
+    <span id="agg_val"><xsl:value-of select="$agg_res"/></span>
+  </form> 
 </xsl:if>
 
 <xsl:call-template name="render-init-func">
