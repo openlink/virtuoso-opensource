@@ -375,6 +375,8 @@ again:
     <ul id="main_menu">
       <?vsp if (sid is not null) { ?>
         <li><a href="<?= b3s_render_fct_link() ?>">Facets</a></li>
+      <?vsp } else { ?>
+      <li><a href="/fct/">Facets (new session)</a></li>
       <?vsp } ?>
       <li id="mnu_descr" class="sel"><a href="/describe/?uri=<?V _S ?><?V ses_parms ?>" class="sel">Description</a></li>
       <li id="mnu_usage">

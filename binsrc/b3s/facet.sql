@@ -917,6 +917,14 @@ fct_literal (in tree any)
   if (dtp = 'http://www.openlinksw.com/schemas/facets/dtp/plainstring')
     return sprintf ('"""%s"""', val);
 
+  if (val like '"%"^^<uri>')
+    {
+      declare arr any;
+      arr := sprintf_inverse (val, '"%s"^^<uri>', 0);
+      if (length (arr) > 0)
+	return sprintf ('<%s>', arr[0]);
+    }
+
   if (dtp = '' or dtp is null or dtp like '%nteger' or dtp like '%ouble' or dtp like '%loat' or dtp like '%nt')
     return val;
 
@@ -1341,7 +1349,7 @@ fct_text (in tree any,
 create procedure
 fct_chk_any_prop (in tree any, inout this_s int, inout max_s int, in txt any)
 {
-  if (0 = xpath_eval ('count (./ancestor::*[name()=''property''])+ count(./ancestor::*[name()=''property-of''])', tree, 1))
+  if (0 = xpath_eval ('count (./ancestor::*[name()=''property''])+ count(./ancestor::*[name()=''property-of'']) + count(./preceding::*[name()=''class'']) ', tree, 1))
     {
       declare dtp varchar;
       dtp := xpath_eval ('./@dtp', tree, 1);
