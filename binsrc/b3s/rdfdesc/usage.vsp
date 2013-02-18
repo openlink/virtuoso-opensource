@@ -147,18 +147,18 @@
       <?vsp if (sid is not null) { ?>
         <li><a href="<?= b3s_render_fct_link() ?>">Facets</a></li>
       <?vsp } ?>
-      <li id="mnu_descr"><a href="/describe/?uri=<?U page_resource_uri ?><?V ses_parms ?>">Description</a></li>
+      <li id="mnu_descr"><a href="/describe/?uri=<?U b3s_u2w (page_resource_uri) ?><?V ses_parms ?>">Description</a></li>
       <li id="mnu_usage" class="sel">
         <a href="#" class="sel">Metadata</a>
       </li>
-      <li id="mnu_settings"><a href="settings.vsp?g=<?U page_resource_uri ?><?V ses_parms ?>">Settings</a></li>
+      <li id="mnu_settings"><a href="settings.vsp?g=<?U b3s_u2w (page_resource_uri) ?><?V ses_parms ?>">Settings</a></li>
     </ul>
 
   </div> <!-- #HD -->
   <div id="MD">
     <div class="page_resource_info">
       <h2>Usage stats on <a href="<?= case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end ?>">
-        <?vsp http (sprintf ('%s', label)); ?></a></h2>&nbsp;<a class="desc_permalink" href="usage.vsp?g=<?U page_resource_uri ?>">Permalink</a>
+        <?vsp http (sprintf ('%s', label)); ?></a></h2>&nbsp;<a class="desc_permalink" href="usage.vsp?g=<?U b3s_u2w (page_resource_uri) ?>">Permalink</a>
       <p> an Entity in Data Space: <a href="http://<?V host ?>"><?V host ?></a></p>
     </div>
     <div class="subj_nav">

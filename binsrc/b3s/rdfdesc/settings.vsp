@@ -45,11 +45,11 @@
         <?vsp if (sid is not null) { ?>
           <li><a href="<?= b3s_render_fct_link() ?>">Facets</a></li>
         <?vsp } ?>
-        <li id="mnu_descr"><a href="/describe/?uri=<?U _S ?><?V ses_parms ?>">Description</a></li>
+        <li id="mnu_descr"><a href="/describe/?uri=<?U b3s_u2w (_S) ?><?V ses_parms ?>">Description</a></li>
         <li id="mnu_usage" class="sel">
-          <a href="usage.vsp?g=<?U _S ?><?V ses_parms ?>">Metadata</a>
+          <a href="usage.vsp?g=<?U b3s_u2w (_S) ?><?V ses_parms ?>">Metadata</a>
         </li>
-        <li id="mnu_settings"><a href="settings.vsp?uri=<?V page_resource_uri ?><?V ses_parms ?>">Settings</a></li>
+        <li id="mnu_settings"><a href="settings.vsp?uri=<?V b3s_u2w (page_resource_uri) ?><?V ses_parms ?>">Settings</a></li>
       </ul>
 
     </div> <!-- #HD -->

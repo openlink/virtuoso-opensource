@@ -664,6 +664,14 @@ b3s_http_url (in url varchar, in sid varchar := null, in _from varchar := null)
   return sprintf ('/describe/?url=%U%s', case when wurl <> 0 then wurl else url end, i);
 };
 
+create procedure b3s_u2w (in u any)
+{
+  declare w any;
+  w := charset_recode (u, 'UTF-8', '_WIDE_');
+  return case when w <> 0 then w else u end;
+}
+;
+
 create procedure
 b3s_http_print_l (in p_text any, inout odd_position int, in r int := 0, in sid varchar := null, in langs any := null)
 {

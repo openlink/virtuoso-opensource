@@ -331,7 +331,7 @@ again:
 
   declare plink_href varchar;
 
-  plink_href := sprintf ('/describe/?url=%U', page_resource_uri);
+  plink_href := sprintf ('/describe/?url=%U', b3s_u2w (page_resource_uri));
 
   if (page is not null and page > 0)
     {
