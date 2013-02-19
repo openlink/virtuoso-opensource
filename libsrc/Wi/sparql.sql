@@ -1011,6 +1011,7 @@ create function rdf_geo_set_id (inout v any)
   return null;
 }
 ;
+
 create function DB.DBA.RDF_OBJ_ADD (in dt_twobyte integeR, in v varchar, in lang_twobyte integeR, in ro_id_dict any := null) returns varchar
 {
   declare llong, id, need_digest integer;
@@ -14177,7 +14178,7 @@ create function DB.DBA.RDF_GRAPH_USER_PERMS_GET (in graph_iri varchar, in uid an
   declare res integer;
   graph_iid := iri_to_id (graph_iri);
   if (isstring (uid))
-    uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uid and (U_NAME='nobody' or U_SQL_ENABLE));
+    uid := ((select U_ID from DB.DBA.SYS_USERS where U_NAME = uid and (U_NAME='nobody' or (U_SQL_ENABLE and not U_ACCOUNT_DISABLED))));
   if (uid is null)
     return 0;
   if (uid = 0)
