@@ -51,20 +51,22 @@ extern "C" {
 \c trav_env_this is not used.
 \c common_env points to dk_set_t of collected distinct variable names. */
 int
-sparp_gp_trav_list_expn_retvals (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
+sparp_gp_trav_list_expn_retval_names (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   caddr_t varname;
-  if (SPAR_VARIABLE != curr->type)
-    return 0;
-  varname = curr->_.var.vname;
-  if (!SPART_VARNAME_IS_NICE_RETVAL (varname, ((dk_set_t *)(common_env))[0]))
-    return SPAR_GPT_NODOWN;
-  t_set_push ((dk_set_t *)(common_env), varname);
+  switch (curr->type)
+    {
+    case SPAR_VARIABLE: varname = curr->_.var.vname; break;
+    case SPAR_ALIAS: varname = curr->_.alias.aname; break;
+    default: return 0;
+    }
+  if (SPART_VARNAME_IS_NICE_RETVAL (varname, ((dk_set_t *)(common_env))[0]))
+    t_set_push_new_string ((dk_set_t *)(common_env), varname);
   return SPAR_GPT_NODOWN;
 }
 
 int
-sparp_gp_trav_list_subquery_retvals (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
+sparp_gp_trav_list_subquery_retval_names (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   int ctr;
   SPART **options = curr->_.gp.options;
@@ -82,7 +84,7 @@ sparp_gp_trav_list_subquery_retvals (sparp_t *sparp, SPART *curr, sparp_trav_sta
               default: name = NULL;
             }
           if (SPART_VARNAME_IS_NICE_RETVAL (name, ((dk_set_t *)(common_env))[0]))
-            t_set_push ((dk_set_t *)(common_env), name);
+            t_set_push_new_string ((dk_set_t *)(common_env), name);
         }
       END_DO_BOX_FAST;
       for (ctr = BOX_ELEMENTS_0 (options); 1 < ctr; ctr -= 2)
@@ -96,7 +98,7 @@ sparp_gp_trav_list_subquery_retvals (sparp_t *sparp, SPART *curr, sparp_trav_sta
             case T_STEP_L: name = val->_.alias.aname; break;
             }
           if (SPART_VARNAME_IS_NICE_RETVAL (name, ((dk_set_t *)(common_env))[0]))
-            t_set_push ((dk_set_t *)(common_env), name);
+            t_set_push_new_string ((dk_set_t *)(common_env), name);
         }
     }
   if (VALUES_L == curr->_.gp.subtype)
@@ -105,7 +107,7 @@ sparp_gp_trav_list_subquery_retvals (sparp_t *sparp, SPART *curr, sparp_trav_sta
         {
           caddr_t name = retval->_.var.vname;
           if (SPART_VARNAME_IS_NICE_RETVAL (name, ((dk_set_t *)(common_env))[0]))
-            t_set_push ((dk_set_t *)(common_env), name);
+            t_set_push_new_string ((dk_set_t *)(common_env), name);
         }
       END_DO_BOX_FAST;
     }
@@ -238,8 +240,8 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
           dk_set_t names_in_groupings = NULL;
           sparp_gp_localtrav_treelist (sparp, query->_.req_top.groupings,
             NULL, &names_in_groupings,
-            sparp_gp_trav_list_subquery_retvals, NULL,
-            sparp_gp_trav_list_expn_retvals, NULL, NULL,
+            sparp_gp_trav_list_subquery_retval_names, NULL,
+            sparp_gp_trav_list_expn_retval_names, NULL, NULL,
             NULL );
           while (NULL != lnar.names)
             {
@@ -262,8 +264,8 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
     sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
     memset (stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
     sparp_gp_trav_int (sparp, query->_.req_top.pattern, stss+1, &(lnar.names),
-      sparp_gp_trav_list_subquery_retvals, NULL,
-      sparp_gp_trav_list_expn_retvals, NULL, NULL,
+      sparp_gp_trav_list_subquery_retval_names, NULL,
+      sparp_gp_trav_list_expn_retval_names, NULL, NULL,
       NULL );
   }
   if (((SPART **)_STAR == retvals) && (NULL == lnar.names) && env->spare_signal_void_variables)
