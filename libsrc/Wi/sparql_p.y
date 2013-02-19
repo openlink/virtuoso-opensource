@@ -862,6 +862,21 @@ spar_construct_query	/* [6]	ConstructQuery	 ::=  'CONSTRUCT' ConstructTemplate D
 		fmt_mode_name = $$->_.req_top.formatmode_name;
 		ssg_find_formatter_by_name_and_subtype (fmt_mode_name, CONSTRUCT_L, &formatter, &agg_formatter, &agg_mdata);
 		spar_compose_retvals_of_construct (sparp_arg, $$, $4, formatter, agg_formatter, agg_mdata); }
+	| CONSTRUCT_L WHERE_L _LBRA {
+		sparp_arg->sparp_allow_aggregates_in_expn &= ~1;
+		spar_gp_init (sparp_arg, WHERE_L); }
+	    spar_gp _RBRA spar_solution_modifier {
+		const char *fmt_mode_name;
+		const char *formatter, *agg_formatter, *agg_mdata;
+		SPART *where_gp = spar_gp_finalize (sparp_arg, NULL);
+		SPART *wm = $7;
+		SPART *tmpl_gp;
+		wm->_.wm.where_gp = where_gp;
+		$$ = spar_make_top_or_special_case_from_wm (sparp_arg, CONSTRUCT_L, NULL, wm );
+		fmt_mode_name = $$->_.req_top.formatmode_name;
+		ssg_find_formatter_by_name_and_subtype (fmt_mode_name, CONSTRUCT_L, &formatter, &agg_formatter, &agg_mdata);
+		tmpl_gp = spar_compose_ctor_gp_from_where_gp (sparp_arg, CONSTRUCT_L, where_gp, NULL);
+		spar_compose_retvals_of_construct (sparp_arg, $$, tmpl_gp, formatter, agg_formatter, agg_mdata); }
 	;
 
 spar_describe_query	/* [7]*	DescribeQuery	 ::=  'DESCRIBE' ( ( Var | IRIref | Backquoted | ( '(' Expn ')' ) )+ | '*' )

@@ -913,6 +913,8 @@ extern SPART *spar_simplify_graph_to_patch (sparp_t *sparp, SPART *g);
 extern void spar_compose_retvals_of_construct (sparp_t *sparp, SPART *top, SPART *ctor_gp, const char *formatter, const char *agg_formatter, const char *agg_mdata);
 extern void spar_compose_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top, SPART *graph_to_patch, SPART *ctor_gp);
 extern void spar_compose_retvals_of_modify (sparp_t *sparp, SPART *top, SPART *graph_to_patch, SPART *del_ctor_gp, SPART *ins_ctor_gp);
+extern void spar_compose_ctor_triples_from_where_gp (sparp_t *sparp, int subtype, SPART *gp, SPART *g, dk_set_t *ret_tmpls);
+extern SPART *spar_compose_ctor_gp_from_where_gp (sparp_t *sparp, int subtype, SPART *where_gp, SPART *gtp);
 extern void spar_compose_retvals_of_delete_from_wm (sparp_t *sparp, SPART *tree, SPART *graph_to_patch);
 extern int spar_optimize_delete_of_single_triple_pattern (sparp_t *sparp, SPART *top);
 extern void spar_optimize_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top);
