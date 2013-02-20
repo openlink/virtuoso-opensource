@@ -2418,9 +2418,9 @@ dbg_print_box_aux (caddr_t object, FILE * out, dk_hash_t *known)
             {
               iri_id_t iid = unbox_iri_id (object);
 	      if (iid >= MIN_64BIT_BNODE_IRI_ID)
-	        fprintf (out, "#ib" BOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
+	        fprintf (out, "#ib" IIDBOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
               else
-	        fprintf (out, "#i" BOXINT_FMT, (boxint)(iid));
+	        fprintf (out, "#i" IIDBOXINT_FMT, (boxint)(iid));
               break;
             }
         case DV_RDF:
@@ -2610,9 +2610,9 @@ row_map_fprint (FILE * out, buffer_desc_t * buf, db_buf_t row, dbe_key_t * key)
 	    ROW_INT_COL (buf, row, rv, (*cl), LONG_REF, iid);
 
             if (iid >= MIN_64BIT_BNODE_IRI_ID)
-	      fprintf (out, " #ib" BOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
+	      fprintf (out, " #ib" IIDBOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
             else
-	      fprintf (out, " #i" BOXINT_FMT, (boxint)(iid));
+	      fprintf (out, " #i" IIDBOXINT_FMT, (boxint)(iid));
 	    col_comp_print (out, key, row, cl);
             break;
           }
@@ -2631,9 +2631,9 @@ row_map_fprint (FILE * out, buffer_desc_t * buf, db_buf_t row, dbe_key_t * key)
             iri_id_t iid;
 	    ROW_INT_COL (buf, row, rv, (*cl), INT64_REF, iid);
             if (iid >= MIN_64BIT_BNODE_IRI_ID)
-	      fprintf (out, " #ib" BOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
+	      fprintf (out, " #ib" IIDBOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
             else
-	      fprintf (out, " #i" BOXINT_FMT, (boxint)(iid));
+	      fprintf (out, " #i" IIDBOXINT_FMT, (boxint)(iid));
 	    col_comp_print (out, key, row, cl);
             break;
           }

@@ -974,6 +974,8 @@ ttlp_uri_resolve (ttlp_t *ttlp_arg, caddr_t qname)
 {
   /*query_instance_t *qi = ttlp_arg[0].ttlp_tf->tf_qi;*/
   caddr_t res, err = NULL;
+  if (('_' == qname[0]) && (':' == qname[1]))
+    return qname;
   res = rfc1808_expand_uri (/*qi,*/ ttlp_arg[0].ttlp_tf->tf_base_uri, qname, "UTF-8", 1 /* ??? */, "UTF-8", "UTF-8", &err);
   if (res != qname)
     dk_free_box (qname);
@@ -2548,9 +2550,9 @@ bif_iri_to_id_repl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
           sqlr_new_error ("22023", "SR626", "The argument of iri_to_id_repl() is an IRI_ID of URI");
 #if 0
         if (iid >= MIN_64BIT_BNODE_IRI_ID)
-          tmp_name = box_sprintf (40, "_:rr_b" BOXINT_FMT, (boxint)(iid - MIN_64BIT_BNODE_IRI_ID));
+          tmp_name = box_sprintf (40, "_:rr_b" IIDBOXINT_FMT, (boxint)(iid - MIN_64BIT_BNODE_IRI_ID));
         else
-          tmp_name = box_sprintf (40, "_:rr" BOXINT_FMT, (boxint)iid);
+          tmp_name = box_sprintf (40, "_:rr" IIDBOXINT_FMT, (boxint)iid);
         res = canon_iri_to_id ((query_instance_t *)qst, tmp_name, IRI_TO_ID_WITH_CREATE, &err);
         dk_free_box (tmp_name);
         if (NULL != err)
@@ -2596,7 +2598,7 @@ bif_iri_canonicalize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
           if (canon_name != raw_name)
             dk_free_tree (canon_name);
           if (!iri)
-            sqlr_new_error ("22023", "SR626", "Can not canonicalize unknown IRI ID " BOXINT_FMT, (boxint)(iid));
+            sqlr_new_error ("22023", "SR626", "Can not canonicalize unknown IRI ID " IIDBOXINT_FMT, (boxint)(iid));
           return iri;
         }
     }

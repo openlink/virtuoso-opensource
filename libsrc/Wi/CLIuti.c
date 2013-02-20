@@ -2214,9 +2214,9 @@ dv_to_str_place (caddr_t it, dtp_t dtp, SQLLEN max, caddr_t place,
         {
           iri_id_t iid = unbox_iri_id (it);
           if (iid >= MIN_64BIT_BNODE_IRI_ID)
-	    snprintf (temp, sizeof (temp), "#ib" BOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
+	    snprintf (temp, sizeof (temp), "#ib" IIDBOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
           else
-	    snprintf (temp, sizeof (temp), "#i" BOXINT_FMT, (boxint)(iid));
+	    snprintf (temp, sizeof (temp), "#i" IIDBOXINT_FMT, (boxint)(iid));
           break;
         }
 

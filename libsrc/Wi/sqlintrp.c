@@ -1375,9 +1375,9 @@ box_err_print_box (caddr_t param_value, int call_depth)
       {
         iri_id_t iid = unbox_iri_id (param_value);
         if (iid >= MIN_64BIT_BNODE_IRI_ID)
-          return box_sprintf (30, "#ib" BOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
+          return box_sprintf (30, "#ib" IIDBOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
         else
-          return box_sprintf (30, "#i" BOXINT_FMT, (boxint)(iid));
+          return box_sprintf (30, "#i" IIDBOXINT_FMT, (boxint)(iid));
       }
     case DV_REFERENCE:
       {

@@ -347,7 +347,11 @@ xp_rdfxml_resolve_iri_avalue (xparse_ctx_t *xp, const char *avalue, int is_id_at
       strcpy (local+1, avalue);
     }
   else
-    local = box_dv_short_string (avalue);
+    {
+      local = box_dv_short_string (avalue);
+      if (('_' == local[0]) && (':' == local[1]))
+        return local;
+    }
 #if 1
   res = rfc1808_expand_uri (xp->xp_rdfxml_locals->xrl_base, local,
     NULL /*output_cs_name*/, 0, NULL /*base_string_cs_name*/, NULL /*rel_string_cs_name*/, &err);
@@ -1029,7 +1033,9 @@ xp_expand_relative_uri (caddr_t base, caddr_t *relative_ptr)
   caddr_t relative = relative_ptr[0];
   caddr_t expanded;
   caddr_t err = NULL;
-  if ((NULL == base) || ('\0' == base[0]) || (NULL == relative) || (DV_IRI_ID == DV_TYPE_OF (relative)) || !strncmp (relative, "http://", 7))
+  if ((NULL == base) || ('\0' == base[0])
+    || (NULL == relative) || (DV_IRI_ID == DV_TYPE_OF (relative)) || !strncmp (relative, "http://", 7)
+    || !strncmp (relative, "_:", 2) )
     return;
   expanded = rfc1808_expand_uri (/*xn->xn_xp->xp_qi,*/ base, relative, "UTF-8", 0, "UTF-8", "UTF-8", &err);
   if (NULL != err)

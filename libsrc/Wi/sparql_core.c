@@ -5349,13 +5349,13 @@ spar_make_literal_from_sql_box (sparp_t * sparp, caddr_t box, int mode)
         SPART *res;
         if (0L == iid)
           return NULL;
-        if (iid >= min_bnode_iri_id ())
+        if ((iid >= min_bnode_iri_id ()) && (iid < min_named_bnode_iri_id ()))
           {
             caddr_t t_iri;
             if (iid >= MIN_64BIT_BNODE_IRI_ID)
-              t_iri = t_box_sprintf (31, "nodeID://b" BOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
+              t_iri = t_box_sprintf (31, "nodeID://b" IIDBOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
             else
-              t_iri = t_box_sprintf (30, "nodeID://" BOXINT_FMT, (boxint)(iid));
+              t_iri = t_box_sprintf (30, "nodeID://" IIDBOXINT_FMT, (boxint)(iid));
             return spartlist (sparp, 2, SPAR_QNAME, t_box_dv_uname_string (t_iri));
           }
         iri = (caddr_t)sparp_id_to_iri (sparp, iid);

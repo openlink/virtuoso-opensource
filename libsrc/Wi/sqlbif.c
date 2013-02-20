@@ -9264,9 +9264,9 @@ do_long_string:
 		{
 		  iri_id_t iid = unbox_iri_id (data);
                   if (iid >= MIN_64BIT_BNODE_IRI_ID)
-                    snprintf (tmp, sizeof (tmp), "#ib" BOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
+                    snprintf (tmp, sizeof (tmp), "#ib" IIDBOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
                   else
-                    snprintf (tmp, sizeof (tmp), "#i" BOXINT_FMT, (boxint)(iid) );
+                    snprintf (tmp, sizeof (tmp), "#i" IIDBOXINT_FMT, (boxint)(iid) );
 		  break;
 		}
 	case DV_GEO:

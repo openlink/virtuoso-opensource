@@ -47,17 +47,17 @@ extern int key_id_to_namespace_and_local (query_instance_t *qi, iri_id_t iid, ca
 extern caddr_t xsd_type_of_box (caddr_t arg);
 /*! Casts \c new_val to some datatype appropriate for XPATH/XSLT and stores in an XSLT variable value or XQI slot passed as an address to free and set */
 extern void rb_cast_to_xpath_safe (query_instance_t *qi, caddr_t new_val, caddr_t *retval_ptr);
-extern boxint bnode_t_treshold;
+extern iri_id_t bnode_t_treshold;
 #ifndef NDEBUG
-#define BNODE_FMT_IMPL(fn,arg1,pfx,iid) (((iid) >= bnode_t_treshold) ? \
-  (fn) ((arg1), pfx "t" BOXINT_FMT, (boxint)((iid)-bnode_t_treshold)) : \
-  (((iid) >= MIN_64BIT_BNODE_IRI_ID) ? \
-    (fn) ((arg1), pfx "b" BOXINT_FMT, (boxint)((iid)-MIN_64BIT_BNODE_IRI_ID)) : \
-    (fn) ((arg1), pfx BOXINT_FMT, (boxint)(iid)) ) )
+#define BNODE_FMT_IMPL(fn,arg1,pfx,iid) (((iri_id_t)(iid) >= bnode_t_treshold) ? \
+  (fn) ((arg1), pfx "t" IIDBOXINT_FMT, (boxint)((iri_id_t)(iid) - bnode_t_treshold)) : \
+  (((iri_id_t)(iid) >= MIN_64BIT_BNODE_IRI_ID) ? \
+    (fn) ((arg1), pfx "b" IIDBOXINT_FMT, (boxint)((iri_id_t)(iid)-MIN_64BIT_BNODE_IRI_ID)) : \
+    (fn) ((arg1), pfx IIDBOXINT_FMT, (boxint)((iri_id_t)(iid))) ) )
 #else
-#define BNODE_FMT_IMPL(fn,arg1,pfx,iid) (((iid) >= MIN_64BIT_BNODE_IRI_ID) ? \
-  (fn) ((arg1), pfx "b" BOXINT_FMT, (boxint)((iid)-MIN_64BIT_BNODE_IRI_ID)) : \
-  (fn) ((arg1), pfx BOXINT_FMT, (boxint)(iid)) )
+#define BNODE_FMT_IMPL(fn,arg1,pfx,iid) (((iri_id_t)(iid) >= MIN_64BIT_BNODE_IRI_ID) ? \
+  (fn) ((arg1), pfx "b" IIDBOXINT_FMT, (boxint)((iri_id_t)(iid)-MIN_64BIT_BNODE_IRI_ID)) : \
+  (fn) ((arg1), pfx IIDBOXINT_FMT, (boxint)((iri_id_t)(iid))) )
 #endif
 
 

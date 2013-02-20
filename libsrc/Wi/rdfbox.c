@@ -1523,7 +1523,7 @@ bif_rdf_sqlval_of_obj (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
             {
               iri = key_id_to_iri (qi, iid);
               if (NULL == iri)
-                sqlr_new_error ("RDFXX", ".....", "IRI ID " BOXINT_FMT " does not match any known IRI in __rdf_sqlval_of_obj()",
+                sqlr_new_error ("RDFXX", ".....", "IRI ID " IIDBOXINT_FMT " does not match any known IRI in __rdf_sqlval_of_obj()",
                   (boxint)iid );
             }
 	  box_flags (iri) = BF_IRI;
@@ -1580,7 +1580,7 @@ bif_rdf_strsqlval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
             {
               res = key_id_to_iri (qi, iid);
               if (NULL == res)
-                sqlr_new_error ("RDFXX", ".....", "IRI ID " BOXINT_FMT " does not match any known IRI in __rdf_strsqlval_of_obj()",
+                sqlr_new_error ("RDFXX", ".....", "IRI ID " IIDBOXINT_FMT " does not match any known IRI in __rdf_strsqlval_of_obj()",
                   (boxint)iid );
             }
           box_flags (res) = (set_bf_iri ? BF_IRI : BF_UTF8);
@@ -4180,7 +4180,7 @@ sparql_rset_xml_write_row_impl (query_instance_t *qi, dk_session_t *ses, caddr_t
                     if (NULL == iri)
                       {
                         char buf[50];
-                        snprintf (buf, sizeof (buf), "bad://" BOXINT_FMT, (boxint)(ptrlong)iri);
+                        snprintf (buf, sizeof (buf), "bad://" IIDBOXINT_FMT, (boxint)(ptrlong)iri);
                         SES_PRINT (ses, buf);
                       }
                     else
@@ -4201,7 +4201,7 @@ sparql_rset_xml_write_row_impl (query_instance_t *qi, dk_session_t *ses, caddr_t
                 if (NULL == iri)
                   {
                     char buf[50];
-                    snprintf (buf, sizeof (buf), "bad://" BOXINT_FMT, (boxint)(ptrlong)iri);
+                    snprintf (buf, sizeof (buf), "bad://" IIDBOXINT_FMT, (boxint)(ptrlong)iri);
                     SES_PRINT (ses, buf);
                   }
                 else
@@ -4792,9 +4792,9 @@ assertion_failed:
         {
           char tmp[40];
           if (graph_iid >= MIN_64BIT_BNODE_IRI_ID)
-            snprintf (tmp, sizeof (tmp), "#ib" BOXINT_FMT, (boxint)(graph_iid-MIN_64BIT_BNODE_IRI_ID));
+            snprintf (tmp, sizeof (tmp), "#ib" IIDBOXINT_FMT, (boxint)(graph_iid-MIN_64BIT_BNODE_IRI_ID));
           else
-            snprintf (tmp, sizeof (tmp), "#i" BOXINT_FMT, (boxint)(graph_iid));
+            snprintf (tmp, sizeof (tmp), "#i" IIDBOXINT_FMT, (boxint)(graph_iid));
           graph_iri = box_dv_short_string (tmp);
         }
       err = srv_make_new_error ("RDF02", "SR619", "%.50s access denied: %.20s user %d (%.200s) has no %.50s permission on graph %.500s",
