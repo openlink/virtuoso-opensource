@@ -5328,6 +5328,7 @@ rdf_box_init ()
   bif_define_typed ("__rdf_box_make_complete", bif_rdf_box_make_complete, &bt_integer);
   bif_set_uses_index (bif_rdf_box_make_complete);
   bif_define_typed ("__rdf_sqlval_of_obj", bif_rdf_sqlval_of_obj, &bt_any);
+  bif_set_no_cluster ("__rdf_sqlval_of_obj");
   bif_set_uses_index (bif_rdf_sqlval_of_obj);
   bif_set_no_cluster ("__rdf_sqlval_of_obj");
   bif_define_typed ("__rdf_strsqlval", bif_rdf_strsqlval, &bt_varchar);

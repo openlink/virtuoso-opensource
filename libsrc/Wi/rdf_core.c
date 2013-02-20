@@ -3583,9 +3583,13 @@ rdf_core_init (void)
 
   bif_define ("iri_to_rdf_prefix_and_local", bif_iri_to_rdf_prefix_and_local);
   bif_define ("rdf_cache_id", bif_rdf_cache_id);
+  bif_set_no_cluster ("rdf_cache_id");
   bif_define ("rdf_cache_id_to_name", bif_rdf_cache_id_to_name);
+  bif_set_no_cluster ("rdf_cache_id_to_name");
   bif_define ("iri_id_cache_flush", bif_iri_id_cache_flush);
+  bif_set_no_cluster ("iri_id_cache_flush");
   bif_define ("iri_id_new", bif_iri_id_new);
+  bif_set_no_cluster ("iri_id_new");
   bif_define ("__rdf_obj_ft_rule_add", bif_rdf_obj_ft_rule_add);
   bif_define ("__rdf_obj_ft_rule_del", bif_rdf_obj_ft_rule_del);
   bif_define ("__rdf_obj_ft_rule_zap_all", bif_rdf_obj_ft_rule_zap_all);
@@ -3593,10 +3597,15 @@ rdf_core_init (void)
   bif_define ("__rdf_obj_ft_rule_count_in_graph", bif_rdf_obj_ft_rule_count_in_graph);
   /* Short aliases for use in generated SQL text: */
   bif_define ("__i2idn", bif_iri_to_id_nosignal);
+  bif_set_no_cluster ("__i2idn");
   bif_define ("__i2id", bif_iri_to_id);
+  bif_set_no_cluster ("__i2id");
   bif_define ("__i2idc", bif_iri_to_id_if_cached);
+  bif_set_no_cluster ("__i2idc");
   bif_define ("__id2i", bif_id_to_iri);
+  bif_set_no_cluster ("__id2i");
   bif_define ("__id2in", bif_id_to_iri_nosignal);
+  bif_set_no_cluster ("__id2in");
   bif_define ("rdf_graph_keyword", bif_rdf_graph_keyword);
   bif_define ("iri_split", bif_iri_split);
   bif_define ("uriqa_dynamic_local_replace", bif_uriqa_dynamic_local_replace);
