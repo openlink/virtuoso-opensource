@@ -34,7 +34,7 @@
 #include "xslt_impl.h"	/* For vector_sort_t */
 #include "aqueue.h"	/* For aq_allocate() in rdf replication */
 
-boxint bnode_t_treshold = ~((boxint)0);
+iri_id_t bnode_t_treshold = ~((iri_id_t)0);
 
 caddr_t
 bif_rdf_set_bnode_t_treshold (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
