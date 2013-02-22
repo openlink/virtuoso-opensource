@@ -872,7 +872,7 @@ DBG_NAME (t_set_pushnew) (DBG_PARAMS s_node_t ** set, void *item)
 
 
 int
-DBG_NAME (t_set_push_new_string) (DBG_PARAMS s_node_t ** set, void *item)
+DBG_NAME (t_set_push_new_string) (DBG_PARAMS s_node_t ** set, char *item)
 {
   if (0 > dk_set_position_of_string (*set, item))
     {

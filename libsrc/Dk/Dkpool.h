@@ -269,7 +269,7 @@ void dbg_mp_set_push (const char *file, int line, mem_pool_t * mp, dk_set_t * se
 dk_set_t dbg_t_cons (const char *file, int line, void *car, dk_set_t cdr);
 void dbg_t_set_push (const char *file, int line, dk_set_t * set, void *elt);
 int dbg_t_set_pushnew (const char *file, int line, s_node_t ** set, void *item);
-int dbg_t_set_push_new_string (const char *file, int line, s_node_t ** set, void *item);
+int dbg_t_set_push_new_string (const char *file, int line, s_node_t ** set, char *item);
 void *dbg_t_set_pop (const char *file, int line, dk_set_t * set);
 dk_set_t dbg_t_set_union (const char *file, int line, dk_set_t s1, dk_set_t s2);
 dk_set_t dbg_t_set_intersect (const char *file, int line, dk_set_t s1, dk_set_t s2);
@@ -296,7 +296,7 @@ void mp_set_push (mem_pool_t * mp, dk_set_t * set, void *elt);
 dk_set_t t_cons (void *car, dk_set_t cdr);
 void t_set_push (dk_set_t * set, void *elt);
 int t_set_pushnew (s_node_t ** set, void *item);
-int t_set_push_new_string (s_node_t ** set, void *item);
+int t_set_push_new_string (s_node_t ** set, char *item);
 void *t_set_pop (dk_set_t * set);
 dk_set_t t_set_union (dk_set_t s1, dk_set_t s2);
 dk_set_t t_set_intersect (dk_set_t s1, dk_set_t s2);
