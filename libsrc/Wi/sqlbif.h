@@ -179,6 +179,7 @@ EXE_EXPORT (caddr_t *, bif_array_of_pointer_arg, (caddr_t * qst, state_slot_t **
 extern bif_type_t bt_varchar;
 extern bif_type_t bt_wvarchar;
 extern bif_type_t bt_any;
+#define bt_any_box bt_any
 extern bif_type_t bt_integer;
 extern bif_type_t bt_double;
 extern bif_type_t bt_float;
