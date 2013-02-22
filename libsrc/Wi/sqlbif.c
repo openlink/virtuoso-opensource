@@ -14959,7 +14959,7 @@ sql_bif_init (void)
   bif_define_typed ("blob_to_string", bif_blob_to_string, &bt_string);
   bif_define_typed ("blob_to_string_output", bif_blob_to_string_output, &bt_varchar);
   bif_define ("blob_page", bif_blob_page);
-  bif_define_typed ("_cvt", bif_convert, &bt_convert);
+  bif_define_ex ("_cvt"		, bif_convert		, BMD_RET_TYPE, &bt_convert	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 3	, BMD_IS_PURE, BMD_DONE);
   bif_define ("__cast_internal", bif_cast_internal);
   bif_define ("__ssl_const", bif_stub_ssl_const);
   bif_define ("coalesce", bif_stub_coalesce);
