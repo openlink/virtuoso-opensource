@@ -650,7 +650,8 @@ itc_insert_unq_ck (it_cursor_t * it, row_delta_t * rd, buffer_desc_t ** unq_buf)
   if (it->itc_insert_key->key_distinct && DVC_MATCH == res)
     {
       /* if key is distinct values only hitting a duplicate does nothing and returns success */
-      page_leave_outside_map (buf);
+      if (!itc_check_ins_deleted (it, buf, rd))
+        page_leave_outside_map (buf);
       return DVC_LESS;
     }
 
