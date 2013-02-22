@@ -155,7 +155,8 @@ extern void sqlp_tweak_selection_names (ST * tree);
 ptrlong sqlp_bunion_flag (ST * l, ST * r, long f);
 ST *sqlp_wpar_nonselect (ST *subq);
 ST * sqlp_inline_order_by (ST *tree, ST **oby);
-ST * sqlp_patch_call_if_special (ST * funcall_tree);
+/*! Tweaks special calls and replaces calls of pure functions on costants with results of that functions */
+ST * sqlp_patch_call_if_special_or_optimizable (ST * funcall_tree);
 ptrlong sqlp_cursor_name_to_type (caddr_t name);
 ptrlong sqlp_fetch_type_to_code (caddr_t name);
 

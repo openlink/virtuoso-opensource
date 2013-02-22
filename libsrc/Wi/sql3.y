@@ -2470,10 +2470,13 @@ scalar_exp_no_col_ref_no_mem_obs_chain
 
 cvt_exp
 	: CONVERT '(' data_type ',' scalar_exp ')'
-		{ $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("_cvt"),
-			t_list (2,
-			  t_list (2, QUOTE, $3),
-			  sqlp_wrapper_sqlxml_assign ($5) ) );
+		{
+		  ST *dtype = t_list (2, QUOTE, $3);
+		  ST *expn_to_cast = sqlp_wrapper_sqlxml_assign ($5);
+		  $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("_cvt"),
+		    t_list (2, dtype, expn_to_cast) );
+		  if (LITERAL_P (expn_to_cast))
+		    $$ = sqlp_patch_call_if_special_or_optimizable ($$);
 		}
 	;
 
@@ -2484,9 +2487,13 @@ opt_collate_exp
 
 cast_exp
 	: CAST '(' scalar_exp AS data_type opt_collate_exp ')'
-		{ $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("_cvt"),
-			t_list ($6 == NULL ? 2 : 3, t_list (2, QUOTE, $5),
-			sqlp_wrapper_sqlxml_assign ($3), $6 ) );
+		{
+		  ST *dtype = t_list (2, QUOTE, $5);
+		  ST *expn_to_cast = sqlp_wrapper_sqlxml_assign ($3);
+		  $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("_cvt"),
+		    t_list ($6 == NULL ? 2 : 3, dtype, expn_to_cast, $6) );
+		  if (LITERAL_P (expn_to_cast))
+		    $$ = sqlp_patch_call_if_special_or_optimizable ($$);
 		}
 	;
 
@@ -2585,7 +2592,7 @@ function_call
 		  else
 		    {
 		      $$ = t_listst (3, CALL_STMT, $1, arglist);
-		      $$ = sqlp_patch_call_if_special ($$);
+		      $$ = sqlp_patch_call_if_special_or_optimizable ($$);
 		    }
 		}
 	| TIMESTAMP_FUNC '(' SQL_TSI ',' scalar_exp ',' scalar_exp ')'
