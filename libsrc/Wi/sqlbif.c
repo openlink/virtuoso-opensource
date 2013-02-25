@@ -14895,8 +14895,8 @@ sql_bif_init (void)
   bif_define_ex ("pi"			, bif_pi	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 0, BMD_MAX_ARGCOUNT, 0	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("round"		, bif_round	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
 
-  bif_define_ex ("rnd"			, bif_rnd	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1				, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("rand"			, bif_rnd	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1				, BMD_IS_PURE, BMD_DONE); /* SQL 92 standard function */
+  bif_define_ex ("rnd"			, bif_rnd	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_DONE);
+  bif_define_ex ("rand"			, bif_rnd	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_DONE); /* SQL 92 standard function */
   bif_define ("randomize", bif_randomize);
   bif_define_ex ("hash"			, bif_hash	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("md5_box"		, bif_md5_box	, BMD_RET_TYPE, &bt_varchar	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
