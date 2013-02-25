@@ -43,7 +43,7 @@
 
   declare _S, odd_position any;
   declare page_resource_uri, proxy_iri, rdf_link, label, vlbl, _subject any;
-  declare white_page, arr, data, meta, h1, h2, inx, gr, host, refr, sid, inf, sas, langs, best_q any;
+  declare white_page, arr, data, meta, h1, h2, inx, gr, host, refr, sid, inf, sas, langs, best_q, grs any;
   declare urilookup integer;
   declare dbg_enable varchar;
   declare qry_str varchar;
@@ -136,12 +136,16 @@ again:
       langs := lang_parm;
     }
   gr := get_keyword ('g', params, '');
-  _from := get_keyword ('graph', params, '');
-  --  dbg_obj_print_vars (gr, _F);
-  if (length (_from))
-    _F := concat ('FROM <', _from, '>');
-  else
-    _F := '';
+
+  _F := ''; _from := null;
+  grs := connection_get ('graphs', null);
+  if (grs is not null)
+    {
+      foreach (any x in grs) do
+	{
+	  _F := _F || sprintf (' FROM <%s> ', x);
+	}
+    }
 
 
   page := null;

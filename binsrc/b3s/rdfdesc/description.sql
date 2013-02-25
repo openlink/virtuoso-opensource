@@ -364,6 +364,7 @@ create procedure
 b3s_parse_inf (in sid varchar, inout params any)
 {
   declare _sas, _inf varchar;
+  declare grs any;
 
   _sas := _inf := null;
 
@@ -400,6 +401,14 @@ b3s_parse_inf (in sid varchar, inout params any)
       else
         connection_set ('sas', null);
     }
+  vectorbld_init (grs);
+  for (declare i int, i := 0; i < length (params); i := i + 2)
+    {
+      if (params[i] = 'graph' and not position (params[i+1], grs))
+	vectorbld_acc (grs, params[i+1]);
+    }
+  vectorbld_final (grs);
+  connection_set ('graphs', grs);
 }
 ;
 
@@ -426,17 +435,27 @@ b3s_render_inf_clause ()
 ;
 
 create procedure
-b3s_render_ses_params ()
+b3s_render_ses_params (in with_graph int := 1) 
 {
   declare i,s,ifp,sid varchar;
+  declare grs any;
 
   i := connection_get ('inf');
   s := connection_get ('sas');
   sid := connection_get ('sid');
+  grs := connection_get ('graphs', null);
 
   if (i is not null) i := '&inf=' || sprintf ('%U', i);
   if (s is not null) i := i || '&sas=' || sprintf ('%V', s);
   if (sid is not null) i := i || '&sid=' || sprintf ('%V', sid);
+
+  if (grs is not null and with_graph)
+    {
+      foreach (any x in grs) do
+	{
+	  i := i || sprintf ('&graph=%U', x);
+	}
+    }
 
   if (i is not null) return i;
   else return '';
