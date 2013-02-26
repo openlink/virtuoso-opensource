@@ -1364,6 +1364,7 @@ char * cl_rdf_init_srv =
 "   DB.DBA.RDF_QNAME_OF_IID (null); \n"
 "   rdf_inf_const_init (); \n"
 "   select count (*) into c from (select distinct s.RS_NAME from sys_rdf_schema s) sub where 0 = rdfs_load_schema (sub.RS_NAME); \n"
+"   DB.DBA.RDF_QUAD_LOAD_CACHE (); \n"
 "   JSO_LOAD_AND_PIN_SYS_GRAPH_RO  (); \n"
 "   commit work; \n"
 "   rdf_init_thread (0); \n"
