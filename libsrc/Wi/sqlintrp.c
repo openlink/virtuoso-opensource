@@ -162,19 +162,26 @@ caddr_t
 sqlr_run_bif_in_sandbox (bif_metadata_t *bmd, caddr_t *args, caddr_t *err_ret)
 {
   int argctr, argcount = BOX_ELEMENTS (args);
-  size_t ssls_size = sizeof (state_slot_t) * (argcount);
+#ifdef MALLOC_DEBUG
+  size_t ssls_size = (argcount ? sizeof (state_slot_t) * argcount : 1); /* 1 instead of 0 to avoid "zero bytes allocation" warning */
+#else
+  size_t ssls_size = sizeof (state_slot_t) * argcount;
+#endif
   state_slot_t *ssls = (state_slot_t *)dk_alloc (ssls_size);
   state_slot_t **params = (state_slot_t **)dk_alloc_list (argcount);
-  caddr_t *qst_stub = dk_alloc_list_zero (argcount);
+  query_instance_t *qi_stub = (query_instance_t *)dk_alloc_list_zero (QI_FIRST_FREE + argcount);
   caddr_t ret_val;
   memset (ssls, 0, ssls_size);
+  qi_stub->qi_client = sqlc_client ();
+  qi_stub->qi_u_id = U_ID_NOBODY;
+  qi_stub->qi_g_id = U_ID_NOGROUP;
   for (argctr = argcount; argctr--; /* no step */)
     {
       state_slot_t *sl = ssls + argctr;
       caddr_t val = args[argctr];
-      sl->ssl_index = argctr;
+      sl->ssl_index = QI_FIRST_FREE + argctr;
       sl->ssl_type = SSL_CONSTANT;
-      sl->ssl_constant = qst_stub[argctr] = val;
+      sl->ssl_constant = ((caddr_t *)(qi_stub))[QI_FIRST_FREE + argctr] = val;
       sl->ssl_dtp = DV_TYPE_OF (val);
       if (sl->ssl_dtp == DV_LONG_STRING)
         sl->ssl_prec = box_length (val) - 1;
@@ -186,7 +193,7 @@ sqlr_run_bif_in_sandbox (bif_metadata_t *bmd, caddr_t *args, caddr_t *err_ret)
     {
       if (!bmd->bmd_is_pure)
         sqlr_new_error ("42000", "SR650", "Only pure function can be executed in a sandbox, %.200s() is not pure", bmd->bmd_name);
-      ret_val = bmd->bmd_main_impl (qst_stub, err_ret, params);
+      ret_val = bmd->bmd_main_impl ((caddr_t *)qi_stub, err_ret, params);
       err_ret[0] = NULL;
     }
   QR_RESET_CODE
@@ -198,7 +205,7 @@ sqlr_run_bif_in_sandbox (bif_metadata_t *bmd, caddr_t *args, caddr_t *err_ret)
       /*no POP_QR_RESET*/;
     }
   END_QR_RESET
-  dk_free_box ((caddr_t)qst_stub);
+  dk_free_box ((caddr_t)qi_stub);
   dk_free_box ((caddr_t)params);
   dk_free (ssls, ssls_size);
   return ret_val;
