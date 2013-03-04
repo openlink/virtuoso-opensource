@@ -1897,7 +1897,7 @@ ws_cors_check (ws_connection_t * ws, char * buf, size_t buf_len)
 #ifdef VIRTUAL_DIR
   caddr_t origin = ws_mime_header_field (ws->ws_lines, "Origin", NULL, 1);
   int rc = 0;
-  if (origin && ws->ws_status_code < 400 && ws->ws_map && ws->ws_map->hm_cors)
+  if (origin && ws->ws_status_code < 500 && ws->ws_map && ws->ws_map->hm_cors)
     {
       caddr_t * orgs = ws_split_cors (origin), * place = NULL;
       int inx;
