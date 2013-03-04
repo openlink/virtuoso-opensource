@@ -3460,6 +3460,9 @@ dbs_from_file (char * name, char * file, char type, volatile int * exists)
 	*exists = 1;
     }
 
+  if (*exists && type == DBS_RECOVER)
+    return NULL;
+
   if (*exists && DBS_TEMP != type)
     dbs_read_cfg_page (dbs, &cfg_page);
 
