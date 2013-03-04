@@ -14331,62 +14331,89 @@ xsd:boolean  CONTAINS(string literal arg1, string literal arg2)
 The CONTAINS function corresponds to the XPath fn:contains. The arguments must be argument compatible otherwise an error is raised.
 */
 
-#define STRCONTAINS_AT_START ((char)0)
-#define STRCONTAINS_INSIDE ((char)1)
-#define STRCONTAINS_AT_END ((char)2)
+#define STRCONTAINS_AT_START	0x00
+#define STRCONTAINS_INSIDE	0x01
+#define STRCONTAINS_AT_END	0x02
+#define STRCONTAINS_RET_BOOL	0x10
+#define STRCONTAINS_RET_AFTER	0x20
+#define STRCONTAINS_RET_BEFORE	0x30
 
 caddr_t
-bif_rdf_strcontains_x_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, const char *fnname, const char *sparql_fnname, char substring_place)
+bif_rdf_strcontains_x_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, const char *fnname, const char *sparql_fnname, int op_flags)
 {
   ccaddr_t str = bif_arg_unrdf (qst, args, 0, fnname);
   ccaddr_t pattern = bif_arg_unrdf (qst, args, 1, fnname);
   ccaddr_t str_end, pattern_position;
-  size_t str_n_chars, str_len, pattern_n_chars, pattern_len;
-  char r = 0; /* false by default */
-  ccaddr_t ok_position;
-
+  size_t size_of_str_char, str_n_chars, str_len, pattern_n_chars, pattern_len;
+  int op_flags_place = op_flags & 0x0F;
+  int op_flags_ret = op_flags & 0xF0;
+  int found = 0;
+  size_t hit_pos = 0;
+  caddr_t res;
   switch (DV_TYPE_OF (str))
     {
     case DV_STRING: /* utf-8 */
     case DV_UNAME:
       {
-        virt_mbstate_t mbstate;
+        /*virt_mbstate_t mbstate;*/
+        str_len = box_length (str) - 1;
+        pattern_len = box_length (pattern) - 1;
+        size_of_str_char = 1;
+/*        memset (&mbstate, 0, sizeof(virt_mbstate_t));
+        str_n_chars = wide_char_length_of_utf8_string ((const unsigned char*)str, box_length (str) - 1);
         memset (&mbstate, 0, sizeof(virt_mbstate_t));
-        str_n_chars = wide_char_length_of_utf8_string ( (const unsigned char*)str, strlen(str));
-        memset (&mbstate, 0, sizeof(virt_mbstate_t));
-        pattern_n_chars = wide_char_length_of_utf8_string ( (const unsigned char*)pattern, strlen(pattern));
-        str_len = strlen ((const char*)str);
-        pattern_len = strlen ((const char*)pattern);
-
-        if (pattern_n_chars && pattern_n_chars <= str_n_chars)
+        pattern_n_chars = wide_char_length_of_utf8_string ((const unsigned char*)pattern, box_length (pattern) - 1);*/
+        if (pattern_len && pattern_len <= str_len)
           {
-            if (substring_place == STRCONTAINS_AT_START)
-              r = strncmp ((const char*)str, (const char*)pattern, pattern_len) == 0;
-            else if (substring_place == STRCONTAINS_INSIDE)
-              r = strstr((const char*)str,(const char*)pattern) != NULL;
-            else
-              r = strncmp ((const char*)str + str_len - pattern_len, (const char*)pattern, pattern_len) == 0;
+            switch (op_flags_place)
+              {
+              case STRCONTAINS_AT_START:
+                found = !memcmp ((const char*)str, (const char*)pattern, pattern_len);
+                break;
+              case STRCONTAINS_INSIDE:
+                {
+                  const char *c = (const char *)memmem (str, str_len, pattern, pattern_len);
+                  if (NULL != c) { found = 1; hit_pos = (c - str); }
+                  break;
+                }
+              case STRCONTAINS_AT_END:
+                found = !memcmp ((const char*)str + str_len - pattern_len, (const char*)pattern, pattern_len);
+                if (found)
+                  hit_pos = str_len - pattern_len;
+                break;
+              }
           }
       }
       break;
     case DV_WIDE: /* utf-32 */
     case DV_LONG_WIDE:
       {
-        str_n_chars = virt_wcslen ((const wchar_t*)str);
+        str_len = box_length (str) - sizeof (wchar_t);
+        pattern_len = box_length (pattern) - sizeof (wchar_t);
+        size_of_str_char = sizeof (wchar_t);
+        /*str_n_chars = virt_wcslen ((const wchar_t*)str);
         pattern_n_chars = virt_wcslen ((const wchar_t*)pattern);
         str_end = (ccaddr_t)(((const wchar_t*)str) + str_n_chars - pattern_n_chars);
-        ok_position = substring_place == STRCONTAINS_AT_START ? str : str_end;
-
-        if (pattern_n_chars && pattern_n_chars <= str_n_chars)
+        ok_position = op_flags_place == STRCONTAINS_AT_START ? str : str_end;*/
+        if (pattern_len && pattern_len <= str_len)
           {
-            pattern_position = substring_place != STRCONTAINS_AT_END ?
-                (ccaddr_t) virt_wcsstr ((const wchar_t*)str, (const wchar_t*)pattern)
-              : (ccaddr_t) virt_wcsrstr ((const wchar_t*)str, (const wchar_t*)pattern);
-
-            if (pattern_n_chars < str_n_chars)
-              r = pattern_position == ok_position || (substring_place == STRCONTAINS_INSIDE && pattern_position);
-            else if (str_n_chars == pattern_n_chars)
-              r = pattern_position == str;
+            switch (op_flags_place)
+              {
+              case STRCONTAINS_AT_START:
+                found = !memcmp ((const char*)str, (const char*)pattern, pattern_len);
+                break;
+              case STRCONTAINS_INSIDE:
+                {
+                  const char *c = (ccaddr_t) virt_wcsstr ((const wchar_t*)str, (const wchar_t*)pattern);
+                  if (NULL != c) { found = 1; hit_pos = (c - str); }
+                  break;
+                }
+              case STRCONTAINS_AT_END:
+                found = !memcmp ((const char*)str + str_len - pattern_len, (const char*)pattern, pattern_len);
+                if (found)
+                  hit_pos = str_len - pattern_len;
+                break;
+              }
           }
       }
       break;
@@ -14396,26 +14423,55 @@ bif_rdf_strcontains_x_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
       sqlr_new_error ("22023", "SL001", "The SPARQL 1.1 function %s() needs a string value as 1st argument", sparql_fnname);
     return NULL;
     }
-
-  return (caddr_t)box_bool(r);
+  switch (op_flags_ret)
+    {
+    case STRCONTAINS_RET_BOOL:
+      res = (caddr_t)box_bool(found);
+      break;
+    case STRCONTAINS_RET_AFTER:
+      if (!found)
+        return box_dv_short_string ("");
+      res = dk_alloc_box (str_len + size_of_str_char - (hit_pos + pattern_len), box_tag (str));
+      memcpy (res, str + hit_pos + pattern_len, str_len + size_of_str_char - (hit_pos + pattern_len));
+      break;
+    case STRCONTAINS_RET_BEFORE:
+      if (!found)
+        return box_dv_short_string ("");
+      res = dk_alloc_box (hit_pos + size_of_str_char, box_tag (str));
+      memcpy (res, str, hit_pos + size_of_str_char);
+      break;
+    }
+  return res;
 }
 
 caddr_t
 bif_rdf_strstarts_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  return bif_rdf_strcontains_x_impl (qst, err_ret, args, "rdf_strstarts_impl", "STRSTARTS", STRCONTAINS_AT_START);
+  return bif_rdf_strcontains_x_impl (qst, err_ret, args, "rdf_strstarts_impl", "STRSTARTS", STRCONTAINS_AT_START | STRCONTAINS_RET_BOOL);
 }
 
 caddr_t
 bif_rdf_strends_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  return bif_rdf_strcontains_x_impl (qst, err_ret, args, "rdf_strends_impl", "STRENDS", STRCONTAINS_AT_END);
+  return bif_rdf_strcontains_x_impl (qst, err_ret, args, "rdf_strends_impl", "STRENDS", STRCONTAINS_AT_END | STRCONTAINS_RET_BOOL);
 }
 
 caddr_t
 bif_rdf_contains_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  return bif_rdf_strcontains_x_impl (qst, err_ret, args, "rdf_contains_impl", "CONTAINS", STRCONTAINS_INSIDE);
+  return bif_rdf_strcontains_x_impl (qst, err_ret, args, "rdf_contains_impl", "CONTAINS", STRCONTAINS_INSIDE | STRCONTAINS_RET_BOOL);
+}
+
+caddr_t
+bif_rdf_strafter_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return bif_rdf_strcontains_x_impl (qst, err_ret, args, "rdf_strafter_impl", "STRAFTER", STRCONTAINS_INSIDE | STRCONTAINS_RET_AFTER);
+}
+
+caddr_t
+bif_rdf_strbefore_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return bif_rdf_strcontains_x_impl (qst, err_ret, args, "rdf_strbefore_impl", "STRBEFORE", STRCONTAINS_INSIDE | STRCONTAINS_RET_BEFORE);
 }
 
 /*
@@ -14673,9 +14729,11 @@ bif_sparql_init (void)
   bif_define_typed ("rdf_substr_impl", bif_rdf_substr_impl, &bt_string);
   bif_define_typed ("rdf_ucase_impl", bif_rdf_ucase_impl, &bt_string);
   bif_define_typed ("rdf_lcase_impl", bif_rdf_lcase_impl, &bt_string);
-  bif_define_typed ("rdf_strstarts_impl", bif_rdf_strstarts_impl, &bt_integer);
-  bif_define_typed ("rdf_strends_impl", bif_rdf_strends_impl, &bt_integer);
-  bif_define_typed ("rdf_contains_impl", bif_rdf_contains_impl, &bt_integer);
+  bif_define_ex ("rdf_strafter_impl"	, bif_rdf_strafter_impl	, BMD_RET_TYPE, &bt_any		, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("rdf_strbefore_impl"	, bif_rdf_strbefore_impl, BMD_RET_TYPE, &bt_any		, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("rdf_strstarts_impl"	, bif_rdf_strstarts_impl, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("rdf_strends_impl"	, bif_rdf_strends_impl	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("rdf_contains_impl"	, bif_rdf_contains_impl	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
   bif_define_typed ("rdf_encode_for_uri_impl", bif_rdf_encode_for_uri_impl, &bt_varchar);
   bif_define_typed ("rdf_concat_impl", bif_rdf_concat_impl, &bt_varchar);
   /* Functions rdf_now_impl() and rdf_year_impl() to rdf_minutes_impl() are in bif_date.c */
@@ -14770,10 +14828,10 @@ sql_bif_init (void)
   bif_define_ex ("concatenate"		, bif_concatenate	, BMD_RET_TYPE, &bt_string	, BMD_MIN_ARGCOUNT, 0				, BMD_IS_PURE, BMD_DONE);  /* Synonym for old times */
   bif_define_ex ("concat"		, bif_concatenate	, BMD_RET_TYPE, &bt_string	, BMD_MIN_ARGCOUNT, 0				, BMD_IS_PURE, BMD_DONE); /* This is more to standard */
   bif_define_ex ("replace"		, bif_replace		, BMD_RET_TYPE, &bt_string	, BMD_MIN_ARGCOUNT, 3, BMD_MAX_ARGCOUNT, 4	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("sprintf"		, bif_sprintf		, BMD_RET_TYPE, &bt_varchar	, BMD_MIN_ARGCOUNT, 1				/*, BMD_IS_PURE*/, BMD_DONE);
-  bif_define_ex ("sprintf_or_null"	, bif_sprintf_or_null	, BMD_RET_TYPE, &bt_varchar	, BMD_MIN_ARGCOUNT, 1				/*, BMD_IS_PURE*/, BMD_DONE);
-  bif_define_ex ("sprintf_iri"		, bif_sprintf_iri	, BMD_RET_TYPE, &bt_varchar	, BMD_MIN_ARGCOUNT, 1				/*, BMD_IS_PURE*/, BMD_DONE);
-  bif_define_ex ("sprintf_iri_or_null"	, bif_sprintf_iri_or_null, BMD_RET_TYPE, &bt_varchar	, BMD_MIN_ARGCOUNT, 1				/*, BMD_IS_PURE*/, BMD_DONE);
+  bif_define_ex ("sprintf"		, bif_sprintf		, BMD_RET_TYPE, &bt_varchar	, BMD_MIN_ARGCOUNT, 1				, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("sprintf_or_null"	, bif_sprintf_or_null	, BMD_RET_TYPE, &bt_varchar	, BMD_MIN_ARGCOUNT, 1				, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("sprintf_iri"		, bif_sprintf_iri	, BMD_RET_TYPE, &bt_varchar	, BMD_MIN_ARGCOUNT, 1				, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("sprintf_iri_or_null"	, bif_sprintf_iri_or_null, BMD_RET_TYPE, &bt_varchar	, BMD_MIN_ARGCOUNT, 1				, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("sprintf_inverse"	, bif_sprintf_inverse					, BMD_MIN_ARGCOUNT, 3, BMD_MAX_ARGCOUNT, 3	, BMD_IS_PURE, BMD_DONE);
 
 /* Finding occurrences of characters and substrings in strings: */
@@ -14895,8 +14953,8 @@ sql_bif_init (void)
   bif_define_ex ("pi"			, bif_pi	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 0, BMD_MAX_ARGCOUNT, 0	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("round"		, bif_round	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
 
-  bif_define_ex ("rnd"			, bif_rnd	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_DONE);
-  bif_define_ex ("rand"			, bif_rnd	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_DONE); /* SQL 92 standard function */
+  bif_define_ex ("rnd"			, bif_rnd	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1				/*, BMD_IS_PURE*/, BMD_DONE);
+  bif_define_ex ("rand"			, bif_rnd	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1				/*, BMD_IS_PURE*/, BMD_DONE); /* SQL 92 standard function */
   bif_define ("randomize", bif_randomize);
   bif_define_ex ("hash"			, bif_hash	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("md5_box"		, bif_md5_box	, BMD_RET_TYPE, &bt_varchar	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);

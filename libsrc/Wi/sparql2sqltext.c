@@ -8126,7 +8126,8 @@ ssg_prepare_sinv_template (spar_sqlgen_t *parent_ssg, SPART *sinv, SPART *gp, ca
   t_NEW_VARZ (spar_sqlgen_t, ssg);
   parent_ssg->ssg_nested_ssg = ssg;
   ssg->ssg_parent_ssg = parent_ssg;
-  ssg->ssg_sd_service_name = sinv->_.sinv.endpoint;
+  ssg->ssg_sd_current_sinv = sinv;
+  ssg->ssg_sd_service_naming = spar_sinv_naming (ssg->ssg_sparp, sinv);
   ssg->ssg_sparp = parent_ssg->ssg_sparp;
   ssg->ssg_tree = parent_ssg->ssg_sparp->sparp_expr;
   ssg->ssg_wrapping_gp = gp;
@@ -8356,7 +8357,7 @@ ssg_print_sinv_table_exp (spar_sqlgen_t *ssg, SPART *gp, int pass)
       caddr_t qtext_posmap = NULL;
       ssg_print_where_or_and (ssg, "sinv");
       ssg_prin_id (ssg, gp->_.gp.selid); ssg_puts (".ws_endpoint = ");
-      ssg_print_box_as_sql_atom (ssg, sinv->_.sinv.endpoint, SQL_ATOM_UTF8_ONLY);
+      ssg_print_scalar_expn (ssg, sinv->_.sinv.endpoint, SSG_VALMODE_SQLVAL, NULL_ASNAME);
       ssg_print_where_or_and (ssg, "sinv");
       ssg_prin_id (ssg, gp->_.gp.selid); ssg_puts (".ws_params = vector (");
       len = BOX_ELEMENTS_0 (sinv->_.sinv.iri_params);
@@ -8475,8 +8476,8 @@ param_value_cant_be_printed: ;
 expanded by optimizer into
 { gp_a service {...} } UNION { gp_b service {...} }
 and in other branch there will by no equiv for the parameter. */
-          spar_error (sparp, "Unable to compose an SQL code to pass parameter ?%.200s to the service <%.200s>",
-            varname, sinv->_.sinv.endpoint );
+          spar_error (sparp, "Unable to compose an SQL code to pass parameter ?%.200s to the %.300s",
+            varname, spar_sinv_naming (sparp, sinv) );
 #else
           ssg_puts (" NULL /* runaway "); ssg_puts (varname); ssg_puts (" after reorder */");
 #endif

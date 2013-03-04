@@ -38,7 +38,9 @@ extern "C" {
 
 #ifdef DEBUG
 #define SPARYYDEBUG
-#else
+#endif
+
+#ifdef NDEBUG
 #undef SPARQL_DEBUG
 #endif
 
@@ -121,19 +123,21 @@ extern "C" {
 #define SPAR_BIF_SHA384		(ptrlong)1133
 #define SPAR_BIF_SHA512		(ptrlong)1134
 #define SPAR_BIF_STR		(ptrlong)1135
-#define SPAR_BIF_STRDT		(ptrlong)1136
-#define SPAR_BIF_STRENDS	(ptrlong)1137
-#define SPAR_BIF_STRLANG	(ptrlong)1138
-#define SPAR_BIF_STRLEN		(ptrlong)1139
-#define SPAR_BIF_STRSTARTS	(ptrlong)1140
-#define SPAR_BIF_STRUUID	(ptrlong)1141
-#define SPAR_BIF_SUBSTR		(ptrlong)1142
-#define SPAR_BIF_TIMEZONE	(ptrlong)1143
-#define SPAR_BIF_TZ		(ptrlong)1144
-#define SPAR_BIF_UCASE		(ptrlong)1145
-#define SPAR_BIF_URI		(ptrlong)1146
-#define SPAR_BIF_UUID		(ptrlong)1147
-#define SPAR_BIF_YEAR		(ptrlong)1148
+#define SPAR_BIF_STRAFTER	(ptrlong)1136
+#define SPAR_BIF_STRBEFORE	(ptrlong)1137
+#define SPAR_BIF_STRDT		(ptrlong)1138
+#define SPAR_BIF_STRENDS	(ptrlong)1139
+#define SPAR_BIF_STRLANG	(ptrlong)1140
+#define SPAR_BIF_STRLEN		(ptrlong)1141
+#define SPAR_BIF_STRSTARTS	(ptrlong)1142
+#define SPAR_BIF_STRUUID	(ptrlong)1143
+#define SPAR_BIF_SUBSTR		(ptrlong)1144
+#define SPAR_BIF_TIMEZONE	(ptrlong)1145
+#define SPAR_BIF_TZ		(ptrlong)1146
+#define SPAR_BIF_UCASE		(ptrlong)1147
+#define SPAR_BIF_URI		(ptrlong)1148
+#define SPAR_BIF_UUID		(ptrlong)1149
+#define SPAR_BIF_YEAR		(ptrlong)1150
 
 #define SPAR_SML_CREATE		(ptrlong)1201
 #define SPAR_SML_DROP		(ptrlong)1202
@@ -689,7 +693,7 @@ typedef struct spar_tree_s
     struct {
         /* define SPAR_SERVICE_INV	(ptrlong)1020 */
         ptrlong own_idx;	/*!< Serial of the sinv in the parser */
-        caddr_t endpoint;	/*!< An IRI of web service endpoint without static parameters */
+        SPART *endpoint;	/*!< An IRI of web service endpoint without static parameters */
         SPART **iri_params;	/*!< A get_keyword style array of parameters to pass in the IRI, like maxrows */
         caddr_t syntax;		/*!< Boxed bitmask of SSG_SD_xxx flags of allowed query serialization features */
         caddr_t *param_varnames;	/*!< Names of variables that are passed as parameters */
@@ -698,6 +702,7 @@ typedef struct spar_tree_s
         SPART **defines;	/*!< List of defines to pass, as a get_keyword style list of qnames and values or arrays of values */
         SPART **sources;	/*!< List of sources, similar to one in req_top. If NULL then sources of parent req_top are used */
         caddr_t storage_uri;	/*!< Storage to use: JSO UNAME if specified explicitly for a service IRI, uname_virtrdf_ns_uri_DefaultServiceStorage if unknown service */
+	ptrlong silent;		/*!< nonzero if SERVICE SILENT syntax is used */
       } sinv;
     struct {
         /* define SPAR_BINDINGS_INV		(ptrlong)1021 */
@@ -905,7 +910,9 @@ extern SPART *spar_add_propvariable (sparp_t *sparp, SPART *lvar, int opcode, SP
 /*! Creates a tree for service invocation but does not add it to the array of all invocations.
 Use spar_add_service_inv_to_sg() to assign sinv.own_idx and store it in sparp->sparp_sg->sg_sinvs .
 Also make sure that sparp->sparp_query_uses_sinvs++ is made somewhere before the creation for the current sparp. */
-extern SPART *spar_make_service_inv (sparp_t *sparp, caddr_t endpoint, dk_set_t all_options, ptrlong permitted_syntax, SPART **sources, caddr_t sinv_storage_uri);
+extern SPART *spar_make_service_inv (sparp_t *sparp, SPART *endpoint, dk_set_t all_options, ptrlong permitted_syntax, SPART **sources, caddr_t sinv_storage_uri, int silent);
+/*! Returns string like "SERVICE <iri> at line NNN" or "SERVICE ?var at line NNN" (for error reporting) */
+extern caddr_t spar_sinv_naming (sparp_t *sparp, SPART *sinv);
 /*! Assigns sinv->_.sinv.own_idx and store the pointer to invocation in sparp->sparp_sg->sg_sinvs. After that it is legal to refer to quad maps inside the sinv and to try optimizations */
 extern void spar_add_service_inv_to_sg (sparp_t *sparp, SPART *sinv);
 extern caddr_t spar_compose_report_flag (sparp_t *sparp);

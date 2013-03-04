@@ -492,8 +492,8 @@ SPAR_PARAMNAME	(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQL
 <SPARQL_DDDQ>((([""]([""]?))?({SPAR_DQ_PLAIN}|{SPAR_ECHAR}))+)		{ yymore(); }
 <SPARQL_SSSQ>[\\]		{ sparyyerror ("Bad escape sequence in a long single-quoted string"); }
 <SPARQL_DDDQ>[\\]		{ sparyyerror ("Bad escape sequence in a long double-quoted string"); }
-<SPARQL_SSSQ>.			{ sparyyerror ("Bad character in a long single-quoted string"); }
-<SPARQL_DDDQ>.			{ sparyyerror ("Bad character in a long double-quoted string"); }
+<SPARQL_SSSQ>.			{ sparyyerror (t_box_sprintf (100, "Bad character '%c' (0x%x) in a long single-quoted string", sparyytext[0], (unsigned int)((unsigned char)(sparyytext[0])))); }
+<SPARQL_DDDQ>.			{ sparyyerror (t_box_sprintf (100, "Bad character '%c' (0x%x) in a long double-quoted string", sparyytext[0], (unsigned int)((unsigned char)(sparyytext[0])))); }
 <SPARQL_SSSQ><<EOF>>		{ sparyyerror ("Unterminated long single-quoted string"); }
 <SPARQL_DDDQ><<EOF>>		{ sparyyerror ("Unterminated long double-quoted string"); }
 
@@ -590,7 +590,7 @@ SPAR_PARAMNAME	(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQL
 <SPARQL_AFTER_IDENTIFIED>.	{ sparyyerror ("Ill formed 'IDENTIFIED BY' term"); }
 <SPARQL_AFTER_NOT>.		{ sparyyerror ("Only EXISTS, FROM, IN, NULL and USING are allowed after NOT keyword in SPARQL expression"); }
 <SPARQL_AFTER_WHERE>.	{ sparyyerror ("Only '{', '(' and a string literal are allowed after WHERE or SQLQUERY keyword in SPARQL expression"); }
-<SPARQL>.		{ sparyyerror ("Invalid character in SPARQL expression"); }
+<SPARQL>.			{ sparyyerror (t_box_sprintf (100, "Bad character '%c' (0x%x) in SPARQL expression", sparyytext[0], (unsigned int)((unsigned char)(sparyytext[0])))); }
 
 %%
 

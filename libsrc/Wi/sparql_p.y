@@ -39,7 +39,7 @@ Whitespaces in all other places, including two whitespaces after "::=" in BNF co
 %pure_parser
 %parse-param {sparp_t * sparp_arg}
 %lex-param {sparp_t * sparp_arg}
-%expect 10
+%expect 11
 
 %{
 #include "libutil.h"
@@ -439,6 +439,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <box> spar_agg_name_int
 %type <box> spar_group_concat_begin
 %type <box> spar_group_concat_begin_int
+%type <tree> spar_var_or_iriref
 %type <tree> spar_var
 %type <tree> spar_global_var
 %type <tree> spar_global_var_int
@@ -585,7 +586,6 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %nonassoc PPATH_MOD
 %nonassoc PPATH_BANG
 %left _LSQBRA _RSQBRA _LPAR _RPAR
-
 %%
 
 /* TOP-LEVEL begin */
@@ -862,14 +862,14 @@ spar_construct_query	/* [6]	ConstructQuery	 ::=  'CONSTRUCT' ConstructTemplate D
 		fmt_mode_name = $$->_.req_top.formatmode_name;
 		ssg_find_formatter_by_name_and_subtype (fmt_mode_name, CONSTRUCT_L, &formatter, &agg_formatter, &agg_mdata);
 		spar_compose_retvals_of_construct (sparp_arg, $$, $4, formatter, agg_formatter, agg_mdata); }
-	| CONSTRUCT_L WHERE_L _LBRA {
+	| CONSTRUCT_L spar_dataset_clauses_opt WHERE_L _LBRA {
 		sparp_arg->sparp_allow_aggregates_in_expn &= ~1;
 		spar_gp_init (sparp_arg, WHERE_L); }
 	    spar_gp _RBRA spar_solution_modifier {
 		const char *fmt_mode_name;
 		const char *formatter, *agg_formatter, *agg_mdata;
 		SPART *where_gp = spar_gp_finalize (sparp_arg, NULL);
-		SPART *wm = $7;
+		SPART *wm = $8;
 		SPART *tmpl_gp;
 		wm->_.wm.where_gp = where_gp;
 		$$ = spar_make_top_or_special_case_from_wm (sparp_arg, CONSTRUCT_L, NULL, wm );
@@ -1023,6 +1023,20 @@ spar_group_expn		/* [Virt]	GroupExpn	 ::=  */
 	| spar_built_in_call
 	| spar_function_call
 	| spar_var
+	| spar_bin_op_sign	{ sparyyerror (sparp_arg, "GROUP BY clause contains a binary operator expression that is not enclosed in (...)"); }
+	;
+
+spar_bin_op_sign
+	: _PLUS
+	| _MINUS
+	| _STAR
+	| _SLASH
+	| _EQ
+	| _NOT_EQ
+	| _LT
+	| _GT
+	| _LE
+	| _GE
 	;
 
 spar_having_clause_opt	/* [Virt]	HavingClause	 ::= 'HAVING' Expn */
@@ -1347,11 +1361,6 @@ spar_constraint		/* [25]*	Constraint	 ::=  'FILTER' ( ( '(' Expn ')' ) | BuiltIn
 	: FILTER_L _LPAR spar_expn _RPAR	{ $$ = $3; }
 	| FILTER_L spar_built_in_call	{ $$ = $2; }
 	| FILTER_L spar_function_call	{ $$ = $2; }
-	| FILTER_L spar_exists_or_not_exists spar_constraint_exists_int {		/*... | 'NOT'? 'EXISTS' DatasetClause* WhereClause	*/
-		if ($2)
-		  $$ = $3;
-		else
-		  SPAR_BIN_OP ($$, BOP_NOT, $3, NULL); }
 	| MINUS_L spar_constraint_exists_int {		/*... | 'MINUS' DatasetClause* WhereClause */
 		/*!!! Dirty hack! Works wrong if MINUS is at the middle of the GP (before smth or not a 2-nd item) */
 		  SPAR_BIN_OP ($$, BOP_NOT, $2, NULL); }
@@ -1382,13 +1391,18 @@ spar_constraint_exists_int
 		sparp_arg->sparp_allow_aggregates_in_expn >>= 1; }
 	;
 
-spar_service_req	/* [Virt]	ServiceRequest ::=  'SERVICE' IRIref ServiceOptionList? GroupGraphPattern	*/
-	: SERVICE_L spar_qm_iriref_const_expn {
+spar_service_req	/* [Virt]	ServiceRequest ::=  'SERVICE' 'Silent'? VarOrIRIref ServiceOptionList? GroupGraphPattern	*/
+	: SERVICE_L spar_silent_opt spar_var_or_iriref {
 		caddr_t sinv_storage_uri;
 		sparp_arg->sparp_query_uses_sinvs++;
 		sinv_storage_uri = uname_virtrdf_ns_uri_DefaultServiceStorage; /*!!! TBD config */
 		/* if config is added above then tweak the check in sparp_gp_trav_add_graph_perm_read_filters and in SPAR_REQ_TOP case of ssg_sdprint_tree() */
-		$<boxes>$ = t_list (5, t_box_num(sparp_arg->sparp_permitted_syntax), sparp_arg->sparp_env->spare_storage_name, sparp_arg->sparp_storage, (ptrlong)(sparp_arg->sparp_storage_is_set), sinv_storage_uri);
+		$<boxes>$ = t_list (5,
+		  t_box_num(sparp_arg->sparp_permitted_syntax),
+		  sparp_arg->sparp_env->spare_storage_name,
+		  sparp_arg->sparp_storage,
+		  (ptrlong)(sparp_arg->sparp_storage_is_set),
+		  sinv_storage_uri );
 		sparp_arg->sparp_inner_permitted_syntax = -1;
 		sparp_arg->sparp_env->spare_storage_name = sinv_storage_uri;
 		sparp_arg->sparp_storage = sparp_find_storage_by_name (sinv_storage_uri);
@@ -1397,32 +1411,32 @@ spar_service_req	/* [Virt]	ServiceRequest ::=  'SERVICE' IRIref ServiceOptionLis
 	    spar_service_options_list_opt {
 		$<box>$ = t_alloc (sizeof (sparp_sources_t));
 		if (-1 == sparp_arg->sparp_inner_permitted_syntax)
-		  sparp_arg->sparp_permitted_syntax = SSG_SD_GLOBALS | sparp_find_language_dialect_by_service (sparp_arg, (SPART *)$2);
+		  sparp_arg->sparp_permitted_syntax = SSG_SD_GLOBALS | sparp_find_language_dialect_by_service (sparp_arg, $3);
 		else
 		  sparp_arg->sparp_permitted_syntax = SSG_SD_GLOBALS | sparp_arg->sparp_inner_permitted_syntax;
 		memcpy ($<box>$, &(sparp_arg->sparp_env->spare_src), sizeof (sparp_sources_t));
 		memset (&(sparp_arg->sparp_env->spare_src), 0, sizeof (sparp_sources_t)); }
 	    spar_dataset_clauses_opt _LBRA {
-		caddr_t sinv_storage_uri = $<boxes>3[4];
+		caddr_t sinv_storage_uri = $<boxes>4[4];
 		SPART **sources;
 		SPART *sinv;
 		if ((NULL == sparp_arg->sparp_env->spare_src.ssrc_default_graphs) && (NULL == sparp_arg->sparp_env->spare_src.ssrc_named_graphs))
-		  memcpy (&(sparp_arg->sparp_env->spare_src), $<box>5, sizeof (sparp_sources_t));
+		  memcpy (&(sparp_arg->sparp_env->spare_src), $<box>6, sizeof (sparp_sources_t));
 		sources = spar_make_sources_like_top (sparp_arg, SELECT_L);
-		sinv = spar_make_service_inv (sparp_arg, $2, $4, sparp_arg->sparp_permitted_syntax, sources, sinv_storage_uri);
+		sinv = spar_make_service_inv (sparp_arg, $3, $5, sparp_arg->sparp_permitted_syntax, sources, sinv_storage_uri, $2);
 		spar_add_service_inv_to_sg (sparp_arg, sinv);
 		t_set_push (&(sparp_env()->spare_context_sinvs), sinv);
 		spar_gp_init (sparp_arg, SERVICE_L); }
 	    spar_group_gp {
-		sparp_arg->sparp_permitted_syntax = unbox($<boxes>3[0]);
-		sparp_arg->sparp_env->spare_storage_name = $<boxes>3[1];
-		sparp_arg->sparp_storage = (quad_storage_t *)($<boxes>3[2]);
-		sparp_arg->sparp_storage_is_set = (ptrlong)($<boxes>3[3]);
-		$9->_.gp.options = (SPART **)t_list_concat_tail (
-		  (caddr_t)($9->_.gp.options), 2,
+		sparp_arg->sparp_permitted_syntax = unbox($<boxes>4[0]);
+		sparp_arg->sparp_env->spare_storage_name = $<boxes>4[1];
+		sparp_arg->sparp_storage = (quad_storage_t *)($<boxes>4[2]);
+		sparp_arg->sparp_storage_is_set = (ptrlong)($<boxes>4[3]);
+		$10->_.gp.options = (SPART **)t_list_concat_tail (
+		  (caddr_t)($10->_.gp.options), 2,
 		  SPAR_SERVICE_INV, t_set_pop (&(sparp_env()->spare_context_sinvs)) );
-		memcpy (&(sparp_arg->sparp_env->spare_src), $<box>5, sizeof (sparp_sources_t));
-		$$ = $9; }
+		memcpy (&(sparp_arg->sparp_env->spare_src), $<box>6, sizeof (sparp_sources_t));
+		$$ = $10; }
 
 spar_service_options_list_opt	/* [Virt]	ServiceOptionList ::=  '(' ( 'DEFINE'? IRIref DefValue ( ',' DefValue )* )+ ')'	*/
 	: /* empty */				{ $$ = NULL; t_set_push (&($$), (SPART *)((ptrlong)IN_L)); t_set_push (&($$), (SPART *)((ptrlong)_STAR)); }
@@ -1652,6 +1666,7 @@ spar_same_as_option
 
 spar_verb		/* Verb		 ::=  Var | Backquoted | PPath	*/
 	: spar_var
+	| spar_blank_node
 	| spar_ppath
 	| spar_backquoted
 	| error { sparyyerror (sparp_arg, "Predicate expected (i.e., variable or a backquoted expn or IRI ref or 'a' keyword or some property path)"); }
@@ -1820,8 +1835,13 @@ spar_group_concat_begin
 	: spar_group_concat_begin_int	{ SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_SPARQL11_DRAFT, "GROUP_CONCAT aggregate function call"); $$ = $1; }
 
 spar_group_concat_begin_int
-	:  GROUP_CONCAT_L _LPAR			{ $$ = t_box_dv_uname_string ("sql:GROUP_CONCAT"); }
-	|  GROUP_CONCAT_L _LPAR DISTINCT_L	{ $$ = t_box_dv_uname_string ("sql:GROUP_CONCAT_DISTINCT"); }
+	: GROUP_CONCAT_L _LPAR			{ $$ = t_box_dv_uname_string ("sql:GROUP_CONCAT"); }
+	| GROUP_CONCAT_L _LPAR DISTINCT_L	{ $$ = t_box_dv_uname_string ("sql:GROUP_CONCAT_DISTINCT"); }
+	;
+
+spar_var_or_iriref	/* [Virt]	VarOrIRIref	 ::=  Var | IRIref	*/
+	: spar_var
+	| spar_iriref
 	;
 
 spar_var		/* [41]*	Var	 ::=  VAR1 | VAR2 | GlobalVar | ( Var ( '+>' | '*>' ) IRIref )	*/
@@ -1915,8 +1935,8 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	( 'AS' ( VAR1 | VAR2 ) ) */
 	    spar_expn	{	/* Virtuoso-specific extension of [47] */
 		$$ = sparp_make_builtin_call (sparp_arg, LIKE_L, (SPART **)t_list (2, $1, $4)); }
 	| spar_expn IN_L	{ SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_IN, "IN operator"); }
-	    _LPAR spar_expns _RPAR	{	/* Virtuoso-specific extension of [47] */
-		  dk_set_t args = $5;
+	    spar_arg_list	{	/* Virtuoso-specific extension of [47] */
+		  dk_set_t args = (((dk_set_t)NIL_L == $4) ? NULL : $4);
                   if (1 == dk_set_length (args))
                     {
 		      SPAR_BIN_OP ($$, BOP_EQ, $1, args->data);
@@ -1929,8 +1949,8 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	( 'AS' ( VAR1 | VAR2 ) ) */
                     }
 		}
 	| spar_expn NOT_IN_L	{ SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_IN, "NOT IN operator"); }
-	    _LPAR spar_expns _RPAR	{	/* Virtuoso-specific extension of [47] */
-		  dk_set_t args = $5;
+	    spar_arg_list	{	/* Virtuoso-specific extension of [47] */
+		  dk_set_t args = (((dk_set_t)NIL_L == $4) ? NULL : $4);
 		  if (1 == dk_set_length (args))
 		    {
 		      SPAR_BIN_OP ($$, BOP_NEQ, $1, args->data);
@@ -2102,6 +2122,11 @@ spar_built_in_call	/* [52]*	BuiltInCall	 ::=  */
 		{ $$ = sparp_make_builtin_call (sparp_arg, DATATYPE_L, (SPART **)t_list (1, $3)); }
 	| BOUND_L _LPAR spar_var _RPAR		/*... | ( 'BOUND' '(' Var ')' ) */
 		{ $$ = sparp_make_builtin_call (sparp_arg, BOUND_L, (SPART **)t_list (1, $3)); }
+	| spar_exists_or_not_exists spar_constraint_exists_int {		/*... | 'NOT'? 'EXISTS' DatasetClause* WhereClause	*/
+		if ($1)
+		  $$ = $2;
+		else
+		  SPAR_BIN_OP ($$, BOP_NOT, $2, NULL); }
 	;
 
 spar_function_call	/* [54]	FunctionCall	 ::=  IRIref ArgList	*/

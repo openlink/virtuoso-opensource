@@ -388,8 +388,8 @@ spar_error_if_unsupported_syntax_imp (sparp_t *sparp, int feature_in_use, const 
   if (NULL != sparp->sparp_env->spare_context_sinvs)
     {
       SPART *sinv = (SPART *)(sparp->sparp_env->spare_context_sinvs->data);
-      spar_error (sparp, "The support of %.200s syntax is not enabled for the SERVICE %.300s (bit 0x%x is not set)",
-        feature_name, sinv->_.sinv.endpoint, feature_in_use );
+      spar_error (sparp, "The support of %.200s syntax is not enabled for the %.300s (bit 0x%x is not set)",
+        feature_name, spar_sinv_naming (sparp, sinv), feature_in_use );
     }
   spar_error (sparp, "The support of %.200s syntax is disabled for debugging or security purpose by disabling bit 0x%x of define lang:dialect",
     feature_name, feature_in_use );
@@ -2024,7 +2024,7 @@ spar_add_service_inv_to_sg (sparp_t *sparp, SPART *sinv)
 }
 
 SPART *
-spar_make_service_inv (sparp_t *sparp, caddr_t endpoint, dk_set_t all_options, ptrlong permitted_syntax, SPART **sources, caddr_t sinv_storage)
+spar_make_service_inv (sparp_t *sparp, SPART *endpoint, dk_set_t all_options, ptrlong permitted_syntax, SPART **sources, caddr_t sinv_storage, int silent)
 {
   dk_set_t iri_params = NULL;
   dk_set_t param_varnames = NULL;
@@ -2083,7 +2083,7 @@ spar_make_service_inv (sparp_t *sparp, caddr_t endpoint, dk_set_t all_options, p
         }
 /*! TBD: add other cases */
     }
-  sinv = spartlist (sparp, 11, SPAR_SERVICE_INV,
+  sinv = spartlist (sparp, 12, SPAR_SERVICE_INV,
     (ptrlong)(0),
     endpoint,
     t_revlist_to_array (iri_params),
@@ -2093,8 +2093,20 @@ spar_make_service_inv (sparp_t *sparp, caddr_t endpoint, dk_set_t all_options, p
     t_revlist_to_array (rset_varnames),
     t_revlist_to_array (defines),
     sources,
-    sinv_storage );
+    sinv_storage,
+    (ptrlong)silent );
   return sinv;
+}
+
+caddr_t
+spar_sinv_naming (sparp_t *sparp, SPART *sinv)
+{
+  switch (SPART_TYPE (sinv->_.sinv.endpoint))
+    {
+    case SPAR_VARIABLE: return t_box_sprintf (300, "SERVICE ?%.200s at line %d", sinv->_.sinv.endpoint->_.var.vname, (int)(unbox(sinv->_.sinv.endpoint->srcline)));
+    case SPAR_QNAME: return t_box_sprintf (300, "SERVICE <?%.200s> at line %d", sinv->_.sinv.endpoint->_.qname.val, (int)(unbox(sinv->_.sinv.endpoint->srcline)));
+    default: return t_box_sprintf (300, "SERVICE at line %d", (int)(unbox(sinv/*->_.sinv.endpoint*/->srcline)));
+    }
 }
 
 int
@@ -4271,6 +4283,8 @@ const sparp_bif_desc_t sparp_bif_descs[] = {
   { "sha384"		, SPAR_BIF_SHA384		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL	},
   { "sha512"		, SPAR_BIF_SHA512		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL	},
   { "str"		, SPAR_BIF_STR			, '-'	, 0			, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT	},
+  { "strafter"		, SPAR_BIF_STRAFTER		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 2	, 2	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_LONG, SSG_VALMODE_LONG, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL	},
+  { "strbefore"		, SPAR_BIF_STRBEFORE		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 2	, 2	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_LONG, SSG_VALMODE_LONG, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL	},
   { "strdt"		, SPAR_BIF_STRDT		, 'S'	, SSG_SD_SPARQL11_DRAFT	, 2	, 2	, SSG_VALMODE_LONG	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT	},
   { "strends"		, SPAR_BIF_STRENDS		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 2	, 2	, SSG_VALMODE_BOOL	, { SSG_VALMODE_LONG, SSG_VALMODE_LONG, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
   { "strlang"		, SPAR_BIF_STRLANG		, 'S'	, SSG_SD_SPARQL11_DRAFT	, 2	, 2	, SSG_VALMODE_LONG	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT	},

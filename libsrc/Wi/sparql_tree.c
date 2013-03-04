@@ -3416,7 +3416,24 @@ sparp_tree_full_copy (sparp_t *sparp, const SPART *orig, const SPART *parent_gp)
       return tgt;
     case SPAR_REQ_TOP:
       if (0 != sparp->sparp_sg->sg_equiv_count)
-        spar_internal_error (sparp, "sparp_tree_full_copy() is used to copy req_top with nonzero equiv_count");
+        {
+#if 0
+          spar_internal_error (sparp, "sparp_tree_full_copy() is used to copy req_top with nonzero equiv_count");
+#endif
+          sparp_equiv_audit_all (sparp, 0);
+          sparp_audit_mem (sparp);
+          sparp->sparp_sg->sg_cloning_serial++;
+#ifndef sparp_tree_full_copy
+          tgt = sparp_tree_full_clone_int (sparp, orig, parent_gp);
+#else
+          tgt = sparp_tree_full_clone_int (sparp, orig, NULL /*could be parent_gp*/);
+#endif
+          sparp->sparp_sg->sg_cloning_serial++;
+          sparp_equiv_audit_all (sparp, 0);
+          sparp_audit_mem (sparp);
+          t_check_tree (tgt);
+          return tgt;
+        }
       tgt = (SPART *)t_box_copy ((caddr_t) orig);
       tgt->_.req_top.retvals = sparp_treelist_full_copy (sparp, orig->_.req_top.retvals, parent_gp);
 #if 0

@@ -896,7 +896,8 @@ type_ok:
       return case (length (rdf_box_data (o_col))) when 0 then 0 else 1 end;
 
 badtype:
-      signal ('RDFXX', sprintf ('Unknown datatype in DB.DBA.RQ_BOOL_OF_O, bad string "%s"', o_col));
+      signal ('RDFXX', signal ('RDFXX', sprintf ('Unknown datatype in DB.DBA.RQ_BOOL_OF_O, bad type id %d, string value "%s"',
+    twobyte, cast (rdf_box_data (o_col) as varchar) ) );
     }
   if (o_col is null)
     return null;
@@ -1528,7 +1529,7 @@ create function DB.DBA.RDF_LANGUAGE_OF_OBJ (in shortobj any, in dflt varchar := 
   return res;
 
 badtype:
-  signal ('RDFXX', sprintf ('Unknown language in DB.DBA.RDF_LANGUAGE_OF_OBJ, bad string "%s"', shortobj));
+  signal ('RDFXX', sprintf ('Unknown language in DB.DBA.RDF_LANGUAGE_OF_OBJ, bad string "%s"', cast (shortobj as varchar)));
 }
 ;
 
@@ -1755,7 +1756,7 @@ type_ok:
   return case (length (rdf_box_data (longobj))) when 0 then 0 else 1 end;
 
 badtype:
-  signal ('RDFXX', sprintf ('Unknown datatype in DB.DBA.RDF_BOOL_OF_LONG (code %d)', rdf_box_type(longobj)));
+  signal ('RDFXX', sprintf ('Unknown datatype in DB.DBA.RDF_BOOL_OF_LONG (code %d)', rdf_box_type (longobj)));
 }
 ;
 

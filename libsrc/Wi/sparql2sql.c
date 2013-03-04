@@ -608,7 +608,7 @@ sparp_gp_trav_cu_in_options (sparp_t *sparp, SPART *gp, SPART *curr, SPART **opt
               spar_error (sparp, "Only plain variables can be used in OFFBAND_L or SCORE_L options, not parameters like ?%.50s", val->_.var.vname);
             sparp_equiv_get (sparp, gp, val, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_INS_VARIABLE | SPARP_EQUIV_ADD_GSPO_USE);
             if (!set_tabid)
-              spar_internal_error (sparp, "sparp_" "gp_trav_cu_in_optionssparp(): OFFBAND_L or SCORE_L not in triple");
+              spar_internal_error (sparp, "sparp_" "gp_trav_cu_in_options(): OFFBAND_L or SCORE_L not in triple");
             val->_.var.tabid = curr->_.triple.tabid;
             break;
           }
@@ -644,6 +644,13 @@ sparp_gp_trav_cu_in_options (sparp_t *sparp, SPART *gp, SPART *curr, SPART **opt
                 pos1_ptr[0] = 1+v_ctr;
               }
             END_DO_BOX_FAST;
+            break;
+          }
+        case SPAR_SERVICE_INV:
+          {
+            SPART *ep = val->_.sinv.endpoint;
+            if (SPAR_VARIABLE == SPART_TYPE (ep))
+              sparp_equiv_get (sparp, gp, ep, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_INS_VARIABLE | SPARP_EQUIV_ADD_CONST_READ);
             break;
           }
         }
@@ -3370,6 +3377,8 @@ sparp_simplify_builtin (sparp_t *sparp, SPART *tree, int *trouble_ret)
     case SPAR_BIF_SHA384: break;
     case SPAR_BIF_SHA512: break;
     case SPAR_BIF_STR: break;
+    case SPAR_BIF_STRAFTER: break;
+    case SPAR_BIF_STRBEFORE: break;
     case SPAR_BIF_STRDT: break;
     case SPAR_BIF_STRENDS: break;
     case SPAR_BIF_STRLANG: break;
@@ -7156,8 +7165,8 @@ sparp_fill_sinv_varlists (sparp_t *sparp, SPART *root)
               if (0 > dk_set_position_of_string (used_globals, param_var_name))
                 {
                   if (!sinv->_.sinv.in_list_implicit)
-                    spar_error (sparp, "SERVICE <%.200s> (...) declares IN ?%.200s variable but an IN variable should be used both inside and outside the SERVICE clause",
-                      sinv->_.sinv.endpoint, param_var_name );
+                    spar_error (sparp, "%.300s declares IN ?%.200s variable but an IN variable should be used both inside and outside the SERVICE clause",
+                      spar_sinv_naming (sparp, sinv), param_var_name );
                   param_varnames_ptr[0] = t_list_remove_nth ((caddr_t)(param_varnames_ptr[0]), varctr);
                 }
             }
