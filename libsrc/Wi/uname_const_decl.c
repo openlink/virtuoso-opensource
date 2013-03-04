@@ -70,6 +70,11 @@ caddr_t uname_rdf_ns_uri_type;
 caddr_t uname_rdf_ns_uri_datatype;
 caddr_t uname_rdf_ns_uri_parseType;
 caddr_t uname_rdf_ns_uri_value;
+caddr_t uname_rdfdf_ns_uri;
+caddr_t uname_rdfdf_ns_uri_default;
+caddr_t uname_rdfdf_ns_uri_default_nullable;
+caddr_t uname_rdfdf_ns_uri_default_iid;
+caddr_t uname_rdfdf_ns_uri_default_iid_nullable;
 caddr_t uname_space;
 caddr_t uname_swap_reify_ns_uri;
 caddr_t uname_swap_reify_ns_uri_statement;
@@ -202,6 +207,11 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname_rdf_ns_uri_datatype			, RDF_NS_URI "datatype"		},
   { &uname_rdf_ns_uri_parseType			, RDF_NS_URI "parseType"	},
   { &uname_rdf_ns_uri_value			, RDF_NS_URI "value"		},
+  { &uname_rdfdf_ns_uri				, RDFDF_NS_URI			},
+  { &uname_rdfdf_ns_uri_default			, RDFDF_NS_URI "default"	},
+  { &uname_rdfdf_ns_uri_default_nullable	, RDFDF_NS_URI "default-nullable"	},
+  { &uname_rdfdf_ns_uri_default_iid		, RDFDF_NS_URI "default-iid"	},
+  { &uname_rdfdf_ns_uri_default_iid_nullable	, RDFDF_NS_URI "default-iid-nullable"	},
   { &uname_space				, "space"			},
   { &uname_swap_reify_ns_uri			, SWAP_REIFY_NS_URI		},
   { &uname_swap_reify_ns_uri_statement		, SWAP_REIFY_NS_URI "statement"	},

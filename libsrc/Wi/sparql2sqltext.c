@@ -1583,7 +1583,16 @@ sparp_equiv_native_valmode (sparp_t *sparp, SPART *gp, sparp_equiv_t *eq)
       return SSG_VALMODE_LONG;
     }
   if (VALUES_L == gp->_.gp.subtype)
-    return SSG_VALMODE_LONG;
+    {
+      if (SPART_VARR_IS_REF & eq->e_rvr.rvrRestrictions)
+        { 
+          caddr_t qmf_name = (SPART_VARR_NOT_NULL & eq->e_rvr.rvrRestrictions) ? uname_rdfdf_ns_uri_default_iid : uname_rdfdf_ns_uri_default_iid_nullable;
+          jso_rtti_t *qmf_rtti = (jso_rtti_t *)gethash (qmf_name, jso_rttis_of_names);
+          if ((NULL != qmf_rtti) && JSO_STATUS_LOADED == qmf_rtti->jrtti_status)
+            return (ssg_valmode_t)(qmf_rtti->jrtti_self);
+        }
+      return SSG_VALMODE_LONG;
+    }
   if (UNION_L == gp->_.gp.subtype)
     {
       ssg_valmode_t smallest_union = SSG_VALMODE_AUTO;

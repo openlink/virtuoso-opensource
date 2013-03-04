@@ -37,6 +37,11 @@
 #define VIRTRDF_NS_URI		"http://www.openlinksw.com/schemas/virtrdf#"
 #define VIRTRDF_NS_URI_LEN	42
 
+/*				 0         1         2         3         4   */
+/*				 012345678901234567890123456789012345678901234567 */
+#define RDFDF_NS_URI		"http://www.openlinksw.com/virtrdf-data-formats#"
+#define RDFDF_NS_URI_LEN	47
+
 /*				 0         1         2         3      */
 /*				 012345678901234567890123456789012345 */
 #define XHV_NS_URI		"http://www.w3.org/1999/xhtml/vocab#"
@@ -88,6 +93,11 @@ extern caddr_t uname_rdf_ns_uri_type;
 extern caddr_t uname_rdf_ns_uri_datatype;
 extern caddr_t uname_rdf_ns_uri_parseType;
 extern caddr_t uname_rdf_ns_uri_value;
+extern caddr_t uname_rdfdf_ns_uri;
+extern caddr_t uname_rdfdf_ns_uri_default;
+extern caddr_t uname_rdfdf_ns_uri_default_nullable;
+extern caddr_t uname_rdfdf_ns_uri_default_iid;
+extern caddr_t uname_rdfdf_ns_uri_default_iid_nullable;
 extern caddr_t uname_space;
 extern caddr_t uname_swap_reify_ns_uri;
 extern caddr_t uname_swap_reify_ns_uri_statement;
