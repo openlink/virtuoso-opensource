@@ -39,8 +39,9 @@ iri_id_t bnode_t_treshold = ~((iri_id_t)0);
 caddr_t
 bif_rdf_set_bnode_t_treshold (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  sec_check_dba ((query_instance_t *)qst, "__rdf_set_bnode_t_treshold");
-  bnode_t_treshold = sequence_next ("RDF_URL_IID_BLANK", 0);
+  sec_check_dba ((query_instance_t *) qst, "__rdf_set_bnode_t_treshold");
+  if (CL_RUN_LOCAL == cl_run_local_only)
+    bnode_t_treshold = sequence_next ("RDF_URL_IID_BLANK", 0);
   return box_iri_id (bnode_t_treshold);
 }
 
