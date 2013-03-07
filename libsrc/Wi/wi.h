@@ -1531,8 +1531,11 @@ extern int64 bdf_is_avail_mask; /* all bits on except read aside flag which does
 #define RST_TIMEOUT	5
 #define RST_AT_END 6 /*  reached top or max rows in a select */
 
+#ifndef DEBUG
+#define NO_ITC_DEBUG
+#endif
 
-#ifdef DEBUG
+#ifndef NO_ITC_DEBUG
 # define FAILCK(it) if (! it -> itc_fail_context) GPF_T1("No fail context.");
 #else
 # define FAILCK(it)
