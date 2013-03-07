@@ -1092,7 +1092,7 @@ end_loop:;
                 accept := "output-format";
 	    }
           stat := '00000';
-	  if (get not in ('soft', 'replacing', 'add'))
+	  if (get not in ('soft', 'replacing', 'add', 'none'))
 	    get := 'add';
 	  if (length (login))
 	    login := concat ('define get:login "', login, '" ');
@@ -1123,6 +1123,9 @@ end_loop:;
 	  url := replace (url, '>', '%3E');
 	  url := replace (url, ' ', '%20');
 
+	  if (get = 'none')
+	    sponge := '';
+          else
 	  sponge := sprintf ('define get:soft "%s"', get);
 
 	  set_user_id ('SPARQL');
