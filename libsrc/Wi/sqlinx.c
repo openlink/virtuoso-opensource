@@ -750,10 +750,7 @@ sqlo_index_path (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t path, int pk_given)
       index_choice_t ic;
       if (opt_inx_name && !path)
 	{
-	  if (!strcmp (opt_inx_name, "PRIMARY KEY")
-	      && key->key_is_primary)
-	    ;
-	  else if (CASEMODESTRCMP (opt_inx_name, key->key_name))
+	  if (!key_matches_index_opt (key, opt_inx_name))
 	    continue;
 	}
       if (pk_given && !key->key_is_primary)

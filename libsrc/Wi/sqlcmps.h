@@ -325,6 +325,9 @@ typedef struct trig_cols_s
   } trig_cols_t;
 
 
+int key_matches_index_opt (dbe_key_t * key, caddr_t opt);
+dbe_key_t *  tb_key_by_index_opt (dbe_table_t * tb, caddr_t opt);
+
 state_slot_t * col_ref_col (sql_comp_t * sc, caddr_t ref);
 
 void comp_scalar_exp (sql_comp_t *sc, dk_set_t * code_vec, sql_tree_t * tree,

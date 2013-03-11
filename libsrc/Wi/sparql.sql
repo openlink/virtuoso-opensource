@@ -7122,7 +7122,7 @@ create function DB.DBA.SPARUL_CLEAR (in graph_iris any, in inside_sponge integer
       exec (sprintf ('
       delete from DB.DBA.RDF_QUAD
       where G = __i2id (''%S'') ', g_iri));
-      DB.DBA.CL_EXEC ('delete from DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS, index_only, no cluster) where G = ? option (index RDF_QUAD_GS)', vector (g_iid));
+      DB.DBA.CL_EXEC ('delete from DB.DBA.RDF_QUAD table option (index G, index_only, no cluster) where G = ? option (index G)', vector (g_iid));
       delete from DB.DBA.RDF_OBJ_RO_FLAGS_WORDS
       where VT_WORD = rdf_graph_keyword (g_iid);
       if (not inside_sponge)
@@ -7626,8 +7626,8 @@ create procedure DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS (in return_iris integer := 1,
 {
   declare specials, specials_vec any;
   declare last_iri_id, cur_iri_id IRI_ID;
-  declare cr cursor for select G from DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS) where G > last_iri_id and not (dict_get (specials, G, 0));
-  declare cr_cl cursor for select G from DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS)  where G > last_iri_id and 0 >= position (G, specials_vec);
+  declare cr cursor for select G from DB.DBA.RDF_QUAD table option (index G) where G > last_iri_id and not (dict_get (specials, G, 0));
+  declare cr_cl cursor for select G from DB.DBA.RDF_QUAD table option (index G)  where G > last_iri_id and 0 >= position (G, specials_vec);
   declare GRAPH_IRI varchar;
   declare GRAPH_IID IRI_ID;
   declare ctr, len integer;

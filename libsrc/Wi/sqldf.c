@@ -3074,6 +3074,40 @@ sqlo_need_index_path (df_elt_t * tb_dfe)
 }
 
 
+int
+key_matches_index_opt (dbe_key_t * key, caddr_t opt)
+{
+  if (!opt)
+    return 1;
+  if (!strcmp (opt, "PRIMARY KEY"))
+    return key->key_is_primary;
+  if (!CASEMODESTRCMP (opt, key->key_name))
+    return 1;
+  if (!CASEMODESTRCMP (opt, ((dbe_column_t*)key->key_parts->data)->col_name))
+    return 1;
+  return 0;
+}
+
+
+dbe_key_t * 
+tb_key_by_index_opt (dbe_table_t * tb, caddr_t opt)
+{
+  dbe_key_t * best = NULL;
+  DO_SET (dbe_key_t *, key, &tb->tb_keys)
+    {
+      if (key_matches_index_opt (key, opt))
+	{
+	  if (!best)
+	    best = key;
+	  else if (key->key_distinct)
+	    best = key;
+	}
+    }
+  END_DO_SET();
+  return best;
+}
+
+
 void
 sqlo_choose_index (sqlo_t * so, df_elt_t * tb_dfe,
 		   dk_set_t * col_preds, dk_set_t * after_preds)
@@ -3133,16 +3167,7 @@ sqlo_choose_index (sqlo_t * so, df_elt_t * tb_dfe,
 	  if (key->key_no_pk_ref && !opt_inx_name)
 	    continue;
 	  memset (&ic, 0, sizeof (ic));
-	  if (opt_inx_name)
-	    {
-	      if (!CASEMODESTRCMP (opt_inx_name, key->key_name))
-		{
-		  tb_dfe->_.table.key = key;
-		  dfe_table_cost_ic (tb_dfe, &best_ic, 0);
-		  break;
-		}
-	    }
-	  else
+	  if (key_matches_index_opt (key, opt_inx_name))
 	    {
 	      tb_dfe->_.table.key = key;
 	      tb_dfe->dfe_unit = 0;

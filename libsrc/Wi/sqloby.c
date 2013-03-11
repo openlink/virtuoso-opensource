@@ -400,7 +400,7 @@ sqlo_try_oby_order (sqlo_t * so, df_elt_t * tb_dfe)
 	continue;
       if (opt_inx_name)
 	{
-	  if (!CASEMODESTRCMP (opt_inx_name, key->key_name))
+	  if (key_matches_index_opt (key, opt_inx_name))
 	    {
 	      if (!sqlo_is_key_in_order (so, tb_dfe, key))
 		return 0;

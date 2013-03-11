@@ -1953,7 +1953,7 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
   get_soft := get_keyword_ucase ('get:soft', options);
   if ('soft' = get_soft)
     {
-      if ((dest = graph_iri) and exists (select 1 from DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS) where G = iri_to_id (graph_iri, 0) ) and
+      if ((dest = graph_iri) and exists (select 1 from DB.DBA.RDF_QUAD table option (index G) where G = iri_to_id (graph_iri, 0) ) and
         not exists (select 1 from DB.DBA.SYS_HTTP_SPONGE
           where HS_LOCAL_IRI = local_iri and HS_PARSER = 'DB.DBA.RDF_LOAD_HTTP_RESPONSE' and
 	  HS_EXPIRATION is not null))
