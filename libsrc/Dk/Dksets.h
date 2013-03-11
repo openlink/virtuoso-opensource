@@ -141,6 +141,7 @@ EXE_EXPORT (caddr_t, revlist_to_array, (dk_set_t l));
 EXE_EXPORT (int, dk_set_delete, (dk_set_t * set, void *item));
 EXE_EXPORT (void *, dk_set_delete_nth, (dk_set_t * set, int idx));
 EXE_EXPORT (void, dk_set_push, (s_node_t ** set, void *item));
+EXE_EXPORT (void, dk_set_push_two, (s_node_t ** set, void *car_item, void *cadr_item));
 
 #ifdef MALLOC_DEBUG
 dk_set_t dbg_dk_set_cons (const char *file, int line, void *s1, dk_set_t s2);
@@ -149,6 +150,7 @@ caddr_t dbg_list_to_array (const char *file, int line, dk_set_t l);
 caddr_t dbg_copy_list_to_array (const char *file, int line, dk_set_t l);
 caddr_t dbg_revlist_to_array (const char *file, int line, dk_set_t l);
 void dbg_dk_set_push (const char *file, int line, s_node_t ** set, void *item);
+void dbg_dk_set_push_two (const char *file, int line, s_node_t ** set, void *car_item, void *cadr_item);
 void dbg_dk_set_pushnew (const char *file, int line, s_node_t ** set, void *item);
 void *dbg_dk_set_pop (const char *file, int line, s_node_t ** set);
 int dbg_dk_set_delete (const char *file, int line, dk_set_t * set, void *item);
@@ -165,6 +167,7 @@ dk_set_t dbg_dk_set_copy (const char *file, int line, dk_set_t s);
 #define copy_list_to_array(S)	dbg_copy_list_to_array (__FILE__, __LINE__, (S))
 #define revlist_to_array(S)	dbg_revlist_to_array (__FILE__, __LINE__, (S))
 #define dk_set_push(S,I)	dbg_dk_set_push (__FILE__, __LINE__, (S), (I))
+#define dk_set_push_two(S,A,AD)	dbg_dk_set_push_two (__FILE__, __LINE__, (S), (A), (AD))
 #define dk_set_pushnew(S,I)	dbg_dk_set_pushnew (__FILE__, __LINE__, (S), (I))
 #define dk_set_pop(S)		dbg_dk_set_pop (__FILE__, __LINE__, (S))
 #define dk_set_delete(S,I)	dbg_dk_set_delete (__FILE__, __LINE__, (S), (I))
