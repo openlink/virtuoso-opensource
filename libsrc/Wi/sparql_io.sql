@@ -1135,6 +1135,7 @@ create procedure DB.DBA.SPARQL_RESULTS_RDFXML_WRITE_RES (inout ses any, in mdta 
 
 create procedure DB.DBA.SPARQL_RESULTS_RDFXML_WRITE_ROW (inout ses any, in mdta any, inout dta any, in rowno integer)
 {
+  -- dbg_obj_princ ('DB.DBA.SPARQL_RESULTS_RDFXML_WRITE_ROW (..., {', dta[rowno], '},...)');
   mdta := mdta[0];
   for (declare x any, x := 0; x < length (mdta); x := x + 1)
     {
@@ -1744,6 +1745,11 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
         DB.DBA.RDF_TRIPLES_TO_CSV (triples, ses);
       else if (ret_format = 'TSV')
         DB.DBA.RDF_TRIPLES_TO_TSV (triples, ses);
+      else if (ret_format = 'NICE_TTL')
+        {
+          DB.DBA.RDF_TRIPLES_TO_NICE_TTL (triples, ses);
+          ret_mime := 'text/rdf+n3';
+        }
       else if (ret_format = 'SOAP')
 	{
 	  declare soap_ns, spt_ns varchar;
@@ -1848,7 +1854,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
       http ('</query-result></soapenv:Body></soapenv:Envelope>', ses);
       goto body_complete;
     }
-  if (ret_format = 'TTL')
+  if ((ret_format = 'TTL') or (ret_format = 'NICE_TTL'))
     {
       if (ret_format is null)
         ret_mime := 'text/rdf+n3';
@@ -2333,11 +2339,13 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
     http('			format.options[13] = new Option(\'CSV\',\'text/csv\');\n');
     http('			format.options[14] = new Option(\'TSV\',\'text/tab-separated-values\');\n');
     http('			format.options[15] = new Option(\'TriG\',\'application/x-trig\');\n');
+    http('			format.options[16] = new Option(\'Pretty-printed Turtle (slow!)\',\'application/x-nice-turtle\');\n');
+
     if (can_cxml)
       {
-	http('			format.options[15] = new Option(\'CXML (Pivot Collection)\',\'text/cxml\');\n');
+	http('			format.options[17] = new Option(\'CXML (Pivot Collection)\',\'text/cxml\');\n');
 	if (can_qrcode)
-	  http('		format.options[16] = new Option(\'CXML (Pivot Collection with QRcodes)\',\'text/cxml+qrcode\');\n');
+	  http('		format.options[18] = new Option(\'CXML (Pivot Collection with QRcodes)\',\'text/cxml+qrcode\');\n');
       }
     http('			format.selectedIndex = 1;\n');
     http('			last_format = 2;\n');
@@ -2461,7 +2469,8 @@ create procedure WS.WS.SPARQL_ENDPOINT_FORMAT_OPTS (in can_cxml integer, in can_
 	  vector ('application/microdata+json'		, 'Microdata/JSON'	),
 	  vector ('text/csv'				, 'CSV'			),
         vector ('text/tab-separated-values'			, 'TSV'			),
-	  vector ('application/x-trig'			, 'TriG'		) );
+        vector ('application/x-trig'		, 'TriG'				),
+        vector ('application/x-nice-turtle'	, 'Pretty-printed Turtle (slow!)'	) );
     }
   else
     {
@@ -2474,8 +2483,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_FORMAT_OPTS (in can_cxml integer, in can_
 	  vector ('application/sparql-results+json'	, 'JSON'		),
 	  vector ('application/javascript'		, 'Javascript'		),
 	  vector ('text/plain'				, 'NTriples'		),
-        vector ('application/rdf+xml',		'RDF/XML')
-        );
+        vector ('application/rdf+xml',		'RDF/XML') );
     }
   foreach (any x in opts) do
     {
@@ -4147,7 +4155,8 @@ DB.DBA.http_rq_file_handler (in content any, in params any, in lines any, inout 
       strcasestr (accept, 'application/rdf+turtle') is not null or
       strcasestr (accept, 'text/cxml') is not null or
       strcasestr (accept, 'text/cxml+qrcode') is not null or
-      strcasestr (accept, 'text/csv') is not null
+      strcasestr (accept, 'text/csv') is not null or
+      strcasestr (accept, 'application/x-nice-turtle') is not null
      )
     {
       http_request_status ('HTTP/1.1 303 See Other');

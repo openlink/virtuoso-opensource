@@ -5883,7 +5883,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_NICE_TTL (inout triples any, inout ses an
   for (tctr := 0; tctr < tcount; tctr := tctr + 1)
     {
       declare s_iid, o_iid IRI_ID;
-      dbg_obj_princ ('Gathering ', tctr, '/', tcount, triples[tctr][0], triples[tctr][1], triples[tctr][2]);
+      -- dbg_obj_princ ('Gathering ', tctr, '/', tcount, triples[tctr][0], triples[tctr][1], triples[tctr][2]);
       if (triples[tctr][0] is null or triples[tctr][1] is null or triples[tctr][2] is null)
         {
           printed_triples_mask[tctr] := ascii ('N');
@@ -5984,15 +5984,15 @@ bn_iid_done: ;
       declare len_ctr integer;
       len_ctr := 0;
       last_good_head_bnode := head_bnode;
-      dbg_obj_princ ('Loop from ', tail_bnode, ' to ', head_bnode);
+      -- dbg_obj_princ ('Loop from ', tail_bnode, ' to ', head_bnode);
       while (is_bnode_iri_id (head_bnode))
         {
           declare u any;
           u := dict_get (bnode_usage_dict, head_bnode, null);
-          dbg_obj_princ (head_bnode, ' has ', u);
+          -- dbg_obj_princ (head_bnode, ' has ', u);
           if (isinteger (u[1]) and isinteger (u[2]) and u[3] is null and (u[0] is null or isiri_id (u[0])))
             {
-              dbg_obj_princ ('Reached ', last_good_head_bnode);
+              -- dbg_obj_princ ('Reached ', last_good_head_bnode);
               last_good_head_bnode := head_bnode;
               u[3] := len_ctr;
               len_ctr := len_ctr + 1;
@@ -6013,14 +6013,14 @@ bn_iid_done: ;
     http_ttl_prefixes (env, triples[tctr][0], triples[tctr][1], triples[tctr][2], ses);
   prev_s := '';
   prev_p := '';
-  dbg_obj_princ ('printed_triples_mask="', printed_triples_mask, '"');
+  -- dbg_obj_princ ('printed_triples_mask="', printed_triples_mask, '"');
   for (tctr := 0; tctr < tcount; tctr := tctr + 1)
     {
       declare s_iid, o_iid IRI_ID;
       declare s, p, o any;
       if (ascii (' ') <> printed_triples_mask[tctr])
         goto done_triple;
-      dbg_obj_princ ('Printing ', tctr, '/', tcount, triples[tctr][0], triples[tctr][1], triples[tctr][2]);
+      -- dbg_obj_princ ('Printing ', tctr, '/', tcount, triples[tctr][0], triples[tctr][1], triples[tctr][2]);
       s := triples[tctr][0];
       p := triples[tctr][1];
       o := triples[tctr][2];
@@ -6057,7 +6057,7 @@ bn_iid_done: ;
         DB.DBA.RDF_TRIPLE_OBJ_BNODE_TO_NICE_TTL (triples, printed_triples_mask, o_iid, env, bnode_usage_dict, 2, ses);
       else
         http_ttl_value (env, o, 2, ses);
-      dbg_obj_princ ('printed_triples_mask="', printed_triples_mask, '"');
+      -- dbg_obj_princ ('printed_triples_mask="', printed_triples_mask, '"');
 done_triple: ;
     }
 done_data:
@@ -6075,13 +6075,13 @@ create procedure DB.DBA.RDF_TRIPLE_OBJ_BNODE_TO_NICE_TTL (inout triples any, ino
   u := dict_get (bnode_usage_dict, s_bnode_iid, null);
   if (u[0] is not null and not isiri_id (u[0]))
     {
-      dbg_obj_princ ('Printing plain bnode ', s_bnode_iid, ' u=', u);
+      -- dbg_obj_princ ('Printing plain bnode ', s_bnode_iid, ' u=', u);
       http_ttl_value (env, s_bnode_iid, 2, ses);
       return;
     }
   if (isinteger (u[3]))
     {
-      dbg_obj_princ ('Printing list from ', s_bnode_iid, ' u=', u);
+      -- dbg_obj_princ ('Printing list from ', s_bnode_iid, ' u=', u);
       http ('(', ses);
       while (is_bnode_iri_id (s_bnode_iid))
         {
@@ -6100,7 +6100,7 @@ create procedure DB.DBA.RDF_TRIPLE_OBJ_BNODE_TO_NICE_TTL (inout triples any, ino
           printed_triples_mask[u[2]] := ascii ('D');
           s_bnode_iid := triples[u[2]][2];
           u := dict_get (bnode_usage_dict, s_bnode_iid, null);
-          dbg_obj_princ ('next node ', s_bnode_iid, ' u=', u);
+          -- dbg_obj_princ ('next node ', s_bnode_iid, ' u=', u);
         }
       http (' )', ses);
       return;
@@ -6108,7 +6108,7 @@ create procedure DB.DBA.RDF_TRIPLE_OBJ_BNODE_TO_NICE_TTL (inout triples any, ino
   tctr := u[4];
   if (tctr is null)
     {
-      dbg_obj_princ ('Printing empty bnode ', s_bnode_iid, ' u=', u);
+      -- dbg_obj_princ ('Printing empty bnode ', s_bnode_iid, ' u=', u);
       http ('[ ]', ses);
       return;
     }
@@ -6116,7 +6116,7 @@ create procedure DB.DBA.RDF_TRIPLE_OBJ_BNODE_TO_NICE_TTL (inout triples any, ino
   subj := triples[tctr][0];
   prev_p := '';
   http ('[\t', ses);
-  dbg_obj_princ ('Printing bnode triples for ', s_bnode_iid, ' starting from ', tctr, '/', tcount, ' u=', u);
+  -- dbg_obj_princ ('Printing bnode triples for ', s_bnode_iid, ' starting from ', tctr, '/', tcount, ' u=', u);
   while (1=1)
     {
       declare o_iid IRI_ID;
