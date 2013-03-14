@@ -6683,7 +6683,7 @@ sparp_gp_trav_add_graph_perm_read_filters (sparp_t *sparp, SPART *curr, sparp_tr
     {
       SPART *memb = curr->_.gp.members[membctr];
       SPART *g_expn, *g_copy, *filter;
-      const SPART *g_norm_expn;
+      SPART *g_norm_expn;
       ccaddr_t fixed_g;
       dtp_t g_norm_expn_dtp;
       int g_norm_is_var;
@@ -6695,7 +6695,7 @@ sparp_gp_trav_add_graph_perm_read_filters (sparp_t *sparp, SPART *curr, sparp_tr
         continue;
       if (spar_plain_const_value_of_tree (g_expn, &fixed_g))
         {
-          g_norm_expn = (const SPART *)fixed_g;
+          g_norm_expn = (SPART *)fixed_g;
           g_norm_expn_dtp = DV_TYPE_OF (g_norm_expn);
           g_norm_is_var = 0;
         }

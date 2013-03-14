@@ -230,7 +230,7 @@ typedef struct ctor_var_enumerator_s
   caddr_t cve_limofs_var_alias;		/*!< Alias used for cve_limofs_var */
   int cve_make_quads;			/*!< Contructor should make quads */
   SPART *cve_default_graph;		/*!< An expression for the default graph. It is not used in the results ATM because we can generate a mix of triples and quads. */
-  int cve_graphs_should_be_set;		/*!< If \c cve_default_graph is NULL and \c cve_graphs_should_be_set is true and a ctor tmpl has no explicit graph then an error should be signalled */
+  int cve_graphs_should_be_set;		/*!< If \c cve_default_graph is NULL and \c cve_graphs_should_be_set is true and a ctor tmpl has no explicit graph then the default graph should be set from context or an error should be signalled */
 }
 ctor_var_enumerator_t;
 
@@ -256,7 +256,7 @@ spar_cve_find_or_add_variable (sparp_t *sparp, ctor_var_enumerator_t *haystack_c
 int
 sparp_gp_trav_ctor_var_to_limofs_aref (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 { /* This rewrites variables that are nested into backquoted expressions in ctor template when the query has limit or offset clause */
-  ctor_var_enumerator_t *cve = common_env;
+  ctor_var_enumerator_t *cve = (ctor_var_enumerator_t *)common_env;
   int curr_type = SPART_TYPE (curr);
   int var_ctr;
   if (SPAR_BLANK_NODE_LABEL == curr_type)
@@ -272,6 +272,34 @@ sparp_gp_trav_ctor_var_to_limofs_aref (sparp_t *sparp, SPART *curr, sparp_trav_s
     }
   return SPAR_GPT_NODOWN;
 }
+
+int
+spar_ctor_uses_default_graph (SPART *ctor_gp)
+{
+  int triple_ctr;
+  for (triple_ctr = BOX_ELEMENTS_INT (ctor_gp->_.gp.members); triple_ctr--; /* no step */)
+    {
+      SPART *memb = ctor_gp->_.gp.members[triple_ctr];
+      switch (SPART_TYPE (memb))
+        {
+        case SPAR_GP:
+          if (spar_ctor_uses_default_graph (memb))
+            return 1;
+          break;
+        case SPAR_TRIPLE:
+          {
+            SPART *g = memb->_.triple.tr_fields[SPART_TRIPLE_GRAPH_IDX];
+            if (SPART_IS_DEFAULT_GRAPH_BLANK (g))
+              return 1;
+            break;
+          }
+        default:
+          break;
+        }
+    }
+  return 0;
+}
+
 
 #define CTOR_OPCODE_VARIABLE 1
 #define CTOR_OPCODE_BNODE 2
@@ -304,7 +332,7 @@ spar_compose_retvals_of_ctor (sparp_t *sparp, SPART *ctor_gp, const char *funnam
           int g_is_default = !cve->cve_make_quads || SPART_IS_DEFAULT_GRAPH_BLANK (g);
           caddr_t *args;
           if (g_is_default && cve->cve_graphs_should_be_set && (NULL == cve->cve_default_graph))
-            spar_error (sparp, "The default target graph is not specified and constructor template has some triple without GRAPH ... {...} around it");
+            spar_internal_error (sparp, "spar_" "compose_retvals_of_ctor(): no default graph but it is needed");
           args = (g_is_default ?
             (caddr_t *)list (6,
               (ptrlong)CTOR_OPCODE_CONST_OR_EXPN, NULL,
@@ -382,6 +410,8 @@ bnode_found_or_added_for_big_ssl:
       SPART **tvector_args;
       SPART *tvector_call;
       int triple_is_const = 1;
+      if (g_is_default && cve->cve_graphs_should_be_set && (NULL == cve->cve_default_graph))
+        spar_internal_error (sparp, "spar_" "compose_retvals_of_ctor(): no default graph but it is needed");
       tvector_args = (g_is_default ?
         (SPART **)t_list (6, NULL, NULL, NULL, NULL, NULL, NULL) :
         (SPART **)t_list (8, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL) );
@@ -680,6 +710,7 @@ spar_compose_retvals_of_modify (sparp_t *sparp, SPART *top, SPART *graph_to_patc
   cve.cve_bnodes_are_prohibited = 1;
   cve.cve_make_quads = g_may_vary;
   cve.cve_default_graph = graph_to_patch;
+  cve.cve_graphs_should_be_set = 1;
   spar_compose_retvals_of_ctor (sparp, del_ctor_gp, "sql:SPARQL_CONSTRUCT", NULL /* no big ssl const */, NULL, NULL,
     &(top->_.req_top.retvals), &cve, NULL, NULL, NULL, 0 );
   cve.cve_limofs_var_alias = NULL;

@@ -856,36 +856,81 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
         {
           sparp_make_and_push_new_graph_source ( sparp, SPART_GRAPH_FROM,
             spartlist (sparp, 2, SPAR_QNAME, t_box_dv_uname_string (value)),
-            NULL );
+            NULL, SPARP_SSRC_FROZEN_BY_PROTOCOL );
+          if (SPARP_SSRC_FROZEN_BY_PROTOCOL > sparp->sparp_env->spare_src.ssrc_freeze_status)
+            sparp->sparp_env->spare_src.ssrc_frozen_pragma_example = param;
+          sparp->sparp_env->spare_src.ssrc_freeze_status |= SPARP_SSRC_FROZEN_BY_PROTOCOL;
           return;
         }
-      if (!strcmp (param, "input:freeze"))
+      if (!strcmp (param, "input:using-graph-uri"))
         {
-          sparp->sparp_env->spare_src.ssrc_default_graphs_locked = 1;
-          sparp->sparp_env->spare_src.ssrc_named_graphs_locked = 1;
+          sparp_make_and_push_new_graph_source ( sparp, SPART_GRAPH_FROM,
+            spartlist (sparp, 2, SPAR_QNAME, t_box_dv_uname_string (value)),
+            NULL, SPARP_SSRC_FROZEN_BY_PROTOCOL | SPARP_SSRC_FROZEN_BY_USING );
+          if (SPARP_SSRC_FROZEN_BY_USING > sparp->sparp_env->spare_src.ssrc_freeze_status)
+            sparp->sparp_env->spare_src.ssrc_frozen_pragma_example = param;
+          sparp->sparp_env->spare_src.ssrc_freeze_status |= SPARP_SSRC_FROZEN_BY_PROTOCOL | SPARP_SSRC_FROZEN_BY_USING;
           return;
         }
       if (!strcmp (param, "input:default-graph-exclude"))
         {
           sparp_make_and_push_new_graph_source ( sparp, SPART_GRAPH_NOT_FROM,
             spartlist (sparp, 2, SPAR_QNAME, t_box_dv_uname_string (value)),
-            NULL );
-          /* No sparp->sparp_env->spare_src.ssrc_default_graphs_locked = 1; here because NOT FROM can not be overridden */
+            NULL, 0 );
+          /* No sparp->sparp_env->spare_src.ssrc_freeze_status |= something, because NOT FROM can not be overridden */
           return;
         }
       if (!strcmp (param, "input:named-graph-uri"))
         {
           sparp_make_and_push_new_graph_source ( sparp, SPART_GRAPH_NAMED,
             spartlist (sparp, 2, SPAR_QNAME, t_box_dv_uname_string (value)),
-            NULL );
+            NULL, SPARP_SSRC_FROZEN_BY_PROTOCOL );
+          if (SPARP_SSRC_FROZEN_BY_PROTOCOL > sparp->sparp_env->spare_src.ssrc_freeze_status)
+            sparp->sparp_env->spare_src.ssrc_frozen_pragma_example = param;
+          sparp->sparp_env->spare_src.ssrc_freeze_status |= SPARP_SSRC_FROZEN_BY_PROTOCOL;
+          return;
+        }
+      if (!strcmp (param, "input:using-named-graph-uri"))
+        {
+          sparp_make_and_push_new_graph_source ( sparp, SPART_GRAPH_NAMED,
+            spartlist (sparp, 2, SPAR_QNAME, t_box_dv_uname_string (value)),
+            NULL, SPARP_SSRC_FROZEN_BY_PROTOCOL | SPARP_SSRC_FROZEN_BY_USING );
+          if (SPARP_SSRC_FROZEN_BY_USING > sparp->sparp_env->spare_src.ssrc_freeze_status)
+            sparp->sparp_env->spare_src.ssrc_frozen_pragma_example = param;
+          sparp->sparp_env->spare_src.ssrc_freeze_status |= SPARP_SSRC_FROZEN_BY_PROTOCOL | SPARP_SSRC_FROZEN_BY_USING;
           return;
         }
       if (!strcmp (param, "input:named-graph-exclude"))
         {
           sparp_make_and_push_new_graph_source (sparp, SPART_GRAPH_NOT_NAMED,
             spartlist (sparp, 2, SPAR_QNAME, t_box_dv_uname_string (value)),
-            NULL );
-          /* No sparp->sparp_env->spare_src.ssrc_default_graphs_locked = 1; here because NOT FROM can not be overridden */
+            NULL, 0 );
+          /* No sparp->sparp_env->spare_src.ssrc_freeze_status |= something, because NOT FROM can not be overridden */
+          return;
+        }
+      if (!strcmp (param, "input:with-graph-uri"))
+        {
+          SPART *iri = ('\0' == value[0]) ? uname_virtrdf_ns_uri_DefaultSparul11Target : t_box_dv_uname_string (value);
+          SPART *val = spartlist (sparp, 2, SPAR_QNAME, iri);
+          sparp_make_and_push_new_graph_source (sparp, SPART_GRAPH_FROM, val, NULL, SPARP_SSRC_FROZEN_BY_PROTOCOL);
+          sparp->sparp_env->spare_src.ssrc_graph_set_by_with = val;
+          if (SPARP_SSRC_FROZEN_BY_WITH > sparp->sparp_env->spare_src.ssrc_freeze_status)
+            sparp->sparp_env->spare_src.ssrc_frozen_pragma_example = param;
+          sparp->sparp_env->spare_src.ssrc_freeze_status |= SPARP_SSRC_FROZEN_BY_PROTOCOL | SPARP_SSRC_FROZEN_BY_WITH;
+          return;
+        }
+      if (!strcmp (param, "input:with-fallback-graph-uri"))
+        {
+          SPART *iri = ('\0' == value[0]) ? uname_virtrdf_ns_uri_DefaultSparul11Target : t_box_dv_uname_string (value);
+          SPART *val = spartlist (sparp, 2, SPAR_QNAME, iri);
+          sparp->sparp_env->spare_src.ssrc_graph_set_by_fallback_with = val;
+          return;
+        }
+      if (!strcmp (param, "input:freeze"))
+        {
+          if (SPARP_SSRC_FROZEN_EXPLICITLY > sparp->sparp_env->spare_src.ssrc_freeze_status)
+            sparp->sparp_env->spare_src.ssrc_frozen_pragma_example = param;
+          sparp->sparp_env->spare_src.ssrc_freeze_status |= SPARP_SSRC_FROZEN_EXPLICITLY;
           return;
         }
       if (!strcmp (param, "input:ifp"))
@@ -946,14 +991,14 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
       if ((11 < strlen (param)) && !memcmp (param, "input:grab-", 11))
         {
           rdf_grab_config_t *rgc = &(sparp->sparp_env->spare_src.ssrc_grab);
-          const char *lock_pragma = NULL;
           rgc->rgc_pview_mode = 1;
-          if (sparp->sparp_env->spare_src.ssrc_default_graphs_locked)
-            lock_pragma = "input:default-graph-uri";
-          else if (sparp->sparp_env->spare_src.ssrc_named_graphs_locked)
-            lock_pragma = "input:named-graph-uri";
-          if (NULL != lock_pragma)
-            spar_error (sparp, "define %s should not appear after define %s", param, lock_pragma);
+          if (sparp->sparp_env->spare_src.ssrc_freeze_status & (SPARP_SSRC_FROZEN_BY_PROTOCOL | SPARP_SSRC_FROZEN_BY_USING | SPARP_SSRC_FROZEN_EXPLICITLY))
+            {
+              const char *frozen_pragma = sparp->sparp_env->spare_src.ssrc_frozen_pragma_example;
+              if (NULL == frozen_pragma)
+                frozen_pragma = "input:using-graph-iri or in combination with similar SPARQL 1.1 protocol parameter";
+              spar_error (sparp, "define %s should not appear after define %s", param, frozen_pragma);
+            }
           if (!strcmp (param, "input:grab-all"))
             {
               rgc->rgc_all = 1;
@@ -3693,12 +3738,13 @@ cannot_cast:
 }
 
 void
-sparp_make_and_push_new_graph_source (sparp_t *sparp, ptrlong subtype, SPART *iri_expn, SPART **options)
+sparp_make_and_push_new_graph_source (sparp_t *sparp, ptrlong subtype, SPART *iri_expn, SPART **options, int freeze_ignore_mask)
 {
   sparp_env_t *spare = sparp->sparp_env;
   caddr_t iri = ((SPAR_QNAME == SPART_TYPE (iri_expn)) ? iri_expn->_.qname.val : NULL);
   dk_set_t *set_ptr;
-  int *is_locked_ptr = NULL;
+  int is_frozen = 0;
+  int signal_error_even_if_dupe = 0;
   SPART *dupe_found = NULL;
   caddr_t **group_members_ptr = NULL;
   SPART *precode;
@@ -3706,15 +3752,20 @@ sparp_make_and_push_new_graph_source (sparp_t *sparp, ptrlong subtype, SPART *ir
     {
     case SPART_GRAPH_FROM:
       spare->spare_src.ssrc_default_graphs_listed++;
-      is_locked_ptr = &(spare->spare_src.ssrc_default_graphs_locked);
-      /* no break */
+      is_frozen = spare->spare_src.ssrc_freeze_status;
+      signal_error_even_if_dupe = is_frozen & SPARP_SSRC_FROZEN_BY_USING;
+      set_ptr = &(spare->spare_src.ssrc_default_graphs);
+      break;
     case SPART_GRAPH_NOT_FROM:
+      signal_error_even_if_dupe = is_frozen & SPARP_SSRC_FROZEN_BY_WITH;
       set_ptr = &(spare->spare_src.ssrc_default_graphs);
       break;
     case SPART_GRAPH_NAMED:
       spare->spare_src.ssrc_named_graphs_listed++;
-      is_locked_ptr = &(spare->spare_src.ssrc_named_graphs_locked);
-      /* no break */
+      is_frozen = spare->spare_src.ssrc_freeze_status;
+      signal_error_even_if_dupe = is_frozen & SPARP_SSRC_FROZEN_BY_USING;
+      set_ptr = &(spare->spare_src.ssrc_named_graphs);
+      break;
     case SPART_GRAPH_NOT_NAMED:
       set_ptr = &(spare->spare_src.ssrc_named_graphs);
       break;
@@ -3731,7 +3782,7 @@ sparp_make_and_push_new_graph_source (sparp_t *sparp, ptrlong subtype, SPART *ir
             continue;
           if ((subtype < SPART_GRAPH_MIN_NEGATION) && (SPART_GRAPH_MIN_NEGATION < c->_.graph.subtype))
             {
-              if (is_locked_ptr && is_locked_ptr[0])
+              if (is_frozen)
                 {
                   const char *fty = ((SPART_GRAPH_NAMED == subtype) ? " NAMED" : "");
                   spar_error (sparp, "An IRI <%.200s> can not be used in FROM%s clause because it is excluded by NOT FROM%s already",
@@ -3749,15 +3800,24 @@ sparp_make_and_push_new_graph_source (sparp_t *sparp, ptrlong subtype, SPART *ir
         }
       END_DO_SET()
     }
-  if ((NULL == dupe_found) && (subtype < SPART_GRAPH_MIN_NEGATION) && is_locked_ptr && is_locked_ptr[0])
+  if (SPART_GRAPH_NOT_FROM == subtype)
+    {
+      SPART *gsbw = spare->spare_src.ssrc_graph_set_by_with;
+      if ((NULL != gsbw) && (SPAR_QNAME == SPART_TYPE (gsbw)) && !strcmp (gsbw->_.qname.val, iri))
+        spar_error (sparp, "NOT FROM <%.200s> clause conflicts with WITH specified before", ((NULL == iri) ? "..." : iri));
+    }
+  if ((subtype < SPART_GRAPH_MIN_NEGATION) && (is_frozen & ~freeze_ignore_mask))
     {
       const char *fty = ((SPART_GRAPH_NAMED == subtype) ? " NAMED" : "");
-      spar_error (sparp, "FROM %s <%.200s> clause violates security restrictions on allowed graph names", fty, ((NULL != iri) ? "..." : iri));
+      if (NULL == dupe_found)
+        spar_error (sparp, "FROM %s <%.200s> clause (or its equivalent) violates restrictions on allowed graph names set by protocol parameters or define pragmas", fty, ((NULL == iri) ? "..." : iri));
+      else if (signal_error_even_if_dupe)
+        spar_error (sparp, "FROM %s <%.200s> clause (or its equivalent) conflicts with protocol parameters or define pragmas and thus violates SPARQL 1.1 Protocol spec", fty, ((NULL == iri) ? "..." : iri));
     }
   if ((SPART_GRAPH_MIN_NEGATION < subtype) && (NULL != options))
     {
       const char *fty = ((SPART_GRAPH_NAMED == subtype) ? " NAMED" : "");
-      spar_error (sparp, "NOT FROM%s <%.200s> clause can not have options, only FROM and FROM NAMED can", fty, ((NULL != iri) ? "..." : iri));
+      spar_error (sparp, "NOT FROM%s <%.200s> clause can not have options, only FROM and FROM NAMED can", fty, ((NULL == iri) ? "..." : iri));
     }
   if ((NULL != iri) && rdf_graph_group_dict_htable->ht_count)
     {
@@ -3870,30 +3930,23 @@ plain_source_without_sponge:
 }
 
 SPART *
-spar_default_sparul_target (sparp_t *sparp, const char *clause_type, int may_return_null)
+spar_default_sparul_target (sparp_t *sparp, const char *reason_to_use)
 {
   dk_set_t dflt_graphs = sparp->sparp_env->spare_src.ssrc_default_graphs;
   SPART *u_graph = sparp->sparp_env->spare_src.ssrc_graph_set_by_with;
   if (NULL != u_graph)
-    {
-      if (sparp->sparp_env->spare_src.ssrc_default_graphs_locked)
-        spar_error (sparp, "USING clause is used but default graph is locked in the preamble");
-      return sparp_tree_full_copy (sparp, (SPART *)(u_graph), NULL);
-    }
+    return sparp_tree_full_copy (sparp, (SPART *)(u_graph), NULL);
   if ((NULL == dflt_graphs) || (((SPART *)(dflt_graphs->data))->_.graph.subtype > SPART_GRAPH_MIN_NEGATION))
     {
-      if (may_return_null)
-        return NULL;
-      spar_error (sparp, "No %.200s and no default graph specified in the preamble", clause_type);
+      SPART *fbk_graph = sparp->sparp_env->spare_src.ssrc_graph_set_by_fallback_with;
+      if (NULL != fbk_graph)
+        return sparp_tree_full_copy (sparp, (SPART *)(fbk_graph), NULL);
+      spar_error (sparp, "No default graph specified in the preamble, but it is needed for %.200s", reason_to_use);
     }
   if ((NULL != dflt_graphs->next) && (((SPART *)(dflt_graphs->next->data))->_.graph.subtype < SPART_GRAPH_MIN_NEGATION))
-    {
-      if (may_return_null)
-        return NULL;
-      spar_error (sparp, "No %.200s and more than one default graph specified in the preamble", clause_type);
-    }
+    spar_error (sparp, "More than one default graph specified in the preamble; single default graph is needed for %.200s", reason_to_use);
   if (SPART_GRAPH_GROUP == ((SPART *)(dflt_graphs->data))->_.graph.subtype)
-    spar_error (sparp, "No %.200s and the IRI in preamble refers to default graph group, not a single default graph", clause_type);
+    spar_error (sparp, "The IRI in preamble refers to default graph group, not to a single default graph; the default graph is needed for %.200s", reason_to_use);
   return sparp_tree_full_copy (sparp, (SPART *)(dflt_graphs->data), NULL);
 }
 
@@ -4520,10 +4573,19 @@ spar_make_sparul_copymoveadd (sparp_t *sparp, ptrlong opcode, SPART *from_graph_
       SPART *single_default;
       dk_set_t graphs = sparp->sparp_env->spare_src.ssrc_default_graphs;
       if ((NULL == graphs) || (SPART_GRAPH_FROM != ((SPART *)(graphs->data))->_.graph.subtype))
-        spar_error (sparp, "SPARQL 1.1 %s...DEFAULT operator requires declaration of a plain default graph", opname);
-      if ((NULL != graphs->next) && (SPART_GRAPH_MIN_NEGATION <= ((SPART *)(graphs->next->data))->_.graph.subtype))
-        spar_error (sparp, "SPARQL 1.1 %s...DEFAULT operator requires exactly one default graph", opname);
-      single_default = spar_simplify_graph_to_patch (sparp, (SPART *)(graphs->data));
+        {
+          SPART *fbk_graph = sparp->sparp_env->spare_src.ssrc_graph_set_by_fallback_with;
+          if (NULL != fbk_graph)
+            single_default = sparp_tree_full_copy (sparp, (SPART *)(fbk_graph), NULL);
+          else
+            spar_error (sparp, "SPARQL 1.1 %s...DEFAULT operator requires declaration of a plain default graph", opname);
+        }
+      else
+        {
+          if ((NULL != graphs->next) && (SPART_GRAPH_MIN_NEGATION <= ((SPART *)(graphs->next->data))->_.graph.subtype))
+            spar_error (sparp, "SPARQL 1.1 %s...DEFAULT operator requires exactly one default graph", opname);
+          single_default = spar_simplify_graph_to_patch (sparp, (SPART *)(graphs->data));
+        }
       if (DEFAULT_L == (ptrlong)(from_graph_precode))
         from_graph_precode = single_default;
       if (DEFAULT_L == (ptrlong)(to_graph_precode))
@@ -5018,8 +5080,8 @@ sparp_clone_for_variant (sparp_t *sparp, int allow_output_formatting)
   ENV_SET_COPY (spare_src.ssrc_named_graphs);
   ENV_COPY (spare_src.ssrc_default_graphs_listed);
   ENV_COPY (spare_src.ssrc_named_graphs_listed);
-  ENV_COPY (spare_src.ssrc_default_graphs_locked);
-  ENV_COPY (spare_src.ssrc_named_graphs_locked);
+  ENV_COPY (spare_src.ssrc_freeze_status);
+  ENV_COPY (spare_src.ssrc_frozen_pragma_example);
   ENV_SET_COPY (spare_common_sql_table_options);
   ENV_SET_COPY (spare_sql_select_options);
   ENV_SET_COPY (spare_global_var_names);
@@ -5029,6 +5091,7 @@ sparp_clone_for_variant (sparp_t *sparp, int allow_output_formatting)
 void
 spar_env_push (sparp_t *sparp)
 {
+  s_node_t *iter;
   sparp_env_t *env = sparp->sparp_env;
   t_NEW_VARZ (sparp_env_t, env_copy);
   ENV_COPY (spare_start_lineno);
@@ -5048,11 +5111,13 @@ spar_env_push (sparp_t *sparp)
     id_hash_t *		spare_global_bindings;		/*!< Dictionary of global bindings, varnames as keys, default value expns as values. DV_DB_NULL box for no expn! */
 #endif
   ENV_COPY (spare_src.ssrc_grab);
-  ENV_COPY (spare_src.ssrc_common_sponge_options);
-  ENV_COPY (spare_src.ssrc_default_graphs);
-  ENV_COPY (spare_src.ssrc_default_graphs_locked);
-  ENV_COPY (spare_src.ssrc_named_graphs);
-  ENV_COPY (spare_src.ssrc_named_graphs_locked);
+  ENV_SET_COPY (spare_src.ssrc_common_sponge_options);
+  ENV_SET_COPY (spare_src.ssrc_default_graphs);
+  ENV_SET_COPY (spare_src.ssrc_named_graphs);
+  ENV_COPY (spare_src.ssrc_default_graphs_listed);
+  ENV_COPY (spare_src.ssrc_named_graphs_listed);
+  ENV_COPY (spare_src.ssrc_freeze_status);
+  ENV_COPY (spare_src.ssrc_frozen_pragma_example);
   ENV_COPY (spare_common_sql_table_options);
   /* no copy for spare_groupings */
   ENV_COPY (spare_sql_select_options);

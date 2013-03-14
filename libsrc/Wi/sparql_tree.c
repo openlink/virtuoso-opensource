@@ -3362,7 +3362,7 @@ sparp_gp_full_clone (sparp_t *sparp, SPART *gp)
 }
 
 SPART *
-sparp_tree_full_copy (sparp_t *sparp, const SPART *orig, const SPART *parent_gp)
+sparp_tree_full_copy (sparp_t *sparp, SPART *orig, SPART *parent_gp)
 {
   int defctr, defcount, fld_ctr;
   SPART *tgt;
@@ -3511,7 +3511,7 @@ sparp_tree_full_copy (sparp_t *sparp, const SPART *orig, const SPART *parent_gp)
 }
 
 SPART **
-sparp_treelist_full_copy (sparp_t *sparp, SPART **origs, const SPART *parent_gp)
+sparp_treelist_full_copy (sparp_t *sparp, SPART **origs, SPART *parent_gp)
 {
   SPART **tgts = (SPART **)t_box_copy ((caddr_t) origs);
   int ctr;
@@ -5222,7 +5222,7 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
               if (NULL != tree->_.graph.iri)
 	        spart_dump (tree->_.graph.iri, ses, indent+2, "IRI", 0);
               if (NULL != tree->_.graph.expn)
-	        spart_dump (tree->_.graph.expn, ses, indent+2, "EXPN", 0);
+	        spart_dump (tree->_.graph.expn, ses, indent+2, "EXPN", -1);
 	      break;
 	    }
 	  case NAMED_L:

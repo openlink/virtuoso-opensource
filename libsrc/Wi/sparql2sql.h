@@ -572,15 +572,15 @@ extern SPART **sparp_treelist_full_clone (sparp_t *sparp, SPART **origs);
 /*! This creates a full copy of \c orig subtree without cloning equivs.
 Variables inside copy have unidirectional pointers to equivs until attached to other tree or same place in same tree. */
 #if 0
-extern SPART *sparp_tree_full_copy (sparp_t *sparp, const SPART *orig, const SPART *parent_gp);
+extern SPART *sparp_tree_full_copy (sparp_t *sparp, SPART *orig, SPART *parent_gp);
 #else
 #define sparp_tree_full_copy(sparp,orig,parent_gp) sparp_tree_full_copy_2(sparp,orig)
-extern SPART *sparp_tree_full_copy_2 (sparp_t *sparp, const SPART *orig);
+extern SPART *sparp_tree_full_copy_2 (sparp_t *sparp, SPART *orig);
 #endif
 
 /*! This creates a copy of \c origs array and fills it with sparp_tree_full_copy of each member of the array. */
 #if 0
-extern SPART **sparp_treelist_full_copy (sparp_t *sparp, SPART **origs, const SPART *parent_gp);
+extern SPART **sparp_treelist_full_copy (sparp_t *sparp, SPART **origs, SPART *parent_gp);
 #else
 #define sparp_treelist_full_copy(sparp,orig,parent_gp) sparp_treelist_full_copy_2(sparp,orig)
 extern SPART **sparp_treelist_full_copy_2 (sparp_t *sparp, SPART **origs);

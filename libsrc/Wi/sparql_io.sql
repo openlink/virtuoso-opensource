@@ -2820,7 +2820,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
 create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout lines any)
 {
   declare query, full_query, format, should_sponge, debug, def_qry varchar;
-  declare dflt_graphs, named_graphs any;
+  declare dflt_graphs, named_graphs, using_graphs, using_named_graphs any;
   declare paramctr, paramcount, qry_params, maxrows, can_sponge,  start_time integer;
   declare ses, content any;
   declare def_max, add_http_headers, hard_timeout, timeout, client_supports_partial_res, sp_ini, soap_ver int;
@@ -2871,6 +2871,8 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   sp_ini := 0;
   dflt_graphs := vector ();
   named_graphs := vector ();
+  using_graphs := vector ();
+  using_named_graphs := vector ();
   maxrows := 1024*1024; -- More than enough for web-interface.
   deadl := 0;
   http_meth := http_request_get ('REQUEST_METHOD');
@@ -3053,6 +3055,16 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
         {
 	  if (position (pvalue, named_graphs) <= 0)
 	    named_graphs := vector_concat (named_graphs, vector (pvalue));
+	}
+      else if ('using-graph-uri' = pname and length (pvalue))
+        {
+	  if (position (pvalue, using_graphs) <= 0)
+	    using_graphs := vector_concat (using_graphs, vector (pvalue));
+	}
+      else if ('using-named-graph-uri' = pname and length (pvalue))
+        {
+	  if (position (pvalue, using_named_graphs) <= 0)
+	    using_named_graphs := vector_concat (using_named_graphs, vector (pvalue));
 	}
       else if ('maxrows' = pname)
         {
@@ -3253,6 +3265,16 @@ host_found:
     {
       full_query := concat ('define input:named-graph-uri <', ng, '> ', full_query);
       http_header (http_header_get () || sprintf ('X-SPARQL-named-graph: %s\r\n', ng));
+    }
+  foreach (varchar dg in using_graphs) do
+    {
+      full_query := concat ('define input:using-graph-uri <', dg, '> ', full_query);
+      http_header (http_header_get () || sprintf ('X-SPARQL-using-graph: %s\r\n', dg));
+    }
+  foreach (varchar ng in using_named_graphs) do
+    {
+      full_query := concat ('define input:using-named-graph-uri <', ng, '> ', full_query);
+      http_header (http_header_get () || sprintf ('X-SPARQL-using-named-graph: %s\r\n', ng));
     }
   if ((should_sponge = 'soft') or (should_sponge = 'replacing'))
     full_query := concat (sprintf('define get:soft "%s" ',should_sponge), full_query);

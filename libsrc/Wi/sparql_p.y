@@ -919,7 +919,7 @@ spar_dataset_clause	/* [9]*	DatasetClause	 ::=   |	*/
 			/* [10]	DefaultGraphClause	 ::=  SourceSelector	*/
 			/* [11]	NamedGraphClause	 ::=  'NAMED' SourceSelector	*/
 	: spar_dataset_clause_subtype spar_iriref spar_sponge_optionlist_opt {
-		sparp_make_and_push_new_graph_source (sparp_arg, $1, $2, $3); }
+		sparp_make_and_push_new_graph_source (sparp_arg, $1, $2, $3, SPARP_SSRC_FROZEN_BY_PROTOCOL); }
 	;
 
 spar_dataset_clause_subtype
@@ -2335,9 +2335,16 @@ spar_sparul_insert	/* [DML]*	InsertAction	 ::=  */
 			/*... ConstructTemplate ( DatasetClause* WhereClause SolutionModifier )?	*/
 	: INSERT_L spar_in_graph_precode _LBRA {
 		t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL); }
-	    spar_ctor_template_nolbra spar_action_solution {
-		$$ = spar_make_top_or_special_case_from_wm (sparp_arg, INSERT_L, NULL, $6 );
-		spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, $2, $5); }
+	    spar_ctor_template_nolbra {
+		if (NULL != $2)
+		  $<tree>$ = $2;
+		else if (spar_ctor_uses_default_graph ($5))
+		  $<tree>$ = spar_default_sparul_target (sparp_arg, "triple constructor in INSERT {...} without GRAPH {...}");
+		else
+		  $<tree>$ = NULL; }
+	    spar_action_solution {
+		$$ = spar_make_top_or_special_case_from_wm (sparp_arg, INSERT_L, NULL, $7 );
+		spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, $<tree>6, $5); }
 	;
 
 spar_sparul_insertdata	/* [DML]*	InsertDataAction	 ::=  */
@@ -2348,9 +2355,12 @@ spar_sparul_insertdata	/* [DML]*	InsertDataAction	 ::=  */
 		sparp_arg->sparp_in_precode_expn = 2; }
 	    spar_ctor_template_nolbra {
                 SPART *fake = spar_make_fake_action_solution (sparp_arg);
+		SPART *dflt_g = $3;
+		if ((NULL == dflt_g) && spar_ctor_uses_default_graph ($6))
+		  dflt_g = spar_default_sparul_target (sparp_arg, "triple in INSERT DATA {...} without GRAPH {...}");
 		sparp_arg->sparp_in_precode_expn = 0;
 		$$ = spar_make_top_or_special_case_from_wm (sparp_arg, SPARUL_INSERT_DATA, NULL, fake );
-		spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, $3, $6); }
+		spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, dflt_g, $6); }
 	;
 
 spar_sparul_delete	/* [DML]*	DeleteAction	 ::=  */
@@ -2358,9 +2368,16 @@ spar_sparul_delete	/* [DML]*	DeleteAction	 ::=  */
 			/*... ConstructTemplate ( DatasetClause* WhereClause SolutionModifier )?	*/
 	: DELETE_L spar_from_graph_precode _LBRA {
 		t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL); }
-	    spar_ctor_template_nolbra spar_action_solution {
-		$$ = spar_make_top_or_special_case_from_wm (sparp_arg, DELETE_L, NULL, $6 );
-		spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, $2, $5); }
+	    spar_ctor_template_nolbra {
+		if (NULL != $2)
+		  $<tree>$ = $2;
+		else if (spar_ctor_uses_default_graph ($5))
+		  $<tree>$ = spar_default_sparul_target (sparp_arg, "triple constructor in DELETE {...} without GRAPH {...}");
+		else
+		  $<tree>$ = NULL; }
+	    spar_action_solution {
+		$$ = spar_make_top_or_special_case_from_wm (sparp_arg, DELETE_L, NULL, $7 );
+		spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, $<tree>6, $5); }
 	;
 
 spar_sparul_deletedata	/* [DML]*	DeleteDataAction	 ::=  */
@@ -2371,9 +2388,12 @@ spar_sparul_deletedata	/* [DML]*	DeleteDataAction	 ::=  */
 		sparp_arg->sparp_in_precode_expn = 2; }
 	    spar_ctor_template_nolbra {
                 SPART *fake = spar_make_fake_action_solution (sparp_arg);
+		SPART *dflt_g = $3;
+		if ((NULL == dflt_g) && spar_ctor_uses_default_graph ($6))
+		  dflt_g = spar_default_sparul_target (sparp_arg, "triple in DELETE DATA {...} without GRAPH {...}");
 		sparp_arg->sparp_in_precode_expn = 0;
 		$$ = spar_make_top_or_special_case_from_wm (sparp_arg, SPARUL_DELETE_DATA, NULL, fake );
-		spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, $3, $6); }
+		spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, dflt_g, $6); }
 	;
 
 spar_sparul_modify	/* [DML]*	ModifyAction	 ::=  */
@@ -2382,10 +2402,18 @@ spar_sparul_modify	/* [DML]*	ModifyAction	 ::=  */
 			/*... ( DatasetClause* WhereClause SolutionModifier )?	*/
 	: MODIFY_L spar_graph_precode_opt DELETE_L _LBRA {
 		t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL); }
-	    spar_ctor_template_nolbra INSERT_L _LBRA spar_ctor_template_nolbra
+	    spar_ctor_template_nolbra INSERT_L _LBRA spar_ctor_template_nolbra {
+		if (NULL != $2)
+		  $<tree>$ = $2;
+		else if (spar_ctor_uses_default_graph ($6))
+		  $<tree>$ = spar_default_sparul_target (sparp_arg, "triple constructor in DELETE {...} without GRAPH {...}");
+		else if (spar_ctor_uses_default_graph ($9))
+		  $<tree>$ = spar_default_sparul_target (sparp_arg, "triple constructor in INSERT {...} without GRAPH {...}");
+		else
+		  $<tree>$ = NULL; }
 	    spar_action_solution {
-		$$ = spar_make_top_or_special_case_from_wm (sparp_arg, MODIFY_L, NULL, $10 );
-		spar_compose_retvals_of_modify (sparp_arg, $$, $2, $6, $9); }
+		$$ = spar_make_top_or_special_case_from_wm (sparp_arg, MODIFY_L, NULL, $11 );
+		spar_compose_retvals_of_modify (sparp_arg, $$, $<tree>10, $6, $9); }
 	;
 
 spar_sparul_clear	/* [DML]*	ClearAction	 ::=  'CLEAR' 'SILENT'? DropTarget	*/
@@ -2427,7 +2455,7 @@ spar_action_solution
 	;
 
 spar_in_graph_precode_opt
-	: /* empty */	{ $$ = spar_default_sparul_target (sparp_arg, "IN clause", 1); }
+	: /* empty */	{ $$ = NULL; }
 	| spar_in_graph_precode	{ $$ = $1; }
 	;
 
@@ -2436,7 +2464,7 @@ spar_in_graph_precode
 	;
 
 spar_from_graph_precode_opt
-	: /* empty */	{ $$ = spar_default_sparul_target (sparp_arg, "FROM clause", 1); }
+	: /* empty */	{ $$ = NULL; }
 	| spar_from_graph_precode	{ $$ = $1; }
 	;
 
@@ -2457,7 +2485,7 @@ spar_default_or_graph_precode
 	;
 
 spar_graph_precode_opt
-	: /* empty */	{ $$ = spar_default_sparul_target (sparp_arg, "GRAPH IDENTIFIED BY clause", 0); }
+	: /* empty */	{ $$ = NULL; }
 	| spar_graph_identified_by_opt spar_precode_expn	{ $$ = $2; }
 	;
 
@@ -2466,7 +2494,7 @@ spar_with_graph_precode_opt
 	| WITH_L spar_graph_identified_by_opt spar_precode_expn spar_sponge_optionlist_opt	{
 		SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_SPARQL11_DRAFT, "WITH clause");
 		sparp_arg->sparp_env->spare_src.ssrc_graph_set_by_with = $3;
-		sparp_make_and_push_new_graph_source (sparp_arg, SPART_GRAPH_FROM, $3, $4); }
+		sparp_make_and_push_new_graph_source (sparp_arg, SPART_GRAPH_FROM, $3, $4, SPARP_SSRC_FROZEN_BY_PROTOCOL); }
 	;
 
 spar_in_or_into
@@ -2486,28 +2514,35 @@ spar_sparul11_deleteinsert	/* [DML]*	DeleteInsert11Action	 ::=  */
 			/*... 'DELETE' ConstructTemplate ( 'INSERT' ConstructTemplate )?	*/
 			/*... ( DatasetClause* WhereClause SolutionModifier )?	*/
 	: DELETE_L _LBRA {
-		$<tree>$ = spar_default_sparul_target (sparp_arg, "SPARQL 1.1 DELETE clause", 1);
 		t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL); }
-	    spar_ctor_template_nolbra spar_sparul11_insert_opt
+	    spar_ctor_template_nolbra spar_sparul11_insert_opt {
+		if (spar_ctor_uses_default_graph ($4))
+		  $<tree>$ = spar_default_sparul_target (sparp_arg, "triple constructor in DELETE {...} without GRAPH {...}");
+		else if ((NULL != $5) && spar_ctor_uses_default_graph ($5))
+		  $<tree>$ = spar_default_sparul_target (sparp_arg, "triple constructor in INSERT {...} without GRAPH {...}");
+		else
+		  $<tree>$ = NULL; }
 	    spar_action_solution {
 		if (NULL != $5)
 		  {
-		    $$ = spar_make_top_or_special_case_from_wm (sparp_arg, MODIFY_L, NULL, $6 );
-		    spar_compose_retvals_of_modify (sparp_arg, $$, $<tree>3, $4, $5); }
+		    $$ = spar_make_top_or_special_case_from_wm (sparp_arg, MODIFY_L, NULL, $7 );
+		    spar_compose_retvals_of_modify (sparp_arg, $$, $<tree>6, $4, $5); }
 		else
 		  {
-		    $$ = spar_make_top_or_special_case_from_wm (sparp_arg, DELETE_L, NULL, $6 );
-		    spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, $<tree>3, $4); } }
+		    $$ = spar_make_top_or_special_case_from_wm (sparp_arg, DELETE_L, NULL, $7 );
+		    spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, $<tree>6, $4); } }
 	| DELETE_L WHERE_L _LBRA {
 		sparp_arg->sparp_allow_aggregates_in_expn &= ~1;
 		spar_gp_init (sparp_arg, WHERE_L); }
 	    spar_gp _RBRA spar_solution_modifier {
-		SPART *tgt_graph = spar_default_sparul_target (sparp_arg, "SPARQL 1.1 DELETE WHERE clause", 1);
 		SPART *where_gp = spar_gp_finalize (sparp_arg, NULL);
 		SPART *wm = $7;
+		SPART *dflt_g = NULL;
+		if (spar_ctor_uses_default_graph (where_gp))
+		  dflt_g = spar_default_sparul_target (sparp_arg, "triple in DELETE WHERE {...} without GRAPH {...}");
 		wm->_.wm.where_gp = where_gp;
 		$$ = spar_make_top_or_special_case_from_wm (sparp_arg, DELETE_L, NULL, wm);
-		spar_compose_retvals_of_delete_from_wm (sparp_arg, $$, tgt_graph); }
+		spar_compose_retvals_of_delete_from_wm (sparp_arg, $$, dflt_g); }
 	;
 
 spar_sparul11_insert	/* [DML]*	Insert11Action	 ::=  */
@@ -2515,12 +2550,15 @@ spar_sparul11_insert	/* [DML]*	Insert11Action	 ::=  */
 			/*... 'INSERT' ConstructTemplate	*/
 			/*... ( DatasetClause* WhereClause SolutionModifier )?	*/
 	: INSERT_L _LBRA {
-		$<tree>$ = spar_default_sparul_target (sparp_arg, "SPARQL 1.1 INSERT clause", 1);
 		t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL); }
-	    spar_ctor_template_nolbra
+	    spar_ctor_template_nolbra {
+		if (spar_ctor_uses_default_graph ($4))
+		  $<tree>$ = spar_default_sparul_target (sparp_arg, "triple constructor in INSERT {...} without GRAPH {...}");
+		else
+		  $<tree>$ = NULL; }
 	    spar_action_solution {
-		$$ = spar_make_top_or_special_case_from_wm (sparp_arg, INSERT_L, NULL, $5 );
-		spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, $<tree>3, $4); }
+		$$ = spar_make_top_or_special_case_from_wm (sparp_arg, INSERT_L, NULL, $6 );
+		spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, $<tree>5, $4); }
 	;
 
 spar_sparul11_insert_opt

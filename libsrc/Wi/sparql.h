@@ -237,18 +237,23 @@ typedef struct rdf_grab_config_s {
 #define SPARE_GLOBALS_ARE_COLONUMBERED	1	/*!< Global parameters are numbered in output so ?:a ?:b ?:a ?:c becomes :0 :1 :0 :2 */
 #define SPARE_GLOBALS_ARE_COLONAMED	2	/*!< Global parameters are named parameters in output so ?:a ?:b ?:a ?:c becomes :a :b :a :c */
 
+#define SPARP_SSRC_FROZEN_BY_PROTOCOL	0x1	/*!< The query can not change the dataset by FROM / FROM NAMED / USING / WITH / dereferencing, because the dataset is specified by protocol parameters. However re-declaration of a URI is permitted (e.g, "define input:named-graph-uri" and FROM for one and the same URI is OK). */
+#define SPARP_SSRC_FROZEN_BY_USING	0x2	/*!< The query will result in error on any occurence of FROM / FROM NAMED / USING / WITH / dereferencing, because some "using-..." define or protocol parameter is used. It is more restrictive than plain SPARP_SSRC_FROZEN_BY_PROTOCOL because re-declaration is not permitted. */
+#define SPARP_SSRC_FROZEN_BY_WITH	0x4	/*!< Neither the query nor protocol can change the "default graph" part of the dataset because define input:with-graph-uri is set */
+#define SPARP_SSRC_FROZEN_EXPLICITLY	0x8	/*!< Neither the query nor protocol can extend the dataset because define input:freeze prohibits that */
 /*!< Description of query sources (all input graphs, their status, automatic data loading) */
 typedef struct sparp_sources_s
   {
     rdf_grab_config_t	ssrc_grab;			/*!< Grabber configuration */
     dk_set_t		ssrc_common_sponge_options;	/*!< Options that are added to every FROM ... OPTION ( ... ) list */
     SPART *		ssrc_graph_set_by_with;		/*!< The precode expression of WITH clause, if exists */
+    SPART *		ssrc_graph_set_by_fallback_with;	/*!< For debugging purposes, it may be convenient to fallback to virtrdf:DefaultSparul11Target or the like instead of "No default graph specified in the preamble..." error. Set the value of this field to non-NULL for this effect. */
     dk_set_t		ssrc_default_graphs;		/*!< Default graphs and NOT FROM graphs as set by protocol or FROM graph-uri-precode. All NOT FROM are after all FROM! */
     dk_set_t		ssrc_named_graphs;		/*!< Named graphs and NOT FROM NAMED graphs as set by protocol or clauses. All NOT FROM NAMED are after all FROM NAMED! */
     int			ssrc_default_graphs_listed;	/*!< At least one default graph was set, so the list of default graphs is exhaustive even if empty or consists of solely NOT FROM (NOT FROM may remove all FROM, making the list empty) */
     int			ssrc_named_graphs_listed;	/*!< At least one named graph was set, so the list of named graphs is exhaustive even if empty or consists of solely NOT FROM NAMED */
-    int			ssrc_default_graphs_locked;	/*!< Default graphs are set by protocol and can not be overwritten. There's no locking for NOT FROM */
-    int			ssrc_named_graphs_locked;	/*!< Named graphs are set by protocol and can not be overwritten. There's no locking for NOT FROM NAMED */
+    int			ssrc_freeze_status;		/*!< Default and named graphs can not be overwritten if set by protocol or using/with defines in service endpoint config. There's no locking for NOT FROM and NOT FROM NAMED */
+    caddr_t		ssrc_frozen_pragma_example;	/*!< An example of name of pragma that prevents the user from dereferencing of variables and the like */
   } sparp_sources_t;
 
 /* When a new field is added here, please check whether it should be added to sparp_clone_for_variant () */
@@ -953,9 +958,13 @@ extern SPART *spar_make_literal_from_sql_box (sparp_t * sparp, caddr_t box, int 
 #define SPAR_MAKE_BOOL_LITERAL(sparp,v) (spartlist ((sparp), 4, SPAR_LIT, (SPART *)t_box_num_nonull((v)?1:0), uname_xmlschema_ns_uri_hash_boolean, NULL))
 
 extern SPART *spar_make_typed_literal (sparp_t *sparp, caddr_t strg, caddr_t type, caddr_t lang);
-extern void sparp_make_and_push_new_graph_source (sparp_t *sparp, ptrlong subtype, SPART *iri_expn, SPART **options);
+/*! Creates a new FROM / FROM NAMED / NOT FROM / NOT FROM NAMED source description and pushes it into context for future storing in req_top.sources.
+The freeze_ignore_mask lists SPARP_SSRC_FROZEN_xxx bits that can be ignored, it is zero during processing of the query text but may be nonzero before that. */
+extern void sparp_make_and_push_new_graph_source (sparp_t *sparp, ptrlong subtype, SPART *iri_expn, SPART **options, int freeze_ignore_mask);
 extern SPART *sparp_make_graph_precode (sparp_t *sparp, ptrlong subtype, SPART *iriref, SPART **options);
-extern SPART *spar_default_sparul_target (sparp_t *sparp, const char *clause_type, int may_return_null);
+/*! Returns whether \c ctor_gp contains at least one use of default graph, so it depends on WITH <graph_iri> or the like */
+extern int spar_ctor_uses_default_graph (SPART *ctor_gp);
+extern SPART *spar_default_sparul_target (sparp_t *sparp, const char *reason_to_use);
 extern SPART *spar_make_regex_or_like_or_eq (sparp_t *sparp, SPART *strg, SPART *regexpn);
 extern void spar_verify_funcall_security (sparp_t *sparp, int *is_agg_ret, const char **fname_ptr, SPART **args);
 

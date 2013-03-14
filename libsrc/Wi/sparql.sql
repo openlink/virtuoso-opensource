@@ -120,14 +120,16 @@ alter index RDF_LANGUAGE on RDF_LANGUAGE  partition cluster replicated
 alter index DB_DBA_RDF_LANGUAGE_UNQC_RL_TWOBYTE on RDF_LANGUAGE  partition cluster replicated
 ;
 
-
-
 create table DB.DBA.SYS_SPARQL_HOST (
   SH_HOST	varchar not null primary key,
   SH_GRAPH_URI	varchar,
   SH_USER_URI	varchar,
+  SH_BASE_URI	varchar,
   SH_DEFINES	long varchar
 )
+;
+
+alter table DB.DBA.SYS_SPARQL_HOST add SH_BASE_URI varchar
 ;
 
 create table DB.DBA.RDF_OBJ_FT_RULES (
