@@ -4154,8 +4154,8 @@ sparp_find_quad_map_by_name (ccaddr_t name)
 SPART *
 sparp_find_origin_of_external_varname_in_eq (sparp_t *sparp, sparp_equiv_t *eq, caddr_t varname, int find_exact_specimen, int null_result_allowed)
 {
-  sparp_equiv_t *esrc, *esub_res_eq = NULL;
-  SPART *esub_res_gp = NULL, *esub_res = NULL;
+  sparp_equiv_t *esrc, *esub_res_eq = NULL, *esub_sample_select_eq = NULL, *esub_sample_nonselect_eq = NULL;
+  SPART *esub_res_gp = NULL, *esub_sample_select_gp = NULL, *esub_sample_nonselect_gp = NULL, *esub_res = NULL;
   SPART *rv;
   int vctr, subv_ctr;
   esrc = SPARP_EQUIV(sparp, eq->e_external_src_idx);
@@ -4198,6 +4198,19 @@ sparp_find_origin_of_external_varname_in_eq (sparp_t *sparp, sparp_equiv_t *eq, 
     {
       sparp_equiv_t *esub_eq = SPARP_EQUIV (sparp, subeq_idx);
       SPART *esub_gp = esub_eq->e_gp;
+      if (esub_eq != eq) /* If we're back to the starting point of the search then that's no good for sampling */
+        {
+          if (SELECT_L == esub_gp->_.gp.subtype) /* SELECTs are preferable candidates for samples because it increments chances to set the end of a transitive subquery, for zero cost. */
+            { /* so we rate any SELECT as "preferito" */
+              esub_sample_select_eq = esub_eq;
+              esub_sample_select_gp = esub_gp;
+            }
+          else if (NULL == esub_sample_nonselect_eq) /* We chose the first non-SELECT as not very convenient. However, not the first one could be even worse because it could be OPTIONAL with higher probability. */
+            { /* non-SELECT without an exact specimen is most probably UNION, so we do not try to chose better or worse sample, the sample is probably bad anyway. */
+              esub_sample_nonselect_eq = esub_eq;
+              esub_sample_nonselect_gp = esub_gp;
+            }
+        }
       if ((OPTIONAL_L == esub_gp->_.gp.subtype) && (NULL != esub_res_gp) && (OPTIONAL_L != esub_res_gp->_.gp.subtype))
         continue; /* There is a better variant already */
       for (vctr = esub_eq->e_var_count; vctr--; /*no step*/)
@@ -4219,19 +4232,18 @@ sparp_find_origin_of_external_varname_in_eq (sparp_t *sparp, sparp_equiv_t *eq, 
         return esub_res;
       goto make_rv; /* see below */
     }
-  DO_BOX_FAST (ptrlong, subeq_idx, subv_ctr, esrc->e_subvalue_idxs)
+  if (NULL != esub_sample_select_eq)
     {
-      sparp_equiv_t *esub_eq = SPARP_EQUIV (sparp, subeq_idx);
-      SPART *esub_gp = esub_eq->e_gp;
-      if (SELECT_L != esub_gp->_.gp.subtype)
-        continue;
-      if (esub_eq == eq) /* Are we back to the starting point of the search? No good, ignoring. */
-        continue;
-      esub_res_eq = esub_eq;
-      esub_res_gp = esub_gp;
+      esub_res_eq = esub_sample_select_eq;
+      esub_res_gp = esub_sample_select_gp;
       goto make_rv; /* see below */
     }
-  END_DO_BOX_FAST;
+  if (NULL != esub_sample_nonselect_eq)
+    {
+      esub_res_eq = esub_sample_nonselect_eq;
+      esub_res_gp = esub_sample_nonselect_gp;
+      goto make_rv; /* see below */
+    }
 null_or_error:
   if (null_result_allowed)
     return NULL;
