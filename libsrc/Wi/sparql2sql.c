@@ -5556,7 +5556,7 @@ sparp_gp_trav_union_of_joins_out (sparp_t *sparp, SPART *curr, sparp_trav_state_
       detached_join_parts [union_idx] = NULL;
       for (case_ctr = 0; case_ctr < case_count; case_ctr++)
         {
-          int last_case = (((case_count-1) == case_ctr) ? 1 : 0);
+          int last_case = 0; /*(((case_count-1) == case_ctr) ? 1 : 0);*/
           SPART *new_join = new_union->_.gp.members [case_ctr]; /* equal to union_part if curr_had_one_member */
           SPART **new_filts_u = (last_case ? detached_union_filters : sparp_treelist_full_clone (sparp, detached_union_filters));
           SPART **new_filts_j = (last_case ? detached_join_filters : sparp_treelist_full_clone (sparp, detached_join_filters));
