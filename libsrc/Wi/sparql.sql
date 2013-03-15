@@ -5857,6 +5857,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_NICE_TTL (inout triples any, inout ses an
   declare all_bnodes any;
   declare tcount, tctr, bnode_ctr integer;
   declare tail_bnode, head_bnode IRI_ID;
+  declare prefixes_are_printed integer;
   declare prev_s, prev_p varchar;
   tcount := length (triples);
   if (0 = tcount)
@@ -6009,8 +6010,11 @@ bn_iid_done: ;
     }
   DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
 -- Start the actual serialization
+  prefixes_are_printed := 0;
   for (tctr := 0; tctr < tcount; tctr := tctr + 1)
-    http_ttl_prefixes (env, triples[tctr][0], triples[tctr][1], triples[tctr][2], ses);
+    prefixes_are_printed := prefixes_are_printed + http_ttl_prefixes (env, triples[tctr][0], triples[tctr][1], triples[tctr][2], ses);
+  if (prefixes_are_printed)
+    http ('\n', ses);
   prev_s := '';
   prev_p := '';
   -- dbg_obj_princ ('printed_triples_mask="', printed_triples_mask, '"');
@@ -6038,7 +6042,7 @@ bn_iid_done: ;
           if (prev_s <> '')
             http (' .\n', ses);
           http_ttl_value (env, s, 0, ses);
-          http ('\t', ses);
+          http ('\n\t', ses);
           prev_s := s;
           prev_p := '';
         }
