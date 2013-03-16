@@ -2871,10 +2871,10 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   set http_charset='utf-8';
   http_methods_set ('OPTIONS', 'GET', 'HEAD', 'POST', 'TRACE');
   ses := 0;
+  debug := '';
   query := null;
   format := '';
   should_sponge := '';
-  debug := get_keyword ('debug', params, case (get_keyword ('query', params, '')) when '' then '1' else '' end);
   add_http_headers := 1;
   sp_ini := 0;
   dflt_graphs := vector ();
@@ -3013,7 +3013,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
 	       goto execute_query;
 	    }
 	}
-
+      debug := get_keyword ('debug', params, '1');
       WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(params, ini_dflt_graph, def_qry, timeout, debug, save_mode, dav_refresh);
 
       return;
@@ -3025,7 +3025,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
       declare pname, pvalue varchar;
       pname := params [paramctr];
       pvalue := params [paramctr+1];
-      if ('query' = pname)
+      if (pname in ('query', 'update'))
         query := pvalue;
       else if ('find' = pname)
 	{
@@ -3159,6 +3159,10 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
       else if (pname[0] = '?'[0])
         {
           dict_put (qry_params, subseq (pname, 1), pvalue);
+        }
+      else if ('debug' = pname)
+        {
+          debug := pvalue;
         }
     }
   if (format <> '')
@@ -3377,7 +3381,7 @@ host_found:
     {
       state := '00000';
       full_query := concat ('define sql:big-data-const 0 ', full_query);
-      sc := exec_score (concat ('sparql ', full_query), state, msg);
+      sc := exec_score (concat ('sparql { ', full_query, '\n}'), state, msg);
       if ((sc/1000) > sc_max)
 	{
 	  signal ('42000', sprintf ('The estimated execution time %d (sec) exceeds the limit of %d (sec).', sc/1000, sc_max));
@@ -3408,7 +3412,7 @@ host_found:
   again:
   state := '00000';
   start_time := msec_time();
-  exec ( concat ('sparql ', full_query), state, msg, qry_params, vector ('max_rows', maxrows, 'use_cache', 1), metas, rset);
+  exec ( concat ('sparql {', full_query, '\n}'), state, msg, qry_params, vector ('max_rows', maxrows, 'use_cache', 1), metas, rset);
   commit work;
   -- dbg_obj_princ ('exec metas=', metas, ', state=', state, ', msg=', msg);
   if (state = '00000')
@@ -3434,7 +3438,7 @@ host_found:
     {
       declare state2, msg2 varchar;
       state2 := '00000';
-      exec ('isnull (sparql_to_sql_text (''define sql:big-data-const 0 '' || ?))', state2, msg2, vector (full_query));
+      exec ('isnull (sparql_to_sql_text (''{ define sql:big-data-const 0 '' || ? || ''\\n}''))', state2, msg2, vector (full_query));
       if (state2 <> '00000')
         {
           DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
