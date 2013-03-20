@@ -749,31 +749,87 @@ create procedure "VAD"."DBA"."VAD_GET_NAME_AND_VERSION"(
 }
 ;
 
-create procedure "VAD"."DBA"."VERSION_COMPARE"(in s1 varchar, in s2 varchar)
+--!
+-- \brief Compare two version strings.
+--
+-- An arbitrary number of version components are supported in addition to an
+-- optional suffix like "_xxxNN" where "xxx" is a word and "NN" is the suffix
+-- number.
+--
+-- \b Examples:
+-- \code
+-- 1.0
+-- 1.0.0
+-- 1.0.2
+-- 2.3_git12
+-- \endcode
+--
+-- \return \p 1 if \p x is larger than \p y, \p -1 if \p x is smaller, \p 0 if they are equal.
+--/
+create procedure "VAD"."DBA"."VERSION_COMPARE"(in x varchar, in y varchar)
     {
-  declare i, j any;
-  declare k int;
-  i := split_and_decode(s1, 1, '\0\0.');
-  j := split_and_decode(s2, 1, '\0\0.');
-  k := 0;
-  declare a, b int;
-  while (k < length(i) or k < length(j))
+  declare xx, yy any;
+  declare xsuff, ysuff varchar;
+  declare xi, yi int;
+
+  if (x is null)
+    return 0;
+  if (length (x) = 0 and length (y) > 0)
+    return 1;
+
+  -- strip optional suffix from versions (suffix separator is '_')
+  xsuff := '';
+  xx := sprintf_inverse (x, '%s_%s', 0);
+  if (not xx is null)
   {
-    if (k < length(i))
-      a := atoi(i[k]);
-    else
-      a := 0;
-    if (k < length(j))
-      b := atoi(j[k]);
-    else
-      b := 0;
-    if (a < b)
+    xsuff := xx[1];
+    x := xx[0];
+  }
+  ysuff := '';
+  yy := sprintf_inverse (y, '%s_%s', 0);
+  if (not yy is null)
+  {
+    ysuff := yy[1];
+    y := yy[0];
+  }
+
+  -- split version strings into components
+  xx := split_and_decode (x, 0, '\0\0.');
+  yy := split_and_decode (y, 0, '\0\0.');
+
+  -- pad vectors to equal length
+  while (length (xx) < length (yy))
+    xx := vector_concat (xx, vector ('0'));
+  while (length (yy) < length (xx))
+    yy := vector_concat (yy, vector ('0'));
+
+  -- compare component by component
+  for (declare i, l int, i := 0, l := length (xx); i < l; i := i + 1)
+    {
+      xi := atoi (xx[i]);
+      yi := atoi (yy[i]);
+
+      if (xi < yi)
     return -1;
-    if (a > b)
+      if (xi > yi)
+    return 1;
+  }
+
+  -- at this point both base versions are the same
+  -- which means that the suffix makes all the difference
+  -- the suffix always starts with at least one letter
+  -- followed by a number
+  xx := regexp_parse('([a-zA-Z]*)([0-9]*)', xsuff, 0);
+  xi := atoi (substring (xsuff, xx[4]+1, xx[5]-xx[4]));
+
+  yy := regexp_parse('([a-zA-Z]*)([0-9]*)', ysuff, 0);
+  yi := atoi (substring (ysuff, yy[4]+1, yy[5]-yy[4]));
+
+  if (xi < yi)
+    return -1;
+  else if (xi > yi)
     return 1;
   else
-      k := k + 1;
-  }
     return 0;
 }
 ;

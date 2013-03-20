@@ -2278,64 +2278,7 @@ create procedure DB.DBA.VAD_DEPS_CHECK (in parr any, in name varchar, in version
 --/
 create procedure VAD.DBA.VER_LT (in x varchar, in y varchar)
 {
-  declare xx, yy any;
-  declare xsuff, ysuff varchar;
-  declare xi, yi int;
-
-  if (x is null)
-    return 0;
-  if (length (x) = 0 and length (y) > 0)
-    return 1;
-
-  -- strip optional suffix from versions (suffix separator is '_')
-  xsuff := '';
-  xx := sprintf_inverse (x, '%s_%s', 0);
-  if (not xx is null)
-  {
-    xsuff := xx[1];
-    x := xx[0];
-  }
-  ysuff := '';
-  yy := sprintf_inverse (y, '%s_%s', 0);
-  if (not yy is null)
-  {
-    ysuff := yy[1];
-    y := yy[0];
-  }
-
-  -- split version strings into components
-  xx := split_and_decode (x, 0, '\0\0.');
-  yy := split_and_decode (y, 0, '\0\0.');
-
-  -- pad vectors to equal length
-  while (length (xx) < length (yy))
-    xx := vector_concat (xx, vector ('0'));
-  while (length (yy) < length (xx))
-    yy := vector_concat (yy, vector ('0'));
-
-  -- compare component by component
-  for (declare i, l int, i := 0, l := length (xx); i < l; i := i + 1)
-    {
-      xi := atoi (xx[i]);
-      yi := atoi (yy[i]);
-
-      if (xi < yi)
-	return 1;
-      if (xi > yi)
-	return 0;
-    }
-
-  -- at this point both base versions are the same
-  -- which means that the suffix makes all the difference
-  -- the suffix always starts with at least one letter
-  -- followed by a number
-  xx := regexp_parse('([a-zA-Z]*)([0-9]*)', xsuff, 0);
-  xi := atoi (substring (xsuff, xx[4]+1, xx[5]-xx[4]));
-
-  yy := regexp_parse('([a-zA-Z]*)([0-9]*)', ysuff, 0);
-  yi := atoi (substring (ysuff, yy[4]+1, yy[5]-yy[4]));
-
-  return (case when (xi < yi) then 1 else 0 end);
+  return (case when "VAD"."DBA"."VERSION_COMPARE" (x, y) = -1 then 1 else 0 end);
 }
 ;
 
