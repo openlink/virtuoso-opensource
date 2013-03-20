@@ -750,7 +750,7 @@ create procedure "VAD"."DBA"."VAD_GET_NAME_AND_VERSION"(
 ;
 
 create procedure "VAD"."DBA"."VERSION_COMPARE"(in s1 varchar, in s2 varchar)
-{
+    {
   declare i, j any;
   declare k int;
   i := split_and_decode(s1, 1, '\0\0.');
@@ -768,13 +768,13 @@ create procedure "VAD"."DBA"."VERSION_COMPARE"(in s1 varchar, in s2 varchar)
     else
       b := 0;
     if (a < b)
-      return -1;
+    return -1;
     if (a > b)
-      return 1;
-    else
+    return 1;
+  else
       k := k + 1;
   }
-  return 0;
+    return 0;
 }
 ;
 
