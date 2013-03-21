@@ -106,8 +106,7 @@ insert into var_test (val) values (6);
 
 select VAR_POP (val) as VAR, STDDEV_POP (val) as STDDEV_POP, STDDEV_SAMP (val) as STDDEV_SAMP, COVAR_SAMP (i, i) as COVAR_SAMPxx, COVAR_SAMP (i, val) as COVAR_SAMPxy, COVAR_SAMP( val, i) as COVAR_SAMPyx, COVAR_POP (val, i) as COVAR_POPxy, COVAR_SAMP (val,val) as COVAR_SAMPyy from var_test;
 
---XXX
---select val, VAR_SAMP (i), VAR_POP(i), STDDEV_POP (i), COVAR_SAMP (i,i) from var_test group by val;
+select val, VAR_SAMP (i), VAR_POP(i), STDDEV_POP (i), COVAR_SAMP (i,i) from var_test group by val;
 
 
 select BB (COVAR_SAMP (i, val)), BB ((SUM( (cast (i as numeric)) * val) - SUM(i) * SUM(val) / COUNT(i)) / (COUNT (i)-1))  from var_test;

@@ -165,7 +165,7 @@ then
 fi
 
 
-#RUN $GETDATA $DSN dba dba
+RUN $GETDATA $DSN dba dba
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tsql2.sh: getdata"
@@ -173,8 +173,7 @@ then
 fi
 
 
-# XXX
-#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tbunion.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tbunion.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: TOP & BEST & UNION tests -- tbunion.sql"

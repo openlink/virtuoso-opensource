@@ -7474,11 +7474,3 @@ create procedure ENEWS.WA.pshCheck ()
   return case when isnull (DB.DBA.VAD_CHECK_VERSION ('pubsubhub')) or ((select top 1 coalesce (WS_FEEDS_HUB_CALLBACK, 1) from DB.DBA.WA_SETTINGS) = 0) then 0 else 1 end;
 }
 ;
-
--------------------------------------------------------------------------------
---
-create procedure ENEWS.WA.pshCheck ()
-{
-  return case when isnull (DB.DBA.VAD_CHECK_VERSION ('pubsubhub')) or ((select top 1 coalesce (WS_FEEDS_HUB_CALLBACK, 1) from DB.DBA.WA_SETTINGS) = 0) then 0 else 1 end;
-}
-;

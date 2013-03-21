@@ -130,10 +130,9 @@ select count (*) from "OrderDetails";
 ECHO BOTH $IF $EQU $LAST[1] 4  "PASSED" "*** FAILED";
 ECHO BOTH ": " $LAST[1] " Order Details\n";
 
--- XXX
---select distinct ("OrderID") from "OrderDetails" except select "OrderID" from "Orders";
---ECHO BOTH $IF $EQU $ROWCNT 0  "PASSED" "*** FAILED";
---ECHO BOTH ": " $ROWCNT " Different OrderID's between OrderDetails and Orders\n";
+select distinct ("OrderID") from "OrderDetails" except select "OrderID" from "Orders";
+ECHO BOTH $IF $EQU $ROWCNT 0  "PASSED" "*** FAILED";
+ECHO BOTH ": " $ROWCNT " Different OrderID's between OrderDetails and Orders\n";
 
 
 xmlsql_update (xml_tree_doc (xml_tree (
@@ -207,10 +206,9 @@ select count("b"."OrderID") from "Orders" "a", "OrderDetails" "b" where "a"."Ord
 ECHO BOTH $IF $EQU $LAST[1] 2000  "PASSED" "*** FAILED";
 ECHO BOTH ": " $LAST[1] " OrdersDetails for CustomerID='REPEATABLE'\n";
 
--- XXX
---select distinct ("OrderID") from "OrderDetails" where "ProductID" > 8 except select "OrderID" from "Orders" where "EmpID"=9999;
---ECHO BOTH $IF $EQU $ROWCNT 0  "PASSED" "*** FAILED";
---ECHO BOTH ": " $ROWCNT " Different OrderID's between OrderDetails and Orders\n";
+select distinct ("OrderID") from "OrderDetails" where "ProductID" > 8 except select "OrderID" from "Orders" where "EmpID"=9999;
+ECHO BOTH $IF $EQU $ROWCNT 0  "PASSED" "*** FAILED";
+ECHO BOTH ": " $ROWCNT " Different OrderID's between OrderDetails and Orders\n";
 
 DROP TABLE ID_TEST;
 CREATE TABLE ID_TEST (ID INTEGER, DT VARCHAR, PRIMARY KEY (ID));
@@ -454,8 +452,7 @@ CREATE TABLE B5342_PRODUCT_ATTRIBUTE_DEFS_TEST(
   FOREIGN KEY(ORG_ID, CATEGORY_ID) REFERENCES B5342_CATEGORIES_TEST(ORG_ID, CATEGORY_ID)
 );
 
--- XXX
-xxx_xmlsql_update (xml_tree_doc (xml_tree (
+xmlsql_update (xml_tree_doc (xml_tree (
 '
 <?xml version="1.0" encoding="UTF-8" ?>
 <ROOT xmlns:sql="urn:schemas-microsoft-com:xml-sql" sql:nullvalue="">
@@ -479,11 +476,10 @@ xxx_xmlsql_update (xml_tree_doc (xml_tree (
   </sql:sync>
 </ROOT>
 ')),vector(),1);
---ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
---ECHO BOTH ": B5342-1 insert updg : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": B5342-1 insert updg : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
--- XXX
-xxx_xmlsql_update (xml_tree_doc (xml_tree (
+xmlsql_update (xml_tree_doc (xml_tree (
 '
 <?xml version="1.0" encoding="UTF-8" ?>
 <ROOT xmlns:sql="urn:schemas-microsoft-com:xml-sql" sql:nullvalue="">
@@ -506,12 +502,12 @@ xxx_xmlsql_update (xml_tree_doc (xml_tree (
   </sql:sync>
 </ROOT>
 ')),vector(),1);
---ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
---ECHO BOTH ": B5342-2 update updg : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": B5342-2 update updg : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
---UPDATE B5342_CATEGORIES_TEST
---   SET ORG_ID = '1000'
--- WHERE ORG_ID = 1000 AND CATEGORY_ID = 403000000005;
+UPDATE B5342_CATEGORIES_TEST
+   SET ORG_ID = '1000'
+ WHERE ORG_ID = 1000 AND CATEGORY_ID = 403000000005;
 -- this is where the real problem is. How to make the trigger to cast as in row_set_col ()
---ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
---ECHO BOTH ": B5342-3 update on trigger tb w/ different types : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": B5342-3 update on trigger tb w/ different types : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";

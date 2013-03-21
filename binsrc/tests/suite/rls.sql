@@ -240,10 +240,9 @@ ECHO BOTH ": DBA policy works for RLS_USR@RLS_T3 STATE=" $STATE " MESSAGE=" $MES
 reconnect dba;
 
 select * from RLS_T2;
--- XXX
---ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
---SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
---ECHO BOTH ": RLS protected row still here after non-DBA delete RLS STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": RLS protected row still here after non-DBA delete RLS STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 
 -- user_has_role stuff
@@ -254,10 +253,9 @@ Create role HAS_ROLE_SECURITY_AUDITOR;
 Grant HAS_ROLE_STAFF to HAS_ROLE_SECURITY_AUDITOR;
 
 select user_has_role ('HAS_ROLE_SECURITY_AUDITOR', 'HAS_ROLE_STAFF');
--- XXX
---ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
---SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
---ECHO BOTH ": user_has_role 1 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": user_has_role 1 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 select user_has_role ('HAS_ROLE_SECURITY_AUDITOR', 'HAS_ROLE_STAFF2');
 ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";

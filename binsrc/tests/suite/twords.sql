@@ -407,12 +407,11 @@ ECHO BOTH $IF $EQU $LAST [1] al- "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": " $LAST [1] " was last in desc len, asc word select / order by col numbers.\n";
 
--- XXX
 select count (distinct word), count (distinct len) from words;
---ECHO BOTH $IF $EQU $LAST [1] 86061 "PASSED" "***FAILED";
---ECHO BOTH ": " $LAST [1] " distinct words.\n";
---ECHO BOTH $IF $EQU $LAST [2] 21 "PASSED" "***FAILED";
---ECHO BOTH ": " $LAST [2] " distinct word lengths.\n";
+ECHO BOTH $IF $EQU $LAST [1] 86061 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST [1] " distinct words.\n";
+ECHO BOTH $IF $EQU $LAST [2] 21 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST [2] " distinct word lengths.\n";
 
 
 select count (*) from words wherre word like 'burro';

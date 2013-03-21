@@ -40,9 +40,6 @@ ECHO BOTH ": het any 2\n";
 -- STop here, rdf boxes are not stored with content any more so the rest does not apply 
 exit;
 
--- STop here, rdf boxes are not stored with content any more so the rest does not apply 
-exit;
-
 
 insert into arn values (rdf_box (1, 257, 257, 1, 0));
 ECHO BOTH $IF $NEQ $STATE OK "PASSED" "FAILED";

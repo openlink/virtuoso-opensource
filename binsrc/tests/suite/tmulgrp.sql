@@ -182,16 +182,14 @@ ECHO BOTH ": select from WEB_DATA (granted to the secondary group's secondary gr
 
 reconnect dba;
 delete user WEB_USERS;
--- XXX
---ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
---SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
---ECHO BOTH ": delete group WEB_USERS (while still having it in WEB_USER). STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": delete group WEB_USERS (while still having it in WEB_USER). STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 reconnect WEB_USER;
 select * from WEB_DATA;
--- XXX
---ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
---SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
---ECHO BOTH ": WEB_DATA unaccessible (as a result of a group drop). STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": WEB_DATA unaccessible (as a result of a group drop). STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 ECHO BOTH "COMPLETED: Multiple user group test (tmulgrp.sql) WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n";

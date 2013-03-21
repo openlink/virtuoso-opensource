@@ -133,12 +133,12 @@ then
     exit 3
 fi
 
-#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < cube.sql
-#if test $STATUS -ne 0
-#then
-#     LOG "***ABORTED: tsqlo.sql: User aggrregates tests"
-#     exit 3
-#fi
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < cube.sql
+if test $STATUS -ne 0
+then
+     LOG "***ABORTED: tsqlo.sql: User aggrregates tests"
+     exit 3
+fi
 
 
 SHUTDOWN_SERVER

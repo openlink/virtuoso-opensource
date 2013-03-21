@@ -56,9 +56,6 @@ then
     exit 3
 fi
 
-# XXX
-if [ 0 == 1 ] 
-then
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tplscroll.sql
 
 if test $STATUS -ne 0
@@ -98,7 +95,6 @@ then
     LOG "***ABORTED: udtsec.sql: SQL200n user defined types sequrity - persistent types"
     exit 3
 fi
-fi
 
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tdcascade.sql
 
@@ -132,9 +128,6 @@ then
     exit 3
 fi
 
-# XXX
-if [ 0 == 1 ]
-then
 grep VDB ident.txt
 if test $? -eq 0
 then 
@@ -145,7 +138,6 @@ then
     exit 3
 else
     LOG "PASSED: tsnaprepl.sh: snapshot local replication"
-fi
 fi
 fi
 

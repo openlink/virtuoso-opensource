@@ -341,8 +341,7 @@ ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": NNTP Prepare data for bug4482 : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
--- XXX
---delete from NEWS_MSG where NM_ID='<zMRYcqp4CHA.1460@cpmsftngxa06>';
---ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
---SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
---ECHO BOTH ": NNTP bug4482 : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+delete from NEWS_MSG where NM_ID='<zMRYcqp4CHA.1460@cpmsftngxa06>';
+ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": NNTP bug4482 : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
