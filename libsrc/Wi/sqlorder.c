@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -32,6 +32,20 @@
 #include "sqlpfn.h"
 #include "sqlcmps.h"
 #include "sqlfn.h"
+
+
+key_id_t
+sqlc_new_temp_key_id (sql_comp_t * sc)
+{
+  key_id_t last;
+  while (sc->sc_super)
+    sc = sc->sc_super;
+  last = sc->sc_next_temp_key_id;
+  if (!last)
+    last = KI_DISTINCT;
+  sc->sc_next_temp_key_id = last + 1;
+  return last;
+}
 
 
 void
@@ -124,51 +138,28 @@ setp_node_free (setp_node_t * setp)
 
 setp_node_t *
 sqlc_add_distinct_node (sql_comp_t * sc, data_source_t ** head,
-			state_slot_t ** ssl_out, long nrows, dk_set_t * code, ptrlong * dist_pos)
+    state_slot_t ** ssl_out, long nrows)
 {
-  state_slot_t * set_no;
   int inx;
   SQL_NODE_INIT (setp_node_t, setp, setp_node_input, setp_node_free);
-  if (dist_pos && 1 != (ptrlong)dist_pos)
-    {
-      DO_BOX (ptrlong, pos, inx, dist_pos)
-	{
-	  state_slot_t * ssl = ssl_out[pos];
-	  setp->setp_keys = NCONC (setp->setp_keys, CONS (ssl, NULL));
-	}
-      END_DO_BOX;
-    }
-  else
-    {
   DO_BOX (state_slot_t *, ssl, inx, ssl_out)
   {
     setp->setp_keys = NCONC (setp->setp_keys, CONS (ssl, NULL));
   }
   END_DO_BOX;
-    }
   setp->setp_distinct = 1;
-  setp_distinct_hash (sc, setp, nrows, HA_DISTINCT);
-  set_no = sqlg_set_no_if_needed (sc, head);
-  if (set_no)
-    {
-      ssa_init (sc, &setp->setp_ssa, set_no);
-      setp_set_ssa (sc, setp, NULL);
-    }
-  if (code && *code)
-    {
-      setp->src_gen.src_pre_code = code_to_cv (sc, *code);
-      *code = NULL;
-    }
+  setp->setp_temp_key = sqlc_new_temp_key_id (sc);
+  setp_distinct_hash (sc, setp, nrows);
   sql_node_append (head, (data_source_t *) setp);
   return setp;
 }
 
 
 data_source_t *
-sqlc_make_sort_out_node (sql_comp_t * sc, dk_set_t out_cols, dk_set_t out_slots, dk_set_t out_always_null, int is_gb)
+sqlc_make_sort_out_node (sql_comp_t * sc, dk_set_t out_cols, dk_set_t out_slots, dk_set_t out_always_null)
 {
-  setp_node_t * setp = sc->sc_sort_insert_node;
   SQL_NODE_INIT (table_source_t, ts, table_source_input, ts_free);
+
   ts->ts_order_cursor = ssl_new_itc (sc->sc_cc);
 
   {
@@ -178,17 +169,6 @@ sqlc_make_sort_out_node (sql_comp_t * sc, dk_set_t out_cols, dk_set_t out_slots,
       sqlc_new_error (sc->sc_cc, "42000", "SQI01", "Internal error in SQL compiler: SqlOrder-232-0912");
 
     ks->ks_key = sc->sc_sort_insert_node->setp_ha->ha_key;
-    ks->ks_row_check = itc_row_check;
-    ks->ks_set_no = sc->sc_set_no_ssl;
-    if (setp->setp_set_no_in_key)
-      {
-	dk_set_t iter;
-	ks->ks_set_no_col_ssl = ssl_new_variable (sc->sc_cc, "gb_set_no", DV_LONG_INT);
-	dk_set_push (&out_slots, (void*)ks->ks_set_no_col_ssl);
-	for (iter = out_cols; iter; iter = iter->next)
-	  *(ptrlong*)&iter->data += 1;
-	dk_set_push (&out_cols, (void*)0);
-      }
     DO_SET (ptrlong, nth, &out_cols)
       {
 	NCONCF1 (ks->ks_out_cols, dk_set_nth (ks->ks_key->key_parts, (int) nth));
@@ -200,14 +180,6 @@ sqlc_make_sort_out_node (sql_comp_t * sc, dk_set_t out_cols, dk_set_t out_slots,
     ks->ks_always_null = out_always_null;
     if (sc->sc_grouping)
       ks->ks_grouping = sc->sc_grouping;
-    if (is_gb && enable_chash_gb)
-      {
-	ts->src_gen.src_input = chash_read_input;
-	ts->clb.clb_nth_set = cc_new_instance_slot (sc->sc_cc);
-	ks->ks_pos_in_temp = cc_new_instance_slot (sc->sc_cc);
-	ks->ks_nth_cha_part = cc_new_instance_slot (sc->sc_cc);
-	ks->ks_cha_chp = cc_new_instance_slot (sc->sc_cc);
-      }
   }
   table_source_om (sc->sc_cc, ts);
   return ((data_source_t *) ts);

@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -56,10 +56,12 @@ create table WS.WS.VFS_QUEUE (
     VQ_LEVEL	int default 0,
     VQ_VIA_SITEMAP int default 0,
     VQ_DT	timestamp,
+    VQ_ORIGIN	IRI_ID_8,
     primary key (VQ_HOST, VQ_URL, VQ_ROOT))
 create index VQ_HOST_ROOT on WS.WS.VFS_QUEUE (VQ_HOST, VQ_ROOT)
 create index VQ_HOST_TIME on WS.WS.VFS_QUEUE (VQ_HOST, VQ_ROOT, VQ_STAT, VQ_TS, VQ_URL)
 create index VQ_TS on WS.WS.VFS_QUEUE (VQ_TS)
+create index VQ_ORIGIN on WS.WS.VFS_QUEUE (VQ_ORIGIN)    
 ;
 
 
@@ -209,6 +211,9 @@ alter table WS.WS.VFS_QUEUE add VQ_VIA_SITEMAP int default 0
 ;
 
 alter table WS.WS.VFS_QUEUE add VQ_DT timestamp
+;
+
+alter table WS.WS.VFS_QUEUE add VQ_ORIGIN IRI_ID_8
 ;
 
 alter table WS.WS.VFS_URL add VU_RES_ID int

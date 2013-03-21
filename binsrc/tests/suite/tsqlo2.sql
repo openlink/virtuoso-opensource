@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -88,5 +88,3 @@ select  a.row_no, b.row_no, mi  from t1, (select row_no, string1, string2, max (
 select  a.row_no, b.row_no, mi  from t1 a, (select row_no, string1, string2, max (fi2) as mi from r1..t1 group by 1, 2, 3) b where a.row_no = b.row_no order by a.row_no desc;
 
 select row_no + 1 as r, count (string1) from r1..t1 group by r order by r;
- 
-

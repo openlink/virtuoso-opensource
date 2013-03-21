@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -20,31 +20,6 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
-create procedure
-adm_news_status (in STAT integer)
-{
-  if (STAT = 1) return '<DIV CLASS="status_ok">OK</DIV>';
-    else if (STAT is NULL) return '<DIV CLASS="status_ok">New</DIV>';
-      else if (STAT = 3) return '<DIV CLASS="status_wip">OK*</DIV>';
-        else if (STAT = 7) return '<DIV CLASS="status_wip">Pending</DIV>';
-          else if (STAT = 9) return '<DIV CLASS="status_wip">Updating...</DIV>';
-            else return '<DIV CLASS="status_err">Unsuccessful</DIV>';
-}
-;
-
-create procedure
-DB.DBA.adm_mailaddr_pretty (in email_addr varchar)
-{
-  declare _email, _name varchar;
-  email_addr := coalesce(email_addr, 'Not Provided');
-  _name := email_addr;
-  _name := substring(_name, 1, coalesce(strstr(_name, '<') -1, length(_name)));
-  _email := coalesce(regexp_substr('([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+)', email_addr, 0), email_addr);
-  _name := replace (_name, '"', '');
-  _name := coalesce(_name, _email);
-  return sprintf('\n<A HREF="mailto:%s">%s</A>\n', _email, _name);
-}
-;
 
 
 CREATE TABLE "DB"."DBA"."NEWS_GROUPS_AVAILABLE" (

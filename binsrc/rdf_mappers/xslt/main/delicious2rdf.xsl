@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -34,6 +34,7 @@
 <!ENTITY moat "http://moat-project.org/ns#">
 <!ENTITY scot "http://scot-project.org/scot/ns#">
 <!ENTITY skos "http://www.w3.org/2004/02/skos/core#">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY bookmark "http://www.w3.org/2002/01/bookmark#">
 ]>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -57,6 +58,7 @@
     xmlns:moat="&moat;"
     xmlns:skos="&skos;"
     xmlns:bookmark="&bookmark;"
+    xmlns:opl="&opl;"
     xmlns:a="http://www.w3.org/2005/Atom"
     xmlns:sioct="&sioct;"
     version="1.0">
@@ -87,6 +89,13 @@
 	    </xsl:for-each>
 	</rdf:Description>
 	<scot:Tagcloud rdf:about="{concat($baseUri, '#tagcloud')}">
+        	<opl:providedBy>
+        		<foaf:Organization rdf:about="http://www.delicious.com#this">
+        			<foaf:name>delicious</foaf:name>
+        			<foaf:homepage rdf:resource="http://www.delicious.com"/>
+        		</foaf:Organization>
+        	</opl:providedBy>
+
 	    <xsl:for-each select="popular">
 		<scot:hasTag rdf:resource="{vi:proxyIRI(concat ('http://www.delicious.com/tag/', .))}"/>
 	    </xsl:for-each>
@@ -110,6 +119,12 @@
 	    <rdf:Description rdf:about="{$resourceURL}">
 		<sioc:has_container rdf:resource="{$docproxyIRI}" />
 		<rdf:type rdf:resource="&sioc;BookmarkFolder"/>
+        	<opl:providedBy>
+        		<foaf:Organization rdf:about="http://www.delicious.com#this">
+        			<foaf:name>delicious</foaf:name>
+        			<foaf:homepage rdf:resource="http://www.delicious.com"/>
+        		</foaf:Organization>
+        	</opl:providedBy>
 		<xsl:variable name="author" select="substring-after(link, 'http://www.delicious.com/')" />
 		<scot:hasScot rdf:resource="{concat('http://www.delicious.com/tags/', $author)}"/>
 		<xsl:for-each select="item">
@@ -183,6 +198,12 @@
 		<xsl:variable name="tag" select="substring-after(substring-after(title, '/'), '/') " />
 		<rdf:type rdf:resource="&scot;Tag"/>
 		<rdf:type rdf:resource="&moat;Tag"/>
+        	<opl:providedBy>
+        		<foaf:Organization rdf:about="http://www.delicious.com#this">
+        			<foaf:name>delicious</foaf:name>
+        			<foaf:homepage rdf:resource="http://www.delicious.com"/>
+        		</foaf:Organization>
+        	</opl:providedBy>
 		<scot:name>
 		    <xsl:value-of select="$tag"/>
 		</scot:name>
@@ -264,6 +285,12 @@
 		<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
 	    </rdf:Description>
 	    <rdf:Description rdf:about="{$resourceURL}">
+        	<opl:providedBy>
+        		<foaf:Organization rdf:about="http://www.delicious.com#this">
+        			<foaf:name>delicious</foaf:name>
+        			<foaf:homepage rdf:resource="http://www.delicious.com"/>
+        		</foaf:Organization>
+        	</opl:providedBy>
 		<rdf:type rdf:resource="&bookmark;Bookmark"/>
 		<sioc:has_container rdf:resource="{$docproxyIRI}" />
 		<dc:title>

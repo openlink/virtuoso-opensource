@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -72,11 +72,20 @@
 			<sioc:container_of rdf:resource="{$resourceURL}"/>
 			<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
 			<dcterms:subject rdf:resource="{$resourceURL}"/>
-			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
+			<dc:title>
+				<xsl:value-of select="$baseUri"/>
+			</dc:title>
 			<owl:sameAs rdf:resource="{$docIRI}"/>
 		</rdf:Description>
 		<xsl:if test="$what='checkin'">		
 			<rdf:Description rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.gowalla.com#this">
+                        			<foaf:name>Gowalla</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.gowalla.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 				<rdf:type rdf:resource="&gn;Feature"/>
 				<xsl:if test="name">
 					<dc:title>
@@ -87,19 +96,13 @@
 					</rdfs:label>				
 				</xsl:if>                
 				<xsl:if test="string-length(address/locality) &gt; 0">
-					<vcard:Locality>
-						<xsl:value-of select="address/locality" />   
-					</vcard:Locality>
+					<vcard:Locality rdf:resource="{vi:dbpIRI ($baseUri, address/locality)}"/>
 				</xsl:if>
 				<xsl:if test="address/iso3166">
-					<vcard:Country>
-						<xsl:value-of select="address/iso3166" />   
-					</vcard:Country>
+					<vcard:Country rdf:resource="{vi:dbpIRI ($baseUri, address/iso3166)}"/>
 				</xsl:if>
 				<xsl:if test="string-length(address/region) &gt; 0">
-					<vcard:Region>
-						<xsl:value-of select="address/region" />   
-					</vcard:Region>
+					<vcard:Region rdf:resource="{vi:dbpIRI ($baseUri, address/region)}"/>
 				</xsl:if>
 				<xsl:if test="string-length(address/street_address) &gt; 0">
 					<vcard:ADR>
@@ -274,6 +277,13 @@
 		</xsl:if>
 		<xsl:if test="$what='photos'">
 			<rdf:Description rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.gowalla.com#this">
+                        			<foaf:name>Gowalla</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.gowalla.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 				<rdf:type rdf:resource="&sioct;ImageGallery"/>
 				<xsl:if test="activity[1]/spot/name">
 					<dc:title>
@@ -284,19 +294,13 @@
 					</rdfs:label>				
 				</xsl:if>                
 				<xsl:if test="string-length(activity[1]/spot/locality) &gt; 0">
-					<vcard:Locality>
-						<xsl:value-of select="activity[1]/spot/locality" />   
-					</vcard:Locality>
+					<vcard:Locality rdf:resource="{vi:dbpIRI ($baseUri, activity[1]/spot/locality)}"/>
 				</xsl:if>
 				<xsl:if test="activity[1]/spot/iso3166">
-					<vcard:Country>
-						<xsl:value-of select="activity[1]/spot/iso3166" />   
-					</vcard:Country>
+					<vcard:Country rdf:resource="{vi:dbpIRI ($baseUri, activity[1]/spot/iso3166)}"/>
 				</xsl:if>
 				<xsl:if test="string-length(activity[1]/spot/region) &gt; 0">
-					<vcard:Region>
-						<xsl:value-of select="activity[1]/spot/region" />   
-					</vcard:Region>
+					<vcard:Region  rdf:resource="{vi:dbpIRI ($baseUri, activity[1]/spot/region)}"/>
 				</xsl:if>
 				<xsl:if test="string-length(activity[1]/spot/street_address) &gt; 0">
 					<vcard:ADR>
@@ -382,6 +386,13 @@
 		</xsl:if>
 		<xsl:if test="$what='highlights'">
 			<rdf:Description rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.gowalla.com#this">
+                        			<foaf:name>Gowalla</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.gowalla.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 				<rdf:type rdf:resource="&sioct;MessageBoard"/>
 				<xsl:if test="highlights[1]/spot/name">
 					<dc:title>
@@ -398,17 +409,23 @@
 					<rdfs:seeAlso rdf:resource="{concat('http://gowalla.com', highlights/spot/url)}"/>
 				</xsl:if>
 				<xsl:for-each select="highlights">
-					<sioc:container_of rdf:resource="{vi:proxyIRI ($baseUri, '', concat('highlight_', url))}"/>
+					<sioc:container_of rdf:resource="{vi:proxyIRI ($baseUri, '', concat('highlight_', updated_at))}"/>
 				</xsl:for-each>
 			</rdf:Description>
 			<xsl:for-each select="highlights">
-				<sioct:Comment rdf:about="{vi:proxyIRI ($baseUri, '', concat('highlight_', url))}">
+				<sioct:Comment rdf:about="{vi:proxyIRI ($baseUri, '', concat('highlight_', updated_at))}">
+					<xsl:if test="string-length(comment) &gt; 0">
 					<rdfs:label>
 						<xsl:value-of select="comment"/>
 					</rdfs:label>
 					<dc:title>
 						<xsl:value-of select="comment"/>
 					</dc:title>
+					</xsl:if>
+					<xsl:if test="string-length(comment) = 0">
+						<rdfs:label>No comment</rdfs:label>
+						<dc:title>No comment</dc:title>
+					</xsl:if>
 					<xsl:if test="string-length(name) &gt; 0">
 						<dc:description>
 							<xsl:value-of select="name" />
@@ -449,6 +466,13 @@
 		</xsl:if>
 		<xsl:if test="$what='user'">
 			<rdf:Description rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.gowalla.com#this">
+                        			<foaf:name>Gowalla</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.gowalla.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 				<rdf:type rdf:resource="&foaf;Person"/>
 				<rdfs:label>
 					<xsl:value-of select="concat(first_name, ' ', last_name)"/>
@@ -586,6 +610,13 @@
 		</xsl:if>
 		<xsl:if test="$what='checkins'">
 			<rdf:Description rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.gowalla.com#this">
+                        			<foaf:name>Gowalla</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.gowalla.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 				<rdf:type rdf:resource="&sioct;Comment"/>
 				<rdfs:label>
 					<xsl:value-of select="message"/>
@@ -633,9 +664,9 @@
 				</xsl:if>
 			</rdf:Description>
 		</xsl:if>
-		
     </xsl:template>
 
     <xsl:template match="text()|@*"/>
 
+	
 </xsl:stylesheet>

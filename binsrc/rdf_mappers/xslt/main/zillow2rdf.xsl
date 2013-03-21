@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -25,8 +25,10 @@
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
 <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY pto "http://www.productontology.org/id/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY geo "http://www.w3.org/2003/01/geo/wgs84_pos#"> 
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
@@ -40,7 +42,9 @@
     xmlns:bibo="&bibo;"
     xmlns:sioc="&sioc;"
     xmlns:dcterms="&dcterms;"
+    xmlns:geo="&geo;"
     xmlns:gr="&gr;"
+    xmlns:opl="&opl;"
     xmlns:pto="&pto;" 
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
@@ -79,6 +83,13 @@
 			</rdf:Description>
 
 			<gr:Offering rdf:about="{vi:proxyIRI($baseUri, '', 'Offer')}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://www.zillow.com#this">
+                                 			<foaf:name>Zillow</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://www.zillow.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
+
 			    <gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
 			    <rdfs:label><xsl:value-of select="concat(request/address, ' ', request/citystatezip)"/></rdfs:label>
 			    <gr:includes rdf:resource="{$resourceURL}"/>
@@ -96,6 +107,12 @@
             </gr:BusinessEntity>
 
             <rdf:Description rdf:about="{$resourceURL}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://www.zillow.com#this">
+                                 			<foaf:name>Zillow</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://www.zillow.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
 			    <rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 			    <rdf:type rdf:resource="&oplzllw;Product" />
 	    		<sioc:has_container rdf:resource="{$docproxyIRI}"/>
@@ -137,8 +154,8 @@
 		<oplzllw:state><xsl:value-of select="translate (state, $lc, $uc)"/></oplzllw:state>
 		<rdfs:seeAlso rdf:resource="{vi:dbpIRI ('', city)}"/>
 		<rdfs:seeAlso rdf:resource="{vi:dbpIRI ('', translate (state, $lc, $uc))}"/>
-		<oplzllw:longitude><xsl:value-of select="longitude"/></oplzllw:longitude>
-		<oplzllw:latitude><xsl:value-of select="latitude"/></oplzllw:latitude>
+		<geo:long><xsl:value-of select="longitude"/></geo:long>
+		<geo:lat><xsl:value-of select="latitude"/></geo:lat>
     </xsl:template>
 
     <xsl:template match="localRealEstate" />

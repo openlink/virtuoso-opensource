@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -885,7 +885,7 @@ create procedure "VAD"."DBA"."VAD_CHECK_STICKER_DETAILS" (
         tid := "VAD"."DBA"."VAD_MKNODE" (parr, tid, s2, 'STRING', s3);
       }
       if (not "VAD"."DBA"."VAD_TEST_PACKAGE_LT" (parr, s2, s3))
-        "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('required package %s with version less than %s hasn\'t yet installed', s2, s3));
+        "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('This package requires %s version less than %s', s2, s3));
     }
     s3 := cast (xpath_eval ('version/@package', aref (items, j)) as varchar);
     if (s2 is not null and length(s3))
@@ -896,7 +896,7 @@ create procedure "VAD"."DBA"."VAD_CHECK_STICKER_DETAILS" (
         tid := "VAD"."DBA"."VAD_MKNODE" (parr, tid, s2, 'STRING', s3);
       }
       if (not "VAD"."DBA"."VAD_TEST_PACKAGE_EQ" (parr, s2, s3))
-        "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('required package %s with version equal to %s hasn\'t yet installed', s2, s3));
+        "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('This package requires %s version %s', s2, s3));
     }
     s3 := cast (xpath_eval ('versions_later/@package', aref (items, j)) as varchar);
     if (s2 is not null and length(s3))
@@ -907,7 +907,7 @@ create procedure "VAD"."DBA"."VAD_CHECK_STICKER_DETAILS" (
         tid := "VAD"."DBA"."VAD_MKNODE" (parr, tid, s2, 'STRING', s3);
       }
       if (not "VAD"."DBA"."VAD_TEST_PACKAGE_GT" (parr, s2, s3))
-        "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('required package %s with version greater than %s hasn\'t yet installed', s2, s3));
+        "VAD"."DBA"."VAD_FAIL_CHECK" (sprintf ('This package requires %s version greater than %s', s2, s3));
     }
     j := j + 1;
   }
@@ -1145,7 +1145,7 @@ create procedure "DB"."DBA"."VAD_INSTALL" (
     exec ('checkpoint');
   else
     {
-      cl_exec ('rdf_check_init()');
+      exec ('rdf_check_init()');
     cl_exec ('checkpoint');
     }
 
@@ -2259,31 +2259,26 @@ create procedure DB.DBA.VAD_DEPS_CHECK (in parr any, in name varchar, in version
 }
 ;
 
--- checks if x is less than y
+--!
+-- \brief Compare two version strings.
+--
+-- An arbitrary number of version components are supported in addition to an
+-- optional suffix like "_xxxNN" where "xxx" is a word and "NN" is the suffix
+-- number.
+--
+-- \b Examples:
+-- \code
+-- 1.0
+-- 1.0.0
+-- 1.0.2
+-- 2.3_git12
+-- \endcode
+--
+-- \return \p 1 if \p x is smaller than \p y, \p 0 otherwise.
+--/
 create procedure VAD.DBA.VER_LT (in x varchar, in y varchar)
 {
-  declare xx, yy any;
-  if (x is null)
-    return 0;
-  if (length (x) = 0 and length (y) > 0)
-    return 1;
-  xx := split_and_decode (x, 0, '\0\0.');
-  yy := split_and_decode (y, 0, '\0\0.');
-  if (length (xx) > length (yy))
-    return 0;
-  if (length (xx) < length (yy))
-    return 1;
-  for (declare i, l int, i := 0, l := length (xx); i < l; i := i + 1)
-    {
-      declare xi, yi int;
-      xi := atoi (xx[i]);
-      yi := atoi (yy[i]);
-      if (xi < yi)
-	return 1;
-      if (xi > yi)
-	return 0;
-    }
-  return 0;
+  return (case when "VAD"."DBA"."VERSION_COMPARE" (x, y) = -1 then 1 else 0 end);
 }
 ;
 

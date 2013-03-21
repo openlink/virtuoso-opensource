@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -28,6 +28,7 @@
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 ]>
 <xsl:stylesheet
 	xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -42,6 +43,8 @@
 	xmlns:dcterms="http://purl.org/dc/terms/"
 	xmlns:twfy="http://www.openlinksw.com/schemas/twfy#"
 	xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:opl="&opl;"	
+	xmlns:sioc="&sioc;"
 	version="1.0">
 	<xsl:output method="xml" indent="yes" />
 	<xsl:param name="baseUri" />
@@ -63,6 +66,14 @@
 		</rdf:RDF>
 	</xsl:template>
 	<xsl:template match="twfy">
+		<rdf:Description rdf:about="{$resourceURL}">
+			<opl:providedBy>
+				<foaf:Organization rdf:about="http://www.theyworkforyou.com#this">
+					<foaf:name>They work for you</foaf:name>
+					<foaf:homepage rdf:resource="http://www.theyworkforyou.com"/>
+				</foaf:Organization>
+			</opl:providedBy>
+		</rdf:Description>
 		<xsl:choose>
 			<xsl:when test="info">
 				<xsl:apply-templates select="info" />

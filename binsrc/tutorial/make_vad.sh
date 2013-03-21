@@ -315,6 +315,8 @@ virtuoso_shutdown() {
 
 sticker_init() {
   ISDAV=$1
+  BASE_PATH_DAV="/DAV/VAD"
+  BASE_PATH_FS="/vad/vsp"
   if [ "$ISDAV" = "1" ] ; then
     BASE_PATH="/DAV/VAD"
     TYPE="dav"
@@ -334,7 +336,7 @@ sticker_init() {
   echo "  <name package=\"tutorial\">" >> $STICKER
   echo "    <prop name=\"Title\" value=\"Virtuoso Developer Tutorial\"/>" >> $STICKER
   echo "    <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2011 OpenLink Software\"/>" >> $STICKER
+  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2013 OpenLink Software\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso\"/>" >> $STICKER
   echo "  </name>" >> $STICKER
@@ -357,7 +359,7 @@ sticker_init() {
   echo "  </sql>" >> $STICKER
   echo "  <sql purpose=\"post-install\">" >> $STICKER
   echo "    <![CDATA[" >> $STICKER
-	echo "    \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/tutorial/setup_tutorial.sql', 1, 'report', $ISDAV);" >> $STICKER
+  echo "    DB.DBA.VAD_LOAD_SQL_FILE ('$BASE_PATH/tutorial/setup_tutorial.sql', 1, 'report', $ISDAV);" >> $STICKER
   echo "    -- Add a virtual directory -------------------" >> $STICKER
   echo "    DB.DBA.VHOST_REMOVE(lpath=>'/tutorial',del_vsps => 1);" >> $STICKER
   echo "    DB.DBA.VHOST_DEFINE(" >> $STICKER
@@ -369,13 +371,45 @@ sticker_init() {
   echo "        def_page => 'index.vsp'" >> $STICKER
   echo "    )" >> $STICKER
   echo "    ;" >> $STICKER
-	echo "    \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/tutorial/setup_search.sql', 1, 'report', $ISDAV);" >> $STICKER
-        echo "    \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/tutorial/DET_RDFData.sql', 1, 'report', $ISDAV);" >> $STICKER
-	echo "    \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/tutorial/fill_search.sql', 1, 'report', $ISDAV);" >> $STICKER
-        echo "    \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/tutorial/sql_rdf.sql', 1, 'report', $ISDAV);" >> $STICKER
+  echo "    DB.DBA.VHOST_REMOVE (lhost=>'*sslini*', vhost=>'*sslini*', lpath=>'/tutorial', del_vsps => 1);" >> $STICKER
+  echo "    DB.DBA.VHOST_DEFINE(" >> $STICKER
+  echo "        lhost    => '*sslini*'," >> $STICKER
+  echo "        vhost    => '*sslini*'," >> $STICKER
+  echo "        lpath    => '/tutorial'," >> $STICKER
+  echo "        ppath    => '$BASE_PATH/tutorial/'," >> $STICKER
+  echo "        is_dav   => $ISDAV," >> $STICKER
+  echo "        vsp_user => 'dba'," >> $STICKER
+  echo "        is_brws  => 1," >> $STICKER
+  echo "        def_page => 'index.vsp'" >> $STICKER
+  echo "    )" >> $STICKER
+  echo "    ;" >> $STICKER
+  echo "    DB.DBA.VHOST_REMOVE(lpath=>'/tutorial/webid',del_vsps => 1);" >> $STICKER
+  echo "    DB.DBA.VHOST_DEFINE(" >> $STICKER
+  echo "        lpath    => '/tutorial/webid'," >> $STICKER
+  echo "        ppath    => '$BASE_PATH_FS/tutorial/webid'," >> $STICKER
+  echo "        is_dav   => 0," >> $STICKER
+  echo "        vsp_user => 'dba'," >> $STICKER
+  echo "        is_brws  => 1" >> $STICKER
+  echo "    )" >> $STICKER
+  echo "    ;" >> $STICKER
+  echo "    DB.DBA.VHOST_REMOVE (lhost=>'*sslini*', vhost=>'*sslini*', lpath=>'/tutorial/webid', del_vsps => 1);" >> $STICKER
+  echo "    DB.DBA.VHOST_DEFINE (" >> $STICKER
+  echo "        lhost    => '*sslini*'," >> $STICKER
+  echo "        vhost    => '*sslini*'," >> $STICKER
+  echo "        lpath    => '/tutorial/webid'," >> $STICKER
+  echo "        ppath    => '$BASE_PATH_FS/tutorial/webid'," >> $STICKER
+  echo "        is_dav   => 0," >> $STICKER
+  echo "        vsp_user => 'dba'," >> $STICKER
+  echo "        is_brws  => 1" >> $STICKER
+  echo "    )" >> $STICKER
+  echo "    ;" >> $STICKER
+  echo "    DB.DBA.VAD_LOAD_SQL_FILE ('$BASE_PATH/tutorial/setup_search.sql', 1, 'report', $ISDAV);" >> $STICKER
+  #echo "    DB.DBA.VAD_LOAD_SQL_FILE ('$BASE_PATH/tutorial/DET_RDFData.sql', 1, 'report', $ISDAV);" >> $STICKER
+  echo "    DB.DBA.VAD_LOAD_SQL_FILE ('$BASE_PATH/tutorial/fill_search.sql', 1, 'report', $ISDAV);" >> $STICKER
+  echo "    DB.DBA.VAD_LOAD_SQL_FILE ('$BASE_PATH/tutorial/sql_rdf.sql', 1, 'report', $ISDAV);" >> $STICKER
 	echo "    exec('UPDATE DB.DBA.TUT_SEARCH set TS_PHPATH  = ''$BASE_PATH/tutorial/'' || TS_PATH');" >> $STICKER
   echo "    -- xqdemo -------------------" >> $STICKER
-	echo "    \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/tutorial/xml/xq_s_1/xqdemo/presetup.sql', 1, 'report', $ISDAV);" >> $STICKER
+  echo "    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH/tutorial/xml/xq_s_1/xqdemo/presetup.sql', 1, 'report', $ISDAV);" >> $STICKER
   echo "    DB.DBA.VHOST_REMOVE(lpath=>'/xqdemo',del_vsps => 1);" >> $STICKER
   echo "    DB.DBA.VHOST_DEFINE(" >> $STICKER
   echo "        lpath    => '/xqdemo'," >> $STICKER
@@ -386,19 +420,10 @@ sticker_init() {
   echo "        def_page => 'demo.vsp'" >> $STICKER
   echo "    )" >> $STICKER
   echo "    ;" >> $STICKER
-#  echo "    DB.DBA.VHOST_REMOVE(lpath=>'/PortalCS',del_vsps => 1);" >> $STICKER
-#  echo "    DB.DBA.VHOST_REMOVE(lpath=>'/PortalCSVS',del_vsps => 1);" >> $STICKER
-#  echo "    DB.DBA.VHOST_REMOVE(lpath=>'/StoreCSVS',del_vsps => 1);" >> $STICKER
-#  echo "    DB.DBA.VHOST_DEFINE(" >> $STICKER
-#  echo "        lpath    => '/PortalCS'," >> $STICKER
-#  echo "        ppath    => '$BASE_PATH/PortalCS/'," >> $STICKER
-#  echo "        def_page => 'Default.aspx'" >> $STICKER
-#  echo "    )" >> $STICKER
-#  echo "    ;" >> $STICKER
-	echo "    \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/tutorial/xml/xq_s_1/xqdemo/desk.sql', 1, 'report', $ISDAV);" >> $STICKER
-	echo "    \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/tutorial/xml/xq_s_1/xqdemo/metadata.sql', 1, 'report', $ISDAV);" >> $STICKER
-	echo "    \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/tutorial/xml/xq_s_1/xqdemo/R-tables.sql', 1, 'report', $ISDAV);" >> $STICKER
-  echo "    \"DB\".\"DBA\".\"DAV_COL_CREATE\" ('/DAV/xqdemo/', '110100100', http_dav_uid(), http_dav_uid() + 1, 'dav', (SELECT pwd_magic_calc (U_NAME, U_PASSWORD, 1) FROM DB.DBA.SYS_USERS WHERE U_NAME = 'dav'));" >> $STICKER
+  echo "    DB.DBA.VAD_LOAD_SQL_FILE ('$BASE_PATH/tutorial/xml/xq_s_1/xqdemo/desk.sql', 1, 'report', $ISDAV);" >> $STICKER
+  echo "    DB.DBA.VAD_LOAD_SQL_FILE ('$BASE_PATH/tutorial/xml/xq_s_1/xqdemo/metadata.sql', 1, 'report', $ISDAV);" >> $STICKER
+  echo "    DB.DBA.VAD_LOAD_SQL_FILE ('$BASE_PATH/tutorial/xml/xq_s_1/xqdemo/R-tables.sql', 1, 'report', $ISDAV);" >> $STICKER
+  echo "    DB.DBA.DAV_COL_CREATE ('/DAV/xqdemo/', '110100100', http_dav_uid(), http_dav_uid() + 1, 'dav', (SELECT pwd_magic_calc (U_NAME, U_PASSWORD, 1) FROM DB.DBA.SYS_USERS WHERE U_NAME = 'dav'));" >> $STICKER
   cd vad_files/vsp/tutorial/xml/xq_s_1/xqdemo/data > /dev/null 2>&1
   for file in `find . -type f -print | LC_ALL=C sort`
   do
@@ -413,7 +438,7 @@ sticker_init() {
   echo "    declare _sql_state,_sql_message varchar;" >> $STICKER
   echo "    exec('drop table XQ.XQ.TEST_FILES',_sql_state,_sql_message);" >> $STICKER
   echo "    exec('drop table XQ.XQ.TEST_CASES',_sql_state,_sql_message);" >> $STICKER
-	echo "    \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/tutorial/xml/xq_s_1/xqdemo/postsetup.sql', 1, 'report', $ISDAV);" >> $STICKER
+  echo "    DB.DBA.VAD_LOAD_SQL_FILE ('$BASE_PATH/tutorial/xml/xq_s_1/xqdemo/postsetup.sql', 1, 'report', $ISDAV);" >> $STICKER
 	echo "" >> $STICKER
 	echo "" >> $STICKER
   echo "    ]]>" >> $STICKER
@@ -424,7 +449,10 @@ sticker_init() {
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
 	echo "  <sql purpose=\"post-uninstall\">" >> $STICKER
-	echo "    vhost_remove (lpath=>'/tutorial');" >> $STICKER
+  echo "    DB.DBA.VHOST_REMOVE (lpath=>'/tutorial', del_vsps => 1);" >> $STICKER
+  echo "    DB.DBA.VHOST_REMOVE (lhost=>'*sslini*', vhost=>'*sslini*', lpath=>'/tutorial', del_vsps => 1);" >> $STICKER
+  echo "    DB.DBA.VHOST_REMOVE (lpath=>'/tutorial/webid', del_vsps => 1);" >> $STICKER
+  echo "    DB.DBA.VHOST_REMOVE (lhost=>'*sslini*', vhost=>'*sslini*', lpath=>'/tutorial/webid', del_vsps => 1);" >> $STICKER
 	echo "  </sql>" >> $STICKER
   echo "</ddls>" >> $STICKER
 	echo "<procedures uninstallation=\"supported\">" >> $STICKER
@@ -465,7 +493,13 @@ sticker_init() {
   for file in `find vad_files -type f -print | LC_ALL=C sort`
   do
      name=`echo "$file" | cut -b15-`
-     echo "  <file overwrite=\"yes\" type=\"$TYPE\" source=\"http\" target_uri=\"$name\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
+     if echo "$file" | grep -v "/webid/" >/dev/null
+     then
+ 	     TYPE2=$TYPE
+     else
+	     TYPE2="http"
+     fi
+     echo "  <file overwrite=\"yes\" type=\"$TYPE2\" source=\"http\" target_uri=\"$name\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
   done
 
   echo "</resources>" >> $STICKER
@@ -595,9 +629,8 @@ else
 	STOP_SERVER
 	chmod 644 tutorial_filesystem.vad
 	chmod 644 tutorial_dav.vad
-	directory_clean
+#        directory_clean
 fi
-
 
 CHECK_LOG
 RUN egrep  '"\*\*.*FAILED:|\*\*.*ABORTED:"' "$LOGFILE"

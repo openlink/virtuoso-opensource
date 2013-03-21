@@ -5,7 +5,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2009 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -71,6 +71,7 @@ GenDefPage ()
 <strong>Page $1</strong><br>
 <a href="page1.html">page1</a><br>
 <a href="errpage.html">page with errors</a><br>
+<a href="honeypot.html"></a><br>
 <img src="image.gif">
 </body>
 </html>
@@ -567,7 +568,16 @@ mkdir dir3/sub31
 mkdir dir3/sub32
 
 GenDefPage
+echo "Generating robots.txt"
+    cat > robots.txt <<END_PAGE
+User-agent: *
+Disallow: /honeypot
+END_PAGE
 GenErrPage
+echo "Generating honeypot.html page"
+    cat > honeypot.html<<END_PAGE
+This is a trap!!!    
+END_PAGE
 GenStartPage
 GenPage 2 sub11 ./dir1/
 GenEndPage 4 ./dir1/sub11/

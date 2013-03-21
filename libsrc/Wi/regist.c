@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -196,7 +196,7 @@ sequences = id_hash_allocate  (101, sizeof (void *), sizeof (boxint), \
 
 
 caddr_t
-box_deserialize_string (caddr_t text, int opt_len, int64 offset)
+box_deserialize_string (caddr_t text, int opt_len, short offset)
 {
   dtp_t dvrdf_temp[50];
   scheduler_io_data_t iod;
@@ -207,47 +207,38 @@ box_deserialize_string (caddr_t text, int opt_len, int64 offset)
   switch ((dtp_t)text[0])
     {
     case DV_LONG_INT:
-      return (box_num (LONG_REF_NA (text + 1) + (int32)offset));
+      return (box_num (LONG_REF_NA (text + 1) + offset));
     case DV_INT64:
-      return (box_num (INT64_REF_NA (text + 1) + (int32)offset));
+      return (box_num (INT64_REF_NA (text + 1) + offset));
 
     case DV_SHORT_INT:
-      return box_num (((signed char *)text)[1] + (int32)offset);
+      return box_num (((signed char *)text)[1] + offset);
     case DV_IRI_ID:
-      return box_iri_id ((unsigned int32)LONG_REF_NA (text + 1) + (int32)offset);
+      return box_iri_id ((unsigned int32)LONG_REF_NA (text + 1) + offset);
     case DV_IRI_ID_8:
-      return box_iri_id (INT64_REF_NA (text + 1) + (int32)offset);
+      return box_iri_id (INT64_REF_NA (text + 1) + offset);
     case DV_SHORT_STRING_SERIAL:
       {
 	unsigned char len = (unsigned char) text[1];
 	caddr_t box = dk_alloc_box (len + 1, DV_STRING);
 	memcpy (box, text + 2, len);
-	if (offset)
-	  {
-	    uint32 last = LONG_REF_NA (box + len - 4);
-	    last += (int32)offset;
-	    LONG_SET_NA (box + len - 4, last);
-	  }
+	box[len - 1] += offset;
 	box[len ] = 0;
 	return box;
       }
     case DV_RDF_ID:
-      return rbb_from_id (LONG_REF_NA (text + 1) + (int32)offset);
+      return rbb_from_id (LONG_REF_NA (text + 1) + offset);
     case DV_RDF_ID_8:
-      return rbb_from_id (INT64_REF_NA (text + 1) + (int32)offset);
+      return rbb_from_id (INT64_REF_NA (text + 1) + offset);
     case DV_RDF:
-    default:
       if (!opt_len)
 	opt_len = box_length (text);
-      if (offset && opt_len > sizeof (dvrdf_temp))
+      if (opt_len > sizeof (dvrdf_temp))
 	buf = dk_alloc (opt_len);
       if (offset)
 	{
-	  int last;
 	  memcpy (buf, text, opt_len);
-	  last = LONG_REF_NA (buf + opt_len - 4);
-	  last += offset;
-	  LONG_SET_NA (buf + opt_len - 4, last);
+	  buf[opt_len - 1] += offset;
 	  text = (char*)buf;
 	}
       break;
@@ -278,10 +269,9 @@ mp_rbb_from_id (mem_pool_t * mp, int64 n)
 
 
 caddr_t
-mp_box_deserialize_string (mem_pool_t * mp, caddr_t text, int opt_len, int64 offset)
+mp_box_deserialize_string (mem_pool_t * mp, caddr_t text, int opt_len, short offset)
 {
   dtp_t dvrdf_temp[50];
-  db_buf_t tmp = NULL;
   scheduler_io_data_t iod;
   caddr_t reg;
 
@@ -290,50 +280,39 @@ mp_box_deserialize_string (mem_pool_t * mp, caddr_t text, int opt_len, int64 off
   switch ((dtp_t)text[0])
     {
     case DV_LONG_INT:
-      return (mp_box_num (mp, LONG_REF_NA (text + 1) + (int32)offset));
+      return (mp_box_num (mp, LONG_REF_NA (text + 1) + offset));
     case DV_INT64:
-      return (mp_box_num (mp, INT64_REF_NA (text + 1) + (int32)offset));
+      return (mp_box_num (mp, INT64_REF_NA (text + 1) + offset));
 
     case DV_SHORT_INT:
-      return mp_box_num (mp, ((signed char *)text)[1] + (int32)offset);
+      return mp_box_num (mp, ((signed char *)text)[1] + offset);
     case DV_IRI_ID:
-      return mp_box_iri_id (mp, (unsigned int32)LONG_REF_NA (text + 1) + (int32)offset);
+      return mp_box_iri_id (mp, (unsigned int32)LONG_REF_NA (text + 1) + offset);
     case DV_IRI_ID_8:
-      return mp_box_iri_id (mp, INT64_REF_NA (text + 1) + (int32)offset);
+      return mp_box_iri_id (mp, INT64_REF_NA (text + 1) + offset);
     case DV_SHORT_STRING_SERIAL:
       {
 	unsigned char len = (unsigned char) text[1];
 	caddr_t box = mp_alloc_box (mp, len + 1, DV_STRING);
 	memcpy (box, text + 2, len);
-	if (offset)
-	  {
-	    uint32 last = LONG_REF_NA (box + len - 4);
-	    last += (int32)offset;
-	    LONG_SET_NA (box + len - 4, last);
-	  }
+	box[len - 1] += offset;
 	box[len ] = 0;
 	return box;
       }
     case DV_RDF_ID:
-      return mp_rbb_from_id (mp, LONG_REF_NA (text + 1) + (int32)offset);
+      return mp_rbb_from_id (mp, LONG_REF_NA (text + 1) + offset);
     case DV_RDF_ID_8:
-      return mp_rbb_from_id (mp, INT64_REF_NA (text + 1) + (int32)offset);
+      return mp_rbb_from_id (mp, INT64_REF_NA (text + 1) + offset);
     case DV_RDF:
-    default:
       if (!opt_len)
 	opt_len = box_length (text);
+      if (opt_len > sizeof (dvrdf_temp))
+	GPF_T1 ("rdf box serialization too long");
       if (offset)
 	{
-	  int last;
-	  if (opt_len > sizeof (dvrdf_temp))
-	    tmp = dk_alloc_box (opt_len + 1, DV_STRING);
-	  else
-	    tmp = dvrdf_temp;
-	  memcpy (tmp, text, opt_len);
-	  last = LONG_REF_NA (tmp + opt_len - 4);
-	  last += offset;
-	  LONG_SET_NA (tmp + opt_len - 4, last);
-	  text = (char *)tmp;
+	  memcpy (dvrdf_temp, text, opt_len);
+	  dvrdf_temp[opt_len - 1] += offset;
+	  text = (char*)dvrdf_temp;
 	}
       break;
     }
@@ -348,8 +327,6 @@ mp_box_deserialize_string (mem_pool_t * mp, caddr_t text, int opt_len, int64 off
 
   reg = (caddr_t) read_object (&ses);
   mp_trash (mp, reg);
-  if (tmp && tmp != dvrdf_temp)
-    dk_free_box ((caddr_t)tmp);
   return reg;
 }
 
@@ -569,19 +546,25 @@ sql_escaped_string_literal (char *target, char *text, int max)
 void
 log_registry_set (lock_trx_t * lt, char * k, const char * d)
 {
-  caddr_t * log_array;
-  if (!lt || lt->lt_replicate == REPL_NO_LOG || !d || !k)
+  int llen = 0;
+  char temp[2000];
+
+  if (!lt || lt->lt_replicate == REPL_NO_LOG || !d || !k || in_log_replay || cl_non_logged_write_mode)
     return;
 
   ASSERT_IN_TXN;
   if (0 == strncmp (k, "__key__", 7)
     || 0 == strncmp (k, "__EM:__key__", 12) )
     return;
-  log_array = (caddr_t*)list (4, box_string ("registry_set (?, ?, ?)"), k, d, (caddr_t)1);
-      log_text_array (lt, log_array);
-      log_array[1] = NULL;
-      log_array[2] = NULL;
-      dk_free_tree ((caddr_t)log_array);
+  tailprintf (temp, sizeof (temp), &llen, "registry_set ('%s', '", k);
+  llen += sql_escaped_string_literal (&temp[llen], (char *) d, sizeof (temp) - llen);
+  if (llen + 3 > sizeof (temp))
+    return;
+  tailprintf (temp, sizeof (temp), &llen, "')");
+  session_buffered_write_char (LOG_TEXT, lt->lt_log);
+  session_buffered_write_char (DV_LONG_STRING, lt->lt_log);
+  print_long ((long)llen, lt->lt_log);
+  session_buffered_write (lt->lt_log, temp, llen);
 }
 
 void

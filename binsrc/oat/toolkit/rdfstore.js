@@ -1,9 +1,8 @@
-/*
- *  $Id$
+/*  $Id$
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2010 OpenLink Software
+ *  Copyright (C) 2005-2013 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -68,6 +67,7 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
     this.labelProps = {
 	"http://www.w3.org/2000/01/rdf-schema#label": 0,
 	"http://www.w3.org/2004/02/skos/core#prefLabel": 1,
+        "http://www.openlinksw.com/schemas/virtrdf#label": 1,
 	"http://xmlns.com/foaf/0.1/name": 2,
 	"http://xmlns.com/foaf/0.1/nick": 3,
 	"http://purl.org/dc/elements/1.1/title": 4,
@@ -482,7 +482,7 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
 		  }
 		else
 		    preds[p] = [o];
-	      }
+                  }
 	    else
 	      { /* new resource */
 		var obj = {
@@ -712,7 +712,10 @@ OAT.RDFStore = function(tripleChangeCallback, optObj) {
 	if (!!item.label)
 	    return item.label;
 	else
-	    return self.getCIRIorSplit (item.iid)
+	    if (self.options.raw_iris) 
+		return OAT.IRIDB.getIRI (item.iid);
+            else
+		return self.getCIRIorSplit (item.iid);
     }
 
 // XXX

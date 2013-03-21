@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -124,7 +124,6 @@
 #define AMMSC_SUM		(ptrlong)5
 #define AMMSC_COUNTSUM		(ptrlong)6
 #define AMMSC_USER		(ptrlong)7
-#define AMMSC_ONE (long)8  /* return of scalar subq in vectored exec, align set no to calling outside subq  sets */
 
 #define ORDER_BY		(ptrlong)111
 
@@ -184,8 +183,6 @@
 #define MODULE_DECL		(ptrlong)630
 #define BREAKPOINT_STMT		(ptrlong)631
 #define USER_AGGREGATE_DECL	(ptrlong)632
-#define FOR_VEC_STMT (ptrlong)635
-#define VECT_DECL ((ptrlong)636)
 
 #define SIMPLE_CASE		(ptrlong)622
 #define SEARCHED_CASE		(ptrlong)623
@@ -312,10 +309,6 @@ Note: bitwise OR of all these masks should be less than SMALLEST_POSSIBLE_POINTE
 #define OPT_SPARQL ((ptrlong) 907)
 #define OPT_NO_CLUSTER ((ptrlong) 930)
 #define OPT_INTO ((ptrlong) 931)
-#define OPT_INS_FETCH ((ptrlong)933)
-#define OPT_VECTORED ((ptrlong)934)
-#define OPT_NOT_VECTORED ((ptrlong)935)
-
 
 #define OPT_HASH ((ptrlong) 903)
 #define OPT_INTERSECT ((ptrlong) 1015)
@@ -737,17 +730,6 @@ typedef struct sql_tree_s
 	  ptrlong	shortest_only;
 	  ptrlong	direction;
 	} trans;
-	struct {
-	  ptrlong		mode;
-	  ST *		name;
-	  ST *		type;
-	  ST *	exp;
-	} vect_decl;
-	struct {
-	  ST **	decl;
-	  ST *	body;
-	  ptrlong	modify;
-	} for_vec;
     } _;
   } sql_tree_t;
 
@@ -869,6 +851,7 @@ extern long sqlp_bin_op_serial;
    || DV_BIN == box_tag((caddr_t) a) \
    || DV_UNAME == box_tag((caddr_t) a) \
    || DV_IRI_ID == box_tag((caddr_t) a) \
+   || DV_DATETIME == box_tag((caddr_t) a) \
    || DV_XPATH_QUERY == box_tag((caddr_t) a) )
 
 #define ST_P(s, tp) \

@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -33,7 +33,9 @@
 #include "../Dk/Dksession.h"
 #include "../Dk/Dkernel.h"
 #include "../Dk/Dkhashext.h"
+#include "../Dk/Dkpool.h"
 #include "../Dk/Dksets.h"
+#include "../Dk/Dktrace.h"
 #include "../Thread/Dkthread.h"
 #include "../Wi/wi.h"
 #include "../Wi/sqlnode.h"
@@ -74,6 +76,7 @@
 #include "../Wi/sqlfn.h"
 #include "../Wi/ltrx.h"
 #include "../Wi/2pc.h"
+#include "../Wi/rdf_core.h"
 
 
 #include "gate_virtuoso_stubs.h"

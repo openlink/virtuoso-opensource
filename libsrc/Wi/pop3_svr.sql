@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -600,7 +600,7 @@ pop_spam_filter_init ()
 {
    declare _from_ini varchar;
 
-   _from_ini := cfg_item_value(virtuoso_ini_path(), 'HTTPServer', 'SpamFilter');
+   _from_ini := virtuoso_ini_item_value ('HTTPServer', 'SpamFilter');
 
    if (_from_ini is NULL or _from_ini <> '1')
      registry_set ('__spam_filtering', '0');

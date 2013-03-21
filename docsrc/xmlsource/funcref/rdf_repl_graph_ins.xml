@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -51,10 +51,17 @@ more than one.
     </refsect2>
   </refsect1>
   <refsect1 id="examples_rdf_repl_graph_ins"><title>Example</title>
-    <example id="ex_rdf_repl_graph_ins"><title>Insert graph to RDF replication</title>
+    <example id="rdf_repl_graph_ins_ex1"><title>Insert graph to RDF replication</title>
       <screen>
 SQL> DB.DBA.RDF_RDF_REPL_GRAPH_INS ('http://test.org');
       </screen>
+    </example>
+    <example id="rdf_repl_graph_ins_ex2"><title>Replicate all graphs</title>
+      <para>To replicate all graphs ( except the system graph http://www.openlinksw.com/schemas/virtrdf# ), 
+      	one should use http://www.openlinksw.com/schemas/virtrdf#rdf_repl_all as graph IRI:</para>        	
+<programlisting><![CDATA[
+SQL> DB.DBA.RDF_RDF_REPL_GRAPH_INS ('http://www.openlinksw.com/schemas/virtrdf#rdf_repl_all');
+]]></programlisting>
     </example>
   </refsect1>
   <refsect1 id="seealso_rdf_repl_graph_ins"><title>See Also</title>

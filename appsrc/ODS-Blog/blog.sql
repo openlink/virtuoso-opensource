@@ -6,7 +6,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -666,6 +666,7 @@ blog2_exec_no_error ('create table SYS_BLOG_CHANNEL_FEEDS
   CF_PUBDATE datetime,
   CF_COMMENT_API varchar,
   CF_COMMENT_RSS varchar,
+  CF_READ int,
   primary key (CF_CHANNEL_URI, CF_ID)
   )')
 ;
@@ -884,7 +885,7 @@ insert soft SYS_ROUTING_TYPE (RT_ID, RT_NAME, RT_TYPE_DESCRIPTION) values (3, 'd
 insert soft SYS_ROUTING_TYPE (RT_ID, RT_NAME, RT_TYPE_DESCRIPTION) values (4, 'Ping', 'Weblog ping')
 ;
 
---   Routing Procotol Table Structure:
+--   Routing Protocol Table Structure:
 blog2_exec_no_error ('create table SYS_ROUTING_PROTOCOL
 (
    RP_ID  int primary key,

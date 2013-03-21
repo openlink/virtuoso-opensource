@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -168,6 +168,25 @@ create procedure DB.DBA.ODS_PHOTO_ITEM_PAGE (in par varchar, in fmt varchar, in 
 }
 ;
 
+create procedure DB.DBA.ODS_MAIL_ITEM_PAGE (in par varchar, in fmt varchar, in val varchar)
+{
+  declare ret, ufname any;
+
+  if (par = 'ufname')
+    {
+      connection_set ('ufname', val);
+      ret := '';
+    }
+  else if (par = 'post')
+    {
+      ufname := connection_get ('ufname');
+      ret := (select TOP 1 WAI_ID from DB.DBA.WA_INSTANCE, DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS where U_NAME = ufname and U_ID = WAM_USER and WAM_APP_TYPE = 'oMail' and WAM_MEMBER_TYPE = 1 and WAI_NAME = WAM_INST);
+      ret := sprintf ('%d/open.vsp?op=%s,1', ret, val);
+    }
+  return sprintf (fmt, ret);
+}
+;
+
 create procedure DB.DBA.ODS_PHOTO_GEMS_PAGE (in par varchar, in fmt varchar, in val varchar)
 {
 
@@ -187,6 +206,19 @@ create procedure DB.DBA.ODS_PHOTO_GEMS_PAGE (in par varchar, in fmt varchar, in 
 }
 ;
 
+create procedure DB.DBA.ODS_FOLDER_PAGE (in par varchar, in fmt varchar, in val varchar)
+{
+  declare ret any;
+  if (par = 'item')
+    {
+      ret := DB.DBA.DAV_SEARCH_PATH (atoi (val), 'C');
+      if (isinteger (ret))
+        ret := '';
+    }
+  return sprintf (fmt, ret);
+}
+;
+
 create procedure DB.DBA.ODS_DET_REF (in par varchar, in fmt varchar, in val varchar)
 {
   declare iri, res any;
@@ -201,6 +233,8 @@ create procedure DB.DBA.ODS_DET_REF (in par varchar, in fmt varchar, in val varc
 	return sprintf (fmt, 'n3');
     }
 
+  if (val like 'raw/%')
+    val := subseq (val, 4);
   iri := sioc..get_graph () ||'/'|| val;
   -- when an about, sioc or foaf is requested, we just remove. the IRI MUST be preceding path
   if (regexp_match ('http://([^/]*)/dataspace/(.*)/(about|sioc|foaf)\\.(rdf|n3|ttl)', iri) is not null)
@@ -253,6 +287,17 @@ create procedure DB.DBA.ODS_URLREW_XRDS (in path varchar)
 }
 ;
 
+create procedure DB.DBA.ODS_SERVICES_PAGE (in par varchar, in fmt varchar, in val varchar)
+{
+  declare ret any;
+
+  if (par = 'part')
+    {
+      ret := sprintf ('http://%s%s/services/%s', SIOC..get_cname (), SIOC..get_base_path (), val);
+    }
+  return sprintf (fmt, ret);
+}
+;
 
 -- Person IRI as HTML
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_person_html', 1,
@@ -393,16 +438,32 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_apps_page', 1,
 
 -- A rule returning home page for a given item within instance all of these having a form of <home>?id=<item id>
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_item_html', 1,
-    '/dataspace/doc/([^/]*)/(weblog|addressbook|ecrm|bookmark|briefcase|community|subscriptions|polls|mail|eCRM|IM)/([^/]*)/((?!gems)(?!tag)[^/\\?]*)',
+    '/dataspace/doc/([^/]*)/(weblog|addressbook|ecrm|socialnetwork|bookmark|briefcase|community|subscriptions|polls|mail|eCRM|IM)/([^/]*)/((?!gems)(?!tag)[^/\\?]*)',
     vector('uname', 'app', 'inst', 'item'), 3,
     '%s?id=%s', vector('inst', 'item'),
     'DB.DBA.ODS_ITEM_PAGE',
     NULL,
     2);
 
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_item_briefcase_html', 1,
+    '/dataspace/doc/([^/]*)/(briefcase)/([^/]*)/folder/([^/\\?]*)',
+    vector('uname', 'app', 'inst', 'item'), 3,
+    '%s', vector('item'),
+    'DB.DBA.ODS_FOLDER_PAGE',
+    NULL,
+    2);
+
 -- Wiki item is special case
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_wiki_item_html', 1,
     '/dataspace/doc/([^/]*)/wiki/([^/]*)/([^\\?]*)',
+    vector('uname', 'inst', 'item'), 3,
+    '%s%s', vector('inst', 'item'),
+    'DB.DBA.ODS_WIKI_ITEM_PAGE',
+    NULL,
+    2);
+
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_wiki_item_html_post', 1,
+    '/dataspace/([^/]*)/wiki/([^/]*)/([^\\?]*)',
     vector('uname', 'inst', 'item'), 3,
     '%s%s', vector('inst', 'item'),
     'DB.DBA.ODS_WIKI_ITEM_PAGE',
@@ -495,6 +556,15 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_discussion_item_html', 1,
     vector('grp', 'post'), 1,
     '/nntpf/nntpf_disp_article.vspx?id=%U', vector('post'),
     'DB.DBA.ODS_DISC_ITEM_ID',
+    NULL,
+    2);
+
+-- A discussion item page
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_mail_item_html', 1,
+    '/dataspace/([^/]*)/mail/([\\d]+)',
+    vector ('ufname', 'post'), 2,
+    '/oMail/%s%s', vector('ufname', 'post'),
+    'DB.DBA.ODS_MAIL_ITEM_PAGE',
     NULL,
     2);
 
@@ -599,6 +669,8 @@ DB.DBA.HTTP_VARIANT_ADD ('ods_rule_list1', 'sioc\x24', 'sioc.ttl',    'text/rdf+
 DB.DBA.HTTP_VARIANT_ADD ('ods_rule_list1', 'sioc\x24', 'sioc.n3',     'text/rdf+n3',         1.0, location_hook=>null);
 DB.DBA.HTTP_VARIANT_ADD ('ods_rule_list1', 'sioc\x24', 'sioc.nt',     'text/n3',             1.0, location_hook=>null);
 DB.DBA.HTTP_VARIANT_ADD ('ods_rule_list1', 'sioc\x24', 'sioc.rdf',    'application/rdf+xml', 1.0, location_hook=>null);
+DB.DBA.HTTP_VARIANT_ADD ('ods_rule_list1', 'sioc\x24', 'sioc.jmd',    'application/microdata+json', 1.0, location_hook=>null);
+DB.DBA.HTTP_VARIANT_ADD ('ods_rule_list1', 'sioc\x24', 'sioc.jld',    'application/ld+json', 1.0, location_hook=>null);
 
 create procedure DB.DBA.ODS_URLREW_HDR (in in_path varchar)
 {
@@ -616,7 +688,12 @@ create procedure DB.DBA.ODS_URLREW_HDR (in in_path varchar)
       	vector ('rdf',  'RDF/XML', 'application/rdf+xml'), 
       	vector ('nt',   'N3/Turtle', 'text/n3'), 
       	vector ('n3',   'N3/Turtle', 'text/rdf+n3'), 
-	vector ('json', 'RDF/JSON', 'application/json')
+	vector ('json', 'RDF/JSON', 'application/json'),
+	vector ('txt', 	'N-Triples', 'text/plain'),
+	vector ('turtle','N3/Turtle', 'text/turtle'),
+	vector ('ttl', 	'N3/Turtle', 'text/rdf+ttl'),
+	vector ('jmd', 	'Microdata+JSON', 'application/microdata+json'),
+	vector ('jld', 	'JSON-LD', 'application/ld+json')
 	);
   path := regexp_replace (in_path, '/(about|foaf|sioc)\\.([a-z0-9]+)\x24', '', 1, null);	
   if (regexp_match ('/dataspace/(person|organization)/([^/]+)\x24', path) is not null)
@@ -634,7 +711,7 @@ create procedure DB.DBA.ODS_URLREW_HDR (in in_path varchar)
     {
       tmp := path;
     }
-  links := 'Link: ';
+  links := sprintf ('X-RDF-Graph: http://%{WSHost}s/dataspace\r\nX-SPARQL-Endpoint: http://%{WSHost}s/sparql-auth/\r\nLink: ');
   links := links || sprintf ('<http://%s%s>; rel="http://xmlns.com/foaf/0.1/primaryTopic",', host, tmp);
   links := links || sprintf ('\r\n <http://%s%s>; rev="describedby",', host, tmp);
   if (uname is not null)
@@ -662,7 +739,7 @@ create procedure DB.DBA.ODS_URLREW_HDR (in in_path varchar)
 }
 ;
 
--- RDF data rules - these was returning 303
+-- RDF data rules - these returns 303
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_html', 1,
     '/dataspace/((?!(doc|person|organization|raw)/)[^\\?]*)\x24', vector('path'), 1,
     '/dataspace/doc/%s', vector('path'),
@@ -677,7 +754,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rdf', 1,
     '/dataspace/([^\\?]*)', vector('path'), 1,
     '/dataspace/raw/%s/sioc', vector('path'),
     null, --'DB.DBA.ODS_DET_REF',
-    '(application/rdf.xml)|(text/rdf.n3)|(text/rdf.turtle)|(text/rdf.ttl)|([a-z]+/turtle)|(application/x-turtle)|(text/n3)|(application/json)',
+    '(application/rdf.xml)|(text/rdf.n3)|(text/rdf.turtle)|(text/rdf.ttl)|([a-z]+/turtle)|(application/x-turtle)|(text/n3)|(application/json)|(application/microdata+json)|(application/ld+json)',
     2,
     303,
     null --'^{sql:DB.DBA.ODS_URLREW_HDR}^'
@@ -688,7 +765,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_rdf_next', 1,
     '/dataspace/(.*)/page/([0-9]*)', vector('path', 'page'), 1,
     '/ods/data/rdf/%U.%U?page=%U', vector('path', '*accept*', 'page'),
     'DB.DBA.ODS_DET_REF',
-    '(application/rdf.xml)|(text/rdf.n3)|(text/rdf.turtle)|(text/rdf.ttl)|([a-z]+/turtle)|(application/x-turtle)|(text/n3)|(application/json)',
+    '(application/rdf.xml)|(text/rdf.n3)|(text/rdf.turtle)|(text/rdf.ttl)|([a-z]+/turtle)|(application/x-turtle)|(text/n3)|(application/json)|(application/microdata+json)|(application/ld+json)',
     2,
     303,
     null --'^{sql:DB.DBA.ODS_URLREW_HDR}^'
@@ -729,10 +806,20 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_error', 1,
     null,
     2);
 
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_services', 1,
+    '/dataspace/doc/services/([^\\?]*)\x24',
+    vector('part'), 1,
+    '/describe/?url=%U', vector('part'),
+    'DB.DBA.ODS_SERVICES_PAGE',
+    null,
+    2,
+    302);
+
 -- All rules are processed in the order below.
 -- Every rule will be tried and last matching rule will win
 DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_rule_list1', 1,
    	vector(
+	  'ods_services',
 	  'ods_person_html',
 	  'ods_person_yadis',
 	  'ods_apps_html',
@@ -749,9 +836,11 @@ DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_rule_list1', 1,
 	  'ods_discussion_home_html',
 	  'ods_discussion_html',
 	  'ods_item_html',
+    'ods_item_briefcase_html',
     'ods_item_discussion_html',
     'ods_item_annotation_html',
 	  'ods_wiki_item_html',
+	  'ods_wiki_item_html_post',
 	  'ods_wiki_atom_html',
 	  'ods_ecrm_item_html1',
 	  'ods_ecrm_item_html2',
@@ -764,6 +853,7 @@ DB.DBA.URLREWRITE_CREATE_RULELIST ('ods_rule_list1', 1,
 	  'ods_apps_gems_html',
 	  'ods_apps_tags_html',
 	  'ods_discussion_item_html',
+	  'ods_mail_item_html',
 	  'ods_blog_tag',
 	  'ods_main',
 	  'ods_space_html',

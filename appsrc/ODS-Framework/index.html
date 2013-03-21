@@ -26,6 +26,7 @@
 
     <title>Personal Data Space Explorer</title>
     <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" href="default.css" type="text/css"/>
     <link rel="stylesheet" href="nav_framework.css" type="text/css"/>
     <!-- #META# -->
     <script type="text/javascript">
@@ -85,10 +86,13 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
     </script>
     <script type="text/javascript" src="oat/loader.js"></script>
     <script type="text/javascript" src="common.js"></script>
+    <script type="text/javascript" src="facebook.js"></script>
     <script type="text/javascript" src="login.js"></script>
     <script type="text/javascript" src="nav_framework.js"></script>
   </head>
   <body>
+    <div id="fb-root">
+    </div>
     <div id="PG">
       <div id="LT">
         <div id="ods_logo">
@@ -423,12 +427,12 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
             </div> <!-- widget -->
    	  <!-- Profile Page end-->
           <!-- Connections Page start-->
-          <div id="contacts_interface" style="display:none;">
+          <div id="contacts_interface" style="display: none;">
             <div class="widget w_contact">
               <div class="w_content">
                 <ul class="tab_bar">
-                  <li id="csiT1"><a href="javascript:void(0)">Connections List</a></li>
-                  <li id="csiT2"><a href="javascript:void(0)">Status Updates</a></li>
+                  <li id="csiT1"><a href="javascript: void(0)">Connections List</a></li>
+                  <li id="csiT2"><a href="javascript: void(0)">Status Updates</a></li>
                 </ul>
                 <div class="tab_deck">
                   <div id="cisPCtr" class="tab_page">
@@ -447,17 +451,17 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
                     <div id="connectionsTemplate" style="display:none;">
                       <table border="0" cellspacing="0" width="98%">
                         <tr>
-			  <td class="image" style="width:150px;">
-                  			    <img src="{connImgSRC}" style="width:40px;cursor:pointer"/>
+                  			  <td class="image" style="width: 150px;">
+                  			    <img src="images/profile.png" style="width: 40px; cursor: pointer"/>
                   			    <br/>
-			    <span style="cursor:pointer;text-decoration: underline;">{connProfileFullName}</span>
+                  			    <span style="cursor: pointer; text-decoration: underline;">{connProfileFullName}</span>
 			  </td>
                           <td class="info">
                           </td>
-                          <td class="actions" style="width:120px;text-align:left;">
-                            <a id="{sendMsg}" style="cursor:pointer;text-decoration:underline;">Send Message</a><br/>
-                            <a id="{viewConnections}" style="cursor:pointer;text-decoration:underline;">View Connections</a><br/>
-			    <a id="{doConnection}" style="cursor:pointer;text-decoration:underline;">Connection/Disconnect</a>
+                          <td class="actions" style="width: 120px; text-align: left;">
+                            <a id="{sendMsg}" style="cursor: pointer; text-decoration:underline;">Send Message</a><br/>
+                            <a id="{viewConnections}" style="cursor: pointer; text-decoration: underline;">View Connections</a><br/>
+			                      <a id="{doConnection}" style="cursor: pointer; text-decoration: underline;">Connection/Disconnect</a>
 			  </td>
                         </tr>
 		      </table>
@@ -886,7 +890,7 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
         <div id="FT">
           <img alt="Powered by OpenLink Virtuoso" src="images/skin/default/virt_power_no_border.png"/>
           <div id="FT_RC">
-            Copyright &copy; 1998-2011 OpenLink Software<br/>
+            Copyright &copy; 1998-2013 OpenLink Software<br/>
             <a href="#">About</a> <a href="#">Privacy</a> <a href="#">FAQ</a> <a href="#">Developers</a>
           </div><!-- #FT_RC -->
         </div> <!-- #FT -->
@@ -1025,21 +1029,22 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
           <td valign="top">
             <div id="lf" class="form">
               <div class="header">
-                Identify Yourself <img id="lf_throbber" src="/ods/images/oat/Ajax_throbber.gif" style="float: right; margin-right: 10px; display: none" />
+                Please identify yourself <img id="lf_throbber" src="/ods/images/oat/Ajax_throbber.gif" style="float: right; margin-right: 10px; display: none" />
               </div>
               <ul id="lf_tabs" class="tabs">
-                <li id="lf_tab_0" title="Digest">Digest</li>
+                <li id="lf_tab_0" title="Digest" style="display: none;">Digest</li>
+                <li id="lf_tab_3" title="WebID" style="display: none;">WebID</li>
                 <li id="lf_tab_1" title="OpenID" style="display: none;">OpenID</li>
                 <li id="lf_tab_2" title="Facebook" style="display: none;">Facebook</li>
-                <li id="lf_tab_3" title="WebID" style="display: none;">WebID</li>
                 <li id="lf_tab_4" title="Twitter" style="display: none;">Twitter</li>
                 <li id="lf_tab_5" title="LinkedIn" style="display: none;">LinkedIn</li>
+                <li id="lf_tab_6" style="display: none;"></li>
               </ul>
               <div style="min-height: 120px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                 <div id="lf_content">&nbsp;
               </div>
-                <div id="lf_page_0" class="tabContent" >
-                  <table class="form" cellspacing="5" style="inherit: none;">
+                <div id="lf_page_0" class="tabContent" style="display: none;">
+                  <table class="form" cellspacing="5">
                     <tr>
                       <th width="20%">
                         <label for="lf_uid">User ID</label>
@@ -1079,7 +1084,6 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
                       <td nowrap="nowrap">
                         <span id="lf_facebookData" style="min-height: 20px;">&nbsp;</span>
                 <br />
-                <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
                         <fb:login-button autologoutlink="true" xmlns:fb="http://www.facebook.com/2008/fbml"></fb:login-button>
                       </td>
                     </tr>
@@ -1088,8 +1092,11 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
 
                 <div id="lf_page_3" class="tabContent" style="display: none;">
                   <table id="lf_table_3" class="form" cellspacing="5">
-                    <tr>
+                    <tr id="lf_table_3_throbber">
+                      <th width="20%">
+                      </th>
                       <td>
+                        <img alt="Import WebID Data" src="/ods/images/oat/Ajax_throbber.gif" />
                       </td>
                     </tr>
                   </table>
@@ -1121,6 +1128,16 @@ if ((document.location.href.indexOf ('/dataspace/person/') >- 1 ||
                           </td>
                         </tr>
                       </table>
+                </div>
+
+                <div id="lf_page_6" class="tabContent" style="display: none;">
+                  <table id="lf_table_6" class="form" cellspacing="5" width="100%">
+                    <tr>
+                      <td style="text-align: center;">
+                        <b>The login is not allowed!</b>
+                      </td>
+                    </tr>
+                  </table>
                 </div>
               </div>
               <div id="lf_forget" class="footer" style="background-color: #FFF; display: none;">

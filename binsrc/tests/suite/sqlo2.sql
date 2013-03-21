@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -375,7 +375,6 @@ insert into locutusmetadata.dba.fam_assetUrl_Table (SubjectUri, GraphName) value
 insert into locutusmetadata.dba.fam_assetUrl_Table (SubjectUri, GraphName) values ('subj15', 'User1');
 insert into locutusmetadata.dba.fam_assetUrl_Table (SubjectUri, GraphName) values ('subj16', 'User1');
 
--- XXX
 SELECT dcterms_subject_Table.SubjectUri,fam_assetUrl_Table.fam_dateTimeOriginalUtc 
 FROM
   locutusmetadata.dba.dcterms_subject_Table,
@@ -391,29 +390,28 @@ WHERE ((
   and dcterms_subject_Table.GraphName ='User1')
 ORDER BY  fam_dateTimeOriginalUtc ASC;
 
---ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
---SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
---ECHO BOTH ": BUG 14167 : union of DISTINCTs inside IN operator STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": BUG 14167 : union of DISTINCTs inside IN operator STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
--- XXX
---SELECT DS.SubjectUri, FA.fam_dateTimeOriginalUtc 
---FROM
---  locutusmetadata.dba.dcterms_subject_Table DS,
---  locutusmetadata.dba.fam_assetUrl_Table FA
---WHERE
---    (DS.subjectUri in (select * from
---      (select T1.SubjectUri from locutusmetadata.dba.dcterms_subject_Table T1 
---        where T1.dcterms_subject like '%Larr%' 
---        union select T2.SubjectUri from locutusmetadata.dba.dcterms_subject_Table T2 
---        where T2.dcterms_subject = 'Larry' ) T3))
---and DS.SubjectUri = FA.SubjectUri
---and 'User1' /* DS.GraphName */ = FA.GraphName
---and DS.GraphName ='User1'
---ORDER BY  FA.fam_dateTimeOriginalUtc ASC;
+SELECT DS.SubjectUri, FA.fam_dateTimeOriginalUtc 
+FROM
+  locutusmetadata.dba.dcterms_subject_Table DS,
+  locutusmetadata.dba.fam_assetUrl_Table FA
+WHERE
+    (DS.subjectUri in (select * from
+      (select T1.SubjectUri from locutusmetadata.dba.dcterms_subject_Table T1 
+        where T1.dcterms_subject like '%Larr%' 
+        union select T2.SubjectUri from locutusmetadata.dba.dcterms_subject_Table T2 
+        where T2.dcterms_subject = 'Larry' ) T3))
+and DS.SubjectUri = FA.SubjectUri
+and 'User1' /* DS.GraphName */ = FA.GraphName
+and DS.GraphName ='User1'
+ORDER BY  FA.fam_dateTimeOriginalUtc ASC;
 
---ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
---SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
---ECHO BOTH ": BUG 14167 : union inside IN operator STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": BUG 14167 : union inside IN operator STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 select count (*) from SYS_USERS where U_NAME = 'dba' and U_NAME in ('dba', 'admin', 'george');
 ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
@@ -522,12 +520,11 @@ ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": BUG 5189-2 : not propagating complex preds to union terms of a dt STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
--- XXX
 select count (*) from
 B5189V A where exists (select 1 from B5189V E where E.ID = A.ID - 1);
---ECHO BOTH $IF $EQU $LAST[1] 5 "PASSED" "***FAILED";
---SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
---ECHO BOTH ": BUG 5189-3 : not propagating complex preds to union terms of a view returned " $LAST[1] "rows\n";
+ECHO BOTH $IF $EQU $LAST[1] 5 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": BUG 5189-3 : not propagating complex preds to union terms of a view returned " $LAST[1] "rows\n";
 
 select composite_ref (composite ('Miles','Herbie','Wayne','Ron','Tony'), 0);
 ECHO BOTH $IF $EQU $LAST[1] Miles "PASSED" "***FAILED";
@@ -604,11 +601,10 @@ ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": BUG 5483-2 : table altered STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
--- XXX
 columns B5483;
---ECHO BOTH $IF $EQU $ROWCNT 3 "PASSED" "***FAILED";
---SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
---ECHO BOTH ": BUG 5483-3 : 3 cols after add col STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH $IF $EQU $ROWCNT 3 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": BUG 5483-3 : 3 cols after add col STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 alter table B5483 drop column D1, D2;
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
@@ -651,11 +647,10 @@ done:
 }
 ;
 
--- XXX
 B5579_BAR0 (null);
---ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
---SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
---ECHO BOTH ": BUG 5579 : oj w/ an ks_setp wrong STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": BUG 5579 : oj w/ an ks_setp wrong STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 create procedure B5577()
 {
@@ -1145,11 +1140,11 @@ as
 select B7590_T2.ID,B7590_T2.TXT,(select TXT from B7590_T1 where B7590_T1.ID = B7590_T2.t1_id)
   from B7590_T2;
 
--- XXX
+
 select top 11,1 ID,T1_TXT from B7590_V1 order by T1_TXT;
---ECHO BOTH $IF $EQU $LAST[2] NULL "PASSED" "***FAILED";
---SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
---ECHO BOTH ": BUG5790: nulls sort as normal values (on top) in TOP memsort LAST[2]=" $LAST[2] "\n";
+ECHO BOTH $IF $EQU $LAST[2] NULL "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": BUG5790: nulls sort as normal values (on top) in TOP memsort LAST[2]=" $LAST[2] "\n";
 
 set timeout = 60;
 select serialize (xml_tree_doc (concat ('<a>', repeat ('abc', 1000), '&#222;', repeat ('def', 1000), '</a>')));
@@ -1162,14 +1157,14 @@ drop table B8512;
 create table B8512 (ID integer primary key, DATA varchar (50));
 insert into B8512 values (1, 'Krali Marko');
 
---select XMLELEMENT ('person',
---		XMLATTRIBUTES (DATA as "name"),
---		XMLAGG  (XMLELEMENT ('sdfd', 'hello'))
---	)
---  from B8512 group by DATA;
---ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
---SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
---ECHO BOTH ": B8512 : XMLATTRIBUTES in a sort hash  STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+select XMLELEMENT ('person',
+		XMLATTRIBUTES (DATA as "name"),
+		XMLAGG  (XMLELEMENT ('sdfd', 'hello'))
+	)
+  from B8512 group by DATA;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": B8512 : XMLATTRIBUTES in a sort hash  STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 drop table CASE_EXISTS1;
 create table CASE_EXISTS1 (PK_ID int primary key, DATA varchar (10));
@@ -1230,11 +1225,10 @@ ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": B7074-2 : can't put long string in a temp tb STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
---XXX
---select * from (select blob_to_string (DATA) as DATA long varchar, DT2 from B7074 order by ID) dummy order by DT2;
---ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
---SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
---ECHO BOTH ": B7074-3 : workaround for B7074-2 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+select * from (select blob_to_string (DATA) as DATA long varchar, DT2 from B7074 order by ID) dummy order by DT2;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": B7074-3 : workaround for B7074-2 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 drop table B9383;
 create table B9383 (ID int primary key, DATA varchar);
@@ -1295,18 +1289,18 @@ ECHO BOTH ": new_tb_name->q_table_name for CREATE INDEX STATE=" $STATE " MESSAGE
 drop table B9929;
 create table B9929 (ID integer, TXT varchar);
 
---select ID from
---  B9929 x1 where exists (
---    select 1 from B9929 x2
---    join B9929 x3 on (x2.ID = x3.ID)
---    join B9929 x4 on (x3.ID = x4.ID)
---    where
---    x2.ID = x1.ID
---    )
---    ;
---ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
---SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
---ECHO BOTH ": B9929 test case STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+select ID from
+  B9929 x1 where exists (
+    select 1 from B9929 x2
+    join B9929 x3 on (x2.ID = x3.ID)
+    join B9929 x4 on (x3.ID = x4.ID)
+    where
+    x2.ID = x1.ID
+    )
+    ;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": B9929 test case STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 drop procedure B10017;
 create procedure B10017 (in x integer)
@@ -1347,8 +1341,8 @@ create view t1order as select row_no, string1, string2 from t1 order by row_no;
 
 select top 2 * from t1order where row_no is null or row_no > 111;
 
-echo both $if $equ $last[1] 113 "PASSED" "***FAILED";
-echo both "or of known false in dt predf import\n";
+ECHO BOTH $IF $EQU $LAST[1] 113 "PASSED" "***FAILED";
+ECHO BOTH ": or of known false in dt predf import\n";
 
 select top 2 * from t1order a where row_no is null or exists (select 1 from t1order b where a.row_no = 1 + b.row_no);
 
@@ -1359,12 +1353,12 @@ select count (*) from t1 where row_no = 111 or (row_no  is null and (row_no is n
 -- hash fillers with hash joined existences
 explain ('select count (*) from t1 a, t1 b where a.row_no = b.row_no and exists (select * from t1 c table option (hash) where c.row_no = b.row_no and c.string1 like ''1%'') option (order, hash)');
 select count (*) from t1 a, t1 b where a.row_no = b.row_no and exists (select * from t1 c table option (hash) where c.row_no = b.row_no and c.string1 like '1%') option (order, hash);
-echo both $if $equ $last[1] 353 "PASSED" "***FAILED";
-echo both ": hash join with filter with hash filler with hashed exists\n";
+ECHO BOTH $IF $EQU $LAST[1] 353 "PASSED" "***FAILED";
+ECHO BOTH ": hash join with filter with hash filler with hashed exists\n";
 
 select count (*) from t1 a, t1 b where a.row_no = b.row_no and exists (select * from t1 c table option (loop) where c.row_no = b.row_no and c.string1 like '1%') option (order, loop);
-echo both $if $equ $last[1] 353 "PASSED" "***FAILED";
-echo both ": verify above with ibid with loop\n";
+ECHO BOTH $IF $EQU $LAST[1] 353 "PASSED" "***FAILED";
+ECHO BOTH ": verify above with ibid with loop\n";
 
 
 

@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -63,8 +63,7 @@ SPARQL
  WHERE {  ?s ?p <http://xmlns.com/foaf/0.1/Person>.
  OPTIONAL { ?s rss:title  ?rss_title }}
 ;
-echo both $if $equ $state OK "PASSED" "***FAILED";
-echo both ": distict with long string\n";
+ECHO BOTH $if $equ $state OK "PASSED" "***FAILED";
+ECHO BOTH ": distict with long string\n";
 
 select hic_set_memcache_size (100000);
-

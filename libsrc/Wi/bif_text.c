@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2009 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1841,7 +1841,7 @@ static char *vt_find_index_text =
 static char *vt_create_text_index_text =
 "create procedure vt_create_text_index (in tb varchar, in col varchar,\n"
 "				       in use_id varchar, in is_xml integer, in defer_generation integer,"
-"				      in obd any, in _func any, in _lang varchar := \'*ini*\', in _enc varchar := \'*ini*\')\n"
+"				      in obd any, in _func any, in _lang varchar := \'*ini*\', in _enc varchar := \'*ini*\', in silent int := 0)\n"
 "{\n"
 "  declare str, text_id_col, kn, vt_name, pk_suits, _colname, func, ufunc, vi_column, text_id_col_type varchar;\n"
 "  declare _coldtp smallint;\n"
@@ -1858,7 +1858,7 @@ static char *vt_create_text_index_text =
 "      signal (\'42S02\', sprintf (\'No table \\\'%s\\\' in create text index\', tb), \'FT021\');\n"
 "  }\n"
 "  if (exists (select 1 from DB.DBA.SYS_VT_INDEX where 0 = casemode_strcmp (VI_TABLE,  tb))) {\n"
-"    if (is_xml = 2) \n"
+"    if (is_xml = 2 or silent) \n"
 "      return; \n"
 "    else\n"
 "      signal (\'42S01\', \'Only one text index allowed per table\', \'FT022\');\n"

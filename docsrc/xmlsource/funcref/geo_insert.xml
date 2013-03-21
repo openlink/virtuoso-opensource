@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="fn_geo_insert">
+  <refmeta>
+    <refentrytitle>geo_insert</refentrytitle>
+    <refmiscinfo>geo</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>geo_insert</refname>
+    <refpurpose>Inserts a geometry from an R tree index.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_geo_insert">
+      <funcprototype id="fproto_geo_insert">
+        <funcdef><function>geo_insert</function></funcdef>
+	<paramdef>in <parameter>tb</parameter> any</paramdef>
+	<paramdef>in <parameter>geo</parameter> any</paramdef>
+	<paramdef>in <parameter>id</parameter> int</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_geo_insert">
+    <title>Description</title>
+    <para>Inserts a geometry from an R tree index. The tb must be a
+fully qualified name of an R tree table. This function is typically used from triggers
+on a geometry column. The function is transactional and makes a transaction log record of the action.
+</para>
+  </refsect1>
+  <refsect1 id="params_geo_insert">
+    <title>Parameters</title>
+    <refsect2><title>tb</title>
+      <para>A fully qualified name of an R tree table.</para>
+    </refsect2>
+    <refsect2><title>geo</title>
+      <para>A geometry.</para>
+    </refsect2>
+    <refsect2><title>id</title>
+      <para>Geometry id.</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret_geo_insert"><title>Return Types</title>
+    <para>Returns int.</para>
+  </refsect1>
+  <refsect1 id="examples_geo_insert">
+    <title>Examples</title>
+    <example id="ex_geo_insert"><title></title>
+      <para></para>
+<programlisting><![CDATA[
+]]></programlisting>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_geo_insert">
+    <title>See Also</title>
+    <para><link linkend="fn_st_point"><function>st_point</function></link></para>
+    <para><link linkend="fn_st_x"><function>st_x</function></link></para>
+    <para><link linkend="fn_st_y"><function>st_y</function></link></para>
+    <para><link linkend="fn_st_distance"><function>st_distance</function></link></para>
+    <para><link linkend="fn_st_srid"><function>st_srid</function></link></para>
+    <para><link linkend="fn_st_setsrid"><function>st_setsrid</function></link></para>
+    <para><link linkend="fn_st_astext"><function>st_astext</function></link></para>
+    <para><link linkend="fn_st_geomfromtext"><function>st_geomfromtext</function></link></para>
+    <para><link linkend="fn_st_intersects"><function>st_intersects</function></link></para>
+    <para><link linkend="fn_st_contains"><function>st_contains</function></link></para>
+    <para><link linkend="fn_st_within"><function>st_within</function></link></para>
+    <para><link linkend="fn_isgeometry"><function>isgeometry</function></link></para>
+    <para><link linkend="fn_geo_delete"><function>geo_delete</function></link></para>
+    <para><link linkend="fn_rdf_geo_add"><function>DB.DBA.RDF_GEO_ADD</function></link></para>
+    <para><link linkend="fn_rdf_geo_fill"><function>DB.DBA.RDF_GEO_FILL</function></link></para>
+  </refsect1>
+</refentry>

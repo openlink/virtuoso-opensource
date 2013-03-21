@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -20,16 +20,16 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
---echo both "\nnwxml3c - Attribute tests\n"
+--ECHO BOTH "\nnwxml3c - Attribute tests\n"
 
 select count(*) from XML_TEXT2 where XT_FILE like '%proce%' and xcontains (XT_TEXT, '//sect1[@id = "whilestmt"]');
-echo both $if $equ $last[1] 0 "PASSED" "*** FAILED";
-echo both ": " $last[1] " rows in xcontains //sect1[@id = ''whilestmt''] where XT_FILE like '%proce%'\n";
+ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " rows in xcontains //sect1[@id = ''whilestmt''] where XT_FILE like '%proce%'\n";
 
 select count(*) from XML_TEXT2 where XT_FILE like '%proce%' and xcontains (XT_TEXT, '//sect2[@id like "whilestmt"]');
-echo both $if $equ $last[1] 1 "PASSED" "*** FAILED";
-echo both ": " $last[1] " rows in xcontains //sect2[@id like ''whilestmt''] where XT_FILE like '%proce%'\n";
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " rows in xcontains //sect2[@id like ''whilestmt''] where XT_FILE like '%proce%'\n";
 
 select count(*) from XML_TEXT2 where XT_FILE like '%proce%' and xcontains (XT_TEXT, '//sect2[@id = "whilestmt"]');
-echo both $if $equ $last[1] 1 "PASSED" "*** FAILED";
-echo both ": " $last[1] " rows in xcontains //sect2[@id = ''whilestmt''] where XT_FILE like '%proce%'\n";
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " rows in xcontains //sect2[@id = ''whilestmt''] where XT_FILE like '%proce%'\n";

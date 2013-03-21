@@ -1,0 +1,206 @@
+/*
+ *  $Id$
+ *
+ *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ *  project.
+ *
+ *  Copyright (C) 1998-2013 OpenLink Software
+ *
+ *  This project is free software; you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License as published by the
+ *  Free Software Foundation; only version 2 of the License, dated June 1991.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ *  General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ *
+ */
+
+struct sparql_keyword { char *kwd; int token; int subtype; };
+
+%%
+"ABS",			SPARQL_BIF		, SPAR_BIF_ABS
+"ADD",			ADD_L			, 0
+"ALL",			ALL_L			, 0
+"ALTER",		ALTER_L			, 0
+"AND",			_AMP_AMP		, 0
+"AS",			AS_L			, 0
+"ASC",			ASC_L			, 0
+"ASK",			ASK_L			, 0
+"ATTACH",		ATTACH_L		, 0
+"AVG",			AVG_L			, 0
+"BASE",			BASE_L			, 0
+"BIND",			BIND_L			, 0
+"BINDINGS",		BINDINGS_L		, 0
+"BIJECTION",		BIJECTION_L		, 0
+"BNODE",		SPARQL_BIF		, SPAR_BIF_BNODE
+"BOUND",		BOUND_L			, 0
+"BY",			BY_L			, 0
+"CLASS",		CLASS_L			, 0
+"CLEAR",		CLEAR_L			, 0
+"CEIL",			SPARQL_BIF		, SPAR_BIF_CEIL
+"COALESCE",		SPARQL_BIF		, SPAR_BIF_COALESCE
+"CONCAT",		SPARQL_BIF		, SPAR_BIF_CONCAT
+"CONSTRUCT",		CONSTRUCT_L		, 0
+"CONTAINS",		SPARQL_BIF		, SPAR_BIF_CONTAINS
+"COPY",			COPY_L			, 0
+"COUNT",		COUNT_L			, 0
+"CREATE",		CREATE_L		, 0
+"DATA",			DATA_L			, 0
+"DATATYPE",		DATATYPE_L		, 0
+"DAY",			SPARQL_BIF		, SPAR_BIF_DAY
+"DEFAULT",		DEFAULT_L		, 0
+"DEFINE",		DEFINE_L		, 0
+"DEFMACRO",		DEFMACRO_L		, 0
+"DELETE",		DELETE_L		, 0
+"DEREF",		DEREF_L			, 0
+"DESC",			DESC_L			, 0
+"DESCRIBE",		DESCRIBE_L		, 0
+"DETACH",		DETACH_L		, 0
+"DISTINCT",		DISTINCT_L		, 0
+"DROP",			DROP_L			, 0
+"ENCODE_FOR_URI",	SPARQL_BIF		, SPAR_BIF_ENCODE_FOR_URI
+"EXCLUSIVE",		EXCLUSIVE_L		, 0
+"EXISTS",		EXISTS_L		, 0
+"FALSE",		false_L			, 0
+"FILTER",		FILTER_L		, 0
+"FLOOR",		SPARQL_BIF		, SPAR_BIF_FLOOR
+"FROM",			FROM_L			, 0
+"FUNCTION",		FUNCTION_L		, 0
+"HOURS",		SPARQL_BIF		, SPAR_BIF_HOURS
+"GRAPH",		GRAPH_L			, 0
+"GROUP",		GROUP_L			, 0
+"GROUP_CONCAT",		GROUP_CONCAT_L		, 0
+"HAVING",		HAVING_L		, 0
+"IF",			SPARQL_BIF		, SPAR_BIF_IF
+"IFP",			IFP_L			, 0
+"IDENTIFIED",		IDENTIFIED_L		, 0
+"IN",			IN_L			, 0
+"INF",			INF_L			, 0
+"INDEX",		INDEX_L			, 0
+"INFERENCE",		INFERENCE_L		, 0
+"INSERT",		INSERT_L		, 0
+"INTO",			INTO_L			, 0
+"IRI",			IRI_L			, 0
+"ISBLANK",		SPARQL_BIF		, SPAR_BIF_ISBLANK
+"ISIRI",		SPARQL_BIF		, SPAR_BIF_ISIRI
+"ISLITERAL",		SPARQL_BIF		, SPAR_BIF_ISLITERAL
+"ISNUMERIC",		SPARQL_BIF		, SPAR_BIF_ISNUMERIC
+"ISREF",		SPARQL_BIF		, SPAR_BIF_ISREF
+"ISURI",		SPARQL_BIF		, SPAR_BIF_ISURI
+"LANG",			LANG_L			, 0
+"LANGMATCHES",		SPARQL_BIF		, SPAR_BIF_LANGMATCHES
+"LCASE",		SPARQL_BIF		, SPAR_BIF_LCASE
+"LIBRARY",		LIBRARY_L		, 0
+"LIKE",			LIKE_L			, 0
+"LIMIT",		LIMIT_L			, 0
+"LITERAL",		LITERAL_L		, 0
+"LOCAL",		LOCAL_L			, 0
+"LOAD",			LOAD_L			, 0
+"MACRO",		MACRO_L			, 0
+"MAKE",			MAKE_L			, 0
+"MAP",			MAP_L			, 0
+"MAX",			MAX_L			, 0
+"MD5",			SPARQL_BIF		, SPAR_BIF_MD5
+"MIN",			MIN_L			, 0
+"MINUS",		MINUS_L			, 0
+"MINUTES",		SPARQL_BIF		, SPAR_BIF_MINUTES
+"MODIFY",		MODIFY_L		, 0
+"MONTH",		SPARQL_BIF		, SPAR_BIF_MONTH
+"MOVE",			MOVE_L			, 0
+"NAMED",		NAMED_L			, 0
+"NAN",			NAN_L			, 0
+"NIL",			NIL_L			, 0
+"NOT",			NOT_L			, 0
+"NOW",			SPARQL_BIF		, SPAR_BIF_NOW
+"NULL",			NULL_L			, 0
+"OBJECT",		OBJECT_L		, 0
+"OF",			OF_L			, 0
+"OFFBAND",		OFFBAND_L		, 0
+"OFFSET",		OFFSET_L		, 0
+"OPTIONAL",		OPTIONAL_L		, 0
+"OPTION",		OPTION_L		, 0
+"OR",			_BAR_BAR		, 0
+"ORDER",		ORDER_L			, 0
+"PREDICATE",		PREDICATE_L		, 0
+"PREFIX",		PREFIX_L		, 0
+"QUAD",			QUAD_L			, 0
+"RAND",			SPARQL_BIF		, SPAR_BIF_RAND
+"REGEX",		SPARQL_BIF		, SPAR_BIF_REGEX
+"REDUCED",		REDUCED_L		, 0
+"REPLACE",		SPARQL_BIF		, SPAR_BIF_REPLACE
+"RETURNS",		RETURNS_L		, 0
+"ROUND",		SPARQL_BIF		, SPAR_BIF_ROUND
+"SCORE",		SCORE_L			, 0
+"SCORE_LIMIT",		SCORE_LIMIT_L		, 0
+"SAME_AS",		SAME_AS_L		, 0
+"SAME_AS_O",		SAME_AS_O_L		, 0
+"SAME_AS_P",		SAME_AS_P_L		, 0
+"SAME_AS_S",		SAME_AS_S_L		, 0
+"SAME_AS_S_O",		SAME_AS_S_O_L		, 0
+"SAMETERM",		SPARQL_BIF		, SPAR_BIF_SAMETERM
+"SAMPLE",		SAMPLE_L		, 0
+"SECONDS",		SPARQL_BIF		, SPAR_BIF_SECONDS
+"SELECT",		SELECT_L		, 0
+"SERVICE",		SERVICE_L		, 0
+"SHA1",			SPARQL_BIF		, SPAR_BIF_SHA1
+"SHA224",		SPARQL_BIF		, SPAR_BIF_SHA224
+"SHA256",		SPARQL_BIF		, SPAR_BIF_SHA256
+"SHA384",		SPARQL_BIF		, SPAR_BIF_SHA384
+"SHA512",		SPARQL_BIF		, SPAR_BIF_SHA512
+"SILENT",		SILENT_L		, 0
+"SOFT",			SOFT_L			, 0
+"SOURCE",		GRAPH_L			, 0
+"SQLQUERY",		SQLQUERY_L		, 0
+"STORAGE",		STORAGE_L		, 0
+"STR",			SPARQL_BIF		, SPAR_BIF_STR
+"STRAFTER",		SPARQL_BIF		, SPAR_BIF_STRAFTER
+"STRBEFORE",		SPARQL_BIF		, SPAR_BIF_STRBEFORE
+"STRDT",		SPARQL_BIF		, SPAR_BIF_STRDT
+"STRENDS",		SPARQL_BIF		, SPAR_BIF_STRENDS
+"STRLANG",		SPARQL_BIF		, SPAR_BIF_STRLANG
+"STRLEN",		SPARQL_BIF		, SPAR_BIF_STRLEN
+"STRSTARTS",		SPARQL_BIF		, SPAR_BIF_STRSTARTS
+"STRUUID",		SPARQL_BIF		, SPAR_BIF_STRUUID
+"SUBCLASS",		SUBCLASS_L		, 0
+"SUBJECT",		SUBJECT_L		, 0
+"SUBSTR",		SPARQL_BIF		, SPAR_BIF_SUBSTR
+"SUM",			SUM_L			, 0
+"TABLE_OPTION",		TABLE_OPTION_L		, 0
+"TEXT",			TEXT_L			, 0
+"TIMEZONE",		SPARQL_BIF		, SPAR_BIF_TIMEZONE
+"TO",			TO_L			, 0
+"TRANSITIVE",		TRANSITIVE_L		, 0
+"TRUE",			true_L			, 0
+"TZ",			SPARQL_BIF		, SPAR_BIF_TZ
+"T_CYCLES_ONLY",	T_CYCLES_ONLY_L		, 0
+"T_DIRECTION",		T_DIRECTION_L		, 0
+"T_DISTINCT",		T_DISTINCT_L		, 0
+"T_END_FLAG",		T_END_FLAG_L		, 0
+"T_EXISTS",		T_EXISTS_L		, 0
+"T_FINAL_AS",		T_FINAL_AS_L		, 0
+"T_IN",			T_IN_L			, 0
+"T_MAX",		T_MAX_L			, 0
+"T_MIN",		T_MIN_L			, 0
+"T_OUT",		T_OUT_L			, 0
+"T_NO_CYCLES",		T_NO_CYCLES_L		, 0
+"T_NO_ORDER",		T_NO_ORDER_L		, 0
+"T_SHORTEST_ONLY",	T_SHORTEST_ONLY_L	, 0
+"T_STEP",		T_STEP_L		, 0
+"UCASE",		SPARQL_BIF		, SPAR_BIF_UCASE
+"UNBOUND",		UNBOUND_L		, 0
+"UNDEF",		UNDEF_L			, 0
+"UNION",		UNION_L			, 0
+"URI",			SPARQL_BIF		, SPAR_BIF_URI
+"USING",		USING_L			, 0
+"UUID",			SPARQL_BIF		, SPAR_BIF_UUID
+"VALUES",		VALUES_L		, 0
+"WHERE",		WHERE_L			, 0
+"WITH",			WITH_L			, 0
+"XML",			XML_L			, 0
+"YEAR",			SPARQL_BIF		, SPAR_BIF_YEAR

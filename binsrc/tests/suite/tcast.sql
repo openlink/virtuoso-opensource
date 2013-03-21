@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -41,8 +41,8 @@ select * from tn where
   d between 0 and 10 and
   n between 0 and 10;
 
-echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
-echo both " search cast 1\n";
+ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
+ECHO BOTH ": search cast 1\n";
 
 
 
@@ -53,8 +53,8 @@ select * from tn where
   d between 0 and cast (10 as double precision) and
   n between 0 and cast (10 as double precision);
 
-echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
-echo both " search cast 2\n";
+ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
+ECHO BOTH ": search cast 2\n";
 
 
 
@@ -67,8 +67,8 @@ select * from tn where
   d between 0 and cast (10 as numeric) and
   n between 0 and cast (10 as numeric);
 
-echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
-echo both " search cast 3\n";
+ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
+ECHO BOTH ": search cast 3\n";
 
 
 select * from tn where 
@@ -78,13 +78,12 @@ select * from tn where
   d between 0 and cast (10 as real) and
   n between 0 and cast (10 as real);
 
-echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
-echo both " search cast 4\n";
+ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
+ECHO BOTH ": search cast 4\n";
 
 select count (*) from tn where n between 1e-100 and 1e100;
--- XXX
---echo both $if $equ $last[1] 1 "PASSED" "***FAILED";
---echo both " dbl and num range cmp.\n";
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+ECHO BOTH ": dbl and num range cmp.\n";
 
 
 
@@ -92,11 +91,9 @@ insert into tn (r,d, n)  values (1e36, 1e100, 9999999999999999999999999999999999
 
 
 select count (*) from tn where r < 1e100;
-echo both $if $equ $last[1] 2 "PASSED" "***FAILED";
-echo both " real-dbl comp\n";
+ECHO BOTH $IF $EQU $LAST[1] 2 "PASSED" "***FAILED";
+ECHO BOTH ": real-dbl comp\n";
 
 select count (*) from tn where r < n;
-echo both $if $equ $last[1] 2 "PASSED" "***FAILED";
-echo both " real- num comp\n";
-
-
+ECHO BOTH $IF $EQU $LAST[1] 2 "PASSED" "***FAILED";
+ECHO BOTH ": real- num comp\n";

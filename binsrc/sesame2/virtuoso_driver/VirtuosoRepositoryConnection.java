@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2010 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -73,6 +73,7 @@ import org.openrdf.query.GraphQuery;
 import org.openrdf.query.GraphQueryResult;
 import org.openrdf.query.MalformedQueryException;
 import org.openrdf.query.Query;
+import org.openrdf.query.Update;
 import org.openrdf.query.QueryEvaluationException;
 import org.openrdf.query.QueryLanguage;
 import org.openrdf.query.TupleQuery;
@@ -82,18 +83,22 @@ import org.openrdf.query.TupleQueryResultHandlerException;
 import org.openrdf.query.algebra.evaluation.QueryBindingSet;
 import org.openrdf.query.impl.GraphQueryResultImpl;
 import org.openrdf.query.impl.TupleQueryResultImpl;
-import org.openrdf.query.QueryEvaluationException;
+import org.openrdf.query.UnsupportedQueryLanguageException;
+import org.openrdf.query.UpdateExecutionException;
 import org.openrdf.repository.Repository;
 import org.openrdf.repository.RepositoryConnection;
 import org.openrdf.repository.RepositoryException;
 import org.openrdf.repository.RepositoryResult;
+import org.openrdf.rio.ParserConfig;
 import org.openrdf.rio.RDFFormat;
 import org.openrdf.rio.RDFHandler;
 import org.openrdf.rio.RDFHandlerException;
 import org.openrdf.rio.RDFParseException;
 import org.openrdf.rio.RDFParser;
+import org.openrdf.rio.RDFParser.DatatypeHandling;
 import org.openrdf.rio.Rio;
 import org.openrdf.rio.helpers.RDFHandlerBase;
+import org.openrdf.rio.helpers.ParseErrorLogger;
 import org.openrdf.rio.n3.N3ParserFactory;
 import org.openrdf.rio.ntriples.NTriplesParserFactory;
 import org.openrdf.rio.rdfxml.RDFXMLParserFactory;
@@ -151,13 +156,14 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	private static Resource nilContext;
 	private Connection quadStoreConnection;
 	protected VirtuosoRepository repository;
-	static final String S_INSERT = "sparql define output:format '_JAVA_' insert into graph iri(??) { `iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)` }";
-        static final String S_DELETE = "sparql define output:format '_JAVA_' delete from graph iri(??) {`iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)`}";
+	static final String S_INSERT = "sparql insert into graph iri(??) { `iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)` }";
+        static final String S_DELETE = "sparql delete from graph iri(??) {`iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)`}";
 	static final int BATCH_SIZE = 5000;
 	private PreparedStatement psInsert;
 	private int psInsertCount = 0;
 	private boolean useLazyAdd = false;
 	private int prefetchSize = 200;
+	private volatile ParserConfig parserConfig = new ParserConfig(true, true, false, DatatypeHandling.IGNORE);
 
 
 	public VirtuosoRepositoryConnection(VirtuosoRepository repository, Connection connection) throws RepositoryException {
@@ -178,6 +184,29 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 
 
+	/**
+	 * Set the parser configuration this connection should use for
+	 * RDFParser-based operations.
+	 * 
+	 * @param config
+	 *        a Rio RDF Parser configuration.
+	 */
+	public void setParserConfig(ParserConfig config)
+	{
+		this.parserConfig = parserConfig;
+	}
+
+	/**
+	 * Returns the parser configuration this connection uses for Rio-based
+	 * operations.
+	 * 
+	 * @return a Rio RDF parser configuration.
+	 */
+	public ParserConfig getParserConfig()
+	{
+		return parserConfig;
+	}
+	
 	/**
 	 * Gets a ValueFactory for this RepositoryConnection.
 	 * 
@@ -265,6 +294,9 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 */
 	public Query prepareQuery(QueryLanguage language, String query, String baseURI) throws RepositoryException, MalformedQueryException {
 		
+		if (language != QueryLanguage.SPARQL)
+		  throw new UnsupportedQueryLanguageException(" : Only SPARQL queries are supported");
+
 		StringTokenizer st = new StringTokenizer(query);
 		String type = null;
 
@@ -328,7 +360,11 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 * @throws UnsupportedQueryLanguageException
 	 *         If the supplied query language is not supported.
 	 */
-	public TupleQuery prepareTupleQuery(QueryLanguage langauge, final String query, String baseeURI) throws RepositoryException, MalformedQueryException {
+	public TupleQuery prepareTupleQuery(QueryLanguage language, final String query, String baseeURI) throws RepositoryException, MalformedQueryException {
+
+		if (language != QueryLanguage.SPARQL)
+		  throw new UnsupportedQueryLanguageException(" : Only SPARQL queries are supported");
+
 		TupleQuery q = new VirtuosoTupleQuery() {
 			public TupleQueryResult evaluate() throws QueryEvaluationException {
 				return executeSPARQLForTupleResult(query, getDataset(), getIncludeInferred(), getBindings());
@@ -381,6 +417,10 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 *         If the supplied query language is not supported.
 	 */
 	public GraphQuery prepareGraphQuery(QueryLanguage language, final String query, String baseURI) throws RepositoryException, MalformedQueryException {
+
+		if (language != QueryLanguage.SPARQL)
+		  throw new UnsupportedQueryLanguageException(" : Only SPARQL queries are supported");
+
 		GraphQuery q = new VirtuosoGraphQuery() {
 			public GraphQueryResult evaluate() throws QueryEvaluationException {
 				return executeSPARQLForGraphResult(query, getDataset(), getIncludeInferred(), getBindings());
@@ -433,6 +473,10 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 *         If the supplied query language is not supported.
 	 */
 	public BooleanQuery prepareBooleanQuery(QueryLanguage language, final String query, String baseURI) throws RepositoryException, MalformedQueryException {
+
+		if (language != QueryLanguage.SPARQL)
+		  throw new UnsupportedQueryLanguageException(" : Only SPARQL queries are supported");
+
 		BooleanQuery q = new VirtuosoBooleanQuery() {
 			public boolean evaluate() throws QueryEvaluationException {
 				return executeSPARQLForBooleanResult(query, getDataset(), getIncludeInferred(), getBindings());
@@ -441,6 +485,25 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		return q;
 	}
 
+	public Update prepareUpdate(QueryLanguage language, String update) throws RepositoryException, MalformedQueryException
+	{
+	        return prepareUpdate(language, update, null);
+	}
+
+	public Update prepareUpdate(QueryLanguage language, final String update, String baseURI) throws RepositoryException, MalformedQueryException
+	{
+		if (language != QueryLanguage.SPARQL)
+		  throw new UnsupportedQueryLanguageException(" : Only SPARQL queries are supported");
+
+		Update u = new VirtuosoUpdate() {
+			public void execute() throws UpdateExecutionException {
+				executeSPARUL(update, getDataset(), getIncludeInferred(), getBindings());
+			}
+		};
+		return u;
+	}
+
+	
 	/**
 	 * Gets all resources that are used as content identifiers. Care should be
 	 * taken that the returned {@link RepositoryResult} is closed to free any
@@ -865,11 +928,10 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 		try {
 			RDFParser parser = Rio.createParser(format, getRepository().getValueFactory());
+		        parser.setParserConfig(getParserConfig());
+		        parser.setParseErrorListener(new ParseErrorLogger());
 
 			// set up a handler for parsing the data from reader
-			parser.setVerifyData(true);
-			parser.setStopAtFirstError(true);
-			parser.setDatatypeHandling(RDFParser.DatatypeHandling.IGNORE);
 			final PreparedStatement ps = prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
 			final Resource[] _contexts = checkDMLContext(contexts);
 
@@ -1582,7 +1644,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			verifyIsOpen();
 			flushDelayAdd();
 			java.sql.Statement stmt = createStatement();
-			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset, includeInferred, bindings));
+			ResultSet rs = stmt.executeQuery(fixQuery(false, query, dataset, includeInferred, bindings));
 
 			ResultSetMetaData rsmd = rs.getMetaData();
 
@@ -1608,7 +1670,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			verifyIsOpen();
 			flushDelayAdd();
 			java.sql.Statement stmt = createStatement();
-			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset, includeInferred, bindings));
+			ResultSet rs = stmt.executeQuery(fixQuery(false, query, dataset, includeInferred, bindings));
 
 			ResultSetMetaData rsmd = rs.getMetaData();
 
@@ -1629,7 +1691,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			verifyIsOpen();
 			flushDelayAdd();
 			java.sql.Statement stmt = createStatement();
-			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset, includeInferred, bindings));
+			ResultSet rs = stmt.executeQuery(fixQuery(false, query, dataset, includeInferred, bindings));
 
 			while(rs.next())
 			{
@@ -1652,7 +1714,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			verifyIsOpen();
 			flushDelayAdd();
 			java.sql.Statement stmt = createStatement();
-			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset, includeInferred, bindings));
+			ResultSet rs = stmt.executeQuery(fixQuery(false, query, dataset, includeInferred, bindings));
 
 			ResultSetMetaData rsmd = rs.getMetaData();
 			// begin at onset one
@@ -1686,7 +1748,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			verifyIsOpen();
 			flushDelayAdd();
 			java.sql.Statement stmt = createStatement();
-			ResultSet rs = stmt.executeQuery(fixQuery(query, dataset, includeInferred, bindings));
+			ResultSet rs = stmt.executeQuery(fixQuery(false, query, dataset, includeInferred, bindings));
 			ResultSetMetaData rsmd = rs.getMetaData();
 	                int col_g = -1;
         	        int col_s = -1;
@@ -1737,6 +1799,23 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 	}
 	
+
+        protected void executeSPARUL(String query, Dataset dataset, boolean includeInferred, BindingSet bindings) throws UpdateExecutionException
+        {
+		try {
+			verifyIsOpen();
+			flushDelayAdd();
+			java.sql.Statement stmt = createStatement();
+			stmt.execute(fixQuery(true, query, dataset, includeInferred, bindings));
+			stmt.close();
+
+		}
+		catch (Exception e) {
+			throw new UpdateExecutionException(": SPARQL execute failed:["+query+"] \n Exception:"+e);
+		}
+	}
+
+
 	/**
 	 * Execute SPARUL query on this repository.
 	 * 
@@ -1749,15 +1828,22 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 */
 	public int executeSPARUL(String query) throws RepositoryException {
 
+		java.sql.Statement stmt = null;
 		try {
 			verifyIsOpen();
 			flushDelayAdd();
-			java.sql.Statement stmt = createStatement();
-			stmt.execute("sparql\n define output:format '_JAVA_'\n " + query);
+			stmt = createStatement();
+			stmt.execute("sparql\n " + query);
 			return stmt.getUpdateCount();
 		}
 		catch (SQLException e) {
 			throw new RepositoryException(": SPARQL execute failed:["+query+"] \n Exception:"+e);
+		}
+		finally {
+			try {
+			  if (stmt != null)
+				stmt.close();
+			} catch (Exception e) {}
 		}
 	}
 
@@ -1848,25 +1934,12 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		return buf.toString();
 	}
 	
-	private String fixQuery(String query, Dataset dataset, boolean includeInferred, BindingSet bindings) 
+	private String fixQuery(boolean isSPARUL, String query, Dataset dataset, boolean includeInferred, BindingSet bindings) 
 	{
-		StringTokenizer tok = new StringTokenizer(query);
-		String s = "";
 		StringBuffer ret = new StringBuffer("sparql\n ");
-
-		while(tok.hasMoreTokens()) {
-		    s = tok.nextToken().toLowerCase();
-		    if (s.equals("describe") || s.equals("construct") || s.equals("ask") || s.equals("select")) 
-			break;
-		}
-
-		if (s.equals("describe") || s.equals("construct") || s.equals("ask")) 
-		    ret.append("define output:format '_JAVA_'\n ");
 
 		if (includeInferred && repository.ruleSet!=null && repository.ruleSet.length() > 0)
 		  ret.append("define input:inference '"+repository.ruleSet+"'\n ");
-
-		ret.append("define output:format '_JAVA_'\n ");
 
 		if (dataset != null)
 		{

@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -294,7 +294,7 @@ CREATE TRIGGER "Versioning_DAV_RES_INSERT" AFTER INSERT ON WS.WS.SYS_DAV_RES ORD
 }
 ;
 
-CREATE TRIGGER "Versioning_DAV_RES_UPDATE" AFTER UPDATE ON WS.WS.SYS_DAV_RES ORDER 10 REFERENCING NEW AS N, OLD AS O
+CREATE TRIGGER "Versioning_DAV_RES_UPDATE" BEFORE UPDATE ON WS.WS.SYS_DAV_RES ORDER 10 REFERENCING NEW AS N, OLD AS O
 {
   declare _diff, _diff_type varchar;
   _diff := NULL;

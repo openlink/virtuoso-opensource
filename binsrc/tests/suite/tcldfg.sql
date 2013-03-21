@@ -20,33 +20,28 @@ select b.fi2 from t1 a, t1 b where b.fi2 = 1 + a.fi2 and a.fi2 = 21 order by 1 +
 select b.fi2 from t1 a, t1 b where b.fi2 between  a.fi2 - 2 and a.fi2 + 2  and a.fi2 = 21 order by 1 + b.fi2 option (loop);
 
 select count (*) from t1 a, t1 b where b.fi2 = 1+ a.fi2 and a.fi2 in ( 21,  22) option (loop);
--- XXX
---echo both $if $equ $last[1] 2 "PASSED" "***FAILED";
---echo both ": select count  with in \n";
+ECHO BOTH $IF $EQU $LAST[1] 2 "PASSED" "***FAILED";
+ECHO BOTH ": select count  with in";
  
 
 select count (*) from t1 a, t1 b where b.fi2 = 1+ a.fi2 and a.fi2 in ( 21,  22) option (loop);
--- XXX
---echo both $if $equ $last[1] 2 "PASSED" "***FAILED";
---echo both ": select count  with in\n";
+ECHO BOTH $IF $EQU $LAST[1] 2 "PASSED" "***FAILED";
+ECHO BOTH ": select count  with in\n";
 
 
 select count (*) from t1 a, t1 b where b.fi2 = 1+ a.fi2 option (loop);
--- XXX
---echo both $if $equ $last[1] 99 "PASSED" "***FAILED";
---echo both ": select count f2 = f2 + 1 \n";
+ECHO BOTH $IF $EQU $LAST[1] 99 "PASSED" "***FAILED";
+ECHO BOTH ": select count f2 = f2 + 1 \n";
 
 
 select count (*) from t1 a, t1 b where b.fi2 between   a.fi2 - 200 and a.fi2 + 200  option (loop);
--- XXX
---echo both $if $equ $last[1] 10201 "PASSED" "***FAILED";
---echo both ": select count f2 = f2 + 1 \n";
+ECHO BOTH $IF $EQU $LAST[1] 10201 "PASSED" "***FAILED";
+ECHO BOTH ": select count f2 = f2 + 1 \n";
 
 
 select a.fi2, (select count (*) from t1 b, t1 c where c.fi2 = b.fi2 + 1 and b.fi2 = a.fi2 + 1) from t1 a where a.fi2 < 40;
--- XXX
---echo both $if $equ $last[2] 1 "PASSED" "***FAILED";
---echo both ": dfg multistate count subq\n";
+ECHO BOTH $IF $EQU $LAST[2] 1 "PASSED" "***FAILED";
+ECHO BOTH ": dfg multistate count subq\n";
 
 select a.fi2, c.fi2, c from t1 a, (select b.fi2, count (*) as c from t1 b group by b.fi2) c where c.fi2 between a.fi2 - 2 and a.fi2 + 2 option (loop, order);
 
@@ -83,3 +78,14 @@ create procedure dfgp ()
 		     }
     }
 }
+
+
+
+create procedure df (in n int, in stage int)
+{
+  if (stage = 1 and 1 < sys_stat ('cl_this_host'))
+	delay (0.1);
+  return n + 1;
+}
+
+select count (*) from t1 a, t1 b, t1 c where b.fi2 = df (a.fi2, 1) and c.fi2 = df (b.fi2, 2) option (order, loop);

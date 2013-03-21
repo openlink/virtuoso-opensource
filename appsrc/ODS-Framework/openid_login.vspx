@@ -5,7 +5,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -53,12 +53,21 @@
   <v:on-init><![CDATA[
     declare cookie_vec, sid any;
     declare pos, tmp any;
+    declare real_uid varchar;
 
     set http_charset='UTF-8';
 
     if (self._identity is null)
       {
         signal ('42000', 'Unknown identity.');
+      }
+    if (self._identity = 'http://specs.openid.net/auth/2.0/identifier_select' and get_keyword ('username', self.vc_event.ve_params) is not null)  
+      {
+        for select U_NAME, WAUI_IS_ORG from SYS_USERS join WA_USER_INFO on (WAUI_U_ID = U_ID) where WAUI_NICK = self._uname do
+          {
+	    self._uname := U_NAME;	
+	    self._identity := db.dba.wa_link (1, '/dataspace/' || case WAUI_IS_ORG when 1 then 'organization/' else 'person/' end || U_NAME);  
+	  }  
       }
     if (self._uname is null)
       {
@@ -68,11 +77,12 @@
         pos := strrchr (tmp, '/');
         if (pos is not null)
 	  {
-            declare real_uid varchar;
 	    self._uname := subseq (tmp, pos + 1);
 	    real_uid := (select U_NAME from SYS_USERS join WA_USER_INFO on (WAUI_U_ID = U_ID) where WAUI_NICK = self._uname);
 	    if (length (real_uid))
 	      self._uname := real_uid;
+            else 
+	      self._uname := null;
 	  }
 	else if (strchr (tmp, '@') is not null)  
 	  {
@@ -102,14 +112,12 @@
 	  }
     if (get_keyword ('sid', self.vc_event.ve_params) is null and is_https_ctx ())
           {
-	declare gr, stat, msg varchar;
+	declare gr, stat, msg, webid, vtype varchar;
 	declare rc int;
 	declare vec any;
-	gr := null;
-	rc := sioc.DBA.foaf_check_ssl_int (null, gr);
-	if (not rc)
-	gr := FOAF_SSL_WEBFINGER (null, 1);
-	if (gr is not null)
+	gr := 'http:' || uuid ();
+	rc := WEBID_AUTH_GEN_2 (null, 0, null, 1, 0, webid, gr, 0, vtype);
+	if (rc)
 	  {
 	    vec := OPENID.DBA.get_user_details (gr, self._identity);
 	    if (vec is not null)
@@ -157,7 +165,12 @@
               <div id="login_form">
                 <form> <!-- just to keep validator happy on this mockup -->
 		  <label for="login_frm_username">User ID</label>
-		  <v:text name="username" type="hidden" value="--self._uname" xhtml_id="login_frm_username" /><?V self._uname ?><br />
+		  <?vsp if (self._identity <> 'http://specs.openid.net/auth/2.0/identifier_select') { ?>
+		  <input type="hidden" name="username" value="<?V self._uname ?>" id="login_frm_username" /><?V self._uname ?><?vsp 
+		  	} else { 
+		  ?><v:text name="username" value="--self._uname" xhtml_id="login_frm_username" />
+		  <?vsp } ?>
+		  <br />
 		  <label for="password">Password</label>
 		  <v:text name="password" value="" xhtml_id="login_frm_password" type="password" />
 		  <div class="login_frm_button_row">
@@ -280,7 +293,7 @@
           <a href="/ods/privacy.html">Privacy</a> |
           <a href="/ods/rabuse.vspx">Report Abuse</a>
           <div class="copyright">
-            Copyright &copy; 1998-2011 OpenLink Software
+            Copyright &copy; 1998-2013 OpenLink Software
           </div>
         </div> <!-- FT_R -->
       </div>

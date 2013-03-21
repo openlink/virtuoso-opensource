@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -110,9 +110,14 @@
               </th>
               <td>
                 <v:select-list name="a_name" value="" xhtml_id="a_name" error-glyph="*">
+                  <v:item name="Box Net API" value="Box Net API"/>
+                  <v:item name="Dropbox API" value="Dropbox API"/>
                   <v:item name="Facebook API" value="Facebook API"/>
+                  <v:item name="Google API" value="Google API"/>
                   <v:item name="LinkedIn API" value="LinkedIn API"/>
+                  <v:item name="SkyDrive API" value="SkyDrive API"/>
                   <v:item name="Twitter API" value="Twitter API"/>
+                  <v:item name="Windows Live API" value="Windows Live API"/>
                 </v:select-list>
               </td>
             </tr>

@@ -22,14 +22,15 @@ create procedure _NMSRV (in str varchar)
 create procedure nm_run (in n_batches int, in bytes int, in ops_per_batch int)
 {
   declare daq any;
-  declare i, h, n int;
+  declare i, h, n, nh int;
+  nh := sys_stat ('cl_n_hosts');
   set vdb_timeout = 2000;
   daq := daq (0);
   for (n:=0; n<n_batches; n := n + 1)
     {
       for (i:= 0; i < ops_per_batch; i:= i + 1)
 	{
-	  for (h := 1; h < sys_stat ('cl_n_hosts'); h:= h + 1)
+	  for (h := 1; h <= nh; h:= h + 1)
 	    {
 	      if (h <> sys_stat ('cl_this_host'))
 		daq_call (daq, '__ALL', vector (h), 'DB.DBA._NMSRV', vector (make_string (bytes)), 0);

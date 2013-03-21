@@ -1,51 +1,86 @@
 <?vsp
-  declare info, res, cb, mod, exp, webid, ret_url, cert, ctype any;
+  declare info, res, cb, mod, exp, webid, ret_url, cert, ctype, err, dummy, expiry_verify, ian_verify, vtype, md5, sha1, subj, json_out, st any;
+  st := msec_time ();
   cb := {?'callback'};
   cert := {?'certificate'};
-  if ((length (cb) = 0) or ((length (cert) = 0) and not is_http_ctx ()))
+  err := '';
+
+  json_out := {?'json'};
+
+  declare acc any;
+  acc := http_request_header (lines, 'Accept', null, '');
+
+  if (json_out = 'yes' or 'application/json' = acc)
+    json_out := 1;
+  else
+    json_out := 0;
+
+  dummy := null;
+  if (not xenc_key_exists ('id_rsa'))
     {
+      err := 'Must configure CA on this host.';
       goto html;
     }
+
+  if (not length(cb)) 
+    {
+      if (json_out) 
+        {
+          http_status_set (400);
+          return;
+    }
+      else goto html;
+    }
+  
+  if ((length (cert) = 0) and not is_http_ctx ())
+      goto html;
+
   ctype := 1;
   if (not length (cert))
     {
       cert := client_attr ('client_certificate');
       ctype := 0;
-    } else {
-  if (strstr (cert, '-----BEGIN CERTIFICATE-----') is null)
+    } 
+  else 
+    {
+      if (strstr (cert, '-----BEGIN CERTIFICATE-----') is null)
     cert := decode_base64 (cert);
   else
     ctype := 0;
     }
+  if ({?'expiration'} = 'true')
+    expiry_verify := 1;
+  else 
+    expiry_verify := 0;
+  if ({?'ian'} = 'true')
+    ian_verify := 1;
+  else 
+    ian_verify := 0;
+
   if (strchr (cb, '?') is null)
     cb := cb || '?';
   else
     cb := cb || '&';
   mod := exp := '';
-  if (not is_http_ctx ())
+  md5 := ''; sha1 := ''; subj := '';
+  if (not is_http_ctx () or cert = 0)
     res := 'noCert';
   else
     { 
       info := get_certificate_info (9, cert, ctype);
       if (info is null)
         res := 'noCert';
-      else if (WEBID_AUTH_GEN (cert, ctype, null, 1, 0))
-        {
-          webid := FOAF_SSL_WEBID_GET (cert, ctype);
-	  if (webid is null)
-	    {
-	      webid := FOAF_SSL_WEBFINGER (cert, 0, ctype);
-	      if (webid is null)
-		webid := ODS..FINGERPOINT_WEBID_GET (cert, null, ctype);
-	    }
-	  res := 'success'; 
-        }
+      else if (WEBID_AUTH_GEN_2 (cert, ctype, null, 1, 0, webid, dummy, expiry_verify, vtype, ian_verify))
+	res := 'success';
       else
 	res := 'noVerified';
       if (info is not null)
         { 
       	  mod := info[1];
           exp := bin2hex (info[2]);
+          md5 := get_certificate_info (6, cert, ctype, null, 'md5');
+          sha1 := get_certificate_info (6, cert, ctype, null, 'sha1');
+          subj := get_certificate_info (2, cert, ctype);
 	}
     }
    if (res = 'success')
@@ -56,21 +91,74 @@
      {
        ret_url := sprintf ('%serror=%U', cb, res);
      }
-   ret_url := ret_url || sprintf ('&ts=%U', date_iso8601 (now ()));  
+   st := msec_time () - st;
+   ret_url := ret_url || sprintf ('&ts=%U&md5=%U&sha1=%U&subj=%U&elapsed=%d', date_iso8601 (now ()), md5, sha1, subj, st);
    ret_url := ret_url || sprintf ('&signature=%U', xenc_dsig_sign (ret_url, 'id_rsa', xenc_get_key_algo ('id_rsa')));  
+
+  if (not json_out) 
+    {
    http_status_set (302);
    http_header (sprintf ('Location: %s\r\n', ret_url));
    return;
+    }
+  else 
+    {
+      http_header ('Content-Type: application/json\r\n');
+      http (sprintf ('{"result": "%U","webid":"%U","ts":"%U","md5":"%U","sha1":"%U","subj":"%U","url":"%s", "signature":"%U"}',
+                      res, coalesce(webid,''), date_iso8601 (now ()), 
+                      md5, sha1, subj, ret_url, xenc_dsig_sign (ret_url, 'id_rsa', xenc_get_key_algo ('id_rsa'))));
+      return;
+    }
+
 html:
+
 ?>
 <html>
   <head>
    <title>WebID Verification Service</title>
+    <style type="text/css">
+      body {
+      	background-color: white;
+      	color: black;
+      	font-size: 10pt;
+      	font-family: Verdana, Helvetica, sans-serif;
+      }
+      ul {
+        font-family: Verdana, Helvetica, sans-serif;
+        list-style-type: none;
+      }
+      #qrcode {
+        float: right;
+        clear: right;
+        margin-right: 20px;
+      }
+    </style>
   </head>
   <body>
     <h1>WebID Verification Service</h1>
+    <div class="msg"><?V err ?></div>
+        <?vsp declare qrimg, ua any;
+     ua := http_request_header (lines, 'User-Agent');
+     qrimg := ODS.ODS_API.qrcode (sprintf ('http://%{WSHost}s%s', http_path ()));
+     if (qrimg is not null and strcasestr (ua, 'Mobile') is null) {
+    ?>
+    <div id="qrcode"><img alt="QRcode image" src="data:image/jpg;base64,<?V qrimg ?>"/></div>
+    <?vsp
+      } ?>
     <div>
-This will send a redirection to the URL you have specified in the input, including a signed assertion by this service about your X.509 Certificate's WebID  watermark. <br/>Also note this service supports ldap, http, mailto, acct scheme based WebIDs.
+      This will send a redirection to the URL you have specified in the input, including a signed assertion by this service about your X.509 Certificate's WebID watermark.
+      <br/>
+      This service supports WebIDs based on the following URI schemes (more to come):
+      <ul>
+      	<li>* <b>ldap</b>, for e.g: <span style="font-size: 80%; color: #1DA237;">ldap://ldap.example.com/o=An%20Example%5C2C%20Inc.,c=US</span></li>
+      	<li>* <b>http</b>, for e.g: <span style="font-size: 80%; color: #1DA237;">http://id.example.com/person/ExampleUser#this</span></li>
+
+      	<li>* <b>mailto</b>, for e.g: <span style="font-size: 80%; color: #1DA237;">mailto:ExampleUser@id.example.com</span></li>
+      	<li>* <b>acct</b>, for e.g: <span style="font-size: 80%; color: #1DA237;">acct:ExampleUser@id.example.com</span></li>
+      </ul>
+    </div>
+    <div>
+    	<a href="http://ods.openlinksw.com/wiki/ODS/ODSWebIDIdP">Help</a>
     </div>
     <br/>
     <br/>
@@ -82,6 +170,13 @@ This will send a redirection to the URL you have specified in the input, includi
     <textarea name="certificate" rows="20" cols="80"></textarea><br/>
     <input type="submit" name="go" value="Verify"/>
     </form>
+    </div>
+    <div>
+	Input parameters:
+	<ul>
+	  <li>callback: return callback URL (mandatory)</li>
+	  <li>certificate: X.509 certificate (optional)</li>
+	</ul>
     </div>
     <div>
 	The return values are:

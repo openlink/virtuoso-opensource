@@ -6,7 +6,7 @@
 --
 --  RDF Schema objects, generator of RDF Views
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -76,7 +76,7 @@ create procedure RDF_VOID_STORE (in graph varchar, in to_graph_name varchar := n
     ses := src;
   if (to_graph_name is null)
     {
-      host := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+      host := virtuoso_ini_item_value ('URIQA','DefaultHost');
       to_graph_name := 'http://' || host || '/stats/void#';
     }
   exec (sprintf ('sparql delete from <%s> { ?s1 ?p1 ?s2 } from <%s> where { <%s#Dataset> void:statItem ?s1 . ?s1 ?p1 ?s2 }',
@@ -99,7 +99,7 @@ create procedure RDF_VOID_ALL_GEN (in target_graph varchar, in details int := 0)
   if (is_http_ctx ())
     host := http_request_header(http_request_header (), 'Host', null, null);
   if (host is null)
-    host := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+    host := virtuoso_ini_item_value ('URIQA','DefaultHost');
   if (host is null)
     {
       hf := WS.WS.PARSE_URI (target_graph);
@@ -216,7 +216,7 @@ create procedure RDF_VOID_GEN_1 (in graph varchar, in gr_name varchar := null,
   if (is_http_ctx ())
     host := http_request_header(http_request_header (), 'Host', null, null);
   if (host is null)
-    host := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+    host := virtuoso_ini_item_value ('URIQA','DefaultHost');
   -- if (host is null)
   --  host := 'lod.openlinksw.com';
 
@@ -246,7 +246,7 @@ create procedure RDF_VOID_GEN_1 (in graph varchar, in gr_name varchar := null,
     declare exit handler for sqlstate '*' { goto end1; };
      _cnt_subj := (select count(distinct S) from DB.DBA.RDF_QUAD where G = iri_to_id (graph));
      http (sprintf ('%s:DistinctSubjectsStat a scovo:Item ; \n rdf:value %d ; \n', ns_pref, _cnt_subj), ses);
-     http (sprintf (' scovo:dimension void:numOfTriples . \n'), ses);
+     http (sprintf (' scovo:dimension void:numberOfDistinctSubjects . \n'), ses);
     end1:;
   }
   if (details)
@@ -261,7 +261,7 @@ create procedure RDF_VOID_GEN_1 (in graph varchar, in gr_name varchar := null,
 	_cnt_obj  := (sparql define input:storage "" select count(distinct (?o)) where { graph `iri (?:graph)` { ?s ?p ?o . filter (isIRI (?o)) } });
       }
     http (sprintf ('%s:DistinctObjectsStat a scovo:Item ; \n rdf:value %d ; \n', ns_pref, _cnt_obj), ses);
-    http (sprintf (' scovo:dimension void:numOfTriples . \n'), ses);
+    http (sprintf (' scovo:dimension void:numberOfDistinctObjects . \n'), ses);
     end2:;
   }
 

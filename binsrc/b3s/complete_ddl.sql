@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2009 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -34,7 +34,7 @@ urilbl_complete_lookup_2 (
 EXEC_STMT ('alter index urilbl_complete_lookup_2 on urilbl_complete_lookup_2 partition (ull_label_ruined varchar (6,0hexffff))', 0);
 
 EXEC_STMT (
-'create table 
+'create table
 urilbl_cpl_log (
   ullog_ts timestamp,
   ullog_msg varchar,

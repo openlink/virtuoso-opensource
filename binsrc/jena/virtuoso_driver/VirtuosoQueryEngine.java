@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2010 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -144,18 +144,7 @@ public class VirtuosoQueryEngine extends QueryEngineMain
     
     private String fixQuery(String query, Binding args, VirtGraph vg)
     {
-	StringTokenizer tok = new StringTokenizer(query);
-	String s = "";
 	StringBuffer sb = new StringBuffer("sparql\n ");
-
-	while (tok.hasMoreTokens()) {
-	  s = tok.nextToken().toLowerCase();
-	  if (s.equals("describe") || s.equals("construct"))
-            break;
-	}
-
-	if (s.equals("describe") || s.equals("construct"))
-	  sb.append("define output:format '_JAVA_'\n ");
 
 	if (vg.getRuleSet()!=null)
           sb.append(" define input:inference '"+vg.getRuleSet()+"'\n ");

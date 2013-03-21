@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -361,6 +361,13 @@ function coloriseRow(obj, checked) {
     obj.className = obj.className + ' ' + 'tr_select';
 }
 
+function mailsShow(sPage, sPageName, width, height) {
+  if ($('sencrypt').checked)
+    sPage += '&certificate=1';
+
+	windowShow(sPage, sPageName, width, height);
+}
+
 function windowShow(sPage, sPageName, width, height) {
   if (width == null)
 		width = 700;
@@ -370,7 +377,7 @@ function windowShow(sPage, sPageName, width, height) {
     sPage += urlParam('sid');
   if (sPage.indexOf('realm=') == -1)
     sPage += urlParam('realm');
-  sPage += '&return=F1' + urlParam('sid') + urlParam('realm');
+  sPage += '&return=F1';
   win = window.open(sPage, sPageName, "width="+width+",height="+height+",top=100,left=100,status=yes,toolbar=no,menubar=no,scrollbars=yes,resizable=yes");
   win.window.focus();
 }
@@ -404,10 +411,9 @@ function initTab2(tabs, defaultNo)
 {
   var divNo = document.getElementById('tabNo');
   var tab = defaultNo;
-  if (divNo != null)
-  {
+  if (divNo) {
     var divTab = document.getElementById('tab_'+divNo.value);
-    if (divTab != null)
+    if (divTab)
       tab = divNo.value;
   }
   showTab2(tab, tabs);
@@ -416,10 +422,9 @@ function initTab2(tabs, defaultNo)
 function addChecked (objForm, objName, selectionMsq)
 {
   if (!anySelected (objForm, objName, selectionMsq, 'confirm'))
-    return;
+    return false;
 
-  if (window.opener.document.f1.elements[objForm.elements["set"].value])
-  {
+  if (window.opener.document.f1.elements[objForm.elements["set"].value]) {
     var destField = window.opener.document.f1.elements[objForm.elements["set"].value];
 
     destField.value = (destField.value).replace(';', ',');
@@ -427,17 +432,17 @@ function addChecked (objForm, objName, selectionMsq)
     destField.value = OMAIL.trim(destField.value, ',');
     destField.value = OMAIL.trim(destField.value);
     destField.value = destField.value + ',';
-    for (var i = 0; i < objForm.elements.length; i = i + 1)
-    {
+    for (var i = 0; i < objForm.elements.length; i = i + 1) {
       var obj = objForm.elements[i];
-      if (obj != null && obj.type == "checkbox" && obj.name == objName)
-      {
-        if (obj.checked)
-        {
-          if (destField.value.indexOf(obj.value+',') == -1)
-            destField.value = destField.value + obj.value+',';
-        } else {
-          destField.value = (destField.value).replace(obj.value+',', '');
+      if (obj && obj.type == "checkbox" && obj.name == objName) {
+        if (obj.checked && (destField.value.indexOf(obj.value+',') == -1)) {
+          destField.value += obj.value + ',';
+          objSibling = obj.nextSibling;
+          if (objSibling && objSibling.type == "hidden")
+            createHidden (window.opener.document, 'modulus_'+obj.value, objSibling.value);
+          objSibling = objSibling.nextSibling;
+          if (objSibling && objSibling.type == "hidden")
+            createHidden (window.opener.document, 'public_exponent_'+obj.value, objSibling.value);
         }
       }
     }
@@ -482,6 +487,30 @@ function accountChange (obj)
     if (obj.value == 'none') {
       $('port').value = '110';
     }
+  }
+}
+
+function whatLabelChange(obj)
+{
+  if (obj.value == '1')
+    $('whatLabel').innerHTML = 'Name';
+
+  if (obj.value == '2')
+    $('whatLabel').innerHTML = 'Mail';
+}
+
+function toggleDisabled(obj, toggles)
+{
+  for (var i = 0; i < toggles.length; i = i + 1) {
+    if (obj.value) {
+      $(toggles[i]).disabled = false;
+    } else {
+      $(toggles[i]).disabled = 'disabled';
+    }
+    if (i == 0)
+      $(toggles[i]).checked = true;
+    if (i == (toggles.length-1))
+      $(toggles[i]).checked = false;
   }
 }
 

@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -65,7 +65,7 @@
                       <td class="page_tab_selected" align="center" nowrap="1">
                         Extractor Cartridges
           		        </td>
-      			          <?vsp if (check_package('rdf_mappers')) { ?>
+      			          <?vsp if (check_package('rdf_mappers') or check_package ('cartridges')) { ?>
                       <td class="page_tab" align="center" nowrap="1">
                         <v:url name="url2" value="Meta Cartridges" format="%s" url="rdf_filters_pp.vspx" xhtml_class="uddi"/>
       		            </td>

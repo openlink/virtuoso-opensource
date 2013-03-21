@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -25,17 +25,19 @@
 -->
 <v:form name="account_form" type="simple" method="POST" xmlns:v="http://www.openlinksw.com/vspx/">
 <div class="confirm_dialog">
-  <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="stop"/>
+  
+  
   <div class="confirm_text">
-    <div>
-      The account "<?V get_keyword ('user_name', self.vc_event.ve_params, '') ?>" may have a home directory associated, do you wish to remove it ?
+  <div><img src="images/icons/stop_32.png" alt="Stop" title="stop"/></div>
+  <div>
+      Remove all associated data?
       <v:select-list name="drop_obj">
 	<v:item name="No" value="No"/>
 	<v:item name="Yes" value="Yes"/>
       </v:select-list>
-    </div>
-    <div>
-            The account
+   </div>   
+   <div>   
+      The account
             <?vsp
               http(sprintf('<b> %s </b>',get_keyword ('user_name', self.vc_page.vc_event.ve_params, '')));
             ?> will be removed permanently and there is no way to restore it. <br/>

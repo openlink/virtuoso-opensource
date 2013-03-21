@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2009 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -223,6 +223,10 @@ create procedure DB.DBA.URLREWRITE_DROP_RULELIST (
     signal ('42000', 'Rule list IRI ' || rulelist_iri || ' is unknown');
   if (strstr (rulelist_iri, 'sys:') = 0)
     signal ('42000', 'Can not drop "sys:..." rule list ' || rulelist_iri);
+  if (exists (select top 1 1 from DB.DBA.HTTP_PATH where HP_OPTIONS is not null and deserialize (HP_OPTIONS) is not null and get_keyword ('url_rewrite', deserialize (HP_OPTIONS), 0) = rulelist_iri))
+    {
+      if (not force)
+        signal ('42000', 'Rule list IRI ' || rulelist_iri || ' is in use as opts in some HTTP virtual host');
       for select HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_DEFAULT, HP_SECURITY, HP_REALM,
         HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_PERSIST_SES_VARS, HP_SOAP_OPTIONS, HP_AUTH_OPTIONS, HP_OPTIONS, HP_IS_DEFAULT_HOST
         from DB.DBA.HTTP_PATH where HP_OPTIONS is not null do
@@ -234,8 +238,6 @@ create procedure DB.DBA.URLREWRITE_DROP_RULELIST (
           opts := deserialize (HP_OPTIONS);
 	  if (isarray (opts) and get_keyword ('url_rewrite', opts, 0) = rulelist_iri)
 	    {
-	      if (not force)
-		signal ('42000', 'Rule list IRI ' || rulelist_iri || ' is in use as opts in some HTTP virtual host');
 	      opts_len := length (opts);
 	      new_opts := vector ();
 	      for (i := 0; i < opts_len; i := i + 2)
@@ -252,6 +254,7 @@ create procedure DB.DBA.URLREWRITE_DROP_RULELIST (
 		deserialize (HP_AUTH_OPTIONS), new_opts, HP_IS_DEFAULT_HOST));
 	    }
         }
+    }
   if (exists (select 1 from DB.DBA.URL_REWRITE_RULE_LIST where URRL_MEMBER = rulelist_iri))
   {
     if (not force)
@@ -487,7 +490,7 @@ create procedure DB.DBA.URLREWRITE_APPLY_RECURSIVE (
 		    goto next_rule;
 		}
 	      -- cannot do redirect on POST or PUT or something having a content sent as part of the request
-	      if (URR_HTTP_REDIRECT is not null and URR_HTTP_REDIRECT > 299 and URR_HTTP_REDIRECT < 304 and meth not in ('GET', 'MGET', 'HEAD'))
+	      if (URR_HTTP_REDIRECT is not null and URR_HTTP_REDIRECT > 299 and URR_HTTP_REDIRECT < 304 and meth not in ('GET', 'MGET', 'HEAD', 'OPTIONS'))
 		{
 		  if (registry_get ('__debug_url_rewrite') in ('1', '2'))
 		    dbg_printf ('skipping rule=[%s] because HTTP redirect cannot be done for HTTP %s', URR_NICE_FORMAT, meth);
@@ -597,7 +600,7 @@ create procedure DB.DBA.URLREWRITE_APPLY (
   -- dbg_obj_princ('bbb5', _lpath, _lhost_port, _lhost);
   whenever not found goto no_rec;
   select top 1 HP_HOST, HP_LISTEN_HOST, HP_LPATH, get_keyword ('url_rewrite', deserialize (HP_OPTIONS), NULL) into db_host, db_lhost, db_lpath, top_rulelist_iri from HTTP_PATH where
-    (HP_LISTEN_HOST = _lhost or HP_LISTEN_HOST = _lhost_port or (HP_LISTEN_HOST = '*ini*' and _lhost_port = cfg_item_value (virtuoso_ini_path (), 'HTTPServer','ServerPort'))) and
+    (HP_LISTEN_HOST = _lhost or HP_LISTEN_HOST = _lhost_port or (HP_LISTEN_HOST = '*ini*' and _lhost_port = virtuoso_ini_item_value ('HTTPServer','ServerPort'))) and
     HP_OPTIONS is not null and deserialize (HP_OPTIONS) is not null and
     left (_lpath, length (HP_LPATH)) = HP_LPATH order by HP_LPATH desc;
   if (db_host is null and db_lhost is null and db_lpath is null)
@@ -1207,7 +1210,7 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
   declare rule_iri, in_path, qstr, meth varchar;
   declare target_vhost_pkey, hf, accept, http_headers any;
   declare result, http_redir, http_tcn_code, tcn_rc, keep_lpath int;
-  declare http_tcn_headers varchar;
+  declare http_tcn_headers, exp_fn varchar;
 
   -- XXX: the path is just path string, no fragment no query no host
   --hf := rfc1808_parse_uri (path);
@@ -1217,12 +1220,14 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
     in_path := '/';
   accept := null;
   qstr := null;
+  exp_fn := null;
   keep_lpath := 0;
   meth := 'GET';
 
   if (is_http_ctx ())
     {
       keep_lpath := http_map_get ('url_rewrite_keep_lpath');
+      exp_fn := http_map_get ('expiration_function');
       lines := http_request_header ();
       if (length (lines))
 	{
@@ -1240,6 +1245,12 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
   else
     {
       lines := vector ();
+    }
+
+  if (isstring (exp_fn) and (__proc_exists (exp_fn) is not null) and (1 = call (exp_fn) (lines, http_map_get ('options'))))
+    {
+      http_body_read ();
+      return 1;
     }
 
   if (length (qstr))
@@ -1429,3 +1440,219 @@ virt_proxy_init ()
 grant execute on ext_http_proxy to PROXY
 ;
 
+-- /* Example for 'denote' and 'entity' IRI patterns */
+-- http://{HostName}/resource/{Local}
+-- http://{HostName}/data/{Local}.{Extension}
+
+
+-- supported mime types
+create procedure
+url_rewrite_mime_types ()
+{
+  return vector (
+      vector ('html',  	'text/html', 		1.0),
+      vector ('xml',   	'application/rdf+xml', 	0.95),
+      vector ('n3',    	'text/n3', 		0.80),
+      vector ('nt',    	'text/rdf+n3', 		0.80),
+      vector ('ttlx',  	'application/x-turtle', 0.70),
+      vector ('ttl',   	'text/turtle',  	0.70),
+      vector ('n3s',   	'text/ntriples',  	0.70),
+      vector ('json',  	'application/json', 	0.60),
+      vector ('jrdf',  	'application/rdf+json',  0.60),
+      vector ('atom',  	'application/atom+xml',  0.50),
+      vector ('jsod',  	'application/odata+json',0.50),
+      vector ('ld',  	'application/ld+json',0.50),
+      vector ('md',  	'application/microdata+json',0.50)
+      );
+}
+;
+
+create procedure
+url_rewrite_mime_pattern ()
+{
+  declare x, res any;
+  x := url_rewrite_mime_types ();
+  res := '';
+  foreach (varchar p in x) do
+    {
+      res := res || sprintf ('(%s)|', replace (p[1], '+', '\\\\+'));
+    }
+  return rtrim (res, '|');
+}
+;
+
+create procedure
+url_rewrite_gen_describe (in graph varchar, in iri_spf varchar)
+{
+  declare ret, qr any;
+  qr := sprintf ('DESCRIBE <%s>', iri_spf);
+  ret := sprintf ('/sparql?default-graph-uri=%U&query=%U', graph, qr);
+  ret := replace (ret, '%', '%%');
+  ret := replace (ret, '@@placeholder@@', '%s');
+  return ret;
+}
+;
+
+create procedure
+url_rewrite_gen_vsp (in graph varchar, in iri_spf varchar)
+{
+  declare ret, qr any;
+  ret := sprintf ('/describe/?url=%s', iri_spf);
+  return ret;
+}
+;
+
+create procedure
+url_rewrite_from_template (in prefix varchar, in graph varchar, in iri_pattern varchar, in url_pattern varchar, in flags int := 0)
+{
+  declare arr, h, iri_path, iri_regex, iri_spf, iri_tcn, url_spf, url_regex, url_tcn, iri_param, url_param, iri_vd, url_vd any;
+  declare pos, nth, fct int;
+
+  pos := 0; nth := 1;
+  h := WS.WS.PARSE_URI (iri_pattern);
+  arr := regexp_parse ('{[[:alpha:]]+}', h[2], pos);
+  if (arr is null) signal ('.....', 'Invalid IRI pattern');
+  iri_vd := subseq (h[2], pos, arr[0]);
+  iri_regex := iri_spf := iri_tcn := '';
+  iri_param := vector ();
+  while (arr is not null)
+    {
+      declare param any;
+      param := subseq (h[2], arr[0], arr[1]);
+      iri_regex := iri_regex || subseq (h[2], pos, arr[0]) || '(.*)';
+      iri_spf := iri_spf || subseq (h[2], pos, arr[0]) || '@@placeholder@@';
+      iri_tcn := iri_tcn || subseq (h[2], pos, arr[0]) || sprintf ('\\x24%d', nth);
+      param := trim (param, '{}');
+      iri_param := vector_concat (iri_param, vector (param));
+      pos := arr[1];
+      arr := regexp_parse ('{[[:alpha:]]+}', h[2], pos);
+      nth := nth + 1;
+    }
+  iri_regex := iri_regex || subseq (h[2], pos);
+  iri_spf := iri_spf || subseq (h[2], pos);
+  iri_tcn := iri_tcn || subseq (h[2], pos);
+
+  if (h[1] = '{HostName}') h[1] := registry_get ('URIQADefaultHost');
+  h[2] := iri_spf;
+  iri_spf := WS.WS.VFS_URI_COMPOSE (h);
+  h[2] := iri_tcn;
+  iri_tcn := WS.WS.VFS_URI_COMPOSE (h);
+
+  pos := 0; nth := 1;
+  h := WS.WS.PARSE_URI (url_pattern);
+  arr := regexp_parse ('{[[:alpha:]]+}', h[2], pos);
+  if (arr is null) signal ('.....', 'Invalid URL pattern');
+  url_spf := url_regex := url_tcn := '';
+  url_param := vector ();
+  url_vd := subseq (h[2], pos, arr[0]);
+  while (arr is not null)
+    {
+      declare param any;
+      param := subseq (h[2], arr[0], arr[1]);
+      if (param <> '{Extension}')
+	{
+	  url_spf := url_spf || subseq (h[2], pos, arr[0]) || '%s';
+	  url_regex := url_regex || subseq (h[2], pos, arr[0]) || '(.*)';
+	  url_tcn := url_tcn || subseq (h[2], pos, arr[0]) || sprintf ('\\x24%d', nth);
+	  param := trim (param, '{}');
+	  url_param := vector_concat (url_param, vector (param));
+	  nth := nth + 1;
+	}
+      else
+	{
+	  url_spf := url_spf || subseq (h[2], pos, arr[0]) || param;
+	  url_regex := url_regex || subseq (h[2], pos, arr[0]) || param;
+	  url_tcn := url_tcn || subseq (h[2], pos, arr[0]) || param;
+	}
+      pos := arr[1];
+      arr := regexp_parse ('{[[:alpha:]]+}', h[2], pos);
+    }
+  url_spf := url_spf || subseq (h[2], pos);
+  url_regex := url_regex || subseq (h[2], pos);
+  --dbg_obj_print_vars (iri_regex, iri_param, url_spf, url_regex, url_param);
+
+  declare ses, mime_types any;
+  ses := string_output ();
+
+  iri_vd := rtrim (iri_vd, '/');
+  url_vd := rtrim (url_vd, '/');
+
+  http ('-- Virtual Directories \n', ses);
+  http (sprintf ('DB.DBA.VHOST_REMOVE (lpath=>\'%s\');\n', iri_vd), ses);
+  http (sprintf ('DB.DBA.VHOST_REMOVE (lpath=>\'%s\');\n', url_vd), ses);
+  http (sprintf ('DB.DBA.VHOST_DEFINE (lpath=>\'%s\', ppath=>\'/\', is_dav=>0, opts=>vector (\'url_rewrite\',  \'%s_iri_rule_list\'));\n', iri_vd, prefix), ses);
+  http (sprintf ('DB.DBA.VHOST_DEFINE (lpath=>\'%s\', ppath=>\'/404.html\', is_dav=>0, opts=>vector (\'url_rewrite\',  \'%s_url_rule_list\'));\n', url_vd, prefix), ses);
+  http ('\n', ses);
+
+  http ('-- Rule list for abstract\n', ses);
+  --http (sprintf ('DB.DBA.URLREWRITE_CREATE_RULELIST ( \'%s_iri_rule_list\', 1, vector (\'%s_iri_rule_2\'));\n', prefix, prefix, prefix), ses);
+  http (sprintf ('DB.DBA.URLREWRITE_CREATE_RULELIST ( \'%s_iri_rule_list\', 1, vector (\'%s_iri_rule_1\', \'%s_iri_rule_2\'));\n', prefix, prefix, prefix), ses);
+  http (sprintf ('DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( \'%s_iri_rule_1\', 1, \'%s\', %s, 1, \'%s\', %s, null, null, 2, 406, null); \n',
+		prefix,
+		iri_regex,
+		sys_sql_val_print (iri_param),
+		rtrim (replace (replace (url_spf, '{Extension}', ''), '//', '/'), '.'),
+		sys_sql_val_print (url_param)
+		), ses);
+
+  http (sprintf ('DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( \'%s_iri_rule_2\', 1, \'%s\', %s, 1, \'%s\', %s, null,\n \'%s\', 2, 303, null); \n',
+		prefix,
+		iri_regex,
+		sys_sql_val_print (iri_param),
+		rtrim (replace (replace (url_spf, '{Extension}', ''), '//', '/'), '.'),
+		sys_sql_val_print (url_param),
+		url_rewrite_mime_pattern ()
+		), ses);
+
+  http ('\n', ses);
+  http (sprintf ('delete from DB.DBA.HTTP_VARIANT_MAP where VM_RULELIST = \'%s_iri_rule_list\';\n', prefix), ses);
+  if (flags and exists (select 1 from VAD.DBA.VAD_REGISTRY where R_KEY like '/VAD/fct/%/resources/dav/%'))
+    fct := 1;
+  mime_types := url_rewrite_mime_types ();
+  foreach (any x in mime_types) do
+    {
+      declare redir varchar;
+      if (fct and x[0] = 'html')
+	redir := url_rewrite_gen_vsp (graph, iri_tcn);
+      else
+	redir := replace (url_tcn, '{Extension}', x[0]);
+      http (sprintf ('DB.DBA.HTTP_VARIANT_ADD (\'%s_iri_rule_list\', \'%s\', \'%s\', \'%s\', %.2f);\n',
+	    prefix,
+	    rtrim (replace (replace (url_regex, '{Extension}', ''), '//', '/'), '.'),
+	    redir,
+	    x[1],
+	    x[2]
+	    ), ses);
+    }
+  http ('\n', ses);
+  http ('-- Rule list for data\n', ses);
+  nth := 1;
+  http (sprintf ('DB.DBA.URLREWRITE_CREATE_RULELIST ( \'%s_url_rule_list\', 1, vector (', prefix), ses);
+  foreach (any x in mime_types) do
+    {
+      if (nth > 1) http (',', ses);
+      http (sprintf ('\'%s_url_rule_%d\'', prefix, nth), ses);
+      nth := nth + 1;
+    }
+  http ('));\n', ses);
+
+  nth := 1;
+  foreach (any x in mime_types) do
+    {
+      declare redir any;
+      redir := url_rewrite_gen_describe (graph, iri_spf) || replace (sprintf ('&format=%U', x[1]), '%', '%%');
+      http (sprintf ('DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( \'%s_url_rule_%d\', 1, \'%s\', %s, 1, \'%s\', %s, null, null, 2, null, \'Content-Type: %s\'); \n',
+		prefix, nth,
+		replace (url_regex, '{Extension}', x[0]),
+		sys_sql_val_print (url_param),
+		redir,
+		sys_sql_val_print (iri_param),
+		x[1]
+		), ses);
+      nth := nth + 1;
+    }
+  return string_output_string (ses);
+}
+;
+
+-- url_rewrite_from_template ('my_dbase', 'http://my.graph.org', 'http://{HostName}/dbase/id/{Local}', '/dbase/data/{Local}.{Extension}');

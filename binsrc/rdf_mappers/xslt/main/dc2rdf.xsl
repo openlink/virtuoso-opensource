@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -27,9 +27,7 @@
     xmlns      ="http://www.w3.org/1999/xhtml"
     xmlns:dc   ="http://purl.org/dc/elements/1.1/"
     xmlns:dcterms = "http://purl.org/dc/terms/"
-    xmlns:xml="xml"
     xmlns:rdf  ="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
-
 
     <xsl:output method="xml" indent="yes"/>
 
@@ -82,10 +80,7 @@
 		    <xsl:with-param name="ns" select="$ns" />
 		</xsl:call-template>
 	    </xsl:variable>
-
-
-	    <xsl:element name="{$ln}"
-		namespace="{$ns}">
+			<xsl:element name="{$ln}" namespace="{$ns}">
 		<xsl:choose>
 		    <xsl:when test="$ref">
 			<rdf:Description rdf:about="{$ref}">
@@ -124,32 +119,21 @@
 	</xsl:if>
     </xsl:template>
 
-
     <xsl:template name="get-ns">
 	<xsl:param name="n" />
-
-	<xsl:variable name="pfx"
-	    select='substring-before(translate($n, $uc, $lc), ".")' />
-
-	<xsl:variable name="binding"
-	    select='../h:link[translate(@rel, $uc, $lc) = translate(concat("schema.", $pfx), $uc, $lc)]'/>
-	<!--xsl:message terminate="no"> get-ns [<xsl:value-of select="$pfx"/>] [<xsl:value-of select="$binding/@href"/>]</xsl:message-->
+		<xsl:variable name="pfx" select='substring-before(translate($n, $uc, $lc), ".")' />
+		<xsl:variable name="binding" select='../h:link[translate(@rel, $uc, $lc) = translate(concat("schema.", $pfx), $uc, $lc)]'/>
 	<xsl:if test="$binding/@href">
-	    <xsl:variable name="ns1"
-		select='$binding/@href' />
-
-	    <xsl:variable name="ln1"
-		select='substring(
-		translate($n, $uc, $lc),
-		string-length($pfx) + 1,
-		string-length($n))' />
+			<xsl:variable name="ns1" select='$binding/@href' />
+			<xsl:variable name="ln1" select='substring(translate($n, $uc, $lc),string-length($pfx) + 1,string-length($n))' />
 	    <xsl:variable name="ns">
 		<xsl:choose>
-		    <xsl:when test='contains($ln1, ".")
-			and $ns1 = "http://purl.org/dc/elements/1.1/"'>
+					<xsl:when test='contains($ln1, ".") and $ns1 = "http://purl.org/dc/elements/1.1/"'>
 			<xsl:value-of select='"http://purl.org/dc/terms/"'/>
 		    </xsl:when>
-		    <xsl:otherwise><xsl:value-of select="$ns1" /></xsl:otherwise>
+					<xsl:otherwise>
+						<xsl:value-of select="$ns1" />
+					</xsl:otherwise>
 		</xsl:choose>
 	    </xsl:variable>
 	    <xsl:value-of select="$ns" />
@@ -160,18 +144,15 @@
     <xsl:template name="get-ln">
 	<xsl:param name="n" />
 	<xsl:param name="ns" />
-
-	<xsl:variable name="ln1"
-	    select='substring-after(translate($n, $uc, $lc), ".") ' />
-
+		<xsl:variable name="ln1" select='substring-after(translate($n, $uc, $lc), ".") ' />
 	<xsl:variable name="ln">
 	    <xsl:choose>
-		<xsl:when test='contains($ln1, ".")
-		    and $ns = "http://purl.org/dc/terms/"'>
+				<xsl:when test='contains($ln1, ".") and $ns = "http://purl.org/dc/terms/"'>
 		    <xsl:value-of select='substring-after($ln1, ".") '/>
 		</xsl:when>
-
-		<xsl:otherwise><xsl:value-of select="$ln1" /></xsl:otherwise>
+				<xsl:otherwise>
+					<xsl:value-of select="$ln1" />
+				</xsl:otherwise>
 	    </xsl:choose>
 	</xsl:variable>
 	<xsl:value-of select="$ln" />

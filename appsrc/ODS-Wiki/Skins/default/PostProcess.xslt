@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -80,7 +80,7 @@
       <link rel="alternate"
             type="application/atomserv+xml"
             href="{wv:atom_pub_uri($ti_cluster_name)}/intro"/>
-
+      <xsl:value-of select="wv:rdfLinksHead($ti_cluster_name, $ti_local_name)" disable-output-escaping="yes" />
 	<xsl:copy-of select="$ods-app"/>
     </head>
       <body>

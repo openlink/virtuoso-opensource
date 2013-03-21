@@ -15,7 +15,7 @@
     <!ENTITY us-gaap-ci 'http://www.xbrl.org/us/fr/gaap/ci/2005-02-28#'>
     <!ENTITY xml 'http://www.w3.org/XML/1998/namespace#'>
 ]>
-<rdf:RDF xmlns:xo="http://rhizomik.upf.edu/redefer/xsl/xsd2owl-functions.xsl" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" xmlns:owl="http://www.w3.org/2002/07/owl#" xmlns:link="http://www.xbrl.org/2003/linkbase#" xmlns:xlink="http://www.w3.org/1999/xlink#" xmlns:xbrli="http://www.xbrl.org/2003/instance#" xmlns:msft="#" xmlns:mem="http://www.microsoft.com/xbrl/mem#" xmlns:usfr-seccert="http://www.xbrl.org/us/fr/rpt/seccert/2005-02-28#" xmlns:usfr-mda="http://www.xbrl.org/us/fr/rpt/mda/2005-02-28#" xmlns:usfr-ar="http://www.xbrl.org/us/fr/rpt/ar/2005-02-28#" xmlns:usfr-pte="http://www.xbrl.org/us/fr/common/pte/2005-02-28#" xmlns:ref="http://www.xbrl.org/2004/ref#" xmlns:usfr-mr="http://www.xbrl.org/us/fr/rpt/mr/2005-02-28#" xmlns:us-gaap-ci="http://www.xbrl.org/us/fr/gaap/ci/2005-02-28#">
+<rdf:RDF xmlns:opl-xbrl="http://www.openlinksw.com/schemas/xbrl/" xmlns:xo="http://rhizomik.upf.edu/redefer/xsl/xsd2owl-functions.xsl" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" xmlns:owl="http://www.w3.org/2002/07/owl#" xmlns:link="http://www.xbrl.org/2003/linkbase#" xmlns:xlink="http://www.w3.org/1999/xlink#" xmlns:xbrli="http://www.xbrl.org/2003/instance#" xmlns:msft="#" xmlns:mem="http://www.microsoft.com/xbrl/mem#" xmlns:usfr-seccert="http://www.xbrl.org/us/fr/rpt/seccert/2005-02-28#" xmlns:usfr-mda="http://www.xbrl.org/us/fr/rpt/mda/2005-02-28#" xmlns:usfr-ar="http://www.xbrl.org/us/fr/rpt/ar/2005-02-28#" xmlns:usfr-pte="http://www.xbrl.org/us/fr/common/pte/2005-02-28#" xmlns:ref="http://www.xbrl.org/2004/ref#" xmlns:usfr-mr="http://www.xbrl.org/us/fr/rpt/mr/2005-02-28#" xmlns:us-gaap-ci="http://www.xbrl.org/us/fr/gaap/ci/2005-02-28#">
    <owl:Ontology rdf:about="">
       <rdfs:comment>OWL ontology for XBRL</rdfs:comment>
       <owl:imports rdf:resource="http://www.xbrl.org/2003/instance#"/>
@@ -105,6 +105,16 @@
          </owl:Class>
       </rdfs:range>
    </owl:ObjectProperty>
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/xbrl/identifier">
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/xbrl"/>
+        <rdfs:label>CIK</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <owl:equivalentProperty rdf:resource="http://www.rdfabout.com/rdf/schema/ussec/cik"/>
+    </owl:DatatypeProperty>
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/xbrl/report">
+        <rdfs:label xml:lang="en">Report</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://rdfs.org/sioc/ns#Container"/>
+    </owl:Class>
    <rdf:Property rdf:about="InvestmentCategoryName">
       <rdfs:subPropertyOf rdf:resource="http://www.xbrl.org/2003/instance#item"/>
       <rdfs:range rdf:resource="http://www.xbrl.org/2003/instance#stringItemType"/>

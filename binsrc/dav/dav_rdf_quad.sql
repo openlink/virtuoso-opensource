@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -39,7 +39,7 @@ create function DB.DBA.DAV_FULL_PATH_TO_IRI (in dav_iri varchar, in _str varchar
 create procedure DB.DBA.DAV_AUTO_REPLICATE_TO_RDF_QUAD ()
 {
   declare uriqa_default_host, old_dav_graph, new_dav_graph varchar;
-  uriqa_default_host := cfg_item_value (virtuoso_ini_path (), 'URIQA','DefaultHost');
+  uriqa_default_host := virtuoso_ini_item_value ('URIQA','DefaultHost');
   if (isstring (registry_get ('DB.DBA.DAV_RDF_GRAPH_URI')))
     return;
   if (uriqa_default_host is null or uriqa_default_host = '')
@@ -52,13 +52,13 @@ create procedure DB.DBA.DAV_REPLICATE_ALL_TO_RDF_QUAD (in enable integer)
 {
   declare uriqa_default_host, old_dav_graph, new_dav_graph varchar;
   declare trx_size integer;
-  uriqa_default_host := cfg_item_value (virtuoso_ini_path (), 'URIQA','DefaultHost');
+  uriqa_default_host := virtuoso_ini_item_value ('URIQA','DefaultHost');
   if (uriqa_default_host is null or uriqa_default_host = '')
     signal ('OBLOM', 'No uriqa_default_host!');
-  if (cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DynamicLocal') = '1')
-  new_dav_graph := 'local:/DAV';
+  if (virtuoso_ini_item_value ('URIQA', 'DynamicLocal') = '1')
+    new_dav_graph := 'local:/DAV/';
   else
-    new_dav_graph := sprintf ('http://%s/DAV', uriqa_default_host);
+    new_dav_graph := sprintf ('http://%s/DAV/', uriqa_default_host);
   exec ('checkpoint');
   __atomic (1);
   DB.DBA.RDF_DELETE_ENTIRE_GRAPH (new_dav_graph, 1);
@@ -197,7 +197,7 @@ create procedure DB.DBA.DAV_RDF_URI_RESOLVE (in dav_rdf_graph_uri varchar, in ir
   else if (left (iri, 22) = 'http://local.virt/DAV/')
     {
 --      declare uriqa_default_host, old_dav_graph, new_dav_graph varchar;
---      uriqa_default_host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+--      uriqa_default_host := virtuoso_ini_item_value ('URIQA', 'DefaultHost');
 --      if (uriqa_default_host is null or uriqa_default_host = '')
 --        signal ('OBLOM', 'No uriqa_default_host!');
 --      new_dav_graph := sprintf ('http://%s/DAV/', uriqa_default_host);
@@ -300,7 +300,7 @@ create function DB.DBA.DAV_MAKE_USER_IRI (in userid integer)
   if (email is null or email='')
     {
       declare uriqa_default_host varchar;
-      uriqa_default_host := cfg_item_value (virtuoso_ini_path (), 'URIQA','DefaultHost');
+      uriqa_default_host := virtuoso_ini_item_value ('URIQA','DefaultHost');
       if (not isstring (uriqa_default_host))
         signal ('22023', 'Function DB.DBA.DAV_MAKE_USER_IRI() has failed to get "DefaultHost" parameter of [URIQA] section of Virtuoso configuration file');
       email := sprintf ('mailto:UserId%d@%s', userid, uriqa_default_host);

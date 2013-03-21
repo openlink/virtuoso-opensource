@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rdf:RDF
+   xmlns:awol="http://bblfish.net/work/atom-owl/2006-06-06/#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:dcterms="http://purl.org/dc/terms/"
+   xmlns:foaf="http://xmlns.com/foaf/0.1/"
+   xmlns:gn="http://www.geonames.org/ontology#"
+   xmlns:opl="http://www.openlinksw.com/schema/attribution#"
+   xmlns:owl="http://www.w3.org/2002/07/owl#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+   xmlns:sioc="http://rdfs.org/sioc/ns#"
+   xmlns:sioct="http://rdfs.org/sioc/types#&quot;"
+   xmlns:virtrdfmec="http://www.openlinksw.com/schemas/virtrdf-meta-entity-class#"
+   xmlns:wa="http://www.openlinksw.com/schemas/wolframalpha#"
+   xmlns:xsd="http://www.w3.org/2001/XMLSchema#">
+  <owl:Ontology rdf:about="http://www.openlinksw.com/schemas/wolframalpha#">
+    <dc:creator rdf:datatype="http://www.w3.org/2001/XMLSchema#string">OpenLink Software, http://www.openlinksw.com</dc:creator>
+  </owl:Ontology>
+  <owl:Class rdf:about="http://www.openlinksw.com/schemas/wolframalpha#Answer">
+    <rdfs:comment>Answer that Wolfram|Alpha considers authoritative</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#"/>
+    <rdfs:label>WolframAlpha Answer</rdfs:label>
+  </owl:Class>
+  <owl:Class rdf:about="http://www.openlinksw.com/schemas/wolframalpha#Query">
+    <rdfs:comment>A Wolfram|Alpha Query</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#"/>
+    <rdfs:label>WolframAlpha Query</rdfs:label>
+  </owl:Class>
+  <owl:Class rdf:about="http://www.openlinksw.com/schemas/wolframalpha#Source">
+    <rdfs:comment>Attributed source for a Wolfram|Alpha Query</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#"/>
+    <rdfs:label>WolframAlpha Source</rdfs:label>
+  </owl:Class>
+  <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/wolframalpha#normative_query">
+    <rdfs:comment>How Wolfram|Alpha resolved the query</rdfs:comment>
+    <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/wolframalpha#Query"/>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#"/>
+    <rdfs:label>Normalised query</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/wolframalpha#primary_answer">
+    <rdfs:comment>Primary answer from Wolfram|Alpha</rdfs:comment>
+    <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/wolframalpha#Query"/>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#"/>
+    <rdfs:label>Answer</rdfs:label>
+    <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/wolframalpha#Answer"/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/wolframalpha#score">
+    <rdfs:comment>(Computed) measure of a Wolfram|Alpha query result's relevance</rdfs:comment>
+    <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/wolframalpha#Query"/>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#"/>
+    <rdfs:label>Score</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+  </owl:DatatypeProperty>
+</rdf:RDF>

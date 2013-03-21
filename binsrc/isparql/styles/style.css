@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2009 OpenLink Software
+ *  Copyright (C) 2009-2013 OpenLink Software
  *
  *  See LICENSE file for details.
  *
@@ -71,15 +71,18 @@ td.cachingOpts label.unit { float: right; clear: none; width: 40px; margin-left:
 td.cachingOpts input { float: left;}
 
 div.controls {
+  float: left;
+  clear: both;
+  width: 99%;
   background-color: #eee;
   background: -moz-linear-gradient (top, #eee, #eff);
   background: -webkit-gradient (linear,left top,left bottom,from(#eee), to(#eff));
-  border: 2px solid #dff;
-  -moz-border-radius: 10px 10px 0px 0px;
-  -webkit-border-radius: 10px 10px 0px 0px;
-  margin: 0px 10px 10px 10px;
-  
+  border: 1px solid #ddd;
+  margin: 5px 5px 0px 5px;  
 }
+
+/*  -moz-border-radius: 10px 10px 0px 0px; */
+/*  -webkit-border-radius: 10px 10px 0px 0px; */
 
 div.controls h3:hover { cursor: pointer;}
 div.controls h3 {margin: 0;padding:0}
@@ -90,13 +93,29 @@ div.controls fieldset { }
 
 #pathTravSchemesPreds { width: 100%; }
 
-fieldset.queryopts {
-  display: block;
-  margin: 0 8px 3px 10px
+#queryopts_ctl {
+  float: left;
+  clear: both;
+  margin: 0 5px 5px 5px;
 }
 
-#qry_type_ctls { display: inline; }
-span.maxrows_expln { font-size: smaller;}
+div.fm_rw span.maxrows_expln { float: left; font-size: smaller;}
+
+div.fm_rw {
+  float: left;
+  clear: both;
+}
+
+div.fm_rw label {
+  width: 15em;
+  float: left;
+  clear: left;
+  margin-top: 3px;
+}
+
+#queryopts_ctl div.fm_rw input {
+  float: left;
+}
 
 fieldset.endpoint {
   margin-top: 10px;
@@ -139,8 +158,8 @@ h3#endpoint_opts_toggler,h3#mdtoggler {
   cursor: hand;
   cursor: pointer;
   border:none;
-  -moz-border-radius: 10px 10px 0px 0px;
-  -webkit-border-radius: 10px 10px 0px 0px;
+/*  -moz-border-radius: 10px 10px 0px 0px;
+  -webkit-border-radius: 10px 10px 0px 0px; */
 }
 
 span.tgl_indicator {
@@ -193,9 +212,9 @@ fieldset.deref_opts h4 {
   text-align: right;
   float: left;
   clear: both;
-  background: -webkit-gradient(linear,left top,left bottom,from(#ccdde0),to(#577));
-  background: -moz-linear-gradient(top,#ccdde0,#577);
-  background-color: #FFFFFF;
+/*  background: -webkit-gradient(linear,left top,left bottom,from(#ccdde0),to(#fff));
+  background: -moz-linear-gradient(top,#ccdde0,#fff); */
+  background-color: #fdfdfd;
   height: 30px;
   padding-top: 10px;
   padding-bottom:30px;
@@ -261,7 +280,6 @@ ul#nav_bar {
 /* tabs */
 
 #tabs {
-	margin-top: 21px;
 	padding-top:10px;
 	list-style-type: none;
 	padding-bottom: 1px;
@@ -322,7 +340,7 @@ div.pager div {
 }
 
 div.pager a {
-  color: #ddd;
+  color: #333;
   font-weight: bold;
   text-decoration: none;
   padding-left: 10px;
@@ -390,6 +408,7 @@ label.load { font-size: 8pt; font-weight: normal}
 #query {
   height: 50ex;
   width: 100%;
+  font-family: monospace;
 }
 
 #goptions label.align {
@@ -546,3 +565,19 @@ ul#tabgrph {
 }
 
 #qbe_query_div {margin-top: 5px;}
+
+.notify_bar_ctr {
+  background-color: #577;
+  color: #eef;
+  z-index: 10000;
+}
+
+.notify_bar_inner {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.notify_content {
+  margin-left: 8px;
+  margin-right: 8px;
+}

@@ -5,7 +5,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2009 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -206,6 +206,7 @@ directory_init() {
 
   cp rdf_mappers.sql vad/code/rdf_mappers
   cp rdf_mappers_drop.sql vad/code/rdf_mappers
+  cp sponger_coref_post_process.sql vad/code/rdf_mappers
   cp virt_rdf_label.sql vad/code/rdf_mappers
 
   cp data/*.sql vad/code/rdf_mappers
@@ -216,6 +217,7 @@ directory_init() {
   cp ontologies/owl/*.owl vad/vsp/rdf_mappers/ontologies/owl/
 
   cp sponger_front_page/* vad/vsp/rdf_mappers/sponger_front_page/
+
   cp sponger_front_page/skin/i/* vad/vsp/rdf_mappers/sponger_front_page/skin/i/
   cp sponger_front_page/skin/ss/* vad/vsp/rdf_mappers/sponger_front_page/skin/ss/
 
@@ -235,7 +237,7 @@ directory_init() {
   #
   #  Install minimal OAT toolkit
   #
-  for i in loader.js animation.js slidebar.js resize.js
+  for i in loader.js animation.js slidebar.js resize.js ajax.js json.js
   do
       cp ../oat/toolkit/$i vad/vsp/rdf_mappers/rdfdesc/oat/
   done
@@ -313,7 +315,7 @@ sticker_init() {
   echo "  <name package=\"$VAD_NAME\">" >> $STICKER
   echo "    <prop name=\"Title\" value=\"$VAD_DESC\"/>" >> $STICKER
   echo "    <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2011 OpenLink Software\"/>" >> $STICKER
+  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2013 OpenLink Software\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso\"/>" >> $STICKER
   echo "  </name>" >> $STICKER
@@ -330,6 +332,11 @@ sticker_init() {
   echo "      { " >> $STICKER
   echo "         result ('ERROR', 'The $VAD_DESC package requires server version $NEED_VERSION or greater'); " >> $STICKER
   echo "	 signal ('FATAL', 'The $VAD_DESC package requires server version $NEED_VERSION or greater'); " >> $STICKER
+  echo "      } " >> $STICKER
+  echo "    if (__proc_exists ('__PROC_PARAMS_NUM', 2) is null) " >> $STICKER
+  echo "      { " >> $STICKER
+  echo "         result ('ERROR', 'The $VAD_DESC package requires new server version'); " >> $STICKER
+  echo "         signal ('FATAL', 'The $VAD_DESC package requires new server version'); " >> $STICKER
   echo "      } " >> $STICKER
   echo "  ]]></sql>" >> $STICKER
   echo "  <sql purpose=\"post-install\">" >> $STICKER
@@ -349,6 +356,7 @@ fi
   echo "    DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/description.sql', 0, 'report', $ISDAV);" >> $STICKER
   echo "    DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/yelp_categories.sql', 0, 'report', $ISDAV);" >> $STICKER
   echo "	DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/rdf_mappers.sql', 0, 'report', $ISDAV);" >> $STICKER
+  echo "    DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/sponger_coref_post_process.sql', 0, 'report', $ISDAV);" >> $STICKER
   echo "	DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/oai_servers.sql', 0, 'report', $ISDAV);" >> $STICKER
   echo "    DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/iso_country_codes.sql', 0, 'report', $ISDAV);" >> $STICKER
   echo "    DB.DBA.VHOST_REMOVE (lpath=>'/rdfdesc');" >> $STICKER
@@ -370,6 +378,7 @@ fi
   echo "<resources>" >> $STICKER
 
   echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/rdf_mappers.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/sponger_coref_post_process.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
   echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/oai_servers.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
   echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/yelp_categories.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
   echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/iso_country_codes.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER

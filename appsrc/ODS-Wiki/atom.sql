@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -450,9 +450,9 @@ create procedure WV.WIKI.gdata (
           attachment_path := DB.DBA.DAV_SEARCH_PATH (topic.ti_col_id, 'C') || topic.ti_local_name || '/';
           DB.DBA.DAV_DELETE_INT (attachment_path, 1, null, null, 0);
           DB.DBA.DAV_DELETE_INT (DB.DBA.DAV_SEARCH_PATH (topic.ti_res_id, 'R'), 1, null, null, 0);
+      }
         }
     }
-  }
   }
   }
 

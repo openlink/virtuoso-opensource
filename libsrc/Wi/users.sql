@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -196,8 +196,7 @@ create procedure DB.DBA.SECURITY_CL_EXEC_AND_LOG (in txt varchar, in args any)
 }
 ;
 
-create procedure
-USER_CREATE (in _name varchar, in passwd varchar, in options any := NULL)
+create procedure DB.DBA.USER_CREATE (in _name varchar, in passwd varchar, in options any := NULL)
 {
   declare _pwd, _pwd_mode, _pwd_mode_data, _login_qual varchar;
   declare _dav_enable, _sql_enable integer;
@@ -228,7 +227,7 @@ USER_CREATE (in _name varchar, in passwd varchar, in options any := NULL)
     _login_qual := get_keyword_ucase ('LOGIN_QUALIFIER', options, 'DB');
     _prim_group := get_keyword_ucase ('PRIMARY_GROUP', options, NULL);
 
-    _u_e_mail := get_keyword_ucase ('E-MAIL', options, '');
+    _u_e_mail := coalesce (get_keyword_ucase ('E-MAIL', options), get_keyword_ucase ('E_MAIL', options, ''));
     _u_full_name := get_keyword_ucase ('FULL_NAME', options, NULL);
     _u_home := get_keyword_ucase ('HOME', options, NULL);
     _u_perms := get_keyword_ucase ('PERMISSIONS', options, '110100000R');
@@ -241,7 +240,7 @@ USER_CREATE (in _name varchar, in passwd varchar, in options any := NULL)
     new_opts := vector ();
     while (i < l)
       {
-	if (upper(options[i]) not in ('PASSWORD_MODE', 'PASSWORD_MODE_DATA', 'GET_PASSWORD', 'SQL_ENABLE', 'DAV_ENABLE', 'LOGIN_QUALIFIER', 'PRIMARY_GROUP', 'E-MAIL', 'FULL_NAME', 'HOME', 'PERMISSIONS', 'DISABLED'))
+	if (upper(options[i]) not in ('PASSWORD_MODE', 'PASSWORD_MODE_DATA', 'GET_PASSWORD', 'SQL_ENABLE', 'DAV_ENABLE', 'LOGIN_QUALIFIER', 'PRIMARY_GROUP', 'E-MAIL', 'E_MAIL', 'FULL_NAME', 'HOME', 'PERMISSIONS', 'DISABLED'))
 	  {
             new_opts := vector_concat (new_opts, vector (options[i], options[i+1]));
 	  }
@@ -250,6 +249,9 @@ USER_CREATE (in _name varchar, in passwd varchar, in options any := NULL)
   }
   if (_login_qual = '')
     signal ('22023', 'Qualifier cannot be empty string');
+
+  if (__tag of NVARCHAR = __tag (passwd))
+    passwd := charset_recode (passwd, '_WIDE_', 'UTF-8');
 
   _pwd := pwd_magic_calc (_name, passwd, 0);
   _u_sys_name := pwd_magic_calc (_name, _u_sec_sys_name, 0);
@@ -334,6 +336,10 @@ USER_ROLE_DROP (in _name varchar)
 create procedure
 USER_CHANGE_PASSWORD (in _name varchar, in old_pwd varchar, in new_pwd varchar)
 {
+  if (__tag of NVARCHAR = __tag (old_pwd))
+    old_pwd := charset_recode (old_pwd, '_WIDE_', 'UTF-8');
+  if (__tag of NVARCHAR = __tag (new_pwd))
+    new_pwd := charset_recode (new_pwd, '_WIDE_', 'UTF-8');
   if (exists (select 1 from SYS_USERS where U_NAME = _name and U_IS_ROLE = 0 and pwd_magic_calc (U_NAME, U_PASSWORD, 1) = old_pwd))
     {
       if (exists (select 1 from SYS_USERS where U_NAME = _name and U_SQL_ENABLE = 1))
@@ -354,6 +360,8 @@ create procedure USER_PASSWORD_SET (in name varchar, in passwd varchar)
 {
   declare _u_id, _u_group integer;
   declare _u_data varchar;
+  if (__tag of NVARCHAR = __tag (passwd))
+    passwd := charset_recode (passwd, '_WIDE_', 'UTF-8');
   if (exists (select 1 from SYS_USERS where U_NAME = name and U_SQL_ENABLE = 1))
     {
       user_set_password (name, passwd);
@@ -462,7 +470,7 @@ USER_GRANT_ROLE (in _name varchar, in _role varchar, in grant_opt integer := 0)
         {
 	  if (primary_group is null or inh[i] <> primary_group)
 	    {
-	      insert into SYS_ROLE_GRANTS (GI_SUPER, GI_SUB, GI_ADMIN, GI_DIRECT, GI_GRANT)
+	      insert soft SYS_ROLE_GRANTS (GI_SUPER, GI_SUB, GI_ADMIN, GI_DIRECT, GI_GRANT)
 		  values (_u_id, inh[i], grant_opt, 0, _g_id);
 	    }
           i := i + 1;
@@ -567,6 +575,7 @@ USER_DROP (in _name varchar, in _cascade integer := 0)
     signal ('37000', concat ('The user ''', _name, ''' does not exist'), 'U0015');
   delete from SYS_USER_GROUP where UG_UID = _u_id;
   delete from SYS_GRANTS where G_USER = _u_id;
+  delete from DB.DBA.RDF_GRAPH_USER where RGU_USER_ID = _u_id;
   if (_u_is_sql)
     DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_remove_user_struct(?)', vector (_name));
 }
@@ -1043,7 +1052,7 @@ create procedure
 	if (fp is null)
 	  goto normal_auth;
 
-        ext_oid := cfg_item_value (virtuoso_ini_path(), 'Parameters', 'X509ExtensionOID');
+        ext_oid := virtuoso_ini_item_value ('Parameters', 'X509ExtensionOID');
 
         if (ext_oid is not null)
           new_user := get_certificate_info (7, null, null, null, ext_oid);
@@ -1070,7 +1079,7 @@ normal_auth:
     {
       rc := "DB"."DBA"."DBEV_LOGIN" (user_name, digest, session_random);
     }
-  else
+  else if (rc <= 0) -- only if not authenticated
     {
       rc := DB.DBA.FOAF_SSL_LOGIN (user_name, digest, session_random);
       if (rc = 0)
@@ -1313,12 +1322,32 @@ alter index SYS_USER_WEBID on SYS_USER_WEBID partition cluster replicated
 create index SYS_USER_WEBID_NAME on SYS_USER_WEBID (UW_U_NAME) partition cluster replicated
 ;
 
+create procedure FOAF_SSL_QRY (in gr varchar, in uri varchar)
+{
+    return sprintf ('sparql
+    define input:storage ""
+    define input:same-as "yes"
+    prefix cert: <http://www.w3.org/ns/auth/cert#>
+    prefix rsa: <http://www.w3.org/ns/auth/rsa#>
+    select (str (?exp)) (str (?mod))
+    from <%S>
+    where
+    {
+      { ?id cert:identity <%S> ; rsa:public_exponent ?exp ; rsa:modulus ?mod .  }
+      union
+      { ?id cert:identity <%S> ; rsa:public_exponent ?exp1 ; rsa:modulus ?mod1 . ?exp1 cert:decimal ?exp . ?mod1 cert:hex ?mod . }
+      union
+      { <%S> cert:key ?key . ?key cert:exponent ?exp . ?key cert:modulus ?mod .  }
+    }', gr, uri, uri, uri);
+}
+;
+
 create procedure
 DB.DBA.FOAF_SSL_LOGIN (inout user_name varchar, in digest varchar, in session_random varchar)
 {
   declare stat, msg, meta, data, info, qr, hf, graph, gr, alts any;
   declare agent varchar;
-  declare rc int;
+  declare rc, vtype int;
   rc := 0;
   gr := null;
 
@@ -1331,6 +1360,12 @@ DB.DBA.FOAF_SSL_LOGIN (inout user_name varchar, in digest varchar, in session_ra
 
   if (client_attr ('client_ssl') = 0)
     return 0;
+
+  if (__proc_exists ('DB.DBA.WEBID_AUTH_GEN_2') and DB.DBA.WEBID_AUTH_GEN_2 (null, 0, 'ODBC', 0, 0, agent, gr, 0, vtype))
+    {
+      user_name := connection_get ('SPARQLUserId');
+      return 1;
+    }
 
   info := get_certificate_info (9);
   agent := get_certificate_info (7, null, null, null, '2.5.29.17');
@@ -1351,19 +1386,10 @@ DB.DBA.FOAF_SSL_LOGIN (inout user_name varchar, in digest varchar, in session_ra
   graph := WS.WS.VFS_URI_COMPOSE (hf);
   qr := sprintf ('sparql load <%S> into graph <%S>', graph, gr);
   stat := '00000';
-  exec (qr, stat, msg);
+  --exec (qr, stat, msg);
+  DB.DBA.SPARUL_LOAD (gr, graph, 0, 1, 0, vector ());
   commit work;
-  qr := sprintf (
-        'sparql define input:storage "" '||
-	' prefix cert: <http://www.w3.org/ns/auth/cert#> '||
-	' prefix rsa: <http://www.w3.org/ns/auth/rsa#> ' ||
-  	' select (str (bif:coalesce (?exp_val, ?exp))) (str (bif:coalesce (?mod_val, ?mod))) '||
-	' from <%S> '||
-  	' where { '||
-	' 	  ?id cert:identity <%S> ; rsa:public_exponent ?exp ; rsa:modulus ?mod . ' ||
-	' 	  optional { ?exp cert:decimal ?exp_val . ?mod cert:hex ?mod_val . } '||
-	'       } ',
-	gr, agent);
+  qr := FOAF_SSL_QRY (gr, agent);
   stat := '00000';
   exec (qr, stat, msg, vector (), 0, meta, data);
   if (stat = '00000' and length (data))
@@ -1385,7 +1411,8 @@ DB.DBA.FOAF_SSL_LOGIN (inout user_name varchar, in digest varchar, in session_ra
     }
   err_ret:
   if (gr is not null)
-    exec (sprintf ('sparql clear graph <%S>', gr), stat, msg);
+    DB.DBA.SPARUL_CLEAR (gr, 0, 0);
+    --exec (sprintf ('sparql clear graph <%S>', gr), stat, msg);
   commit work;
   return rc;
 }

@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -54,6 +54,7 @@
       <v:variable name="dsrws" type="any" default="null" />
       <!-- keep the selection -->
       <v:variable name="selcust" type="any" default="null" />
+      <v:variable name="selcustall" type="any" default="null" />
     </vm:variables>
     <vm:menu>
       <vm:menuitem name="vers" value="Snapshot"/>
@@ -558,6 +559,58 @@ self.vc_data_bind(e);
       <v:template name="link_template" type="simple" enabled="-- equ(self.repl_snap_stage, 2)">
         <h3>Step 3: Choose Destinations Parameters</h3>
         <v:form name="link2_form" action="db_repl_snap_create.vspx" method="POST" type="simple">
+          <div class="listing_top_ctl_grp">
+            <v:text name="mass_tbq" xhtml_size="3" value="">
+              <v:before-render>
+                control.ufl_value := '';
+              </v:before-render>
+            </v:text>.
+            <v:text name="mass_tbo" xhtml_size="15" value="">
+              <v:before-render>
+                control.ufl_value := '';
+              </v:before-render>
+            </v:text>.[TABLE]
+            <v:button name="mass_set" action="simple" value="Set To All">
+              <v:on-post>
+                <![CDATA[
+                  declare i, l,dst_arr,tmp_arr any;
+                  declare _views integer;
+                  declare p1, p2, p3 varchar;
+                  _views := 0;
+            
+            
+                  if (self.mass_tbq.ufl_value <> '' or self.mass_tbo.ufl_value <> '') {
+                    _loop:;
+            	      i := 0;
+            	        dst_arr := self.selcust;
+            	      l := length(dst_arr);
+            	      while (i < l) {
+            	        tmp_arr := dst_arr[i];
+            	        
+            	        p1 := name_part(tmp_arr, 0);   
+            	        p2 := self.repl_snap_dsn;   
+            	        p3 := name_part(tmp_arr, 2);   
+            	                                  	        
+            	        if (self.mass_tbq.ufl_value <> '')
+            	          p1 := self.mass_tbq.ufl_value;
+            	        if (self.mass_tbo.ufl_value <> '')
+            	          p2 := self.mass_tbo.ufl_value;
+            	        aset(dst_arr,i,concat(p1,'.',p2,'.',p3));  
+            	        i:= i + 1;
+            	      };
+              	    
+              	    self.selcustall := dst_arr;
+            	      if (_views = 0)
+            	      {
+            	        _views := 1;
+            	        goto _loop;
+            	      };
+            	      self.vc_data_bind(e);
+                  };
+                ]]>
+              </v:on-post>
+            </v:button>
+          </div>        
           <table class="listing" rules="groups">
             <colgroup/><colgroup/>
             <thead>
@@ -577,9 +630,22 @@ self.vc_data_bind(e);
               while (_idx < length(self.selcust))
               {
                 _tblname := self.selcust[_idx];
-                _idx := _idx + 1;
+                
+                declare l1 integer;
+                declare _tblname2 any;
                 declare _attached_name varchar;
+                
+                l1 := length(self.selcustall);
+                
+                if (l1 ) 
+                {
+                  _tblname2 := self.selcustall[_idx];  
+                  _attached_name := _tblname2;                  
+                }else{
                 _attached_name := att_local_name(self.repl_snap_dsn, name_part(_tblname, 2));
+                };   
+                
+                _idx := _idx + 1;
                 self.r_count := self.r_count + 1;
                 http (sprintf ('<tr class="%s">', case when mod (self.r_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
                 http ('<td class="listing_col"><img src="images/icons/table_16.png" alt="Table" title="Table"/></td>');

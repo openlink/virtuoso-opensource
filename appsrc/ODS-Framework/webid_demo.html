@@ -1,0 +1,154 @@
+<html>
+  <head>
+    <title>WebID Verification Demo</title>
+    <style type="text/css">
+      body {
+      	background-color: white;
+      	color: black;
+      	font-size: 10pt;
+      	font-family: Verdana, Helvetica, sans-serif;
+      }
+      ul {
+        font-family: Verdana, Helvetica, sans-serif;
+        list-style-type: none;
+      }
+      #qrcode {
+        float: right;
+        clear: right;
+        margin-right: 20px;
+      }
+    </style>
+    <script type="text/javascript" src="/ods/oat/loader.js"></script>
+    <script type="text/javascript">
+      OAT.Preferences.imagePath = '/ods/images/oat/';
+      OAT.Preferences.stylePath = '/ods/oat/styles/';
+      OAT.Preferences.showAjax = false;
+
+      var featureList=["ajax", "json"];
+      OAT.Loader.load(featureList);
+    </script>
+    <script type="text/javascript">
+      function check() {
+        var x = function (data) {
+	  var expiration = $('expiration').checked ? '&expiration=true' : '';
+	  var ian = $('ian').checked ? '&ian=true' : '';
+          var callback = document.location.protocol + '//' + document.location.host + document.location.pathname;
+          document.location = 'https://' + data + '/ods/webid_verify.vsp?callback=' + encodeURIComponent(callback) + expiration;
+        }
+        OAT.AJAX.GET ('/ods/api/getDefaultHttps', false, x, {async: false});
+      }
+      function getObject(id) {
+        return document.getElementById(id)
+      }
+      function hide(id) {
+        var obj = getObject(id);
+        obj.style.display = "none";
+      }
+      function show(id) {
+        var obj = getObject(id);
+        obj.style.display = "";
+      }
+      function getParam(name)
+      {
+        name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
+        var regexS = "[\\?&]"+name+"=([^&#]*)";
+        var regex = new RegExp( regexS );
+        var results = regex.exec( window.location.href );
+        if( results == null )
+          return "";
+        else
+          return decodeURIComponent(results[1]);
+      }
+      function showQR()
+      {
+        var hostURL = document.location.protocol + '//' + document.location.host + document.location.pathname;
+        var x = function (data) {
+          var img = getObject('qrcodeImg');
+          img.src = 'data:image/jpg;base64,'+data;
+          show(img);
+        }
+        OAT.AJAX.GET ('/ods/api/qrcode?data='+encodeURIComponent(hostURL), false, x, {async: false});
+      }
+    </script>
+  </head>
+  <body>
+    <h1>WebID Verification Demo</h1>
+    <div id="qrcode"><img id="qrcodeImg" alt="QRcode image" src="" /></div>
+    <script type="text/javascript">
+  	  OAT.Loader.load(['ajax'], showQR);
+  	</script>
+    <div>
+      This will check the WebID watermark in your X.509 Certificate.<br/><br/>
+      This service supports WebIDs based on the following URI schemes (more to come):
+      <ul>
+      	<li>* <b>acct</b>, e.g: <span style="font-size: 80%; color: #1DA237;">acct:ExampleUser@id.example.com</span></li>
+      	<li>* <b>http</b>, e.g: <span style="font-size: 80%; color: #1DA237;">http://id.example.com/person/ExampleUser#this</span></li>
+      	<li>* <b>ldap</b>, e.g: <span style="font-size: 80%; color: #1DA237;">ldap://ldap.example.com/o=An%20Example%5C2C%20Inc.,c=US</span></li>
+      	<li>* <b>mailto</b>, e.g: <span style="font-size: 80%; color: #1DA237;">mailto:ExampleUser@id.example.com</span></li>
+      </ul>
+    </div>
+    <div>
+    	<a href="http://ods.openlinksw.com/wiki/ODS/ODSWebIDIdP">Help</a>
+    </div>	
+    <br/>
+    <br/>
+    <div>
+      <form method="get">
+	<input type="checkbox" value="true" name="expiration" id="expiration" />  <label for="expiration">Check Certificate Expiration</label><br /> 
+	<input type="checkbox" value="true" name="ian" id="ian" />  <label for="ian">Check Issuer Alternative Name</label><br /> 
+        <input type="button" name="go" value="Check" id="go" onclick="javascript: return check();" />
+      </form>
+    </div>
+    <div id="result" style="display: none;">
+    	The return values are:
+	    <ul id="result_webid" style="display: none;">
+	      <li>WebID - <script language="javascript" type="text/javascript">
+            document.write('<a href="" id="link"><span id="webid"></span><\/a>')
+          </script></li>
+	      <li>Subject - <span id="subj"></span></li>
+	      <li>MD5 - <span id="md5"></span></li>
+	      <li>SHA1 - <span id="sha1"></span></li>
+	      <li>Timestamp in ISO 8601 format - <span id="ts"></span></li>
+	      <li>Certificate WebID lookup (de-reference) completed in <span id="ela"></span> msec.</li>
+	    </ul>
+	    <ul id="result_error" style="display: none;">
+	      <li>Error - <span id="error"></span></li>
+	      <li>Subject - <span id="subje"></span></li>
+	      <li>MD5 - <span id="md5e"></span></li>
+	      <li>SHA1 - <span id="sha1e"></span></li>
+	      <li>Timestamp in ISO 8601 format - <span id="tse"></span></li>
+	    </ul>
+    </div>
+    <script type="text/javascript">
+      var webid = getParam('webid');
+      var error = getParam('error');
+      if ((webid != '') || (error != '')) {
+        show('result');
+        if (webid != '') {
+          show('result_webid');
+          getObject('webid').innerHTML = getParam('webid');
+          getObject('link').href = getParam('webid');
+          getObject('ts').innerHTML = getParam('ts');
+          getObject('md5').innerHTML = getParam('md5');
+          getObject('sha1').innerHTML = getParam('sha1');
+          getObject('subj').innerHTML = getParam('subj');
+          getObject('ela').innerHTML = getParam('elapsed');
+        } else {
+          hide('result_webid');
+        }
+        if (error != '') {
+          show('result_error');
+          getObject('error').innerHTML = getParam('error');;
+          getObject('tse').innerHTML = getParam('ts');
+          getObject('md5e').innerHTML = getParam('md5');
+          getObject('sha1e').innerHTML = getParam('sha1');
+          getObject('subje').innerHTML = getParam('subj');
+        } else {
+          hide('result_error');
+        }
+      } else {
+        hide('result');
+      }
+  	</script>
+  </body>
+</html>

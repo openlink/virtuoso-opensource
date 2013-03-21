@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -47,7 +47,7 @@ create function WS.WS.URIQA_CFG_ITEM_VALUE (in param_name varchar, in is_list in
   declare string_val varchar;
   declare list_val any;
   ini_path := virtuoso_ini_path ();
-  string_val := cfg_item_value (ini_path, 'URIQA', param_name);
+  string_val := virtuoso_ini_item_value ('URIQA', param_name);
   if (string_val is not null)
     {
       if (is_list)

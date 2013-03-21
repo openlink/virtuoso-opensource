@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -106,33 +106,33 @@ xml_view_doc ('ord', 'ord1');
 
 select count (n) from XML_TEXT where xpath_contains (XT_TEXT, '/*/*', n);
 
-echo both $if $equ $last[1] 107 "PASSED" "*** FAILED";
-echo both ": " $last[1] " top level entities\n";
+ECHO BOTH $IF $EQU $LAST[1] 107 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " top level entities\n";
 
 
 
 select count (n) from XML_TEXT where xpath_contains (XT_TEXT, '/document/category/@description', n);
-echo both $if $equ $last[1] 16 "PASSED" "*** FAILED";
-echo both ": " $last[1] " top level category entities\n";
+ECHO BOTH $IF $EQU $LAST[1] 16 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " top level category entities\n";
 
 
 select n from XML_TEXT where xpath_contains (XT_TEXT, '/document/category/product/@ProductName', n);
-echo both $if $equ $rowcnt 154 "PASSED" "*** FAILED";
-echo both ": " $rowcnt  " products under categories \n";
+ECHO BOTH $IF $EQU $ROWCNT 154 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT  " products under categories \n";
 
 select count(n) from XML_TEXT where xpath_contains (XT_TEXT, '//product', n);
-echo both $if $equ $last[1] 2309  "PASSED" "*** FAILED";
-echo both ": " $last[1] " products under //  \n";
+ECHO BOTH $IF $EQU $LAST[1] 2309  "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " products under //  \n";
 
 
 select n from XML_TEXT where xpath_contains (XT_TEXT, '/document/category [@description like ''%Bread%''] /product/@ProductName', n) and XT_FILE = 'cat1';
-echo both $if $equ $rowcnt 7  "PASSED" "*** FAILED";
-echo both ": " $rowcnt " products under bread category in cat1  \n";
+ECHO BOTH $IF $EQU $ROWCNT 7  "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " products under bread category in cat1  \n";
 
 
 select n from XML_TEXT where xpath_contains (XT_TEXT, '//product[../@description like ''Sea%'']', n);
-echo both $if $equ $rowcnt 24 "PASSED" "*** FAILED";
-echo both ": " $rowcnt  " products under seafood parent  \n";
+ECHO BOTH $IF $EQU $ROWCNT 24 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT  " products under seafood parent  \n";
 
 
 
@@ -141,8 +141,8 @@ select n from XML_TEXT where xpath_contains (XT_TEXT, '/*/category', n) and XT_F
 
 
 select count (n) from XML_TEXT where xpath_contains (XT_TEXT, '//product', n) and XT_FILE = 'ord1';
-echo both $if $equ $last[1] 2155  "PASSED" "*** FAILED";
-echo both ": " $last[1] " in //* in view ord \n";
+ECHO BOTH $IF $EQU $LAST[1] 2155  "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " in //* in view ord \n";
 
 
 
@@ -187,20 +187,20 @@ select n from XML_TEXT where xpath_contains (XT_TEXT, '//product[@ProductName = 
 select n from XML_TEXT where xpath_contains (XT_TEXT, '//product[@ProductName = ''Inlagd Sill'']/following-sibling::*', n);
 
 select n from XML_TEXT where xpath_contains (XT_TEXT, '//product[@ProductName = ''Inlagd Sill'']/preceding-sibling::*', n) and XT_FILE = 'cat1';
-echo both $if $equ $rowcnt 4 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " siblings before Sill   \n";
+ECHO BOTH $IF $EQU $ROWCNT 4 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " siblings before Sill   \n";
 
 
 select n from XML_TEXT where xpath_contains (XT_TEXT, '//product[@ProductName = ''Inlagd Sill'']/following-sibling::*', n) and XT_FILE = 'cat1';
-echo both $if $equ $rowcnt 7 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " siblings after Sill   \n";
+ECHO BOTH $IF $EQU $ROWCNT 7 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " siblings after Sill   \n";
 
 
 
 
 select n from XML_TEXT where xpath_contains (XT_TEXT, '/document/category[@description like ''**fish'']/descendant-or-self::*', n) and XT_FILE = 'cat1';
-echo both $if $equ $rowcnt 13 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " rows in seafood and descendants \n";
+ECHO BOTH $IF $EQU $ROWCNT 13 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows in seafood and descendants \n";
 
 
 -- test of XPATH reserved words
@@ -236,105 +236,102 @@ insert into xte values (sequence_next ('xte'), '<Ancestor/>');
 
 
 select id,p from xte where xpath_contains (dt,'/div', p);
-echo both $if $equ $last[1] 1  "PASSED" "*** FAILED";
-echo both ": " $last[2] " keyword as path expression \n";
+ECHO BOTH $IF $EQU $LAST[1] 1  "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[2] " keyword as path expression \n";
 select id,p from xte where xpath_contains (dt,'/mod', p);
-echo both $if $equ $last[1] 2  "PASSED" "*** FAILED";
-echo both ": " $last[2] " keyword as path expression \n";
+ECHO BOTH $IF $EQU $LAST[1] 2  "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[2] " keyword as path expression \n";
 select id,p from xte where xpath_contains (dt,'/not',p);
-echo both $if $equ $last[1] 3  "PASSED" "*** FAILED";
-echo both ": " $last[2] " keyword as path expression \n";
+ECHO BOTH $IF $EQU $LAST[1] 3  "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[2] " keyword as path expression \n";
 select id,p from xte where xpath_contains (dt,'/or',p);
-echo both $if $equ $last[1] 4  "PASSED" "*** FAILED";
-echo both ": " $last[2] " keyword as path expression \n";
+ECHO BOTH $IF $EQU $LAST[1] 4  "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[2] " keyword as path expression \n";
 select id,p from xte where xpath_contains (dt,'/and',p);
-echo both $if $equ $last[1] 5  "PASSED" "*** FAILED";
-echo both ": " $last[2] " keyword as path expression \n";
+ECHO BOTH $IF $EQU $LAST[1] 5  "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[2] " keyword as path expression \n";
 select id,p from xte where xpath_contains (dt,'/ancestor',p);
-echo both $if $equ $last[1] 6  "PASSED" "*** FAILED";
-echo both ": " $last[2] " keyword as path expression \n";
+ECHO BOTH $IF $EQU $LAST[1] 6  "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[2] " keyword as path expression \n";
 select id,p from xte where xpath_contains (dt,'/ancestor-or-self',p);
-echo both $if $equ $last[1] 7  "PASSED" "*** FAILED";
-echo both ": " $last[2] " keyword as path expression \n";
+ECHO BOTH $IF $EQU $LAST[1] 7  "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[2] " keyword as path expression \n";
 select id,p from xte where xpath_contains (dt,'/attribute',p);
-echo both $if $equ $last[1] 8  "PASSED" "*** FAILED";
-echo both ": " $last[2] " keyword as path expression \n";
+ECHO BOTH $IF $EQU $LAST[1] 8  "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[2] " keyword as path expression \n";
 select id,p from xte where xpath_contains (dt,'/child',p);
-echo both $if $equ $last[1] 9  "PASSED" "*** FAILED";
-echo both ": " $last[2] " keyword as path expression \n";
+ECHO BOTH $IF $EQU $LAST[1] 9  "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[2] " keyword as path expression \n";
 select id,p from xte where xpath_contains (dt,'/descendant',p);
-echo both $if $equ $last[1] 10 "PASSED" "*** FAILED";
-echo both ": " $last[2] " keyword as path expression \n";
+ECHO BOTH $IF $EQU $LAST[1] 10 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[2] " keyword as path expression \n";
 select id,p from xte where xpath_contains (dt,'/descendant-or-self',p);
-echo both $if $equ $last[1] 11  "PASSED" "*** FAILED";
-echo both ": " $last[2] " keyword as path expression \n";
+ECHO BOTH $IF $EQU $LAST[1] 11  "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[2] " keyword as path expression \n";
 select id,p from xte where xpath_contains (dt,'/following',p);
-echo both $if $equ $last[1] 12  "PASSED" "*** FAILED";
-echo both ": " $last[2] " keyword as path expression \n";
+ECHO BOTH $IF $EQU $LAST[1] 12  "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[2] " keyword as path expression \n";
 select id,p from xte where xpath_contains (dt,'/following-sibling',p);
-echo both $if $equ $last[1] 13  "PASSED" "*** FAILED";
-echo both ": " $last[2] " keyword as path expression \n";
+ECHO BOTH $IF $EQU $LAST[1] 13  "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[2] " keyword as path expression \n";
 select id,p from xte where xpath_contains (dt,'/node',p);
-echo both $if $equ $last[1] 14  "PASSED" "*** FAILED";
-echo both ": " $last[2] " keyword as path expression \n";
+ECHO BOTH $IF $EQU $LAST[1] 14  "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[2] " keyword as path expression \n";
 select id,p from xte where xpath_contains (dt,'/text',p);
-echo both $if $equ $last[1] 15  "PASSED" "*** FAILED";
-echo both ": " $last[2] " keyword as path expression \n";
+ECHO BOTH $IF $EQU $LAST[1] 15  "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[2] " keyword as path expression \n";
 select id,p from xte where xpath_contains (dt,'/processing-instruction',p);
-echo both $if $equ $last[1] 16  "PASSED" "*** FAILED";
-echo both ": " $last[2] " keyword as path expression \n";
+ECHO BOTH $IF $EQU $LAST[1] 16  "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[2] " keyword as path expression \n";
 select id,p from xte where xpath_contains (dt,'/comment',p);
-echo both $if $equ $last[1] 17  "PASSED" "*** FAILED";
-echo both ": " $last[2] " keyword as path expression \n";
+ECHO BOTH $IF $EQU $LAST[1] 17  "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[2] " keyword as path expression \n";
 select id,p from xte where xpath_contains (dt,'/namespace',p);
-echo both $if $equ $last[1] 18  "PASSED" "*** FAILED";
-echo both ": " $last[2] " keyword as path expression \n";
+ECHO BOTH $IF $EQU $LAST[1] 18  "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[2] " keyword as path expression \n";
 select id,p from xte where xpath_contains (dt,'/parent',p);
-echo both $if $equ $last[1] 19  "PASSED" "*** FAILED";
-echo both ": " $last[2] " keyword as path expression \n";
+ECHO BOTH $IF $EQU $LAST[1] 19  "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[2] " keyword as path expression \n";
 select id,p from xte where xpath_contains (dt,'/preceding',p);
-echo both $if $equ $last[1] 20  "PASSED" "*** FAILED";
-echo both ": " $last[2] " keyword as path expression \n";
+ECHO BOTH $IF $EQU $LAST[1] 20  "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[2] " keyword as path expression \n";
 select id,p from xte where xpath_contains (dt,'/preceding-sibling',p);
-echo both $if $equ $last[1] 21  "PASSED" "*** FAILED";
-echo both ": " $last[2] " keyword as path expression \n";
+ECHO BOTH $IF $EQU $LAST[1] 21  "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[2] " keyword as path expression \n";
 select id,p from xte where xpath_contains (dt,'/self',p);
-echo both $if $equ $last[1] 22  "PASSED" "*** FAILED";
-echo both ": " $last[2] " keyword as path expression \n";
+ECHO BOTH $IF $EQU $LAST[1] 22  "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[2] " keyword as path expression \n";
 --select id,p from xte where xpath_contains (dt,'/near',p);
---echo both $if $equ $last[1] 23  "PASSED" "*** FAILED";
---echo both ": " $last[2] " keyword as path expression \n";
+--ECHO BOTH $IF $EQU $LAST[1] 23  "PASSED" "***FAILED";
+--ECHO BOTH ": " $LAST[2] " keyword as path expression \n";
 --select id,p from xte where xpath_contains (dt,'/like',p);
---echo both $if $equ $last[1] 24  "PASSED" "*** FAILED";
---echo both ": " $last[2] " keyword as path expression \n";
+--ECHO BOTH $IF $EQU $LAST[1] 24  "PASSED" "***FAILED";
+--ECHO BOTH ": " $LAST[2] " keyword as path expression \n";
 select id,p from xte where xpath_contains (dt,'/DiV',p);
-echo both $if $equ $last[1] 25  "PASSED" "*** FAILED";
-echo both ": " $last[2] " keyword as path expression \n";
+ECHO BOTH $IF $EQU $LAST[1] 25  "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[2] " keyword as path expression \n";
 select id,p from xte where xpath_contains (dt,'/Ancestor',p);
-echo both $if $equ $last[1] 26  "PASSED" "*** FAILED";
-echo both ": " $last[2] " keyword as path expression \n";
+ECHO BOTH $IF $EQU $LAST[1] 26  "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[2] " keyword as path expression \n";
 select id,p from xte where xpath_contains (dt,'/Div',p);
-echo both $if $equ $rowcnt 0  "PASSED" "*** FAILED";
-echo both ": " $rowcnt " row(s) on /Div expression \n";
+ECHO BOTH $IF $EQU $ROWCNT 0  "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " row(s) on /Div expression \n";
 
 insert into xte values (sequence_next ('xte'), '<a><not>and</not></a>');
 
 select id from xte where xpath_contains(dt,'//not[not . = ''and'']');
-echo both $if $equ $last[1] 3  "PASSED" "*** FAILED";
-echo both ": " $last[1] " id on row contains //not[not . = 'and'] \n";
+ECHO BOTH $IF $EQU $LAST[1] 3  "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " id on row contains //not[not . = 'and'] \n";
 
 select * from xte where xpath_contains(dt,'//*[not substring(not,1,2) = ''not'']');
-echo both $if $equ $rowcnt 27  "PASSED" "*** FAILED";
-echo both ": " $rowcnt " row(s) contains //*[not substring(not,1,2) = 'not'] \n";
+ECHO BOTH $IF $EQU $ROWCNT 27  "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " row(s) contains //*[not substring(not,1,2) = 'not'] \n";
 
 select * from xte where xpath_contains(dt,'//*[not div = div]');
-echo both $if $equ $rowcnt 27  "PASSED" "*** FAILED";
-echo both ": " $rowcnt " row(s) contains //*[not div = div] \n";
+ECHO BOTH $IF $EQU $ROWCNT 27  "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " row(s) contains //*[not div = div] \n";
 
 
 select * from xte where xpath_contains(dt,'//*[not not = not]');
-echo both $if $equ $rowcnt 27  "PASSED" "*** FAILED";
-echo both ": " $rowcnt " row(s) contains //*[not not = not] \n";
-
-
-
+ECHO BOTH $IF $EQU $ROWCNT 27  "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " row(s) contains //*[not not = not] \n";

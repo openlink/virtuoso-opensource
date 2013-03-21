@@ -8,7 +8,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2006 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -115,7 +115,7 @@ then
     exit 1
 fi
 
-#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < texecute.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < texecute.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: EXEC & company tests -- texecute.sql"
@@ -157,15 +157,15 @@ then
     exit 1
 fi
 
-# XXX
-#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tplmodule.sql
+
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tplmodule.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: PL modules tests -- tplmodule.sql"
     exit 1
 fi
 
-# disabled until internal server is installed
+# disabled 
 #RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tldap.sql
 #if test $STATUS -ne 0
 #then
@@ -189,8 +189,7 @@ then
     exit 1
 fi
 
-# XXX
-#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < trdfinf.sql 
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < trdfinf.sql 
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: rdf inference -- trdfinf.sql"
@@ -198,16 +197,14 @@ then
 fi
 
 
-# XXX
-#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < trdfinfifp.sql 
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < trdfinfifp.sql 
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: rdf inference -- trdfinfifp.sql"
     exit 1
 fi
 
-# XXX
-#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < ttrans2.sql 
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < ttrans2.sql 
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: rdf inference -- ttrans2.sql"

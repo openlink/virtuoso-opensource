@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -29,9 +29,6 @@
 #include "sqlfn.h"
 #include "srvstat.h"
 #include "recovery.h"
-#include "sqlbif.h"
-#include "datesupp.h"
-
 
 #ifdef MAP_DEBUG
 # define dbg_map_printf(a) printf a
@@ -64,7 +61,7 @@ it_can_reuse_logical (index_tree_t * it, dp_addr_t dp)
 
 
 void
-it_free_remap (index_tree_t * it, dp_addr_t logical, dp_addr_t remap, int dp_flags, oid_t col_id)
+it_free_remap (index_tree_t * it, dp_addr_t logical, dp_addr_t remap, int dp_flags)
 {
   /* Free the remap page of logical.  */
   it_map_t * itm = IT_DP_MAP (it, logical);
@@ -73,15 +70,14 @@ it_free_remap (index_tree_t * it, dp_addr_t logical, dp_addr_t remap, int dp_fla
     remap = (dp_addr_t) (uptrlong) gethash (DP_ADDR2VOID (logical), &itm->itm_remap);
   if (remap != logical)
     {
-      extent_map_t * em = IT_COL_REMAP_EM (it, col_id);
-      em_free_dp (em, remap, EXT_REMAP);
+      em_free_dp (it->it_extent_map, remap, EXT_REMAP);
     }
   else
     {
       /* log == phys. Free is OK if not remapped in checkpoint */
       if (!DP_CHECKPOINT_REMAP (it->it_storage, logical))
 	{
-	  em_free_dp (IT_COL_EM (it, col_id), logical, (dp_flags == DPF_INDEX || dp_flags == DPF_HASH || dp_flags == DPF_COLUMN) ? EXT_INDEX : EXT_BLOB);
+	  em_free_dp (it->it_extent_map, logical, (dp_flags == DPF_INDEX || dp_flags == DPF_HASH) ? EXT_INDEX : EXT_BLOB);
 	}
     }
 }
@@ -584,34 +580,10 @@ pl_remove_rl_at (page_lock_t * pl, int pos)
 uc_insert_t * cpt_uci_list;
 uc_insert_t * cpt_last_uci;
 
-
-void
-buf_extract_registered (buffer_desc_t * buf, int map_pos, int col_row, it_cursor_t ** reg_ret)
-{
-  it_cursor_t * registered = buf->bd_registered;
-  it_cursor_t ** prev = &buf->bd_registered;
-  while (registered)
-    {
-      it_cursor_t * next = registered->itc_next_on_page;
-      if (registered->itc_map_pos == map_pos && (-1 == col_row || col_row == registered->itc_col_row))
-	{
-	  *prev = registered->itc_next_on_page;
-	  registered->itc_next_on_page = *reg_ret;
-	  *reg_ret = registered;
-	}
-      else
-	{
-	  *prev = registered;
-	  prev = &registered->itc_next_on_page;
-	}
-      registered = next;
-    }
-}
-
-
 void
 cpt_ins_image (buffer_desc_t * buf, int map_pos)
 {
+  it_cursor_t ** prev, * registered;
   rb_entry_t * rbe;
   NEW_VARZ (uc_insert_t, uci);
   mutex_enter (&wi_inst.wi_cpt_lt->lt_rb_mtx);
@@ -635,7 +607,24 @@ cpt_ins_image (buffer_desc_t * buf, int map_pos)
       cpt_last_uci = uci;
     }
   uci->uci_rl = pl_remove_rl_at (buf->bd_pl, map_pos);
-  buf_extract_registered (buf, map_pos, -1, &uci->uci_registered);
+  registered = buf->bd_registered;
+  prev = &buf->bd_registered;
+  while (registered)
+    {
+      it_cursor_t * next = registered->itc_next_on_page;
+      if (registered->itc_map_pos == map_pos)
+	{
+	  *prev = registered->itc_next_on_page;
+	  registered->itc_next_on_page = uci->uci_registered;
+	  uci->uci_registered = registered;
+	}
+      else
+	{
+	  *prev = registered;
+	  prev = &registered->itc_next_on_page;
+	}
+      registered = next;
+    }
   dk_free ((caddr_t)rbe, sizeof (rb_entry_t));
   lt_rb_check (wi_inst.wi_cpt_lt);
 }
@@ -854,7 +843,6 @@ cpt_uncommitted ()
 	cpt_lt_rollback (lt);
     }
   END_DO_SET();
-  cpt_col_uncommitted (wi_inst.wi_master);
 }
 
 
@@ -988,7 +976,6 @@ cpt_restore_uncommitted (it_cursor_t * itc)
       dk_free ((caddr_t) cpt_uci_list, sizeof (uc_insert_t));
       cpt_uci_list = next;
     }
-  cpt_col_restore_uncommitted (wi_inst.wi_master);
   if (wi_inst.wi_cpt_lt)
     {
       lock_trx_t * lt = wi_inst.wi_cpt_lt;
@@ -1319,7 +1306,6 @@ cpt_neodisk_page (const void *key, void *value)
     GPF_T1 ("Zero phys page");
   if (physical == DP_DELETED)
     {
-      extent_map_t * em;
       dp_addr_t cp_remap =
 	  (dp_addr_t) (uptrlong) gethash (DP_ADDR2VOID (logical), cpt_dbs->dbs_cpt_remap);
       if (cp_remap)
@@ -1327,11 +1313,7 @@ cpt_neodisk_page (const void *key, void *value)
 	  remhash (DP_ADDR2VOID (logical), cpt_dbs->dbs_cpt_remap);
 	  em_free_dp (it_from_g->it_extent_map, cp_remap, EXT_REMAP);
 	}
-      if (it_from_g->it_col_extent_maps)
-	em = dbs_dp_to_em  (it_from_g->it_storage, logical);
-      else
-	em = it_from_g->it_extent_map;
-      em_free_dp (em, logical, EMF_INDEX_OR_BLOB);
+      em_free_dp (it_from_g->it_extent_map, logical, EMF_INDEX_OR_BLOB);
       dp_set_backup_flag (cpt_dbs, logical, 0);
       DBG_PT_PRINTF (("  cpt clear backup flag L=%d \n", logical));
       return;
@@ -1450,14 +1432,12 @@ wi_write_dirty (void)
   END_DO_BOX;
 }
 
-extern int dbf_fast_cpt;
+
 
 void
 dbs_backup_check (dbe_storage_t * dbs, int flag)
 {
-  if (dbf_fast_cpt)
-    return;
-#if 0
+#if 1
   int n;
   if (flag != CPT_INC_RESET)
     return;
@@ -1479,15 +1459,13 @@ dbs_backup_check (dbe_storage_t * dbs, int flag)
 void
 dbs_cache_check (dbe_storage_t * dbs, int mode)
 {
-  if (dbf_cpt_rb || dbf_fast_cpt)
+  if (dbf_cpt_rb)
     return; /* quick in debug mode */
-#ifndef NDEBUG
   DO_SET (index_tree_t *, it, &dbs->dbs_trees)
     {
       it_cache_check (it, mode);
     }
   END_DO_SET();
-#endif
 }
 
 
@@ -1881,12 +1859,10 @@ int dbs_stop_cp = 0;
 void
 dbs_checkpoint (char *log_name, int shutdown)
 {
-  char dt_start[DT_LENGTH];
   int mcp_delta_count, inx;
   long start_atomic;
   FILE *checkpoint_flag_fd = NULL;
-  if (!c_checkpoint_sync)
-    dbf_fast_cpt = 1;
+
   mcp_delta_count = 0;
   LEAVE_TXN;
   wi_check_all_compact (0);
@@ -1901,7 +1877,6 @@ dbs_checkpoint (char *log_name, int shutdown)
 
   IN_TXN;
   cpt_rollback (LT_KILL_FREEZE);
-  dt_now ((caddr_t)&dt_start);
   start_atomic = get_msec_real_time ();
   iq_shutdown (IQ_STOP);
   wi_check_all_compact (0);
@@ -1913,7 +1888,6 @@ dbs_checkpoint (char *log_name, int shutdown)
   WITHOUT_SIGNALS
   {
     cpt_uc_blob_dps = hash_table_allocate (100);
-    mcp_itc = itc_create (NULL, NULL);
     cpt_uncommitted ();
     cpt_uncommitted_blobs (1);
     checkpoint_flag_fd = fopen(CHECKPOINT_IN_PROGRESS_FILE, "a");
@@ -1925,6 +1899,7 @@ dbs_checkpoint (char *log_name, int shutdown)
 		get_msec_real_time ());
 	fclose(checkpoint_flag_fd);
       }
+    mcp_itc = itc_create (NULL, NULL);
     bp_flush_all ();
     iq_shutdown (IQ_STOP);
     DO_SET (dbe_storage_t *, dbs, &wi_inst.wi_master_wd->wd_storage)
@@ -1996,7 +1971,6 @@ dbs_checkpoint (char *log_name, int shutdown)
 	dbs->dbs_deleted_trees = NULL;
 	dbs_write_page_set (dbs, dbs->dbs_incbackup_set);
 	dbs_write_page_set (dbs, dbs->dbs_extent_set);
-	memcpy(&dbs->dbs_cfg_page_dt, dt_start, DT_LENGTH);
 	dbs_write_cfg_page (dbs, 0);
 	IN_DBS (dbs);
 	LEAVE_DBS (dbs);
@@ -2017,9 +1991,7 @@ dbs_checkpoint (char *log_name, int shutdown)
       cpt_restore_uncommitted (mcp_itc); /* restore uncommitted before log cpt because logcpt may have to rewrite a log of uncommitted if the cpt was between phases of 2pc */
       hash_table_free (cpt_uc_blob_dps);
       cpt_uc_blob_dps = NULL;
-      LEAVE_TXN;
       log_checkpoint (dbs, log_name, shutdown);
-      IN_TXN;
       unlink(CHECKPOINT_IN_PROGRESS_FILE);
 
     }
@@ -2066,7 +2038,7 @@ cpt_count_mapped_back (dbe_storage_t * dbs)
 
 
 void
-srv_global_unlock_1 (client_connection_t *cli, lock_trx_t *lt, int was_error)
+srv_global_unlock (client_connection_t *cli, lock_trx_t *lt)
 {
   if (server_lock.sl_owner != THREAD_CURRENT_THREAD)
     GPF_T1 ("not owner of atomic lock");
@@ -2075,17 +2047,11 @@ srv_global_unlock_1 (client_connection_t *cli, lock_trx_t *lt, int was_error)
     {
       IN_TXN;
       if (lt->lt_threads)
-	{
-	  if (was_error)
-	    {
-	      lt->lt_is_excl = 0;
-	      lt_rollback (lt, TRX_CONT);
-	    }
-	  else
         lt_commit (lt, TRX_CONT);
-	}
+      LEAVE_TXN;
       server_lock.sl_owner = NULL;
       wi_inst.wi_atomic_ignore_2pc = 0;
+      IN_TXN;
       cpt_over ();
       LEAVE_TXN;
       lt->lt_is_excl = 0;
@@ -2097,18 +2063,8 @@ srv_global_unlock_1 (client_connection_t *cli, lock_trx_t *lt, int was_error)
 
 
 void
-srv_global_unlock (client_connection_t *cli, lock_trx_t *lt)
-{
-  srv_global_unlock_1 (cli, lt, 0);
-}
-
-
-int32 cl_retry_seed;
-
-void
 srv_global_lock (query_instance_t * qi, int flag)
 {
-  int retries = 0;
   lock_trx_t * lt = qi->qi_trx;
   /*GK: in roll forward this is a no-op */
   if (in_log_replay)
@@ -2120,7 +2076,6 @@ srv_global_lock (query_instance_t * qi, int flag)
 	  server_lock.sl_count++;
 	  return;
 	}
-    again:
       {
 	int rc;
 	caddr_t err = NULL;
@@ -2134,7 +2089,7 @@ srv_global_lock (query_instance_t * qi, int flag)
 	  }
       }
       IN_CPT(lt);
-      wi_inst.wi_atomic_ignore_2pc = 0 != (flag & SRVL_CL_CONFIG);
+      wi_inst.wi_atomic_ignore_2pc = 0 != (flag & 2);
       server_lock.sl_count = 1;
       lt->lt_is_excl = 1;
       lt->lt_replicate = REPL_NO_LOG;

@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2009 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -38,6 +38,7 @@
 #include "turtle_p.h"
 #include "nquad_p.h"
 #include "security.h"
+#include "sqlbif.h"
 #if (__NQUAD_NONPUNCT_END != __TTL_NONPUNCT_END)
   Sources of parsers are out of sync: mismatch between token declarations in nquad_p.y and turtle_p.y
 #endif
@@ -159,8 +160,8 @@ INTEGER_LITERAL ([0-9]+)
 DECIMAL_LITERAL (([0-9]+"."[0-9]*)|("."[0-9]+))
 DOUBLE_LITERAL	(({INTEGER_LITERAL}|{DECIMAL_LITERAL})[eE][+-]?[0-9]+)
 
-SPAR_SQ_PLAIN	([^\\''\r\n])
-SPAR_DQ_PLAIN	([^\\""\r\n])
+SPAR_SQ_PLAIN	([^\x00-\x1f\\''\r\n]|[\t])
+SPAR_DQ_PLAIN	([^\x00-\x1f\\""\r\n]|[\t])
 SPAR_ECHAR	([\\]([atbvnrf\\""'']|("u"{HEX}{HEX}{HEX}{HEX})|("U"{HEX}{HEX}{HEX}{HEX}{HEX}{HEX}{HEX}{HEX})))
 SPAR_LANGTAG	([a-zA-Z]+)(("-"([a-zA-Z0-9]+))*)
 SPAR_OLD_LANGTAG	([a-z]+)"_"([a-zA-Z0-9]+)
@@ -204,6 +205,9 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 <INITIAL>"@prefix"			{ return _AT_prefix_L; }
 <INITIAL>"@forAll"			{ ttlyyerror ("Current version of Virtuoso does not support @forAll keyword"); }
 <INITIAL>"@forSome"			{ ttlyyerror ("Current version of Virtuoso does not support @forSome keyword"); }
+<INITIAL>"-INF"				{ return _MINUS_INF_L; }
+<INITIAL>[+]?"INF"			{ return INF_L; }
+<INITIAL>[+-]?"NaN"			{ return NaN_L; }
 <INITIAL>"false"			{ return false_L; }
 <INITIAL>"true"				{ return true_L; }
 
@@ -226,11 +230,15 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 <INITIAL>"}"				{ ttlp_arg[0].ttlp_lexdepth--; return _RBRA; }
 
 <INITIAL>"<"([^\\>\001-\040])*">"	{
+    if (TTL_MAX_IRI_LEN <= yyleng)
+      TTLYYERROR_OR_RECOVER("The \"relative IRI\" (angle-bracketed) notation is too long");
     ttlyylval.box = box_dv_short_nchars (yytext + 1, yyleng - 2);
     return Q_IRI_REF;
   }
 
-<INITIAL>"<"(([^\\>\001-\040])|{SPAR_ECHAR})*">"	{
+<INITIAL>"<"(([^\\>\001-\040])|{SPAR_ECHAR}|"\\>")*">"	{
+    if (TTL_MAX_IRI_LEN <= yyleng)
+      TTLYYERROR_OR_RECOVER("The \"relative IRI\" (angle-bracketed) notation is too long");
     ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_LTGT, '>');
     return Q_IRI_REF;
   }
@@ -238,6 +246,8 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 <INITIAL>"<"([^<>\001-\037]|"\t")*">"	{
     if (!(ttlp_arg[0].ttlp_flags & TTLP_ACCEPT_DIRTY_NAMES))
       TTLYYERROR_OR_RECOVER ("Invalid characters in angle-bracketed name; this error can be suppressed by parser flags");
+    if (TTL_MAX_IRI_LEN <= yyleng)
+      TTLYYERROR_OR_RECOVER("The \"relative IRI\" (angle-bracketed) notation is too long");
     tf_report (ttlp_arg[0].ttlp_tf, 'W', NULL, NULL, "Invalid characters in angle-bracketed name");
     ttlyylval.box = box_dv_short_nchars (yytext + 1, yyleng - 2);
     return Q_IRI_REF;
@@ -246,6 +256,8 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 <INITIAL>"<"([^<>\001-\037]|"\t")+{S_NL}([^<>.;,\[\]{}\'\"\\\001-\037]|"\t")*">"	{
     if (!(ttlp_arg[0].ttlp_flags & TTLP_ACCEPT_DIRTY_NAMES))
       TTLYYERROR_OR_RECOVER ("Line break in angle-bracketed name; this error can be suppressed by parser flags");
+    if (TTL_MAX_IRI_LEN <= yyleng)
+      TTLYYERROR_OR_RECOVER("The \"relative IRI\" (angle-bracketed) notation is too long");
     tf_report (ttlp_arg[0].ttlp_tf, 'W', NULL, NULL, "Line break in angle-bracketed name");
     ttlyylval.box = box_dv_short_nchars (yytext + 1, yyleng - 2);
     ttlp_arg[0].ttlp_lexlineno++;
@@ -263,7 +275,7 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
     tf_report (ttlp_arg[0].ttlp_tf, 'W', NULL, NULL, "Invalid characters in local part of QName");
     TTL_TOKBOX_Q(0,QNAME,"qualified URI"); }
 
-<INITIAL>({SPAR_NCNAME_PREFIX}?)":"		{ TTL_TOKBOX_Q(0,QNAME_NS,"namespace"); }
+<INITIAL>{SPAR_NCNAME_PREFIX}":"		{ TTL_TOKBOX_Q(0,QNAME_NS,"namespace"); }
 <INITIAL>{SPAR_NCNAME}				{ TTL_TOKBOX_Q(0,QNAME,"name without prefix"); }
 <INITIAL>"_:"{SPAR_NCNAME}			{ TTL_TOKBOX_BNODE(0,BLANK_NODE_LABEL,"blank node label"); }
 
@@ -280,12 +292,16 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
     TTL_TOKBOX_Q(0,VARIABLE,"variable name"); }
 
 <INITIAL>"@"([a-zA-Z]+)(("-"([a-zA-Z0-9]+))*)	{
+    if (TTL_MAX_KEYWORD_LEN <= yyleng)
+      TTLYYERROR_OR_RECOVER("The @-keyword is too long");
     ttlyylval.box = box_dv_short_nchars (yytext + 1, yyleng - 1);
     return KEYWORD;
   }
 
 <TURTLE_AT_AFTER_QUOTED>{SPAR_LANGTAG}	{
     BEGIN INITIAL;
+    if (TTL_MAX_LANGNAME_LEN <= yyleng)
+      TTLYYERROR_OR_RECOVER("The language identifier after \"@\" mark is too long");
     ttlyylval.box = box_dv_short_nchars (yytext, yyleng);
     return LANGTAG;
   }
@@ -295,6 +311,8 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
     BEGIN INITIAL;
     if (!(ttlp_arg[0].ttlp_flags & TTLP_ACCEPT_DIRTY_NAMES))
       TTLYYERROR_OR_RECOVER ("Obsolete format of language; this error can be recovered if proper parser flags are set");
+    if (TTL_MAX_LANGNAME_LEN <= yyleng)
+      TTLYYERROR_OR_RECOVER("The language identifier after \"@\" mark is too long");
     tf_report (ttlp_arg[0].ttlp_tf, 'W', NULL, NULL, "Obsolete format of language");
     ttlyylval.box = box_dv_short_nchars (yytext, yyleng);
     for (tail = ttlyylval.box + (yyleng); tail >= ttlyylval.box; tail--)
@@ -309,11 +327,15 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 
 
 <INITIAL>([""][^""\\\n]*[""])|([''][^''\\\n]*['']) {
+    if (TTL_MAX_LITERAL_LEN <= yyleng)
+      TTLYYERROR_OR_RECOVER("The double-quoted string is too long");
     ttlyylval.box = box_dv_short_nchars (yytext+1, yyleng - 2);
     return TURTLE_STRING;
   }
 
 <INITIAL>(([""][^""\\\n]*[""])|([''][^''\\\n]*['']))"@" {
+    if (TTL_MAX_LITERAL_LEN <= yyleng)
+      TTLYYERROR_OR_RECOVER("The double-quoted string is too long");
     ttlyylval.box = box_dv_short_nchars (yytext+1, yyleng - 3);
     BEGIN TURTLE_AT_AFTER_QUOTED;
     return TURTLE_STRING;
@@ -321,12 +343,12 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 
 <INITIAL>['']['']['']		{ yymore(); BEGIN TURTLE_SSSQ; }
 <INITIAL>[""][""][""]		{ yymore(); BEGIN TURTLE_DDDQ; }
-<TURTLE_SSSQ>[''][''](['']+)	{ ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT, '\''); BEGIN INITIAL; return TURTLE_STRING; }
-<TURTLE_DDDQ>[""][""]([""]+)	{ ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT, '\"'); BEGIN INITIAL; return TURTLE_STRING; }
-<TURTLE_SSSQ>['']['']['']"@"	{ ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT_AT, '\''); BEGIN TURTLE_AT_AFTER_QUOTED; return TURTLE_STRING; }
-<TURTLE_DDDQ>[""][""][""]"@"	{ ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT_AT, '\"'); BEGIN TURTLE_AT_AFTER_QUOTED; return TURTLE_STRING; }
-<TURTLE_SSSQ>(([''](['']?))?{S_NL})		{ ttlp_arg[0].ttlp_lexlineno++; yymore(); }
-<TURTLE_DDDQ>(([""]([""]?))?{S_NL})		{ ttlp_arg[0].ttlp_lexlineno++; yymore(); }
+<TURTLE_SSSQ>[''][''](['']+)	{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The triple-single-quoted string is too long"); ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT, '\''); BEGIN INITIAL; return TURTLE_STRING; }
+<TURTLE_DDDQ>[""][""]([""]+)	{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The triple-double-quoted string is too long"); ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT, '\"'); BEGIN INITIAL; return TURTLE_STRING; }
+<TURTLE_SSSQ>['']['']['']"@"	{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The triple-single-quoted string is too long"); ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT_AT, '\''); BEGIN TURTLE_AT_AFTER_QUOTED; return TURTLE_STRING; }
+<TURTLE_DDDQ>[""][""][""]"@"	{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The triple-double-quoted string is too long"); ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT_AT, '\"'); BEGIN TURTLE_AT_AFTER_QUOTED; return TURTLE_STRING; }
+<TURTLE_SSSQ>(([''](['']?))?{S_NL})		{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The triple-single-quoted string is too long"); ttlp_arg[0].ttlp_lexlineno++; yymore(); }
+<TURTLE_DDDQ>(([""]([""]?))?{S_NL})		{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The triple-double-quoted string is too long"); ttlp_arg[0].ttlp_lexlineno++; yymore(); }
 <TURTLE_SSSQ>((([''](['']?))?({SPAR_SQ_PLAIN}|{SPAR_ECHAR}))+)		{ yymore(); }
 <TURTLE_DDDQ>((([""]([""]?))?({SPAR_DQ_PLAIN}|{SPAR_ECHAR}))+)		{ yymore(); }
 <TURTLE_SSSQ>[\\]		{ ttlyyerror ("Bad escape sequence in a long single-quoted string"); }
@@ -339,10 +361,10 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 
 <INITIAL>['']		{ yymore(); BEGIN TURTLE_SQ; }
 <INITIAL>[""]		{ yymore(); BEGIN TURTLE_DQ; }
-<TURTLE_SQ>['']		{ ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_QUOT, '\''); BEGIN INITIAL; return TURTLE_STRING; }
-<TURTLE_DQ>[""]		{ ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_QUOT, '\"'); BEGIN INITIAL; return TURTLE_STRING; }
-<TURTLE_SQ>['']"@"	{ ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_QUOT_AT, '\''); BEGIN TURTLE_AT_AFTER_QUOTED; return TURTLE_STRING; }
-<TURTLE_DQ>[""]"@"	{ ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_QUOT_AT, '\"'); BEGIN TURTLE_AT_AFTER_QUOTED; return TURTLE_STRING; }
+<TURTLE_SQ>['']		{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The single-quoted string is too long"); ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_QUOT, '\''); BEGIN INITIAL; return TURTLE_STRING; }
+<TURTLE_DQ>[""]		{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The double-quoted string is too long"); ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_QUOT, '\"'); BEGIN INITIAL; return TURTLE_STRING; }
+<TURTLE_SQ>['']"@"	{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The single-quoted string is too long"); ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_QUOT_AT, '\''); BEGIN TURTLE_AT_AFTER_QUOTED; return TURTLE_STRING; }
+<TURTLE_DQ>[""]"@"	{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The double-quoted string is too long"); ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_QUOT_AT, '\"'); BEGIN TURTLE_AT_AFTER_QUOTED; return TURTLE_STRING; }
 <TURTLE_SQ>{S_NL}	{
     if (!(TTLP_STRING_MAY_CONTAIN_CRLF & ttlp_arg[0].ttlp_flags))
       {
@@ -605,33 +627,15 @@ rdf_load_turtle (
 
   if (arg1_is_filename)
     {
-#ifdef WIN32
-      char fname[_MAX_PATH], *fname_ptr;
-      strncpy (fname, text_or_filename, _MAX_PATH);
-      fname[_MAX_PATH - 1] = '\0';
-      for (fname_ptr = fname; fname_ptr[0]; fname_ptr++)
-        {
-          switch (fname_ptr[0])
-            {
-            case '|':
-              fname_ptr[0] = ':';
-              break;
-            case '/':
-              fname_ptr[0] = '\\';
-              break;
-            }
-        }
-#else
-      char *fname = ((char *) text_or_filename);
-#endif
       sec_check_dba (qi, "<read XML from URL of type file://...>");
-      srcfile = fopen (fname, "rb");
+      tf->tf_boxed_input_name = file_native_name_from_iri_path_nchars (text_or_filename, strlen (text_or_filename));
+      file_path_assert (tf->tf_boxed_input_name, NULL, 1);
+      srcfile = fopen (tf->tf_boxed_input_name, "rb");
       if (NULL == srcfile)
         {
           ttlp_free (ttlp);
-	  sqlr_new_error ("42000", "SR598", "TURTLE parser has failed to open file '%s' for reading", fname);
+          sqlr_new_error ("42000", "SR598", "TURTLE parser has failed to open file '%s' for reading", tf->tf_boxed_input_name);
         }
-      tf->tf_input_name = fname;
       ttlp->ttlp_iter = file_read;
       ttlp->ttlp_iter_data = srcfile;
       goto iter_is_set;

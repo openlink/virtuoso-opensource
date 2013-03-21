@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -91,10 +91,9 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": FTP upload test_1947.db.test user2\n";
 
 select length (ftp_ls ('localhost:$U{FTPPORT}', 'dav', 'dav', '', 0));
--- XXX
---ECHO BOTH $IF $EQU $LAST[1] 7 "PASSED" "***FAILED";
---SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
---ECHO BOTH ": FTP ls dav home expected 7 returned " $LAST[1] " entries\n";
+ECHO BOTH $IF $EQU $LAST[1] 7 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": FTP ls dav home expected 7 returned " $LAST[1] " entries\n";
 
 select length (ftp_ls ('localhost:$U{FTPPORT}', 'dav', 'dav', 'u1', 0));
 ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
@@ -180,10 +179,9 @@ ECHO BOTH ": FTP update permission /DAV/u1/ \n";
 
 
 select length (ftp_ls ('localhost:$U{FTPPORT}', 'anonymous', 'test@test.com', '', 0));
--- XXX
---ECHO BOTH $IF $EQU $LAST[1] 7 "PASSED" "***FAILED";
---SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
---ECHO BOTH ": FTP ls / user anonymous passive mode expected 7 returned " $LAST[1] " entries\n";
+ECHO BOTH $IF $EQU $LAST[1] 7 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": FTP ls / user anonymous passive mode expected 7 returned " $LAST[1] " entries\n";
 
 
 select length (ftp_ls ('localhost:$U{FTPPORT}', 'anonymous', 'test@test.com', 'u1', 1));
@@ -199,10 +197,9 @@ ECHO BOTH ": FTP user anonymous write in home directory.\n";
 
 
 select length (ftp_ls ('localhost:$U{FTPPORT}', 'anonymous', 'test@test.com', '', 0));
--- XXX
---ECHO BOTH $IF $EQU $LAST[1] 8 "PASSED" "***FAILED";
---SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
---ECHO BOTH ": FTP ls / user anonymous passive mode expected 8 returned " $LAST[1] " entries\n";
+ECHO BOTH $IF $EQU $LAST[1] 8 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": FTP ls / user anonymous passive mode expected 8 returned " $LAST[1] " entries\n";
 
 select ftp_put ('localhost:$U{FTPPORT}', 'anonymous', 'test@test.com', 'tftp.sql', 'u1/tftp.sql', 0);
 ECHO BOTH $IF $NEQ $STATE 'OK'  "PASSED" "***FAILED";

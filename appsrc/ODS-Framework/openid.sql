@@ -6,7 +6,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -62,10 +62,10 @@ create procedure yadis (in uname varchar, in tp varchar := null)
   if (tp not in ('person/', 'organization/'))
     tp := '';
   url := db.dba.wa_link (1, '/dataspace/'||tp||uname);
-  ssl := ODS..getDefaultHttps ();
+  ssl := ODS.ODS_API.getDefaultHttps ();
   if (exists (select 1 from DB..WA_SETTINGS where WS_HTTPS = 1) and ssl is not null)
     srv := 'https://' || ssl || '/openid';
-  else  
+  else
   srv := db.dba.wa_link (1, '/openid');
   for select WAUI_OPENID_URL, WAUI_OPENID_SERVER, WAUI_NICK
     from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and U_NAME = uname
@@ -151,7 +151,7 @@ create procedure server
   cookies_vec := DB.DBA.vsp_ua_get_cookie_vec (lines);
   oid_sid := get_keyword ('openid.sid', cookies_vec);
   ns := get_keyword ('openid.ns', params, 'http://openid.net/signon/1.1');
-  oauth_ns := 'openid.oauth.';	
+  oauth_ns := 'openid.oauth.';
   pos := position (oauth_ns (), params);
   if (pos > 1)
     {
@@ -168,7 +168,7 @@ create procedure server
     ver := 1;
   if (is_https_ctx ())
     op := sprintf ('https://%{WSHost}s/openid');
-  else  
+  else
     op := sprintf ('http://%{WSHost}s/openid');
 
   if ("openid.mode" = 'associate')
@@ -431,7 +431,7 @@ create procedure get_user_details (in gr varchar, in _identity varchar)
 	  if (regexp_match ('http://[^/]+/dataspace/(person|organization)/.+', _identity) is not null)
 	    {
 	      arr1 := sprintf_inverse (_identity, '%s://%s/dataspace/%s/%s', 1);
-	      if (length (arr1) = 4 and length (arr2) = 3 and arr1[0] = arr2[0] and arr1[1] = arr2[1] and 
+	      if (length (arr1) = 4 and length (arr2) = 3 and arr1[0] = arr2[0] and arr1[1] = arr2[1] and
 		  exists (select 1 from DB.DBA.SYS_USERS, DB.DBA.WA_USER_INFO where WAUI_U_ID = U_ID and U_NAME = arr1[3]))
 		goto verified;
 	    }
@@ -510,7 +510,7 @@ create procedure checkid_immediate
   --dbg_obj_print_vars ('checkid_immediate', sid, ver);
   ns := '';
   ns_sign := '';
-  oauthf := ''; 
+  oauthf := '';
   oauth_resp := '';
   if (isstring (ver))
     ver := atoi (ver);
@@ -535,7 +535,7 @@ create procedure checkid_immediate
       if (length (oauth_consumer))
         {
           login := login || sprintf ('&oauth_consumer=%U&oauth_scope=%U', oauth_consumer, oauth_scope);
-        }	  
+        }
       --dbg_obj_print (sprintf ('Location: %s?openid.mode=id_res&openid.user_setup_url=%U\r\n', return_to, login));
       http_header (http_header_get () || sprintf ('Location: %s%sopenid.mode=id_res%s&openid.user_setup_url=%U\r\n',
 	    return_to, delim, ns, login));
@@ -631,11 +631,11 @@ create procedure checkid_immediate
 		  values (assoc_handle, ss_key, ss_key_data, '3DES', dateadd ('hour', 1, now()));
 	    }
 	}
-      -- make OAuth request_token call 
-      if (length (oauth_consumer) > 0)	  
-	tok := OAUTH..hybrid_request_token (sid, oauth_consumer);	  
+      -- make OAuth request_token call
+      if (length (oauth_consumer) > 0)
+	tok := OAUTH..hybrid_request_token (sid, oauth_consumer);
       else
-        tok := null;	
+        tok := null;
 
       rhf := WS.WS.PARSE_URI (return_to);
       if (rhf[4] <> '')
@@ -660,7 +660,7 @@ create procedure checkid_immediate
 	    {
 	  if (is_https_ctx ())
 	    op := sprintf ('https://%{WSHost}s/openid');
-	  else  
+	      else
 	    op := sprintf ('http://%{WSHost}s/openid');
 	    }
 	  nonce := DB.DBA.date_iso8601 (dt_set_tz (curdatetime (0), 0)) || cast (msec_time () as varchar);
@@ -706,7 +706,7 @@ create procedure checkid_immediate
 	      http (sprintf ('oauth.scope:%s\x0A', oauth_scope), ses);
 	      oauth_resp := oauth_resp || sprintf ('&openid.oauth.scope=%U', oauth_scope);
 	    }
-        }	  
+        }
 
       if (user <> 'OpenID')
         set_user_id ('OpenID');
@@ -764,12 +764,12 @@ create procedure checkid_setup
       if (length (oauth_consumer))
         {
           login := login || sprintf ('&oauth_consumer=%U&oauth_scope=%U', oauth_consumer, oauth_scope);
-        }	  
+        }
       http_header (http_header_get () || sprintf ('Location: %s\r\n', login));
       --http_header (http_header_get () || sprintf ('Location: %s%sopenid.mode=cancel\r\n', return_to, delim));
       return '';
     }
-  return checkid_immediate (ver, _identity, assoc_handle, return_to, trust_root, sid, 1, sreg_required, sreg_optional, policy_url, 
+  return checkid_immediate (ver, _identity, assoc_handle, return_to, trust_root, sid, 1, sreg_required, sreg_optional, policy_url,
       oauth_consumer, oauth_scope, op);
 };
 
@@ -813,19 +813,19 @@ create procedure oid_set_sid (in sid varchar, in pars any)
 create procedure oid_get_user_id (in _identity any)
 {
   declare iarr, uname, webid any;
-  declare webid, gr varchar;    
+  declare webid, gr varchar;
   uname := null;
   --dbg_obj_print_vars (_identity);
   if (strchr (_identity, '@') is not null)
-    { 
+    {
       gr := sioc..get_graph ();
-      webid := (SPARQL 
-	       PREFIX owl: <http://www.w3.org/2002/07/owl#> 
-	       PREFIX foaf: <http://xmlns.com/foaf/0.1/>	 
+      webid := (SPARQL
+	       PREFIX owl: <http://www.w3.org/2002/07/owl#>
+	       PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 	       SELECT ?openid WHERE { graph `iri(?:gr)` { ?webid owl:sameAs `iri(?:_identity)` ; foaf:openid ?openid . }});
       if (webid is not null)
-        _identity := webid;	
-    }	 
+        _identity := webid;
+    }
   if (regexp_match ('http://[^/]+/dataspace/(person|organization)/.+', _identity) is not null)
     {
       iarr := sprintf_inverse (_identity, 'http://%s/dataspace/%s/%s', 1);

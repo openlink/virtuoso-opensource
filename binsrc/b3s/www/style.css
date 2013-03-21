@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2009 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -28,6 +28,9 @@ body {
     font-size: 80%;
     margin: 0;
     padding: 1.2em 2em;}
+
+a, a:visited {color: #242;}
+
 #rdficon { float: right; position: relative; top: -28px; vertical-align: middle; padding: 3px; border: 1px solid #fff;}
 #header { border-bottom: 2px solid #696; margin: 0 0 1.2em; padding: 0 0 0.3em; }
 #footer { border-top: 2px solid #696; color: #666; margin: 1.2em 0 0; padding: 0.3em 0 0; }

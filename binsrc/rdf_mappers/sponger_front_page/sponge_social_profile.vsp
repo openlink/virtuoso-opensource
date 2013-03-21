@@ -4,18 +4,25 @@
     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <?vsp
-  declare skinpfx, banner_txt, strapline varchar;
+  declare skinpfx, banner_txt, strapline, banner_logo, fp_title, fp_favicon varchar;
   skinpfx := registry_get ('_sponger_fp_SkinPrefix');
   banner_txt := registry_get ('_sponger_fp_Banner');
+  banner_logo := registry_get ('_sponger_fp_Logo');
   strapline := registry_get ('_sponger_fp_Strapline');
+  fp_title := registry_get ('_sponger_fp_Title');
+  fp_favicon := registry_get ('_sponger_fp_Favicon');
   if (skinpfx = 0) skinpfx := 'skin';
   if (banner_txt = 0) banner_txt := 'Virtuoso Linked Data Middleware';
   if (strapline = 0) strapline := '';
+  if (fp_title = 0) fp_title := 'Virtuoso Sponger';
 ?>
 <head>
   <link rel="stylesheet" href="<?=skinpfx?>/ss/sponger_frontpage.css" type="text/css"/>
   <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
-  <title>Virtuoso Sponger - Sponge Your Social Profile</title>
+  <title><?=fp_title?> - Sponge Your Profile</title>
+  <?vsp if (fp_favicon <> 0) { ?>
+  <link rel="shortcut icon" href="<?=skinpfx?>/i/<?=fp_favicon?>" />
+  <?vsp } ?>
   <script type="text/javascript">
     var el_user_id;
     var el_about_sponge_uri;
@@ -23,7 +30,7 @@
     var el_fb_ds_links_no_token;
     var user_id = "";
 
-    function build_sponge_links (site_name, host, entity_uri)
+    function build_sponge_links (site_name, host, entity_uri, about_sponge_uri)
     {
       var describe_href;
 
@@ -36,7 +43,7 @@
       // TO DO - Check the entered user ID is valid
       if (user_id.length == 0)
       {
-        alert ('Please enter your ' + site_name + ' user ID');
+        alert ('Please enter your ' + site_name + ' ID');
         el_fb_ds_links_no_token.style.display = 'none';
         return false;
       }
@@ -44,15 +51,38 @@
       switch (site_name)
       {
         case 'Twitter':
-          el_about_sponge_uri.href = el_about_sponge_uri.href.replace(/twitter.com\/.*@Lookup@/, 'twitter.com/' + user_id + '?@Lookup@');
+          el_about_sponge_uri.href = about_sponge_uri.replace(/twitter.com\/.*sponger:get/, 'twitter.com/' + user_id + '?sponger:get');
           entity_uri = entity_uri.replace(/twitter.com\/.*/, 'twitter.com/' + user_id);
-          describe_href = 'http://' + host + '/describe/?url=' + encodeURIComponent(entity_uri) + '&sp=1';
+          describe_href = 'http://' + host + '/describe/?url=' + encodeURIComponent(entity_uri) + '&sponger:get=add&sr=0';
           el_describe_sponge_uri.href = describe_href;
           break;
         case 'Delicious':
-          el_about_sponge_uri.href = el_about_sponge_uri.href.replace(/twitter.com\/.*@Lookup@/, 'www.delicious.com/' + user_id + '?@Lookup@');
+          el_about_sponge_uri.href = about_sponge_uri.replace(/twitter.com\/.*sponger:get/, 'www.delicious.com/' + user_id + '?sponger:get');
           entity_uri = entity_uri.replace(/twitter.com\/.*/, 'www.delicious.com/' + user_id);
-          describe_href = 'http://' + host + '/describe/?url=' + encodeURIComponent(entity_uri) + '&sp=1';
+          describe_href = 'http://' + host + '/describe/?url=' + encodeURIComponent(entity_uri) + '&sponger:get=add&sr=0';
+          el_describe_sponge_uri.href = describe_href;
+          break;
+        case 'Google+':
+	  var matches = /\/(\d{5,})/.exec (user_id);
+	  // Guard against a user entering their full Google+ profile URI instead of just their user ID
+	  if (matches != null)
+	    user_id = matches[1];
+	  else
+	  {
+	    matches = /^\d{5,}$/.exec (user_id);
+	    if (matches != null)
+	      user_id = matches[0];
+	    else
+	    {
+	      alert ('Please enter your ' + site_name + ' ID');
+	      el_fb_ds_links_no_token.style.display = 'none';
+	      return false;
+	    }
+	  }
+          el_about_sponge_uri.href = about_sponge_uri.replace(/http\/twitter.com\/.*sponger:get/, 
+                  'https/plus.google.com/' + user_id + '?sponger:get');
+          entity_uri = entity_uri.replace(/http\/twitter.com\/.*/, 'https/plus.google.com/' + user_id);
+          describe_href = 'http://' + host + '/describe/?url=' + encodeURIComponent(entity_uri) + '&sponger:get=add&sr=0';
           el_describe_sponge_uri.href = describe_href;
           break;
       }
@@ -65,33 +95,21 @@
 <?vsp
   declare _host varchar;
   declare site_name varchar;
-  declare rm_hook varchar;
-  declare api_key_mandatory, api_key_missing integer;
+  declare rm_key varchar;
+  declare api_key_missing integer;
 
   site_name := http_param ('site');
   _host := registry_get ('URIQADefaultHost');
   if (is_http_ctx ()) _host := http_request_header(http_request_header (), 'Host', null, _host);
 
-  api_key_mandatory := 0;
   api_key_missing := 0;
-  rm_hook := '';
 
-  if (site_name = 'XXXX')
+  if (site_name = 'Google+')
   {
-    api_key_mandatory := 1;
-    rm_hook := 'DB.DBA.RDF_LOAD_YYYY';
-  }
-
-  if (api_key_mandatory)
-  {
-    declare rm_key varchar;
-    rm_key := (select RM_KEY from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = rm_hook);
-    if (rm_key is null)
+    rm_key := (select RM_KEY from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_GOOGLE_PLUS');
+    if (length(rm_key) = 0)
       api_key_missing := 1;
   }
-
-    
-
 ?>
 </head>
 
@@ -104,12 +122,19 @@
              src="<?=skinpfx?>/i/openlinklogo_wstrap_2008_100h.png" /></a> 
         </div>
         <div id="header_text">
-          <h1><?=banner_txt?></h1><?=strapline?>
+          <?vsp if (banner_logo <> 0) { ?>
+            <img id="banner_logo" alt="[Sponger instance logo]"
+                 src="<?=skinpfx?>/i/<?=banner_logo?>" /><br/>
+          <?vsp } else { ?>
+            <h1><?=banner_txt?></h1>
+          <?vsp } ?>
+          <?=strapline?>
         </div>
       </div>
 
       <div id="navbar">
         <a href="index.vsp">Home</a> | 
+        <a href="sponger_architecture.vsp#how_it_works">How It Works</a> | 
         <a href= "sponger_architecture.vsp">Architecture</a> | 
         <a href= "sponger_setup.vsp">Sponger Setup</a> | 
         <a href= "examples.vsp">Live Sponger Examples</a> | 
@@ -129,10 +154,10 @@
   declare user_id varchar;
 
   user_id := 'UNKNOWN_USER_ID';
-  about_sponge_uri := sprintf ('http://%s/about/html/http/%s/about/id/entity/http/twitter.com/%s?@Lookup@=&refresh=0', _host, _host, user_id);
+  about_sponge_uri := sprintf ('http://%s/about/html/http/%s/about/id/entity/http/twitter.com/%s?sponger:get=add&refresh=0', _host, _host, user_id);
   entity_uri := sprintf ('http://%s/about/id/entity/http/twitter.com/%s', _host, user_id);
-  --describe_sponge_uri := sprintf ('http://%s/describe/?url=%U&sp=1', _host, entity_uri);
-  describe_sponge_uri := sprintf ('http://%s/describe/?url=%s&sp=1', _host, entity_uri);
+  --describe_sponge_uri := sprintf ('http://%s/describe/?url=%U&sponger:get=add&sr=0', _host, entity_uri);
+  describe_sponge_uri := sprintf ('http://%s/describe/?url=%s&sponger:get=add&sr=0', _host, entity_uri);
   ?>
 
 <?vsp
@@ -146,8 +171,23 @@
 
   <form action="#" method="post">
     <div>
-      <label for="fld_user_id"><?=site_name?> username:&nbsp;</label><input type="text" maxlength="20" id="fld_user_id" name="fld_user_id" />
-      <input type="submit" name="cmd_submit_FB_ID" id="cmd_submit_user_id" value="Submit" onclick="return build_sponge_links('<?=site_name?>', '<?=_host?>', '<?=entity_uri?>');"/>
+<?vsp
+  if (site_name = 'Google+')
+    http (sprintf ('<label for="fld_user_id">Google+ ID*:&nbsp;</label>'));
+  else
+    http (sprintf ('<label for="fld_user_id">%s username:&nbsp;</label>', site_name));
+?>
+      <input type="text" maxlength="80" size="42" id="fld_user_id" name="fld_user_id" />
+      <input type="submit" name="cmd_submit_FB_ID" id="cmd_submit_user_id" value="Submit" 
+           onclick="return build_sponge_links('<?=site_name?>', '<?=_host?>', '<?=entity_uri?>', '<?=about_sponge_uri?>');"/>
+<?vsp
+  if (site_name = 'Google+')
+  {
+    http (sprintf ('<div style="font-size: 0.9em"><p/>*The highlighted part in the following URL shows a Google+ user ID:<br/>
+                   &nbsp;&nbsp;http://plus.google.com/<span style="color:gray">110272002170841199999</span>/...<br/> 
+                   View <a href="https://plus.google.com/u/0/me/about">your Google+ profile</a>, and copy the ID from your profile URL.</div>'));
+  }
+?>
     </div>
   </form>
 
@@ -191,7 +231,7 @@
 
       <div class="reset">
         <div id="footer">
-          Copyright (C) OpenLink Software 2011. All rights reserved.
+          Copyright (C) 1998-2013 OpenLink Software. All rights reserved.
         </div>
       </div>
 </div><!-- outer -->

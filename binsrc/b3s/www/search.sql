@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2009 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -39,7 +39,7 @@ create procedure label_get(in smode varchar)
   else if (smode='14') label := 'Motorways across England & Scotland';
   else if (smode='15') label := 'Objects around London with Cities in close proximity';
   else if (smode='16') label := 'Places with coordinates';
-  else if (smode='17') label := 'Subcategories of Protestant Churches';
+  else if (smode='17') label := 'Subcategories of History of Wisconsin';
   else if (smode='18') label := 'Things within close proximity of New York City';
   else if (smode='19') label := 'Distance between New York City and London, England';
   else if (smode='20') label := 'All Educational Institutions within 10km of Oxford, UK';
@@ -73,7 +73,7 @@ create procedure input_get (in num varchar)
 	'Person URI',
 	'Property',
 	'Nickname',
-	'Nickname',
+	'Text pattern',
 	'Nickname',
 	'Number of items',
         'Price value',
@@ -151,8 +151,8 @@ create procedure desc_get (in num varchar)
 	'What sources talk the most about a given subject? Show the top N graphs containing triples with the given text pattern. Sort by descending triple count.',
 	'What types of objects contain a text pattern. Find matches, get the type. Group by type, order by count.',
 	'What are the interests of a given person based on their foaf:name?',
-	'Who writes the most about a topic. Show for each author the number of works mentioning the topic and total number of works.'
-||'<br>For all documents and posts we have extracted named entities the entity could shows the entities which occur in the works of each author.'
+	'Who writes the most about a topic. Show for each author the number of works mentioning the topic and total number of works. '
+||'<br>For all documents and posts we have extracted named entities the entity could shows the entities which occur in the works of each author. '
 ||'There are statistics about named entities occurring together, these are used for display a list of related entities. '
 	,
 	'Show the people a person directly or indirectly knows. Sort by distance and count of connections of the known person',
@@ -167,7 +167,7 @@ create procedure desc_get (in num varchar)
         'Show motorways across England & Scotland from DBpedia.',
         'Shows cities within certain proximity of London.',
         'Shows geometries with their coordinates.',
-        'Find entities that are subcategories of Protestant Churches, no deeper than 3 levels within the concept scheme hierarchy filtered by a specific subcategory.',
+        'Find entities that are subcategories of History of Wisconsin, no deeper than 3 levels within the concept scheme hierarchy filtered by a specific subcategory.',
         'Shows things within certain proximity of a place.',
         'Shows distance between 2 cities.',
         'Find all Educational Institutions within 10km of Oxford, UK ordered by date of establishment.'
@@ -202,7 +202,8 @@ create procedure head_get (in num varchar)
     vector ('Thing', 'Nick name', 'Occurrences'),
     vector ('Thing', 'Text Pattern', 'Occurrences'),
     vector ('Manifacturer URI', 'Total Products'),
-    vector ('Vendor', 'Offer', 'Business Function', 'Customer Type', 'Offer Object', 'Type of Good', 'Price'),
+    vector ('Vendor', 'Offer', 'Business Function', 'Offer Object', 'Type of Good', 'Price'),
+--    vector ('Vendor', 'Offer', 'Business Function', 'Customer Type', 'Offer Object', 'Type of Good', 'Price'),
 --    vector ('Total Products'),
     vector ('Cafe URI', 'Latitude', 'Longitude', 'Cafe Name', 'Church Name', 'Count'),
     vector ('Road', 'Latitude', 'Longitude'),
@@ -234,7 +235,7 @@ create procedure validate_input(inout val varchar)
 {
   val := trim(val, ' ');
   val := replace(val, '*', '');
-  val := replace(val, '>', '');
+ val := replace(val, '>', '');
   val := replace(val, '<', '');
   --val := replace(val, '&', '');
   --val := replace(val, '"', '');
@@ -245,7 +246,7 @@ create procedure validate_input(inout val varchar)
 create procedure get_curie (in val any)
 {
 
-  declare delim, delim1, delim2, delim3 integer;
+ declare delim, delim1, delim2, delim3 integer;
   declare pref, res, suff varchar;
 
   delim1 := coalesce (strrchr (val, '/'), -1);
@@ -576,13 +577,14 @@ create procedure pick_query(in smode varchar, inout val any, inout query varchar
     s1 := 'sparql SELECT ?i2 COUNT (*) WHERE  { ?p foaf:interest ?i1 . ' ||
     ' ?p foaf:name ?name . ' ||
     ' FILTER ( bif:contains (?name, \'';
-  validate_input(val);
+    validate_input(val);
     s2 := trim (fti_make_search_string(val), '()');
     s3 := '\')) . ?p foaf:interest ?i2  } GROUP BY ?i2 ORDER BY DESC 2 LIMIT 20';
-  query := concat('',s1, s2, s3,'');
+    query := concat('',s1, s2, s3,'');
   }
   else if (smode='5')
   {
+
 -- this query crashes the server:
 ----* The Most One-Sidedly Known People
 --sparql
@@ -738,7 +740,7 @@ s3 := '\')) .
     }
   else if (smode = '9')
     {
-      if (isnull(val)  or val = '') val := '"SQL"';
+      if (isnull(val)  or val = '') val := '"data"';
 
 -- b3s variant:
 
@@ -758,7 +760,7 @@ s3 := '\')) .
     }
   else if (smode = '10')
     {
-      if (isnull(val)  or val = '') val := '"SQL"';
+      if (isnull(val)  or val = '') val := '"Wellington"';
 
       s1 :=
       'sparql define input:inference \'virtrdf-label\' SELECT ?s ?lbl COUNT(*) WHERE { ?s  ?p2 ?o2 .  ?o2 <http://www.w3.org/2000/01/rdf-schema#label> ?lbl . ' ||
@@ -784,13 +786,14 @@ s3 := '\')) .
     {
       if (isnull(val)  or val = '') val := '500';
 
+--' ?ab gr:eligibleCustomerTypes ?el . ' ||
+
       s1 :=
-      'sparql SELECT ?xx ?ab ?bp ?el ?b ?c ?cv WHERE {' ||
+      'sparql SELECT ?xx ?ab ?bp ?b ?c bif:ceiling(?cv*100)/100.00  WHERE {' ||
       ' ?xx a gr:BusinessEntity . ' ||
       ' ?xx gr:offers ?ab . ' ||
       ' ?ab rdf:type gr:Offering . ' ||
       ' ?ab gr:hasBusinessFunction ?bp . ' ||
-      ' ?ab gr:eligibleCustomerTypes ?el . ' ||
       ' ?ab gr:includesObject ?b . ' ||
       ' ?b rdf:type gr:TypeAndQuantityNode . ' ||
       ' ?b gr:typeOfGood ?c . ' ||
@@ -800,7 +803,7 @@ s3 := '\')) .
       ' FILTER (?cv > ';
       validate_input(val);
       s2 := val;
-      s3 := ') } LIMIT 50';
+      s3 := ') } LIMIT 10';
       query := s1 || s2 || s3;
     }
 -- for now is removed from the list
@@ -821,7 +824,7 @@ s3 := '\')) .
     if (isnull(val2)  or val2 = '') val2 := '48.853';
 
     if (isnull(val3)  or val3 = '') val3 := '5';
-    if (isnull(val4)  or val4 = '') val4 := '0.2';
+    if (isnull(val4)  or val4 = '') val4 := '0.9';
 
 
     s1 := 'sparql SELECT DISTINCT ?cafe ?lat ?long ?cafename ?churchname ' ||
@@ -924,10 +927,10 @@ s3 := '\')) .
   }
   else if ( smode='17' )
   {
-    if (isnull(val)  or val = '') val := 'category:Protestant_churches';
+    if (isnull(val)  or val = '') val := 'category:History_of_Wisconsin';
     if (isnull(val2)  or val2 = '') val2 := 'en';
     if (isnull(val3)  or val3 = '') val3 := 'en';
-    if (isnull(val4)  or val4 = '') val4 := 'http://dbpedia.org/resource/Category:Churches_in_London';
+    if (isnull(val4)  or val4 = '') val4 := 'http://dbpedia.org/resource/Category:Metropolitan_areas_of_Wisconsin';
 
     validate_input(val);
     validate_input(val2);
@@ -941,7 +944,7 @@ s3 := '\')) .
        ' WHERE  ' ||
        '   { ' ||
        '     { ' ||
-       '       SELECT ?c  ?m ?n ?p ?trans?dist ' ||
+       '       SELECT ?c ?m ?n ?p ?trans ?dist ' ||
        '       WHERE ' ||
        '         { ' ||
        '           ?m rdfs:label ?n . ' ||

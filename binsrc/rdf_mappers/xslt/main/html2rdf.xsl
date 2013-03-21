@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -29,6 +29,9 @@
 <!ENTITY owl "http://www.w3.org/2002/07/owl#">
 <!ENTITY awol "http://bblfish.net/work/atom-owl/2006-06-06/#">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
+<!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
+<!ENTITY oplcert "http://www.openlinksw.com/schemas/cert#">
+<!ENTITY cert "http://www.w3.org/ns/auth/cert#">
 ]>
 <xsl:stylesheet
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -45,6 +48,7 @@
   xmlns:content="http://purl.org/rss/1.0/modules/content/"
   xmlns:awol="&awol;"
   xmlns:dcterms="&dcterms;"
+  xmlns:oplcert="&oplcert;"
   xmlns:xhv="http://www.w3.org/1999/xhtml/vocab#"
   version="1.0">
   <xsl:output method="xml" indent="yes" encoding="utf-8"/>
@@ -80,16 +84,73 @@
 		    <xsl:apply-templates  select="/html/body" mode="content"/>
 		</xsl:variable>
 		<!--content:encoded><xsl:value-of select="vi:escape($doc1)" /></content:encoded-->
-		<xsl:if test="not ($baseUri like 'http://%.nytimes.com/%')">
+	        <xsl:if test="not ($baseUri like 'http://%.nytimes.com/%' or $baseUri like 'http://stackoverflow.com/%' or $baseUri like 'http://%.stackexchange.com/%')">
 		    <awol:content rdf:resource="{$resourceURL}#content"/>
 		</xsl:if>
       </rdf:Description>
-      <xsl:if test="not ($baseUri like 'http://%.nytimes.com/%')">
+      <xsl:if test="not ($baseUri like 'http://%.nytimes.com/%' or $baseUri like 'http://stackoverflow.com/%' or $baseUri like 'http://%.stackexchange.com/%')">
 	  <rdf:Description rdf:about="{$resourceURL}#content">
 	      <rdf:type rdf:resource="&awol;Content"/>
 	      <awol:src rdf:resource="{$source}"/>
 	  </rdf:Description>
       </xsl:if>
+      <!-- x509 certificate -->
+      <xsl:for-each select="//*[starts-with (., '#X509Cert Fingerprint:')]">
+	  <xsl:variable name="fp"><xsl:value-of select="substring-before (substring-after (., '#X509Cert Fingerprint:'), ' ')"/></xsl:variable>
+	  <xsl:variable name="fpn"><xsl:value-of select="translate ($fp, ':', '')"/></xsl:variable>
+	  <xsl:variable name="dgst">
+	      <xsl:choose>
+		  <xsl:when test="contains (., '#SHA1')">sha1</xsl:when>
+		  <xsl:otherwise>md5</xsl:otherwise>
+	      </xsl:choose>
+	  </xsl:variable>
+	  <xsl:variable name="ct"><xsl:value-of select="vi:proxyIRI ($baseUri,'',$fpn)"/></xsl:variable>
+	  <xsl:variable name="au">
+	      <xsl:choose>
+		  <xsl:when test="//link[@rel='canonical']/@href"><xsl:value-of select="//link[@rel='canonical']/@href"/>#author</xsl:when>
+		  <xsl:otherwise><xsl:value-of select="vi:proxyIRI ($baseUri,'','author')"/></xsl:otherwise>
+	      </xsl:choose>
+	  </xsl:variable>
+	  <foaf:Agent rdf:about="{$au}">
+	      <oplcert:hasCertificate rdf:resource="{$ct}"/>
+	  </foaf:Agent>
+	  <rdf:Description rdf:about="{$resourceURL}">
+	      <dc:creator rdf:resource="{$au}"/>
+	  </rdf:Description>
+	  <oplcert:Certificate rdf:about="{$ct}">
+	      <rdfs:label><xsl:value-of select="$fp"/></rdfs:label>
+	      <oplcert:fingerprint><xsl:value-of select="$fp"/></oplcert:fingerprint>
+	      <oplcert:fingerprint-digest><xsl:value-of select="$dgst"/></oplcert:fingerprint-digest>
+	  </oplcert:Certificate>
+      </xsl:for-each>
+      <!-- end certificate -->
+      <!-- x509 certificate -->
+      <xsl:for-each select="//*[text() like '%di:%?hashtag=webid%']">
+	  <xsl:variable name="di"><xsl:copy-of select="vi:di-split (.)"/></xsl:variable>
+	  <xsl:variable name="au">
+	      <xsl:choose>
+		  <xsl:when test="//link[@rel='canonical']/@href"><xsl:value-of select="//link[@rel='canonical']/@href"/>#author</xsl:when>
+		  <xsl:otherwise><xsl:value-of select="vi:proxyIRI ($baseUri,'','author')"/></xsl:otherwise>
+	      </xsl:choose>
+	  </xsl:variable>
+	  <xsl:for-each select="$di/result/di">
+	      <xsl:variable name="fp"><xsl:value-of select="hash"/></xsl:variable>
+	      <xsl:variable name="dgst"><xsl:value-of select="dgst"/></xsl:variable>
+	      <xsl:variable name="ct"><xsl:value-of select="vi:proxyIRI ($baseUri,'',$fp)"/></xsl:variable>
+	      <foaf:Agent rdf:about="{$au}">
+		  <oplcert:hasCertificate rdf:resource="{$ct}"/>
+	      </foaf:Agent>
+	      <rdf:Description rdf:about="{$resourceURL}">
+		  <dc:creator rdf:resource="{$au}"/>
+	      </rdf:Description>
+	      <oplcert:Certificate rdf:about="{$ct}">
+		  <rdfs:label><xsl:value-of select="$fp"/></rdfs:label>
+		  <oplcert:fingerprint><xsl:value-of select="$fp"/></oplcert:fingerprint>
+		  <oplcert:fingerprint-digest><xsl:value-of select="$dgst"/></oplcert:fingerprint-digest>
+	      </oplcert:Certificate>
+	  </xsl:for-each>
+      </xsl:for-each>
+      <!-- end certificate -->
   </xsl:template>
 
   <xsl:template match="link[@rel='alternate']">

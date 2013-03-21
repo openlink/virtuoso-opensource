@@ -1,0 +1,61 @@
+<!--
+
+  $Id$
+
+  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+  project.
+
+  Copyright (C) 1998-2013 OpenLink Software
+
+  This project is free software; you can redistribute it and/or modify it
+  under the terms of the GNU General Public License as published by the
+  Free Software Foundation; only version 2 of the License, dated June 1991.
+
+  This program is distributed in the hope that it will be useful, but
+  WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+  General Public License for more details.
+
+  You should have received a copy of the GNU General Public License along
+  with this program; if not, write to the Free Software Foundation, Inc.,
+  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+
+-->
+
+<rdf:RDF xmlns="http://www.openlinksw.com/schemas/money#"
+    xmlns:dc="http://purl.org/dc/elements/1.1/"
+    xmlns:log="http://www.w3.org/2000/10/swap/log#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema#">
+
+    <owl:Ontology rdf:about="http://www.openlinksw.com/schemas/money">
+        <dc:creator>OpenLink Software, http://www.openlinksw.com</dc:creator>
+        <dc:date rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2011-09-09</dc:date>
+        <dc:description xml:lang="en">OpenLink schema for money</dc:description>
+        <dc:title>OpenLink money schema</dc:title>
+    </owl:Ontology>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/money#MonetaryValue">
+        <rdfs:comment>A class representing a monetary value</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/money"/>
+        <rdfs:label xml:lang="en">monetary value</rdfs:label>
+    </owl:Class>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/money#hasCurrencyCode">
+        <rdfs:comment>The ISO 4217 standard (3 character) currency code</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/money#MonetaryValue"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/money"/>
+        <rdfs:label xml:lang="en">ISO-4127 currency code</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/money#hasCurrencyValue">
+        <rdfs:comment xml:lang="en">the amount of money</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/money#MonetaryValue"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/money"/>
+        <rdfs:label xml:lang="en">currency value</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+    </owl:DatatypeProperty>
+</rdf:RDF>

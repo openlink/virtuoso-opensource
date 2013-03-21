@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -242,4 +242,3 @@ ECHO BOTH ": B7157 : LAST[1]=" $LAST[1] " (XML ENTITY)\n";
 select length(X) from B7260;
 ECHO BOTH $IF $EQU $LAST[1] 835106 "PASSED" "***FAILED";
 ECHO BOTH ": B7260 : length (X)=" $LAST[1] " (words.esp)\n";
-

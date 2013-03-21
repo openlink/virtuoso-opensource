@@ -1662,7 +1662,7 @@ rdfs:seeAlso &lt;http://en.wikipedia.org/wiki/British_national_grid_reference_sy
     <status:userdocs rdf:resource="http://open.vocab.org/terms/rtfm.html"/>
     <status:term_status>unstable</status:term_status>
     <rdfs:range rdf:resource="http://xmlns.com/foaf/0.1/Document"/>
-    <rdfs:label xml:lang="en">read the f***ing manual</rdfs:label>
+    <rdfs:label xml:lang="en">read the fine manual</rdfs:label>
     <rdfs:isDefinedBy rdf:resource="http://open.vocab.org/terms"/>
     <rdfs:domain rdf:resource="http://xmlns.com/foaf/0.1/Agent"/>
     <rdfs:comment xml:lang="en">State that an individual should consult the appropriate manual before asking a question on a mailing list, IRC channel, etc.</rdfs:comment>

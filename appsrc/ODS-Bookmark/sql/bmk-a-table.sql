@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -694,17 +694,17 @@ BMK.WA.exec_no_error ('
 --
 create procedure BMK.WA.drop_index ()
 {
-  if (registry_get ('bmk_index_version') = '2')
+  if (registry_get ('bmk_index_version') = '3')
     return;
 
   BMK.WA.exec_no_error ('drop table BMK.WA.BOOKMARK_DOMAIN_BD_DESCRIPTION_WORDS');
-  registry_set ('bmk_index_version', '2');
+  registry_set ('bmk_index_version', '3');
 }
 ;
 BMK.WA.drop_index ();
 
 BMK.WA.exec_no_error('
-  create text index on BMK.WA.BOOKMARK_DOMAIN (BD_DESCRIPTION) with key BD_ID not insert clustered with (BD_ID, BD_UPDATED) using function
+  create text index on BMK.WA.BOOKMARK_DOMAIN (BD_DESCRIPTION) with key BD_ID not insert clustered with (BD_ID, BD_UPDATED) using function language \'x-ViDoc\'
 ');
 
 -------------------------------------------------------------------------------

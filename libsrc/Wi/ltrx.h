@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -212,7 +212,6 @@ typedef struct lock_trx_s
     caddr_t		lt_log_name;
     dk_set_t		lt_blob_log; /* pdl of blob start addresses to log. Zero if overwritten in the same trx */
     char		lt_timestamp[DT_LENGTH];
-    char		lt_approx_dt[DT_LENGTH];
     dk_session_t *	lt_backup;  /* if running an online backup,
 				     * the session to the backup device */
     int64		lt_backup_length;
@@ -243,24 +242,20 @@ typedef struct lock_trx_s
       caddr_t		_2pc_prepared;
       dk_set_t		_2pc_remotes;
       int		_2pc_invalid; /* is set if one of branches in unreachable  */
-      box_t		_2pc_xid;
-      char		_2pc_wait_commit;
+      box_t             _2pc_xid;
+      char              _2pc_wait_commit;
     } lt_2pc;
 #endif
 
     dk_hash_t *	lt_upd_hi;  /* for each update node active in txn, the set of affected hi's */
     dk_set_t		lt_hi_delta;
     int64		lt_w_id;
-    int64		lt_rc_w_id; /* in a parallel query branch, set this to the lt_w_id of the starting lt so as to see the same uncommitted state in read committed */
     dk_set_t 		lt_cl_branches; /* cl_host_t for cluster hosts in same commit */
-    caddr_t		lt_2pc_hosts; /* list of host ids with prepared state.  Use for recov consensus */
     struct cl_host_s *	lt_branch_of;
     OFF_T		lt_commit_flag_offset; /* use for updating log record state in 2pc */
-    char		lt_need_branch_consensus; /* prepared originating from self comes in log sync. Must ask other branches what became of it. */
     char		lt_known_in_cl; /* if ever participated in wait or had remote branch, must notify monitor of transact, else not */
     char		lt_log_2pc;
     char		lt_transact_notify_sent; /* if non-monitor commits a branch on the monitor, no separate notify wanted */
-    char		lt_cl_server_recd_rb;
     struct cl_req_group_s *	lt_clrg;
     caddr_t		lt_error_detail; /* if non-zero fill it with details about the error at hand */
 #ifdef MSDTC_DEBUG
@@ -274,14 +269,8 @@ typedef struct lock_trx_s
 #define LT_LAST_RESERVED_NO 99 /* the first 100 trx_no are reserved for temp use, no real transaction uses them */
 #define LT_ID_FREE ((int64)-1) /* lt_w_id and lt_trx_no when lt is free in trx_rc */
 
-#define LT_SEES_EFFECT(branch, owner) \
-  (branch == owner || branch->lt_rc_w_id == owner->lt_w_id)
-
 #define LTN_HOST(ltn) ((uint32)((ltn) >> 32))
 #define LTN_NO(ltn) ((uint32)((ltn) & 0xffffffff))
-
-#define W_ID_GT(w1, w2) \
-  (((uint32)(w1)) - ((uint32)(w2)) < 0x80000000)
 
 #define LOCK_MAX_WAITS 1024 /* no more than this many queued on a single lock */
 
@@ -351,20 +340,6 @@ typedef struct gen_lock_s
     LOCK;
   } gen_lock_t;
 
-
-typedef struct col_lock_s
-{
-  LOCK;
-  row_no_t	clk_pos;
-  char		clk_change; /* row inserted/deleted/both by lock owner */
-  db_buf_t *	clk_rbe;
-} col_row_lock_t;
-/* clk_change */
-#define CLK_INSERTED 1
-#define CLK_DELETE_AT_COMMIT 2
-#define CLK_DELETE_AT_ROLLBACK 4
-#define CLK_REVERT_AT_ROLLBACK 8
-#define CLK_FINALIZED 16
 #define N_RLOCK_SETS 4
 
 
@@ -372,9 +347,8 @@ typedef struct row_lock_s
   {
     LOCK;
     short		rl_pos;
-    row_no_t		rl_n_cols;
     struct row_lock_s *	rl_next;
-    col_row_lock_t **	rl_cols; /* row locks for column projection segment for this row */
+
   } row_lock_t;
 
 
@@ -397,7 +371,7 @@ typedef struct page_lock_s
 #define RL_FOLLOW	8
 #define PL_PAGE_LOCK	16
 #define PL_FINALIZE	32
-#define PL_WHOLE_SEG 64 /* in row lock when the rl is escalated over all rows in the column proj seg */
+
 
 
 #define PL_TYPE(pl) (pl->pl_type & 0x3)
@@ -423,8 +397,8 @@ typedef struct page_lock_s
 
 
 #define ITC_MAYBE_LOCK(itc, pos) \
-  (itc->itc_pl \
-   && (PL_RLS (itc->itc_pl, pos) || PL_IS_PAGE (itc->itc_pl)))
+  (it->itc_pl \
+   && (PL_RLS (it->itc_pl, pos) || PL_IS_PAGE (it->itc_pl)))
 
 
 #define PL_RL_ADD(pl, rl, to) \
@@ -454,7 +428,7 @@ typedef struct page_lock_s
 
 
 #define PL_CAN_ESCALATE(itc, pl, buf) \
-  (!itc->itc_is_col && (pl->pl_n_row_locks * 100) / (buf->bd_content_map->pm_count + 1) > lock_escalation_pct \
+  ((pl->pl_n_row_locks * 100) / (buf->bd_content_map->pm_count + 1) > lock_escalation_pct \
     && !PL_IS_PAGE (pl) \
     && !pl->pl_is_owner_list \
     && pl->pl_owner == itc->itc_ltrx \
@@ -480,7 +454,6 @@ int lock_add_owner (gen_lock_t * pl, it_cursor_t * it, int was_waiting);
 
 void pl_release (page_lock_t * pl, lock_trx_t * lt, buffer_desc_t * buf);
 void pl_page_deleted (page_lock_t * pl, buffer_desc_t * buf);
-void lock_release (gen_lock_t * pl, lock_trx_t * lt);
 page_lock_t * pl_allocate (void);
 void pl_free (page_lock_t * pl);
 row_lock_t * rl_allocate (void);
@@ -503,9 +476,9 @@ void lt_killall (lock_trx_t * lt, int lte);
 int lock_enter (gen_lock_t * pl, it_cursor_t * it, buffer_desc_t * buf);
 EXE_EXPORT (lock_trx_t *, lt_start, (void));
 lock_trx_t * lt_start_outside_map (void);
-int lt_commit (lock_trx_t * lt, int free_trx);
-int lt_commit_cl_local_only (lock_trx_t * lt);
-void lt_rollback (lock_trx_t * lt, int free_trx);
+EXE_EXPORT (int, lt_commit, (lock_trx_t * lt, int free_trx));
+EXE_EXPORT (int, lt_commit_cl_local_only, (lock_trx_t * lt));
+EXE_EXPORT (void, lt_rollback, (lock_trx_t * lt, int free_trx));
 void lt_rollback_1 (lock_trx_t * lt, int free_trx);
 void lt_transact (lock_trx_t * lt, int op);
 void lt_hi_transact (lock_trx_t * lt, int op);
@@ -541,13 +514,13 @@ void itc_split_lock (it_cursor_t * itc, buffer_desc_t * left, buffer_desc_t * ex
 void itc_split_lock_waits (it_cursor_t * itc, buffer_desc_t * left, buffer_desc_t * extend);
 row_lock_t * upd_refit_rlock (it_cursor_t * itc, int pos);
 void lt_clear_pl_wait_ref (lock_trx_t * waiting, gen_lock_t * pl);
-int itc_check_ins_deleted (it_cursor_t * itc, buffer_desc_t * buf, row_delta_t * rd, int may_replace);
+int itc_check_ins_deleted (it_cursor_t * itc, buffer_desc_t * buf, row_delta_t * rd);
 void itc_insert_rl (it_cursor_t * itc, buffer_desc_t * buf, int pos, row_lock_t * rl, int do_not_escalate);
 #define RL_NO_ESCALATE 1
 #define RL_ESCALATE_OK 0
 
 
-int itc_insert_lock (it_cursor_t * itc, buffer_desc_t * buf, int *res_ret, int may_wait);
+int itc_insert_lock (it_cursor_t * itc, buffer_desc_t * buf, int *res_ret);
 int itc_landed_lock_check (it_cursor_t * itc, buffer_desc_t ** buf_ret);
 void lt_add_pl (lock_trx_t * lt, page_lock_t * pl, int is_new_pl);
 int pl_lt_is_owner (page_lock_t * pl, lock_trx_t * lt);

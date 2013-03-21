@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -30,6 +30,7 @@
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
 <!ENTITY rss "http://purl.org/rss/1.0/">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY dc "http://purl.org/dc/elements/1.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
@@ -51,6 +52,7 @@
   xmlns:dcterms="http://purl.org/dc/terms/"
   xmlns:owl="http://www.w3.org/2002/07/owl#"
   xmlns:sioct="&sioct;"
+  xmlns:opl="&opl;"
   xmlns:sioc="&sioc;"
   xmlns:bibo="&bibo;"
   xmlns:xsd="&xsd;"
@@ -75,6 +77,13 @@
 
     <xsl:template match="sf:*">
 		<rdf:Description rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.salesforce.com#this">
+                        			<foaf:name>Salesforce</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.salesforce.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<rdf:type rdf:resource="&sioc;Item"/>
 			<xsl:element name="{local-name()}" namespace="http://demo.openlinksw.com/schemas/ecrm#">
 				<xsl:apply-templates select="*|text()" />

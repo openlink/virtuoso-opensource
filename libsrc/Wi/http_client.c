@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -423,7 +423,7 @@ http_cli_negotiate_socks4 (dk_session_t * ses, char * in_host, char * name, char
   socksreq[8] = 0; /* no name */
   if (name)
     {
-      strncat ((char*)socksreq + 8, name, sizeof(socksreq) - 8);
+      strncat ((char*)socksreq + 8, name, sizeof(socksreq) - 8 - 1);
       socksreq[sizeof (socksreq) - 1] = 0;
       packetsize = 9 + strlen ((char *) socksreq + 8);
     }
@@ -1150,6 +1150,7 @@ http_cli_parse_resp_hdr (http_cli_ctx * ctx, char* hdr, int num_chars)
   if (!strnicmp ("Content-Length:", hdr, 15))
     {
       ctx->hcctx_resp_content_length = atol (hdr + 15);
+      ctx->hcctx_resp_content_len_recd = 1;
 
       if (ctx->hcctx_resp_content_length < 0)
 	{
@@ -1275,7 +1276,7 @@ http_cli_read_resp_body (http_cli_ctx * ctx)
   if (F_ISSET (ctx, HC_F_BODY_READ)) return (HC_RET_OK);
   ctx->hcctx_state = HC_STATE_READ_RESP_BODY;
 
-  if (!ctx->hcctx_resp_content_length && !ctx->hcctx_is_chunked && !ctx->hcctx_close)
+  if (!ctx->hcctx_resp_content_length && !ctx->hcctx_is_chunked && (!ctx->hcctx_close || ctx->hcctx_resp_content_len_recd))
     return (HC_RET_OK);
 
   if (ctx->hcctx_method == HC_METHOD_HEAD || ctx->hcctx_respcode == 304)
@@ -1957,7 +1958,7 @@ http_cli_std_handle_redir (http_cli_ctx * ctx, caddr_t parm, caddr_t ret_val, ca
       ctx->hcctx_ssl_insecure = '\1';
       RELEASE (ctx->hcctx_proxy.hcp_proxy);
     }
-  else
+  else if (!strnicmp (url, "http://", 7))
     {
       ctx->hcctx_pkcs12_file = NULL;
     }
@@ -2155,6 +2156,7 @@ http_cli_req_init (http_cli_ctx * ctx)
       ctx->hcctx_is_chunked = 0;
       ctx->hcctx_respcode = 0;
       ctx->hcctx_resp_content_length = 0;
+      ctx->hcctx_resp_content_len_recd = 0;
     }
   return (HC_RET_OK);
 }
@@ -2188,6 +2190,7 @@ http_cli_resp_reset (http_cli_ctx * ctx)
   ctx->hcctx_is_chunked = 0;
   ctx->hcctx_respcode = 0;
   ctx->hcctx_resp_content_length = 0;
+  ctx->hcctx_resp_content_len_recd = 0;
 }
 
 HC_RET

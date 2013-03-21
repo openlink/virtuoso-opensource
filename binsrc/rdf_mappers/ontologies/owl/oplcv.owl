@@ -1,0 +1,969 @@
+<!--
+
+  $Id$
+
+  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+  project.
+
+  Copyright (C) 1998-2013 OpenLink Software
+
+  This project is free software; you can redistribute it and/or modify it
+  under the terms of the GNU General Public License as published by the
+  Free Software Foundation; only version 2 of the License, dated June 1991.
+
+  This program is distributed in the hope that it will be useful, but
+  WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+  General Public License for more details.
+
+  You should have received a copy of the GNU General Public License along
+  with this program; if not, write to the Free Software Foundation, Inc.,
+  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+
+
+  Generated from opllinkedin.n3 by on-line N3-RDF/XML converter at http://www.mindswap.org/2002/rdfconvert/ 
+ 
+  An OpenLink ontology for CVs and resumes
+ 
+  A derivative of the CV ontology of Uldis Bojars
+  See:
+  http://captsolo.net/semweb/resume/0.2/cv.rdf
+  http://captsolo.net/semweb/resume/0.2/base.rdf
+-->
+
+<rdf:RDF xmlns="http://www.openlinksw.com/schemas/cv#"
+    xmlns:bibo="http://purl.org/ontology/bibo/"
+    xmlns:dc="http://purl.org/dc/elements/1.1/"
+    xmlns:dcterms="http://purl.org/dc/terms/"
+    xmlns:foaf="http://xmlns.com/foaf/0.1/"
+    xmlns:gr="http://purl.org/goodrelations/v1#"
+    xmlns:log="http://www.w3.org/2000/10/swap/log#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema#">
+
+    <owl:Ontology rdf:about="http://www.openlinksw.com/schemas/cv">
+        <dc:creator>OpenLink Software, http://www.openlinksw.com</dc:creator>
+        <dc:date rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2011-07-07</dc:date>
+        <dc:description>OpenLink schema for CVs based on earlier work by Uldis Bojars: http://captsolo.net/semweb/resume/0.2/cv.rdf</dc:description>
+        <dc:title>OpenLink schema for CVs / resumes</dc:title>
+    </owl:Ontology>
+
+    <OtherCVInfoType rdf:about="http://www.openlinksw.com/schemas/cv#Accomplishments">
+        <rdfs:comment>Additional CV information - accomplishments</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Other info - accomplishments</rdfs:label>
+    </OtherCVInfoType>
+
+    <OtherCVInfoType rdf:about="http://www.openlinksw.com/schemas/cv#Awards">
+        <rdfs:comment>Additional CV information - awards</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Other info - awards</rdfs:label>
+    </OtherCVInfoType>
+
+    <rdfs:Class rdf:about="http://www.openlinksw.com/schemas/cv#CV">
+        <rdfs:comment>A class representing a Curriculum Vitae</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>CV</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://purl.org/ontology/bibo/Document"/>
+    </rdfs:Class>
+
+    <rdfs:Class rdf:about="http://www.openlinksw.com/schemas/cv#CVCareerLevel">
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>CV career level</rdfs:label>
+    </rdfs:Class>
+
+    <rdfs:Class rdf:about="http://www.openlinksw.com/schemas/cv#CVJobMode">
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>CV job mode (full/part - time)</rdfs:label>
+    </rdfs:Class>
+
+    <rdfs:Class rdf:about="http://www.openlinksw.com/schemas/cv#CVJobType">
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>CV job type (employee/contractor/intern)</rdfs:label>
+    </rdfs:Class>
+
+    <rdfs:Class rdf:about="http://www.openlinksw.com/schemas/cv#CV_Entry">
+        <rdfs:comment>A single entry of CV information. The type of CV information contained in the entry is specified in subclasses/individuals</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>CV_Entry</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.w3.org/2000/01/rdf-schema#Resource"/>
+    </rdfs:Class>
+
+    <rdfs:Class rdf:about="http://www.openlinksw.com/schemas/cv#Company">
+        <rdfs:comment>A class for company information</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Company</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/cv#Organization"/>
+        <owl:equivalentClass rdf:resource="http://purl.org/goodrelations/v1#BusinessEntity"/>
+    </rdfs:Class>
+
+    <CVJobType rdf:about="http://www.openlinksw.com/schemas/cv#Contractor">
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>contractor</rdfs:label>
+    </CVJobType>
+
+    <rdfs:Class rdf:about="http://www.openlinksw.com/schemas/cv#Course">
+        <rdfs:comment>CV entry detailing a course taken</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Course</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/cv#CV_Entry"/>
+    </rdfs:Class>
+
+    <MaritalStatus rdf:about="http://www.openlinksw.com/schemas/cv#Divorced">
+        <rdfs:comment>Marital status - divorced</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>divorced</rdfs:label>
+    </MaritalStatus>
+
+    <EduDegree rdf:about="http://www.openlinksw.com/schemas/cv#EduAssociate">
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Associate degree</rdfs:label>
+    </EduDegree>
+
+    <EduDegree rdf:about="http://www.openlinksw.com/schemas/cv#EduBachelor">
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Bachelor's degree</rdfs:label>
+    </EduDegree>
+
+    <EduDegree rdf:about="http://www.openlinksw.com/schemas/cv#EduCollegeCoursework">
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Some college coursework completed.</rdfs:label>
+    </EduDegree>
+
+    <rdfs:Class rdf:about="http://www.openlinksw.com/schemas/cv#EduDegree">
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Degrees</rdfs:label>
+    </rdfs:Class>
+
+    <EduDegree rdf:about="http://www.openlinksw.com/schemas/cv#EduDoctorate">
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Doctorate</rdfs:label>
+    </EduDegree>
+
+    <EduDegree rdf:about="http://www.openlinksw.com/schemas/cv#EduHighSchool">
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>High school or equivalent.</rdfs:label>
+    </EduDegree>
+
+    <EduDegree rdf:about="http://www.openlinksw.com/schemas/cv#EduMaster">
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Master's degree</rdfs:label>
+    </EduDegree>
+
+    <EduDegree rdf:about="http://www.openlinksw.com/schemas/cv#EduProfessional">
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Professional</rdfs:label>
+    </EduDegree>
+
+    <EduDegree rdf:about="http://www.openlinksw.com/schemas/cv#EduVocational">
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Vocational</rdfs:label>
+    </EduDegree>
+
+    <rdfs:Class rdf:about="http://www.openlinksw.com/schemas/cv#Education">
+        <rdfs:comment>CV entry detailing education</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Education</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/cv#CV_Entry"/>
+    </rdfs:Class>
+
+    <rdfs:Class rdf:about="http://www.openlinksw.com/schemas/cv#EducationalOrg">
+        <rdfs:comment>Educational organization</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>EducationalOrg</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/cv#Organization"/>
+    </rdfs:Class>
+
+    <CVJobType rdf:about="http://www.openlinksw.com/schemas/cv#Employee">
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>employee</rdfs:label>
+    </CVJobType>
+
+    <CVCareerLevel rdf:about="http://www.openlinksw.com/schemas/cv#EntryLvl">
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Entry level (less than 2 years of experience)</rdfs:label>
+    </CVCareerLevel>
+
+    <CVCareerLevel rdf:about="http://www.openlinksw.com/schemas/cv#Executive">
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Executive (SVP, EVP, VP)</rdfs:label>
+    </CVCareerLevel>
+
+    <Gender rdf:about="http://www.openlinksw.com/schemas/cv#Female">
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Female</rdfs:label>
+    </Gender>
+
+    <CVJobMode rdf:about="http://www.openlinksw.com/schemas/cv#Full-time">
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>full-time</rdfs:label>
+    </CVJobMode>
+
+    <rdfs:Class rdf:about="http://www.openlinksw.com/schemas/cv#Gender">
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Gender</rdfs:label>
+    </rdfs:Class>
+
+    <CVCareerLevel rdf:about="http://www.openlinksw.com/schemas/cv#HighSchool">
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Student (high school)</rdfs:label>
+    </CVCareerLevel>
+
+    <OtherCVInfoType rdf:about="http://www.openlinksw.com/schemas/cv#Interests">
+        <rdfs:comment>Additional CV information - interests</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Other info - interests</rdfs:label>
+    </OtherCVInfoType>
+
+    <CVJobType rdf:about="http://www.openlinksw.com/schemas/cv#Intern">
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>internship</rdfs:label>
+    </CVJobType>
+
+    <rdfs:Class rdf:about="http://www.openlinksw.com/schemas/cv#LanguageSkill">
+        <rdfs:comment>Language skill (spoken, written, reading)</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>language skill</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/cv#Skill"/>
+    </rdfs:Class>
+
+    <Gender rdf:about="http://www.openlinksw.com/schemas/cv#Male">
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Male</rdfs:label>
+    </Gender>
+
+    <CVCareerLevel rdf:about="http://www.openlinksw.com/schemas/cv#Management">
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Management (manager/director of staff)</rdfs:label>
+    </CVCareerLevel>
+
+    <rdfs:Class rdf:about="http://www.openlinksw.com/schemas/cv#MaritalStatus">
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Marital Status</rdfs:label>
+    </rdfs:Class>
+
+    <MaritalStatus rdf:about="http://www.openlinksw.com/schemas/cv#Married">
+        <rdfs:comment>Marital status - married</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>married</rdfs:label>
+    </MaritalStatus>
+
+    <OtherCVInfoType rdf:about="http://www.openlinksw.com/schemas/cv#Membership">
+        <rdfs:comment>Additional CV information - membership</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Other info - membership</rdfs:label>
+    </OtherCVInfoType>
+
+    <CVCareerLevel rdf:about="http://www.openlinksw.com/schemas/cv#MidCareer">
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Mid-career (2+ years of experience)</rdfs:label>
+    </CVCareerLevel>
+
+    <rdfs:Class rdf:about="http://www.openlinksw.com/schemas/cv#Organization">
+        <rdfs:comment>General class for organizations</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Organization</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.w3.org/2000/01/rdf-schema#Resource"/>
+        <rdfs:subClassOf rdf:resource="http://xmlns.com/foaf/0.1/Organization"/>
+    </rdfs:Class>
+
+    <OtherCVInfoType rdf:about="http://www.openlinksw.com/schemas/cv#Other">
+        <rdfs:comment>Additional CV information - miscellaneous</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Other info - other</rdfs:label>
+    </OtherCVInfoType>
+
+    <rdfs:Class rdf:about="http://www.openlinksw.com/schemas/cv#OtherCVInfoType">
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Type of misc information added to a CV.</rdfs:label>
+    </rdfs:Class>
+
+    <rdfs:Class rdf:about="http://www.openlinksw.com/schemas/cv#OtherInfo">
+        <rdfs:comment>Other information in CV</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Other Info</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/cv#CV_Entry"/>
+    </rdfs:Class>
+
+    <CVJobMode rdf:about="http://www.openlinksw.com/schemas/cv#Part-time">
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>part-time</rdfs:label>
+    </CVJobMode>
+
+    <rdfs:Class rdf:about="http://www.openlinksw.com/schemas/cv#Person">
+        <rdfs:comment>A Person a CV relates to</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Person</rdfs:label>
+        <owl:equivalentClass rdf:resource="http://xmlns.com/foaf/0.1/Person"/>
+    </rdfs:Class>
+
+    <rdfs:Class rdf:about="http://www.openlinksw.com/schemas/cv#PersonalReference">
+        <rdfs:comment>Personal reference</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Personal Reference</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/cv#Reference"/>
+    </rdfs:Class>
+
+    <OtherCVInfoType rdf:about="http://www.openlinksw.com/schemas/cv#PointOfView">
+        <rdfs:comment>Additional CV information - point of view</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Other info - point of view</rdfs:label>
+    </OtherCVInfoType>
+
+    <rdfs:Class rdf:about="http://www.openlinksw.com/schemas/cv#ProfessionalReference">
+        <rdfs:comment>Professional reference</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Professional Reference</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/cv#Reference"/>
+    </rdfs:Class>
+
+    <OtherCVInfoType rdf:about="http://www.openlinksw.com/schemas/cv#Publications">
+        <rdfs:comment>Additional CV information - publications</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Other info - publications</rdfs:label>
+    </OtherCVInfoType>
+
+    <rdfs:Class rdf:about="http://www.openlinksw.com/schemas/cv#Reference">
+        <rdfs:comment>CV entry for references</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Reference</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/cv#CV_Entry"/>
+    </rdfs:Class>
+
+    <CVCareerLevel rdf:about="http://www.openlinksw.com/schemas/cv#SeniorExecutive">
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Senior Executive (president / CEO)</rdfs:label>
+    </CVCareerLevel>
+
+    <MaritalStatus rdf:about="http://www.openlinksw.com/schemas/cv#Single">
+        <rdfs:comment>Marital status - single</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>single</rdfs:label>
+    </MaritalStatus>
+
+    <rdfs:Class rdf:about="http://www.openlinksw.com/schemas/cv#Skill">
+        <rdfs:comment>CV entry for description of skills</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Skill</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/cv#CV_Entry"/>
+    </rdfs:Class>
+
+    <OtherCVInfoType rdf:about="http://www.openlinksw.com/schemas/cv#SocialActivities">
+        <rdfs:comment>Additional CV information - social activities</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Other info - social activities</rdfs:label>
+    </OtherCVInfoType>
+
+    <CVCareerLevel rdf:about="http://www.openlinksw.com/schemas/cv#Student">
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Student (graduate/undergraduate)</rdfs:label>
+    </CVCareerLevel>
+
+    <rdfs:Class rdf:about="http://www.openlinksw.com/schemas/cv#Target">
+        <rdfs:comment>CV information for target of job application.
+(Single entry per CV. May be defined in the properties of CV class instead).</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Target</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/cv#CV_Entry"/>
+    </rdfs:Class>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#URL">
+        <rdfs:comment>Company home page</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Organization"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>home page URL</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2000/01/rdf-schema#Resource"/>
+    </rdf:Property>
+
+    <MaritalStatus rdf:about="http://www.openlinksw.com/schemas/cv#Widowed">
+        <rdfs:comment>Marital status - widowed</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>widowed</rdfs:label>
+    </MaritalStatus>
+
+    <rdfs:Class rdf:about="http://www.openlinksw.com/schemas/cv#WorkHistory">
+        <rdfs:comment>CV entry for work history</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>Work History</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/cv#CV_Entry"/>
+    </rdfs:Class>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#aboutPerson">
+        <rdfs:comment>The person the CV describes</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#CV"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>about person</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/cv#Person"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#birthPlace">
+        <rdfs:comment>Place of birth</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>birth place</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#careerLevel">
+        <rdfs:comment>Career level for the position in company</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#WorkHistory"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>career level</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/cv#CVCareerLevel"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#conditionWillRelocate">
+        <rdfs:comment>Is the candidate willing to relocate?</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Target"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>willing to relocate</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#boolean"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#conditionWillTravel">
+        <rdfs:comment>Is the candidate willing to travel?</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Target"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>willing to travel</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#boolean"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#country">
+        <rdfs:comment>Country where an organization is located</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Organization"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>country</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#courseDescription">
+        <rdfs:comment>Description of the course / certification</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Course"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>course description</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#courseFinishDate">
+        <rdfs:comment>Date when course was finished / certification acquired</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Course"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>course finish date</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#date"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#courseStartDate">
+        <rdfs:comment>Start date of the course taken</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Course"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>course start date</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#date"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#courseTitle">
+        <rdfs:comment>Title of the course taken or certification acquired</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Course"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>course title</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#courseURL">
+        <rdfs:comment>Web page of a course taken or certification acquired</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Course"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>course URL</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2000/01/rdf-schema#Resource"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#cvCopyright">
+        <rdfs:comment>Copyright notice - who owns rights to CV, how may it be used, other legal info.</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#CV"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>cv copyright</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#cvDescription">
+        <rdfs:comment>Text describing what the person wants to accomplish by this CV; what is they are looking for etc</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#CV"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>cv description</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#cvIsActive">
+        <rdfs:comment>If the CV is active and the person is actively looking for job opportunities.</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#CV"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>cvIsActive</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#boolean"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#cvIsConfidential">
+        <rdfs:comment>If the CV is confidential and may be used by receiving party only</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#CV"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>cv is confidential</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#boolean"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#cvTitle">
+        <rdfs:comment>CV title.</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#CV"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>cvTitle</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#degreeType">
+        <rdfs:comment>Type (title) of the degree</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Education"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>degree type</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/cv#EduDegree"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#eduDescription">
+        <rdfs:comment>Description of the education info</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Education"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>education description</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#eduGradDate">
+        <rdfs:comment>Education end date</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Education"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>graduation date</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#date"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#eduMajor">
+        <rdfs:comment>Major speciality graduated in</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Education"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>education major</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#eduMinor">
+        <rdfs:comment>Minor specialities graduated in</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Education"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>education minor</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#eduStartDate">
+        <rdfs:comment>Education start date</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Education"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>education start date</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#date"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#employedIn">
+        <rdfs:comment>The company where the person is/was employed</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#WorkHistory"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>employed in</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/cv#Company"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#endDate">
+        <rdfs:comment>End date of employment</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#WorkHistory"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>end date</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#date"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#gender">
+        <rdfs:comment>The person's gender</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>gender</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/cv#Gender"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#hasCitizenship">
+        <rdfs:comment>Country in which a person has citizenship</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>has citizenship</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#hasCourse">
+        <rdfs:comment>Details of a course attended by the person</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#CV"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>has course</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/cv#Course"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#hasDriversLicence">
+        <rdfs:comment>Indicates if the person holds a driver's licence (for regular cars)</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>has drivers licence</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#boolean"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#hasEducation">
+        <rdfs:comment>Details of a person's education</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#CV"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>has education</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/cv#Education"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#hasNationality">
+        <rdfs:comment>The person's nationality.</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>has nationality</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#hasOtherInfo">
+        <rdfs:comment>Miscellaneous additional information included in the CV</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#CV"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>has other info</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/cv#OtherInfo"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#hasReference">
+        <rdfs:comment>A work reference</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#CV"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>has reference</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/cv#Reference"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#hasSkill">
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#CV"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>hasSkill</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/cv#Skill"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#hasTarget">
+        <rdfs:comment>The person's target job</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#CV"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>has target job</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/cv#Target"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#hasWorkHistory">
+        <rdfs:comment>The person's employment history</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#CV"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>has work history</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/cv#WorkHistory"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#has_CV">
+        <rdfs:comment>A CV of this person</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>has CV</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/cv#CV"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#industry">
+        <rdfs:comment>Industry a company operates in</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Company"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>industry</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#isCertification">
+        <rdfs:comment>Does this course entry include certification?</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Course"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>is certification</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#boolean"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#isCurrent">
+        <rdfs:comment>Indicates if the person currently holds this position</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#WorkHistory"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>is current</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#boolean"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#jobDescription">
+        <rdfs:comment>Description of the job in the company</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#WorkHistory"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>job description</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#jobTitle">
+        <rdfs:comment>Title in the company</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#WorkHistory"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>job title</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#jobType">
+        <rdfs:comment>Type of the job: employee / contractor / intern</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#WorkHistory"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>job type</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/cv#CVJobType"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#lastUpdate">
+        <rdfs:comment>Date when the information in CV was last updated</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#CV"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>last update</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#date"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#lngSkillLevelReading">
+        <rdfs:comment>Level of reading skills in a language skill (0..5)</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#languageSkill"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>language reading level</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#lngSkillLevelWriting">
+        <rdfs:comment>Level of writing skills in a language (0..5)</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#languageSkill"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>language writing level</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#locality">
+        <rdfs:comment>Region / state of the company</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Organization"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>locality</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#maritalStatus">
+        <rdfs:comment>The person's marital status</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>marital status</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/cv#MaritalStatus"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#noOfChildren">
+        <rdfs:comment>Number of children the person has</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Person"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>number of children</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#notes">
+        <rdfs:comment>Notes about an organization</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Organization"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>notes</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#numSubordinates">
+        <rdfs:comment>Number of subordinates reporting to the person</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#WorkHistory"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>number of subordinates</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#organization_name">
+        <rdfs:comment>Name of an organization</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Organization"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>organization name</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#organizedBy">
+        <rdfs:comment>Organization that organized courses and/or provided certification</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Course"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>organized by</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/cv#Organization"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#otherInfoDescription">
+        <rdfs:comment>Description - content of miscellaneous CV information</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#OtherInfo"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>other info description</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#otherInfoType">
+        <rdfs:comment>Type of other CV information (interests / awards / accomplishments / point of view / membership / social activities / other)</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#OtherInfo"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>other info type</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/cv#OtherCVInfoType"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#referenceBy">
+        <rdfs:comment>Points to a person who provides the reference</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Reference"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>reference by</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/cv#Person"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#skillLastUsed">
+        <rdfs:comment>Date when skill was last used.</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Skill"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>skill last used</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#date"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#skillLevel">
+        <rdfs:comment>Level of accomplishment in the skill (0..5)</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Skill"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>skill level</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#skillName">
+        <rdfs:comment>Name of the skill</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Skill"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>skill name</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#skillYearsExperience">
+        <rdfs:comment>Years of experience in this skill</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Skill"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>skill years experience</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#startDate">
+        <rdfs:comment>Start date of employment</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#WorkHistory"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>start date</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#date"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#studiedIn">
+        <rdfs:comment>Educational organization where person studied</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Education"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>studied in</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/cv#EducationalOrg"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#targetCareerLevel">
+        <rdfs:comment>Target career level.</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Target"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>target career level</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/cv#CVCareerLevel"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#targetCompanyDescription">
+        <rdfs:comment>Description on the company where the candidate would like to work</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Target"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>target company description</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#targetCompanyIndustry">
+        <rdfs:comment>Industry of the company where the candidate would like to work</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Target"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>target company industry</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#targetCompanySize">
+        <rdfs:comment>Size of the target company</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Target"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>target company size</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#targetCountry">
+        <rdfs:comment>Country where job applicant would like to work</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Target"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>target country</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#targetJobDescription">
+        <rdfs:comment>Description of the job applicant is seeking</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Target"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>target job description</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#targetJobMode">
+        <rdfs:comment>Job mode: full-time / part-time</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Target"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>target job mode</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/cv#CVJobMode"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#targetJobType">
+        <rdfs:comment>Target job type</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Target"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>target job type</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/cv#CVJobType"/>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#targetSalary">
+        <rdfs:comment>Target salary</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Target"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>target salary</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+        <owl:maxCardinality>1</owl:maxCardinality>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#targetSalaryCurrency">
+        <rdfs:comment>Currency for target salary.</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Target"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>target salary currency</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <owl:maxCardinality>1</owl:maxCardinality>
+    </rdf:Property>
+
+    <rdf:Property rdf:about="http://www.openlinksw.com/schemas/cv#weeksNoticePeriod">
+        <rdfs:comment>Notice period (weeks) required before starting new position.</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cv#Target"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cv"/>
+        <rdfs:label>notice period (weeks)</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    </rdf:Property>
+</rdf:RDF>

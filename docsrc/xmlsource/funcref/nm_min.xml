@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2013 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_nm_min">
+  <refmeta>
+    <refentrytitle>__min</refentrytitle>
+    <refmiscinfo>number</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>__min</refname>
+    <refpurpose>Returns minimum value among all its arguments.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn___min">
+      <funcprototype id="fproto___min">
+        <funcdef>any <function>__min</function></funcdef>
+	        <paramdef><parameter>arg1</parameter> any</paramdef>
+	        <paramdef><parameter>arg2</parameter> any</paramdef>
+	        <paramdef><parameter>...</parameter></paramdef>
+	        <paramdef><parameter>argN</parameter> any</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc___min"><title>Description</title>
+  <para>The function returns the minimum value among all values in all its arguments.</para>
+  </refsect1>	
+  <refsect1 id="params___min"><title>Parameters</title>
+    <refsect2><title>argI</title>
+      <para>Values which can be with type float, integer etc.</para></refsect2>
+  </refsect1>
+  <refsect1 id="examples___min"><title>Examples</title>
+  <example id="ex___min"><title></title>
+<para><emphasis>Example 1</emphasis></para>    
+  <screen><![CDATA[
+SQL> select __min(12, 2.34, 5, 20);
+__min
+VARCHAR
+_______________________________________________________________________________
+
+2.34
+
+1 Rows. -- 32 msec.
+]]></screen>
+<para><emphasis>Example 2</emphasis></para>  
+<programlisting><![CDATA[
+SQL> SPARQL 
+INSERT INTO GRAPH <http://mygraph2.com>
+  { 
+    <http://mygraph2.com/pricing/#QVal1> <price1>  1 ; <price2> 9 ; <price3> 5 .
+    <http://mygraph2.com/pricing/#QVal2> <price1>  3 ; <price2> 1 ; <price3> 4 .
+    <http://mygraph2.com/pricing/#QVal3> <price1>  6 ; <price2> 2 ; <price3> 2 .
+  };
+  
+Insert into <http://mygraph.com>, 9 (or less) triples -- done
+No. of rows in result: 1
+ 
+  
+SQL> SPARQL SELECT ?s (bif:__min(?pr1, ?pr2, ?pr3))
+FROM <http://mygraph2.com>
+WHERE 
+  {
+    ?s <price1> ?pr1 ;  
+       <price2> ?pr2 ;  
+       <price3> ?pr3 
+  };  	
+  
+Query result:
+s                                     callret-1
+VARCHAR 	                            VARCHAR
+_______________________________________________
+http://mygraph2.com/pricing/#QVal3	  2
+http://mygraph2.com/pricing/#QVal2	  1
+http://mygraph2.com/pricing/#QVal1	  1
+
+No. of rows in result: 3  	
+]]></programlisting>
+  </example>
+  </refsect1>
+    <refsect1 id="seealso___min">
+    <title>See Also</title>
+    <para><link linkend="fn_nm_max"><function>__max</function></link></para>    
+    <para><link linkend="fn_nm_min_notnull"><function>__min_notnull</function></link></para>
+    <para><link linkend="fn_nm_max_notnull"><function>__max_notnull</function></link></para>    
+  </refsect1>
+</refentry>
+
+

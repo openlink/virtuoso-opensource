@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2009 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -118,7 +118,7 @@ create procedure WS.WS.FTP_SRV (in path any, in params any, in lines any)
 
   if (FTP_ANONYMOUS_CHECK (ftp_user))
     {
-       home_dir := cfg_item_value(virtuoso_ini_path(), 'HTTPServer', 'FTPServerAnonymousHome');
+       home_dir := virtuoso_ini_item_value ('HTTPServer', 'FTPServerAnonymousHome');
        if (home_dir is NULL)
 	 home_dir := '/DAV/';
        else if (DAV_HIDE_ERROR (DAV_SEARCH_ID (home_dir, 'C')) is null)
@@ -208,7 +208,7 @@ create procedure FTP_GET_COMMAND (in _in varchar, inout command varchar, inout a
 create procedure FTP_ANONYMOUS_CHECK (in _user varchar)
 {
   if (upper (_user) = 'ANONYMOUS' and
-      cfg_item_value(virtuoso_ini_path(), 'HTTPServer', 'FTPServerAnonymousLogin') = '1')
+      virtuoso_ini_item_value ('HTTPServer', 'FTPServerAnonymousLogin') = '1')
     return 1;
 
   return 0;
@@ -223,7 +223,7 @@ FTP_AUTHENTICATE (in id any, in what char(1), in req varchar, in a_uname varchar
     {
       if (upper (a_uname) = 'ANONYMOUS')
         {
-          if (cfg_item_value (virtuoso_ini_path(), 'HTTPServer', 'FTPServerAnonymousLogin') = '1')
+          if (virtuoso_ini_item_value ('HTTPServer', 'FTPServerAnonymousLogin') = '1')
             return DAV_AUTHENTICATE (id, what, req, 'anonymous', a_pwd, 1);
           return -12;
         }
@@ -1026,7 +1026,7 @@ create procedure FTP_NOR_DIR (in dir1 varchar, inout dir2 varchar)
 
 create procedure FTP_GET (in _server varchar, in _user varchar, in _pass varchar,
 			  in _file varchar, in _local varchar, in is_pasv integer := 1,
-			  in dav_user varchar := NULL, in dav_pass varchar := NULL)
+			  in dav_user varchar := NULL, in dav_pass varchar := NULL, in ret_ses int := 0)
 {
   declare ses, listen, data_ses, data_addr, all_at any;
 
@@ -1055,6 +1055,9 @@ create procedure FTP_GET (in _server varchar, in _user varchar, in _pass varchar
 
   FTP_COMMAND (ses, concat ('quit'), NULL);
   ses_disconnect (ses);
+
+  if (ret_ses)
+    return all_at;
 
   if (length (_local) >= 7 and "LEFT" (_local, 7) = 'virt://')
     return FTP_PUT_IN_DAV (_local, all_at, dav_user, dav_pass);
@@ -1169,7 +1172,7 @@ create procedure FTP_COMMAND (inout ses any, in cmd varchar, in is_ok any)
 		 code := 0;
 
 	    if (FTP_IF_CODE_OK (code, is_ok))
-	      return;
+	      return code;
 
             if (code and not FTP_IF_CODE_OK (code, is_ok))
 	      signal ('42000', _in);
@@ -1205,7 +1208,7 @@ create procedure FTP_SES_GET (in new_addr varchar, inout all_at any, inout data_
 create procedure FTP_CONNECT (in _server varchar, in _user varchar, in _pass varchar,
 			      inout ses any, in pasv integer)
 {
-
+  declare rc any;
   if (strstr (_server, ':') is NULL)
     _server := concat (_server, ':21');
 
@@ -1215,8 +1218,9 @@ create procedure FTP_CONNECT (in _server varchar, in _user varchar, in _pass var
   ses := ses_connect (_server);
 
   FTP_COMMAND (ses, NULL, vector (220));
-  FTP_COMMAND (ses, _user, vector (331));
-  FTP_COMMAND (ses, _pass, vector (230));
+  rc := FTP_COMMAND (ses, _user, vector (331, 230));
+  if (rc <> 230)
+    FTP_COMMAND (ses, _pass, vector (230));
   FTP_COMMAND (ses, 'type i', vector (200));
 
   if (pasv)
@@ -1325,8 +1329,8 @@ create procedure GET_FREE_PORT ()
 {
    declare _last, _min, _max any;
 
-   _min := cfg_item_value(virtuoso_ini_path(), 'HTTPServer', 'FTPServerMinFreePort');
-   _max := cfg_item_value(virtuoso_ini_path(), 'HTTPServer', 'FTPServerMaxFreePort');
+   _min := virtuoso_ini_item_value ('HTTPServer', 'FTPServerMinFreePort');
+   _max := virtuoso_ini_item_value ('HTTPServer', 'FTPServerMaxFreePort');
 
    if (_min is NULL) _min := 20000;
    if (_max is NULL) _max := 30000;
@@ -1433,7 +1437,7 @@ create procedure FTP_WRITE (in l_user varchar, in w_str varchar, in command varc
   declare log_file varchar;
   -- dbg_obj_princ ('FTP_WRITE (', l_user, w_str, command, len, ')');
 
-  log_file := cfg_item_value(virtuoso_ini_path(), 'HTTPServer', 'FTPServerLogFile');
+  log_file := virtuoso_ini_item_value ('HTTPServer', 'FTPServerLogFile');
 
   if (log_file is NULL)
     goto finish;

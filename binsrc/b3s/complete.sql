@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2009 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -20,9 +20,9 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
--- URI completion 
+-- URI completion
 
-create procedure 
+create procedure
 num_str (in n int)
 {
   declare s varchar;
@@ -38,7 +38,7 @@ num_str (in n int)
 }
 ;
 
-create procedure 
+create procedure
 str_inc (in str varchar, in pref int := 0)
 {
   -- increment by one for range cmp
@@ -66,7 +66,7 @@ str_inc (in str varchar, in pref int := 0)
 --}
 
 
-create procedure 
+create procedure
 cmp_find_iri (in str varchar, in no_name int := 0)
 {
   /* We look for iris, assuming the full ns is in the name  */
@@ -80,11 +80,11 @@ cmp_find_iri (in str varchar, in no_name int := 0)
       pref := str;
       name := '1111';
     }
-  else 
+  else
     pref := iri_split (str, name, 1);
 
-  id := (select rp_id 
-           from rdf_prefix 
+  id := (select rp_id
+           from rdf_prefix
            where rp_name = pref);
 
   if (id is null)
@@ -98,34 +98,34 @@ cmp_find_iri (in str varchar, in no_name int := 0)
 
   if (no_name)
     {
-      iris :=  (select vector_agg (ri_name) 
-                from (select top 20 ri_name 
-                        from rdf_iri 
-                        where ri_name >= name and 
+      iris :=  (select vector_agg (ri_name)
+                from (select top 20 ri_name
+                        from rdf_iri
+                        where ri_name >= name and
                               ri_name < num_str (id + 1)) ir);
 
       if (length (iris) < 20 and length (iris) > 1)
-        iris := (select vector_agg (ri_name) 
-                 from (select ri_name 
-                         from rdf_iri 
-                         where ri_name >= name and 
+        iris := (select vector_agg (ri_name)
+                 from (select ri_name
+                         from rdf_iri
+                         where ri_name >= name and
                                ri_name < num_str (id + 1)
                          order by iri_rank (ri_id) desc) ir);
     }
-  else 
+  else
     {
-      iris :=  (select vector_agg (ri_name) 
-                  from (select top 20 ri_name 
-                          from rdf_iri 
-                          where ri_name >= name and 
+      iris :=  (select vector_agg (ri_name)
+                  from (select top 20 ri_name
+                          from rdf_iri
+                          where ri_name >= name and
                                 ri_name < str_inc (name, 4)) ir);
 
       if (length (iris) < 20 and length (iris) > 1)
-        iris := (select vector_agg (ri_name) 
-                 from (select ri_name 
-                         from rdf_iri 
-                         where ri_name >= name and 
-                               ri_name < str_inc (name, 4) 
+        iris := (select vector_agg (ri_name)
+                 from (select ri_name
+                         from rdf_iri
+                         where ri_name >= name and
+                               ri_name < str_inc (name, 4)
                          order by iri_rank (ri_id) desc) ir);
     }
 
@@ -138,15 +138,14 @@ cmp_find_iri (in str varchar, in no_name int := 0)
 }
 ;
 
-create procedure 
+create procedure
 cmp_find_ns (in str varchar)
 {
   declare nss any;
-
-  nss := (select vector_agg (rp_name) 
-            from (select top 20 rp_name 
-                    from rdf_prefix 
-                    where rp_name >= str and 
+  nss := (select vector_agg (rp_name)
+            from (select top 20 rp_name
+                    from rdf_prefix
+                    where rp_name >= str and
                           rp_name < str_inc (str)) ns);
 
   return nss;
@@ -154,7 +153,7 @@ cmp_find_ns (in str varchar)
 ;
 
 
-create procedure 
+create procedure
 cmp_with_ns (in str varchar)
 {
   declare pref_str varchar;
@@ -165,8 +164,8 @@ cmp_with_ns (in str varchar)
   if (col = 0)
     return null;
 
-  pref_str := (select ns_url 
-                 from SYS_XML_PERSISTENT_NS_DECL 
+  pref_str := (select ns_url
+                 from SYS_XML_PERSISTENT_NS_DECL
                  where ns_prefix = subseq (str, 0, col - 1));
   if (pref_str is null)
     return null;
@@ -177,7 +176,7 @@ cmp_with_ns (in str varchar)
 ;
 
 
-create procedure 
+create procedure
 cmp_uri (in str varchar)
 {
   declare with_ns varchar;
@@ -193,6 +192,7 @@ cmp_uri (in str varchar)
 	return cmp_find_iri (with_ns);
 
       -- no protocol and no known prefix
+      if (strstr (str, ':') is null)
 	str := 'http://' || str;
     }
 
@@ -217,7 +217,7 @@ cmp_uri (in str varchar)
 }
 ;
 
-create procedure 
+create procedure
 urilbl_ac_ruin_label (in lbl varchar)
 {
   declare tmp any;
@@ -229,7 +229,7 @@ urilbl_ac_ruin_label (in lbl varchar)
 }
 ;
 
-create procedure 
+create procedure
 urilbl_ac_init_log (in msg varchar)
 {
 --  dbg_printf(msg);
@@ -241,7 +241,7 @@ urilbl_ac_init_log (in msg varchar)
 -- Originally from rdf_mappers/rdfdesc.sql
 -- Determine q of given lang based on value of Accept-Language hdr
 
-create procedure 
+create procedure
 cmp_get_lang_by_q (in accept varchar, in lang varchar)
 {
   declare format, itm, q varchar;

@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2010 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -28,23 +28,9 @@ TBL.selectOption = function(fld, fldValue, optionName, optionValue) {
 		o.selected = true;
 }
 
-TBL.createRow = function (prefix, No, optionObject)
-{
-  if (No != null)
+TBL.No = function (tbl, prefix, options)
   {
-    TBL.deleteRow(prefix, No);
-  }
-  else
-  {
-    var tbl = $(prefix+'_tbody');
-    if (!tbl)
-      tbl = $(prefix+'_tbl');
-    if (tbl)
-    {
-      var options = {btn_1: {mode: 0}};
-      for (var p in optionObject) {options[p] = optionObject[p]; }
-
-      No = options.No;
+  var No = options.No;
       if (!$(prefix+'_no')) {
       	var fld = OAT.Dom.create("input");
         fld.type = 'hidden';
@@ -58,8 +44,36 @@ TBL.createRow = function (prefix, No, optionObject)
       } else {
         No = $v(prefix+'_no');
       }
-      No = parseInt(No)
+  return parseInt(No)
+}
 
+TBL.parent = function (obj, tag) {
+  var obj = obj.parentNode;
+  if (obj.tagName.toLowerCase() == tag)
+    return obj;
+  return TBL.parent(obj, tag);
+}
+
+TBL.createRow = function (prefix, No, optionObject, viewMode) {
+  if (No != null)
+  {
+    TBL.deleteRow(prefix, No);
+  }
+  else if (viewMode)
+  {
+    TBL.createViewRow(prefix, optionObject);
+  }
+  else
+  {
+    var tbl = $(prefix+'_tbody');
+    if (!tbl)
+      tbl = $(prefix+'_tbl');
+    if (tbl)
+    {
+      var options = {btn_1: {mode: 0}};
+      for (var p in optionObject) {options[p] = optionObject[p]; }
+
+      No = TBL.No(tbl, prefix, options);
       OAT.Dom.hide (prefix+'_tr_no');
 
       var tr = OAT.Dom.create('tr');
@@ -87,7 +101,7 @@ TBL.createRow = function (prefix, No, optionObject)
       // actions
       var td = OAT.Dom.create('td');
       td.id = prefix+'_td_'+ No+'_btn';
-      td.style.whiteSpace = 'nowrap';
+      td.style.cssText = 'white-space: nowrap; vertical-align: top;';
       tr.appendChild(td);
       if (options.id) {
       	var fld = OAT.Dom.create("input");
@@ -125,12 +139,16 @@ TBL.createRow = function (prefix, No, optionObject)
 
 TBL.createViewRow = function (prefix, options)
 {
-  var tbl = $(prefix+'_tbl');
+  var tbl = $(prefix+'_tbody');
+  if (!tbl)
+    tbl = $(prefix+'_tbl');
   if (tbl)
   {
+    var No = TBL.No(tbl, prefix, options);
     OAT.Dom.hide (prefix+'_tr_no');
 
     var tr = OAT.Dom.create('tr');
+    tr.id = prefix+'_tr_' + No;
     tbl.appendChild(tr);
 
     // fields
@@ -145,7 +163,7 @@ TBL.createViewRow = function (prefix, options)
         tr.appendChild(td);
 
         if (fldOptions.mode) {
-          fldName = prefix + '_' + fld + '_0';
+          fldName = prefix + '_' + fld + '_' + No;
           var fn = TBL["viewCell"+fldOptions.mode];
           if (fn)
         	  fn(td, prefix, fldName, 0, fldOptions);
@@ -153,6 +171,7 @@ TBL.createViewRow = function (prefix, options)
           td.innerHTML = fldOptions.value;
         }
       }
+      $(prefix+'_no').value = No + 1;
     }
   }
 }
@@ -165,11 +184,19 @@ TBL.deleteRow = function (prefix, No, ask) {
   OAT.Dom.unlink(prefix+'_tr_'+No+'_items');
   OAT.Dom.unlink(prefix+'_tr_'+No+'_properties');
   var No = parseInt($(prefix+'_no').value);
-  for (var N = 0; N < No; N++)
-  {
+  for (var N = 0; N < No; N++) {
     if ($(prefix+'_tr_'+N))
       return;
   }
+  OAT.Dom.show(prefix+'_tr_no');
+  return true;
+}
+
+TBL.clean = function (prefix) {
+  var No = parseInt($(prefix+'_no').value);
+  for (var N = 0; N < No; N++)
+    OAT.Dom.unlink(prefix+'_tr_'+N);
+
   OAT.Dom.show(prefix+'_tr_no');
   return true;
 }
@@ -328,7 +355,7 @@ TBL.createCell52 = function (td, prefix, fldName, No, fldOptions, disabled) {
     suffix = fldOptions.suffix;
   cb(td, prefix, fldName+'_r'+suffix, No, fldOptions, disabled, 0);
   cb(td, prefix, fldName+'_w'+suffix, No, fldOptions, disabled, 1);
-  // cb(td, prefix, fldName+'_x'+suffix, No, fldOptions, disabled, 2);
+  cb(td, prefix, fldName+'_x'+suffix, No, fldOptions, disabled, 2);
 }
 
 TBL.viewCell52 = function (td, prefix, fldName, No, fldOptions) {
@@ -364,6 +391,215 @@ TBL.createCell53 = function (td, prefix, fldName, No, fldOptions)
   return fld;
 }
 
+TBL.changeCell55 = function (obj)
+{
+  var prefix = obj._prefix;
+  var No = obj._No;
+
+  TBL.createCell55Ext(obj);
+
+  var td = $(prefix+'_td_'+No+'_2');
+  td.innerHTML = '';
+  TBL.createCell56(td, prefix, prefix+'_fld_2_'+No, No, {className: '_validate_'});
+
+  var td = $(prefix+'_td_'+No+'_3');
+  td.innerHTML = '';
+  TBL.createCell57(td, prefix, prefix+'_fld_3_'+No, No, {className: '_validate_'});
+}
+
+TBL.createCell55 = function (td, prefix, fldName, No, fldOptions, disabled) {
+  var fld = TBL.createCellSelect(fldName, fldOptions);
+  fld._prefix = prefix;
+  fld._No = No;
+  fld.style.width = '95%';
+  OAT.Dom.option('', '', fld);
+  if (!TBL.predicates)
+    TBL.initValues();
+  if (TBL.predicates)
+    for (var i = 0; i < TBL.predicates.length; i = i + 2) {
+      OAT.Dom.option(TBL.predicates[i+1][0], TBL.predicates[i], fld);
+    }
+
+  if (fldOptions.value)
+    fld.value = fldOptions.value;
+
+  if (disabled)
+    fld.disabled = disabled;
+
+  if (!disabled)
+    fld.onchange = function(){TBL.changeCell55(this)};
+
+  td.appendChild(fld);
+  TBL.createCell55Ext(fld, fldOptions, disabled)
+
+  return fld;
+}
+
+TBL.createCell55Ext = function (obj, fldOptions, disabled) {
+  var prefix = obj._prefix;
+  var No = obj._No;
+
+  var predicate = TBL.predicateGet(prefix+'_fld_1_'+No);
+  if (!predicate)
+    return;
+
+  var fldName = prefix+'_fld_0_'+No;
+  if ((predicate[1] != 'sparql') && (predicate[1] != 'triplet')) {
+    OAT.Dom.unlink(fldName);
+    return;
+  }
+
+  if ($(fldName))
+    return;
+
+  if (predicate[1] == 'sparql') {
+  if (!fldOptions)
+    fldOptions = {valueExt: 'prefix sioc: <http://rdfs.org/sioc/ns#>\nprefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>\nprefix foaf: <http://xmlns.com/foaf/0.1/>\nASK where {^{webid}^ rdf:type foaf:Person}'};
+
+  var td = TBL.parent(obj, 'td');
+  var fld = OAT.Dom.create('textarea');
+  fld.id = fldName;
+  fld.name = fld.id;
+  fld.style.cssFloat = 'left';
+  fld.style.width = '94%';
+  fld.style.height = '8em';
+  if (fldOptions.valueExt)
+    fld.value = fldOptions.valueExt;
+  if (disabled)
+    fld.disabled = disabled;
+
+  td.appendChild(fld);
+}
+  else if (predicate[1] == 'triplet') {
+    var td = TBL.parent(obj, 'td');
+    if (!fldOptions)
+      fldOptions = {valueExt: ''};
+
+    var fld = TBL.createCellCombolist(td, fldOptions.valueExt, {name: fldName});
+    fld.input.style.width = "95%";
+
+    if (!TBL.triplets)
+      TBL.initValues();
+
+    for (i = 0; i < TBL.triplets.length; i++)
+      fld.addOption(TBL.triplets[i]);
+
+    td.appendChild(fld.div);
+  }
+}
+
+TBL.changeCell56 = function (obj) {
+  var prefix = obj._prefix;
+  var No = obj._No;
+
+  var td = $(prefix+'_td_'+No+'_3');
+  td.innerHTML = '';
+  TBL.createCell57(td, prefix, prefix+'_fld_3_'+No, No, {className: '_validate_'});
+}
+
+TBL.viewCell55 = function (td, prefix, fldName, No, fldOptions) {
+  TBL.createCell55(td, prefix, fldName, No, fldOptions, true);
+}
+
+TBL.createCell56 = function (td, prefix, fldName, No, fldOptions, disabled)
+{
+  var predicate = TBL.predicateGet(prefix+'_fld_1_'+No);
+  if (!predicate)
+    return;
+
+  var fld = TBL.createCellSelect(fldName, fldOptions);
+  fld._prefix = prefix;
+  fld._No = No;
+  fld.style.width = '95%';
+  OAT.Dom.option('', '', fld);
+  var predicateType = predicate[1];
+  if (TBL.compares)
+    for (var i = 0; i < TBL.compares.length; i = i + 2) {
+      var compareTypes = TBL.compares[i+1][1];
+      for (var j = 0; j < compareTypes.length; j++) {
+        if (compareTypes[j] == predicateType)
+          OAT.Dom.option(TBL.compares[i+1][0], TBL.compares[i], fld);
+      }
+    }
+  if (fldOptions.value)
+    fld.value = fldOptions.value;
+
+  if (disabled)
+    fld.disabled = disabled;
+
+  if (!disabled)
+    fld.onchange = function(){TBL.changeCell56(this)};
+
+  td.appendChild(fld);
+  return fld;
+}
+
+TBL.viewCell56 = function (td, prefix, fldName, No, fldOptions) {
+  TBL.createCell56(td, prefix, fldName, No, fldOptions, true);
+}
+
+TBL.createCell57 = function (td, prefix, fldName, No, fldOptions)
+{
+  var predicate = TBL.predicateGet(prefix+'_fld_1_'+No);
+  if (!predicate)
+    return;
+
+  var fld_2 = $(fldName.replace('fld_3', 'fld_2'));
+  if (!fld_2)
+    return;
+
+  var compare;
+  for (var i = 0; i < TBL.compares.length; i = i + 2) {
+    if (TBL.compares[i] == fld_2.value)
+      compare = TBL.compares[i+1];
+  }
+  if (!compare || (compare[2] == 0))
+    return;
+
+  if ((predicate[1] == 'boolean') || (predicate[1] == 'sparql')) {
+    var fld = OAT.Dom.create("select");
+    OAT.Dom.option('Yes', '1', fld);
+    OAT.Dom.option('No', '0', fld);
+  }
+  else
+  {
+    var fld = OAT.Dom.create("input");
+    fld.type = 'text';
+  }
+  fld.id = fldName;
+  fld.name = fld.id;
+  fld.style.width = '93%';
+  if (fldOptions.value)
+    fld.value = fldOptions.value;
+  if (fldOptions.className)
+    fld.className = fldOptions.className;
+  td.appendChild(fld);
+
+  for (var i = 0; i < predicate[3].length; i += 2) {
+    if (predicate[3][i] == 'size') {
+      fld['size'] = predicate[3][i+1];
+      fld.style.width = null;
+    }
+
+    if (predicate[3][i] == 'class')
+      fld.className = predicate[3][i+1];
+
+    if (predicate[3][i] == 'onclick')
+      OAT.Event.attach(fld, "click", new Function((predicate[3][i+1]).replace(/-FIELD-/g, fld.id)));
+
+    if (predicate[3][i] == 'button') {
+      var span = OAT.Dom.create("span");
+      span.innerHTML = ' ' + (predicate[3][i+1]).replace(/-FIELD-/g, fld.id);
+      td.appendChild(span);
+    }
+  }
+  return fld;
+}
+
+TBL.viewCell57 = function (td, prefix, fldName, No, fldOptions) {
+  TBL.createCell0(td, prefix, fldName, No, fldOptions, true);
+}
+
 TBL.createButton0 = function (td, prefix, fldName, No, fldOptions)
 {
   var fld = OAT.Dom.create('span');
@@ -382,4 +618,41 @@ TBL.createButton0 = function (td, prefix, fldName, No, fldOptions)
 
   td.appendChild(fld);
   return fld;
+}
+
+TBL.createButton55 = function (td, prefix, fldName, No, fldOptions)
+{
+  var img = OAT.Dom.create('img');
+  img.src = '/ods/images/icons/trash_16.png';
+  img.alt = 'Delete row';
+  img.title = img.alt;
+  img.onclick = function(){TBL.deleteRow(prefix, No);};
+  OAT.Dom.addClass(img, 'button');
+
+  td.appendChild(img);
+  return img;
+}
+
+TBL.initValues = function () {
+  // load filters data
+  var x = function(data) {
+    var o = OAT.JSON.parse(data);
+    TBL.predicates = o[0];
+    TBL.compares = o[1];
+    TBL.triplets = o[2];
+  }
+  OAT.AJAX.GET('/ods/api/filtersData', false, x, {async: false});
+}
+
+TBL.predicateGet = function (fldName) {
+  var fld = $(fldName)
+  if (fld) {
+    if (!TBL.predicates)
+      TBL.initValues();
+    for (var i = 0; i < TBL.predicates.length; i += 2) {
+      if (TBL.predicates[i] == fld.value)
+        return TBL.predicates[i+1];
+    }
+  }
+  return null;
 }

@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -60,13 +60,13 @@
 
     <xsl:output method="xml" indent="yes" />
 
-    <xsl:template match="/">
+    <xsl:template match="/rdf:RDF">
 	<rdf:RDF>
 	    <xsl:apply-templates/>
 	</rdf:RDF>
     </xsl:template>
 
-    <xsl:template match="rdf:RDF/geonames:Feature">
+    <xsl:template match="geonames:Feature">
 	<rdf:Description rdf:about="{$docproxyIRI}">
 	    <rdf:type rdf:resource="&bibo;Document"/>
 	    <sioc:container_of rdf:resource="{vi:proxyIRI($baseUri)}"/>
@@ -77,8 +77,16 @@
 	    <dc:title><xsl:value-of select="$baseUri"/></dc:title>
 	</rdf:Description>
 	<rdf:Description rdf:about="{vi:proxyIRI($baseUri)}">
+          	<opl:providedBy>
+          		<foaf:Organization rdf:about="http://www.geonames.org#this">
+          			<foaf:name>Geonames</foaf:name>
+          			<foaf:homepage rdf:resource="http://www.geonames.org"/>
+          		</foaf:Organization>
+          	</opl:providedBy>
+
 	    <rdf:type rdf:resource="&geonames;Feature"/>
-        <rdf:type rdf:resource="&gr;LocationOfSalesOrServiceProvisioning"/>
+			<rdf:type rdf:resource="&gr;Location"/>
+			<rdfs:label><xsl:value-of select="geonames:name"/></rdfs:label>
 	    <xsl:copy-of select="*"/>
 	</rdf:Description>
     </xsl:template>

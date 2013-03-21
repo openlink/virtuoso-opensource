@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -29,6 +29,7 @@
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY pto "http://www.productontology.org/id/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY vcard "http://www.w3.org/2001/vcard-rdf/3.0#">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY owl "http://www.w3.org/2002/07/owl#">
@@ -51,6 +52,7 @@
     xmlns:gr="&gr;"
     xmlns:pto="&pto;" 
     xmlns:oplamz="&oplamz;"	
+    xmlns:opl="&opl;"
     xmlns:bestbuy="http://remix.bestbuy.com/"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
     xmlns:cl="&cl;"
@@ -88,6 +90,13 @@
 						</gr:BusinessEntity>
 
 				<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Product')}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.productwiki.com#this">
+                        			<foaf:name>Productwiki</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.productwiki.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 					<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 					<rdf:type rdf:resource="&oplbb;Product" />
 				   <xsl:apply-templates select="//product[1]" />

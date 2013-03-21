@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2009 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -425,11 +425,7 @@ public class PreparedStatementWrapper
   public ResultSetMetaData getMetaData() throws SQLException {
     check_close();
     try {
-      ResultSetMetaData rsmd = ((PreparedStatement)stmt).getMetaData();
-      if (rsmd != null)
-        return new ResultSetMetaDataWrapper(rsmd, wconn);
-      else
-        return null;
+      return ((PreparedStatement)stmt).getMetaData();
     } catch (SQLException ex) {
       exceptionOccurred(ex);
       throw ex;
@@ -492,11 +488,7 @@ public class PreparedStatementWrapper
   public java.sql.ParameterMetaData getParameterMetaData() throws SQLException {
     check_close();
     try {
-      java.sql.ParameterMetaData prmd = ((PreparedStatement)stmt).getParameterMetaData();
-      if (prmd != null)
-        return new ParameterMetaDataWrapper(prmd, wconn);
-      else
-        return null;
+      return ((PreparedStatement)stmt).getParameterMetaData();
     } catch (SQLException ex) {
       exceptionOccurred(ex);
       throw ex;

@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2013 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_strcontains">
+  <refmeta>
+    <refentrytitle>strcontains</refentrytitle>
+    <refmiscinfo>string</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>strcontains</refname>
+    <refpurpose>Performs substring search</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_strcontains">
+      <funcprototype id="fproto_strcontains">
+        <funcdef><function>strcontains</function></funcdef>
+        <paramdef>in <parameter>str</parameter> string</paramdef>
+        <paramdef>in <parameter>sub</parameter> string</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_strcontains">
+    <title>Description</title>
+    <para><function>strcontains</function> performs a
+    substring search, returning 1 or 0.</para>
+  </refsect1>  
+  <refsect1 id="params_strcontains">
+    <title>Parameters</title>
+    <refsect2><title>str</title>
+      <para>String to search from.</para>
+    </refsect2>
+    <refsect2><title>sub</title>
+      <para>Substring to search for.</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret_strcontains">
+    <title>Return Types</title>
+    <para>1 if found, 0 if not found.</para>
+  </refsect1>
+  <refsect1 id="examples_strcontains">
+    <title>Examples</title>
+    <example id="ex_strcontains"><title>Simple example</title>
+<programlisting><![CDATA[
+SQL> select strcontains('AbracadabrA','abrA');
+strcontains
+INTEGER
+_______________________________________________________________________________
+
+1
+
+1 Rows. -- 0 msec.
+
+SQL> select strcontains('AbracadabrA','XZ');
+strcontains
+INTEGER
+_______________________________________________________________________________
+
+0
+
+1 Rows. -- 0 msec.
+]]></programlisting>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_strcontains">
+    <title>See Also</title>
+    <para><link linkend="fn_strcasestr"><function>strcasestr</function></link>.</para>
+    <para><link linkend="fn_starts_with"><function>starts_with</function></link>.</para>        
+    <para><link linkend="fn_ends_with"><function>end_with</function></link>.</para>  
+  </refsect1>
+</refentry>
+
+

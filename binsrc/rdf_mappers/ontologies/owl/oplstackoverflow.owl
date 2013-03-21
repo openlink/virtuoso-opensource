@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+
+  $Id$
+
+  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+  project.
+
+  Copyright (C) 1998-2013 OpenLink Software
+
+  This project is free software; you can redistribute it and/or modify it
+  under the terms of the GNU General Public License as published by the
+  Free Software Foundation; only version 2 of the License, dated June 1991.
+
+  This program is distributed in the hope that it will be useful, but
+  WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+  General Public License for more details.
+
+  You should have received a copy of the GNU General Public License along
+  with this program; if not, write to the Free Software Foundation, Inc.,
+  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+
+-->
+<rdf:RDF
+   xmlns:awol="http://bblfish.net/work/atom-owl/2006-06-06/#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:dcterms="http://purl.org/dc/terms/"
+   xmlns:foaf="http://xmlns.com/foaf/0.1/"
+   xmlns:gn="http://www.geonames.org/ontology#"
+   xmlns:opl="http://www.openlinksw.com/schema/attribution#"
+   xmlns:owl="http://www.w3.org/2002/07/owl#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+   xmlns:sioc="http://rdfs.org/sioc/ns#"
+   xmlns:sioct="http://rdfs.org/sioc/types#&quot;"
+   xmlns:so="http://www.openlinksw.com/schemas/stackoverflow#"
+   xmlns:virtrdfmec="http://www.openlinksw.com/schemas/virtrdf-meta-entity-class#"
+   xmlns:xsd="http://www.w3.org/2001/XMLSchema#">
+  <owl:Ontology rdf:about="http://www.openlinksw.com/schemas/stackoverflow#">
+    <dc:creator rdf:datatype="http://www.w3.org/2001/XMLSchema#string">OpenLink Software, http://www.openlinksw.com</dc:creator>
+  </owl:Ontology>
+  <owl:Class rdf:about="http://www.openlinksw.com/schemas/stackoverflow#Answer">
+    <rdfs:comment>An answer in a StackOverflow question thread</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#"/>
+    <rdfs:label>StackOverflow Answer</rdfs:label>
+  </owl:Class>
+  <owl:Class rdf:about="http://www.openlinksw.com/schemas/stackoverflow#Entity">
+    <rdfs:comment>An entity in the StackOverflow world</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#"/>
+    <rdfs:label>StackOverflow Entity</rdfs:label>
+  </owl:Class>
+  <owl:Class rdf:about="http://www.openlinksw.com/schemas/stackoverflow#Question">
+    <rdfs:comment>A StackOverflow question thread</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#"/>
+    <rdfs:label>StackOverflow Question</rdfs:label>
+  </owl:Class>
+  <owl:Class rdf:about="http://www.openlinksw.com/schemas/stackoverflow#User">
+    <rdfs:comment>A StackOverflow user</rdfs:comment>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#"/>
+    <rdfs:label>StackOverflow User</rdfs:label>
+  </owl:Class>
+  <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/stackoverflow#accepted_answer_id">
+    <rdfs:comment>An answer accepted by the original user</rdfs:comment>
+    <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#Question"/>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#"/>
+    <rdfs:label>Accepted Answer</rdfs:label>
+    <rdfs:range rdf:resource="http://rdfs.org/sioc/types#&quot;Answer"/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/stackoverflow#answer_count">
+    <rdfs:comment>Number of answers provided for a Question</rdfs:comment>
+    <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#Question"/>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#"/>
+    <rdfs:label>Answer count</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/stackoverflow#employee">
+    <rdfs:comment>Whether a StackOverflow User is an employee or not</rdfs:comment>
+    <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#Question"/>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#"/>
+    <rdfs:label>Employed?</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#boolean"/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/stackoverflow#is_accepted">
+    <rdfs:comment>Whether the answer has been accepted by original poster</rdfs:comment>
+    <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#Answer"/>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#"/>
+    <rdfs:label>Accepted?</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#boolean"/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/stackoverflow#location">
+    <rdfs:comment>StackOverflow user's general location</rdfs:comment>
+    <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#User"/>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#"/>
+    <rdfs:label>Location</rdfs:label>
+    <rdfs:subPropertyOf rdf:resource="http://www.geonames.org/ontology#name"/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/stackoverflow#quota_max">
+    <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#Agent"/>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#"/>
+    <rdfs:label>Quota: Max</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/stackoverflow#quota_remaining">
+    <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#Agent"/>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#"/>
+    <rdfs:label>Quota: Remaining</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/stackoverflow#reputation">
+    <rdfs:comment>A StackOverflow User's reputation (karma)</rdfs:comment>
+    <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#User"/>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#"/>
+    <rdfs:label>Reputation</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/stackoverflow#reputation_change_day">
+    <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#User"/>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#"/>
+    <rdfs:label>Reputation change 1d</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/stackoverflow#reputation_change_month">
+    <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#User"/>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#"/>
+    <rdfs:label>Reputation change 1m</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/stackoverflow#reputation_change_week">
+    <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#User"/>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#"/>
+    <rdfs:label>Reputation change 1wk</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/stackoverflow#reputation_change_year">
+    <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#User"/>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#"/>
+    <rdfs:label>Reputation change 1yr</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/stackoverflow#score">
+    <rdfs:comment>A StackOverflow Entity's score</rdfs:comment>
+    <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#Entity"/>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#"/>
+    <rdfs:label>Score</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/stackoverflow#user_type">
+    <rdfs:comment>Whether the user is registered or not</rdfs:comment>
+    <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#User"/>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#"/>
+    <rdfs:label>User type</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+  </owl:DatatypeProperty>
+  <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/stackoverflow#view_count">
+    <rdfs:comment>Number of times a StackOverflow question has been viewed</rdfs:comment>
+    <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#Question"/>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/stackoverflow#"/>
+    <rdfs:label>View count</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+  </owl:DatatypeProperty>
+</rdf:RDF>

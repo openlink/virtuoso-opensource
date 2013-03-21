@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -306,6 +306,8 @@ struct stmt_descriptor_s {
 # define err_printf(a)
 #endif
 
+#define cli_dbg_printf(a)
+
 
 #define CON(c, cc) \
   cli_connection_t *c = (cli_connection_t *) cc
@@ -436,8 +438,6 @@ SQLLEN col_desc_get_display_size (col_desc_t *cd, int cli_binary_timestamp);
 void dbg_print_box (caddr_t object, FILE * out);
 #endif
 extern int isdts_mode;
-
-#define cli_dbg_printf(a)
 
 
 /*
@@ -902,7 +902,7 @@ if (wsz##param) \
     if ((con)->con_defs.cdef_utf8_execs) \
       { \
 	SQLSMALLINT len1; \
-	len1 = (SQLSMALLINT) cli_utf8_to_narrow (con->con_charset, sz##param, _cb##param, wsz##param, cb##param); \
+	len1 = (SQLSMALLINT) cli_utf8_to_narrow (con->con_charset, sz##param, _vpcb##param, wsz##param, cb##param); \
 	if (pcb##param) \
 	  *pcb##param = *_pcb##param; \
 	dk_free_box ((box_t) sz##param); \

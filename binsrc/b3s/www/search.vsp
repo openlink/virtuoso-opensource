@@ -7,7 +7,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2009 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -57,6 +57,9 @@
     err_msg := 'No such query';
     res := vector();
   };
+
+  declare desc_resource_uri varchar;
+  desc_resource_uri := sprintf ('http://%{WSHost}s/sparql?query=%U&format=cxml', ltrim(squery, 'sparql '));
 ?>
   <head>
     <link rel="stylesheet" type="text/css" href="style.css">
@@ -77,7 +80,7 @@
                 http (sprintf('&nbsp;<b><a href="dlistall.vsp?p=%U">Back to Drill-down list | </a></b>',srch));
               http(sprintf('<a href="listall.vsp">Back to main menu</a>'));
             ?>
-	    <p><?vsp http (desc_get (smode)); ?></p>	
+	    <p><?vsp http (desc_get (smode)); ?></p>
           </td>
        </tr>
      </table>
@@ -91,9 +94,9 @@
 		<?vsp
 		  if (input_get (smode) = 'Search for')
                     {
-                      http_value ('In search form, enter words separated by spaces.  To indicate consecutive words, enclose in quotes (").', 'p'); 
-		    }   
-		?>  
+                      http_value ('In search form, enter words separated by spaces. To indicate consecutive words, enclose in quotes (").', 'p');
+		    }
+		?>
 		<?V input_get (smode) ?> <input size="60" type="text" name="sc" value="<?= srch ?>"/>&nbsp;
                 <!-- show the second input field-->
                 <?vsp
@@ -220,7 +223,7 @@
 		      http ('<tr>');
 		      foreach (any elm in head) do
 			{
-			  http_value (elm, 'th'); 
+			  http_value (elm, 'th');
 			}
 		      http ('</tr>');
 		    }
@@ -253,15 +256,15 @@
 			else if (smode = '1004' and j = 0)
 			  {
 			    http (sprintf ('<td><a href="search.vsp?q=1001&sc=%U&fa=Execute">', tmp));
-		            http_value (tmp);
+	                    http_value (tmp);
 			    http ('</a>');
 			  }
-			else if (smode = '4' and j = 0) 
+			else if (smode = '4' and j = 0)
 			  {
 			    http (sprintf ('<td><a href="search.vsp?q=%U&sc=%U&fa=Execute">', smode, '<'||tmp||'>'));
 		            http_value (tmp);
 			    http (sprintf('</a>&nbsp;<a href="/describe/?url=%U">Browse</a>',tmp));
-			  }	
+			  }
 			else if (smode = '18' and j = 0)
 			  {
 			    http (sprintf ('<td><a href="search.vsp?q=%U&sc=%U&sc2=%U&sc3=%U&fa=Execute">', smode, '<'||tmp||'>', srch2, srch3));
@@ -270,11 +273,11 @@
 			  }
 			else if (smode  = '1001' and j = 0)
                           {
-		  	    http (sprintf ('<td><a class="uri" href="%V">%s</a>', 
-			    	replace (tmp, 'http://umbel.org/umbel/ne/wikipedia/', 'http://dbpedia.org/resource/'), 
+		  	    http (sprintf ('<td><a class="uri" href="%V">%s</a>',
+			    	replace (tmp, 'http://umbel.org/umbel/ne/wikipedia/', 'http://dbpedia.org/resource/'),
 			    	get_curie (tmp)));
 			    http (sprintf('&nbsp;<b><a href="search.vsp?q=1004&sc=%U&fa=Execute">Authors</a></b>',tmp));
-		          }		
+		          }
 			else if (smode not in ('2'))
 		   	  http (sprintf ('<td><a class="uri" href="%s">%s</a>', concat('/describe/?url=', sprintf ('%U',tmp)), get_curie (tmp)));
  		        else
@@ -295,22 +298,22 @@
                         --dbg_obj_print(tmp);
 			if (__tag of rdf_box = __tag (tmp) and not rdf_box_is_complete (tmp))
 			  http ('Incomplete box');
-			else  
+			else
 			  {
 			    if ((smode = '8' or smode ='9' or smode ='10') and j = 1)
-			      http (sprintf ('<a href="search.vsp?q=%U&sc=%U&fa=Execute">', smode, tmp));	
+			      http (sprintf ('<a href="search.vsp?q=%U&sc=%U&fa=Execute">', smode, tmp));
 			    if ((smode = '8' or smode ='9' or smode ='10') and j = 2)
-			      http (sprintf ('<a href="search.vsp?q=1005&sc=%U&fa=Execute">', rs[1]));	
+			      http (sprintf ('<a href="search.vsp?q=1005&sc=%U&fa=Execute">', rs[1]));
 		            if ((smode = '1' and j = 2) or (smode = '1002' and j = 2) or (smode = '1003' and j = 2))
                               http (tmp);
-			    else  
+			    else
                               {
 			        if (isstring (tmp))
 				  tmp := charset_recode (tmp, 'UTF-8', '_WIDE_');
 			        http_value(tmp);
-		              } 		
+		              }
 			    if ( (smode = '8' or smode ='9' or smode ='10') and (j = 1 or j = 2))
-			      http ('</a>');	
+			      http ('</a>');
 			  }
                         http('</td>');
                       };
@@ -324,19 +327,19 @@
           <?vsp
             };
               };
-	    if (smode = '1004') {   
+	    if (smode = '1004') {
           ?>
 	  <tr>
 	      <td>
 		  <p>Related NEs</p>
 		  <table class="tableresult" border="1">
-		  <?vsp 
+		  <?vsp
 		  exec ('select top 20 iri from (select id_to_iri (tc_t2) iri, tc_count from nes_coincidence where tc_t1 = iri_to_id (?) union select id_to_iri (tc_t1), tc_count from nes_coincidence where tc_t2 = iri_to_id (?) order by tc_count desc) xx', null, null, vector (srch, srch), 0, meta, data);
 		  for (i := 0; i < length (data); i := i + 1)
 		    {
                       declare iri any;
 		      iri := data[i][0];
-		      http (sprintf ('<tr><td><a href="search.vsp?q=1004&sc=%U&fa=Execute">%V</a></td></tr>', iri, get_curie (iri))); 
+		      http (sprintf ('<tr><td><a href="search.vsp?q=1004&sc=%U&fa=Execute">%V</a></td></tr>', iri, get_curie (iri)));
 		    }
 		  ?>
                  </table>
@@ -351,7 +354,8 @@
           </tr>
       </table>
     </div><!--  #content -->
-    <div id="isparql-results">
+
+    <!-- div id="isparql-results">
       <table class="description">
         <tr>
           <td>
@@ -364,7 +368,7 @@
           </td>
        </tr>
      </table>
-    </div>
+    </div -->
 
     <div id="homelink">
       <table class="description">
@@ -380,12 +384,34 @@
      </table>
     </div>
     <div id="footer">
+
       <div id="ft_b">
-	<a href="about.html">About</a> 
+        <?vsp if (squery <> '' and squery is not null) { ?>
+         Alternative Linked Data Views:
+
+	       <?vsp if (VAD_CHECK_VERSION ('PivotViewer') is not null) { ?>
+	         <a href="/PivotViewer/?url=<?vsp http_url (desc_resource_uri); ?>" title="PivotViewer page for exploring results and generating new queries" target="_blank">PivotViewer</a>
+	       <?vsp } ?>
+	        |
+	       <?vsp if (VAD_CHECK_VERSION ('iSPARQL') is not null) {
+	         squery := ltrim(squery, 'sparql ');
+           http (sprintf('&nbsp;<a href="/isparql/view/?query=%U&endpoint=/sparql&maxrows=50&default-graph-uri=&amp;resultview=browser" title="Interactive Query By Example oriented SPARQL UI" target="_blank">iSPARQL</a>',squery));
+	       } ?>
+
+        <?vsp } ?>
+      </div> <!-- #ft_t -->
+
+      <div id="ft_b">
+	<a href="about.html">About</a>
         <a href="http://virtuoso.openlinksw.com" title="OpenLink Virtuoso"><img class="powered_by" src="http://dbpedia.org/statics/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso"/></a>
         <a href="http://linkeddata.org/"><img alt="This material is Open Knowledge" src="http://dbpedia.org/statics/LoDLogo.gif" border="0"></a> &nbsp;
         <a href="http://dbpedia.org/sparql"><img alt="W3C Semantic Web Technology" src="http://dbpedia.org/statics/sw-sparql-blue.png" border="0"></a> &nbsp;  &nbsp;
         <a href="http://www.opendefinition.org/"><img alt="This material is Open Knowledge" src="http://dbpedia.org/statics/od_80x15_red_green.png" border="0"></a>
+        <br />
+	This work is licensed under a
+	<a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/">Creative Commons Attribution-Share Alike 3.0 Unported License</a>.<br />
+	<?vsp fct_virt_info (); ?><br />
+	Copyright &copy; 2009-2013 OpenLink Software
       </div> <!-- #ft_b -->
     </div> <!-- #footer -->
   </body>

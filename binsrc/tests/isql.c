@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2009 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -645,7 +645,7 @@ TCHAR *web_query_string = NULL;	/* from environment variable QUERY_STRING */
 int web_mode = 0;		/* Is set to 1 in the beginning of main if used
 			       as a cgi-script */
 int kubl_mode = 1;		/* Currently affects only how MAXROWS are handled. */
-int print_banner_flag = 1, print_types_also = 1, verbose_mode = 1, echo_mode = 0;
+int print_banner_flag = 1, print_types_also = 1, verbose_mode = 1, echo_mode = 0, explain_mode = 0, sparql_translate_mode = 0;
 int flag_newlines_at_eor = 1;	/* By default print one nl at the end of row */
 long int select_max_rows = 0;	/* By default show them all. */
 long int perm_deadlock_retries = 0, vol_deadlock_retries = 0;
@@ -2153,7 +2153,7 @@ unescape_string (TCHAR * _string)
 	    case 'x':		/* There's a hexadecimal char constant \xhh */
 	    case 'X':
 	      {			/* Well, we should check that only max 2 digits are parsed */
-		*res_ptr++ = ((UTCHAR) hextoi (&string, ++string));
+		*res_ptr++ = ((UTCHAR) hextoi (&string, string+1));
 		continue;
 	      }
 /* The following might conflict with some other usage. Commented out. */
@@ -2625,6 +2625,8 @@ add_var_def (_T("FORM_LAST_ENCODING"), (&form_last_encoding), CHARPTR_VAR, NULL)
   add_var_def (_T("BLOBS"), (&print_blobs_flag), INT_FLAG, OFF_ON),
   add_var_def (_T("FOREACH_ERR_BREAK"), (&foreach_err_break), INT_FLAG, OFF_ON),
   add_var_def (_T("ECHO"), (&echo_mode), INT_FLAG, OFF_ON),
+  add_var_def (_T("EXPLAIN"), (&explain_mode), INT_FLAG, OFF_ON),
+  add_var_def (_T("SPARQL_TRANSLATE"), (&sparql_translate_mode), INT_FLAG, OFF_ON),
   add_var_def (_T("HIDDEN_CRS"), (&clear_hidden_crs_flag), INT_FLAG, PRESERVED_CLEARED),
   add_var_def (_T("BINARY_OUTPUT"), (&flag_binary_output), INT_FLAG, OFF_ON),
   add_var_def (_T("BANNER"), (&print_banner_flag), INT_FLAG, OFF_ON),
@@ -5901,9 +5903,32 @@ again_exec:;
 	    );
 
 	  IF_ERR_GO (stmt, error, rc);
+          rc = SQLExecDirect (stmt, UCP (text), SQL_NTS);
 	}
+      else if (explain_mode)
+        {
+	  rc = SQLPrepare (stmt, _T("EXPLAIN(?)"), SQL_NTS);
+	  IF_ERR_GO (stmt, error, rc);
+	  rc = SQLBindParameter (stmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_CHAR, isqlt_tcslen(text), 0, UCP(text), isqlt_tcslen(text), NULL);
+	  IF_ERR_GO (stmt, error, rc);
+	  rc = SQLExecute (stmt);
+	}
+      else if (sparql_translate_mode)
+        {
+          const TCHAR* q = text;
+          if (!strncasecmp (text, _T("SPARQL"), isqlt_tcslen(_T("SPARQL"))))
+            q = text + isqlt_tcslen(_T("SPARQL"));
 
-      rc = SQLExecDirect (stmt, UCP (text), SQL_NTS);
+          rc = SQLPrepare (stmt, _T("SELECT SPARQL_TO_SQL_TEXT(?)"), SQL_NTS);
+          IF_ERR_GO (stmt, error, rc);
+          rc = SQLBindParameter (stmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_CHAR, isqlt_tcslen(q), 0, UCP(q), isqlt_tcslen(q), NULL);
+          IF_ERR_GO (stmt, error, rc);
+          rc = SQLExecute (stmt);
+        }
+      else
+        {
+	  rc = SQLExecDirect (stmt, UCP (text), SQL_NTS);
+	}
     }
   else if (rc == DO_SQL_API_COMMAND_IS_NOT_AVAILABLE)
     {				/* Should we free something? */
@@ -9353,10 +9378,6 @@ handle_multipart_form (TCHAR *boundary, FILE * in_fp)
 
   form_boundary = chestrdup (boundary, me);
 
-#ifdef WIN32
-  setmode (fileno (stdin), _O_BINARY);	/* _O_TEXT is ASCII mode. */
-#endif
-
   while (0 != (got_anything = bin_fgets (inpoint, IN_BATCH, in_fp)))
     {
 /*
@@ -9482,6 +9503,9 @@ _tmain (int argc, TCHAR **argv)
     printf ("Can't apply the system locale. "
 	"Possibly wrong setting for LANG environment variable. "
 	"Using the C locale instead.\n");
+#endif
+#ifdef WIN32
+  setmode (fileno (stdin), _O_BINARY);
 #endif
 #ifdef MALLOC_DEBUG
   dbg_malloc_enable();
@@ -10251,7 +10275,7 @@ line_from_html_file (TCHAR *templatename)
 {
   TCHAR tmp1[2002];
 
-  return (isqlt_fgetts (tmp1, (sizeof (tmp1) - 1), html_infp));
+  return (isqlt_fgetts (tmp1, ((sizeof (tmp1) / sizeof (TCHAR)) - 1), html_infp));
 }
 
 /* Return the whole string in one piece. After that return NULL.

@@ -652,7 +652,7 @@ Node *FindBody(Node *root);
 
 #ifdef BIF_TIDY
 extern mem_pool_t *tidy_mp;
-#define MemAlloc(size) mp_alloc_box(tidy_mp, (size), DV_CUSTOM)
+#define MemAlloc(size) mp_alloc_box(tidy_mp, (size), DV_NON_BOX)
 #define MemFree(mem) /**/
 #define ClearMemory(mem, size) memset((mem), 0, (size))
 #else

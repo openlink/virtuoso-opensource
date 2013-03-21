@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -189,10 +189,9 @@ ECHO BOTH ": deleting from SEC_TEST_4 WITHOUT permission to column a: STATE=" $S
 -- Should work for u1, u2 and u5: (and now also u3)
 --
 delete from SEC_TEST_4;
--- XXX
---ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
---SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
---ECHO BOTH ": deleting from SEC_TEST_4 WITH permission: STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": deleting from SEC_TEST_4 WITH permission: STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 --
 -- Should produce for all ordinary users:

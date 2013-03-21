@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2010 OpenLink Software
+ *  Copyright (C) 2005-2013 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -32,14 +32,18 @@ OAT.RDFMini = function(div,optObj) {
 		showSearch:true,
 		imagePath:OAT.Preferences.imagePath,
 	endpoint:"/sparql?query=",
-	store: false
+	store: false,
+	sel_ctr: false, // optional place view selector in custom place
+	defaultTab: 2
 	}
+
 	for (var p in optObj) { this.options[p] = optObj[p]; }
 
 	this.parent = $(div);
 	this.content = OAT.Dom.create("div",{className:"rdf_mini"});
 	this.tabs = [];
 	this.select = false;
+    this.curTabIdx = this.lastTabIdx = self.options.defaultTab;
 
 	this.executeSparql = function(template,replace) {
 		var str = template;
@@ -50,6 +54,30 @@ OAT.RDFMini = function(div,optObj) {
 		var url = self.options.endpoint+encodeURIComponent(str)+"&format=rdf";
 		self.open(url);
 	}
+
+    this.getCurrentTabType = function () {
+	return (self.options.tabs[self.curTabIdx][0]);
+    }
+
+    this.getCurrentTab = function () {
+	return (self.select.selectedIndex);
+    }
+
+    this.setTab = function (i) {
+	if (i < self.select.options.length) {
+	    self.lastTabIdx = self.curTabIdx;
+	    self.curTabIdx = self.select.selectedIndex = i;
+	    self.redraw();
+	}
+    }
+
+    this.setDefaultTab = function () {
+	self.setTab (self.options.defaultTab);
+    }
+
+    this.setLastTab = function () {
+	self.setTab (self.lastTabIdx);
+    }
 
 	this.search = function(str) {
 		var s = (str ? str : $v(self.searchInput));
@@ -101,10 +129,16 @@ OAT.RDFMini = function(div,optObj) {
 				self.tabs.push(obj);
 				OAT.Dom.option(t[1],t[1],s);
 			}
-			OAT.Event.attach(s,"change",self.redraw);
+	    OAT.Event.attach(s, "change", self.tabSelChangeH);
 			self.select = s;
 
-	    var sel_ctr = OAT.Dom.create("div",{className:"rdfmini_view_sel_ctr"});
+	    var sel_ctr;
+
+	    if (!self.options.sel_ctr) 
+		sel_ctr = OAT.Dom.create("div",{className:"rdfmini_view_sel_ctr"});
+	    else
+		sel_ctr = self.options.self_ctr;
+
 	    var sel_lbl = OAT.Dom.create("label");
 
 	    OAT.Dom.append([self.parent,sel_ctr],[sel_ctr,sel_lbl,s]);
@@ -115,6 +149,12 @@ OAT.RDFMini = function(div,optObj) {
 			self.tabs.push(obj);
 		}
 
+	OAT.MSG.attach ("*","MAP_NOTHING_TO_SHOW", 
+			function (_s,_m,_e) { 
+			    self.setLastTab();
+			    self.redraw() 
+			});
+	
 	var ua = navigator.userAgent;
 
 	if (ua.indexOf('iPhone') != -1 || ua.indexOf('Android') != -1 ) {
@@ -132,6 +172,11 @@ OAT.RDFMini = function(div,optObj) {
 		self.parent.appendChild(self.content);
 	}
 
+    this.tabSelChangeH = function (e) {
+	self.setTab(e.target.selectedIndex);
+	self.redraw();
+    }
+    
 	this.redraw = function() { /* change vis */
 	    var index = 0;
 	    if (self.select) { index = self.select.selectedIndex; }
@@ -141,6 +186,7 @@ OAT.RDFMini = function(div,optObj) {
 	    self.tabs[index].redraw();
 	    var et = {};
 	    et.tabIndex = index;
+	et.tabType = self.options.tabs[index][0];
 	    OAT.MSG.send (self,"RDFMINI_VIEW_CHANGED",et);
 	}
 
@@ -174,13 +220,23 @@ OAT.RDFMini = function(div,optObj) {
 	    var data;
 	var label = false;
 	var ciri;
+	var _type;
 
 	    if (data_.constructor == OAT.RDFAtom)
 		switch (data_.getTag()) {
 		case OAT.RDFTag.IRI:
 		    data = data_.getIRI();
 		ciri = OAT.IRIDB.resolveCIRI(data_.getValue());
-		    break;
+		content = OAT.Dom.create("span");
+		var a = OAT.Dom.create("a");
+
+		if (label) a.innerHTML = label;
+		else a.innerHTML = (self.options.raw_iris ? data : ciri);
+
+		a.href = data;
+		content.appendChild(a);
+		self.processLink(a,data,disabledActions);
+		return content;
 		case OAT.RDFTag.LIT:
 		    data = data_.getValue();
 		    break;
@@ -189,12 +245,21 @@ OAT.RDFMini = function(div,optObj) {
 	    ciri = OAT.IRIDB.resolveCIRI(data_.iid);
 	    data = OAT.IRIDB.getIRI(data_.iid);
 	    label = data_.label;
+	    content = OAT.Dom.create("span");
+	    var a = OAT.Dom.create("a");
+
+	    if (label) a.innerHTML = label;
+            else a.innerHTML = (self.options.raw_iris ? data : ciri);
+
+	    a.href = data;
+	    content.appendChild(a);
+	    self.processLink(a,data,disabledActions);
+	    return content;
 	}
 	
+	_type = self.getContentType(data); // Only literals should be left something that may be deref'd?
 
-		var type = self.getContentType(data);
-
-		switch (type) {
+	switch (_type) { // XXX this should be pruned with extreme prejudice
 			case 3:
 				content = OAT.Dom.create("img");
 	    content.title = (label ? label : data);

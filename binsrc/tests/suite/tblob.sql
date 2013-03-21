@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -68,22 +68,22 @@ create procedure tb_e2 ()
 
 tb_e2 ();
 
-echo both $if $neq $sqlstate OK "PASSED" "***FAILED";
-echo both ": row too long check\n";
+ECHO BOTH $IF $NEQ $SQLSTATE OK "PASSED" "***FAILED";
+ECHO BOTH ": row too long check\n";
  
 
 update tblob set b3 = '12345678901234567890';
 update tblob set b1 = b3, b2 = b3, b4 = b3;
-echo both $if $neq $sqlstate OK "PASSED" "***FAILED";
-echo both ": row too long check 2\n";
+ECHO BOTH $IF $NEQ $SQLSTATE OK "PASSED" "***FAILED";
+ECHO BOTH ": row too long check 2\n";
 
 update tblob set e1 = '123';
-echo both $if $neq $sqlstate OK "PASSED" "***FAILED";
-echo both ": row too long check 3\n";
+ECHO BOTH $IF $NEQ $SQLSTATE OK "PASSED" "***FAILED";
+ECHO BOTH ": row too long check 3\n";
 
 update tblob set e2 = make_string (4000);
-echo both $if $neq $sqlstate OK "PASSED" "***FAILED";
-echo both ": row too long check 4\n";
+ECHO BOTH $IF $NEQ $SQLSTATE OK "PASSED" "***FAILED";
+ECHO BOTH ": row too long check 4\n";
 
 update tblob set e2 = '1234';
 
@@ -169,10 +169,10 @@ again:
 }
 
 
-echo both "starting blob random update ...\n";
+ECHO BOTH "starting blob random update ...\n";
 tb_upd (2000, '');
-echo both $if $equ $state OK "PASSED" "***FAILED";
-echo both ": blob random update " $state "\n";
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": blob random update " $STATE "\n";
 
 
 insert into tb_stat select k, length (b1), length (b2), length (b3), length (b4), e1, e2 from tblob;
@@ -189,18 +189,19 @@ create procedure tb_check (in q integer)
 
 
 tb_check (1);
-echo both $if $equ $state OK "PASSED" "***FAILED";
-echo both ": blobs rollback / roll forward consistency " $state "\n";
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": blobs rollback / roll forward consistency " $STATE "\n";
 
 
-echo both "starting blob random update ...\n";
+
+ECHO BOTH "starting blob random update ...\n";
 tb_upd (2000 , 'rb');
-echo both $if $equ $state OK "PASSED" "***FAILED";
-echo both ": rollback blob random update " $state "\n";
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": rollback blob random update " $STATE "\n";
 
 tb_check (1);
-echo both $if $equ $state OK "PASSED" "***FAILED";
-echo both ":  blob check after 2000 rollbacks " $state "\n";
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ":  blob check after 2000 rollbacks " $STATE "\n";
 
 
 
@@ -214,8 +215,8 @@ update tblob set b1 = make_string (3000), ed = '--';
 update tblob set b1 = make_string (2000), ed = 'qq';
 
 tb_check (1);
-echo both $if $equ $state OK "PASSED" "***FAILED";
-echo both ": blobs rollback / roll forward consistency " $state "\n";
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": blobs rollback / roll forward consistency " $STATE "\n";
 
 
 create procedure tb_ins (in ct integer, in mode varchar)
@@ -268,13 +269,13 @@ create procedure bad_upd_1 (in q integer)
 --bad_upd_1 (1);
 
 
-echo both "starting blob random insert ...\n";
+ECHO BOTH "starting blob random insert ...\n";
 tb_ins (1000, '');
-echo both "finished blob random insert\n";
+ECHO BOTH "finished blob random insert\n";
 
 select * from tblob where length (blob_to_string (b4)) <> length (b4);
-echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
-echo both ": tblob length check\n";
+ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
+ECHO BOTH ": tblob length check\n";
 
 
 cl_exec ('__dbf_set (''dbf_cl_blob_autosend_limit'', 100000)');
@@ -299,21 +300,21 @@ foreach blob in words.esp update tblob set b1 = ?, b2 = '', b3 = '', b4 = '', e1
 
 -- subseq done in cluster 
 select subseq (b1, 10000, 10500) from tblob where k > 9999;
-echo both $if $equ $rowcnt 8 "PASSED" "***FAILED";
-echo both ": b subseq 1\n";
+ECHO BOTH $IF $EQU $ROWCNT 8 "PASSED" "***FAILED";
+ECHO BOTH ": b subseq 1\n";
 -- subseq in cluster with sql func, then subseq done in coordinator. id_to_iri is a location sequence break. 
 create procedure f (in q any) {return q;};
 create procedure f_noloc (in q any) { id_to_iri (#i1); return q;};
 
 
 select subseq (f (b1), 10000, 10500) from tblob where k > 9999;
-echo both $if $equ $rowcnt 8 "PASSED" "***FAILED";
-echo both ": b subseq 2\n";
+ECHO BOTH $IF $EQU $ROWCNT 8 "PASSED" "***FAILED";
+ECHO BOTH ": b subseq 2\n";
 
 
 select subseq (f_noloc (b1), 10000, 10100) from tblob where k > 9999;
-echo both $if $equ $rowcnt 8 "PASSED" "***FAILED";
-echo both ": b subseq 3\n";
+ECHO BOTH $IF $EQU $ROWCNT 8 "PASSED" "***FAILED";
+ECHO BOTH ": b subseq 3\n";
 
 
 -- master to c2
@@ -326,8 +327,8 @@ update tblob set k = 11000 where k = 10003;
 
 load clexpck.sql;
 select explain_check ('select length (blob_to_string (bl)) from (select b1 as bl from tblob order by -k) f', 'cl fref read');
-echo both $if $equ $sqlstate OK "PASSED" "***FAILED";
-echo both ": blob sort compilation\n";
+ECHO BOTH $IF $EQU $SQLSTATE OK "PASSED" "***FAILED";
+ECHO BOTH ": blob sort compilation\n";
 
 select length (blob_to_string (bl)) from (select b1 as bl from tblob order by -k) f;
 
@@ -339,8 +340,8 @@ delete from tb_stat;
 insert into tb_stat select k, length (b1), length (b2), length (b3), length (b4), e1, e2 from tblob;
 
 tb_check (1);
-echo both $if $equ $state OK "PASSED" "***FAILED";
-echo both ": tblob insert check " $state "\n";
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": tblob insert check " $STATE "\n";
 
 create table rep_blob (id int primary key, b long varchar);
 alter index rep_blob on rep_blob partition cluster replicated;
@@ -357,12 +358,7 @@ create procedure large_repl ()
 large_repl ();
 large_repl ();
 select length (b) from rep_blob;
-echo both $if $equ $last[1] 20000000 "PASSED"  "***FAILED";
-echo both ": replicated ins replacing of large blob\n";
+ECHO BOTH $IF $EQU $LAST[1] 20000000 "PASSED"  "***FAILED";
+ECHO BOTH ": replicated ins replacing of large blob\n";
 
 cl_exec ('backup ''/dev/null''');
-
-
-
-
-

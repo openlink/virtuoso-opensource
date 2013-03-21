@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -56,24 +56,6 @@ int numeric_compare_dvc (numeric_t x, numeric_t y);
 int dv_num_compare (numeric_t dn1, numeric_t dn2, dtp_t dtp1, dtp_t dtp2);
 #define MAX_INT_DOUBLE ((((int64)1) << 53) - 1)
 #define MIN_INT_DOUBLE  (-(((int64)1)<<53) + 1)
-
-void dc_add_int (instruction_t * ins, caddr_t * inst);
-void dc_add_int_1 (instruction_t * ins, caddr_t * inst);
-int dc_cmp_int (instruction_t * ins, caddr_t * inst, db_buf_t bits);
-int dc_cmp_int_1 (instruction_t * ins, caddr_t * inst);
-void dc_asg_64_1 (instruction_t * ins, caddr_t * inst);
-void dc_asg_64 (instruction_t * ins, caddr_t * inst);
-
-#define ARTM_VEC_LEN 256
-
-typedef void (*artm_vec_f) (int64* res, int64 * l, int64* r, int n);
-extern  artm_vec_f vec_adds[3];
-extern  artm_vec_f vec_subs[3];
-extern  artm_vec_f vec_mpys[3];
-extern  artm_vec_f vec_divs[3];
-
-int artm_vec (caddr_t * inst, instruction_t * ins, artm_vec_f * ops);
-
 
 
 #endif /* _WI_ARITH_H */

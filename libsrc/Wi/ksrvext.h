@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -161,8 +161,9 @@ caddr_t bif_strict_array_or_null_arg (caddr_t * qst, state_slot_t ** args, int n
 caddr_t bif_array_or_null_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func);
 void bif_result_inside_bif (int n, ...);
 
-
-caddr_t srv_make_new_error (const char *code, const char *virt_code, const char *msg,...);
+#ifndef srv_make_new_error
+extern caddr_t srv_make_new_error (const char *code, const char *virt_code, const char *msg,...);
+#endif
 void sqlr_error (const char *code, const char *msg,...);
 void sqlr_new_error (const char *code, const char *virt_code, const char *msg,...);
 void sqlr_resignal (caddr_t err);
@@ -381,6 +382,9 @@ struct thread_s
   void *		thr_tmp_pool;
   int                   thr_attached;
   caddr_t		thr_dbg;
+#ifndef NDEBUG
+  void *		thr_pg_dbg;
+#endif
 };
 
 #define MAX_NESTED_FUTURES      20
@@ -394,6 +398,8 @@ struct dk_thread_s
   int                 dkt_request_count;
   future_request_t *  dkt_requests[MAX_NESTED_FUTURES];
 };
+
+typedef int (*mtx_entry_check_t) (dk_mutex_t * mtx, thread_t * self, void * cd);
 
 struct mutex_s
   {
@@ -545,7 +551,7 @@ struct dk_session_s
     caddr_t *		dks_caller_id_opts;
 
     void *		dks_dbs_data;
-    void *		dks_cluster_data; /* cluster interconnect state.  Not the same as dks_dbs_data because dks_dbs_data when present determines protocol vrsions and cluster is all the same version */
+    void *		dks_cluster_data; /* cluster interconnect state.  Not the same as dks_dbs_data because dks_dbs_data when present determines protocol versions and cluster is all the same version */
     void *		dks_write_temp;	/* Used by Distributed Objects */
 
         /*! max msecs to block on a read */
@@ -623,12 +629,16 @@ struct s_node_s
    s_node_t *          next;
 };
 
-
+EXE_EXPORT (caddr_t, list_to_array, (dk_set_t l));
 #ifdef MALLOC_DEBUG
 caddr_t dbg_strses_string (DBG_PARAMS dk_session_t * ses);
 caddr_t dbg_list_to_array (char *file, int line, dk_set_t l);
 #define strses_string(S) dbg_strses_string (__FILE__, __LINE__, (S))
+#ifndef _USRDLL
+#ifndef EXPORT_GATE
 #define list_to_array(S)	dbg_list_to_array (__FILE__, __LINE__, (S))
+#endif
+#endif
 #else
 caddr_t strses_string (dk_session_t * ses);
 caddr_t list_to_array (dk_set_t l);

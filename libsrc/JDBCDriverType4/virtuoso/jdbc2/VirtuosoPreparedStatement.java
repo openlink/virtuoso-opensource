@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2009 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -340,7 +340,8 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	     // Build the args array
 	     Object[] args = new Object[2];
 	     args[0] = statid;
-	     args[1] = new Long(VirtuosoTypes.STAT_CLOSE);
+//	     args[1] = new Long(VirtuosoTypes.STAT_CLOSE);
+	     args[1] = new Long(VirtuosoTypes.STAT_DROP);
 	     // Create and get a future for this
 	     future = connection.getFuture(VirtuosoFuture.close,args, this.rpc_timeout);
 	     // Read the answer

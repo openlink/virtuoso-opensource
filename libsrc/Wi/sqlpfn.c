@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -41,6 +41,7 @@
 #include "sqlbif.h"
 #include "sqlcstate.h"
 #include "xmltree.h" /* For trick with precompilation of strings that are XPATH/XQuery expressions */
+#include "xpf.h"
 
 
 void yyerror (const char *s);
@@ -640,14 +641,14 @@ casemode_strncmp (const char *s1, const char *s2, size_t n)
 }
 
 caddr_t
-sqlp_box_id_upcase (const char *str)
+DBG_NAME (sqlp_box_id_upcase) (DBG_PARAMS const char *str)
 {
   /* nothing in 2 */
   caddr_t s;
   size_t len = strlen (str);
   if (len > MAX_NAME_LEN - 2)
     len = MAX_NAME_LEN - 2;
-  s = box_dv_short_nchars (str, len);
+  s = DBG_NAME (box_dv_short_nchars) (DBG_ARGS str, len);
   box_tag_modify (s, DV_SYMBOL);
   if (CM_UPPER == case_mode)
     sqlp_upcase (s);
@@ -1473,7 +1474,11 @@ sqlp_complete_fun_ref (ST * tree)
     {
       /* count of non-* */
       ST * arg = tree->_.fn_ref.fn_arg; /* not AMMSC_USER so it's argument, not a vector of them */
-      ST * exp = (ST*) t_list (3, CALL_STMT, t_sqlp_box_id_upcase  ("isnotnull"), t_list (1, arg));
+      ST * exp = (ST*) t_list (2, SEARCHED_CASE,
+			     t_list (4, t_list (4, BOP_NULL, arg, NULL, NULL),
+				   box_num (0),
+				   t_list (2, QUOTE, NULL),
+				   box_num (1)));
       tree->_.fn_ref.fn_arg = exp;
       tree->_.fn_ref.fn_code = AMMSC_COUNTSUM;
     }
@@ -1836,7 +1841,6 @@ sqlp_inline_order_by (ST *tree, ST **oby)
   return tree;
 }
 
-#if 0 /*GK: dead code */
 static ST *
 sqlp_raw_name_string_to_col_dotted (const char *fullname)
 {
@@ -1862,8 +1866,6 @@ sqlp_raw_name_string_to_col_dotted (const char *fullname)
     return t_listst (3, COL_DOTTED, c_pref (t_sqlp_box_id_upcase (buf), part1-buf, NULL, 0, t_sqlp_box_id_upcase (part2)), t_sqlp_box_id_upcase (part3));
   return t_listst (3, COL_DOTTED, c_pref (t_sqlp_box_id_upcase (buf), part1-buf, t_sqlp_box_id_upcase (part1), part2-part1, t_sqlp_box_id_upcase (part2)), t_sqlp_box_id_upcase (part3));
 }
-#endif
-
 
 static void
 sqlp_contains_opts (ST * tree)
@@ -1982,7 +1984,6 @@ sqlp_sqlxml (ST * tree)
 }
 /*end sqlxml*/
 
-#if 0 /*GK: dead code ?*/
 static void
 sqlp_xpath_or_xquery_eval (ST * funcall_tree)
 {
@@ -1991,7 +1992,7 @@ sqlp_xpath_or_xquery_eval (ST * funcall_tree)
       ST **old_params = funcall_tree->_.call.params;
       size_t old_argcount = BOX_ELEMENTS (old_params);
       if (2 > old_argcount)
-	yyerror ("Functions xpath_eval and xquery_eval require at least two arguments");
+    yyerror ("Functions xpath_eval() and xquery_eval() require at least two arguments");
       if (DV_STRING == DV_TYPE_OF(old_params[0]))
         {
 	  char predicate_type = (0 == stricmp (call_name, "xpath_eval")) ? 'p' : 'q';
@@ -2058,20 +2059,77 @@ sqlp_xpath_or_xquery_eval (ST * funcall_tree)
 	    }
 	  if (NULL != xqr)
 	    {
-	      old_params[0] = (ST *)(t_box_copy ((caddr_t)xqr));
+          /*t_trash_push (xqr);*/
+          old_params[0] = (ST *)xqr;
 	      return;
 	    }
         }
-      sprintf (buf, "%s (w/cache)", call_name);
+  sprintf (buf, "%s__w_cache", call_name);
+  funcall_tree->_.call.name = t_sqlp_box_id_upcase (buf);
+  funcall_tree->_.call.params = (ST **)t_list_concat ((caddr_t)old_params, (caddr_t)t_list (1, t_box_num_and_zero (0)));
+}
+
+static void
+sqlp_xpath_funcall_or_apply (ST * funcall_tree)
+{
+  const char *call_name = funcall_tree->_.call.name;
+  const char *xpf_name = NULL;
+  xpf_metadata_t *metas = NULL;
+  char buf[30];
+  ST **old_params = funcall_tree->_.call.params;
+  size_t old_argcount = BOX_ELEMENTS (old_params);
+  char call_type = ((0 == stricmp (call_name, "xpath_funcall")) ? 'f' : 'a');
+  if ('f' == call_type)
+    {
+      if (2 > old_argcount)
+        yyerror ("Function xpath_funcall() requires at least two arguments");
+    }
+  else
+    {
+      if (3 != old_argcount)
+        yyerror ("Function xpath_apply() requires exactly three arguments");
+    }
+  if (DV_STRING == DV_TYPE_OF(old_params[0]))
+    {
+      xpf_metadata_t ** metas_ptr;
+      xpf_name = (const char *)(old_params[0]);
+      metas_ptr = (xpf_metadata_t **)id_hash_get (xpf_metas, (caddr_t)(&xpf_name));
+      if (NULL == metas_ptr)
+        yyerror ("Unknown XPath function name is used as first argument of xpath_funcall() or xpath_apply() function");
+      metas = metas_ptr[0];
+    }
+  if ((NULL != metas) && ('f' == call_type))
+    {
+      xp_query_t *xqr;
+      int fn_argcount = old_argcount-2;
+      if (metas->xpfm_min_arg_no > fn_argcount)
+        yyerror ("The XPATH function mentioned in xpath_funcall() requires more arguments than specified in the call");
+      if (metas->xpfm_main_arg_no < fn_argcount)
+        {
+          if (0 == metas->xpfm_tail_arg_no)
+            yyerror ("The XPATH function mentioned in xpath_funcall() requires less arguments than specified in the call");
+          else
+            {
+              int tail_mod = (fn_argcount - metas->xpfm_main_arg_no) % metas->xpfm_tail_arg_no;
+              if (tail_mod)
+                yyerror ("The XPATH function mentioned in xpath_funcall() requires less arguments than specified in the call");
+            }
+        }
+      xqr = xqr_stub_for_funcall (metas, fn_argcount);
+      /*t_trash_push (xqr);*/
+      old_params[0] = (ST *)xqr;
+    }
+  sprintf (buf, "%s__w_cache", call_name);
       funcall_tree->_.call.name = t_sqlp_box_id_upcase (buf);
       funcall_tree->_.call.params = (ST **)t_list_concat ((caddr_t)old_params, (caddr_t)t_list (1, t_box_num_and_zero (0)));
 }
-#endif
 
 ST *
-sqlp_patch_call_if_special (ST * funcall_tree)
+sqlp_patch_call_if_special_or_optimizable (ST * funcall_tree)
 {
   char *call_name = funcall_tree->_.call.name;
+  bif_metadata_t *bmd;
+  int argcount = BOX_ELEMENTS (funcall_tree->_.call.params);
   if ((DV_SYMBOL != DV_TYPE_OF (call_name)) && (DV_STRING != DV_TYPE_OF (call_name)))
     call_name = "";
   if (0 == stricmp (call_name, "contains")
@@ -2094,7 +2152,7 @@ sqlp_patch_call_if_special (ST * funcall_tree)
   if (0 == stricmp (call_name, "fix_identifier_case"))
     {
       ST * param;
-      if (0 == BOX_ELEMENTS (funcall_tree->_.call.params))
+      if (0 == argcount)
 	goto generic_check;
       param = funcall_tree->_.call.params[0];
       if (CM_UPPER != case_mode)
@@ -2108,16 +2166,20 @@ sqlp_patch_call_if_special (ST * funcall_tree)
 	}
       goto generic_check;
     }
-#if 0 /* Tmp change */
   if (0 == stricmp (call_name, "xpath_eval")
 	   || 0 == stricmp (call_name, "xquery_eval") )
     {
       sqlp_xpath_or_xquery_eval (funcall_tree);
       goto generic_check;
     }
-#endif
+  if (0 == stricmp (call_name, "xpath_funcall")
+	   || 0 == stricmp (call_name, "xquery_apply") )
+    {
+      sqlp_xpath_funcall_or_apply (funcall_tree);
+      goto generic_check;
+    }
   if ((0 == strnicmp (call_name, "__I2ID", 6) || strstr (call_name, "IID_OF_QNAME"))
-      && BOX_ELEMENTS (funcall_tree->_.call.params) >= 1)
+      && argcount >= 1)
     {
       caddr_t arg = sqlo_iri_constant_name_1 (funcall_tree->_.call.params[0]);
       if (arg)
@@ -2127,11 +2189,80 @@ sqlp_patch_call_if_special (ST * funcall_tree)
 	  funcall_tree->_.call.params[0] = (ST *) arg;
 	}
     }
-
 generic_check:
-  sqlp_check_arg(funcall_tree);
-
-/*end*/
+  bmd = find_bif_metadata_by_raw_name (call_name);
+  if (NULL != bmd)
+    {
+#if 0
+      if ((bmd->bmd_min_argcount == bmd->bmd_max_argcount) && (bmd->bmd_min_argcount != argcount))
+        yyerror (t_box_sprintf (1000, "Wrong number of arguments in %.200s() function call (%d arguments, must be %d):",
+            call_name, argcount, bmd->bmd_min_argcount ) );
+      if (bmd->bmd_min_argcount > argcount)
+        yyerror (t_box_sprintf (1000, "Insufficient number of arguments in %.200s() function call (%d arguments, the minimum is %d):",
+            call_name, argcount, bmd->bmd_min_argcount ) );
+      if (bmd->bmd_max_argcount < argcount)
+        yyerror (t_box_sprintf (1000, "Too many arguments in %.200s() function call (%d arguments, no more than %d are allowed):",
+            call_name, argcount, bmd->bmd_max_argcount ) );
+      if ((1 < bmd->bmd_argcount_inc) && (argcount - bmd->bmd_min_argcount) % bmd->bmd_argcount_inc)
+        yyerror (t_box_sprintf (1000, "Wrong number of arguments in %.200s() function call (%d arguments, valid counts are %d, %d, %d etc.):",
+            call_name, argcount, bmd->bmd_min_argcount, bmd->bmd_min_argcount + bmd->bmd_argcount_inc, bmd->bmd_min_argcount + 2 * bmd->bmd_argcount_inc ) );
+#endif
+      if (bmd->bmd_is_pure)
+        {
+          int argctr, quoted_arg_ctr = 0;
+          caddr_t err = NULL;
+          caddr_t ret_val;
+          caddr_t *unquoted_params = NULL;
+          for (argctr = 0; argctr < argcount; argctr++)
+            {
+              ST *arg = funcall_tree->_.call.params[argctr];
+              if (LITERAL_P (arg))
+                continue;
+              if (ST_P (arg, QUOTE))
+                {
+                  quoted_arg_ctr++;
+                  continue;
+                }
+              goto not_a_constant_pure;
+            }
+          if (quoted_arg_ctr)
+            {
+              unquoted_params = (caddr_t *)t_box_copy ((caddr_t)(funcall_tree->_.call.params));
+              for (argctr = 0; argctr < argcount; argctr++)
+                {
+                  ST *arg = funcall_tree->_.call.params[argctr];
+                  if (ST_P (arg, QUOTE))
+                    unquoted_params[argctr] = (caddr_t)(arg->_.op.arg_1);
+                }
+            }
+          else
+            unquoted_params = (caddr_t *)(funcall_tree->_.call.params);
+          ret_val = sqlr_run_bif_in_sandbox (bmd, unquoted_params, &err);
+          if (NULL != err)
+            {
+#if 0
+              ST *res;
+              res = t_listst (3, CALL_STMT, t_box_dv_short_string ("signal"), t_list (2,
+                  t_box_dv_short_string (ERR_STATE (err)),
+                  t_box_dv_short_string (ERR_MESSAGE (err)) ) );
+              dk_free_tree (err);
+              return res;
+#else
+              goto not_a_constant_pure;
+#endif
+            }
+          else if (LITERAL_P(ret_val))
+            {
+              ST *lit = (ST *)(t_full_box_copy_tree (ret_val));
+              dk_free_box (ret_val);
+              return lit;
+            }
+          else
+            dk_free_box (ret_val);
+not_a_constant_pure: ;
+        }
+    }
+  sqlp_check_arg (funcall_tree);
   return funcall_tree;
 }
 

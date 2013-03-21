@@ -4,18 +4,25 @@
     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <?vsp
-  declare skinpfx, banner_txt, strapline varchar;
+  declare skinpfx, banner_txt, strapline, banner_logo, fp_title, fp_favicon varchar;
   skinpfx := registry_get ('_sponger_fp_SkinPrefix');
   banner_txt := registry_get ('_sponger_fp_Banner');
+  banner_logo := registry_get ('_sponger_fp_Logo');
   strapline := registry_get ('_sponger_fp_Strapline');
+  fp_title := registry_get ('_sponger_fp_Title');
+  fp_favicon := registry_get ('_sponger_fp_Favicon');
   if (skinpfx = 0) skinpfx := 'skin';
   if (banner_txt = 0) banner_txt := 'Virtuoso Linked Data Middleware';
   if (strapline = 0) strapline := '';
+  if (fp_title = 0) fp_title := 'Virtuoso Sponger';
 ?>
 <head>
   <link rel="stylesheet" href="<?=skinpfx?>/ss/sponger_frontpage.css" type="text/css"/>
   <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
-  <title>Sponger-Facebook Binding</title>
+  <?vsp if (fp_favicon <> 0) { ?>
+  <link rel="shortcut icon" href="<?=skinpfx?>/i/<?=fp_favicon?>" />
+  <?vsp } ?>
+  <title><?=fp_title?> - Facebook Binding</title>
   <script type="text/javascript">
     var el_facebook_id;
     var el_about_sponge_uri;
@@ -39,8 +46,8 @@
         return false;
       }
 
-      el_about_sponge_uri.href = el_about_sponge_uri.href.replace(/graph.facebook.com\/.*@Lookup@/, 'graph.facebook.com/' + facebook_id + '?@Lookup@' );
-      el_describe_sponge_uri.href = el_describe_sponge_uri.href.replace(/graph.facebook.com\/.*1/, 'graph.facebook.com/' + facebook_id + '&sp=1' );
+      el_about_sponge_uri.href = el_about_sponge_uri.href.replace(/graph.facebook.com\/.*sponger:get/, 'graph.facebook.com/' + facebook_id + '?sponger:get' );
+      el_describe_sponge_uri.href = el_describe_sponge_uri.href.replace(/graph.facebook.com\/.*add/, 'graph.facebook.com/' + facebook_id + '&sponger:get=add' );
       el_about_sponge_uri.innerHTML = el_describe_sponge_uri.innerHTML = "Facebook ID: " + facebook_id;
       el_fb_ds_links_no_token.style.display = 'inline';
 
@@ -100,23 +107,23 @@
     -- Get the OAuth code
     if (oauth_code = '0') 
     {
-      fb_login_dialog_url := sprintf ('http://www.facebook.com/dialog/oauth?client_id=%s&redirect_uri=%U', fb_app_id, fb_app_site_url);
+      fb_login_dialog_url := sprintf ('http://www.facebook.com/dialog/oauth?client_id=%s&redirect_uri=%U&scope=', fb_app_id, fb_app_site_url);
 
       -- Request a non-expiring token
       if (offline_access)
-        fb_login_dialog_url := fb_login_dialog_url || '&scope=offline_access';
+        fb_login_dialog_url := fb_login_dialog_url || 'offline_access,';
 
       -- Request permissions for additional info beyond the basic info returned
       -- See http://developers.facebook.com/docs/authentication/permissions/ for full permissions list
-      fb_login_dialog_url := fb_login_dialog_url || ',user_likes,friends_likes,user_activities,user_interests,user_notes,user_photos,user_status,user_videos,user_website';
-
+      fb_login_dialog_url := fb_login_dialog_url || 'user_likes,friends_likes,user_activities,user_interests,user_notes,user_photos,user_status,user_videos,user_website,user_checkins,friends_checkins,publish_stream,read_stream';
+      -- dbg_obj_print (fb_login_dialog_url);
       http ('<script>');
       http (sprintf ('top.location.href=\'%s\';', fb_login_dialog_url));
       http ('</script>');
     }
 
     -- Get the access token
-    oauth_url := sprintf ('https://graph.facebook.com/oauth/access_token?client_id=%s&redirect_uri=%U&client_secret=%s&code=%s',
+    oauth_url := sprintf ('https://graph.facebook.com/oauth/access_token?client_id=%U&redirect_uri=%U&client_secret=%U&code=%U',
         fb_app_id, fb_app_site_url, fb_app_secret, oauth_code);
 
     oauth_resp := http_client_ext (url=>oauth_url, headers=>oauth_headers);
@@ -170,12 +177,19 @@ auth_err: ;
              src="<?=skinpfx?>/i/openlinklogo_wstrap_2008_100h.png" /></a> 
         </div>
         <div id="header_text">
-          <h1><?=banner_txt?></h1><?=strapline?>
+          <?vsp if (banner_logo <> 0) { ?>
+            <img id="banner_logo" alt="[Sponger instance logo]"
+                 src="<?=skinpfx?>/i/<?=banner_logo?>" /><br/>
+          <?vsp } else { ?>
+            <h1><?=banner_txt?></h1>
+          <?vsp } ?>
+          <?=strapline?>
         </div>
       </div>
 
       <div id="navbar">
         <a href="index.vsp">Home</a> | 
+        <a href="sponger_architecture.vsp#how_it_works">How It Works</a> | 
         <a href="sponger_architecture.vsp">Architecture</a> | 
         <a href="sponger_setup.vsp">Sponger Setup</a> | 
         <a href="examples.vsp">Live Sponger Examples</a> | 
@@ -240,9 +254,9 @@ auth_err: ;
       <p><strong>Please update your RDF Mappers VAD. The latest VAD saves access tokens to a Virtuoso table. Manual entry of access tokens in the API Key is no longer required.</strong></p>
     <?vsp } else { 
       declare entity_uri, about_sponge_uri, describe_sponge_uri varchar;
-      about_sponge_uri := sprintf ('http://%s/about/html/http/%s/about/id/entity/http/graph.facebook.com/%s?@Lookup@=&refresh=0', _host, _host, og_user_id);
+      about_sponge_uri := sprintf ('http://%s/about/html/http/%s/about/id/entity/http/graph.facebook.com/%s?sponger:get=add&refresh=0', _host, _host, og_user_id);
       entity_uri := sprintf ('http://%s/about/id/entity/http/graph.facebook.com/%s', _host, og_user_id);
-      describe_sponge_uri := sprintf ('http://%s/describe/?url=%U&sp=1', _host, entity_uri);
+      describe_sponge_uri := sprintf ('http://%s/describe/?url=%U&sponger:get=add&sr=0', _host, entity_uri);
     ?>
 	  <h3>View Your Facebook Linked Data Space</h3>
       <p>Here are a variety of Linked Data oriented views derived from your Facebook profile:</p> 
@@ -263,10 +277,10 @@ auth_err: ;
 <?vsp if (oauth_token is null) { 
   declare entity_uri, about_sponge_uri, describe_sponge_uri varchar;
   og_user_id := 'UNKNOWN_OG_USER_ID';
-  about_sponge_uri := sprintf ('http://%s/about/html/http/%s/about/id/entity/http/graph.facebook.com/%s?@Lookup@=&refresh=0', _host, _host, og_user_id);
+  about_sponge_uri := sprintf ('http://%s/about/html/http/%s/about/id/entity/http/graph.facebook.com/%s?sponger:get=add&refresh=0', _host, _host, og_user_id);
   entity_uri := sprintf ('http://%s/about/id/entity/http/graph.facebook.com/%s', _host, og_user_id);
-  --describe_sponge_uri := sprintf ('http://%s/describe/?url=%U&sp=1', _host, entity_uri);
-  describe_sponge_uri := sprintf ('http://%s/describe/?url=%s&sp=1', _host, entity_uri);
+  --describe_sponge_uri := sprintf ('http://%s/describe/?url=%U&sponger:get=add&sr=0', _host, entity_uri);
+  describe_sponge_uri := sprintf ('http://%s/describe/?url=%s&sponger:get=add&sr=0', _host, entity_uri);
   ?>
 
   <p><strong>You can still sponge without an access token by entering your Facebook ID.</strong></p>
@@ -315,7 +329,7 @@ auth_err: ;
 
       <div class="reset">
         <div id="footer">
-          Copyright (C) OpenLink Software 2011. All rights reserved.
+          Copyright (C) 1998-2013 OpenLink Software. All rights reserved.
         </div>
       </div>
 </div><!-- outer -->

@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2010 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -57,7 +57,7 @@ If quad map value is specified but not a constant then there's no need to rememb
 
 typedef struct rdb2rdf_blocker_s {
     struct rdb2rdf_blocker_s *rrb_next;			/*!< Next item in list */
-    ccaddr_t rrb_const_vals[SPART_TRIPLE_FIELDS_COUNT];	/*!< Field values */
+    ccaddr_t rrb_const_vals[SPART_TRIPLE_FIELDS_COUNT];	/*!< Field values. No graph translation here, otherwise xlat can merge merge an exclusive graph is merged with non-exclusive */
     int rrb_total_eclipse;				/*!< Nonzero if total eclipse so no further scan required. For debugging, bits 0x1-0x8 indicate positions of non-constant quad map values */
   } rdb2rdf_blocker_t;
 
@@ -94,6 +94,8 @@ typedef struct rdb2rdf_ctx_s {
     dk_set_t			rrc_qm_revlist;	/*!< Accumulator to build \c rrc_all_qms */
     quad_map_t **		rrc_all_qms;	/*!< List of all quad maps of the storage (first */
     char **		rrc_conflicts_of_qms;	/*!< Matrix of RDB2RDF_QMQM_xxx values, one row per quad map (same order as in \c rrc_all_qms), one item per qm-to-qm relation */
+    caddr_t *			rrc_graph_xlat;	/*!< An get_keyword style array of strings; constant graph of RDF View as a key, replacement graph of the dump as a value. Can be NULL. */
+    int			rrc_graph_xlat_count;	/*!< Count of strings (not count of pairs) in rrc_graph_xlat */
     int			rrc_rule_id_seed;	/*!< Value for RULE_ID field of RDF_QUAD_DELETE_QUEUE */
     int				rrc_rule_count;	/*!< Count of rules, if zero then "after delete" code is not needed. */
     sparp_t			rrc_sparp_stub;	/*!< Stub for use its auto-initializable fields in sparp_rvr_intersect_sprintffs() and the like */
@@ -181,6 +183,21 @@ rdb2rdf_pop_rrvs_stack (rdb2rdf_ctx_t *rrc, int expects_empty_after)
    }
 }
 
+void
+rrc_tweak_const_with_graph_xlat (rdb2rdf_ctx_t *rrc, ccaddr_t *fld_const_ptr)
+{
+  int idx;
+  if (NULL == fld_const_ptr[0])
+    return;
+  if (DV_UNAME != DV_TYPE_OF (fld_const_ptr[0]))
+    sqlr_new_error ("22023", "SR637", "A quad map has constant graph that is not an IRI");
+  idx = ecm_find_name (fld_const_ptr[0], rrc->rrc_graph_xlat, rrc->rrc_graph_xlat_count/2, 2 * sizeof (caddr_t));
+  if (0 <= idx)
+    fld_const_ptr[0] = rrc->rrc_graph_xlat [2*idx + 1];
+}
+
+/*! Returns 1 if quad map \c qm does not use table \c table_name in any alias that is keyrefd by resulting quad.
+If 1 is returned then removal of a row in table does not automatically mean removal of some quad made from that row before */
 int
 rdb2rdf_qm_is_self_multi (quad_map_t *qm, ccaddr_t table_name)
 {
@@ -388,15 +405,26 @@ rdb2rdf_calculate_qmqm (rdb2rdf_ctx_t *rrc, rdb2rdf_optree_t *main_optree, int o
 /* Optimistic loop */
   for (fld_ctr = 0; fld_ctr < SPART_TRIPLE_FIELDS_COUNT; fld_ctr++)
     {
-      ccaddr_t main_fld_const = SPARP_FIELD_CONST_OF_QM(main_qm,fld_ctr);
-      ccaddr_t other_fld_const = SPARP_FIELD_CONST_OF_QM(other_qm,fld_ctr);
-      if ((NULL != main_fld_const) && (NULL != other_fld_const))
+      ccaddr_t main_fld_const, other_fld_const;
+      dtp_t fld_const_dtp;
+      main_fld_const = SPARP_FIELD_CONST_OF_QM(main_qm,fld_ctr);
+      if (NULL == main_fld_const)
+        continue;
+      other_fld_const = SPARP_FIELD_CONST_OF_QM(other_qm,fld_ctr);
+      if (NULL == other_fld_const)
+        continue;
+      fld_const_dtp = DV_TYPE_OF (other_fld_const);
+      if (DV_TYPE_OF (main_fld_const) != fld_const_dtp)
+        goto disjoin; /* see below */
+      if ((SPART_TRIPLE_GRAPH_IDX == fld_ctr) && rrc->rrc_graph_xlat_count)
         {
+          rrc_tweak_const_with_graph_xlat (rrc, &main_fld_const);
+          rrc_tweak_const_with_graph_xlat (rrc, &other_fld_const);
+        }
           if ((DV_TYPE_OF (main_fld_const) != DV_TYPE_OF (other_fld_const)) ||
             (DVC_MATCH != cmp_boxes (main_fld_const, other_fld_const, NULL, NULL)) )
               goto disjoin; /* see below */
         }
-    }
 /* Pessimistic loop */
   for (fld_ctr = 0; fld_ctr < SPART_TRIPLE_FIELDS_COUNT; fld_ctr++)
     {
@@ -409,6 +437,11 @@ rdb2rdf_calculate_qmqm (rdb2rdf_ctx_t *rrc, rdb2rdf_optree_t *main_optree, int o
         continue; /* consts are compared in the optimistic loop, so either disjoin is found or there's no need to compare equal values again */
       main_fld_qmv = SPARP_FIELD_QMV_OF_QM(main_qm,fld_ctr);
       other_fld_qmv = SPARP_FIELD_QMV_OF_QM(other_qm,fld_ctr);
+      if ((SPART_TRIPLE_GRAPH_IDX == fld_ctr) && rrc->rrc_graph_xlat_count)
+        {
+          rrc_tweak_const_with_graph_xlat (rrc, &main_fld_const);
+          rrc_tweak_const_with_graph_xlat (rrc, &other_fld_const);
+        }
       rdb2rdf_set_rvr_by_const_or_qmv (rrc, &main_rvr, main_fld_const, main_fld_qmv);
       rdb2rdf_set_rvr_by_const_or_qmv (rrc, &other_rvr, other_fld_const, other_fld_qmv);
       sparp_rvr_audit(&(rrc->rrc_sparp_stub), &main_rvr);
@@ -819,6 +852,8 @@ rdb2rdf_qm_codegen (rdb2rdf_ctx_t *rrc, rdb2rdf_optree_t *rro, caddr_t table_nam
         continue;
       if ((0 != alias_no) && (RDB2RDF_MAX_ALIASES_OF_MAIN_TABLE != alias_no))
         continue;
+      if ((SPART_TRIPLE_GRAPH_IDX == fld_ctr) && rrc->rrc_graph_xlat_count)
+        rrc_tweak_const_with_graph_xlat (rrc, &fld_const);
       if ((NULL != rvvs_jso_ptr[0]) && (DV_ARRAY_OF_POINTER != DV_TYPE_OF (rvvs_jso_ptr[0])) &&
         (DVC_MATCH == cmp_boxes (rvvs_jso_ptr[0], fld_const, NULL, NULL)) )
       continue;
@@ -1059,7 +1094,7 @@ rdb2rdf_optree_codegen (rdb2rdf_ctx_t *rrc, rdb2rdf_optree_t *rro, caddr_t table
     {
     case RDB2RDF_CODEGEN_INITIAL_SUB_SINGLE:
       if (single_use_of_single_main)
-        rdb2rdf_qm_codegen (rrc, rro, table_name, opcode, subopcode, prefix, rro->rro_aliases_of_main_table->data, 0, ssg);
+        rdb2rdf_qm_codegen (rrc, rro, table_name, opcode, subopcode, prefix, (ccaddr_t)(rro->rro_aliases_of_main_table->data), 0, ssg);
       break;
     case RDB2RDF_CODEGEN_INITIAL_SUB_MULTI:
       if (!single_use_of_single_main)
@@ -1237,7 +1272,7 @@ next_qm: ;
 }
 
 caddr_t
-bif_sparql_rdb2rdf_impl (caddr_t * qst, caddr_t table_name, int opcode, int rule_id_seed, int only_list_tables)
+bif_sparql_rdb2rdf_impl (caddr_t * qst, caddr_t table_name, int opcode, caddr_t *graph_xlat, int rule_id_seed, int only_list_tables)
 {
   caddr_t storage_name = uname_virtrdf_ns_uri_SyncToQuads;
   quad_storage_t *storage = sparp_find_storage_by_name (storage_name);
@@ -1256,6 +1291,41 @@ bif_sparql_rdb2rdf_impl (caddr_t * qst, caddr_t table_name, int opcode, int rule
       rdb2rdf_optree_t *prev_top_rro = NULL;
       memset (&rrc, 0, sizeof (rdb2rdf_ctx_t));
       rrc.rrc_rule_id_seed = rule_id_seed;
+      if (NULL != graph_xlat)
+        {
+          rrc.rrc_graph_xlat_count = BOX_ELEMENTS (graph_xlat);
+          if (rrc.rrc_graph_xlat_count % 2)
+            sqlr_new_error ("22023", "SR639", "Vector of graph IRIs to translate should be of even length, not of length %d", rrc.rrc_graph_xlat_count);
+          if (rrc.rrc_graph_xlat_count)
+            {
+              int ctr, ctrL;
+              rrc.rrc_graph_xlat = (caddr_t *)t_alloc_box (rrc.rrc_graph_xlat_count * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+              for (ctr = rrc.rrc_graph_xlat_count; ctr--; /* no step */)
+                {
+                  caddr_t g = graph_xlat[ctr];
+                  dtp_t g_dtp = DV_TYPE_OF (g);
+                  if ((DV_STRING != g_dtp) && (DV_UNAME != g_dtp))
+                    sqlr_new_error ("22023", "SR639", "Graph IRI should be an UTF-8 string or an UNAME");
+                  rrc.rrc_graph_xlat[ctr] = t_box_dv_uname_string (g);
+                }
+              /* check + sort by keys */
+              for (ctr = 0; ctr < rrc.rrc_graph_xlat_count; ctr += 2)
+                {
+                  for (ctrL = ctr - 2; 0 <= ctrL; ctrL -= 2)
+                    {
+                      int cmp = strcmp (rrc.rrc_graph_xlat[ctrL], rrc.rrc_graph_xlat[ctrL+2]);
+                      if (!cmp)
+                        sqlr_new_error ("22023", "SR639", "Graph IRI '%.100s' is used twice as a key in array of graph translations", rrc.rrc_graph_xlat[ctr]);
+                      if (0 < cmp)
+                        {
+                          caddr_t swap;
+                          swap = rrc.rrc_graph_xlat[ctrL]; rrc.rrc_graph_xlat[ctrL] = rrc.rrc_graph_xlat[ctrL+2]; rrc.rrc_graph_xlat[ctrL+2] = swap;
+                          swap = rrc.rrc_graph_xlat[ctrL+1]; rrc.rrc_graph_xlat[ctrL+1] = rrc.rrc_graph_xlat[ctrL+3]; rrc.rrc_graph_xlat[ctrL+3] = swap;
+                        }
+                    }
+                }
+            }
+        }
       DO_BOX_FAST (quad_map_t *, qm, qm_ctr, storage->qsUserMaps)
         {
           rdb2rdf_optree_t *qm_rro = rdb2rdf_create_optree (&rrc, &(rrc.rrc_root_rro), prev_top_rro, qm, table_name);
@@ -1327,17 +1397,20 @@ bif_sparql_rdb2rdf_impl (caddr_t * qst, caddr_t table_name, int opcode, int rule
 caddr_t
 bif_sparql_rdb2rdf_codegen (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, const char *fname)
 {
+  int argcount = BOX_ELEMENTS (args);
   caddr_t table_name = bif_string_arg (qst, args, 0, "sparql_rdb2rdf_codegen");
   int opcode = bif_long_range_arg (qst, args, 1, "sparql_rdb2rdf_codegen", RDB2RDF_CODEGEN_EXPLAIN, COUNTOF__RDB2RDF_CODEGEN);
-  int rule_id_seed = (3 <= BOX_ELEMENTS (args)) ?
-    bif_long_arg (qst, args, 2, "sparql_rdb2rdf_codegen") :
+  caddr_t *graph_xlat = ((3 <= argcount) ?
+    bif_array_of_pointer_arg (qst, args, 2, "sparql_rdb2rdf_codegen") : NULL );
+  int rule_id_seed = (4 <= argcount) ?
+    bif_long_arg (qst, args, 3, "sparql_rdb2rdf_codegen") :
     (adler32_of_buffer ((unsigned char *)table_name, box_length (table_name)-1) ^ opcode);
-  return bif_sparql_rdb2rdf_impl (qst, table_name, opcode, rule_id_seed, 0);
+  return bif_sparql_rdb2rdf_impl (qst, table_name, opcode, graph_xlat, rule_id_seed, 0);
 }
 
 caddr_t
 bif_sparql_rdb2rdf_list_tables (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, const char *fname)
 {
   int opcode = bif_long_range_arg (qst, args, 0, "sparql_rdb2rdf_list_tables", RDB2RDF_CODEGEN_EXPLAIN, COUNTOF__RDB2RDF_CODEGEN);
-  return bif_sparql_rdb2rdf_impl (qst, NULL, opcode, 0 /*fake*/, 1);
+  return bif_sparql_rdb2rdf_impl (qst, NULL, opcode, NULL, 0 /*fake*/, 1);
 }

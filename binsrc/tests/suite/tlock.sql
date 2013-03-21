@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -46,7 +46,7 @@ wait_for_children;
 set DEADLOCK_RETRIES = 0;
 select count (*), count (distinct CTR)from LOCK_TT;
 
-#echo both $if $equ $last[1] 90000 "PASSED" "***FAILED";
-#$echo both ": Inserted " $last[1] " rows\n";
-#echo both $if $equ $last[2] 50000 "PASSED" "***FAILED";
-#echo both ": Inserted " $last[2] " distinct CTR values\n";
+#ECHO BOTH $IF $EQU $LAST[1] 90000 "PASSED" "***FAILED";
+#$ECHO BOTH ": Inserted " $LAST[1] " rows\n";
+#ECHO BOTH $IF $EQU $LAST[2] 50000 "PASSED" "***FAILED";
+#ECHO BOTH ": Inserted " $LAST[2] " distinct CTR values\n";

@@ -1,0 +1,87 @@
+<?vsp
+--
+--  $Id$
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2013 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+
+   declare ms int;
+   ms := 0;
+   http_rewrite ();
+   if (length ({?'mbox'}))
+     {
+       declare mbox, digest, id, mu, https, sender, sid, accept, fmt, cb any;
+       accept := http_request_header_full (lines, 'Accept', '*/*');
+       fmt := {?'format'};
+       if (length (fmt) = 0)
+         {
+       fmt := DB.DBA.HTTP_RDF_GET_ACCEPT_BY_Q (accept);
+         }
+       if (fmt = 'application/json')
+         http_header ('Content-Type: application/json\r\n');
+       mbox := {?'mbox'};
+       cb := {?'cb'};
+       https := ODS.ODS_API.getDefaultHttps ();
+       sender := (select U_E_MAIL from SYS_USERS where U_NAME = 'dav');
+       sid := vspx_sid_generate ();
+       insert into VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY, VS_STATE) values (sid, 'mv', mbox, now (), serialize (vector ('callback', cb)));
+       declare exit handler for sqlstate '*'
+	{
+	   if (fmt = 'application/json')
+	     {
+	       http_status_set (400);
+	       http ('{"status":"error", "message":"Error in processing your request."}');
+	       return;
+	     }
+           goto error;	  
+	};
+       smtp_send (null, sender, mbox,
+     	sprintf ('Subject: Mail verification service\r\nPlease click on the link below to confirm your email.\r\nhttps://%s/mv/mc.vsp?confirm=%U', https, sid));
+       ms := 1;
+       if (fmt = 'application/json')
+         {
+           http ('{"status":"ok", "message":"A confirmation mail was sent, please check your mail box."}');
+           return;
+         }
+     }
+?>
+<html>
+    <head>
+	<title>Mail verification service</title>
+    </head>
+    <body>
+	<?vsp if (ms = 0) { ?>
+	<h1>Enter your mail address</h1>
+	<form name="f" method="post" action="mv.vsp">
+	    <input type="text" size="70" name="mbox" value=""/>
+	    <input type="submit" value="Verify" name="go" />
+	</form>
+	<?vsp } else { ?>
+	<div>A confirmation mail was sent, please check your mail box.</div>
+	<?vsp }
+	   if (0)
+	     {
+		error:
+	?>
+	<div>Error in processing your request.</div>
+	<?vsp
+	     }
+	?>
+    </body>
+</html>

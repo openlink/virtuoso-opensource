@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2009 OpenLink Software
+ *  Copyright (C) 2009-2013 OpenLink Software
  *
  *  See LICENSE file for details.
  *
@@ -744,7 +744,7 @@ iSPARQL.QBE = function (def_obj) {
 	    for (var i=0;i<root.children.length;i++) {
 		var child = root.children[i];
 		if (child.schema == parts[0])  { schemaNode = child; }
-		}
+	    }
 	    if (!schemaNode) { return; }
 	    var containerNode = false;
 	    var finalNode = false;
@@ -755,7 +755,7 @@ iSPARQL.QBE = function (def_obj) {
 		    if (child2.uri == url) {
 			containerNode = child1;
 			finalNode = child2;
-			}
+		    }
 		}
 	    }
 	    if (!finalNode) { return; }
@@ -2153,7 +2153,7 @@ iSPARQL.QBE = function (def_obj) {
 	} else { OAT.Dom.hide("qbe_return_btn");}
 
     } else {
-	if (self.svgsparql) { self.loadFromString(self.defaults.query); }
+	if (self.svgsparql) { self.loadFromString(self.defaults.query); self.svgsparql.reposition();}
 	$('qbe_graph').value = self.defaults.graph;
 	OAT.Dom.hide("qbe_return_btn");
     }

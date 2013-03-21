@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -51,7 +51,7 @@
           id := cast (get_keyword ('x4_fld_0_'||suffix, params, '-1') as integer);
           if (id <> -1)
           {
-            update WA_USER_OL_ACCOUNTS
+            update DB.DBA.WA_USER_OL_ACCOUNTS
                set WUO_NAME = trim (params [N+1]),
                    WUO_URL = trim (get_keyword ('x4_fld_2_'||suffix, params, '')),
                    WUO_URI = trim (get_keyword ('x4_fld_3_'||suffix, params, ''))
@@ -60,14 +60,14 @@
           }
         }
       }
-      for (select WUO_ID as _id from WA_USER_OL_ACCOUNTS where WUO_U_ID = self.u_id and WUO_TYPE = 'P') do
+      for (select WUO_ID as _id from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_U_ID = self.u_id and WUO_NAME <> 'webid' and WUO_TYPE = 'P') do
       {
         for (N := 0; N < length (IDc); N := N + 1)
         {
           if (IDc[N] = _id)
             goto _exit;
         }
-        delete from WA_USER_OL_ACCOUNTS where WUO_ID = _id;
+        delete from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_ID = _id;
       _exit:;
       }
       for (N := 0; N < length (params); N := N + 4)
@@ -78,8 +78,8 @@
           id := cast (get_keyword ('x4_fld_0_'||suffix, params, '-1') as integer);
           if ((id = -1) and (trim (get_keyword ('x4_fld_2_'||suffix, params, '')) <> ''))
         {
-            insert into WA_USER_OL_ACCOUNTS ( WUO_NAME, WUO_URL, WUO_URI, WUO_U_ID, WUO_TYPE)
-              values (trim (params [N+1]), trim (get_keyword ('x4_fld_2_'||suffix, params, '')), trim (get_keyword ('x4_fld_3_'||suffix, params, '')), self.u_id, 'P');
+            insert into DB.DBA.WA_USER_OL_ACCOUNTS (WUO_U_ID, WUO_TYPE, WUO_NAME, WUO_URL, WUO_URI)
+              values (self.u_id, 'P', trim (params [N+1]), trim (get_keyword ('x4_fld_2_'||suffix, params, '')), trim (get_keyword ('x4_fld_3_'||suffix, params, '')));
           }
         }
       }
@@ -127,7 +127,7 @@
             		  <![CDATA[
             		    <script type="text/javascript">
             		    <?vsp
-                  for (select WUO_ID, WUO_NAME, WUO_URL, WUO_URI, WUO_OAUTH_SID from WA_USER_OL_ACCOUNTS where WUO_TYPE = 'P' and WUO_U_ID = self.u_id) do
+                  for (select WUO_ID, WUO_NAME, WUO_URL, WUO_URI, WUO_OAUTH_SID from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_U_ID = self.u_id and WUO_TYPE = 'P' and WUO_NAME <> 'webid') do
                   {
 		     http (sprintf (
 		     	'ODSInitArray.push ( function () {
@@ -137,7 +137,7 @@
 					{ 
 						id: "%d", 
 						fld_1: {mode: 10, value: "%s"}, 
-						fld_2: {value: "%s", className: "_validate_ _uri_ _canEmpty_"}, 
+						fld_2: {value: "%s"},
 						fld_3: {value: "%s"},
 						btn_1: {mode: 0},
 						btn_2: {mode: 44, profile_url: "%s", oauth_sid: "%s", enabled: "%d"},
@@ -152,7 +152,7 @@
             </table>
           </td>
           <td valign="top" nowrap="1">
-            <span class="button pointer" onclick="TBL.createRow('x4', null, {fld_1: {mode: 10}, fld_2: {className: '_validate_ _uri_ _canEmpty_'}, fld_3: {}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
+            <span class="button pointer" onclick="TBL.createRow('x4', null, {fld_1: {mode: 10}, fld_2: {}, fld_3: {}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
           </td>
         </tr>
       </table>

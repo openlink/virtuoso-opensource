@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -28,6 +28,8 @@
 <!ENTITY mo "http://purl.org/ontology/mo/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY mmd "http://musicbrainz.org/ns/mmd-1.0#">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
+<!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY dc "http://purl.org/dc/elements/1.1/">
 <!ENTITY atom "http://atomowl.org/ontologies/atomrdf#">
 <!ENTITY audio "http://purl.org/media/audio#">
@@ -40,6 +42,8 @@
     xmlns:rdf="&rdf;"
     xmlns:rdfs="&rdfs;"
     xmlns:foaf="&foaf;"
+    xmlns:opl="&opl;"
+    xmlns:dcterms="&dcterms;"
     xmlns:mo="&mo;"
     xmlns:mmd="&mmd;"
     xmlns:atom="&atom;"
@@ -62,6 +66,13 @@
 
     <xsl:template match="artist">
 		<mo:MusicArtist rdf:about="{html-href}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.rhapsody.com#this">
+                        			<foaf:name>Rhapsody</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.rhapsody.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<foaf:name>
 				<xsl:value-of select="@name"/>
 			</foaf:name>
@@ -140,6 +151,13 @@
 
     <xsl:template match="album">
 		<rdf:Description rdf:about="{html-href}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.rhapsody.com#this">
+                        			<foaf:name>Rhapsody</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.rhapsody.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<rdf:type rdf:resource="&mo;Record"/>
 			<rdf:type rdf:resource="&audio;Album"/>
     		<dc:title>
@@ -198,6 +216,13 @@
 
 	<xsl:template match="track">
 		<rdf:Description rdf:about="{concat('http://www.rhapsody.com/goto?rcid=', @rcid)}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.rhapsody.com#this">
+                        			<foaf:name>Rhapsody</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.rhapsody.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<rdf:type rdf:resource="&mo;Track"/>
 			<rdf:type rdf:resource="&audio;Recording"/>
 			<dc:title>
@@ -213,6 +238,13 @@
 
     <xsl:template match="genre">
 		<mo:Genre rdf:about="{html-href}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.rhapsody.com#this">
+                        			<foaf:name>Rhapsody</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.rhapsody.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<dc:title>
                 <xsl:value-of select="@name"/>
             </dc:title>

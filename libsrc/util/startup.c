@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -251,6 +251,8 @@ default_usage (void)
   for (opt = program_info.program_options; opt->long_opt; opt++)
     {
       int i = (int) strlen (opt->long_opt);
+      if (!opt->help)
+	continue;
       if (!strcmp (opt->long_opt, "internal"))
         continue;
       if (i > fmtlen)
@@ -313,6 +315,8 @@ default_usage (void)
   fmtlen = -(fmtlen + 2);
   for (opt = program_info.program_options; opt->long_opt; opt++)
     {
+      if (!opt->help)
+	continue;
 #ifdef BROKEN_PRINTF
       int i = strlen (opt->long_opt);
       if (!strcmp (opt->long_opt, "internal"))

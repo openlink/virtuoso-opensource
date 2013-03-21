@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -510,8 +510,6 @@ bop_text (int bop)
 {
   switch (bop)
     {
-    case BOP_NOT:
-      return "not";
     case BOP_EQ:
       return "=";
     case BOP_GT:
@@ -542,6 +540,8 @@ bop_text (int bop)
       return (" UNION ALL ");
     case BOP_LIKE:
       return (" LIKE ");
+    case BOP_NOT:
+      return "not";
     case BOP_NULL:
       return (" IS NULL ");
     }
@@ -1193,9 +1193,18 @@ sqlc_exp_print (sql_comp_t * sc, comp_table_t * ct, ST * exp, char *text, size_t
 	case SEARCHED_CASE:
 	  {
 	    int inx;
+	    id_hash_t *old_private_elts = NULL;
+	    df_elt_t * case_dfe = NULL;
+	    if (sc->sc_so)
+	      case_dfe = sqlo_df (sc->sc_so, tree);
 	    sprintf_more (text, tlen, fill, "CASE ");
 	    for (inx = 0; ((uint32) inx) < BOX_ELEMENTS (tree->_.comma_exp.exps); inx += 2)
 	      {
+		if (sc->sc_so)
+		  {
+		    old_private_elts = sc->sc_so->so_df_private_elts;
+		    sc->sc_so->so_df_private_elts = case_dfe->_.control.private_elts[inx];
+		  }
 		if (ST_P (tree->_.comma_exp.exps[inx], QUOTE))
 		  {
 		    sprintf_more (text, tlen, fill, " ELSE ");
@@ -1208,6 +1217,8 @@ sqlc_exp_print (sql_comp_t * sc, comp_table_t * ct, ST * exp, char *text, size_t
 		    sprintf_more (text, tlen, fill, " THEN ");
 		    sqlc_exp_print (sc, ct, tree->_.comma_exp.exps[inx + 1], text, tlen, fill);
 		  }
+		if (sc->sc_so)
+		  sc->sc_so->so_df_private_elts = old_private_elts;
 	      }
 	    sprintf_more (text, tlen, fill, " END ");
 	  }

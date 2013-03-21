@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -116,6 +116,7 @@ typedef struct xper_ctx_s
     caddr_t vt_batch;		/*!< batch of word indexing information, or NULL */
     int xpc_index_attrs;	/*!< Flags if attributes should be indexed */
     id_hash_t *xpc_id_dict;
+    caddr_t xpc_src_filename;
     FILE *xpc_src_file;
     vxml_parser_t *xpc_parser;
     dk_set_t xpc_cut_chain;	/* Chain of boxes, which will be written into the copy */
@@ -1394,6 +1395,11 @@ xper_destroy_ctx (xper_ctx_t * ctx)
       VXmlParserDestroy (ctx->xpc_parser);
       ctx->xpc_parser = NULL;
     }
+  if (NULL != ctx->xpc_src_filename)
+    {
+      dk_free_box (ctx->xpc_src_filename);
+      ctx->xpc_src_filename = NULL;
+    }
 }
 
 static caddr_t
@@ -2509,38 +2515,21 @@ xper_entity_t *
   if ((dtp_of_source_arg == DV_SHORT_STRING_SERIAL) ||
       (dtp_of_source_arg == DV_STRING) ||
       (dtp_of_source_arg == DV_C_STRING))
-    {
-      if (!strncasecmp (source_arg, "file://", 7 /* strlen(("file://") */ ))
+    {                             /* 01234567 */
+      if (!strncasecmp (source_arg, "file://", 7))
         {
-#ifdef WIN32
-	    char fname[_MAX_PATH], *fname_ptr;
-	    /*fname = dk_alloc(strlen(source+7/ * strlen("file://"* /)+1); */
-	    strncpy (fname, source_arg + 7 /* strlen("file://" */ , _MAX_PATH);
-	    fname[_MAX_PATH - 1] = '\0';
-	    for (fname_ptr = fname; fname_ptr[0]; fname_ptr++)
-	      {
-		switch (fname_ptr[0])
-		  {
-		  case '|':
-		    fname_ptr[0] = ':';
-		    break;
-		  case '/':
-		    fname_ptr[0] = '\\';
-		    break;
-		  }
-	      }
-#else
-	    char *fname = ((char *) source_arg) + 7 /* strlen("file://") */ ;
-#endif
-	    sec_check_dba (qi, "<read XML from URL of type file://...>");
-	    xper_dbg_print_1 ("File '%s'\n", fname);
-	    context.xpc_src_file = fopen (fname, "rb");
-	    if (NULL == context.xpc_src_file)
-	      {
-		xper_destroy_ctx (&context);
-		dk_free_box (uri);
-		sqlr_new_error ("42000", "XP100", "Error opening file '%s'", fname);
-	      }
+          sec_check_dba (qi, "<read XML from URL of type file://...>");
+                 context.xpc_src_filename = file_native_name_from_iri_path_nchars (source_arg + 7, strlen (source_arg + 7));
+          file_path_assert (context.xpc_src_filename, NULL, 1);
+          xper_dbg_print_1 ("File '%s'\n", context.xpc_src_filename);
+          context.xpc_src_file = fopen (context.xpc_src_filename, "rb");
+          if (NULL == context.xpc_src_file)
+            {
+              caddr_t err = srv_make_new_error ("42000", "XP100", "Error opening file '%s'", context.xpc_src_filename);
+              xper_destroy_ctx (&context);
+              dk_free_box (uri);
+              sqlr_resignal (err);
+            }
         source_type = 'F';
 	iter = file_read;
 	iter_data = context.xpc_src_file;
@@ -4432,7 +4421,7 @@ xp_string_value_is_nonempty (xml_entity_t * xe)
 	    namelen = (int) skip_string_length (&ptr);
 	    ptr += namelen;
 	    alen = (long) skip_string_length (&ptr);
-	    if (alen);
+	    if (alen)
 	      return 1;
 	    ptr += alen;
 	  }
@@ -4477,7 +4466,7 @@ xp_string_value_is_nonempty (xml_entity_t * xe)
 		      namelen = (int) skip_string_length (&ptr);
 		      ptr += namelen;
 		      alen = (long) skip_string_length (&ptr);
-		      if (alen);
+		      if (alen)
 			return 1;
 		      ptr += alen;
 		    }

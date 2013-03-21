@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -28,6 +28,7 @@
 <!ENTITY pto "http://www.productontology.org/id/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
+<!ENTITY geo "http://www.w3.org/2003/01/geo/wgs84_pos#"> 
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
 <!ENTITY oplzllw "http://www.openlinksw.com/schemas/zillow#">
@@ -35,10 +36,12 @@
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
+    xmlns:opl="http://www.openlinksw.com/schema/attribution#"
     xmlns:rdf="&rdf;"
     xmlns:foaf="&foaf;"
     xmlns:bibo="&bibo;"
     xmlns:sioc="&sioc;"
+    xmlns:geo="&geo;"
     xmlns:dcterms="&dcterms;"
     xmlns:gr="&gr;"
     xmlns:pto="&pto;" 
@@ -53,7 +56,6 @@
     <xsl:output method="xml" indent="yes" />
 
     <xsl:param name="baseUri"/>
-    <xsl:param name="currentDateTime"/>
 
     <xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
     <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
@@ -80,6 +82,12 @@
 	
 	<xsl:template match="property|listing">
 		<gr:Offering rdf:about="{vi:proxyIRI($baseUri, '', 'Offer')}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://www.zoopla.com#this">
+                                 			<foaf:name>Zoopla</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://www.zoopla.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
 			<xsl:if test="listing_status = 'rent'">
 				<gr:hasBusinessFunction rdf:resource="&gr;LeaseOut"/>
 			</xsl:if>
@@ -103,6 +111,12 @@
 		</gr:BusinessEntity>
 		
 		<rdf:Description rdf:about="{$resourceURL}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://www.zoopla.com#this">
+                                 			<foaf:name>Zoopla</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://www.zoopla.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
 			<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 			<rdf:type rdf:resource="&oplzllw;Product" />
 			<sioc:has_container rdf:resource="{$docproxyIRI}"/>
@@ -133,10 +147,10 @@
 				<rdfs:seeAlso rdf:resource="{refine_estimate_url}"/>
 			</xsl:if>
 			<xsl:if test="longitude">
-				<oplzllw:longitude><xsl:value-of select="longitude"/></oplzllw:longitude>
+				<geo:long><xsl:value-of select="longitude"/></geo:long>
 			</xsl:if>
 			<xsl:if test="latitude">
-				<oplzllw:latitude><xsl:value-of select="latitude"/></oplzllw:latitude>
+				<geo:lat><xsl:value-of select="latitude"/></geo:lat>
 			</xsl:if>
 			<xsl:if test="postcode">
 				<oplzllw:postalCode><xsl:value-of select="postcode"/></oplzllw:postalCode>

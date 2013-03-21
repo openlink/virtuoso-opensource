@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -770,7 +770,10 @@ dk_alloc (size_t c)
 {
   void *thing = dbg_malloc (__FILE__, __LINE__, c);
   if (NULL == thing)
-    GPF_T1 ("Out of memory");
+    {
+      dbg_dump_mem();
+      GPF_T1 ("Out of memory");
+    }
   return thing;
 }
 
@@ -780,7 +783,10 @@ dbg_dk_alloc (DBG_PARAMS size_t c)
 {
   void *thing = dbg_malloc (DBG_ARGS c);
   if (NULL == thing)
-    GPF_T1 ("Out of memory");
+    {
+      dbg_dump_mem();
+      GPF_T1 ("Out of memory");
+    }
   return thing;
 }
 

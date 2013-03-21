@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2009 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -42,13 +42,15 @@ extern "C" {
 #endif
 #include "xml_ecm.h"
 
+/* The name becomes misleading because "limofs" subquery can now be used for CONSTRUCT {...} WHERE {...} GROUP BY..., not only for LIMIT...OFFSET... */
 #define CTOR_NEEDS_LIMOFS_TRICK(top) ( \
  (DV_LONG_INT != DV_TYPE_OF (top->_.req_top.offset)) || \
  (DV_LONG_INT != DV_TYPE_OF (top->_.req_top.limit)) || \
  (0 != unbox ((caddr_t)(top->_.req_top.offset))) || \
- ((SPARP_MAXLIMIT != unbox ((caddr_t)(top->_.req_top.limit))) && \
+ ((NULL != top->_.req_top.limit) && \
      ((1 != unbox ((caddr_t)(top->_.req_top.limit))) || \
-       (0 != BOX_ELEMENTS (top->_.req_top.pattern->_.gp.members)) ) ) )
+       (0 != BOX_ELEMENTS (top->_.req_top.pattern->_.gp.members)) ) ) || \
+ (NULL != top->_.req_top.groupings) )
 
 #define CTOR_DISJOIN_WHERE 1
 #define CTOR_MAY_INTERSECTS_WHERE 0
@@ -56,8 +58,24 @@ extern "C" {
 caddr_t
 spar_compose_report_flag (sparp_t *sparp)
 {
-  const char *fmtname = sparp->sparp_env->spare_output_format_name; /* Report is always a result-set, so no spare_output_XXX_format name */
-  return t_box_num (((NULL != fmtname) && !strcmp (fmtname, "_JAVA_")) ? 0 : 1);
+  sparp_env_t *spare = sparp->sparp_env;
+  const char *fmtname;
+  caddr_t res;
+  if (NULL != spare->spare_output_compose_report)
+    return spare->spare_output_compose_report;
+  fmtname = spare->spare_output_format_name; /* Report is always a result-set, so no spare_output_XXX_format name */
+  if ((NULL == spare->spare_output_format_name)
+    && (NULL == sparp->sparp_env->spare_parent_env)
+    && ssg_is_odbc_cli () )
+    {
+      if (ssg_is_odbc_msaccess_cli ())
+        fmtname = spare->spare_output_format_name = t_box_dv_short_string ("_MSACCESS_");
+      else
+        fmtname = spare->spare_output_format_name = t_box_dv_short_string ("_UDBC_");
+    }
+  res = t_box_num_nonull (((NULL != fmtname) && (!strcmp (fmtname, "_JAVA_") || !strcmp (fmtname, "_UDBC_") || !strcmp (fmtname, "_MSACCESS_"))) ? 0 : 1);
+  spare->spare_output_compose_report = res;
+  return res;
 }
 
 extern int sparp_ctor_fields_are_disjoin_with_where_fields (sparp_t *sparp, SPART **ctor_fields, SPART **where_fields);
@@ -97,14 +115,14 @@ sparp_ctor_fields_are_disjoin_with_where_fields (sparp_t *sparp, SPART **ctor_fi
             sparp_equiv_t *src_equiv = sparp_equiv_get_ro (top_eqs, top_eq_count,
               top_gp, ctor_fld, SPARP_EQUIV_GET_NAMESAKES );
             if (NULL != src_equiv) /* src_equiv may be NULL in subqueries */
-              sparp_rvr_tighten (sparp, &rvr, &(src_equiv->e_rvr), ~1);
+              sparp_rvr_tighten (sparp, &rvr, &(src_equiv->e_rvr), ~0);
             break;
           }
         case SPAR_LIT: case SPAR_QNAME:
           {
             rdf_val_range_t tmp;
             sparp_rvr_set_by_constant (sparp, &tmp, NULL, ctor_fld);
-            sparp_rvr_tighten (sparp, &rvr, &tmp, ~1);
+            sparp_rvr_tighten (sparp, &rvr, &tmp, ~0);
             break;
           }
         default: break;
@@ -114,13 +132,13 @@ sparp_ctor_fields_are_disjoin_with_where_fields (sparp_t *sparp, SPART **ctor_fi
       switch (where_fld_type)
         {
         case SPAR_BLANK_NODE_LABEL: case SPAR_VARIABLE:
-          sparp_rvr_tighten (sparp, &rvr, &(where_fld->_.var.rvr), ~1);
+          sparp_rvr_tighten (sparp, &rvr, &(where_fld->_.var.rvr), ~0);
           break;
         case SPAR_LIT: case SPAR_QNAME:
           {
             rdf_val_range_t tmp;
             sparp_rvr_set_by_constant (sparp, &tmp, NULL, where_fld);
-            sparp_rvr_tighten (sparp, &rvr, &tmp, ~1);
+            sparp_rvr_tighten (sparp, &rvr, &tmp, ~0);
             break;
           }
         default: break;
@@ -145,21 +163,23 @@ sparp_gp_trav_find_isect_with_ctor (sparp_t *sparp, SPART *curr, sparp_trav_stat
       switch (curr->_.gp.subtype)
         {
         case SELECT_L:
-        {
+          {
 #if 1 /*!!! TBD: implement rewriting of ctor fields so that a field that correspond to an alias of subquery's retval is replaced with the expression of the alias. Then use the branch that is currently not in use */
-          return SPAR_GPT_COMPLETED;
-#else
-          int isect_res;
-          sparp_t *sub_sparp = sparp_down_to_sub (sparp, curr);
-          isect_res = sparp_ctor_fields_are_disjoin_with_data_gathering (sub_sparp, (SPART **)common_env, curr->_.gp.subquery, 1);
-          sparp_up_from_sub (sparp, curr, sub_sparp);
-          if (CTOR_MAY_INTERSECTS_WHERE == isect_res)
             return SPAR_GPT_COMPLETED;
-          return SPAR_GPT_NODOWN;
+#else
+            int isect_res;
+            sparp_t *sub_sparp = sparp_down_to_sub (sparp, curr);
+            isect_res = sparp_ctor_fields_are_disjoin_with_data_gathering (sub_sparp, (SPART **)common_env, curr->_.gp.subquery, 1);
+            sparp_up_from_sub (sparp, curr, sub_sparp);
+            if (CTOR_MAY_INTERSECTS_WHERE == isect_res)
+              return SPAR_GPT_COMPLETED;
+            return SPAR_GPT_NODOWN;
 #endif
-        }
+          }
         case SERVICE_L:
           return 0; /* remote triples can not interfere with local data manipulations. This may change in the future if SERVICE group ctor template is added in SPARUL */
+        case VALUES_L:
+          return 0; /* no variables --- no interference */
         }
       break;
     }
@@ -171,7 +191,7 @@ int
 sparp_ctor_fields_are_disjoin_with_data_gathering (sparp_t *sparp, SPART **ctor_fields, SPART *req, int the_query_is_topmost)
 {
   int res;
-  SPART **saved_orig_retvals = NULL;
+  /*SPART **saved_orig_retvals = NULL;*/
   SPART **saved_retvals = NULL;
   res = sparp_gp_trav (sparp, req->_.req_top.pattern, ctor_fields,
     sparp_gp_trav_find_isect_with_ctor, NULL,
@@ -181,8 +201,8 @@ sparp_ctor_fields_are_disjoin_with_data_gathering (sparp_t *sparp, SPART **ctor_
     return CTOR_MAY_INTERSECTS_WHERE;
   if (the_query_is_topmost)
     {
-      saved_orig_retvals = req->_.req_top.orig_retvals;
-      req->_.req_top.orig_retvals = NULL;
+      /*saved_orig_retvals = req->_.req_top.orig_retvals;
+      req->_.req_top.orig_retvals = NULL;*/
       saved_retvals = req->_.req_top.retvals;
       req->_.req_top.retvals = NULL;
     }
@@ -192,7 +212,7 @@ sparp_ctor_fields_are_disjoin_with_data_gathering (sparp_t *sparp, SPART **ctor_
     NULL );
   if (the_query_is_topmost)
     {
-      req->_.req_top.orig_retvals = saved_orig_retvals;
+      /*req->_.req_top.orig_retvals = saved_orig_retvals;*/
       req->_.req_top.retvals = saved_retvals;
     }
   if (res & SPAR_GPT_COMPLETED)
@@ -202,12 +222,15 @@ sparp_ctor_fields_are_disjoin_with_data_gathering (sparp_t *sparp, SPART **ctor_
 
 typedef struct ctor_var_enumerator_s
 {
-  dk_set_t cve_dist_vars_acc;	/*!< Accumulator of variables with distinct names used in triple patterns of constructors */
+  dk_set_t cve_dist_vars_acc;		/*!< Accumulator of variables with distinct names used in triple patterns of constructors */
   int cve_dist_vars_count;		/*!< Length of \c cve_dist_vars_acc */
   int cve_total_vars_count;		/*!< Count of all occurrences of variables */
   int cve_bnodes_are_prohibited;	/*!< Bnodes are not allowed in DELETE ctor gp */
-  SPART *cve_limofs_var;	/*!< Variable that is passed from limit-offset subselect */
-  caddr_t cve_limofs_var_alias;	/*!< Alias used for cve_limofs_var */
+  SPART *cve_limofs_var;		/*!< Variable that is passed from limit-offset subselect */
+  caddr_t cve_limofs_var_alias;		/*!< Alias used for cve_limofs_var */
+  int cve_make_quads;			/*!< Contructor should make quads */
+  SPART *cve_default_graph;		/*!< An expression for the default graph. It is not used in the results ATM because we can generate a mix of triples and quads. */
+  int cve_graphs_should_be_set;		/*!< If \c cve_default_graph is NULL and \c cve_graphs_should_be_set is true and a ctor tmpl has no explicit graph then the default graph should be set from context or an error should be signalled */
 }
 ctor_var_enumerator_t;
 
@@ -233,7 +256,7 @@ spar_cve_find_or_add_variable (sparp_t *sparp, ctor_var_enumerator_t *haystack_c
 int
 sparp_gp_trav_ctor_var_to_limofs_aref (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 { /* This rewrites variables that are nested into backquoted expressions in ctor template when the query has limit or offset clause */
-  ctor_var_enumerator_t *cve = common_env;
+  ctor_var_enumerator_t *cve = (ctor_var_enumerator_t *)common_env;
   int curr_type = SPART_TYPE (curr);
   int var_ctr;
   if (SPAR_BLANK_NODE_LABEL == curr_type)
@@ -249,6 +272,34 @@ sparp_gp_trav_ctor_var_to_limofs_aref (sparp_t *sparp, SPART *curr, sparp_trav_s
     }
   return SPAR_GPT_NODOWN;
 }
+
+int
+spar_ctor_uses_default_graph (SPART *ctor_gp)
+{
+  int triple_ctr;
+  for (triple_ctr = BOX_ELEMENTS_INT (ctor_gp->_.gp.members); triple_ctr--; /* no step */)
+    {
+      SPART *memb = ctor_gp->_.gp.members[triple_ctr];
+      switch (SPART_TYPE (memb))
+        {
+        case SPAR_GP:
+          if (spar_ctor_uses_default_graph (memb))
+            return 1;
+          break;
+        case SPAR_TRIPLE:
+          {
+            SPART *g = memb->_.triple.tr_fields[SPART_TRIPLE_GRAPH_IDX];
+            if (SPART_IS_DEFAULT_GRAPH_BLANK (g))
+              return 1;
+            break;
+          }
+        default:
+          break;
+        }
+    }
+  return 0;
+}
+
 
 #define CTOR_OPCODE_VARIABLE 1
 #define CTOR_OPCODE_BNODE 2
@@ -277,15 +328,29 @@ spar_compose_retvals_of_ctor (sparp_t *sparp, SPART *ctor_gp, const char *funnam
       for (triple_ctr = BOX_ELEMENTS_INT (ctor_gp->_.gp.members); triple_ctr--; /* no step */)
         {
           SPART *triple = ctor_gp->_.gp.members[triple_ctr];
-          caddr_t *args = (caddr_t *)list (6,
-            (ptrlong)CTOR_OPCODE_CONST_OR_EXPN, NULL,
-            (ptrlong)CTOR_OPCODE_CONST_OR_EXPN, NULL,
-            (ptrlong)CTOR_OPCODE_CONST_OR_EXPN, NULL );
-          for (fld_ctr = 1; fld_ctr < SPART_TRIPLE_FIELDS_COUNT; fld_ctr++)
+          SPART *g = triple->_.triple.tr_fields[SPART_TRIPLE_GRAPH_IDX];
+          int g_is_default = !cve->cve_make_quads || SPART_IS_DEFAULT_GRAPH_BLANK (g);
+          caddr_t *args;
+          if (g_is_default && cve->cve_graphs_should_be_set && (NULL == cve->cve_default_graph))
+            spar_internal_error (sparp, "spar_" "compose_retvals_of_ctor(): no default graph but it is needed");
+          args = (g_is_default ?
+            (caddr_t *)list (6,
+              (ptrlong)CTOR_OPCODE_CONST_OR_EXPN, NULL,
+              (ptrlong)CTOR_OPCODE_CONST_OR_EXPN, NULL,
+              (ptrlong)CTOR_OPCODE_CONST_OR_EXPN, NULL ) :
+            (caddr_t *)list (8,
+              (ptrlong)CTOR_OPCODE_CONST_OR_EXPN, NULL,
+              (ptrlong)CTOR_OPCODE_CONST_OR_EXPN, NULL,
+              (ptrlong)CTOR_OPCODE_CONST_OR_EXPN, NULL,
+              (ptrlong)CTOR_OPCODE_CONST_OR_EXPN, NULL ) );
+          for (fld_ctr = g_is_default ? 1 : 0; fld_ctr < SPART_TRIPLE_FIELDS_COUNT; fld_ctr++)
             {
               SPART *fld = triple->_.triple.tr_fields[fld_ctr];
               ptrlong fld_type = SPART_TYPE(fld);
               caddr_t val;
+              int arg_ofs = ((fld_ctr + SPART_TRIPLE_FIELDS_COUNT - 1) % SPART_TRIPLE_FIELDS_COUNT) * 2;
+              ptrlong *opcode_arg_ptr = (ptrlong *)(args + arg_ofs);
+              caddr_t *val_arg_ptr = args + arg_ofs + 1;
               switch (fld_type)
                 {
                 case SPAR_BLANK_NODE_LABEL:
@@ -302,21 +367,21 @@ spar_compose_retvals_of_ctor (sparp_t *sparp, SPART *ctor_gp, const char *funnam
                   t_set_push (&bnodes_acc, fld);
                   var_ctr = bnode_count++;
 bnode_found_or_added_for_big_ssl:
-                  args [(fld_ctr-1)*2] = (caddr_t)((ptrlong)CTOR_OPCODE_BNODE);
-                  args [(fld_ctr-1)*2 + 1] = box_num (var_ctr);
+                  opcode_arg_ptr[0] = CTOR_OPCODE_BNODE;
+                  val_arg_ptr[0] = box_num (var_ctr);
                   break;
                 case SPAR_LIT:
                   if ((NULL != fld->_.lit.datatype) || (NULL != fld->_.lit.language))
                     val = list (3, box_copy (fld->_.lit.val), box_copy (fld->_.lit.datatype), box_copy (fld->_.lit.language));
                   else
                     val = box_copy (fld->_.qname.val);
-                  args[(fld_ctr-1)*2 + 1] = val;
+                  val_arg_ptr[0] = val;
                   break;
                 case SPAR_QNAME:
                   val = box_copy (fld->_.qname.val);
-                  args[(fld_ctr-1)*2 + 1] = val;
                   if (DV_STRING == DV_TYPE_OF (val))
                     box_flags (val) = BF_IRI;
+                  val_arg_ptr[0] = val;
                   break;
                 default: spar_internal_error (sparp, "Non-const in big ssl const mode constructor pattern");
                 }
@@ -329,7 +394,7 @@ bnode_found_or_added_for_big_ssl:
         {
           caddr_t *new_consts = (caddr_t *)dk_alloc_box ((ssl_count + 1) * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
           memcpy (new_consts, ssl_consts_ptr[0], ssl_count * sizeof (caddr_t));
-          dk_free_box (ssl_consts_ptr[0]);
+          dk_free_box ((caddr_t)(ssl_consts_ptr[0]));
           ssl_consts_ptr[0] = new_consts;
         }
       ssl_consts_ptr[0][ssl_count] = (caddr_t)list_to_array (list_of_triples);
@@ -340,15 +405,28 @@ bnode_found_or_added_for_big_ssl:
   for (triple_ctr = BOX_ELEMENTS_INT (ctor_gp->_.gp.members); triple_ctr--; /* no step */)
     {
       SPART *triple = ctor_gp->_.gp.members[triple_ctr];
+      SPART *g = triple->_.triple.tr_fields[SPART_TRIPLE_GRAPH_IDX];
+      int g_is_default = !cve->cve_make_quads || SPART_IS_DEFAULT_GRAPH_BLANK (g);
       SPART **tvector_args;
       SPART *tvector_call;
       int triple_is_const = 1;
-      tvector_args = (SPART **)t_list (6, NULL, NULL, NULL, NULL, NULL, NULL);
+      if (g_is_default && cve->cve_graphs_should_be_set && (NULL == cve->cve_default_graph))
+        spar_internal_error (sparp, "spar_" "compose_retvals_of_ctor(): no default graph but it is needed");
+      tvector_args = (g_is_default ?
+        (SPART **)t_list (6, NULL, NULL, NULL, NULL, NULL, NULL) :
+        (SPART **)t_list (8, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL) );
+#if 0
       tvector_call = spar_make_funcall (sparp, 0, ((NULL == formatter) ? "LONG::bif:vector" :  "bif:vector"), tvector_args);
-      for (fld_ctr = 1; fld_ctr < SPART_TRIPLE_FIELDS_COUNT; fld_ctr++)
+#else /* LONG::bif:vector is needed always, otherwise construct with constant "string"@lang may become plain "string" in a formatted output */
+      tvector_call = spar_make_funcall (sparp, 0, "LONG::bif:vector", tvector_args);
+#endif
+      for (fld_ctr = g_is_default ? 1 : 0; fld_ctr < SPART_TRIPLE_FIELDS_COUNT; fld_ctr++)
         {
           SPART *fld = triple->_.triple.tr_fields[fld_ctr];
           ptrlong fld_type = SPART_TYPE(fld);
+          int arg_ofs = ((fld_ctr + SPART_TRIPLE_FIELDS_COUNT - 1) % SPART_TRIPLE_FIELDS_COUNT) * 2;
+          caddr_t *opcode_arg_ptr = (caddr_t *)(tvector_args + arg_ofs);
+          SPART **val_arg_ptr = tvector_args + arg_ofs + 1;
           switch (fld_type)
             {
             case SPAR_VARIABLE:
@@ -359,8 +437,8 @@ bnode_found_or_added_for_big_ssl:
                   break;
                 }
               var_ctr = spar_cve_find_or_add_variable (sparp, cve, fld);
-              tvector_args [(fld_ctr-1)*2] = (SPART *)t_box_num_nonull (CTOR_OPCODE_VARIABLE);
-              tvector_args [(fld_ctr-1)*2 + 1] = (SPART *)t_box_num_nonull (var_ctr);
+              opcode_arg_ptr[0] = t_box_num_nonull (CTOR_OPCODE_VARIABLE);
+              val_arg_ptr[0] = (SPART *)t_box_num_nonull (var_ctr);
               triple_is_const = 0;
               break;
             case SPAR_BLANK_NODE_LABEL:
@@ -377,19 +455,19 @@ bnode_found_or_added_for_big_ssl:
               t_set_push (&bnodes_acc, fld);
               var_ctr = bnode_count++;
 bnode_found_or_added:
-              tvector_args [(fld_ctr-1)*2] = (SPART *)t_box_num_nonull (CTOR_OPCODE_BNODE);
-              tvector_args [(fld_ctr-1)*2 + 1] = (SPART *)t_box_num_nonull (var_ctr);
+              opcode_arg_ptr[0] = t_box_num_nonull (CTOR_OPCODE_BNODE);
+              val_arg_ptr[0] = (SPART *)t_box_num_nonull (var_ctr);
               triple_is_const = 0;
               break;
             case SPAR_LIT: case SPAR_QNAME:
-              tvector_args [(fld_ctr-1)*2] = (SPART *)t_box_num_nonull (CTOR_OPCODE_CONST_OR_EXPN);
-              tvector_args [(fld_ctr-1)*2 + 1] = fld;
+              opcode_arg_ptr[0] = t_box_num_nonull (CTOR_OPCODE_CONST_OR_EXPN);
+              val_arg_ptr[0] = fld;
             default:
               {
                 int old_total_vars_count = cve->cve_total_vars_count;
                 sparp_gp_trav (sparp, fld, cve, NULL, NULL, sparp_gp_trav_ctor_var_to_limofs_aref, NULL, NULL, NULL);
-                tvector_args [(fld_ctr-1)*2] = (SPART *)t_box_num_nonull (CTOR_OPCODE_CONST_OR_EXPN);
-                tvector_args [(fld_ctr-1)*2 + 1] = fld;
+                opcode_arg_ptr[0] = t_box_num_nonull (CTOR_OPCODE_CONST_OR_EXPN);
+                val_arg_ptr[0] = fld;
                 if (cve->cve_total_vars_count != old_total_vars_count)
                   triple_is_const = 0;
               }
@@ -427,7 +505,7 @@ args_ready:
       (SPART **)t_list (4, arg1, var_vector_arg, arg3, t_box_num_nonull (use_limits)) );
   if (cve->cve_limofs_var_alias)
     {
-      SPART *alias = spartlist (sparp, 4, SPAR_ALIAS, var_vector_expn, cve->cve_limofs_var_alias, SSG_VALMODE_AUTO);
+      SPART *alias = spartlist (sparp, 5, SPAR_ALIAS, var_vector_expn, cve->cve_limofs_var_alias, SSG_VALMODE_AUTO, (ptrlong)0);
       retvals[0] = (SPART **)t_list (2, ctor_call, alias);
     }
   else
@@ -442,8 +520,16 @@ spar_compose_retvals_of_construct (sparp_t *sparp, SPART *top, SPART *ctor_gp,
 {
   int use_limits = 0;
   int need_limofs_trick = CTOR_NEEDS_LIMOFS_TRICK(top);
+  SPART *multigraph = sparp_get_option (sparp, ctor_gp->_.gp.options, QUAD_L);
+  int g_may_vary = (NULL != multigraph);
   ctor_var_enumerator_t cve;
   memset (&cve, 0, sizeof (ctor_var_enumerator_t));
+  if (!g_may_vary && (0 < BOX_ELEMENTS (ctor_gp->_.gp.members)))
+    {
+      SPART *g = ctor_gp->_.gp.members[0]->_.triple.tr_graph;
+      if (!SPART_IS_DEFAULT_GRAPH_BLANK (g))
+        g_may_vary = 1;
+    }
   if (need_limofs_trick)
     {
       caddr_t limofs_name = t_box_dv_short_string (":\"limofs\".\"ctor-1\"");
@@ -453,21 +539,26 @@ spar_compose_retvals_of_construct (sparp_t *sparp, SPART *top, SPART *ctor_gp,
   if ((NULL == sparp->sparp_env->spare_storage_name) ||
     ('\0' != sparp->sparp_env->spare_storage_name) )
     use_limits = 1;
+  cve.cve_make_quads = g_may_vary;
+  cve.cve_default_graph = NULL;
   spar_compose_retvals_of_ctor (sparp, ctor_gp, "sql:SPARQL_CONSTRUCT", NULL /* no big ssl const */, NULL, NULL,
     &(top->_.req_top.retvals), &cve, formatter, agg_formatter, agg_mdata, use_limits );
-
 }
 
 SPART *
 spar_simplify_graph_to_patch (sparp_t *sparp, SPART *g)
 {
-  if (SPAR_GRAPH != SPART_TYPE (g))
-    return g;
-  if ((SPART_GRAPH_NOT_FROM == g->_.graph.subtype) || (SPART_GRAPH_NOT_NAMED == g->_.graph.subtype))
-    spar_internal_error (sparp, "NOT FROM and NOT FROM NAMED are not fully supported by SPARUL operations, sorry");
-  if (SPAR_QNAME == SPART_TYPE (g->_.graph.expn))
-    return (SPART *)(g->_.graph.iri);
-  return g->_.graph.expn;
+  if (SPAR_GRAPH == SPART_TYPE (g))
+    {
+      if ((SPART_GRAPH_NOT_FROM == g->_.graph.subtype) || (SPART_GRAPH_NOT_NAMED == g->_.graph.subtype))
+        spar_internal_error (sparp, "NOT FROM and NOT FROM NAMED are not fully supported by SPARUL operations, sorry");
+      if (SPAR_QNAME == SPART_TYPE (g->_.graph.expn))
+        return (SPART *)(g->_.graph.iri);
+      return g->_.graph.expn;
+    }
+  if (SPAR_QNAME == SPART_TYPE (g))
+    return (SPART *)(g->_.qname.val);
+  return g;
 }
 
 int
@@ -498,11 +589,18 @@ spar_compose_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top, SPART *gra
   int top_subtype = top->_.req_top.subtype;
   int top_subtype_is_insert = ((INSERT_L == top_subtype) || (SPARUL_INSERT_DATA == top_subtype));
   int big_ssl_const_mode = ((SPARUL_INSERT_DATA == top_subtype) || (SPARUL_DELETE_DATA == top_subtype));
+  SPART *multigraph = sparp_get_option (sparp, ctor_gp->_.gp.options, QUAD_L);
   const char *top_fname;
   caddr_t log_mode;
   SPART **rv;
   ctor_var_enumerator_t cve;
   sql_comp_t *sc_for_big_ssl_const = NULL;
+  if ((NULL == multigraph) && (0 != BOX_ELEMENTS_0 (ctor_gp->_.gp.members)))
+    {
+      SPART *first_tmpl = ctor_gp->_.gp.members[0];
+      if (!SPART_IS_DEFAULT_GRAPH_BLANK (first_tmpl->_.triple.tr_graph))
+        graph_to_patch = first_tmpl->_.triple.tr_graph;
+    }
   graph_to_patch = spar_simplify_graph_to_patch (sparp, graph_to_patch);
   memset (&cve, 0, sizeof (ctor_var_enumerator_t));
   log_mode = sparp->sparp_env->spare_sparul_log_mode;
@@ -518,15 +616,20 @@ spar_compose_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top, SPART *gra
     big_ssl_const_mode = spar_find_sc_for_big_ssl_const (sparp, &sc_for_big_ssl_const);
   if ((INSERT_L != top->_.req_top.subtype) && (SPARUL_INSERT_DATA != top->_.req_top.subtype))
     cve.cve_bnodes_are_prohibited = 1;
+  cve.cve_make_quads = ((NULL != multigraph) ? 1 : 0);
+  cve.cve_default_graph = graph_to_patch;
+  cve.cve_graphs_should_be_set = 1;
   spar_compose_retvals_of_ctor (sparp, ctor_gp, "sql:SPARQL_CONSTRUCT", sc_for_big_ssl_const, NULL, NULL,
     &(top->_.req_top.retvals), &cve, NULL, NULL, NULL, 0 );
   rv = top->_.req_top.retvals;
+  if (NULL == graph_to_patch)
+    graph_to_patch = (SPART *)uname_virtrdf_ns_uri_DefaultSparul11Target;
   if (NULL != sparp->sparp_env->spare_output_route_name)
     {
       top_fname = t_box_sprintf (200, "sql:SPARQL_ROUTE_DICT_CONTENT_%.100s", sparp->sparp_env->spare_output_route_name);
       rv[0] = spar_make_funcall (sparp, 0, top_fname,
         (SPART **)t_list (11, graph_to_patch,
-          t_box_dv_short_string (top_subtype_is_insert ? "INSERT" : "DELETE"),
+          t_box_dv_short_string ((NULL != multigraph) ? (top_subtype_is_insert ? "INSERT_QUAD" : "DELETE_QUAD") : (top_subtype_is_insert ? "INSERT" : "DELETE")),
           ((NULL == sparp->sparp_env->spare_storage_name) ? t_NEW_DB_NULL : sparp->sparp_env->spare_storage_name),
           ((NULL == sparp->sparp_env->spare_output_storage_name) ? t_NEW_DB_NULL : sparp->sparp_env->spare_output_storage_name),
           ((NULL == sparp->sparp_env->spare_output_format_name) ? t_NEW_DB_NULL : sparp->sparp_env->spare_output_format_name),
@@ -537,7 +640,9 @@ spar_compose_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top, SPART *gra
     }
   else
     {
-      top_fname = top_subtype_is_insert ? "sql:SPARQL_INSERT_DICT_CONTENT" : "sql:SPARQL_DELETE_DICT_CONTENT";
+      top_fname = ((NULL != multigraph) ?
+        (top_subtype_is_insert ? "sql:SPARQL_INSERT_QUAD_DICT_CONTENT" : "sql:SPARQL_DELETE_QUAD_DICT_CONTENT") :
+        (top_subtype_is_insert ? "sql:SPARQL_INSERT_DICT_CONTENT" : "sql:SPARQL_DELETE_DICT_CONTENT") );
       rv[0] = spar_make_funcall (sparp, 0, top_fname,
         (SPART **)t_list (5, graph_to_patch, rv[0],
           spar_exec_uid_and_gs_cbk (sparp), log_mode, spar_compose_report_flag (sparp) ) );
@@ -548,10 +653,36 @@ void
 spar_compose_retvals_of_modify (sparp_t *sparp, SPART *top, SPART *graph_to_patch, SPART *del_ctor_gp, SPART *ins_ctor_gp)
 {
   int need_limofs_trick;
+  SPART *del_multigraph = sparp_get_option (sparp, del_ctor_gp->_.gp.options, QUAD_L);
+  SPART *ins_multigraph = sparp_get_option (sparp, ins_ctor_gp->_.gp.options, QUAD_L);
+  SPART *del_graph_to_patch = graph_to_patch;
+  SPART *ins_graph_to_patch = graph_to_patch;
+  int g_may_vary = ((NULL != del_multigraph) || (NULL != ins_multigraph));
   caddr_t log_mode;
   SPART **ins = NULL;
   SPART **rv;
   ctor_var_enumerator_t cve;
+  if ((NULL == del_multigraph) && (0 != BOX_ELEMENTS_0 (del_ctor_gp->_.gp.members)))
+    {
+      SPART *first_tmpl = del_ctor_gp->_.gp.members[0];
+      if (!SPART_IS_DEFAULT_GRAPH_BLANK (first_tmpl->_.triple.tr_graph))
+        del_graph_to_patch = first_tmpl->_.triple.tr_graph;
+    }
+  del_graph_to_patch = spar_simplify_graph_to_patch (sparp, del_graph_to_patch);
+  if ((NULL == ins_multigraph) && (0 != BOX_ELEMENTS_0 (ins_ctor_gp->_.gp.members)))
+    {
+      SPART *first_tmpl = ins_ctor_gp->_.gp.members[0];
+      if (!SPART_IS_DEFAULT_GRAPH_BLANK (first_tmpl->_.triple.tr_graph))
+        ins_graph_to_patch = first_tmpl->_.triple.tr_graph;
+    }
+  ins_graph_to_patch = spar_simplify_graph_to_patch (sparp, ins_graph_to_patch);
+  if (DV_STRINGP (del_graph_to_patch) && DV_STRINGP (ins_graph_to_patch)
+    && !strcmp ((caddr_t)del_graph_to_patch, (caddr_t)ins_graph_to_patch) )
+    {
+      graph_to_patch = del_graph_to_patch;
+    }
+  else
+    g_may_vary = 1;
   graph_to_patch = spar_simplify_graph_to_patch (sparp, graph_to_patch);
   if (0 == BOX_ELEMENTS (del_ctor_gp->_.gp.members))
     {
@@ -577,6 +708,9 @@ spar_compose_retvals_of_modify (sparp_t *sparp, SPART *top, SPART *graph_to_patc
       cve.cve_limofs_var_alias = t_box_dv_short_string ("ctor-1");
     }
   cve.cve_bnodes_are_prohibited = 1;
+  cve.cve_make_quads = g_may_vary;
+  cve.cve_default_graph = graph_to_patch;
+  cve.cve_graphs_should_be_set = 1;
   spar_compose_retvals_of_ctor (sparp, del_ctor_gp, "sql:SPARQL_CONSTRUCT", NULL /* no big ssl const */, NULL, NULL,
     &(top->_.req_top.retvals), &cve, NULL, NULL, NULL, 0 );
   cve.cve_limofs_var_alias = NULL;
@@ -589,7 +723,7 @@ spar_compose_retvals_of_modify (sparp_t *sparp, SPART *top, SPART *graph_to_patc
     rv[0] = spar_make_funcall (sparp, 0,
       t_box_sprintf (200, "sql:SPARQL_ROUTE_DICT_CONTENT_%.100s", sparp->sparp_env->spare_output_route_name),
       (SPART **)t_list (11, graph_to_patch,
-        t_box_dv_short_string ("MODIFY"),
+        t_box_dv_short_string (g_may_vary ? "MODIFY" : "MODIFY_QUAD"),
         ((NULL == sparp->sparp_env->spare_storage_name) ? t_NEW_DB_NULL : sparp->sparp_env->spare_storage_name),
         ((NULL == sparp->sparp_env->spare_output_storage_name) ? t_NEW_DB_NULL : sparp->sparp_env->spare_output_storage_name),
         ((NULL == sparp->sparp_env->spare_output_format_name) ? t_NEW_DB_NULL : sparp->sparp_env->spare_output_format_name),
@@ -597,9 +731,86 @@ spar_compose_retvals_of_modify (sparp_t *sparp, SPART *top, SPART *graph_to_patc
         t_NEW_DB_NULL,
         spar_exec_uid_and_gs_cbk (sparp), log_mode, spar_compose_report_flag (sparp) ) );
   else
-    rv[0] = spar_make_funcall (sparp, 0, "sql:SPARQL_MODIFY_BY_DICT_CONTENTS",
+    rv[0] = spar_make_funcall (sparp, 0, (g_may_vary ? "sql:SPARQL_MODIFY_BY_QUAD_DICT_CONTENTS" : "sql:SPARQL_MODIFY_BY_DICT_CONTENTS"),
       (SPART **)t_list (6, graph_to_patch, rv[0], ins[0],
         spar_exec_uid_and_gs_cbk (sparp), log_mode, spar_compose_report_flag (sparp) ) );
+}
+
+void
+spar_compose_ctor_triples_from_where_gp (sparp_t *sparp, int subtype, SPART *gp, SPART *g, dk_set_t *ret_tmpls)
+{
+  int memb_ctr;
+  if (SPAR_GP != SPART_TYPE (gp))
+    spar_error (sparp, "Cannot convert a pattern into constructor template, DELETE WHERE works only for simple quad templates");
+  if ((0 != gp->_.gp.subtype) && (WHERE_L != gp->_.gp.subtype) && (OPTIONAL_L != gp->_.gp.subtype))
+    spar_error (sparp, "DELETE WHERE works only for simple quad templates, only basic group patterns and OPTIONAL are allowed");
+  /*if (0 != BOX_ELEMENTS_0 (gp->_.gp.filters))
+    spar_error (sparp, "DELETE WHERE does not support FILTER");*/
+  DO_BOX_FAST (SPART *, memb, memb_ctr, gp->_.gp.members)
+    {
+      SPART *tmpl;
+      if (SPAR_TRIPLE != SPART_TYPE (memb))
+        {
+          spar_compose_ctor_triples_from_where_gp (sparp, subtype, memb, g, ret_tmpls);
+          continue;
+        }
+      if (DELETE_L == subtype)
+        {
+          if (0 < BOX_ELEMENTS_0 (memb->_.triple.options))
+            spar_error (sparp, "DELETE WHERE does not support OPTION () clauses of triples and related features, such as transitivity");
+          if (SPART_IS_DEFAULT_GRAPH_BLANK (memb->_.triple.tr_graph) && (NULL == g))
+            spar_error (sparp, "DELETE WHERE requires default graph but it is not provided");
+        }
+      tmpl = sparp_tree_full_copy (sparp, memb, gp);
+      t_set_push (ret_tmpls, tmpl);
+    }
+  END_DO_BOX_FAST;
+}
+
+SPART *
+spar_compose_ctor_gp_from_where_gp (sparp_t *sparp, int subtype, SPART *where_gp, SPART *gtp)
+{
+  dk_set_t tmpls = NULL;
+  caddr_t prev_fixed_graph = NULL;
+  int g_grp_count = 0;
+  SPART *tmpl_gp;
+  spar_compose_ctor_triples_from_where_gp (sparp, subtype, where_gp, gtp, &tmpls);
+  DO_SET (SPART *, triple, &tmpls)
+    {
+      SPART *g = triple->_.triple.tr_graph;
+      if (SPART_IS_DEFAULT_GRAPH_BLANK (g))
+        g = gtp;
+      if ((SPAR_LIT != SPART_TYPE (g)) && (SPAR_QNAME != SPART_TYPE (g)))
+        g_grp_count++;
+      else
+        {
+          caddr_t g_val = SPAR_LIT_OR_QNAME_VAL (g);
+          if ((DV_STRING == DV_TYPE_OF (g_val)) || (DV_UNAME == DV_TYPE_OF (g_val)))
+            {
+              if ((NULL == prev_fixed_graph) || strcmp (prev_fixed_graph, g_val))
+                g_grp_count++;
+              prev_fixed_graph = g_val;
+            }
+          else
+            g_grp_count++;
+        }
+    }
+  END_DO_SET()
+  tmpl_gp = (SPART *)(t_box_copy ((caddr_t)where_gp)); /* Dirty hack here, indeed, however we need only a box with type and proper length, nothing else */
+  tmpl_gp->_.gp.members = (SPART **)t_revlist_to_array (tmpls);
+  tmpl_gp->_.gp.options = NULL;
+  if (1 < g_grp_count)
+    tmpl_gp->_.gp.options = (SPART **)t_list (2, (SPART *)((ptrlong)QUAD_L), t_box_num_nonull (g_grp_count));
+  return tmpl_gp;
+}
+
+void
+spar_compose_retvals_of_delete_from_wm (sparp_t *sparp, SPART *tree, SPART *graph_to_patch)
+{
+  SPART *gtp = spar_simplify_graph_to_patch (sparp, graph_to_patch);
+  SPART *pat = tree->_.req_top.pattern;
+  SPART *tmpl_gp = spar_compose_ctor_gp_from_where_gp (sparp, DELETE_L, pat, gtp);
+  spar_compose_retvals_of_insert_or_delete (sparp, tree, graph_to_patch, tmpl_gp);
 }
 
 SPART *
@@ -614,8 +825,8 @@ spar_emulate_ctor_field (sparp_t *sparp, SPART *opcode, SPART *oparg, SPART **va
       {
         if (NULL == bnode_emulation)
 #ifdef DEBUG
-          bnode_emulation = box_copy_tree (spartlist (sparp, 7 + (sizeof (rdf_val_range_t) / sizeof (caddr_t)), SPAR_BLANK_NODE_LABEL,
-            NULL, NULL, NULL, NULL, NULL, SPART_RVR_LIST_OF_NULLS, NULL ) );
+          bnode_emulation = (SPART *)box_copy_tree ((caddr_t)spartlist (sparp, 8 + (sizeof (rdf_val_range_t) / sizeof (caddr_t)), SPAR_BLANK_NODE_LABEL,
+            NULL, NULL, NULL, NULL, NULL, SPART_RVR_LIST_OF_NULLS, (ptrlong)(0x0), NULL ) );
 #else
           bnode_emulation = box_copy_tree (spartlist (sparp, 1, SPAR_BLANK_NODE_LABEL));
 #endif
@@ -625,6 +836,19 @@ spar_emulate_ctor_field (sparp_t *sparp, SPART *opcode, SPART *oparg, SPART **va
     }
   spar_internal_error (sparp, "spar_" "emulate_ctor_field(): bad opcode");
   return NULL; /* never reached */
+}
+
+void
+spar_emulate_ctor_fields (sparp_t *sparp, SPART *graph_expn, SPART **args, SPART **known_vars, SPART **quad_fields)
+{
+  int g_is_set = (8 <= BOX_ELEMENTS (args));
+  if (g_is_set)
+    quad_fields [SPART_TRIPLE_GRAPH_IDX] = spar_emulate_ctor_field (sparp, args[6], args[7], known_vars);
+  else
+    quad_fields [SPART_TRIPLE_GRAPH_IDX] = graph_expn;
+  quad_fields [SPART_TRIPLE_SUBJECT_IDX] = spar_emulate_ctor_field (sparp, args[0], args[1], known_vars);
+  quad_fields [SPART_TRIPLE_PREDICATE_IDX] = spar_emulate_ctor_field (sparp, args[2], args[3], known_vars);
+  quad_fields [SPART_TRIPLE_OBJECT_IDX] = spar_emulate_ctor_field (sparp, args[4], args[5], known_vars);
 }
 
 SPART *
@@ -686,51 +910,87 @@ spar_tr_fields_are_similar (sparp_t *sparp, SPART *fld1, SPART *fld2)
   return 0; /* to keep compiler happy */
 }
 
+SPART *
+spar_dealias (sparp_t *sparp, SPART *expn, int expected_type)
+{
+  if (SPAR_ALIAS == SPART_TYPE (expn))
+    expn = expn->_.alias.arg;
+  if ((expected_type > 0) && (expected_type != SPART_TYPE (expn)))
+    spar_internal_error (sparp, "spar_" "deailas(): unexpected type of expression");
+  return expn;
+}
+
+#define CTOR_ARGS_HAVE_BNODE(args) ( \
+  (CTOR_OPCODE_BNODE == unbox ((caddr_t)(args[0]))) \
+  || (CTOR_OPCODE_BNODE == unbox ((caddr_t)(args[2]))) \
+  || (CTOR_OPCODE_BNODE == unbox ((caddr_t)(args[4]))) \
+  || ((8 <= BOX_ELEMENTS (args)) && (CTOR_OPCODE_BNODE == unbox ((caddr_t)(args[6])))) )
+
 int
 spar_optimize_delete_of_single_triple_pattern (sparp_t *sparp, SPART *top)
 {
   SPART *triple;
-  SPART *ctor;
+  SPART *emu;
   SPART **known_vars;
   SPART **retvals = top->_.req_top.retvals;
   int retvals_count = BOX_ELEMENTS (retvals);
   SPART **var_triples, **args;
-  SPART *graph_expn, *uid_expn, *log_mode_expn, *good_ctor_call, *compose_report_expn;
+  int g_is_set;
+  SPART *arg0, *graph_expn, *ctor, *uid_expn, *log_mode_expn, *good_ctor_call /* unused?? *compose_report_expn */;
   if (NULL != sparp->sparp_env->spare_output_route_name)
     return 0; /* If an output may go outside the default storage then there's no way of avoiding the complete filling of the result dictionary */
-  dbg_assert ((SPAR_FUNCALL == SPART_TYPE (retvals[0])) && (5 == BOX_ELEMENTS (retvals[0]->_.funcall.argtrees)));
   triple = spar_find_single_physical_triple_pattern (sparp, top->_.req_top.pattern);
   if (NULL == triple)
     return 0; /* nontrivial pattern, can not be optimized this way */
-  graph_expn		= retvals[0]->_.funcall.argtrees[0];
-  ctor			= retvals[0]->_.funcall.argtrees[1];
-  uid_expn		= retvals[0]->_.funcall.argtrees[2];
-  log_mode_expn		= retvals[0]->_.funcall.argtrees[3];
-  compose_report_expn	= retvals[0]->_.funcall.argtrees[4];
+  arg0 = spar_dealias (sparp, retvals[0], SPAR_FUNCALL);
+  dbg_assert ((SPAR_FUNCALL == SPART_TYPE (arg0)) && (5 == BOX_ELEMENTS (arg0->_.funcall.argtrees)));
+  if (strcmp ("sql:SPARQL_DELETE_DICT_CONTENT", arg0->_.funcall.qname)
+    && strcmp ("sql:SPARQL_DELETE_QUAD_DICT_CONTENT", arg0->_.funcall.qname) )
+    return 0;
+  graph_expn		= arg0->_.funcall.argtrees[0];
+  ctor			= arg0->_.funcall.argtrees[1];
+  uid_expn		= arg0->_.funcall.argtrees[2];
+  log_mode_expn		= arg0->_.funcall.argtrees[3];
+  /* unused?? compose_report_expn	= arg0->_.funcall.argtrees[4]; */
   dbg_assert ((SPAR_FUNCALL == SPART_TYPE (ctor)) && (4 == BOX_ELEMENTS (ctor->_.funcall.argtrees)));
   dbg_assert (DELETE_L == top->_.req_top.subtype);
   var_triples = ctor->_.funcall.argtrees[0]->_.funcall.argtrees;
   if (1 < retvals_count)
-    known_vars = retvals [retvals_count-1]->_.funcall.argtrees;
+    {
+      SPART *known_vars_vector = spar_dealias (sparp, retvals [retvals_count-1], SPAR_FUNCALL);
+      known_vars = known_vars_vector->_.funcall.argtrees;
+    }
   else
     known_vars = ctor->_.funcall.argtrees[1]->_.funcall.argtrees;
   if (1 != BOX_ELEMENTS (var_triples))
     return 0; /* nontrivial constructor, can not be optimized this way */
   args = var_triples[0]->_.funcall.argtrees;
-  if ((CTOR_OPCODE_BNODE == unbox ((caddr_t)(args[0]))) ||
-    (CTOR_OPCODE_BNODE == unbox ((caddr_t)(args[2]))) ||
-    (CTOR_OPCODE_BNODE == unbox ((caddr_t)(args[4]))) )
+  g_is_set = (8 <= BOX_ELEMENTS (args));
+  if (CTOR_ARGS_HAVE_BNODE (args))
     return 0; /* bnodes in constructor can not be optimized this way (BTW that is blab when inside DELETE) */
-  if (!spar_tr_fields_are_similar (sparp, graph_expn,
-      triple->_.triple.tr_fields[SPART_TRIPLE_GRAPH_IDX] ) ||
-    !spar_tr_fields_are_similar (sparp,
-      spar_emulate_ctor_field (sparp, args[0], args[1], known_vars),
-      triple->_.triple.tr_fields[SPART_TRIPLE_SUBJECT_IDX] ) ||
-    !spar_tr_fields_are_similar (sparp,
-      spar_emulate_ctor_field (sparp, args[2], args[3], known_vars),
-      triple->_.triple.tr_fields[SPART_TRIPLE_PREDICATE_IDX] ) ||
-    !spar_tr_fields_are_similar (sparp,
-      spar_emulate_ctor_field (sparp, args[4], args[5], known_vars),
+  if (g_is_set)
+    {
+      emu = spar_emulate_ctor_field (sparp, args[6], args[7], known_vars);
+      if (!spar_tr_fields_are_similar (sparp, emu,
+          triple->_.triple.tr_fields[SPART_TRIPLE_GRAPH_IDX] ) )
+        return 0;
+    }
+  else
+    {
+      if (!spar_tr_fields_are_similar (sparp, graph_expn,
+          triple->_.triple.tr_fields[SPART_TRIPLE_GRAPH_IDX] ) )
+        return 0;
+    }
+  emu = spar_emulate_ctor_field (sparp, args[0], args[1], known_vars);
+  if (!spar_tr_fields_are_similar (sparp, emu,
+      triple->_.triple.tr_fields[SPART_TRIPLE_SUBJECT_IDX] ) )
+    return 0;
+  emu = spar_emulate_ctor_field (sparp, args[2], args[3], known_vars);
+  if (!spar_tr_fields_are_similar (sparp, emu,
+      triple->_.triple.tr_fields[SPART_TRIPLE_PREDICATE_IDX] ) )
+    return 0;
+  emu = spar_emulate_ctor_field (sparp, args[4], args[5], known_vars);
+  if (!spar_tr_fields_are_similar (sparp, emu,
       triple->_.triple.tr_fields[SPART_TRIPLE_OBJECT_IDX] ) )
     return 0;
   good_ctor_call = spar_make_funcall (sparp, 1, "sql:SPARQL_DELETE_CTOR",
@@ -748,7 +1008,6 @@ spar_optimize_delete_of_single_triple_pattern (sparp_t *sparp, SPART *top)
 void
 spar_optimize_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top)
 {
-  SPART *ctor;
   SPART **known_vars;
   SPART **retvals = top->_.req_top.retvals;
   int retvals_count = BOX_ELEMENTS (retvals);
@@ -759,38 +1018,37 @@ spar_optimize_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top)
   dk_set_t bad_triples = NULL;
   int all_triple_count, bad_triple_count, tctr;
   const char *fname;
-  SPART *graph_expn, *uid_expn, *log_mode_expn, *good_ctor_call, *compose_report_expn;
+  SPART *arg0, *graph_expn, *ctor, *uid_expn, *log_mode_expn, *good_ctor_call /* unused?? *compose_report_expn */;
   if (NULL != sparp->sparp_env->spare_output_route_name)
     return; /* If an output may go outside the default storage then there's no way of avoiding the complete filling of the result dictionary */
-  dbg_assert ((SPAR_FUNCALL == SPART_TYPE (retvals[0])) && (5 == BOX_ELEMENTS (retvals[0]->_.funcall.argtrees)));
-  graph_expn		= retvals[0]->_.funcall.argtrees[0];
-  ctor			= retvals[0]->_.funcall.argtrees[1];
-  uid_expn		= retvals[0]->_.funcall.argtrees[2];
-  log_mode_expn		= retvals[0]->_.funcall.argtrees[3];
-  compose_report_expn	= retvals[0]->_.funcall.argtrees[4];
+  arg0 = spar_dealias (sparp, retvals[0], SPAR_FUNCALL);
+  dbg_assert ((SPAR_FUNCALL == SPART_TYPE (arg0)) && (5 == BOX_ELEMENTS (arg0->_.funcall.argtrees)));
+  if (strcmp ("sql:SPARQL_INSERT_DICT_CONTENT", arg0->_.funcall.qname)
+    && strcmp ("sql:SPARQL_INSERT_QUAD_DICT_CONTENT", arg0->_.funcall.qname)
+    && strcmp ("sql:SPARQL_DELETE_DICT_CONTENT", arg0->_.funcall.qname)
+    && strcmp ("sql:SPARQL_DELETE_QUAD_DICT_CONTENT", arg0->_.funcall.qname) )
+    return;
+  graph_expn		= arg0->_.funcall.argtrees[0];
+  ctor			= arg0->_.funcall.argtrees[1];
+  uid_expn		= arg0->_.funcall.argtrees[2];
+  log_mode_expn		= arg0->_.funcall.argtrees[3];
+  /* unused?? compose_report_expn	= arg0->_.funcall.argtrees[4]; */
   dbg_assert ((SPAR_FUNCALL == SPART_TYPE (ctor)) && (4 == BOX_ELEMENTS (ctor->_.funcall.argtrees)));
   var_triples = ctor->_.funcall.argtrees[0]->_.funcall.argtrees;
+  all_triple_count = bad_triple_count = BOX_ELEMENTS (var_triples);
   if (1 < retvals_count)
     {
-      SPART *call = retvals [retvals_count-1];
-      if (SPAR_ALIAS == SPART_TYPE (call))
-        call = call->_.alias.arg;
-      known_vars = call->_.funcall.argtrees;
+      SPART *known_vars_vector = spar_dealias (sparp, retvals [retvals_count-1], SPAR_FUNCALL);
+      known_vars = known_vars_vector->_.funcall.argtrees;
     }
   else
     known_vars = ctor->_.funcall.argtrees[1]->_.funcall.argtrees;
-  all_triple_count = bad_triple_count = BOX_ELEMENTS (var_triples);
   for (tctr = all_triple_count; tctr--; /* no step */)
     {
       SPART **args = var_triples[tctr]->_.funcall.argtrees;
       SPART *quad_fields[SPART_TRIPLE_FIELDS_COUNT];
-      quad_fields [SPART_TRIPLE_GRAPH_IDX] = graph_expn;
-      quad_fields [SPART_TRIPLE_SUBJECT_IDX] = spar_emulate_ctor_field (sparp, args[0], args[1], known_vars);
-      quad_fields [SPART_TRIPLE_PREDICATE_IDX] = spar_emulate_ctor_field (sparp, args[2], args[3], known_vars);
-      quad_fields [SPART_TRIPLE_OBJECT_IDX] = spar_emulate_ctor_field (sparp, args[4], args[5], known_vars);
-      if ((CTOR_OPCODE_BNODE == unbox ((caddr_t)(args[0]))) ||
-        (CTOR_OPCODE_BNODE == unbox ((caddr_t)(args[2]))) ||
-        (CTOR_OPCODE_BNODE == unbox ((caddr_t)(args[4]))) )
+      spar_emulate_ctor_fields (sparp, graph_expn, args, known_vars, quad_fields);
+      if (CTOR_ARGS_HAVE_BNODE (args))
         t_set_push (&positions_with_bnodes, ((void *)((ptrlong)tctr)));
       if (CTOR_DISJOIN_WHERE ==
         sparp_ctor_fields_are_disjoin_with_data_gathering (sparp, quad_fields, top, 1) )
@@ -835,7 +1093,6 @@ spar_optimize_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top)
 void
 spar_optimize_retvals_of_modify (sparp_t *sparp, SPART *top)
 {
-  SPART *del_ctor, *ins_ctor;
   SPART **known_vars;
   SPART **retvals = top->_.req_top.retvals;
   int retvals_count = BOX_ELEMENTS (retvals);
@@ -848,16 +1105,19 @@ spar_optimize_retvals_of_modify (sparp_t *sparp, SPART *top)
   dk_set_t bad_ins_triples = NULL;
   int all_del_triple_count, bad_del_triple_count, del_const_count, del_tctr;
   int all_ins_triple_count, bad_ins_triple_count, ins_tctr;
-  SPART *graph_expn, *uid_expn, *log_mode_expn, *good_ctor_call, *compose_report_expn;
+  SPART *arg0, *graph_expn, *del_ctor, *ins_ctor, *uid_expn, *log_mode_expn, *good_ctor_call /* unused?? *compose_report_expn */;
   if (NULL != sparp->sparp_env->spare_output_route_name)
     return; /* If an output may go outside the default storage then there's no way of avoiding the complete filling of the result dictionary */
-  dbg_assert ((SPAR_FUNCALL == SPART_TYPE (retvals[0])) && (6 == BOX_ELEMENTS (retvals[0]->_.funcall.argtrees)));
-  graph_expn		= retvals[0]->_.funcall.argtrees[0];
-  del_ctor		= retvals[0]->_.funcall.argtrees[1];
-  ins_ctor		= retvals[0]->_.funcall.argtrees[2];
-  uid_expn		= retvals[0]->_.funcall.argtrees[3];
-  log_mode_expn		= retvals[0]->_.funcall.argtrees[4];
-  compose_report_expn	= retvals[0]->_.funcall.argtrees[5];
+  arg0 = spar_dealias (sparp, retvals[0], SPAR_FUNCALL);
+  dbg_assert ((SPAR_FUNCALL == SPART_TYPE (arg0)) && (6 == BOX_ELEMENTS (arg0->_.funcall.argtrees)));
+  if (strcmp ("sql:SPARQL_MODIFY_BY_DICT_CONTENT", arg0->_.funcall.qname))
+    return;
+  graph_expn		= arg0->_.funcall.argtrees[0];
+  del_ctor		= arg0->_.funcall.argtrees[1];
+  ins_ctor		= arg0->_.funcall.argtrees[2];
+  uid_expn		= arg0->_.funcall.argtrees[3];
+  log_mode_expn		= arg0->_.funcall.argtrees[4];
+  /* unused?? compose_report_expn	= arg0->_.funcall.argtrees[5]; */
   dbg_assert ((SPAR_FUNCALL == SPART_TYPE (del_ctor)) && (4 == BOX_ELEMENTS (del_ctor->_.funcall.argtrees)));
   dbg_assert ((SPAR_FUNCALL == SPART_TYPE (ins_ctor)) && (4 == BOX_ELEMENTS (ins_ctor->_.funcall.argtrees)));
   del_var_triples = del_ctor->_.funcall.argtrees[0]->_.funcall.argtrees;
@@ -865,7 +1125,10 @@ spar_optimize_retvals_of_modify (sparp_t *sparp, SPART *top)
   del_const_triples = del_ctor->_.funcall.argtrees[2]->_.funcall.argtrees;
   del_const_count = BOX_ELEMENTS (del_const_triples);
   if (1 < retvals_count)
-    known_vars = retvals [retvals_count-1]->_.funcall.argtrees;
+    {
+      SPART *known_vars_vector = spar_dealias (sparp, retvals [retvals_count-1], SPAR_FUNCALL);
+      known_vars = known_vars_vector->_.funcall.argtrees;
+    }
   else
     known_vars = ins_ctor->_.funcall.argtrees[1]->_.funcall.argtrees;
 /* Part 1. Collecting optimized data for DELETE ctor */
@@ -875,10 +1138,7 @@ spar_optimize_retvals_of_modify (sparp_t *sparp, SPART *top)
     {
       SPART **args = del_var_triples[del_tctr]->_.funcall.argtrees;
       SPART *quad_fields[SPART_TRIPLE_FIELDS_COUNT];
-      quad_fields [SPART_TRIPLE_GRAPH_IDX] = graph_expn;
-      quad_fields [SPART_TRIPLE_SUBJECT_IDX] = spar_emulate_ctor_field (sparp, args[0], args[1], known_vars);
-      quad_fields [SPART_TRIPLE_PREDICATE_IDX] = spar_emulate_ctor_field (sparp, args[2], args[3], known_vars);
-      quad_fields [SPART_TRIPLE_OBJECT_IDX] = spar_emulate_ctor_field (sparp, args[4], args[5], known_vars);
+      spar_emulate_ctor_fields (sparp, graph_expn, args, known_vars, quad_fields);
       if (CTOR_DISJOIN_WHERE ==
         sparp_ctor_fields_are_disjoin_with_data_gathering (sparp, quad_fields, top, 1) )
         {
@@ -900,13 +1160,8 @@ spar_optimize_retvals_of_modify (sparp_t *sparp, SPART *top)
     {
       SPART **args = ins_var_triples[ins_tctr]->_.funcall.argtrees;
       SPART *quad_fields[SPART_TRIPLE_FIELDS_COUNT];
-      quad_fields [SPART_TRIPLE_GRAPH_IDX] = graph_expn;
-      quad_fields [SPART_TRIPLE_SUBJECT_IDX] = spar_emulate_ctor_field (sparp, args[0], args[1], known_vars);
-      quad_fields [SPART_TRIPLE_PREDICATE_IDX] = spar_emulate_ctor_field (sparp, args[2], args[3], known_vars);
-      quad_fields [SPART_TRIPLE_OBJECT_IDX] = spar_emulate_ctor_field (sparp, args[4], args[5], known_vars);
-      if ((CTOR_OPCODE_BNODE == unbox ((caddr_t)(args[0]))) ||
-        (CTOR_OPCODE_BNODE == unbox ((caddr_t)(args[2]))) ||
-        (CTOR_OPCODE_BNODE == unbox ((caddr_t)(args[4]))) )
+      spar_emulate_ctor_fields (sparp, graph_expn, args, known_vars, quad_fields);
+      if (CTOR_ARGS_HAVE_BNODE (args))
         t_set_push (&positions_with_bnodes, ((void *)((ptrlong)ins_tctr)));
       if (CTOR_DISJOIN_WHERE !=
         sparp_ctor_fields_are_disjoin_with_data_gathering (sparp, quad_fields, top, 1) )
@@ -915,10 +1170,7 @@ spar_optimize_retvals_of_modify (sparp_t *sparp, SPART *top)
         {
           SPART **del_args = del_var_triples[del_tctr]->_.funcall.argtrees;
           SPART *del_fields[SPART_TRIPLE_FIELDS_COUNT];
-          del_fields [SPART_TRIPLE_GRAPH_IDX] = graph_expn;
-          del_fields [SPART_TRIPLE_SUBJECT_IDX] = spar_emulate_ctor_field (sparp, del_args[0], del_args[1], known_vars);
-          del_fields [SPART_TRIPLE_PREDICATE_IDX] = spar_emulate_ctor_field (sparp, del_args[2], del_args[3], known_vars);
-          del_fields [SPART_TRIPLE_OBJECT_IDX] = spar_emulate_ctor_field (sparp, del_args[4], del_args[5], known_vars);
+          spar_emulate_ctor_fields (sparp, graph_expn, del_args, known_vars, del_fields);
           if (CTOR_DISJOIN_WHERE !=
             sparp_ctor_fields_are_disjoin_with_where_fields (sparp, quad_fields, del_fields) )
             goto ins_is_bad; /* see below */
@@ -927,10 +1179,7 @@ spar_optimize_retvals_of_modify (sparp_t *sparp, SPART *top)
         {
           SPART **del_args = del_const_triples[del_tctr]->_.funcall.argtrees;
           SPART *del_fields[SPART_TRIPLE_FIELDS_COUNT];
-          del_fields [SPART_TRIPLE_GRAPH_IDX] = graph_expn;
-          del_fields [SPART_TRIPLE_SUBJECT_IDX] = spar_emulate_ctor_field (sparp, del_args[0], del_args[1], known_vars);
-          del_fields [SPART_TRIPLE_PREDICATE_IDX] = spar_emulate_ctor_field (sparp, del_args[2], del_args[3], known_vars);
-          del_fields [SPART_TRIPLE_OBJECT_IDX] = spar_emulate_ctor_field (sparp, del_args[4], del_args[5], known_vars);
+          spar_emulate_ctor_fields (sparp, graph_expn, del_args, known_vars, del_fields);
           if (CTOR_DISJOIN_WHERE !=
             sparp_ctor_fields_are_disjoin_with_where_fields (sparp, quad_fields, del_fields) )
             goto ins_is_bad; /* see below */

@@ -10,7 +10,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -39,6 +39,7 @@ char * http_port;
 char * https_port;
 char * https_cert;
 char * https_key;
+char * https_extra;
 int32 https_client_verify = 0;
 int32 https_client_verify_depth = 0;
 char * https_client_verify_file = NULL;
@@ -85,8 +86,8 @@ int n_oldest_flushable;
 int null_bad_dtp;
 int atomic_dive = 0;
 int dive_pa_mode = PA_READ;
-int c_compress_mode = 0;
-int default_txn_isolation = ISO_COMMITTED;
+int32 c_compress_mode = 0;
+int default_txn_isolation = ISO_REPEATABLE;
 int prefix_in_result_col_names;
 int disk_no_mt_write;
 char *db_name;
@@ -127,6 +128,7 @@ int c_stripe_unit = 256;
 extern int32 sqlo_compiler_exceeds_run_factor;
 
 int32 c_dense_page_allocation = 0;
+int32 log_proc_overwrite = 1;
 
 void _db_read_cfg (dbe_storage_t * dbs, char *mode);
 dk_set_t _cfg_read_storages (caddr_t **temp_storage);
@@ -500,7 +502,7 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
     }
   atomic_dive = 0;
 
-  max_dirty = (int) (ptrlong) cfg_get_parm (wholefile, "\nmax_dirty_buffers:", 0);
+    max_dirty = (int) (ptrlong) cfg_get_parm (wholefile, "\nmax_dirty_buffers:", 0);
   wi_inst.wi_max_dirty = max_dirty;
   if (cfg_get_parm (wholefile, "\nautocorrect_links:", 0))
     correct_parent_links = 1;
@@ -575,8 +577,6 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
   COND_PARAM("\nmax_static_cursor_rows:", max_static_cursor_rows);
   COND_PARAM("\ncheckpoint_audit_trail:", log_audit_trail);
   COND_PARAM_WITH_DEFAULT("\nmin_autocheckpoint_size:", min_checkpoint_size, MIN_CHECKPOINT_SIZE);
-  COND_PARAM_WITH_DEFAULT("\nthreads_per_query:", enable_qp, 8);
-  COND_PARAM_WITH_DEFAULT("\naq_threads:", aq_max_threads, 20);
   COND_PARAM("\nautocheckpoint_log_size:", autocheckpoint_log_size);
   COND_PARAM("\nuse_daylight_saving:", isdts_mode);
   isdts_mode = (int) (ptrlong) cfg_get_parm (wholefile, "\nuse_daylight_saving:", 1);
@@ -692,7 +692,7 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
   else if (wi_inst.wi_temp_allocation_pct < 0)
     wi_inst.wi_temp_allocation_pct = 30;
 
-  COND_PARAM_WITH_DEFAULT("\ndefault_txn_isolation:", default_txn_isolation, ISO_COMMITTED);
+  COND_PARAM_WITH_DEFAULT("\ndefault_txn_isolation:", default_txn_isolation, ISO_REPEATABLE);
   COND_PARAM_WITH_DEFAULT("\nsql_compile_on_startup:", sql_proc_use_recompile, 1);
   COND_PARAM_WITH_DEFAULT("\nreqursive_ft_usage:", recursive_ft_usage, 1);
   COND_PARAM_WITH_DEFAULT("\nreqursive_trigger_calls:", recursive_trigger_calls, 1);

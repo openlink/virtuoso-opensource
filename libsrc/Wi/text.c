@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -276,16 +276,6 @@ d_id_ref (d_id_t * d_id, db_buf_t p)
     }
 }
 
-#define TXS_QST_SET(txs, qst, ssl, v) \
-   do { \
-      if ((txs)->src_gen.src_sets) \
-	{ \
-	  data_col_t * dc = QST_BOX (data_col_t *, qst, (ssl)->ssl_index); \
-	  dc_append_box (dc, v); \
-	} \
-      else \
-	qst_set ((qst), (ssl), (v)); \
-   } while (0)
 
 int
 itc_text_row (it_cursor_t * itc, buffer_desc_t * buf, dp_addr_t * leaf_ret)
@@ -458,7 +448,7 @@ itc_text_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_re
 	  if (it->itc_owns_page != it->itc_page)
 	    {
 	      if (it->itc_isolation == ISO_SERIALIZABLE
-		  || ITC_MAYBE_LOCK (it, it->itc_map_pos))
+		  || ITC_MAYBE_LOCK (itc, it->itc_map_pos))
 		{
 		  for (;;)
 		    {
@@ -933,6 +923,7 @@ wst_get_specs (dbe_key_t *key)
   ss->sp_cl = (cl); \
   ss->sp_min_op = (minop);	ss->sp_min = (minarg); \
   ss->sp_max_op = (maxop);	ss->sp_max = (maxarg); \
+  ss->sp_is_boxed = 1
 
 #define SS_ADVANCE ss->sp_next = ss+1; ss++
 
@@ -2920,7 +2911,7 @@ txs_set_offband (text_node_t * txs, caddr_t * qst)
 		  state_slot_t * ssl = txs->txs_offband[inx2 + 1];
 		  if (IS_BOX_POINTER (offband) && BOX_ELEMENTS (offband) > nth_offb)
 		    {
-		      TXS_QST_SET (txs, qst, ssl, offband[nth_offb]);
+		      qst_set (qst, ssl, offband[nth_offb]);
 		      offband[nth_offb] = NULL;
 		    }
 		}
@@ -3115,8 +3106,8 @@ txs_set_ranges (text_node_t * txs, caddr_t * qst, search_stream_t * sst)
   sst_range_lists (sst, &main_list, &attr_list);
   main_ranges = (ptrlong **)list_to_array (dk_set_nreverse (main_list));
   attr_ranges = (ptrlong **)list_to_array (dk_set_nreverse (attr_list));
-  TXS_QST_SET (txs, qst, txs->txs_main_range_out, (caddr_t)(main_ranges));
-  TXS_QST_SET (txs, qst, txs->txs_attr_range_out, (caddr_t)(attr_ranges));
+  qst_set (qst, txs->txs_main_range_out, (caddr_t)(main_ranges));
+  qst_set (qst, txs->txs_attr_range_out, (caddr_t)(attr_ranges));
 #ifdef TEXT_DEBUG
   fprintf(stderr,"\ntxs_set_ranges(...) stores ");
   dbg_print_box((caddr_t)main_ranges,stderr);
@@ -3257,7 +3248,7 @@ txs_next (text_node_t * txs, caddr_t * qst, int first_time)
       if (score_limit || txs->txs_score)
 	sst_scores (sst, &d_id);
       if (txs->txs_score)
-	TXS_QST_SET (txs, qst, txs->txs_score, box_num (sst->sst_score));
+	qst_set_long (qst, txs->txs_score, sst->sst_score);
       if (score_limit && sst->sst_score < score_limit)
 	return ((caddr_t) SQL_NO_DATA_FOUND);
       txs_set_ranges (txs, qst, sst);
@@ -3286,92 +3277,25 @@ txs_next (text_node_t * txs, caddr_t * qst, int first_time)
       break;
     }
   if (txs->txs_score)
-    TXS_QST_SET (txs, qst, txs->txs_score, box_num (sst->sst_score));
+    qst_set_long (qst, txs->txs_score, sst->sst_score);
   if (txs->txs_is_rdf)
     {
       unsigned int64 n = D_ID_NUM_REF (&d_id.id[0]);
-      TXS_QST_SET (txs, qst, txs->txs_d_id, (caddr_t)rbb_from_id (n));
+      qst_set (qst, txs->txs_d_id, (caddr_t)rbb_from_id (n));
     }
   else
-    {
-      TXS_QST_SET (txs, qst, txs->txs_d_id, box_d_id (&d_id));
-    }
+    qst_set (qst, txs->txs_d_id, box_d_id (&d_id));
   txs_set_offband (txs, qst);
   txs_set_ranges (txs, qst, sst);
   return ((caddr_t) SQL_SUCCESS);
 }
 
-void
-txs_vec_input (text_node_t * txs, caddr_t * inst, caddr_t *state)
-{
-  int n_sets = QST_INT (inst, txs->src_gen.src_prev->src_out_fill);
-  int nth_set, first_time = 0, batch_sz;
-  QNCAST (data_source_t, qn, txs);
-  caddr_t err = NULL;
-
-  if (state)
-    nth_set = QST_INT (inst, txs->clb.clb_nth_set) = 0;
-  else
-    nth_set = QST_INT (inst, txs->clb.clb_nth_set);
-
-again:
-  batch_sz = QST_INT (inst, txs->src_gen.src_batch_size);
-  QST_INT (inst, qn->src_out_fill) = 0;
-  dc_reset_array (inst, qn, qn->src_continue_reset, -1);
-  for (; nth_set < n_sets; nth_set ++)
-    {
-      QNCAST (query_instance_t, qi, inst);
-      qi->qi_set = nth_set;
-      for (;;)
-	{
-	  if (!state)
-	    {
-	      state = SRC_IN_STATE (qn, inst);
-	    }
-	  else
-	    {
-	      txs_init (txs, (query_instance_t *) state);
-	      dc_reset (QST_BOX (data_col_t *, inst, txs->txs_d_id->ssl_index));
-	      first_time = 1;
-	    }
-	  err = txs_next (txs, state, first_time);
-	  first_time = 0;
-	  if (err != SQL_SUCCESS)
-	    {
-	      SRC_IN_STATE (qn, inst) = NULL;
-	      if (err != (caddr_t) SQL_NO_DATA_FOUND)
-		sqlr_resignal (err);
-	      break;
-	    }
-	  qn_result (qn, inst, nth_set);
-	  if (!txs->txs_is_driving)
-	    break;
-	  SRC_IN_STATE (qn, inst) = state;
-	  state = NULL;
-	  if (QST_INT (inst, qn->src_out_fill) >= batch_sz)
-	    {
-	      QST_INT (inst, txs->clb.clb_nth_set) = nth_set;
-	      qn_send_output (qn, inst);
-	      goto again;
-	    }
-	}
-    }
-
-  SRC_IN_STATE (qn, inst) = NULL;
-  if (QST_INT (inst, qn->src_out_fill))
-    qn_send_output (qn, inst);
-}
 
 void
 txs_input (text_node_t * txs, caddr_t * inst, caddr_t *state)
 {
   caddr_t err;
   int first_time = 0;
-  if (txs->src_gen.src_sets)
-    {
-      txs_vec_input (txs, inst, state);
-      return;
-    }
   for (;;)
     {
       if (!state)
@@ -3416,6 +3340,7 @@ txs_input (text_node_t * txs, caddr_t * inst, caddr_t *state)
 void
 txs_free (text_node_t * txs)
 {
+  dk_free_box (txs->txs_offband);
 }
 
 caddr_t

@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -42,6 +42,13 @@ table
     font-family: Arial, Helvetica, Helv, sans-serif;
     font-size: 10pt;
 }
+
+input[type="text"], input[type="password"], select {
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+}
+
 /* Main page segments */
 
 /* Main banner */
@@ -2175,4 +2182,42 @@ span.button {
 
 img.button {
   margin-bottom: -3px;
+}
+
+/* Popup Calendar */
+.calendar {
+	border: 1px solid #000;
+	background-color: #FFF;
+  z-index: 101;
+}
+
+.calendar_year, .calendar_month {
+	text-align: center;
+	border-bottom: 1px solid #aaa;
+	padding: 2px 0px;
+}
+
+.calendar table {
+	margin-top: 2px;
+}
+
+.calendar thead {
+	font-weight: bold;
+}
+
+.calendar thead td {
+	padding: 0px 2px;
+}
+
+.calendar td {
+	font-size: 75%;
+	text-align: center;
+}
+
+td.calendar_selected {
+	background-color: #faa;
+}
+
+.calendar_special {
+	color: #c55;
 }

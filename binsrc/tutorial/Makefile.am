@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2006 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -33,7 +33,7 @@ tutorial_filesystem.vad tutorial_dav.vad: $(EXTRA_DIST)
 	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HOST=localhost sh ./make_vad.sh
 
 clean-local:
-	-rm -rf vad
+	-rm -rf vad vad_files
 
 # ----------------------------------------------------------------------
 #
@@ -158,6 +158,9 @@ EXTRA_DIST= \
 	wap/wa_b_3/*.vsp \
 	wap/wa_b_3/*.xml \
 	web2/*.xml \
+	webid/*.html \
+	webid/*.php \
+	webid/*.vsp \
 	xmlapps/*.xml \
 	xmlsql/*.css \
 	xmlsql/*.xml \

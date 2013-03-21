@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -38,6 +38,7 @@
       <v:variable name="lhost1" persist="0" type="varchar" default="null"/>
       <v:variable name="vhost1" persist="0" type="varchar" default="null"/>
       <v:variable name="key1" persist="0" type="varchar" default="'none'"/>
+      <v:variable name="extra_cert" persist="0" type="varchar" default="null"/>
       <v:variable name="verify1" persist="0" type="varchar" default="0"/>
       <v:variable name="port1" persist="0" type="varchar" default="'443'"/>
       <v:variable name="stopit" persist="0" type="int" default="1"/>
@@ -63,6 +64,7 @@
 		    cert := subseq (cert, 3);
 		  self.key1 := cert;
 		  self.verify1 := cast (get_keyword ('https_verify', opts, 0) as varchar);
+		  self.extra_cert := get_keyword ('https_extra_chain_certificates', opts, null);
 	        }
 	    }
 	  if (self.stopit and 1 = http_listen_host (self.lhost, 2))
@@ -259,7 +261,8 @@
 			      'CN',  host,
 			      'emailAddress',  get_keyword ('emailAddress', arr)),
 			      vector ('basicConstraints', 'critical,CA:FALSE',
-			        'authorityKeyIdentifier', 'keyid,issuer:always',
+			        --'authorityKeyIdentifier', 'keyid,issuer:always',
+                                'extendedKeyUsage', 'critical,serverAuth',
 			        'nsComment', 'Virtuoso Generated Certificate'));
 			  USER_KEY_STORE (user, k, 'X.509', 2, '', cast (xenc_pkcs12_export (k, 'HTTPS Certificate', '') as varchar));
 			  self.key_list.vc_data_bind (e);
@@ -267,6 +270,13 @@
 			  self.key_list.vs_set_selected ();
 			  ]]></v:on-post>
 		  </v:button>
+              </td>
+            </tr>
+            <tr>
+              <td>Extra Chain Certificates</td>
+              <td>
+		<v:text name="extra_cert1" value="--self.extra_cert" xhtml_size="50">
+		</v:text>
               </td>
             </tr>
             <tr>
@@ -364,16 +374,16 @@
 	     {
                declare opts varchar;
 	       opts := vector ();
-	       yac_set_ssl_key (self.key_list.ufl_value, self.verify.ufl_value, opts);
+	       yac_set_ssl_key (self.key_list.ufl_value, self.verify.ufl_value, self.extra_cert1.ufl_value, opts);
 	       VHOST_DEFINE (vhost=>vhost, lhost=>lhost, lpath=>'/', ppath=>'/', sec=>'SSL', auth_opts=>opts);
 	       goto same_host;
 	     }
 
-	   if (self.vhost = vhost and lhost = self.lhost and self.key_list.ufl_value = self.key1 and self.verify1 = self.verify.ufl_value)
+	   if (self.vhost = vhost and lhost = self.lhost and self.key_list.ufl_value = self.key1 and self.verify1 = self.verify.ufl_value and self.extra_cert1.ufl_value = self.extra_cert)
              {  
                declare opts varchar;
 	       opts := vector ();
-	       yac_set_ssl_key (self.key_list.ufl_value, self.verify.ufl_value, opts);
+	       yac_set_ssl_key (self.key_list.ufl_value, self.verify.ufl_value, self.extra_cert1.ufl_value, opts);
 	       http_listen_host (lhost, 0, opts);
 	     goto same_host;
 	     }
@@ -391,7 +401,7 @@
 	        msg := '';
 		VHOST_REMOVE (vhost_o, lhost_o, HP_LPATH, 0);
 		opts := deserialize (HP_AUTH_OPTIONS);
-		yac_set_ssl_key (self.key_list.ufl_value, self.verify.ufl_value, opts);
+		yac_set_ssl_key (self.key_list.ufl_value, self.verify.ufl_value, self.extra_cert1.ufl_value, opts);
 		HP_AUTH_OPTIONS := serialize (opts);
 		if (self.key_list.ufl_value <> 'none')
 		  {

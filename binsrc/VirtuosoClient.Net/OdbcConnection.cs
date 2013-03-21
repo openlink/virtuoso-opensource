@@ -2,7 +2,7 @@
 //  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 //  project.
 //  
-//  Copyright (C) 1998-2006 OpenLink Software
+//  Copyright (C) 1998-2013 OpenLink Software
 //  
 //  This project is free software; you can redistribute it and/or modify it
 //  under the terms of the GNU General Public License as published by the
@@ -606,6 +606,8 @@ namespace OpenLink.Data.Virtuoso
 		protected override void Dispose (bool disposing)
 		{
 		  Debug.WriteLineIf (CLI.FnTrace.Enabled, "OdbcConnection.Dispose ()");
+			try
+			{
 			if (disposing)
 			{
 				Close ();
@@ -619,10 +621,17 @@ namespace OpenLink.Data.Virtuoso
 				OnDisconnect ();
 			}
 
-#if WIN32_FINALIZERS
+#if WIN3#if WIN32_FINALIZERS
 			//statementList.Unreference ();
 			Unreference ();
 #endif
+		}
+			catch (Exception e)
+			{
+				// Dispose method should never throw an exception
+				Debug.WriteLineIf(CLI.FnTrace.Enabled,
+					"OdbcConnection.Dispose caught exception: " + e.Message);
+			}
 		}
 
 		internal void Add (IntPtr hstmt, VirtuosoCommand command)

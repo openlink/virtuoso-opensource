@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -198,7 +198,8 @@ ptr += 4
 #ifdef _MSC_VER
 
 #define _DO_BOX(inx, arr) \
-  _DO_BOX_FAST(inx, arr)
+	for (inx = 0; inx < (long)((arr) ? BOX_ELEMENTS(arr) : 0); inx ++) \
+	  {
 
 #define _DO_BOX_FAST(inx, arr) \
 	do { \
@@ -206,14 +207,28 @@ ptr += 4
 	    for (inx = 0; inx < __max_##inx; inx ++) \
 	      {
 
+#define _DO_BOX_FAST_STEP2(inx, arr) \
+	do { \
+	    long __max_##inx = (long)((arr) ? BOX_ELEMENTS(arr) : 0); \
+	    for (inx = 0; inx < __max_##inx; inx += 2) \
+	      {
+
 #else
 
 #define _DO_BOX(inx, arr) \
-  _DO_BOX_FAST(inx, arr)
+	for (inx = 0; inx < ((arr) ? BOX_ELEMENTS(arr) : 0); inx ++) \
+	  {
+
 #define _DO_BOX_FAST(inx, arr) \
 	do { \
 	    uint32 __max_##inx = ((arr) ? BOX_ELEMENTS(arr) : 0); \
 	    for (inx = 0; inx < __max_##inx; inx ++) \
+	      {
+
+#define _DO_BOX_FAST_STEP2(inx, arr) \
+	do { \
+	    uint32 __max_##inx = ((arr) ? BOX_ELEMENTS(arr) : 0); \
+	    for (inx = 0; inx < __max_##inx; inx += 2) \
 	      {
 
 #endif
@@ -223,21 +238,26 @@ ptr += 4
 	    for (inx = (long)((arr) ? BOX_ELEMENTS(arr) : 0); inx--; /* no step */) \
 	      {
 
-
 #define DO_BOX(dtp, v, inx, arr) \
-	_DO_BOX_FAST(inx, (arr)) \
+	_DO_BOX(inx, (arr)) \
 	    dtp v = (dtp) (((void **)(arr)) [inx]);
 
 #define END_DO_BOX \
-  }} while (0);
-
-
+}
 
 #define DO_BOX_FAST(dtp, v, inx, arr) \
 	_DO_BOX_FAST(inx, (arr)) \
 	    dtp v = (dtp) (((void **)(arr)) [inx]);
 
 #define END_DO_BOX_FAST \
+	  }} while (0)
+
+#define DO_BOX_FAST_STEP2(dtp1, v1, dtp2, v2, inx, arr) \
+	_DO_BOX_FAST_STEP2(inx, (arr)) \
+	    dtp1 v1 = (dtp1) (((void **)(arr)) [inx]); \
+	    dtp2 v2 = (dtp2) (((void **)(arr)) [inx+1]);
+
+#define END_DO_BOX_FAST_STEP2 \
 	  }} while (0)
 
 #define DO_BOX_FAST_REV(dtp, v, inx, arr) \
@@ -251,12 +271,14 @@ ptr += 4
 
 #ifdef DOUBLE_ALIGN
 
+#define ALIGN_LIKE_BOX(x)		ALIGN_8(x)
 #define STATIC_DV_NULL 			{0,0,0,0,0,0,0,(char)DV_DB_NULL}
 #define BOX_AUTO_OVERHEAD 		8
 #define BOX_BEGIN_IN_AREA(area) 	(((char *) (~((ptrlong)7) & (ptrlong)(area))) + BOX_AUTO_OVERHEAD)
 
 #else /* DOUBLE_ALIGN */
 
+#define ALIGN_LIKE_BOX(x)		ALIGN_4(x)
 #define STATIC_DV_NULL 			{0,0,0,(char)DV_DB_NULL}
 #define BOX_AUTO_OVERHEAD 		4
 #define BOX_BEGIN_IN_AREA(area) 	(((char *) area) + BOX_AUTO_OVERHEAD)
@@ -305,7 +327,7 @@ ptr += 4
 
 #define DV_NON_BOX 			101
 
-#define FIRST_DV_DTP 			180
+#define FIRST_DV_DTP 			125
 
 /* Data types */
 
@@ -478,8 +500,10 @@ typedef int64 boxint;
 
 #ifdef WIN32
 #define BOXINT_FMT 			"%I64d"
+#define UBOXINT_FMT 			"%I64u"
 #else
 #define BOXINT_FMT 			"%lld"
+#define UBOXINT_FMT 			"%llu"
 #endif
 
 #define unbox_num(n) 			unbox(n)
@@ -489,12 +513,13 @@ typedef int64 boxint;
 #define unbox_string(s) 		((char *)s)
 
 typedef unsigned int64 iri_id_t;
+#define IIDBOXINT_FMT UBOXINT_FMT
 #define MIN_32BIT_BNODE_IRI_ID ((iri_id_t)1000000000)
 #define MAX_32BIT_BNODE_IRI_ID ((iri_id_t)1999999999)
 #define MIN_64BIT_BNODE_IRI_ID (((iri_id_t)1) << 62)
 #define MAX_64BIT_BNODE_IRI_ID ((((iri_id_t)1) << 63)-1)
 #define MIN_32BIT_NAMED_BNODE_IRI_ID ((iri_id_t)1800000000)
-#define MIN_64BIT_NAMED_BNODE_IRI_ID (((iri_id_t)3) << 62)
+#define MIN_64BIT_NAMED_BNODE_IRI_ID (((iri_id_t)7) << 60)
 #define unbox_iri_id(i) ((i)?(*(iri_id_t*)(i)):0)
 
 #define IS_NONLEAF_DTP(dtp) \
@@ -604,13 +629,10 @@ uname_blk_t;
 #define RDF_BOX_MAX_LANG 		0x7F01
 #define RDF_BOX_ILL_TYPE 		0x7F02
 #define RDF_BOX_ILL_LANG 		0x7F03
-#define RDF_BOX_GEO 0x100
-#define RDF_BOX_INTERVAL 0xff
-#define RDF_BOX_STRING_ID 0xfe /* Like a type 257 but no string inlined, collates by lang and id alone */
-#define RDF_BOX_MIN_TYPE 0xfe
-
-#define rb_dt_lang_check(f)
-
+#define RDF_BOX_GEO 			0x100
+#define RDF_BOX_INTERVAL 		0xff
+#define RDF_BOX_STRING_ID 		0xfe /* Like a type 257 but no string inlined, collates by lang and id alone */
+#define RDF_BOX_MIN_TYPE 		0xfe
 
 typedef struct rdf_box_s
 {
@@ -626,6 +648,15 @@ typedef struct rdf_box_s
   caddr_t 		rb_box;
 } rdf_box_t;
 
+#ifndef NDEBUG
+#define rb_dt_lang_check(rb) do { \
+    if (RDF_BOX_ILL_TYPE == (rb)->rb_type) GPF_T1("Bad rb_type"); \
+    if (RDF_BOX_ILL_LANG == (rb)->rb_lang) GPF_T1("Bad rb_lang"); \
+  } while (0)
+#else
+#define rb_dt_lang_check(rb)
+#endif
+
 #define RB_MAX_INLINED_CHARS 		20
 
 #define RBS_OUTLINED			0x01
@@ -635,7 +666,7 @@ typedef struct rdf_box_s
 #define RBS_CHKSUM			0x10
 #define RBS_64				0x20
 #define RBS_SKIP_DTP			0x40
-#define RBS_EXT_TYPE 0x80
+#define RBS_EXT_TYPE 			0x80
 
 
 #define RBS_ID_ONLY(f) \
@@ -655,8 +686,13 @@ EXE_EXPORT (box_t, dk_try_alloc_box, (size_t bytes, dtp_t tag));
 EXE_EXPORT (box_t, dk_alloc_box_zero, (size_t bytes, dtp_t tag));
 
 #define dk_alloc_list(n) 		((caddr_t *)dk_alloc_box ((n) * sizeof (caddr_t), DV_ARRAY_OF_POINTER))
+#define dk_alloc_list_zero(n) 		((caddr_t *)dk_alloc_box_zero ((n) * sizeof (caddr_t), DV_ARRAY_OF_POINTER))
 
 #ifdef MALLOC_DEBUG
+#define DK_ALLOC_BOX_DEBUG
+#endif
+
+#ifdef DV_UNAME_UNIT_DEBUG
 #define DK_ALLOC_BOX_DEBUG
 #endif
 
@@ -684,6 +720,7 @@ EXE_EXPORT (ptrlong, unbox_ptrlong, (ccaddr_t n));
 EXE_EXPORT (int64, unbox_int64, (ccaddr_t n));
 EXE_EXPORT (box_t, box_num, (boxint n));
 EXE_EXPORT (box_t, box_num_nonull, (boxint n));
+EXE_EXPORT (box_t, box_iri_id, (int64 n));
 EXE_EXPORT (box_t, box_string, (const char *string));
 EXE_EXPORT (box_t, box_dv_short_string, (const char *string));
 EXE_EXPORT (box_t, box_dv_short_nchars, (const char *buf, size_t buf_len));
@@ -698,6 +735,7 @@ EXE_EXPORT (box_t, box_dv_uname_nchars, (const char *buf, size_t buf_len));
 EXE_EXPORT (box_t, box_dv_uname_substr, (ccaddr_t box, int n1, int n2));
 EXE_EXPORT (box_t, box_double, (double d));
 EXE_EXPORT (box_t, box_float, (float d));
+EXE_EXPORT (box_t, box_dv_wide_nchars, (const wchar_t *buf, size_t buf_wchar_count));
 #ifdef _DKSYSTEM_H
 EXE_EXPORT (caddr_t, box_vsprintf, (size_t buflen_eval, const char *format, va_list tail));
 #endif
@@ -755,6 +793,7 @@ box_t dbg_box_copy_tree (const char *file, int line, cbox_t box);
 box_t dbg_box_try_copy_tree (const char *file, int line, cbox_t box, box_t stub);
 box_t dbg_box_num (const char *file, int line, boxint n);
 box_t dbg_box_num_nonull (const char *file, int line, boxint n);
+box_t dbg_box_iri_id (const char *file, int line, int64 n);
 char *dbg_box_dv_ubuf (const char *file, int line, size_t buf_strlen);
 box_t dbg_box_dv_uname_from_ubuf (const char *file, int line, char *ubuf);
 box_t dbg_box_dv_uname_string (const char *file, int line, const char *string);
@@ -762,6 +801,7 @@ box_t dbg_box_dv_uname_nchars (const char *file, int line, const char *buf, size
 box_t dbg_box_dv_uname_substr (const char *file, int line, ccaddr_t box, int n1, int n2);
 box_t dbg_box_double (const char *file, int line, double d);
 box_t dbg_box_float (const char *file, int line, float d);
+box_t dbg_box_dv_wide_nchars (const char *file, int line, const wchar_t *buf, size_t buf_wchar_count);
 #ifdef _DKSYSTEM_H
 caddr_t dbg_box_vsprintf (const char *file, int line, size_t buflen_eval, const char *format, va_list tail);
 #endif
@@ -784,6 +824,7 @@ caddr_t dbg_box_vsprintf (const char *file, int line, size_t buflen_eval, const 
 #define box_try_copy_tree(S,STUB)		dbg_box_try_copy_tree (__FILE__, __LINE__, (S), (STUB))
 #define box_num(S)				dbg_box_num (__FILE__, __LINE__, (S))
 #define box_num_nonull(S)			dbg_box_num_nonull (__FILE__, __LINE__, (S))
+#define box_iri_id(S)				dbg_box_iri_id (__FILE__, __LINE__, (S))
 #define box_dv_ubuf(B)				dbg_box_dv_ubuf (__FILE__, __LINE__, (B))
 #define box_dv_uname_from_ubuf(U)		dbg_box_dv_uname_from_ubuf (__FILE__, __LINE__, (U))
 #define box_dv_uname_string(S)			dbg_box_dv_uname_string (__FILE__, __LINE__, (S))
@@ -791,6 +832,7 @@ caddr_t dbg_box_vsprintf (const char *file, int line, size_t buflen_eval, const 
 #define box_dv_uname_substr(S,N1,N2)		dbg_box_dv_uname_substr (__FILE__, __LINE__, (S), (N1), (N2))
 #define box_double(D)				dbg_box_double (__FILE__, __LINE__, (D))
 #define box_float(D)				dbg_box_float (__FILE__, __LINE__, (D))
+#define box_dv_wide_nchars(B,WCHAR_COUNT)	dbg_box_dv_wide_nchars (__FILE__, __LINE__, (B), (WCHAR_COUNT))
 #define box_vsprintf(L,F,T)			dbg_box_vsprintf (__FILE__, __LINE__, (L), (F), (T))
 
 #endif
@@ -843,17 +885,12 @@ extern void dkbox_terminate_module (void);
 #define DV_INT_TAG_WORD_64 DV_INT_TAG_WORD 		
 #define DV_IRI_TAG_WORD 		0x080000f3
 #define DV_IRI_TAG_WORD_64  DV_IRI_TAG_WORD
-#define DV_DOUBLE_TAG_WORD 		0x080000bf
-#define DV_FLOAT_TAG_WORD 		0x080000be
-
 
 #else
 #define DV_INT_TAG_WORD  		0xbd000008
 #define DV_INT_TAG_WORD_64 0xbd00000800000000
 #define DV_IRI_TAG_WORD 		0xf3000008
 #define DV_IRI_TAG_WORD_64 		0xf300000800000000
-#define DV_DOUBLE_TAG_WORD  0xbf000008
-#define DV_FLOAT_TAG_WORD 0xbe000008
 #endif
 
 /* values for box_flags */

@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -58,16 +58,20 @@ create procedure poll_comment_iri (
 
 -------------------------------------------------------------------------------
 --
-create procedure fill_ods_polls_sioc (in graph_iri varchar, in site_iri varchar, in _wai_name varchar := null)
+create procedure fill_ods_polls_sioc (
+  in graph_iri varchar,
+  in site_iri varchar,
+  in _wai_name varchar := null)
 {
   declare id, deadl, cnt integer;
-  declare c_iri, creator_iri varchar;
+  declare acl_graph_iri, c_iri, creator_iri varchar;
 
   {
     -- init services
     SIOC..fill_ods_polls_services ();
 
     for (select WAI_ID,
+                WAI_IS_PUBLIC,
                 WAI_TYPE_NAME,
                 WAI_NAME,
                 WAI_ACL
@@ -75,9 +79,9 @@ create procedure fill_ods_polls_sioc (in graph_iri varchar, in site_iri varchar,
           where ((_wai_name is null) or (WAI_NAME = _wai_name))
             and WAI_TYPE_NAME = 'Polls') do
     {
-      graph_iri := SIOC..acl_graph (WAI_TYPE_NAME, WAI_NAME);
-      exec (sprintf ('sparql clear graph <%s>', graph_iri));
-      SIOC..wa_instance_acl_insert (WAI_TYPE_NAME, WAI_NAME, WAI_ACL);
+      acl_graph_iri := SIOC..acl_graph (WAI_TYPE_NAME, WAI_NAME);
+      exec (sprintf ('sparql clear graph <%s>', acl_graph_iri));
+      SIOC..wa_instance_acl_insert (WAI_IS_PUBLIC, WAI_TYPE_NAME, WAI_NAME, WAI_ACL);
       for (select P_DOMAIN_ID, P_ID, P_ACL
              from POLLS.WA.POLL
             where P_DOMAIN_ID = WAI_ID and P_ACL is not null) do

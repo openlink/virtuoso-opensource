@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -98,7 +98,7 @@ create procedure TUT_get_xml(in path varchar){
 	
   	if(isnull(xpath_eval('@wwwpath',xp_example)))
   	{
-		 	if (_ex_optxml and lower(xpath_eval('string(/init/@is_vspx)',_ex_optxml)) = 'yes')
+	  if (_ex_optxml is not null and lower(xpath_eval('string(/init/@is_vspx)',_ex_optxml)) = 'yes')
 	       		ex := 'x';
   	  		XMLAddAttribute (xp_example,2,'wwwpath',concat(_ex_fspath ,'/', _ex_id , '.vsp',ex));
   	  	};
@@ -207,6 +207,9 @@ create procedure TUT_generate_files(
 
   foreach (varchar gen_path in paths)do
   {
+    if (gen_path like '%/idp_s_1.vsp')
+      goto _skip;
+    
 	  _file := 'index.vsp';
 	  if (length(gen_path) > 5 and (
 	      subseq(gen_path,length(gen_path) - 4,length(gen_path)) = '.vsp'  or
@@ -219,7 +222,7 @@ create procedure TUT_generate_files(
 	      subseq(xsl_mountpoint,length(xsl_mountpoint) - 4,length(xsl_mountpoint)) = '.vsp'  or
 	  		subseq(xsl_mountpoint,length(xsl_mountpoint) - 5,length(xsl_mountpoint)) = '.vspx')
 	  		)
-	  	xsl_mountpoint := regexp_replace(xsl_mountpoint,'[^/]*\$','');
+	  	xsl_mountpoint := regexp_replace(xsl_mountpoint,'[^/]+\$','');
 	  xsl_mountpoint := trim(xsl_mountpoint,'/');
 	  if (xsl_mountpoint = '')
 	    xsl_mountpoint := '.';
@@ -260,8 +263,9 @@ create procedure TUT_generate_files(
 	  	http_flush (1);
 	  } else {
 	  	result('Wrote ' || http_root() ||path|| gen_path || _file);
-	  };
-  };
+	  }
+	_skip:;  
+  }
 	if (_outmode = 'web'){
 		http('Finished.\n');
 		http_flush(1);

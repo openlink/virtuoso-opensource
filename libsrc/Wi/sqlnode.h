@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -44,35 +44,20 @@ typedef void (*qn_input_fn) (data_source_t *, caddr_t *, caddr_t *);
 typedef void (*qn_advance_fn) (data_source_t *);
 typedef void (*qn_free_fn) (data_source_t *);
 
-
-typedef struct _src_stat_s
-{
-  unsigned int64	srs_start;
-  unsigned int64	srs_cum_time;
-  unsigned int64	srs_n_in;
-  unsigned int64	srs_n_out;
-} src_stat_t;
-
-#define SRC_STAT(qn, inst)  ((src_stat_t*)&((caddr_t*)inst)[qn->src_stat])
-
+typedef unsigned short ssl_index_t;
 
 struct data_source_s
   {
     dk_set_t		src_continuations;
     ssl_index_t		src_in_state;
-    ssl_index_t		src_batch_size;
-    ssl_index_t		src_sets;
-    ssl_index_t 	src_out_fill;
-    ssl_index_t		src_stat;
+    ssl_index_t		src_count;
     qn_input_fn		src_input;
     qn_free_fn		src_free;
     code_vec_t		src_pre_code;
     code_vec_t		src_after_code;
     code_vec_t		src_after_test;
     query_t *		src_query;
-    struct state_slot_s **	src_pre_reset;
-    struct state_slot_s **	src_continue_reset;
-    data_source_t *		src_prev;
+    struct state_slot_s **	src_local_save; /* When no clb, array with ssls to save + save places, values need to be preserved for correct op of continue of this qn */
   };
 
 
@@ -91,8 +76,6 @@ struct data_source_s
 #define SSL_CURSOR		6 /* a local_query_t * inside a SQL procedure */
 #define SSL_TREE 7
 #define SSL_REMOTE_STMT		9
-#define SSL_VEC 90 /* value is a qi_mp allocated data_column_t */
-#define SSL_REF 91 /* ref to  result of prior node in vectored exec */
 
 #define SSL_CONSTANT		100
 #define SSL_REF_PARAMETER	101
@@ -104,53 +87,23 @@ struct data_source_s
 #define IS_UNNAMED_PARAM(ssl) 	\
 	(ssl && ssl->ssl_name && ssl->ssl_name[0] == ':' && isdigit (ssl->ssl_name[1]))
 
-#define SSL_IS_VEC(ssl) (SSL_VEC == (ssl)->ssl_type)
-#define SSL_IS_VEC_OR_REF(ssl) \
-  (SSL_REF == (ssl)->ssl_type || SSL_VEC == (ssl)->ssl_type)
 
 
-#define SSL_FLAGS \
-    char		ssl_type; \
-  dtp_t			ssl_dc_dtp; \
-    bitf_t		ssl_is_alias:1; \
-    bitf_t		ssl_is_observer:1; \
-    bitf_t		ssl_is_callret:1; \
-    bitf_t		ssl_not_freeable:1; \
-    bitf_t		ssl_qr_global:1; /* value either aggregating or invariant across qr */ \
-  bitf_t	ssl_vec_param:2; /* in vectored proc in/inout/out */ \
-  ssl_index_t	ssl_index; \
-  ssl_index_t		ssl_box_index; /*if vectored and needs box for single state ops, place in qst for this */ \
-  sql_type_t		ssl_sqt
-
-
-struct state_slot_s
+typedef struct state_slot_s
   {
-    SSL_FLAGS;
-    ssl_index_t		ssl_sets; /* if this is a cast or a search param where nulls can occur, there will be filtering.  Correlate the values to the rows of input */
-    ssl_index_t		ssl_n_values;
+    char		ssl_type;
+    bitf_t		ssl_is_alias:1;
+    bitf_t		ssl_is_observer:1;
+    bitf_t		ssl_is_callret:1;
+    bitf_t		ssl_not_freeable:1;
+    bitf_t		ssl_qr_global:1; /* value either aggregating or invariant across qr */
+    ssl_index_t		ssl_index;
+    sql_type_t		ssl_sqt;
     caddr_t	ssl_constant;
     char *		ssl_name;
     dbe_column_t *	ssl_column;
     struct state_slot_s *ssl_alias_of;
-};
-
-
-/* ssl_vec_param */
-#define SSL_VP_IN 1
-#define SSL_VP_OUT 2
-#define SSL_VP_RET 3
-
-
-struct state_slot_ref_s
-  {
-    SSL_FLAGS;
-    short	sslr_distance;
-    ssl_index_t *	sslr_set_nos;
-    state_slot_t *	sslr_ssl;
-};
-
-#define sslr_index ssl_index
-#define sslr_box_index ssl_box_index
+  } state_slot_t;
 
 #define ssl_dtp ssl_sqt.sqt_dtp
 #define ssl_prec ssl_sqt.sqt_precision
@@ -159,18 +112,30 @@ struct state_slot_ref_s
 #define ssl_non_null ssl_sqt.sqt_non_null
 
 
-typedef state_slot_t state_const_slot_t; ;
+typedef struct state_const_slot_s
+  {
+    char		ssl_type;
+    bitf_t		ssl_is_alias:1;
+    bitf_t		ssl_is_observer:1;
+    bitf_t		ssl_is_callret:1;
+    bitf_t		ssl_not_freeable:1;
+    bitf_t		ssl_qr_global:1; /* value either aggregating or invariant across qr */
+    ssl_index_t		ssl_index;
+    sql_type_t		ssl_sqt;
+    caddr_t		ssl_const_val;
+    char *		ssl_name;
+    struct state_const_slot_s *ssl_next_const;
+    struct state_slot_s *ssl_alias_of;
+  } state_const_slot_t;
 
-#define ssl_next_const ssl_alias_of
-#define ssl_const_val ssl_constant
 
+/* the const is at the place of teh name if it is const */
+/* #define ssl_constant ssl_name */
 
 #define SSL_HAS_NAME(ssl) (/*ssl->ssl_type != SSL_CONSTANT &&*/ ssl->ssl_name)
 
 #define QST_GET(qst,ssl) \
-  (ssl->ssl_type < SSL_VEC ? ((caddr_t*)qst)[ssl->ssl_index] : \
-   (ssl->ssl_type < SSL_CONSTANT ? sslr_qst_get (qst, (state_slot_ref_t*)ssl, ((query_instance_t*)qst)->qi_set) : \
-(ssl->ssl_type > SSL_CONSTANT ? ((caddr_t**)qst)[ssl->ssl_index][0] : ssl->ssl_constant)))
+  (ssl->ssl_type < SSL_CONSTANT ? ((caddr_t*)qst)[ssl->ssl_index] : (ssl->ssl_type > SSL_CONSTANT ? ((caddr_t**)qst)[ssl->ssl_index][0] : ssl->ssl_constant))
 
 #define QST_GET_ADDR(qst,ssl) \
   (ssl->ssl_type < SSL_CONSTANT ? (((caddr_t*)qst) + ssl->ssl_index) : (ssl->ssl_type > SSL_CONSTANT ? ((caddr_t**)qst)[ssl->ssl_index] : &(ssl->ssl_constant)))
@@ -288,19 +253,13 @@ struct query_s
     bitf_t		qr_trig_event:2;	/*!< If trigger, type of event: insert/delete/update */
     bitf_t		qr_cl_locatable:2; /* can run in aquery frag, yes/no/unknown */
     bitf_t		qr_cl_qf_freed:1; /* if freed but still around because of pending qi's */
-    bitf_t		qr_last_qi_may_free:1; /* if freed but still around because of pending local qi's */
-    bitf_t		qr_proc_vectored:2;
-    bitf_t		qr_vec_opt_done:1;
     char			qr_hidden_columns;
     char			qr_n_stages; /* if represents distr frag */
     /* The query state array's description */
     dk_set_t		qr_state_map;
     state_slot_t **	qr_freeable_slots;
-    state_slot_t **	qr_vec_ssls;
-    state_slot_t **	qr_qp_copy_ssls;
     state_const_slot_t *	qr_const_ssls;
     dk_set_t 		qr_temp_spaces;
-    dk_set_t		qr_ssl_refs;
     struct select_node_s *qr_select_node;
 
     /* The query's instantiation */
@@ -393,10 +352,6 @@ struct query_s
   memset (qr, 0, sizeof (query_t)); }
 #endif
 
-/* qr_proc_vectored */
-#define QR_VEC_PROC 1
-#define QR_VEC_STMT 2
-
 /* qr_remote_mode values */
 
 #define QR_LOCAL	0
@@ -436,7 +391,6 @@ typedef struct query_instance_s
 
     du_thread_t *	qi_thread;
     struct client_connection_s *qi_client;
-    int			qi_ref_count;
     char		qi_threads;
     char		qi_isolation;
     bitf_t              qi_lock_mode:3;
@@ -449,9 +403,6 @@ typedef struct query_instance_s
     bitf_t		qi_non_txn_insert:1; /* make insert not subject to rb and log it immediately */
     bitf_t		qi_is_partial:1; /* was interrupted by anytime timeout */
     bitf_t		qi_dfg_anytimed:1;
-    bitf_t		qi_vec_from_scalar:1;
-    bitf_t		qi_is_branch:1;
-    uint32		qi_root_id;
     int32		qi_rpc_timeout;
     int32		qi_prefetch_bytes;
     int32		qi_bytes_selected;
@@ -464,11 +415,6 @@ typedef struct query_instance_s
     struct local_cursor_s *qi_lc;
     struct icc_lock_s	*qi_icc_lock;	/* Pointer to an InterConnectionCommunication lock to be released at exit */
     struct object_space_s *qi_object_space;
-    mem_pool_t *	qi_mp;
-    dtp_t *		qi_set_mask; /* which places in vectors are active in a conditional branch of a cectored code vec */
-    int			qi_set; /*inx of current  value in vectored code vec.  Use for scalar ops like function call */
-    int			qi_n_sets; /* when running code vec, no of sets */
-    struct select_node_s *	qi_branched_select; /* if a exists/scalar subq made this qi as a parallel branch, this is the select node ending the subq.  Need to know for results merge */
 #ifdef PLDBG
     void * 		qi_last_break;
     int 		qi_step;
@@ -504,7 +450,6 @@ typedef struct hash_area_s
   state_slot_t *	ha_tree;
   state_slot_t *	ha_ref_itc;
   state_slot_t * 	ha_insert_itc;
-  state_slot_t *	ha_set_no;
 #ifdef NEW_HASH
   state_slot_t * 	ha_bp_ref_itc;
 #endif
@@ -518,14 +463,8 @@ typedef struct hash_area_s
   char			ha_allow_nulls;
   char			ha_memcache_only; /* flags if the hash may not reside on disk */
   long 			ha_row_size;
-  uint64 			ha_row_count;
-  /*chash fields */
-  int	ha_ch_len;
-  int	ha_ch_nn_flags; /* offset of non-null flags in chash row */
-  char	ha_ch_unique;
+  long 			ha_row_count;
 } hash_area_t;
-
-#define CHASH_GB_MAX_KEYS 10
 
 
 #define HA_DISTINCT 1
@@ -543,38 +482,23 @@ typedef struct clo_comp_s
 } clo_comp_t;
 
 
-typedef int (*row_check_func_t) (it_cursor_t * itc, buffer_desc_t * buf);
-
-struct key_source_s
+typedef struct key_source_s
   {
     dbe_key_t *		ks_key;
     clo_comp_t **	ks_cl_order; /* if results from many cluster nodes, given them in key order? If so, this is the compare order in result rows. */
     state_slot_t *	ks_init_place;
     key_spec_t 		ks_spec;
     unsigned char	ks_spec_nth;
-    unsigned char	ks_n_vec_sort_cols; /* how many first search params participate in sorting of vectored param set */
     char		ks_copy_search_pars; /* in dfg, the itc's pars must be copies owned by the itc */
     int			ks_init_used;
-    int			ks_param_nos; /* array for sorting params in vector exec */
     search_spec_t *	ks_row_spec;
-    row_check_func_t	ks_row_check;
     dk_set_t		ks_out_cols;
     dk_set_t		ks_out_slots;
     caddr_t *		ks_out_col_ids; /* ready for cluster rpc */
     out_map_t *	ks_out_map; /* inline array of dbe_col_locs for each member of ks:_out_slots for the matching key */
-    v_out_map_t *	ks_v_out_map;
     state_slot_t *	ks_from_temp_tree;	/* tree of group or order temp or such */
-    state_slot_ref_t **	ks_vec_source; /* if need align or cast of searchh pars for vectored exec */
-    state_slot_t **	ks_vec_cast;
-    dc_val_cast_t *	ks_dc_val_cast;
-    state_slot_t *	ks_last_vec_param; /* used for getting the count of param rows after casts */
-    state_slot_t *	ks_first_row_vec_ssl;
     struct setp_node_s *	ks_from_setp;
-    state_slot_t *		ks_set_no; /* if ks reading a gby/oby temp, this is ssl ref to the set no from the set ctr at the start of the qr */
-    ssl_index_t			ks_pos_in_temp; /* if mem sort, pos in the sort while reading.  Inx in inst. if chash, pos inside the chash page  */
-    ssl_index_t		ks_nth_cha_part;  /* when reading chash, nth partition */
-    ssl_index_t		ks_cha_chp; /* when reading chash, the chash_page_t */
-
+    int			ks_pos_in_temp; /* if mem sort, pos in the sort while reading.  Inx in inst */
     query_frag_t *	ks_from_temp_qf; /* if reading cluster aggregates, this is the qf holding the stuff */
     code_vec_t		ks_local_test;
     code_vec_t		ks_local_code;
@@ -584,16 +508,10 @@ struct key_source_s
 					   postprocess follows.
 					   True if fun ref query */
     bitf_t		ks_is_loc_of_txs:1; /* if dummy cluster location ks for a txs then ks_ts is the text_source_t */
-    bitf_t		ks_is_qf_first:1; /* the first in a cluster partition has its ks vec params set by the partitioning node so the cast dcs are ready to be set as search params */
-    bitf_t		ks_is_flood:1; /* partitioning ks of qf does not have eq on all partitioning columns, goes to all partitions */
-    bitf_t		ks_vec_asc_eq:1;
-    bitf_t		ks_oby_order:1;
-    bitf_t		ks_is_deleting:1;
-    bitf_t		ks_is_proc_view:1;
+    ssl_index_t		ks_count;
     state_slot_t *	ks_proc_set_ctr;
 /*    char 			ks_local_op; */
     struct setp_node_s *	ks_setp;
-    state_slot_t *		ks_set_no_col_ssl; /* if reading gby temp with set no in gb key, ssl for retrieving this, use as set no of retrieved row */
 #ifdef NEW_HASH
     hash_area_t *		ks_ha;
 #endif
@@ -603,14 +521,19 @@ struct key_source_s
     data_source_t *	ks_next_clb; /* if cluster and no order and the next node has a cl buffer, feed the data direct in there if no intervening steps */
     state_slot_t **		ks_qf_output; /* if last ks of value producing qf, then send these as result row. */
     struct table_source_s *	ks_ts;
-    dk_set_t	ks_hash_spec; /* hash fill frefs that cause this ts to filter out rows either as hash filler or as hash probe */
-    ssl_index_t *	ks_hs_partition_spec;
-};
+  } key_source_t;
 
 #define ks_itcl ks_ts->clb.clb_itcl
 
 #define KS_SPC_DFG 2 /* copy search pars local and remote */
 #define KS_SPC_QF 1 /* copy search pars on local only */
+
+
+#define KS_COUNT(ks, qst) \
+  if (ks->ks_count) ((ptrlong*)qst)[ks->ks_count]++
+
+#define SRC_COUNT(src, qst) \
+  if ((src)->src_count) ((ptrlong*)qst)[(src)->src_count]++
 
 
 
@@ -671,8 +594,6 @@ typedef struct table_source_s
     data_source_t	src_gen;
     cl_buffer_t		clb;
     float		ts_cardinality; /* cardinality estimate from compiler */
-    float		ts_inx_cardinality; /* card est with only indexed preds counted, use for splitting a scan where some keading keys are given */
-    float		ts_cost_after; /* cost of nodes after this, per row of output from this */
     key_source_t *	ts_order_ks;
     key_source_t *	ts_main_ks;
     state_slot_t *	ts_order_cursor;
@@ -684,25 +605,14 @@ typedef struct table_source_s
     bitf_t		ts_need_placeholder:1;
     bitf_t		ts_is_alternate:2;
     bitf_t 		ts_alternate_inited:1;
-    bitf_t		ts_order:2;
-    bitf_t		ts_card_measured:1; /* is cardinality baesd on sample, i.e. reliable */
-    bitf_t		ts_branch_by_value:1; /* if parallelizing scan, divide at value boundaries so that if order col is group col groups are guaranteed distinct */
     caddr_t		ts_rnd_pcnt;
     code_vec_t		ts_after_join_test;
     struct inx_op_s *	ts_inx_op;
-    state_slot_t *	ts_aq;
-    state_slot_t *	ts_aq_qis; /* when this splits into many threads, this holds the per thread qis as an array */
-    state_slot_t **	ts_branch_ssls;
-    ssl_index_t *	ts_branch_sets;
-    dbe_column_t *	ts_branch_col; /* if scan partitioned by range, this is the col */
-    data_source_t *	ts_agg_node; /* if parallelizable in fref, this is the fref, if in scalar/exists subq, this is the select */
-    ssl_index_t		ts_aq_state;
     inx_locality_t	ts_il;
     hash_area_t *	ts_proc_ha; /* ha for temp of prov view res.  Keep here to free later */
     ts_alt_func_t 	ts_alternate_test;
     struct table_source_s *	ts_alternate;
     state_slot_t*		ts_alternate_cd;
-    caddr_t			ts_sort_read_mask; /* array of char flags.  Set if in reading sort temp the item at the place goes into the output */
     short		ts_max_rows; /* if last of top n and a single state makes this many, then can end whole set */
     short		ts_prefetch_rows; /* recommend cluster end batch   after this many because top later */
   } table_source_t;
@@ -711,55 +621,20 @@ typedef struct table_source_s
 #define TS_ALT_PRE 1
 #define TS_ALT_POST 2
 
-/* ts_aq_state */
-#define TS_AQ_NONE 0
-#define TS_AQ_FIRST 1 /* this ts serves as an aq branch and should start the scan at the start. Alternately the scan bounds are in the search specs.  */
-#define TS_AQ_PLACED 2 /* this ts serves as an aq branch and has a set initial position */
-#define TS_AQ_SRV_RUN 3 /* aq server that is inited and running */
-#define TS_AQ_COORD 4 /* this ts has aq branches. Going through its own slice of the row.  Not at end until aq branches  are */
-#define TS_AQ_COORD_AQ_WAIT 5 /* this ts has aq branches.  The own part of the job is done but aq branches are not at end */
-
-
-
-/* vectored alt index path */
-typedef struct ts_alt_split_s
-{
-  data_source_t	src_gen;
-  ssl_index_t	tssp_is_alt;
-  char			tssp_inited;
-  state_slot_t *	tssp_v1;
-  state_slot_t *	tssp_v2;
-  table_source_t *	tssp_alt_ts;
-} ts_split_node_t;
-
 
 typedef table_source_t sort_read_node_t;
 
 typedef struct rdf_inf_node_s rdf_inf_pre_node_t;
 typedef struct trans_node_s trans_node_t;
 
-
-typedef struct iter_node_s
-{
-  state_slot_t *	in_output;
-  state_slot_t *	in_values_array;
-  state_slot_t *	in_vec_array; /* if each set of input iterates over different array */
-  int			in_current_value;
-  int		in_current_set;
-  int		in_is_const;
-} iter_node_t;
-
-
 typedef struct  in_iter_node_s
 {
   data_source_t	src_gen;
-  iter_node_t	ii_iter;
   state_slot_t **	ii_values;
-#define 	ii_output ii_iter.in_output
-#define	ii_values_array ii_iter.in_values_array
-#define ii_nth_set ii_iter.in_current_set
-#define ii_nth_value ii_iter.in_current_value
+  state_slot_t *	ii_output;
+  state_slot_t *	ii_values_array;
   state_slot_t *	ii_outer_any_passed; /* if rhs of left outer, flag here to see if any answer. If not, do outer output when at end */
+  int		ii_nth_value;
   void 	       *	ii_dfe;
 } in_iter_node_t;
 
@@ -771,8 +646,6 @@ typedef struct outer_seq_end_s
   state_slot_t *	ose_set_no;
   state_slot_t *	ose_prev_set_no;
   state_slot_t **	ose_out_slots; /* the ssls that are null for the outer row */
-  state_slot_t **	ose_out_shadow; /* If vectored, ssl vec (not ref) ssls for the nullable columns.  Values are a solid copy of ose out slots */
-  state_slot_t *	ose_bits;
   state_slot_t *	ose_buffered_row;
   int			ose_last_outer_set; /* set no of the last outer row.  inx of int in qi */
 } outer_seq_end_node_t;
@@ -785,20 +658,7 @@ typedef struct set_ctr_node_s
   state_slot_t *	sctr_set_no;
   outer_seq_end_node_t *	sctr_ose;
   dk_set_t 			sctr_continuable; /* continuable nodes between the sctr and the ose */
-  dk_set_t 			sctr_hash_spec; /* if before partitioned outer hash join, these sp's are the hash filler frefs that determine the partition */
-  char				sctr_role;
-  ssl_index_t 			sctr_is_trans_recursive;
 } set_ctr_node_t;
-
-
-/* sctr_role */
-#define SCTR_TOP 0
-#define SCTR_EXISTS SEL_VEC_EXISTS
-#define SCTR_SCALAR SEL_VEC_SCALAR
-#define SCTR_DT SEL_VEC_DT
-#define SCTR_OJ 4
-
-
 #define sctr_itcl clb.clb_itcl
 
 
@@ -851,7 +711,6 @@ struct query_frag_s
   table_source_t *	qf_loc_ts;
   state_slot_t **	qf_params;
   clo_comp_t **		qf_order;
-  state_slot_t **	qf_inner_out_slots; /* the out slots of the qf before the shadow used for ref after qf - This is what running the qf sets */
   state_slot_t **	qf_result;
   dk_set_t 		qf_out_slots; /* set to itcl_out_slots */
   int 			qf_dfg_state;
@@ -877,11 +736,6 @@ struct query_frag_s
   state_slot_t **	qf_const_ssl; /* when ends in a group by, some slots must be inited.  If set, odd is value, next even is ssl to init to value */
   state_slot_t **		qf_local_save; /* for a result set making qf, (non agg, non upd), the save state that must be saved and restored between interrupting and continuing generating  a single result set from the qf */
   state_slot_t *		qf_keyset_state;
-
-  /* during sql vec */
-  dk_hash_t *	qf_ssl_def;
-  dk_hash_t *	qf_ssl_shadow;
-  dk_set_t	qf_vec_pred;
 };
 
 #define qf_itcl clb.clb_itcl
@@ -913,42 +767,17 @@ typedef struct dpipe_node_s
 typedef struct hash_source_s
 {
   data_source_t		src_gen;
-  cl_buffer_t		clb;
   ssl_index_t		hs_current_inx;
-  ssl_index_t		hs_saved_hmk;
-  ssl_index_t		hs_pos_in_set; /* If interrupted in mid resullt set, this is the position in the set */
-  ssl_index_t 		hs_done_in_probe; /* set in inst if hash was unique on hash key and operation was merged into the node that produced the probe input */
-  key_source_t *	hs_ks; /* for vectored casts, near same functionality so use ks */
-  state_slot_t *	hs_hash_no;
   state_slot_t *	hs_tree;
   state_slot_t **	hs_ref_slots;
   hash_area_t *	hs_ha; /* shared with the filler setp */
   state_slot_t **	hs_out_slots;
-  state_slot_t *	hs_prehash; /* work area with the hashes of input rows, state etc. */
-  col_ref_t *		hs_col_ref;
+  search_spec_t *	hs_col_specs;
   dbe_col_loc_t *	hs_out_cols;
   ptrlong *		hs_out_cols_indexes;
-  code_vec_t 		hs_local_test;
-  char			hs_is_unique;
   char			hs_is_outer;
-  char			hs_range_partition; /* if hash filler in order of single hash join key */
-  char			hs_no_partition; /* if probe from inside exists/value subq/dt as outer then can't distinguish between not exists and out of partition so must not partition */
   code_vec_t		hs_after_join_test;
-  table_source_t *	hs_probe; /* the last ts in join order that binds a col that is input to here */
-  search_spec_t *	hs_probe_partition;  /* if the hash is partitioned, this sp is to filter out out of partition values from the probe */
-  ssl_index_t 		hs_is_partitioned; /* set by hash filler, indicates whether the probe must filter based on hash partitioning */
-  struct fun_ref_node_s *	hs_filler;
-  table_source_t *	hs_merged_into_ts;
-  float			hs_cardinality;
-  char 			hs_partition_filter_self; /* means that this hs will evaluate probe partition for each input because the place where the input is produced does not support filter in situ */
 } hash_source_t;
-
-typedef struct hi_memcache_key_s {
-  id_hashed_key_t hmk_hash;
-  int hmk_var_len;
-  hash_area_t *hmk_ha;
-  caddr_t *hmk_data;
-} hi_memcache_key_t;
 
 
 typedef struct remote_table_source_s
@@ -1027,11 +856,7 @@ typedef void (*fnp_func_t) (data_source_t * fnp_node);
 typedef struct ins_key_s
 {
   dbe_key_t *		ik_key;
-  dbe_column_t **	ik_cols;
   state_slot_t **	ik_slots;
-  state_slot_t **	ik_del_slots;
-  state_slot_t **	ik_del_cast;
-  dc_val_cast_t *	ik_del_cast_func;
 } ins_key_t;
 
 
@@ -1044,20 +869,11 @@ typedef struct insert_node_s
     dk_set_t		ins_values;
     char		ins_mode;
     char		ins_no_deps; /* true if all cols of tb are in pk */
-    char		ins_vectored;
     state_slot_t **	ins_trigger_args;
     ins_key_t **	ins_keys;
     query_t *		ins_policy_qr;
     caddr_t		ins_key_only; /* key name, if inserting only this key, as in create index */
     state_slot_t *	ins_daq; /* in cluster, queue the insert here */
-    state_slot_ref_t **	ins_vec_source;
-    state_slot_t **	ins_vec_cast;
-    dbe_col_loc_t **	ins_vec_cast_cl;
-    state_slot_t *	ins_seq_val; /* if fetching ins, this is the col to be set after the existing value or filed from seq if new val made and inserted */
-    state_slot_t *	ins_seq_name;
-    state_slot_t *	ins_fetch_flag; /* set to 1 for the rows where there was insert */
-    dbe_column_t *	ins_seq_col;
-    v_out_map_t *	ins_v_out_map; /* output cols if fetching insert */
   } insert_node_t;
 
 
@@ -1116,9 +932,6 @@ typedef struct delete_node_s
     state_slot_t *	del_place;
     state_slot_t **	del_trigger_args;
     query_t *		del_policy_qr;
-    ins_key_t **	del_keys;
-    ssl_index_t		del_param_nos;
-    char		del_is_view;
   } delete_node_t;
 
 
@@ -1213,16 +1026,7 @@ typedef struct select_node_s
     state_slot_t *	sel_set_no; /* in array exec'd dt no if set this row belongs to */
     state_slot_t *	sel_prev_set_no; /* set no of prev row.  when changes, reset the top ctr */
     state_slot_t *	sel_cn_set_no; /* if in multistate exists or value subq, this is set no of containing code node.  As soon as one result is produced, advance the multistate qr to the next set as per this set no */
-    state_slot_t *	sel_scalar_ret;
-    ssl_index_t		sel_vec_set_mask; /* In vectored subq, if top = 1, bit mask where each exists marks a 1 at the set no.  If top > 1, array of ints with row count in the set in question. */
-    ssl_index_t	sel_client_batch_start; /* set no of 1st result row in current batch of rows to sql client */
-    char		sel_vec_role;
-    char		sel_is_scalar_agg; /* scalar subq with aggregate and no group by */
   } select_node_t;
-
-#define SEL_VEC_EXISTS 1
-#define SEL_VEC_SCALAR 2
-#define SEL_VEC_DT 3
 
 #define SEL_NODE_INIT(cc, sel) \
   sel->sel_out_box = cc_new_instance_slot (cc); \
@@ -1236,9 +1040,7 @@ typedef struct select_node_s
 typedef struct skip_node_s
 {
   data_source_t 	src_gen;
-  state_slot_t *	sk_top;
   state_slot_t *	sk_top_skip;
-  state_slot_t *	sk_set_no;
   state_slot_t *	sk_row_ctr;
 } skip_node_t;
 
@@ -1284,8 +1086,7 @@ typedef struct setp_node_s
     dk_set_t		setp_gb_ops;	/* AMMSC for group by */
     char		setp_distinct;
     char		setp_set_op;
-    char		setp_top_sort_distinct; /* when merging branches of top k obys, remove duplicates */
-    char		setp_set_no_in_key;  /* multistate group by with set no as 1st grouping col */
+    key_id_t		setp_temp_key;
     state_slot_t *	setp_top;
     state_slot_t *	setp_top_skip;
     state_slot_t *	 setp_row_ctr;
@@ -1297,11 +1098,9 @@ typedef struct setp_node_s
     state_slot_t *	setp_sorted;
     state_slot_t *	setp_flushing_mem_sort;
     struct fun_ref_node_s *	setp_ordered_gb_fref;
-    struct fun_ref_node_s *	setp_fref;
     state_slot_t **	setp_ordered_gb_out;
     key_spec_t 	setp_insert_spec;
     hash_area_t *	setp_reserve_ha;
-    char		setp_top_distinct; /* indicates combined distinct + top order by */
     char	                setp_any_distinct_gos;
     char			setp_any_user_aggregate_gos;
     char		setp_partitioned; /* oby or gby in needing no merge in cluster */
@@ -1312,15 +1111,6 @@ typedef struct setp_node_s
     table_source_t *	setp_loc_ts;
     float		setp_card;  /* for a group by, guess of how many distinct values of grouping cols */
     char		setp_is_qf_last; /* if set, the next can be a read node of partitioned setp but do not call it from the setp. */
-    char		setp_is_streaming; /* a group by with ordering cols as grouping cols, results available in mid-grouping */
-    state_slot_t *	setp_streaming_ssl; /* if grouping cols are ordering cols but have duplicates, this is the col to check for distinguishing known complete groups from possible incomplete groups */
-
-    /* partitioned hash fill */
-    dk_set_t 	setp_hash_sources; /* hs nodes that ref the hash filled here */
-    data_source_t *	setp_hash_part_filter; /* this filters out the rows that are not in partition.  Most often ts, sometimes the setp itself */
-    search_spec_t *	setp_hash_part_spec; /* if hash join filler must make many partitions because too large, then this sp is applied to limit the probes si only stuff potentially in the hash is probed */
-    ssl_index_t	setp_hash_fill_partitioned;
-    ssl_index_t	setp_fill_cha; /* for chash join fill, the cha where the filler thread puts its rows */
 } setp_node_t;
 
 #define IS_SETP(qn) IS_QN (qn, setp_node_input)
@@ -1363,29 +1153,12 @@ typedef struct fun_ref_node_s
     char		fnr_partitioned;
     char		fnr_is_order; /* if partitioned setp, must read in order?*/
     char		fnr_is_set_ctr; /* if outermost multistate fref, double as a set ctr if no other set ctr */
-    state_slot_t *	fnr_branch_qis;
-    char		fnr_parallel_hash_fill;
-    char		fnr_no_hash_partition;
-    dk_set_t		fnr_prev_hash_fillers; /* This fun ref can produce output only when these hash fillers have gone through all partitions */
-    ssl_index_t	fnr_n_part;
-    ssl_index_t	fnr_nth_part;
-    ssl_index_t fnr_hash_part_min;
-    ssl_index_t fnr_hash_part_max;
-    table_source_t *	fnr_stream_ts; /* the ts in select that parallelizes streaming group by */
-    state_slot_t *		fnr_cha_surviving; /* in streaming group by, some groups can survive sending a batch of results. If they share the vallue of the latest grouping col, the next batch could update the groups */
-    ssl_index_t	fnr_stream_state;
-    ssl_index_t	fnr_current_branch; /* if parallel streaming, this branch was sent to output and must be continued next round */
-    char	fnr_stream_ok_with_hash_part; /* true if streaming is still OK if hash join partitioning is applied.  True if stuff being agregated does not depend on the hash partition or if results depend on hash partitioning but are again aggregated without conditions  */
   } fun_ref_node_t;
 
 /* fnr_partitioned */
 #define FNR_PARTITIONED 1
 #define FNR_REDUNDANT 2
 
-
-/* fnr_is_streaming */
-#define FNR_STREAM_DUPS 1 /* grouping cols come in order from the table they come from */
-#define FNR_STREAM_UNQ 2 /* grouping cols do not repeat in the table where they come from */
 
 #define IS_FREF(qn) ((qn_input_fn)fun_ref_node_input == ((data_source_t*)qn)->src_input)
 
@@ -1419,12 +1192,13 @@ typedef struct breakup_node_s
 typedef struct comp_context_s
   {
     int			cc_instance_fill;
-    char		cc_has_vec_subq;
     dk_set_t		cc_state_slots;
     id_hash_t *		cc_slots;
     query_t *		cc_query;
     dbe_schema_t *	cc_schema;
     caddr_t		cc_error;
+    int			cc_any_result_ind; /* used with function refs to see
+					      if there's any output */
     struct comp_context_s *cc_super_cc;
     dk_hash_t * 	cc_keep_ssl;
   } comp_context_t;
@@ -1490,8 +1264,7 @@ typedef struct srv_stmt_s
     caddr_t		sst_pl_error;
     /* multistate */
     caddr_t *		sst_qst; /* same as sst_inst */
-    int		sst_vec_n_rows;
-    char	sst_is_started;
+    int		sst_batch_size;
   } srv_stmt_t;
 
 
@@ -1584,6 +1357,7 @@ caddr_t _br_cstm (caddr_t stmt);
 #define U_ID_WS		4 	/* the WS user is needed to define compatibile WebDAV views */
 #define U_ID_NOBODY	5
 #define U_ID_NOGROUP	6
+#define U_ID_RDF_REPL	7
 #define U_ID_FIRST	100 	/* first free U_ID, let reserve space for a future system accounts */
 
 struct tp_data_s;
@@ -1593,12 +1367,8 @@ typedef struct db_activity_s
 {
   int64	da_random_rows;
   int64	da_seq_rows;
-  int64	da_same_seg;
-  int64	da_same_page;
-  int64	da_same_parent;
   int64	da_cl_bytes;
   int	da_cl_messages;
-  int	da_qp_thread;
   int	da_disk_reads;
   int	da_spec_disk_reads;
   int	da_lock_waits;
@@ -1616,7 +1386,6 @@ typedef struct client_connection_s
     bitf_t			cli_autocommit:1;
     bitf_t			cli_is_log:1;
     bitf_t		cli_in_daq:2; /* running invoked by daq on local? autcommitting? For cluster, data in cli_clt */
-    bitf_t 		cli_non_txn_insert:1;
     char		cli_row_autocommit;
     int			cli_n_to_autocommit;
     lock_trx_t *	cli_trx;
@@ -1780,14 +1549,11 @@ typedef struct local_cursor_s
   {
     caddr_t *		lc_inst;
     int			lc_position;
-    int			lc_vec_n_rows;
-    char		lc_vec_at_end;
     caddr_t		lc_error;
     caddr_t		lc_proc_ret; /* if stmt is a SQL procedure, this is the QA_PROC_RET block */
     int			lc_is_allocated; /* 1 if dk_alloc'd */
     caddr_t		lc_cursor_name; /* if lc implements scroll crsr and qi occurs in cli_cursors */
     int			lc_row_count;
-    data_col_t *	lc_ret_dc; /* in calling vectored proc, put return values in here. */
   } local_cursor_t;
 
 
@@ -1795,10 +1561,6 @@ void dbe_col_load_stats (client_connection_t *cli, query_instance_t *caller,
     dbe_table_t *tb, dbe_column_t *col);
 typedef caddr_t (*bif_t) (caddr_t * qst, caddr_t * err_ret,
     state_slot_t ** args);
-
-typedef void (*bif_vec_t) (caddr_t * qst, caddr_t * err_ret,
-			   state_slot_t ** args, state_slot_t * ret);
-
 
 struct user_aggregate_fun_s
   {
@@ -1837,6 +1599,7 @@ extern void sqls_define_uddi (void);
 extern void sqls_define_imsg (void);
 extern void sqls_define_auto (void);
 extern void sqls_define_sparql (void);
+extern void sqls_define_sparql_init (void);
 extern void sqls_define_sys (void);
 extern void sqls_define_repl (void);
 extern void sqls_define_ws (void);
@@ -1889,5 +1652,4 @@ extern client_connection_t *autocheckpoint_cli;
 #define EXPLAIN_LINE_MAX 200
 #define EXPLAIN_LINE_MAX_STR_FORMAT "%.200s"
 
-extern int enable_vec;
 #endif /* _SQLNODE_H */

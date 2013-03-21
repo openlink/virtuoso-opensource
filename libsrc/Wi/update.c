@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -700,6 +700,7 @@ update_node_run_1 (update_node_t * upd, caddr_t * inst,
 		  goto next_key;
 		if (!key->key_distinct)
 		  {
+		    del_itc->itc_no_bitmap = 0; /* reset as prev ins may set it to true */
 		    res = itc_get_alt_key (del_itc, &del_buf, key, &rd);
 		    itc_delete_this (del_itc, &del_buf, res, NO_BLOBS);
 		  }
@@ -949,7 +950,7 @@ update_node_input (update_node_t * upd, caddr_t * inst, caddr_t * state)
       return;
     }
   if (upd->upd_policy_qr)
-    trig_call (upd->upd_policy_qr, inst, upd->upd_trigger_args, upd->upd_table, (data_source_t*)upd);
+    trig_call (upd->upd_policy_qr, inst, upd->upd_trigger_args, upd->upd_table);
 
   if (!upd->upd_trigger_args)
     {
@@ -1101,6 +1102,35 @@ itc_row_insert (it_cursor_t * itc, row_delta_t * rd, buffer_desc_t ** unq_buf,
   return DVC_LESS;
 }
 
+void
+row_insert_rd_len (row_delta_t * rd)
+{
+  dbe_key_t * key = rd->rd_key;
+  int inx = 0;
+  DO_ALL_CL (cl, key)
+    {
+      caddr_t val = rd->rd_values [inx];
+      switch (cl->cl_sqt.sqt_dtp)
+	{
+	  case DV_STRING:
+	  case DV_WIDE:
+	  case DV_ANY:
+	  case DV_OBJECT:
+	      rd->rd_non_comp_len += (box_length (val) - 1);
+	      break;
+	  case DV_BIN:
+	      rd->rd_non_comp_len += box_length (val);
+	      break;
+	  case DV_BLOB:
+	  case DV_BLOB_BIN:
+	  case DV_BLOB_WIDE:
+	      rd->rd_non_comp_len += DV_BLOB_LEN;
+	      break;
+	}
+      inx++;
+    }
+  END_DO_ALL_CL;
+}
 
 void
 row_insert_node_input (row_insert_node_t * ins, caddr_t * inst,
@@ -1121,6 +1151,9 @@ row_insert_node_input (row_insert_node_t * ins, caddr_t * inst,
   if (!key)
     sqlr_new_error ("42000", "RFW..", "Key id " BOXINT_FMT " undefined in row insert", unbox (row[0]));
   rd.rd_key = key;
+  rd.rd_non_comp_len = key->key_row_var_start[0];
+  rd.rd_non_comp_max = MAX_ROW_BYTES;
+  row_insert_rd_len (&rd);
   ITC_FAIL (it)
   {
     if (DVC_MATCH == itc_row_insert (it, &rd, &buf, 0, 0))

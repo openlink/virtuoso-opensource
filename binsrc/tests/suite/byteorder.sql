@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -97,5 +97,3 @@ ECHO BOTH ": BACKUP STATE: " $STATE "\n";
 select check_dav_blobs ('factbook.xml',                                                                      4222646);
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 ECHO BOTH ": BACKUP STATE: " $STATE "\n";
-
-

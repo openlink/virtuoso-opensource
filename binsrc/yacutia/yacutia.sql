@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -18,6 +18,7 @@
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
 
 /* Aggregate concat */
 
@@ -192,8 +193,10 @@ yacutia_http_log_ui_labels ()
 
 create procedure adm_menu_tree ()
 {
-  declare wa_available integer;
-  wa_available := gt (DB.DBA.VAD_CHECK_VERSION ('Framework'), '1.02.13');
+  declare wa_available, rdf_available, policy_vad integer;
+  wa_available := VAD.DBA.VER_LT ('1.02.13', DB.DBA.VAD_CHECK_VERSION ('Framework'));
+  policy_vad := DB.DBA.VAD_CHECK_VERSION ('policy_manager');
+  rdf_available := check_package ('cartridges');
   return concat (
 '<?xml version="1.0" ?>
 <adm_menu_tree>
@@ -214,11 +217,8 @@ create procedure adm_menu_tree ()
      </node>
      <node name="Access Control" url="sec_auth_serv.vspx" id="24" place="1" allowed="yacutia_acl_page">
       <node name="ACL List" url="sec_auth_serv.vspx" id="25" place="1" allowed="yacutia_acl_page"/>
-      <node name="ACL Edit" url="sec_acl_edit.vspx" id="26" place="1" allowed="yacutia_acl_page"/>',
-      case when wa_available then 
-      '<node name="SPARQL ACL" url="sparql_acl.vspx" id="26" place="1" allowed="yacutia_acl_page"/>'
-      else '' end,
-     '</node>
+      <node name="ACL Edit" url="sec_acl_edit.vspx" id="26" place="1" allowed="yacutia_acl_page"/>
+     </node>
    </node>
    <node name="User Accounts" url="accounts_page.vspx"  id="3" allowed="yacutia_accounts_page">
      <node name="Accounts" url="accounts.vspx" id="4" place="1" allowed="yacutia_accounts_page"/>
@@ -333,10 +333,10 @@ create procedure adm_menu_tree ()
     <node name="Basic" url="db_repl_basic_local.vspx" id="8011" place="1" />
     <node name="Basic" url="db_repl_basic_local_create.vspx" id="8012" place="1" />
    </node>
-   <node name="Incremental" url="db_repl_snap.vspx"  id="81" >
-    <node name="Incremental" url="db_repl_snap_create.vspx" id="82" place="1" />
-    <node name="Incremental" url="db_repl_snap_pull.vspx" id="83" place="1"/>
-    <node name="Incremental" url="db_repl_snap_pull_create.vspx" id="84" place="1" />
+   <node name="Incremental" url="db_repl_snap_pull.vspx"  id="81" >
+    <node name="Incremental" url="db_repl_snap_pull_create.vspx" id="82" place="1" />
+    <node name="Incremental" url="db_repl_snap.vspx" id="83" place="1"/>
+    <node name="Incremental" url="db_repl_snap_create.vspx" id="84" place="1" />
     <node name="Incremental" url="db_repl_snap_local.vspx" id="85" place="1"/>
     <node name="Incremental" url="db_repl_snap_local_create.vspx" id="86" place="1" />
    </node>
@@ -443,7 +443,7 @@ create procedure adm_menu_tree ()
 --             </node>'
 --when 0 then '' end,
 '</node>
- <node name="RDF" url="sparql_input.vspx"  id="189" tip="RDF " allowed="yacutia_message">',
+ <node name="Linked Data" url="sparql_input.vspx"  id="189" tip="Linked Data" allowed="yacutia_message">',
   '<node name="SPARQL" url="sparql_input.vspx"  id="180" allowed="yacutia_sparql_page">
      <node name="SPARQL" url="sparql_load.vspx" id="181" place="1" allowed="yacutia_sparql_page" />
    </node>',
@@ -451,7 +451,7 @@ case when 0 and check_package('rdf_mappers') then
   '<node name="Stylesheets" url="sparql_filters.vspx"  id="190" tip="GRDDL " allowed="yacutia_message">
      <node name="Stylesheets" url="sparql_filters.vspx" id="182" place="1" allowed="yacutia_sparql_page" />
    </node>' else '' end,
-   '<node name="Sponger" url="rdf_filters.vspx"  id="191" tip="RDF Mappers " allowed="yacutia_message">
+   '<node name="Sponger" url="rdf_filters.vspx"  id="191" tip="Linked Data Cartridges " allowed="yacutia_message">
      <node name="Cartridges" url="rdf_filters.vspx" id="192" place="1" allowed="yacutia_sparql_page" />
      <node name="Meta Cartridges" url="rdf_filters_pp.vspx" id="193" place="1" allowed="yacutia_sparql_page" />
      <node name="Stylesheets" url="sparql_filters.vspx" id="182" place="1" allowed="yacutia_sparql_page" />
@@ -465,19 +465,32 @@ case when 0 and check_package('rdf_mappers') then
    '<node name="Schemas"  url="rdf_schemas.vspx"  id="183" allowed="yacutia_message">
      <node name="Schemas" url="rdf_schemas.vspx" id="184" place="1" allowed="yacutia_sparql_page" />
    </node>
-   <node name="Namespaces"  url="persistent_xmlns.vspx"  id="183" allowed="yacutia_message" />
-   <node name="RDF Views" url="db_rdf_objects.vspx"  id="271" allowed="yacutia_rdf_schema_objects_page"/>
-   <node name="RDF Views" url="db_rdf_class.vspx"  id="272" place="1"/>
-   <node name="RDF Views" url="db_rdf_owl.vspx"  id="273" place="1"/>
-   <node name="RDF Views" url="db_rdf_view_1.vspx"  id="273" place="1"/>
-   <node name="RDF Views" url="db_rdf_view_2.vspx"  id="273" place="1"/>
-   <node name="RDF Views" url="db_rdf_view_3.vspx"  id="273" place="1"/>
-   <node name="RDF Views" url="db_rdf_view_tb.vspx"  id="273" place="1"/>
-   <node name="RDF Views" url="db_rdf_view_cols.vspx"  id="273" place="1"/>
-   <node name="RDF Views" url="db_rdf_view_pk.vspx"  id="273" place="1"/>
-   <node name="RDF Store Upload" url="rdf_import.vspx"  id="271" allowed="rdf_import_page"/>',
+   <node name="Namespaces"  url="persistent_xmlns.vspx"  id="183" allowed="yacutia_message" />',
+      case when ((wa_available > 0 or policy_vad is not null) and rdf_available > 0) then
+      ' <node name="Access Control" url="sparql_acl.vspx" id="274" allowed="yacutia_acls">
+        <node name="ACL List" url="sec_auth_serv_sp.vspx" id="277" place="1" allowed="yacutia_acls"/>
+        <node name="Sponger Groups" url="sec_auth_sponger_1.vspx" id="277" place="1" allowed="yacutia_acls"/>
+        <node name="Sponger ACL" url="sec_auth_sponger_2.vspx" id="277" place="1" allowed="yacutia_acls"/>
+        <node name="ACL Edit" url="sec_acl_edit_sp.vspx" id="276" place="1" allowed="yacutia_acls"/>
+        <node name="SPARQL ACL" url="sparql_acl.vspx" id="277" place="1" allowed="yacutia_acls"/>
+       </node>'
+      else '' end,
+   '<node name="Views" url="db_rdf_objects.vspx"  id="271" allowed="yacutia_rdf_schema_objects_page"/>
+   <node name="Views" url="db_rdf_class.vspx"  id="272" place="1"/>
+   <node name="Views" url="db_rdf_owl.vspx"  id="273" place="1"/>
+   <node name="Views" url="db_rdf_view_1.vspx"  id="273" place="1"/>
+   <node name="Views" url="db_rdf_view_2.vspx"  id="273" place="1"/>
+   <node name="Views" url="db_rdf_view_3.vspx"  id="273" place="1"/>
+   <node name="Views" url="db_rdf_view_tb.vspx"  id="273" place="1"/>
+   <node name="Views" url="db_rdf_view_cols.vspx"  id="273" place="1"/>
+   <node name="Views" url="db_rdf_view_pk.vspx"  id="273" place="1"/>',
+case when check_package('rdb2rdf') then
+   '<node name="R2RML" url="r2rml_import.vspx"  id="273" />
+   <node name="R2RML" url="r2rml_validate.vspx"  id="273" place="1"/>
+   <node name="R2RML" url="r2rml_gen.vspx"  id="273" place="1"/>' else '' end,
+   '<node name="Quad Store Upload" url="rdf_import.vspx"  id="271" allowed="rdf_import_page"/>',
    case when __proc_exists ('PSH.DBA.cli_subscribe') is not null then 
-   '<node name="RDF Subscriptions" url="rdf_psh_subs.vspx"  id="271" allowed="rdf_psh_sub_page"/>'
+   '<node name="Subscriptions (PHSB)" url="rdf_psh_subs.vspx"  id="271" allowed="rdf_psh_sub_page"/>'
        else
        '' 
        end,
@@ -659,7 +672,8 @@ adm_db_tree ()
        i := i + 1;
        http (sprintf ('<node name="%V" id="%d">', TABLE_QUAL, i), ses);
          http (sprintf ('<node name="Tables" id="1-%d"/>\n', i), ses);
-         http (sprintf ('<node name="Views" id="2-%d"/>\n', i), ses);
+         http (sprintf ('<node name="Views (SQL)" id="2-%d"/>\n', i), ses);
+         http (sprintf ('<node name="Views (Linked Data)" id="5-%d"/>\n', i), ses);
          http (sprintf ('<node name="Procedures" id="3-%d"/>\n', i), ses);
          http (sprintf ('<node name="User Defined Types" id="4-%d"/>\n', i), ses);
        http ('</node>\n', ses);
@@ -1080,117 +1094,7 @@ disk_stat_meta(in par integer)
 }
 ;
 
-create procedure
-adm_next_checkbox (in keyw varchar, inout params varchar, inout spos integer)
-{
-  declare pos integer;
-  declare len integer;
-  declare klen integer;
-  declare s varchar;
-
-  len := length (params);
-  klen := length (keyw);
-
-  while (spos < len)
-    {
-      s := aref (params, spos);
-      if (keyw = "LEFT" (s, klen) and
-    'on' = lcase (coalesce (aref (params, spos + 1),'')))
-  {
-    spos := spos + 2;
-    return "RIGHT" (s, length (s) - klen);
-  }
-      spos := spos + 2;
-    }
-}
-;
-
-create procedure
-adm_get_file_dsn ()
-{
-  declare idx, len integer;
-  declare name, s_root varchar;
-  declare ret, _all any;
-  declare _err_code, _err_message varchar;
-  declare exit handler for sqlstate '*'
-    {
-      _err_code := __SQL_STATE; _err_message := __SQL_MESSAGE; goto error;
-    };
-
-  _all := sys_dirlist ('.', 1);
-  s_root := server_root ();
-
-  idx := 0;
-  len := length (_all);
-  ret := vector ();
-
-  while (idx < len)
-    {
-       name := aref (_all, idx);
-
-       if (strstr (name, '.dsn'))
-         ret := vector_concat (ret, vector (concat (s_root, name)));
-
-       idx := idx + 1;
-    }
-
-  return ret;
-
-error:
-  return vector ();
-}
-;
-
-create procedure
-adm_lt_dsn_options (in dsn varchar)
-{
-  declare dsns, f_dsns any;
-  declare len, len_f, idx integer;
-
-  dsns := sql_data_sources(1);
-
-  idx := 0;
-  len := length (dsns);
-  len_f := 0;
-
-  if (sys_stat('st_build_opsys_id') = 'Win32')
-    {
-       f_dsns := adm_get_file_dsn ();
-       len_f := length (f_dsns);
-    }
-
-  if (len = 0 and len_f = 0)
-    {
-      http('<option value=NONE>No pre-defined DSNs</option>');
-    }
-  else
-    {
-      while (idx < len)
-  {
-    http (sprintf ('<option value="%s" %s>%s</option>' ,
-       aref (aref (dsns, idx), 0),
-       select_if (aref (aref (dsns, idx), 0), dsn),
-       aref (aref ( dsns, idx), 0)));
-    idx := idx + 1;
-  }
-
-      if (sys_stat('st_build_opsys_id') = 'Win32' and len_f > 0)
-  {
-    idx := 0;
-    while (idx < len_f)
-      {
-        http (sprintf ('<option value="%s" %s>%s</option>' ,
-           aref (f_dsns, idx), select_if (aref (f_dsns, idx), dsn),
-           aref (f_dsns, idx)));
-        idx := idx + 1;
-      }
-  }
-    }
-}
-;
-
-create procedure
-true_if (in sel varchar, in val varchar)
+create procedure true_if (in sel varchar, in val varchar)
 {
   if (sel = val)
       return ('true');
@@ -1198,9 +1102,7 @@ true_if (in sel varchar, in val varchar)
 }
 ;
 
-create procedure
-make_full_name (in cat varchar, in sch varchar, in name varchar, in quoted integer := 0)
-returns varchar
+create procedure make_full_name (in cat varchar, in sch varchar, in name varchar, in quoted integer := 0) returns varchar
 {
     declare ret, quote varchar;
     if (quoted <> 0) quote := '"';
@@ -1217,45 +1119,6 @@ returns varchar
 }
 ;
 
-create procedure
-adm_lt_make_dsn_part (in dsn varchar)
-{
-  declare inx, c integer;
-  dsn := ucase (dsn);
-  inx :=0;
-  while (inx < length (dsn)) {
-    c := aref (dsn, inx);
-    if (not ((c >= aref ('A', 0) and c <= aref ('Z', 0))
-       or (c >= aref ('0', 0) and c <= aref ('9', 0))))
-      aset (dsn, inx, aref ('_', 0));
-    inx := inx + 1;
-  }
-  return dsn;
-}
-;
-
-create procedure
-adm_make_option_list (in opts any, in name varchar, in val varchar, in spare integer)
-{
-  declare i, l, j, k integer;
-  declare ch varchar;
-  l := length (opts); i := 0;
-  j := 0; k := 1;
-  if (spare > 0) {
-      j := 1;
-      k := 2;
-  }
-  http (sprintf ('<select name="%s">', name));
-  while (i < l) {
-      ch := '';
-      if (opts[i] = val)
-  ch := 'selected="true"';
-      http (sprintf ('<option value="%s" %s>%s</option>', opts[i+j], ch, opts[i]));
-      i := i + k;
-  }
-  http ('</select>');
-}
-;
 
 create procedure
 adm_lt_getRPKeys2 (in dsn varchar,
@@ -1334,33 +1197,6 @@ next:
 	}
     }
   return my_pkeys;
-}
-;
-
-create procedure
-vector_print (in in_vector any)
-{
-  declare len, idx integer;
-  declare temp varchar;
-  declare res varchar;
-
-  if (isstring (in_vector))
-    in_vector := vector (in_vector);
-
-  len := length (in_vector);
-  res:='';
-  idx := 0;
-  while ( idx < len ) {
-    if (idx > 0 )
-      res := concat (res, ', ');
-    temp := aref (in_vector, idx);
-    if (__tag(temp) = 193)
-      res := concat (res, 'vector');
-    else
-      res := concat (res, temp);
-    idx := idx+1;
-  }
-  return (res);
 }
 ;
 
@@ -1592,163 +1428,6 @@ sequence_set ('dbpump_temp', 0, 0)
 sequence_set ('dbpump_id', 1, 0)
 ;
 
-create procedure "PUMP"."DBA"."__GET_TEMPORARY" (  )
-{
-  return  sprintf('./tmp/dbpump%d.tmp', sequence_next('dbpump_temp'));
-}
-;
-
-create procedure "PUMP"."DBA"."__GET_KEYWORD" ( in name varchar, in arr any, in def varchar )
-{
-  if (arr is not null)
-    return get_keyword(name,arr,def);
-  return '';
-}
-;
-
-create procedure "PUMP"."DBA"."URLIFY_STRING" (in val varchar)
-{
-  declare i,n,c integer;
-  declare s varchar;
-  s := '';
-  if (val is not null and length(val)>0) {
-      n := length(val);
-      i := 0;
-      while (i<n) {
-          c := aref(val,i);
-          if (c = 32)
-              s := concat(s,'+');
-          else {
-              if ((c>=48 and c<=57) or (c>=97 and c<=122) or (c>=65 and c<=90))
-                  s := concat(s,sprintf('%c',c));
-              else
-                  s := concat(s,sprintf('%%%02X',c));
-          }
-          i := i + 1;
-      }
-  }
-  return s;
-}
-;
-
-create procedure "PUMP"."DBA"."DBPUMP_START_COMPONENT" (  in pars any,
-              in name varchar,
-              in arg varchar )
-{
-  declare i,n integer;
-  declare str,allt,s,argsfile varchar;
-  declare outarr any;
-
-  allt := 'all_together_now';
-  argsfile := sprintf('./tmp/%s.cmd-line',name);
-  if (arg is null or length(arg)=0)
-    arg := 'DUMMY';
-  str := sprintf('%s %s ', name, arg);
-  n := length(pars);
-  str := concat (str, sprintf (' %s=%s ', allt,
-  "PUMP"."DBA"."URLIFY_STRING" (
-    "PUMP"."DBA"."__GET_KEYWORD" (allt,pars,''))));
-  i := n - 2;
-  while (i>=0)
-  {
-    s := aref(pars,i);
-    if (neq (allt, s))
-      str := concat (str, sprintf (' %s=%s ', s,"PUMP"."DBA"."URLIFY_STRING" (aref(pars,i+1))));
-    i := i - 2;
-  }
-  string_to_file (argsfile,str,-2);
-  str := sprintf ('@%s', argsfile);
---  str := concat (str, ' > ');
---  str := concat (str, tmp);
-  commit work;
-  run_executable ('dbpump', 1, str);
-  return str;
-}
-;
-
-create procedure "PUMP"."DBA"."DBPUMP_RUN_COMPONENT" (  inout pars any,
-              in name varchar,
-              in arg varchar,
-              in outerr integer := 1 )
-{
-  declare i,n integer;
-  declare str,allt,s,argsfile varchar;
-  declare tmp,errstr varchar;
-  declare outarr any;
-
-  allt := 'all_together_now';
-  tmp := "PUMP"."DBA"."__GET_TEMPORARY" ();
-  argsfile := sprintf('./tmp/%s.cmd-line',name);
-  if (arg is null or length(arg)=0)
-    arg := 'DUMMY';
-  str := sprintf('%s %s %s', name, arg, tmp);
-  n := length(pars);
-  str := concat (str, sprintf (' %s=%s ', allt,
-  "PUMP"."DBA"."URLIFY_STRING" (
-    "PUMP"."DBA"."__GET_KEYWORD" (allt,pars,''))));
-  i := n - 2;
-  while (i>=0)
-  {
-    s := aref(pars,i);
-    if (neq (allt, s))
-      str := concat (str, sprintf (' %s=%s ', s,"PUMP"."DBA"."URLIFY_STRING" (aref(pars,i+1))));
-    i := i - 2;
-  }
-
-  declare exit handler for sqlstate '*' { errstr := sprintf ('Temporary file creation error:\n%s %s\nprobably permissions were revoked for temporary folder\nor it doesn\'t exist', __SQL_STATE, __SQL_MESSAGE); goto error_gen; };
-
-  string_to_file(argsfile,str,-2);
-  str := sprintf ('@%s', argsfile);
---  str := concat (str, ' > ');
---  str := concat (str, tmp);
-  commit work;
-  declare exit handler for sqlstate '*' { errstr := sprintf ('Dbpump running error:\n%s %s\nProbably the executable \'dbpump\' doesn\'t exist in \'bin\' folder', __SQL_STATE, __SQL_MESSAGE); goto error_gen; };
-  run_executable('dbpump', 1, str);
-  declare str varchar;
-
-  declare exit handler for sqlstate '*' { errstr := sprintf ('Results obtaining error:\n%s %s\nProbably the executable \'dbpump\' crashed during the work', __SQL_STATE, __SQL_MESSAGE); goto error_gen; };
-  str := file_to_string(tmp);
-  string_to_file(sprintf('./tmp/%s.cmd-out',name),str,-2);
-  "PUMP"."DBA"."DBPUMP_START_COMPONENT" (pars, 'remove_temporary', tmp);
---  run_executable('rm',0,'-f',tmp);
-  return str;
-
-error_gen:
-  "PUMP"."DBA"."CHANGE_VAL" (pars, 'last_error', errstr);
-  if (outerr)
-    return sprintf ('last_error=%s', errstr);
-  else
-    return '';
-}
-;
-
-
-create procedure "PUMP"."DBA"."HTML_RETRIEVE_TABLES" (  inout arr any )
-{
-  declare str varchar;
-  str := "PUMP"."DBA"."DBPUMP_RUN_COMPONENT" (arr,'retrieve_tables','*');
-  if (str is null)
-    return '';
-  return str;
-}
-;
-
-create procedure "PUMP"."DBA"."HTML_RETRIEVE_QUALIFIERS_VIA_PLSQL" ( in arr any )
-{
-  declare str, s varchar;
-  str := '%=None&custom=Advanced';
-whenever not found goto fin;
-
-  for (select distinct name_part (KEY_TABLE, 0, 'DB') as qual from DB.DBA.SYS_KEYS) do
-    {
-      str := concat (str, '&', qual, '=', qual);
-    }
-fin:
-  return str;
-}
-;
-
-
 create procedure "PUMP"."DBA"."RETRIEVE_TABLES_VIA_PLSQL" ( in qual_mask varchar, in owner_mask varchar, in table_mask varchar, in out_type integer := 1 )
 {
 
@@ -1875,71 +1554,6 @@ create procedure "DB"."DBA"."BACKUP_VIA_DBPUMP" (
   "PUMP"."DBA"."CHANGE_VAL" (pars, 'choice_sav',  sel_tables);
   res := "PUMP"."DBA"."DUMP_TABLES_AND_PARS_RETRIEVE" (pars);
 
-  declare str varchar;
-  str := get_keyword ('result_txt', res, NULL);
-  if(str is null)
-    str := get_keyword ('last_error', res, '');
-
-  return str;
-}
-;
-
-create procedure "PUMP"."DBA"."DUMP_TABLES_AND_PARS_RETRIEVE" ( inout pars any )
-{
-  declare n integer;
-  declare str varchar;
-  declare outarr any;
-
---  checkpoint;
-  str := "PUMP"."DBA"."DBPUMP_RUN_COMPONENT" (pars,'dump_tables','*');
-  outarr := split_and_decode(str,0);
---  n := length(outarr);
-  return outarr;
-}
-;
-
---drop procedure restore_tables_and_pars_retrieve;
-create procedure "PUMP"."DBA"."RESTORE_TABLES_AND_PARS_RETRIEVE" ( inout pars any )
-{
-  declare n integer;
-  declare str varchar;
-  declare outarr any;
-
---  checkpoint;
-
-  str := "PUMP"."DBA"."DBPUMP_RUN_COMPONENT" (pars,'restore_tables','*');
-  outarr := split_and_decode(str,0);
---  n := length(outarr);
-  return outarr;
-}
-;
-
-create procedure "DB"."DBA"."RESTORE_DBPUMP'S_FOLDER" (
-                        in username varchar,
-                        in passwd varchar,
-                        in datasource varchar,
-                        in dump_path varchar,
-                        in dump_dir varchar,
-                        in dump_items varchar,
-                        in chqual varchar,
-                        in chuser varchar
-                        ) returns varchar
-{
-  declare pars, res any;
-  pars:= null;
-
-  "PUMP"."DBA"."CHANGE_VAL" (pars, 'user', username);
-  "PUMP"."DBA"."CHANGE_VAL" (pars, 'password', passwd);
-  "PUMP"."DBA"."CHANGE_VAL" (pars, 'datasource', datasource);
-  "PUMP"."DBA"."CHANGE_VAL" (pars, 'dump_path', dump_path);
-  "PUMP"."DBA"."CHANGE_VAL" (pars, 'dump_dir', dump_dir);
-  "PUMP"."DBA"."CHANGE_VAL" (pars, 'restore_users', case dump_items[7] when 1 then 'on' else 'off' end );
-  "PUMP"."DBA"."CHANGE_VAL" (pars, 'restore_grants', case dump_items[8] when 1 then 'on' else 'off' end );
-  "PUMP"."DBA"."CHANGE_VAL" (pars, 'change_rqualifier', case when length(chqual) > 0 then 'on' else 'off' end );
-  "PUMP"."DBA"."CHANGE_VAL" (pars, 'new_rqualifier', chqual );
-  "PUMP"."DBA"."CHANGE_VAL" (pars, 'change_rowner', case when length(chuser) > 0 then 'on' else 'off' end );
-  "PUMP"."DBA"."CHANGE_VAL" (pars, 'new_rowner', chuser );
-  res := "PUMP"."DBA"."RESTORE_TABLES_AND_PARS_RETRIEVE" (pars);
   declare str varchar;
   str := get_keyword ('result_txt', res, NULL);
   if(str is null)
@@ -3443,16 +3057,16 @@ create procedure DB.DBA.Y_ACI_LOAD (
   st := '00000';
   exec (S, st, msg, vector (), 0, meta, data);
   if (st = '00000' and length (data))
-{
+  {
     declare N, aclNo, aclRule, aclMode, V any;
 
     V := null;
     aclNo := 0;
     aclRule := '';
     for (N := 0; N < length (data); N := N + 1)
-{
+    {
       if (aclRule <> data[N][0])
-{
+      {
         if (not isnull (V))
           retValue := vector_concat (retValue, vector (V));
         aclNo := aclNo + 1;
@@ -3468,7 +3082,7 @@ create procedure DB.DBA.Y_ACI_LOAD (
         V[3] := 1;
       if (aclMode = 'acl:Write')
         V[4] := 1;
-      if (aclMode = 'acl:Control')
+      if (aclMode = 'acl:Execute')
         V[5] := 1;
     }
     if (not isnull (V))
@@ -3487,7 +3101,7 @@ create procedure DB.DBA.Y_ACI_PARAMS (
   M := 1;
   retValue := vector ();
   for (N := 0; N < length (params); N := N + 2)
-{
+  {
     if (params[N] like 'f_fld_2_%')
     {
       aclNo := replace (params[N], 'f_fld_2_', '');
@@ -3528,9 +3142,9 @@ create procedure DB.DBA.Y_ACI_N3 (
         retValue := retValue || sprintf (';\n   acl:agent <%s>', aciArray[N][1]);
       }
       else if (aciArray[N][2] = 'group')
-        {
+      {
         retValue := retValue || sprintf (';\n   acl:agentClass <%s>', aciArray[N][1]);
-        }
+      }
       else if (aciArray[N][2] = 'public')
       {
         retValue := retValue || ';\n   acl:agentClass foaf:Agent';
@@ -3540,7 +3154,7 @@ create procedure DB.DBA.Y_ACI_N3 (
       if (aciArray[N][4])
         retValue := retValue || ';\n   acl:mode acl:Write';
       if (aciArray[N][5])
-        retValue := retValue || ';\n   acl:mode acl:Control';
+        retValue := retValue || ';\n   acl:mode acl:Execute';
       retValue := retValue || '.\n';
     }
   }
@@ -3579,11 +3193,11 @@ create procedure fs_chek_filter (in dirlist any, in filters any)
    idx := 0;
 
    while (idx < len)
-  {
+     {
   if (dirlist like filters[idx])
     return 1;
   idx := idx + 1;
-}
+     }
 
    return ret;
 }
@@ -3611,7 +3225,7 @@ db.dba.fs_browse_proc_empty (in path varchar, in show_details integer := 0, in f
 };
 
 create procedure fs_browse_proc (in path varchar, in show_details integer := 0, in filter varchar := '', in ord any := '', in ordseq any := 'asc')
-  {
+{
   declare stat, msg, mdt, dta any;
 
       if (ord = 'name')
@@ -3641,7 +3255,7 @@ create procedure
 db.dba.fs_browse_proc_p (in path varchar,
                        in show_details integer := 0,
                        in filter varchar := '' ) returns any
-  {
+{
   declare i, len integer;
   declare dirlist, retval, filters any;
   declare f_type, f_name, f_mime, f_size, f_date, f_ftype any;
@@ -3682,9 +3296,9 @@ db.dba.fs_browse_proc_p (in path varchar,
   i := 0;
 
   while (i < len)
-  {
-      if (dirlist[i] <> '.' and dirlist[i] <> '..')
     {
+      if (dirlist[i] <> '.' and dirlist[i] <> '..')
+        {
 	  declare mod any;
 	  f_type := 1;
 	  f_name := dirlist[i];
@@ -3696,10 +3310,10 @@ db.dba.fs_browse_proc_p (in path varchar,
 	      f_date := stringdate(mod);
 	      f_ftype := 'Folder';
 	      result (f_type, f_name, f_mime, f_size, f_date, f_ftype);
-    }
-  }
+	    }
+        }
       i := i + 1;
-}
+    }
 
   dirlist := sys_dirlist (path, 1);
 
@@ -3711,22 +3325,22 @@ db.dba.fs_browse_proc_p (in path varchar,
   i := 0;
 
   while (i < len)
-{
+    {
       if (fs_chek_filter (dirlist [i], filters))  -- we filter out files only
-{
+        {
 	  declare ssize any;
 	  f_type := 0;
 	  f_name := dirlist[i];
 	  f_mime := null;
 	  ssize := file_stat (path || dirlist[i], 1);
 	  if (isstring (ssize))
-{
+	    {
 	      f_size := atoi(ssize);
 	      f_date := stringdate (file_stat (path||dirlist[i], 0));
 	      f_ftype := 'File';
 	      result (f_type, f_name, f_mime, f_size, f_date, f_ftype);
-}
-}
+	    }
+        }
       i :=  i + 1;
     }
   return;
@@ -3801,7 +3415,7 @@ db.dba.vproc_browse_proc (in path varchar,
   descr := case level when 0 then 'Catalog' when 1 then 'Schema' else 'Procedure' end;
 
   if (cat = 'DB' AND sch = 'DBA')
-  {
+    {
       retval := vector_concat (retval,
                                vector (vector (is_node,
                                                'HP_AUTH_SQL_USER',
@@ -3817,15 +3431,15 @@ db.dba.vproc_browse_proc (in path varchar,
                                                'HP_AUTH_DAV_PROTOCOL',
                                                NULL,
                                                'Built-in')));
-  }
+    }
   if (cat = 'WS' AND sch = 'WS')
-  {
+    {
       retval := vector_concat(retval,
                               vector (vector (is_node,
                                               'DIGEST_AUTH',
                                               NULL,
                                               'Built-in')));
-  }
+    }
 
   for (select DISTINCT name_part (P_NAME, level) AS ITEM
          from SYS_PROCEDURES
@@ -3834,17 +3448,17 @@ db.dba.vproc_browse_proc (in path varchar,
                P_NAME not like '%.%./%' and
                P_NAME like filter
          order by P_NAME) do
-  {
+    {
       retval := vector_concat(retval,
                               vector(vector(is_node, ITEM, NULL, descr)));
-  }
+    }
   return retval;
-  }
+}
 ;
 
 create procedure
 db.dba.vview_browse_proc_meta() returns any
-  {
+{
   declare retval any;
   retval := vector ('ITEM_IS_CONTAINER', 'ITEM_NAME', 'ICON_NAME', 'Description');
   return retval;
@@ -3899,16 +3513,16 @@ db.dba.vview_browse_proc (in path varchar,
               KEY_IS_MAIN = 1 and
               KEY_MIGRATE_TO is NULL and
               KEY_TABLE like filter) do
-{
+    {
       retval := vector_concat (retval,
                                vector (vector (is_node, ITEM, NULL, descr)));
-}
+    }
   return retval;
 }
 ;
 
 create procedure DB.DBA.MSG_NEWS_DOWNLOAD_MESSAGES(in _ns_id integer, in _ng_id integer, in _mode varchar)
-     {
+{
   if (isstring (_ng_id))
     new_news (atoi (_ng_id));
   return '';
@@ -3953,7 +3567,7 @@ DB.DBA.MSG_NEWS_CLEAR_MESSAGES (in _ns_id integer,
 
   commit work;
 
-{
+  {
     declare _nm_num_group, _nm_key_id any;
     declare cr cursor for
       select NM_NUM_GROUP, NM_KEY_ID
@@ -3966,7 +3580,7 @@ DB.DBA.MSG_NEWS_CLEAR_MESSAGES (in _ns_id integer,
     open cr (exclusive, prefetch 1);
 
     while (1)
-{
+      {
         fetch cr into _nm_num_group, _nm_key_id;
 
         if (_nm_num_group >= _group_last_out and _mode <> 'clear all')
@@ -4035,7 +3649,7 @@ db.dba.yac_user_caps (in username varchar,
        ord := ' order by 5 ' || ordseq;
      else if (ord = 'owner')
        ord := ' order by 6 ' || ordseq;
-  else
+     else
        ord := '';
    }
  else
@@ -4047,7 +3661,7 @@ db.dba.yac_user_caps (in username varchar,
   pars := vector ();
 
   if (tabls <> 0)
-	    {
+    {
       sql := sql ||
        'select distinct 1, KEY_TABLE, cast (direct_grants(KEY_TABLE, ? ) as int) as dg, indirect_grants(KEY_TABLE, ?) as ig
        , ''Table'' as rt, name_part (KEY_TABLE, 1) as own
@@ -4062,7 +3676,7 @@ db.dba.yac_user_caps (in username varchar,
 	 pars := vector_concat (pars, vector (username));
       --exec (sql, null, null, vector (1, user_ident, inh, filter, 'TABLE', username), 0, mtd, dta);
       --retval := vector_concat (retval, dta);
-        }
+    }
 
   if ( views <> 0)
     {
@@ -4116,7 +3730,7 @@ direct_grants( in object_name varchar, in user_id integer, in colname varchar :=
 
   for( select G_OP from SYS_GRANTS where G_USER = user_id and G_OBJECT = object_name and G_COL in ('_all', colname)) do {
     dg := bit_or( dg, G_OP );
-}
+  }
   return dg;
 }
 ;
@@ -4197,7 +3811,7 @@ create procedure adm_get_users (in mask any := '%', in ord any := '', in seq any
     {
       tmp := case ord when 'name' then '1' when 'fullname' then '2' when 'login' then '3' when 'edit' then '4' else '' end;
       if (tmp <> '')
-    {
+	{
 	  ord := 'order by ' || tmp || ' ' || seq;
 	  sql := sql || ord;
 	}
@@ -4210,7 +3824,7 @@ create procedure adm_get_users (in mask any := '%', in ord any := '', in seq any
 ;
 
 create procedure adm_get_all_users (in mask any := '%', in ord any := '', in seq any := 'asc')
-    {
+{
   declare sql, dta, mdta, rc, h, tmp any;
 
   declare U_NAME, U_FULL_NAME, U_LOGIN_TIME, U_EDIT_TIME any;
@@ -4226,7 +3840,7 @@ create procedure adm_get_all_users (in mask any := '%', in ord any := '', in seq
 	{
 	  ord := 'order by ' || tmp || ' ' || seq;
 	  sql := sql || ord;
-    }
+	}
     }
   rc := exec (sql, null, null, vector (mask), 0, null, null, h);
   while (0 = exec_next (h, null, null, dta))
@@ -4269,32 +3883,6 @@ yacutia_exec_no_error('create procedure view Y_SYS_SCHEDULED_EVENT as adm_get_sc
 --select indirect_grants( 'WS.SOAP.countTheEntities', vector(103));
 --select G_OP from SYS_GRANTS where G_USER = 103 and G_OBJECT = 'WS.SOAP.countTheEntities' and G_COL in ('_all', '_all');
 
-create procedure
-adm_get_init_name ()
-{
-  declare _all varchar;
-
-  _all := virtuoso_ini_path();
-
-  if (sys_stat ('st_build_opsys_id') = 'Win32')
-    {
-      while (length (_all) > 0)
-        {
-          declare pos integer;
-
-          pos := strstr (_all, '\\');
-
-          if (pos is NULL)
-            return _all;
-
-          _all := subseq (_all, pos + 1);
-        }
-    }
-  else
-    return _all;
-}
-;
-
 
 create procedure
 YACUTIA_DAV_COPY (in path varchar,
@@ -4303,7 +3891,7 @@ YACUTIA_DAV_COPY (in path varchar,
                   in permissions varchar := '110100000R',
                   in uid integer := NULL,
                   in gid integer := NULL)
-    {
+{
   declare rc integer;
   declare pwd1, cur_user any;
   cur_user := connection_get ('vspx_user');
@@ -4463,7 +4051,7 @@ YACUTIA_DAV_COL_CREATE (in path varchar,
 
   rc := DAV_COL_CREATE (path, permissions, uid, gid, cur_user, pwd1);
   return rc;
-   }
+}
 ;
 
 create procedure
@@ -4484,7 +4072,7 @@ YACUTIA_DAV_DIR_LIST (in path varchar := '/DAV/',
 
 create procedure
 YACUTIA_DAV_DIR_LIST_P (in path varchar := '/DAV/', in recursive integer := 0, in auth_uid varchar := 'dav')
-    {
+{
   declare arr, pwd1 any;
   declare i, l integer;
   declare FULL_PATH, PERMS, MIME_TYPE, NAME varchar;
@@ -4521,9 +4109,10 @@ YACUTIA_DAV_DIR_LIST_P (in path varchar := '/DAV/', in recursive integer := 0, i
 	  arr[i][10]);
       i := i + 1;
     }
-    }
+}
 ;
 
+yacutia_exec_no_error ('drop view Y_DAV_DIR');
 yacutia_exec_no_error('create procedure view Y_DAV_DIR as YACUTIA_DAV_DIR_LIST_P (path,recursive,auth_uid) (FULL_PATH varchar, TYPE varchar, RLENGTH integer, MOD_TIME datetime, ID integer, PERMS varchar, GRP varchar, OWNER varchar, CR_TIME datetime, MIME_TYPE varchar, NAME varchar)')
 ;
 
@@ -4533,7 +4122,7 @@ dav_path_validate (in path varchar,
                    out folder_group integer,
                    out folder_perms varchar,
                    out message varchar)
-    {
+{
   declare  sl_pos, cname_size,c_id, flag, c_owner, c_group integer;
   declare path_tree, cname, cperm varchar;
 
@@ -4544,7 +4133,7 @@ dav_path_validate (in path varchar,
     {
       message := sprintf('path %s is incorrect. Must start from /DAV/...', path );
       goto not_found;
-  }
+    }
 
   sl_pos := coalesce (strrchr (path, '/'), 0);
   path_tree :=  substring(path,1,sl_pos);
@@ -4574,14 +4163,14 @@ dav_path_validate (in path varchar,
               folder_owner := c_owner;
               folder_group := c_group;
               flag := 1;
-}
+            }
 
         }
       else
-{
+        {
           message := sprintf ('Folder %s does not exist.', path_tree );
           goto not_found;
-  }
+        }
       if (sl_pos > 0)
         path_tree := substring (path_tree,1,sl_pos);
     }
@@ -4619,17 +4208,17 @@ dav_check_permissions (in user_name varchar,
         goto not_found;
 
       if (dav_folder_owner = user_id)
-      {
+        {
        ; -- You are owner of this folder
 
-        i := 0;
+          i:= 0;
 
           while (i < 3)
-          {
+            {
               if (chr (aref (mask,i)) = '1' and chr (aref (file_perms,i)) = '1')
                 aset(vmask,i,ascii('1'));
-            i := i + 1;
-          }
+              i := i + 1;
+            }
 
           if (
               ((chr(aref(mask,0)) = '1' and chr(aref(vmask,0)) = '1') or
@@ -4643,18 +4232,18 @@ dav_check_permissions (in user_name varchar,
         }
 
       if (dav_folder_group = g_id)
-      {
+        {
     ; -- you are member if group, to which this folder belongs.
 
-            i := 0;
+          i:= 0;
 
           while (i < 3)
-              {
+            {
               if (chr(aref(mask,i)) = '1' and chr(aref(file_perms,i +3)) = '1')
                 aset(vmask,i,ascii('1'));
 
-                i := i + 1;
-              }
+              i := i + 1;
+            }
 
           if (
               ((chr(aref(mask,0)) = '1' and chr(aref(vmask,0)) = '1') or
@@ -4669,18 +4258,18 @@ dav_check_permissions (in user_name varchar,
       if (exists (select 1
                    from SYS_ROLE_GRANTS
                    where GI_SUPER=user_id and GI_SUB = dav_folder_group ))
-{
+        {
       ; --  group, to which folder belongs , is granted to you
 
           i:= 0;
 
           while (i < 3)
-	{
+            {
               if (chr (aref (mask, i)) = '1' and chr (aref (file_perms, i + 3)) = '1')
                 aset(vmask,i,ascii('1'));
 
               i := i + 1;
-}
+            }
           if (
               ((chr (aref (mask, 0)) = '1' and chr (aref (vmask, 0)) = '1') or
                (chr (aref (mask, 0)) = '0' and chr (aref (vmask, 0)) = '0'))
@@ -4697,11 +4286,11 @@ dav_check_permissions (in user_name varchar,
       i:= 0;
 
       while (i < 3)
-	{
+        {
           if (chr (aref (mask,i)) = '1' and chr (aref (file_perms, i + 6)) = '1')
             aset (vmask,i,ascii('1'));
           i := i + 1;
-}
+        }
 
       if (
           ((chr (aref (mask, 0)) = '1' and chr (aref (vmask, 0)) = '1') or
@@ -4717,7 +4306,7 @@ dav_check_permissions (in user_name varchar,
 
       goto not_found;
 
-	}
+    }
   else
     {
       message := sprintf ('Account %s does not have DAV login enabled.', user_name);
@@ -4741,7 +4330,7 @@ check_dav_file_permissions (in path varchar,
 
   whenever  not found goto not_found;
   if (not exists (select 1 from ws.ws.SYS_DAV_USER where U_NAME = user_name))
-        {
+    {
       message := sprintf('Access into DAV is denied for user: %s.',user_name);
       return 0;
     }
@@ -4786,10 +4375,10 @@ get_sql_tables (in dsn varchar,
   if (cat ='%' or sch = '%')
     {
        key_list := sql_tables (dsn, null, null, null, null);
-}
+    }
 
   if (cat = '%')
-{
+    {
       i:= 0; len :=  length (key_list);
 
       while (i < len)
@@ -4800,13 +4389,13 @@ get_sql_tables (in dsn varchar,
           if (v is not null and not position (v, cat_list))
             cat_list := vector_concat (cat_list, vector (v));
           i := i + 1;
-}
+        }
     }
   else
     cat_list := vector_concat (cat_list, vector(cat));
 
   if (sch = '%')
-{
+    {
       i := 0; len :=  length (key_list);
       while (i < len)
         {
@@ -4877,10 +4466,10 @@ get_sql_procedures (in dsn varchar, in cat varchar, in sch varchar, in table_mas
   if (cat ='%' or sch = '%')
     {
       key_list := sql_procedures (dsn, null, null, null);
-}
+    }
 
   if (cat ='%')
-{
+    {
       i:= 0; len :=  length (key_list);
       while (i < len)
         {
@@ -4898,13 +4487,13 @@ get_sql_procedures (in dsn varchar, in cat varchar, in sch varchar, in table_mas
             cat_list := vector_concat (cat_list, vector (v));
 
           i := i + 1;
-}
+        }
     }
   else
     cat_list := vector_concat (cat_list, vector (cat));
 
   if (sch = '%')
-{
+    {
       i:= 0; len :=  length (key_list);
       while (i < len)
         {
@@ -4923,7 +4512,7 @@ get_sql_procedures (in dsn varchar, in cat varchar, in sch varchar, in table_mas
             sch_list := vector_concat (sch_list, vector (v));
 
           i := i + 1;
-}
+        }
     }
   else
     sch_list := vector_concat (sch_list, vector (sch));
@@ -4938,12 +4527,12 @@ get_sql_procedures (in dsn varchar, in cat varchar, in sch varchar, in table_mas
   i := 0; len := length (cat_list);
 
   while (i < len)
-{
+    {
       c_cat := aref (cat_list, i);
       j := 0; lz := length (sch_list);
 
        while(j < lz)
-    {
+         {
 	   declare tbls any;
            c_sch := aref (sch_list, j);
 	   tbls :=  sql_procedures(dsn, c_cat, c_sch, null);
@@ -4964,7 +4553,7 @@ get_sql_procedures (in dsn varchar, in cat varchar, in sch varchar, in table_mas
            j := j + 1;
          }
 
-      i := i + 1;
+       i:= i + 1;
     }
   return  tables_list;
 }
@@ -4975,23 +4564,10 @@ create procedure get_vdb_data_types() {
 }
 ;
 
-create procedure adm_is_hosted ()
-{
-  declare ret integer;
-
-  ret := 0;
-
-  if (__proc_exists ('aspx_get_temp_directory', 2) is not NULL) ret := 1;
-  if (__proc_exists ('java_load_class', 2) is not NULL) ret := ret + 2;
-
-  return ret;
-    }
-;
-
 
 create procedure
 vdb_get_pkeys (in dsn varchar, in tbl_qual varchar, in tbl_user varchar, in tbl_name varchar)
-    {
+  {
     declare pkeys, pkey_curr, pkey_col, my_pkeys any;
     declare pkeys_len, idx integer;
 
@@ -5001,7 +4577,7 @@ vdb_get_pkeys (in dsn varchar, in tbl_qual varchar, in tbl_user varchar, in tbl_
       tbl_user := NULL;
 
     if (sys_stat ('vdb_attach_autocommit') > 0) vd_autocommit (dsn, 1);
-        {
+      {
   declare exit handler for SQLSTATE '*'
   goto next;
 
@@ -5015,19 +4591,19 @@ vdb_get_pkeys (in dsn varchar, in tbl_qual varchar, in tbl_user varchar, in tbl_
     idx := 0;
     my_pkeys := vector();
     if (0 <> pkeys_len)
-            {
+      {
   while (idx < pkeys_len)
     {
       pkey_curr := aref (pkeys, idx);
       pkey_col := aref (pkey_curr, 3);
       my_pkeys := vector_concat (my_pkeys, vector(pkey_col));
       idx := idx +1;
-            }
-        }
-      else
-        {
+    }
+      }
+    else
+      {
   if (sys_stat ('vdb_attach_autocommit') > 0) vd_autocommit (dsn, 1);
-{
+    {
       declare exit handler for SQLSTATE '*'
       goto next2;
 
@@ -5040,9 +4616,9 @@ vdb_get_pkeys (in dsn varchar, in tbl_qual varchar, in tbl_user varchar, in tbl_
     pkeys_len := length (pkeys);
 
   if (0 <> pkeys_len)
-        {
+    {
       while (idx < pkeys_len)
-            {
+        {
     pkey_curr := aref (pkeys, idx);
     pkey_col := aref (pkey_curr, 8);
                 if (idx > 0 and aref (pkey_curr, 7) = 1 and length (my_pkeys) > 0)
@@ -5050,24 +4626,24 @@ vdb_get_pkeys (in dsn varchar, in tbl_qual varchar, in tbl_user varchar, in tbl_
     if (pkey_col is not null)
       my_pkeys := vector_concat (my_pkeys, vector(pkey_col));
     idx := idx +1;
-            }
-   key_ends:;
         }
+   key_ends:;
+    }
   else
-            {
+    {
       pkeys := NULL;
       pkeys_len := 0;
     }
-            }
+      }
 
    return my_pkeys;
-        }
+  }
 ;
 
 yacutia_exec_no_error ('CREATE TABLE DB.DBA.SYS_REMOTE_PROCEDURES (RP_NAME varchar primary key, RP_REMOTE_NAME varchar, RP_DSN varchar)');
 
 create procedure R_GET_REMOTE_NAME (inout pr_text any, inout rname any, inout dsn any)
-            {
+{
   declare rc int;
   rname := null;
   dsn := null;
@@ -5081,7 +4657,7 @@ create procedure R_GET_REMOTE_NAME (inout pr_text any, inout rname any, inout ds
     };
 
   if (regexp_match ('\-\-PL Wrapper ', pr_text) is not null)
-        {
+    {
       declare tmp any;
       declare dsnofs, profs int;
       tmp := regexp_match ('\-\-"DSN:.*PROCEDURE:.*', pr_text);
@@ -5098,13 +4674,13 @@ create procedure R_GET_REMOTE_NAME (inout pr_text any, inout rname any, inout ds
         }
     }
   else if (regexp_match ('^attach procedure', lower (pr_text)) is not null)
-    {
+   {
       declare exp any;
       exp := sql_parse (pr_text);
       dsn := exp[6];
       rname := exp[2];
       rc := 1;
-    }
+   }
   return rc;
 }
 ;
@@ -5125,55 +4701,55 @@ create procedure R_PROC_INIT ()
       declare rname, dsn varchar;
 
       if (R_GET_REMOTE_NAME (pr_text, rname, dsn))
-    {
+  {
           insert soft  DB.DBA.SYS_REMOTE_PROCEDURES (RP_NAME, RP_REMOTE_NAME, RP_DSN)
             values (P_NAME, rname, dsn);
+  }
     }
-}
   registry_set ('R_PROC_INIT', '1');
-    }
+}
 ;
 
 create trigger SYS_PROCEDURES_REMOTE_AI after insert on SYS_PROCEDURES
-    {
+{
   declare pr_text any;
   declare rname, dsn varchar;
 
   pr_text := coalesce (P_TEXT, blob_to_string (P_MORE));
   R_GET_REMOTE_NAME (pr_text, rname, dsn);
   if (R_GET_REMOTE_NAME (pr_text, rname, dsn))
-        {
+    {
       insert soft  DB.DBA.SYS_REMOTE_PROCEDURES (RP_NAME, RP_REMOTE_NAME, RP_DSN)
          values (P_NAME, rname, dsn);
-        }
     }
+}
 ;
 
 create trigger SYS_PROCEDURES_REMOTE_AU after update on SYS_PROCEDURES
 referencing old as O, new as N
-    {
+{
   declare pr_text any;
   declare rname, dsn varchar;
   pr_text := coalesce (N.P_TEXT, blob_to_string (N.P_MORE));
   delete from DB.DBA.SYS_REMOTE_PROCEDURES where RP_NAME = O.P_NAME;
   if (R_GET_REMOTE_NAME (pr_text, rname, dsn))
-        {
+    {
       insert soft  DB.DBA.SYS_REMOTE_PROCEDURES (RP_NAME, RP_REMOTE_NAME, RP_DSN)
          values (N.P_NAME, rname, dsn);
-       }
     }
+}
 ;
 
 create trigger SYS_PROCEDURES_REMOTE_AD after delete on SYS_PROCEDURES
-     {
+{
   delete from DB.DBA.SYS_REMOTE_PROCEDURES where RP_NAME = P_NAME;
 }
 ;
 
 create procedure YAC_GET_DAV_ERR (in code int)
-	     {
+{
   return 'The WebDAV operation failed. Error code: ' || DAV_PERROR (code);
-	     }
+}
 ;
 
 create procedure YAC_DAV_RES_UPLOAD
@@ -5186,12 +4762,12 @@ create procedure YAC_DAV_RES_UPLOAD
     in grp any,
     in usr varchar := null
     )
-		 {
+{
   declare rc, flag, pwd int;
 
   flag := 0; pwd := null;
   if (usr is not null)
-		     {
+    {
       if (usr = 'dba')
         usr := 'dav';
       whenever not found goto err;
@@ -5199,7 +4775,7 @@ create procedure YAC_DAV_RES_UPLOAD
       flag := 1;
       select pwd_magic_calc (U_NAME, U_PASSWORD) into pwd from SYS_USERS where U_NAME = usr;
       rc := 0;
-     }
+    }
 
   rc := DAV_RES_UPLOAD_STRSES_INT
         (
@@ -5242,7 +4818,7 @@ create procedure YAC_DAV_PROP_SET (in path varchar, in prop varchar, in val any,
 err:
   if (rc <= 0)
     signal ('22023', YAC_GET_DAV_ERR (rc));
-            }
+}
 ;
 
 create procedure YAC_DAV_PROP_REMOVE (in path varchar, in prop varchar, in usr varchar, in silent int := 0)
@@ -5260,25 +4836,25 @@ create procedure YAC_DAV_PROP_REMOVE (in path varchar, in prop varchar, in usr v
 err:
   if (rc < 0 and silent = 0)
     signal ('22023', YAC_GET_DAV_ERR (rc));
-    }
+}
 ;
 
 create procedure www_split_host (in fhost any, out host any, out port any)
-        {
+{
   declare pos int;
   pos := strrchr (fhost, ':');
   if (pos is not null)
-            {
+    {
       host := substring (fhost, 1, pos);
       port := substring (fhost, pos + 2, length (fhost));
-            }
+    }
   else
     {
       host := fhost;
       if (host not in ('*ini*', '*sslini*'))
         port := '80';
-        }
     }
+}
 ;
 
 create procedure www_listeners ()
@@ -5304,7 +4880,7 @@ create procedure www_listeners ()
 ;
 
 create procedure www_tree (in path any)
-    {
+{
   declare ss, i any;
   set isolation='uncommitted';
   if (path is null) 
@@ -5327,39 +4903,39 @@ create procedure www_tree (in path any)
 
 
        if (vhost = '*ini*')
-         {
+   {
      vhost := '{Default Web Site}';
      port := cfg_item_value (virtuoso_ini_path (), 'HTTPServer', 'ServerPort');
      intf := '0.0.0.0';
    }
        else if (vhost = '*sslini*')
-	     {
+   {
            vhost := '{Default SSL Web Site}';
      port := cfg_item_value (virtuoso_ini_path (), 'HTTPServer', 'SSLPort');
      if (port is null)
        port := '';
      intf := '0.0.0.0';
-	     }
-	   else
-	     {
+   }
+       else
+   {
      www_split_host (HOST, vhost, tmp);
      www_split_host (LHOST, intf, port);
      if (intf = '' or intf = '*ini*' or intf = '*sslini*')
-		     {
+       {
 	   if (intf = '*ini*')
 	     port := cfg_item_value (virtuoso_ini_path (), 'HTTPServer', 'ServerPort');
 	   else if (intf = '*sslini*')
 	     port := cfg_item_value (virtuoso_ini_path (), 'HTTPServer', 'SSLPort');
           intf := '0.0.0.0';
-    }
-}
+       }
+   }
 
 
        http (sprintf ('<node host="%s" port="%s" lhost="%s" edit="%d" chost="%s" clhost="%s" control="%d">\n', vhost, port, intf, HP_NO_EDIT, HOST, LHOST, HP_NO_CTRL), ss);
        i := 0;
        for select HP_LPATH, HP_PPATH, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_SECURITY, HP_OPTIONS
 	 from DB.DBA.HTTP_PATH where HP_HOST = HOST and HP_LISTEN_HOST = LHOST and path <> '*LISTENERS*' do
-{
+   {
       declare tp, usr any;
       declare hp_opts, url_rew any;
 
@@ -5390,7 +4966,7 @@ create procedure www_tree (in path any)
           usr := '*disabled*';
 
       if (path = '*ALL*' or path = tp)
-  {
+        {
 	  http (sprintf ('\t<node lpath="%s" type="%s" user="%s" sec="%s" url_rew="%s"/>\n',
 		HP_LPATH, tp, usr, coalesce (HP_SECURITY, ''), url_rew), ss);
 	  i := i + 1;
@@ -5410,16 +4986,16 @@ create procedure www_tree (in path any)
 
 
 create procedure www_root_node (in path any)
-      {
+{
   return xpath_eval ('/www/*', www_tree (path), 0);
 }
 ;
 
 
 create procedure www_chil_node (in path varchar, in node varchar)
-    {
+{
   return xpath_eval (path, node, 0);
-      }
+}
 ;
 
 create procedure y_get_host_name (in vhost varchar, in port varchar, in lines varchar)
@@ -5437,7 +5013,7 @@ create procedure y_get_host_name (in vhost varchar, in port varchar, in lines va
 
 
 create procedure y_base_uri (in p any)
-        {
+{
   declare path any;
   path := http_physical_path ();
   path := WS.WS.EXPAND_URL (path, p);
@@ -5446,7 +5022,7 @@ create procedure y_base_uri (in p any)
   else
     path := 'file:' || path;
   return path;
-  }
+}
 ;
 
 create procedure y_get_file_dsns ()
@@ -5457,12 +5033,12 @@ create procedure y_get_file_dsns ()
   if (not (sys_stat('st_build_opsys_id') = 'Win32'))
     goto done;
   declare exit handler for sqlstate '*'
-    {
+  {
     goto done;
-    };
+  };
   arr := sys_dirlist ('.', 1);
   foreach (any elm in arr) do
-    {
+   {
      if (elm like '%.dsn')
        dsns := vector_concat (dsns, vector (vector (pwd || elm, '')));
    }
@@ -5472,23 +5048,23 @@ create procedure y_get_file_dsns ()
 ;
 
 create procedure get_granted_xml_templates (in uid int, inout plist any)
-    {
+{
   declare arr any;
   arr := vector ();
   plist := vector ();
   for select G_OBJECT from SYS_GRANTS where G_OP = 32 and G_USER = uid do
-  {
+    {
       for select blob_to_string (PROP_VALUE) as PROP_VALUE, RES_FULL_PATH
   from WS.WS.SYS_DAV_PROP, WS.WS.SYS_DAV_RES
   where PROP_TYPE = 'R' and PROP_NAME = 'xml-soap-method' and RES_ID = PROP_PARENT_ID do
-{
-      if (PROP_VALUE = G_OBJECT)
     {
+      if (PROP_VALUE = G_OBJECT)
+        {
           arr := vector_concat (arr, vector (RES_FULL_PATH));
           plist := vector_concat (plist, vector (G_OBJECT));
           goto next;
+              }
     }
-}
       next:;
     }
   return arr;
@@ -5532,7 +5108,7 @@ create procedure make_xml_template_wrapper (in path varchar, in uname varchar, i
    else
      tp_name := n_name;
 
-      whenever not found goto err;
+   whenever not found goto err;
    select blob_to_string (RES_CONTENT), RES_ID into res_cnt, res_id from WS.WS.SYS_DAV_RES where RES_FULL_PATH = path;
    descr := coalesce ((select blob_to_string (PROP_VALUE) from WS.WS.SYS_DAV_PROP where
       PROP_NAME = 'xml-sql-description' and PROP_TYPE= 'R' and PROP_PARENT_ID = res_id), '');
@@ -5544,7 +5120,7 @@ create procedure make_xml_template_wrapper (in path varchar, in uname varchar, i
        tp_name := sprintf ('"%I"."%I"."%I"',
        name_part (exist_pr, 0), name_part (exist_pr, 1), name_part (exist_pr, 2));
        goto ret;
-    }
+     }
    else if (not make_proc)
      return null;
 
@@ -5576,7 +5152,7 @@ create procedure make_xml_template_wrapper (in path varchar, in uname varchar, i
 
    ret:
    return tp_name;
-err:
+   err:
    if (e_stat = '00000')
      {
        e_stat := 'XT000';
@@ -5609,22 +5185,22 @@ create procedure y_check_query_type (in query_text any)
             {
 	      flag := 4;
 	      pos := i;
-}
+            }
 
           if (lex_text = 'XML' and flag = 4 and pos = (i + 1))
-{
+            {
 	      flag := 3;
             }
           else if (lex_text = 'FOR' and flag = 3 and pos = (i + 2))
-    {
+	      {
 		flag := 2;
-    }
+	      }
 	  else if (lex_text = 'XMLELEMENT' and flag = -2)
-    {
+	    {
 	      flag := 0;
-    }
+	    }
           i := i - 1;
-}
+        }
       if (flag <> 0 and flag <> 2 and upper (aref (aref (lexems, 0), 1)) = 'SELECT')
 	flag := 2;
     }
@@ -5652,13 +5228,13 @@ create procedure y_execute_xq (in q any, in root any, in base any, in url any, i
       coll := xquery_eval (sprintf ('<%s>{ for \044doc in collection ("%s",.,1,2) return \044doc/* }</%s>',
       		root, nuri, root), xtree_doc('<empty/>', 0, nuri), 0);
       doc := coll[0];
-}
+    }
   res := xquery_eval (q, doc, 0);
   ses := string_output ();
   foreach (any elm in res) do
-{
-      if (isentity (elm))
     {
+      if (isentity (elm))
+        {
 	  xml_tree_doc_set_output (elm, 'xml');
 	  http_value (elm, null, ses);
         }
@@ -5680,14 +5256,14 @@ create procedure y_cli_status_proc ()
   exec ('status (\'c\')', stat, msg, vector (), 1000, mta, dta);
 
   if (stat <> '00000')
-   {
+    {
       rollback work;
       return;
-   }
+    }
   st := 0;
   trx := '';
   foreach (any elm in dta) do
-   {
+    {
       declare tmp1, tmp2, tmp3, tmp4, ctmp, line any;
       line := elm[0];
       if (st = 0)
@@ -5700,9 +5276,9 @@ create procedure y_cli_status_proc ()
 	  if (ctmp is not null)
 	    {
 	      cli_id := trim (substring (ctmp, 7, length (ctmp)), ' :');
-   }
+	    }
 	  if (tmp1 is not null and tmp2 is not null and tmp3 is not null)
-   {
+	    {
 	      name := substring (tmp1, 9, length (tmp1));
 	      bin := atoi(tmp2);
 	      bout := atoi(tmp3);
@@ -5719,17 +5295,17 @@ create procedure y_cli_status_proc ()
 	     os := tmp1[1];
 	     app := tmp1[2];
 	     ip := tmp1[3];
-       }
+	   }
          st := 2;
-   }
+       }
       else if (st = 2)
-   {
+	{
 	  tmp4 := regexp_match ('[0-9]+ threads\.', line);
           tmp1 := regexp_match ('Transaction status: [A-Z]+,', line);
 	  if (tmp4 is not null)
-        {
+	    {
 	      threads := atoi (tmp4);
-        }
+	    }
 	  if (tmp1 is not null)
             {
 	      trx := rtrim (substring (tmp1, 20, length (tmp1)), ',');
@@ -5745,8 +5321,8 @@ create procedure y_cli_status_proc ()
 	      result (name, bin, bout, threads, lck, trx, cli_id, pid, os, app, ip);
 	    }
 	  st := 0;
-   }
-     }
+	}
+    }
 }
 ;
 
@@ -5815,7 +5391,7 @@ create procedure y_check_host (in host varchar, in listen varchar, in port varch
 ;
 
 create procedure y_make_url_from_vd (in host varchar, in lhost varchar, in path varchar, in sec varchar := null)
-  {
+{
   declare pos, port any;
   pos := strrchr (host, ':');
   if (pos is not null)
@@ -5831,10 +5407,10 @@ create procedure y_make_url_from_vd (in host varchar, in lhost varchar, in path 
     return sprintf ('https://%s%s%s/', host, port, rtrim(path, '/'));
   else
   return sprintf ('http://%s%s%s/', host, port, rtrim(path, '/'));
-  };
+};
 
 create procedure y_escape_local_name (in nam varchar)
-   {
+{
   declare q, o, n varchar;
   if (nam is null or nam[0] = ascii ('"'))
     return nam;
@@ -5857,7 +5433,7 @@ create procedure y_get_tbl_row_count (in q any, in o any, in n any)
 ;
 
 create procedure y_get_first_table_name (in q any)
-    {
+{
    declare tree, tbn any;
    tree := sql_parse (q);
    tbn := '';
@@ -5867,20 +5443,20 @@ create procedure y_get_first_table_name (in q any)
 ;
 
 create procedure y_get_first_table (in tree any, inout tbn any)
-    {
+{
   if (isarray (tree) and length (tree) > 1 and tree[0] = 200)
-        {
+    {
       if (length (tbn))
 	tbn := tbn || '_' ;
       tbn := tbn || name_part (tree[1], 2);
       return;
-              }
+    }
   else if (isarray (tree))
     {
       foreach (any tree1 in tree) do
 	{
 	  y_get_first_table (tree1, tbn);
-    }
+	}
     }
 }
 ;
@@ -5932,12 +5508,53 @@ create procedure y_make_tb_from_query (in tb any, in q any)
 }
 ;
 
-create procedure yac_syncml_detect (in _name any)
+create procedure Y_SYNCML_DETECT (
+  in path varchar)
 {
+  if (__proc_exists ('DB.DBA.yac_syncml_detect') is not null)
+    return DB.DBA.yac_syncml_detect (path);
+
    return 0;
 }
 ;
 
+create procedure Y_SYNCML_VERSIONS ()
+{
+  if (__proc_exists ('DB.DBA.yac_syncml_version') is not null)
+    return DB.DBA.yac_syncml_version ();
+
+  return vector ();
+}
+;
+
+create procedure Y_SYNCML_VERSION (
+  in path varchar)
+{
+  if (__proc_exists ('DB.DBA.yac_syncml_version_get') is not null)
+    return DB.DBA.yac_syncml_version_get (path);
+
+  return 'N';
+}
+;
+
+create procedure Y_SYNCML_TYPES ()
+{
+  if (__proc_exists ('DB.DBA.yac_syncml_type') is not null)
+    return DB.DBA.yac_syncml_type ();
+
+  return vector ();
+}
+;
+
+CREATE PROCEDURE Y_SYNCML_TYPE (
+  in path varchar)
+{
+  if (__proc_exists ('DB.DBA.yac_syncml_type_get') is not null)
+    return DB.DBA.yac_syncml_type_get (path);
+
+  return 'N';
+}
+;
 
 create procedure y_sprintf_to_reg (in fmt varchar, in in_list any, in o_list any)
 {
@@ -5957,7 +5574,7 @@ create procedure y_sprintf_to_reg (in fmt varchar, in in_list any, in o_list any
 
       if (inx < length (o_list))
         pos := position (o_list[inx], in_list);
-   else
+      else
         pos := 0;
 
       fchar := ltrim (pc, '%');
@@ -5969,7 +5586,7 @@ create procedure y_sprintf_to_reg (in fmt varchar, in in_list any, in o_list any
 
       pc := regexp_match ('%[sdU]', fmt, 1);
       inx := inx + 1;
-     }
+    }
   cp_fmt := replace (cp_fmt, '%%', '%');
   return cp_fmt;
 };
@@ -5989,7 +5606,7 @@ create procedure y_reg_to_sprintf (in fmt varchar, out in_list any, out o_list a
   o_list := vector ();
 
   while (pc is not null)
-     {
+    {
       _from := strstr (cp_fmt, pc);
       _to := _from + length (pc);
 
@@ -5997,22 +5614,22 @@ create procedure y_reg_to_sprintf (in fmt varchar, out in_list any, out o_list a
       _right := substring (cp_fmt, _to+1, length (cp_fmt));
 
       if (pc = '\x24accept')
-        {
+	{
 	  o_list := vector_concat (o_list, vector ('*accept*'));
 	}
       else
-            {
+	{
 	  pos := atoi (ltrim (pc, '\x24sdU'));
 	  o_list := vector_concat (o_list, vector (sprintf ('par_%d', pos)));
-            }
+        }
 
       if (length (in_list) < pos)
-            {
+	{
 	  declare to_add int;
 	  to_add := pos - length (in_list);
 	  in_list := vector_concat (in_list, make_array (to_add, 'any'));
 	  in_list [pos - 1] := sprintf ('par_%d', pos);
-            }
+	}
       else
 	in_list [pos - 1] := sprintf ('par_%d', pos);
 
@@ -6025,9 +5642,9 @@ create procedure y_reg_to_sprintf (in fmt varchar, out in_list any, out o_list a
 
       pc := regexp_match ('(\\x24[sdU]?[0-9]+)|(\\x24accept)', fmt, 1);
       inx := inx + 1;
-	      }
+    }
   for (inx := 0; inx < length (in_list); inx := inx + 1)
-	    {
+    {
       if (in_list[inx] = 0)
 	in_list[inx] := sprintf ('par_%d', inx + 1);
     }
@@ -6051,17 +5668,17 @@ create procedure URL_REWRITE_LIST_DUMP (in rule_list varchar)
 };
 
 create procedure URL_REWRITE_LIST_DUMP_REC (in rule_list varchar, in parent_list varchar)
-    {
+{
   for select distinct URRL_MEMBER as cur_iri, URRL_INX as idx from DB.DBA.URL_REWRITE_RULE_LIST where URRL_LIST = rule_list
     order by URRL_INX
 	do
-    {
+	  {
 	    if (exists (select 1 from DB.DBA.URL_REWRITE_RULE_LIST where URRL_LIST = cur_iri))
 	      {
 		URL_REWRITE_LIST_DUMP_REC (cur_iri, parent_list ||'/'||cur_iri);
-    }
+	      }
 	    else
-    {
+	      {
 		for select
 		  URR_RULE,
 		      URR_RULE_TYPE,
@@ -6076,12 +5693,12 @@ create procedure URL_REWRITE_LIST_DUMP_REC (in rule_list varchar, in parent_list
 		      URR_HTTP_HEADERS
 			  from DB.DBA.URL_REWRITE_RULE where URR_RULE = cur_iri
 			  do
-        {
+			    {
 			      result (rule_list, parent_list, URR_RULE, URR_RULE_TYPE, URR_NICE_FORMAT, nice_fmt, URR_NICE_MIN_PARAMS, URR_TARGET_FORMAT, URR_TARGET_EXPR, URR_ACCEPT_PATTERN, URR_NO_CONTINUATION, URR_HTTP_REDIRECT, URR_HTTP_HEADERS, idx);
-        }
+			    }
 
-    }
-}
+	      }
+	  }
 };
 
 yacutia_exec_no_error('drop view DB.DBA.URL_REWRITE_LIST_DUMP');
@@ -6111,10 +5728,10 @@ create procedure YAC_VAD_LIST (in dir varchar := null, in fs_type int := 0)
     vaddir := cfg_item_value (virtuoso_ini_path (), 'Parameters', 'VADInstallDir');
 
   if (vaddir is null)
-      return;
+    return;
 
   declare exit handler for sqlstate '*'
-        {
+  {
     goto merge;
   };
 
@@ -6127,9 +5744,9 @@ create procedure YAC_VAD_LIST (in dir varchar := null, in fs_type int := 0)
     arr := (select vector_agg (RES_NAME) from WS..SYS_DAV_RES where RES_FULL_PATH like vaddir || '%' and RES_FULL_PATH = vaddir||RES_NAME);
 
   foreach (any f in arr) do
-	    {
+    {
        if (f like '%.vad')
-	    {
+	 {
 
 	   declare st, rc int;
 	   declare exit handler for sqlstate '*' {
@@ -6150,18 +5767,18 @@ create procedure YAC_VAD_LIST (in dir varchar := null, in fs_type int := 0)
 	   next_pkg:;
            if (pname is not null)
 	     nlist := vector_concat (nlist, vector (pname, vector (pver, pdate, f)));
-	    }
-	}
+	 }
+    }
   merge:
   declare exit handler for sqlstate '*'
-       {
+  {
     resignal;
   };
   ilist := VAD.DBA.VAD_GET_PACKAGES ();
   tmp := make_array (length (ilist) * 2, 'any');
 
   for (declare i,l int, i := 0, l := length (ilist); i < l; i := i + 1)
-	   {
+    {
       declare isdav int;
       isdav := 0;
       if (exists (select top 1 1 from VAD.DBA.VAD_REGISTRY
@@ -6169,7 +5786,7 @@ create procedure YAC_VAD_LIST (in dir varchar := null, in fs_type int := 0)
 	isdav := 1;
       tmp[i*2] := ilist[i][1];
       tmp[(i*2)+1] := vector_concat (ilist[i], vector (null, null, null, isdav));
-}
+    }
   ilist := tmp;
 
   tmp := vector ();
@@ -6180,27 +5797,27 @@ create procedure YAC_VAD_LIST (in dir varchar := null, in fs_type int := 0)
       if (nlist[i+1][2] like '%_dav.vad')
 	nisdav := 1;
       if ((pos := position (nlist[i], ilist)))
-    {
+	{
 	  if (VAD.DBA.VERSION_COMPARE (ilist[pos][2], nlist[i+1][0]) = -1 and ilist[pos][9] = nisdav)
-    {
+	    {
 	      ilist[pos][6] := nlist[i+1][0];
 	      ilist[pos][7] := nlist[i+1][1];
 	      ilist[pos][8] := nlist[i+1][2];
-    }
-}
-  else
-{
+	    }
+	}
+      else
+	{
 	  declare suf any;
 	  suf := 0;
 	  if (nlist[i+1][2] like '%_dav.vad')
 	    suf := 1;
 	  tmp := vector_concat (tmp,
 	  	vector (nlist[i], vector (0, nlist[i], null, null, null, 'n/a', nlist[i+1][0], nlist[i+1][1], nlist[i+1][2], suf)));
-}
+	}
     }
   ilist := vector_concat (ilist, tmp);
   for (declare i,l int, i := 0, l := length (ilist); i < l; i := i + 2)
-	{
+    {
       result
 	  (
 	      ilist[i+1][1],
@@ -6213,7 +5830,7 @@ create procedure YAC_VAD_LIST (in dir varchar := null, in fs_type int := 0)
 	      ilist[i+1][8],
 	      ilist[i+1][9]
 	  );
-}
+    }
 };
 
 yacutia_exec_no_error('drop view DB.DBA.YAC_VAD_LIST');
@@ -6223,25 +5840,25 @@ create procedure view YAC_VAD_LIST as DB.DBA.YAC_VAD_LIST (dir, fs_type)
      PKG_NVER varchar,  PKG_NDATE  varchar,  PKG_FILE varchar, PKG_DEST int);
 
 create procedure URL_REWRITE_UPDATE_VHOST (in rulelist varchar, in lpath varchar, in vhost varchar, in lhost varchar)
-        {
+{
   declare h_opts any;
   declare upd_vd int;
   h_opts := (select deserialize (HP_OPTIONS) from DB.DBA.HTTP_PATH
   	where HP_LPATH = lpath and HP_HOST = vhost and HP_LISTEN_HOST = lhost);
   upd_vd := 0;
   if (not isarray (h_opts))
-        {
+    {
       h_opts := vector ('url_rewrite', rulelist);
       upd_vd := 1;
-}
+    }
   else if (not position ('url_rewrite', h_opts))
-{
+    {
       h_opts := vector_concat (h_opts, vector ('url_rewrite', rulelist));
       upd_vd := 1;
-}
+    }
 
   if (upd_vd = 1)
-{
+    {
       update DB.DBA.HTTP_PATH set HP_OPTIONS = serialize (h_opts)
 	  where HP_LPATH = lpath and HP_HOST = vhost and HP_LISTEN_HOST = lhost;
       DB.DBA.VHOST_MAP_RELOAD (vhost, lhost, lpath);
@@ -6250,7 +5867,7 @@ create procedure URL_REWRITE_UPDATE_VHOST (in rulelist varchar, in lpath varchar
 ;
 
 create procedure yac_list_keys (in username varchar)
-    {
+{
   declare xenc_name, xenc_type varchar;
   declare arr any;
   result_names (xenc_name, xenc_type);
@@ -6258,7 +5875,7 @@ create procedure yac_list_keys (in username varchar)
     return;
   arr := USER_GET_OPTION (username, 'KEYS');
   for (declare i, l int, i := 0, l := length (arr); i < l; i := i + 2)
-	{
+    {
     if (length (arr[i]))
         result (arr[i], arr[i+1][0]);
     }
@@ -6280,7 +5897,7 @@ create procedure yac_vec_add (in k varchar, in v varchar, inout opts any)
 
 
 create procedure
-yac_set_ssl_key (in k varchar, in v varchar, inout opts any)
+yac_set_ssl_key (in k varchar, in v varchar, in extra varchar, inout opts any)
 {
   if (k = 'none' or not length (k))
     {
@@ -6288,7 +5905,7 @@ yac_set_ssl_key (in k varchar, in v varchar, inout opts any)
       new_opts := vector ();
       for (declare i, l int, i := 0, l := length (opts); i < l; i := i + 2)
         {
-	  if (opts[i] not in ('https_cert', 'https_key', 'https_verify', 'https_cv_depth'))
+	  if (opts[i] not in ('https_cert', 'https_key', 'https_verify', 'https_cv_depth', 'https_extra_chain_certificates'))
 	    new_opts := vector_concat (new_opts, vector (opts[i], opts[i+1]));
 	}
       opts := new_opts;
@@ -6297,6 +5914,7 @@ yac_set_ssl_key (in k varchar, in v varchar, inout opts any)
     {
       yac_vec_add ('https_cert', 'db:'||k, opts);
       yac_vec_add ('https_key',  'db:'||k, opts);
+      yac_vec_add ('https_extra_chain_certificates', extra, opts);
       yac_vec_add ('https_verify', cast (v as int), opts);
       yac_vec_add ('https_cv_depth', 10, opts);
     }
@@ -6620,6 +6238,8 @@ create procedure y_rdf_api_type (in t int)
     return 'URL';
   else if (t = 2)
     return 'keywords';
+  else if (t = 3)
+    return 'preprocess';
   return '';
 }
 ;
@@ -6911,3 +6531,271 @@ create procedure y_list_webids (in uname varchar)
   return webids;
 }
 ;
+
+create procedure construct_table_sql( in tablename varchar ) returns varchar
+{
+  declare sql varchar;
+  declare k integer;
+  
+  sql := 'SELECT ';
+  k := 0;
+
+    for SELECT c."COLUMN" as COL_NAME 
+      from  DB.DBA.SYS_KEYS k, DB.DBA.SYS_KEY_PARTS kp, "SYS_COLS" c
+      where
+            name_part (k.KEY_TABLE, 0) =  name_part (tablename, 0) and
+            name_part (k.KEY_TABLE, 1) =  name_part (tablename, 1) and
+            name_part (k.KEY_TABLE, 2) =  name_part (tablename, 2)
+            and __any_grants (k.KEY_TABLE)
+        and c."COLUMN" <> '_IDN'
+        and k.KEY_IS_MAIN = 1
+        and k.KEY_MIGRATE_TO is null
+        and kp.KP_KEY_ID = k.KEY_ID
+        and c.COL_ID = kp.KP_COL
+	order by kp.KP_NTH do 
+	{
+      if (k > 0 )
+          sql := concat( sql, ',' );
+      else k := 1;
+
+      sql := concat( sql, COL_NAME);
+      
+  }
+  sql := concat(sql, ' FROM ', tablename);
+  
+  return sql;
+}
+;
+
+
+create procedure vector_to_text_opt (in v any)
+{
+  declare i int;
+  declare r varchar;
+  if (v is null) return '';
+  r := '';
+  for (i := 0; i < length (v); i := i + 2)
+    r := r || v[i] || '=' || v[i+1] || ';\r\n';
+  return r;  
+}
+;
+
+create procedure text_opt_to_vector (in s varchar)
+{
+  declare inx int;
+  declare arr any;
+  s := replace (s, '\n', '');
+  s := replace (s, '\r', '');
+  s := trim (s);
+  s := rtrim (s, ';');
+  s := replace (s, ';', '&');
+  arr := split_and_decode (s);
+  if (0 = length (arr))
+    return NULL;
+  inx := 0;
+  foreach (varchar x in arr) do
+    {
+      arr[inx] := trim (x);
+      inx := inx + 1;
+    } 
+  return arr; 
+}
+;
+
+create procedure DI_TAG (in fp any, in w any, in dgst any := 'MD5', in fmt any := 'json')
+{
+  declare x, u, pref any;
+  u := sprintf ('&http=%{WSHost}s');
+  x := hex2bin (lower (replace (fp, ':', '')));  
+  x := encode_base64url (cast (x as varchar));
+  if (fmt <> 'sparql')
+    pref := 'ID Claim: ';
+  else  
+    pref := ''; 
+  return sprintf ('%sdi:%s;%s?hashtag=webid%s', pref, lower (dgst), x, u);
+}
+;
+
+create procedure X509_STRING_DATE (in val varchar)
+{
+  declare ret, tmp any;
+  ret := NULL;
+  declare exit handler for sqlstate '*'
+    {
+      return null;
+    };
+  val := regexp_replace (val, '[ ]+', ' ', 1, null);
+  -- Jan 11 14:36:33 2012 GMT
+  if (val is not null and regexp_match ('[[:upper:]][[:lower:]]{2} [0-9]{1,} [0-9]{2}:[0-9]{2}:[0-9]{2} [0-9]{4,} GMT', val) is not null)
+    {
+      tmp := sprintf_inverse (val, '%s %s %s %s GMT', 0);
+      if (tmp is not null and length (tmp) > 3)
+	{
+	  ret := http_string_date (sprintf ('Wee, %s %s %s %s GMT', tmp[1], tmp[0], tmp[3], tmp[2]));
+	  ret := dt_set_tz (ret, 0);
+	}
+    }
+  return ret;
+}
+;
+
+create procedure URL_REMOVE_FRAG (in uri any)
+{
+  declare h any;
+  h := WS.WS.PARSE_URI (uri);
+  h [5] := '';
+  uri := WS.WS.VFS_URI_COMPOSE (h);
+  return uri;
+}
+;
+
+create procedure 
+make_cert_iri (in key_name varchar)
+{
+  return sprintf ('http://%{WSHost}s/issuer/key/%s/%s#this', user, key_name); 
+}
+;
+
+create procedure
+make_cert_stmt (in key_name varchar, in digest_type varchar := 'sha1')
+{
+  declare key_iri, cer_iri, webid varchar;
+  declare cert_fingerprint, cert_modulus, cert_exponent varchar;
+  declare info any;
+  declare cert_serial, cert_subject, cert_issuer, cert_val_not_before, cert_val_not_after varchar;
+  declare tag, san, ian varchar;
+  declare stmt varchar;
+
+  cert_serial         := get_certificate_info (1, key_name, 3);
+  cert_subject        := get_certificate_info (2, key_name, 3);
+  cert_issuer         := get_certificate_info (3, key_name, 3);
+  cert_val_not_before := get_certificate_info (4, key_name, 3);
+  cert_val_not_after  := get_certificate_info (5, key_name, 3);
+  cert_fingerprint    := get_certificate_info (6, key_name, 3, null, digest_type);
+  info := get_certificate_info (9, key_name, 3);
+  san := get_certificate_info (7, key_name, 3, '', '2.5.29.17');
+  ian := get_certificate_info (7, key_name, 3, '', '2.5.29.18');
+  if (san is null) san := make_cert_iri (key_name);
+  if (ian is null) ian := make_cert_iri (key_name);
+
+  cert_exponent    := info[1];
+  cert_modulus     := bin2hex(info[2]);
+  cert_fingerprint := replace (cert_fingerprint, ':', '');
+
+  tag := DI_TAG (cert_fingerprint, webid, digest_type, 'sparql');
+
+  key_iri := sprintf ('http://%{WSHost}s/issuer/key/%s/%s', user, key_name); 
+  webid := make_cert_iri (key_name);
+  cer_iri := url_remove_frag (webid) || '#cert' || replace (cert_fingerprint, ':', '');
+
+  stmt := sprintf ('
+SPARQL  
+PREFIX rsa: <http://www.w3.org/ns/auth/rsa#>
+PREFIX cert: <http://www.w3.org/ns/auth/cert#>
+PREFIX oplcert: <http://www.openlinksw.com/schemas/cert#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+INSERT 
+INTO GRAPH <http://%{WSHost}s/pki>
+ {  
+    <%s>       cert:key <%s> ;
+    	       a foaf:Agent .		
+    <%s>       a cert:RSAPublicKey ;  
+               cert:modulus "%s"^^xsd:hexBinary ;    
+               cert:exponent "%d"^^xsd:int .   
+
+    <%s>       oplcert:hasCertificate <%s> .
+    <%s>       a oplcert:Certificate ;
+               oplcert:fingerprint "%s" ;
+               oplcert:fingerprint-digest "%s" ;
+               oplcert:subject "%s" ;
+       	       oplcert:issuer "%s" ; 	 
+               oplcert:notBefore "%s"^^xsd:dateTime ; 	 
+               oplcert:notAfter "%s"^^xsd:dateTime ; 	 
+               oplcert:serial "%s" ;
+	       oplcert:digestURI <%s> ;
+	       %s
+    	       %s		   
+	       oplcert:hasPublicKey <%s> .
+ }
+',  webid, key_iri,
+    key_iri, cert_modulus, cert_exponent,
+    webid, cer_iri,
+    cer_iri, cert_fingerprint, digest_type, cert_subject, cert_issuer, 
+    DB..date_iso8601 (DB..X509_STRING_DATE (cert_val_not_before)), DB..date_iso8601 (DB..X509_STRING_DATE (cert_val_not_after)), 
+    cert_serial, tag, 
+    case when san is not null then sprintf ('oplcert:subjectAltName <%s> ; ', san) else '' end,
+    case when ian is not null then sprintf ('oplcert:issuerAltName <%s> ;', ian) else '' end,
+    key_iri);
+
+--  dbg_printf ('%s', stmt);
+
+  return stmt;
+
+}
+;
+
+
+create procedure PKI.DBA."key" (in "key_name" varchar, in "username" varchar) __SOAP_HTTP 'text/plain'
+{
+  declare accept, pref_acc any;
+  accept := http_request_header_full (http_request_header (), 'Accept', 'text/plain');
+  pref_acc := DB.DBA.HTTP_RDF_GET_ACCEPT_BY_Q (accept);
+  set_user_id ("username");
+  if (xenc_key_exists ("key_name"))
+    {
+      declare k any;
+      k := "key_name";
+      if (strstr (pref_acc, 'application/x-ssh-key') is not null)
+       http (xenc_pubkey_ssh_export (k));
+      else if (strstr (pref_acc, 'application/x-der-key') is not null)
+        http (xenc_pubkey_DER_export (k));
+      else if (strstr (pref_acc, 'text/x-der-key') is not null)
+        http (encode_base64 (cast (xenc_pubkey_DER_export (k) as varchar)));
+      else if (strstr (pref_acc, 'text/plain') is not null)
+        http (xenc_pubkey_PEM_export (k));
+      else if (strstr (pref_acc, 'text/html') is not null or strstr (pref_acc, '*/*') is not null)	
+	{
+	   http_status_set (303);
+	   http_header (http_header_get () || sprintf ('Location: /describe/?url=http://%{WSHost}s/issuer/key/%s/%s\r\n', "username", "key_name"));
+	   return '';
+	}	
+      else
+        {
+	  declare qr, path, params, lines any;
+	  qr := sprintf ('DESCRIBE <http://%{WSHost}s/issuer/key/%s/%s> FROM <http://%{WSHost}s/pki>', "username", "key_name");
+	  http_header ('');
+	  path := vector ('sparql');
+	  params := vector ('query', qr);
+	  lines := http_request_header ();
+	  WS.WS."/!sparql/" (path, params, lines);
+	  return '';
+	}  
+      http_header (sprintf ('Content-Type: %s\r\n', pref_acc));
+    }
+  return '';
+}
+;
+
+create procedure PKI_INIT ()
+{
+  if (exists (select 1 from DB.DBA.SYS_USERS where U_NAME = 'PKI')) 
+    return;
+  DB.DBA.USER_CREATE ('PKI', uuid(), vector ('DISABLED', 1, 'LOGIN_QUALIFIER', 'PKI'));
+};
+
+PKI_INIT ();
+
+DB.DBA.VHOST_REMOVE (lpath=>'/issuer/key');
+DB.DBA.VHOST_DEFINE (lpath=>'/issuer/key', ppath=>'/SOAP/Http/key', soap_user=>'PKI', opts=>vector ('url_rewrite', 'pki_certs_list1'));
+
+DB.DBA.URLREWRITE_CREATE_RULELIST ('pki_certs_list1', 1, vector ('pki_cert_rule1'));
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('pki_cert_rule1', 1,
+    '/issuer/([^/]*)/([^/]*)/([^/]*)\x24',
+    vector('m', 'uid', 'id'), 1,
+    '/issuer/%s?key_name=%s&username=%U', vector('m', 'id', 'uid'),
+    null,
+    null,
+    2);
+
+grant execute on PKI.DBA."key" to PKI;

@@ -1,0 +1,288 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectName>virtuoso-clr-t</ProjectName>
+    <ProjectGuid>{8D07389F-F48A-49B9-BED9-F71FCBACC4A8}</ProjectGuid>
+    <RootNamespace>virtuoso_clr_t</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros">
+    <ShortPlatform Condition="'$(Platform)' == 'Win32'">x86</ShortPlatform>
+    <ShortPlatform Condition="'$(Platform)' == 'x64'">x64</ShortPlatform>
+  </PropertyGroup>
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ShortPlatform)\$(Configuration)\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ShortPlatform)\$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ShortPlatform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ShortPlatform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|x64'" />
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Midl>
+      <TargetEnvironment>X64</TargetEnvironment>
+    </Midl>
+    <ClCompile>
+      <Optimization>Full</Optimization>
+      <AdditionalIncludeDirectories>..\libsrc\xml.new;..\libsrc;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\zlib;..\binsrc\driver;..\libsrc\plugin;..\libsrc\langfunc;..\libsrc\openssl;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;_CONSOLE;_SSL;YYTOKENTYPE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <ExceptionHandling>
+      </ExceptionHandling>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <CompileAs>Default</CompileAs>
+    </ClCompile>
+    <Link>
+      <AdditionalOptions>/MACHINE:AMD64 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalDependencies>libvirtuoso-t.lib;ws2_32.lib;libeay32.lib;ssleay32.lib;advapi32.lib;Mscoree.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutDir)virtuoso-clr-t.exe</OutputFile>
+      <AdditionalLibraryDirectories>$(ShortPlatform)/$(Configuration)/;../SDK/$(ShortPlatform)/sslsdk/out32dll;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <ProgramDatabaseFile>$(OutDir)virtuoso_clr_t.pdb</ProgramDatabaseFile>
+      <SubSystem>Console</SubSystem>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
+      <DataExecutionPrevention>
+      </DataExecutionPrevention>
+      <TargetMachine>MachineX64</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Midl />
+    <ClCompile>
+      <Optimization>Full</Optimization>
+      <AdditionalIncludeDirectories>..\libsrc\xml.new;..\libsrc;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\zlib;..\binsrc\driver;..\libsrc\plugin;..\libsrc\langfunc;..\libsrc\openssl;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;_CONSOLE;_SSL;YYTOKENTYPE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <ExceptionHandling>
+      </ExceptionHandling>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <PrecompiledHeaderFile>
+      </PrecompiledHeaderFile>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <CompileAs>Default</CompileAs>
+    </ClCompile>
+    <Link>
+      <AdditionalOptions>
+      </AdditionalOptions>
+      <AdditionalDependencies>libvirtuoso-t.lib;ws2_32.lib;libeay32.lib;ssleay32.lib;advapi32.lib;Mscoree.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutDir)virtuoso-clr-t.exe</OutputFile>
+      <AdditionalLibraryDirectories>$(ShortPlatform)/$(Configuration)/;../SDK/$(ShortPlatform)/sslsdk/out32dll;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <ProgramDatabaseFile>$(OutDir)virtuoso_clr_t.pdb</ProgramDatabaseFile>
+      <SubSystem>Console</SubSystem>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
+      <DataExecutionPrevention>
+      </DataExecutionPrevention>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\binsrc\hosting\mono\basec.c" />
+    <ClCompile Include="..\binsrc\hosting\mono\dotnet.cpp" />
+    <ClCompile Include="..\binsrc\hosting\mono\sql_code_clr.c" />
+    <ClCompile Include="..\binsrc\hosting\mono\sql_code_xslt.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\binsrc\virtuoso\virtuoso_t.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\binsrc\hosting\mono\import_clr.sql">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">cd %(RootDir)%(Directory)
+rm -f sql_code_clr.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_clr pass_bootstrap_cli=1 pl_stats=PLDBG %(FullPath) &gt; sql_code_clr.c
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)\sql_code_clr.c;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">cd %(RootDir)%(Directory)
+rm -f sql_code_clr.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_clr pass_bootstrap_cli=1 pl_stats=PLDBG %(FullPath) &gt; sql_code_clr.c
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">cd %(RootDir)%(Directory)
+rm -f sql_code_clr.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_clr pass_bootstrap_cli=1 pl_stats=PLDBG %(FullPath) &gt; sql_code_clr.c
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RootDir)%(Directory)\sql_code_clr.c;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)\sql_code_clr.c;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">cd %(RootDir)%(Directory)
+rm -f sql_code_clr.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_clr pass_bootstrap_cli=1 pl_stats=PLDBG %(FullPath) &gt; sql_code_clr.c
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)\sql_code_clr.c;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">cd %(RootDir)%(Directory)
+rm -f sql_code_clr.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_clr pass_bootstrap_cli=1 pl_stats=PLDBG %(FullPath) &gt; sql_code_clr.c
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">cd %(RootDir)%(Directory)
+rm -f sql_code_clr.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_clr pass_bootstrap_cli=1 pl_stats=PLDBG %(FullPath) &gt; sql_code_clr.c
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RootDir)%(Directory)\sql_code_clr.c;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)\sql_code_clr.c;%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\binsrc\hosting\mono\mono_type.xsl">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">cd %(RootDir)%(Directory)
+rm -f sql_code_clr.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_xslt pass_bootstrap_cli=1 pl_stats=PLDBG %(FullPath) &gt; sql_code_xslt.c
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)\sql_code_xslt.c;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">cd %(RootDir)%(Directory)
+rm -f sql_code_xslt.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_xslt pass_bootstrap_cli=1 pl_stats=PLDBG %(Filename)%(Extension) &gt; sql_code_xslt.c
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">cd %(RootDir)%(Directory)
+rm -f sql_code_xslt.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_xslt pass_bootstrap_cli=1 pl_stats=PLDBG %(Filename)%(Extension) &gt; sql_code_xslt.c
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RootDir)%(Directory)\sql_code_xslt.c;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)\sql_code_xslt.c;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">cd %(RootDir)%(Directory)
+rm -f sql_code_clr.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_xslt pass_bootstrap_cli=1 pl_stats=PLDBG %(FullPath) &gt; sql_code_xslt.c
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)\sql_code_xslt.c;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">cd %(RootDir)%(Directory)
+rm -f sql_code_xslt.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_xslt pass_bootstrap_cli=1 pl_stats=PLDBG %(Filename)%(Extension) &gt; sql_code_xslt.c
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">cd %(RootDir)%(Directory)
+rm -f sql_code_xslt.c
+gawk -f ../../../libsrc/Wi/sql_to_c.awk -v init_name=_xslt pass_bootstrap_cli=1 pl_stats=PLDBG %(Filename)%(Extension) &gt; sql_code_xslt.c
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RootDir)%(Directory)\sql_code_xslt.c;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)\sql_code_xslt.c;%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\binsrc\hosting\mono\virtclr.cs">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">cd %(RootDir)%(Directory)
+
+csc /t:library /out:$(TargetDir)/virtclr.dll %(Filename)%(Extension)
+csc /t:library /out:$(TargetDir)/virt_http.dll virt_http.cs
+gacutil -u virt_http
+gacutil -i $(TargetDir)/virt_http.dll
+
+cd $(ProjectDir)
+</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)\virt_http.cs;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(TargetDir)\virtclr.dll;$(TargetDir)\virt_http.dll;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">cd %(RootDir)%(Directory)
+
+csc /t:library /out:$(TargetDir)/virtclr.dll %(Filename)%(Extension)
+csc /t:library /out:$(TargetDir)/virt_http.dll virt_http.cs
+gacutil -u virt_http
+gacutil -i $(TargetDir)/virt_http.dll
+
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">cd %(RootDir)%(Directory)
+
+csc /t:library /out:$(TargetDir)/virtclr.dll %(Filename)%(Extension)
+csc /t:library /out:$(TargetDir)/virt_http.dll virt_http.cs
+gacutil -u virt_http
+gacutil -i $(TargetDir)/virt_http.dll
+
+cd $(ProjectDir)
+</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RootDir)%(Directory)\virt_http.cs;%(AdditionalInputs)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)\virt_http.cs;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(TargetDir)\virtclr.dll;$(TargetDir)\virt_http.dll;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(TargetDir)\virtclr.dll;$(TargetDir)\virt_http.dll;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">cd %(RootDir)%(Directory)
+
+csc /t:library /out:$(TargetDir)/virtclr.dll %(Filename)%(Extension)
+csc /t:library /out:$(TargetDir)/virt_http.dll virt_http.cs
+gacutil -u virt_http
+gacutil -i $(TargetDir)/virt_http.dll
+
+cd $(ProjectDir)
+</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)\virt_http.cs;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(TargetDir)\virtclr.dll;$(TargetDir)\virt_http.dll;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">cd %(RootDir)%(Directory)
+
+csc /t:library /out:$(TargetDir)/virtclr.dll %(Filename)%(Extension)
+csc /t:library /out:$(TargetDir)/virt_http.dll virt_http.cs
+gacutil -u virt_http
+gacutil -i $(TargetDir)/virt_http.dll
+
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">cd %(RootDir)%(Directory)
+
+csc /t:library /out:$(TargetDir)/virtclr.dll %(Filename)%(Extension)
+csc /t:library /out:$(TargetDir)/virt_http.dll virt_http.cs
+gacutil -u virt_http
+gacutil -i $(TargetDir)/virt_http.dll
+
+cd $(ProjectDir)
+</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RootDir)%(Directory)\virt_http.cs;%(AdditionalInputs)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)\virt_http.cs;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(TargetDir)\virtclr.dll;$(TargetDir)\virt_http.dll;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(TargetDir)\virtclr.dll;$(TargetDir)\virt_http.dll;%(Outputs)</Outputs>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="libvirtuoso_odbc_t.vcxproj">
+      <Project>{fb836c59-41e1-48ea-a59b-460ab56587ee}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

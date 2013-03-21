@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -200,7 +200,7 @@ box_read_long_wide_string (dk_session_t *session, dtp_t macro)
 {
   long utf8_len, wide_len = 0;
   dk_set_t string_set = NULL;
-  wchar_t *array, *ptr;
+  wchar_t *w_array, *ptr;
   virt_mbstate_t state;
   wchar_t tmp[1];
   char read;
@@ -208,17 +208,17 @@ box_read_long_wide_string (dk_session_t *session, dtp_t macro)
 
   utf8_len = read_long (session);
   memset (&state, 0, sizeof (virt_mbstate_t));
-  MARSH_CHECK_BOX (ptr = array = (wchar_t *) dk_try_alloc_box (CHUNK_SIZE * sizeof (wchar_t), DV_WIDE));
+  MARSH_CHECK_BOX (ptr = w_array = (wchar_t *) dk_try_alloc_box (CHUNK_SIZE * sizeof (wchar_t), DV_WIDE));
   while (utf8_len-- > 0)
     {
       read = session_buffered_read_char (session);
       rc = (int) virt_mbrtowc (tmp, (unsigned char *) &read, 1, &state);
       if (rc > 0)
 	{
-	  if (ptr - array == CHUNK_SIZE)
+	  if (ptr - w_array == CHUNK_SIZE)
 	    {
-	      dk_set_push (&string_set, array);
-	      MARSH_CHECK_BOX (ptr = array = (wchar_t *) dk_try_alloc_box (CHUNK_SIZE * sizeof (wchar_t), DV_WIDE));
+	      dk_set_push (&string_set, w_array);
+	      MARSH_CHECK_BOX (ptr = w_array = (wchar_t *) dk_try_alloc_box (CHUNK_SIZE * sizeof (wchar_t), DV_WIDE));
 	      MARSH_CHECK_LENGTH ((wide_len + 1) * sizeof (wchar_t));
 	    }
 	  *ptr++ = tmp[0];
@@ -228,7 +228,12 @@ box_read_long_wide_string (dk_session_t *session, dtp_t macro)
 	{ /* an error occurred */
 	  caddr_t chunk_ptr;
 	  while (NULL != (chunk_ptr = (caddr_t) dk_set_pop (&string_set)))
-	    dk_free_box (chunk_ptr);
+            {
+#ifdef MALLOC_DEBUG
+              ((wchar_t *)chunk_ptr)[CHUNK_SIZE - 1] = 0;
+#endif
+	      dk_free_box (chunk_ptr);
+            }
 	  return NULL;
 	}
     }
@@ -241,27 +246,36 @@ box_read_long_wide_string (dk_session_t *session, dtp_t macro)
       while (NULL != (chunk_ptr = (caddr_t) dk_set_pop (&string_set)))
 	{
 	  memcpy (box_ptr, chunk_ptr, CHUNK_SIZE * sizeof (wchar_t));
+#ifdef MALLOC_DEBUG
+          ((wchar_t *)chunk_ptr)[CHUNK_SIZE - 1] = 0;
+#endif
 	  dk_free_box (chunk_ptr);
 	  box_ptr += CHUNK_SIZE * sizeof (wchar_t);
 	}
-      if (ptr - array > 0)
+      if (ptr - w_array > 0)
 	{
-	  memcpy (box_ptr, array, (ptr - array) * sizeof (wchar_t));
-	  dk_free_box ((box_t) array);
+	  memcpy (box_ptr, w_array, (ptr - w_array) * sizeof (wchar_t));
+#ifdef MALLOC_DEBUG
+          w_array[CHUNK_SIZE - 1] = 0;
+#endif
+	  dk_free_box ((box_t) w_array);
 	}
-      *((wchar_t *)(box_ptr + (((long)(ptr - array)) * sizeof (wchar_t)))) = L'\0';
+      *((wchar_t *)(box_ptr + (((long)(ptr - w_array)) * sizeof (wchar_t)))) = L'\0';
       return box;
     }
   else
     { /* no wide chars at all */
-      dk_free_box ((box_t) array);
+#ifdef MALLOC_DEBUG
+      w_array[CHUNK_SIZE - 1] = 0;
+#endif
+      dk_free_box ((box_t) w_array);
       return NULL;
     }
 }
 
 
 size_t
-wide_char_length_of_utf8_string (unsigned char *str, size_t utf8_length)
+wide_char_length_of_utf8_string (const unsigned char *str, size_t utf8_length)
 {
   virt_mbstate_t state;
   memset (&state, 0, sizeof (virt_mbstate_t));
@@ -355,6 +369,20 @@ virt_wcsstr (const wchar_t *wcs, const wchar_t *wc)
   return NULL;
 }
 
+wchar_t *
+virt_wcsrstr (const wchar_t *wcs, const wchar_t *wc)
+{
+  size_t len;
+  const wchar_t *cp;
+  const wchar_t *ep;
+
+  len = virt_wcslen (wc);
+  for (cp = wcs + virt_wcslen (wcs) - len; cp >= wcs; --cp)
+    if (*cp == *wc && !virt_wcsncmp (cp, wc, len))
+      return (wchar_t *) cp;
+
+  return NULL;
+}
 
 static unsigned char
 cli_wchar_to_char (wchar_t src, wcharset_t *charset)

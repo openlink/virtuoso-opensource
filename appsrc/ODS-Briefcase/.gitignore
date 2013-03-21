@@ -1,0 +1,6 @@
+make_ods_blog_vad.log
+make_ods_blog_vad.xml
+*.vad
+version.base
+version.curr
+*.log

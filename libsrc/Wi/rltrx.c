@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -104,9 +104,7 @@ pl_rlock_table (page_lock_t * pl, row_lock_t ** locks, int *fill_ret)
   DO_RLOCK (rl, pl)
   {
 #ifndef NDEBUG
-    /* If column-wise key, a transact can do many page apply's on the same page so rl on deld is normal.  Else should mention */
-    if (ITC_AT_END == rl->rl_pos && !pl->pl_it->it_key->key_is_col)
-      log_info ("suspect to have deld rls on pl outside of transact");
+    if (ITC_AT_END == rl->rl_pos) log_info ("suspect to have deld rls on pl outside of transact");
 #endif
     locks[fill++] = rl;
   }
@@ -119,7 +117,7 @@ pl_rlock_table (page_lock_t * pl, row_lock_t ** locks, int *fill_ret)
 
 
 void
-lock_add_pl_to_owners (it_cursor_t * itc, gen_lock_t * rl, page_lock_t * pl)
+rl_add_pl_to_owners (it_cursor_t * itc, row_lock_t * rl, page_lock_t * pl)
 {
   it_cursor_t *waiting;
   if (rl->pl_is_owner_list)
@@ -140,19 +138,6 @@ lock_add_pl_to_owners (it_cursor_t * itc, gen_lock_t * rl, page_lock_t * pl)
       rdbg_printf (("   rl %p moved, waiting lt %p added to pl %p\n", rl, waiting->itc_ltrx, pl));
       waiting = waiting->itc_next_on_lock;
     }
-}
-
-
-void
-rl_add_pl_to_owners (it_cursor_t * itc, row_lock_t * rl, page_lock_t * pl)
-{
-  if (rl->rl_n_cols)
-    {
-      int inx;
-      for (inx = 0; inx < rl->rl_n_cols; inx++)
-	lock_add_pl_to_owners (itc, (gen_lock_t*)rl->rl_cols[inx], pl);    }
-  else
-    lock_add_pl_to_owners (itc, (gen_lock_t*)rl, pl);
 }
 
 
@@ -297,7 +282,7 @@ upd_refit_rlock (it_cursor_t * itc, int pos)
   page_lock_t *pl = itc->itc_pl;
   row_lock_t **prev;
   row_lock_t *rl;
-  if (itc->itc_non_txn_insert || itc->itc_ltrx->lt_is_excl)
+  if (itc->itc_ltrx->lt_is_excl)
     return NULL;
   prev = &PL_RLS (pl, pos);
   rl = *prev;
@@ -319,7 +304,7 @@ upd_refit_rlock (it_cursor_t * itc, int pos)
 
 
 int
-itc_check_ins_deleted (it_cursor_t * itc, buffer_desc_t * buf, row_delta_t * rd, int may_replace)
+itc_check_ins_deleted (it_cursor_t * itc, buffer_desc_t * buf, row_delta_t * rd)
 {
   db_buf_t page = buf->bd_buffer;
   int pos = buf->bd_content_map->pm_entries[itc->itc_map_pos];
@@ -331,8 +316,6 @@ itc_check_ins_deleted (it_cursor_t * itc, buffer_desc_t * buf, row_delta_t * rd,
 	  log_error ("insert on a deleted row not of this transaction.  Can be the deleted flag is left on from before, from a finished transaction or cpt kill recovery");
 	  itc_set_lock_on_row (itc, &buf);
 	}
-      if (!may_replace)
-	return 1;
       upd_refit_row (itc, &buf, rd, RD_UPDATE);
       return 1;
     }
@@ -355,33 +338,6 @@ itc_make_pl (it_cursor_t * itc, buffer_desc_t * buf)
   ITC_LEAVE_MAP_NC (itc);
   itc->itc_pl = pl;
   lt_add_pl (itc->itc_ltrx, pl, 1);
-}
-
-
-void
-pl_clk_lt_refs (page_lock_t * pl, row_lock_t * rl)
-{
-  int inx;
-  for (inx = 0; inx < rl->rl_n_cols; inx++)
-    {
-      col_row_lock_t * clk = rl->rl_cols[inx];
-      it_cursor_t * waiting = clk->pl_waiting;
-      if (clk->pl_is_owner_list)
-	{
-	  DO_SET (lock_trx_t *, owner, (dk_set_t*)&clk->pl_owner)
-	    {
-	      lt_add_pl (owner, pl, 0);
-	    }
-	  END_DO_SET();
-	}
-      else
-	lt_add_pl (clk->pl_owner, pl, 0);
-      while (waiting)
-    {
-      lt_add_pl (waiting->itc_ltrx, pl, 0);
-      waiting = waiting->itc_next_on_lock;
-    }
-    }
 }
 
 
@@ -435,23 +391,13 @@ itc_insert_rl (it_cursor_t * itc, buffer_desc_t * buf, int pos, row_lock_t * rl,
     }
   if (itc->itc_ltrx->lt_status != LT_PENDING)
     {
-    rdbg_printf (("*** making posthumous ins lock T=%ld L=%d \n", TRX_NO (itc->itc_ltrx), itc->itc_page));
+      rdbg_printf (("*** making posthumous ins lock T=%ld L=%d \n", TRX_NO (itc->itc_ltrx), itc->itc_page));
     }
 
   pl->pl_n_row_locks++;
   /* rdbg_printf (("       rl insert at %d on %ld\n", pos, pl->pl_page)); */
-  if (itc->itc_is_col)
-    {
-      rl->pl_type = PL_SHARED;
-      if (!rl->rl_cols)
-	rl->rl_cols = (col_row_lock_t **)dk_alloc_box (sizeof (caddr_t) * 32, DV_BIN);
-      pl_clk_lt_refs (pl, rl);
-    }
-  else
-    {
   rl->pl_type = PL_EXCLUSIVE;
   rl->pl_owner = itc->itc_ltrx;
-    }
   rl->rl_pos = pos;
   if (!new_pl
       || (not_own = !pl_lt_is_owner (pl, itc->itc_ltrx)))
@@ -466,7 +412,7 @@ itc_insert_rl (it_cursor_t * itc, buffer_desc_t * buf, int pos, row_lock_t * rl,
 
 
 int
-itc_insert_lock (it_cursor_t * itc, buffer_desc_t * buf, int *res_ret, int may_wait)
+itc_insert_lock (it_cursor_t * itc, buffer_desc_t * buf, int *res_ret)
 {
   int res = *res_ret;
   page_lock_t *pl = itc->itc_pl;
@@ -474,8 +420,6 @@ itc_insert_lock (it_cursor_t * itc, buffer_desc_t * buf, int *res_ret, int may_w
     return NO_WAIT;
   if (PL_IS_PAGE (pl))
     {
-      if (!may_wait)
-	return lock_add_owner ((gen_lock_t*)pl, itc, 0) ? NO_WAIT : WAIT_OVER;
       return (lock_enter ((gen_lock_t *) pl, itc, buf));
     }
   if (DVC_LESS == res)
@@ -486,8 +430,6 @@ itc_insert_lock (it_cursor_t * itc, buffer_desc_t * buf, int *res_ret, int may_w
       if (RL_IS_FOLLOW (rl) && rl->pl_owner != itc->itc_ltrx)
 	{
 	  TC (tc_insert_follow_wait);
-	  if (!may_wait)
-	    return lock_add_owner ((gen_lock_t*)rl, itc, 0) ? NO_WAIT : WAIT_OVER;
 	  lock_wait ((gen_lock_t *) rl, itc, buf, cl_run_local_only ? ITC_NO_LOCK : ITC_GET_LOCK);
 	  return WAIT_OVER;
 	}
@@ -499,8 +441,6 @@ itc_insert_lock (it_cursor_t * itc, buffer_desc_t * buf, int *res_ret, int may_w
       if (rl)
 	if (!lock_add_owner ((gen_lock_t *) rl, itc, 0))
 	  {
-	    if (!may_wait)
-	      return WAIT_OVER;
 	    lock_wait ((gen_lock_t *) rl, itc, buf, cl_run_local_only ? ITC_NO_LOCK : ITC_GET_LOCK);
 	    return WAIT_OVER;
 	  }
@@ -688,16 +628,8 @@ itc_make_rl (it_cursor_t * itc)
   PL_RL_ADD (pl, rl, itc->itc_map_pos);
   pl->pl_n_row_locks++;
   /* rdbg_printf (("	rl set at %d on %ld %d total\n", rl->rl_pos, pl->pl_page, pl->pl_n_row_locks)); */
-  if (itc->itc_is_col)
-    {
-      rl->pl_type = PL_SHARED;
-      rl->rl_cols = (col_row_lock_t **)dk_alloc_box (sizeof (caddr_t) * 32, DV_BIN);
-
-    }
-  else
   rl->pl_type = itc->itc_lock_mode;
   if (itc->itc_isolation == ISO_SERIALIZABLE
-      && !itc->itc_is_col
       && itc->itc_search_mode != SM_INSERT)
     PL_SET_FLAG (rl, RL_FOLLOW);
   rl->pl_owner = itc->itc_ltrx;
@@ -760,8 +692,6 @@ itc_set_lock_on_row (it_cursor_t * itc, buffer_desc_t ** buf_ret)
 	}
       else
 	{
-	  if (itc->itc_non_txn_insert)
-	    return NO_WAIT;
 	  ITC_MARK_LOCK_SET (itc);
 	  if (PL_CAN_ESCALATE (itc, pl, (*buf_ret)))
 	    {
@@ -782,8 +712,6 @@ itc_set_lock_on_row (it_cursor_t * itc, buffer_desc_t ** buf_ret)
 	GPF_T1 ("itc_pl null when there is a pl");
       ITC_LEAVE_MAP_NC (itc);
 #endif
-      if (itc->itc_non_txn_insert)
-	return NO_WAIT;
       itc_make_pl (itc, *buf_ret);
       if (ITC_PREFER_PAGE_LOCK (itc))
 	{
@@ -853,7 +781,7 @@ itc_read_committed_check (it_cursor_t * itc, buffer_desc_t * buf)
   /* the lock concerns this row, either ecl row lock hwre or excl page lock on page */
   page = buf->bd_buffer;
   row = page + buf->bd_content_map->pm_entries[itc->itc_map_pos];
-  if (LT_SEES_EFFECT (itc->itc_ltrx, gl->pl_owner))
+  if (itc->itc_ltrx == gl->pl_owner)
     return (IE_ISSET (row, IEF_DELETE)) ? DVC_LESS : DVC_MATCH;
   /* this is somebody else's lock.  Get the rb record.
    * Note that if the owner is committing at this time, this cr may have seen a after image  row before but here it will see a pre image .
@@ -1593,9 +1521,9 @@ lt_transact (lock_trx_t * lt, int op)
       char user[16];
       char peer[32];
       dks_client_ip (lt->lt_client, from, user, peer, sizeof (from), sizeof (user), sizeof (peer));
-      log_info ("LTRS_1 %s %s %s %s transact %p %li", user, from, peer,
+      log_info ("LTRS_1 %s %s %s %s transact %p %d", user, from, peer,
 	  op == SQL_COMMIT ? "Commit" : "Rollback", lt,
-          lt->lt_client ? lt->lt_client->cli_autocommit : 0);
+          (int) (lt->lt_client ? lt->lt_client->cli_autocommit : 0));
     }
   lt->lt_status = LT_CLOSING;
 #ifdef PAGE_TRACE
@@ -1613,9 +1541,7 @@ lt_transact (lock_trx_t * lt, int op)
 	  page_lock_t * pl = pl_arr[l_inx];
 	  itc->itc_tree = pl->pl_it;
 	  itc->itc_insert_key = itc->itc_tree->it_key;
-	  if (itc->itc_insert_key->key_is_col)
-	    pl_col_finalize_page (pl, itc, SQL_ROLLBACK == op);
-	  else if (SQL_COMMIT == op)
+	  if (SQL_COMMIT == op)
 	    pl_finalize_page (pl, itc);
 	  else
 	    pl_rollback_page (pl, itc);
@@ -1672,8 +1598,6 @@ lt_transact (lock_trx_t * lt, int op)
     }
 #endif
   DBG_PT_PRINTF (("  Transacted T=%d\n", lt->lt_trx_no));
-  if (itc->itc_is_col)
-    itc_col_free (itc);
   /* it_cache_check (db_main_tree); */
 }
 
@@ -1811,17 +1735,6 @@ lt_rb_entry (lock_trx_t * lt, buffer_desc_t * buf, db_buf_t row, uint32 *code_re
 
 
 void
-lt_rb_whole_row (row_fill_t * rf, db_buf_t row, dbe_key_t * key)
-{
-  int len = row_length (row, key);
-  if (rf->rf_space < len)
-    rf->rf_row = rf->rf_large_row;
-  memcpy (rf->rf_row, row, len);
-  rf->rf_fill = len;
-}
-
-
-void
 lt_rb_copy (buffer_desc_t * buf, db_buf_t row, int op, row_fill_t * rf)
 {
   dbe_key_t * key = buf->bd_tree->it_key;
@@ -1831,11 +1744,6 @@ lt_rb_copy (buffer_desc_t * buf, db_buf_t row, int op, row_fill_t * rf)
   TMP_V_RD (rd);
   if (!kv || KV_LEFT_DUMMY == kv) GPF_T1 ("only rb copies of real rows are allowed");
   key = key->key_versions[kv];
-  if (key->key_no_compression && RB_INSERT != op)
-    {
-      lt_rb_whole_row (rf, row, key);
-      return;
-    }
   IE_SET_KEY_VERSION(rf->rf_row, RB_INSERT == op ? 0 : IE_KEY_VERSION (row));
   if (is_deld)
     {

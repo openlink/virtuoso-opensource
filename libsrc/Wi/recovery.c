@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -248,7 +248,6 @@ srv_dd_to_log (client_connection_t * cli)
   db_log_registry (cli->cli_trx->lt_log);
 
   lt_backup_flush (cli->cli_trx, 1);
-  log_time (log_time_header (wi_inst.wi_master->dbs_cfg_page_dt));
   log_debug ("Dumping the schema done");
 }
 
@@ -516,53 +515,6 @@ row_log (it_cursor_t * itc, buffer_desc_t * buf, int map_pos, dbe_key_t * row_ke
     }
 }
 
-void
-col_row_log (it_cursor_t * itc, buffer_desc_t * buf, int map_pos, dbe_key_t * row_key, row_delta_t * rd)
-{
-  mem_pool_t * mp = mem_pool_alloc ();
-  int row, n_rows = -1, n;
-  itc->itc_map_pos = map_pos;
-  itc->itc_row_data = BUF_ROW (buf, map_pos);
-  DO_CL (cl, row_key->key_row_var)
-    {
-      col_data_ref_t * cr = itc->itc_col_refs[cl->cl_nth - row_key->key_n_significant];
-      if (!cr)
-	itc->itc_col_refs[cl->cl_nth - row_key->key_n_significant] = cr = itc_new_cr (itc);
-      itc_fetch_col (itc, buf, cl, 0, COL_NO_ROW);
-      cr->cr_pages[0].cp_ceic = (ce_ins_ctx_t*)cr_mp_array (cr, mp, 0, COL_NO_ROW, 0);
-      n = BOX_ELEMENTS (cr->cr_pages[0].cp_ceic);
-      if (-1 == n_rows)
-	n_rows = n;
-      else if (n_rows != n)
-	{
-	  log_error ("Columns of different length in seg key %s L=%d, r = %d", row_key->key_name, buf->bd_page, map_pos);
-	  STRUCTURE_FAULT;
-	}
-    }
-  END_DO_CL;
-  rd->rd_key = row_key;
-  rd->rd_n_values = row_key->key_n_parts - row_key->key_n_significant;
-  for (row = 0; row < n_rows; row++)
-    {
-      int col = 0, rd_inx;
-      DO_CL (cl, row_key->key_row_var)
-	{
-	  col_data_ref_t * cr = itc->itc_col_refs[cl->cl_nth - row_key->key_n_significant];
-	  if (col < row_key->key_n_significant)
-	    rd_inx = row_key->key_part_in_layout_order[col];
-	  else
-	    rd_inx = col;
-	  rd->rd_values[rd_inx] = ((caddr_t*)cr->cr_pages[0].cp_ceic)[row];
-	  col++;
-	}
-      END_DO_CL;
-      log_insert (itc->itc_ltrx, rd, LOG_KEY_ONLY | INS_REPLACING);
-      log_rd_blobs (itc, rd);
-    }
-  mp_free (mp);
-  itc_col_leave (itc, 0);
-}
-
 
 void
 log_page (it_cursor_t * it, buffer_desc_t * buf, void* dummy)
@@ -591,11 +543,7 @@ log_page (it_cursor_t * it, buffer_desc_t * buf, void* dummy)
     STRUCTURE_FAULT;
 
   buf->bd_tree = page_key->key_fragments[0]->kf_it;
-  if (!is_crash_dump)
-    {
   /* internal rows consistence check */
-      buf_order_ck (buf);
-    }
   DO_ROWS (buf, map_pos, row, NULL)
     {
       if (row - buf->bd_buffer  > PAGE_SZ)
@@ -624,17 +572,12 @@ log_page (it_cursor_t * it, buffer_desc_t * buf, void* dummy)
 	      n_bad_rows++;
 	      goto next;
 	    }
-	  if (page_key->key_is_col)
-	    col_row_log (it, buf, map_pos, row_key, &rd);
-	  else
-	    {
 	  if (bkp_check_and_recover_blobs)
 	    {
 	      if (bkp_check_and_recover_blob_cols (it, row))
 		buf_set_dirty (buf);
 	    }
 	  row_log (it, buf, map_pos, row_key, &rd);
-	    }
 	  any++;
 	  n_bad_rows = 0;
 	  n_rows++;

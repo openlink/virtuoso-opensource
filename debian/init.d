@@ -5,7 +5,7 @@
 #		Written by OpenLink Virtuoso Maintainer 
 #		<vos.admin@openlinksw.com>
 #
-# Version:	@(#)virtuoso  7.0.0  25-Mar-2011	vos.admin@openlinksw.com
+# Version:	@(#)virtuoso  6.1.4  25-Mar-2011	vos.admin@openlinksw.com
 #
 
 ### BEGIN INIT INFO
@@ -18,7 +18,7 @@
 # Description:		Start and stop the primary instance of Virtuoso running
 # 	in /var/lib/virtuoso/db/. The first time this runs, it loads the
 # 	Conductor administrative package.
-###
+### END INIT INFO
 
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin

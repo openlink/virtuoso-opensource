@@ -7,7 +7,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2006 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -212,7 +212,6 @@ rm -f audit.txt core debug.txt
 ./tvsp.sh
 #./tupgrade_recov.sh
 
-# XXX
 ./trecov.sh
 ./trecov_schema.sh
 
@@ -221,12 +220,12 @@ rm -f audit.txt core debug.txt
 ./tsql3.sh
 ./tsec.sh
 STOP_SERVER
-#./rtest.sh
+./rtest.sh
 ./nwxml.sh
 ./gtkbench.sh quicktest
 ./thttp.sh
 ./tproxy.sh
-#./trepl.sh
+./trepl.sh
 ./txslt.sh
 ./tdav.sh
 # ./tdrop.sh	# Not for a regular test suite
@@ -235,21 +234,20 @@ STOP_SERVER
 ./tvad.sh
 #if [ "X$SQLOPTIMIZE" != "X" ]
 #then
-./tsqlo.sh local # XXX local only
+./tsqlo.sh
 #fi
-
 ./obackup.sh
 if [ "X$IN_NIGHTLY" != "X" ]
 then
 #./tdbp.sh
 touch tdbp.output
 fi
-#./tjdbc.sh
-#./msdtc.sh
-#./ttutorial.sh
-#./bpel.sh
+./tjdbc.sh
+./msdtc.sh
+./ttutorial.sh
+./bpel.sh
 ./tdav_meta.sh
-./tpcd.sh local
+./tpcd.sh
 
 #XXX: not tested yet on Win32
 if [ "x$HOST_OS" != "x" ]
@@ -267,7 +265,7 @@ else
   touch inprocess.output
   ./tsoap12.sh
   ./tvspxex.sh
-#  (cd ../lubm; ./tlubm.sh)
+  (cd ../lubm; ./tlubm.sh)
 fi  
 
 #
@@ -316,9 +314,6 @@ BANNER "COMPLETED testall.sh (almost)"
 #
 #  Check if the tests left us any log files to examine
 #
-#XXX
-if [ 0 == 1 ]
-then
 if test \! -f tvsp.output
 then
     ECHO "***ABORTED: No tvsp.output"
@@ -484,42 +479,37 @@ sqlo_outputs=tsqlo.output
 	exit 3
     fi
 #fi
-fi #XXX
 #
 #  Check if the tests logged any failures
 #
-logs=`ls *.output | grep -v testall`
-RUN egrep '"\*\*\*.*FAILED|\*\*\*.*ABORTED"' $logs
-#RUN egrep '"\*\*\*.*FAILED|\*\*\*.*ABORTED"' tvsp.output trecov.output tsql.output tsql2.output tsql3.output tsec.output rtest.output gtkbench.output thttp.output tproxy.output tdav.output twcopy.output $sqlo_outputs timsg.output tvad.output trepl.output nwxml.output txslt.output obackup.output tjdbc.output inprocess.output tvspxex.output tsoap12.output trecov_schema.output msdtc.output ttutorial.output bpel.output tdav_meta.output # tupgrade_recov.output 
+RUN egrep '"\*\*\*.*FAILED|\*\*\*.*ABORTED"' tvsp.output trecov.output tsql.output tsql2.output tsql3.output tsec.output rtest.output gtkbench.output thttp.output tproxy.output tdav.output twcopy.output $sqlo_outputs timsg.output tvad.output trepl.output nwxml.output txslt.output obackup.output tjdbc.output inprocess.output tvspxex.output tsoap12.output trecov_schema.output msdtc.output ttutorial.output bpel.output tdav_meta.output # tupgrade_recov.output 
 if test $STATUS -eq 0
 then
     ECHO ""
     LINE
     ECHO "=  WARNING: Some tests failed. See *.output in this directory" `pwd`
-    #egrep '\*\*\*.*FAILED|\*\*\*.*ABORTED' tvsp.output trecov.output tsql.output tsql2.output tsql3.output tsec.output rtest.output gtkbench.output thttp.output tproxy.output tdav.output twcopy.output $sqlo_outputs timsg.output tvad.output trepl.output nwxml.output txslt.output obackup.output tjdbc.output inprocess.output tvspxex.output tsoap12.output trecov_schema.output msdtc.output ttutorial.output bpel.output tdav_meta.output # tupgrade_recov.output 
-    RUN egrep '"\*\*\*.*FAILED|\*\*\*.*ABORTED"' $logs
+    egrep '\*\*\*.*FAILED|\*\*\*.*ABORTED' tvsp.output trecov.output tsql.output tsql2.output tsql3.output tsec.output rtest.output gtkbench.output thttp.output tproxy.output tdav.output twcopy.output $sqlo_outputs timsg.output tvad.output trepl.output nwxml.output txslt.output obackup.output tjdbc.output inprocess.output tvspxex.output tsoap12.output trecov_schema.output msdtc.output ttutorial.output bpel.output tdav_meta.output # tupgrade_recov.output 
     LINE
     rm -f audit.txt
  
-# XXX    
     #grail error
-#    RUN egrep '"\*\*\*.*FAILED|\*\*\*.*ABORTED"' trecov.output 
-#    if test $STATUS -eq 0
-#    then
-#	rm -rf grail_backup
-#	mkdir grail_backup
-#	cp *.r* grail_backup
-#	cp trecov.output grail_backup/trecov.out.err
-#    fi	
+    RUN egrep '"\*\*\*.*FAILED|\*\*\*.*ABORTED"' trecov.output 
+    if test $STATUS -eq 0
+    then
+	rm -rf grail_backup
+	mkdir grail_backup
+	cp *.r* grail_backup
+	cp trecov.output grail_backup/trecov.out.err
+    fi	
     #grail error part2
-#    RUN egrep '"\*\*\*.*FAILED|\*\*\*.*ABORTED"' trecov_schema.output 
-#    if test $STATUS -eq 0
-#    then
-#	rm -rf grail_backup2
-#	mkdir grail_backup2
-#	cp *.sr* grail_backup2
-#	cp trecov_schema.output grail_backup2/trecov_schema.out.err
-#    fi	
+    RUN egrep '"\*\*\*.*FAILED|\*\*\*.*ABORTED"' trecov_schema.output 
+    if test $STATUS -eq 0
+    then
+	rm -rf grail_backup2
+	mkdir grail_backup2
+	cp *.sr* grail_backup2
+	cp trecov_schema.output grail_backup2/trecov_schema.out.err
+    fi	
     exit 3;
 else
     ECHO ""

@@ -12,7 +12,8 @@ registry_set ('__sparql_sponge_use_w3c_xslt', 'off');
 delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_HTTP_SESSION';
 delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_CALAIS';
 delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_FEED_RESPONSE';
-delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH_SELECTION';
+delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH';
+delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_HTMLTABLE';
 update DB.DBA.SYS_RDF_MAPPERS set RM_OPTIONS = vector ('add-html-meta', 'no', 'get-feeds', 'no') where RM_HOOK = 'DB.DBA.RDF_LOAD_HTML_RESPONSE';
 delete from DB.DBA.RDF_META_CARTRIDGES;
 

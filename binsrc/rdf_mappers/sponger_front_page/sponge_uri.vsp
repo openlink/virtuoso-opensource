@@ -4,18 +4,25 @@
     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <?vsp
-  declare skinpfx, banner_txt, strapline varchar;
+  declare skinpfx, banner_txt, strapline, banner_logo, fp_title, fp_favicon varchar;
   skinpfx := registry_get ('_sponger_fp_SkinPrefix');
   banner_txt := registry_get ('_sponger_fp_Banner');
+  banner_logo := registry_get ('_sponger_fp_Logo');
   strapline := registry_get ('_sponger_fp_Strapline');
+  fp_title := registry_get ('_sponger_fp_Title');
+  fp_favicon := registry_get ('_sponger_fp_Favicon');
   if (skinpfx = 0) skinpfx := 'skin';
   if (banner_txt = 0) banner_txt := 'Virtuoso Linked Data Middleware';
   if (strapline = 0) strapline := '';
+  if (fp_title = 0) fp_title := 'Virtuoso Sponger';
 ?>
 <head>
   <link rel="stylesheet" href="<?=skinpfx?>/ss/sponger_frontpage.css" type="text/css"/>
   <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
-  <title>Virtuoso Sponger</title>
+  <title><?=fp_title?></title>
+  <?vsp if (fp_favicon <> 0) { ?>
+  <link rel="shortcut icon" href="<?=skinpfx?>/i/<?=fp_favicon?>" />
+  <?vsp } ?>
   <script type="text/javascript">
     var el_item_id;
     var el_about_sponge_uri;
@@ -26,6 +33,7 @@
     function build_sponge_links (site_name, host, entity_uri)
     {
       var describe_href;
+      var item_id_sanitized;
 
       el_item_id = el_item_id || document.getElementById('fld_item_id');
       el_about_sponge_uri = el_about_sponge_uri || document.getElementById('about_sponge_uri');
@@ -36,7 +44,15 @@
       // TO DO - Check the entered item ID is valid
       if (item_id.length == 0)
       {
+        switch (site_name)
+        {
+          case 'WebFinger':
+            alert ('Please enter an email address identifying a WebFinger profile');
+            break;
+          default:
         alert ('Please enter a ' + site_name + ' URI');
+            break;
+        }
         el_fb_ds_links_no_token.style.display = 'none';
         return false;
       }
@@ -44,59 +60,68 @@
       switch (site_name)
       {
         case 'WebID':
-          el_about_sponge_uri.href = el_about_sponge_uri.href.replace(/about\/html\/.*@Lookup@/, 'about/html/' + item_id + '?@Lookup@');
-          describe_href = 'http://' + host + '/describe/?url=' + encodeURIComponent(item_id) + '&sp=1';
+          el_about_sponge_uri.href = el_about_sponge_uri.href.replace(/about\/html\/.*sponger:get/, 'about/html/' + item_id + '?sponger:get');
+          describe_href = 'http://' + host + '/describe/?url=' + encodeURIComponent(item_id) + '&sponger:get=add&sr=0';
+          el_describe_sponge_uri.href = describe_href;
+          break;
+        case 'WebFinger':
+	  item_id = item_id.replace (/^acct:/, '');
+          el_about_sponge_uri.href = el_about_sponge_uri.href.replace(/about\/html\/.*sponger:get/, 'about/html/acct:' + item_id + '?sponger:get');
+          describe_href = 'http://' + host + '/describe/?url=' + encodeURIComponent('acct:' + item_id) + '&sponger:get=add&sr=0';
           el_describe_sponge_uri.href = describe_href;
           break;
         case 'LinkedIn':
         case 'Flickr':
-          item_id = item_id.replace (/http:\//, 'http');
-          el_about_sponge_uri.href = el_about_sponge_uri.href.replace(/id\/entity\/.*@Lookup@/, 'id/entity/' + item_id + '?@Lookup@');
-          entity_uri = entity_uri.replace(/id\/entity\/.*/, 'id/entity/' + item_id);
-          describe_href = 'http://' + host + '/describe/?url=' + encodeURIComponent(entity_uri) + '&sp=1';
+	case 'Foursquare':
+          item_id_sanitized = item_id.replace (/https:\//, 'https');
+          item_id_sanitized = item_id_sanitized.replace (/http:\//, 'http');
+          el_about_sponge_uri.href = el_about_sponge_uri.href.replace(/id\/entity\/.*sponger:get/, 'id/entity/' + item_id_sanitized + '?sponger:get');
+          entity_uri = entity_uri.replace(/id\/entity\/.*/, 'id/entity/' + item_id_sanitized);
+          describe_href = 'http://' + host + '/describe/?url=' + encodeURIComponent(entity_uri) + '&sponger:get=add&sr=0';
           el_describe_sponge_uri.href = describe_href;
           break;
       }
+      switch (site_name)
+      {
+        case 'WebFinger':
+          el_about_sponge_uri.innerHTML = el_describe_sponge_uri.innerHTML = site_name + " URL: acct:" + item_id;
+          break;
+        default:
       el_about_sponge_uri.innerHTML = el_describe_sponge_uri.innerHTML = site_name + " URL: " + item_id;
+          break;
+      }
       el_fb_ds_links_no_token.style.display = 'inline';
-
       return false;
     }
   </script>
 <?vsp
   declare _host varchar;
   declare site_name varchar;
-  declare rm_hook varchar;
-  declare api_key_mandatory, api_key_missing integer;
+  declare rm_key, rm_opt varchar;
+  declare api_key_missing integer;
 
   site_name := http_param ('site');
   _host := registry_get ('URIQADefaultHost');
   if (is_http_ctx ()) _host := http_request_header(http_request_header (), 'Host', null, _host);
 
-  api_key_mandatory := 0;
   api_key_missing := 0;
-  rm_hook := '';
 
   if (site_name = 'Flickr')
   {
-    api_key_mandatory := 1;
-    rm_hook := 'DB.DBA.RDF_LOAD_FLICKR_IMG';
+    rm_key := (select RM_KEY from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_FLICKR_IMG');
+    if (length (rm_key) = 0)
+      api_key_missing := 1;
   }
-
-  if (api_key_mandatory)
+  else if (site_name = 'Foursquare')
   {
-    declare rm_key varchar;
-    rm_key := (select RM_KEY from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = rm_hook);
-    if (rm_key is null)
-      api_key_missing := 0;
+    rm_opt := (select get_keyword ('oauth_token', coalesce (RM_OPTIONS, vector())) from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_FOURSQUARE');
+    if (length (rm_opt) = 0)
+      api_key_missing := 1;
   }
-
-    
-
 ?>
 </head>
 
-<body onload="page_load_hndlr()">
+<body>
 <div id="outer">
       <div id="header">
         <div id="header_logo">
@@ -105,12 +130,19 @@
              src="<?=skinpfx?>/i/openlinklogo_wstrap_2008_100h.png" /></a> 
         </div>
         <div id="header_text">
-          <h1><?=banner_txt?></h1><?=strapline?>
+          <?vsp if (banner_logo <> 0) { ?>
+            <img id="banner_logo" alt="[Sponger instance logo]"
+                 src="<?=skinpfx?>/i/<?=banner_logo?>" /><br/>
+          <?vsp } else { ?>
+            <h1><?=banner_txt?></h1>
+          <?vsp } ?>
+          <?=strapline?>
         </div>
       </div>
 
       <div id="navbar">
         <a href="index.vsp">Home</a> | 
+        <a href="sponger_architecture.vsp#how_it_works">How It Works</a> | 
         <a href= "sponger_architecture.vsp">Architecture</a> | 
         <a href= "sponger_setup.vsp">Sponger Setup</a> | 
         <a href= "examples.vsp">Live Sponger Examples</a> | 
@@ -138,22 +170,27 @@
   item_id := 'UNKNOWN_ITEM_ID';
   if (site_name = 'WebID')
   {
-    about_sponge_uri := sprintf ('http://%s/about/html/%s?@Lookup@=&refresh=0', _host, item_id);
+    about_sponge_uri := sprintf ('http://%s/about/html/%s?sponger:get=add&refresh=0', _host, item_id);
     entity_uri := item_id;
+  }
+  else if (site_name = 'WebFinger')
+  {
+    about_sponge_uri := sprintf ('http://%s/about/html/acct:%s?sponger:get=add&refresh=0', _host, item_id);
+    entity_uri := 'acct:' || item_id;
   }
   else
   {
-    about_sponge_uri := sprintf ('http://%s/about/html/http/%s/about/id/entity/%s?@Lookup@=&refresh=0', _host, _host, item_id);
+    about_sponge_uri := sprintf ('http://%s/about/html/http/%s/about/id/entity/%s?sponger:get=add&refresh=0', _host, _host, item_id);
     entity_uri := sprintf ('http://%s/about/id/entity/%s', _host, item_id);
   }
-  --describe_sponge_uri := sprintf ('http://%s/describe/?url=%U&sp=1', _host, entity_uri);
-  describe_sponge_uri := sprintf ('http://%s/describe/?url=%s&sp=1', _host, entity_uri);
+  --describe_sponge_uri := sprintf ('http://%s/describe/?url=%U&sponger:get=add&sr=0', _host, entity_uri);
+  describe_sponge_uri := sprintf ('http://%s/describe/?url=%s&sponger:get=add&sr=0', _host, entity_uri);
   ?>
 
 <?vsp
   if (api_key_missing)
   {
-    http (sprintf ('<p>An API key is required for the %s cartridge, but one hasn\'t been configured.<br/>Please refer to <a href="sponger_setup.vsp">Sponger Setup</a></p>', site_name));
+    http (sprintf ('<p>An API key or cartridge options are required for the %s cartridge, but none has been configured.<br/>Please refer to <a href="sponger_setup.vsp">Sponger Setup</a></p>', site_name));
   } 
   else
   {
@@ -161,14 +198,34 @@
 
   <form action="#" method="post">
     <div>
-      <label for="fld_item_id"><?=site_name?> URL:&nbsp;</label><input type="text" size="60" id="fld_item_id" name="fld_item_id" />
+      <label for="fld_item_id">
+<?vsp
+      if (site_name = 'WebFinger')
+        http (sprintf ('WebFinger email address:&nbsp;'));
+      else if (site_name = 'Foursquare')
+        http (sprintf ('%s profile URL:&nbsp;', site_name)); 
+      else
+        http (sprintf ('%s URL:&nbsp;', site_name)); 
+?>
+      </label>
+      <input type="text" size="60" id="fld_item_id" name="fld_item_id" />
       <input type="submit" name="cmd_submit_FB_ID" id="cmd_submit" value="Submit" onclick="return build_sponge_links('<?=site_name?>', '<?=_host?>', '<?=entity_uri?>');"/>
+<?vsp
+  if (site_name = 'WebFinger')
+  {
+    http (sprintf ('<div style="font-size: 0.9em"><p/>Enter the email address (without the acct: prefix) identifying your WebFinger profile.</div>'));
+  }
+?>
     </div>
   </form>
 
   <div id="fb_ds_links_no_token">
     <h3>View Your <?=site_name?> Linked Data Space</h3>
-      <p>Here are a variety of Linked Data oriented views derived from your <?=site_name?> URL:</p> 
+
+<?vsp
+  if (site_name <> 'WebFinger')
+    http (sprintf ('<p>Here are a variety of Linked Data oriented views derived from your %s URL:</p>', site_name)); 
+?>
       <ul>
       <li>
         <a id="about_sponge_uri" href="<?=about_sponge_uri?>">
@@ -177,7 +234,13 @@
           </script>
         </a><br/>A simple page for follow-your-nose exploration
       </li>
-      <li>
+<?vsp
+  if (site_name <> 'WebFinger')
+    http ('<li>'); 
+  else
+    -- Hide /describe proxy link - it doesn't currently support the acct: scheme
+    http ('<li style="display:none;">'); 
+?>
         <a id="describe_sponge_uri" href="<?=describe_sponge_uri?>">
           <script type="text/javascript">
             document.write('<?=site_name?> URL: UNKNOWN_ITEM_ID');
@@ -206,7 +269,7 @@
 
       <div class="reset">
         <div id="footer">
-          Copyright (C) OpenLink Software 2011. All rights reserved.
+          Copyright (C) 1998-2013 OpenLink Software. All rights reserved.
         </div>
       </div>
 </div><!-- outer -->

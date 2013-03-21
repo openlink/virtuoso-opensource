@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -65,7 +65,8 @@
     <xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
     <xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
 
-	<xsl:template match="/user">
+    <xsl:template match="/results">
+		<rdf:RDF>
 		<rdf:Description rdf:about="{$docproxyIRI}">
 			<rdf:type rdf:resource="&bibo;Document"/>
 			<sioc:container_of rdf:resource="{$resourceURL}"/>
@@ -74,126 +75,268 @@
 			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
 			<owl:sameAs rdf:resource="{$docIRI}"/>
 		</rdf:Description>
+			<xsl:apply-templates select="response/user" />
+			<xsl:apply-templates select="response/venue" />
+			<xsl:apply-templates select="response/results" />
+		</rdf:RDF>
+    </xsl:template>
+	
+	<xsl:template match="response/results">
 		<foaf:Person rdf:about="{$resourceURL}">
+			<opl:providedBy>
+				<foaf:Organization rdf:about="http://www.foursquare.com#this">
+					<foaf:name>Foursquare</foaf:name>
+					<foaf:homepage rdf:resource="http://www.foursquare.com"/>
+				</foaf:Organization>
+			</opl:providedBy>		
 			<rdfs:label>
-				<xsl:value-of select="concat(firstname, ' ', lastname)"/>
+				<xsl:value-of select="concat(firstName, ' ', lastName)"/>
 			</rdfs:label>
+			<xsl:if test="string-length(firstName) &gt; 0">
 			<foaf:firstName>
-				<xsl:value-of select="firstname"/>
+					<xsl:value-of select="firstName"/>
 			</foaf:firstName>
+			</xsl:if>
+			<xsl:if test="string-length(lastName) &gt; 0">
 			<foaf:familyName>
-				<xsl:value-of select="lastname"/>
+					<xsl:value-of select="lastName"/>
 			</foaf:familyName>
+			</xsl:if>
 			<vcard:Locality>
-				<xsl:value-of select="homecity" />   
+				<xsl:value-of select="homeCity" />   
 			</vcard:Locality>
 			<foaf:depiction rdf:resource="{photo}"/>
 			<foaf:gender>
 				<xsl:value-of select="gender" />   
 			</foaf:gender>
-			<sioc:link rdf:resource="{concat('http://foursquare.com/user/', id)}" />
+			<sioc:link rdf:resource="{concat('https://foursquare.com/user/', id)}" />
+			<owl:sameAs rdf:resource="{vi:proxyIRI(concat('https://foursquare.com/user/', id))}" />
 		</foaf:Person>
     </xsl:template>
 		
-    <xsl:template match="/venue">
-		<rdf:Description rdf:about="{$docproxyIRI}">
-			<rdf:type rdf:resource="&bibo;Document"/>
-			<sioc:container_of rdf:resource="{$resourceURL}"/>
-			<foaf:primaryTopic rdf:resource="{$resourceURL}"/>
-			<dcterms:subject rdf:resource="{$resourceURL}"/>
-			<dc:title><xsl:value-of select="$baseUri"/></dc:title>
-			<owl:sameAs rdf:resource="{$docIRI}"/>
+	<xsl:template match="response/user">
+		<foaf:Person rdf:about="{$resourceURL}">
+			<opl:providedBy>
+				<foaf:Organization rdf:about="http://www.foursquare.com#this">
+					<foaf:name>Foursquare</foaf:name>
+					<foaf:homepage rdf:resource="http://www.foursquare.com"/>
+				</foaf:Organization>
+			</opl:providedBy>		
+			<rdfs:label>
+				<xsl:value-of select="concat(firstName, ' ', lastName)"/>
+			</rdfs:label>
+			<xsl:if test="string-length(firstName) &gt; 0">
+				<foaf:firstName>
+					<xsl:value-of select="firstName"/>
+				</foaf:firstName>
+			</xsl:if>
+			<xsl:if test="string-length(lastName) &gt; 0">
+				<foaf:familyName>
+					<xsl:value-of select="lastName"/>
+				</foaf:familyName>
+			</xsl:if>
+			<vcard:Locality>
+				<xsl:value-of select="homeCity" />   
+			</vcard:Locality>
+			<foaf:depiction rdf:resource="{photo}"/>
+			<foaf:gender>
+				<xsl:value-of select="gender" />   
+			</foaf:gender>
+			<xsl:if test="string-length(contact/email) &gt; 0">
+				<foaf:mbox rdf:resource="{concat('mailto:', contact/email)}"/>
+				<opl:email_address_digest rdf:resource="{vi:di-uri (contact/email)}"/>
+			</xsl:if>
+			<xsl:if test="string-length(contact/facebook) &gt; 0">
+				<sioc:link rdf:resource="{concat('http://www.facebook.com/profile.php?id=', contact/facebook)}"/>
+			</xsl:if>
+			<sioc:link rdf:resource="{concat('https://foursquare.com/user/', id)}" />
+			<oplfq:badges>
+				<xsl:value-of select="badges/count" />
+			</oplfq:badges>
+			<xsl:for-each select="mayorships/items">
+				<oplfq:is_mayor_of>
+					<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', concat('mayorship_', id))}">
+						<rdf:type rdf:resource="&gn;Feature"/>
+						<opl:providedBy>
+							<foaf:Organization rdf:about="http://www.foursquare.com#this">
+								<foaf:name>Foursquare</foaf:name>
+								<foaf:homepage rdf:resource="http://www.foursquare.com"/>
+							</foaf:Organization>
+						</opl:providedBy>
+						<xsl:if test="name">
+							<dc:title>
+								<xsl:value-of select="name" />
+							</dc:title>
+						</xsl:if>                
+						<xsl:if test="contact/twitter">
+							<rdfs:seeAlso rdf:resource="{concat('http://twitter.com/', contact/twitter)}"/>
+						</xsl:if>
+						<xsl:if test="location/city">
+							<vcard:Locality>
+								<xsl:value-of select="location/city" />   
+							</vcard:Locality>
+						</xsl:if>
+						<xsl:if test="location/country">
+							<vcard:Country>
+								<xsl:value-of select="location/country" />   
+							</vcard:Country>
+						</xsl:if>
+						<xsl:if test="location/state">
+							<vcard:Region>
+								<xsl:value-of select="location/state" />   
+							</vcard:Region>
+						</xsl:if>
+						<xsl:if test="location/zip">
+							<vcard:Pcode>
+								<xsl:value-of select="location/zip" />   
+							</vcard:Pcode>
+						</xsl:if>
+						<xsl:if test="location/phone">
+							<vcard:TEL>
+								<xsl:value-of select="location/phone" />   
+							</vcard:TEL>
+						</xsl:if>
+						<xsl:if test="location/crossstreet">
+							<vcard:Street>
+								<xsl:value-of select="location/crossstreet" />   
+							</vcard:Street>
+						</xsl:if>
+						<xsl:if test="location/address">
+							<vcard:ADR>
+								<xsl:value-of select="location/address" />   
+							</vcard:ADR>
+						</xsl:if>
+						<xsl:if test="location/lng">
+							<geo:long rdf:datatype="&xsd;float">
+								<xsl:value-of select="location/lng"/>
+							</geo:long>
+						</xsl:if>
+						<xsl:if test="location/lat">
+							<geo:lat rdf:datatype="&xsd;float">
+								<xsl:value-of select="location/lat"/>
+							</geo:lat>
+						</xsl:if>
+						<bibo:uri rdf:resource="{concat('https://foursquare.com/venue/', id)}" />
+						<sioc:link rdf:resource="{concat('https://foursquare.com/venue/', id)}" />
+						<xsl:for-each select="categories">
+							<oplfq:category>
+								<bibo:Document rdf:about="{vi:proxyIRI ($baseUri, '', concat('category_', id))}">
+									<rdfs:label>
+										<xsl:value-of select="name"/>
+									</rdfs:label>
+									<dc:title>
+										<xsl:value-of select="name" />
+									</dc:title>
+									<dc:description>
+										<xsl:value-of select="name" />
+									</dc:description>
+									<foaf:depiction rdf:resource="{icon}"/>
+								</bibo:Document>
+							</oplfq:category>
+						</xsl:for-each>
 		</rdf:Description>
+				</oplfq:is_mayor_of>
+			</xsl:for-each>
+		</foaf:Person>
+    </xsl:template>
+		
+    <xsl:template match="response/venue">
 		<rdf:Description rdf:about="{$resourceURL}">
 			<rdf:type rdf:resource="&gn;Feature"/>
+                	<opl:providedBy>
+                		<foaf:Organization rdf:about="http://www.foursquare.com#this">
+                			<foaf:name>Foursquare</foaf:name>
+                			<foaf:homepage rdf:resource="http://www.foursquare.com"/>
+                		</foaf:Organization>
+                	</opl:providedBy>
+
 			<xsl:if test="name">
 				<dc:title>
 					<xsl:value-of select="name" />
 				</dc:title>
 			</xsl:if>                
-			<xsl:if test="twitter">
-				<rdfs:seeAlso rdf:resource="{concat('http://twitter.com/', twitter)}"/>
+			<xsl:if test="contact/twitter">
+				<rdfs:seeAlso rdf:resource="{concat('http://twitter.com/', contact/twitter)}"/>
 			</xsl:if>
-			<xsl:if test="city">
+			<xsl:if test="location/city">
 				<vcard:Locality>
-					<xsl:value-of select="city" />   
+					<xsl:value-of select="location/city" />   
 				</vcard:Locality>
 			</xsl:if>
-			<xsl:if test="country">
+			<xsl:if test="location/country">
 				<vcard:Country>
-					<xsl:value-of select="country" />   
+					<xsl:value-of select="location/country" />   
 				</vcard:Country>
 			</xsl:if>
-			<xsl:if test="state">
+			<xsl:if test="location/state">
 				<vcard:Region>
-					<xsl:value-of select="state" />   
+					<xsl:value-of select="location/state" />   
 				</vcard:Region>
 			</xsl:if>
-			<xsl:if test="zip">
+			<xsl:if test="location/zip">
 				<vcard:Pcode>
-					<xsl:value-of select="zip" />   
+					<xsl:value-of select="location/zip" />   
 				</vcard:Pcode>
 			</xsl:if>
-			<xsl:if test="phone">
+			<xsl:if test="contact/phone">
 				<vcard:TEL>
-					<xsl:value-of select="phone" />   
+					<xsl:value-of select="contact/phone" />   
 				</vcard:TEL>
 			</xsl:if>
-			<xsl:if test="crossstreet">
+			<xsl:if test="location/crossstreet">
 				<vcard:Street>
-					<xsl:value-of select="crossstreet" />   
+					<xsl:value-of select="location/crossstreet" />   
 				</vcard:Street>
 			</xsl:if>
-			<xsl:if test="address">
+			<xsl:if test="location/address">
 				<vcard:ADR>
-					<xsl:value-of select="address" />   
+					<xsl:value-of select="location/address" />   
 				</vcard:ADR>
 			</xsl:if>
-			<xsl:if test="geolong">
+			<xsl:if test="location/lng">
 				<geo:long rdf:datatype="&xsd;float">
-					<xsl:value-of select="geolong"/>
+					<xsl:value-of select="location/lng"/>
 				</geo:long>
 			</xsl:if>
-			<xsl:if test="geolat">
+			<xsl:if test="location/lat">
 				<geo:lat rdf:datatype="&xsd;float">
-					<xsl:value-of select="geolat"/>
+					<xsl:value-of select="location/lat"/>
 				</geo:lat>
 			</xsl:if>
-			<bibo:uri rdf:resource="{concat('http://foursquare.com/venue/', id)}" />
-			<sioc:link rdf:resource="{concat('http://foursquare.com/venue/', id)}" />
+			<bibo:uri rdf:resource="{concat('https://foursquare.com/venue/', id)}" />
+			<sioc:link rdf:resource="{concat('https://foursquare.com/venue/', id)}" />
 			<xsl:if test="stats">
-				<oplfq:checkins><xsl:value-of select="stats/checkins"/></oplfq:checkins>
-				<oplfq:herenow><xsl:value-of select="stats/herenow"/></oplfq:herenow>
-				<xsl:if test="stats/mayor/user">
+				<oplfq:checkins><xsl:value-of select="stats/checkinsCount"/></oplfq:checkins>
+				<oplfq:usersCount><xsl:value-of select="stats/usersCount"/></oplfq:usersCount>
+				<oplfq:tipCount><xsl:value-of select="stats/tipCount"/></oplfq:tipCount>
+			</xsl:if>
+			<xsl:if test="mayor/user">
 					<oplfq:mayor>
-						<foaf:Person rdf:about="{vi:proxyIRI ($baseUri, '', stats/mayor/user/id)}">
+					<foaf:Person rdf:about="{vi:proxyIRI ($baseUri, '', mayor/user/id)}">
 							<rdfs:label>
-								<xsl:value-of select="concat(stats/mayor/user/firstname, ' ', stats/mayor/user/lastname)"/>
+							<xsl:value-of select="concat(mayor/user/firstName, ' ', mayor/user/lastName)"/>
 							</rdfs:label>
 							<foaf:firstName>
-								<xsl:value-of select="stats/mayor/user/firstname"/>
+							<xsl:value-of select="mayor/user/firstName"/>
 							</foaf:firstName>
 							<foaf:familyName>
-								<xsl:value-of select="stats/mayor/user/lastname"/>
+							<xsl:value-of select="mayor/user/lastName"/>
 							</foaf:familyName>
 							<vcard:Locality>
-								<xsl:value-of select="stats/mayor/user/homecity" />   
+							<xsl:value-of select="mayor/user/homeCity" />   
 							</vcard:Locality>
-							<foaf:depiction rdf:resource="{stats/mayor/user/photo}"/>
+						<foaf:depiction rdf:resource="{mayor/user/photo}"/>
 							<foaf:gender>
-								<xsl:value-of select="stats/mayor/user/gender" />   
+							<xsl:value-of select="mayor/user/gender" />   
 							</foaf:gender>
-							<sioc:link rdf:resource="{concat('http://foursquare.com/user/', stats/mayor/user/id)}" />
-							<oplfq:count><xsl:value-of select="stats/mayor/count"/></oplfq:count>							
+						<sioc:link rdf:resource="{concat('https://foursquare.com/user/', mayor/user/id)}" />
+						<oplfq:count><xsl:value-of select="mayor/count"/></oplfq:count>							
 						</foaf:Person>
 					</oplfq:mayor>
 				</xsl:if>
-			</xsl:if>
-
-			<xsl:if test="tips">
-				<xsl:for-each select="tips/tip">
+			<xsl:for-each select="tips/groups/items">
 					<review:hasReview>
-						<review:Review rdf:about="{vi:proxyIRI ($baseUri, '', id)}">
+					<review:Review rdf:about="{vi:proxyIRI ($baseUri, '', concat('tip_', id))}">
 							<rdfs:label>
 								<xsl:value-of select="text"/>
 							</rdfs:label>
@@ -204,10 +347,10 @@
 								<xsl:value-of select="text" />
 							</dc:description>
 							<dcterms:created rdf:datatype="&xsd;dateTime">
-								<xsl:value-of select="vi:http_string_date (created)"/>
+							<xsl:value-of select="vi:http_string_date (createdAt)"/>
 							</dcterms:created>
 							<review:reviewer>
-								<foaf:Person rdf:about="{vi:proxyIRI ($baseUri, '', user/id)}">
+							<foaf:Person rdf:about="{vi:proxyIRI ($baseUri, '', concat('tip_of_', user/id))}">
 									<foaf:firstName>
 										<xsl:value-of select="user/firstname"/>
 									</foaf:firstName>
@@ -215,64 +358,34 @@
 										<xsl:value-of select="user/lastname"/>
 									</foaf:familyName>
 									<vcard:Locality>
-										<xsl:value-of select="user/homecity" />   
+									<xsl:value-of select="user/homeCity" />   
 									</vcard:Locality>
 									<foaf:depiction rdf:resource="{user/photo}"/>
 									<foaf:gender>
 										<xsl:value-of select="user/gender" />   
 									</foaf:gender>
-									<sioc:link rdf:resource="{concat('http://foursquare.com/user/', user/id)}" />
+								<sioc:link rdf:resource="{concat('https://foursquare.com/user/', user/id)}" />
 								</foaf:Person>
 							</review:reviewer>
-							<oplfq:todocount><xsl:value-of select="stats/todocount"/></oplfq:todocount>
-							<oplfq:donecount><xsl:value-of select="stats/donecount"/></oplfq:donecount>
 						</review:Review>
 					</review:hasReview>
 				</xsl:for-each>
-			</xsl:if>
-
-			<xsl:if test="categories">
-				<xsl:for-each select="categories/category">
+			<xsl:for-each select="categories">
 					<sioc:topic>
-						<bibo:Document rdf:about="{vi:proxyIRI ($baseUri, '', id)}">
+					<bibo:Document rdf:about="{vi:proxyIRI ($baseUri, '', concat('category_', id))}">
 							<rdfs:label>
-								<xsl:value-of select="fullpathname"/>
+							<xsl:value-of select="name"/>
 							</rdfs:label>
 							<dc:title>
-								<xsl:value-of select="fullpathname" />
+							<xsl:value-of select="name" />
 							</dc:title>
 							<dc:description>
-								<xsl:value-of select="fullpathname" />
+							<xsl:value-of select="name" />
 							</dc:description>
-							<foaf:depiction rdf:resource="{iconurl}"/>
-							<oplfq:nodename><xsl:value-of select="nodename"/></oplfq:nodename>
+						<foaf:depiction rdf:resource="{icon}"/>
 						</bibo:Document>
 					</sioc:topic>
 				</xsl:for-each>
-			</xsl:if>
-
-			<xsl:if test="specials">
-				<xsl:for-each select="specials/special">
-					<sioc:topic>
-						<sioct:Comment rdf:about="{vi:proxyIRI ($baseUri, '', id)}">
-							<rdfs:label>
-								<xsl:value-of select="message"/>
-							</rdfs:label>
-							<dc:title>
-								<xsl:value-of select="message" />
-							</dc:title>
-							<dc:description>
-								<xsl:value-of select="message" />
-							</dc:description>
-							<oplfq:kind><xsl:value-of select="kind"/></oplfq:kind>
-							<oplfq:type><xsl:value-of select="type"/></oplfq:type>
-							<sioc:link rdf:resource="{concat('http://foursquare.com/venue/', venue/id)}" />
-						</sioct:Comment>
-					</sioc:topic>
-				</xsl:for-each>
-			</xsl:if>
-			<sioc:link rdf:resource="{short_url}" />
-			
 		</rdf:Description>
     </xsl:template>
 

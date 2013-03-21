@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -39,11 +39,183 @@ extern "C" {
 }
 #endif
 
+#ifdef NDEBUG
+#undef RDFXML_DEBUG
+#endif
+
 #ifdef RDFXML_DEBUG
 #define rdfxml_dbg_printf(x) dbg_printf (x)
 #else
 #define rdfxml_dbg_printf(x)
 #endif
+
+/*!< RDF/XML parser mode, i.e. what does the parser expect to read */
+#define XRL_PARSETYPE_TOP_LEVEL		0x01	/*!< Top-level element (rdf:RDF) */
+#define XRL_PARSETYPE_RESOURCE		0x02	/*!< Resource description */
+#define XRL_PARSETYPE_LITERAL		0x04	/*!< Literal value */
+#define XRL_PARSETYPE_RES_OR_LIT	0x08	/*!< Either resource description or a literal */
+#define XRL_PARSETYPE_PROPLIST		0x10	/*!< Sequence of properties of a resource */
+#define XRL_PARSETYPE_EMPTYPROP		0x20	/*!< Nothing but ending tag of property */
+#define XRL_PARSETYPE_COLLECTION	0x40	/*!< First resource inside collection, other resources are recognized by */
+#define XRL_PARSETYPE_SET_EXPLICITLY	0x80	/*!< The parser mode is set explicitly by rdf:parseType attribute */
+
+/*! Stack part of RDF/XML-specific context of XML parser.
+These are fields of quad to be created.
+"Inheritable" fields are propagated from the parent. Pointers are copied, strings are not copied. */
+typedef struct xp_rdfxml_locals_s
+{
+  struct xp_rdfxml_locals_s *xrl_parent;	/*!< Pointer to parent context */
+  xp_node_t *	xrl_xn;			/*!< Node whose not-yet-closed element corresponds to the given context */
+  caddr_t	xrl_subject;		/*!< Subject (IRI of named node or blank node IRI_ID); subject is used for nested predicates */
+  caddr_t	xrl_predicate;		/*!< Predicate (IRI of named node or blank node IRI_ID) */
+  caddr_t	xrl_base;		/*!< Base to resolve relative URIs, inheritable */
+  caddr_t	xrl_language;		/*!< Language tag as string or NULL, inheritable */
+  caddr_t	xrl_datatype;		/*!< Object data type (named node IRI_ID), not inheritable */
+  caddr_t	xrl_reification_id;	/*!< ID used to reify a statement as four quads for S,P,O and rdf:type rdfs:Statement. */
+  int		xrl_li_count;		/*!< Counter of used LI, not inheritable */
+  dk_set_t	xrl_seq_items;		/*!< Backstack of "Sequence" parseType subjects */
+  unsigned char	xrl_parsetype;		/*!< Parse type (one of XRL_DATATYPE_NNN), not inheritable */
+  char		xrl_base_set;
+  char		xrl_language_set;
+} xp_rdfxml_locals_t;
+
+#define RDFA_ICT_PRED_REL_OR_TYPEOF	200	/*!< Forward with ref object */
+#define RDFA_ICT_PRED_REV		201	/*!< Reverse predicate */
+#define RDFA_ICT_PRED_PROPERTY		202	/*!< Forward predicate with literal object */
+
+/*! [I]n[C]omplete [T]riple.
+We should keep subject instead of use of innermost xrdfal_subj.
+This is for incomplete triples inside HEAD, they may wait for BASE definition and contain different "about" attributes. */
+typedef struct rdfa_ict_s
+{
+  ptrlong ict_pred_type;	/*!< Predicate type, one of RDFA_ICT_PRED_xxx values */
+  caddr_t ict_left;		/*!< Subject by default and object if \c ict_pred_type == RDFA_ICT_PRED_REV */
+  caddr_t ict_pred;		/*!< Predicate */
+  caddr_t ict_right;		/*!< Object by default and subject if \c ict_pred_type == RDFA_ICT_PRED_REV */
+  caddr_t ict_datatype;		/*!< Datatype of a literal object */
+  caddr_t ict_language;		/*!< Language of a literal object */
+  ptrlong ict_used_as_template;	/*!< The ICT itself was used as a template for cases like <X rel="p"><Y typeof="t" /></X> (even if was not completed) */
+} rdfa_ict_t;
+
+#define RDFA_IN_HTML		0x01	/*!< The current tag is XHTML top (or nested), respect <HEAD> and <BODY> if found inside */
+#define RDFA_IN_HEAD		0x02	/*!< The current tag is HEAD in XHTML (or nested), the doc is now default subject, do not feed triples immediately to handle <BASE> */
+#define RDFA_IN_BASE		0x04	/*!< The current tag is BASE in HEAD in XHTML (or nested), the content will go to all \c xrdfal_base throughout the stack. */
+#define RDFA_IN_BODY		0x08	/*!< The current tag is BODY in XHTML (or nested), the doc is now default subject, do feed triples as soon as they're complete */
+#define RDFA_IN_LITERAL		0x10	/*!< The parser runs inside an XML literal or a string literal or an unused subtree, because there was a "property" attribute */
+#define RDFA_IN_UNUSED		0x20	/*!< The parser runs inside an element with "content" attribute. The attribute is used as a string literal already so there's nothing to do in a subtree. Similarly, it is used for internals of <base href="...">...</base> */
+#define RDFA_IN_STRLITERAL	0x40	/*!< The parser runs inside an element with explicit datatype other than rdf:XMLLiteral, so all non-text items should be ignored, only texts are important. */
+#define RDFA_IN_XMLLITERAL	0x80	/*!< The parser runs inside an element with explicit rdf:XMLLiteral datatype or datatype is not present but non-text nodes were found. */
+
+/*! Stack part of RDFa-specific context of XML parser.
+Unlike RDF/XML, not every opened tag gets its own stack item, because many of them lacks RDFa-specific data at all.
+RDFa locals are popped only when an XML element to close corresponds to xrdfal_xn of the innermost local context */
+
+typedef struct xp_rdfa_locals_s
+{
+  struct xp_rdfa_locals_s *xrdfal_parent;	/*!< Pointer to parent context */
+  xp_node_t *	xrdfal_xn;		/*!< Node whose not-yet-closed element corresponds to the given context */
+  int		xrdfal_place_bits;	/*!< A combination of RDFA_IN_... bits */
+  caddr_t	xrdfal_subj;		/*!< A [new subject] as set at the end of parsing the opening tag. It can be NULL, look up */
+  caddr_t	xrdfal_obj_res;		/*!< A [current object resource] as set at the end of parsing the opening tag or created as bnode after that */
+  caddr_t	xrdfal_datatype;	/*!< Datatype IRI */
+  caddr_t	xrdfal_base;		/*!< Base to resolve relative links as set by <BASE> now in XSLT+RDFa and may be set by xml:base in other XML docs. Automatically inherited from parent */
+  caddr_t	xrdfal_language;	/*!< Language label. Automatically inherited from parent */
+  caddr_t	xrdfal_vocab;		/*!< Vocabulary URI. Automatically inherited from parent */
+  caddr_t *	xrdfal_profile_terms;	/*!< Definitions of terms from an external RDFa profile resource, get-keyword style, sorted by terms for \c ecm_find_name(). Automatically inherited from parent */
+  rdfa_ict_t *	xrdfal_ict_buffer;	/*!< Storage for incomplete triples, may contain NULLs at the end */
+  int		xrdfal_ict_count;	/*!< Count of stored incomplete triples */
+  int		xrdfal_boring_opened_elts;	/*!< Number of opened but not yet closed elements inside RDFA_IN_STRLITERAL or RDFA_IN_UNUSED or "uninteresting" elements between \c xrdfal_xn and next nested \c xp_rdfa_locals_t in chain */
+} xp_rdfa_locals_t;
+
+#define RDFA_ATTR_ABOUT		0
+#define RDFA_ATTR_CONTENT	1
+#define RDFA_ATTR_DATATYPE	2
+#define RDFA_ATTR_HREF		3
+#define RDFA_ATTR_PREFIX	4
+#define RDFA_ATTR_PROFILE	5
+#define RDFA_ATTR_PROPERTY	6
+#define RDFA_ATTR_REL		7
+#define RDFA_ATTR_RESOURCE	8
+#define RDFA_ATTR_REV		9
+#define RDFA_ATTR_SRC		10
+#define RDFA_ATTR_TYPEOF	11
+#define RDFA_ATTR_VOCAB		12
+#define RDFA_ATTR_XML_BASE	13
+#define RDFA_ATTR_XML_LANG	14
+#define COUNTOF__RDFA_ATTR	15
+
+#define MDATA_IN_UNUSED		0x01	/*!< The parser runs inside an "blocking" element. This is not used ATM, but can be used later for tags like XMP */
+#define MDATA_IN_STRLITERAL	0x02	/*!< The parser runs inside an element with explicit datatype other than rdf:XMLLiteral, so all non-text items should be ignored, only texts are important. */
+#define MDATA_IN_XMLLITERAL	0x04	/*!< The parser runs inside an element with explicit rdf:XMLLiteral datatype or datatype is not present but non-text nodes were found. */
+
+/*! Stack part of Microdata-specific context of XML parser.
+Unlike RDF/XML, not every opened tag gets its own stack item, because many of them lacks Microdata-specific data at all.
+Microdata locals are popped only when an XML element to close corresponds to xmdatal_xn of the innermost local context */
+
+typedef struct xp_mdata_locals_s
+{
+  struct xp_mdata_locals_s *xmdatal_parent;	/*!< Pointer to parent context */
+  xp_node_t *	xmdatal_xn;		/*!< Node whose not-yet-closed element corresponds to the given context */
+  int		xmdatal_place_bits;	/*!< A combination of MDATA_IN_... bits */
+  caddr_t	xmdatal_subj;		/*!< An [item] as set at the end of parsing the opening tag. It can be NULL inside MDATA_IN_UNUSED, it can be set to Id instead of ITEMID. Automatically inherited from parent */
+  int		xmdatal_subj_is_id;	/*!< Flags if \c xmldatal_subj is set by document-wide id, not by a global itemid or a "blank node" itemscope. Automatically inherited from parent */
+  int		xmdatal_prop_count;	/*!< Count of predicates set above the current element, they're listed at the beginning of \c xmdatal_preds. Automatically inherited from parent */
+  caddr_t *	xmdatal_props;		/*!< Buffer for predicates set above the current element. Automatically inherited from parent */
+  caddr_t	xmdatal_datatype;	/*!< Datatype IRI. Automatically inherited from parent */
+  int		xmdatal_datatype_is_local;	/*!< Datatype can be removed from \c xpt_subj2type at closing this tag. NOT inherited from parent! */
+  caddr_t	xmdatal_base;		/*!< Base to resolve relative links as set by <BASE> now in XSLT+RDFa and may be set by xml:base in other XML docs. Automatically inherited from parent */
+  caddr_t	xmdatal_language;	/*!< Language label. Automatically inherited from parent */
+  int		xmdatal_boring_opened_elts;	/*!< Number of opened but not yet closed elements inside MDATA_IN_STRLITERAL or MDATA_IN_UNUSED or "uninteresting" elements between \c xmdatal_xn and next nested \c xp_mdata_locals_t in chain */
+} xp_mdata_locals_t;
+
+#define MDATA_ATTR_OBJ_CONTENT_STRLIT	0
+#define MDATA_ATTR_OBJ_DATETIME		1
+#define MDATA_ATTR_OBJ_STRLIT		2
+#define MDATA_ATTR_OBJ_CITE_REF		3
+#define MDATA_ATTR_OBJ_REF		4
+#define MDATA_ATTR_OBJ_NAME		5
+#define MDATA_ATTR_ID			6
+#define MDATA_ATTR_ITEMID		7
+#define MDATA_ATTR_ITEMPROP		8
+#define MDATA_ATTR_ITEMREF		9
+#define MDATA_ATTR_ITEMSCOPE		10
+#define MDATA_ATTR_ITEMTYPE		11
+#define MDATA_ATTR_REL			12
+#define MDATA_ATTR_XML_BASE		13
+#define MDATA_ATTR_XML_LANG		14
+#define COUNTOF__MDATA_ATTR		15
+
+
+/*! This structure is kept in RDFa and Microdata parsers as a DV_ARRAY_OF_POINTER and freed in case of error, to avoid memleaks.
+It is allocated once and only partially cleaned by callback calls. */
+typedef struct xp_tmp_s
+{
+/* Common part: */
+  caddr_t xpt_base;		/*!< Readed but not saved xml:base */
+  caddr_t xpt_lang;		/*!< Readed but not saved xml:lang */
+/* RDFa part: */
+  caddr_t xpt_dt;		/*!< Readed, not expanded and not saved datatype */
+  caddr_t xpt_src;		/*!< Readed, not expanded and not saved subj (obj for reverse preds) */
+  caddr_t xpt_href;		/*!< Readed, not expanded and not saved obj (subj for reverse preds or triple from element w/o "rel" or "rev") */
+  caddr_t *xpt_rel_preds;	/*!< Readed, not expanded and not saved "rel" predicates */
+  caddr_t *xpt_rev_preds;	/*!< Readed, not expanded and not saved "rev" predicates */
+  caddr_t *xpt_prop_preds;	/*!< Readed, not expanded and not saved "property" predicates */
+  caddr_t *xpt_typeofs;		/*!< Readed, not expanded and not saved "typeof" types */
+  caddr_t xpt_obj_res;		/*!< Readed, not expanded and not saved object resource OR composed and not saved bnode object */
+  caddr_t xpt_obj_content;	/*!< Readed but not saved content of literal object */
+/* Microdata part: */
+  id_hash_t *xpt_subj2type;	/*!< Hashtable that maps subjects to type IRIs. itemscopes with itemtype are added here and removed at end of document (if itemscope has itemrefs) or at closing tag (otherwise) */
+  id_hash_t *xpt_id2desc;	/*!< Hashtable that maps ids to \c mdata_id_desc_t (i.e., to validation data + accumulators of subjects that itemref-s to that ids) */
+  id_hash_t *xpt_dangling_triples;	/*!< Hashtable with triples as keys, values are bitmasks about replacing ids to IRIs in the key triple: 1 = no replaces, 2 = replace S, 4 = replace O, 8 = replace both */
+} xp_tmp_t;
+
+#define MDATA_DANGLING_TRIPLE_CVT_BITS(cvt_s,cvt_o) (1 << (((cvt_s) ? 1 : 0) + ((cvt_o) ? 2 : 0)))
+
+
+extern void xp_pop_rdf_locals (xparse_ctx_t *xp);
+extern void xp_pop_rdfa_locals (xparse_ctx_t *xp);
+extern xp_rdfxml_locals_t *xp_push_rdf_locals (xparse_ctx_t *xp);
+
 
 /* Part 1. RDF/XML-specific functions */
 
@@ -164,7 +336,7 @@ xp_rdfxml_locals_t *xp_push_rdf_locals (xparse_ctx_t *xp)
 
 
 caddr_t
-xp_rdfxml_resolved_iid (xparse_ctx_t *xp, const char *avalue, int is_id_attr)
+xp_rdfxml_resolve_iri_avalue (xparse_ctx_t *xp, const char *avalue, int is_id_attr)
 {
   caddr_t err = NULL;
   caddr_t local, res;
@@ -175,8 +347,17 @@ xp_rdfxml_resolved_iid (xparse_ctx_t *xp, const char *avalue, int is_id_attr)
       strcpy (local+1, avalue);
     }
   else
-    local = box_dv_short_string (avalue);
-  res = xml_uri_resolve_like_get (xp->xp_qi, &err, xp->xp_rdfxml_locals->xrl_base, local, "UTF-8");
+    {
+      local = box_dv_short_string (avalue);
+      if (('_' == local[0]) && (':' == local[1]))
+        return local;
+    }
+#if 1
+  res = rfc1808_expand_uri (xp->xp_rdfxml_locals->xrl_base, local,
+    NULL /*output_cs_name*/, 0, NULL /*base_string_cs_name*/, NULL /*rel_string_cs_name*/, &err);
+#else
+  res = xml_uri_resolve_like_get (xp->xp_qi, &err, xp->xp_rdfxml_locals->xrl_base, local, NULL /* No need to convert into "UTF-8" because it's UTF-8 already */);
+#endif
   dk_free_box (local);
   if (NULL != err)
     sqlr_resignal (err);
@@ -233,7 +414,7 @@ xp_rdfxml_triple_l (xparse_ctx_t *xp, caddr_t s, caddr_t p, caddr_t o, caddr_t d
 void
 xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
 {
-  xparse_ctx_t * xp = (xparse_ctx_t*) userdata;
+  xparse_ctx_t *xp = (xparse_ctx_t*) userdata;
   xp_rdfxml_locals_t *outer = xp->xp_rdfxml_locals;
   xp_rdfxml_locals_t *inner;
   xp_node_t *xn;
@@ -245,17 +426,17 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
 #ifdef RECOVER_RDF_VALUE
   caddr_t rdf_val = NULL;
 #endif
-  if (XRL_PARSETYPE_LITERAL == outer->xrl_parsetype)
+  if (XRL_PARSETYPE_LITERAL & outer->xrl_parsetype)
     {
       xp_element (userdata, name, attrdata);
       return;
     }
-  else if (XRL_PARSETYPE_EMPTYPROP == outer->xrl_parsetype)
+  else if (XRL_PARSETYPE_EMPTYPROP & outer->xrl_parsetype)
     xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Sub-element in a predicate element with object node attribute");
   inner = xp_push_rdf_locals (xp);
   xn = xp->xp_free_list;
   if (NULL == xn)
-    xn = dk_alloc (sizeof (xp_node_t));
+    xn = (xp_node_t *)dk_alloc (sizeof (xp_node_t));
   else
     xp->xp_free_list = xn->xn_parent;
   memset (xn, 0, sizeof (xp_node_t));
@@ -285,17 +466,17 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
     {
       if (!strcmp ("RDF", tmp_local))
         {
-          if (XRL_PARSETYPE_TOP_LEVEL != outer->xrl_parsetype)
+          if (!(XRL_PARSETYPE_TOP_LEVEL & outer->xrl_parsetype))
             xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 200, "Element rdf:RDF can appear only at top level");
           inner->xrl_parsetype = XRL_PARSETYPE_RESOURCE;
         }
       else if (!strcmp ("Description", tmp_local))
         {
-          if (XRL_PARSETYPE_PROPLIST == outer->xrl_parsetype)
+          if (XRL_PARSETYPE_PROPLIST & outer->xrl_parsetype)
             xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 200, "Element rdf:Description can not appear in list of properties");
           inner->xrl_parsetype = XRL_PARSETYPE_PROPLIST;
         }
-      else if (XRL_PARSETYPE_PROPLIST == outer->xrl_parsetype)
+      else if (XRL_PARSETYPE_PROPLIST & outer->xrl_parsetype)
         {
           caddr_t full_element_name;
           if (!strcmp ("li", tmp_local))
@@ -321,25 +502,55 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
           return;
         }
 #endif
-      else if (
-        !strcmp ("Property", tmp_local) ||
-        !strcmp ("Bag", tmp_local) ||
-        !strcmp ("Seq", tmp_local) ||
-        !strcmp ("Alt", tmp_local)  ||
-        !strcmp ("List", tmp_local) ||
-        !strcmp ("Statement", tmp_local) )
+      else
         {
-          size_t l1 = strlen (tmp_nsuri), l2 = strlen (tmp_local);
-          caddr_t full_element_name = dk_alloc_box (l1 + l2 + 1, DV_STRING);
+          size_t l1, l2;
+          caddr_t full_element_name;
+          if (
+            !strcmp ("Property", tmp_local) ||
+            !strcmp ("Bag", tmp_local) ||
+            !strcmp ("Seq", tmp_local) ||
+            !strcmp ("Alt", tmp_local)  ||
+            !strcmp ("List", tmp_local) ||
+            !strcmp ("Statement", tmp_local) ||
+            !strcmp ("nil", tmp_local) )
+            { ; }
+          else if (
+            !strcmp ("subject", tmp_local) ||
+            !strcmp ("predicate", tmp_local) ||
+            !strcmp ("object", tmp_local) ||
+            !strcmp ("type", tmp_local) ||
+            !strcmp ("value", tmp_local) ||
+            !strcmp ("first", tmp_local) ||
+            !strcmp ("rest", tmp_local) ||
+            '_' == tmp_local[0] )
+            {
+              xmlparser_logprintf (xp->xp_parser, XCFG_WARNING, 200, "Name rdf:%.200s is used for node, not for property (legal, but strange)", tmp_local);
+            }
+          else if (
+            !strcmp ("ID", tmp_local) ||
+            !strcmp ("about", tmp_local) ||
+            !strcmp ("bagID", tmp_local) ||
+            !strcmp ("parseType", tmp_local) ||
+            !strcmp ("resource", tmp_local) ||
+            !strcmp ("nodeID", tmp_local) ||
+            !strcmp ("li", tmp_local) ||
+            !strcmp ("aboutEach", tmp_local) ||
+            !strcmp ("aboutEachPrefix", tmp_local) )
+            {
+              xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 200, "Name rdf:%.200s is used for node", tmp_local);
+            }
+          else
+            {
+              xmlparser_logprintf (xp->xp_parser, XCFG_WARNING, 200, "Unknown name rdf:%.200s is used (legal, but strange)", tmp_local);
+            }
+          l1 = strlen (tmp_nsuri);
+          l2 = strlen (tmp_local);
+          full_element_name = dk_alloc_box (l1 + l2 + 1, DV_STRING);
           memcpy (full_element_name, tmp_nsuri, l1);
           strcpy (full_element_name + l1, tmp_local);
           subj_type = xp->xp_boxed_name = full_element_name;
           inner->xrl_parsetype = XRL_PARSETYPE_PROPLIST;
-        }
-      else
-        {
-          xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 200, "Unknown element in RDF namespace");
-          return;
         }
     }
   else
@@ -348,7 +559,7 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
       caddr_t full_element_name = dk_alloc_box (l1 + l2 + 1, DV_STRING);
       memcpy (full_element_name, tmp_nsuri, l1);
       strcpy (full_element_name + l1, tmp_local);
-      if (XRL_PARSETYPE_PROPLIST == outer->xrl_parsetype)
+      if (XRL_PARSETYPE_PROPLIST & outer->xrl_parsetype)
         {
           dk_free_tree (inner->xrl_predicate);
           inner->xrl_predicate = full_element_name;
@@ -373,8 +584,13 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
             XRL_SET_INHERITABLE (inner, xrl_language, box_dv_short_string (avalue), "Attribute 'xml:lang' is used twice");
           else if (!strcmp (tmp_local, "base"))
             {
-            XRL_SET_INHERITABLE (inner, xrl_base, box_dv_short_string (avalue), "Attribute 'xml:base' is used twice");
-              TF_CHANGE_BASE_AND_DEFAULT_GRAPH(xp->xp_tf,box_dv_short_string (avalue));
+              caddr_t local_base;
+              if ((NULL != inner->xrl_base) && ('\0' != inner->xrl_base))
+                local_base = xp_rdfxml_resolve_iri_avalue (xp, avalue, 0);
+              else
+                local_base = box_dv_short_string (avalue);
+              XRL_SET_INHERITABLE (inner, xrl_base, local_base, "Attribute 'xml:base' is used twice");
+              TF_CHANGE_BASE_AND_DEFAULT_GRAPH(xp->xp_tf, box_copy (local_base));
             }
           else if (0 != strcmp (tmp_local, "space"))
             xmlparser_logprintf (xp->xp_parser, XCFG_WARNING, 200,
@@ -391,24 +607,24 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
           if (!strcmp (tmp_local, "about"))
             {
               caddr_t inner_subj;
-              if (XRL_PARSETYPE_PROPLIST == outer->xrl_parsetype)
+              if (XRL_PARSETYPE_PROPLIST & outer->xrl_parsetype)
                 {
                   xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute 'rdf:about' can not appear in element that is supposed to be property name");
                   return;
                 }
-              inner_subj = xp_rdfxml_resolved_iid (xp, avalue, 0);
+              inner_subj = xp_rdfxml_resolve_iri_avalue (xp, avalue, 0);
               XRL_SET_NONINHERITABLE (inner, xrl_subject, inner_subj, "Attribute 'rdf:about' conflicts with other attribute that set the subject");
               inner->xrl_parsetype = XRL_PARSETYPE_PROPLIST;
             }
           else if (!strcmp (tmp_local, "resource"))
             {
               caddr_t inner_subj;
-              if (XRL_PARSETYPE_PROPLIST != outer->xrl_parsetype)
+              if (!(XRL_PARSETYPE_PROPLIST & outer->xrl_parsetype))
                 {
                   xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute 'rdf:resource' can appear only in element that is supposed to be property name");
                   return;
                 }
-              inner_subj = xp_rdfxml_resolved_iid (xp, avalue, 0);
+              inner_subj = xp_rdfxml_resolve_iri_avalue (xp, avalue, 0);
               XRL_SET_NONINHERITABLE (inner, xrl_subject, inner_subj, "Attribute 'rdf:resource' conflicts with other attribute that set the subject");
               inner->xrl_parsetype = XRL_PARSETYPE_EMPTYPROP;
             }
@@ -416,7 +632,7 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
             {
               caddr_t inner_subj = xp_rdfxml_bnode_iid (xp, box_dv_short_string (avalue));
               XRL_SET_NONINHERITABLE (inner, xrl_subject, inner_subj, "Attribute 'rdf:nodeID' conflicts with other attribute that set the subject");
-              if (XRL_PARSETYPE_PROPLIST == outer->xrl_parsetype)
+              if (XRL_PARSETYPE_PROPLIST & outer->xrl_parsetype)
                 {
                   inner->xrl_parsetype = XRL_PARSETYPE_EMPTYPROP;
                 }
@@ -427,31 +643,31 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
             }
           else if (!strcmp (tmp_local, "ID"))
             {
-              if (XRL_PARSETYPE_PROPLIST == outer->xrl_parsetype)
+              if (XRL_PARSETYPE_PROPLIST & outer->xrl_parsetype)
                 {
-                  caddr_t reif_subj = xp_rdfxml_resolved_iid (xp, avalue, 1);
+                  caddr_t reif_subj = xp_rdfxml_resolve_iri_avalue (xp, avalue, 1);
                   XRL_SET_NONINHERITABLE (inner, xrl_reification_id, reif_subj, "Reification ID of the statement is set twice by 'rdf:ID' attribute of a property element");
                 }
               else
                 {
-                  caddr_t inner_subj = xp_rdfxml_resolved_iid (xp, avalue, 1);
+                  caddr_t inner_subj = xp_rdfxml_resolve_iri_avalue (xp, avalue, 1);
                   XRL_SET_NONINHERITABLE (inner, xrl_subject, inner_subj, "Attribute 'rdf:ID' conflicts with other attribute that set node ID");
                   inner->xrl_parsetype = XRL_PARSETYPE_PROPLIST;
                 }
             }
           else if (!strcmp (tmp_local, "datatype"))
             {
-              if (XRL_PARSETYPE_PROPLIST != outer->xrl_parsetype)
+              if (!(XRL_PARSETYPE_PROPLIST & outer->xrl_parsetype))
                 {
                   xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute 'rdf:datatype' can appear only in property elements");
                   return;
                 }
-              XRL_SET_NONINHERITABLE (inner, xrl_datatype, xp_rdfxml_resolved_iid (xp, avalue, 0),  "Attribute 'rdf:datatype' us used twice");
+              XRL_SET_NONINHERITABLE (inner, xrl_datatype, xp_rdfxml_resolve_iri_avalue (xp, avalue, 0),  "Attribute 'rdf:datatype' is used twice");
               inner->xrl_parsetype = XRL_PARSETYPE_LITERAL;
             }
           else if (!strcmp (tmp_local, "parseType"))
             {
-              if (XRL_PARSETYPE_PROPLIST != outer->xrl_parsetype)
+              if (!(XRL_PARSETYPE_PROPLIST & outer->xrl_parsetype))
                 {
                   xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute 'rdf:parseType' can appear only in property elements");
                   return;
@@ -460,15 +676,15 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
                 {
                   caddr_t inner_subj = xp_rdfxml_bnode_iid (xp, NULL);
                   XRL_SET_NONINHERITABLE (inner, xrl_subject, inner_subj, "Attribute parseType='Resource' can not be used if object is set by other attribute");
-                  inner->xrl_parsetype = XRL_PARSETYPE_PROPLIST;
+                  inner->xrl_parsetype = XRL_PARSETYPE_PROPLIST | XRL_PARSETYPE_SET_EXPLICITLY;
                 }
               else if (!strcmp (avalue, "Literal"))
                 {
-                  inner->xrl_parsetype = XRL_PARSETYPE_LITERAL;
+                  inner->xrl_parsetype = XRL_PARSETYPE_LITERAL | XRL_PARSETYPE_SET_EXPLICITLY;
                 }
               else if (!strcmp (avalue, "Collection"))
                 {
-                  inner->xrl_parsetype = XRL_PARSETYPE_COLLECTION;
+                  inner->xrl_parsetype = XRL_PARSETYPE_COLLECTION | XRL_PARSETYPE_SET_EXPLICITLY;
                   return;
                 }
               else
@@ -477,21 +693,21 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
                   return;
                 }
             }
-	  else if (!strcmp (tmp_local, "type"))
-	    {
+          else if (!strcmp (tmp_local, "type"))
+            {
               dk_set_push (&inner_attr_props, avalue);
               dk_set_push (&inner_attr_props, ((caddr_t)((ptrlong)'T')));
               inner->xrl_parsetype = XRL_PARSETYPE_PROPLIST;
               continue;
-	    }
-	  else if (!strcmp (tmp_local, "value"))
-	    {
+            }
+          else if (!strcmp (tmp_local, "value"))
+            {
 #ifdef RECOVER_RDF_VALUE
-	      rdf_val = avalue;
+              rdf_val = avalue;
 #else
               goto push_inner_attr_prop; /* see below */
 #endif
-	    }
+            }
           else
             {
               xmlparser_logprintf (xp->xp_parser, XCFG_WARNING, 200,
@@ -501,19 +717,7 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
           continue;
         }
       else if (!stricmp (tmp_nsuri, "xml"))
-        {
-/*
-   	  XXX: moved above
-          if (!strcmp (tmp_local, "lang"))
-            XRL_SET_INHERITABLE (inner, xrl_language, box_dv_short_string (avalue), "Attribute 'xml:lang' is used twice");
-          else if (!strcmp (tmp_local, "base"))
-            XRL_SET_INHERITABLE (inner, xrl_base, box_dv_short_string (avalue), "Attribute 'xml:base' is used twice");
-          else if (0 != strcmp (tmp_local, "space"))
-            xmlparser_logprintf (xp->xp_parser, XCFG_WARNING, 200,
-              "Unsupported 'xml:...' attribute, only 'xml:lang', 'xml:base' and 'xml:space' are supported" );
-*/
           continue;
-        }
 push_inner_attr_prop:
       dk_set_push (&inner_attr_props, avalue);
       dk_set_push (&inner_attr_props, tmp_local);
@@ -522,37 +726,34 @@ push_inner_attr_prop:
     }
   if ((NULL != inner->xrl_subject) || (NULL != inner_attr_props))
     {
-      if (XRL_PARSETYPE_LITERAL == inner->xrl_parsetype)
+      if (XRL_PARSETYPE_LITERAL & inner->xrl_parsetype)
         {
           xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 200,
             "Conflicting attributes: property value can not be a node and a literal simultaneously" );
           return;
         }
     }
-/*  if ((XRL_PARSETYPE_PROPLIST == outer->xrl_parsetype) && (NULL != outer->xrl_subject))
-    XRL_SET_NONINHERITABLE (inner, xrl_subject, box_copy_tree (outer->xrl_subject));
-*/
   if (NULL == inner->xrl_subject)
     {
       if ((NULL != inner_attr_props) || (NULL != subj_type) ||
 #ifdef RECOVER_RDF_VALUE
         (NULL != rdf_val) ||
 #endif
-        (XRL_PARSETYPE_PROPLIST == inner->xrl_parsetype) )
+        (XRL_PARSETYPE_PROPLIST & inner->xrl_parsetype) )
         {
           caddr_t inner_subj = xp_rdfxml_bnode_iid (xp, NULL);
           XRL_SET_NONINHERITABLE (inner, xrl_subject, inner_subj, "Blank node object can not be defined here");
           inner->xrl_parsetype = XRL_PARSETYPE_PROPLIST;
         }
     }
-  if ((XRL_PARSETYPE_PROPLIST == inner->xrl_parsetype) && (NULL != outer->xrl_predicate))
+  if ((XRL_PARSETYPE_PROPLIST & inner->xrl_parsetype) && (NULL != outer->xrl_predicate))
     XRL_SET_NONINHERITABLE (outer, xrl_subject, box_copy_tree (inner->xrl_subject), "A property can not have two object values");
   if (NULL != subj_type)
     xp_rdfxml_triple (xp, inner->xrl_subject, uname_rdf_ns_uri_type, subj_type);
 #ifdef RECOVER_RDF_VALUE
   if (NULL != rdf_val)
     { /* This preserves semantics */
-      caddr_t resolved_rdf_val = xp_rdfxml_resolved_iid (xp, rdf_val, 0);
+      caddr_t resolved_rdf_val = xp_rdfxml_resolve_iri_avalue (xp, rdf_val, 0);
       xp_rdfxml_triple (xp, inner->xrl_subject, uname_rdf_ns_uri_value, resolved_rdf_val);
       dk_free_box (resolved_rdf_val);
     }
@@ -580,11 +781,11 @@ push_inner_attr_prop:
       xp->xp_boxed_name = aname = dk_alloc_box (l1 + l2 + 1, DV_STRING);
       memcpy (aname, tmp_nsuri, l1);
       strcpy (aname + l1, tmp_local);
-      xp_rdfxml_triple_l (xp, inner->xrl_subject, aname, avalue, NULL, NULL);
+      xp_rdfxml_triple_l (xp, inner->xrl_subject, aname, avalue, NULL, inner->xrl_language);
       dk_free_box (aname);
       xp->xp_boxed_name = NULL;
     }
-  if ((XRL_PARSETYPE_PROPLIST == inner->xrl_parsetype) && (XRL_PARSETYPE_PROPLIST == outer->xrl_parsetype))
+  if ((XRL_PARSETYPE_PROPLIST & inner->xrl_parsetype) && (XRL_PARSETYPE_PROPLIST & outer->xrl_parsetype))
     { /* This means parseType="Resource". It should be handled immediately to prevent error in case of parseType="Resource" nested inside inner. */
       xp_rdfxml_triple (xp, outer->xrl_subject, inner->xrl_predicate, inner->xrl_subject);
       if (NULL != inner->xrl_reification_id)
@@ -605,12 +806,12 @@ xp_rdfxml_element_end (void *userdata, const char * name)
 {
   xparse_ctx_t *xp = (xparse_ctx_t*) userdata;
   xp_rdfxml_locals_t *inner = xp->xp_rdfxml_locals;
-  if (XRL_PARSETYPE_LITERAL != inner->xrl_parsetype)
+  if (!(XRL_PARSETYPE_LITERAL & inner->xrl_parsetype))
     {
       xp_node_t *current_node = xp->xp_current;
       xp_node_t *parent_node = xp->xp_current->xn_parent;
       xp_rdfxml_locals_t *outer = inner->xrl_parent;
-      if ((NULL != outer) && (XRL_PARSETYPE_COLLECTION == outer->xrl_parsetype))
+      if ((NULL != outer) && (XRL_PARSETYPE_COLLECTION & outer->xrl_parsetype))
         {
           xp_rdfxml_locals_t *outer = inner->xrl_parent;
           caddr_t subj;
@@ -623,7 +824,7 @@ xp_rdfxml_element_end (void *userdata, const char * name)
             }
           dk_set_push (&(outer->xrl_seq_items), subj);
         }
-      else if (XRL_PARSETYPE_COLLECTION == inner->xrl_parsetype)
+      else if (XRL_PARSETYPE_COLLECTION & inner->xrl_parsetype)
         {
           caddr_t tail = uname_rdf_ns_uri_nil;
           while (NULL != inner->xrl_seq_items)
@@ -640,17 +841,33 @@ xp_rdfxml_element_end (void *userdata, const char * name)
       else if (NULL != inner->xrl_predicate)
         {
           xp_rdfxml_locals_t *outer = inner->xrl_parent;
-          if (NULL == inner->xrl_subject)
-            inner->xrl_subject = xp_rdfxml_bnode_iid (xp, NULL);
-          xp_rdfxml_triple (xp, outer->xrl_subject, inner->xrl_predicate, inner->xrl_subject);
-          if (NULL != inner->xrl_reification_id)
+          if ((NULL == inner->xrl_subject) && (XRL_PARSETYPE_RES_OR_LIT & inner->xrl_parsetype))
             {
-              xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_subject, outer->xrl_subject);
-              xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_predicate, inner->xrl_predicate);
-              xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_object, inner->xrl_subject);
-              xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_type, uname_rdf_ns_uri_Statement);
-    }
-}
+              caddr_t obj = box_dv_short_string ("");
+              xp_rdfxml_triple_l (xp, inner->xrl_parent->xrl_subject, inner->xrl_predicate, obj, inner->xrl_datatype, inner->xrl_language);
+              if (NULL != inner->xrl_reification_id)
+                {
+                  xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_subject, outer->xrl_subject);
+                  xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_predicate, inner->xrl_predicate);
+                  xp_rdfxml_triple_l (xp, inner->xrl_reification_id, uname_rdf_ns_uri_object, obj, inner->xrl_datatype, inner->xrl_language);
+                  xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_type, uname_rdf_ns_uri_Statement);
+                }
+              dk_free_tree (obj);
+            }
+          else
+            {
+              if (NULL == inner->xrl_subject)
+                inner->xrl_subject = xp_rdfxml_bnode_iid (xp, NULL);
+              xp_rdfxml_triple (xp, outer->xrl_subject, inner->xrl_predicate, inner->xrl_subject);
+              if (NULL != inner->xrl_reification_id)
+                {
+                  xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_subject, outer->xrl_subject);
+                  xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_predicate, inner->xrl_predicate);
+                  xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_object, inner->xrl_subject);
+                  xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_type, uname_rdf_ns_uri_Statement);
+                }
+            }
+        }
       if (0 != strses_length (xp->xp_strses))
         GPF_T1("xp_rdfxml_element_end(): non-empty xp_strses outside XRL_PARSETYPE_LITERAL");
       if (NULL != current_node->xn_children)
@@ -666,12 +883,15 @@ xp_rdfxml_element_end (void *userdata, const char * name)
     {
       xp_node_t * current_node = xp->xp_current;
       xp_node_t * parent_node = xp->xp_current->xn_parent;
+      xp_rdfxml_locals_t *outer = inner->xrl_parent;
+      caddr_t lang_in_effect;
       caddr_t obj;
       xml_tree_ent_t *literal_xte;
-      if (NULL == xp->xp_current->xn_children)
-    {
+      if ((NULL == xp->xp_current->xn_children) && !(XRL_PARSETYPE_SET_EXPLICITLY & inner->xrl_parsetype))
+        {
           obj = strses_string (xp->xp_strses);
-      strses_flush (xp->xp_strses);
+          strses_flush (xp->xp_strses);
+          lang_in_effect = inner->xrl_language;
         }
       else
         {
@@ -683,54 +903,62 @@ xp_rdfxml_element_end (void *userdata, const char * name)
           literal_head = (caddr_t *)list (1, uname__root);
           children = CONS (literal_head, children);
           literal_tree = list_to_array (children);
-              literal_xte = xte_from_tree (literal_tree, xp->xp_qi);
-              obj = (caddr_t) literal_xte;
-            }
+          literal_xte = xte_from_tree (literal_tree, xp->xp_qi);
+          obj = (caddr_t) literal_xte;
+          lang_in_effect = NULL;
+        }
       dk_free_tree (current_node->xn_attrs);
       xp->xp_current = parent_node;
       current_node->xn_parent = xp->xp_free_list;
       xp->xp_free_list = current_node;
-      xp_rdfxml_triple_l (xp, inner->xrl_parent->xrl_subject, inner->xrl_predicate, obj, inner->xrl_datatype, inner->xrl_language);
+      xp_rdfxml_triple_l (xp, outer->xrl_subject, inner->xrl_predicate, obj, inner->xrl_datatype, lang_in_effect);
+      if (NULL != inner->xrl_reification_id)
+        {
+          xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_subject, outer->xrl_subject);
+          xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_predicate, inner->xrl_predicate);
+          xp_rdfxml_triple_l (xp, inner->xrl_reification_id, uname_rdf_ns_uri_object, obj, inner->xrl_datatype, lang_in_effect);
+          xp_rdfxml_triple (xp, inner->xrl_reification_id, uname_rdf_ns_uri_type, uname_rdf_ns_uri_Statement);
+        }
       dk_free_tree (obj);
       xp_pop_rdf_locals (xp);
       return;
-        }
+    }
   xp_element_end (userdata, name);
-        }
+}
 
 
 void
 xp_rdfxml_id (void *userdata, char * name)
-        {
-  xparse_ctx_t * xp = (xparse_ctx_t*) userdata;
-  if (XRL_PARSETYPE_LITERAL == xp->xp_rdfxml_locals->xrl_parsetype)
+{
+  xparse_ctx_t *xp = (xparse_ctx_t*) userdata;
+  if (XRL_PARSETYPE_LITERAL & xp->xp_rdfxml_locals->xrl_parsetype)
     xp_id (userdata, name);
-    }
+}
 
 
 void
 xp_rdfxml_character (vxml_parser_t * parser,  char * s, int len)
-        {
+{
   xparse_ctx_t *xp = (xparse_ctx_t *) parser;
-  switch (xp->xp_rdfxml_locals->xrl_parsetype)
-            {
+  switch (xp->xp_rdfxml_locals->xrl_parsetype & (XRL_PARSETYPE_LITERAL | XRL_PARSETYPE_RES_OR_LIT))
+    {
     case XRL_PARSETYPE_LITERAL:
       session_buffered_write (xp->xp_strses, s, len);
       break;
     case XRL_PARSETYPE_RES_OR_LIT:
-        {
+      {
         char *tail = s+len;
         while ((--tail) >= s)
           if (NULL == strchr (" \t\r\n", tail[0]))
-        {
+            {
               xp->xp_rdfxml_locals->xrl_parsetype = XRL_PARSETYPE_LITERAL;
               session_buffered_write (xp->xp_strses, s, len);
               break;
-        }
+            }
         break;
-    }
+      }
     default:
-            {
+      {
         char *tail = s+len;
         while ((--tail) >= s)
           if (NULL == strchr (" \t\r\n", tail[0]))
@@ -739,7 +967,7 @@ xp_rdfxml_character (vxml_parser_t * parser,  char * s, int len)
               return;
             }
         break;
-        }
+      }
     }
 }
 
@@ -747,8 +975,8 @@ void
 xp_rdfxml_entity (vxml_parser_t * parser, const char * refname, int reflen, int isparam, const xml_def_4_entity_t *edef)
 {
   xparse_ctx_t *xp = (xparse_ctx_t *) parser;
-  switch (xp->xp_rdfxml_locals->xrl_parsetype)
-{
+  switch (xp->xp_rdfxml_locals->xrl_parsetype & (XRL_PARSETYPE_LITERAL | XRL_PARSETYPE_RES_OR_LIT))
+    {
     case XRL_PARSETYPE_LITERAL:
       xp_entity (parser, refname, reflen, isparam, edef);
       break;
@@ -759,14 +987,14 @@ xp_rdfxml_entity (vxml_parser_t * parser, const char * refname, int reflen, int 
     default:
       xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Entity found instead of XML element");
       break;
-}
+    }
 }
 
 void
 xp_rdfxml_pi (vxml_parser_t * parser, const char *target, const char *data)
 {
   xparse_ctx_t *xp = (xparse_ctx_t *) parser;
-  switch (xp->xp_rdfxml_locals->xrl_parsetype)
+  switch (xp->xp_rdfxml_locals->xrl_parsetype & (XRL_PARSETYPE_LITERAL | XRL_PARSETYPE_TOP_LEVEL | XRL_PARSETYPE_RES_OR_LIT))
     {
     case XRL_PARSETYPE_LITERAL:
       xp_pi (parser, target, data);
@@ -778,7 +1006,7 @@ xp_rdfxml_pi (vxml_parser_t * parser, const char *target, const char *data)
       xp_pi (parser, target, data);
       break;
     default:
-      xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Processing instruction found instead of XML element");
+      xmlparser_logprintf (xp->xp_parser, XCFG_WARNING, 100, "Processing instruction found instead of XML element");
       break;
     }
 }
@@ -805,7 +1033,9 @@ xp_expand_relative_uri (caddr_t base, caddr_t *relative_ptr)
   caddr_t relative = relative_ptr[0];
   caddr_t expanded;
   caddr_t err = NULL;
-  if ((NULL == base) || ('\0' == base[0]) || (NULL == relative) || (DV_IRI_ID == DV_TYPE_OF (relative)) || !strncmp (relative, "http://", 7))
+  if ((NULL == base) || ('\0' == base[0])
+    || (NULL == relative) || (DV_IRI_ID == DV_TYPE_OF (relative)) || !strncmp (relative, "http://", 7)
+    || !strncmp (relative, "_:", 2) )
     return;
   expanded = rfc1808_expand_uri (/*xn->xn_xp->xp_qi,*/ base, relative, "UTF-8", 0, "UTF-8", "UTF-8", &err);
   if (NULL != err)
@@ -879,7 +1109,7 @@ xp_rdfa_expand_name (xp_node_t * xn, const char *name, const char *colon, int us
             }
           dk_free_box (ns_uri);
         }
-    return NULL; /* error: undefined namespace prefix */
+      return NULL; /* error: undefined namespace prefix */
     }
   relative = box_dv_short_string (name);
 
@@ -1111,7 +1341,7 @@ next_token:
               if (!lpar_found && strchr (tail, '('))
                 lpar_found = 1;         /* 012345678901 */
               if (!lpar_found && strncmp ("javascript:", attrvalue, 11))
-              break;
+                break;
             }
           tail++;
         }
@@ -1195,22 +1425,22 @@ next_token:
           else
             {
 #ifndef NDEBUG
-          token_end[0] = '\0';
-          if (('_' == token_start[0]) && (curie_colon == token_start + 1))
-            expanded_token = tf_bnode_iid (xp->xp_tf, box_dv_short_nchars (token_start+2, token_end-(token_start+2)));
-          else if (curie_colon == token_start)
-            { /* Note that the default prefix mapping may differ from usage to usage, it is xhtml vocab namespace only for RDFa */
-              expanded_token = box_dv_short_strconcat (uname_xhv_ns_uri, curie_colon+1);
-            }
-          else
-            expanded_token = xp_rdfa_expand_name (xn, token_start, curie_colon, 1/*, base*/);
-          token_end[0] = saved_token_delim;
+              token_end[0] = '\0';
+              if (('_' == token_start[0]) && (curie_colon == token_start + 1))
+                expanded_token = tf_bnode_iid (xp->xp_tf, box_dv_short_nchars (token_start+2, token_end-(token_start+2)));
+              else if (curie_colon == token_start)
+                { /* Note that the default prefix mapping may differ from usage to usage, it is xhtml vocab namespace only for RDFa */
+                  expanded_token = box_dv_short_strconcat (uname_xhv_ns_uri, curie_colon+1);
+                }
+              else
+                expanded_token = xp_rdfa_expand_name (xn, token_start, curie_colon, 1/*, base*/);
+              token_end[0] = saved_token_delim;
 #endif
-        xmlparser_logprintf (xp->xp_parser, XCFG_ERROR, 100,
-          "Bad token in the value of attribute \"%.20s\" (undeclared namespace?)",
+              xmlparser_logprintf (xp->xp_parser, XCFG_ERROR, 100,
+                "Bad token in the value of attribute \"%.20s\" (undeclared namespace?)",
                 rdfa_attribute_names[attr_id] );
-    }
-    }
+            }
+        }
     }
   else if (RDFA_ATTRSYNTAX_TERM & allowed_syntax)
     {
@@ -1234,7 +1464,7 @@ next_token:
         {
           if ((RDFA_ATTRSYNTAX_REL_REV_RESERVED & allowed_syntax) ||
             ((NULL != xp->xp_rdfa_locals) && (RDFA_IN_HTML & xp->xp_rdfa_locals->xrdfal_place_bits)) )
-      expanded_token = rdfa_rel_rev_value_is_reserved (token_start);
+            expanded_token = rdfa_rel_rev_value_is_reserved (token_start);
         }
       if (NULL == expanded_token)
         {
@@ -1245,11 +1475,11 @@ next_token:
       if (NULL == expanded_token)
         {
 #if 1
-        goto next_token; /* see above */
+          goto next_token; /* see above */
 #else
-        expanded_token = box_dv_short_nchars (token_start, token_end-token_start);
+          expanded_token = box_dv_short_nchars (token_start, token_end-token_start);
 #endif
-    }
+        }
     }
   else if ((RDFA_ATTRSYNTAX_SAFECURIE & token_syntax) && (token_end == token_start))
     {
@@ -1581,7 +1811,7 @@ rdfa_feed_or_make_ict (xparse_ctx_t *xp, xp_rdfa_locals_t *xrdfal, caddr_t left,
 void
 xp_rdfa_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
 {
-  xparse_ctx_t * xp = (xparse_ctx_t*) userdata;
+  xparse_ctx_t *xp = (xparse_ctx_t*) userdata;
   xp_rdfa_locals_t *outer = xp->xp_rdfa_locals;
   xp_rdfa_locals_t *inner = NULL; /* This is not allocated at all if there's nothing "interesting" in the tag */
   xp_tmp_t *xpt = xp->xp_tmp;
@@ -1785,16 +2015,16 @@ xp_rdfa_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
         }
     }
   if (NULL != avalues[RDFA_ATTR_ABOUT])
+    {
+      if (1 <= src_prio)
         {
-          if (1 <= src_prio)
-            {
-              dk_free_tree (xpt->xpt_src);
-              xpt->xpt_src = NULL; /* to avoid second delete of freed value in case of error inside xp_rdfa_parse_attr_value() */
+          dk_free_tree (xpt->xpt_src);
+          xpt->xpt_src = NULL; /* to avoid second delete of freed value in case of error inside xp_rdfa_parse_attr_value() */
           xpt->xpt_src = xp_rdfa_parse_attr_value (xp, xn, RDFA_ATTR_ABOUT, avalues,
             RDFA_ATTRSYNTAX_SAFECURIE | RDFA_ATTRSYNTAX_CURIE | RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_EMPTY_ACCEPTABLE,
-                NULL, NULL );
-              src_prio = 1;
-            }
+            NULL, NULL );
+          src_prio = 1;
+        }
     }
   if (NULL != avalues[RDFA_ATTR_CONTENT])
     {
@@ -1804,80 +2034,80 @@ xp_rdfa_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
     {
       xpt->xpt_dt = xp_rdfa_parse_attr_value (xp, xn, RDFA_ATTR_DATATYPE, avalues,
         RDFA_ATTRSYNTAX_TERM | RDFA_ATTRSYNTAX_CURIE | RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_EMPTY_ACCEPTABLE,
-            NULL, NULL );
+        NULL, NULL );
     }
   if (NULL != avalues[RDFA_ATTR_HREF])
     {
-          if (RDFA_IN_BASE & inner_place_bits)
-            {
-              dk_free_tree (xpt->xpt_href);
-              xpt->xpt_href = NULL; /* to avoid second delete of freed value in case of error inside xp_rdfa_parse_attr_value() */
+      if (RDFA_IN_BASE & inner_place_bits)
+        {
+          dk_free_tree (xpt->xpt_href);
+          xpt->xpt_href = NULL; /* to avoid second delete of freed value in case of error inside xp_rdfa_parse_attr_value() */
           xpt->xpt_href = xp_rdfa_parse_attr_value (xp, xn, RDFA_ATTR_HREF, avalues,
-                RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_EMPTY_ACCEPTABLE | RDFA_ATTRSYNTAX_DIRTY_HREF,
-                NULL, NULL );
-              xp_rdfa_set_base (xp, outer, xpt->xpt_href);
-              xpt->xpt_href = NULL;
-              inner_place_bits |= RDFA_IN_UNUSED;
-            }
-          else if (4 <= href_prio)
-            {
-              dk_free_tree (xpt->xpt_href);
-              xpt->xpt_href = NULL; /* to avoid second delete of freed value in case of error inside xp_rdfa_parse_attr_value() */
+            RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_EMPTY_ACCEPTABLE | RDFA_ATTRSYNTAX_DIRTY_HREF,
+            NULL, NULL );
+          xp_rdfa_set_base (xp, outer, xpt->xpt_href);
+          xpt->xpt_href = NULL;
+          inner_place_bits |= RDFA_IN_UNUSED;
+        }
+      else if (4 <= href_prio)
+        {
+          dk_free_tree (xpt->xpt_href);
+          xpt->xpt_href = NULL; /* to avoid second delete of freed value in case of error inside xp_rdfa_parse_attr_value() */
           xpt->xpt_href = xp_rdfa_parse_attr_value (xp, xn, RDFA_ATTR_HREF, avalues,
-                RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_EMPTY_ACCEPTABLE | RDFA_ATTRSYNTAX_DIRTY_HREF,
-                NULL, NULL );
-              href_prio = 4;
-            }
+            RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_EMPTY_ACCEPTABLE | RDFA_ATTRSYNTAX_DIRTY_HREF,
+            NULL, NULL );
+          href_prio = 4;
+        }
     }
   if (NULL != avalues[RDFA_ATTR_PROPERTY])
     {
       xp_rdfa_parse_attr_value (xp, xn, RDFA_ATTR_PROPERTY, avalues,
         RDFA_ATTRSYNTAX_TERM | RDFA_ATTRSYNTAX_CURIE | RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_WS_LIST,
-            &(xpt->xpt_prop_preds), &prop_pred_count );
+        &(xpt->xpt_prop_preds), &prop_pred_count );
     }
   if (NULL != avalues[RDFA_ATTR_REL])
     {
       xp_rdfa_parse_attr_value (xp, xn, RDFA_ATTR_REL, avalues,
         RDFA_ATTRSYNTAX_TERM | RDFA_ATTRSYNTAX_CURIE | RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_REL_REV_RESERVED | RDFA_ATTRSYNTAX_WS_LIST,
-            &(xpt->xpt_rel_preds), &rel_pred_count );
-          rel_rev_attrcount++;
+        &(xpt->xpt_rel_preds), &rel_pred_count );
+      rel_rev_attrcount++;
     }
   if (NULL != avalues[RDFA_ATTR_RESOURCE])
     {
-          if (3 <= href_prio)
-            {
-              dk_free_tree (xpt->xpt_href);
-              xpt->xpt_href = NULL; /* to avoid second delete of freed value in case of error inside xp_rdfa_parse_attr_value() */
+      if (3 <= href_prio)
+        {
+          dk_free_tree (xpt->xpt_href);
+          xpt->xpt_href = NULL; /* to avoid second delete of freed value in case of error inside xp_rdfa_parse_attr_value() */
           xpt->xpt_href = xp_rdfa_parse_attr_value (xp, xn, RDFA_ATTR_RESOURCE, avalues,
             RDFA_ATTRSYNTAX_SAFECURIE | RDFA_ATTRSYNTAX_CURIE | RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_EMPTY_ACCEPTABLE,
-                NULL, NULL );
-              href_prio = 3;
-            }
+            NULL, NULL );
+          href_prio = 3;
+        }
     }
   if (NULL != avalues[RDFA_ATTR_REV])
     {
       xp_rdfa_parse_attr_value (xp, xn, RDFA_ATTR_REV, avalues,
         RDFA_ATTRSYNTAX_TERM | RDFA_ATTRSYNTAX_CURIE | RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_REL_REV_RESERVED | RDFA_ATTRSYNTAX_WS_LIST,
-            &(xpt->xpt_rev_preds), &rev_pred_count );
-          rel_rev_attrcount++;
+        &(xpt->xpt_rev_preds), &rev_pred_count );
+      rel_rev_attrcount++;
     }
   if (NULL != avalues[RDFA_ATTR_SRC])
     {
-          if (2 <= src_prio)
-            {
-              dk_free_tree (xpt->xpt_src);
-              xpt->xpt_src = NULL; /* to avoid second delete of freed value in case of error inside xp_rdfa_parse_attr_value() */
+      if (2 <= src_prio)
+        {
+          dk_free_tree (xpt->xpt_src);
+          xpt->xpt_src = NULL; /* to avoid second delete of freed value in case of error inside xp_rdfa_parse_attr_value() */
           xpt->xpt_src = xp_rdfa_parse_attr_value (xp, xn, RDFA_ATTR_SRC, avalues,
-                RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_EMPTY_ACCEPTABLE,
-                NULL, NULL );
-              src_prio = 2;
-            }
+            RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_EMPTY_ACCEPTABLE,
+            NULL, NULL );
+          src_prio = 2;
+        }
     }
   if (NULL != avalues[RDFA_ATTR_TYPEOF])
     {
       xp_rdfa_parse_attr_value (xp, xn, RDFA_ATTR_TYPEOF, avalues,
         RDFA_ATTRSYNTAX_TERM | RDFA_ATTRSYNTAX_CURIE | RDFA_ATTRSYNTAX_URI | RDFA_ATTRSYNTAX_WS_LIST,
-            &(xpt->xpt_typeofs), &typeof_count );
+        &(xpt->xpt_typeofs), &typeof_count );
     }
   if (NULL != avalues[RDFA_ATTR_XML_BASE])
     {
@@ -1890,8 +2120,8 @@ xp_rdfa_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
     }
   if (NULL != avalues[RDFA_ATTR_XML_LANG])
     {
-          if (NULL != xpt->xpt_lang)
-            dk_free_tree (xpt->xpt_lang);
+      if (NULL != xpt->xpt_lang)
+        dk_free_tree (xpt->xpt_lang);
       xpt->xpt_lang = box_dv_short_string (avalues[RDFA_ATTR_XML_LANG]);
     }
 
@@ -1959,7 +2189,7 @@ all_attributes_are_retrieved:
       xp->xp_current = xn;
     }
   if (!inner_is_allocated)
-  inner = xp_push_rdfa_locals (xp);
+    inner = xp_push_rdfa_locals (xp);
 #ifdef DEBUG
   if (NULL != xp->xp_boxed_name)
     GPF_T1("Memory leak in xp->xp_boxed_name");
@@ -2139,7 +2369,7 @@ xp_rdfa_element_end (void *userdata, const char * name)
           literal_head = (caddr_t *)list (1, uname__root);
           children = CONS (literal_head, children);
           literal_tree = list_to_array (children);
-	  current_node->xn_children = NULL;
+          current_node->xn_children = NULL;
           if (obj_use_count)
             {
               xml_tree_ent_t *literal_xte;
@@ -2243,7 +2473,7 @@ xp_rdfa_element_end (void *userdata, const char * name)
 void
 xp_rdfa_id (void *userdata, char * name)
 {
-  xparse_ctx_t * xp = (xparse_ctx_t*) userdata;
+  xparse_ctx_t *xp = (xparse_ctx_t*) userdata;
   xp_rdfa_locals_t *inner = xp->xp_rdfa_locals;
   if (RDFA_IN_XMLLITERAL & inner->xrdfal_place_bits)
     xp_id (userdata, name);
@@ -2266,7 +2496,7 @@ xp_rdfa_entity (void *userdata, const char * refname, int reflen, int isparam, c
   xparse_ctx_t *xp = (xparse_ctx_t *) userdata;
   xp_rdfa_locals_t *inner = xp->xp_rdfa_locals;
   if (RDFA_IN_XMLLITERAL & inner->xrdfal_place_bits)
-    xp_entity (userdata, refname, reflen, isparam, edef);
+    xp_entity ((vxml_parser_t *)userdata, refname, reflen, isparam, edef);
   else if (RDFA_IN_STRLITERAL & inner->xrdfal_place_bits)
     xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Entities are not supported in string literal object");
 }
@@ -2277,7 +2507,7 @@ xp_rdfa_pi (void *userdata, const char *target, const char *data)
   xparse_ctx_t *xp = (xparse_ctx_t *) userdata;
   xp_rdfa_locals_t *inner = xp->xp_rdfa_locals;
   if (RDFA_IN_XMLLITERAL & inner->xrdfal_place_bits)
-    xp_pi (userdata, target, data);
+    xp_pi ((vxml_parser_t *)userdata, target, data);
 }
 
 void
@@ -2286,12 +2516,968 @@ xp_rdfa_comment (void *userdata, const char *text)
   xparse_ctx_t *xp = (xparse_ctx_t *) userdata;
   xp_rdfa_locals_t *inner = xp->xp_rdfa_locals;
   if (RDFA_IN_XMLLITERAL & inner->xrdfal_place_bits)
-    xp_comment (userdata, text);
+    xp_comment ((vxml_parser_t *)userdata, text);
+}
+
+/* Part 3. Microdata parser */
+
+const char *mdata_attribute_lognames[COUNTOF__MDATA_ATTR] = {
+  "meta content",	/* MDATA_ATTR_OBJ_CONTENT_STRLIT	0	*/
+  "datetime",		/* MDATA_ATTR_OBJ_DATETIME		1	*/
+  "literal content",	/* MDATA_ATTR_OBJ_STRLIT		2	*/
+  "cite",		/* MDATA_ATTR_OBJ_CITE			3	*/
+  "href/src/data",	/* MDATA_ATTR_OBJ_REF			4	*/
+  "name",		/* MDATA_ATTR_OBJ_NAME			5	*/
+  "id",			/* MDATA_ATTR_ID			6	*/
+  "itemid",		/* MDATA_ATTR_ITEMID			7	*/
+  "itemprop",		/* MDATA_ATTR_ITEMPROP			8	*/
+  "itemref",		/* MDATA_ATTR_ITEMREF			9	*/
+  "itemscope",		/* MDATA_ATTR_ITEMSCOPE			10	*/
+  "itemtype",		/* MDATA_ATTR_ITEMTYPE			11	*/
+  "rel",		/* MDATA_ATTR_REL			12	*/
+  "xml:base",		/* MDATA_ATTR_XML_BASE			13	*/
+  "xml:lang" };		/* MDATA_ATTR_XML_LANG			14	*/
+
+int
+mdata_find_attr_idx (const char *attrname, const char *elname)
+{
+  if (!strcmp (attrname, "href"))
+    {
+      if (!strcmp (elname, "a") || !strcmp (elname, "link") || !strcmp (elname, "area"))
+        return MDATA_ATTR_OBJ_REF;
+      return -1;
+    }
+  if (!strcmp (attrname, "src"))
+    {
+      if (!strcmp (elname, "img") || !strcmp (elname, "iframe") || !strcmp (elname, "audio")
+        || !strcmp (elname, "embed") || !strcmp (elname, "source") || !strcmp (elname, "track") || !strcmp (elname, "video"))
+        return MDATA_ATTR_OBJ_REF;
+      return -1;
+    }
+  if (!strcmp (attrname, "data"))
+    {
+      if (!strcmp (elname, "object"))
+        return MDATA_ATTR_OBJ_REF;
+      return -1;
+    }
+  if (!strcmp (attrname, "content"))
+    {
+      if (!strcmp (elname, "meta"))
+        return MDATA_ATTR_OBJ_CONTENT_STRLIT;
+      return -2;
+    }
+  if (!strcmp (attrname, "cite"))
+    {
+      if (!strcmp (elname, "blockquote") || !strcmp (elname, "q"))
+        return MDATA_ATTR_OBJ_CITE_REF;
+      return -2;
+    }
+  if (!strcmp (attrname, "name"))
+    {
+      if (!strcmp (elname, "meta"))
+        return MDATA_ATTR_OBJ_NAME;
+      return -2;
+    }
+  if (!strcmp (attrname, "id"))
+    return MDATA_ATTR_ID;
+  if (!strcmp (attrname, "rel"))
+    {
+      if (!strcmp (elname, "a") || !strcmp (elname, "link") || !strcmp (elname, "area"))
+        return MDATA_ATTR_REL;
+      return -1;
+    }
+  if (!strncmp (attrname, "xml:", 4))
+    {
+      if (!strcmp (attrname, "xml:base"))
+        return MDATA_ATTR_XML_BASE;
+      if (!strcmp (attrname, "xml:lang"))
+        return MDATA_ATTR_XML_LANG;
+      return -3;
+    }
+  if (!strncmp (attrname, "item", 4))
+    {
+      if (!strcmp (attrname, "itemid"))
+        return MDATA_ATTR_ITEMID;
+      if (!strcmp (attrname, "itemprop"))
+        return MDATA_ATTR_ITEMPROP;
+      if (!strcmp (attrname, "itemref"))
+        return MDATA_ATTR_ITEMREF;
+      if (!strcmp (attrname, "itemscope"))
+        return MDATA_ATTR_ITEMSCOPE;
+      if (!strcmp (attrname, "itemtype"))
+        return MDATA_ATTR_ITEMTYPE;
+      return -4;
+    }
+  if (!strcmp (attrname, "datetime"))
+    {
+      if (!strcmp (elname, "time"))
+        return MDATA_ATTR_OBJ_DATETIME;
+      return -5;
+    }
+  return -6;
 }
 
 
+#define MDATA_ATTRSYNTAX_URI		0x01
+#define MDATA_ATTRSYNTAX_REL		0x02
+#define MDATA_ATTRSYNTAX_ID		0x04
+#define MDATA_ATTRSYNTAX_WS_LIST	0x08
+#define MDATA_ATTRSYNTAX_OPTIONAL	0x10
+#define MDATA_ATTRSYNTAX_SILENT		0x20
 
-/* Part 3. Common parser invocation routine */
+caddr_t
+xp_mdata_parse_attr_value (xparse_ctx_t *xp, xp_node_t * xn, int attr_id, char **attrvalues, int allowed_syntax, caddr_t **values_ret, int *values_count_ret)
+{
+  char *attrvalue = attrvalues[attr_id];
+  char *tail = attrvalue;
+  char *token_start, *token_end;
+  int token_syntax;
+  caddr_t expanded_token = NULL;
+  int values_count, expanded_token_not_saved = 0;
+#define free_unsaved_token() do { \
+  if (expanded_token_not_saved) { \
+      dk_free_box (expanded_token); \
+      expanded_token = NULL; \
+      expanded_token_not_saved = 0; } \
+  } while (0)
+#ifdef RDFXML_DEBUG
+  if (((NULL != values_ret) ? 1 : 0) != ((NULL != values_count_ret) ? 1 : 0))
+    GPF_T1 ("xp_" "mdata_parse_attr_value(): bad call (1)");
+  if (((NULL != values_ret) ? 1 : 0) != ((MDATA_ATTRSYNTAX_WS_LIST & allowed_syntax) ? 1 : 0))
+    GPF_T1 ("xp_" "mdata_parse_attr_value(): bad call (2)");
+#endif
+  if (NULL != values_ret)
+    {
+      if (NULL == values_ret[0])
+        values_ret[0] = dk_alloc_list_zero (1);
+      values_count = values_count_ret[0];
+    }
+  else
+    values_count = 0;
+  if (NULL == attrvalue)
+    {
+      if (!(MDATA_ATTRSYNTAX_OPTIONAL & allowed_syntax))
+        {
+          free_unsaved_token();
+          if (MDATA_ATTRSYNTAX_SILENT & allowed_syntax)
+            return NULL;
+          xmlparser_logprintf (xp->xp_parser, XCFG_ERROR, 100, "Missing attribute %.20s", mdata_attribute_lognames[attr_id]);
+        }
+      return NULL;
+    }
+
+next_token:
+  if ((MDATA_ATTRSYNTAX_WS_LIST | MDATA_ATTRSYNTAX_ID) & allowed_syntax)
+    while (('\0' != tail[0]) && isspace (tail[0])) tail++;
+  else if (isspace (tail[0]))
+    {
+      free_unsaved_token();
+      if (MDATA_ATTRSYNTAX_SILENT & allowed_syntax)
+        return NULL;
+      xmlparser_logprintf (xp->xp_parser, XCFG_ERROR, 100, "Whitespaces are not allowed for attribute %.20s", mdata_attribute_lognames[attr_id]);
+      return NULL;
+    }
+  if ('\0' == tail[0])
+    {
+      if (0 == values_count)
+        {
+          if (MDATA_ATTRSYNTAX_WS_LIST & allowed_syntax)
+            return NULL;
+          if (MDATA_ATTRSYNTAX_SILENT & allowed_syntax)
+            return NULL;
+          xmlparser_logprintf (xp->xp_parser, XCFG_ERROR, 100, "Empty value is not allowed for attribute %.20s", mdata_attribute_lognames[attr_id]);
+        }
+      if (NULL != values_count_ret)
+        values_count_ret[0] = values_count;
+      return expanded_token;
+    }
+  if ((1 == values_count) && !(MDATA_ATTRSYNTAX_WS_LIST & allowed_syntax))
+    {
+      free_unsaved_token();
+      if (MDATA_ATTRSYNTAX_SILENT & allowed_syntax)
+        return NULL;
+      xmlparser_logprintf (xp->xp_parser, XCFG_ERROR, 100, "Multiple values are not allowed for attribute %.20s", mdata_attribute_lognames[attr_id]);
+      if (NULL != values_count_ret)
+        values_count_ret[0] = values_count;
+      return NULL;
+    }
+  token_syntax = allowed_syntax & (MDATA_ATTRSYNTAX_URI | MDATA_ATTRSYNTAX_ID);
+  token_start = tail;
+  while (('\0' != tail[0]) && !isspace(tail[0]))
+    tail++;
+  token_end = tail;
+  if (NULL != values_ret)
+    {
+      if (values_count == BOX_ELEMENTS (values_ret[0]))
+        {
+          caddr_t *new_buf = dk_alloc_list_zero (values_count * 2);
+          memcpy (new_buf, values_ret[0], box_length (values_ret[0]));
+          dk_free_box ((caddr_t)(values_ret[0]));
+          values_ret[0] = (caddr_t *)new_buf;
+        }
+      else if (NULL != values_ret[0][values_count]) /* There's some old garbage to delete */
+        {
+#ifdef RDFXML_DEBUG
+          GPF_T1 ("xp_" "mdata_parse_attr_value(): garbage?");
+#endif
+          dk_free_tree (values_ret[0][values_count]);
+          values_ret[0][values_count] = NULL;
+        }
+    }
+  expanded_token = box_dv_short_nchars (token_start, token_end-token_start);
+  if (MDATA_ATTRSYNTAX_REL & token_syntax)
+    {
+      if (NULL != values_ret)
+        {
+          const char *alt_ssheet_compl_name = NULL;
+          if (!strcasecmp (expanded_token, "alternate"))
+            alt_ssheet_compl_name = "http://www.w3.org/1999/xhtml/vocab#stylesheet";
+          else if (!strcasecmp (expanded_token, "stylesheet"))
+            alt_ssheet_compl_name = "http://www.w3.org/1999/xhtml/vocab#alternate";
+          if (NULL != alt_ssheet_compl_name)
+            {
+              int prev_ctr = values_count;
+              while (0 < prev_ctr--)
+                {
+                  if (strcmp (values_ret[0][prev_ctr], alt_ssheet_compl_name))
+                    continue;
+                  dk_free_box (values_ret[0][prev_ctr]);
+                  dk_free_box (expanded_token);
+                  values_ret[0][prev_ctr] = box_dv_short_string ("http://www.w3.org/1999/xhtml/vocab#ALTERNATE-STYLESHEET");
+                  goto token_done; /* see below */
+                }
+            }
+        }
+      if (NULL == strchr (expanded_token, ':'))
+        {
+          caddr_t vocab_token;
+          char *ttail;
+          for (ttail = expanded_token; ('\0' != ttail[0]) && !(ttail[0] & ~0x7f); ttail++) ttail[0] = tolower (ttail[0]);
+          vocab_token = box_dv_short_strconcat ("http://www.w3.org/1999/xhtml/vocab#", expanded_token);
+          dk_free_box (expanded_token);
+          expanded_token = vocab_token;
+          goto token_done; /* see below */
+        }
+    }
+  if (MDATA_ATTRSYNTAX_URI & token_syntax)
+    {
+      caddr_t base = xn->xn_xp->xp_mdata_locals->xmdatal_base;
+      xp_expand_relative_uri (base, &expanded_token);
+      if (NULL == expanded_token)
+        {
+          if (MDATA_ATTRSYNTAX_SILENT & allowed_syntax)
+            return NULL;
+          xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Bad URI token in the value of attribute \"%.20s\"", mdata_attribute_lognames[attr_id]);
+        }
+    }
+token_done:
+  expanded_token_not_saved = 1;
+  if (NULL != values_ret)
+    {
+      values_ret[0][values_count] = expanded_token;
+      expanded_token_not_saved = 0;
+    }
+  values_count++;
+  goto next_token; /* see above */
+}
+
+typedef struct mdata_id_desc_s {
+  ptrlong iddesc_found;
+  ptrlong iddesc_refcount;
+  caddr_t *iddesc_refs;
+}
+mdata_id_desc_t;
+
+void
+mdata_register_id_elt (xparse_ctx_t *xp, ccaddr_t id)
+{
+  id_hash_t *ht = xp->xp_tmp->xpt_id2desc;
+  mdata_id_desc_t **desc;
+  mdata_id_desc_t *new_desc;
+  desc = (mdata_id_desc_t **)id_hash_get (ht, (caddr_t)(&id));
+  if (NULL != desc)
+    {
+      if (desc[0]->iddesc_found)
+        xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Id %.200s is not unique", id);
+      desc[0]->iddesc_found = 1;
+      return;
+    }
+  id = box_copy (id);
+  new_desc = (mdata_id_desc_t *)list (3, (ptrlong)1, (ptrlong)0, dk_alloc_list_zero (2));
+  id_hash_set (ht, (caddr_t)(&id), (caddr_t)(&new_desc));
+}
+
+void
+mdata_register_id_usage (xparse_ctx_t *xp, ccaddr_t id, caddr_t itemid)
+{
+  id_hash_t *ht = xp->xp_tmp->xpt_id2desc;
+  mdata_id_desc_t **desc;
+  mdata_id_desc_t *new_desc;
+  desc = (mdata_id_desc_t **)id_hash_get (ht, (caddr_t)(&id));
+  if (NULL != desc)
+    {
+      int refs_room = BOX_ELEMENTS (desc[0]->iddesc_refs);
+      if (desc[0]->iddesc_refcount >= refs_room)
+        {
+          caddr_t *new_refs = dk_alloc_list_zero (refs_room * 2);
+          memcpy (new_refs, desc[0]->iddesc_refs, refs_room * sizeof (caddr_t));
+          dk_free_box ((caddr_t)(desc[0]->iddesc_refs));
+          desc[0]->iddesc_refs = new_refs;
+        }
+      desc[0]->iddesc_refs [desc[0]->iddesc_refcount++] = box_copy_tree (itemid);
+      return;
+    }
+  new_desc = (mdata_id_desc_t *)list (3, (ptrlong)0, (ptrlong)1, (caddr_t *)dk_alloc_list_zero (2));
+  new_desc->iddesc_refs[0] = box_copy_tree (itemid);
+  id = box_copy (id);
+  id_hash_set (ht, (caddr_t)(&id), (caddr_t)(&new_desc));
+}
+
+void
+mdata_feed_or_keep (xparse_ctx_t *xp, xp_mdata_locals_t *subj_l, caddr_t prop, xp_mdata_locals_t *inner, caddr_t obj, int obj_type)
+{
+  int obj_is_iri = ((MDATA_ATTR_ITEMID == obj_type) || (MDATA_ATTR_ID == obj_type) || (MDATA_ATTR_OBJ_REF == obj_type) || (MDATA_ATTR_OBJ_REF == obj_type));
+  caddr_t obj_datatype = NULL;
+  caddr_t obj_lang = (obj_is_iri ? NULL : inner->xmdatal_language);
+  switch (obj_type)
+    {
+    case MDATA_ATTR_OBJ_DATETIME:
+      {
+        dtp_t dt_dtp = 0;
+        caddr_t dt_obj;
+        caddr_t dt_err = NULL;
+        char month[4], weekday[10], tzstring[10];
+        unsigned day, year, mnth, hour, minute, second;
+        if (6 == sscanf (obj, "%4u-%2u-%2uT%2u:%2u:%2u",
+          &year, &mnth, &day, &hour, &minute, &second) )
+          dt_dtp = DV_DATETIME;
+        else if (6 == sscanf (obj, "%4u-%2u-%2u %2u:%2u:%2u",
+          &year, &mnth, &day, &hour, &minute, &second) )
+          dt_dtp = DV_DATETIME;
+        else if (8 == sscanf (obj, "%9s, %2u-%3s-%2u %2u:%2u:%u %9s",
+          weekday, &day, month, &year, &hour, &minute, &second, tzstring) )
+          dt_dtp = DV_DATETIME;
+        else if (3 == sscanf (obj, "%4u-%2u-%2u",
+          &year, &mnth, &day) )
+          dt_dtp = DV_DATE;
+        else if (3 == sscanf (obj, "%2u-%3s-%2u",
+          &day, month, &year) )
+          dt_dtp = DV_DATE;
+        else if (3 == sscanf (obj, "%2u:%2u:%2u",
+          &hour, &minute, &second) )
+          dt_dtp = DV_TIME;
+        if (0 != dt_dtp)
+          {
+            dt_obj = box_cast_to ((caddr_t *)(xp->xp_qi), obj, DV_STRING, dt_dtp, 0, 0, &dt_err);
+            if (((dt_dtp == DV_TYPE_OF (dt_obj)) || (DV_DATETIME == DV_TYPE_OF (dt_obj))) && (NULL == dt_err))
+              {
+                dk_free_box (obj);
+                obj = dt_obj;
+                obj_datatype = NULL;
+                obj_lang = NULL;
+              }
+            else
+              dk_free_box (dt_obj);
+          }
+        break;
+      }
+    case MDATA_ATTR_OBJ_REF:
+      {
+        caddr_t base = xp->xp_mdata_locals->xmdatal_base;
+        xp_expand_relative_uri (base, &obj);
+        if (NULL == obj)
+          {
+            dk_free_box (prop);
+            return;
+          }
+        break;
+      }
+      default: ;
+    }
+
+  if (subj_l->xmdatal_subj_is_id || (MDATA_ATTR_ID == obj_type))
+    {
+      ptrlong new_cvt_bits = MDATA_DANGLING_TRIPLE_CVT_BITS (subj_l->xmdatal_subj_is_id, ((MDATA_ATTR_ID == obj_type) ? 1 : 0));
+      caddr_t *triple = (caddr_t *)list (6, box_copy (subj_l->xmdatal_subj), prop, obj,
+        (ptrlong)(obj_is_iri ? 1 : 0),
+        ((NULL != obj_datatype) ? NULL : box_copy_tree (obj_datatype)),
+        ((NULL != obj_lang) ? NULL : box_copy_tree (obj_lang)) );
+      ptrlong *cvt_bits_ptr = (ptrlong *)id_hash_get (xp->xp_tmp->xpt_dangling_triples, (caddr_t)(&triple));
+      if (NULL == cvt_bits_ptr)
+        {
+          id_hash_set (xp->xp_tmp->xpt_dangling_triples, (caddr_t)(&triple), (caddr_t)(&new_cvt_bits));
+        }
+      else
+        {
+          cvt_bits_ptr[0] |= new_cvt_bits;
+          dk_free_tree ((caddr_t)triple);
+        }
+    }
+  else if (NULL != subj_l->xmdatal_subj)
+    {
+      if (obj_is_iri)
+        tf_triple (xp->xp_tf, subj_l->xmdatal_subj, prop, obj);
+      else
+        tf_triple_l (xp->xp_tf, subj_l->xmdatal_subj, prop, obj, obj_datatype, obj_lang);
+      dk_free_box (prop);
+      dk_free_box (obj);
+    }
+  else
+    {
+      dk_free_box (prop);
+      dk_free_box (obj);
+    }
+}
+
+void
+mdata_feed_single_pending (xparse_ctx_t *xp, caddr_t *triple, int s_is_id, int o_is_id)
+{
+  caddr_t patched_triple[6];
+  patched_triple[0] = triple[0];
+  patched_triple[1] = triple[1];
+  patched_triple[2] = triple[2];
+  patched_triple[3] = triple[3];
+  patched_triple[4] = triple[4];
+  patched_triple[5] = triple[5];
+  if (s_is_id)
+    {
+      caddr_t subj = triple[0];
+      int ctr;
+      mdata_id_desc_t **id_desc_ptr = (mdata_id_desc_t **)id_hash_get (xp->xp_tmp->xpt_id2desc, (caddr_t)(&subj));
+      if (NULL == id_desc_ptr)
+        GPF_T1("unknown id as subj");
+      for (ctr = id_desc_ptr[0]->iddesc_refcount; ctr--; /* no step */)
+        {
+          patched_triple[0] = id_desc_ptr[0]->iddesc_refs[ctr];
+          mdata_feed_single_pending (xp, patched_triple, 0, o_is_id);
+        }
+    }
+  else if (o_is_id)
+    {
+      caddr_t obj = triple[2];
+      int ctr;
+      mdata_id_desc_t **id_desc_ptr = (mdata_id_desc_t **)id_hash_get (xp->xp_tmp->xpt_id2desc, (caddr_t)(&obj));
+      if (NULL == id_desc_ptr)
+        GPF_T1("unknown id as obj");
+      for (ctr = id_desc_ptr[0]->iddesc_refcount; ctr--; /* no step */)
+        {
+          patched_triple[2] = id_desc_ptr[0]->iddesc_refs[ctr];
+          mdata_feed_single_pending (xp, patched_triple, s_is_id, 0);
+        }
+    }
+  else
+    {
+      if (triple[3])
+        tf_triple (xp->xp_tf, triple[0], triple[1], triple[2]);
+      else
+        tf_triple_l (xp->xp_tf, triple[0], triple[1], triple[2], triple[4], triple[5]); /* index 3 is skipped intentionally ;) */
+    }
+}
+
+void
+mdata_process_pending_triples (xparse_ctx_t *xp)
+{
+  id_hash_iterator_t hit;
+  mdata_id_desc_t **id_desc_ptr;
+  caddr_t *id_ptr, **triple_ptr;
+  ptrlong *flags_ptr;
+  id_hash_iterator (&hit, xp->xp_tmp->xpt_id2desc);
+  while (hit_next (&hit, (char **)&id_ptr, (char **)&id_desc_ptr))
+    {
+      if (!(id_desc_ptr[0]->iddesc_found))
+        xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Id '%.200s' is mentioned in an itemref attribute of some itemscope but not found in the whole XHTML/Microdata resource", id_ptr[0]);
+    }
+  id_hash_iterator (&hit, xp->xp_tmp->xpt_dangling_triples);
+  while (hit_next (&hit, (char **)&triple_ptr, (char **)&flags_ptr))
+    {
+      if (flags_ptr[0] & MDATA_DANGLING_TRIPLE_CVT_BITS (0, 0))
+        mdata_feed_single_pending (xp, triple_ptr[0], 0, 0);
+      if (flags_ptr[0] & MDATA_DANGLING_TRIPLE_CVT_BITS (0, 1))
+        mdata_feed_single_pending (xp, triple_ptr[0], 0, 1);
+      if (flags_ptr[0] & MDATA_DANGLING_TRIPLE_CVT_BITS (1, 0))
+        mdata_feed_single_pending (xp, triple_ptr[0], 1, 0);
+      if (flags_ptr[0] & MDATA_DANGLING_TRIPLE_CVT_BITS (1, 1))
+        mdata_feed_single_pending (xp, triple_ptr[0], 1, 1);
+    }
+}
+
+xp_mdata_locals_t *
+xp_push_mdata_locals (xparse_ctx_t *xp)
+{
+  xp_mdata_locals_t *outer = xp->xp_mdata_locals;
+  xp_mdata_locals_t *inner = xp->xp_mdata_free_list;
+  if (NULL == inner)
+    inner = dk_alloc (sizeof (xp_mdata_locals_t));
+  else
+    xp->xp_mdata_free_list = xp->xp_mdata_free_list->xmdatal_parent;
+  memset (inner, 0, sizeof (xp_mdata_locals_t));
+  if (NULL != outer)
+    {
+      inner->xmdatal_subj = outer->xmdatal_subj;
+      inner->xmdatal_subj_is_id = outer->xmdatal_subj_is_id;
+      inner->xmdatal_prop_count = outer->xmdatal_prop_count;
+      inner->xmdatal_props = outer->xmdatal_props;
+      inner->xmdatal_datatype = outer->xmdatal_datatype;
+      inner->xmdatal_base = outer->xmdatal_base;
+      inner->xmdatal_language = outer->xmdatal_language;
+    }
+  inner->xmdatal_parent = outer;
+  xp->xp_mdata_locals = inner;
+  return inner;
+}
+
+void
+xp_pop_mdata_locals (xparse_ctx_t *xp)
+{
+  xp_mdata_locals_t *inner = xp->xp_mdata_locals;
+  xp_mdata_locals_t *outer = inner->xmdatal_parent;
+#define XP_FREE_INNER_IF_NEQ_OUTER(fld) do { \
+  if ((NULL != inner->fld) && ((NULL == outer) || (outer->fld != inner->fld))) \
+    dk_free_tree ((caddr_t)(inner->fld)); } while (0)
+  XP_FREE_INNER_IF_NEQ_OUTER (xmdatal_subj);
+  XP_FREE_INNER_IF_NEQ_OUTER (xmdatal_props);
+  XP_FREE_INNER_IF_NEQ_OUTER (xmdatal_datatype);
+  XP_FREE_INNER_IF_NEQ_OUTER (xmdatal_base);
+  XP_FREE_INNER_IF_NEQ_OUTER (xmdatal_language);
+  inner->xmdatal_parent = xp->xp_mdata_free_list;
+  xp->xp_mdata_free_list = inner;
+  xp->xp_mdata_locals = outer;
+}
+
+void
+xp_mdata_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
+{
+  xparse_ctx_t *xp = (xparse_ctx_t*) userdata;
+  xp_mdata_locals_t *outer = xp->xp_mdata_locals;
+  xp_mdata_locals_t *inner = NULL; /* This is not allocated at all if there's nothing "interesting" in the tag */
+  xp_tmp_t *xpt = xp->xp_tmp;
+  xp_node_t *xn = xp->xp_current;
+  caddr_t avalues[COUNTOF__MDATA_ATTR];
+  int inx, fill, n_attrs, n_ns, xn_is_allocated = 0;
+  char *local_name;
+  int obj_attr_idx = -1;
+  int outer_place_bits = outer->xmdatal_place_bits;
+  int need_mdata_local = 0;
+  int props_connect_local_id_to_local_itemscope = 0;
+#ifdef RDFXML_DEBUG
+  if (xpt->xpt_base || xpt->xpt_dt || xpt->xpt_lang || xpt->xpt_obj_content || xpt->xpt_obj_res || xpt->xpt_src || xpt->xpt_href)
+    GPF_T1("xp_" "mdata_element(): nonempty xpt");
+#endif
+#ifdef RECOVER_RDF_VALUE
+  caddr_t rdf_val = NULL;
+#endif
+  if ((MDATA_IN_UNUSED | MDATA_IN_STRLITERAL) & outer_place_bits)
+    {
+      outer->xmdatal_boring_opened_elts++;
+      return;
+    }
+  if ((MDATA_IN_XMLLITERAL) & outer_place_bits)
+    {
+      xp_element (userdata, name, attrdata);
+      return;
+    }
+/* Let's make xp->xp_free_list nonempty just to not duplicate this code in few places below */
+  if (NULL == xp->xp_free_list)
+    {
+      xp->xp_free_list = (xp_node_t *)dk_alloc (sizeof (xp_node_t));
+      xp->xp_free_list->xn_parent = NULL;
+    }
+  n_ns = attrdata->local_nsdecls_count;
+  if (n_ns)
+    {
+      caddr_t *save_ns;
+      xn = xp->xp_free_list;
+      xp->xp_free_list = xn->xn_parent;
+      memset (xn, 0, sizeof (xp_node_t));
+      xn->xn_xp = xp;
+      xn->xn_parent = xp->xp_current;
+      xp->xp_current = xn;
+      xn_is_allocated = 1;
+      need_mdata_local++;
+      save_ns = (caddr_t*) dk_alloc_box (2 * n_ns * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+      /* Trick here: xn->xn_attrs is set to xn->xn_namespaces in order to free memory on errors or element end. */
+      xn->xn_attrs = xn->xn_namespaces = save_ns;
+      fill = 0;
+      for (inx = 0; inx < n_ns; inx++)
+        {
+          save_ns[fill++] = box_dv_uname_string (attrdata->local_nsdecls[inx].nsd_prefix);
+          save_ns[fill++] = box_dv_uname_string (attrdata->local_nsdecls[inx].nsd_uri);
+        }
+    }
+/* Setting place bits */
+  local_name = strchr (name, ':');
+  if (NULL == local_name)
+    local_name = name;
+  n_attrs = attrdata->local_attrs_count;
+  memset (avalues, 0, sizeof (avalues));
+  if (0 == n_attrs)
+    goto all_attributes_are_retrieved; /* see below */
+  for (inx = 0; inx < n_attrs; inx ++)
+    {
+      char *raw_aname = attrdata->local_attrs[inx].ta_raw_name.lm_memblock;
+      int mdata_attr_idx = mdata_find_attr_idx (raw_aname, name);
+      if (0 > mdata_attr_idx)
+        continue;
+      need_mdata_local++;
+      if (NULL != avalues[mdata_attr_idx])
+        xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Duplicate/conflicting attribute names in one element head");
+      avalues[mdata_attr_idx] = attrdata->local_attrs[inx].ta_value;
+    }
+  if (!need_mdata_local)
+    {
+      goto all_attributes_are_retrieved; /* see below */
+    }
+  if (NULL != avalues[MDATA_ATTR_ITEMPROP])
+    {
+      if (NULL != avalues[MDATA_ATTR_OBJ_REF])
+        obj_attr_idx = MDATA_ATTR_OBJ_REF;
+      else if (NULL != avalues[MDATA_ATTR_OBJ_STRLIT])
+        obj_attr_idx = MDATA_ATTR_OBJ_STRLIT;
+      else if (NULL != avalues[MDATA_ATTR_OBJ_CONTENT_STRLIT])
+        obj_attr_idx = MDATA_ATTR_OBJ_CONTENT_STRLIT;
+      else if (NULL != avalues[MDATA_ATTR_OBJ_DATETIME])
+        obj_attr_idx = MDATA_ATTR_OBJ_DATETIME;
+    }
+  if ((2 == need_mdata_local) && (NULL != outer->xmdatal_subj) && (0 <= obj_attr_idx))
+    {
+
+      int prop_ctr, prop_count = 0;
+      caddr_t *props = NULL;
+      xp_mdata_parse_attr_value (xp, xn, MDATA_ATTR_ITEMPROP, avalues,
+            MDATA_ATTRSYNTAX_ID | MDATA_ATTRSYNTAX_WS_LIST, &props, &prop_count );
+      for (prop_ctr = 0; prop_ctr < prop_count; prop_ctr++)
+        {
+          caddr_t prop = props[prop_ctr];
+          props[prop_ctr] = NULL;
+          mdata_feed_or_keep (xp, outer, prop, outer /* yes, not inner */, box_dv_short_string (avalues[obj_attr_idx]), obj_attr_idx );
+        }
+      dk_free_box ((caddr_t)props);
+      outer->xmdatal_boring_opened_elts++; /* This is to disable processing of closing tag because it can not be interesting and it should do nothing. */
+      return;
+    }
+  if (!xn_is_allocated)
+    {
+      xn = xp->xp_free_list;
+      xp->xp_free_list = xn->xn_parent;
+      memset (xn, 0, sizeof (xp_node_t));
+      xn->xn_xp = xp;
+      xn->xn_parent = xp->xp_current;
+      xp->xp_current = xn;
+      xn_is_allocated = 1;
+    }
+  inner = xp_push_mdata_locals (xp);
+  inner->xmdatal_xn = xn;
+  if (NULL != avalues[MDATA_ATTR_XML_BASE])
+    {
+      if (NULL != xpt->xpt_base)
+        dk_free_tree (xpt->xpt_base);
+      xpt->xpt_base = box_dv_short_string (avalues[MDATA_ATTR_XML_BASE]);
+    }
+  if (NULL != avalues[MDATA_ATTR_XML_LANG])
+    {
+      if (NULL != xpt->xpt_lang)
+        dk_free_tree (xpt->xpt_lang);
+      xpt->xpt_lang = box_dv_short_string (avalues[MDATA_ATTR_XML_LANG]);
+    }
+  if (NULL != xpt->xpt_base)
+    {
+      inner->xmdatal_base = xpt->xpt_base;
+      xpt->xpt_base = NULL;
+    }
+  if (NULL != xpt->xpt_lang)
+    {
+      inner->xmdatal_language = xpt->xpt_lang;
+      xpt->xpt_lang = NULL;
+    }
+  if ((NULL != avalues[MDATA_ATTR_ID]) && ((NULL == avalues[MDATA_ATTR_ITEMSCOPE]) || (NULL != avalues[MDATA_ATTR_ITEMPROP])))
+    {
+      caddr_t id = xp_mdata_parse_attr_value (xp, xn, MDATA_ATTR_ID, avalues, MDATA_ATTRSYNTAX_ID, NULL, NULL);
+      mdata_register_id_elt (xp, id);
+      inner->xmdatal_subj = id;
+      inner->xmdatal_subj_is_id = 1;
+      inner->xmdatal_props = NULL;
+      inner->xmdatal_prop_count = 0;
+    }
+  if (NULL != avalues[MDATA_ATTR_ITEMSCOPE])
+    {
+      caddr_t itemid = xp_mdata_parse_attr_value (xp, xn, MDATA_ATTR_ITEMID, avalues,
+            MDATA_ATTRSYNTAX_URI | MDATA_ATTRSYNTAX_OPTIONAL, NULL, NULL );
+      if (NULL == itemid)
+        itemid = tf_bnode_iid (xp->xp_tf, NULL);
+      if ((NULL != avalues[MDATA_ATTR_ID]) && (NULL != avalues[MDATA_ATTR_ITEMPROP]))
+        {
+          int prop_ctr, prop_count = 0;
+          caddr_t *props = NULL;
+          xp_mdata_parse_attr_value (xp, xn, MDATA_ATTR_ITEMPROP, avalues,
+                MDATA_ATTRSYNTAX_ID | MDATA_ATTRSYNTAX_WS_LIST, &props, &prop_count );
+          inner->xmdatal_props = props;
+          inner->xmdatal_prop_count = prop_count;
+          for (prop_ctr = 0; prop_ctr < prop_count; prop_ctr++)
+            {
+              caddr_t prop = props[prop_ctr];
+              props[prop_ctr] = NULL;
+              mdata_feed_or_keep (xp, inner, prop, inner, box_copy (itemid), MDATA_ATTR_ITEMID);
+            }
+          dk_free_box (inner->xmdatal_subj);
+          inner->xmdatal_subj = NULL;
+          dk_free_box ((caddr_t)(inner->xmdatal_props));
+          inner->xmdatal_props = NULL;
+          inner->xmdatal_prop_count = 0;
+          props_connect_local_id_to_local_itemscope = 1;
+        }
+      if (!(props_connect_local_id_to_local_itemscope || outer->xmdatal_prop_count) && (NULL != xp->xp_tf->tf_base_uri))
+        tf_triple (xp->xp_tf, xp->xp_tf->tf_base_uri, box_dv_uname_string ("http://www.w3.org/1999/xhtml/microdata#item"), itemid);
+      inner->xmdatal_subj = itemid;
+      inner->xmdatal_subj_is_id = 0;
+      inner->xmdatal_props = NULL;
+      inner->xmdatal_prop_count = 0;
+      if (NULL != avalues[MDATA_ATTR_ITEMREF])
+        {
+          caddr_t *ref_ids = 0;
+          int ref_id_ctr, ref_id_count = 0;
+          xp_mdata_parse_attr_value (xp, xn, MDATA_ATTR_ITEMREF, avalues,
+            MDATA_ATTRSYNTAX_ID | MDATA_ATTRSYNTAX_WS_LIST, &ref_ids, &ref_id_count );
+          for (ref_id_ctr = 0; ref_id_ctr < ref_id_count; ref_id_ctr++)
+            mdata_register_id_usage (xp, ref_ids[ref_id_ctr], inner->xmdatal_subj);
+          dk_free_tree ((caddr_t)ref_ids);
+        }
+    }
+  else if (NULL != avalues[MDATA_ATTR_ITEMREF])
+    xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute itemref in an opening tag that has no itemscope attribute");
+  if (outer->xmdatal_prop_count && (NULL != outer->xmdatal_subj) && (NULL != inner->xmdatal_subj) && ((NULL != avalues[MDATA_ATTR_ITEMSCOPE]) || (NULL != avalues[MDATA_ATTR_ID])))
+    {
+      int prop_ctr;
+      for (prop_ctr = 0; prop_ctr < outer->xmdatal_prop_count; prop_ctr++)
+        {
+          caddr_t prop = outer->xmdatal_props[prop_ctr];
+          mdata_feed_or_keep (xp, outer, box_copy (prop), inner,
+            box_dv_short_string (inner->xmdatal_subj), ((NULL != avalues[MDATA_ATTR_ITEMSCOPE]) ? MDATA_ATTR_ITEMSCOPE : MDATA_ATTR_ID) );
+        }
+    }
+  if (NULL != avalues[MDATA_ATTR_ITEMTYPE])
+    {
+      caddr_t itemtype, itemid;
+      caddr_t *old_itemtype_ptr;
+      if (NULL == avalues[MDATA_ATTR_ITEMSCOPE])
+        xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute itemtype without attribute itemscope");
+      itemtype = xp_mdata_parse_attr_value (xp, xn, MDATA_ATTR_ITEMTYPE, avalues,
+            MDATA_ATTRSYNTAX_URI, NULL, NULL );
+      itemid = inner->xmdatal_subj;
+      old_itemtype_ptr = (caddr_t *)id_hash_get (xpt->xpt_subj2type, (caddr_t)(&itemid));
+      if (NULL != old_itemtype_ptr)
+        {
+          dk_free_tree (itemtype);
+          xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "The subject '%.200s' has more than one itemtype definition", inner->xmdatal_subj);
+        }
+      else
+        {
+          mdata_feed_or_keep (xp, inner, uname_rdf_ns_uri_type, inner, box_copy (itemtype), MDATA_ATTR_ITEMSCOPE);
+          itemid = box_copy (itemid);
+          id_hash_set (xpt->xpt_subj2type, (caddr_t)(&itemid), (caddr_t)(&itemtype));
+        }
+    }
+  if ((NULL != avalues[MDATA_ATTR_ITEMPROP]) && !props_connect_local_id_to_local_itemscope)
+    {
+      int prop_ctr, prop_count = 0;
+      caddr_t *props = NULL;
+      if (NULL == inner->xmdatal_subj)
+        xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute itemprop outside any element with itemscope or id");
+      xp_mdata_parse_attr_value (xp, xn, MDATA_ATTR_ITEMPROP, avalues,
+            MDATA_ATTRSYNTAX_ID | MDATA_ATTRSYNTAX_WS_LIST, &props, &prop_count );
+      inner->xmdatal_props = props;
+      inner->xmdatal_prop_count = prop_count;
+      if ((NULL != outer->xmdatal_subj) && (0 <= obj_attr_idx))
+        {
+          if (inner->xmdatal_subj != outer->xmdatal_subj)
+            xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "An opening tag with itemscope or id can not contain both attribute itemprop and some object attribute");
+          for (prop_ctr = 0; prop_ctr < prop_count; prop_ctr++)
+            {
+              caddr_t prop = props[prop_ctr];
+              props[prop_ctr] = NULL;
+              mdata_feed_or_keep (xp, outer, prop, inner, box_dv_short_string (avalues[obj_attr_idx]), obj_attr_idx );
+            }
+          inner->xmdatal_prop_count = 0;
+        }
+      else if ((NULL != outer->xmdatal_subj) && (inner->xmdatal_subj != outer->xmdatal_subj))
+        {
+          for (prop_ctr = 0; prop_ctr < prop_count; prop_ctr++)
+            {
+              caddr_t prop = props[prop_ctr];
+              props[prop_ctr] = NULL;
+              mdata_feed_or_keep (xp, outer, prop, inner, box_copy_tree (inner->xmdatal_subj),
+                (inner->xmdatal_subj_is_id ? MDATA_ATTR_ID : MDATA_ATTR_ITEMID) );
+            }
+          inner->xmdatal_prop_count = 0;
+        }
+      else
+        {
+          inner->xmdatal_place_bits |= MDATA_IN_STRLITERAL;
+        }
+    }
+  if ((NULL != avalues[MDATA_ATTR_REL]) && (NULL != avalues[MDATA_ATTR_OBJ_REF]))
+    {
+      int rel_ctr, rel_count = 0;
+      caddr_t *rels = NULL;
+      caddr_t ref;
+      xp_mdata_parse_attr_value (xp, xn, MDATA_ATTR_REL, avalues,
+            MDATA_ATTRSYNTAX_REL | MDATA_ATTRSYNTAX_URI | MDATA_ATTRSYNTAX_WS_LIST, &rels, &rel_count );
+      ref = xp_mdata_parse_attr_value (xp, xn, MDATA_ATTR_OBJ_REF, avalues,
+            MDATA_ATTRSYNTAX_URI | MDATA_ATTRSYNTAX_OPTIONAL, NULL, NULL );
+      if ((NULL != ref) && (NULL != xp->xp_tf->tf_base_uri))
+        for (rel_ctr = 0; rel_ctr < rel_count; rel_ctr++)
+          {
+            caddr_t prop = rels[rel_ctr];
+            tf_triple (xp->xp_tf, xp->xp_tf->tf_base_uri, prop, ref);
+          }
+      dk_free_tree ((caddr_t)rels);
+      dk_free_box (ref);
+    }
+  if ((NULL != avalues[MDATA_ATTR_OBJ_NAME]) && (NULL != avalues[MDATA_ATTR_OBJ_CONTENT_STRLIT]))
+    {
+      caddr_t rel = xp_mdata_parse_attr_value (xp, xn, MDATA_ATTR_OBJ_NAME, avalues,
+            MDATA_ATTRSYNTAX_REL | MDATA_ATTRSYNTAX_URI | MDATA_ATTRSYNTAX_SILENT, NULL, NULL );
+      if ((NULL != rel) && (NULL != xp->xp_tf->tf_base_uri))
+        tf_triple_l (xp->xp_tf, xp->xp_tf->tf_base_uri, rel, avalues[MDATA_ATTR_OBJ_CONTENT_STRLIT], NULL, inner->xmdatal_language);
+      dk_free_box (rel);
+    }
+  if (NULL != avalues[MDATA_ATTR_OBJ_CITE_REF])
+    {
+      caddr_t ref = xp_mdata_parse_attr_value (xp, xn, MDATA_ATTR_OBJ_CITE_REF, avalues,
+            MDATA_ATTRSYNTAX_URI | MDATA_ATTRSYNTAX_OPTIONAL, NULL, NULL );
+      if ((NULL != ref) && (NULL != xp->xp_tf->tf_base_uri))
+        tf_triple (xp->xp_tf, xp->xp_tf->tf_base_uri, box_dv_uname_string ("http://purl.org/dc/terms/source"), ref);
+      dk_free_box (ref);
+    }
+
+all_attributes_are_retrieved:
+/* Escape if nothing interesting is detected at all */
+  if (!need_mdata_local)
+    {
+      outer->xmdatal_boring_opened_elts++;
+      return;
+    }
+/* There is something interesting so the stack should grow */
+  if (!xn_is_allocated)
+    {
+      xn = xp->xp_free_list;
+      xp->xp_free_list = xn->xn_parent;
+      memset (xn, 0, sizeof (xp_node_t));
+      xn->xn_xp = xp;
+      xn->xn_parent = xp->xp_current;
+      xp->xp_current = xn;
+    }
+}
+
+void
+xp_mdata_element_end (void *userdata, const char * name)
+{
+  xparse_ctx_t *xp = (xparse_ctx_t*) userdata;
+  xp_mdata_locals_t *inner = xp->xp_mdata_locals;
+  xp_node_t *current_node, *parent_node;
+  int inner_place_bits = inner->xmdatal_place_bits;
+  if (NULL == inner->xmdatal_xn)
+    return; /* This happens for elements that are closed outside any "interesting" element */
+  if ((xp->xp_current != inner->xmdatal_xn) && (MDATA_IN_XMLLITERAL & inner_place_bits))
+    {
+      xp_element_end (userdata, name);
+      return;
+    }
+  if (inner->xmdatal_boring_opened_elts)
+    {
+      inner->xmdatal_boring_opened_elts--;
+      return;
+    }
+  inner_place_bits = inner->xmdatal_place_bits;
+  current_node = xp->xp_current;
+  if ((MDATA_IN_STRLITERAL | MDATA_IN_XMLLITERAL) & inner_place_bits)
+    {
+      caddr_t obj = NULL;
+      int prop_ctr, prop_count;
+      if (MDATA_IN_XMLLITERAL & inner_place_bits)
+        {
+          dk_set_t children;
+          caddr_t *literal_head;
+          caddr_t literal_tree;
+          xml_tree_ent_t *literal_xte;
+          XP_STRSES_FLUSH (xp);
+          children = dk_set_nreverse (current_node->xn_children);
+          literal_head = (caddr_t *)list (1, uname__root);
+          children = CONS (literal_head, children);
+          literal_tree = list_to_array (children);
+          current_node->xn_children = NULL;
+          literal_xte = xte_from_tree (literal_tree, xp->xp_qi);
+          obj = (caddr_t) literal_xte;
+        }
+      else
+        {
+          obj = strses_string (xp->xp_strses);
+          strses_flush (xp->xp_strses);
+        }
+      prop_count = inner->xmdatal_prop_count;
+      for (prop_ctr = prop_count; prop_ctr--; /* no step */)
+        {
+          caddr_t prop = inner->xmdatal_props[prop_ctr];
+          inner->xmdatal_props[prop_ctr] = NULL;
+          mdata_feed_or_keep (xp, inner, prop, inner, (prop_ctr ? box_copy_tree (obj) : obj), MDATA_ATTR_OBJ_STRLIT);
+        }
+    }
+  parent_node = xp->xp_current->xn_parent;
+  dk_free_tree ((caddr_t)(current_node->xn_attrs));
+  xp->xp_current = parent_node;
+  current_node->xn_parent = xp->xp_free_list;
+  xp->xp_free_list = current_node;
+  xp_pop_mdata_locals (xp);
+}
+
+void
+xp_mdata_id (void *userdata, char * name)
+{
+  xparse_ctx_t *xp = (xparse_ctx_t*) userdata;
+  xp_mdata_locals_t *inner = xp->xp_mdata_locals;
+  if (RDFA_IN_XMLLITERAL & inner->xmdatal_place_bits)
+    xp_id (userdata, name);
+}
+
+void
+xp_mdata_character (void *userdata,  char * s, int len)
+{
+  xparse_ctx_t *xp = (xparse_ctx_t*) userdata;
+  xp_mdata_locals_t *inner = xp->xp_mdata_locals;
+  int inner_place_bits = inner->xmdatal_place_bits;
+  if ((MDATA_IN_STRLITERAL | MDATA_IN_XMLLITERAL) & inner_place_bits)
+    session_buffered_write (xp->xp_strses, s, len);
+}
+
+void
+xp_mdata_entity (void *userdata, const char * refname, int reflen, int isparam, const xml_def_4_entity_t *edef)
+{
+  xparse_ctx_t *xp = (xparse_ctx_t *) userdata;
+  xp_mdata_locals_t *inner = xp->xp_mdata_locals;
+  if (MDATA_IN_XMLLITERAL & inner->xmdatal_place_bits)
+    xp_entity ((vxml_parser_t *)userdata, refname, reflen, isparam, edef);
+  else if (MDATA_IN_STRLITERAL & inner->xmdatal_place_bits)
+    xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Entities are not supported in string literal object");
+}
+
+void
+xp_mdata_pi (void *userdata, const char *target, const char *data)
+{
+  xparse_ctx_t *xp = (xparse_ctx_t *) userdata;
+  xp_mdata_locals_t *inner = xp->xp_mdata_locals;
+  if (MDATA_IN_XMLLITERAL & inner->xmdatal_place_bits)
+    xp_pi ((vxml_parser_t *)userdata, target, data);
+}
+
+void
+xp_mdata_comment (void *userdata, const char *text)
+{
+  xparse_ctx_t *xp = (xparse_ctx_t *) userdata;
+  xp_mdata_locals_t *inner = xp->xp_mdata_locals;
+  if (MDATA_IN_XMLLITERAL & inner->xmdatal_place_bits)
+    xp_comment ((vxml_parser_t *)userdata, text);
+}
+
+/* Part 4. Common parser invocation routine */
 
 void
 rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
@@ -2317,14 +3503,18 @@ rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
   if (!xml_set_xml_read_iter (qi, text, &xrie, &enc))
     sqlr_new_error ("42000", "XM032",
       "Unable to parse RDF/XML from data of type %s (%d)", dv_type_title (dtp_of_text), dtp_of_text);
+  if (DV_WIDE == DV_TYPE_OF (base_uri))
+    base_uri = box_cast_to_UTF8 ((caddr_t *)qi, base_uri);
+  else
+    base_uri = box_copy (base_uri);
   xn = (xp_node_t *) dk_alloc (sizeof (xp_node_t));
   memset (xn, 0, sizeof(xp_node_t));
   memset (&context, 0, sizeof (context));
   context.xp_current = xn;
   xn->xn_xp = &context;
-  root_xrl = (xp_rdfxml_locals_t *) dk_alloc (sizeof (xp_rdfxml_locals_t));
-  memset (root_xrl, 0, sizeof (xp_rdfxml_locals_t));
+  root_xrl = (xp_rdfxml_locals_t *) dk_alloc_zero (sizeof (xp_rdfxml_locals_t));
   root_xrl->xrl_base = base_uri;
+  root_xrl->xrl_base_set = 1;
   root_xrl->xrl_parsetype = XRL_PARSETYPE_TOP_LEVEL;
   root_xrl->xrl_xn = xn;
   context.xp_strses = strses_allocate ();
@@ -2353,11 +3543,26 @@ rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
   parser->fill_ns_2dict = 0;
   context.xp_parser = parser;
   VXmlSetUserData (parser, &context);
-  if (mode_bits & RDFXML_IN_ATTRIBUTES)
+  if (mode_bits & RDFXML_IN_MDATA)
+    {
+      xp_mdata_locals_t *root_xmdatal = xp_push_mdata_locals (&context);
+      root_xmdatal->xmdatal_base = box_copy (base_uri);
+      context.xp_tmp = (xp_tmp_t *)dk_alloc_box_zero (sizeof (xp_tmp_t), DV_ARRAY_OF_POINTER);
+      context.xp_tmp->xpt_id2desc = (id_hash_t *)box_dv_dict_hashtable (30);
+      context.xp_tmp->xpt_dangling_triples = (id_hash_t *)box_dv_dict_hashtable (100);
+      context.xp_tmp->xpt_subj2type = (id_hash_t *)box_dv_dict_hashtable (30);
+      VXmlSetElementHandler (parser, (VXmlStartElementHandler) xp_mdata_element, xp_mdata_element_end);
+      VXmlSetIdHandler (parser, (VXmlIdHandler)xp_mdata_id);
+      VXmlSetCharacterDataHandler (parser, (VXmlCharacterDataHandler) xp_mdata_character);
+      VXmlSetEntityRefHandler (parser, (VXmlEntityRefHandler) xp_mdata_entity);
+      VXmlSetProcessingInstructionHandler (parser, (VXmlProcessingInstructionHandler) xp_mdata_pi);
+      VXmlSetCommentHandler (parser, (VXmlCommentHandler) xp_mdata_comment);
+    }
+  else if (mode_bits & RDFXML_IN_ATTRIBUTES)
     {
       xp_rdfa_locals_t *root_xrdfal = xp_push_rdfa_locals (&context);
       root_xrdfal->xrdfal_base = box_copy (base_uri);
-      context.xp_tmp = dk_alloc_box_zero (sizeof (xp_tmp_t), DV_ARRAY_OF_POINTER);
+      context.xp_tmp = (xp_tmp_t *)dk_alloc_box_zero (sizeof (xp_tmp_t), DV_ARRAY_OF_POINTER);
       VXmlSetElementHandler (parser, (VXmlStartElementHandler) xp_rdfa_element, xp_rdfa_element_end);
       VXmlSetIdHandler (parser, (VXmlIdHandler)xp_rdfa_id);
       VXmlSetCharacterDataHandler (parser, (VXmlCharacterDataHandler) xp_rdfa_character);
@@ -2385,10 +3590,11 @@ rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
     }
   tf = tf_alloc ();
   tf->tf_qi = qi;
-  tf->tf_default_graph_uri = graph_uri;
+  tf->tf_base_uri = box_copy (base_uri);
+  tf->tf_default_graph_uri = box_copy (graph_uri);
   tf->tf_app_env = app_env;
   tf->tf_creator = "rdf_load_rdfxml";
-  tf->tf_input_name = source_name;
+  tf->tf_boxed_input_name = box_dv_short_string (source_name);
   tf->tf_line_no_ptr = &(parser->curr_pos.line_num);
   context.xp_tf = tf;
   QR_RESET_CTX
@@ -2398,7 +3604,9 @@ rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
       if (0 == setjmp (context.xp_error_ctx))
         rc = VXmlParse (parser, text, xrie.xrie_text_len);
       else
-	rc = 0;
+        rc = 0;
+      if (mode_bits & RDFXML_IN_MDATA)
+        mdata_process_pending_triples (&context);
       tf_commit (tf);
     }
   QR_RESET_CODE
@@ -2453,4 +3661,48 @@ rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
   xp_free (&context);
   tf_free (tf);
   return;
+}
+
+void
+xp_free_rdf_parser_fields (xparse_ctx_t *xp)
+{
+  xp_rdfxml_locals_t *xrl;
+  xp_rdfa_locals_t *xrdfal;
+  xp_mdata_locals_t *xmdatal;
+  while (NULL != xp->xp_rdfxml_locals)
+    xp_pop_rdf_locals (xp);
+  while (NULL != xp->xp_rdfa_locals)
+    {
+#ifndef NDEBUG
+      dk_free_tree (xp->xp_rdfa_locals->xrdfal_ict_buffer);
+      xp->xp_rdfa_locals->xrdfal_ict_buffer = NULL;
+#endif
+      xp_pop_rdfa_locals (xp);
+    }
+  while (NULL != xp->xp_mdata_locals)
+    xp_pop_mdata_locals (xp);
+  xrl = xp->xp_rdfxml_free_list;
+  while (NULL != xrl)
+    {
+      xp_rdfxml_locals_t *next_xrl = xrl->xrl_parent;
+      dk_free (xrl, sizeof (xp_rdfxml_locals_t));
+      xrl = next_xrl;
+    }
+  xrdfal = xp->xp_rdfa_free_list;
+  while (NULL != xrdfal)
+    {
+      xp_rdfa_locals_t *next_xrdfal = xrdfal->xrdfal_parent;
+      dk_free_tree (xrdfal->xrdfal_ict_buffer);
+      dk_free (xrdfal, sizeof (xp_rdfa_locals_t));
+      xrdfal = next_xrdfal;
+    }
+  xmdatal = xp->xp_mdata_free_list;
+  while (NULL != xmdatal)
+    {
+      xp_mdata_locals_t *next_xmdatal = xmdatal->xmdatal_parent;
+      dk_free (xmdatal, sizeof (xp_mdata_locals_t));
+      xmdatal = next_xmdatal;
+    }
+  dk_free_tree (xp->xp_tmp);
+  /* Note that xp_tf is intentionally left untouched. */
 }

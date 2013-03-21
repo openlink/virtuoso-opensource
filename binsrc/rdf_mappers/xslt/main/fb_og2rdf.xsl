@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -21,9 +21,13 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 -->
+<!-- tabstops=4 -->
 <!DOCTYPE xsl:stylesheet [
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY c "http://www.w3.org/2002/12/cal/icaltzd#">
+<!ENTITY exif "http://www.w3.org/2003/12/exif/ns/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY geo "http://www.w3.org/2003/01/geo/wgs84_pos#">
 <!ENTITY like "http://ontologi.es/like#">
 <!ENTITY mmd "http://musicbrainz.org/ns/mmd-1.0#">
 <!ENTITY mo "http://purl.org/ontology/mo/">
@@ -32,40 +36,46 @@
 <!ENTITY oplog "http://www.openlinksw.com/schemas/opengraph#">
 <!ENTITY owl "http://www.w3.org/2002/07/owl#">
 <!ENTITY rdfns  "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+<!ENTITY scot "http://scot-project.org/scot/ns#">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY sioct "http://rdfs.org/sioc/types#">
+<!ENTITY tag "http://www.holygoat.co.uk/owl/redwood/0.1/tags/">
+<!ENTITY vcard "http://www.w3.org/2006/vcard/ns#">
+<!ENTITY vi "http://www.openlinksw.com/virtuoso/xslt/">
 <!ENTITY video "http://purl.org/media/video#">
 <!ENTITY xhv  "http://www.w3.org/1999/xhtml/vocab#">
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
-<!ENTITY vi "http://www.openlinksw.com/virtuoso/xslt/">
-<!ENTITY exif "http://www.w3.org/2003/12/exif/ns/">
-<!ENTITY c "http://www.w3.org/2002/12/cal/icaltzd#">
-<!ENTITY vcard "http://www.w3.org/2006/vcard/ns#">
+<!ENTITY oplcert "http://www.openlinksw.com/schemas/cert#">
+<!ENTITY cert "http://www.w3.org/ns/auth/cert#">
 ]>
 <xsl:stylesheet
+	xmlns:fb="http://www.facebook.com/2008/fbml"
     xmlns:bibo="&bibo;"
+    xmlns:c="&c;"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
     xmlns:dcterms="http://purl.org/dc/terms/"
+    xmlns:exif="&exif;"
 	xmlns:foaf="&foaf;"
+    xmlns:geo="&geo;"
     xmlns:h="http://www.w3.org/1999/xhtml"
     xmlns:like="&like;"
     xmlns:mmd="&mmd;"
     xmlns:mo="&mo;"
-    xmlns:c="&c;"
-	xmlns:vcard="&vcard;"
-    xmlns:exif="&exif;"
     xmlns:og="&og;"
     xmlns:opl="&opl;"
     xmlns:oplog="&oplog;"
     xmlns:owl="&owl;"	
     xmlns:rdf="&rdfns;"
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:scot="&scot;"
     xmlns:sioc="&sioc;"
     xmlns:sioct="&sioct;"
+    xmlns:tag="&tag;"
+    xmlns:vcard="&vcard;"
     xmlns:vi="&vi;"
     xmlns:video="&video;"
     xmlns:xhv="&xhv;"
-	xmlns:fb="http://www.facebook.com/2008/fbml"
+    xmlns:oplcert="&oplcert;"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     version="1.0"
 	>
@@ -85,84 +95,113 @@
             <xsl:when test="$og_object_type = 'general'">
 	            <xsl:apply-templates mode="general"/>
             </xsl:when>
-            <xsl:when test="$og_object_type = 'page'">
+            <xsl:when test="$og_object_type = 'album'">
 	            <xsl:apply-templates mode="root"/>
-	            <xsl:apply-templates mode="page"/>
+	            <xsl:apply-templates mode="album"/>
             </xsl:when>
-            <xsl:when test="$og_object_type = 'user'">
-	            <xsl:apply-templates mode="root"/>
-	            <xsl:apply-templates mode="user"/>
-            </xsl:when>
-            <xsl:when test="$og_object_type = 'event'">
-	            <xsl:apply-templates mode="root"/>
-	            <xsl:apply-templates mode="event"/>
+            <xsl:when test="$og_object_type = 'album_photos'">
+	            <xsl:apply-templates mode="album_photos"/>
             </xsl:when>
             <xsl:when test="$og_object_type = 'application'">
 	            <xsl:apply-templates mode="root"/>
 	            <xsl:apply-templates mode="application"/>
             </xsl:when>
+            <xsl:when test="$og_object_type = 'event'">
+	            <xsl:apply-templates mode="root"/>
+	            <xsl:apply-templates mode="event"/>
+            </xsl:when>
             <xsl:when test="$og_object_type = 'group'">
 	            <xsl:apply-templates mode="root"/>
 	            <xsl:apply-templates mode="group"/>
             </xsl:when>
-            <xsl:when test="$og_object_type = 'album'">
+            <xsl:when test="$og_object_type = 'link'">
 	            <xsl:apply-templates mode="root"/>
-	            <xsl:apply-templates mode="album"/>
+	            <xsl:apply-templates mode="link"/>
+            </xsl:when>
+            <xsl:when test="$og_object_type = 'link_comments'">
+	            <xsl:apply-templates mode="status_comments"/>
+            </xsl:when>
+            <xsl:when test="$og_object_type = 'page'">
+	            <xsl:apply-templates mode="root"/>
+	            <xsl:apply-templates mode="page"/>
+            </xsl:when>
+            <xsl:when test="$og_object_type = 'page_albums'">
+	            <xsl:apply-templates mode="user_albums"/>
+            </xsl:when>
+            <xsl:when test="$og_object_type = 'page_events'">
+	            <xsl:apply-templates mode="page_events"/>
+            </xsl:when>
+            <xsl:when test="$og_object_type = 'page_feed'">
+	            <xsl:apply-templates mode="page_feed"/>
+            </xsl:when>
+            <xsl:when test="$og_object_type = 'page_links'">
+	            <xsl:apply-templates mode="user_links"/>
+            </xsl:when>
+            <xsl:when test="$og_object_type = 'page_notes'">
+	            <xsl:apply-templates mode="page_notes"/>
+            </xsl:when>
+            <xsl:when test="$og_object_type = 'page_posts'">
+	            <xsl:apply-templates mode="user_posts"/>
+            </xsl:when>
+            <xsl:when test="$og_object_type = 'page_statuses'">
+	            <xsl:apply-templates mode="page_statuses"/>
+            </xsl:when>
+            <xsl:when test="$og_object_type = 'page_tagged'">
+	            <xsl:apply-templates mode="page_feed"/>
+            </xsl:when>
+            <xsl:when test="$og_object_type = 'page_videos'">
+	            <xsl:apply-templates mode="user_movies"/>
             </xsl:when>
             <xsl:when test="$og_object_type = 'photo'">
 	            <xsl:apply-templates mode="root"/>
 	            <xsl:apply-templates mode="photo"/>
             </xsl:when>
-            <xsl:when test="$og_object_type = 'user_activities'">
-	            <xsl:apply-templates mode="user_activities"/>
+            <xsl:when test="$og_object_type = 'status'">
+	            <xsl:apply-templates mode="root"/>
+	            <xsl:apply-templates mode="status"/>
             </xsl:when>
-            <xsl:when test="$og_object_type = 'page_notes'">
-	            <xsl:apply-templates mode="page_notes"/>
+            <xsl:when test="$og_object_type = 'status_comments'">
+	            <xsl:apply-templates mode="status_comments"/>
             </xsl:when>
-            <xsl:when test="$og_object_type = 'page_events'">
-	            <xsl:apply-templates mode="page_events"/>
-            </xsl:when>
-            <xsl:when test="$og_object_type = 'user_links'">
-	            <xsl:apply-templates mode="user_links"/>
-            </xsl:when>
-            <xsl:when test="$og_object_type = 'page_links'">
-	            <xsl:apply-templates mode="user_links"/>
+            <xsl:when test="$og_object_type = 'user'">
+	            <xsl:apply-templates mode="root"/>
+	            <xsl:apply-templates mode="user"/>
             </xsl:when>
             <xsl:when test="$og_object_type = 'user_accounts'">
 	            <xsl:apply-templates mode="user_accounts"/>
             </xsl:when>
-            <xsl:when test="$og_object_type = 'user_books'">
-	            <xsl:apply-templates mode="user_books"/>
-            </xsl:when>
-            <xsl:when test="$og_object_type = 'user_friends'">
-	            <xsl:apply-templates mode="user_friends"/>
+            <xsl:when test="$og_object_type = 'user_activities'">
+	            <xsl:apply-templates mode="user_activities"/>
             </xsl:when>
             <xsl:when test="$og_object_type = 'user_albums'">
 	            <xsl:apply-templates mode="user_albums"/>
             </xsl:when>
-            <xsl:when test="$og_object_type = 'page_albums'">
-	            <xsl:apply-templates mode="user_albums"/>
+            <xsl:when test="$og_object_type = 'user_books'">
+	            <xsl:apply-templates mode="user_books"/>
             </xsl:when>
-            <xsl:when test="$og_object_type = 'page_statuses'">
-	            <xsl:apply-templates mode="page_statuses"/>
+            <xsl:when test="$og_object_type = 'user_feed'">
+	            <xsl:apply-templates mode="page_feed"/>
             </xsl:when>
-            <xsl:when test="$og_object_type = 'user_likes'">
-	            <xsl:apply-templates mode="user_likes"/>
+            <xsl:when test="$og_object_type = 'user_friends'">
+	            <xsl:apply-templates mode="user_friends"/>
+            </xsl:when>
+            <xsl:when test="$og_object_type = 'user_games'">
+	            <xsl:apply-templates mode="user_games"/>
             </xsl:when>
             <xsl:when test="$og_object_type = 'user_interests'">
 	            <xsl:apply-templates mode="user_interests"/>
             </xsl:when>
-            <xsl:when test="$og_object_type = 'user_movies'">
-	            <xsl:apply-templates mode="user_movies"/>
+            <xsl:when test="$og_object_type = 'user_likes'">
+	            <xsl:apply-templates mode="user_likes"/>
             </xsl:when>
-            <xsl:when test="$og_object_type = 'page_videos'">
+            <xsl:when test="$og_object_type = 'user_links'">
+	            <xsl:apply-templates mode="user_links"/>
+            </xsl:when>
+            <xsl:when test="$og_object_type = 'user_movies'">
 	            <xsl:apply-templates mode="user_movies"/>
             </xsl:when>
             <xsl:when test="$og_object_type = 'user_music'">
 	            <xsl:apply-templates mode="user_music"/>
-            </xsl:when>
-            <xsl:when test="$og_object_type = 'user_games'">
-	            <xsl:apply-templates mode="user_games"/>
             </xsl:when>
             <xsl:when test="$og_object_type = 'user_picture'">
 	            <xsl:apply-templates mode="user_picture"/>
@@ -170,17 +209,12 @@
             <xsl:when test="$og_object_type = 'user_posts'">
 	            <xsl:apply-templates mode="user_posts"/>
             </xsl:when>
-            <xsl:when test="$og_object_type = 'page_feed'">
-	            <xsl:apply-templates mode="page_feed"/>
-            </xsl:when>
-            <xsl:when test="$og_object_type = 'page_tagged'">
-	            <xsl:apply-templates mode="page_feed"/>
-            </xsl:when>
-            <xsl:when test="$og_object_type = 'page_posts'">
-	            <xsl:apply-templates mode="user_posts"/>
-            </xsl:when>
             <xsl:when test="$og_object_type = 'user_television'">
 	            <xsl:apply-templates mode="user_television"/>
+            </xsl:when>
+            <xsl:when test="$og_object_type = 'video'">
+	            <xsl:apply-templates mode="root"/>
+	            <xsl:apply-templates mode="video"/>
             </xsl:when>
             <xsl:otherwise>
                 <xsl:apply-templates />
@@ -316,7 +350,11 @@
                 <xsl:if test="name">
                     <foaf:name><xsl:value-of select="name"/></foaf:name>
                 </xsl:if>
+				<!-- 
+				picture is a thumbnail which is also included in the images list. 
+				Just associate source as the main photo.
 				<foaf:depiction rdf:resource="{picture}"/>
+				-->
 				<foaf:depiction rdf:resource="{source}"/>
                 <oplog:height rdf:datatype="&xsd;integer">
 					<xsl:value-of select="height"/>
@@ -325,14 +363,43 @@
 					<xsl:value-of select="width"/>
 				</oplog:width>
 				<xsl:for-each select="images">
-					<foaf:depiction rdf:resource="{source}"/>
+					<oplog:has_variant>
+						<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', concat('Image_', ../id, '_', position()))}">
+							<rdf:type rdf:resource="&oplog;Image" />
+							<rdfs:label>
+								<xsl:value-of select="concat ('Photo ', ../id, ' (', width, 'w x ', height, 'h)')"/>
+							</rdfs:label>
+							<foaf:depiction rdf:resource="{source}"/>
+							<oplog:height rdf:datatype="&xsd;integer">
+								<xsl:value-of select="height"/>
+							</oplog:height>
+							<oplog:width rdf:datatype="&xsd;integer">
+								<xsl:value-of select="width"/>
+							</oplog:width>
+	                    </rdf:Description>
+					</oplog:has_variant>
 				</xsl:for-each>
 				<xsl:if test="link">
                     <oplog:uri rdf:resource="{link}"/>
                 </xsl:if>
+				<!--
 				<xsl:if test="icon">
 					<foaf:depiction rdf:resource="{icon}"/>
 				</xsl:if>
+				-->
+
+				<!-- 
+				Some photo objects appear to be more like a status update relating to a photo.
+				In which case the following fields are present
+				-->
+                <xsl:if test="caption">
+                    <dc:title><xsl:value-of select="caption"/></dc:title>
+                </xsl:if>
+				<xsl:if test="string-length(story) &gt; 0">
+                    <dc:description><xsl:value-of select="story"/></dc:description>
+                </xsl:if>
+				<!-- -->
+
 				<dcterms:created rdf:datatype="&xsd;dateTime">
                     <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
                     <xsl:choose>
@@ -361,18 +428,15 @@
 					</dcterms:modified>
                 </xsl:if>
 				<xsl:for-each select="comments/data">
-					<sioc:topic>
+					<sioc:has_reply>
 						<sioct:Comment rdf:about="{vi:proxyIRI ($baseUri, '', id)}">
 		                    <opl:providedBy rdf:resource="{$providedByIRI}" />
 							<rdfs:label>
 								<xsl:value-of select="message"/>
 							</rdfs:label>
-							<dc:title>
+							<sioc:content>
 								<xsl:value-of select="message" />
-							</dc:title>
-							<dc:description>
-								<xsl:value-of select="message" />
-							</dc:description>
+							</sioc:content>
 							<dcterms:created rdf:datatype="&xsd;dateTime">
                                 <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
                                 <xsl:choose>
@@ -384,10 +448,17 @@
                                   </xsl:otherwise>
                                 </xsl:choose>
 							</dcterms:created>
-							<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}"/>
+							<dcterms:creator>
+								<!-- 
+								Stub resource to hold creator's name. Resource will be sponged fully when dcterms:creator link is followed 
+								-->
+								<rdf:Description rdf:about="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}">
+									<foaf:name><xsl:value-of select="from/name"/></foaf:name>
+								</rdf:Description>
+							</dcterms:creator>
 							<sioc:link rdf:resource="{concat('https://graph.facebook.com/', id)}" />
 						</sioct:Comment>
-					</sioc:topic>
+					</sioc:has_reply>
 				</xsl:for-each>
                 <!--xsl:for-each select="metadata/connections/*">
 					<foaf:focus rdf:resource="{.}"/>
@@ -437,6 +508,7 @@
                 </xsl:if>
                 <xsl:if test="email">
                     <foaf:mbox rdf:resource="{email}"/>
+		    <opl:email_address_digest rdf:resource="{vi:di-uri (email)}"/>
                 </xsl:if>
 				<!--xsl:for-each select="metadata/connections/*">
 					<foaf:focus rdf:resource="{.}"/>
@@ -455,7 +527,14 @@
                 <xsl:if test="id">
                     <oplog:id><xsl:value-of select="id"/></oplog:id>
                 </xsl:if>
-				<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}"/>
+				<dcterms:creator>
+					<!-- 
+					Stub resource to hold creator's name. Resource will be sponged fully when dcterms:creator link is followed 
+					-->
+					<rdf:Description rdf:about="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}">
+						<foaf:name><xsl:value-of select="from/name"/></foaf:name>
+					</rdf:Description>
+				</dcterms:creator>
                 <xsl:if test="name">
                     <foaf:name><xsl:value-of select="name"/></foaf:name>
                 </xsl:if>
@@ -493,18 +572,15 @@
 					</dcterms:modified>
                 </xsl:if>
 				<xsl:for-each select="comments/data">
-					<sioc:topic>
+					<sioc:has_reply>
 						<sioct:Comment rdf:about="{vi:proxyIRI ($baseUri, '', id)}">
 		                    <opl:providedBy rdf:resource="{$providedByIRI}" />
 							<rdfs:label>
 								<xsl:value-of select="message"/>
 							</rdfs:label>
-							<dc:title>
+							<sioc:content>
 								<xsl:value-of select="message" />
-							</dc:title>
-							<dc:description>
-								<xsl:value-of select="message" />
-							</dc:description>
+							</sioc:content>
 							<dcterms:created rdf:datatype="&xsd;dateTime">
                               <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
                               <xsl:choose>
@@ -516,10 +592,14 @@
                                 </xsl:otherwise>
                               </xsl:choose>
 							</dcterms:created>
-							<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}"/>
+							<dcterms:creator>
+								<rdf:Description rdf:about="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}">
+									<foaf:name><xsl:value-of select="from/name"/></foaf:name>
+								</rdf:Description>
+							</dcterms:creator>
 							<sioc:link rdf:resource="{concat('https://graph.facebook.com/', id)}" />
 						</sioct:Comment>
-					</sioc:topic>
+					</sioc:has_reply>
 				</xsl:for-each>
 				<!--xsl:for-each select="metadata/connections/*">
 					<foaf:focus rdf:resource="{.}"/>
@@ -559,7 +639,7 @@
     				<oplog:locale><xsl:value-of select="locale"/></oplog:locale>
                 </xsl:if>
                 <xsl:if test="link">
-                    <oplog:uri rdf:resource="{link}"/>
+                    <oplog:public_profile_url rdf:resource="{link}"/>
                 </xsl:if>
 				<xsl:if test="username">
                     <foaf:nick><xsl:value-of select="username"/></foaf:nick>
@@ -823,18 +903,15 @@
                             <oplog:category><xsl:value-of select="category"/></oplog:category>
 	                        <foaf:focus rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
 							<xsl:for-each select="comments/data">
-								<sioc:topic>
+								<sioc:has_reply>
 									<sioct:Comment rdf:about="{vi:proxyIRI ($baseUri, '', id)}">
 		                                <opl:providedBy rdf:resource="{$providedByIRI}" />
 										<rdfs:label>
 											<xsl:value-of select="message"/>
 										</rdfs:label>
-										<dc:title>
+										<sioc:content>
 											<xsl:value-of select="message" />
-										</dc:title>
-										<dc:description>
-											<xsl:value-of select="message" />
-										</dc:description>
+										</sioc:content>
 										<dcterms:created rdf:datatype="&xsd;dateTime">
                                           <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
                                           <xsl:choose>
@@ -846,10 +923,14 @@
                                             </xsl:otherwise>
                                           </xsl:choose>
 										</dcterms:created>
-										<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}"/>
+										<dcterms:creator>
+											<rdf:Description rdf:about="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}">
+												<foaf:name><xsl:value-of select="from/name"/></foaf:name>
+											</rdf:Description>
+										</dcterms:creator>
 										<sioc:link rdf:resource="{concat('https://graph.facebook.com/', id)}" />
 									</sioct:Comment>
-								</sioc:topic>
+								</sioc:has_reply>
 							</xsl:for-each>
 						</rdf:Description>
                     </sioc:container_of>
@@ -869,6 +950,7 @@
 	                    <rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', concat('Link_', $id))}">
 		                    <opl:providedBy rdf:resource="{$providedByIRI}" />
                             <rdf:type rdf:resource="&oplog;Link" />
+                            <rdf:type rdf:resource="&sioc;Post" />
                             <oplog:id><xsl:value-of select="id"/></oplog:id>
                             <oplog:from><xsl:value-of select="concat (from/name, ' (', from/id, ')')"/></oplog:from>
 							<xsl:if test="picture">
@@ -900,7 +982,7 @@
                               </xsl:choose>
 					        </dcterms:created>
 							<xsl:for-each select="comments/data">
-								<sioc:topic>
+								<sioc:has_reply>
 									<sioct:Comment rdf:about="{vi:proxyIRI ($baseUri, '', id)}">
 		                                <opl:providedBy rdf:resource="{$providedByIRI}" />
 										<rdfs:label>
@@ -909,9 +991,9 @@
 										<dc:title>
 											<xsl:value-of select="concat('Comment from ', from/name, ' ', from/id)" />
 										</dc:title>
-										<dc:description>
+										<sioc:content>
 											<xsl:value-of select="message" />
-										</dc:description>
+										</sioc:content>
 										<dcterms:created rdf:datatype="&xsd;dateTime">
                                           <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
                                           <xsl:choose>
@@ -923,10 +1005,14 @@
                                             </xsl:otherwise>
                                           </xsl:choose>
 										</dcterms:created>
-										<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}"/>
+										<dcterms:creator>
+											<rdf:Description rdf:about="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}">
+												<foaf:name><xsl:value-of select="from/name"/></foaf:name>
+											</rdf:Description>
+										</dcterms:creator>
 										<sioc:link rdf:resource="{concat('https://graph.facebook.com/', id)}" />
 									</sioct:Comment>
-								</sioc:topic>
+								</sioc:has_reply>
 							</xsl:for-each>
 	                        <!--foaf:focus rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" /-->
 		                </rdf:Description>
@@ -990,18 +1076,15 @@
 								<oplog:album_type><xsl:value-of select="type"/></oplog:album_type>
 							</xsl:if>
 							<xsl:for-each select="comments/data">
-								<sioc:topic>
+								<sioc:has_reply>
 									<sioct:Comment rdf:about="{vi:proxyIRI ($baseUri, '', id)}">
 		                                <opl:providedBy rdf:resource="{$providedByIRI}" />
 										<rdfs:label>
 											<xsl:value-of select="message"/>
 										</rdfs:label>
-										<dc:title>
+										<sioc:content>
 											<xsl:value-of select="message" />
-										</dc:title>
-										<dc:description>
-											<xsl:value-of select="message" />
-										</dc:description>
+										</sioc:content>
 										<dcterms:created rdf:datatype="&xsd;dateTime">
                                           <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
                                           <xsl:choose>
@@ -1013,10 +1096,14 @@
                                             </xsl:otherwise>
                                           </xsl:choose>
 										</dcterms:created>
-										<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}"/>
+										<dcterms:creator>
+											<rdf:Description rdf:about="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}">
+												<foaf:name><xsl:value-of select="from/name"/></foaf:name>
+											</rdf:Description>
+										</dcterms:creator>
 										<sioc:link rdf:resource="{concat('https://graph.facebook.com/', id)}" />
 									</sioct:Comment>
-								</sioc:topic>
+								</sioc:has_reply>
 							</xsl:for-each>
 	                        <foaf:focus rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
 		                </rdf:Description>
@@ -1208,18 +1295,15 @@
                               </xsl:choose>
 					        </dcterms:modified>
 							<xsl:for-each select="comments/data">
-								<sioc:topic>
+								<sioc:has_reply>
 									<sioct:Comment rdf:about="{vi:proxyIRI ($baseUri, '', id)}">
 		                                <opl:providedBy rdf:resource="{$providedByIRI}" />
 										<rdfs:label>
 											<xsl:value-of select="message"/>
 										</rdfs:label>
-										<dc:title>
+										<sioc:content>
 											<xsl:value-of select="message" />
-										</dc:title>
-										<dc:description>
-											<xsl:value-of select="message" />
-										</dc:description>
+										</sioc:content>
     				        <dcterms:created rdf:datatype="&xsd;dateTime">
                                           <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
                                           <xsl:choose>
@@ -1231,10 +1315,14 @@
                                             </xsl:otherwise>
                                           </xsl:choose>
 					        </dcterms:created>
-										<dcterms:creator rdf:resource="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}"/>
+										<dcterms:creator>
+											<rdf:Description rdf:about="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}">
+												<foaf:name><xsl:value-of select="from/name"/></foaf:name>
+											</rdf:Description>
+										</dcterms:creator>
 										<sioc:link rdf:resource="{concat('https://graph.facebook.com/', id)}" />
 									</sioct:Comment>
-								</sioc:topic>
+								</sioc:has_reply>
 							</xsl:for-each>
 	                        <foaf:focus rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', $id))}" />
 		                </rdf:Description>
@@ -1441,6 +1529,141 @@
 		</rdf:RDF>
 	</xsl:template>
 
+	<xsl:template match="/results" mode="status">
+		<xsl:variable name="id" select="id" />
+	    <rdf:RDF>
+            <rdf:Description rdf:about="{$resourceURL}">
+		        <opl:providedBy rdf:resource="{$providedByIRI}" />
+			    <owl:sameAs rdf:resource="{$docIRI}"/>
+                <rdf:type rdf:resource="&oplog;Post" />
+                <oplog:id><xsl:value-of select="id"/></oplog:id>
+                <oplog:from><xsl:value-of select="concat (from/name, ' (', from/id, ')')"/></oplog:from>
+    	        <dcterms:created rdf:datatype="&xsd;dateTime">
+                    <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
+                    <xsl:choose>
+                        <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                            <xsl:value-of select="$time_without_bad_offset"/>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <xsl:value-of select="created_time"/>
+                        </xsl:otherwise>
+                    </xsl:choose>
+		        </dcterms:created>
+    			<dcterms:modified rdf:datatype="&xsd;dateTime">
+                    <xsl:variable name="time_without_bad_offset" select="substring-before(updated_time, '+0000')"/>
+                    <xsl:choose>
+                        <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                             <xsl:value-of select="$time_without_bad_offset"/>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <xsl:value-of select="updated_time"/>
+                        </xsl:otherwise>
+                    </xsl:choose>
+				</dcterms:modified>
+
+				<xsl:choose>
+					<xsl:when test="string-length(message) &gt; 0">
+						<rdfs:label>
+							<xsl:choose>
+								<xsl:when test="string-length(message) &gt; 50">
+									<xsl:value-of select="concat(substring (message, 1, 100), '...')"/>
+								 </xsl:when>
+								 <xsl:otherwise>
+									 <xsl:value-of select="message"/>
+								 </xsl:otherwise>
+							 </xsl:choose>
+                        </rdfs:label>
+					</xsl:when>
+					<xsl:when test="string-length(description) &gt; 0">
+                        <rdfs:label>
+							<xsl:choose>
+								<xsl:when test="string-length(description) &gt; 50">
+									<xsl:value-of select="concat(substring (description, 1, 100), '...')"/>
+								</xsl:when>
+								<xsl:otherwise>
+								    <xsl:value-of select="description"/>
+								</xsl:otherwise>
+							</xsl:choose>
+						</rdfs:label>
+					</xsl:when>
+					<xsl:when test="string-length(story) &gt; 0">
+						<rdfs:label><xsl:value-of select="story"/></rdfs:label>
+					</xsl:when>
+					<xsl:otherwise>
+						<rdfs:label><xsl:value-of select="concat ('Post ', $id)"/></rdfs:label>
+					</xsl:otherwise>
+				</xsl:choose>
+
+                <xsl:if test="description">
+					<oplog:description><xsl:value-of select="description"/></oplog:description>
+                </xsl:if>
+                <xsl:if test="message">
+                    <oplog:message><xsl:value-of select="message"/></oplog:message>
+                </xsl:if>
+                <xsl:if test="actions/link">
+		            <xsl:variable name="link" select="actions/link" />
+                    <oplog:link rdf:resource="{$link}" />
+                </xsl:if>
+		    </rdf:Description>
+	    </rdf:RDF>
+	</xsl:template>
+
+	<xsl:template match="/results" mode="link">
+		<xsl:variable name="id" select="id" />
+	    <rdf:RDF>
+            <rdf:Description rdf:about="{$resourceURL}">
+		        <opl:providedBy rdf:resource="{$providedByIRI}" />
+			    <owl:sameAs rdf:resource="{$docIRI}"/>
+                <rdf:type rdf:resource="&oplog;Link" />
+                <rdf:type rdf:resource="&sioc;Post" />
+                <oplog:id><xsl:value-of select="id"/></oplog:id>
+                <oplog:from><xsl:value-of select="concat (from/name, ' (', from/id, ')')"/></oplog:from>
+                <rdfs:label>
+				  <xsl:choose>
+					<xsl:when test="string-length (name) &gt; 0">
+					  <xsl:value-of select="name"/>
+					</xsl:when>
+					<xsl:otherwise>
+					  <xsl:value-of select="concat ('Link ', $id)"/>
+					</xsl:otherwise>
+				  </xsl:choose>
+				</rdfs:label>
+    	        <dcterms:created rdf:datatype="&xsd;dateTime">
+                    <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
+                    <xsl:choose>
+                        <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                            <xsl:value-of select="$time_without_bad_offset"/>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <xsl:value-of select="created_time"/>
+                        </xsl:otherwise>
+                    </xsl:choose>
+		        </dcterms:created>
+    			<dcterms:modified rdf:datatype="&xsd;dateTime">
+                    <xsl:variable name="time_without_bad_offset" select="substring-before(updated_time, '+0000')"/>
+                    <xsl:choose>
+                        <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                             <xsl:value-of select="$time_without_bad_offset"/>
+                        </xsl:when>
+                        <xsl:otherwise>
+                            <xsl:value-of select="updated_time"/>
+                        </xsl:otherwise>
+                    </xsl:choose>
+				</dcterms:modified>
+                <xsl:if test="message">
+                    <oplog:message><xsl:value-of select="message"/></oplog:message>
+                </xsl:if>
+                <xsl:if test="link">
+		            <xsl:variable name="link" select="link" />
+                    <oplog:link rdf:resource="{$link}" />
+                </xsl:if>
+                <xsl:if test="description">
+                    <dc:description><xsl:value-of select="description"/></dc:description>
+                </xsl:if>
+		    </rdf:Description>
+	    </rdf:RDF>
+	</xsl:template>
+
     <!-- Process output from: http://graph.facebook.com/<id>/posts?access_token=... -->
 	<xsl:template match="/results" mode="user_posts">
 	    <rdf:RDF>
@@ -1477,12 +1700,40 @@
                                 </xsl:otherwise>
                               </xsl:choose>
 					        </dcterms:modified>
-                            <!--
-                            <xsl:if test="name">
-                                <rdfs:label><xsl:value-of select="name"/></rdfs:label>
-                            </xsl:if>
-                            -->
-                            <rdfs:label><xsl:value-of select="concat ('Post ', $id)"/></rdfs:label>
+
+							<xsl:choose>
+							  <xsl:when test="string-length(message) &gt; 0">
+                                <rdfs:label>
+								  <xsl:choose>
+									  <xsl:when test="string-length(message) &gt; 50">
+										  <xsl:value-of select="concat(substring (message, 1, 100), '...')"/>
+									  </xsl:when>
+									  <xsl:otherwise>
+										  <xsl:value-of select="message"/>
+									  </xsl:otherwise>
+								  </xsl:choose>
+                                </rdfs:label>
+							  </xsl:when>
+							  <xsl:when test="string-length(description) &gt; 0">
+                                <rdfs:label>
+								  <xsl:choose>
+									  <xsl:when test="string-length(description) &gt; 50">
+										  <xsl:value-of select="concat(substring (description, 1, 100), '...')"/>
+									  </xsl:when>
+									  <xsl:otherwise>
+										  <xsl:value-of select="description"/>
+									  </xsl:otherwise>
+								  </xsl:choose>
+								</rdfs:label>
+							  </xsl:when>
+							  <xsl:when test="string-length(story) &gt; 0">
+								<rdfs:label><xsl:value-of select="story"/></rdfs:label>
+							  </xsl:when>
+							  <xsl:otherwise>
+								<rdfs:label><xsl:value-of select="concat ('Post ', $id)"/></rdfs:label>
+							  </xsl:otherwise>
+							</xsl:choose>
+
                             <xsl:if test="description">
                                 <oplog:description><xsl:value-of select="description"/></oplog:description>
                             </xsl:if>
@@ -1514,7 +1765,11 @@
                             <rdf:type rdf:resource="&oplog;Post" />
                             <oplog:id><xsl:value-of select="id"/></oplog:id>
                             <oplog:from><xsl:value-of select="concat (from/name, ' (', from/id, ')')"/></oplog:from>
-                            <oplog:to><xsl:value-of select="concat (to/data/name, ' (', to/data/id, ')')"/></oplog:to>
+							<xsl:if test="to">
+								<oplog:to>
+									<xsl:value-of select="concat (to/data/name, ' (', to/data/id, ')')"/>
+								</oplog:to>
+							</xsl:if>
     				        <dcterms:created rdf:datatype="&xsd;dateTime">
                               <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
                               <xsl:choose>
@@ -1537,7 +1792,40 @@
                                 </xsl:otherwise>
                               </xsl:choose>
 					        </dcterms:modified>
-                            <rdfs:label><xsl:value-of select="concat ('Post ', $id)"/></rdfs:label>
+
+							<xsl:choose>
+							  <xsl:when test="string-length(message) &gt; 0">
+                                <rdfs:label>
+								  <xsl:choose>
+									  <xsl:when test="string-length(message) &gt; 50">
+										  <xsl:value-of select="concat(substring (message, 1, 100), '...')"/>
+									  </xsl:when>
+									  <xsl:otherwise>
+										  <xsl:value-of select="message"/>
+									  </xsl:otherwise>
+								  </xsl:choose>
+                                </rdfs:label>
+							  </xsl:when>
+							  <xsl:when test="string-length(description) &gt; 0">
+                                <rdfs:label>
+								  <xsl:choose>
+									  <xsl:when test="string-length(description) &gt; 50">
+										  <xsl:value-of select="concat(substring (description, 1, 100), '...')"/>
+									  </xsl:when>
+									  <xsl:otherwise>
+										  <xsl:value-of select="description"/>
+									  </xsl:otherwise>
+								  </xsl:choose>
+								</rdfs:label>
+							  </xsl:when>
+							  <xsl:when test="string-length(story) &gt; 0">
+								<rdfs:label><xsl:value-of select="story"/></rdfs:label>
+							  </xsl:when>
+							  <xsl:otherwise>
+								<rdfs:label><xsl:value-of select="concat ('Post ', $id)"/></rdfs:label>
+							  </xsl:otherwise>
+							</xsl:choose>
+
                             <xsl:if test="description">
                                 <oplog:description><xsl:value-of select="description"/></oplog:description>
                             </xsl:if>
@@ -1552,10 +1840,330 @@
 		                </rdf:Description>
                     </oplog:posted>
                 </xsl:for-each>
+	    </rdf:Description>
+	    <xsl:for-each select="data">
+		<!-- x509 -->
+		<xsl:if test="starts-with (message, '#X509Cert Fingerprint:')">
+		    <xsl:variable name="fp"><xsl:value-of select="substring-before (substring-after (message, '#X509Cert Fingerprint:'), ' ')"/></xsl:variable>
+		    <xsl:variable name="fpn"><xsl:value-of select="translate ($fp, ':', '')"/></xsl:variable>
+		    <xsl:variable name="dgst">
+			<xsl:choose>
+			    <xsl:when test="contains (message, '#SHA1')">sha1</xsl:when>
+			    <xsl:otherwise>md5</xsl:otherwise>
+			</xsl:choose>
+		    </xsl:variable>
+		    <xsl:variable name="ct"><xsl:value-of select="vi:proxyIRI ($baseUri,'',$fpn)"/></xsl:variable>
+		    <rdf:Description rdf:about="{$resourceURL}">
+			<oplcert:hasCertificate rdf:resource="{$ct}"/>
 		    </rdf:Description>
+		    <oplcert:Certificate rdf:about="{$ct}">
+			<rdfs:label><xsl:value-of select="$fp"/></rdfs:label>
+			<oplcert:fingerprint><xsl:value-of select="$fp"/></oplcert:fingerprint>
+			<oplcert:fingerprint-digest><xsl:value-of select="$dgst"/></oplcert:fingerprint-digest>
+		    </oplcert:Certificate>
+		</xsl:if>
+		<!-- x509 certificate -->
+		<xsl:if test="message like '%di:%?hashtag=webid%'">
+		    <xsl:variable name="di"><xsl:copy-of select="vi:di-split (message)"/></xsl:variable>
+		    <xsl:for-each select="$di/result/di">
+			<xsl:variable name="fp"><xsl:value-of select="hash"/></xsl:variable>
+			<xsl:variable name="dgst"><xsl:value-of select="dgst"/></xsl:variable>
+			<xsl:variable name="ct"><xsl:value-of select="vi:proxyIRI ($baseUri,'',$fp)"/></xsl:variable>
+			<foaf:Agent rdf:about="{$resourceURL}">
+			    <oplcert:hasCertificate rdf:resource="{$ct}"/>
+			</foaf:Agent>
+			<oplcert:Certificate rdf:about="{$ct}">
+			    <rdfs:label><xsl:value-of select="$fp"/></rdfs:label>
+			    <oplcert:fingerprint><xsl:value-of select="$fp"/></oplcert:fingerprint>
+			    <oplcert:fingerprint-digest><xsl:value-of select="$dgst"/></oplcert:fingerprint-digest>
+			</oplcert:Certificate>
+		    </xsl:for-each>
+		</xsl:if>
+		<!-- end certificate -->
+	    </xsl:for-each>
 	    </rdf:RDF>
 	</xsl:template>
 	
+	<xsl:template match="/results" mode="status_comments">
+	    <rdf:RDF>
+            <rdf:Description rdf:about="{$resourceURL}">
+		        <opl:providedBy rdf:resource="{$providedByIRI}" />
+			    <owl:sameAs rdf:resource="{$docIRI}"/>
+                <xsl:for-each select="data">
+					<sioc:has_reply>
+						<sioct:Comment rdf:about="{vi:proxyIRI ($baseUri, '', id)}">
+		                    <opl:providedBy rdf:resource="{$providedByIRI}" />
+							<rdfs:label>
+								<xsl:value-of select="message" />
+							</rdfs:label>
+							<sioc:content>
+								<xsl:value-of select="message" />
+							</sioc:content>
+							<dcterms:creator>
+								<rdf:Description rdf:about="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}">
+									<foaf:name><xsl:value-of select="from/name"/></foaf:name>
+								</rdf:Description>
+							</dcterms:creator>
+							<sioc:link rdf:resource="{concat('https://graph.facebook.com/', id)}" />
+    				        <dcterms:created rdf:datatype="&xsd;dateTime">
+                              <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
+                              <xsl:choose>
+                                <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                                  <xsl:value-of select="$time_without_bad_offset"/>
+                                </xsl:when>
+                                <xsl:otherwise>
+                                  <xsl:value-of select="created_time"/>
+                                </xsl:otherwise>
+                              </xsl:choose>
+					        </dcterms:created>
+						</sioct:Comment>
+					</sioc:has_reply>
+                </xsl:for-each>
+		    </rdf:Description>
+	    </rdf:RDF>
+	</xsl:template>
+
+	<xsl:template match="/results" mode="album_photos">
+	    <rdf:RDF>
+            <rdf:Description rdf:about="{$resourceURL}">
+		        <opl:providedBy rdf:resource="{$providedByIRI}" />
+			    <owl:sameAs rdf:resource="{$docIRI}"/>
+                <xsl:for-each select="data">
+		            <xsl:variable name="id" select="id" />
+                    <oplog:has_photo>
+	                    <rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', concat('Photo_', $id))}">
+		                    <opl:providedBy rdf:resource="{$providedByIRI}" />
+							<rdf:type rdf:resource="&foaf;Image" />
+							<rdf:type rdf:resource="&exif;IFD" />
+							<rdf:type rdf:resource="&oplog;Photo" />
+                            <oplog:id><xsl:value-of select="id"/></oplog:id>
+                            <rdfs:label>
+								<xsl:choose>
+									<xsl:when test="name">
+										<xsl:value-of select="concat('Photo ', position, ': ', name)"/>
+									</xsl:when>
+									<xsl:when test="comments/data/message[1]">
+										<xsl:value-of select="concat('Photo ', position, ': ', comments/data/message[1])"/>
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:value-of select="concat('Photo ', position)"/>
+									</xsl:otherwise>
+								</xsl:choose>
+							</rdfs:label>
+							<dcterms:creator>
+								<!-- 
+								Stub resource to hold creator's name. Resource will be sponged fully when dcterms:creator link is followed 
+								-->
+								<rdf:Description rdf:about="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}">
+									<foaf:name><xsl:value-of select="from/name"/></foaf:name>
+								</rdf:Description>
+							</dcterms:creator>
+							<!-- 
+							picture is a thumbnail which is also included in the images list. 
+							Just associate source as the main photo.
+							<foaf:depiction rdf:resource="{picture}"/>
+							-->
+							<foaf:depiction rdf:resource="{source}"/>
+							<oplog:height rdf:datatype="&xsd;integer">
+								<xsl:value-of select="height"/>
+							</oplog:height>
+							<oplog:width rdf:datatype="&xsd;integer">
+								<xsl:value-of select="width"/>
+							</oplog:width>
+							<xsl:for-each select="images">
+								<oplog:has_variant>
+									<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', concat('Image_', ../id, '_', position()))}">
+										<rdf:type rdf:resource="&oplog;Image" />
+										<rdfs:label>
+											<xsl:value-of select="concat ('Photo ', ../id, ' (', width, 'w x ', height, 'h)')"/>
+										</rdfs:label>
+										<foaf:depiction rdf:resource="{source}"/>
+										<oplog:height rdf:datatype="&xsd;integer">
+											<xsl:value-of select="height"/>
+										</oplog:height>
+										<oplog:width rdf:datatype="&xsd;integer">
+											<xsl:value-of select="width"/>
+										</oplog:width>
+									</rdf:Description>
+								</oplog:has_variant>
+							</xsl:for-each>
+							<sioc:link rdf:resource="{link}" />
+							<!--
+							<xsl:if test="icon">
+								<foaf:depiction rdf:resource="{icon}"/>
+							</xsl:if>
+							-->
+							<dcterms:created rdf:datatype="&xsd;dateTime">
+								<xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
+								<xsl:choose>
+									<xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+										<xsl:value-of select="$time_without_bad_offset"/>
+									</xsl:when>
+									<xsl:otherwise>
+										<xsl:value-of select="created_time"/>
+									</xsl:otherwise>
+								</xsl:choose>
+							</dcterms:created>
+							<xsl:if test="position">
+								<oplog:position rdf:datatype="&xsd;integer"><xsl:value-of select="position"/></oplog:position>
+							</xsl:if>
+							<xsl:if test="updated_time">
+								<dcterms:modified rdf:datatype="&xsd;dateTime">
+									<xsl:variable name="time_without_bad_offset" select="substring-before(updated_time, '+0000')"/>
+									<xsl:choose>
+										<xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+											<xsl:value-of select="$time_without_bad_offset"/>
+										</xsl:when>
+										<xsl:otherwise>
+											<xsl:value-of select="updated_time"/>
+										</xsl:otherwise>
+									</xsl:choose>
+								</dcterms:modified>
+							</xsl:if>
+							<xsl:for-each select="comments/data">
+								<sioc:has_reply>
+									<sioct:Comment rdf:about="{vi:proxyIRI ($baseUri, '', id)}">
+										<opl:providedBy rdf:resource="{$providedByIRI}" />
+										<rdfs:label>
+											<xsl:value-of select="message"/>
+										</rdfs:label>
+										<sioc:content>
+											<xsl:value-of select="message" />
+										</sioc:content>
+										<dcterms:created rdf:datatype="&xsd;dateTime">
+											<xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
+											<xsl:choose>
+												<xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+													<xsl:value-of select="$time_without_bad_offset"/>
+												</xsl:when>
+												<xsl:otherwise>
+													<xsl:value-of select="created_time"/>
+												</xsl:otherwise>
+											</xsl:choose>
+										</dcterms:created>
+										<dcterms:creator>
+											<rdf:Description rdf:about="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}">
+												<foaf:name><xsl:value-of select="from/name"/></foaf:name>
+											</rdf:Description>
+										</dcterms:creator>
+										<sioc:link rdf:resource="{concat('https://graph.facebook.com/', id)}" />
+									</sioct:Comment>
+								</sioc:has_reply>
+							</xsl:for-each>
+							<xsl:for-each select="tags/data">
+								<scot:hasTag>
+									<!-- Not all tags have an id, so don't use as part of entity URI -->
+									<scot:Tag rdf:about="{vi:proxyIRI ($baseUri, '', concat('Tag_', ../../id, '_',  position()))}">
+										<tag:name>
+											<xsl:value-of select="name"/>
+										</tag:name>
+										<rdfs:label>
+											<xsl:value-of select="name"/>
+										</rdfs:label>
+										<xsl:if test="string-length(id) &gt; 0">
+											<oplog:id><xsl:value-of select="id"/></oplog:id>
+											<foaf:focus rdf:resource="{vi:proxyIRI (concat('http://graph.facebook.com/', id))}"/>
+										</xsl:if>
+									</scot:Tag>
+								</scot:hasTag>
+							</xsl:for-each>
+		                </rdf:Description>
+                    </oplog:has_photo>
+                </xsl:for-each>
+		    </rdf:Description>
+	    </rdf:RDF>
+	</xsl:template>
+
+	<xsl:template match="/results" mode="video">
+		<rdf:RDF>
+		    <rdf:Description rdf:about="{$resourceURL}">
+		        <opl:providedBy rdf:resource="{$providedByIRI}" />
+			    <owl:sameAs rdf:resource="{$docIRI}"/>
+                <rdf:type rdf:resource="&oplog;Video" />
+                <oplog:uri rdf:resource="{source}" />
+                <xsl:if test="id">
+                    <oplog:id><xsl:value-of select="id"/></oplog:id>
+                </xsl:if>
+				<dcterms:creator>
+					<!-- 
+					Stub resource to hold creator's name. Resource will be sponged fully when dcterms:creator link is followed 
+					-->
+					<rdf:Description rdf:about="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}">
+						<foaf:name><xsl:value-of select="from/name"/></foaf:name>
+					</rdf:Description>
+				</dcterms:creator>
+                <xsl:if test="name">
+                    <foaf:name><xsl:value-of select="name"/></foaf:name>
+                </xsl:if>
+				<xsl:if test="description">
+					<dc:description>
+						<xsl:value-of select="description"/>
+					</dc:description>
+				</xsl:if>
+				<xsl:if test="picture">
+					<foaf:depiction rdf:resource="{picture}"/>
+				</xsl:if>
+
+				<dcterms:created rdf:datatype="&xsd;dateTime">
+                    <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
+                    <xsl:choose>
+                      <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                        <xsl:value-of select="$time_without_bad_offset"/>
+                      </xsl:when>
+                      <xsl:otherwise>
+                        <xsl:value-of select="created_time"/>
+                      </xsl:otherwise>
+                    </xsl:choose>
+				</dcterms:created>
+                <xsl:if test="updated_time">
+    				<dcterms:modified rdf:datatype="&xsd;dateTime">
+                      <xsl:variable name="time_without_bad_offset" select="substring-before(updated_time, '+0000')"/>
+                      <xsl:choose>
+                        <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                          <xsl:value-of select="$time_without_bad_offset"/>
+                        </xsl:when>
+                        <xsl:otherwise>
+                          <xsl:value-of select="updated_time"/>
+                        </xsl:otherwise>
+                      </xsl:choose>
+					</dcterms:modified>
+                </xsl:if>
+				<xsl:for-each select="comments/data">
+					<sioc:has_reply>
+						<sioct:Comment rdf:about="{vi:proxyIRI ($baseUri, '', id)}">
+		                    <opl:providedBy rdf:resource="{$providedByIRI}" />
+							<rdfs:label>
+								<xsl:value-of select="message"/>
+							</rdfs:label>
+							<sioc:content>
+								<xsl:value-of select="message" />
+							</sioc:content>
+							<dcterms:created rdf:datatype="&xsd;dateTime">
+                                <xsl:variable name="time_without_bad_offset" select="substring-before(created_time, '+0000')"/>
+                                <xsl:choose>
+                                  <xsl:when test="string-length($time_without_bad_offset) &gt; 0">
+                                    <xsl:value-of select="$time_without_bad_offset"/>
+                                  </xsl:when>
+                                  <xsl:otherwise>
+                                    <xsl:value-of select="created_time"/>
+                                  </xsl:otherwise>
+                                </xsl:choose>
+							</dcterms:created>
+							<dcterms:creator>
+								<!-- 
+								Stub resource to hold creator's name. Resource will be sponged fully when dcterms:creator link is followed 
+								-->
+								<rdf:Description rdf:about="{vi:proxyIRI(concat('https://graph.facebook.com/', from/id))}">
+									<foaf:name><xsl:value-of select="from/name"/></foaf:name>
+								</rdf:Description>
+							</dcterms:creator>
+							<sioc:link rdf:resource="{concat('https://graph.facebook.com/', id)}" />
+						</sioct:Comment>
+					</sioc:has_reply>
+				</xsl:for-each>
+		    </rdf:Description>
+		</rdf:RDF>
+	</xsl:template>
 
     <xsl:template match="*|text()"/>
 

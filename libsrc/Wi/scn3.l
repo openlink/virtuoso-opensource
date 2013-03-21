@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -769,7 +769,7 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 		   {
 		     caddr_t raw = t_strliteral (yytext + 5 /* == strlen("UNAME")*/);
 		     caddr_t tmp = box_dv_uname_nchars (raw, box_length (raw) - 1);
-		     box_dv_uname_make_immortal (tmp);
+		     /*box_dv_uname_make_immortal (tmp); -- No longer needed because memory pools keep lists of UNAMEs in use and can free them on destroy */
 		     yylval.box = tmp;
 		     RETURN_CODE (UNAME_LITERAL);
 		   }
@@ -824,7 +824,7 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 <SQL>[ \t]+	{ save_str(" "); RETURN_WS (WS_WHITESPACE); }
 
 	/* Pragmas */
-<SQL>"#"("pragma"[\ t]+)?"line"[ \t]+[0-9-]+([ \t]+[""][^""]+[""])?[ \t]*("--".*)?{S_NL} { scn3_pragma_line (yytext); scn3_lineno_increment = 1; scn3_plineno++; RETURN_WS(WS_PRAGMA_LINE); }
+<SQL>"#"("pragma"[\ t]+)?"line"[ \t]+[0-9]+([ \t]+[""][^""]+[""])?[ \t]*("--".*)?{S_NL} { scn3_pragma_line (yytext); scn3_lineno_increment = 1; scn3_plineno++; RETURN_WS(WS_PRAGMA_LINE); }
 <SQL>"#"("pragma"[\ t]+)?"line"[ \t]+"push"[ \t]*("--".*)?{S_NL} { scn3_pragma_line_push (); scn3_lineno_increment = 1; scn3_plineno++; RETURN_WS(WS_PRAGMA_LINE); }
 <SQL>"#"("pragma"[\ t]+)?"line"[ \t]+"pop"[ \t]*("--".*)?{S_NL} { scn3_pragma_line_pop (); scn3_lineno_increment = 1; scn3_plineno++; RETURN_WS(WS_PRAGMA_LINE); }
 <SQL>"#"("pragma"[\ t]+)?"line"([ \t]+"reset")?[ \t]*("--".*)?{S_NL} { scn3_pragma_line_reset (); scn3_lineno_increment = 1; scn3_plineno++; RETURN_WS(WS_PRAGMA_LINE); }

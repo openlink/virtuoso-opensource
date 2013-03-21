@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -66,6 +66,7 @@
 	xmlns:awol="&awol;"
 	xmlns:d="&d;"
 	xmlns:m="&m;"	
+    xmlns:opl="http://www.openlinksw.com/schema/attribution#"
 	version="1.0">
 	<xsl:output indent="yes" />
 	<xsl:param name="baseUri" />
@@ -163,7 +164,7 @@
 
 	<xsl:template match="rss:link">
 		<sioc:link rdf:resource="{string(.)}" />
-	        <xsl:if test="not ($baseUri like 'http://%.nytimes.com/%')">
+	<xsl:if test="not ($baseUri like 'http://%.nytimes.com/%' and $baseUri like 'http://stackoverflow.com/%' and $baseUri like 'http://%.stackexchange.com/%')">
 		<awol:content>
 		    <awol:Content rdf:ID="content{generate-id()}">
 			<awol:src rdf:resource="{string(.)}"/>
@@ -211,6 +212,7 @@
 				    </xsl:if>
 				    <xsl:if test="string (//foaf:mbox/@rdf:resource) != ''">
 			                <foaf:mbox rdf:resource="{//foaf:mbox/@rdf:resource}" />                  
+		<opl:email_address_digest rdf:resource="{vi:di-uri (//foaf:mbox/@rdf:resource)}"/>
 				    </xsl:if>
 					<xsl:for-each select="//rss:item[string (dc:creator) = $uname]">
                 <foaf:made rdf:resource="{vi:proxyIRI (@rdf:about)}" />

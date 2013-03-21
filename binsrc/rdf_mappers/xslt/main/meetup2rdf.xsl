@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -27,6 +27,7 @@
 <!ENTITY xml 'http://www.w3.org/XML/1998/namespace#'>
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY sioct "http://rdfs.org/sioc/types#">
 ]>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -34,6 +35,7 @@
 	xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
 	xmlns:dc="http://purl.org/dc/elements/1.1/"
 	xmlns:dcterms="http://purl.org/dc/terms/"
+	xmlns:opl="&opl;"
 	xmlns:foaf="&foaf;"
 	xmlns:sioc="&sioc;"
 	xmlns:sioct="&sioct;"
@@ -71,6 +73,13 @@
 		    <foaf:primaryTopic>
 			<xsl:if test="$what = 'events' or $what = 'comments'">
 			    <foaf:Group rdf:about="{vi:proxyIRI($base)}" >
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.meetup.com#this">
+                        			<foaf:name>Meetup</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.meetup.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 				<xsl:for-each select="item">
 				    <xsl:if test="$what = 'events'">
 					<foaf:made rdf:resource="{event_url}"/>
@@ -93,6 +102,12 @@
 		    <owl:sameAs rdf:resource="{$docIRI}"/>
 		    <foaf:primaryTopic>
 			<foaf:Group rdf:about="{vi:proxyIRI($baseUri)}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.meetup.com#this">
+                        			<foaf:name>Meetup</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.meetup.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
 			    <xsl:for-each select="item">
 				<foaf:member rdf:resource="{vi:proxyIRI(link)}"/>
 			    </xsl:for-each>
@@ -104,6 +119,12 @@
 	    <xsl:for-each select="item">
 		<xsl:if test="$what = 'comments'">
 		    <rdf:Description rdf:about="{vi:proxyIRI($base, '', link)}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.meetup.com#this">
+                        			<foaf:name>Meetup</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.meetup.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
 			<rdf:type rdf:resource="&sioct;Comment"/>
 			<sioc:has_container rdf:resource="{vi:proxyIRI ($base)}"/>
 			<sioc:has_creator rdf:resource="{vi:proxyIRI (link)}"/>
@@ -137,6 +158,12 @@
 		    <foaf:Document rdf:about="{event_url}">
 			<foaf:primaryTopic>
 			    <c:Vevent rdf:about="{vi:proxyIRI(event_url)}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.meetup.com#this">
+                        			<foaf:name>Meetup</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.meetup.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
 				<c:dtstart>
 				    <xsl:value-of select="time"/>
 				</c:dtstart>
@@ -184,6 +211,12 @@
 		    <foaf:Document rdf:about="{$docproxyIRI}">
 			<xsl:element name="{$tp}" namespace="&foaf;">
 			    <foaf:Group rdf:about="{vi:proxyIRI(link)}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.meetup.com#this">
+                        			<foaf:name>Meetup</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.meetup.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
 				<foaf:name>
 				    <xsl:value-of select="name" />
 				</foaf:name>
@@ -250,6 +283,12 @@
 			<owl:sameAs rdf:resource="{vi:docIRI (link)}"/>
 			<foaf:primaryTopic>
 			    <foaf:Person rdf:about="{vi:proxyIRI(link)}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.meetup.com#this">
+                        			<foaf:name>Meetup</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.meetup.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
 				<foaf:name>
 				    <xsl:value-of select="name" />
 				</foaf:name>

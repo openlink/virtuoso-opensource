@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -78,6 +78,9 @@ extern char *f_crash_dump_data_ini;
 
 extern const char* recover_file_prefix;
 extern int ob_just_report;
+#ifdef V5UPGRADE
+extern int32 log_v6_format;
+#endif
 
 struct pgm_option options[] =
 {
@@ -125,6 +128,10 @@ struct pgm_option options[] =
   {"pwddba", '\0', ARG_STR, &f_new_dba_pass, "New DBA password"},
 
   {"pwddav", '\0', ARG_STR, &f_new_dav_pass, "New DAV password"},
+
+#ifdef V5UPGRADE
+  {"log6", '\0', ARG_NONE, &log_v6_format, "Backup dump in version 6 format"},
+#endif
 
   {0}
 };
@@ -174,10 +181,10 @@ void new_dbs_read_cfg (caddr_t *it, char *mode);
 dk_set_t new_cfg_read_storages (caddr_t **temp_storage);
 
 extern LOG *startup_log;
-LOG *cfg_open_syslog (int level);
+LOG *cfg_open_syslog (int level, char *facility);
 
 /* Globals for virtuoso */
-PCONFIG pconfig;			/* configuration file */
+PCONFIG pconfig = NULL;			/* configuration file */
 
 /* Locals */
 extern LOG *stderr_log;
@@ -561,7 +568,7 @@ main (int argc, char **argv)
   dbg_malloc_enable();
 #endif
   if (!startup_log)
-    startup_log = cfg_open_syslog (LOG_DEBUG);
+    startup_log = cfg_open_syslog (LOG_DEBUG, "default");
 
   process_exit_hook = viunix_terminate;
 
@@ -576,6 +583,10 @@ main (int argc, char **argv)
   /* all of the below means foreground ! */
   if (f_backup_dump || recover_file_prefix || f_crash_dump)
     f_foreground = 1;
+#ifdef V5UPGRADE
+  if (!f_backup_dump)
+    log_v6_format = 0;
+#endif
 
   /* put ourselves in the background */
   os_background ();

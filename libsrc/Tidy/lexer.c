@@ -191,7 +191,7 @@ Lexer *NewLexer(StreamIn *in)
     Lexer *lexer;
 
     lexer = (Lexer *)MemAlloc(sizeof(Lexer));
-        ClearMemory (lexer, sizeof (Lexer *));
+        ClearMemory (lexer, sizeof (Lexer));
         lexer->in = in;
         lexer->lines = 1;
         lexer->columns = 1;
@@ -483,7 +483,7 @@ Node *NewNode(void)
     Node *node;
 
     node = (Node *)MemAlloc(sizeof(Node));
-    ClearMemory (node, sizeof (Node *));
+    ClearMemory (node, sizeof (Node));
     node->type = TextNode;
     return node;
 }

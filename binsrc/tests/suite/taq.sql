@@ -5,7 +5,7 @@
 --  Test for async queue 
 
 
-echo both "Async Queue Tests\n";
+ECHO BOTH "Async Queue Tests\n";
 
 
 drop table aqi;
@@ -98,3 +98,25 @@ create procedure INS1_ERR (in q int, in w int)
 
 taq1err (1);
 
+
+create procedure fi (in i int)
+{
+  if (i < 2) return i;
+  else return fi (i - 1) + fi (i - 2);
+}
+
+
+create procedure FIAQ (in i int)
+{
+  if (i < 20)
+  return fi (i);
+  declare aq, n1, n2 any;
+  aq := async_queue (2, 1);
+  n1 := aq_request (aq, 'DB.DBA.FIAQ', vector (i - 1));
+  n2 := aq_request (aq, 'DB.DBA.FIAQ', vector (i - 2));
+  return aq_wait (aq, n1, 1) + aq_wait (aq, n2, 1);
+}
+
+select fiaq (29);
+ECHO BOTH $IF $EQU $LAST[1] 514229 "PASSED" "***FAILED";
+ECHO BOTH ": aq fi\n";

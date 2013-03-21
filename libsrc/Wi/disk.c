@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -50,6 +50,16 @@
 #include "srvstat.h"
 #include "recovery.h"
 #include "zlib.h"
+#ifdef _SSL
+#include <openssl/md5.h>
+#define MD5Init   MD5_Init
+#define MD5Update MD5_Update
+#define MD5Final  MD5_Final
+#else
+#include "util/md5.h"
+#endif /* _SSL */
+
+
 
 #ifdef BYTE_ORDER_REV_SUPPORT
 
@@ -471,7 +481,6 @@ it_temp_allocate (dbe_storage_t * dbs)
     {
       int inx;
       index_tree_t * tree = (index_tree_t*) dk_alloc_box_zero (sizeof (index_tree_t), DV_INDEX_TREE);
-      tree->it_ref_count = 1;
       tree->it_maps = dk_alloc (sizeof (it_map_t) * IT_N_MAPS);
       memset (tree->it_maps, 0, sizeof (it_map_t) * IT_N_MAPS);
       for (inx = 0; inx < IT_N_MAPS; inx++)
@@ -493,7 +502,6 @@ it_temp_allocate (dbe_storage_t * dbs)
     }
   else
     {
-      tree->it_ref_count = 1;
       tree->it_hi = NULL;
       tree->it_storage = dbs;
       tree->it_extent_map = dbs->dbs_extent_map;
@@ -542,6 +550,22 @@ it_temp_tree (index_tree_t * it)
 
 
 void
+buf_unregister_itcs (buffer_desc_t * buf)
+{
+  it_cursor_t * reg = buf->bd_registered;
+  while (reg)
+    {
+      it_cursor_t * next = reg->itc_next_on_page;
+      reg->itc_buf_registered = NULL;
+      reg->itc_is_registered = 0;
+      reg->itc_next_on_page = NULL;
+      reg = next;
+    }
+  buf->bd_registered = NULL;
+}
+
+
+void
 it_temp_free (index_tree_t * it)
 {
   /* free a temp tree */
@@ -565,17 +589,6 @@ it_temp_free (index_tree_t * it)
     return;  /* a reusable hash temp ref dropped */
   if (it->it_hi_signature)
     GPF_T1 ("freeing hash without invalidating it first");
-  if (!it->it_hi)
-    {
-      /* this is then a order by temp.  ref counts apply */
-      int n;
-      IN_HIC;
-      n = --it->it_ref_count;
-      if (n < 0) GPF_T1 ("neg ref count of oby temp");
-      LEAVE_HIC;
-      if (n)
-	return;
-    }
   ITC_INIT (itc, NULL, NULL);
   itc_from_it (itc, it);
   buf_dbg_printf (("temp tree %x free \n", isp));
@@ -619,6 +632,7 @@ it_temp_free (index_tree_t * it)
       buf->bd_is_dirty = 0;
       buf->bd_page = 0;
       buf->bd_physical_page = 0;
+      buf_unregister_itcs (buf);
     }
       clrhash (&itm->itm_dp_to_buf);
       ITC_LEAVE_MAPS (itc);
@@ -1431,43 +1445,10 @@ dbg_sleep (int msecs)
 #endif
 }
 
-
-void
-dbs_ext_ts_wraparound (dbe_storage_t * dbs)
-{
-  ext_ts_t * ts;
-  int inx, len;
-  dbs_ec_enter (dbs);
-  ts = dbs->dbs_ext_ts;
-  len = box_length (dbs->dbs_ext_ref_ct) / sizeof (ext_ts_t);
-  for (inx = 0; inx < len; inx++)
-    ts[inx] = ts[inx] >> 1;
-  dbs_ec_leave (dbs);
-}
-
-
 disk_stripe_t *
-dp_disk_locate (dbe_storage_t * dbs, dp_addr_t target, OFF_T * place, int is_write, ext_ref_t * er)
+dp_disk_locate (dbe_storage_t * dbs, dp_addr_t target, OFF_T * place)
 {
   dp_addr_t start = 0, end;
-  int ext = target / EXTENT_SZ;
-  if (er &&& dbs->dbs_ext_ts)
-    {
-      ext_ts_t ts;
-      DBS_EC_ENTER (dbs, ext);
-      ts = dbs->dbs_ext_ts[ext];
-      ts++;
-      if (!ts)
-	{
-	  DBS_EC_LEAVE (dbs, ext);
-	  dbs_ext_ts_wraparound (dbs);
-	}
-      else
-	{
-	  dbs->dbs_ext_ts[ext] = ts;
-	  DBS_EC_LEAVE (dbs, ext);
-	}
-    }
   DO_SET (disk_segment_t *, seg, &dbs->dbs_disks)
   {
     end = start + seg->ds_size;
@@ -1743,7 +1724,7 @@ dst_fd (disk_stripe_t * dst)
 
 
 void
-dst_fd_done (disk_stripe_t * dst, int fd, ext_ref_t * er)
+dst_fd_done (disk_stripe_t * dst, int fd)
 {
   mutex_enter (dst->dst_mtx);
   dst->dst_fds[dst->dst_fd_fill++] = fd;
@@ -1758,7 +1739,7 @@ dst_fd_done (disk_stripe_t * dst, int fd, ext_ref_t * er)
   db_buf_t copy = IS_8K (source) ? source : (memcpy (copy##_temp, source, 8192), copy##_temp);
 
 
-unsigned long disk_reads = 0;
+long disk_reads = 0;
 long disk_writes = 0;
 long read_cum_time = 0;
 long write_cum_time = 0;
@@ -1801,8 +1782,7 @@ buf_disk_read (buffer_desc_t * buf)
 #endif
   if (dbs->dbs_disks)
     {
-      ext_ref_t er;
-      disk_stripe_t *dst = dp_disk_locate (dbs, buf->bd_physical_page, &off, 0, &er);
+      disk_stripe_t *dst = dp_disk_locate (dbs, buf->bd_physical_page, &off);
       int fd = dst_fd (dst);
       start = get_msec_real_time ();
       rc = LSEEK (fd, off, SEEK_SET);
@@ -1812,7 +1792,7 @@ buf_disk_read (buffer_desc_t * buf)
 	  GPF_T;
 	}
       rc = read (fd, buf->bd_buffer, PAGE_SZ);
-      dst_fd_done (dst, fd, &er);
+      dst_fd_done (dst, fd);
       if (rc != PAGE_SZ)
 	{
 	  if (assertion_on_read_fail)
@@ -1873,8 +1853,6 @@ buf_disk_read (buffer_desc_t * buf)
     return WI_OK;
   if (DPF_INDEX == flags)
     pg_make_map (buf);
-  else if (DPF_COLUMN == flags)
-    pg_make_col_map (buf);
   else if (buf->bd_content_map)
     {
       resource_store (PM_RC (buf->bd_content_map->pm_size), (void*) buf->bd_content_map);
@@ -1891,8 +1869,8 @@ buf_disk_read (buffer_desc_t * buf)
 void
 buf_disk_write (buffer_desc_t * buf, dp_addr_t phys_dp_to)
 {
-  dtp_t c_buf[PAGE_SZ + 512];
-  db_buf_t out = (db_buf_t)_RNDUP_PWR2  (((ptrlong)&c_buf), 512);
+  dtp_t c_buf[PAGE_SZ];
+  db_buf_t out = c_buf;
   long start;
   int bytes, n_out;
   short flags;
@@ -1900,6 +1878,9 @@ buf_disk_write (buffer_desc_t * buf, dp_addr_t phys_dp_to)
   OFF_T rc;
   OFF_T off;
   dp_addr_t dest = (phys_dp_to ? phys_dp_to : buf->bd_physical_page);
+#ifdef VALGRIND
+  memset (c_buf, 0, sizeof (c_buf));
+#endif
 #ifdef O_DIRECT
   if (c_use_o_direct && !IS_IO_ALIGN (buf->bd_buffer))
     GPF_T1 ("buf_disk_write (): The buffer is not io-aligned");
@@ -1934,8 +1915,7 @@ buf_disk_write (buffer_desc_t * buf, dp_addr_t phys_dp_to)
     TC(tc_blob_write);
   if (dbs->dbs_disks)
     {
-      ext_ref_t er;
-      disk_stripe_t *dst = dp_disk_locate (dbs, dest, &off, 1, &er);
+      disk_stripe_t *dst = dp_disk_locate (dbs, dest, &off);
       int fd = dst_fd (dst);
       start = get_msec_real_time ();
       rc = LSEEK (fd, off, SEEK_SET);
@@ -1950,7 +1930,7 @@ buf_disk_write (buffer_desc_t * buf, dp_addr_t phys_dp_to)
 	  log_error ("Write failure on stripe %s", dst->dst_file);
 	  GPF_T;
 	}
-      dst_fd_done (dst, fd, &er);
+      dst_fd_done (dst, fd);
     }
   else
     {
@@ -2507,7 +2487,6 @@ gen_bsort (int * in, int n_in, sort_cmp_func_t cmp, void* cd)
     }
 }
 
-int32 qsort_seed;
 
 void
 gen_qsort (int * in, int * left,
@@ -2527,17 +2506,16 @@ gen_qsort (int * in, int * left,
     }
   else
     {
-      int n_retries = 0, split, inx;
-      int n_left, n_right, mid, is_mid;
+      int split;
+      int mid = 0, is_mid = 0;
+      int n_left = 0, n_right = n_in - 1;
+      int inx;
       if (depth > 60)
 	{
 	  gen_bsort (in, n_in, cmp, cd);
 	  return;
 	}
       split =  in[n_in / 2];
-    resplit:
-      is_mid = 0;
-      n_left = 0, n_right = n_in - 1;
       for (inx = 0; inx < n_in; inx++)
 	{
 	  int res = cmp (in[inx], split, cd);
@@ -2547,8 +2525,6 @@ gen_qsort (int * in, int * left,
 	      mid = in[inx];
 	      continue;
 	    }
-	  if (DVC_MATCH == res && (inx & 1))
-	    res = DVC_LESS; /* if lots of eq values, every second to the left and every second to the right */
 	  if (DVC_LESS == res)
 	    {
 	      left[n_left++] = in[inx];
@@ -2563,14 +2539,6 @@ gen_qsort (int * in, int * left,
 	  log_error ("in gen_qsort, items being sorted look to have changed during sort, result will not be in order");
 	  return;
 	}
-      if (n_retries < 3 && n_in > 20
-	  && (n_left < n_in / 16 || (n_in - n_left) < n_in / 16))
-	{
-	  n_retries++;
-	  split = ((sqlbif_rnd (&qsort_seed) & 0x7fffffff) % n_in);
-	  split = in[split];
-	  goto resplit;
-	}
       gen_qsort (left, in, n_left, depth + 1, cmp, cd);
       gen_qsort (left + n_right + 1, in + n_right + 1,
 		 (n_in - n_right) - 1, depth + 1, cmp, cd);
@@ -2581,477 +2549,6 @@ gen_qsort (int * in, int * left,
 
     }
 }
-
-
-#define BUCKET_FIRST(inx) \
-  b_curr[inx]
-
-
-#define MAX_BUCKETS 128
-
-
-void
-gen_sort_print (int * in, int * bucket_start, short * bucket_order, int n, void* cd)
-{
-  QNCAST (it_cursor_t, itc, cd);
-  data_col_t * dc = ITC_P_VEC (itc, 0);
-  int inx;
-  for (inx = 0; inx < n; inx++)
-    printf (" "BOXINT_FMT, ((int64*)dc->dc_values)[in[bucket_start[bucket_order[inx]] - 1]]);
-  printf ("\n");
-}
-
-#if 0
-void
-gen_sort_check (int * in, int n_in, sort_cmp_func_t  cmp, void * cd)
-{
-  int inx;
-  for (inx = 0; inx < n_in - 1; inx++)
-    if (DVC_GREATER == cmp (in[inx], in[inx + 1], cd))
-      GPF_T1 ("merge sort produced bad order");
-}
-
-void
-gen_sort_b_check (int * in, int * bucket_start, short * bucket_order, int n_buckets, sort_cmp_func_t  cmp, void * cd)
-{
-  int inx;
-  for (inx = 0; inx < n_buckets - 1; inx++)
-    if (DVC_GREATER == cmp (in[bucket_start[bucket_order[inx]] - 1], in[bucket_start[bucket_order[inx + 1]] - 1], cd))
-      GPF_T1 ("merge sort produced bad order");
-}
-
-#else
-#define gen_sort_b_check(in, bucket_start, bucket_order, n_buckets, cmp, cd)
-#define gen_sort_check(in, n_in, cmp, cd)
-#endif
-
-int
-mrg_place (short * bucket_order, int val, int * in, int * bucket_start, short n_in_merge, sort_cmp_func_t cmp, void* cd)
-{
-  int guess, below = n_in_merge, at_or_above = 0, res;
-  int at_or_above_res = -100;
-  for (;;)
-    {
-      if (below - at_or_above == 1)
-	{
-	  if (-100 == at_or_above_res)
-	    at_or_above_res = cmp (in[bucket_start[bucket_order[at_or_above]] - 1], val, cd);
-	  return DVC_LESS == at_or_above_res ? at_or_above + 1 : at_or_above;
-	}
-      guess = at_or_above + ((below - at_or_above) / 2);
-      res = cmp (in[bucket_start[bucket_order[guess]] - 1], val, cd);
-      if (DVC_MATCH == res)
-	return guess;
-      else if (DVC_LESS == res)
-	{
-	  at_or_above_res = res;
-	  at_or_above = guess;
-	}
-      else
-	below = guess;
-    }
-}
-
-
-int qsort_cache = 2000000;
-
-void
-gen_qmsort (int * in, int * left,
-	   int n_in, sort_cmp_func_t cmp, void* cd, int key_bytes)
-{
-  int bucket_start[MAX_BUCKETS];
-  int bucket_count[MAX_BUCKETS];
-  short bucket_order[MAX_BUCKETS];
-  int n_buckets = MIN ((n_in * key_bytes) / qsort_cache, MAX_BUCKETS);
-  int inx, n_in_merge, res_fill = 0, n_in_bucket;
-  if (n_buckets < 2)
-    {
-      gen_qsort (in, left, n_in, 0, cmp, cd);
-      return;
-    }
-  n_in_bucket = n_in / n_buckets ;
-  for (inx = 0; inx < n_buckets; inx++)
-    {
-      int bucket_len = inx == n_buckets - 1 ? n_in - (inx * n_in_bucket) : n_in_bucket;
-      bucket_start[inx] = inx * n_in_bucket;
-      bucket_count[inx] = bucket_len;
-      gen_qsort (in + (inx * n_in_bucket), left, bucket_len, 0, cmp, cd);
-    }
-  bucket_order[0] = 0;
-  n_in_merge = 1;
-  bucket_start[0]++;
-  bucket_count[0]--;
-  for (inx = 1; inx < n_buckets; inx++)
-    {
-      int place = mrg_place (bucket_order, in[bucket_start[inx]], in, bucket_start, n_in_merge, cmp, cd);
-      memmove (&bucket_order[place + 1], &bucket_order[place], (n_in_merge - place) * sizeof (bucket_order[0]));
-      n_in_merge++;
-      bucket_order[place] = inx;
-      bucket_start[inx]++;
-      bucket_count[inx]--;
-      gen_sort_b_check (in, bucket_start, bucket_order, n_in_merge, cmp, cd);
-    }
-  for (;;)
-    {
-      int val = in[bucket_start[bucket_order[0]] - 1];
-      left[res_fill++] = val;
-      gen_sort_b_check (in, bucket_start, bucket_order, n_in_merge, cmp, cd);
-      bucket_start[bucket_order[0]]++;
-      if (-1 == --(bucket_count[bucket_order[0]]))
-	{
-	  n_in_merge--;
-	  if (!n_in_merge)
-	    goto done;
-	  memmove (bucket_order, &bucket_order[1], sizeof (bucket_order[0]) * n_in_merge);
-	  continue;
-	}
-      if (1 == n_in_merge)
-	continue;
-      if (DVC_LESS != cmp (in[bucket_start[bucket_order[0]] - 1], in[bucket_start[bucket_order[1]] - 1], cd))
-	{
-	  short prev_first;
-	  int place = 1 + mrg_place (&bucket_order[1], in[bucket_start[bucket_order[0]] - 1], in, bucket_start, n_in_merge - 1, cmp, cd);
-	  prev_first = bucket_order[0];
-	  memmove (bucket_order, &bucket_order[1], place * sizeof (bucket_order[0]));
-	  bucket_order[place - 1] = prev_first;
-	}
-    }
- done:
-    memcpy (in, left, n_in * sizeof (int));
-    gen_sort_check (in, n_in, cmp, cd);
-}
-
-/* digit sort */
-
-#define DS_N_SETS 16
-#define DS_UNIT 16
-#define DS_UNIT_MASK 15
-#define DS_N_VALUES (DS_UNIT * DS_N_SETS * 256)
-
-#define DSS_MAX_DS 100
-
-typedef struct digit_sort_s
-{
-  int	ds_start[256];
-  int	ds_end[256];
-  int	ds_data[DS_N_VALUES];
-} digit_sort_t;
-
-
-digit_sort_t *
-ds_allocate ()
-{
-  return (digit_sort_t*)dk_alloc (sizeof (digit_sort_t));
-}
-
-
-void
-ds_free (caddr_t ds)
-{
-  dk_free (ds, -1);
-}
-
-
-typedef struct ds_set_s
-{
-  int		dss_current_ds;
-  int		dss_n_ds;
-  int			dss_last_ds_fill;
-  digit_sort_t *	dss_ds[ DSS_MAX_DS];
-} digit_sort_set_t;
-
-#define DS_INIT(ds) \
-memset (&ds->ds_start, -1, sizeof (ds->ds_start));
-
-resource_t * ds_rc;
-
-unsigned int64
-dc_nth_int (data_col_t * dc, int row, int row2)
-{
-  if (DCT_NUM_INLINE & dc->dc_type)
-    {
-      __builtin_prefetch (&((int64*)dc->dc_values)[row2]);
-      return dc_int (dc, row);
-    }
-  GPF_T1 ("bad dc type for digit sort");
-  return 0;
-}
-
-
-int
-dc_nth_byte (data_col_t * dc, int row, int digit, int row2)
-{
-  unsigned int64 i;
-  __builtin_prefetch (&((int64*)dc->dc_values)[row2]);
-  i = dc_int (dc, row);
-  return 0xff & (i >> (digit * 8));
-}
-
-
-void
-ds_add (digit_sort_set_t * target, int byte, int data)
-{
-  digit_sort_t * ds = target->dss_ds[target->dss_current_ds];
- start:
-  if (-1 == ds->ds_start[byte])
-    {
-      if (DS_N_VALUES == target->dss_last_ds_fill)
-	goto new_ds;
-      ds->ds_start[byte] = target->dss_last_ds_fill;
-      ds->ds_data[target->dss_last_ds_fill] = data;
-      ds->ds_end[byte] = target->dss_last_ds_fill + 1;
-      target->dss_last_ds_fill += DS_UNIT;
-    }
-  else
-    {
-      int end = ds->ds_end[byte];
-      if (DS_UNIT_MASK == (end & DS_UNIT_MASK))
-	{
-	  if (DS_N_VALUES == target->dss_last_ds_fill)
-	    goto new_ds;
-	  ds->ds_data[end] = -target->dss_last_ds_fill;
-	  ds->ds_end[byte] = target->dss_last_ds_fill + 1;
-	  ds->ds_data[target->dss_last_ds_fill] = data;
-	  target->dss_last_ds_fill += DS_UNIT;
-	}
-      else
-	{
-	  ds->ds_data[end] = data;
-	  ds->ds_end[byte] = end + 1;
-	}
-    }
-  return;
- new_ds:
-  if (++target->dss_current_ds >= target->dss_n_ds)
-    {
-      ds = (digit_sort_t*)resource_get (ds_rc);
-      target->dss_ds[target->dss_n_ds] = ds;
-      if (++target->dss_n_ds > DSS_MAX_DS)
-	GPF_T1 ("vector length too large for vec digit sort");
-    }
-  else
-    ds = target->dss_ds[target->dss_current_ds];
-  DS_INIT (ds);
-  target->dss_last_ds_fill = 0;
-  goto start;
-}
-
-#define DS_PREFETCH_DIST 8
-
-void
-dss_pass (digit_sort_set_t * target, digit_sort_set_t * source,
-	 int from_byte, int to_byte, data_col_t * dc, int nth_byte)
-{
-  int byte, source_inx, start, end;
-  for (byte = from_byte; byte < to_byte; byte++)
-    {
-      for (source_inx = 0; source_inx <= source->dss_current_ds; source_inx++)
-	{
-	  digit_sort_t * ds = source->dss_ds[source_inx];
-	  start = ds->ds_start[byte];
-	  if (-1 == start)
-	    continue;
-	  end = ds->ds_end[byte];
-	  while (start != end)
-	    {
-	      int data = ds->ds_data[start];
-	      int data2 = start + DS_PREFETCH_DIST < end ? ds->ds_data[start + DS_PREFETCH_DIST] : data;
-	      int new_byte = dc_nth_byte (dc, data, nth_byte, data2);
-	      ds_add (target, new_byte, data);
-	      start++;
-	      if (DS_UNIT_MASK == (start & DS_UNIT_MASK) && start != end)
-		start = - ds->ds_data[start];
-	    }
-	}
-    }
-}
-
-
-void
-dss_final (digit_sort_set_t * source, int * res, int from_byte, int to_byte, int * fill_ret)
-{
-  int byte, source_inx, fill = *fill_ret, start, end;
-  for (byte = from_byte; byte < to_byte; byte++)
-    {
-      for (source_inx = 0; source_inx <= source->dss_current_ds; source_inx++)
-	{
-	  digit_sort_t * ds = source->dss_ds[source_inx];
-	  start = ds->ds_start[byte];
-	  if (-1 == start)
-	    continue;
-	  end = ds->ds_end[byte];
-	  while (start != end)
-	    {
-	      int data = ds->ds_data[start];
-	      res[fill++] = data;
-	      start++;
-	      if (DS_UNIT_MASK == (start & DS_UNIT_MASK) && start != end)
-		start = - ds->ds_data[start];
-	    }
-	}
-    }
-  *fill_ret = fill;
-}
-
-
-int
-dss_initial (digit_sort_set_t * target, data_col_t * dc, int * sets, unsigned int64 * mask_ret, int n_sets)
-{
-  unsigned int64 mask = 0, prev;
-  int inx, in_order = 1;
-  int is_signed = DV_IRI_ID != dc->dc_dtp;
-  prev = dc_nth_int (dc, sets[0], sets[0]);
-  for (inx = 0; inx < n_sets; inx++)
-    {
-      unsigned int64 i = dc_nth_int (dc, sets[inx], sets[inx]);
-      mask |= i ^ prev;
-      if (in_order
-	  && (is_signed ? (prev > i) : ((unsigned int64)prev > (unsigned int64)i)))
-	in_order = 0;
-      prev = i;
-      ds_add (target, i & 0xff, sets[inx]);
-    }
-  *mask_ret = mask;
-  return in_order;
-}
-
-
-int
-dss_dss_initial (digit_sort_set_t * target, digit_sort_set_t * source,
-		 data_col_t * dc, unsigned int64 * mask_ret, int prev_signed)
-{
-  int from_byte = 0, to_byte = 256;
-  int byte, source_inx, start, end, in_order = 1;
-  unsigned int64 prev, mask = 0;
-  int is_first = 1, sign_ctr;
-  int is_signed = DV_IRI_ID != dc->dc_dtp;
-  int sign_count = prev_signed ? 2 : 1;
-  for (sign_ctr = 0; sign_ctr < sign_count; sign_ctr++)
-    {
-      if (2 == sign_count)
-	{
-	  from_byte = 0 == sign_ctr ? 0x80 : 0;
-	  to_byte = 0 == sign_ctr ? 0x100 : 0x80;
-	}
-      for (byte = from_byte; byte < to_byte; byte++)
-	{
-	  for (source_inx = 0; source_inx <= source->dss_current_ds; source_inx++)
-	    {
-	      digit_sort_t * ds = source->dss_ds[source_inx];
-	      start = ds->ds_start[byte];
-	      if (-1 == start)
-		continue;
-	      end = ds->ds_end[byte];
-	      while (start != end)
-		{
-		  unsigned int64 i;
-		  int data = ds->ds_data[start];
-		  int data2 = start + DS_PREFETCH_DIST < end ? ds->ds_data[start + DS_PREFETCH_DIST] : data;
-		  i = dc_nth_int (dc, data, data2);
-		  if (!is_first)
-		    {
-		      mask |= i ^ prev;
-		      if (in_order
-			  && (is_signed ? (prev > i) : ((unsigned int64)prev > (unsigned int64)i)))
-			in_order = 0;
-		    }
-		  else
-		    is_first = 0;
-		  prev = i;
-		  ds_add (target, i & 0xff, data);
-		  start++;
-		  if (DS_UNIT_MASK == (start & DS_UNIT_MASK) && start != end)
-		    start = - ds->ds_data[start];
-		}
-	    }
-	}
-    }
-  *mask_ret = mask;
-  return in_order;
-}
-
-
-#define TGT_DSS (&dss[(nth + 1) & 1])
-#define SRC_DSS (&dss[(nth) & 1])
-
-#define DSS_INIT(dss) \
- dss.dss_last_ds_fill = dss.dss_current_ds = dss.dss_n_ds = 0;
-
-void
-dss_reset (digit_sort_set_t * dss)
-{
-  dss->dss_last_ds_fill = 0;
-  dss->dss_current_ds = 0;
-  if (!dss->dss_n_ds)
-    {
-      dss->dss_ds[0] = (digit_sort_t*)resource_get (ds_rc);
-      dss->dss_n_ds = 1;
-    }
-  DS_INIT (dss->dss_ds[0]);
-}
-
-void
-dss_done (digit_sort_set_t * dss)
-{
-  int inx;
-  for (inx  = 0; inx < dss->dss_n_ds; inx++)
-    resource_store (ds_rc, (void*) dss->dss_ds[inx]);
-}
-
-void
-dc_digit_sort (data_col_t ** dcs, int n_dcs, int * sets, int n_sets)
-{
-  digit_sort_set_t dss[2];
-  int is_first = 1;
-  unsigned int64 mask;
-  int nth = 0, inx, digit, prev_signed = 0;
-  DSS_INIT (dss[0]);
-  DSS_INIT (dss[1]);
-  for (inx = n_dcs - 1; inx >= 0; inx--)
-    {
-      int in_order;
-      data_col_t * dc = dcs[inx];
-      int is_signed;
-      if (!dc)
-	continue;
-      is_signed = !(DV_IRI_ID == dc->dc_dtp);
-      dss_reset (TGT_DSS);
-      if (is_first)
-	in_order = dss_initial (TGT_DSS, dcs[inx], sets, &mask, n_sets);
-      else
-	in_order = dss_dss_initial (TGT_DSS, SRC_DSS, dcs[inx], &mask, prev_signed);
-      if (in_order)
-	continue;
-      is_first = 0;
-      prev_signed = is_signed && (0 != (mask & ((int64)1 << 63)));
-      for (digit = 1; digit < 8; digit++)
-	{
-	  if (!(mask & (((int64)0xff) << (digit * 8))))
-	    continue;
-	  nth++;
-	  dss_reset (TGT_DSS);
-	  dss_pass (TGT_DSS, SRC_DSS, 0, 256, dc, digit);
-	}
-      nth++;
-    }
-  if (!is_first)
-    {
-      int fill = 0;
-      if (prev_signed)
-	{
-	  dss_final (SRC_DSS, sets, 0x80, 0x100, &fill);
-	  dss_final (SRC_DSS, sets, 0, 0x80, &fill);
-	}
-      else
-	dss_final (SRC_DSS, sets, 0, 256, &fill);
-      if (fill != n_sets)
-	GPF_T1 ("item count out of whakc in digit sort");
-
-    }
-  dss_done (&dss[0]);
-  dss_done (&dss[1]);
-}
-
 
 
 long last_flush_time = 0;
@@ -3129,7 +2626,6 @@ bp_write_dirty (buffer_pool_t * bp, int force, int is_in_bp, int n_oldest)
     mutex_leave (bp->bp_mtx);
 }
 
-#define DB_FILE_SIZE_FIX 2
 
 OFF_T
 db_file_size (int fd, char * fn, int check)
@@ -3141,28 +2637,9 @@ db_file_size (int fd, char * fn, int check)
       log_error ("It is impossible to have a database file %s with a length not multiple of 2MB.", fn);
       log_error ("The process must have last terminated while growing the file.");
       log_error ("Please contact OpenLink Customer Support");
-      if (DB_FILE_SIZE_FIX == check)
-	{
-	  ftruncate (fd, size - rem);
-	}
+      call_exit (1);
     }
   return size - rem;
-}
-
-
-void
-dbs_open_ext_cache (dbe_storage_t * dbs)
-{
-  int n_ext_stats = (dbs->dbs_n_pages / EXTENT_SZ) + 2048;
-  int inx;
-  for (inx = 0; inx < DBS_EC_N_SETS; inx++)
-    {
-      dbs->dbs_ext_cache_mtx[inx] = mutex_allocate ();
-      mutex_option (dbs->dbs_ext_cache_mtx[inx], "ext_cache", NULL, NULL);
-      dbs->dbs_ext_cache[inx] = hash_table_allocate (11);
-    }
-  dbs->dbs_ext_ts = (ext_ts_t*)dk_alloc_box_zero (sizeof (ext_ts_t) * n_ext_stats, DV_BIN);
-  dbs->dbs_ext_ref_ct  = (db_buf_t) dk_alloc_box_zero (n_ext_stats, DV_BIN);
 }
 
 
@@ -3204,7 +2681,7 @@ dbs_open_disks (dbe_storage_t * dbs)
 			     dst->dst_file, errno);
 		  call_exit (1);
 		}
-	      dst_fd_done (dst, fd, NULL);
+	      dst_fd_done (dst, fd);
 	    }
 	}
       size = db_file_size (dst->dst_fds[0], dst->dst_file, 0);
@@ -3244,7 +2721,6 @@ dbs_open_disks (dbe_storage_t * dbs)
   }
   END_DO_SET ();
   dbs->dbs_n_pages = pages;
-  dbs_open_ext_cache (dbs);
   return first_exists;
 }
 
@@ -3297,7 +2773,6 @@ dbs_close_disks (dbe_storage_t * dbs)
 }
 
 int32 bp_n_bps = 4;
-extern int dbf_fast_cpt;
 
 void
 dbs_sync_disks (dbe_storage_t * dbs)
@@ -3305,8 +2780,6 @@ dbs_sync_disks (dbe_storage_t * dbs)
 #ifdef HAVE_FSYNC
   int inx;
 
-  if (dbf_fast_cpt)
-    return;
   switch (c_checkpoint_sync)
     {
     case 0:
@@ -3349,18 +2822,39 @@ dbs_byte_order_cmp (char byte_order)
   return 0;
 }
 
+extern caddr_t *local_interfaces;
+extern char *srv_cwd;
+
+static void
+dbs_init_id (char * str)
+{
+  int inx;
+  char buf[100];
+  MD5_CTX ctx;
+  memset (&ctx, 0, sizeof (MD5_CTX));
+  MD5Init (&ctx);
+  DO_BOX (caddr_t, val, inx, local_interfaces)
+    {
+      MD5Update (&ctx, (unsigned char *) val, box_length (val) - 1);
+    }
+  END_DO_BOX;
+  MD5Update (&ctx, (unsigned char *) srv_cwd, strlen (srv_cwd));
+  snprintf (buf, sizeof (buf), "%ld,%p", srv_pid, &str);
+  MD5Update (&ctx, (unsigned char *) buf, strlen (buf));
+  MD5Final (str, &ctx);
+}
+
 void
 dbs_write_cfg_page (dbe_storage_t * dbs, int is_first)
 {
   disk_stripe_t *dst = NULL;
   wi_database_t db;
-  ext_ref_t er;
   int fd, rc;
   ALIGNED_PAGE_ZERO (zero);
   if (dbs->dbs_disks)
     {
       OFF_T off;
-      dst = dp_disk_locate (dbs, 0, &off, 1, &er);
+      dst = dp_disk_locate (dbs, 0, &off);
       fd = dst_fd (dst);
     }
   else
@@ -3389,7 +2883,9 @@ dbs_write_cfg_page (dbe_storage_t * dbs, int is_first)
     }
   db.db_checkpoint_map = dbs->dbs_cp_remap_pages ? (dp_addr_t) (uptrlong) dbs->dbs_cp_remap_pages->data : 0;
   db.db_byte_order = DB_SYS_BYTE_ORDER;
-  memcpy (db.db_cpt_dt, dbs->dbs_cfg_page_dt, DT_LENGTH);
+  if (0 == dbs->dbs_id[0])
+    dbs_init_id (dbs->dbs_id);
+  memcpy (db.db_id, dbs->dbs_id, sizeof (db.db_id));
 
   LSEEK (fd, 0, SEEK_SET);
   memcpy (zero, &db, sizeof (db));
@@ -3397,7 +2893,7 @@ dbs_write_cfg_page (dbe_storage_t * dbs, int is_first)
   if (PAGE_SZ != rc)
     printf  ("failed write of 0 page errno %d\n", errno);
   if (dst)
-    dst_fd_done (dst, fd, &er);
+    dst_fd_done (dst, fd);
 }
 
 
@@ -3790,12 +3286,11 @@ dbs_read_cfg_page (dbe_storage_t * dbs, wi_database_t * cfg_page)
   disk_stripe_t *dst = NULL;
   int storage_ver;
   int fd;
-  ext_ref_t er;
   ALIGNED_PAGE_ZERO (zero);
   if (dbs->dbs_disks)
     {
       OFF_T off;
-      dst = dp_disk_locate (dbs, 0, &off, 0, &er);
+      dst = dp_disk_locate (dbs, 0, &off);
       fd = dst_fd (dst);
     }
   else
@@ -3830,7 +3325,7 @@ dbs_read_cfg_page (dbe_storage_t * dbs, wi_database_t * cfg_page)
 #endif /* BYTE_ORDER_REV_SUPPORT */
     }
   if (dst)
-    dst_fd_done (dst, fd, &er);
+    dst_fd_done (dst, fd);
   log_info ("Database version %d", storage_ver);
 }
 
@@ -3965,10 +3460,11 @@ dbs_from_file (char * name, char * file, char type, volatile int * exists)
 	*exists = 1;
     }
 
+  if (*exists && type == DBS_RECOVER)
+    return NULL;
+
   if (*exists && DBS_TEMP != type)
-    {
     dbs_read_cfg_page (dbs, &cfg_page);
-    }
 
   if (dbs->dbs_disks)
     {
@@ -3985,9 +3481,7 @@ dbs_from_file (char * name, char * file, char type, volatile int * exists)
     }
   else
     {
-      size = db_file_size (fd, dbs->dbs_file, DB_FILE_SIZE_FIX);
-      dbs->dbs_file_length = size;
-      dbs->dbs_n_pages = (dp_addr_t ) (dbs->dbs_file_length / PAGE_SZ);
+      db_file_size (fd, dbs->dbs_file, 1);
     }
 
   if (*exists && DBS_TEMP != type)
@@ -3995,7 +3489,6 @@ dbs_from_file (char * name, char * file, char type, volatile int * exists)
       /* There's a file. */
       dbs->dbs_stripe_unit = cfg_page.db_stripe_unit ? cfg_page.db_stripe_unit : 1;
       dbs->dbs_initial_gen = cfg_page.db_initial_gen;
-      memcpy (dbs->dbs_cfg_page_dt, &cfg_page.db_cpt_dt, sizeof (dbs->dbs_cfg_page_dt));
 #ifdef BYTE_ORDER_REV_SUPPORT
       if (dbs_reverse_db)
 	dbs_reverse_cfg_page (&cfg_page);
@@ -4025,6 +3518,7 @@ dbs_from_file (char * name, char * file, char type, volatile int * exists)
 	  bp_ctx.db_bp_index = cfg_page.db_bp_index;
 	  bp_ctx.db_bp_wr_bytes = cfg_page.db_bp_wr_bytes;
 	}
+      memcpy (dbs->dbs_id, cfg_page.db_id, sizeof (cfg_page.db_id));
       if (DBS_PRIMARY == type)
 	dbs_init_registry (dbs);
       dbs_extent_open (dbs);
@@ -4119,26 +3613,12 @@ extern dk_mutex_t * log_write_mtx;
 extern   dk_mutex_t * transit_list_mtx;
 
 int64 bdf_is_avail_mask;
-void ti_func_init ();
-
-
-
-int
-log_write_entry_check (dk_mutex_t * mtx, du_thread_t * self, void * cd)
-{
-  ASSERT_OUTSIDE_MTX (wi_inst.wi_txn_mtx);
-  return 1;
-}
-
 
 void
 wi_open (char *mode)
 {
   int inx;
   const_length_init ();
-  vec_dtp_init ();
-  chash_init ();
-  ti_func_init ();
   bm_init ();
   extent_map_create_mtx = mutex_allocate ();
   mutex_option (extent_map_create_mtx, "em_create", NULL, NULL);
@@ -4148,7 +3628,7 @@ wi_open (char *mode)
   pl_ref_count_mtx = mutex_allocate ();
   mutex_option (pl_ref_count_mtx, "pl_ref_count", NULL, NULL);
   log_write_mtx = mutex_allocate ();
-  mutex_option (log_write_mtx, "Log_write", log_write_entry_check, NULL);
+  mutex_option (log_write_mtx, "Log_write", NULL, NULL);
   transit_list_mtx = mutex_allocate ();
   mutex_option (transit_list_mtx, "transit_list", NULL, NULL);
   srv_client_defaults_init ();
@@ -4224,11 +3704,6 @@ void rbp_free (caddr_t p);
 
 extern dk_hash_t * dp_compact_checked;
 extern dk_mutex_t * dp_compact_mtx;
-extern dk_hash_t * qi_branch_count;
-extern col_partition_t cp_distinct_any;
-extern int ac_aq_threads;
-extern int ac_col_max_pages;
-
 
 #ifdef MTX_DEBUG
 #define TRX_RC_SZ 2
@@ -4252,39 +3727,12 @@ it_free_cb (caddr_t it)
 }
 
 
-caddr_t
-it_copy_cb (caddr_t x)
-{
-  QNCAST (index_tree_t, it, x);
-  IN_HIC;
-  it->it_ref_count++;
-  LEAVE_HIC;
-  return x;
-}
-
-#if 0
-#include <sched.h>
-
-void
-wi_init_process ()
-{
-  int rc;
-  struct sched_param p;
-  p.sched_priority = 1;
-  rc = sched_setscheduler (0, SCHED_RR, &p);
-  if (rc < 0)
-    perror ("sched_setschuduler:");
-}
-#else
-#define wi_init_process()
-#endif
-
 void
 wi_init_globals (void)
 {
   PrpcInitialize ();
   blobio_init ();
-  wi_init_process ();
+
 #ifdef PAGE_SET_CHECKSUM
   page_set_checksums = hash_table_allocate (203);
 #endif
@@ -4310,10 +3758,6 @@ wi_init_globals (void)
 
   trx_rc = resource_allocate (TRX_RC_SZ, (rc_constr_t) lt_allocate,
 			    (rc_destr_t) lt_free, (rc_destr_t) lt_clear, 0);
-  cp_distinct_any.cp_sqt.sqt_dtp = DV_ANY;
-  cp_distinct_any.cp_type = CP_WORD;
-  cp_distinct_any.cp_mask = 0xffffffff;
-  ds_rc = resource_allocate (20, (rc_constr_t)ds_allocate, (rc_destr_t)ds_free, NULL, 0);
   buf_sort_mtx = mutex_allocate_typed (MUTEX_TYPE_LONG);
   time_mtx = mutex_allocate ();
   checkpoint_mtx = mutex_allocate_typed (MUTEX_TYPE_LONG);
@@ -4333,12 +3777,8 @@ wi_init_globals (void)
   dp_compact_checked = hash_table_allocate (1000);
   dk_hash_set_rehash (dp_compact_checked, 3);
   dbs_autocompact_mtx = mutex_allocate ();
-  ac_aq_threads = MIN (main_bufs / (2 * ac_col_max_pages), enable_qp);
-  dk_mem_hooks (DV_INDEX_TREE, it_copy_cb, it_free_cb, 0);
-  dk_mem_hooks (DV_ITC, it_copy_cb, itc_free_cb, 0);
-  dk_mem_hooks (DV_QI, qi_copy_cb, qi_free_cb, 0);
-  qi_ref_mtx = mutex_allocate ();
-  qi_branch_count = hash_table_allocate (61);
+  dk_mem_hooks (DV_INDEX_TREE, box_non_copiable, it_free_cb, 0);
+  dk_mem_hooks (DV_ITC, box_non_copiable, itc_free_cb, 0);
   alt_ts_mtx = mutex_allocate ();
 }
 
@@ -4476,17 +3916,8 @@ key_dropped (dbe_key_t * key)
       registry_set (kf->kf_name, NULL);
       dk_set_delete (&wi_inst.wi_master->dbs_trees, kf->kf_it);
       dk_set_push (&wi_inst.wi_master->dbs_deleted_trees, kf->kf_it);
-      if (kf->kf_it->it_col_extent_maps)
-	{
-	  DO_HT (ptrlong, col_id, extent_map_t *, em, kf->kf_it->it_col_extent_maps)
-	    {
-	      registry_set (em->em_name, NULL);
-	      dk_set_push (wi_inst.wi_master->dbs_deleted_ems, (void*)em);
-	    }
-	  END_DO_HT;
-	}
-      kf->kf_it->it_root = 0;
       LEAVE_TXN;
+      kf->kf_it->it_root = 0;
     }
   END_DO_BOX;
 }

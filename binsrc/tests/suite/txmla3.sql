@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -265,4 +265,3 @@ select test_bookmark_suite ('localhost', server_http_port(),
 ;
 ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
 ECHO BOTH ": XMLA Bookmark test 5 : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
-

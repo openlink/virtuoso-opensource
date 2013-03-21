@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -82,7 +82,7 @@ if (DVC_GREATER == l1) goto gt; \
     iri_id_t i1, i2; \
     dv2 = (db_buf_t) itc->itc_search_params[nth_param];		\
   cl  = key->key_part_cls[nth_key]; \
-  ROW_INT_COL (buf, row, rv, *cl, (iri_id_t)(uint32) LONG_REF, i1);	\
+    ROW_INT_COL (buf, row, rv, *cl, (iri_id_t) LONG_REF, i1); \
   i2 = unbox_iri_id (((caddr_t) dv2));				\
   if (i1 < i2) goto lt; \
   if (i1 > i2) goto gt; \

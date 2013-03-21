@@ -2,7 +2,7 @@
 //  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 //  project.
 //  
-//  Copyright (C) 1998-2006 OpenLink Software
+//  Copyright (C) 1998-2013 OpenLink Software
 //  
 //  This project is free software; you can redistribute it and/or modify it
 //  under the terms of the GNU General Public License as published by the
@@ -319,6 +319,9 @@ namespace OpenLink.Data.Virtuoso
                 case IsolationLevel.Serializable:
                     isolation = CLI.IsolationLevel.SQL_TXN_SERIALIZABLE;
                     break;
+                case IsolationLevel.Unspecified:
+                    isolation = CLI.IsolationLevel.SQL_TXN_READ_COMMITED;
+                    break;
                 default:
                     throw new Exception ("Unknown or unsupported isolation level");
             }
@@ -569,6 +572,8 @@ namespace OpenLink.Data.Virtuoso
 
         protected override void Dispose (bool disposing)
         {
+	    try
+	    {
             if (disposed)
                 return;
 
@@ -582,6 +587,12 @@ namespace OpenLink.Data.Virtuoso
             options = null;
 
             base.Dispose (disposing);
+        }
+	    catch (Exception e)
+	    {
+	        Debug.WriteLineIf(CLI.FnTrace.Enabled,
+		    "VirtuosoConnection.Dispose caught exception: " + e.Message);
+	    }
         }
 
         private ConnectionOptions ParseConnectionString (string connectionString)

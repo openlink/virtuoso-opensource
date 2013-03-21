@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -21,20 +21,35 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 -->
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+<!DOCTYPE xsl:stylesheet [
+<!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+<!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY sioc "http://rdfs.org/sioc/ns#">
+<!ENTITY owl "http://www.w3.org/2002/07/owl#">
+<!ENTITY awol "http://bblfish.net/work/atom-owl/2006-06-06/#">
+<!ENTITY dcterms "http://purl.org/dc/terms/">
+<!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
+<!ENTITY oplcert "http://www.openlinksw.com/schemas/cert#">
+<!ENTITY cert "http://www.w3.org/ns/auth/cert#">
+]>
+<xsl:stylesheet
+	xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     		xmlns:v="http://www.w3.org/2006/vcard/ns#"
 		xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 		xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
 		xmlns:h="http://www.w3.org/1999/xhtml"
 		xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
 		xmlns:foaf="http://xmlns.com/foaf/0.1/"
+	xmlns:cert="http://www.w3.org/ns/auth/cert#"
+	xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
                 version="1.0">
 
 <xsl:output method="xml" encoding="utf-8" indent="yes"/>
 
 <xsl:preserve-space elements="*"/>
 <xsl:param name="baseUri" />
-<xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
+	<xsl:variable  name="docproxyIRI" select="vi:proxyIRI($baseUri)"/>
 
 <xsl:template match="/">
   <rdf:RDF>
@@ -50,6 +65,26 @@
   </xsl:variable>
 
   <xsl:if test="$vcard != 0">
+		    <xsl:if test="//*[contains (concat (' ', @class, ' '), ' key ')]">
+			<rdf:Description>
+			    <xsl:for-each select="//*[contains (concat (' ', @class, ' '), ' url ')][1]">
+				<xsl:attribute name="rdf:about">
+				    <xsl:choose>
+					<xsl:when test="@href">
+					    <xsl:value-of select="@href"/>
+					</xsl:when>
+					<xsl:otherwise>
+					    <xsl:if test="not(contains(.,':'))">http://</xsl:if>
+					    <xsl:value-of select="string(.)"/>
+					</xsl:otherwise>
+				    </xsl:choose>
+				</xsl:attribute>
+			    </xsl:for-each>
+			    <rdf:type rdf:resource="&bibo;Document"/>
+			    <rdf:type rdf:resource="&foaf;Document"/>
+			    <xsl:apply-templates mode="extract-key"/>
+			</rdf:Description>
+		    </xsl:if>
     <rdf:Description rdf:about="{$docproxyIRI}">
       <foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'hcard')}"/>
     </rdf:Description>
@@ -64,6 +99,24 @@
 <xsl:template match="comment()|processing-instruction()|text()"/>
 
 <!-- ============================================================ -->
+	<xsl:template match="*" mode="extract-key">
+		<xsl:variable name="key">
+			<xsl:call-template name="testclass">
+				<xsl:with-param name="val" select="'key'"/>
+			</xsl:call-template>
+		</xsl:variable>
+		<xsl:if test="$key != 0 and @href and starts-with (@href, 'data:application/x-x509-user-cert;base64,')">
+		    <xsl:variable name="cert"><stub><xsl:copy-of select="vi:x509_pub_key (@href)"/></stub></xsl:variable>
+		    <cert:key>
+			<cert:RSAPublicKey rdf:ID="key{$cert//fp}">
+			    <cert:modulus rdf:datatype="http://www.w3.org/2001/XMLSchema#hexBinary"><xsl:value-of select="$cert//mod"/></cert:modulus>
+			    <cert:exponent rdf:datatype="http://www.w3.org/2001/XMLSchema#integer"><xsl:value-of select="$cert//exp"/></cert:exponent>
+			</cert:RSAPublicKey>
+		    </cert:key>
+		</xsl:if>
+	</xsl:template>
+	<xsl:template match="comment()|processing-instruction()|text()"
+	      mode="extract-key"/>
 
 <xsl:template match="*" mode="extract-vcard">
   <xsl:variable name="fn">
@@ -219,11 +272,14 @@
   <!-- ============================================================ -->
 
   <xsl:if test="$fn != 0">
-    <v:fn><xsl:value-of select="."/></v:fn>
+			<v:fn>
+				<xsl:value-of select="."/>
+			</v:fn>
   </xsl:if>
 
   <xsl:if test="$n != 0">
-    <v:n rdf:parseType="Resource">
+			<v:n>
+				<rdf:Description>
       <rdf:type rdf:resource="http://nwalsh.com/rdf/vCard#Name"/>
       <xsl:apply-templates select="." mode="extract-field">
 	<xsl:with-param name="field" select="'given-name'"/>
@@ -243,6 +299,13 @@
       <xsl:apply-templates select="." mode="extract-field">
 	<xsl:with-param name="field" select="'nickname'"/>
       </xsl:apply-templates>
+					<xsl:attribute name="rdf:about">
+						<xsl:value-of select="vi:proxyIRI($baseUri, '', replace(., ' ', ''))" />
+					</xsl:attribute>
+					<rdfs:label>
+						<xsl:value-of select="."/>
+					</rdfs:label>
+				</rdf:Description>
     </v:n>
   </xsl:if>
 
@@ -348,11 +411,19 @@
 	</v:org>
       </xsl:when>
       <xsl:otherwise>
-	<v:org rdf:parseType="Resource">
+					<v:org>
+						<rdf:Description>
 	  <rdf:type rdf:resource="http://nwalsh.com/rdf/vCard#Organization"/>
+							<xsl:attribute name="rdf:about">
+								<xsl:value-of select="vi:proxyIRI($baseUri, '', replace(., ' ', ''))" />
+							</xsl:attribute>
 	  <v:organization-name>
 	    <xsl:value-of select="."/>
 	  </v:organization-name>
+							<rdfs:label>
+								<xsl:value-of select="."/>
+							</rdfs:label>
+						</rdf:Description>
 	</v:org>
       </xsl:otherwise>
     </xsl:choose>
@@ -399,11 +470,15 @@
   </xsl:if>
 
   <xsl:if test="$sort-string != 0">
-    <v:sort-string><xsl:value-of select="."/></v:sort-string>
+			<v:sort-string>
+				<xsl:value-of select="."/>
+			</v:sort-string>
   </xsl:if>
 
   <xsl:if test="$nickname != 0">
-    <v:nickname><xsl:value-of select="."/></v:nickname>
+			<v:nickname>
+				<xsl:value-of select="."/>
+			</v:nickname>
   </xsl:if>
 
   <xsl:apply-templates mode="extract-vcard"/>
@@ -560,19 +635,30 @@
     <xsl:when test="$token = 'home' or $token = 'personal'">
       <v:homeAdr rdf:parseType="Resource">
 	<xsl:copy-of select="$fields"/>
-	<rdfs:label><xsl:value-of select="concat($fields/v:extended-address, ' ', $fields/v:street-address, ', ', $fields/v:locality, ', ', $fields/v:postal-code, ', ', $fields/v:country-name)"/></rdfs:label>
+					<rdfs:label>
+						<xsl:value-of select="vi:trim(concat($fields/v:extended-address, ', ', $fields/v:street-address, ', ', $fields/v:locality, ', ', $fields/v:postal-code, ', ', $fields/v:country-name), ', ')"/>
+					</rdfs:label>
       </v:homeAdr>
     </xsl:when>
     <xsl:when test="$token = 'work' or $token = 'office'">
       <v:workAdr rdf:parseType="Resource">
 	<xsl:copy-of select="$fields"/>
-	<rdfs:label><xsl:value-of select="concat($fields/v:extended-address, ' ', $fields/v:street-address, ', ', $fields/v:locality, ', ', $fields/v:postal-code, ', ', $fields/v:country-name)"/></rdfs:label>
+					<rdfs:label>
+						<xsl:value-of select="vi:trim(concat($fields/v:extended-address, ' ', $fields/v:street-address, ', ', $fields/v:locality, ', ', $fields/v:postal-code, ', ', $fields/v:country-name), ', ')"/>
+					</rdfs:label>
       </v:workAdr>
     </xsl:when>
     <xsl:otherwise>
-      <v:adr rdf:parseType="Resource">
+				<v:adr>
+					<rdf:Description>
 	<xsl:copy-of select="$fields"/>
-	<rdfs:label><xsl:value-of select="concat($fields/v:extended-address, ' ', $fields/v:street-address, ', ', $fields/v:locality, ', ', $fields/v:postal-code, ', ', $fields/v:country-name)"/></rdfs:label>
+						<rdfs:label>
+							<xsl:value-of select="vi:trim(concat($fields/v:extended-address, ', ', $fields/v:street-address, ', ', $fields/v:locality, ', ', $fields/v:postal-code, ', ', $fields/v:country-name), ', ')"/>
+						</rdfs:label>
+						<xsl:attribute name="rdf:about">
+							<xsl:value-of select="vi:proxyIRI($baseUri, '', concat('adr_', position()))" />
+						</xsl:attribute>
+					</rdf:Description>
       </v:adr>
     </xsl:otherwise>
   </xsl:choose>

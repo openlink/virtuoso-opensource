@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -27,6 +27,7 @@
 <!ENTITY xsd  "http://www.w3.org/2001/XMLSchema#">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 ]>
 <xsl:stylesheet
     xmlns:xsl  ="http://www.w3.org/1999/XSL/Transform" version="1.0"
@@ -38,6 +39,7 @@
     xmlns:foaf ="&foaf;"
     xmlns:sioc ="&sioc;"
     xmlns:bibo ="&bibo;"
+    xmlns:opl="&opl;"
     xmlns:v    ="http://www.openlinksw.com/xsltext/"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
     xmlns:exif ="http://www.w3.org/2003/12/exif/ns/"
@@ -92,6 +94,13 @@
 			<dcterms:subject rdf:resource="{$resourceURL}"/>
 		</rdf:Description>
 		<rdf:Description rdf:about="{$resourceURL}">
+                	<opl:providedBy>
+                		<foaf:Organization rdf:about="http://www.flickr.com#this">
+                			<foaf:name>Flickr</foaf:name>
+                			<foaf:homepage rdf:resource="http://www.flickr.com"/>
+                		</foaf:Organization>
+                	</opl:providedBy>
+
 			<rdf:type rdf:resource="http://www.w3.org/2003/12/exif/ns/IFD"/>
 			<xsl:variable name="image_url" select="concat('http://farm', @farm,'.static.flickr.com/', @server, '/', @id, '_', @secret, '.', @originalformat)"/>
 			<foaf:img rdf:resource="{$image_url}"/>

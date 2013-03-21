@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -616,19 +616,19 @@
             <xsl:when test="$token = 'home' or $token = 'personal'">
                 <v:homeAdr rdf:parseType="Resource">
                     <xsl:copy-of select="$fields" />
-		    <rdfs:label><xsl:value-of select="concat($fields/v:extended-address, ' ', $fields/v:street-address, ', ', $fields/v:locality, ', ', $fields/v:postal-code, ', ', $fields/v:country-name)"/></rdfs:label>
+		    <rdfs:label><xsl:value-of select="vi:trim(concat($fields/v:extended-address, ' ', $fields/v:street-address, ', ', $fields/v:locality, ', ', $fields/v:postal-code, ', ', $fields/v:country-name), ', ')"/></rdfs:label>
                 </v:homeAdr>
             </xsl:when>
             <xsl:when test="$token = 'work' or $token = 'office'">
                 <v:workAdr rdf:parseType="Resource">
                     <xsl:copy-of select="$fields" />
-		    <rdfs:label><xsl:value-of select="concat($fields/v:extended-address, ' ', $fields/v:street-address, ', ', $fields/v:locality, ', ', $fields/v:postal-code, ', ', $fields/v:country-name)"/></rdfs:label>
+		    <rdfs:label><xsl:value-of select="vi:trim(concat($fields/v:extended-address, ' ', $fields/v:street-address, ', ', $fields/v:locality, ', ', $fields/v:postal-code, ', ', $fields/v:country-name), ', ')"/></rdfs:label>
                 </v:workAdr>
             </xsl:when>
             <xsl:otherwise>
                 <v:adr rdf:parseType="Resource">
                     <xsl:copy-of select="$fields" />
-	            <rdfs:label><xsl:value-of select="concat($fields/v:extended-address, ' ', $fields/v:street-address, ', ', $fields/v:locality, ', ', $fields/v:postal-code, ', ', $fields/v:country-name)"/></rdfs:label>
+	            <rdfs:label><xsl:value-of select="vi:trim(concat($fields/v:extended-address, ' ', $fields/v:street-address, ', ', $fields/v:locality, ', ', $fields/v:postal-code, ', ', $fields/v:country-name), ', ')"/></rdfs:label>
                 </v:adr>
             </xsl:otherwise>
         </xsl:choose>

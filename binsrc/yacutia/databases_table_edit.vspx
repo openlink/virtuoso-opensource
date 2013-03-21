@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -105,20 +105,31 @@
         </v:template>
         <v:template name="temp_table_exist" type="simple" enabled="-- case when (self.mode <> 'create') then 1 else 0 end">
           <v:form name="tab_navigation_form" type="simple" method="POST" action="databases_table_edit.vspx">
-            <table class="page_tab_row" align="left" border="0" cellspacing="0" cellpadding="5">
+            <table class="page_tab_row" align="left" border="0" cellspacing="0" cellpadding="6">
               <tr>
-                <td nowrap="nowrap">
+                <td width="10%" nowrap="nowrap">
+                  <v:button action="simple" name="tb_brw" value="Table Browse" style="url">
+                    <v:on-post><v:script><![CDATA[
+                      declare ex_q varchar;
+	     				        ex_q := construct_table_sql (self.name);
+				            
+                      http_request_status ('HTTP/1.1 302 Found');
+                      http_header (sprintf('Location: isql_main.vspx?sid=%s&realm=%s&load_sql=%s\r\n',self.sid ,self.realm, ex_q));
+                    
+                    ]]></v:script></v:on-post>
+                  </v:button>
+                </td>
+                <td width="10%" nowrap="nowrap">
                   <v:button action="simple" name="tb_def" value="Show Columns" style="url">
                     <v:on-post><v:script><![CDATA[ self.mode:='definition'; self.vc_data_bind(e);]]></v:script></v:on-post>
                   </v:button>
                 </td>
-                <td nowrap="nowrap">
+                <td width="10%" nowrap="nowrap">
                   <v:button action="simple" name="tb_sql" value="Show SQL" style="url">
                     <v:on-post><v:script><![CDATA[ self.mode:='sql'; self.vc_data_bind(e);]]></v:script></v:on-post>
                   </v:button>
                 </td>
-                <td nowrap="nowrap">
-
+                <td width="10%" nowrap="nowrap">
 		<v:button action="browse" name="tb_edit_ddl" value="Edit" style="url"
 		  selector="isql.vspx"
 		  child-window-options="scrollbars=yes, resizable=yes, menubar=no, height=630, width=800">
@@ -135,12 +146,12 @@
 		      ]]></v:before-render>
                   </v:button>
                 </td>
-                <td nowrap="nowrap">
+                <td width="10%" nowrap="nowrap">
                   <v:button action="simple" name="tb_indx" value="Edit Indexes" style="url">
                     <v:on-post><v:script><![CDATA[ self.mode:='indexes'; self.vc_data_bind(e);]]></v:script></v:on-post>
                   </v:button>
                 </td>
-                <td nowrap="nowrap">
+                <td width="10%" nowrap="nowrap">
                   <v:button action="simple" name="tb_trig" value="Edit Triggers" style="url">
                     <v:on-post><v:script><![CDATA[ self.mode:='triggers'; self.vc_data_bind(e);]]></v:script></v:on-post>
                   </v:button>

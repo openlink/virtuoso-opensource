@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -3136,8 +3136,6 @@ xre_col_from_ssl (state_slot_t * ssl, int no, long directives)
   xre_col_t * col = (xre_col_t *) dk_alloc_box_zero (sizeof (xre_col_t), DV_ARRAY_OF_POINTER);
   col->xrc_xsdtype = (xv_schema_xsdtype_t *) dk_alloc_box (sizeof (xv_schema_xsdtype_t), DV_ARRAY_OF_LONG);
   xv_schema_xsdtype_default (directives, col->xrc_xsdtype);
-  if (ssl->ssl_type == SSL_REF)
-    ssl = ((state_slot_ref_t *) ssl)->sslr_ssl;
   if (NULL != ssl->ssl_name)
     col->xrc_name = cd_strip_col_name (ssl->ssl_name);
   else
@@ -4563,7 +4561,7 @@ xs_stmts_exec (query_instance_t * qi, caddr_t *err_ret, xmlsql_ugram_t * xs,
 #ifndef XS_DEBUG
 	  /*    qr = sql_compile (stmt, qi->qi_client, &err, SQLC_DEFAULT);  */
 	  stmt_id = box_dv_short_string ("xmlsql-updg");
-	  sst = cli_get_stmt_access (qi->qi_client, stmt_id, GET_EXCLUSIVE);
+	  sst = cli_get_stmt_access (qi->qi_client, stmt_id, GET_EXCLUSIVE, NULL);
 	  /* get the old value of is_cli_log */
 	  old_log_val = qi->qi_client->cli_is_log;
 	  /*  set the cli_is_log to tru this will avoid PrpcAddAnswer and set_query will return a error */
@@ -4876,7 +4874,13 @@ xml_template_get_sqlx_parms (client_connection_t * cli, const caddr_t text, id_h
       if (place)
 	{
 	  ret [inx+named_params] = box_cast_to (NULL, *place, DV_TYPE_OF (*place), ssl->ssl_dtp,
-	      NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, NULL);
+	      NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, err);
+	  if (*err)
+	    {
+	      dk_free_tree (ret);
+	      ret = NULL;
+	      goto err_end;
+	    }
 	}
       else
 	ret [inx+named_params] = NEW_DB_NULL;

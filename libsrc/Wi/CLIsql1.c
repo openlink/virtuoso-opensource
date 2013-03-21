@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -141,6 +141,8 @@ virtodbc__SQLAllocStmt (
   NEW_VAR (stmt_descriptor_t, desc4);
 #endif
   NEW_VARZ (cli_stmt_t, stmt);
+
+  set_error (&con->con_error, NULL, NULL, NULL);
 
   memset (opts, 0, sizeof (stmt_options_t));
   *phstmt = (SQLHSTMT) stmt;
@@ -825,7 +827,7 @@ internal_sql_connect (
 #ifdef _SSL
   /* We need to ensure that SSL error stack is clear before peeking a error */
   ERR_clear_error ();
-#if !defined (WIN32)
+#if 0 /*!defined (WIN32)*/
   {
     char *ssl_usage = con->con_encrypt;
     if (ssl_usage && strlen (ssl_usage) > 0 && atoi (ssl_usage) == 0)

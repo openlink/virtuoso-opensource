@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -28,6 +28,7 @@
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY geo "http://www.w3.org/2003/01/geo/wgs84_pos#">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY dc "http://purl.org/dc/elements/1.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 ]>
@@ -37,6 +38,7 @@
 	xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
 	xmlns:foaf="&foaf;"
 	xmlns:sioc="&sioc;"
+	xmlns:opl="&opl;"
 	xmlns:bibo="&bibo;"
 	xmlns:dcterms="&dcterms;"
 	xmlns:owl="http://www.w3.org/2002/07/owl#"
@@ -65,6 +67,13 @@
 	</xsl:template>
 	<xsl:template match="SLIDESHOWS/SLIDESHOW">
 		<rdf:Description rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.slidesix.com#this">
+                        			<foaf:name>Slidesix</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.slidesix.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<rdf:type rdf:resource="&bibo;Slideshow"/>
 			<dc:title>
 				<xsl:value-of select="SLIDESHOWTITLE" />

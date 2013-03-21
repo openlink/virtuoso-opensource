@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2006 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -19,7 +19,7 @@
 #  
 #  
 
-SUBDIRS = dav mono virtuoso tests rdf_mappers driver maildrop sqldoc hosting bpel b3s tutorial yacutia samples vsp ws sync vspx vad cached_resources virtodbc virtoledb virtuoso_sink xddl VirtuosoClient.Net oat isparql jena sesame sesame2 sesame3 redland hibernate
+SUBDIRS = dav mono virtuoso tests rdf_mappers driver maildrop sqldoc hosting bpel b3s tutorial yacutia samples vsp ws sync vspx vad cached_resources virtodbc virtoledb virtuoso_sink xddl VirtuosoClient.Net oat isparql jena sesame sesame2 sesame3 redland hibernate dbpedia rdb2rdf
 
 
 # ----------------------------------------------------------------------

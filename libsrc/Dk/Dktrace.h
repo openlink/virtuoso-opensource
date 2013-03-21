@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -25,18 +25,20 @@
  *
  */
 
+#ifndef _DKTRACE_H
+#define _DKTRACE_H
+
 #define GPF_T \
 	gpf_notice (__FILE__, __LINE__, NULL)
 
 #define GPF_T1(tx) \
 	gpf_notice (__FILE__, __LINE__, tx)
 
-#ifndef DEBUG
-#undef NO_DBG_PRINTF
-#define NO_DBG_PRINTF
+#ifdef NDEBUG
+#undef DBG_PRINTF
 #endif
 
-#ifndef NO_DBG_PRINTF
+#ifdef DBG_PRINTF
 # ifdef __GNUC__
 /* This macro uses a gcc specific preprocessor extension */
 #  define _dbg_print(fmt, args...) \
@@ -138,3 +140,5 @@ BEGIN_CPLUSPLUS
 int gpf_notice (const char *file, int line, const char *text);
 
 END_CPLUSPLUS
+
+#endif

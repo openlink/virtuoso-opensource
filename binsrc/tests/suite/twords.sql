@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -416,19 +416,18 @@ select count (distinct word), count (distinct len) from words;
 
 
 select count (*) from words wherre word like 'burro';
-echo both $if $equ $last[1]  "PASSED" "***FAILED";
-echo both " exact like OK.\n";
+ECHO BOTH $IF $EQU $LAST[1]  "PASSED" "***FAILED";
+ECHO BOTH ": exact like OK.\n";
 
 
 select count (*) from words where word like '%';
-echo both $if $equ $last[1]  86061 "PASSED" "***FAILED";
-echo both " % like OK.\n";
+ECHO BOTH $IF $EQU $LAST[1]  86061 "PASSED" "***FAILED";
+ECHO BOTH ": % like OK.\n";
 
 
 select count (*) from words where word like 'bur%';
-echo both $if $equ $last[1]  90  "PASSED" "***FAILED";
-echo both " prefix % like OK.\n";
-
+ECHO BOTH $IF $EQU $LAST[1]  90  "PASSED" "***FAILED";
+ECHO BOTH ": prefix % like OK.\n";
 
 
 ECHO BOTH "COMPLETED WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED: Wordtest\n";

@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2007 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -293,7 +293,7 @@ create procedure CAL.WA.access_is_write (
 --
 create procedure CAL.WA.wa_home_link ()
 {
-  return case when registry_get ('wa_home_link') = 0 then '/ods/' else registry_get ('wa_home_link') end;
+  return case when cast (registry_get ('wa_home_link') as varchar) = '0' then '/ods/' else registry_get ('wa_home_link') end;
 }
 ;
 
@@ -301,7 +301,7 @@ create procedure CAL.WA.wa_home_link ()
 --
 create procedure CAL.WA.wa_home_title ()
 {
-  return case when registry_get ('wa_home_title') = 0 then 'ODS Home' else registry_get ('wa_home_title') end;
+  return case when cast (registry_get ('wa_home_title') as varchar) = '0' then 'ODS Home' else registry_get ('wa_home_title') end;
 }
 ;
 
@@ -732,6 +732,11 @@ create procedure CAL.WA.domain_update (
   path := home || 'Calendar' || '/';
   DB.DBA.DAV_MAKE_DIR (path, account_id, null, '110100000N');
   update WS.WS.SYS_DAV_COL set COL_DET = 'Calendar' where COL_ID = DAV_SEARCH_ID (path, 'C');
+
+  path := home || 'calendars' || '/';
+  DB.DBA.DAV_MAKE_DIR (path, account_id, null, '110100000N');
+  update WS.WS.SYS_DAV_COL set COL_DET = 'CalDAV' where COL_ID = DAV_SEARCH_ID (path, 'C');
+
   return 1;
 }
 ;
@@ -739,7 +744,7 @@ create procedure CAL.WA.domain_update (
 -------------------------------------------------------------------------------
 --
 create procedure CAL.WA.domain_owner_id (
-  inout domain_id integer)
+  in domain_id integer)
 {
   return (select TOP 1 A.WAM_USER from WA_MEMBER A, WA_INSTANCE B where A.WAM_MEMBER_TYPE = 1 and A.WAM_INST = B.WAI_NAME and B.WAI_ID = domain_id);
 }
@@ -748,7 +753,7 @@ create procedure CAL.WA.domain_owner_id (
 -------------------------------------------------------------------------------
 --
 create procedure CAL.WA.domain_owner_name (
-  inout domain_id integer)
+  in domain_id integer)
 {
   return (select TOP 1 C.U_NAME from WA_MEMBER A, WA_INSTANCE B, SYS_USERS C where A.WAM_MEMBER_TYPE = 1 and A.WAM_INST = B.WAI_NAME and B.WAI_ID = domain_id and C.U_ID = A.WAM_USER);
 }
@@ -882,6 +887,15 @@ create procedure CAL.WA.domain_sioc_url (
 
   S := CAL.WA.iri_fix (CAL.WA.forum_iri (domain_id));
   return CAL.WA.url_fix (S, sid, realm);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.domain_calDav_url (
+  in domain_id integer)
+{
+  return sprintf ('%s/DAV/home/%s/calendars/%s', CAL.WA.host_url (), CAL.WA.domain_owner_name (domain_id), DB.DBA.CalDAV__FIXNAME (CAL.WA.domain_name (domain_id)));
 }
 ;
 
@@ -1215,11 +1229,12 @@ create procedure CAL.WA.dav_home(
   inout account_id integer) returns varchar
 {
   declare name, home any;
-  declare cid integer;
+  declare cid any;
 
-  name := coalesce((select U_NAME from DB.DBA.SYS_USERS where U_ID = account_id), -1);
-  if (isinteger(name))
+  name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = account_id);
+  if (isnull (name))
     return null;
+
   home := CAL.WA.dav_home_create(name);
   if (isinteger(home))
     return null;
@@ -1490,6 +1505,23 @@ _again:
 
 -------------------------------------------------------------------------------
 --
+create procedure CAL.WA.http_error (
+  in _header any,
+  in _silent integer := 0)
+{
+  if (_header[0] like 'HTTP/1._ 4__ %' or _header[0] like 'HTTP/1._ 5__ %')
+  {
+    if (not _silent)
+      signal ('22023', trim (_header[0], '\r\n'));
+
+    return 0;
+  }
+  return 1;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure CAL.WA.xslt_root()
 {
   declare sHost varchar;
@@ -1522,7 +1554,8 @@ create procedure CAL.WA.xml_set(
   declare aEntity any;
 
   {
-    declare exit handler for SQLSTATE '*' {
+    declare exit handler for SQLSTATE '*'
+    {
       pXml := xtree_doc('<?xml version="1.0" encoding="UTF-8"?><settings />');
       goto _skip;
     };
@@ -1554,8 +1587,12 @@ create procedure CAL.WA.xml_get(
 
   declare exit handler for SQLSTATE '*' {return defaultValue;};
 
+  if (isnull (pXml))
+    return defaultValue;
+
   if (not isentity(pXml))
     pXml := xtree_doc(pXml);
+
   value := xpath_eval (sprintf ('string(/settings/entry[@ID = "%s"]/.)', id), pXml);
   if (is_empty_or_null(value))
     return defaultValue;
@@ -1616,7 +1653,7 @@ create procedure CAL.WA.normalize_space(
 -------------------------------------------------------------------------------
 --
 create procedure CAL.WA.utfClear(
-  inout S varchar)
+  in S varchar)
 {
   declare N integer;
   declare retValue varchar;
@@ -1636,7 +1673,7 @@ create procedure CAL.WA.utfClear(
 -------------------------------------------------------------------------------
 --
 create procedure CAL.WA.utf2wide (
-  inout S any)
+  in S any)
 {
   declare retValue any;
 
@@ -1653,7 +1690,7 @@ create procedure CAL.WA.utf2wide (
 -------------------------------------------------------------------------------
 --
 create procedure CAL.WA.wide2utf (
-  inout S any)
+  in S any)
 {
   declare retValue any;
 
@@ -1751,6 +1788,18 @@ create procedure CAL.WA.strDecode (
     N := N + 1;
   }
   return T;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure CAL.WA.isVector (
+  inout aVector any)
+{
+  if (isarray (aVector) and not isstring (aVector))
+    return 1;
+
+  return 0;
 }
 ;
 
@@ -2393,7 +2442,7 @@ create procedure CAL.WA.dt_deformat (
 --
 create procedure CAL.WA.dt_deformat_tmp (
   in S varchar,
-  inout N varchar)
+  inout N integer)
 {
   declare V any;
 
@@ -2459,7 +2508,7 @@ create procedure CAL.WA.dt_formatTemplate (
 -----------------------------------------------------------------------------
 --
 create procedure CAL.WA.dt_timeDecode(
-  inout pTime time,
+  inout pTime datetime,
   inout pHour integer,
   inout pMinute integer)
 {
@@ -2482,7 +2531,7 @@ create procedure CAL.WA.dt_timeEncode(
 -----------------------------------------------------------------------------
 --
 create procedure CAL.WA.dt_timestring (
-  in pTime integer,
+  in pTime datetime,
   in pFormat varchar := 'e')
 {
   declare exit handler for SQLSTATE '*' {
@@ -2548,7 +2597,7 @@ create procedure CAL.WA.dt_stringtime (
 -----------------------------------------------------------------------------------------
 --
 create procedure CAL.WA.dt_timeFloor (
-  in pTime datetime,
+  in pTime time,
   in pRound integer := 0)
 {
   declare h, m integer;
@@ -3328,9 +3377,10 @@ create procedure CAL.WA.d_encode (
 create procedure CAL.WA.test_clear (
   in S any)
 {
-  declare N integer;
+  S := substring (S, 1, coalesce (strstr (S, '<>'), length (S)));
+  S := substring (S, 1, coalesce (strstr (S, '\nin'), length (S)));
 
-  return substring (S, 1, coalesce(strstr(S, '<>'), length (S)));
+  return S;
 }
 ;
 
@@ -3338,7 +3388,7 @@ create procedure CAL.WA.test_clear (
 --
 create procedure CAL.WA.test (
   in value any,
-  in params any := null)
+  in params any := null) returns any
 {
   declare valueType, valueClass, valueName, valueMessage, tmp any;
 
@@ -3494,7 +3544,7 @@ create procedure CAL.WA.validate2 (
     if (isnull (regexp_match('^[^\\\/\?\*\"\'\>\<\:\|]*\$', propertyValue)))
       goto _error;
   } else if ((propertyType = 'uri') or (propertyType = 'anyuri')) {
-    if (isnull (regexp_match('^(ht|f)tp(s?)\:\/\/[0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*(:(0-9)*)*(\/?)([a-zA-Z0-9\-\.\?\,\'\/\\\+&amp;%\$#_=:]*)?\$', propertyValue)))
+    if (isnull (regexp_match('^(ht|f)tp(s?)\:\/\/[0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*(:(0-9)*)*(\/?)([a-zA-Z0-9\-\.\?\,\'\/\\\+&amp;%\$#_=:~]*)?\$', propertyValue)))
       goto _error;
   } else if (propertyType = 'email') {
     if (isnull (regexp_match('^([a-zA-Z0-9_\-])+(\.([a-zA-Z0-9_\-])+)*@((\[(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5]))\]))|((([a-zA-Z0-9])+(([\-])+([a-zA-Z0-9])+)*\.)+([a-zA-Z])+(([\-])+([a-zA-Z0-9])+)*))\$', propertyValue)))
@@ -3604,7 +3654,7 @@ create procedure CAL.WA.validate_tags (
 -----------------------------------------------------------------------------------------
 --
 create procedure CAL.WA.checkedAttribute (
-  in checkedValue integer,
+  in checkedValue any,
   in compareValue any := 1)
 {
   if (checkedValue = compareValue)
@@ -3971,6 +4021,16 @@ create procedure CAL.WA.settings_set (
 -- Events
 --
 -----------------------------------------------------------------------------------------
+create procedure CAL.WA.event_sioc_iri (
+  in domain_id integer,
+  in event_id integer)
+{
+  return CAL.WA.iri_fix (SIOC..calendar_event_iri (domain_id, event_id));
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
 create procedure CAL.WA.event_kind (
   in id integer)
 {
@@ -4129,9 +4189,9 @@ create procedure CAL.WA.event_update (
         (coalesce (eEventStart   , now ()) = coalesce (_eEventStart   , now ())) and
         (coalesce (eEventEnd     , now ()) = coalesce (_eEventEnd     , now ())) and
         (coalesce (eRepeat       , ''    ) = coalesce (_eRepeat       , ''    )) and
-        (coalesce (eRepeatParam1 , ''    ) = coalesce (_eRepeatParam1 , ''    )) and
-        (coalesce (eRepeatParam2 , ''    ) = coalesce (_eRepeatParam2 , ''    )) and
-        (coalesce (eRepeatParam3 , ''    ) = coalesce (_eRepeatParam3 , ''    )) and
+        (coalesce (eRepeatParam1 , -1    ) = coalesce (_eRepeatParam1 , -1    )) and
+        (coalesce (eRepeatParam2 , -1    ) = coalesce (_eRepeatParam2 , -1    )) and
+        (coalesce (eRepeatParam3 , -1    ) = coalesce (_eRepeatParam3 , -1    )) and
         (coalesce (eRepeatUntil  , now ()) = coalesce (_eRepeatUntil  , now ())) and
         (coalesce (eReminder     , -1    ) = coalesce (_eReminder     , -1    )) and
         (coalesce (notes         , ''    ) = coalesce (_notes         , ''    ))
@@ -4194,7 +4254,8 @@ create procedure CAL.WA.event_update_acl (
 {
   update CAL.WA.EVENTS
      set E_ACL = acl
-   where E_ID = id;
+   where E_ID = id
+     and E_PRIVACY = 2;
 }
 ;
 
@@ -5120,7 +5181,8 @@ create procedure CAL.WA.task_update (
         (coalesce (notes,       '')     = coalesce (_notes,       ''))
        )
       goto _end;
-
+      if (status is null)
+	status := _status;
     update CAL.WA.EVENTS
        set E_SUBJECT = subject,
            E_DESCRIPTION = description,
@@ -5550,18 +5612,26 @@ create procedure CAL.WA.vcal_str2date (
     tzID := cast (xquery_eval (xmlPath || '/TZID', xmlItem, 1) as varchar);
     if (not isnull (tzID))
     {
-      tzObject := dict_get (tzDict, tzID, 0);
-      tzOffset := get_keyword ('standardTo', tzObject);
+      tzObject := dict_get (tzDict, tzID, null);
+      if (isnull (tzObject))
+        goto _exit;
+
+      tzOffset := get_keyword ('standartFrom', tzObject);
+      if (isnull (tzOffset))
+        goto _exit;
+
       tzStartRRule := get_keyword ('daylightRRule', tzObject);
-      if (not isnull (tzStartRRule))
-      {
+      if (isnull (tzStartRRule))
+        goto _exit;
+
         tzEndRRule := get_keyword ('standartRRule', tzObject);
         if (CAL.WA.event_daylightCheck (dt, tzStartRRule, tzEndRRule))
           tzOffset := get_keyword ('daylightTo', tzObject);
-      }
+
         dt := dateadd ('minute', tzOffset, dt);
       }
     }
+_exit:;
   return dt;
 }
 ;
@@ -5573,14 +5643,14 @@ create procedure CAL.WA.vcal_str2status (
   in xmlPath varchar)
 {
   declare N integer;
-  declare S, V any;
+  declare S, V, W any;
 
   V := vector ('Not Started', 'In Progress', 'Completed', 'Waiting', 'Deferred');
+  W := vector ('NEEDS-ACTION', 'IN-PROCESS', 'COMPLETED', 'DELEGATED', 'DECLINED');
   S := CAL.WA.vcal_str (xmlItem, xmlPath);
   for (N := 0; N < length (V); N := N + 1)
-    if (lcase (S) = lcase (V[N]))
+    if (lcase (S) = lcase (V[N]) or lcase (S) = lcase (W[N]))
       return V[N];
-
   return null;
 }
 ;
@@ -5661,7 +5731,8 @@ create procedure CAL.WA.vcal_datetime2str (
 create procedure CAL.WA.vcal_date2utc (
   in dt datetime)
 {
-  return CAL.WA.dt_format (dateadd ('minute', -timezone (now ()), dt), 'YMDTHNSZ');
+  return CAL.WA.dt_format (dt, 'YMDTHNSZ');
+  --return CAL.WA.dt_format (dateadd ('minute', -timezone (now ()), dt), 'YMDTHNSZ');
 }
 ;
 
@@ -6034,16 +6105,24 @@ create procedure CAL.WA.export_vcal_line (
   inout sStream any)
 {
   declare prefix varchar;
+  declare tmp any;
 
   if (is_empty_or_null (value))
     return;
 
   prefix := '';
-  value := sprintf ('%s:%s', property, replace (cast (value as varchar), '\n', '\\n'));
-  while (length (value) > lenght (prefix))
+  tmp := CAL.WA.utf2wide(sprintf ('%s:%s', property, replace(replace (cast (value as varchar), '\n', '\\n'), '\r', '')));
+  while (length (tmp) > length (prefix))
   {
-    http (subseq (value, 0, 73) || '\r\n', sStream);
-    value := prefix || subseq (value, 73);
+	http_escape(CAL.WA.wide2utf(subseq (tmp, 0, 60)) || '\r\n', 1, sStream, 1, 1);
+    if (length (tmp) > 60)
+    {
+      tmp := prefix || subseq (tmp, 60);
+    }
+    else
+    {
+      tmp := '';
+    }
     prefix := ' ';
   }
 }
@@ -6090,6 +6169,7 @@ create procedure CAL.WA.export_vcal (
 
   -- start
   http ('BEGIN:VCALENDAR\r\n', sStream);
+  http (sprintf ('PRODID:-//OpenLink Software Ltd//ODS Calendar %s//EN\r\n', registry_get('calendar_version')), sStream);
   http ('VERSION:2.0\r\n', sStream);
   http (sprintf ('X-WR-CALNAME:%s\r\n', CAL.WA.domain_name (domain_id)), sStream);
 
@@ -6178,8 +6258,22 @@ create procedure CAL.WA.export_vcal (
         CAL.WA.export_vcal_line ('DTSTART;VALUE=DATE', CAL.WA.vcal_date2str (CAL.WA.dt_dateClear (CAL.WA.event_gmt2user (E_EVENT_START, tz, daylight))), sStream);
         CAL.WA.export_vcal_line ('DUE;VALUE=DATE', CAL.WA.vcal_date2str (CAL.WA.dt_dateClear (CAL.WA.event_gmt2user (E_EVENT_END, tz, daylight))), sStream);
         CAL.WA.export_vcal_line ('COMPLETED;VALUE=DATE', CAL.WA.vcal_date2str (CAL.WA.dt_dateClear (CAL.WA.event_gmt2user (E_COMPLETED, tz, daylight))), sStream);
+        CAL.WA.export_vcal_line ('PERCENT-COMPLETE', E_COMPLETE, sStream);
         CAL.WA.export_vcal_line ('PRIORITY', E_PRIORITY, sStream);
-        CAL.WA.export_vcal_line ('STATUS', E_STATUS, sStream);
+        declare tmp_value varchar;
+        if (E_STATUS = 'Not Started')
+          tmp_value := 'NEEDS-ACTION';
+        else if (E_STATUS = 'In Progress')
+          tmp_value := 'IN-PROCESS';
+        else if (E_STATUS = 'Completed')
+          tmp_value := 'COMPLETED';
+        else if (E_STATUS = 'Waiting')
+          tmp_value := 'DELEGATED';
+        else if (E_STATUS = 'Deferred')
+          tmp_value := 'DECLINED';
+      	else
+      	  tmp_value := 'NEEDS-ACTION';
+        CAL.WA.export_vcal_line ('STATUS', tmp_value, sStream);
         CAL.WA.export_vcal_attendees (E_ID, E_DOMAIN_ID, E_ATTENDEES, sStream);
         CAL.WA.export_vcal_line ('X-OL-NOTES', E_NOTES, sStream);
         CAL.WA.export_vcal_privacy (E_PRIVACY, sStream);
@@ -6396,7 +6490,7 @@ create procedure CAL.WA.import_vcal (
         if (isnull (priority))
           priority := '3';
           status := CAL.WA.vcal_str2status (xmlEvent, 'STATUS');
-          complete := CAL.WA.vcal_str (xmlEvent, 'COMPLETE');
+          complete := CAL.WA.vcal_str (xmlEvent, 'PERCENT-COMPLETE');
           completed := CAL.WA.vcal_str2date (xmlEvent, 'COMPLETED');
         completed := CAL.WA.dt_join (completed, CAL.WA.dt_timeEncode (12, 0));
           updated := CAL.WA.vcal_str2date (xmlEvent, 'DTSTAMP', tzDict);
@@ -6471,6 +6565,101 @@ create procedure CAL.WA.import_vcal_attendees (
     }
   vectorbld_final (retValue);
   return retValue;
+}
+;
+
+--------------------------------------------------------------------------------
+--
+create procedure CAL.WA.import_CalDAV (
+  in _domain_id integer,
+  in _name any,
+  in _options any := null)
+{
+  declare _user, _password varchar;
+  declare _page, _body, _bodyTemplate, _resHeader, _reqHeader any;
+  declare _xml, _items, _data any;
+
+  _user := get_keyword ('user', _options);
+  _password := get_keyword ('password', _options);
+  _bodyTemplate :=
+   '<?xml version="1.0" encoding="utf-8" ?>
+    <C:calendar-multiget xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:ns:caldav">
+      <D:prop>
+        <D:getetag/>
+        <C:calendar-data/>
+      </D:prop>
+      <D:href>%s</D:href>
+    </C:calendar-multiget>';
+
+  -- check CalDAV
+  _reqHeader := 'Accept: text/xml\r\nContent-Type: text/xml; charset=utf-8';
+  if (not is_empty_or_null (_user))
+    _reqHeader := _reqHeader || sprintf ('\r\nAuthorization: Basic %s', encode_base64 (_user || ':' || _password));
+
+  _page := http_client_ext (url=>_name, http_method=>'OPTIONS', http_headers=>_reqHeader, headers =>_resHeader, n_redirects=>15);
+  CAL.WA.http_error (_resHeader);
+  if (not (http_request_header (_resHeader, 'DAV') like '%calendar-access%'))
+    signal ('CAL01', 'Bad import/subscription source!<>');
+
+  _body := null;
+  _reqHeader := _reqHeader || '\r\nDepth: 1';
+  _page := http_client_ext (url=>_name, http_method=>'PROPFIND', http_headers=>_reqHeader, headers =>_resHeader, body=>_body, n_redirects=>15);
+  CAL.WA.http_error (_resHeader);
+  {
+    declare exit handler for sqlstate '*'
+    {
+      signal ('CAL01', 'Bad import/subscription source!<>');
+    };
+    _xml := xml_tree_doc (xml_expand_refs (xml_tree (_page)));
+		_items := xpath_eval ('[xmlns:D="DAV:" xmlns="urn:ietf:params:xml:ns:caldav:"] /D:multistatus/D:response/D:href/text()', _xml, 0);
+		foreach (any _item in _items) do
+		{
+		  commit work;
+      _body := sprintf (_bodyTemplate, cast (_item as varchar));
+      _page := http_client_ext (url=>_name, http_method=>'REPORT', http_headers=>_reqHeader, headers =>_resHeader, body=>_body, n_redirects=>15);
+      CAL.WA.http_error (_resHeader);
+      _xml := xml_tree_doc (xml_expand_refs (xml_tree (_page)));
+		  if (not isnull (xpath_eval ('[xmlns:D="DAV:" xmlns="urn:ietf:params:xml:ns:caldav:"] /D:multistatus/D:response/D:href/text()', _xml, 1)))
+		  {
+		    _data := cast (xpath_eval ('[xmlns:D="DAV:" xmlns="urn:ietf:params:xml:ns:caldav:"] /D:multistatus/D:response/D:propstat/D:prop/calendar-data/text()', _xml, 1) as varchar);
+		    CAL.WA.import_vcal (_domain_id, _data, _options);
+      }
+	  }
+  }
+  return 1;
+}
+;
+
+--------------------------------------------------------------------------------
+--
+create procedure CAL.WA.import_CalDAV_check (
+  in _name any,
+  in _options any,
+  in _silent integer := 0)
+{
+  declare _user, _password varchar;
+  declare _page, _body, _resHeader, _reqHeader any;
+  declare exit handler for sqlstate '*'
+  {
+    return 0;
+  };
+
+  _user := get_keyword ('user', _options);
+  _password := get_keyword ('password', _options);
+
+  -- check CalDAV
+  _reqHeader := 'Accept: text/xml\r\nContent-Type: text/xml; charset=utf-8';
+  if (not is_empty_or_null (_user))
+    _reqHeader := _reqHeader || sprintf ('\r\nAuthorization: Basic %s', encode_base64 (_user || ':' || _password));
+
+  _page := http_client_ext (url=>_name, http_method=>'OPTIONS', http_headers=>_reqHeader, headers =>_resHeader, n_redirects=>15);
+  if (not CAL.WA.http_error (_resHeader, _silent))
+    return 0;
+
+  if (not (http_request_header (_resHeader, 'DAV') like '%calendar-access%'))
+    return 0;
+
+  return 1;
 }
 ;
 
@@ -6829,26 +7018,29 @@ create procedure CAL.WA.exchange_exec_internal (
           }
         }
       }
-    -- subscribe
     else if (_direction = 1)
     {
+      -- subscribe
+
+      if (_type = 3)
+        return CAL.WA.exchange_CalDAV (_id);
+
       if (_type = 1)
-      {
         _name := CAL.WA.host_url () || _name;
-      }
+
       _content := CAL.WA.dav_content (_name, 0, _user, _password);
       if (isnull(_content))
-      {
         signal ('CAL01', 'Bad import/subscription source!<>');
-      }
+
       CAL.WA.import_vcal (_domain_id, _content, _options, _id);
     }
-    -- syncml
     else if (_direction = 2)
     {
-      declare data any;
+      -- syncml
+
+      declare data, _pathID any;
       declare N, _in, _out, _tmp, _rlog_res_id integer;
-      declare _path, _pathID varchar;
+      declare _path varchar;
 
       _in := vector (0, 0);
       _out := vector (0, 0);
@@ -6904,6 +7096,22 @@ create procedure CAL.WA.exchange_exec_internal (
       return vector (_in, _out);
     }
   }
+}
+;
+
+--------------------------------------------------------------------------------
+--
+create procedure CAL.WA.exchange_CalDAV (
+  in _id integer)
+{
+  for (select EX_DOMAIN_ID as _domain_id, EX_TYPE as _direction, deserialize (EX_OPTIONS) as _options from CAL.WA.EXCHANGE where EX_ID = _id) do
+  {
+    if (get_keyword ('type', _options) <> 3)
+       return;
+
+    CAL.WA.import_CalDAV (_domain_id, get_keyword ('name', _options), _options);
+  }
+  return 1;
 }
 ;
 
@@ -7042,6 +7250,10 @@ create procedure CAL.WA.syncml_check (
     return 0;
   if (VAD.DBA.version_compare (syncmlVersion, '1.05.75') < 0)
     return 0;
+  if (__proc_exists ('DB.DBA.yac_syncml_version_get') is null)
+    return 0;
+  if (__proc_exists ('DB.DBA.yac_syncml_type_get') is null)
+    return 0;
   if (isnull (syncmlPath))
     return 1;
   if (DB.DBA.yac_syncml_version_get (syncmlPath) = 'N')
@@ -7070,6 +7282,8 @@ create procedure CAL.WA.syncml_entry_update (
   {
     _syncmlPath := get_keyword ('name', _options);
     if (not CAL.WA.syncml_check (_syncmlPath))
+      goto _skip;
+    if ((_event_kind = 0) and (get_keyword ('events', _options, 0) = 0))
       goto _skip;
     if ((_event_kind = 1) and (get_keyword ('tasks', _options, 0) = 0))
       goto _skip;
@@ -7102,17 +7316,15 @@ create procedure CAL.WA.syncml_entry_update_internal (
     _content := CAL.WA.entry2syncml (_domain_id, _event_id);
     _permissions := USER_GET_OPTION (_user, 'PERMISSIONS');
     if (isnull (_permissions))
-    {
       _permissions := '110100000RR';
-    }
+
     connection_set ('__sync_dav_upl', '1');
     connection_set ('__sync_ods', '1');
-    DB.DBA.DAV_RES_UPLOAD_STRSES_INT (_path, _content, 'text/x-vcalendar', _permissions, http_dav_uid (), http_dav_uid () + 1, null, null, 0);
+    DB.DBA.DAV_RES_UPLOAD_STRSES_INT (_path, _content, 'text/x-vcalendar', _permissions, _user, _user, null, null, 0);
     connection_set ('__sync_ods', '0');
     connection_set ('__sync_dav_upl', '0');
   }
-
-  if (_action = 'D')
+  else if (_action = 'D')
   {
     declare _id integer;
 
@@ -7120,7 +7332,7 @@ create procedure CAL.WA.syncml_entry_update_internal (
     if (isinteger(_id) and (_id > 0))
     {
       connection_set ('__sync_ods', '1');
-      DB.DBA.DAV_DELETE (_path, 1, _user, _password);
+      DB.DBA.DAV_DELETE_INT (_path, 1, _user, _password, 0);
       connection_set ('__sync_ods', '0');
     }
   }
@@ -7252,9 +7464,9 @@ create procedure CAL.WA.syncml2entry_internal (
     return;
   };
 
-  declare N, _pathID integer;
+  declare N integer;
   declare _data  varchar;
-  declare IDs any;
+  declare IDs, _pathID any;
 
   if (not xslt_is_sheet ('http://local.virt/sync_out_xsl'))
     DB.DBA.sync_define_xsl ();
@@ -8439,62 +8651,5 @@ create procedure CAL.WA.news_comment_get_cn_type (in f_name varchar)
 	  ext := ((select T_TYPE from WS.WS.SYS_DAV_RES_TYPES where T_EXT = temp));
 
   return ext;
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure CAL.WA.obj2json (
-  in o any,
-  in d integer := 2)
-{
-  declare N, M integer;
-  declare R, T any;
-  declare retValue any;
-
-	if (d = 0)
-	  return '[maximum depth achieved]';
-
-  T := vector ('\b', '\\b', '\t', '\\t', '\n', '\\n', '\f', '\\f',	'\r', '\\r', '"', '\\"', '\\', '\\\\');
-	retValue := '';
-	if (isnumeric (o))
-	{
-		retValue := cast (o as varchar);
-	}
-	else if (isstring (o))
-	{
-		for (N := 0; N < length(o); N := N + 1)
-		{
-			R := chr (o[N]);
-		  for (M := 0; M < length(T); M := M + 2)
-		  {
-				if (R = T[M])
-				  R := T[M+1];
-			}
-			retValue := retValue || R;
-		}
-		retValue := '"' || retValue || '"';
-	}
-	else if (isarray (o))
-	{
-		retValue := '[';
-		for (N := 0; N < length(o); N := N + 1)
-		{
-		  retValue := retValue || CAL.WA.obj2json (o[N], d-1);
-		  if (N <> length(o)-1)
-			  retValue := retValue || ',\n';
-		}
-		retValue := retValue || ']';
-	}
-	return retValue;
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure CAL.WA.json2obj (
-  in o any)
-{
-  return json_parse (o);
 }
 ;

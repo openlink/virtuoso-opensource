@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -1039,20 +1039,22 @@ create procedure ddl_pk_change_1 (in tb varchar, in cols any)
     COL_CHECK,
     deserialize (COL_DEFAULT),
     COL_NTH,
-    COL_NULLABLE from DB.DBA.SYS_COLS
+    COL_NULLABLE,
+    COL_OPTIONS
+    from DB.DBA.SYS_COLS
     where concat ('', "TABLE") = tb order by COL_ID;
     whenever not found goto done;
     open cr;
     while (1)
       {
-	declare _col1, _col2, _col3, _col4, _col5, _col6, _col7, _col8, _col9, _col10 any;
-	fetch cr into  _col3, _col4, _col5, _col6, _col7, _col8, _col9, _col10;
+	declare _col1, _col2, _col3, _col4, _col5, _col6, _col7, _col8, _col9, _col10, _col11 any;
+	fetch cr into  _col3, _col4, _col5, _col6, _col7, _col8, _col9, _col10, _col11;
         _col1 := new_col_id (0);
         _col2 := tname;
 	insert into DB.DBA.SYS_COLS
 	    (COL_ID, "TABLE", "COLUMN", COL_DTP, COL_PREC, COL_SCALE, COL_CHECK, COL_DEFAULT,
-	      		COL_NTH, COL_NULLABLE)
-	    values (_col1, _col2, _col3, _col4, _col5, _col6, _col7, serialize (_col8), _col9, _col10);
+	      		COL_NTH, COL_NULLABLE, COL_OPTIONS)
+	    values (_col1, _col2, _col3, _col4, _col5, _col6, _col7, serialize (_col8), _col9, _col10, _col11);
       }
 done:
   close cr;
@@ -1233,7 +1235,7 @@ create procedure DB.DBA.ddl_check_constraint (in pk_table varchar, in decl any)
   declare k_id, parts integer;
   declare iu cursor for select SC."COLUMN"
       from  DB.DBA.SYS_KEY_PARTS KP, DB.DBA.SYS_COLS SC
-      where KP.KP_KEY_ID = k_id and SC.COL_ID = KP.KP_COL order by KP.KP_NTH+1;
+      where KP.KP_KEY_ID = k_id and SC.COL_ID = KP.KP_COL;
 
 
   pkcols := aref (decl, 3);
@@ -4667,98 +4669,77 @@ returns integer
 --!AWK PLBIF regexp_replace
 create procedure REGEXP_REPLACE (in source_string any, in pattern any,
             in replace_string varchar := '', in position integer := 1,
-	    in occurrence any := 1, in match_parameter integer := null)
+	    in occurrence integer := 0, in match_parameter varchar := null)
 {
+  declare hit_list any;
+  declare res, res_cs varchar;
   if (source_string is null or pattern is null or replace_string is null)
     return source_string;
+  if (match_parameter is null)
+    match_parameter := '';
+  if (iswidestring (source_string) or iswidestring (pattern) or iswidestring (replace_string))
+    {
+      if (iswidestring (source_string))
+        source_string := charset_recode (source_string, '_WIDE_', 'UTF-8');
   else
     {
-      if ((not isstring (source_string)) and (not iswidestring (source_string)))
+          if (isstring (source_string))
+            source_string := charset_recode (source_string, null, 'UTF-8');
+          else
 	source_string := cast (source_string as varchar);
-      if ((not isstring (pattern)) and (not iswidestring (pattern)))
-	pattern := cast (pattern as varchar);
-      if ((not isstring (replace_string)) and (not iswidestring (replace_string)))
-	replace_string := cast (replace_string as varchar);
     }
-
-  if (match_parameter is not null)
-    signal ('22023', 'match_parameter not supported yet', 'SR372');
-  declare cur_pos, copied_up_to, nth integer;
-  declare ret any;
-
-  ret := either (iswidestring (source_string), N'', '');
-  cur_pos := position - 1;
-  copied_up_to := position - 1;
-  nth := 1;
-
-  while (cur_pos < length (source_string))
-    {
-      declare exprs any;
-
-      exprs := regexp_parse (pattern, source_string, cur_pos);
-
-      if (not isarray (exprs))
-	goto done;
-
-      declare start_inx, end_inx integer;
-      start_inx := exprs[0];
-      end_inx := exprs[1];
-
-      if (occurrence is null or occurrence = nth)
-	{
-	  if (start_inx > copied_up_to)
-	    ret := concat (ret, subseq (source_string, copied_up_to, start_inx));
-
-	  if (length (exprs) > 2)
-	    {
-	      declare expr_inx integer;
-	      declare replace_str any;
-	      declare replace_string_tmp any;
-	      replace_string_tmp := replace_string;
-	      expr_inx := 1;
-
-	      while (expr_inx * 2 < length (exprs))
+      if (iswidestring (pattern))
+        pattern := charset_recode (pattern, '_WIDE_', 'UTF-8');
+      else
 		{
-		  declare replace_str_found varchar;
-
-		  if (exprs[expr_inx * 2] >= 0 and exprs[expr_inx * 2 + 1] >= 0)
-		    replace_str_found := subseq (source_string, exprs[expr_inx * 2], exprs [expr_inx * 2 + 1]);
+          if (isstring (pattern))
+            pattern := charset_recode (pattern, null, 'UTF-8');
 		  else
-		    replace_str_found := either (iswidestring (source_string), N'', '');
-
-		  replace_str := sprintf ('\\%d', expr_inx);
-		  if (iswidestring (source_string))
-		    replace_str := cast (replace_str as nvarchar);
-		  replace_string_tmp := replace (replace_string_tmp, replace_str,
-		       replace_str_found);
-		  expr_inx := expr_inx + 1;
+            pattern := cast (pattern as varchar);
 		}
-	      while (expr_inx < 10)
+      if (iswidestring (replace_string))
+        replace_string := charset_recode (replace_string, '_WIDE_', 'UTF-8');
+      else
 		{
-		  replace_str := sprintf ('\\%d', expr_inx);
-		  if (iswidestring (source_string))
-		    replace_str := cast (replace_str as nvarchar);
-		  replace_string_tmp := replace (replace_string_tmp, replace_str,
-		    either (iswidestring (source_string), N'', ''));
-		  expr_inx := expr_inx + 1;
+          if (isstring (replace_string))
+            replace_string := charset_recode (replace_string, null, 'UTF-8');
+          else
+            replace_string := cast (replace_string as varchar);
 		}
-	      ret := concat (ret, replace_string_tmp);
+      if (strchr (match_parameter, 'u') is null and strchr (match_parameter, 'U') is null)
+        match_parameter := match_parameter || 'u';
+      res_cs := '_WIDE_';
 	    }
 	  else
-	    ret := concat (ret, replace_string);
-	  copied_up_to := end_inx;
-	  if (occurrence is not null)
-	    goto done;
-	}
-
-      nth := nth + 1;
-      cur_pos := end_inx;
+    {
+      if (not isstring (source_string))	source_string := cast (source_string as varchar);
+      if (not isstring (pattern)) pattern := cast (pattern as varchar);
+      if (not isstring (replace_string)) replace_string := cast (replace_string as varchar);
+      res_cs := '';
     }
-done:
-  if (copied_up_to < length (source_string))
-    ret := concat (ret, subseq (source_string, copied_up_to, length (source_string)));
-
-  return ret;
+  if (0 = length (source_string))
+    return subseq (source_string, 0, 0);
+  if (occurrence is null)
+    occurrence := 0;
+  if (regexp_parse (pattern, '', 0, match_parameter) is not null)
+    signal ('22023', 'The REGEXP_REPLACE() function can not search for a pattern that can be found even in an empty string');
+  if (0 = occurrence)
+    {
+      hit_list := regexp_parse_list (pattern, source_string, position-1, match_parameter, 2097152);
+      if (0 = length (hit_list))
+        return source_string;
+	}
+  else
+    {
+      hit_list := regexp_parse_list (pattern, source_string, position-1, match_parameter, occurrence);
+      if (length (hit_list) < occurrence)
+        return source_string;
+      hit_list := vector (hit_list[occurrence-1]);
+    }
+  res := regexp_replace_hits_with_template (source_string, replace_string, hit_list, 0);
+  if (res_cs = '_WIDE_')
+    return charset_recode (res, 'UTF-8', '_WIDE_');
+  return res;
 }
 ;
 
@@ -5018,7 +4999,7 @@ create procedure DB.DBA.VACUUM (in table_name varchar := '%', in index_name varc
       if (not exists (select 1 from SYS_VIEWS where V_NAME = _table_name) and
 	  not exists (select 1 from SYS_REMOTE_TABLE where RT_NAME = _table_name))
          {
-	   stmt := sprintf ('select count(*) from "%I"."%I"."%I" table option (index %I, index_only, vacuum 0)',
+	   stmt := sprintf ('select count(*) from "%I"."%I"."%I" table option (index %I, vacuum 0)',
 	     	 name_part (_table_name,0),
 	     	 name_part (_table_name,1),
 	     	 name_part (_table_name,2),
@@ -5149,9 +5130,6 @@ result_names (n, cond);
   tc_result ('tc_cl_wait_queries', is_cl);
   tc_result ('tc_cl_kill_1pc', is_cl);
   tc_result ('tc_cl_kill_2pc', is_cl);
-  tc_result ('tc_cl_consensus_rollback', is_cl);
-  tc_result ('tc_cl_consensus_commit', is_cl);
-  tc_result ('tc_cl_consensus_deferred', is_cl);
 }
 ;
 
@@ -5186,15 +5164,14 @@ create procedure daq_results (in daq any)
 ;
 
 
-create procedure cl_all_hosts (in except_self int := 0, in except_master int := 0)
+create procedure cl_all_hosts ()
 {
   declare map, inx, hosts any;
   map := cl_control (0, 'cl_host_map');
   hosts := vector ();
   for (inx := 0; inx < length (map); inx := inx + 1)
     {
-      if (map[inx] <> 1 and map[inx] <> 7 and (0 = except_self or inx <> sys_stat ('cl_this_host'))
-	  and (0 = except_master or 0 = position (inx, cl_control (0, 'cl_master_list'))))
+      if (map[inx] <> 1 and map[inx] <> 7)
         hosts := vector_concat (hosts, vector (inx));
     }
   return hosts;
@@ -5366,7 +5343,6 @@ create procedure cl_new_db ()
 {
   cl_init_seqs ();
   cl_control (sys_stat ('cl_this_host'), 'ch_status', 0);
-  commit work;
   cl_wait_start ();
   log_message ('new clustered database:Init of RDF');
   rdf_dpipes ();
@@ -5384,11 +5360,9 @@ create procedure cl_node_started ()
     return;
   if (sys_stat ('cl_this_host') = sys_stat ('cl_master_host'))
     {
-      if ((select cl_map from sys_cluster table option (no cluster) where cl_name = '__ALL') is null)
+      if ((select cl_map from sys_cluster where cl_name = '__ALL') is null)
 	{
-	  __dbf_set ('cl_no_disable_of_unavailable', 1);
 	  cl_control (sys_stat ('cl_this_host'), 'ch_status', 0);
-	  commit work;
 	  cl_wait_start ();
 	  delete from sys_cluster where cl_name = '__ALL';
 	  insert into sys_cluster (cl_name, cl_HOSTS, cl_map) values ('__ALL', null, clm_map ('__ALL'));
@@ -5397,7 +5371,6 @@ create procedure cl_node_started ()
 	}
       if (0 = sys_stat ('db_exists'))
 	{
-	  __dbf_set ('cl_no_disable_of_unavailable', 1);
 	  cl_new_db ();
 	}
     }
@@ -5531,8 +5504,12 @@ create procedure
 DB.DBA.SYS_SQL_VAL_PRINT (in v any)
 {
   --no_c_escapes-
-  if (isstring (v))
+  if (isstring (v) or __tag (v) = 183 or __tag (v) = 127)
     return sprintf ('\'%S\'', replace (v, '\\', '\\\\'));
+  else if (iswidestring (v))
+    return sprintf ('\'%S\'', replace (charset_recode (v, '_WIDE_', 'UTF-8'), '\\', '\\\\'));
+  else if (__tag (v) = 230)
+    return sprintf ('\'%S\'', replace (serialize_to_UTF8_xml (v), '\\', '\\\\'));
   else if (v is null)
     return 'NULL';
   else if (isinteger (v))
@@ -5544,6 +5521,12 @@ DB.DBA.SYS_SQL_VAL_PRINT (in v any)
   else if (__tag (v) = 193)
     {
       return concat ('vector (',SYS_SQL_VECTOR_PRINT (v),')');
+    }
+  else if (__tag (v) = 255)
+    return '<tag 255>';
+  else if (__tag (v) = 211)
+    {
+      return sprintf ('stringdate (%s)', SYS_SQL_VAL_PRINT (datestring (v)));
     }
   else
     signal ('22023', sprintf('Unsupported type %d', __tag (v)));
@@ -5560,7 +5543,7 @@ create procedure view_from_tbl (in _dir varchar, in _tbls any)
    ret := make_array (2, 'any');
    prefix := 'SPARQL\n';
 
-   ns := sprintf ('prefix %s: <http://%s/%s#>\n', _dir, cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost'), _dir);
+   ns := sprintf ('prefix %s: <http://%s/%s#>\n', _dir, virtuoso_ini_item_value ('URIQA', 'DefaultHost'), _dir);
    ns := ns || 'prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
 prefix demo: <http://www.openlinksw.com/schemas/demo#>
 prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
@@ -5568,7 +5551,7 @@ prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
 prefix wgs: <http://www.w3.org/2003/01/geo/wgs84_pos#>\n';
 
-   uriqa_str := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+   uriqa_str := virtuoso_ini_item_value ('URIQA','DefaultHost');
 
    create_class_stmt := '';
 
@@ -5594,7 +5577,7 @@ create procedure view_create_view (in _tbls any, in _dir varchar)
    declare ret, qual, qual_l, tbl_name, tbl_name_l, pks, pk_text, uriqa_str any;
    declare sufix, tname, tbl any;
 
-   uriqa_str := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+   uriqa_str := virtuoso_ini_item_value ('URIQA','DefaultHost');
    qual := name_part (_tbls[0], 0);
    qual_l := lcase (qual);
 
@@ -6075,194 +6058,3 @@ create procedure csv_cols_def (in f varchar)
   return vec;
 }
 ;
-
-create procedure csv_vec_load (in s any, in _from int := 0, in _to int := null, in tb varchar := null, in log_mode int := 2, in opts any := null)
-{
-  declare r, log_ses, vecarr any;
-  declare stmt, enc, pname varchar;
-  declare inx, old_mode, num_cols, nrows, mode, log_error, import_first_n_cols, fill, txn int;
-  declare delim, quot char;
-
-  delim := quot := enc := mode := null;
-  log_error := 0;
-  txn := 1;
-  if (isvector (opts) and mod (length (opts), 2) = 0)
-    {
-      delim := get_keyword ('csv-delimiter', opts);
-      quot  := get_keyword ('csv-quote', opts);
-      enc := get_keyword ('encoding', opts);
-      mode := get_keyword ('mode', opts);
-      log_error := get_keyword ('log', opts, 0);
-      import_first_n_cols := get_keyword ('lax', opts, 0);
-      txn := get_keyword ('txn', opts, 1);
-    }
-
-  stmt := csv_vec_ins_stmt (tb, num_cols, pname);
-  exec (stmt);
-  pname := replace (pname, '\"', '');
-  if (0 = txn)
-    {
-      set non_txn_insert = 1;
-    }
-  old_mode := log_enable (log_mode, 1);
-  inx := 0;
-  nrows  := 0;
-  log_ses := string_output ();
-  vecarr := make_array (dc_batch_sz (), 'any');
-  fill := 0;
-  while (isvector (r := get_csv_row (s, delim, quot, enc, mode)))
-    {
-      if (inx >= _from)
-	{
-	  if (0 and import_first_n_cols and length (r) > num_cols)
-            r := subseq (r, 0, num_cols);
-	  if (length (r) = num_cols or import_first_n_cols)
-	    {
-              aset_zap_arg (vecarr, fill, r);
-	      fill := fill + 1;
-	    }
-	  else
-	    {
-	      if (log_error)
-		http (sprintf ('<error line="%d">different number of columns</error>', inx), log_ses);
-	      else
-		log_message (sprintf ('CSV import: wrong number of values at line: %d', inx));
-	    }
-	}
-      if (inx > _to)
-	goto end_loop;
-      if (fill >= length (vecarr))
-	{
-	  declare stat, message varchar;
-	  stat := '00000';
-          call (pname) (vecarr, fill);
-	  --exec (sprintf ('%s (?, ?)', pname), stat, message, vector (vecarr, fill), vector ('max_rows', 0, 'use_cache', 1));
-	  if (stat <> '00000')
-	    {
-	      if (log_error)
-		{
-		  http (sprintf ('<error line="%d"><![CDATA[%s]]></error>', inx, message), log_ses);
-		}
-	      else
-		{
-		  log_message (sprintf ('CSV import: error importing row: %d', inx));
-		  log_message (message);
-		}
-	    }
-	  else
-	    nrows := nrows + fill;
-	  fill := 0;
-	}
-      inx := inx + 1;
-    }
-  end_loop:;
-
-  if (fill > 0)
-    {
-      declare stat, message varchar;
-      stat := '00000';
-      call (pname) (vecarr, fill);
-      -- exec (sprintf ('%s (?, ?)', pname), stat, message, vector (vecarr, fill), vector ('max_rows', 0, 'use_cache', 1));
-      if (stat <> '00000')
-	{
-	  if (log_error)
-	    {
-	      http (sprintf ('<error line="%d"><![CDATA[%s]]></error>', inx, message), log_ses);
-	    }
-	  else
-	    {
-	      log_message (sprintf ('CSV import: error importing row: %d', inx));
-	      log_message (message);
-	    }
-	}
-      else
-	nrows := nrows + fill;
-    }
-
-  log_enable (old_mode, 1);
-  exec (sprintf ('drop procedure %s', pname));
-  if (log_error)
-    return vector (nrows, log_ses);
-  return nrows;
-}
-;
-
-create procedure csv_vec_ins_stmt (in tb varchar, out num_cols int, out pname varchar)
-{
-  declare ss any;
-  declare cols any;
-  declare i int;
-  tb := complete_table_name (tb, 0);
-  cols := vector ();
-  for select "COLUMN" as col from SYS_COLS where "TABLE" = tb and "COLUMN" <> '_IDN' and COL_CHECK <> 'I' order by COL_ID do
-    {
-      cols := vector_concat (cols, vector (col));
-    }
-  if (length (cols) = 0)
-    signal ('22023', 'No such table');
-  ss := string_output ();
-
-  pname := sprintf ('"%I"."%I"."%I_CSV_VEC_INS_%d"',
-	  name_part (tb, 0),
-	  name_part (tb, 1),
-	  name_part (tb, 2),
-	  sequence_next ('CSV_IMP_SEQ')
-	  );
-  http (sprintf ('create procedure %s (inout arr any, in fill any) \n { \n', pname), ss);
-  -- variables
-  for (i := 0; i < length (cols); i := i + 1)
-     {
-       http (sprintf ('   declare "%I_VA" any; \n', cols[i]), ss);
-       http (sprintf ('   "%I_VA" := make_array (fill, \'any\'); \n', cols[i]), ss);
-     }
-
-  -- prepare vectors
-  http ('   for (declare i int, i := 0; i < fill; i := i + 1) \n   {\n', ss);
-
-  for (i := 0; i < length (cols); i := i + 1)
-     {
-       http (sprintf ('\t\taset_1_2_zap ("%I_VA", i, arr, i,%d); \n', cols[i], i), ss);
-     }
-
-  http ('   }\n', ss);
-
-  -- call vectored insert
-  http ('  for vectored modify (', ss);
-
-  for (i := 0; i < length (cols); i := i + 1)
-     {
-       http (sprintf ('in "%I_VI" any array := "%I_VA"', cols[i], cols[i]), ss);
-       if (i < length (cols) - 1)
-         http (', ', ss);
-     }
-
-  http (')\n  {\n', ss);
-
-  http (sprintf ('   INSERT INTO "%I"."%I"."%I" (',
-	  name_part (tb, 0),
-	  name_part (tb, 1),
-	  name_part (tb, 2)
-	  ), ss);
-  for (i := 0; i < length (cols); i := i + 1)
-    {
-       http (sprintf ('"%I"', cols[i]), ss);
-       if (i < length (cols) - 1)
-         http (', ', ss);
-    }
-  http (') values (', ss);
-  for (i := 0; i < length (cols); i := i + 1)
-    {
-       http (sprintf ('"%I_VI"', cols[i]), ss);
-       if (i < length (cols) - 1)
-         http (', ', ss);
-    }
-  http (');', ss);
-
-  http ('\n }\n', ss);
-
-  http ('\n }\n', ss);
-  num_cols := length (cols);
-  return string_output_string (ss);
-}
-;
-

@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2010 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -120,7 +120,7 @@ public class VirtuosoTest {
 			// test add data to the repository
 			boolean ok = true;
 			String query = null;
-			String strurl = "http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com/foaf.rdf";
+			String strurl = "http://dbpedia.org/data/Berlin.rdf";
 			URL url = new URL(strurl);
 			URI context = repository.getValueFactory().createURI("http://demo.openlinksw.com/demo#this");
 			Value[][] results = null;

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -479,16 +479,7 @@ cli_scrap_cached_statements (client_connection_t * cli)
   IN_CLIENT (cli);
   while (hit_next (&it, (caddr_t *) & text, (caddr_t *) & stmt))
     {
-      srv_stmt_t * sst = *stmt;
-      if (sst->sst_query)
-	{
-	  IN_CLL;
-	  if (!sst->sst_query->qr_ref_count)
-	    log_error ("Suspect to have query assigned to stmt but 0 ref count on query");
-	  else
-	    sst->sst_query->qr_ref_count--;
-	  LEAVE_CLL;
-	}
+
       if (client_trace_flag)
        {
 	 if (79 < box_length (*text))
@@ -882,7 +873,7 @@ srv_client_connection_died (client_connection_t *cli)
     {
       if (lt && lt->lt_2pc._2pc_type != cli->cli_tp_data->cli_trx_type)
         {
-	lt_log_debug (("srv_client_connection_died diff trx_type cli=%p cli_trx_type=%d, 2pc_type=%d, enlisted=%d",
+	  lt_log_debug (("srv_client_connection_died diff trx_type cli=%p cli_trx_type=%d, 2pc_type=%d, enlisted=%d",
 	    cli, cli->cli_tp_data->cli_trx_type,
 	    lt->lt_2pc._2pc_type,
 	    cli->cli_tp_data->cli_tp_enlisted));
@@ -1037,7 +1028,7 @@ sf_sql_connect (char *username, char *password, char *cli_ver, caddr_t *info)
 
   while (!virtuoso_server_initialized)
     { /* suspend thread right here if the server isn't up */
-      virtuoso_sleep (0, 100);
+      virtuoso_sleep (5, 0);
     }
   if (failed_login_to_disconnect (client))
     {
@@ -1401,15 +1392,21 @@ stmt_set_query (srv_stmt_t * stmt, client_connection_t * cli, caddr_t text,
 
 }
 
-
+int32 cli_max_cached_stmts = 10000;
 
 srv_stmt_t *
-cli_get_stmt_access (client_connection_t * cli, caddr_t id, int mode)
+cli_get_stmt_access (client_connection_t * cli, caddr_t id, int mode, caddr_t * err_ret)
 {
   caddr_t place;
   srv_stmt_t *stmt;
   IN_CLIENT (cli);
   place = id_hash_get (cli->cli_statements, (caddr_t) & id);
+  if (!place && cli->cli_statements->ht_count >= cli_max_cached_stmts)
+    {
+      if (err_ret)
+	*err_ret = srv_make_new_error ("HY013", "SR491", "Too many open statements");
+      return NULL;
+    }
   if (!place)
     {
       NEW_VARZ (srv_stmt_t, stmt);
@@ -1455,7 +1452,7 @@ cli_cached_sql_compile (caddr_t query_text, client_connection_t *cli, caddr_t *e
   caddr_t stmt_boxed = box_dv_short_string (query_text);
 
   stmt_id = box_dv_short_string (stmt_id_name);
-  sst = cli_get_stmt_access (cli, stmt_id, GET_EXCLUSIVE);
+  sst = cli_get_stmt_access (cli, stmt_id, GET_EXCLUSIVE, NULL);
   old_log_val = cli->cli_is_log;
   cli->cli_is_log = 1;
   err = stmt_set_query (sst, cli, stmt_boxed, NULL);
@@ -1475,16 +1472,19 @@ sf_stmt_prepare (caddr_t stmt_id, char *text, long explain,
 {
   dk_session_t *client = IMMEDIATE_CLIENT;
   client_connection_t *cli = DKS_DB_DATA (client);
-  caddr_t err;
+  caddr_t err = NULL;
 
-  srv_stmt_t *stmt = cli_get_stmt_access (cli, stmt_id, GET_EXCLUSIVE);
+  srv_stmt_t *stmt = cli_get_stmt_access (cli, stmt_id, GET_EXCLUSIVE, &err);
+  if (!stmt && err)
+    goto report_error;
   cli->cli_terminate_requested = 0;
   cli->cli_start_time = time_now_msec;
   if (!stmt || stmt->sst_cursor_state)
     {
       /* There's an instance. can't do it */
-      mutex_leave (cli->cli_mtx);
       err = srv_make_new_error ("S1010", "SR209", "Statement active");
+report_error:
+      mutex_leave (cli->cli_mtx);
       PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
       dk_free_tree (err);
 
@@ -1671,7 +1671,9 @@ sf_sql_execute (caddr_t stmt_id, char *text, char *cursor_name,
       goto report_rpc_format_error;
     }
 
-  stmt = cli_get_stmt_access (cli, stmt_id, GET_EXCLUSIVE);
+  stmt = cli_get_stmt_access (cli, stmt_id, GET_EXCLUSIVE, &err);
+  if (err)
+    goto report_error;
   if (params)
     n_params = BOX_ELEMENTS (params);
 
@@ -1694,6 +1696,7 @@ report_error:
       mutex_leave (cli->cli_mtx);
     report_rpc_format_error:
       PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
+      DKST_RPC_DONE (client);
       dk_free_tree (err);
 
       dk_free_box (text);
@@ -2291,7 +2294,7 @@ sf_sql_fetch (caddr_t stmt_id, long cond_no)
   dk_session_t *client = IMMEDIATE_CLIENT;
   caddr_t err;
   client_connection_t *cli = DKS_DB_DATA (client);
-  srv_stmt_t *stmt = cli_get_stmt_access (cli, stmt_id, GET_EXCLUSIVE);
+  srv_stmt_t *stmt = cli_get_stmt_access (cli, stmt_id, GET_EXCLUSIVE, NULL);
 
   CHANGE_THREAD_USER(cli->cli_user);
 
@@ -2349,7 +2352,13 @@ sf_sql_free_stmt (caddr_t stmt_id, int op)
   query_instance_t *qi = NULL;
   dk_session_t *client = IMMEDIATE_CLIENT;
   client_connection_t *cli = DKS_DB_DATA (client);
-  srv_stmt_t *stmt = cli_get_stmt_access (cli, stmt_id, GET_ANY);
+  srv_stmt_t *stmt = cli_get_stmt_access (cli, stmt_id, GET_ANY, NULL);
+  if (!stmt)
+    {
+      LEAVE_CLIENT (cli);
+      DKST_RPC_DONE (IMMEDIATE_CLIENT);
+      return 1;
+    }
   dbg_printf (("sf_sql_free_stmt %s %d\n", stmt->sst_id, op));
   if (stmt->sst_cursor_state)
     stmt_scroll_close (stmt);
@@ -2416,7 +2425,6 @@ CLI_WRAPPER (sf_sql_free_stmt, (caddr_t stmt_id, int op), (stmt_id, op))
 caddr_t
 cli_transact (client_connection_t * cli, int op, caddr_t * replicate)
 {
-  int err = LTE_OK;
   caddr_t res;
   int rc;
   lock_trx_t *lt;
@@ -2438,8 +2446,6 @@ cli_transact (client_connection_t * cli, int op, caddr_t * replicate)
     }
   else
     {
-      if (LTE_OK != err)
-	rc = err;
       MAKE_TRX_ERROR (rc, res, LT_ERROR_DETAIL (lt));
     }
   return res;
@@ -2660,8 +2666,6 @@ sf_make_auto_cp(void)
   make_cp = (wi_inst.wi_master->dbs_log_length >= min_checkpoint_size ||
 	     wi_inst.wi_master->dbs_log_length >= autocheckpoint_log_size)
     ? 1 : 0;
-  if (server_lock.sl_owner || local_cll.cll_atomic_trx_id)
-    make_cp = 0;
   LEAVE_TXN;
   if (make_cp)
     {
@@ -2680,11 +2684,7 @@ void
 sf_makecp (char *log_name, lock_trx_t *trx, int fail_on_vdb, int shutdown)
 {
   int need_mtx = !srv_have_global_lock(THREAD_CURRENT_THREAD);
-  if (in_log_replay)
-    {
-      log_info ("Host %d: Checkpoint invoked during log replay, ignoring.", local_cll.cll_this_host);
-      return;
-    }
+
   if (need_mtx)
     IN_CPT (trx);
   else if (trx)
@@ -2871,6 +2871,10 @@ sf_sql_get_data_trx_error (int code, caddr_t err_detail)
 }
 
 
+#define BLOB_CHAR 0
+#define BLOB_WIDE 1
+#define BLOB_BIN  2
+
 void
 sf_sql_get_data (caddr_t stmt_id, long current_of, long nth_col,
     long how_much, long starting_at)
@@ -2879,8 +2883,8 @@ sf_sql_get_data (caddr_t stmt_id, long current_of, long nth_col,
   dk_session_t *client = IMMEDIATE_CLIENT_OR_NULL;
   client_connection_t *cli = DKS_DB_DATA (client);
   lock_trx_t *lt;
-  srv_stmt_t *stmt = cli_get_stmt_access (cli, stmt_id, GET_ANY);
-  if (stmt->sst_inst)
+  srv_stmt_t *stmt = cli_get_stmt_access (cli, stmt_id, GET_ANY, NULL);
+  if (stmt && stmt->sst_inst)
     {
       query_instance_t *qi = stmt->sst_inst;
       caddr_t val;
@@ -2898,7 +2902,7 @@ sf_sql_get_data (caddr_t stmt_id, long current_of, long nth_col,
       LEAVE_CLIENT (cli);
       if (IS_BLOB_HANDLE (val))
 	{
-	  blob_send_bytes (qi->qi_trx, val, how_much, 0);
+	  blob_send_bytes (qi->qi_trx, val, how_much, 0, BLOB_CHAR);
 	}
       else
 	{
@@ -2998,15 +3002,14 @@ lt_enter_anyway (lock_trx_t * lt)
   return rc;
 }
 
-
 void
-sf_sql_get_data_ac (long dp_from, long how_much, long starting_at, long bh_key_id, long bh_frag_no, long page_dir, caddr_t page_array, long is_wide, long timestamp)
+sf_sql_get_data_ac (long dp_from, long how_much, long starting_at, long bh_key_id, long bh_frag_no, long page_dir, caddr_t page_array, long blob_type, long timestamp)
 {
   int is_timeout;
   dk_session_t *client = IMMEDIATE_CLIENT_OR_NULL;
   client_connection_t *cli = DKS_DB_DATA (client);
   lock_trx_t *trx;
-  dtp_t bh_tag = is_wide ? DV_BLOB_WIDE_HANDLE : DV_BLOB_HANDLE;
+  dtp_t bh_tag = blob_type == BLOB_WIDE ? DV_BLOB_WIDE_HANDLE : DV_BLOB_HANDLE;
   blob_handle_t * bh = bh_alloc (bh_tag);
   dbe_key_t *key;
 
@@ -3052,7 +3055,7 @@ sf_sql_get_data_ac (long dp_from, long how_much, long starting_at, long bh_key_i
       return;
     }
   trx = cli->cli_trx;
-  blob_send_bytes (trx, (caddr_t) bh, how_much, 1);
+  blob_send_bytes (trx, (caddr_t) bh, how_much, 1, blob_type);
 
   IN_TXN;
   is_timeout = lt_leave (trx);
@@ -3067,8 +3070,9 @@ sf_sql_get_data_ac (long dp_from, long how_much, long starting_at, long bh_key_i
 
 #ifdef SERIAL_CLI
 CLI_WRAPPER (sf_sql_get_data_ac,
-	(long dp_from, long how_much, long starting_at, long bh_key_id, long bh_frag_no, long page_dir, caddr_t page_array, long is_wide, long timestamp),
-	(dp_from, how_much, starting_at, bh_key_id, bh_frag_no, page_dir, page_array, is_wide, timestamp))
+	(long dp_from, long how_much, long starting_at, long bh_key_id, long bh_frag_no, long page_dir, caddr_t page_array, long blob_type, 
+	 long timestamp),
+	(dp_from, how_much, starting_at, bh_key_id, bh_frag_no, page_dir, page_array, blob_type, timestamp))
 #define sf_sql_get_data_ac sf_sql_get_data_ac_w
 #endif
 
@@ -3208,7 +3212,7 @@ box_flags_serial_test (dk_session_t * ses)
 {
   /* serialize box flags only for clients that are 3029 or newer.  Do not serialize this if going to non-client.  */
   client_connection_t *cli = DKS_DB_DATA (ses);
-  if (ses->dks_cluster_flags & (DKS_TO_CLUSTER | DKS_TO_OBY_KEY | DKS_TO_HA_DISK_ROW))
+  if (ses->dks_cluster_flags & (DKS_TO_CLUSTER | DKS_TO_OBY_KEY | DKS_TO_HA_DISK_ROW | DKS_REPLICATION))
     return 1;
   if (!cli)
     return 0;
@@ -3792,8 +3796,6 @@ srv_global_init (char *mode)
 #ifdef BIF_XML
   html_hash_init ();
 #endif
-  dt_init ();
-  dt_now (srv_approx_dt);
   cluster_init ();
 #ifdef PLDBG
   if (lite_mode)
@@ -3801,7 +3803,6 @@ srv_global_init (char *mode)
 #endif
   wi_open (mode);
   sql_bif_init ();
-  bif_daq_init ();
   if (lite_mode)
     log_info ("Entering Lite Mode");
 
@@ -3925,12 +3926,14 @@ srv_global_init (char *mode)
       sec_read_grants (NULL, NULL, NULL, 0);
       sec_read_tb_rls (NULL, NULL, NULL);
       sinv_read_sql_inverses (NULL, bootstrap_cli);
-      cl_read_dpipes ();
-      read_proc_tables (1);
-      read_proc_tables (0);
+      sqls_define_sparql_init ();
+      read_proc_and_trigger_tables (1);
+      read_proc_and_trigger_tables (0);
       sec_read_grants (NULL, NULL, NULL, 1); /* call second time to do read of execute grants */
       ddl_standard_procs ();
     }
+  else if (!in_crash_dump)
+    sqls_define_sparql_init ();
   ddl_obackup_init ();
 
   ddl_ensure_stat_tables ();
@@ -3941,6 +3944,7 @@ srv_global_init (char *mode)
   /* and a third time to process grants over the sqls_define procs */
   if (!strchr (mode, 'a'))
     sec_read_grants (NULL, NULL, NULL, 1);
+  read_utd_method_tables ();
   if (ddl_init_hook)
     ddl_init_hook (bootstrap_cli);
   local_commit (bootstrap_cli);

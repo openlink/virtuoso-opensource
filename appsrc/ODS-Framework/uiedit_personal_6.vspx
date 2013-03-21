@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -78,7 +78,7 @@
 	                sql="select WUF_ID, WUF_LABEL, WUF_URI from DB.DBA.WA_USER_FAVORITES where WUF_U_ID = :self.u_id"
 		              scrollable="1"
 		              editable="1"
-		              nrows="10">
+		              nrows="0">
 
         <v:template name="r_ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
       	  <table class="listing" rules="groups">

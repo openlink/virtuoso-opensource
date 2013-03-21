@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -86,8 +86,6 @@ sql_compile_st (ST ** ptree, client_connection_t * cli,
     SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_SQLC_ERROR, NULL);
     sql_stmt_comp (&sc, ptree);
     qr_set_local_code_and_funref_flag (sc.sc_cc->cc_query);
-    if (sc.sc_cc->cc_query->qr_proc_vectored || sc.sc_cc->cc_has_vec_subq)
-      sqlg_vector (&sc, sc.sc_cc->cc_query);
     qr_resolve_aliases (qr);
     qr_set_freeable (&cc, qr);
     qr->qr_instance_length = cc.cc_instance_fill * sizeof (caddr_t);
@@ -598,7 +596,7 @@ sqlc_top_select_wrap_dt (sql_comp_t * sc, ST * tree)
   top = SEL_TOP (tree);
   if (top)
     {
-      ST * out_names = (ST *) sqlc_selection_names (tree);
+      ST * out_names = (ST *) sqlc_selection_names (tree, 0);
       ST ** oby = tree->_.select_stmt.table_exp->_.table_exp.order_by;
       if (oby)
 	{

@@ -1,0 +1,182 @@
+<!--
+
+  $Id$
+
+  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+  project.
+
+  Copyright (C) 1998-2013 OpenLink Software
+
+  This project is free software; you can redistribute it and/or modify it
+  under the terms of the GNU General Public License as published by the
+  Free Software Foundation; only version 2 of the License, dated June 1991.
+
+  This program is distributed in the hope that it will be useful, but
+  WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+  General Public License for more details.
+
+  You should have received a copy of the GNU General Public License along
+  with this program; if not, write to the Free Software Foundation, Inc.,
+  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+
+  Generated from opltwitter.n3 by on-line N3-RDF/XML converter at http://www.mindswap.org/2002/rdfconvert/ 
+ 
+  An OpenLink ontology for Twitter 
+ 
+  See: 
+  https://dev.twitter.com/docs/api (Twitter REST API resources)
+-->
+
+<rdf:RDF xmlns="http://www.openlinksw.com/schemas/twitter#"
+    xmlns:dc="http://purl.org/dc/elements/1.1/"
+    xmlns:dcterms="http://purl.org/dc/terms/"
+    xmlns:foaf="http://xmlns.com/foaf/0.1/"
+    xmlns:log="http://www.w3.org/2000/10/swap/log#"
+    xmlns:opltw="http://www.openlinksw.com/schemas/twitter#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:sioct="http://rdfs.org/sioc/types#"
+    xmlns:virtrdfmec="http://www.openlinksw.com/schemas/virtrdf-meta-entity-class#"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema#">
+
+    <owl:Ontology rdf:about="http://www.openlinksw.com/schemas/twitter">
+        <dc:creator>OpenLink Software, http://www.openlinksw.com</dc:creator>
+        <dc:date rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2011-07-22</dc:date>
+        <dc:description>OpenLink schema for Twitter objects and properties</dc:description>
+        <dc:title>OpenLink schema for Twitter</dc:title>
+    </owl:Ontology>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/twitter#Application">
+        <rdfs:comment>Application used to generate tweets</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/twitter"/>
+        <rdfs:label>Twitter application</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/twitter#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/twitter#Object">
+        <rdfs:comment>A base class representing all Twitter objects</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/twitter"/>
+        <rdfs:label>Twitter object</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/twitter#Tweet">
+        <rdfs:comment>Tweets are the atomic building blocks of Twitter, 140-character status updates with additional associated metadata</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/twitter"/>
+        <rdfs:label>Tweet</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/twitter#Object"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/twitter#User">
+        <rdfs:comment>A Twitter user</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/twitter"/>
+        <rdfs:label>Twitter user</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/twitter#Object"/>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/virtrdf-meta-entity-class#Person"/>
+    </owl:Class>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/twitter#appLink">
+        <rdfs:comment>Resource for the agent used to post the tweet</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/twitter#Application"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/twitter"/>
+        <rdfs:label>Posting Agent resource</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#anyURI"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/twitter#favorites_count">
+        <rdfs:comment>The number of tweets (statuses) tagged by this user as being a favorite</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/twitter#User"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/twitter"/>
+        <rdfs:label>favorites count</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    </owl:DatatypeProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/twitter#followed_by">
+        <rdfs:comment>A user following this Twitter user</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/twitter#User"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/twitter"/>
+        <rdfs:label>followed by</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/twitter#User"/>
+    </owl:ObjectProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/twitter#followers_count">
+        <rdfs:comment>The number of followers a Twitter user has</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/twitter#User"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/twitter"/>
+        <rdfs:label>followers count</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    </owl:DatatypeProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/twitter#follows">
+        <rdfs:comment>A user followed by this Twitter user</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/twitter#User"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/twitter"/>
+        <rdfs:label>follows</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/twitter#User"/>
+    </owl:ObjectProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/twitter#friends_count">
+        <rdfs:comment>The number of people who follow this Twitter user</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/twitter#User"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/twitter"/>
+        <rdfs:label>friends count</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    </owl:DatatypeProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/twitter#has_favorite">
+        <rdfs:comment>Identifies a tweet marked as being amongst a user's favorites</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/twitter#User"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/twitter"/>
+        <rdfs:label>has favorite</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/twitter#Tweet"/>
+    </owl:ObjectProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/twitter#id">
+        <rdfs:comment>A Twitter object ID</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/twitter#Object"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/twitter"/>
+        <rdfs:label>id</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:ObjectProperty rdf:about="http://www.openlinksw.com/schemas/twitter#made_tweet">
+        <rdfs:comment>A tweet created by this Twitter user</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/twitter#User"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/twitter"/>
+        <rdfs:label>made tweet</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/twitter#Tweet"/>
+    </owl:ObjectProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/twitter#public_profile_url">
+        <rdfs:comment>URL to a Twitter user's public profile / home page</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/twitter#User"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/twitter"/>
+        <rdfs:label>Twitter profile URL</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#anyURI"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/twitter#screen_name">
+        <rdfs:comment>Twitter account name</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/twitter#User"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/twitter"/>
+        <rdfs:label>screen_name</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/twitter#statuses_count">
+        <rdfs:comment>The number of tweets (statuses) posted by this user</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/twitter#User"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/twitter"/>
+        <rdfs:label>statuses count</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/twitter#via">
+        <rdfs:comment>Agent used for posting the tweet</rdfs:comment>
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/twitter#Tweet"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/twitter"/>
+        <rdfs:label>via</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/twitter#Application"/>
+    </owl:DatatypeProperty>
+</rdf:RDF>

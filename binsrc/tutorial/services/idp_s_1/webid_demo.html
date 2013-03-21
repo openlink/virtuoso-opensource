@@ -1,0 +1,100 @@
+<html>
+  <head>
+    <title>WebID Verification Demo - HTML, JS</title>
+    <style type="text/css">
+      body {
+      	background-color: white;
+      	color: black;
+      	font-size: 10pt;
+      	font-family: Verdana, Helvetica, sans-serif;
+      }
+      ul {
+        font-family: Verdana, Helvetica, sans-serif;
+        list-style-type: none;
+      }
+    </style>
+    <script type="text/javascript">
+      function check() {
+        if (document.location.protocol != 'https:') {
+          alert('Please use https protocol');
+          return;
+        }
+
+        var callback = document.location.protocol + '//' + document.location.host + document.location.pathname;
+        document.location = 'https://id.myopenlink.net/ods/webid_verify.vsp?callback=' + encodeURIComponent(callback);
+      }
+      function getObject(id) {
+        return document.getElementById(id)
+      }
+      function hide(id) {
+        var obj = getObject(id);
+        obj.style.display = "none";
+      }
+      function show(id) {
+        var obj = getObject(id);
+        obj.style.display = "";
+      }
+      function getParam(name)
+      {
+        name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
+        var regexS = "[\\?&]"+name+"=([^&#]*)";
+        var regex = new RegExp( regexS );
+        var results = regex.exec( window.location.href );
+        if( results == null )
+          return "";
+        else
+          return decodeURIComponent(results[1]);
+      }
+    </script>
+  </head>
+  <body>
+    <h1>WebID Verification Demo - HTML, JS</h1>
+    <div>
+      This will check the WebID watermark in your X.509 Certificate.<br/><br/>
+      This service supports WebIDs based on the following URI schemes (more to come):
+      <ul>
+      	<li>* <b>acct</b>, e.g: <span style="font-size: 80%; color: #1DA237;">acct:ExampleUser@id.example.com</span></li>
+      	<li>* <b>http</b>, e.g: <span style="font-size: 80%; color: #1DA237;">http://id.example.com/person/ExampleUser#this</span></li>
+      	<li>* <b>ldap</b>, e.g: <span style="font-size: 80%; color: #1DA237;">ldap://ldap.example.com/o=An%20Example%5C2C%20Inc.,c=US</span></li>
+      	<li>* <b>mailto</b>, e.g: <span style="font-size: 80%; color: #1DA237;">mailto:ExampleUser@id.example.com</span></li>
+      </ul>
+    </div>
+    <br/>
+    <br/>
+    <div>
+      <input type="button" name="go" value="Check" id="go" onclick="javascript: return check();" />
+    </div>
+    <div id="result" style="display: none;">
+    	The return values are:
+	    <ul id="result_webid" style="display: none;">
+	      <li>WebID -  <span id="webid"></span></li>
+	      <li>Timestamp in ISO 8601 format - <span id="ts"></span></li>
+	    </ul>
+	    <ul id="result_error" style="display: none;">
+	      <li>Error - <span id="error"></span></li>
+	    </ul>
+    </div>
+    <script type="text/javascript">
+      var webid = getParam('webid');
+      var error = getParam('error');
+      if ((webid != '') || (error != '')) {
+        show('result');
+        if (webid != '') {
+          show('result_webid');
+          getObject('webid').innerHTML = getParam('webid');;
+          getObject('ts').innerHTML = getParam('ts');;
+        } else {
+          hide('result_webid');
+        }
+        if (error != '') {
+          show('result_error');
+          getObject('error').innerHTML = getParam('error');;
+        } else {
+          hide('result_error');
+        }
+      } else {
+        hide('result');
+      }
+    </script>
+  </body>
+</html>

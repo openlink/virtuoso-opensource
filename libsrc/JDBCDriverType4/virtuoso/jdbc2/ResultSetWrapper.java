@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2009 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -85,7 +85,10 @@ public class ResultSetWrapper implements ResultSet, Closeable {
       if (wstmt == null) //DBMetaDataResultSet
         wconn.removeObjFromClose(this);
       else
-        wstmt.removeObjFromClose(this);
+        {
+          wstmt.removeObjFromClose(this);
+          wstmt.close();
+        }
       rs = null;
       wstmt = null;
       wconn = null;
@@ -468,11 +471,7 @@ public class ResultSetWrapper implements ResultSet, Closeable {
   public ResultSetMetaData getMetaData() throws SQLException {
     check_close();
     try {
-      ResultSetMetaData rsmd = rs.getMetaData();
-      if (rsmd != null)
-        return new ResultSetMetaDataWrapper(rsmd, wconn);
-      else
-        return null;
+      return rs.getMetaData();
     } catch (SQLException ex) {
       exceptionOccurred(ex);
       throw ex;
@@ -2044,6 +2043,35 @@ public class ResultSetWrapper implements ResultSet, Closeable {
       throw ex;
     }
   }
+
+#if JDK_VER >= 17
+
+    //------------------------- JDBC 4.1 -----------------------------------
+  public <T> T getObject(int columnIndex, Class<T> type) throws SQLException
+  {
+    check_close();
+    try {
+      return rs.getObject(columnIndex, type);
+    } catch (SQLException ex) {
+      exceptionOccurred(ex);
+      throw ex;
+    }
+  }
+
+
+  public <T> T getObject(String columnLabel, Class<T> type) throws SQLException
+  {
+    check_close();
+    try {
+      return rs.getObject(columnLabel, type);
+    } catch (SQLException ex) {
+      exceptionOccurred(ex);
+      throw ex;
+    }
+  }
+#endif
+
+
 
 #endif
 #endif

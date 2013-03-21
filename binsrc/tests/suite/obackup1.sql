@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -32,7 +32,7 @@ ECHO BOTH $LAST[1] " checkpoint remap pages\n";
 
 select backup_pages();
 ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
-ECHO BOTH " pages changed since last backup (in checkpoint space) = " $LAST[1] "\n";
+ECHO BOTH ": pages changed since last backup (in checkpoint space) = " $LAST[1] "\n";
 
 ECHO BOTH "update Orders\n";
 update "Demo"."demo"."Orders" set "Freight" = "Freight" + 1;
@@ -50,5 +50,3 @@ backup_max_dir_size (300000);
 backup_online ('nwdemo_i_#', 150,0, vector ('nw1', 'nw2', 'nw3', 'nw4', 'nw5'));
 
 shutdown;
-
-

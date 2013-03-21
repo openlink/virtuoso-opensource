@@ -70,11 +70,17 @@ create procedure ld_sample (in is_first int := 0)
 
 create procedure ld_meter_run (in s_delay int)
 {
+  declare stat, msg any;
   ld_sample (1);
   while (1)
     {
       delay (s_delay);
-      exec ('ld_sample (0)', null, null, null);
+      stat := '00000';
+      exec ('ld_sample (0)', stat, msg, null);
+      if (stat <> '00000')
+	{
+	  rollback work;
+	  log_message (stat || ' ' || msg);
+	}
     }
 }
-

@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2010 OpenLink Software
+ *  Copyright (C) 2005-2013 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -86,8 +86,8 @@ OAT.Preferences = {
     imagePath: "/DAV/JS/images/",
     stylePath: "/DAV/JS/styles/",
     endpointXmla: "/XMLA",
-    version: "2.9",
-    build: "$Date$",
+    version: "2.9.4",
+    build: "$Date: 2012/08/16 10:26:11 $",
     httpError: 1, /* show http errors */
     allowDefaultResize: 1,
     allowDefaultDrag: 1
@@ -271,7 +271,7 @@ if (!Array.prototype.forEach) {
 	var len = this.length;
 	for (var i=0;i<len;i++) {
 	    if (i in this) { cb.call(_this, this[i], i, this); }
-    }
+	}
     }
 }
 

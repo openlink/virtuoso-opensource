@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -100,8 +100,6 @@ rl_allocate (void)
 void
 rl_free (row_lock_t * rl)
 {
-  if (rl->rl_cols)
-    dk_free_box ((caddr_t)rl->rl_cols);
   dk_free ((caddr_t) rl, sizeof (row_lock_t));
 }
 
@@ -387,7 +385,7 @@ lt_restart (lock_trx_t * lt, int leave_flag)
     const char *	lt_last_increase_file[2];
     int		lt_last_increase_line[2];
 #endif
-    caddr_t repl = (excl || (cli && cli->cli_row_autocommit)) ? box_copy_tree ((box_t) lt->lt_replicate) : NULL;
+    caddr_t repl = (excl || cli->cli_row_autocommit) ? box_copy_tree ((box_t) lt->lt_replicate) : NULL;
     /* we we'll save the state of replication flag
        when  we're in atomic mode */
 #ifdef VIRTTP
@@ -401,7 +399,7 @@ lt_restart (lock_trx_t * lt, int leave_flag)
     lt_clear (lt);
 
     lt->lt_started = approx_msec_real_time ();
-    if (!cli || excl || cli->cli_row_autocommit) /* therefore we'll set the saved one */
+    if (excl || cli->cli_row_autocommit) /* therefore we'll set the saved one */
       lt->lt_replicate = (caddr_t*) repl;
     else
       lt->lt_replicate = (caddr_t*) box_copy_tree ((caddr_t) cli->cli_replicate);
@@ -608,8 +606,8 @@ lt_rollback_1 (lock_trx_t * lt, int free_trx)
   if (LT_PREPARE_PENDING == lt->lt_status)
     {
       if (LTE_OK == lt_2pc_prepare(lt))
-	{
-	  lt->lt_status = LT_PREPARED;
+      {
+	lt->lt_status = LT_PREPARED;
       } else
 	lt->lt_status = LT_BLOWN_OFF;
       ASSERT_IN_TXN;
@@ -1303,8 +1301,6 @@ lock_wait (gen_lock_t * pl, it_cursor_t * it, buffer_desc_t * buf,
   rdbg_printf (("    LW itc=%x L=%d T=%d pl %x owner T=%d LF=%x K=%s\n",
 		it, it->itc_page,
 		TRX_NO (it->itc_ltrx), it->itc_pl, PL_OWNER_NO (pl), (int) pl->pl_type, it->itc_insert_key->key_name));
-  if (it->itc_is_col)
-    itc_col_leave (it, 0);
   page_leave_outside_map (buf);
   time = get_msec_real_time ();
   it->itc_ltrx->lt_wait_since = time;
@@ -1390,7 +1386,7 @@ lock_enter (gen_lock_t * pl, it_cursor_t * it, buffer_desc_t * buf)
     {
       return NO_WAIT;
     }
-  return (lock_wait (pl, it, buf, it->itc_non_txn_insert ? ITC_NO_LOCK : ITC_LOCK_IF_ON_ROW));
+  return (lock_wait (pl, it, buf, ITC_LOCK_IF_ON_ROW));
 }
 
 
@@ -1680,9 +1676,6 @@ rl_release_list (row_lock_t ** rlist, lock_trx_t * lt, page_lock_t * pl)
   while (rl)
     {
       row_lock_t * next = rl->rl_next;
-      if (rl->rl_n_cols)
-	rl_col_release (rl, lt);
-      else
       lock_release ((gen_lock_t *) rl, lt);
       if (PL_FREE == PL_TYPE (rl))
 	{
@@ -1902,7 +1895,6 @@ unsigned long cfg_resources_clear_interval = 0;
 extern uint32 cl_last_wait_query;
 
 uint32 prev_reaper_time;
-char srv_approx_dt[DT_LENGTH];
 
 void
 clear_old_root_images ()
@@ -1939,12 +1931,8 @@ the_grim_lock_reaper (void)
   long now = approx_msec_real_time ();
   int server_is_idle = 1;
   dt_init ();
-  dt_now (&srv_approx_dt);
   if (CPT_CHECKPOINT == wi_inst.wi_is_checkpoint_pending)
     return;
-  page_set_last (wi_inst.wi_master->dbs_free_set);
-  page_set_last (wi_inst.wi_master->dbs_incbackup_set);
-  page_set_last (wi_inst.wi_master->dbs_extent_set);
   if (prev_reaper_time && now - prev_reaper_time > 2900)
     {
       /*printf ("lti = %d \n", now - prev_reaper_time);*/
@@ -1998,7 +1986,7 @@ the_grim_lock_reaper (void)
       wi_free_schemas ();
     }
   LEAVE_TXN;
-  if (0 && now - last_exec_time > AUTO_FLUSH_DELAY &&
+  if (now - last_exec_time > AUTO_FLUSH_DELAY &&
       now - last_flush_time > AUTO_FLUSH_DELAY
       && server_is_idle)
     {

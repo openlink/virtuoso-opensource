@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -428,21 +428,20 @@ repl_dav_proc ('WS.WS.REMOTE_COL', 'WS.WS.REMOTE_RES', 1, 1);
 select RES_FULL_PATH, md5 (blob_to_string (RES_CONTENT)) from WS.WS.SYS_DAV_RES
 except
 select RES_FULL_PATH, md5 (blob_to_string (RES_CONTENT)) from WS.WS.REMOTE_RES;
-echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
-echo both ": " $rowcnt " WebDAV resources with different content\n";
+ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " WebDAV resources with different content\n";
 
 select RES_FULL_PATH from WS.WS.SYS_DAV_RES except select RES_FULL_PATH from WS.WS.REMOTE_RES;
-echo both $if $equ $rowcnt 0  "PASSED" "***FAILED";
-echo both ": " $rowcnt " WebDAV resources differ\n";
+ECHO BOTH $IF $EQU $ROWCNT 0  "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " WebDAV resources differ\n";
 
 
 select count(*) from WS.WS.SYS_DAV_COL a, WS.WS.REMOTE_COL b where WS.WS.COL_PATH (a.COL_ID) = DAV_COL_PATH (b.COL_ID);
-echo both $if $equ $last[1] 9  "PASSED" "***FAILED";
-echo both ": " $last[1] " WebDAV collections found, should be 9\n";
+ECHO BOTH $IF $EQU $LAST[1] 9  "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " WebDAV collections found, should be 9\n";
 
 select count(*) from WS.WS.SYS_DAV_RES a, WS.WS.REMOTE_RES b where a.RES_FULL_PATH = b.RES_FULL_PATH;
-echo both $if $equ $last[1] 9  "PASSED" "***FAILED";
-echo both ": " $last[1] " WebDAV resources found, should be 9\n";
+ECHO BOTH $IF $EQU $LAST[1] 9  "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " WebDAV resources found, should be 9\n";
 
 ECHO BOTH "COMPLETED WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED: WebDAV transactional replication tests\n";
-

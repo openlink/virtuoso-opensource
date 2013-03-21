@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -677,7 +677,8 @@ function checkState()
         setTimeout("checkState()", 500);
       } else {
       progressTimer = null;
-        $('btn_Stop').click();
+      $('btn_Stop').value = 'Close';
+      OAT.Dom.hide('btn_Background');
       }
     }
   OAT.AJAX.POST('ajax.vsp', "a=load&sa=state&id="+progressID+urlParam("sid")+urlParam("realm"), x);
@@ -751,12 +752,17 @@ function readBookmark (id)
   OAT.AJAX.POST ('ajax.vsp', "sid="+sid+"&realm="+realm+"&id="+id+"&a=visited", function(){}, {onstart:function(){}, onerror:function(){}});
 }
 
-function davBrowse (fld)
-{
+function davBrowse(fld, folders) {
+	/* load stylesheets */
+	OAT.Style.include("grid.css");
+	OAT.Style.include("webdav.css");
+
   var options = {
     mode: 'browser',
     onConfirmClick: function(path, fname) {$(fld).value = '/DAV' + path + fname;}
   };
+  if (!folders) {folders = false;}
+  OAT.WebDav.options.foldersOnly = folders;
   OAT.WebDav.open(options);
 }
 
@@ -1293,7 +1299,7 @@ BMK.loadItems = function(nodeID, nodePath)
     nodePath = nodeID;
   var pane = $('pane_right_top');
   pane.innerHTML = '';
-  var URL = 'forms.vspx?sa=browse&node='+encodeURIComponent(nodeID)+'&path='+encodeURIComponent(nodePath)+BMK.sessionParams();
+  var URL = 'forms.vspx?sa=browse&node='+encodeURIComponent(nodeID)+'&path='+encodeURIComponent('/'+BMK.trim(nodePath, '/'))+BMK.sessionParams();
   var v = $('nodeItem');
   if (v && (v.value != '')) {
     URL += '&item=' + v.value;
@@ -1426,12 +1432,10 @@ BMK.formPostAfter = function (action)
 BMK.aboutDialog = function ()
 {
   var aboutDiv = $('aboutDiv');
-  if (aboutDiv) {OAT.Dom.unlink(aboutDiv);}
-  aboutDiv = OAT.Dom.create('div', {
-    width:'430px',
-    height: '170px',
-    overflow: 'hidden'
-  });
+  if (aboutDiv)
+    OAT.Dom.unlink(aboutDiv);
+
+  aboutDiv = OAT.Dom.create('div', {height: '160px', overflow: 'hidden'});
   aboutDiv.id = 'aboutDiv';
   aboutDialog = new OAT.Dialog('About ODS Booomarks', aboutDiv, {width:445, buttons: 0, resize:0, modal:1});
 	aboutDialog.cancel = aboutDialog.hide;

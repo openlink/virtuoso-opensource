@@ -3,7 +3,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2007 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -28,7 +28,7 @@ export LANG LC_ALL
 
 MODE=$1
 LOGDIR=`pwd`
-VERSION="1.1.37"
+VERSION="1.0.0"
 LOGFILE="${LOGDIR}/vad_make.log"
 STICKER_DAV="vad_dav.xml"
 STICKER_FS="vad_filesystem.xml"
@@ -62,22 +62,6 @@ else
   RM="rm -f"
 fi
 
-VOS=0
-if [ -f ../../autogen.sh ]
-then
-    VOS=1
-fi
-
-if [ "z$SERVER" = "z" ]  
-then
-    if [ "x$HOST_OS" != "x" ]
-    then
-	SERVER=virtuoso-odbc-t.exe
-    else
-	SERVER=virtuoso
-    fi
-fi
-
 rm -rf vad
 
 . $HOME/binsrc/tests/suite/test_fn.sh
@@ -88,6 +72,57 @@ then
 else
   myrm=$RM
 fi
+
+
+VOS=0
+if [ -f ../../autogen.sh ]
+then
+    VOS=1
+fi
+
+version_init()
+{
+  if [ $VOS -eq 1 ]
+  then
+      if [ -f vad_version ]
+      then
+	  VERSION=`cat vad_version`
+      else
+        LOG "The vad_version does not exist, please verify your checkout"
+	exit 1
+      fi
+  else
+      rm -f version.tmp
+      for i in `find . -name 'Entries' | grep -v "vad/" | grep -v "/tests/"`; do
+	  cat "$i" | grep -v "version\."| grep "^[^D].*" | cut -f 3 -d "/" | sed -e "s/1\.//g" >> version.tmp
+      done
+      LANG=POSIX
+      export LANG
+
+      BASE="0"
+#      echo $BASE
+      if [ -f version.base ] ; then
+	  BASE=`cat version.base`
+      fi
+
+      VERSION=`cat version.tmp | awk ' BEGIN { cnt=10 } { cnt = cnt + $1 } END { print cnt }'`
+
+      VERSION=`expr $BASE + $VERSION`
+      CURR_VERSION=$VERSION
+      if [ -f version.curr ] ; then
+	  CURR_VERSION=`cat version.curr`
+      fi
+      if [ $CURR_VERSION -gt $VERSION ] ; then
+	  BASE=`expr $CURR_VERSION - $VERSION + 1`
+	  echo $BASE > version.base
+	  VERSION=$CURR_VERSION
+      fi
+      echo $VERSION > version.curr
+      VERSION=`echo $VERSION | awk ' { printf "1.%02.02f", $1/100 }'`
+      rm -f version.tmp
+      echo "$VERSION" > vad_version
+fi
+}
 
 virtuoso_start() {
   echo "Starting $SERVER"
@@ -224,7 +259,7 @@ sticker_init() {
   echo "  <name package=\"Polls\">" >> $STICKER
   echo "    <prop name=\"Title\" value=\"ODS Polls Manager\"/>" >> $STICKER
   echo "    <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2011 OpenLink Software\"/>" >> $STICKER
+  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2013 OpenLink Software\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso\"/>" >> $STICKER
   echo "  </name>" >> $STICKER
@@ -236,8 +271,8 @@ sticker_init() {
   echo "<dependencies>" >> $STICKER
   echo "  <require>" >> $STICKER
   echo "    <name package=\"Framework\"/>" >> $STICKER
-  echo "    <versions_later package=\"1.82.42\">" >> $STICKER
-  echo "      <prop name=\"Date\" value=\"2011-06-15 12:00\" />" >> $STICKER
+  echo "    <versions_later package=\"1.88.99\">" >> $STICKER
+  echo "      <prop name=\"Date\" value=\"2012-10-31 12:00\" />" >> $STICKER
   echo "      <prop name=\"Comment\" value=\"An incompatible version of the ODS Framework\" />" >> $STICKER
   echo "    </versions_later>" >> $STICKER
   echo "  </require>" >> $STICKER
@@ -365,6 +400,7 @@ echo '----------------------'
 
 STOP_SERVER
 directory_clean
+version_init
 directory_init
 virtuoso_init
 if [ "$MODE" = "" ] || [ "$MODE" = "1" ]
@@ -381,7 +417,6 @@ virtuoso_shutdown
 STOP_SERVER
 chmod 644 ods_polls_dav.vad
 chmod 644 ods_polls_filesystem.vad
-directory_clean
 
 CHECK_LOG
 RUN egrep  '"\*\*.*FAILED:|\*\*.*ABORTED:"' "$LOGFILE"
@@ -390,6 +425,8 @@ then
 	$myrm -f *.vad
 	exit 1
 fi
+
+directory_clean
 
 BANNER "COMPLETED VAD PACKAGING"
 exit 0

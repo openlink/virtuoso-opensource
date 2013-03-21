@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -122,7 +122,7 @@ int
 make_supply_w_id ()
 {
   if (n_ware > 1 && RandomNumber (0, 99) < 10)
-{
+    {
       int n, n_tries = 0;
       do
 	{
@@ -131,7 +131,7 @@ make_supply_w_id ()
 	}
       while (n == local_w_id && n_tries < 10);
       return local_w_id;
-}
+    }
   else
     return local_w_id;
 }

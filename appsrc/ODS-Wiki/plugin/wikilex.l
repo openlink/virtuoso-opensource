@@ -5,7 +5,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -19,7 +19,6 @@
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *
  */
 
 #include <ctype.h>
@@ -152,6 +151,19 @@ static void bm_alloc (bufmem_t *buf, size_t len)
     wlex_free (buf->bm_memblock, -1);
   buf->bm_length = (len + 0x100) & ~0x7F;
   buf->bm_memblock = wlex_alloc (buf->bm_length);
+}
+
+void wikilexdone ()
+{
+  wlex_state_t * st = STATEPTR;
+  if (st->wikiwordbuf.bm_memblock != NULL)
+    wlex_free (st->wikiwordbuf.bm_memblock, -1);
+  if (st->hrefbuf.bm_memblock != NULL)
+    wlex_free (st->hrefbuf.bm_memblock, -1);
+  if (st->titlebuf.bm_memblock != NULL)
+    wlex_free (st->titlebuf.bm_memblock, -1);
+  if (st->predicatebuf.bm_memblock != NULL)
+    wlex_free (st->predicatebuf.bm_memblock, -1);
 }
 
 static char *strdigit (char *str)

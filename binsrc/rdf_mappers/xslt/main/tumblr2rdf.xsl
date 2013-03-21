@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -28,6 +28,7 @@
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY owl "http://www.w3.org/2002/07/owl#">
 <!ENTITY sioct "http://rdfs.org/sioc/types#">
@@ -41,6 +42,7 @@
     xmlns:bibo="&bibo;"
     xmlns:sioc="&sioc;"
     xmlns:sioct="&sioct;"    
+    xmlns:opl="&opl;"
     xmlns:owl="&owl;"
     xmlns:dcterms="&dcterms;"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
@@ -68,6 +70,13 @@
 			<xsl:choose>
 				<xsl:when test="$baseUri like '%.tumblr.com/post/%'">
 					<rdf:Description rdf:about="{$resourceURL}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://www.tumblr.com#this">
+                                 			<foaf:name>Tumblr</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://www.tumblr.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
+
 						<rdf:type rdf:resource="&sioct;BlogPost"/>
 						<dc:title>
 							<xsl:value-of select="posts/post/@slug"/>

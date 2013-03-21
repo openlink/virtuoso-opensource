@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -30,15 +30,15 @@
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
         fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
         xmlns:vm="http://www.openlinksw.com/vspx/macro">
- <vm:pagetitle>RDF Store Upload</vm:pagetitle>
+ <vm:pagetitle>Quad Store Upload</vm:pagetitle>
  <vm:pagewrapper>
     <vm:variables>
       <v:variable name="message" default="null" type="varchar" persist="0"/>
     </vm:variables>
   <vm:menu>
-   <vm:menuitem value="RDF"/>
+   <vm:menuitem value="Linked Data"/>
   </vm:menu>
-  <vm:header caption="RDF Store Upload"/>
+  <vm:header caption="Quad Store Upload"/>
   <vm:pagebody>
   <v:on-init>
     <![CDATA[
@@ -78,6 +78,11 @@
     		                </td>
                         <td>
                           <input type="text" name="t_rdf_url" size="100"></input>
+                        </td>
+                      </tr>
+                      <tr id="cb2">
+                        <td colspan="2">
+			    <v:check-box name="persist_graph" value="1" xhtml_id="cbp"/> <label for="cbp">Create graph explicitly</label>
                         </td>
                       </tr>
                       <tr id="rd2">
@@ -123,7 +128,13 @@ declare _file, _graph, is_ttl, is_xml any;
       exec (sprintf ('sparql load "%s" into <%s>', uri, _graph));
       goto end_post;
     }
-
+    declare magic any;
+    if (length (_file) > 2)
+      {
+        magic := subseq (_file, 0, 2);
+	if (magic[0] = 0hex1f and magic[1] = 0hex8b)
+	  _file := gzip_uncompress (_file);
+      }
     is_ttl := 1;
     {
       declare continue handler for SQLSTATE '*'
@@ -147,6 +158,10 @@ declare _file, _graph, is_ttl, is_xml any;
 	self.vc_is_valid := 0;
 	self.vc_error_message := 'You have attempted to upload invalid data. You can only upload RDF, Turtle, N3 serializations of RDF Data to the RDF Data Store.';
 	return;
+      }
+    if (self.persist_graph.ufl_selected)
+      {
+         SPARQL CREATE SILENT GRAPH iri (?:_graph) ;     
       }
 
 end_post:;

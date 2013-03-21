@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -132,6 +132,7 @@ loaded_xe_is_ready:
       memcpy (xlazye->xe_doc.xd, loaded_doc, sizeof (xper_doc_t));
       dk_free (loaded_doc, sizeof (xper_doc_t));
     }
+  xlazye->xe_doc.xd->xd_top_doc = xlazye->xe_doc.xd;
   loaded_xe->xe_doc.xd = xlazye->xe_doc.xd;
   while (NULL != all_lazy_entities)
     {
@@ -208,6 +209,10 @@ DBG_NAME(xlazye_attribute) (DBG_PARAMS xml_entity_t *xe, int start, XT *node, ca
 void
 DBG_NAME(xlazye_string_value) (DBG_PARAMS xml_entity_t * xe, caddr_t * ret, dtp_t dtp)
 { xlazye_make_actual_load (xe); xe->_->DBG_NAME(xe_string_value)(DBG_ARGS xe, ret, dtp); }
+
+int
+xlazye_string_value_is_nonempty (xml_entity_t * xe)
+{ xlazye_make_actual_load (xe); return xe->_->xe_string_value_is_nonempty (xe); }
 
 int
 xlazye_up (xml_entity_t * xe, XT * node, int up_flags)
@@ -365,6 +370,7 @@ xml_lazy_init (void)
   xec_lazy_xe.xe_attribute = xlazye_attribute;
   xec_lazy_xe.xe_string_value = (void (*) (xml_entity_t * xe, caddr_t * ret, dtp_t dtp)) xlazye_string_value;
 #endif
+  xec_lazy_xe.xe_string_value_is_nonempty = xlazye_string_value_is_nonempty;
   xec_lazy_xe.xe_first_child = xlazye_first_child;
   xec_lazy_xe.xe_last_child = xlazye_last_child;
   xec_lazy_xe.xe_get_child_count_any = xlazye_get_child_count_any;

@@ -9,7 +9,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2006 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -304,7 +304,7 @@ echo "  <caption>" >> $STICKER
 echo "    <name package=\"conductor\">" >> $STICKER
 echo "      <prop name=\"Title\" value=\"Virtuoso Conductor\"/>" >> $STICKER
 echo "      <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-echo "      <prop name=\"Copyright\" value=\"(C) 1998-2011 OpenLink Software\"/>" >> $STICKER
+echo "      <prop name=\"Copyright\" value=\"(C) 1998-2013 OpenLink Software\"/>" >> $STICKER
 echo "      <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso/conductor/download\"/>" >> $STICKER
 echo "      <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso/conductor/download\"/>" >> $STICKER
 echo "    </name>" >> $STICKER
@@ -322,7 +322,7 @@ echo "  <ddls>" >> $STICKER
 echo "    <sql purpose=\"pre-install\">if (lt (sys_stat ('st_dbms_ver'), '$NEED_VERSION')) { result ('ERROR', 'The conductor package requires server version $NEED_VERSION or greater'); signal ('FATAL', 'The conductor package requires server version $NEED_VERSION or greater'); } </sql>" >> $STICKER
 echo "    <sql purpose=\"post-install\">" >> $STICKER
 echo "      registry_set('__no_vspx_temp', '1');" >> $STICKER
-echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/admin_dav_browser.sql', 1, 'report', $ISDAV);" >> $STICKER
+#echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/admin_dav_browser.sql', 1, 'report', $ISDAV);" >> $STICKER
 echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/vdir_helper.sql', 1, 'report', $ISDAV);" >> $STICKER
 echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/yacutia.sql', 1, 'report', $ISDAV);" >> $STICKER
 echo "      vhost_remove (lpath=>'/conductor');" >> $STICKER

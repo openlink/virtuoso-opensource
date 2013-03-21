@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -78,8 +78,8 @@ Add new types by typing the details into the fields provided and pressing the <e
   <sect4 id="davcontresperm"><title>Resource Permissions</title>
   <para>Unlike Unix, the Repository does not use the designation 'd' for 
   directories, which in DAV are more commonly referred to as collections.  
-  Collections are distinguished by a different icon &mdash; a folder-like icon 
-  &mdash; and by having the type named &quot;collection&quot;.</para>
+  Collections are distinguished by a different icon - a folder-like icon
+  - and by having the type named &quot;collection&quot;.</para>
 
   <para>In addition, the permissions string has a trailing letter designating
   the indexing status of the resource.  This letter is 'n' to designate 
@@ -114,6 +114,9 @@ Add new types by typing the details into the fields provided and pressing the <e
   properties of a resource, other than its name, by selecting the 
   resource via the checkbox to the left of the icon, and pressing the 
   &quot;Properties&quot; button.</para>
+  <figure float="1" id="editres"><title>Edit Resource Properties</title>
+    <graphic fileref="ui/editres.png"/>
+  </figure>
 
   <para>XML documents also permit you to edit their XML properties 
   specifically.  This can be done on any document of type text/xml by 
@@ -126,10 +129,15 @@ for one or a group of resources which should be selected. The name of a resource
     <para>The owner, group, permissions, and indexing controls on this form 
     apply to the appropriate properties of resources, as documented 
     above.  Changes to the type of a collection (folder) are ignored.</para>
-
+  <figure float="1" id="meditres"><title>Multiple Resources Edit Properties</title>
+    <graphic fileref="ui/meditres.png"/>
+  </figure>
     <para>The &quot;Property&quot; control permits you to change or add
     additional properties.  There is a pulldown of predefined XML-related 
     properties, or you may create your own property.</para>
+  <figure float="1" id="meditres2"><title>Multiple Resources Edit Properties</title>
+    <graphic fileref="ui/meditres2.png"/>
+  </figure>    
     </sect5>
 
     <sect5 id="davcontdavprop"><title>WebDAV Properties</title>
@@ -154,14 +162,20 @@ for one or a group of resources which should be selected. The name of a resource
   <para>The &quot;Create Folder&quot; button brings up a form in which you can 
   specify the name of the collection (folder), its owner and group, and the initial 
   permissions.  You may also turn on indexing for the folder's contents at this point.</para>
+    <figure float="1" id="cfolder"><title>Create Folder</title>
+    <graphic fileref="ui/cfolder.png"/>
+  </figure>
 
   <para>The &quot;Upload File&quot; button brings up a form in which you can 
   specify the name and location of a file on your local computer that is 
   to be copied into the DAV repository.  You need to specify the name of 
   the resource in the repository and give it a type.  You can also set 
   the basic repository properties here.</para>
+      <figure float="1" id="ufile"><title>Upload File</title>
+    <graphic fileref="ui/ufile.png"/>
+  </figure>
 
-  <sect5 id="davadsymlink"><title>WebDAV Symbolic Linking</title>
+  <!--sect5 id="davadsymlink"><title>WebDAV Symbolic Linking</title>
 
 <para>WebDAV symbolic linking, also known as <emphasis>DAV
 redirection</emphasis>, is another method for accessing content from
@@ -196,13 +210,13 @@ Name.</para>
 
 <example id="ex_davsymlincs"><title>Examples:</title>
 
-<para>If I wish to keep a link to the article found at &lt;URL:
-http://www.xml.com/pub/a/2001/10/17/slippery-soap.html&gt;  I would
+<para>If one wishes to keep a link to the article found at &lt;URL:
+http://www.xml.com/pub/a/2001/10/17/slippery-soap.html&gt;  he/she would
 simply click the Add Link button, type a useful local name, such as
 &quot;Slippery SOAP article&quot; and paste the URL into the Link to
 field.</para>
 
-<para>More interesting, I could set up a Web Data Import for the
+<para>More interesting, he/she could set up a Web Data Import for the
 target &lt;URL:
 http://news.cnet.com/news/0-1277-210-7545619-1.html?tag=bt_bh&gt;</para>
 
@@ -213,7 +227,7 @@ feature, we are able to map the actual documents imported to a common
 location without encountering problems related to component
 references, embedded links, etc.</para>
 </example>
-</sect5>
+</sect5-->
 
 </sect4>
 </sect3>

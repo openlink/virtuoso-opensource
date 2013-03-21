@@ -50,6 +50,8 @@ SOURCES1= \
 	VirtuosoConnection.cs \
 	VirtuosoDataAdapter.cs \
 	VirtuosoDataReader.cs \
+	VirtuosoDateTime.cs \
+	VirtuosoDateTimeOffset.cs \
 	VirtuosoErrorCollection.cs \
 	VirtuosoError.cs \
 	VirtuosoException.cs \
@@ -58,6 +60,7 @@ SOURCES1= \
 	VirtuosoParameter.cs \
 	VirtuosoPermissionAttribute.cs \
 	VirtuosoPermission.cs \
+	VirtuosoTimeSpan.cs \
 	VirtuosoTransaction.cs \
 	VirtuosoWarning.cs \
 	Win32.cs

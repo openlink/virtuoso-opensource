@@ -9,7 +9,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2006 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -251,6 +251,7 @@ then
 	(cd $HOME/binsrc/bpel; make)
 	(cd $HOME/binsrc/isparql ; make)
 	(cd $HOME/binsrc/rdf_mappers ; make)
+	(cd $HOME/binsrc/rdb2rdf ; make)
 	(cd $HOME/binsrc/samples/image_magick ; make)
 	(cd $HOME/binsrc/samples/sparql_demo ; make)
 	(cd $HOME/binsrc/tutorial ; make)
@@ -342,6 +343,7 @@ $LN $HOME/binsrc/b3s/fct_dav.vad .
 $LN $HOME/binsrc/bpel/bpel_dav.vad .
 $LN $HOME/binsrc/isparql/isparql_dav.vad .
 $LN $HOME/binsrc/rdf_mappers/rdf_mappers_dav.vad .
+$LN $HOME/binsrc/rdb2rdf/rdb2rdf_dav.vad .
 $LN $HOME/binsrc/samples/sparql_demo/sparql_demo_dav.vad .
 $LN $HOME/binsrc/tutorial/tutorial_dav.vad .
 $LN $HOME/binsrc/yacutia/conductor_dav.vad .
@@ -350,6 +352,7 @@ $LN $HOME/binsrc/yacutia/conductor_dav.vad .
 [ -f fct_dav.vad ] && DO_COMMAND "vad_install ('fct_dav.vad')" dba dba
 [ -f doc_dav.vad ] && DO_COMMAND "vad_install ('doc_dav.vad')" dba dba
 [ -f rdf_mappers_dav.vad ] && DO_COMMAND "vad_install ('rdf_mappers_dav.vad')" dba dba
+[ -f rdb2rdf_dav.vad ] && DO_COMMAND "vad_install ('rdb2rdf_dav.vad')" dba dba
 [ -f isparql_dav.vad ] && DO_COMMAND "vad_install ('isparql_dav.vad')" dba dba
 [ -f bpel_dav.vad ] && DO_COMMAND "vad_install ('bpel_dav.vad')" dba dba
 [ -f sparql_demo_dav.vad ] && DO_COMMAND "vad_install ('sparql_demo_dav.vad')" dba dba

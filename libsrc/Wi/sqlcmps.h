@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -232,22 +232,8 @@ typedef struct sql_comp_s
     char		sc_in_dfg_subq;
     char		sc_fref_nesting; /* if nested gby/oby, true if colocating the gby */
     char		sc_qf_n_temp_trees; /* how many gb/oby temps in qf.  If many, make shorter batches to save mem */
-    char		sc_is_scalar_agg; /* aggregation in scalar subq, no group by */
-    char		sc_vec_in_outer; /* true if vectoring right side of left oj.  Fetched cols may not be aliased to others */
     rdf_inf_slots_t *	sc_rdf_inf_slots;
     caddr_t * sc_big_ssl_consts;	/*!< Vector of saved values for SSL consts of unusual types (like vectors) or just too big to fit into SQL text in a plain way */
-    dk_set_t		sc_vec_pred;
-    dk_hash_t *		sc_vec_ssl_def;
-    dk_hash_t *		sc_vec_ssl_shadow;
-    dk_hash_t *		sc_vec_no_copy_ssls;
-    query_frag_t *	sc_vec_qf; /* if inside a qf in sqlvec */
-    dk_hash_t * 	sc_vec_cast_ssls; /* from the cast ssl to its original ssl */
-    dk_set_t		sc_hash_fillers;
-    data_source_t *	sc_vec_current;
-    dbe_column_t *	sc_vec_current_col; /* set when looking for a comparison param for this col, implies null values get filterd out in cast  */
-    data_source_t *	sc_vec_first_of_qf; /* qf or stn if setting vec ssls  partitioning  ks of it. */
-    dk_set_t	sc_vec_new_ssls;
-    dk_set_t 	sc_ssl_prereset_only;
   } sql_comp_t;
 
 
@@ -256,9 +242,8 @@ typedef struct sql_comp_s
 #define SC_UPD_INS 2
 
 #define TS_ORDER_KEY 0 /* generate results in key order and add key cols */
-#define TS_ORDER_DETERMINISTIC 1  /* Like key order but may sort for vectoring, i.e. no irder by coming from index order */
-#define TS_ORDER_PLACE 2 /* generate the results in any order but add key cols for subsequent searched upd or del */
-#define TS_ORDER_NONE 3  /* generate the results in any order */
+#define TS_ORDER_PLACE 1 /* generate the results in any order but add key cols for subsequent searched upd or del */
+#define TS_ORDER_NONE 2  /* generate the resulsts in any order */
 
 
 
@@ -340,6 +325,9 @@ typedef struct trig_cols_s
   } trig_cols_t;
 
 
+int key_matches_index_opt (dbe_key_t * key, caddr_t opt);
+dbe_key_t *  tb_key_by_index_opt (dbe_table_t * tb, caddr_t opt);
+
 state_slot_t * col_ref_col (sql_comp_t * sc, caddr_t ref);
 
 void comp_scalar_exp (sql_comp_t *sc, dk_set_t * code_vec, sql_tree_t * tree,
@@ -411,7 +399,7 @@ dbe_table_t * table_ref_table (sql_comp_t * sc, ST* tref);
 state_slot_t * sqlc_col_ref_ssl (sql_comp_t * sc, ST* col_ref);
 
 setp_node_t *  sqlc_add_distinct_node (sql_comp_t * sc, data_source_t ** head,
-				       state_slot_t ** ssl_out, long nrows, dk_set_t * code, ptrlong * dist_pos);
+    state_slot_t ** ssl_out, long nrows);
 
 
 void ct_make_ts (sql_comp_t * sc, comp_table_t * ct);
@@ -496,7 +484,7 @@ void sqlc_update_set_keyset (sql_comp_t * sc, table_source_t * ts);
 
 
 void tc_init (trig_cols_t * tc, int event, dbe_table_t * tb, caddr_t * cols,
-    ST ** vals, dbe_key_t * add_pk);
+    ST ** vals, int add_pk);
 void tc_free (trig_cols_t * tc);
 int tc_new_value_inx (trig_cols_t * tc, char *col_name);
 int tc_pk_value_inx (trig_cols_t * tc, char *col_name);
@@ -530,7 +518,6 @@ void sqlc_cursor (sql_comp_t * sc, ST ** ptree, int cr_type);
 ST * sql_tree_and (ST * tree, ST * cond);
 ptrlong cmp_op_inverse (ptrlong op);
 caddr_t box_append_1 (caddr_t box, caddr_t elt);
-caddr_t box_append_1_free (caddr_t box, caddr_t elt);
 caddr_t t_box_append_1 (caddr_t box, caddr_t elt);
 
 col_ref_rec_t * sqlc_virtual_col_crr (sql_comp_t * sc, comp_table_t * ct, char * name, dtp_t dtp);
@@ -542,7 +529,7 @@ void sqlc_meta_data_hook (sql_comp_t * sc, ST * tree);
 void sqlc_proc_table_cols (sql_comp_t * sc, comp_table_t * ct);
 
 void sqlc_top_select_dt (sql_comp_t * sc, ST * tree);
-ST ** sqlc_selection_names (ST * tree);
+ST ** sqlc_selection_names (ST * tree, int only_edit_tree);
 
 #define P_NO_MATCH 0
 #define P_EXACT 1
@@ -554,12 +541,12 @@ int indexable_predicate_p (int p);
 unsigned char bop_to_dvc (int op);
 void sqlc_select_top (sql_comp_t * sc, select_node_t * sel, ST * tree, 		 dk_set_t * code);
 void sqlc_select_unique_ssls (sql_comp_t * sc, select_node_t * sel, dk_set_t *sel_set);
-data_source_t * sqlc_make_sort_out_node (sql_comp_t * sc, dk_set_t out_cols, dk_set_t out_slots, dk_set_t out_always_null, int is_gb);
+data_source_t * sqlc_make_sort_out_node (sql_comp_t * sc, dk_set_t out_cols, dk_set_t out_slots, dk_set_t out_always_null);
 setp_node_t * setp_node_keys (sql_comp_t * sc, select_node_t * sel, caddr_t * cols);
 void qr_replace_node (query_t * qr, data_source_t * to_replace,
-		      data_source_t * replace_with, int move_after_code);
+		      data_source_t * replace_with);
 
-void setp_distinct_hash (sql_comp_t * sc, setp_node_t * setp, uint64 n_rows, int op);
+void setp_distinct_hash (sql_comp_t * sc, setp_node_t * setp, long n_rows);
 void setp_after_deserialize (setp_node_t * setp);
 void ha_free (hash_area_t * ha);
 
@@ -613,7 +600,7 @@ extern int sqlg_count_qr_global_refs;
        && (sqlg_count_qr_global_refs||  !ssl->ssl_qr_global)  && SSL_PLACEHOLDER != ssl->ssl_type && SSL_ITC != ssl->ssl_type) \
 sethash ((void*)ssl, res, (void*)1); }
 
-void  ref_ssl_list (sql_comp_t * sc, dk_hash_t * ht, dk_set_t ssls);
+void  ref_ssl_list (dk_hash_t * ht, dk_set_t ssls);
 
 #define ASG_SSL(res, all_res, ssl) \
   if (IS_REAL_SSL (ssl)) \
@@ -648,16 +635,6 @@ dk_set_t  sqlg_continue_list (data_source_t * qn);
 extern int cl_rdf_inf_inited;
 extern du_thread_t * cl_rdf_inf_init_thread;
 
-void sqlg_vector (sql_comp_t * sc, query_t * qr);
-void sqlg_vector_params (sql_comp_t * sc, query_t * qr);
-void sqlg_vector_subq (sql_comp_t * sc);
-void sqlg_vec_qns (sql_comp_t * sc, data_source_t * qn, dk_set_t prev_nodes);
-void qn_vec_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t * all_res, int * non_cl_local);
-#define sqlg_is_vector  (sc->sc_cc->cc_query->qr_proc_vectored)
-
-void remhash_ssl (state_slot_t * ssl, dk_hash_t * ht);
-void qr_no_copy_ssls (query_t * qr, dk_hash_t * no_copy);
-
 
 #define OUTSIDE_PARSE_SEM \
   { \
@@ -671,6 +648,5 @@ void qr_no_copy_ssls (query_t * qr, dk_hash_t * no_copy);
 	semaphore_enter (parse_sem); \
   }
 
-dk_hash_t * hash_table_copy (dk_hash_t * ht);
 
 #endif /* _SQLCMPS_H */

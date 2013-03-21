@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -332,13 +332,13 @@ DAV_HOME_DIR_CREATE (in uid varchar) returns any
     if (isnull (DAV_HIDE_ERROR (rc)))
       goto _end;
 
-    host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+    host := virtuoso_ini_item_value ('URIQA', 'DefaultHost');
     if (host is null) {
       host := sys_stat ('st_host_name');
       if (server_http_port () <> '80')
         host := host ||':'|| server_http_port ();
     }
-    rc := DAV_PROP_SET_INT (path, 'virt:rdf_graph', 'http://' || host || path, null, null, 0, 0);
+    rc := DAV_PROP_SET_INT (path, 'virt:rdf_graph', rtrim ('http://' || host || path, '/') || '#this', null, null, 0, 0);
     if (isnull (DAV_HIDE_ERROR (rc)))
       goto _end;
     rc := DAV_PROP_SET_INT (path, 'virt:rdf_sponger', 'on', null, null, 0, 0);
@@ -849,6 +849,18 @@ DAV_SEARCH_ID (in path any, in what char (1)) returns any
       if (not isstring (path))
         path := DAV_CONCAT_PATH (par, null);
       id := coalesce ((select RES_ID from WS.WS.SYS_DAV_RES where RES_FULL_PATH = path), -1);
+      if ((id <> -1) and (connection_get ('dav_store') is null))
+      {
+        declare det, detcol_id any;
+
+        detcol_id := DAV_PROP_GET_INT (id, what, 'virt:DETCOL_ID', 0);
+        if (DAV_HIDE_ERROR (detcol_id) is not null)
+        {
+          det := cast (coalesce ((select COL_DET from WS.WS.SYS_DAV_COL where COL_ID = detcol_id), '') as varchar);
+          if ((det <> '') and __proc_exists ('DB.DBA.' || det || '_DAV_MAKE_ID'))
+            return call (cast (det as varchar) || '_DAV_MAKE_ID') (detcol_id, id, 'R');
+        }
+      }
     }
   else if (what = 'C')
     {
@@ -1086,8 +1098,28 @@ DAV_SEARCH_ID_OR_DET (in path any, in what char (1), out det_ret varchar, out de
       if (not isstring (path))
         path := DAV_CONCAT_PATH (par, null);
       id := coalesce ((select RES_ID from WS.WS.SYS_DAV_RES where RES_FULL_PATH = path), -1);
-      if (id > 0)
-        goto found_plain_id;
+      if ((id <> -1) and (connection_get ('dav_store') is null))
+      {
+        detcol_id := cast (DAV_PROP_GET_INT (id, what, 'virt:DETCOL_ID', 0) as integer);
+        if (DAV_HIDE_ERROR (detcol_id) is not null)
+        {
+          det_ret := cast (coalesce ((select COL_DET from WS.WS.SYS_DAV_COL where COL_ID = detcol_id), '') as varchar);
+          if ((det_ret <> '') and __proc_exists ('DB.DBA.' || det_ret || '_DAV_MAKE_ID'))
+          {
+            declare detcol_par any;
+
+            detcol_par := split_and_decode (DAV_SEARCH_PATH (detcol_id, 'C'), 0, '\0\0/');
+            inx := length (detcol_par)-2;
+            detcol_path_parts := subseq (par, 0, inx + 1);
+            par := subseq (par, inx + 1);
+            unreached_path_parts := par;
+            return call (cast (det_ret as varchar) || '_DAV_MAKE_ID') (detcol_id, id, 'R');
+          }
+        }
+      }
+     if (id > 0)
+      goto found_plain_id;
+
     }
   else if (what = 'C')
     {
@@ -1110,7 +1142,7 @@ descending_col_search:
       cname := aref (par, inx);
       -- dbg_obj_princ ('select, cname =', cname, inx);
       select COL_ID, COL_DET into cur_id, det from WS.WS.SYS_DAV_COL where COL_NAME = cname and COL_PARENT = parent_id;
-      if (det is not NULL)
+      if ((det is not NULL) and (connection_get ('dav_store') is null))
         {
           det_ret := det;
           detcol_id := cur_id;
@@ -1520,14 +1552,14 @@ DAV_REQ_CHARS_TO_BITMASK (in req varchar) returns integer
 }
 ;
 
-
 --!AWK PUBLIC
 create function
 DAV_AUTHENTICATE (in id any, in what char(1), in req varchar, in a_uname varchar, in a_pwd varchar, in a_uid integer := null) returns integer
 {
-  declare oid, ogid, puid, pgid integer;
+  declare rc, oid, ogid, puid, pgid integer;
   declare opwd, pperms varchar;
   declare pacl varbinary;
+
   what := upper (what);
   -- dbg_obj_princ ('DAV_AUTHENTICATE (', id, what, req, a_uname, a_pwd, a_uid, ')');
   if (length (req) <> 3)
@@ -1566,18 +1598,11 @@ DAV_AUTHENTICATE (in id any, in what char(1), in req varchar, in a_uname varchar
   }
   if (isarray (id))
   {
-    declare detcol_id integer;
+    rc := call (cast (id[0] as varchar) || '_DAV_AUTHENTICATE') (id, what, req, a_uname, a_pwd, a_uid);
+    if (rc = -20)
+      rc := DAV_AUTHENTICATE (id[1], 'C', req, a_uname, a_pwd, a_uid);
 
-    detcol_id := id[1];
-    select COL_OWNER, COL_GROUP, COL_PERMS, COL_ACL into puid, pgid, pperms, pacl from WS.WS.SYS_DAV_COL where COL_ID = detcol_id;
-    if (not DAV_CHECK_PERM (pperms, req, oid, ogid, pgid, puid))
-    {
-      if (not WS.WS.ACL_IS_GRANTED (pacl, oid, 4))
-      {
-        return -13;
-      }
-    }
-    return call (cast (id[0] as varchar) || '_DAV_AUTHENTICATE') (id, what, req, a_uname, a_pwd, a_uid);
+    return rc;
   }
   whenever not found goto nf_col_or_res;
   if (what = 'R')
@@ -1647,8 +1672,8 @@ DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_
     declare d__perms varchar;
 
     rc := call (cast (id[0] as varchar) || '_DAV_AUTHENTICATE_HTTP') (id, what, req, can_write_http, a_lines, a_uname, a_pwd, a_uid, a_gid, _perms);
-    if (rc >= 0)
-      rc := DAV_AUTHENTICATE_HTTP (id[1], 'C', '1__', can_write_http, a_lines, a_uname, a_pwd, a_uid, a_gid, d__perms);
+    if (rc = -20)
+      rc := DAV_AUTHENTICATE_HTTP (id[1], 'C', req, can_write_http, a_lines, a_uname, a_pwd, a_uid, a_gid, _perms);
 
     return rc;
   }
@@ -1671,9 +1696,9 @@ DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_
     }
     else
     {
-          return -14;
-        }
-      anon_flags := substring (cast (pperms as varchar), 7, 3);
+      return -14;
+    }
+    anon_flags := substring (cast (pperms as varchar), 7, 3);
     allow_anon := WS.WS.PERM_COMP (anon_flags, req);
   }
   -- dbg_obj_princ ('DAV_AUTHENTICATE_HTTP has a_uid=', a_uid, ' allow_anon=', allow_anon);
@@ -1685,9 +1710,12 @@ DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_
       if (rc < 0)
       {
         if (DAV_AUTHENTICATE_SSL (id, what, null, req, a_uid, a_gid, _perms))
+        {
+				  http_rewrite ();
           return a_uid;
+        }
 
-          return rc;	
+        return rc;
       }
     }
   }
@@ -1772,91 +1800,46 @@ DAV_AUTHENTICATE_SSL_CONDITION () returns integer
 }
 ;
 
+-- redundant code muste be deleted after move the procedure WEBID_AUTH_GEN_2 in DAV!!!
+-- START REDUNDANT CODE
+create function DAV_WEBID_QR (in gr varchar, in uri varchar)
+{
+    return sprintf ('sparql
+    define input:storage ""
+    define input:same-as "yes"
+    prefix cert: <http://www.w3.org/ns/auth/cert#>
+    prefix rsa: <http://www.w3.org/ns/auth/rsa#>
+    select (str (?exp)) (str (?mod))
+    from <%S>
+    where
+    {
+      { ?id cert:identity <%S> ; rsa:public_exponent ?exp ; rsa:modulus ?mod .  }
+      union
+      { ?id cert:identity <%S> ; rsa:public_exponent ?exp1 ; rsa:modulus ?mod1 . ?exp1 cert:decimal ?exp . ?mod1 cert:hex ?mod . }
+      union
+      { <%S> cert:key ?key . ?key cert:exponent ?exp . ?key cert:modulus ?mod .  }
+    }', gr, uri, uri, uri);
+}
+;
+-- END REDUNDANT CODE
+
 create function
 DAV_AUTHENTICATE_SSL_WEBID ()
 {
-  declare retIRI varchar;
-  declare graph, baseGraph, foafIRI, foafGraph, loadIRI, localIRI any;
-  declare S, V, info, st, msg, data, meta any;
+  declare webid varchar;
+  declare cert, dummy, vtype any;
 
-  retIRI := null;
-
-  set_user_id ('dba');
-  foafIRI := trim (get_certificate_info (7, null, null, null, '2.5.29.17'));
-  V := regexp_replace (foafIRI, ',[ ]*', ',', 1, null);
-  V := split_and_decode (V, 0, '\0\0,:');
-  if (V is null)
-    V := vector ();
-  foafIRI := get_keyword ('URI', V);
-  if (isnull (foafIRI))
+  webid := null;
+  if (__proc_exists ('DB.DBA.WEBID_AUTH_GEN_2') is not null)
     {
-      if (__proc_exists ('DB.DBA.FOAF_SSL_WEBFINGER') is not null)
-	{
-	    retIRI := DB.DBA.FOAF_SSL_WEBFINGER ();
-	    if (not isnull (retIRI))
-	      goto _exit;
-	}
-      if (__proc_exists ('ODS.DBA.FINGERPOINT_WEBID_GET') is not null)
-	{
-	    retIRI := ODS.DBA.FINGERPOINT_WEBID_GET ();
-	    if (not isnull (retIRI))
-	goto _exit;
-    }
-  } else {
-    foafGraph := 'http://local.virt/FOAF/' || cast (rnd (1000) as varchar);
-  localIRI := foafIRI;
-  V := rfc1808_parse_uri (localIRI);
-  if (is_https_ctx () and
-      cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DynamicLocal') = '1' and
-      V[1] = registry_get ('URIQADefaultHost'))
-  {
-    V [0] := 'local';
-    V [1] := '';
-    localIRI := db.dba.vspx_uri_compose (V);
-  }
-  V := rfc1808_parse_uri (foafIRI);
-  V[5] := '';
-  loadIRI := DB.DBA.vspx_uri_compose (V);
-  S := sprintf ('sparql load <%s> into graph <%s>', loadIRI, foafGraph);
-  st := '00000';
-  exec (S, st, msg, vector (), 0);
-    if (st = '00000')
-    {
-  S := sprintf (' sparql define input:storage "" ' ||
-                ' prefix cert: <http://www.w3.org/ns/auth/cert#> ' ||
-                ' prefix rsa: <http://www.w3.org/ns/auth/rsa#> ' ||
-                ' select (str (bif:coalesce (?exp_val, ?exp))) ' ||
-                '        (str (bif:coalesce (?mod_val, ?mod))) ' ||
-                '   from <%s> ' ||
-                '  where { ' ||
-                '          ?id cert:identity <%s> ; ' ||
-                '              rsa:public_exponent ?exp ; ' ||
-                '              rsa:modulus ?mod . ' ||
-                '          optional { ?exp cert:decimal ?exp_val . ' ||
-                '          ?mod cert:hex ?mod_val . } ' ||
-                '        }',
-                foafGraph,
-                localIRI);
-  exec (S, st, msg, vector (), 0, meta, data);
-      if (st = '00000')
-      {
-        info := get_certificate_info (9);
-  foreach (any _row in data) do
-  {
-    if (_row[0] = cast (info[1] as varchar) and
-        lower (regexp_replace (_row[1], '[^A-Z0-9a-f]', '', 1, null)) = bin2hex (info[2]))
-    {
-            retIRI := foafIRI;
-            goto _break;
+      cert := client_attr ('client_certificate');
+      dummy := null;
+      -- !!!
+      -- if (not DB.DBA.WEBID_AUTH_GEN_2 (cert, 0, null, 1, 0, webid, dummy, 0, vtype))
+      --   webid := null;
+      DB.DBA.WEBID_AUTH_GEN_2 (cert, 0, null, 1, 0, webid, dummy, 0, vtype);
           }
-        }
-      }
-    }
-  _break:;
-    exec (sprintf ('SPARQL clear graph <%s>', foafGraph), st, msg, vector (), 0);
-  }
-_exit:
-  return retIRI;
+  return webid;
 }
 ;
 
@@ -1884,10 +1867,7 @@ DAV_AUTHENTICATE_SSL (
     goto _exit;
 
   set_user_id ('dba');
-  foafIRI := DAV_AUTHENTICATE_SSL_WEBID ();
-  if (isnull (foafIRI))
-    goto _exit;
-
+  foafIRI := null;
   tmp := '/';
   V := vector ();
   T := split_and_decode (trim (path, '/'), 0, '\0\0/');
@@ -1908,6 +1888,12 @@ DAV_AUTHENTICATE_SSL (
     if (isinteger (id) and exists (select 1 from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = id and PROP_TYPE = what and PROP_NAME = 'virt:aci_meta_n3'))
     {
       tmp := null;
+      if (isnull (foafIRI))
+      {
+	      foafIRI := DB.DBA.DAV_AUTHENTICATE_SSL_WEBID ();
+      if (isnull (foafIRI))
+	goto _exit;
+  	  }
       graph := WS.WS.DAV_IRI (V[N]);
       for (
         sparql
@@ -1950,25 +1936,25 @@ DAV_AUTHENTICATE_SSL (
                    graph ?g
                    {
                      ?p3 rdf:type foaf:Group ;
-                         foaf:member `iri(?:foafIRI)` .
+                     foaf:member `iri(?:foafIRI)` .
                      filter (?g like (?:grpGraph)) .
                    }
                  }
                }
          order by ?p3 ?p2 ?p1 ?mode) do
       {
-        if      (not isnull (p1))
+        if      (not isnull ("p1"))
           I := 0;
-        else if (not isnull (p2))
+        else if (not isnull ("p2"))
           I := 1;
-        else if (not isnull (p3))
+        else if (not isnull ("p3"))
           I := 2;
         else
           goto _skip;
 
-        if (tmp <> coalesce (p1, coalesce (p2, p3)))
+        if (tmp <> coalesce ("p1", coalesce ("p2", "p3")))
         {
-          tmp := coalesce (p1, coalesce (p2, p3));
+	    tmp := coalesce ("p1", coalesce ("p2", "p3"));
           for (M := 0; M < length (IRIs[I]); M := M + 1)
           {
             if (tmp = IRIs[I][M])
@@ -1976,11 +1962,11 @@ DAV_AUTHENTICATE_SSL (
           }
         }
 
-        if      (mode like '%#Read')
+        if ("mode" like '%#Read')
           realMode[0] := 1;
-        else if (mode like '%#Write')
+        else if ("mode" like '%#Write')
           realMode[1] := 1;
-        else if (mode like '%#Control')
+        else if ("mode" like '%#Execute')
           realMode[2] := 1;
 
         if ((reqMode[0] <= realMode[0]) and (reqMode[1] <= realMode[1]) and (reqMode[2] <= realMode[2]))
@@ -2019,7 +2005,6 @@ DAV_COL_CREATE (
       path, permissions, uid, gid, auth_uid, auth_pwd, 1, 1, 1, null, null);
 }
 ;
-
 
 create procedure
 DAV_COL_CREATE_INT (
@@ -2071,7 +2056,7 @@ DAV_COL_CREATE_INT (
 
   if (isarray (pid))
     det := pid[0];
-  else if (pid > 0)
+  else if ((pid > 0) and (connection_get ('dav_store') is null))
     det := coalesce ((select COL_DET from WS.WS.SYS_DAV_COL where COL_ID=pid), NULL);
   else
     det := null;
@@ -2164,7 +2149,6 @@ DAV_RES_UPLOAD_STRSES (
 }
 ;
 
-
 create procedure
 DAV_RES_UPLOAD_STRSES_INT (
     in path varchar,
@@ -2193,6 +2177,11 @@ DAV_RES_UPLOAD_STRSES_INT (
   log_enable (bit_or (old_log_mode, 4), 1);
   return rc;
 }
+;
+
+-- the sink queue, see below
+create table RDF_SINK_QUEUE (RSQ_PATH varchar, RSQ_ID int, RSQ_C_ID int, RSQ_GRAPH varchar, RSQ_STATE int, RSQ_TS timestamp, RSQ_TYPE varchar, RSQ_UID int, RSQ_GID int, primary key (RSQ_ID))
+create index RDF_SINK_QUEUE_STAT on RDF_SINK_QUEUE (RSQ_STATE, RSQ_TS)
 ;
 
 create procedure
@@ -2279,7 +2268,7 @@ DAV_RES_UPLOAD_STRSES_INT_INNER (
       if (isarray (pid))
         det := pid[0];
       else if (pid > 0)
-        det := coalesce ((select COL_DET from WS.WS.SYS_DAV_COL where COL_ID=pid), NULL);
+        det := coalesce ((select COL_DET from WS.WS.SYS_DAV_COL where COL_ID=pid and connection_get ('dav_store') is null), NULL);
       else
         {
           -- dbg_obj_princ ('no parent, DAV_RES_UPLOAD_STRSES_INT returns ', pid);
@@ -2436,7 +2425,7 @@ DAV_RES_UPLOAD_STRSES_INT_INNER (
              return -38;
         }
        -- dbg_obj_princ ('UPDATE ', name);
-      if (sys_stat ('cl_run_local_only') = 1) 
+      if (sys_stat ('cl_run_local_only') = 1)
 	{
 	  update WS.WS.SYS_DAV_RES
 	     set RES_OWNER = ouid,
@@ -2468,55 +2457,38 @@ DAV_RES_UPLOAD_STRSES_INT_INNER (
     -- dbg_obj_princ ('fine, DAV_RES_UPLOAD_STRSES_INT returns ', rc, ' for ', path);
 
 
-  declare c_id integer;
- 	declare is_rdf integer;
-  declare rdf_graph, rdf_graph2, rdf_sponger any;
-  declare rdf_graph_resource_id, rdf_graph_resource_name, rdf_graph_resource_path, host any;
+  declare c_id, depth integer;
+  declare rdf_graph any;
+  declare _col_p_id, _inherit any;
 
   -- delete RDF data from separate (file) graph (if exists)
   RDF_SINK_DELETE (path);
 
-  -- flag for rdf upload
-  is_rdf := 0;
-
   -- get parent collection id
-  c_id := (select RES_COL from WS.WS.SYS_DAV_RES where RES_ID = rc);
-
+   c_id := (select RES_COL from WS.WS.SYS_DAV_RES where RES_ID = rc);
   -- is rdf_sink folder?
-  rdf_graph := (select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = c_id and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdf_graph');
+  rdf_graph := null;
+  depth := 0;
+  {
+     whenever not found goto rdfg_found;
+look_again:
+      select COL_PARENT, COL_INHERIT into _col_p_id, _inherit from WS.WS.SYS_DAV_COL where COL_ID = c_id;
+      rdf_graph := (select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = c_id and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdf_graph');
+      if ((_inherit = 'R' or (depth = 1 and _inherit = 'M') or depth = 0) and length (rdf_graph))
+	goto rdfg_found;
+      c_id := _col_p_id;
+      depth := depth + 1;
+      rdf_graph := null;
+      goto look_again;
+  }
+  rdfg_found:;
   if (not DB.DBA.is_empty_or_null (rdf_graph))
   {
-    declare exit handler for sqlstate '*'
-    {
-      goto _bad_content;
-    };
-
-    rdf_graph2 := 'http://local.virt' || path;
-    -- get sponger parameter?
-    content := (select RES_CONTENT from WS.WS.SYS_DAV_RES where RES_ID = rc);
-    rdf_sponger := coalesce((select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = c_id and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdf_sponger'), 'on');
-    -- upload into first (rdf_sink) graph
-    if (RDF_SINK_UPLOAD (content, type, rdf_graph, rdf_graph2, rdf_sponger))
-    {
-      rdf_graph_resource_name := replace ( replace ( replace ( replace ( replace ( replace ( replace (rdf_graph, '/', '_'), '\\', '_'), ':', '_'), '+', '_'), '\"', '_'), '[', '_'), ']', '_') || '.RDF';
-      rdf_graph_resource_path := WS.WS.COL_PATH (c_id) || rdf_graph_resource_name;
-      if (isnull (DAV_HIDE_ERROR (DAV_SEARCH_ID (rdf_graph_resource_path, 'R'))))
-      {
-        -- RDF content
-        host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
-        if (host is null)
-        {
-          host := sys_stat ('st_host_name');
-          if (server_http_port () <> '80')
-            host := host ||':'|| server_http_port ();
-        }
-        rdf_graph_resource_id := WS.WS.GETID ('R');
-        insert into WS.WS.SYS_DAV_RES (RES_ID, RES_NAME, RES_COL, RES_OWNER, RES_GROUP, RES_PERMS, RES_CR_TIME, RES_MOD_TIME, RES_TYPE, RES_CONTENT)
-          values (rdf_graph_resource_id, rdf_graph_resource_name, c_id, ouid, ogid, '111101101NN', now (), now (), 'text/xml', '');
-        DB.DBA.DAV_PROP_SET_INT (rdf_graph_resource_path, 'redirectref', sprintf ('http://%s/sparql?default-graph-uri=%U&query=%U&format=%U', host, rdf_graph, 'CONSTRUCT { ?s ?p ?o} WHERE {?s ?p ?o}', 'text/xml'), null, null, 0, 0, 1);
-      }
-    }
-  _bad_content:;
+    declare aq any;
+    insert soft RDF_SINK_QUEUE (RSQ_PATH, RSQ_ID, RSQ_C_ID, RSQ_GRAPH, RSQ_STATE, RSQ_TYPE, RSQ_UID, RSQ_GID) values (path, rc, c_id, rdf_graph, 0, type, ouid, ogid);
+    set_user_id (user);
+    aq := async_queue (1);
+    aq_request (aq, 'DB.DBA.RDF_SINK_AQ_RUN', vector ());
   }
   return rc;
 
@@ -2531,18 +2503,166 @@ unhappy_upload:
 }
 ;
 
-create procedure RDF_SINK_UPLOAD (
-  inout content any,
-  inout type varchar,
-  in rdf_graph varchar,
-  in rdf_graph2 varchar,
-  in rdf_sponger varchar)
+create procedure RDF_SINK_AQ_GET ()
 {
+  declare arr any;
+  set isolation = 'serializable';
+  arr := (select vector_agg (vector (RSQ_PATH, RSQ_ID, RSQ_C_ID, RSQ_GRAPH, RSQ_TYPE, RSQ_UID, RSQ_GID)) from (select top 10 RSQ_PATH, RSQ_ID, RSQ_C_ID, RSQ_GRAPH, RSQ_TYPE, RSQ_UID, RSQ_GID
+  	from RDF_SINK_QUEUE where RSQ_STATE = 0 order by RSQ_TS for update) x);
+  foreach (any x in arr) do
+    {
+      update RDF_SINK_QUEUE set RSQ_STATE = 1 where RSQ_ID = x[1];
+    }
+  commit work;
+  return arr;
+}
+;
+
+create procedure DB.DBA.RDF_SINK_AQ_RUN ()
+{
+  declare aq, arr any;
+  if (exists (select 1 from RDF_SINK_QUEUE where RSQ_STATE = 1))
+    return;
+  aq := async_queue (10);
+  for (;;)
+    {
+      arr := RDF_SINK_AQ_GET ();
+      if (not length (arr))
+	return;
+      foreach (any x in arr) do
+	{
+	  aq_request (aq, 'DB.DBA.RDF_SINK_FUNC', vector (x[0], x[1], x[2], x[3], x[4], x[5], x[6]));
+	}
+      aq_wait_all (aq);
+      delete from RDF_SINK_QUEUE where RSQ_STATE = 2;
+      commit work;
+    }
+}
+;
+
+create procedure DAV_RDF_RES_NAME (in rdf_graph varchar)
+{
+   return replace ( replace ( replace ( replace ( replace ( replace ( replace (rdf_graph, '/', '_'), '\\', '_'), ':', '_'), '+', '_'), '\"', '_'), '[', '_'), ']', '_') || '.RDF';
+}
+;
+
+create procedure RDF_SINK_FUNC (in path varchar, in rc int, in c_id int, in rdf_graph any, in type any, in ouid int, in ogid int)
+{
+  declare rdf_sponger, rdf_cartridges, rdf_metaCartridges any;
+  declare rdf_graph_resource_id, rdf_graph_resource_name, rdf_graph_resource_path, host, content any;
+  declare exit handler for sqlstate '*'
+    {
+      goto _bad_content;
+    };
+
+  -- get sponger parameter?
+  content := (select RES_CONTENT from WS.WS.SYS_DAV_RES where RES_ID = rc);
+  rdf_sponger := coalesce((select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = c_id and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdf_sponger'), 'on');
+  rdf_cartridges := coalesce((select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = c_id and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdf_cartridges'), '');
+  rdf_metaCartridges := coalesce((select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = c_id and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdf_metaCartridges'), '');
+  -- upload into first (rdf_sink) graph
+  if (RDF_SINK_UPLOAD (path, content, type, rdf_graph, rdf_sponger, rdf_cartridges, rdf_metaCartridges))
+    {
+      rdf_graph_resource_name := DAV_RDF_RES_NAME (rdf_graph);
+      rdf_graph_resource_name := replace (rdf_graph_resource_name, ' ', '_');
+      rdf_graph_resource_path := WS.WS.COL_PATH (c_id) || rdf_graph_resource_name;
+      if (isnull (DAV_HIDE_ERROR (DAV_SEARCH_ID (rdf_graph_resource_path, 'R'))))
+	{
+	  -- RDF content
+	  host := virtuoso_ini_item_value ('URIQA', 'DefaultHost');
+	  if (host is null)
+	    {
+	      host := sys_stat ('st_host_name');
+	      if (server_http_port () <> '80')
+		host := host ||':'|| server_http_port ();
+	    }
+	  rdf_graph_resource_id := WS.WS.GETID ('R');
+	  insert into WS.WS.SYS_DAV_RES (RES_ID, RES_NAME, RES_COL, RES_OWNER, RES_GROUP, RES_PERMS, RES_CR_TIME, RES_MOD_TIME, RES_TYPE, RES_CONTENT)
+		values (rdf_graph_resource_id, rdf_graph_resource_name, c_id, ouid, ogid, '111101101NN', now (), now (), 'text/xml', '');
+	  DB.DBA.DAV_PROP_SET_INT (rdf_graph_resource_path, 'redirectref', sprintf ('http://%s/sparql?default-graph-uri=%U&query=%U&format=%U', host, rdf_graph,
+		'CONSTRUCT { ?s ?p ?o} WHERE {?s ?p ?o}', 'text/xml'), null, null, 0, 0, 1);
+	}
+    }
+  _bad_content:;
+  update RDF_SINK_QUEUE set RSQ_STATE = 2 where RSQ_ID = rc;
+  commit work;
+}
+;
+
+create procedure RDF_SINK_UPLOAD (
+    in path varchar,
+    inout _content any,
+    in type varchar,
+    in rdf_graph varchar,
+    in rdf_sponger varchar,
+    in rdf_cartridges varchar,
+    in rdf_metaCartridges varchar)
+{
+  declare rdf_iri, rdf_graph2 varchar;
+  declare content any;
+
+  if (length (_content) = 0)
+    return 0;
+
+  -- general case, should return false
+  declare exit handler for sqlstate '*' {
+     return 0;
+  };
+
+  if (path like '%.zip')
+    {
+      declare lst, tmp_file, zip_graph any;
+      tmp_file := tmp_file_name ();
+      declare exit handler for sqlstate '*' {
+	file_delete (tmp_file, 1);
+	return 0;
+      };
+      zip_graph := 'http://local.virt' || path;
+      string_to_file (tmp_file, _content, -2);
+      lst := unzip_list (tmp_file);
+      foreach (any x in lst) do
+	{
+	  declare fname, item_graph, ss any;
+	  ss := string_output ();
+	  fname := x[0];
+	  content := unzip_file (tmp_file, fname);
+	  http_dav_url (fname, null, ss);
+	  fname := string_output_string (ss);
+	  item_graph := 'http://local.virt' || path || '/' || fname;
+	  RDF_SINK_UPLOAD (concat (path, '/', fname), content, DAV_GUESS_MIME_TYPE_BY_NAME (fname), rdf_graph, rdf_sponger, rdf_cartridges, rdf_metaCartridges);
+	  SPARQL insert in graph ?:zip_graph { ?s ?p ?o } where { graph `iri(?:item_graph)` { ?s ?p ?o } };
+	  SPARQL clear graph ?:item_graph;
+	}
+      file_delete (tmp_file, 1);
+      return 1;
+    }
+
+  content := _content;
+  if (path like '%.gz' and length (_content) > 2)
+    {
+      declare magic, html_start varchar;
+      magic := subseq (_content, 0, 2);
+      html_start := null;
+      if (magic[0] = 0hex1f and magic[1] = 0hex8b)
+	{
+	  content := gzip_uncompress (cast (_content as varchar));
+	  path := regexp_replace (path, '\.gz\x24', '');
+	  type := DAV_GUESS_MIME_TYPE (path, content, html_start);
+	}
+    }
+  -- dbg_obj_print ('RDF_SINK_UPLOAD (', length (content), type, rdf_graph, rdf_graph2, rdf_sponger, rdf_cartridges, rdf_metaCartridges, ')');
+  rdf_iri := WS.WS.DAV_IRI (path);
+  rdf_graph2 := 'http://local.virt' || path;
   if (
        strstr (type, 'application/rdf+xml') is not null or
        strstr (type, 'application/foaf+xml') is not null
      )
   {
+    {
+      declare exit handler for sqlstate '*'
+      {
+        goto _grddl;
+      };
     if (rdf_sponger = 'on')
     {
       declare xt any;
@@ -2552,9 +2672,11 @@ create procedure RDF_SINK_UPLOAD (
         goto _grddl;
     }
     DB.DBA.RDF_LOAD_RDFXML (blob_to_string (content), rdf_graph2, rdf_graph2);
+    }
     goto _exit;
   }
   if (
+       strstr (type, 'text/n3') is not null or
        strstr (type, 'text/rdf+n3') is not null or
        strstr (type, 'text/rdf+ttl') is not null or
        strstr (type, 'application/rdf+n3') is not null or
@@ -2563,49 +2685,33 @@ create procedure RDF_SINK_UPLOAD (
        strstr (type, 'application/x-turtle') is not null
      )
   {
-    DB.DBA.TTLP (content, rdf_graph2, rdf_graph2);
+    {
+      declare exit handler for sqlstate '*'
+      {
+        goto _grddl;
+      };
+      DB.DBA.TTLP (blob_to_string (content), rdf_graph2, rdf_graph2);
+    }
     goto _exit;
   }
 
 _grddl:;
   if (rdf_sponger = 'on')
   {
-    declare aq, ps, xrc any;
+    declare rc, rcMeta integer;
     declare ret_body varchar;
+    declare exit handler for sqlstate '*'
+    {
+      goto _exit;
+    };
 
     ret_body := cast (content as varchar);
-    ps := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'PingService');
-    aq := case when (length (ps)) then async_queue (1) else null end;
-    for select RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_OPTIONS from DB.DBA.SYS_RDF_MAPPERS where RM_ENABLED = 1 order by RM_ID do
-    {
-      declare val_match, pcols, npars any;
-
-      val_match := case when (RM_TYPE = 'MIME') then type else rdf_graph2 end;
-      if (isstring (val_match) and regexp_match (RM_PATTERN, val_match) is not null)
-      {
-        if (__proc_exists (RM_HOOK) is null)
-          goto try_next_mapper;
-
-        declare exit handler for sqlstate '*'
-        {
-          goto try_next_mapper;
-        };
-
-        pcols := DB.DBA.RDF_PROC_COLS (RM_HOOK);
-        npars := case when (isarray (pcols)) then length (pcols) else 8 end;
-	      if (npars = 7)
-	      {
-		      xrc := call (RM_HOOK) (rdf_graph2, rdf_graph2, null, ret_body, aq, ps, RM_KEY);
-	      } else {
-		      xrc := call (RM_HOOK) (rdf_graph2, rdf_graph2, null, ret_body, aq, ps, RM_KEY, RM_OPTIONS);
-	      }
-	      if (__tag(xrc) = 193 or xrc < 0 or xrc > 0)
-	      {
-	        goto _exit;
-	      }
-      }
-    try_next_mapper:;
-    }
+    -- dbg_obj_print ('extractor');
+    rc := RDF_SINK_UPLOAD_CARTRIDGES (ret_body, type, 'select RM_ID, RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_OPTIONS from DB.DBA.SYS_RDF_MAPPERS where RM_ENABLED = 1 order by RM_ID', rdf_iri, rdf_graph2, rdf_cartridges);
+    -- dbg_obj_print ('meta');
+    rcMeta := RDF_SINK_UPLOAD_CARTRIDGES (ret_body, type, 'select MC_ID, MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_OPTIONS from DB.DBA.RDF_META_CARTRIDGES where MC_ENABLED = 1 order by MC_SEQ, MC_ID', rdf_iri, rdf_graph2, rdf_metaCartridges);
+    if (rc or rcMeta)
+      goto _exit;
   }
   return 0;
 
@@ -2615,35 +2721,95 @@ _exit:
 }
 ;
 
-create procedure RDF_SINK_DELETE (
-  in path2 any)
+
+create procedure RDF_SINK_UPLOAD_CARTRIDGES (
+  inout content any,
+  inout type varchar,
+  in S varchar,
+  in rdf_iri varchar,
+  in rdf_graph varchar,
+  in rdf_cartridges varchar)
 {
-  declare c_id integer;
-  declare parts, path, rdf_graph, rdf_graph2 any;
+  declare cnt, hasSelection integer;
+  declare cname, pname varchar;
+  declare cartridges, aq, ps any;
+  declare xrc, val_match any;
+  declare st, msg, meta, rows, opts any;
 
-  parts := split_and_decode (path2, 0, '\0\0/');
-  if (length (parts) <>  6)
-    return;
-  if (parts[0] <> '')
-    return;
-  if (parts[length (parts) - 1] = '')
-    return;
-  if (parts[length (parts) - 2] <> 'rdf_sink')
-    return;
+  st := '00000';
+  exec (S, st, msg, vector (), vector ('use_cache', 1), meta, rows);
+  if ('00000' <> st)
+    return 0;
 
-  rdf_graph2 := 'http://local.virt' || path2;
-
-  path := replace (path2, parts[length (parts) - 1], '');
-  c_id := DAV_SEARCH_ID (path, 'C');
-  if (isinteger (c_id) and (c_id > 0))
-  {
-    rdf_graph := (select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = c_id and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdf_graph');
-    if (not DB.DBA.is_empty_or_null (rdf_graph))
+    cartridges := split_and_decode (rdf_cartridges, 0, '\0\0,');
+  ps := null;
+  aq := null;
+  foreach (any row in rows) do
     {
-      SPARQL delete from graph ?:rdf_graph { ?s ?p ?o } where { graph `iri(?:rdf_graph2)` { ?s ?p ?o } };
-    }
-  }
+    cname := cast (row[0] as varchar);
+	    if (position (cname, cartridges))
+            goto _try;
 
+        goto _try_next;
+
+    _try:
+    val_match := case when (row[2] = 'MIME') then type else rdf_graph end;
+    if (isstring (val_match) and regexp_match (row[1], val_match) is not null)
+      {
+	pname := row[3];
+	if (__proc_exists (pname) is null)
+          goto _try_next;
+
+        declare exit handler for sqlstate '*'
+        {
+          goto _try_next;
+        };
+	opts := vector_concat (vector (), row[5]);
+	xrc := call (pname) (rdf_graph, rdf_iri, null, content, aq, ps, row[4], opts);
+	-- dbg_obj_print (pname, xrc, (select count(*) from rdf_quad where g = iri_to_id (rdf_graph)));
+	-- when no selection we stop processing when a given cartridge indicate to stop
+	if (not hasSelection and (__tag (xrc) = 193 or xrc < 0 or xrc > 0))
+          return 1;
+	      }
+    _try_next:;
+    }
+  return 1;
+}
+;
+
+create procedure RDF_SINK_DELETE (
+  in path any)
+{
+  declare c_id, _col_p_id, _inherit, depth integer;
+  declare rdf_graph, rdf_graph2 any;
+
+  c_id := DB.DBA.DAV_SEARCH_ID (subseq (path, 0, strrchr (path, '/') + 1), 'C');
+  if (not isinteger (c_id) or (c_id < 0))
+    return;
+
+  rdf_graph := null;
+  depth := 0;
+  {
+     whenever not found goto rdfg_found;
+look_again:
+      select COL_PARENT, COL_INHERIT into _col_p_id, _inherit from WS.WS.SYS_DAV_COL where COL_ID = c_id;
+      rdf_graph := (select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = c_id and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdf_graph');
+      if ((_inherit = 'R' or (depth = 1 and _inherit = 'M') or depth = 0) and length (rdf_graph))
+	goto rdfg_found;
+      c_id := _col_p_id;
+      depth := depth + 1;
+      rdf_graph := null;
+      goto look_again;
+  }
+  rdfg_found:;
+
+  if (DB.DBA.is_empty_or_null (rdf_graph))
+    return;
+
+  if (path like '%.gz')
+    path := regexp_replace (path, '\.gz\x24', '');
+  rdf_graph2 := 'http://local.virt' || path;
+  SPARQL delete from graph ?:rdf_graph { ?s ?p ?o } where { graph `iri(?:rdf_graph2)` { ?s ?p ?o } };
   SPARQL clear graph ?:rdf_graph2;
 }
 ;
@@ -2715,6 +2881,12 @@ DAV_DELETE_INT (
   else if (ty = 'C')
     {
       declare rrc integer;
+      declare det varchar;
+
+      det := cast ((select COL_DET from WS.WS.SYS_DAV_COL where COL_ID=id) as varchar);
+      if (det in ('S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE'))
+        connection_set ('dav_store', 1);
+
       for select RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_COL = id do
         {
           rrc := DAV_DELETE_INT (RES_FULL_PATH, silent, auth_uname, auth_pwd, extern);
@@ -3535,7 +3707,6 @@ DAV_PROP_SET_INT (
 }
 ;
 
-
 create function
 DAV_PROP_SET_RAW (
     inout id integer,
@@ -4012,7 +4183,11 @@ DAV_PROP_GET_INT (
         {
           if (isarray (id))
             {
+              ret := call (cast (id[0] as varchar) || '_DAV_PROP_GET') (id, what, propname, auth_uid);
+              if (isinteger (ret) and (ret = -20))
               return coalesce ((select COL_ACL from WS.WS.SYS_DAV_COL where COL_ID = id[1]));
+
+              return ret;
             }
           else
             {
@@ -4413,31 +4588,34 @@ create trigger SYS_DAV_RES_WAC_U after update on WS.WS.SYS_DAV_RES order 100 ref
 
   if (connection_get ('dav_acl_sync') = 1)
     return;
+
   if (N.RES_NAME like '%,acl')
-    {
-      declare rid int;
-      oldPath := WS.WS.COL_PATH (O.RES_COL) || O.RES_NAME;
-      newPath := WS.WS.COL_PATH (N.RES_COL) || N.RES_NAME;
-      oldPath := regexp_replace (oldPath, ',acl\x24', '');
-      newPath := regexp_replace (newPath, ',acl\x24', '');
-      aciContent := N.RES_CONTENT;
-      rid := (select RES_ID from WS.WS.SYS_DAV_RES where RES_FULL_PATH = oldPath);
-      set triggers off;
-      update WS.WS.SYS_DAV_PROP set PROP_VALUE = N.RES_CONTENT where PROP_TYPE = 'R' and PROP_NAME = 'virt:aci_meta_n3' and PROP_PARENT_ID = rid;
-      set triggers on;
-      update_acl := 0;
-    }
+  {
+    declare rid int;
+    oldPath := WS.WS.COL_PATH (O.RES_COL) || O.RES_NAME;
+    newPath := WS.WS.COL_PATH (N.RES_COL) || N.RES_NAME;
+    oldPath := regexp_replace (oldPath, ',acl\x24', '');
+    newPath := regexp_replace (newPath, ',acl\x24', '');
+    aciContent := N.RES_CONTENT;
+    rid := (select RES_ID from WS.WS.SYS_DAV_RES where RES_FULL_PATH = oldPath);
+    set triggers off;
+    update WS.WS.SYS_DAV_PROP set PROP_VALUE = N.RES_CONTENT where PROP_TYPE = 'R' and PROP_NAME = 'virt:aci_meta_n3' and PROP_PARENT_ID = rid;
+    set triggers on;
+    update_acl := 0;
+  }
   else
-    {
-      if ((O.RES_NAME = N.RES_NAME) and (O.RES_COL = N.RES_COL))
-	return;
-      aciContent := (select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = N.RES_ID and PROP_TYPE = 'R' and PROP_NAME = 'virt:aci_meta_n3');
-      if (aciContent is null)
-	return;
-      oldPath := WS.WS.COL_PATH (O.RES_COL) || O.RES_NAME;
-      newPath := WS.WS.COL_PATH (N.RES_COL) || N.RES_NAME;
-      update_acl := 1;
-    }
+  {
+    if ((O.RES_NAME = N.RES_NAME) and (O.RES_COL = N.RES_COL))
+	    return;
+
+    aciContent := (select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = N.RES_ID and PROP_TYPE = 'R' and PROP_NAME = 'virt:aci_meta_n3');
+    if (aciContent is null)
+	    return;
+
+    oldPath := WS.WS.COL_PATH (O.RES_COL) || O.RES_NAME;
+    newPath := WS.WS.COL_PATH (N.RES_COL) || N.RES_NAME;
+    update_acl := 1;
+  }
   WS.WS.WAC_DELETE (oldPath, update_acl);
   WS.WS.WAC_INSERT (newPath, aciContent, N.RES_OWNER, N.RES_GROUP, update_acl);
 }
@@ -4447,18 +4625,20 @@ create trigger SYS_DAV_RES_WAC_D after delete on WS.WS.SYS_DAV_RES order 100 ref
 {
   declare update_acl int;
   declare path varchar;
+
   if (connection_get ('dav_acl_sync') = 1)
     return;
+
   if (O.RES_NAME like '%,acl')
-    {
-      update_acl := 0;
-      path := regexp_replace (O.RES_FULL_PATH, ',acl\x24', '');
-    }
+  {
+    update_acl := 0;
+    path := regexp_replace (O.RES_FULL_PATH, ',acl\x24', '');
+  }
   else
-    {
-      path := O.RES_FULL_PATH;
-      update_acl := 1;
-    }
+  {
+    path := O.RES_FULL_PATH;
+    update_acl := 1;
+  }
   WS.WS.WAC_DELETE (path, update_acl);
 }
 ;
@@ -4496,7 +4676,7 @@ create trigger SYS_DAV_PROP_WAC_U after update (PROP_NAME, PROP_VALUE) on WS.WS.
   declare exit handler for not found { return; };
 
   if (N.PROP_TYPE = 'R')
-    {
+  {
     select RES_FULL_PATH, RES_OWNER, RES_GROUP
       into _path, _owner, _group
       from WS.WS.SYS_DAV_RES
@@ -4506,7 +4686,7 @@ create trigger SYS_DAV_PROP_WAC_U after update (PROP_NAME, PROP_VALUE) on WS.WS.
       into _path, _owner, _group
       from WS.WS.SYS_DAV_COL
      where COL_ID = N.PROP_PARENT_ID;
-    }
+  }
   WS.WS.WAC_DELETE (_path, 1);
   WS.WS.WAC_INSERT (_path, N.PROP_VALUE, _owner, _group, 1);
 }
@@ -4543,18 +4723,20 @@ create procedure WS.WS.WAC_INSERT (
   in gid integer,
   in update_acl integer)
 {
-  --dbg_obj_print ('WAC_INSERT', path);
-  declare graph varchar;
+  -- dbg_obj_print ('WAC_INSERT', path);
+  declare what, graph, permissions varchar;
 
-  graph := WS.WS.DAV_IRI (path);
-    aciContent := cast (blob_to_string (aciContent) as varchar);
-    if (update_acl)
-    {
-      connection_set ('dav_acl_sync', 1);
-    DAV_RES_UPLOAD_STRSES_INT (rtrim (path, '/') || ',acl', aciContent, 'text/n3', '110100000RR', uid, gid, null, null, 0);
-      connection_set ('dav_acl_sync', null);
-    }
-    DB.DBA.TTLP (aciContent, graph, graph);
+  graph := WS.WS.WAC_GRAPH (path);
+  aciContent := cast (blob_to_string (aciContent) as varchar);
+  if (update_acl)
+  {
+    connection_set ('dav_acl_sync', 1);
+    what := case when (path[length (path)-1] <> ascii('/')) then 'R' else 'C' end;
+    permissions := DB.DBA.DAV_PROP_GET_INT (DB.DBA.DAV_SEARCH_ID (path, what), what, ':virtpermissions', 0, null, null, http_dav_uid ());
+    DAV_RES_UPLOAD_STRSES_INT (rtrim (path, '/') || ',acl', aciContent, 'text/n3', permissions, uid, gid, null, null, 0);
+    connection_set ('dav_acl_sync', null);
+  }
+  DB.DBA.TTLP (aciContent, graph, graph);
 }
 ;
 
@@ -4562,18 +4744,26 @@ create procedure WS.WS.WAC_DELETE (
   in path varchar,
   in update_acl integer)
 {
-  --dbg_obj_print ('WAC_DELETE', path);
+  -- dbg_obj_print ('WAC_DELETE', path);
   declare graph, st, msg varchar;
 
-  graph := WS.WS.DAV_IRI (path);
-    if (update_acl)
-    {
-      connection_set ('dav_acl_sync', 1);
+  graph := WS.WS.WAC_GRAPH (path);
+  if (update_acl)
+  {
+    connection_set ('dav_acl_sync', 1);
     DAV_DELETE_INT (rtrim (path, '/') || ',acl', 1, null, null, 0, 0);
-      connection_set ('dav_acl_sync', null);
-    }
-  exec (sprintf ('sparql clear graph <%s>', graph), st, msg);
+    connection_set ('dav_acl_sync', null);
   }
+  set_user_id ('dba');
+  delete from DB.DBA.RDF_QUAD where G = iri_to_id (graph);
+}
+;
+
+create procedure WS.WS.WAC_GRAPH (
+  in path varchar)
+{
+  return rtrim (WS.WS.DAV_IRI (path), '/') || '/';
+}
 ;
 
 create procedure WS.WS.DAV_IRI (
@@ -4585,14 +4775,13 @@ create procedure WS.WS.DAV_IRI (
   http_dav_url (path, null, S);
   S := string_output_string (S);
 
-  host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+  host := virtuoso_ini_item_value ('URIQA', 'DefaultHost');
   if (host is null)
   {
     host := sys_stat ('st_host_name');
     if (server_http_port () <> '80')
       host := host ||':'|| server_http_port ();
   }
-
   return sprintf ('http://%s%s', host, S);
 }
 ;
@@ -4604,7 +4793,7 @@ create trigger SYS_DAV_COL_ACL_I after insert on WS.WS.SYS_DAV_COL order 9 refer
   declare aAcl, aParentAcl any;
 
   -- dbg_obj_princ ('trigger SYS_DAV_COL_ACL_I (', NC.COL_ID, ')');
-  aAcl := WS.WS.ACL_PARSE(NC.COL_ACL, '01', 0);
+  aAcl := WS.WS.ACL_PARSE (NC.COL_ACL, '01', 0);
   foreach (any acl in aAcl) do
   {
     insert replacing WS.WS.SYS_DAV_ACL_INVERSE (AI_FLAG, AI_PARENT_ID, AI_PARENT_TYPE, AI_GRANTEE_ID)
@@ -4615,8 +4804,8 @@ create trigger SYS_DAV_COL_ACL_I after insert on WS.WS.SYS_DAV_COL order 9 refer
   if (isnull(aParentAcl))
     return;
 
-  aAcl := WS.WS.ACL_PARSE(NC.COL_ACL, '012', 0);
-    set triggers off;
+  aAcl := WS.WS.ACL_PARSE (NC.COL_ACL, '012', 0);
+  set triggers off;
   update WS.WS.SYS_DAV_COL
      set COL_ACL = WS.WS.ACL_COMPOSE (vector_concat (aAcl, WS.WS.ACL_MAKE_INHERITED(aParentAcl)))
    where COL_ID = NC.COL_ID;
@@ -4627,10 +4816,10 @@ create trigger SYS_DAV_COL_ACL_I after insert on WS.WS.SYS_DAV_COL order 9 refer
 create function WS.WS.ACL_CONTAINS_GRANTEE_AND_FLAG (inout aAcl any, in grantee integer, in flag char(1)) returns integer
 {
   foreach (any acl in aAcl) do
-    {
+  {
     if ((grantee = acl[0]) and (flag = either(equ(acl[1],0), 'R', 'G')))
-        return 1;
-    }
+      return 1;
+  }
   return 0;
 }
 ;
@@ -4644,8 +4833,8 @@ create trigger SYS_DAV_COL_ACL_U after update (COL_ACL) on WS.WS.SYS_DAV_COL ord
   delete
     from WS.WS.SYS_DAV_ACL_INVERSE
    where AI_PARENT_ID = O.COL_ID
-      and AI_PARENT_TYPE = 'C'
-      and not WS.WS.ACL_CONTAINS_GRANTEE_AND_FLAG (aAcl, AI_GRANTEE_ID, AI_FLAG);
+     and AI_PARENT_TYPE = 'C'
+     and not WS.WS.ACL_CONTAINS_GRANTEE_AND_FLAG (aAcl, AI_GRANTEE_ID, AI_FLAG);
 
   aAcl := WS.WS.ACL_PARSE (N.COL_ACL, '01', 0);
   foreach (any acl in aAcl) do
@@ -4716,8 +4905,8 @@ create trigger SYS_DAV_RES_ACL_U after update (RES_ACL) on WS.WS.SYS_DAV_RES ord
   delete
     from WS.WS.SYS_DAV_ACL_INVERSE
    where AI_PARENT_ID = O.RES_ID
-      and AI_PARENT_TYPE = 'R'
-      and not WS.WS.ACL_CONTAINS_GRANTEE_AND_FLAG (aAcl, AI_GRANTEE_ID, AI_FLAG);
+     and AI_PARENT_TYPE = 'R'
+     and not WS.WS.ACL_CONTAINS_GRANTEE_AND_FLAG (aAcl, AI_GRANTEE_ID, AI_FLAG);
 
   aAcl := WS.WS.ACL_PARSE (N.RES_ACL, '0', 0);
   foreach (any acl in aAcl) do
@@ -4754,7 +4943,7 @@ create procedure WS.WS.ACL_UPDATE (in id integer, in parentAcl any)
       update WS.WS.SYS_DAV_RES
          set RES_ACL = nAcl
        where RES_ID = resID;
-  }
+    }
   }
   for select COL_ID as colID, COL_ACL as aAcl from WS.WS.SYS_DAV_COL where COL_PARENT = id do
   {
@@ -4810,25 +4999,25 @@ create procedure WS.WS.ACL_SERIALIZE_INT(in I integer) returns varbinary
   declare N integer;
   declare aResult varchar;
 
-  aResult:=repeat('\0',4);
+  aResult := repeat('\0', 4);
 
-  N := bit_shift(I,-24);
-  if(N)
-    aset(aResult, 0, N);
+  N := bit_shift (I,-24);
+  if (N)
+    aset (aResult, 0, N);
 
-  N := bit_shift(bit_shift(I, 8),-24);
-  if(N)
-    aset(aResult,1,N);
+  N := bit_shift (bit_shift (I, 8),-24);
+  if (N)
+    aset (aResult, 1, N);
 
-  N := bit_shift(bit_shift(I,16),-24);
-  if(N)
-    aset(aResult,2,N);
+  N := bit_shift(bit_shift (I,16),-24);
+  if (N)
+    aset (aResult, 2, N);
 
-  N := bit_shift(bit_shift(I, 24),-24);
-  if(N)
-    aset(aResult,3,N);
+  N := bit_shift(bit_shift (I, 24),-24);
+  if (N)
+    aset (aResult, 3, N);
 
-  return cast(aResult as varbinary);
+  return cast (aResult as varbinary);
 }
 ;
 
@@ -4838,8 +5027,8 @@ create procedure WS.WS.ACL_DESERIALIZE_INT(in vb varbinary) returns integer
 {
   declare vc varchar;
 
-  vc := cast(vb as varchar);
-  return bit_or(bit_or(bit_or(bit_shift(aref(vc, 0), 24), bit_shift(aref(vc, 1), 16)), bit_shift(aref(vc, 2), 8)), aref(vc, 3));
+  vc := cast (vb as varchar);
+  return bit_or (bit_or (bit_or (bit_shift (aref(vc, 0), 24), bit_shift (aref (vc, 1), 16)), bit_shift (aref (vc, 2), 8)), aref (vc, 3));
 }
 ;
 
@@ -4847,7 +5036,7 @@ create procedure WS.WS.ACL_DESERIALIZE_INT(in vb varbinary) returns integer
 --
 create procedure WS.WS.ACL_GET_ACLLENGTH(in acl varbinary) returns integer
 {
-  return WS.WS.ACL_DESERIALIZE_INT(cast(substring(cast(acl as varchar), 1, 4) as varbinary));
+  return WS.WS.ACL_DESERIALIZE_INT (cast (substring( cast (acl as varchar), 1, 4) as varbinary));
 }
 ;
 
@@ -4855,7 +5044,7 @@ create procedure WS.WS.ACL_GET_ACLLENGTH(in acl varbinary) returns integer
 --
 create procedure WS.WS.ACL_GET_ACESIZE(in acl varbinary) returns integer
 {
-  return WS.WS.ACL_DESERIALIZE_INT(cast(substring(cast(acl as varchar), 5, 4) as varbinary));
+  return WS.WS.ACL_DESERIALIZE_INT (cast (substring (cast (acl as varchar), 5, 4) as varbinary));
 }
 ;
 
@@ -4866,8 +5055,8 @@ create procedure WS.WS.ACL_GET_ACESIZE(in acl varbinary) returns integer
 -------------------------------------------------------------------------------
 create procedure WS.WS.ACL_CREATE() returns varbinary
 {
-  return cast(concat(cast(WS.WS.ACL_SERIALIZE_INT(8) as varchar),
-                     cast(WS.WS.ACL_SERIALIZE_INT(0) as varchar)) as varbinary);
+  return cast(concat(cast (WS.WS.ACL_SERIALIZE_INT (8) as varchar),
+                     cast (WS.WS.ACL_SERIALIZE_INT (0) as varchar)) as varbinary);
 }
 ;
 
@@ -4916,7 +5105,7 @@ create procedure WS.WS.ACL_ADD_ENTRY(inout acl varbinary, in uid integer, in bit
   declare N, bFound integer;
   declare aAcl any;
 
-  aAcl := WS.WS.ACL_PARSE(acl);
+  aAcl := WS.WS.ACL_PARSE (acl);
 
   bFound := 0;
   for (N := 0; N < length (aAcl); N := N + 1)
@@ -4925,12 +5114,12 @@ create procedure WS.WS.ACL_ADD_ENTRY(inout acl varbinary, in uid integer, in bit
     {
       if (aAcl[N][1] = is_grant)
       {
-        aset(aAcl, N, vector(aAcl[N][0], aAcl[N][1], aAcl[N][2], bitmask));
+        aset (aAcl, N, vector (aAcl[N][0], aAcl[N][1], aAcl[N][2], bitmask));
         bFound := 1;
       }
       else
       {
-        aset(aAcl, N, vector(aAcl[N][0], aAcl[N][1], aAcl[N][2], bit_and(aAcl[N][3], bit_not(bitmask))));
+        aset (aAcl, N, vector (aAcl[N][0], aAcl[N][1], aAcl[N][2], bit_and(aAcl[N][3], bit_not(bitmask))));
       }
     }
   }
@@ -4956,7 +5145,7 @@ create procedure WS.WS.ACL_REMOVE_ENTRY(inout acl varbinary, in uid integer, in 
   declare N integer;
   declare aAcl any;
 
-  aAcl := WS.WS.ACL_PARSE(acl);
+  aAcl := WS.WS.ACL_PARSE (acl);
   for (N := 0; N < length(aAcl); N := N + 1)
   {
     if ((aAcl[N][0] = uid) and (aAcl[N][2] = inheritance))
@@ -4982,7 +5171,7 @@ create procedure WS.WS.ACL_REMOVE_ENTRY(inout acl varbinary, in uid integer, in 
 -- True if all the operations in bitmask are granted to the uid in the ACL.
 --
 -------------------------------------------------------------------------------
-create procedure WS.WS.ACL_IS_GRANTED(in acl varbinary, in uid integer, in bitmask integer) returns integer
+create procedure WS.WS.ACL_IS_GRANTED (in acl varbinary, in uid integer, in bitmask integer) returns integer
 {
   declare N, lenAcl integer;
   declare aAcl any;
@@ -4992,7 +5181,7 @@ create procedure WS.WS.ACL_IS_GRANTED(in acl varbinary, in uid integer, in bitma
   if (isnull(acl))
     return 0;
 
-  aAcl := WS.WS.ACL_PARSE(acl);
+  aAcl := WS.WS.ACL_PARSE (acl);
   if (length(aAcl) = 0)
     return 0;
   ids := (select vector_concat (vector (uid), VECTOR_AGG (GI_SUB)) from DB.DBA.SYS_ROLE_GRANTS where GI_SUPER = uid);
@@ -5001,22 +5190,22 @@ create procedure WS.WS.ACL_IS_GRANTED(in acl varbinary, in uid integer, in bitma
   N := 0;
   lenAcl := length(aAcl);
   for (N := 0; N < lenAcl; N := N + 1)
+  {
+    if (position (aAcl[N][0], ids))
     {
-      if (position (aAcl[N][0], ids))
+      declare anded integer;
+      anded := bit_and (aAcl[N][3], bitmask);
+      if (anded <> 0)
+      {
+        if (aAcl[N][1])
         {
-          declare anded integer;
-          anded := bit_and (aAcl[N][3], bitmask);
-          if (anded <> 0)
-            {
-              if (aAcl[N][1])
-                {
-                  or_acc := bit_or (or_acc, anded);
-                }
-              else
-                return 0; -- revoke of any single bit invalidates the permission.
-            }
+          or_acc := bit_or (or_acc, anded);
         }
+        else
+          return 0; -- revoke of any single bit invalidates the permission.
+      }
     }
+  }
   if (or_acc = bitmask)
     return or_acc;
   return 0;
@@ -5061,8 +5250,9 @@ create procedure WS.WS.ACL_PARSE (
 
   if (acl is null)
     return vector ();
+
   if (internal_type_name(internal_type(acl)) = 'BLOB_HANDLE')
-    acl := cast(blob_to_string(acl) as varbinary);
+    acl := cast (blob_to_string (acl) as varbinary);
   else if (internal_type_name(internal_type(acl)) = 'VARCHAR')
     acl := cast (acl as varbinary);
 
@@ -5074,17 +5264,17 @@ create procedure WS.WS.ACL_PARSE (
   }
 
   aclSize := WS.WS.ACL_GET_ACESIZE (acl);
-  sAcl := cast(acl as varchar);
+  sAcl := cast (acl as varchar);
 
   vectorbld_init (aAcl);
   for (N := 1; N <= aclSize; N := N + 1)
   {
-    T := WS.WS.ACL_DESERIALIZE_INT(cast (substring(sAcl, 8*N+5, 4) as varbinary));
-    I := abs(bit_and(bit_shift(T, -29), 3));
-    if (not isnull(strchr(inheritance, cast(I as varchar))))
+    T := WS.WS.ACL_DESERIALIZE_INT (cast (substring (sAcl, 8*N+5, 4) as varbinary));
+    I := abs (bit_and (bit_shift (T, -29), 3));
+    if (not isnull (strchr (inheritance, cast (I as varchar))))
       vectorbld_acc (aAcl, vector (WS.WS.ACL_DESERIALIZE_INT (cast (substring (sAcl, 8*N+1, 4) as varbinary)),
-                                          abs(bit_shift(T, -31)),
-                                          I,
+                                   abs(bit_shift (T, -31)),
+                                   I,
                                    abs (bit_and (T, 536870911))));
   }
   vectorbld_final (aAcl);
@@ -6519,8 +6709,8 @@ create procedure DAV_EXTRACT_AND_SAVE_RDF_INT (inout resid integer, inout resnam
   if ((length (_rescontent) < 262144) or (registry_get ('DAV_EXTRACT_RDF_ASYNC') <> '1'))
     {
       DAV_EXTRACT_AND_SAVE_RDF_INT2 (resid, resname, restype, rescontent);
-    } 
-  else 
+    }
+  else
     {
       declare aq any;
       aq := async_queue (1);
@@ -6544,7 +6734,7 @@ create procedure DAV_EXTRACT_AND_SAVE_RDF_INT2 (in resid integer, in resname var
   spotlight_addon_n3 := null;
   addon_n3 := null;
   --if (restype is null)
-    restype := DAV_GUESS_MIME_TYPE (resname, rescontent, html_start);
+  restype := DAV_GUESS_MIME_TYPE (resname, rescontent, html_start);
   -- dbg_obj_princ ('restype is ', restype);
   if (restype is not null)
     {
@@ -6617,7 +6807,7 @@ DAV_HOME_DIR_UPDATE ()
 {
   if (isstring (registry_get ('DAV_HOME_DIR_UPDATE')))
     return;
-  for (select U_NAME from SYS_USERS where U_DAV_ENABLE = 1 and U_IS_ROLE = 0 and U_NAME <> 'nobody') do
+  for (select U_NAME from SYS_USERS where U_DAV_ENABLE = 1 and U_IS_ROLE = 0 and U_NAME <> 'nobody' and U_NAME <> '__rdf_repl') do
     DAV_HOME_DIR_CREATE (U_NAME);
   registry_set ('DAV_HOME_DIR_UPDATE', 'done');
 }

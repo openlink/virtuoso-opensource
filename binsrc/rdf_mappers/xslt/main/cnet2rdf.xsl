@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -31,6 +31,7 @@
 <!ENTITY pto "http://www.productontology.org/id/">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
 <!ENTITY cnet "http://api.cnet.com/restApi/v1.0/ns">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY oplcn "http://www.openlinksw.com/schemas/cnet#">
 ]>
 <xsl:stylesheet version="1.0"
@@ -47,6 +48,7 @@
   xmlns:dc="http://purl.org/dc/elements/1.1/"
   xmlns:owl="http://www.w3.org/2002/07/owl#"
   xmlns:cnet="&cnet;"
+  xmlns:opl="&opl;"
   xmlns:oplcn="&oplcn;">
 
   <xsl:output method="xml" indent="yes" />
@@ -98,6 +100,13 @@
 	               		</gr:BusinessEntity>
 
 				<gr:Offering rdf:about="{vi:proxyIRI ($baseUri, '', 'Offering')}">
+              				<opl:providedBy>
+              					<foaf:Organization rdf:about="http://www.cnet.com#this">
+              						<foaf:name>CNET</foaf:name>
+              						<foaf:homepage rdf:resource="http://www.cnet.com"/>
+              					</foaf:Organization>
+              				</opl:providedBy>
+
 			    		<sioc:has_container rdf:resource="{$docproxyIRI}"/>
 			    		<gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
 			                <gr:validFrom rdf:datatype="&xsd;dateTime"><xsl:value-of select="$currentDateTime"/></gr:validFrom>
@@ -143,6 +152,13 @@
 	<rdf:Description rdf:about="{$resourceURL}">
 		<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 		<rdf:type rdf:resource="&oplcn;TechProduct" />
+      		<opl:providedBy>
+      			<foaf:Organization rdf:about="http://www.cnet.com#this">
+      				<foaf:name>CNET</foaf:name>
+      				<foaf:homepage rdf:resource="http://www.cnet.com"/>
+      			</foaf:Organization>
+      		</opl:providedBy>
+
        		<gr:hasMakeAndModel>
 	               	<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'MakeAndModel')}">
 	               		<rdf:type rdf:resource="&gr;ProductOrServiceModel"/>

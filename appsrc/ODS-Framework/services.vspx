@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -454,8 +454,7 @@
                   <v:after-data-bind>
                     <![CDATA[
                       control.ufl_value := '<img src="images/icons/group_16.png" border="0" alt="Members (application)" title="Members (application)"/>&#160;Members';
-		      if ((control.vc_parent as vspx_row_template).te_rowset[7] = 1 or
-                                    (control.vc_parent as vspx_row_template).te_rowset[6] in ('oMail', 'IM'))
+                                if ((control.vc_parent as vspx_row_template).te_rowset[7] = 1)
 		        control.vc_enabled := 0;
                     ]]>
                   </v:after-data-bind>

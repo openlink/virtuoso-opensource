@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -33,6 +33,7 @@
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY owl "http://www.w3.org/2002/07/owl#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY cl "http://www.ebusiness-unibw.org/ontologies/consumerelectronics/v1#">
 <!ENTITY oplbb "http://www.openlinksw.com/schemas/bestbuy#">
 ]>
@@ -53,6 +54,7 @@
     xmlns:dc="http://purl.org/dc/elements/1.1/"
     xmlns:cl="&cl;"
     xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"	
+    xmlns:opl="&opl;"
     xmlns:oplbb="&oplbb;">
 
     <xsl:output method="xml" indent="yes" />
@@ -78,6 +80,13 @@
 			</rdf:Description>
 
 			<gr:Offering rdf:about="{$resourceURL}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://www.zappos.com#this">
+                                 			<foaf:name>Zappos</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://www.zappos.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
+
 				<sioc:has_container rdf:resource="{$docproxyIRI}"/>
 				<gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
 				<rdfs:label><xsl:value-of select="concat('Offer: ', product/productName)"/></rdfs:label>
@@ -98,6 +107,12 @@
 			</gr:BusinessEntity>
 
 			<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Product')}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://www.zappos.com#this">
+                                 			<foaf:name>Zappos</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://www.zappos.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
 				<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 				<rdf:type rdf:resource="&oplbb;Product" />
 				<gr:hasMakeAndModel>

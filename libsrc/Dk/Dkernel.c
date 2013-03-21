@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -27,7 +27,7 @@
 
 /* Sorry, this still is a mess - merge not complete yet - PmN */
 
-#define NO_DBG_PRINTF
+#undef DBG_PRINTF
 
 #include "Dk.h"
 #include "Dk/Dksystem.h"
@@ -157,6 +157,7 @@ dk_hash_t *pending_futures;
 char *c_ssl_server_port;
 char *c_ssl_server_cert;
 char *c_ssl_server_key;
+char *c_ssl_server_extra_certs;
 #endif
 #endif /* GSTATE */
 
@@ -582,7 +583,7 @@ check_inputs_low (TAKE_G timeout_t * timeout_org, int is_recursive, select_func_
   if (rc < 0)
     {
       int eno = errno;
-      check_inputs_for_errors (eno, protocol);
+      check_inputs_for_errors (eno, protocol); 
       PROCESS_ALLOW_SCHEDULE ();
       return 0;
     }
@@ -4311,7 +4312,7 @@ PrpcConnect2 (char *address, int sesclass, char *ssl_usage, char *pass, char *ca
 	  SSL *ssl = NULL;
 	  int ssl_err = 0;
 	  int dst = tcpses_get_fd (session->dks_session);
-	  SSL_METHOD *ssl_method = SSLv23_client_method ();
+	  const SSL_METHOD *ssl_method = SSLv23_client_method ();
 	  SSL_CTX *ssl_ctx = SSL_CTX_new (ssl_method);
 	  ssl = SSL_new (ssl_ctx);
 	  SSL_set_fd (ssl, dst);
@@ -4331,6 +4332,24 @@ PrpcConnect2 (char *address, int sesclass, char *ssl_usage, char *pass, char *ca
 	      SSL_set_verify_depth (ssl, -1);
 	      SSL_CTX_set_session_id_context (ssl_ctx, (unsigned char *) &session_id_context, sizeof session_id_context);
 	    }
+	  else if (ca_list)
+	    {
+	      int session_id_context = 12;
+	      if (SSL_CTX_load_verify_locations (ssl_ctx, ca_list, NULL) <= 0)
+		{
+		  SSL_free (ssl);
+		  SSL_CTX_free (ssl_ctx);
+		  SESSTAT_CLR (session->dks_session, SST_OK);
+		  SESSTAT_SET (session->dks_session, SST_BROKEN_CONNECTION);
+		  return session;
+		}
+#if 0
+	      SSL_set_verify (ssl, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT | SSL_VERIFY_CLIENT_ONCE, NULL);
+	      SSL_set_verify_depth (ssl, -1);
+#endif
+	      SSL_CTX_set_session_id_context (ssl_ctx, (unsigned char *) &session_id_context, sizeof session_id_context);
+	    }
+
 	  ssl_err = SSL_connect (ssl);
 	  if (ssl_err != 1)
 	    {
@@ -4644,19 +4663,13 @@ ssl_report_errors (char *client_ip)
 int
 cli_ssl_get_error_string (char *out_data, int out_data_len)
 {
-  unsigned long l;
-  const char *file, *data;
-  int line, flags;
-
-  if ((l = ERR_get_error_line_data (&file, &line, &data, &flags)) != 0)
-    {
-#if 0
-      ERR_error_string_n (l, out_data, out_data_len);
-#else
-      ERR_error_string (l, out_data);
-#endif
-      return 1;
-    }
+  unsigned long err = ERR_get_error ();
+  const char *reason = ERR_reason_error_string (err);
+  const char *lib = ERR_lib_error_string (err);
+  const char *func = ERR_func_error_string (err);
+  out_data[out_data_len - 1] = 0;
+  snprintf (out_data, out_data_len - 1, "%s (%s:%s)",
+      reason ? reason : (err == 0 ? "No error" : "Unknown error"), lib ? lib : "?", func ? func : "?");
   return 0;
 }
 
@@ -4764,9 +4777,12 @@ ssl_cert_verify_callback (int ok, void *_ctx)
       ok = 1;
     }
 
+#if 0
   log_debug ("%s Certificate Verification: depth: %d, subject: %s, issuer: %s",
   	app_ctx->ssci_name_ptr, errdepth, cp != NULL ? cp : "-unknown-",
 	cp2 != NULL ? cp2 : "-unknown");
+#endif
+
   /*
    * Additionally perform CRL-based revocation checks
    *
@@ -4843,46 +4859,80 @@ dk_ssl_free (void *old)
 }
 #endif
 
+#if defined (_SSL) && !defined (NO_THREAD)
+int ssl_server_set_certificate (SSL_CTX* ssl_ctx, char * cert_name, char * key_name, char * extra);
+
+static int 
+ssl_server_key_setup ()
+{
+  if (!c_ssl_server_cert || !c_ssl_server_key)
+    {
+      log_error ("SSL: Server certificate and private key must both be specified");
+      return 0;
+    }
+
+  if (!ssl_server_set_certificate (ssl_server_ctx, c_ssl_server_cert, c_ssl_server_key, c_ssl_server_extra_certs))
+    return 0;
+
+  if (ssl_server_verify)
+    {
+      int i, session_id_context = 2, verify = SSL_VERIFY_NONE;
+      STACK_OF (X509_NAME) * skCAList = NULL;
+
+      if (ssl_server_verify_file && ssl_server_verify_file[0])
+	{
+	  SSL_CTX_load_verify_locations (ssl_server_ctx, ssl_server_verify_file, NULL);
+	  SSL_CTX_set_client_CA_list (ssl_server_ctx, SSL_load_client_CA_file (ssl_server_verify_file));
+	}
+      SSL_CTX_set_app_data (ssl_server_ctx, &ssl_server_ctx_info);
+      if (ssl_server_verify == 1)	/* required */
+	verify |= SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT | SSL_VERIFY_CLIENT_ONCE;
+      else			/* 2 optional OR 3 optional no ca */
+	verify |= SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE;
+      SSL_CTX_set_verify (ssl_server_ctx, verify, (int (*)(int, X509_STORE_CTX *)) ssl_cert_verify_callback);
+      SSL_CTX_set_verify_depth (ssl_server_ctx, (int) ssl_server_verify_depth);
+      SSL_CTX_set_session_id_context (ssl_server_ctx, (unsigned char *) &session_id_context, sizeof session_id_context);
+
+      skCAList = SSL_CTX_get_client_CA_list (ssl_server_ctx);
+      if (ssl_server_verify != 3 && sk_X509_NAME_num (skCAList) == 0)
+	log_warning ("SSL: Client authentication requested but no CA known for verification");
+      for (i = 0; i < sk_X509_NAME_num (skCAList); i++)
+	{
+	  char ca_buf[1024];
+	  X509_NAME *ca_name = (X509_NAME *) sk_X509_NAME_value (skCAList, i);
+	  if (X509_NAME_oneline (ca_name, ca_buf, sizeof (ca_buf)))
+	    log_debug ("SSL: Using X509 client CA %s", ca_buf);
+	}
+    }
+
+  return 1;
+}
+#endif
+
 static void
 ssl_server_init ()
 {
-  SSL_METHOD *ssl_server_method = NULL;
-  unsigned char tmp[1024];
-#ifndef NO_THREAD
-  char err_buf[1024];
+  const SSL_METHOD *ssl_server_method;
+
 #ifdef SSL_DK_ALLOC
   CRYPTO_set_mem_functions (dk_ssl_alloc, dk_ssl_realloc, dk_ssl_free);
   CRYPTO_set_locked_mem_functions (dk_ssl_alloc, dk_ssl_free);
 #endif
   SSL_load_error_strings ();
-  ERR_load_X509_strings ();
+  ERR_load_crypto_strings ();
 #ifndef WIN32
-  RAND_bytes (tmp, sizeof (tmp));
-  RAND_add (tmp, sizeof (tmp), (double) (sizeof (tmp)));
+  {
+    unsigned char tmp[1024];
+    RAND_bytes (tmp, sizeof (tmp));
+    RAND_add (tmp, sizeof (tmp), (double) (sizeof (tmp)));
+  }
 #endif
 # if (OPENSSL_VERSION_NUMBER >= 0x00908000L)
   SSL_library_init ();
 # endif
   SSLeay_add_all_algorithms ();
-#else
-#ifdef SSL_DK_ALLOC
-  CRYPTO_set_mem_functions (dk_ssl_alloc, dk_ssl_realloc, dk_ssl_free);
-  CRYPTO_set_locked_mem_functions (dk_ssl_alloc, dk_ssl_free);
-#endif
-  SSL_load_error_strings ();
-  ERR_load_X509_strings ();
-  ERR_load_PKCS12_strings ();
-#ifndef WIN32
-  RAND_bytes (tmp, sizeof (tmp));
-  RAND_add (tmp, sizeof (tmp), (double) (sizeof (tmp)));
-#endif
-# if (OPENSSL_VERSION_NUMBER >= 0x00908000L)
-  SSL_library_init ();
-# else
-  SSLeay_add_ssl_algorithms ();
-# endif
-  PKCS12_PBE_add ();
-#endif
+  PKCS12_PBE_add ();		/* stub */
+
 #ifdef NO_THREAD
   ssl_server_method = SSLv23_client_method ();
 #else
@@ -4894,63 +4944,6 @@ ssl_server_init ()
       ERR_print_errors_fp (stderr);
       call_exit (-1);
     }
-
-#ifndef NO_THREAD
-  if (!c_ssl_server_port)
-    return;
-
-  if (SSL_CTX_use_certificate_file (ssl_server_ctx, c_ssl_server_cert, SSL_FILETYPE_PEM) <= 0)
-    {
-      cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-      if (!c_ssl_server_key)
-	log_error ("ODBC Server X509 certificate is required");
-      else
-	log_error ("Error loading the ODBC server X509 certificate %s : %s", c_ssl_server_key, err_buf);
-      call_exit (-1);
-    }
-  if (SSL_CTX_use_PrivateKey_file (ssl_server_ctx, c_ssl_server_key, SSL_FILETYPE_PEM) <= 0)
-    {
-      if (!c_ssl_server_key)
-	log_error ("ODBC Server X509 private key is required");
-      else
-	log_error ("Error loading the ODBC server X509 private key %s : %s", c_ssl_server_key, err_buf);
-      call_exit (-1);
-    }
-
-  if (!SSL_CTX_check_private_key (ssl_server_ctx))
-    {
-      log_error ("X509 Private key in %s does not match the X509 certificate public key in %s", c_ssl_server_key ? c_ssl_server_key : "<empty>", c_ssl_server_cert ? c_ssl_server_cert : "<empty>");
-      call_exit (-1);
-    }
-
-  if (ssl_server_verify)
-    {
-      int i, session_id_context = 2, verify = SSL_VERIFY_NONE;
-      STACK_OF (X509_NAME) * skCAList = NULL;
-
-      SSL_CTX_load_verify_locations (ssl_server_ctx, ssl_server_verify_file, NULL);
-      SSL_CTX_set_client_CA_list (ssl_server_ctx, SSL_load_client_CA_file (ssl_server_verify_file));
-      SSL_CTX_set_app_data (ssl_server_ctx, &ssl_server_ctx_info);
-      if (ssl_server_verify == 1) /* required */
-	verify |= SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT | SSL_VERIFY_CLIENT_ONCE;
-      else /* 2 optional OR 3 optional no ca */
-	verify |= SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE;
-      SSL_CTX_set_verify (ssl_server_ctx, verify, (int (*)(int, X509_STORE_CTX *)) ssl_cert_verify_callback);
-      SSL_CTX_set_verify_depth (ssl_server_ctx, (int) ssl_server_verify_depth);
-      SSL_CTX_set_session_id_context (ssl_server_ctx, (unsigned char *) &session_id_context, sizeof session_id_context);
-
-      skCAList = SSL_CTX_get_client_CA_list (ssl_server_ctx);
-      if (sk_X509_ALGOR_num (skCAList) == 0)
-	log_warning ("ODBC X509 Client authentication requested but no CA known for verification");
-      for (i = 0; i < sk_X509_ALGOR_num (skCAList); i++)
-	{
-	  char ca_buf[1024];
-	  X509_NAME *ca_name = (X509_NAME *) sk_X509_ALGOR_value (skCAList, i);
-	  if (X509_NAME_oneline (ca_name, ca_buf, sizeof (ca_buf)))
-	    log_debug ("ODBC Server Using X509 Client CA %s", ca_buf);
-	}
-    }
-#endif
 }
 
 
@@ -5081,69 +5074,53 @@ int
 ssl_client_use_pkcs12 (SSL * ssl, char *pkcs12file, char *passwd, char *ca)
 {
   int /*session_id_context = 2, */ i;
-  FILE *fi = fopen (pkcs12file, "rb");
-  PKCS12 *p12;
+  FILE *fi;
+  PKCS12 *p12 = NULL;
   EVP_PKEY *pkey;
   X509 *cert;
   STACK_OF (X509) * ca_list = NULL;
   SSL_CTX *ssl_ctx = SSL_get_SSL_CTX (ssl);
 
-  if (0 != PEM_parse (pkcs12file, passwd, &pkey, &cert, &ca_list))
-    goto ssl_setup;
-
-  if (!fi || NULL == (p12 = d2i_PKCS12_fp (fi, NULL)))
+  if (0 == PEM_parse (pkcs12file, passwd, &pkey, &cert, &ca_list))
     {
-      if (fi)
-	fclose (fi);
-      return 0;
+      if ((fi = fopen (pkcs12file, "rb")) != NULL)
+	{
+	  p12 = d2i_PKCS12_fp (fi, NULL);
+	  fclose (fi);
+	}
+      if (p12)
+	{
+	  i = PKCS12_parse (p12, passwd, &pkey, &cert, &ca_list);
+	  PKCS12_free (p12);
+	  if (!i)
+	    return 0;
+	}
     }
-  if (!PKCS12_parse (p12, passwd, &pkey, &cert, &ca_list))
-    {
-      if (fi)
-	fclose (fi);
-      return 0;
-    }
-  PKCS12_free (p12);
-
-ssl_setup:
-  fclose (fi);
 
   if (ca && ca[0] != 0)
     {
-      sk_X509_ALGOR_pop_free (ca_list, (void (*)(void *)) X509_free);
-      ca_list = NULL;
+      sk_X509_pop_free (ca_list, X509_free);
       ca_list = PEM_load_certs (ca, passwd);
     }
 
-  if (!SSL_use_PrivateKey (ssl, pkey))
+  i = SSL_use_certificate (ssl, cert);
+  if (i)
+    i = SSL_use_PrivateKey (ssl, pkey);
+  if (i)
+    i = SSL_check_private_key (ssl);
+  if (i)
     {
-      X509_free (cert);
-      EVP_PKEY_free (pkey);
-      sk_X509_ALGOR_pop_free (ca_list, (void (*)(void *)) X509_free);
-      return 0;
-    }
-  EVP_PKEY_free (pkey);
-  if (!SSL_use_certificate (ssl, cert))
-    {
-      X509_free (cert);
-      sk_X509_ALGOR_pop_free (ca_list, (void (*)(void *)) X509_free);
-      return 0;
+      for (i = 0; i < sk_X509_num (ca_list); i++)
+	{
+	  X509 *ca = (X509 *) sk_X509_value (ca_list, i);
+	  SSL_add_client_CA (ssl, ca);
+	  X509_STORE_add_cert (SSL_CTX_get_cert_store (ssl_ctx), ca);
+	}
     }
   X509_free (cert);
-
-  if (!SSL_check_private_key (ssl))
-    {
-      sk_X509_ALGOR_pop_free (ca_list, (void (*)(void *)) X509_free);
-      return 0;
-    }
-  for (i = 0; i < sk_X509_ALGOR_num (ca_list); i++)
-    {
-      X509 *ca = (X509 *) sk_X509_ALGOR_value (ca_list, i);
-      SSL_add_client_CA (ssl, ca);
-      X509_STORE_add_cert (SSL_CTX_get_cert_store (ssl_ctx), ca);
-    }
-  sk_X509_ALGOR_pop_free (ca_list, (void (*)(void *)) X509_free);
-  return 1;
+  EVP_PKEY_free (pkey);
+  sk_X509_pop_free (ca_list, X509_free);
+  return i ? 1 : 0;
 }
 
 
@@ -5331,6 +5308,9 @@ dk_alloc_reserve_malloc (size_t size, int gpf_if_not)
 #if defined (UNIX) && !defined (MALLOC_DEBUG)
       log_error ("Current location of the program break %ld", (long) sbrk (0) - init_brk);
 #endif
+#ifdef MALLOC_DEBUG
+      dbg_dump_mem();
+#endif
       GPF_T1 ("Out of memory");
     }
   return thing;
@@ -5349,6 +5329,9 @@ dk_alloc_reserve_malloc (size_t size, int gpf_if_not)
 #if defined (UNIX) && !defined (MALLOC_DEBUG)
       log_error ("Current location of the program break %ld", (long) sbrk (0) - init_brk);
 #endif
+#ifdef MALLOC_DEBUG
+      dbg_dump_mem();
+#endif
       GPF_T1 ("Out of memory");
     }
   return thing;
@@ -5362,22 +5345,23 @@ void
 ssl_server_listen ()
 {
 #ifdef _SSL
+  dk_session_t *listening;
   if (!c_ssl_server_port)
     return;
-  else
-    {
-      dk_session_t *listening = PrpcListen (c_ssl_server_port, SESCLASS_TCPIP);
+
+  if (!ssl_server_key_setup ())
+    goto failed;
+
+  listening = PrpcListen (c_ssl_server_port, SESCLASS_TCPIP);
       if (!SESSTAT_ISSET (listening->dks_session, SST_LISTENING))
 	{
-	  log_error ("Failed ODBC Server SSL listen at %s.", c_ssl_server_port);
-	  call_exit (-1);
-	};
-      ssl_server_port = tcpses_get_port (listening->dks_session);
-      if (ssl_server_verify)
-	log_info ("ODBC SSL/X509 server online at %s", c_ssl_server_port);
-      else
-	log_info ("ODBC SSL server online at %s", c_ssl_server_port);
+    failed:
+      log_error ("SSL: Failed listen at %s", c_ssl_server_port);
+      return;
     }
+      ssl_server_port = tcpses_get_port (listening->dks_session);
+
+  log_info ("SSL server online at %s", c_ssl_server_port);
 #endif
 }
 

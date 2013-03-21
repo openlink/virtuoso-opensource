@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1151,7 +1151,7 @@ ddl_commit_trx (query_instance_t *qi)
 void
 ddl_create_primary_key (query_instance_t * qi,
     char *name, char *table, caddr_t * parts,
-			int cluster_on_id, int is_object_id, caddr_t * opts)
+    int cluster_on_id, int is_object_id)
 {
   client_connection_t *cli = qi->qi_client;
   int inx = (int) BOX_ELEMENTS (parts);
@@ -1193,22 +1193,6 @@ ddl_create_primary_key (query_instance_t * qi,
     }
   lc_free (lc_cols);
   ddl_check_cols (qi, id);
-
-  if (inx_opt_flag (opts, "column"))
-    {
-      caddr_t err = NULL;
-      static query_t * col_qr = NULL;
-      if (!col_qr)
-	col_qr = sql_compile_static ("update SYS_KEYS set KEY_OPTIONS = vector ('column') where KEY_TABLE = ? and KEY_IS_MAIN = 1",
-				     bootstrap_cli, &err, SQLC_DEFAULT);
-      err = qr_rec_exec (col_qr, qi->qi_client, NULL, qi, NULL, 1,
-			 ":0", table, QRP_STR);
-      if (err != SQL_SUCCESS)
-	{
-	  QI_POISON_TRX (qi);
-	  sqlr_resignal (err);
-	}
-    }
   ddl_table_changed (qi, table);
 
   ddl_commit_trx (qi);
@@ -2764,20 +2748,16 @@ ddl_drop_index (caddr_t * qst, const char *table, const char *name, int log_to_t
 	log_text_cluster (qi, temp_tx);
       else
 	log_text (qi->qi_trx, temp_tx);
-      temp_tx_box = box_string (temp_tx);
-      dk_free_box (temp_tx_box);
+    }
+  if (DO_LOG(LOG_DDL))
+    {
+      client_connection_t * cli = qi->qi_client;
+      LOG_GET
+      log_info ("DDLC_6 %s %s %s Drop index %.*s (%.*s)", user, from, peer,
+	    LOG_PRINT_STR_L, szTheIndexName, LOG_PRINT_STR_L, szTheTableName);
     }
   dk_free_box(szTheTableName);
   dk_free_box(szTheIndexName);
-
-  if (DO_LOG(LOG_DDL))
-    {
-      user_t * usr = ((query_instance_t *)(qst))->qi_client->cli_user;
-
-      if (table)
-	log_info ("DDLC_6 %s Drop index %.*s (%.*s)", GET_USER,
-	    LOG_PRINT_STR_L, name, LOG_PRINT_STR_L, table);
-    }
 }
 
 
@@ -2968,9 +2948,9 @@ ddl_index_def (query_instance_t * qi, caddr_t name, caddr_t table, caddr_t * col
   atomic_mode (qi, 0, atomic); /* unlock */
   if (DO_LOG(LOG_DDL))
     {
-      user_t * usr = ((query_instance_t *)(qi))->qi_client->cli_user;
-      if (usr && GET_USER)
-	log_info ("DDLC_5 %s Create index %*.s (%*.s)", GET_USER,
+      client_connection_t * cli = qi->qi_client;
+      LOG_GET
+      log_info ("DDLC_5 %s %s %s Create index %.*s (%.*s)", user, from, peer,
 	    LOG_PRINT_STR_L, name, LOG_PRINT_STR_L, table);
     }
 
@@ -3044,8 +3024,8 @@ ddl_rename_table_1 (query_instance_t * qi, char *old, char *new_name, caddr_t *e
   new_tb = sch_name_to_table (wi_inst.wi_schema, new_name);
   if (DO_LOG(LOG_DDL))
     {
-      user_t * usr = ((query_instance_t *)(qi))->qi_client->cli_user;
-      log_info ("DDLC_7 %s Rename table %*.s (%*.s)", GET_USER,
+      LOG_GET
+      log_info ("DDLC_7 %s %s %s Rename table %.*s (%.*s)", user, from, peer,
 	  LOG_PRINT_STR_L, old, LOG_PRINT_STR_L, new_name);
     }
 }
@@ -3281,9 +3261,10 @@ ddl_drop_table (query_instance_t * qi, char *name)
     }
 #endif
 
+
 #ifdef BIF_XML
   del_st = sql_compile_static ("DB.DBA.vt_clear_text_index (?)", cli, &err, SQLC_DEFAULT);
-  if (del_st)
+  if (del_st && !sch_view_def (wi_inst.wi_schema, name))
     {
       AS_DBA (qi, err = qr_rec_exec (del_st, cli, NULL, qi, NULL, 1,
 	  ":0", name, QRP_STR));
@@ -3931,7 +3912,7 @@ sql_ddl_node_input_1 (ddl_node_t * ddl, caddr_t * inst, caddr_t * state)
 		(caddr_t *) tree->_.table_def.cols);
 	    ddl_create_primary_key (qi, tree->_.table_def.name,
 		tree->_.table_def.name, (caddr_t *) prime->_.index.cols,
-				    KO_CLUSTER (opts), KO_OID (opts), opts);
+		KO_CLUSTER (opts), KO_OID (opts));
 	  }
 	QR_RESET_CTX
 	  {
@@ -4424,10 +4405,10 @@ again:
 	{
 	  if (strlen (text) > 60)
 	    text[59] = 0;
-	    log_error ("Error compiling definition of %s '%s': %s: %s\n%s",
-		(text_is_reload ? "mapping schema" : "view"), name,
-		((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING],
-		text);
+	  log_error ("Error compiling definition of %s '%s': %s: %s\n%s",
+	      (text_is_reload ? "mapping schema" : "view"), name,
+	      ((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING],
+	      text);
 	}
       if (view_qr)
         {
@@ -4606,10 +4587,9 @@ ddl_read_constraints (char *spec_tb_name, caddr_t *qst)
 
 
 void
-read_proc_tables (int remotes)
+read_proc_and_trigger_tables (int remotes)
 {
   user_t *org_user = bootstrap_cli->cli_user;
-
   caddr_t org_qual = bootstrap_cli->cli_qualifier;
   query_t *proc_qr;
   /* Procedure's calls published for replication */
@@ -4835,8 +4815,22 @@ scan_SYS_PROCEDURES:
   lc_free (lc);
   qr_free (rdproc);
 
+end:;
   bootstrap_cli->cli_user = org_user;
   CLI_RESTORE_QUAL (bootstrap_cli, org_qual);
+  local_commit (bootstrap_cli);
+}
+
+void
+read_utd_method_tables (void)
+{
+  user_t *org_user = bootstrap_cli->cli_user;
+  caddr_t org_qual = bootstrap_cli->cli_qualifier;
+  query_t *proc_qr;
+  /* Procedure's calls published for replication */
+  caddr_t err;
+  query_t *rdproc;
+  local_cursor_t *lc;
   rdproc = sql_compile_static (
       "select blob_to_string (M_TEXT), M_QUAL, M_OWNER from DB.DBA.SYS_METHODS",
       bootstrap_cli, NULL, SQLC_DEFAULT);

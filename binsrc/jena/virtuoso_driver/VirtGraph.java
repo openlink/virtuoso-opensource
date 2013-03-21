@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2010 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -58,8 +58,8 @@ public class VirtGraph extends GraphBase
     protected String ruleSet = null;
     protected boolean useSameAs = false;
     protected int queryTimeout = 0;
-    static final String sinsert = "sparql define output:format '_JAVA_' insert into graph iri(??) { `iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)` }";
-    static final String sdelete = "sparql define output:format '_JAVA_' delete from graph iri(??) {`iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)`}";
+    static final String sinsert = "sparql insert into graph iri(??) { `iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)` }";
+    static final String sdelete = "sparql delete from graph iri(??) {`iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)`}";
     static final int BATCH_SIZE = 5000;
     static final String utf8 = "charset=utf-8";
     static final String charset = "UTF-8";
@@ -136,7 +136,7 @@ public class VirtGraph extends GraphBase
 	    this.graphName = DEFAULT;
 
 	try {
-	        if (url_hostlist.startsWith("jdbc:virtuoso://")) {
+	    if (url_hostlist.startsWith("jdbc:virtuoso://")) {
 
 	        String url = url_hostlist;
                 if (url.toLowerCase().indexOf(utf8) == -1) {

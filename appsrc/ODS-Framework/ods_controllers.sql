@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2009 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -39,8 +39,158 @@
 --
 -- Note: some of methods bellow uses ods_api.sql code
 
-
 use ODS;
+
+--!
+-- \brief Try to create a nice new username from arbitrary profile information.
+--
+-- This is used for auto-registration via third-party service profiles.
+--/
+create procedure ODS.DBA.ods_build_new_user_name (
+  in firstName varchar,
+  in lastName varchar,
+  in uid varchar := null,
+  in email varchar := null)
+{
+  -- prepare input
+  if (firstName = '')
+    firstName := null;
+  if (lastName = '')
+    lastName := null;
+  if (uid = '')
+    uid := null;
+  if (email = '')
+    email := null;
+
+  if (not firstName is null)
+    firstName := replace (firstName, ' ', '');
+  if (not lastName is null)
+    lastName := replace (lastName, ' ', '');
+
+  if (not firstName is null and not lastName is null)
+    return sprintf('%s.%s', lcase(substring(firstName, 1, 1)), lcase(lastName));
+  else if (not lastName is null)
+    return lcase(lastName);
+  else if (not firstName is null)
+    return lcase(firstName);
+  else if (not email is null)
+    return lcase(left(email, strcr(email, '@')));
+  else
+    return uid;
+}
+;
+
+--!
+-- \brief Internal utility proc to build the authentication callback URL.
+--
+-- The callback URL always points to the user.authenticate.callback procedure
+-- if possible using a secure connection.
+--
+-- \param service The service type like \p facebook or \p google.
+-- \param url An optional base64 callback URL. See user.authenticate.authenticationUrl for details.
+--/
+create procedure ODS.DBA.ods_authenticate_callback_url()
+{
+  declare sslInfo any;
+  declare sslPort, sslHost varchar;
+  declare callback varchar;
+
+  --
+  -- FIXME: Virtuoso will always ask for a client certificate when the callback is called
+  --        via https. Since this is a very confusing experience for the user who tries to
+  --        login via a non-certificate-based method like Google or Twitter we disable
+  --        the https callback for now. As soon as this problem is fixed the documentation of
+  --        user.authenticate.authenticationUrl needs to be updated to reflect the usage of
+  --        https.
+  --
+  if (0 and is_https_ctx())
+  {
+    return sprintf('https://%s/ods/api/user.authenticate.callback', http_host());
+  }
+  else
+  {
+    --sslInfo := json_parse(ODS.ODS_API."server.getInfo"('sslPort'));
+    if (0 and length(sslInfo) > 1)
+    {
+      sslPort := get_keyword('sslPort', sslInfo);
+      sslHost := get_keyword('sslHost', sslInfo);
+      callback := sprintf('https://%s:%s/ods/api/user.authenticate.callback', sslHost, sslPort);
+    }
+    else
+    {
+      callback := sprintf('http://%s/ods/api/user.authenticate.callback', http_host());
+    }
+
+    return callback;
+  }
+}
+;
+
+--!
+-- Internal utility procedure to check if a client has been registered via admin.clients.new()
+--
+-- \return \p 1 if allowed, \p 0 otherwise.
+--/
+create procedure ODS..ods_check_client_url (
+  in callback varchar)
+{
+  if (exists (select * from DB.DBA.WA_CLIENT_REG where starts_with(callback, CLIENT_URL)))
+    return 1;
+  else
+    return 0;
+}
+;
+
+--!
+-- \brief Get the key and secret for the given service API.
+--
+-- This procedure reads client id and secret from OAUTH.DBA.APP_REG.
+--
+-- \param service The name of the service.
+-- \param clientId[out] A vector containing the client ID and secret on success.
+--
+-- \return On success \p 1 is returned, \p 0 otherwise.
+--/
+create procedure ODS..ods_get_service_client_key (
+  in service varchar,
+  out clientId any)
+{
+  -- For historical reasons the names of the services are like "Wordpress API" or "Windows Live API"
+  -- while internally we now use "wordpress" or "windowslive" which is much easier to handle all over
+  service := replace(lcase(service), ' ', '');
+  if (not ends_with(service, 'api'))
+    service := service || 'api';
+
+  clientId := null;
+  for (select a_key, a_secret from OAUTH.DBA.APP_REG where a_owner = 0 and replace(lcase(a_name), ' ', '') = service) do
+  {
+    clientId := vector (a_key, a_secret);
+    return 1;
+  }
+  return 0;
+}
+;
+
+--!
+-- Creates an XML stream of a user session as returned by authentication and registration methods.
+--/
+create procedure ODS.DBA.ods_serialize_user_session (
+  in sid varchar,
+  in uname varchar,
+  in isNewUser int := 0)
+{
+  return
+    '<userSession>' ||
+      '<sid>' || sid  || '</sid>' ||
+      '<user>' ||
+        '<uname>' || uname || '</uname>' ||
+        '<uid>' || cast (username2id (uname) as varchar) || '</uid>' ||
+        '<new>'  || cast (isNewUser as varchar) || '</new>' ||
+        '<dba>' || cast (is_dba (uname) as varchar) || '</dba>' ||
+      '</user>' ||
+    '</userSession>';
+}
+;
 
 create procedure ods_serialize_int_res (in rc any, in msg varchar := '')
 {
@@ -63,11 +213,15 @@ create procedure ods_serialize_int_res (in rc any, in msg varchar := '')
 
 create procedure ods_serialize_sql_error (in state varchar, in message varchar)
 {
+  message := substring (message, 1, coalesce (strstr (message, '<>'), length (message)));
+  message := substring (message, 1, coalesce (strstr (message, '\nin'), length (message)));
   return sprintf ('<failed><code>%s</code><message>%V</message></failed>', state, message);
 }
 ;
 
---! Performs HTTP, OAuth, session based authentication, FOAF+SSL in same order
+--!
+-- Performs HTTP, OAuth, session based authentication, FOAF+SSL in same order
+--/
 create procedure ods_check_auth (
   out uname varchar,
   in inst_id integer := null,
@@ -80,7 +234,8 @@ create procedure ods_check_auth (
 create procedure ods_check_auth2 (
   out uname varchar,
   inout inst_id integer := null,
-  in mode char := 'owner')
+  in mode char := 'owner',
+  in withSSL int := 1)
 {
   declare rc, authType integer;
   declare params, lines any;
@@ -108,6 +263,8 @@ create procedure ods_check_auth2 (
     }
   else if (get_keyword ('user_name', params) is not null and get_keyword ('password_hash', params) is not null)
     {
+      if ((select top 1 WS_LOGIN from DB.DBA.WA_SETTINGS) = 1)
+      {
       declare pwd any;
       uname := get_keyword ('user_name', params);
       select pwd_magic_calc (U_NAME, U_PASSWORD, 1) into pwd from DB.DBA.SYS_USERS where U_NAME = uname;
@@ -115,10 +272,14 @@ create procedure ods_check_auth2 (
 	rc := 1;
       authType := 1;
     }
-  else if (check_authentication_ssl (uname))
+    }
+  else if (withSSL and check_authentication_ssl (uname))
+    {
+      if ((select top 1 WS_LOGIN_SSL from DB.DBA.WA_SETTINGS) = 1)
     {
       rc := 1;
       authType := 1;
+    }
     }
   -- check ACL
   if (inst_id > 0 and rc > 0)
@@ -146,21 +307,125 @@ create procedure ods_check_auth2 (
       rc := 0;
   }
 nf:
+  if (rc = 0)
+  {
+  declare cookie_arr any;
+  cookie_arr := DB.DBA.vsp_ua_get_cookie_vec(lines);
+  if(cookie_arr is not null and get_keyword('interface',cookie_arr,'js')='vspx')
+  {
+    if (get_keyword ('sid', cookie_arr) is not null)
+    {
+      select VS_UID into uname from DB.DBA.VSPX_SESSION where VS_SID = get_keyword ('sid', cookie_arr);
+      if (uname is not null)
+	return 1;
+    }
+   }
+  }
   return rc;
 }
 ;
 
+--!
+-- \ingroup ods_devel_api
+--
+-- \brief Try to map a WebID to an ODS user account.
+--
+-- Each ODS user account has one main WebID and a set of optional
+-- additional WebIDs. This method can be used to retrieve the ODS user
+-- account name accociated with the provided WebID.
+--
+-- \param webid The WebID which should be mapped to a user account.
+--
+-- \return The accociated ODS user account name or \p null if the given WebID
+-- does not map to any user account.
+--/
+create procedure webid_to_ods_user (
+  in webid varchar)
+{
+  declare uname varchar;
+
+  -- FIXME: normally this should be handled by the Virtuoso inferencer via owl:sameAs inferencing
+  --        However, in order to do that securely we need to make sure to only look into the user
+  --        profile's graphs. At the moment there are at least 3. Thus, we need to make a graph
+  --        group of all of them. Otherwise something like the following might occure:
+  --        A profile is loaded into a tmp graph which claims to be the same as our user's webid.
+  --        The inferencer would then pick it up and return the wrong user account.
+  --
+  --        graph := getGraphGroupContainingAllUserProfiles();
+  --        return (sparql define input:same-as "yes" select ?user where { graph `iri(?:graph)` { ?user a sioc:User ; sioc:account_of `iri(?:webid)` . } });
+  --
+  --        For now we do it the dumb way and simply look into the profile table
+
+  -- 1. Check if we have a user that is accociated with the verified WebID
+  uname := sprintf_inverse(webid, sprintf('http://%s/dataspace/person/%s#this', SIOC..get_cname(), '%s'), 2)[0];
+  if (not isnull(uname))
+    {
+      if ((select U_ID from DB.DBA.SYS_USERS where U_NAME = uname))
+        return uname;
+    }
+
+  -- 2. Check if we have a user that set the verified WebID as an alternative
+  uname := (select U_NAME from DB.DBA.SYS_USERS, DB.DBA.WA_USER_OL_ACCOUNTS where U_ID = WUO_U_ID and WUO_NAME = 'webid' and WUO_URL = webid);
+
+  -- nothing found
+  return uname;
+}
+;
+
+--!
+-- \ingroup ods_devel_api
+--
+-- \brief Try to map an X.509 certificate fingerprint to an ODS user account.
+--
+-- Each ODS user accountcan have several X.509 certificate fingerprints accociated with it.
+-- These are typically added when registering with or connecting to an X.509 certificate
+-- without am embedded WebID.
+--
+-- \param fingerprint The X.509 certifcate fingerprint which should be mapped to a user account.
+--
+-- \return The accociated ODS user account name or \p null if the given fingerprint
+-- does not map to any user account.
+--/
+create procedure x509_cert_fingerprint_to_ods_user (
+  in fingerprint varchar)
+{
+  return (select U_NAME from DB.DBA.SYS_USERS, DB.DBA.WA_USER_CERTS where U_ID = UC_U_ID and UC_FINGERPRINT = fingerprint);
+}
+;
+
+--!
+-- \ingroup ods_devel_api
+--
+-- \brief Verify a provided X.509 certificate and map the accociated WebID to an ODS account.
+--
+-- \param uname[out] The ODs user name to which the WebID in the certificate is accociated.
+--
+-- \return If the WebID in the certificate could be mapped to an ODS user \p 1 is returned
+-- and \p uname is set to the user account name. Otherwise \p 0 is returned.
+--/
 create procedure check_authentication_ssl (
   out uname varchar := null)
 {
+  declare webid varchar;
+
   if (not is_https_ctx ())
     return 0;
 
-  uname := (select U_NAME from DB.DBA.SYS_USERS, DB.DBA.WA_USER_CERTS where U_ID = UC_U_ID and UC_FINGERPRINT = get_certificate_info (6));
-  if (isnull (uname))
+  -- 1. Verify that the given WebID matches the given certificate
+  if (not SIOC..foaf_check_ssl_2 (null, webid))
     return 0;
 
-  return SIOC..foaf_check_ssl (null);
+  -- 2. Check if we have a user that is accociated with the verified WebID
+  uname := webid_to_ods_user(webid);
+  if (not isnull(uname))
+    return 1;
+
+  -- 3.Check if we have the certifcate fingerprint accociated with a user
+  uname := x509_cert_fingerprint_to_ods_user(get_certificate_info (6));
+  if (not isnull(uname))
+    return 1;
+
+  return 0;
 }
 ;
 
@@ -173,6 +438,9 @@ create procedure normalize_url_like_browser (in x varchar)
 }
 ;
 
+--!
+-- FIXME: get_ses is only used in Gallery!
+--/
 create procedure get_ses (in uname varchar)
 {
   declare params, lines any;
@@ -193,6 +461,9 @@ create procedure get_ses (in uname varchar)
 }
 ;
 
+--!
+-- FIXME: close_ses is only used in Gallery!
+--/
 create procedure close_ses (in sid1 varchar)
 {
   declare params, lines any;
@@ -268,8 +539,10 @@ create procedure ods_xml_item (
   in pTag varchar,
   in pValue any)
 {
+  -- sprintf %V cannot handle UTF-8. We need to convert to wide chars first. Otherwise we end up with double-endoded characters.
+  -- if the input string is already wide nothing is done.
   if (not DB.DBA.is_empty_or_null (pValue))
-    http (sprintf ('<%s>%V</%s>', pTag, cast (pValue as varchar), pTag));
+    http (sprintf ('<%s>%V</%s>', pTag,  charset_recode (cast (pValue as varchar), 'UTF-8', '_WIDE_'), pTag));
 }
 ;
 
@@ -398,6 +671,10 @@ create procedure obj2xml (
   {
     retValue := sprintf ('%V', o);
   }
+  else if (__tag (o) = 211)
+  {
+    retValue := datestring (o);
+  }
   else if (isJsonObject (o))
   {
     for (N := 2; N < length(o); N := N + 2)
@@ -455,6 +732,13 @@ create procedure params2json (in o any)
 }
 ;
 
+create procedure json2obj (
+  in o any)
+{
+  return json_parse (o);
+}
+;
+
 create procedure dav_path_normalize (
   in path varchar,
   in path_type varchar := 'P')
@@ -509,7 +793,7 @@ create procedure ODS.ODS_API."qrcode" (
   in data any,
   in width int := 120,
   in height int := 120,
-  in scale int := 4) __soap_http 'text/plain'
+  in scale int := 3) __soap_http 'text/plain'
 {
   declare qrcode_bytes, mixed_content, content varchar;
   declare qrcode any;
@@ -527,6 +811,13 @@ create procedure ODS.ODS_API."qrcode" (
   mixed_content := replace (mixed_content, '\r\n', '');
 
   return mixed_content;
+}
+;
+
+create procedure ODS.ODS_API."iri2proxy" (
+  in iri any) __soap_http 'text/plain'
+{
+  return DB.DBA.RDF_PROXY_ENTITY_IRI (rtrim (iri, '#this'));
 }
 ;
 
@@ -746,7 +1037,6 @@ create procedure ODS.ODS_API."ontology.sparql" (
   commit work;
   st := '00000';
   exec (S, st, msg, V, vector ('use_cache', 1), meta, data);
-  --exec (S, st, msg, V, 0, meta, data);
   if (debug)
     dbg_obj_princ (S, st, msg);
   if (st = '00000')
@@ -1197,57 +1487,130 @@ create procedure ODS.ODS_API."lookup.list" (
 }
 ;
 
-create procedure ODS..getDefaultHttps ()
+create procedure ODS.ODS_API.getDefaultHttps () __SOAP_HTTP 'text/plain'
 {
   declare host, port, tmp varchar;
-  host := null; port := null;
-  for select top 1 HP_HOST, HP_LISTEN_HOST from  DB.DBA.HTTP_PATH, DB.DBA.WA_DOMAINS
-    where HP_PPATH like '/DAV/VAD/wa/%' and WD_HOST = HP_HOST and WD_LISTEN_HOST = HP_LISTEN_HOST
-	and WD_LPATH = HP_LPATH and HP_HOST not like '*sslini*' and HP_SECURITY = 'SSL' and length (HP_HOST) do
-	 {
-	    tmp := split_and_decode (HP_LISTEN_HOST, 0, '\0\0:');
-	    if (length (tmp) = 2)
-	      tmp := tmp[1];
-	    else
-	      tmp := HP_LISTEN_HOST;
-	    host := HP_HOST;
-	    port := tmp;  
-	    if (port <> '443')
-	      host := host || ':' || port;
-	 }
+
+  host := null;
+  port := null;
+  for select top 1 HP_HOST, HP_LISTEN_HOST
+        from DB.DBA.HTTP_PATH, DB.DBA.WA_DOMAINS
+       where HP_PPATH like '/DAV/VAD/wa/%'
+         and WD_HOST = HP_HOST
+         and WD_LISTEN_HOST = HP_LISTEN_HOST
+	       and WD_LPATH = HP_LPATH
+	       and HP_HOST not like '*sslini*'
+	       and HP_SECURITY = 'SSL'
+	       and length (HP_HOST) do
+	{
+	  tmp := split_and_decode (HP_LISTEN_HOST, 0, '\0\0:');
+	  if (length (tmp) = 2)
+	    tmp := tmp[1];
+	  else
+	    tmp := HP_LISTEN_HOST;
+	  host := HP_HOST;
+	  port := tmp;
+	  if (port <> '443')
+	    host := host || ':' || port;
+	}
   if (server_https_port () is not null and host is null)
-    {
-      host := registry_get ('URIQADefaultHost');
-      tmp := split_and_decode (host, 0, '\0\0:');
-      if (length (tmp) = 2)
-	tmp := tmp[0];
-      else
-	tmp := host;
-      port := server_https_port (); 
-      if (port <> '443')
-	host := host || ':' || port;
-    }
+  {
+    host := registry_get ('URIQADefaultHost');
+    tmp := split_and_decode (host, 0, '\0\0:');
+    if (length (tmp) = 2)
+	    tmp := tmp[0];
+    else
+	    tmp := host;
+
+    port := server_https_port ();
+    if (port <> '443')
+	    host := tmp || ':' || port;
+  }
   return host;
 }
 ;
 
--- Server Info
+--!
+-- \brief Get information about the ODS instance's configuration.
+--
+-- \param info The type of info to return. Supported values are
+-- - \p sslPort This will return the SSL host and port of the ODS instance if available.
+-- - \p regData This will return the registration and authentication configuration, ie. which
+--   registration and authentication methods are available and enabled. See below for an example of the
+--   returned data.
+--
+-- \return A JSON stream containing the requested information.
+--
+-- \b Example:
+--
+-- The following result shows that authentication via WebID, OpenID, Facebook, Twitter, and Google
+-- are enabled while LinkedIn and Windows Live are disabled. \p digest refers to authentication or
+-- registration via username and password. \p connect refers to connecting an external account with
+-- an ODS account. The three blocks \p authenticate, \p register, and \p connect map to the actions
+-- as defined in \ref ods_authentication_url_action.
+--
+-- \verbatim
+-- {
+--   "openidEnable":1,
+--   "facebookEnable":1,
+--   "twitterEnable":1,
+--   "linkedinEnable":0,
+--   "googleEnable":1,
+--   "sslEnable":1,
+--   "sslAutomaticEnable":1,
+--   "authenticate":
+--   {
+--     "digest":1,
+--     "webid":1,
+--     "openid":1,
+--     "facebook":1,
+--     "twitter":1,
+--     "linkedin":0,
+--     "google":1,
+--     "windowslive":0,
+--     [...]
+--   },
+--   "register":
+--   {
+--     "digest":1,
+--     "webid":1,
+--     "openid":1,
+--     "facebook":1,
+--     "twitter":1,
+--     "linkedin":0,
+--     "google":1,
+--     "windowslive":0,
+--     [...]
+--   },
+--   "connect":
+--   {
+--     "webid":1,
+--     "openid":1,
+--     "facebook":1,
+--     "twitter":1,
+--     "linkedin":0,
+--     "google":1,
+--     "windowslive":0,
+--     [...]
+--   }
+-- }
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."server.getInfo" (
-  in info varchar) __soap_http 'application/json'
+  in info varchar,
+  in json integer := 1) __soap_http 'application/json'
 {
   declare retValue, params any;
+  declare sslHost varchar;
 
   params := http_param ();
   retValue := null;
   if (info = 'sslPort')
   {
-    if (server_https_port () is not null)
-      retValue := vector ('sslPort', server_https_port (), 'sslHost', '');
-    else
-    {
-    	for select top 1 HP_HOST, HP_LISTEN_HOST from  DB.DBA.HTTP_PATH, DB.DBA.WA_DOMAINS
-    	  where HP_PPATH like '/DAV/VAD/wa/%' and WD_HOST = HP_HOST and WD_LISTEN_HOST = HP_LISTEN_HOST
-	      and WD_LPATH = HP_LPATH and HP_HOST not like '*sslini*' and HP_SECURITY = 'SSL' and length (HP_HOST) do
+  	for select top 1 HP_HOST, HP_LISTEN_HOST
+  	      from DB.DBA.HTTP_PATH, DB.DBA.WA_DOMAINS
+  	     where HP_PPATH like '/DAV/VAD/wa/%' and WD_HOST = HP_HOST and WD_LISTEN_HOST = HP_LISTEN_HOST and WD_LPATH = HP_LPATH
+  	       and HP_HOST not like '*sslini*' and HP_SECURITY = 'SSL' and length (HP_HOST) do
       {
     	   declare tmp any;
     	   tmp := split_and_decode (HP_LISTEN_HOST, 0, '\0\0:');
@@ -1257,39 +1620,195 @@ create procedure ODS.ODS_API."server.getInfo" (
     	     tmp := HP_LISTEN_HOST;
     	   retValue := vector ('sslPort', tmp, 'sslHost', HP_HOST);
    	  }
+    if (retValue is null and server_https_port () is not null)
+    {
+      sslHost := http_host();
+      sslHost := substring (sslHost, 1, coalesce (strstr (sslHost, ':'), length (sslHost)));
+      retValue := vector ('sslPort', server_https_port (), 'sslHost', sslHost);
     }
   }
   else if (info = 'regData')
   {
-    for (select TOP 1 WS_REGISTER, WS_REGISTER_OPENID, WS_REGISTER_FACEBOOK, WS_REGISTER_TWITTER, WS_REGISTER_LINKEDIN, WS_REGISTER_SSL, WS_REGISTER_AUTOMATIC_SSL from DB.DBA.WA_SETTINGS) do
+    for (select TOP 1
+         WS_LOGIN,
+         WS_LOGIN_OPENID,
+         WS_LOGIN_BROWSERID,
+         WS_LOGIN_FACEBOOK,
+         WS_LOGIN_TWITTER,
+         WS_LOGIN_LINKEDIN,
+         WS_LOGIN_GOOGLE,
+         WS_LOGIN_WINLIVE,
+         WS_LOGIN_WORDPRESS,
+         WS_LOGIN_YAHOO,
+         WS_LOGIN_TUMBLR,
+         WS_LOGIN_DISQUS,
+         WS_LOGIN_INSTAGRAM,
+         WS_LOGIN_BITLY,
+         WS_LOGIN_FOURSQUARE,
+         WS_LOGIN_DROPBOX,
+         WS_LOGIN_GITHUB,
+         WS_LOGIN_SSL,
+         WS_REGISTER,
+         WS_REGISTER_OPENID,
+         WS_REGISTER_BROWSERID,
+         WS_REGISTER_FACEBOOK,
+         WS_REGISTER_TWITTER,
+         WS_REGISTER_LINKEDIN,
+         WS_REGISTER_GOOGLE,
+         WS_REGISTER_WINLIVE,
+         WS_REGISTER_WORDPRESS,
+         WS_REGISTER_YAHOO,
+         WS_REGISTER_TUMBLR,
+         WS_REGISTER_DISQUS,
+         WS_REGISTER_INSTAGRAM,
+         WS_REGISTER_BITLY,
+         WS_REGISTER_FOURSQUARE,
+         WS_REGISTER_DROPBOX,
+         WS_REGISTER_GITHUB,
+         WS_REGISTER_SSL,
+         WS_REGISTER_AUTOMATIC_SSL from DB.DBA.WA_SETTINGS) do
     {
-      declare facebookEnable, twitterEnable, linkedinEnable integer;
-      declare facebookOptions any;
+      declare loginFacebookEnable, loginTwitterEnable, loginLinkedinEnable, loginGoogleEnable, loginWinliveEnable, loginWordpressEnable, loginYahooEnable, loginTumblrEnable, loginDisqusEnable, loginInstagramEnable, loginBitlyEnable, loginFoursquareEnable, loginDropboxEnable, loginGithubEnable integer;
+      declare facebookEnable, twitterEnable, linkedinEnable, googleEnable, winliveEnable, wordpressEnable, yahooEnable, tumblrEnable, disqusEnable, instagramEnable, bitlyEnable, foursquareEnable, dropboxEnable, githubEnable integer;
+      declare haveFacebookApiID, haveTwitterApiID, haveLinkedinApiID, haveGoogleApiID, haveWinliveApiID, haveWordpressApiID, haveYahooApiID, haveTumblrApiID, haveDisqusApiID, haveInstagramApiID, haveBitlyApiID, haveFoursquareApiID, haveDropboxApiID, haveGitHubApiID integer;
+      declare facebookApiID varchar;
+      declare tmp any;
 
-      facebookEnable := WS_REGISTER_FACEBOOK;
-      if ((facebookEnable = 1) and (not DB.DBA._get_ods_fb_settings (facebookOptions)))
-        facebookEnable := 0;
+      -- FIXME: We do not want to expose this. As soon as the 2000 UI has been ported to the new auth/reg API, remove it.
+      facebookApiID := (select a_key from OAUTH.DBA.APP_REG where a_owner = 0 and a_name = 'Facebook API');
 
-      twitterEnable := WS_REGISTER_TWITTER;
-      if ((twitterEnable = 1) and (not exists (select 1 from OAUTH.DBA.APP_REG where a_owner = 0 and a_name = 'Twitter API')))
-        twitterEnable := 0;
+      haveFacebookApiID := ODS.DBA.ods_get_service_client_key('Facebook API', tmp);
+      haveTwitterApiID := ODS.DBA.ods_get_service_client_key('Twitter API', tmp);
+      haveLinkedinApiID := ODS.DBA.ods_get_service_client_key('LinkedIn API', tmp);
+      haveGoogleApiID := ODS.DBA.ods_get_service_client_key('Google API', tmp);
+      haveWinliveApiID := ODS.DBA.ods_get_service_client_key('Windows Live API', tmp);
+      haveWordpressApiID := ODS.DBA.ods_get_service_client_key('Wordpress API', tmp);
+      haveYahooApiID := ODS.DBA.ods_get_service_client_key('Yahoo API', tmp);
+      haveTumblrApiID := ODS.DBA.ods_get_service_client_key('Tumblr API', tmp);
+      haveDisqusApiID := ODS.DBA.ods_get_service_client_key('Disqus API', tmp);
+      haveInstagramApiID := ODS.DBA.ods_get_service_client_key('Instagram API', tmp);
+      haveBitlyApiID := ODS.DBA.ods_get_service_client_key('Bitly API', tmp);
+      haveFoursquareApiID := ODS.DBA.ods_get_service_client_key('Foursquare API', tmp);
+      haveDropboxApiID := ODS.DBA.ods_get_service_client_key('DropBox API', tmp);
+      haveGitHubApiID := ODS.DBA.ods_get_service_client_key('GitHub API', tmp);
 
-      linkedinEnable := WS_REGISTER_LINKEDIN;
-      if ((linkedinEnable = 1) and (not exists (select 1 from OAUTH.DBA.APP_REG where a_owner = 0 and a_name = 'LinkedIn API')))
-        linkedinEnable := 0;
+      loginFacebookEnable := case when (WS_LOGIN_FACEBOOK and haveFacebookApiID) then 1 else 0 end;
+      loginTwitterEnable := case when (WS_LOGIN_TWITTER and haveTwitterApiID) then 1 else 0 end;
+      loginLinkedinEnable := case when (WS_LOGIN_LINKEDIN and haveLinkedinApiID) then 1 else 0 end;
+      loginGoogleEnable := case when (WS_LOGIN_GOOGLE and haveGoogleApiID) then 1 else 0 end;
+      loginWinliveEnable := case when (WS_LOGIN_WINLIVE and haveWinliveApiID) then 1 else 0 end;
+      loginWordpressEnable := case when (WS_LOGIN_WORDPRESS and haveWordpressApiID) then 1 else 0 end;
+      loginYahooEnable := case when (WS_LOGIN_YAHOO and haveYahooApiID) then 1 else 0 end;
+      loginTumblrEnable := case when (WS_LOGIN_TUMBLR and haveTumblrApiID) then 1 else 0 end;
+      loginDisqusEnable := case when (WS_LOGIN_DISQUS and haveDisqusApiID) then 1 else 0 end;
+      loginInstagramEnable := case when (WS_LOGIN_INSTAGRAM and haveInstagramApiID) then 1 else 0 end;
+      loginBitlyEnable := case when (WS_LOGIN_BITLY and haveBitlyApiID) then 1 else 0 end;
+      loginFoursquareEnable := case when (WS_LOGIN_FOURSQUARE and haveFoursquareApiID) then 1 else 0 end;
+      loginDropboxEnable := case when (WS_LOGIN_DROPBOX and haveDropboxApiID) then 1 else 0 end;
+      loginGithubEnable := case when (WS_LOGIN_GITHUB and haveGitHubApiID) then 1 else 0 end;
 
+      facebookEnable := case when (WS_REGISTER_FACEBOOK and haveFacebookApiID) then 1 else 0 end;
+      twitterEnable := case when (WS_REGISTER_TWITTER and haveTwitterApiID) then 1 else 0 end;
+      linkedinEnable := case when (WS_REGISTER_LINKEDIN and haveLinkedinApiID) then 1 else 0 end;
+      googleEnable := case when (WS_REGISTER_GOOGLE and haveGoogleApiID) then 1 else 0 end;
+      winliveEnable := case when (WS_REGISTER_WINLIVE and haveWinliveApiID) then 1 else 0 end;
+      wordpressEnable := case when (WS_REGISTER_WORDPRESS and haveWordpressApiID) then 1 else 0 end;
+      yahooEnable := case when (WS_REGISTER_YAHOO and haveYahooApiID) then 1 else 0 end;
+      tumblrEnable := case when (WS_REGISTER_TUMBLR and haveTumblrApiID) then 1 else 0 end;
+      disqusEnable := case when (WS_REGISTER_DISQUS and haveDisqusApiID) then 1 else 0 end;
+      instagramEnable := case when (WS_REGISTER_INSTAGRAM and haveInstagramApiID) then 1 else 0 end;
+      bitlyEnable := case when (WS_REGISTER_BITLY and haveBitlyApiID) then 1 else 0 end;
+      foursquareEnable := case when (WS_REGISTER_FOURSQUARE and haveFoursquareApiID) then 1 else 0 end;
+      dropboxEnable := case when (WS_REGISTER_DROPBOX and haveDropboxApiID) then 1 else 0 end;
+      githubEnable := case when (WS_REGISTER_GITHUB and haveGitHubApiID) then 1 else 0 end;
+
+      -- At the moment of this writing Tumblr did not expose the email address via the API. Thus, we cannot register with Tumblr.
+      -- Once we have additional parameter handling in user.authenticate.authenticationUrl to allow setting a custom email we can
+      -- remove the following:
+      tumblrEnable := 0;
+
+      -- CAUTION/FIXME: This info block contains the authentication information in two forms: 1. the old plain way and 2. the new nested way.
+      --                The former information is kept for backwards compatibility. But the goal is to get rid of it.
   	  retValue := vector (
-  	                      'register', WS_REGISTER,
+                          'login', WS_LOGIN,
+                          'loginOpenidEnable', WS_LOGIN_OPENID,
+                          'loginFacebookEnable', loginFacebookEnable,
+                          'loginTwitterEnable', loginTwitterEnable,
+                          'loginLinkedinEnable', loginLinkedinEnable,
+                          'loginSslEnable', WS_LOGIN_SSL,
   	                      'openidEnable', WS_REGISTER_OPENID,
   	                      'facebookEnable', facebookEnable,
+                          'facebookApiID', facebookApiID,
   	                      'twitterEnable', twitterEnable,
   	                      'linkedinEnable', linkedinEnable,
   	                      'sslEnable', WS_REGISTER_SSL,
-  	                      'sslAutomaticEnable', WS_REGISTER_AUTOMATIC_SSL
+                          'sslAutomaticEnable', WS_REGISTER_AUTOMATIC_SSL,
+                          'authenticate', array2Obj(vector (
+                            'digest', WS_LOGIN,
+                            'webid', WS_LOGIN_SSL,
+                            'openid', WS_LOGIN_OPENID,
+                            'browserid', WS_LOGIN_BROWSERID,
+                            'facebook', loginFacebookEnable,
+                            'twitter', loginTwitterEnable,
+                            'linkedin', loginLinkedinEnable,
+                            'google', loginGoogleEnable,
+                            'windowslive', loginWinliveEnable,
+                            'wordpress', loginWordpressEnable,
+                            'yahoo', loginYahooEnable,
+                            'tumblr', loginTumblrEnable,
+                            'disqus', loginDisqusEnable,
+                            'instagram', loginInstagramEnable,
+                            'bitly', loginBitlyEnable,
+                            'foursquare', loginFoursquareEnable,
+                            'dropbox', loginDropboxEnable,
+                            'github', loginGithubEnable
+                          )),
+                          'register', array2Obj(vector (
+                            'digest', WS_REGISTER,
+                            'webid', WS_REGISTER_SSL,
+                            'openid', WS_REGISTER_OPENID,
+                            'browserid', WS_REGISTER_BROWSERID,
+                            'facebook', facebookEnable,
+                            'twitter', twitterEnable,
+                            'linkedin', linkedinEnable,
+                            'google', googleEnable,
+                            'windowslive', winliveEnable,
+                            'wordpress', wordpressEnable,
+                            'yahoo', yahooEnable,
+                            'tumblr', tumblrEnable,
+                            'disqus', disqusEnable,
+                            'instagram', instagramEnable,
+                            'bitly', bitlyEnable,
+                            'foursquare', foursquareEnable,
+                            'dropbox', dropboxEnable,
+                            'github', githubEnable
+                          )),
+                          'connect', array2Obj(vector (
+                            'webid', 1,
+                            'openid', 1,
+                            'browserid', 1,
+                            'facebook', haveFacebookApiID,
+                            'twitter', haveTwitterApiID,
+                            'linkedin', haveLinkedinApiID,
+                            'google', haveGoogleApiID,
+                            'windowslive', haveWinliveApiID,
+                            'wordpress', haveWordpressApiID,
+                            'yahoo', haveYahooApiID,
+                            'tumblr', haveTumblrApiID,
+                            'disqus', haveDisqusApiID,
+                            'instagram', haveInstagramApiID,
+                            'bitly', haveBitlyApiID,
+                            'foursquare', haveFoursquareApiID,
+                            'dropbox', haveDropboxApiID,
+                            'github', haveGitHubApiID
+                          ))
   	                     );
   	}
   }
+  if (json)
   return params2json (retValue);
+
+  return retValue;
 }
 ;
 
@@ -1323,12 +1842,196 @@ create procedure ODS.ODS_API."address.geoData" (
 }
 ;
 
--- User account activity
+--!
+-- Utility procedure to map a facebook account to an ODS user.
+-- The issue is that ODS stores Facebook URIs. These have changed in the past. So at the moment of
+-- this writing there are three possible URL variants. These are all checked here based on Facebook
+-- username and numerical ID.
+--/
+create procedure ODS..facebook_to_ods_user (
+  in username varchar,
+  in id varchar)
+{
+  return (select U_NAME
+          from DB.DBA.SYS_USERS,
+               DB.DBA.WA_USER_OL_ACCOUNTS
+          where WUO_U_ID = U_ID
+                and WUO_TYPE = 'P'
+                and (WUO_URL = DB.DBA.WA_USER_OL_ACCOUNTS_FACEBOOK (cast (id as integer)) or
+                     WUO_URL = DB.DBA.WA_USER_OL_ACCOUNTS_FACEBOOK_URI (username) or
+                     WUO_URL = DB.DBA.WA_USER_OL_ACCOUNTS_FACEBOOK_URI (id)));
+}
+;
 
---! User registration
---! name: desired user account name
---! password: desired password
---! email: user's e-mail address
+
+--!
+-- \brief Check if a certain user account name is available.
+--
+-- Before creating an account via user.register() this method can be used
+-- to check the availability of the user name and the email address.
+--
+-- Although both parameters are marked as optional reliable results are only
+-- obtained if both parameters are given.
+--
+-- \param name The user account name to check.
+-- \param email The corresponding email address.
+--
+-- \return An error code stating the success of the command execution as detailed in \ref ods_response_format_result_code.
+-- If the account name and email address are available \p 1 is returned. Otherwise an error code and a human readable message
+-- indicating the problem are returned.
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i http://demo.openlinksw.com/ods/api/user.checkAvailability?name=demo2&email=demo2@hello.com
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/06.01.3127 (Linux) x86_64-unknown-linux-gnu
+-- Connection: Keep-Alive
+-- Date: Tue, 17 Apr 2012 15:44:46 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="UTF-8"
+-- Content-Length: 57
+--
+-- <result><code>1</code><message>Success</message></result>
+-- \endverbatim
+--/
+create procedure ODS.ODS_API."user.checkAvailability" (
+  in name varchar := null,
+	in email varchar := null) __soap_http 'text/xml'
+{
+  declare exit handler for sqlstate '*'
+  {
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (name is null or length (name) < 1 or length (name) > 20)
+    signal ('23023', 'Login name cannot be empty or longer than 20 chars');
+
+  if (regexp_match ('^[A-Za-z0-9_.@-]+\$', name) is null)
+    signal ('23023', 'The login name contains invalid characters');
+
+  if (exists (select 1 from DB.DBA.SYS_USERS where U_NAME = name))
+    signal ('23023', 'This login name is already registered');
+
+  if (email is null or length (email) < 1 or length (email) > 40)
+    signal ('23023', 'E-mail address cannot be empty or longer then 40 chars');
+
+  if (regexp_match ('[^@ ]+@([^\. ]+\.)+[^\. ]+', email) is null)
+    signal ('23023', 'Invalid E-mail address');
+
+  if (exists (select 1 from DB.DBA.SYS_USERS where U_E_MAIL = email) and exists (select 1 from DB.DBA.WA_SETTINGS where WS_UNIQUE_MAIL = 1))
+    signal ('23023', 'This e-mail address is already registered');
+
+  return ods_serialize_int_res (1);
+}
+;
+
+--!
+-- \brief Register a new user account.
+--
+-- ODS allows to register new accounts in several ways, ranging from simple a username/password combination to registration through an existing Twitter account.
+-- Some registration methods such as the registration via OAuth or OpenID requires more than one step. However, any registration method ends with a call to
+-- user.register() which will create the actual ODS account.
+--
+-- For security reasons it is highly recommended to perform any registration calls through a secure connection.
+--
+-- \section ods_user_register_password Classical Registration via Username and Password
+--
+-- Registration via username and password is as easy as calling user.register() with the \p name, \p password, and \p email parameters filled. If the \p name is not
+-- in use yet and the \p email address is either unique or ODS has been configured to allow non-unique email addresses, then a new user account will be created
+-- which can immediately be used for \ref ods_authentication.
+--
+-- \section ods_user_register_openid Registration via OpenID
+--
+-- A new ODS account can be created through an existing OpenID. To that end the user needs to login with their OpenID before the account can be created. This process
+-- involves three steps on behalf of the ODS client:
+-- - Using the provided OpenID the client creates a login URL via user.openid.authenticationUrl() to which the user needs to be navigated.
+-- - After the user did login successfully with the OpenID provider they are redirected to the ODS client according to the callback URL provided as a parameter to
+--   user.openid.authenticationUrl(). The client then needs to convert the URL parameters into a form suitable for user.register()'s \p data parameter. This is
+--   done via user.openid.registrationData().
+-- - Finally user.register() is called with the mentioned \p data paramter, a \p mode of \p 1, and a suitable \p name and \p email. The latter two can be taken
+--   from the \p data JSON blob in case the OpenID provider did add this information to the callback URL.
+--
+-- As a result the newly created ODS account will be connected to the given OpenID.
+--
+-- \section ods_user_register_webid Registration via WebID
+--
+-- Creating a new ODS account via an existing WebID involves two steps:
+-- - Fetch details about the profile accociated with the WebID via user.getFOAFData() which will return a blob of JSON data suitable for the \p data parameter.
+-- - Call user.register() through an SSL connection with the mentioned \p data parameter, a \p mode of \p 3, and a suitable \p name and \p email. The SSL connection
+--   is required for the browser to be able to provide the certificate with the embedded WebID.
+--
+-- As a result the newly created ODS account will be connected to the given WebID.
+--
+-- \section ods_user_register_oauth Registration via OAuth (Twitter, LinkedIn, Facebook)
+--
+-- ODS aupports the creation of user accounts based on existing accounts from Twitter, LinkedIn, or Facebook via their OAuth interfaces. Like with the OpenID
+-- support this requires the user to log into the third party service and authenticate ODS to use the account. An ODS client performs the requried steps as
+-- follows:
+-- - A login URL is created via one of the authenticationUrl functions suitable for the service in question: user.oauth.twitter.authenticationUrl(),
+--   user.oauth.linkedin.authenticationUrl() providing a callback URL.
+-- - The client directs the user to the login URL from the previous step. Once the user sucessfully logged in and confirmed that ODS should indeed be allowed
+--   to authenticate through that account, the OAuth-enabled service will redirect the user to the callback URL providing three parametes \p sid, \p oauth_verifier,
+--   and \p oauth_token.
+-- - The three parameters from the callback URL are used in one of the OAuth registrationData functions suitable for the service in question to prepare the \p data
+--   blob required for user.register() : user.oauth.twitter.registrationData(), user.oauth.linkedin.registrationData()
+-- - Finally user.register() is called with the mentioned \p data paramter, a suitable \p mode for the service in question, and a \p name and \p email. The \p name
+--   is optional since it will be taken from the existing account profile of the third party service.
+--
+-- As a result the newly created ODS account will be connected to the given OAuth-enabled account.
+--
+--
+-- \par Post Registration
+-- ODS accounts which have not beed created with a classical password have a random password which can be changed later on via user.password_change() to enable
+-- classical \ref ods_authentication_password_hash. In addition any of the supported registration and authentication methods can be added to an existing account
+-- at any time through the user.update() or user.update.fields() functions.
+--
+-- \param name The user name for the new account. Except for \p mode \p 4 and \p 5 (Twitter and LinkedIn) this is mandatory. If omitted the username will be taken
+--             from the third-party service data.
+-- \param password The password for the new account. Only used if \p mode is \p 0. Otherwise authentication is done through the specified service without the need
+-- for a specific ODS password.
+-- \param email The email address for the new account. Except for \p mode \p 2 (Facebook) this is mandatory.
+-- \param mode ODS supports different methods of authentication as detailed in \ref ods_authentication. For user registration ODS also supports several methods:
+-- - \p 0 - Default registration via username and password. This is the default.
+-- - \p 1 - Registration via OpenID.
+-- - \p 2 - Registration via Facebook.
+-- - \p 3 - Registration via FOAF+SSL/WebID.
+-- - \p 4 - Registration via Twitter.
+-- - \p 5 - Registration via LinkedIn.
+-- \param data Additional registration details. The format depends on the registration \p mode.
+-- - \p mode = \p 0 (username/password) - \p data is unused.
+-- - \p mode = \p 1 (OpenID) - A JSON stream of profile details as created by user.openid.registrationData().
+-- - \p mode = \p 2 (Facebook) - A JSON stream of profile data. This data is typically retrieved via user.oauth.facebook.registrationData().
+-- - \p mode = \p 3 (FOAF+SSL/WebID) - A JSON stream of details retrieved from a WebID profile. One way of getting that information is user.getFOAFData().
+-- - \p mode = \p 4 (Twitter) - An XML stream of Twitter user profile details. This data is typically retrieved via user.oauth.twitter.registrationData().
+-- - \p mode = \p 5 (LinkedIn) - An XML stream of user information from LinkedIn. This data is typically retrieved via user.oauth.linkedin.registrationData().
+--
+-- \return On success a new user session as detailed in \ref ods_user_session_example is returned which can be used as described in \ref ods_authentication_session_id.
+--
+-- \sa \ref ods_authentication_oauth
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i "http://demo.openlinksw.com/ods/api/user.register?name=test123&password=1&email=test@yahoo.com"
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/05.12.3041 (Solaris) x86_64-sun-solaris2.10-64  VDB
+-- Connection: Keep-Alive
+-- Date: Mon, 28 Dec 2009 22:18:59 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="ISO-8859-1"
+-- Content-Length: 59
+--
+-- <userSession>
+--   <sid>1de236f5da2f32d92e8c0cce5053a96e</sid>
+--   <user>
+--     <uname>test123</uname>
+--     <uid>132</uid>
+--     <new>1</new>
+--     <dba>0</dba>
+--   </user>
+-- </userSession>
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."user.register" (
   in name varchar := null,
 	in "password" varchar := null,
@@ -1336,43 +2039,48 @@ create procedure ODS.ODS_API."user.register" (
 	in mode integer := 0,
 	in data any := null) __soap_http 'text/xml'
 {
-  declare sid, rc, name2, xmlData any;
+  declare sid, rc, tmp, name2, xmlData any;
+  declare registerData any;
   declare exit handler for sqlstate '*'
   {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
+
+  registerData := ODS.ODS_API."server.getInfo" ('regData', 0);
 	if (mode = 1)
 	{
 	  -- OpenID
+    if (get_keyword ('openidEnable', registerData, 0) = 0)
+      signal ('22023', 'The OpenID registration type is disabled');
+
 	  data := json_parse (data);
-	  if (isnull (name))
-    name := DB.DBA.WA_MAKE_NICK (coalesce (get_keyword ('nick', data), replace (get_keyword ('name', data), ' ', '')));
-	  if (isnull ("email"))
-    "email" := get_keyword ('mbox', data);
     "password" := uuid ();
 	}
 	else if (mode = 2)
 	{
 	  -- Facebook
+    if (get_keyword ('facebookEnable', registerData, 0) = 0)
+      signal ('22023', 'The Facebook registration type is disabled');
+
 	  data := json_parse (data);
-    name := DB.DBA.WA_MAKE_NICK (coalesce (get_keyword ('nick', data), replace (get_keyword ('name', data), ' ', '')));
-    "email" := null;
     "password" := uuid ();
 	}
 	else if (mode = 3)
 	{
 	  -- FOAF+SSL
+    if (get_keyword ('sslEnable', registerData, 0) = 0)
+      signal ('22023', 'The WebID registration type is disabled');
+
 	  data := json_parse (data);
-	  if (isnull (name))
-    name := DB.DBA.WA_MAKE_NICK (coalesce (get_keyword ('nick', data), replace (get_keyword ('name', data), ' ', '')));
-	  if (isnull ("email"))
-    "email" := get_keyword ('mbox', data);
     "password" := uuid ();
 	}
 	else if (mode = 4)
 	{
 	  -- Twitter
+    if (get_keyword ('twitterEnable', registerData, 0) = 0)
+      signal ('22023', 'The Twitter registration type is disabled');
+
     xmlData := xml_tree_doc (data);
     if (xpath_eval ('string(/users/user/id)', xmlData))
       name2 := cast (xpath_eval ('string(/users/user/screen_name)', xmlData) as varchar);
@@ -1385,6 +2093,9 @@ create procedure ODS.ODS_API."user.register" (
 	else if (mode = 5)
 	{
 	  -- LinkedIn
+    if (get_keyword ('linkedinEnable', registerData, 0) = 0)
+      signal ('22023', 'The LinkedIn registration type is disabled');
+
     xmlData := xml_tree_doc (data);
     if (xpath_eval ('string(/person/first-name)', xmlData))
       name2 := cast (xpath_eval ('string(/person/first-name)', xmlData) as varchar);
@@ -1394,37 +2105,18 @@ create procedure ODS.ODS_API."user.register" (
 
     "password" := uuid ();
 	}
-  if (name is null or length (name) < 1 or length (name) > 20)
-    signal ('23023', 'Login name cannot be empty or longer then 20 chars');
-
-  if (regexp_match ('^[A-Za-z0-9_.@-]+\$', name) is null)
-    signal ('23023', 'The login name contains invalid characters');
-
-  if (mode <> 2)
-  {
-    if ("email" is null or length ("email") < 1 or length ("email") > 40)
-      signal ('23023', 'E-mail address cannot be empty or longer then 40 chars');
-
-    if (regexp_match ('[^@ ]+@([^\. ]+\.)+[^\. ]+', "email") is null)
-      signal ('23023', 'Invalid E-mail address');
-  }
-  if (exists (select 1 from DB.DBA.SYS_USERS where U_E_MAIL = "email") and exists (select 1 from DB.DBA.WA_SETTINGS where WS_UNIQUE_MAIL = 1))
-    signal ('23023', 'This e-mail address is already registered.');
-
-  if ("password" is null or length ("password") < 1 or length ("password") > 40)
-    signal ('23023', 'Password cannot be empty or longer then 40 chars');
 
   if ((mode = 1) and get_keyword ('openid_url', data) is not null and exists (select 1 from DB.DBA.WA_USER_INFO where WAUI_OPENID_URL = get_keyword ('openid_url', data)))
-    signal ('23023', 'This OpenID identity is already registered.');
+    signal ('23023', 'This OpenID identity is already registered');
 
-  if ((mode = 2) and exists (select 1 from DB.DBA.WA_USER_INFO where WAUI_FACEBOOK_ID = get_keyword ('uid', data)))
-    signal ('23023', 'This Facebook identity is already registered.');
+  if ((mode = 2) and not ODS..facebook_to_ods_user (name2, get_keyword ('id', data)) is null)
+    signal ('23023', 'This Facebook identity is already registered');
 
-  if ((mode = 4) and exists (select 1 from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_TYPE = 'P' and WUO_NAME = 'Twitter' and WUO_URL = sprintf ('http://twitter.com/%U', name2)))
-    signal ('23023', 'This Twitter identity is already registered.');
+  if ((mode = 4) and exists (select 1 from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_TYPE = 'P' and WUO_NAME = 'Twitter' and WUO_URL = DB.DBA.WA_USER_OL_ACCOUNTS_TWITTER (name2)))
+    signal ('23023', 'This Twitter identity is already registered');
 
   if ((mode = 5) and exists (select 1 from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_TYPE = 'P' and WUO_NAME = 'LinkedIn' and WUO_URL = cast (xpath_eval ('string(/person/public-profile-url)', xmlData) as varchar)))
-    signal ('23023', 'This LinkedIn identity is already registered.');
+    signal ('23023', 'This LinkedIn identity is already registered');
 
   rc := DB.DBA.ODS_CREATE_USER (name, "password", "email");
   if (not isinteger (rc))
@@ -1449,7 +2141,19 @@ create procedure ODS.ODS_API."user.register" (
     DB.DBA.WA_USER_EDIT (name, 'WAUI_FIRST_NAME'   , get_keyword ('firstName', data));
     DB.DBA.WA_USER_EDIT (name, 'WAUI_LAST_NAME'    , get_keyword ('family_name', data));
     DB.DBA.WA_USER_EDIT (name, 'WAUI_GENDER'       , get_keyword ('gender', data));
-    DB.DBA.WA_USER_EDIT (name, 'WAUI_FACEBOOK_ID', get_keyword ('uid', data));
+
+    tmp := get_keyword ('link', data);
+    if (isnull (tmp))
+    {
+      tmp := get_keyword ('id', data);
+      if (not isnull (tmp))
+        tmp := DB.DBA.WA_USER_OL_ACCOUNTS_FACEBOOK_URI (get_keyword ('id', data));
+    }
+    if (not isnull (tmp))
+    {
+    insert into DB.DBA.WA_USER_OL_ACCOUNTS (WUO_U_ID, WUO_TYPE,  WUO_NAME, WUO_URL, WUO_URI)
+      values (rc, 'P', 'Facebook', tmp, ODS.ODS_API."user.onlineAccounts.uri" (tmp));
+  }
   }
   else if (mode = 3)
   {
@@ -1469,7 +2173,9 @@ create procedure ODS.ODS_API."user.register" (
     DB.DBA.WA_USER_EDIT (name, 'WAUI_HPHONE'       , get_keyword ('phone', data));
     DB.DBA.WA_USER_EDIT (name, 'WAUI_BORG_HOMEPAGE', get_keyword ('organizationHomepage', data));
     DB.DBA.WA_USER_EDIT (name, 'WAUI_BORG'         , get_keyword ('organizationTitle', data));
-    DB.DBA.WA_USER_EDIT (name, 'WAUI_FOAF'         , get_keyword ('iri', data));
+    DB.DBA.WA_USER_EDIT (name, 'WAUI_PHOTO_URL'    , get_keyword ('depiction', data));
+    insert into DB.DBA.WA_USER_OL_ACCOUNTS (WUO_U_ID, WUO_TYPE, WUO_NAME, WUO_URL, WUO_URI, WUO_PUBLIC)
+      values (rc, 'P', 'webid', get_keyword ('iri', data), get_keyword ('iri', data), 1);
 
     declare cert any;
     cert := client_attr ('client_certificate');
@@ -1479,25 +2185,1898 @@ create procedure ODS.ODS_API."user.register" (
   else if (mode = 4)
   {
     DB.DBA.WA_USER_EDIT (name, 'WAUI_FULL_NAME'    , xpath_eval ('string(/users/user/name)', xmlData));
-    insert into DB.DBA.WA_USER_OL_ACCOUNTS (WUO_U_ID, WUO_TYPE, WUO_NAME, WUO_URL, WUO_URI)
-      values (rc, 'P', 'Twitter', sprintf ('http://twitter.com/%U', name2), '');
+    tmp := DB.DBA.WA_USER_OL_ACCOUNTS_TWITTER (name2);
+    insert into DB.DBA.WA_USER_OL_ACCOUNTS (WUO_U_ID, WUO_TYPE, WUO_NAME, WUO_URL, WUO_URI, WUO_PUBLIC)
+      values (rc, 'P', 'Twitter', tmp, ODS.ODS_API."user.onlineAccounts.uri" (tmp), 1);
   }
   else if (mode = 5)
   {
     DB.DBA.WA_USER_EDIT (name, 'WAUI_FIRST_NAME'    , xpath_eval ('string(/person/first-name)', xmlData));
     DB.DBA.WA_USER_EDIT (name, 'WAUI_LAST_NAME'     , xpath_eval ('string(/person/last-name)', xmlData));
-    insert into DB.DBA.WA_USER_OL_ACCOUNTS (WUO_U_ID, WUO_TYPE, WUO_NAME, WUO_URL, WUO_URI)
-      values (rc, 'P', 'LinkedIn', cast (xpath_eval ('string(/person/public-profile-url)', xmlData) as varchar), '');
+    tmp := cast (xpath_eval ('string(/person/public-profile-url)', xmlData) as varchar);
+    insert into DB.DBA.WA_USER_OL_ACCOUNTS (WUO_U_ID, WUO_TYPE, WUO_NAME, WUO_URL, WUO_URI, WUO_PUBLIC)
+      values (rc, 'P', 'LinkedIn', tmp, ODS.ODS_API."user.onlineAccounts.uri" (tmp), 1);
   }
 
-  sid := DB.DBA.vspx_sid_generate ();
-  insert into DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY)
-    values (sid, 'wa', name, now ());
-  return '<sid>' || sid  || '</sid>';
+  sid := ODS..ods_new_user_session(name, 0);
+  return ODS.DBA.ods_serialize_user_session (sid, name, 1);
 }
 ;
 
-create procedure ODS.ODS_API.twitterServer (
+--!
+-- An internal utility function used by authentication procs:
+-- - user.authenticate.callback()
+-- - user.authenticate.browserid()
+-- - user.authenticate.webid()
+--
+-- It performs the final steps which are similar in all three situations:
+-- create the new account, connect the online account to the ODS account.
+--
+-- On error the procedure will simple throw a signal which is handled
+-- by the calling procedure.
+--
+-- \param action The performed action. If \p auto it will be set to the actual used value.
+-- \param confirm The confirmation mode (auto, always, or never)
+-- \param service The service type like "facebook" or "webid"
+-- \param serviceId The identifier like the facebook profile URL or the actual WebID.
+-- \param uname The authenticated ODS user. null if not authenticated.
+-- \param newUsr A possible username as extracted from the external profile data.
+-- \param newEmail A possible email as extracted from the external profile data.
+--
+-- \return The username of the ODS account which was authenticated, newly registered,
+-- or connected to.
+--/
+create procedure ODS.DBA.ods_authenticate_finish (
+  inout action varchar,
+  in confirm varchar,
+  in service varchar,
+  in serviceId varchar,
+  in uname varchar,
+  in newUsr varchar,
+  in newEmail varchar,
+  in odsuser varchar := null)
+{
+  declare uid any;
+  declare cid varchar;
+  declare i int;
+  declare tmpUsr varchar;
+
+
+  -- Map the serviceId to an ODS account
+  if (odsuser is null)
+    odsuser := (select U_NAME from DB.DBA.SYS_USERS, DB.DBA.WA_USER_OL_ACCOUNTS where WUO_U_ID = U_ID and lcase(WUO_NAME) = lcase(service) and WUO_URL = serviceId);
+
+
+    -- Login if there is an account, register otherwise
+  if (action = 'auto')
+{
+    if (odsuser is null)
+      action := 'register';
+    else
+      action := 'authenticate';
+  }
+
+
+  -- Finally perform the requested action
+  if (action = 'authenticate')
+  {
+    if (odsuser is null)
+      signal ('22023', sprintf('The %s account "%s" is not connected to any ODS account.', service, serviceId));
+
+    -- Successfully verified and mapped to ODS account odsuser
+    uname := odsuser;
+}
+
+  else -- action = 'register' or 'connect'
+{
+    -- Both for register and connect we need the BrowserID not to be connected to any ODS account
+    if (not odsuser is null)
+      signal ('22023', sprintf ('The %s account "%s" is already connected to ODS user account "%s".', service, serviceId, odsuser));
+
+    if (action = 'register')
+    {
+      -- Prepare username (take first part of email address if too long
+      while (length(newUsr) > 20)
+      {
+        i := strchr (newUsr, '@');
+        if (i > 0)
+          newUsr := left(newUsr, i);
+        else
+          newUsr := left(newUsr, 20);
+      }
+
+      -- Make username unique
+      i := 0;
+      tmpUsr := newUsr;
+      while (not (select U_ID from DB.DBA.SYS_USERS where U_NAME = tmpUsr) is null)
+      {
+        i := i + 1;
+        tmpUsr := sprintf ('%s%d', newUsr, i);
+      }
+      newUsr := tmpUsr;
+
+
+      if (confirm = 'auto' and (newUsr is null or newEmail is null))
+        confirm := 'always';
+
+      if (confirm = 'always')
+      {
+        -- We create a new confirm session
+        cid := DB.DBA.vspx_sid_generate ();
+        insert into DB.DBA.WA_AUTH_CONFIRM_SESS(AUTH_SESS_CID, AUTH_SESS_CLIENT_IP, AUTH_SESS_SERVICE, AUTH_SESS_SERVICE_ID, AUTH_SESS_TIMESTAMP)
+          values(cid, http_client_ip(), service, serviceId, now());
+
+        -- Return the confirm session to the calling procedure
+        return vector(
+          'cid', cid,
+          'service', coalesce(service, ''),
+          'serviceId', coalesce(serviceId, ''),
+          'newUsr', coalesce(newUsr, ''),
+          'newEmail', coalesce(newEmail, '')
+        );
+      }
+
+      else -- confirm = 'never'
+      {
+        -- Create the new user account
+        uid := DB.DBA.ODS_CREATE_USER (newUsr, uuid(), newEmail);
+        if (not isinteger (uid))
+          signal ('22023', uid);
+        uname := newUsr;
+      }
+    }
+
+    else -- action = 'connect'
+    {
+      if (uname is null)
+        signal ('22023', 'Trying to connect a service account to an ODS account without a valid session.');
+
+      -- We already have an authenticated ODS user in "uname"
+      uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME=uname);
+    }
+
+    -- FIXME: OpenIDs should also be stored in WA_USER_OL_ACCOUNTS
+    if (service = 'openid')
+    {
+      update DB.DBA.WA_USER_INFO
+         set WAUI_OPENID_URL = serviceId,
+             WAUI_OPENID_SERVER = http_param('openid.server')
+       where WAUI_U_ID = uid;
+    }
+    else
+    {
+      -- Connect the service ID to the account from register or connect action
+      insert into DB.DBA.WA_USER_OL_ACCOUNTS (WUO_U_ID, WUO_TYPE,  WUO_NAME, WUO_URL)
+        values (uid, 'P', service, serviceId);
+      -- TODO: add profile details including optional photo
+      --       there probably is no other way then to convert each profile into a generic form and then add the data here.
+      --       Thus, we basically need to have a "registrationData" for each service.
+    }
+  }
+
+
+  return uname;
+}
+;
+
+--!
+-- \brief Create an authentication URL to log into or register with ODS through a third party service.
+--
+-- ODS supports a variety of third-party services for login and registration including Twitter, Facebook,
+-- or Google. ODS clients can use this method to easily expose this functionality to their users. Clients
+-- can either start authentication, registration or the connection of an ODS account with a third-party
+-- service account.
+--
+-- \section ods_authentication_url_workflow Client Workflow
+--
+-- The workflow for a client is always the same irrespective of the service type:
+-- -# The client requests an authentication URL via this method, specifying the \p service type (see below
+--    for supported services, the \p action to take, and a callback URL.
+-- -# The client navigates to the returned URL allowing the user to authenticate with the 3rd party service.
+-- -# The 3rd party service redirects to ODS which concludes the action and performs the final redirect to
+--    the \p callback URL provided by the client. The \p callback URL contains one the following:
+--    -# A new ODS session ID in the \p userSession.sid parameter and a flag (\p 0 or \p 1) to indicate if a new account has been registered \p user.new.
+--       See also \ref ods_authentication_session_id.
+--    -# An authentication confirmation session consisting of the parameters \p confirmSession.cid, \p user.name,
+--       \p user.email, \p onlineAccount.service, and \p onlineAccount.uid. See \ref ods_authentication_url_confirm
+--       for details.
+--    -# In the case of a workflow error an error messages in the \p error.msg parameter. Errors include such
+--       conditions as a failed 3rd party service authentication or a missing detail in the profile for
+--       registration (ODS for example requires an email address for account creation).
+--
+-- Clients can use server.getInfo() to retrieve the enabled services. A service is available if it
+-- is enabled in the ODS configuration (all are enabled by default) and if the ODS instance contains
+-- an application ID. Application IDs are typically created through the third-party service's web interface
+-- and can be added by the ODS administrator via admin.apikeys.add(). (See below for links to the respective
+-- admin pages and the required callback links.)
+--
+-- For security reasons the \p callback URL needs to match one of the configures clients URLs. See
+-- admin.clients.new() for details.
+--
+-- \section ods_authentication_url_action Authentication Action Types
+--
+-- Clients can initiate three different types of actions revolving around third-party service accounts with
+-- this methods. The actions are as follows:
+--
+-- - \p authenticate A basic authentication workflow which, if succesful results in the client being authenticated
+--      with the ODS account which is connected to the 3rd-party service account the user logged into.
+-- - \p register The creation of a new ODS account which will be connected to the 3rd-party service account the user
+--      logged into. The new ODS account will have a random password set which can later be changed via user.password_change()
+--      to allow authentication with classical username digest information.
+-- - \p connect Connect an existing ODS account with a third-party service account. This is the convenient version of
+--      user.onlineAccounts.new().
+-- - \p auto In automatic mode ODS tries to choose the best fitting action. Should an ODS account be connected to the
+--      3rd-party service account the user logged into \p authenticate will be chosen. Otherwise ODS will try to create
+--      a new account like with \p register. Should the client provide authentication information according to \ref
+--      ods_authentication ODS will try to connect the 3rd-party service account the user logged into with the
+--      authenticated ODS account.
+--
+-- \section ods_authentication_url_confirm Authentication Confirmation Mode
+--
+-- ODS allows to create accounts by simply connecting them to third-party online accounts. Clients can either ask the user to confirm
+-- the creation of the new account or have it done automatically. ODS supports three modes for registration confirmation:
+-- - \p always ODS will always ask the client to confirm the creation of the new account.
+-- - \p never ODS will never ask the client for confirmation. If certain details like the email are missing for account creation
+--      it will simply fail.
+-- - \p auto ODS will decide based on the available profile detail. If both username and email address are available the new account
+--      will be created without confirmation. Otherwise ODS will request confirmation.
+--
+-- A verified and completed confirmation request can be confirmed to create the final account via user.authenticate.confirm().
+--
+-- \section ods_authentication_url_services Supported Services
+--
+-- ODS supports the following services for authentication and registration. Except for OpenID each service
+-- uses one flavor of OAuth and requires a client ID and secret to be registered with ODS. Client IDs are managed
+-- via admin.apikeys.add().
+--
+-- Most services require that a callback URL is stored with the client ID. The following list contains details on
+-- the values to add for ODS. Keep in mind that both ODS and Virtuoso support OAuth workflows in other situations
+-- like Briefcase external web drive mounting. These use different callback URLs which needs to be taken into
+-- account when configuring certain services like Google.
+--
+-- - \p facebook Create a login link for Facebook. Client IDs including key and secret can be created at https://developers.facebook.com/apps.
+--      The Facebook client app should be configured as "Website with Facebook login" with a site URL matching the host of the ODS installation.
+--      Example: if ODS runs at <code>http://myhost.com/ods/api</code> then the URL in the Facebook app should be <code>http://myhost.com/</code>.
+-- - \p google Create a login link for Google. Client IDs including key and secret can be created at https://code.google.com/apis/console/.
+--      The redirect urls need to contain <code>http[s]://HOST[:PORT]/ods/api/user.authenticate.callback</code>.
+-- - \p twitter Create a login link for Twitter. Consumer key and secret can be created at https://dev.twitter.com/apps.
+--      The Twitter Callback URL should be set to the host of the ODS installation. See \p facebook above for an example.
+-- - \p linkedin Create a login link for LinkedIn. Client IDs including API and secret key can be created at https://www.linkedin.com/secure/developer.
+--      There is no need to specify a callback URL.
+-- - \p windowslive Create a login link for Windows Live. Client IDs including API and secret key can be created at https://manage.dev.live.com/Applications/Index.
+--      The redirect domain of the configured application needs to match the host of the ODS installation. See \p facebook above for an example.
+-- - \p wordpress Create a login link for Wordpress. Client IDs including API and secret key can be created at https://developer.wordpress.com/apps/.
+--      The redirect URL of the configured OAuth application needs to match the host of the ODS installation. See \p facebook above for an example.
+-- - \p yahoo Create a login link for Yahoo. Client IDs including API and secret key can be created at https://developer.apps.yahoo.com/dashboard/createKey.html.
+--      When creating the key make sure to select read/write permissions for the <em>Social Directory</em> scope.
+--      The redirect URL of the configured OAuth application needs to match the host of the ODS installation. See \p facebook above for an example.
+-- - \p tumblr Create a login link for Tumblr. Client IDs including API and secret key can be created at http://www.tumblr.com/oauth/apps.
+--      The redirect URL of the configured OAuth application needs to match the host of the ODS installation. See \p facebook above for an example.
+-- - \p disqus Create a login link for Disqus. Client IDs including API and secret key can be created at http://disqus.com/api/applications/.
+--      ODS only requires the created application to have read access. The redirect URL of the configured OAuth application needs to match
+--      the host of the ODS installation. See \p facebook above for an example.
+-- - \p instagram Create a login link for Instagram. Client IDs including API and secret key can be created at http://instagram.com/developer/clients/manage/.
+-- - \p bitly Create a login link for Bitly. Client IDs including API and secret key can be created at http://bitly.com/a/settings/advanced#oauthapps by
+--      registering an OAuth 2 application. The application link should be set to the host of the ODS installation. See \p facebook above for an example.
+-- - \p foursquare Create a login link for Foursquare. Client IDs including API and secret key can be created at https://foursquare.com/developers/apps.
+--      The application link should be set to the host of the ODS installation. See \p facebook above for an example.
+-- - \p dropbox Create a login link for DropBox. Client IDs including API and secret key can be created at https://www.dropbox.com/developers/apps. No callback
+--      URL needs to be configured.
+-- - \p github Create a login link for GitHub. Client IDs including API and secret key can be created at https://github.com/settings/applications/new.
+--      The callback URL should be set to the host of the ODS installation. See \p facebook above for an example.
+-- - \p openid (The actual OpenID is specified in \p data)
+--
+--
+-- \param service The type of service to authenticate with. See the list above for supported services. An example would be \p google.
+-- \param callback The client callback URL. Once the login is complete the user will be redirected here. ODS will add one of two parameters
+--        to the URL depending on the success of the login. If the login was successful a new session ID will be provided in the \p sid
+--        parameter. For details see \ref ods_authentication_session_id. If the login was not successful ODS will add query parameter \p error_msg
+--        containing an error message.
+-- \param action The action that should be taken. Can be one of \p authenticate, \p register, \p connect, or \p auto. See \ref ods_authentication_url_action
+--        for details.
+-- \param confirm FIXME: ADD CONFIRM DETAILS
+-- \param data Optional data only required for \p openid login.
+--
+-- \return A URL pointing to the third-party's login page which will result in a redirection to ODS. Clients need to point their users to this URL.
+--         In the case of an error like missing input or a disabled service this method will return with a 4xx HTTP error code.
+--
+-- \sa user.authenticate(), user.authenticate.browserid(), user.authenticate.webid()
+--/
+create procedure ODS.ODS_API."user.authenticate.authenticationUrl" (
+  in service varchar,
+  in callback varchar,
+  in action varchar := 'authenticate',
+  in confirm varchar := 'auto',
+  in data varchar := null) __SOAP_HTTP 'text/plain'
+{
+  --
+  -- CONCEPT:
+  --
+  -- The client will use the URL returned from this procedure to redirect the user.
+  -- The URL created by this proc uses user.authenticate.callback as callback URL instead of the one given by the client.
+  -- The client callback URL as well as any other parameters will be added as a query parameter in base64-encoded
+  -- form (state). The latter is necessary to avoid problems with special chars in callback URLs (Facebook is a pain).
+  -- Once the user logged in the service redirects to user.authenticate.callback which will conclude the ODS login process by
+  -- fetching user information and matching that to an ODS account. Finally user.authenticate.callback concludes with a redirect to
+  -- the client including the new session ID in the query parameters.
+  --
+
+
+  declare odsCallback, callbackParams varchar;
+  declare clientKey any;
+  declare uname, sid varchar;
+  uname := null;
+
+
+  -- This procedure is supposed to be called in an http context
+  -- Thus, the error handler does produce http status codes
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    if (__SQL_STATE = '42000') -- permission denied
+      http_status_set(403);
+    else
+      http_status_set(400); -- misc error
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+
+  -- Check if the callback URL's domain is registered as a trusted application
+  -- Without this malicious applications could log into ODS
+  if (ODS.DBA.ods_check_client_url (callback) = 0)
+  {
+    signal ('42000', sprintf('Unknown callback domain "%s". Please register via admin.clients.new', callback));
+  }
+
+
+  -- Normalize and verify parameters
+  if (service is null)
+  {
+    signal ('22023', 'No Service specified');
+  }
+  if (callback is null or callback = '')
+  {
+    signal ('22023', 'No callback URL specified');
+  }
+  service := lcase(service);
+  action := lcase(action);
+  confirm := lcase(confirm);
+
+
+  -- Check the input parameters
+  if (action <> 'authenticate' and action <> 'register' and action <> 'auto' and action <> 'connect')
+  {
+    signal ('22023', sprintf('Unknown authentication action: %s', action));
+  }
+  if (confirm <> 'never' and confirm <> 'always' and confirm <> 'auto')
+  {
+    signal ('22023', sprintf('Unknown confirmation mode: %s', confirm));
+  }
+
+
+  -- Check if authentication or registration with the service has been disabled
+  -- In auto mode this will never be fired. Instead the callback will handle it
+  if (cast (get_keyword (service, get_keyword (action, json_parse (ODS.ODS_API."server.getInfo" ('regData')))) as varchar) = '0')
+  {
+    signal ('42000', sprintf ('%s has been disabled for service %s.', action, service));
+  }
+
+
+  -- We need to encode a few parameters into our redirection URL for the service. That way we
+  -- know what to do in our callback function
+  --
+  -- Some services allow arbitrary query params in the callback URL. For others, like Google
+  -- we will simply put the params in the state parameter which is intended for this use.
+  callbackParams := sprintf('service=%U&url=%U&confirm=%U', service, callback, confirm);
+
+
+  -- For the connect action we need to be authenticated. So we check for authentication information if we might connect
+  if (action = 'connect' or action = 'auto')
+  {
+    -- We cannot allow SSL authentication in auto mode, otherwise the result is not what the user expects (silent SSL authentication)
+    declare inst_id integer;
+    inst_id := null;
+    if (not ods_check_auth2 (uname, inst_id, 'owner', (case when (action <> 'auto') then 1 else 0 end)))
+    {
+      if (action = 'connect')
+        signal ('42000', sprintf ('Need to be authenticated to perform serivce account connection.'));
+    }
+    else
+    {
+      -- automatic mode will always add the account to the authenticated user
+      if (action = 'auto')
+        action := 'connect';
+
+      -- If the client already created a session we will resue it, otherwise we create a new one to verify in the callback procedure
+      sid := http_param ('sid');
+      if (not exists (select 1 from DB.DBA.VSPX_SESSION where VS_SID = sid and VS_REALM = http_param ('realm') and VS_UID = uname))
+        sid := ODS.DBA.ods_new_user_session(uname);
+
+      callbackParams := sprintf('%s&sid=%U', callbackParams, sid);
+    }
+  }
+
+
+  -- Encode the action into the parameters for the callback procedure
+  callbackParams := sprintf('%s&action=%U', callbackParams, action);
+
+  -- Some services get confused with special chars in the query params. Thus, we bas64-encode our params
+  -- We also need to strip away the = chars since they are not allowed either and are not really part of the base64 encoded value
+  callbackParams := replace(encode_base64(callbackParams), '=', '');
+
+
+  -- Build our proxy callback URL
+  odsCallback := ODS.DBA.ods_authenticate_callback_url();
+
+
+  -- -----------------------------------------------------------------------------------
+  -- OpenID
+  -- -----------------------------------------------------------------------------------
+  if (service = 'openid')
+  {
+    if (data is null or data = '')
+    {
+      signal ('22023', 'No OpenID specified.');
+    }
+
+    -- Append the OpenID to the callback URL so it is available in user.authenticate.callback
+    odsCallback := odsCallback || sprintf('?state=%U&openid=%U', callbackParams, data);
+
+    return ODS.ODS_API."user.openid.authenticationUrl" (data, odsCallback);
+  }
+
+
+  -- -----------------------------------------------------------------------------------
+  -- Every service that needs a client id and secret (basically OAuth)
+  -- -----------------------------------------------------------------------------------
+  else
+  {
+    if (ODS.DBA.ods_get_service_client_key(service, clientKey) = 0)
+    {
+      signal ('22023', sprintf('No %s App ID has been added to this instance of ODS.', service));
+    }
+
+    -- -----------------------------------------------------------------------------------
+    -- Facebook
+    -- -----------------------------------------------------------------------------------
+    if (service = 'facebook')
+    {
+      return sprintf('https://www.facebook.com/dialog/oauth?redirect_uri=%U&scope=email&client_id=%s&state=%s', odsCallback, clientKey[0], callbackParams);
+    }
+
+
+    -- -----------------------------------------------------------------------------------
+    -- Google
+    -- -----------------------------------------------------------------------------------
+    else if (service = 'google')
+    {
+      return sprintf('https://accounts.google.com/o/oauth2/auth?response_type=code&redirect_uri=%U&state=%s&scope=%U&client_id=%s', odsCallback, callbackParams, 'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile', clientKey[0]);
+    }
+
+
+    -- -----------------------------------------------------------------------------------
+    -- Windows Live
+    -- -----------------------------------------------------------------------------------
+    else if (service = 'windowslive')
+    {
+      return sprintf('https://login.live.com/oauth20_authorize.srf?client_id=%U&scope=%U&response_type=code&redirect_uri=%U&state=%s', clientKey[0], 'wl.basic wl.signin', odsCallback, callbackParams);
+    }
+
+
+    -- -----------------------------------------------------------------------------------
+    -- Wordpress
+    -- -----------------------------------------------------------------------------------
+    else if (service = 'wordpress')
+    {
+      return sprintf('https://public-api.wordpress.com/oauth2/authorize?client_id=%U&response_type=code&redirect_uri=%U&state=%s', clientKey[0], odsCallback, callbackParams);
+    }
+
+
+    -- -----------------------------------------------------------------------------------
+    -- Disqus
+    -- -----------------------------------------------------------------------------------
+    else if (service = 'disqus')
+    {
+      return sprintf('https://disqus.com/api/oauth/2.0/authorize/?client_id=%U&response_type=code&redirect_uri=%U&scope=%U&state=%s', clientKey[0], odsCallback, 'read', callbackParams);
+    }
+
+
+    -- -----------------------------------------------------------------------------------
+    -- Instagram
+    -- -----------------------------------------------------------------------------------
+    else if (service = 'instagram')
+    {
+      return sprintf('https://api.instagram.com/oauth/authorize/?client_id=%U&response_type=code&redirect_uri=%U&state=%s', clientKey[0], odsCallback, callbackParams);
+    }
+
+
+    -- -----------------------------------------------------------------------------------
+    -- Bitly
+    -- -----------------------------------------------------------------------------------
+    else if (service = 'bitly')
+    {
+      -- Bitly does not support the OAuth 2 "state" parameter the way the rest of the OAuth 2 serivces do. We need to put it in the callback URL.
+      return sprintf('https://bitly.com/oauth/authorize?client_id=%U&response_type=code&redirect_uri=%U', clientKey[0], sprintf('%s?state=%U', odsCallback, callbackParams));
+    }
+
+
+    -- -----------------------------------------------------------------------------------
+    -- Foursquare
+    -- -----------------------------------------------------------------------------------
+    else if (service = 'foursquare')
+    {
+      return sprintf('https://foursquare.com/oauth2/authenticate?redirect_uri=%U&response_type=code&client_id=%s&state=%s', odsCallback, clientKey[0], callbackParams);
+    }
+
+
+    -- -----------------------------------------------------------------------------------
+    -- GitHub
+    -- -----------------------------------------------------------------------------------
+    else if (service = 'github')
+    {
+      return sprintf('https://github.com/login/oauth/authorize?redirect_uri=%U&client_id=%s&state=%U&scope=user', odsCallback, clientKey[0], callbackParams);
+    }
+
+
+    -- -----------------------------------------------------------------------------------
+    -- Twitter
+    -- -----------------------------------------------------------------------------------
+    else if (service = 'twitter')
+    {
+      return OAUTH.DBA.ods_oauth_one_authentication_url (clientKey[0], 'http://twitter.com/oauth/request_token', 'http://twitter.com/oauth/authenticate', sprintf('%s?state=%U', odsCallback, callbackParams));
+    }
+
+
+    -- -----------------------------------------------------------------------------------
+    -- LinkedIn
+    -- -----------------------------------------------------------------------------------
+    else if (service = 'linkedin')
+    {
+      return OAUTH.DBA.ods_oauth_one_authentication_url (clientKey[0], 'https://api.linkedin.com/uas/oauth/requestToken?scope=r_basicprofile+r_emailaddress', 'https://www.linkedin.com/uas/oauth/authenticate', sprintf('%s?state=%U', odsCallback, callbackParams));
+    }
+
+
+    -- -----------------------------------------------------------------------------------
+    -- Yahoo
+    -- -----------------------------------------------------------------------------------
+    else if (service = 'yahoo')
+    {
+      return OAUTH.DBA.ods_oauth_one_authentication_url (clientKey[0], 'https://api.login.yahoo.com/oauth/v2/get_request_token', 'https://api.login.yahoo.com/oauth/v2/request_auth', sprintf('%s?state=%U', odsCallback, callbackParams));
+    }
+
+
+    -- -----------------------------------------------------------------------------------
+    -- Tumblr
+    -- -----------------------------------------------------------------------------------
+    else if (service = 'tumblr')
+    {
+      return OAUTH.DBA.ods_oauth_one_authentication_url (clientKey[0], 'http://www.tumblr.com/oauth/request_token', 'http://www.tumblr.com/oauth/authorize', sprintf('%s?state=%U', odsCallback, callbackParams));
+    }
+
+
+    -- -----------------------------------------------------------------------------------
+    -- DropBox
+    -- -----------------------------------------------------------------------------------
+    else if (service = 'dropbox')
+    {
+      return OAUTH.DBA.ods_oauth_one_authentication_url (clientKey[0], 'https://api.dropbox.com/1/oauth/request_token', 'https://www.dropbox.com/1/oauth/authorize', sprintf('%s?state=%U', odsCallback, callbackParams), 'POST');
+    }
+
+
+    -- -----------------------------------------------------------------------------------
+    -- UNKNOWN
+    -- -----------------------------------------------------------------------------------
+    else
+    {
+      signal ('22023', sprintf('Unknown authentication service type: "%s"', service));
+    }
+  }
+}
+;
+
+--!
+-- \brief Internal callback function used for user authentication.
+--
+-- This is an internal function which is used to process the authentication via OAuth-based
+-- third-party APIs. Clients never need to call this function.
+--/
+create procedure ODS.ODS_API."user.authenticate.callback" (
+  in state varchar) __SOAP_HTTP 'text/xml'
+{
+  declare errMsg, httpHeader varchar;
+  declare token, data, sid, redirUrl, sig, _key, _val, serviceId, uname, activeOdsAcc, tmp varchar;
+  declare oauthVerifier, oauthSid varchar;
+  declare clientKey any;
+  declare odsOpts, uriParams any;
+  declare uid any;
+
+  -- parameters which were provided to user.authenticate.authenticationUrl
+  declare service, url, action, confirm varchar;
+
+  -- values extracted from 3rd party profiles for registration
+  declare newUsr, newEmail varchar;
+  newUsr := null;
+  newEmail := null;
+
+  -- The session id after successful login or registration or as encoded in the parameters
+  sid := null;
+  -- The user name of the ODS account matching the 3rd party serivce profile
+  uname := null;
+  -- The authenticated ODS user in case action is "connect"
+  activeOdsAcc := null;
+  -- The 3rd party service id as used in ODS (often an URL)
+  serviceId := null;
+
+
+  -- This procedure is supposed to be called in an http context
+  -- It will always perform a redirect and never fail
+  http_status_set (303);
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    redirUrl := sprintf('%serror.msg=%U', redirUrl, __SQL_MESSAGE);
+    http_header (sprintf('Location: %s\r\n', redirUrl));
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+
+  --
+  -- Decode the parameters
+  --
+  odsOpts := decode_base64(state);
+  odsOpts := split_and_decode(odsOpts);
+  service := get_keyword('service', odsOpts);
+  url := get_keyword('url', odsOpts);
+  action := get_keyword('action', odsOpts);
+  confirm := get_keyword('confirm', odsOpts);
+  sid := get_keyword('sid', odsOpts);
+
+
+  -- Prepare the redirection URL
+  redirUrl := url;
+  if (strcontains(redirUrl, '?'))
+    redirUrl := redirUrl || '&';
+  else
+    redirUrl := redirUrl || '?';
+
+
+  --
+  -- For the "connect" action we need to be authenticated, thus "sid" needs to be a valid session which maps to a user account
+  --
+  if (action = 'connect')
+  {
+    -- Map the session id to an ODS account
+    select VS_UID into activeOdsAcc from DB.DBA.VSPX_SESSION where VS_SID = sid and VS_REALM = 'wa';
+  }
+
+
+  -- ===================================================================================
+  -- STEP 1: Verify the OAuth information, fetch profile data from service, and map to ODS user
+  -- ===================================================================================
+
+  -- -----------------------------------------------------------------------------------
+  -- OpenID
+  -- -----------------------------------------------------------------------------------
+  if(service = 'openid')
+  {
+    -- Get the login URL we need for user.authenticate
+
+    -- Add basic OpenID parameters to the login URL
+    token := http_param('openid.server');
+    if (strcontains(token, '?'))
+      token := token || '&';
+    else
+      token := token || '?';
+    token := token || 'openid.mode=check_authentication'
+      || sprintf('&openid.assoc_handle=%U', http_param('openid.assoc_handle'))
+      || sprintf('&openid.sig=%U', http_param('openid.sig'))
+      || sprintf('&openid.signed=%U', http_param('openid.signed'));
+
+    sig := split_and_decode(http_param('openid.signed'), 0, '\0\0,');
+    for (declare i int, i := 0; i < length(sig); i := i + 1)
+    {
+      _key := trim(sig[i]);
+      if (_key <> 'mode' and
+          _key <> 'signed' and
+          _key <> 'assoc_handle')
+      {
+        _val := http_param('openid.' || _key);
+        if (not _val is null and _val <> '')
+          token := token || sprintf('&openid.%s=%U', _key, _val);
+      }
+    }
+
+    tmp := http_client (token);
+    if (tmp not like '%is_valid:%true\n%')
+      signal ('22023', 'OpenID Authentication Failed.');
+
+    serviceId := http_param('openid');
+    uname := (select U_NAME from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and rtrim (WAUI_OPENID_URL, '/') = rtrim (serviceId, '/'));
+
+    -- All profile details are added as URL params, we simply search the ones we need supporting different namespaces
+    uriParams := http_param();
+    for (declare i, l int, i := 0, l := length (uriParams); i < l; i := i + 2)
+    {
+      if (ends_with(uriParams[i], 'email'))
+        newEmail := uriParams[i+1];
+      else if (newUsr is null and (ends_with(uriParams[i], 'fname') or ends_with(uriParams[i], 'fullname')))
+        newUsr := uriParams[i+1];
+      else if (ends_with(uriParams[i], 'nickname'))
+        newUsr := uriParams[i+1];
+    }
+
+    -- fallback username
+    if (newUsr is null)
+      newUsr := serviceId;
+  }
+
+
+  -- -----------------------------------------------------------------------------------
+  -- Every service that needs a client id and secret (basically OAuth)
+  -- -----------------------------------------------------------------------------------
+  else
+  {
+    if (ODS.DBA.ods_get_service_client_key(service, clientKey) = 0)
+    {
+      signal ('22023', sprintf('No %s App ID has been added to this instance of ODS.', service));
+    }
+
+    -- -----------------------------------------------------------------------------------
+    -- Facebook
+    -- -----------------------------------------------------------------------------------
+    if (service = 'facebook')
+    {
+      -- Check for code
+      token := get_keyword('code', http_param());
+      if (token is null or token = '')
+      {
+        signal ('22023', http_param('error_description'));
+      }
+
+      -- Convert the Facebook code into an access token
+      token := http_get (sprintf('https://graph.facebook.com/oauth/access_token?client_id=%s&client_secret=%s&code=%s&redirect_uri=%U', clientKey[0], clientKey[1], token, ODS.DBA.ods_authenticate_callback_url()));
+
+      -- TODO: error handling for the http get above
+      token := get_keyword('access_token', split_and_decode(token));
+
+      -- Fetch the Facebook profile details
+      data := http_get (sprintf('https://graph.facebook.com/me?access_token=%s', token));
+
+      -- Extract the details we need and map to ODS account
+      data := json_parse(data);
+      serviceId := get_keyword('id', data);
+      if (serviceId is null or serviceId = '')
+      {
+        -- FIXME: get actual error message
+        signal ('22023', 'Facebook authorization failed. Could not fetch profile details.');
+      }
+
+      newUsr := get_keyword ('username', data);
+      newEmail := get_keyword ('email', data);
+      uname := ODS.DBA.facebook_to_ods_user (newUsr, serviceId);
+      serviceId := DB.DBA.WA_USER_OL_ACCOUNTS_FACEBOOK_URI (coalesce (get_keyword ('username', data), serviceId));
+    }
+
+
+    -- -----------------------------------------------------------------------------------
+    -- Google
+    -- -----------------------------------------------------------------------------------
+    else if (service = 'google')
+    {
+      token := get_keyword('code', http_param());
+      if (token is null or token = '')
+        signal('22023', http_param('error'));
+
+      -- Convert the Google OAuth 2.0 code into an access token. Google's API requires this to be a HTTPS POST
+      declare header any;
+      data := http_get ('https://accounts.google.com/o/oauth2/token',
+                        header,
+                        'POST',
+                        null,
+                        sprintf('client_id=%s&client_secret=%s&code=%s&redirect_uri=%U&grant_type=authorization_code', clientKey[0], clientKey[1], token, ODS.DBA.ods_authenticate_callback_url()));
+
+      token := get_keyword('access_token', json_parse(data));
+      if (token is null or token = '')
+        signal ('22023', sprintf('Failed to obtain Google OAuth token: %s', get_keyword('error', json_parse(data))));
+
+      -- Fetch the Google profile details
+      data := http_get (sprintf('https://www.googleapis.com/oauth2/v1/userinfo?access_token=%s', token));
+       -- Extract the Email address from the Google account
+      data := json_parse(data);
+      serviceId := get_keyword ('email', data);
+      if (serviceId is null or serviceId = '')
+      {
+        -- FIXME: get actual error message
+        signal ('22023', 'Google authorization failed. Could not fetch profile details.');
+      }
+
+      newUsr := serviceId;
+      newEmail := coalesce (get_keyword('email', data), serviceId);
+    }
+
+
+    -- -----------------------------------------------------------------------------------
+    -- Windows Live
+    -- -----------------------------------------------------------------------------------
+    else if (service = 'windowslive')
+    {
+      token := get_keyword('code', http_param());
+      if (token is null or token = '')
+      {
+        signal ('22023', http_param('error'));
+      }
+
+      -- Convert the Windows Live OAuth 2.0 code into an access token. Windows Live's API requires this to be a HTTPS POST
+      declare header any;
+      data := http_get ('https://login.live.com/oauth20_token.srf',
+                        header,
+                        'POST',
+                        null,
+                        sprintf('client_id=%s&client_secret=%s&code=%s&redirect_uri=%U&grant_type=authorization_code', clientKey[0], clientKey[1], token, ODS.DBA.ods_authenticate_callback_url()));
+
+      token := get_keyword('access_token', json_parse(data));
+      if (token is null or token = '')
+      {
+        signal ('22023', sprintf('Failed to obtain Windows Live OAuth token: %s', get_keyword('error', json_parse(data))));
+      }
+
+      -- Fetch the Windows Live profile details
+      data := http_get (sprintf('https://apis.live.net/v5.0/me?access_token=%s', token));
+
+      -- Extract the Windows Live profile link of the form http://profile.live.com/cid-7a6b1666d21a866b/
+      data := json_parse(data);
+      serviceId := get_keyword ('link', data);
+      if (serviceId is null or serviceId = '')
+      {
+        -- FIXME: get actual error message
+        signal ('22023', 'Windows Live authorization failed. Could not fetch profile details.');
+      }
+
+      newUsr := lcase(replace(get_keyword ('name', data), ' ', '_')); -- FIXME: create a better name ->username conversion
+      newEmail := get_keyword ('account', data);
+    }
+
+
+    -- -----------------------------------------------------------------------------------
+    -- Wordpress
+    -- -----------------------------------------------------------------------------------
+    else if (service = 'wordpress')
+    {
+      token := get_keyword('code', http_param());
+      if (token is null or token = '')
+      {
+        signal ('22023', http_param('error'));
+      }
+
+      -- Convert the Wordpress OAuth 2.0 code into an access token. Wordpress' API requires this to be a HTTPS POST
+      declare header any;
+      data := http_get ('https://public-api.wordpress.com/oauth2/token',
+                        header,
+                        'POST',
+                        null,
+                        sprintf('client_id=%U&client_secret=%s&code=%s&redirect_uri=%U&grant_type=authorization_code', clientKey[0], clientKey[1], token, ODS.DBA.ods_authenticate_callback_url()));
+
+      token := get_keyword('access_token', json_parse(data));
+      if (token is null or token = '')
+      {
+        signal ('22023', sprintf('Failed to obtain Wordpress OAuth token: %s', get_keyword('error', json_parse(data))));
+      }
+
+      -- Fetch the Wordpress profile details using the token in an authorization header
+      data := http_get ('https://public-api.wordpress.com/rest/v1/me',
+                        header,
+                        'GET',
+                        sprintf('authorization: Bearer %s', token));
+
+      -- Extract the Wordpress profile link of the form http://USER.wordpress.com/
+      data := json_parse (data);
+      serviceId := get_keyword ('username', data);
+      if (serviceId is null or serviceId = '')
+      {
+        -- FIXME: get actual error message
+        signal ('22023', 'Wordpress authorization failed. Could not fetch profile details.');
+      }
+
+      newUsr := serviceId;
+      newEmail := get_keyword ('email', data);
+    }
+
+
+    -- -----------------------------------------------------------------------------------
+    -- Disqus
+    -- -----------------------------------------------------------------------------------
+    else if (service = 'disqus')
+    {
+      token := get_keyword('code', http_param());
+      if (token is null or token = '')
+      {
+        signal ('22023', http_param('error'));
+      }
+
+      -- Convert the Disqus OAuth 2.0 code into an access token.
+      declare header any;
+      data := http_get ('https://disqus.com/api/oauth/2.0/access_token/',
+                       header,
+                      'POST',
+                       null,
+                       sprintf('client_id=%U&client_secret=%s&code=%s&redirect_uri=%U&grant_type=authorization_code', clientKey[0], clientKey[1], token, ODS.DBA.ods_authenticate_callback_url()));
+
+      token := get_keyword('access_token', json_parse(data));
+      if (token is null or token = '')
+      {
+        signal ('22023', sprintf('Failed to obtain Disqus OAuth token: %s', get_keyword('error', json_parse(data))));
+      }
+
+      -- Fetch the Disqus profile details using the token in an authorization header
+      data := http_get (sprintf('https://disqus.com/api/3.0/users/details.json?access_token=%U&api_key=%U&api_secret=%U', token, clientKey[0], clientKey[1]), httpHeader);
+      data := json_parse (data);
+      data := get_keyword ('response', data);
+
+      -- error handling
+      if (httpHeader[0] not like 'HTTP/1._ 20_ %' or not isvector(data))
+      {
+        signal ('22023', coalesce(data, httpHeader[0]));
+      }
+
+      -- Extract the Disqus profile url
+      serviceId := get_keyword ('profileUrl', data);
+      newEmail := get_keyword ('email', data);
+      newUsr := get_keyword ('username', data);
+    }
+
+
+    -- -----------------------------------------------------------------------------------
+    -- Instagram
+    -- -----------------------------------------------------------------------------------
+    else if (service = 'instagram')
+    {
+      token := get_keyword('code', http_param());
+      if (token is null or token = '')
+      {
+        signal ('22023', http_param('error_description'));
+      }
+
+      -- Convert the OAuth 2.0 code into an access token.
+      declare header any;
+      data := http_get ('https://api.instagram.com/oauth/access_token',
+                        header,
+                        'POST',
+                        null,
+                        sprintf('client_id=%U&client_secret=%s&code=%s&redirect_uri=%U&grant_type=authorization_code', clientKey[0], clientKey[1], token, ODS.DBA.ods_authenticate_callback_url()));
+
+      token := get_keyword('access_token', json_parse(data));
+      if (token is null or token = '')
+      {
+        signal ('22023', sprintf('Failed to obtain Instagram OAuth token: %s', get_keyword('error', json_parse(data))));
+      }
+
+      -- The user API does not provide the email and the username is already in the token response, no need to get more
+      data := get_keyword ('user', json_parse (data));
+      if (isvector (data))
+      {
+        serviceId := get_keyword ('username', data);
+        newUsr := serviceId;
+      }
+      else
+      {
+        signal ('22023', 'Failed to extract Instagram username from OAuth reply.');
+      }
+    }
+
+
+    -- -----------------------------------------------------------------------------------
+    -- Bitly
+    -- -----------------------------------------------------------------------------------
+    else if (service = 'bitly')
+    {
+      token := get_keyword('code', http_param());
+      if (token is null or token = '')
+      {
+        signal ('22023', http_param('error'));
+      }
+
+      -- Convert the OAuth 2.0 code into an access token.
+      declare header any;
+      data := http_get ('https://api-ssl.bitly.com/oauth/access_token',
+                        header,
+                        'POST',
+                        null,
+                        sprintf('client_id=%U&client_secret=%U&code=%U&redirect_uri=%U&grant_type=authorization_code', clientKey[0], clientKey[1], token, sprintf('%s?state=%U', ODS.DBA.ods_authenticate_callback_url(), state)));
+
+      -- Bitly does not return Json but an URL-encoded string
+      if (header[0] not like 'HTTP/1._ 20_ %')
+      {
+        signal ('22023', sprintf('Failed to obtain Bitly OAuth token: %s', data));
+      }
+
+      token := get_keyword('access_token', split_and_decode(data));
+
+      -- Fetch the profile details using the token in an authorization header
+      data := http_get (sprintf('https://api-ssl.bitly.com/v3/user/info?access_token=%U', token));
+
+      tmp := json_parse (data);
+      data := get_keyword ('data', tmp);
+
+      -- error handling
+      if (not isvector (data) or get_keyword ('status_code', tmp) <> 200)
+      {
+        signal ('22023', get_keyword ('status_txt', tmp));
+      }
+
+      -- Extract the Disqus profile url (sadly no email)
+      serviceId := get_keyword ('profile_url', data);
+      newUsr := get_keyword ('login', data);
+    }
+
+
+    -- -----------------------------------------------------------------------------------
+    -- Foursquare
+    -- -----------------------------------------------------------------------------------
+    else if (service = 'foursquare')
+    {
+      -- Check for code
+      token := get_keyword('code', http_param());
+      if (token is null or token = '')
+      {
+        signal ('22023', http_param('error_description'));
+      }
+
+      -- Convert the code into an access token
+      data := http_get (sprintf('https://foursquare.com/oauth2/access_token?client_id=%s&client_secret=%s&code=%s&redirect_uri=%U&grant_type=authorization_code', clientKey[0], clientKey[1], token, ODS.DBA.ods_authenticate_callback_url()));
+
+      data := json_parse (data);
+      token := get_keyword('access_token', data);
+      if (token is null)
+        signal ('22023', sprintf ('Foursquare OAuth error: %s', get_keyword ('error', data)));
+
+      -- Fetch the profile details
+      data := http_get (sprintf('https://api.foursquare.com/v2/users/self?oauth_token=%s', token));
+
+      -- Extract the details we need and map to ODS account
+      data := json_parse(data);
+      tmp := get_keyword ('user', coalesce (get_keyword ('response', data), vector()));
+      if (tmp is null)
+        signal ('22023', sprintf ('Foursquare profile error: %s', get_keyword ('errorType', coalesce (get_keyword ('meta', data), vector()))));
+      data := tmp;
+
+      serviceId := get_keyword('id', data);
+      if (serviceId is null or serviceId = '')
+        signal ('22023', 'Failed to extract Foursquare profile ID.');
+
+      -- We use a service profile URL because it is "webby"
+      serviceId := sprintf ('https://foursquare.com/user/%s', serviceId);
+
+      newUsr := ODS.DBA.ods_build_new_user_name (get_keyword ('firstName', data), get_keyword ('lastName', data), get_keyword ('id', data));
+      newEmail := get_keyword ('email', coalesce (get_keyword ('contact', data), vector()));
+    }
+
+
+    -- -----------------------------------------------------------------------------------
+    -- GitHub
+    -- -----------------------------------------------------------------------------------
+    else if (service = 'github')
+    {
+      -- Check for code
+      token := get_keyword('code', http_param());
+      if (token is null or token = '')
+      {
+        signal ('22023', http_param('error_description'));
+      }
+
+      -- Convert the OAuth 2.0 code into an access token.
+      declare header any;
+      data := http_get ('https://github.com/login/oauth/access_token',
+                        header,
+                        'POST',
+                        null,
+                        sprintf('client_id=%U&client_secret=%U&code=%U&redirect_uri=%U&state=%U', clientKey[0], clientKey[1], token, ODS.DBA.ods_authenticate_callback_url(), state));
+
+      -- GitHub does not return Json but an URL-encoded string
+      if (header[0] not like 'HTTP/1._ 20_ %')
+        signal ('22023', sprintf('Failed to obtain GitHub OAuth token: %s', data));
+
+      token := get_keyword('access_token', split_and_decode(data));
+
+      -- Fetch the profile details using the token in an authorization header
+      tmp := http_get (sprintf('https://api.github.com/user?access_token=%U', token));
+
+      data := json_parse (tmp);
+
+      serviceId := get_keyword ('url', data);
+      newUsr := get_keyword ('login', data);
+      newEmail := get_keyword ('email', data);
+    }
+
+
+    -- -----------------------------------------------------------------------------------
+    -- Twitter
+    -- -----------------------------------------------------------------------------------
+    else if (service = 'twitter')
+    {
+      -- Extract the OAuth 1.0 sid, token, and verifier
+      oauthSid := http_param('sid');
+      token := cast (http_param('oauth_token') as varchar);
+      oauthVerifier := http_param('oauth_verifier');
+
+      -- If there is no token, get the error
+      if (token is null or length(token) < 2)
+      {
+        -- FIXME: get the correct OAuth 1.0 error message key
+        signal ('22023', 'Failed to obtain Twitter OAuth 1.0 request token.');
+      }
+
+      tmp := OAUTH.DBA.sign_request ('GET',
+                                     'http://twitter.com/oauth/access_token',
+                                     sprintf ('oauth_verifier=%U', oauthVerifier),
+                                     clientKey[0],
+                                     oauthSid,
+                                     1);
+      tmp := http_get (tmp);
+      OAUTH.DBA.parse_response (oauthSid, clientKey[0], tmp);
+      tmp := split_and_decode (tmp, 0);
+
+      newUsr := get_keyword ('screen_name', tmp);
+      -- FIXME: fetch twitter profile if action not auth!
+
+      serviceId := DB.DBA.WA_USER_OL_ACCOUNTS_TWITTER (newUsr);
+
+      OAUTH.DBA.session_terminate (oauthSid);
+    }
+
+
+    -- -----------------------------------------------------------------------------------
+    -- LinkedIn
+    -- -----------------------------------------------------------------------------------
+    else if (service = 'linkedin')
+    {
+      -- Extract the OAuth 1.0 sid, token, and verifier
+      oauthSid := http_param('sid');
+      token := cast (http_param('oauth_token') as varchar);
+      oauthVerifier := http_param('oauth_verifier');
+
+      -- If there is no token, get the error
+      if (token is null or length(token) < 2)
+      {
+        -- FIXME: get the correct OAuth 1.0 error message key
+        signal ('22023', 'Failed to obtain LinkedIn OAuth 1.0 request token.');
+      }
+
+      tmp := OAUTH.DBA.sign_request ('GET',
+                                     'https://api.linkedin.com/uas/oauth/accessToken',
+                                     sprintf ('oauth_verifier=%U', oauthVerifier),
+                                     clientKey[0],
+                                     oauthSid,
+                                     1);
+      tmp := http_get (tmp);
+      OAUTH.DBA.parse_response (oauthSid, clientKey[0], tmp);
+      tmp := OAUTH.DBA.sign_request ('GET',
+                                     'https://api.linkedin.com/v1/people/~:(id,email-address,first-name,last-name,public-profile-url)',
+                                     '',
+                                     clientKey[0],
+                                     oauthSid,
+                                     1);
+      data := http_get (tmp);
+      data := xtree_doc (data);
+
+      -- See for more fields: https://developer.linkedin.com/documents/profile-fields
+
+      serviceId := cast (xpath_eval ('/person/public-profile-url', data) as varchar);
+      newUsr := lcase (sprintf('%s.%s', xpath_eval ('string(/person/first-name)', data), xpath_eval ('string(/person/last-name)', data)));
+      newEmail := xpath_eval ('string(/person/email-address)', data);
+
+      OAUTH.DBA.session_terminate (oauthSid);
+    }
+
+
+    -- -----------------------------------------------------------------------------------
+    -- Yahoo
+    -- -----------------------------------------------------------------------------------
+    else if (service = 'yahoo')
+    {
+      -- Extract the OAuth 1.0 sid, token, and verifier
+      oauthSid := http_param('sid');
+      token := cast (http_param('oauth_token') as varchar);
+      oauthVerifier := http_param('oauth_verifier');
+
+      -- If there is no token, get the error
+      if (token is null or length(token) < 2)
+      {
+        -- FIXME: get the correct OAuth 1.0 error message key
+        signal ('22023', 'Failed to obtain Yahoo OAuth 1.0 request token.');
+      }
+
+      tmp := OAUTH.DBA.sign_request ('GET',
+                                     'https://api.login.yahoo.com/oauth/v2/get_token',
+                                     sprintf ('oauth_verifier=%U', oauthVerifier),
+                                     clientKey[0],
+                                     oauthSid,
+                                     1);
+
+      tmp := http_get (tmp);
+      OAUTH.DBA.parse_response (oauthSid, clientKey[0], tmp);
+      tmp := OAUTH.DBA.sign_request ('GET',
+                                     'http://query.yahooapis.com/v1/yql',
+                                     sprintf('q=%U', 'select * from social.profile where guid=me'),
+                                     clientKey[0],
+                                     oauthSid,
+                                     1);
+      data := http_get (tmp);
+      data := xtree_doc (data);
+
+      -- Check if we have an error
+      if (xpath_eval ('[ xmlns:yahoo="http://www.yahooapis.com/v1/base.rng" ] boolean(//yahoo:error)', data))
+      {
+        signal ('22023', xpath_eval ('[ xmlns:yahoo="http://www.yahooapis.com/v1/base.rng" ] string(//yahoo:error/yahoo:detail)', data));
+      }
+
+      -- See for more fields: http://developer.yahoo.com/yql/console/#h=select%20*%20from%20social.profile%20where%20guid%3Dme
+
+      serviceId := xpath_eval ('string(//profile/profileUrl)', data);
+      newUsr := xpath_eval ('string(//profile/emails[not(primary="true")]/handle)', data);
+      newEmail := xpath_eval ('string(//profile/emails[primary="true"]/handle)', data);
+      if (length(newEmail) = 0)
+        newEmail := newUsr;
+      if (length(newUsr) = 0)
+        newUsr := newEmail;
+
+      OAUTH.DBA.session_terminate (oauthSid);
+    }
+
+
+    -- -----------------------------------------------------------------------------------
+    -- Tumblr
+    -- -----------------------------------------------------------------------------------
+    else if (service = 'tumblr')
+    {
+      -- Extract the OAuth 1.0 sid, token, and verifier
+      oauthSid := http_param('sid');
+      token := cast (http_param('oauth_token') as varchar);
+      oauthVerifier := http_param('oauth_verifier');
+
+      -- If there is no token, get the error
+      if (token is null or length(token) < 2)
+      {
+        -- FIXME: get the correct OAuth 1.0 error message key
+        signal ('22023', 'Failed to obtain Tumblr OAuth 1.0 request token.');
+      }
+
+      tmp := OAUTH.DBA.sign_request ('GET',
+                                     'http://www.tumblr.com/oauth/access_token',
+                                     sprintf ('oauth_verifier=%U', oauthVerifier),
+                                     clientKey[0],
+                                     oauthSid,
+                                     1);
+      tmp := http_get (tmp);
+      OAUTH.DBA.parse_response (oauthSid, clientKey[0], tmp);
+
+      tmp := OAUTH.DBA.sign_request ('GET',
+                                     'http://api.tumblr.com/v2/user/info',
+                                     '',
+                                     clientKey[0],
+                                     oauthSid,
+                                     1);
+      data := http_get (tmp);
+      data := json_parse (data);
+      data := get_keyword ('response', data);
+      if (isvector(data))
+        data := get_keyword ('user', data);
+      if (isvector(data))
+        serviceId := get_keyword ('name', data);
+      newUsr := serviceId;
+
+      -- It looks like sadly Tumblr does not expose the email address through the API. Thus, we cannot register with it.
+      -- If this situation is "fixed" by allowing additional parameters in user.authenticate.authenticationUrl then enable registration in server.getInfo also
+
+      OAUTH.DBA.session_terminate (oauthSid);
+   }
+
+
+    -- -----------------------------------------------------------------------------------
+    -- DropBox
+    -- -----------------------------------------------------------------------------------
+    else if (service = 'dropbox')
+    {
+      -- Extract the OAuth 1.0 sid, token, and verifier
+      oauthSid := http_param('sid');
+      token := cast (http_param('oauth_token') as varchar);
+
+      -- If there is no token, get the error
+      if (token is null or length(token) < 2)
+      {
+        -- FIXME: get the correct OAuth 1.0 error message key
+        signal ('22023', 'Failed to obtain DropBox OAuth 1.0 request token.');
+      }
+
+      tmp := OAUTH.DBA.sign_request ('POST',
+                                     'https://api.dropbox.com/1/oauth/access_token',
+                                     '',
+                                     clientKey[0],
+                                     oauthSid,
+                                     1);
+
+      declare header any;
+      data := http_get ('https://api.dropbox.com/1/oauth/access_token', header, 'POST', null, tmp);
+      OAUTH.DBA.parse_response (oauthSid, clientKey[0], data);
+
+      tmp := OAUTH.DBA.sign_request ('GET',
+                                     'https://api.dropbox.com/1/account/info',
+                                     '',
+                                     clientKey[0],
+                                     oauthSid,
+                                     1);
+      data := http_get (tmp);
+      data := json_parse (data);
+
+      serviceId := cast (get_keyword ('uid', data) as varchar);
+      newEmail := get_keyword ('email', data);
+      newUsr := ODS.DBA.ods_build_new_user_name (get_keyword ('display_name', data), null, serviceId);
+
+      OAUTH.DBA.session_terminate (oauthSid);
+   }
+
+
+    -- -----------------------------------------------------------------------------------
+    -- UNKNWON
+    -- -----------------------------------------------------------------------------------
+    else
+    {
+      signal ('22023', sprintf('Unknown authentication service type: "%s"', service));
+    }
+  }
+
+
+  -- =====================================================================================
+  -- STEP 2: Perform the requested action: Create a new user session or register a new account or connect the service to an ODS account
+  -- =====================================================================================
+
+  -- Check if authentication or registration with the service has been disabled
+  -- This is only of interest in auto mode. Otherwise user.authenticate.authenticationUrl has already quit with an error
+  if (cast (get_keyword (service, get_keyword (action, json_parse (ODS.ODS_API."server.getInfo" ('regData')))) as varchar) = '0')
+  {
+    signal ('22023', sprintf ('%s has been disabled for service %s.', action, service));
+  }
+
+
+  if (serviceId is null)
+    signal ('22023', sprintf('Failed to get a %s profile ID.', service));
+
+
+  -- Finish the requested action (throws a signal on error)
+  uname := ODS.DBA.ods_authenticate_finish(action, confirm, service, serviceId, activeOdsAcc, newUsr, newEmail, uname);
+
+
+  -- If an auth confirm session has been created the result is a vector
+  if(isvector(uname))
+  {
+    redirUrl := sprintf('%sconfirmSession.cid=%U&user.name=%U&user.email=%U&onlineAccount.service=%U&onlineAccount.uid=%U',
+                        redirUrl,
+                        get_keyword('cid', uname),
+                        get_keyword('newUsr', uname, ''),
+                        get_keyword('newEmail', uname, ''),
+                        get_keyword('service', uname, ''),
+                        get_keyword('serviceId', uname, ''));
+  }
+  else
+  {
+    -- We always return a valid session
+    if (sid is null)
+      sid := ods_new_user_session(uname);
+
+
+    -- Redirect the client with the new session ID
+    redirUrl := sprintf('%suserSession.sid=%s&user.uname=%U&user.uid=%d&user.new=%d&user.dba=%d', redirUrl, sid, uname, username2id (uname), case when (action = 'register') then 1 else 0 end, is_dba (uname));
+  }
+
+  http_header (sprintf('Location: %s\r\n', redirUrl));
+}
+;
+
+--!
+-- \brief Verify a BrowserID assertion.
+--
+-- This procedure will verify a BrowserID assertion.
+--
+-- \param assertion The assertion to verify.
+-- \param[out] browserid Will be set to the BrowserID corresponding to the \p assertion on success.
+--
+-- \return \p 1 on successful verification, \p 0 on failure. Normally there is no need to check
+--         the return value as the procedure will throw a signal on error which the calling procedure
+--         should catch.
+--/
+create procedure ODS.DBA.ods_browserid_verify_assertion (
+  in assertion varchar,
+  in audience varchar,
+  out browserid varchar)
+{
+  declare returnHeader any;
+  declare result any;
+  declare status varchar;
+
+  -- Simply forward the assertion to Mozilla's service for now.
+  -- We can implement the verification ourselves at any time
+  result := http_get ('https://verifier.login.persona.org/verify',
+                      returnHeader,
+                      'POST',
+                      '',
+                      sprintf('assertion=%U&audience=%U', assertion, audience));
+
+  -- The result is a JSON stream
+  result := json_parse (result);
+  status := get_keyword ('status', result);
+  if (status <> 'okay')
+    signal ('42000', sprintf('Failed to verify BrowserID assertion: %s.', get_keyword ('reason', result)));
+
+  -- Extract the BrowserID (email)
+  browserid := get_keyword ('email', result);
+  if (browserid = null)
+    signal ('22023', 'Could not extract BrowserID from assertion validation reply.');
+
+  return 1;
+}
+;
+
+--!
+-- \brief Authenticate with, register with, or connect a BrowserID.
+--
+-- This method represents the ODS support for BrowserID. It can be used to connect an ODS account to
+-- a BrowserID, to register a new ODS account using a BrowserID, or to authenticate a user via their BrowserID.
+--
+-- \section ods_user_authenticate_browserid_client BrowserID Javascript Client Library
+--
+-- BrowserID requires the client to make use of the BrowserID/Persona Javascript library from Mozilla
+-- (see https://developer.mozilla.org/en-US/docs/Persona). There are a few minor things to take into account
+-- when using BrowserID with ODS in a client. It is recommended to use the ODS session management instead of
+-- BrowserID persistent login. To accomplish that a client simply needs to tell the BrowserID Javascript library
+-- to logout directly after having logged in. The following example code demonstrates this (based on the code in
+-- the <a href="https://developer.mozilla.org/en/Persona/Quick_Setup">BrowserID/Personal Quick setup guide</a>):
+--
+-- Connect the BrowserID/Persona login button to the <code>navigator.id.request</code> call as usual. Then
+-- handle <code>navigator.id</code> events along the lines of the following:
+--
+-- \code
+-- navigator.id.watch({
+--   loggedInUser: null,
+--
+--   onlogin: function(assertion) {
+--     navigator.id.logout();
+--
+--     $.ajax({
+--        type: 'GET',
+--        url: '/ods/api/user.authenticate.browserid',
+--        data: { assertion: assertion },
+--        success: function(sid, status, xhr) { /* do something with the new Session ID in "sid" */ }.
+--        error: function(sid, status, xhr) { alert("login failure" + res); }
+--     });
+--   },
+--
+--   onlogout: function() { /* do nothing */ }
+-- });
+-- \endcode
+--
+-- There are three distinct differences to the example code in the <a href="https://developer.mozilla.org/en/Persona/Quick_Setup">BrowserID/Personal Quick setup guide</a>:
+-- - The \p loggedInUser is always \p null. This is because from a BrowserID point of view the user is never logged in.
+--   Only the ODS session ID is used.
+-- - Directly before the call to user.authenticate.browserid() <code>navigator.id.logout</code> will disable the persistent login so all
+--   session management can be done via ODS session IDs.
+-- - The \p onlogout function does nothing since logout is handled via user.logout() instead.
+--
+-- The simplest way to accomplish this is to use the <a href="http://web.ods.openlinksw.com/jods.vsp">ODS Javascript Library</a> as provided by OpenLink Software.
+--
+-- \section ods_user_authenticate_browserid_storage BrowserID Storage
+--
+-- BrowserIDs will be stored like other 3rd party online accounts as handled by user.authenticate.authenticationUrl(). As such
+-- one can also add BrowserIDs via user.onlineAccounts.new() instead of using \p action \p connect. In that case the name of
+-- the online account is \p "browserid" and the \p uri is the actual BrowserID, ie. the email address. It is, however, recommended
+-- to use the \p connect action instead since that requires the user to proove that they actually own the BrowserID.
+--
+--
+-- \param assertion The assertion to verify as produced by the BrowserID client library in the browser.
+-- \param audience The client address as required by Persona, consisting of protocol, domain, and port. The domain has to be registered via admin.clients.new(). It needs
+-- to match the address of the client initiating the Javascript BrowserID session.
+-- \param action The action to perform. See \ref ods_authentication_url_action for details on the supported actions.
+-- \param confirm The confirmation mode. See \ref ods_authentication_url_confirm for details on the supported modes.
+--
+-- \return A valid ODS session or the confirmation session encoded as an XML stream. In case the client authenticated with a session ID for the \p connect action this session ID
+-- will be returned.
+--
+-- \sa user.authenticate(), user.authenticate.webid(), user.authenticate.authenticationUrl()
+--
+-- \section ods_user_session_example Example User Session:
+--
+-- The user session object contains:
+-- - The session ID \p sid
+-- - The user with username \p uname, the internal numerical \p uid, and two flags:
+--   - \p dba indicates if the user is the dba user, ie. has administrator priviledges.
+--   - \p new indicates if this user has been newly registered. This is useful for client to show some welcome message or the like.
+--
+-- \verbatim
+-- <userSession>
+--   <sid>1de236f5da2f32d92e8c0cce5053a96e</sid>
+--   <user>
+--     <uname>demo</uname>
+--     <uid>127</uid>
+--     <new>0</new>
+--     <dba>0</dba>
+--   </user>
+-- </userSession>
+-- \endverbatim
+--
+-- \section ods_auth_confirmation_session_example Example Confirmation Session:
+--
+-- \verbatim
+-- <confirmSession>
+--   <cid></cid>
+--   <user>
+--     <name></name>
+--     <email></email>
+--   </user>
+--   <onlineAccount>
+--     <service>browserid</service>
+--     <uid></uid>
+--   </onlineAccount>
+-- </confirmSession>
+-- \endverbatim
+--/
+create procedure ODS.ODS_API."user.authenticate.browserid" (
+  in assertion varchar,
+  in audience varchar,
+  in action varchar := 'authenticate',
+  in confirm varchar := 'auto') __SOAP_HTTP 'text/xml'
+{
+  declare browserid, uname, sid varchar;
+  sid := null;
+
+
+  -- This procedure is supposed to be called in an http context
+  -- Thus, the error handler does produce http status codes
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    if (__SQL_STATE = '42000') -- permission denied
+      http_status_set(403);
+    else
+      http_status_set(400); -- misc error
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+
+  -- Check the input parameters
+  action := lcase(action);
+  confirm := lcase(confirm);
+  if (action <> 'authenticate' and action <> 'register' and action <> 'auto' and action <> 'connect')
+  {
+    signal ('22023', sprintf('Unknown authentication action: %s', action));
+  }
+  if (confirm <> 'never' and confirm <> 'always' and confirm <> 'auto')
+  {
+    signal ('22023', sprintf('Unknown confirmation mode: %s', confirm));
+  }
+
+
+  -- Check the audience. Only registered clients are allowed to use the BrowserID feature
+  if (ODS.DBA.ods_check_client_url (audience) = 0)
+    signal ('42000', sprintf('Unknown client "%s". Please register via admin.clients.new.', audience));
+
+
+  -- For the connect action we need to be authenticated. So we check for authentication information if we might connect
+  if (action = 'connect' or action = 'auto')
+  {
+    if (not ods_check_auth (uname))
+    {
+      if (action = 'connect')
+        signal ('42000', sprintf ('Need to be authenticated to perform service account connection.'));
+    }
+    else
+    {
+      -- automatic mode will always add the account to the authenticated user
+      if (action = 'auto')
+        action := 'connect';
+
+      -- If the client already created a session we will resue it, otherwise we create a new one
+      sid := http_param ('sid');
+      if (not exists (select 1 from DB.DBA.VSPX_SESSION where VS_SID = sid and VS_REALM = http_param ('realm') and VS_UID = uname))
+        sid := null;
+    }
+  }
+
+
+  -- Check if authentication or registration with the service has been disabled
+  if (cast (get_keyword ('browserid', get_keyword (action, json_parse (ODS.ODS_API."server.getInfo" ('regData')))) as varchar) = '0')
+  {
+    signal ('42000', sprintf ('%s has been disabled for BrowserID login.', action));
+  }
+
+
+  -- This will throw a signal on error
+  ODS.DBA.ods_browserid_verify_assertion (assertion, audience, browserid);
+
+
+  -- Finish the requested action (throws a signal on error)
+  uname := ODS.DBA.ods_authenticate_finish(action, confirm, 'browserid', browserid, uname, browserid, browserid);
+
+
+  -- If an auth confirm session has been created the result is a vector
+  if(isvector(uname))
+  {
+    return
+      '<confirmSession>' ||
+        '<cid>' || get_keyword('cid', uname) || '</cid>' ||
+        '<user>' ||
+          '<name>' || get_keyword('newUsr', uname) || '</name>' ||
+          '<email>' || get_keyword('newEmail', uname) || '</email>' ||
+          '<onlineAccount>' ||
+            '<service>' || get_keyword('service', uname) || '</service>' ||
+            '<uid>' || get_keyword('serviceId', uname) || '</uid>' ||
+          '</onlineAccount>' ||
+        '</user>' ||
+      '</confirmSession>';
+  }
+  else
+  {
+    -- We always return a valid session
+    if (sid is null)
+      sid := ods_new_user_session(uname);
+
+    return ODS.DBA.ods_serialize_user_session (sid, uname, case when (action = 'register') then 1 else 0 end);
+  }
+}
+;
+
+--!
+-- \brief Authenticate with, register with, or connect a WebID
+--
+-- This method represents the ODS support for WebID authentiction. It can be used to connect an ODS account to
+-- a WebID, to register a new ODS account using a WebID, or to authenticate a user via their WebID.
+-- In addition ODS supports X.509 certificates without an embedded WebID.
+--
+-- Clients need to call this method through an SSL connection providing the X.509 client certifcate which
+-- should be used for authentication, registration, or to connect to an account. In the case of account
+-- connection the user need to authenticate themselves in addition to providing the certificate. Any of the
+-- supported ways can be used except for the certificate itself. Typically clients will use a session ID.
+-- See \ref ods_authentication for details.
+--
+-- \section ods_user_authenticate_web_storage WebID Storage
+--
+-- WedIDs will be stored like other 3rd party online accounts as handled by user.authenticate.authenticationUrl(). As such
+-- one can also add WebIDs via user.onlineAccounts.new() instead of using \p action \p connect. In that case the name of
+-- the online account is \p "webid" and the \p uri is the actual WebID. It is, however, recommended
+-- to use the \p connect action instead since that requires the user to proove that they actually own the WebID.
+--
+-- \param action The action to perform. See \ref ods_authentication_url_action for details on the supported actions.
+-- \param confirm The confirmation mode. See \ref ods_authentication_url_confirm for details on the supported modes.
+--
+-- \return A valid ODS session ID. In case the client authenticated with a session ID for the \p connect action this session ID
+-- will be returned. See user.authenticate.browserid() for an example.
+--
+-- \sa user.authenticate(), user.authenticate.webid(), user.authenticate.authenticationUrl()
+--/
+create procedure ODS.ODS_API."user.authenticate.webid" (
+  in action varchar := 'authenticate',
+  in confirm varchar := 'auto') __SOAP_HTTP 'text/xml'
+{
+  declare webid, odsuser, newUsr, newEmail, uname, sid varchar;
+  declare webidCacheGraph varchar;
+  sid := null;
+
+  -- This procedure is supposed to be called in an http context
+  -- Thus, the error handler does produce http status codes
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    if (__SQL_STATE = '42000') -- permission denied
+      http_status_set(403);
+    else
+      http_status_set(400); -- misc error
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+
+  -- Check the input parameters
+  action := lcase(action);
+  confirm := lcase(confirm);
+  if (action <> 'authenticate' and action <> 'register' and action <> 'auto' and action <> 'connect')
+  {
+    signal ('22023', sprintf('Unknown authentication action: %s', action));
+  }
+  if (confirm <> 'never' and confirm <> 'always' and confirm <> 'auto')
+  {
+    signal ('22023', sprintf('Unknown confirmation mode: %s', confirm));
+  }
+
+
+  -- For the connect action we need to be authenticated. So we check for authentication information if we might connect
+  if (action = 'connect' or action = 'auto')
+  {
+    -- We need to check authentication without SSL since that is what we are trying to connect
+    declare inst_id integer;
+    inst_id := null;
+    if (not ods_check_auth2 (uname, inst_id, 'owner', 0))
+    {
+      if (action = 'connect')
+        signal ('42000', sprintf ('Need to be authenticated to perform serivce account connection.'));
+    }
+    else
+    {
+      -- automatic mode will always add the account to the authenticated user
+      if (action = 'auto')
+        action := 'connect';
+
+      -- If the client already created a session we will resue it, otherwise we create a new one
+      sid := http_param ('sid');
+      if (not exists (select 1 from DB.DBA.VSPX_SESSION where VS_SID = sid and VS_REALM = http_param ('realm') and VS_UID = uname))
+        sid := null;
+    }
+  }
+
+
+  -- Check if authentication or registration with the service has been disabled
+  if (cast (get_keyword ('webid', get_keyword (action, json_parse (ODS.ODS_API."server.getInfo" ('regData')))) as varchar) = '0')
+  {
+    signal ('42000', sprintf ('%s has been disabled for WebID login.', action));
+  }
+
+
+  -- Verify the WebID in the given certificate and cache the profile data in a tmp graph
+  webidCacheGraph := sprintf('http://%s/%s', http_host(), uuid());
+  SIOC.DBA.acl_webid (webid, webidCacheGraph);
+
+
+  -- We need a WebID to continue
+  if (webid is null)
+    signal ('22023', 'The provided client certificate did not have an embedded verifiable WebID.');
+
+
+  -- Get nickname and email address from the profile
+  if (action = 'register' or action = 'auto')
+  {
+    for (sparql select bif:coalesce (?nick_name, ?full_name) as ?nick, ?email
+                where {
+                  graph `iri(?:webidCacheGraph)` {
+                    `iri(?:webid)` a ?type .
+                    OPTIONAL { `iri(?:webid)` foaf:nick ?nick_name . } .
+                    OPTIONAL { `iri(?:webid)` foaf:name ?full_name . } .
+                    OPTIONAL { `iri(?:webid)` foaf:mbox ?email . } .
+                  }
+                } LIMIT 1) do
+    {
+       newUsr := "nick";
+       newEmail := "email";
+       -- FIXME: find out why sometimes we get integers
+       if (isinteger(newUsr))
+        newUsr := null;
+       if (isinteger(newEmail))
+        newEmail := null;
+    }
+  }
+
+
+  -- Finish the requested action (throws a signal on error)
+  odsuser := coalesce (ODS.DBA.webid_to_ods_user(webid), ODS.DBA.x509_cert_fingerprint_to_ods_user(get_certificate_info (6)));
+  uname := ODS.DBA.ods_authenticate_finish(action, confirm, 'webid', webid, uname, newUsr, newEmail, odsuser);
+
+
+  -- If an auth confirm session has been created the result is a vector
+  if(isvector(uname))
+  {
+    return
+      '<confirmSession>' ||
+        '<cid>' || get_keyword('cid', uname) || '</cid>' ||
+        '<user>' ||
+          '<name>' || get_keyword('newUsr', uname) || '</name>' ||
+          '<email>' || get_keyword('newEmail', uname) || '</email>' ||
+          '<onlineAccount>' ||
+            '<service>' || get_keyword('service', uname) || '</service>' ||
+            '<uid>' || get_keyword('serviceId', uname) || '</uid>' ||
+          '</onlineAccount>' ||
+        '</user>' ||
+      '</confirmSession>';
+  }
+  else
+  {
+    -- We always return a valid session
+    if (sid is null)
+      sid := ods_new_user_session(uname);
+
+    -- Clear the tmp profile graph
+    sparql clear graph iri(?:webidCacheGraph);
+
+    return ODS.DBA.ods_serialize_user_session (sid, uname, case when (action = 'register') then 1 else 0 end);
+  }
+}
+;
+
+--!
+-- \brief Confirm an authentication confirmation request.
+--
+-- Whenever ODS creates an authentication confirmation request as a result to a call to user.authenticate.authenticationUrl(),
+-- user.authenticate.browserid(), or user.authenticate.webid() this method can be used to complete the authentication and
+-- create the final account with the verified profile details.
+--
+-- \param cid The confirmation session ID.
+-- \param userName The username as verified and optionally changed by the user.
+-- \param email The email as verified and optionally changed by the user.
+--
+-- \return An error code stating the success of the command execution as detailed in \ref ods_response_format_result_code.
+--/
+create procedure ODS.ODS_API."user.authenticate.confirm" (
+  in cid varchar,
+  in username varchar,
+  in email varchar) __SOAP_HTTP 'text/xml'
+{
+  declare service, serviceId varchar;
+  declare uid any;
+
+
+  -- This procedure is supposed to be called in an http context
+  -- Thus, the error handler does produce http status codes
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    if (__SQL_STATE = '42000') -- permission denied
+      http_status_set(403);
+    else
+      http_status_set(400); -- misc error
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+
+  -- Check that we have a valid confirm session ID
+  if (not (select (1) from DB.DBA.WA_AUTH_CONFIRM_SESS where AUTH_SESS_CID = cid and AUTH_SESS_CLIENT_IP = http_client_ip()))
+    signal ('42000', 'Invalid confirm session ID or mismatching client IP.');
+
+
+  -- Get the values from the session
+  select AUTH_SESS_SERVICE, AUTH_SESS_SERVICE_ID into service, serviceId from DB.DBA.WA_AUTH_CONFIRM_SESS where AUTH_SESS_CID = cid;
+
+
+  -- Delete the session which is not required anymore
+  delete from DB.DBA.WA_AUTH_CONFIRM_SESS where AUTH_SESS_CID = cid;
+
+
+  -- complete the registration
+  uid := DB.DBA.ODS_CREATE_USER (username, uuid(), email);
+  if (not isinteger (uid))
+    signal ('22023', uid);
+
+
+  -- FIXME: OpenIDs should also be stored in WA_USER_OL_ACCOUNTS
+  if (service = 'openid')
+  {
+    update DB.DBA.WA_USER_INFO
+       set WAUI_OPENID_URL = serviceId,
+           WAUI_OPENID_SERVER = http_param('openid.server')
+     where WAUI_U_ID = uid;
+  }
+  else
+  {
+     -- Connect the service ID to the account from register or connect action
+    insert into DB.DBA.WA_USER_OL_ACCOUNTS (WUO_U_ID, WUO_TYPE,  WUO_NAME, WUO_URL)
+      values (uid, 'P', service, serviceId);
+  }
+
+  return ODS.DBA.ods_serialize_user_session (ods_new_user_session(username), username, 1);
+}
+;
+
+--!
+-- \brief Request a Twitter authentication URL.
+--
+-- Twitter is supported via OAuth. This requires the user to authenticate ODS for login via their Twitter account.
+-- The user needs to login with Twitter, following a redirect to ODS. This function will setup the OAuth session
+-- with Twitter and return the authentication URL.
+--
+-- \param hostUrl The callback URL. Once authenticated Twitter will redirect here adding the following parameters
+--                to the URL which can be used in user.authenticate() or user.oauth.twitter.registrationData() to complete the OAuth process:
+--                - \p sid - The OAuth session ID
+--                - \p oauth_verifier - The OAuth verifer
+--                - \p oauth_token - The OAuth request token
+--
+-- \return The Twitter authentication URL which the client needs to direct the user to. At that URL the user needs
+--         to authenticate with Twitter which will retult in the callback to \p hostUrl as explained above.
+--
+-- \sa user.oauth.twitter.registrationData(), user.oauth.linkedin.authenticationUrl(), user.authenticate(), user.register()
+--/
+create procedure ODS.ODS_API."user.oauth.twitter.authenticationUrl" (
   in hostUrl varchar) __SOAP_HTTP 'text/plain'
 {
   declare token, result, url, sid, oauth_token, return_url any;
@@ -1516,7 +4095,37 @@ create procedure ODS.ODS_API.twitterServer (
 }
 ;
 
-create procedure ODS.ODS_API.twitterVerify (
+--!
+-- \deprecated Use user.oauth.twitter.authenticationUrl() instead.
+--/
+create procedure ODS.ODS_API.twitterServer (
+  in hostUrl varchar) __SOAP_HTTP 'text/plain'
+{
+  return ODS.ODS_API."user.oauth.twitter.authenticationUrl"(hostUrl);
+}
+;
+
+--!
+-- \brief Get Twitter account details.
+--
+-- ODS supports registration and authentication via Twitter's OAuth API. This requires two steps:
+-- -# Let the user log into Twitter and authenticate ODS
+-- -# Map the Twitter account to an ODS account
+--
+-- user.oauth.twitter.authenticationUrl() can be used to perform the first step. In the case of authentication user.authenticate() performs the second step.
+-- In the case of registration the second step is performed by this function. It will fetch the user details from the authenticated
+-- Twitter user. The result can then be passed into the \p data parameter of the user.register() function.
+--
+-- \param sid The OAuth session ID as provided by the Twitter callback initiated by the URL returned from user.oauth.twitter.authenticationUrl()
+-- \param oauth_verifier The OAuth verifer as provided by the Twitter callback initiated by the URL returned from user.oauth.twitter.authenticationUrl()
+-- \param oauth_token The OAuth request token as provided by the Twitter callback initiated by the URL returned from user.oauth.twitter.authenticationUrl()
+--
+-- \return An XML stream containing the usr profile details from the Twitter account which provided the paramters. This can be used
+-- as input for user.register().
+--
+-- \sa user.oauth.twitter.authenticationUrl(), user.oauth.linkedin.registrationData(), user.register()
+--/
+create procedure ODS.ODS_API."user.oauth.twitter.registrationData" (
   in sid varchar,
   in oauth_verifier varchar,
   in oauth_token varchar) __SOAP_HTTP 'text/xml'
@@ -1546,7 +4155,37 @@ create procedure ODS.ODS_API.twitterVerify (
 }
 ;
 
-create procedure ODS.ODS_API.linkedinServer (
+--!
+-- \deprecated Use user.oauth.twitter.registrationData() instead.
+--/
+create procedure ODS.ODS_API.twitterVerify (
+  in sid varchar,
+  in oauth_verifier varchar,
+  in oauth_token varchar) __SOAP_HTTP 'text/xml'
+{
+  return ODS.ODS_API."user.oauth.twitter.registrationData"(sid, oauth_verifier, oauth_token);
+}
+;
+
+--!
+-- \brief Request a LinkedIn authentication URL.
+--
+-- LinkedIn is supported via OAuth. This requires the user to authenticate ODS for login via their LinkedIn account.
+-- The user needs to login with LinkedIn, following a redirect to ODS. This function will setup the OAuth session
+-- with LinkedIn and return the authentication URL.
+--
+-- \param hostUrl The callback URL. Once authenticated LinkedIn will redirect here adding the following parameters
+--                to the URL which can be used in user.authenticate() or user.oauth.twitter.registrationData() to complete the OAuth process:
+--                - \p sid - The OAuth session ID
+--                - \p oauth_verifier - The OAuth verifer
+--                - \p oauth_token - The OAuth request token
+--
+-- \return The LinkedIn authentication URL which the client needs to direct the user to. At that URL the user needs
+--         to authenticate with LinkedIn which will retult in the callback to \p hostUrl as explained above.
+--
+-- \sa user.oauth.linkedin.registrationData(), user.oauth.twitter.authenticationUrl(), user.authenticate(), user.register()
+--/
+create procedure ODS.ODS_API."user.oauth.linkedin.authenticationUrl" (
   in hostUrl varchar) __SOAP_HTTP 'text/plain'
 {
   declare token, result, url, sid, oauth_token, return_url any;
@@ -1554,7 +4193,7 @@ create procedure ODS.ODS_API.linkedinServer (
   token := ODS.ODS_API.get_oauth_tok ('LinkedIn API');
   sid := md5 (datestring (now ()));
   return_url := sprintf ('%s&sid=%U', hostUrl, sid);
-  url := OAUTH..sign_request ('GET', 'https://api.linkedin.com/uas/oauth/requestToken', sprintf ('oauth_callback=%U', return_url), token, null, 1);
+  url := OAUTH..sign_request ('GET', 'https://api.linkedin.com/uas/oauth/requestToken?scope=r_basicprofile+r_emailaddress', sprintf ('oauth_callback=%U', return_url), token, null, 1);
   result := http_get (url);
   sid := OAUTH..parse_response (sid, token, result);
 
@@ -1565,7 +4204,37 @@ create procedure ODS.ODS_API.linkedinServer (
 }
 ;
 
-create procedure ODS.ODS_API.linkedinVerify (
+--!
+-- \deprecated Use user.oauth.linkedin.authenticationUrl() instead.
+--/
+create procedure ODS.ODS_API.linkedinServer (
+  in hostUrl varchar) __SOAP_HTTP 'text/plain'
+{
+  return ODS.ODS_API."user.oauth.linkedin.authenticationUrl"(hostUrl);
+}
+;
+
+--!
+-- \brief Get LinkedIn account details.
+--
+-- ODS supports registration and authentication via LinkedIn's OAuth API. This requires two steps:
+-- -# Let the user log into LinkedIn and authenticate ODS
+-- -# Map the LinkedIn account to an ODS account
+--
+-- user.oauth.linkedin.authenticationUrl() can be used to perform the first step. In the case of authentication user.authenticate() performs the second step.
+-- In the case of registration the second step is performed by this function. It will fetch the user details from the authenticated
+-- LinkedIn user. The result can then be passed into the \p data parameter of the user.register() function.
+--
+-- \param sid The OAuth session ID as provided by the LinkedIn callback initiated by the URL returned from user.oauth.linkedin.authenticationUrl()
+-- \param oauth_verifier The OAuth verifer as provided by the LinkedIn callback initiated by the URL returned from user.oauth.linkedin.authenticationUrl()
+-- \param oauth_token The OAuth request token as provided by the LinkedIn callback initiated by the URL returned from user.oauth.linkedin.authenticationUrl()
+--
+-- \return An XML stream containing the usr profile details from the LinkedIn account which provided the paramters. This can be used
+-- as input for user.register().
+--
+-- \sa user.oauth.linkedin.authenticationUrl(), user.oauth.twitter.registrationData(), user.register()
+--/
+create procedure ODS.ODS_API."user.oauth.linkedin.registrationData" (
   in sid varchar,
   in oauth_verifier varchar,
   in oauth_token varchar) __SOAP_HTTP 'text/xml'
@@ -1592,12 +4261,343 @@ create procedure ODS.ODS_API.linkedinVerify (
 }
 ;
 
---! Authenticate ODS account using name & password hash
---! Will estabilish a session in VSPX_SESSION table
+--!
+-- \deprecated Use user.oauth.linkedin.registrationData() instead.
+--/
+create procedure ODS.ODS_API.linkedinVerify (
+  in sid varchar,
+  in oauth_verifier varchar,
+  in oauth_token varchar) __SOAP_HTTP 'text/xml'
+{
+  return ODS.ODS_API."user.oauth.linkedin.registrationData"(sid, oauth_verifier, oauth_token);
+}
+;
+
+--!
+-- \brief Request an OpenID authentication URL.
+--
+-- Registration or authentication via OpenID is a two-step process. First the client needs to retrieve the OpenID server details. This is done
+-- through this function which will return a URL directing the user to the login page of the OpenID provider. After the login the provider
+-- will use the provided callback URL to redirect the user to the ODS client. The second step is to either call user.register() or
+-- user.authenticate() to either create a new account or log into an existing one which is connected to the provided OpenID.
+--
+-- \param openid The OpenID to register or authenticate with.
+-- \param hostUrl The callback URL. Once authenticated the OpenID provider will redirect the client to this URL including a set of parameters.
+--                Clients may use user.openid.registrationData() to prepare the redirection URL for user.register()'s \p data parameter.
+--                These parameters include at least the following but may, depending on the OpenID provider, contain additional user profile data:
+--                - \p openid.server - The OpenID server handling the authentication for the provider.
+--                - \p openid.identity - The OpenID identity. This is typically the same as \p openid although it might differ in certain cases.
+-- \param trustroot An optional base URL for the ODS instance, see the OpenID spec for details. If omitted ODS will use the domain of \p hostUrl.
+--
+-- \return The authentication URL which the client needs to direct the user to. At that URL the user needs
+--         to authenticate with the OpenId provider which will retult in the callback to \p hostUrl as explained above.
+--
+-- \sa user.openid.registrationData()
+--/
+create procedure ODS.ODS_API."user.openid.authenticationUrl" (
+  in openid varchar,
+  in hostUrl varchar,
+  in trustroot varchar := null) __SOAP_HTTP 'text/plain'
+{
+  declare oi_version, oi_srv, oi_identity, oi_delegate, oi_params varchar;
+  declare authUrl varchar;
+  declare h any;
+
+  -- Get the details of the server
+  getOpenIdServer(openid, oi_srv, oi_version, oi_identity, oi_delegate, oi_params);
+
+  -- optimize some parameters
+  if (oi_params is null or oi_params = '')
+    oi_params := 'sreg';
+
+  if (oi_delegate is not null and oi_delegate <> '')
+      oi_identity := oi_delegate;
+
+  -- fall back to the domain of the callback URL
+  if (trustroot is null)
+  {
+    h := rfc1808_parse_uri(hostUrl);
+    h[2] := '';
+    h[3] := '';
+    h[4] := '';
+    h[5] := '';
+    trustroot := DB.DBA.vspx_uri_compose(h);
+  }
+
+  -- We always need the oid_server for user.register
+  if (strcontains(hostUrl, '?'))
+    hostUrl := hostUrl || '&';
+  else
+    hostUrl := hostUrl || '?';
+  hostUrl := hostUrl || sprintf('openid.server=%U', oi_srv);
+
+  -- Build the authentication URL the client needs to show to the user
+  authUrl := oi_srv;
+  if (strcontains(oi_srv, '?'))
+    authUrl := authUrl || '&';
+  else
+    authUrl := authUrl || '?';
+
+  authUrl := authUrl || sprintf('openid.mode=checkid_setup&openid.return_to=%U', hostUrl);
+
+  if (oi_version = '1.0')
+      authUrl := authUrl
+                 || sprintf('&openid.identity=%U', oi_identity)
+                 || sprintf('&openid.trust_root=%U', trustroot);
+
+  else if (oi_version = '2.0')
+    authUrl := authUrl
+               || sprintf('&openid.ns=%U', 'http://specs.openid.net/auth/2.0')
+               || sprintf('&openid.claimed_id=%U', oi_identity)
+               || sprintf('&openid.identity=%U', oi_identity);
+
+  if (oi_params = 'sreg')
+    authUrl := authUrl
+               || sprintf('&openid.sreg.optional=%U', 'fullname,nickname,dob,gender,postcode,country,timezone')
+               || sprintf('&openid.sreg.required=%U', 'email,nickname');
+
+  else if (oi_params = 'ax')
+    authUrl := authUrl
+               || sprintf('&openid.ns.ax=%U', 'http://openid.net/srv/ax/1.0')
+               || sprintf('&openid.ax.mode=%U', 'fetch_request')
+               || sprintf('&openid.ax.required=%U', 'country,email,firstname,fname,language,lastname,timezone')
+               || sprintf('&openid.ax.type.country=%U', 'http://axschema.org/contact/country/home')
+               || sprintf('&openid.ax.type.email=%U', 'http://axschema.org/contact/email')
+               || sprintf('&openid.ax.type.firstname=%U', 'http://axschema.org/namePerson/first')
+               || sprintf('&openid.ax.type.fname=%U', 'http://axschema.org/namePerson')
+               || sprintf('&openid.ax.type.language=%U', 'http://axschema.org/pref/language')
+               || sprintf('&openid.ax.type.lastname=%U', 'http://axschema.org/namePerson/last')
+               || sprintf('&openid.ax.type.timezone=%U', 'http://axschema.org/pref/timezone');
+
+  return authUrl;
+}
+;
+
+--!
+-- \brief Get OpenID accound details for user registration.
+--
+-- ODS supports registration via OpenID. To this end the data returned by the OpenID provider as
+-- query parameters to the callback URL from user.openid.authenticationUrl() needs to be prepared for feeding into the \p data parameter
+-- of user.register(). Be aware though that user.register() still requires a \p name and an \p email value to be present. These values might
+-- be contained in the returned JSON blob (\p nick and \p mbox) if the OpenID provider returns them. Otherwise the user needs to provide those
+-- values manually.
+--
+-- \param url The redirect URL with the OpenID parameters from the OpenID provider. This URL is obtained by the client
+--            by navigating to the URL provided through user.openid.authenticationUrl() and awaiting the redirect.
+--
+-- \return A JSON stream of OpenID account data suitable for user.register()
+--
+-- \sa user.openid.authenticationUrl()
+--/
+create procedure ODS.ODS_API."user.openid.registrationData" (
+  in url varchar) __SOAP_HTTP 'text/json'
+{
+  declare data any;
+  declare uriParams any;
+
+  uriParams := split_and_decode(rfc1808_parse_uri(url)[4], 0);
+
+  data := ODS..jsonObject ();
+
+  -- Convert all the profile detail properties to key names user.register can handle
+  for (declare i, l int, i := 0, l := length (uriParams); i < l; i := i + 2)
+  {
+    if (ends_with(uriParams[i], 'country'))
+      ODS.ODS_API.set_keyword ('homeCountry', data, uriParams[i+1]);
+
+    else if (ends_with(uriParams[i], 'email'))
+      ODS.ODS_API.set_keyword ('mbox', data, uriParams[i+1]);
+
+    else if (ends_with(uriParams[i], 'firstname'))
+      ODS.ODS_API.set_keyword ('firstName', data, uriParams[i+1]);
+
+    else if (ends_with(uriParams[i], 'fname') or ends_with(uriParams[i], 'fullname'))
+      ODS.ODS_API.set_keyword ('name', data, uriParams[i+1]);
+
+    else if (ends_with(uriParams[i], 'language'))
+      ODS.ODS_API.set_keyword ('language', data, uriParams[i+1]);
+
+    else if (ends_with(uriParams[i], 'lastname'))
+      ODS.ODS_API.set_keyword ('family_name', data, uriParams[i+1]);
+
+    else if (ends_with(uriParams[i], 'timezone'))
+      ODS.ODS_API.set_keyword ('timezone', data, uriParams[i+1]);
+
+    else if (ends_with(uriParams[i], 'dob'))
+      ODS.ODS_API.set_keyword ('birthday', data, uriParams[i+1]);
+
+    else if (ends_with(uriParams[i], 'postcode'))
+      ODS.ODS_API.set_keyword ('homeCode', data, uriParams[i+1]);
+
+    else if (ends_with(uriParams[i], 'gender'))
+      ODS.ODS_API.set_keyword ('gender', data, uriParams[i+1]);
+
+    else if (ends_with(uriParams[i], 'nickname'))
+      ODS.ODS_API.set_keyword ('nick', data, uriParams[i+1]);
+  }
+
+  -- If we have no nick we use name
+  if (not get_keyword('nick', data) and get_keyword('name', data))
+    ODS.ODS_API.set_keyword ('nick', data, get_keyword('name', data));
+
+  -- Add the values required by user.register
+  ODS.ODS_API.set_keyword ('openid_url', data, get_keyword('openid.identity', uriParams));
+  ODS.ODS_API.set_keyword ('openid_server', data, get_keyword('openid.server', uriParams));
+
+  return ODS..obj2json(data);
+}
+;
+
+--!
+-- \brief Request an OpenID Login URL
+--
+-- Authentication via OpenID is a three-step process in ODS including user.openid.authenticationUrl(), this function, and
+-- a call to user.authenticate() using the result as input.
+--
+-- \param url The redirection URL constructed by the OpenID provider.
+--
+-- \return An OpenID login url which can be used to authenticate the ODS user via user.authenticate()
+--         and its \p openIdUrl parameter.
+--/
+create procedure ODS.ODS_API."user.openid.loginUrl" (
+  in url varchar) __SOAP_HTTP 'text/plain'
+{
+  declare uriParams any;
+  declare loginUrl varchar;
+  declare sig any;
+  declare _key, _val varchar;
+
+  -- Get a hash of all query parameters in the given URL
+  uriParams := split_and_decode(rfc1808_parse_uri(url)[4], 0);
+
+  -- Add basic OpenID parameters to the login URL
+  loginUrl := get_keyword('openid.server', uriParams);
+  if (strcontains(loginUrl, '?'))
+    loginUrl := loginUrl || '&';
+  else
+    loginUrl := loginUrl || '?';
+  loginUrl := loginUrl || 'openid.mode=check_authentication'
+    || sprintf('&openid.assoc_handle=%U', get_keyword('openid.assoc_handle', uriParams))
+    || sprintf('&openid.sig=%U', get_keyword('openid.sig', uriParams))
+    || sprintf('&openid.signed=%U', get_keyword('openid.signed', uriParams));
+
+  --
+  sig := split_and_decode(get_keyword('openid.signed', uriParams), 0, '\0\0,');
+  for (declare i int, i := 0; i < length(sig); i := i + 1)
+  {
+    _key := trim(sig[i]);
+    if (_key <> 'mode' and
+        _key <> 'signed' and
+        _key <> 'assoc_handle')
+    {
+      _val := get_keyword('openid.' || _key, uriParams);
+      if (not _val is null and _val <> '')
+        loginUrl := loginUrl || sprintf('&openid.%s=%U', _key, _val);
+    }
+  }
+
+  return loginUrl;
+}
+;
+
+--!
+-- \brief Internal procedure which creates a new user session and returns the session ID.
+--
+-- No authentication checks are made. However, if the user is deactivated an error signal
+-- will be thrown.
+--
+-- \param uname The name of the user to create the session for.
+-- \param checkDeactivated If \p 1 (the default) deactivated user sessions will be refused.
+--
+-- \return The session ID (varchar) on success, \p null otherwise.
+--/
+create procedure ODS..ods_new_user_session (
+  in uname varchar,
+  in checkDeactivated int := 1)
+{
+  declare sid varchar;
+
+  if (isnull (uname))
+    return null;
+
+  if (checkDeactivated and (select U_ACCOUNT_DISABLED from DB.DBA.SYS_USERS where U_NAME = uname) = 1)
+    signal ('22000', sprintf('The ODS account "%s" is deactivated.', uname));
+
+  sid := DB.DBA.vspx_sid_generate ();
+
+  insert into DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_STATE, VS_EXPIRY)
+    values (sid, 'wa', uname, serialize (vector ('vspx_user', uname)), now ());
+
+  return sid;
+}
+;
+
+--!
+-- \brief Start a new user session via user digest information.
+--
+-- ODS supports a variety of authentication methods. The most common way of operation for a client is to obtain a session ID and use it in subsequent calls to the API as
+-- described in \ref ods_authentication_session_id. Session IDs are obtained in one of the following ways. This method allows to authenticate via classical user digest information
+-- (user name and password). Authentication through third-party services is handled by user.authenticate.authenticationUrl(). user.authenticate.webid() and user.authenticate.browserid()
+-- handle WebiD (X.509 client SSL certificate authentication) and BrowserID (Mozilla Persona) respectively.
+-- In contrast to the other methods user.authenticate.authenticationUrl() will return a URL the client needs to navigate the user to in order to complete the authentication.
+-- The other methods will return a session ID.
+--
+-- A session will timeout after being unused for half an hour.
+--
+-- \section ods_user_authenticate_password Authentication via Password Hash
+--
+-- When authenticating via password hashes parameters \p user_name and \p password_hash need to be specified. The
+-- password hash uses the \em sha1 digest algorithm and includes both the user name and the password.
+--
+-- This can be created via openssl or any sha1 tool available in the environment of the client:
+-- \code
+-- # echo -n "demofoobar" | openssl dgst -sha1
+-- # echo -n "demofoobar" | sha1sum
+-- \endcode
+--
+-- \param user_name The user name of the account created via user.register(). If specified \p password_hash also needs to be provided.
+-- \param password_hash The password hash as explained in \ref ods_authentication_password_hash. Mandatory if \p user_name is specified.
+-- \param facebookUID Deprecated Use user.authenticate.authenticationUrl() for Facebook login.
+-- \param openIdUrl Deprecated Use user.authenticate.authenticationUrl() for OpenID login.
+-- \param openIdIdentity Deprecated Use user.authenticate.authenticationUrl() for OpenID login.
+-- \param oauthMode Deprecated Use user.authenticate.authenticationUrl() for OAuth login.
+-- \param oauthSid Deprecated Use user.authenticate.authenticationUrl() for OAuth login.
+-- \param oauthVerifier Deprecated Use user.authenticate.authenticationUrl() for OAuth login.
+-- \param oauthToken Deprecated Use user.authenticate.authenticationUrl() for OAuth login.
+--
+-- \return An XML stream containing the session id of the newly created session. This session id can then be
+-- used to authenticate other method calls as explained in \ref ods_authentication_session_id. For an example of a user session
+-- object see \ref ods_user_session_example.
+--
+-- \sa \ref ods_authentication_oauth, user.authenticate.browserid(), user.authenticate.webid(), user.authenticate.authenticationUrl()
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i "http://demo.openlinksw.com/ods/api/user.authenticate?user_name=demo&password_hash=49e473da03fbc286f06b5f0bf1f3301b5e4a67fd"
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/06.01.3127 (Linux) x86_64-unknown-linux-gnu
+-- Connection: Keep-Alive
+-- Date: Tue, 17 Apr 2012 09:31:34 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="UTF-8"
+-- Content-Length: 114
+--
+-- <userSession>
+--   <sid>1de236f5da2f32d92e8c0cce5053a96e</sid>
+--   <user>
+--     <uname>demo</uname>
+--     <uid>127</uid>
+--     <new>0</new>
+--     <dba>0</dba>
+--   </user>
+-- </userSession>
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."user.authenticate" (
   in user_name varchar := null,
 	in password_hash varchar := null,
-	in facebookUID integer := null,
+	in facebookUID varchar := null,
 	in openIdUrl varchar := null,
 	in openIdIdentity varchar := null,
   in oauthMode varchar := null,
@@ -1606,43 +4606,61 @@ create procedure ODS.ODS_API."user.authenticate" (
   in oauthToken varchar := null) __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare sid, tmp varchar;
+  declare sid, tmp, profile_url varchar;
+  declare loginData any;
   declare exit handler for sqlstate '*'
   {
     rollback work;
-    return ods_serialize_sql_error (__SQL_STATE, substring(__SQL_MESSAGE, 1, coalesce(strstr(__SQL_MESSAGE, '<>'), length(__SQL_MESSAGE))));
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
 
   tmp := (select WAB_DISABLE_UNTIL from DB.DBA.WA_BLOCKED_IP where WAB_IP = http_client_ip ());
   --if (tmp is not null and tmp > now ())
-  --  signal ('22023', 'Too many failed attempts. Try again in an hour.<>');
+  --  signal ('22023', 'Too many failed attempts. Try again in an hour.');
 
+  loginData := ODS.ODS_API."server.getInfo" ('regData', 0);
   uname := null;
     if (not isnull (facebookUID))
     {
-    uname := (select U_NAME from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and WAUI_FACEBOOK_ID = facebookUID);
+    if (get_keyword ('facebookEnable', loginData, 0) = 0)
+      signal ('22023', 'The Facebook authentication type is disabled.');
+
+    profile_url := DB.DBA.WA_USER_OL_ACCOUNTS_FACEBOOK (facebookUID);
+    uname := (select U_NAME
+                from DB.DBA.SYS_USERS,
+                     DB.DBA.WA_USER_OL_ACCOUNTS
+               where WUO_U_ID = U_ID
+                 and WUO_TYPE = 'P'
+                 and WUO_URL = profile_url);
+
     if (isnull (uname))
-      signal ('22023', 'The Facebook account is not registered.\nPlease enter your Facebook account data in ODS ''Edit Profile/Security/Facebook'' \nfor a successful authentication.<>');
+      signal ('22023', 'The Facebook account is not registered.\nPlease enter your Facebook account data in ODS ''Edit Profile/Personal/Online Accounts'' \nfor a successful authentication.');
     }
   else if (not isnull (openIdUrl))
     {
       declare vResult any;
 
+    if (get_keyword ('openidEnable', loginData, 0) = 0)
+      signal ('22023', 'The OpenID authentication type is disabled.');
+
       commit work;
       vResult := http_client (openIdUrl);
       if (vResult not like '%is_valid:%true\n%')
-      signal ('22023', 'OpenID Authentication Failed.<>');
+      signal ('22023', 'OpenID Authentication Failed.');
 
     uname := (select U_NAME from DB.DBA.WA_USER_INFO, DB.DBA.SYS_USERS where WAUI_U_ID = U_ID and rtrim (WAUI_OPENID_URL, '/') = rtrim (openIdIdentity, '/'));
     if (isnull (uname))
-      signal ('22023', 'The OpenID account is not registered.\nPlease enter your OpenID account data in ODS ''Edit Profile/Security/OpenID'' \nfor a successful authentication.<>');
+      signal ('22023', 'The OpenID account is not registered.\nPlease enter your OpenID account data in ODS ''Edit Profile/Security/OpenID'' \nfor a successful authentication.');
     }
   else if (not isnull (oauthMode))
   {
-    declare tmp, url, token, result, screen_name, profile_url any;
+    declare url, token, result, screen_name any;
 
     if (oauthMode = 'twitter')
     {
+      if (get_keyword ('twitterEnable', loginData, 0) = 0)
+        signal ('22023', 'The Twitter authentication type is disabled.');
+
     token := ODS.ODS_API.get_oauth_tok ('Twitter API');
     url := OAUTH..sign_request ('GET',
                                 'http://twitter.com/oauth/access_token',
@@ -1659,10 +4677,14 @@ create procedure ODS.ODS_API."user.authenticate" (
                 from DB.DBA.SYS_USERS,
                      DB.DBA.WA_USER_OL_ACCOUNTS
                where WUO_U_ID = U_ID
-                 and WUO_URL = sprintf ('http://twitter.com/%U', screen_name));
+                   and WUO_TYPE = 'P'
+                   and WUO_URL = DB.DBA.WA_USER_OL_ACCOUNTS_TWITTER (screen_name));
   }
     else if (oauthMode = 'linkedin')
     {
+      if (get_keyword ('linkedinEnable', loginData, 0) = 0)
+        signal ('22023', 'The LinkedIn authentication type is disabled.');
+
       token := ODS.ODS_API.get_oauth_tok ('LinkedIn API');
       url := OAUTH..sign_request ('GET',
                                   'https://api.linkedin.com/uas/oauth/accessToken',
@@ -1680,15 +4702,16 @@ create procedure ODS.ODS_API."user.authenticate" (
                   from DB.DBA.SYS_USERS,
                        DB.DBA.WA_USER_OL_ACCOUNTS
                  where WUO_U_ID = U_ID
+                   and WUO_TYPE = 'P'
                    and WUO_URL = profile_url);
     }
     OAUTH..session_terminate (oauthSid);
 
     if (isnull (uname) and (oauthMode = 'twitter'))
-      signal ('22000', 'The Twitter account is not registered.\n Please enter your Twitter account data in ODS ''Edit Profile/Personal/Online Accounts'' \nfor a successful authentication.<>');
+      signal ('22000', 'The Twitter account is not registered.\nPlease enter your Twitter account data in ODS ''Edit Profile/Personal/Online Accounts'' \nfor a successful authentication.');
 
     if (isnull (uname) and (oauthMode = 'linkedin'))
-      signal ('22000', 'The LinkedIn account is not registered.\n Please enter your LinkedIn account data in ODS ''Edit Profile/Personal/Online Accounts'' \nfor a successful authentication.<>');
+      signal ('22000', 'The LinkedIn account is not registered.\nPlease enter your LinkedIn account data in ODS ''Edit Profile/Personal/Online Accounts'' \nfor a successful authentication.');
   }
   else
   {
@@ -1698,19 +4721,25 @@ create procedure ODS.ODS_API."user.authenticate" (
   if (isnull (uname))
     return ods_auth_failed ();
 
-  sid := DB.DBA.vspx_sid_generate ();
-  insert into DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_STATE, VS_EXPIRY)
-    values (sid, 'wa', uname, serialize (vector ('vspx_user', uname)), now ());
-  return
-    '<root>' ||
-      '<sid>' || sid  || '</sid>' ||
-      '<userName>' || uname || '</userName>' ||
-      '<userId>' || cast (username2id (uname) as varchar) || '</userId>' ||
-      '<dba>' || cast (is_dba (uname) as varchar) || '</dba>' ||
-    '</root>';
+  sid := ODS..ods_new_user_session(uname);
+  return ODS.DBA.ods_serialize_user_session (sid, uname, 0);
 }
 ;
 
+--!
+-- \deprecated Use user.authenticate() instead.
+--
+-- \brief Start a new user session.
+--
+-- Calling this method is similar to calling user.authenticate() with the password hash
+-- method.
+--
+-- \param user_name The user name of the account created via user.register().
+-- \param password_hash The password hash as explained in \ref ods_authentication_password_hash.
+--
+-- \return The session id of the newly created session. This session id can then be
+-- used to authenticate other method calls as explained in \ref ods_authentication_session_id.
+--/
 create procedure ODS.ODS_API."user.login" (
   in user_name varchar,
 	in password_hash varchar) __soap_http 'text/plain'
@@ -1719,6 +4748,15 @@ create procedure ODS.ODS_API."user.login" (
 }
 ;
 
+--!
+-- \brief Validate user authentication credentials.
+--
+-- This method can be used to check user authentication credentials as detailed in
+-- \ref ods_authentication.
+--
+-- \return An error code stating the success of the command execution as detailed in \ref ods_response_format_result_code.
+-- If the authentication credentials are valid \p 1 is returned.
+--/
 create procedure ODS.ODS_API."user.validate" () __soap_http 'text/xml'
 {
   declare uname varchar;
@@ -1735,6 +4773,14 @@ create procedure ODS.ODS_API."user.validate" () __soap_http 'text/xml'
 }
 ;
 
+--!
+-- \brief End a user session.
+--
+-- This method ends a user session created via user.login() or user.authenticate().
+-- The user session needs to be specified via \ref ods_authentication_session_id.
+--
+-- \return An error code stating the success of the command execution as detailed in \ref ods_response_format_result_code.
+--/
 create procedure ODS.ODS_API."user.logout" () __soap_http 'text/plain'
 {
   declare uname varchar;
@@ -1760,6 +4806,108 @@ create procedure ODS.ODS_API."user.logout" () __soap_http 'text/plain'
 }
 ;
 
+--!
+-- \brief Change user profile information.
+--
+-- This method allows to update any key/value pair in the user profile.
+--
+-- \param user_info A comma-separated list of \p key=value pairs identifying
+-- details in the user profile of the authenticated user. The following keys are supported:
+-- - \p WAUI_TITLE
+-- - \p WAUI_FIRST_NAME
+-- - \p WAUI_LAST_NAME
+-- - \p WAUI_FULL_NAME
+-- - \p WAUI_GENDER
+-- - \p WAUI_BIRTHDAY
+-- - \p WAUI_WEBPAGE
+-- - \p WAUI_MSIGNATURE
+-- - \p WAUI_ICQ
+-- - \p WAUI_SKYPE
+-- - \p WAUI_AIM
+-- - \p WAUI_YAHOO
+-- - \p WAUI_MSN
+-- - \p WAUI_HADDRESS1
+-- - \p WAUI_HADDRESS2
+-- - \p WAUI_HCODE
+-- - \p WAUI_HCITY
+-- - \p WAUI_HSTATE
+-- - \p WAUI_HCOUNTRY
+-- - \p WAUI_HTZONE
+-- - \p WAUI_HPHONE
+-- - \p WAUI_HPHONE_EXT
+-- - \p WAUI_HMOBILE
+-- - \p WAUI_BINDUSTRY
+-- - \p WAUI_BORG
+-- - \p WAUI_BJOB
+-- - \p WAUI_BADDRESS1
+-- - \p WAUI_BADDRESS2
+-- - \p WAUI_BCODE
+-- - \p WAUI_BCITY
+-- - \p WAUI_BSTATE
+-- - \p WAUI_BCOUNTRY
+-- - \p WAUI_BTZONE
+-- - \p WAUI_BLAT
+-- - \p WAUI_BLNG
+-- - \p WAUI_BPHONE
+-- - \p WAUI_BPHONE_EXT
+-- - \p WAUI_BMOBILE
+-- - \p WAUI_BREGNO
+-- - \p WAUI_BCAREER
+-- - \p WAUI_BEMPTOTAL
+-- - \p WAUI_BVENDOR
+-- - \p WAUI_BSERVICE
+-- - \p WAUI_BOTHER
+-- - \p WAUI_BNETWORK
+-- - \p WAUI_SUMMARY
+-- - \p WAUI_RESUME
+-- - \p WAUI_SEC_QUESTION
+-- - \p WAUI_SEC_ANSWER
+-- - \p WAUI_PHOTO_URL
+-- - \p WAUI_TEMPLATE
+-- - \p WAUI_LAT
+-- - \p WAUI_LNG
+-- - \p WAUI_LATLNG_VISIBLE
+-- - \p WAUI_USER_SEARCHABLE
+-- - \p WAUI_AUDIO_CLIP
+-- - \p WAUI_FAVORITE_BOOKS
+-- - \p WAUI_FAVORITE_MUSIC
+-- - \p WAUI_FAVORITE_MOVIES
+-- - \p WAUI_SEARCHABLE
+-- - \p WAUI_SHOWACTIVE
+-- - \p WAUI_LATLNG_HBDEF
+-- - \p WAUI_SITE_NAME
+-- - \p WAUI_INTERESTS
+-- - \p WAUI_INTEREST_TOPICS
+-- - \p WAUI_BORG_HOMEPAGE
+-- - \p WAUI_OPENID_URL
+-- - \p WAUI_OPENID_SERVER
+-- - \p WAUI_FACEBOOK_ID
+-- - \p WAUI_IS_ORG
+-- - \p WAUI_APP_ENABLE
+-- - \p WAUI_SPB_ENABLE
+-- - \p WAUI_NICK
+-- - \p WAUI_BICQ
+-- - \p WAUI_BSKYPE
+-- - \p WAUI_BAIM
+-- - \p WAUI_BYAHOO
+-- - \p WAUI_BMSN
+-- - \p WAUI_MESSAGING
+-- - \p WAUI_BMESSAGING
+-- - \p WAUI_CERT_LOGIN
+-- - \p WAUI_CERT_FINGERPRINT
+-- - \p WAUI_CERT
+-- - \p WAUI_ACL - A serialized array of ACLs which is nearly impossible to create as a client since the serialization requires an internal Virtuoso function called serialize().
+-- - \p WAUI_SALMON_KEY
+-- - \p WAUI_SETTINGS
+-- - \p WAUI_JOIN_DATE
+-- - \p WAUI_FOAF
+--
+-- \reqb{The request body should contain a \ref ods_user_profile_resource.}
+--
+-- \return An error code stating the success of the command execution as detailed in \ref ods_response_format_result_code.
+--
+-- \sa user.update.fields()
+--/
 create procedure ODS.ODS_API."user.update" (
 	in user_info any) __soap_http 'text/xml'
 {
@@ -1802,6 +4950,95 @@ create procedure ODS.ODS_API."user.update.field" (
 }
 ;
 
+--!
+-- \brief Change user profile information.
+--
+-- This method allows to update details in the user profile. Any parameter can be omitted which will
+-- result in its value not being touched.
+--
+-- \param nickName The user's nick name. Typically a short name used in chats and such.
+-- \param mail The user's email address.
+-- \param title The user's title. Can be something like "Mr." or "Ms."
+-- \param firstName The user's first name.
+-- \param lastName The user's last name.
+-- \param fullName The user's full name including any middle names.
+-- \param gender The user's gender. Can be either \p "male" or \p "female".
+-- \param birthday The user's birthday. The date format is \p YYYY.MM.DD.
+-- \param homepage The user's homepage.
+-- \param mailSignature The user's mail signature to be attached to each mail written.
+-- \param sumary A piece of text giving a summary of the user. This can be anything. The summary is subject to privacy settings as detailed in \ref ods_user_privacy.
+-- \param appSetting
+-- \param spbEnable
+-- \param Search
+-- \param showActive
+-- \param webIDs
+-- \param interests
+-- \param topicInterests
+-- \param icq
+-- \param skype
+-- \param yahoo
+-- \param aim
+-- \param msn
+-- \param messaging
+-- \param defaultMapLocation
+-- \param homeCountry
+-- \param homeState
+-- \param homeCity
+-- \param homeCode
+-- \param homeAddress1
+-- \param homeAddress2
+-- \param homeTimezone
+-- \param homeLatitude
+-- \param homeLongitude
+-- \param homePhone
+-- \param homePhoneExt
+-- \param homeMobile
+-- \param businessIndustry
+-- \param businessOrganization
+-- \param businessHomePage
+-- \param businessJob
+-- \param businessRegNo
+-- \param businessCareer
+-- \param businessEmployees
+-- \param businessVendor
+-- \param businessService
+-- \param businessOther
+-- \param businessNetwork
+-- \param businessResume
+-- \param businessCountry
+-- \param businessState
+-- \param businessCity
+-- \param businessCode
+-- \param businessAddress1
+-- \param businessAddress2
+-- \param businessTimezone
+-- \param businessLatitude
+-- \param businessLongitude
+-- \param businessPhone
+-- \param businessPhoneExt
+-- \param businessMobile
+-- \param businessIcq
+-- \param businessSkype
+-- \param businessYahoo
+-- \param businessAim
+-- \param businessMsn
+-- \param businessMessaging
+-- \param securityOpenID
+-- \param securityFacebookID
+-- \param securitySecretQuestion
+-- \param securitySecretAnswer
+-- \param securitySiocLimit
+-- \param photo
+-- \param photoContent
+-- \param audio
+-- \param audioContent
+-- \param mode
+-- \param onlineAccounts
+--
+-- \return An error code stating the success of the command execution as detailed in \ref ods_response_format_result_code.
+--
+-- \sa user.update()
+--/
 create procedure ODS.ODS_API."user.update.fields" (
   in nickName varchar := null,
   in mail varchar := null,
@@ -1902,6 +5139,8 @@ create procedure ODS.ODS_API."user.update.fields" (
   if (not ods_check_auth (uname))
     return ods_auth_failed ();
 
+  uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+
   -- Personal
   if (not isnull (nickName))
     ODS.ODS_API."user.update.field" (uname, 'WAUI_NICK', DB.DBA.WA_MAKE_NICK (nickName));
@@ -1930,9 +5169,14 @@ create procedure ODS.ODS_API."user.update.fields" (
   ODS.ODS_API."user.update.field" (uname, 'WAUI_SEARCHABLE', atoi(inSearch));
   ODS.ODS_API."user.update.field" (uname, 'WAUI_SHOWACTIVE', atoi(showActive));
 
-  ODS.ODS_API."user.update.field" (uname, 'WAUI_FOAF', webIDs);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_INTERESTS', interests);
   ODS.ODS_API."user.update.field" (uname, 'WAUI_INTEREST_TOPICS', topicInterests);
+  delete from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_NAME = 'webid' and WUO_TYPE = 'P' and WUO_U_ID = uid;
+  for (select _iri, _public from DB.DBA.WA_USER_INTERESTS (txt) (_iri varchar, _public varchar) P where txt = webIDs) do
+  {
+    insert into DB.DBA.WA_USER_OL_ACCOUNTS (WUO_U_ID, WUO_TYPE, WUO_NAME, WUO_URL, WUO_URI, WUO_PUBLIC)
+      values (uid, 'P', 'webid', _iri, _iri, _public);
+  }
 
   -- Contact
   ODS.ODS_API."user.update.field" (uname, 'WAUI_ICQ', icq);
@@ -1993,7 +5237,6 @@ create procedure ODS.ODS_API."user.update.fields" (
   ODS.ODS_API."user.update.field" (uname, 'WAUI_BMESSAGING', businessMessaging);
 
   -- Security
-  uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
   rc := ODS..openid_url_set (uid, securityOpenID);
   if (not isnull (rc))
     signal ('23023', rc);
@@ -2001,7 +5244,7 @@ create procedure ODS.ODS_API."user.update.fields" (
   if (not DB.DBA.is_empty_or_null (securityFacebookID))
   {
     if (exists (select 1 from DB.DBA.WA_USER_INFO where WAUI_U_ID <> uid and WAUI_FACEBOOK_ID = securityFacebookID))
-      signal ('23023', 'This Facebook identity is already registered.');
+      signal ('23023', 'This Facebook identity is already registered');
   }
   ODS.ODS_API."user.update.field" (uname, 'WAUI_FACEBOOK_ID', securityFacebookID);
 
@@ -2017,6 +5260,7 @@ create procedure ODS.ODS_API."user.update.fields" (
 }
 ;
 
+-- FIXME: this does not seem to be complete
 create procedure ODS.ODS_API."user.acl.array" ()
 {
   return vector (
@@ -2076,10 +5320,54 @@ create procedure ODS.ODS_API."user.acl.array" ()
 }
 ;
 
+--!
+-- \brief Get privacy information about user profile details.
+--
+-- Almost each detail in a user's profile can have its individual privacy setting as detailed in
+-- \ref ods_user_privacy. This method returns the currently configured privacy settings for the
+-- authenticated user.
+--
+-- \return An XML stream containing one tag for each user profile detail with the following content:
+-- - \p 1 - The detail is public
+-- - \p 2 - The detail is controlled by ACLs. FIXME: see also somewhere
+-- - \p 3 - The detail is private
+--
+-- \sa user.acl.update()
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i "http://demo.openlinksw.com/ods/api/user.acl.info?user_name=demo&password_hash=49e473da03fbf295f06b5f0bf1f3301b5e4a67fc"
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/06.01.3127 (Linux) x86_64-unknown-linux-gnu
+-- Connection: Keep-Alive
+-- Date: Wed, 18 Apr 2012 06:30:48 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="UTF-8"
+-- Content-Length: 1421
+--
+-- <acl>
+--   <title>1</title>
+--   <firstName>1</firstName>
+--   <lastName>1</lastName>
+--   <fullName>1</fullName>
+--   <mail>1</mail>
+--   <gender>1</gender>
+--   <birthday>2</birthday>
+--   <homepage>1</homepage>
+--   <webIDs>1</webIDs>
+--   <mailSignature>3</mailSignature>
+--   <icq>1</icq>
+--   <skype>1</skype>
+--   <yahoo>1</yahoo>
+--   [...]
+-- </acl>
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."user.acl.info" () __soap_http 'text/xml'
 {
   declare uname varchar;
-  declare N, M, tmp, acl, aclArray any;
+  declare N, M, acl, aclArray any;
   declare exit handler for sqlstate '*' {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
@@ -2103,6 +5391,93 @@ create procedure ODS.ODS_API."user.acl.info" () __soap_http 'text/xml'
 }
 ;
 
+--!
+-- \brief Change the user profile detail privacy settings.
+--
+-- Almost each detail in a user's profile can have its individual privacy setting as detailed in
+-- \ref ods_user_privacy. This method allows to change these privacy settings.
+--
+-- The following user detail identifier are supported:
+-- - \p title
+-- - \p firstName
+-- - \p lastName
+-- - \p fullName
+-- - \p mail
+-- - \p gender
+-- - \p birthday
+-- - \p homepage
+-- - \p webIDs
+-- - \p mailSignature
+-- - \p icq
+-- - \p skype
+-- - \p yahoo
+-- - \p aim
+-- - \p msn
+-- - \p homeAddress1
+-- - \p homeCountry
+-- - \p homeTimezone
+-- - \p homePhone
+-- - \p businessIndustry
+-- - \p businessOrganization
+-- - \p businessJob
+-- - \p businessAddress1
+-- - \p businessCountry
+-- - \p businessTimezone
+-- - \p businessPhone
+-- - \p businessRegNo
+-- - \p businessCareer
+-- - \p businessEmployees
+-- - \p businessVendor
+-- - \p businessService
+-- - \p businessOther
+-- - \p businessNetwork
+-- - \p summary
+-- - \p businessResume
+-- - \p photo
+-- - \p homeLatitude
+-- - \p audio
+-- - \p businessLatitude
+-- - \p interests
+-- - \p topicInterests
+-- - \p businessIcq
+-- - \p businessSkype
+-- - \p businessYahoo
+-- - \p businessAim
+-- - \p businessMsn
+-- - \p homeCode
+-- - \p homeCity
+-- - \p homeState
+-- - \p businessCode
+-- - \p businessCity
+-- - \p businessState
+--
+-- \param acls A list of URL-parameter style key/value pairs where each key corresponds to one user profile
+-- detail and each value refers to its visibility. A simple example would be \p "gender=1&birthday=3&photo=1"
+-- which would set the gender to be public, the birthday to be controlled by fine grained ACLs, and
+-- the photo to be public, too. The visibility value can be one of the following:
+-- - \p 1 - The detail is public
+-- - \p 2 - The detail is controlled by ACLs. FIXME: see also somewhere
+-- - \p 3 - The detail is private
+--
+-- \return An error code stating the success of the command execution as detailed in \ref ods_response_format_result_code.
+--
+-- \sa user.acl.info()
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i "http://demo.openlinksw.com/ods/api/user.acl.update?user_name=demo&password_hash=49e473da03fbd296f05b5f0bf1f3301b5e4a67fc&acls=gender%3D1%26birthday%3D3%26photo%3D1"
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/06.01.3127 (Linux) x86_64-unknown-linux-gnu
+-- Connection: Keep-Alive
+-- Date: Wed, 18 Apr 2012 09:07:25 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="UTF-8"
+-- Content-Length: 57
+--
+-- <result><code>1</code><message>Success</message></result>
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."user.acl.update" (
   in acls varchar) __soap_http 'text/xml'
 {
@@ -2134,6 +5509,35 @@ create procedure ODS.ODS_API."user.acl.update" (
 }
 ;
 
+--!
+-- \brief Change the password of a user account.
+--
+-- This method allows to change the password on a user account. Since passwords
+-- are transmitted in plain text it is recommended to use an encrypted connection.
+--
+-- \param old_password The old password in plain text.
+-- \param new_password The new password in plain text.
+--
+-- \return An error code stating the success of the command execution as detailed in \ref ods_response_format_result_code.
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i "http://demo.openlinksw.com/ods/api/user.password_change?user_name=test123&password_hash=4674a4b44e89011cfa581ff90967ebc52fd1080d&old_password=1&new_password=2"
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/05.12.3041 (Solaris) x86_64-sun-solaris2.10-64  VDB
+-- Connection: Keep-Alive
+-- Date: Mon, 28 Dec 2009 22:46:56 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="ISO-8859-1"
+-- Content-Length: 57
+--
+-- <result>
+--   <code>1</code>
+--   <message>Success</message>
+-- </result>
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."user.password_change" (
   in old_password varchar,
 	in new_password varchar) __soap_http 'text/xml'
@@ -2171,6 +5575,24 @@ ret:
 }
 ;
 
+--!
+-- \deprecated Use user.update() instead.
+--
+-- \brief Upload binary user data.
+--
+-- The ODS user profile contains an optional user photo and user audio file. These can be
+-- uploaded through this method.
+--
+-- For this purpose an HTTP POST needs to be performed with the following paramters:
+-- - \c pf_photo - The file name of the photo.
+-- - \c pf_photoContent - The content of the photo file (jpg, gif, or png)
+-- - \c pf_audio - The file name of the audio.
+-- - \c pf_audioContent - The content of the audio file.
+--
+-- \return \return An error code stating the success of the command execution as detailed in \ref ods_response_format_result_code.
+--
+-- \sa user.update(), user.update.fields()
+--/
 create procedure ODS.ODS_API."user.upload" () __soap_http 'text/xml'
 {
   declare params any;
@@ -2217,7 +5639,7 @@ create procedure ODS.ODS_API."user.upload.internal" (
 
     ext := split_and_decode (photo, 0, '\0\0.');
     if (ext is not null and ext[length(ext)-1] is not null and lcase(ext[length(ext)-1]) not in ('jpg', 'png', 'gif'))
-      signal ('23023', 'Invalid image type. Please use jpg, png or gif for browser compatibility.');
+      signal ('23023', 'Invalid image type. Please use jpg, png or gif for browser compatibility');
 
     uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
     dir := rtrim (DB.DBA.DAV_HOME_DIR (uname), '/')||'/wa/images/';
@@ -2256,6 +5678,10 @@ create procedure ODS.ODS_API."user.upload.internal" (
     if (path like '/DAV/%')
       path := subseq (path, 4);
     ODS.ODS_API."user.update.field" (uname, 'WAUI_PHOTO_URL', path);
+  }
+  else if (length(photo))
+  {
+    ODS.ODS_API."user.update.field" (uname, 'WAUI_PHOTO_URL', photo);
   }
   else if (photo = '')
   {
@@ -2321,22 +5747,34 @@ create procedure ODS.ODS_API."user.delete" (
 create procedure ODS.ODS_API."user.enable" (
   in name varchar) __soap_http 'text/xml'
 {
+  declare rc, allow integer;
   declare uname varchar;
-  declare rc integer;
   declare exit handler for sqlstate '*'
   {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
+
   if (not ods_check_auth (uname))
     return ods_auth_failed ();
+
   if (not exists (select 1 from DB.DBA.SYS_USERS where U_NAME = name))
     return ods_serialize_sql_error ('37000', 'The item is not found');
+
+  allow := 0;
   if (uname in ('dav', 'dba'))
+    allow := 1;
+
+  if ((not allow) and (uname = DB.DBA.WA_USER_SETTING_GET (name, 'DISABLED_BY')))
+    allow := 1;
+
+  if (allow)
     {
     update DB.DBA.WA_INSTANCE
        set WAI_IS_FROZEN = 0
      where WAI_NAME in (select WAM_INST from DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS where WAM_USER = U_ID and U_NAME = name and WAM_MEMBER_TYPE = 1);
+    DB.DBA.WA_USER_SETTING_SET (name, 'DISABLED_BY', null);
+    connection_set ('WA_USER_DISABLED', name);
       DB.DBA.USER_SET_OPTION (name, 'DISABLED', 0);
       rc := 1;
   } else {
@@ -2349,23 +5787,28 @@ create procedure ODS.ODS_API."user.enable" (
 create procedure ODS.ODS_API."user.disable" (
   in name varchar) __soap_http 'text/xml'
 {
-  declare uname varchar;
   declare rc integer;
+  declare uname varchar;
   declare exit handler for sqlstate '*'
   {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
+
   if (not ods_check_auth (uname))
     return ods_auth_failed ();
+
   if (not exists (select 1 from DB.DBA.SYS_USERS where U_NAME = name))
     return ods_serialize_sql_error ('37000', 'The item is not found');
-  if (uname in ('dav', 'dba'))
+
+  if ((uname in ('dav', 'dba')) or (uname = name))
     {
     delete from DB.DBA.VSPX_SESSION where VS_UID = name;
     update DB.DBA.WA_INSTANCE
        set WAI_IS_FROZEN = 1
      where WAI_NAME in (select WAM_INST from DB.DBA.WA_MEMBER, DB.DBA.SYS_USERS where WAM_USER = U_ID and U_NAME = name and WAM_MEMBER_TYPE = 1);
+    DB.DBA.WA_USER_SETTING_SET (name, 'DISABLED_BY', uname);
+    connection_set ('WA_USER_DISABLED', name);
     DB.DBA.USER_SET_OPTION (name, 'DISABLED', 1);
       rc := 1;
   } else {
@@ -2384,12 +5827,40 @@ create procedure ODS.ODS_API."user.get" (
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
   };
+
   q := sprintf ('select * from <%s> where { ?user a sioc:User ; sioc:id "%s" ; ?property ?value } ', ods_graph(), name);
   exec_sparql (q);
   return '';
 }
 ;
 
+--!
+-- \brief Fetch basic information about a user.
+--
+-- This method allows to fetch details about an ODS user. If no user name is given the authenticated
+-- user is returned. This means that user.info() can be used to get user information for an authentication
+-- session (see also \ref ods_authentication_session_id).
+--
+-- \param name The optional ODS user name. Defaults to the authenticated user.
+-- \param short An optional boolean setting. If \p 1 only the most basic information is returned.
+--
+-- \return An XML stream encoding the user details such as uid, name, or the personal URL.
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i "http://demo.openlinksw.com/ods/api/user.info?sid=07e6e4b8da77691c729e6c95e3016ac8&short=1"
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/06.01.3127 (Linux) x86_64-unknown-linux-gnu
+-- Connection: Keep-Alive
+-- Date: Sat, 21 Apr 2012 09:52:46 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="UTF-8"
+-- Content-Length: 157
+--
+-- <user><uid>127</uid><iri>http://demo.openlinksw.com/dataspace/person/demo#this</iri><name>demo</name><nickName>demo</nickName><fullName>Demo User
+-- </fullName></user>
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."user.info" (
   in name varchar := null,
   in "short" varchar := '0') __soap_http 'text/xml'
@@ -2412,7 +5883,7 @@ create procedure ODS.ODS_API."user.info" (
     name := uname;
 
   if (not isnull (uname) and (uname <> name))
-    return ods_serialize_sql_error ('37000', 'Bad  user''s name paramater');
+    return ods_serialize_sql_error ('37000', 'Bad  user''s name parameter');
 
   if (not exists (select 1 from DB.DBA.SYS_USERS where U_NAME = name))
     return ods_serialize_sql_error ('37000', 'The item is not found');
@@ -2450,7 +5921,13 @@ create procedure ODS.ODS_API."user.info" (
       ods_xml_item ('gender',                 WAUI_GENDER);
       if (not isnull (WAUI_BIRTHDAY))
         ods_xml_item ('birthday',             subseq (datestring (WAUI_BIRTHDAY), 0, 10));
-      ods_xml_item ('webIDs',                 WAUI_FOAF);
+
+      tmp := '';
+      for (select WUO_URL, WUO_PUBLIC from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_NAME = 'webid' and WUO_TYPE = 'P' and WUO_U_ID = U_ID) do
+      {
+        tmp := tmp || WUO_URL || ';' || cast (WUO_PUBLIC as varchar)  || '\n';
+      }
+      ods_xml_item ('webIDs',                 tmp);
       ods_xml_item ('interests',              WAUI_INTERESTS);
       ods_xml_item ('topicInterests',         WAUI_INTEREST_TOPICS);
 
@@ -2544,6 +6021,17 @@ create procedure ODS.ODS_API."user.info" (
 }
 ;
 
+--!
+-- \brief Fetch details about an ODS user based on their WebID.
+--
+-- This method returns public information about an ODS user based on their specific
+-- ODS WebID.
+--
+-- \param webID The WebID of the user to lookup.
+-- \param output The output type. Can be either \p xml or \p json. Defaults to \p xml.
+--
+-- \return The details of the requested user serialized as an xml stream.s
+--/
 create procedure ODS.ODS_API."user.info.webID" (
   in webID varchar,
   in output varchar := 'xml') __soap_http 'text/xml'
@@ -2587,7 +6075,7 @@ create procedure ODS.ODS_API."user.info.webID" (
                           optional { ?iri foaf:msnChatID ?msnChatID } .
                           optional { ?iri foaf:aimChatID ?aimChatID } .
                           optional { ?iri foaf:yahooChatID ?yahooChatID } .
-         	                optional { ?iri foaf:holdsAccount ?t_holdsAccount .
+	                        optional { {?iri foaf:holdsAccount ?t_holdsAccount} UNION {?iri foaf:account ?t_holdsAccount}.
          	                           ?t_holdsAccount foaf:accountServiceHomepage ?t_accountServiceHomepage ;
          	                                           foaf:accountName ?skypeChatID.
                                      filter (str(?t_accountServiceHomepage) like ''skype%%'').
@@ -2612,7 +6100,7 @@ create procedure ODS.ODS_API."user.info.webID" (
                                      ?x_interest_url rdfs:label ?xa_interest_label. } .
                           optional { ?iri foaf:topic_interest ?x_topicInterest_url .
                                      ?x_topicInterest_url rdfs:label ?xa_topicInterest_label. } .
-                          optional { ?iri foaf:holdsAccount ?t_oa .
+	                        optional { {?iri foaf:holdsAccount ?t_oa} UNION {?iri foaf:account ?t_oa}.
                                      ?t_oa a foaf:OnlineAccount.
                                      ?t_oa foaf:accountServiceHomepage ?x_onlineAccount_url.
                                      ?t_oa foaf:accountName ?xa_onlineAccount_label.
@@ -2775,7 +6263,46 @@ create procedure ODS.ODS_API."user.search" (
 
 -- Social Network activity
 
-create procedure ODS.ODS_API."user.invite" (
+--!
+-- \brief Invite someone to join the user's social network.
+--
+-- ODS allows users to be connected in a social network. This requires users to send invitations
+-- to other users. The other users then need to either approve or reject that invitation.
+--
+-- \param friends_email The email address the invitation should be sent to. This can either be
+-- an already registered user or someone that is also invited to create an account with the instance of ODS.
+-- \param custom_message An optional custom message to be sent as part of the autogenerated one. The auto-generated
+-- message is based on a template stored in the DAV file system at \p "/DAV/VAD/wa/tmpl/SN_INV_TEMPLATE" or in the
+-- web server's file structure at \p "wa/tmpl/SN_INV_TEMPLATE". The default template can be seen below.
+-- \verbatim
+-- %invitation%
+--
+-- I've created my own place on %app% and I'd like you to connect to me so we can stay in touch.
+-- You can view my blog, my photos, my news and wiki.
+--
+-- With %app%, you can create your own personal page and blog of your own,
+-- which will can be linked to mine.
+--
+-- To join my network please visit %url%
+--
+-- - %user%
+--
+-- --------------------------------------------------------------------------
+--
+-- Thank you for using Virtuoso Web Applications. Virtuoso Team
+--
+-- -- Powered by Virtuoso  http://virtuoso.openlinksw.com/
+-- \endverbatim
+-- It can easily be replaced by the system administrator. The following placeholders are supported:
+-- - \p %app% - The title of the web service or the server's hostname as a fallback.
+-- - \p %user% - The full name of the user sending the invitation.
+-- - \p %url% - The URL to the login page of this ODS instance. FIXME: This depends on the used UI. It should be provided by the client or be configurable.
+-- - \p %invitation% - The \p custom_message provided as a parameter.
+-- \return An error code stating the success of the command execution as detailed in \ref ods_response_format_result_code.
+--
+-- \sa user.invitation.approve(), user.invitation.list()
+--/
+create procedure ODS.ODS_API."user.invitation.new" (
   in friends_email varchar,
   in custom_message varchar := '') __soap_http 'text/xml'
 {
@@ -2794,6 +6321,7 @@ create procedure ODS.ODS_API."user.invite" (
   if (not ods_check_auth (uname))
     return ods_auth_failed ();
 
+-- FIXME: this URL is UI specific and should be provided by the client rather than being hard-coded here.
   url := WS.WS.EXPAND_URL (HTTP_URL_HANDLER (), 'login.vspx?URL=sn_rec_inv.vspx');
   copy := (select top 1 WS_WEB_TITLE from DB.DBA.WA_SETTINGS);
   if (copy = '' or copy is null)
@@ -2805,9 +6333,13 @@ create procedure ODS.ODS_API."user.invite" (
   sn_id := (select sne_id from DB.DBA.sn_person where sne_name = uname);
   msg := DB.DBA.WA_GET_EMAIL_TEMPLATE ('SN_INV_TEMPLATE', 1);
   msg := replace (msg, '%app%', copy);
+-- FIXME: the template does not contain the '%invitation%' placeholder
   msg := replace (msg, '%invitation%', custom_message);
+-- FIXME: why would the user send a message to themselves. Here the receipiant's name should go. This we only have if the user is already registered or if we invite a WebID which should be possible, too.
   msg := replace (msg, '%user%', DB.DBA.WA_WIDE_TO_UTF8 (_u_full_name));
   msg := replace (msg, '%url%', url);
+
+-- FIXME: %app_action_url%, %service_url%, %app_owner%, %timeout_join% and %service% are never replaced in the msg.
 
   uids := split_and_decode (friends_email, 0, '\0\0,');
 
@@ -2835,7 +6367,7 @@ create procedure ODS.ODS_API."user.invite" (
 	    {
 	      rollback work;
 	      if (__SQL_STATE not like 'WA%')
-		msg := 'The e-mail address(es) is not valid and mail cannot be sent.';
+      		msg := 'The e-mail address(es) is not valid and mail cannot be sent';
 	      else
 		msg := __SQL_MESSAGE;
               rc := -1;
@@ -2856,7 +6388,33 @@ ret:
 }
 ;
 
-create procedure ODS.ODS_API."user.invitation" (
+--!
+-- \deprecated Use user.invitation.new() instead.
+--/
+create procedure ODS.ODS_API."user.invite" (
+  in friends_email varchar,
+  in custom_message varchar := '') __soap_http 'text/xml'
+{
+  return ODS.ODS_API."user.invitation.new"(friends_email, custom_message);
+}
+;
+
+--!
+-- \brief Approve an invitation from another user.
+--
+-- ODS allows users to be connected in a social network. This requires users to send invitations
+-- to other users. The other users then need to either approve or reject that invitation.
+--
+-- This method allow to approve or reject invitations from other users.
+--
+-- \param invitation_id The id of the invitation as reported by user.invitation.list().
+-- \param approve Either \p 1 or \p 0 to \em approve or \em reject the invitation.
+--
+-- \return An error code stating the success of the command execution as detailed in \ref ods_response_format_result_code.
+--
+-- \sa user.invitation.new(), user.invitation.list()
+--/
+create procedure ODS.ODS_API."user.invitation.approve" (
   in invitation_id int,
   in approve smallint) __soap_http 'text/xml'
 {
@@ -2897,7 +6455,30 @@ ret:
 }
 ;
 
-create procedure ODS.ODS_API."user.invitations.get" () __soap_http 'text/xml'
+--!
+-- \deprecated Use user.invitation.approve() instead.
+--/
+create procedure ODS.ODS_API."user.invitation" (
+  in invitation_id int,
+  in approve smallint) __soap_http 'text/xml'
+{
+  return ODS.ODS_API."user.invitation.approve"(invitation_id, approve);
+}
+;
+
+--!
+-- \brief Get a list of pending invitations.
+--
+-- ODS allows users to be connected in a social network. This requires users to send invitations
+-- to other users. The other users then need to either approve or reject that invitation.
+--
+-- This method lists the invitations other users sent to the authenticated user.
+--
+-- \return FIXME
+--
+-- \sa user.invitation.new(), user.invitation.approve()
+--/
+create procedure ODS.ODS_API."user.invitation.list" () __soap_http 'text/xml'
 {
   declare uname varchar;
   declare rc integer;
@@ -2912,12 +6493,34 @@ create procedure ODS.ODS_API."user.invitations.get" () __soap_http 'text/xml'
     return ods_auth_failed ();
 
   -- XXX: add sparql_exec after RDF data update triggers is done
+-- FIXME: simply return the values from sn_invitation
 ret:
   return ods_serialize_int_res (rc);
 }
 ;
 
-create procedure ODS.ODS_API."user.relation_terminate" (
+--!
+-- \deprecated Use user.invitation.list() instead.
+--/
+create procedure ODS.ODS_API."user.invitations.get" () __soap_http 'text/xml'
+{
+  return ODS.ODS_API."user.invitation.list"();
+}
+;
+
+--!
+-- \brief Delete a connection to another user.
+--
+-- ODS allows users to be connected in a social network. This requires users to send invitations
+-- to other users. The other users then need to either approve or reject that invitation.
+--
+-- This method allows to remove a connection that has been created through an approved invitation.
+--
+-- \return An error code stating the success of the command execution as detailed in \ref ods_response_format_result_code.
+--
+-- \sa user.invitation.new(), user.invitation.list()
+--/
+create procedure ODS.ODS_API."user.relation.delete" (
   in friend varchar) __soap_http 'text/xml'
 {
   declare uname varchar;
@@ -2937,6 +6540,19 @@ create procedure ODS.ODS_API."user.relation_terminate" (
 }
 ;
 
+--!
+-- \deprecated Use user.relation.delete() instead.
+--/
+create procedure ODS.ODS_API."user.relation_terminate" (
+  in friend varchar) __soap_http 'text/xml'
+{
+  return ODS.ODS_API."user.relation.delete"(friend);
+}
+;
+
+--!
+-- \brief Change connection details. FIXME: this does nothing!
+--/
 create procedure ODS.ODS_API."user.relation_update" (
   in friend varchar,
   in relation_details any) __soap_http 'text/xml'
@@ -3416,10 +7032,57 @@ create procedure ODS.ODS_API."user.onlineAccounts.list" (
   {
     retValue := vector_concat (retValue, vector (vector (WUO_ID, WUO_NAME, WUO_URL, WUO_URI)));
   }
+
+  -- include OpenID. FIXME: OpenIDs should also be stored in the same table
+  for (select WAUI_OPENID_URL from DB.DBA.WA_USER_INFO where WAUI_U_ID = _u_id and not WAUI_OPENID_URL is null) do
+  {
+    retValue := vector_concat (retValue, vector (vector (-1, 'openid', WAUI_OPENID_URL, '')));
+  }
+
   return obj2json (retValue);
 }
 ;
 
+--!
+-- \brief Add a new online account to an ODS account.
+--
+-- An ODS user profile can contain an arbitrary number of online accounts from any service
+-- available. Only two main things are required: the name of the service and the service identifier.
+--
+-- For many services adding an online account will result in the user being able to log into their
+-- ODS account through that service (See user.authenticate.authenticationUrl(), user.authenticate.browserid(),
+-- and user.authenticate.webid()). In order for this connection to work properly the online accounts need to
+-- be added in a special form (be aware that the \p connect action in the mentioned authentication methods
+-- allow to add online accounts automatically).
+--
+-- The following list gives an overview of the supported services (See also \ref ods_authentication_url_services)
+-- and the identifiers used in ODS:
+--
+-- Service Type   | Identifier used         | Example
+-- ---------------|-------------------------|--------
+-- \p facebook    | The profile URL         | http://www.facebook.com/sebastian.trug
+-- \p twitter     | The profile URL         | http://twitter.com/tmptrueg
+-- \p linkedin    | The profile URL         | http://www.linkedin.com/in/trueg
+-- \p windowslive | The profile URL         | http://profile.live.com/cid-7a6b1666d21a866b/
+-- \p google      | The login email address |
+-- \p wordpress   | The username            | trueg
+-- \p disqus      | The profile URL         | http://disqus.com/strueg/
+-- \p instagram   | The username            |
+-- \p yahoo       | The profile URL         | http://profile.yahoo.com/S4KF6WXGWUBRV74G4TD6GOPCAE
+-- \p tumblr      | The username            |
+-- \p bitly       | The profile URL         | http://bitly.com/u/webods
+-- \p browserid   | The email address       |
+-- \p webid       | The personal URI        | http://web.ods.openlinksw.com/dataspace/person/trueg#this
+-- \p openid      | The OpenID URL          |
+--
+-- \param name The name of the online account service provider (Examples: \p facebook, \p disqus, \p browserid)
+-- \param url The service account identifier or username.
+-- \param uri An optional named graph to publish the information to (typically this can be left out since ODS
+-- will handle that automatically).
+-- \param type The type of the account, ie. is it a private account (\p P) or a business account (\p B).
+--
+-- \return An error code as defined in \ref ods_response_format_result_code.
+--/
 create procedure ODS.ODS_API."user.onlineAccounts.new" (
   in name varchar,
   in url varchar,
@@ -3453,7 +7116,7 @@ create procedure ODS.ODS_API."user.onlineAccounts.delete" (
   in name varchar := null,
   in url varchar := null,
   in uri varchar := null,
-  in "type" varchar) __soap_http 'text/xml'
+  in "type" varchar := null) __soap_http 'text/xml'
 {
   declare uname varchar;
   declare rc integer;
@@ -3468,6 +7131,9 @@ create procedure ODS.ODS_API."user.onlineAccounts.delete" (
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
   if (isnull (id))
   {
+    if (name = 'openid')
+      update DB.DBA.WA_USER_INFO set WAUI_OPENID_URL=null, WAUI_OPENID_SERVER=null where WAUI_U_ID=_u_id;
+    else
     delete
       from DB.DBA.WA_USER_OL_ACCOUNTS
      where WUO_U_ID = _u_id
@@ -3476,6 +7142,9 @@ create procedure ODS.ODS_API."user.onlineAccounts.delete" (
        and (url  is null or WUO_URL = url)
        and (uri  is null or WUO_URI = uri);
   } else {
+    if (id = -1)
+      update DB.DBA.WA_USER_INFO set WAUI_OPENID_URL=null, WAUI_OPENID_SERVER=null where WAUI_U_ID=_u_id;
+    else
     delete
       from DB.DBA.WA_USER_OL_ACCOUNTS
      where WUO_U_ID = _u_id
@@ -3798,7 +7467,7 @@ create procedure ODS.ODS_API."user.mades.update" (
   {
     declare exit handler for sqlstate '*'
     {
-      exec (sprintf ('sparql clear graph <%s>', tmp), stat, msg);
+      SPARQL clear graph ?:tmp;
       goto _next;
     };
     qrs := vector (0,0,0);
@@ -3845,7 +7514,7 @@ create procedure ODS.ODS_API."user.mades.update" (
     	}
     }
   _found:
-    exec (sprintf ('sparql clear graph <%s>', tmp), stat, msg);
+    SPARQL clear graph ?:tmp;
   }
 _next:;
 
@@ -3895,7 +7564,7 @@ create procedure ODS.ODS_API."user.mades.edit" (
 
 create procedure ODS.ODS_API."user.mades.delete" (
   in id integer) __soap_http 'text/xml'
-  {
+{
   declare uname varchar;
   declare rc integer;
   declare _u_id integer;
@@ -3956,7 +7625,7 @@ create procedure ODS.ODS_API."user.offers.list" (
 
 create procedure ODS.ODS_API."user.offers.get" (
   in id integer) __soap_http 'application/json'
-    {
+{
   declare uname varchar;
   declare _u_id integer;
   declare flag, name, comment, products, retValue any;
@@ -4014,11 +7683,11 @@ create procedure ODS.ODS_API."user.offers.update" (
   ontologies := json_parse (properties);
   products := vector_concat (ODS..jsonObject (), vector ('version', '2.0', 'ontologies', ontologies));
   if (isnull (id))
-      {
+  {
     insert into DB.DBA.WA_USER_OFFERLIST (WUOL_U_ID, WUOL_TYPE, WUOL_FLAG, WUOL_OFFER, WUOL_COMMENT, WUOL_PROPERTIES)
       values (_u_id, type, flag, name, comment, serialize (products));
     id := (select max (WUOL_ID) from DB.DBA.WA_USER_OFFERLIST);
-    }
+  }
   else
   {
     update DB.DBA.WA_USER_OFFERLIST
@@ -4038,9 +7707,9 @@ create procedure ODS.ODS_API."user.offers.new" (
   in name varchar,
   in comment varchar,
   in properties any := null) __soap_http 'text/xml'
-  {
+{
   return ODS.ODS_API."user.offers.update" (null, type, flag, name, comment, properties);
-  }
+}
 ;
 
 create procedure ODS.ODS_API."user.offers.edit" (
@@ -4050,14 +7719,14 @@ create procedure ODS.ODS_API."user.offers.edit" (
   in name varchar,
   in comment varchar,
   in properties any := null) __soap_http 'text/xml'
-  {
+{
   return ODS.ODS_API."user.offers.update" (id, type, flag, name, comment, properties);
-  }
+}
 ;
 
 create procedure ODS.ODS_API."user.offers.delete" (
   in id integer) __soap_http 'text/xml'
-  {
+{
   declare uname varchar;
   declare rc integer;
   declare _u_id integer;
@@ -4075,13 +7744,13 @@ create procedure ODS.ODS_API."user.offers.delete" (
   rc := row_count ();
 
   return ods_serialize_int_res (rc);
-  }
+}
 ;
 
 create procedure ODS.ODS_API."user.seeks.list" () __soap_http 'application/json'
-  {
+{
   return ODS.ODS_API."user.offers.list"('2');
-  }
+}
 ;
 
 create procedure ODS.ODS_API."user.seeks.get" (
@@ -4459,11 +8128,49 @@ create procedure ODS.ODS_API."user.knows.delete" (
 }
 ;
 
+--!
+-- \brief List all X.509 certificates accociated with an account.
+--
+-- An ODS account can contain an arbitrary number of certificates which can either be
+-- imported via user.certificates.new() or be created via user.certificates.create().
+-- This method lists all certificates in the profile.
+--
+-- \return A JSON list of all X.509 certificates accociated with the account. For historical
+-- reasons all information is provided twice: once in a plain list and once in a clean JSON map.
+--
+-- \b Example:
+--
+-- \verbatim
+-- [
+--   [
+--     1,
+--     "/CN=Sebastian Trueg (local ODS instance)/emailAddress=trueg@openlinksw.com",
+--     "1 week(s) ago",
+--     "67:1C:7A:E3:D2:2D:85:C9:E4:AF:BB:D7:F1:EA:53:3B",
+--     "Yes",
+--     {
+--       "id": 1,
+--       "fingerprint": "67:1C:7A:E3:D2:2D:85:C9:E4:AF:BB:D7:F1:EA:53:3B",
+--       "timestamp": "2012-10-15 20:31:36",
+--       "fuzzyTimestamp": "1 week(s) ago",
+--       "subject":
+--       {
+--         "CN": "Sebastian Trueg (local ODS instance)",
+--         "emailAddress": "trueg@openlinksw.com"
+--       }
+--     }
+--   ]
+-- ]
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."user.certificates.list" () __soap_http 'application/json'
 {
   declare uname varchar;
   declare _u_id integer;
-  declare retValue any;
+  declare isFirst int;
+  declare certVec any;
+  declare subject varchar;
+
   declare exit handler for sqlstate '*' {
     rollback work;
     return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
@@ -4472,12 +8179,67 @@ create procedure ODS.ODS_API."user.certificates.list" () __soap_http 'applicatio
     return ods_auth_failed ();
 
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
-  retValue := vector();
+  isFirst := 1;
+  http('[');
   for (select UC_ID, UC_CERT, UC_TS, UC_FINGERPRINT, UC_LOGIN, UC_FINGERPRINT from DB.DBA.WA_USER_CERTS where UC_U_ID = _u_id order by UC_TS desc) do
   {
-    retValue := vector_concat (retValue, vector (vector (UC_ID, get_certificate_info (2, cast (UC_CERT as varchar), 0, ''), DB.DBA.wa_abs_date (UC_TS), UC_FINGERPRINT, case when UC_LOGIN = 1 then 'Yes' else 'No' end)));
+    if(isFirst)
+      isFirst := 0;
+    else
+      http(',');
+
+    subject := get_certificate_info (2, cast (UC_CERT as varchar), 0, '');
+
+    -- old-style plain list without any context
+    certVec := vector (UC_ID, subject, DB.DBA.wa_abs_date (UC_TS), UC_FINGERPRINT, case when UC_LOGIN = 1 then 'Yes' else 'No' end);
+
+    -- Add a new-style JSON blob at the end of the vector
+    subject := split_and_decode(ltrim(subject, '/'), 0, '\0\0/=');
+
+    -- Start the old-style list but open it at the end
+    http (rtrim (obj2json (certVec), ']') || ',');
+
+    -- Add our new JSON object
+    http(params2Json (
+            vector('id', UC_ID,
+                   'fingerprint', UC_FINGERPRINT,
+                   'timestamp', cast (UC_TS as varchar),
+                   'fuzzyTimestamp', DB.DBA.wa_abs_date (UC_TS),
+                   'subject', array2Obj(subject))));
+
+    -- Close the list
+    http(']');
   }
-  return obj2json (retValue);
+
+  http(']');
+  return '';
+}
+;
+
+create procedure ODS.ODS_API."user.instances.list" () __soap_http 'text/xml'
+{
+  declare uname varchar;
+  declare _u_id integer;
+  declare retValue any;
+
+  declare exit handler for sqlstate '*' {
+    rollback work;
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+  if (not ods_check_auth (uname))
+    return ods_auth_failed ();
+  _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+
+  retValue := (select 
+  	xmlelement ('result', 
+	  	xmlagg (
+		  	xmlelement ('instance', 
+			xmlelement ('id', WAI_ID), 
+			xmlelement ('name', WAI_NAME), 
+			xmlelement ('type', DB.DBA.wa_type_to_app (WAI_TYPE_NAME)), 
+			xmlelement ('member_type', WAM_MEMBER_TYPE)))) 
+	from DB.DBA.WA_MEMBER, DB.DBA.WA_INSTANCE where WAM_INST = WAI_NAME and WAM_USER = _u_id);
+  return serialize_to_UTF8_xml (retValue);
 }
 ;
 
@@ -4503,7 +8265,7 @@ create procedure ODS.ODS_API."user.certificates.get" (
   for (select UC_ID, UC_CERT, UC_LOGIN, UC_FINGERPRINT from DB.DBA.WA_USER_CERTS where UC_ID = id and UC_U_ID = _u_id) do
   {
     subject := get_certificate_info (2, UC_CERT, 0, '');
-    agentID := ODS.ODS_API.SSL_WEBID_GET (UC_CERT);
+    agentID := DB.DBA.FOAF_SSL_WEBID_GET (UC_CERT);
     fingerPrint := get_certificate_info (6, UC_CERT, 0, '');
     certificate := UC_CERT;
     enableLogin := UC_LOGIN;
@@ -4538,7 +8300,7 @@ create procedure ODS.ODS_API."user.certificates.update" (
 
   _u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
 
-  agent := ODS.ODS_API.SSL_WEBID_GET (certificate);
+  agent := DB.DBA.FOAF_SSL_WEBID_GET (certificate);
   if ((agent is null and length (certificate)) or (0 = length (certificate)))
 	  signal ('', 'The certificate must be in PEM format and must have Alternate Name attribute.');
 
@@ -4779,7 +8541,7 @@ create procedure ODS.ODS_API.graph_clear (
   in graph varchar)
 {
   commit work;
-  exec (sprintf ('SPARQL clear graph <%s>', graph));
+  SPARQL clear graph ?:graph;
 }
 ;
 
@@ -4791,7 +8553,7 @@ create procedure ODS.ODS_API.getFOAFDataArray (
   declare N integer;
   declare S, SQLs, IRI, foafGraph, _identity, _loc_idn varchar;
   declare V, st, msg, rows, meta any;
-  declare certLogin, certLoginEnable any;
+  declare loginName, certLogin, certLoginEnable any;
   declare personUri any;
   declare host, port, arr any;
   declare info any;
@@ -4834,7 +8596,8 @@ create procedure ODS.ODS_API.getFOAFDataArray (
                             select ?iri
           		                from <%s>
                              where {
-                                     ?iri a foaf:Person.
+			     	     [] foaf:primaryTopic ?iri .
+                                     ?iri a foaf:Person .
                                    } ', foafGraph)
                  );
 
@@ -4879,15 +8642,21 @@ create procedure ODS.ODS_API.getFOAFDataArray (
       }
       goto _exit;
   }
+
 _loginIn:
+  loginName := '';
   certLogin := 0;
   certLoginEnable := 0;
   if (is_https_ctx ())
   {
-    for (select UC_LOGIN from DB.DBA.WA_USER_CERTS where UC_FINGERPRINT = get_certificate_info (6)) do
-    {
+    -- FIXME: there is a lot of redundance here: we get the WebID at least twice and we fetch and delete the profile
+    if (check_authentication_ssl(loginName))
+      {
+	-- Any WebID mapping to an ODS account can be used to login
       certLogin := 1;
-      certLoginEnable := coalesce (UC_LOGIN, 0);
+	certLoginEnable := 1;
+	appendProperty (V, 'certLogin', cast (certLogin as varchar));
+	appendProperty (V, 'certLoginEnable', cast (certLoginEnable as varchar));
   }
   }
   V := ODS.ODS_API.extractFOAFDataArray (personUri, foafGraph);
@@ -4908,9 +8677,14 @@ _loginIn:
   if (certLogin and length (V))
     appendProperty (V, 'certLogin', cast (certLogin as varchar));
 
+  if (loginName = '')
+    loginName := DB.DBA.WA_MAKE_NICK2 (get_keyword ('nick', V), get_keyword ('name', V), get_keyword ('firstName', V), get_keyword ('family_name', V));
+
+  if (loginName <> '')
+    appendProperty (V, 'loginName', loginName);
+
 _exit:;
   ODS.ODS_API.graph_clear (foafGraph);
-  -- dbg_obj_print ('V', V);
   return V;
 }
 ;
@@ -4950,9 +8724,23 @@ create procedure ODS.ODS_API.extractFOAFDataArray (
   in iri varchar,
   in graph varchar)
 {
+  declare V any;
+
+  V := vector ();
+  ODS.ODS_API.extractPersonData (V, iri, graph);
+
+  return V;
+}
+;
+
+
+create procedure ODS.ODS_API.extractPersonData (
+  inout V any,
+  in iri varchar,
+  in graph varchar)
+{
   declare N integer;
-  declare S varchar;
-  declare V, S, st, msg, rows, meta any;
+  declare S, st, msg, rows, meta any;
 
   S := sprintf ('sparql
                  define input:storage ""
@@ -4962,41 +8750,7 @@ create procedure ODS.ODS_API.extractFOAFDataArray (
                   prefix foaf: <http://xmlns.com/foaf/0.1/>
                   prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
                   prefix bio: <http://vocab.org/bio/0.1/>
-                 select ?iri
-                        ?type
-                        ?personalProfileDocument
-                        ?title
-                         ?name
-                         ?nick
-                         ?firstName
-                         ?givenname
-                         ?family_name
-                         ?mbox
-                         ?gender
-                         ?birthday
-                         ?lat
-                         ?lng
-                         ?icqChatID
-                         ?msnChatID
-                         ?aimChatID
-                         ?yahooChatID
-                        ?skypeChatID
-                         ?workplaceHomepage
-                         ?homepage
-                         ?phone
-                         ?organizationTitle
-                         ?keywords
-                         ?depiction
-                        ?resume
-                        ?interest_array
-                         ?interest_label
-                        ?topic_interest_array
-                        ?topic_interest_label
-                        ?onlineAccount_array
-                        ?onlineAccount_url
-                        ?sameAs_array
-                        ?knows_array
-                        ?knows_nick
+                 select *
 		               from <%s>
                    where {
                           ?iri rdf:type ?type .
@@ -5017,7 +8771,7 @@ create procedure ODS.ODS_API.extractFOAFDataArray (
                             optional { ?iri foaf:msnChatID ?msnChatID } .
                             optional { ?iri foaf:aimChatID ?aimChatID } .
                             optional { ?iri foaf:yahooChatID ?yahooChatID } .
-  	                        optional { ?iri foaf:holdsAccount ?holdsAccount .
+	                        optional { {?iri foaf:holdsAccount ?holdsAccount} UNION {?iri foaf:account ?holdsAccount}.
   	                                   ?holdsAccount foaf:accountServiceHomepage ?accountServiceHomepage ;
   	                                                 foaf:accountName ?skypeChatID.
                                        filter (str(?accountServiceHomepage) like ''skype%%'').
@@ -5030,11 +8784,19 @@ create procedure ODS.ODS_API.extractFOAFDataArray (
                              optional { ?organization a foaf:Organization }.
                              optional { ?organization foaf:homepage ?workplaceHomepage }.
                              optional { ?organization dc:title ?organizationTitle }.
+                          optional { ?iri vcard:ADR ?t_address .
+                                     optional { ?t_address vcard:Country ?country } .
+                             	       optional { ?t_address vcard:Locality ?locality } .
+                              			 optional { ?t_address vcard:Region ?region } .
+                              			 optional { ?t_address vcard:Pobox ?pobox } .
+                              			 optional { ?t_address vcard:Street ?street } .
+                              			 optional { ?t_address vcard:Extadd ?extadd } .
+                          	       } .
                             optional { ?iri foaf:interest ?interest_array .
                                        ?interest_array rdfs:label ?interest_label. } .
                             optional { ?iri foaf:topic_interest ?topic_interest_array .
                                        ?topic_interest_array rdfs:label ?topic_interest_label. } .
-                            optional { ?iri foaf:holdsAccount ?oa .
+	                        optional { {?iri foaf:holdsAccount ?oa} UNION {?iri foaf:account ?oa}.
                                        ?oa a foaf:OnlineAccount;
                                            foaf:accountServiceHomepage ?onlineAccount_url;
                                            foaf:accountName ?onlineAccount_array. } .
@@ -5046,13 +8808,12 @@ create procedure ODS.ODS_API.extractFOAFDataArray (
                                      } .
                           filter (?iri = iri(?::0)).
                         }', graph);
-  V := vector ();
   st := '00000';
   commit work;
   exec (S, st, msg, vector (iri), vector ('use_cache', 1), meta, rows);
   if (st = '00000')
   {
-  meta := ODS.ODS_API.simplifyMeta(meta);
+    meta := ODS.ODS_API.simplifyMeta (meta);
   foreach (any row in rows) do
   {
     N := 0;
@@ -5068,10 +8829,22 @@ create procedure ODS.ODS_API.extractFOAFDataArray (
     }
   }
   }
- return V;
   }
 ;
 
+--!
+-- \brief Fetch the contents of a FOAF user profile.
+--
+-- \param foafIRI The URL of the FOAF profile to lookup.
+-- \param spongerMode \em unused
+-- \param sslFOAFCheck If set to anything but \p 0 no action will be taken unless the connection is secure.
+-- \param outputMode \em unused
+-- \param sslLoginCheck \em unused
+--
+-- \return The details of the FOAF profile serialized as a JSON stream. This stream can be used in user.register().
+--
+-- \b FIXME: support CN and fix outputMode.
+--/
 create procedure ODS.ODS_API."user.getFOAFData" (
   in foafIRI varchar,
   in spongerMode integer := 0,
@@ -5089,81 +8862,160 @@ create procedure ODS.ODS_API."user.getFOAFData" (
 }
 ;
 
-create procedure ODS.ODS_API.SSL_WEBID_GET (in cert any := null)
+create procedure ODS.ODS_API.SSL_WEBID_GET (
+  in cert any := null)
 {
-  return DB.DBA.FOAF_SSL_WEBID_GET (cert);
+  declare rc, webid, webidType, graph any;
+
+  graph := null;
+  rc := ODS.ODS_API.SSL_WEBID_GET_2 (cert, webid, webidType, graph);
+  if (rc)
+    return webid;
+
+  return null;
 }
 ;
 
+create procedure ODS.ODS_API.SSL_WEBID_GET_2 (
+  in cert any,
+  inout webid varchar,
+  inout webidType integer,
+  inout graph varchar)
+{
+  declare rc any;
+
+  if (isnull (cert))
+    cert := client_attr ('client_certificate');
+
+  rc := DB.DBA.WEBID_AUTH_GEN_2 (cert, 0, null, 1, 0, webid, graph, 0, webidType);
+  return rc;
+}
+;
+
+--!
+-- \brief Fetch the FOAF profile for a WebID certificate.
+--
+-- The client needs to provide the WebID X.509 certificate as an additional context attribute.
+--
+-- \param sslFOAFCheck \em unused
+-- \param outputMode \em unused
+-- \param sslLoginCheck \em unused
+--
+-- \return The details of the FOAF profile serialized as a JSON stream.
+--/
 create procedure ODS.ODS_API."user.getFOAFSSLData" (
   in sslFOAFCheck integer := 0,
   in outputMode integer := 1,
   in sslLoginCheck integer := 0) __soap_http 'application/json'
 {
-  declare foafIRI, alts any;
+  declare rc, webid, webidType, graph, alts any;
   declare V any;
-  declare certLogin, certLoginEnable any;
+  declare cert, loginName, certLogin, certRegister, certLoginAutomatic, certLoginEnable, certRegisterEnable, certFilter, certFilterCheck any;
 
-  certLogin := 0;
-  certLoginEnable := 0;
-  foafIRI := ODS.ODS_API.SSL_WEBID_GET ();
-  if (not isnull (foafIRI))
-  {
-    try_auth:
-    if (foafIRI like 'ldap://%')
-      {
-	declare i, arr, rc any;
-	V := vector ();
-	rc := DB.DBA.FOAF_SSL_LDAP_CHECK_INT (foafIRI, arr);
-	arr := arr[1];
-	for (i := 0; i < length (arr); i := i + 2)
-	   {
-	     if (arr[i] = 'mail')
-	       appendProperty (V, 'mbox', cast (arr[i+1][0] as varchar));
-	     else if (arr[i] = 'cn')
-	       appendProperty (V, 'name', cast (arr[i+1][0] as varchar));
-	   }
-	if (rc)
+  set_user_id ('dba');
+  graph := 'http://' || uuid ();
+  cert := client_attr ('client_certificate');
+  rc := ODS.ODS_API.SSL_WEBID_GET_2 (cert, webid, webidType, graph);
+  if (not rc)
+    return obj2json (null);
+
+ 	V := vector ();
+  appendProperty (V, 'iri', webid);
+
+ 	loginName := '';
+ 	certFilter := 1;
+  certLoginEnable := coalesce ((select top 1 WS_LOGIN_SSL from DB.DBA.WA_SETTINGS), 1);
+ 	if (certLoginEnable)
+    appendProperty (V, 'certLoginEnable', cast (certLoginEnable as varchar));
+
+  certRegisterEnable := coalesce ((select top 1 WS_REGISTER_SSL from DB.DBA.WA_SETTINGS), 1);
+ 	if (certRegisterEnable)
+    appendProperty (V, 'certRegisterEnable', cast (certRegisterEnable as varchar));
+
+	for (select TOP 1 WS_REGISTER_SSL_FILTER, WS_REGISTER_SSL_RULE, WS_REGISTER_SSL_REALM from DB.DBA.WA_SETTINGS) do
+	{
+	  if (WS_REGISTER_SSL_FILTER)
 	  {
-	    appendProperty (V, 'iri', foafIRI);
-	  }
-    	for (select UC_LOGIN from DB.DBA.WA_USER_CERTS where UC_FINGERPRINT = get_certificate_info (6)) do
-  	  {
-  	    certLogin := 1;
-  	    appendProperty (V, 'certLogin', cast (certLogin as varchar));
-	  }
-      }
-    else
-    V := ODS.ODS_API.getFOAFDataArray (foafIRI, sslFOAFCheck, sslLoginCheck);
-    return case when outputMode then params2json (V) else V end;
-  }
-  else if (is_https_ctx ()) -- try webfinger
+  	  certFilterCheck := sprintf ('DB.DBA.WEBID_ACL_CHECK__%s_%s', WS_REGISTER_SSL_RULE, WS_REGISTER_SSL_REALM);
+      if (__proc_exists (certFilterCheck) is not null)
+        certFilter := call (certFilterCheck) (cert, graph);
+    }
+	}
+
+	if (certFilter and (certLoginEnable or certRegisterEnable))
+	{
+    appendProperty (V, 'certFilterCheck', cast (certFilter as varchar));
+  for (select UC_U_ID, UC_LOGIN from DB.DBA.WA_USER_CERTS where UC_FINGERPRINT = get_certificate_info (6, cert, 0, '')) do
+	{
+    loginName := (select U_NAME from DB.DBA.SYS_USERS where U_ID = UC_U_ID);
+    if (not isnull (loginName))
+    {
+	  certLogin := 1;
+    	  certLoginAutomatic := coalesce (UC_LOGIN, 0);
+	  appendProperty (V, 'certLogin', cast (certLogin as varchar));
+       	if (certLoginAutomatic)
+          appendProperty (V, 'certLoginAutomatic', cast (certLoginAutomatic as varchar));
+    	}
+  	}
+	}
+
+	if (certFilter and certRegisterEnable and not certLogin)
+	{
+    certRegister := 1;
+    appendProperty (V, 'certRegister', cast (certRegister as varchar));
+	}
+
+  if (webidType = 0)
   {
-    declare agent any;
-    agent := DB.DBA.FOAF_SSL_WEBFINGER ();
-    if (agent is not null)
+    -- FOAF
+    ODS.ODS_API.extractPersonData (V, webid, graph);
+  }
+  else if (webidType = 1)
+  {
+    -- WEBFINGER
+    appendProperty (V, 'mbox', get_certificate_info (10, cert, 0, '', 'emailAddress'));
+	  appendProperty (V, 'name', get_certificate_info (10, cert, 0, '', 'CN'));
+  }
+  else if (webidType = 2)
+  {
+    -- DI
+    ;
+  }
+  else if (webidType = 3)
+  {
+    -- SEARCH
+    ;
+  }
+  else if (webidType = 4)
+  {
+    -- SPONGE
+    ODS.ODS_API.extractPersonData (V, webid, graph);
+  }
+  else if (webidType = 5)
+  {
+    -- LDAP
+    declare i, items any;
+
+  	if (DB.DBA.FOAF_SSL_LDAP_CHECK_INT (webid, items))
+  	{
+    	items := items[1];
+    	for (i := 0; i < length (items); i := i + 2)
       {
-	V := vector ();
-	for (select UC_LOGIN from DB.DBA.WA_USER_CERTS where UC_FINGERPRINT = get_certificate_info (6)) do
-	  {
-	    certLogin := 1;
-	    certLoginEnable := coalesce (UC_LOGIN, 0);
-	    appendProperty (V, 'iri', agent);
-	    appendProperty (V, 'mbox', get_certificate_info (10, null, 0, '', 'emailAddress'));
-	    appendProperty (V, 'name', get_certificate_info (10, null, 0, '', 'CN'));
-  	    appendProperty (V, 'certLogin', cast (certLogin as varchar));
-  	    --appendProperty (V, 'certLoginEnable', certLoginEnable);
-	    return case when outputMode then params2json (V) else V end;
-	  }
+        if (items[i] = 'mail')
+          appendProperty (V, 'mbox', cast (items[i+1][0] as varchar));
+        else if (items[i] = 'cn')
+          appendProperty (V, 'name', cast (items[i+1][0] as varchar));
       }
-    else
-      {
-	foafIRI := ODS..FINGERPOINT_WEBID_GET ();
-	if (foafIRI is not null)
-	  goto try_auth;
       }
   }
-  return case when outputMode then obj2json (null) else null end;
+  if (loginName = '')
+    loginName := DB.DBA.WA_MAKE_NICK2 (get_keyword ('nick', V), get_keyword ('name', V), get_keyword ('firstName', V), get_keyword ('family_name', V));
+
+  if (loginName <> '')
+    appendProperty (V, 'loginName', loginName);
+
+
+  return params2json (V);
 }
 ;
 
@@ -5178,9 +9030,8 @@ create procedure ODS.ODS_API."user.getFacebookData" (
 
   retValue := null;
   if (isnull (fb) and DB.DBA._get_ods_fb_settings (fbOptions))
-  {
     fb := new DB.DBA.Facebook(fbOptions[0], fbOptions[1], http_param (), http_request_header ());
-  }
+
   if (not isnull (fb))
   {
     fbPaths := vector ();
@@ -5189,9 +9040,7 @@ create procedure ODS.ODS_API."user.getFacebookData" (
                       'last_name', 'family_name',
                       'sex', 'gender'
                      );
-    retValue := jsonObject ();
-    retValue := vector_concat (retValue, vector ('api_key', fb.api_key));
-    retValue := vector_concat (retValue, vector ('secret', fb.secret));
+    retValue := vector_concat (jsonObject (), vector ('api_key', fb.api_key, 'secret', fb.secret));
     if (length (fb._user))
     {
       resValue := fb.api_client.users_getInfo(fb._user, fields);
@@ -5205,13 +9054,11 @@ create procedure ODS.ODS_API."user.getFacebookData" (
           tmpPath := '/users_getInfo_response/user/' || get_keyword (V[N], fbPaths, V[N]);
           tmpValue := serialize_to_UTF8_xml (xpath_eval (sprintf ('string(%s)', tmpPath), resValue));
           if (length (tmpValue))
-          {
             retValue := vector_concat (retValue, vector (get_keyword (V[N], fbMaps, V[N]), tmpValue));
           }
         }
       }
     }
-  }
   return case when outputMode then obj2json (retValue) else retValue end;
 }
 ;
@@ -5299,7 +9146,7 @@ create procedure ODS.ODS_API."user.getKnowsData" (
       knows := data[N][0];
       nick := '';
       name := '';
-      }
+    }
     if ((nick = '') and not DB.DBA.is_empty_or_null (data[N][1]))
       nick := data[N][1];
 
@@ -5308,8 +9155,145 @@ create procedure ODS.ODS_API."user.getKnowsData" (
   }
 
 _exit:;
-  exec (sprintf ('SPARQL clear graph <%s>', foafGraph), st, msg, vector (), 0);
+  SPARQL clear graph ?:foafGraph;
   return obj2json (V);
+}
+;
+
+--!
+-- \brief Create a new client certificate and accociate it with the authenticated user.
+--
+-- FIXME: create new X.509 certificate, example with <keygen>, etc.
+--
+-- \return The new X.509 certificate with mimetype "application/x-x509-user-cert" or an
+-- error code as defined in \ref ods_response_format_result_code.
+--/
+create procedure ODS.ODS_API."user.certificates.create" (
+  in commonName varchar := null,
+  in country varchar := null,
+  in organization varchar := null,
+  in email varchar := null,
+  in expirationDays int := null,
+  in expirationHours float := 0.0,
+  in publicKey varchar := null) __soap_http 'text/xml'
+{
+  declare kname, certPem, certDer varchar;
+  declare webid, uname varchar;
+  declare uid int;
+  declare exts any;
+  declare instanceName varchar;
+  declare cn, c, o, mail varchar;
+
+
+  -- This procedure is supposed to be called in an http context
+  -- Thus, the error handler does produce http status codes
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    if (__SQL_STATE = '42000') -- permission denied
+      http_status_set(403);
+    else
+      http_status_set(400); -- misc error
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+
+  if (not ods_check_auth (uname))
+    signal ('42000', 'Authentication failed');
+
+  if(publicKey is null or publicKey = '')
+    signal('22023', 'Cannot create certificate without public key.');
+
+  -- We do not allows an empty common name
+  if (commonName = '')
+    commonName := null;
+
+
+  -- An identifier for the ODS instance which we add to the default common name
+  if(commonName is null)
+  {
+    instanceName := (select top 1 WS_WEB_TITLE from DB.DBA.WA_SETTINGS);
+    if(length(instanceName) = 0)
+      instanceName := sys_stat ('st_host_name');
+  }
+  else
+  {
+    instanceName := null;
+  }
+
+
+  -- Fetch default values for all parameters
+  select
+    coalesce(commonName, U_FULL_NAME, U_NAME),
+    coalesce(email, U_E_MAIL),
+    coalesce(organization, WAUI_BORG),
+    coalesce(country, WAUI_BCOUNTRY),
+    U_ID
+  into
+    commonName,
+    email,
+    organization,
+    country,
+    uid
+  from
+    DB.DBA.SYS_USERS,
+    DB.DBA.WA_USER_INFO
+  where
+    U_ID = WAUI_U_ID and
+    U_NAME = uname;
+
+  expirationDays := coalesce(expirationDays, (select top 1 WS_CERT_EXPIRATION_PERIOD from DB.DBA.WA_SETTINGS), 365);
+  expirationHours:= coalesce(expirationHours, 0.0);
+
+  if (not instanceName is null)
+    commonName := commonName || ' (' || instanceName || ')';
+
+  webid := sioc.DBA.person_iri (sioc..user_obj_iri (uname));
+
+  -- Clean up public key
+  publicKey := replace (publicKey, '\r\n', '');
+  publicKey := replace (publicKey, '\n', '');
+  publicKey := replace (publicKey, '\r', '');
+
+
+  -- Need dba privileges to create certificates
+  set_user_id ('dba');
+
+  -- Build the certificate
+  kname := xenc_SPKI_read (null, publicKey);
+
+  webid := 'URI:' || replace (webid, ',', '%2C');
+  exts := vector ('subjectAltName', webid,
+                  'nsComment', 'Virtuoso Generated Certificate',
+                  'keyUsage', 'critical, digitalSignature, keyEncipherment',
+                  'extendedKeyUsage', 'critical, clientAuth, emailProtection');
+
+  xenc_x509_generate ('id_rsa', kname, sequence_next ('ca_id_rsa'), expirationDays,
+                      vector (
+                        'CN', commonName,
+                        'C',  country,
+                        'O',  organization,
+                        'emailAddress', email
+                      ),
+                      exts,
+                      expirationHours);
+
+  -- prepare the certificate for further processing
+  certDer := decode_base64 (xenc_X509_certificate_serialize (kname));
+  certPem := xenc_pem_export (kname);
+
+  -- Accociate the new cert with the user
+  insert into DB.DBA.WA_USER_CERTS (UC_U_ID, UC_CERT, UC_FINGERPRINT, UC_LOGIN, UC_TS)
+    values (uid, certPem, get_certificate_info (6, certPem, 0, ''), 1, now ());
+
+  -- Cleanup
+  xenc_key_remove (kname);
+
+  -- Return the newly created certificate
+  http_rewrite();
+  http_header ('Content-Type: application/x-x509-user-cert\r\n');
+  http(certDer);
+  return '';
 }
 ;
 
@@ -5618,6 +9602,39 @@ create procedure ODS.ODS_API."instance.get" (
 }
 ;
 
+--!
+-- \brief Get the id of an ODS app instance.
+--
+-- Each ODS app has a unique numeric id which is required for almost
+-- all operations. This method allows to determine that id from the
+-- app instance's name (App instance names are oftern something like
+-- "foobar's Calendar").
+--
+-- \param instanceName The name of the app instance.
+--
+-- \return An error code as defined in \ref ods_response_format_result_code which in this case
+-- matches the instance id.
+--
+-- \sa \ref ods_instance_id
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i "http://demo.openlinksw.com/ods/api/instance.get.id?instanceName=Demo%20account%27s%20Briefcase&sid=c198c56e675abd9967b2b264d1119ae2&realm=wa"
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/05.12.3041 (Solaris) x86_64-sun-solaris2.10-64  VDB
+-- Connection: Keep-Alive
+-- Date: Tue, 01 Dec 2009 12:39:19 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="ISO-8859-1"
+-- Content-Length: 57
+--
+-- <result>
+--   <code>6</code>
+--   <message>Success</message>
+-- </result>
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."instance.get.id" (
   in instanceName varchar) __soap_http 'text/xml'
 {
@@ -5696,6 +9713,94 @@ ret:
 }
 ;
 
+create procedure ODS.ODS_API.predicates ()
+{
+  return vector (
+    'webIDVerified'  , vector ('Certificate - Verified',           'boolean',     'boolean',  vector ()),
+    'certExpiration' , vector ('Certificate - Expiration Status',  'boolean',     'boolean',  vector ()),
+    'certSerial'     , vector ('Certificate - Serial Number',      'varchar',     'varchar',  vector ()),
+    'webID'            , vector ('Certificate - WebID',              'varchar',     'varchar',  vector ()),
+    'certMail'       , vector ('Certificate - Mail',               'varchar',     'varchar',  vector ()),
+    'certSubject'    , vector ('Certificate - Subject',            'varchar',     'varchar',  vector ()),
+    'certIssuer'     , vector ('Certificate - Issuer',             'varchar',     'varchar',  vector ()),
+    'certStartDate'  , vector ('Certificate - Issue Date',         'date',        'date',     vector ('size', '10', 'class', '_validate_ _date_', 'onclick', 'datePopup(\'-FIELD-\')', 'button', '<img id="-FIELD-_select" border="0" src="/oMail/i/pick_calendar.gif" onclick="javascript: datePopup(\'-FIELD-\');" />')),
+    'certEndDate'    , vector ('Certificate - Expiry Date',        'date',        'date',     vector ('size', '10', 'class', '_validate_ _date_', 'onclick', 'datePopup(\'-FIELD-\')', 'button', '<img id="-FIELD-_select" border="0" src="/oMail/i/pick_calendar.gif" onclick="javascript: datePopup(\'-FIELD-\');" />')),
+    'certDigest'     , vector ('Certificate - Fingerprint Digest', 'digest',      'varchar',  vector ('class', '_validate_ _digest_')),
+    'certSparqlTriplet', vector ('Certificate - SPARQL Triplet',     'triplet',     'varchar',  vector ()),
+    'certSparqlASK'  , vector ('Certificate - SPARQL ASK',         'sparql',      'boolean',  vector ())
+  );
+}
+;
+
+create procedure ODS.ODS_API.compares ()
+{
+  return vector (
+    'eq'           , vector ('equal to'                  , vector ('integer', 'date', 'varchar', 'address', 'priority', 'folder', 'boolean', 'triplet', 'sparql', 'digest'), 1),
+    'neq'          , vector ('not equal to'              , vector ('integer', 'date', 'varchar', 'address', 'priority', 'folder', 'boolean', 'triplet', 'sparql', 'digest'), 1),
+    'lt'           , vector ('less than'                , vector ('integer', 'date', 'priority'), 1),
+    'lte'          , vector ('less thanor equal to'     , vector ('integer', 'date', 'priority'), 1),
+    'gt'           , vector ('greater than'             , vector ('integer', 'date', 'priority'), 1),
+    'gte'          , vector ('greater than or equal to' , vector ('integer', 'date', 'priority'), 1),
+    'contains'     , vector ('contains substring'        , vector ('varchar', 'address', 'triplet'), 1),
+    'notContains'  , vector ('does not contain substring', vector ('varchar', 'address', 'triplet'), 1),
+    'startsWith'   , vector ('starts with'               , vector ('varchar', 'address', 'triplet'), 1),
+    'notStartsWith', vector ('does not start with'       , vector ('varchar', 'address', 'triplet'), 1),
+    'endsWith'     , vector ('ends with'                 , vector ('varchar', 'address', 'triplet'), 1),
+    'notEndsWith'  , vector ('does not end with'         , vector ('varchar', 'address', 'triplet'), 1),
+    'isNull'       , vector ('is null'                  , vector ('address'), 0),
+    'isNotNull'    , vector ('is not null'              , vector ('address'), 0)
+  );
+}
+;
+
+--!
+-- \brief Mapping of ODS supported comparison commands to SQL expressions.
+--
+-- The returned vector contains a mapping from comparison name (\p eq, \p gt, etc)
+-- to an SQL command which does the actual comparison. The command uses two variables:
+-- - value
+-- - pattern
+--
+-- One example is the \greater \p than command which is encoded as follows:
+-- \verbatim
+--     'gt', '(^{value}^ > ^{pattern}^)'
+-- \endverbatim
+--
+-- This is used by sioc.sql for ACL rule checking only.
+--/
+create procedure ODS.ODS_API.commands ()
+{
+  return vector (
+    'eq'           , '(^{value}^ = ^{pattern}^)',
+    'neq'          , '(^{value}^ <> ^{pattern}^)',
+    'lt'           , '(^{value}^ < ^{pattern}^)',
+    'lte'          , '(^{value}^ <= ^{pattern}^)',
+    'gt'           , '(^{value}^ > ^{pattern}^)',
+    'gte'          , '(^{value}^ >= ^{pattern}^)',
+    'contains'     , '(bif:isnull (bif:strstr (bif:ucase (^{value}^), bif:ucase (^{pattern}^))) = 0)',
+    'notContains'  , '(bif:isnull (bif:strstr (bif:ucase (^{value}^), bif:ucase (^{pattern}^))) = 1)',
+    'startsWith'   , '(bif:starts_with (bif:ucase (^{value}^), bif:ucase (^{pattern}^)) = 1)',
+    'notStartsWith', '(bif:starts_with (bif:ucase (^{value}^), bif:ucase (^{pattern}^)) = 0)',
+    'endsWith'     , '(bif:ends_with (bif:ucase (^{value}^), bif:ucase (^{pattern}^)) = 1)',
+    'notEndsWith'  , '(bif:ends_with (bif:ucase (^{value}^), bif:ucase (^{pattern}^)) = 0)',
+    'isNull'       , '(DB.DBA.is_empty_or_null (^{value}^) = 1)',
+    'isNotNull'    , '(DB.DBA.is_empty_or_null (^{value}^) = 0)'
+    );
+}
+;
+
+create procedure ODS.ODS_API."triplets" ()
+{
+  return vector ('foaf:knows');
+}
+;
+
+create procedure ODS.ODS_API."filtersData" () __soap_http 'application/json'
+{
+  return obj2json (vector (ODS.ODS_API."predicates" (), ODS.ODS_API."compares" (), ODS.ODS_API."triplets" ()));
+}
+;
+
 -- global actions
 
 create procedure ODS.ODS_API."site.search" (in pattern varchar, in options any) __soap_http 'text/xml'
@@ -5720,13 +9825,116 @@ create procedure ODS.ODS_API.error_handler () __soap_http 'text/xml'
 }
 ;
 
+--!
+-- \brief Register a new client application with an ODS instance.
+--
+-- Certain operations in ODS require special security mesures. This includes authentication
+-- through third-party services for which the callback URL needs to be trusted. To this end
+-- administrator can register client URLs via this function.
+--
+-- This administration function requires \p dba priviledges.
+--
+-- \param name A descriptive name for the client.
+-- \param url The URL of the client which will access the ODS instance. The base URL is sufficient.
+--
+-- \return An error code as defined in \ref ods_response_format, \p 0 on success. On
+-- error the HTTP status code will be set to \p 403 or \p 400, depending on the type
+-- of error.
+--/
+create procedure ODS.ODS_API."admin.clients.new" (
+  in name varchar,
+  in url varchar) __SOAP_HTTP 'text/xml'
+{
+  declare uname varchar;
+
+  -- This procedure is supposed to be called in an http context
+  -- Thus, the error handler does produce http status codes
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    if (__SQL_STATE = '42000') -- permission denied
+      http_status_set(403);
+    else
+      http_status_set(400); -- misc error
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  if (not ods_check_auth (uname))
+  {
+    signal('42000', 'Admin priviledges are required to add client URLs to an ODS instance.');
+  }
+
+  -- become the authenticated user for further operations
+  set_qualifier(uname);
+
+  insert into DB.DBA.WA_CLIENT_REG(CLIENT_NAME, CLIENT_URL) VALUES (name, url);
+
+  return ods_serialize_int_res(0);
+}
+;
+
+--!
+-- \brief Add a 3rd-party service client key and secret for OAuth authentication.
+--
+-- ODS (and Virtuoso) supports many 3rd-party services via OAuth. In order to use these
+-- features the ODS instance needs to be registered with the service and the client key
+-- and secret needs to be added to the ODS instance through this function.
+--
+-- See \ref ods_authentication_url_services for details on how to create the client key
+-- and secret for the different supported services.
+--
+-- \return An error code as defined in \ref ods_response_format, \p 0 on success. On
+-- error the HTTP status code will be set to \p 403 or \p 400, depending on the type
+-- of error.
+--/
+create procedure ODS.ODS_API."admin.apikeys.new" (
+  in name varchar,
+  in clientkey varchar,
+  in clientsecret varchar) __SOAP_HTTP 'text/xml'
+{
+  declare uname varchar;
+
+  -- This procedure is supposed to be called in an http context
+  -- Thus, the error handler does produce http status codes
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    if (__SQL_STATE = '42000') -- permission denied
+      http_status_set(403);
+    else
+      http_status_set(400); -- misc error
+    return ods_serialize_sql_error (__SQL_STATE, __SQL_MESSAGE);
+  };
+
+  if (not ods_check_auth (uname))
+    signal('42000', 'Admin priviledges are required to add client URLs to an ODS instance.');
+
+  if (length(name) = 0)
+    signal('22023', 'Cannot add a client key with an empty name');
+  if (length(clientKey) = 0)
+    signal('22023', 'Cannot add a client key with an empty key');
+
+  -- become the authenticated user for further operations
+  set_qualifier(uname);
+
+  insert into OAUTH.DBA.APP_REG(a_owner, a_name, a_key, a_secret) VALUES (0, name, clientkey, clientsecret);
+
+  return ods_serialize_int_res(0);
+}
+;
+
+
 DB.DBA.USER_CREATE ('ODS_API', uuid(), vector ('DISABLED', 1, 'LOGIN_QUALIFIER', 'ODS'));
+DB.DBA.EXEC_STMT ('grant SPARQL_UPDATE to ODS_API', 0);
 DB.DBA.VHOST_REMOVE (lpath=>'/ods/api');
 DB.DBA.VHOST_DEFINE (lpath=>'/ods/api', ppath=>'/SOAP/Http', soap_user=>'ODS_API', opts=>vector ('500_page', 'error_handler'));
 
 grant execute on ODS.ODS_API.error_handler to ODS_API;
 
+grant execute on ODS.ODS_API."iri2proxy" to ODS_API;
+
 grant execute on ODS.ODS_API."qrcode" to ODS_API;
+grant execute on ODS.ODS_API."getDefaultHttps" to ODS_API;
 
 grant execute on ODS.ODS_API."ontology.classes" to ODS_API;
 grant execute on ODS.ODS_API."ontology.classProperties" to ODS_API;
@@ -5738,14 +9946,28 @@ grant execute on ODS.ODS_API."lookup.list" to ODS_API;
 grant execute on ODS.ODS_API."server.getInfo" to ODS_API;
 grant execute on ODS.ODS_API."address.geoData" to ODS_API;
 
+grant execute on ODS.ODS_API."user.oauth.twitter.authenticationUrl" to ODS_API;
+grant execute on ODS.ODS_API."user.oauth.twitter.registrationData" to ODS_API;
 grant execute on ODS.ODS_API."twitterServer" to ODS_API;
 grant execute on ODS.ODS_API."twitterVerify" to ODS_API;
 
+grant execute on ODS.ODS_API."user.oauth.linkedin.authenticationUrl" to ODS_API;
+grant execute on ODS.ODS_API."user.oauth.linkedin.registrationData" to ODS_API;
 grant execute on ODS.ODS_API."linkedinServer" to ODS_API;
 grant execute on ODS.ODS_API."linkedinVerify" to ODS_API;
 
+grant execute on ODS.ODS_API."user.openid.authenticationUrl" to ODS_API;
+grant execute on ODS.ODS_API."user.openid.registrationData" to ODS_API;
+grant execute on ODS.ODS_API."user.openid.loginUrl" to ODS_API;
+
+grant execute on ODS.ODS_API."user.checkAvailability" to ODS_API;
 grant execute on ODS.ODS_API."user.register" to ODS_API;
 grant execute on ODS.ODS_API."user.authenticate" to ODS_API;
+grant execute on ODS.ODS_API."user.authenticate.authenticationUrl" to ODS_API;
+grant execute on ODS.ODS_API."user.authenticate.callback" to ODS_API;
+grant execute on ODS.ODS_API."user.authenticate.browserid" to ODS_API;
+grant execute on ODS.ODS_API."user.authenticate.webid" to ODS_API;
+grant execute on ODS.ODS_API."user.authenticate.confirm" to ODS_API;
 grant execute on ODS.ODS_API."user.login" to ODS_API;
 grant execute on ODS.ODS_API."user.validate" to ODS_API;
 grant execute on ODS.ODS_API."user.logout" to ODS_API;
@@ -5763,6 +9985,10 @@ grant execute on ODS.ODS_API."user.info" to ODS_API;
 grant execute on ODS.ODS_API."user.info.webID" to ODS_API;
 grant execute on ODS.ODS_API."user.certificateUrl" to ODS_API;
 grant execute on ODS.ODS_API."user.search" to ODS_API;
+grant execute on ODS.ODS_API."user.invitation.new" to ODS_API;
+grant execute on ODS.ODS_API."user.invitation.approve" to ODS_API;
+grant execute on ODS.ODS_API."user.invitation.list" to ODS_API;
+grant execute on ODS.ODS_API."user.relation.delete" to ODS_API;
 grant execute on ODS.ODS_API."user.invite" to ODS_API;
 grant execute on ODS.ODS_API."user.invitation" to ODS_API;
 grant execute on ODS.ODS_API."user.invitations.get" to ODS_API;
@@ -5822,11 +10048,13 @@ grant execute on ODS.ODS_API."user.knows.get" to ODS_API;
 grant execute on ODS.ODS_API."user.knows.new" to ODS_API;
 grant execute on ODS.ODS_API."user.knows.edit" to ODS_API;
 grant execute on ODS.ODS_API."user.knows.delete" to ODS_API;
+grant execute on ODS.ODS_API."user.instances.list" to ODS_API;
 grant execute on ODS.ODS_API."user.certificates.list" to ODS_API;
 grant execute on ODS.ODS_API."user.certificates.get" to ODS_API;
 grant execute on ODS.ODS_API."user.certificates.new" to ODS_API;
 grant execute on ODS.ODS_API."user.certificates.edit" to ODS_API;
 grant execute on ODS.ODS_API."user.certificates.delete" to ODS_API;
+grant execute on ODS.ODS_API."user.certificates.create" to ODS_API;
 grant execute on ODS.ODS_API."user.getKnowsData" to ODS_API;
 grant execute on ODS.ODS_API."user.getFOAFData" to ODS_API;
 grant execute on ODS.ODS_API."user.getFOAFSSLData" to ODS_API;
@@ -5851,6 +10079,10 @@ grant execute on ODS.ODS_API."instance.unfreeze" to ODS_API;
 
 grant execute on ODS.ODS_API."site.search" to ODS_API;
 
+grant execute on ODS.ODS_API."filtersData" to ODS_API;
+
+grant execute on ODS.ODS_API."admin.clients.new" to ODS_API;
+grant execute on ODS.ODS_API."admin.apikeys.new" to ODS_API;
 
 create procedure __user_password (in uname varchar)
 {

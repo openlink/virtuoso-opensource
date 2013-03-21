@@ -1,0 +1,78 @@
+<!--
+
+  oplbase.owl,v 1.1.2.3 2012/03/06 16:48:07 source Exp
+
+  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+  project.
+
+  Copyright (C) 1998-2013 OpenLink Software
+
+  This project is free software; you can redistribute it and/or modify it
+  under the terms of the GNU General Public License as published by the
+  Free Software Foundation; only version 2 of the License, dated June 1991.
+
+  This program is distributed in the hope that it will be useful, but
+  WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+  General Public License for more details.
+
+  You should have received a copy of the GNU General Public License along
+  with this program; if not, write to the Free Software Foundation, Inc.,
+  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+
+ Generated from oplbase.n3
+
+ An OpenLink base ontology for collecting together similar classes and properties 
+ from other OpenLink ontologies
+
+ See also virt_rdf_label.sql
+-->
+
+<rdf:RDF xmlns="http://www.openlinksw.com/schemas/oplbase#"
+    xmlns:dc="http://purl.org/dc/elements/1.1/"
+    xmlns:dcterms="http://purl.org/dc/terms/"
+    xmlns:log="http://www.w3.org/2000/10/swap/log#"
+    xmlns:oplbase="http://www.openlinksw.com/schemas/oplbase#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema#">
+
+    <owl:Ontology rdf:about="http://www.openlinksw.com/schemas/oplbase">
+        <dc:creator>OpenLink Software, http://www.openlinksw.com</dc:creator>
+        <dc:date rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2012-02-10</dc:date>
+        <dc:description>An OpenLink base schema for collecting together similar classes and properties from other OpenLink ontologies - see also ruleset virtrdf-label</dc:description>
+        <dc:title>OpenLink base schema</dc:title>
+    </owl:Ontology>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/oplbase#blog_url">
+        <rdfs:comment>A generic blog as a social profile URL. e.g. pointing to Blogger, Blogspot, Wordpress, etc.</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/oplbase"/>
+        <rdfs:label>Blog URL</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#anyURI"/>
+        <rdfs:subPropertyOf rdf:resource="http://www.openlinksw.com/schemas/oplbase#social_profile_url"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/oplbase#native_entity_type">
+        <rdfs:comment>An entity type classifier returned by an entity extraction service</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/oplbase"/>
+        <rdfs:label>native entity type</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/oplbase#relevance_score">
+        <rdfs:comment>A relevance score returned by an entity extraction service</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/oplbase"/>
+        <rdfs:label>relevance score</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/oplbase#social_profile_url">
+        <rdfs:comment>A generic property for holding a social profile URL. e.g. from Twitter, Facebook, LinkedIn etc.</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/oplbase"/>
+        <rdfs:label>social profile url</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#anyURI"/>
+    </owl:DatatypeProperty>
+</rdf:RDF>
+
+

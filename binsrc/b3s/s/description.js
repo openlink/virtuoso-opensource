@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2009 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -29,6 +29,7 @@ function init() {
 var long_literal_counter = 0;
 var long_literal_spans = {};
 var long_literal_texts = {};
+
 function init_long_literals() {
     var spans = document.getElementsByTagName('span');
     for (i = 0; i < spans.length; i++) {
@@ -55,10 +56,11 @@ function init_long_literals() {
 var long_ul_counter = 0;
 var long_uls = {};
 var long_uls_nodes = {};
-function init_long_list() 
+
+function init_long_list()
 {
     var uls = document.getElementsByTagName('ul');
-    for (i = 0; i < uls.length; i++) 
+    for (i = 0; i < uls.length; i++)
       {
 	if (uls[i].className != 'obj') continue;
 	if (uls[i].childNodes.length <= 10) continue;
@@ -106,7 +108,7 @@ function uri_parms_string (p_obj)
     return parms_s.substring(0,parms_s.length-1);
 }
 
-function inf_cb () 
+function inf_cb ()
 {
     var loc = window.location;
     var href = loc.protocol+'//'+loc.host+loc.pathname;
@@ -116,7 +118,7 @@ function inf_cb ()
     window.location = href+uri_parms_string(parms);
 }
 
-function sas_cb () 
+function sas_cb ()
 {
     var loc = window.location;
     var href = loc.protocol+'//'+loc.host+loc.pathname;

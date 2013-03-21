@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -66,8 +66,8 @@
     return 'Deny';
   </v:method>
   <v:method name="fmt_dest" arglist="in i any">
-    if (self.acl_name = 'HTTP')
-      return 'N/A';
+    --if (self.acl_name = 'HTTP')
+    --  return 'N/A';
     return i;
   </v:method>
   <v:method name="fmt_obj" arglist="in i any">
@@ -151,19 +151,22 @@
 			<v:url xhtml_style="page_tab" url="sec_auth_serv.vspx?acl=PROXY" value="PROXY" render-only="1"/>
 		      </td>
                       <?vsp
-		        if (vad_check_version ('rdf_mappers') is not null)
+		        if (vad_check_version ('pubsubhub') is not null)
 			  {
 		      ?>
-		      <td class="<?V self.astyle ('Sponger') ?>" align="center">
-			<v:url xhtml_style="page_tab" url="sec_auth_serv.vspx?acl=Sponger" value="Sponger" render-only="1"/>
+		      <td class="<?V self.astyle ('PSH') ?>" align="center">
+			<v:url xhtml_style="page_tab" url="sec_auth_serv.vspx?acl=PSH" value="PSH" render-only="1"/>
+		      </td>
+		      <td class="<?V self.astyle ('PSH-SSL') ?>" align="center">
+			<v:url xhtml_style="page_tab" url="sec_auth_serv.vspx?acl=PSH-SSL" value="PSH-SSL" render-only="1"/>
 		      </td>
                       <?vsp
 		          }
                         declare i, fnd integer;
                         i := 0; fnd := 0;
-			for select distinct HA_LIST from HTTP_ACL where HA_LIST not in ('HTTP','NEWS','PROXY', 'Sponger') do
+			for select distinct HA_LIST from HTTP_ACL where HA_LIST not in ('HTTP','NEWS','PROXY', 'Sponger','PSH','PSH-SSL') do
                         {
-			  if (self.acl_name not in ('HTTP','NEWS','PROXY') and HA_LIST = self.acl_name)
+			  if (self.acl_name not in ('HTTP','NEWS','PROXY','PSH','PSH-SSL') and HA_LIST = self.acl_name)
 			    fnd := 1;
 			  ?>
 			  <td class="<?V self.astyle (HA_LIST) ?>" align="center">
@@ -174,7 +177,7 @@
                           i := i + 1;
                         }
 
-			if (not fnd and self.acl_name not in ('HTTP','NEWS','PROXY', 'Sponger'))
+			if (not fnd and self.acl_name not in ('HTTP','NEWS','PROXY', 'Sponger','PSH','PSH-SSL'))
 			  {
 			  ?>
 			  <td class="<?V self.astyle (self.acl_name) ?>" align="center">
@@ -184,11 +187,11 @@
 			  <?vsp
 			  }
                       ?>
-		      <?vsp if (DB.DBA.VAD_CHECK_VERSION ('Framework') is not null) { ?>
-		      <td class="<?V self.astyle ('SPARQL-SSL') ?>" align="center">
-			<v:url xhtml_style="page_tab" url="sparql_acl.vspx" value="SPARQL-SSL" render-only="1"/>
-		      </td>
-		      <?vsp } ?>
+		      <!--?vsp if (DB.DBA.VAD_CHECK_VERSION ('Framework') is not null) { ?-->
+		      <!--td class="<?V self.astyle ('WebID ACLs') ?>" align="center">
+			<v:url xhtml_style="page_tab" url="sparql_acl.vspx" value="WebID ACLs" render-only="1"/>
+		      </td-->
+		      <!--?vsp } ?-->
                         <!--td class="page_tab_empty" align="center" width="100%">
                           <table cellpadding="0" cellspacing="0">
                             <tr>
@@ -459,7 +462,7 @@
 				</v:select-list>
 			      </td>
 			    </tr>
-			    <?vsp if (self.acl_name <> 'HTTP' and self.acl_name <> 'NEWS') { ?>
+			    <?vsp if (self.acl_name <> 'NEWS') { ?>
 			    <tr>
 			      <td>Destination</td><td><v:text name="dest1" value="--self.dest"/></td>
 			    </tr>
@@ -542,7 +545,7 @@
                                     rat := 0;
                                     lim := 0;
 
-				    if (self.acl_name <> 'HTTP')
+				    --if (self.acl_name <> 'HTTP')
 				      dest := self.dest1.ufl_value;
 
 				    if (self.acl_name not in ('HTTP', 'PROXY'))

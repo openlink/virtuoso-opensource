@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -589,7 +589,7 @@ dbe_column_add (dbe_table_t * tb, const char *name, oid_t id, dtp_t dtp)
       sethash ((void *) (ptrlong) id, tb->tb_schema->sc_id_to_col, (void *) col);
       col->col_name = n2;
       col->col_id = id;
-      col->col_sqt.sqt_col_dtp = col->col_sqt.sqt_dtp = dtp;
+      col->col_sqt.sqt_dtp = dtp;
       col->col_count = DBE_NO_STAT_DATA;
       col->col_n_distinct = DBE_NO_STAT_DATA;
     }
@@ -643,8 +643,8 @@ dbe_column_parse_options (dbe_column_t * col)
       char *i_inx = strchr (ck, 'I'),
 	 *u_inx = strstr (ck, " U ");
 
-      if (i_inx && DV_LONG_INT == dtp_canonical[col->col_sqt.sqt_dtp]
-	  && (!u_inx || i_inx < u_inx))
+      if (i_inx)
+	if (!u_inx || i_inx < u_inx)
 	  col->col_is_autoincrement = 1;
       if (u_inx)
 	{
@@ -987,61 +987,9 @@ key_fill_part_cls (dbe_key_t * key)
 }
 
 
-void
-key_col_alter (dbe_key_t * key, dk_set_t * prev)
-{
-  dk_set_t keys = NULL;
-  dk_set_t alters = NULL;
-  int nth = 0;
-  DO_SET (dbe_column_t *, col, &key->key_parts)
-    {
-      dk_set_push (&keys, (void*)col);
-      if (++nth == key->key_n_significant)
-	break;
-    }
-  END_DO_SET();
-  *prev = key->key_parts;
-  DO_SET (dbe_column_t *, col, &key->key_parts)
-    {
-      NEW_VARZ(dbe_column_t, alt);
-      dk_set_push (&alters, (void*)alt);
-      memcpy (alt, col, sizeof (dbe_column_t));
-      memset (&alt->col_sqt, 0, sizeof (sql_type_t));
-      alt->col_compression = CC_NONE;
-      if (DV_COMP_OFFSET == col->col_sqt.sqt_dtp)
-	alt->col_sqt.sqt_col_dtp = col->col_sqt.sqt_col_dtp;
-      else
-	alt->col_sqt.sqt_col_dtp = col->col_sqt.sqt_dtp;
-      alt->col_sqt.sqt_dtp = DV_STRING;
-      alt->col_sqt.sqt_non_null = 1;
-    }
-  END_DO_SET();
-  alters = dk_set_nreverse (alters);
-  keys = dk_set_nreverse (keys);
-  key->key_parts = keys;
-  dk_set_conc (keys, alters);
-}
-
-
-void
-key_col_restore (dbe_key_t * key, dk_set_t prev)
-{
-  int nth = 0;
-  DO_SET (dbe_column_t *, col, &key->key_parts)
-    {
-      if (++nth > key->key_n_significant)
-	dk_free ((caddr_t)col, sizeof (dbe_column_t));
-    }
-  END_DO_SET();
-  dk_set_free (key->key_parts);
-  key->key_parts = prev;
-}
-
-
 int
 dbe_key_layout_1 (dbe_key_t * key)
 {
-  dk_set_t prev_parts = NULL;
   int kf_fill = IE_FIRST_KEY, rf_fill = 0, kv_fill = 0, kv_fill_key = 0;
   int null_fill = 0, null_bytes = 0, key_null_area = 0, key_nullables = 0;
   dk_set_t keys = NULL;
@@ -1065,10 +1013,7 @@ dbe_key_layout_1 (dbe_key_t * key)
     key->key_not_null = 1;
   if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (key->key_options)
       && inx_opt_flag (key->key_options, "column"))
-    {
     key->key_is_col = 1;
-      key_col_alter (key, &prev_parts);
-    }
   DO_SET (dbe_column_t *, col, &key->key_parts)
     {
       if (inx >= key->key_n_significant)
@@ -1087,7 +1032,6 @@ dbe_key_layout_1 (dbe_key_t * key)
 	}
       END_DO_SET();
     }
-  key->key_n_parts = dk_set_length (key->key_parts);
   deps = key->key_parts;
   for (inx = 0; inx < key->key_n_significant; inx++)
     {
@@ -1176,8 +1120,6 @@ dbe_key_layout_1 (dbe_key_t * key)
   key_fill_part_cls (key);
   if (key->key_is_bitmap)
     dk_set_free (deps);
-  if (key->key_is_col)
-    key_col_restore (key, prev_parts);
   return 1;
 }
 
@@ -1227,7 +1169,7 @@ dbe_key_version_layout (dbe_key_t * key, row_ver_t rv, dk_set_t parts)
   END_DO_CL;
   DO_CL (cl, kv->key_row_var)
     {
-      dbe_col_loc_t * kcl = cl_list_find (key->key_row_var, cl->cl_col_id);
+      dbe_col_loc_t * kcl = key_find_cl (key, cl->cl_col_id);
       kcl->cl_pos[rv] = cl->cl_pos[0];
       kcl->cl_null_mask[rv] = cl->cl_null_mask[0];
       kcl->cl_null_flag[rv] = cl->cl_null_flag[0];
@@ -1337,15 +1279,13 @@ dbe_key_compression (dbe_key_t * key)
 {
   /* calculate combinations of offset compressible cols and make row versions for each */
   dk_set_t parts_copy;
-  int c_fill = 0, nth_col = 0, c_inx, nth_part = 0;
+  int c_fill = 0, nth_col = 0, c_inx;
   dbe_column_t c_cols[N_COMPRESS_OFFSETS];
   int c_nth_col [N_COMPRESS_OFFSETS];
   row_ver_t rv;
   memset (&c_cols, 0, sizeof (c_cols));
   DO_SET (dbe_column_t *, col, &key->key_parts)
     {
-      if (key->key_is_col && nth_part++ == key->key_n_significant)
-	break; /* for column store, dependents will never be offset comp.  Key parts can be since they have 2 cl's, one for the key and the other for the col string, the latter is not compressed. For dependents, there is only the col string which must not be compressed */
       if (dtp_is_offset_comp (col->col_sqt.sqt_dtp)
 	  && CC_NONE != col->col_compression && CC_PREFIX != col->col_compression)
 	{
@@ -1418,35 +1358,23 @@ dbe_key_compression (dbe_key_t * key)
 
 
 void
-key_set_simple_compression (dbe_key_t * c_key)
+key_set_simple_compression (dbe_key_t * key)
+{
+  if (!key->key_is_bitmap && dk_set_length (key->key_parts) == key->key_n_significant)
+    key->key_no_dependent = 1;
+  key->key_n_key_compressibles  = dk_set_length (key->key_key_compressibles);
+  key->key_n_row_compressibles  = dk_set_length (key->key_row_compressibles);
+  if (dk_set_length (key->key_key_compressibles) == dk_set_length (key->key_row_compressibles)
+      && !key->key_key_pref_compressibles && !key->key_row_pref_compressibles)
+    key->key_simple_compress = 1;
+  else
     {
       int inx;
-  int no_comp = 1, simple_comp = 1;
-  int max = KI_TEMP == c_key->key_id ? 2 : KEY_MAX_VERSIONS;
-  for (inx = 0; inx < max; inx++)
+      for (inx = 0; inx < KEY_MAX_VERSIONS; inx++)
 	{
-      dbe_key_t * ver = c_key->key_versions[inx];
-      if (!ver)
-	continue;
-      ver->key_n_key_compressibles  = dk_set_length (ver->key_key_compressibles);
-      ver->key_n_row_compressibles  = dk_set_length (ver->key_row_compressibles);
-      if (!ver->key_n_row_compressibles && !ver->key_n_key_compressibles)
-	;
-      else
-	no_comp = 0;
-      if (dk_set_length (ver->key_key_compressibles) == dk_set_length (ver->key_row_compressibles)
-	  && !ver->key_key_pref_compressibles && !ver->key_row_pref_compressibles)
-	;
-      else
-	simple_comp = 0;
-    }
-  for (inx = 0; inx < max; inx++)
-	{
-      dbe_key_t * ver = c_key->key_versions[inx];
+	  dbe_key_t * ver = key->key_versions[inx];
 	  if (ver)
-	{
-	  ver->key_no_compression = no_comp;
-	  ver->key_simple_compress = simple_comp;
+	    ver->key_simple_compress = 0;
 	}
     }
 }
@@ -2381,7 +2309,7 @@ isp_read_schema (lock_trx_t * lt)
 	if (col)
 	  {
 	    caddr_t col_default;
-	    col->col_sqt.sqt_col_dtp = col->col_sqt.sqt_dtp = dtp;
+	    col->col_sqt.sqt_dtp = dtp;
 	    col->col_scale = (char) itc_long_column (itc_cols, buf_cols,
 		CI_COLS_SCALE);
 	    col->col_precision = itc_long_column (itc_cols, buf_cols,
@@ -2667,7 +2595,7 @@ qi_read_table_schema_1 (query_instance_t * qi, char *read_tb, dbe_schema_t * sc)
 	}
       col = dbe_column_add (tb, col_name, col_id, dtp);
 
-      col->col_sqt.sqt_col_dtp = col->col_sqt.sqt_dtp = dtp;
+      col->col_sqt.sqt_dtp = dtp;
       col->col_precision = unbox_or_null (lc_nth_col (lc, 4));
       col->col_scale = (char) unbox_or_null (lc_nth_col (lc, 5));
       col->col_non_null = (1 == unbox_or_null (lc_nth_col (lc, 6)));
@@ -2935,11 +2863,15 @@ qi_read_table_schema_old_keys (query_instance_t * qi, char *read_tb, dk_set_t ol
 		      dk_free_box (kf->kf_name);
 		      kf->kf_name = box_dv_short_string (str);
 		      kf->kf_it->it_key = k;
-		      it_rename_col_ems (kf->kf_it, k->key_name);
 		      if (kf->kf_it->it_extent_map != kf->kf_it->it_storage->dbs_extent_map)
 			{
+			  extent_map_t * em = kf->kf_it->it_extent_map;
+			  IN_TXN;
+			  dbs_registry_set (em->em_dbs, em->em_name, NULL, 1);
+			  LEAVE_TXN;
 			  snprintf (str, sizeof (str), "__EM:%s", kf->kf_name);
-			  em_rename (kf->kf_it->it_extent_map, str);
+			  dk_free_box (em->em_name);
+			  em->em_name = box_dv_short_string (str);
 			}
 		    }
 		  END_DO_BOX;

@@ -3,7 +3,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2010 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -55,12 +55,9 @@ function _getChildElemsByClassName(elm, class_name, max_depth,
   return elm_arr;
 }
 
-function getChildElemsByClassName(elm, class_name, max_depth,
-		stop_at_first_match) {
+function getChildElemsByClassName(elm, class_name, max_depth, stop_at_first_match) {
   var elm_arr = new Array ();
-  
-	return _getChildElemsByClassName(elm, class_name, max_depth,
-			stop_at_first_match, elm_arr);
+	return _getChildElemsByClassName(elm, class_name, max_depth, stop_at_first_match, elm_arr);
 }
 
 function replaceTemplateClass(elm, class_name, content) {
@@ -211,7 +208,7 @@ function inverseSelected(parentDiv) {
 }
 
 OAT.Preferences.imagePath = "/ods/images/oat/";
-OAT.Preferences.stylePath = "/ods/";
+OAT.Preferences.stylePath = "/ods/oat/styles/";
 
 window.ODS = {};
 
@@ -1066,11 +1063,12 @@ ODS.Nav = function(navOptions) {
 	this.initLeftBar = function() {
 	rootDiv = self.leftbar;
 	OAT.Dom.clear (rootDiv);
-    var odsHomeA = OAT.Dom.create ('a', {})
-    odsHomeA.id = 'ODS_HOME_LNK';
-	odsHomeA.innerHTML = '<img class="ods_logo" src="images/odslogosml_new.png" alt="Site Home"/>';
-	  OAT.Event.attach(odsHomeA, "click", function() {self.loadVspx(self.frontPage());});
-	OAT.Dom.append ([rootDiv, odsHomeA]);
+		var a = OAT.Dom.create('a', {})
+		a.href = '';
+		a.id = 'ODS_HOME_LNK';
+		a.innerHTML = '<img class="ods_logo" src="images/odslogosml_new.png" alt="Site Home"/>';
+	  OAT.Event.attach(a, "click", function() {self.loadVspx(self.frontPage());});
+		OAT.Dom.append( [ rootDiv, a ]);
     };
 
 	this.initRightBar = function() {
@@ -1098,7 +1096,7 @@ ODS.Nav = function(navOptions) {
 			}, 'menu_link profile_edit shortcut');
 		profileMenuAProfileEdit.innerHTML = 'edit';
       OAT.Event.attach (profileMenuAProfileEdit, "click", function () {
-				      self.loadVspx (self.expandURL (self.ods + 'uiedit.vspx'));
+				self.loadCheckedVspx(self.expandURL(self.ods + 'uiedit.vspx'));
 				  });
 
 		if (self.session.userName)
@@ -1234,11 +1232,9 @@ ODS.Nav = function(navOptions) {
 
 	    var messagesMenu = new OAT.Menu ();
 	    messagesMenu.noCloseFilter = 'menu_separator';
-
 	    messagesMenu.createFromUL ("messages_menu");
 
-	    OAT.Style.include ('dock.css');
-
+			OAT.Style.include(location.protocol + '//' + location.host + '/ods/dock.css');
 	    OAT.Dom.show ($('messages_menu').parentNode);
 
 			OAT.Loader.load( [ "dock" ], function() {
@@ -1550,20 +1546,17 @@ ODS.Nav = function(navOptions) {
 										"click",
 						  function (e) {
 						      var t = eTarget (e);
-											self
-													.userMessageStatusSet(
+											self.userMessageStatusSet(
 															t.msgId,
 															-1,
 										 function () {
-																OAT.Dom
-																		.unlink(t.parentNode);
+																OAT.Dom.unlink(t.parentNode);
 																var msgCount = $('newMsgCountSpan').innerHTML
 																		.substring(
 																				1,
 																				$('newMsgCountSpan').innerHTML.length - 1);
 																$('newMsgCountSpan').innerHTML = '(' + (msgCount - 1) + ')';
-																self
-																		.wait('hide');
+																self.wait('hide');
 										 });
 						  });
 
@@ -1875,7 +1868,7 @@ ODS.Nav = function(navOptions) {
 		var aSettings = OAT.Dom.create("a", {cursor: 'pointer'});
 
 		OAT.Event.attach(aSettings, "click", function() {
-			      self.loadVspx (self.expandURL (self.ods + 'app_settings.vspx'));
+			self.loadCheckedVspx(self.expandURL(self.ods + 'app_settings.vspx'));
 			  });
 
     aSettings.innerHTML = 'Application Settings';
@@ -1883,7 +1876,7 @@ ODS.Nav = function(navOptions) {
 		var aSiteSettings = OAT.Dom.create("a", {cursor: 'pointer'});
 
 		OAT.Event.attach(aSiteSettings, "click", function() {
-			      self.loadVspx (self.expandURL (self.ods + 'site_settings.vspx'));
+			self.loadCheckedVspx(self.expandURL(self.ods + 'site_settings.vspx'));
 			  });
 
 	aSiteSettings.innerHTML = 'Site Settings';
@@ -1949,6 +1942,8 @@ ODS.Nav = function(navOptions) {
       try {
         self.regData = OAT.JSON.parse(data);
       } catch (e) { self.regData = {}; }
+      if (!regData)
+        regData = self.regData;
     }
     OAT.AJAX.GET ('/ods/api/server.getInfo?info=regData', false, x, {async: false});
 
@@ -1987,6 +1982,9 @@ ODS.Nav = function(navOptions) {
 				} catch (e) {
 					o = null;
 				}
+        if (!lfSslData)
+         lfSslData = o;
+
 				if (o && o.iri) {
           self.sslData = o;
 					if (o.certLogin && !self.userLogged) {
@@ -1999,7 +1997,7 @@ ODS.Nav = function(navOptions) {
 		}
 	    }
         }
-			  OAT.AJAX.GET('/ods/api/user.getFOAFSSLData?sslFOAFCheck=1&sslLoginCheck=1', false, x);
+		  OAT.AJAX.GET('/ods/api/user.getFOAFSSLData?sslFOAFCheck=1', false, x, {async: false});
 			}
       }
 
@@ -2479,7 +2477,7 @@ ODS.Nav = function(navOptions) {
 
 		OAT.Dom.append ([$('search_listing'),resultLi]);
 	    }
-	self.showSearch ()
+		self.showSearch();
 	self.wait ('hide');
     };
 
@@ -2624,8 +2622,8 @@ ODS.Nav = function(navOptions) {
 
       var session = self.session;
       session.sid = OAT.Xml.textValue(xml.getElementsByTagName('sid')[0]);
-			session.userName = OAT.Xml.textValue(xml.getElementsByTagName('userName')[0]);
-			session.userId = OAT.Xml.textValue(xml.getElementsByTagName('userId')[0]);
+			session.userName = OAT.Xml.textValue(xml.getElementsByTagName('uname')[0]);
+			session.userId = OAT.Xml.textValue(xml.getElementsByTagName('uid')[0]);
 			session.userIsDba = OAT.Xml.textValue(xml.getElementsByTagName('dba')[0]);
 		  OAT.MSG.send(session, "WA_SES_VALIDBIND", {});
     } else {
@@ -2746,7 +2744,7 @@ ODS.Nav = function(navOptions) {
 
 		var connHTML = templateHtml;
 
-			connHTML = connHTML.replace('{connImgSRC}', conn.photo.length > 0 ? conn.photo : 'images/missing_profile_picture.png'); // images/profile.png
+			connHTML = connHTML.replace('images/profile.png', conn.photo.length > 0 ? conn.photo : 'images/profile.png');
 	connHTML = connHTML.replace ('{connProfileFullName}', conn.fullName);
 	connHTML = connHTML.replace ('{sendMsg}', 'sendMsg_' + conn.uid);
 	connHTML = connHTML.replace ('{viewConnections}', 'viewConnections_' + conn.uid);
@@ -3022,6 +3020,7 @@ ODS.Nav = function(navOptions) {
       img.src = userProfilePhoto;
       img.alt = userDisplayName;
       img.rel = 'foaf:depiction';
+      OAT.Dom.clear('userProfilePhoto');
       $('userProfilePhoto').appendChild(img);
   	} else {
       $('userProfilePhoto').innerHTML = '<br /><b>Photo Not Available</b><br /><br />';
@@ -3700,8 +3699,7 @@ ODS.Nav = function(navOptions) {
 		}
 
 			if ($('sm_foaf') && $('sm_foaf').tagName == 'A') {
-				$('sm_foaf').href = self.odsLink()
-						+ userProfileDataspace.replace('#this', '/foaf.rdf');
+				$('sm_foaf').href = self.odsLink() + userProfileDataspace.replace('#this', '/foaf.rdf');
 
 		    if (self.serverOptions.useRDFB)
 					$('sm_foaf').onclick = function(e) {
@@ -3714,8 +3712,7 @@ ODS.Nav = function(navOptions) {
 		}
 
 			if ($('sm_sioc') && $('sm_sioc').tagName == 'A') {
-				$('sm_sioc').href = self.odsLink()
-						+ userProfileDataspace.replace('#this', '/sioc.rdf');
+				$('sm_sioc').href = self.odsLink() + userProfileDataspace.replace('#this', '/sioc.rdf');
 
 		    if (self.serverOptions.useRDFB)
 					$('sm_sioc').onclick = function(e) {
@@ -4009,6 +4006,18 @@ ODS.Nav = function(navOptions) {
 		return this.expandURL(this.ods + 'sfront.vspx');
 	};
 
+	this.loadCheckedVspx = function(url) {
+    var x = function (data) {
+      var xml = OAT.Xml.createXmlDoc(data);
+      if (hasError(xml, false)) {
+				self.session.end();
+      } else {
+	      self.loadVspx(url);
+	    }
+    }
+    OAT.AJAX.GET('/ods/api/user.validate?sid='+self.session.sid+'&realm='+self.session.realm, false, x);
+	};
+
 	this.loadRDFB = function(url, useFrame) {
 		if (typeof (url) == 'undefined')
 			return;
@@ -4148,7 +4157,7 @@ ODS.Nav = function(navOptions) {
 	if (applicationType == 'FeedManager')
 	    applicationType = 'Feed Manager';
 
-	if (applicationType == 'InstantMessenger')
+		else if (applicationType == 'InstantMessenger')
 	    applicationType = 'Instant Messenger';
 
 		var data = 'sid=' + self.session.sid + '&application=' + encodeURIComponent(applicationType);
@@ -4158,7 +4167,8 @@ ODS.Nav = function(navOptions) {
 		    if (typeof (callbackFunction) == "function")
 			callbackFunction (xmlDoc);
 			} else {
-		    self.wait();
+				self.session.end();
+				// self.wait();
 		}
     }
 		OAT.AJAX.POST(self.session.endpoint + "checkApplication", data, callback, ajaxOptions);
@@ -4738,11 +4748,20 @@ ODS.Nav = function(navOptions) {
 	return odsLink;
     };
 
-    self.serverSettings ()
+	self.serverSettings();
     var uriParams = OAT.Dom.uriParams();
     var cookieSid = this.readCookie ('sid');
 
-	if (!self.session.sid && typeof (uriParams['openid.signed']) != 'undefined' && uriParams['openid.signed'] != '')
+	if (typeof (uriParams['form']) != 'undefined' && uriParams['form'] == 'login')
+	{
+    self.loadVspx(self.frontPage());
+	  self.logIn();
+	}
+	else if (typeof (uriParams['form']) != 'undefined' && uriParams['form'] == 'register')
+	{
+		self.loadVspx(self.expandURL(self.ods + 'register.vspx'));
+	}
+	else if (!self.session.sid && typeof (uriParams['openid.signed']) != 'undefined' && uriParams['openid.signed'] != '')
 	{
 	  self.logIn();
 		lfTab.go(1);

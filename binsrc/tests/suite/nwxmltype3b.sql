@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -21,14 +21,14 @@
 --  
 --  
 select count(*) from XML_TEXT_FRAGS where cast(XTF_FRAG1 as varchar) <> cast(XTF_FRAG2 as varchar);
-echo both $if $equ $last[1] 0 "PASSED" "*** FAILED";
-echo both ": " $last[1] " explicitly cropped XMLType instances were recovered from log with errors\n";
+ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " explicitly cropped XMLType instances were recovered from log with errors\n";
 select count(*) from XML_TEXT_FRAGS where cast(XTF_FRAG1 as varchar) <> cast(XTF_FRAG3 as varchar);
-echo both $if $equ $last[1] 0 "PASSED" "*** FAILED";
-echo both ": " $last[1] " implicitly cropped XMLType instances were recovered from log with errors\n";
+ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " implicitly cropped XMLType instances were recovered from log with errors\n";
 
 select LXML_NAME, FRAG from LONG_XML_TEXTS where xpath_contains (LXML_DOC, '//*', FRAG);
 select count (FRAG) from LONG_XML_TEXTS where xpath_contains (LXML_DOC, '//*', FRAG);
 -- There was an bug here: must be 19 frags, not 11 or 15.
-echo both $if $equ $last[1] 19 "PASSED" "*** FAILED";
-echo both ": " $last[1] " fragments in XMLType column after log replay\n";
+ECHO BOTH $IF $EQU $LAST[1] 19 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " fragments in XMLType column after log replay\n";

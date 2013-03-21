@@ -5,7 +5,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -21,14 +21,13 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
-  declare N, M, id, _domain_id, _account_id integer;
+  declare N, M, _domain_id, _account_id integer;
   declare sid, realm, action, subAction, node, nodePath varchar;
   declare nodes, parts, sessionData, returnData any;
 
   sid := get_keyword ('sid', params, '');
   realm := get_keyword ('realm', params, '');
 
-  id := cast (get_keyword ('id', params, '0') as integer);
   action := get_keyword ('a', params, '');
   subAction := get_keyword ('sa', params, '');
 
@@ -38,6 +37,9 @@
 
   if (action = 'visited')
   {
+    declare id integer;
+
+    id := cast (get_keyword ('id', params, '0') as integer);
     BMK.WA.bookmark_visited_set (_domain_id, id, now ());
   }
   else if (action = 'load')
@@ -150,7 +152,7 @@
     }
     http_rewrite ();
     http_header ('Content-Type: text/plain\r\n');
-    http (BMK.WA.obj2json(returnData, 3));
+    http (ODS..obj2json (returnData, 5));
   }
   else if (action = 'tags')
   {
@@ -204,7 +206,7 @@
           tmp := split_and_decode (trim (params[N+1]), 0, '\0\0,');
           for (M := 0; M < length (tmp); M := M + 1)
           {
-            if (ODRIVE.WA.odrive_user_id (trim (tmp[M])) <> -1)
+            if (not isnull (BMK.WA.account_id (trim (tmp[M]))))
               grants := grants || ',' || tmp[M];
           }
         }
@@ -221,7 +223,10 @@
       tmp := BMK.WA.tags2vector (tags);
       tmp := BMK.WA.vector_unique (tmp);
       tags := BMK.WA.vector2tags (tmp);
-      acl := serialize (DB.DBA.wa_acl_params (params));
+      -- validate ACL rules
+      DB.DBA.wa_aci_validate (DB.DBA.wa_aci_params (params));
+
+      acl := serialize (DB.DBA.wa_aci_params (params));
       folder_id := BMK.WA.folder_create (_domain_id, folder_name, folder_id);
       id := BMK.WA.bookmark_update (id, _domain_id, uri, name, description, tags, folder_id, null, acl);
       BMK.WA.shareNode (_account_id, BMK.WA.make_node ('b', id), grants, 1);
@@ -413,7 +418,7 @@
 	_formExit:;
     http_rewrite ();
     http_header ('Content-Type: text/plain\r\n');
-    http (BMK.WA.obj2json(returnData));
+    http (ODS..obj2json(returnData, 5));
   }
   else if (action = 'about')
   {

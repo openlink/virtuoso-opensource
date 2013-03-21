@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -388,9 +388,6 @@ sqlo_try_oby_order (sqlo_t * so, df_elt_t * tb_dfe)
 	  sqlo_tb_key_cost (tb_dfe, ot->ot_table->tb_primary_key, col_preds, &is_unq);
 	  if (is_unq)
 	    tb_dfe->_.table.is_unique = 1;
-	  if (!is_unq && ot->ot_table->tb_primary_key->key_is_col && ORDER_DESC == ot->ot_order_dir)
-	    best = NULL; /* can't read col inx backwards */
-	  else
 	  best = ot->ot_table->tb_primary_key;
 	}
     }
@@ -403,7 +400,7 @@ sqlo_try_oby_order (sqlo_t * so, df_elt_t * tb_dfe)
 	continue;
       if (opt_inx_name)
 	{
-	  if (!CASEMODESTRCMP (opt_inx_name, key->key_name))
+	  if (key_matches_index_opt (key, opt_inx_name))
 	    {
 	      if (!sqlo_is_key_in_order (so, tb_dfe, key))
 		return 0;
@@ -412,9 +409,6 @@ sqlo_try_oby_order (sqlo_t * so, df_elt_t * tb_dfe)
 		  sqlo_tb_key_cost (tb_dfe, key, col_preds, &is_unq);
 		  if (is_unq)
 		    tb_dfe->_.table.is_unique = 1;
-		  if (!is_unq && key->key_is_col  && ORDER_DESC == tb_dfe->_.table.ot->ot_order_dir)
-		    best = NULL;
-		  else
 		  best = key;
 		  break;
 		}
@@ -425,8 +419,7 @@ sqlo_try_oby_order (sqlo_t * so, df_elt_t * tb_dfe)
 	  if (1 /*key != prev_key */)
 	    {
 	      float cost  = sqlo_tb_key_cost (tb_dfe, key, tb_dfe->_.table.all_preds, &is_unq);
-	      if ((is_unq || cost < best_cost || -1 == best_cost)
-		  && !(key->key_is_col && ORDER_DESC == tb_dfe->_.table.ot->ot_order_dir))
+	      if (is_unq || cost < best_cost || -1 == best_cost)
 		{
 		  best_cost = cost;
 		  best = key;
@@ -706,10 +699,7 @@ sqlo_fun_ref_epilogue (sqlo_t * so, op_table_t * from_ot)
       return;
     }
   if (group_dfe)
-    {
     group_dfe->dfe_locus = from_ot->ot_work_dfe->dfe_locus; /* if dt passed through then group too */
-      group_dfe->_.setp.is_being_placed = 1;
-    }
   if (group)
     {
       all_cols_p = sqlo_oby_exp_cols (so, from_ot->ot_dt, group);
@@ -782,9 +772,6 @@ sqlo_fun_ref_epilogue (sqlo_t * so, op_table_t * from_ot)
       t_set_push (&group_dfe->_.setp.fun_refs, fref);
     }
   END_DO_SET();
-  if (group_dfe)
-    group_dfe->_.setp.is_being_placed = 0;
-
   /* all the predicates not done so far are from the HAVING clause, even if not mentioned in the texp since they could hav been added to the ot from an enclosing context */
   so->so_gen_pt = from_ot->ot_group_dfe;
   DO_SET (df_elt_t *, pred, &from_ot->ot_preds)
@@ -854,6 +841,7 @@ sqlo_post_oby_ref (sqlo_t * so, df_elt_t * dt_dfe, df_elt_t * sel_dfe, int inx)
   /* if exps laid out after oby, add the cols refd therein to oby deps */
   dk_set_t deps = NULL;
   df_elt_t * oby_dfe = dt_dfe->_.sub.last;
+  int __i;
   while (oby_dfe)
     {
       if (DFE_ORDER == oby_dfe->dfe_type)
@@ -862,6 +850,13 @@ sqlo_post_oby_ref (sqlo_t * so, df_elt_t * dt_dfe, df_elt_t * sel_dfe, int inx)
     }
   if (!oby_dfe)
     return;
+  DO_BOX (ST *, spec, __i, oby_dfe->_.setp.specs)
+    {
+      df_elt_t * spec_dfe = sqlo_df (so, spec->_.o_spec.col);
+      if (spec_dfe == sel_dfe)
+	return;
+    }
+  END_DO_BOX;
   sqlo_exp_cols_from_dt (so, sel_dfe->dfe_tree, dt_dfe, &deps);
   if (!oby_dfe->_.setp.oby_dep_cols)
     {

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -272,6 +272,12 @@ pldbg_print_value (dk_session_t * ses, box_t box, query_instance_t *qi)
 	    SES_PRINT (ses, "}\n");
 	  }
 	break;
+	case DV_BIN:
+	  {
+	    snprintf (tmp, sizeof (tmp), " LEN %ld", box_length (box));
+	    SES_PRINT (ses, tmp);
+	  }
+	break;
       default:
 	    {
 	      caddr_t err_ret = NULL;
@@ -338,8 +344,6 @@ pldbg_ssl_print (char * buf, size_t buf_len, state_slot_t * ssl, caddr_t * qst)
     case SSL_VARIABLE:
     case SSL_REF_PARAMETER:
     case SSL_REF_PARAMETER_OUT:
-    case SSL_VEC:
-    case SSL_REF:
 	  {
 	    caddr_t value = qst_get (qst, ssl);
 	    dtp_t dtp = DV_TYPE_OF (value);
@@ -535,12 +539,15 @@ static query_t *
 pldbg_get_qr (char * name)
 {
   int inx;
-  query_t * qr;
+  query_t * qr = NULL;
+  const char * pname;
 
   if (!name)
     return NULL;
 
-  qr = sch_proc_def (wi_inst.wi_schema, name);
+  pname = sch_full_proc_name (wi_inst.wi_schema, name, "DB", "DBA");
+  if (pname)
+    qr = sch_proc_def (wi_inst.wi_schema, pname);
   if (!qr) /* triggers */
     {
       dbe_table_t *tb;
@@ -825,7 +832,7 @@ pldbg_cmd_execute (dk_session_t * ses, caddr_t * args)
 			}
 		  case PDI_THRE: /* stopped threads */
 			{
-			  char conn_id[20];
+			  char conn_id[30];
 			  client_connection_t * cli;
 			  IN_TXN;
 			  DO_SET (lock_trx_t *, lt, &all_trxs)
@@ -843,7 +850,8 @@ pldbg_cmd_execute (dk_session_t * ses, caddr_t * args)
 					cli->cli_pldbg->pd_id = box_copy (c_ses->dks_peer_name);
 				      else
 					{
-					  snprintf (conn_id, sizeof (conn_id), "INTERNAL:%lX", (unsigned long) (uptrlong) cli);
+					  char * ct = cli && cli->cli_ws ? "HTTP" : "INTERNAL";
+					  snprintf (conn_id, sizeof (conn_id), "%s:%lX", ct, (unsigned long) (uptrlong) cli);
 					  cli->cli_pldbg->pd_id = box_dv_short_string (conn_id);
 					}
 				    }

@@ -10,7 +10,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -1302,15 +1302,15 @@ create procedure bf2 ()
   commit work;
   return blob_to_string (_b1);
 }
-echo both "Error messages about reading free pages and bad blobs are expected next.  Ignore until a message says that this is no longer expected.\n";
+ECHO BOTH "Error messages about reading free pages and bad blobs are expected next.  Ignore until a message says that this is no longer expected.\n";
 
 --bf();
 --bf2();
 
---echo both $if $equ $sqlstate "22023" "PASSED" "***FAILED";
---echo both ": deleted blob read in blob_to_string\n";
+--ECHO BOTH $IF $EQU $SQLSTATE "22023" "PASSED" "***FAILED";
+--ECHO BOTH ": deleted blob read in blob_to_string\n";
 
-echo both "Error messages about bad blobs or reading free pages are not expected after this point.\n";
+ECHO BOTH "Error messages about bad blobs or reading free pages are not expected after this point.\n";
 
 
 -- bad nvarchar processing in ins replacing 

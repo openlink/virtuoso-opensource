@@ -2,7 +2,7 @@
 //  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 //  project.
 //  
-//  Copyright (C) 1998-2006 OpenLink Software
+//  Copyright (C) 1998-2013 OpenLink Software
 //  
 //  This project is free software; you can redistribute it and/or modify it
 //  under the terms of the GNU General Public License as published by the
@@ -867,7 +867,11 @@ namespace OpenLink.Data.Virtuoso
                                 case "System.Double":
                                 case "System.Decimal":
                                 case "System.DateTime":
+                                case "OpenLink.Data.Virtuoso.VirtuosoDateTime":
+                                case "System.DateTimeOffset":
+                                case "OpenLink.Data.Virtuoso.VirtuosoDateTimeOffset":
                                 case "System.TimeSpan":
+                                case "OpenLink.Data.Virtuoso.VirtuosoTimeSpan":
                                     return column.data;
                                 default:
                     			return Convert.ChangeType(column.data, type);
@@ -882,8 +886,11 @@ namespace OpenLink.Data.Virtuoso
                             switch (column.data.GetType().FullName)
                             {
                                 case "System.DateTime":
+                                case "OpenLink.Data.Virtuoso.VirtuosoDateTime":
                                 case "System.DateTimeOffset":
+                                case "OpenLink.Data.Virtuoso.VirtuosoDateTimeOffset":
                                 case "System.TimeSpan":
+                                case "OpenLink.Data.Virtuoso.VirtuosoTimeSpan":
                                 case "System.Byte[]":
                                     return column.data;
                                 default:
@@ -909,10 +916,18 @@ namespace OpenLink.Data.Virtuoso
 		private void Dispose (bool disposing)
 #endif
 		{
+			try
+			{
 			if (disposing)
 				Close ();
 			connection = null;
         }
+			catch (Exception e)
+			{
+				Debug.WriteLineIf(CLI.FnTrace.Enabled,
+				"VirtousoDataReader.Dispose caught exception: " + e.Message);
+			}
+        	}
         #region ADO.NET 2.0
 #if ADONET2
         public override bool  HasRows

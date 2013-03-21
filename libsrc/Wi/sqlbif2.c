@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -716,6 +716,9 @@ bif_client_attr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       else
 	return NULL;
 
+      if (!cert)
+	return NULL;
+
       in = BIO_new (BIO_s_mem());
 
       if (!in)
@@ -765,6 +768,16 @@ bif_client_attr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NULL;
 }
 
+static caddr_t
+bif_query_instance_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t * qi = (query_instance_t *) qst;
+  long depth = bif_long_range_arg (qst, args, 0, "query_instance_id", 0, 0xffff);
+  while ((depth-- > 0) && (NULL != qi)) qi = qi->qi_caller;
+  if (NULL == qi)
+    return NEW_DB_NULL;
+  return box_num ((ptrlong)qi);
+}
 
 static caddr_t
 bif_sql_warnings_resignal (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -831,7 +844,7 @@ bif_current_proc_name (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       frames --;
       qi = qi->qi_caller;
-    } 
+    }
   if (IS_POINTER (qi) && qi->qi_query && qi->qi_query->qr_proc_name)
     return box_string (qi->qi_query->qr_proc_name);
   return NEW_DB_NULL;
@@ -1126,12 +1139,12 @@ rfc1808_expand_uri (/*query_instance_t *qi,*/ ccaddr_t base_uri, ccaddr_t rel_ur
     }
   if ((base_cs != buffer_cs_upcase) && !((NULL != base_cs) && (NULL != buffer_cs_upcase) && !strcmp (base_cs, buffer_cs_upcase)))
     {
-      base_uri = charset_recode_from_named_to_named ((caddr_t)base_uri, base_cs, buffer_cs_upcase, &base_uri_is_temp, err_ret);
+      base_uri = charset_recode_from_named_to_named ((query_instance_t *)NULL, (caddr_t)base_uri, base_cs, buffer_cs_upcase, &base_uri_is_temp, err_ret);
       if (err_ret[0]) goto res_complete; /* see below */
     }
   if ((rel_cs != buffer_cs_upcase) && !((NULL != rel_cs) && (NULL != buffer_cs_upcase) && !strcmp (rel_cs, buffer_cs_upcase)))
     {
-      rel_uri = charset_recode_from_named_to_named ((caddr_t)rel_uri, rel_cs, buffer_cs_upcase, &rel_uri_is_temp, err_ret);
+      rel_uri = charset_recode_from_named_to_named ((query_instance_t *)NULL, (caddr_t)rel_uri, rel_cs, buffer_cs_upcase, &rel_uri_is_temp, err_ret);
       if (err_ret[0]) goto res_complete; /* see below */
     }
   if ((NULL == base_uri) || ('\0' == base_uri[0]))
@@ -1337,7 +1350,7 @@ buffer_ready:
     ((NULL == buffer_cs_upcase) || (NULL == output_cs_upcase) || strcmp(buffer_cs_upcase, output_cs_upcase)) )
     {
       caddr_t boxed_buffer = box_dv_short_nchars (buffer, buf_tail - buffer);
-      res = charset_recode_from_named_to_named (boxed_buffer, buffer_cs_upcase, output_cs_upcase, &res_is_new, err_ret);
+      res = charset_recode_from_named_to_named ((query_instance_t *)NULL, boxed_buffer, buffer_cs_upcase, output_cs_upcase, &res_is_new, err_ret);
       if (res_is_new)
         dk_free_box (boxed_buffer);
       else
@@ -1361,6 +1374,8 @@ buffer_ready:
     }
 
 res_complete:
+  if (!res_is_new)
+    res = box_copy (res);
   dk_free_box (output_cs_upcase);
   if (base_uri_is_temp)
     dk_free_box ((caddr_t) base_uri);
@@ -1547,32 +1562,6 @@ static char restricted_xml_chars[0x80] = {
   return NULL;
 }
 
-static const char *cl_sequence_set_text =
-" create procedure cl_sequence_set (in _name varchar, in _count int, in _mode int)\n"
-"{\n"
-"if (sys_stat (\'cl_master_host\') = sys_stat (\'cl_this_host\'))\n"
-"{\n"
-"__sequence_set (\'__MAX__\' || _name, 0, 0);\n"
-"__sequence_set (\'__NEXT__\' || _name, _count, _mode);\n"
-"__sequence_set (_name, _count, _mode);\n"
-"}\n"
-"else\n"
-"{\n"
-"__sequence_set (\'__MAX__\' || _name, 0, 0);\n"
-"__sequence_set (_name, 0, _mode);\n"
-"}\n"
-"}\n"
-;
-
-static const char *sequence_set_text =
-" create procedure sequence_set (in _name varchar, in _count int, in _mode int)\n"
-"{\n"
-"if (sys_stat (\'cl_run_local_only\') or _mode = 2)\n"
-"return __sequence_set (_name, _count, _mode);\n"
-"else\n"
-"cl_exec (\'cl_sequence_set (?, ?, ?)\', vector (_name, _count, _mode), txn => 1);\n"
-"}\n"
-;
 
 
 /*
@@ -1611,6 +1600,111 @@ bif_format_number (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return res;
 }
 
+static caddr_t
+soundex (caddr_t name)
+{
+#define raw_toupper(C) ((C) & (255-32))
+  char tmp[5] = {'0','0','0','0',0} , current_code = '\0', previous_code = '\0';
+  int inx = 0, i = 0;
+  if (box_length (name) > 1)
+    {
+      while (name[inx] && !isalpha (name[inx])) inx ++;
+      if (name[inx]) tmp[i++] = raw_toupper (name[inx++]);
+      for (; inx < box_length (name) - 1; inx ++)
+	{
+	  char c;
+	  c = raw_toupper (name[inx]);
+	  if (!isalpha (c)) continue;
+	  current_code = '\0';
+	  if (strchr ("BFPV", c))
+	    current_code = '1';
+	  else if (strchr ("CSKGJQXZ", c))
+	    current_code = '2';
+	  else if (strchr ("DT", c))
+	    current_code = '3';
+	  else if (strchr ("L", c))
+	    current_code = '4';
+	  else if (strchr ("MN", c))
+	    current_code = '5';
+	  else if (strchr ("R", c))
+	    current_code = '6';
+	  if (current_code != previous_code && current_code != '\0')
+	    tmp [i++] = current_code;
+	  if (i >= 4) break;
+	  /*if (current_code != '\0')*/
+	  previous_code = current_code;
+	}
+      for (;i < 4; i ++)
+	tmp[i] = '0';
+    }
+  return box_dv_short_string (tmp);
+}
+
+static caddr_t
+bif_soundex (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t name = bif_string_arg (qst, args, 0, "soundex");
+  return soundex (name);
+}
+
+static caddr_t
+bif_difference (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t name1 = bif_string_arg (qst, args, 0, "difference");
+  caddr_t name2 = bif_string_arg (qst, args, 1, "difference");
+  caddr_t soundex1, soundex2;
+  int result = 0;
+  char tmp[3] = {0,0,0};
+  if (box_length (name1) <= 1 || box_length (name2) <= 1)
+    return box_num (0);
+  soundex1 = soundex (name1);
+  soundex2 = soundex (name2);
+  if (!strcmp (soundex1, soundex2))
+    {
+      result = 4;
+      goto ret;
+    }
+  if (soundex1[0] == soundex2[0])
+    result = 1;
+  if (strstr (soundex2, soundex1 + 1)) /* 2,3,4 */
+    {
+      result += 3;
+      goto ret;
+    }
+  if (strstr (soundex2, soundex1 + 2)) /* 3,4 */
+    {
+      result += 2;
+      goto ret;
+    }
+  memcpy (&tmp[0], soundex1 + 1, 2);
+  if (strstr (soundex2, tmp)) /* 2,3 */
+    {
+      result += 2;
+      goto ret;
+    }
+  if (strchr (soundex2, soundex1[1]))
+    result ++;
+  if (strchr (soundex2, soundex1[2]))
+    result ++;
+  if (strchr (soundex2, soundex1[3]))
+    result ++;
+ret:
+  dk_free_box (soundex1);
+  dk_free_box (soundex2);
+  return box_num (result);
+}
+
+static caddr_t
+bif_this_server (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return NEW_DB_NULL;
+}
+static caddr_t
+bif_is_geometry (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return box_num (0);
+}
+
 void
 sqlbif2_init (void)
 {
@@ -1629,6 +1723,7 @@ sqlbif2_init (void)
   bif_define_typed ("user_has_role", bif_user_has_role, &bt_integer);
   bif_define_typed ("user_is_dba", bif_user_is_dba, &bt_integer);
   bif_define_typed ("client_attr", bif_client_attr, &bt_integer);
+  bif_define_typed ("query_instance_id", bif_query_instance_id, &bt_integer);
   bif_define ("sql_warning", bif_sql_warning);
   bif_define ("sql_warnings_resignal", bif_sql_warnings_resignal);
   bif_define_typed ("__sec_uid_to_user", bif_sec_uid_to_user, &bt_varchar);
@@ -1639,6 +1734,10 @@ sqlbif2_init (void)
   bif_define ("patch_restricted_xml_chars", bif_patch_restricted_xml_chars);
   bif_define_typed ("format_number", bif_format_number, &bt_varchar);
   bif_define ("__stop_cpt", bif_stop_cpt);
+  bif_define ("soundex", bif_soundex);
+  bif_define ("difference", bif_difference);
+  bif_define ("repl_this_server", bif_this_server);
+  bif_define ("isgeometry", bif_is_geometry);
   /*sqls_bif_init ();*/
   sqls_bif_init ();
   sqlo_inv_bif_int ();
@@ -1648,13 +1747,7 @@ void
 sqlbif_sequence_init (void)
 {
   /* sequence_set bifs */
-  ddl_std_proc_1 (sequence_set_text, 0x1, 1);
-  ddl_std_proc_1 (cl_sequence_set_text, 0x1, 1);
-  pl_bif_name_define ("cl_sequence_set");
-  pl_bif_name_define ("sequence_set");
-#if 0
   bif_define_typed ("sequence_set", bif_sequence_set, &bt_integer);
-#endif
 }
 
 /* This should stay the last part of the file */

@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2009 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -209,6 +209,9 @@ tf_free (triple_feed_t *tf)
     dk_free_tree (tf->tf_current_graph_uri);
   dk_free_tree (tf->tf_default_graph_iid);
   dk_free_tree (tf->tf_current_graph_iid);
+  dk_free_tree (tf->tf_boxed_input_name);
+  dk_free_tree (tf->tf_base_uri);
+  dk_free_tree (tf->tf_default_graph_uri);
   dk_free (tf, sizeof (triple_feed_t));
 }
 
@@ -413,7 +416,7 @@ tf_report (triple_feed_t *tf, char msg_type, const char *sqlstate, const char *s
   BOX_AUTO_TYPED (void **, params, params_buf, sizeof (caddr_t) * 11, DV_ARRAY_OF_POINTER);
   msg_no_box = box_num (tf->tf_message_count++);
   msg_type_box = box_dv_short_nchars (&msg_type, 1);
-  inp_name_box = box_dv_short_string (tf->tf_input_name);
+  inp_name_box = box_copy (tf->tf_boxed_input_name);
   line_no_box = ((NULL != tf->tf_line_no_ptr) ? box_num (tf->tf_line_no_ptr[0]) : NULL);
   triple_no_box = box_num (tf->tf_triple_count);
   sqlstate_box = box_dv_short_string (sqlstate);
@@ -510,7 +513,7 @@ tf_new_base (triple_feed_t *tf, caddr_t new_base)
 
 
 caddr_t
-bif_rdf_load_rdfxml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+bif_rdf_load_rdfxml_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int mode_bits, const char *bifname)
 {
   caddr_t text_arg;
   dtp_t dtp_of_text_arg;
@@ -524,18 +527,17 @@ bif_rdf_load_rdfxml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t graph_uri;
   ccaddr_t *cbk_names;
   caddr_t *app_env;
-  int mode_bits = 0;
   int n_args = BOX_ELEMENTS (args);
   /*wcharset_t * volatile charset = QST_CHARSET (qst) ? QST_CHARSET (qst) : default_charset;*/
-  text_arg = bif_arg (qst, args, 0, "rdf_load_rdfxml");
-  mode_bits = bif_long_arg (qst, args, 1, "rdf_load_rdfxml");
-  graph_uri = bif_string_or_wide_or_uname_arg (qst, args, 2, "rdf_load_rdfxml");
-  cbk_names = (ccaddr_t *)bif_strict_type_array_arg (DV_STRING, qst, args, 3, "rdf_load_rdfxml");
-  app_env = (caddr_t *) bif_arg (qst, args, 4, "rdf_load_rdfxml");
+  text_arg = bif_arg (qst, args, 0, bifname);
+  mode_bits |= bif_long_arg (qst, args, 1, bifname);
+  graph_uri = bif_string_or_wide_or_uname_arg (qst, args, 2, bifname);
+  cbk_names = (ccaddr_t *)bif_strict_type_array_arg (DV_STRING, qst, args, 3, bifname);
+  app_env = (caddr_t *) bif_arg (qst, args, 4, bifname);
   if ((COUNTOF__TRIPLE_FEED__REQUIRED > BOX_ELEMENTS (cbk_names)) || (COUNTOF__TRIPLE_FEED__ALL < BOX_ELEMENTS (cbk_names)))
     sqlr_new_error ("22023", "RDF01",
-      "The argument #4 of rdf_load_rdfxml() should be a vector of %d to %d names of stored procedures",
-      COUNTOF__TRIPLE_FEED__REQUIRED, COUNTOF__TRIPLE_FEED__ALL );
+      "The argument #4 of %.200s() should be a vector of %d to %d names of stored procedures",
+      bifname, COUNTOF__TRIPLE_FEED__REQUIRED, COUNTOF__TRIPLE_FEED__ALL );
   dtp_of_text_arg = DV_TYPE_OF (text_arg);
   /*ns_2dict.xn2_size = 0;*/
   do
@@ -556,12 +558,12 @@ bif_rdf_load_rdfxml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  int ses_sort = looks_like_serialized_xml (((query_instance_t *)(qst)), text_arg);
 	  if (XE_XPER_SERIALIZATION == ses_sort)
 	    sqlr_error ("42000",
-	      "Function rdf_load_rdfxml() does not support loading from string session with persistent XML data");
+	      "Function %.200s() does not support loading from string session with persistent XML data", bifname );
 	  if (XE_XPACK_SERIALIZATION == ses_sort)
 	    {
 #if 1
 	    sqlr_error ("42000",
-	      "Function rdf_load_rdfxml() does not support loading from string session with packed XML data");
+	      "Function %.200s() does not support loading from string session with packed XML data", bifname );
 #else
 	      caddr_t *tree_tmp = NULL; /* Solely to avoid dummy warning C4090: 'function' : different 'volatile' qualifiers */
 	      xte_deserialize_packed ((dk_session_t *)text_arg, &tree_tmp, dtd_ptr);
@@ -577,18 +579,18 @@ bif_rdf_load_rdfxml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	}
       if (dtp_of_text_arg == DV_BLOB_XPER_HANDLE)
 	sqlr_error ("42000",
-	  "Function rdf_load_rdfxml() does not support loading from persistent XML objects");
+	  "Function %.200s() does not support loading from persistent XML objects", bifname );
       if ((DV_BLOB_HANDLE == dtp_of_text_arg) || (DV_BLOB_WIDE_HANDLE == dtp_of_text_arg))
 	{
 	  int blob_sort = looks_like_serialized_xml (((query_instance_t *)(qst)), text_arg);
 	  if (XE_XPER_SERIALIZATION == blob_sort)
 	    sqlr_error ("42000",
-	      "Function rdf_load_rdfxml() does not support loading from BLOBs with persistent XML data");
+	      "Function %.200s() does not support loading from BLOBs with persistent XML data", bifname );
 	  if (XE_XPACK_SERIALIZATION == blob_sort)
 	    {
 #if 1
 	    sqlr_error ("42000",
-	      "Function rdf_load_rdfxml() does not support loading from BLOBs with packed XML data");
+	      "Function %.200s() does not support loading from BLOBs with packed XML data", bifname );
 #else
 	      caddr_t *tree_tmp = NULL; /* Solely to avoid dummy warning C4090: 'function' : different 'volatile' qualifiers */
 	      dk_session_t *ses = blob_to_string_output (((query_instance_t *)(qst))->qi_trx, text_arg);
@@ -598,7 +600,7 @@ bif_rdf_load_rdfxml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	        dtd_addref (dtd, 0);
 	      strses_free (ses);
 	      if ((NULL == tree) && (DEAD_HTML != (parser_mode & ~(FINE_XSLT | GE_XML | WEBIMPORT_HTML | FINE_XML_SRCPOS))))
-		sqlr_error ("42000", "The BLOB passed to a function rdf_load_rdfxml() contains corrupted packed XML serialization data");
+		sqlr_error ("42000", "The BLOB passed to a function %.200s() contains corrupted packed XML serialization data", bifname);
 	      goto tree_complete; /* see below */
 #endif
 	    }
@@ -606,8 +608,8 @@ bif_rdf_load_rdfxml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  break;
 	}
       sqlr_error ("42000",
-	"Function rdf_load_rdfxml() needs a string or string session or BLOB as argument 1, not an arg of type %s (%d)",
-	dv_type_title (dtp_of_text_arg), dtp_of_text_arg);
+	"Function %.200s() needs a string or string session or BLOB as argument 1, not an arg of type %s (%d), bifname",
+	bifname, dv_type_title (dtp_of_text_arg), dtp_of_text_arg);
     } while (0);
   /* Now we have \c text ready to process */
 
@@ -619,13 +621,13 @@ bif_rdf_load_rdfxml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
     default:
 /*    case 9:
-      dtd_config = bif_array_or_null_arg (qst, args, 8, "rdf_load_rdfxml");*/
+      dtd_config = bif_array_or_null_arg (qst, args, 8, bifname);*/
     case 8:
-      lh = lh_get_handler (bif_string_arg (qst, args, 7, "rdf_load_rdfxml"));
+      lh = lh_get_handler (bif_string_arg (qst, args, 7, bifname));
     case 7:
-      enc = bif_string_arg (qst, args, 6, "rdf_load_rdfxml");
+      enc = bif_string_arg (qst, args, 6, bifname);
     case 6:
-      base_uri = bif_string_or_uname_arg (qst, args, 5, "rdf_load_rdfxml");
+      base_uri = bif_string_or_uname_or_wide_or_null_arg (qst, args, 5, bifname);
     case 5:
     case 4:
     case 3:
@@ -642,6 +644,27 @@ bif_rdf_load_rdfxml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
+caddr_t
+bif_rdf_load_rdfxml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return bif_rdf_load_rdfxml_impl (qst, err_ret, args, 0, "rdf_load_rdfxml");
+}
+
+
+caddr_t
+bif_rdf_load_rdfa (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return bif_rdf_load_rdfxml_impl (qst, err_ret, args, RDFXML_IN_ATTRIBUTES, "rdf_load_rdfa");
+}
+
+
+caddr_t
+bif_rdf_load_microdata (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return bif_rdf_load_rdfxml_impl (qst, err_ret, args, RDFXML_IN_MDATA, "rdf_load_microdata");
+}
+
+
 ttlp_t *
 ttlp_alloc (void)
 {
@@ -655,10 +678,46 @@ ttlp_alloc (void)
 }
 
 void
+ttlp_enter_trig_group (ttlp_t *ttlp)
+{
+  ttlp->ttlp_default_ns_uri_saved = ttlp->ttlp_default_ns_uri;
+  ttlp->ttlp_base_uri_saved = ttlp->ttlp_base_uri;
+  ttlp->ttlp_in_trig_graph = 1;
+}
+
+void
+ttlp_leave_trig_group (ttlp_t *ttlp)
+{
+  if (ttlp->ttlp_default_ns_uri_saved != ttlp->ttlp_default_ns_uri)
+    {
+      dk_free_box (ttlp->ttlp_default_ns_uri);
+      ttlp->ttlp_default_ns_uri = ttlp->ttlp_default_ns_uri_saved;
+      ttlp->ttlp_default_ns_uri_saved = NULL;
+    }
+  if (ttlp->ttlp_base_uri_saved != ttlp->ttlp_base_uri)
+    {
+      dk_free_box (ttlp->ttlp_base_uri);
+      ttlp->ttlp_base_uri = ttlp->ttlp_base_uri_saved;
+      ttlp->ttlp_base_uri_saved = NULL;
+    }
+  dk_free_box ((caddr_t)(ttlp->ttlp_inner_namespaces_prefix2iri));
+  ttlp->ttlp_inner_namespaces_prefix2iri = NULL;
+  ttlp->ttlp_in_trig_graph = 0;
+}
+
+void
 ttlp_free (ttlp_t *ttlp)
 {
+  if (ttlp->ttlp_in_trig_graph)
+    {
+      dk_free_box ((caddr_t)(ttlp->ttlp_inner_namespaces_prefix2iri));
+      if (ttlp->ttlp_default_ns_uri_saved != ttlp->ttlp_default_ns_uri)
+        dk_free_box (ttlp->ttlp_default_ns_uri_saved);
+      if (ttlp->ttlp_base_uri_saved != ttlp->ttlp_base_uri)
+        dk_free_box (ttlp->ttlp_base_uri_saved);
+    }
   dk_free_box (ttlp->ttlp_default_ns_uri);
-  dk_free_box (ttlp->ttlp_namespaces_prefix2iri);
+  dk_free_box ((caddr_t)(ttlp->ttlp_namespaces_prefix2iri));
   while (NULL != ttlp->ttlp_saved_uris)
     dk_free_tree ((box_t) dk_set_pop (&(ttlp->ttlp_saved_uris)));
   while (NULL != ttlp->ttlp_unused_seq_bnodes)
@@ -670,8 +729,6 @@ ttlp_free (ttlp_t *ttlp)
   dk_free_tree (ttlp->ttlp_obj_type);
   dk_free_tree (ttlp->ttlp_obj_lang);
   dk_free_tree (ttlp->ttlp_formula_iid);
-  dk_free_tree (ttlp->ttlp_tf->tf_base_uri);
-  dk_free_tree (ttlp->ttlp_tf->tf_default_graph_uri);
   tf_free (ttlp->ttlp_tf);
   dk_free (ttlp, sizeof (ttlp_t));
 }
@@ -797,6 +854,7 @@ caddr_t ttlp_strliteral (ttlp_t *ttlp_arg, const char *strg, int mode, char deli
 	}
     }
   res = box_dv_short_nchars (tmp_buf, tgt_tail - tmp_buf);
+  box_flags (res) = BF_UTF8;
   dk_free_box (tmp_buf);
   return res;
 
@@ -866,25 +924,28 @@ this means that <#foo> can be written :foo and using @keywords one can reduce th
       goto ns_uri_found; /* see below */
     }
   lname++;
-  ns_dict = ttlp_arg[0].ttlp_namespaces_prefix2iri;
   ns_pref = box_dv_short_nchars (qname, lname - qname);
-  ns_uri_ptr = ((NULL == ns_dict) ? NULL : (caddr_t *) id_hash_get (ns_dict, (caddr_t)(&ns_pref)));
-  if (NULL != ns_uri_ptr)
-    ns_uri = ns_uri_ptr[0];
-  else
-    {
-      if (!strcmp (ns_pref, "rdf:"))
-        ns_uri = uname_rdf_ns_uri;
-      else if (!strcmp (ns_pref, "xsd:"))
-        ns_uri = uname_xmlschema_ns_uri_hash;
-      else if (!strcmp (ns_pref, "virtrdf:"))
-        ns_uri = uname_virtrdf_ns_uri;
-      else
+  do {
+      if (ttlp_arg[0].ttlp_in_trig_graph)
         {
-          dk_free_box (ns_pref);
-          ttlyyerror_impl (ttlp_arg, qname, "Undefined namespace prefix");
+          ns_dict = ttlp_arg[0].ttlp_inner_namespaces_prefix2iri;
+          ns_uri_ptr = ((NULL == ns_dict) ? NULL : (caddr_t *) id_hash_get (ns_dict, (caddr_t)(&ns_pref)));
+          if (NULL != ns_uri_ptr)
+            { ns_uri = ns_uri_ptr[0]; break; }
         }
-    }
+      ns_dict = ttlp_arg[0].ttlp_namespaces_prefix2iri;
+      ns_uri_ptr = ((NULL == ns_dict) ? NULL : (caddr_t *) id_hash_get (ns_dict, (caddr_t)(&ns_pref)));
+      if (NULL != ns_uri_ptr)
+        { ns_uri = ns_uri_ptr[0]; break; }
+      if (!strcmp (ns_pref, "rdf:"))
+        { ns_uri = uname_rdf_ns_uri; break; }
+      if (!strcmp (ns_pref, "xsd:"))
+        { ns_uri = uname_xmlschema_ns_uri_hash; break; }
+      if (!strcmp (ns_pref, "virtrdf:"))
+        { ns_uri = uname_virtrdf_ns_uri; break; }
+      dk_free_box (ns_pref);
+      ttlyyerror_impl (ttlp_arg, qname, "Undefined namespace prefix");
+    } while (0);
   dk_free_box (ns_pref);
   ns_uri_len = box_length (ns_uri) - 1;
 
@@ -913,6 +974,8 @@ ttlp_uri_resolve (ttlp_t *ttlp_arg, caddr_t qname)
 {
   /*query_instance_t *qi = ttlp_arg[0].ttlp_tf->tf_qi;*/
   caddr_t res, err = NULL;
+  if (('_' == qname[0]) && (':' == qname[1]))
+    return qname;
   res = rfc1808_expand_uri (/*qi,*/ ttlp_arg[0].ttlp_tf->tf_base_uri, qname, "UTF-8", 1 /* ??? */, "UTF-8", "UTF-8", &err);
   if (res != qname)
     dk_free_box (qname);
@@ -984,6 +1047,18 @@ ttlp_triple_l_and_inf (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t
     }
   tf_triple_l (ttlp_arg[0].ttlp_tf, s, p, o_sqlval, o_dt, o_lang);
 }
+
+void
+ttlp_triples_for_bnodes_debug (ttlp_t *ttlp_arg, caddr_t bnode_iid, int lineno, caddr_t label)
+{
+  triple_feed_t *tf = ttlp_arg[0].ttlp_tf;
+  if (NULL != ttlp_arg->ttlp_base_uri)
+    tf_triple_l (tf, bnode_iid, uname_virtrdf_ns_uri_bnode_base, ttlp_arg->ttlp_base_uri, NULL, NULL);
+  tf_triple_l (tf, bnode_iid, uname_virtrdf_ns_uri_bnode_row, box_num_nonull (lineno), NULL, NULL);
+  if (NULL != label)
+    tf_triple_l (tf, bnode_iid, uname_virtrdf_ns_uri_bnode_label, label, NULL, NULL);
+}
+
 
 #ifdef DEBUG
 #define TF_TRIPLE_PROGRESS_MESSAGE_MOD 25
@@ -1468,13 +1543,13 @@ lt_nic_rollback_hook (lock_trx_t * lt)
 
 
 caddr_t
-nic_id_name (name_id_cache_t * nic, boxint id)
+DBG_NAME(nic_id_name) (DBG_PARAMS name_id_cache_t * nic, boxint id)
 {
   caddr_t ret;
   boxint r;
   mutex_enter (nic->nic_mtx);
   gethash_64 (r, id, nic->nic_id_to_name);
-  ret = r ? box_copy ((caddr_t) (ptrlong)r) : NULL;
+  ret = r ? DBG_NAME (box_copy) (DBG_ARGS (caddr_t) (ptrlong)r) : NULL;
   /* read the value inside the mtx because cache replacement may del it before the copy is made if not in the mtx */
   mutex_leave(nic->nic_mtx);
   return ret;
@@ -1798,7 +1873,6 @@ re_search:
       res = itc_search (itc, &buf);
       if (DVC_MATCH == res)
 	{
-	  KEY_TOUCH (itc->itc_insert_key);
 	  iri = itc_box_column (itc, buf, iri_col->col_id, NULL);
 	  itc_page_leave (itc, buf);
 	}
@@ -2123,7 +2197,6 @@ key_find_rdf_obj_1 (rdf_box_t * rb, caddr_t name)
 rdf_box_t *
 key_find_rdf_obj (lock_trx_t * lt, rdf_box_t * rb)
 {
-  caddr_t r, trid;
   int len;
   caddr_t allocd_content = NULL;
   int entered = 0;
@@ -2245,6 +2318,8 @@ bif_iri_id_new (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_iri_id (id);
 }
 
+extern iri_id_t bnode_t_treshold;
+
 int
 iri_canonicalize (query_instance_t *qi, caddr_t name, int mode, caddr_t *res_ret, caddr_t *err_ret)
 {
@@ -2309,8 +2384,19 @@ again:
     {
       unsigned char *tail = (unsigned char *)(name + 9);
       int64 acc = 0;
-      int b_first = 0;
-      if ('b' == tail[0]) { b_first = 1; tail++; }
+      int64 prefix_base = 0;
+      if ('b' == tail[0]) { prefix_base = MIN_64BIT_BNODE_IRI_ID; tail++; }
+      else if ('t' == tail[0])
+        {
+          if (bnode_t_treshold == ~((boxint)0))
+            {
+              err_ret[0] = srv_make_new_error ("RDFXX", ".....",
+                "Bad argument to iri_to_id (), '%.100s' is not supported while __rdf_set_bnode_t_treshold() is not called", name );
+              goto return_error; /* see below */
+            }
+          prefix_base = bnode_t_treshold;
+          tail++;
+        }
       while (isdigit (tail[0]))
         acc = acc * 10 + ((tail++)[0] - '0');
       if ('\0' != tail[0])
@@ -2319,7 +2405,7 @@ again:
             "Bad argument to iri_to_id (), '%.100s' is not valid bnode IRI", name );
           goto return_error; /* see below */
         }
-      if (b_first) acc += MIN_64BIT_BNODE_IRI_ID;
+      acc += prefix_base;
       if ((acc > (2 * min_bnode_iri_id())) || (acc < min_bnode_iri_id()))
         {
           if ((bnode_iri_ids_are_huge) || (acc < 0))
@@ -2373,10 +2459,6 @@ canon_iri_to_id (query_instance_t *qi, caddr_t canon_name, int mode, caddr_t *er
           return key_name_to_iri_id (qi->qi_trx, canon_name, 0);
         case IRI_TO_ID_WITH_CREATE:
           return key_name_to_iri_id (qi->qi_trx, canon_name, 1);
-#ifdef DEBUG
-	  if (!boxed_iid) bing ();
-#endif
-	  break;
         case IRI_TO_ID_IF_CACHED:
           return key_name_to_existing_cached_iri_id (qi->qi_trx, canon_name);
         }
@@ -2456,21 +2538,21 @@ caddr_t
 bif_iri_to_id_repl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t name = bif_arg (qst, args, 0, "iri_to_id_repl");
-  caddr_t tmp_name = NULL;
   caddr_t err = NULL;
   caddr_t res;
   switch (DV_TYPE_OF (name))
     {
     case DV_LONG_INT: case DV_IRI_ID:
       {
+        /* caddr_t tmp_name = NULL; */
         iri_id_t iid = unbox_iri_int64 (name);
         if (iid < min_bnode_iri_id ())
           sqlr_new_error ("22023", "SR626", "The argument of iri_to_id_repl() is an IRI_ID of URI");
 #if 0
         if (iid >= MIN_64BIT_BNODE_IRI_ID)
-          tmp_name = box_sprintf (40, "_:rr_b" BOXINT_FMT, (boxint)(iid - MIN_64BIT_BNODE_IRI_ID));
+          tmp_name = box_sprintf (40, "_:rr_b" IIDBOXINT_FMT, (boxint)(iid - MIN_64BIT_BNODE_IRI_ID));
         else
-          tmp_name = box_sprintf (40, "_:rr" BOXINT_FMT, (boxint)iid);
+          tmp_name = box_sprintf (40, "_:rr" IIDBOXINT_FMT, (boxint)iid);
         res = canon_iri_to_id ((query_instance_t *)qst, tmp_name, IRI_TO_ID_WITH_CREATE, &err);
         dk_free_box (tmp_name);
         if (NULL != err)
@@ -2516,7 +2598,7 @@ bif_iri_canonicalize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
           if (canon_name != raw_name)
             dk_free_tree (canon_name);
           if (!iri)
-            sqlr_new_error ("22023", "SR626", "Can not canonicalize unknown IRI ID " BOXINT_FMT, (boxint)(iid));
+            sqlr_new_error ("22023", "SR626", "Can not canonicalize unknown IRI ID " IIDBOXINT_FMT, (boxint)(iid));
           return iri;
         }
     }
@@ -2675,6 +2757,7 @@ key_id_to_canonicalized_iri (query_instance_t * qi, iri_id_t iri_id_no)
 	  caddr_t id_box = box_iri_id (iri_id_no);
 	  caddr_t ret = cl_id_to_iri (qi, id_box);
 	  dk_free_box (id_box);
+	  dk_free_box (local);
 	  return ret;
 	}
       else
@@ -2886,14 +2969,12 @@ bif_rdf_cache_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t pref = bif_string_or_uname_arg (qst, args, 1, "rdf_cache_id");
   name_id_cache_t * cache = mode[0] == 'p' ? iri_prefix_cache
     : mode[0] == 'l' ? rdf_lang_cache
-    : mode[0] == 't' ? rdf_type_cache
-    : mode[0] == 'i'? iri_name_cache : NULL;
+    : mode[0] == 't' ? rdf_type_cache : NULL;
   if (!cache)
     sqlr_new_error ("42000", "RDF..", "bad mode for rdf_cache_id");
   if (BOX_ELEMENTS (args) > 2)
     {
-      boxint new_id = 'i' == mode[0] ? (boxint)bif_iri_id_arg (qst, args, 2, "rdf_cache_id")
-	: bif_long_arg (qst, args, 2, "rdf_cache_id");
+      boxint new_id = bif_long_arg (qst, args, 2, "rdf_cache_id");
       if (cache == iri_name_cache || cache == iri_prefix_cache)
 	lt_nic_set (qi->qi_trx, cache, pref, new_id);
       else
@@ -2915,7 +2996,6 @@ bif_rdf_cache_id_to_name (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
   boxint id = bif_long_arg (qst, args, 1, "rdf_cache_id_to_name");
   name_id_cache_t * cache = mode[0] == 'p' ? iri_prefix_cache
     : mode[0] == 'l' ? rdf_lang_cache
-    : mode[0] == 'i' ? iri_name_cache
     : mode[0] == 't' ? rdf_type_cache : NULL;
   if (!cache)
     sqlr_new_error ("42000", "RDF..", "bad mode for rdf_cache_id_to_name");
@@ -2976,6 +3056,7 @@ caddr_t DBG_NAME (tf_formula_bnode_iid) (DBG_PARAMS ttlp_t *ttlp_arg, caddr_t tx
   /*dk_set_pop (&(ttlp_arg[0].ttlp_saved_uris));*/
   return res;
 }
+
 
 char * range_replay =
 "create procedure ID_RANGE_REPLAY (in iri_seq varchar, in iri_seq_max varchar, in id int, in max_id int)\n"
@@ -3094,7 +3175,7 @@ bif_rdf_obj_ft_rule_add (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   rdf_obj_ft_rule_iri_hkey_t iri_hkey;
   iid_hkey.hkey_g = g_id;
   iid_hkey.hkey_iid_p = p_id;
-  if (1)
+  if (CL_RUN_LOCAL != cl_run_local_only)
     {
       iri_hkey.hkey_g = g_id;
       iri_hkey.hkey_iri_p = p_iri = ((0 == p_id) ? NULL
@@ -3226,14 +3307,23 @@ bif_rdf_obj_ft_rule_zap_all (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
 caddr_t
 bif_rdf_obj_ft_rule_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  iri_id_t g_id = bif_iri_id_arg (qst, args, 0, "__rdf_obj_ft_rule_check");
-  caddr_t p = bif_arg (qst, args, 1, "__rdf_obj_ft_rule_check");
+  iri_id_t g_id;
+  caddr_t p;
   rdf_obj_ft_rule_iid_hkey_t iid_hkey;
   dtp_t p_dtp;
+  if (CL_RUN_LOCAL != cl_run_local_only)
+    {
+      caddr_t cl_text_set = registry_get ("cl_rdf_text_index");
+      char flag = cl_text_set ? cl_text_set[0] : '\0';
+      dk_free_tree (cl_text_set);
+      if ('1' == flag)
+        return box_num (2);
+    }
+  g_id = bif_iri_id_arg (qst, args, 0, "__rdf_obj_ft_rule_check");
+  p = bif_arg (qst, args, 1, "__rdf_obj_ft_rule_check");
   iid_hkey.hkey_g = 0;
   iid_hkey.hkey_iid_p = 0;
   p_dtp = DV_TYPE_OF (p);
-
   switch (p_dtp)
     {
       case DV_IRI_ID: case DV_STRING: case DV_UNAME:
@@ -3296,7 +3386,16 @@ bif_rdf_obj_ft_rule_count_in_graph (caddr_t * qst, caddr_t * err_ret, state_slot
 {
   ptrlong res = rdf_obj_ft_predonly_rule_count;
   ptrlong *graph_specific;
-  boxint g_id_int = bif_iri_id_arg (qst, args, 0, "__rdf_obj_ft_rule_count_in_graph");
+  boxint g_id_int;
+  if (CL_RUN_LOCAL != cl_run_local_only)
+    {
+      caddr_t cl_text_set = registry_get ("cl_rdf_text_index");
+      char flag = cl_text_set ? cl_text_set[0] : '\0';
+      dk_free_tree (cl_text_set);
+      if ('1' == flag)
+        return box_num (-1);
+    }
+  g_id_int = bif_iri_id_arg (qst, args, 0, "__rdf_obj_ft_rule_count_in_graph");
   mutex_enter (rdf_obj_ft_rules_mtx);
   graph_specific = (ptrlong *)id_hash_get (rdf_obj_ft_graph_rule_counts, (caddr_t)(&g_id_int));
   if (NULL != graph_specific)
@@ -3443,9 +3542,6 @@ rdf_key_comp_init ()
   key_cl_by_name (ogps, "S")->cl_comp_asc = 1;
 }
 
-void bif_rld_init ();
-void bif_id2i_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret);
-
 
 void
 rdf_core_init (void)
@@ -3456,6 +3552,10 @@ rdf_core_init (void)
   prefix_nic_rc = resource_allocate (10, NULL, (rc_destr_t)nic_free, (rc_destr_t)nic_clear, 0);
   bif_define_typed ("rdf_load_rdfxml", bif_rdf_load_rdfxml, &bt_xml_entity);
   bif_set_uses_index (bif_rdf_load_rdfxml);
+  bif_define_typed ("rdf_load_rdfa", bif_rdf_load_rdfa, &bt_xml_entity);
+  bif_set_uses_index (bif_rdf_load_rdfa);
+  bif_define_typed ("rdf_load_microdata", bif_rdf_load_microdata, &bt_xml_entity);
+  bif_set_uses_index (bif_rdf_load_microdata);
   bif_define ("rdf_load_turtle", bif_rdf_load_turtle);
   bif_set_uses_index (bif_rdf_load_turtle);
   bif_define ("rdf_load_turtle_local_file", bif_rdf_load_turtle_local_file);
@@ -3464,11 +3564,12 @@ rdf_core_init (void)
   bif_define ("iri_to_id", bif_iri_to_id);
   bif_define ("iri_ensure", bif_iri_ensure);
   bif_set_uses_index (bif_iri_to_id);
+  bif_set_no_cluster ("iri_to_id");
   bif_define ("iri_to_id_repl", bif_iri_to_id_repl);
   bif_set_uses_index (bif_iri_to_id_repl);
   bif_define ("iri_canonicalize", bif_iri_canonicalize);
   bif_set_uses_index (bif_iri_canonicalize);
-  bif_set_no_cluster ("iri_to_id");
+  bif_set_no_cluster ("iri_to_id_repl");
   bif_define ("iri_to_id_nosignal", bif_iri_to_id_nosignal);
   bif_set_uses_index (bif_iri_to_id_nosignal);
   bif_set_no_cluster ("iri_to_id_nosignal");
@@ -3482,9 +3583,13 @@ rdf_core_init (void)
 
   bif_define ("iri_to_rdf_prefix_and_local", bif_iri_to_rdf_prefix_and_local);
   bif_define ("rdf_cache_id", bif_rdf_cache_id);
+  bif_set_no_cluster ("rdf_cache_id");
   bif_define ("rdf_cache_id_to_name", bif_rdf_cache_id_to_name);
+  bif_set_no_cluster ("rdf_cache_id_to_name");
   bif_define ("iri_id_cache_flush", bif_iri_id_cache_flush);
+  bif_set_no_cluster ("iri_id_cache_flush");
   bif_define ("iri_id_new", bif_iri_id_new);
+  bif_set_no_cluster ("iri_id_new");
   bif_define ("__rdf_obj_ft_rule_add", bif_rdf_obj_ft_rule_add);
   bif_define ("__rdf_obj_ft_rule_del", bif_rdf_obj_ft_rule_del);
   bif_define ("__rdf_obj_ft_rule_zap_all", bif_rdf_obj_ft_rule_zap_all);
@@ -3492,11 +3597,15 @@ rdf_core_init (void)
   bif_define ("__rdf_obj_ft_rule_count_in_graph", bif_rdf_obj_ft_rule_count_in_graph);
   /* Short aliases for use in generated SQL text: */
   bif_define ("__i2idn", bif_iri_to_id_nosignal);
+  bif_set_no_cluster ("__i2idn");
   bif_define ("__i2id", bif_iri_to_id);
+  bif_set_no_cluster ("__i2id");
   bif_define ("__i2idc", bif_iri_to_id_if_cached);
-  bif_define_typed ("__id2i", bif_id_to_iri, &bt_varchar);
-  bif_set_vectored (bif_id_to_iri, bif_id2i_vec);
+  bif_set_no_cluster ("__i2idc");
+  bif_define ("__id2i", bif_id_to_iri);
+  bif_set_no_cluster ("__id2i");
   bif_define ("__id2in", bif_id_to_iri_nosignal);
+  bif_set_no_cluster ("__id2in");
   bif_define ("rdf_graph_keyword", bif_rdf_graph_keyword);
   bif_define ("iri_split", bif_iri_split);
   bif_define ("uriqa_dynamic_local_replace", bif_uriqa_dynamic_local_replace);
@@ -3525,5 +3634,4 @@ rdf_core_init (void)
   ddl_std_proc (range_replay, 0);
   rdf_inf_init ();
   rdf_key_comp_init  ();
-  bif_rld_init ();
 }

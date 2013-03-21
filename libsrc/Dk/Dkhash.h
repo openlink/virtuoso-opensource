@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -159,6 +159,7 @@ void hash_table_destroy (dk_hash_t * ht);
 extern void *gethash (const void *key, dk_hash_t * ht);
 extern void maphash (maphash_func func, dk_hash_t * table);
 extern void maphash3 (maphash3_func func, dk_hash_t * table, void *env);
+extern void **hash_list_keys (dk_hash_t * table);
 extern void maphash_no_remhash (maphash_func func, dk_hash_t * table);
 extern void dk_hash_iterator (dk_hash_iterator_t * hit, dk_hash_t * ht);
 extern int dk_hit_next (dk_hash_iterator_t * hit, void **key, void **data);
@@ -167,7 +168,7 @@ extern void dk_hash_set_rehash (dk_hash_t * ht, uint32 ov_per_bucket);
 typedef int32 (*box_hash_func_t) (caddr_t);
 typedef int (*box_hash_cmp_func_t) (ccaddr_t, ccaddr_t);
 void dk_dtp_register_hash (dtp_t dtp, box_hash_func_t hf, box_hash_cmp_func_t cmp);
-#ifdef DEBUG						   /* These definitions are here because they need dk_hash_t, otherwise they would be placed into Dkbox.h */
+#ifdef DK_ALLOC_BOX_DEBUG						   /* These definitions are here because they need dk_hash_t, otherwise they would be placed into Dkbox.h */
 extern void dk_check_tree_iter (box_t box, box_t parent, dk_hash_t * known);
 extern void dk_check_domain_of_connectivity_iter (box_t box, box_t parent, dk_hash_t * known);
 #endif

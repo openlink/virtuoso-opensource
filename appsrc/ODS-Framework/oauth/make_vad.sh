@@ -5,7 +5,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2009 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -252,7 +252,7 @@ sticker_init() {
   echo "  <name package=\"$VAD_NAME\">" >> $STICKER
   echo "    <prop name=\"Title\" value=\"$VAD_DESC\"/>" >> $STICKER
   echo "    <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2011 OpenLink Software\"/>" >> $STICKER
+  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2013 OpenLink Software\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso\"/>" >> $STICKER
   echo "  </name>" >> $STICKER
@@ -294,14 +294,14 @@ fi
   # OAuth server endpoint
   echo "    DB.DBA.VHOST_REMOVE (lpath=>'/oauth');" >> $STICKER
   echo "    DB.DBA.VHOST_DEFINE (lpath=>'/oauth', ppath=>_ppath, vsp_user=>'dba', is_dav=>$ISDAV, is_brws=>0, def_page=>'index.vsp');" >> $STICKER
-  # SPARQL + OAUTH 
-  echo "    DB.DBA.VHOST_REMOVE (lpath=>'/sparql-oauth');" >> $STICKER
-  echo "    DB.DBA.VHOST_DEFINE (lpath=>'/sparql-oauth', ppath=>_ppath, vsp_user=>'dba', is_dav=>$ISDAV, is_brws=>0, def_page=>'sparql.vsp');" >> $STICKER
   # UI for settings etc.
   echo "    DB.DBA.VHOST_REMOVE (lpath=>'/$VAD_NAME');" >> $STICKER
   echo "    DB.DBA.VHOST_DEFINE (lpath=>'/$VAD_NAME', ppath=>_ppath, vsp_user=>'dba', is_dav=>$ISDAV, is_brws=>0, def_page=>'index.vsp');" >> $STICKER
   echo "    DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/oauth.sql', 0, 'report', $ISDAV);" >> $STICKER
   echo "    DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/foaf_ssl.sql', 0, 'report', $ISDAV);" >> $STICKER
+  # SPARQL + OAUTH 
+  echo "    DB.DBA.VHOST_REMOVE (lpath=>'/sparql-oauth');" >> $STICKER
+  echo "    DB.DBA.VHOST_DEFINE (lpath=>'/sparql-oauth', ppath=>_ppath, vsp_user=>'dba', is_dav=>$ISDAV, is_brws=>0, def_page=>'sparql.vsp');" >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
   echo "  <sql purpose='pre-uninstall'>" >> $STICKER

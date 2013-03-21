@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -168,4 +168,3 @@ ECHO BOTH ": REGR_SYY = REGR_COUNT () * VAR_POP (x) = " $LAST[1] "\n";
 select BB (REGR_SXY (i, val)), BB(REGR_COUNT(i,val) * COVAR_POP (i,val)) from var_test where val is not null;
 ECHO BOTH $IF $EQU $LAST[1] $LAST[2] "PASSED" "***FAILED";
 ECHO BOTH ": REGR_SXY = REGR_COUNT () * COVAR_POP (x,y) = " $LAST[1] "\n";
-

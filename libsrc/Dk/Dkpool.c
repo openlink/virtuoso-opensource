@@ -9,7 +9,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -73,11 +73,6 @@ mem_pool_alloc (void)
 void
 mp_free (mem_pool_t * mp)
 {
-  DO_SET (caddr_t, box, &mp->mp_trash)
-  {
-    dk_free_tree (box);
-  }
-  END_DO_SET ();
   while (mp->mp_fill)
     {
       caddr_t buf;
@@ -91,30 +86,16 @@ mp_free (mem_pool_t * mp)
     }
   maphash (mp_uname_free, mp->mp_unames);
   hash_table_free (mp->mp_unames);
+  DO_SET (caddr_t, box, &mp->mp_trash)
+  {
+    dk_free_tree (box);
+  }
+  END_DO_SET ();
+  dk_set_free (mp->mp_trash);
   dk_free ((caddr_t) mp->mp_allocs, mp->mp_size * sizeof (caddr_t));
   dk_free ((caddr_t) mp, sizeof (mem_pool_t));
 }
 
-#ifdef MALLOC_DEBUG
-void
-mp_check (mem_pool_t * mp)
-{
-  int fill;
-  if (!mp)
-    return;
-  fill = mp->mp_fill;
-  while (fill)
-    {
-      caddr_t buf;
-      const char *err;
-      fill -= 1;
-      buf = mp->mp_allocs[fill];
-      err = dbg_find_allocation_error (buf, mp);
-      if (NULL != err)
-	GPF_T1 (err);
-    }
-}
-#endif
 
 void
 mp_alloc_box_assert (mem_pool_t * mp, caddr_t box)
@@ -157,11 +138,6 @@ void
 mp_free (mem_pool_t * mp)
 {
   mem_block_t *mb = mp->mp_first, *next;
-  DO_SET (caddr_t, box, &mp->mp_trash)
-  {
-    dk_free_tree (box);
-  }
-  END_DO_SET ();
   while (mb)
     {
       next = mb->mb_next;
@@ -170,6 +146,13 @@ mp_free (mem_pool_t * mp)
     }
   maphash (mp_uname_free, mp->mp_unames);
   hash_table_free (mp->mp_unames);
+  DO_SET (caddr_t, box, &mp->mp_trash)
+  {
+    dk_free_tree (box);
+  }
+  END_DO_SET ();
+  dk_set_free (mp->mp_trash);
+
   dk_free ((caddr_t) mp, sizeof (mem_pool_t));
 }
 
@@ -261,19 +244,62 @@ DBG_NAME (mp_alloc_box) (DBG_PARAMS mem_pool_t * mp, size_t len1, dtp_t dtp)
   if (bh_len)
     {
 #endif
-      if (DV_NON_BOX != dtp)
-	{
       WRITE_BOX_HEADER (ptr, len1, dtp);
-	}
 #ifndef LACERATED_POOL
     }
 #endif
-  if (DV_NON_BOX != dtp)
   memset (ptr, 0, len1);
   return ((caddr_t) ptr);
 }
 
-
+caddr_t
+mp_alloc_sized (mem_pool_t * mp, size_t len1)
+{
+#ifdef LACERATED_POOL
+  return mp_alloc_box (mp, len1, DV_NON_BOX);
+#else
+  dtp_t *ptr;
+  size_t len = ALIGN_8 (len1);
+  mem_block_t *mb = NULL;
+  mem_block_t *f = mp->mp_first;
+  size_t hlen = ALIGN_8 ((sizeof (mem_block_t)));	/* we can have a doubles so structure also must be aligned */
+  if (!f || f->mb_size - f->mb_fill < len)
+    {
+      if (len > mp->mp_block_size - hlen)
+	{
+	  mb = (mem_block_t *) dk_alloc (hlen + len);
+	  mb->mb_size = len + hlen;
+	  mb->mb_fill = hlen;
+	  if (f)
+	    {
+	      mb->mb_next = f->mb_next;
+	      f->mb_next = mb;
+	    }
+	  else
+	    {
+	      mb->mb_next = NULL;
+	      mp->mp_first = mb;
+	    }
+	  mp->mp_bytes += mb->mb_size;
+	}
+      else
+	{
+	  mb = (mem_block_t *) dk_alloc (mp->mp_block_size);
+	  mb->mb_size = mp->mp_block_size;
+	  mb->mb_fill = hlen;
+	  mb->mb_next = mp->mp_first;
+	  mp->mp_first = mb;
+	  mp->mp_bytes += mb->mb_size;
+	}
+    }
+  else
+    mb = f;
+  ptr = ((dtp_t *) mb) + mb->mb_fill;
+  mb->mb_fill += len;
+  memset (ptr, 0, len1);
+  return ((caddr_t) ptr);
+#endif
+}
 caddr_t
 DBG_NAME (mp_box_string) (DBG_PARAMS mem_pool_t * mp, const char *str)
 {
@@ -411,6 +437,15 @@ DBG_NAME (mp_box_copy) (DBG_PARAMS mem_pool_t * mp, caddr_t box)
     case DV_XPATH_QUERY:
       return box;
 
+#ifdef MALLOC_DEBUG
+    case DV_WIDE:
+      {
+        int len = box_length (box);
+        if ((len % sizeof (wchar_t)) || (0 != ((wchar_t *)box)[len/sizeof (wchar_t) - 1]))
+          GPF_T1 ("mp_box_copy of a damaged wide string");
+        /* no break */
+      }
+#endif
     default:
       {
 	caddr_t cp;
@@ -419,7 +454,7 @@ DBG_NAME (mp_box_copy) (DBG_PARAMS mem_pool_t * mp, caddr_t box)
 	    if (box_tmp_copier[dtp])
 	      return box_tmp_copier[dtp] (mp, box);
 	    cp = box_copy (box);
-	    mp_set_push (mp, &mp->mp_trash, (void*)cp);
+	    dk_set_push (&mp->mp_trash, (void*)cp);
 	    return cp;
 	  }
 	{
@@ -587,33 +622,6 @@ DBG_NAME (t_box_num_and_zero) (DBG_PARAMS boxint n)
 
 
 caddr_t
-DBG_NAME (mp_box_iri_id) (DBG_PARAMS mem_pool_t * mp, iri_id_t n)
-{
-  caddr_t box;
-  MP_INT (box, mp, n, DV_IRI_TAG_WORD);
-  return box;
-}
-
-
-caddr_t
-DBG_NAME (mp_box_double) (DBG_PARAMS mem_pool_t * mp, double n)
-{
-  caddr_t box;
-  MP_DOUBLE (box, mp, n, DV_DOUBLE_TAG_WORD);
-  return box;
-}
-
-
-caddr_t
-DBG_NAME (mp_box_float) (DBG_PARAMS mem_pool_t * mp, float n)
-{
-  caddr_t box;
-  MP_FLOAT (box, mp, n, DV_FLOAT_TAG_WORD);
-  return box;
-}
-
-
-caddr_t
 DBG_NAME (t_box_iri_id) (DBG_PARAMS int64 n)
 {
   iri_id_t *box = (iri_id_t *) DBG_T_ALLOC_BOX (sizeof (iri_id_t), DV_IRI_ID);
@@ -690,23 +698,6 @@ t_list (long n, ...)
   return ((caddr_t *) box);
 }
 #endif
-
-caddr_t *
-t_list_nc (long n, ...)
-{
-  caddr_t *box;
-  va_list ap;
-  int inx;
-  va_start (ap, n);
-  box = (caddr_t *) t_alloc_box (sizeof (caddr_t) * n, DV_ARRAY_OF_POINTER);
-  for (inx = 0; inx < n; inx++)
-    {
-      caddr_t child = va_arg (ap, caddr_t);
-      box[inx] = child;
-    }
-  va_end (ap);
-  return ((caddr_t *) box);
-}
 
 caddr_t *
 t_list_concat_tail (caddr_t list, long n, ...)
@@ -824,8 +815,7 @@ t_sc_list (long n, ...)
 void
 DBG_NAME (mp_set_push) (DBG_PARAMS mem_pool_t * mp, dk_set_t * set, void *elt)
 {
-  s_node_t *s;
-  MP_BYTES (s, mp, sizeof (s_node_t));
+  s_node_t *s = (s_node_t *) DBG_NAME (mp_alloc_box) (DBG_ARGS mp, sizeof (s_node_t), DV_NON_BOX);
   s->data = elt;
   s->next = *set;
   *set = s;
@@ -835,9 +825,7 @@ DBG_NAME (mp_set_push) (DBG_PARAMS mem_pool_t * mp, dk_set_t * set, void *elt)
 dk_set_t
 DBG_NAME (t_cons) (DBG_PARAMS void *car, dk_set_t cdr)
 {
-  mem_pool_t * mp = THR_TMP_POOL;
-  s_node_t *s;
-  MP_BYTES (s, mp, sizeof (s_node_t));
+  s_node_t *s = (s_node_t *) t_alloc_box (sizeof (s_node_t), DV_NON_BOX);
   s->data = car;
   s->next = cdr;
   return s;
@@ -884,7 +872,7 @@ DBG_NAME (t_set_pushnew) (DBG_PARAMS s_node_t ** set, void *item)
 
 
 int
-DBG_NAME (t_set_push_new_string) (DBG_PARAMS s_node_t ** set, void *item)
+DBG_NAME (t_set_push_new_string) (DBG_PARAMS s_node_t ** set, char *item)
 {
   if (0 > dk_set_position_of_string (*set, item))
     {
@@ -1066,7 +1054,7 @@ t_box_sprintf (size_t buflen_eval, const char *format, ...)
 void
 mp_trash (mem_pool_t * mp, caddr_t box)
 {
-  mp_set_push (mp, &mp->mp_trash, (void *) box);
+  dk_set_push (&mp->mp_trash, (void *) box);
 }
 
 
@@ -1136,3 +1124,31 @@ ap_list (auto_pool_t * apool, long n, ...)
   va_end (ap);
   return ((caddr_t *) box);
 }
+
+#if defined (DEBUG) || defined (MALLOC_DEBUG)
+#undef mem_pool_alloc
+mem_pool_t *mem_pool_alloc (void) { return dbg_mem_pool_alloc (__FILE__, __LINE__); }
+#endif
+
+#ifdef MALLOC_DEBUG
+#undef mp_alloc_box
+caddr_t mp_alloc_box (mem_pool_t * mp, size_t len, dtp_t dtp) { return dbg_mp_alloc_box (__FILE__, __LINE__, mp, len, dtp); }
+#undef mp_box_string
+caddr_t mp_box_string (mem_pool_t * mp, const char *str) { return dbg_mp_box_string (__FILE__, __LINE__, mp, str); }
+#undef mp_box_substr
+caddr_t mp_box_substr (mem_pool_t * mp, ccaddr_t str, int n1, int n2) { return dbg_mp_box_substr (__FILE__, __LINE__, mp, str, n1, n2); }
+#undef mp_box_dv_short_nchars
+box_t mp_box_dv_short_nchars (mem_pool_t * mp, const char *str, size_t len) { return dbg_mp_box_dv_short_nchars (__FILE__, __LINE__, mp, str, len); }
+#undef mp_box_dv_uname_string
+caddr_t mp_box_dv_uname_string (mem_pool_t * mp, const char *str) { return dbg_mp_box_dv_uname_string (__FILE__, __LINE__, mp, str); }
+#undef mp_box_dv_uname_nchars
+box_t mp_box_dv_uname_nchars (mem_pool_t * mp, const char *str, size_t len) { return dbg_mp_box_dv_uname_nchars (__FILE__, __LINE__, mp, str, len); }
+#undef mp_box_copy
+caddr_t mp_box_copy (mem_pool_t * mp, caddr_t box) { return dbg_mp_box_copy (__FILE__, __LINE__, mp, box); }
+#undef mp_box_copy_tree
+caddr_t mp_box_copy_tree (mem_pool_t * mp, caddr_t box) { return dbg_mp_box_copy_tree (__FILE__, __LINE__, mp, box); }
+#undef mp_full_box_copy_tree
+caddr_t mp_full_box_copy_tree (mem_pool_t * mp, caddr_t box) { return dbg_mp_full_box_copy_tree (__FILE__, __LINE__, mp, box); }
+#undef mp_box_num
+caddr_t mp_box_num (mem_pool_t * mp, boxint num) { return dbg_mp_box_num (__FILE__, __LINE__, mp, num); }
+#endif

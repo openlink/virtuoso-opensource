@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -25,7 +25,7 @@
  *
  */
 
-#define NO_DBG_PRINTF
+#undef DBG_PRINTF
 
 #include "Dk.h"
 #include "Dksestcp.h"
@@ -2425,6 +2425,7 @@ sslses_to_tcpses (session_t * ses)
   ses->ses_device->dev_funs->dfp_write = tcpses_write;
   ses->ses_device->dev_funs->dfp_free = tcpdev_free;
   ses->ses_device->dev_connection->ssl = NULL;
+  ses->ses_device->dev_connection->ssl_ctx = NULL;
 }
 
 

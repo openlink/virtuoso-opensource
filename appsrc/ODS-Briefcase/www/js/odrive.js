@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -27,6 +27,49 @@ function setFooter() {
     var cPos = OAT.Dom.position('dav_list')
     $('dav_list').style.height = (wDims[1] - hDims[1] - cPos[1] - 20) + 'px';
   }
+}
+
+function destinationChange(obj, changes) {
+  function destinationChangeInternal(actions) {
+    if (!obj)
+      return;
+
+    if (actions.hide) {
+      var a = actions.hide;
+      for ( var i = 0; i < a.length; i++) {
+        var o = $(a[i])
+        if (o) {
+          OAT.Dom.hide(o);
+        }
+      }
+    }
+    if (actions.show) {
+      var a = actions.show;
+      for ( var i = 0; i < a.length; i++) {
+        var o = $(a[i])
+        if (o) {
+          OAT.Dom.show(o);
+        }
+      }
+    }
+    if (actions.clear) {
+      var a = actions.clear;
+      for ( var i = 0; i < a.length; i++) {
+        var o = $(a[i])
+        if (o && o.value) {
+          o.value = '';
+        }
+      }
+    }
+  }
+  if (!changes)
+    return;
+
+  if (obj.checked && changes.checked)
+    destinationChangeInternal(changes.checked);
+
+  if (!obj.checked && changes.unchecked)
+    destinationChangeInternal(changes.unchecked);
 }
 
 function urlParam(fldName) {
@@ -184,7 +227,7 @@ function selectAllCheckboxes (obj, prefix, toolbarsFlag) {
   for (var i = 0; i < objForm.elements.length; i++)
   {
     var o = objForm.elements[i];
-    if (o != null && o.type == "checkbox" && !o.disabled && o.name.indexOf (prefix) != -1)
+    if (o != null && o.type == "checkbox" && !o.disabled && o.name.indexOf (prefix) == 0)
     {
       o.checked = (obj.value == 'Select All');
       coloriseRow(getParent(o, 'tr'), o.checked);
@@ -231,7 +274,7 @@ function enableToolbars (objForm, prefix, doc)
   enableElement('tb_delete', 'tb_delete_gray', oCount>0, doc);
 
   enableElement('tb_tag', 'tb_tag_gray', tCount>0, doc);
-  enableElement('tb_properties', 'tb_properties_gray', oCount>0, doc);
+  enableElement('tb_properties', 'tb_properties_gray', oCount>1, doc);
 }
 
 function getParent (o, tag)
@@ -375,16 +418,16 @@ function getFileName(obj)
     N = S.indexOf('#');
     S = S.substr(0, N);
   }
-  if (document.F1.dav_destination[1].checked == '1')
-  {
+  if (document.forms['F1'].elements['dav_destination']) {
+    if (document.F1.dav_destination[1].checked == '1') {
     N = S.indexOf('.rdf');
     S = S.substr(0, N);
   }
-  if ((document.F1.dav_destination[0].checked == '1') && (document.F1.dav_source[2].checked == '1'))
-  {
+    if ((document.F1.dav_destination[0].checked == '1') && (document.F1.dav_source[2].checked == '1')) {
     N = S.indexOf('.rdf');
     if (N == -1)
       S = S + '.rdf';
+  }
   }
   document.F1.dav_name.value = S;
 }
@@ -397,19 +440,41 @@ function chkbx(bx1, bx2)
 
 function updateLabel(value)
 {
-  hideLabel(4, 10);
+  hideLabel(4, 17);
   if (value == 'oMail')
     showLabel(4, 4);
-  if (value == 'PropFilter')
+  else if (value == 'PropFilter')
     showLabel(5, 5);
-  if (value == 'S3')
+  else if (value == 'S3')
     showLabel(6, 6);
-  if (value == 'ResFilter')
+  else if (value == 'ResFilter')
     showLabel(7, 7);
-  if (value == 'CatFilter')
+  else if (value == 'CatFilter')
     showLabel(7, 7);
-  if (value == 'rdfSink')
+  else if (value == 'rdfSink')
     showLabel(8, 8);
+  else if (value == 'SyncML')
+    showLabel(10, 10);
+  else if (value == 'IMAP')
+    showLabel(11, 11);
+  else if (value == 'GDrive')
+    showLabel(12, 12);
+  else if (value == 'Dropbox')
+    showLabel(13, 13);
+  else if (value == 'SkyDrive')
+    showLabel(14, 14);
+  else if (value == 'Box')
+    showLabel(15, 15);
+  else if (value == 'WebDAV')
+    showLabel(16, 16);
+  else if (value == 'RACKSPACE')
+    showLabel(17, 17);
+
+  if (value == 'IMAP')
+    OAT.Dom.show('cVerify');
+  else
+    OAT.Dom.hide('cVerify');
+
 }
 
 function showLabel(from, to)
@@ -504,19 +569,23 @@ function webidShow(obj) {
   windowShow('/ods/webid_select.vspx?mode='+S.charAt(0)+'&params='+obj.id+':s1;');
 }
 
-function windowShow(sPage, sPageName, width, height) {
+function windowShowInternal(sPage, sPageName, width, height) {
 	if (width == null)
     width = 700;
 	if (height == null)
 		height = 500;
+  win = window.open(sPage, sPageName, "width="+width+",height="+height+",top=100,left=100,status=yes,toolbar=no,menubar=no,scrollbars=yes,resizable=yes");
+  win.window.focus();
+}
+
+function windowShow(sPage, sPageName, width, height) {
   if (sPage.indexOf('form=') == -1)
     sPage += '&form=F1';
   if (sPage.indexOf('sid=') == -1)
     sPage += urlParam('sid');
   if (sPage.indexOf('realm=') == -1)
     sPage += urlParam('realm');
-  win = window.open(sPage, sPageName, "width="+width+",height="+height+",top=100,left=100,status=yes,toolbar=no,menubar=no,scrollbars=yes,resizable=yes");
-  win.window.focus();
+  windowShowInternal(sPage, sPageName, width, height);
 }
 
 function renameShow(myForm, myPrefix, myPage, width, height) {
@@ -540,9 +609,10 @@ function mailShow(myForm, myPrefix, myPage, width, height)
 }
 
 function coloriseRow(obj, checked) {
-  obj.className = (obj.className).replace('tr_select', '');
   if (checked)
-    obj.className = obj.className + ' ' + 'tr_select';
+    OAT.Dom.addClass(obj, 'selected');
+  else
+    OAT.Dom.removeClass(obj, 'selected');
 }
 
 function coloriseTable(id)
@@ -710,7 +780,7 @@ function addChecked (form, txt, selectionMsq)
 // Hiddens functions
 function createHidden(frm_name, fld_name, fld_value)
 {
-  createHidden2(document, frm_name, fld_name, fld_value);
+  return createHidden2(document, frm_name, fld_name, fld_value);
 }
 
 function createHidden2(doc, frm_name, fld_name, fld_value)
@@ -729,6 +799,8 @@ function createHidden2(doc, frm_name, fld_name, fld_value)
       doc.forms[frm_name].appendChild(hidden);
     }
     hidden.value = fld_value;
+
+    return hidden;
   }
 }
 
@@ -763,8 +835,9 @@ function hideCell(cell)
 
 function toggleDavRows()
 {
-  if (document.forms['F1'].elements['dav_destination'])
-  {
+  if (!document.forms['F1'].elements['dav_destination'])
+    return;
+
     if (document.forms['F1'].elements['dav_destination'][0].checked == '1')
     {
       showTableRow('davRow_mime');
@@ -777,14 +850,13 @@ function toggleDavRows()
       showTableRow('davRow_tagsPublic');
       showTableRow('davRow_tagsPrivate');
 
-      showTableRow('rdf_store');
-
+    showCell('dav_source_2');
       showCell('label_dav');
       hideCell('label_dav_rdf');
       showCell('dav_name');
       hideCell('dav_name_rdf');
     }
-    if (document.forms['F1'].elements['dav_destination'][1].checked == '1')
+  else if (document.forms['F1'].elements['dav_destination'][1].checked == '1')
     {
       hideCell('davRow_tagsPrivate');
       hideCell('davRow_tagsPublic');
@@ -795,9 +867,11 @@ function toggleDavRows()
       hideCell('davRow_owner');
       hideCell('davRow_version');
       hideCell('davRow_mime');
+    if ($('dav_content_plain'))
+      showCell('davRow_mime');
 
-      hideCell('rdf_store');
-      if (document.forms['F1'].elements['dav_source'][2].checked == '1')
+    hideCell('dav_source_2');
+    if (document.forms['F1'].elements['dav_source'] && (document.forms['F1'].elements['dav_source'][2].checked == '1'))
         document.forms['F1'].elements['dav_source'][0].checked = '1';
 
       hideCell('label_dav');
@@ -805,19 +879,48 @@ function toggleDavRows()
       hideCell('dav_name');
       showCell('dav_name_rdf');
     }
+  toggleDavSource();
+}
+
+function toggleDavSource()
+{
+  if (!document.forms['F1'].elements['dav_source'])
+    return;
+
+  if (document.forms['F1'].elements['dav_source'][0].checked == '1')
+  {
+    $('dav_file_label').innerHTML = 'File';
+    showCell('dav_file');
+    hideCell('dav_url');
+    hideCell('dav_rdf');
+  }
+  else if (document.forms['F1'].elements['dav_source'][1].checked == '1')
+  {
+    $('dav_file_label').innerHTML = 'URL';
+    hideCell('dav_file');
+    showCell('dav_url');
+    hideCell('dav_rdf');
+  }
+  else if (document.forms['F1'].elements['dav_source'][2].checked == '1')
+  {
+    $('dav_file_label').innerHTML = 'Quad Store Named Graph IRI';
+    hideCell('dav_file');
+    hideCell('dav_url');
+    showCell('dav_rdf');
   }
 }
 
 var ODRIVE = new Object();
 
 ODRIVE.forms = new Object();
-ODRIVE.forms['properties'] = {params: {items: true}, width: '900', height: '700', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
-ODRIVE.forms['edit'] = {params: {items: true}, height: '430'};
-ODRIVE.forms['copy'] = {params: {items: true}, height: '380', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
-ODRIVE.forms['move'] = {params: {items: true}, height: '380', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
-ODRIVE.forms['tags'] = {params: {items: true}, height: '360', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
-ODRIVE.forms['rename'] = {params: {items: true}, height: '150', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
-ODRIVE.forms['delete'] = {params: {items: true}, height: '300', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
+ODRIVE.forms['properties'] = {params: {items: true}, width: '900', height: '630', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
+ODRIVE.forms['edit'] = {params: {items: true}, height: '440', postActions:['ODRIVE.formSubmit()']};
+ODRIVE.forms['view'] = {params: {items: true}, height: '440'};
+ODRIVE.forms['copy'] = {params: {items: true}, height: '330', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
+ODRIVE.forms['move'] = {params: {items: true}, height: '330', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
+ODRIVE.forms['tags'] = {params: {items: true}, height: '350', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
+ODRIVE.forms['rename'] = {params: {items: true}, height: '160', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
+ODRIVE.forms['delete'] = {params: {items: true}, height: '290', postActions:['ODRIVE.formSubmit()', 'ODRIVE.resetToolbars()']};
 
 ODRIVE.trim = function (sString, sChar)
 {
@@ -930,7 +1033,12 @@ ODRIVE.init = function ()
 
 ODRIVE.initFilter = function ()
 {
-  if (ODRIVE.searchPredicates) {return;}
+  if (ODRIVE.searchPredicates)
+    return;
+
+  if (!OAT.AJAX)
+    return;
+
   var x = function(data) {
     var o = OAT.JSON.parse(data);
     ODRIVE.searchPredicates = o[0];
@@ -974,6 +1082,10 @@ ODRIVE.resetToolbars = function ()
 
 ODRIVE.formShow = function (action, id, params)
 {
+  var cmd = $('_cmd');
+  if (cmd)
+   cmd.value = '';
+
   var formParams = action.split('/')[0].toLowerCase();
   var form = ODRIVE.forms[formParams];
   if (form)
@@ -987,7 +1099,7 @@ ODRIVE.formShow = function (action, id, params)
     if (formDiv) {OAT.Dom.unlink(formDiv);}
     formDiv = OAT.Dom.create('div', {width:dx+'px', height:dy+'px'});
     formDiv.id = 'formDiv';
-    formDialog = new OAT.Dialog('', formDiv, {width:parseInt(dx)+20, buttons: 0, resize: 0, modal: 1, onhide: function(){return false;}});
+    formDialog = new OAT.Dialog('', formDiv, {buttons: 0, resize: 0, modal: 1, onhide: function(){return false;}});
     formDialog.cancel = formDialog.hide;
 
     var s = 'forms.vspx?sa='+encodeURIComponent(action)+ODRIVE.sessionParams();
@@ -1395,20 +1507,29 @@ ODRIVE.searchGetCompares = function (predicate)
 
 ODRIVE.davFolderSelect = function (fld)
 {
+	/* load stylesheets */
+	OAT.Style.include("grid.css");
+	OAT.Style.include("webdav.css");
+
   var options = {
     mode: 'browser',
-    foldersOnly: true,
                   onConfirmClick: function(path) {$(fld).value = '/DAV' + path;}
                 };
+  OAT.WebDav.options.foldersOnly = true;
   OAT.WebDav.open(options);
 }
 
 ODRIVE.davFileSelect = function (fld)
 {
+	/* load stylesheets */
+	OAT.Style.include("grid.css");
+	OAT.Style.include("webdav.css");
+
   var options = {
     mode: 'browser',
     onConfirmClick: function(path, fname) {$(fld).value = '/DAV' + path + fname;}
                 };
+  OAT.WebDav.options.foldersOnly = false;
   OAT.WebDav.open(options);
 }
 
@@ -1429,12 +1550,10 @@ ODRIVE.coloriseTables = function ()
 ODRIVE.aboutDialog = function ()
 {
   var aboutDiv = $('aboutDiv');
-  if (aboutDiv) {OAT.Dom.unlink(aboutDiv);}
-  aboutDiv = OAT.Dom.create('div', {
-    width:'430px',
-    height: '170px',
-    overflow: 'hidden'
-  });
+  if (aboutDiv)
+    OAT.Dom.unlink(aboutDiv);
+
+  aboutDiv = OAT.Dom.create('div', {height: '160px', overflow: 'hidden'});
   aboutDiv.id = 'aboutDiv';
   aboutDialog = new OAT.Dialog('About ODS Briefcase', aboutDiv, {width:445, buttons: 0, resize:0, modal:1});
 	aboutDialog.cancel = aboutDialog.hide;
@@ -1482,4 +1601,209 @@ ODRIVE.toggleEditor = function ()
     oEditor.updateElement();
     $('dav_content_plain').value = $v('dav_content_html');
   }
+}
+
+ODRIVE.updateRdfGraph = function ()
+{
+  function updateRdfGraphInternal(name) {
+    var graphPrefix;
+    var rdfGraph;
+
+    graphPrefix = $v('rdfGraph_prefix');
+    rdfGraph = $('dav_'+name+'_graph');
+    if ((rdfGraph.value == '') || (rdfGraph.value == (graphPrefix+$v('dav_name_save')+'#this')))
+      rdfGraph.value = graphPrefix + $v('dav_name') + '#this';
+  }
+  updateRdfGraphInternal('rdfSink');
+  updateRdfGraphInternal('S3');
+  updateRdfGraphInternal('IMAP');
+  updateRdfGraphInternal('GDrive');
+  updateRdfGraphInternal('Dropbox');
+  updateRdfGraphInternal('SkyDrive');
+  updateRdfGraphInternal('Box');
+  updateRdfGraphInternal('WebDAV');
+  updateRdfGraphInternal('RACKSPACE');
+
+  $('dav_name_save').value = $v('dav_name');
+}
+
+ODRIVE.oauthParams = function (json, display_name, email)
+{
+  try {
+    params = OAT.JSON.deserialize(unescape(json));
+  } catch (e) { params = null; }
+  var fld = createHidden('F1', 'dav_GDrive_JSON', null);
+  if (!params || params.error) {
+    alert ('Bad authentication!');
+    fld.value = '';
+  } else {
+    var d = new Date();
+    params.access_timestamp = d.format('Y-m-d H:i');
+    fld.value = OAT.JSON.serialize(params);
+    // $('dav_GDrive_authentication').innerHTML = 'Authenticated';
+    createHidden('F1', 'dav_GDrive_display_name', display_name);
+    createHidden('F1', 'dav_GDrive_email', email);
+
+    OAT.Dom.show('tr_dav_GDrive_display_name');
+    $('td_dav_GDrive_display_name').innerHTML = display_name;
+    OAT.Dom.show('tr_dav_GDrive_email');
+    $('td_dav_GDrive_email').innerHTML = email;
+    $('dav_GDrive_authenticate').value = 'Re-Authenticate';
+  }
+}
+
+ODRIVE.dropboxParams = function (sid, display_name, email)
+{
+  createHidden('F1', 'dav_Dropbox_authentication', 'Yes');
+  createHidden('F1', 'dav_Dropbox_sid', sid);
+  createHidden('F1', 'dav_Dropbox_display_name', display_name);
+  createHidden('F1', 'dav_Dropbox_email', email);
+
+  OAT.Dom.show('tr_dav_Dropbox_display_name');
+  $('td_dav_Dropbox_display_name').innerHTML = display_name;
+  OAT.Dom.show('tr_dav_Dropbox_email');
+  $('td_dav_Dropbox_email').innerHTML = email;
+  $('dav_Dropbox_authenticate').value = 'Re-Authenticate';
+}
+
+ODRIVE.skydriveParams = function (json, display_name)
+{
+  try {
+    params = OAT.JSON.deserialize(unescape(json));
+  } catch (e) { params = null; }
+  var fld = createHidden('F1', 'dav_SkyDrive_JSON', null);
+  if (!params || params.error) {
+    alert ('Bad authentication!');
+    fld.value = '';
+  } else {
+    var d = new Date();
+    params.access_timestamp = d.format('Y-m-d H:i');
+    fld.value = OAT.JSON.serialize(params);
+    createHidden('F1', 'dav_SkyDrive_display_name', display_name);
+
+    OAT.Dom.show('tr_dav_SkyDrive_display_name');
+    $('td_dav_SkyDrive_display_name').innerHTML = display_name;
+    $('dav_SkyDrive_authenticate').value = 'Re-Authenticate';
+  }
+}
+
+ODRIVE.boxParams = function (auth_token, display_name)
+{
+  createHidden('F1', 'dav_Box_authentication', 'Yes');
+  createHidden('F1', 'dav_Box_auth_token', auth_token);
+  createHidden('F1', 'dav_Box_display_name', display_name);
+
+  OAT.Dom.show('tr_dav_Box_display_name');
+  $('td_dav_Box_display_name').innerHTML = display_name;
+  $('dav_Box_authenticate').value = 'Re-Authenticate';
+}
+
+ODRIVE.verifyDialog = function ()
+{
+  var verifyDiv = $('verifyDiv');
+  if (verifyDiv)
+    OAT.Dom.unlink(verifyDiv);
+
+  verifyDiv = OAT.Dom.create('div', {height: '160px', overflow: 'hidden'});
+  verifyDiv.id = 'verifyDiv';
+  verifyDialog = new OAT.Dialog('Verify External Account', verifyDiv, {width:475, buttons: 0, resize:0, modal:1});
+	verifyDialog.cancel = verifyDialog.hide;
+  verifyDiv.innerHTML = '<img src="/ods/images/oat/Ajax_throbber.gif" style="margin: 80px 220px;" />';
+  verifyDialog.show();
+
+  var x = function (txt) {
+    if (txt != "")
+    {
+      var verifyDiv = $("verifyDiv");
+      if (verifyDiv)
+      {
+        verifyDiv.innerHTML = txt;
+        verifyDialog.show();
+      }
+    }
+  }
+  var params = '&connection=' + encodeURIComponent($v('dav_IMAP_connection'))
+             + '&server='     + encodeURIComponent($v('dav_IMAP_server'))
+             + '&port='       + encodeURIComponent($v('dav_IMAP_port'))
+             + '&user='       + encodeURIComponent($v('dav_IMAP_user'))
+             + '&password='   + encodeURIComponent($v('dav_IMAP_password'));
+  OAT.AJAX.GET(ODRIVE.httpsLink('ajax.vsp')+'?a=mailVerify'+params, '', x, {type:OAT.AJAX.TYPE_TEXT, onstart:function(){}, onerror:function(){}});
+}
+
+var dav_IMAP_connection;
+var dav_IMAP_server;
+var dav_IMAP_port;
+var dav_IMAP_user;
+var dav_IMAP_password;
+var dav_IMAP_seqNo = 0;;
+ODRIVE.loadIMAPFolders = function ()
+{
+  var needLoad = false;
+  if (!dav_IMAP_connection || (dav_IMAP_connection != $v('dav_IMAP_connection').trim())) {
+    dav_IMAP_connection = $v('dav_IMAP_connection').trim();
+    needLoad = true;
+  }
+  if (!dav_IMAP_server || (dav_IMAP_server != $v('dav_IMAP_server').trim())) {
+    dav_IMAP_server = $v('dav_IMAP_server').trim();
+    needLoad = true;
+  }
+  if (!dav_IMAP_port || (dav_IMAP_port != $v('dav_IMAP_port').trim())) {
+    dav_IMAP_port = $v('dav_IMAP_port').trim();
+    needLoad = true;
+  }
+  if (!dav_IMAP_user || (dav_IMAP_user != $v('dav_IMAP_user').trim())) {
+    dav_IMAP_user = $v('dav_IMAP_user').trim();
+    needLoad = true;
+  }
+  if (!dav_IMAP_password || (dav_IMAP_password != $v('dav_IMAP_password').trim())) {
+    dav_IMAP_password = $v('dav_IMAP_password').trim();
+    needLoad = true;
+  }
+  if (needLoad) {
+    var x = function(seqNo, data) {
+      if (seqNo < dav_IMAP_seqNo)
+        return;
+
+      var o = OAT.JSON.parse(data);
+      var dav_IMAP_folder = $('dav_IMAP_folder');
+      var cl = dav_IMAP_folder.comboList;
+      if (cl) {
+        cl.clearOpts();
+        var founded = false;
+        for (var i = 0; i < o.length; i++) {
+          cl.addOption(o[i]);
+          if (o[i] == dav_IMAP_folder.value)
+            founded = true;
+        }
+        if (!founded)
+          dav_IMAP_folder.value = '';
+
+        dav_IMAP_time = new Date();
+      }
+    }
+    var params = '&connection=' + encodeURIComponent(dav_IMAP_connection)
+               + '&server='     + encodeURIComponent(dav_IMAP_server)
+               + '&port='       + encodeURIComponent(dav_IMAP_port)
+               + '&user='       + encodeURIComponent(dav_IMAP_user)
+               + '&password='   + encodeURIComponent(dav_IMAP_password);
+    dav_IMAP_seqNo += 1;
+    var seqNo = dav_IMAP_seqNo;
+    OAT.AJAX.GET(ODRIVE.httpsLink('ajax.vsp')+'?a=mailFolders'+params, '', function(data){x(seqNo, data);});
+  }
+}
+
+ODRIVE.httpsLink = function (page) {
+  return page;
+
+  if (!ODRIVE.sslData)
+    return page;
+
+  var href =
+    'https://' +
+		document.location.hostname +
+		((ODRIVE.sslData.sslPort != '443')? ':' + ODRIVE.sslData.sslPort: '') +
+		document.location.pathname +
+		'/' +
+		page;
+  return href;
 }

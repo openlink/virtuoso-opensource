@@ -1,0 +1,136 @@
+@prefix rr: <http://www.w3.org/ns/r2rml#> .
+@prefix Demo: <http://localhost:8890/schemas/Demo/> .
+@prefix demo-stat: <http://localhost:8890/Demo/stat#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix void: <http://rdfs.org/ns/void#> .
+@prefix scovo: <http://purl.org/NET/scovo#> .
+@prefix aowl: <http://bblfish.net/work/atom-owl/2006-06-06/> .
+
+
+<#TriplesMapCategories> a rr:TriplesMap; rr:logicalTable [ rr:tableSchema "Demo" ; rr:tableOwner "demo" ; rr:tableName "Categories" ]; 
+rr:subjectMap [ rr:termType rr:IRI  ; rr:template "http://localhost:8890/Demo/categories/{CategoryID}"; rr:class Demo:Categories; rr:graph <http://localhost:8890/Demo#> ];
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:categoryid ] ; rr:objectMap [ rr:column "CategoryID" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:categoryname ] ; rr:objectMap [ rr:column "CategoryName" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:description ] ; rr:objectMap [ rr:column "Description" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:picture ] ; rr:objectMap [ rr:column "Picture" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:categories_of_products ] ; rr:objectMap [ rr:parentTriplesMap <#TriplesMapProducts>;  rr:joinCondition [ rr:child "CategoryID" ; rr:parent "CategoryID" ] ; ]; ] .
+
+<#TriplesMapCountries> a rr:TriplesMap; rr:logicalTable [ rr:tableSchema "Demo" ; rr:tableOwner "demo" ; rr:tableName "Countries" ]; 
+rr:subjectMap [ rr:termType rr:IRI  ; rr:template "http://localhost:8890/Demo/countries/{Name}"; rr:class Demo:Countries; rr:graph <http://localhost:8890/Demo#> ];
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:name ] ; rr:objectMap [ rr:column "Name" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:code ] ; rr:objectMap [ rr:column "Code" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:smallflagdavresourcename ] ; rr:objectMap [ rr:column "SmallFlagDAVResourceName" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:largeflagdavresourcename ] ; rr:objectMap [ rr:column "LargeFlagDAVResourceName" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:smallflagdavresourceuri ] ; rr:objectMap [ rr:column "SmallFlagDAVResourceURI" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:largeflagdavresourceuri ] ; rr:objectMap [ rr:column "LargeFlagDAVResourceURI" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:lat ] ; rr:objectMap [ rr:column "Lat" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:lng ] ; rr:objectMap [ rr:column "Lng" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:countries_of_provinces ] ; rr:objectMap [ rr:parentTriplesMap <#TriplesMapProvinces>;  rr:joinCondition [ rr:child "Code" ; rr:parent "CountryCode" ] ; ]; ] .
+
+<#TriplesMapCustomers> a rr:TriplesMap; rr:logicalTable [ rr:tableSchema "Demo" ; rr:tableOwner "demo" ; rr:tableName "Customers" ]; 
+rr:subjectMap [ rr:termType rr:IRI  ; rr:template "http://localhost:8890/Demo/customers/{CustomerID}"; rr:class Demo:Customers; rr:graph <http://localhost:8890/Demo#> ];
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:customerid ] ; rr:objectMap [ rr:column "CustomerID" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:companyname ] ; rr:objectMap [ rr:column "CompanyName" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:contactname ] ; rr:objectMap [ rr:column "ContactName" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:contacttitle ] ; rr:objectMap [ rr:column "ContactTitle" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:address ] ; rr:objectMap [ rr:column "Address" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:city ] ; rr:objectMap [ rr:column "City" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:region ] ; rr:objectMap [ rr:column "Region" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:postalcode ] ; rr:objectMap [ rr:column "PostalCode" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:country ] ; rr:objectMap [ rr:column "Country" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:countrycode ] ; rr:objectMap [ rr:column "CountryCode" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:phone ] ; rr:objectMap [ rr:column "Phone" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:fax ] ; rr:objectMap [ rr:column "Fax" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:customers_of_orders ] ; rr:objectMap [ rr:parentTriplesMap <#TriplesMapOrders>;  rr:joinCondition [ rr:child "CustomerID" ; rr:parent "CustomerID" ] ; ]; ] .
+
+<#TriplesMapEmployees> a rr:TriplesMap; rr:logicalTable [ rr:tableSchema "Demo" ; rr:tableOwner "demo" ; rr:tableName "Employees" ]; 
+rr:subjectMap [ rr:termType rr:IRI  ; rr:template "http://localhost:8890/Demo/employees/{EmployeeID}"; rr:class Demo:Employees; rr:graph <http://localhost:8890/Demo#> ];
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:employeeid ] ; rr:objectMap [ rr:column "EmployeeID" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:lastname ] ; rr:objectMap [ rr:column "LastName" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:firstname ] ; rr:objectMap [ rr:column "FirstName" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:title ] ; rr:objectMap [ rr:column "Title" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:titleofcourtesy ] ; rr:objectMap [ rr:column "TitleOfCourtesy" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:birthdate ] ; rr:objectMap [ rr:column "BirthDate" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:hiredate ] ; rr:objectMap [ rr:column "HireDate" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:address ] ; rr:objectMap [ rr:column "Address" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:city ] ; rr:objectMap [ rr:column "City" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:region ] ; rr:objectMap [ rr:column "Region" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:postalcode ] ; rr:objectMap [ rr:column "PostalCode" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:country ] ; rr:objectMap [ rr:column "Country" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:countrycode ] ; rr:objectMap [ rr:column "CountryCode" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:homephone ] ; rr:objectMap [ rr:column "HomePhone" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:extension ] ; rr:objectMap [ rr:column "Extension" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:photo ] ; rr:objectMap [ rr:column "Photo" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:notes ] ; rr:objectMap [ rr:column "Notes" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:reportsto ] ; rr:objectMap [ rr:column "ReportsTo" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:employees_of_orders ] ; rr:objectMap [ rr:parentTriplesMap <#TriplesMapOrders>;  rr:joinCondition [ rr:child "EmployeeID" ; rr:parent "EmployeeID" ] ; ]; ] .
+
+<#TriplesMapOrder_Details> a rr:TriplesMap; rr:logicalTable [ rr:tableSchema "Demo" ; rr:tableOwner "demo" ; rr:tableName "Order_Details" ]; 
+rr:subjectMap [ rr:termType rr:IRI  ; rr:template "http://localhost:8890/Demo/order_details/{OrderID}/{ProductID}"; rr:class Demo:Order_Details; rr:graph <http://localhost:8890/Demo#> ];
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:unitprice ] ; rr:objectMap [ rr:column "UnitPrice" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:quantity ] ; rr:objectMap [ rr:column "Quantity" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:discount ] ; rr:objectMap [ rr:column "Discount" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:order_details_has_orders ] ; rr:objectMap [ rr:termType rr:IRI ; rr:template "http://localhost:8890/Demo/orders/{OrderID}" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:order_details_has_products ] ; rr:objectMap [ rr:termType rr:IRI ; rr:template "http://localhost:8890/Demo/products/{ProductID}" ]; ] .
+
+<#TriplesMapOrders> a rr:TriplesMap; rr:logicalTable [ rr:tableSchema "Demo" ; rr:tableOwner "demo" ; rr:tableName "Orders" ]; 
+rr:subjectMap [ rr:termType rr:IRI  ; rr:template "http://localhost:8890/Demo/orders/{OrderID}"; rr:class Demo:Orders; rr:graph <http://localhost:8890/Demo#> ];
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:orderid ] ; rr:objectMap [ rr:column "OrderID" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:orderdate ] ; rr:objectMap [ rr:column "OrderDate" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:requireddate ] ; rr:objectMap [ rr:column "RequiredDate" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:shippeddate ] ; rr:objectMap [ rr:column "ShippedDate" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:freight ] ; rr:objectMap [ rr:column "Freight" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:shipname ] ; rr:objectMap [ rr:column "ShipName" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:shipaddress ] ; rr:objectMap [ rr:column "ShipAddress" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:shipcity ] ; rr:objectMap [ rr:column "ShipCity" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:shipregion ] ; rr:objectMap [ rr:column "ShipRegion" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:shippostalcode ] ; rr:objectMap [ rr:column "ShipPostalCode" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:shipcountry ] ; rr:objectMap [ rr:column "ShipCountry" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:shipcountrycode ] ; rr:objectMap [ rr:column "ShipCountryCode" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:orders_has_customers ] ; rr:objectMap [ rr:termType rr:IRI ; rr:template "http://localhost:8890/Demo/customers/{CustomerID}" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:orders_has_employees ] ; rr:objectMap [ rr:termType rr:IRI ; rr:template "http://localhost:8890/Demo/employees/{EmployeeID}" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:orders_has_shippers ] ; rr:objectMap [ rr:termType rr:IRI ; rr:template "http://localhost:8890/Demo/shippers/{ShipVia}" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:orders_of_order_details ] ; rr:objectMap [ rr:parentTriplesMap <#TriplesMapOrder_Details>;  rr:joinCondition [ rr:child "OrderID" ; rr:parent "OrderID" ] ; ]; ] .
+
+<#TriplesMapProducts> a rr:TriplesMap; rr:logicalTable [ rr:tableSchema "Demo" ; rr:tableOwner "demo" ; rr:tableName "Products" ]; 
+rr:subjectMap [ rr:termType rr:IRI  ; rr:template "http://localhost:8890/Demo/products/{ProductID}"; rr:class Demo:Products; rr:graph <http://localhost:8890/Demo#> ];
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:productid ] ; rr:objectMap [ rr:column "ProductID" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:productname ] ; rr:objectMap [ rr:column "ProductName" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:quantityperunit ] ; rr:objectMap [ rr:column "QuantityPerUnit" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:unitprice ] ; rr:objectMap [ rr:column "UnitPrice" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:unitsinstock ] ; rr:objectMap [ rr:column "UnitsInStock" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:unitsonorder ] ; rr:objectMap [ rr:column "UnitsOnOrder" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:reorderlevel ] ; rr:objectMap [ rr:column "ReorderLevel" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:discontinued ] ; rr:objectMap [ rr:column "Discontinued" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:products_has_categories ] ; rr:objectMap [ rr:termType rr:IRI ; rr:template "http://localhost:8890/Demo/categories/{CategoryID}" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:products_has_suppliers ] ; rr:objectMap [ rr:termType rr:IRI ; rr:template "http://localhost:8890/Demo/suppliers/{SupplierID}" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:products_of_order_details ] ; rr:objectMap [ rr:parentTriplesMap <#TriplesMapOrder_Details>;  rr:joinCondition [ rr:child "ProductID" ; rr:parent "ProductID" ] ; ]; ] .
+
+<#TriplesMapProvinces> a rr:TriplesMap; rr:logicalTable [ rr:tableSchema "Demo" ; rr:tableOwner "demo" ; rr:tableName "Provinces" ]; 
+rr:subjectMap [ rr:termType rr:IRI  ; rr:template "http://localhost:8890/Demo/provinces/{CountryCode}/{Province}"; rr:class Demo:Provinces; rr:graph <http://localhost:8890/Demo#> ];
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:province ] ; rr:objectMap [ rr:column "Province" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:provinces_has_countries ] ; rr:objectMap [ rr:termType rr:IRI ; rr:template "http://localhost:8890/Demo/countries/{CountryCode}" ]; ] .
+
+<#TriplesMapShippers> a rr:TriplesMap; rr:logicalTable [ rr:tableSchema "Demo" ; rr:tableOwner "demo" ; rr:tableName "Shippers" ]; 
+rr:subjectMap [ rr:termType rr:IRI  ; rr:template "http://localhost:8890/Demo/shippers/{ShipperID}"; rr:class Demo:Shippers; rr:graph <http://localhost:8890/Demo#> ];
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:shipperid ] ; rr:objectMap [ rr:column "ShipperID" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:companyname ] ; rr:objectMap [ rr:column "CompanyName" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:phone ] ; rr:objectMap [ rr:column "Phone" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:shippers_of_orders ] ; rr:objectMap [ rr:parentTriplesMap <#TriplesMapOrders>;  rr:joinCondition [ rr:child "ShipperID" ; rr:parent "ShipVia" ] ; ]; ] .
+
+<#TriplesMapSuppliers> a rr:TriplesMap; rr:logicalTable [ rr:tableSchema "Demo" ; rr:tableOwner "demo" ; rr:tableName "Suppliers" ]; 
+rr:subjectMap [ rr:termType rr:IRI  ; rr:template "http://localhost:8890/Demo/suppliers/{SupplierID}"; rr:class Demo:Suppliers; rr:graph <http://localhost:8890/Demo#> ];
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:supplierid ] ; rr:objectMap [ rr:column "SupplierID" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:companyname ] ; rr:objectMap [ rr:column "CompanyName" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:contactname ] ; rr:objectMap [ rr:column "ContactName" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:contacttitle ] ; rr:objectMap [ rr:column "ContactTitle" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:address ] ; rr:objectMap [ rr:column "Address" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:city ] ; rr:objectMap [ rr:column "City" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:region ] ; rr:objectMap [ rr:column "Region" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:postalcode ] ; rr:objectMap [ rr:column "PostalCode" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:country ] ; rr:objectMap [ rr:column "Country" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:countrycode ] ; rr:objectMap [ rr:column "CountryCode" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:phone ] ; rr:objectMap [ rr:column "Phone" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:fax ] ; rr:objectMap [ rr:column "Fax" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:homepage ] ; rr:objectMap [ rr:column "HomePage" ]; ] ;
+rr:predicateObjectMap [ rr:predicateMap [ rr:constant Demo:suppliers_of_products ] ; rr:objectMap [ rr:parentTriplesMap <#TriplesMapProducts>;  rr:joinCondition [ rr:child "SupplierID" ; rr:parent "SupplierID" ] ; ]; ] .

@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -1012,8 +1012,8 @@ select LEFT('$U{DATESTRING}',4), $U{YEAR},
                    'Thursday','Friday','Saturday'),$U{DAYOFWEEK}),
         '$U{DAYNAME}',
 
-       one_of_these('$U{DAYNAME}','Sunday','Monday','Tuesday','Wednesday',
-                                  'Thursday','Friday','Saturday'),
+       position ('$U{DAYNAME}', vector ('Sunday','Monday','Tuesday','Wednesday',
+                                  'Thursday','Friday','Saturday')),
         $U{DAYOFWEEK},
 
        aref(vector('No-Zero-Month!','January','February','March','April',

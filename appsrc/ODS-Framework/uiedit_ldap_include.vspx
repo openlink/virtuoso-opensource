@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -101,7 +101,7 @@
 
   <h3>LDAP Servers Addministration</h3>
   <vm:if test="self.v_mode = 'LDAP/browse'">
-    <v:data-source name="dsrc" expression-type="sql" nrows="10" initial-offset="0">
+    <v:data-source name="dsrc" expression-type="sql" nrows="0" initial-offset="0">
       <v:before-data-bind>
         <![CDATA[
           control.ds_sql := sprintf ('select * from LDAP..LDAP_SERVERS where LS_USER_ID = %d', self.u_id);

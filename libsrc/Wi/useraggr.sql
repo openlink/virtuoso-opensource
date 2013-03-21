@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -696,7 +696,7 @@ create aggregate DB.DBA.REGR_SXY (in e1 numeric, in e2 numeric) returns numeric 
 ;
 
 --!AWK PUBLIC
-create procedure xte_nodebld_final_root (in acc any) returns any array
+create procedure xte_nodebld_final_root (in acc any) returns any
 {
   return xte_nodebld_xmlagg_final (acc, xte_head (UNAME' root'));
 }
@@ -708,18 +708,303 @@ create aggregate DB.DBA.XMLAGG (in _child any) returns any
 
 create aggregate DB.DBA.VECTOR_AGG (in _child any) returns any
   from vectorbld_init, vectorbld_agg_acc, vectorbld_agg_final
+order
 ;
 
--- same as vector agg but does not force query to produce deterministic result order
-create aggregate DB.DBA.BAG_AGG (in _child any) returns any
-  from vectorbld_init, vectorbld_agg_acc, vectorbld_agg_final
+create aggregate DB.DBA.VECTOR_OF_NONNULLS_AGG (in _child any) returns any
+  from vectorbld_init, vector_of_nonnulls_bld_agg_acc, vectorbld_agg_final
+order
+;
+
+create aggregate DB.DBA.VECTOR_OR_NULL_AGG (in _child any) returns any
+  from vectorbld_init, vectorbld_agg_acc, vector_or_null_bld_agg_final
+order
+;
+
+create aggregate DB.DBA.VECTOR_OF_NONNULLS_OR_NULL_AGG (in _child any) returns any
+  from vectorbld_init, vector_of_nonnulls_bld_agg_acc, vector_or_null_bld_agg_final
+order
 ;
 
 create aggregate DB.DBA.VECTOR_CONCAT_AGG (in _child any) returns any
   from vectorbld_init, vectorbld_concat_agg_acc, vectorbld_agg_final
+order
 ;
 
 create aggregate DB.DBA.XQ_SEQUENCE_AGG (in _child any) returns any
   from xq_sequencebld_init, xq_sequencebld_agg_acc, xq_sequencebld_agg_final
+order
 ;
 
+-- same as vector aggregates but they do not force query to produce deterministic result order
+create aggregate DB.DBA.BAG_AGG (in _child any) returns any
+  from vectorbld_init, vectorbld_agg_acc, vectorbld_agg_final
+;
+
+create aggregate DB.DBA.BAG_OF_NONNULLS_AGG (in _child any) returns any
+  from vectorbld_init, vector_of_nonnulls_bld_agg_acc, vectorbld_agg_final
+;
+
+create aggregate DB.DBA.BAG_OR_NULL_AGG (in _child any) returns any
+  from vectorbld_init, vectorbld_agg_acc, vector_or_null_bld_agg_final
+;
+
+create aggregate DB.DBA.BAG_OF_NONNULLS_OR_NULL_AGG (in _child any) returns any
+  from vectorbld_init, vector_of_nonnulls_bld_agg_acc, vector_or_null_bld_agg_final
+;
+
+create aggregate DB.DBA.BAG_CONCAT_AGG (in _child any) returns any
+  from vectorbld_init, vectorbld_concat_agg_acc, vectorbld_agg_final
+;
+
+
+--!AWK PUBLIC
+create procedure DB.DBA.GROUP_CONCAT_INIT (inout _env any)
+{
+  _env := 0;
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.GROUP_CONCAT_ACC (inout _env any, in token varchar, in delim varchar)
+{
+--  if (185 <> __tag (_env))
+--    _env := string_output();
+--  else if (delim is not null)
+--    http (cast (delim as varchar), _env);
+--  http (cast (token as varchar), _env);
+  if (__tag of varchar <> __tag (_env))
+    _env := cast (token as varchar);
+  else if (delim is not null)
+    _env := concat (_env, cast (delim as varchar), cast (token as varchar));
+  else
+    _env := concat (_env, cast (token as varchar));
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.GROUP_CONCAT_FIN (inout _env any)
+{
+--  if (185 <> __tag (_env))
+--    return '';
+--  return string_output_string (_env);
+  if (__tag of varchar <> __tag (_env))
+    return '';
+  return _env;
+}
+;
+
+create aggregate DB.DBA.GROUP_CONCAT (in token varchar, in delim varchar) returns varchar
+  from DB.DBA.GROUP_CONCAT_INIT, DB.DBA.GROUP_CONCAT_ACC, DB.DBA.GROUP_CONCAT_FIN
+order
+;
+
+
+--!AWK PUBLIC
+create procedure DB.DBA.GROUP_CONCAT_DISTINCT_INIT (inout _env any)
+{
+  _env := 0;
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.GROUP_CONCAT_DISTINCT_ACC (inout _env any, in token varchar, in delim varchar)
+{
+  declare curlen integer;
+  declare env_vec, items any;
+  if (__tag of varchar <> __tag (token))
+    {
+      token := cast (token as varchar);
+      if (token is null)
+        return;
+    }
+  if (__tag of varchar <> __tag (_env))
+    {
+      _env := serialize (vector_zap_args (vector_zap_args (token), cast (delim as varchar)));
+      return;
+    }
+  env_vec := deserialize (_env);
+  items := aref_set_0 (env_vec, 0);
+  if (0 < position (token, items))
+    return;
+  items := vector_concat (items, vector_zap_args (token));
+  aset_zap_arg (env_vec, 0, items);
+  _env := serialize (env_vec);
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.GROUP_CONCAT_DISTINCT_FIN (inout _env any)
+{
+  declare itemctr, itemcount integer;
+  declare env_vec, items, ses any;
+  declare delim varchar;
+  if (__tag of varchar <> __tag (_env))
+    return '';
+  env_vec := deserialize (_env);
+  items := aref_set_0 (env_vec, 0);
+  gvector_sort (items, 1, 0, 1);
+  delim := aref_set_0 (env_vec, 1);
+  ses := string_output ();
+  itemctr := 0;
+  itemcount := length (items);
+  for (itemctr := 0; itemctr < itemcount; itemctr := itemctr + 1)
+    {
+      declare itm varchar;
+      if (itemctr)
+        http (delim, ses);
+      itm := items [itemctr];
+      http (itm, ses);
+    }
+items_done:
+  return string_output_string (ses);
+}
+;
+
+create aggregate DB.DBA.GROUP_CONCAT_DISTINCT (in token varchar, in delim varchar, in maxlen integer, in mode integer) returns varchar
+  from DB.DBA.GROUP_CONCAT_DISTINCT_INIT, DB.DBA.GROUP_CONCAT_DISTINCT_ACC, DB.DBA.GROUP_CONCAT_DISTINCT_FIN
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.GROUP_DIGEST_INIT (inout _env any)
+{
+  _env := 0;
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.GROUP_DIGEST_ACC (inout _env any, in token varchar, in delim varchar, in maxlen integer, in mode integer)
+{
+  declare curlen integer;
+  declare env_vec, items any;
+  if (__tag of varchar <> __tag (token))
+    {
+      token := cast (token as varchar);
+      if (token is null)
+        return;
+    }
+  if (__tag of varchar <> __tag (_env))
+    {
+      if (length (token) > maxlen)
+        token := subseq (token, 0, maxlen+1);
+      _env := serialize (vector_zap_args (vector_zap_args (token), cast (delim as varchar), maxlen));
+      return;
+    }
+  curlen := length (_env);
+  if (curlen >= maxlen)
+    return;
+  env_vec := deserialize (_env);
+  items := aref_set_0 (env_vec, 0);
+  if (bit_and (mode, 1))
+    {
+      if (0 < position (token, items))
+        return;
+    }
+  if (length (token) > (env_vec[2] - curlen))
+    token := subseq (token, 0, (env_vec[2] - curlen)+1);
+  items := vector_concat (items, vector_zap_args (token));
+  aset_zap_arg (env_vec, 0, items);
+  _env := serialize (env_vec);
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.GROUP_DIGEST_FIN (inout _env any)
+{
+  declare envlen, curlen, maxlen, itemctr, itemcount, delim_len, rest_len integer;
+  declare env_vec, items, ses any;
+  declare delim varchar;
+  if (__tag of varchar <> __tag (_env))
+    return '';
+  envlen := length (_env);
+  env_vec := deserialize (_env);
+  items := aref_set_0 (env_vec, 0);
+  delim := aref_set_0 (env_vec, 1);
+  rest_len := maxlen := aref_set_0 (env_vec, 2);
+  ses := string_output ();
+  itemctr := 0;
+  itemcount := length (items);
+  delim_len := length (delim);
+  for (itemctr := 0; itemctr < itemcount; itemctr := itemctr + 1)
+    {
+      declare itm varchar;
+      declare itm_len integer;
+      if (delim_len > (rest_len-5))
+        goto items_done;
+      if (itemctr)
+        {
+          http (delim, ses);
+          rest_len := rest_len - delim_len;
+        }
+      itm := items [itemctr];
+      itm_len := length (itm);
+      if ((itm_len > rest_len) or ((envlen > maxlen) and (itemctr = itemcount-1)))
+        {
+          itm := subseq (itm, 0, rest_len);
+          itm_len := coalesce (__max_notnull (strrchr (itm, 32), strrchr (itm, 10), strrchr (itm, 13)), 0);
+          while ((itm_len > 0) and (itm [itm_len-1] in (32, 10, 13)))
+            itm_len := itm_len - 1;
+          if (0 = itm_len)
+            http (subseq (itm, 0, rest_len-3), ses);
+          else
+            http (subseq (itm, 0, itm_len), ses);
+          http ('...', ses);
+          goto items_done;
+        }
+      http (itm, ses);
+      rest_len := rest_len - itm_len;
+    }
+items_done:
+  return string_output_string (ses);
+}
+;
+
+create aggregate DB.DBA.GROUP_DIGEST (in token varchar, in delim varchar, in maxlen integer, in mode integer) returns varchar
+  from DB.DBA.GROUP_DIGEST_INIT, DB.DBA.GROUP_DIGEST_ACC, DB.DBA.GROUP_DIGEST_FIN
+order
+;
+
+
+--!AWK PUBLIC
+create procedure DB.DBA.SAMPLE_INIT (inout _env any)
+{
+  _env := null;
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.SAMPLE_ACC (inout _env any, in sample any)
+{
+  if (_env is not null)
+    return;
+  _env := sample;
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.SAMPLE_FIN (inout _env any)
+{
+  return _env;
+}
+;
+
+create aggregate DB.DBA.SAMPLE (in sample any) returns any
+  from DB.DBA.SAMPLE_INIT, DB.DBA.SAMPLE_ACC, DB.DBA.SAMPLE_FIN
+order
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.BIT_OR_AGG_INIT (inout _env integer) { _env := 0; }
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.BIT_OR_AGG_ACC (inout _env integer, in v integer) { _env := __bit_or (_env, v); }
+;
+
+--!AWK PUBLIC
+create function DB.DBA.BIT_OR_AGG_FINAL (inout _env integer) returns integer { return _env; }
+;
+
+create aggregate DB.DBA.BIT_OR_AGG (in _child any) returns any
+  from DB.DBA.BIT_OR_AGG_INIT, DB.DBA.BIT_OR_AGG_ACC, DB.DBA.BIT_OR_AGG_FINAL
+;

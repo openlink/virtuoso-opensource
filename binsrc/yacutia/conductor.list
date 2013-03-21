@@ -9,7 +9,6 @@ conductor/account_remove_inc.vspx
 conductor/account_remove.vspx
 conductor/accounts_page.vspx
 conductor/accounts.vspx
-conductor/admin_dav_browser.sql
 conductor/admin_utils.js
 conductor/adm_login.vspx
 conductor/adm_navigation_bar.vspx
@@ -292,6 +291,9 @@ conductor/page.xsl
 conductor/persistent_xmlns.vspx
 conductor/popup2_browser.vspx
 conductor/popup_browser.vspx
+conductor/r2rml_gen.vspx
+conductor/r2rml_import.vspx
+conductor/r2rml_validate.vspx
 conductor/rdf_conf.vspx
 conductor/rdf_console.vspx
 conductor/rdf_filters_pp.vspx
@@ -313,13 +315,18 @@ conductor/role_remove_inc.vspx
 conductor/role_remove.vspx
 conductor/roles_inc.vspx
 conductor/roles.vspx
+conductor/sec_acl_edit_sp.vspx
 conductor/sec_acl_edit.vspx
+conductor/sec_auth_serv_sp.vspx
 conductor/sec_auth_serv.vspx
+conductor/sec_auth_sponger_1.vspx
+conductor/sec_auth_sponger_2.vspx
 conductor/sec_pki_1.vspx
 conductor/sec_pki_2_conf.vspx
 conductor/sec_pki_2.vspx
 conductor/sec_pki_3.vspx
 conductor/sec_pki_4.vspx
+conductor/sec_pki_download.vsp
 conductor/sec_pki_drop.vspx
 conductor/site.vspx
 conductor/soap_del_path.vspx

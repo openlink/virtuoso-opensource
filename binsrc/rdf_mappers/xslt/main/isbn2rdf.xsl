@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -30,6 +30,7 @@
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY geo "http://www.w3.org/2003/01/geo/wgs84_pos#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#"> 
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 ]>
 <xsl:stylesheet
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -42,6 +43,7 @@
   xmlns:wf="http://www.w3.org/2005/01/wf/flow#"
   xmlns:dcterms="http://purl.org/dc/terms/"
   xmlns:foaf="&foaf;"
+  xmlns:opl="&opl;"
   xmlns:sioc="&sioc;"
   xmlns:bibo="&bibo;"
   xmlns:gr="&gr;"
@@ -77,6 +79,13 @@
 
     <xsl:template match="ISBNdb/BookList/BookData">
 	<rdf:Description rdf:about="{vi:proxyIRI(concat('http://isbndb.com/d/book/', @book_id, '.html'))}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.isbndb.com#this">
+                        			<foaf:name>ISBN DB</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.isbndb.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 		<rdf:type rdf:resource="&book;Book"/>
         <rdf:type rdf:resource="&gr;ProductOrServiceModel"/>
 	</rdf:Description>
@@ -104,6 +113,13 @@
 
     <xsl:template match="ISBNdb/SubjectList/SubjectData">
 	<bibo:Collection rdf:about="{vi:proxyIRI(concat('http://isbndb.com/d/subject/', @subject_id, '.html'))}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.isbndb.com#this">
+                        			<foaf:name>ISBN DB</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.isbndb.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
             <xsl:if test="Name">
             <bibo:shortTitle>
                 <xsl:value-of select="Name"/>
@@ -126,6 +142,13 @@
 
     <xsl:template match="ISBNdb/CategoryList/CategoryData">
 	<bibo:Collection rdf:about="{vi:proxyIRI(concat('http://isbndb.com/c/', @category_id))}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.isbndb.com#this">
+                        			<foaf:name>ISBN DB</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.isbndb.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
             <xsl:if test="Name">
             <bibo:shortTitle>
                 <xsl:value-of select="Name"/>

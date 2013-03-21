@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -151,7 +151,6 @@ typedef struct sql_type_s
     collation_t *sqt_collation;
     uint32	sqt_precision;
     dtp_t	sqt_dtp;
-    dtp_t	sqt_col_dtp; /* in column wise index, dtp is varchar for the leaf row col but the content dtp is sqt_col_dtp */
     char	sqt_scale;
     char		sqt_non_null;
     char		sqt_is_xml;
@@ -181,7 +180,6 @@ typedef struct cl_host_group_s
   struct cluster_map_s *	chg_clm;
   cl_host_t **	chg_hosts;
   int32 *	chg_slices;
-  struct cl_slice_s **	chg_hosted_slices;
   char		chg_status; /* any slices in read only */
 } cl_host_group_t;
 
@@ -193,25 +191,13 @@ typedef struct cl_host_group_s
 #define CL_SLICE_RO 2 /* read only */
 
 /* location of data based on hash */
-
-typedef struct cl_slice_s
-{
-  /* unit of movable storage, several per server if elastic, else 1:1 to host groups */
-  int	csl_id;
-  cl_host_group_t *		csl_chg;
-  struct dbe_storage_s * 	csl_storage;
-} cl_slice_t;
-
 typedef struct cluster_map_s
 {
   caddr_t	clm_name;
   char		clm_is_modulo;
-  char		clm_is_elastic;
-  int		clm_distinct_slices; /* no of different slices */
-  int	clm_n_slices; /* no of places in the clm_slice_map */
+  int		clm_n_slices;
   int		clm_n_replicas;
   char *		clm_slice_status;
-  cl_slice_t **	clm_slices; /* which physical slice contains the data for the place in slice map, if not elastic 1:1 to host groups  */
   cl_host_group_t **	clm_slice_map;
   cl_host_group_t **	clm_hosts;
   char		clm_any_in_transfer; /* true if logging should check whether an extra log entry is needed due to updating a slice being relocated.  True is any in cl_slice_status is CL_CLICE_LOG.  */
@@ -384,11 +370,11 @@ struct dbe_key_s
   char			key_is_bitmap;
   char			key_simple_compress;
   key_ver_t		key_version;
+  char			key_no_dependent;
   char			key_is_col; /* column-wise layout */
   char		key_no_pk_ref; /* the key does not ref the main row */
   char		key_distinct; /* if no pk ref, do not put duplicates */
   char		key_not_null; /* if a significant key part is nullable and null, do not make an index entry */
-  char		key_no_compression; /* no key part is compressed in any version of key*/
   key_id_t		key_migrate_to;
   key_id_t		key_super_id;
   dbe_key_t **		key_versions;
@@ -436,7 +422,7 @@ struct dbe_key_s
   dbe_col_loc_t *	key_key_var;
   dbe_col_loc_t *	key_row_fixed;
   dbe_col_loc_t *	key_row_var;
-  short		key_n_parts;
+  struct extent_map_s **	key_col_em; /* for col projection, column wise em */
   short		key_n_key_compressibles;
   short		key_n_row_compressibles;
   short		key_length_area[N_ROW_VERSIONS]; /* if key/row have variable length, the offset of the first length word */
@@ -474,7 +460,7 @@ fragment instead of searching for the the fragment actually needed. */
   it->itc_read_waits += 10000; \
   if (k1) \
     k1->key_read++; \
-  if (itc->itc_ltrx && itc->itc_ltrx->lt_client) itc->itc_ltrx->lt_client->cli_activity.da_disk_reads++; \
+  if (itc->itc_ltrx) itc->itc_ltrx->lt_client->cli_activity.da_disk_reads++; \
 }
 
 #define ITC_MARK_LOCK_WAIT(it, t) \
@@ -509,13 +495,6 @@ fragment instead of searching for the the fragment actually needed. */
 { \
   if (itc->itc_insert_key) itc->itc_insert_key->key_n_landings++; \
   if (itc->itc_ltrx && itc->itc_ltrx->lt_client) itc->itc_ltrx->lt_client->cli_activity.da_random_rows++; \
-}
-
-
-#define ITC_MARK_LANDED_NC(itc) \
-{ \
-  itc->itc_insert_key->key_n_landings++; \
-  itc->itc_ltrx->lt_client->cli_activity.da_random_rows++; \
 }
 
 #define ITC_MARK_DIRTY(itc) \

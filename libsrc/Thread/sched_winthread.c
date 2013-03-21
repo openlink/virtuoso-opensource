@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -831,6 +831,7 @@ mutex_enter (dk_mutex_t *mtx)
     EnterCriticalSection(mtx->mtx_handle);
   _thread_num_wait--;
 #ifdef MTX_DEBUG
+  assert (mtx->mtx_owner == NULL);
   mtx->mtx_owner = thr;
   mtx->mtx_entry_file = file;
   mtx->mtx_entry_line = line;
@@ -840,30 +841,43 @@ mutex_enter (dk_mutex_t *mtx)
 
 
 int
-mutex_try_enter (dk_mutex_t *self)
+mutex_try_enter (dk_mutex_t *mtx)
 {
 #ifdef MTX_DEBUG
   thread_t* thr = thread_current();
 #endif
-  if (self->mtx_type == MUTEX_TYPE_LONG)
+  if (mtx->mtx_type == MUTEX_TYPE_LONG)
     {
-      if (WaitForSingleObject (self->mtx_handle, 0) == WAIT_TIMEOUT)
+      if (WaitForSingleObject (mtx->mtx_handle, 0) == WAIT_TIMEOUT)
 	return 0;
     }
-  EnterCriticalSection(self->mtx_handle);
+  else
+    {
+      if (!TryEnterCriticalSection (mtx->mtx_handle))
+	return 0;
+    }
 
 #ifdef MTX_DEBUG
-  self->mtx_owner = thr;
+  assert (mtx->mtx_owner == NULL);
+  mtx->mtx_owner = thr;
+  mtx->mtx_entry_file = __FILE__;
+  mtx->mtx_entry_line = __LINE__;
 #endif
   return 1;
 }
 
 
-void
-mutex_leave (dk_mutex_t *self)
+#ifdef MTX_DEBUG
+void mutex_leave_dbg (int line, char * file, dk_mutex_t *self)
+#else
+void mutex_leave (dk_mutex_t *self)
+#endif
 {
 #ifdef MTX_DEBUG
+  assert (self->mtx_owner == thread_current ());
   self->mtx_owner = NULL;
+  self->mtx_leave_line = line;
+  self->mtx_leave_file = file;
 #endif
   if (self->mtx_type == MUTEX_TYPE_LONG)
     ReleaseMutex (self->mtx_handle);
@@ -935,5 +949,11 @@ int
 mutex_enter (dk_mutex_t * mtx)
 {
   return (mutex_enter_dbg (__LINE__, __FILE__, mtx));
+}
+#undef mutex_leave
+void
+mutex_leave (dk_mutex_t * mtx)
+{
+  mutex_leave_dbg (__LINE__, __FILE__, mtx);
 }
 #endif

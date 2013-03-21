@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-<?vsp 
+<?vsp
   declare host,gr,page_resource_uri,_S varhar;
   declare sid,ses_parms  varchar;
   declare arr any;
@@ -14,10 +14,10 @@
 
   page_resource_uri := gr;
   page_resource_uri := replace (page_resource_uri, '%23', '#');
-   
-  _S := page_resource_uri; 
 
-  host := http_request_header (http_request_header (), 'Host');  
+  _S := page_resource_uri;
+
+  host := http_request_header (http_request_header (), 'Host');
 
   b3s_handle_ses (path, lines, params);
   sid := connection_get ('sid');
@@ -26,7 +26,7 @@
 
 ?>
 <head>
-  <base href="http://<?V host ?>/fct/rdfdesc/" />
+  <base href="http<?V case is_https_ctx () when 1 then 's' else '' end ?>://<?V host ?>/fct/rdfdesc/" />
   <title>Settings</title>
 
   <link rel="stylesheet" type="text/css" href="styles/default.css"  charset="utf-8" />
@@ -40,16 +40,16 @@
 <body>
   <div id="PG">
     <div id="HD">
-      <?vsp fct_page_head (); ?>	
+      <?vsp fct_desc_page_head (); ?>
       <ul id="main_menu">
         <?vsp if (sid is not null) { ?>
           <li><a href="<?= b3s_render_fct_link() ?>">Facets</a></li>
-        <?vsp } ?>      
-        <li id="mnu_descr"><a href="/describe/?uri=<?U _S ?><?V ses_parms ?>">Description</a></li>
+        <?vsp } ?>
+        <li id="mnu_descr"><a href="/describe/?uri=<?U b3s_u2w (_S) ?><?V ses_parms ?>">Description</a></li>
         <li id="mnu_usage" class="sel">
-          <a href="usage.vsp?g=<?U _S ?><?V ses_parms ?>">Usage Statistics</a>
+          <a href="usage.vsp?g=<?U b3s_u2w (_S) ?><?V ses_parms ?>">Metadata</a>
         </li>
-        <li id="mnu_settings"><a href="settings.vsp?uri=<?V page_resource_uri ?><?V ses_parms ?>">Settings</a></li>
+        <li id="mnu_settings"><a href="settings.vsp?uri=<?V b3s_u2w (page_resource_uri) ?><?V ses_parms ?>">Settings</a></li>
       </ul>
 
     </div> <!-- #HD -->
@@ -74,8 +74,8 @@
       <div id="ft_t">
       </div> <!-- #ft_t -->
       <div id="ft_b">
-	<?vsp fct_virt_info (); ?><br /> 
-	Copyright &copy; 2009-2011 OpenLink Software | <a href="/fct/facet_doc.html">About</a>
+	<?vsp fct_virt_info (); ?><br />
+	Copyright &copy; 2009-2013 OpenLink Software | <a href="/fct/facet_doc.html">About</a>
       </div> <!-- #ft_b -->
     </div> <!-- #FT -->
   </div> <!-- #PG -->

@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software AJAX Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2010 OpenLink Software
+ *  Copyright (C) 2005-2013 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -82,6 +82,14 @@ OAT.AJAX = {
 		return xhr;
 	},
 
+    HEAD:function(url,dta,callback,optObj) {
+	var options = OAT.AJAX.options(optObj);
+	var xhr = OAT.AJAX.init(url,callback,options);
+	xhr.open("HEAD",url,options.async,options.user,options.password);
+	OAT.AJAX.send(xhr,dta);
+	return xhr;
+    },
+    
     POST:function(url,dta,callback,optObj) {
 		var options = OAT.AJAX.options(optObj);
 		var xhr = OAT.AJAX.init(url,callback,options);

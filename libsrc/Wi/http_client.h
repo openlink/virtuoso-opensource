@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2009 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -188,6 +188,7 @@ typedef struct http_cli_ctx_s
   dk_session_t *    hcctx_prv_req_hdrs;
   dk_session_t *    hcctx_req_body;
   char		    hcctx_resp_content_is_strses;
+  char		    hcctx_resp_content_len_recd;
   long              hcctx_resp_content_length;
   caddr_t           hcctx_response;
   dk_set_t          hcctx_resp_hdrs;

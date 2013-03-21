@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2009 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -30,6 +30,8 @@
 #include "security.h"
 
 static void shcompo_release_int (shcompo_t *shc);
+long shc_waits = 0;
+long shc_recompiled = 0;
 
 /* PART 1. Generic functionality */
 
@@ -48,16 +50,19 @@ shcompo_get_or_compile (shcompo_vtable_t *vt, caddr_t key, int key_is_const, str
       mutex_leave (vt->shcompo_cache_mutex);
       if (NULL != res->shcompo_comp_mutex)
         {
-          mutex_enter (res->shcompo_comp_mutex);
+	  IO_SECT (qi);
+          SHC_ENTER (res);
+	  END_IO_SECT (err_ret);
+	  shc_waits ++;
           if (NULL != res->shcompo_error)
             {
               if (NULL != err_ret)
                 err_ret[0] = box_copy_tree (res->shcompo_error);
-              mutex_leave (res->shcompo_comp_mutex);
+              SHC_LEAVE (res);
               shcompo_release (res);
               return NULL;
             }
-          mutex_leave (res->shcompo_comp_mutex);
+          SHC_LEAVE (res);
         }
       return res;
     }
@@ -89,12 +94,14 @@ static int32 shc_rnd_seed;
               old_data->shcompo_ref_count -= 1;
               if (0 == old_data->shcompo_ref_count)
 	        shcompo_release_int (old_data);
+	      else /* we must increase again as it may happen to be released prematurely by other thread waiting on same condition */
+		old_data->shcompo_ref_count += 1;
             }
           rnd++;
 	}
     }
   id_hash_add_new (vt->shcompo_cache, (caddr_t)(&key), (caddr_t)(&res));
-  mutex_enter (res->shcompo_comp_mutex); /* Safe to enter there inside vt->shcompo_cache_mutex because nobody else knows about the res at all */
+  SHC_ENTER (res); /* Safe to enter there inside vt->shcompo_cache_mutex because nobody else knows about the res at all */
   mutex_leave (vt->shcompo_cache_mutex);
   vt->shcompo_compile (res, qi, env);
   if (NULL != res->shcompo_error)
@@ -105,11 +112,11 @@ static int32 shc_rnd_seed;
       if (id_hash_remove (vt->shcompo_cache, (caddr_t)(&key)))
         res->shcompo_ref_count -= 1;
       mutex_leave (vt->shcompo_cache_mutex);
-      mutex_leave (res->shcompo_comp_mutex);
+      SHC_LEAVE (res);
       shcompo_release (res);
       return NULL;
     }
-  mutex_leave (res->shcompo_comp_mutex);
+  SHC_LEAVE (res);
   return res;
 }
 
@@ -126,14 +133,14 @@ shcompo_get (shcompo_vtable_t *vt, caddr_t key)
       mutex_leave (vt->shcompo_cache_mutex);
       if (NULL != res->shcompo_comp_mutex)
         {
-          mutex_enter (res->shcompo_comp_mutex);
+          SHC_ENTER (res);
           if (NULL != res->shcompo_error)
             {
-              mutex_leave (res->shcompo_comp_mutex);
+              SHC_LEAVE (res);
               shcompo_release (res);
               return NULL;
             }
-          mutex_leave (res->shcompo_comp_mutex);
+          SHC_LEAVE (res);
         }
       return res;
     }
@@ -155,6 +162,7 @@ shcompo_release_int (shcompo_t *shc)
   shcompo_vtable_t *vt = shc->_;
   if (NULL != shc->shcompo_comp_mutex)
     {
+      SHC_COMP_MTX_CHECK (shc);
       dk_set_push (&(vt->shcompo_spare_mutexes), shc->shcompo_comp_mutex);
       shc->shcompo_comp_mutex = NULL;
     }
@@ -209,8 +217,6 @@ shcompo_stale_if_needed (shcompo_t *shc)
   vt = shc->_;
   if (NULL == vt->shcompo_check_if_stale)
     return;
-  if (shc->shcompo_is_stale || (NULL == shc->shcompo_data))
-    return;
   mutex_enter (vt->shcompo_cache_mutex);
   if (shc->shcompo_is_stale || (NULL == shc->shcompo_data))
     {
@@ -254,7 +260,8 @@ shcompo_recompile (shcompo_t **shc_ptr)
     new_shc->shcompo_comp_mutex = (dk_mutex_t *)(dk_set_pop (&(vt->shcompo_spare_mutexes)));
   else
     new_shc->shcompo_comp_mutex = mutex_allocate ();
-  mutex_enter (new_shc->shcompo_comp_mutex);
+  SHC_ENTER (new_shc);
+  shc_recompiled ++;
   mutex_leave (vt->shcompo_cache_mutex);
   vt->shcompo_recompile (old_shc, new_shc);
   if (NULL != new_shc->shcompo_error)
@@ -265,12 +272,13 @@ shcompo_recompile (shcompo_t **shc_ptr)
       old_shc->shcompo_is_stale = 1;
       if (1 == old_shc->shcompo_ref_count)
         {
+	  SHC_COMP_MTX_CHECK (old_shc);
           dk_set_push (&(old_shc->_->shcompo_spare_mutexes), old_shc->shcompo_comp_mutex);
           old_shc->shcompo_comp_mutex = NULL;
         }
       new_shc->shcompo_key = NULL;
       mutex_leave (vt->shcompo_cache_mutex);
-      mutex_leave (new_shc->shcompo_comp_mutex);
+      SHC_LEAVE (new_shc);
       shcompo_release (new_shc);
       return;
     }
@@ -279,7 +287,7 @@ shcompo_recompile (shcompo_t **shc_ptr)
   new_shc->shcompo_ref_count += 1;
   old_shc->shcompo_key = NULL;
   mutex_leave (vt->shcompo_cache_mutex);
-  mutex_leave (new_shc->shcompo_comp_mutex);
+  SHC_LEAVE (new_shc);
   shcompo_stale (old_shc);
   shc_ptr[0] = new_shc;
 }
@@ -316,6 +324,9 @@ shcompo_alloc__default (void *env)
 {
   shcompo_t *res = (shcompo_t *)dk_alloc (sizeof (shcompo_t));
   res->shcompo_data = NULL;
+#ifndef NDEBUG
+  res->shcompo_owner = NULL;
+#endif
   return res;
 }
 
@@ -329,7 +340,26 @@ shcompo_compile__qr(shcompo_t *shc, query_instance_t *qi, void *env)
   caddr_t txt = ((caddr_t *)(shc->shcompo_key))[0];
   long saved_mrows = qi->qi_client->cli_resultset_max_rows;
   qi->qi_client->cli_resultset_max_rows = -1;
+  QR_RESET_CTX_T (qi->qi_thread)
+    {
       shc->shcompo_data = sql_compile (txt, qi->qi_client, &(shc->shcompo_error), 0);
+    }
+  QR_RESET_CODE
+    {
+      POP_QR_RESET;
+      /* if it compiles possibly will have an non-empty mem pool */
+      if (THR_TMP_POOL)
+	MP_DONE ();
+      switch (reset_code)
+	{
+	  case RST_ERROR:
+	      shc->shcompo_error = thr_get_error_code (THREAD_CURRENT_THREAD);
+	      break;
+	  default:
+	      shc->shcompo_error = srv_make_new_error ("S1T00", "SR490", "Transaction timed out");
+	}
+    }
+  END_QR_RESET;
   qi->qi_client->cli_resultset_max_rows = saved_mrows;
 }
 

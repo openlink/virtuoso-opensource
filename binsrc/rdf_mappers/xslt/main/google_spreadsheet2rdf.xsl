@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -33,6 +33,7 @@
 	<!ENTITY rss "http://purl.org/rss/1.0/">
 	<!ENTITY dc "http://purl.org/dc/elements/1.1/">
 	<!ENTITY dcterms "http://purl.org/dc/terms/">
+	<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 	<!ENTITY atomowl "http://atomowl.org/ontologies/atomrdf#">
 	<!ENTITY content "http://purl.org/rss/1.0/modules/content/">
 	<!ENTITY ff "http://api.friendfeed.com/2008/03">
@@ -46,6 +47,7 @@
     xmlns:xn="http://www.ning.com/atom/1.0"
     xmlns:gs="&gs;"
     xmlns:bibo="&bibo;"
+    xmlns:opl="&opl;"
     xmlns:sioc="&sioc;"
     xmlns:foaf="&foaf;"
     xmlns:dcterms="&dcterms;"
@@ -82,6 +84,13 @@
 			</rdf:Description>
 
 			<rdf:Description rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://spreadsheets.google.com#this">
+                        			<foaf:name>Google Spreadsheets</foaf:name>
+                        			<foaf:homepage rdf:resource="http://spreadsheets.google.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 				<rdf:type rdf:resource="&bibo;Document"/>
 				<dcterms:modified rdf:datatype="&xsd;dateTime">
 					<xsl:value-of select="a:updated"/>

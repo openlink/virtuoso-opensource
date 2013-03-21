@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -27,7 +27,7 @@
         fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
         xmlns:vm="http://www.openlinksw.com/vspx/macro"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
-  <vm:pagetitle>RDF View definition</vm:pagetitle>
+  <vm:pagetitle>Linked Data View definition</vm:pagetitle>
   <vm:pagewrapper>
   <vm:variables>
     <v:variable name="is_popup" persist="0" type="integer" default="0" />
@@ -46,7 +46,7 @@
       <v:variable persist="0" name="pklist" type="any" default="null" param-name="pk"/>
   </vm:variables>
 
-  <vm:header caption="RDF View definition"/>
+  <vm:header caption="Linked Data View definition"/>
   <vm:pagebody>
       <v:on-init><![CDATA[
 	  declare pos int;
@@ -76,7 +76,7 @@
 	      declare i int;
               i := 0;
 	      cols := make_array ((select count(*) from TABLE_COLS where "TABLE" = self.tbl), 'any');
-	      for select "COLUMN" as colname, COL_DTP from TABLE_COLS where "TABLE" = self.tbl order by COL_ID do
+	      for select "COLUMN" as colname, COL_DTP from TABLE_COLS where "TABLE" = self.tbl and "COLUMN" <> '_IDN' order by COL_ID do
 	        {
 		  cols [i] := vector (0, '');
 		  i := i + 1;
@@ -170,7 +170,7 @@
 				      select distinct ?prop
 				      { graph ?:owl { ?prop rdfs:domain ?cls .  }}) x);
 		      --dbg_obj_print (props);
-		      for select "COLUMN" as col, COL_ID from TABLE_COLS where "TABLE" = self.tbl order by COL_ID do
+		      for select "COLUMN" as col, COL_ID from TABLE_COLS where "TABLE" = self.tbl and "COLUMN" <> '_IDN' order by COL_ID do
 		        {
 		      ?>
 		      <tr class="<?V case when mod (i, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
@@ -238,7 +238,7 @@
 			    }
 			  pos := position (self.tbl, self.tbls);
 			  cols := self.cols [pos - 1][1];
-			  for select "COLUMN" as col, COL_ID from TABLE_COLS where "TABLE" = self.tbl order by COL_ID do
+			  for select "COLUMN" as col, COL_ID from TABLE_COLS where "TABLE" = self.tbl and "COLUMN" <> '_IDN' order by COL_ID do
 			    {
 			      x := atoi (get_keyword (sprintf ('sel_%d', COL_ID), e.ve_params, '0'));
 			      if (x = 2)
@@ -267,7 +267,7 @@
         <v:template type="simple" name="sc_1" enabled="0">
           <tr>
 	    <td>
-	      <img class="dialog_icon" src="images/icons/about_32.png" alt="Info" title="Info"/> The RDF View definition exported successfully.
+	      <img class="dialog_icon" src="images/icons/about_32.png" alt="Info" title="Info"/> The Linked Data View definition is exported successfully.
 	    </td>
           </tr>
         </v:template>

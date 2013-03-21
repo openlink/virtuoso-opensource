@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -698,7 +698,7 @@ These are then enforced for SPARUL (the SPARQL update language) and SPARQL.
 </para>
 <para>
 When an RDF graph is based on relationally stored data in Virtuoso or another RDBMS through Virtuoso's
-SQL federation feature (i.e., if the graph is an RDF View of underlying SQL data), then all relational
+SQL federation feature (i.e., if the graph is an Linked Data View of underlying SQL data), then all relational
 security controls apply.
 </para>
 <para>
@@ -780,12 +780,12 @@ MaxCheckpointRemap = 246837
        say 1/4 of the DB size will resolve the issue.</para>
     </sect2>                  
     <sect2 id="virtuosotipsandtricksrdftriggersoptions">
-      <title>What are "Generate RDB2RDF triggers" and "Enable Data Syncs with Physical Quad Store" RDF Views options?</title>
-      <para>These RDF Views options basically persist the triples in the transient View Graph in the Native Quad Store. The Data Sync is how you keep the transient views in sync with the persisted triples.</para>	      
+      <title>What are "Generate RDB2RDF triggers" and "Enable Data Syncs with Physical Quad Store" Linked Data Views options?</title>
+      <para>These Linked Data Views options basically persist the triples in the transient View Graph in the Native Quad Store. The Data Sync is how you keep the transient views in sync with the persisted triples.</para>	      
       <para>Without this capability you cannot exploit faceted browsing without severe performance overhead when using Linked Data based conceptual views over ODBC or JDBC accessible data sources.</para>	
       <para>Note: Using these options when the RFViews have already been created is not currently possible via the Conductor UI. Instead you should be able to add them manually from isql:</para>	            
 <orderedlist>
-  <listitem>Drop the RDF View graph and Quad Map.</listitem>
+  <listitem>Drop the Linked Data View graph and Quad Map.</listitem>
   <listitem>Create it again with the RDB2RDF Triggers options enabled.</listitem>
 </orderedlist>  
      <tip><title>See Also:</title>
@@ -834,7 +834,7 @@ LIMIT 10
     </sect2>  
     <sect2 id="virtuosotipsandtricksquadstorageinternally">
       <title>How can I see which quad storages exist and in which quad storage a graph resides?</title>
-      <para>Let's take for example a <ulink url="http://virtuoso.openlinksw.com/whitepapers/relational%20rdf%20views%20mapping.html">created RDF view from relational data in Virtuoso</ulink>. The RDF output therefor should have two graphs which reside in a quad storage named for ex.:
+      <para>Let's take for example a <ulink url="http://virtuoso.openlinksw.com/whitepapers/relational%20rdf%20views%20mapping.html">created Linked Data View from relational data in Virtuoso</ulink>. The RDF output therefor should have two graphs which reside in a quad storage named for ex.:
       </para>	
 <programlisting><![CDATA[
 http://localhost:8890/rdfv_demo/quad_storage/default	
@@ -874,12 +874,12 @@ http://www.openlinksw.com/schemas/virtrdf#SyncToQuads
       <itemizedlist mark="bullet">
         <listitem><emphasis>virtrdf:DefaultQuadStorage</emphasis> is what's in use if no input:storage specified.</listitem>
         <listitem><emphasis>virtrdf:DefaultServiceStorage</emphasis> will be used for SPARQL federation.</listitem>
-        <listitem><emphasis>virtrdf:SyncToQuads</emphasis> is to keep the list of RDF Views that are translated into RDB2RDF triggers.</listitem>        
+        <listitem><emphasis>virtrdf:SyncToQuads</emphasis> is to keep the list of Linked Data Views that are translated into RDB2RDF triggers.</listitem>        
       </itemizedlist>      
-      <para>There are two ways of using the RDF View from above in SPARQL endpoint without 
+      <para>There are two ways of using the Linked Data View from above in SPARQL endpoint without 
       	<emphasis>define input:storage</emphasis>:</para>	
       <orderedlist>
-        <listitem>Create RDF View right in <emphasis>virtrdf:DefaultQuadStorage</emphasis> or add the 
+        <listitem>Create Linked Data View right in <emphasis>virtrdf:DefaultQuadStorage</emphasis> or add the 
         view in other storage and then copy it from there to <emphasis>virtrdf:DefaultQuadStorage</emphasis>.
           <itemizedlist mark="bullet">
             <listitem>In any of these two variants, use: 
@@ -910,7 +910,7 @@ SPARQL ALTER QUAD STORAGE virtrdf:DefaultQuadStorage . . .
       some other built-in thing, it can be safely recovered by 
       <link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA</function></link>, 
       with first parameter set to 1. This will keep your own data intact. However we recommend to write 
-      a script that declares all your formats, RDF Views and storages, to be able to reproduce the 
+      a script that declares all your formats, Linked Data Views and storages, to be able to reproduce the 
       configuration after any failures.</para>
     </sect2>    
     <sect2 id="virtuosotipsandtricksgraphsecurity">
@@ -918,7 +918,7 @@ SPARQL ALTER QUAD STORAGE virtrdf:DefaultQuadStorage . . .
       <para>Virtuoso supports graph-level security, as described <link linkend="rdfgraphsecurity">here</link> 
       but not subject-level or predicate-level. When exposing data that needs protected access, triples 
       should be confined to private  name graphs which are protected by ACLs using WebID.</para>
-      <para>Note, how you can use <ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtAuthPolicyFOAFSSL">WebID to protect Virtuoso SPARQL endpoints</ulink>.</para>  
+      <para>Note, how you can use <ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSPARQLSecurityWebID">WebID to protect Virtuoso SPARQL endpoints</ulink>.</para>  
       <tip><title>See Also:</title>
         <para><link linkend="rdfgraphsecurity">RDF Graphs Security</link></para>
       </tip>
@@ -1181,34 +1181,85 @@ specific patch.
       <title>How Can I define graph with virt:rdf_sponger option set to "on"?</title>                    
       <para>Suppose we have the following scenario:</para>
       <orderedlist>
-        <listitem>Create Virtuoso user using Conductor.</listitem>
-        <listitem>Create for the user a RDF Sink folder.</listitem>        
-        <listitem>In the properties of the RDF sink folder add the following 
-          <emphasis>virt:rdf_graph</emphasis> option: 
+        <listitem>Create Virtuoso user using Conductor for ex. with name "john" and pwd 1.</listitem>
+        <listitem>Create for the user a RDF Sink folder for ex. with name "MySinkFolder" from type 
+        	"RDF Upload Folder" or use the <emphasis>rdf_sink</emphasis> folder created automatically 
+        	for your user.</listitem> 
+        <listitem>In the properties page of the RDF sink folder add in the WebDAV section this 
+        	property <emphasis>virt:rdf_graph</emphasis> with value: 
 <programlisting><![CDATA[
-http://localhost:8080/DAV/home/dba/rdf_sink/	
+http://host:port/DAV/home/<user-name>/<rdf-sink-folder>/
+
+-- So in our example it should be:
+http://localhost:8890/DAV/home/john/MySinkFolder/
 ]]></programlisting>
         </listitem>
-        <listitem>Set <emphasis>virt:rdf_sponger</emphasis> to "on".</listitem>
-        <listitem>Upload RDF files to the RDF Sink folder.</listitem>        
-        <listitem>As result the RDF data should be stored in graph 
-        	for ex. (depending on your folder name etc.): 
-<programlisting><![CDATA[
-http://local.virt/DAV/home/wa_sink/rdf_sink/wa_address_agents.rdf	
-]]></programlisting>
+        <listitem>Add another property virt:rdf_sponger with value "on". 
+          <figure id="sink1" float="1">
+            <title></title>
+            <graphic fileref="ui/sink1.png"/>
+          </figure>        	
         </listitem>
-        <listitem>In order to define any graph you want with the option from above, you should execute:
+        <listitem>Upload RDF files to the RDF Sink folder "MySinkFolder", for ex. upload file with name 
+        	"data.rdf":
+          <figure id="sink2" float="1">
+            <title></title>
+            <graphic fileref="ui/sink2.png"/>
+          </figure>         	
+        </listitem>        
+        <listitem>As result the RDF data should be stored in graph depending on your folder name etc.: 
 <programlisting><![CDATA[
-SQL>DAV_PROP_SET (davLocation,  'virt:rdf_graph', iri, _uid, _pwd);	
+http:///local.virt/DAV/home/<user-name>/<rdf-sink-folder>/<resource>
+
+-- So in our example it will be:
+http:///local.virt/DAV/home/john/MySinkFolder/data.rdf
+]]></programlisting>
+          <orderedlist>
+            <listitem>Go to http://host:port/sparql ; </listitem>
+            <listitem>Execute simple query to view the graph triples: 
+<programlisting><![CDATA[
+SELECT  * 
+FROM <http://local.virt/DAV/home/john/MySinkFolder/data.rdf>
+WHERE 
+  {
+    ?s ?p ?o
+  }	
+]]></programlisting>
+              <figure id="sink3" float="1">
+                <title></title>
+                <graphic fileref="ui/sink3.png"/>
+              </figure> 
+              <figure id="sink4" float="1">
+                <title></title>
+                <graphic fileref="ui/sink4.png"/>
+              </figure> 
+        </listitem>
+          </orderedlist>     
+        </listitem>
+        <listitem>In order to define any graph you want with the options from above, you should execute: 
+<programlisting><![CDATA[
+SQL> DAV_PROP_SET ('/DAV/home/<user-name>/<rdf-sink-folder>/',  'virt:rdf_graph', iri, <user-name>, <password>);
+
+-- So in our example it should be:
+SQL> DAV_PROP_SET ('/DAV/home/john/MySinkFolder/',  'virt:rdf_graph', 'http://mydata.com', 'john', '1');
 ]]></programlisting>
           <itemizedlist mark="bullet">
-            <listitem>Calling this function uses the given IRI as the graph IRI when sponging stuff 
-            	put in the rdf_sink/ collection davLocation.</listitem>
+            <listitem>Note: calling this function uses the given IRI as the graph IRI when sponging 
+            	stuff put in &lt;your-rdf-sink-folder&gt;.</listitem>
           </itemizedlist>            
         </listitem>
         <listitem>Finally you should execute the following command to get the RDF data from the new graph:
 <programlisting><![CDATA[
-SQL>SELECT DAV_PPROP_GET ('/DAV/home/dba/rdf_sink/', 'virt:rdf_graph','dba', 'dba');	
+SQL> SELECT DAV_PROP_GET ('/DAV/home/<user-name>/<your-rdf-sink-folder>/', 'virt:rdf_graph',<user-name>, <password>);
+
+-- So in our example it should be:
+SQL> SELECT DAV_PROP_GET ('/DAV/home/john/MySinkFolder/', 'virt:rdf_graph','john', '1');
+
+Query result:
+DAV_PROP_GET
+http://localhost:8890/DAV/home/john/MySinkFolder/
+
+No. of rows in result: 1 
 ]]></programlisting>
         </listitem>
         </orderedlist>
@@ -1434,7 +1485,7 @@ WHERE
       <tip><title>See Also:</title>
        <para><link linkend="rdfsparqlrule">Inference Rules and Reasoning</link></para>
        <para><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtFacetBrowserInstallConfig">Virtuoso Faceted Browser Installation and configuration</ulink></para>
-       <para><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtuosoFacetsWebService">Virtuoso Facets Web Service</ulink></para>       
+       <para><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtuosoFacetsWebService">Virtuoso Faceted Web Service</ulink></para>       
      </tip>          
     </sect2>   
     <sect2 id="virtuosotipsandtricksdumparbqntr">
@@ -1998,6 +2049,48 @@ Done. -- 866 msec.
   </listitem>
 </orderedlist>
     </sect2> 
+    <sect2 id="cxmlurlptrn">
+      <title>What CXML params are supported for the SPARQL URL pattern?</title>     
+      <para>The following options are supported for CXML link behavior in the SPARQL URL Pattern:</para>
+<orderedlist>
+  <listitem>Local faceted navigation links: 
+<programlisting><![CDATA[ 
+# CXML_redir_for_subjs=&CXML_redir_for_hrefs=&: 
+
+http://lod.openlinksw.com/sparql?default-graph-uri=&should-sponge=&query=SELECT+DISTINCT+%3Fcafe+%3Flat+%3Flong+%3Fcafename+%3Fchurchname++%28+bif%3Around%28bif%3Ast_distance+%28%3Fchurchgeo%2C+%3Fcafegeo%29%29+%29++WHERE++{++++%3Fchurch+a+lgv%3Aplace_of_worship+.++++%3Fchurch+geo%3Ageometry+%3Fchurchgeo+.++++%3Fchurch+lgv%3Aname+%3Fchurchname+.++++%3Fcafe+a+lgv%3Acafe+.++++%3Fcafe+lgv%3Aname+%3Fcafename+.++++%3Fcafe+geo%3Ageometry+%3Fcafegeo+.++++%3Fcafe+geo%3Alat+%3Flat+.++++%3Fcafe+geo%3Along+%3Flong+.++++FILTER+%28+bif%3Ast_intersects+%28%3Fchurchgeo%2C+bif%3Ast_point+%282.3498%2C48.853%29%2C5%29++%26%26+bif%3Ast_intersects+%28%3Fcafegeo%2C+%3Fchurchgeo%2C+0.2%29+%29+}+LIMIT+50&debug=on&timeout=&format=text%2Fhtml&CXML_redir_for_subjs=&CXML_redir_for_hrefs=&save=display&fname=
+]]></programlisting>   	
+  </listitem>
+  <listitem>External Resource Links: 
+<programlisting><![CDATA[ 
+# CXML_redir_for_subjs=&CXML_redir_for_hrefs=121: 
+
+http://lod.openlinksw.com/sparql?default-graph-uri=&should-sponge=&query=SELECT+DISTINCT+%3Fcafe+%3Flat+%3Flong+%3Fcafename+%3Fchurchname++%28+bif%3Around%28bif%3Ast_distance+%28%3Fchurchgeo%2C+%3Fcafegeo%29%29+%29++WHERE++{++++%3Fchurch+a+lgv%3Aplace_of_worship+.++++%3Fchurch+geo%3Ageometry+%3Fchurchgeo+.++++%3Fchurch+lgv%3Aname+%3Fchurchname+.++++%3Fcafe+a+lgv%3Acafe+.++++%3Fcafe+lgv%3Aname+%3Fcafename+.++++%3Fcafe+geo%3Ageometry+%3Fcafegeo+.++++%3Fcafe+geo%3Alat+%3Flat+.++++%3Fcafe+geo%3Along+%3Flong+.++++FILTER+%28+bif%3Ast_intersects+%28%3Fchurchgeo%2C+bif%3Ast_point+%282.3498%2C48.853%29%2C5%29++%26%26+bif%3Ast_intersects+%28%3Fcafegeo%2C+%3Fchurchgeo%2C+0.2%29+%29+}+LIMIT+50&debug=on&timeout=&format=text%2Fhtml&CXML_redir_for_subjs=&CXML_redir_for_hrefs=121&save=display&fname=
+
+]]></programlisting>   	
+  </listitem>
+  <listitem>External faceted navigation links: 
+<programlisting><![CDATA[ 
+# CXML_redir_for_subjs=&CXML_redir_for_hrefs=LOCAL_PIVOT: 
+
+http://lod.openlinksw.com/sparql?default-graph-uri=&should-sponge=&query=SELECT+DISTINCT+%3Fcafe+%3Flat+%3Flong+%3Fcafename+%3Fchurchname++%28+bif%3Around%28bif%3Ast_distance+%28%3Fchurchgeo%2C+%3Fcafegeo%29%29+%29++WHERE++{++++%3Fchurch+a+lgv%3Aplace_of_worship+.++++%3Fchurch+geo%3Ageometry+%3Fchurchgeo+.++++%3Fchurch+lgv%3Aname+%3Fchurchname+.++++%3Fcafe+a+lgv%3Acafe+.++++%3Fcafe+lgv%3Aname+%3Fcafename+.++++%3Fcafe+geo%3Ageometry+%3Fcafegeo+.++++%3Fcafe+geo%3Alat+%3Flat+.++++%3Fcafe+geo%3Along+%3Flong+.++++FILTER+%28+bif%3Ast_intersects+%28%3Fchurchgeo%2C+bif%3Ast_point+%282.3498%2C48.853%29%2C5%29++%26%26+bif%3Ast_intersects+%28%3Fcafegeo%2C+%3Fchurchgeo%2C+0.2%29+%29+}+LIMIT+50&debug=on&timeout=&format=text%2Fhtml&CXML_redir_for_subjs=&CXML_redir_for_hrefs=LOCAL_PIVOT&save=display&fname=
+]]></programlisting>   	
+  </listitem>
+  <listitem>External description resource(TTL): 
+<programlisting><![CDATA[ 
+# CXML_redir_for_subjs=&CXML_redir_for_hrefs=LOCAL_TTL:
+
+http://lod.openlinksw.com/sparql?default-graph-uri=&should-sponge=&query=SELECT+DISTINCT+%3Fcafe+%3Flat+%3Flong+%3Fcafename+%3Fchurchname++%28+bif%3Around%28bif%3Ast_distance+%28%3Fchurchgeo%2C+%3Fcafegeo%29%29+%29++WHERE++{++++%3Fchurch+a+lgv%3Aplace_of_worship+.++++%3Fchurch+geo%3Ageometry+%3Fchurchgeo+.++++%3Fchurch+lgv%3Aname+%3Fchurchname+.++++%3Fcafe+a+lgv%3Acafe+.++++%3Fcafe+lgv%3Aname+%3Fcafename+.++++%3Fcafe+geo%3Ageometry+%3Fcafegeo+.++++%3Fcafe+geo%3Alat+%3Flat+.++++%3Fcafe+geo%3Along+%3Flong+.++++FILTER+%28+bif%3Ast_intersects+%28%3Fchurchgeo%2C+bif%3Ast_point+%282.3498%2C48.853%29%2C5%29++%26%26+bif%3Ast_intersects+%28%3Fcafegeo%2C+%3Fchurchgeo%2C+0.2%29+%29+}+LIMIT+50&debug=on&timeout=&format=text%2Fhtml&CXML_redir_for_subjs=&CXML_redir_for_hrefs=LOCAL_TTL&save=display&fname=
+]]></programlisting>   	
+  </listitem>
+  <listitem>External description resource(CXML): 
+<programlisting><![CDATA[ 
+# CXML_redir_for_subjs=&CXML_redir_for_hrefs=LOCAL_CXML: 
+
+http://lod.openlinksw.com/sparql?default-graph-uri=&should-sponge=&query=SELECT+DISTINCT+%3Fcafe+%3Flat+%3Flong+%3Fcafename+%3Fchurchname++%28+bif%3Around%28bif%3Ast_distance+%28%3Fchurchgeo%2C+%3Fcafegeo%29%29+%29++WHERE++{++++%3Fchurch+a+lgv%3Aplace_of_worship+.++++%3Fchurch+geo%3Ageometry+%3Fchurchgeo+.++++%3Fchurch+lgv%3Aname+%3Fchurchname+.++++%3Fcafe+a+lgv%3Acafe+.++++%3Fcafe+lgv%3Aname+%3Fcafename+.++++%3Fcafe+geo%3Ageometry+%3Fcafegeo+.++++%3Fcafe+geo%3Alat+%3Flat+.++++%3Fcafe+geo%3Along+%3Flong+.++++FILTER+%28+bif%3Ast_intersects+%28%3Fchurchgeo%2C+bif%3Ast_point+%282.3498%2C48.853%29%2C5%29++%26%26+bif%3Ast_intersects+%28%3Fcafegeo%2C+%3Fchurchgeo%2C+0.2%29+%29+}+LIMIT+50&debug=on&timeout=&format=text%2Fhtml&CXML_redir_for_subjs=&CXML_redir_for_hrefs=LOCAL_CXML&save=display&fname=
+]]></programlisting>   	
+  </listitem>
+</orderedlist>
+    </sect2> 
     <sect2 id="replallgr">
       <title>How can I replicate all graphs?</title>     
       <para>To replicate all graphs ( except the system graph http://www.openlinksw.com/schemas/virtrdf# ), 
@@ -2006,7 +2099,1759 @@ Done. -- 866 msec.
 SQL> DB.DBA.RDF_RDF_REPL_GRAPH_INS ('http://www.openlinksw.com/schemas/virtrdf#rdf_repl_all');
 ]]></programlisting>   	
     </sect2>        	
+    <sect2 id="rndsalltr">
+      <title>What is best method to get a random sample of all triples for a subset of all the resources 
+      	of a SPARQL endpoint?</title>     
+      <para>The best method to get a random sample of all triples for a subset of all the resources of 
+      	a SPARQL endpoint, is decimation in its original style:</para>
+<programlisting><![CDATA[ 
+SELECT ?s ?p ?o 
+FROM <some-graph>
+WHERE 
+  { 
+    ?s ?p ?o .
+    FILTER ( 1 > bif:rnd (10, ?s, ?p, ?o) )
+  }
+]]></programlisting>   	
+      <para>By tweaking first argument of <emphasis>bif:rnd()</emphasis> and the left side of the 
+      inequality you can tweak decimation ratio from 1/10 to the desired value. What's important is 
+      to know that the SQL optimizer has a right to execute <emphasis>bif:rnd (10)</emphasis> only once 
+      at the beginning of the query, so we had to pass additional three arguments that can be known only 
+      when a table row is fetched so <emphasis>bif:rnd (10, ?s, ?p, ?o)</emphasis> is calculated for every 
+      row and thus any given row is either returned or ignored independently from others.</para>
+      <para>However, <emphasis>bif:rnd (10, ?s, ?p, ?o)</emphasis> contains a subtle inefficiency. In RDF 
+      store, graph nodes are stored as numeric IRI IDs and literal objects can be stored in a separate 
+      table. The call of an SQL function needs arguments of traditional SQL datatypes, so the query 
+      processor will extract the text of IRI for each node and the full value for each literal object. 
+      That is significant waste of time. The workaround is:</para>      
+<programlisting><![CDATA[ 
+SPARQL 
+SELECT ?s ?p ?o 
+FROM <some-graph> 
+WHERE 
+  { 
+    ?s ?p ?o .
+    FILTER ( 1>  <SHORT_OR_LONG::bif:rnd>  (10, ?s, ?p, ?o))  
+  }
+]]></programlisting>   	
+      <para>This tells the SPARQL front-end to omit redundant conversions of values.</para>
+    </sect2>   
+    <sect2 id="replallgr">
+      <title>How can I replicate all graphs?</title>     
+      <para>To replicate all graphs ( except the system graph http://www.openlinksw.com/schemas/virtrdf# ), 
+      	one should use http://www.openlinksw.com/schemas/virtrdf#rdf_repl_all as graph IRI:</para>
+<programlisting><![CDATA[ 
+SQL> DB.DBA.RDF_RDF_REPL_GRAPH_INS ('http://www.openlinksw.com/schemas/virtrdf#rdf_repl_all');
+]]></programlisting>   	
+    </sect2>  
+    <sect2 id="sparqlmkmeshup">
+      <title>How can I use SPARQL to make Meshups?</title>     
+      <para>The following example demonstrates how to use SPARQL in order to make Meshups:</para>
+<programlisting><![CDATA[ 
+PREFIX dbo: <http://dbpedia.org/ontology/>
+PREFIX rtb: <http://www.openlinksw.com/schemas/oat/rdftabs#>
+
+CONSTRUCT 
+  {
+    ?museum geo:geometry ?museumgeo ;
+             rtb:useMarker 'star' ;
+             foaf:name ?musname;
+             rdfs:comment ?muscomment.
+    ?edu geo:geometry ?edugeo ;
+          rtb:useMarker 'book' ;
+          foaf:name ?eduname;
+          rdfs:comment ?educomment.
+    ?wh geo:geometry ?whgeo;
+            rtb:useMarker '03';
+            foaf:name ?whname;
+            rdfs:comment ?whcomment.
+  }
+WHERE 
+  { 
+    {
+      ?museum a dbo:Museum;
+              geo:geometry ?museumgeo;
+              foaf:name ?musname;
+              rdfs:comment ?muscomment.
+      filter (lang(?musname)='en' && lang(?muscomment)='en')
+    } 
+    UNION 
+    {
+      ?edu a dbo:University;
+           geo:geometry ?edugeo;
+           foaf:name ?eduname;
+           rdfs:comment ?educomment.
+      filter (lang(?eduname)='en' && lang(?educomment)='en')
+    } 
+    UNION 
+    {
+      ?wh a dbo:WorldHeritageSite;
+            geo:geometry ?whgeo;
+            rdfs:label ?whname;
+            rdfs:comment ?whcomment. 
+      filter (lang(?whname)='en' && lang(?whcomment)='en')
+    } 
+  }
+]]></programlisting>   	
+    </sect2> 
+    <sect2 id="clusternetmeter">
+      <title>How can I use the net_meter utility before starting the ingestion to a cluster?</title>                 	
+      <para>The <link linkend="">net_meter</link> utility is a SQL procedure that runs a network 
+test procedure on every host of the cluster. The network test procedure sends a message 
+to every other host of the cluster and waits for the replies from each host. After the last 
+reply is received the action is repeated. This results in a symmetrical load of the network, 
+all points acting as both clients and servers to all other points.
+      </para>
+<programlisting><![CDATA[
+net_meter ( 
+  in n_threads int, 
+  in n_batches int, 
+  in bytes int, 
+  in ops_per_batch int)
+]]></programlisting>
+      <para>The parameters have the following meaning:</para>
+      <itemizedlist mark="bullet">
+        <listitem><emphasis>n_threads</emphasis>: The number of network test instances started on 
+each host. A value of 4 on a cluster of 4 hosts would result in a total of 16 network test 
+procedures spread over 4 processes.
+        </listitem>
+        <listitem><emphasis>n_batches</emphasis>: The number of message exchanges done by each network 
+test procedure. A message exchange consists of sending one request to every other host of the cluster 
+and of waiting for all to have replied.
+        </listitem>
+        <listitem><emphasis>bytes</emphasis>: The number of bytes sent to each host in each message 
+exchange. The reply from each host has the same number of bytes.
+        </listitem>
+        <listitem><emphasis>ops_per_batch</emphasis>: This causes each message batch to contain several 
+operations. In practice this is a multiplier on the number of bytes.
+        </listitem>
+      </itemizedlist>
+      <sect3 id="clusternetmeterex">
+        <title>Example</title>
+        <para>Assume anuser has run 2 sets of tests on a cluster:</para>
+        <para>The first one was 1 thread, 1000 batches, 1000 bytes per exchange, 1 operation per batch:</para>
+<programlisting><![CDATA[
+SQL> net_meter (1, 1000, 1000, 1);
+
+round_trips     MBps
+REAL            REAL
+    
+_______________________________________
+
+1245.393315542000254  2.489418401123078
+
+1 Rows. -- 39345 msec.	
+]]></programlisting>
+        <para>resulted in a measured throughput of 2.5 MBps</para>
+        <para>The second one was 1 thread, 5000 batches, 10000 bytes per exchange, 1 operation per batch:</para>
+<programlisting><![CDATA[
+SQL> net_meter (1, 5000, 10000, 1);
+
+round_trips     MBps
+REAL            REAL
+    
+___________________________________________
+
+15915.291672080031181  305.017186586494738
+
+1 Rows. -- 15394 msec.	
+]]></programlisting>
+        <para>resulted in a measured throughput of 305 MBps.</para>
+        <para>This indicates that the user's network is slow when sending multiple short messages.</para>
+        <para>When using the ingestion you should check the:</para>
+<programlisting><![CDATA[
+status('cluster');	
+]]></programlisting>        	   
+        <para>command a few times and check the XX KB/s amount which should be around or above the 2500 mark.</para>
+      </sect3>	
+    </sect2>   
+    <sect2 id="loadcmrdf">
+      <title>How can I use the LOAD command to import RDF data?</title>                 	
+      <para>SPARQL INSERT can be done using the LOAD command:</para>
+<programlisting><![CDATA[  
+SPARQL INSERT INTO <..> { .... } [[FROM ...] { ... }]
+
+SPARQL LOAD <x> [INTO <y>]
+
+-- <ResourceURL> will be the Graph IRI of the loaded data:
+SPARQL LOAD <ResourceURL>	
+]]></programlisting>  	  
+      <sect3 id="loadcmrdfex"> 
+      	<title>Examples</title> 
+        <sect4 id="loadcmrdfex1">  
+      	  <title>Load from Resource URL</title>         	
+      	  <para>In order to load data from resource URL for ex: 
+http://www.w3.org/People/Berners-Lee/card#i , execute from isql the following command:</para>
+<programlisting><![CDATA[  
+SQL> SPARQL LOAD <http://www.w3.org/People/Berners-Lee/card#i>;
+callret-0
+VARCHAR
+_______________________________________________________________________________
+
+Load <http://www.w3.org/People/Berners-Lee/card#i> into graph <http://www.w3.org/People/Berners-Lee/card#i> -- done
+
+1 Rows. -- 703 msec.
+SQL>	
+]]></programlisting> 
+        </sect4>      	
+        <sect4 id="loadcmrdfex2">         	
+      	  <title>Load from file</title>         	
+          <orderedlist>
+            <listitem>Create DAV collection which is visible to public, for ex: http://localhost:8890/DAV/tmp</listitem>
+            <listitem>Upload to the DAV collection a file for ex. with name listall.rq and with the following content:
+<programlisting><![CDATA[  
+SPARQL
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX sioc: <http://rdfs.org/sioc/ns#>
+SELECT ?x ?p ?o
+FROM <http://mygraph.com>
+WHERE
+  {
+    ?x rdf:type sioc:User .
+    ?x ?p ?o.
+    ?x sioc:id ?id .
+    FILTER REGEX(str(?id), "^King")
+  }
+ORDER BY ?x	
+]]></programlisting>             	
+            </listitem>
+            <listitem>Execute from ISQL the following command:
+<programlisting><![CDATA[  
+SQL>SPARQL LOAD bif:concat ("http://", bif:registry_get("URIQADefaultHost"), "/DAV/tmp/listall.rq") into graph <http://myNewGraph.com>;
+callret-0
+VARCHAR
+_______________________________________________________________________________
+
+Load <http://localhost:8890/DAV/tmp/listall.rq> into graph <http://myNewGraph.com> -- done
+
+1 Rows. -- 321 msec.	
+]]></programlisting>            	
+            </listitem>
+          </orderedlist>      	  
+        </sect4>      	
+        <sect4 id="loadcmrdfex3">  
+      	  <title>Directly LOAD triples using ISQL</title>         	
+<programlisting><![CDATA[
+SQL>SPARQL INSERT INTO graph <http://mygraph.com>
+{
+  <http://myopenlink.net/dataspace/Kingsley#this>
+  <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
+  <http://rdfs.org/sioc/ns#User> .
+
+  <http://myopenlink.net/dataspace/Kingsley#this>
+  <http://rdfs.org/sioc/ns#id>
+  <Kingsley> .
+
+  <http://myopenlink.net/dataspace/Caroline#this>
+  <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
+  <http://rdfs.org/sioc/ns#User> .
+
+  <http://myopenlink.net/dataspace/Caroline#this>
+  <http://rdfs.org/sioc/ns#id>
+  <Caroline> .
+};	
+]]></programlisting>
+        </sect4>      	
+      </sect3>      	
+    </sect2>       
+    <sect2 id="degrprc">
+      <title>How can I delete graphs using stored procedure?</title>     
+      <para>The following script demonstrates the use of custom stored procedures for deleting graph(s). 
+      	It first creates a table <emphasis>GRAPHS_TO_DELETE</emphasis>, into which the names of the graphs 
+      	to be deleted should be inserted, as follows:</para>
+<programlisting><![CDATA[ 
+use MYUSR;
+
+create procedure GRAPHS_TO_DELETE_SP (in gd_iris any)
+{
+  declare gd_iri iri_id;
+  declare dp, row any;
+  result_names (gd_iri);
+  dp := dpipe (0, '__I2IDN');
+  foreach (varchar iri in GD_IRIS) do
+    {
+      dpipe_input (dp, iri);
+    }
+  while (0 <> (row := dpipe_next (dp, 0)))
+    {
+      result (row[0]);
+    }
+}
+;
+
+drop view GRAPHS_TO_DELETE_VIEW;
+create procedure view GRAPHS_TO_DELETE_VIEW as MYUSR.DBA.GRAPHS_TO_DELETE_SP (gd_iris) (gd_iri any);
+
+create procedure DELETE_GRAPHS (in g_iris any)
+{
+  declare g_iids any;
+  if (not isvector (g_iris) and g_iris is not null)
+    signal ('22023', '.....', 'The input argument must be an array of strings or null');
+  if (not length (g_iris))
+    return 0;
+  delete from DB.DBA.RDF_QUAD where G in (select * from GRAPHS_TO_DELETE_VIEW where gd_iris = g_iris) option (loop exists);
+  return row_count ();
+}
+;
+]]></programlisting>   	
+      <para>Finally call the procedure DELETE_GRAPHS to perform the deletion of the specified graphs. 
+      	Note it does not return a result set and can be called as follows:</para> 
+<programlisting><![CDATA[ 
+SQL> select MYUSR.DBA.DELETE_GRAPHS (vector ('g1', 'g2', 'g3'));	
+]]></programlisting>   	
+      <para>This will return the number of triples removed from the specified graphs.</para>       
+      <para>Note: the procedure only applies to the cluster so to get IRI IDs via partitioned 
+      	pipe (DAQ). It is not usable on single.</para>
+    </sect2>     
+    <sect2 id="sparulspongertut">
+      <title>How can I use SPARUL to add missing triples to a Named Graph?</title>         
+      <sect3 id="sparulspongertutwhat">
+      	<title>What?</title>
+        <para>Use of SPARUL to add missing triples to a Named Graph. For example, an ontology/vocabulary 
+        	extension.</para>         
+      </sect3>           
+      <sect3 id="sparulspongertutwhy">
+      	<title>Why?</title>
+        <para>A lot of ontologies and vocabularies started life prior to emergence of the Linked Data 
+        	meme. As a result, many do not include rdfs:isDefinedBy relations (via triples) that associate 
+        	Classes and Properties in an ontology with the ontology itself, using de-referencable URIs. 
+        	The downside of this pattern is that Linked Data's follow-your-nose pattern isn't exploitable 
+        	when viewing these ontologies e.g., when using contemporary Linked Data aware browsers.</para>         
+      </sect3>           
+      <sect3 id="sparulspongertuthow">
+      	<title>How?</title>
+        <para>If SPARUL privileges are assigned to SPARQL or other accounts associated with SPARQL 
+        	Endpoint. Or via WebID? protected SPARQL endpoint with SPARUL is granted to SPARQL or specific 
+        	accounts or WebIDs in a group.</para>         
+<programlisting><![CDATA[
+INSERT INTO <LocalNamedGraphIRI>
+  { ?s rdfs:DefinedBy <LocalOntologyEntityURI>.
+    ?o rdfs:isDefinedBy <http://www.w3.org/ns/auth/acl>. }
+FROM <ExtSourceNamedGraphIRI> 
+WHERE 
+  { 
+    ?s a ?o 
+  }
+]]></programlisting>  
+        <sect4 id="sparulspongertutex">
+      	  <title>Example</title>      
+          <orderedlist>
+            <listitem>Load Quad Named Graph via Sponger based query: 
+<programlisting><![CDATA[
+DEFINE get:soft "replace"
+SELECT DISTINCT *
+FROM <http://www.w3.org/ns/auth/acl#>
+WHERE 
+  { 
+    ?s ?p ?o 
+  }
+]]></programlisting>
+            </listitem>
+            <listitem>Added Triples via SPARUL to Ontology Named Graph: 
+<programlisting><![CDATA[
+INSERT INTO <http://www.w3.org/ns/auth/acl#>
+  {  ?s rdfs:DefinedBy <http://www.w3.org/ns/auth/acl>.
+     ?o rdfs:DefinedBy <http://www.w3.org/ns/auth/acl>. }
+FROM <http://www.w3.org/ns/auth/acl#> 
+WHERE 
+  {
+    ?s a ?o
+  }
+]]></programlisting>
+            </listitem>
+            <listitem>Via Conductor or Command-line iSQL courtesy of SPASQL execute the following statements: 
+            	<orderedlist>
+                <listitem>Remove an existing graph: 
+<programlisting><![CDATA[
+SPARQL
+CLEAR GRAPH <http://www.w3.org/ns/auth/acl/> ;
+
+SPARQL
+CLEAR GRAPH <http://www.w3.org/ns/auth/acl> ;
+
+SPARQL
+CLEAR GRAPH <http://www.w3.org/ns/auth/acl#> ;
+]]></programlisting>
+                </listitem>
+                <listitem>Load a new graph: 
+<programlisting><![CDATA[
+SPARQL
+LOAD <http://www.w3.org/ns/auth/acl> ;
+]]></programlisting>
+                </listitem>
+                <listitem>Add missing rdfs:isDefinedBy triples via SPARUL: 
+<programlisting><![CDATA[
+SPARQL
+INSERT INTO <http://www.w3.org/ns/auth/acl>
+  {  ?s rdfs:DefinedBy <http://www.w3.org/ns/auth/acl>.
+     ?o rdfs:DefinedBy <http://www.w3.org/ns/auth/acl>. }
+FROM <http://www.w3.org/ns/auth/acl> 
+WHERE 
+  {
+    ?s a ?o
+  } ;
+]]></programlisting>
+                </listitem>
+              </orderedlist>
+            </listitem>
+            <listitem>Verification: Access the following url: <emphasis>http://&lt;cname&gt;/describe/?uri=http://www.w3.org/ns/auth/acl></emphasis>
+            </listitem>
+          </orderedlist>      	
+          <tip><title>See Also:</title>
+            <para><link linkend="rdfsparul">SPARUL -- an Update Language For RDF Graphs</link></para>
+            <para><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSponger">Virtuoso Sponger</ulink><link linkend="rdfsparul"></link></para>            
+          </tip>  	
+        </sect4>                 	  
+      </sect3>           
+    </sect2>           
+    <sect2 id="ifsparqlbi">
+      <title>How can I use the SPARQL IF operator for SPARQL-BI endpoint?</title>                 	
+      <para>Assume a SPARQL query is to be executed against the Virtuoso DBpedia SPARQL endpoint 
+      	(<ulink url="http://dbpedia.org/sparql">http://dbpedia.org/sparql</ulink>) to retrieve the 
+      	decimal longitude of the "NJ Devils' hometown" with cardinal direction, which determines 
+      	whether the decimal is positive (in the case of East) or negative (in the case of West).</para>
+      <para>Virtuoso supports SPARQL-BI, an extended SPARQL 1.0 implementation from before SPARQL 1.1 
+      	was ratified, thus the "IF" operator is not currently supported, but an equivalent 
+      	<link linkend="fn_either"><function>bif:either</function></link> built-in SQL function does 
+      	exist enabling an equivalent query to be executed:</para>
+<programlisting><![CDATA[
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX dbo: <http://dbpedia.org/ontology/>
+PREFIX dbp: <http://dbpedia.org/property/>
+SELECT ?team ( (bif:either( ?ew = 'W', -1, 1)) * (?d + (((?m * 60) + ?s) / 3600.0)) as ?v)
+  { 
+    ?team a dbo:HockeyTeam . ?team rdfs:label 'New Jersey Devils'@en . 
+    ?team dbp:city ?cityname . ?city rdfs:label ?cityname . 
+    ?city dbp:longd ?d; dbp:longm ?m; dbp:longs ?s; dbp:longew ?ew . 
+  }  	
+]]></programlisting>      
+      <figure id="spbi1" float="1">
+        <title>SPARQL IF operator for SPARQL-BI endpoint</title>
+        <graphic fileref="ui/spbi1.png"/>
+      </figure>
+      <tip><title>See Also:</title>
+        <para><link linkend="rdfsparqlimplementatioptragmas">Supported SPARQL-BI "define" pragmas</link></para>
+        <para><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VOSArticleBISPARQL2">SPARQL-BI</ulink><link linkend="rdfsparul"></link></para>            
+      </tip>      
+    </sect2>  
+    <sect2 id="chpntset">
+      <title>How can I handle checkpoint condition?</title>
+      <para>In general, to control checkpoint in order to bypass client timeouts during long checkpoints when inserting triples into the Virtuoso server, one must disable automatic checkpoint by:</para>
+<programlisting><![CDATA[
+SQL> checkpoint_interval (0);	
+]]></programlisting>      
+      <para>and also to make sure the AutoCheckpointLogSize is off. Then can be performed checkpoint whenever the client wants using the 'checkpoint' command.</para>
+      <para>However the need of cache check is not needed unless instance shows regular errors. By default the cache check is disabled.</para>
+      <para>Virtuoso offers a new option in the Virtuoso ini file to enable the check of page maps: <emphasis>PageMapCheck</emphasis>, 1/0 default 0: </para>
+<programlisting><![CDATA[
+-- Virtuoso.ini
+
+...
+[Parameters]
+...
+PageMapCheck  = 0
+...	
+]]></programlisting>      
+      <para>Also customer can add <emphasis>CheckpointSyncMode = 0</emphasis> in order to disable sync during checkpoint to speed the operations.</para>
+    </sect2>    
+    <sect2 id="inccntnegt">
+      <title>How can I incorporate Content Negotiation into RDF bulk loaders?</title>       
+      <para>The examples from below demonstrate how to incorporate Content Negotiation into RDF bulk loaders:</para>
+      <itemizedlist mark="bullet">
+        <listitem>Using the <link linkend="fn_rdf_load_rdfxml"><function>DB.DBA.RDF_LOAD_RDFXML</function></link> function:
+<programlisting><![CDATA[
+DB.DBA.RDF_LOAD_RDFXML (http_get ('http://purl.org/ontology/mo/', null, 'GET', 'Accept: application/rdf+xml', null, null, 3), 'http://purl.org/ontology/mo/', 'http://purl.org/ontology/mo/') .	
+]]></programlisting>
+        </listitem>
+        <listitem>Using the <link linkend="fn_ttlp"><function>DB.DBA.TTLP</function></link> function: The call to http client should be modified to ask for appropriate content type as for ex: 
+<programlisting><![CDATA[
+DB.DBA.TTLP (http_get ('http://purl.org/ontology/mo/', null, 'GET', 'Accept: text/n3', null, null, 3), 'http://purl.org/ontology/mo/', 'http://purl.org/ontology/mo/'), '...', '...');
+]]></programlisting>        	
+        </listitem>
+      </itemizedlist>
+    </sect2>      
+    <sect2 id="linkeddata3simplesteps">    
+       <title>Virtuoso Linked Data Deployment In 3 Simple Steps?</title>	    
+       <para>Injecting Linked Data into the Web has been a major pain point for those who seek personal, service, or organization-specific variants of DBpedia. Basically, the sequence goes something like this:</para>
+       <orderedlist>
+         <listitem>You encounter DBpedia or the LOD Cloud Pictorial.</listitem>
+         <listitem>You look around (typically following your nose from link to link).</listitem>
+         <listitem>You attempt to publish your own stuff.</listitem>
+         <listitem>You get stuck.</listitem>         
+       </orderedlist>       
+       <para>The problems typically take the following form:</para>
+       <orderedlist>
+         <listitem>Functionality confusion about the complementary Name and Address functionality of a single URI abstraction.</listitem>
+         <listitem>Terminology confusion due to conflation and over-loading of terms such as Resource, URL, Representation, Document, etc.</listitem>
+         <listitem>Inability to find robust tools with which to generate Linked Data from existing data sources such as relational databases, CSV files, XML, Web Services, etc.</listitem>
+       </orderedlist>              
+       <para>To start addressing these problems, here is a simple guide for generating and publishing Linked Data using Virtuoso.</para>
+       <sect3 id="linkeddata3simplesteps1">  
+       	 <title>Step 1 - RDF Data Generation</title>    
+         <para>Existing RDF data can be added to the Virtuoso RDF Quad Store via a variety of built-in data loader utilities.</para>
+         <para>Many options allow you to easily and quickly generate RDF data from other data sources:</para>       	    
+         <itemizedlist mark="bullet">
+           <listitem>Install the Sponger Bookmarklet for the URIBurner service. Bind this to your own SPARQL-compliant backend RDF database (in this scenario, your local Virtuoso instance), and then perform Network Resource Fetch of some HTTP-accessible resources.</listitem>
+           <listitem>Convert relational DBMS data to RDF using the Virtuoso Linked Data Views Wizard.</listitem>
+           <listitem>Starting with CSV files, you can:
+             <itemizedlist mark="bullet">
+               <listitem>Place them at an HTTP-accessible location, and use the Virtuoso Sponger to convert them to RDF or;</listitem>
+               <listitem>Use the CVS import feature to import their content into Virtuoso's relational 
+               	data engine; then use the built-in Linked Data Views Wizard as with other RDBMS data.</listitem>
+             </itemizedlist>           	
+           </listitem>
+           <listitem>Starting from XML files, you can:
+             <itemizedlist mark="bullet">
+               <listitem>Use Virtuoso's inbuilt XSLT-Processor for manual XML to RDF/XML transformation or;</listitem>
+               <listitem>Leverage the Sponger Cartridge for GRDDL, if there is a transformation service associated with your XML data source, or;</listitem>
+               <listitem>Let the Sponger analyze the XML data source and make a best-effort transformation to RDF.</listitem>               
+             </itemizedlist>           	
+           </listitem>                      
+         </itemizedlist>         
+       </sect3>       	
+       <sect3 id="linkeddata3simplesteps2">   
+       	 <title>Step 2 - Linked Data Deployment</title>           	     
+         <para>Install the Faceted Browser VAD package (fct_dav.vad) which delivers the following:</para>       	 
+         <orderedlist>
+           <listitem>Faceted Browser Engine UI</listitem>
+           <listitem>Dynamic Hypermedia Resource Generator:
+             <itemizedlist mark="bullet">
+               <listitem>delivers descriptor resources for every entity (data object) in the Native or Virtual Quad Stores</listitem>
+               <listitem>supports a broad array of output formats, including HTML+RDFa, RDF/XML, N3/Turtle, NTriples, RDF-JSON, OData+Atom, and OData+JSON.</listitem>
+             </itemizedlist>           	
+           </listitem>
+         </orderedlist>         
+       </sect3>       	       
+       <sect3 id="linkeddata3simplesteps3">        
+       	 <title>Step 3 - Linked Data Consumption &amp; Exploitation</title>           	
+         <para>Three simple steps allow you, your enterprise, and your customers to consume and exploit your newly deployed Linked Data --</para>
+           <orderedlist>
+             <listitem>Load a page like this in your browser: http://&lt;cname>[:&lt;port&gt;]/describe/?uri=&lt;entity-uri&gt; 
+               <itemizedlist mark="bullet">
+                 <listitem>&lt;cname&gt;[:&lt;port&gt;] gets replaced by the host and port of your Virtuoso instance </listitem>
+                 <listitem>&lt;entity-uri&gt; gets replaced by the URI you want to see described -- for instance, the URI of one of the resources you let the Sponger handle.</listitem>
+               </itemizedlist>             	
+             </listitem>
+             <listitem>Follow the links presented in the descriptor page.</listitem>
+             <listitem>If you ever see a blank page with a hyperlink subject name in the About: section at the top of the page, simply add the parameter "&amp;sp=1" to the URL in the browser's Address box, and hit [ENTER]. This will result in an "on the fly" resource retrieval, transformation, and descriptor page generation.</listitem>
+             <listitem>Use the navigator controls to page up and down the data associated with the "in scope" resource descriptor.</listitem>             
+           </orderedlist>         
+       </sect3>       	       
+    </sect2>          	
+    <sect2 id="difcrdrdelgr">
+      <title>What are the differences between create, drop, clear and delete Graph?</title>
+      <para>In Virtuoso it does not matter whether <emphasis>CREATE GRAPH</emphasis> and 
+      <emphasis>DROP GRAPH</emphasis> are called or not. Their purpose is to provide compatibility with 
+      the original SPARUL that was designed for Jena. Some Jena triple stores require explicit creation 
+      of each graph (like CREATE TABLE in SQL), they report errors if one tries to create a graph twice 
+      and so on.</para>
+      <para>For Virtuoso, a new graph is not an important system event, it has single quad store shared 
+      	by all graphs. When a graph is made by <emphasis>CREATE GRAPH</emphasis>, its name is placed in 
+      	an auxiliary table that is used solely to signal appropriate errors on CREATE graph that is 
+      	CREATE-d already or on DROP of a missing graph; this table is not used in any way in SPARQL or 
+      	other subsystems. In a perfect world, smart development tools will query that table to give 
+      	hints to a programmer regarding available graphs, but the reality is not so perfect.</para>
+      <para>What's more important is a difference between 
+      	<emphasis>DELETE FROM g { ?s ?p ?o } FROM g WHERE { ?s ?p ?o }</emphasis> and 
+      	<emphasis>CLEAR GRAPH g</emphasis>, as both will delete all triples from the specified graph &lt;g&gt; with 
+      	equal speed, but <emphasis>CLEAR GRAPH</emphasis> will also delete free-text index data about 
+      	occurrences of literals in this specific graph. So <emphasis>CLEAR GRAPH</emphasis> will make 
+      	the database slightly more compact and the text search slightly faster. (Naturally, 
+      	<emphasis>DROP GRAPH</emphasis> makes <emphasis>CLEAR GRAPH</emphasis> inside, not just 
+      	<emphasis>DELETE FROM ...</emphasis> )</para>      
+     <tip><title>See Also:</title>
+       <para><link linkend="rdfinsertmethods">RDF Insert Methods in Virtuoso</link></para>
+     </tip>    
+    </sect2>          	      
+    <sect2 id="srchprd">  
+      <title>How can I perform search for predicate values?</title>	  
+      <para><emphasis>What?</emphasis></para>
+      <para>Creation of a stored procedure that enables users to find properties based on their string based token patterns.</para>
+      <para><emphasis>Why?</emphasis></para>
+      <para>When working with datasets from disparate datasources in a common named graph, there are times when you seek to scope sparql or spasql queries to specific property IRI/URI patterns without embarking upon inefficient regex heuristics.</para>      
+      <para><emphasis>What?</emphasis></para>
+      <para>Make a stored procedure for querying against the main quad store table (rdf_quad). Surface the procedure as a magic predicate using "bif:" prefix. To find all the properties whose predicates start with "http://www.openlinksw.com/", a Virtuoso/PL procedure can be used as listed below:</para>
+<programlisting><![CDATA[
+SQL> create procedure PREDICATES_OF_IRI_PATH ( 
+  in path varchar, 
+  in dump_iri_ids integer := 0)
+{
+  declare PRED_IRI varchar;
+  declare PRED_IRI_ID IRI_ID;
+  declare path_head_len integer;
+  
+  if (dump_iri_ids)
+    result_names (PRED_IRI_ID);
+  else
+    result_names (PRED_IRI);
+    
+  for ( SELECT RP_NAME, RP_ID 
+        FROM RDF_PREFIX
+        WHERE (RP_NAME >= path) AND (RP_NAME < path || chr(255)) ) do
+    {
+      declare fourbytes varchar;
+      fourbytes := '----';
+      fourbytes[0] := bit_shift (RP_ID, -24);
+      fourbytes[1] := bit_and (bit_shift (RP_ID, -16), 255);
+      fourbytes[2] := bit_and (bit_shift (RP_ID, -8), 255);
+      fourbytes[3] := bit_and (RP_ID, 255);
+      
+      for ( SELECT RI_NAME, RI_ID from RDF_IRI
+            WHERE (RI_NAME >= fourbytes) AND (RI_NAME < fourbytes || chr(255)) ) do
+        {
+          if (exists (SELECT TOP 1 1 FROM RDF_QUAD WHERE P=RI_ID))
+            result (case when (dump_iri_ids) then RI_ID else RP_NAME || subseq (RI_NAME, 4) end);
+        }
+    }
+    
+  for ( path_head_len := length (path)-1; path_head_len >= 0; path_head_len := path_head_len - 1)
+    {
+      for ( SELECT RP_NAME, RP_ID from RDF_PREFIX
+            WHERE RP_NAME = subseq (path, 0, path_head_len) ) do
+        {
+          declare fourbytes varchar;
+          fourbytes := '----';
+          fourbytes[0] := bit_shift (RP_ID, -24);
+          fourbytes[1] := bit_and (bit_shift (RP_ID, -16), 255);
+          fourbytes[2] := bit_and (bit_shift (RP_ID, -8), 255);
+          fourbytes[3] := bit_and (RP_ID, 255);
+          
+          for ( SELECT RI_NAME, RI_ID from RDF_IRI
+                WHERE (RI_NAME >= fourbytes || subseq (path, path_head_len))
+                AND (RI_NAME < fourbytes || subseq (path, path_head_len) || chr(255)) ) do
+            {
+              if (exists (SELECT TOP 1 1 FROM RDF_QUAD WHERE P=RI_ID))
+                result (case when (dump_iri_ids) then RI_ID else RP_NAME || subseq (RI_NAME, 4) end);
+            }
+        }
+    }
+}
+;
+
+
+Done. -- 16 msec.	
+]]></programlisting>      
+      <para><emphasis>Example Usage</emphasis></para>
+      <orderedlist>
+        <listitem>Execute:
+<programlisting><![CDATA[
+set echo on;	
+]]></programlisting>        	
+        </listitem>
+        <listitem>Collect all predicates that start with: 
+<programlisting><![CDATA[
+-- http://www.openlinksw.com/
+SQL>PREDICATES_OF_IRI_PATH ('http://www.openlinksw.com/', 1);
+VARCHAR
+_______________________________________________________________________________
+
+#i351
+#i159
+#i10
+#i8
+...
+
+-- http://www.openlinksw.com/schemas/virtrdf
+SQL>PREDICATES_OF_IRI_PATH ('http://www.openlinksw.com/schemas/virtrdf', 1);
+PRED_IRI_ID
+VARCHAR
+_______________________________________________________________________________
+
+#i159
+#i10
+#i8
+#i6
+#i160
+#i269
+#i278
+#i275
+
+
+-- http://www.openlinksw.com/schemas/virtrdf#
+SQL>PREDICATES_OF_IRI_PATH ('http://www.openlinksw.com/schemas/virtrdf#',1);
+PRED_IRI_ID
+VARCHAR
+_______________________________________________________________________________
+
+#i159
+#i10
+#i8
+#i6
+#i160
+#i269
+#i278
+...
+
+-- http://www.openlinksw.com/schemas/virtrdf#i
+SQL>PREDICATES_OF_IRI_PATH ('http://www.openlinksw.com/schemas/virtrdf#i',1);
+PRED_IRI_ID
+VARCHAR
+_______________________________________________________________________________
+
+#i159
+#i10
+#i8
+
+-- other
+SQL>PREDICATES_OF_IRI_PATH ('no://such :)', 1);
+0 Rows. -- 0 msec.
+	
+]]></programlisting>        	
+        </listitem>
+        <listitem>Show all predicates that start with: 
+<programlisting><![CDATA[
+-- http://www.openlinksw.com/
+SQL>PREDICATES_OF_IRI_PATH ('http://www.openlinksw.com/');
+PRED_IRI
+VARCHAR
+_______________________________________________________________________________
+
+http://www.openlinksw.com/schemas/DAV#ownerUser
+http://www.openlinksw.com/schemas/virtrdf#inheritFrom
+http://www.openlinksw.com/schemas/virtrdf#isSpecialPredicate
+http://www.openlinksw.com/schemas/virtrdf#item
+http://www.openlinksw.com/schemas/virtrdf#loadAs
+http://www.openlinksw.com/schemas/virtrdf#noInherit
+http://www.openlinksw.com/schemas/virtrdf#qmGraphMap
+http://www.openlinksw.com/schemas/virtrdf#qmMatchingFlags
+http://www.openlinksw.com/schemas/virtrdf#qmObjectMap
+http://www.openlinksw.com/schemas/virtrdf#qmPredicateMap
+http://www.openlinksw.com/schemas/virtrdf#qmSubjectMap
+...
+
+-- http://www.openlinksw.com/schemas/virtrdf
+SQL>PREDICATES_OF_IRI_PATH ('http://www.openlinksw.com/schemas/virtrdf');
+PRED_IRI
+VARCHAR
+_______________________________________________________________________________
+
+http://www.openlinksw.com/schemas/virtrdf#inheritFrom
+http://www.openlinksw.com/schemas/virtrdf#isSpecialPredicate
+http://www.openlinksw.com/schemas/virtrdf#item
+http://www.openlinksw.com/schemas/virtrdf#loadAs
+http://www.openlinksw.com/schemas/virtrdf#noInherit
+http://www.openlinksw.com/schemas/virtrdf#qmGraphMap
+http://www.openlinksw.com/schemas/virtrdf#qmMatchingFlags
+http://www.openlinksw.com/schemas/virtrdf#qmObjectMap
+http://www.openlinksw.com/schemas/virtrdf#qmPredicateMap
+http://www.openlinksw.com/schemas/virtrdf#qmSubjectMap
+http://www.openlinksw.com/schemas/virtrdf#qmTableName
+...
+
+-- http://www.openlinksw.com/schemas/virtrdf#
+SQL>PREDICATES_OF_IRI_PATH ('http://www.openlinksw.com/schemas/virtrdf#');
+PRED_IRI
+VARCHAR
+_______________________________________________________________________________
+
+http://www.openlinksw.com/schemas/virtrdf#inheritFrom
+http://www.openlinksw.com/schemas/virtrdf#isSpecialPredicate
+http://www.openlinksw.com/schemas/virtrdf#item
+http://www.openlinksw.com/schemas/virtrdf#loadAs
+http://www.openlinksw.com/schemas/virtrdf#noInherit
+http://www.openlinksw.com/schemas/virtrdf#qmGraphMap
+http://www.openlinksw.com/schemas/virtrdf#qmMatchingFlags
+http://www.openlinksw.com/schemas/virtrdf#qmObjectMap
+http://www.openlinksw.com/schemas/virtrdf#qmPredicateMap
+http://www.openlinksw.com/schemas/virtrdf#qmSubjectMap
+http://www.openlinksw.com/schemas/virtrdf#qmTableName
+http://www.openlinksw.com/schemas/virtrdf#qmf01blankOfShortTmpl
+http://www.openlinksw.com/schemas/virtrdf#qmf01uriOfShortTmpl
+http://www.openlinksw.com/schemas/virtrdf#qmfBoolOfShortTmpl
+http://www.openlinksw.com/schemas/virtrdf#qmfBoolTmpl
+...
+
+-- http://www.openlinksw.com/schemas/virtrdf#i
+SQL>PREDICATES_OF_IRI_PATH ('http://www.openlinksw.com/schemas/virtrdf#i');
+PRED_IRI
+VARCHAR
+_______________________________________________________________________________
+
+http://www.openlinksw.com/schemas/virtrdf#inheritFrom
+http://www.openlinksw.com/schemas/virtrdf#isSpecialPredicate
+http://www.openlinksw.com/schemas/virtrdf#item
+
+3 Rows. -- 15 msec.
+
+-- other
+SQL>PREDICATES_OF_IRI_PATH ('no://such :)');
+PRED_IRI
+VARCHAR
+_______________________________________________________________________________
+
+
+0 Rows. -- 15 msec.
+]]></programlisting>        	
+        </listitem>
+      </orderedlist>      
+      <para>If you want to use the procedure's output inside SPARQL queries, it can be wrapped by a procedure view and it in turn can be used in an Linked Data View but it is redundant for most applications.</para>
+      <para>For typical "almost static" data, it is more practical to write a procedure that will store all found predicates in some dedicated "dictionary" graph and then use the graph as usual.</para>
+    </sect2>          	         	
+    <sect2 id="constrinserst">  
+      <title>How can I use INSERT via CONSTRUCT Statements?</title>	  
+      <para>You can write an ordinary CONSTRUCT statement, ensure that it generates the triples intended to be added, and then replace the leading CONSTRUCT keyword with the INSERT INTO phrase.</para>
+      <para><emphasis>Example:</emphasis></para>
+      <orderedlist>
+        <listitem>Assume new triples need to be added for the equivalentClass:
+<programlisting><![CDATA[
+CONSTRUCT 
+  {  
+    ?s <http://www.w3.org/2002/07/owl#equivalentClass> `iri (bif:replace(?o,'http://schema.rdfs.org/', 'http://schema.org/'))`
+   } 
+FROM <http://www.openlinksw.com/schemas/rdfs> 
+WHERE 
+  { 
+    ?s <http://www.w3.org/2002/07/owl#equivalentClass> ?o
+  };	
+]]></programlisting>        	
+        </listitem>
+        <listitem>Execute the CONSTRUCT query from the htp://cname/sparql SPARQL endpoint.</listitem>        
+        <listitem>View the generated triples to ensure they are correct.</listitem>
+        <listitem>Replace CONSTRUCT with INSERT INTO:
+<programlisting><![CDATA[
+SPARQL INSERT INTO <http://www.openlinksw.com/schemas/rdfs>  
+  {  
+    ?s <http://www.w3.org/2002/07/owl#equivalentClass> `iri (bif:replace(?o,'http://schema.rdfs.org/', 'http://schema.org/'))`
+   } 
+FROM <http://www.openlinksw.com/schemas/rdfs> 
+WHERE 
+  { 
+    ?s <http://www.w3.org/2002/07/owl#equivalentClass> ?o
+  } ;	
+]]></programlisting>        	
+        </listitem>
+      </orderedlist>
+    </sect2>          	         	      
+    <sect2 id="cleargraphrelemtgr">  
+      <title>How to clear graphs which are related to empty graphs?</title>	      
+      <para>The following example demonstrates how to remove graphs which are related to empty graphs:</para>
+<programlisting><![CDATA[     
+PREFIX nrl:<http://www.semanticdesktop.org/ontologies/2007/08/15/nrl#>
+SELECT ( bif:exec(bif:sprintf("SPARQL CLEAR GRAPH<%s>", str(?mg))))
+WHERE 
+  {
+    ?mg nrl:coreGraphMetadataFor ?g .
+    FILTER(?g in ( <urn:nepomuk:local:8a9e692a> )) .
+    FILTER ( !bif:exists((SELECT (1) WHERE { GRAPH ?g { ?s ?p ?o . } . })) ) .
+  }	 
+]]></programlisting>     
+    </sect2>   
+    <sect2 id="subqrbl">  
+      <title>How can I use sub-queries to enable literal values based joins?</title>	            	         	            
+      <sect3 id="subqrblwhat">  
+        <title>What?</title>	   
+        <para>Use of subqueries to enable literal values based joins.</para>         	         	            
+      </sect3>    
+      <sect3 id="subqrblwhy">  
+        <title>Why?</title>	            	         	            
+        <para>Sophisticated access to literal values via subqueries provides powerful mechanism for enhancing sparql graph patterns via dynamic literal value generation.</para>
+      </sect3>
+      <sect3 id="subqrblhow">  
+        <title>How?</title>	            	         	            
+        <para>Use select list variables from subqueries to produce literal object values in sparql graph patterns.</para>        
+      <sect4 id="subqrblhowex">  
+        <title>Example</title>	            	         	            
+        <para>Assume in the following query, where should be used a sub-query to replace ?app:</para>   
+<programlisting><![CDATA[
+SELECT DISTINCT ?r 
+WHERE 
+  {
+    graph ?g 
+      {
+        ?r nie:url ?url .
+      }  .
+      ?g nao:maintainedBy ?app .
+      ?app nao:identifier "nepomukindexer" .
+  }	
+]]></programlisting>             
+        <para>If it is not sure that ?app is the only, for e.g., the triple ?app nao:identifier "nepomukindexer" can appear in more than one graph, then the query should be changed to:</para>   
+<programlisting><![CDATA[
+SELECT DISTINCT ?r 
+WHERE 
+  {
+    graph ?g 
+      {
+        ?r nie:url ?url .
+      }  .
+      ?g nao:maintainedBy ?app .
+      FILTER (?app = (SELECT ?a WHERE { ?a nao:identifier "nepomukindexer" }))
+}	
+]]></programlisting>        
+        <para>or even shorter:</para>   
+<programlisting><![CDATA[
+SELECT DISTINCT ?r 
+WHERE 
+  {
+   graph ?g 
+     {
+       ?r nie:url ?url .
+     }  .
+   ?g nao:maintainedBy `(SELECT ?a WHERE { ?a nao:identifier "nepomukindexer" })` .
+ }	
+]]></programlisting>        
+      </sect4>                   
+      </sect3>
+    </sect2>  
+    <sect2 id="sparqlpreforder">  
+      <title>How can I execute query with labels preference order?</title>	      
+      <para>The way to prefer one label to the other can be done as follows:</para>
+      <itemizedlist mark="bullet">
+        <listitem>Have a procedure which returns preference order:
+<programlisting><![CDATA[
+create procedure lbl_order (in p any)
+{    
+  declare r int;
+  r := vector (
+  'http://www.w3.org/2000/01/rdf-schema#label',
+  'http://xmlns.com/foaf/0.1/name',
+  'http://purl.org/dc/elements/1.1/title',
+  'http://purl.org/dc/terms/title',
+  'http://xmlns.com/foaf/0.1/nick',
+  'http://usefulinc.com/ns/doap#name',
+  'http://rdf.data-vocabulary.org/name',
+  'http://www.w3.org/2002/12/cal/ical#summary',
+  'http://aims.fao.org/aos/geopolitical.owl#nameListEN',
+  'http://s.opencalais.com/1/pred/name',
+  'http://www.crunchbase.com/source_description',
+  'http://dbpedia.org/property/name',
+  'http://www.geonames.org/ontology#name',
+  'http://purl.org/ontology/bibo/shortTitle',
+  'http://www.w3.org/1999/02/22-rdf-syntax-ns#value',
+  'http://xmlns.com/foaf/0.1/accountName',
+  'http://www.w3.org/2004/02/skos/core#prefLabel',
+  'http://rdf.freebase.com/ns/type.object.name',
+  'http://s.opencalais.com/1/pred/name',
+  'http://www.w3.org/2008/05/skos#prefLabel',
+  'http://www.w3.org/2002/12/cal/icaltzd#summary',
+  'http://rdf.data-vocabulary.org/name',
+  'http://rdf.freebase.com/ns/common.topic.alias',
+  'http://opengraphprotocol.org/schema/title',
+  'http://rdf.alchemyapi.com/rdf/v1/s/aapi-schema.rdf#Name',
+  'http://poolparty.punkt.at/demozone/ont#title'
+   );
+  if (isiri_id (p))
+    p := id_to_iri (p);   
+  r := position (p, r);
+  if (r = 0)
+    return 100;
+  return r;
+}
+;	
+]]></programlisting>        	
+        </listitem>
+        <listitem>Execute the following query:
+<programlisting><![CDATA[
+SPARQL 
+DEFINE input:inference "facets" 
+SELECT ?o 
+WHERE 
+  { 
+    <http://uriburner.com/about/id/entity/http/www.linkedin.com/in/kidehen#CV_mfrTl4s6Jy> virtrdf:label ?o ; 
+       ?p ?o . 
+  } 
+ORDER BY (sql:lbl_order (?p));
+]]></programlisting>        	
+        </listitem>
+        <listitem>Or execute the following query using sql:
+<programlisting><![CDATA[
+
+SELECT __ro2sq (O), lbl_order (P) 
+FROM RDF_QUAD table option (with ''facets'') 
+WHERE G = __i2id (?) 
+  AND S = __i2id (?) 
+  AND P = __i2id (''http://www.openlinksw.com/schemas/virtrdf#label'', 0) 
+ORDER BY 2
+]]></programlisting>        	
+        </listitem>
+      </itemizedlist>      
+    </sect2>  
+    <sect2 id="getobjdtype">  
+      <title>How can I get object datatype?</title>	      
+      <para>To get object datatype should be used the internal Virtuoso/PL function 
+      	<link linkend="fn_rdf_datatype_of_obj"><function>DB.DBA.RDF_DATATYPE_OF_OBJ</function></link>, visible in SPARQL as sql:RDF_DATATYPE_OF_OBJ.
+      </para>           
+      <para>Suppose the following scenario:</para>	
+<programlisting><![CDATA[
+# Explicit typecast (insert) 
+SQL> sparql insert into <test_datatype> { <a> <string> "string 1"^^xsd:string . };
+callret-0
+VARCHAR
+_______________________________________________________________________________
+
+Insert into <test_datatype>, 1 (or less) triples -- done
+
+1 Rows. -- 94 msec.
+
+
+#Not explicit typecast (insert)
+SQL> sparql insert into <test_datatype> { <a> <string> "string 2". };
+callret-0
+VARCHAR
+_______________________________________________________________________________
+
+Insert into <test_datatype>, 1 (or less) triples -- done
+
+1 Rows. -- 16 msec.
+
+SQL> SPARQL 
+SELECT ?o (iri(sql:RDF_DATATYPE_OF_OBJ(?o, 'untyped!'))) 
+FROM <test_datatype> { <a> <string> ?o} ;
+o                       callret-1
+VARCHAR                 VARCHAR
+_______________________________________________________________________________
+
+string 1                http://www.w3.org/2001/XMLSchema#string 
+string 2                untyped!
+
+2 Rows. -- 16 msec.
+SQL>	
+]]></programlisting>      
+    </sect2>        
+    <sect2 id="howbackuprestoreind">  
+        <title>How Can I Backup and Restore individual table(s) and individual index(s)?</title>	   
+        <para>See more details <link linkend="procindexrecov">here</link>.</para>
+    </sect2> 
+    <sect2 id="bifcontainsoptions">  
+      <title>What bif:contains free-text options can I use?</title>	   
+      <para>Virtuoso supports the following free-text options for bif:contains:</para>
+      <orderedlist>
+        <listitem><emphasis>OFFBAND</emphasis>: See description for this free-text option in 
+        <link linkend="offbanddata">this section</link>.           
+          <itemizedlist mark="bullet">
+            <listitem>Note: it is useful only if data comers via an Linked Data View and the source 
+            	relational table uses this trick;</listitem>
+          </itemizedlist>          
+        </listitem>
+        <listitem><emphasis>SCORE</emphasis>: This free-text option is calculated as described in 
+        <link linkend="hitscores">this section</link>:
+<programlisting><![CDATA[
+SQL>SPARQL 
+SELECT ?s1 as ?c1, ?sc, ?rank 
+WHERE 
+  {
+    {
+      { 
+        SELECT ?s1, (?sc * 3e-1) as ?sc, ?o1, 
+          (sql:rnk_scale (<LONG::IRI_RANK> (?s1))) as ?rank  
+        WHERE 
+          { 
+            ?s1 ?s1textp ?o1 . 
+            ?o1 bif:contains  '"CNET"'  option (score ?sc)  . 
+          } 
+        ORDER BY DESC (?sc * 3e-1 + sql:rnk_scale (<LONG::IRI_RANK> (?s1)))  
+        LIMIT 20  
+        OFFSET 0 
+      }
+    }
+  };
+
+c1                                              sc      rank
+_________________________________________________________________________
+http://www.mixx.com/stories/45003360/justi...   3 	    5.881291583872891e-14
+http://www.mixx.com/stories/45099313/bing_...   2.7     5.881291583872891e-14
+http://dbpedia.org/resource/CBS_Interactive 	  1.5 	  5.881291583872891e-14
+http://dbpedia.org/resource/CBS_Interactive 	  1.5 	  5.881291583872891e-14
+
+
+4 Rows. -- 1 msec.
+]]></programlisting>
+      </listitem>
+      <listitem><emphasis>SCORE_LIMIT</emphasis>: This free-text option works as it is in plain 
+      SQL free-text. <link linkend="queryingftcols">See more details</link> :
+<programlisting><![CDATA[
+SQL> SPARQL 
+SELECT ?s ?sc 
+WHERE 
+  { 
+    ?s ?p ?o . 
+    ?o bif:contains "tree" OPTION (score ?sc , score_limit 20)
+  };
+  
+s                                                                      sc
+VARCHAR                                                                INTEGER
+________________________________________________________________________________   
+
+                                                                      
+http://www.openlinksw.com/virtrdf-data-formats#default                 24
+http://www.openlinksw.com/virtrdf-data-formats#default                 24
+http://www.openlinksw.com/virtrdf-data-formats#sql-longvarbinary       21
+http://www.openlinksw.com/virtrdf-data-formats#sql-varchar-dt          20
+http://www.openlinksw.com/virtrdf-data-formats#sql-nvarchar-dt         20
+http://www.openlinksw.com/virtrdf-data-formats#sql-varchar-lang        20
+http://www.openlinksw.com/virtrdf-data-formats#sql-nvarchar-lang       20
+
+7 Rows. -- 2 msec.
+]]></programlisting>          
+        </listitem>
+      </orderedlist>
+    </sect2>              
+    <sect2 id="sparqlendpointprotection">  
+      <title>What SPARQL Endpoint Protection Methods can I use?</title>	   
+      <para>Virtuoso supports the following SPARQL Endpoint protection methods:</para>
+      <orderedlist>
+        <listitem><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSPARQLSecurityWebID">Secure SPARQL Endpoint Guide using WebID Protocol</ulink></listitem>
+        <listitem><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtOAuthSPARQL">Secure SPARQL Endpoint Guide via OAuth</ulink></listitem>
+        <listitem><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSPARQLProtectSQLDigestAuthentication">Secure SPARQL Endpoint Guide via SQL Accounts -- usage path digest authentication</ulink></listitem>
+      </orderedlist>
+    </sect2>   
+    <sect2 id="sparqlassignrole">    
+    	<title>How do I assign SPARQL role to SQL user?</title>	   
+    	<para>This section a sample scenario how to assign SPARQL ( for ex. SPARQL_SELECT ) role to 
+    		Virtuoso SQL user:</para>
+      <orderedlist>
+      	<listitem>Go to <ulink url="http://cname/conductor">http://cname/conductor</ulink>.</listitem>
+      	<listitem>Enter dba credentials.</listitem> 
+        <listitem>Go to System Admin -&gt; User Accounts: 
+          <figure id="role1" float="1">
+            <title>Assign SPARQL Role to SQL User</title>
+            <graphic fileref="ui/ag1.png"/>
+          </figure>
+        </listitem>
+        <listitem>Click "Edit" for a given user from the very last right column:
+          <figure id="role2" float="1">
+            <title>Assign SPARQL Role to SQL User</title>
+            <graphic fileref="ui/ag2.png"/>
+          </figure>
+        </listitem>
+        <listitem>From "Accounts Roles" drop-down list select a SPARQL Role, for ex. 
+        	<emphasis>SPARQL_SELECT</emphasis> and click the "&gt;&gt;" button:
+          <figure id="role1" float="1">
+            <title>Assign SPARQL Role to SQL User</title>
+            <graphic fileref="ui/ag3.png"/>
+          </figure>
+        </listitem>
+        <listitem>Click "Save". </listitem>
+      </orderedlist>    	                   
+    </sect2>   
+    <sect2 id="delsptriple">    
+    	<title>How Can I Delete a Specific Triple Across Graphs?</title>        	
+    	<para>Suppose the following situation:</para>  
+      <itemizedlist mark="bullet">
+        <listitem>There is a specific triple somewhere in a massive dataset in a Virtuoso DBMS.</listitem>
+        <listitem>There are too many possible named graphs associated with the pattern so 
+        	<emphasis>SPARQL DELETE</emphasis> (which requires <emphasis>FROM</emphasis> i.e., Named 
+        	Graph scoping) isn't adequate</listitem>
+      </itemizedlist>  
+      <para>What is the solution?</para>    	 	
+      <para>Using SQL you can execute the following:</para>    	 	      
+<programlisting><![CDATA[
+SQL> SPARQL
+DELETE FROM rdf_quad 
+WHERE s = iri_to_id ('http://linkeddata.uriburner.com/about/id/entity/http/twitter.com/kidehen') 
+  AND o = iri_to_id ('http://purl.org/ontology/bibo/Document') 
+  AND p = iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type');	
+]]></programlisting>      
+    </sect2>        	
+    <sect2 id="sparqlnotexists">    
+    	<title>How Do I Use NOT EXISTS in SPARQL Query?</title>        
+    	<para>Virtuoso supports "NOT EXISTS" SPARQL 1.1 feature. For example:</para>    	
+<programlisting><![CDATA[    	
+SQL> SPARQL 
+SELECT COUNT(*) 
+WHERE 
+  {
+    ?s ?p "Novosibirsk"  FILTER NOT EXISTS { ?s ?p "Новосибирск" } 
+  }
+
+callret-0
+INTEGER
+313
+No. of rows in result: 1 	
+]]></programlisting>     	
+    	<para>This query is equivalent to the following query:</para>    	
+<programlisting><![CDATA[
+SQL> SPARQL 
+SELECT COUNT(*) 
+WHERE 
+  { 
+    { ?s ?p "Novosibirsk" } MINUS { ?s ?p "Новосибирск" } }
+
+callret-0
+INTEGER
+ 313
+No. of rows in result: 1 	    	
+]]></programlisting>     
+    </sect2>        	    	
+    <sect2 id="sparqlminus">    
+    	<title>How Do I Use MINUS in SPARQL Query?</title>        
+    	<para>Virtuoso supports "MINUS" SPARQL 1.1 feature. For example:</para>
+<programlisting><![CDATA[    
+
+SQL> SPARQL 
+SELECT COUNT(*) 
+WHERE 
+  { 
+    { ?s ?p "Novosibirsk" } MINUS { ?s ?p "Новосибирск" } }
+
+callret-0
+INTEGER
+ 313
+No. of rows in result: 1 		
+]]></programlisting>     
+    	<para>This query is equivalent to the following query:</para>    	
+<programlisting><![CDATA[    	
+SQL> SPARQL 
+SELECT COUNT(*) 
+WHERE 
+  {
+    ?s ?p "Novosibirsk"  FILTER NOT EXISTS { ?s ?p "Новосибирск" } 
+  }
+
+callret-0
+INTEGER
+313
+No. of rows in result: 1 	
+]]></programlisting>         	
+    </sect2>        	    	    
+    <sect2 id="subclassofinferenceoptions">    
+    	<title>How Do I Use Transitive SPARQL Query Options and Exploit Inference Rules?</title>        
+    	<para>This section contains subClassOf oriented subsumption examples and examples for 
+    		Transitive Options e.g., Scope the reasoning to layers in the hierarchy.</para>
+      <sect3 id="subclassofinferenceoptionstranexmp">    
+      	<title>Transitive query options examples usage</title>    
+        <itemizedlist mark="bullet">
+          <listitem><ulink url="http://virtuoso.openlinksw.com/presentations/SPARQL_Tutorials/SPARQL_Tutorials_Part_5/SPARQL_Tutorials_Part_5.html#%2849%29">Transitivity with sameAs and graph</ulink></listitem>
+          <listitem><ulink url="http://virtuoso.openlinksw.com/presentations/SPARQL_Tutorials/SPARQL_Tutorials_Part_5/SPARQL_Tutorials_Part_5.html#%2850%29">Transitive Closure via Graph Path Expressions: TBox</ulink></listitem>
+          <listitem><ulink url="http://virtuoso.openlinksw.com/presentations/SPARQL_Tutorials/SPARQL_Tutorials_Part_5/SPARQL_Tutorials_Part_5.html#%2851%29">Transitive Closure via Graph Path Expressions: ABox</ulink></listitem>
+          <listitem><link linkend="rdfsparqlimplementatiotransexamples7">Inference Rule using transitive properties from SKOS vocabulary</link></listitem>                    
+        </itemizedlist>      	    
+    	</sect3>
+      <sect3 id="subclassofinferenceoptionsinferexmp">    
+      	<title>subClassOf examples usage</title>        
+        <itemizedlist mark="bullet">
+          <listitem><link linkend="rdfiridereferencingfacetprlh">Processing Large Hierarchies in SPARQL</link></listitem>
+          <listitem><link linkend="rdfsparqlimplementatiotransexamples5">Example for TBox Subsumption</link></listitem>
+          <listitem><link linkend="rdfsparqlimplementatiotransexamples6">Example for Receptors</link></listitem>
+          <listitem><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtTipsAndTricksGuideRDFSchemaOWLInferenceRules">Inference Rule using transitive properties from SKOS vocabulary</ulink></listitem>                    
+        </itemizedlist>      	    
+    	</sect3>    	
+    </sect2>      
+    <sect2 id="samplegroupconcatdigest">    
+    	<title>What is the difference between the functions SAMPLE, GROUP_CONCAT and GROUP_DIGEST?</title>        
+    	<para>This section demonstrates the differences between the functions 
+    		<link linkend="fn_SAMPLE"><function>SAMPLE</function></link>, 
+    		<link linkend="fn_GROUP_CONCAT"><function>GROUP_CONCAT</function></link> and 
+    		<link linkend="fn_GROUP_DIGEST"><function>GROUP_DIGEST</function></link>.
+      </para>      	    	        	
+    	<para>Assume the following query that should get all ?assets as a list with delimiters:</para>	
+<programlisting><![CDATA[
+SPARQL SELECT ?view ?path (sql:GROUP_CONCAT (?asset, ' ')) as ?asset_list
+FROM <http://mygraph.com> 
+WHERE
+ { 
+   ?view <viewPath> ?path ; 
+     <viewContent> ?asset ; 
+     <viewType>  'phyview'. 
+ }
+;	
+]]></programlisting>  
+      <para>This method is not universal, because conversion to strings will eliminate the difference 
+      	between strings and IRIs and there should be some delimiter that never appears in values of 
+      	?asset. In addition, the query may fail with "row too long" error if values of ?asset are 
+      	lengthy and/or numerous enough. It is also possible the query not work completely free from 
+      	duplicates if more than one list is desired. E.g.:</para>  	
+<programlisting><![CDATA[
+SPARQL 
+SELECT ?view (sql:GROUP_CONCAT (?path, ' ')) as ?path_list
+  (sql:GROUP_CONCAT (?asset, ' ')) as ?asset_list
+FROM <http://mygraph.com>
+WHERE 
+  { 
+    ?view <viewPath> ?path ; 
+      <viewContent> ?asset ; 
+      <viewType> 'phyview' . 
+  }	
+]]></programlisting>      	
+      <para>will not contain duplicates in lists only if either ?path or ?asset is unique for every 
+      	found ?view; but if it's so unique then there's no need in the corresponding 
+      	sql:GROUP_CONCAT().</para>  	
+      <para>If there are many values per property but it's enough to return any single value and ignore 
+      	the rest then use sql:<link linkend="fn_SAMPLE"><function>SAMPLE ()</function></link> 
+      	function instead of sql:<link linkend="fn_GROUP_CONCAT"><function>GROUP_CONCAT ()</function></link>.
+      </para>  	            
+      <para>If there are many values per property and it's better to show more than one value but "row 
+      	too long" error happens, then the sql:<link linkend="fn_GROUP_DIGEST"><function>GROUP_DIGEST ()</function></link> 
+      	function can be used:</para>  	    
+<programlisting><![CDATA[
+SPARQL 
+SELECT ?view (sql:GROUP_DIGEST (?path, ' ', 1000, 1)) as ?path_list 
+  (sql:GROUP_DIGEST (?asset, ' ', 1000, 1)) as ?asset_list
+FROM <http://mygraph.com> 
+WHERE
+  { 
+    ?view <viewPath> ?path ; 
+      <viewContent> ?asset ; 
+      <viewType> 'phyview' . 
+  }
+]]></programlisting>      	
+    </sect2>          		
+    <sect2 id="constructaggfunc">    
+    	<title>How Do I use CONSTRUCT with objects which are value of aggregate function?</title>   
+    	<para>The following section demonstrates usage example of CONSTRUCT Query with object which is 
+    		a value of the aggregate function COUNT:</para>
+      <orderedlist>
+        <listitem>Assume following SPARQL SELECT Query: 
+<programlisting><![CDATA[
+SELECT DISTINCT ?category COUNT(?category) AS ?count
+WHERE
+  {
+    ?s<http://purl.org/dc/terms/subject> ?category
+    FILTER(?s =<http://dbpedia.org/resource/Higgs_boson> || ?s =<http://dbpedia.org/resource/Gluon>)
+  }	
+]]></programlisting>        	
+        </listitem>
+        <listitem>To present it as CONSTRUCT Query, one should put "SELECT DISTINCT" into the 
+        	CONSTRUCT's WHERE clause as a subquery. So for example it could be: 
+<programlisting><![CDATA[
+
+CONSTRUCT 
+  {
+    ?category a<http://www.w3.org/2004/02/skos/core#Concept> .
+    ?category<http://www.turnguard.com/virtuoso/aggregates#count>  ?count
+  }
+WHERE 
+  {
+    { 
+      SELECT DISTINCT ?category COUNT(?category) AS ?count
+      WHERE
+        {
+          ?s <http://purl.org/dc/terms/subject> ?category
+          FILTER(?s =<http://dbpedia.org/resource/Higgs_boson> || ?s =<http://dbpedia.org/resource/Gluon>)
+        } 
+    } 
+  }	
+]]></programlisting>        	
+        </listitem>
+      </orderedlist>	
+    </sect2>          		    	
+    <sect2 id="sparqlcleanerrantdata">
+      <title>How Do I Clean Up Errant Data using SPARQL Update Language?</title>         
+      <sect3 id="sparqlcleanerrantdatawhat">
+      	<title>What?</title>
+        <para>Cleaning up errant data using SPARQL Update Language.</para>         
+      </sect3>           
+      <sect3 id="sparqlcleanerrantdatawhy">
+      	<title>Why?</title>
+        <para>All data endeavors involve varying degrees of prospective and retrospective error 
+        correction.</para>         
+      </sect3>           
+      <sect3 id="sparqlcleanerrantdatahow">
+      	<title>How?</title>
+        <para>Given a triple in a Virtuoso Quad store that contains an errant URI e.g. one that 
+        accidentally contains spaces, here is a SPARQL example that showcases how to delete said 
+        triple using a built-in function:</para>         
+<programlisting><![CDATA[
+DELETE FROM <your_graph> 
+  { 
+    `iri("http://isbsg.clearbluewater.com.au/wsf/datasets/378/Capers Jones_107_12122011081257")` 
+     a <http://isbsg.org/ontology/data/Dataset>  
+  };
+]]></programlisting>  
+      </sect3>           
+    </sect2> 
+    <sect2 id="sparqladdmissingtriples">
+      <title>How to Use SPARQL to add missing isDefinedBy relations to an Ontology?</title>         
+      <sect3 id="sparqladdmissingtripleswhat">
+      	<title>What?</title>
+      	<para>Using SPARQL to add missing isDefinedBy relations to an Ontology.</para>
+      </sect3>   	      	
+      <sect3 id="sparqladdmissingtripleswhy">
+      	<title>Why?</title>      	
+      	<para>isDefinedBy relations make Ontologies (TBox) more navigable using follow-your-nose 
+      		pattern. This also makes ABox instance data more discoverable.</para>      	
+      </sect3>      
+      <sect3 id="sparqladdmissingtripleshow">
+      	<title>How?</title>      	
+      	<para>Use SPARQL to generate relations that associate Classes and Properties the Ontology 
+      		that describes them.</para>      	
+        <sect4 id="sparqladdmissingtriplesvcard">
+        	<title>Example Using the Ontology for vCards</title>      	
+      	  <para>In this example we will use:</para>        	
+          <itemizedlist mark="bullet">
+            <listitem>Ontology Document URL: http://www.w3.org/2006/vcard/ns ;</listitem>
+            <listitem>Ontology URI: http://www.w3.org/2006/vcard/ns# ;</listitem>
+            <listitem>A local Named Graph IRI to host SPARQL Update (SPARUL) the new relations.</listitem>            
+          </itemizedlist>      	  
+<programlisting><![CDATA[
+## Uncomment line below if using Virtuoso and executing SPARQL via iSQL 
+## or via an ODBC, JDBC, ADO.NET connection
+
+## SPARQL
+
+## Uncomment line (a SPARQL pragma) below if using Virtuoso and there 
+## isn't a local Named Graph holding triples retrieved from the Ontology URL
+
+## DEFINE get:soft "add"
+
+INSERT INTO <urn:data:qos:vcard> 
+  { ?s rdfs:isDefinedBy <http://www.w3.org/2006/vcard/ns#> }
+FROM <http://www.w3.org/2006/vcard/ns>
+WHERE 
+  {
+    ?s a ?o
+  }	
+]]></programlisting>      	  
+        </sect4>        	
+        <sect4 id="sparqladdmissingtripleshowrmedia">
+        	<title>Example Using the Recorded Media Ontology</title>      	
+      	  <para>In this example we will use:</para>        	
+          <itemizedlist mark="bullet">
+            <listitem>Ontology Document URL: http://www.w3.org/ns/ma-ont ;</listitem>
+            <listitem>Ontology URI: http://www.w3.org/ns/ma-ont# ;</listitem>
+            <listitem>A local Named Graph IRI to host SPARQL Update (SPARUL) the new relations.</listitem>            
+          </itemizedlist>      	  
+      	  
+<programlisting><![CDATA[
+SPARQL
+INSERT INTO <urn:data:qos:ma-ont> 
+  { ?s rdfs:isDefinedBy <http://www.w3.org/ns/ma-ont#> }
+FROM <http://www.w3.org/ns/ma-ont>
+WHERE 
+  {
+    ?s a ?o
+  }	
+]]></programlisting>      	  
+        </sect4>        	        
+      </sect3>            
+    </sect2>   	
+    <sect2 id="loadsqldjdbc">
+      <title>How Can I execute load of sql dump from jdbc?</title>       
+      <para>LOAD" is not a Virtuoso SQL command, it's an ISQL one. The ISQL checks the command to 
+      	be executed, whether it's of special "isql"-ish syntax or not, it executes commands it 
+      	understand and send the rest to the server, unchanged.</para>
+      <para>There's no way to mimic ISQL's behavior right on the server, without ISQL. However 
+      	some files can be loaded via the 
+      	<link linkend="fn_vad_load_sql_file"><function>DB.DBA.VAD_LOAD_SQL_FILE</function></link> 
+      	function.
+      </para>      
+    </sect2>   	
+    <sect2 id="usemodifyasinsert">          
+    	<title>How Can I Use MODIFY to update triples?</title>
+    	<para>The following queries are equivalent:</para>
+<programlisting><![CDATA[
+MODIFY <http://test.com/>
+DELETE {?s ?p ?o}
+INSERT {?s_new ?p ?o}
+FROM <http://test.com/>
+WHERE
+{
+  {
+    SELECT iri(bif:replace(str(?s),"http://test.com/link","http://test.com/extra/link" ) )
+      AS ?s_new ?s ?p ?o
+    WHERE 
+      {
+        ?s ?p ?o FILTER (regex (str(?s), "http://test.com/link"))
+      }
+  }
+}	
+]]></programlisting>
+<programlisting><![CDATA[
+MODIFY <http://test.com/>
+DELETE {?s ?p ?o}
+INSERT {`iri(?s_new)` ?p ?o}
+FROM <http://test.com/>
+WHERE 
+  {
+    {
+      SELECT bif:replace(str(?s),"http://test.com/link","http://test.com/extra/link" )
+        AS ?s_new ?s ?p ?o
+      WHERE 
+        {
+          ?s ?p ?o FILTER (regex (str(?s), "http://test.com/link"))
+        }
+    }
+  }	
+]]></programlisting>
+<programlisting><![CDATA[
+MODIFY <http://test.com/>
+DELETE {?s ?p ?o}
+INSERT
+  { `iri(bif:replace(str(?s),"http://test.com/link","http://test.com/extra/link" ))`  ?p ?o }
+FROM <http://test.com/>  
+WHERE
+  {
+    {
+      ?s ?p ?o FILTER (regex (str(?s), "http://test.com/link"))
+    }
+  }
+}	
+]]></programlisting>    	
+    </sect2>   	    	
+    <sect2 id="exectinsdelsparqilwebid">          
+    	<title>How Can I execute INSERT/DELETE (SPARUL) statements against a WebID? protected SPARQL endpoint?</title>
+      <para>View our <link linkend="rdfsparulexamples22">sample scenario</link>.</para>
+    </sect2>  
+    <sect2 id="loggingandrecording">          
+    	<title>How can I make HTTP Logging and Recording in Virtuoso?</title>
+      <sect3 id="loggingandrecordinglg">     
+      	<title>HTTP Logging</title>      	
+        <para>Virtuoso can keep http log with all the requests that are made to the HTTP endpoint. Here 
+        	are the steps:</para>      	
+        <orderedlist>
+          <listitem>Edit your virtuoso.ini and add the following setting:
+<programlisting><![CDATA[
+[HTTPServer]
+HTTPLogFile                = logs/http15022012.log	
+]]></programlisting>         	
+          </listitem>
+          <listitem>Restart Virtuoso.</listitem>          
+          <listitem>Virtuoso will now maintain a http log in the logs 
+          	subdirectory, with one line per request as in:
+<programlisting><![CDATA[
+180.76.5.87 - - [15/Feb/2012:21:50:44 +0100] "GET /data/Wilton_power_stations.json HTTP/1.0" 200 8014 "" 
+  "Mozilla/5.0 (compatible; Baiduspider/2.0; +http://www.baidu.com/search/spider.html)"
+180.76.5.87 - - [15/Feb/2012:21:50:45 +0100] "POST /sparql HTTP/1.0" 200 3012 "" ""	
+]]></programlisting>          	
+          </listitem>
+          <listitem>The first request after midnight will open a new logfile, to make sure the logfile does not keep growing. 
+Old logfiles can be gzipped or removed by hand to conserve disk space.</listitem>
+        </orderedlist>        	
+        <para>The HTTP log files that Virtuoso produces can be processed by programs like 
+        	<ulink url="http://www.webalizer.org/">Webalizer</ulink> or 
+        	<ulink url="http://awstats.sourceforge.net/">AWstats</ulink> to accurately measure 
+        	site usage.
+        </para>          
+      </sect3>      	
+      <sect3 id="loggingandrecordingrc">     
+      	<title>HTTP Recording</title>      	
+        <para>Virtuoso can also record the complete HTTP request for both GET and POST requests, 
+        	including all incoming headers, POST parameters etc. This is a very useful tool for debugging, 
+        	but it will cost performance and disk space, so it should not be left on for long periods of 
+        	time. Each request will be written to a separate file.
+        </para>    
+        <para><emphasis>Note</emphasis>: Some filesystem types like ext2 and earlier versions of ext3 
+        on Linux cannot handle huge amounts of files in a single directory without slowing down the whole 
+        system.</para>  	
+      </sect3>      	
+        <sect4 id="loggingandrecordingrcexget">    
+          <title>Example of a GET request</title>         
+<programlisting><![CDATA[
+GET /sparql?query=DESCRIBE%20%3CnodeID%3A%2F%2Fb15481%3E&output=text%2Fcxml     HTTP/1.1
+Host: localhost:8890
+Connection: Keep-alive
+Accept: */*
+From: googlebot(at)googlebot.com
+User-Agent: Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)
+Accept-Encoding: gzip,deflate	
+]]></programlisting>          
+        </sect4>      	        	
+        <sect4 id="loggingandrecordingrcexpost">    
+          <title>Example of a POST request</title>         
+<programlisting><![CDATA[
+POST /ods_services/Http/usersGetInfo HTTP/1.1
+User-Agent: Opera/9.80 (Macintosh; Intel Mac OS X 10.5.8; U; en) Presto/2.9.168 Version/11.51
+Host: localhost:8890
+Accept: text/html, application/xml;q=0.9, application/xhtml+xml, image/png, image/webp, image/jpeg, image/gif, 
+  image/x-xbitmap, */*;q=0.1
+Accept-Language: en,en-US;q=0.9,ja;q=0.8,fr;q=0.7,de;q=0.6,es;q=0.5,it;q=0.4,pt;q=0.3,pt-  
+  PT;q=0.2,nl;q=0.1,sv;q=0.1,nb;q=0.1,da;q=0.1,fi;q=0.1,ru;q=0.1,pl;q=0.1,zh-CN;q=0.1,zh-TW;q=0.1,ko;q=0.1
+Accept-Encoding: gzip, deflate
+Referer: https://localhost:8890/ods/
+Cookie: interface=js; oatSecurityCookie=0123456878794576; sid=b3fae40reb78bc4babab3cb2a70fb111
+Connection: Keep-Alive
+Content-Length: 77
+Content-Type: application/x-www-form-urlencoded
+Authorization: Basic bnQacPPuhhxs
+Content-Transfer-Encoding: binary	
+]]></programlisting>          
+        </sect4>   
+        <sect4 id="loggingandrecordingrcexenbr">    
+          <title>Example Enabling recording</title>    
+          <orderedlist>
+            <listitem>Go to the directory where the database is started from:
+<programlisting><![CDATA[
+mkdir sys_http_recording
+chmod 777 sys_http_recording	
+]]></programlisting>            	
+            </listitem>
+            <listitem>Edit virtuoso.ini and set:
+<programlisting><![CDATA[
+[HTTPServer]
+EnableRequestTrap          = 1	
+]]></programlisting>            	
+            </listitem>
+            <listitem>Next connect with isql to your database and run the following commands:
+<programlisting><![CDATA[
+registry_set ('__save_http_history_on_disk', '1');
+registry_set ('__save_http_history', '/');	
+]]></programlisting>            	
+            </listitem>
+            <listitem>Finally restart Virtuoso.</listitem>
+            <listitem>As result at this point every HTTP GET and POST request will be logged with 
+            	all the parameters, headers and settings.
+            </listitem>            
+          </orderedlist>               
+        </sect4>        
+        <sect4 id="loggingandrecordingrcexdsbr">    
+          <title>Example Disabling recording</title>     
+          <orderedlist>
+            <listitem>To temporary disable the recordings, edit virtuoso.ini and set:
+<programlisting><![CDATA[
+[HTTPServer]
+EnableRequestTrap          = 0
+]]></programlisting>            	
+            </listitem>
+            <listitem>Next you should remove the two registry items:
+<programlisting><![CDATA[
+registry_remove ('__save_http_history_on_disk');
+registry_remove ('__save_http_history');	
+]]></programlisting>            	
+            </listitem>
+            <listitem>Finally restart Virtuoso.</listitem>            
+          </orderedlist>     
+        </sect4>                 	        	        
+    </sect2>     	    	
+    <sect2 id="rdfinsertcrawlingmethods">          
+    	<title>Quad Store Data Loading via Virtuoso's In-built Content Crawler?</title>
+    	<para>This section covers the use of Virtuoso's in-built content crawler as a mechanism for 
+    		scheduled of one-off data loading operations for its native quad store.</para>
+    	<para><emphasis>Why is this important?</emphasis></para>
+    	<para>Transforming external data sources into Linked Data "on the fly" (e.g., via the 'Sponger') 
+    		is sufficient for many use cases, but there are times when the volume or sheer nature of a 
+    		data source makes batch-loading necessary. For example, Freebase offers RDF representations 
+    		of its data, but it doesn't publish RDF dumps; even if it did, such dumps would usually be 
+    		outdated by the time they were loaded. Thus, a scheduled crawl of that resource collection 
+    		offers a viable alternative.</para>
+    	<para><emphasis>How to Set Up the Content Crawler for Linked Data generation and import</emphasis></para>    	
+    	<para>The Virtuoso Conductor can be used to set up various Content Crawler Jobs:</para>
+    	<itemizedlist mark="bullet">
+        <listitem><link linkend="rdfinsertmethodvirtuosocrawler">Setting up a Content Crawler Job to Import Linked Data into the Virtuoso Quad Store</link></listitem>
+        <listitem><link linkend="contentcrawlerrdfsm">Setting up a Content Crawler Job to Retrieve Sitemaps</link> (when the source includes RDFa) </listitem>
+        <listitem><link linkend="contentcrawlerrdfssm">Setting up a Content Crawler Job to Retrieve Semantic Sitemaps</link> (a variation of the standard sitemap)</listitem>
+        <listitem><link linkend="contentcrawlerrdfsd">Setting up a Content Crawler Job to Retrieve Content from Specific Directories</link></listitem>        
+        <listitem><link linkend="contentcrawleratom">Setting up a Content Crawler Job to Retrieve Content from ATOM feed</link></listitem>
+        <listitem><link linkend="contentcrawlersparqlendp">Setting up a Content Crawler Job to Retrieve Content from SPARQL endpoint</link></listitem>
+      </itemizedlist>
+    </sect2>     	    
+    <sect2 id="setshortenlongurisparam">          
+    	<title>What is the ShortenLongURIs Virtuoso configuration parameter?</title>	    	
+    	<para>The ShortenLongURIs parameter is a Virtuoso configuration setting to shorten extremely long 
+    		URIs in datasets when loading with the RDF Bulk Loader.</para>
+      <para>Some RDF datasets have long URIs that exceed the Virtuoso internal maximum size of 1900 bytes 
+      	and thus need to be shortened to avoid errors like:</para>
+<programlisting><![CDATA[
+"SR133: Can not set NULL to not nullable column 'DB.DBA.RDF_QUAD.S' (or .O, or .P)"	
+]]></programlisting>      	
+      <para>which has been seen loading some of the DBpedia 3.7 datasets, for example.</para>    		
+      <para>The Virtuoso ShortenLongURIs parameter needs to be set in the 
+      	<link linkend="ini_SPARQL">[SPARQL]</link> section of the Virtuoso configuration file 
+      	(virtuoso.ini by default) and restart the Virtuoso Server.
+      </para>
+<programlisting><![CDATA[
+[SPARQL]
+.
+.
+.
+ShortenLongURIs = 1
+.
+.
+.	
+]]></programlisting>      	
+    <para><emphasis>Note</emphasis>: This parameter is only in the Virtuoso 06.03.3131+ commercial builds, 
+  	at the time of writing it is not included in the open source 6.1.4 archives but will be in the 
+  	next 6.1.5 release. A patch to enable this feature is however available from the 
+  	<ulink url="http://sourceforge.net/tracker/?func=detail&amp;aid=3496331&amp;group_id=161622&amp;tid=820576">Virtuso patches page on source forge</ulink>, which can be applied to a 6.1.4 archive from source forge and the Virtuoso 
+  	server binary rebuilt.</para>
+    </sect2>     	
+    <sect2 id="soaprequestoversparqlendpoint">          	
+      <title>How Can I send SOAP requests to Virtuoso SPARQL Endpoint?</title>    	
+      <para>This section presents sample scenario how to execute SPARQL query in SOAP request over 
+      	Virtuoso SPARQL Endpoint.</para>
+      <orderedlist>
+        <listitem>Assume the following sample SOAP request containing simple SPARQL query:
+<programlisting><![CDATA[
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+   <soapenv:Body>
+      <query-request xmlns="http://www.w3.org/2005/09/sparql-protocol-types/#">
+         <query xmlns="">SELECT DISTINCT ?z FROM virtrdf: {?x ?y ?z .} LIMIT 10</query>
+      </query-request>
+   </soapenv:Body>
+</soapenv:Envelope>	
+]]></programlisting>
+        </listitem>
+        <listitem>Save locally the content from above for ex. to file with name "soap.xml".</listitem>
+        <listitem>To pass the SOAP request to a Virtuoso SPARQL Endpoint, execute the following curl command:
+<programlisting><![CDATA[
+$ curl -d@soap.xml -H "Content-Type:text/xml" -H "SOAPAction: ''" http://localhost:8890/sparql
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+  <soapenv:Body>
+    <query-result xmlns="http://www.w3.org/2005/09/sparql-protocol-types/#">
+      <sparql xmlns="http://www.w3.org/2005/sparql-results#" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2001/sw/DataAccess/rf1/result2.xsd">
+        <head>
+         <variable name="z"/>
+        </head>
+        <results distinct="false" ordered="true">
+          <result>
+            <binding name="z">
+             <uri>http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat</uri>
+            </binding>
+          </result>
+          <result>
+            <binding name="z">
+             <uri>http://www.openlinksw.com/schemas/virtrdf#QuadStorage</uri>
+            </binding>
+          </result>
+          <result>
+            <binding name="z">
+             <uri>http://www.openlinksw.com/schemas/virtrdf#array-of-QuadMapFormat</uri>
+            </binding>
+          </result>
+          <result>
+            <binding name="z">
+             <uri>http://www.openlinksw.com/schemas/virtrdf#QuadMap</uri>
+            </binding>
+          </result>
+          <result>
+            <binding name="z">
+             <uri>http://www.openlinksw.com/schemas/virtrdf#QuadMapValue</uri>
+            </binding>
+          </result>
+          <result>
+            <binding name="z">
+             <uri>http://www.openlinksw.com/schemas/virtrdf#array-of-QuadMapColumn</uri>
+            </binding>
+          </result>
+          <result>
+            <binding name="z">
+             <uri>http://www.openlinksw.com/schemas/virtrdf#QuadMapColumn</uri>
+            </binding>
+          </result>
+          <result>
+            <binding name="z">
+             <uri>http://www.openlinksw.com/schemas/virtrdf#array-of-QuadMapATable</uri>
+            </binding>
+          </result>
+          <result>
+            <binding name="z">
+             <uri>http://www.openlinksw.com/schemas/virtrdf#QuadMapATable</uri>
+            </binding>
+          </result>
+          <result>
+            <binding name="z">
+             <uri>http://www.openlinksw.com/schemas/virtrdf#QuadMapFText</uri>
+            </binding>
+          </result>          
+        </results>        
+      </sparql>
+    </query-result>
+  </soapenv:Body>
+</soapenv:Envelope>	
+]]></programlisting>
+        </listitem>
+      </orderedlist>	
+    </sect2>     	 
+    <sect2 id="howtodeleteblanknodes">          	
+      <title>How Can I Delete Triples containing blank nodes?</title>   	
+      <para>Please see details and sample scenario <link linkend="rdfsparulexamples24">here</link>.</para>
+    </sect2>     	       
+    <sect2 id="howtogetfullexplainplanforsparqlquery">          	
+      <title>How Can I Get a full explain plan for a simple SPARQL query?</title>   	
+      <para>Please see details and sample scenario <link linkend="rdfperfcosttransanalyze">here</link>.</para>
+    </sect2>     	       
+    <sect2 id="expressionsusage">          	
+      <title>How Can I Use Expressions inside CONSTRUCT, INSERT and DELETE {...} Templates?</title>   	
+      <para>Please examples <link linkend="rdfsparulexamples25">here</link>.</para>
+    </sect2>     
   </sect1>    
 </chapter>
-
-

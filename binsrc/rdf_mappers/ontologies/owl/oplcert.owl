@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<!--
+
+  $Id$
+
+  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+  project.
+
+  Copyright (C) 1998-2013 OpenLink Software
+
+  This project is free software; you can redistribute it and/or modify it
+  under the terms of the GNU General Public License as published by the
+  Free Software Foundation; only version 2 of the License, dated June 1991.
+
+  This program is distributed in the hope that it will be useful, but
+  WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+  General Public License for more details.
+
+  You should have received a copy of the GNU General Public License along
+  with this program; if not, write to the Free Software Foundation, Inc.,
+  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+-->
+
+<rdf:RDF xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:cert="http://www.w3.org/ns/auth/cert#" xmlns:xsd="http://www.w3.org/2001/XMLSchema#" xmlns:foaf="http://xmlns.com/foaf/0.1/" xmlns:wot="http://xmlns.com/wot/0.1/" xmlns:owl="http://www.w3.org/2002/07/owl#" xmlns:opl="http://www.openlinksw.com/schemas/cert#" xmlns:ns="http://purl.org/dc/elements/1.1/">
+	<owl:Ontology rdf:about="http://www.openlinksw.com/schemas/cert#">
+		<ns:creator>OpenLink Software, http://www.openlinksw.com</ns:creator>
+	</owl:Ontology>
+	<owl:Class rdf:about="http://www.openlinksw.com/schemas/cert#Certificate">
+		<rdfs:label>Certificate</rdfs:label>
+		<owl:equivalentClass rdf:resource="http://www.w3.org/ns/auth/cert#X509Certificate" />
+		<owl:equivalentClass rdf:resource="http://xmlns.com/wot/0.1/PubKey" />
+		<rdfs:subClassOf rdf:resource="http://www.w3.org/ns/auth/cert#Certificate" />
+		<rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cert#" />
+	</owl:Class>
+	<rdf:Property rdf:about="http://www.openlinksw.com/schemas/cert#hasCertificate">
+		<rdfs:label>Owns</rdfs:label>
+		<rdfs:domain rdf:resource="http://xmlns.com/foaf/0.1/Agent" />
+		<rdfs:range rdf:resource="http://www.openlinksw.com/schemas/cert#Certificate" />
+		<rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cert#" />
+	</rdf:Property>
+	<rdf:Property rdf:about="http://www.openlinksw.com/schemas/cert#fingerprint">
+		<rdfs:label>fingerprint</rdfs:label>
+		<rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cert#Certificate" />
+		<rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cert#" />
+		<rdfs:range rdf:resource="http://www.w3.org/ns/auth/cert#hex" />
+	</rdf:Property>
+	<rdf:Property rdf:about="http://www.openlinksw.com/schemas/cert#fingerprint-digest">
+		<rdfs:label>fingerprint digest</rdfs:label>
+		<rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/cert#Certificate" />
+		<rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/cert#" />
+		<rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string" />
+	</rdf:Property>
+</rdf:RDF>

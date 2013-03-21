@@ -2,19 +2,26 @@
 
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
   <?vsp
-    declare skinpfx, banner_txt, strapline varchar;
+  declare skinpfx, banner_txt, strapline, banner_logo, fp_title, fp_favicon varchar;
     skinpfx := registry_get ('_sponger_fp_SkinPrefix');
     banner_txt := registry_get ('_sponger_fp_Banner');
+  banner_logo := registry_get ('_sponger_fp_Logo');
     strapline := registry_get ('_sponger_fp_Strapline');
+  fp_title := registry_get ('_sponger_fp_Title');
+  fp_favicon := registry_get ('_sponger_fp_Favicon');
     if (skinpfx = 0) skinpfx := 'skin';
     if (banner_txt = 0) banner_txt := 'Virtuoso Linked Data Middleware';
     if (strapline = 0) strapline := '';
+  if (fp_title = 0) fp_title := 'Virtuoso Sponger';
   ?>
   <head>
     <meta name="generator" content="HTML Tidy, see www.w3.org"/>
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-    <title>Virtuoso Sponger</title>
+    <title><?=fp_title?></title>
     <link rel="stylesheet" href="<?=skinpfx?>/ss/sponger_frontpage.css" type="text/css"/>
+    <?vsp if (fp_favicon <> 0) { ?>
+    <link rel="shortcut icon" href="<?=skinpfx?>/i/<?=fp_favicon?>" />
+    <?vsp } ?>
   </head>
 
   <body>
@@ -26,12 +33,19 @@
         src="<?=skinpfx?>/i/openlinklogo_wstrap_2008_100h.png" /></a> 
         </div>
         <div id="header_text">
-          <h1><?=banner_txt?></h1><?=strapline?>
+          <?vsp if (banner_logo <> 0) { ?>
+            <img id="banner_logo" alt="[Sponger instance logo]"
+                 src="<?=skinpfx?>/i/<?=banner_logo?>" /><br/>
+          <?vsp } else { ?>
+            <h1><?=banner_txt?></h1>
+          <?vsp } ?>
+          <?=strapline?>
         </div>
       </div>
 
       <div id="navbar">
         <a href="index.vsp">Home</a> | 
+        <a href="sponger_architecture.vsp#how_it_works">How It Works</a> | 
         <a href="sponger_architecture.vsp">Architecture</a> | 
         <a href= "sponger_setup.vsp">Sponger Setup</a> | 
         <a href="examples.vsp">Live Sponger Examples</a> | 
@@ -116,12 +130,15 @@
                 <h2><a id="how_it_works"></a>How It Works</h2>
 
                 <p>
-                Designed with a pluggable architecture, the Sponger's core functionality is provided by a cartridge pipeline. Each cartridge includes data 
-                extractors to extract data from one or more data sources, and ontology mappers which map the extracted data to one or more ontologies/schemas, 
-                en route to producing Linked Data. Cartridges for a wide variety of both open and proprietary formats are included, a few of which are depicted 
-                in the animation below. After the initial structured data generation by one or more extractor cartridges, the Linked Data is further enriched 
-                by meta-cartridges which take named entities created from the initial pass and submit these to third party lookup services (such as DBpedia, Calais 
-                and Zemanta) which in turn provide additional context.
+                Designed with a customization-friendly plug-in architecture, the Sponger's core functionality is provided by data transformation 
+                drivers, known as Sponger Cartridges, that handle entity extraction, representation construction, metadata generation, and the 
+                creation of de-referenceable proxy (or wrapper) URIs.  Cartridges may be written in Virtuoso Procedure Language, XSLT, PHP, Python, Java, etc.
+                </p>
+                <p>
+                There are currently two kinds of cartridges: Extractor and Metadata. Extractor cartridges run within the Virtuoso instance, performing 
+                initial data retrieval, data object construction, vocabulary/ontology mapping, and proxy URI creation. Metadata (or "Meta") cartridges,
+                on the other hand, use bindings to external processes and/or third-party services to extract entities from content, and to handle 
+                additional data retrieval, data object construction, and data transformation.
                 </p>
 
                 <table width="100%" border="0" cellspacing="0" cellpadding="0">
@@ -143,7 +160,7 @@
 
       <div class="reset">
         <div id="footer">
-          Copyright (C) OpenLink Software 2011. All rights reserved.
+          Copyright (C) 1998-2013 OpenLink Software. All rights reserved.
         </div>
       </div>
     </div>

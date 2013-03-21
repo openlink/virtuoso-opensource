@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -74,6 +74,19 @@ create procedure WS.WS.VFS_ENSURE_NEW_SITE (in _host varchar, in _root varchar, 
       select _new_host, _new_host, _new_url, VS_SRC, VS_OWN, VS_DEL, VS_NEWER, VS_FOLLOW, VS_NFOLLOW, VS_METHOD, VS_OTHER, _new_host 
 	  from VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
     }
+}
+;
+
+create procedure WS.WS.VFS_GUESS_CONTENT_TYPE (in origin_uri varchar, in ret_content_type varchar, inout ret_body any)
+{
+  declare ret_begin, ret_html any;
+  ret_begin := subseq (ret_body, 0, 4096);
+  if (isstring_session (ret_begin))
+    ret_begin := string_output_string (ret_begin);
+  ret_html := xtree_doc (ret_begin, 2);
+  if (xpath_eval ('/sitemapindex|/urlset', ret_html) is not null)
+    return 'text/xml';
+  return ret_content_type;
 }
 ;
 
@@ -272,6 +285,7 @@ get_again:
 	{
 	  _c_type := http_request_header (_resp, 'Content-Type', null, '');
       _c_type := DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (_url, _c_type, _content);
+	  _c_type := WS.WS.VFS_GUESS_CONTENT_TYPE (_url, _c_type, _content);
       _etag := http_request_header (_resp, 'ETag', null, '');
 
       if (ext_hook is not null and __proc_exists (ext_hook))
@@ -666,7 +680,7 @@ create procedure WS.WS.GET_URLS (in _host varchar, in _url varchar, in _root var
   declare _flw, _nflw, _method, _delete, xp_exp, base, robots, care_of_bot varchar;
   declare _newer datetime;
   declare _own integer;
-  declare frames, _urls_arr any;
+  declare frames, _urls_arr, origin_iri, urls any;
 
   if (WS.WS.SITEMAP_PROCESS (_host, _url, _root, _content, ctype, lev))
     return;
@@ -696,6 +710,8 @@ create procedure WS.WS.GET_URLS (in _host varchar, in _url varchar, in _root var
 
   _inx := 0;
   base := WS.WS.VFS_URI_COMPOSE (vector ('http', _host, _url, '', '', ''));
+  origin_iri := iri_to_id (base, 1);
+  urls := make_array (_urls_arr_len, 'any');
   while (_inx < _urls_arr_len)
 	    {
       declare hi, sch any;
@@ -719,16 +735,18 @@ create procedure WS.WS.GET_URLS (in _host varchar, in _url varchar, in _root var
 	  _tmp_url := WS.WS.VFS_URI_COMPOSE (hi);  -- local part & URL parameters
 	  if (_tmp_host <> _host)
 	    _tmp_url := _tmp;
+	  urls [_inx] := _tmp_url;  
 	      --dbg_obj_print ('LINK: ',_tmp_host,_tmp_url);
 	  if ((get_keyword (_tmp_url, frames) is not null or WS.WS.FOLLOW (_host, _root, _tmp_url, _flw, _nflw, _start_url, _d_imgs)))
 			{
-	      insert soft VFS_QUEUE (VQ_HOST, VQ_TS, VQ_URL, VQ_STAT, VQ_ROOT, VQ_LEVEL)
-		  values (_host, now (), _tmp_url, 'waiting', _root, lev);
-		    }
+	      insert soft VFS_QUEUE (VQ_HOST, VQ_TS, VQ_URL, VQ_STAT, VQ_ROOT, VQ_LEVEL, VQ_ORIGIN)
+		  values (_host, now (), _tmp_url, 'waiting', _root, lev, origin_iri);
+		}
 		}
       next_url:
       _inx := _inx + 1;
     }
+  delete from WS.WS.VFS_QUEUE where VQ_HOST = _host and VQ_ROOT = _root and VQ_ORIGIN = origin_iri and not position (VQ_URL, urls);
 no_site_rec:  
   return;
 }
@@ -776,21 +794,21 @@ create procedure WS.WS.SITEMAP_PROCESS (in _host varchar, in _url varchar, in _r
 		}
 	      xp := ar;
 	    }
-	  WS.WS.SITEMAP_URLS_REGISTER (_host, _root, xp, lev, 0);
+	  WS.WS.SITEMAP_URLS_REGISTER (_host, _root, _url, xp, lev, 0);
 	  return 1;
 	}
       else if (xpath_eval ('/sitemapindex/sitemap/loc', xt) is not null)
 	{
 	  --xp := xpath_eval ('/sitemapindex/sitemap/loc/text()', xt, 0);
 	  xp := WS.WS.SITEMAP_GET_LOC (xt, '/sitemapindex/sitemap', './loc/text()', './lastmod/text()');
-	  WS.WS.SITEMAP_URLS_REGISTER (_host, _root, xp, lev, 0);
+	  WS.WS.SITEMAP_URLS_REGISTER (_host, _root, _url, xp, lev, 0);
 	  return 1;
 	}
       else if (xpath_eval ('/urlset/url/loc', xt) is not null)
 	{
 	  --xp := xpath_eval ('/urlset/url/loc/text()', xt, 0);
 	  xp := WS.WS.SITEMAP_GET_LOC (xt, '/urlset/url', './loc/text()', './lastmod/text()');
-	  WS.WS.SITEMAP_URLS_REGISTER (_host, _root, xp, lev, 1);
+	  WS.WS.SITEMAP_URLS_REGISTER (_host, _root, _url, xp, lev, 1);
 	  return 1;
 	}
     }
@@ -1927,12 +1945,16 @@ create procedure WS.WS.SITEMAP_ENSURE_NEW_SITE (in _host varchar, in _root varch
 ;
 
 
-create procedure WS.WS.SITEMAP_URLS_REGISTER (in _host varchar, in _root varchar, inout xp any, in lev int := 0, in sm int := 0)
+create procedure WS.WS.SITEMAP_URLS_REGISTER (in _host varchar, in _root varchar, in src_url varchar, inout xp any, in lev int := 0, in sm int := 0, in delta int := 1)
 {
-  declare _flw_s, _nflw_s, _url, _img varchar;
+  declare _flw_s, _nflw_s, _url, _img, origin_iri varchar;
+  declare urls, inx any;
   whenever not found goto no_ini;
   select VS_FOLLOW, VS_NFOLLOW, VS_URL, VS_SRC into _flw_s, _nflw_s, _url, _img
       from VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
+  origin_iri := iri_to_id (WS.WS.MAKE_URL (_host, src_url), 1);
+  urls := make_array (length (xp), 'any');
+  inx := 0;
   foreach (any u in xp) do
     {
       declare hf, host, url, abs_url varchar;
@@ -1956,16 +1978,20 @@ create procedure WS.WS.SITEMAP_URLS_REGISTER (in _host varchar, in _root varchar
       url := WS.WS.VFS_URI_COMPOSE (hf);
       if (host <> _host)
 	url := abs_url;
+      urls [inx] := url;	
+      inx := inx + 1;
       if (WS.WS.FOLLOW (_host, _root, url, _flw_s, _nflw_s, _url, _img))
 	    {
-	  insert soft WS.WS.VFS_QUEUE (VQ_HOST, VQ_TS, VQ_URL, VQ_STAT, VQ_ROOT, VQ_LEVEL, VQ_VIA_SITEMAP) 
-	      values (_host, now (), url, 'waiting', _root, lev, sm); 
+	  insert soft WS.WS.VFS_QUEUE (VQ_HOST, VQ_TS, VQ_URL, VQ_STAT, VQ_ROOT, VQ_LEVEL, VQ_VIA_SITEMAP, VQ_ORIGIN) 
+	      values (_host, now (), url, 'waiting', _root, lev, sm, origin_iri); 
 	  if (row_count () = 0)
 	    {
 	      update WS.WS.VFS_QUEUE set VQ_STAT = 'waiting' where VQ_HOST = _host and VQ_ROOT = _root and VQ_URL = url and VQ_TS < ts;
 	    }
 	}
     }
+  if (delta)
+    delete from WS.WS.VFS_QUEUE where VQ_HOST = _host and VQ_ROOT = _root and VQ_ORIGIN = origin_iri and not position (VQ_URL, urls);
   if (length (xp))
     update WS.WS.VFS_SITE set VS_IS_SITEMAP = 1 where VS_HOST = _host and VS_ROOT = _root and VS_IS_SITEMAP = 0;
   commit work;
@@ -2019,7 +2045,7 @@ create procedure WS.WS.SITEMAP_XML_PARSE (in _host varchar, in _url varchar, in 
   if (_url like '%.xml' or _url like '%.xml.gz' or _c_type = 'text/xml' or _c_type = 'application/xml' or _c_type = 'application/sparql-results+xml')
     {
       xt := xtree_doc (_content);
-      if (xpath_eval ('/urlset/dataset', xt) is not null)
+      if (xpath_eval ('/urlset/dataset/dataDumpLocation', xt) is not null)
 	{
 	  declare ts any;
 	  xp := xpath_eval ('/urlset/dataset/dataDumpLocation/text()', xt, 0);
@@ -2038,29 +2064,29 @@ create procedure WS.WS.SITEMAP_XML_PARSE (in _host varchar, in _url varchar, in 
 		}
 	      xp := ar;
 	    }
-	  WS.WS.SITEMAP_URLS_REGISTER (_host, _root, xp, lev, 0);
+	  WS.WS.SITEMAP_URLS_REGISTER (_host, _root, _url, xp, lev, 0);
 	}
       else if (xpath_eval ('/sitemapindex/sitemap/loc', xt) is not null)
 	{
 	  --xp := xpath_eval ('/sitemapindex/sitemap/loc/text()', xt, 0);
 	  xp := WS.WS.SITEMAP_GET_LOC (xt, '/sitemapindex/sitemap', './loc/text()', './lastmod/text()');
-	  WS.WS.SITEMAP_URLS_REGISTER (_host, _root, xp, lev, 0);
+	  WS.WS.SITEMAP_URLS_REGISTER (_host, _root, _url, xp, lev, 0);
 	}
       else if (_c_type = 'application/sparql-results+xml')
 	{
 	  xp := xpath_eval ('/sparql/results/result/binding/uri/text()', xt, 0);
-	  WS.WS.SITEMAP_URLS_REGISTER (_host, _root, xp, lev, 0);
+	  WS.WS.SITEMAP_URLS_REGISTER (_host, _root, _url, xp, lev, 0);
 	}
       else if (xpath_eval ('/urlset/url/loc', xt) is not null)
 	{
 	  --xp := xpath_eval ('/urlset/url/loc/text()', xt, 0);
 	  xp := WS.WS.SITEMAP_GET_LOC (xt, '/urlset/url', './loc/text()', './lastmod/text()');
-	  WS.WS.SITEMAP_URLS_REGISTER (_host, _root, xp, lev, 1);
+	  WS.WS.SITEMAP_URLS_REGISTER (_host, _root, _url, xp, lev, 1);
 	}
-      if (xpath_eval ('/urlset/dataset/sampleURI', xt) is not null)
+      else if (xpath_eval ('/urlset/dataset/sampleURI', xt) is not null)
 	{
 	  xp := xpath_eval ('/urlset/dataset/sampleURI/text()', xt, 0);
-	  WS.WS.SITEMAP_URLS_REGISTER (_host, _root, xp, lev, 1);
+	  WS.WS.SITEMAP_URLS_REGISTER (_host, _root, _url, xp, lev, 1);
 	}
     }
 }
@@ -2103,7 +2129,7 @@ create procedure WS.WS.SITEMAP_RDF_STORE (in _host varchar, in _url varchar, in 
     }
   if (url_ck like '%.rdf' or _c_type = 'application/rdf+xml')
     {
-      DB.DBA.RDF_LOAD_RDFXML (_content, base, graph, 3);
+      DB.DBA.RDF_LOAD_RDFXML (_content, base, graph, 0, 3);
     }
   else if (url_ck like '%.n3' or url_ck like '%.ttl' or url_ck like '%.nt' or _c_type = 'text/n3' or _c_type = 'text/rdf+n3')
     {
@@ -2125,14 +2151,14 @@ create procedure WS.WS.SITEMAP_RDF_STORE (in _host varchar, in _url varchar, in 
             arr[i] := iri_to_id (arr[i], 0);  
 	}
       objs := (select DB.DBA.VECTOR_AGG (id_to_iri (O)) from DB.DBA.RDF_QUAD where G = iri_to_id (graph, 0) and P in (arr) and isiri_id (O));
-      WS.WS.SITEMAP_URLS_REGISTER (_host, _root, objs, lev, 0);
+      WS.WS.SITEMAP_URLS_REGISTER (_host, _root, _url, objs, lev, 0, 0);
     } 
   if (_c_type = 'text/html' and isvector (udata) and 1 = get_keyword ('follow-meta', udata, 0))
     {
       declare xt, xp any;
       xt := xtree_doc (_content, 2);
       xp := xpath_eval ('/html/head/link[@rel="meta"]/@href', xt, 0);
-      WS.WS.SITEMAP_URLS_REGISTER (_host, _root, xp, lev, 0);
+      WS.WS.SITEMAP_URLS_REGISTER (_host, _root, _url, xp, lev, 0, 0);
     }
   insert soft WS.WS.VFS_URL (VU_HOST, VU_URL, VU_CHKSUM, VU_CPTIME, VU_ETAG, VU_ROOT)
       values (_host, _url, md5 (_content), now (), _s_etag, _root);

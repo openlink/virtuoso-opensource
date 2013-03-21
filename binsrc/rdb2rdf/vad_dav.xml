@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="ASCII"?>
+<!DOCTYPE sticker SYSTEM "vad_sticker.dtd">
+<!--
+ -  
+ -  $Id:$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2013 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+
+<sticker version="1.0.010505A" xml:lang="en-UK">
+  <caption>
+    <name package="rdb2rdf">
+      <prop name="Title" value="RDB2RDF support"/>
+      <prop name="Developer" value="OpenLink Software"/>
+      <prop name="Copyright" value="(C) 2013 OpenLink Software"/>
+      <prop name="Download" value="http://www.openlinksw.com/virtuoso/rdb2rdf/download"/>
+      <prop name="Download" value="http://www.openlinksw.co.uk/virtuoso/rdb2rdf/download"/>
+    </name>
+    <version package="1.00.0003">
+      <prop name="Release Date" value="2011-09-05 12:01"/>
+      <prop name="Build" value="Release, optimized"/>
+    </version>
+  </caption>
+  <dependencies/>
+  <procedures uninstallation="supported">
+    <sql purpose="pre-install"></sql>
+    <sql purpose="post-install"></sql>
+  </procedures>
+  <ddls>
+    <sql purpose="pre-install">if (lt (sys_stat ('st_dbms_ver'), '06.01.3127')) { result ('ERROR', 'The RDB2RDF package requires server version 06.01.3127 or greater'); signal ('FATAL', 'The conductor package requires server version 06.01.3127 or greater'); } </sql>
+    <sql purpose="post-install">
+      "DB"."DBA"."VAD_LOAD_SQL_FILE"('/DAV/VAD/rdb2rdf/ovl.sql', 1, 'report', 1);
+      "DB"."DBA"."VAD_LOAD_SQL_FILE"('/DAV/VAD/rdb2rdf/r2rml.sql', 1, 'report', 1);
+      "DB"."DBA"."VAD_LOAD_SQL_FILE"('/DAV/VAD/rdb2rdf/r2rml_validation_metas.sql', 1, 'report', 1);
+    </sql>
+    <sql purpose="post-uninstall">
+      ;
+    </sql>
+  </ddls>
+  <resources>
+    <file type="dav" source="http" target_uri="rdb2rdf/ovl.sql" dav_owner='dav' dav_grp='administrators' dav_perm='110100100NN' makepath="yes"/>
+    <file type="dav" source="http" target_uri="rdb2rdf/r2rml.sql" dav_owner='dav' dav_grp='administrators' dav_perm='110100100NN' makepath="yes"/>
+    <file type="dav" source="http" target_uri="rdb2rdf/r2rml_validation_metas.sql" dav_owner='dav' dav_grp='administrators' dav_perm='110100100NN' makepath="yes"/>
+    <file type="dav" source="http" target_uri="rdb2rdf/northwind_r2rml.ttl" dav_owner='dav' dav_grp='administrators' dav_perm='110100100NN' makepath="yes"/>
+  </resources>
+  <registry>
+  </registry>
+</sticker>

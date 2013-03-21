@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -60,6 +60,13 @@ administrate views, tables, stored procedures, trigger definitions, user define 
 		<title>Database Administration</title>
 		<graphic fileref="database.png"/>
 	</figure>
+<para>From "Replication" you can create Snapshot Replications to copy sections of the Database
+    to remote locations or use Transactional Replication to keep Virtuoso Servers
+    in sync over a definable interval.</para>
+	<figure id="adminuireplication" float="1">
+		<title>Replication</title>
+		<graphic fileref="replication.png"/>
+        </figure>	
 <para>From "Web Application Server" you can configure Virtuoso's WebDAV, and HTTP
 Server functionality, which includes management of Virtual Domains &amp; Directories.</para>
 	<figure id="adminuiwebdav" float="1">
@@ -80,14 +87,9 @@ perform WSDL Import/Export, manage your BPEL processes.
 		<title>web Services</title>
 		<graphic fileref="webservices.png"/>
 	</figure>
-<para>From "Replication" you can create Snapshot Replications to copy sections of the Database
-    to remote locations or use Transactional Replication to keep Virtuoso Servers 
-    in sync over a definable interval.</para>
-	<figure id="adminuireplication" float="1">
-		<title>Replication</title>
-		<graphic fileref="replication.png"/>
-        </figure>
-      <para>From "RDF" you can execute/save/load SPARQL queries, add/edit RDF Mapping, make statistics, manage graphs, import schemas and define namespaces, generated RDF views, upload to the RDF Store:</para>
+      <para>From "Linked Data" you can execute/save/load SPARQL queries, add/edit RDF Mapping, make 
+      	statistics, manage graphs, import schemas and define namespaces, generated Linked Data Views, 
+      	upload to the Quad Store:</para>
 	<figure id="adminuirdf" float="1">
                 <title>RDF</title>
 		<graphic fileref="rdf.png"/>

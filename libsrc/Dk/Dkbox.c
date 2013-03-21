@@ -18,7 +18,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -490,6 +490,17 @@ dk_free_box (box_t box)
 
   switch (tag)
     {
+#ifdef MALLOC_DEBUG
+    case DV_WIDE:
+      if ((len % sizeof (wchar_t)) || (0 != ((wchar_t *)box)[len/sizeof (wchar_t) - 1]))
+        GPF_T1 ("Free of a damaged wide string");
+#ifdef DOUBLE_ALIGN
+      len = ALIGN_8 (len);
+#else
+      len = ALIGN_4 (len);
+#endif
+      break;
+#endif
     case DV_STRING:
     case DV_C_STRING:
     case DV_SHORT_STRING_SERIAL:
@@ -667,6 +678,17 @@ dk_free_tree (box_t box)
 
   switch (tag)
     {
+#ifdef MALLOC_DEBUG
+    case DV_WIDE:
+      if ((len % sizeof (wchar_t)) || (0 != ((wchar_t *)box)[len/sizeof (wchar_t) - 1]))
+        GPF_T1 ("Free of a tree with a damaged wide string");
+#ifdef DOUBLE_ALIGN
+      len = ALIGN_8 (len);
+#else
+      len = ALIGN_4 (len);
+#endif
+      break;
+#endif
     case DV_STRING:
     case DV_C_STRING:
     case DV_SHORT_STRING_SERIAL:
@@ -680,19 +702,9 @@ dk_free_tree (box_t box)
     case DV_XTREE_HEAD:
     case DV_XTREE_NODE:
       {
-	uint32 count = len / sizeof (box_t), inx = 0;
+	uint32 count = len / sizeof (box_t), inx;
 	box_t *obj = (box_t *) box;
-	if (count > 3)
-	  {
-	    for (inx = 0; inx < count - 3; inx += 2)
-	      {
-		__builtin_prefetch (obj[inx + 2]);
-		__builtin_prefetch (obj[inx + 3]);
-		dk_free_tree (obj[inx]);
-		dk_free_tree (obj[inx + 1]);
-	      }
-	  }
-	for (inx = inx; inx < count; inx++)
+	for (inx = 0; inx < count; inx++)
 	  dk_free_tree (obj[inx]);
 #ifdef MALLOC_DEBUG
 	if (len != ALIGN_4 (len))
@@ -813,6 +825,8 @@ dk_check_tree_heads_iter (box_t box, box_t parent, dk_hash_t * known, int count_
     GPF_T1 ("Tree contains a pointer to a freed box");
   if (TAG_BAD == tag)
     GPF_T1 ("Tree contains a pointer to a box marked bad");
+  if (tag < FIRST_DV_DTP)
+    GPF_T1 ("Tree contains a pointer to a Box with weird tag");
   if (!box_can_appear_twice_in_tree[tag])
     {
       box_t other_parent = gethash (box, known);
@@ -1016,6 +1030,17 @@ DBG_NAME (box_num_nonull) (DBG_PARAMS boxint n)
 }
 
 
+box_t
+DBG_NAME (box_iri_id) (DBG_PARAMS int64 n)
+{
+  iri_id_t * box = (iri_id_t*) DBG_NAME (dk_alloc_box) (DBG_ARGS sizeof (iri_id_t), DV_IRI_ID);
+  *box = n;
+  return (caddr_t) box;
+}
+
+
+
+
 /*
  * Box a null-terminated string into a
  * DV_<XX>_STRING tagged box
@@ -1052,6 +1077,13 @@ DBG_NAME (box_copy) (DBG_PARAMS cbox_t box)
   tag = box_tag (box);
   switch (tag)
     {
+    case DV_WIDE:
+#ifdef MALLOC_DEBUG
+      len = box_length (box);
+      if ((len % sizeof (wchar_t)) || (0 != ((wchar_t *)box)[len/sizeof (wchar_t) - 1]))
+        GPF_T1 ("Copy of a damaged wide string");
+      break;
+#endif
     case DV_STRING:
     case DV_ARRAY_OF_POINTER:
     case DV_LIST_OF_POINTER:
@@ -1150,6 +1182,10 @@ DBG_NAME (box_copy) (DBG_PARAMS cbox_t box)
 #endif
 
     default:
+#ifdef MALLOC_DEBUG
+      if (tag < FIRST_DV_DTP)
+        GPF_T1 ("Copy of a box with weird tag");
+#endif
       if (box_copier[tag])
 	return (box_copier[tag] ((caddr_t) box));
     }
@@ -1173,6 +1209,13 @@ box_t DBG_NAME (box_copy_tree) (DBG_PARAMS cbox_t box)
   tag = box_tag (box);
   switch (tag)
     {
+#ifdef MALLOC_DEBUG
+    case DV_WIDE:
+      len = box_length (box);
+      if ((len % sizeof (wchar_t)) || (0 != ((wchar_t *)box)[len/sizeof (wchar_t) - 1]))
+        GPF_T1 ("Copy of a tree with a damaged wide string");
+      break;
+#endif
     case DV_ARRAY_OF_POINTER:
     case DV_LIST_OF_POINTER:
     case DV_ARRAY_OF_XQVAL:
@@ -1181,16 +1224,7 @@ box_t DBG_NAME (box_copy_tree) (DBG_PARAMS cbox_t box)
       len = box_length (box);
       copy = (box_t *) DBG_NAME (dk_alloc_box) (DBG_ARGS len, tag);
       len /= sizeof (box_t);
-      inx = 0;
-      if (len > 1)
-	{
-	  for (inx = 0; inx < len - 1; inx++)
-	    {
-	      __builtin_prefetch (((box_t*)box)[inx + 1]);
-	      copy[inx] = DBG_NAME (box_copy_tree) (DBG_ARGS ((box_t *) box)[inx]);
-	    }
-	}
-      for (inx = inx; inx < len; inx++)
+      for (inx = 0; inx < len; inx++)
 	copy[inx] = DBG_NAME (box_copy_tree) (DBG_ARGS ((box_t *) box)[inx]);
       return (box_t) copy;
 
@@ -1210,6 +1244,10 @@ box_t DBG_NAME (box_copy_tree) (DBG_PARAMS cbox_t box)
 
 #endif
     default:
+#ifdef MALLOC_DEBUG
+      if (tag < FIRST_DV_DTP)
+        GPF_T1 ("Copy of a box with weird tag");
+#endif
       if (box_copier[tag])
 	return (box_copier[tag] ((caddr_t) box));
     }
@@ -1294,6 +1332,10 @@ DBG_NAME (box_try_copy_tree) (DBG_PARAMS box_t box, box_t stub)
 #endif
 
     default:
+#ifdef MALLOC_DEBUG
+      if (tag < FIRST_DV_DTP)
+        GPF_T1 ("Copy of a box with weird tag");
+#endif
       if (box_copier[tag])
 	return (box_copier[tag] (box));
     }
@@ -1342,7 +1384,7 @@ DBG_NAME (box_dv_short_string) (DBG_PARAMS const char *string)
 rdf_box_t *
 rb_allocate (void)
 {
-  rdf_box_t *rb = (rdf_box_t *) dk_alloc_box_zero (sizeof (rdf_bigbox_t), DV_RDF);
+  rdf_box_t *rb = (rdf_box_t *) dk_alloc_box_zero (sizeof (rdf_box_t), DV_RDF);
   rb->rb_ref_count = 1;
   return rb;
 }
@@ -1459,6 +1501,17 @@ DBG_NAME (box_dv_short_strconcat) (DBG_PARAMS const char *str1, const char *str2
   memcpy (res, str1, len1);
   memcpy (res + len1, str2, len2);
   return res;
+}
+
+
+box_t
+DBG_NAME (box_dv_wide_nchars) (DBG_PARAMS const wchar_t *buf, size_t buf_wchar_count)
+{
+  wchar_t *box;
+  box = (wchar_t *)DBG_NAME (dk_alloc_box) (DBG_ARGS (uint32) ((buf_wchar_count + 1) * sizeof (wchar_t)), DV_WIDE);
+  memcpy (box, buf, buf_wchar_count * sizeof (wchar_t));
+  box[buf_wchar_count] = (wchar_t)'\0';
+  return (box_t)box;
 }
 
 
@@ -1595,7 +1648,10 @@ box_equal (cbox_t b1, cbox_t b2)
   if (IS_NONLEAF_DTP (b1_tag) && IS_NONLEAF_DTP (b2_tag))
     {
       uint32 inx;
-      l1 /= sizeof (caddr_t);
+      l1 = BOX_ELEMENTS (b1);
+      l2 = BOX_ELEMENTS (b2);
+      if (l1 != l2)
+	return 0;
       for (inx = 0; inx < l1; inx++)
 	{
 	  if (!box_equal (((box_t *) b1)[inx], ((box_t *) b2)[inx]))
@@ -1603,11 +1659,7 @@ box_equal (cbox_t b1, cbox_t b2)
 	}
       return 1;
     }
-  memcmp_8 (b1, b2, l1, neq);
-  return 1;
- neq:
-  return 0;
-  /*return (memcmp (b1, b2, l1) ? 0 : 1); */
+  return (memcmp (b1, b2, l1) ? 0 : 1);
 }
 
 
@@ -2024,6 +2076,7 @@ box_dv_uname_make_immortal (caddr_t tree)
   switch (DV_TYPE_OF (tree))
     {
     case DV_UNAME:
+      /*printf ("\nUNAME %s is about to become immortal", tree);*/
       mutex_enter (uname_mutex);
 #ifdef MALLOC_DEBUG
       len = box_length (tree) - 1;
@@ -2428,6 +2481,14 @@ box_num_nonull (boxint n)
 }
 
 
+#undef box_iri_id
+box_t
+box_iri_id (int64 n)
+{
+  return dbg_box_iri_id (__FILE__, __LINE__, n);
+}
+
+
 #undef box_dv_ubuf
 char *
 box_dv_ubuf (size_t buf_strlen)
@@ -2481,6 +2542,14 @@ box_t
 box_float (float d)
 {
   return dbg_box_float (__FILE__, __LINE__, d);
+}
+
+
+#undef box_dv_wide_nchars
+box_t
+box_dv_wide_nchars (const wchar_t *buf, size_t buf_wchar_count)
+{
+  return dbg_box_dv_wide_nchars (__FILE__, __LINE__, buf, buf_wchar_count);
 }
 
 

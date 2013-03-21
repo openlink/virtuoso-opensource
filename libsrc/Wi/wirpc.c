@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -82,7 +82,7 @@ SERVICE_9 (s_get_data_ac , _sgbt2, "GETDA", DA_FUTURE_REQUEST,
 	DV_LONG_INT,		1,/* frag_no */
 	DV_LONG_INT,		1,/* page dir 1st page */
 	DV_LONG_STRING,		1,/* the array of page nos */
-	DV_LONG_INT,		1,/* is_wide? */
+	DV_LONG_INT,		1,/* is_wide or is_bin ? */
 	DV_LONG_INT,            1);/* blob timestamp */
 
 

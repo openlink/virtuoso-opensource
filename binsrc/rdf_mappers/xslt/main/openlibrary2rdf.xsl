@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -27,6 +27,7 @@
 <!ENTITY xsd  "http://www.w3.org/2001/XMLSchema#">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY geo "http://www.w3.org/2003/01/geo/wgs84_pos#">
 <!ENTITY book "http://purl.org/NET/book/vocab#">
 ]>
@@ -41,6 +42,7 @@
   xmlns:wf="http://www.w3.org/2005/01/wf/flow#"
   xmlns:dcterms="http://purl.org/dc/terms/"
   xmlns:address="http://schemas.talis.com/2005/address/schema#"
+  xmlns:opl="&opl;"
   xmlns:foaf="&foaf;"
   xmlns:sioc="&sioc;"
   xmlns:bibo="&bibo;"
@@ -68,6 +70,13 @@
 		<rdf:type rdf:resource="&book;Book"/>
           </rdf:Description>
 	<bibo:Book rdf:about="{$res}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.openlibrary.org#this">
+                        			<foaf:name>OpenLibrary</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.openlibrary.org"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 	    <foaf:homepage rdf:resource="{$baseUri}"/>
 	    <xsl:apply-templates select="results/result"/>
 	</bibo:Book>

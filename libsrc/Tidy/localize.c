@@ -75,6 +75,8 @@ void tidy_out_tio(tidy_io_t *tio, int maxlength, const char* msg, ...)
     int vsprintf_len;
     maxlength += 0x100;
     newlen = tio->tio_pos+maxlength;
+    if (newlen > 20000000)
+      return;
     if (newlen >= tio->tio_data.lm_length)
       {
 	caddr_t new_buf;

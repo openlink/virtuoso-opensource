@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -32,9 +32,10 @@
 #define XPF_DEFUN 1
 
 /* Don't forget to modify xp_register_default_namespace_prefixes() when adding new prefixes here! */
-#define XFN_NS_PREFIX1			"fn"
-#define XFN_NS_PREFIX2			"xf"
-#define XFN_NS_URI			"http://www.w3.org/2004/07/xpath-functions"
+#define XFN_NS_PREFIX			"fn"
+#define XFN_NS_URI			"http://www.w3.org/2005/xpath-functions"
+#define XXF_NS_PREFIX			"xf"
+#define XXF_NS_URI			"http://www.w3.org/2004/07/xpath-functions"
 #define XLOCAL_NS_PREFIX		"local"
 #define XLOCAL_NS_URI			"http://www.w3.org/2004/07/xquery-local-functions"
 #define XOP_NS_PREFIX			"op"
@@ -76,14 +77,26 @@ extern id_hash_t * xpf_reveng;
 #define xpfma(name,dtp,iter) ((xpfm_arg_descr_t *)(list (3, ((name) ? box_dv_uname_string (name) : NULL), (ptrlong)dtp, (ptrlong)iter)))
 #define xpfmalist (xpfm_arg_descr_t **)list
 
+extern void xpfm_create_and_store_builtin (
+  const char *xpfm_name,
+  xp_func_t xpfm_executable,
+  ptrlong xpfm_res_dtp,
+  ptrlong xpfm_min_arg_no,
+  xpfm_arg_descr_t **xpfm_main_args,
+  xpfm_arg_descr_t **xpfm_tail_args,
+  const char* nmspace );
 
-extern void xpf_define_builtin (
+typedef void xpfm_define_builtin_t (
   const char *xpfm_name,
   xp_func_t xpfm_executable,
   ptrlong xpfm_res_dtp,
   ptrlong xpfm_min_arg_no,
   xpfm_arg_descr_t **xpfm_main_args,
   xpfm_arg_descr_t **xpfm_tail_args );
+
+extern xpfm_define_builtin_t xpf_define_builtin, x2f_define_builtin, xqf_define_builtin, xsd_define_builtin, xop_define_builtin;
+
+extern void xpfm_store_alias (const char *alias_local_name, const char *alias_ns, const char *main_local_name, const char *main_ns, const char *alias_mid_chars, int insert_soft);
 
 extern void xpf_define_alias (const char *alias_local_name, const char *alias_ns, const char *main_local_name, const char *main_ns);
 
@@ -141,5 +154,7 @@ extern void xpf_arg_list_impl (xp_instance_t * xqi, XT * arg, xml_entity_t * ctx
 #define xpf_arg_list(xqi,tree,ctx_xe,n,res) xpf_arg_list_impl ((xqi), xpf_arg_tree ((tree), (n)), (ctx_xe), (res))
 
 extern void xpf_init(void);
+
+extern xp_query_t *xqr_stub_for_funcall (xpf_metadata_t *metas, int argcount);
 
 #endif /* _XPF_H */

@@ -2,7 +2,7 @@
 
 
 
-echo both "Anytime timeout test\n";
+ECHO BOTH "Anytime timeout test\n";
 
 
 set result_timeout = 1000;
@@ -12,9 +12,8 @@ select fi2 from t1 where delay (fi2 - fi2 + 0.2) = 0;
 select fi2 from t1 where  case when mod (fi2, 4) = 1 then delay (fi2 - fi2 + 0.2) else 0 end = 0 option (any order);
 select fi2 from t1 where  case when mod (fi2, 4) = 0 then delay (fi2 - fi2 + 0.4) else 0 end = 0 option (any order);
 
--- XXX
---echo both $if $equ $sqlstate S1TAT "PASSED" "***FAILED";
---echo both ": Anytime 1\n";
+ECHO BOTH $IF $EQU $SQLSTATE S1TAT "PASSED" "***FAILED";
+ECHO BOTH ": Anytime 1\n";
 
 select count (fi2) from t1 where  case when mod (fi2, 4) = 0 then delay (fi2 - fi2 + 0.3) else 0 end = 0 option (any order);
 select count (fi2) from t1 where  case when mod (fi2, 4) <> 0 then delay (fi2 - fi2 + 0.3) else 0 end = 0 option (any order);
@@ -22,8 +21,8 @@ select count (fi2) from t1 where  case when mod (fi2, 4) <> 0 then delay (fi2 - 
 
 select count (fi2) from t1 where delay (fi2 - fi2 + 0.2) = 0 option (any order);
 
-echo both $if $equ $sqlstate S1TAT "PASSED" "***FAILED";
-echo both ": Anytime 2\n";
+ECHO BOTH $IF $EQU $SQLSTATE S1TAT "PASSED" "***FAILED";
+ECHO BOTH ": Anytime 2\n";
 
 
 -- with dfg
@@ -33,9 +32,8 @@ select count (*) from t1 a, t1 b where b.fi2 = 1 + a.fi2 and 0 = case when mod (
 -- dfg timeout on host 2
 select count (*) from t1 a, t1 b where b.fi2 = 1 + a.fi2 and 0 = case when mod (b.fi2, 4) = 1 then delay (b.fi2 - b.fi2 + 0.2) else 0 end option (loop, order);
 
--- XXX
---echo both $if $equ $sqlstate S1TAT "PASSED" "***FAILED";
---echo both ": Anytime 3\n";
+ECHO BOTH $IF $EQU $SQLSTATE S1TAT "PASSED" "***FAILED";
+ECHO BOTH ": Anytime 3\n";
 
 
 -- with index order 
@@ -49,9 +47,8 @@ select a.fi2, b.fi2 from t1 a, t1 b where b.fi2 = 1 + a.fi2 and 0 = case when mo
 -- non agg dfg timeout on host2
 select a.fi2, b.fi2 from t1 a, t1 b where b.fi2 = 1 + a.fi2 and 0 = case when mod (b.fi2, 4) = 1 then delay (b.fi2 - b.fi2 + 0.2) else 0 end order by a.fi2 + 1, b.fi2 + 1  option (loop, order);
 
--- XXX
---echo both $if $equ $sqlstate S1TAT "PASSED" "***FAILED";
---echo both ": Anytime 4\n";
+ECHO BOTH $IF $EQU $SQLSTATE S1TAT "PASSED" "***FAILED";
+ECHO BOTH ": Anytime 4\n";
 
 
 -- value qf in index order 
@@ -81,9 +78,8 @@ select a.fi2, count (*) from t1 a, t1 b where b.fi2 > a.fi2 and 0 = delay (b.fi2
 select dt.fi2, cnt, (select count (*) from t1 c where c.fi2 > dt.fi2 )
 from (select a.fi2, count (*) as cnt from t1 a, t1 b where b.fi2 > a.fi2 and 0 = delay (b.fi2 - b.fi2 + 0.003) group by a.fi2 order by 2 desc  option (order, loop)) dt;
 
--- XXX
---echo both $if $equ $sqlstate S1TAT "PASSED" "***FAILED";
---echo both ": Anytime 5\n";
+ECHO BOTH $IF $EQU $SQLSTATE S1TAT "PASSED" "***FAILED";
+ECHO BOTH ": Anytime 5\n";
 
 
 -- timeout the counting also.
@@ -100,13 +96,13 @@ select string2, (select count (*) from t1 b where b.string2 > dt.string2 and 0 =
 where cnt = 1
 order by 2;
 
-echo both $if $equ $sqlstate S1TAT "PASSED" "***FAILED";
-echo both ": Anytime 6\n";
+ECHO BOTH $IF $EQU $SQLSTATE S1TAT "PASSED" "***FAILED";
+ECHO BOTH ": Anytime 6\n";
 
 
 update t1 set fi6 = row_no where 0 = delay (fi2 - fi2 + 0.04);
-echo both $if $equ $sqlstate OK "PASSED" "***FAILED";
-echo both ": Anytime  update not stopped\n";
+ECHO BOTH $IF $EQU $SQLSTATE OK "PASSED" "***FAILED";
+ECHO BOTH ": Anytime  update not stopped\n";
 
 
 
@@ -125,8 +121,8 @@ create procedure at_upd ()
 }
 
 at_upd ();
--- echo both $if $equ $sqlstate OK "PASSED" "***FAILED";
--- echo both ": Anytime  proc update\n";
+-- ECHO BOTH $IF $EQU $SQLSTATE OK "PASSED" "***FAILED";
+-- ECHO BOTH ": Anytime  proc update\n";
 
 
 
@@ -143,4 +139,3 @@ select top 20 a.fi2, count (*) from t1 a, t1 b where b.fi2 > a.fi2 group by a.fi
 -- timeout before the 1st ssa iter 
 
 select top 20 a.fi2, count (*) from t1 a, t1 b where b.fi2 > a.fi2 group by a.fi2 order by count (*) + delay (0.05 + count (*) - count (*)) desc;
-

@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -119,9 +119,9 @@ application logic.</para></formalpara>
 <para> An float for Rate Limit. The filter calculates hit rate average and
 compares with limit for http acl rule. If it is larger then will drop connection.
 Once per day the statistics will be reset.</para>
-<para>The Rate Limit UI can be configured from Conductor->System Admin->Access Control where:</para>
+<para>The Rate Limit UI can be configured from Conductor->System Admin->Security->Access Control where:</para>
 <itemizedlist mark="bullet">
-  <listitem>Regular expessions are not supported.</listitem>
+  <listitem>Regular expressions are not supported.</listitem>
   <listitem>Can be used patterns, for ex:
 <programlisting><![CDATA[
 -- like '%something' or
@@ -130,7 +130,7 @@ Once per day the statistics will be reset.</para>
 </listitem>
 </itemizedlist>
 <para>Rate limit is hits/per second from one IP address.</para>
-<para>For search enging eoptimization statistics, for example can be set rate limit 10 (or even 100 so to
+<para>For search engine optimization statistics, for example can be set rate limit 10 (or even 100 so to
 start to collect statistics), and then to check with http_acl_stats () what values are returned.</para>
 </formalpara>
 
@@ -143,12 +143,15 @@ start to collect statistics), and then to check with http_acl_stats () what valu
 
 <itemizedlist>
   <listitem>From Admin UI main menu open "System Admin" node.</listitem>
-  <listitem>Choose "Access Control"</listitem>
+  <listitem>Go to Security -&gt; Access Control</listitem>
   <listitem>By default three default ACLs are listed:
   <simplelist>
    <member>HTTP - rules for the Web server </member>
    <member>NEWS - rules for the Internet News</member>
    <member>PROXY - rules for the Web Proxy Server</member>
+   <member>PSH and PSH-SSL - available only when the 
+	    <ulink url="http://s3.amazonaws.com/opldownload/uda/vad-packages/6.1/virtuoso/pubsubhub_dav.vad">pubsubhub_dav.vad</ulink> 
+	    is installed.</member>
   </simplelist>
   <figure id="admacl1" float="1">
       <title>Access Control</title>

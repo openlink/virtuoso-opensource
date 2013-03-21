@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -68,8 +68,8 @@ create procedure tv_upd ()
 tv_upd ();
 
 select * from tt;
-echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
-echo both " test with constant col in view with instead of triggers.\n";
+ECHO BOTH $IF $EQU $ROWCNT 3 "PASSED" "***FAILED";
+ECHO BOTH ": test with constant col in view with instead of triggers.\n";
 
 
 

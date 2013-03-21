@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2009 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -20,7 +20,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
-create procedure 
+create procedure
 isvector (in x any)
 {
   if (x is null) return null;
@@ -42,19 +42,19 @@ json_out_vec_tst (in v any)
 }
 ;
 
-create procedure 
+create procedure
 json_esc_str (in s any)
 {
   return sprintf ('"%s"', replace (replace (replace (s, '\\', '\\\\'), '"', '\\"'), '\n', '\\n'));
 }
 ;
 
-create procedure 
+create procedure
 json_out_vec (in v any, inout ses any)
 {
   declare s varchar;
   s := string_output();
-	
+
   http ('[', s);
 
 --  dbg_obj_print (v[0]);
@@ -80,10 +80,10 @@ json_out_vec (in v any, inout ses any)
 ;
 
 DB.DBA.VHOST_REMOVE (lpath=>'/services/rdf/iriautocomplete.get');
-DB.DBA.VHOST_DEFINE (lpath=>'/services/rdf/iriautocomplete.get', 
+DB.DBA.VHOST_DEFINE (lpath=>'/services/rdf/iriautocomplete.get',
                      ppath=>'/SOAP/Http/IRI_AUTOCOMPLETE', soap_user=>'PROXY');
 
-create procedure 
+create procedure
 DB.DBA.IRI_AUTOCOMPLETE () __SOAP_HTTP 'text/json'
 {
   declare params any;
@@ -92,7 +92,7 @@ DB.DBA.IRI_AUTOCOMPLETE () __SOAP_HTTP 'text/json'
   declare len int;
   declare iri_str, lbl_str varchar;
   declare langs varchar;
-  
+
   iri_str := lbl_str := null;
 
   ses := string_output();
@@ -129,11 +129,11 @@ DB.DBA.IRI_AUTOCOMPLETE () __SOAP_HTTP 'text/json'
     }
 
   {
-    declare exit handler for sqlstate '*' 
+    declare exit handler for sqlstate '*'
     {
-      http ('{"error": {"sqlstate" : ' || 
-            json_esc_str(__SQL_STATE) || 
-            ',"sqlmessage":' || 
+      http ('{"error": {"sqlstate" : ' ||
+            json_esc_str(__SQL_STATE) ||
+            ',"sqlmessage":' ||
             json_esc_str(__SQL_MESSAGE) || '},"results":[]}', ses);
       return ses;
     };
@@ -142,7 +142,7 @@ DB.DBA.IRI_AUTOCOMPLETE () __SOAP_HTTP 'text/json'
       res := DB.DBA.cmp_uri (iri_str);
     else if (lbl_str is not null)
       res := DB.DBA.cmp_label (lbl_str, langs);
-    else 
+    else
       goto empty;
 
 --  dbg_obj_print (res);
@@ -153,7 +153,7 @@ DB.DBA.IRI_AUTOCOMPLETE () __SOAP_HTTP 'text/json'
 
           if (isvector (res[0]))
             http ('"restype":"multiple",', ses);
-          else 
+          else
             http ('"restype":"single",', ses);
 
           if (iri_str)

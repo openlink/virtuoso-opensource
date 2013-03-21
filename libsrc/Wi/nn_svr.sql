@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -1974,8 +1974,8 @@ create procedure nntp_update_org_path_header ()
 {
   declare _org, _from varchar;
 
-  _org := cfg_item_value(virtuoso_ini_path(), 'HTTPServer', 'NNTPOrganizationHeader');
-  _from := cfg_item_value(virtuoso_ini_path(), 'HTTPServer', 'NNTPFromHeader');
+  _org := virtuoso_ini_item_value ('HTTPServer', 'NNTPOrganizationHeader');
+  _from := virtuoso_ini_item_value ('HTTPServer', 'NNTPFromHeader');
 
   if (_org is NULL)
    _org := '';

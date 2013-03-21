@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -795,7 +795,7 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": InteropTests.echoFloat : " $LAST[1] "\n";
 
 select soap_box_xml_entity_validating (aref(InteropTests.echoFloat(cast(1e40 as float)),1), 'float');
-ECHO BOTH $IF $EQU $LAST[1] '1e+40' "PASSED" $if $EQU $LAST[1] '1e+040' "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $LAST[1] '1e+40' "PASSED" $IF $EQU $LAST[1] '1e+040' "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": InteropTests.echoFloat : " $LAST[1] "\n";
 

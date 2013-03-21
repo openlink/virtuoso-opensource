@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2006 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -62,8 +62,7 @@ noinst_HEADERS = \
 	xml.h xmlnode.h xmlres.h xmltree.h xpath.h xpathp.h xpathp_impl.h \
 	xpf.h xqf.h xslt_impl.h aqueue.h rdf_mapping_jso.h bitmap.h jso.h \
 	json_p.h bif_audio_tags.h shcompo.h cluster.h extent.h uname_const_decl.h \
-	col.h simd.h vec.h mhash.h
-
+	sparqlwords.h
 
 
 generated_code = \
@@ -81,6 +80,7 @@ generated_code = \
 	sparql_l.c \
 	sparql_p.c \
 	sparql_p.h \
+	sparqlwords.h \
 	sql3.c \
 	sql_code.c \
 	sql_code_1.c \
@@ -95,6 +95,7 @@ generated_code = \
 	sql_code_pldbg.c  \
 	sql_code_repl.c \
 	sql_code_sparql.c \
+	sql_code_sparql_init.c \
 	sql_code_sys.c \
 	sql_code_uddi.c \
 	sql_code_vad.c \
@@ -115,26 +116,26 @@ CLEANFILES = \
 
 C_FILES_SPARQL	= \
 	jso.c \
+	rdfbox.c \
+	rdf_core.c \
+	rdfinf.c \
+	rdf_mapping_jso.c \
+	rdfxml_parser.c \
 	nquad_p.c \
 	nquad_p.h \
-	rdf_core.c \
-	rdf_mapping_jso.c \
-	rdfbox.c \
-	rdfinf.c \
-	rdfld.c \
-	rdfxml_parser.c \
 	sparql2sql.c \
 	sparql2sqltext.c \
+	sparqld.c \
 	sparql_core.c \
 	sparql_l.c \
 	sparql_p.c \
 	sparql_qm.c \
-	sparql_rdb2rdf.c \
 	sparql_sff.c \
 	sparql_tree.c \
-	sparqld.c \
+	sparql_rdb2rdf.c \
 	sparul2sql.c \
 	sql_code_sparql.c \
+	sql_code_sparql_init.c \
 	turtle_l.c \
 	turtle_p.c
 
@@ -149,35 +150,18 @@ libwi_la_SOURCES = \
 	bif_intl.c \
 	bif_json.c \
 	bif_regexp.c \
+	bif_search_excerpt.c \
 	bif_uuencode.c \
 	bitmap.c \
 	blob.c \
 	blobio.c \
-	ceins.c \
-	cetop.c \
-	chash.c \
-	clcli.c \
-	cldaq.c \
-	cldfg.c \
-	cldt.c \
-	clnode.c \
-	clrdf.c \
-	clserial.c \
-	clsql.c \
-	clsrv.c \
-	cltrx.c \
-	clvec.c \
-	col.c \
-	colin.c \
-	colins.c \
-	collock.c \
-	colsearch.c \
+	cl_stubs.c \
 	datesupp.c \
 	ddlrun.c \
 	disk.c \
 	dks_esc.c \
-	eqlcomp.c \
 	extent.c \
+	eqlcomp.c \
 	gate.c \
 	hash.c \
 	hosting.c \
@@ -190,7 +174,6 @@ libwi_la_SOURCES = \
 	lock.c \
 	log.c \
 	map_schema.c \
-	mem.c \
 	meta.c \
 	mtwrite.c \
 	multibyte.c \
@@ -199,7 +182,6 @@ libwi_la_SOURCES = \
 	obackup.c \
 	page.c \
 	plugin_loader.c \
-	read.c \
 	recovery.c \
 	regist.c \
 	rendezvous.c \
@@ -214,6 +196,8 @@ libwi_la_SOURCES = \
 	sort.c \
 	space.c \
 	sql3.c \
+	sqlbif2.c \
+	sqlbif.c \
 	sql_code.c \
 	sql_code_1.c \
 	sql_code_2pc.c \
@@ -228,15 +212,14 @@ libwi_la_SOURCES = \
 	sql_code_pldbg.c  \
 	sql_code_repl.c \
 	sql_code_sparql.c \
+	sql_code_sparql_init.c \
 	sql_code_sys.c \
 	sql_code_uddi.c \
 	sql_code_vad.c \
 	sql_code_vdb.c \
 	sql_code_ws.c \
-	sqlbif.c \
-	sqlbif2.c \
-	sqlcomp.c \
 	sqlcomp2.c \
+	sqlcomp.c \
 	sqlcost.c \
 	sqlcr.c \
 	sqldf.c \
@@ -245,9 +228,8 @@ libwi_la_SOURCES = \
 	sqlhash.c \
 	sqlintrp.c \
 	sqlinx.c \
-	sqljp.c \
-	sqlo.c \
 	sqloby.c \
+	sqlo.c \
 	sqlocr.c \
 	sqloinv.c \
 	sqloinx.c \
@@ -262,11 +244,8 @@ libwi_la_SOURCES = \
 	sqlstmts.c \
 	sqltrig.c \
 	sqltype.c \
-	sqlvec.c \
 	sqlver.c \
 	sqlview.c \
-	sqlvnode.c \
-	sqlvrun.c \
 	srvcr.c \
 	srvmultibyte.c \
 	srvstat.c \
@@ -274,11 +253,6 @@ libwi_la_SOURCES = \
 	trans.c \
 	update.c \
 	uuencode.c \
-	vec.c \
-	vechash.c \
-	vecins.c \
-	vecrdf.c \
-	vecsearch.c \
 	wirpc.c \
 	wiservic.c \
 	xpathp.c \
@@ -295,35 +269,18 @@ libwi_odbc_la_SOURCES = \
 	bif_intl.c \
 	bif_json.c \
 	bif_regexp.c \
+	bif_search_excerpt.c \
 	bif_uuencode.c \
 	bitmap.c \
 	blob.c \
 	blobio.c \
-	ceins.c \
-	cetop.c \
-	chash.c \
-	clcli.c \
-	cldaq.c \
-	cldfg.c \
-	cldt.c \
-	clnode.c \
-	clrdf.c \
-	clserial.c \
-	clsql.c \
-	clsrv.c \
-	cltrx.c \
-	clvec.c \
-	col.c \
-	colin.c \
-	colins.c \
-	collock.c \
-	colsearch.c \
+	cl_stubs.c \
 	datesupp.c \
 	ddlrun.c \
 	disk.c \
 	dks_esc.c \
-	eqlcomp.c \
 	extent.c \
+	eqlcomp.c \
 	gate.c \
 	hash.c \
 	hosting.c \
@@ -336,7 +293,6 @@ libwi_odbc_la_SOURCES = \
 	lock.c \
 	log.c \
 	map_schema.c \
-	mem.c \
 	meta.c \
 	mtwrite.c \
 	multibyte.c \
@@ -345,7 +301,6 @@ libwi_odbc_la_SOURCES = \
 	obackup.c \
 	page.c \
 	plugin_loader.c \
-	read.c \
 	recovery.c \
 	regist.c \
 	rendezvous.c \
@@ -360,6 +315,8 @@ libwi_odbc_la_SOURCES = \
 	sort.c \
 	space.c \
 	sql3.c \
+	sqlbif2.c \
+	sqlbif.c \
 	sql_code.c \
 	sql_code_1.c \
 	sql_code_2pc.c \
@@ -374,15 +331,14 @@ libwi_odbc_la_SOURCES = \
 	sql_code_pldbg.c  \
 	sql_code_repl.c \
 	sql_code_sparql.c \
+	sql_code_sparql_init.c \
 	sql_code_sys.c \
 	sql_code_uddi.c \
 	sql_code_vad.c \
 	sql_code_vdb.c \
 	sql_code_ws.c \
-	sqlbif.c \
-	sqlbif2.c \
-	sqlcomp.c \
 	sqlcomp2.c \
+	sqlcomp.c \
 	sqlcost.c \
 	sqlcr.c \
 	sqldf.c \
@@ -391,9 +347,8 @@ libwi_odbc_la_SOURCES = \
 	sqlhash.c \
 	sqlintrp.c \
 	sqlinx.c \
-	sqljp.c \
-	sqlo.c \
 	sqloby.c \
+	sqlo.c \
 	sqlocr.c \
 	sqloinv.c \
 	sqloinx.c \
@@ -408,11 +363,8 @@ libwi_odbc_la_SOURCES = \
 	sqlstmts.c \
 	sqltrig.c \
 	sqltype.c \
-	sqlvec.c \
 	sqlver.c \
 	sqlview.c \
-	sqlvnode.c \
-	sqlvrun.c \
 	srvcr.c \
 	srvmultibyte.c \
 	srvstat.c \
@@ -420,11 +372,6 @@ libwi_odbc_la_SOURCES = \
 	trans.c \
 	update.c \
 	uuencode.c \
-	vec.c \
-	vechash.c \
-	vecins.c \
-	vecrdf.c \
-	vecsearch.c \
 	wirpc.c \
 	wiservic.c \
 	xpathp.c \
@@ -591,7 +538,6 @@ SQL_FILES		= \
 	$(srcdir)/system.sql \
 	$(srcdir)/system2.sql \
 	$(srcdir)/odbccat.sql \
-	$(srcdir)/useraggr.sql \
 	$(srcdir)/vt_text.sql \
 	$(srcdir)/phrasematch.sql \
 	$(srcdir)/hosting.sql
@@ -670,8 +616,11 @@ SQL_FILES_REPL		= \
 	$(srcdir)/snapshot_repl.sql \
 	$(srcdir)/repl.sql
 
+SQL_FILES_SPARQL_INIT = \
+	$(srcdir)/useraggr.sql \
+	$(srcdir)/sparql_init.sql
+
 SQL_FILES_SPARQL	= \
-	$(srcdir)/ttlpv.sql \
 	$(srcdir)/sparql.sql \
 	$(srcdir)/sparql_io.sql \
 	$(srcdir)/rdf_sponge.sql \
@@ -742,20 +691,20 @@ json_l.c: $(srcdir)/json.l json_p.h Makefile.am
 	@$(GEN) $(LEX) -o json_l.c -Pjsonyy $(srcdir)/json.l
 
 
-sqlwords.h: $(srcdir)/sqlwords.gperf
+sqlwords.h: $(srcdir)/sqlwords.gperf Makefile.am
 	@${GEN} --stdout ${GPERF} \
 		-o sqlwords.h \
 		-aCDGptr -Kkeiiyword -L ANSI-C -k1,2,3,6,9,$$ \
 		-Nlex_hash_kw \
 		$(srcdir)/sqlwords.gperf
 
-sql3.c sql3.h: sql3.y
+sql3.c sql3.h: sql3.y Makefile.am
 	@$(GEN) $(YACC) -o sql3.c -vd $(srcdir)/sql3.y
 
-scn3.c: scn3.l sql3.c sqlwords.h
+scn3.c: scn3.l sql3.c sqlwords.h Makefile.am
 	@$(GEN) $(LEX) -o scn3.c $(srcdir)/scn3.l
 
-scn3split.c: scn3.l sql3.c sqlwords.h
+scn3split.c: scn3.l sql3.c sqlwords.h Makefile.am
 	@$(GEN) $(LEX) -o scn3split.c -Pscn3splityy $(srcdir)/scn3.l
 
 $(top_srcdir)/binsrc/cached_resources/cached_resources.c:
@@ -767,38 +716,48 @@ sql_code_cache.c: $(top_srcdir)/binsrc/cached_resources/cached_resources.c sql_c
 	@echo "#include \"sql_code_cache_impl.c\"" >> $@
 	@echo "#include \"$(top_srcdir)/binsrc/cached_resources/cached_resources.c\"" >> $@
 
-xpathp.c xpathp.h : xpathp.y
+xpathp.c xpathp.h : xpathp.y Makefile.am
 	@$(GEN) $(YACC) -o xpathp.c -vd -pxpyy $(srcdir)/xpathp.y
 
-xpathp_lex_props.c: list_lex_props.sh xpathp.y
+xpathp_lex_props.c: list_lex_props.sh xpathp.y Makefile.am
 	list_lex_props.sh xpathp.y xpathp_lex_props.c
 
-xpscn.c: xpscn.l xpathp.h
+xpscn.c: xpscn.l xpathp.h Makefile.am
 	@$(GEN) $(LEX) -o xpscn.c -Pxpyy $(srcdir)/xpscn.l
 
-sparql_p.c sparql_p.h: sparql_p.y
+sparqlwords.h: sparqlwords.gperf Makefile.am
+	@$(GEN) --stdout $(GPERF) -o $@ \
+		-aCDGptr \
+		-Kkwd \
+		-L ANSI-C \
+		-k1,2,3,5,7,$$ \
+		--ignore-case \
+		-Nsparql_lex_hash_kw \
+		sparqlwords.gperf
+
+sparql_p.c sparql_p.h: sparql_p.y Makefile.am
 	@$(GEN) $(YACC) -o sparql_p.c -vd -psparyy $(srcdir)/sparql_p.y
 
-sparql_lex_props.c: list_lex_props.sh sparql_p.y
+sparql_lex_props.c: list_lex_props.sh sparql_p.y Makefile.am
 	list_lex_props.sh sparql_p.y sparql_lex_props.c
 
-sparql_l.c: sparql_l.l sparql_p.h
+sparql_l.c: sparql_l.l sparql_p.h Makefile.am
 	@$(GEN) $(LEX) -o sparql_l.c -Psparyy $(srcdir)/sparql_l.l
 
-nquad_p.c nquad_p.h: nquad_p.y
+nquad_p.c nquad_p.h: nquad_p.y Makefile.am
 	@$(GEN) $(YACC) -o nquad_p.c -vd -pnqyy $(srcdir)/nquad_p.y
 
-turtle_p.c turtle_p.h: turtle_p.y
+turtle_p.c turtle_p.h: turtle_p.y Makefile.am
 	@$(GEN) $(YACC) -o turtle_p.c -vd -pttlyy $(srcdir)/turtle_p.y
 
-turtle_lex_props.c: list_lex_props.sh turtle_p.y
+turtle_lex_props.c: list_lex_props.sh turtle_p.y Makefile.am
 	list_lex_props.sh turtle_p.y turtle_lex_props.c
 
-turtle_l.c: turtle_l.l turtle_p.h
+turtle_l.c: turtle_l.l turtle_p.h Makefile.am
 	@$(GEN) $(LEX) -o turtle_l.c -Pttlyy $(srcdir)/turtle_l.l
 
 
-AWK_FILES = $(srcdir)/sql_to_c.awk
+AWK_FILES = $(srcdir)/sql_to_c.awk Makefile.am
 
 sql_code.c: $(SQL_FILES) $(AWK_FILES) Makefile.am
 	@${GEN} ${GAWK} \
@@ -887,7 +846,7 @@ sql_code_2pc.c: $(SQL_FILES_2PC) $(AWK_FILES) Makefile.am
 		-v pl_stats=$(PLSTATS) \
 		$(SQL_FILES_2PC)
 
-#sql_code_blog.c: $(SQL_FILES_BLOG) $(AWK_FILES)
+#sql_code_blog.c: $(SQL_FILES_BLOG) $(AWK_FILES) Makefile.am
 #	@${GEN} ${GAWK} -o sql_code_2pc.c -f $(srcdir)/sql_to_c.awk \
 #		-v init_name=_blog -v pl_stats=$(PLSTATS) $(SQL_FILES_BLOG)
 
@@ -898,6 +857,14 @@ sql_code_vdb.c: $(SQL_FILES_VDB) $(AWK_FILES) Makefile.am
 		-v init_name=_vdb \
 		-v pl_stats=$(PLSTATS) \
 		$(SQL_FILES_VDB)
+
+sql_code_sparql_init.c: $(SQL_FILES_SPARQL_INIT) $(AWK_FILES) Makefile.am
+	@${GEN} ${GAWK} \
+		-o sql_code_sparql_init.c \
+		-f $(srcdir)/sql_to_c.awk \
+		-v init_name=_sparql_init \
+		-v pl_stats=$(PLSTATS) \
+		$(SQL_FILES_SPARQL_INIT)
 
 sql_code_sparql.c: $(SQL_FILES_SPARQL) $(AWK_FILES) Makefile.am
 	@${GEN} ${GAWK} \
@@ -989,6 +956,7 @@ generated: \
 	sparql_l.c \
 	sparql_p.c \
 	sparql_p.h \
+	sparqlwords.h \
 	sql3.c \
 	sql_code.c \
 	sql_code_1.c \
@@ -1028,20 +996,11 @@ EXTRA_DIST = \
  	*.l \
 	*.y \
 	2pc_client.c \
-	bif_gnw.c \
 	bif_kerberoscli.c \
 	bif_mts.c \
+	bif_gnw.c \
 	bif_purify.c \
-	box2any.c \
-	cedel.c \
-	cedict1.c \
-	cedictad.c \
-	ceintd.c \
-	cesearch.c \
-	ceveci.c \
-	cevecins.c \
 	crypt.c \
-	dvcmp.c \
 	iodbcinst.c \
 	jso_reformat.awk \
 	list_lex_props.sh \
@@ -1053,10 +1012,11 @@ EXTRA_DIST = \
 	rdf_mapping.jso \
 	rdf_mapping_jso.ttl \
 	rdf_mapping_jso.ttl-sample \
-	scn3split.c \
 	sql3_vc.c \
+	scn3split.c \
 	sql_code_cache_impl.c \
 	sql_to_c.awk \
 	sqlwords.gperf \
+	sparqlwords.gperf \
 	ssl.c \
 	string_tmpl.c

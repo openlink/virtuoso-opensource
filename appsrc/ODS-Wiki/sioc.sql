@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -148,7 +148,7 @@ create procedure fill_ods_wiki_sioc (in graph_iri varchar, in site_iri varchar, 
           order by WAI_ID) do
     {
       w_iri := wiki_iri (WAI_NAME);
-      iri := sprintf ('http://%s/dataspace/%s/wiki/%s/atom-pub/', get_cname(), U_NAME, WAI_NAME);
+      iri := sprintf ('http://%s/dataspace/doc/%s/wiki/%s/atom-pub/', get_cname(), U_NAME, WAI_NAME);
       ods_sioc_service (graph_iri, iri, w_iri, null, null, null, iri, 'Atom');
       cnt := cnt + 1;
       if (mod (cnt, 500) = 0)

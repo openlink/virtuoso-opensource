@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2009 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -25,8 +25,8 @@
  *
  */
 
-#ifndef DKHASH64_H
-#define DKHASH64_H
+#ifndef _DKHASH64_H
+#define _DKHASH64_H
 
 #define dk_hash_64_t 			id_hash_t
 
@@ -65,4 +65,8 @@
 #define hash_table_free_64(ht) \
   id_hash_free (ht)
 
-#endif /* DKHASH64_H */
+#define dk_hash_64_iterator_t id_hash_iterator_t
+#define dk_hash_64_iterator id_hash_iterator
+#define dk_hash_64_hit_next hit_next
+
+#endif

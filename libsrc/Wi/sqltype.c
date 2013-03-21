@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -2240,8 +2240,8 @@ udt_sql_method_call (caddr_t *qst, sql_class_t *udt, caddr_t udi,
 	}
       if (!sec_udt_check_qst (udt, qst, GR_EXECUTE) &&
 	  !sec_proc_check (proc, eff_g_id, eff_u_id))
-	sqlr_new_error ("42000", "SR186", "No permission to execute method %s of type %s.",
-	    mtd->scm_name, mtd->scm_class->scl_name);
+	sqlr_new_error ("42000", "SR186", "No permission to execute method %s of type %s with user ID %d, group ID %d",
+	    mtd->scm_name, mtd->scm_class->scl_name, (int)eff_g_id, (int)eff_u_id );
 
       BOX_AUTO (ptmp, pars_auto, param_len, DV_ARRAY_OF_POINTER);
       pars = (caddr_t *) ptmp;
@@ -2727,7 +2727,7 @@ static int sqlc_udt_find_best_method_to_call (
       int score;
       if (CASEMODESTRCMP (method_name, method->scm_name))	 /* Name does not match. */
 	continue;
-      if (method->scm_type != method_type)	/* instance instead of static or vica versum */
+      if (method->scm_type != method_type)	/* instance instead of static or vice versa */
 	{
           wrong_count ++;
 	  continue;
@@ -3615,7 +3615,10 @@ static void *
 box_read_long_ref (dk_session_t *session, dtp_t dtp)
 {
   size_t length = (size_t) read_long (session);
-  char *ref = (char *) dk_alloc_box (length, DV_REFERENCE);
+  char *ref;
+  if (length >= MAX_BOX_LENGTH)
+    return box_read_error (session, dtp);
+  ref = (char *) dk_alloc_box (length, DV_REFERENCE);
   session_buffered_read (session, ref, (int) length);
   return (void *) ref;
 }
@@ -3623,7 +3626,11 @@ box_read_long_ref (dk_session_t *session, dtp_t dtp)
 caddr_t
 udt_mp_copy (mem_pool_t * mp, caddr_t box)
 {
-  caddr_t cp = xe_make_copy (box);
+  caddr_t cp = NULL;
+  if (UDT_I_CLASS (box) == XMLTYPE_CLASS)
+    cp = xe_make_copy (box);
+  else
+    cp = box_copy (box);
   dk_set_push (&mp->mp_trash, (void*)cp);
   return cp;
 }

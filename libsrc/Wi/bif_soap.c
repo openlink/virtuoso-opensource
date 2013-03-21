@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -3872,6 +3872,7 @@ ws_http_error_header (int code)
       case 503: ret = "Service Unavailable"; break;
       case 504: ret = "Gateway Timeout"; break;
       case 505: ret = "HTTP Version Not Supported"; break;
+      case 509: ret = "Bandwidth Limit Exceeded"; break;
       default:
 		code = 500;
 		ret = "Internal Server Error";
@@ -9586,6 +9587,17 @@ static int
 soap_print_scalar_value (dtp_t proposed_type, caddr_t value, dk_session_t *ses, soap_ctx_t * ctx, caddr_t *err_ret)
 {
 /*  int use_escapes = ctx->use_escapes;*/
+  if (DV_TYPE_OF (value) == DV_RDF)
+    {
+      rdf_box_t * rb = (rdf_box_t *) value;
+      query_instance_t * qi = (query_instance_t *) ctx->qst;
+      if (!qi && !rb->rb_is_complete)
+	SOAP_VALIDATE_ERROR (("22023", "SV093", "Can not serialize incomplete RDF box"));
+      if (!rb->rb_is_complete)
+	rb_complete (rb, qi->qi_trx, qi);
+      value = rb->rb_box;
+      goto cast_as_wide;
+    }
   if (proposed_type == DV_SHORT_INT)
     {
       if (DV_TYPE_OF (value) == DV_LONG_INT || DV_TYPE_OF (value) ==  DV_SHORT_INT)
@@ -9751,6 +9763,7 @@ do_string:
       else if (proposed_type != DV_TYPE_OF (value))
 	SOAP_VALIDATE_ERROR (("22023", "SV058", "Non expected type of PL value : (%d) expected (%d)",
 	      DV_TYPE_OF (value), proposed_type));
+cast_as_wide:
       wide = box_cast_to (NULL, value, DV_TYPE_OF (value), DV_WIDE,
 	  NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, err_ret);
       if (*err_ret)

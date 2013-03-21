@@ -1,5 +1,26 @@
 <?xml version="1.0" ?>
 <!--
+
+  $Id$
+
+  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+  project.
+
+  Copyright (C) 1998-2013 OpenLink Software
+
+  This project is free software; you can redistribute it and/or modify it
+  under the terms of the GNU General Public License as published by the
+  Free Software Foundation; only version 2 of the License, dated June 1991.
+
+  This program is distributed in the hope that it will be useful, but
+  WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+  General Public License for more details.
+
+  You should have received a copy of the GNU General Public License along
+  with this program; if not, write to the Free Software Foundation, Inc.,
+  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+
   The OpenLink Sponger ontology for transformation results attribution.
 -->
 
@@ -31,7 +52,7 @@
 
     <owl:Class rdf:about="&opl;DataSource">
         <rdfs:label>DataSource</rdfs:label>
-        <rdfs:comment>The source ontology used for transformation</rdfs:comment>
+        <rdfs:comment>The data source used for transformation</rdfs:comment>
         <rdfs:isDefinedBy rdf:resource="&opl;"/>
     </owl:Class>
 
@@ -48,7 +69,7 @@
     </owl:Class>
 
     <owl:Property rdf:about="&opl;isDescribedUsing">
-        <rdfs:comment>The source ontology URI whcih is used for transformation</rdfs:comment>
+        <rdfs:comment>The source ontology URI which is used for transformation</rdfs:comment>
         <rdfs:domain rdf:resource="&opl;DataSource"/>
         <rdfs:isDefinedBy rdf:resource="&opl;"/>
         <rdfs:label>Is Described Using</rdfs:label>
@@ -86,4 +107,29 @@
         <rdfs:label>Error Text</rdfs:label>
         <rdfs:range rdf:resource="&xsd;string"/>
     </owl:AnnotationProperty>
+
+    <owl:Property rdf:about="&opl;mentions">
+        <rdfs:comment>A named entity mentioned in the source data</rdfs:comment>
+        <rdfs:domain rdf:resource="&opl;DataSource"/>
+        <rdfs:isDefinedBy rdf:resource="&opl;"/>
+        <rdfs:label>mentions</rdfs:label>
+        <rdfs:range rdf:resource="&opl;NamedEntity"/>
+    </owl:Property>
+
+    <owl:Class rdf:about="&opl;NamedEntity">
+        <rdfs:label>NamedEntity</rdfs:label>
+        <rdfs:comment>A named entity identified by a Sponger NLP cartridge</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="&opl;"/>
+    </owl:Class>
+
+    <owl:Property rdf:about="&opl;entityType">
+        <rdfs:comment>The type or ontological category of a named entity</rdfs:comment>
+        <rdfs:domain rdf:resource="&opl;NamedEntity"/>
+        <rdfs:isDefinedBy rdf:resource="&opl;"/>
+        <rdfs:label>entity type</rdfs:label>
+        <rdfs:range rdf:resource="&owl;Thing"/>
+        <owl:equivalentProperty rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#type"/>
+    </owl:Property>
+
 </rdf:RDF>
+

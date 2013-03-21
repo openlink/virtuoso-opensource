@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -2624,15 +2624,15 @@ bh_string_output_n (lock_trx_t * lt, blob_handle_t * bh, int omit, int free_buff
   return (string_output);
 }
 
-#define bh_string_list(lt, bh, get_bytes, omit) \
+#define bh_string_list(lt, bh, get_bytes, omit, blob_type) \
 ((box_tag (bh) == DV_BLOB_WIDE_HANDLE) ? \
-    bh_string_list_w (lt, bh, get_bytes, omit) : \
-    bh_string_list_n (lt, bh, get_bytes, omit))
+    bh_string_list_w (lt, bh, get_bytes, omit, blob_type) : \
+    bh_string_list_n (lt, bh, get_bytes, omit, blob_type))
 
 
 dk_set_t
 bh_string_list_n (/* this was before 3.0: index_space_t * isp, */ lock_trx_t * lt, blob_handle_t * bh,
-    long get_bytes, int omit)
+    long get_bytes, int omit, long blob_type)
 {
   /* take current page at current place and make string of
      n bytes from the place and return as string list */
@@ -2682,10 +2682,14 @@ bh_string_list_n (/* this was before 3.0: index_space_t * isp, */ lock_trx_t * l
 		  SET_DK_MEM_RESERVE_STATE (lt);
 		  itc_bust_this_trx (tmp_itc, &buf, ITC_BUST_THROW);
 		}
-	      page_string = dk_alloc_box (bytes_on_page + 1, DV_LONG_STRING);
+	      if (blob_type) /* BLOB_BIN */
+		page_string = dk_alloc_box (bytes_on_page, DV_BIN);
+	      else
+		page_string = dk_alloc_box (bytes_on_page + 1, DV_LONG_STRING);
 	      memcpy (page_string, buf->bd_buffer + DP_DATA + from_byte,
 		  bytes_on_page);
-	      page_string[bytes_on_page] = 0;
+	      if (!blob_type) /* BLOB_BIN */
+		page_string[bytes_on_page] = 0;
 	      dk_set_push (&string_list, page_string);
 	    }
 	  bytes_filled += bytes_on_page;
@@ -3091,12 +3095,11 @@ bh_write_out (lock_trx_t * lt, blob_handle_t * bh, dk_session_t * ses)
 
 void
 blob_send_bytes (lock_trx_t * lt, caddr_t bhp, long get_bytes,
-    int send_position)
+    int send_position, long blob_type)
 {
   blob_handle_t *bh = (blob_handle_t *) bhp;
   caddr_t arr;
-  dk_set_t string_list =
-  bh_string_list (/*NULL,*/ lt, (blob_handle_t *) bhp, get_bytes, 0);
+  dk_set_t string_list = bh_string_list (/*NULL,*/ lt, (blob_handle_t *) bhp, get_bytes, 0, blob_type);
 
   if (BH_DIRTYREAD == string_list)
     {
@@ -3177,7 +3180,7 @@ blob_subseq (lock_trx_t * lt, caddr_t bhp, size_t from, size_t to)
 	      if (from)
 		{
 		  bh->bh_position = 0;
-		  bh_string_list (/*NULL,*/ lt, bh, (long) from, 1);
+		  bh_string_list (/*NULL,*/ lt, bh, (long) from, 1, 0);
 		}
 	    }
 	}
@@ -3189,7 +3192,7 @@ blob_subseq (lock_trx_t * lt, caddr_t bhp, size_t from, size_t to)
 	{
 
 	  bh->bh_position = 0;
-	  bh_string_list (/*NULL,*/ lt, bh, (long) from, 1);
+	  bh_string_list (/*NULL,*/ lt, bh, (long) from, 1, 0);
 	}
       else
 	{
@@ -3197,7 +3200,7 @@ blob_subseq (lock_trx_t * lt, caddr_t bhp, size_t from, size_t to)
 	    bh_read_ahead (lt, bh, (unsigned) from, (unsigned) to);
 	}
     }
-  string_list = bh_string_list (/*NULL,*/ lt, bh, (long)(to - from), 0);
+  string_list = bh_string_list (/*NULL,*/ lt, bh, (long)(to - from), 0, 0);
  strings_ready:
   bh->bh_current_page = bh->bh_page;
   bh->bh_position = 0;
@@ -3294,7 +3297,7 @@ blob_to_string_isp (lock_trx_t * lt, caddr_t bhp)
     }
 
   string_list = bh_string_list (lt, bh,
-      10000000, 0);		/* up to 10MB as varchar */
+      10000000, 0, 0);		/* up to 10MB as varchar */
   bh->bh_current_page = bh->bh_page;
   bh->bh_position = 0;
 
@@ -3517,6 +3520,7 @@ rd_outline_1 (query_instance_t * qi, row_delta_t * rd, dbe_col_loc_t * cl)
   outlined = dk_alloc_box (DV_BLOB_LEN + 1, DV_STRING);
   ITC_OWNS_PARAM (rd->rd_itc, outlined);
   itc_set_blob_col (itc, (db_buf_t)outlined,  str, NULL, BLOB_IN_UPDATE, &cl->cl_sqt);
+  dk_free_box (str);
   rd->rd_values[cl->cl_nth] = outlined;
 }
 
@@ -3577,7 +3581,6 @@ rd_inline_1 (query_instance_t * qi, row_delta_t * rd, dbe_col_loc_t * cl, int lo
   int was_ask_from_cli = 1; /* when blob got from cli, the handle keeps the ref so no free until commit cause trigs or other code can ref the blob subsequently. */
   caddr_t str;
   int32 len;
-  mem_pool_t * mp = qi->qi_mp;
   blob_layout_t * bl;
   it_cursor_t itc_auto;
   buffer_desc_t * buf = NULL;
@@ -3589,16 +3592,11 @@ rd_inline_1 (query_instance_t * qi, row_delta_t * rd, dbe_col_loc_t * cl, int lo
   dp = LONG_REF_NA (outlined + BL_DP);
   page_wait_blob_access (itc, dp, &buf, PA_WRITE, NULL, 1);
   len = LONG_REF (buf->bd_buffer + DP_BLOB_LEN);
-  if (mp)
-    str = mp_alloc_box (mp, len + 2, DV_STRING);
-  else
-    {
   str = dk_alloc_box (len + 2, DV_STRING);
-      ITC_OWNS_PARAM (rd->rd_itc, str);
-    }
   str[0] = DV_STRING;
   memcpy (str + 1, buf->bd_buffer + DP_DATA, len);
   str[len + 1] = 0;
+  ITC_OWNS_PARAM (rd->rd_itc, str);
   if (BLOB_IN_INSERT == log_mode)
     {
       blob_log_set_delete (&qi->qi_trx->lt_blob_log, dp);

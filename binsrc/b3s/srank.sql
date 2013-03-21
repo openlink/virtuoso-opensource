@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2009 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -56,7 +56,7 @@ create procedure rnk_scale (in i int)
 
   ret := exp ((i - 0hex7fff) / 1e3);
 
-  if (ret < 1) 
+  if (ret < 1)
     {
       return (2 * atan (ret*5));
     }
@@ -66,7 +66,7 @@ create procedure rnk_scale (in i int)
       return 3 + ((atan (ret-1) * 4) / 3.14e0);
     }
 
-  else 
+  else
     {
       return 7 + (atan ((ret-10)/50) * 2);
     }

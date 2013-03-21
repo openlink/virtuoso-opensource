@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -39,4 +39,3 @@ ECHO BOTH  ": atof stored as " $LAST[1] "\n";
 select count (*) from DB.DBA.SYS_KEYS where KEY_TABLE like case when 201 < 101 then '' else '%' end;
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED" "***FAILED";
 ECHO BOTH  ": BUG4118: case in where returned " $LAST[1] " rows\n";
-

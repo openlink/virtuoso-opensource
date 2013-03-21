@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -1388,7 +1388,7 @@ configured, i.e. https://virtuoso.example.com:4443/</listitem>
 	<orderedlist>
 		<listitem>In the Preferences dialog, open the Advanced tab, and click the "View certificates" button.</listitem> 
 		<listitem>Click the "Add exception" button and enter the address of the HTTPS server you've just
-configured, i.e. https://virtuoso.example.com:4433/
+configured, i.e. https://virtuoso.example.com:443/
 </listitem>
 <listitem>Click OK, and confirm the exception.
   	<figure id="sphttps10" float="1">

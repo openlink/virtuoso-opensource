@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -390,7 +390,7 @@ read_int (dk_session_t *session)
   if (dtp == DV_SHORT_INT)
     return read_short_int (session);
   else if (DV_LONG_INT == dtp)
-  return read_long (session);
+    return read_long (session);
   else if (DV_INT64 == dtp)
     return read_int64 (session);
 
@@ -891,7 +891,7 @@ double_to_buf (double d, char *buf)
   unsigned char buf2[8];
   XDR x;
 
-  xdrmem_create (&x, (char *) buf, sizeof (buf2), XDR_ENCODE);
+  xdrmem_create (&x, (char *) buf2, sizeof (buf2), XDR_ENCODE);
   xdr_double (&x, &d);
   memcpy (buf, buf2, sizeof (double));
 #endif

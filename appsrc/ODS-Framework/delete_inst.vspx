@@ -5,7 +5,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -34,32 +34,35 @@
     <v:on-init>
       <![CDATA[
         declare apps, v, i any;
+
         if (self.iid is not null)
+        {
+          select WAI_MEMBER_MODEL, WAI_IS_PUBLIC, WAI_MEMBERS_VISIBLE, WAI_INST, WAI_NAME, WAI_DESCRIPTION, WAI_TYPE_NAME
+            into self.imodel, self.is_public, self.is_visible, self.inst, self.iname, self.idesc, self.wa_type
+            from DB.DBA.WA_INSTANCE
+           where WAI_ID = self.iid;
+          self.instance_descr := self.idesc;
+          self.ihome := self.inst.wa_home_url();
+        }
+        v := null;
+        if (self.apps_ids is not null)
+        {
+          apps := split_and_decode (self.apps_ids, 0, '\0\0,');
+          v := make_array (length (apps), 'any');
+          i := 0;
+          foreach (any id in apps) do
           {
-	    select WAI_MEMBER_MODEL, WAI_IS_PUBLIC, WAI_MEMBERS_VISIBLE, WAI_INST, WAI_NAME, WAI_DESCRIPTION, WAI_TYPE_NAME into
-	    self.imodel, self.is_public, self.is_visible, self.inst, self.iname, self.idesc, self.wa_type from
-	    DB.DBA.WA_INSTANCE where WAI_ID = self.iid;
-	    self.instance_descr := self.idesc;
-	    self.ihome := self.inst.wa_home_url();
-	  }
-	v := null;
-	if (self.apps_ids is not null)
-	  {
-	    apps := split_and_decode (self.apps_ids, 0, '\0\0,');
-	    v := make_array (length (apps), 'any');
-	    i := 0;
-            foreach (any id in apps) do
-	      {
-                v[i] := atoi (id);
-	        i := i + 1;
-	      }
-	  }
-	self.apps := v;
+            v[i] := atoi (id);
+            i := i + 1;
+          }
+        }
+        self.apps := v;
       ]]>
     </v:on-init>
     <v:after-data-bind>
       <![CDATA[
         declare freeze varchar;
+
         freeze := (select WAI_IS_FROZEN from DB.DBA.WA_INSTANCE where WAI_ID = self.iid);
         if (freeze = 1 and not wa_user_is_dba (self.u_name, self.u_group))
         {
@@ -98,80 +101,107 @@
         <div class="box">
           <v:form type="simple" method="POST" name="eform1">
             <h3>You are about to delete following application(s). This operation cannot be undone. Please confirm.</h3>
-	       <?vsp if (self.iid is not null) { ?>
-	    <h2>Application Details</h2>
-	    <?vsp } else {
-	    declare wai_nam varchar;
-	    foreach (any v in self.apps) do
-	       {
-	         wai_nam := (select WAI_NAME from WA_INSTANCE where WAI_ID = v);
-	         http (wai_nam); http ('<br />');
-	       }
-	     } ?>
-	     <table  class="ctl_grp">
-	       <?vsp if (self.iid is not null) { ?>
-	       <vm:instance-settings readonly="yes"/>
-	       <?vsp } ?>
-	       <tr>
-		 <td colspan="2">
-	    <span class="fm_ctl_btn">
-                  <v:button action="simple" name="cancel1" value="Cancel">
-                    <v:on-post>
-                      <![CDATA[
-                        if (self.redir = 'security')
-                          self.vc_redirect ('security.vspx');
-                        else
-                          self.vc_redirect ('services.vspx');
-                      ]]>
-                    </v:on-post>
-                  </v:button>
-                  <v:button action="simple" name="accept1" value="Delete">
-                    <v:on-post>
-                      <![CDATA[
-                        declare inst web_app;
-                        declare h, id any;
-			declare freeze varchar;
+            <?vsp
+              if (self.iid is not null)
+              {
+            ?>
+            <h2>Application Details</h2>
+            <?vsp
+              }
+              else
+              {
+                declare wai_nam varchar;
+                foreach (any v in self.apps) do
+                {
+                  wai_nam := (select WAI_NAME from WA_INSTANCE where WAI_ID = v);
+                  http (wai_nam); http ('<br />');
+                }
+              }
+            ?>
+            <table  class="ctl_grp">
+              <?vsp
+                if (self.iid is not null)
+                {
+              ?>
+              <vm:instance-settings readonly="yes"/>
+              <?vsp
+                }
+              ?>
+              <?vsp
+                if (self.wa_type = 'oMail')
+                {
+              ?>
+              <tr>
+                <th>
+                  Do you like to delete a content of mailboxes?
+                </th>
+                <td>
+                  <v:check-box name="iDeleteAll" xhtml_id="iDeleteAll" value="1" />
+                </td>
+              </tr>
+              <?vsp
+                }
+              ?>
+              <tr>
+                <td colspan="2">
+                  <span class="fm_ctl_btn">
+                    <v:button action="simple" name="cancel1" value="Cancel">
+                      <v:on-post>
+                        <![CDATA[
+                          if (self.redir = 'security')
+                            self.vc_redirect ('security.vspx');
+                          else
+                            self.vc_redirect ('services.vspx');
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                    <v:button action="simple" name="accept1" value="Delete">
+                      <v:on-post>
+                        <![CDATA[
+                          declare inst web_app;
+                          declare h, id any;
+                          declare freeze varchar;
 
-			if (self.apps is null)
-			  self.apps := vector (self.iid);
+                          if (self.apps is null)
+                            self.apps := vector (self.iid);
 
-			foreach (any iid in self.apps) do
-			  {
-			    declare exit handler for not found {
+                          foreach (any iid in self.apps) do
+                          {
+                            declare exit handler for not found {
                               rollback work;
                               signal ('22023', 'No such application');
-			    };
+                            };
                             select WAI_IS_FROZEN, WAI_INST into freeze, inst from DB.DBA.WA_INSTANCE where WAI_ID = iid;
-
-			    if (freeze = 1 and not wa_user_is_dba (self.u_name, self.u_group))
-			    {
-			      self.vc_error_message := 'Application is frozen';
-			      self.vc_is_valid := 0;
-			      goto done;
-			    }
-			    h := udt_implements_method(inst, 'wa_drop_instance');
-			    declare exit handler for sqlstate '*'
-			    {
-			      self.vc_error_message := WA_RETRIEVE_MESSAGE(concat(__SQL_STATE,' ',__SQL_MESSAGE));
-			      self.vc_is_valid := 0;
-			      rollback work;
-			      return;
-			    };
-			    commit work;
-			    id := call (h) (inst);
-			  }
+                            if (freeze = 1 and not wa_user_is_dba (self.u_name, self.u_group))
+                            {
+                              self.vc_error_message := 'Application is frozen';
+                              self.vc_is_valid := 0;
+                              goto done;
+                            }
+                            h := udt_implements_method(inst, 'wa_drop_instance');
+                            declare exit handler for sqlstate '*'
+                            {
+                              self.vc_error_message := WA_RETRIEVE_MESSAGE (concat (__SQL_STATE, ' ', __SQL_MESSAGE));
+                              self.vc_is_valid := 0;
+                              rollback work;
+                              return;
+                            };
+                            commit work;
+                            connection_set ('deleteAll', self.iDeleteAll.ufl_selected);
+                            id := call (h) (inst);
+                          }
                         done:;
-                        if (self.redir = 'security')
-                          self.vc_redirect ('security.vspx');
-                        else
-                          self.vc_redirect ('services.vspx');
-                      ]]>
-                    </v:on-post>
-                  </v:button>
-		</span>
-	      </td>
-	    </tr>
-	      </table>
+                          if (self.redir = 'security')
+                            self.vc_redirect ('security.vspx');
+                          else
+                            self.vc_redirect ('services.vspx');
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                  </span>
+                </td>
+              </tr>
+            </table>
           </v:form>
         </div>
       </vm:body>

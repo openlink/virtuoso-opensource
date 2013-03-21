@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -73,14 +73,13 @@
 	<xsl:template match="xbrl">
 		<sioc:Container rdf:about="{$resourceURL}">
 			<xsl:for-each select="context">
-				<sioc:container_of rdf:resource="{concat('#', @id)}"/>
+				<sioc:container_of rdf:resource="{vi:proxyIRI ($baseUri, '', @id)}"/>
 			</xsl:for-each>
 		</sioc:Container>
 		<xsl:apply-templates select="*" />
 	</xsl:template>
 	<xsl:template match="context">
-		<xsl:variable name="id" select="concat('#', @id)" />
-		<sioc:Container rdf:about="{$id}">
+		<sioc:Container rdf:about="{vi:proxyIRI ($baseUri, '', @id)}">
 			<sioc:has_container rdf:resource="{$resourceURL}"/>
 			<rdfs:label>
 				<xsl:choose>
@@ -100,8 +99,7 @@
 		</sioc:Container>
 	</xsl:template>
 	<xsl:template match="unit">
-		<xsl:variable name="id" select="concat('#', @id)" />
-		<sioc:Item rdf:about="{$id}">
+		<sioc:Item rdf:about="{vi:proxyIRI ($baseUri, '', @id)}">
 			<opl-xbrl:measure>
 				<xsl:value-of select="measure" />
 			</opl-xbrl:measure>
@@ -170,11 +168,11 @@
 		<xsl:variable name="canonical_value_name" select="virt:xbrl_canonical_value_name(local-name(.))" />
 		<xsl:variable name="canonical_value_datatype" select="virt:xbrl_canonical_value_datatype(local-name(.))" />
 		<xsl:variable name="canonical_label_name" select="virt:xbrl_canonical_label_name(local-name(.))" />
-		<xsl:variable name="contextRef" select="concat('#', @contextRef)" />
+		<xsl:variable name="contextRef" select="vi:proxyIRI ($baseUri, '', @contextRef)" />
 		<xsl:variable name="label" select="concat($ns, $canonical_name)" />
 		<xsl:variable name="dt" />
 		<xsl:if test="$canonical_name">
-			<rdf:Description rdf:about="{concat($resourceURL, '#', @contextRef, '/', $canonical_name)}">
+			<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', concat(@contextRef, '/', $canonical_name))}">
 				<xsl:if test="$canonical_type">
 					<rdf:type>
 						<xsl:attribute name="rdf:resource">
@@ -192,12 +190,19 @@
 				</xsl:if>
 				<sioc:has_container rdf:resource="{$contextRef}" />
 				<rdfs:label>
-					<xsl:value-of select="$canonical_name"/>
+				    <xsl:choose>
+				        <xsl:when test="string-length(normalize-space(.)) &gt; 0">
+				            <xsl:value-of select="concat($canonical_label_name, ': ', normalize-space(.))"/>
+				        </xsl:when>
+				        <xsl:otherwise>
+                            <xsl:value-of select="$canonical_label_name"/>
+                        </xsl:otherwise>
+				    </xsl:choose>
 				</rdfs:label>	
 			</rdf:Description>
 
 			<rdf:Description rdf:about="{$contextRef}">
-				<sioc:container_of rdf:resource="{concat($resourceURL, '#', @contextRef, '/', $canonical_name)}" />
+				<sioc:container_of rdf:resource="{vi:proxyIRI ($baseUri, '', concat(@contextRef, '/', $canonical_name))}" />
 				<!--rdfs:label>
 					<xsl:value-of select="@contextRef"/>
 				</rdfs:label-->

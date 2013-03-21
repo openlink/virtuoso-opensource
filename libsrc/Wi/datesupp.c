@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -25,7 +25,6 @@
  *
  */
 
-#include "wi.h"
 #include "CLI.h"
 #include "util/strfuns.h"
 #include "datesupp.h"
@@ -614,7 +613,7 @@ GMTimestamp_struct_to_dt (GMTIMESTAMP_STRUCT * ts, char *dt)
   DT_SET_SECOND (dt, ts->second);
   DT_SET_FRACTION (dt, ts->fraction);
   DT_SET_TZ (dt, 0);
-  DT_SET_DT_TYPE (dt, DT_TYPE_DATETIME);
+  DT_SET_DT_TYPE_NOAUDIT (dt, DT_TYPE_DATETIME);
 }
 
 void
@@ -1344,13 +1343,14 @@ and MUST be assumed when reading the asctime format. */
   if (1123 == fmt || 850 == fmt) /* these formats are explicitly for GMT */
 #endif
   if (0 == tz_min)
-  GMTimestamp_struct_to_dt (ts, dt);
+    GMTimestamp_struct_to_dt (ts, dt);
   else
     {
       ts_add (ts, -tz_min, "minute");
       GMTimestamp_struct_to_dt (ts, dt);
       DT_SET_TZ (dt, tz_min);
     }
+  DT_AUDIT_FIELDS (dt);
   return 1;
 }
 
@@ -1424,38 +1424,6 @@ dt_make_day_zero (char *dt)
   DT_SET_DT_TYPE (dt, DT_TYPE_TIME);
 }
 
-
-unsigned int64
-dt_seconds (caddr_t dt1)
-{
-  return ((unsigned int64)DT_DAY (dt1)) * 24 * 60 * 60 + DT_HOUR (dt1) * 60 * 60 + DT_MINUTE (dt1) * 60 + DT_SECOND (dt1);
-}
-
-
-void
-dt_print (caddr_t dt)
-{
-  char str[100];
-  dt_to_string (dt, str, sizeof (str));
-		printf ("%s\n", str);
-}
-
-
-int
-dt_compare (caddr_t dt1, caddr_t dt2)
-{
-  int inx;
-  for (inx = 0; inx < DT_COMPARE_LENGTH; inx++)
-    {
-      if (dt1[inx] < dt2[inx])
-	return DVC_LESS;
-      else if (dt1[inx] > dt2[inx])
-	return DVC_GREATER;
-    }
-  return DVC_MATCH;
-}
-
-
 #ifdef DEBUG
 void
 dt_audit_fields (char *dt)
@@ -1481,7 +1449,7 @@ dt_audit_fields (char *dt)
       if (0 != f) GPF_T1 ("nonzero fraction in DT_TYPE_DATE dt_audit_fields()");
       break;
     case DT_TYPE_TIME:
-      if (DAY_ZERO != d) GPF_T1 ("DAY_ZERO in DT_TYPE_TIME dt_audit_fields()");
+      if (DAY_ZERO != d) GPF_T1 ("non-DAY_ZERO in DT_TYPE_TIME dt_audit_fields()");
       break;
     default:
         GPF_T1 ("Wrong DT_DT_TYPE in dt_audit_fields()");

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -143,6 +143,7 @@ int numeric_to_double (numeric_t n, double *pvalue);
 int numeric_to_dv (numeric_t n, dtp_t *res, size_t reslength);
 
 int numeric_rescale (numeric_t y, numeric_t x, int prec, int scale);
+int numeric_rescale_noround (numeric_t y, numeric_t x, int prec, int scale);
 
 /* arithmetic & comparison */
 int numeric_compare (numeric_t x, numeric_t y);
@@ -172,5 +173,9 @@ int numeric_raw_precision (numeric_t n);
 int numeric_scale (numeric_t n);
 int _numeric_size (void);
 uint32 numeric_hash (numeric_t n);
+
+/* Internals listed below are not for common use.
+Functions that use them outside numeric.c should probably be splitted and low-level parts should be added to numeric.c API. */
+extern void num_add (numeric_t sum, numeric_t n1, numeric_t n2, int scale_min);
 
 #endif /* _WI_NUMERIC_H */

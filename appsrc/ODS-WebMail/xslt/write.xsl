@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -106,6 +106,7 @@
         <xsl:attribute name="value"><xsl:value-of select="string(//save_copy)"/></xsl:attribute>
       </input>
       <xsl:apply-templates select="message/eparams"/>
+      <xsl:apply-templates select="message/options/certificates/certificate"/>
       <xsl:call-template name="write_form"/>
     </form>
   </xsl:template>
@@ -179,7 +180,7 @@
             <xsl:attribute name="value"><xsl:apply-templates select="message/address/addres_list/to"/></xsl:attribute>
           </input>
           <xsl:call-template name="nbsp"/>
-          <input type="button" value="Select" onclick="javascript: windowShow('mails.vsp?set=to')" class="button" />
+          <input type="button" value="Select" onclick="javascript: mailsShow('mails.vsp?set=to')" class="button" />
         </td>
       </tr>
       <tr id="row_cc" style="display: none;">
@@ -191,7 +192,7 @@
             <xsl:attribute name="value"><xsl:apply-templates select="message/address/addres_list/cc"/></xsl:attribute>
           </input>
           <xsl:call-template name="nbsp"/>
-          <input type="button" value="Select" onclick="javascript: windowShow('mails.vsp?set=cc')" class="button" />
+          <input type="button" value="Select" onclick="javascript: mailsShow('mails.vsp?set=cc')" class="button" />
         </td>
       </tr>
       <tr id="row_bcc" style="display: none;">
@@ -203,7 +204,7 @@
             <xsl:attribute name="value"><xsl:apply-templates select="message/address/addres_list/bcc"/></xsl:attribute>
           </input>
           <xsl:call-template name="nbsp"/>
-          <input type="button" value="Select" onclick="javascript: windowShow('mails.vsp?set=bcc')" class="button" />
+          <input type="button" value="Select" onclick="javascript: mailsShow('mails.vsp?set=bcc')" class="button" />
         </td>
       </tr>
       <xsl:if test="//conversation = 1">
@@ -298,10 +299,10 @@
           </input>
             Save copy in "Sent" folder
           </label>
-          <xsl:if test="//security_sign_mode = 1">
+          <xsl:if test="//security_sign != ''">
             |
             <label>
-              <input type="checkbox" name="ssign" value="1">
+              <input type="checkbox" name="ssign" id="ssign" value="1">
                 <xsl:choose>
                   <xsl:when test="message/options/securitySign">
                     <xsl:if test="message/options/securitySign = 1">
@@ -309,17 +310,19 @@
                     </xsl:if>
                   </xsl:when>
                   <xsl:otherwise>
+                    <xsl:if test="//security_sign_mode = 1">
                     <xsl:attribute name="checked">checked</xsl:attribute>
+                    </xsl:if>
                   </xsl:otherwise>
                 </xsl:choose>
               </input>
               Digitally sign
             </label>
           </xsl:if>
-          <xsl:if test="//security_encrypt_mode = 1">
+          <xsl:if test="//security_encrypt != ''">
             |
             <label>
-              <input type="checkbox" name="sencrypt" value="1">
+              <input type="checkbox" name="sencrypt" id="sencrypt" value="1">
                 <xsl:choose>
                   <xsl:when test="message/options/securityEncrypt">
                     <xsl:if test="message/options/securityEncrypt = 1">
@@ -327,7 +330,9 @@
                     </xsl:if>
                   </xsl:when>
                   <xsl:otherwise>
+                    <xsl:if test="//security_encrypt_mode = 1">
                     <xsl:attribute name="checked">checked</xsl:attribute>
+                    </xsl:if>
                   </xsl:otherwise>
                 </xsl:choose>
               </input>
@@ -508,6 +513,19 @@ Sent: <xsl:value-of select="rcv_date"/>
         </td>
       </tr>
     </xsl:if>
+  </xsl:template>
+  <!-- ====================================================================================== -->
+  <xsl:template match="certificate">
+    <input type="hidden">
+      <xsl:attribute name="name">modulus_<xsl:value-of select="./mail"/></xsl:attribute>
+      <xsl:attribute name="id">modulus_<xsl:value-of select="./mail"/></xsl:attribute>
+      <xsl:attribute name="value"><xsl:value-of select="./modulus"/></xsl:attribute>
+    </input>
+    <input type="hidden">
+      <xsl:attribute name="name">public_exponent_<xsl:value-of select="./mail"/></xsl:attribute>
+      <xsl:attribute name="id">public_exponent_<xsl:value-of select="./mail"/></xsl:attribute>
+      <xsl:attribute name="value"><xsl:value-of select="./public_exponent"/></xsl:attribute>
+    </input>
   </xsl:template>
   <!-- ====================================================================================== -->
 </xsl:stylesheet>

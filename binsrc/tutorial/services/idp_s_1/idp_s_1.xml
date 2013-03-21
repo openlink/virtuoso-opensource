@@ -1,0 +1,43 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2013 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="IdP-S-1">
+  <refmeta>
+    <refentrytitle>WebID Identity Provider (IdP)</refentrytitle>
+    <refmiscinfo>tutorial</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>Checking if WebID and specific Public Key are in a relation</refname>
+    <refpurpose>Checking WebID</refpurpose>
+  </refnamediv>
+
+<refsect1 id="IdP-S-1">
+<title>Example</title>
+<itemizedlist mark="bullet">
+  <listitem>The service is an alternative to using SPARQL queries via the SPARQL protocol against Virtuoso endpoints re. WebID verification i.e., lookup a profile graph to see if WebID and specific Public Key are in a relation.</listitem>
+  <listitem>The webid_demo.vsp is a vsp page which implements WebID checking.</listitem>
+  <listitem>The webid_demo.php is a PHP page which implements WebID checking.</listitem>
+  <listitem>The webid_demo.html is a HTML (JS) page which implements WebID checking.</listitem>
+</itemizedlist> 
+</refsect1>
+</refentry>

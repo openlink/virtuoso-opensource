@@ -1,0 +1,15 @@
+Makefile
+Makefile.in
+vad
+*.vad
+virtuoso.db
+virtuoso.ini
+virtuoso.lck
+virtuoso.lic
+virtuoso.log
+virtuoso.pxa
+virtuoso.tdb
+virtuoso.trx
+version.base
+version.curr
+*.log

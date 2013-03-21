@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -34,4 +34,3 @@ xml_test ('http://localhost:$U{HTTPPORT}/docsrc/sqlreference.xml');
 xml_test ('http://localhost:$U{HTTPPORT}/docsrc/user.xml');
 xml_test ('http://localhost:$U{HTTPPORT}/docsrc/vdbconcepts.xml');
 xml_test ('http://localhost:$U{HTTPPORT}/docsrc/virtdocs.xml');
-

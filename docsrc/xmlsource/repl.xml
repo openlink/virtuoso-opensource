@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -1049,65 +1049,44 @@ a procedure name and set of parameters to a publication inside a transaction.  W
 publication entries are appended to the publication, forming a replication entry with
 its unique number.
 </para>
-<para>
-These functions are available to the publishing Virtuoso server.</para>
-
-<link linkend="fn_repl_publish"><function>repl_publish()</function></link>
-
-<link linkend="fn_repl_unpublish"><function>repl_unpublish()</function></link>
-
-<link linkend="fn_repl_pub_add"><function>repl_pub_add()</function></link>
-
-<link linkend="fn_repl_pub_remove"><function>repl_pub_remove()</function></link>
-
-<link linkend="fn_repl_pub_init_image"><function>repl_pub_init_image()</function></link>
-
-<link linkend="fn_repl_new_log"><function>repl_new_log()</function></link>
-
-<link linkend="fn_repl_text"><function>repl_text()</function></link>
-
-<link linkend="fn_repl_grant"><function>repl_grant()</function></link>
-
-<link linkend="fn_repl_revoke"><function>repl_revoke()</function></link>
-
+<para>These functions are available to the publishing Virtuoso server:</para>
+<itemizedlist mark="bullet">
+  <listitem><link linkend="fn_repl_publish"><function>repl_publish()</function></link></listitem>
+  <listitem><link linkend="fn_repl_unpublish"><function>repl_unpublish()</function></link></listitem>
+  <listitem><link linkend="fn_repl_pub_add"><function>repl_pub_add()</function></link></listitem>
+  <listitem><link linkend="fn_repl_pub_remove"><function>repl_pub_remove()</function></link></listitem>
+  <listitem><link linkend="fn_repl_pub_init_image"><function>repl_pub_init_image()</function></link></listitem>
+  <listitem><link linkend="fn_repl_new_log"><function>repl_new_log()</function></link></listitem>
+  <listitem><link linkend="fn_repl_text"><function>repl_text()</function></link></listitem>
+  <listitem><link linkend="fn_repl_grant"><function>repl_grant()</function></link></listitem>
+  <listitem><link linkend="fn_repl_revoke"><function>repl_revoke()</function></link></listitem>
+</itemizedlist>
 </sect2>
 
 <sect2 id="SubscriberFunctions">
 <title>Subscriber Functions</title>
-<para>
-These are the functions that are available to the subscribing Virtuoso server.
-</para>
-
-<link linkend="fn_repl_server"><function>repl_server()</function></link>
-
-<link linkend="fn_repl_subscribe"><function>repl_subscribe()</function></link>
-
-<link linkend="fn_repl_unsubscribe"><function>repl_unsubscribe()</function></link>
-
-<link linkend="fn_repl_init_copy"><function>repl_init_copy()</function></link>
-
-<link linkend="fn_repl_sync"><function>repl_sync()</function></link>
-
-<link linkend="fn_repl_sync_all"><function>repl_sync_all()</function></link>
-
-<link linkend="fn_repl_sched_init"><function>repl_sched_init()</function></link>
-
-<link linkend="fn_sub_schedule"><function>sub_schedule()</function></link>
-
-<link linkend="fn_repl_disconnect"><function>repl_disconnect()</function></link>
-
-<link linkend="fn_repl_this_server"><function>repl_this_server()</function></link>
-<link linkend="fn_repl_purge"><function>repl_purge()</function></link>
-
+<para>These are the functions that are available to the subscribing Virtuoso server:</para>
+<itemizedlist mark="bullet">
+  <listitem><link linkend="fn_repl_server"><function>repl_server()</function></link></listitem>
+  <listitem><link linkend="fn_repl_subscribe"><function>repl_subscribe()</function></link></listitem>
+  <listitem><link linkend="fn_repl_unsubscribe"><function>repl_unsubscribe()</function></link></listitem>
+  <listitem><link linkend="fn_repl_init_copy"><function>repl_init_copy()</function></link></listitem>
+  <listitem><link linkend="fn_repl_sync"><function>repl_sync()</function></link></listitem>
+  <listitem><link linkend="fn_repl_sync_all"><function>repl_sync_all()</function></link></listitem>
+  <listitem><link linkend="fn_repl_sched_init"><function>repl_sched_init()</function></link></listitem>
+  <listitem><link linkend="fn_sub_schedule"><function>sub_schedule()</function></link></listitem>
+  <listitem><link linkend="fn_repl_disconnect"><function>repl_disconnect()</function></link></listitem>
+  <listitem><link linkend="fn_repl_this_server"><function>repl_this_server()</function></link></listitem>
+  <listitem><link linkend="fn_repl_purge"><function>repl_purge()</function></link></listitem>
+</itemizedlist>
 </sect2>
 
 <sect2 id="ReplStatusFunctions">
 <title>Common Status Functions</title>
-
-<link linkend="fn_repl_stat"><function>repl_stat()</function></link>
-
-<link linkend="fn_repl_status"><function>repl_status()</function></link>
-
+<itemizedlist mark="bullet">
+  <listitem><link linkend="fn_repl_stat"><function>repl_stat()</function></link></listitem>
+  <listitem><link linkend="fn_repl_status"><function>repl_status()</function></link></listitem>
+</itemizedlist>
 	<para>
 The status () function shows a replication status summary.
 The same data can be obtained with the repl_stat and repl_status procedures.
@@ -1233,8 +1212,9 @@ executes each command which applies to the current time. Note that overdue comma
 only once.
 </para>
 		<para>
-There is a virtuoso.ini parameter &quot;Scheduler interval&quot; under &quot;Parameters&quot; section which defines
-the scheduler wake-up interval. Set this to 0 (the default) to disable the scheduler.
+There is a virtuoso.ini parameter &quot;SchedulerInterval&quot; under 
+<link linkend="ini_Parameters">Parameters</link> section which defines the scheduler wake-up interval. 
+Set this to 0 (the default) to disable the scheduler.
 </para>
 		<sect2 id="replschSYSTABLES">
 			<title>SYS_SCHEDULED_EVENT</title>

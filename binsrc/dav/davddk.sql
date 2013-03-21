@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -36,7 +36,7 @@ create table WS.WS.SYS_DAV_COL (
     COL_PERMS           char (11),
     COL_DET             varchar,
     COL_ACL             long varbinary,
-    COL_IID 		IRI_ID,
+    COL_IID 		IRI_ID_8,
     COL_AUTO_VERSIONING char(1),
     COL_FORK 		integer not null default 0,
     COL_INHERIT		char(1) default 'N', 		-- NMR flag denotes, none, members, recursive
@@ -58,7 +58,7 @@ alter table WS.WS.SYS_DAV_COL add COL_ACL long varbinary
 alter table WS.WS.SYS_DAV_COL modify COL_PERMS char (11)
 ;
 
-alter table WS.WS.SYS_DAV_COL add COL_IID IRI_ID
+alter table WS.WS.SYS_DAV_COL add COL_IID IRI_ID_8
 ;
 
 alter table WS.WS.SYS_DAV_COL add COL_INHERIT char(1) default 'N'
@@ -80,7 +80,7 @@ create table WS.WS.SYS_DAV_RES (
     RES_FULL_PATH       varchar,
     ROWGUID             varchar,
     RES_ACL             long varbinary,
-    RES_IID 		IRI_ID,
+    RES_IID 		IRI_ID_8,
     RES_STATUS 		varchar,
     RES_VCR_ID 		integer,
     RES_VCR_CO_VERSION 	integer,
@@ -103,7 +103,7 @@ alter table WS.WS.SYS_DAV_RES add RES_ACL long varbinary
 alter table WS.WS.SYS_DAV_RES modify RES_PERMS char (11)
 ;
 
-alter table WS.WS.SYS_DAV_RES add RES_IID IRI_ID
+alter table WS.WS.SYS_DAV_RES add RES_IID IRI_ID_8
 ;
 --#ENDIF
 
@@ -549,6 +549,12 @@ create procedure WS.WS.COL_PATH (in _id any)
   while (_id > 0)
     {
       select COL_NAME, COL_PARENT into _name, _p_id from WS.WS.SYS_DAV_COL where COL_ID = _id;
+      if (_id = _p_id)
+	{
+	  log_message (sprintf ('DAV collection %d is its own parent', _id));
+	  _path := '**circular**/' || _path;
+	  return _path;
+	}
       _id := _p_id;
       _path := concat ('/', _name, _path);
     }
@@ -1129,6 +1135,17 @@ props_done:
     values (http_nobody_uid (), 'nobody','Special account', 'nobody@example.domain', pwd_magic_calc ('nobody', uuid()), http_admin_gid (), '110100000', 1, 0, 1);
   insert soft DB.DBA.SYS_USERS (U_ID, U_NAME, U_FULL_NAME, U_E_MAIL, U_PASSWORD, U_GROUP, U_DEF_PERMS, U_ACCOUNT_DISABLED, U_SQL_ENABLE, U_DAV_ENABLE, U_IS_ROLE)
     values (http_nogroup_gid (), 'nogroup','Special group', 'nobody@example.domain', '', NULL, '110100000', 0, 0, 1, 1);
+  if (not exists (select top 1 1 from DB.DBA.SYS_USERS where U_ID = __rdf_repl_uid()))
+    {
+      declare passwd varchar;
+      passwd := uuid();
+      insert replacing DB.DBA.SYS_USERS (U_ID, U_NAME, U_FULL_NAME, U_E_MAIL, U_PASSWORD, U_GROUP, U_DEF_PERMS, U_ACCOUNT_DISABLED, U_SQL_ENABLE, U_DAV_ENABLE)
+        values (__rdf_repl_uid(), '__rdf_repl','Special account', 'nobody@example.domain', pwd_magic_calc ('__rdf_repl', passwd), http_admin_gid (), '110100000', 0, 1, 1);
+      DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_set_user_struct (?,?,?,?,?,?,?)', vector (
+          '__rdf_repl', passwd, __rdf_repl_uid(), http_admin_gid (), concat ('Q ', 'DB'), 0, NULL, NULL));
+      DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_user_enable (?, ?)', vector ('__rdf_repl', 0));
+    }
+  commit work;
   __atomic (0);
   return;
 }
@@ -1314,7 +1331,7 @@ insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/x-gtar',
 ;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/x-hdf','hdf')
 ;
-insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/x-javascript','js')
+insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/javascript','js')
 ;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/x-koan','skp')
 ;

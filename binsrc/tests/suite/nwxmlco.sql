@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -93,5 +93,3 @@ vt_batch_update ('DB.DBA.XML_TEXT', 'OFF', 0);
 update xml_text set xt_text = xt_text;
 
 select count (*) from xml_text_xt_text_hit;
-
-

@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -22,10 +22,10 @@
  -
 -->
 
-<sect2 id="rdfadm"><title>Conductor RDF Administration</title>
-  <para>From Conductor the RDF tab allows you to execute/save/load SPARQL queries, 
+<sect2 id="rdfadm"><title>Conductor Linked Data Administration</title>
+  <para>From Conductor the Linked Data tab allows you to execute/save/load SPARQL queries, 
 	to add/edit RDF Mapping, to perform statistics and manage graphs, 
-	to import schemas and define namespaces, to generated RDF views and to upload to the RDF Store.
+	to import schemas and define namespaces, to generated Linked Data Views and to upload to the Quad Store.
 	</para>
   <sect3 id="rdfadmsparql"><title>SPARQL</title>  
     <sect4 id="rdfadmsparqlex"><title>Query</title>  
@@ -135,9 +135,45 @@
 		    <graphic fileref="rdf12.png"/>
 	    </figure>	  	  
 	</sect3>
-	<sect3 id="rdfadmviews"><title>RDF Views</title>
+	<sect3 id="rdfadmacl"><title>Access Control</title>
+	  <sect4 id="rdfadmaclsponger"><title>Sponger</title>
+	    <para>Manage Sponger rules by adding new ones, deleting, re-ordering, etc.</para>
+		  <para>This tab is available only when the 
+	    <ulink url="http://s3.amazonaws.com/opldownload/uda/vad-packages/6.3/virtuoso/cartridges_dav.vad">cartridges_dav.vad</ulink> 
+	    is installed.</para>	
+	    <figure id="adminuirdf15" float="1">
+        <title>RDF</title>
+		    <graphic fileref="rdf19.png"/>
+	    </figure>
+	  </sect4>  
+	  <sect4 id="rdfadmaclsparqlssl"><title>SPARQL-WebID</title>
+	  <para>Here you can manage different WebID Protocol ACLs WebID ACL by granting 
+	  	SPARQL Roles such as "SELECT", "UPDATE", "SPONGE":</para>
+		  <para>This tab is available only when the 
+	    <ulink url="http://s3.amazonaws.com/opldownload/uda/vad-packages/6.3/virtuoso/policy_manager_dav.vad">policy__manager_dav.vad</ulink> 
+	    is installed.</para>		  	
+	  	<figure id="adminuirdf15" float="1">
+        <title>RDF</title>
+		    <graphic fileref="rdf18.png"/>
+	    </figure>	
+	  <tip><title>See Also:</title> 
+	      <para><link linkend="sparqwebservicetbl">Managing a SPARQL Web Service Endpoint</link></para>
+	      <para><link linkend="sparqloauthendpointfoafssl">WebID Protocol ACLs</link></para>
+	      <para><link linkend="sparqloauthendpointfoafsslsparql">Creating and Using a SPARQL-WebID based Endpoint</link></para>
+	      <para><link linkend="rdfsparqlendpointexamples3">Example with curl and SPARQL-WebID endpoint</link></para>
+	    </tip>
+	  </sect4>	  
+	</sect3>
+	<sect3 id="rdfadmviews"><title>Views</title>
 	  <para>Virtuoso uses a SPARQL-based Meta Schema Language to provide RDBMS-to-RDF mapping 
-	  	functionality (also described as, RDF Views of SQL data). The language is an extension of the SPARQL query language meshed with Virtuoso's SPASQL (SPARQL-inside-SQL) functionality. The language enables you to declaratively map relational database schema tables, columns, rows, and foreign key relationships to Classes, Attributes, Relationships, and Instances (Objects/Entities/Individuals) defined by RDF Schemas or OWL Ontologies. The mapping process uses a special built-in Virtuoso function to generate IRIs / URIs in "Subject" or "Object" position of a SPARQL graph pattern, en route to building a set of SQL compiler rules and optimizations for translating SPARQL queries into SQL on the fly.</para>
+	  	functionality (also described as, Linked Data Views of SQL data). The language is an extension of the 
+	  	SPARQL query language meshed with Virtuoso's SPASQL (SPARQL-inside-SQL) functionality. The 
+	  	language enables you to declaratively map relational database schema tables, columns, rows, 
+	  	and foreign key relationships to Classes, Attributes, Relationships, and Instances 
+	  	(Objects/Entities/Individuals) defined by RDF Schemas or OWL Ontologies. The mapping 
+	  	process uses a special built-in Virtuoso function to generate IRIs / URIs in "Subject" 
+	  	or "Object" position of a SPARQL graph pattern, en route to building a set of SQL compiler 
+	  	rules and optimizations for translating SPARQL queries into SQL on the fly.</para>
 	  	<figure id="adminuirdf16" float="1">
         <title>RDF</title>
 		    <graphic fileref="rdf13.png"/>
@@ -146,28 +182,32 @@
 	      <para><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VOSSQL2RDF#Mapping%20Process">Mapping Process steps.</ulink></para>
 	      <para><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VOSSQL2RDF#Mapping%20Example">Mapping Example.</ulink></para>
 	      <para><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VOSSQL2RDF">Mapping SQL Data to RDF.</ulink></para>	      
-	      <para><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtRdb2RDFViewsGeneration">Automated Generation of RDF Views over Relational Data Sources with Virtuoso.</ulink></para>	      	      
+	      <para><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtRdb2RDFViewsGeneration">Automated Generation of Linked Data Views over Relational Data Sources with Virtuoso.</ulink></para>	      	      
 	    </tip>
 	</sect3>
-	<sect3 id="rdfadm"><title>RDF Store Upoload</title>
-	  <para>Offers upload to RDF Quad Store from file or Resource URL:</para>
+	<sect3 id="rdfadm"><title>Quad Store Upoload</title>
+	  <para>Offers upload to Quad Store from file or Resource URL:</para>
 	  	<figure id="adminuirdf17" float="1">
         <title>RDF</title>
 		    <graphic fileref="rdf16.png"/>
 	    </figure>		 	  
 	</sect3>
-	<sect3 id="rdfadm"><title>RDF Subscriptions</title>
-	  <para>This tab will be only when the 
+	<sect3 id="rdfadm"><title>Subscriptions (PHSB)</title>
+	  <para>This tab is available only when the 
 	    <ulink url="http://s3.amazonaws.com/opldownload/uda/vad-packages/6.1/virtuoso/pubsubhub_dav.vad">pubsubhub_dav.vad</ulink> 
 	    is installed.</para>	    
 	  <para>Offers Virtuoso's implementation of the <ulink url="http://pubsubhubbub.googlecode.com/svn/trunk/pubsubhubbub-core-0.3.html">PubSubHubBub Protocol</ulink> to handle Linked Data 
 	  	by subscribing to Linked Data resource URIs.</para>
+	  	<figure id="adminuirdf17" float="1">
+        <title>Subscriptions (PHSB)</title>
+		    <graphic fileref="rdf17.png"/>
+	    </figure>			  
 	  <para>Note: the Hub endpoint should be defined ACL in System Admin -&gt; Security -&gt; Access Control -&gt; PSH-SLL</para>
     <tip><title>See Also:</title>	    
       <para><ulink url="http://ods.openlinksw.com/wiki/ODS/VirtPubSubHub">Example of Linked Data Usage of PubSubHubbub Implementation.</ulink></para>
       <para><ulink url="http://ods.openlinksw.com/wiki/ODS/VirtFeedPubSubHub">Feed subscription via PubSubHub Protocol.</ulink></para>
       <para><ulink url="http://ods.openlinksw.com/wiki/ODS/VirtODSPubSubHub">Setting up PubSubHub in ODS.</ulink></para>
-      <para><ulink url="http://ods.openlinksw.com/wiki/ODS/VirtAuthPolicyFOAFSSL">WebID Protocol ACLs Tutorial.</ulink></para>
+      <para><ulink url="http://ods.openlinksw.com/wiki/ODS/VirtSPARQLSecurityWebID">Securing your SPARQL Endpoint via WebID.</ulink></para>
     </tip>
 	</sect3>
 </sect2>

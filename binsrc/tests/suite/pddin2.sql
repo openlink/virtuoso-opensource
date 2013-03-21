@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -75,4 +75,3 @@ ECHO BOTH ": updating narrow data; STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 --select string_to_file('pddd3.txt',blob_to_string("b"),-2) from "pdd" where "a" = 2;
 --select string_to_file('pddd4.txt',blob_to_string("c"),-2) from "pdd" where "a" = 2;
 --select string_to_file('pddd5.txt',blob_to_string("d"),-2) from "pdd" where "a" = 2;
-

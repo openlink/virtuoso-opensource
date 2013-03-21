@@ -3,7 +3,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2007 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -198,8 +198,10 @@ function confirmAction(confirmMsq, form, txt, selectionMsq) {
   return false;
 }
 
-function selectCheck(obj, prefix) {
+function selectCheck(obj, prefix, noToolbars) {
   coloriseRow(getParent(obj, 'tr'), obj.checked);
+  if (noToolbars)
+    return;
   enableToolbars(obj.form, prefix);
 }
 
@@ -227,7 +229,7 @@ function enableElement(id, id_gray, showFlag) {
 }
 }
 
-function selectAllCheckboxes (obj, prefix) {
+function selectAllCheckboxes(obj, prefix, noToolbars) {
   var objForm = obj.form;
   for (var i = 0; i < objForm.elements.length; i++) {
     var o = objForm.elements[i];
@@ -239,12 +241,15 @@ function selectAllCheckboxes (obj, prefix) {
       coloriseRow(getParent(o, 'tr'), o.checked);
     }
   }
+  obj.focus();
   if (obj.value == 'Select All')
     obj.value = 'Unselect All';
   else
     obj.value = 'Select All';
-  selectCheck (obj, prefix);
-  obj.focus();
+
+  if (noToolbars)
+    return;
+  enableToolbars(objForm, prefix);
 }
 
 function anySelected (form, txt, selectionMsq) {
@@ -541,11 +546,17 @@ function updateGeodata(mode) {
 	OAT.AJAX.GET(S, '', function(arg) {cb(arg, mode);});
 }
 
-function davBrowse(fld) {
+function davBrowse(fld, folders) {
+	/* load stylesheets */
+	OAT.Style.include("grid.css");
+	OAT.Style.include("webdav.css");
+
   var options = {
     mode: 'browser',
     onConfirmClick: function(path, fname) {$(fld).value = '/DAV' + path + fname;}
   };
+  if (!folders) {folders = false;}
+  OAT.WebDav.options.foldersOnly = folders;
   OAT.WebDav.open(options);
 }
 
@@ -605,6 +616,36 @@ function destinationChange(obj, actions) {
 			}
     }
   }
+	if (actions.exec) {
+		var a = actions.exec;
+		for ( var i = 0; i < a.length; i++) {
+			a[i](obj);
+		}
+	}
+}
+
+function excLabel(obj) {
+  var srcLabel = $('excLabel');
+  if (!srcLabel)
+    return;
+  if ($('exc_options_type_1').checked)
+    srcLabel.innerHTML = 'WebDAV File URL (.ics)';
+  if ($('exc_options_type_3').checked)
+    srcLabel.innerHTML = 'CalDAV URL';
+  if ($('exc_options_type_2').checked)
+    srcLabel.innerHTML = 'File URL (.ics)';
+}
+
+function iType(obj) {
+  var i = -1;
+  if ($('i_type_0').checked)
+    i = 0;
+  if ($('i_type_1').checked)
+    i = 1;
+  if ($('i_type_2').checked)
+    i = 2;
+  if (i < 0)
+    $('i_type_0').checked = true;
 }
 
 function urlParam(fldName)
@@ -694,7 +735,9 @@ function checkState()
     } else {
       progressTimer = null;
       progressPollTimer = null;
-      $('btn_Stop').click();
+      $('btn_Stop').value = 'Close';
+      OAT.Dom.hide('btn_Background');
+      doPost ('F1', 'btn_Background');
     }
   }
   OAT.AJAX.POST('ajax.vsp', "a=load&sa=state&id="+progressID+urlParam("sid")+urlParam("realm"), x);
@@ -871,21 +914,12 @@ AB.setFOAFValue = function(fValue, fName) {
 
 AB.aboutDialog = function() {
   var aboutDiv = $('aboutDiv');
-	if (aboutDiv) {
+  if (aboutDiv)
 		OAT.Dom.unlink(aboutDiv);
-	}
-	aboutDiv = OAT.Dom.create('div', {
-		width : '430px',
-    height: '170px',
-    overflow: 'hidden'
-	});
+
+  aboutDiv = OAT.Dom.create('div', {height: '160px', overflow: 'hidden'});
   aboutDiv.id = 'aboutDiv';
-	aboutDialog = new OAT.Dialog('About ODS AddressBook', aboutDiv, {
-		width : 445,
-		buttons : 0,
-		resize : 0,
-		modal : 1
-	});
+  aboutDialog = new OAT.Dialog('About ODS AddressBook', aboutDiv, {width:445, buttons: 0, resize:0, modal:1});
 	aboutDialog.cancel = aboutDialog.hide;
 
   var x = function (txt) {

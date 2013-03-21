@@ -1,5 +1,0 @@
-*.dll
-clrsrv*
-*.output
-Makefile
-Makefile.in

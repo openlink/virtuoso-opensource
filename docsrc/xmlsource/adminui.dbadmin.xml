@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -44,11 +44,87 @@ refer to a particular catalog or database.
 </para>
 		<para>
 You can import users by adding LDAP Servers(s) from the "LDAP Servers" tab, and then from the "LDAP Import" to specify from
-which LDAP server the import should be done. </para>
+which LDAP server the import should be done:</para>
 
     <figure float="1"><title>Users Accounts</title>
       <graphic fileref="ui/admtables_01a.png"/></figure>
 
+        <sect4 id="dbusersandgroupsldap"><title>Configuring and import from LDAP server</title>
+<para>The following steps describe how to configure LDAP server and then import user(s) using the Conducor UI:</para>        
+<orderedlist>
+	 <listitem>Go to http://cname:port/conductor</listitem>
+	 <listitem>Enter user dba credentials</listitem>
+	 <listitem>Go to System Admin -&gt; User Accounts -&gt; LDAP Servers
+     <figure id="ldap1" float="1">
+       <title>LDAP Servers Configure and Import</title>
+       <graphic fileref="ui/ldap1.png"/>
+     </figure>
+	 </listitem>
+	 <listitem>Enter in the LDAP servers form respectively:
+     <orderedlist>
+     	 <listitem>Host Name: for ex.: ldap.example.com
+         <para>Note: you can also use ldap:// or ldaps:// in front of Host name</para>
+       </listitem>
+       <listitem>Base: for ex.: o=MyCompany,c=DE</listitem>
+       <listitem>Base DN: for ex: ou=Accounts,o=MyCompany,c=DE</listitem>
+       <listitem>UID field: uid</listitem>
+       <listitem>Account: for ex: joe</listitem>
+       <listitem>Password: *******</listitem>
+       <listitem>LDAP version: choose for ex. 3</listitem>
+     </orderedlist>
+	 </listitem>
+	 <listitem>Check the connection by pressing "Test":
+	   <figure id="ldap2" float="1">
+       <title>LDAP Servers Configure and Import</title>
+       <graphic fileref="ui/ldap2.png"/>
+     </figure>	
+	 </listitem>
+   <listitem>If the test connection is successful, click "Add".
+	   <figure id="ldap3" float="1">
+       <title>LDAP Servers Configure and Import</title>
+       <graphic fileref="ui/ldap3.png"/>
+     </figure>	   	
+   </listitem>
+   <listitem>Next you can import various data from your LDAP server.</listitem>
+   <listitem>Go to System Admin -&gt; User Accounts -&gt; LDAP Import
+   	<figure id="ldap3a" float="1">
+       <title>LDAP Servers Configure and Import</title>
+       <graphic fileref="ui/ldap3a.png"/>
+     </figure>
+   </listitem>
+   <listitem>Select the LDAP server added from above:  
+   	 <figure id="ldap4" float="1">
+       <title>LDAP Servers Configure and Import</title>
+       <graphic fileref="ui/ldap4.png"/>
+     </figure>   	
+   </listitem> 
+   <listitem>Click "Search".
+   	 <figure id="ldap5" float="1">
+       <title>LDAP Servers Configure and Import</title>
+       <graphic fileref="ui/ldap5.png"/>
+     </figure>   	
+   </listitem>	  	
+   <listitem>Click "Next".
+   	 <figure id="ldap6" float="1">
+       <title>LDAP Servers Configure and Import</title>
+       <graphic fileref="ui/ldap6.png"/>
+     </figure>   	
+   </listitem>	  	
+   <listitem>Select the desired profiles to be imported and click "Import".
+   	 <figure id="ldap7" float="1">
+       <title>LDAP Servers Configure and Import</title>
+       <graphic fileref="ui/ldap7.png"/>
+     </figure>   	
+   </listitem>	  	
+   <listitem>Click "Finish".</listitem>	  	
+   <listitem>The imported profile(s) should be displayed in the Users tab:
+   	 <figure id="ldap8" float="1">
+       <title>LDAP Servers Configure and Import</title>
+       <graphic fileref="ui/ldap8.png"/>
+     </figure>   	
+   </listitem>	  	
+  </orderedlist>
+        </sect4>
       	</sect3>
 
       	<sect3 id="databases">
@@ -117,7 +193,7 @@ need a screenshot  here
 	procedures can be done via the ISQL command-line interface or from the "Create Procedure" link shown
         above the list of objects for the relevant database.
 	</para>
-    <figure float="1"><title>Viewing Stored Procedures details for the Demo catalogue in the Demo Database</title>
+    <figure float="1"><title>Viewing Stored Procedures details for the DB catalogue</title>
       <graphic fileref="ui/admprocedures_01.png"/></figure>
         <para>
 	Stored procedures may also refer to modules that contain a group

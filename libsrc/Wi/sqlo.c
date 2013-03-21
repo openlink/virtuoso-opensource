@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -36,6 +36,7 @@
 #include "arith.h"
 #include "security.h"
 #include "sqlo.h"
+#include "remote.h"
 
 
 #define CHECK_OBSERVER(tree_ptr) \
@@ -832,13 +833,6 @@ sqlo_trans_cols (sqlo_t * so, op_table_t * ot)
 }
 
 
-ST*
-sqlo_with_decl (sqlo_t * so,  ST * tree)
-{
-  return NULL;
-}
-
-
 void
 sqlo_add_table_ref (sqlo_t * so, ST ** tree_ret, dk_set_t *res)
 {
@@ -863,22 +857,17 @@ sqlo_add_table_ref (sqlo_t * so, ST ** tree_ret, dk_set_t *res)
       }
     case TABLE_DOTTED:
       {
-	ST * with_view = sqlo_with_decl (so, tree);
-	dbe_table_t *tb = with_view ? NULL : sch_name_to_table (so->so_sc->sc_cc->cc_schema, tree->_.table.name);
+	dbe_table_t *tb = sch_name_to_table (so->so_sc->sc_cc->cc_schema, tree->_.table.name);
 	ST * view;
-	if (!tb && !with_view)
+	if (!tb)
 	  sqlc_error (so->so_sc->sc_cc, "S0002", "No table %s", tree->_.table.name);
 	if (inside_view)
 	  tree->_.table.name = t_box_copy (tb->tb_name);
-	if (!with_view)
-	  {
 	sqlc_table_used (so->so_sc, tb);
 	view = (ST*) sch_view_def (so->so_sc->sc_cc->cc_schema, tb->tb_name);
-	  }
-	else
-	  view = with_view;
 	if (!view || inside_view)
 	  {
+	    remote_table_t * rt = find_remote_table (tb->tb_name, 0);
 	    t_NEW_VARZ (op_table_t, ot);
 	    ot->ot_opts = ST_OPT (tree, caddr_t *, _.table.opts);
 	    ot->ot_prefix = tree->_.table.prefix;
@@ -886,6 +875,7 @@ sqlo_add_table_ref (sqlo_t * so, ST ** tree_ret, dk_set_t *res)
 	    ot->ot_new_prefix = t_box_string (tmp);
 	    tree->_.table.prefix = ot->ot_new_prefix;
 	    ot->ot_table = tb;
+	    ot->ot_rds = rt ? rt->rt_rds : NULL;
 	    ot->ot_u_id = (oid_t) unbox (tree->_.table.u_id);
 	    ot->ot_g_id = (oid_t) unbox (tree->_.table.g_id);
 	    if (ST_P (view, PROC_TABLE))
@@ -902,7 +892,7 @@ sqlo_add_table_ref (sqlo_t * so, ST ** tree_ret, dk_set_t *res)
 	else
 	  {
 	    op_table_t * ot = NULL;
-	    if (!with_view && !sec_tb_check (tb, (oid_t) unbox (tree->_.table.u_id), (oid_t) unbox (tree->_.table.u_id), GR_SELECT))
+	    if (!sec_tb_check (tb, (oid_t) unbox (tree->_.table.u_id), (oid_t) unbox (tree->_.table.u_id), GR_SELECT))
 	      sqlc_error (so->so_sc->sc_cc, "42000", "Must have select privileges on view %s", tb->tb_name);
 	    view = (ST*) t_box_copy_tree ((caddr_t) view);
 	    if (ST_P (view, UNION_ST) ||
@@ -1366,6 +1356,19 @@ sqlo_expand_dt (sqlo_t *so, ST *tree, ST ** from_ret, op_table_t *ot, int is_in_
     }
 }
 
+/* check after sqlo_dt_inlineable if right side selection list has expressions containing no columns of the table */
+static int
+sqlo_selection_all_cols (sqlo_t * so, caddr_t * tree, op_table_t * ot)
+{
+  int inx;
+  DO_BOX (ST *, s, inx, (ST**)tree)
+    {
+      if (!sqlo_has_col_ref (s))
+	return 0;
+    }
+  END_DO_BOX;
+  return 1;
+}
 
 int
 sqlo_inline_jt (sqlo_t * so, ST * tree, ST * exp, op_table_t * ot)
@@ -1384,7 +1387,8 @@ sqlo_inline_jt (sqlo_t * so, ST * tree, ST * exp, op_table_t * ot)
       else if (ST_P (exp->_.join.left, TABLE_REF) && ST_P (exp->_.join.left->_.table_ref.table, JOINED_TABLE))
 	any += sqlo_inline_jt (so, tree, exp->_.join.left->_.table_ref.table, ot);
       if (OJ_LEFT == exp->_.join.type
-	  && sqlo_dt_inlineable (so, tree, exp->_.join.right, ot, 1))
+	  && sqlo_dt_inlineable (so, tree, exp->_.join.right, ot, 1)
+	  && sqlo_selection_all_cols (so, exp->_.join.right->_.table_ref.table->_.select_stmt.selection, ot))
 	{
 	  /* left oj with single table dt to the right. */
 	  ST * texp = exp->_.join.right->_.table_ref.table->_.select_stmt.table_exp;
@@ -1596,7 +1600,10 @@ sqlo_check_ft_offband (sqlo_t * so, op_table_t * ot, ST ** args, char type)
 	  inx + 1, sqlo_spec_predicate_name(type), arg );
     }
   if (off)
-    ot->ot_text_offband = (op_virt_col_t **) list_to_array (off);
+    {
+      ot->ot_text_offband = (op_virt_col_t **) t_list_to_array (off);
+      dk_set_free (off);
+    }
 }
 
 
@@ -2026,23 +2033,23 @@ sqlo_opt_value (caddr_t * opts, int opt)
 }
 
 
-void
+int
 sqlo_expand_distinct_joins (sqlo_t * so, ST *tree, op_table_t *sel_ot, dk_set_t *res)
 {
-  int inx;
+  int inx, has_expand = 0;
   if (!tree->_.select_stmt.table_exp || !SEL_IS_DISTINCT (tree))
-    return;
+    return 0;
   _DO_BOX (inx, tree->_.select_stmt.table_exp->_.table_exp.from)
     {
       ST **tbp = & (tree->_.select_stmt.table_exp->_.table_exp.from[inx]);
-      if (ST_P (*tbp, TABLE_REF))
+      while (ST_P (*tbp, TABLE_REF))
 	tbp = & (*tbp)->_.table_ref.table;
 
       if (ST_P (*tbp, JOINED_TABLE) && ((*tbp)->_.join.type == OJ_LEFT || (*tbp)->_.join.type == OJ_FULL))
 	{
-	  ST *rtb = (*tbp)->_.join.right;
+	  ST *rtb = (*tbp)->_.join.right, *ltp;
 	  op_table_t *ot = NULL;
-	  if (ST_P (rtb, TABLE_REF))
+	  while (ST_P (rtb, TABLE_REF))
 	    rtb = rtb->_.table_ref.table;
 	  if (ST_P (rtb, TABLE_DOTTED))
 	    ot = sqlo_cname_ot (so, rtb->_.table.prefix);
@@ -2066,11 +2073,16 @@ sqlo_expand_distinct_joins (sqlo_t * so, ST *tree, op_table_t *sel_ot, dk_set_t 
 	      t_set_delete (&so->so_scope->sco_tables, ot);
 	      t_set_delete (res, (*tbp)->_.join.cond);
 	      t_set_delete (&sel_ot->ot_from_ots, ot);
-	      *tbp = (*tbp)->_.join.left;
+	      ltp = (*tbp)->_.join.left;
+	      if (ST_P (tree->_.select_stmt.table_exp->_.table_exp.from[inx], TABLE_REF) && ST_P (ltp, TABLE_REF))
+		ltp = ltp->_.table_ref.table;
+	      *tbp = ltp;
+	      has_expand ++;
 	    }
 	}
     }
   END_DO_BOX;
+  return has_expand;
 }
 
 
@@ -2309,15 +2321,55 @@ sqlo_bop_expand_or_exp (sqlo_t *so, ST *tree)
   return tree;
 }
 
+static int
+sqlo_has_implicit_gby (sqlo_t *so, ST *tree, ST ** group, op_table_t *dt_ot)
+{
+  int inx;
+
+  if (group) /* not implicit */
+    return 0;
+  if (DV_TYPE_OF (tree) != DV_ARRAY_OF_POINTER)
+    return 0;
+  else if (ST_P (tree, FUN_REF))
+    return 0;
+  if (ST_COLUMN (tree, COL_DOTTED) && tree->_.col_ref.prefix)
+    {
+      DO_SET (op_table_t *, ot, &dt_ot->ot_from_ots)
+	{
+	  if (!strcmp (tree->_.col_ref.prefix, ot->ot_new_prefix))
+	    return 1;
+	}
+      END_DO_SET ();
+    }
+  DO_BOX (ST *, exp, inx, ((ST **)tree))
+    {
+      return sqlo_has_implicit_gby (so, exp, group, dt_ot);
+    }
+  END_DO_BOX;
+  return 0;
+}
 
 static void
 sqlo_check_group_by_cols (sqlo_t *so, ST *tree, ST *** group, op_table_t *dt_ot)
 {
-  int inx;
+  int inx, has_nulls = 0;
+  dk_set_t non_null_gb_cols = NULL;
+
   if (DV_TYPE_OF (tree) != DV_ARRAY_OF_POINTER)
     return;
   else if (ST_P (tree, FUN_REF))
     return;
+  /* when NULLs are in group by list we remove them as they not affect the grouping */
+  DO_BOX (ST *, spec, inx, group[0])
+    {
+      if (ST_P (spec, ORDER_BY) && DV_DB_NULL == DV_TYPE_OF (spec->_.o_spec.col))
+	has_nulls += 1;
+      else
+	non_null_gb_cols = dk_set_conc (non_null_gb_cols, t_cons ((void *) spec, NULL));
+    }
+  END_DO_BOX;
+  if (has_nulls)
+    *group = (ST **) t_list_to_array (non_null_gb_cols);
   DO_BOX (ST *, spec, inx, (*group))
     {
       if (box_equal ((box_t) tree, (box_t) spec->_.o_spec.col))
@@ -2649,7 +2701,8 @@ sqlo_select_scope (sqlo_t * so, ST ** ptree)
       END_DO_BOX;
       sqlo_scope_array  (so, (ST**) tree->_.select_stmt.selection);
       /* if a single row is to be returned the order by really does not matter */
-      if (ot->ot_fun_refs && !texp->_.table_exp.group_by)
+      if (ot->ot_fun_refs && !texp->_.table_exp.group_by &&
+	 !sqlo_has_implicit_gby (so, (ST *) tree->_.select_stmt.selection, texp->_.table_exp.group_by, ot))
 	texp->_.table_exp.order_by = NULL;
       sqlo_replace_as_exps (&(texp->_.table_exp.having), so->so_scope);
       sqlo_scope (so, &(texp->_.table_exp.having));
@@ -2721,8 +2774,16 @@ sqlo_select_scope (sqlo_t * so, ST ** ptree)
     }
   /* end dt expansion */
 #endif
-  if (texp && SEL_IS_DISTINCT (tree))
-    sqlo_expand_distinct_joins (so, tree, ot, &res);
+  if (texp && SEL_IS_DISTINCT (tree) && sqlo_expand_distinct_joins (so, tree, ot, &res))
+    {
+      char old_rescope = so->so_is_rescope;
+      so->so_this_dt = old_dt;
+      so->so_is_rescope = 1;
+      so->so_scope = so->so_scope->sco_super;
+      sqlo_scope (so, ptree);
+      so->so_is_rescope = old_rescope;
+      return;
+    }
   DO_SET (ST *, jc, &res)
     {
       jc->_.join.cond = (ST *) STAR;
@@ -2937,6 +2998,8 @@ sqlo_scalar_subq_scope (sqlo_t * so, ST ** ptree)
   dk_set_t s;
   sql_scope_t * sco = so->so_scope;
   ST * org, * res;
+  if (!sco)
+    SQL_GPF_T1 (so->so_sc->sc_cc, "no scope");
   for (s = sco->sco_scalar_subqs; s; s = s->next->next)
     {
       org = (ST*)s->data;

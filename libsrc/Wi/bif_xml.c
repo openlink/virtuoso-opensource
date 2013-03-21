@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -630,8 +630,6 @@ xp_free (xparse_ctx_t * xp)
 {
   dk_hash_iterator_t hit;
   caddr_t it, k;
-  xp_rdfxml_locals_t *xrl;
-  xp_rdfa_locals_t *xrdfal;
   xp_node_t * xn;
   dk_free_box (xp->xp_id);
   dk_free_box (xp->xp_error_msg);
@@ -647,7 +645,7 @@ xp_free (xparse_ctx_t * xp)
   while (xn)
     {
       xp_node_t * next = xn->xn_parent;
-#ifdef MALLOC_DEBUG
+#ifdef XTREE_DEBUG
       dk_check_tree ((caddr_t) xn->xn_attrs);
 #endif
       dk_free_tree ((caddr_t) xn->xn_attrs);
@@ -709,33 +707,8 @@ xp_free (xparse_ctx_t * xp)
   if ((NULL != xp->xp_doc_cache) && (&(xp->xp_doc_cache) == xp->xp_doc_cache->xdc_owner))
     xml_doc_cache_free (xp->xp_doc_cache);
   dk_free_box (xp->xp_top_excl_res_prefx);
-  while (NULL != xp->xp_rdfxml_locals)
-    xp_pop_rdf_locals (xp);
-  while (NULL != xp->xp_rdfa_locals)
-    {
-#ifndef NDEBUG
-      dk_free_tree (xp->xp_rdfa_locals->xrdfal_ict_buffer);
-      xp->xp_rdfa_locals->xrdfal_ict_buffer = NULL;
-#endif
-      xp_pop_rdfa_locals (xp);
-    }
-  xrl = xp->xp_rdfxml_free_list;
-  while (NULL != xrl)
-    {
-      xp_rdfxml_locals_t *next_xrl = xrl->xrl_parent;
-      dk_free (xrl, sizeof (xp_rdfxml_locals_t));
-      xrl = next_xrl;
-    }
-  xrdfal = xp->xp_rdfa_free_list;
-  while (NULL != xrdfal)
-    {
-      xp_rdfa_locals_t *next_xrdfal = xrdfal->xrdfal_parent;
-      dk_free_tree (xrdfal->xrdfal_ict_buffer);
-      dk_free (xrdfal, sizeof (xp_rdfa_locals_t));
-      xrdfal = next_xrdfal;
-    }
-  dk_free_tree (xp->xp_tmp);
-  /* Note that xp_xf is intentionally left untouched. */
+  if (NULL != xp->xp_tf)
+    xp_free_rdf_parser_fields (xp);
 }
 
 
@@ -3797,6 +3770,40 @@ DBG_NAME(box_cast_to_UTF8) (DBG_PARAMS caddr_t * qst, caddr_t data)
 
 
 caddr_t
+box_cast_to_UTF8_xsd (caddr_t *qst, caddr_t data)
+{
+  char tmpbuf[50];
+  int buffill;
+  double boxdbl;
+  switch (DV_TYPE_OF (data))
+    {
+    case DV_SINGLE_FLOAT: boxdbl = (double)(unbox_float (data)); goto make_double; /* see below */
+    case DV_DOUBLE_FLOAT: boxdbl = unbox_double (data); goto make_double; /* see below */
+    default: return box_cast_to_UTF8 (qst, data);
+    }
+make_double:
+  buffill = sprintf (tmpbuf, "%lg", boxdbl);
+  if ((NULL == strchr (tmpbuf, '.')) && (NULL == strchr (tmpbuf, 'E')) && (NULL == strchr (tmpbuf, 'e')))
+    {
+      if (isalpha(tmpbuf[1+1]))
+        {
+	  double myZERO = 0.0;
+          double myPOSINF_d = 1.0/myZERO;
+          double myNEGINF_d = -1.0/myZERO;
+          if (myPOSINF_d == boxdbl) return box_dv_short_string ("INF");
+          else if (myNEGINF_d == boxdbl) return box_dv_short_string ("-INF");
+          else return box_dv_short_string ("NAN");
+        }
+      else
+        {
+          strcpy (tmpbuf+buffill, ".0");
+          buffill += 2;
+        }
+    }
+  return box_dv_short_nchars (tmpbuf, buffill);
+}
+
+caddr_t
 box_cast_to_UTF8_uname (caddr_t *qst, caddr_t raw_name)
 {
   switch (DV_TYPE_OF (raw_name))
@@ -3814,6 +3821,7 @@ box_cast_to_UTF8_uname (caddr_t *qst, caddr_t raw_name)
     }
   return NULL; /* never reached */
 }
+
 
 caddr_t
 bif_xte_head (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -5185,6 +5193,9 @@ bif_to_xml_array_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *
 	elem_is_writeable = 0;
         to_be_deleted = NULL;
 #endif
+	if (BOX_ELEMENTS (elem) < 1)
+	  sqlr_new_error ("37000", "XI027", "Argument of %s must be valid xml entity.", func);
+
 	  if ((((caddr_t *) elem)[0]) == XMLATTRIBUTE_FLAG)
 	    { /* XMLATTRIBUTES */
 	      int inx, attr_length = BOX_ELEMENTS (elem);
@@ -5204,6 +5215,8 @@ bif_to_xml_array_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *
 		}
               goto array_arg_done;
 	    }
+	if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (((caddr_t *)elem)[0]) || BOX_ELEMENTS (((caddr_t *)elem)[0]) < 1)
+	  sqlr_new_error ("37000", "XI027", "Argument of %s must be valid xml entity.", func);
         if (DV_UNAME != DV_TYPE_OF (XTE_HEAD_NAME (XTE_HEAD (elem))))
           {
             if (!elem_is_writeable)
@@ -5819,7 +5832,7 @@ bif_xml_init (void)
   bif_define (XMLSPROC, bif_xmls_proc);
 
   /* bif_define (TREETOXML, bif_tree_to_xml); */
-  bif_define_typed ("xml_tree", bif_xml_tree, &bt_xml_entity);
+  bif_define ("xml_tree", bif_xml_tree);
   bif_set_uses_index (bif_xml_tree);
   bif_define_typed ("xtree_doc", bif_xtree_doc, &bt_xml_entity);
   bif_set_uses_index (bif_xtree_doc);
@@ -5886,14 +5899,14 @@ bif_xml_init (void)
   bif_define ("xq_sequencebld_final", bif_xq_sequencebld_final);
   bif_define ("xq_sequencebld_agg_final", bif_xq_sequencebld_agg_final);
 
-  bif_define_typed ("xmlelement", bif_xmlelement, &bt_xml_entity);
-  bif_define_typed ("xmlattributes", bif_xmlattributes, &bt_xml_entity);
-  bif_define_typed ("xmlattributes_2", bif_xmlattributes, &bt_xml_entity);
-  bif_define_typed ("xmlforest", bif_xmlforest, &bt_xml_entity);
-  bif_define_typed ("xmlforest_2", bif_xmlforest, &bt_xml_entity);
-  bif_define_typed ("xmlconcat", bif_xmlconcat, &bt_xml_entity);
+  bif_define_typed ("xmlelement", bif_xmlelement, &bt_any);
+  bif_define_typed ("xmlattributes", bif_xmlattributes, &bt_any);
+  bif_define_typed ("xmlattributes_2", bif_xmlattributes, &bt_any);
+  bif_define_typed ("xmlforest", bif_xmlforest, &bt_any);
+  bif_define_typed ("xmlforest_2", bif_xmlforest, &bt_any);
+  bif_define_typed ("xmlconcat", bif_xmlconcat, &bt_any);
   bif_define_typed ("serialize_to_UTF8_xml", bif_serialize_to_UTF8_xml, &bt_varchar);
-  bif_define_typed ("xte_expand_xmlns", bif_xte_expand_xmlns, &bt_xml_entity);
+  bif_define_typed ("xte_expand_xmlns", bif_xte_expand_xmlns, &bt_any);
   bif_define_typed ("xmlnss_get", bif_xmlnss_get, &bt_xml_entity);
   bif_define_typed ("xmlnss_xpath_pre", bif_xmlnss_xpath_pre, &bt_varchar);
 

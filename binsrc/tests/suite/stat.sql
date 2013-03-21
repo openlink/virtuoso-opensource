@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -88,7 +88,3 @@ stat_fill_counts_2 ();
 
 select sprintf ('%.1f%%', avg ((abs (cc_prec - cc_ex + 0.0) / cc_ex) * 100)) from stat_counts where cc_ex > 1000;
 echo BOTH "Average error = " $LAST[1] "\n";
-
-
-
-

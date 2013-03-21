@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -122,7 +122,6 @@ typedef struct blob_layout_s blob_layout_t;
 
 void bh_free (blob_handle_t * bh);
 
-caddr_t  box_iri_id (int64 n);
 void iri_id_write (iri_id_t *iid, dk_session_t * ses);
 
 void blobio_init (void);
@@ -147,8 +146,6 @@ int bh_read_ahead (struct lock_trx_s *lt, blob_handle_t * bh, unsigned from, uns
 
 int rbs_length (db_buf_t rbs);
 void rbs_hash_range (dtp_t ** buf, int * len, int * is_string);
-int64 rbs_ro_id (db_buf_t rbs);
-
 extern caddr_t rb_copy (rdf_box_t * rb);
 extern void rb_complete (rdf_box_t * rb, struct lock_trx_s * lt, void * /*actually query_instance_t * */ caller_qi);
 extern void rb_complete_1 (rdf_box_t * rb, struct lock_trx_s * lt, void * /*actually query_instance_t * */ caller_qi, int is_local);

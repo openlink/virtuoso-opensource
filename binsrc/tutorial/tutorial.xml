@@ -3,7 +3,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -220,6 +220,12 @@
 					<example id="UD-S-2" fspath="services/ud_s_2"></example>
 					<example id="UD-S-3" fspath="services/ud_s_3"></example>
 	      </group>
+              <group Title="Domain check and registration Services">
+                                        <example id="DC-S-1" fspath="services/dc_s_1"></example>
+              </group>
+              <group Title="WebID Identity Provider (IdP)">
+                                        <example id="IdP-S-1" fspath="services/idp_s_1"></example>
+              </group>
       </group>
     </subsection>
     <subsection Title="Wireless Access Protocols" fspath="wap">

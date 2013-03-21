@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -97,48 +97,48 @@ vt_inc_index_DB_DBA_XML_TEXT2 ();
 select xtree_doc (XT_TEXT) from XML_TEXT2 where XT_FILE = 'ce.xml';
 
 select t from XML_TEXT2 where xpath_contains (XT_TEXT, '//title', t);
-echo both $if $equ $rowcnt 792 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " rows in xpath_contains //title\n";
+ECHO BOTH $IF $EQU $ROWCNT 792 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows in xpath_contains //title\n";
 
 select t from XML_TEXT2 where xpath_contains (XT_TEXT, '//title [. like ''%ISOLATION%'' ]', t);
-echo both $if $equ $rowcnt 4 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " rows in xpath_contains //title [. like '%ISOLATION%' ]\n";
-echo both $if $equ $last[1]  "<title>SQL_TXN_ISOLATION</title>" "PASSED" "*** FAILED";
-echo both ": " $last[1] " last row in xpath_contains //title [. like '%ISOLATION%' ]\n";
+ECHO BOTH $IF $EQU $ROWCNT 4 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows in xpath_contains //title [. like '%ISOLATION%' ]\n";
+ECHO BOTH $IF $EQU $LAST[1]  "<title>SQL_TXN_ISOLATION</title>" "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " last row in xpath_contains //title [. like '%ISOLATION%' ]\n";
 
 select t from XML_TEXT2 where xpath_contains (XT_TEXT, '//title [.=''ISOLATION'' ]', t);
-echo both $if $equ $rowcnt 2 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " rows in xpath_contains //title [.='ISOLATION' ]\n";
+ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows in xpath_contains //title [.='ISOLATION' ]\n";
 
 select t from XML_TEXT2 where xpath_contains (XT_TEXT, '//title [. like ''%ISOLATION%'' ]/ancestor::*/title', t);
-echo both $if $equ $rowcnt 16 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " rows in xpath_contains //title [. like '%ISOLATION%' ]/ancestor::*/title\n";
+ECHO BOTH $IF $EQU $ROWCNT 16 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows in xpath_contains //title [. like '%ISOLATION%' ]/ancestor::*/title\n";
 
 select t from XML_TEXT2 where xpath_contains (XT_TEXT, '//title [.=''ISOLATION'' ]/ancestor::*/title', t);
-echo both $if $equ $rowcnt 7 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " rows in xpath_contains //title [.='ISOLATION' ]/ancestor::*/title\n";
--- echo both $if $equ $last[1] "<title>SQL Reference</title>" "PASSED" "*** FAILED";
--- echo both ": " $last[1] " last row in xpath_contains //title [. like '%ISOLATION%' ]/ancestor::*/title\n";
+ECHO BOTH $IF $EQU $ROWCNT 7 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows in xpath_contains //title [.='ISOLATION' ]/ancestor::*/title\n";
+-- ECHO BOTH $IF $EQU $LAST[1] "<title>SQL Reference</title>" "PASSED" "***FAILED";
+-- ECHO BOTH ": " $LAST[1] " last row in xpath_contains //title [. like '%ISOLATION%' ]/ancestor::*/title\n";
 
 select t from XML_TEXT2 where xpath_contains (XT_TEXT, '//chapter/title', t);
-echo both $if $equ $rowcnt 20 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " rows in xpath_contains //chapter/title\n";
---echo both $if $equ $last[1] "<title>Virtual Database Concepts</title>" "PASSED" "*** FAILED";
---echo both ": " $last[1] " last row in xpath_contains //chapter/title\n";
+ECHO BOTH $IF $EQU $ROWCNT 20 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows in xpath_contains //chapter/title\n";
+--ECHO BOTH $IF $EQU $LAST[1] "<title>Virtual Database Concepts</title>" "PASSED" "***FAILED";
+--ECHO BOTH ": " $LAST[1] " last row in xpath_contains //chapter/title\n";
 
 select t from XML_TEXT2 where xpath_contains (XT_TEXT, '//chapter/title[position () = 1]', t);
-echo both $if $equ $rowcnt 20 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " rows in xpath_contains //chapter/title[position () = 1]\n";
--- echo both $if $equ $last[1] "<title>International character support and compatibility</title>" "PASSED" "*** FAILED";
--- echo both ": " $last[1] " last row in xpath_contains //chapter/title[position () = 1]\n";
+ECHO BOTH $IF $EQU $ROWCNT 20 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows in xpath_contains //chapter/title[position () = 1]\n";
+-- ECHO BOTH $IF $EQU $LAST[1] "<title>International character support and compatibility</title>" "PASSED" "***FAILED";
+-- ECHO BOTH ": " $LAST[1] " last row in xpath_contains //chapter/title[position () = 1]\n";
 
 select count (*) from XML_TEXT2 where xpath_contains (XT_TEXT, '//chapter//para[position () > 10]', t);
-echo both $if $equ $last[1] 6 "PASSED" "*** FAILED";
-echo both ": " $last[1] " rows in xpath_contains //chapter//para[position () > 10]\n";
+ECHO BOTH $IF $EQU $LAST[1] 6 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " rows in xpath_contains //chapter//para[position () > 10]\n";
 
 select count (*) from XML_TEXT2 where xpath_contains (XT_TEXT, '//chapter/descendant::para[position () > 10]', t);
-echo both $if $equ $last[1] 1630 "PASSED" "*** FAILED";
-echo both ": " $last[1] " rows in xpath_contains //chapter/descendant::para[position () > 10]\n";
+ECHO BOTH $IF $EQU $LAST[1] 1630 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " rows in xpath_contains //chapter/descendant::para[position () > 10]\n";
 
 select c from XML_TEXT2 where xpath_contains (XT_TEXT, '//customer[.//product/@unit_price > 20]/@name', c);
 
@@ -148,8 +148,8 @@ select p from XML_TEXT2 where xpath_contains (XT_TEXT, '(document/category/produ
 select p from XML_TEXT2 where xpath_contains (XT_TEXT, '(document/category/product)[position () > 22 and position() < 33]', p);
 
 select count (*) from XML_TEXT2 where XT_ID = 1 and xpath_contains (XT_TEXT, '1 > 2 != 2 > 1');
-echo both $if $equ $last[1] 1 "PASSED" "*** FAILED";
-echo both ": " $last[1] " rows in xpath_contains 1 > 2 != 2 > 1\n";
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " rows in xpath_contains 1 > 2 != 2 > 1\n";
 
 
 select p from XML_TEXT2 where xpath_contains (XT_TEXT, '[xmlns:r="http://www.w3.org/TR/RDF/"]//*[@r:id = "Top"]', p);
@@ -157,10 +157,10 @@ select p from XML_TEXT2 where xpath_contains (XT_TEXT, '[xmlns:r="http://www.w3.
 
 
 select SCORE, XT_FILE from XML_TEXT2 where contains (XT_TEXT, '"case sensitive"');
-echo both $if $equ $rowcnt 3 "PASSED" "*** FAILED";
-echo both ": " $rowcnt " rows in contains case sensitive\n";
-echo both $if $equ $last[1] 176 "PASSED" "*** FAILED";
-echo both ": " $last[1] " last score in contains case sensitive\n";
+ECHO BOTH $IF $EQU $ROWCNT 3 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT " rows in contains case sensitive\n";
+ECHO BOTH $IF $EQU $LAST[1] 176 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " last score in contains case sensitive\n";
 
 select SCORE, XT_FILE from XML_TEXT2 where contains (XT_TEXT, '"case sensitive"') order by XT_ID desc;
 
@@ -200,4 +200,3 @@ select n from XML_TEXT2 where xpath_contains (XT_TEXT, '//product [contains (@Pr
 
 
 select n from XML_TEXT2 where xpath_contains (XT_TEXT, '//product [string-length (@ProductName) > 25]', n);
-

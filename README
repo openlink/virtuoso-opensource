@@ -1,7 +1,7 @@
 Virtuoso Open-Source Edition: Building
 ======================================
 
-Copyright (C) 1998-2010 OpenLink Software <vos.admin@openlinksw.com>
+Copyright (C) 1998-2013 OpenLink Software <vos.admin@openlinksw.com>
 
 
 Table of Contents
@@ -34,6 +34,9 @@ Table of Contents
  * .... Mac OS X 10.6 32-bit
  * .... Mac OS X 10.6 64-bit
  * .... Mac OS X 10.6 Universal
+ * .... Mac OS X 10.7 32-bit
+ * .... Mac OS X 10.7 64-bit
+ * .... Mac OS X 10.7 Universal
  * .... Solaris 2.x i386 32-bit
  * .... Solaris 2.10 Opteron 32-bit
  * .... Solaris 2.10 Opteron 64-bit
@@ -49,7 +52,7 @@ Introduction
 ============
 
 This document explains steps to take after obtaining a Virtuoso source
-snapshot or cvs checkout.
+snapshot or git clone.
 
 These sections explain how to compile, test and install and what
 components are produced by the make process and how one can interact
@@ -140,7 +143,7 @@ Make FAQ
 
 In the root directory of the checkout perform the following commands:
 
-    ./autogen.sh        # should only be needed in CVS checkout
+    ./autogen.sh        # should only be needed in git clone
     ./configure
     make
 
@@ -310,6 +313,24 @@ Mac OS X 10.6 64-bit
 Mac OS X 10.6 Universal 
 -----------------------
     CFLAGS="-O -isysroot /Developer/SDKs/MacOSX10.6.sdk -arch i386 -arch x86_64 -mmacosx-version-min=10.6"
+    export CFLAGS
+    ./configure --disable-dependency-tracking ...
+
+Mac OS X 10.7 32-bit
+--------------------
+    CFLAGS="-O -m32 -mmacosx-version-min=10.7"
+    export CFLAGS
+    ./configure ...
+
+Mac OS X 10.7 64-bit
+--------------------
+    CFLAGS="-O -m64 -mmacosx-version-min=10.7"
+    export CFLAGS
+    ./configure ...
+
+Mac OS X 10.7 Universal 
+-----------------------
+    CFLAGS="-O -arch i386 -arch x86_64 -mmacosx-version-min=10.7"
     export CFLAGS
     ./configure --disable-dependency-tracking ...
 

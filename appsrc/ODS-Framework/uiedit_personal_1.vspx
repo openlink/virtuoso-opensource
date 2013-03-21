@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -133,7 +133,7 @@
         self.s_photo.ufl_value := '';
         return;
       }
-      if (get_keyword ('up_photo', params, '') <> '' or (self.previe_path <> '' and self.s_photo.ufl_value <> ''))
+      if ((get_keyword ('up_photo', params, '') <> '') or (self.previe_path <> '' and self.s_photo.ufl_value <> ''))
       {
         declare dir, p_path, p_path_org, dotpos, up_cont any;
         declare p_path_size2 any;
@@ -195,10 +195,13 @@
           p_path := subseq (p_path, 4);
         WA_USER_EDIT (self.u_name, 'WAUI_PHOTO_URL', p_path);
       }
-      else
+      else if ((get_keyword ('s_photo', params) like 'http://%') or (get_keyword ('s_photo', params) like 'https://%'))
       {
-        if (get_keyword ('s_photo', params, '') = '')
-          WA_USER_EDIT (self.u_name, 'WAUI_PHOTO_URL', '');
+        WA_USER_EDIT (self.u_name, 'WAUI_PHOTO_URL', get_keyword ('s_photo', params));
+      }
+      else if (get_keyword ('s_photo', params) = '')
+      {
+        WA_USER_EDIT (self.u_name, 'WAUI_PHOTO_URL', '');
       }
       if (get_keyword ('up_audio', params, '') <> '')
       {
@@ -254,7 +257,13 @@
       self.storePersonal_1();
       WA_USER_EDIT (self.u_name, 'WAUI_INTEREST_TOPICS', self.interestTopics);
       WA_USER_EDIT (self.u_name, 'WAUI_INTERESTS', self.interests);
-      WA_USER_EDIT (self.u_name, 'WAUI_FOAF', self.efoaf);
+
+      delete from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_NAME = 'webid' and WUO_TYPE = 'P' and WUO_U_ID = self.u_id;
+      for (select _iri, _public from DB.DBA.WA_USER_INTERESTS (txt) (_iri varchar, _public varchar) P where txt = self.efoaf) do
+      {
+        insert into DB.DBA.WA_USER_OL_ACCOUNTS (WUO_U_ID, WUO_TYPE, WUO_NAME, WUO_URL, WUO_URI, WUO_PUBLIC)
+          values (self.u_id, 'P', 'webid', _iri, _iri, _public);
+      }
 
       WA_USER_EDIT (self.u_name, 'WAUI_APP_ENABLE', atoi (self.app_enable.ufl_value));
       WA_USER_EDIT (self.u_name, 'WAUI_SPB_ENABLE', self.spb_enable.ufl_selected);
@@ -263,28 +272,28 @@
     ]]>
   </v:method>
 
-  <v:variable persist="0" name="utitle" type="varchar" default="''"/>
-  <v:variable persist="0" name="nick" type="varchar" default="''"/>
-  <v:variable persist="0" name="ftname" type="varchar" default="''"/>
-  <v:variable persist="0" name="lname" type="varchar" default="''"/>
-  <v:variable persist="0" name="fullname" type="varchar" default="''"/>
-  <v:variable persist="0" name="gender" type="varchar" default="''"/>
-  <v:variable persist="0" name="bdate" type="datetime" default="null"/>
+  <v:variable persist="0" name="utitle" type="varchar" default="''" />
+  <v:variable persist="0" name="nick" type="varchar" default="''" />
+  <v:variable persist="0" name="ftname" type="varchar" default="''" />
+  <v:variable persist="0" name="lname" type="varchar" default="''" />
+  <v:variable persist="0" name="fullname" type="varchar" default="''" />
+  <v:variable persist="0" name="gender" type="varchar" default="''" />
+  <v:variable persist="0" name="bdate" type="datetime" default="null" />
 
-  <v:variable persist="0" name="wpage" type="varchar" default="''"/>
-  <v:variable persist="0" name="efoaf" type="varchar" default="''"/>
-  <v:variable persist="0" name="msign" type="varchar" default="''"/>
-  <v:variable persist="0" name="summ" type="varchar" default="''"/>
-  <v:variable persist="0" name="email" type="varchar" default="''"/>
-  <v:variable persist="0" name="photo" type="varchar" default="''"/>
-  <v:variable persist="0" name="audio" type="varchar" default="''"/>
+  <v:variable persist="0" name="wpage" type="varchar" default="''" />
+  <v:variable persist="0" name="efoaf" type="varchar" default="''" />
+  <v:variable persist="0" name="msign" type="varchar" default="''" />
+  <v:variable persist="0" name="summ" type="varchar" default="''" />
+  <v:variable persist="0" name="email" type="varchar" default="''" />
+  <v:variable persist="0" name="photo" type="varchar" default="''" />
+  <v:variable persist="0" name="audio" type="varchar" default="''" />
 
-  <v:variable persist="0" name="inSearch" type="int" default="1"/>
-  <v:variable persist="0" name="showactive" type="int" default="1"/>
-  <v:variable persist="0" name="interests" type="varchar" default="''"/>
-  <v:variable persist="0" name="interestTopics" type="varchar" default="''"/>
-  <v:variable persist="0" name="appEnable" type="integer" default="0"/>
-  <v:variable persist="0" name="spbEnable" type="integer" default="0"/>
+  <v:variable persist="0" name="inSearch" type="int" default="1" />
+  <v:variable persist="0" name="showactive" type="int" default="1" />
+  <v:variable persist="0" name="interests" type="varchar" default="''" />
+  <v:variable persist="0" name="interestTopics" type="varchar" default="''" />
+  <v:variable persist="0" name="appEnable" type="integer" default="0" />
+  <v:variable persist="0" name="spbEnable" type="integer" default="0" />
 
   <v:variable name="sav0" type="varchar" default="'1'" />
   <v:variable name="sav1" type="varchar" default="'1'" />
@@ -316,7 +325,6 @@
              WAUI_GENDER,
              WAUI_BIRTHDAY,
              WAUI_WEBPAGE,
-             WAUI_FOAF,
              wa_utf8_to_wide (WAUI_MSIGNATURE),
              wa_utf8_to_wide (WAUI_SUMMARY),
              WAUI_PHOTO_URL,
@@ -336,7 +344,6 @@
              self.gender,
              self.bdate,
              self.wpage,
-             self.efoaf,
              self.msign,
              self.summ,
              self.photo,
@@ -356,6 +363,12 @@
 
       if (length (self.wpage) = 0)
         self.wpage := SIOC..person_iri (SIOC..user_obj_iri (self.u_name), '');
+
+      self.efoaf := '';
+      for (select WUO_URL, WUO_PUBLIC from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_NAME = 'webid' and WUO_TYPE = 'P' and WUO_U_ID = self.u_id) do
+      {
+        self.efoaf := self.efoaf || WUO_URL || ';' || cast (WUO_PUBLIC as varchar)  || '\n';
+      }
 
       declare tmp any;
 
@@ -406,16 +419,23 @@
     <div>
       <table class="ctl_grp">
         <tr>
+          <th>Account deactivation</th>
+          <td class="listing_col" nowrap="1">
+            <input type="button" value="Deactivate" onclick="return accountDisable('x_name');" />
+          </td>
+        </tr>
+        <tr>
           <th><label for="labelww">Login name</label></th>
           <td class="listing_col" nowrap="1">
-            <v:label value="--self.u_name" format="%s"/>
+            <v:label value="--self.u_name" format="%s" />
+            <v:text name="x_name" xhtml_id="x_name" type="hidden" value="--self.u_name" />
           </td>
         </tr>
         <tr>
           <th><label for="labelwwn">Nick name</label></th>
           <td class="listing_col" nowrap="1">
             <v:text name="nickn" value="--self.nick" format="%s">
-              <v:validator test="length" min="3" max="100" name="vv_nickn" message="Nick name cannot be shorter than 3 chars or longer than 100 chars"/>
+              <v:validator test="length" min="3" max="100" name="vv_nickn" message="Nick name cannot be shorter than 3 chars or longer than 100 chars" />
             </v:text>
           </td>
         </tr>
@@ -436,13 +456,13 @@
         <tr id="pers_1" class="initial_hidden">
           <th><label for="regtitle">Title</label></th>
           <td class="listing_col" nowrap="1">
-            <v:select-list name="regtitle">
-              <v:item name="" value=""/>
-              <v:item name="Mr" value="Mr"/>
-              <v:item name="Mrs" value="Mrs"/>
-              <v:item name="Dr" value="Dr"/>
-              <v:item name="Ms" value="Ms"/>
-              <v:item name="Sir" value="Sir"/>
+            <v:select-list name="regtitle" xhtml_id="regtitle">
+              <v:item name="" value="" />
+              <v:item name="Mr" value="Mr" />
+              <v:item name="Mrs" value="Mrs" />
+              <v:item name="Dr" value="Dr" />
+              <v:item name="Ms" value="Ms" />
+              <v:item name="Sir" value="Sir" />
 
               <v:before-data-bind>
                 <![CDATA[
@@ -458,8 +478,8 @@
           <th><label for="f_name">First Name</label></th>
           <td class="listing_col" nowrap="1">
             <v:text name="f_name" error-glyph="*" value="--self.ftname" xhtml_style="width:216px" fmt-function="wa_utf8_to_wide" xhtml_onblur="javascript: fillFullName (this.form.full_name, this.form.f_name, this.form.l_name, false)">
-              <v:validator test="length" min="0" max="50" name="vv_f_name1" message="First name cannot be longer then 50 chars" empty-allowed="1"/>
-              <v:validator test="sql" name="vv_f_name2" expression="length(trim(self.f_name.ufl_value)) > 50" message="First name cannot be longer then 50 chars" empty-allowed="1"/>
+              <v:validator test="length" min="0" max="50" name="vv_f_name1" message="First name cannot be longer then 50 chars" empty-allowed="1" />
+              <v:validator test="sql" name="vv_f_name2" expression="length(trim(self.f_name.ufl_value)) > 50" message="First name cannot be longer then 50 chars" empty-allowed="1" />
             </v:text>
             <div style="display:inline; color:red;"><v:error-summary match="f_name" /></div>
             <vm:u-prop-select name="sel_1" value="self.sav1" />
@@ -469,8 +489,8 @@
           <th><label for="l_name">Last Name</label></th>
           <td class="listing_col" nowrap="1">
             <v:text name="l_name" error-glyph="*" value="--self.lname" xhtml_style="width:216px" fmt-function="wa_utf8_to_wide" xhtml_onblur="javascript: fillFullName (this.form.full_name, this.form.f_name, this.form.l_name, false)">
-              <v:validator test="length" min="0" max="50" message="Last name cannot be longer then 50 chars" empty-allowed="1" name="vv_lname1"/>
-              <v:validator test="sql" expression="length(trim(self.l_name.ufl_value)) > 50" name="vv_lname2" message="Last name cannot be longer then 50 chars" empty-allowed="1"/>
+              <v:validator test="length" min="0" max="50" message="Last name cannot be longer then 50 chars" empty-allowed="1" name="vv_lname1" />
+              <v:validator test="sql" expression="length(trim(self.l_name.ufl_value)) > 50" name="vv_lname2" message="Last name cannot be longer then 50 chars" empty-allowed="1" />
             </v:text>
             <div style="display:inline; color:red;"><v:error-summary match="l_name" /></div>
             <vm:u-prop-select name="sel_2" value="self.sav2" />
@@ -481,7 +501,7 @@
           <td class="listing_col" nowrap="1">
             <v:text name="full_name" error-glyph="*" value="--self.fullname" xhtml_style="width:216px" fmt-function="wa_utf8_to_wide" xhtml_onfocus="javascript: fillFullName (this.form.full_name, this.form.f_name, this.form.l_name, true)">
               <v:validator test="length" min="0" max="100" name="vv_fulname1" message="Full name cannot be longer then 100 chars" empty-allowed="1" />
-              <v:validator test="sql" expression="length(trim(self.full_name.ufl_value)) > 100" name="vv_fulname2" message="Full name cannot be longer then 100 chars" mpty-allowed="1"/>
+              <v:validator test="sql" expression="length(trim(self.full_name.ufl_value)) > 100" name="vv_fulname2" message="Full name cannot be longer then 100 chars" mpty-allowed="1" />
             </v:text>
             <div style="display:inline; color:red;"><v:error-summary match="full_name" /></div>
             <vm:u-prop-select name="sel_3" value="self.sav3" />
@@ -500,9 +520,9 @@
           <th><label for="regender">Gender</label></th>
           <td class="listing_col" nowrap="1">
             <v:select-list name="regender">
-              <v:item name="Not Specified" value="unknown"/>
-              <v:item name="Male" value="male"/>
-              <v:item name="Female" value="female"/>
+              <v:item name="Not Specified" value="unknown" />
+              <v:item name="Male" value="male" />
+              <v:item name="Female" value="female" />
               <v:before-data-bind>
                 <v:script><![CDATA[
                   control.ufl_value := self.gender;
@@ -516,14 +536,14 @@
         <tr id="pers_5" class="initial_hidden">
           <th><label for="regbday">Birthday</label></th>
           <td class="listing_col" nowrap="1">
-            <v:text name="regbdate" xhtml_id="regbdate" value="--case when isnull (self.bdate) then '' else left (datestring (self.bdate), 10) end" xhtml_size="10" xhtml_onclick="javascript: datePopup(\'regbdate\');"/>
+            <v:text name="regbdate" xhtml_id="regbdate" value="--case when isnull (self.bdate) then '' else left (datestring (self.bdate), 10) end" xhtml_size="10" xhtml_onclick="javascript: datePopup(\'regbdate\');" />
             <vm:u-prop-select name="sel_6" value="self.sav6" />
           </td>
         </tr>
          <tr>
            <th><label for="w_page" id="lb_1">Personal Webpage</label></th>
            <td class="listing_col" nowrap="1">
-             <v:text name="w_page" value="--self.wpage" xhtml_class="_validate_ _url_ _canEmpty_" xhtml_style="width:216px" xhtml_onblur="javascript: validateField(this);"/>
+             <v:text name="w_page" value="--self.wpage" xhtml_class="_validate_ _url_ _canEmpty_" xhtml_style="width:216px" xhtml_onblur="javascript: validateField(this);" />
              <vm:u-prop-select name="sel_7" value="self.sav7" />
            </td>
          </tr>
@@ -573,15 +593,15 @@
            <th><label for="m_sign">Mail Signature<span class="small">Automatically added to mails sent by you</span></label></th>
            <td class="listing_col" nowrap="1">
              <v:textarea name="m_sign" value="--self.msign" xhtml_rows="4" xhtml_cols="80" fmt-function="wa_utf8_to_wide" error-glyph="*">
-               <v:validator test="length" min="0" max="255" name="vv_m_sign1" message="Mail Signature cannot be longer then 255 chars" empty-allowed="1"/>
+               <v:validator test="length" min="0" max="255" name="vv_m_sign1" message="Mail Signature cannot be longer then 255 chars" empty-allowed="1" />
              </v:textarea>
-             <v:text type="hidden" name="sel_9" value="3"/>
+             <v:text type="hidden" name="sel_9" value="3" />
            </td>
          </tr>
          <tr>
            <th><label for="s_summ">Summary</label></th>
            <td class="listing_col" nowrap="1">
-             <v:textarea name="s_summ" value="--self.summ" xhtml_rows="4" xhtml_cols="80" fmt-function="wa_utf8_to_wide" error-glyph="*"/>
+             <v:textarea name="s_summ" value="--self.summ" xhtml_rows="4" xhtml_cols="80" fmt-function="wa_utf8_to_wide" error-glyph="*" />
              <vm:u-prop-select name="sel_33" value="self.sav33" />
            </td>
          </tr>
@@ -592,7 +612,7 @@
           <td class="listing_col" nowrap="1">
             <v:textarea name="s_tag" value="--WA_USER_TAG_GET(self.u_name)" xhtml_cols="50" xhtml_rows="5" />
             <v:button action="browse" name="tagsbt" value="Import Tags..." selector="get_tags_popup.vspx" child-window-options="scrollbar=yes,resizable=yes,menubar=no,height=600,width=800">
-              <v:field name="s_tag"/>
+              <v:field name="s_tag" />
             </v:button>
           </td>
          </tr>
@@ -789,9 +809,9 @@
            </th>
            <td>
              <v:select-list xhtml_class="select" name="app_enable" xhtml_id="app_enable">
-               <v:item value="0" name="disabled"/>
-               <v:item value="1" name="click"/>
-               <v:item value="2" name="hover"/>
+               <v:item value="0" name="disabled" />
+               <v:item value="1" name="click" />
+               <v:item value="2" name="hover" />
                <v:before-data-bind>
                  <v:script>
                    <![CDATA[

@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -223,25 +223,25 @@ ECHO BOTH ": " $LAST[1] " rows in remote x remote natural join\n";
 
 
 select (select count (*) from R1..T1 where ROW_NO < 110) from R1..T1 where ROW_NO < 110;
-echo both $if $equ $last[1] 10 "PASSED" "***FAILED";
-echo both ": " $last[1] " count of remote scalar subq #1.\n";
+ECHO BOTH $IF $EQU $LAST[1] 10 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " count of remote scalar subq #1.\n";
 
 select (select count (*) from R1..T1 where ROW_NO < n_identity (110)) from R1..T1 where ROW_NO < 110;
-echo both $if $equ $last[1] 10 "PASSED" "***FAILED";
-echo both ": " $last[1] " count of remote scalar subq #2.\n";
+ECHO BOTH $IF $EQU $LAST[1] 10 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " count of remote scalar subq #2.\n";
 
 create view TU as select ROW_NO, FI2 from T1 union all select ROW_NO, FI2 from R1..T1;
 
 select count (*) from TU A where ROW_NO < 300 and exists (select 1 from TU B where A.ROW_NO = B.ROW_NO);
-echo both $if $equ $last[1] 200 "PASSED" "***FAILED";
-echo both " " $last[1] " from union view as an existence predicate\n";
+ECHO BOTH $IF $EQU $LAST[1] 200 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " from union view as an existence predicate\n";
 
 
 
 
 select ROW_NO, T1_UN.ROW_NO, DBA.T1_UN.ROW_NO, DB.DBA.T1_UN.ROW_NO  from T1_UN where ROW_NO = 111;
-echo both $if $equ $last[1] 111 "PASSED" "***FAILED";
-echo both " " $last[1] " from funny correlated ref to union view col\n";
+ECHO BOTH $IF $EQU $LAST[1] 111 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " from funny correlated ref to union view col\n";
 
 create view T1_FR3 as
        select ROW_NO, STRING1, STRING2, FI2  from R1..T1 where ROW_NO < 120
@@ -250,25 +250,25 @@ create view T1_FR3 as
 
 
 select ROW_NO from T1_FR3 where ROW_NO < 1200;
-echo both $if $equ $rowcnt 40 "PASSED" "***FAILED";
-echo both " " $rowcnt  " rows  in t1_fr3 < 1200\n";
+ECHO BOTH $IF $EQU $ROWCNT 40 "PASSED" "***FAILED";
+ECHO BOTH ": " $ROWCNT  " rows  in t1_fr3 < 1200\n";
 
 select count (*) from T1_FR3;
-echo both $if $equ$last[1] 61 "PASSED" "***FAILED";
-echo both " " $last[1] " count of t1_fr3\n";
+ECHO BOTH $IF $EQU$LAST[1] 61 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " count of t1_fr3\n";
 
 select max (ROW_NO) as xx from T1_FR3 where ROW_NO < 1200;
-echo both $if $equ $last[1] 1099 "PASSED" "***FAILED";
-echo both " " $last[1] " max row_no  of t1_fr3 where row_no < 1200 \n";
+ECHO BOTH $IF $EQU $LAST[1] 1099 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " max row_no  of t1_fr3 where row_no < 1200 \n";
 
 select FI2, max (ROW_NO) from T1_FR3 group by FI2 order by FI2 desc;
-echo both $if $equ$last[1] 1111 "PASSED" "***FAILED";
-echo both " " $last[1] "  fi2 from t1_fr3 gb, ob fi2 desc\n";
+ECHO BOTH $IF $EQU$LAST[1] 1111 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] "  fi2 from t1_fr3 gb, ob fi2 desc\n";
 
 
 select FI2, max (ROW_NO) as xx from T1_FR3 group by FI2 having xx > 3000 order by FI2 desc;
-echo both $if $equ$last[1] 1111 "PASSED" "***FAILED";
-echo both " " $last[1] "  fi2 from t1_fr3 gb,having max > 3000  ob fi2 desc\n";
+ECHO BOTH $IF $EQU$LAST[1] 1111 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] "  fi2 from t1_fr3 gb,having max > 3000  ob fi2 desc\n";
 
 
 
@@ -276,6 +276,3 @@ echo both " " $last[1] "  fi2 from t1_fr3 gb,having max > 3000  ob fi2 desc\n";
 -- End of test
 --
 ECHO BOTH "COMPLETED: Remote test 2 (rtest2.sql) WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";
-
-
-

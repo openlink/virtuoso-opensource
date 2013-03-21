@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1110,6 +1110,19 @@ DBG_NAME (strses_string) (DBG_PARAMS dk_session_t * ses)
 
 
 caddr_t
+DBG_NAME (strses_wide_string) (DBG_PARAMS dk_session_t * ses)
+{
+  int64 len = strses_length (ses);
+  caddr_t box;
+  if (NULL == (box = DBG_NAME (dk_alloc_box) (DBG_ARGS len + sizeof (wchar_t), DV_WIDE)))
+    return NULL;
+  strses_to_array (ses, box);
+  ((wchar_t *)(box+len))[0] = 0;
+  return box;
+}
+
+
+caddr_t
 t_strses_string (dk_session_t * ses)
 {
   int64 len = strses_length (ses);
@@ -1655,6 +1668,14 @@ caddr_t
 strses_string (dk_session_t * ses)
 {
   return dbg_strses_string (__FILE__, __LINE__, ses);
+}
+
+
+#undef strses_wide_string
+caddr_t
+strses_wide_string (dk_session_t * ses)
+{
+  return dbg_strses_wide_string (__FILE__, __LINE__, ses);
 }
 #endif
 

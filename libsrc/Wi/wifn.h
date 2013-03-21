@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -41,18 +41,11 @@ extern numeric_t num_int64_max;
 extern numeric_t num_int64_min;
 void db_buf_length  (unsigned char * buf, long * head_ret, long * len_ret);
 int box_serial_length (caddr_t box, dtp_t dtp);
-int rb_serial_length (caddr_t x);
-
-extern signed char db_buf_const_length [256];
+extern short db_buf_const_length [256];
 extern dtp_t dtp_canonical[256];
-extern signed char  db_ce_const_length[256];
-extern dtp_t dv_ce_dtp[256];
-extern unsigned int32 byte_bits[256];
-
 
 int  dv_composite_cmp (db_buf_t dv1, db_buf_t dv2, collation_t * coll);
 int dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t *collation, unsigned short offset);
-int dv_compare_so (db_buf_t dv1, db_buf_t dv2, collation_t *collation, int64 offset);
 int dv_compare_box (db_buf_t dv1, caddr_t box, collation_t *collation);
 int pg_key_compare (buffer_desc_t * buf, int pos, it_cursor_t * it);
 int pg_insert_key_compare (buffer_desc_t * buf, int pos, it_cursor_t * it);
@@ -98,7 +91,7 @@ void itc_prev_entry (it_cursor_t * it, buffer_desc_t * buf);
 
 int itc_search (it_cursor_t * it, buffer_desc_t ** buf_ret);
 void itc_restart_search (it_cursor_t * it, buffer_desc_t ** buf);
-int itc_row_check (it_cursor_t * itc, buffer_desc_t * buf);
+
 int itc_page_search (it_cursor_t * it, buffer_desc_t ** buf_ret,
 		     dp_addr_t * leaf_ret, int skip_first_key_cmp);
 int itc_page_insert_search (it_cursor_t * it, buffer_desc_t ** buf);
@@ -109,8 +102,6 @@ void itc_clear_stats (it_cursor_t *it);
 void itc_from_keep_params (it_cursor_t * it, dbe_key_t * key);
 void itc_from_it (it_cursor_t * itc, index_tree_t * it);
 int itc_next (it_cursor_t * it, buffer_desc_t ** buf_ret);
-int itc_next_set (it_cursor_t * itc, buffer_desc_t ** buf_ret);
-int64 itc_sample_1 (it_cursor_t * it, buffer_desc_t ** buf_ret, int64 * n_leaves_ret, int angle);
 int64 itc_sample (it_cursor_t * it);
 int64 itc_local_sample (it_cursor_t * it);
 unsigned int64 key_count_estimate (dbe_key_t * key, int n_samples, int upd_col_stats);
@@ -142,49 +133,13 @@ void itc_sqlr_new_error (it_cursor_t * itc, buffer_desc_t * buf, const char * co
 
 #define DB_BUF_TLEN(len, dtp, ptr) \
   len = db_buf_const_length [dtp]; \
-  if ((int)len < 0) len = (ptr) [1] + 2;	\
+  if (len == -1) len = (ptr) [1] + 2; \
   else if (len == 0) { \
     long __l, __hl; \
     db_buf_length (ptr, &__hl, &__l); \
     len = (int) (__hl + __l); \
   }
 
-
-#if WORDS_BIGENDIAN
-#error DV_EQ must have big endia def
-#else
-#define DV_EQ(p1, p2, neq) \
-{ \
-db_buf_t dv1 = (db_buf_t)p1, dv2 = (db_buf_t)p2; \
-  uint64 w1 = *(int64*)dv1; \
-  uint64 xo = w1 ^ *(int64*)dv2; \
-  int l = db_buf_const_length[(dtp_t)w1];	\
-  if (l < 0) \
-    { \
-      l = 2 + (int)(dtp_t)(w1 >> 8); \
-    } \
-  else if (l == 0) \
-    { long l2, hl2; \
-      db_buf_length (dv1, &l2, &hl2); \
-      l = l2 + hl2; \
-    } \
-  if (l >= 8) \
-	{ \
-	  if (xo) goto neq; \
-	  dv1 += 8; \
-	  dv2 += 8; \
-	  l -= 8; \
-	  memcmp_8 (dv1, dv2, l, neq); \
-	} \
-  else  \
-    { \
-      if (xo & (((int64)1 << (l << 3)) - 1)) \
-	goto neq; \
-    } \
-}
-#endif
-
-int dv_bin_equal (db_buf_t dv1, db_buf_t dv2);
 int buf_check_deleted_refs (buffer_desc_t * buf, int do_gpf);
 void itc_set_last_safe (it_cursor_t * it, buffer_desc_t * buf);
 void itc_from_dyn_sp (it_cursor_t * it, dbe_key_t * key);
@@ -196,9 +151,6 @@ void itc_read_ahead_blob (it_cursor_t * itc, struct ra_req_s *ra, int flags);
 
 void itc_read_ahead (it_cursor_t * itc, buffer_desc_t ** buf_ret);
 struct ra_req_s * itc_read_aside (it_cursor_t * itc, buffer_desc_t * buf, dp_addr_t dp);
-int em_trigger_ra (extent_map_t * em, dp_addr_t ext_dp, uint32 now, int window, int threshold);
-int em_ext_ra_pages (extent_map_t * em, it_cursor_t * itc, dp_addr_t ext_dp, dp_addr_t * leaves, int max, dp_addr_t except_dp, dk_hash_t * except);
-
 void dbs_timeout_read_history (dbe_storage_t * dbs);
 
 
@@ -278,32 +230,12 @@ buffer_desc_t * page_try_transit (it_cursor_t * it, buffer_desc_t * from,
 void it_wait_no_io_pending (void);
 
 void page_leave_as_deleted (buffer_desc_t * buf);
-void pa_page_leave (it_cursor_t * itc, buffer_desc_t * buf, int chg);
 
 /* void itc_page_leave (it_cursor_t *, buffer_desc_t * buf); */
 #define itc_page_leave(it, buf) \
 { \
   ITC_IN_KNOWN_MAP ((it), (buf)->bd_page);			\
   if ((buf)->bd_page != (it)->itc_page) GPF_T1 ("itc_page_leave has different bd_page and itc_page"); \
-  page_leave_inner ((buf));			\
-  ITC_LEAVE_MAP_NC ((it));			\
-}
-
-void itc_register_safe (it_cursor_t * itc, buffer_desc_t * buf);
-
-#define itc_register_and_leave(it, buf) \
-{ \
-  if ((buf)->bd_page != (it)->itc_page) GPF_T1 ("itc_page_leave has different bd_page and itc_page"); \
-  if (buf->bd_is_write) \
-    { \
-      itc_register (it, buf); \
-      ITC_IN_KNOWN_MAP ((it), (buf)->bd_page);			\
-    } \
-  else \
-    {\
-      ITC_IN_KNOWN_MAP ((it), (buf)->bd_page);			\
-      itc_register_safe (it, buf); \
-} \
   page_leave_inner ((buf));			\
   ITC_LEAVE_MAP_NC ((it));			\
 }
@@ -341,15 +273,6 @@ void itc_unregister_inner (it_cursor_t * itc, buffer_desc_t * buf, int is_transi
 void itc_unregister_while_on_page (it_cursor_t * it_in, it_cursor_t * preserve_itc, buffer_desc_t ** preserve_buf);
 
 
-/* read.c */
-int itc_dive_read_hook (it_cursor_t * itc, buffer_desc_t * buf_from, dp_addr_t dp);
-int itc_col_read_hook (it_cursor_t * itc, buffer_desc_t * buf_from, dp_addr_t dp);
-void itc_set_siblings (it_cursor_t * itc, buffer_desc_t * buf_from, dp_addr_t dp);
-void
-itc_check_col_prefetch (it_cursor_t * itc, buffer_desc_t * buf);
-extern int rn_n_col_leaves;
-
-
 /* disk.c */
 
 int word_free_bit (dp_addr_t w);
@@ -368,8 +291,7 @@ dp_addr_t bd_phys_page_key (buffer_desc_t * b);
 typedef int (*sort_cmp_func_t)(int n1, int n2, void * cd);
 void gen_qsort (int * in, int * left,
 	   int n_in, int depth, sort_cmp_func_t cmp, void* cd);
-void gen_qmsort (int * in, int * left,
-	    int n_in, sort_cmp_func_t cmp, void* cd, int key_bytes);
+
 
 int bp_buf_enter (buffer_desc_t * buf, it_map_t ** itm_ret);
 buffer_desc_t * bp_get_buffer_1  (buffer_pool_t * bp, buffer_pool_t ** pool_for_action, int mode);
@@ -386,9 +308,7 @@ void buf_recommend_reuse (buffer_desc_t * buf);
 
 int buf_disk_read (buffer_desc_t * buf);
 void buf_disk_write (buffer_desc_t * buf, dp_addr_t phy_dp_to);
-disk_stripe_t * dp_disk_locate (dbe_storage_t * dbs, dp_addr_t target, OFF_T * place, int is_write, ext_ref_t * ref);
-int dst_fd (disk_stripe_t * dst);
-void dst_fd_done (disk_stripe_t * dst, int fd, ext_ref_t * er);
+disk_stripe_t * dp_disk_locate (dbe_storage_t * dbs, dp_addr_t target, OFF_T * place);
 
 long dbs_count_pageset_items (dbe_storage_t * dbs, buffer_desc_t** ppage_set);
 long dbs_count_free_pages (dbe_storage_t * dbs);
@@ -515,6 +435,7 @@ index_tree_t * it_allocate (dbe_storage_t *);
 index_tree_t * it_temp_allocate (dbe_storage_t *);
 void it_temp_free (index_tree_t * it);
 int it_temp_tree (index_tree_t * it);
+void it_free (index_tree_t * it);
 #if !defined (__APPLE__)
 void it_not_in_any (du_thread_t * self, index_tree_t * except);
 #endif
@@ -529,15 +450,7 @@ int buf_set_dirty_inside (buffer_desc_t * buf);
 #define buf_set_dirty_inside(b)  ((b)->bd_is_dirty = 1)
 #endif
 
-#ifdef CL6
-#ifdef MTX_DEBUG
-void cl_enlist_ck (it_cursor_t * itc);
-#else
-#define cl_enlist_ck(itc)
-#endif
-#else
 #define cl_enlist_ck(it)
-#endif
 
 void wi_new_dirty (buffer_desc_t * buf);
 
@@ -551,20 +464,17 @@ void sch_save_roots (dbe_schema_t * sc);
 
 /* space.h */
 
-extent_map_t * buf_em (buffer_desc_t * buf);
+
 buffer_desc_t * itc_delta_this_buffer (it_cursor_t * itc, buffer_desc_t * buf, int stay_in_map);
 #define DELTA_STAY_INSIDE 1
 #define DELTA_MAY_LEAVE 0
 
-#define IT_COL_REMAP_EM(it, col_id) it->it_extent_map
 
-#define IT_COL_EM(it, col_id) \
-  ((col_id && it->it_col_extent_maps) ? ((extent_map_t*)gethash ((void*)(ptrlong)col_id, it->it_col_extent_maps)) \
-  : it->it_extent_map)
+
 
 dbe_schema_t * isp_schema_1 (void * thr);
 #define isp_schema(x) (wi_inst.wi_schema)
-buffer_desc_t * it_new_page (index_tree_t * isp, dp_addr_t nearxx, int type, oid_t col_id, it_cursor_t * has_hold);
+buffer_desc_t * it_new_page (index_tree_t * isp, dp_addr_t nearxx, int type, int in_pmap, it_cursor_t * has_hold);
 void it_free_page (index_tree_t * it, buffer_desc_t * buf);
 void it_free_dp_no_read (index_tree_t * it, dp_addr_t dp, int dp_type);
 void it_cache_check (index_tree_t * it, int mode);
@@ -578,7 +488,7 @@ void it_cache_check (index_tree_t * it, int mode);
 void lt_new_w_id (lock_trx_t * lt);
 extern resource_t * idp_rc;
 extern int32 swap_guard_on;
-extern char srv_approx_dt[DT_LENGTH];
+
 
 /* page.c */
 
@@ -631,10 +541,9 @@ void  page_row_bm (buffer_desc_t * buf, int irow, row_delta_t * rd, int op, it_c
 
 
 caddr_t rd_col (row_delta_t * rd, oid_t cid, int * found);
-int key_col_in_layout_seq_1 (dbe_key_t * key, dbe_column_t * col, int gpf_if_not);
-#define key_col_in_layout_seq(key,col) key_col_in_layout_seq_1(key, col, 1)
+int key_col_in_layout_seq (dbe_key_t * key, dbe_column_t * col);
 void kc_var_col (dbe_key_t * key, buffer_desc_t * buf, db_buf_t row, dbe_col_loc_t * cl, db_buf_t * p1, row_size_t * len1, db_buf_t * buf2, row_size_t* len2, unsigned short * offset);
-void pf_fill_registered (page_fill_t * pf, buffer_desc_t * buf);
+void pf_fill_registered (page_fill_t * pf, buffer_desc_t * buf, it_cursor_t * itc);
 int page_reloc_right_leaves (it_cursor_t * itc, buffer_desc_t * buf);
 void pf_change_org (page_fill_t * pf);
 void page_reg_past_end (buffer_desc_t * buf);
@@ -648,13 +557,11 @@ void page_apply (it_cursor_t * itc, buffer_desc_t * buf, int n_delta, row_delta_
 
 void rd_free (row_delta_t * rd);
 void rd_list_free (row_delta_t ** rds);
-int buf_row_compare (buffer_desc_t * buf1, int i1, buffer_desc_t * buf2, int i2, int is_assert);
-void buf_order_ck (buffer_desc_t * buf);
 
 
 /* row.c */
 
-caddr_t rd_alloc_box (row_delta_t * rd, int len, dtp_t dtp);
+caddr_t mp_box_iri_id (mem_pool_t * mp, iri_id_t iid);
 void rd_free_box (row_delta_t * rd, caddr_t box);
 void itc_delete_blob_search_pars (it_cursor_t * itc, row_delta_t * rd);
 void row_insert_cast (row_delta_t * rd, dbe_col_loc_t * cl, caddr_t data,
@@ -731,9 +638,6 @@ struct query_s * sch_proc_def (dbe_schema_t * sch, const char * name);
 struct query_s * sch_partial_proc_def (dbe_schema_t * sc, caddr_t name, char *q_def, char *o_def);
 struct query_s * sch_proc_exact_def (dbe_schema_t * sch, const char * name);
 struct query_s * sch_module_def (dbe_schema_t * sch, const char * name);
-#ifdef UNIVERSE
-extern void sch_set_remote_proc_def (caddr_t name, caddr_t proc);
-#endif
 #define IS_REMOTE_ROUTINE_QR(qr) ((qr) && (qr)->qr_is_remote_proc)
 void sch_set_proc_def (dbe_schema_t * sch, caddr_t name,  struct query_s * qr);
 void sch_set_module_def (dbe_schema_t * sch, caddr_t name,  struct query_s * qr);
@@ -756,7 +660,11 @@ extern int case_mode;
 int casemode_strcmp (const char *s1, const char *s2);
 int casemode_strncmp (const char *s1, const char *s2, size_t n);
 
-caddr_t sqlp_box_id_upcase (const char *str);
+caddr_t DBG_NAME (sqlp_box_id_upcase) (DBG_PARAMS const char *str);
+#ifdef MALLOC_DEBUG
+#define sqlp_box_id_upcase(s) dbg_sqlp_box_id_upcase (__FILE__, __LINE__, s)
+#endif
+caddr_t t_sqlp_box_id_upcase (const char *str);
 void sqlp_upcase (char *str);
 caddr_t sqlp_box_upcase (const char *str);
 
@@ -766,9 +674,6 @@ extern int null_unspecified_params;
 extern int32 do_os_calls;
 extern long max_static_cursor_rows;
 extern long log_audit_trail;
-#define LOG_TRAIL_NONE 0
-#define LOG_TRAIL_ALL 1 /* complete history, no purge */
-#define LOG_TRAIL_CL_FLT 2 /* history as far as needed for cluster fault tolerance */
 extern long http_proxy_enabled;
 #ifdef _IMSG
 extern int pop3_port;
@@ -790,16 +695,6 @@ extern long pl_debug_all;
 extern char * pl_debug_cov_file;
 extern long vt_batch_size_limit;
 extern long sqlc_add_views_qualifiers;
-#if UNIVERSE
-extern unsigned long vdb_oracle_catalog_fix; /* from odbccat.c */
-extern long vdb_attach_autocommit; /* from odbccat.c */
-extern long rds_disconnect_timeout; /* from sqlrrun.c */
-extern int32 vdb_client_fixed_thread;
-extern int prpc_disable_burst_mode;
-extern int prpc_forced_fixed_thread;
-extern int prpc_force_burst_mode;
-extern long prpc_burst_timeout_msecs;
-#endif
 extern int sqlo_max_layouts;
 extern int32 sqlo_max_mp_size;
 extern long txn_after_image_limit;
@@ -945,7 +840,7 @@ int itc_print_blob_col_non_txn (it_cursor_t * row_itc, dk_session_t * row, caddr
 int bh_fill_buffer_from_blob (index_tree_t * it, lock_trx_t * lt, blob_handle_t * bh,
     caddr_t outbuf, long get_bytes);
 void blob_chain_delete (it_cursor_t * it, blob_layout_t *bl);
-void blob_send_bytes (lock_trx_t * lt, caddr_t bh, long n_bytes, int send_position);
+void blob_send_bytes (lock_trx_t * lt, caddr_t bh, long n_bytes, int send_position, long blob_type);
 void lt_write_blob_log (lock_trx_t * lt, dk_session_t * log_ses);
 dk_session_t * blob_to_string_output_isp (lock_trx_t * lt, caddr_t bhp);
 typedef struct blob_log_s
@@ -1006,7 +901,7 @@ void dbs_checkpoint (char * log_name, int shutdown);
 void dbs_read_checkpoint_remap (dbe_storage_t * dbs, dp_addr_t from);
 int it_can_reuse_logical (index_tree_t * it, dp_addr_t dp);
 
-void it_free_remap (index_tree_t * it, dp_addr_t logical, dp_addr_t remap, int dp_flags, oid_t col_id);
+void it_free_remap (index_tree_t * it, dp_addr_t logical, dp_addr_t remap, int dp_flags);
 
 #define DP_CHECKPOINT_REMAP(dbs, dp)\
   ((dp_addr_t)(ptrlong)gethash (DP_ADDR2VOID (dp), dbs->dbs_cpt_remap))
@@ -1015,8 +910,6 @@ int cpt_count_mapped_back (dbe_storage_t * dbs);
 dp_addr_t remap_phys_key (remap_t * r);
 int cpt_is_global_lock (void);
 
-void buf_extract_registered (buffer_desc_t * buf, int map_pos, int col_row, it_cursor_t ** reg_ret);
-extern mem_pool_t * cpt_mp;
 
 /* other */
 
@@ -1059,8 +952,8 @@ void db_replay_registry_sequences (void);
 void cli_bootstrap_cli ();
 void db_log_registry (dk_session_t * log);
 void registry_update_sequences (void);
-caddr_t box_deserialize_string (caddr_t text, int opt_len, int64 offset);
-caddr_t mp_box_deserialize_string (mem_pool_t * mp, caddr_t text, int opt_len, int64 offset);
+caddr_t box_deserialize_string (caddr_t text, int opt_len, short offset);
+caddr_t mp_box_deserialize_string (mem_pool_t * mp, caddr_t text, int opt_len, short offset);
 
 
 /* sqlsrv.c */
@@ -1162,12 +1055,6 @@ void print_short (short s, dk_session_t * ses);
 extern rdf_box_t * rb_allocate (void);
 extern int dv_rdf_compare (db_buf_t dv1, db_buf_t dv2);
 extern int rdf_box_compare (ccaddr_t rb1, ccaddr_t rb2);
-db_buf_t mp_dv_rdf_to_db_serial (mem_pool_t * mp, db_buf_t  dv);
-int dv_rdf_id_compare (db_buf_t dv1, db_buf_t dv2, int64 offset, int64 * delta_ret);
-int dv_rdf_dc_compare (db_buf_t dv1, db_buf_t dv2);
-
-
-
 /*rdf_core.c */
 int  iri_split (char * iri, caddr_t * pref, caddr_t * name);
 
@@ -1184,7 +1071,10 @@ extern name_id_cache_t * iri_prefix_cache;
 extern name_id_cache_t * rdf_lang_cache;
 extern name_id_cache_t * rdf_type_cache;
 boxint nic_name_id (name_id_cache_t * nic, char * name);
-caddr_t  nic_id_name (name_id_cache_t * nic, boxint id);
+caddr_t DBG_NAME(nic_id_name) (DBG_PARAMS name_id_cache_t * nic, boxint id);
+#ifdef MALLOC_DEBUG
+#define nic_id_name(nic,id) DBG_NAME(nic_id_name) (__FILE__, __LINE__, (nic), (id))
+#endif
 void nic_set (name_id_cache_t * nic, caddr_t name, boxint id);
 boxint  lt_nic_name_id (lock_trx_t * lt, name_id_cache_t * nic, caddr_t name);
 caddr_t  lt_nic_id_name (lock_trx_t * lt, name_id_cache_t * nic, boxint id);
@@ -1305,21 +1195,10 @@ extern unsigned blob_page_dir_threshold;
 extern int virtuoso_server_initialized;
 extern int dive_pa_mode;
 extern unsigned int bp_hit_ctr;
-extern int c_compress_mode;
+extern int32 c_compress_mode;
 extern int rdf_no_string_inline;
 /* geo.c */
 
-#ifdef GEO_INDEX
-void dv_geo_length (db_buf_t dv, long * hl, long * l);
-
-void  itc_geo_insert (it_cursor_t * itc, buffer_desc_t * buf, row_delta_t * rd);
-caddr_t geo_wkt (caddr_t g);
-extern dk_mutex_t * geo_reg_mtx;
-void itc_geo_unregister (it_cursor_t * itc);
-caddr_t geo_parse_wkt (char * str, caddr_t * err_ret);
-double  geo_page_area (it_cursor_t * itc, buffer_desc_t * buf);
-
-#endif
 
 /* extent.c */
 
@@ -1338,35 +1217,16 @@ dp_addr_t em_new_dp (extent_map_t * em, int type, dp_addr_t near, int * hold);
 void em_free_remap_hold (extent_map_t * em, int * hold);
 int em_hold_remap (extent_map_t * em, int * hold);
 int it_own_extent_map (index_tree_t * tree);
-extent_map_t * it_col_own_extent_map (index_tree_t * tree, oid_t col_id);
 void dbs_cpt_write_extents (dbe_storage_t * dbs);
 void em_check_dp (extent_map_t * em, dp_addr_t dp);
 void em_free (extent_map_t * em);
-void em_rename (extent_map_t * em, char * name);
-void it_rename_col_ems (index_tree_t * it, char * key_name);
 void dbs_cpt_set_allocated (dbe_storage_t * dbs, dp_addr_t dp, int is_allocd);
-void dbs_ec_enter (dbe_storage_t * dbs);
-void dbs_ec_leave (dbe_storage_t * dbs);
 void clear_old_root_images  ();
 
 extern dk_mutex_t * extent_map_create_mtx;
+
 #define WAIT_IF(msec) if (msec) virtuoso_sleep ((msec) /1000, 1000 * ((msec) % 1000));
 extern int32 sql_const_cond_opt;
-extern int32 enable_qp;
-caddr_t strses_read_reusing (dk_session_t * ses, caddr_t box);
-
-
-/* mem.c */
-void int_asc_fill (int * ptr, int len, int start);
-void int_fill (int * ptr, int n, int l);
-void int64_fill (int64 * ptr, int64 n, int l);
-void int64_fill_nt (int64 * ptr, int64 n, int l);
-void  memzero (void* p, int len);
-void memcpy_16 (void * target, const void * source, size_t len);
-void memcpy_16_nt (void * t, const void * s, size_t len);
-void memmove_16 (void * t, const void * s, size_t len);
-unsigned  int64 rdtsc();
-
 extern int aq_max_threads;
 extern int in_log_replay;
 extern int32 dbs_check_extent_free_pages;

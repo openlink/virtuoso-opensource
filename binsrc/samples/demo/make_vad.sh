@@ -5,7 +5,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2006 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -285,7 +285,7 @@ directory_init() {
   cp -f art_vad.sql                                             vad/data/demo/sql
   cp -f uninst.sql                                              vad/data/demo/sql
   cp -f uninst.sql                                              vad/data/demo/sql
-  cp -f $HOME/binsrc/dav/DET_RDFData.sql                        vad/data/demo/sql
+  #cp -f $HOME/binsrc/dav/DET_RDFData.sql                        vad/data/demo/sql
   cp -f $HOME/binsrc/vsp/soapdemo/fishselect.sql                vad/data/demo/sql
   cp -f $HOME/binsrc/vsp/soapdemo/soap_validator.sql            vad/data/demo/sql
   cp -f $HOME/binsrc/vsp/soapdemo/interop-xsd.sql               vad/data/demo/sql
@@ -357,7 +357,7 @@ sticker_init() {
   echo "  <name package=\"Demo\">" >> $STICKER
   echo "    <prop name=\"Title\" value=\"Demo Database\"/>" >> $STICKER
   echo "    <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2011 OpenLink Software\"/>" >> $STICKER
+  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2013 OpenLink Software\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso/demo/download\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso/demo/download\"/>" >> $STICKER
   echo "  </name>" >> $STICKER
@@ -430,7 +430,7 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/eNews_vad.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/def_vad.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/func_vad.sql', 1, 'report', 1);" >> $STICKER
-  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/DET_RDFData.sql', 1, 'report', 1);" >> $STICKER
+  #echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/DET_RDFData.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/sql_rdf.sql', 1, 'report', 1);" >> $STICKER
   #echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/tpch.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/demo/sql/rd_v_1.sql', 1, 'report', 1);" >> $STICKER  

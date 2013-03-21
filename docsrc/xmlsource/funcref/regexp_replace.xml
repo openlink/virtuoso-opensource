@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -63,17 +63,17 @@ the number of extra spaces may not be the same everywhere in the text. </para>
     <refsect2><title>position</title>
       <para>By default this is set to 1.</para></refsect2>
     <refsect2><title>occurrence</title>
-      <para>By default this is set to 1.  If you specify occurrence as DB NULL value it'll replace all the occurrences of the
-pattern in the string</para></refsect2>
+      <para>By default this is set to 0. If you specify occurrence as DB NULL value it will replace all 
+      	the occurrences of the pattern in the string.</para></refsect2>
     <refsect2><title>match_parameter</title>
       <para>By default this is set to null.</para></refsect2>
   </refsect1>
   <refsect1 id="ret_regexp_replace"><title>Returns</title>
   <para>This function returns the a substring matching the regular expression.</para>
   </refsect1>
- <refsect1 id="examples"><title>Examples</title>
+ <refsect1 id="examples_regexp_replace"><title>Examples</title>
     <example id="ex_regexp_replace">
-<title>Examples</title>
+<title></title>
 
 <para>This example has three spaces between Joe and Smith. The REPLACE function's
 parameter specifies that two spaces should be replaced with one space. In

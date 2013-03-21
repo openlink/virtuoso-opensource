@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -38,6 +38,7 @@
 <!ENTITY review "http:/www.purl.org/stuff/rev#">
 <!ENTITY ebay "urn:ebay:apis:eBLBaseComponents">
 <!ENTITY oplebay "http://www.openlinksw.com/schemas/ebay#">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -50,6 +51,7 @@
     xmlns:pto="&pto;" 
     xmlns:gr="&gr;"
     xmlns:book="&book;"
+    xmlns:opl="&opl;"
     xmlns:dc="&dc;"
     xmlns:dcterms="&dcterms;"
     xmlns:review="&review;"
@@ -95,6 +97,13 @@
 			<gr:Offering rdf:about="{concat ($baseUri, '#', 'Offer')}">
 			-->
 			<gr:Offering rdf:about="{vi:proxyIRI($baseUri, '', 'Offer')}">
+                         	<opl:providedBy>
+                         		<foaf:Organization rdf:about="http://www.ebay.com#this">
+                         			<foaf:name>Ebay</foaf:name>
+                         			<foaf:homepage rdf:resource="http://www.ebay.com"/>
+                         		</foaf:Organization>
+                         	</opl:providedBy>
+
 			    <gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
 			    <rdfs:label><xsl:value-of select="ebay:Item/ebay:Title"/></rdfs:label>
 				<!-- Xalan
@@ -152,7 +161,16 @@
 			<rdf:Description rdf:about="{$resourceURL}">
 			-->
 			<rdf:Description rdf:about="{$resourceURL}">
+                         	<opl:providedBy>
+                         		<foaf:Organization rdf:about="http://www.ebay.com#this">
+                         			<foaf:name>Ebay</foaf:name>
+                         			<foaf:homepage rdf:resource="http://www.ebay.com"/>
+                         		</foaf:Organization>
+                         	</opl:providedBy>
+
 			    <rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
+			    <rdf:type rdf:resource="&gr;ProductOrService" />
+			    
 			    <rdf:type rdf:resource="&oplebay;Product" />
 
                 <foaf:page rdf:resource="{$baseUri}"/>
@@ -163,6 +181,12 @@
 						select="//ebay:Item/ebay:ItemSpecifics/ebay:NameValueList[ebay:Name='Make']/ebay:Value"/>
 					<xsl:variable name="model"
 						select="//ebay:Item/ebay:ItemSpecifics/ebay:NameValueList[ebay:Name='Model']/ebay:Value"/>
+						
+		<xsl:if test="string-length($brand) &gt; 0">
+		  <gr:hasBrand rdf:resource="{vi:proxyIRI ($docproxyIRI, '', 'Brand')}" />
+		</xsl:if>
+						
+						
                 <xsl:if test="string-length(concat($brand, $make, $model)) &gt; 0">
 	
                     <xsl:if test="string-length($make) &gt; 0">
@@ -227,9 +251,19 @@
 			   -->
 			   <xsl:apply-templates select="ebay:Item" />
 			</rdf:Description>
+			
+			
+			<rdf:Description rdf:about="{vi:proxyIRI ($docproxyIRI, '', 'Brand')}">
+				<xsl:apply-templates select="//ebay:Item/ebay:ItemSpecifics/ebay:NameValueList[ebay:Name='Brand']/ebay:Value" mode="grbrand" />
+			</rdf:Description>
 		</rdf:RDF>
     </xsl:template>
 
+    <xsl:template match="ebay:Value" mode="grbrand">
+      <rdf:type rdf:resource="&gr;Brand" />
+      <gr:name><xsl:value-of select="." /></gr:name>
+    </xsl:template>
+    
     <xsl:template match="ebay:Item">
         <xsl:apply-templates select="*"/>
     </xsl:template>

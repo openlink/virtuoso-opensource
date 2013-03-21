@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -27,6 +27,7 @@
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY sioct "http://rdfs.org/sioc/types#">
 <!ENTITY review "http:/www.purl.org/stuff/rev#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
@@ -44,6 +45,7 @@
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:sioc="&sioc;"
     xmlns:sioct="&sioct;"
+    xmlns:opl="&opl;"
     xmlns:review="&review;"
     xmlns:geo="&geo;"
     xmlns:vcard="&vcard;"
@@ -70,7 +72,14 @@
 				<owl:sameAs rdf:resource="{$docIRI}" />
 			</rdf:Description>
 			<rdf:Description rdf:about="{$resourceURL}">
-				<rdf:type rdf:resource="&gr;LocationOfSalesOrServiceProvisioning"/>
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://www.yelp.com#this">
+                                 			<foaf:name>Yelp</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://www.yelp.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
+
+				<rdf:type rdf:resource="&gr;Location"/>
 				<dc:title>
 					<xsl:value-of select="name" />
 				</dc:title>

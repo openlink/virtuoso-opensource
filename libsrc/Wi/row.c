@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -274,8 +274,6 @@ itc_box_column (it_cursor_t * itc, buffer_desc_t *buf, oid_t col, dbe_col_loc_t 
 	cl = itc_col_loc (itc, buf, col);
   if (!cl)
     return (dk_alloc_box (0, DV_DB_NULL));
-  if (!buf->bd_content_map)
-    return page_box_col (itc, buf, itc->itc_row_data, cl); /* can be hash temp */
   return page_box_col (itc, buf, buf->bd_buffer + buf->bd_content_map->pm_entries[itc->itc_map_pos], cl);
 }
 
@@ -315,10 +313,10 @@ page_box_col (it_cursor_t * itc, buffer_desc_t * buf, db_buf_t row, dbe_col_loc_
   int len;
   int64 ln;
   caddr_t str;
-  unsigned short vl1, vl2, offset;
+  unsigned short vl1 = 0, vl2 = 0, offset = 0;
   row_ver_t rv = IE_ROW_VERSION (row);
   dbe_key_t * row_key = buf->bd_tree->it_key->key_versions[IE_KEY_VERSION (row)];
-  db_buf_t xx, xx2;
+  db_buf_t xx = NULL, xx2 = NULL;
   dtp_t col_dtp;
   if (row[cl->cl_null_flag[rv]] & cl->cl_null_mask[rv])
     return (dk_alloc_box (0, DV_DB_NULL));
@@ -362,7 +360,7 @@ page_box_col (it_cursor_t * itc, buffer_desc_t * buf, db_buf_t row, dbe_col_loc_
       VL;
       str = dk_alloc_box ((int) len + vl2 + 1, DV_LONG_STRING);
       memcpy (str, xx, len);
-      memcpy (str + len, xx2, vl2);
+      if (vl2 > 0) memcpy (str + len, xx2, vl2);
       str[len + vl2 - 1] += offset;
       str[len + vl2] = 0;
       return str;
@@ -396,7 +394,7 @@ page_box_col (it_cursor_t * itc, buffer_desc_t * buf, db_buf_t row, dbe_col_loc_
 	VL;
 	str = dk_alloc_box ((int) len + vl2, DV_BIN);
 	memcpy (str, xx, (int) len);
-	memcpy (str + len, xx2, (int) vl2);
+	if (vl2 > 0) memcpy (str + len, xx2, (int) vl2);
 	return str;
       }
 
@@ -501,6 +499,14 @@ page_box_col (it_cursor_t * itc, buffer_desc_t * buf, db_buf_t row, dbe_col_loc_
 
 
 caddr_t
+mp_box_iri_id (mem_pool_t * mp, iri_id_t iid)
+{
+  caddr_t  b;
+  MP_INT (b, mp, iid, DV_IRI_TAG_WORD);
+  return b;
+}
+
+caddr_t
 page_mp_box_col (it_cursor_t * itc, mem_pool_t * mp, buffer_desc_t * buf, db_buf_t row, dbe_col_loc_t * cl)
 {
   int len;
@@ -544,7 +550,7 @@ page_mp_box_col (it_cursor_t * itc, mem_pool_t * mp, buffer_desc_t * buf, db_buf
       VL;
       str = mp_alloc_box (mp, (int) len + vl2 + 1, DV_LONG_STRING);
       memcpy (str, xx, len);
-      memcpy (str + len, xx2, vl2);
+      if (vl2 > 0) memcpy (str + len, xx2, vl2);
       str[len + vl2 - 1] += offset;
       str[len + vl2] = 0;
       return str;
@@ -572,7 +578,7 @@ page_mp_box_col (it_cursor_t * itc, mem_pool_t * mp, buffer_desc_t * buf, db_buf
 	VL;
 	str = mp_alloc_box (mp, (int) len + vl2, DV_BIN);
 	memcpy (str, xx, (int) len);
-	memcpy (str + len, xx2, (int) vl2);
+	if (vl2 > 0) memcpy (str + len, xx2, (int) vl2);
 	return str;
       }
 
@@ -615,16 +621,6 @@ rd_alloc_box (row_delta_t * rd, int len, dtp_t dtp)
       db_buf_t ptr;
       int fill = rd->rd_temp_fill;
       int bytes = 8 + ALIGN_8 (len);
-#if defined(WORDS_BIGENDIAN) && defined(SOLARIS)
-      if (0 == fill)
-        {
-	  fill = (uptrlong) rd->rd_temp % 8;
-	  if (fill)
-	    fill = 8 - fill;
-	  rd->rd_temp_max -= fill;
-	  rd->rd_temp_fill += fill;
-        }
-#endif
       if (fill + bytes > rd->rd_temp_max)
 	{
 	  rd->rd_allocated = RD_ALLOCATED_VALUES;
@@ -645,7 +641,7 @@ rd_alloc_box (row_delta_t * rd, int len, dtp_t dtp)
 }
 
 #define RD_IRI_BOX(val) \
-  { if (rd && rd->rd_temp_fill + 16 < rd->rd_temp_max) \
+  { if (rd && (rd->rd_temp_fill + 16 < rd->rd_temp_max)) \
       { rd->rd_temp_fill += 16; *(int64*)(rd->rd_temp + rd->rd_temp_fill - 16) = DV_IRI_TAG_WORD_64; *(iri_id_t*)(rd->rd_temp + rd->rd_temp_fill - 8) = val; return (caddr_t)rd->rd_temp + rd->rd_temp_fill - 8;} \
     else \
       { caddr_t box = rd_alloc_box (rd, sizeof (iri_id_t), DV_IRI_ID); *((iri_id_t*)box) = val; return box;}}
@@ -728,7 +724,7 @@ page_copy_col (buffer_desc_t * buf, db_buf_t row, dbe_col_loc_t * cl, row_delta_
 	VL;
 	str = rd_alloc_box (rd, (int) len + vl2, DV_BIN);
 	memcpy (str, xx, (int) len);
-	memcpy (str + len, xx2, (int) vl2);
+	if (vl2 > 0) memcpy (str + len, xx2, (int) vl2);
 	str[len + vl2 - 1] += offset;
 	return str;
       }
@@ -1059,11 +1055,6 @@ qst_set_pref_string (caddr_t * state, state_slot_t * sl, db_buf_t data, size_t l
 void
 qst_set_over (caddr_t * qst, state_slot_t * ssl, caddr_t v)
 {
-  if (SSL_VEC == ssl->ssl_type)
-    {
-      qst_vec_set_copy (qst, ssl, v);
-      return;
-    }
   switch (DV_TYPE_OF (v))
     {
     case DV_STRING:
@@ -1473,21 +1464,95 @@ box_to_double (caddr_t data, dtp_t dtp, oid_t col_id, caddr_t * err_ret, dbe_key
   ((ap && n + 16 < ap->ap_size - ap->ap_fill) ? ap_alloc_box (ap, n, t)	\
     : dk_alloc_box (n, t))
 
+caddr_t
+box_to_any_1 (caddr_t data, caddr_t * err_ret, auto_pool_t *ap, int ser_flags)
+{
+  caddr_t box;
+  int init, len;
+  dtp_t key_image[PAGE_DATA_SZ];
+  dk_session_t sesn, *ses = &sesn;
+  scheduler_io_data_t io;
+  dtp_t dtp = DV_TYPE_OF (data);
 
-#define name  box_to_any_1
-#define MP_T auto_pool_t
-#define ALLOC(n, dtp)  BOX_OR_AUTO(n, dtp)
+  switch (dtp)
+    {
+    case DV_IRI_ID:
+      {
+	iri_id_t id = unbox_iri_id (data);
+	if (id < 0xffffffff)
+	  {
+	    box = BOX_OR_AUTO (6, DV_STRING);
+	    box[0] = DV_IRI_ID;
+	    LONG_SET_NA (box + 1, id);
+	    box[5] = 0;
+	    return box;
+	  }
+	else
+	  {
+	    box = BOX_OR_AUTO (10, DV_STRING);
+	    box[0] = DV_IRI_ID_8;
+	    INT64_SET_NA (box + 1, id);
+	    box[9] = 0;
+	    return box;
+	  }
+      }
+    case DV_LONG_INT:
+      {
+	boxint n = unbox (data);
+	if ((n > -128) && (n < 128))
+	  {
+	    box = BOX_OR_AUTO (3, DV_STRING);
+	    box[0] = DV_SHORT_INT;
+	    box[1] = n;
+	    box[2] = 0;
+	  }
+	else if (n >= (int64) INT32_MIN && n <= (int64) INT32_MAX)
+	  {
+	    int32 ni = n;
+	    box = BOX_OR_AUTO (6, DV_STRING);
+	    box[0] = DV_LONG_INT;
+	    LONG_SET_NA (box + 1, ni);
+	    box[5] = 0;
+	  }
+	else
+	  {
+	    box = BOX_OR_AUTO (10, DV_STRING);
+	    box[0] = DV_INT64;
+	    INT64_SET_NA (box + 1, n);
+	    box[9] = 0;
+	  }
 
-#include "box2any.c"
+	return box;}
+    default: ;
+    }
+  ROW_OUT_SES (sesn, key_image);
+  SESSION_SCH_DATA (ses) = &io;
+  memset (SESSION_SCH_DATA (ses), 0, sizeof (scheduler_io_data_t));
+  sesn.dks_cluster_flags = ser_flags;
+  init = sesn.dks_out_fill;
 
-#define name  mp_box_to_any_1
-#define MP_T mem_pool_t
-#define ALLOC(n, dtp)  mp_alloc_box_ni(ap, n, dtp)
+  CATCH_WRITE_FAIL (ses)
+    {
+      print_object (data, &sesn, NULL, NULL);
+    }
+  FAILED
+    {
+      *err_ret = srv_make_new_error ("22026", "SR477", "Error serializing the value into an ANY column");
+      return NULL;
+    }
+  END_WRITE_FAIL (ses);
 
-#include "box2any.c"
-
-
-
+  if (sesn.dks_out_fill > PAGE_DATA_SZ - 10)
+    {
+      *err_ret = srv_make_new_error ("22026", "SR478", "Value of ANY type column too long");
+      return NULL;
+    }
+  len = sesn.dks_out_fill - init;
+  box = dk_alloc_box (len + 1, DV_STRING);
+  memcpy (box, &sesn.dks_out_buffer[init], len);
+  box[len] = 0;
+  return box;
+}
 
 caddr_t
 box_to_any (caddr_t data, caddr_t * err_ret)
@@ -1504,11 +1569,18 @@ caddr_t
 box_to_shorten_any (caddr_t data, caddr_t * err_ret)
 {
   dtp_t data_dtp = DV_TYPE_OF (data);
+  caddr_t box = NULL, ret;
   size_t data_len;
   if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &err_ret, (PAGE_DATA_SZ+1500)))
     {
       *err_ret = srv_make_new_error ("42000", "SR483", "Stack Overflow");
       return NULL;
+    }
+  if (DV_WIDE == data_dtp)
+    {
+      box = box_wide_as_utf8_char (data, box_length (data) / sizeof (wchar_t) - 1, DV_LONG_STRING);
+      data_dtp = DV_TYPE_OF (box);
+      data = box;
     }
 #define BOX_SHORT_ANY_LIMIT (128+1+(BOX_AUTO_OVERHEAD-8))
   if (((DV_STRING == data_dtp) || (DV_WIDE == data_dtp) || (DV_BIN == data_dtp)) &&
@@ -1530,9 +1602,13 @@ box_to_shorten_any (caddr_t data, caddr_t * err_ret)
       ((boxint *)(tmp + BOX_SHORT_ANY_LIMIT-17))[0] = hi;
       ((boxint *)(tmp + BOX_SHORT_ANY_LIMIT-9))[0] = lo;
       tmp[BOX_SHORT_ANY_LIMIT-1] = '\0';
-      return box_to_any_1 (tmp, err_ret, NULL, 0);
+      ret = box_to_any_1 (tmp, err_ret, NULL, 0);
+      dk_free_box (box);
+      return ret;
     }
-  return box_to_any_1 (data, err_ret, NULL, 0);
+  ret = box_to_any_1 (data, err_ret, NULL, 0);
+  dk_free_box (box);
+  return ret;
 }
 
 
@@ -1642,17 +1718,6 @@ itc_print_params (it_cursor_t * itc)
   printf ("\n");
 }
 
-void
-rd_print (row_delta_t * rd)
-{
-  int inx = 0;
-  dbe_key_t * key = rd->rd_key;
-  for (inx = 0; inx < key->key_n_significant; inx++)
-    {
-      sqlo_box_print (rd->rd_values[key->key_part_in_layout_order[inx]]);
-      printf ("\n");
-    }
-}
 
 void
 row_insert_cast (row_delta_t * rd, dbe_col_loc_t * cl, caddr_t data,
@@ -1698,7 +1763,7 @@ row_insert_cast (row_delta_t * rd, dbe_col_loc_t * cl, caddr_t data,
       return;
     }
 
-  switch (cl->cl_sqt.sqt_col_dtp)
+  switch (cl->cl_sqt.sqt_dtp)
     {
     case DV_LONG_INT:
       lv = box_to_boxint (data, dtp, cl->cl_col_id, err_ret, key, DV_LONG_INT);
@@ -1770,7 +1835,7 @@ row_insert_cast (row_delta_t * rd, dbe_col_loc_t * cl, caddr_t data,
 	  }
 	iid = unbox_iri_id (data);
 	ITC_SEARCH_PARAM (ins_itc, data);
-	if (DV_IRI_ID == cl->cl_sqt.sqt_col_dtp)
+	if (DV_IRI_ID == cl->cl_sqt.sqt_dtp)
 	  {
 	    /* to don't overflow */
 	    if (iid > 0xFFFFFFFF)
@@ -1943,7 +2008,7 @@ row_insert_cast (row_delta_t * rd, dbe_col_loc_t * cl, caddr_t data,
 	{
 convert_dt:
 	  data = box_cast_to (ins_itc ? ins_itc->itc_out_state : NULL, data, dtp,
-	      cl->cl_sqt.sqt_col_dtp, 0, 0, err_ret);
+	      cl->cl_sqt.sqt_dtp, 0, 0, err_ret);
 	  if (ins_itc)
 	    ITC_OWNS_PARAM (ins_itc, data);
 	  if (*err_ret)
@@ -1975,7 +2040,7 @@ convert_dt:
 	{
 	  caddr_t dt_box = box_copy (data);
 	        DT_SET_FRACTION (dt_box, 0);
-      SET_DT_TYPE_BY_DTP (dt_box, cl->cl_sqt.sqt_col_dtp);
+      SET_DT_TYPE_BY_DTP (dt_box, cl->cl_sqt.sqt_dtp);
       ITC_SEARCH_PARAM (ins_itc, dt_box);
 	  ITC_OWNS_PARAM (ins_itc, dt_box);
 	}
@@ -2289,7 +2354,7 @@ row_set_col (row_fill_t * rf, dbe_col_loc_t * cl, caddr_t data)
 
     case DV_SINGLE_FLOAT:
       {
-	double df = unbox_float (data);
+	double df = IS_BOX_POINTER (data) ? unbox_float (data) : (double) (ptrlong) data;
 	float ft = (float) df;
 	FLOAT_TO_EXT (row + cl->cl_pos[rv], &ft);
 	return;
@@ -2297,7 +2362,7 @@ row_set_col (row_fill_t * rf, dbe_col_loc_t * cl, caddr_t data)
 
     case DV_DOUBLE_FLOAT:
       {
-	double df = unbox_double (data);
+	double df = IS_BOX_POINTER (data) ? unbox_double (data) : (double) (ptrlong) data;
 	DOUBLE_TO_EXT (row + cl->cl_pos[rv], &df);
 	return;
       }
@@ -2514,31 +2579,6 @@ key_insert (insert_node_t * ins, caddr_t * qst, it_cursor_t * it, ins_key_t * ik
     }
 
   col_ctr = inx;
-  if (key->key_is_col)
-    {
-      dbe_col_loc_t cl;
-      int l;
-      dk_set_t parts = key->key_parts;
-      for (l = 0; l < key->key_n_significant; l++)
-	parts = parts->next;
-      DO_SET (dbe_column_t *, col, &parts)
-	{
-	  caddr_t data = QST_GET (qst, ik->ik_slots[col_ctr]);
-	  cl.cl_col_id = col->col_id;
-	  cl.cl_sqt = col->col_sqt;
-	  cl.cl_null_mask[0] = !col->col_sqt.sqt_non_null;
-	  row_insert_cast (&rd, &cl, data, &err, NULL);
-	  col_ctr++;
-	  if (err)
-	    {
-	      itc_free_owned_params (it);
-	      sqlr_resignal (err);
-	    }
-	}
-      END_DO_SET();
-    }
-  else
-    {
   for (inx = 0; key->key_row_fixed[inx].cl_col_id; inx++)
     {
       caddr_t data = QST_GET (qst, ik->ik_slots[col_ctr + inx]);
@@ -2568,7 +2608,6 @@ key_insert (insert_node_t * ins, caddr_t * qst, it_cursor_t * it, ins_key_t * ik
       itc_free_owned_params (it);
       sqlr_resignal (err);
     }
-    }
   rd.rd_values = &it->itc_search_params[key->key_n_significant];
   rd.rd_n_values = it->itc_search_par_fill - key->key_n_significant;
   /* now the cols are in layout order, kf kv rf rv.  Put them now at the head in key order */
@@ -2597,12 +2636,6 @@ key_insert (insert_node_t * ins, caddr_t * qst, it_cursor_t * it, ins_key_t * ik
     }
   if (KI_TEMP != key->key_id && !qi->qi_non_txn_insert)
     rd.rd_make_ins_rbe = 1;
-  if (key->key_is_col)
-    {
-      key_col_insert (it, &rd, ins);
-      rc = DVC_LESS;
-    }
-  else
   rc = itc_insert_unq_ck (it, &rd, unq_buf_ptr);
   if (DVC_MATCH == rc)
     {

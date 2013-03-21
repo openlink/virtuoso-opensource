@@ -7,7 +7,7 @@
 
   This file is part of the OpenLink Ajax Toolkit (OAT) project
 
-  Copyright (C) 2009 OpenLink Software
+  Copyright (C) 2009-2013 OpenLink Software
 
   This project is free software; you can redistribute it and/or modify it
   under the terms of the GNU General Public License as published by the
@@ -96,15 +96,18 @@ OAT.MSG.attach(OAT, 'OAT_LOAD', myInit);
           <img src="/isparql/images/stop_32.png" alt="error"/>
           <div class="error statMsgError">
             iSPARQL is a JavaScript application.<br/>
-	        JavaScript is not available. This may mean that you are running on a browser that has no JavaScript support, 
-            or JavaScript is disabled. Please use a browser that supports JavaScript, or enable JavaScript for this page.
+	    It turns out that JavaScript is not available. This may mean that you are running on a browser that has no JavaScript support, 
+            or JavaScript is disabled.<br/>
+            To use iSPARQL, please switch to a browser that has JavaScript, or enable JavaScript for this page, if it's been disabled.
 	  </div>
         </noscript>
 
         <img src="/isparql/images/stop_32.png" alt="error" id="splashErrorImg" style="display: none"/>
+
         <div class="error" id="statMsgErr"></div>
 	<div id="splash_ver"></div>
-        <div id="splash_copyr">Copyright &copy; 2006-2011 OpenLink Software</div>
+        <div id="splash_copyr">Copyright &copy; 2006-2013 OpenLink Software</div>
+
         <div id="splash_foot" class="opl_motto">Making Technology Work For You &trade;</div>
       </div> <!-- #splash_inner -->
     </div> <!-- #splash -->
@@ -219,7 +222,7 @@ OAT.MSG.attach(OAT, 'OAT_LOAD', myInit);
 	    </div> <!-- #qbe_props_node -->
 	    <div id="qbe_props_edge" style="display:none;">
 	      <input type="checkbox" id="qbe_edge_type" /><label class="ckb" for="qbe_edge_type">Optional</label><br/>
-	      <label for="qbe_edge_value">Res Type: </label><input type="text" id="qbe_edge_value" />
+	          <label for="qbe_edge_value">Name: </label><input type="text" id="qbe_edge_value" />
 	    </div>
             <div id="qbe_props_group" style="display:none;">
               <label for="qbe_group_type">Group Type: </label>
@@ -241,8 +244,7 @@ OAT.MSG.attach(OAT, 'OAT_LOAD', myInit);
           </div> <!-- #qbe_props -->
           <div id="schemas"> <!#-- schemas (sub)window -->
 	    <div id="schemas_tree_container">
-	      <ul id="schemas_tree">
-	      </ul>
+	      <ul id="schemas_tree"></ul>
 	    </div>
 	    <div id="schema_div"></div>
 	    <button id="schema_import">Import</button>
@@ -389,6 +391,8 @@ WHERE     {	?thing a ?type;
 	  </div> <!-- #query_div -->
         <div id="res_area"></div> <!-- #res_area -->
       </div> <!-- page_query -->
+      <div id="queryopts_outer">
+        <div id="queryopts_ctr">
       <fieldset class="queryopts" id="queryopts">
 	  	<legend>Query options</legend>
 	  	<div id="qry_type_ctls">
@@ -405,9 +409,16 @@ WHERE     {	?thing a ?type;
 	  	  </select>
         &nbsp;|&nbsp;
 	  	</div> <!-- qry_type_ctls -->
+	    <div class="fm_rw">
 	  	<label for="maxrows">Result size limit: </label>
         <input type="text" id="maxrows" size="4"/> rows
-        <span class="maxrows_expln">Leave empty for server maximum setting.</span>
+              <span class="expln">Leave empty for server maximum setting.</span>
+            </div>
+            <div class="fm_rw" id="qry_tout_ctls">
+              <label for="timeout">Query timeout: </label>
+	      <input type="text" id="timeout" size="4" />
+              <span class="expln" id="tout_expln">msec - leave blank for server default, or when not querying a Virtuoso endpoint.</span>
+	    </div>
       </fieldset>
         <div class="controls" id="controls">
         <h3 id="endpoint_opts_toggler" class="ctl_tgl">
@@ -418,13 +429,13 @@ WHERE     {	?thing a ?type;
               <table>
                 <tr>
 	          <td class="cachingOpts" style="padding-right: 8px;">
-		    <label for="cachingSchemesCtl" title="(re)set get:soft pragma value">Caching Scheme</label><!-- XXX -->
+		    <label for="cachingSchemesCtl" title="(re)set get:soft pragma value">Caching Scheme:</label><!-- XXX -->
 		    <select id="cachingSchemesCtl">
                       <option value="none">Don't Sponge</option>
 		      <option value="replacing">None (replacing)</option>
 		      <option value="soft">Automatic (soft)</option>
 		    </select><br/>
-		    <label for="nodesRetrievedCtl" title="(re)set input:grab-limit pragma value">Limit Sponging To</label>
+		    <label for="nodesRetrievedCtl" title="(re)set input:grab-limit pragma value">Limit Sponging To:</label>
 		    <select id="nodesRetrievedCtl"> <!-- XXX should be text input -->
 		      <option value="">Default</option>
 		      <option value="100">100</option>
@@ -433,7 +444,7 @@ WHERE     {	?thing a ?type;
 		      <option value="400">400</option>
 		      <option value="500">500</option>
 		    </select><label class="unit">nodes</label><br/>
-		    <label for="nodesCrawledCtl" title="(re)set input:grab-depth pragma value">Sponge No Deeper Than</label>
+		    <label for="nodesCrawledCtl" title="(re)set input:grab-depth pragma value">Sponge No Deeper Than:</label>
                     <select id="nodesCrawledCtl">
 		      <option value="">Default</option>
 		      <option value="1">1</option>
@@ -457,7 +468,7 @@ WHERE     {	?thing a ?type;
 			   checked="checked"/>
 		    <label for="pathTravSchemesDefault"
 		           id="pathTravSchemesDefaultLabel"
-			   class="ckb">Server Default</label><br/> <!-- XXX should have list to show -->
+			   class="ckb">Server Default:</label><br/> <!-- XXX should have list to show -->
 
 		    <input type="radio"
 		           name="pathTraversalSchemes"
@@ -484,11 +495,11 @@ WHERE     {	?thing a ?type;
 		      <select id="pathTravSchemesPreds"
 		              multiple="multiple"
 			      style="height: 100px;">
-		        <option value="http://xmlns.com/foaf/0.1/" selected="selected">foaf:knows</option>
-		        <option value="http://rdfs.org/sioc/ns#" selected="selected">sioc:links_to</option>
-		        <option value="http://www.w3.org/2000/01/rdf-schema#" selected="selected">rdfs:isDefinedBy</option>
-		        <option value="http://www.w3.org/2000/01/rdf-schema#" selected="selected">rdfs:seeAlso</option>
-		        <option value="http://www.w3.org/2002/07/owl#" selected="selected">owl:sameAs</option>
+		            <option value="http://xmlns.com/foaf/0.1/knows" selected="selected">foaf:knows</option>
+		            <option value="http://rdfs.org/sioc/ns#links_to" selected="selected">sioc:links_to</option>
+		            <option value="http://www.w3.org/2000/01/rdf-schema#isDefinedBy" selected="selected">rdfs:isDefinedBy</option>
+		            <option value="http://www.w3.org/2000/01/rdf-schema#seeAlso" selected="selected">rdfs:seeAlso</option>
+		            <option value="http://www.w3.org/2002/07/owl#sameAs" selected="selected">owl:sameAs</option>
 		      </select><br/>
 		      <input type="button" id="spongerPredsAdd" value="Add" style="margin-top:10px;"/>
 		      <input type="button" id="spongerPredsDel" style="margin-top:10px;" value="Remove"/>
@@ -518,10 +529,13 @@ WHERE     {	?thing a ?type;
           </fieldset>
         </div> <!-- #mdopts_ctr -->
       </div> <!-- #queryMetaData -->
+        <br style="clear:both;" />
+        </div> <!-- queryopts_ctr -->
+      </div> <!-- #queryopts_outer -->
 	<div class="main_col_page" id="page_results"></div>
         <div id="foot">
 	      <div id="data_links" style="display:none">Raw Linked Data formats: 
-            <a id="cxml_raw_lnk">CXML</a>|<a id="csv_raw_lnk">CSV</a> |
+            <span id="cxml_raw_lnk_c" style="display:none"><a id="cxml_raw_lnk">CXML</a> | </span><a id="csv_raw_lnk">CSV</a> |
 		    RDF (<a id="nt_raw_lnk">N-Triples</a> <a id="n3_raw_lnk">N3/Turtle</a> <a id="json_raw_lnk">JSON</a> <a id="rdfxml_raw_lnk">XML</a>) |
             ODATA (<a id="odata_atom_lnk">Atom</a> | <a id="odata_json_lnk">JSON</a>)
           </div>
@@ -534,7 +548,7 @@ WHERE     {	?thing a ?type;
             &nbsp;Bookmarklet - drag this link to your browser's bookmark bar: <a id="isparql_bookmarklet_a" href="javascript:(function(){location='http://www.openlinksw.com/';})();">iSPARQL</a> <a id="sparql_bookmarklet_a" href="" style="display:none">SPARQL</a>
         </div> <!-- #foot_l -->
           <div class="foot_r" id="foot_r">
-            iSPARQL Copyright &copy; 2006-2011 OpenLink Software<br/><span id="ft_loc"></span><br/>
+            iSPARQL Copyright &copy; 2006-2013 OpenLink Software<br/><span id="ft_loc"></span><br/>
         </div>
 	<div id="stats"></div> <!-- stats -->
       </div> <!-- #foot -->
@@ -566,7 +580,7 @@ WHERE     {	?thing a ?type;
       <label for="auth_dlg_user">Username:</label>
       <input type="text" id="auth_dlg_user" value="demo" /><br/>
       <label for="auth_dlg_pass" class="align">Password:</label>
-      <input type="password" id="auth_dlg_pass" value="demo"><br/>
+      <input type="password" id="auth_dlg_pass" value="demo" /><br/>
       <!--input type="checkbox" id="auth_dlg_save"><label class="ckb">Save in browser</label-->
       <div id="auth_dlg_error"></div>
       <div id="auth_buttons"><button id="auth_login_b">Login</button><button id="auth_cancel_b">Cancel</button></div>
@@ -650,16 +664,17 @@ WHERE     {	?thing a ?type;
       <h1>OpenLink iSPARQL</h1>
       <pre>
       Version: <span id="about_version">N/A</span>
-      Build Date: <span id="about_date">N/A</span>
+<!--      Build Date:   <span id="about_date">N/A</span> -->
       Built using <a target="_blank" href="http://sourceforge.net/projects/oat">OpenLink Ajax Toolkit (OAT)</a>
       OAT version: <span id="about_oat_version">N/A</span>
       OAT build: <span id="about_oat_build">N/A</span>
       IRI DB count: <span id="iridb_stats">N/A</span> IRI IDs
-      STORE:        <span id="triple_count">N/A</span> triples
-                    <span id="item_count">N/A</span> items
+<!--      STORE:        <span style="display:none" id="store_count">N/A</span> graphs
+                    <span id="triple_count">N/A</span> triples
+                    <span style="display:none" id="item_count">N/A</span> items
                     <span id="label_count">N/A</span> labels chosen
-                    <span id="label_proc_count">N/A</span> labels processed
-      LOCATION:     <span id="about_loc"></span>
+                      <span id="label_proc_count">N/A</span> labels processed -->
+      Last known Loc: <span id="about_loc">Unknown</span>
 
       </pre>
       <div class="btn_row"><button id="about_dlg_b_ok">OK</button></div>
@@ -674,6 +689,10 @@ WHERE     {	?thing a ?type;
       <div id="prefs_tab_services_ct" class="prefs_tab_ctr">
         <h2>Services</h2>
 		<div id="endpoint"><label for="service">SPARQL Endpoint:</label></div> <!-- endpoint combo box container -->
+	<!--div id="episvirtctr">
+	  <input type="checkbox" id="episvirt" checked="true" />
+	  <label class="ckb" for="episvirt">Use Virtuoso-specific options</label>
+        </div-->
         <div id="shortener">
 		  <input type="checkbox" id="shortener_ep_ckb">
 		  <label for="shortener_ep_ckb" class="ckb">Shorten URIs using:<br/><span class="expln">Virtuoso curi endpoint</span></label><input id="shortener_ep"></div>

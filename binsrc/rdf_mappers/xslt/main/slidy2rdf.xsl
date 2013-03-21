@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -28,6 +28,7 @@
 <!ENTITY sioct 'http://rdfs.org/sioc/types#'>
 <!ENTITY sioc 'http://rdfs.org/sioc/ns#'>
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY dc "http://purl.org/dc/elements/1.1/">
@@ -39,6 +40,7 @@
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
     xmlns:sioct="&sioct;"
     xmlns:sioc="&sioc;"
+    xmlns:opl="&opl;"
     xmlns:foaf="&foaf;"
     xmlns:bibo="&bibo;"
     xmlns:dcterms="&dcterms;"
@@ -69,6 +71,13 @@
 	    <owl:sameAs rdf:resource="{$docIRI}"/>
 	</rdf:Description>
 	<rdf:Description rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.slidy.com#this">
+                        			<foaf:name>Slidy</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.slidy.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 	    <rdfs:label>
 		<xsl:value-of select="string (//html/head/title)"/>
 	    </rdfs:label>

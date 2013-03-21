@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -48,8 +48,8 @@ typedef uint32 dp_addr_t;	/* must be exactly 32 bits wide */
 
 typedef unsigned char * db_buf_t;
 
-
 #define PAGE_SZ			8192
+#define KILOS_PER_PAGE (PAGE_SZ/1024)
 #define PAGE_DATA_SZ		(PAGE_SZ - DP_DATA)
 
 #define ROW_ALIGN(s) ALIGN_2(s)
@@ -78,8 +78,6 @@ typedef unsigned char * db_buf_t;
 #define DP_PARENT		(2 * sizeof (dp_addr_t))
 #define DP_RIGHT_INSERTS	(3 * sizeof (dp_addr_t))
 #define DP_LAST_INSERT		(3 * sizeof (dp_addr_t) + 2)
-#define DP_COL_LOWEST_INS DP_RIGHT_INSERTS /* for col page, lowest row no inserted w/o compression */
-#define DP_COL_N_NON_COMP_INS  DP_LAST_INSERT /* for col page, count of uncomporessed inserted col values  */
 #define DP_KEY_ID		(4 * sizeof (dp_addr_t))  /* overlaps with the blob len since only occurs in DPF_INDEX pages.  4 bytes */
 
 #define DP_BLOB_DIR (1 * sizeof (dp_addr_t)) /* overlap with index page comp overflow since blobs compressed stream wise if at all */
@@ -117,7 +115,8 @@ typedef unsigned char * db_buf_t;
 #define DPF_EXTENT_MAP 10
 #define DPF_HASH 11
 /* Like a page with rows but temporary hash index */
-#define DPF_COLUMN 12
+#define DPF_COMPRESS_OVERFLOW 12
+/* this page has what did not fit on some  compressed page */
 /* fake DPF which indicates max possible value of the DPF */
 #define DPF_LAST_DPF		13
 
@@ -358,7 +357,7 @@ struct wi_database_s
     int32	db_stripe_unit;
     int32	db_extent_size;
     int32	db_initial_gen;
-    char	db_cpt_dt[10]; /* DT_LENGTH bytes for datetime of checkpoint */
+    char 	db_id[16];
   };
 
 struct disk_stripe_s
@@ -477,6 +476,8 @@ extern int c_use_o_direct;
 
 /* compare given byte order with current sys byte order, 0=equals, -1=non equals */
 int dbs_byte_order_cmp (char byte_order);
+extern int dst_fd (disk_stripe_t * dst);
+extern void dst_fd_done (disk_stripe_t * dst, int fd);
 
 #ifdef DBG_BLOB_PAGES_ACCOUNT
 void db_dbg_account_add_page (dp_addr_t start);

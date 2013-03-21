@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2010 OpenLink Software
+ *  Copyright (C) 2005-2013 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -242,7 +242,7 @@ OAT.IRIDB = {
     }, 
 
     makeNSPrefix:function() {
-	return 'isparql'+this._ns_cnt++;
+	return 'ns'+this._ns_cnt++;
     },
 
     //

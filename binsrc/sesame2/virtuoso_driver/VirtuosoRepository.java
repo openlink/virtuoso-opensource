@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2010 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -348,6 +348,17 @@ public class VirtuosoRepository implements Repository {
 	public void initialize() throws RepositoryException {
 		initialized = true;
 	}
+
+        /**
+         * Indicates if the Repository has been initialized. Note that the
+         * initialization status may change if the Repository is shut down.
+         * 
+         * @return true iff the repository has been initialized.
+         */
+        public boolean isInitialized() {
+                return initialized;
+        }
+    
 
 	/**
 	 * Checks whether this repository is writable, i.e. if the data contained in

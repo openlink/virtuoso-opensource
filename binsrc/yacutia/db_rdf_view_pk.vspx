@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -105,7 +105,7 @@
 				  }
 
 				avail := vector ();
-				for select "COLUMN" from SYS_COLS where "TABLE" = self.tbl and not position ("COLUMN", self.pkeys) order by COL_ID do
+				for select "COLUMN" from SYS_COLS where "TABLE" = self.tbl and not position ("COLUMN", self.pkeys) and "COLUMN" <> '_IDN' order by COL_ID do
 				   {
                                      avail := vector_concat (avail, vector ("COLUMN"));
 				   }
@@ -125,6 +125,14 @@
 				</v:select-list>
 			      </td>
 			      <td>
+				<v:button name="add_to_all" value="&gt;&gt;&gt;" action="simple" >
+				  <v:on-post>
+				    self.pkeys := vector_concat (self.pkeys, self.avail);
+				    self.avail := vector ();
+				    self.av_cols.vc_data_bind (e);
+				    self.se_cols.vc_data_bind (e);
+				  </v:on-post>
+			        </v:button><br />
 				<v:button name="add_to" value="&gt;" action="simple" >
 				  <v:on-post>
 				    declare av, se, sel, nav any;
@@ -170,6 +178,14 @@
 					  nav := vector_concat (nav, vector (c));
 				      }
 				    self.pkeys := nav;
+				    self.av_cols.vc_data_bind (e);
+				    self.se_cols.vc_data_bind (e);
+				  </v:on-post>
+			        </v:button><br />
+				<v:button name="remove_from_all" value="&lt;&lt;&lt;" action="simple" >
+				  <v:on-post>
+				    self.avail := vector_concat (self.avail, self.pkeys);
+				    self.pkeys := vector ();
 				    self.av_cols.vc_data_bind (e);
 				    self.se_cols.vc_data_bind (e);
 				  </v:on-post>

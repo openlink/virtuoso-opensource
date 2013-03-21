@@ -1,0 +1,254 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{F357CF96-CF7A-11DA-85E2-A4E5714C712A}</ProjectGuid>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros">
+      <ShortPlatform Condition="'$(Platform)' == 'Win32'">x86</ShortPlatform>
+      <ShortPlatform Condition="'$(Platform)' == 'x64'">x64</ShortPlatform>
+  </PropertyGroup>
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ShortPlatform)\$(Configuration)\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ShortPlatform)\$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ShortPlatform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ShortPlatform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkIncremental>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Midl>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MkTypLibCompatible>true</MkTypLibCompatible>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <TargetEnvironment>X64</TargetEnvironment>
+      <TypeLibraryName>$(Configuration)/virtoledb.tlb</TypeLibraryName>
+    </Midl>
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <AdditionalIncludeDirectories>..\binsrc\driver;..\libsrc\Wi;..\libsrc\langfunc;..\libsrc\Xml.new;..\libsrc\plugin;..\libsrc\Dk;..\binsrc\driver\include;..\libsrc\util\win32;..\libsrc;openssl;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_SSL;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;YYTOKENTYPE;DLDAPI_WINDOWS;NO_IMPORT;VIRTTP;BIF_XML;NDEBUG;VIRTOLEDB_CLI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <ExceptionHandling>
+      </ExceptionHandling>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <BrowseInformation>
+      </BrowseInformation>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <CompileAs>Default</CompileAs>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0419</Culture>
+      <AdditionalIncludeDirectories>..\libsrc\Wi;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Link>
+      <AdditionalOptions>/MACHINE:I386 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalDependencies>ole32.lib;oleaut32.lib;odbccp32.lib;rpcrt4.lib;gdi32.lib;comdlg32.lib;threads.lib;dk1t.lib;util.lib;odbc32.lib;ws2_32.lib;libeay32.lib;ssleay32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutDir)virtoledb.dll</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <AdditionalLibraryDirectories>$(ShortPlatform)/$(Configuration)/;../SDK/$(ShortPlatform)/sslsdk/out32dll;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <IgnoreSpecificDefaultLibraries>LIBCD.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ModuleDefinitionFile>..\binsrc\virtoledb\virtoledb.def</ModuleDefinitionFile>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ProgramDatabaseFile>$(Configuration)/virtoledb.pdb</ProgramDatabaseFile>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
+      <DataExecutionPrevention>
+      </DataExecutionPrevention>
+      <ImportLibrary>$(Configuration)/virtoledb.lib</ImportLibrary>
+      <TargetMachine>MachineX64</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Midl>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MkTypLibCompatible>true</MkTypLibCompatible>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <TypeLibraryName>$(Configuration)/virtoledb.tlb</TypeLibraryName>
+    </Midl>
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <AdditionalIncludeDirectories>..\binsrc\driver;..\libsrc\Wi;..\libsrc\langfunc;..\libsrc\Xml.new;..\libsrc\plugin;..\libsrc\Dk;..\binsrc\driver\include;..\libsrc\util\win32;..\libsrc;openssl;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_SSL;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;YYTOKENTYPE;DLDAPI_WINDOWS;NO_IMPORT;VIRTTP;BIF_XML;NDEBUG;VIRTOLEDB_CLI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <ExceptionHandling>
+      </ExceptionHandling>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <BrowseInformation>
+      </BrowseInformation>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <CompileAs>Default</CompileAs>
+    </ClCompile>
+    <ResourceCompile>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <Culture>0x0419</Culture>
+      <AdditionalIncludeDirectories>..\libsrc\Wi;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ResourceCompile>
+    <Link>
+      <AdditionalOptions>
+      </AdditionalOptions>
+      <AdditionalDependencies>ole32.lib;oleaut32.lib;odbccp32.lib;rpcrt4.lib;gdi32.lib;comdlg32.lib;threads.lib;dk1t.lib;util.lib;odbc32.lib;ws2_32.lib;libeay32.lib;ssleay32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutDir)virtoledb.dll</OutputFile>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <AdditionalLibraryDirectories>$(ShortPlatform)/$(Configuration)/;../SDK/$(ShortPlatform)/sslsdk/out32dll;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <IgnoreSpecificDefaultLibraries>LIBCD.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <ModuleDefinitionFile>..\binsrc\virtoledb\virtoledb.def</ModuleDefinitionFile>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ProgramDatabaseFile>$(Configuration)/virtoledb.pdb</ProgramDatabaseFile>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
+      <DataExecutionPrevention>
+      </DataExecutionPrevention>
+      <ImportLibrary>$(Configuration)/virtoledb.lib</ImportLibrary>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\binsrc\virtoledb\asserts.cpp" />
+    <ClCompile Include="..\binsrc\virtoledb\baseobj.cpp" />
+    <ClCompile Include="..\libsrc\Wi\blobio.c" />
+    <ClCompile Include="..\libsrc\Wi\CLIcr.c" />
+    <ClCompile Include="..\libsrc\Wi\CLIodbc3.c" />
+    <ClCompile Include="..\libsrc\Wi\CLIsql1.c" />
+    <ClCompile Include="..\libsrc\Wi\CLIsql2.c" />
+    <ClCompile Include="..\binsrc\virtodbc\CLIsql3_w32.cpp" />
+    <ClCompile Include="..\libsrc\Wi\CLIuti.c" />
+    <ClCompile Include="..\libsrc\Wi\CLIw.c" />
+    <ClCompile Include="..\binsrc\virtoledb\command.cpp" />
+    <ClCompile Include="..\binsrc\virtoledb\connobj.cpp" />
+    <ClCompile Include="..\binsrc\virtoledb\data.cpp" />
+    <ClCompile Include="..\binsrc\virtoledb\datalink.cpp" />
+    <ClCompile Include="..\binsrc\virtoledb\dataobj.cpp" />
+    <ClCompile Include="..\binsrc\virtoledb\datasource.cpp" />
+    <ClCompile Include="..\libsrc\Wi\datesupp.c" />
+    <ClCompile Include="..\binsrc\virtoledb\db.cpp" />
+    <ClCompile Include="..\binsrc\virtodbc\dialog.cpp" />
+    <ClCompile Include="..\libsrc\plugin\dlf.c" />
+    <ClCompile Include="..\binsrc\virtoledb\dllmodule.cpp" />
+    <ClCompile Include="..\binsrc\virtoledb\error.cpp" />
+    <ClCompile Include="..\binsrc\virtoledb\filedsn.cpp" />
+    <ClCompile Include="..\binsrc\virtoledb\globals.cpp" />
+    <ClCompile Include="..\binsrc\virtodbc\kvlist.cpp" />
+    <ClCompile Include="..\binsrc\virtoledb\lobdata.cpp" />
+    <ClCompile Include="..\binsrc\virtoledb\mresults.cpp" />
+    <ClCompile Include="..\libsrc\Wi\mts_client.c" />
+    <ClCompile Include="..\libsrc\Wi\multibyte.c" />
+    <ClCompile Include="..\libsrc\Wi\numeric.c" />
+    <ClCompile Include="..\binsrc\virtoledb\paramdata.cpp" />
+    <ClCompile Include="..\libsrc\Wi\plugin_gate.c" />
+    <ClCompile Include="..\binsrc\virtoledb\properties.cpp" />
+    <ClCompile Include="..\binsrc\virtoledb\refcounted.cpp" />
+    <ClCompile Include="..\binsrc\virtoledb\rowset.cpp" />
+    <ClCompile Include="..\binsrc\virtoledb\rowsetdata.cpp" />
+    <ClCompile Include="..\binsrc\virtoledb\rowsetprops.cpp" />
+    <ClCompile Include="..\binsrc\virtoledb\session.cpp" />
+    <ClCompile Include="..\binsrc\virtoledb\syncobj.cpp" />
+    <ClCompile Include="..\binsrc\virtoledb\util.cpp" />
+    <ClCompile Include="..\binsrc\virtodbc\virtodbc.cpp" />
+    <ClCompile Include="..\libsrc\Wi\wi_xid.c" />
+    <ClCompile Include="..\binsrc\virtodbc\winctl.cpp" />
+    <ClCompile Include="..\libsrc\Wi\wirpc.c" />
+    <ClCompile Include="..\binsrc\virtodbc\wizard.cpp" />
+    <ClCompile Include="..\binsrc\virtodbc\zcbrowser.cpp" />
+    <ClCompile Include="..\binsrc\virtodbc\zcbrowsercombo.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\binsrc\virtodbc\virtodbc.def" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\binsrc\virtoledb\asserts.h" />
+    <ClInclude Include="..\binsrc\virtoledb\baseobj.h" />
+    <ClInclude Include="..\binsrc\virtoledb\command.h" />
+    <ClInclude Include="..\binsrc\virtoledb\connobj.h" />
+    <ClInclude Include="..\binsrc\virtoledb\data.h" />
+    <ClInclude Include="..\binsrc\virtoledb\datalink.h" />
+    <ClInclude Include="..\binsrc\virtoledb\dataobj.h" />
+    <ClInclude Include="..\binsrc\virtoledb\db.h" />
+    <ClInclude Include="..\binsrc\virtoledb\dllmodule.h" />
+    <ClInclude Include="..\binsrc\virtoledb\error.h" />
+    <ClInclude Include="..\binsrc\virtoledb\filedsn.h" />
+    <ClInclude Include="..\binsrc\virtoledb\headers.h" />
+    <ClInclude Include="..\binsrc\virtoledb\lobdata.h" />
+    <ClInclude Include="..\binsrc\virtoledb\os.h" />
+    <ClInclude Include="..\binsrc\virtoledb\paramdata.h" />
+    <ClInclude Include="..\binsrc\virtoledb\properties.h" />
+    <ClInclude Include="..\binsrc\virtoledb\refcounted.h" />
+    <ClInclude Include="..\binsrc\virtoledb\resource.h" />
+    <ClInclude Include="..\binsrc\virtoledb\rowset.h" />
+    <ClInclude Include="..\binsrc\virtoledb\rowsetdata.h" />
+    <ClInclude Include="..\binsrc\virtoledb\rowsetprops.h" />
+    <ClInclude Include="..\binsrc\virtoledb\session.h" />
+    <ClInclude Include="..\binsrc\virtoledb\util.h" />
+    <ClInclude Include="..\binsrc\virtoledb\virtoledb.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\binsrc\virtoledb\virtoledb.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="dk1t.vcxproj">
+      <Project>{58f7dcef-d5de-402d-8f50-39b67c8b9e9e}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="threads.vcxproj">
+      <Project>{b619bb2c-a9ac-453d-ba98-3a8f3217b1ab}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="util.vcxproj">
+      <Project>{031db868-5294-4738-90ba-f80bb2cea9dc}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="wic.vcxproj">
+      <Project>{a66e395b-18ee-4877-8f0d-386a7bbab370}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

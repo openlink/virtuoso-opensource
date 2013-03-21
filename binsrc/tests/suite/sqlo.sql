@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -127,8 +127,8 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": where FI3 between 100 and 110  order by STRING1 desc last row FI2=" $LAST[2] "\n";
 
 select STRING1, FI2 from T1 where FI3 between 2000 and 2010  order by STRING1 desc;
-echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
-echo both ": not exists and partitioned sort\n";
+ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
+ECHO BOTH ": not exists and partitioned sort\n";
 
 select top 2 FS1 from T1 order by 1 - ROW_NO;
 ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
@@ -186,11 +186,10 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": select * from union subq with where clause in the topmost select last row x=" $LAST[1] "\n";
 
 
--- XXX
---select x from (select ROW_NO, ROW_NO + 1 as x  from T1  union corresponding by (x) select ROW_NO, ROW_NO + 2 from T1) un where un.ROW_NO < 30 order by x;
---ECHO BOTH $IF $EQU $LAST[1] 31 "PASSED" "***FAILED";
---SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
---ECHO BOTH ": select * from union corresponding by (x) subq with where clause in the topmost select last row x=" $LAST[1] "\n";
+select x from (select ROW_NO, ROW_NO + 1 as x  from T1  union corresponding by (x) select ROW_NO, ROW_NO + 2 from T1) un where un.ROW_NO < 30 order by x;
+ECHO BOTH $IF $EQU $LAST[1] 31 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": select * from union corresponding by (x) subq with where clause in the topmost select last row x=" $LAST[1] "\n";
 
 select x from (select ROW_NO, ROW_NO + 1 as x  from T1  union all  select ROW_NO, ROW_NO + 2 from T1) un where un.ROW_NO < 30 order by x;
 ECHO BOTH $IF $EQU $LAST[1] 31 "PASSED" "***FAILED";
@@ -298,11 +297,10 @@ ECHO BOTH $IF $EQU $ROWCNT 3 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": ALL subq/group by made into exists returned " $ROWCNT " rows\n";
 
--- XXX
 select row_no from t1 where row_no < all (select min (row_no) from t1 where row_no > 22 and row_no < 100 group by STRING1);
---ECHO BOTH $IF $EQU $ROWCNT 3 "PASSED" "***FAILED";
---SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
---ECHO BOTH ": ALL subq/aggregates/group by made into exists returned " $ROWCNT " rows\n";
+ECHO BOTH $IF $EQU $ROWCNT 3 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": ALL subq/aggregates/group by made into exists returned " $ROWCNT " rows\n";
 
 
 -- aggregate subqueries expansion (ANY PRED)
@@ -398,11 +396,10 @@ ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": adding the oby cols as out cols in indexed order by case STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
--- XXX
---select _ROW, ROW_NO from T1;
---ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
---SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
---ECHO BOTH ": select _ROW STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+select _ROW, ROW_NO from T1;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": select _ROW STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 drop table G1;
 drop table G2;
@@ -514,22 +511,20 @@ INSERT INTO TESTSPR3901B (ICOL_ID, COL_ID, SEQ_NUM) VALUES (3, 3, 3);
 INSERT INTO TESTSPR3901B (ICOL_ID, COL_ID, SEQ_NUM) VALUES (4, 4, 2);
 INSERT INTO TESTSPR3901B (ICOL_ID, COL_ID, SEQ_NUM) VALUES (5, 5, 1);
 
--- XXX
 select count (distinct NAME) from (select NAME from TESTSPR3901A, TESTSPR3901B
 	where TESTSPR3901B.COL_ID = TESTSPR3901A.COL_ID
 	order by TESTSPR3901B.SEQ_NUM) x;
---ECHO BOTH $IF $EQU $LAST[1] 5 "PASSED" "***FAILED";
---SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
---ECHO BOTH ": BUG1301: order by returns correct resultset\n";
+ECHO BOTH $IF $EQU $LAST[1] 5 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": BUG1301: order by returns correct resultset\n";
 
 use DB;
 
 -- bug 1286
--- XXX
---explain ('select * from WS..SYS_DAV_RES a, WS..SYS_DAV_RES b where contains (b.RES_CONTENT, ''a'')');
---ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
---SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
---ECHO BOTH ": BUG1286: contains on a non-driving table\n";
+explain ('select * from WS..SYS_DAV_RES a, WS..SYS_DAV_RES b where contains (b.RES_CONTENT, ''a'')');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": BUG1286: contains on a non-driving table\n";
 
 
 
@@ -680,11 +675,10 @@ CREATE TEXT XML INDEX ON B2176(XML_DATA) WITH KEY ID;
 INSERT INTO B2176 (ID,XML_DATA) VALUES( 1,'<name>test  1 </name>');
 INSERT INTO B2176 (ID,XML_DATA) VALUES( 2,'<name>test  2 </name>');
 
--- XXX
---SELECT ID, XML_DATA FROM B2176 WHERE xcontains (XML_DATA,sprintf('/name'));
---ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
---SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
---ECHO BOTH ": BUG2176: placing the xcontains args correctly STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+SELECT ID, XML_DATA FROM B2176 WHERE xcontains (XML_DATA,sprintf('/name'));
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": BUG2176: placing the xcontains args correctly STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 explain ('select * from NEWS_MESSAGES', 1);
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
@@ -986,16 +980,16 @@ INSERT INTO B9401_3 (ID,DATA)
 INSERT INTO B9401_3 (ID,DATA)
           VALUES (2, 'name 2');
 
--- XXX
---SELECT T2.DATA
---  FROM B9401_1 T TABLE OPTION (INDEX TEXT KEY)
---  left JOIN B9401_2 T2 on T.OBJ_ID = T2.ID
---  left JOIN B9401_3 T3 on T.OBJ_ID = T3.ID
--- WHERE contains(T.DATA,'asdf')
---   AND ORG_ID = 1000;
---ECHO BOTH $IF $EQU $ROWCNT 3 "PASSED" "*** FAILED";
---SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
---ECHO BOTH ": B9401: nested OJ and contains returns " $ROWCNT " rows STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+SELECT T2.DATA
+  FROM B9401_1 T TABLE OPTION (INDEX TEXT KEY)
+  left JOIN B9401_2 T2 on T.OBJ_ID = T2.ID
+  left JOIN B9401_3 T3 on T.OBJ_ID = T3.ID
+ WHERE contains(T.DATA,'asdf')
+   AND ORG_ID = 1000;
+ECHO BOTH $IF $EQU $ROWCNT 3 "PASSED" "*** FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": B9401: nested OJ and contains returns " $ROWCNT " rows STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 drop table BUG_TBLOB;
 drop table BUG_TB_STAT;
@@ -1043,34 +1037,31 @@ create procedure f (in x any)
   return x;
 };
 
--- XXX
 select count (*) from t1 a, t1 b where a.fi2 = b.fi2 and f(a.row_no) = f(b.row_no) and  f(b.row_no) < 1000  option (order, hash);
---ECHO BOTH $IF $EQU $LAST[1] 980 "PASSED" "*** FAILED";
---SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
---echo both ": count with hash j with expression hash  key reused in after join test\n";
+ECHO BOTH $IF $EQU $LAST[1] 980 "PASSED" "*** FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": count with hash j with expression hash  key reused in after join test\n";
 
 
 select count (*) from (select distinct row_no from t1) f where f.row_no is null or f.row_no is null;
 ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "*** FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-echo both ": count of dt with inported false const preds\n";
+ECHO BOTH ": count of dt with inported false const preds\n";
 
 
 select count (*) from (select distinct row_no from t1) f where not (f.row_no is null or f.row_no is null);
 ECHO BOTH $IF $EQU $LAST[1] 1000 "PASSED" "*** FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-echo both ": count of dt with inported true const preds\n";
+ECHO BOTH ": count of dt with inported true const preds\n";
 
--- XXX
 select a.row_no, b.row_no from t1 a, (select top 4 row_no from t1) b where a.row_no = b.row_no option (order) ;
---echo both $if $equ $rowcnt 4 "PASSED" "***FAILED";
---echo both ": dt with top does not import preds\n";
+ECHO BOTH $IF $EQU $ROWCNT 4 "PASSED" "***FAILED";
+ECHO BOTH ": dt with top does not import preds\n";
 
 select __max (__min (1000), count (1)) from sys_users where u_id = 1111;
-echo both $if $equ $last[1] 1000 "PASSED" "***FAILED";
-echo both ": emppty agg with data independent false cond inits data independent exps\n";
+ECHO BOTH $IF $EQU $LAST[1] 1000 "PASSED" "***FAILED";
+ECHO BOTH ": emppty agg with data independent false cond inits data independent exps\n";
 
 
 
 ECHO BOTH "COMPLETED: SQL Optimizer tests (sqlo.sql) WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";
-

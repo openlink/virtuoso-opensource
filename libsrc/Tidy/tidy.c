@@ -215,7 +215,7 @@ StreamIn *OpenInputBoxString(caddr_t html_input)
 {
     StreamIn *in;
     in = (StreamIn *)MemAlloc(sizeof(StreamIn));
-    ClearMemory(in, sizeof (StreamIn *));
+    ClearMemory(in, sizeof (StreamIn));
     in->input.tio_data.lm_memblock = html_input;
     in->input.tio_data.lm_length = box_length (html_input)-1;
     in->input.tio_pos = 0;

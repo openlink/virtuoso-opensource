@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2007 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -57,7 +57,8 @@
       for (i := 0; i < length (self.items); i := i + 2)
       {
         item := ODRIVE.WA.DAV_INIT (self.items[i]);
-
+        if (not ODRIVE.WA.DAV_ERROR (item))
+        {
         http ('    <tr>');
         http (sprintf ('<td nowrap="nowrap"><img src="%s" alt="%s">&nbsp;&nbsp;%s</td>', ODRIVE.WA.ui_image (ODRIVE.WA.DAV_GET (item, 'fullPath'), ODRIVE.WA.DAV_GET (item, 'type'), ODRIVE.WA.DAV_GET (item, 'mimeType')), ODRIVE.WA.ui_alt (ODRIVE.WA.DAV_GET (item, 'name'), ODRIVE.WA.DAV_GET (item, 'type')), self.items[i]));
         http (sprintf ('<td class="number" nowrap="nowrap">%s</td>', ODRIVE.WA.ui_size (ODRIVE.WA.DAV_GET (item, 'length'), ODRIVE.WA.DAV_GET (item, 'type'))));
@@ -70,6 +71,7 @@
         http (sprintf ('<td style="color: red;">%s</td>', self.items[i+1]));
         }
         http ('    </tr>');
+      }
       }
       http ('  </table>');
       http ('</div>');
@@ -156,6 +158,10 @@
             self.vc_is_valid := 0;
             return;
           }
+
+        -- validate ACL rules
+        DB.DBA.wa_aci_validate (DB.DBA.wa_aci_params (params));
+
         prop_mime  := trim (get_keyword ('prop_mime', params, ''));
         prop_owner := ODRIVE.WA.odrive_user_id (trim(get_keyword ('prop_owner', params, '')));
         prop_group := ODRIVE.WA.odrive_user_id (trim(get_keyword ('prop_group', params, '')));
@@ -182,14 +188,14 @@
         acl_value := WS.WS.ACL_PARSE (ODRIVE.WA.acl_params (params));
 
         -- aci properties
-        aci_value := ODRIVE.WA.aci_n3 (ODRIVE.WA.aci_params (params));
+        aci_value := ODRIVE.WA.aci_n3 (DB.DBA.wa_aci_params (params));
 
         for (I := 0; I < length (self.items); I := I + 2)
         {
           item := ODRIVE.WA.DAV_INIT(self.items[I]);
           if (not ODRIVE.WA.DAV_ERROR (item))
           {
-            if (('' <> prop_mime) and (ODRIVE.WA.DAV_GET (item, 'type') = 'R') and (ODRIVE.WA.DAV_GET (item, 'mimeType') <> prop_mime))
+            if (('' <> prop_mime) and ('Do not change' <> prop_mime) and (ODRIVE.WA.DAV_GET (item, 'type') = 'R') and (ODRIVE.WA.DAV_GET (item, 'mimeType') <> prop_mime))
             {
               ODRIVE.WA.DAV_SET (self.items[I], 'mimeType', prop_mime);
             }
@@ -266,8 +272,7 @@
             }
 
             -- aci - WebAccess
-            item := ODRIVE.WA.DAV_INIT(self.items[I]);
-            if ((ODRIVE.WA.DAV_GET (item, 'type') = 'R') and length (aci_value))
+            if (length (aci_value))
             {
               ODRIVE.WA.DAV_PROP_SET (self.items[I], 'virt:aci_meta_n3', aci_value);
             }
@@ -275,13 +280,15 @@
         }
         self.v_step := 'end';
       }
-      else if (self.v_form = 'edit')
+      else if (self.v_form in ('edit', 'view'))
       {
         item := ODRIVE.WA.DAV_INIT (self.v_path);
+        if (not ODRIVE.WA.DAV_ERROR (item))
+        {
         returnData := ODRIVE.WA.DAV_RES_UPLOAD (self.v_path, get_keyword ('f_content', params, ''), ODRIVE.WA.DAV_GET (item, 'mimeType'), ODRIVE.WA.DAV_GET (item, 'permissions'), ODRIVE.WA.DAV_GET (item, 'ownerID'), ODRIVE.WA.DAV_GET (item, 'groupID'));
         if (ODRIVE.WA.DAV_ERROR (returnData))
           signal('TEST', ODRIVE.WA.DAV_PERROR (returnData) || '<>');
-
+        }
         self.v_step := 'end';
       }
       else if (self.v_form = 'rename')
@@ -421,19 +428,19 @@
                 <table class="form-body" cellspacing="0">
                   <tr>
                     <th>
-                      <v:label for="prop_mime" value="--'File Mime Type'" />
+                      <vm:label for="prop_mime" value="--'File Mime Type'" />
                     </th>
                     <td>
-                      <input type="text" name="prop_mime" class="field-short" />
+                      <v:text name="prop_mime" xhtml_id="prop_mime" value="--'Do not change'" format="%s" xhtml_class="field-short" />
                       <input type="button" value="Select" onclick="javascript: windowShow('<?V ODRIVE.WA.page_url (self.domain_id, 'mimes_select.vspx?params=prop_mime:s1;') ?>');" class="button" />
                     </td>
                   </tr>
                   <tr>
                     <th>
-                      <v:label for="prop_owner" value="--'Owner'" />
+                      <vm:label for="prop_owner" value="--'Owner'" />
                     </th>
                     <td>
-                      <v:text name="prop_owner" value="--'Do not change'" format="%s" xhtml_class="field-short">
+                      <v:text name="prop_owner" xhtml_id="prop_owner" value="--'Do not change'" format="%s" xhtml_class="field-short">
                         <v:after-data-bind>
                           <![CDATA[
                             if (not ODRIVE.WA.check_admin (self.account_id))
@@ -448,16 +455,16 @@
                   </tr>
                   <tr>
                     <th>
-                      <v:label for="prop_group" value="--'Group'" />
+                      <vm:label for="prop_group" value="--'Group'" />
                     </th>
                     <td>
-                      <v:text name="prop_group" value="--'Do not change'" format="%s" xhtml_class="field-short" />
+                      <v:text name="prop_group" xhtml_id="prop_group" value="--'Do not change'" format="%s" xhtml_class="field-short" />
                       <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=g&amp;params=prop_group:s1;')" class="button" />
                     </td>
                   </tr>
                   <tr>
-                    <th>
-                      <v:label value="--'Permissions'" />
+                    <th valign="top">
+                      <vm:label value="--'Permissions'" />
                     </th>
                     <td>
                       <table class="permissions-list" cellspacing="0">
@@ -478,8 +485,6 @@
                         <tr>
                           <td class="bottom">Remove</td>
                           <?vsp
-                            declare i integer;
-                            declare S varchar;
                             for (i := 0; i < 9; i := i + 1)
                             {
                               S := case when (i = 8) then 'class="right bottom"' else 'class="bottom"' end;
@@ -492,10 +497,10 @@
                   </tr>
                   <tr>
                     <th>
-                      <v:label for="prop_index" value="--'Full Text Search'" />
+                      <vm:label for="prop_index" value="--'Full Text Search'" />
                     </th>
                     <td>
-                      <v:select-list name="prop_index">
+                      <v:select-list name="prop_index" xhtml_id="prop_index" >
                         <v:item name="Do not change" value="*" />
                         <v:item name="Off" value="N" />
                         <v:item name="Direct members" value="T" />
@@ -505,10 +510,10 @@
                   </tr>
                   <tr>
                     <th>
-                      <v:label for="prop_metagrab" value="--'Metadata Retrieval'" />
+                      <vm:label for="prop_metagrab" value="--'Metadata Retrieval'" />
                     </th>
                     <td>
-                      <v:select-list name="prop_metagrab">
+                      <v:select-list name="prop_metagrab" xhtml_id="prop_metagrab" >
                         <v:item name="Do not change" value="*" />
                         <v:item name="Off" value="N" />
                         <v:item name="Direct members" value="M" />
@@ -520,11 +525,11 @@
                     <th />
                     <td valign="center">
                       <input type="checkbox" name="prop_recursive" id="prop_recursive" title="Recursive" />
-                      <v:label for="prop_recursive" value="--'Recursive'" />
+                      <vm:label for="prop_recursive" value="--'Recursive'" />
                     </td>
                   </tr>
                   <tr>
-                    <th>WebDAV Properties</th>
+                    <th valign="top">WebDAV Properties</th>
                     <td>
                       <table>
                         <tr>
@@ -540,7 +545,7 @@
                             </table>
                           </td>
                           <td valign="top" nowrap="nowrap">
-                            <span class="button pointer" onclick="javascript: TBL.createRow('c', null, {fld_1: {mode: 40, className: '_validate_', onblur: function(){validateField(this);}}, fld_2: {mode: 0}, fld_3: {mode: 41}});"><img src="image/add_16.png" class="button" alt="Add Property" title="Add Property" /> Add</span><br /><br />
+                            <span class="button pointer" onclick="javascript: TBL.createRow('c', null, {fld_1: {mode: 40, className: '_validate_', onblur: function(){validateField(this);}}, fld_2: {mode: 0}, fld_3: {mode: 41}});"><img src="/ods/images/icons/add_16.png" class="button" alt="Add Property" title="Add Property" /> Add</span><br /><br />
                           </td>
                         </tr>
                       </table>
@@ -555,7 +560,8 @@
                   <table>
                     <tr>
                       <td width="100%">
-                        <table id="s_tbl" class="form-list" style="width: 100%;"  cellspacing="0">
+                        <table id="f_tbl" class="form-list" style="width: 100%;"  cellspacing="0">
+                          <thead>
                   <tr>
                             <th nowrap="nowrap">User/Group</th>
                             <th>Inheritance</th>
@@ -563,11 +569,14 @@
                             <th width="1%" align="center" nowrap="nowrap">Deny<br />(R)ead, (W)rite, e(X)ecute</th>
                             <th width="1%">Action</th>
                   </tr>
-                          <tr id="s_tr_no"><td colspan="5"><b>No Security Properties</b></td></tr>
+                          </thead>
+                          <tbody id="f_tbody">
+                            <tr id="f_tr_no"><td colspan="5"><b>No Security Properties</b></td></tr>
+                          </tbody>
                 </table>
                       </td>
                       <td valign="top" nowrap="nowrap">
-                        <span class="button pointer" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 1, cssText: 'width: 88%;', tdCssText: 'white-space: nowrap;'}, fld_2: {mode: 43, value: 1}, fld_3: {mode: 42, value: [1, 1, 0], suffix: '_grant', onclick: function(){TBL.clickCell42(this);}, tdCssText: 'width: 1%; text-align: center;'}, fld_4: {mode: 42,  suffix: '_deny', onclick: function(){TBL.clickCell42(this);}, tdCssText: 'width: 1%; text-align: center;'}});"><img src="image/add_16.png" class="button" alt="Add Security" title="Add Security" /> Add</span><br /><br />
+                        <span class="button pointer" onclick="javascript: TBL.createRow('f', null, {fld_1: {mode: 1, cssText: 'width: 88%;', tdCssText: 'white-space: nowrap;'}, fld_2: {mode: 43, value: 1}, fld_3: {mode: 42, value: [1, 1, 0], suffix: '_grant', onclick: function(){TBL.clickCell42(this);}, tdCssText: 'width: 1%; text-align: center;'}, fld_4: {mode: 42,  suffix: '_deny', onclick: function(){TBL.clickCell42(this);}, tdCssText: 'width: 1%; text-align: center;'}});"><img src="/ods/images/icons/add_16.png" class="button" alt="Add Security" title="Add Security" /> Add</span><br /><br />
                       </td>
                     </tr>
                   </table>
@@ -578,18 +587,22 @@
                   <table>
                     <tr>
                       <td width="100%">
-                          <table id="f_tbl" class="form-list" style="width: 100%;"  cellspacing="0">
+                          <table id="s_tbl" class="form-list" style="width: 100%;"  cellspacing="0">
+                            <thead>
                           <tr>
                               <th width="1%" align="center" nowrap="nowrap">Acces Type</th>
                               <th nowrap="nowrap">WebID</th>
-                              <th width="1%" align="center" nowrap="nowrap">ACL: (R)ead, (W)rite</th>
+                                <th width="1%" align="center" nowrap="nowrap">Allow<br />(R)ead, (W)rite, e(X)ecute</th>
                             <th width="1%" >Action</th>
                           </tr>
-                            <tr id="f_tr_no"><td colspan="4"><b>No Security Properties</b></td></tr>
+                            </thead>
+                            <tbody id="s_tbody" >
+                              <tr id="s_tr_no"><td colspan="4"><b>No Security Properties</b></td></tr>
+                            </tbody>
                         </table>
                       </td>
-                      <td valign="top" nowrap="nowrap">
-                          <span class="button pointer" onclick="javascript: TBL.createRow('f', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: 'F1', tdCssText: 'white-space: nowrap;', className: '_validate_ _uri_'}, fld_3: {mode: 52, value: [1, 0, 0], tdCssText: 'width: 1%; text-align: center;'}});"><img src="image/add_16.png" class="button" alt="Add Security" title="Add Security" /> Add</span><br /><br />
+                        <td valign="top" nowrap="nowrap">3
+                          <span class="button pointer" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: 'F1', tdCssText: 'white-space: nowrap;', className: '_validate_ _uri_'}, fld_3: {mode: 52, value: [1, 0, 0], execute: true, tdCssText: 'width: 1%; text-align: center;'}});"><img src="/ods/images/icons/add_16.png" class="button" alt="Add Security" title="Add Security" /> Add</span><br /><br />
                       </td>
                     </tr>
                   </table>
@@ -614,7 +627,7 @@
           </script>
         </v:template>
 
-        <v:template type="simple" enabled="-- case when (self.v_form = 'edit') then 1 else 0 end">
+        <v:template type="simple" enabled="-- case when (self.v_form in ('edit', 'view')) then 1 else 0 end">
           <v:before-data-bind>
             <![CDATA[
               declare item any;
@@ -625,21 +638,26 @@
             ]]>
           </v:before-data-bind>
           <div class="new-form-header">
-            Edit resource <?V self.v_path ?>
+            <?V initcap (self.v_form) ?> resource <?V ODRIVE.WA.utf2wide (self.v_path) ?>
           </div>
-          <div style="padding-right: 12px;">
-            <textarea id="f_content" name="f_content" style="width: 100%; height: 365px"><?vsp http (ODRIVE.WA.DAV_RES_CONTENT (self.v_path)); ?></textarea>
+          <div style="padding-right: 6px;">
+            <?vsp
+              declare disabled varchar;
+
+              disabled := case when self.v_form = 'view' then 'disabled="disabled"' else '' end;
+              http (sprintf ('<textarea id="f_content" name="f_content" style="width: 100%%; height: 360px" %s>%V</textarea>', disabled, ODRIVE.WA.utf2wide (cast (ODRIVE.WA.DAV_RES_CONTENT (self.v_path) as varchar))));
+            ?>
             <vm:if test="self.mimeType like 'text/html'">
               <![CDATA[
                 <script type="text/javascript" src="/ods/ckeditor/ckeditor.js"></script>
                 <script type="text/javascript">
-                  var oEditor = CKEDITOR.replace('f_content', {height: '250px'});
+                  var oEditor = CKEDITOR.replace('f_content', {height: '250px', width: '99%'});
                 </script>
               ]]>
             </vm:if>
           </div>
           <div class="new-form-footer">
-            <v:button action="simple" value="Save">
+            <v:button action="simple" value="Save" enabled="--case when self.v_form = 'view' then 0 else 1 end">
               <v:on-post>
                 <![CDATA[
                   self.execPost (e);

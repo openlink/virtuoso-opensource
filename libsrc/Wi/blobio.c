@@ -9,7 +9,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -635,15 +635,6 @@ xx_encrypt_passwd (char *thing, int thing_len, char *user_name)
   for (md5_inx = 0, thing_ptr = (unsigned char *) thing; thing_ptr - ((unsigned char *)thing) < thing_len;
       thing_ptr++, md5_inx = (md5_inx+1) % MD5_SIZE)
     *thing_ptr = *thing_ptr ^ md5[md5_inx];
-}
-
-
-caddr_t
-box_iri_id (int64 n)
-{
-  iri_id_t * box = (iri_id_t*) dk_alloc_box (sizeof (iri_id_t), DV_IRI_ID);
-  *box = n;
-  return (caddr_t) box;
 }
 
 

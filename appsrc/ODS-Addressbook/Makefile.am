@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2007 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -44,8 +44,10 @@ clean-local:
 	-rm -rf vad
 
 EXTRA_DIST = \
+	*.dox \
 	make_vad.sh \
 	sql/*.sql \
+	vad_version \
 	www/*.vsp \
 	www/*.vspx \
 	www/css/*.css \

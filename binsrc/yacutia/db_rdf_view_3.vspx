@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -27,7 +27,7 @@
         fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
         xmlns:vm="http://www.openlinksw.com/vspx/macro"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
-  <vm:pagetitle>RDF View definition</vm:pagetitle>
+  <vm:pagetitle>Linked Data View definition</vm:pagetitle>
   <vm:pagewrapper>
   <vm:variables>
     <v:variable name="is_popup" persist="0" type="integer" default="0" />
@@ -41,6 +41,7 @@
       <v:variable name="exec_ret" type="any" default="null" persist="temp"/>
       <v:variable name="sync_ret" type="any" default="null" persist="temp"/>
       <v:variable persist="0" name="body_v" type="any" default="null" param-name="cr_view"/>
+      <v:variable persist="0" name="body_r2rml" type="any" default="null" param-name="r2rml"/>
       <v:variable persist="0" name="body_o" type="any" default="null" param-name="cr_owl"/>
       <v:variable persist="0" name="text_e" type="integer" default="0"/>
       <v:variable persist="0" name="owl" type="int" default="0" param-name="owl"/>
@@ -52,9 +53,10 @@
       <v:variable persist="0" name="exec_it" type="int" default="0" param-name="exec" />
       <v:variable persist="0" name="cols" type="any" default="null" param-name="cols"/>
       <v:variable persist="0" name="pklist" type="any" default="null" param-name="pk"/>
+      <v:variable persist="0" name="pgraphv" type="varchar" default="''" param-name="pgraph"/>
   </vm:variables>
 
-  <vm:header caption="RDF View definition"/>
+  <vm:header caption="Linked Data View definition"/>
   <vm:pagebody>
   <script type="text/javascript"><![CDATA[
     function saveSQL ()
@@ -101,7 +103,7 @@
 		}
              if (self.rdb_sync.ufl_selected)
 	       {
-	         self.sync_ret := RDF_VIEW_DO_SYNC (self.base_url, self.fill.ufl_selected);
+	         self.sync_ret := RDF_VIEW_DO_SYNC (self.base_url, self.fill.ufl_selected, self.pgraph.ufl_value);
                  if (0 = length (self.sync_ret))
 		   self.sync_ret := vector (vector ('00000', 'OK'));
   	       }	       
@@ -114,6 +116,7 @@
 		 gr := sprintf ('http://%s/schemas/%s#', cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost'), self.base_url);
 		 stat := '00000';
 		 msg := 'OK';
+		 sparql clear graph iri (?:gr);
 		 exec ('DB.DBA.TTLP (?, \'\', ?, 255)', stat, msg, vector (self.body_o, gr), 0, meta, data);
 		 res [length(arr)] := vector (vector (stat, msg));
 		 exec (sprintf ('sparql
@@ -198,6 +201,10 @@
 	        {
 		  self.body_v := self.body_v || '\n\n';
 		  self.body_v := self.body_v || DB.DBA.RDF_VIEW_FROM_TBL (_base_url, tbls, self.voidst, cols);
+		  if (__proc_exists ('DB.DBA.R2RML_FROM_TBL') is not null)
+		    self.body_r2rml := R2RML_FROM_TBL (_base_url, tbls, self.voidst, cols);
+		  else
+		    self.body_r2rml := '### You need a new server binary in order to unlock R2RML graph generator';   
 	        }
 	      if (self.view_vd)
   	        self.body_v := self.body_v || '\n\n-- Virtual directories for instance data\n' || DB.DBA.RDF_VIEW_GEN_VD (_base_url);
@@ -234,6 +241,7 @@
 	    {
 	  ?>
 	  <h2>Execution Status</h2>
+	  <div class="scroll_area">
 	  <table class="listing">
 	      <tr class="listing_header_row"><th>Status</th><th>Message</th></tr>
 	      <?vsp
@@ -249,6 +257,7 @@
 	        }
 	      ?>
 	  </table>
+          </div>
 	  <?vsp
 	  if (length (self.sync_ret))
 	    {
@@ -268,6 +277,23 @@
 	  </table>
 	  <?vsp
 	    }  
+	  ?>
+	  <h2>Quad Maps</h2>
+	  <?vsp
+	       declare defhost, stat, msg, data, meta, data2, meta2, qr, gr, fct_installed any;
+	       stat := '00000';
+	       defhost := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
+	     gr := sprintf ('http://%s/%s#', defhost, self.base_url);
+	       if (exists (select 1 from VAD.DBA.VAD_REGISTRY where R_KEY like '/VAD/fct/%/resources/dav/%'))
+	         fct_installed := 1;
+               else 
+	         fct_installed := 0;
+	     for select * from (sparql define input:storage "" select ?s from virtrdf: { ?s virtrdf:qmGraphRange-rvrFixedValue `iri(?:gr)` ; virtrdf:qmUserSubMaps ?t }) x do
+               {
+	         http (sprintf ('<a href="/describe/?uri=%U" target="_blank">%V</a><br/>', "s", "s")); 
+	       }  
+	  ?>
+	  <?vsp  
 	  if (self.view_vd or self.owl_vd)
 	    {
 	  ?>
@@ -276,23 +302,15 @@
 	    }
 	  ?>
 	  <?vsp
-	       declare defhost, stat, msg, data, meta, data2, meta2, qr, gr, fct_installed any;
-	       stat := '00000';
-	       defhost := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
-	       if (exists (select 1 from VAD.DBA.VAD_REGISTRY where R_KEY like '/VAD/fct/%/resources/dav/%'))
-	         fct_installed := 1;
-               else 
-	         fct_installed := 0;
 	       if (__proc_exists (fix_identifier_case ('shcompo_clear'), 2) is not null)
 	         shcompo_clear ();
 	       if (self.view_vd)
                  {
-		   gr := sprintf ('http://%s/%s#', defhost, self.base_url);
 		   qr := sprintf ('sparql select distinct ?class from <%s> { ?s a ?class } limit 10', gr);
 		   exec (qr, stat, msg, vector (), 0, meta, data);
 		   if (stat = '00000' and length (data) and length (data[0]))
 		     {
-		       http ('<div>Instance Data: <br/>');
+		     http (sprintf ('<div>Instance Data Named Graph: <a href="/describe/?uri=%U"i target="_blank">%V</a> <br/>', gr, gr));
 		       foreach (any _row in data) do
 			 {
 			   if (_row[0] not like '%/stat#%')
@@ -310,6 +328,28 @@
 			 }
 		       http ('</div>');
 		     }
+		   if (length (self.pgraphv) and self.fill.ufl_selected)
+		     {
+		       qr := sprintf ('sparql select distinct ?class from <%s> { ?s a ?class } limit 10', self.pgraphv);
+		       exec (qr, stat, msg, vector (), 0, meta, data);
+		       if (stat = '00000' and length (data) and length (data[0]))
+			 {
+			   http (sprintf ('<div>Instance Data Physical Named Graph: %V <br/>', self.pgraphv));
+			   foreach (any _row in data) do
+			     {
+			       qr := sprintf ('sparql select ?s from <%s> { ?s a <%s> } limit 1', self.pgraphv, _row[0]);
+			       exec (qr, stat, msg, vector (), 1, meta2, data2);
+			       if (stat = '00000' and length (data2) and length (data2[0]))
+				 {
+				   if (fct_installed)
+				     http (sprintf ('<a href="/describe/?url=%U" target="_blank">%s</a><br/>', data2[0][0], data2[0][0]));
+				   else
+				     http (sprintf ('<a href="%s" target="_blank">%s</a><br/>', replace (data2[0][0], '#', '%01'), data2[0][0]));
+				 }
+			     }
+			   http ('</div>');
+			 }
+		     } 
 	        }
 	       if (self.st and self.view_vd)
                  {
@@ -318,7 +358,7 @@
 		   exec (qr, stat, msg, vector (), 1, meta, data);
 		   if (stat = '00000' and length (data) and length (data[0]))
 		   {
-		   http ('<div>Statistics Data (VoiD Graph): <br/>');
+		       http ('<div>Metadata Data (VoiD): ');
 		   if (fct_installed)
 		     http (sprintf ('<a href="%s" target="_blank">%s</a>', data[0][0], data[0][0]));
                    else  
@@ -328,20 +368,15 @@
 	        }
 	       if (self.owl_vd)
                  {
- 		   gr := sprintf ('http://%s/schemas/%s#', defhost, self.base_url);
-		   qr := sprintf ('sparql select ?s from <%s> { ?s a ?class } limit 1', gr);
-		   exec (qr, stat, msg, vector (), 1, meta, data);
-		   if (stat = '00000' and length (data) and length (data[0]))
-		   {
-		   http ('<div>Ontology: <br/>');
+		   gr := sprintf ('http://%s/schemas/%s/', defhost, self.base_url);
+		   http ('<div>Ontology Data Named Graph: ');
 		   if (fct_installed)
-	             http (sprintf ('<a href="%s" target="_blank">%s</a>', data[0][0], data[0][0]));
+	             http (sprintf ('<a href="%V" target="_blank">%V</a>', gr, gr));
 		   else
-	           http (sprintf ('<a href="%s" target="_blank">%s</a>', replace (data[0][0], '#', '%01'), data[0][0]));
+	             http (sprintf ('<a href="%V" target="_blank">%V</a>', replace (gr, '#', '%01'), gr));
 		   http ('</div>');
 	           }
 	        }
-	    }
 	  ?>
       </td>
   </tr>
@@ -351,6 +386,8 @@
 	  <?vsp if (self.exist_sql) { ?>
 	  <h2>Definitions</h2>
 	  <v:textarea name="cr_view" xhtml_cols="120" xhtml_rows="20" value="--self.body_v"/><br/>
+	  <h2>R2RML Graph</h2>
+	  <v:textarea name="r2rml" xhtml_cols="120" xhtml_rows="20" value="--self.body_r2rml"/><br/>
 	  <?vsp } ?>
 	  <?vsp if (self.owl) { ?>
 	  <h2>Ontology</h2>
@@ -358,7 +395,9 @@
 	  <?vsp } ?>
 	  <?vsp } ?>
 	  <?vsp if (self.text_e = 0 and __proc_exists ('DB.DBA.RDF_VIEW_DO_SYNC')) { ?>
-	  <br /><v:check-box name="rdb_sync" value="1" xhtml_id="rdb_sync" /> <label for="rdb_sync">Generate RDB2RDF triggers</label> <br/>
+	  <br />
+	  <label>Physical Graph Name</label> <v:text name="pgraph" value="--sprintf ('urn:%{URIQADefaultHost}s:%s', self.base_url)" xhtml_size="70" /><br />
+	  <v:check-box name="rdb_sync" value="1" xhtml_id="rdb_sync" /> <label for="rdb_sync">Generate RDB2RDF triggers</label> <br/>
 	  <v:check-box name="fill" value="1" xhtml_id="fill" /> <label for="fill">Enable Data Syncs with Physical Quad Store</label> <br/>
 	  <?vsp } ?>
 	  <input type="hidden" name="host" value="<?V get_keyword('host', self.vc_event.ve_params) ?>"/><br/>
@@ -506,7 +545,7 @@
         <v:template type="simple" name="sc_1" enabled="0">
           <tr>
 	    <td>
-	      <img class="dialog_icon" src="images/icons/about_32.png" alt="Info" title="Info"/> The RDF View definition is exported successfully.
+	      <img class="dialog_icon" src="images/icons/about_32.png" alt="Info" title="Info"/> The Linked Data View definition is exported successfully.
 	    </td>
           </tr>
         </v:template>

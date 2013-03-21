@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -106,7 +106,5 @@ extern int dt_print_to_buffer (char *buf, caddr_t arg, int mode);
 extern int dt_scan_from_buffer (const char *buf, int mode, caddr_t *dt_ret, const char **err_msg_ret);
 
 extern int dt_local_tz;
-int dt_compare (caddr_t dt1, caddr_t dt2);
-unsigned int64  dt_seconds (caddr_t dt);
 
 #endif /* _DATESUPP_H */
