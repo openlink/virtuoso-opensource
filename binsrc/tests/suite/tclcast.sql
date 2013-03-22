@@ -14,5 +14,7 @@ insert into ot values (stringdate ('2001-1-1'));
 insert into ot values (rdf_box (stringdate ('2001-1-1'), 257, 257, 0, 1));
 
 select * from ot;
-ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
-ECHO BOTH ": rows in ot after non-unq inserts with different dtps and rdf boxes\n";
+echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
+echo both ": rows in ot after non-unq inserts with different dtps and rdf boxes\n";
+
+

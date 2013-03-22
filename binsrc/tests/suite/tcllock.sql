@@ -45,16 +45,16 @@ insert into cllk (id) values (14) &
 sleep (0.2);
 
 select count (*) from cllk;
-ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
-ECHO BOTH ": cl serializable insert 1\n";
+echo both $if $equ $last[1] 1 "PASSED" "***FAILED";
+echo both ": cl serializable insert 1\n";
 
 commit work;
 
 delay (0.2);
 
 select count (*) from cllk;
-ECHO BOTH $IF $EQU $LAST[1] 5 "PASSED" "***FAILED";
-ECHO BOTH ": cl serializable insert 2\n";
+echo both $if $equ $last[1] 5 "PASSED" "***FAILED";
+echo both ": cl serializable insert 2\n";
 
 
 sread (10);

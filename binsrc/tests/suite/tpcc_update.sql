@@ -1,5 +1,5 @@
 --  
---  $Id$
+--  $Id: tpcc_update.sql,v 1.5.10.1 2013/01/02 16:15:16 source Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -147,3 +147,8 @@ ECHO BOTH " CHECKPOINT STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 backup_online ('tpcc_k_#', 5000);
 ECHO BOTH $IF $EQU $STATE "OK"  "PASSED" "***FAILED";
 ECHO BOTH " BACKUP ONLINE STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+
+
+
+

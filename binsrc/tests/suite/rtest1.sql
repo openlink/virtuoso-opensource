@@ -1,7 +1,7 @@
 --
 --  rtest1.sql
 --
---  $Id$
+--  $Id: rtest1.sql,v 1.14.10.1 2013/01/02 16:14:54 source Exp $
 --
 --  Remote database testing part 1
 --  

@@ -1,5 +1,5 @@
 --  
---  $Id$
+--  $Id: msdtc_conn_check.sql,v 1.4.10.1 2013/01/02 16:14:42 source Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -27,5 +27,5 @@
 -- ECHO BOTH ": mts_connect() : STATE=" $STATE "\n";
 
 select mts_status ('MTS');
-ECHO BOTH $IF $EQU $LAST[1] 'connected' "PASSED" "***FAILED";
-ECHO BOTH ": server " $LAST[1] " to MS DTC\n";
+echo both $if $equ $last[1] 'connected' "PASSED" "*** FAILED";
+echo both ": server " $last[1] " to MS DTC\n";

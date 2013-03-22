@@ -1,6 +1,6 @@
--- 
---  $Id$
--- 
+--
+--  $Id: tiri.sql,v 1.5.2.1.4.2 2013/01/02 16:15:11 source Exp $
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
@@ -46,32 +46,32 @@ insert into at values (iri_id_from_num (-3000));
 
 
 insert into it values (#i1);
-ECHO BOTH $IF $EQU $SQLSTATE 23000 "PASSED" "***FAILED";
-ECHO BOTH ": IRI_ID IRI_ID unq\n";
+echo both $if $equ $sqlstate 23000 "PASSED" "***FAILED";
+echo both " IRI_ID IRI_ID unq\n";
 
 insert into at values (#i1);
-ECHO BOTH $IF $EQU $SQLSTATE 23000 "PASSED" "***FAILED";
-ECHO BOTH ": any IRI_ID unq\n";
+echo both $if $equ $sqlstate 23000 "PASSED" "***FAILED";
+echo both " any IRI_ID unq\n";
 
 select iri_id_num (max (i)) from it;
-ECHO BOTH  $IF $EQU $LAST[1] 4000003000 "PASSED" "***FAILED";
-ECHO BOTH ": IRI_ID max\n";
+echo both  $if $equ $last[1] 4000003000 "PASSED" "***FAILED";
+echo both " IRI_ID max\n";
 
 select iri_id_num (max (i)) from at;
-ECHO BOTH  $IF $EQU $LAST[1] -3 "PASSED" "***FAILED";
-ECHO BOTH ": any  IRI_ID max\n";
+echo both  $if $equ $last[1] -3 "PASSED" "***FAILED";
+echo both " any  IRI_ID max\n";
 
 
 select count (distinct i) from it;
 
 select * from it a, it b table option (hash) where a.i = b.i option (order);
-ECHO BOTH $IF $EQU $ROWCNT 5 "PASSED" "***FAILED";
-ECHO BOTH ": IRI_ID hash join\n";
+echo both $if $equ $rowcnt 5 "PASSED" "***FAILED";
+echo both " IRI_ID hash join\n";
 
 
 select * from at a, at b table option (hash) where a.i = b.i option (order);
-ECHO BOTH $IF $EQU $ROWCNT 5 "PASSED" "***FAILED";
-ECHO BOTH ": any IRI_ID hash join\n";
+echo both $if $equ $rowcnt 5 "PASSED" "***FAILED";
+echo both " any IRI_ID hash join\n";
 
 
 
@@ -79,8 +79,8 @@ ECHO BOTH ": any IRI_ID hash join\n";
 
 select * from it order by iri_id_num (i);
 select * from it a, it b table option (loop) where a.i = b.i option (order);
-ECHO BOTH $IF $EQU $ROWCNT 5 "PASSED" "***FAILED";
-ECHO BOTH ": IRI_ID loop  join\n";
+echo both $if $equ $rowcnt 5 "PASSED" "***FAILED";
+echo both " IRI_ID loop  join\n";
 
 create table it2 (ik IRI_ID, id IRI_ID, primary key (ik));
 
@@ -88,9 +88,14 @@ insert into it2 select i, i from it;
 insert into it2 select iri_id_from_num (iri_id_num (i) + 10), i from it;
 
 select id, count (*) from it2 group by id;
-ECHO BOTH $IF $EQU $ROWCNT 5 "PASSED" "***FAILED";
-ECHO BOTH ": IRI_ID group by\n";
+echo both $if $equ $rowcnt 5 "PASSED" "***FAILED";
+echo both " IRI_ID group by\n";
 
 select * from it2 order by id desc;
-ECHO BOTH $IF $EQU $LAST[1] #i11 "PASSED" "**FAILED";
-ECHO BOTH ": IRI_ID order by\n";
+echo both $if $equ $last[1] #i11 "PASSED" "**FAILED";
+echo both " IRI_ID order by\n";
+
+select a.ik from it2 a where not exists (select 1 from it2 b table option (loop) where b.ik = a.ik);
+echo both $if $equ $rowcnt 0 "PASSED" "**FAILED";
+echo both " iri id in order.\n";
+

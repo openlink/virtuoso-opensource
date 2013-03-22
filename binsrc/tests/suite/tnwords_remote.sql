@@ -1,7 +1,7 @@
 --
 --  tnwords_remote.sql
 --
---  $Id$
+--  $Id: tnwords_remote.sql,v 1.4.10.1 2013/01/02 16:15:15 source Exp $
 --
 --  Attaches the tables for Word tests and does the test remotely
 --  

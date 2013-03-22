@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-#  $Id$
+#  $Id: oledb.sh,v 1.4.10.3 2013/01/02 16:14:51 source Exp $
 #
 #  OLE DB tests
 #  
@@ -26,7 +26,7 @@
 
 LOGFILE=oledb.output
 export LOGFILE
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 
 VIRTOLEDB_PATH=../virtoledb.dll
 MOVENEXT=../movenext.exe
@@ -118,7 +118,7 @@ MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
 
 START_SERVER $PORT 1000
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < nwdemo.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/nwdemo.sql
 if [ $STATUS -ne 0 ]; then
     LOG "***ABORTED: oledb.sh: loading northwind data"
     exit 3

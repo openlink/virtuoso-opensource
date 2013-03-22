@@ -1,7 +1,7 @@
 --
 --  rproc2.sql
 --
---  $Id$
+--  $Id: rproc2.sql,v 1.8.10.2 2013/01/02 16:14:53 source Exp $
 --
 --  procedure attachment testsuite destination part
 --  
@@ -88,6 +88,10 @@ ECHO BOTH $IF $EQU $LAST[1] 11 "PASSED" $IF $EQU $U{DO_RPROC} "NO" "SKIPPED" "**
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": retcode test procedure with 1 param return 11 : RETURN=" $LAST[1] "\n";
 
+
+select sum (rproc_retcode (row_no) - 10) from t1;
+echo both $if $equ $last[1] 599500  "PASSED" "***FAILED";
+echo both ":  rproc_retcode on vector\n";
 
 
 select RPROC_INOUT_WRAP (NULL);

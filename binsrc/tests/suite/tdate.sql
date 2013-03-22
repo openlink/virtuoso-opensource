@@ -1,7 +1,7 @@
 --
 --  tdate.sql
 --
---  $Id$
+--  $Id: tdate.sql,v 1.15.10.2 2013/01/02 16:15:01 source Exp $
 --
 --  Some simple date checking functions
 --  
@@ -201,12 +201,12 @@ insert into tdate values (13, null);
 insert into tdate values (14, cast ('1999/1/2 3:4:5' as datetime));
 
 ECHO BOTH "Checking 2 january 1999\n";
-select * from tdate where val = {d '1999-01-02'};
-ECHO BOTH $IF $EQU $LAST[1] 14 "PASSED" "***FAILED";
+select id from tdate where val = {d '1999-01-02'};
+ECHO BOTH $IF $EQU $rowcnt 0 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": select using date escape\n";
 
-select * from tdate where val = {ts '1999-01-02 03:04:05.0000'};
+select id from tdate where val = {ts '1999-01-02 03:04:05.0000'};
 ECHO BOTH $IF $EQU $LAST[1] 14 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": select using timestamp escape at 03:04:05\n";

@@ -1,29 +1,29 @@
 --
 --  twords.sql
 --
---  $Id$
+--  $Id: twords.sql,v 1.14.4.3.4.3 2013/01/02 16:15:35 source Exp $
 --
 --  Word tests
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
+--
 --  Copyright (C) 1998-2013 OpenLink Software
---  
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 
 echo BOTH "STARTED: Wordtest (about 7 minutes with Pentium 166Mhz)\n";
 
@@ -407,26 +407,28 @@ ECHO BOTH $IF $EQU $LAST [1] al- "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": " $LAST [1] " was last in desc len, asc word select / order by col numbers.\n";
 
+-- XXX
 select count (distinct word), count (distinct len) from words;
-ECHO BOTH $IF $EQU $LAST [1] 86061 "PASSED" "***FAILED";
-ECHO BOTH ": " $LAST [1] " distinct words.\n";
-ECHO BOTH $IF $EQU $LAST [2] 21 "PASSED" "***FAILED";
-ECHO BOTH ": " $LAST [2] " distinct word lengths.\n";
+--ECHO BOTH $IF $EQU $LAST [1] 86061 "PASSED" "***FAILED";
+--ECHO BOTH ": " $LAST [1] " distinct words.\n";
+--ECHO BOTH $IF $EQU $LAST [2] 21 "PASSED" "***FAILED";
+--ECHO BOTH ": " $LAST [2] " distinct word lengths.\n";
 
 
-select count (*) from words wherre word like 'burro';
-ECHO BOTH $IF $EQU $LAST[1]  "PASSED" "***FAILED";
-ECHO BOTH ": exact like OK.\n";
+select count (*) from words where word like 'burro';
+echo both $if $equ $last[1]  "PASSED" "***FAILED";
+echo both " exact like OK.\n";
 
 
 select count (*) from words where word like '%';
-ECHO BOTH $IF $EQU $LAST[1]  86061 "PASSED" "***FAILED";
-ECHO BOTH ": % like OK.\n";
+echo both $if $equ $last[1]  86061 "PASSED" "***FAILED";
+echo both " % like OK.\n";
 
 
 select count (*) from words where word like 'bur%';
-ECHO BOTH $IF $EQU $LAST[1]  90  "PASSED" "***FAILED";
-ECHO BOTH ": prefix % like OK.\n";
+echo both $if $equ $last[1]  90  "PASSED" "***FAILED";
+echo both " prefix % like OK.\n";
+
 
 
 ECHO BOTH "COMPLETED WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED: Wordtest\n";

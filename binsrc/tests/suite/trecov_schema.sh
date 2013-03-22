@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-#  $Id$
+#  $Id: trecov_schema.sh,v 1.5.6.4.4.5 2013/01/02 16:15:19 source Exp $
 #
 #  Database recovery tests
 #  
@@ -26,38 +26,33 @@
 
 LOGFILE=trecov_schema.output
 export LOGFILE
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
+cp $VIRTUOSO_TEST/spanish.coll .
+cp $VIRTUOSO_TEST/words.esp .
 
 BANNER "STARTED SCHEMA RECOVERY TEST (trecov_schema.sh)"
+
+if [ "$SERVER" -ne "virtuoso" -o "$SERVER" -ne "virtuoso-t" ]
+  echo "SKIPPED: Unknown server. Exiting" | tee -a $LOGFILE
+  exit
+fi
 
 rm -f $DELETEMASK
 MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
 
-case $SERVER in
-
-  *virtuoso*)
-	  echo Using virtuoso configuration | tee -a $LOGFILE
-	  ;;
-   *)
-	  echo "SKIPPED: Unknown server. Exiting" | tee -a $LOGFILE
-	  exit
-	  ;;
-esac	  
-
 SHUTDOWN_SERVER
 START_SERVER $PORT 1000
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < treg1.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/treg1.sql
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tblob.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tblob.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: trecov_schema.sh: Inline Blobs "
     exit 3
 fi
 
-
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tconcur2.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tconcur2.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: trecov_schema.sh: Concurrent inserts with timestamp key"
@@ -75,7 +70,7 @@ else
     exit 3
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < blobs.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/blobs.sql
 if test $STATUS -eq 0
 then
     LOG "PASSED: trecov_schema.sh: blobs 1st round"
@@ -85,7 +80,7 @@ else
 fi
 
 RUN $BLOBS $DSN
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < blobs.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/blobs.sql
 if test $STATUS -eq 0
 then
     LOG "PASSED: trecov_schema.sh: blobs 2nd round"
@@ -95,7 +90,7 @@ else
 fi
 
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tschema1.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tschema1.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: trecov_schema.sh: Schema test"
@@ -157,12 +152,13 @@ cp $DBFILE $DBFILE.sr4
 RUN ls -la virtuoso.*
 START_SERVER $PORT 3000
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < recovck1_noreg.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/recovck1_noreg.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: trecov_schema.sh: Connect failed after -d roll forward"
     exit 3
 fi
+
 RUN $ISQL $DSN USR3 USR3PASS PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT EXEC="'select USER'"
 if test $STATUS -ne 0
 then

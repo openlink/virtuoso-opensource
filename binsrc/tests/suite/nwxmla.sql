@@ -1,5 +1,5 @@
 --  
---  $Id$
+--  $Id: nwxmla.sql,v 1.12.10.1 2013/01/02 16:14:47 source Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -215,3 +215,4 @@ XPATH [__view 'pay'] //*;
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": xml view with a large number of columns STATE=" $STATE " MESSAGE=" $MESSAGE " rows\n";
+

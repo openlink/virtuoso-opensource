@@ -1,7 +1,7 @@
 --
 --  tchars.sql
 --
---  $Id$
+--  $Id: tchars.sql,v 1.3.10.1 2013/01/02 16:15:00 source Exp $
 --
 --  strict chars testing
 --  

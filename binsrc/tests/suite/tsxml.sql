@@ -1,5 +1,5 @@
 --  
---  $Id$
+--  $Id: tsxml.sql,v 1.5.10.2 2013/01/02 16:15:29 source Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -20,6 +20,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
+
 xml_add_system_path('file://schemasource/system');
 select xml_load_schema_decl('file://schemasource/xmlsource/schema', 'docbook.xsd', 'UTF-8', 'x-any');
 select xml_load_schema_decl('file://schemasource/xmlsource/test0000', 'test0002.xsd', 'UTF-8', 'x-any');

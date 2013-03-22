@@ -1,7 +1,7 @@
 --
 --  tplscroll.sql
 --
---  $Id$
+--  $Id: tplscroll.sql,v 1.13.10.1 2013/01/02 16:15:17 source Exp $
 --
 --  PL Scrollable cursors suite testing
 --  

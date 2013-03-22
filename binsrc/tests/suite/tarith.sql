@@ -1,7 +1,7 @@
 --
 --  tarrith.sql
 --
---  $Id$
+--  $Id: tarith.sql,v 1.8.10.1 2013/01/02 16:14:58 source Exp $
 --
 --  Arithmetic tests
 --  
@@ -39,3 +39,4 @@ ECHO BOTH  ": atof stored as " $LAST[1] "\n";
 select count (*) from DB.DBA.SYS_KEYS where KEY_TABLE like case when 201 < 101 then '' else '%' end;
 ECHO BOTH $IF $GT $LAST[1] 0 "PASSED" "***FAILED";
 ECHO BOTH  ": BUG4118: case in where returned " $LAST[1] " rows\n";
+

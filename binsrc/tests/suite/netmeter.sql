@@ -49,7 +49,7 @@ create procedure nm_start (in n_threads int, in n_batches int, in bytes int, in 
 {
   declare aq any;
   declare c int;
- aq := async_queue (n_threads);
+ aq := async_queue (n_threads, 4);
   for (c:= 0; c < n_threads; c:= c + 1)
     {
       aq_request (aq, 'DB.DBA.NM_RUN', vector (n_batches, bytes, ops_per_batch));
@@ -60,7 +60,7 @@ create procedure nm_start (in n_threads int, in n_batches int, in bytes int, in 
 create procedure nm_run_srv (in n_threads int, in  n_batches int, in bytes int, in ops_per_batch int)
 {
   declare aq any;
- aq := async_queue (1);
+ aq := async_queue (1, 4);
   aq_request (aq, 'DB.DBA.NM_START', vector  (n_threads, n_batches, bytes, ops_per_batch));
   aq_wait_all (aq);
 }

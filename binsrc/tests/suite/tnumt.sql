@@ -1,7 +1,7 @@
 --
 --  tnumt.sql
 --
---  $Id$
+--  $Id: tnumt.sql,v 1.4.10.1 2013/01/02 16:15:14 source Exp $
 --
 --  Number tests
 --  

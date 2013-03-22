@@ -1,7 +1,7 @@
 --
 --  tviewqual.sql
 --
---  $Id$
+--  $Id: tviewqual.sql,v 1.4.10.1 2013/01/02 16:15:33 source Exp $
 --
 --  expansion of the view qualifiers
 --  

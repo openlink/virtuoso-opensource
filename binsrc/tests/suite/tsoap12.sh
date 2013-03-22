@@ -1,27 +1,27 @@
 #!/bin/sh
-#
-#  $Id$
+#  
+#  $Id: tsoap12.sh,v 1.10.4.2.4.6 2013/01/02 16:15:26 source Exp $
 #
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
-#
+#  
 #  Copyright (C) 1998-2013 OpenLink Software
-#
+#  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
 #  Free Software Foundation; only version 2 of the License, dated June 1991.
-#
+#  
 #  This program is distributed in the hope that it will be useful, but
 #  WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 #  General Public License for more details.
-#
+#  
 #  You should have received a copy of the GNU General Public License along
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-#
+#  
 
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 
 DSN=$PORT
 
@@ -34,7 +34,7 @@ ISQL=$HOME/binsrc/tests/isql
 LOGFILE=`pwd`/tsoap12.output
 TESTDIR=`pwd`
 export LOGFILE ISQL
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 DSN=$PORT
 AWK=${AWK-gawk}
 
@@ -158,7 +158,7 @@ esac
 
 MakeIni ()
 {
-   MAKECFG_FILE ../$TESTCFGFILE $PORT $CFGFILE
+   MAKECFG_FILE $VIRTUOSO_TEST/../$TESTCFGFILE $PORT $CFGFILE
    case $SERVER in
    *[Mm]2*)
    cat >> $CFGFILE <<END_HTTP
@@ -173,7 +173,7 @@ http_proxy_connection_cache_timeout: 15
 END_HTTP
    ;;
    *virtuoso*)
-   MAKECFG_FILE ../$TESTCFGFILE $PORT $CFGFILE
+   MAKECFG_FILE $VIRTUOSO_TEST/../$TESTCFGFILE $PORT $CFGFILE
    cat >> $CFGFILE <<END_HTTP1
 [HTTPServer]
 HTTPLogFile = http.log
@@ -4265,7 +4265,7 @@ cp $HOME/binsrc/vsp/soapdemo/interop-xsd.sql .
 cp $HOME/binsrc/vsp/soapdemo/round2.sql . 
 cp $HOME/binsrc/vsp/soapdemo/soap12-addon.sql . 
 
-cp -f ../tvspxex.awk .
+cp -f $VIRTUOSO_TEST/tvspxex.awk .
 #MakeIni
 MakeConfig 
 gen_req

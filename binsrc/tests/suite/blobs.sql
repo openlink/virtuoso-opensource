@@ -1,7 +1,7 @@
 --
 --  blobs.sql
 --
---  $Id$
+--  $Id: blobs.sql,v 1.4.10.1 2013/01/02 16:14:38 source Exp $
 --
 --  Check Blob fields
 --  

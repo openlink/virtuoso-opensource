@@ -1,5 +1,5 @@
 --  
---  $Id$
+--  $Id: txmlload.sql,v 1.7.10.1 2013/01/02 16:15:36 source Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -34,3 +34,4 @@ xml_test ('http://localhost:$U{HTTPPORT}/docsrc/sqlreference.xml');
 xml_test ('http://localhost:$U{HTTPPORT}/docsrc/user.xml');
 xml_test ('http://localhost:$U{HTTPPORT}/docsrc/vdbconcepts.xml');
 xml_test ('http://localhost:$U{HTTPPORT}/docsrc/virtdocs.xml');
+

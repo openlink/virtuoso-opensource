@@ -1,6 +1,6 @@
 <?vsp 
 --  
---  $Id$
+--  $Id: vspsoap_mod.vsp,v 1.4.10.1 2013/01/02 16:15:39 source Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -96,7 +96,6 @@
         else if (soap_method in ('fake#SOAPMOD3'))
           {
 	    declare res any;
-	    set_user_id ('SOAP_SRV');	
 	    res := soap_server (soap_xml, soap_method, lines, 11, 'DB.DBA.SOAPMOD');
 	    dbg_obj_print ('vspsoap result', res);
 	    http (res);

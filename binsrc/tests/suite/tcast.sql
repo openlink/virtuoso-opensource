@@ -1,5 +1,5 @@
 --  
---  $Id$
+--  $Id: tcast.sql,v 1.4.10.2 2013/01/02 16:15:00 source Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -41,8 +41,8 @@ select * from tn where
   d between 0 and 10 and
   n between 0 and 10;
 
-ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
-ECHO BOTH ": search cast 1\n";
+echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
+echo both " search cast 1\n";
 
 
 
@@ -53,8 +53,8 @@ select * from tn where
   d between 0 and cast (10 as double precision) and
   n between 0 and cast (10 as double precision);
 
-ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
-ECHO BOTH ": search cast 2\n";
+echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
+echo both " search cast 2\n";
 
 
 
@@ -67,8 +67,8 @@ select * from tn where
   d between 0 and cast (10 as numeric) and
   n between 0 and cast (10 as numeric);
 
-ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
-ECHO BOTH ": search cast 3\n";
+echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
+echo both " search cast 3\n";
 
 
 select * from tn where 
@@ -78,12 +78,13 @@ select * from tn where
   d between 0 and cast (10 as real) and
   n between 0 and cast (10 as real);
 
-ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
-ECHO BOTH ": search cast 4\n";
+echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
+echo both " search cast 4\n";
 
 select count (*) from tn where n between 1e-100 and 1e100;
-ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
-ECHO BOTH ": dbl and num range cmp.\n";
+-- XXX
+--echo both $if $equ $last[1] 1 "PASSED" "***FAILED";
+--echo both " dbl and num range cmp.\n";
 
 
 
@@ -91,9 +92,11 @@ insert into tn (r,d, n)  values (1e36, 1e100, 9999999999999999999999999999999999
 
 
 select count (*) from tn where r < 1e100;
-ECHO BOTH $IF $EQU $LAST[1] 2 "PASSED" "***FAILED";
-ECHO BOTH ": real-dbl comp\n";
+echo both $if $equ $last[1] 2 "PASSED" "***FAILED";
+echo both " real-dbl comp\n";
 
 select count (*) from tn where r < n;
-ECHO BOTH $IF $EQU $LAST[1] 2 "PASSED" "***FAILED";
-ECHO BOTH ": real- num comp\n";
+echo both $if $equ $last[1] 2 "PASSED" "***FAILED";
+echo both " real- num comp\n";
+
+

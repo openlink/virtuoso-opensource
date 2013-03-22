@@ -1,7 +1,7 @@
 --
 --  ttrig2.sql
 --
---  $Id$
+--  $Id: ttrig2.sql,v 1.11.10.2 2013/01/02 16:15:30 source Exp $
 --
 --  Test INSTEAD OF & view triggers.
 --  
@@ -68,8 +68,8 @@ create procedure tv_upd ()
 tv_upd ();
 
 select * from tt;
-ECHO BOTH $IF $EQU $ROWCNT 3 "PASSED" "***FAILED";
-ECHO BOTH ": test with constant col in view with instead of triggers.\n";
+echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
+echo both " test with constant col in view with instead of triggers.\n";
 
 
 
@@ -402,52 +402,53 @@ delete from T_LOG;
 insert into B3746_ST (TID, TDATA, STDATA) values (1, 2, 3);
 select * from T_LOG;
 
+-- XXX: bellow are diosabled dur to obsolete UNDER feature
 select count (*) from T_LOG;
-ECHO BOTH $IF $EQU $LAST[1] 4 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": " $LAST[1] " triggers fired on insert\n";
+--ECHO BOTH $IF $EQU $LAST[1] 4 "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": " $LAST[1] " triggers fired on insert\n";
 
 select count (*) from T_LOG where TRIG_NAME = 'BI_B3746_T' and TS < (select b.TS from T_LOG b where b.TRIG_NAME = 'BI_B3746_ST');
-ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": super's before insert trigger fired before the sub's before insert\n";
+--ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": super's before insert trigger fired before the sub's before insert\n";
 
 select count (*) from T_LOG where TRIG_NAME = 'AI_B3746_T' and TS < (select b.TS from T_LOG b where b.TRIG_NAME = 'AI_B3746_ST');
-ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": super's after insert trigger fired before the sub's after insert\n";
+--ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": super's after insert trigger fired before the sub's after insert\n";
 
 select count (*) from T_LOG where
 (N_TID <> 1) or
 (N_TDATA <> 2) or
 (TRIG_NAME like '%_B3746_ST' and N_STDATA <> 3);
-ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": " $LAST[1] " triggers got bad data on insert\n";
+--ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": " $LAST[1] " triggers got bad data on insert\n";
 
 delete from T_LOG;
 update B3746_ST set STDATA = 4;
 select * from T_LOG;
 
 select count (*) from T_LOG;
-ECHO BOTH $IF $EQU $LAST[1] 5 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": " $LAST[1] " triggers fired on update\n";
+--ECHO BOTH $IF $EQU $LAST[1] 5 "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": " $LAST[1] " triggers fired on update\n";
 
 select count (*) from T_LOG where TRIG_NAME = 'BU_B3746_T' and TS < (select b.TS from T_LOG b where b.TRIG_NAME = 'BU_B3746_ST');
-ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": super's before update fired before the sub's before update\n";
+--ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": super's before update fired before the sub's before update\n";
 
 select count (*) from T_LOG where TRIG_NAME = 'AU_B3746_T' and TS < (select b.TS from T_LOG b where b.TRIG_NAME = 'AU_B3746_ST');
-ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": super's after update fired before the sub's after update\n";
+--ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": super's after update fired before the sub's after update\n";
 
 select count (*) from T_LOG where TRIG_NAME = 'BU_B3746_ST_STDATA';
-ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": sub's trigger on the update col fired\n";
+--ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": sub's trigger on the update col fired\n";
 
 select count (*) from T_LOG where
 (O_TID <> 1) or
@@ -457,9 +458,9 @@ select count (*) from T_LOG where
 (N_TDATA <> 2) or
 (TRIG_NAME like '%_B3746_ST%' and N_STDATA <> 4)
 ;
-ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": " $LAST[1] " triggers got bad data on update\n";
+--ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": " $LAST[1] " triggers got bad data on update\n";
 
 
 delete from T_LOG;
@@ -467,24 +468,24 @@ update B3746_ST set TDATA = 5;
 select * from T_LOG;
 
 select count (*) from T_LOG;
-ECHO BOTH $IF $EQU $LAST[1] 5 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": " $LAST[1] " triggers fired on update of super's col\n";
+--ECHO BOTH $IF $EQU $LAST[1] 5 "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": " $LAST[1] " triggers fired on update of super's col\n";
 
 select count (*) from T_LOG where TRIG_NAME = 'BU_B3746_T' and TS < (select b.TS from T_LOG b where b.TRIG_NAME = 'BU_B3746_ST');
-ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": super's before update fired before the sub's before update\n";
+--ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": super's before update fired before the sub's before update\n";
 
 select count (*) from T_LOG where TRIG_NAME = 'AU_B3746_T' and TS < (select b.TS from T_LOG b where b.TRIG_NAME = 'AU_B3746_ST');
-ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": super's after update fired before the sub's after update\n";
+--ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": super's after update fired before the sub's after update\n";
 
 select count (*) from T_LOG where TRIG_NAME = 'BU_B3746_T_TDATA';
-ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": super's trigger on the update col fired\n";
+--ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": super's trigger on the update col fired\n";
 
 select count (*) from T_LOG where
 (O_TID <> 1) or
@@ -494,9 +495,9 @@ select count (*) from T_LOG where
 (N_TDATA <> 5) or
 (TRIG_NAME like '%_B3746_ST%' and N_STDATA <> 4)
 ;
-ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": " $LAST[1] " triggers got bad data on update on super's col\n";
+--ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": " $LAST[1] " triggers got bad data on update on super's col\n";
 
 
 delete from T_LOG;
@@ -504,27 +505,27 @@ delete from B3746_ST;
 select * from T_LOG;
 
 select count (*) from T_LOG;
-ECHO BOTH $IF $EQU $LAST[1] 4 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": " $LAST[1] " triggers fired on delete\n";
+--ECHO BOTH $IF $EQU $LAST[1] 4 "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": " $LAST[1] " triggers fired on delete\n";
 
 select count (*) from T_LOG where TRIG_NAME = 'BD_B3746_T' and TS < (select b.TS from T_LOG b where b.TRIG_NAME = 'BD_B3746_ST');
-ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": super's before delete trigger fired before the sub's before delete\n";
+--ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": super's before delete trigger fired before the sub's before delete\n";
 
 select count (*) from T_LOG where TRIG_NAME = 'AD_B3746_T' and TS < (select b.TS from T_LOG b where b.TRIG_NAME = 'AD_B3746_ST');
-ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": super's after delete trigger fired before the sub's after delete\n";
+--ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": super's after delete trigger fired before the sub's after delete\n";
 
 select count (*) from T_LOG where
 (O_TID <> 1) or
 (O_TDATA <> 5) or
 (TRIG_NAME like '%_B3746_ST' and O_STDATA <> 4);
-ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": " $LAST[1] " triggers got bad data on delete\n";
+--ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": " $LAST[1] " triggers got bad data on delete\n";
 
 drop table EXTRIG;
 create table EXTRIG (id int);

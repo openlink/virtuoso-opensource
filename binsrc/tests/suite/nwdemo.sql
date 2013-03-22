@@ -1,7 +1,7 @@
 --
 --  nwdemo.sql
 --
---  $Id$
+--  $Id: nwdemo.sql,v 1.6.10.1 2013/01/02 16:14:42 source Exp $
 --
 --  Creates a demo database, works regardless of case mode
 --  

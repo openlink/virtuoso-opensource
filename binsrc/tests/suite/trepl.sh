@@ -1,31 +1,31 @@
 #!/bin/sh
-#
-#  $Id$
+#  
+#  $Id: trepl.sh,v 1.46.4.2.2.5 2013/01/02 16:15:20 source Exp $
 #
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
-#
+#  
 #  Copyright (C) 1998-2013 OpenLink Software
-#
+#  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
 #  Free Software Foundation; only version 2 of the License, dated June 1991.
-#
+#  
 #  This program is distributed in the hope that it will be useful, but
 #  WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 #  General Public License for more details.
-#
+#  
 #  You should have received a copy of the GNU General Public License along
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-#
+#  
 
 LOGFILE=./trepl.output
 export LOGFILE
 
 
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 
 
 
@@ -44,11 +44,10 @@ size1=1000000
 two=""
 mixed=""
 
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 
 
-grep VDB ident.txt
-if test $? -ne 0
+if [ "$VIRTUOSO_VDB" = "0" ]
 then 
     LOG "No VDB in trepl.sh"
     echo "trepl.sh: The present build is not set up for VDB."
@@ -201,10 +200,10 @@ END_URL
     chmod 644 $file
   if test -z "$dst"
     then
-      ../urlsimu -u dav -p dav $file  > ./dav_stat.log >> $LOGFILE
+      $VIRTUOSO_TEST/../urlsimu -u dav -p dav $file  > ./dav_stat.log >> $LOGFILE
     else
       hdr="Destination: http://$host$dst"
-      ../urlsimu -u dav -p dav $file -l "$hdr" > ./dav_stat.log >> $LOGFILE
+      $VIRTUOSO_TEST/../urlsimu -u dav -p dav $file -l "$hdr" > ./dav_stat.log >> $LOGFILE
   fi
 CheckLog "$line" 4 ./dav_stat.log
 rm -f $file
@@ -316,7 +315,7 @@ STOP_SERVERS 2
 CLEANUP_DIRS
 START_SERVERS 2 
 
-RUN $ISQL $DS1 dba dba PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u 'DS1=$DS1' 'DS2=$DS2' 'HTTP1=$http1' 'HTTP2=$http2' 'SIZE0=$size0' 'SIZE1=$size1' < trepl.sql
+RUN $ISQL $DS1 dba dba PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u 'DS1=$DS1' 'DS2=$DS2' 'HTTP1=$http1' 'HTTP2=$http2' 'SIZE0=$size0' 'SIZE1=$size1' < $VIRTUOSO_TEST/trepl.sql
 if test $? -ne 0
 then
     LOG "***ABORTED: replication test -- trepl.sql"
@@ -338,6 +337,8 @@ for i in `find rep?/ -name 'core*'`
 
 CLEANUP_DIRS
 START_SERVERS 3
+ln -s $VIRTUOSO_TEST/words.esp .
+ln -s $VIRTUOSO_TEST/docsrc .
 
 SILENT=0
 Line
@@ -346,15 +347,15 @@ Line
 
 DAVcommand localhost $http1 "MKCOL /DAV/repl/"
 # WebDAV & table replication
-RUN $ISQL $DS1 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u 'DS1=$DS1' 'DS2=$DS2' < trepl_t1.sql
+RUN $ISQL $DS1 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u 'DS1=$DS1' 'DS2=$DS2' < $VIRTUOSO_TEST/trepl_t1.sql
 # Procedure replication
-RUN $ISQL $DS1 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u 'DS1=$DS1' 'DS2=$DS2' < trepl_p1.sql
+RUN $ISQL $DS1 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u 'DS1=$DS1' 'DS2=$DS2' < $VIRTUOSO_TEST/trepl_p1.sql
 
 #XXX: disabled - it hangs the trepl.sh (something to do with FT indexes & replication)
-RUN $ISQL $DS1 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u 'DS1=$DS1' 'DS2=$DS2' < ftirepl.sql
+RUN $ISQL $DS1 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u 'DS1=$DS1' 'DS2=$DS2' < $VIRTUOSO_TEST/ftirepl.sql
 
 # DDL repl
-RUN $ISQL $DS1 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u 'DS1=$DS1' 'DS2=$DS2' < trepl_ddl.sql
+RUN $ISQL $DS1 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u 'DS1=$DS1' 'DS2=$DS2' < $VIRTUOSO_TEST/trepl_ddl.sql
 
 STOP_SERVERS 3
 CLEANUP_DIRS
@@ -366,12 +367,12 @@ LOG "STARTED: Bi-directional transactional replication test"
 Line
 
 # initialize
-RUN $ISQL $DS1 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u "DBNAME1=$DBNAME1" "DBNAME2=$DBNAME2" "DS2=$DS2" "DBNAME3=$DBNAME3" "DS3=$DS3" < ../repl_trx/regress/publish.sql
-RUN $ISQL $DS2 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u "DBNAME=$DBNAME1" "DS=$DS1" "TARGET_DBNAME=$DBNAME2" "TARGET_DS=$DS2" < ../repl_trx/regress/subscribe.sql
-RUN $ISQL $DS3 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u "DBNAME=$DBNAME1" "DS=$DS1" "TARGET_DBNAME=$DBNAME3" "TARGET_DS=$DS3" < ../repl_trx/regress/subscribe.sql
+RUN $ISQL $DS1 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u "DBNAME1=$DBNAME1" "DBNAME2=$DBNAME2" "DS2=$DS2" "DBNAME3=$DBNAME3" "DS3=$DS3" < $VIRTUOSO_TEST/../repl_trx/regress/publish.sql
+RUN $ISQL $DS2 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u "DBNAME=$DBNAME1" "DS=$DS1" "TARGET_DBNAME=$DBNAME2" "TARGET_DS=$DS2" < $VIRTUOSO_TEST/../repl_trx/regress/subscribe.sql
+RUN $ISQL $DS3 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u "DBNAME=$DBNAME1" "DS=$DS1" "TARGET_DBNAME=$DBNAME3" "TARGET_DS=$DS3" < $VIRTUOSO_TEST/../repl_trx/regress/subscribe.sql
 
 # run
-RUN $ISQL $DS1 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u "DBNAME1=$DBNAME1" "DS1=$DS1" "DBNAME2=$DBNAME2" "DS2=$DS2" "DBNAME3=$DBNAME3" "DS3=$DS3" < ../repl_trx/regress/regress.sql
+RUN $ISQL $DS1 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u "DBNAME1=$DBNAME1" "DS1=$DS1" "DBNAME2=$DBNAME2" "DS2=$DS2" "DBNAME3=$DBNAME3" "DS3=$DS3" < $VIRTUOSO_TEST/../repl_trx/regress/regress.sql
 
 # post-checks
 if grep foo.log rep1/repl.cfg >/dev/null; then
@@ -395,12 +396,12 @@ LOG "STARTED: Bi-directional snapshot replication test"
 Line
 
 # initialize
-RUN $ISQL $DS1 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u "DBNAME1=$DBNAME1" "DBNAME2=$DBNAME2" "DS2=$DS2" "DBNAME3=$DBNAME3" "DS3=$DS3" < ../repl_trx/bidir-regress/publish.sql
-RUN $ISQL $DS2 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u "DBNAME=$DBNAME1" "DS=$DS1" "TARGET_DBNAME=$DBNAME2" "TARGET_DS=$DS2" < ../repl_trx/bidir-regress/subscribe.sql
-RUN $ISQL $DS3 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u "DBNAME=$DBNAME1" "DS=$DS1" "TARGET_DBNAME=$DBNAME3" "TARGET_DS=$DS3" < ../repl_trx/bidir-regress/subscribe.sql
+RUN $ISQL $DS1 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u "DBNAME1=$DBNAME1" "DBNAME2=$DBNAME2" "DS2=$DS2" "DBNAME3=$DBNAME3" "DS3=$DS3" < $VIRTUOSO_TEST/../repl_trx/bidir-regress/publish.sql
+RUN $ISQL $DS2 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u "DBNAME=$DBNAME1" "DS=$DS1" "TARGET_DBNAME=$DBNAME2" "TARGET_DS=$DS2" < $VIRTUOSO_TEST/../repl_trx/bidir-regress/subscribe.sql
+RUN $ISQL $DS3 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u "DBNAME=$DBNAME1" "DS=$DS1" "TARGET_DBNAME=$DBNAME3" "TARGET_DS=$DS3" < $VIRTUOSO_TEST/../repl_trx/bidir-regress/subscribe.sql
 
 # run
-RUN $ISQL $DS1 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u "DBNAME1=$DBNAME1" "DS1=$DS1" "DBNAME2=$DBNAME2" "DS2=$DS2" "DBNAME3=$DBNAME3" "DS3=$DS3" < ../repl_trx/bidir-regress/regress.sql
+RUN $ISQL $DS1 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u "DBNAME1=$DBNAME1" "DS1=$DS1" "DBNAME2=$DBNAME2" "DS2=$DS2" "DBNAME3=$DBNAME3" "DS3=$DS3" < $VIRTUOSO_TEST/../repl_trx/bidir-regress/regress.sql
 
 #
 # bi-directional snapshot DAV test
@@ -412,12 +413,12 @@ STOP_SERVERS 3
 CLEANUP_DIRS
 START_SERVERS 3
 # initialize
-RUN $ISQL $DS1 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u "DBNAME1=$DBNAME1" "DBNAME2=$DBNAME2" "DS2=$DS2" "DBNAME3=$DBNAME3" "DS3=$DS3" < ../repl_trx/bidir-dav/publish.sql
-RUN $ISQL $DS2 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u "DBNAME=$DBNAME1" "DS=$DS1" "TARGET_DBNAME=$DBNAME2" "TARGET_DS=$DS2" < ../repl_trx/bidir-dav/subscribe.sql
-RUN $ISQL $DS3 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u "DBNAME=$DBNAME1" "DS=$DS1" "TARGET_DBNAME=$DBNAME3" "TARGET_DS=$DS3" < ../repl_trx/bidir-dav/subscribe.sql
+RUN $ISQL $DS1 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u "DBNAME1=$DBNAME1" "DBNAME2=$DBNAME2" "DS2=$DS2" "DBNAME3=$DBNAME3" "DS3=$DS3" < $VIRTUOSO_TEST/../repl_trx/bidir-dav/publish.sql
+RUN $ISQL $DS2 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u "DBNAME=$DBNAME1" "DS=$DS1" "TARGET_DBNAME=$DBNAME2" "TARGET_DS=$DS2" < $VIRTUOSO_TEST/../repl_trx/bidir-dav/subscribe.sql
+RUN $ISQL $DS3 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u "DBNAME=$DBNAME1" "DS=$DS1" "TARGET_DBNAME=$DBNAME3" "TARGET_DS=$DS3" < $VIRTUOSO_TEST/../repl_trx/bidir-dav/subscribe.sql
 
 # run
-RUN $ISQL $DS1 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u "DBNAME1=$DBNAME1" "DS1=$DS1" "DBNAME2=$DBNAME2" "DS2=$DS2" "DBNAME3=$DBNAME3" "DS3=$DS3" < ../repl_trx/bidir-dav/regress.sql
+RUN $ISQL $DS1 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u "DBNAME1=$DBNAME1" "DS1=$DS1" "DBNAME2=$DBNAME2" "DS2=$DS2" "DBNAME3=$DBNAME3" "DS3=$DS3" < $VIRTUOSO_TEST/../repl_trx/bidir-dav/regress.sql
 
 STOP_SERVERS 3
 }
@@ -431,21 +432,21 @@ CLEANUP_DIRS
 
 START_SERVERS 2
 
-RUN $ISQL $DS1 dba dba PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < ../repl_trx/bidir-dav/sub_init.sql 
+RUN $ISQL $DS1 dba dba PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/../repl_trx/bidir-dav/sub_init.sql 
 if test $? -ne 0
 then
     LOG "***ABORTED: DAV2 replication test -- sub_init"
     exit 1
 fi
 
-RUN $ISQL $DS2 dba dba PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u 'DS1=$DS1' < ../repl_trx/bidir-dav/pub_init.sql 
+RUN $ISQL $DS2 dba dba PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u 'DS1=$DS1' < $VIRTUOSO_TEST/../repl_trx/bidir-dav/pub_init.sql 
 if test $? -ne 0
 then
     LOG "***ABORTED: DAV2 replication test -- pub_init.sql"
     exit 1
 fi
 
-RUN $ISQL $DS2 dba dba PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < ../repl_trx/bidir-dav/repl_proc.sql
+RUN $ISQL $DS2 dba dba PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/../repl_trx/bidir-dav/repl_proc.sql
 if test $? -ne 0
 then
     LOG "***ABORTED: DAV2 replication test -- repl_proc.sql"

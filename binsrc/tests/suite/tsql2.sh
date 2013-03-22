@@ -1,7 +1,7 @@
 #!/bin/sh
 #  tsql2.sh
 #
-#  $Id$
+#  $Id: tsql2.sh,v 1.14.4.1.4.9 2013/01/02 16:15:28 source Exp $
 #
 #  SQL conformance tests
 #  
@@ -25,11 +25,13 @@
 #  
 #  
 
-SCROLL=${SCROLL-../scroll}
-GETDATA=${GETDATA-../getdata}
+SCROLL=${SCROLL-$VIRTUOSO_TEST/../scroll}
+GETDATA=${GETDATA-$VIRTUOSO_TEST/../getdata}
 LOGFILE=tsql2.output
 export LOGFILE
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
+cp $VIRTUOSO_TEST/spanish.coll .
+cp $VIRTUOSO_TEST/words.esp .
 
 BANNER "STARTED SERIES OF SQL TESTS (tsql2.sh)"
 
@@ -41,27 +43,33 @@ SHUTDOWN_SERVER
 START_SERVER $PORT 1000
 
 RUN $INS $DSN 20 100
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tschema1.sql
+
+LOG + running sql script tschema1
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tschema1.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tschema1.sql"
     exit 1
 fi
+# XXX: under tables not supported
+#LOG + running sql script tunder1
+#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tunder1.sql
+#if test $STATUS -ne 0
+#then
+#    LOG "***ABORTED: tunder1.sql"
+#    exit 1
+#fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tunder1.sql
-if test $STATUS -ne 0
-then
-    LOG "***ABORTED: tunder1.sql"
-    exit 1
-fi
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tunder2.sql
-if test $STATUS -ne 0
-then
-    LOG "***ABORTED: tunder2.sql"
-    exit 1
-fi
+#LOG + running sql script tunder2
+#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tunder2.sql
+#if test $STATUS -ne 0
+#then
+#    LOG "***ABORTED: tunder2.sql"
+#    exit 1
+#fi
 
-#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tbak.sql
+#LOG + running sql script tbak
+#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tbak.sql
 #if test $STATUS -ne 0
 #then
 #    LOG "***ABORTED: tbak.sql"
@@ -71,16 +79,18 @@ fi
 
 RUN date
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tbin.sql
+LOG + running sql script tbin
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tbin.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tbin.sql"
     exit 1
 fi
 
-../blobs $PORT
+$VIRTUOSO_TEST/../blobs $PORT
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < terror.sql
+LOG + running sql script terror
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/terror.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: terror.sql"
@@ -89,21 +99,24 @@ fi
 
 RUN date
 
-#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tobject.sql
+#LOG + running sql script tobject
+#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tobject.sql
 #if test $STATUS -ne 0
 #then
 #    LOG "***ABORTED: tobject.sql"
 #    exit 1
 #fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tfref.sql
+LOG + running sql script tfref
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tfref.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tfref.sql"
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tlock.sql
+LOG + running sql script tlock
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tlock.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tlock.sql"
@@ -112,7 +125,8 @@ fi
 
 RUN date
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tupdate.sql
+LOG + running sql script tupdate
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tupdate.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tupdate.sql"
@@ -122,35 +136,40 @@ fi
 RUN date
 
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tdelete.sql
+LOG + running sql script tdelete
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tdelete.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tdelete.sql"
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tcoll.sql
+LOG + running sql script tcoll
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tcoll.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tcoll.sql"
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tschema2.sql
+LOG + running sql script tschema2
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tschema2.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tschema2.sql"
     exit 1
 fi
 
-# RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tschema3.sql
+# LOG + running sql script tschema3
+#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tschema3.sql
 # if test $STATUS -ne 0
 # then
 #    LOG "***ABORTED: tschema3.sql"
 #     exit 1
 # fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tschema4.sql
+LOG + running sql script tschema4
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tschema4.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tschema4.sql"
@@ -165,7 +184,7 @@ then
 fi
 
 
-RUN $GETDATA $DSN dba dba
+#RUN $GETDATA $DSN dba dba
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tsql2.sh: getdata"
@@ -173,14 +192,17 @@ then
 fi
 
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tbunion.sql
+# XXX
+#LOG + running sql script tbunion
+#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tbunion.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: TOP & BEST & UNION tests -- tbunion.sql"
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tinlist.sql
+LOG + running sql script tinlist
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tinlist.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: in list predicate -- tinlist.sql"
@@ -190,7 +212,8 @@ fi
 
 
 
-#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < txml.sql
+#LOG + running sql script txml
+#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/txml.sql
 #if test $STATUS -ne 0
 #then
 #    LOG "***ABORTED: XMLtest -- txml.sql"

@@ -1,7 +1,7 @@
 --
 --  recovck1.sql
 --
---  $Id$
+--  $Id: recovck1.sql,v 1.15.10.1 2013/01/02 16:14:52 source Exp $
 --
 --  Recovery check test
 --  

@@ -1,7 +1,7 @@
 --
 --  tsnaprepl.sql
 --
---  $Id$
+--  $Id: tsnaprepl.sql,v 1.2.10.1 2013/01/02 16:15:25 source Exp $
 --
 --  Snapshot replication local tests
 --  

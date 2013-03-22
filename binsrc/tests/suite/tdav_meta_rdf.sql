@@ -1,5 +1,5 @@
 --  
---  $Id$
+--  $Id: tdav_meta_rdf.sql,v 1.17.10.3 2013/01/02 16:15:03 source Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -49,7 +49,11 @@ create procedure TDAV_RDF_QUAD_CHECK (in resname varchar, in propuri varchar, in
     actual := 0;
   dbg_obj_princ ('TDAV_RDF_QUAD_CHECK: should be ', should_present, ', actual ', actual);
   if (isiri_id(propval))
-    propval := concat ('<', DB.DBA.RDF_QNAME_OF_IID(propval), '>');
+    {
+      declare propval_iid IRI_ID;
+      propval_iid := propval;
+      propval := concat ('<', id_to_iri (propval_iid), '>');
+    }
   if (should_present)
     {
       if (actual)
@@ -73,7 +77,7 @@ DAV_COL_CREATE('/DAV/tdav_meta_home/zip_samples/test11/', '100100100R', 'tdav_me
 update WS.WS.SYS_DAV_RES set RES_PERMS = '100100100RR';
 update WS.WS.SYS_DAV_COL set COL_PERMS = '100100100RR';
 DB.DBA.DAV_REPLICATE_ALL_TO_RDF_QUAD (1);
-load 'tdav_meta_rdf_checks.sql'; 
+load tdav_meta_rdf_checks.sql; 
 
 --create procedure TDAV_RDF_QUAD_CHECK2 (in resname varchar, in propuri varchar, in encoded_propval varchar)
 --{

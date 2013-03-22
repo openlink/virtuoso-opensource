@@ -2,7 +2,7 @@
 #
 #  rtest.sh
 #
-#  $Id$
+#  $Id: rtest.sh,v 1.37.4.3.4.11 2013/01/02 16:14:54 source Exp $
 #
 #  SQL conformance tests
 #  
@@ -28,89 +28,105 @@
 
 LOGFILE=rtest.output
 export LOGFILE
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 
-
-
-DS1=$PORT
-DS2=`expr $PORT + 1`
-
-
-
+LOCAL=$PORT
+GENERATE_PORTS 1
+REMOTE=$GENERATED_PORT
 
 BANNER "STARTED SERIES OF REMOTE SQL TESTS (rtest.sh)"
 
 LOG "Remote database access test"
 
-
-grep VDB ident.txt
-if test $? -ne 0
+if [ "$VIRTUOSO_VDB" = "0" ]
 then 
     echo "The present build is not set up for VDB."
     exit
 fi
 
-DSN = $DS1
-STOP_SERVER
-DSN = $DS2
-STOP_SERVER
-
-
+STOP_SERVER $REMOTE
+STOP_SERVER $LOCAL
 
 #
 #  Create temp directories for the two remote databases
 #
-rm -rf remote1
-mkdir remote1
-cd remote1
-MAKECFG_FILE ../$TESTCFGFILE $DS1 $CFGFILE
-ln -s ../words.esp words.esp
-START_SERVER $DS1 1000
+rm -rf remote
+mkdir remote
+cd remote
+MAKECFG_FILE $VIRTUOSO_TEST/$TESTCFGFILE $REMOTE $CFGFILE
+ln -s $VIRTUOSO_TEST/words.esp words.esp
+SERVER_TITLE="REMOTE"
+START_SERVER $REMOTE 1000
 cd ..
 
-rm -rf remote2
-mkdir remote2
-cd remote2
-MAKECFG_FILE ../$TESTCFGFILE $DS2 $CFGFILE
-ln -s ../words.esp words.esp
-START_SERVER $DS2 1000
-cd ..
+MAKECFG_FILE $VIRTUOSO_TEST/$TESTCFGFILE $LOCAL $CFGFILE
+ln -s $VIRTUOSO_TEST/words.esp words.esp
+SERVER_TITLE="LOCAL"
+START_SERVER $LOCAL 1000
 
 LOG "Loading base tables"
 
-RUN $INS $DS1 1000 100 dba dba usedt
+RUN $INS $REMOTE 1000 100 dba dba usedt
 if test $STATUS -ne 0
 then
-    LOG "***ABORTED: rtest.sh: loading base tables DS1"
+    LOG "***ABORTED: rtest.sh: loading base tables REMOTE"
     exit 1
 fi
 
-RUN $INS $DS2 1000 3000 dba dba usedt
+RUN $INS $LOCAL 1000 3000 dba dba usedt
 if test $STATUS -ne 0
 then
-    LOG "***ABORTED: rtest.sh: loading base tables DS2"
+    LOG "***ABORTED: rtest.sh: loading base tables LOCAL"
     exit 1
 fi
 
-RUN $BLOBS $DS1
-
-RUN $ISQL $DS1 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < rtest1-1.sql
-
-RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "PORT=$DS1" "LOCALPORT=$DS2" < rtest1.sql
+RUN $BLOBS $REMOTE
 if test $STATUS -ne 0
+then
+    LOG "***ABORTED: rtest.sh: Can't populate blobs on remote."
+    exit 1
+fi
+
+CHECKPOINT_SERVER $REMOTE
+CHECKPOINT_SERVER $LOCAL
+
+LOG + running sql script rtest1-1.sql
+RUN $ISQL $REMOTE PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/rtest1-1.sql
+if [ $STATUS -ne 0 ]
+then
+    LOG "***ABORTED: rtest1-1.sql"
+    exit 1
+fi
+
+LOG + running sql script rtest1.sql
+RUN $ISQL $LOCAL PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "PORT=$REMOTE" "LOCALPORT=$LOCAL" < $VIRTUOSO_TEST/rtest1.sql
+if [ $STATUS -ne 0 ]
 then
     LOG "***ABORTED: rtest.sh: Schema test"
     exit 1
 fi
 
-RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < rtest2.sql
+CHECKPOINT_SERVER $REMOTE
+CHECKPOINT_SERVER $LOCAL
+
+LOG + running sql script rtest0.sql
+RUN $ISQL $LOCAL PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/rtest0.sql
+if [ $STATUS -ne 0 ]
+then
+    LOG "***ABORTED: rtest.sh: rtest0"
+    exit 1
+fi
+
+LOG + running sql script rtest2.sql
+RUN $ISQL $LOCAL PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/rtest2.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: rtest.sh: rtest2"
     exit 1
 fi
 
-RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < rtesta.sql
+#LOG + running sql script rtesta.sql
+#RUN $ISQL $LOCAL PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/rtesta.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: rtest.sh: rtesta"
@@ -118,7 +134,8 @@ then
 fi
 
 
-RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < rpjoin.sql
+#LOG + running sql script rpjoin.sql
+#RUN $ISQL $LOCAL PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/rpjoin.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: rtest.sh: rpjoin"
@@ -126,67 +143,85 @@ then
 fi
 
 
-RUN $ISQL $DS1 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tnumt.sql
-RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tnumt.sql
-RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "PORT=$DS1" < tnumr.sql
+LOG + running sql script tnumt.sql on remote
+RUN $ISQL $REMOTE PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tnumt.sql
+LOG + running sql script tnumt.sql on local
+RUN $ISQL $LOCAL PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tnumt.sql
+LOG + running sql script tnumr.sql
+RUN $ISQL $LOCAL PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "PORT=$REMOTE" < $VIRTUOSO_TEST/tnumr.sql
 
 
 echo "VDB BLOBS\n";
-../blobs $DS2 R1 R1
+RUN $BLOBS $LOCAL R1 R1
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: rtest.sh: Can't populate blobs on local."
+    exit 1
+fi
 
-RUN $ISQL $DS1 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < ttrigt.sql
-RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "PORT=$DS1" < ttrigr.sql
-RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < ttrigtrig.sql
-RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < ttrig1.sql
+LOG + running sql script ttrigt.sql on remote
+RUN $ISQL $REMOTE PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/ttrigt.sql
+LOG + running sql script ttrigt.sql on local
+RUN $ISQL $LOCAL PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "PORT=$REMOTE" < $VIRTUOSO_TEST/ttrigr.sql
+LOG + running sql script ttrigtrig.sql
+RUN $ISQL $LOCAL PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/ttrigtrig.sql
+LOG + running sql script ttrig1.sql
+#RUN $ISQL $LOCAL PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/ttrig1.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: rtest.sh: ttrig1"
     exit 1
 fi
 
-RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "PORT=$DS1" < rtest3.sql
+LOG + running sql script rtest3.sql
+RUN $ISQL $LOCAL PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "PORT=$REMOTE" < $VIRTUOSO_TEST/rtest3.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: rtest.sh: rtest3"
     exit 1
 fi
 
-DSN = $DS1
-SHUTDOWN_SERVER
+SHUTDOWN_SERVER $REMOTE
 
-RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < rtest4.sql
+LOG + running sql script rtest4.sql
+RUN $ISQL $LOCAL PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/rtest4.sql
 if test $STATUS -ne 0
 then
   LOG "***ABORTED: rtest.sh: rtest4"
   exit 1
 fi
 
-cd remote1
-START_SERVER $DS1 1000
+cd remote
+SERVER_TITLE="REMOTE (restarted)"
+START_SERVER $REMOTE 1000
 cd ..
 
-RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < rtest5.sql
+LOG + running sql script rtest5.sql
+RUN $ISQL $LOCAL PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/rtest5.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: rtest.sh: rtest5"
     exit 1
 fi
 
-RUN $ISQL $DS1 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < rls_create.sql
+LOG + running sql script rls_create.sql
+RUN $ISQL $REMOTE PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/rls_create.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: rtest.sh: rls_create"
     exit 1
 fi
 
-RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "PORT=$DS1" < rls_attach.sql
+LOG + running sql script rls_attach.sql
+RUN $ISQL $LOCAL PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "PORT=$REMOTE" < $VIRTUOSO_TEST/rls_attach.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: rtest.sh: rls_attach"
     exit 1
 fi
 
-RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < rls.sql
+LOG + running sql script rls.sql
+RUN $ISQL $LOCAL PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/rls.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: rtest.sh: rls"
@@ -194,42 +229,48 @@ then
 fi
 
 
-RUN $ISQL $DS1 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tnwords_create.sql
+LOG + running sql script tnwords_create.sql
+RUN $ISQL $REMOTE PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tnwords_create.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: rtest.sh: tnwords_create"
     exit 1
 fi
 
-RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "PORT=$DS1" < tnwords_remote.sql
+LOG + running sql script tnwords_remote.sql
+RUN $ISQL $LOCAL PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "PORT=$REMOTE" < $VIRTUOSO_TEST/tnwords_remote.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: rtest.sh: tnwords_remote"
     exit 1
 fi
 
-RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < rproc1.sql
+#LOG + running sql script rproc1.sql
+#RUN $ISQL $LOCAL PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/rproc1.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: rtest.sh: rproc1"
     exit 1
 fi
 
-RUN $ISQL $DS1 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "LOCALPORT=$DS2" "DO_RPROC=YES" < rproc2.sql
+#LOG + running sql script rproc2.sql
+#RUN $ISQL $REMOTE PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "LOCALPORT=$LOCAL" "DO_RPROC=YES" < $VIRTUOSO_TEST/rproc2.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: rtest.sh: rproc2"
     exit 1
 fi
 
-RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "PORT=$DS1" < rexecute.sql
+#LOG + running sql script rexecute.sql
+#RUN $ISQL $LOCAL PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "PORT=$REMOTE" < $VIRTUOSO_TEST/rexecute.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: rtest.sh: rexecute"
     exit 1
 fi
 
-RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "PORT=$DS1" "LOCALPORT=$DS2" < pass.sql
+LOG + running sql script pass.sql
+RUN $ISQL $LOCAL PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "PORT=$REMOTE" "LOCALPORT=$LOCAL" < $VIRTUOSO_TEST/pass.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: rtest.sh: pass.sql"
@@ -237,7 +278,7 @@ then
 fi
 
 LOG "Inserted 3000 rows through VDB."
-RUN $INS $DS2 4000 1100 R1 R1 dba dba usedt
+RUN $INS $LOCAL 4000 1100 R1 R1 dba dba usedt
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: rtest.sh: Inserted 3000 rows through VDB"
@@ -246,12 +287,12 @@ fi
 
 # NOT AVAILABLE
 # echo VDB Read timing tests
-# ../batread $DS2 100 2100 1 R1 R1 >> ../vdt/rtest.log
-# ../ranread $DS2 100 3100 10 R1 R1  >> ../vdt/rtest.log
+# $VIRTUOSO_TEST/../batread $LOCAL 100 2100 1 R1 R1 >> $VIRTUOSO_TEST/../vdt/rtest.log
+# $VIRTUOSO_TEST/../ranread $LOCAL 100 3100 10 R1 R1  >> $VIRTUOSO_TEST/../vdt/rtest.log
 # NOT AVAILABLE
 
 LOG "Scrolling through the VDB."
-RUN $SCROLL $DS2 100 R1 R1
+RUN $SCROLL $LOCAL 100 R1 R1
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: rtest.sh: scroll"
@@ -260,7 +301,8 @@ fi
 
 
 
-RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tbreakup.sql
+#LOG + running sql script tbreakup.sql
+#RUN $ISQL $LOCAL PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tbreakup.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: rtest.sh: rtbreakup.sql"
@@ -268,7 +310,8 @@ then
 fi
 
 
-RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < rtrxdead.sql
+#LOG + running sql script rtrxdead.sql
+#RUN $ISQL $LOCAL PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/rtrxdead.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: rtest.sh: rtrxdead.sql"
@@ -278,17 +321,13 @@ fi
 
 LOG "Shutdown databases"
 
-DSN=$DS1
-SHUTDOWN_SERVER
-DSN=$DS2
-SHUTDOWN_SERVER
-
-
+SHUTDOWN_SERVER $REMOTE
+SHUTDOWN_SERVER $LOCAL
 
 #
 #  Cleanup
 #
-# rm -rf remote1 remote2
+# rm -rf remote 
 
 CHECK_LOG
 BANNER "COMPLETED SERIES OF REMOTE SQL TESTS (rtest.sh)"

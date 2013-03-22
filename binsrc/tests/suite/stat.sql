@@ -1,5 +1,5 @@
 --  
---  $Id$
+--  $Id: stat.sql,v 1.4.10.3 2013/01/02 16:14:58 source Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -88,3 +88,7 @@ stat_fill_counts_2 ();
 
 select sprintf ('%.1f%%', avg ((abs (cc_prec - cc_ex + 0.0) / cc_ex) * 100)) from stat_counts where cc_ex > 1000;
 echo BOTH "Average error = " $LAST[1] "\n";
+
+
+
+

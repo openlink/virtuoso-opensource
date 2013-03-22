@@ -1,5 +1,5 @@
 --  
---  $Id$
+--  $Id: trepl_t1.sql,v 1.9.10.1 2013/01/02 16:15:22 source Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -242,3 +242,4 @@ ECHO BOTH ": B7157 : LAST[1]=" $LAST[1] " (XML ENTITY)\n";
 select length(X) from B7260;
 ECHO BOTH $IF $EQU $LAST[1] 835106 "PASSED" "***FAILED";
 ECHO BOTH ": B7260 : length (X)=" $LAST[1] " (words.esp)\n";
+

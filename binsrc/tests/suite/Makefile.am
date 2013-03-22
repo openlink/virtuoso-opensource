@@ -19,7 +19,7 @@
 #  
 #  
 
-SUBDIRS	= tpc-d .
+SUBDIRS	= . tpc-d
 
 TOP=@TOP@
 
@@ -27,6 +27,8 @@ check_SCRIPTS = \
 	bpel.sh \
 	byteorder.sh \
 	clean.sh \
+	epilog.sh \
+	go_functions.sh \
 	gtkbench.sh \
 	inprocess.sh \
 	large_db.sh \
@@ -35,22 +37,32 @@ check_SCRIPTS = \
 	nwxml.sh \
 	obackup.sh \
 	oledb.sh \
+	prepare_t1.sh \
+	prolog.sh \
+	release.sh \
 	rtest.sh \
+	summary.sh \
 	tblob_recode.sh \
+	tcl.sh \
 	tclstart.sh \
 	tclstop.sh \
-	tcpt.sh \
 	tdav.sh \
 	tdav_meta.sh \
 	tdbp.sh \
 	tdconv.sh \
 	tdrop.sh \
+	test_cluster.sh \
 	test_fn.sh \
+	test_run.sh \
 	test_server.sh \
 	testall.sh \
+	testlib.sh \
 	thttp.sh \
 	timsg.sh \
 	tjdbc.sh \
+	tlubm.sh \
+	toptiremote.sh \
+	toptitpcd.sh \
 	tp.sh \
 	tpcd.sh \
 	tproviders.sh \
@@ -58,11 +70,10 @@ check_SCRIPTS = \
 	trecov.sh \
 	trecov_schema.sh \
 	trepl.sh \
+	trepl_rdf.sh \
 	treplh.sh \
 	tsec.sh \
 	tsoap12.sh \
-	tsparql.sh \
-	tsparql_demo.sh \
 	tsql.sh \
 	tsql2.sh \
 	tsql3.sh \
@@ -70,6 +81,7 @@ check_SCRIPTS = \
 	tsqlo.sh \
 	tstriping.sh \
 	tsxml.sh \
+	ttpch.sh \
 	ttutorial.sh \
 	tupgrade_recov.sh \
 	tvad.sh \
@@ -79,11 +91,12 @@ check_SCRIPTS = \
 	tvspxex.sh \
 	twcopy.sh \
 	twiki.sh \
-	txslt.sh
+	txslt.sh \
+	wtf.sh
 
 TESTS=test_server.sh
 TESTS_ENVIRONMENT=PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" \
-	PORT=$(PORT) HOME="$(TOP)" JDK2="@ac_jdk2_path@" JDK3="@ac_jdk3_path@" HOST=localhost SERVER=virtuoso-t
+	PORT=$(PORT) TOP="$(TOP)" HOME="$(TOP)" JDK2="@ac_jdk2_path@" JDK3="@ac_jdk3_path@" HOST=localhost SERVER=virtuoso-t
 
 clean-local:
 	./clean.sh

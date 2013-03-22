@@ -2153,7 +2153,7 @@ unescape_string (TCHAR * _string)
 	    case 'x':		/* There's a hexadecimal char constant \xhh */
 	    case 'X':
 	      {			/* Well, we should check that only max 2 digits are parsed */
-		*res_ptr++ = ((UTCHAR) hextoi (&string, string+1));
+		*res_ptr++ = ((UTCHAR) hextoi (&string, ++string));
 		continue;
 	      }
 /* The following might conflict with some other usage. Commented out. */
@@ -6715,10 +6715,26 @@ load_raw (FILE * f)
 int
 load_file (TCHAR *name, int raw_load, TCHAR *loadexpr)
 {
-  FILE *f;
+  FILE *f = NULL;
+  TCHAR *sql_path = NULL;
+  size_t sql_path_size;
+  TCHAR *sql_path_element = NULL;
+  TCHAR filename_buf[4096];
+  TCHAR *sql_path_delimiters =
+#if defined (WIN32)
+          _T(";");
+#else
+          _T(":");
+#endif
+  TCHAR *os_path_delimiter =
+#if defined (WIN32)
+          _T("\\");
+#else
+          _T("/");
+#endif
 
   if (((NULL == name) && (name = _T("NULL")))
-      || (!*name) || !(f = isqlt_tfopen (name, _T("r"))))
+      || (!*name))
     {
       isqlt_tperror (progname);
       isql_fprintf (error_stream,
@@ -6727,6 +6743,49 @@ load_file (TCHAR *name, int raw_load, TCHAR *loadexpr)
 		    current_loadexpr ());
       return (0);
     }
+
+  f = isqlt_tfopen (name, _T("r"));
+
+  if (!f)
+    {
+      sql_path = isqlt_tgetenv (_T("SQLPATH"));
+
+      if (sql_path)
+        {
+	  TCHAR *tok_state;
+
+          sql_path_size = (isqlt_tcslen (sql_path) + 1 ) * sizeof (TCHAR);
+          sql_path = chemalloc (sql_path_size, _T("load_file"));
+          isqlt_tcscpy (sql_path, isqlt_tgetenv (_T("SQLPATH")));
+
+          sql_path_element = isqlt_tcstok (sql_path, sql_path_delimiters, &tok_state);
+
+          while (sql_path_element)
+            {
+              isqlt_tcscpy (filename_buf, sql_path_element);
+              isqlt_tcscat (filename_buf, os_path_delimiter);
+              isqlt_tcscat (filename_buf, name);
+              if ((f = isqlt_tfopen (filename_buf, _T("r"))))
+                {
+                  name = filename_buf;
+                  break;
+                }
+              sql_path_element = isqlt_tcstok (NULL, sql_path_delimiters, &tok_state);
+            }
+          free (sql_path);
+        }
+
+      if (!f)
+    {
+      isqlt_tperror (progname);
+      isql_fprintf (error_stream,
+	     _T("%") PCT_S _T(": Cannot open file \"%") PCT_S _T("\" for loading, at line %ld of %") PCT_S _T("\n"),
+		    progname, name, latest_statement_begins_at (),
+		    current_loadexpr ());
+      return (0);
+    }
+    }
+
   current_file = name;
   push_to_loadexpr_stack (loadexpr, f);
   if (raw_load)
@@ -6982,6 +7041,10 @@ read_blob_from_input (TCHAR *statement, int has_output, FILE * in_fp,
       rc = SQLParamData (stmt, ((PTR *) & param_num));
       if (SQL_NEED_DATA == rc)
 	{
+          /* rewinding input stream to the start, there can be many parameters */
+          if (!user_input_p (in_fp))
+            rewind (in_fp);
+
 	  for (;;)
 	    {
 	      if (line_by_line_input)
@@ -7066,22 +7129,15 @@ read_blob_from_input (TCHAR *statement, int has_output, FILE * in_fp,
 		  inbuf_len = got_anything + previous_crlfs;
 
 		}
-	      else
-		/* Reading in binary format from the file specified */
+	      else /* Reading in binary format from the file specified */
 		{
-		  got_anything = (int) fread (inbuf, 1, inbuf_size, in_fp);
-		  /*
-		     isql_fprintf(error_stream,
+		  inbuf_len = got_anything = (int) fread (inbuf, 1, inbuf_size, in_fp);
+		  /* isql_fprintf(error_stream,
 		     "read_blob_from_input: fread got %d bytes, feof(in_fp)=%d, ferror(in_fp)=%d\n"
-		     "inbuf[0-15]='%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c'\n",
-		     got_anything,feof(in_fp),ferror(in_fp),
-		     inbuf[0],inbuf[1],inbuf[2],inbuf[3],
-		     inbuf[4],inbuf[5],inbuf[6],inbuf[7],
-		     inbuf[8],inbuf[9],inbuf[10],inbuf[11],
-		     inbuf[12],inbuf[13],inbuf[14],inbuf[15]
+		     "inbuf[0-15]='%.16s'\n",
+		     got_anything,feof(in_fp),ferror(in_fp), inbuf
 		     ); fflush(error_stream);
 		   */
-		  inbuf_len = got_anything;
 		  if (!got_anything)
 		    {
 		      *end_found = 1;
@@ -7089,7 +7145,6 @@ read_blob_from_input (TCHAR *statement, int has_output, FILE * in_fp,
 		    }
 		}
 
-	      {
 		rc2 = SQLPutData (stmt, inbuf, ((SQLLEN) inbuf_len));
 		if (SQL_ERROR == rc2)
 		  {
@@ -7101,19 +7156,18 @@ read_blob_from_input (TCHAR *statement, int has_output, FILE * in_fp,
 				   unless the next line happens to be the mime boundary. */
 		    isqlt_tcsncpy (inbuf, (inbuf + ind_to_crlfs), crlfs);
 /*                    inbuf[0] = inbuf[inbuf_len];
-   if(crlfs > 1) { inbuf[1] = inbuf[inbuf_len+1]; } */
+                     if(crlfs > 1) { inbuf[1] = inbuf[inbuf_len+1]; }
+                     */
 		  }
 
 		/* Was:   IF_SEVERE_ERR_GO(stmt, error, rc2); */
-	      }
-	    }			/* for loop */
+	    } /* for loop over blob chunks */
 	}
       else
 	{
 	  if (SQL_ERROR == rc)
 	    return (rc);
 	}
-      /* Was: { IF_SEVERE_ERR_GO(stmt,error,rc); } */
     }
   while (SQL_NEED_DATA == rc);
 /* Parameter was a blob? */
@@ -9294,11 +9348,11 @@ bin_fgets (TCHAR *buffer, int max_size, FILE * infp)
    HTML-constructs like this, which at least Netscape version 2.02E
    will send without any escaping...
 
-   <INPUT TYPE=HIDDEN NAME="LUMIKÄÄRME&#34;Lismake&LT;=&GT;kima&#59;ra&AMP;lahna" VALUE="Suikkaboksi ääliömäisesti huikkaa!">
+   <INPUT TYPE=HIDDEN NAME="LUMIKï¿½ï¿½RME&#34;Lismake&LT;=&GT;kima&#59;ra&AMP;lahna" VALUE="Suikkaboksi ï¿½ï¿½liï¿½mï¿½isesti huikkaa!">
    <INPUT TYPE=CHECKBOX NAME="sikaniska-NAME=lumiukko filename=pena" VALUE=RASTITTU>
 
    like these:
-   Content-Disposition: form-data; name="LUMIKÄÄRME"Lismake<=>kima;ra&lahna"
+   Content-Disposition: form-data; name="LUMIKï¿½ï¿½RME"Lismake<=>kima;ra&lahna"
    Content-Disposition: form-data; name="sikaniska-NAME=lumiukko filename=pena"
 
    A line with real filename= parameter should look like this:
@@ -10275,7 +10329,7 @@ line_from_html_file (TCHAR *templatename)
 {
   TCHAR tmp1[2002];
 
-  return (isqlt_fgetts (tmp1, ((sizeof (tmp1) / sizeof (TCHAR)) - 1), html_infp));
+  return (isqlt_fgetts (tmp1, (sizeof (tmp1) - 1), html_infp));
 }
 
 /* Return the whole string in one piece. After that return NULL.

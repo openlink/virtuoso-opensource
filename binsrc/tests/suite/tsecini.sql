@@ -1,7 +1,7 @@
 --
 --  tsecini.sql
 --
---  $Id$
+--  $Id: tsecini.sql,v 1.13.10.3 2013/01/02 16:15:24 source Exp $
 --
 --  Test security - initialization
 --  
@@ -240,20 +240,21 @@ ECHO BOTH $IF $EQU $LAST[7] "SELECT" "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": Privilege granted is " $LAST[7] "\n";
 
-grant update (b, c) on SEC_TEST_3 to U1, U3, U4;
+-- select (a) is needed for the user to get values of PK.
+grant select (a), update (b, c) on SEC_TEST_3 to U1, U3, U4;
 
 -- O, this is tedious, but nevertheless, we do it all:
 TABLEPRIVILEGES SEC_TEST_3;
 ECHO BOTH $IF $EQU $ROWCNT 12 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": " $ROWCNT " grants on SEC_TEST_3 after GRANT UPDATE (b, c) ON SEC_TEST_3 TO U1, U3, U4;\n";
+ECHO BOTH ": " $ROWCNT " grants on SEC_TEST_3 after GRANT select (a), UPDATE (b, c) ON SEC_TEST_3 TO U1, U3, U4;\n";
 
 ECHO BOTH $IF $EQU $LAST[3] "SEC_TEST_3" "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": Granted on table " $LAST[3] "\n";
 
 --
--- Note how $+ macros work like logical OR shere, as one of the
+-- Note how $+ macros work like logical OR here, as one of the
 -- $EQU -clauses have to be non-zero that their sum were non-zero as well:
 --
 ECHO BOTH $IF $+ $+ $EQU $LAST[5] "U1" $EQU $LAST[5] "U3" $EQU $LAST[5] "U4" "PASSED" "***FAILED";
@@ -268,7 +269,7 @@ ECHO BOTH ": Privilege granted is " $LAST[6] "\n";
 -- Same with SQLColumnPrivileges:
 --
 COLUMNPRIVILEGES SEC_TEST_3;
-ECHO BOTH $IF $EQU $ROWCNT 6 "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $ROWCNT 9 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": " $ROWCNT " column grants on SEC_TEST_3 after GRANT UPDATE (b, c) ON SEC_TEST_3 TO U1, U3, U4;\n";
 

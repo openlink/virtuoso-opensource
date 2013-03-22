@@ -1,7 +1,7 @@
 --
 --  rproc1.sql
 --
---  $Id$
+--  $Id: rproc1.sql,v 1.4.10.1 2013/01/02 16:14:53 source Exp $
 --
 --  procedure attachment testsuite
 --  

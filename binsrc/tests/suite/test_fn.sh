@@ -2,7 +2,7 @@
 #
 #  test_fn.sh
 #
-#  $Id$
+#  $Id: test_fn.sh,v 1.49.6.11.4.35 2013/01/02 16:15:06 source Exp $
 #
 #  Generic test functions which should be read at the beginning of the
 #  shell script.
@@ -33,6 +33,7 @@
 LANG=C
 LC_ALL=POSIX
 export LANG LC_ALL
+
 
 #===========================================================================
 #  Set global environment variables for test suite
@@ -398,9 +399,10 @@ CHECKPOINT_SERVER()
 
 CHECK_LOG()
 {
+#   I've modified these grep patterns to ignore ':' which may be forgoten easily.
     passed=`grep "^PASSED" $LOGFILE | wc -l`
-    failed=`grep "^\*\*\*.*FAILED:" $LOGFILE | wc -l`
-    aborted=`grep "^\*\*\*.*ABORTED:" $LOGFILE | wc -l`
+    failed=`grep "^\*\*\*.*FAILED" $LOGFILE | wc -l`
+    aborted=`grep "^\*\*\*.*ABORTED" $LOGFILE | wc -l`
 
     ECHO ""
     LINE

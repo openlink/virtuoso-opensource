@@ -1,7 +1,7 @@
 --
 --  tsecu5-1.sql
 --
---  $Id$
+--  $Id: tsecu5-1.sql,v 1.5.10.2 2013/01/02 16:15:25 source Exp $
 --
 --  Security test #5
 --  
@@ -38,7 +38,7 @@ SET ARGV[0] 0;
 SET ARGV[1] 0;
 
 
-revoke update(c,b) on SEC_TEST_3 from u3,u1;
+revoke select(a),update(c,b) on SEC_TEST_3 from u3,u1;
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": REVOKE update(c,b) ON SEC_TEST_3 FROM u3,u1; STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
@@ -49,7 +49,7 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": COLUMNPRIVILEGES SEC_TEST_3 after REVOKE update(c,b) ON SEC_TEST_3 FROM u3,u1; STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 -- 6 (2*3) - 4 (2*2) should be 2 (2 columns granted for one user):
-ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $ROWCNT 3 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": " $ROWCNT " column grants remaining on SEC_TEST_2.\n";
 

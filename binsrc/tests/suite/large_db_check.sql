@@ -1,7 +1,7 @@
 --
 --  large_db_check.sql
 --
---  $Id$
+--  $Id: large_db_check.sql,v 1.3.10.1 2013/01/02 16:14:41 source Exp $
 --
 --  Large DB test
 --  
@@ -32,3 +32,4 @@ ECHO BOTH " TEST table contains " $LAST[1] " rows\n";
 backup '/dev/null';
 ECHO BOTH $IF $EQU $STATE OK  "PASSED" "***FAILED";
 ECHO BOTH ": Travers all trees\n";
+

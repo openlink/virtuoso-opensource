@@ -2,7 +2,7 @@
 #
 #  tpcd.sh
 #
-#  $Id$
+#  $Id: tpcd.sh,v 1.9.2.2.4.8 2013/01/02 16:15:16 source Exp $
 #
 #  TPC-D tests
 #  
@@ -24,22 +24,35 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #  
-#
+#  
+
+mode=${TPCDMODE-local}
+if [ $# -ge 1 ]
+then
+    mode=$1
+fi
 
 LOGFILE=`pwd`/tpcd.output
 export LOGFILE
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
+. $VIRTUOSO_TEST/tpc-d/LOAD.sh
+SQLPATH=$SQLPATH:$VIRTUOSO_TEST/tpc-d
 
 DS1=$PORT
 DS2=`expr $PORT + 1`
 
+skip_local=0
+skip_remote=0
+if [ "$mode" = 'local' ]
+then
+  skip_remote=1
+fi
 
 echo "Server=" $SERVER
 
 BANNER "STARTED SERIES OF TPC-D TESTS (tpcd.sh)"
 
-grep VDB ident.txt
-if test $? -ne 0
+if [ "$VIRTUOSO_VDB" = "0" ]
 then 
     echo "The present build is not set up for VDB."
     exit
@@ -65,24 +78,24 @@ LOG
 LOG "Loading the TPC-D tables into $DS1"
 LOG
 
-cd tpc-d
-. ./LOAD.sh $DS1 dba dba tables
-. ./LOAD.sh $DS1 dba dba indexes
-. ./LOAD.sh $DS1 dba dba procedures
-. ./LOAD.sh $DS1 dba dba load
-cd ..
+LOAD_TPCD $DS1 dba dba tables
+LOAD_TPCD $DS1 dba dba indexes
+LOAD_TPCD $DS1 dba dba procedures
+LOAD_TPCD $DS1 dba dba load
 
 LOG
 LOG "Running a subset of TPC-D queries against $DS1"
 LOG
 
-RUN $ISQL $DS1 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tpc-d/Q.sql
+RUN $ISQL $DS1 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tpc-d/Q.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tpcd.sh: Q.sql"
     exit 1
 fi
 
+if [ $skip_remote -eq 0 ]
+then
 LOG
 LOG "Starting the server on $DS2"
 LOG
@@ -98,44 +111,43 @@ LOG
 LOG "Attaching the TPC-D tables from $DS1 into $DS2"
 LOG
 
-cd tpc-d
-. ./LOAD.sh $DS2 dba dba attach $DS1 dba dba
-cd ..
+. $VIRTUOSO_TEST/tpc-d/LOAD.sh $DS2 dba dba attach $DS1 dba dba
 
 LOG
 LOG "Running a subset of TPC-D queries against attached table in $DS2 from $DS1"
 LOG
 
-RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tpc-d/Q.sql
+RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tpc-d/Q.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tpcd.sh: tpc-d/Q.sql"
     exit 1
 fi
-RUN $ISQL $PORT PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tpc-d/sql_rdf.sql
+RUN $ISQL $PORT PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tpc-d/sql_rdf.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tpcd.sh test -- tpc-d/sql_rdf.sql"
     exit 1
 fi
-RUN $ISQL $PORT PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tpc-d/all_ms.sql
+RUN $ISQL $PORT PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tpc-d/all_ms.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tpcd.sh test -- tpc-d/all_ms.sql"
     exit 1
 fi
-RUN $ISQL $PORT PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tpc-d/test_tbl.sql
+RUN $ISQL $PORT PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tpc-d/test_tbl.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tpcd.sh test -- tpc-d/test_tbl.sql"
     exit 1
 fi
-RUN $ISQL $PORT PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tpc-d/Q_sparql_map_cmp.sql
+RUN $ISQL $PORT PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tpc-d/Q_sparql_map_cmp.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tpcd.sh test -- tpc-d/Q_sparql_map_cmp.sql"
     exit 1
 fi
+fi #end skip
 
 LOG
 LOG "Shutdown databases"

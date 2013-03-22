@@ -1,7 +1,7 @@
 #!/bin/sh
 #  tsql.sh
 #
-#  $Id$
+#  $Id: tsqllite.sh,v 1.1.2.1.4.3 2013/01/02 16:15:28 source Exp $
 #
 #  SQL conformance tests
 #  
@@ -27,7 +27,7 @@
 
 LOGFILE=tsqllite.output
 export LOGFILE
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 
 CLEAN_DBLOGFILE
 CLEAN_DBFILE
@@ -42,13 +42,13 @@ BANNER "STARTED SERIES OF SQL TESTS (tsqllite.sh)"
 
 START_SERVER $PORT 1000
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < twords.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/twords.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: Wordtest -- twords.sql"
     exit 1
 fi
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tupdate.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tupdate.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tupdate.sql"
@@ -58,7 +58,7 @@ fi
 RUN date
 
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tdelete.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tdelete.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tdelete.sql"

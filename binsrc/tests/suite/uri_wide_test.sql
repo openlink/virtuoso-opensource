@@ -1,5 +1,5 @@
 --  
---  $Id$
+--  $Id: uri_wide_test.sql,v 1.1.6.1 2013/01/02 16:15:38 source Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.

@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-#  $Id$
+#  $Id: tproviders.sh,v 1.4.2.2.4.3 2013/01/02 16:15:18 source Exp $
 #
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
@@ -23,7 +23,7 @@
 
 LOGFILE=`pwd`/tproviders.output
 export LOGFILE
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
  
 CURRDIR=`pwd`
 JENADIR="../../jena"

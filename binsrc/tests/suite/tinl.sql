@@ -1,5 +1,5 @@
 
-ECHO BOTH "Test inlining exists as dt\n";
+echo both "Test inlining exists as dt\n";
 
 
 -- Test for changing a subquery into a outer loop for joining.
@@ -37,41 +37,42 @@ explain ('select count (*) from t1 where (row_no, fi2) in (select row_no, fi2 fr
 explain ('select count (*) from t1 where string1 in (select string2 from r1..t1 where row_no = 222)');
 
 select count (*) from t1 where string1 in (select string2 from r1..t1 where row_no = 222);
-ECHO BOTH $IF $EQU $LAST[1] 3 "PASSED" "***FAILED";
-ECHO BOTH ": r1..t1 in r1..t1 \n";
+echo both $if $equ $last[1] 3 "PASSED" "***FAILED";
+echo both ": r1..t1 in r1..t1 \n";
 
 explain ('select count (*) from t1 where string1 in (select string2 from r1..t1 where row_no = 222) option (do not loop exists)');
 
 select count (*) from r1..t1 a, t1 b where a.string1 in (select string2 from r1..t1 where row_no = 222) and b.row_no = a.row_no;
-ECHO BOTH $IF $EQU $LAST[1] 3 "PASSED" "***FAILED";
-ECHO BOTH ": r1..t1 in r1..t1, t1 \n";
+echo both $if $equ $last[1] 3 "PASSED" "***FAILED";
+echo both ": r1..t1 in r1..t1, t1 \n";
 
 select count (*) from r1..t1 a, t1 b where a.string1 in (select string2 from r1..t1 where row_no = 222) and b.row_no = a.row_no option (do not loop exists);
-ECHO BOTH $IF $EQU $LAST[1] 3 "PASSED" "***FAILED";
-ECHO BOTH ": r1..t1 in r1..t1, t1  do not loop exists\n";
+echo both $if $equ $last[1] 3 "PASSED" "***FAILED";
+echo both ": r1..t1 in r1..t1, t1  do not loop exists\n";
 
 select count (*) from r1..t1 a, t1 b where a.string1 in (select string2 from r1..t1 where row_no = 222) and b.row_no = a.row_no option (loop exists);
-ECHO BOTH $IF $EQU $LAST[1] 3 "PASSED" "***FAILED";
-ECHO BOTH ": r1..t1 in r1..t1, t1 loop exists\n";
+echo both $if $equ $last[1] 3 "PASSED" "***FAILED";
+echo both ": r1..t1 in r1..t1, t1 loop exists\n";
 
 select count (*) from r1..t1 a, t1 b where a.string1 in (select string2 from r1..t1 c where c.row_no = 222 and c.row_no = a.fi2) and b.row_no = a.row_no option ( loop exists);
-ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
-ECHO BOTH ": r1..t1 in r1..t1, t1, 2 in join conds, loop exists\n";
+echo both $if $equ $last[1] 0 "PASSED" "***FAILED";
+echo both ": r1..t1 in r1..t1, t1, 2 in join conds, loop exists\n";
 
 
 update t1 set fi2 = fi2 + 2  where row_no in (select row_no from r1..t1 where string1 = '11');
-ECHO BOTH $IF $EQU $ROWCNT 3 "PASSED" "***FAILED";
-ECHO BOTH ": update t1 in r1..t1\n";
+echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
+echo both ": update t1 in r1..t1\n";
 
 update r1..t1 set fi2 = fi2 + 2  where row_no in (select row_no from r1..t1 where string1 = '11');
-ECHO BOTH $IF $EQU $ROWCNT 3 "PASSED" "***FAILED";
-ECHO BOTH ": update t1 in r1..t1\n";
+echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
+echo both ": update t1 in r1..t1\n";
 
 
 update r1..t1 set fi2 = fi2 + 2  where row_no in (select row_no from t1 where string1 = '11');
-ECHO BOTH $IF $EQU $ROWCNT 3 "PASSED" "***FAILED";
-ECHO BOTH ": update r1..t1 in t1\n";
+echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
+echo both ": update r1..t1 in t1\n";
 
 update r1..t1 set fi2 = fi2 + 2  where row_no in (select row_no from t1 where string1 > '11') and row_no = 411;
-ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
-ECHO BOTH ": update r1..t1 in t1 and row_no = 411\n";
+echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
+echo both ": update r1..t1 in t1 and row_no = 411\n";
+

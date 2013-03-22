@@ -1,7 +1,7 @@
 --
 --  obackup0.sql
 --
---  $Id$
+--  $Id: obackup0.sql,v 1.6.6.1.4.1 2013/01/02 16:14:49 source Exp $
 --
 --  Online Backup stage 0
 --  
@@ -40,3 +40,10 @@ ECHO BOTH ": " $LAST[1] " checkpoint remap pages\n";
 
 backup_max_dir_size (300000);
 backup_online ('nwdemo_i_#', 150,0, vector ('nw1', 'nw2', 'nw3', 'nw4', 'nw5'));
+
+
+
+
+
+
+

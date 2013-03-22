@@ -1,5 +1,5 @@
 --  
---  $Id$
+--  $Id: txmla3.sql,v 1.8.10.1 2013/01/02 16:15:36 source Exp $
 --
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -265,3 +265,4 @@ select test_bookmark_suite ('localhost', server_http_port(),
 ;
 ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
 ECHO BOTH ": XMLA Bookmark test 5 : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+

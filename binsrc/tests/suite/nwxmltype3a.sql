@@ -1,5 +1,5 @@
 --  
---  $Id$
+--  $Id: nwxmltype3a.sql,v 1.5.10.1 2013/01/02 16:14:48 source Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -85,8 +85,8 @@ create procedure fill_xtf_3()
 fill_xtf_1_2();
 
 select count(*) from XML_TEXT_FRAGS where cast(XTF_FRAG1 as varchar) <> cast(XTF_FRAG2 as varchar);
-ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
-ECHO BOTH ": " $LAST[1] " XMLType instances were cropped with errors\n";
+echo both $if $equ $last[1] 0 "PASSED" "*** FAILED";
+echo both ": " $last[1] " XMLType instances were cropped with errors\n";
 
 insert into LONG_XML_TEXTS (LXML_NAME, LXML_DOC) values ('/Doc'	, '<a/>');
 insert into LONG_XML_TEXTS (LXML_NAME, LXML_DOC) values ('/Doc/cha1'	, '<a/>');
@@ -101,11 +101,11 @@ checkpoint;
 fill_xtf_3();
 
 select count(*) from XML_TEXT_FRAGS where cast(XTF_FRAG1 as varchar) <> cast(XTF_FRAG2 as varchar);
-ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
-ECHO BOTH ": " $LAST[1] " explicitly cropped XMLType instances were filled with errors\n";
+echo both $if $equ $last[1] 0 "PASSED" "*** FAILED";
+echo both ": " $last[1] " explicitly cropped XMLType instances were filled with errors\n";
 select count(*) from XML_TEXT_FRAGS where cast(XTF_FRAG1 as varchar) <> cast(XTF_FRAG3 as varchar);
-ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
-ECHO BOTH ": " $LAST[1] " implicitly cropped XMLType instances were filled with errors\n";
+echo both $if $equ $last[1] 0 "PASSED" "*** FAILED";
+echo both ": " $last[1] " implicitly cropped XMLType instances were filled with errors\n";
 
 update LONG_XML_TEXTS set LXML_DOC = '<?xml version="1.0"?>
 <!DOCTYPE book [
@@ -146,5 +146,5 @@ where LXML_NAME = '/Doc/sub22';
 select LXML_NAME, FRAG from LONG_XML_TEXTS where xpath_contains (LXML_DOC, '//*', FRAG);
 select count (FRAG) from LONG_XML_TEXTS where xpath_contains (LXML_DOC, '//*', FRAG);
 -- There was an bug here: must be 19 frags, not 11 or 15.
-ECHO BOTH $IF $EQU $LAST[1] 19 "PASSED" "***FAILED";
-ECHO BOTH ": " $LAST[1] " fragments in XMLType column before log replay\n";
+echo both $if $equ $last[1] 19 "PASSED" "*** FAILED";
+echo both ": " $last[1] " fragments in XMLType column before log replay\n";

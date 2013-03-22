@@ -1,7 +1,7 @@
 --
 --  terror.sql
 --
---  $Id$
+--  $Id: terror.sql,v 1.46.2.3.4.14 2013/01/02 16:15:05 source Exp $
 --
 --  Various tests that should return an error.
 --  The intent is that the server recover from these, hence results are
@@ -26,6 +26,9 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 --
+
+select sys_stat ('db_default_columnstore');
+set U{COLUMNSTORE} $LAST[1];
 
 select blob_to_string (ROW_NO) from T2 where T2 = 11;
 select blob_to_string (ROW_NO) from BLOBS where ROW_NO = 1;
@@ -745,9 +748,10 @@ alter table colcnttest  add errorcol integer;
 ECHO BOTH $IF $NEQ $STATE OK  "PASSED" "***FAILED";
 ECHO BOTH ": adding column to table with 300 cols with alter table " $STATE "\n";
 
-create table colinher  (under colcnttest, errorcol integer);
-ECHO BOTH $IF $EQU $STATE 42S22  "PASSED" "***FAILED";
-ECHO BOTH ": inheriting table with 300 cols with UNDER " $STATE "\n";
+-- UNDER NOT SUPPORTED
+--create table colinher  (under colcnttest, errorcol integer);
+--ECHO BOTH $IF $EQU $STATE 42S22  "PASSED" "***FAILED";
+--ECHO BOTH ": inheriting table with 300 cols with UNDER " $STATE "\n";
 
 
 create table dupcols (id integer, id varchar);
@@ -826,6 +830,9 @@ fin:
 ECHO BOTH $IF $NEQ $STATE OK  "PASSED" "***FAILED";
 ECHO BOTH ": Virtuoso/PL fetch with 3 into params on a select with 2 output columns STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
+create procedure ff (in a any) returns any array {return a;};
+
+
 drop table WIDEZTEST;
 create table WIDEZTEST (ID int not null primary key, DATA nvarchar);
 
@@ -837,10 +844,44 @@ insert into WIDEZTEST (ID, DATA) values (2, N'\x5\x0\x1\x0\x2\x0\x3\x0\x4');
 ECHO BOTH $IF $NEQ $STATE OK "PASSED" "*** FAILED";
 ECHO BOTH ": inserting \\x0 into nvarchar column STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
-insert into WIDEZTEST (ID, DATA) values (3, cast ('\x5\x0\x1\x0\x2\x0\x3\x0\x4' as nvarchar));
+insert into WIDEZTEST (ID, DATA) values (10, cast ('\x5\x0\x1\x0\x2\x0\x3\x0\x4' as nvarchar));
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "*** FAILED";
+ECHO BOTH ": casting narrow binary zeroes string into nvarchar column STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+insert into WIDEZTEST (ID, DATA) values (13, cast ('Abcdefghi' as nvarchar));
+select length (DATA) from WIDEZTEST where ID = 13;
+ECHO BOTH $IF $EQU $LAST[1] 9 "PASSED" "*** FAILED";
+ECHO BOTH ": casting narrow binary zeroes string into nvarchar column STATE=" $STATE " MESSAGE=" $MESSAGE "length (DATA)=" $LAST[1] ", should be 9\n";
+
+insert into WIDEZTEST (ID, DATA) values (3, cast ('\x5\xfc\x1\xfd\x2\xfe\x3\xff\x4' as nvarchar));
 select length (DATA) from WIDEZTEST where ID = 3;
 ECHO BOTH $IF $EQU $LAST[1] 9 "PASSED" "*** FAILED";
-ECHO BOTH ": casting narrow binary zeroes string into nvarchar column STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH ": casting narrow string into nvarchar column STATE=" $STATE " MESSAGE=" $MESSAGE " DATA LENGTH=" $LAST[1] ", must be 9\n";
+
+insert into WIDEZTEST (ID, DATA) values (300, ff (cast ('\x5\xfc\x1\xfd\x2\xfe\x3\xff\x4' as nvarchar)));
+select length (DATA) from WIDEZTEST where ID = 300;
+ECHO BOTH $IF $EQU $LAST[1] 9 "PASSED" "*** FAILED";
+ECHO BOTH ": ins func call casting narrow string into nvarchar column STATE=" $STATE " MESSAGE=" $MESSAGE " DATA LENGTH=" $LAST[1] ", must be 9\n";
+
+update  WIDEZTEST set data =  cast ('\x5\xfc\x1\xfd\x2\xfe\x3\xff\x4' as nvarchar);
+select bin2hex(DATA) from WIDEZTEST where ID = 3;
+select length (DATA) from WIDEZTEST where ID = 3;
+ECHO BOTH $IF $EQU $LAST[1] 9 "PASSED" "*** FAILED";
+ECHO BOTH ": update casting narrow string into nvarchar column STATE=" $STATE " MESSAGE=" $MESSAGE " DATA LENGTH=" $LAST[1] ", must be 9\n";
+
+update  WIDEZTEST set data =  ff (cast ('\x5\xfc\x1\xfd\x2\xfe\x3\xff\x4' as nvarchar));
+select length (DATA) from WIDEZTEST where ID = 3;
+--ECHO BOTH $IF $EQU $LAST[1] 9 "PASSED" "*** FAILED";
+--ECHO BOTH ": update func casting narrow string into nvarchar column STATE=" $STATE " MESSAGE=" $MESSAGE " DATA LENGTH=" $LAST[1] ", must be 9\n";
+#if $NEQ $LAST[1] 9
+select DATA as table_data from WIDEZTEST where ID = 3;
+select bin2hex(cast( DATA as varbinary)) as table_data_hex from WIDEZTEST where ID = 3;
+select cast ('\x5\xfc\x1\xfd\x2\xfe\x3\xff\x4' as nvarchar) as constant_data from WIDEZTEST where ID = 3;
+select bin2hex(cast ('\x5\xfc\x1\xfd\x2\xfe\x3\xff\x4' as nvarchar)) as constant_data_hex from WIDEZTEST where ID = 3;
+select length(cast ('\x5\xfc\x1\xfd\x2\xfe\x3\xff\x4' as nvarchar)) as constant_data_len from WIDEZTEST where ID = 3;
+select ff (cast ('\x5\xfc\x1\xfd\x2\xfe\x3\xff\x4' as nvarchar)) as func_result from WIDEZTEST where ID = 3;
+select length(ff (cast ('\x5\xfc\x1\xfd\x2\xfe\x3\xff\x4' as nvarchar))) as func_result_len from WIDEZTEST where ID = 3;
+#endif
 
 insert into WIDEZTEST (ID, DATA) values (4, 0x81);
 ECHO BOTH $IF $NEQ $STATE OK "PASSED" "*** FAILED";
@@ -947,6 +988,7 @@ create procedure test_var_scope ()
 };
 ECHO BOTH $IF $NEQ $STATE OK "PASSED" "*** FAILED";
 ECHO BOTH ": variable used outside it's scope STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- ' for syntax
 
 -- we just tested that server will not crash on log_text()
 create procedure vtb_err(in vtb any) { return; };
@@ -1161,11 +1203,13 @@ update TTROW1 set D1 = make_string (1);
 create index TTROW1_SEC on TTROW1 (D1, V1, I4, I3, I2, I1);
 ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
 ECHO BOTH ": Can't create index : ruling part too long STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- ' for stupid syntax highliters
 
 select * from DB.DBA.SYS_KEYS where KEY_TABLE = 'DB.DBA.TTROW1' and KEY_NAME = 'TTROW1_SEC';
 select count (*) from DB.DBA.SYS_KEYS where KEY_TABLE = 'DB.DBA.TTROW1' and KEY_NAME = 'TTROW1_SEC';
 ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
 ECHO BOTH ": Can't create index : no index after the error STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- ' for stupid syntax highliters
 
 update TTROW1 set D1 = make_string (2179);
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
@@ -1183,7 +1227,11 @@ ECHO BOTH ": PK key too long in insert STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 insert into TTROW1 (I2, I3, I4, V1, V2, D1)
    values (1,2,3, make_string (1024), make_string (850), make_string (2186));
-ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+#if $EQU $U{COLUMNSTORE} 1
+    ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+#else
+    ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+#endif
 ECHO BOTH ": PK key row too long in insert STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 update TTROW1 set V2 = make_string (2180);
@@ -1191,7 +1239,11 @@ ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
 ECHO BOTH ": PK key too long in update STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 update TTROW1 set D1 = make_string (2186);
-ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+#if $EQU $U{COLUMNSTORE} 1
+   ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+#else
+   ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+#endif
 ECHO BOTH ": PK key row too long in update STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 delete from TTROW1;
@@ -1302,15 +1354,15 @@ create procedure bf2 ()
   commit work;
   return blob_to_string (_b1);
 }
-ECHO BOTH "Error messages about reading free pages and bad blobs are expected next.  Ignore until a message says that this is no longer expected.\n";
+echo both "Error messages about reading free pages and bad blobs are expected next.  Ignore until a message says that this is no longer expected.\n";
 
 --bf();
 --bf2();
 
---ECHO BOTH $IF $EQU $SQLSTATE "22023" "PASSED" "***FAILED";
---ECHO BOTH ": deleted blob read in blob_to_string\n";
+--echo both $if $equ $sqlstate "22023" "PASSED" "***FAILED";
+--echo both ": deleted blob read in blob_to_string\n";
 
-ECHO BOTH "Error messages about bad blobs or reading free pages are not expected after this point.\n";
+echo both "Error messages about bad blobs or reading free pages are not expected after this point.\n";
 
 
 -- bad nvarchar processing in ins replacing 
@@ -1406,3 +1458,59 @@ alter table mig drop d5;
 
 
 drop table mig;
+
+
+create table ins1 (d varchar);
+create index insd on ins1 (d);
+
+create procedure rec_ins ()
+{
+  insert into ins1 (d) values ('abcdefghijkmlnopqrstuvxyz'|| cast (rnd (10000) as varchar));
+  rec_ins ();
+}
+
+rec_ins ();
+
+
+
+create procedure ff (in q any) returns any array {return q;}
+
+select row_no, sum (ff (fi2)) from t1 group by row_no;
+
+
+-- dpipe dependent code in placing dpipe 
+explain ('select cast (__ro2sq (o) as real) as c, cast (__ro2sq (s) as varchar) as d, count (*) from rdf_quad group by c, d');
+
+explain ('select count (*) from t1 a where (select b.row_no from t1 b table option (loop) where b.row_no = a.row_no + 200) = a.row_no + 200');
+
+
+create procedure t1cd (inout i int)
+{
+  return (select max (b.row_no) from t1 a, t1 b where a.row_no = i and b.row_no = a.row_no + i + 256 option (loop));
+}
+
+
+
+select top 10 * from (select  row_no, mod (row_no / 256, 32) as t1s,  partition_group ('DB.DBA.T1', 'STR1', vector (string1), 0) as strs from t1 a table option (index t1) where not exists (select 1 from t1 b table option (loop, index str1) where b.string1 = a.string1 and b.row_no = a.row_no) ) f where t1s = strs;
+
+
+--- nonsense group by and const 
+
+select u_group, count (*) from sys_users group by 0, u_group;
+
+select 0, u_group, count (*) from sys_users group by u_group;
+
+
+select coalesce ((select u_name from sys_users where u_name = user), 1);
+echo both $if $equ $last[1]  "dba" "PASSED" "***FAILED";
+echo both ":  control exp and value subbq\n";
+
+select coalesce ((select u_name from sys_users where u_name = get_user (1)), 1);
+echo both $if $equ $last[1]  "dba" "PASSED" "***FAILED";
+echo both ":  control exp and value subbq\n";
+
+select coalesce ((select u_name from sys_users where u_name = get_user (u_name)), 1);
+echo both $if $equ $last[1]  "dba" "PASSED" "***FAILED";
+echo both ":  control exp and value subbq\n";
+
+

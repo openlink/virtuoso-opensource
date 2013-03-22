@@ -1,7 +1,7 @@
 --
 --  tmulgroup.sql
 --
---  $Id$
+--  $Id: tmulgrp2.sql,v 1.3.10.1 2013/01/02 16:15:13 source Exp $
 --
 --  Check multiple user group functions
 --  

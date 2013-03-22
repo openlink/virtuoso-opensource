@@ -1,7 +1,7 @@
 --
 --  inprocess.sql
 --
---  $Id$
+--  $Id: inprocess.sql,v 1.4.10.1 2013/01/02 16:14:40 source Exp $
 --
 --  inprocess client tests
 --  

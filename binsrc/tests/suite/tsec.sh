@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-#  $Id$
+#  $Id: tsec.sh,v 1.12.6.2.4.5 2013/01/02 16:15:23 source Exp $
 #
 #  Security tests
 #  
@@ -27,7 +27,7 @@
 
 LOGFILE=tsec.output
 export LOGFILE
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 
 
 BANNER "STARTED SECURITY TEST (tsec.sh)"
@@ -485,17 +485,15 @@ then
   exit 1
 fi
 
+# XXX
 #The following test should be the last before the shutdown, to prevent side effects on tests that may use SPARQL.
-if test -f ../wb/SparqlSec.sql
-then
-  cat ../wb/SparqlSec.sql | grep -v "set echo on;" > ../wb/SparqlSec_noecho.sql
-  RUN $ISQL $DSN dba dba ../wb/SparqlSec_noecho.sql PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT
-  if test $STATUS -ne 0
-  then
-    LOG "***ABORTED: ../wb/SparqlSec.sql Sparql graph level security tests"
-    exit 1
-  fi
-fi
+#cat $VIRTUOSO_TEST/../wb/SparqlSec.sql | grep -v "set echo on;" > $VIRTUOSO_TEST/../wb/SparqlSec_noecho.sql
+#RUN $ISQL $DSN dba dba $VIRTUOSO_TEST/../wb/SparqlSec_noecho.sql PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT
+#if test $STATUS -ne 0
+#then
+#  LOG "***ABORTED: $VIRTUOSO_TEST/../wb/SparqlSec.sql Sparql graph level security tests"
+#  exit 1
+#fi
 
 
 SHUTDOWN_SERVER

@@ -1,7 +1,7 @@
 --
 --  tschema2.sql
 --
---  $Id$
+--  $Id: tschema2.sql,v 1.4.10.1 2013/01/02 16:15:22 source Exp $
 --
 --  Test DDL functionality #2
 --  

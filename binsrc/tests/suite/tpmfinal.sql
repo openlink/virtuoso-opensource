@@ -1,5 +1,5 @@
 --  
---  $Id$
+--  $Id: tpmfinal.sql,v 1.3.10.1 2013/01/02 16:15:18 source Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -25,3 +25,4 @@ select now ();
 
 select ((select sum (d_next_o_id) from district) - (select t_n_orders from tpm))
   /  datediff ('minute', now (), (select  t_time from tpm));
+

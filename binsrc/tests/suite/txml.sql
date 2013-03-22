@@ -1,7 +1,7 @@
 --
 --  txml.sql
 --
---  $Id$
+--  $Id: txml.sql,v 1.8.10.1 2013/01/02 16:15:36 source Exp $
 --
 --  XML tests
 --  

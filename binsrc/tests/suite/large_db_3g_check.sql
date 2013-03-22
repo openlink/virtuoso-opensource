@@ -1,7 +1,7 @@
 --
 --  large_db_check.sql
 --
---  $Id$
+--  $Id: large_db_3g_check.sql,v 1.3.10.1 2013/01/02 16:14:41 source Exp $
 --
 --  Large DB test
 --  
@@ -37,3 +37,4 @@ ECHO BOTH ": Travers all trees\n";
 select check_sum();
 ECHO BOTH $IF $EQU $LAST[1] "373" "PASSED" "***FAILED";
 ECHO BOTH " CHECK SUM:" $LAST[1] "\n"
+

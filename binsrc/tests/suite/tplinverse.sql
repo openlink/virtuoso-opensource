@@ -1,7 +1,7 @@
 --
 --  tplinverse.sql
 --
---  $Id$
+--  $Id: tplinverse.sql,v 1.10.10.1 2013/01/02 16:15:17 source Exp $
 --
 --  PL inverse functions suite
 --  

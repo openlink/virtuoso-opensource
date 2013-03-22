@@ -1,5 +1,5 @@
 --  
---  $Id$
+--  $Id: tpminit.sql,v 1.3.10.1 2013/01/02 16:15:18 source Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -26,3 +26,5 @@ create table tpm (t_n_orders int, t_time datetime);
 set autocommit on;
 insert into tpm values ((select sum (d_next_o_id) from district), now  ());
 select * from tpm;
+
+

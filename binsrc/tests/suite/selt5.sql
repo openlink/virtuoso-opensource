@@ -1,7 +1,7 @@
 --
 --  selt5.sql
 --
---  $Id$
+--  $Id: selt5.sql,v 1.4.10.1 2013/01/02 16:14:56 source Exp $
 --
 --  checkpoint errors #1.
 --  
@@ -34,3 +34,4 @@ create procedure p (in q int)
 set autocommit on;
 select * from t1 order by p (fi2);
 commit work;
+

@@ -1,5 +1,5 @@
 --  
---  $Id$
+--  $Id: tsoap_new.sql,v 1.3.10.1 2013/01/02 16:15:26 source Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -363,8 +363,6 @@ create procedure DB.DBA.SOAPTEST ()
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "*** FAILED";
 ECHO BOTH ": creating VSP SOAP server procedure STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
-grant execute on DB.DBA.SOAPTEST to SOAP_SRV;
-
 soap_call_new ('localhost:$U{HTTPPORT}', '/vspsoap.vsp', 'fake', 'test', vector(), 11);
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "*** FAILED";
 ECHO BOTH ": calling the VSP SOAP server with fake#test STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
@@ -382,7 +380,6 @@ create module DB.DBA.SOAPMOD {
   procedure SOAPMOD2(inout par2 int) { return par2 + 1; };
   procedure SOAPMOD3() { return 14; };
 };
-GRANT EXECUTE ON DB.DBA.SOAPMOD TO SOAP_SRV;
 
 select xml_tree_doc (soap_sdl ('DB.DBA.SOAPMOD', 'URL'));
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "*** FAILED";

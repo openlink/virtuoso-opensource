@@ -1,7 +1,7 @@
 --
 --  revstr.sql
 --
---  $Id$
+--  $Id: revstr.sql,v 1.3.10.1 2013/01/02 16:14:52 source Exp $
 --
 --  Stored Procedure to reverse a string argument
 --  

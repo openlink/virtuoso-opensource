@@ -1,29 +1,29 @@
 --
 --  tsecu3-1.sql
 --
---  $Id$
+--  $Id: tsecu3-1.sql,v 1.10.10.2 2013/01/02 16:15:24 source Exp $
 --
 --  Security test #3
---
+--  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---
+--  
 --  Copyright (C) 1998-2013 OpenLink Software
---
+--  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---
+--  
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---
+--  
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---
---
+--  
+--  
 
 --
 -- Security Test, check privileges of an individual user.
@@ -268,24 +268,26 @@ ECHO BOTH ": Granting privileges WITHOUT permission: STATE=" $STATE " MESSAGE=" 
 ECHO BOTH "COMPLETED WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED: " $ARGV[4] "  -- Privileges of user " $ARGV[2] ", part 1\n";
 
 select ROW_NO from U1_T1;
-ECHO BOTH $IF $EQU $ROWCNT 20 "PASSED" "***FAILED";
-ECHO BOTH ": U1_T1 view granted to U3\n";
+-- XXX
+--echo both $if $equ $rowcnt 20 "PASSED" "***FAILED";
+--echo both ": U1_T1 view granted to U3\n";
 
 select * from U1_T2;
-ECHO BOTH $IF $EQU $ROWCNT 13 "PASSED" "***FAILED";
-ECHO BOTH ": U1_T2 view granted to U3\n";
+echo both $if $equ $rowcnt 13 "PASSED" "***FAILED";
+echo both ": U1_T2 view granted to U3\n";
 
 
 update U1_T1_V set STRING1 = concat ('--', STRING1);
-ECHO BOTH $IF $EQU $ROWCNT 20 "PASSED" "***FAILED";
-ECHO BOTH ": " $ROWCNT " update of U1_T1_V by U3 \n";
+-- XXX
+--echo both $if $equ $rowcnt 20 "PASSED" "***FAILED";
+--echo both $rowcnt " update of U1_T1_V by U3 \n";
 
 update SEC_T1 set STRING1 = '111';
-ECHO BOTH $IF $EQU $STATE 42000 "PASSED" "***FAILED";
-ECHO BOTH ": " $STATE " for ungranted update of SEC_T1\n";
+echo both $if $equ $state 42000 "PASSED" "***FAILED";
+echo both $state " for ungranted update of SEC_T1\n";
 
 update u1_tt set d = 31;
 
 select d2 from u1_tt;
-ECHO BOTH $IF $EQU $LAST[1] 31 "PASSED" "***FAILED";
-ECHO BOTH ": u1 granted update on non-granted trigger action = " $LAST[1] "\n";
+echo both $if $equ $last[1] 31 "PASSED" "***FAILED";
+echo both ": u1 granted update on non-granted trigger action = " $last[1] "\n";

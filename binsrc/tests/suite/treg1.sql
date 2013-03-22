@@ -1,7 +1,7 @@
 --
 --  treg.sql
 --
---  $Id$
+--  $Id: treg1.sql,v 1.5.10.1 2013/01/02 16:15:19 source Exp $
 --
 --  Test DB Registry
 --  

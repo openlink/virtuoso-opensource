@@ -1,6 +1,6 @@
 
 
-ECHO BOTH "RDF IFP Test\n";
+echo both "RDF IFP Test\n";
 
 ttlp ('
 <john1> a <person> .
@@ -31,21 +31,23 @@ rdfs_rule_set ('ifps', 'ifp_list');
 
 
 sparql define input:inference 'ifps'  select * from <ifps> where {<john1> ?p ?o};
-ECHO BOTH $IF $EQU $ROWCNT 9 "PASSED" "***FAILED";
-ECHO BOTH ": properties of john\n";
+echo both $if $equ $rowcnt 9 "PASSED" "***FAILED";
+echo both ": properties of john\n";
 
 sparql define input:inference 'ifps'  select * from <ifps> where { ?person a <person> . ?person <knows> ?somebody . ?somebody  ?p ?o};
 
 
 sparql select distinct ?p from <ifps> where { ?p a <person>};
-ECHO BOTH $IF $EQU $ROWCNT 4 "PASSED" "***FAILED";
-ECHO BOTH ": distinct persons\n";
+echo both $if $equ $rowcnt 4 "PASSED" "***FAILED";
+echo both ": distinct persons\n";
 
 sparql define input:inference "ifps" select distinct ?p from <ifps> where { ?p a <person>};
-ECHO BOTH $IF $EQU $ROWCNT 3 "PASSED" "***FAILED";
-ECHO BOTH ": distinct persons with ifp inf\n";
+echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
+echo both ": distinct persons with ifp inf\n";
 
 
 -- rdf_inf_set_ifp_exclude_list ('ifps', iri_to_id ('name'), vector ('John'));
 
 -- sparql define input:inference "ifps" select distinct ?p from <ifps> where { ?p a <person>};
+
+

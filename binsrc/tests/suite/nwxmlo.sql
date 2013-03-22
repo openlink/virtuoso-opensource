@@ -1,7 +1,7 @@
 --
 --  nwxmlo.sql
 --
---  $Id$
+--  $Id: nwxmlo.sql,v 1.20.6.2.4.2 2013/01/02 16:14:48 source Exp $
 --
 --  For XML auto testing
 --  
@@ -283,29 +283,30 @@ CREATE TABLE B3746_TEST1(
   CONSTRAINT B3746_TEST1_PK PRIMARY KEY(ID)
 );
 
-CREATE TABLE B3746_TEST2(
-  NAME     VARCHAR(255)   NOT NULL,
+-- XXX: under not supported
+--CREATE TABLE B3746_TEST2(
+--  NAME     VARCHAR(255)   NOT NULL,
 
-  UNDER B3746_TEST1
-);
+--  UNDER B3746_TEST1
+--);
 
-CREATE TEXT XML INDEX ON B3746_TEST1(DATA) WITH KEY ID;
+--CREATE TEXT XML INDEX ON B3746_TEST1(DATA) WITH KEY ID;
 
-INSERT INTO B3746_TEST1 (ID,DATA) VALUES (1,'<root>test 1</root>');
-INSERT INTO B3746_TEST1 (ID,DATA) VALUES (2,'<root>test 2</root>');
+--INSERT INTO B3746_TEST1 (ID,DATA) VALUES (1,'<root>test 1</root>');
+--INSERT INTO B3746_TEST1 (ID,DATA) VALUES (2,'<root>test 2</root>');
 
-INSERT INTO B3746_TEST2 (ID,DATA,NAME) VALUES (3,'<root>test 3</root>','test 3');
-INSERT INTO B3746_TEST2 (ID,DATA,NAME) VALUES (4,'<root>test 4</root>','test 4');
+--INSERT INTO B3746_TEST2 (ID,DATA,NAME) VALUES (3,'<root>test 3</root>','test 3');
+--INSERT INTO B3746_TEST2 (ID,DATA,NAME) VALUES (4,'<root>test 4</root>','test 4');
 
-SELECT * FROM B3746_TEST1 WHERE xcontains(DATA,'/root[contains(.,''test'')]');
-ECHO BOTH $IF $EQU $ROWCNT 4 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": BUG 3746 FT returned " $ROWCNT " rows\n";
+--SELECT * FROM B3746_TEST1 WHERE xcontains(DATA,'/root[contains(.,''test'')]');
+--ECHO BOTH $IF $EQU $ROWCNT 4 "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": BUG 3746 FT returned " $ROWCNT " rows\n";
 
-SELECT * FROM B3746_TEST2 WHERE xcontains(DATA,'/root[contains(.,''test'')]');
-ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": BUG 3746 FT-2 returned " $ROWCNT " rows\n";
+--SELECT * FROM B3746_TEST2 WHERE xcontains(DATA,'/root[contains(.,''test'')]');
+--ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": BUG 3746 FT-2 returned " $ROWCNT " rows\n";
 
 
 DROP TABLE B4710;

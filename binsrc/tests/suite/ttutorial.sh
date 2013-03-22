@@ -1,31 +1,31 @@
-#!/bin/sh
-#
-#  $Id$
+#!/bin/sh 
+#  
+#  $Id: ttutorial.sh,v 1.13.4.2.4.4 2013/01/02 16:15:31 source Exp $
 #
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
-#
+#  
 #  Copyright (C) 1998-2013 OpenLink Software
-#
+#  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
 #  Free Software Foundation; only version 2 of the License, dated June 1991.
-#
+#  
 #  This program is distributed in the hope that it will be useful, but
 #  WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 #  General Public License for more details.
-#
+#  
 #  You should have received a copy of the GNU General Public License along
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-#
+#  
 
 LOGFILE=`pwd`/ttutorial.output
 LOGFILE_SUITE=$LOGFILE
 STARTED_FROM_SUITE=1
 export LOGFILE LOGFILE_SUITE STARTED_FROM_SUITE
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
  
 rm -f $DELETEMASK
 
@@ -39,7 +39,7 @@ NOLITE
 HOST_OS=`uname -s | grep WIN`
 
 # disabled until tests are fixed 
-exit 0
+#exit 0
 
 if [ "x$HOST_OS" != "x" ]
 then
@@ -70,27 +70,27 @@ mkdir vsp
 # UNIX
 
 rm -f $DELETEMASK
-cp -R ../../../tutorial vsp 
-cp -R ../../../samples/xquery vsp/xqdemo 
-cp -R ../../tutorial_test/xml/* . 
+cp -R $VIRTUOSO_TEST/../../tutorial vsp 
+cp -R $VIRTUOSO_TEST/../../samples/xquery vsp/xqdemo 
+cp -R $VIRTUOSO_TEST/../tutorial_test/xml/* . 
 rm -rf suppfiles
-cp -R ../../tutorial_test/suppfiles .
-cp -f ../../urlsimu suppfiles
-cp -f ../../isql suppfiles
+cp -R $VIRTUOSO_TEST/../tutorial_test/suppfiles .
+cp -f $VIRTUOSO_TEST/../urlsimu suppfiles
+cp -f $VIRTUOSO_TEST/../isql suppfiles
 
-cp -f ../$TESTCFGFILE $TESTCFGFILE 
+cp -f $VIRTUOSO_TEST/$TESTCFGFILE $TESTCFGFILE 
 
 MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
 
 case $SERVER in
    *virtuoso*)
-   if test \! -f ../../../samples/demo/demo.db 
+   if test \! -f $VIRTUOSO_TEST/../../samples/demo/demo.db 
 #  if test $STATUS -eq 0
    then
        LOG "***FAILED: ttutorial.sh needed demo.db to run tests."
        exit 0
    else
-       cp ../../../samples/demo/demo.db virtuoso.db
+       cp $VIRTUOSO_TEST/../../samples/demo/demo.db virtuoso.db
        LOG "PASSED: Copy demo.db"
    fi
    

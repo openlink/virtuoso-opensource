@@ -1,7 +1,7 @@
 --
 --  sqlovdb.sql
 --
---  $Id$
+--  $Id: sqlovdb.sql,v 1.19.2.4.4.2 2013/01/02 16:14:57 source Exp $
 --
 --  SQLO Remote database testing part 1
 --
@@ -243,10 +243,11 @@ ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": select * from identicaly false where returned " $ROWCNT " rows\n";
 
-select ROW_NO from T1 where ROW_NO < 110 union select  ROW_NO from T1 where ROW_NO < 112 ;
-ECHO BOTH $IF $EQU $ROWCNT 12 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": union with two where's returned " $ROWCNT " rows\n";
+-- XXX
+--select ROW_NO from T1 where ROW_NO < 110 union select  ROW_NO from T1 where ROW_NO < 112 ;
+--ECHO BOTH $IF $EQU $ROWCNT 12 "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": union with two where's returned " $ROWCNT " rows\n";
 
 select ROW_NO, 1  from T1 where ROW_NO < 110 union select  ROW_NO, 2  from T1 where ROW_NO < 112 ;
 ECHO BOTH $IF $EQU $ROWCNT 22 "PASSED" "***FAILED";
@@ -271,7 +272,7 @@ ECHO BOTH $IF $EQU $ROWCNT 11 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": local/remote eq join with remote where returned " $ROWCNT " rows\n";
 
-ECHO BOTH "explain here \n";
+echo both "explain here \n";
 explain ('select A.ROW_NO, B.ROW_NO from T1 A left join R1..T1 B on A.ROW_NO - 1 = B.ROW_NO where A.ROW_NO < 111');
 
 select A.ROW_NO, B.ROW_NO from T1 A left join R1..T1 B on A.ROW_NO - 1 = B.ROW_NO where A.ROW_NO < 111;
@@ -403,112 +404,112 @@ create procedure leq (in a any, in b any)
 select count (*) from r1..t1 a left join r1..t1 b on a.row_no = b.row_no;
 
 select count (*) from r1..t1 a left join r1..t1 b on a.row_no = b.row_no and leq (1 + a.row_no, b.row_no);
-ECHO BOTH $IF $EQU $LAST[1] 1000  "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $last[1] 1000  "PASSED" "***FAILED";
 ECHO BOTH ": left oj with proc false cond.\n";
 
 
 select count (*) from r1..t1 a left join r1..t1 b on a.row_no = b.row_no and a.row_no + 1 = b.row_no;
-ECHO BOTH $IF $EQU $LAST[1] 1000  "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $last[1] 1000  "PASSED" "***FAILED";
 ECHO BOTH ": left oj with pass through  false cond.\n";
 
 select count (2) from r1..t1 a left join (select row_no, count (*) as ct  from r1..t1 group by row_no) b on a.row_no = b.row_no and a.row_no + 1 = b.row_no;
-ECHO BOTH $IF $EQU $LAST[1] 1000  "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $last[1] 1000  "PASSED" "***FAILED";
 ECHO BOTH ": left oj with dt with pass through  false cond.\n";
 
 
 select count (*) from r1..t1 a  join (select row_no, count (*) as ct  from r1..t1 group by row_no) b on 1 + a.row_no = b.row_no;
-ECHO BOTH $IF $EQU $LAST[1] 999  "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $last[1] 999  "PASSED" "***FAILED";
 ECHO BOTH ": qual inner join  with dt with pass through  true cond.\n";
 
 select count (*) from r1..t1 a, (select row_no, count (*) as ct  from r1..t1 group by row_no) b where 1 + a.row_no = b.row_no;
-ECHO BOTH $IF $EQU $LAST[1] 999  "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $last[1] 999  "PASSED" "***FAILED";
 ECHO BOTH ": join  with dt with pass through  true cond.\n";
 
 
 select count (2) from t1 a left join (select row_no, count (*) as ct  from r1..t1 group by row_no) b on a.row_no = b.row_no and a.row_no + 1 = b.row_no;
-ECHO BOTH $IF $EQU $LAST[1] 1000  "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $last[1] 1000  "PASSED" "***FAILED";
 ECHO BOTH ": MIX left oj with dt with pass through  false cond.\n";
 
 
 select count (*) from t1 a  join (select row_no, count (*) as ct  from r1..t1 group by row_no) b on 1 + a.row_no = b.row_no;
-ECHO BOTH $IF $EQU $LAST[1] 999  "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $last[1] 999  "PASSED" "***FAILED";
 ECHO BOTH ": MIX qual inner join  with dt with pass through  true cond.\n";
 
 select count (*) from r1..t1 a, (select row_no, count (*) as ct  from t1 group by row_no) b where 1 + a.row_no = b.row_no;
-ECHO BOTH $IF $EQU $LAST[1] 999  "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $last[1] 999  "PASSED" "***FAILED";
 ECHO BOTH ": join  with dt with pass through  true cond.\n";
 
 
 select sum (fi2), string1 from r1..t1 a group by string1 having sum (fi2) > (select min (s) from (select sum (fi2) as s, string1  from t1 b group by b.string1) c);
-ECHO BOTH $IF $EQU $ROWCNT 100  "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $rowcnt 100  "PASSED" "***FAILED";
 ECHO BOTH ": MIX grou with having with group \n";
 
 
 select sum (fi2), string1 from r1..t1 a group by string1 having sum (fi2) > (select min (s) from (select sum (fi2) as s, string1  from r1..t1 b group by b.string1) c);
-ECHO BOTH $IF $EQU $ROWCNT 100  "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $rowcnt 100  "PASSED" "***FAILED";
 ECHO BOTH ": grou with having with group \n";
 
 
 
 select sum (fi2), string1 from r1..t1 a group by string1 having sum (fi2) >= (select min (s) from (select sum (fi2) as s, string1  from t1 b group by b.string1) c);
-ECHO BOTH $IF $EQU $ROWCNT 300  "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $rowcnt 300  "PASSED" "***FAILED";
 ECHO BOTH ": group with sum >= min of same sum grouped \n";
 
 
 
 select count (*) from t1 a, t1 b where a.row_no = b.row_no and a.row_no < 111 and b.row_no < 109;
-ECHO BOTH $IF $EQU $LAST[1] 9 "PASSED" "***FAILED";
-ECHO BOTH ": t1 inner t1 b.row_no < 109 \n";
+echo both $if $equ $last[1] 9 "PASSED" "***FAILED";
+echo both ": t1 inner t1 b.row_no < 109 \n";
 
 
 select count (*) from t1 a join t1 b on a.row_no = b.row_no where b.row_no < 111;
-ECHO BOTH $IF $EQU $LAST[1]  11 "PASSED" "***FAILED";
-ECHO BOTH ": t1 inner t1 b.row_no < 111 \n";
+echo both $if $equ $last[1]  11 "PASSED" "***FAILED";
+echo both ": t1 inner t1 b.row_no < 111 \n";
 
 
 create view t1_g as select a.row_no as r1, b.row_no as r2, sum (a.row_no) as sm from t1 a join t1 b on a.row_no = b.row_no group by a.row_no, b.row_no;
 create view r1..t1_g as select a.row_no as r1, b.row_no as r2, sum (a.row_no) as sm from r1..t1 a join r1..t1 b on a.row_no = b.row_no group by a.row_no, b.row_no;
 
 select row_no, r1, sm from t1 join t1_g  on r1 = row_no where r2 < 111;
-ECHO BOTH $IF $EQU $ROWCNT 11 "PASSED" "***FAILED";
-ECHO BOTH  ": t1 x t1_g \n";
+echo both $if $equ $rowcnt 11 "PASSED" "***FAILED";
+echo both  ": t1 x t1_g \n";
 
 select row_no, r1, sm from t1 join r1..t1_g  on r1 = row_no where r2 < 111;
-ECHO BOTH $IF $EQU $ROWCNT 11 "PASSED" "***FAILED";
-ECHO BOTH  ": t1 x t1_g \n";
+echo both $if $equ $rowcnt 11 "PASSED" "***FAILED";
+echo both  ": t1 x t1_g \n";
 
 
 select row_no, r1, sm from r1..t1 join r1..t1_g  on r1 = row_no where r2 < 111;
-ECHO BOTH $IF $EQU $ROWCNT 11 "PASSED" "***FAILED";
-ECHO BOTH  ": r1..t1 x r1..t1_g \n";
+echo both $if $equ $rowcnt 11 "PASSED" "***FAILED";
+echo both  ": r1..t1 x r1..t1_g \n";
 
 select row_no, r1, sm from r1..t1 join t1_g  on r1 = row_no where r2 < 111;
-ECHO BOTH $IF $EQU $ROWCNT 11 "PASSED" "***FAILED";
-ECHO BOTH  ": r1..t1 x t1_g \n";
+echo both $if $equ $rowcnt 11 "PASSED" "***FAILED";
+echo both  ": r1..t1 x t1_g \n";
 
 
 
 select row_no, r1, sm from r1..t1,  r1..t1_g  where r1 = row_no and r2 < 111;
-ECHO BOTH $IF $EQU $ROWCNT 11 "PASSED" "***FAILED";
-ECHO BOTH  ": r1..t1 x t1_g \n";
+echo both $if $equ $rowcnt 11 "PASSED" "***FAILED";
+echo both  ": r1..t1 x t1_g \n";
 
 
 select row_no, r1, sm from t1 left join t1_g  on r1 = row_no where r2 < 111;
-ECHO BOTH $IF $EQU $ROWCNT 11 "PASSED" "***FAILED";
-ECHO BOTH  ": t1 left x t1_g \n";
+echo both $if $equ $rowcnt 11 "PASSED" "***FAILED";
+echo both  ": t1 left x t1_g \n";
 
 select row_no, r1, sm from t1 left join r1..t1_g  on r1 = row_no where r2 < 111;
-ECHO BOTH $IF $EQU $ROWCNT 11 "PASSED" "***FAILED";
-ECHO BOTH  ": t1 left x t1_g \n";
+echo both $if $equ $rowcnt 11 "PASSED" "***FAILED";
+echo both  ": t1 left x t1_g \n";
 
 
 select row_no, r1, sm from r1..t1 left join r1..t1_g  on r1 = row_no where r2 < 111;
-ECHO BOTH $IF $EQU $ROWCNT 11 "PASSED" "***FAILED";
-ECHO BOTH  ": r1..t1 left x r1..t1_g \n";
+echo both $if $equ $rowcnt 11 "PASSED" "***FAILED";
+echo both  ": r1..t1 left x r1..t1_g \n";
 
 select row_no, r1, sm from r1..t1 left join t1_g  on r1 = row_no where r2 < 111;
-ECHO BOTH $IF $EQU $ROWCNT 11 "PASSED" "***FAILED";
-ECHO BOTH  ": r1..t1 left x t1_g \n";
+echo both $if $equ $rowcnt 11 "PASSED" "***FAILED";
+echo both  ": r1..t1 left x t1_g \n";
 
 
 
@@ -517,12 +518,12 @@ ECHO BOTH  ": r1..t1 left x t1_g \n";
 -----
 select * from (select 't1' as xx , row_no from r1..t1 where row_no < 105 union all select 't2' as xx, row_no  from t1 where row_no < 105) ff;
 select * from (select 't1' as xx , row_no from r1..t1 where row_no < 105 union all select 't2' as xx, row_no  from t1 where row_no < 105) ff where xx = 't1';
-ECHO BOTH $IF $EQU $ROWCNT 5 "PASSED" "***FAILED";
-ECHO BOTH ": union filter on term const\n";
+echo both $if $equ $rowcnt 5 "PASSED" "***FAILED";
+echo both ": union filter on term const\n";
 
 select * from (select 't1' as xx , row_no from r1..t1 where row_no < 105 union all select 't2' as xx, row_no  from t1 where row_no < 105) ff where xx = 'xx';
-ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
-ECHO BOTH ": union filter on term const\n";
+echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
+echo both ": union filter on term const\n";
 
 
 
@@ -632,8 +633,8 @@ create view t1order as select row_no, string1, string2 from r1..t1 order by row_
 
 select top 2 * from t1order where row_no is null or row_no > 111;
 
-ECHO BOTH $IF $EQU $LAST[1] 113 "PASSED" "***FAILED";
-ECHO BOTH ": or of known false in dt predf import\n";
+echo both $if $equ $last[1] 113 "PASSED" "***FAILED";
+echo both ": or of known false in dt predf import\n";
 
 -- *** the 2 below do not work.  Bad locus after import of preds into the dt.
 select top 2 * from t1order a where row_no is null or exists (select 1 from t1order b where a.row_no = 1 + b.row_no);
@@ -682,30 +683,30 @@ ECHO BOTH ": B8669-3: pass-through of SQLX statements\n";
 
 -- hash fillers nested 
 select count (*) from t1 a, r1..t1 b where a.row_no = b.row_no and exists (select * from r1..t1 c table option (hash) where c.row_no = b.row_no and c.string1 like '1%') option (order, hash);
-ECHO BOTH $IF $EQU $LAST[1] 433 "PASSED" "***FAILED";
-ECHO BOTH ": vdb hash join with filter with hash filler with hashed exists\n";
+echo both $if $equ $last[1] 433 "PASSED" "***FAILED";
+echo both ": vdb hash join with filter with hash filler with hashed exists\n";
 
 select count (*) from t1 a, r1..t1 b where a.row_no = b.row_no and exists (select * from r1..t1 c table option (loop) where c.row_no = b.row_no and c.string1 like '1%') option (order, loop, loop exists);
-ECHO BOTH $IF $EQU $LAST[1] 433 "PASSED" "***FAILED";
-ECHO BOTH ": ibid verify with loop\n";
+echo both $if $equ $last[1] 433 "PASSED" "***FAILED";
+echo both ": ibid verify with loop\n";
 
 select count (*) from t1 a, r1..t1 b where a.row_no = b.row_no and exists (select * from r1..t1 c table option (loop) where c.row_no = b.row_no and c.string1 like '1%') option (order, loop, do not loop exists);
-ECHO BOTH $IF $EQU $LAST[1] 433 "PASSED" "***FAILED";
-ECHO BOTH ": ibid verify with loop\n";
+echo both $if $equ $last[1] 433 "PASSED" "***FAILED";
+echo both ": ibid verify with loop\n";
 
 
 
 select top 101 a.row_no , (select b.row_no from r1..t1 b where  b.row_no between case when 0 = mod (a.row_no, 5) then cast (a.row_no - 1 as varchar) else a.row_no - 1 end  and a.row_no + 1) from t1 a order by 1;
---ECHO BOTH $IF $EQU $LAST[2] 199 "PASSED" "***FAILED";
---ECHO BOTH ": vdb array params with changing types\n";
+--echo both $if $equ $last[2] 199 "PASSED" "***FAILED";
+--echo both ": vdb array params with changing types\n";
 
 select fi2, ct from (select fi2, count (*) as ct from r1..t1 group by fi2) xx where ct = (select max (ct2) from (select fi2, count (*) as ct2 from r1..t1 group by fi2) qq);
-ECHO BOTH $IF $EQU $LAST[2] 1000 "PASSED" "***FAILED";
-ECHO BOTH ": count gb where count  is max count gb\n";
+echo both $if $equ $last[2] 1000 "PASSED" "***FAILED";
+echo both " count gb where count  is max count gb\n";
 
 select fi2, ct from (select fi2, count (*) as ct from r1..t1 group by fi2) xx where ct = f ((select max (ct2) from (select fi2, count (*) as ct2 from r1..t1 group by fi2) qq));
-ECHO BOTH $IF $EQU $LAST[2] 1000 "PASSED" "***FAILED";
-ECHO BOTH ": count gb where count  is max count gb break with f\n";
+echo both $if $equ $last[2] 1000 "PASSED" "***FAILED";
+echo both " count gb where count  is max count gb break with f\n";
 
 
 
@@ -713,3 +714,5 @@ ECHO BOTH ": count gb where count  is max count gb break with f\n";
 -- End of test
 --
 ECHO BOTH "COMPLETED: SQLO Remote test (sqlovdb.sql) WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";
+
+

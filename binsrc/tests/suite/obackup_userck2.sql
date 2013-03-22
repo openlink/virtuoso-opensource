@@ -1,7 +1,7 @@
 --
 --  obackup_userck2.sql
 --
---  $Id$
+--  $Id: obackup_userck2.sql,v 1.6.6.1.4.1 2013/01/02 16:14:50 source Exp $
 --
 --  Concurrency test #N..
 --
@@ -34,20 +34,21 @@ ECHO BOTH $LAST[1] " checkpoint remap pages\n";
 
 select backup_pages();
 ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
-ECHO BOTH ": number of pages changed since last backup = " $LAST[1] "\n";
+ECHO BOTH " number of pages changed since last backup = " $LAST[1] "\n";
 
 select check_seqs ('h', 10000, 1);
 ECHO BOTH $IF $EQU $LAST[1] "EQUAL" "PASSED" "***FAILED";
-ECHO BOTH ": all sequences hNNNN are " $LAST[1] " to 1\n";
+ECHO BOTH " all sequences hNNNN are " $LAST[1] " to 1\n";
 
 select check_seqs ('x', 10000, 1);
 ECHO BOTH $IF $EQU $LAST[1] "EQUAL" "PASSED" "***FAILED";
-ECHO BOTH ": all sequence xNNNN = " $LAST[1] " to 0\n";
+ECHO BOTH " all sequence xNNNN = " $LAST[1] " to 0\n";
 
 select check_seqs ('ax', 10000, 1);
 ECHO BOTH $IF $EQU $LAST[1] "EQUAL" "PASSED" "***FAILED";
-ECHO BOTH ": all sequence axNNNN = " $LAST[1] " to 0\n";
+ECHO BOTH " all sequence axNNNN = " $LAST[1] " to 0\n";
 
 select check_seqs ('bx', 10000, 1);
 ECHO BOTH $IF $EQU $LAST[1] "EQUAL" "PASSED" "***FAILED";
-ECHO BOTH ": all sequence bxNNNN = " $LAST[1] " to 0\n";
+ECHO BOTH " all sequence bxNNNN = " $LAST[1] " to 0\n";
+

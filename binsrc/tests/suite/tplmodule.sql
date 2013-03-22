@@ -1,7 +1,7 @@
 --
 --  tplmodule.sql
 --
---  $Id$
+--  $Id: tplmodule.sql,v 1.5.10.1 2013/01/02 16:15:17 source Exp $
 --
 --  PL Modules suite testing
 --  

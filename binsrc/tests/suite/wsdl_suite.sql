@@ -1,5 +1,5 @@
 --  
---  $Id$
+--  $Id: wsdl_suite.sql,v 1.5.10.1 2013/01/02 16:15:39 source Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.

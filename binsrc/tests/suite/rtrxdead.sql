@@ -1,7 +1,7 @@
 --
 --  rtrxdead.sql
 --
---  $Id$
+--  $Id: rtrxdead.sql,v 1.5.6.3.4.1 2013/01/02 16:14:55 source Exp $
 --
 --  Remote database transaction testing
 --

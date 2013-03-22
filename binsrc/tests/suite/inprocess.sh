@@ -2,7 +2,7 @@
 #
 #  inprocess.sh
 #
-#  $Id$
+#  $Id: inprocess.sh,v 1.4.10.3 2013/01/02 16:14:40 source Exp $
 #
 #  inprocess client tests
 #  
@@ -28,7 +28,7 @@
 
 LOGFILE=inprocess.output
 export LOGFILE
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 
 BANNER "STARTED SERIES OF INPROCESS CLIENT TESTS (inprocess.sh)"
 
@@ -45,7 +45,7 @@ then
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u LOCALPORT=$PORT < inprocess.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u LOCALPORT=$PORT < $VIRTUOSO_TEST/inprocess.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: inprocess client tests -- inprocess.sql"

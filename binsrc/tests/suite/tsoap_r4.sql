@@ -1,5 +1,5 @@
 --  
---  $Id$
+--  $Id: tsoap_r4.sql,v 1.8.10.1 2013/01/02 16:15:26 source Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -380,3 +380,4 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": echoVoidSoapHeader : " $LAST[1] "\n";
 
 ECHO BOTH "COMPLETED WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED: SOAP Interop IV tests\n";
+

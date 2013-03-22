@@ -1,27 +1,27 @@
 #!/bin/sh
 #
-#  $Id$
-#
+#  $Id: tp.sh,v 1.2.6.1.4.2 2013/01/02 16:15:16 source Exp $
+#  
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
-#
+#  
 #  Copyright (C) 1998-2013 OpenLink Software
-#
+#  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
 #  Free Software Foundation; only version 2 of the License, dated June 1991.
-#
+#  
 #  This program is distributed in the hope that it will be useful, but
 #  WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 #  General Public License for more details.
-#
+#  
 #  You should have received a copy of the GNU General Public License along
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-#
 #  
-isql 1111 < ./tpminit.sql >tpm.out 
+#  
+isql 1111 < $VIRTUOSO_TEST/./tpminit.sql >tpm.out 
 
  
 ../tpcc 1111 dba dba r 1000000 1 40 &
@@ -135,8 +135,8 @@ sleep 1
 ../tpcc 1111 dba dba r 1000000 40 40 &
 
 sleep 
-isql 1111 errors=stdout < tpm.sql >>tpm.out 
-isql 1111 errors=stdout < tpmfinal.sql >>tpm.out 
+isql 1111 errors=stdout < $VIRTUOSO_TEST/tpm.sql >>tpm.out 
+isql 1111 errors=stdout < $VIRTUOSO_TEST/tpmfinal.sql >>tpm.out 
 
 
 

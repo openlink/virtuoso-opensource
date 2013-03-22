@@ -1,5 +1,5 @@
 --  
---  $Id$
+--  $Id: tblogq.sql,v 1.3.10.1 2013/01/02 16:15:00 source Exp $
 --
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -128,3 +128,4 @@ make_wwwroot ()
 
 make_user_blog_and_posts ()
 ;
+

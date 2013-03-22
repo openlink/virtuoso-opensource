@@ -1,6 +1,6 @@
 #!/bin/sh 
 #
-#  $Id$
+#  $Id: tvad.sh,v 1.8.6.3.4.4 2013/01/02 16:15:32 source Exp $
 #
 #  VAD tests
 #  
@@ -26,7 +26,7 @@
 
 LOGFILE=tvad.output
 export LOGFILE
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 
 
 DoCommand()
@@ -48,7 +48,7 @@ END_SQL
   echo $comment >> $file 
 
   echo "+ " $ISQL $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $*		>> $LOGFILE	
-  RUN $ISQL $DSN dba dba PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tvadtest.sql 
+  RUN $ISQL $DSN dba dba PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tvadtest.sql 
 }
 
 DoBadCommand()
@@ -76,7 +76,7 @@ END_SQL
   
   START_SERVER $PORT 1000 
 
-  RUN $ISQL $DSN dba dba PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tvadbtest.sql 
+  RUN $ISQL $DSN dba dba PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tvadbtest.sql 
 
   STOP_SERVER
   rm -f $DBLOGFILE
@@ -241,6 +241,8 @@ END_URI
 
 BANNER "STARTED VAD TEST (tvad.sh)"
 NOLITE
+
+MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
 
 GenVAD1 t1.xml
 GenVAD2 t2.xml

@@ -117,3 +117,10 @@ ECHO BOTH ": delete from and upload to Test : STATE=" $STATE " MESSAGE=" $MESSAG
 delete_cluster_test('Test');
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 ECHO BOTH ": delete Test : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+
+
+
+
+
+

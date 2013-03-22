@@ -1,7 +1,7 @@
 --
 --  tidxksize.sql
 --
---  $Id$
+--  $Id: tidxksize.sql,v 1.7.10.1 2013/01/02 16:15:10 source Exp $
 --
 --  Index key sizes test suite
 --  

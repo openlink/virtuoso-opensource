@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 #
-#  $Id$
+#  $Id: test_server.sh,v 1.13.6.1.4.21 2013/01/02 16:15:07 source Exp $
 #
 #  choose a server to run with
 #  
@@ -31,13 +31,113 @@ LANG=C
 LC_ALL=POSIX
 export LANG LC_ALL
 
-LOGFILE=test_server.output
-export LOGFILE
+if test "x$TOP" = "x"
+then
+    echo ""
+    echo "***"
+    echo "*** ERROR: \$TOP "
+    echo "***"
+    exit 1
+fi
+export TOP
+VIRTUOSO_BUILD=$TOP
+export VIRTUOSO_BUILD
+VIRTUOSO_TEST=$VIRTDEV_HOME/binsrc/tests/suite
+export VIRTUOSO_TEST
+SQLPATH=$VIRTUOSO_TEST
+export SQLPATH
+
+if test \! -f "$VIRTUOSO_BUILD/binsrc/virtuoso/virtuoso-t"
+then
+    echo ""
+    echo "***"
+    echo "*** ERROR: \$VIRTUOSO_BUILD does not appear to contain standard virtuoso binary"
+    echo "***" 
+    exit 1
+fi
+
+VIRTUOSO_CAPACITY="default"
+VIRTUOSO_TABLE_SCHEME="default"
+VIRTUOSO_VDB="default"
+SERVER=virtuoso
+TEST_DIR_MASK=""
+APPENDMODE=0
+
+set -- -cs
+
+while getopts ":smrcvwV" optname
+  do
+    case "$optname" in
+      "v")
+        SERVER=virtuoso
+        ;;
+      "w")
+        SERVER=M2
+        ;;
+      "i")
+	SERVER=virtuoso-iodbc
+	;;
+      "V") # no VDB
+        VIRTUOSO_VDB=0
+        ;;
+      "s")
+        if [ "$VIRTUOSO_CAPACITY" = "default" ]
+        then
+            VIRTUOSO_CAPACITY="single"
+        else
+            VIRTUOSO_CAPACITY="$VIRTUOSO_CAPACITY single"
+        fi
+        ;;
+      "m")
+        if [ "$VIRTUOSO_CAPACITY" = "default" ]
+        then
+            VIRTUOSO_CAPACITY="multiple"
+        else
+            VIRTUOSO_CAPACITY="$VIRTUOSO_CAPACITY multiple"
+        fi
+        ;;
+      "r")
+        if [ "$VIRTUOSO_TABLE_SCHEME" = "default" ]
+        then
+            VIRTUOSO_TABLE_SCHEME="row"
+        else
+            VIRTUOSO_TABLE_SCHEME="$VIRTUOSO_TABLE_SCHEME row"
+        fi
+        ;;
+      "c")
+        if [ "$VIRTUOSO_TABLE_SCHEME" = "default" ]
+        then
+            VIRTUOSO_TABLE_SCHEME="col"
+        else
+            VIRTUOSO_TABLE_SCHEME="$VIRTUOSO_TABLE_SCHEME col"
+        fi
+        ;;
+      "A")
+	APPENDMODE=1
+	;;
+      *)
+      # other parameters -- passed to the scripts
+        otherparams="$otherparams $optname"
+        ;;
+    esac
+  done
+shift `expr $OPTIND - 1`
+
+if [ "$VIRTUOSO_CAPACITY" = "default" ]
+then
+    VIRTUOSO_CAPACITY="single multiple"
+fi
+
+if [ "$VIRTUOSO_TABLE_SCHEME" = "default" ]
+then
+    VIRTUOSO_TABLE_SCHEME="row col"
+fi
+
+. $VIRTUOSO_TEST/testlib.sh
 
 # decide witch server options set to use based on the server's name
-SERVER=${SERVER-$1}
-case $SERVER in
 
+case $SERVER in
   *virtuoso*)
 	  echo Using virtuoso configuration | tee -a $LOGFILE
 	  CFGFILE=virtuoso.ini
@@ -46,15 +146,12 @@ case $SERVER in
 	  DELETEMASK="virtuoso.lck $DBLOGFILE $DBFILE virtuoso.tdb virtuoso.ttr"
 	  SRVMSGLOGFILE="virtuoso.log"
 	  TESTCFGFILE=virtuoso-1111.ini
-          #TESTCFGFILEDS1=virtuoso-1111.ini
-          #TESTCFGFILEDS2=virtuoso-1112.ini
 	  BACKUP_DUMP_OPTION=+backup-dump
 	  CRASH_DUMP_OPTION=+crash-dump
-
-# only in that case
-	  FOREGROUND_OPTION=+foreground
+	  FOREGROUND_OPTION=-f
 	  LOCKFILE=virtuoso.lck
-	  export FOREGROUND_OPTION LOCKFILE
+	  _2PCFILE=virtuoso.2pc
+	  export FOREGROUND_OPTION LOCKFILE _2PCFILE
 	  ;;
   *[Mm]2*)
 	  echo Using M2 configuration | tee -a $LOGFILE
@@ -64,40 +161,103 @@ case $SERVER in
 	  DELETEMASK="`ls wi.* witemp.* | grep -v wi.err`"
 	  SRVMSGLOGFILE="wi.err"
 	  TESTCFGFILE=witest.cfg
-          #TESTCFGFILEDS1=witest.cfg
-          #TESTCFGFILEDS2=witest.cfg
 	  BACKUP_DUMP_OPTION=-d
 	  CRASH_DUMP_OPTION=-D
+	  _2PCFILE=virtuoso.2pc
 	  unset FOREGROUND_OPTION
 	  unset LOCKFILE
+	  export _2PCFILE
 	  ;;
-
    *)
 	  echo "***FAILED: Unknown server. Exiting" | tee -a $LOGFILE
 	  exit 3;
 	  ;;
 esac
 
-export CFGFILE DBFILE DBLOGFILE DELETEMASK SRVMSGLOGFILE #TESTCFGFILEDS1 TESTCFGFILEDS2
-export BACKUP_DUMP_OPTION CRASH_DUMP_OPTION TESTCFGFILE SERVER
-
-if test o$2 = odebug
+tst=$1
+if [ -n "$tst" ]
 then
-  echo PORT = $PORT
-  echo CFGFILE = $CFGFILE
-  echo DBFILE = $DBFILE
-  echo DBLOGFILE = $DBLOGFILE
-  echo DELETEMASK = "$DELETEMASK"
-  echo SRVMSGLOGFILE = "$SRVMSGLOGFILE"
-  echo TESTCFGFILE = $TESTCFGFILE
-  #echo TESTCFGFILEDS1 = $TESTCFGFILEDS1
-  #echo TESTCFGFILEDS2  = $TESTCFGFILEDS2
-  echo BACKUP_DUMP_OPTION = $BACKUP_DUMP_OPTION
-  echo CRASH_DUMP_OPTION = $CRASH_DUMP_OPTION
-elif test o$2 = o
-then
-  ./testall.sh
-else
-  shift
-  $*
+    if [ "`basename $tst ".sh"`.sh" = "$tst" ]
+    then	
+	test_to_run=`basename $tst ".sh"`
+	test_type=sh
+    elif [ "`basename $tst ".sql"`.sql" = "$tst" ]
+    then
+	test_to_run=`basename $tst ".sql"`
+	test_type=sql
+    else
+        # default test type is SH
+	test_type=sh
+	test_to_run=`basename $tst ".sh"`
+    fi
 fi
+
+if [ "$test_to_run" = "debug" ]
+then
+  set | egrep "^(PORT|CFGFILE|DBFILE|DBLOGFILE|DELETEMASK|SRVMSGLOGFILE|TESTCFGFILE|BACKUP_DUMP_OPTION|CRASH_DUMP_OPTION|VIRTUOSO_CAPACITY|VIRTUOSO_TABLE_SCHEME|TEST_DIR_MASK)="
+  exit 42
+fi  
+
+CURRENT_VIRTUOSO_CAPACITY="single"
+CURRENT_VIRTUOSO_TABLE_SCHEME="row"
+export CFGFILE DBFILE DBLOGFILE DELETEMASK SRVMSGLOGFILE BACKUP_DUMP_OPTION CRASH_DUMP_OPTION TESTCFGFILE SERVER CURRENT_VIRTUOSO_CAPACITY CURRENT_VIRTUOSO_TABLE_SCHEME VIRTUOSO_VDB TEST_DIR_MASK
+
+rm -rf $VIRTUOSO_TEST/PORTS
+mkdir $VIRTUOSO_TEST/PORTS
+
+# do the prolog
+if [ -z "$test_to_run" ]
+then
+#  Clean up the mess from the last run
+    if [ "$APPENDMODE" = "0" ]
+    then
+	rm -rf $VIRTUOSO_TEST/*.test $VIRTUOSO_TEST/*.ro $VIRTUOSO_TEST/*.co $VIRTUOSO_TEST/*.clro $VIRTUOSO_TEST/*.clco
+	$VIRTUOSO_TEST/clean.sh
+    fi
+
+    LOGFILE=$VIRTUOSO_TEST/testall.output
+    export LOGFILE
+    . prolog.sh
+else
+    shift
+fi
+if [ "$VIRTUOSO_VDB" = "default" ]
+then
+    if grep VDB $VIRTUOSO_TEST/ident.txt > /dev/null
+    then 
+        VIRTUOSO_VDB=1
+    else
+        VIRTUOSO_VDB=0
+    fi
+fi
+
+TEST_DIR_MASK=""
+for CURRENT_VIRTUOSO_CAPACITY in $VIRTUOSO_CAPACITY
+do
+    for CURRENT_VIRTUOSO_TABLE_SCHEME in $VIRTUOSO_TABLE_SCHEME
+    do
+	BANNER "confuguraton $CURRENT_VIRTUOSO_CAPACITY, $CURRENT_VIRTUOSO_TABLE_SCHEME"
+	
+	GET_TEST_DIR_SUFFIX $CURRENT_VIRTUOSO_CAPACITY $CURRENT_VIRTUOSO_TABLE_SCHEME
+	TEST_DIR_MASK="$TEST_DIR_MASK *.$GET_TEST_DIR_SUFFIX_RESULT"
+	cfg=$GET_TEST_DIR_SUFFIX_RESULT
+	
+ 	if [ -z "$test_to_run" ]
+	then
+	  $VIRTUOSO_TEST/testall.sh "$cfg"
+	else
+	  if [ "$test_type" = "sql" ]
+	  then
+	    RUN_SQL_TEST "$cfg" $test_to_run
+	    KILL_TEST_INSTANCES
+	  else
+	    RUN_TEST "$cfg" $test_to_run
+	    KILL_TEST_INSTANCES
+	  fi
+	fi
+
+    done
+done
+
+# do the epilog
+. epilog.sh

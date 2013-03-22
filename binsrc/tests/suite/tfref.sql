@@ -1,7 +1,7 @@
 --
 --  tfref.sql
 --
---  $Id$
+--  $Id: tfref.sql,v 1.7.10.3 2013/01/02 16:15:09 source Exp $
 --
 --  Function reference tests
 --  
@@ -25,6 +25,25 @@
 --  
 --  
 
+drop table T2;
+create table T2 (A integer, B integer, primary key (A));
+insert into T2 values (1, 2);
+insert into T2 values (2, 2);
+insert into T2 values (3, 2);
+
+insert into T2 (A, B) values (4, 2);
+insert into T2 (A, B) values (5, 2);
+insert into T2 (A, B) values (6, 2);
+insert into T2 (A, B) values (7, 2);
+insert into T2 (A, B) values (8, 2);
+
+insert into T2 (A, B) values (10, 2);
+insert into T2 (A, B) values (11, 2);
+insert into T2 (A, B) values (12, 2);
+insert into T2 (A, B) values (13, 2);
+insert into T2 (A, B) values (14, 2);
+
+
 create procedure tfref (in q integer)
 {
   declare ctr, c, s, mi, ma, av integer;
@@ -32,13 +51,16 @@ create procedure tfref (in q integer)
   while (ctr < q) {
     select count (*), sum (A), avg (A), min (A), max (A)
       into c, s, av, mi, ma from T2;
+--    dbg_obj_print_vars (c, s, av, mi, ma);
     if (s <> 96 or c <> 13 or mi <> 1 or ma <> 14 or av <> 7)
       goto failed;
     select count (*), sum (A), avg (A), min (A), max (A)
       into c, s, av, mi, ma  from T2 where A > 100;
+--    dbg_obj_print_vars (c, s, av, mi, ma);
     if (s <> null or c <> 0 or mi <> null or ma <> null or av <> null)
       goto failed;
 
+--    dbg_obj_print ('-'); 
     ctr := ctr + 1;
   }
   result_names (s);

@@ -1,5 +1,5 @@
 --  
---  $Id$
+--  $Id: txslt.sql,v 1.5.10.2 2013/01/02 16:15:37 source Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -33,7 +33,7 @@ create procedure DO_XSLT (in _xml varchar, in _xsl varchar)
   http_value (_tree, 0, _ses);
   http (concat ('\n============ END ============\n'), _ses);
   _res := string_output_string (_ses);
-  string_to_file ('../txslt.result', _res, -1);
+  string_to_file ('txslt.result', _res, -1);
   return _res;
 }
 
@@ -123,3 +123,4 @@ nfuser:
   return;
 }
 ;
+

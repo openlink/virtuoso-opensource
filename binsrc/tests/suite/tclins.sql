@@ -2,7 +2,7 @@
 
 -- replacing and soft inserts in cluster 
 
-ECHO BOTH "Cluster insert replacing and soft\n";
+echo both "Cluster insert replacing and soft\n";
 drop table ko;
 drop table kd;
 
@@ -26,31 +26,31 @@ insert soft kd select * from kd;
 insert soft kd select k1 + 1, ku + 1, nu + 1 from kd where k1 < 7;
 
 select * from kd;
-ECHO BOTH $IF $EQU $LAST[1] 7 "PASSED" "***FAILED";
-ECHO BOTH ": ins repl + soft no1\n";
+echo both $if $equ $last[1] 7 "PASSED" "***FAILED";
+echo both ": ins repl + soft no1\n";
 
 
 set autocommit manual;
 insert replacing kd values (4, 6, 7);
-ECHO BOTH $IF $NEQ $SQLSTATE OK "PASSED" "***FAILED";
-ECHO BOTH ": non unq 2nd in ins repl\n";
+echo both $if $neq $sqlstate OK "PASSED" "***FAILED";
+echo both ": non unq 2nd in ins repl\n";
 
 rollback work;
 set autocommit off;
 
 insert replacing kd values (5, 7, 8);
-ECHO BOTH $IF $NEQ $SQLSTATE OK "PASSED" "***FAILED";
-ECHO BOTH ": non unq 2nd in ins repl 2\n";
+echo both $if $neq $sqlstate OK "PASSED" "***FAILED";
+echo both ": non unq 2nd in ins repl 2\n";
 
 rollback work;
 insert replacing kd values (4, 10, 11);
 
 select * from kd where k1 = 4;
-ECHO BOTH $IF $EQU $LAST[3] 11 "PASSED" "***FAILED";
-ECHO BOTH ": ins repl ok\n";
+echo both $if $equ $last[3] 11 "PASSED" "***FAILED";
+echo both ": ins repl ok\n";
 
 
 insert soft kd values (5, 10, 11);
 select * from kd where k1 = 5;
-ECHO BOTH $IF $EQU $LAST[3] 7 "PASSED" "***FAILED";
-ECHO BOTH ": ins soft ok\n";
+echo both $if $equ $last[3] 7 "PASSED" "***FAILED";
+echo both ": ins soft ok\n";

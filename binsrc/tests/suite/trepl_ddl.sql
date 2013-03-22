@@ -1,7 +1,7 @@
 --
 --  trepl_ddl.sql
 --
---  $Id$
+--  $Id: trepl_ddl.sql,v 1.4.10.1 2013/01/02 16:15:21 source Exp $
 --
 --  DDL replication suite
 --  

@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-#  $Id$
+#  $Id: lowerall.sh,v 1.3.10.1 2013/01/02 16:14:41 source Exp $
 #
 #  Rename all files in current directory to lowercase names
 #  

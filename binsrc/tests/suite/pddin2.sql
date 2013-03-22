@@ -1,5 +1,5 @@
 --  
---  $Id$
+--  $Id: pddin2.sql,v 1.3.10.1 2013/01/02 16:14:51 source Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -75,3 +75,4 @@ ECHO BOTH ": updating narrow data; STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 --select string_to_file('pddd3.txt',blob_to_string("b"),-2) from "pdd" where "a" = 2;
 --select string_to_file('pddd4.txt',blob_to_string("c"),-2) from "pdd" where "a" = 2;
 --select string_to_file('pddd5.txt',blob_to_string("d"),-2) from "pdd" where "a" = 2;
+

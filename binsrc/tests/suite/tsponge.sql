@@ -6,7 +6,7 @@ CONNECT;
 SET ARGV[0] 0;
 SET ARGV[1] 0;
 
-VAD_INSTALL ('rdf_mappers_dav.vad');
+VAD_INSTALL ('cartridges_dav.vad');
 
 registry_set ('__sparql_sponge_use_w3c_xslt', 'off');
 delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_HTTP_SESSION';
@@ -34,7 +34,7 @@ ECHO BOTH ": Get RDF from a spreadsheet : " $ROWCNT " triples, expected 22\n";
 sparql define get:soft "replacing" define input:default-graph-uri
 <http://localhost:$U{HTTPPORT}/grddl-tests/rdf_sem.html>
 select * where { ?s ?p ?o . };
-ECHO BOTH $IF $EQU $ROWCNT 5 "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $ROWCNT 6 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": RDFa example : " $ROWCNT " triples, expected 6\n";
 
@@ -119,9 +119,9 @@ ECHO BOTH ": Transformations may produce serializations other than RDF/XML " $RO
 sparql define get:soft "replacing" define input:default-graph-uri
 <http://localhost:$U{HTTPPORT}/grddl-tests/conneg.html>
 select * where { ?s ?p ?o . };
-ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $ROWCNT 3 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": Content Negotiation with GRDDL " $ROWCNT " triples, expected 2\n";
+ECHO BOTH ": Content Negotiation with GRDDL " $ROWCNT " triples, expected 3\n";
 
 sparql define get:soft "replacing" define input:default-graph-uri
 <http://localhost:$U{HTTPPORT}/grddl-tests/grddlonrdf-xmlmediatype.rdf>

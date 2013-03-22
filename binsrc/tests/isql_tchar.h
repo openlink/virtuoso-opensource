@@ -282,6 +282,7 @@ wchar_t *isqlt_wgetenv(const wchar_t *name);
 int isqlt_cwprintf(const wchar_t *format, ...);
 #endif
 
+#define isqlt_tcstok(a,b,c) wcstok(a,b,c)
 
 #ifdef HAVE_WEXECVP
 #define isqlt_texecvp	wexecvp
@@ -365,6 +366,11 @@ wchar_t *isqlt_wgetpassphrase( const wchar_t * prompt );
 #define isqlt_tfopen		fopen
 #define isqlt_tgetenv		getenv
 #define isqlt_texecvp		execvp
+#ifdef HAVE_STRTOK_R
+#define isqlt_tcstok(a,b,c)     strtok_r(a,b,c)
+#else
+#define isqlt_tcstok(a,b,c)     strtok(a,b)
+#endif
 #if !(defined (WIN32) || defined (HPUX_10) || defined (HPUX_11))
 #define isqlt_tgetpass		getpass
 #endif

@@ -1,7 +1,7 @@
 --
 --  succ.sql
 --
---  $Id$
+--  $Id: succ.sql,v 1.3.10.1 2013/01/02 16:14:58 source Exp $
 --
 --  Stored Procedure to increase the last character of the argument by one.
 --  

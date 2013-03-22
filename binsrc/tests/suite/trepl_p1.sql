@@ -1,5 +1,5 @@
 --  
---  $Id$
+--  $Id: trepl_p1.sql,v 1.10.10.1 2013/01/02 16:15:21 source Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -174,3 +174,5 @@ WAIT_FOR_SYNC ('rep1', 'proc', 10);
 select count(*) from p_test;
 ECHO BOTH $IF $EQU $LAST[1] 256 "PASSED" "*** FAILED";
 ECHO BOTH ": " $LAST[1] " entries in test table replicated with 2 calls (one is keyword parameter call)\n";
+
+

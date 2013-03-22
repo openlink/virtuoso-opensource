@@ -1,5 +1,5 @@
 --  
---  $Id$
+--  $Id: tft_offband.sql,v 1.6.10.1 2013/01/02 16:15:09 source Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -150,7 +150,7 @@ vt_inc_index_db_dba_toff ();
 select c_o_1 from toff where contains (dt, 'abc', OFFBAND, c_o_1);
 ECHO BOTH $IF $EQU $LAST[1] "abccde1qq"  "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": " $LAST[1] " as offband after batch update\n";
+ECHO BOTH ": " $last[1] " as offband after batch update\n";
 
 
 

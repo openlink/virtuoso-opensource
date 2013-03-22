@@ -1,7 +1,7 @@
 --
 --  rtest2.sql
 --
---  $Id$
+--  $Id: rtest2.sql,v 1.6.10.3 2013/01/02 16:14:55 source Exp $
 --
 --  Remote database testing part 2
 --  
@@ -9,7 +9,7 @@
 --  project.
 --  
 --  Copyright (C) 1998-2013 OpenLink Software
---  
+-- 
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
@@ -33,6 +33,7 @@ ECHO BOTH "VDB SQL TEST, WITH ARRAY PARAMETERS\n";
 set param_batch = 10;
 load rtest2-1.sql;
 
-select count (*) from T1 A where exists (select *, *, *, *, *, *, *, *, *, *, *, *, *, * from R1..T1 B where B.ROW_NO > A.ROW_NO - 2900  );
+select count (*) from T1 A where exists (select * from R1..T1 B where B.ROW_NO > A.ROW_NO - 2900  );
 ECHO BOTH $IF $EQU $LAST[1] 999 "PASSED" "***FAILED";
 ECHO BOTH ": " $LAST[1] " rows in remote select close timing test\n";
+

@@ -1,5 +1,5 @@
 --  
---  $Id$
+--  $Id: mail.sql,v 1.9.10.1 2013/01/02 16:14:42 source Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -153,3 +153,4 @@ select pop3_get ('localhost $U{POP3PORT}', 'user1', 'wrong_pwd', 88888, 'UiDL');
 ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": POP3 wrong password check : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+

@@ -1,5 +1,5 @@
 --  
---  $Id$
+--  $Id: tsqlo2.sql,v 1.4.10.1 2013/01/02 16:15:29 source Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -88,3 +88,5 @@ select  a.row_no, b.row_no, mi  from t1, (select row_no, string1, string2, max (
 select  a.row_no, b.row_no, mi  from t1 a, (select row_no, string1, string2, max (fi2) as mi from r1..t1 group by 1, 2, 3) b where a.row_no = b.row_no order by a.row_no desc;
 
 select row_no + 1 as r, count (string1) from r1..t1 group by r order by r;
+ 
+

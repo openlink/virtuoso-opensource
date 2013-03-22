@@ -1,6 +1,6 @@
 #!/bin/sh 
 #
-#  $Id$
+#  $Id: tsxml.sh,v 1.6.10.3 2013/01/02 16:15:29 source Exp $
 #
 #  Database recovery tests
 #  
@@ -22,30 +22,32 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #  
-#  
+# 
+ 
+#set -x
 
 LOGFILE=tsxml.output
 export LOGFILE
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
  
 
 BANNER "STARTED XML Schema TEST (tsxml.sh)"
 
 rm -f schemasource
-ln -s ../../samples/schemaview schemasource
+ln -s $VIRTUOSO_TEST/../../samples/schemaview schemasource
 
 rm -f $DBLOGFILE
 rm -f $DBFILE
 cat $TESTCFGFILE | sed -e "s/PORT/$PORT/g" -e "s/CASE_MODE/$CASE_MODE/g" > $CFGFILE
 
-# SHUTDOWN_SERVER
-# START_SERVER $PORT 1000 
+SHUTDOWN_SERVER
+START_SERVER $PORT 1000 
 
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < schemasource/load_tables.isql
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < schemasource/vsputils.isql
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < schemasource/load_cfg.isql
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < schemasource/load_docs.isql
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tsxml.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tsxml.sql
 
 if test $STATUS -ne 0
 then

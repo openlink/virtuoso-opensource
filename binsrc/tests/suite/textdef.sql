@@ -1,5 +1,5 @@
 --  
---  $Id$
+--  $Id: textdef.sql,v 1.3.10.1 2013/01/02 16:15:08 source Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -88,3 +88,6 @@ vt_name);
       __ddl_changed (KEY_TABLE);
     }
 }
+
+
+

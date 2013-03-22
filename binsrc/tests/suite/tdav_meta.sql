@@ -1,5 +1,5 @@
 --
---  $Id$
+--  $Id: tdav_meta.sql,v 1.12.6.2.4.1 2013/01/02 16:15:02 source Exp $
 --
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -136,7 +136,7 @@ ECHO BOTH "Starting URIQA tests. In case of errors this may result a wait for ti
 
 select isnull (strstr (TDAV_URIQA ('$U{HOST}', '/DAV/tdav_meta_home/zip_samples/', 'MGET',''), 'Kingsley Idehen.foaf'));
 ECHO BOTH $IF $EQU $LAST[1] 0  "PASSED" "***FAILED";
-ECHO BOTH ": MGET on collection\n";
+ECHO BOTH $LAST[1] ": MGET on collection\n";
 
 select isnull (strstr (TDAV_URIQA ('$U{HOST}', '/DAV/tdav_meta_home/zip_samples/Kingsley%20Idehen.foaf', 'MGET',''), 'RDF'));
 ECHO BOTH $IF $EQU $LAST[1] 0  "PASSED" "***FAILED";

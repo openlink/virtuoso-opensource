@@ -1,5 +1,5 @@
 --  
---  $Id$
+--  $Id: nwdemo_update.sql,v 1.3.10.1 2013/01/02 16:14:45 source Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -30,3 +30,4 @@ UPDATE "Demo"."demo"."Products" SET "ProductName" = 'updated';
 UPDATE "Demo"."demo"."Customers" SET "ContactTitle" = 'updated';
 UPDATE "Demo"."demo"."Employees" SET "Address" = 'updated';
 UPDATE "Demo"."demo"."Orders" SET "ShipName" = 'updated';
+

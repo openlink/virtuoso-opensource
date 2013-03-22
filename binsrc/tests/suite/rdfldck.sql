@@ -342,7 +342,7 @@ create procedure  ckop ()
 
 
 
-create procedure slice_ck_slice (in slid int)
+create procedure SLICE_CK_SLICE (in slid int)
 {
 	declare cnt int;
 	cl_detach_thread ();
@@ -352,32 +352,22 @@ create procedure slice_ck_slice (in slid int)
 	log_message (sprintf ('pogs Slice %d out of whack by %d', slid, cnt));
 	cnt := (select count (*) from rdf_quad a table option (index rdf_quad, no cluster) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad, no cluster)  where a.g = b.g and a.p = b.p and a.o = b.o and a.s = b.s));
 	if (0 <> cnt)
-	log_message (sprintf ('psog Slice %d out of whack by %d', slid, cnt));
-	cnt := (select count (*) from rdf_quad a table option (index rdf_quad_op, index_only, no cluster) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_op, index_only, no cluster)  where a.p = b.p and a.o = b.o));
-	if (0 <> cnt)
-	log_message (sprintf ('op Slice %d out of whack by %d', slid, cnt));
-	cnt := (select count (*) from rdf_quad a table option (index rdf_quad_sp, index_only, no cluster) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_sp, index_only, no cluster)  where  a.p = b.p and a.s = b.s));
-	if (0 <> cnt)
-	log_message (sprintf ('sp Slice %d out of whack by %d', slid, cnt));
-	cnt := (select count (*) from rdf_quad a table option (index rdf_quad_gs, index_only, no cluster) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_gs, index_only, no cluster)  where  a.s = b.s and a.g = b.g));
-	if (0 <> cnt)
-	log_message (sprintf ('gs Slice %d out of whack by %d', slid, cnt));
-}
-
-create procedure slice_ck_slice_op (in slid int)
-{
-	declare cnt int;
-	cl_detach_thread ();
-	cl_set_slice ('DB.DBA.RDF_QUAD',  'RDF_QUAD', slid);
+	log_message (sprintf ('pk Slice %d out of whack by %d', slid, cnt));
 	cnt := (select count (*) from rdf_quad a table option (index rdf_quad_op, index_only, no cluster) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_op, index_only, no cluster)  where  a.p = b.p and a.o = b.o ));
 	if (0 <> cnt)
-	log_message (sprintf ('Slice %d out of whack by %d', slid, cnt));
+	log_message (sprintf ('op Slice %d out of whack by %d', slid, cnt));
+	cnt := (select count (*) from rdf_quad a table option (index rdf_quad_sp, index_only, no cluster) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_sp, index_only, no cluster)  where  a.p = b.p  and a.s = b.s));
+	if (0 <> cnt)
+	log_message (sprintf ('sp Slice %d out of whack by %d', slid, cnt));
+	cnt := (select count (*) from rdf_quad a table option (index rdf_quad_gs, index_only, no cluster) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_gs, index_only, no cluster)  where a.g = b.g and a.s = b.s));
+	if (0 <> cnt)
+	log_message (sprintf ('pogs Slice %d out of whack by %d', slid, cnt));
 }
 
-create procedure slice_ck (in exits int := 0)
+create procedure slice_ck ()
 {
   cl_detach_thread ();
-  cl_exec ('cl_call_local_slices (''DB.DBA.RDF_QUAD'',  ''RDF_QUAD'', ''slice_ck_slice'',  vector (exits))');
+  cl_exec ('cl_call_local_slices (''DB.DBA.RDF_QUAD'',  ''RDF_QUAD'', ''slice_ck_slice'',  vector ())');
 }
 
 
@@ -397,8 +387,14 @@ sequence_set ('__NEXT__RDF_URL_IID_NAMED', 2147483648 - 500000, 0);
 sequence_set ('__NEXT__RDF_RO_ID', 2147483648 - 500000, 0);
 
 sequence_set ('__NEXT__RDF_URL_IID_NAMED', bit_shift (1, 32) - 300000, 0);
-sequence_set ('__NEXT__RDF_RO_ID', bit_shift (1, 32) - 100000, 0);
+sequence_set ('__NEXT__RDF_RO_ID', bit_shift (1, 32) + 100, 0);
 
 select top 1 iri_id_num (ri_id) - bit_shift (1, 32) from rdf_iri order by ri_id desc;
 
 select top 1 ro_id - bit_shift (1, 32) from rdf_obj order by ro_id desc;
+
+
+--- reset iri ranges:
+
+cl_exec ('rdf_seq_init_srv ()');
+sequence_set ('RDF_URL_IID_NAMED', 4200000000, 0);

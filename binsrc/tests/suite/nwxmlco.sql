@@ -1,5 +1,5 @@
 --  
---  $Id$
+--  $Id: nwxmlco.sql,v 1.4.10.1 2013/01/02 16:14:47 source Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -93,3 +93,5 @@ vt_batch_update ('DB.DBA.XML_TEXT', 'OFF', 0);
 update xml_text set xt_text = xt_text;
 
 select count (*) from xml_text_xt_text_hit;
+
+

@@ -1,5 +1,5 @@
 --  
---  $Id$
+--  $Id: rpjoin.sql,v 1.5.6.1.4.1 2013/01/02 16:14:53 source Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -25,7 +25,7 @@ DROP TABLE T_LOC;
 CREATE TABLE T_LOC (S_DATE DATE, S_STATUS VARCHAR, S_NO VARCHAR);
 
 
-ECHO BOTH "Joins with remotes and proc views rpjoin.sql\n";
+echo both "Joins with remotes and proc views rpjoin.sql\n";
 
 INSERT INTO T_LOC SELECT FDATE, substring (FS4, 1, 1), concat ('0102-', STRING1) FROM R1..T1 WHERE ROW_NO > 100 AND ROW_NO < 121;
 
@@ -77,32 +77,34 @@ SELECT CAST('GUARANTEED' AS VARCHAR), S.STRING1, S.STRING2, S.FDATE, G.S_STATUS,
          R1..T1 S INNER JOIN DELIVERY_VIEW G ON ( GD_TRACKING_NO(S.STRING1) = G.S_NO );
 
 ECHO BOTH $IF $EQU $ROWCNT 80 "PASSED" "***FAILED";
-ECHO BOTH ": INNER JOIN on procedure view and remote table " $ROWCNT " rows\n";
+ECHO BOTH ": INNER JOIN on procedure view and remote table " $rowcnt " rows\n";
 
 
 SELECT CAST('GUARANTEED' AS VARCHAR), S.STRING1, S.STRING2, S.FDATE, G.S_STATUS, G.S_NO FROM
          R1..T1 S, DELIVERY_VIEW G WHERE  GD_TRACKING_NO(S.STRING1) = G.S_NO option (order);
 ECHO BOTH $IF $EQU $ROWCNT 80 "PASSED" "***FAILED";
-ECHO BOTH ": JOIN comma syntax on procedure view and remote table " $ROWCNT " rows\n";
+ECHO BOTH ": JOIN comma syntax on procedure view and remote table " $rowcnt " rows\n";
 
 
 SELECT CAST('GUARANTEED' AS VARCHAR), S.STRING1, S.STRING2, S.FDATE, G.S_STATUS, G.S_NO FROM
          R1..T1 S LEFT OUTER JOIN DELIVERY_VIEW G ON ( GD_TRACKING_NO(S.STRING1) = G.S_NO );
 ECHO BOTH $IF $EQU $ROWCNT 1000 "PASSED" "***FAILED";
-ECHO BOTH ": LEFT OUTER JOIN on procedure view and remote table " $ROWCNT " rows\n";
+ECHO BOTH ": LEFT OUTER JOIN on procedure view and remote table " $rowcnt " rows\n";
 
 SELECT CAST('GUARANTEED' AS VARCHAR), S.STRING1, S.STRING2, S.FDATE, G.S_STATUS, G.S_NO FROM
          R1..T1 S RIGHT OUTER JOIN DELIVERY_VIEW G ON ( GD_TRACKING_NO(S.STRING1) = G.S_NO );
 ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
-ECHO BOTH ": RIGHT OUTER JOIN on procedure view and remote table " $ROWCNT " rows\n";
+ECHO BOTH ": RIGHT OUTER JOIN on procedure view and remote table " $rowcnt " rows\n";
 
 
 SELECT CAST('GUARANTEED' AS VARCHAR), S.STRING1, S.STRING2, S.FDATE, G.S_STATUS, G.S_NO FROM
         DELIVERY_VIEW G  RIGHT OUTER JOIN R1..T1 S ON (G.S_NO = GD_TRACKING_NO(S.STRING1));
 ECHO BOTH $IF $EQU $ROWCNT 1000 "PASSED" "***FAILED";
-ECHO BOTH ": RIGHT OUTER JOIN on procedure view and remote table " $ROWCNT " rows\n";
+ECHO BOTH ": RIGHT OUTER JOIN on procedure view and remote table " $rowcnt " rows\n";
 
 SELECT CAST('GUARANTEED' AS VARCHAR), S.STRING1, S.STRING2, S.FDATE, G.S_STATUS, G.S_NO FROM
         DELIVERY_VIEW G  LEFT OUTER JOIN R1..T1 S ON (G.S_NO = GD_TRACKING_NO(S.STRING1));
 ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
-ECHO BOTH ": LEFT OUTER JOIN on procedure view and remote table " $ROWCNT " rows\n";
+ECHO BOTH ": LEFT OUTER JOIN on procedure view and remote table " $rowcnt " rows\n";
+
+

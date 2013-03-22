@@ -1,29 +1,29 @@
 #!/bin/sh
-#
-#  $Id$
+#  
+#  $Id: twcopy.sh,v 1.16.2.3.4.7 2013/01/02 16:15:34 source Exp $
 #
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
-#
+#  
 #  Copyright (C) 1998-2013 OpenLink Software
-#
+#  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
 #  Free Software Foundation; only version 2 of the License, dated June 1991.
-#
+#  
 #  This program is distributed in the hope that it will be useful, but
 #  WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 #  General Public License for more details.
-#
+#  
 #  You should have received a copy of the GNU General Public License along
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-#
+#  
 
 LOGFILE=twcopy.output
 export LOGFILE
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 
 DS1=$PORT
 
@@ -71,7 +71,6 @@ GenDefPage ()
 <strong>Page $1</strong><br>
 <a href="page1.html">page1</a><br>
 <a href="errpage.html">page with errors</a><br>
-<a href="honeypot.html"></a><br>
 <img src="image.gif">
 </body>
 </html>
@@ -493,7 +492,7 @@ END_PAGE
 
 ChkExp ()
 {
-  num=`ls -1R wcopy/exp | grep html | wc -l`
+  num=`ls -1R exp | grep html | wc -l`
   if [ "$num" -ne "21" ]
   then
       echo "***FAILED: Export to local file system (files $num)" | tee -a $LOGFILE
@@ -504,7 +503,7 @@ ChkExp ()
 
 MakeIni ()
 {
-   MAKECFG_FILE ../$TESTCFGFILE $PORT $CFGFILE
+   MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
    case $SERVER in
    *[Mm]2*)
    cat >> $CFGFILE <<END_HTTP
@@ -551,9 +550,6 @@ NOLITE
 LOG "Web Loader test"
 #CLEANUP
 rm -f $LOGFILE
-rm -rf wcopy
-mkdir wcopy
-cd wcopy
 
 LOG "Building WEB site"
 mkdir exp
@@ -568,16 +564,7 @@ mkdir dir3/sub31
 mkdir dir3/sub32
 
 GenDefPage
-echo "Generating robots.txt"
-    cat > robots.txt <<END_PAGE
-User-agent: *
-Disallow: /honeypot
-END_PAGE
 GenErrPage
-echo "Generating honeypot.html page"
-    cat > honeypot.html<<END_PAGE
-This is a trap!!!    
-END_PAGE
 GenStartPage
 GenPage 2 sub11 ./dir1/
 GenEndPage 4 ./dir1/sub11/
@@ -607,10 +594,10 @@ GenEndPage 18 ./dir3/sub32/
 GenEndPage 19 ./dir3/sub32/
 
 
+STOP_SERVER
 MakeIni
 START_SERVER $DS1 1000
 CHECK_HTTP_PORT $TPORT
-cd ..
 
 if [ "z$HOST_OS" != "z" ]
 then
@@ -618,20 +605,23 @@ cygwinver=`uname -r | grep '20.1'`
 exp_path=`pwd`
 if [ "z$cygwinver" = "z" ]
 then
-  exp_path="`echo "$exp_path" | cut -b11-11`:`echo "$exp_path" | cut -b12-`/wcopy/exp/"
+  exp_path="`echo "$exp_path" | cut -b11-11`:`echo "$exp_path" | cut -b12-`/exp/"
 else
-  exp_path="`echo "$exp_path" | cut -b3-3`:`echo "$exp_path" | cut -b4-`/wcopy/exp/"
+  exp_path="`echo "$exp_path" | cut -b3-3`:`echo "$exp_path" | cut -b4-`/exp/"
 fi
 else
-exp_path="$HOME/binsrc/tests/suite/wcopy/exp/"
+  exp_path="exp/"
 fi
 
 LOG "Checking URI parser"
-RUN $ISQL $DS1 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u "HOST=$THOST:$TPORT" < uri_test.sql
-RUN $ISQL $DS1 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u "HOST=$THOST:$TPORT" < uri_wide_test.sql
+RUN $ISQL $DS1 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u "HOST=$THOST:$TPORT" < $VIRTUOSO_TEST/uri_test.sql
+RUN $ISQL $DS1 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u "HOST=$THOST:$TPORT" < $VIRTUOSO_TEST/uri_wide_test.sql
 #Main
-RUN $ISQL $DS1 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u "HOST=$THOST:$TPORT" "EXP_PATH=$exp_path" < twcopy.sql
-ChkExp
+RUN $ISQL $DS1 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u "HOST=$THOST:$TPORT" "EXP_PATH=$exp_path" < $VIRTUOSO_TEST/twcopy.sql
+
+# inside twcopy.sql export to local filesystem is turned off now and not done.
+# enable the following line if export is enabled.
+# ChkExp
 
 RUN $ISQL $DS1 '"EXEC=shutdown;"' ERRORS=STDOUT
 

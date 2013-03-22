@@ -1,4 +1,4 @@
 set autocommit on;
 str2ck (1);
-ECHO BOTH  $IF $EQU $STATE OK "PASSED" "***FAILED";
-ECHO BOTH ": check of read committed of previous t1\n";
+echo both  $if $equ $state OK "PASSED" "***FAILED";
+echo both ": check of read committed of previous t1\n";

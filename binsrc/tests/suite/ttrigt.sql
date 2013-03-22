@@ -1,7 +1,7 @@
 --
 --  ttrigt.sql
 --
---  $Id$
+--  $Id: ttrigt.sql,v 1.3.10.1 2013/01/02 16:15:31 source Exp $
 --
 --  Trigger testing
 --  

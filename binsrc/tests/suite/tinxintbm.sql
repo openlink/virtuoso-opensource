@@ -1,5 +1,5 @@
 --  
---  $Id$
+--  $Id: tinxintbm.sql,v 1.2.6.1.4.1 2013/01/02 16:15:11 source Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -23,7 +23,7 @@
 
 
 
-ECHO BOTH "Index intersecction tests with bitmap index\n";
+echo both "Index intersecction tests with bitmap index\n";
 
 
 update t1 set fi3 = mod (row_no, 11), fi2 = mod (row_no, 7);
@@ -33,57 +33,57 @@ create bitmap index fi3 on t1 (fi3) partition (fi3 int);
 
 
 select count (*) from t1 where fi2 = 3 and fi3 = 3;
-ECHO BOTH $IF $EQU $LAST[1] 130 "PASSED" "***FAILED";
-ECHO BOTH ": t1 inx int count\n";
+echo both $if $equ $last[1] 130 "PASSED" "*** FAILED";
+echo both " t1 inx int count\n";
 
 select count (*) from t1 table option (index fi2) where fi2 = 3 and fi3 = 3;
-ECHO BOTH $IF $EQU $LAST[1] 130 "PASSED" "***FAILED";
-ECHO BOTH ": t1 inx fi2  count\n";
+echo both $if $equ $last[1] 130 "PASSED" "*** FAILED";
+echo both " t1 inx fi2  count\n";
 
 select count (*) from t1 table option (index primary key) where fi2 = 3 and fi3 = 3;
-ECHO BOTH $IF $EQU $LAST[1] 130 "PASSED" "***FAILED";
-ECHO BOTH ": t1 pk  count\n";
+echo both $if $equ $last[1] 130 "PASSED" "*** FAILED";
+echo both " t1 pk  count\n";
 
 
 
 select sum  (fi6) from t1 where fi2 = 3 and fi3 = 3;
-ECHO BOTH $IF $EQU $LAST[1] 866580 "PASSED" "***FAILED";
-ECHO BOTH ": ti inx int fi6 sum.\n";
+echo both $if $equ $last[1] 866580 "PASSED" "*** FAILED";
+echo both ": ti inx int fi6 sum.\n";
 
 
 
 update t1 set fi6 = 11 where fi2 = 4 and fi3 = 5;
-ECHO BOTH $IF $EQU $ROWCNT 130 "PASSED" "***FAILED";
-ECHO BOTH ": t1 inx int update 1\n";
+echo both $if $equ $rowcnt 130 "PASSED" "*** FAILED";
+echo both " t1 inx int update 1\n";
 
 
 update t1 set fi6 = 11 where fi2 = 4 and fi3 = 5 and fi6 = 11;
-ECHO BOTH $IF $EQU $ROWCNT 130 "PASSED" "***FAILED";
-ECHO BOTH ": t1 inx int update 2\n";
+echo both $if $equ $rowcnt 130 "PASSED" "*** FAILED";
+echo both " t1 inx int update 2\n";
 
 
 update t1 set fi6 = 11 where fi2 = 4 and fi3 = 5 and fi6 = 22;
-ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
-ECHO BOTH ": t1 inx int update 3\n";
+echo both $if $equ $rowcnt 0 "PASSED" "*** FAILED";
+echo both " t1 inx int update 3\n";
 
 create procedure f (in a any) {return a;};
 
 select count (*) from t1 a, t1 b where a.fi2 = 3 and b.fi3 = 4 and a.row_no = b.row_no;
-ECHO BOTH $IF $EQU $LAST[1] 130 "PASSED" "***FAILED";
-ECHO BOTH ": inx int join 1\n";
+echo both $if $equ $last[1] 130 "PASSED" "***FAILED";
+echo both ": inx int join 1\n";
 
 
 select count (*) from t1 a, t1 b where a.fi2 = 3 and b.fi3 = 4 and a.row_no = b.row_no and f(a.row_no) < 2000;
-ECHO BOTH $IF $EQU $LAST[1] 25 "PASSED" "***FAILED";
-ECHO BOTH ": inx int join 2\n";
+echo both $if $equ $last[1] 25 "PASSED" "***FAILED";
+echo both ": inx int join 2\n";
 
 select count (*) from t1 a, t1 b where a.fi2 = 3 and b.fi3 = 4 and a.row_no = b.row_no and f(a.row_no + b.row_no) < 4000;
-ECHO BOTH $IF $EQU $LAST[1] 25 "PASSED" "***FAILED";
-ECHO BOTH ": inx int join 3\n";
+echo both $if $equ $last[1] 25 "PASSED" "***FAILED";
+echo both ": inx int join 3\n";
 
 select count (*) from t1 a, t1 b, t1 c where a.fi2 = 4 and b.fi2 = 4 and c.fi3 = 3 and a.row_no = b.row_no and b.row_no = c.row_no and f(a.fi2) is not null and f(c.fs1) is not null;
-ECHO BOTH $IF $EQU $LAST[1] 130  "PASSED" "***FAILED";
-ECHO BOTH ": inx int join 3 tables\n";
+echo both $if $equ $last[1] 130  "PASSED" "***FAILED";
+echo both ": inx int join 3 tables\n";
 
 
 create procedure  t1bm1 ()
@@ -107,3 +107,5 @@ return 0;
 
 drop table t1;
 -- the next test tjoin needs to fill this from scratch
+
+

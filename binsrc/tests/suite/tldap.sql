@@ -1,5 +1,5 @@
 --
---  $Id$
+--  $Id: tldap.sql,v 1.8.2.1.4.1 2013/01/02 16:15:12 source Exp $
 --
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -27,7 +27,7 @@ echo BOTH "STARTED: Ldap test\n";
 SET ARGV[0] 0;
 SET ARGV[1] 0;
 
-connection_set ('LDAP_VERSION', 2);
+--connection_set ('LDAP_VERSION', 2);
 
 select __proc_exists ('LDAP_SEARCH', 2);
 ECHO BOTH $IF $EQU $LAST[1] LDAP_SEARCH "PASSED" "SKIP NEXT 3 TESTS.";
@@ -37,7 +37,7 @@ ECHO BOTH ": Test LDAP support : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 create procedure ldap_t1 ()
 {
   if (__proc_exists ('LDAP_SEARCH', 2))
-     return ldap_search ('ldap://mail2.openlinksw.com:389', 0, 'ou=Accounts, o=OpenLink Software, c=US', '(cn=Kingsley*)', 'ou=Accounts, o=OpenLink Software, c=US', '')[3][3];
+     return ldap_search ('ldap://mail.usnet.private:389', 0, 'o=OpenLink Software, c=US', '(cn=Kingsley*)', 'ou=Accounts, o=OpenLink Software, c=US', '')[3][3];
   else
      return 'Success';
 }
@@ -50,7 +50,7 @@ ECHO BOTH ": create procedure ldap_t1 : STATE=" $STATE " MESSAGE=" $MESSAGE "\n"
 create procedure ldap_t2 ()
 {
   if (__proc_exists ('LDAP_SEARCH', 2))
-     return ldap_search ('ldap://mail2.openlinksw.com:389', 0, 'ou=Accounts, o=OpenLink Software, c=US', '(cn=Orri*)', 'ou=Accounts, o=OpenLink Software, c=US', '')[1][1];
+     return ldap_search ('ldap://mail.usnet.private:389', 0, 'o=OpenLink Software, c=US', '(cn=Orri*)', 'ou=Accounts, o=OpenLink Software, c=US', '')[1][1];
   else
      return 'uid=oerling,ou=Accounts,o=OpenLink Software,c=US';
 }
@@ -63,7 +63,7 @@ ECHO BOTH ": create procedure ldap_t2 : STATE=" $STATE " MESSAGE=" $MESSAGE "\n"
 create procedure ldap_t3 ()
 {
   if (__proc_exists ('LDAP_SEARCH', 2))
-     return ldap_search ('ldap://mail2.openlinksw.com:389', 0, 'ou=Accounts, o=OpenLink Software, c=US', '(cn=Kingsley*)', 'ou=Accounts, o=OpenLink Software, c=US', '')[1][1];
+     return ldap_search ('ldap://mail.usnet.private:389', 0, 'o=OpenLink Software, c=US', '(cn=Kingsley*)', 'ou=Accounts, o=OpenLink Software, c=US', '')[1][1];
   else
      return 'uid=kidehen,ou=Accounts,o=OpenLink Software,c=US';
 }

@@ -1,5 +1,5 @@
 --  
---  $Id$
+--  $Id: cube.sql,v 1.5.10.5 2013/01/04 10:55:09 oerling Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -20,6 +20,12 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --  
 --  
+
+
+select sys_stat ('cluster_enable');
+#if $equ $last[1] 0
+
+
 CREATE PROCEDURE drop_table(in tb varchar)
 {
    if(
@@ -33,7 +39,10 @@ CREATE PROCEDURE drop_table(in tb varchar)
 
 drop_table ('DB.DBA.ROLLUP1');
 
-create table ROLLUP1 (i integer, j integer, k integer, t integer, s integer);
+-- make partition
+--__dbf_set ('qp_thread_min_usec', 0);
+create table ROLLUP1 (i integer, j integer, k integer, t integer, s integer, primary key (i,j,k,t,s));
+alter index ROLLUP1 on ROLLUP1 partition (i int);
 
 create procedure fill_ROLLUP (in c integer:=1000)
 {
@@ -42,6 +51,7 @@ create procedure fill_ROLLUP (in c integer:=1000)
 		c:=c-1;
 		insert into ROLLUP1 values
 		( mod (c,10), mod (c,5), mod (c,4), mod (c,3), mod (c,2) );
+		    commit work;
 	}
 }
 
@@ -159,3 +169,50 @@ select distinct GJ
 	     ) MM;
 ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
 ECHO BOTH ": B8788 the grouping bug : wrong placement of the grouping () call_exp dfe.\n";
+
+
+-- GROUPING SETS
+CREATE TABLE Sales (EmpId INT, Yr INT, Sales NUMERIC);
+INSERT into Sales VALUES(1, 2005, 12000);
+INSERT into Sales VALUES(1, 2006, 18000);
+INSERT into Sales VALUES(1, 2007, 25000);
+INSERT into Sales VALUES(2, 2005, 15000);
+INSERT into Sales VALUES(2, 2006, 6000);
+INSERT into Sales VALUES(3, 2006, 20000);
+INSERT into Sales VALUES(3, 2007, 24000);
+
+SELECT (EmpId) as ee, (Yr) as yy, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((ee), (yy));
+SELECT (EmpId) as ee, (Yr) as yy, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((ee), order by (yy));
+SELECT (EmpId) as ee, f(Yr) as yy, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((ee), order by (yy));
+SELECT (EmpId) as ee, f(Yr) as yy, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((ee), (yy));
+SELECT (EmpId) as ee, f(Yr) as yy, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((ee), order by (yy), order by (ee));
+SELECT EmpId, Yr, AVG(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((EmpId), (Yr));
+SELECT EmpId, Yr, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS(());
+SELECT EmpId, Yr, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((), (Yr), (EmpId), (Yr, EmpId));
+SELECT EmpId, Yr, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((EmpId));
+SELECT EmpId, Yr, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((EmpId), (Yr));
+SELECT EmpId, Yr, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((EmpId), (Yr), ());
+SELECT EmpId, Yr, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((EmpId), (Yr desc));
+SELECT EmpId, Yr, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((EmpId), ORDER BY TOP 5 (Yr));
+SELECT EmpId, Yr, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((EmpId), order by (Yr));
+SELECT EmpId, Yr, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((EmpId), order by (Yr), ());
+SELECT EmpId, Yr, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((EmpId), order by (Yr, EmpId));
+SELECT EmpId, Yr, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((EmpId), order by (Yr, EmpId), ());
+SELECT EmpId, Yr, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((EmpId), order by (Yr desc));
+SELECT EmpId, Yr, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((EmpId, Yr), ());
+SELECT EmpId, Yr, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((EmpId, Yr), (EmpId));
+SELECT f(EmpId) as ee, f2(Yr) as yy, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((ee), order by top 2,1 (yy));
+SELECT f(EmpId) as ee, f2(Yr) as yy, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((ee), order by top 3 (yy));
+SELECT f(EmpId) as ee, f2(Yr) as yy, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((ee), order by top 5,1 (yy));
+SELECT f(EmpId) as ee, f2(Yr) as yy, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((ee), order by top 5 (yy), order by (ee));
+SELECT f(EmpId) as ee, f2(Yr+0) as yy, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((ee), order by (yy));
+SELECT f(EmpId) as ee, f2(Yr+1) as yy, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((ee), order by (ee));
+SELECT f(EmpId) as ee, f2(Yr+1) as yy, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((ee), order by (yy));
+SELECT f(EmpId) as ee, f (Yr) as yy, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((ee), (yy));
+SELECT f(EmpId) as ee, f (Yr) as yy, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((ee), order by (yy));
+SELECT f(EmpId) as ee, f (Yr) as yy, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((ee), order by (yy), order by (ee));
+SELECT f2(EmpId) as ee, (Yr) as yy, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((ee), order by (yy));
+SELECT f (EmpId), Yr, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((EmpId, Yr), (Yr), ());
+SELECT f (EmpId) as ee, f (Yr) as yy, SUM(Sales) AS Sales FROM Sales GROUP BY GROUPING SETS((ee), order by (yy));
+
+#endif

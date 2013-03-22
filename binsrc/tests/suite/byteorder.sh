@@ -1,7 +1,7 @@
 #!/bin/sh
 #  tsql.sh
 #
-#  $Id$
+#  $Id: byteorder.sh,v 1.3.10.3 2013/01/02 16:14:38 source Exp $
 #
 #  VARIOUS MACHINE BYTEORDER support 
 #  
@@ -27,7 +27,7 @@
 
 LOGFILE=byteorder.output
 export LOGFILE
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 
 DSN=$PORT
 www_server=bugzilla.openlinksw.com
@@ -89,7 +89,7 @@ SHUTDOWN_SERVER
 
 START_SERVER $PORT 1000
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < byteorder.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/byteorder.sql
 
 rm -f fc.xml
 

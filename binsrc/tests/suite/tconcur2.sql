@@ -1,7 +1,7 @@
 --
 --  tconcur2.sql
 --
---  $Id$
+--  $Id: tconcur2.sql,v 1.4.6.2.4.1 2013/01/02 16:15:01 source Exp $
 --
 --  Concurrency test #2
 --  

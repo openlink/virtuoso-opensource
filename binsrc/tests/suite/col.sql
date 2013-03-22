@@ -1,36 +1,11 @@
---
---  col.sql
---
---  $Id$
---
---  Test some compressions 
---
---  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
---  project.
---  
---  Copyright (C) 1998-2011 OpenLink Software
---  
---  This project is free software; you can redistribute it and/or modify it
---  under the terms of the GNU General Public License as published by the
---  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
---  This program is distributed in the hope that it will be useful, but
---  WITHOUT ANY WARRANTY; without even the implied warranty of
---  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
---  General Public License for more details.
---  
---  You should have received a copy of the GNU General Public License along
---  with this program; if not, write to the Free Software Foundation, Inc.,
---  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
 
+-- Test some compressions 
 
-create procedure cs (in f int, in a any, in ck int := 0)
+create procedure cs (in f int, in a any, in ck int := 0, in dtp int := 0)
 {
   declare cs, l, inx, dec any;
   l := length (a);
-  cs := cs_new (f);
+  cs := cs_new (f, dtp);
   for (inx := 0; inx < l; inx := inx + 1)
 cs_compress (cs, a[inx]);
 	  l :=cs_string (cs);
@@ -56,6 +31,17 @@ cs_compress (cs, a[inx]);
 }
 
 
+create procedure str_vec (in n int, in l int)
+{
+  declare i, r any;
+  r := make_array (n, 'any');
+  for (i := 0; i < n; i := i + 1)
+    {
+      r[i] := sprintf ('%d%s', i, subseq ('abcdefghijklmnopqrstuvwxyz', 0, l));
+    }
+  return r;
+}
+
 create procedure cs_stat_pv (in ce any)
 {
   declare n_bytes, n_values, ce_type, ce_dtp, inx int;
@@ -69,6 +55,11 @@ create procedure cs_stat_pv (in ce any)
   end_result ();
 }
 
+
+create procedure view cs_stat as cs_stat_pv (cs) (cs_bytes int, cs_values int, cs_type int, cs_flags int);
+
+
+exit;
 
 
 select cs (0, vector (1, 2, 4, 6, 7, 7, 7), 1);
@@ -150,9 +141,16 @@ select sum (al), sum (ct) from
 
 
 
-create table R2 (G iri_id_8, S iri_id_8, P iri_id_8, O any, primary key (S, P, O, G));
+create table R2 (G iri_id_8, S iri_id_8, P iri_id_8, O any, primary key (p, s, O, G));
 
 insert into r2 (g, s, p, o) select g, s, p, ro_id_only (o) from rdf_quad;
+create distinct no primary key ref bitmap index r2_gs on r2 (g, s);
+create distinct no primary key ref bitmap index r2_sp on r2 (s, p);
+create distinct no primary key ref index r2_op on r2 (o, p);
+
+__vt_index ('DB.DBA.R2', 'R2_OP', 'O', 'O', 'DB.DBA.RDF_OBJ_RO_FLAGS_WORDS');
+ 
+
 
 create index r2_psog on r2 (p, s, o, g);
 create bitmap index r2_pogs on r2 (p, o, g, s);
@@ -188,6 +186,21 @@ create table rcol_pogs (s iri_id_8, p iri_id_8, o any, g iri_id_8,
    sc long varchar, pc long varchar, oc long varchar, gc long varchar,
   primary key (p, o, g, s));
 
+create table rcol_sp (s iri_id_8, p iri_id_8, 
+   sc long varchar, pc long varchar,
+  primary key (s, p));
+
+
+create table rcol_op (o any, p iri_id_8, 
+   oc long varchar, pc long varchar,
+  primary key (o, p));
+
+create table rcol_gs (g iri_id_8, s iri_id_8, 
+   gc long varchar, sc long varchar,
+  primary key (g, s));
+
+
+
 
 create table cs_error (id int identity primary key, v long varchar);
 
@@ -219,15 +232,24 @@ create procedure cs_string_ck (inout cs varchar, in n int, in col varchar)
 }
 
 
-create procedure rcol_pogs (in step int := 2040)
+
+create procedure rcol_pogs (in step int := 2040, in skip int := 0, in first_p iri_id := 0)
 {
   declare ctr, scs, ocs, pcs, gcs any;
   declare s1, p1, o1, g1, n any;
  n := -step;
   log_enable (2, 1);
+  first_p := iri_id_from_num (first_p);
  ctr := -1;
-  for select s, p, o, g from rdf_quad table option (index rdf_quad_pogs) do
+  for select s, p, o, g from r2 table option (index r2_pogs) where p >= first_p do
    {
+     if (skip > 0)
+       {
+       skip := skip - 1;
+	 if (0 = skip)
+	   dbg_obj_print ('start at p ', p);
+	 goto next;
+       }
      if (-1 = ctr)
        {
        s1 := s; p1 := p; o1 := o; g1 := g;
@@ -245,14 +267,196 @@ create procedure rcol_pogs (in step int := 2040)
        }
      else 
      ctr := ctr + 1;
+   next: ;
    }
 }
 
 
 
+create procedure rcol_psog (in step int := 2040, in skip int := 0, in first_p iri_id := 0)
+{
+  declare ctr, scs, ocs, pcs, gcs any;
+  declare s1, p1, o1, g1, n any;
+ n := -step;
+  log_enable (2, 1);
+  first_p := iri_id_from_num (first_p);
+ ctr := -1;
+  for select s, p, o, g from r2 table option (index r2_psog) where p >= first_p do
+   {
+     if (skip > 0)
+       {
+       skip := skip - 1;
+	 if (0 = skip)
+	   dbg_obj_print ('start at p ', p);
+	 goto next;
+       }
+     if (-1 = ctr)
+       {
+       s1 := s; p1 := p; o1 := o; g1 := g;
+       n := n + step;
+       ctr := 0;
+      cs_done (scs); cs_done (pcs); cs_done (ocs); cs_done (gcs);
+       scs := cs_new (0); pcs := cs_new (0); ocs := cs_new (0); gcs := cs_new (0);
+       }
+     cs_compress (scs, s); cs_compress (pcs, p); cs_compress (ocs, o); cs_compress (gcs, g);
+     if (ctr = step)
+       {
+         insert into rcol_psog (s, p, o, g, sc, pc, oc, gc)
+	   values (s1, p1, o1, g1, cs_string_ck (scs, n, 's'), cs_string_ck (pcs, n, 'p'), cs_string_ck (ocs, n, 'o'), cs_string_ck (gcs, n, 'g'));
+       ctr := -1;
+       }
+     else 
+     ctr := ctr + 1;
+   next: ;
+   }
+}
+
+
+create procedure rcol_sp (in step int := 2040, in skip int := 0, in first_p iri_id := 0)
+{
+  declare ctr, scs, ocs, pcs, gcs any;
+  declare s1, p1, o1, g1, n any;
+ n := -step;
+  log_enable (2, 1);
+  first_p := iri_id_from_num (first_p);
+ ctr := -1;
+  for select s, p from r2_sp table option (index r2_sp) where p >= first_p do
+   {
+     if (skip > 0)
+       {
+       skip := skip - 1;
+	 if (0 = skip)
+	   dbg_obj_print ('start at p ', p);
+	 goto next;
+       }
+     if (-1 = ctr)
+       {
+       s1 := s; p1 := p;
+       n := n + step;
+       ctr := 0;
+      cs_done (scs); cs_done (pcs);
+       scs := cs_new (0); pcs := cs_new (0); 
+       }
+     cs_compress (scs, s); cs_compress (pcs, p);
+     if (ctr = step)
+       {
+         insert into rcol_sp (s, p, sc, pc)
+	   values (s1, p1, cs_string_ck (scs, n, 's'), cs_string_ck (pcs, n, 'p'));
+       ctr := -1;
+       }
+     else 
+     ctr := ctr + 1;
+   next: ;
+   }
+}
+
+
+create procedure rcol_op (in step int := 2040, in skip int := 0, in first_p iri_id := 0)
+{
+  declare ctr, scs, ocs, pcs, gcs any;
+  declare s1, p1, o1, g1, n any;
+ n := -step;
+  log_enable (2, 1);
+  first_p := iri_id_from_num (first_p);
+ ctr := -1;
+  for select o, p from r2_op table option (index r2_op) where p >= first_p do
+   {
+     if (skip > 0)
+       {
+       skip := skip - 1;
+	 if (0 = skip)
+	   dbg_obj_print ('start at p ', p);
+	 goto next;
+       }
+     if (-1 = ctr)
+       {
+       o1 := o; p1 := p;
+       n := n + step;
+       ctr := 0;
+      cs_done (ocs); cs_done (pcs);
+       ocs := cs_new (0); pcs := cs_new (0); 
+       }
+     cs_compress (ocs, o); cs_compress (pcs, p);
+     if (ctr = step)
+       {
+         insert into rcol_op (o, p, oc, pc)
+	   values (o1, p1, cs_string_ck (ocs, n, 'o'), cs_string_ck (pcs, n, 'p'));
+       ctr := -1;
+       }
+     else 
+     ctr := ctr + 1;
+   next: ;
+   }
+}
+
+
 select cs_stat_pv (cs (0, (select vector_agg (s) from (select top 1000, 1000 s from r2 table option (index r2_pogs)) f), 1));
-select sum (length (pc)), sum (length (oc)), sum (length (sc)), sum (length (gc)) from rcol_pogs;
+select sum (length (pc)),  sum (length (oc)), sum (length (sc)), sum (length (gc)) from rcol_pogs;
+
+select (sum (length (pc)) +  sum (length (oc)) +  sum (length (sc)) +  sum (length (gc))) / (count (*) * 2041) from rcol_pogs;
+
 
 select cs_stat_pv (cs (0, (select vector_agg (o) from (select top 2388800, 1000 o from r2 table option (index r2_pogs)) f), 1));
 
 cs_stat_pv (cs (0, (select deserialize (v) from cs_error), 0));
+
+
+select __tag (o), count (*) as ct, avg (length (serialize (o)) * 1.0) as len from r2 group by __tag (o) order by 2 desc&
+select top 20 id_to_iri (p), len, ct from ( select p, avg (length (serialize (o)) * 1.0) as len, count (*) as ct from r2 group by p) f order by len desc &
+
+select cs_type, sum (cs_bytes) from rcol_pogs, cs_stat where cs = oc group by cs_type order by 2 desc;
+
+select cs_type, count (*), sum (cs_bytes) from rcol_pogs, cs_stat where cs = blob_to_string (oc) group by cs_type order by 3 desc option (order);
+select cs_type, count (*), sum (cs_bytes), sum (cs_values), sum (cs_bytes * 1.0) / (sum (cs_values)  + 1) from rcol_pogs, cs_stat where cs = blob_to_string (oc) group by cs_type order by 3 desc option (order);
+
+select cs_type, sum (cs_bytes), sum (cs_values), sum (cs_bytes * 1.0) / (sum (cs_values)  + 1) from rcol_pogs, cs_stat where cs = blob_to_string (sc) group by cs_type order by 2 desc option (order);
+
+select top 10 p, sum (cs_bytes), sum (cs_values), sum (cs_bytes * 1.0) / (sum (cs_values)  + 1) from rcol_pogs, cs_stat where cs = blob_to_string (sc) and ce_type = 1 group by p order by 2 desc option (order);
+
+
+select top 10 oc from rcol_pogs, cs_stat  where cs_type = 6 and cs = blob_to_string (oc) option (order);
+
+
+select cs_stat_pv (oc) from (select top 10 oc from rcol_pogs, cs_stat where cs = blob_to_string (oc) and cs_type = 3 and cs_values > 10 and cs_bytes/ cs_values > 20 option (order)) f;
+
+
+
+
+
+create procedure rq_pogs (in step int := 2040, in skip int := 0, in first_p iri_id := 0)
+{
+  declare ctr, scs, ocs, pcs, gcs any;
+  declare s1, p1, o1, g1, n any;
+ n := -step;
+  log_enable (2, 1);
+  first_p := iri_id_from_num (first_p);
+ ctr := -1;
+  for select s, p, o, g from rdf_quad table option (index rdf_quad_pogs) where p >= first_p do
+   {
+     if (skip > 0)
+       {
+       skip := skip - 1;
+	 if (0 = skip)
+	   dbg_obj_print ('start at p ', p);
+	 goto next;
+       }
+     if (-1 = ctr)
+       {
+       s1 := s; p1 := p; o1 := o; g1 := g;
+       n := n + step;
+       ctr := 0;
+      cs_done (scs); cs_done (pcs); cs_done (ocs); cs_done (gcs);
+       scs := cs_new (0, 243); pcs := cs_new (0, 243); ocs := cs_new (0); gcs := cs_new (0, 243);
+       }
+     cs_compress (scs, s); cs_compress (pcs, p); cs_compress (ocs, o); cs_compress (gcs, g);
+     if (ctr = step)
+       {
+         insert into rcol_pogs (s, p, o, g, sc, pc, oc, gc)
+	   values (s1, p1, o1, g1, cs_string_ck (scs, n, 's'), cs_string_ck (pcs, n, 'p'), cs_string_ck (ocs, n, 'o'), cs_string_ck (gcs, n, 'g'));
+       ctr := -1;
+       }
+     else 
+     ctr := ctr + 1;
+   next: ;
+   }
+}

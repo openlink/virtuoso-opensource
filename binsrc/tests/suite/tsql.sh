@@ -1,7 +1,7 @@
 #!/bin/sh
 #  tsql.sh
 #
-#  $Id$
+#  $Id: tsql.sh,v 1.55.4.8.4.16 2013/01/02 16:15:27 source Exp $
 #
 #  SQL conformance tests
 #  
@@ -27,19 +27,41 @@
 
 LOGFILE=tsql.output
 export LOGFILE
-. ./test_fn.sh
-
+. $VIRTUOSO_TEST/testlib.sh
 BANNER "STARTED SERIES OF SQL TESTS (tsql.sh)"
 
 SHUTDOWN_SERVER
 rm -f $DBLOGFILE
 rm -f $DBFILE
+cp $VIRTUOSO_TEST/words.esp .
+
 MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
 
 
 START_SERVER $PORT 1000
 RUN $INS $DSN 100000  100
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tcptrb3.sql
+
+
+
+LOG + running sql script tgroupc
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tgroupc.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: tgroupc.sql"
+    exit 1
+fi
+
+
+LOG + running sql script tclrec
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tclrec.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: tcldfg.sql"
+    exit 1
+fi
+
+LOG + running sql script tcptrb3
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tcptrb3.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: cpt rb  -- tcptrb3.sql"
@@ -47,18 +69,20 @@ then
 fi
 
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tcptrb.sql
+LOG + running sql script tcptrb
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tcptrb.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: cpt rb  -- tcptrb.sql"
     exit 1
 fi
-RUN $ISQL $DSN '"EXEC=raw_exit();"' ERRORS=STDOUT
 
+STOP_SERVER
 
 START_SERVER $PORT 1000
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tcptrb2.sql
+LOG + running sql script tcptrb2
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tcptrb2.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: cpt rb -- tcptrb2.sql"
@@ -70,14 +94,16 @@ fi
 
 START_SERVER $PORT 1000
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < twords.sql
+LOG + running sql script twords
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/twords.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: Wordtest -- twords.sql"
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tnwords_create.sql
+LOG + running sql script tnwords_create
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tnwords_create.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: nvarchar Wordtest -- tnwords_create.sql"
@@ -85,7 +111,8 @@ then
 fi
 
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tnwords.sql
+LOG + running sql script tnwords
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tnwords.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: nvarchar Wordtest -- tnwords.sql"
@@ -115,26 +142,31 @@ else
     exit 1
 fi
 RUN date
-RUN_DIFF words.esp words.out worddiff.out
+RUN_DIFF $VIRTUOSO_TEST/words.esp words.out worddiff.out
 RUN date
 
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tbitmap.sql
+LOG + running sql script tbitmap
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tbitmap.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tbitmap.sql"
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tac.sql
+LOG + running sql script tac
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tac.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: autocompact tac.sql "
     exit 1
 fi
 
+
+RUN $ISQL $DSN '"EXEC=drop table T1;"' ERRORS=STDOUT
 RUN $INS $DSN 10000  100
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tinxint.sql
+LOG + running sql script tinxint
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tinxint.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tinxint.sql"
@@ -142,7 +174,8 @@ then
 fi
 
 RUN $INS $DSN 10000  100
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tinxintbm.sql
+LOG + running sql script tinxintbm
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tinxintbm.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tinxintbm.sql"
@@ -150,7 +183,8 @@ then
 fi
 
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < taq.sql
+LOG + running sql script taq
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/taq.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: taq.sql"
@@ -159,7 +193,8 @@ fi
 
 
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tcast.sql
+LOG + running sql script tcast
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tcast.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tcast.sql"
@@ -169,14 +204,16 @@ fi
 
 
 RUN $INS $DSN 20 100
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tjoin.sql
+LOG + running sql script tjoin
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tjoin.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tjoin.sql"
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tjoin2.sql
+LOG + running sql script tjoin2
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tjoin2.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tjoin2.sql"
@@ -184,7 +221,8 @@ then
 fi
 
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tiri.sql
+LOG + running sql script tiri
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tiri.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tiri.sql"
@@ -193,14 +231,17 @@ fi
 
 
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tany.sql
+LOG + running sql script tany
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tany.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tany.sql"
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tany2.sql
+
+LOG + running sql script tany2
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tany2.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tany2.sql"
@@ -208,15 +249,20 @@ then
 fi
 
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < ttrigt.sql
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < ttrigtrig.sql
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < ttrig1.sql
+LOG + running sql script ttrigt
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/ttrigt.sql
+LOG + running sql script ttrigtrig
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/ttrigtrig.sql
+LOG + running sql script ttrig1
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/ttrig1.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: ttrig1.sql"
     exit 1
 fi
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < ttrig2.sql
+
+LOG + running sql script ttrig2
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/ttrig2.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: ttrig2.sql"
@@ -226,21 +272,26 @@ fi
 
 
 RUN date
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tgroup.sql
+
+LOG + running sql script tgroup
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tgroup.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tgroup.sql"
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tview.sql
+
+LOG + running sql script tview
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tview.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tview.sql"
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tpview.sql
+#LOG + running sql script tpview
+#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tpview.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tpview.sql"
@@ -248,42 +299,50 @@ then
 fi
 
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tdatefun.sql
+LOG + running sql script tdatefun
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tdatefun.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tdatefun.sql"
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tdate.sql
+LOG + running sql script tdate
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tdate.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tdate.sql"
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tpkopt.sql
+# XXX
+LOG + running sql script tpkopt
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tpkopt.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tpkopt.sql"
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tinx.sql
+LOG + running sql script tinx
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tinx.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tinx.sql"
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < ttrans.sql
+# XXX
+LOG + running sql script ttrans
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/ttrans.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: ttrans.sql"
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tclins.sql
+LOG + running sql script tclins
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tclins.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tclins.sql"
@@ -295,7 +354,8 @@ RUN $ISQL $DSN '"EXEC=drop table T1;"' ERRORS=STDOUT
 RUN $INS $DSN 100 20
 
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tcljoin.sql
+LOG + running sql script tcljoin
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tcljoin.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tcljoin.sql"
@@ -303,14 +363,17 @@ then
 fi
 
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tcldt.sql
+
+LOG + running sql script tcldt
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tcldt.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tcldt.sql"
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tcldfg.sql
+LOG + running sql script tcldfg
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tcldfg.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tcldfg.sql"
@@ -318,14 +381,17 @@ then
 fi
 
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tcllock.sql
+LOG + running sql script tcllock
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tcllock.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tcllock.sql"
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tanytime.sql
+
+LOG + running sql script tanytime
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tanytime.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tanytime.sql"
@@ -333,14 +399,16 @@ then
 fi
 
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tclparts.sql
+LOG + running sql script tclparts
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tclparts.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tclparts.sql"
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tclcast.sql
+LOG + running sql script tclcast
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tclcast.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tclcast.sql"
@@ -348,7 +416,7 @@ then
 fi
 
 
-RUN $ISQL $DS1 '"EXEC=drop table T1;"' ERRORS=STDOUT
+RUN $ISQL $DSN '"EXEC=drop table T1;"' ERRORS=STDOUT
 RUN $INS $DSN 200000 100
 
 RUN_BG_CHECK()
@@ -367,11 +435,11 @@ RUN_BG_CHECK()
     ECHO "DONE $_script"
 }
 
-#RUN_BG_CHECK selt1.sql 12
-#RUN_BG_CHECK selt2.sql 1
-#RUN_BG_CHECK selt3.sql 12
-#RUN_BG_CHECK selt4.sql 15
-#RUN_BG_CHECK selt5.sql 21
+#RUN_BG_CHECK $VIRTUOSO_TEST/selt1.sql 12
+#RUN_BG_CHECK $VIRTUOSO_TEST/selt2.sql 1
+#RUN_BG_CHECK $VIRTUOSO_TEST/selt3.sql 12
+#RUN_BG_CHECK $VIRTUOSO_TEST/selt4.sql 15
+#RUN_BG_CHECK $VIRTUOSO_TEST/selt5.sql 21
 
 SHUTDOWN_SERVER
 

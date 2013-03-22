@@ -1,7 +1,7 @@
 --
 --  tschema1.sql
 --
---  $Id$
+--  $Id: tunder1.sql,v 1.5.10.1 2013/01/02 16:15:31 source Exp $
 --
 --  Test DDL functionality #1
 --  

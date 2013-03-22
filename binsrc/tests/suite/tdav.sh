@@ -1,29 +1,29 @@
 #!/bin/sh
-#
-#  $Id$
+#  
+#  $Id: tdav.sh,v 1.12.6.3.4.3 2013/01/02 16:15:01 source Exp $
 #
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
-#
+#  
 #  Copyright (C) 1998-2013 OpenLink Software
-#
+#  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
 #  Free Software Foundation; only version 2 of the License, dated June 1991.
-#
+#  
 #  This program is distributed in the hope that it will be useful, but
 #  WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 #  General Public License for more details.
-#
+#  
 #  You should have received a copy of the GNU General Public License along
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-#
+#  
 
 LOGFILE=./tdav.output
 export LOGFILE
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 
 DS1=$PORT
 
@@ -85,14 +85,14 @@ START_SERVER $DS1 1000
 CHECK_HTTP_PORT $HTTPPORT
 
 
-RUN $ISQL $DS1 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u "HOST=$HOST:$HTTPPORT" < tdav.sql 
+RUN $ISQL $DS1 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF -u "HOST=$HOST:$HTTPPORT" < $VIRTUOSO_TEST/tdav.sql 
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: webDAV methods tests tdav.sql"
     exit 1
 fi
 # concurrency tests 
-RUN $ISQL $DS1 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF < tdav_conc.sql  
+RUN $ISQL $DS1 ERRORS=STDOUT VERBOSE=OFF BANNER=OFF PROMPT=OFF < $VIRTUOSO_TEST/tdav_conc.sql  
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: webDAV concurency tests tdav_conc.sql"
@@ -122,7 +122,7 @@ CHECKPOINT_SERVER
 #CHECKPOINT_SERVER
 
 
-RUN $ISQL $DS1 ERRORS=STDOUT  VERBOSE=OFF BANNER=OFF PROMPT=OFF -u "HOST=$HOST:$HTTPPORT" < tdav1.sql 
+RUN $ISQL $DS1 ERRORS=STDOUT  VERBOSE=OFF BANNER=OFF PROMPT=OFF -u "HOST=$HOST:$HTTPPORT" < $VIRTUOSO_TEST/tdav1.sql 
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: webDAV repository status tdav1.sql"
@@ -137,7 +137,7 @@ LOG "SPOTLIGHT TEST"
 if [ "x`uname -s`" = "xDarwin" ]
 then
   gzip -c -d spotlight_test.tar.gz | tar xf -
-  RUN $ISQL $DS1 ERRORS=STDOUT  VERBOSE=OFF BANNER=OFF PROMPT=OFF -u "HOST=$HOST:$HTTPPORT" < tspotlight.sql 
+  RUN $ISQL $DS1 ERRORS=STDOUT  VERBOSE=OFF BANNER=OFF PROMPT=OFF -u "HOST=$HOST:$HTTPPORT" < $VIRTUOSO_TEST/tspotlight.sql 
   if test $STATUS -ne 0
   then
       LOG "***ABORTED: webDAV repository status tspotlight.sql"

@@ -1,7 +1,7 @@
 --
 --  tdatefun.sql
 --
---  $Id$
+--  $Id: tdatefun.sql,v 1.9.6.1.4.1 2013/01/02 16:15:01 source Exp $
 --
 --  Test date and timestamp functions
 --  
@@ -1012,8 +1012,8 @@ select LEFT('$U{DATESTRING}',4), $U{YEAR},
                    'Thursday','Friday','Saturday'),$U{DAYOFWEEK}),
         '$U{DAYNAME}',
 
-       position ('$U{DAYNAME}', vector ('Sunday','Monday','Tuesday','Wednesday',
-                                  'Thursday','Friday','Saturday')),
+       one_of_these('$U{DAYNAME}','Sunday','Monday','Tuesday','Wednesday',
+                                  'Thursday','Friday','Saturday'),
         $U{DAYOFWEEK},
 
        aref(vector('No-Zero-Month!','January','February','March','April',

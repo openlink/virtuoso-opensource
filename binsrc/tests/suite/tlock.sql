@@ -1,5 +1,5 @@
 --  
---  $Id$
+--  $Id: tlock.sql,v 1.6.10.1 2013/01/02 16:15:12 source Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -46,7 +46,7 @@ wait_for_children;
 set DEADLOCK_RETRIES = 0;
 select count (*), count (distinct CTR)from LOCK_TT;
 
-#ECHO BOTH $IF $EQU $LAST[1] 90000 "PASSED" "***FAILED";
-#$ECHO BOTH ": Inserted " $LAST[1] " rows\n";
-#ECHO BOTH $IF $EQU $LAST[2] 50000 "PASSED" "***FAILED";
-#ECHO BOTH ": Inserted " $LAST[2] " distinct CTR values\n";
+#echo both $if $equ $last[1] 90000 "PASSED" "***FAILED";
+#$echo both ": Inserted " $last[1] " rows\n";
+#echo both $if $equ $last[2] 50000 "PASSED" "***FAILED";
+#echo both ": Inserted " $last[2] " distinct CTR values\n";

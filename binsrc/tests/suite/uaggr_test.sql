@@ -1,5 +1,5 @@
 --  
---  $Id$
+--  $Id: uaggr_test.sql,v 1.3.10.2 2013/01/02 16:15:37 source Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -106,7 +106,8 @@ insert into var_test (val) values (6);
 
 select VAR_POP (val) as VAR, STDDEV_POP (val) as STDDEV_POP, STDDEV_SAMP (val) as STDDEV_SAMP, COVAR_SAMP (i, i) as COVAR_SAMPxx, COVAR_SAMP (i, val) as COVAR_SAMPxy, COVAR_SAMP( val, i) as COVAR_SAMPyx, COVAR_POP (val, i) as COVAR_POPxy, COVAR_SAMP (val,val) as COVAR_SAMPyy from var_test;
 
-select val, VAR_SAMP (i), VAR_POP(i), STDDEV_POP (i), COVAR_SAMP (i,i) from var_test group by val;
+--XXX
+--select val, VAR_SAMP (i), VAR_POP(i), STDDEV_POP (i), COVAR_SAMP (i,i) from var_test group by val;
 
 
 select BB (COVAR_SAMP (i, val)), BB ((SUM( (cast (i as numeric)) * val) - SUM(i) * SUM(val) / COUNT(i)) / (COUNT (i)-1))  from var_test;
@@ -167,3 +168,4 @@ ECHO BOTH ": REGR_SYY = REGR_COUNT () * VAR_POP (x) = " $LAST[1] "\n";
 select BB (REGR_SXY (i, val)), BB(REGR_COUNT(i,val) * COVAR_POP (i,val)) from var_test where val is not null;
 ECHO BOTH $IF $EQU $LAST[1] $LAST[2] "PASSED" "***FAILED";
 ECHO BOTH ": REGR_SXY = REGR_COUNT () * COVAR_POP (x,y) = " $LAST[1] "\n";
+

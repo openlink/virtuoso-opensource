@@ -1,7 +1,7 @@
 --
 --  tnwords_create.sql
 --
---  $Id$
+--  $Id: tnwords_create.sql,v 1.3.10.1 2013/01/02 16:15:15 source Exp $
 --
 --  Creates the tables for Word tests
 --  

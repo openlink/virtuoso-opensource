@@ -1,7 +1,7 @@
 --
 --  tnumr.sql
 --
---  $Id$
+--  $Id: tnumr.sql,v 1.6.10.1 2013/01/02 16:15:14 source Exp $
 --
 --  Number tests
 
@@ -26,5 +26,16 @@
 --  
 --  
 
+--  (C)Copyright 2005 OpenLink Software.
+--  All Rights Reserved.
+--
+--  The copyright above and this notice must be preserved in all
+--  copies of this source code.  The copyright above does not
+--  evidence any actual or intended publication of this source code.
+--
+--  This is unpublished proprietary trade secret of OpenLink Software.
+--  This source code may not be copied, disclosed, distributed, demonstrated
+--  or licensed except as authorized by OpenLink Software.
+--
 echo $U{PORT} "\n";
 attach table n_inx as r1..n_inx from '$U{PORT}';

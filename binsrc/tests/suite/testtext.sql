@@ -1,5 +1,5 @@
 --  
---  $Id$
+--  $Id: testtext.sql,v 1.14.6.2.4.1 2013/01/02 16:15:07 source Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.

@@ -1,5 +1,5 @@
 --  
---  $Id$
+--  $Id: text.sql,v 1.4.10.1 2013/01/02 16:15:08 source Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
@@ -413,3 +413,7 @@ create procedure index_batch_test (in start integer, in id2 integer, in flag int
   vt_batch_process (vtb);
   return;
 }
+
+
+
+
