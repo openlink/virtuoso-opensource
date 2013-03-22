@@ -29,7 +29,7 @@ AC_REVISION($Id$)
 ##									##
 ##########################################################################
 
-AC_INIT([Virtuoso Open Source Edition],
+AC_INIT([Virtuoso Open Source Edition (Row Store)],
 	[6.1.7-rc1],
 	[vos.admin@openlinksw.com],
 	[virtuoso-opensource])
