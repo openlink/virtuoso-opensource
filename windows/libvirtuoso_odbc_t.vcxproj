@@ -72,7 +72,7 @@
     </ClCompile>
     <Link>
       <AdditionalOptions>/MACHINE:AMD64 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>threadw.lib;wi.lib;dksrv.lib;util.lib;xml.lib;zlib.lib;ws2_32.lib;libeay32.lib;ssleay32.lib;tidy.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>threadw.lib;wi.lib;dksrv.lib;util.lib;xml.lib;zlib.lib;ws2_32.lib;libeay32.lib;ssleay32.lib;tidy.lib;psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)libvirtuoso-t.dll</OutputFile>
       <AdditionalLibraryDirectories>$(ShortPlatform)/$(Configuration)/;../SDK/$(ShortPlatform)/sslsdk/out32dll;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>LIBCMT;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>

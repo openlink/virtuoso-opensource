@@ -37,8 +37,8 @@
     <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros">
-      <ShortPlatform Condition="'$(Platform)' == 'Win32'">x86</ShortPlatform>
-      <ShortPlatform Condition="'$(Platform)' == 'x64'">x64</ShortPlatform>
+    <ShortPlatform Condition="'$(Platform)' == 'Win32'">x86</ShortPlatform>
+    <ShortPlatform Condition="'$(Platform)' == 'x64'">x64</ShortPlatform>
   </PropertyGroup>
   <PropertyGroup>
     <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
@@ -121,6 +121,7 @@
     <ClCompile Include="..\libsrc\Dk\Dkhash.c" />
     <ClCompile Include="..\libsrc\Dk\Dkhashext.c" />
     <ClCompile Include="..\libsrc\Dk\Dkmarshal.c" />
+    <ClCompile Include="..\libsrc\Dk\Dkmem.c" />
     <ClCompile Include="..\libsrc\Dk\Dkpool.c" />
     <ClCompile Include="..\libsrc\Dk\Dkresource.c" />
     <ClCompile Include="..\libsrc\Dk\Dkrusage.c" />

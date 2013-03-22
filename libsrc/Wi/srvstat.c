@@ -51,9 +51,9 @@
 
 #ifndef WIN32
 # include <pwd.h>
+#include <unistd.h>
 #endif
 
-#include <unistd.h>
 #ifdef __APPLE__
 #include <sys/types.h>
 #include <sys/sysctl.h>

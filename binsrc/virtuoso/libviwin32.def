@@ -210,3 +210,4 @@ EXPORTS
 	strses_enable_paging		@689
 	http_ses_size			@690
 	log_proc_overwrite		@691
+	rdtsc				@692
