@@ -365,14 +365,15 @@ create procedure TDAV_RDF_QUAD_CHECK_COL11(in col_full_path varchar, in propuri 
 
 --- tests!
 --set echo on;
-TDAV_RDF_QUAD_CHECK3 ('George Kodinov.vcf', 'http://www.w3.org/2001/vcard-rdf/3.0#Address-Country', 'Bulgaria');
-TDAV_RDF_QUAD_CHECK44 ('George Kodinov.vcf', 'http://www.w3.org/2001/vcard-rdf/3.0#Address-Country', 'Bulgaria');
-TDAV_RDF_QUAD_CHECK5 ('George Kodinov.vcf.mod', 'http://www.w3.org/2001/vcard-rdf/3.0#Address-Country', 'Bulgaria');
-TDAV_RDF_QUAD_CHECK6 ('George Kodinov.vcf.mod', 'http://www.w3.org/2001/vcard-rdf/3.0#Address-Country', 'Bulgaria');
-TDAV_RDF_QUAD_CHECK7 ('George Kodinov.vcf.mod');
-TDAV_RDF_QUAD_CHECK8 ('George Kodinov.vcf.mod');	
-TDAV_RDF_QUAD_CHECK9 ('George Kodinov.vcf.mod');
-TDAV_RDF_QUAD_CHECK10 ('George Kodinov.vcf.mod');
+-- TBD:
+--TDAV_RDF_QUAD_CHECK3 ('George Kodinov.vcf', 'http://www.w3.org/2001/vcard-rdf/3.0#Address-Country', 'Bulgaria');
+--TDAV_RDF_QUAD_CHECK44 ('George Kodinov.vcf', 'http://www.w3.org/2001/vcard-rdf/3.0#Address-Country', 'Bulgaria');
+--TDAV_RDF_QUAD_CHECK5 ('George Kodinov.vcf.mod', 'http://www.w3.org/2001/vcard-rdf/3.0#Address-Country', 'Bulgaria');
+--TDAV_RDF_QUAD_CHECK6 ('George Kodinov.vcf.mod', 'http://www.w3.org/2001/vcard-rdf/3.0#Address-Country', 'Bulgaria');
+--TDAV_RDF_QUAD_CHECK7 ('George Kodinov.vcf.mod');
+--TDAV_RDF_QUAD_CHECK8 ('George Kodinov.vcf.mod');	
+--TDAV_RDF_QUAD_CHECK9 ('George Kodinov.vcf.mod');
+--TDAV_RDF_QUAD_CHECK10 ('George Kodinov.vcf.mod');
 TDAV_RDF_QUAD_CHECK11 ('Dimitar Dimitrov.vcf', 'http://www.w3.org/2001/vcard-rdf/3.0#Org-Orgname', 'OpenLink Bulgaria');
 TDAV_RDF_QUAD_CHECK_COL44 ('/DAV/tdav_meta_home/zip_samples/test', 'http://www.openlinksw.com/schemas/DAV#ownerUser', DB.DBA.RDF_MAKE_IID_OF_QNAME('mailto:tdav_meta@localhost'));
 TDAV_RDF_QUAD_CHECK_COL6('/DAV/tdav_meta_home/zip_samples/test.mod', 'http://www.openlinksw.com/schemas/DAV#ownerUser', DB.DBA.RDF_MAKE_IID_OF_QNAME('mailto:tdav_meta@localhost'));

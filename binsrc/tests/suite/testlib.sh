@@ -430,8 +430,7 @@ KILL_TEST_INSTANCES()
     #
     #  Killing virtuoso instances left, if any.
     #
-    #kill `find . -type f -name "virtuoso.lck" -print0 | xargs -0 cat | cut -d "=" -f 2` 2> /dev/null
-    for f in `find . -type f -name virtuoso.lck`; do . $f ; kill $VIRT_PID ; done
+    kill `find . -type f -name "virtuoso.lck" -print0 | xargs -0 cat | cut -d "=" -f 2` 2> /dev/null
 }
 
 
@@ -471,9 +470,9 @@ GENERATE_RELEASE_IDENT()
 CHECK_LOG()
 {
 #   I've modified these grep patterns to ignore ':' which may be forgoten easily.
-    passed=`find . -type f -name "*.output" -print | xargs egrep "^PASSED" | wc -l`
-    failed=`find . -type f -name "*.output" -print | xargs egrep  "^\*\*\* ?FAILED" | wc -l`
-    aborted=`find . -type f -name "*.output" -print | xargs egrep  "^\*\*\* ?ABORTED" | wc -l`
+    passed=`find . -type f -name "*.output" -print0 | xargs -0 grep -E "^PASSED" | wc -l`
+    failed=`find . -type f -name "*.output" -print0 | xargs -0 grep -E "^\*\*\* ?FAILED" | wc -l`
+    aborted=`find . -type f -name "*.output" -print0 | xargs -0 grep -E "^\*\*\* ?ABORTED" | wc -l`
 
     ECHO ""
     LINE
@@ -490,9 +489,9 @@ CHECK_LOG()
        ECHO "*** Not all tests completed successfully"
        ECHO "*** Check the file $LOGFILE for more information"
        echo "Failed tests:" >> $LOGFILE
-       find . -type f -name "*.output" -print | xargs  egrep -l "^\*\*\* ?FAILED" >> $LOGFILE
+       find . -type f -name "*.output" -print0 | xargs -0 grep -El "^\*\*\* ?FAILED" >> $LOGFILE
        echo "Aborted tests:" >> $LOGFILE
-       find . -type f -name "*.output" -print | xargs  egrep -l "^\*\*\* ?ABORTED" >> $LOGFILE
+       find . -type f -name "*.output" -print0 | xargs -0 grep -El "^\*\*\* ?ABORTED" >> $LOGFILE
     fi
 }
 

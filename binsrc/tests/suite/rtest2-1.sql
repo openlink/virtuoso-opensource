@@ -101,6 +101,7 @@ ECHO BOTH $IF $EQU $ROWCNT 30 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": select * from remote join w/ local proc " $ROWCNT " rows\n";
 
+
 -------------- Distributed statements
 
 update R1..T1 set FI2 = FI2 + 1 where n_identity (ROW_NO) < 200;

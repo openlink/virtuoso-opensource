@@ -5,7 +5,7 @@ ttlp (file_to_string ('tst.nq'), '', 'no-g', 512, transactional => 1, log_enable
 
 sparql select count (*) from <g1> where {?s ?p ?o};
 
-echo both $if $equ last[1] 8 "PASSED" "***FAILED";
+echo both $if $equ $last[1] 8 "PASSED" "***FAILED";
 echo both ": 8 triples in g1\n";
 
 

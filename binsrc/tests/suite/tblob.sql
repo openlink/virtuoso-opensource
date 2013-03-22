@@ -21,7 +21,7 @@
 --
 --
 set deadlock_retries = 10;
-set echo on;
+--set echo on;
 
 select sys_stat ('db_default_columnstore');
 set U{COLUMNSTORE} $LAST[1];

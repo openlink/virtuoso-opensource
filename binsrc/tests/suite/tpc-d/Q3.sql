@@ -54,3 +54,9 @@ ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ":  Result from Q3 \n";
 
+#if $NEQ $LAST[1] 1
+    ECHOLN BOTH " Q3 should be:";
+    select * from MS_OUT_Q3;
+    ECHOLN BOTH " Q3 IS:";
+    select * from OUT_Q3;
+#endif

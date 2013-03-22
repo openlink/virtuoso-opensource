@@ -48,7 +48,7 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": Q13\n";
 
 select cmp ('MS_OUT_Q13', 'OUT_Q13');
-ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ":  Result from Q13 \n";
+--ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ":  Result from Q13 \n";
 

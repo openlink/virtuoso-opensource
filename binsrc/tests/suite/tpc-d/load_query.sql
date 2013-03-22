@@ -21,6 +21,10 @@
 --  
 --
 ECHO BOTH "STARTED: TPC-D queries\n";
+__dbf_set ('qp_even_if_lock', 1);
+__dbf_set ('enable_qp', 4);
+__dbf_set ('qp_thread_min_usec', 0);
+
 load Q1.sql;
 load Q2.sql;
 load Q3.sql;

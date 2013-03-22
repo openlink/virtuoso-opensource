@@ -132,7 +132,8 @@ twcopy \
 txslt \
 trecov \
 tlubm \
-ttpch"
+ttpch \
+rtest"
 
 QUICKTEST=1
 TPCDMODE=local

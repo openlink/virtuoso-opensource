@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!--
  -  
- -  $Id$
+ -  $Id: bids-table.xsl,v 1.3.10.1 2013/01/02 16:16:02 source Exp $
  -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.

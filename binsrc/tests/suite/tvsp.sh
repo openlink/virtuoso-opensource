@@ -58,7 +58,7 @@ then
 fi
 
 # XXX
-if [ 0 -eq 1 ] 
+if [ 0 == 1 ] 
 then
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tplscroll.sql
 

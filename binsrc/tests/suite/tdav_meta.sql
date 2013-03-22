@@ -136,7 +136,7 @@ ECHO BOTH "Starting URIQA tests. In case of errors this may result a wait for ti
 
 select isnull (strstr (TDAV_URIQA ('$U{HOST}', '/DAV/tdav_meta_home/zip_samples/', 'MGET',''), 'Kingsley Idehen.foaf'));
 ECHO BOTH $IF $EQU $LAST[1] 0  "PASSED" "***FAILED";
-ECHO BOTH $LAST[1] ": MGET on collection\n";
+ECHO BOTH ": MGET on collection\n";
 
 select isnull (strstr (TDAV_URIQA ('$U{HOST}', '/DAV/tdav_meta_home/zip_samples/Kingsley%20Idehen.foaf', 'MGET',''), 'RDF'));
 ECHO BOTH $IF $EQU $LAST[1] 0  "PASSED" "***FAILED";
