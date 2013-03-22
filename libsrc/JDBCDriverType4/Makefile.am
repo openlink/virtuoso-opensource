@@ -161,6 +161,8 @@ EXTRA_DIST = \
 	test3.sh \
 	test4.bat \
 	test4.sh \
+	test4_1.bat \
+	test4_1.sh \
 	test.bat \
 	test.sh \
 	virtjdbc2.jar \

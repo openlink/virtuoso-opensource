@@ -54,6 +54,7 @@ clean-local:
 EXTRA_DIST = \
 	$(srcdir)/*.html \
 	$(srcdir)/*.js \
+	$(srcdir)/*.owl \
 	$(srcdir)/*.sql \
 	$(srcdir)/*.txt \
 	$(srcdir)/*.vsp \

@@ -110,43 +110,31 @@ clean-local:
 EXTRA_DIST= \
 	$(check_SCRIPTS) \
 	*.dtd \
+	*.eml \
+	*.nq \
+	*.pem \
 	*.sql \
 	*.txt \
 	*.vsp \
 	*.xml \
 	*.xsl \
-	cert.pem \
-	docsrc/*.xml \
-	docsrc/*.xsl \
-	eml1.eml \
-	eml2.eml \
-	etalon_ouput_gz \
+	cluster-test.ini \
 	grddl-tests.tar.gz \
 	pdd_txt.gz \
-	pk.pem \
-	r4/r4.tmp \
-	r4/*.sql \
-	r4/*.xsd \
-	rtest.sh \
 	spanish.coll \
 	spotlight_test.tar.gz \
 	tdav_meta_050512.zip \
 	tdav_meta_050528.zip \
-	test_news_server_file \
+	tpcd.sh \
 	treplh-dsn-odbc.cfg \
 	treplh-test-odbc.cfg \
 	tvspxex.awk \
 	txslt.cmp \
-	vad_test/vsp/vad_test1/*.sql \
-	vad_test/vsp/vad_test1/*.vsp \
-	vad_test/vsp/vad_test2/*.sql \
-	vad_test/vsp/vad_test2/*.vsp \
 	virtuoso-1111.ini \
+	virtuoso-cl.ini \
 	virtuoso-striping.ini \
 	wi-striping-1-large.cfg \
-	wi-striping.cfg \
 	wi-striping-large.cfg \
+	wi-striping.cfg \
 	witest.cfg \
-	words.esp \
-	xsl_samples/*.xml \
-	xsl_samples/*.xsl
+	words.esp

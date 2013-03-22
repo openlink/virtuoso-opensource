@@ -1070,6 +1070,8 @@ EXTRA_DIST = \
 	cesearch.c \
 	ceveci.c \
 	cevecins.c \
+	coltry.c \
+	cl_stubs.c \
 	crypt.c \
 	dvcmp.c \
 	iodbcinst.c \
