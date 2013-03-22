@@ -27,7 +27,7 @@
 #  
 #  
 
-. ./go_functions.sh
+. $VIRTUOSO_TEST/go_functions.sh
 
 # ----------------------------------------------------------------------
 #  Fix issues with LOCALE
