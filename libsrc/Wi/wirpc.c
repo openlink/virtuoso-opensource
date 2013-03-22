@@ -82,7 +82,7 @@ SERVICE_9 (s_get_data_ac , _sgbt2, "GETDA", DA_FUTURE_REQUEST,
 	DV_LONG_INT,		1,/* frag_no */
 	DV_LONG_INT,		1,/* page dir 1st page */
 	DV_LONG_STRING,		1,/* the array of page nos */
-	DV_LONG_INT,		1,/* is_wide or is_bin ? */
+	DV_LONG_INT,		1,/* is_wide? */
 	DV_LONG_INT,            1);/* blob timestamp */
 
 

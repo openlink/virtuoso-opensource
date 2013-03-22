@@ -40,12 +40,13 @@ pldbg_connect (char * addr, char * usr, char * pwd1)
 {
   char pwd[17];
   caddr_t result;
-  dk_session_t *ses;
+  dk_session_t *ses = NULL;
   if (!usr || !pwd1)
     return NULL;
   ses = PrpcConnect (addr, SESCLASS_TCPIP);
   if (!DKSESSTAT_ISSET (ses, SST_OK))
     {
+      if (ses)
       PrpcSessionFree (ses);
       return NULL;
     }

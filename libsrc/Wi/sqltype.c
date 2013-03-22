@@ -3152,7 +3152,7 @@ sqlo_udt_check_observer (sqlo_t * so, sql_comp_t * sc, ST * tree)
 ST *
 sqlo_udt_is_mutator (sqlo_t * so, sql_comp_t * sc, ST * lvalue)
 { /* from ASG_STMT */
-  if (ST_COLUMN (lvalue, COL_DOTTED))
+  if (ST_P (lvalue, COL_DOTTED))
     {
       if (lvalue->_.col_ref.prefix)
 	{
@@ -3182,7 +3182,7 @@ sqlo_udt_is_mutator (sqlo_t * so, sql_comp_t * sc, ST * lvalue)
 ST *
 sqlo_udt_make_mutator (sqlo_t * so, sql_comp_t * sc, ST * lvalue, ST *rvalue, ST *var_to_be)
 {
-  if (ST_COLUMN (lvalue, COL_DOTTED) && var_to_be)
+  if (ST_P (lvalue, COL_DOTTED) && var_to_be)
     {
       ST *new_tree =
 	  t_listst (3, CALL_STMT, lvalue->_.col_ref.name, t_list (2, var_to_be, rvalue));
@@ -3573,7 +3573,7 @@ udt_can_write_to (sql_type_t *sqt, caddr_t data, caddr_t *err_ret)
       *err_ret = srv_make_new_error ("22023", "UD055", "Can't write a wide blob handle into a long any column,.  Cast to string or string output first.");
       return;
     }
-  if ((sqt->sqt_dtp == DV_OBJECT || sqt->sqt_dtp == DV_BLOB) && sqt->sqt_class &&
+  if ((sqt->sqt_col_dtp == DV_OBJECT || sqt->sqt_col_dtp == DV_BLOB) && sqt->sqt_class &&
       DV_TYPE_OF (data) == DV_OBJECT &&
       UDT_I_CLASS (data) &&
       udt_instance_of (UDT_I_CLASS (data), sqt->sqt_class))

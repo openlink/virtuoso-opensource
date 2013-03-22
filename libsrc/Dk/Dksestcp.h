@@ -64,9 +64,7 @@ extern int last_errno;
 # define init_tcpip()
 /* if (!pctcp_started) {pctcp_started=1;init_pctcp();};
   Init called from level 2.  */
-# ifndef EMSGSIZE
 # define EMSGSIZE WSAEMSGSIZE
-# endif
 #else /* PCTCP */
 # define init_tcpip()
 #endif

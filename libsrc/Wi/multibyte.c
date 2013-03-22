@@ -279,7 +279,7 @@ wide_char_length_of_utf8_string (const unsigned char *str, size_t utf8_length)
 {
   virt_mbstate_t state;
   memset (&state, 0, sizeof (virt_mbstate_t));
-  return virt_mbsnrtowcs (NULL, &str, utf8_length, 0, &state);
+  return virt_mbsnrtowcs (NULL, (unsigned char **)&str, utf8_length, 0, &state);
 }
 
 
@@ -374,7 +374,6 @@ virt_wcsrstr (const wchar_t *wcs, const wchar_t *wc)
 {
   size_t len;
   const wchar_t *cp;
-  const wchar_t *ep;
 
   len = virt_wcslen (wc);
   for (cp = wcs + virt_wcslen (wcs) - len; cp >= wcs; --cp)

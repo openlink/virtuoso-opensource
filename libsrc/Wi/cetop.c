@@ -154,6 +154,9 @@ itc_dv_param (it_cursor_t * itc, int nth_key, db_buf_t ctmp)
 	      ctmp[0] = DV_DATETIME;
 	      memcpy (ctmp + 1, dc->dc_values + set * DT_LENGTH, DT_LENGTH);
 	      return ctmp;
+	    case DV_NUMERIC:
+	      numeric_to_dv (((numeric_t *) dc->dc_values)[set], ctmp, MAX_FIXED_DV_BYTES);
+	      return ctmp;
 	    default:
 	      i = ((int64 *) dc->dc_values)[itc->itc_param_order[itc->itc_set]];
 	      break;
@@ -277,7 +280,7 @@ ce_vec_any_val (db_buf_t ce_first, dtp_t flags, int n_values, int nth, db_buf_t 
 int
 ce_num_cast_cb (col_pos_t * cpo, int row, dtp_t flags, db_buf_t val, int len, int64 offset, int rl)
 {
-  dtp_t tmp[40];
+  dtp_t tmp[COL_MAX_STR_LEN + 20];
   int rc;
   if (CE_INTLIKE (flags))
     {
@@ -382,7 +385,12 @@ itc_num_cast_search (it_cursor_t * itc, db_buf_t ce, int64 delta, int dtp_cmp, i
     {
       itc->itc_ranges[set].r_first = range.r_first + itc->itc_row_of_ce;
       if (COL_NO_ROW == range.r_end)
+	{
+	  /* there was no gt in the scanned part of the ce.  If range extends beyond, contimue search, else leave end unchanged and take next set */
+	  if (itc->itc_ranges[set].r_end <= row_of_ce + ce_rows)
+	    return CE_NEXT_SET;
 	return CE_CONTINUES;
+	}
       itc->itc_ranges[set].r_end = range.r_end + itc->itc_row_of_ce;
       return CE_NEXT_SET;
     }
@@ -418,8 +426,10 @@ itc_bad_len_ins (it_cursor_t * itc, db_buf_t ce, int64 delta, int dtp_cmp, int r
   int set, row;
   int from, to, row_of_ce = itc->itc_row_of_ce, ce_rows;
   col_pos_t cpo;
-  if (ASC_NUMBERS == dtp_cmp)
+  if (1 || ASC_NUMBERS == dtp_cmp)
     return itc_num_cast_search (itc, ce, delta, dtp_cmp, rc);
+  GPF_T1
+      ("not to come here.  All comparisons needing cast or with different length intlike compressed strings go via the general case");
   set = itc->itc_set - itc->itc_col_first_set;
   if (ASC_NUMBERS != dtp_cmp && CE_FIND_LAST == rc)
     {
@@ -791,6 +801,33 @@ ntype:
   return ce_dtp > dtp ? DVC_DTP_GREATER : DVC_DTP_LESS;
 }
 
+
+db_buf_t
+ce_dict_array (db_buf_t ce)
+{
+  dtp_t flags = ce[0];
+  db_buf_t ce_first = CE_IS_SHORT & flags ? ce + 3 : ce + 5;
+  int n_dict = ce_first[0];
+  switch (flags & CE_DTP_MASK)
+    {
+    case CET_INT | CE_IS_IRI:
+    case CET_INT:
+      return ce_first + 1 + n_dict * sizeof (int32);
+    case CET_INT | CE_IS_IRI | CE_IS_64:
+    case CET_INT | CE_IS_64:
+      return ce_first + 1 + n_dict * sizeof (int64);
+    case CET_ANY:
+      {
+	int l;
+	db_buf_t dict_ret;
+	CE_ANY_NTH (ce_first + 1, n_dict, n_dict - 1, dict_ret, l);
+	return dict_ret + l;
+      }
+    default:
+      GPF_T1 ("unsupported dict type");
+    }
+  return 0;
+}
 
 int
 ce_dict_key (db_buf_t ce, db_buf_t dict, int64 value, dtp_t dtp, db_buf_t * dict_ret, int *sz_ret)
@@ -1525,7 +1562,7 @@ not_found:
       goto next_set;
     }
   if (nth < at_or_above)
-    itc->itc_ranges[set].r_end = at_or_above + row_of_ce;
+    itc->itc_ranges[set].r_first = itc->itc_ranges[set].r_end = at_or_above + row_of_ce;
   else if (nth >= below)
     {
       itc->itc_ranges[set].r_first = below + row_of_ce;
@@ -1587,7 +1624,7 @@ found:
 	}
       if (nth < at_or_above)
 	{
-	  itc->itc_ranges[set].r_end = at_or_above + row_of_ce;
+	  itc->itc_ranges[set].r_first = itc->itc_ranges[set].r_end = at_or_above + row_of_ce;
 	  goto next_set;
 	}
       else if (nth >= below)
@@ -1658,17 +1695,6 @@ next_set:
     goto new_val;
   }
 }
-
-
-#if WORDS_BIGENDIAN
-
-#define ce_first_int_low_byte (ce, ce_first) \
-  ce_first[-1]
-#else
-#define ce_first_int_low_byte(ce, ce_first) \
-  ce[ce[0] & CE_IS_SHORT ? 3 : 5]
-#endif
-
 
 int
 ce_int_delta_bin_search (db_buf_t ce_first, int skip, int last, int64 base, int64 value)

@@ -21,7 +21,6 @@
  *
  */
 
-#include "../Dk/Dkhash64.h"
 #include "libutil.h"
 #include "sqlnode.h"
 #include "sqlbif.h"
@@ -35,6 +34,8 @@
 #include "rdf_core.h"
 #include "security.h" /* for sec_proc_check() */
 #include "http.h"
+#include "../Dk/Dkhash64.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -58,6 +59,7 @@ extern "C" {
 #else
 #include "../util/md5.h"
 #endif /* _SSL */
+#include "mhash.h"
 
 int uriqa_dynamic_local = 0;
 
@@ -220,11 +222,28 @@ sqlr_set_cbk_name_and_proc (client_connection_t *cli, const char *cbk_name, cons
   char **full_name_ret, query_t **proc_ret, caddr_t *err_ret )
 {
   const char *param_type_iter;
+  char *full_name;
   proc_ret[0] = NULL;
   err_ret[0] = NULL;
-  full_name_ret[0] = sch_full_proc_name (wi_inst.wi_schema, cbk_name, cli_qual (cli), CLI_OWNER (cli));
-  if (NULL != full_name_ret[0])
-    proc_ret[0] = sch_proc_def (wi_inst.wi_schema, full_name_ret[0]);
+  if ('\0' == cbk_name[0])
+    {
+      if (NULL != full_name_ret)
+        full_name_ret[0] = NULL;
+      proc_ret[0] = NULL;
+      return;
+    }
+  if ('!' == cbk_name[0])
+    {
+      if (NULL != full_name_ret)
+        full_name_ret[0] = cbk_name;
+      proc_ret[0] = NULL;
+      return;
+    }
+  full_name = sch_full_proc_name (wi_inst.wi_schema, cbk_name, cli_qual (cli), CLI_OWNER (cli));
+  if (NULL != full_name_ret)
+    full_name_ret[0] = full_name;
+  if (NULL != full_name)
+    proc_ret[0] = sch_proc_def (wi_inst.wi_schema, full_name);
   if (NULL == proc_ret[0])
     {
       err_ret[0] = srv_make_new_error ("42001", "SR574",
@@ -240,14 +259,14 @@ sqlr_set_cbk_name_and_proc (client_connection_t *cli, const char *cbk_name, cons
   if (NULL != cli->cli_user && !sec_proc_check (proc_ret[0], cli->cli_user->usr_id, cli->cli_user->usr_g_id))
     {
       err_ret[0] = srv_make_new_error ("42000", "SR575",
-        "No permission to execute %.300s as callback of %.100s()", full_name_ret[0], funname );
+        "No permission to execute %.300s as callback of %.100s()", full_name, funname );
       return;
     }
   if (strlen (cbk_param_types) != dk_set_length (proc_ret[0]->qr_parms))
     {
       err_ret[0] = srv_make_new_error ("42000", "SR576",
         "The callback %.300s[] of %.100s() declaration contains %d arguments, not %d as expected",
-        full_name_ret[0], funname, (int)(dk_set_length (proc_ret[0]->qr_parms)), (int)(strlen (cbk_param_types)) );
+        full_name, funname, (int)(dk_set_length (proc_ret[0]->qr_parms)), (int)(strlen (cbk_param_types)) );
       return;
     }
   param_type_iter = cbk_param_types;
@@ -274,7 +293,7 @@ sqlr_set_cbk_name_and_proc (client_connection_t *cli, const char *cbk_name, cons
           err_ret[0] = srv_make_new_error ("42000", "SR577",
             "The argument #%ld (%.100s) of callback %.300s[] of %.100s() %.100s",
             (long) (param_type_iter - cbk_param_types) + 1, ssl->ssl_name,
-            full_name_ret[0], funname, problem );
+            full_name, funname, problem );
 	  return;
 	}
       param_type_iter++;
@@ -1402,11 +1421,194 @@ end_of_test:
 }
 #endif
 
+
+
+
+id_hashed_key_t iristrhash (char *strp);
+int iristrhashcmp (char *x, char *y);
+
+
+void
+nic_set_n_ways (name_id_cache_t * nic, int n_ways)
+{
+  int inx, sz;
+  if (!n_ways)
+    GPF_T1 ("n_ways in nic_set_n_ways must be > 0.");
+  sz = 1 + (nic->nic_size / n_ways);
+  nic->nic_n_ways = n_ways;
+  id_hash_free (nic->nic_name_to_id);
+  nic->nic_name_to_id = NULL;
+  hash_table_free_64 (nic->nic_id_to_name);
+  nic->nic_id_to_name = NULL;
+  nic->nic_in_array = (dk_hash_64_t**)dk_alloc_box (sizeof (caddr_t) * n_ways, DV_BIN);
+  nic->nic_ni_array = (id_hash_t **)dk_alloc_box (sizeof (caddr_t) * n_ways, DV_BIN);
+  nic->nic_ni_mtx = dk_alloc_box (sizeof (dk_mutex_t) * n_ways, DV_BIN);
+  nic->nic_in_mtx = dk_alloc_box (sizeof (dk_mutex_t) * n_ways, DV_BIN);
+  for (inx = 0; inx < n_ways; inx++)
+    {
+      nic->nic_in_array[inx] = hash_table_allocate_64 (sz);
+      nic->nic_ni_array[inx] = id_hash_allocate (sz, sizeof (caddr_t), sizeof (caddr_t), iristrhash, iristrhashcmp);
+      dk_mutex_init (&nic->nic_in_mtx[inx], MUTEX_TYPE_SHORT);
+      mutex_option (&nic->nic_in_mtx[inx], "NICB_IN", NULL, NULL);
+      dk_mutex_init (&nic->nic_ni_mtx[inx], MUTEX_TYPE_SHORT);
+      mutex_option (&nic->nic_in_mtx[inx], "NICB_NI", NULL, NULL);
+    }
+}
+
+
+#define NIC_IN_ID(nic, __n, id) {__n = ((uint32)id) % nic->nic_n_ways; mutex_enter (&nic->nic_in_mtx[__n]);}
+#define NIC_LEAVE_ID(nic, __n) mutex_leave (&nic->nic_in_mtx[__n])
+#define NIC_WAY_OF_HI(nic,hi) ((((uint32)hi) >> 8) % (nic)->nic_n_ways)
+#define NIC_IN_NAME(nic, __n, name, __hi) { __hi = iristrhash (&name); __n = NIC_WAY_OF_HI(nic,hi); mutex_enter (&nic->nic_ni_mtx[__n]);}
+#define NIC_LEAVE_NAME(nic, __n) mutex_leave (&nic->nic_ni_mtx[__n])
+
+boxint
+nic_name_id_n (name_id_cache_t * nic, char * name)
+{
+  boxint * place, res = 0;
+  id_hashed_key_t hi = iristrhash ((char*)&name);
+  int nth_name = NIC_WAY_OF_HI(nic,hi);
+  mutex_enter (&nic->nic_ni_mtx[nth_name]);
+  place = (boxint*) id_hash_get_with_hash_number (nic->nic_ni_array[nth_name], (caddr_t) &name, hi);
+  if (place)
+    res = *place;
+  mutex_leave (&nic->nic_ni_mtx[nth_name]);
+  return res;
+}
+
+caddr_t
+DBG_NAME (nic_id_name_n) (DBG_PARAMS name_id_cache_t * nic, boxint id)
+{
+  caddr_t ret;
+  boxint r;
+  int nth_id;
+  NIC_IN_ID (nic, nth_id, id);
+  gethash_64 (r, id, nic->nic_in_array[nth_id]);
+  ret = r ? DBG_NAME(box_copy) (DBG_ARGS (caddr_t)((ptrlong)r)) : NULL;
+  /* read the value inside the mtx because cache replacement may del it before the copy is made if not in the mtx */
+  NIC_LEAVE_ID (nic, nth_id);
+  return ret;
+}
+
+static void
+nic_remove_some_elements_n (name_id_cache_t * nic, int nth_name, char cachelet_mutex_locked)
+{
+/*  id_hashed_key_t hi = iristrhash (&name);
+  int nth_name = NIC_WAY_OF_HI(nic,hi); */
+  int nth_id, flag;
+  if (!cachelet_mutex_locked)
+    mutex_enter (&nic->nic_ni_mtx[nth_name]);
+
+  while (nic->nic_ni_array[nth_name]->ht_count > nic->nic_size / nic->nic_n_ways)
+    {
+      nic_name_id_cache_element_t el;
+      int32 rnd  = sqlbif_rnd (&tf_rnd_seed);
+      el.nicel_name = NULL;
+      if (id_hash_remove_rnd (nic->nic_ni_array[nth_name], rnd, (caddr_t)&el.nicel_name, (caddr_t)&el.nicel_id))
+        {
+          mutex_leave (&nic->nic_ni_mtx[nth_name]);
+
+          NIC_IN_ID (nic, nth_id, el.nicel_id);
+          remhash_64_f ( el.nicel_id, nic->nic_in_array[nth_id], flag);
+	  if (!flag)
+	    log_error ("missed delete of name id cache %s %Ld", el.nicel_name, el.nicel_id);
+          NIC_LEAVE_ID (nic, nth_id);
+
+          if (/* IvAn/121009 nic->nic_is_boxes && */ flag)
+            dk_free_box (el.nicel_name);
+
+          mutex_enter (&nic->nic_ni_mtx[nth_name]);
+        }
+    }
+
+  if (!cachelet_mutex_locked)
+    mutex_leave (&nic->nic_ni_mtx[nth_name]);
+}
+
+static void
+nic_remove_some_elements (name_id_cache_t * nic, char cache_mutex_locked)
+{
+  if (!cache_mutex_locked)
+    mutex_enter (nic->nic_mtx);
+
+  while (nic->nic_id_to_name->ht_count > nic->nic_size)
+    {
+      nic_name_id_cache_element_t el;
+      int32 rnd  = sqlbif_rnd (&tf_rnd_seed);
+      el.nicel_name = NULL;
+      if (id_hash_remove_rnd (nic->nic_name_to_id, rnd, (caddr_t)&el.nicel_name, (caddr_t)&el.nicel_id))
+        {
+          remhash_64 ( el.nicel_id, nic->nic_id_to_name);
+          dk_free_box (el.nicel_name);
+        }
+    }
+
+  if (!cache_mutex_locked)
+    mutex_leave (nic->nic_mtx);
+}
+
+void
+nic_set_n (name_id_cache_t * nic, caddr_t name, boxint id)
+{
+  caddr_t name_box = NULL;
+  caddr_t * place;
+  id_hashed_key_t hi = iristrhash ((char*)&name);
+  int nth_name = NIC_WAY_OF_HI(nic,hi);
+  int nth_id;
+
+  mutex_enter (&nic->nic_ni_mtx[nth_name]);
+
+  place = (caddr_t*) id_hash_get_with_hash_number (nic->nic_ni_array[nth_name], (caddr_t)&name, hi);
+  if(place) /* the key is found */
+    {
+      boxint old_id = *(boxint*)place;
+      name_box = ((caddr_t*)place) [-1];
+
+      if (old_id == id) /* we already have this name <-> id pair */
+	{
+	  mutex_leave (&nic->nic_ni_mtx[nth_name]);
+	  return;
+	}
+
+      *(boxint*) place = id;
+
+      mutex_leave (&nic->nic_ni_mtx[nth_name]);
+
+      NIC_IN_ID (nic, nth_id, old_id);
+      remhash_64 (old_id, nic->nic_in_array[nth_id]);
+      NIC_LEAVE_ID (nic, nth_id);
+
+      NIC_IN_ID (nic, nth_id, id);
+      sethash_64 (id, nic->nic_in_array[nth_id],  (boxint)((ptrlong)(name_box)));
+      NIC_LEAVE_ID (nic, nth_id);
+    }
+  else
+    {
+      /* free some space in the cache if there is not enough */
+      nic_remove_some_elements_n (nic, nth_name, 1);
+
+      name_box = nic->nic_is_boxes ? box_copy (name) : box_dv_short_string (name);
+
+      id_hash_set_with_hash_number (nic->nic_ni_array[nth_name], (caddr_t)&name_box, (caddr_t)&id, hi);
+
+      mutex_leave (&nic->nic_ni_mtx[nth_name]);
+
+      NIC_IN_ID (nic, nth_id, id);
+      sethash_64 (id, nic->nic_in_array[nth_id], (boxint)((ptrlong)(name_box)));
+      NIC_LEAVE_ID (nic, nth_id);
+    }
+}
+
 void
 nic_set (name_id_cache_t * nic, caddr_t name, boxint id)
 {
   caddr_t name_box = NULL;
   caddr_t * place;
+  if (nic->nic_n_ways)
+    {
+      nic_set_n (nic, name, id);
+      return;
+    }
   mutex_enter (nic->nic_mtx);
   place = (caddr_t*) id_hash_get (nic->nic_name_to_id, (caddr_t)&name);
   if(place)
@@ -1419,18 +1621,8 @@ nic_set (name_id_cache_t * nic, caddr_t name, boxint id)
     }
   else
     {
-      while (nic->nic_id_to_name->ht_count > nic->nic_size)
-	{
-	  caddr_t key = NULL;
-	  boxint id;
-	  int32 rnd  = sqlbif_rnd (&tf_rnd_seed);
-	  if (id_hash_remove_rnd (nic->nic_name_to_id, rnd, (caddr_t)&key, (caddr_t)&id))
-	    {
-	      remhash_64 ( id, nic->nic_id_to_name);
-	      dk_free_box (key);
-	    }
-	}
-      name_box = treehash == nic->nic_name_to_id->ht_hash_func  ? box_copy (name) :  box_dv_short_string (name);
+      nic_remove_some_elements (nic, 1);
+      name_box = nic->nic_is_boxes ? box_copy (name) :  box_dv_short_string (name);
       id_hash_set (nic->nic_name_to_id, (caddr_t)&name_box, (caddr_t)&id);
       sethash_64 (id, nic->nic_id_to_name, (boxint)((ptrlong)(name_box)));
     }
@@ -1442,6 +1634,18 @@ boxint
 nic_name_id (name_id_cache_t * nic, char * name)
 {
   boxint * place, res = 0;
+  if (nic->nic_n_ways)
+    return nic_name_id_n (nic, name);
+  if (nic->nic_is_boxes)
+    {
+      id_hashed_key_t hi = iristrhash ((char*)&name);
+      mutex_enter (nic->nic_mtx);
+      place = (boxint*) id_hash_get_with_hash_number (nic->nic_name_to_id, (caddr_t) &name, hi);
+      if (place)
+	res = *place;
+      mutex_leave (nic->nic_mtx);
+      return res;
+    }
   mutex_enter (nic->nic_mtx);
   place = (boxint*) id_hash_get (nic->nic_name_to_id, (caddr_t) &name);
   if (place)
@@ -1450,6 +1654,25 @@ nic_name_id (name_id_cache_t * nic, char * name)
   return res;
 }
 
+void
+nic_merge_n (name_id_cache_t * to, name_id_cache_t * from)
+{
+  int inx;
+  id_hash_iterator_t hit;
+  caddr_t * pn;
+  boxint * pid;
+  for (inx = 0; inx < from->nic_n_ways; inx++)
+    {
+      id_hash_iterator (&hit, from->nic_ni_array[inx]);
+      while (hit_next (&hit, (caddr_t*)&pn, (caddr_t*)&pid))
+        {
+          nic_set (to, *pn, *pid);
+          dk_free_box (*pn);
+        }
+      id_hash_clear (from->nic_ni_array[inx]);
+      id_hash_clear (from->nic_in_array[inx]);
+    }
+}
 
 void
 nic_merge (name_id_cache_t * to, name_id_cache_t * from)
@@ -1457,6 +1680,13 @@ nic_merge (name_id_cache_t * to, name_id_cache_t * from)
   id_hash_iterator_t hit;
   caddr_t * pn;
   boxint * pid;
+
+  if (from->nic_n_ways)
+    {
+      nic_merge_n ( to, from );
+      return;
+    }
+
   id_hash_iterator (&hit, from->nic_name_to_id);
   while (hit_next (&hit, (caddr_t*)&pn, (caddr_t*)&pid))
     {
@@ -1467,10 +1697,24 @@ nic_merge (name_id_cache_t * to, name_id_cache_t * from)
   id_hash_clear (from->nic_id_to_name);
 }
 
-
-resource_t * iri_nic_rc;
-resource_t * prefix_nic_rc;
-
+void
+nic_clear_n (name_id_cache_t * nic)
+{
+  int inx;
+  for (inx = 0; inx < nic->nic_n_ways; inx++)
+    {
+      id_hash_iterator_t hit;
+      caddr_t * pn;
+      boxint * pid;
+      id_hash_iterator (&hit, nic->nic_ni_array[inx]);
+      while (hit_next (&hit, (caddr_t*)&pn, (caddr_t*)&pid))
+        {
+          dk_free_box (*pn);
+        }
+      id_hash_clear (nic->nic_ni_array[inx]);
+      id_hash_clear (nic->nic_in_array[inx]);
+    }
+}
 
 void
 nic_clear (name_id_cache_t * nic)
@@ -1478,6 +1722,11 @@ nic_clear (name_id_cache_t * nic)
   id_hash_iterator_t hit;
   caddr_t * pn;
   boxint * pid;
+  if (nic->nic_n_ways)
+    {
+      nic_clear_n (nic);
+      return;
+    }
   id_hash_iterator (&hit, nic->nic_name_to_id);
   while (hit_next (&hit, (caddr_t*)&pn, (caddr_t*)&pid))
     {
@@ -1491,12 +1740,33 @@ void
 nic_free (name_id_cache_t * nic)
 {
   nic_clear (nic);
+  if (nic->nic_name_to_id)
   id_hash_free (nic->nic_name_to_id);
+  if (nic->nic_id_to_name)
   id_hash_free (nic->nic_id_to_name);
+
+  if (nic->nic_n_ways)
+    {
+      int inx;
+      for (inx = 0; inx < nic->nic_n_ways; inx++)
+        {
+          hash_table_free_64 (nic->nic_in_array[inx]);
+          id_hash_free (nic->nic_ni_array[inx]);
+          mutex_free (&nic->nic_in_mtx[inx]);
+          mutex_free (&nic->nic_ni_mtx[inx]);
+        }
+      dk_free ( nic->nic_ni_mtx, sizeof (dk_mutex_t) * nic->nic_n_ways );
+      dk_free ( nic->nic_in_mtx, sizeof (dk_mutex_t) * nic->nic_n_ways );
+      dk_free ( nic->nic_in_array, sizeof (caddr_t) * nic->nic_n_ways );
+      dk_free ( nic->nic_ni_array, sizeof (caddr_t) * nic->nic_n_ways );
+    }
+
   mutex_free (nic->nic_mtx);
   dk_free ((caddr_t)nic, sizeof (name_id_cache_t));
 }
 
+resource_t * iri_nic_rc;
+resource_t * prefix_nic_rc;
 
 void
 nic_done (resource_t * rc, name_id_cache_t * nic)
@@ -1547,6 +1817,8 @@ DBG_NAME(nic_id_name) (DBG_PARAMS name_id_cache_t * nic, boxint id)
 {
   caddr_t ret;
   boxint r;
+  if (nic->nic_n_ways)
+    return DBG_NAME(nic_id_name_n) (DBG_ARGS nic, id);
   mutex_enter (nic->nic_mtx);
   gethash_64 (r, id, nic->nic_id_to_name);
   ret = r ? DBG_NAME (box_copy) (DBG_ARGS (caddr_t) (ptrlong)r) : NULL;
@@ -1556,6 +1828,33 @@ DBG_NAME(nic_id_name) (DBG_PARAMS name_id_cache_t * nic, boxint id)
 }
 
 
+id_hashed_key_t
+iristrhash (char *strp)
+{
+  char *str = *(char **) strp;
+  int l = box_length (str) - 1;
+  uint64 h = 1;
+  MHASH_VAR (h, str, l);
+  return h & 0x7fffffff;
+}
+
+int
+iristrhashcmp (char *x, char *y)
+{
+  char * str1 = *(caddr_t *) x;
+  char * str2 = *(caddr_t *) y;
+  int l = box_length (str1);
+  if (l != box_length (str2))
+    return 0;
+  l--;
+  memcmp_8 (str1, str2, l, neq);
+  return 1;
+ neq:
+  return 0;
+}
+
+
+
 name_id_cache_t *
 nic_allocate (unsigned long sz, int is_box, int ht_init_sz)
 {
@@ -1563,10 +1862,11 @@ nic_allocate (unsigned long sz, int is_box, int ht_init_sz)
   nic->nic_size = sz;
   if (ht_init_sz)
     sz = ht_init_sz * 2;
+  nic->nic_is_boxes = is_box;
   if (!is_box)
     nic->nic_name_to_id = id_hash_allocate (sz / 2, sizeof (caddr_t), sizeof (boxint), strhash, strhashcmp);
   else
-    nic->nic_name_to_id = id_hash_allocate (sz / 2, sizeof (caddr_t), sizeof (boxint), treehash, treehashcmp);
+    nic->nic_name_to_id = id_hash_allocate (sz, sizeof (caddr_t), sizeof (boxint), iristrhash, iristrhashcmp);
   nic->nic_id_to_name = hash_table_allocate_64 (sz);
   id_hash_set_rehash_pct (nic->nic_id_to_name, 220);
   id_hash_set_rehash_pct (nic->nic_name_to_id, 220);
@@ -1576,9 +1876,51 @@ nic_allocate (unsigned long sz, int is_box, int ht_init_sz)
 }
 
 void
+nic_flush_n (name_id_cache_t * nic)
+{
+  dk_set_t removed_keys = NULL;
+  int bucket_ctr = 0, inx;
+  int nth_id;
+
+  for (inx = 0; inx < nic->nic_n_ways; inx++)
+    {
+      mutex_enter (&nic->nic_ni_mtx[inx]);
+
+      for (bucket_ctr = nic->nic_ni_array[inx]->ht_buckets; bucket_ctr--; /* no step */)
+        {
+          nic_name_id_cache_element_t el;
+          while (id_hash_remove_rnd (nic->nic_ni_array[inx], bucket_ctr, (caddr_t)&el.nicel_name, (caddr_t)&el.nicel_id))
+            {
+              nic_name_id_cache_element_t *new_el = dk_alloc( sizeof(nic_name_id_cache_element_t) );
+              memcpy ( new_el, &el, sizeof(nic_name_id_cache_element_t) );
+              dk_set_push ( &removed_keys, new_el );
+            }
+        }
+
+      mutex_leave(&nic->nic_ni_mtx[inx]);
+    }
+
+  DO_SET(nic_name_id_cache_element_t*,el,&removed_keys)
+  {
+    NIC_IN_ID ( nic, nth_id, el->nicel_id );
+    remhash_64 ( el->nicel_id, nic->nic_in_array[nth_id]);
+    dk_free_box (el->nicel_name);
+    dk_free (el, sizeof(nic_name_id_cache_element_t));
+    NIC_LEAVE_ID( nic, nth_id);
+  }
+  END_DO_SET();
+  dk_set_free(removed_keys);
+}
+
+void
 nic_flush (name_id_cache_t * nic)
 {
   int bucket_ctr = 0;
+  if (nic->nic_n_ways)
+  {
+    nic_flush_n (nic);
+    return;
+  }
   mutex_enter (nic->nic_mtx);
   for (bucket_ctr = nic->nic_name_to_id->ht_buckets; bucket_ctr--; /* no step */)
     {
@@ -1648,19 +1990,34 @@ lt_nic_name_id (lock_trx_t * lt, name_id_cache_t * nic, caddr_t name)
   return nic_name_id (nic, name);
 }
 
-
-caddr_t
-lt_nic_id_name (lock_trx_t * lt, name_id_cache_t * nic, boxint id)
+#if 0
+boxint
+nic_prefix_local (lock_trx_t * lt, name_id_cache_t * nic, caddr_t name)
 {
   name_id_cache_t * lt_nic = lt->lt_client->cli_row_autocommit ? NULL
     : nic == iri_name_cache ? lt->lt_rdf_iri : lt->lt_rdf_prefix;
   if (lt_nic)
     {
-      caddr_t name = nic_id_name (lt_nic, id);
+      boxint id = nic_name_id (lt_nic, name);
+      if (id)
+	return id;
+    }
+  return nic_name_id (nic, name);
+}
+#endif
+
+caddr_t
+DBG_NAME(lt_nic_id_name) (DBG_PARAMS lock_trx_t * lt, name_id_cache_t * nic, boxint id)
+{
+  name_id_cache_t * lt_nic = lt->lt_client->cli_row_autocommit ? NULL
+    : nic == iri_name_cache ? lt->lt_rdf_iri : lt->lt_rdf_prefix;
+  if (lt_nic)
+    {
+      caddr_t name = DBG_NAME(nic_id_name) (DBG_ARGS lt_nic, id);
       if (name)
 	return name;
     }
-  return nic_id_name (nic, id);
+  return DBG_NAME(nic_id_name) (DBG_ARGS nic, id);
 }
 
 
@@ -1686,8 +2043,9 @@ tb_string_and_id_check (dbe_table_t * tb, dbe_column_t ** str_col, dbe_column_t 
   return 1;
 }
 
+int32 iri_range_size = 1000000;
 #define N_IRI_SEQS 19
-#define IRI_RANGE_SZ 10000
+#define IRI_RANGE_SZ iri_range_size
 
 extern dk_mutex_t * log_write_mtx;
 
@@ -1783,7 +2141,7 @@ tb_new_id_and_name (lock_trx_t * lt, it_cursor_t * itc, dbe_table_t * tb, caddr_
   res_box = box_iri_int64 (res, id_col->col_sqt.sqt_dtp);
   itc->itc_insert_key = tb->tb_primary_key;
   itc->itc_owned_search_par_fill= 0; /* do not free the name yet */
-  itc_from (itc, itc->itc_insert_key);
+  itc_from (itc, itc->itc_insert_key, QI_NO_SLICE);
   ITC_SEARCH_PARAM(itc, name);
   ITC_OWNS_PARAM(itc, name);
   rd.rd_non_comp_len = itc->itc_insert_key->key_row_var_start[0] + box_length (name) - 1;
@@ -1797,7 +2155,7 @@ tb_new_id_and_name (lock_trx_t * lt, it_cursor_t * itc, dbe_table_t * tb, caddr_
   itc->itc_insert_key = id_key;
   rd.rd_non_comp_len = itc->itc_insert_key->key_row_var_start[0] + box_length (name) - 1;
   itc->itc_owned_search_par_fill = 0; /* do not free the name yet */
-  itc_from (itc, itc->itc_insert_key);
+  itc_from (itc, itc->itc_insert_key, QI_NO_SLICE);
   ITC_SEARCH_PARAM(itc, res_box);
   ITC_SEARCH_PARAM(itc, name);
   ITC_OWNS_PARAM (itc, name);
@@ -1847,7 +2205,7 @@ tb_name_to_id (lock_trx_t * lt, char * tb_name, caddr_t name, char * value_seq_n
     return NULL;
   ITC_INIT (itc, key->key_fragments[0]->kf_it, NULL);
   itc->itc_ltrx = lt;
-  itc_from (itc, key);
+  itc_from (itc, key, QI_NO_SLICE);
   ITC_SEARCH_PARAM (itc, name);
   ITC_OWNS_PARAM(itc, name);
   if(lt)
@@ -1873,6 +2231,7 @@ re_search:
       res = itc_search (itc, &buf);
       if (DVC_MATCH == res)
 	{
+	  KEY_TOUCH (itc->itc_insert_key);
 	  iri = itc_box_column (itc, buf, iri_col->col_id, NULL);
 	  itc_page_leave (itc, buf);
 	}
@@ -2108,6 +2467,7 @@ caddr_t
 key_name_to_iri_id (lock_trx_t * lt, caddr_t name, int make_new)
 {
   caddr_t r;
+  mem_pool_t * mp;
   int entered = 0;
   if (!lt)
     {
@@ -2122,7 +2482,10 @@ key_name_to_iri_id (lock_trx_t * lt, caddr_t name, int make_new)
 	    return NULL;
     }
     }
+  /* can be called from compiler, can do a cluster req and can potentially service recursive req so where can lose the tmp pool so save */
+  mp = THR_TMP_POOL;
   r = key_name_to_iri_id_1 (lt, name, make_new);
+  SET_THR_TMP_POOL (mp);
   if (entered)
     {
       IN_TXN;
@@ -2157,7 +2520,7 @@ key_find_rdf_obj_1 (rdf_box_t * rb, caddr_t name)
   val_col = (dbe_column_t*)key->key_parts->data;
   dtlang_col = (dbe_column_t*)key->key_parts->next->next->data;
   ITC_INIT (itc, key->key_fragments[0]->kf_it, NULL);
-  itc_from (itc, key);
+  itc_from (itc, key, QI_NO_SLICE);
   ITC_SEARCH_PARAM (itc, name);
   ITC_SEARCH_PARAM (itc, dtlang);
   ITC_OWNS_PARAM (itc, dtlang);
@@ -2318,8 +2681,6 @@ bif_iri_id_new (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_iri_id (id);
 }
 
-extern iri_id_t bnode_t_treshold;
-
 int
 iri_canonicalize (query_instance_t *qi, caddr_t name, int mode, caddr_t *res_ret, caddr_t *err_ret)
 {
@@ -2458,7 +2819,13 @@ canon_iri_to_id (query_instance_t *qi, caddr_t canon_name, int mode, caddr_t *er
         case IRI_TO_ID_IF_KNOWN:
           return key_name_to_iri_id (qi->qi_trx, canon_name, 0);
         case IRI_TO_ID_WITH_CREATE:
-          return key_name_to_iri_id (qi->qi_trx, canon_name, 1);
+          {
+            caddr_t boxed_iid = key_name_to_iri_id (qi->qi_trx, canon_name, 1);
+#ifdef DEBUG
+	  if (!boxed_iid) bing ();
+#endif
+            return boxed_iid;
+          }
         case IRI_TO_ID_IF_CACHED:
           return key_name_to_existing_cached_iri_id (qi->qi_trx, canon_name);
         }
@@ -2544,7 +2911,6 @@ bif_iri_to_id_repl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
     case DV_LONG_INT: case DV_IRI_ID:
       {
-        /* caddr_t tmp_name = NULL; */
         iri_id_t iid = unbox_iri_int64 (name);
         if (iid < min_bnode_iri_id ())
           sqlr_new_error ("22023", "SR626", "The argument of iri_to_id_repl() is an IRI_ID of URI");
@@ -2666,7 +3032,7 @@ tb_id_to_name (lock_trx_t * lt, char * tb_name, caddr_t id)
   key = (dbe_key_t *)(tb->tb_keys->data == tb->tb_primary_key ? tb->tb_keys->next->data : tb->tb_keys->data);
   ITC_INIT (itc, key->key_fragments[0]->kf_it, NULL);
   itc->itc_ltrx = lt;
-  itc_from (itc, key);
+  itc_from (itc, key, QI_NO_SLICE);
   ITC_SEARCH_PARAM (itc, id);
   itc->itc_isolation =ISO_COMMITTED;
   itc->itc_key_spec = key->key_insert_spec;
@@ -2929,7 +3295,7 @@ bif_iri_id_cache_flush (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   lock_trx_t *lt = qi->qi_trx;
   caddr_t log_array;
   int rc;
-  if (!srv_have_global_lock (THREAD_CURRENT_THREAD))
+  if (0 && !srv_have_global_lock (THREAD_CURRENT_THREAD))
     srv_make_new_error ("42000", "SR535", "iri_id_cache_flush() can be used only inside atomic section");
   nic_flush (iri_name_cache);
   nic_flush (iri_prefix_cache);
@@ -2969,12 +3335,14 @@ bif_rdf_cache_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t pref = bif_string_or_uname_arg (qst, args, 1, "rdf_cache_id");
   name_id_cache_t * cache = mode[0] == 'p' ? iri_prefix_cache
     : mode[0] == 'l' ? rdf_lang_cache
-    : mode[0] == 't' ? rdf_type_cache : NULL;
+    : mode[0] == 't' ? rdf_type_cache
+    : mode[0] == 'i'? iri_name_cache : NULL;
   if (!cache)
     sqlr_new_error ("42000", "RDF..", "bad mode for rdf_cache_id");
   if (BOX_ELEMENTS (args) > 2)
     {
-      boxint new_id = bif_long_arg (qst, args, 2, "rdf_cache_id");
+      boxint new_id = 'i' == mode[0] ? (boxint)bif_iri_id_arg (qst, args, 2, "rdf_cache_id")
+	: bif_long_arg (qst, args, 2, "rdf_cache_id");
       if (cache == iri_name_cache || cache == iri_prefix_cache)
 	lt_nic_set (qi->qi_trx, cache, pref, new_id);
       else
@@ -2996,6 +3364,7 @@ bif_rdf_cache_id_to_name (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
   boxint id = bif_long_arg (qst, args, 1, "rdf_cache_id_to_name");
   name_id_cache_t * cache = mode[0] == 'p' ? iri_prefix_cache
     : mode[0] == 'l' ? rdf_lang_cache
+    : mode[0] == 'i' ? iri_name_cache
     : mode[0] == 't' ? rdf_type_cache : NULL;
   if (!cache)
     sqlr_new_error ("42000", "RDF..", "bad mode for rdf_cache_id_to_name");
@@ -3175,7 +3544,7 @@ bif_rdf_obj_ft_rule_add (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   rdf_obj_ft_rule_iri_hkey_t iri_hkey;
   iid_hkey.hkey_g = g_id;
   iid_hkey.hkey_iid_p = p_id;
-  if (CL_RUN_LOCAL != cl_run_local_only)
+  if (1)
     {
       iri_hkey.hkey_g = g_id;
       iri_hkey.hkey_iri_p = p_iri = ((0 == p_id) ? NULL
@@ -3189,7 +3558,6 @@ bif_rdf_obj_ft_rule_add (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       dk_set_t new_reasons = NULL;
       dk_set_push (&new_reasons, box_copy (reason));
       id_hash_add_new (rdf_obj_ft_rules_by_iids, (caddr_t)(&iid_hkey), (caddr_t)(&new_reasons));
-      if (CL_RUN_LOCAL != cl_run_local_only)
         id_hash_add_new (rdf_obj_ft_rules_by_iris, (caddr_t)(&iri_hkey), (caddr_t)(&new_reasons));
       rule_count_ptr[0]++;
       mutex_leave (rdf_obj_ft_rules_mtx);
@@ -3198,7 +3566,7 @@ bif_rdf_obj_ft_rule_add (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (0 > dk_set_position_of_string (known_reasons_ptr[0], reason))
     {
       dk_set_push (known_reasons_ptr, box_copy (reason));
-      if (CL_RUN_LOCAL != cl_run_local_only)
+      if (1)
         {
           dk_set_t *second_ptr = (dk_set_t *)id_hash_get (rdf_obj_ft_rules_by_iris, (caddr_t)(&iri_hkey));
           second_ptr[0] = known_reasons_ptr[0];
@@ -3208,7 +3576,7 @@ bif_rdf_obj_ft_rule_add (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       return box_num (1);
     }
   mutex_leave (rdf_obj_ft_rules_mtx);
-  if (CL_RUN_LOCAL != cl_run_local_only)
+  if (1)
     dk_free_box (p_iri);
   return box_num (0);
 }
@@ -3310,7 +3678,7 @@ bif_rdf_obj_ft_rule_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
   iri_id_t g_id;
   caddr_t p;
   rdf_obj_ft_rule_iid_hkey_t iid_hkey;
-  dtp_t p_dtp;
+  dtp_t g_dtp, p_dtp;
   if (CL_RUN_LOCAL != cl_run_local_only)
     {
       caddr_t cl_text_set = registry_get ("cl_rdf_text_index");
@@ -3319,10 +3687,30 @@ bif_rdf_obj_ft_rule_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
       if ('1' == flag)
         return box_num (2);
     }
-  g_id = bif_iri_id_arg (qst, args, 0, "__rdf_obj_ft_rule_check");
+
+  if (!rdf_obj_ft_rules_by_iris->ht_count)
+    return NULL;
+  g_id = bif_arg (qst, args, 0, "__rdf_obj_ft_rule_check");
   p = bif_arg (qst, args, 1, "__rdf_obj_ft_rule_check");
   iid_hkey.hkey_g = 0;
   iid_hkey.hkey_iid_p = 0;
+  mutex_enter (rdf_obj_ft_rules_mtx);
+  if (NULL != id_hash_get (rdf_obj_ft_rules_by_iids, (caddr_t)(&iid_hkey)))
+    goto hit; /* see_below */
+  g_dtp = DV_TYPE_OF (g_id);
+  switch (g_dtp)
+    {
+      case DV_IRI_ID: /* case DV_STRING: case DV_UNAME: */
+        break;
+      case DV_DB_NULL:
+        g_id = 0;
+        break;
+      default:
+        mutex_leave (rdf_obj_ft_rules_mtx);
+        sqlr_new_error ("22023", "SR008",
+          "Function __rdf_obj_ft_rule_check needs a IRI_ID as argument 1, "
+          "not an arg of type %s (%d)", dv_type_title (g_dtp), g_dtp );
+    }
   p_dtp = DV_TYPE_OF (p);
   switch (p_dtp)
     {
@@ -3332,12 +3720,11 @@ bif_rdf_obj_ft_rule_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
 	  p = 0;
 	  break;
       default:
+        mutex_leave (rdf_obj_ft_rules_mtx);
 	  sqlr_new_error ("22023", "SR008",
 		    "Function __rdf_obj_ft_rule_check needs a string or UNAME or IRI_ID as argument 2, "
 		    "not an arg of type %s (%d)", dv_type_title (p_dtp), p_dtp);
     }
-
-  mutex_enter (rdf_obj_ft_rules_mtx);
   if (NULL != id_hash_get (rdf_obj_ft_rules_by_iids, (caddr_t)(&iid_hkey)))
     goto hit; /* see_below */
   if (DV_IRI_ID == p_dtp || DV_DB_NULL == p_dtp)
@@ -3389,8 +3776,11 @@ bif_rdf_obj_ft_rule_count_in_graph (caddr_t * qst, caddr_t * err_ret, state_slot
   boxint g_id_int;
   if (CL_RUN_LOCAL != cl_run_local_only)
     {
-      caddr_t cl_text_set = registry_get ("cl_rdf_text_index");
-      char flag = cl_text_set ? cl_text_set[0] : '\0';
+      char *  cl_text_set, flag;
+      IN_TXN;
+      cl_text_set = registry_get ("cl_rdf_text_index");
+      LEAVE_TXN;
+      flag = cl_text_set ? cl_text_set[0] : '\0';
       dk_free_tree (cl_text_set);
       if ('1' == flag)
         return box_num (-1);
@@ -3403,6 +3793,8 @@ bif_rdf_obj_ft_rule_count_in_graph (caddr_t * qst, caddr_t * err_ret, state_slot
   mutex_leave (rdf_obj_ft_rules_mtx);
   return box_num (res);
 }
+
+int rdf_g_pref_digits = 3;
 
 void
 rdf_graph_keyword (iri_id_t id, char *ret)
@@ -3417,7 +3809,7 @@ rdf_graph_keyword (iri_id_t id, char *ret)
       sprintf (ret, "g%s", str);
       return;
     }
-  brk -= 6;
+  brk -= rdf_g_pref_digits;
   ch[0] = str[brk];
   ch[1] = 0;
   str[brk] = 0;
@@ -3542,6 +3934,9 @@ rdf_key_comp_init ()
   key_cl_by_name (ogps, "S")->cl_comp_asc = 1;
 }
 
+void bif_rld_init ();
+void bif_id2i_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret);
+
 
 void
 rdf_core_init (void)
@@ -3561,35 +3956,34 @@ rdf_core_init (void)
   bif_define ("rdf_load_turtle_local_file", bif_rdf_load_turtle_local_file);
   bif_set_uses_index (bif_rdf_load_turtle_local_file);
   bif_define ("turtle_lex_analyze", bif_turtle_lex_analyze);
-  bif_define ("iri_to_id", bif_iri_to_id);
+  bif_define_typed ("iri_to_id", bif_iri_to_id, &bt_iri_id);
+  bif_set_cluster_rec ("iri_to_id");
+  bif_set_enlist ("iri_to_id");
   bif_define ("iri_ensure", bif_iri_ensure);
   bif_set_uses_index (bif_iri_to_id);
   bif_set_no_cluster ("iri_to_id");
   bif_define ("iri_to_id_repl", bif_iri_to_id_repl);
+  bif_set_cluster_rec ("iri_to_id_repl");
+  bif_set_enlist ("iri_to_id_repl");
   bif_set_uses_index (bif_iri_to_id_repl);
   bif_define ("iri_canonicalize", bif_iri_canonicalize);
   bif_set_uses_index (bif_iri_canonicalize);
-  bif_set_no_cluster ("iri_to_id_repl");
   bif_define ("iri_to_id_nosignal", bif_iri_to_id_nosignal);
   bif_set_uses_index (bif_iri_to_id_nosignal);
-  bif_set_no_cluster ("iri_to_id_nosignal");
-  bif_define ("iri_to_id_if_cached", bif_iri_to_id_if_cached);
-  bif_define ("id_to_iri", bif_id_to_iri);
+  bif_set_cluster_rec ("iri_to_id_nosignal");
+  bif_define_typed ("iri_to_id_if_cached", bif_iri_to_id_if_cached, &bt_varchar);
+  bif_define_typed ("id_to_iri", bif_id_to_iri, &bt_varchar);
   bif_set_uses_index (bif_id_to_iri);
-  bif_set_no_cluster ("id_to_iri");
-  bif_define ("id_to_iri_nosignal", bif_id_to_iri_nosignal);
+  bif_set_cluster_rec ("id_to_iri");
+  bif_define_typed ("id_to_iri_nosignal", bif_id_to_iri_nosignal, &bt_varchar);
   bif_set_uses_index (bif_id_to_iri_nosignal);
-  bif_set_no_cluster ("id_to_iri_nosignal");
+  bif_set_cluster_rec ("id_to_iri_nosignal");
 
   bif_define ("iri_to_rdf_prefix_and_local", bif_iri_to_rdf_prefix_and_local);
   bif_define ("rdf_cache_id", bif_rdf_cache_id);
-  bif_set_no_cluster ("rdf_cache_id");
   bif_define ("rdf_cache_id_to_name", bif_rdf_cache_id_to_name);
-  bif_set_no_cluster ("rdf_cache_id_to_name");
   bif_define ("iri_id_cache_flush", bif_iri_id_cache_flush);
-  bif_set_no_cluster ("iri_id_cache_flush");
   bif_define ("iri_id_new", bif_iri_id_new);
-  bif_set_no_cluster ("iri_id_new");
   bif_define ("__rdf_obj_ft_rule_add", bif_rdf_obj_ft_rule_add);
   bif_define ("__rdf_obj_ft_rule_del", bif_rdf_obj_ft_rule_del);
   bif_define ("__rdf_obj_ft_rule_zap_all", bif_rdf_obj_ft_rule_zap_all);
@@ -3597,15 +3991,11 @@ rdf_core_init (void)
   bif_define ("__rdf_obj_ft_rule_count_in_graph", bif_rdf_obj_ft_rule_count_in_graph);
   /* Short aliases for use in generated SQL text: */
   bif_define ("__i2idn", bif_iri_to_id_nosignal);
-  bif_set_no_cluster ("__i2idn");
   bif_define ("__i2id", bif_iri_to_id);
-  bif_set_no_cluster ("__i2id");
   bif_define ("__i2idc", bif_iri_to_id_if_cached);
-  bif_set_no_cluster ("__i2idc");
-  bif_define ("__id2i", bif_id_to_iri);
-  bif_set_no_cluster ("__id2i");
+  bif_define_typed ("__id2i", bif_id_to_iri, &bt_varchar);
+  bif_set_vectored (bif_id_to_iri, bif_id2i_vec);
   bif_define ("__id2in", bif_id_to_iri_nosignal);
-  bif_set_no_cluster ("__id2in");
   bif_define ("rdf_graph_keyword", bif_rdf_graph_keyword);
   bif_define ("iri_split", bif_iri_split);
   bif_define ("uriqa_dynamic_local_replace", bif_uriqa_dynamic_local_replace);
@@ -3613,14 +4003,17 @@ rdf_core_init (void)
   bif_define ("turtle_lex_test", bif_turtle_lex_test);
 #endif
   if (100 >= iri_cache_size)
-    iri_cache_size = main_bufs / 2;
+    iri_cache_size = MIN (500000, main_bufs / 2);
   iri_name_cache = nic_allocate (iri_cache_size, 1, 0);
+  nic_set_n_ways (iri_name_cache, 64);
   iri_prefix_cache = nic_allocate (iri_cache_size / 10, 0, 0);
+  nic_set_n_ways (iri_prefix_cache, 64);
   rdf_lang_cache = nic_allocate (255, 0, 0);
   rdf_type_cache = nic_allocate (1000, 0, 0);
   ddl_ensure_table ("DB.DBA.RDF_PREFIX", rdf_prefix_text);
   ddl_ensure_table ("DB.DBA.RDF_IRI", rdf_iri_text);
   rdf_obj_ft_rules_mtx = mutex_allocate ();
+  mutex_option (rdf_obj_ft_rules_mtx, "rdf_ft_rules", NULL, NULL);
   rdf_obj_ft_rules_by_iids = id_hash_allocate (1000,
     sizeof (rdf_obj_ft_rule_iid_hkey_t), sizeof (dk_set_t),
     rdf_obj_ft_rule_iid_hkey_hash, rdf_obj_ft_rule_iid_hkey_cmp );
@@ -3634,4 +4027,5 @@ rdf_core_init (void)
   ddl_std_proc (range_replay, 0);
   rdf_inf_init ();
   rdf_key_comp_init  ();
+  bif_rld_init ();
 }

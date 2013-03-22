@@ -29,8 +29,8 @@ AC_REVISION($Id$)
 ##									##
 ##########################################################################
 
-AC_INIT([Virtuoso Open Source Edition],
-	[6.1.7-rc1],
+AC_INIT([Virtuoso Open Source Edition (Column Store)],
+	[7.0.0-rc1],
 	[vos.admin@openlinksw.com],
 	[virtuoso-opensource])
 AC_CONFIG_SRCDIR([libsrc/Dk.h])
@@ -2256,8 +2256,8 @@ AC_ARG_ENABLE([],[
 VAD Packages:],[])
 
 AC_ARG_ENABLE(bpel-vad,
-AC_HELP_STRING([--enable-bpel-vad], [enable BPEL vad (default)])
-AC_HELP_STRING([--disable-bpel-vad], [disable BPEL vad])dnl
+AC_HELP_STRING([--enable-bpel-vad], [enable BPEL vad])
+AC_HELP_STRING([--disable-bpel-vad], [disable BPEL vad (default)])dnl
 ], [
      case "${enableval}" in
        yes)	with_bpel_vad="yes";;
@@ -2265,7 +2265,7 @@ AC_HELP_STRING([--disable-bpel-vad], [disable BPEL vad])dnl
        *)	AC_MSG_ERROR(bad value ${enableval} for --enable-bpel-vad) ;;
      esac
   ],
-  [ with_bpel_vad="yes" ]
+  [ with_bpel_vad="no" ]
 )
 
 AC_ARG_ENABLE(conductor-vad,
@@ -2282,8 +2282,8 @@ AC_HELP_STRING([--disable-conductor-vad], [disable Conductor vad package])dnl
 )
 
 AC_ARG_ENABLE(dbpedia-vad,
-AC_HELP_STRING([--enable-dbpedia-vad], [enable DBpedia vad package (default)])
-AC_HELP_STRING([--disable-dbpedia-vad], [disable DBpedia vad package])dnl
+AC_HELP_STRING([--enable-dbpedia-vad], [enable DBpedia vad package])
+AC_HELP_STRING([--disable-dbpedia-vad], [disable DBpedia vad package (default)])dnl
 ], [
      case "${enableval}" in
        yes)	with_dbpedia_vad="yes";;
@@ -2291,12 +2291,12 @@ AC_HELP_STRING([--disable-dbpedia-vad], [disable DBpedia vad package])dnl
        *)	AC_MSG_ERROR(bad value ${enableval} for --enable-dbpedia-vad) ;;
      esac
   ],
-  [ with_dbpedia_vad="yes" ]
+  [ with_dbpedia_vad="no" ]
 )
 
 AC_ARG_ENABLE(demo-vad,
-AC_HELP_STRING([--enable-demo-vad], [enable Demo vad package (default)])
-AC_HELP_STRING([--disable-demo-vad], [disable Demo vad package])dnl
+AC_HELP_STRING([--enable-demo-vad], [enable Demo vad package])
+AC_HELP_STRING([--disable-demo-vad], [disable Demo vad package (default)])dnl
 ], [
      case "${enableval}" in
        yes)	with_demo_vad="yes";;
@@ -2304,12 +2304,12 @@ AC_HELP_STRING([--disable-demo-vad], [disable Demo vad package])dnl
        *)	AC_MSG_ERROR(bad value ${enableval} for --enable-demo-vad) ;;
      esac
   ],
-  [ with_demo_vad="yes" ]
+  [ with_demo_vad="no" ]
 )
 
 AC_ARG_ENABLE(fct-vad,
-AC_HELP_STRING([--enable-fct-vad], [enable Demo vad package (default)])
-AC_HELP_STRING([--disable-fct-vad], [disable Facet Browser vad package])dnl
+AC_HELP_STRING([--enable-fct-vad], [enable Facet Browser vad package])
+AC_HELP_STRING([--disable-fct-vad], [disable Facet Browser vad package (default)])dnl
 ], [
      case "${enableval}" in
        yes)	with_fct_vad="yes";;
@@ -2317,12 +2317,12 @@ AC_HELP_STRING([--disable-fct-vad], [disable Facet Browser vad package])dnl
        *)	AC_MSG_ERROR(bad value ${enableval} for --enable-fct-vad) ;;
      esac
   ],
-  [ with_fct_vad="yes" ]
+  [ with_fct_vad="no" ]
 )
 
 AC_ARG_ENABLE(isparql-vad,
-AC_HELP_STRING([--enable-isparql-vad], [enable iSPARQL vad package (default)])
-AC_HELP_STRING([--disable-isparql-vad], [disable iSPARQL vad package])dnl
+AC_HELP_STRING([--enable-isparql-vad], [enable iSPARQL vad package])
+AC_HELP_STRING([--disable-isparql-vad], [disable iSPARQL vad package (default)])dnl
 ], [
      case "${enableval}" in
        yes)	with_isparql_vad="yes";;
@@ -2334,8 +2334,8 @@ AC_HELP_STRING([--disable-isparql-vad], [disable iSPARQL vad package])dnl
 )
 
 AC_ARG_ENABLE(ods-vad,
-AC_HELP_STRING([--enable-ods-vad], [enable ODS vad packages (default)])
-AC_HELP_STRING([--disable-ods-vad], [disable ODS vad packages])dnl
+AC_HELP_STRING([--enable-ods-vad], [enable ODS vad packages])
+AC_HELP_STRING([--disable-ods-vad], [disable ODS vad packages (default)])dnl
 ], [
      case "${enableval}" in
        yes)	with_ods_vad="yes";;
@@ -2343,12 +2343,12 @@ AC_HELP_STRING([--disable-ods-vad], [disable ODS vad packages])dnl
        *)	AC_MSG_ERROR(bad value ${enableval} for --enable-ods-vad) ;;
      esac
   ],
-  [ with_ods_vad="yes" ]
+  [ with_ods_vad="no" ]
 )
 
 AC_ARG_ENABLE(rdfmappers-vad,
-AC_HELP_STRING([--enable-rdfmappers-vad], [enable Sparql Demo vad package (default)])
-AC_HELP_STRING([--disable-rdfmappers-vad], [disable Sparql Demo vad package])dnl
+AC_HELP_STRING([--enable-rdfmappers-vad], [enable RDF Mappers vad package])
+AC_HELP_STRING([--disable-rdfmappers-vad], [disable RDF Mappers vad package (default)])dnl
 ], [
      case "${enableval}" in
        yes)	with_rdfmappers_vad="yes";;
@@ -2356,12 +2356,12 @@ AC_HELP_STRING([--disable-rdfmappers-vad], [disable Sparql Demo vad package])dnl
        *)	AC_MSG_ERROR(bad value ${enableval} for --enable-rdfmappers-vad) ;;
      esac
   ],
-  [ with_rdfmappers_vad="yes" ]
+  [ with_rdfmappers_vad="no" ]
 )
 
 AC_ARG_ENABLE(rdb2rdf-vad,
-AC_HELP_STRING([--enable-rdb2rdf-vad], [enable Rdb2Rdf vad package (default)])
-AC_HELP_STRING([--disable-rdb2rdf-vad], [disable Rdb2Rdf vad package])dnl
+AC_HELP_STRING([--enable-rdb2rdf-vad], [enable Rdb2Rdf vad package])
+AC_HELP_STRING([--disable-rdb2rdf-vad], [disable Rdb2Rdf vad package (default)])dnl
 ], [
      case "${enableval}" in
        yes)	with_rdb2rdf_vad="yes";;
@@ -2369,12 +2369,12 @@ AC_HELP_STRING([--disable-rdb2rdf-vad], [disable Rdb2Rdf vad package])dnl
        *)	AC_MSG_ERROR(bad value ${enableval} for --enable-rdb2rdf-vad) ;;
      esac
   ],
-  [ with_rdb2rdf_vad="yes" ]
+  [ with_rdb2rdf_vad="no" ]
 )
 
 AC_ARG_ENABLE(sparqldemo-vad,
-AC_HELP_STRING([--enable-sparqldemo-vad], [enable Sparql Demo vad package (default)])
-AC_HELP_STRING([--disable-sparqldemo-vad], [disable Sparql Demo vad package])dnl
+AC_HELP_STRING([--enable-sparqldemo-vad], [enable Sparql Demo vad package])
+AC_HELP_STRING([--disable-sparqldemo-vad], [disable Sparql Demo vad package (default)])dnl
 ], [
      case "${enableval}" in
        yes)	with_sparqldemo_vad="yes";;
@@ -2382,12 +2382,12 @@ AC_HELP_STRING([--disable-sparqldemo-vad], [disable Sparql Demo vad package])dnl
        *)	AC_MSG_ERROR(bad value ${enableval} for --enable-sparqldemo-vad) ;;
      esac
   ],
-  [ with_sparqldemo_vad="yes" ]
+  [ with_sparqldemo_vad="no" ]
 )
 
 AC_ARG_ENABLE(syncml-vad,
-AC_HELP_STRING([--enable-syncml-vad], [enable SyncML vad package (default)])
-AC_HELP_STRING([--disable-syncml-vad], [disable SyncML vad package])dnl
+AC_HELP_STRING([--enable-syncml-vad], [enable SyncML vad package])
+AC_HELP_STRING([--disable-syncml-vad], [disable SyncML vad package (default)])dnl
 ], [
      case "${enableval}" in
        yes)	with_syncml_vad="yes";;
@@ -2395,12 +2395,12 @@ AC_HELP_STRING([--disable-syncml-vad], [disable SyncML vad package])dnl
        *)	AC_MSG_ERROR(bad value ${enableval} for --enable-syncml-vad) ;;
      esac
   ],
-  [ with_syncml_vad="yes" ]
+  [ with_syncml_vad="no" ]
 )
 
 AC_ARG_ENABLE(tutorial-vad,
-AC_HELP_STRING([--enable-tutorial-vad], [enable Tutorial vad package (default)])
-AC_HELP_STRING([--disable-tutorial-vad], [disable Tutorial vad package])dnl
+AC_HELP_STRING([--enable-tutorial-vad], [enable Tutorial vad package])
+AC_HELP_STRING([--disable-tutorial-vad], [disable Tutorial vad package (default)])dnl
 ], [
      case "${enableval}" in
        yes)	with_tutorial_vad="yes";;
@@ -2408,7 +2408,7 @@ AC_HELP_STRING([--disable-tutorial-vad], [disable Tutorial vad package])dnl
        *)	AC_MSG_ERROR(bad value ${enableval} for --enable-tutorial-vad) ;;
      esac
   ],
-  [ with_tutorial_vad="yes" ]
+  [ with_tutorial_vad="no" ]
 )
 
 

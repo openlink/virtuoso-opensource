@@ -101,8 +101,10 @@ dfe_p_const_abbrev (df_elt_t * tb_dfe)
 float *
 dfe_p_stat (df_elt_t * tb_dfe, iri_id_t pid, dk_set_t * parts_ret)
 {
+#if 0
   caddr_t ctx_name = sqlo_opt_value (tb_dfe->_.table.ot->ot_opts, OPT_RDF_INFERENCE);
   rdf_inf_ctx_t **place = ctx_name ? (rdf_inf_ctx_t **) id_hash_get (rdf_name_to_ric, (caddr_t) & ctx_name) : NULL;
+#endif
   dbe_key_t *pk = tb_dfe->_.table.ot->ot_table->tb_primary_key;
   float *p_stat;
   if (!pk->key_p_stat)
@@ -222,7 +224,7 @@ jp_fanout (join_plan_t * jp)
 	{
 	  if (is_s && is_o)
 	    return jp->jp_fanout = 0.9;
-	  if (is_o)
+	  if (is_o && o)
 	    return jp->jp_fanout = sqlo_rdfs_type_card (jp->jp_tb_dfe, is_p, is_o);
 	}
       p_stat = dfe_p_stat (jp->jp_tb_dfe, p, &parts);
@@ -287,9 +289,12 @@ dfe_const_value (df_elt_t * dfe, caddr_t * data_ret)
     }
   if ((name = sqlo_iri_constant_name (dfe->dfe_tree)))
     {
-      *data_ret = key_name_to_iri_id (NULL, name, 0);
+      caddr_t id = key_name_to_iri_id (NULL, name, 0);
+      *data_ret = id;
       if (!*data_ret)
 	return 0;
+      *data_ret = t_full_box_copy_tree (id);
+      dk_free_tree (id);
       return 1;
     }
   if ((name = sqlo_rdf_obj_const_value (dfe->dfe_tree, NULL, NULL)))
@@ -385,18 +390,27 @@ jp_add (join_plan_t * jp, df_elt_t * tb_dfe, df_elt_t * pred, int is_join)
 }
 
 
+int
+dfe_in_hash_set (df_elt_t * tb_dfe, int hash_set)
+{
+  if (!hash_set)
+    return 1;
+  return unbox (sqlo_opt_value (tb_dfe->_.table.ot->ot_opts, OPT_HASH_SET)) == hash_set;
+}
+
 void
-dfe_jp_fill (sqlo_t * so, op_table_t * ot, df_elt_t * tb_dfe, join_plan_t * jp, int mode)
+dfe_jp_fill (sqlo_t * so, op_table_t * ot, df_elt_t * tb_dfe, join_plan_t * jp, int mode, int hash_set)
 {
   jp->jp_n_joined = jp->jp_n_preds = 0;
   jp->jp_tb_dfe = tb_dfe;
   DO_SET (df_elt_t *, pred, &ot->ot_preds)
   {
-    if (pred->dfe_tables && !pred->dfe_tables->next && tb_dfe->_.table.ot == (op_table_t *) pred->dfe_tables->data)
+    if (pred->dfe_tables && !pred->dfe_tables->next
+	&& tb_dfe->_.table.ot == (op_table_t *) pred->dfe_tables->data && dfe_in_hash_set (tb_dfe, hash_set))
       {
 	jp_add (jp, tb_dfe, pred, 0);
       }
-    else if (dk_set_member (pred->dfe_tables, (void *) tb_dfe->_.table.ot))
+    else if (dk_set_member (pred->dfe_tables, (void *) tb_dfe->_.table.ot) && dfe_in_hash_set (tb_dfe, hash_set))
       {
 	jp_add (jp, tb_dfe, pred, 1 | mode);
 	if (jp->jp_preds[jp->jp_n_preds - 1].ps_is_placeable)
@@ -455,7 +469,7 @@ dfe_join_score_jp (sqlo_t * so, op_table_t * ot, df_elt_t * tb_dfe, dk_set_t * r
       level++;
     }
   tb_dfe->dfe_is_placed = 1;	/* to fool dfe_reqd_placed */
-  dfe_jp_fill (so, ot, tb_dfe, &jp, JPF_TRY);
+  dfe_jp_fill (so, ot, tb_dfe, &jp, JPF_TRY, 0);
   if (jp.jp_prev)
     jp.jp_cost = jp.jp_prev->jp_cost + path_fanout * jp.jp_fanout;
   else
@@ -534,7 +548,7 @@ jp_print (join_plan_t * jp)
 
 
 void
-dfe_hash_fill_score (sqlo_t * so, op_table_t * ot, df_elt_t * tb_dfe, join_plan_t * prev_jp)
+dfe_hash_fill_score (sqlo_t * so, op_table_t * ot, df_elt_t * tb_dfe, join_plan_t * prev_jp, int hash_set)
 {
   /* if finds a restricting join path, adds the dfes on the path to the hash filler dfes */
   join_plan_t jp;
@@ -553,7 +567,7 @@ dfe_hash_fill_score (sqlo_t * so, op_table_t * ot, df_elt_t * tb_dfe, join_plan_
   jp.jp_hash_fill_dfes = jp.jp_prev->jp_hash_fill_dfes;
   tb_dfe->dfe_is_placed = 1;	/* to fool dfe_reqd_placed */
   jp.jp_not_for_hash_fill = 0;
-  dfe_jp_fill (so, ot, tb_dfe, &jp, JPF_HASH);
+  dfe_jp_fill (so, ot, tb_dfe, &jp, JPF_HASH, hash_set);
   if (jp.jp_fanout > 1.3 || jp.jp_not_for_hash_fill)
     {
       if (level > 1 && path_fanout / root_jp->jp_fanout < 0.7)
@@ -579,7 +593,7 @@ dfe_hash_fill_score (sqlo_t * so, op_table_t * ot, df_elt_t * tb_dfe, join_plan_
       tn.next = jp.jp_prev->jp_hash_fill_dfes;
       jp.jp_hash_fill_dfes = &tn;
       for (jinx = 0; jinx < jp.jp_n_joined; jinx++)
-	dfe_hash_fill_score (so, ot, jp.jp_joined[jinx], &jp);
+	dfe_hash_fill_score (so, ot, jp.jp_joined[jinx], &jp, hash_set);
       jp.jp_hash_fill_dfes = tn.next;
     }
   else if (root_jp)
@@ -624,24 +638,25 @@ sqlo_hash_fill_join (sqlo_t * so, df_elt_t * hash_ref_tb, df_elt_t ** fill_ret, 
   op_table_t *ot = so->so_this_dt;
   char sqk[SQK_MAX_CHARS];
   char *p_sqk = sqk;
+  int hash_set = unbox (sqlo_opt_value (hash_ref_tb->_.table.ot->ot_opts, OPT_HASH_SET));
   int sqk_fill = 0;
   df_elt_t **sqc_place = NULL;
   df_elt_t *fill_copy;
   join_plan_t jp;
   df_elt_t *fill_dfe;
-  if (!enable_hash_fill_join)
+  if (!enable_hash_fill_join || -1 == hash_set)
     return 0;
   jp.jp_hash_fill_preds = org_preds;
   jp.jp_prev = NULL;
   jp.jp_hash_fill_dfes = NULL;
-  dfe_jp_fill (so, ot, hash_ref_tb, &jp, JPF_TRY | JPF_NO_PLACED_JOINS);
+  dfe_jp_fill (so, ot, hash_ref_tb, &jp, JPF_TRY | JPF_NO_PLACED_JOINS, hash_set);
   jp.jp_best_card = 1;
   if (!jp.jp_n_joined)
     return 0;
   jp.jp_hash_fill_dfes = t_cons ((void *) hash_ref_tb, NULL);
   for (jinx = 0; jinx < jp.jp_n_joined; jinx++)
-    dfe_hash_fill_score (so, ot, jp.jp_joined[jinx], &jp);
-  if (jp.jp_best_card > 0.9)
+    dfe_hash_fill_score (so, ot, jp.jp_joined[jinx], &jp, hash_set);
+  if (jp.jp_best_card > 0.9 && !hash_set)
     return 0;
   if (so->so_cache_subqs)
     {

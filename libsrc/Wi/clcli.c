@@ -28,7 +28,11 @@
 #include "sqlnode.h"
 #include "sqlver.h"
 #include "log.h"
-
+#ifndef WIN32
+#include "sys/socket.h"
+#include "netdb.h"
+#include "netinet/tcp.h"
+#endif
 
 #define oddp(x) ((x) & 1)
 
@@ -36,35 +40,6 @@ int32 cl_msg_drop_rate;
 int32 cl_con_drop_rate;
 int32 drop_seed;
 
-
-int64
-__gethash64 (int64 i, id_hash_t * ht)
-{
-  int64 r;
-  gethash_64 (r, i, ht);
-  return r;
-}
-
-
-cl_req_group_t *
-cl_req_group (lock_trx_t * lt)
-{
-  cl_req_group_t * clrg = (cl_req_group_t*) dk_alloc_box_zero (sizeof (cl_req_group_t), DV_CLRG);;
-  clrg->clrg_ref_count = 1;
-  dk_mutex_init (&clrg->clrg_mtx, MUTEX_TYPE_SHORT);
-  clrg->clrg_lt = lt;
-  if (lt)
-    clrg->clrg_trx_no = lt->lt_trx_no;
-  return clrg;
-}
-
-
-void
-clrg_set_lt (cl_req_group_t * clrg, lock_trx_t * lt)
-{
-  clrg->clrg_lt = lt;
-  clrg->clrg_trx_no = lt ? lt->lt_trx_no : 0;
-}
 
 resource_t * clib_rc;
 
@@ -81,7 +56,11 @@ void
 clib_clear (cll_in_box_t * clib)
 {
   dk_session_t * strses = clib->clib_req_strses;
-  memset (clib, 0, (ptrlong)&((cll_in_box_t*)0)->clib_in_strses);
+  cl_queue_t clq = clib->clib_in;
+  assert (!clq.rb_count);
+  rb_ck_cnt (&clq);
+  memzero (clib, (ptrlong) & ((cll_in_box_t *) 0)->clib_in_strses);
+  clib->clib_in = clq;
   clib->clib_req_strses = strses;
   clib->clib_in_strses.dks_in_buffer = 0;
   clib->clib_in_strses.dks_in_fill = 0;
@@ -93,6 +72,9 @@ clib_clear (cll_in_box_t * clib)
 void
 clib_free (cll_in_box_t * clib)
 {
+#ifdef CL_RBUF
+  rbuf_destroy (&clib->clib_in);
+#endif
       dk_free ((caddr_t)clib, sizeof (cll_in_box_t));
 }
 
@@ -103,14 +85,192 @@ clib_rc_init ()
   clib_rc = resource_allocate (200, (rc_constr_t)clib_allocate, (rc_destr_t)clib_free, (rc_destr_t)clib_clear, 0);
 }
 
+dk_mutex_t mctr_mtx;
+dk_hash_64_t *mctr_ht;
+uint32 mctr_ctr;
+
+msg_ctr_t *
+mctr_by_id (uint64 id)
+{
+  ptrlong pmctr;
+  mutex_enter (&mctr_mtx);
+  gethash_64 (pmctr, id, mctr_ht);
+  if (pmctr)
+    {
+      mutex_leave (&mctr_mtx);
+      return (msg_ctr_t *) pmctr;
+    }
+  {
+    NEW_VARZ (msg_ctr_t, mctr);
+    sethash_64 (id, mctr_ht, (ptrlong) mctr);
+    mctr->mctr_conn_id = id;
+    mutex_leave (&mctr_mtx);
+    return mctr;
+  }
+}
+
+
+msg_ctr_t *
+mctr_new_conn (cl_host_t * to)
+{
+  int64 id;
+  NEW_VARZ (msg_ctr_t, mctr);
+  mutex_enter (&mctr_mtx);
+  id = ++mctr_ctr;
+  id |= ((uint64) local_cll.cll_this_host) << 48;
+  id |= ((uint64) to->ch_id) << 32;
+  sethash_64 (id, mctr_ht, (ptrlong) mctr);
+  mutex_leave (&mctr_mtx);
+  mctr->mctr_conn_id = id;
+  return mctr;
+}
+
+
+void
+mctr_init ()
+{
+  mctr_ht = hash_table_allocate_64 (200);
+  dk_mutex_init (&mctr_mtx, MUTEX_TYPE_SHORT);
+}
+
+
+
+
+void
+id_hash_print (id_hash_t * ht)
+{
+  DO_IDHASH (void *, k, void *, d, ht)
+  {
+    printf ("%p -> %p\n", k, d);
+  }
+  END_DO_IDHASH;
+}
+
+void
+ht_print (dk_hash_t * ht)
+{
+  DO_HT (void *, k, void *, d, ht)
+  {
+    printf ("%p -> %p\n", k, d);
+  }
+  END_DO_HT;
+}
+
+
+int64
+__gethash64 (int64 i, id_hash_t * ht)
+{
+  int64 r;
+  gethash_64 (r, i, ht);
+  return r;
+}
+
+
+void
+__dk_hash_64_print (id_hash_t * ht)
+{
+  DO_IDHASH (int64, k, int64, d, ht)
+  {
+    printf ("%d:%d -> " BOXINT_FMTX "\n", QFID_HOST (k), (uint32) k, d);
+  }
+  END_DO_IDHASH;
+}
+
+cl_req_group_t *
+cl_req_group (lock_trx_t * lt)
+{
+  cl_req_group_t *clrg = (cl_req_group_t *) dk_alloc_box_zero (sizeof (cl_req_group_t), DV_CLRG);;
+  clrg->clrg_ref_count = 1;
+  dk_mutex_init (&clrg->clrg_mtx, MUTEX_TYPE_SHORT);
+  clrg->clrg_lt = lt;
+  if (lt)
+    clrg->clrg_trx_no = lt->lt_main_trx_no ? lt->lt_main_trx_no : lt->lt_trx_no;
+  return clrg;
+}
+
+
+void
+clrg_set_lt (cl_req_group_t * clrg, lock_trx_t * lt)
+{
+  clrg->clrg_lt = lt;
+  clrg->clrg_trx_no = lt ? (lt->lt_main_trx_no ? lt->lt_main_trx_no : lt->lt_trx_no) : 0;
+}
 
 cl_req_group_t *
 clrg_copy (cl_req_group_t * clrg)
 {
-  mutex_enter (clrg_ref_mtx);
+  mutex_enter (&clrg->clrg_mtx);
   clrg->clrg_ref_count++;
-  mutex_leave (clrg_ref_mtx);
+  mutex_leave (&clrg->clrg_mtx);
   return clrg;
+}
+
+
+
+void
+clrg_dml_free (cl_req_group_t * clrg)
+{
+  /* drop allocd mem for daq ins/del */
+  DO_SET (cl_op_t *, clo, &clrg->clrg_vec_clos)
+  {
+    caddr_t *params = NULL;
+    if (CLO_INSERT == clo->clo_op || CLO_DELETE == clo->clo_op)
+      params = clo->_.insert.rd->rd_values;
+    else if (CLO_CALL == clo->clo_op)
+      params = clo->_.call.params;
+    if (params)
+      {
+	int inx;
+	DO_BOX (data_col_t *, dc, inx, params)
+	{
+	  if (DV_DATA == DV_TYPE_OF (dc))
+	    dc_reset (dc);
+	}
+	END_DO_BOX;
+      }
+  }
+  END_DO_SET ();
+  clrg->clrg_vec_clos = NULL;
+}
+
+
+void lt_alt_trx_no_free (lock_trx_t * lt, int64 alt_no);
+
+
+#define TA_DUP_CANCEL 1300
+
+
+int
+cl_is_dup_cancel (id_hash_t ** ht, int to_host, int coord, int req_no)
+{
+  int64 id;
+  id_hash_t *dups;
+  if (!*ht)
+    {
+      du_thread_t *self = THREAD_CURRENT_THREAD;
+      dups = (id_hash_t *) THR_ATTR (self, TA_DUP_CANCEL);
+      if (dups)
+	*ht = dups;
+      else
+	{
+	  *ht = dups = id_hash_allocate (123, sizeof (int64), 0, boxint_hash, boxint_hashcmp);
+	  SET_THR_ATTR (self, TA_DUP_CANCEL, dups);
+	}
+    }
+  else
+    dups = *ht;
+  if (boxint_hash != dups->ht_hash_func || 8 != dups->ht_ext_inx)
+    GPF_T1 ("corrupt dups cancel ht");
+  id = DFG_ID (((to_host << 16) | coord), req_no);
+  if (id_hash_get (dups, (caddr_t) & id))
+    return 1;
+  id_hash_set (dups, (caddr_t) & id, NULL);
+  return 0;
+}
+
+void
+cl_clear_dup_cancel ()
+{
 }
 
 
@@ -118,18 +278,21 @@ clrg_copy (cl_req_group_t * clrg)
 int
 clrg_destroy (cl_req_group_t * clrg)
 {
-  mutex_enter (clrg_ref_mtx);
+  id_hash_t *dups = NULL;
+  mutex_enter (&clrg->clrg_mtx);
   clrg->clrg_ref_count--;
   if (clrg->clrg_ref_count)
     {
-      mutex_leave (clrg_ref_mtx);
+      mutex_leave (&clrg->clrg_mtx);
       return 1;
     }
-  mutex_leave (clrg_ref_mtx);
-  mutex_enter (local_cll.cll_mtx);
+  mutex_leave (&clrg->clrg_mtx);
+  IN_CLL;
   mutex_enter (&clrg->clrg_mtx);
   DO_SET (cll_in_box_t *, clib, &clrg->clrg_clibs)
     {
+    if (clib->clib_alt_trx_no)
+      lt_alt_trx_no_free (clrg->clrg_lt, clib->clib_alt_trx_no);
       if (!clib->clib_req_no || clib->clib_fake_req_no)
 	continue; /* if no req no or a dfg sending clib, it is not really registered. If freed here, would remhash using a remote clib no and could collide dropping a local registration */
 #if 0
@@ -139,7 +302,7 @@ clrg_destroy (cl_req_group_t * clrg)
       remhash ((void*)(ptrlong)clib->clib_req_no, local_cll.cll_id_to_clib);
     }
   END_DO_SET();
-  mutex_leave (local_cll.cll_mtx);
+  LEAVE_CLL;
   mutex_leave (&clrg->clrg_mtx);
   dk_free_tree (clrg->clrg_error);
   DO_SET (cll_in_box_t *, clib, &clrg->clrg_clibs)
@@ -164,6 +327,7 @@ clrg_destroy (cl_req_group_t * clrg)
     }
   END_DO_SET ();
   dk_set_free (clrg->clrg_clibs);
+  clrg_dml_free (clrg);
   dk_mutex_destroy (&clrg->clrg_mtx);
   if (clrg->clrg_cu)
     cu_free (clrg->clrg_cu);
@@ -205,9 +369,6 @@ clo_allocate_4 (char op)
   return clo;
 }
 
-#define CLO_HEAD_SIZE ((ptrlong)&((cl_op_t*)0)->_)
-#define CLO_ROW_SIZE (((ptrlong)&((cl_op_t*)0)->_.row.cols) + sizeof (caddr_t))
-#define CLO_CALL_SIZE  (CLO_HEAD_SIZE + sizeof (((cl_op_t*)0)->_.call))
 
 
 cl_op_t *
@@ -227,6 +388,7 @@ mp_clo_allocate (mem_pool_t * mp, char op)
       MP_BYTES (box, mp, CLO_ROW_SIZE);
       clo = (cl_op_t*) box;
       clo->_.row.cols = NULL;
+      clo->_.row.local_dcs = NULL;
       clo->clo_clibs = NULL;
       break;
     case CLO_CALL:
@@ -289,24 +451,6 @@ clo_destroy  (cl_op_t * clo)
       dk_free_tree (clo->_.call.func);
       dk_free_tree (clo->_.call.params);
       break;
-    case CLO_STATUS:
-      dk_free ((caddr_t)clo->_.cst.cst, sizeof (cl_status_t));
-      break;
-    case CLO_INXOP:
-      dk_free (clo->_.inxop.cio, sizeof (cl_inxop_t));
-      break;
-    case CLO_QF_EXEC:
-      dk_free_tree ((caddr_t)clo->_.frag.params);
-      break;
-    case CLO_STN_IN:
-      dk_free_box (clo->_.stn_in.in);
-      break;
-    case CLO_DFG_ARRAY:
-      dk_free_tree ((caddr_t)clo->_.dfg_array.stats);
-      break;
-    case CLO_DFG_STATE:
-      dk_free_box ((caddr_t)clo->_.dfg_stat.out_counts);
-      break;
     }
   return 0;
 }
@@ -319,31 +463,19 @@ clrg_add (cl_req_group_t * clrg, cl_host_t * host, cl_op_t * clop)
   return 0;
 }
 
-
 int
-clrg_wait (cl_req_group_t * clrg, int wait_all, caddr_t * qst)
+clrg_add_slice (cl_req_group_t * clrg, cl_host_t * host, cl_op_t * clop, slice_id_t slid)
 {
-  return CLE_OK;
+  return 0;
 }
 
 
-void
-clib_read_next (cll_in_box_t * clib, caddr_t * inst, dk_set_t out_slots)
-{
-  /* set clib_first to be the next from the in strings.  If no data, set it to CLO_NONE.
-   * if the next is a row and the slots are given, set the data into the slots direct and set the row.cols to null */
-  dtp_t op;
-  dk_session_t * ses = &clib->clib_in_strses;
-  if (clib->clib_host && clib->clib_host->ch_id == local_cll.cll_this_host)
-    {
-      if (++clib->clib_rows_done < clib->clib_n_local_rows)
+extern du_thread_t *recomp_thread;
+
+int
+clrg_wait (cl_req_group_t * clrg, int wait_all, caddr_t * qst)
 	{
-	  clib_row_boxes (clib);
-	  return;
-	}
-      clib->clib_first.clo_op = CLO_NONE;
-      return;
-    }
+  return CLE_OK;
 }
 
 
@@ -370,63 +502,13 @@ cl_local_skip_to_set (cll_in_box_t * clib)
 	return;
     }
 }
+
 void
-clib_more (cll_in_box_t * clib)
+lt_alt_trx_no_free (lock_trx_t * lt, int64 alt_no)
 {
-  if (clib->clib_host->ch_id == local_cll.cll_this_host)
-    {
-      if (clib->clib_skip_target_set)
-	{
-	  cl_local_skip_to_set (clib);
-	  return; /* do not do an actual more when skipping sets.  Let the subsequen itcl_fetch do that. Like this, the state is not changed by skipping sets */
-	}
-      if (clib->clib_local_clo.bsk_count)
-	clib_local_next (clib);
-    }
 }
 
-cl_op_t *
-clib_first (cll_in_box_t * clib)
-{
- retry:
-  if (clib->clib_host->ch_id == local_cll.cll_this_host)
-    {
-      if (!clib->clib_is_active)
+void
+clrg_top_check (cl_req_group_t * clrg, query_instance_t * top_qi)
 	{
-	  clib->clib_first.clo_op = CLO_SET_END;
-	  return &clib->clib_first;
-	}
-      if (clib->clib_rows_done > clib->clib_n_local_rows)
-	{
-	  clib_more (clib);
-	  goto retry;
-	}
-      clib->clib_rows_done = 0;
-      clib_row_boxes (clib);
-    }
-  if (CLO_NONE == clib->clib_first.clo_op)
-    {
-      if (clib->clib_in.bsk_count)
-	{
-	  clib_read_next (clib, NULL, NULL);
-	  return clib_first (clib);
-	}
-      return NULL;
-    }
-  if (CLO_BATCH_END == clib->clib_first.clo_op)
-    {
-      clib->clib_batches_read++;
-      if (clib->clib_batches_requested == clib->clib_batches_read)
-	{
-	  cl_printf (("Host %d at batch end, unexpected, at %d rows\n", clib->clib_host->ch_id, clib->clib_rows_done));
-	  clib_more (clib);
-	}
-      clib->clib_rows_done = 0;
-      clib->clib_row_low_water = 0;
-      clib->clib_first.clo_op = CLO_NONE;
-      return NULL;
-    }
-  return &clib->clib_first;
 }
-
-

@@ -106,5 +106,7 @@ extern int dt_print_to_buffer (char *buf, caddr_t arg, int mode);
 extern int dt_scan_from_buffer (const char *buf, int mode, caddr_t *dt_ret, const char **err_msg_ret);
 
 extern int dt_local_tz;
-
+int dt_compare (caddr_t dt1, caddr_t dt2);
+unsigned int64  dt_seconds (caddr_t dt);
+void dt_print (caddr_t dt);
 #endif /* _DATESUPP_H */

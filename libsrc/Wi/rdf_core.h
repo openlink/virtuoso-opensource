@@ -34,6 +34,7 @@
 #define IRI_TO_ID_IF_KNOWN	0 /*!< Return IRI_ID if known, integer zero (NULL) if not known or error is not NULL */
 #define IRI_TO_ID_WITH_CREATE	1 /*!< Return IRI_ID if known or created on the fly, integer zero (NULL) if error is not NULL */
 #define IRI_TO_ID_IF_CACHED	2 /*!< Return IRI_ID if known and is in cache, integer zero (NULL) if not known or known but not cached or error is not NULL */
+#define IRI_TO_ID_GPF		3 /*!< The conversion must be avoided at all, GPF is signalled if the value is tried */
 
 /*!< returns 0 for NULL or non-cached rdf box or error, 1 for ready to use iri_id, 2 for URI string */
 extern int iri_canonicalize (query_instance_t *qi, caddr_t name, int mode, caddr_t *res_ret, caddr_t *err_ret);
@@ -68,6 +69,9 @@ extern iri_id_t bnode_t_treshold;
 #define BNODE_IID_TO_TALIS_JSON_LABEL(iid) BNODE_FMT_IMPL(box_sprintf,30,"_:v",iid)
 
 /* Set of callback to accept the stream of RDF quads that are grouped by graph and share blank node IDs */
+
+EXE_EXPORT (void, sqlr_set_cbk_name_and_proc, (client_connection_t *cli, const char *cbk_name, const char* cbk_param_types, const char *funname,
+  char **full_name_ret, query_t **proc_ret, caddr_t *err_ret ));
 
 #define TRIPLE_FEED_NEW_GRAPH	0
 #define TRIPLE_FEED_NEW_BLANK	1
@@ -316,6 +320,7 @@ extern caddr_t uriqa_dynamic_local_replace_nocheck (caddr_t name, client_connect
 
 /* if rb content longer than this, use md5 in rdf_obj table key */
 #define RB_BOX_HASH_MIN_LEN 50
-
+caddr_t mdigest5 (caddr_t str);
+boxint rdf_new_iri_id (lock_trx_t * lt, char ** value_seq_ret, int nth, query_instance_t * qi);
 
 #endif

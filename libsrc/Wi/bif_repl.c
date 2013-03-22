@@ -55,12 +55,13 @@ sched_do_round_1 (const char * text)
   client_connection_t * save_cli = THR_ATTR (THREAD_CURRENT_THREAD, TA_IMMEDIATE_CLIENT);
   caddr_t org_qual = sched_cli->cli_qualifier; /* store the original qualifier */
 
-  if (cpt_is_global_lock ())
+  if (cpt_is_global_lock (NULL))
     return;
 
   sched_cli->cli_qualifier = box_string (org_qual);
   SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_IMMEDIATE_CLIENT, sched_cli);
   local_start_trx (sched_cli);
+  cli_set_start_times (sched_cli);
   qr = sql_compile (text, sched_cli, &err, SQLC_DEFAULT);
   if (!err)
     err = qr_quick_exec (qr, sched_cli, "", NULL, 0);

@@ -417,7 +417,7 @@ inxop_bm_next (inx_op_t * iop , query_instance_t * qi, int op,
   if (0 && IOP_TARGET == op)
     check_target (itc);
   iob = (inxop_bm_t *) QST_GET (qst, iop->iop_bitmap);
-  if (iob &&  iob->iob_is_inited && itc->itc_bp.bp_is_pos_valid)
+  if (iob &&  iob->iob_is_inited)
     {
       rc = inxop_iob_next (iop, itc, iob, op, qst);
       if (rc != IOP_READ_INDEX)
@@ -451,7 +451,7 @@ inxop_bm_next (inx_op_t * iop , query_instance_t * qi, int op,
 	    }
 	case IOP_TARGET:
 	  itc->itc_search_mode = SM_READ;
-	  itc->itc_key_spec = iop->iop_ks_full_spec; /* set here. May have looped because of checking with iop_other and the init specs may have been the specs for next */
+	  itc->itc_key_spec = iop->iop_ks_full_spec; /* set here. May have looped because of checking with iop_other and the init speczs may have been the specs for next */
 	  buf = itc_reset (itc);
 	  rc = itc_search (itc, &buf);
 	  if (DVC_LESS == rc)
@@ -569,7 +569,7 @@ inxop_next (inx_op_t * iop , query_instance_t * qi, int op,
       itc->itc_ks = ks;
       itc->itc_out_state = qst;
 
-      itc_from (itc, ks->ks_key);
+      itc_from (itc, ks->ks_key, QI_NO_SLICE);
       itc->itc_insert_key = ks->ks_key;
       itc->itc_desc_order = ks->ks_descending;
 

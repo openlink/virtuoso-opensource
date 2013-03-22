@@ -38,6 +38,10 @@
 #undef DBG_PRINTF
 #endif
 
+#ifdef NO_DBG_PRINTF
+#undef DBG_PRINTF
+#endif
+
 #ifdef DBG_PRINTF
 # ifdef __GNUC__
 /* This macro uses a gcc specific preprocessor extension */
@@ -137,8 +141,7 @@ typedef union memview_u memview_t;
 
 BEGIN_CPLUSPLUS
 
-int gpf_notice (const char *file, int line, const char *text);
+EXE_EXPORT (int, gpf_notice, (const char *file, int line, const char *text));
 
 END_CPLUSPLUS
-
 #endif

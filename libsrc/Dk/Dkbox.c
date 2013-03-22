@@ -151,7 +151,25 @@ box_dv_uname_audit_table (void)
 #define box_dv_uname_audit_table()
 #endif
 
+#ifdef MALLOC_DEBUG
+#define dk_alloc_mmap(sz) dk_alloc (sz)
+#define dk_free_munmap(ptr, sz) dk_free (ptr, sz)
+#else
 
+void *
+dk_mmap_brk (size_t sz)
+{
+  return mm_large_alloc (sz);
+}
+
+#define dk_alloc_mmap(sz) \
+  ((sz) >= box_min_mmap && (sz) < 0xffffff ? (caddr_t) dk_mmap_brk (sz) : dk_alloc (sz))
+#define dk_free_munmap(ptr, sz)						\
+  ((sz) >= box_min_mmap && (sz) < 0xffffff ? mm_free_sized (ptr, sz) : dk_free (ptr, sz))
+#endif
+
+
+size_t box_min_mmap = (1024 * 100 ) - 8;
 #undef dk_alloc_box
 box_t
 dk_alloc_box (size_t bytes, dtp_t tag)
@@ -170,7 +188,7 @@ dk_alloc_box (size_t bytes, dtp_t tag)
   align_bytes = 4 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_4 (bytes));
 #endif
 
-  ptr = (unsigned char *) dk_alloc (align_bytes);
+  ptr = (unsigned char *) dk_alloc_mmap (align_bytes);
   if (!ptr)
     return (box_t) ptr;
 
@@ -192,9 +210,10 @@ dk_alloc_box_long (size_t bytes, dtp_t tag)
 {
   unsigned char *ptr;
   size_t align_bytes;
+
 #ifdef MALLOC_DEBUG
-  if (bytes > 100000000)
-    GPF_T1 ("malloc debug only check for large boxes, over 100M");
+  if (bytes > 1000000000)
+    GPF_T1 ("Box over 1G, suspect, assertion in malloc debug mode only");
 #endif
 
   /* This assumes dk_alloc aligns at least at 4 */
@@ -204,7 +223,7 @@ dk_alloc_box_long (size_t bytes, dtp_t tag)
   align_bytes = 4 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_4 (bytes));
 #endif
 
-  ptr = (unsigned char *) dk_alloc (align_bytes);
+  ptr = (unsigned char *) dk_alloc_mmap (align_bytes);
   if (!ptr)
     return (box_t) ptr;
 
@@ -241,6 +260,9 @@ dk_try_alloc_box (size_t bytes, dtp_t tag)
   align_bytes = 4 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_4 (bytes));
 #endif
 
+  if (align_bytes >= box_min_mmap)
+    ptr = dk_alloc_mmap (align_bytes);
+  else
   ptr = (unsigned char *) dk_try_alloc (align_bytes);
   if (!ptr)
     return (box_t) ptr;
@@ -273,7 +295,7 @@ dk_alloc_box_zero (size_t bytes, dtp_t tag)
   align_bytes = 4 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_4 (bytes));
 #endif
 
-  ptr = (unsigned char *) dk_alloc (align_bytes);
+  ptr = (unsigned char *) dk_alloc_mmap (align_bytes);
   if (!ptr)
     return (box_t) ptr;
 
@@ -456,6 +478,7 @@ box_mp_copy_non_box (mem_pool_t * mp, caddr_t b)
 void
 dk_mem_hooks (dtp_t tag, box_copy_f c, box_destr_f d, int bcatit)
 {
+  if (box_destr[tag] && d && d != box_destr[tag]) GPF_T1 ("redefining mem hooks");
   box_destr[tag] = d;
   box_copier[tag] = c;
   box_tmp_copier[tag] = NULL;
@@ -466,6 +489,7 @@ dk_mem_hooks (dtp_t tag, box_copy_f c, box_destr_f d, int bcatit)
 void
 dk_mem_hooks_2 (dtp_t tag, box_copy_f c, box_destr_f d, int bcatit, box_tmp_copy_f t_c)
 {
+  if (box_destr[tag] && d && d != box_destr[tag]) GPF_T1 ("redefining mem hooks");
   box_destr[tag] = d;
   box_copier[tag] = c;
   box_can_appear_twice_in_tree[tag] = bcatit;
@@ -615,16 +639,16 @@ dk_free_box (box_t box)
 #endif
 
 #ifdef DOUBLE_ALIGN
-#ifdef MALLOC_DEBUG 
+#ifdef MALLOC_DEBUG
   if (len >= 0xffffff)
     {
       dbg_free (__FILE__, __LINE__, ptr - 8);
       return 0;
     }
 #endif
-  dk_free (ptr - 8, len + 8);
+  dk_free_munmap (ptr - 8, len + 8);
 #else
-  dk_free (ptr - 4, len + 4);
+  dk_free_munmap (ptr - 4, len + 4);
 #endif
 #ifdef _DEBUG
   box_types_free[tag]++;
@@ -660,6 +684,9 @@ dkbox_terminate_module (void)
     }
 }
 
+#if defined (WIN32) || defined (SOLARIS)
+#define __builtin_prefetch(m)
+#endif
 
 int
 dk_free_tree (box_t box)
@@ -702,9 +729,19 @@ dk_free_tree (box_t box)
     case DV_XTREE_HEAD:
     case DV_XTREE_NODE:
       {
-	uint32 count = len / sizeof (box_t), inx;
+	uint32 count = len / sizeof (box_t), inx = 0;
 	box_t *obj = (box_t *) box;
-	for (inx = 0; inx < count; inx++)
+	if (count > 3)
+	  {
+	    for (inx = 0; inx < count - 3; inx += 2)
+	      {
+		__builtin_prefetch (obj[inx + 2]);
+		__builtin_prefetch (obj[inx + 3]);
+		dk_free_tree (obj[inx]);
+		dk_free_tree (obj[inx + 1]);
+	      }
+	  }
+	for (inx = inx; inx < count; inx++)
 	  dk_free_tree (obj[inx]);
 #ifdef MALLOC_DEBUG
 	if (len != ALIGN_4 (len))
@@ -744,9 +781,9 @@ dk_free_tree (box_t box)
 #endif
 
 #ifdef DOUBLE_ALIGN
-  dk_free (ptr - 8, len + 8);
+  dk_free_munmap (ptr - 8, len + 8);
 #else
-  dk_free (ptr - 4, len + 4);
+  dk_free_munmap (ptr - 4, len + 4);
 #endif
 #ifdef _DEBUG
   box_types_free[tag]++;
@@ -765,6 +802,7 @@ box_reuse (caddr_t box, ccaddr_t data, size_t len, dtp_t dtp)
   ((dtp_t *) box)[-4] = (dtp_t) (len & 0xff);
   ((dtp_t *) box)[-3] = (dtp_t) (len >> 8);
   ((dtp_t *) box)[-2] = (dtp_t) (len >> 16);
+  if (box != data)
   memcpy (box, data, len);
 }
 
@@ -1224,8 +1262,19 @@ box_t DBG_NAME (box_copy_tree) (DBG_PARAMS cbox_t box)
       len = box_length (box);
       copy = (box_t *) DBG_NAME (dk_alloc_box) (DBG_ARGS len, tag);
       len /= sizeof (box_t);
-      for (inx = 0; inx < len; inx++)
+      if (len > 1)
+	{
+	  for (inx = 0; inx < len - 1; inx++)
+	    {
+	      __builtin_prefetch (((box_t*)box)[inx + 1]);
+	      copy[inx] = DBG_NAME (box_copy_tree) (DBG_ARGS ((box_t *) box)[inx]);
+	    }
 	copy[inx] = DBG_NAME (box_copy_tree) (DBG_ARGS ((box_t *) box)[inx]);
+	}
+      else if (len)
+        {
+          copy[0] = DBG_NAME (box_copy_tree) (DBG_ARGS ((box_t *) box)[0]);
+        }
       return (box_t) copy;
 
     case DV_UNAME:
@@ -1384,7 +1433,7 @@ DBG_NAME (box_dv_short_string) (DBG_PARAMS const char *string)
 rdf_box_t *
 rb_allocate (void)
 {
-  rdf_box_t *rb = (rdf_box_t *) dk_alloc_box_zero (sizeof (rdf_box_t), DV_RDF);
+  rdf_box_t *rb = (rdf_box_t *) dk_alloc_box_zero (sizeof (rdf_bigbox_t), DV_RDF);
   rb->rb_ref_count = 1;
   return rb;
 }
@@ -1399,7 +1448,7 @@ rbb_allocate (void)
 }
 
 
-caddr_t 
+caddr_t
 rbb_from_id (int64 n)
 {
   rdf_bigbox_t * rbb = rbb_allocate ();
@@ -1426,6 +1475,7 @@ rdf_box_audit_impl (rdf_box_t * rb)
   if ((0 == rb->rb_ro_id) && (0 == rb->rb_is_complete))
     GPF_T1 ("RDF box is too incomplete");
 #endif
+  if (rb->rb_type < RDF_BOX_MIN_TYPE) GPF_T1 ("rb type out pof range");
   if (rb->rb_is_complete)
     rb_dt_lang_check(rb);
 }
@@ -1589,6 +1639,7 @@ DBG_NAME (box_float) (DBG_PARAMS float d)
 
 
 box_hash_cmp_func_t dtp_cmp_func[256];
+box_hash_cmp_func_t dtp_strong_cmp_func[256];
 
 void
 dtp_set_cmp (dtp_t dtp, box_hash_cmp_func_t f)
@@ -1596,6 +1647,11 @@ dtp_set_cmp (dtp_t dtp, box_hash_cmp_func_t f)
   dtp_cmp_func[dtp] = f;
 }
 
+void
+dtp_set_strong_cmp (dtp_t dtp, box_hash_cmp_func_t f)
+{
+  dtp_strong_cmp_func[dtp] = f;
+}
 
 int
 box_equal (cbox_t b1, cbox_t b2)
@@ -1648,10 +1704,7 @@ box_equal (cbox_t b1, cbox_t b2)
   if (IS_NONLEAF_DTP (b1_tag) && IS_NONLEAF_DTP (b2_tag))
     {
       uint32 inx;
-      l1 = BOX_ELEMENTS (b1);
-      l2 = BOX_ELEMENTS (b2);
-      if (l1 != l2)
-	return 0;
+      l1 /= sizeof (caddr_t);
       for (inx = 0; inx < l1; inx++)
 	{
 	  if (!box_equal (((box_t *) b1)[inx], ((box_t *) b2)[inx]))
@@ -1659,7 +1712,79 @@ box_equal (cbox_t b1, cbox_t b2)
 	}
       return 1;
     }
-  return (memcmp (b1, b2, l1) ? 0 : 1);
+  memcmp_8 (b1, b2, l1, neq);
+  return 1;
+ neq:
+  return 0;
+  /*return (memcmp (b1, b2, l1) ? 0 : 1); */
+}
+
+
+int
+box_strong_equal (cbox_t b1, cbox_t b2)
+{
+  uint32 l1, l2;
+  dtp_t b1_tag, b2_tag;
+  boxint b1_long_val = 0, b2_long_val = 0;
+
+  if (b1 == b2)
+    return 1;
+
+  if (!IS_BOX_POINTER (b1))
+    {
+      b1_tag = DV_LONG_INT;
+      b1_long_val = (boxint) (ptrlong) b1;
+    }
+  else
+    {
+      b1_tag = box_tag (b1);
+      if (b1_tag == DV_LONG_INT)
+	b1_long_val = *(boxint *) b1;
+    }
+
+  if (!IS_BOX_POINTER (b2))
+    {
+      b2_tag = DV_LONG_INT;
+      b2_long_val = (boxint) (ptrlong) b2;
+    }
+  else
+    {
+      b2_tag = box_tag (b2);
+      if (b2_tag == DV_LONG_INT)
+	b2_long_val = *(boxint *) b2;
+    }
+  if (b1_tag == DV_RDF || b2_tag == DV_RDF)
+    {
+      if (b1_tag != DV_RDF || b2_tag != DV_RDF)
+        return 0;
+    }
+  if (b1_tag == DV_LONG_INT || b2_tag == DV_LONG_INT)
+    {
+      if (b1_tag != b2_tag)
+	return 0;
+      return b1_long_val == b2_long_val;
+    }
+  if (b1_tag == b2_tag && dtp_strong_cmp_func[b1_tag])
+    return dtp_strong_cmp_func[b1_tag] (b1, b2);
+  l1 = box_length (b1);
+  l2 = box_length (b2);
+  if (l1 != l2)
+    return 0;
+  if (IS_NONLEAF_DTP (b1_tag) && IS_NONLEAF_DTP (b2_tag))
+    {
+      uint32 inx;
+      l1 /= sizeof (caddr_t);
+      for (inx = 0; inx < l1; inx++)
+	{
+	  if (!box_strong_equal (((box_t *) b1)[inx], ((box_t *) b2)[inx]))
+	    return 0;
+	}
+      return 1;
+    }
+  memcmp_8 (b1, b2, l1, neq);
+  return 1;
+ neq:
+  return 0;
 }
 
 
@@ -2280,6 +2405,7 @@ dk_box_initialize (void)
 #ifdef MALLOC_DEBUG
   dk_mem_hooks_2 (DV_NON_BOX, box_copy_non_box, NULL, 0, box_mp_copy_non_box);
 #endif
+  dk_mem_hooks (DV_RBUF,  box_non_copiable, rbuf_free_cb, 0);
   uname_mutex = mutex_allocate ();
   if (NULL == uname_mutex)
     GPF_T;

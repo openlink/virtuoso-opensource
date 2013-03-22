@@ -33,16 +33,37 @@
 
 resource_t *aq_threads;
 int aq_n_threads = 0;
-int aq_max_threads = 10;
+int aq_max_threads = 20;
 
 int aq_free (async_queue_t * aq);
 
 long tc_aq_from_queue;
+long tc_aq_from_other;
+dk_hash_t *all_aqs;
+dk_mutex_t *all_aq_mtx;
+
+#define IN_AQ mutex_enter (all_aq_mtx)
+#define LEAVE_AQ mutex_leave (all_aq_mtx)
+
+
+void
+aq_print (async_queue_t * aq)
+{
+  DO_HT (ptrlong, req_no, aq_request_t *, aqr, aq->aq_requests)
+  {
+    printf ("%ld state %d aqr %p\n", req_no, aqr->aqr_state, aqr);
+  }
+  END_DO_HT;
+}
+
 
 void
 aq_lt_leave (lock_trx_t * lt, aq_request_t * aqr)
 {
-  int lte = lt->lt_error;
+  int lte;
+  lt_log_merge (lt, 1);
+  lte = lt->lt_error;
+  lt->lt_at_end_of_aq_thread = 1;
   if (aqr->aqr_error || LT_PENDING != lt->lt_status)
     {
       lt_rollback (lt, TRX_CONT);
@@ -59,6 +80,39 @@ aq_lt_leave (lock_trx_t * lt, aq_request_t * aqr)
 }
 
 
+aq_request_t *
+aqt_other_aq (aq_thread_t * aqt)
+{
+  /* called when own aq is exhausted. See if another can be served */
+  async_queue_t *best = NULL;
+  uint32 best_time;
+  uint32 now = 4000 + approx_msec_real_time ();
+  ASSERT_IN_MTX (all_aq_mtx);
+  DO_HT (async_queue_t *, aq, caddr_t, ign, all_aqs)
+  {
+    if (aq->aq_no_lt_enter && aq->aq_queue.bsk_count)
+      {
+	best = aq;
+	break;
+      }
+    if (!aq->aq_deleted && aq->aq_queue.bsk_count
+	&& aq->aq_n_threads < aq->aq_max_threads && (!best || best_time < now - aq->aq_ts))
+      {
+	best = aq;
+	best_time = now - aq->aq_ts;
+      }
+  }
+  END_DO_HT;
+  if (best)
+    {
+      aqt->aqt_aq = best;
+      best->aq_n_threads++;
+      return basket_get (&best->aq_queue);
+    }
+  return NULL;
+}
+
+
 void
 aq_thread_func (aq_thread_t * aqt)
 {
@@ -69,14 +123,32 @@ aq_thread_func (aq_thread_t * aqt)
   sqlc_set_client (aqt->aqt_cli);
   for (;;)
     {
+      int64 ts = rdtsc ();
       async_queue_t *aq = aqt->aqt_aq;
       aq_request_t *aqr = aqt->aqt_aqr;
       assert (AQR_QUEUED == aqr->aqr_state);
-      lt_enter_anyway (aqt->aqt_cli->cli_trx);
+      if (!aq->aq_no_lt_enter)
+	{
+	  lt_enter_anyway (aqt->aqt_cli->cli_trx);
+	  aqt->aqt_cli->cli_trx->lt_thr = self;
+	  aqt->aqt_cli->cli_trx->lt_main_trx_no = aq->aq_main_trx_no;
+	  aqt->aqt_cli->cli_trx->lt_rc_w_id = aq->aq_rc_w_id;
+	  memcpy (aqt->aqt_cli->cli_trx->lt_timestamp, aq->aq_lt_timestamp, DT_LENGTH);
+	}
+      if (aqt->aqt_cli->cli_trx->lt_vdb_threads)
+	GPF_T1 ("at lt not supposed to in io sect");
       if (IS_BOX_POINTER (aqt->aqt_cli->cli_trx->lt_replicate))
 	dk_free_tree (aqt->aqt_cli->cli_trx->lt_replicate);
-      aqt->aqt_cli->cli_trx->lt_replicate = REPL_LOG;
-      aqt->aqt_cli->cli_row_autocommit = 0;
+      aqt->aqt_cli->cli_trx->lt_replicate = (caddr_t *) aq->aq_replicate;
+      aqt->aqt_cli->cli_row_autocommit = aq->aq_row_autocommit;
+      aqt->aqt_cli->cli_non_txn_insert = aq->aq_non_txn_insert;
+      aqt->aqt_cli->cli_no_triggers = aq->aq_no_triggers;
+      aqt->aqt_cli->cli_terminate_requested = 0;
+      aqt->aqt_cli->cli_anytime_started = aq->aq_anytime_started;
+      aqt->aqt_cli->cli_anytime_timeout = aq->aq_anytime_timeout;
+      aqt->aqt_cli->cli_anytime_qf_started = 0;
+      aqt->aqt_cli->cli_cl_stack = (cl_call_stack_t *) box_copy ((caddr_t) aq->aq_cl_stack);
+      aqt->aqt_cli->cli_aqr = aqr;
       if (AQR_QUEUED != aqr->aqr_state)
 	GPF_T1 ("aqr_state is supposed to be AQR_QUEUEED here");
       mutex_enter (aq->aq_mtx);
@@ -86,16 +158,37 @@ aq_thread_func (aq_thread_t * aqt)
       /* with privs of te owner of the aq being served */
       aqt->aqt_cli->cli_user = aq->aq_user;
       CLI_SET_QUAL (aqt->aqt_cli, aq->aq_qualifier);
-      aqr->aqr_value = aqr->aqr_func (aqr->aqr_args, &aqr->aqr_error);
+      memzero (&aqt->aqt_cli->cli_activity, sizeof (db_activity_t));
+      aqr->aqr_dbg_thread = THREAD_CURRENT_THREAD;
+      if (0 && aq->aq_anytime_started && aq->aq_anytime_started + aq->aq_anytime_timeout < approx_msec_real_time ())
+	aqr->aqr_error = srv_make_new_error (SQL_ANYTIME, "AQANY", "Aq request anytimed before starting execution");
+      else
+	aqr->aqr_value = aqr->aqr_func (aqr->aqr_args, &aqr->aqr_error);
+      aqr->aqr_debug = NULL;
       assert (aqt->aqt_thread->thr_sem->sem_entry_count == 0);
+      if (aqt->aqt_cli->cli_clt)
+	GPF_T1 ("aq thread returning is not supposed to have a clt, not even if served rec dfg, would been clrd");
       aqr->aqr_args = NULL;
-      IN_TXN;
-      aq_lt_leave (aqt->aqt_cli->cli_trx, aqr);
-      LEAVE_TXN;
+      dk_free_box (aqt->aqt_cli->cli_cl_stack);
+      aqt->aqt_cli->cli_cl_stack = NULL;
+      if (QI_NO_SLICE != aqt->aqt_cli->cli_slice)
+	cli_set_slice (aqt->aqt_cli, NULL, QI_NO_SLICE, NULL);
+      if (!aq->aq_no_lt_enter)
+	{
+	  IN_TXN;
+	  aqt->aqt_cli->cli_trx->lt_main_trx_no = aq->aq_main_trx_no;
+	  aq_lt_leave (aqt->aqt_cli->cli_trx, aqr);
+	  LEAVE_TXN;
 
+	}
+      aqt->aqt_cli->cli_activity.da_thread_time += rdtsc () - ts;
+      aqr->aqr_activity = aqt->aqt_cli->cli_activity;
+      memzero (&aqt->aqt_cli->cli_activity, sizeof (db_activity_t));
       mutex_enter (aq->aq_mtx);
       aqr->aqr_state = AQR_DONE;
-      if (aqr->aqr_waiting)
+      if (aq->aq_waiting)
+	semaphore_leave (aq->aq_waiting->thr_sem);
+      else if (aqr->aqr_waiting)
 	semaphore_leave (aqr->aqr_waiting->thr_sem);
       aqt->aqt_aqr = aqr = basket_get (&aq->aq_queue);
       if (aqr)
@@ -109,9 +202,17 @@ aq_thread_func (aq_thread_t * aqt)
 	{
 	  mutex_leave (aq->aq_mtx);
 	  dk_free_box (aq);
+	  IN_AQ;
 	}
-      else
-	mutex_leave (aq->aq_mtx);
+
+      aqt->aqt_aqr = aqr = aqt_other_aq (aqt);
+      if (aqr)
+	{
+	  LEAVE_AQ;
+	  TC (tc_aq_from_other);
+	  continue;
+	}
+      LEAVE_AQ;
       TC (tc_aq_sleep);
       resource_store (aq_threads, (void *) aqt);
       semaphore_enter (self->thr_sem);
@@ -120,12 +221,11 @@ aq_thread_func (aq_thread_t * aqt)
 
 
 aq_thread_t *
-aqt_allocate (lock_trx_t * lt)
+aqt_allocate ()
 {
   if (aq_n_threads >= aq_max_threads)
     return NULL;
   aq_n_threads++;
-  vdb_enter_lt (lt);
   {
     dk_thread_t *thr;
     dk_session_t *ses = dk_session_allocate (SESCLASS_TCPIP);
@@ -137,7 +237,6 @@ aqt_allocate (lock_trx_t * lt)
     IN_TXN;
     cli_set_new_trx (cli);
     LEAVE_TXN;
-    vdb_leave_lt (lt, NULL);
     thr = PrpcThreadAllocate ((init_func) aq_thread_func, http_thread_sz, (void *) aqt);
     if (!thr)
       {
@@ -155,47 +254,88 @@ aqt_allocate (lock_trx_t * lt)
 }
 
 
-int
-aq_request (async_queue_t * aq, aq_func_t f, caddr_t args, lock_trx_t * lt)
+void
+aqr_call_w_ctx (aq_request_t * aqr)
 {
-  int rc;
-  client_connection_t * cli = NULL;
+  client_connection_t *cli = GET_IMMEDIATE_CLIENT_OR_NULL;
+  async_queue_t *aq = aqr->aqr_aq;
+  aq_request_t *old_aqr = cli->cli_aqr;
+  int old_nt = cli->cli_non_txn_insert;
+  int old_ntrig = cli->cli_no_triggers;
+  int old_ac = cli->cli_row_autocommit;
+  cl_aq_ctx_t *old_claq = cli->cli_claq;
+  cl_slice_t *old_csl = cli->cli_csl;
+  int old_qfs = cli->cli_anytime_qf_started;
+  cli->cli_aqr = aqr;
+  cli->cli_no_triggers = aq->aq_no_triggers;
+  cli->cli_row_autocommit = aq->aq_row_autocommit;
+  cli->cli_non_txn_insert = aq->aq_non_txn_insert;
+  aqr->aqr_dbg_thread = THREAD_CURRENT_THREAD;
+  if (0 && aq->aq_anytime_started && aq->aq_anytime_started + aq->aq_anytime_timeout < approx_msec_real_time ())
+    aqr->aqr_error = srv_make_new_error (SQL_ANYTIME, "AQANY", "Aq request anytimed before starting execution");
+  else
+    aqr->aqr_value = aqr->aqr_func (aqr->aqr_args, &aqr->aqr_error);
+  cli->cli_row_autocommit = old_ac;
+  cli->cli_no_triggers = old_ntrig;
+  cli->cli_non_txn_insert = old_nt;
+  cli->cli_claq = old_claq;
+  cli->cli_aqr = old_aqr;
+  cli->cli_anytime_qf_started = old_qfs;
+  if (old_csl)
+    {
+      caddr_t err = NULL;
+      cli_set_slice (cli, old_csl->csl_clm, old_csl->csl_id, &err);
+      dk_free_tree (err);
+    }
+  else
+    cli_set_slice (cli, NULL, QI_NO_SLICE, NULL);
+}
+
+
+int
+aq_request (async_queue_t * aq, aq_func_t f, caddr_t args)
+{
   aq_thread_t *aqt;
   NEW_VARZ (aq_request_t, aqr);
+  aqr->aqr_aq = aq;
   mutex_enter (aq->aq_mtx);
-  aqr->aqr_req_no = aq->aq_req_no++;
+  do
+    {
+      aqr->aqr_req_no = ++aq->aq_req_no;
+    }
+  while (0 == aqr->aqr_req_no || gethash ((void *) (ptrlong) aqr->aqr_req_no, aq->aq_requests));
   aqr->aqr_func = f;
   aqr->aqr_args = args;
+  /*aqr->aqr_debug = BOX_ELEMENTS (args) ? (caddr_t)unbox (((caddr_t*)args)[0]) : NULL; */
   sethash ((void *) (ptrlong) aqr->aqr_req_no, aq->aq_requests, (void *) aqr);
   aqr->aqr_state = AQR_QUEUED;
-  if (aq->aq_n_threads == aq->aq_max_threads)
+  if (aq->aq_n_threads == aq->aq_max_threads || !aq_max_threads || aq->aq_queue_only)
     {
+      aq->aq_queue_only = 0;
       basket_add (&aq->aq_queue, (void *) aqr);
       mutex_leave (aq->aq_mtx);
       return aqr->aqr_req_no;
     }
   aqt = (aq_thread_t *) resource_get (aq_threads);
-  if (!aqt)
+  if (!aqt && !(aq->aq_no_lt_enter && wi_inst.wi_is_checkpoint_pending))
+    aqt = aqt_allocate ();
+  if (!aqt && !aq->aq_do_self_if_would_wait && 2 != aq->aq_need_own_thread)
     {
-      aqt = aqt_allocate (lt);
+      client_connection_t *cli = GET_IMMEDIATE_CLIENT_OR_NULL;
+      mutex_leave (aq->aq_mtx);
+      dbg_printf (("aq execution on requesting thread\n"));
+      if (cli->cli_clt || aq->aq_need_own_thread)
+	sqlr_new_error ("42000", "CLAQN",
+	    "aq request could not get its own thread on a cluster server thread. The request would not get an independent transaction and therefore cannot be started on the caller thread.   If the request does not require an independent transaction then specify the do self if would wait flag to the aq (flag value 1)");
+      aqr_call_w_ctx (aqr);
+      aqr->aqr_args = NULL;
+      aqr->aqr_state = AQR_DONE;
+      return aqr->aqr_req_no;
     }
   if (!aqt)
     {
+      basket_add (&aq->aq_queue, (void *) aqr);
       mutex_leave (aq->aq_mtx);
-      cli = GET_IMMEDIATE_CLIENT_OR_NULL;
-      dbg_printf (("aq execution on requesting thread\n"));
-      aqr->aqr_value = aqr->aqr_func (aqr->aqr_args, &aqr->aqr_error);
-      aqr->aqr_args = NULL;
-      aqr->aqr_state = AQR_DONE;
-      IN_TXN;
-      rc = lt_commit (cli->cli_trx, TRX_CONT);
-      LEAVE_TXN;
-      if (rc != LTE_OK)
-	{
-	  caddr_t err;
-	  MAKE_TRX_ERROR (rc, err, LT_ERROR_DETAIL (cli->cli_trx));
-	  sqlr_resignal (err);
-	}
       return aqr->aqr_req_no;
     }
   aqt->aqt_aq = aq;
@@ -206,24 +346,102 @@ aq_request (async_queue_t * aq, aq_func_t f, caddr_t args, lock_trx_t * lt)
   return aqr->aqr_req_no;
 }
 
+void
+aq_check_duplicate (async_queue_t * aq, caddr_t val)
+{
+  IN_AQ;
+  DO_HT (ptrlong, req_no, aq_request_t *, aqr, aq->aq_requests)
+  {
+#if 0
+    if (AQR_DONE != aqr->aqr_state && val == aqr->aqr_debug)
+      GPF_T1 ("double aq request");
+#endif
+  }
+  END_DO_HT;
+  LEAVE_AQ;
+}
+
 
 void
 aqr_free (aq_request_t * aqr)
 {
   assert (AQR_DONE == aqr->aqr_state);
   dk_free_tree (aqr->aqr_args);
-  dk_free_tree (aqr->aqr_value);
   dk_free_tree (aqr->aqr_error);
+  dk_free_tree (aqr->aqr_value);
   dk_free ((caddr_t) aqr, sizeof (aq_request_t));
+}
+
+
+int
+aq_do_self (async_queue_t * aq, caddr_t * err_ret)
+{
+  client_connection_t *cli;
+  uint64 ts;
+  caddr_t leave_err = NULL;
+  query_instance_t *qi;
+  aq_request_t *aqr;
+  if (!aq->aq_queue.bsk_count || aq->aq_need_own_thread)
+    return 0;
+  if (!aq->aq_wait_qi && !aq->aq_no_lt_enter)
+    return 0;
+  cli = sqlc_client ();
+  aqr = basket_get (&aq->aq_queue);
+  mutex_leave (aq->aq_mtx);
+  ts = rdtsc ();
+  if (aq->aq_no_lt_enter)
+    {
+      aqr->aqr_dbg_thread = THREAD_CURRENT_THREAD;
+      aqr->aqr_value = aqr->aqr_func (aqr->aqr_args, &aqr->aqr_error);
+      if (cli)
+	cli->cli_activity.da_thread_time += rdtsc () - ts;
+      aqr->aqr_args = NULL;
+      aqr->aqr_state = AQR_DONE;
+      mutex_enter (aq->aq_mtx);
+      return 1;
+    }
+  qi = aq->aq_wait_qi;
+  vdb_leave_lt (qi->qi_trx, &leave_err);
+  if (leave_err)
+    {
+      *err_ret = leave_err;
+      vdb_enter_lt_1 (qi->qi_trx, err_ret, 1);
+      IN_AQ;
+      return 0;
+    }
+  aqr_call_w_ctx (aqr);
+  aqr->aqr_args = NULL;
+  aqr->aqr_state = AQR_DONE;
+  if (aqr->aqr_error)
+    {
+      *err_ret = aqr->aqr_error;
+      aqr->aqr_error = NULL;
+    }
+  vdb_enter_lt_1 (qi->qi_trx, err_ret, 1);
+  mutex_enter (aq->aq_mtx);
+  return *err_ret ? 0 : 1;
+}
+
+
+void
+cli_aqr_add (client_connection_t * cli, aq_request_t * aqr)
+{
+  /* add up the exec stats and clutsre enlist forward */
+  if (!cli)
+    return;
+  da_add (&cli->cli_activity, &aqr->aqr_activity);
 }
 
 
 caddr_t
 aq_wait (async_queue_t * aq, int req_no, caddr_t * err, int wait)
 {
+  int64 wait_start;
+  client_connection_t *cli = aq->aq_wait_qi ? aq->aq_wait_qi->qi_client : NULL;
   caddr_t val;
   aq_request_t *aqr;
   mutex_enter (aq->aq_mtx);
+check_wait:
   aqr = gethash ((void *) (ptrlong) req_no, aq->aq_requests);
   if (!aqr)
     {
@@ -236,9 +454,19 @@ aq_wait (async_queue_t * aq, int req_no, caddr_t * err, int wait)
     {
       if (wait)
 	{
+	  if (aq_do_self (aq, err))
+	    goto check_wait;
+	  if (*err)
+	    {
+	      mutex_leave (aq->aq_mtx);
+	      return NULL;
+	    }
 	  aqr->aqr_waiting = THREAD_CURRENT_THREAD;
 	  mutex_leave (aq->aq_mtx);
+	  wait_start = rdtsc ();
 	  semaphore_enter (THREAD_CURRENT_THREAD->thr_sem);
+	  if (cli)
+	    cli->cli_activity.da_thread_time -= rdtsc () - wait_start;
 	  mutex_enter (aq->aq_mtx);
 	  if (!remhash ((void *) (ptrlong) req_no, aq->aq_requests))
 	    GPF_T1 ("aqr was not in ar_requests for remove.");
@@ -247,6 +475,8 @@ aq_wait (async_queue_t * aq, int req_no, caddr_t * err, int wait)
 	  *err = aqr->aqr_error;
 	  aqr->aqr_error = NULL;
 	  aqr->aqr_value = NULL;
+	  if (cli)
+	    cli_aqr_add (cli, aqr);
 	  aqr_free (aqr);
 	  return val;
 	}
@@ -260,6 +490,8 @@ aq_wait (async_queue_t * aq, int req_no, caddr_t * err, int wait)
   val = aqr->aqr_value;
   *err = aqr->aqr_error;
   aqr->aqr_error = NULL;
+  if (cli)
+    cli_aqr_add (cli, aqr);
   aqr->aqr_value = NULL;
   if (!remhash ((void *) (ptrlong) req_no, aq->aq_requests))
     GPF_T1 ("aqr not in aq_requests for remove");
@@ -269,24 +501,72 @@ aq_wait (async_queue_t * aq, int req_no, caddr_t * err, int wait)
 }
 
 
-int aq_wait_last_first = 1;
+caddr_t
+aq_wait_any (async_queue_t * aq, caddr_t * err_ret, int wait, int *req_no_ret)
+{
+  client_connection_t *cli = aq->aq_wait_qi ? aq->aq_wait_qi->qi_client : NULL;
+  IN_AQ;
+check_wait:
+  DO_HT (ptrlong, req_no, aq_request_t *, aqr, aq->aq_requests)
+  {
+    if (AQR_DONE == aqr->aqr_state)
+      {
+	caddr_t val = aqr->aqr_value;
+	*err_ret = aqr->aqr_error;
+	aqr->aqr_error = NULL;
+	*req_no_ret = req_no;
+	remhash ((void *) (ptrlong) aqr->aqr_req_no, aq->aq_requests);
+	LEAVE_AQ;
+	if (cli)
+	  cli_aqr_add (cli, aqr);
+	dk_free ((caddr_t) aqr, sizeof (aq_request_t));
+	return val;
+      }
+  }
+  END_DO_HT;
+  if (wait)
+    {
+      if (aq_do_self (aq, err_ret))
+	goto check_wait;
+      if (*err_ret)
+	{
+	  LEAVE_AQ;
+	  return NULL;
+	}
+      aq->aq_waiting = THREAD_CURRENT_THREAD;
+      LEAVE_AQ;
+      semaphore_enter (THREAD_CURRENT_THREAD->thr_sem);
+      IN_AQ;
+      goto check_wait;
+    }
+  else
+    {
+      LEAVE_AQ;
+      *err_ret = (caddr_t) AQR_RUNNING;
+      return (caddr_t) AQR_RUNNING;
+    }
+}
+
+
+int aq_wait_last_first = 0;
 
 caddr_t
-aq_wait_all (async_queue_t * aq, caddr_t * err_ret)
+aq_wait_all_1 (async_queue_t * aq, caddr_t * err_ret)
 {
-  caddr_t v, err;
+  caddr_t v, err = NULL;
   int waited;
+  client_connection_t *cli = aq->aq_wait_qi ? aq->aq_wait_qi->qi_client : NULL;
   dk_hash_iterator_t hit;
   ptrlong req_no;
   aq_request_t *aqr;
   mutex_enter (aq->aq_mtx);
   if (aq_wait_last_first && aq->aq_queue.bsk_data.longval)
     {
-      aq_request_t * last = aq->aq_queue.bsk_prev->bsk_data.ptrval;
+      aq_request_t *last = aq->aq_queue.bsk_prev->bsk_data.ptrval;
       if (last && AQR_DONE != last->aqr_state)
 	{
 	  int last_req = last->aqr_req_no;
-	  mutex_leave (aq->aq_mtx);
+	  LEAVE_AQ;
 	  v = aq_wait (aq, last_req, &err, 1);
 	  dk_free_tree (v);
 	  if (err_ret && err)
@@ -295,7 +575,7 @@ aq_wait_all (async_queue_t * aq, caddr_t * err_ret)
 	      return NULL;
 	    }
 	  dk_free_tree (err);
-	  mutex_enter (aq->aq_mtx);
+	  IN_AQ;
 	}
     }
   do
@@ -304,8 +584,20 @@ aq_wait_all (async_queue_t * aq, caddr_t * err_ret)
       waited = 0;
       while (dk_hit_next (&hit, (void **) &req_no, (void **) &aqr))
 	{
+	  err = NULL;
 	  if (AQR_DONE == aqr->aqr_state)
 	    {
+	      if (cli)
+		{
+		  cli_aqr_add (cli, aqr);
+		  memzero (&aqr->aqr_activity, sizeof (db_activity_t));
+		}
+	      if (aqr->aqr_error && err_is_anytime (aqr->aqr_error))
+		{
+		  /* anytime termination does not stop the waiting.  The fact of anytime termination appears in the cli_activity of the waiting cli */
+		  dk_free_tree (aqr->aqr_error);
+		  aqr->aqr_error = NULL;
+		}
 	      if (aqr->aqr_error && err_ret)
 		{
 		  *err_ret = aqr->aqr_error;
@@ -316,8 +608,14 @@ aq_wait_all (async_queue_t * aq, caddr_t * err_ret)
 	      continue;
 	    }
 	  mutex_leave (aq->aq_mtx);
+	  err = NULL;
 	  v = aq_wait (aq, (int) req_no, &err, 1);
 	  dk_free_tree (v);
+	  if (err && err_is_anytime (err))
+	    {
+	      dk_free_tree (err);
+	      err = NULL;
+	    }
 	  if (err_ret && err)
 	    {
 	      *err_ret = err;
@@ -330,7 +628,8 @@ aq_wait_all (async_queue_t * aq, caddr_t * err_ret)
 	}
     }
   while (waited);
-
+  if (aq->aq_queue.bsk_count)
+    GPF_T1 ("aq wait all should have empty queue after waiting for all");
   dk_hash_iterator (&hit, aq->aq_requests);
   while (dk_hit_next (&hit, (void **) &req_no, (void **) &aqr))
     {
@@ -344,34 +643,175 @@ aq_wait_all (async_queue_t * aq, caddr_t * err_ret)
 }
 
 
+#define AQ_WAIT_BATCH 100
+
+caddr_t
+aq_wait_all (async_queue_t * aq, caddr_t * err_ret)
+{
+  caddr_t v, err = NULL;
+  client_connection_t *cli = aq->aq_wait_qi ? aq->aq_wait_qi->qi_client : NULL;
+  aq_request_t *aqrs[AQ_WAIT_BATCH];
+  dk_hash_iterator_t hit;
+  ptrlong req_no;
+  aq_request_t *aqr;
+  int is_err = 0;
+  IN_AQ;
+  if (aq_wait_last_first && aq->aq_queue.bsk_data.longval)
+    {
+      aq_request_t *last = aq->aq_queue.bsk_prev->bsk_data.ptrval;
+      if (last && AQR_DONE != last->aqr_state)
+	{
+	  int last_req = last->aqr_req_no;
+	  LEAVE_AQ;
+	  v = aq_wait (aq, last_req, &err, 1);
+	  dk_free_tree (v);
+	  if (err_ret && err)
+	    {
+	      *err_ret = err;
+	      return NULL;
+	    }
+	  dk_free_tree (err);
+	  IN_AQ;
+	}
+    }
+  for (;;)
+    {
+      uint32 fill = 0, best = 0, inx;
+      dk_hash_iterator (&hit, aq->aq_requests);
+
+      while (dk_hit_next (&hit, (void **) &req_no, (void **) &aqr))
+	{
+	  if (req_no != aqr->aqr_req_no)
+	    GPF_T1 ("aqr req no not as in aq_requests");
+	  if (AQR_DONE == aqr->aqr_state)
+	    {
+	      aqrs[fill++] = aqr;
+	      if (fill >= AQ_WAIT_BATCH)
+		break;
+	    }
+	  else
+	    {
+	      if ((uint32) aqr->aqr_req_no > best)
+		{
+		  best = aqr->aqr_req_no;
+		}
+	    }
+	}
+      LEAVE_AQ;
+      if (best)
+	{
+	  v = aq_wait (aq, best, &err, 1);
+	  dk_free_tree (v);
+	  if (err && err_is_anytime (err))
+	    {
+	      dk_free_tree (err);
+	      err = NULL;
+	    }
+	  if (err_ret && err)
+	    {
+	      *err_ret = err;
+	      return NULL;
+	    }
+	  dk_free_tree (err);
+	  err = NULL;
+	}
+      for (inx = 0; inx < fill; inx++)
+	{
+	  aq_request_t *aqr = aqrs[inx];
+	  if (cli)
+	    {
+	      cli_aqr_add (cli, aqr);
+	      memzero (&aqr->aqr_activity, sizeof (db_activity_t));
+	    }
+	  if (aqr->aqr_error && err_is_anytime (aqr->aqr_error))
+	    {
+	      /* anytime termination does not stop the waiting.  The fact of anytime termination appears in the cli_activity of the waiting cli */
+	      dk_free_tree (aqr->aqr_error);
+	      aqr->aqr_error = NULL;
+	    }
+	  if (aqr->aqr_error && err_ret)
+	    {
+	      *err_ret = aqr->aqr_error;
+	      aqr->aqr_error = NULL;
+	      is_err = 1;
+	      fill = inx + 1;
+	    }
+	  err = NULL;
+	  aqrs[inx] = (aq_request_t *) (ptrlong) aqr->aqr_req_no;
+	  aqr_free (aqr);
+	  if (is_err)
+	    break;
+	}
+      IN_AQ;
+      for (inx = 0; inx < fill; inx++)
+	{
+	  if (!remhash ((void *) aqrs[inx], aq->aq_requests))
+	    GPF_T1 ("bad req no for remhash in aq wait all");
+	}
+      if (is_err)
+	{
+	  LEAVE_AQ;
+	  return NULL;
+	}
+      if (!best && fill < AQ_WAIT_BATCH)
+	{
+	  if (aq->aq_requests->ht_count || aq->aq_queue.bsk_count)
+	    GPF_T1 ("aq supposed to be empty");
+	  LEAVE_AQ;
+	  return NULL;
+	}
+    }
+}
+
+
 async_queue_t *
 aq_allocate (client_connection_t * cli, int n_threads)
 {
   async_queue_t *aq = (async_queue_t *) dk_alloc_box_zero (sizeof (async_queue_t), DV_ASYNC_QUEUE);
   aq->aq_ref_count = 1;
   aq->aq_requests = hash_table_allocate (101);
-  aq->aq_mtx = mutex_allocate ();
+  aq->aq_mtx = all_aq_mtx;
 #ifdef MTX_DEBUG
   aq->aq_requests->ht_required_mtx = aq->aq_mtx;
 #endif
+  aq->aq_cl_stack = (cl_call_stack_t *) box_copy ((caddr_t) cli->cli_cl_stack);
+  aq->aq_main_trx_no = cli->cli_trx->lt_main_trx_no ? cli->cli_trx->lt_main_trx_no : cli->cli_trx->lt_trx_no;
   aq->aq_max_threads = n_threads;
-  mutex_option (aq->aq_mtx, "AQ", NULL, NULL);
   aq->aq_user = cli->cli_user;
+  if (!aq->aq_user)
+    aq->aq_user = sec_id_to_user (U_ID_DBA);
   aq->aq_qualifier = box_string (cli->cli_qualifier);
+  aq->aq_row_autocommit = cli->cli_row_autocommit;
+  aq->aq_no_triggers = cli->cli_no_triggers;
+  aq->aq_replicate = box_copy_tree ((caddr_t) cli->cli_trx->lt_replicate);
+  aq->aq_anytime_timeout = cli->cli_anytime_timeout;
+  aq->aq_anytime_started = cli->cli_anytime_started;
+  IN_AQ;
+  sethash ((void *) aq, all_aqs, (void *) 1);
+  LEAVE_AQ;
   return aq;
 }
 
 
+void
+aqr_set_free (dk_set_t s)
+{
+  DO_SET (aq_request_t *, aqr, &s) aqr_free (aqr);
+  END_DO_SET ();
+  dk_set_free (s);
+}
+
 int
 aq_free (async_queue_t * aq)
 {
-  mutex_enter (aq->aq_mtx);
+  dk_set_t aqrs = NULL;
+  IN_AQ;
   if (!aq->aq_deleted)
     {
       aq->aq_ref_count--;
       if (aq->aq_ref_count)
 	{
-	  mutex_leave (aq->aq_mtx);
+	  LEAVE_AQ;
 	  return 1;
 	}
       if (aq->aq_n_threads)
@@ -381,10 +821,12 @@ aq_free (async_queue_t * aq)
 	    {
 	      remhash ((void *) (ptrlong) aqr->aqr_req_no, aq->aq_requests);
 	      aqr->aqr_state = AQR_DONE;
-	      aqr_free (aqr);
+	      dk_set_push (&aqrs, (void *) aqr);
 	    }
 	  aq->aq_deleted = 1;
-	  mutex_leave (aq->aq_mtx);
+	  LEAVE_AQ;
+	  /* free the reqs outside of mtx, args can have qis with aqs inside */
+	  aqr_set_free (aqrs);
 	  return 1;
 	}
     }
@@ -392,17 +834,25 @@ aq_free (async_queue_t * aq)
     dk_hash_iterator_t hit;
     aq_request_t *aqr;
     void *reqno;
+    while (basket_get (&aq->aq_queue))
+      ;
     dk_hash_iterator (&hit, aq->aq_requests);
     while (dk_hit_next (&hit, &reqno, (void **) &aqr))
-      aqr_free (aqr);
+      {
+	aqr->aqr_state = AQR_DONE;
+	dk_set_push (&aqrs, (void *) aqr);
+      }
   }
-  mutex_leave (aq->aq_mtx);
+  remhash ((void *) aq, all_aqs);
+  LEAVE_AQ;
+  aqr_set_free (aqrs);
+
 #ifdef MTX_DEBUG
   aq->aq_requests->ht_required_mtx = NULL;
 #endif
   hash_table_free (aq->aq_requests);
   dk_free_tree (aq->aq_qualifier);
-  mutex_free (aq->aq_mtx);
+  dk_free_box ((caddr_t) aq->aq_cl_stack);
   return 0;
 }
 
@@ -432,7 +882,34 @@ bif_async_queue (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   QNCAST (query_instance_t, qi, qst);
   long n = bif_long_arg (qst, args, 0, "async_queue");
+  int flags = BOX_ELEMENTS (args) > 1 ? bif_long_arg (qst, args, 1, "async_queue") : 0;
   async_queue_t *aq = aq_allocate (qi->qi_client, n);
+  if (CL_RUN_CLUSTER == cl_run_local_only && !(AQ_DO_SELF_IF_WAIT & flags))
+    flags |= AQ_SEPARATE_TXN;
+  if (AQ_SEPARATE_TXN & flags)
+    {
+      aq->aq_need_own_thread = 1;
+      aq->aq_main_trx_no = 0;
+      flags &= ~AQ_DO_SELF_IF_WAIT;
+    }
+  if (flags & AQ_DO_SELF_IF_WAIT)
+    {
+      if (qi->qi_client->cli_clt && !qi->qi_client->cli_cl_stack)
+	sqlr_new_error ("42000", "CLAQN",
+	    "May not create a do self if would wait aq on a cluster server thread after cl_detach_thread ()");
+      aq->aq_do_self_if_would_wait = 1;
+    }
+  if (AQ_TXN_BRANCH & flags)
+    {
+      aq->aq_rc_w_id = LT_MAIN_W_ID (qi->qi_client->cli_trx);
+      lt_timestamp (qi->qi_trx, (char *) &aq->aq_lt_timestamp);
+    }
+  if (!(flags & AQ_CLUSTER_RECURSIVE))
+    {
+      dk_free_box ((caddr_t) aq->aq_cl_stack);
+      aq->aq_cl_stack = NULL;
+    }
+  aq->aq_ts = get_msec_real_time ();
   return (caddr_t) aq;
 }
 
@@ -450,14 +927,13 @@ aq_sql_func (caddr_t * av, caddr_t * err_ret)
       cli_qual (cli), CLI_OWNER (cli));
   query_t *proc = full_name ? sch_proc_def (wi_inst.wi_schema, full_name) : NULL;
   dk_free_box (av);
+  dk_free_box (fn);
   if (!proc)
     {
-      *err_ret = srv_make_new_error ("42001", "AQ...", "undefined procedure %.300s in aq_request()", full_name ? full_name : ((DV_STRING == DV_TYPE_OF (fn)) ? fn : "<no name>"));
-      dk_free_box (fn);
       dk_free_tree ((caddr_t) params);
+      *err_ret = srv_make_new_error ("42001", "AQ...", "undefined procedure in aq %s", full_name ? full_name : "<no name>");
       return NULL;
     }
-  dk_free_box (fn);
   if (proc->qr_to_recompile)
     {
       *err_ret = NULL;
@@ -468,28 +944,22 @@ aq_sql_func (caddr_t * av, caddr_t * err_ret)
 	  return NULL;
 	}
     }
-  if (!cli || !cli->cli_user)
+  if (!cli->cli_user || !sec_proc_check (proc, cli->cli_user->usr_id, cli->cli_user->usr_g_id))
     {
-      *err_ret = srv_make_new_error ("42000", "AQ005", "Bad context to execute %.300s in aq_request(), like a log replay", full_name);
-      dk_free_tree ((caddr_t) params);
-      return NULL;
-    }
-  if (!sec_proc_check (proc, cli->cli_user->usr_id, cli->cli_user->usr_g_id))
-    {
-      *err_ret = srv_make_new_error ("42000", "SR186", "No permission to execute %.300s in aq_request(), user ID %ld, group ID %ld", full_name, (long)(cli->cli_user->usr_id), (long)(cli->cli_user->usr_g_id));
+      *err_ret = srv_make_new_error ("42000", "SR186", "No permission to execute %s in aq_request", full_name);
       dk_free_tree ((caddr_t) params);
       return NULL;
     }
   DO_SET (state_slot_t *, ssl, &proc->qr_parms)
-    {
-      if (SSL_REF_PARAMETER == ssl->ssl_type)
-	{
-	  *err_ret = srv_make_new_error ("42000", "AQ002", "Reference parameters not allowed in aq_request(), procedure %.300s", full_name);
-	  dk_free_tree ((caddr_t) params);
-	  return NULL;
-	}
-    }
-  END_DO_SET();
+  {
+    if (SSL_REF_PARAMETER == ssl->ssl_type)
+      {
+	*err_ret = srv_make_new_error ("42000", "AQ002", "Reference parameters not allowed in aq_request");
+	dk_free_tree ((caddr_t) params);
+	return NULL;
+      }
+  }
+  END_DO_SET ();
   *err_ret = qr_exec (cli, proc, CALLER_LOCAL, NULL, NULL, NULL, params, NULL, 0);
   dk_free_box ((caddr_t) params);
   val = self->thr_func_value;
@@ -506,8 +976,10 @@ bif_aq_request (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t f_args = bif_strict_array_or_null_arg (qst, args, 2, "aq_request");
   caddr_t unsafe_subtree;
   caddr_t aq_args;
+#ifdef NO_AQ_ATOMIC
   if (0 != server_lock.sl_count)
     sqlr_new_error ("22023", "SR567", "Function aq_request() can not be used inside atomic section");
+#endif
   if (!f_args)
     sqlr_new_error ("42000", "AQ001", "Must have arguments for aq_request()");
   unsafe_subtree = box_find_mt_unsafe_subtree (f_args);
@@ -521,7 +993,7 @@ bif_aq_request (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   f_args = box_copy_tree (f_args);
   box_make_tree_mt_safe (f_args);
   aq_args = list (2, box_copy (f), f_args);
-  return box_num (aq_request (aq, (aq_func_t) aq_sql_func, (caddr_t) aq_args, ((query_instance_t*)qst)->qi_trx));
+  return box_num (aq_request (aq, (aq_func_t) aq_sql_func, (caddr_t) aq_args));
 }
 
 
@@ -533,8 +1005,10 @@ bif_aq_request_zap_args (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int aq_argctr, aq_argcount = BOX_ELEMENTS (args) - 2;
   caddr_t *f_args;
   caddr_t aq_args;
+#ifdef NO_AQ_ATOMIC
   if (0 != server_lock.sl_count)
     sqlr_new_error ("22023", "SR567", "Function aq_request() can not be used inside atomic section");
+#endif
   for (aq_argctr = 0; aq_argctr < aq_argcount; aq_argctr++)
     {
       caddr_t unsafe_subtree = box_find_mt_unsafe_subtree (bif_arg (qst, args, aq_argctr + 2, "aq_request_zap_args"));
@@ -553,7 +1027,7 @@ bif_aq_request_zap_args (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       box_make_tree_mt_safe (f_args[aq_argctr]);
     }
   aq_args = list (2, box_copy (f), f_args);
-  return box_num (aq_request (aq, (aq_func_t) aq_sql_func, (caddr_t) aq_args, ((query_instance_t*)qst)->qi_trx));
+  return box_num (aq_request (aq, (aq_func_t) aq_sql_func, (caddr_t) aq_args));
 }
 
 
@@ -566,12 +1040,17 @@ bif_aq_wait (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t err = NULL;
   query_instance_t *qi = (query_instance_t *) qst;
   caddr_t val = NULL;
+#ifdef NO_AQ_ATOMIC
   if (0 != server_lock.sl_count)
     sqlr_new_error ("22023", "SR568", "Function aq_wait() can not be used inside atomic section");
-  if (lt_has_locks (qi->qi_trx))
+#endif
+  if (!aq->aq_rc_w_id && lt_has_locks (qi->qi_trx))
     sqlr_new_error ("40010", "AQ003", "Not allowed to wait for AQ while holding locks");
+  if (aq->aq_do_self_if_would_wait)
+    aq->aq_wait_qi = qi;
   IO_SECT (qst);
   val = aq_wait (aq, req, &err, wait);
+  aq->aq_wait_qi = NULL;
   END_IO_SECT (err_ret);
   if (*err_ret)
     {
@@ -589,6 +1068,43 @@ bif_aq_wait (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
+void
+aq_wait_all_in_qi (async_queue_t * aq, caddr_t * inst, caddr_t * err_ret, aq_cleanup_t clup)
+{
+  QNCAST (QI, qi, inst);
+  caddr_t err = NULL, err2 = NULL, err1 = NULL;
+  vdb_enter_lt_1 (qi->qi_trx, &err1, 1);
+  aq->aq_wait_qi = qi;
+  aq_wait_all (aq, &err);
+  aq->aq_wait_qi = NULL;
+  if (err1)
+    {
+      dk_free_tree (err);
+      err = err1;
+    }
+  if (err)
+    {
+      aq_request_t *aqr;
+      IN_AQ;
+      while ((aqr = basket_get (&aq->aq_queue)))
+	{
+	  if (clup)
+	    clup (aqr->aqr_args);
+	  aqr->aqr_state = AQR_DONE;
+	}
+      LEAVE_AQ;
+      aq_wait_all (aq, NULL);
+      if (aq->aq_n_threads)
+	GPF_T1 ("aq wait for all finishes while aq has threads");
+    }
+  vdb_leave_lt (qi->qi_trx, &err2);
+  if (err)
+    *err_ret = err;
+  else if (err2)
+    *err_ret = err;
+  aq->aq_no_more = 0;
+}
+
 caddr_t
 bif_aq_wait_all (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -597,12 +1113,16 @@ bif_aq_wait_all (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   async_queue_t *aq = bif_aq_arg (qst, args, 0, "aq_wait");
   long allow_locks = BOX_ELEMENTS (args) > 1 ? bif_long_arg (qst, args, 1, "aq_wait") : 0;
   query_instance_t *qi = (query_instance_t *) qst;
+#ifdef NO_AQ_ATOMIC
   if (0 != server_lock.sl_count)
     sqlr_new_error ("22023", "SR569", "Function aq_wait_all() can not be used inside atomic section");
-  if (!allow_locks && lt_has_locks (qi->qi_trx))
+#endif
+  if (!aq->aq_rc_w_id && !allow_locks && lt_has_locks (qi->qi_trx))
     sqlr_new_error ("40010", "AQ003", "Not allowed to wait for AQ while holding locks");
   IO_SECT (qst);
+  aq->aq_wait_qi = qi;
   val = aq_wait_all (aq, &err);
+  aq->aq_wait_qi = NULL;
   END_IO_SECT (err_ret);
 #ifdef DEBUG
   if (*err_ret)
@@ -613,6 +1133,14 @@ bif_aq_wait_all (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return val;
 }
 
+
+caddr_t
+bif_aq_queue_only (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  async_queue_t *aq = bif_aq_arg (qst, args, 0, "aq_wait");
+  aq->aq_queue_only = 1;
+  return NULL;
+}
 
 void
 aq_serialize (caddr_t x, dk_session_t * ses)
@@ -633,5 +1161,10 @@ bif_aq_init ()
   bif_set_uses_index (bif_aq_wait);
   bif_define ("aq_wait_all", bif_aq_wait_all);
   bif_set_uses_index (bif_aq_wait_all);
-  aq_threads = resource_allocate (20, NULL, NULL, NULL, 0);
+  bif_define ("aq_queue_only", bif_aq_queue_only);
+  aq_threads = resource_allocate (aq_max_threads, NULL, NULL, NULL, 0);
+  all_aq_mtx = mutex_allocate ();
+  mutex_option (all_aq_mtx, "AQ", NULL, NULL);
+  all_aqs = hash_table_allocate (11);
+  HT_REQUIRE_MTX (all_aqs, all_aq_mtx);
 }

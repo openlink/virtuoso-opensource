@@ -839,7 +839,7 @@ rdb2rdf_qm_codegen (rdb2rdf_ctx_t *rrc, rdb2rdf_optree_t *rro, caddr_t table_nam
           out_of_loop_ifs_for_blockers++;
         }
     }
-/* Now a similar loop deals with consts. Blockers are not checked here hecause they've inspected when optree is composed. */
+/* Now a similar loop deals with consts. Blockers are not checked here because they've inspected when optree is composed. */
   for (fld_ctr = SPART_TRIPLE_FIELDS_COUNT; fld_ctr--; /* no step*/)
     {
       ccaddr_t fld_const = SPARP_FIELD_CONST_OF_QM(qm,fld_ctr);

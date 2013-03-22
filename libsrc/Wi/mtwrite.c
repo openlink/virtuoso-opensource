@@ -25,7 +25,7 @@
  *
  */
 
-#include "wi.h"
+#include "sqlnode.h"
 #include "list2.h"
 
 
@@ -44,12 +44,18 @@ int num_cont_pages=8;
 
 int mti_writes_queued;
 int mti_reads_queued;
-
+#if defined (MTX_DEBUG) && defined (IQ_TRACE)
+#define IQ_ENTER_TRACE(buf, iq) buf->bd_enter_line = buf->bd_read_waiting ? - __LINE__ : __LINE__
+#define IQ_LEAVE_TRACE(buf) buf->bd_leave_line = buf->bd_read_waiting ? - __LINE__ : __LINE__
+#else
+#define IQ_ENTER_TRACE(buf, iq)
+#define IQ_LEAVE_TRACE(buf)
+#endif
 
 dk_set_t mti_io_queues;
 int n_iqs; /*length of mti_io_queues*/
 
-
+#define BD_SYNC ((db_buf_t)1)
 
 
 io_queue_t *  bd_ioq;
@@ -63,7 +69,7 @@ db_io_queue (dbe_storage_t * dbs, dp_addr_t dp)
   if (dbs->dbs_disks)
     {
       OFF_T ign;
-      disk_stripe_t * dst = dp_disk_locate (dbs, dp, &ign);
+      disk_stripe_t * dst = dp_disk_locate (dbs, dp, &ign, 0, NULL);
       return (dst->dst_iq);
     }
   else if (mti_io_queues)
@@ -88,9 +94,7 @@ buf_cancel_write (buffer_desc_t * buf)
    * Thus the bd_iq of an occupied buffer can be async reset by another thread. */
   io_queue_t * iq = buf->bd_iq;
   if (buf->bd_tree)
-    {
       ASSERT_OUTSIDE_MAP (buf->bd_tree, buf->bd_page);
-    }
 
   /* Note that this can block waiting for IQ which is owned by another
   thread in iq_schedule. The thread in iq_schedule can block on this
@@ -115,6 +119,53 @@ buf_cancel_write (buffer_desc_t * buf)
     }
 }
 
+extern int dbf_fast_cpt;
+
+
+
+void
+iq_sync_disks (io_queue_t * iq)
+{
+#ifdef HAVE_FSYNC
+  dbe_storage_t * dbs = wi_inst.wi_master;
+  int inx;
+  if (dbf_fast_cpt)
+    return;
+  switch (c_checkpoint_sync)
+    {
+    case 0:
+	/* NO SYNC */
+	break;
+
+    case 1:
+#ifndef WIN32
+      sync();
+#endif
+      break;
+
+    case 2:
+    default:
+      if (dbs->dbs_disks)
+	{
+	  DO_SET (disk_segment_t *, seg, &dbs->dbs_disks)
+	    {
+	      DO_BOX (disk_stripe_t *, dst, inx, seg->ds_stripes)
+		{
+		  if (iq != dst->dst_iq)
+		    continue;
+		  fd_fsync (dst->dst_fds[0]);
+		}
+	      END_DO_BOX;
+	    }
+	  END_DO_SET ();
+	}
+      else
+	{
+	  fd_fsync (dbs->dbs_fd);
+	}
+    }
+#endif
+}
 
 void
 iq_schedule (buffer_desc_t ** bufs, int n)
@@ -124,6 +175,8 @@ iq_schedule (buffer_desc_t ** bufs, int n)
   buf_sort (bufs, n, (sort_key_func_t) bd_phys_page_key);
   for (inx = 0; inx < n; inx++)
     {
+      if (BD_SYNC == bufs[inx]->bd_buffer)
+	continue;
       if (bufs[inx]->bd_iq)
 	GPF_T1 ("buffer added to iq already has a bd_iq");
       bufs[inx]->bd_iq = db_io_queue (bufs[inx]->bd_storage, bufs[inx]->bd_physical_page);
@@ -154,6 +207,7 @@ iq_schedule (buffer_desc_t ** bufs, int n)
 	  if (!ipoint)
 	    {
 	      L2_PUSH_LAST (iq->iq_first, iq->iq_last, buf, bd_iq_);
+	      IQ_ENTER_TRACE (buf, iq);
 	      n_added++;
 	      inx++;
 	    }
@@ -162,26 +216,25 @@ iq_schedule (buffer_desc_t ** bufs, int n)
 	      ipoint = ipoint->bd_iq_next;
 	      goto next_ipoint;
 	    }
-	  else if (BUF_SORT_DP (ipoint) == BUF_SORT_DP (buf))
+	  else if (ipoint->bd_physical_page == buf->bd_physical_page && ipoint->bd_storage == buf->bd_storage) /* do the assert check without the sort offset.  Can be the sort offset changes on another thread due to dbs size changes so can have a false hit */
 	    GPF_T1 ("the same buffer can't be scheduled twice for io");
 	  else
 	    {
 	      L2_INSERT (iq->iq_first, iq->iq_last, ipoint, buf, bd_iq_);
+	      IQ_ENTER_TRACE (buf, iq);
 	      n_added++;
 	      inx++;
 	    }
-	  if (!buf->bd_being_read)
+	  if (!buf->bd_being_read && BD_SYNC != buf->bd_buffer)
 	    {
 	      page_leave_outside_map (buf);
 	    }
 	}
       LEAVE_IOQ (iq);
       if (n_added && !is_reads)
-        {
-	  dbg_printf (("IQ %s %d %s added, %s.\n", IQ_NAME (iq),
+	idbg_printf (("IQ %s %d %s added, %s.\n", IQ_NAME (iq),
 		      n_added, is_reads ? "reads" : "writes",
 		      was_empty ? "starting" : "running"));
-	}
       if (n_added && was_empty)
 	semaphore_leave (iq->iq_sem);
 
@@ -206,6 +259,9 @@ long tc_aio_seq_write;
 #define AIO_NONE 0
 #define AIO_NATIVE 1
 #define AIO_MERGING 2
+#ifndef WIN32
+#define HAVE_AIO
+#endif
 
 #ifdef HAVE_AIO
 
@@ -215,9 +271,12 @@ long tc_aio_seq_write;
 
 #define IQ_LISTIO
 
-#define MAX_MERGE 100
+#define MAX_MERGE 128
 #define MERGE_THR_SIZE ((30*1024)+(MAX_MERGE*PAGE_SZ))
 
+int lio_max_gap = 10;
+
+#if defined (linux) && defined (__GNUC__)
 void
 iq_read_merge (struct aiocb ** list, int n, char * temp)
 {
@@ -230,7 +289,7 @@ iq_read_merge (struct aiocb ** list, int n, char * temp)
       if (list[inx]->aio_fildes != fd
 	  || list[inx]->aio_lio_opcode != LIO_READ)
 	break;
-      if (list[inx]->aio_offset - last_planned > 2 * PAGE_SZ
+      if (list[inx]->aio_offset - last_planned > lio_max_gap * PAGE_SZ
 	  || list[inx]->aio_offset - first_offset > (MAX_MERGE - 1) * PAGE_SZ)
 	break;
       list[inx]->__error_code = -1;
@@ -258,7 +317,7 @@ iq_read_merge (struct aiocb ** list, int n, char * temp)
     {
       if (-1 == list[inx2]->__error_code)
 	{
-	  memcpy (list[inx2]->aio_buf, temp + (list[inx2]->aio_offset - first_offset), PAGE_SZ);
+	  memcpy_16 (list[inx2]->aio_buf, temp + (list[inx2]->aio_offset - first_offset), PAGE_SZ);
 	  list[inx2]->__return_value = PAGE_SZ;
 	  list[inx2]->__error_code = 0;
 	}
@@ -315,7 +374,7 @@ iq_write_merge (struct aiocb ** list, int n, char * temp)
 void
 iq_listio (struct aiocb ** list, int fill)
 {
-  /* like lio_listio with LIO_WAIT , but merges reads that are close enough together, only PAGE_SZ chunks down  */
+  /* like lio_listio with LIO_WAIT , but merges reads that are close enough together, only PAGE_SZ chunks donw  */
   char temp_space [(MAX_MERGE + 1) * PAGE_SZ];
   char * temp = ALIGN_8K (&temp_space[0]);
   int inx;
@@ -329,6 +388,7 @@ iq_listio (struct aiocb ** list, int fill)
 		iq_write_merge (&list[inx], fill - inx, temp);
     }
 }
+#endif
 
 
 int
@@ -345,7 +405,7 @@ aio_fd (buffer_desc_t * buf, dk_hash_t * aio_ht, OFF_T * off)
 	  dbs_ht = hash_table_allocate (10);
 	  sethash ((void*)dbs, aio_ht, (void*) dbs_ht);
 	}
-      dst = dp_disk_locate (buf->bd_storage, buf->bd_physical_page, off);
+      dst = dp_disk_locate (buf->bd_storage, buf->bd_physical_page, off, 1, NULL);
       fd = (int)(ptrlong) gethash ((void*)dst, dbs_ht);
       if (!fd)
 	{
@@ -380,7 +440,7 @@ aio_fd_free (dk_hash_t * aio_ht)
 	{
 	  DO_HT (disk_stripe_t *, dst, ptrlong, fd, ht)
 	    {
-	      dst_fd_done (dst, fd);
+	      dst_fd_done (dst, fd, NULL);
 	    }
 	  END_DO_HT;
 	  hash_table_free (ht);
@@ -416,7 +476,7 @@ iq_aio (io_queue_t * iq)
       buffer_desc_t * buf;
       if (!iq->iq_current)
 	iq->iq_current = iq->iq_first;
-      if (!iq->iq_current)
+      if (!iq->iq_current || BD_SYNC == iq->iq_current->bd_buffer)
 	{
 	  if (!fill)
 	    return;
@@ -508,9 +568,11 @@ iq_aio (io_queue_t * iq)
     }
   LEAVE_IOQ (iq);
   lio_time = get_msec_real_time ();
+#if defined (linux) && defined (__GNUC__)
   if (AIO_MERGING == c_use_aio)
     iq_listio (list, fill);
   else
+#endif
     {
       rc = lio_listio (LIO_NOWAIT, list, fill, NULL);
       if (rc)
@@ -529,13 +591,17 @@ iq_aio (io_queue_t * iq)
 	  if (rc) GPF_T1 ("aio_suspend returns error");
 	  /*printf ("aio done %d\n", buf->bd_physical_page);*/
 	}
+#if defined (linux) && defined (__GNUC__)
       if (cb[inx].__return_value != PAGE_SZ || cb[inx].__error_code)
 	GPF_T1 ("aio cb has error code");
+#endif
       if (buf->bd_being_read)
 	{
 	  int flags = SHORT_REF (buf->bd_buffer + DP_FLAGS);
 	  if (DPF_INDEX == flags)
 	    pg_make_map (buf);
+	  else if (DPF_COLUMN == flags)
+	    pg_make_col_map (buf);
 	  else if (buf->bd_content_map)
 	    {
 	      resource_store (PM_RC (buf->bd_content_map->pm_size), (void*) buf->bd_content_map);
@@ -550,6 +616,7 @@ iq_aio (io_queue_t * iq)
 	{
 	  buf->bd_pl = IT_DP_PL (buf->bd_tree, buf->bd_page);
 	  buf->bd_being_read = 0;
+	  buf->bd_batch_id = 0;
 	}
       else
 	{
@@ -584,12 +651,44 @@ iq_clear (void)
 
 
 int iq_on = 1;
+int enable_mt_sync = 1;
 
 
 void
 iq_shutdown (int mode)
 {
-  int all_empty;
+  int all_empty, inx;
+  int n_iq = dk_set_length (mti_io_queues);
+  static buffer_desc_t * sync_bufs;
+  if (!sync_bufs || box_length (sync_bufs) < sizeof (buffer_desc_t) * n_iq)
+    {
+      int inx = 0;
+      if (sync_bufs)
+	dk_free_box ((caddr_t)sync_bufs);
+      sync_bufs = (buffer_desc_t*)dk_alloc_box (sizeof (buffer_desc_t) * n_iq, DV_BIN);
+      memset (sync_bufs, 0, n_iq * sizeof (buffer_desc_t));
+      DO_SET (io_queue_t *, iq, &mti_io_queues)
+	{
+	  sync_bufs[inx].bd_buffer = BD_SYNC;
+	  sync_bufs[inx].bd_storage = wi_inst.wi_master;
+	  sync_bufs[inx].bd_page = 0xffffffff;
+	  sync_bufs[inx].bd_iq = iq;
+	  inx++;
+	}
+      END_DO_SET();
+    }
+  if (enable_mt_sync)
+    {
+      for (inx  = 0; inx < n_iq; inx++)
+	{
+	  if (!sync_bufs[inx].bd_batch_id)
+	    {
+	      buffer_desc_t * tmp = &sync_bufs[inx];
+	      sync_bufs[inx].bd_batch_id = 1;
+	      iq_schedule (&tmp, 1);
+	    }
+	}
+    }
   if (IQ_STOP == mode)
     iq_on = 0;
   do
@@ -695,8 +794,9 @@ iq_loop (io_queue_t * iq)
 	  * LOOK OUT.  Inside atomic checkpoint waiting for sync must be strict. During unremap Sync means all iq's empty  Else meltdown fuckup. If sync not strict, buffers get scrapped before written */
 	  iq_dry (iq);
 	}
+      buf = iq->iq_current;
 #ifdef HAVE_AIO
-      if (AIO_NONE != c_use_aio)
+      if (AIO_NONE != c_use_aio && BD_SYNC != buf->bd_buffer)
 	{
 	  iq_aio (iq);
 	  continue;
@@ -704,9 +804,13 @@ iq_loop (io_queue_t * iq)
 #endif
       leave_needed = IQ_NO_OP;
       buf_itm = NULL;
-      buf = iq->iq_current;
 
-      if (buf->bd_being_read)
+      if (BD_SYNC == buf->bd_buffer)
+	{
+	  LEAVE_IOQ (iq);
+	  iq_sync_disks (iq);
+	}
+      else if (buf->bd_being_read)
 	{
 	  if (!buf->bd_is_write) GPF_T1 ("read ahead buf must have  bd_is_write");
 	  mti_reads_queued--;
@@ -715,6 +819,7 @@ iq_loop (io_queue_t * iq)
 	  iq->iq_action_ctr += 2; /* counts for 3 if syncing for cpt */
 	  LEAVE_IOQ (iq);
 	  is_read_pending++;
+	  BUF_PW (buf);
 	  buf_disk_read (buf);
 	  is_read_pending--;
 	  DBG_PT_READ (buf, ((lock_trx_t*) NULL));
@@ -771,6 +876,7 @@ iq_loop (io_queue_t * iq)
       buf->bd_iq = NULL;
       iq->iq_current = buf->bd_iq_next;
       L2_DELETE (iq->iq_first, iq->iq_last, buf, bd_iq_);
+      buf->bd_batch_id = 0;
       if (IQ_WRITE == leave_needed)
 	{
 	  it_map_t * itm = IT_DP_MAP (buf->bd_tree, buf->bd_page);
@@ -780,12 +886,14 @@ iq_loop (io_queue_t * iq)
 	    {
 	      buf->bd_pl = IT_DP_PL (buf->bd_tree, buf->bd_page);
 	      buf->bd_being_read = 0;
+	      buf->bd_batch_id = 0;
 	}
 	  else
 	{
 	      mtx_assert (buf->bd_pl == IT_DP_PL (buf->bd_tree, buf->bd_page));
 	      wi_inst.wi_n_dirty--;
 	    }
+	  IQ_LEAVE_TRACE (buf);
 	  page_leave_inner (buf);
 	  mutex_leave (&itm->itm_mtx);
 	  IN_IOQ (iq);
@@ -959,6 +1067,11 @@ dbs_mtwrite_init (dbe_storage_t * dbs)
 }
 
 
+extern semaphore_t * bp_flush_sem;
+extern du_thread_t * bp_flush_thr;
+void bp_flush_thread_func (void * arg);
+
+
 void
 mt_write_init ()
 {
@@ -972,6 +1085,8 @@ mt_write_init ()
     }
   END_DO_SET();
   dbs_mtwrite_init (wi_inst.wi_temp);
+  bp_flush_sem = semaphore_allocate (0);
+  bp_flush_thr = PrpcThreadAllocate ((thread_init_func) bp_flush_thread_func, 100000, NULL)->dkt_process;
 }
 
 

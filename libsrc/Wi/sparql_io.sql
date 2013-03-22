@@ -2675,7 +2675,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
     declare path, save_dir varchar;
     declare parts any;
     save_dir := null;
-    for (select COL_ID from WS.WS.SYS_DAV_COL where COL_DET = 'DynaRes' and WS.WS.COL_PATH (COL_PARENT) like sprintf ('/DAV/home/%s%%', user_id)) do
+    for (select COL_ID from WS.WS.SYS_DAV_COL where COL_DET = 'DynaRes' and WS.WS.COL_PATH (COL_PARENT) like '/DAV/home/%') do
     {
       path := WS.WS.COL_PATH (COL_ID);
       parts := split_and_decode (path, 0, '\0\0/');
@@ -4178,17 +4178,17 @@ DB.DBA.http_rq_file_handler (in content any, in params any, in lines any, inout 
 
 create procedure DB.DBA.SPARQL_SD_TRIPLE (inout sd any, in s varchar, in p varchar, in o varchar)
 {
-  if (starts_with (s, '!')) s := __xml_nsexpand_iristr (subseq (s, 1)); else s := __box_flags_tweak (s, 1);
-  if (starts_with (p, '!')) p := __xml_nsexpand_iristr (subseq (p, 1)); else p := __box_flags_tweak (p, 1);
-  if (starts_with (o, '!')) o := __xml_nsexpand_iristr (subseq (o, 1)); else o := __box_flags_tweak (o, 1);
+  if (starts_with (s, '!')) s := __xml_nsexpand_iristr (subseq (s, 1)); else s := __bft (s, 1);
+  if (starts_with (p, '!')) p := __xml_nsexpand_iristr (subseq (p, 1)); else p := __bft (p, 1);
+  if (starts_with (o, '!')) o := __xml_nsexpand_iristr (subseq (o, 1)); else o := __bft (o, 1);
   vectorbld_acc (sd, vector (s, p, o));
 }
 ;
 
 create procedure DB.DBA.SPARQL_SD_TRIPLE_L (inout sd any, in s varchar, in p varchar, in o any)
 {
-  if (starts_with (s, '!')) s := __xml_nsexpand_iristr (subseq (s, 1)); else s := __box_flags_tweak (s, 1);
-  if (starts_with (p, '!')) p := __xml_nsexpand_iristr (subseq (p, 1)); else p := __box_flags_tweak (p, 1);
+  if (starts_with (s, '!')) s := __xml_nsexpand_iristr (subseq (s, 1)); else s := __bft (s, 1);
+  if (starts_with (p, '!')) p := __xml_nsexpand_iristr (subseq (p, 1)); else p := __bft (p, 1);
   vectorbld_acc (sd, vector (s, p, o));
 }
 ;

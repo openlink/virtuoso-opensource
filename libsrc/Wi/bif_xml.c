@@ -5832,7 +5832,7 @@ bif_xml_init (void)
   bif_define (XMLSPROC, bif_xmls_proc);
 
   /* bif_define (TREETOXML, bif_tree_to_xml); */
-  bif_define ("xml_tree", bif_xml_tree);
+  bif_define_typed ("xml_tree", bif_xml_tree, &bt_xml_entity);
   bif_set_uses_index (bif_xml_tree);
   bif_define_typed ("xtree_doc", bif_xtree_doc, &bt_xml_entity);
   bif_set_uses_index (bif_xtree_doc);
@@ -5899,14 +5899,14 @@ bif_xml_init (void)
   bif_define ("xq_sequencebld_final", bif_xq_sequencebld_final);
   bif_define ("xq_sequencebld_agg_final", bif_xq_sequencebld_agg_final);
 
-  bif_define_typed ("xmlelement", bif_xmlelement, &bt_any);
-  bif_define_typed ("xmlattributes", bif_xmlattributes, &bt_any);
-  bif_define_typed ("xmlattributes_2", bif_xmlattributes, &bt_any);
-  bif_define_typed ("xmlforest", bif_xmlforest, &bt_any);
-  bif_define_typed ("xmlforest_2", bif_xmlforest, &bt_any);
-  bif_define_typed ("xmlconcat", bif_xmlconcat, &bt_any);
+  bif_define_typed ("xmlelement", bif_xmlelement, &bt_xml_entity);
+  bif_define_typed ("xmlattributes", bif_xmlattributes, &bt_xml_entity);
+  bif_define_typed ("xmlattributes_2", bif_xmlattributes, &bt_xml_entity);
+  bif_define_typed ("xmlforest", bif_xmlforest, &bt_xml_entity);
+  bif_define_typed ("xmlforest_2", bif_xmlforest, &bt_xml_entity);
+  bif_define_typed ("xmlconcat", bif_xmlconcat, &bt_xml_entity);
   bif_define_typed ("serialize_to_UTF8_xml", bif_serialize_to_UTF8_xml, &bt_varchar);
-  bif_define_typed ("xte_expand_xmlns", bif_xte_expand_xmlns, &bt_any);
+  bif_define_typed ("xte_expand_xmlns", bif_xte_expand_xmlns, &bt_xml_entity);
   bif_define_typed ("xmlnss_get", bif_xmlnss_get, &bt_xml_entity);
   bif_define_typed ("xmlnss_xpath_pre", bif_xmlnss_xpath_pre, &bt_varchar);
 

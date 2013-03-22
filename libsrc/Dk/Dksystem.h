@@ -37,22 +37,6 @@
 # include "Dkconfig.h"
 #endif
 
-#if 0
-/* XXX cleanup for final version */
-#ifndef NO_THREAD
-# if defined (WITH_PTHREADS) || defined (PTHREAD)
-#  include <pthread.h>
-#  ifndef _REENTRANT
-#   define _REENTRANT
-#  endif
-#  ifndef PTHREAD
-#   define PTHREAD
-#  endif
-#  define PREEMPT
-# endif
-#endif
-#endif
-
 #if !defined (NO_THREAD) && defined (WITH_PTHREADS) && !defined (_REENTRANT)
 #define _REENTRANT
 #endif
@@ -138,6 +122,10 @@ void free ();
 
 #ifndef O_BINARY
 # define O_BINARY 0
+#endif
+
+#ifndef MAP_ANONYMOUS
+#define MAP_ANONYMOUS MAP_ANON
 #endif
 
 #include <errno.h>

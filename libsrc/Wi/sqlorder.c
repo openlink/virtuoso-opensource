@@ -31,22 +31,10 @@
 #include "sqlpar.h"
 #include "sqlpfn.h"
 #include "sqlcmps.h"
+#include "sqlo.h"
 #include "sqlfn.h"
-
-
-key_id_t
-sqlc_new_temp_key_id (sql_comp_t * sc)
-{
-  key_id_t last;
-  while (sc->sc_super)
-    sc = sc->sc_super;
-  last = sc->sc_next_temp_key_id;
-  if (!last)
-    last = KI_DISTINCT;
-  sc->sc_next_temp_key_id = last + 1;
-  return last;
-}
-
+#include "arith.h"
+#include "sqlintrp.h"
 
 void
 ha_free (hash_area_t * ha)
@@ -57,50 +45,7 @@ ha_free (hash_area_t * ha)
   dk_free ((caddr_t)ha, sizeof (hash_area_t));
 }
 
-#define SSA_PUSH(s) if (s) dk_set_push (&save, (void*)s)
 
-
-dk_set_t
-ha_save (hash_area_t * ha)
-{
-  dk_set_t save = NULL;
-  SSA_PUSH (ha->ha_tree);
-  SSA_PUSH (ha->ha_insert_itc);
-  SSA_PUSH (ha->ha_ref_itc);
-  SSA_PUSH (ha->ha_bp_ref_itc);
-
-  return save;
-}
-
-
-void
-setp_set_ssa (sql_comp_t * sc, setp_node_t * setp, dk_set_t * list_ret)
-{
-  /* put all the ssls that keep state for the setp into the ssa_save */
-  dk_set_t save = NULL;
-  hash_area_t * ha = setp->setp_ha;
-  SSA_PUSH (ha->ha_tree);
-  SSA_PUSH (ha->ha_insert_itc);
-  SSA_PUSH (ha->ha_ref_itc);
-  SSA_PUSH (ha->ha_bp_ref_itc);
-  SSA_PUSH (setp->setp_sorted);
-  SSA_PUSH (setp->setp_row_ctr);
-  DO_SET (gb_op_t *, go, &setp->setp_gb_ops)
-    {
-      if (go->go_distinct_ha)
-	{
-	  hash_area_t * ha = go->go_distinct_ha;
-	  SSA_PUSH (ha->ha_tree);
-	  SSA_PUSH (ha->ha_insert_itc);
-	  SSA_PUSH (ha->ha_ref_itc);
-	  SSA_PUSH (ha->ha_bp_ref_itc);
-	}
-    }
-  END_DO_SET();
-  if (list_ret)
-    *list_ret = dk_set_copy (save);
-  setp->setp_ssa.ssa_save = (state_slot_t **) list_to_array (save);
-}
 
 
 void
@@ -138,28 +83,57 @@ setp_node_free (setp_node_t * setp)
 
 setp_node_t *
 sqlc_add_distinct_node (sql_comp_t * sc, data_source_t ** head,
-    state_slot_t ** ssl_out, long nrows)
+			state_slot_t ** ssl_out, long nrows, dk_set_t * code, ptrlong * dist_pos)
 {
+  state_slot_t * set_no;
   int inx;
   SQL_NODE_INIT (setp_node_t, setp, setp_node_input, setp_node_free);
+  if (dist_pos && 1 != (ptrlong)dist_pos)
+    {
+      DO_BOX (ptrlong, pos, inx, dist_pos)
+	{
+	  state_slot_t * ssl = ssl_out[pos];
+	  setp->setp_keys = NCONC (setp->setp_keys, CONS (ssl, NULL));
+	}
+      END_DO_BOX;
+    }
+  else
+    {
   DO_BOX (state_slot_t *, ssl, inx, ssl_out)
   {
     setp->setp_keys = NCONC (setp->setp_keys, CONS (ssl, NULL));
   }
   END_DO_BOX;
+    }
+  setp->setp_set_no_in_key = sqlg_is_multistate_gb (sc->sc_so);
+  if (setp->setp_set_no_in_key)
+    {
+      dk_set_push (&setp->setp_keys, (void*) sc->sc_set_no_ssl);
+    }
+
   setp->setp_distinct = 1;
-  setp->setp_temp_key = sqlc_new_temp_key_id (sc);
-  setp_distinct_hash (sc, setp, nrows);
+  setp_distinct_hash (sc, setp, nrows, HA_DISTINCT);
+  set_no = sqlg_set_no_if_needed (sc, head);
+  if (set_no)
+    {
+      ssa_init (sc, &setp->setp_ssa, set_no);
+    }
+  if (code && *code)
+    {
+      setp->src_gen.src_pre_code = code_to_cv (sc, *code);
+      *code = NULL;
+    }
+  setp->setp_keys_box = (state_slot_t **) dk_set_to_array (setp->setp_keys);
   sql_node_append (head, (data_source_t *) setp);
   return setp;
 }
 
 
 data_source_t *
-sqlc_make_sort_out_node (sql_comp_t * sc, dk_set_t out_cols, dk_set_t out_slots, dk_set_t out_always_null)
+sqlc_make_sort_out_node (sql_comp_t * sc, dk_set_t out_cols, dk_set_t out_slots, dk_set_t out_always_null, int is_gb)
 {
+  setp_node_t * setp = sc->sc_sort_insert_node;
   SQL_NODE_INIT (table_source_t, ts, table_source_input, ts_free);
-
   ts->ts_order_cursor = ssl_new_itc (sc->sc_cc);
 
   {
@@ -169,6 +143,26 @@ sqlc_make_sort_out_node (sql_comp_t * sc, dk_set_t out_cols, dk_set_t out_slots,
       sqlc_new_error (sc->sc_cc, "42000", "SQI01", "Internal error in SQL compiler: SqlOrder-232-0912");
 
     ks->ks_key = sc->sc_sort_insert_node->setp_ha->ha_key;
+    ks->ks_row_check = itc_row_check;
+    ks->ks_set_no = sc->sc_set_no_ssl;
+    if (setp->setp_set_no_in_key)
+      {
+	dk_set_t iter;
+	ks->ks_set_no_col_ssl = ssl_new_variable (sc->sc_cc, "gb_set_no", DV_LONG_INT);
+	dk_set_push (&out_slots, (void*)ks->ks_set_no_col_ssl);
+	for (iter = out_cols; iter; iter = iter->next)
+	  *(ptrlong*)&iter->data += 1;
+	t_set_push (&out_cols, (void*)0);
+      }
+    if (enable_vec)
+      {
+	DO_SET (state_slot_t *, ssl, &out_slots)
+	  {
+	    ssl->ssl_type = SSL_VEC;
+	    ssl->ssl_always_vec = 1;
+	  }
+	END_DO_SET();
+      }
     DO_SET (ptrlong, nth, &out_cols)
       {
 	NCONCF1 (ks->ks_out_cols, dk_set_nth (ks->ks_key->key_parts, (int) nth));
@@ -180,20 +174,38 @@ sqlc_make_sort_out_node (sql_comp_t * sc, dk_set_t out_cols, dk_set_t out_slots,
     ks->ks_always_null = out_always_null;
     if (sc->sc_grouping)
       ks->ks_grouping = sc->sc_grouping;
+    if (is_gb && enable_chash_gb)
+      {
+	ts->src_gen.src_input = (qn_input_fn)chash_read_input;
+	ts->clb.clb_nth_set = cc_new_instance_slot (sc->sc_cc);
+	ks->ks_pos_in_temp = cc_new_instance_slot (sc->sc_cc);
+	ks->ks_nth_cha_part = cc_new_instance_slot (sc->sc_cc);
+	ks->ks_cha_chp = cc_new_instance_slot (sc->sc_cc);
+      }
   }
   table_source_om (sc->sc_cc, ts);
+  if (is_gb)
+    ts->ts_order_ks->ks_proc_set_ctr = ssl_new_variable (sc->sc_cc, "hash_iter", DV_BIN);
   return ((data_source_t *) ts);
 }
 
 
 void
-sqlc_copy_ssl_if_constant (sql_comp_t * sc, state_slot_t ** ssl_ret)
+sqlc_copy_ssl_if_constant (sql_comp_t * sc, state_slot_t ** ssl_ret, dk_set_t * asg_code, setp_node_t * setp)
 {
   state_slot_t *ssl = *ssl_ret;
   if (SSL_CONSTANT == ssl->ssl_type)
     {
-      *ssl_ret = ssl_new_variable (sc->sc_cc, "", DV_UNKNOWN);
-      ssl_copy_types (*ssl_ret, ssl);
+      state_slot_t * v = ssl_new_variable (sc->sc_cc, "", DV_UNKNOWN);
+      ssl_copy_types (v, ssl);
+      if (setp)
+	{
+	  dk_set_replace (setp->setp_keys, ssl, v);
+	  dk_set_replace (setp->setp_dependent, ssl, v);
+	}
+      if (asg_code)
+	cv_artm (asg_code, (ao_func_t)box_identity, v, ssl, NULL);
+      *ssl_ret = v;
     }
 }
 

@@ -124,6 +124,7 @@
 #define AMMSC_SUM		(ptrlong)5
 #define AMMSC_COUNTSUM		(ptrlong)6
 #define AMMSC_USER		(ptrlong)7
+#define AMMSC_ONE (long)8  /* return of scalar subq in vectored exec, align set no to calling outside subq  sets */
 
 #define ORDER_BY		(ptrlong)111
 
@@ -183,6 +184,8 @@
 #define MODULE_DECL		(ptrlong)630
 #define BREAKPOINT_STMT		(ptrlong)631
 #define USER_AGGREGATE_DECL	(ptrlong)632
+#define FOR_VEC_STMT (ptrlong)635
+#define VECT_DECL ((ptrlong)636)
 
 #define SIMPLE_CASE		(ptrlong)622
 #define SEARCHED_CASE		(ptrlong)623
@@ -309,6 +312,13 @@ Note: bitwise OR of all these masks should be less than SMALLEST_POSSIBLE_POINTE
 #define OPT_SPARQL ((ptrlong) 907)
 #define OPT_NO_CLUSTER ((ptrlong) 930)
 #define OPT_INTO ((ptrlong) 931)
+#define OPT_INS_FETCH ((ptrlong)933)
+#define OPT_VECTORED ((ptrlong)934)
+#define OPT_NOT_VECTORED ((ptrlong)935)
+#define OPT_NO_IDENTITY ((ptrlong)936)
+#define OPT_ELASTIC ((ptrlong)937)
+#define OPT_NO_TRIGGER ((ptrlong)938)
+
 
 #define OPT_HASH ((ptrlong) 903)
 #define OPT_INTERSECT ((ptrlong) 1015)
@@ -323,6 +333,13 @@ Note: bitwise OR of all these masks should be less than SMALLEST_POSSIBLE_POINTE
 #define OPT_ARRAY ((ptrlong) 1017)
 #define OPT_ANY_ORDER (ptrlong)1018
 #define OPT_INDEX_ONLY (ptrlong)932
+#define OPT_HASH_SET ((ptrlong)940)
+#define OPT_HASH_PARTITION ((ptrlong)941)
+#define OPT_HASH_REPLICATION ((ptrlong)942)
+#define OPT_ISOLATION ((ptrlong)943)
+#define OPT_CHECK ((ptrlong)944)
+#define OPT_PART_GBY ((ptrlong)945)
+#define OPT_NO_PART_GBY ((ptrlong)946)
 
 
 /* GROUPING SETS */
@@ -656,6 +673,7 @@ typedef struct sql_tree_s
 	  {
 	    ST *	col;
 	    ptrlong	order;
+	    ST *	gsopt;
 	  } o_spec;
 	struct
 	  {
@@ -696,7 +714,7 @@ typedef struct sql_tree_s
 	compound;
 	struct {
 	  caddr_t 	name;
-	  ptrlong	is_modulo;
+	  caddr_t *	options;
 	  ST **		hosts;
 	} cluster;
 	struct {
@@ -730,6 +748,17 @@ typedef struct sql_tree_s
 	  ptrlong	shortest_only;
 	  ptrlong	direction;
 	} trans;
+	struct {
+	  ptrlong		mode;
+	  ST *		name;
+	  ST *		type;
+	  ST *	exp;
+	} vect_decl;
+	struct {
+	  ST **	decl;
+	  ST *	body;
+	  ptrlong	modify;
+	} for_vec;
     } _;
   } sql_tree_t;
 
@@ -878,22 +907,8 @@ extern long sqlp_bin_op_serial;
 
 #define t_NULLCONST	t_alloc_box (0, DV_DB_NULL)
 
-#define CAR(dt,x)	(x ? ((dt) ((x)->data)) : 0)
-
-#define CDR(x)		(x ? (x)->next : NULL)
-
-#define CONS(car,cdr)	dk_set_cons ((caddr_t) car, (dk_set_t) cdr)
-
-#define t_CONS(car,cdr)	t_cons ((caddr_t) car, (dk_set_t) cdr)
-
-#define NCONC(x,y)	dk_set_conc ((dk_set_t) x, (dk_set_t) y)
-
-#define t_NCONC(x,y)	dk_set_conc ((dk_set_t) x, (dk_set_t) y)
-
 #define t_dk_set_append_1(res,item) \
   *(res) = t_NCONC (*(res), t_CONS (item, NULL))
-
-#define NCONCF1(l, n)	(l = NCONC (l, CONS (n, NULL)))
 
 #define t_NCONCF1(l, n)	(l = t_NCONC (l, t_CONS (n, NULL)))
 

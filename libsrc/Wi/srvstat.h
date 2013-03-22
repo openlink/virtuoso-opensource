@@ -30,7 +30,7 @@
 #include "Dk.h"
 
 /* disk.c */
-extern long disk_reads;
+extern unsigned long disk_reads;
 extern long disk_releases;
 extern long read_cum_time;
 extern long disk_writes;
@@ -65,6 +65,7 @@ extern long srv_max_clients;
 /* srvstat.c */
 extern char *product_version_string (void);
 extern time_t st_started_since;
+extern long st_sys_ram;
 
 extern long first_id;
 

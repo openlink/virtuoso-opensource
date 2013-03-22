@@ -242,12 +242,39 @@ srv_dd_to_log (client_connection_t * cli)
       lc_free (lc);
       qr_free (qr); /* PmN */
     }
-  itc_free (it);
   log_sc_change_2 (cli->cli_trx);
   log_debug ("Dumping the registry");
   db_log_registry (cli->cli_trx->lt_log);
 
   lt_backup_flush (cli->cli_trx, 1);
+  mutex_enter (log_write_mtx);
+  log_time (log_time_header (wi_inst.wi_master->dbs_cfg_page_dt));
+  mutex_leave (log_write_mtx);
+  if (1)
+    {
+      local_cursor_t *lc;
+      query_t *qr;
+      snprintf (temp, sizeof (temp), "select _ROW from DB.DBA.SYS_VT_INDEX");
+      qr = eql_compile (temp, cli);
+      qr_quick_exec (qr, cli, "", &lc, 0);
+      while (lc_next (lc))
+	{
+	  row_delta_t rd;
+	  caddr_t * row = (caddr_t *) lc_nth_col (lc, 0);
+	  memset (&rd, 0, sizeof (rd));
+	  rd.rd_values = &row[1];
+	  rd.rd_n_values = BOX_ELEMENTS (row) - 1;
+	  rd.rd_key = sch_id_to_key (wi_inst.wi_schema, unbox (row[0]));
+	  log_insert (cli->cli_trx, &rd, INS_REPLACING);
+	  log_rd_blobs (it, &rd);
+	}
+      lc_free (lc);
+      qr_free (qr); /* PmN */
+      log_text_array (cli->cli_trx, list (1, box_string ("select count (*)  from SYS_VT_INDEX where "
+	  "0 = __vt_index (VI_TABLE, VI_INDEX, VI_COL, VI_ID_COL, VI_INDEX_TABLE, "
+	  "deserialize (VI_OFFBAND_COLS), VI_LANGUAGE, VI_ENCODING, deserialize (VI_ID_CONSTR), VI_OPTIONS)")));
+    }
+  itc_free (it);
   log_debug ("Dumping the schema done");
 }
 
@@ -256,18 +283,22 @@ static void
 log_rd_blobs (it_cursor_t * itc, row_delta_t * rd)
 {
   dbe_key_t * key = rd->rd_key;
+  int ctr = 0;
   itc->itc_row_key = key;
   itc->itc_insert_key = key;
   /* printf ("### %ld >\n", key_id); */
   DO_CL (cl, key->key_row_var)
     {
-      dtp_t dtp = cl->cl_sqt.sqt_dtp;
+      dtp_t dtp = cl->cl_sqt.sqt_col_dtp;
       if (IS_BLOB_DTP (dtp))
 	{
-	  caddr_t val = rd->rd_values[cl->cl_nth];
+	  int nth = rd->rd_key->key_is_col ? ctr : cl->cl_nth;
+	  caddr_t val = rd->rd_values[nth];
 	  if (DV_DB_NULL == DV_TYPE_OF (val))
 	    continue;
 	  dtp = val[0];
+	  if (DV_COL_BLOB_SERIAL == dtp)
+	    dtp = cl->cl_sqt.sqt_col_dtp;
 	  if (IS_BLOB_DTP (dtp))
 	    {
 		  dp_addr_t start = LONG_REF_NA (val + BL_DP);
@@ -277,6 +308,7 @@ log_rd_blobs (it_cursor_t * itc, row_delta_t * rd)
 				  cl->cl_col_id, key->key_table->tb_name);
 		}
 	    }
+      ctr++;
     }
   END_DO_CL;
   fflush (stdout);
@@ -498,7 +530,7 @@ row_log (it_cursor_t * itc, buffer_desc_t * buf, int map_pos, dbe_key_t * row_ke
 	rd->rd_temp_max = sizeof (temp_un.temp);
 	page_row_bm (buf, map_pos, rd, RO_ROW, itc);
 	rd->rd_n_values--; /*no bitmap string */
-	log_insert (itc->itc_ltrx, rd, LOG_KEY_ONLY | INS_REPLACING);
+	log_insert (itc->itc_ltrx, rd, LOG_KEY_ONLY | (rd->rd_key->key_id < DD_FIRST_PRIVATE_OID ? INS_REPLACING : INS_NORMAL));
 	rd->rd_n_values++;
 	pl_next_bit ((placeholder_t*)itc, bm, bm_len, bm_start, 0);
 	rd_free (rd);
@@ -509,10 +541,104 @@ row_log (it_cursor_t * itc, buffer_desc_t * buf, int map_pos, dbe_key_t * row_ke
 	rd->rd_temp = &(temp_un.temp[0]);
 	rd->rd_temp_max = sizeof (temp_un.temp);
       page_row (buf, map_pos, rd, RO_ROW);
-      log_insert (itc->itc_ltrx, rd, LOG_KEY_ONLY | INS_REPLACING);
+      log_insert (itc->itc_ltrx, rd, LOG_KEY_ONLY | (rd->rd_key->key_id < DD_FIRST_PRIVATE_OID ? INS_REPLACING : INS_NORMAL));
       log_rd_blobs (itc, rd);
       rd_free (rd);
     }
+}
+
+void
+log_recov_anyfy (caddr_t* values, mem_pool_t * mp)
+{
+  /* if an any column has string values these must be anified because a string in an any column in an rd will be mistaken for a dv serialization. */
+  int inx;
+  DO_BOX (caddr_t, val, inx, values)
+    {
+      dtp_t dtp = DV_TYPE_OF (val);
+      if (DV_STRING == dtp || DV_WIDE == dtp)
+	{
+	  caddr_t err = NULL;
+	  values[inx] = mp_box_to_any_1 (val, &err, mp, 0);
+	  if (err)
+	    {
+	      dk_free_tree (err);
+	      err = NULL;
+	      values[inx] = mp_box_to_any_1 ((caddr_t)0, &err, mp, 0);
+	    }
+	}
+    }
+  END_DO_BOX;
+}
+
+
+int
+col_row_log (it_cursor_t * itc, buffer_desc_t * buf, int map_pos, dbe_key_t * row_key, row_delta_t * rd)
+{
+  mem_pool_t * mp = mem_pool_alloc ();
+  int row, n_rows = -1, n;
+  itc->itc_map_pos = map_pos;
+  itc->itc_row_data = BUF_ROW (buf, map_pos);
+  itc_ensure_col_refs (itc);
+  DO_CL (cl, row_key->key_row_var)
+    {
+      col_data_ref_t * cr = itc->itc_col_refs[cl->cl_nth - row_key->key_n_significant];
+      if (!cr)
+	itc->itc_col_refs[cl->cl_nth - row_key->key_n_significant] = cr = itc_new_cr (itc);
+      itc_fetch_col (itc, buf, cl, 0, COL_NO_ROW);
+      cr->cr_pages[0].cp_ceic = (ce_ins_ctx_t*)cr_mp_array (cr, mp, 0, COL_NO_ROW, 0);
+      if (DV_ANY == cl->cl_sqt.sqt_col_dtp)
+	log_recov_anyfy ((caddr_t*)cr->cr_pages[0].cp_ceic, mp);
+      n = BOX_ELEMENTS (cr->cr_pages[0].cp_ceic);
+      if (-1 == n_rows)
+	n_rows = n;
+      else if (n_rows != n)
+	{
+	  FILE * fp = fopen ("recovery.txt", "a");
+	  log_error ("Columns of different length in seg key %s L=%d, r = %d", row_key->key_name, buf->bd_page, map_pos);
+	  fprintf (fp, "error at map_pos: %d\n", map_pos);
+	  fclose (fp);
+	  mp_free (mp);
+	  itc_col_leave (itc, 0);
+	  return 1;
+	  STRUCTURE_FAULT;
+	}
+    }
+  END_DO_CL;
+  rd->rd_key = row_key;
+  rd->rd_n_values = row_key->key_n_parts - row_key->key_n_significant;
+  for (row = 0; row < n_rows; row++)
+    {
+      int col = 0, rd_inx;
+      DO_CL (cl, row_key->key_row_var)
+	{
+	  caddr_t val, err = NULL;
+	  col_data_ref_t * cr = itc->itc_col_refs[cl->cl_nth - row_key->key_n_significant];
+	  if (col < row_key->key_n_significant)
+	    rd_inx = row_key->key_part_in_layout_order[col];
+	  else
+	    rd_inx = col;
+	  val = ((caddr_t*)cr->cr_pages[0].cp_ceic)[row];
+	  if (IS_BLOB_DTP (cl->cl_sqt.sqt_col_dtp))
+	    {
+	      if (IS_BLOB_HANDLE_DTP (DV_TYPE_OF (val)))
+		{
+		  caddr_t ser = mp_alloc_box (mp, DV_BLOB_LEN, DV_STRING);
+		  bh_to_dv ((blob_handle_t *)val, (db_buf_t)ser, cl->cl_sqt.sqt_col_dtp);
+		  val = ser;
+		}
+	      else
+		val = mp_box_to_any_1 (val, &err, mp, 0);
+	    }
+	  rd->rd_values[rd_inx] = val;
+	  col++;
+	}
+      END_DO_CL;
+      log_insert (itc->itc_ltrx, rd, LOG_KEY_ONLY | INS_SOFT);
+      log_rd_blobs (itc, rd);
+    }
+  mp_free (mp);
+  itc_col_leave (itc, 0);
+  return 0;
 }
 
 
@@ -523,8 +649,9 @@ log_page (it_cursor_t * it, buffer_desc_t * buf, void* dummy)
   int l;
   key_id_t k_id;
   int rc;
+  slice_id_t slice = buf->bd_storage->dbs_slice;
   dp_addr_t parent_dp;
-  int any = 0, n_bad_rows = 0, n_rows = 0;
+  int any = 0, n_bad_rows = 0, n_rows = 0, colerr = 0;
   dbe_key_t * row_key, * page_key = NULL;
   LOCAL_RD (rd);
   page = buf->bd_buffer;
@@ -539,11 +666,25 @@ log_page (it_cursor_t * it, buffer_desc_t * buf, void* dummy)
   if (!key_is_recoverable (k_id))
     return;
   parent_dp = (dp_addr_t) LONG_REF (buf->bd_buffer + DP_PARENT);
-  if (parent_dp && parent_dp > wi_inst.wi_master->dbs_n_pages)
+  if (parent_dp && parent_dp > buf->bd_storage->dbs_n_pages)
     STRUCTURE_FAULT;
 
-  buf->bd_tree = page_key->key_fragments[0]->kf_it;
+  buf->bd_tree = page_key->key_fragments[slice]->kf_it;
+  itc_from_it (it, buf->bd_tree);
+  if (!is_crash_dump)
+    {
   /* internal rows consistence check */
+      buf_order_ck (buf);
+    }
+  if (it->itc_insert_key != page_key)
+    itc_col_free (it);
+  if (page_key->key_is_col)
+    {
+      if (!it->itc_is_col)
+	itc_col_init (it);
+      itc_ce_check (it, buf, 0);
+      it->itc_col_row = COL_NO_ROW;
+    }
   DO_ROWS (buf, map_pos, row, NULL)
     {
       if (row - buf->bd_buffer  > PAGE_SZ)
@@ -572,12 +713,17 @@ log_page (it_cursor_t * it, buffer_desc_t * buf, void* dummy)
 	      n_bad_rows++;
 	      goto next;
 	    }
+	  if (page_key->key_is_col)
+	    colerr += col_row_log (it, buf, map_pos, row_key, &rd);
+	  else
+	    {
 	  if (bkp_check_and_recover_blobs)
 	    {
 	      if (bkp_check_and_recover_blob_cols (it, row))
 		buf_set_dirty (buf);
 	    }
 	  row_log (it, buf, map_pos, row_key, &rd);
+	    }
 	  any++;
 	  n_bad_rows = 0;
 	  n_rows++;
@@ -587,6 +733,13 @@ next:
 	STRUCTURE_FAULT;
     }
   END_DO_ROWS;
+  /* we dump buf here if have skipped rows */
+  if (colerr)
+    {
+      FILE * fp = fopen ("recovery.txt", "a");
+      dbg_page_map_f (buf, fp);
+      fclose (fp);
+    }
   if (any)
     {
       if (!is_crash_dump)
@@ -1008,11 +1161,11 @@ caddr_t bif_crash_recovery_log_check (caddr_t * qst, caddr_t * err_ret, state_sl
 #endif
 
 int ignore_remap = 0;
-long dpf_count[11];
+long dpf_count[14];
 
 extern long blob_pages_logged;
 void
-db_pages_to_log (char *mode, volatile dp_addr_t start_dp, volatile dp_addr_t end_dp)
+dbs_pages_to_log (dbe_storage_t * storage, char *mode, volatile dp_addr_t start_dp, volatile dp_addr_t end_dp)
 {
   int n_logged = 0, n_non_index = 0, n_bad_dpf = 0;
   buffer_desc_t *buf;
@@ -1020,9 +1173,8 @@ db_pages_to_log (char *mode, volatile dp_addr_t start_dp, volatile dp_addr_t end
   volatile dp_addr_t end_page;
   it_cursor_t *it;
 
-  dbe_storage_t * storage = wi_inst.wi_master;
   it = itc_create (NULL, bootstrap_cli->cli_trx);
-
+  bootstrap_cli->cli_trx->lt_replicate = REPL_LOG;
   no_free_set = strchr (mode, 'a') ? 1 : 0;
   is_crash_dump = 1;
 
@@ -1102,7 +1254,7 @@ db_pages_to_log (char *mode, volatile dp_addr_t start_dp, volatile dp_addr_t end
 		  else
 		    {
 		      int fl = SHORT_REF (buf->bd_buffer + DP_FLAGS);
-		      if (fl < 10)
+		      if (fl < 13)
 			dpf_count[fl]++;
 		      else
 			n_bad_dpf++;
@@ -1192,7 +1344,7 @@ db_crash_to_log (char *mode)
     }
 
   log_debug ("Dumping the data");
-  db_pages_to_log (mode, crashdump_start_dp, crashdump_end_dp);
+  dbs_pages_to_log (wi_inst.wi_master, mode, crashdump_start_dp, crashdump_end_dp);
   log_debug ("Dumping data done");
 
   sqlc_hook_enable = saved_sqlc_hook_enable;
@@ -1244,7 +1396,7 @@ bif_log_index (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   memset (levels, 0, sizeof (levels));
 
   itc = itc_create (NULL , qi->qi_trx);
-  itc_from (itc, key);
+  itc_from (itc, key, qi->qi_client->cli_slice);
   itc->itc_isolation = ISO_UNCOMMITTED;
   ITC_FAIL (itc)
     {

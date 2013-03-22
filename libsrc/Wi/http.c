@@ -109,7 +109,7 @@ static id_hash_t * http_url_cache = NULL; /* WS cached URLs */
 long http_ses_trap = 0;
 int www_maintenance = 0;
 
-#define MAINTENANCE (NULL != www_maintenance_page && (wi_inst.wi_is_checkpoint_pending || www_maintenance || cpt_is_global_lock ()))
+#define MAINTENANCE (NULL != www_maintenance_page && (wi_inst.wi_is_checkpoint_pending || www_maintenance || cpt_is_global_lock (NULL)))
 
 caddr_t
 temp_aspx_dir_get (void)
@@ -1662,7 +1662,7 @@ ws_clear (ws_connection_t * ws, int error_cleanup)
   if (ws->ws_cli)
     {
       memset (&ws->ws_cli->cli_activity, 0, sizeof (db_activity_t));
-      ws->ws_cli->cli_anytime_timeout = 0;
+      ws->ws_cli->cli_anytime_timeout_orig = ws->ws_cli->cli_anytime_timeout = 0;
     }
   if (!http_keep_hosting)
     hosting_clear_cli_attachments (ws->ws_cli, 0);
@@ -1963,6 +1963,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 	  exec_params[8] = box_string ("MEDIATYPE"); exec_params[9] = (caddr_t) &media_type;
 	  exec_params[10] = box_string ("ENC"); exec_params[11] = (caddr_t) &xsl_encoding;
 	  err = qr_exec (ws->ws_cli, http_xslt_qr, CALLER_LOCAL, NULL, NULL, NULL, exec_params, NULL, 1);
+	  cli_set_slice (ws->ws_cli, NULL, QI_NO_SLICE, NULL);
 	  dk_free_box ((box_t) exec_params);
 	}
       if (err)
@@ -3322,7 +3323,7 @@ request_do_again:
   is_vsmx = 0;
   is_http_binding = 0;
   is_physical_soap = 0;
-  cli->cli_start_time = time_now_msec;
+  cli_set_start_times (cli);
   cli->cli_terminate_requested = 0;
 
   p_name[0] = 0;
@@ -3338,7 +3339,7 @@ request_do_again:
       size_t alen;
       caddr_t apage;
 #ifdef _IMSG
-      if (ws->ws_port > 0) /* if POP3, NNTP or FTP just return */
+      if (ws->ws_port > 0) /* if POP3, IMAP, NNTP or FTP just return */
 	goto do_file;
 #endif
       print_slash = (www_maintenance_page[0] != '/');
@@ -3435,7 +3436,7 @@ request_do_again:
 	      MAKE_TRX_ERROR (rc, err, LT_ERROR_DETAIL (cli->cli_trx));
 	    }
 	}
-      dk_free_box (save_history_name); 
+      dk_free_box (save_history_name);
       dk_free_box (vdir);
 rec_err_end:
       if (err && err != (caddr_t) SQL_NO_DATA_FOUND)
@@ -3932,6 +3933,7 @@ do_file:
   /* instead of connection_set (cli, con_dav_v_name, NULL);
    * we'll clear all connection settings if connection is dirty */
   ws_connection_vars_clear (cli);
+  cli_free_dae (cli);
 
   dk_free_tree ((caddr_t) err);
   dk_free_tree ((box_t) ws->ws_lines);
@@ -3950,6 +3952,7 @@ http_client_ip (session_t * ses)
   return (box_dv_short_string (buf));
 }
 
+extern db_activity_t http_activity;
 #define IS_GATEWAY_PROXY(ws) (ws->ws_forward || \
     (http_proxy_address && (ws) && (ws)->ws_client_ip && !strcmp ((ws)->ws_client_ip, http_proxy_address)))
 
@@ -4056,9 +4059,14 @@ ws_read_req (ws_connection_t * ws)
 	}
 #endif
       if (ws_auth_check (ws))
+	{
+	  memset (&ws->ws_cli->cli_activity, 0, sizeof (db_activity_t));
 	ws_request (ws);
+	  cli_set_slice (ws->ws_cli, NULL, QI_NO_SLICE, NULL);
+	  da_add (&http_activity, &ws->ws_cli->cli_activity);
+	}
 #ifdef _IMSG
-      /* clear POP3, NNTP & FTP port after work is done */
+      /* clear POP3, IMAP, NNTP & FTP port after work is done */
       ws->ws_port = 0;
 #endif
     }
@@ -4318,6 +4326,7 @@ ws_init_func (ws_connection_t * ws)
   semaphore_enter (ws->ws_thread->thr_sem);
   SET_THR_ATTR (ws->ws_thread, TA_IMMEDIATE_CLIENT, ws->ws_cli);
   sqlc_set_client (ws->ws_cli);
+  ws->ws_cli->cli_trx->lt_thr = ws->ws_thread;
   for (;;)
     {
       dk_session_t * ses;
@@ -4344,7 +4353,7 @@ ws_init_func (ws_connection_t * ws)
 	  session_accept (ses->dks_session, ws->ws_session->dks_session);
 	  ws->ws_session->dks_ws_status = DKS_WS_ACCEPTED;
 #if defined (_SSL) || defined (_IMSG)
-	  /* initialize ws stricture for ssl, pop3, nntp & ftp service */
+	  /* initialize ws stricture for ssl, pop3, imap, nntp & ftp service */
 	  ws_inet_session_init (ses, ws);
 #endif
 	  http_trace (("connect from queue accept ws %p ses %p\n", ws, ws->ws_session));
@@ -4399,7 +4408,7 @@ ws_ready (dk_session_t * accept)
       rc = session_accept (accept->dks_session, ws->ws_session->dks_session);
       ws->ws_session->dks_ws_status = DKS_WS_ACCEPTED;
 #if defined (_SSL) || defined (_IMSG)
-      /* initialize ws stricture for ssl, pop3, nntp & ftp service */
+      /* initialize ws stricture for ssl, pop3, imap, nntp & ftp service */
       ws_inet_session_init (accept, ws);
 #endif
       http_trace (("accept ws %p ses %p\n", ws, ws->ws_session));
@@ -4733,6 +4742,8 @@ bif_http_result (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   /* potentially long time when session is flushed or chunked, then should use io sect
      for now as almost we using to go to string session we keep it w/o io sect */
   /* IO_SECT (qst); */
+  if (DV_DB_NULL == dtp)
+    return NULL;
   if (dtp == DV_SHORT_STRING || dtp == DV_LONG_STRING || dtp == DV_C_STRING || dtp == DV_BIN)
     session_buffered_write (out, string, box_length (string) - (IS_STRING_DTP (DV_TYPE_OF (string)) ? 1 : 0));
   else if (dtp == DV_BLOB_HANDLE)
@@ -8284,12 +8295,68 @@ https_cert_verify_callback (int ok, void *_ctx)
 }
 
 int
+https_ssl_verify_callback (int ok, void *_ctx)
+{
+  X509_STORE_CTX *ctx;
+  SSL *ssl;
+  X509 *xs;
+  int errnum, verify, depth;
+  int errdepth;
+  char *cp, cp_buf[1024];
+  char *cp2, cp2_buf[1024];
+  uptrlong ap;
+
+  ctx = (X509_STORE_CTX *)_ctx;
+  ssl  = (SSL *)X509_STORE_CTX_get_app_data(ctx);
+  ap = (uptrlong) SSL_get_app_data (ssl);
+
+  xs       = X509_STORE_CTX_get_current_cert(ctx);
+  errnum   = X509_STORE_CTX_get_error(ctx);
+  errdepth = X509_STORE_CTX_get_error_depth(ctx);
+
+  cp  = X509_NAME_oneline(X509_get_subject_name(xs), cp_buf, sizeof (cp_buf));
+  cp2 = X509_NAME_oneline(X509_get_issuer_name(xs),  cp2_buf, sizeof (cp2_buf));
+
+  verify = (int) ((0xff000000 & ap) >> 24);
+  depth =  (int) (0xffffff & ap);
+
+  if (( errnum == X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT
+	|| errnum == X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN
+	|| errnum == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY
+#if OPENSSL_VERSION_NUMBER >= 0x00905000
+	|| errnum == X509_V_ERR_CERT_UNTRUSTED
+#endif
+	|| errnum == X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE)
+      && verify == HTTPS_VERIFY_OPTIONAL_NO_CA )
+    {
+      SSL_set_verify_result(ssl, X509_V_OK);
+      ok = 1;
+    }
+
+  if (!ok)
+    {
+      log_error ("HTTPS Certificate Verification: Error (%d): %s",
+	  errnum, X509_verify_cert_error_string(errnum));
+    }
+
+  if (errdepth > depth)
+    {
+      log_error ("HTTPS Certificate Verification: Certificate Chain too long "
+	  "(chain has %d certificates, but maximum allowed are only %ld)",
+	  errdepth, depth);
+      ok = 0;
+    }
+  return (ok);
+}
+
+int
 ssl_server_set_certificate (SSL_CTX* ssl_ctx, char * cert_name, char * key_name, char * extra)
 {
   char err_buf[1024];
   EVP_PKEY *pkey;
   X509 *x509;
 
+  /* TODO create internal OpenSSL engine for this */
   if (strstr (cert_name, "db:") == cert_name || strstr (key_name, "db:") == key_name)
     {
       xenc_key_t *k;
@@ -8367,7 +8434,7 @@ ssl_server_set_certificate (SSL_CTX* ssl_ctx, char * cert_name, char * key_name,
 		  break;
 		}
 	      CRYPTO_add(&k->xek_x509->references, 1, CRYPTO_LOCK_X509);
-              tok = strtok_r (NULL, ",", &tok_s);		  
+              tok = strtok_r (NULL, ",", &tok_s);
 	    }
 	  dk_free_box (str);
 	  cli->cli_user = saved_user;
@@ -8376,7 +8443,7 @@ ssl_server_set_certificate (SSL_CTX* ssl_ctx, char * cert_name, char * key_name,
 	{
 	  X509 *x = NULL;
 	  BIO *in;
-	  if ((in = BIO_new_file (extra, "r")) != NULL) 
+	  if ((in = BIO_new_file (extra, "r")) != NULL)
 	    {
 	      while ((x = PEM_read_bio_X509 (in, NULL, NULL, NULL)))
 		{
@@ -9344,6 +9411,58 @@ bif_http_is_flushed (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
   return box_num(1);
 }
 
+static caddr_t
+bif_https_renegotiate (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
+{
+  char * me = "https_renegotiate";
+  query_instance_t *qi = (query_instance_t *)qst;
+  ws_connection_t *ws = qi->qi_client->cli_ws;
+#ifdef _SSL
+  SSL *ssl = NULL;
+#endif
+
+  if (!ws)
+    return box_num (0);
+#ifdef _SSL
+  ssl = (SSL *) tcpses_get_ssl (ws->ws_session->dks_session);
+  if (ssl)
+    {
+      int i, verify = SSL_VERIFY_NONE;
+      uptrlong ap;
+      static int s_server_auth_session_id_context;
+      int https_client_verify = BOX_ELEMENTS (args) > 0 ? bif_long_arg (qst, args, 0, me) : HTTPS_VERIFY_OPTIONAL_NO_CA;
+      int https_client_verify_depth = BOX_ELEMENTS (args) > 1 ? bif_long_arg (qst, args, 1, me) : 15;
+      s_server_auth_session_id_context ++;
+
+      if (https_client_verify < 0 || https_client_verify > HTTPS_VERIFY_OPTIONAL_NO_CA)
+	sqlr_new_error ("22023", ".....", "The verify flag must be between 0 and 3");
+      if (https_client_verify_depth <= 0)
+	sqlr_new_error ("22023", ".....", "The verify depth must be greater than zero");
+
+      ap = ((0xff & https_client_verify) << 24) | (0xffffff & https_client_verify_depth);
+
+      if (HTTPS_VERIFY_REQUIRED == https_client_verify)
+	verify |= SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
+      if (HTTPS_VERIFY_OPTIONAL == https_client_verify || HTTPS_VERIFY_OPTIONAL_NO_CA == https_client_verify)
+	verify |= SSL_VERIFY_PEER;
+
+      SSL_set_verify (ssl, verify, (int (*)(int, X509_STORE_CTX *)) https_ssl_verify_callback);
+      SSL_set_app_data (ssl, ap);
+      SSL_set_session_id_context (ssl, (void*)&s_server_auth_session_id_context, sizeof(s_server_auth_session_id_context));
+      i = SSL_renegotiate (ssl);
+      if (i <= 0) sqlr_new_error ("42000", ".....", "SSL_renegotiate failed");
+      i = SSL_do_handshake (ssl);
+      if (i <= 0) sqlr_new_error ("42000", ".....", "SSL_do_handshake failed");
+      ssl->state = SSL_ST_ACCEPT;
+      i = SSL_do_handshake (ssl);
+      if (i <= 0) sqlr_new_error ("42000", ".....", "SSL_do_handshake failed");
+      if (SSL_get_peer_certificate (ssl))
+	return box_num (1);
+    }
+#endif
+  return box_num (0);
+}
+
 FILE *debug_log = NULL;
 
 static caddr_t
@@ -9647,6 +9766,311 @@ bif_http_acl_stats (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   http_acl_stats ();
   trset_end ();
   return NULL;
+}
+
+static caddr_t
+bif_sysacl_compose (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t *src = bif_array_of_pointer_arg (qst, args, 0, "sysacl_compose");
+  ptrlong maxperm = bif_long_range_arg (qst, args, 1, "sysacl_compose", 0, 0xff);
+  caddr_t res;
+  uint16 *gids;
+  unsigned char *perms;
+  int src_len, gid_ctr, ctr2, gid_count;
+  src_len = BOX_ELEMENTS (src);
+  if (src_len % 2)
+    sqlr_new_error ("22023", "SA001", "The function sysacl_compose() expects get_keyword - style array of roles and permission bits as its argument)");
+  gid_count = src_len/2;
+  res = dk_alloc_box (gid_count * (sizeof (uint16) + 1) + 1, DV_STRING);
+  gids = (uint16 *)res;
+  perms = (unsigned char *)(res + gid_count * sizeof (uint16));
+  for (gid_ctr = 0; gid_ctr < gid_count; gid_ctr++)
+    {
+      caddr_t src_grp = src [gid_ctr*2];
+      dtp_t src_grp_dtp = DV_TYPE_OF (src_grp);
+      caddr_t src_perm = src [gid_ctr*2 + 1];
+      user_t *grp;
+      boxint gid;
+      boxint perm;
+      if (DV_LONG_INT == src_grp_dtp)
+        {
+          grp = sec_id_to_user (unbox (src_grp));
+          if (NULL == grp)
+            {
+              dk_free_box (res);
+              sqlr_new_error ("22023", "SA002", "Unknown user or group id %ld", (long)unbox (src_grp));
+            }
+        }
+      else if (DV_STRING == src_grp_dtp)
+        {
+          grp = sec_name_to_user (src_grp);
+          if (NULL == grp)
+            {
+              dk_free_box (res);
+              sqlr_new_error ("22023", "SA003", "Unknown user or group name \"%.200s\"", src_grp);
+            }
+        }
+      else
+        {
+          dk_free_box (res);
+          sqlr_new_error ("22023", "SA004", "User or group should be identified by name or integer id (U_NAME or U_ID from DB.DBA.SYS_USERS)");
+        }
+      gid = grp->usr_id;
+      if (DV_LONG_INT != DV_TYPE_OF (src_perm))
+        {
+          dk_free_box (res);
+          sqlr_new_error ("22023", "SA005", "Permissions for user or group should be integer");
+        }
+      perm = unbox (src_perm);
+      if ((perm < 0) || (perm > maxperm))
+        {
+          dk_free_box (res);
+          sqlr_new_error ("22023", "SA006", "Permission %ld is out of range of valid permisions (from 0 to %ld)", (long)perm, (long)maxperm);
+        }
+      for (ctr2 = 0; ctr2 < gid_ctr; ctr2++)
+        {
+          if (gids[ctr2] != gid)
+            continue;
+          dk_free_box (res);
+          sqlr_new_error ("22023", "SA007", "User or group with id %ld is listed twice, in indicies %ld and %ld of the source vector", (long)gid, (long)(ctr2*2), (long)(gid_ctr*2));
+        }
+      gids[gid_ctr] = gid;
+      perms[gid_ctr] = perm;
+    }
+/* Now bubble sort of the result */
+  for (gid_ctr = gid_count; gid_ctr--; /* no step */)
+    {
+      for (ctr2 = 0; ctr2 < gid_ctr; ctr2++)
+        {
+          uint16 swap_gid;
+          unsigned char swap_perm;
+          if (gids[ctr2] < gids[ctr2+1])
+            continue;
+          swap_gid = gids[ctr2]; gids[ctr2] = gids[ctr2+1]; gids[ctr2+1] = swap_gid;
+          swap_perm = perms[ctr2]; perms[ctr2] = perms[ctr2+1]; perms[ctr2+1] = swap_perm;
+        }
+    }
+  perms[gid_count] = '\0'; /* Trailing zero of the string */
+  return res;
+}
+
+static caddr_t
+bif_sysacl_direct_bits_of_user (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t sysacl = bif_string_or_null_arg (qst, args, 0, "sysacl_direct_bits_of_user");
+  user_t *user;
+  oid_t uid;
+  int gids_count;
+  uint16 *gids_tail, *gids_end;
+  if (NULL == sysacl)
+    return box_num (0); /* to stay on safe side */
+  if (1 < BOX_ELEMENTS (args))
+    user = bif_user_t_arg (qst, args, 1, "sysacl_direct_bits_of_user", (USER_SHOULD_EXIST | USER_NOBODY_IS_PERMITTED | USER_SPARQL_IS_PERMITTED), 1);
+  else
+    user = ((query_instance_t *)qst)->qi_client->cli_user;
+  uid = user->usr_id;
+  gids_count = box_length (sysacl) - 1;
+  if (gids_count % (sizeof (uint16) + 1))
+    sqlr_new_error ("22023", "SA008", "Invalid sysacl string is passed to function sysacl_direct_bits_of_user()");
+  gids_count = gids_count / (sizeof (uint16) + 1);
+  gids_tail = (uint16 *)sysacl;
+  gids_end = gids_tail + gids_count;
+  while (gids_tail < gids_end)
+    {
+      if (gids_tail[0] < uid)
+        gids_tail++;
+      else if (gids_tail[0] > uid)
+        break;
+      else
+        return box_num (((unsigned char *)gids_end)[gids_tail - (uint16 *)sysacl]);
+    }
+  return box_num (0);
+}
+
+static caddr_t
+bif_sysacl_all_bits_of_tree (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t sysacl = bif_string_or_null_arg (qst, args, 0, "sysacl_all_bits_of_tree");
+  user_t *user;
+  int res = 0, gids_count;
+  uint16 *gids_tail, *gids_end;
+  oid_t *flat_tail, *flat_end;
+  if (NULL == sysacl)
+    return box_num (0); /* to stay on safe side */
+  if (1 < BOX_ELEMENTS (args))
+    user = bif_user_t_arg (qst, args, 1, "sysacl_all_bits_of_tree", (USER_SHOULD_EXIST | USER_NOBODY_IS_PERMITTED | USER_SPARQL_IS_PERMITTED), 1);
+  else
+    user = ((query_instance_t *)qst)->qi_client->cli_user;
+  if (0 == user->usr_flatten_g_ids_len)
+    sec_usr_flatten_g_ids_refill (user);
+  gids_count = box_length (sysacl) - 1;
+  if (gids_count % (sizeof (uint16) + 1))
+    sqlr_new_error ("22023", "SA008", "Invalid sysacl string is passed to function sysacl_all_bits_of_tree()");
+  gids_count = gids_count / (sizeof (uint16) + 1);
+  gids_tail = (uint16 *)sysacl;
+  gids_end = gids_tail + gids_count;
+  flat_tail = user->usr_flatten_g_ids;
+  flat_end = flat_tail + user->usr_flatten_g_ids_len;
+  while ((gids_tail < gids_end) && (flat_tail < flat_end))
+    {
+      if (gids_tail[0] < flat_tail[0])
+        gids_tail++;
+      else if (gids_tail[0] > flat_tail[0])
+        flat_tail++;
+      else
+        {
+          res |= ((unsigned char *)gids_end)[gids_tail - (uint16 *)sysacl];
+          gids_tail++;
+          flat_tail++;
+        }
+    }
+  return box_num (res);
+}
+
+static int
+sec_sysacl_bit1_of_tree (caddr_t sysacl, user_t *user)
+{
+  int gids_count;
+  uint16 *gids_tail, *gids_end;
+  oid_t *flat_tail, *flat_end;
+  if (0 == user->usr_flatten_g_ids_len)
+    sec_usr_flatten_g_ids_refill (user);
+  gids_count = box_length (sysacl) - 1;
+  if (gids_count % (sizeof (uint16) + 1))
+    sqlr_new_error ("22023", "SA008", "Invalid sysacl string is passed to function sysacl_bit1_of_tree()");
+  gids_count = gids_count / (sizeof (uint16) + 1);
+  gids_tail = (uint16 *)sysacl;
+  gids_end = gids_tail + gids_count;
+  flat_tail = user->usr_flatten_g_ids;
+  flat_end = flat_tail + user->usr_flatten_g_ids_len;
+  while ((gids_tail < gids_end) && (flat_tail < flat_end))
+    {
+      if (gids_tail[0] < flat_tail[0])
+        gids_tail++;
+      else if (gids_tail[0] > flat_tail[0])
+        flat_tail++;
+      else
+        {
+          if (0x1 & ((unsigned char *)gids_end)[gids_tail - (uint16 *)sysacl])
+            return 1;
+          gids_tail++;
+          flat_tail++;
+        }
+    }
+  return 0;
+}
+
+static caddr_t
+bif_sysacl_bit1_of_tree (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t sysacl = bif_string_or_null_arg (qst, args, 0, "sysacl_bit1_of_tree");
+  user_t *user;
+  if (NULL == sysacl)
+    return box_num (0); /* to stay on safe side */
+  if (1 < BOX_ELEMENTS (args))
+    user = bif_user_t_arg (qst, args, 1, "sysacl_bit1_of_tree", (USER_SHOULD_EXIST | USER_NOBODY_IS_PERMITTED | USER_SPARQL_IS_PERMITTED), 1);
+  else
+    user = ((query_instance_t *)qst)->qi_client->cli_user;
+  return box_num (sec_sysacl_bit1_of_tree (sysacl, user));
+}
+
+void
+bif_sysacl_bit1_of_tree_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret)
+{
+  data_col_t * dc, *sysacl_arg, *user_arg = NULL;
+  QNCAST (query_instance_t, qi, qst);
+  db_buf_t set_mask = qi->qi_set_mask;
+  int argcount, set, n_sets = qi->qi_n_sets, first_set = 0;
+  state_slot_t * sysacl_ssl, *user_ssl;
+  user_t *curr_user = NULL;
+
+  if (!ret)
+    return;
+  dc = QST_BOX (data_col_t *, qst, ret->ssl_index);
+  argcount = BOX_ELEMENTS (args);
+  if (argcount < 1)
+    sqlr_new_error ("42001", "VEC..", "Not enough arguments for sysacl_bit1_of_tree()");
+  sysacl_ssl = args[0];
+  sysacl_arg = QST_BOX (data_col_t *, qst, sysacl_ssl->ssl_index);
+  if (argcount < 2)
+    curr_user = ((query_instance_t *)qst)->qi_client->cli_user;
+  else
+    {
+      user_ssl = args[1];
+      if (SSL_VEC == user_ssl->ssl_type)
+        user_arg = QST_BOX (data_col_t *, qst, user_ssl->ssl_index);
+      else
+        curr_user = bif_user_t_arg (qst, args, 1, "sysacl_bit1_of_tree", (USER_SHOULD_EXIST | USER_NOBODY_IS_PERMITTED | USER_SPARQL_IS_PERMITTED), 1);
+    }
+  DC_CHECK_LEN (dc, qi->qi_n_sets - 1);
+  SET_LOOP
+    {
+      caddr_t sysacl, user_name_or_id;
+      int sysacl_row_no, user_row_no;
+      int bit1;
+      if (SSL_REF == sysacl_ssl->ssl_type)
+        sysacl_row_no = sslr_set_no (qst, sysacl_ssl, set);
+      else
+        sysacl_row_no = set;
+      if (DCT_BOXES & sysacl_arg->dc_type)
+        sysacl = ((caddr_t*)(sysacl_arg->dc_values))[sysacl_row_no];
+      else if (DV_ANY == sysacl_arg->dc_dtp)
+        {
+          db_buf_t ser = ((db_buf_t*)(sysacl_arg->dc_values))[sysacl_row_no];
+          if (DV_DB_NULL == ser[0])
+            { bit1 = 0; goto ans_done; }
+          sysacl = box_deserialize_string ((caddr_t)ser, 0, 0);
+        }
+      else
+        {
+          if (DC_IS_NULL (sysacl_arg, sysacl_row_no))
+            { bit1 = 0; goto ans_done; }
+        }
+      if (DV_STRING != DV_TYPE_OF (sysacl))
+        {
+          if (DV_DB_NULL == DV_TYPE_OF (sysacl))
+            { bit1 = 0; goto ans_done; }
+          sqlr_new_error ("42001", "VEC..", "Wrong dadatype of sysacl");
+        }
+      if (NULL != user_arg)
+        {
+          if (SSL_REF == user_ssl->ssl_type)
+            user_row_no = sslr_set_no (qst, user_ssl, set);
+          else
+            user_row_no = set;
+          if (DCT_BOXES & user_arg->dc_type)
+            user_name_or_id = ((caddr_t*)(user_arg->dc_values))[user_row_no];
+          else if (DV_ANY == user_arg->dc_dtp)
+            {
+              db_buf_t ser = ((db_buf_t*)(user_arg->dc_values))[user_row_no];
+              if (DV_DB_NULL == ser[0])
+                { bit1 = 0; goto ans_done; }
+              user_name_or_id = box_deserialize_string ((caddr_t)ser, 0, 0);
+            }
+          else
+            {
+              if (DC_IS_NULL (user_arg, user_row_no))
+                { bit1 = 0; goto ans_done; }
+              if (DV_LONG_INT == user_arg->dc_dtp)
+                {
+                  int64 i = ((int64*)(user_arg->dc_values))[user_row_no];
+                  curr_user = sec_id_to_user (i);
+                  bit1 = ((NULL == curr_user) ? 0 : sec_sysacl_bit1_of_tree (sysacl, curr_user));
+                  goto ans_done;
+                }
+            }
+          switch (DV_TYPE_OF (user_name_or_id))
+            {
+            case DV_LONG_INT: curr_user = sec_id_to_user (unbox (user_name_or_id)); break;
+            case DV_STRING: curr_user = sec_name_to_user (user_name_or_id); break;
+            default: bit1 = 0; goto ans_done;
+            }
+        }
+      bit1 = sec_sysacl_bit1_of_tree (sysacl, curr_user);
+ans_done:
+      dc_set_long (dc, set, bit1);
+    }
+  END_SET_LOOP;
 }
 
 /*
@@ -10424,6 +10848,7 @@ http_init_part_one ()
   bif_define_typed ("is_http_ctx", bif_is_http_ctx, &bt_any);
   bif_define_typed ("is_https_ctx", bif_is_https_ctx, &bt_any);
   bif_define_typed ("http_is_flushed", bif_http_is_flushed, &bt_any);
+  bif_define ("https_renegotiate", bif_https_renegotiate);
   bif_define_typed ("http_debug_log", bif_http_debug_log, &bt_any);
   bif_define("http_login_failed", bif_http_login_failed);
 #ifdef VIRTUAL_DIR
@@ -10444,6 +10869,12 @@ http_init_part_one ()
   bif_define_typed ("http_acl_get", bif_http_acl_get, &bt_any);
   bif_define_typed ("http_acl_remove", bif_http_acl_remove, &bt_any);
   bif_define_typed ("http_acl_stats", bif_http_acl_stats, &bt_any);
+
+  bif_define_typed ("sysacl_compose", bif_sysacl_compose, &bt_varchar);
+  bif_define_typed ("sysacl_direct_bits_of_user", bif_sysacl_direct_bits_of_user, &bt_integer);
+  bif_define_typed ("sysacl_all_bits_of_tree", bif_sysacl_all_bits_of_tree, &bt_integer);
+  bif_define_typed ("sysacl_bit1_of_tree", bif_sysacl_bit1_of_tree, &bt_integer);
+  bif_set_vectored (bif_sysacl_bit1_of_tree, bif_sysacl_bit1_of_tree_vec);
 
   bif_define ("http_url_cache_set", bif_http_url_cache_set);
   bif_define ("http_url_cache_get", bif_http_url_cache_get);
@@ -10542,6 +10973,8 @@ http_threads_allocate (int n_threads)
     }
 }
 
+extern int cl_no_init;
+
 int
 http_init_part_two ()
 {
@@ -10554,6 +10987,8 @@ http_init_part_two ()
   dk_session_t *nntp_listen = NULL;
   dk_session_t *ftp_listen = NULL;
 #endif
+  if (cluster_enable && cl_no_init)
+    return 1;
 
   if (lite_mode)
     return 1;
@@ -10583,8 +11018,8 @@ http_init_part_two ()
   ddl_sel_for_effect ("select count (*) from DB.DBA.HTTP_PATH where http_map_table (HP_LPATH, HP_PPATH, HP_HOST, HP_LISTEN_HOST, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_DEFAULT, HP_SECURITY, HP_REALM, HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_PERSIST_SES_VARS, deserialize (HP_SOAP_OPTIONS), deserialize (HP_AUTH_OPTIONS), deserialize (HP_OPTIONS), HP_IS_DEFAULT_HOST)");
 #endif
   ddl_sel_for_effect ("SELECT count (*) FROM DB.DBA.SYS_SOAP_DATATYPES where "
-      "__soap_dt_define(SDT_NAME, xslt ('http://local.virt/soap_sch', xml_tree_doc(xml_tree(SDT_SCH)), vector ('udt_struct', case when isstring(SDT_UDT) then 1 else 0 end)), "
-      "xml_tree_doc(xml_tree(SDT_SCH)), SDT_TYPE, SDT_UDT)");
+      "__soap_dt_define(SDT_NAME, xslt ('http://local.virt/soap_sch', xtree_doc(SDT_SCH), vector ('udt_struct', case when isstring(SDT_UDT) then 1 else 0 end)), "
+      "xtree_doc(SDT_SCH), SDT_TYPE, SDT_UDT)");
 
   ddl_sel_for_effect ("SELECT count (*) FROM DB.DBA.SYS_SOAP_UDT_PUB where "
       "__soap_udt_publish (SUP_HOST, SUP_LHOST, SUP_END_POINT, SUP_CLASS)");

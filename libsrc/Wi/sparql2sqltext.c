@@ -1585,7 +1585,7 @@ sparp_equiv_native_valmode (sparp_t *sparp, SPART *gp, sparp_equiv_t *eq)
   if (VALUES_L == gp->_.gp.subtype)
     {
       if (SPART_VARR_IS_REF & eq->e_rvr.rvrRestrictions)
-        { 
+        {
           caddr_t qmf_name = (SPART_VARR_NOT_NULL & eq->e_rvr.rvrRestrictions) ? uname_rdfdf_ns_uri_default_iid : uname_rdfdf_ns_uri_default_iid_nullable;
           jso_rtti_t *qmf_rtti = (jso_rtti_t *)gethash (qmf_name, jso_rttis_of_names);
           if ((NULL != qmf_rtti) && JSO_STATUS_LOADED == qmf_rtti->jrtti_status)
@@ -7930,6 +7930,8 @@ from_printed:
                 case OFFBAND_L:		ssg_puts (", OFFBAND, ");	goto contains_prin_id; /* see below */
                 case SCORE_L:		ssg_puts (", SCORE, ");		goto contains_prin_id; /* see below */
                 case SCORE_LIMIT_L:	ssg_puts (", SCORE_LIMIT, ");	goto contains_print_scalar; /* see below */
+                case GEO_L:		ssg_puts (", GEO, ");		goto contains_print_scalar; /* see below */
+                case PRECISION_L:	ssg_puts (", PRECISION, ");	goto contains_print_scalar; /* see below */
                 default: spar_internal_error (ssg->ssg_sparp, "Unsupported option in printing freetext predicate"); break;
                 }
 contains_prin_id:

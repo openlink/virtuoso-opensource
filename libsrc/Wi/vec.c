@@ -37,6 +37,7 @@
 #include "libutil.h"
 #include "arith.h"
 #include "datesupp.h"
+#include "datesupp.h"
 
 
 int64
@@ -67,6 +68,45 @@ dc_any_value (data_col_t * dc, int inx)
   return 0;
 }
 
+
+int64
+dc_any_value_n (data_col_t * dc, int inx, char *nf)
+{
+  if (DCT_BOXES & dc->dc_type)
+    {
+      caddr_t b = ((caddr_t *) dc->dc_values)[inx];
+      *nf = IS_BOX_POINTER (b) && DV_DB_NULL == box_tag (b);
+      return (ptrlong) b;
+    }
+  switch (dc->dc_dtp)
+    {
+    case DV_ANY:
+      {
+	db_buf_t a = ((db_buf_t *) dc->dc_values)[inx];
+	*nf = DV_DB_NULL == a[0];
+	return (uptrlong) a;
+      }
+    case DV_SHORT_INT:
+    case DV_DOUBLE_FLOAT:
+    case DV_LONG_INT:
+    case DV_IRI_ID:
+    case DV_INT64:
+    case DV_IRI_ID_8:
+      *nf = DC_IS_NULL (dc, inx);
+      return ((int64 *) dc->dc_values)[inx];
+    case DV_SINGLE_FLOAT:
+      *nf = DC_IS_NULL (dc, inx);
+      return (unsigned int64) ((uint32 *) dc->dc_values)[inx];
+    case DV_DATETIME:
+    case DV_DATE:
+    case DV_TIME:
+    case DV_TIMESTAMP:
+      *nf = DC_IS_NULL (dc, inx);
+      return ((int64) (ptrlong) dc->dc_values) + DT_LENGTH * inx;
+    }
+  GPF_T1 ("dc of no dtp in dc_any_value");
+  return 0;
+}
 
 int64
 dc_any_value_prefetch (data_col_t * dc, int inx, int inx2)
@@ -105,6 +145,50 @@ dc_any_value_prefetch (data_col_t * dc, int inx, int inx2)
   return 0;
 }
 
+
+int64
+dc_any_value_n_prefetch (data_col_t * dc, int inx, int inx2, char *nf)
+{
+  if (DCT_BOXES & dc->dc_type)
+    {
+      caddr_t b = ((caddr_t *) dc->dc_values)[inx];
+      __builtin_prefetch (&((caddr_t *) dc->dc_values)[inx2]);
+      *nf = IS_BOX_POINTER (b) && DV_DB_NULL == box_tag (b);
+      return (ptrlong) b;
+    }
+  switch (dc->dc_dtp)
+    {
+    case DV_ANY:
+      {
+	db_buf_t a = ((db_buf_t *) dc->dc_values)[inx];
+	__builtin_prefetch (&((caddr_t *) dc->dc_values)[inx2]);
+	*nf = DV_DB_NULL == a[0];
+	return (uptrlong) a;
+      }
+    case DV_SHORT_INT:
+    case DV_DOUBLE_FLOAT:
+    case DV_LONG_INT:
+    case DV_IRI_ID:
+    case DV_INT64:
+    case DV_IRI_ID_8:
+      __builtin_prefetch (&((int64 *) dc->dc_values)[inx2]);
+      *nf = DC_IS_NULL (dc, inx);
+      return ((int64 *) dc->dc_values)[inx];
+    case DV_SINGLE_FLOAT:
+      __builtin_prefetch (&((int32 *) dc->dc_values)[inx2]);
+      *nf = DC_IS_NULL (dc, inx);
+      return (unsigned int64) ((uint32 *) dc->dc_values)[inx];
+    case DV_DATETIME:
+    case DV_DATE:
+    case DV_TIME:
+    case DV_TIMESTAMP:
+      __builtin_prefetch (dc->dc_values + inx2 * DT_LENGTH);
+      *nf = DC_IS_NULL (dc, inx);
+      return ((int64) (ptrlong) dc->dc_values) + DT_LENGTH * inx;
+    }
+  GPF_T1 ("dc of no dtp in dc_any_value");
+  return 0;
+}
 
 caddr_t dc_mp_box_for_rd (mem_pool_t * mp, data_col_t * dc, int inx)
 {
@@ -153,6 +237,8 @@ dc_ensure_null_bits (data_col_t * dc)
 {
   /* called for adding null bitmap to a num inline or date dc.  Use a previously existing one if it is large enough, else make a new one */
   int null_len = ALIGN_8 (dc->dc_n_places) / 8;
+  if (dc->dc_nulls && box_length (dc->dc_nulls) >= null_len)
+    return;
   if (dc->dc_org_nulls && box_length (dc->dc_org_nulls) >= null_len)
     {
       dc->dc_nulls = dc->dc_org_nulls;
@@ -164,6 +250,15 @@ dc_ensure_null_bits (data_col_t * dc)
     }
   memset (dc->dc_nulls, 0, null_len);
 }
+
+
+#ifdef DC_BOXES_DBG
+#define DC_FREE_BOX(dc, nth) \
+  { caddr_t __v = ((caddr_t*)(dc)->dc_values)[nth]; dk_free_tree (__v); if (dc->dc_mp->mp_box_to_dc) remhash ((void*)__v, dc->dc_mp->mp_box_to_dc); }
+#else
+#define DC_FREE_BOX(dc, nth) \
+  dk_free_tree (((caddr_t*)(dc)->dc_values)[nth])
+#endif
 
 
 void
@@ -182,6 +277,10 @@ dc_set_null (data_col_t * dc, int set)
     }
   if (DCT_BOXES & dc->dc_type)
     {
+      if (dc->dc_n_values > set)
+	{
+	  DC_FREE_BOX (dc, set);
+	}
       DC_FILL_TO (dc, int64, set);
       ((caddr_t *) dc->dc_values)[set] = dk_alloc_box (0, DV_DB_NULL);
       if (dc->dc_n_values <= set)
@@ -239,6 +338,7 @@ void
 dc_append_bytes (data_col_t * dc, db_buf_t bytes, int len, db_buf_t pref_bytes, int pref_len)
 {
   len += pref_len;
+  DC_CHECK_LEN (dc, dc->dc_n_values);
   if (dc->dc_buf_fill + len >= dc->dc_buf_len)
     {
       int l = 0;
@@ -293,6 +393,21 @@ dc_append_box (data_col_t * dc, caddr_t box)
   if (DCT_BOXES & dc->dc_type)
     {
       ((caddr_t *) dc->dc_values)[dc->dc_n_values++] = box_copy_tree (box);
+#ifdef DC_BOXES_DBG
+      {
+	caddr_t value = ((caddr_t *) dc->dc_values)[dc->dc_n_values - 1];
+	mem_pool_t *mp = dc->dc_mp;
+	if (IS_BOX_POINTER (value))
+	  {
+	    if (!mp->mp_box_to_dc)
+	      {
+		mp->mp_box_to_dc = hash_table_allocate (10001);
+		mp->mp_box_to_dc->ht_rehash_threshold = 3;
+	      }
+	    sethash ((void *) value, mp->mp_box_to_dc, (void *) dc);
+	  }
+      }
+#endif
       return;
     }
   switch (dc->dc_dtp)
@@ -306,7 +421,10 @@ dc_append_box (data_col_t * dc, caddr_t box)
       ((int64 *) dc->dc_values)[dc->dc_n_values++] = unbox_inline_num (box);
       break;
     case DV_SINGLE_FLOAT:
+      if (IS_BOX_POINTER (box))
       ((float *) dc->dc_values)[dc->dc_n_values++] = unbox_float (box);
+      else
+	((float *) dc->dc_values)[dc->dc_n_values++] = (float) (int64) box;
       break;
     case DV_ANY:
       {
@@ -318,6 +436,8 @@ dc_append_box (data_col_t * dc, caddr_t box)
 	switch (dtp)
 	  {
 	  case DV_STRING:
+	    if (box_flags (box))
+	      goto general;
 	    len = box_length (box) - 1;
 	    if (len < 256)
 	      {
@@ -345,7 +465,7 @@ dc_append_box (data_col_t * dc, caddr_t box)
 	    }
 	  default:
 	  general:
-	    str = box_to_any_1 (box, &err, &ap, 0);
+	    str = box_to_any_1 (box, &err, &ap, DKS_TO_DC);
 	    if (err)
 	      sqlr_resignal (err);
 	    dc_append_bytes (dc, (db_buf_t) str, box_length (str) - 1, NULL, 0);
@@ -686,7 +806,11 @@ dc_itc_append_box (it_cursor_t * itc, buffer_desc_t * buf, dbe_col_loc_t * cl, c
   data_col_t *dc = QST_BOX (data_col_t *, inst, ssl->ssl_index);
   caddr_t b = itc_box_column (itc, buf, 0, cl);
   if (DCT_BOXES & dc->dc_type)
+    {
     ((caddr_t *) dc->dc_values)[dc->dc_n_values++] = b;
+      if (IS_BOX_POINTER (b) && DV_DB_NULL == box_tag (b))
+	dc->dc_any_null = 1;
+    }
   else
     {
       dc_append_box (dc, b);
@@ -706,27 +830,16 @@ dc_itc_append_box (it_cursor_t * itc, buffer_desc_t * buf, dbe_col_loc_t * cl, c
 void
 dc_reset (data_col_t * dc)
 {
-  if (DCT_BOXES & dc->dc_type)
+  if (DCT_BOXES & dc->dc_type && dc->dc_values)
     {
       int inx;
       for (inx = 0; inx < dc->dc_n_values; inx++)
 	{
-	  dk_free_tree (((caddr_t *) dc->dc_values)[inx]);
+	  DC_FREE_BOX (dc, inx);
 	  ((caddr_t *) dc->dc_values)[inx] = NULL;
 	}
     }
-  DO_SET (db_buf_t, buf, &dc->dc_buffers)
-  {
-#ifdef MALLOC_DEBUG
-    buf[-1] = 0;		/* bypess the check preventing this in box tag modify */
-#else
-    box_tag_modify (buf, 0);
-#endif
-  }
-  END_DO_SET ();
-  dc->dc_buf_len = 0;
-  dc->dc_buffer = NULL;
-  dc->dc_buf_fill = 0;
+  dc_reset_alloc (dc);
   dc->dc_n_values = 0;
   dc->dc_any_null = 0;
   if (dc->dc_nulls)
@@ -757,7 +870,14 @@ dc_reset_array (caddr_t * inst, data_source_t * qn, state_slot_t ** ssls, int ne
       else
 	size = QST_INT (inst, qn->src_batch_size);
       if (!size || -1 != new_sz)
+	{
+	  int prev_size = QST_INT (inst, qn->src_batch_size);
+	  if (size > prev_size || !prev_size)
 	size = QST_INT (inst, qn->src_batch_size) = MAX (size, dc_batch_sz);
+	  else
+	    size = prev_size;
+	}
+      if (qn->src_sets)
       QN_CHECK_SETS (qn, inst, size);
     }
   if (!ssls)
@@ -766,12 +886,11 @@ dc_reset_array (caddr_t * inst, data_source_t * qn, state_slot_t ** ssls, int ne
   DO_BOX (state_slot_t *, ssl, inx, ssls)
   {
     data_col_t *dc;
-    if (!ssl)
+    if (!ssl || SSL_VEC != ssl->ssl_type)
       continue;			/* can be omitted/aliased out slots in hs out slots */
     dc = QST_BOX (data_col_t *, inst, ssl->ssl_index);
     dc_reset (dc);
-    if (size)
-      DC_CHECK_LEN (dc, size - 1);
+    DC_CHECK_LEN (dc, (size ? size : dc->dc_n_places) - 1);
   }
   END_DO_BOX;
 }
@@ -823,6 +942,24 @@ dc_alloc (data_col_t * dc, int bytes)
 
 
 void
+dc_reset_alloc (data_col_t * dc)
+{
+  DO_SET (db_buf_t, buf, &dc->dc_buffers)
+  {
+#ifdef MALLOC_DEBUG
+    buf[-1] = 0;		/* bypess the check preventing this in box tag modify */
+#else
+    box_tag_modify (buf, 0);
+#endif
+  }
+  END_DO_SET ();
+  dc->dc_buf_len = 0;
+  dc->dc_buffer = NULL;
+  dc->dc_buf_fill = 0;
+}
+
+
+void
 dc_itc_append_any (it_cursor_t * itc, buffer_desc_t * buf, dbe_col_loc_t * cl, caddr_t * inst, state_slot_t * ssl)
 {
   data_col_t *dc = (data_col_t *) inst[ssl->ssl_index];
@@ -838,6 +975,7 @@ dc_itc_append_any (it_cursor_t * itc, buffer_desc_t * buf, dbe_col_loc_t * cl, c
 	  return;
 	}
       dc_append_bytes (dc, &n, 1, NULL, 0);
+      dc->dc_any_null = 1;
       return;
     }
 
@@ -882,6 +1020,7 @@ dc_itc_append_string (it_cursor_t * itc, buffer_desc_t * buf, dbe_col_loc_t * cl
 	{
 	  dtp_t n = DV_DB_NULL;
 	  dc_append_bytes (dc, &n, 1, NULL, 0);
+	  dc->dc_any_null = 1;
 	}
       else
 	GPF_T1 ("dc is not nullable for null column");
@@ -978,16 +1117,19 @@ dc_itc_append_row (it_cursor_t * itc, buffer_desc_t * buf, dbe_col_loc_t * cl, c
 void
 dc_itc_delete (it_cursor_t * itc, buffer_desc_t * buf, dbe_col_loc_t * cl, caddr_t * inst, state_slot_t * ssl)
 {
-  QNCAST (query_instance_t, qi, inst);
   dbe_key_t *key = itc->itc_insert_key;
-  if (key->key_is_primary)
-    qi->qi_n_affected++;
   if ((key->key_partition || key->key_is_primary) && itc->itc_ltrx->lt_replicate != REPL_NO_LOG)
     {
       LOCAL_RD (rd);
       page_row_bm (buf, itc->itc_map_pos, &rd, RO_ROW, itc);
-      log_delete (itc->itc_ltrx, &rd, key->key_partition ? LOG_KEY_ONLY : 0);
+      log_delete (itc->itc_ltrx, &rd, LOG_ANY_AS_STRING | (key->key_partition ? LOG_KEY_ONLY : 0));
       rd_free (&rd);
+    }
+  if (ISO_SERIALIZABLE != itc->itc_isolation)
+    {
+      int wait = itc_set_lock_on_row (itc, &buf);
+      if (NO_WAIT != wait)
+	GPF_T1 ("should not have waited on row-wise non serializable delete");
     }
   itc_delete (itc, &buf, itc->itc_insert_key->key_table->tb_any_blobs ? MAYBE_BLOBS : NO_BLOBS);
   if (!itc->itc_insert_key->key_is_bitmap)
@@ -997,16 +1139,38 @@ dc_itc_delete (it_cursor_t * itc, buffer_desc_t * buf, dbe_col_loc_t * cl, caddr
 
 
 void
+dc_itc_placeholder (it_cursor_t * itc, buffer_desc_t * buf, dbe_col_loc_t * cl, caddr_t * inst, state_slot_t * ssl)
+{
+  data_col_t *dc = (data_col_t *) inst[ssl->ssl_index];
+  NEW_PLH (pl);
+  memcpy (pl, itc, ITC_PLACEHOLDER_BYTES);
+  pl->itc_type = ITC_PLACEHOLDER;
+  pl->itc_is_on_row = 1;
+  itc_register ((it_cursor_t *) pl, buf);
+  ((placeholder_t **) dc->dc_values)[dc->dc_n_values++] = pl;
+}
+
+
+long tc_dc_extend;
+long tc_dc_extend_values;
+
+void
 dc_extend_2 (data_col_t * dc, int ninx)
 {
   int elt_sz = dc_elt_size (dc);
   db_buf_t vs = dc->dc_values;
-  int next_len = MAX (2 * dc->dc_n_places, ninx + 1);
+  int next_len;
+  if (!vs)
+    next_len = MAX (ninx + 1, dc->dc_n_places);
+  else
+    next_len = MAX (2 * dc->dc_n_places, ninx + 1);
   if (ninx >= dc_max_batch_sz)
     GPF_T1 ("extending dc past max batch size");
   if (next_len > dc_max_batch_sz)
     next_len = dc_max_batch_sz;
-  dc->dc_values = (db_buf_t) mp_alloc_box (dc->dc_mp, elt_sz * next_len, DV_NON_BOX);
+  dc->dc_values = (db_buf_t) mp_alloc_box (dc->dc_mp, 8 + elt_sz * next_len, DV_NON_BOX);
+  dc->dc_values = (db_buf_t) ALIGN_16 ((ptrlong) dc->dc_values);
+  if (vs)
   memcpy_16 (dc->dc_values, vs, elt_sz * dc->dc_n_values);
   dc->dc_org_values = NULL;
   dc->dc_org_nulls = NULL;
@@ -1026,6 +1190,8 @@ dc_extend_2 (data_col_t * dc, int ninx)
     }
   dc->dc_n_places = next_len;
   dc->dc_min_places = next_len;
+  TC (tc_dc_extend);
+  tc_dc_extend_values += next_len;
 }
 
 
@@ -1081,7 +1247,7 @@ dc_elt_size (data_col_t * dc)
 #define SSL_FIXED_STR_BOX(dtp, len)			\
 { \
   caddr_t  box = inst[box_index]; \
-  if (!box || len != box_length (box))					\
+  if (!IS_BOX_POINTER (box) || len != box_length (box))			\
     { dk_free_box (box); box = inst[box_index] = dk_alloc_box (len, dtp); } \
   if (val_dc->dc_nulls && DC_IS_NULL(val_dc, row_no)) \
     { box_tag_modify (box, DV_DB_NULL); }	      \
@@ -1107,9 +1273,9 @@ sslr_qst_get (caddr_t * inst, state_slot_ref_t * sslr, int row_no)
 	{
 	  int *set_nos = (int *) inst[sslr->sslr_set_nos[step]];
 #if 0
-	  int fill = QST_INT (inst, sslr->sslr_set_nos[step] + 1);
-	  if (row_no > fill)
-	    GPF_T1 ("acces to set beyond present results");
+	  uint32 fill = QST_INT (inst, sslr->sslr_set_nos[step] + 1);
+	  if ((uint32) row_no > fill)
+	    GPF_T1 ("access to set beyond present results");
 #endif
 	  row_no = set_nos[row_no];
 	}
@@ -1129,7 +1295,7 @@ sslr_qst_get (caddr_t * inst, state_slot_ref_t * sslr, int row_no)
 	caddr_t prev = inst[box_index];
 	caddr_t next;
 	db_buf_t ptr;
-	if (row_no >= val_dc->dc_n_values)
+	if ((uint32) row_no >= val_dc->dc_n_values)
 	  return NULL;
 	ptr = ((db_buf_t *) val_dc->dc_values)[row_no];
 	next = box_deserialize_reusing (ptr, prev);
@@ -1157,7 +1323,7 @@ sslr_qst_get (caddr_t * inst, state_slot_ref_t * sslr, int row_no)
       SSL_FIXED_STR_BOX (DV_SINGLE_FLOAT, sizeof (float));
     default:
       if (DCT_BOXES & val_dc->dc_type)
-	if (val_dc->dc_n_values <= row_no)
+	if (val_dc->dc_n_values <= (uint32) row_no)
 	  return NULL;
       return ((caddr_t *) val_dc->dc_values)[row_no];
       GPF_T1 ("dc of unsupported dtp for single value qst_get");
@@ -1384,20 +1550,49 @@ dc_nn_sets (data_col_t * dc, int *sets, int first_set, int n_sets)
 #define VA_8(tgt, src) \
   ((int64*)target_val)[tgt] = ((int64*)source_val)[src]
 
+#define VA_NULL(tgt, src) \
+  if (BIT_IS_SET (source_nulls, src)) BIT_SET (target_nulls, tgt);
+
 #define VA_4(tgt, src) \
   ((int32*)target_val)[tgt] = ((int32*)source_val)[src]
 
 #define VA_N(tgt, src) \
   memcpy (target_val + dc_elt_len * (tgt), source_val + dc_elt_len * (src), dc_elt_len)
 
+#define VA_CPY(tgt) \
+{ \
+  db_buf_t dv = ((db_buf_t*)target_val)[tgt], dv2;	\
+  int l; \
+  DB_BUF_TLEN (l, dv[0], dv); \
+  dv2 = dc_alloc (target_dc, l); \
+  memcpy (dv2, dv, l); \
+  ((db_buf_t*)target_val)[tgt] = dv2; \
+}
+
+
 
 void
-sslr_dc_copy (caddr_t * inst, state_slot_ref_t * sslr, data_col_t * target_dc, data_col_t * source_dc, int n_sets, int dc_elt_len)
+sslr_dc_copy (caddr_t * inst, state_slot_ref_t * sslr, data_col_t * target_dc, data_col_t * source_dc, int n_sets, int dc_elt_len,
+    int copy_anies)
 {
   db_buf_t target_val;
+  db_buf_t target_nulls = NULL;
+  db_buf_t source_nulls = source_dc->dc_nulls;
   db_buf_t source_val = source_dc->dc_values;
+  int copy_nulls = 0;
   int n, step;
   DC_CHECK_LEN (target_dc, n_sets - 1);
+  if (source_dc->dc_any_null)
+    target_dc->dc_any_null = 1;
+  if (source_dc->dc_any_null && (DV_DATETIME == source_dc->dc_dtp || (DCT_NUM_INLINE & source_dc->dc_type)))
+    {
+      dc_ensure_null_bits (target_dc);
+      target_nulls = target_dc->dc_nulls;
+      memzero (target_nulls, ALIGN_8 (n_sets) / 8);
+      copy_nulls = 1;
+    }
+  if (DV_ANY == target_dc->dc_dtp && DV_ANY != source_dc->dc_dtp)
+    dc_convert_empty (target_dc, dtp_canonical[source_dc->dc_dtp]);
   target_val = target_dc->dc_values;
   for (n = 0; n <= n_sets - 8; n += 8)
     {
@@ -1435,6 +1630,17 @@ sslr_dc_copy (caddr_t * inst, state_slot_ref_t * sslr, data_col_t * target_dc, d
 	  VA_8 (n + 5, s6);
 	  VA_8 (n + 6, s7);
 	  VA_8 (n + 7, s8);
+	  if (copy_anies && DV_ANY == target_dc->dc_dtp)
+	    {
+	      VA_CPY (n);
+	      VA_CPY (n + 1);
+	      VA_CPY (n + 2);
+	      VA_CPY (n + 3);
+	      VA_CPY (n + 4);
+	      VA_CPY (n + 5);
+	      VA_CPY (n + 6);
+	      VA_CPY (n + 7);
+	    }
 	}
       else if (4 == dc_elt_len)
 	{
@@ -1458,6 +1664,17 @@ sslr_dc_copy (caddr_t * inst, state_slot_ref_t * sslr, data_col_t * target_dc, d
 	  VA_N (n + 6, s7);
 	  VA_N (n + 7, s8);
 	}
+      if (copy_nulls)
+	{
+	  VA_NULL (n, s1);
+	  VA_NULL (n + 1, s2);
+	  VA_NULL (n + 2, s3);
+	  VA_NULL (n + 3, s4);
+	  VA_NULL (n + 4, s5);
+	  VA_NULL (n + 5, s6);
+	  VA_NULL (n + 6, s7);
+	  VA_NULL (n + 7, s8);
+	}
     }
   for (n = n; n < n_sets; n++)
     {
@@ -1472,13 +1689,86 @@ sslr_dc_copy (caddr_t * inst, state_slot_ref_t * sslr, data_col_t * target_dc, d
 	  ((caddr_t *) target_val)[n + 0] = box_copy_tree (((caddr_t *) source_dc->dc_values)[s1]);
 	}
       else if (8 == dc_elt_len)
+	{
 	VA_8 (n, s1);
+	  if (copy_anies && DV_ANY == target_dc->dc_dtp)
+	    VA_CPY (n);
+	}
       else if (4 == dc_elt_len)
 	VA_4 (n, s1);
       else
 	VA_N (n, s1);
+      if (copy_nulls)
+	VA_NULL (n, s1);
     }
   target_dc->dc_n_values = n_sets;
+}
+
+
+int64
+box_to_int64 (caddr_t box, dtp_t dtp)
+{
+  switch (DV_TYPE_OF (box))
+    {
+    case DV_LONG_INT:
+      return unbox_inline (box);
+    case DV_SINGLE_FLOAT:
+      return (int64) unbox_float (box);
+    case DV_DOUBLE_FLOAT:
+      return (int64) unbox_double (box);
+    case DV_NUMERIC:
+      {
+	int64 i;
+	numeric_to_int64 ((numeric_t) box, &i);
+	return i;
+      }
+    default:
+      return 0;
+    }
+}
+
+double
+box_to_double (caddr_t box, dtp_t dtp)
+{
+  switch (DV_TYPE_OF (box))
+    {
+    case DV_LONG_INT:
+      return (double) unbox_inline (box);
+    case DV_SINGLE_FLOAT:
+      return (double) unbox_float (box);
+    case DV_DOUBLE_FLOAT:
+      return unbox_double (box);
+    case DV_NUMERIC:
+      {
+	double d;
+	numeric_to_double ((numeric_t) box, &d);
+	return d;
+      }
+    default:
+      return 0;
+    }
+}
+
+float
+box_to_float (caddr_t box, dtp_t dtp)
+{
+  switch (DV_TYPE_OF (box))
+    {
+    case DV_LONG_INT:
+      return (float) unbox_inline (box);
+    case DV_SINGLE_FLOAT:
+      return unbox_float (box);
+    case DV_DOUBLE_FLOAT:
+      return (float) unbox_double (box);
+    case DV_NUMERIC:
+      {
+	double d;
+	numeric_to_double ((numeric_t) box, &d);
+	return d;
+      }
+    default:
+      return 0;
+    }
 }
 
 
@@ -1488,8 +1778,9 @@ qst_vec_set_copy (caddr_t * inst, state_slot_t * ssl, caddr_t v)
   QNCAST (query_instance_t, qi, inst);
   int set = qi->qi_set;
   data_col_t *dc = QST_BOX (data_col_t *, inst, ssl->ssl_index);
+  dtp_t dtp = DV_TYPE_OF (v);
   DC_CHECK_LEN (dc, set);
-  if (DV_DB_NULL == DV_TYPE_OF (v))
+  if (DV_DB_NULL == dtp)
     {
       dc_set_null (dc, set);
       return;
@@ -1498,9 +1789,17 @@ qst_vec_set_copy (caddr_t * inst, state_slot_t * ssl, caddr_t v)
     {
       DC_FILL_TO (dc, int64, set);
     }
+  if (DV_ANY == ssl->ssl_sqt.sqt_dtp && DV_ANY != dc->dc_dtp && !(DCT_BOXES & dc->dc_type) && dtp_canonical[dtp] != dc->dc_dtp)
+    dc_heterogenous (dc);
   if ((DCT_NUM_INLINE & dc->dc_type) && DV_SINGLE_FLOAT != dc->dc_dtp)
     {
+      dtp_t dtp = DV_TYPE_OF (v);
+      if (dtp == dc->dc_dtp)
       ((int64 *) dc->dc_values)[set] = unbox_inline_num (v);
+      else if (DV_LONG_INT == dc->dc_dtp)
+	((int64 *) dc->dc_values)[set] = box_to_int64 (v, dtp);
+      else
+	((double *) dc->dc_values)[set] = box_to_double (v, dtp);
       if (dc->dc_nulls)
 	DC_CLR_NULL (dc, set);
       if (set >= dc->dc_n_values)
@@ -1510,7 +1809,7 @@ qst_vec_set_copy (caddr_t * inst, state_slot_t * ssl, caddr_t v)
     {
       DC_FILL_TO (dc, int64, set);
       if (set < dc->dc_n_values)
-	dk_free_tree (((caddr_t *) dc->dc_values)[set]);
+	DC_FREE_BOX (dc, set);
       ((caddr_t *) dc->dc_values)[set] = box_copy_tree (v);
       if (set >= dc->dc_n_values)
 	dc->dc_n_values = set + 1;
@@ -1541,7 +1840,7 @@ qst_vec_set_copy (caddr_t * inst, state_slot_t * ssl, caddr_t v)
 	    dc->dc_n_values = set + 1;
 	  break;
 	case DV_SINGLE_FLOAT:
-	  ((float *) dc->dc_values)[set] = unbox_float (v);
+	  ((float *) dc->dc_values)[set] = box_to_float (v, DV_TYPE_OF (v));
 	  if (dc->dc_nulls)
 	    DC_CLR_NULL (dc, set);
 	  if (set >= dc->dc_n_values)
@@ -1560,16 +1859,24 @@ qst_vec_set (caddr_t * inst, state_slot_t * ssl, caddr_t v)
   QNCAST (query_instance_t, qi, inst);
   int set = qi->qi_set;
   data_col_t *dc = QST_BOX (data_col_t *, inst, ssl->ssl_index);
+  dtp_t dtp = DV_TYPE_OF (v);
   DC_CHECK_LEN (dc, set);
-  if (DV_DB_NULL == DV_TYPE_OF (v))
+  if (DV_DB_NULL == dtp)
     {
       dc_set_null (dc, set);
       dk_free_box (v);
       return;
     }
+  if (DV_ANY == ssl->ssl_sqt.sqt_dtp && DV_ANY != dc->dc_dtp && !(DCT_BOXES & dc->dc_type) && dtp_canonical[dtp] != dc->dc_dtp)
+    dc_heterogenous (dc);
   if ((DCT_NUM_INLINE & dc->dc_type) && DV_SINGLE_FLOAT != dc->dc_dtp)
     {
+      if (dtp == dc->dc_dtp)
       ((int64 *) dc->dc_values)[set] = unbox_inline_num (v);
+      else if (DV_LONG_INT == dc->dc_dtp)
+	((int64 *) dc->dc_values)[set] = box_to_int64 (v, dtp);
+      else
+	((double *) dc->dc_values)[set] = box_to_double (v, dtp);
       dk_free_tree (v);
       if (dc->dc_nulls)
 	DC_CLR_NULL (dc, set);
@@ -1580,7 +1887,7 @@ qst_vec_set (caddr_t * inst, state_slot_t * ssl, caddr_t v)
     {
       DC_FILL_TO (dc, int64, set);
       if (set < dc->dc_n_values)
-	dk_free_tree (((caddr_t *) dc->dc_values)[set]);
+	DC_FREE_BOX (dc, set);
       ((caddr_t *) dc->dc_values)[set] = v;
       if (set >= dc->dc_n_values)
 	dc->dc_n_values = set + 1;
@@ -1614,7 +1921,7 @@ qst_vec_set (caddr_t * inst, state_slot_t * ssl, caddr_t v)
 	  dk_free_tree (v);
 	  break;
 	case DV_SINGLE_FLOAT:
-	  ((float *) dc->dc_values)[set] = unbox_float (v);
+	  ((float *) dc->dc_values)[set] = box_to_float (v, DV_TYPE_OF (v));
 	  if (dc->dc_nulls)
 	    DC_CLR_NULL (dc, set);
 	  if (set >= dc->dc_n_values)
@@ -1635,15 +1942,34 @@ dc_set_long (data_col_t * dc, int set, boxint lv)
   DC_CHECK_LEN (dc, set);
   if (!(DCT_NUM_INLINE & dc->dc_type))
     {
+      int is_boxes = DCT_BOXES & dc->dc_type;
+      if (dc->dc_n_values > set && is_boxes)
+	dk_free_tree (((caddr_t *) dc->dc_values)[set]);
       DC_FILL_TO (dc, ptrlong, set);
+      if (is_boxes)
+	{
+	  ((caddr_t *) dc->dc_values)[set] = box_num (lv);
+	  dc->dc_n_values = MAX (dc->dc_n_values, set + 1);
+	  return;
+	}
     }
   dc->dc_n_values = set;
   if (DCT_NUM_INLINE & dc->dc_type)
+    {
+      if (DV_LONG_INT == dc->dc_dtp || DV_IRI_ID == dc->dc_dtp)
     dc_append_int64 (dc, lv);
+      else if (DV_SINGLE_FLOAT == dc->dc_dtp)
+	dc_append_float (dc, (float) lv);
   else
     {
-      caddr_t xx[3], b;
-      BOX_AUTO (b, xx, 2 * sizeof (boxint), DV_LONG_INT);
+	  double df = (double) lv;
+	  dc_append_int64 (dc, *(int64 *) & df);
+	}
+    }
+  else
+    {
+      caddr_t xx[2], b;
+      BOX_AUTO (b, xx, sizeof (boxint), DV_LONG_INT);
       *(int64 *) b = lv;
       dc_append_box (dc, b);
     }
@@ -1658,15 +1984,27 @@ dc_set_float (data_col_t * dc, int set, float f)
   DC_CHECK_LEN (dc, set);
   if (!(DCT_NUM_INLINE & dc->dc_type))
     {
+      if (dc->dc_n_values > set && (DCT_BOXES & dc->dc_type))
+	dk_free_tree (((caddr_t *) dc->dc_values)[set]);
       DC_FILL_TO (dc, ptrlong, set);
     }
   dc->dc_n_values = set;
   if (DCT_NUM_INLINE & dc->dc_type)
+    {
+      if (DV_SINGLE_FLOAT == dc->dc_dtp)
     dc_append_float (dc, f);
+      else if (DV_DOUBLE_FLOAT == dc->dc_dtp)
+	{
+	  double df = (double) f;
+	  dc_append_int64 (dc, *(int64 *) & df);
+	}
+      else
+	dc_append_int64 (dc, (int64) f);
+    }
   else
     {
       caddr_t xx[3], b;
-      BOX_AUTO (b, xx, 2 * sizeof (boxint), DV_SINGLE_FLOAT);
+      BOX_AUTO (b, xx, sizeof (boxint), DV_SINGLE_FLOAT);
       *(float *) b = f;
       dc_append_box (dc, b);
     }
@@ -1680,15 +2018,24 @@ dc_set_double (data_col_t * dc, int set, double df)
   DC_CHECK_LEN (dc, set);
   if (!(DCT_NUM_INLINE & dc->dc_type))
     {
+      if (dc->dc_n_values > set && (DCT_BOXES & dc->dc_type))
+	dk_free_tree (((caddr_t *) dc->dc_values)[set]);
       DC_FILL_TO (dc, ptrlong, set);
     }
   dc->dc_n_values = set;
   if (DCT_NUM_INLINE & dc->dc_type)
+    {
+      if (DV_DOUBLE_FLOAT == dc->dc_dtp)
     dc_append_int64 (dc, *(int64 *) & df);
+      else if (DV_SINGLE_FLOAT == dc->dc_dtp)
+	dc_append_float (dc, (float) df);
+      else
+	dc_append_int64 (dc, (int64) df);
+    }
   else
     {
       caddr_t xx[3], b;
-      BOX_AUTO (b, xx, 2 * sizeof (boxint), DV_DOUBLE_FLOAT);
+      BOX_AUTO (b, xx, sizeof (boxint), DV_DOUBLE_FLOAT);
       *(double *) b = df;
       dc_append_box (dc, b);
     }
@@ -1763,6 +2110,54 @@ col_ref_func (dbe_key_t * key, dbe_column_t * col, state_slot_t * ssl)
     default:
       return dc_itc_append_box;
     }
+}
+
+
+dk_hash_t *cl_dc_func_id;
+dk_hash_t *cl_id_dc_func;
+
+
+void
+cl_dcf_id (col_ref_t f)
+{
+  static int id = 0;
+  id++;
+  sethash ((void *) (ptrlong) id, cl_id_dc_func, (void *) f);
+  sethash ((void *) f, cl_dc_func_id, (void *) (ptrlong) id);
+}
+
+
+void
+cl_dc_funcs ()
+{
+  cl_dc_func_id = hash_table_allocate (21);
+  cl_id_dc_func = hash_table_allocate (21);
+  cl_dcf_id (NULL);
+  cl_dcf_id (dc_itc_delete);
+  cl_dcf_id (dc_itc_placeholder);
+
+
+  cl_dcf_id (dc_itc_append_string);
+  cl_dcf_id (dc_itc_append_wide);
+  cl_dcf_id (dc_itc_append_any);
+  cl_dcf_id (dc_itc_append_box);
+  cl_dcf_id (dc_itc_append_bm_value);
+  cl_dcf_id (dc_itc_append_int64_nn);
+  cl_dcf_id (dc_itc_append_int64);
+  cl_dcf_id (dc_itc_append_int_nn);
+  cl_dcf_id (dc_itc_append_int);
+  cl_dcf_id (dc_itc_append_short);
+  cl_dcf_id (dc_itc_append_iri32);
+  cl_dcf_id (dc_itc_append_datetime);
+  cl_dcf_id (dc_itc_append_double);
+  cl_dcf_id (dc_itc_append_float);
+
+  cl_dcf_id ((col_ref_t) vc_box_copy);
+  cl_dcf_id ((col_ref_t) vc_anynn_iri);
+  cl_dcf_id ((col_ref_t) vc_irinn_any);
+  cl_dcf_id ((col_ref_t) vc_anynn);
+  cl_dcf_id ((col_ref_t) vc_anynn_generic);
+  cl_dcf_id ((col_ref_t) vc_generic);
 }
 
 
@@ -1981,6 +2376,11 @@ vc_generic (data_col_t * target, data_col_t * source, int row, caddr_t * err_ret
   int prec = target->dc_sqt.sqt_precision, scale = target->dc_sqt.sqt_scale;
   caddr_t box = dc_box (source, row);
   caddr_t box2;
+  if (DV_DB_NULL == DV_TYPE_OF (box) && target->dc_sqt.sqt_non_null)
+    {
+      dk_free_box (box);
+      return 0;
+    }
   if (DV_NUMERIC == target->dc_dtp)
     {
       prec = NUMERIC_MAX_PRECISION;
@@ -2203,11 +2603,14 @@ dc_copy (data_col_t * target, data_col_t * source)
 void
 dc_assign (caddr_t * inst, state_slot_t * ssl_to, int row_to, state_slot_t * ssl_from, int row_from)
 {
+  state_slot_t tmp;
   caddr_t box;
   int save;
   data_col_t *target = QST_BOX (data_col_t *, inst, ssl_to->ssl_index);
   data_col_t *source = QST_BOX (data_col_t *, inst, ssl_from->ssl_index);
   QNCAST (query_instance_t, qi, inst);
+  if (SSL_REF == ssl_from->ssl_type)
+    row_from = sslr_set_no (inst, ssl_from, row_from);
   if (SSL_VEC != ssl_to->ssl_type)
     goto general;
   if ((DCT_BOXES & target->dc_type) || (DCT_BOXES & source->dc_type))
@@ -2219,8 +2622,6 @@ dc_assign (caddr_t * inst, state_slot_t * ssl_to, int row_to, state_slot_t * ssl
     {
       DC_FILL_TO (target, caddr_t, row_to);
     }
-  if (SSL_REF == ssl_from->ssl_type)
-    row_from = sslr_set_no (inst, ssl_from, row_from);
   if (target->dc_type == source->dc_type && target->dc_dtp == source->dc_dtp)
     {
       if (source->dc_dtp == DV_ANY)
@@ -2247,7 +2648,20 @@ dc_assign (caddr_t * inst, state_slot_t * ssl_to, int row_to, state_slot_t * ssl
     }
 general:
   save = qi->qi_set;
-  qi->qi_set = row_from;
+  if (SSL_REF == ssl_from->ssl_type)
+    {
+      state_slot_t *ssl_from2 = ((state_slot_ref_t *) ssl_from)->sslr_ssl;
+      if (ssl_from2->ssl_index != ssl_from->ssl_index)
+	{
+	  tmp = *ssl_from2;
+	  tmp.ssl_index = ssl_from->ssl_index;
+	  tmp.ssl_box_index = ssl_from->ssl_box_index;
+	  ssl_from = &tmp;
+	}
+      else
+	ssl_from = ssl_from2;
+    }
+  qi->qi_set = row_from;	/* the indirections are counted, so for a ref use the org ssl */
   box = QST_GET (inst, ssl_from);
   qi->qi_set = row_to;
   qst_set_copy (inst, ssl_to, box);
@@ -2292,7 +2706,9 @@ dc_heterogenous (data_col_t * dc)
 
     case DV_SINGLE_FLOAT:
       dc->dc_n_places /= 2;
-      DC_CHECK_LEN (dc, dc->dc_n_values);
+      dc->dc_n_values = ALIGN_2 (n) / 2;
+      dc->dc_dtp = DV_DOUBLE_FLOAT;
+      DC_CHECK_LEN (dc, n);
       tmp[0] = DV_SINGLE_FLOAT;
       for (inx = n - 1; inx >= 0; inx--)
 	{
@@ -2301,6 +2717,7 @@ dc_heterogenous (data_col_t * dc)
 	  dc->dc_n_values = inx;
 	  dc_append_bytes (dc, tmp, 5, NULL, 0);
 	}
+      dc->dc_n_values = n;
       break;
     case DV_DATETIME:
       dc->dc_n_places = dc->dc_n_places * DT_LENGTH / sizeof (caddr_t);
@@ -2308,6 +2725,7 @@ dc_heterogenous (data_col_t * dc)
       for (inx = 0; inx < n; inx++)
 	{
 	  memcpy_dt (&tmp[1], dc->dc_values + DT_LENGTH * inx);
+	  /*dc_any_trap (tmp); */
 	  dc->dc_n_values = inx;
 	  dc_append_bytes (dc, tmp, 1 + DT_LENGTH, NULL, 0);
 	}
@@ -2323,6 +2741,7 @@ dc_heterogenous (data_col_t * dc)
 	  if (DC_IS_NULL (dc, inx))
 	    *((db_buf_t *) dc->dc_values)[inx] = DV_DB_NULL;
 	}
+      dc->dc_org_nulls = dc->dc_nulls;
       dc->dc_nulls = NULL;
     }
   dc->dc_dtp = DV_ANY;
@@ -2562,9 +2981,11 @@ dcp (data_col_t * dc, int n1, int n2)
     }
 }
 
+
 void
-ssl_dcp (caddr_t * inst, state_slot_t * ssl, int n1, int n2)
+ssl_dcp_sm (caddr_t * inst, state_slot_t * ssl, int n1, int n2, int use_sets)
 {
+  QNCAST (QI, qi, inst);
   int inx2;
   data_col_t *dc = QST_BOX (data_col_t *, inst, ssl->ssl_index);
   if (!IS_BOX_POINTER (dc) || DV_DATA != box_tag (dc))
@@ -2576,8 +2997,17 @@ ssl_dcp (caddr_t * inst, state_slot_t * ssl, int n1, int n2)
   for (inx2 = n1; inx2 < n2; inx2++)
     {
       int inx = inx2;
+      if (use_sets)
+	{
+	  if (!QI_IS_SET (qi, inx))
+	    continue;
+	  printf ("%d: ", inx2);
+	}
+      else
+	{
       if (!((inx2 - n1) % 10))
 	printf (" %d: ", inx2);
+	}
       if (SSL_REF == ssl->ssl_type)
 	{
 	  QNCAST (state_slot_ref_t, sslr, ssl);
@@ -2626,7 +3056,97 @@ ssl_dcp (caddr_t * inst, state_slot_t * ssl, int n1, int n2)
 
 
 void
+ssl_dcp (caddr_t * inst, state_slot_t * ssl, int n1, int n2)
+{
+  ssl_dcp_sm (inst, ssl, n1, n2, 0);
+}
+
+
+void
+dcp_nz (data_col_t * dc)
+{
+  int inx, first = -1, last = -1, n = 0;
+  int64 s = 0, v;
+  for (inx = 0; inx < dc->dc_n_values; inx++)
+    {
+      if ((v = (((int64 *) dc->dc_values)[inx])))
+	{
+	  if (-1 == first)
+	    first = inx;
+	  last = inx;
+	  n++;
+	  s += v;
+	}
+    }
+  if (s != n)
+    bing ();
+  printf ("first %d last %d n %d sum %d\n", first, last, n, (int) s);
+}
+
+
+void
+dcp_find (data_col_t * dc, int64 x)
+{
+  int inx, first = -1, last = -1, n = 0;
+  for (inx = 0; inx < dc->dc_n_values; inx++)
+    {
+      if (x == (((int64 *) dc->dc_values)[inx]))
+	{
+	  if (-1 == first)
+	    first = inx;
+	  last = inx;
+	  n++;
+	}
+    }
+  printf ("first %d last %d n %d \n", first, last, n);
+}
+
+void
 anyp (db_buf_t a)
 {
   sqlo_box_print (box_deserialize_string ((caddr_t) a, INT32_MAX, 0));
+}
+
+void
+dc_stats (data_col_t * dc, slice_id_t * slices, slice_id_t slid)
+{
+  int inx, longest_inx = -1, longest = 0, total = 0;
+  if (!(DCT_BOXES & dc->dc_type))
+    return;
+  for (inx = 0; inx < dc->dc_n_values; inx++)
+    {
+      caddr_t box;
+      int len;
+      if (slices && slices[inx] != slid)
+	continue;
+      box = ((caddr_t *) dc->dc_values)[inx];
+      len = box_serial_length (box, 0);
+      total += len;
+      if (len > longest)
+	{
+	  longest = len;
+	  longest_inx = inx;
+	}
+    }
+  printf ("total %d, longest %d at %d\n", total, longest, longest_inx);
+}
+
+void
+qst_set_with_ref (caddr_t * inst, state_slot_t * ssl, caddr_t val)
+{
+  if (SSL_REF == ssl->ssl_type)
+    {
+      QNCAST (state_slot_ref_t, sslr, ssl);
+      QNCAST (QI, qi, inst);
+      int save = qi->qi_set;
+      int set_no = sslr_set_no (inst, ssl, qi->qi_set);
+      state_slot_t *org_ssl = sslr->sslr_ssl;
+      if (SSL_VEC != org_ssl->ssl_type || sslr->ssl_index != org_ssl->ssl_index)
+	GPF_T1 ("assigning ssl ref where org is not vec or has different ssl index from ref");
+      qi->qi_set = set_no;
+      qst_set (inst, org_ssl, val);
+      qi->qi_set = save;
+    }
+  else
+    qst_set (inst, ssl, val);
 }

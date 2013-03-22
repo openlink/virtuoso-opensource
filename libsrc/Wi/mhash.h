@@ -53,6 +53,9 @@
 
 
 
+#ifdef VALGRIND
+#define MHASH_VAR(init, ptr, len) BYTE_BUFFER_HASH (init, ptr, len)
+#else
 #define MHASH_VAR(init, ptr, len)		\
 { \
     uint64 __h = init; \
@@ -79,4 +82,4 @@
     }\
   init = __h; \
 }
-
+#endif

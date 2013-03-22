@@ -27,7 +27,8 @@ noinst_HEADERS = \
 	Dkdevice.h Dkernel.h Dkhashext.h Dkhash.h Dkmarshal.h \
 	Dkparam.h Dkpool.h Dkresource.h Dksession.h Dksesstr.h \
 	Dksestcp.h Dksets.h Dkstubs.h Dksystem.h Dktrace.h \
-	Dktypes.h Dkutil.h Dkhash64.h Dkword.h Dksestcpint.h
+	Dktypes.h Dkutil.h Dkhash64.h Dkword.h Dksestcpint.h \
+	Dksimd.h
 
 #############################################
 #DKSRV
@@ -40,6 +41,7 @@ libdksrv_la_SOURCES = \
 	Dkhashext.c \
 	Dklongjmp.c \
 	Dkmarshal.c \
+	Dkmem.c \
 	Dkresource.c \
 	Dkrusage.c \
 	Dkses2.c \
@@ -68,6 +70,7 @@ libdk1t_la_SOURCES = \
 	Dkhashext.c \
 	Dklongjmp.c \
 	Dkmarshal.c \
+	Dkmem.c \
 	Dkresource.c \
 	Dkrusage.c \
 	Dkses2.c \

@@ -174,7 +174,7 @@ User-level object is of type DV_XML_ENTITY. */
 
 /* occurs in key layout when assigning places for offsets for ref to uncompressed value on other row. 2 bytes per field, laid out before rest */
 #define DV_COMP_OFFSET 136
-
+#define DV_COL_BLOB_SERIAL 200 /* in column store array ce, a blob must be amrked by dtp > 180, so use this instead of dv blob */
 #define DV_TIME		210
 #define DV_DATETIME	211
 #define DV_NUMERIC	219
@@ -201,6 +201,8 @@ User-level object is of type DV_XML_ENTITY. */
 
 #define DV_INDEX_TREE 137
 #define DV_ITC 138
+#define DV_DATA 141 /*vector of data in a column */
+#define DV_QI 142
 #define DV_GEO 238
 #define DV_FIXED_STRING 240
 #define DV_TINY_INT 241
@@ -280,6 +282,8 @@ User-level object is of type DV_XML_ENTITY. */
 #define IS_INT_DTP(dtp) \
   (DV_LONG_INT == dtp || DV_SHORT_INT == dtp || DV_INT64 == dtp)
 
+#define IS_DT_DTP(dtp) \
+  (DV_DATE == dtp || DV_DATETIME == dtp || DV_TIME == dtp || DV_TIMESTAMP == dtp)
 
 #define DV_STRINGP(q) \
   (IS_BOX_POINTER (q) && ((DV_STRING == box_tag (q)) || (DV_UNAME == box_tag (q))))
@@ -495,7 +499,7 @@ sqlr_new_error is void, and should never return.
     "OBJECT_REFERENCE" : \
   ((type) == DV_DELETED) /* 199 */ ? \
     "DELETED" : \
-  ((type) == DV_MEMBER_POINTER) /* 200 */ ? \
+  ((type) == DV_COL_BLOB_SERIAL) /* 200 */ ? \
     "MEMBER_POINTER" : \
   ((type) == DV_C_INT) /* 201 */ ? \
     "C_INT" : \

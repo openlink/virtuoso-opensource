@@ -1,4 +1,4 @@
-/*
+/*d6
  *  col.h
  *
  *  $Id$
@@ -26,6 +26,7 @@
  */
 
 #ifndef __COL_H
+#define __COL_H
 #define CE_DENSE 0
 #define CE_RL 1
 #define CE_GAP 2
@@ -70,6 +71,25 @@
 
 #define CE_INT_DELTA_MAX 0x7ff00000  /* a bit under max int32, some low bits are not used for delta */
 
+typedef struct dist_hash_elt_s
+{
+  int64 dhe_data;
+  struct dist_hash_elt_s *dhe_next;
+} dist_hash_elt_t;
+
+#define DHE_EMPTY ((dist_hash_elt_t*)-1)
+
+typedef struct dist_hash_s
+{
+  dist_hash_elt_t *dh_array;
+  int dh_n_buckets;
+  int dh_count;
+  int dh_fill;
+  int dh_max;
+  int dh_max_fill;
+} dist_hash_t;
+
+
 typedef struct comp_state_s
 {
   char 	cs_head;
@@ -78,7 +98,6 @@ typedef struct comp_state_s
   char	cs_all_string;
   char		cs_is_asc;
   char		cs_no_dict;
-  char		cs_is_num;
   char		cs_any_64; /* all numbers in 32 bits */
   char		cs_heterogenous;
   dtp_t 	cs_dtp;
@@ -90,9 +109,8 @@ typedef struct comp_state_s
   mem_pool_t *	cs_mp;
   caddr_t *	cs_values;
   int64 *	cs_numbers;
-  id_hash_t *	cs_any_distinct;
+  dist_hash_t cs_dh;
   id_hash_t *	cs_any_delta_distinct;
-  id_hash_t *	cs_num_distinct;
   dtp_t **	cs_distinct; /* sorted array of distinct any strings */
   dk_set_t	cs_ready_ces;
   dk_set_t	cs_org_values;
@@ -108,6 +126,7 @@ typedef struct comp_state_s
   dtp_t *	cs_asc_result;
   } compress_state_t;
 
+#define CS_INT_ONLY 2		/*cs_all_int set to this when the col dtp is iri or int */
 
 /* cs exclude, selective disable of options for testing */
 #define CS_NO_BITS 1
@@ -117,11 +136,12 @@ typedef struct comp_state_s
 #define CS_NO_DENSE 16
 #define CS_NO_DICT 32
 #define CS_NO_ANY_INT_VEC 64
+#define CS_NO_VEC 128
 
 #define CS_ASC_UNQ 1
 #define CS_ASC 2
 
-#define CS_MAX_BYTES (9 * 2048 + 100)
+#define CS_MAX_BYTES (10 * CS_MAX_VALUES + 100)	/* worst int compression in any vec, 8 b for int, 1 for tag and 1 for offset */
 
 
 #define CE_MAX_RL_VALUES 256
@@ -182,8 +202,8 @@ caddr_t		cpo_cmp_max;
 
 #define VEC_VALUES_PER_LEN 2
 
-int cs_append_any (dtp_t * out, int * fill_ret, db_buf_t any, int clear_last);
-int cs_int_type (compress_state_t * cs, db_buf_t * values, int from, int to, int * best);
+int cs_append_any (compress_state_t * cs, dtp_t * out, int *fill_ret, int nth, int clear_last);
+int cs_int_type (compress_state_t * cs, int from, int to, int *best);
 void cs_append_int (dtp_t * out, int * fill_ret, int64 n, dtp_t dtp);
 
 #define CE_VEC_LENGTHS(n_values) (((n_values) - 1) / 2)
@@ -332,9 +352,11 @@ typedef struct ce_ins_ctx_s
   int		ceic_ac_rows;
   int		ceic_nth_rb_rd;
   char		ceic_is_finalize;
+  char ceic_is_cpt_restore;
   char		ceic_is_rb;
   char		ceic_finalize_needs_update;
   char		ceic_is_ac;
+  char ceic_dtp_checked;
 } ce_ins_ctx_t;
 
 
@@ -426,6 +448,7 @@ ce_first = ce + 5; n_bytes = SHORT_REF_CA (ce + 1); n_values = SHORT_REF_CA (ce 
 
 caddr_t mp_box_to_any (mem_pool_t * mp, caddr_t box);
 void cs_compress (compress_state_t * cs, caddr_t any);
+void cs_compress_int (compress_state_t * cs, int64 * ints, int n_ints);
 void cs_best (compress_state_t * cs, dtp_t ** best, int * len);
 void cs_reset (compress_state_t * cs);
 int cs_decode (col_pos_t * cpo, int from, int to);
@@ -544,10 +567,12 @@ dtp_t any_ce_dtp (db_buf_t dv);
 
 /* below note that for a dict the short forms of int must be generated because if mixing long and short forms of equal numbers dict compression is not possible */
 #define CEIC_FLOAT_INT(col_dtp, str) \
-  if (DV_DOUBLE_FLOAT == col_dtp) \
-    dv_from_int (str, INT64_REF_NA (str + 1)); \
+  if (DV_DB_NULL == ((db_buf_t)str)[0])		\
+    ; \
+  else if (DV_DOUBLE_FLOAT == col_dtp)	       \
+    dv_from_int ((db_buf_t)str, INT64_REF_NA (str + 1));	\
   else if (DV_SINGLE_FLOAT == col_dtp)	\
-    dv_from_int (str, LONG_REF_NA (str + 1));
+    dv_from_int ((db_buf_t)str, LONG_REF_NA (str + 1));
 
 int ce_like_filter (col_pos_t * cpo, int row, dtp_t flags, db_buf_t val, int len, int64 offset, int rl);
 int itc_col_count (it_cursor_t * itc, buffer_desc_t * buf, int * row_match_ctr);
@@ -588,7 +613,7 @@ void colin_init ();
 db_buf_t  ce_any_dict_array (db_buf_t ce, dtp_t flags);
 int  col_find_op (int op);
 #define CE_DECODE 255 /* col op for getting values.  must be different from any CMP_* */
-
+#define CE_ALL_LTGT 254		/* op for range with >= > < <= */
 void cs_clear (compress_state_t * cs);
 void dv_from_int (db_buf_t ctmp, int64 i);
 void dv_from_iri (db_buf_t ctmp, iri_id_t i);
@@ -601,7 +626,7 @@ int ce_dict_generic_range_filter (col_pos_t * cpo, db_buf_t ce_first, int n_valu
 int ce_dict_generic_sets_filter (col_pos_t * cpo, db_buf_t ce_first, int n_values, int n_bytes);
 
 
-int itc_first_col_lock (it_cursor_t * itc, col_row_lock_t ** clk_ret);
+int itc_first_col_lock (it_cursor_t * itc, col_row_lock_t ** clk_ret, buffer_desc_t * buf);
 #define CLK_NO_WAIT 0
 #define CLK_WAIT_LANDED 1
 #define CLK_WAIT_RND 2
@@ -610,11 +635,12 @@ void itc_col_wait (it_cursor_t * itc, buffer_desc_t ** buf_ret, col_row_lock_t *
 void ceic_split_locks (ce_ins_ctx_t * ceic, int * splits, int n_splits, row_delta_t ** rds);
 col_row_lock_t * itc_clk_at (it_cursor_t * itc, row_no_t pos, row_no_t * point, row_no_t * next_ret);
 void ceic_del_ins_rbe (ce_ins_ctx_t * ceic, int nth_range, db_buf_t dv);
+void ceic_del_ins_rbe_int (ce_ins_ctx_t * ceic, int nth_range, int64 i, dtp_t dtp);
 void clk_free (col_row_lock_t * clk);
 int itc_rows_in_seg (it_cursor_t * itc, buffer_desc_t * buf);
 void mp_conc1 (mem_pool_t * mp, dk_set_t * r, void* v);
 extern int dbf_compress_mask;
-void ceic_cs_flags (ce_ins_ctx_t * ceic, compress_state_t * cs);
+void ceic_cs_flags (ce_ins_ctx_t * ceic, compress_state_t * cs, dtp_t dcdtp);
 void cs_distinct_ces (compress_state_t * cs);
 row_delta_t * ceic_1st_changed (ce_ins_ctx_t * ceic);
 void  ceic_no_split (ce_ins_ctx_t * ceic, buffer_desc_t * buf, int * action);
@@ -632,7 +658,7 @@ col_row_lock_t * itc_new_clk (it_cursor_t * itc, int row);
 void itc_make_rl (it_cursor_t * itc);
 int  ceic_pl_more (ce_ins_ctx_t * ceic, page_lock_t * pl, it_cursor_t * itc, int is_rb);
 int itc_col_serializable (it_cursor_t * itc, buffer_desc_t ** buf_ret);
-void itc_col_lock (it_cursor_t * itc, buffer_desc_t * buf, int n_rows);
+void itc_col_lock (it_cursor_t * itc, buffer_desc_t * buf, int n_rows, int may_delete);
 row_lock_t * rl_col_allocate ();
 db_buf_t  ceic_ins_any_value (ce_ins_ctx_t * ceic, int nth);
 db_buf_t itc_string_param (it_cursor_t * itc, int nth_key, int * len_ret, dtp_t * dtp_ret);
@@ -663,8 +689,70 @@ db_buf_t ceic_updated_col (ce_ins_ctx_t * ceic, buffer_desc_t * buf, int row, db
 int64 itc_anify_param (it_cursor_t * itc, caddr_t box);
 void cs_free_allocd_parts (compress_state_t * cs);
 void cpt_col_uncommitted (dbe_storage_t * dbs);
-void cpt_col_restore_uncommitted (dbe_storage_t * dbs);
+void cpt_col_restore_uncommitted ();
 int col_ac_set_dirty (caddr_t * qst, state_slot_t ** args, it_cursor_t * itc, buffer_desc_t * buf, int first, int n_last);
 void itc_ensure_col_refs (it_cursor_t * itc);
+void itc_col_page_free (it_cursor_t * itc, buffer_desc_t * buf, int col);
+void itc_fetch_col_dps (it_cursor_t * itc, buffer_desc_t * buf, dbe_col_loc_t * cl, dk_hash_t * dps);
+void itc_col_insert_rows (it_cursor_t * itc, buffer_desc_t * buf, int is_update);
+/* is_update */
+#define COL_UPDATE 1
+#define COL_CPT_RESTORE 2
+#define COL_CPT_RB 3
+void pl_cpt_col_page (page_lock_t * pl, it_cursor_t * itc, buffer_desc_t * buf, int is_restore);
+#define COL_UPD_NO_CHANGE ((caddr_t)-1)
+int blob_col_inlined (caddr_t * val_ret, dtp_t col_dtp, mem_pool_t * mp);
+#define COL_MAX_STR_LEN ((PAGE_DATA_SZ / 2) - 14)	/* 2 single value ces with max len string per page */
+
+void itc_ce_check (it_cursor_t * itc, buffer_desc_t * buf, int leave);
+void buf_ce_check (buffer_desc_t * buf);
+void ce_del_array (ce_ins_ctx_t * ceic, db_buf_t array, int n_elt, int elt_sz);
+int ce_del_int_delta (ce_ins_ctx_t * ceic, db_buf_t ce, int *len_ret);
+int ce_del_dict (ce_ins_ctx_t * ceic, db_buf_t ce, int *len_ret);
+void bit_delete (db_buf_t base, int target, int source, int bits);
+db_buf_t ce_dict_array (db_buf_t ce);
+int ce_head_len (db_buf_t ce);
+buffer_desc_t *it_new_col_page (index_tree_t * it, dp_addr_t near_dp, it_cursor_t * has_hold, dbe_column_t * col);
+void itc_delete_blob_array (it_cursor_t * itc, caddr_t * blobs, int fill);
+int ce_space_after (buffer_desc_t * buf, db_buf_t ce);
+caddr_t mp_box_any_dv (mem_pool_t * mp, db_buf_t dv);
+void itc_col_ins_locks_nti (it_cursor_t * itc, buffer_desc_t * buf);
+extern int ce_op_decode;
+caddr_t *ce_box (db_buf_t ce, int extra);
+void itc_extend_array (it_cursor_t * itc, int *sz, int elt_sz, void ***arr);
+
+#define N4_REF_NA(p, l) \
+  (l > 3 ? LONG_REF_NA ((p))  \
+  : 3 == l ? ((((dtp_t*)(p))[1] << 16) + (((dtp_t*)(p))[2] << 8) + ((dtp_t*)(p))[3]) \
+ : 2 == l ? SHORT_REF_NA ((p) + 2) : (uint32)((dtp_t*)(p))[3])
+
+int strcmp8 (unsigned char *s1, unsigned char *s2, int l1, int l2);
+int str_cmp_offset (db_buf_t dv1, db_buf_t dv2, int n1, int n2, int64 offset);
+int ceic_all_dtp (ce_ins_ctx_t * ceic, dtp_t dtp);
+void itc_clear_col_refs (it_cursor_t * itc);
+int ce_dict_ins_any_key (db_buf_t ce, db_buf_t dict, int64 value, dtp_t dtp, db_buf_t * dict_ret, int *sz_ret, int *is_ncast_eq);
+void key_col_check (dbe_key_t * key);
+int cr_new_size (col_data_ref_t * cr, int *bytes_ret);
+void itc_set_sp_stat (it_cursor_t * itc);
+
+#if WORDS_BIGENDIAN
+
+#define ce_first_int_low_byte (ce, ce_first) \
+  ce_first[-1]
+#else
+#define ce_first_int_low_byte(ce, ce_first) \
+  ce[ce[0] & CE_IS_SHORT ? 3 : 5]
+#endif
+
+
+#if WORDS_BIGENDIAN
+#define ce_first_int_low_byte (ce, ce_first) \
+  ce_first[-1]
+#else
+#define ce_first_int_low_byte(ce, ce_first) \
+  ce[ce[0] & CE_IS_SHORT ? 3 : 5]
+#endif
+extern int dbf_ignore_uneven_col;
+void ceic_upd_rd (ce_ins_ctx_t * ceic, int map_pos, int nth_col, db_buf_t str);
 
 #endif

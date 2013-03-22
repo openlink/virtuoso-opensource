@@ -1483,7 +1483,7 @@ spar_gp_finalize (sparp_t *sparp, SPART **options)
     orig_selid = spar_mkid (sparp, "s");
   spar_dbg_printf (("spar_gp_finalize (..., %ld), orig_selid %s\n", (long)subtype, orig_selid));
   sparp->sparp_sg->sg_invalidated_bnode_labels = dk_set_conc (
-    (dk_set_t)t_set_pop (&(sparp->sparp_sg->sg_bnode_label_sets)), 
+    (dk_set_t)t_set_pop (&(sparp->sparp_sg->sg_bnode_label_sets)),
     sparp->sparp_sg->sg_invalidated_bnode_labels );
   if (CONSTRUCT_L != subtype) /* CONSTRUCT_L did not push to spare_propvar_sets, using one that will be used in WHERE_L */
     {
@@ -3205,6 +3205,7 @@ spar_gp_add_triplelike (sparp_t *sparp, SPART *graph, SPART *subject, SPART *pre
       if (0 != BOX_ELEMENTS (spec_pred_names))
         {
           caddr_t pname = spec_pred_names[0];
+          int is_geo = 0;
           if (NULL != options)
             {
               int ctr;
@@ -3213,9 +3214,18 @@ spar_gp_add_triplelike (sparp_t *sparp, SPART *graph, SPART *subject, SPART *pre
                 {
                   ptrlong option_id = (ptrlong)(options[ctr]);
                   SPART *option_value = options[ctr+1];
+                  if ((GEO_L == option_id) || (PRECISION_L == option_id))
+                    is_geo = 1;
                   if (SPAR_VARIABLE == SPART_TYPE (option_value))
                     option_value->_.var.rvr.rvrRestrictions |= SPART_VARR_IS_LIT;
                 }
+            }
+          if (is_geo)
+            {
+              if (!strcmp ("bif:contains", pname) || !strcmp ("bif:spatial_contains", pname))
+                pname = box_dv_uname_string ("bif:spatial_contains");
+              else
+                spar_error (sparp, "Spatial options can be used only with bif:contains and bif:spatial_contains special predicates, not with %.200s", pname);
             }
           spar_gp_add_filter (sparp,
             spar_make_funcall (sparp, 0, pname,

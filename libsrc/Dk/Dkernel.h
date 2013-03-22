@@ -997,7 +997,7 @@ void *dk_alloc_reserve_malloc (size_t size, int gpf_if_not);
 
 #ifndef NO_THREAD
 #define BURST_STOP_TIMEOUT 		1000		   /* 1 sec to switch off burst mode */
-extern long time_now_msec;
+extern uint32 time_now_msec;
 void dks_stop_burst_mode (dk_session_t * ses);
 #endif
 

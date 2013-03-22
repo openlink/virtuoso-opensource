@@ -3039,6 +3039,8 @@ void dsig_sec_init ()
   dsig_sign_algo_create (DSIG_DSA_SHA1_ALGO, dsig_dsa_sha1_digest);
   dsig_sign_algo_create (DSIG_RSA_SHA1_ALGO, dsig_rsa_sha1_digest);
   dsig_sign_algo_create (DSIG_HMAC_SHA1_ALGO, dsig_hmac_sha1_digest);
+  dsig_sign_algo_create ("hmac-sha1", dsig_hmac_sha1_digest); /* alias */
+
   dsig_verify_algo_create (DSIG_DSA_SHA1_ALGO, dsig_dsa_sha1_verify);
   dsig_verify_algo_create (DSIG_RSA_SHA1_ALGO, dsig_rsa_sha1_verify);
   dsig_verify_algo_create (DSIG_HMAC_SHA1_ALGO, dsig_hmac_sha1_verify);
@@ -3048,6 +3050,7 @@ void dsig_sec_init ()
   dsig_verify_algo_create (DSIG_RSA_SHA256_ALGO, dsig_rsa_sha256_verify);
   dsig_digest_algo_create (DSIG_SHA256_ALGO, dsig_sha256_digest);
   dsig_sign_algo_create (DSIG_HMAC_SHA256_ALGO, dsig_hmac_sha256_digest);
+  dsig_sign_algo_create ("hmac-sha256", dsig_hmac_sha256_digest); /* alias */
   dsig_verify_algo_create (DSIG_HMAC_SHA256_ALGO, dsig_hmac_sha256_verify);
 #endif
 

@@ -31,6 +31,10 @@
 #include "srvmultibyte.h"
 #include "numeric.h"
 #include "xmltree.h"
+#include "sqlpar.h"
+#include "sqlcmps.h"
+#include "sqlintrp.h"
+
 
 void
 qst_set_long (caddr_t * state, state_slot_t * sl, boxint lv)
@@ -43,34 +47,38 @@ qst_set_long (caddr_t * state, state_slot_t * sl, boxint lv)
   else
     {
 #endif
-  caddr_t *place = IS_SSL_REF_PARAMETER (sl->ssl_type)
-    ? (caddr_t *) state[sl->ssl_index]
-    : (caddr_t *) & state[sl->ssl_index];
-  caddr_t old = *place;
-  if (IS_BOX_POINTER (old))
-    {
-      if (DV_LONG_INT == box_tag (old))
+      caddr_t *place, old;
+      if (SSL_VEC == sl->ssl_type)
 	{
-	  *(boxint *) old = lv;
+	  QNCAST (query_instance_t, qi, state);
+	  dc_set_long (QST_BOX (data_col_t *, state, sl->ssl_index), qi->qi_set, lv);
+	  return;
+	}
+      place = IS_SSL_REF_PARAMETER (sl->ssl_type) ? (caddr_t *) state[sl->ssl_index] : (caddr_t *) & state[sl->ssl_index];
+      old = *place;
+      if (IS_BOX_POINTER (old))
+	{
+	  if (DV_LONG_INT == box_tag (old))
+	    {
+	      *(boxint *) old = lv;
+	    }
+	  else
+	    {
+	      ssl_free_data (sl, *place);
+	      *place = box_num (lv);
+	    }
 	}
       else
 	{
-	  ssl_free_data (sl, *place);
-	  *place = box_num (lv);
+	  if (IS_BOXINT_POINTER (lv))
+	    *place = box_num (lv);
+	  else
+	    *(ptrlong *) place = lv;
 	}
-    }
-  else
-    {
-      if (IS_BOXINT_POINTER (lv))
-	*place = box_num (lv);
-      else
-	*(ptrlong *) place = lv;
-    }
 #ifdef QST_DEBUG
     }
 #endif
 }
-
 
 
 void
@@ -84,23 +92,28 @@ qst_set_float (caddr_t * state, state_slot_t * sl, float fv)
   else
     {
 #endif
-  caddr_t *place = IS_SSL_REF_PARAMETER (sl->ssl_type)
-    ? (caddr_t *) state[sl->ssl_index]
-    : (caddr_t *) & state[sl->ssl_index];
-  caddr_t old = *place;
-  if (IS_BOX_POINTER (old) && DV_SINGLE_FLOAT == box_tag (old))
-    *(float *) old = fv;
-  else
-    {
-      if (old)
-	ssl_free_data (sl, *place);
-      *place = box_float (fv);
-    }
+      caddr_t *place;
+      caddr_t old;
+      if (SSL_VEC == sl->ssl_type)
+	{
+	  QNCAST (query_instance_t, qi, state);
+	  dc_set_float (QST_BOX (data_col_t *, state, sl->ssl_index), qi->qi_set, fv);
+	  return;
+	}
+      place = IS_SSL_REF_PARAMETER (sl->ssl_type) ? (caddr_t *) state[sl->ssl_index] : (caddr_t *) & state[sl->ssl_index];
+      old = *place;
+      if (IS_BOX_POINTER (old) && DV_SINGLE_FLOAT == box_tag (old))
+	*(float *) old = fv;
+      else
+	{
+	  if (old)
+	    ssl_free_data (sl, *place);
+	  *place = box_float (fv);
+	}
 #ifdef QST_DEBUG
     }
 #endif
 }
-
 
 
 void
@@ -114,23 +127,27 @@ qst_set_double (caddr_t * state, state_slot_t * sl, double dv)
   else
     {
 #endif
-  caddr_t *place = IS_SSL_REF_PARAMETER (sl->ssl_type)
-    ? (caddr_t *) state[sl->ssl_index]
-    : (caddr_t *) & state[sl->ssl_index];
-  caddr_t old = *place;
-  if (IS_BOX_POINTER (old) && DV_DOUBLE_FLOAT == box_tag (old))
-    *(double *) old = dv;
-  else
-    {
-      if (old)
-	ssl_free_data (sl, *place);
-      *place = box_double (dv);
-    }
+      caddr_t *place, old;
+      if (SSL_VEC == sl->ssl_type)
+	{
+	  QNCAST (query_instance_t, qi, state);
+	  dc_set_double (QST_BOX (data_col_t *, state, sl->ssl_index), qi->qi_set, dv);
+	  return;
+	}
+      place = IS_SSL_REF_PARAMETER (sl->ssl_type) ? (caddr_t *) state[sl->ssl_index] : (caddr_t *) & state[sl->ssl_index];
+      old = *place;
+      if (IS_BOX_POINTER (old) && DV_DOUBLE_FLOAT == box_tag (old))
+	*(double *) old = dv;
+      else
+	{
+	  if (old)
+	    ssl_free_data (sl, *place);
+	  *place = box_double (dv);
+	}
 #ifdef QST_DEBUG
     }
 #endif
 }
-
 
 
 void
@@ -144,20 +161,20 @@ qst_set_numeric_buf (caddr_t * qst, state_slot_t * sl, db_buf_t xx)
   else
     {
 #endif
-  caddr_t old = NULL;
-  old = QST_GET (qst, sl);
-  if (DV_NUMERIC != DV_TYPE_OF (old))
-    old = NULL;
-  if (!old)
-    {
-      old = (caddr_t) numeric_allocate ();
-      numeric_from_buf ((numeric_t) old, xx);
-      qst_set (qst, sl, old);
-    }
-  else
-    {
-      numeric_from_buf ((numeric_t) old, xx);
-    }
+      caddr_t old = NULL;
+      old = QST_GET (qst, sl);
+      if (DV_NUMERIC != DV_TYPE_OF (old))
+	old = NULL;
+      if (!old)
+	{
+	  old = (caddr_t) numeric_allocate ();
+	  numeric_from_buf ((numeric_t) old, xx);
+	  qst_set (qst, sl, old);
+	}
+      else
+	{
+	  numeric_from_buf ((numeric_t) old, xx);
+	}
 #ifdef QST_DEBUG
     }
 #endif
@@ -187,7 +204,7 @@ n_coerce (caddr_t n1, caddr_t n2, dtp_t dtp1, dtp_t dtp2, dtp_t * out_dtp)
 	    *out_dtp = DV_DOUBLE_FLOAT;
 	    return 1;
 	  case DV_NUMERIC:
-	    tl = *(boxint*) n1;
+	    tl = *(boxint *) n1;
 	    numeric_init_static ((numeric_t) n1, NUMERIC_STACK_BYTES);
 	    numeric_from_int64 ((numeric_t) n1, (int64) tl);
 	    *out_dtp = DV_NUMERIC;
@@ -212,7 +229,7 @@ n_coerce (caddr_t n1, caddr_t n2, dtp_t dtp1, dtp_t dtp2, dtp_t * out_dtp)
 	    *out_dtp = DV_DOUBLE_FLOAT;
 	    return 1;
 	  case DV_NUMERIC:
-	    td = (double) (* (float*) n1);
+	    td = (double) (*(float *) n1);
 	    numeric_init_static ((numeric_t) n1, NUMERIC_STACK_BYTES);
 	    numeric_from_double ((numeric_t) n1, td);
 	    *out_dtp = DV_NUMERIC;
@@ -257,13 +274,13 @@ n_coerce (caddr_t n1, caddr_t n2, dtp_t dtp1, dtp_t dtp2, dtp_t * out_dtp)
 	    *out_dtp = DV_NUMERIC;
 	    return 1;
 	  case DV_SINGLE_FLOAT:
-	    td = (double) * (float*)n2;
+	    td = (double) *(float *) n2;
 	    numeric_init_static ((numeric_t) n2, NUMERIC_STACK_BYTES);
 	    numeric_from_double ((numeric_t) n2, td);
 	    *out_dtp = DV_NUMERIC;
 	    return 1;
 	  case DV_DOUBLE_FLOAT:
-	    td = *(double*)n2;
+	    td = *(double *) n2;
 	    numeric_init_static ((numeric_t) n2, NUMERIC_STACK_BYTES);
 	    numeric_from_double ((numeric_t) n2, td);
 	    *out_dtp = DV_NUMERIC;
@@ -293,7 +310,7 @@ dv_ext_to_num (dtp_t * place, caddr_t to)
       *(boxint *) to = LONG_REF_NA (place + 1);
       return DV_LONG_INT;
     case DV_INT64:
-      *(boxint*) to = INT64_REF_NA (place + 1);
+      *(boxint *) to = INT64_REF_NA (place + 1);
       return DV_LONG_INT;
     case DV_NULL:
       *(boxint *) to = 0;
@@ -378,7 +395,7 @@ cmp_double (double x1, double x2, double epsilon)
    *  So we only want to set exponent to 0 if both x1 and x2 are 0.
    *  Hence, the following works for all x1 and x2.
    */
-  frexp(fabs(x1) > fabs(x2) ? x1 : x2, &exponent);
+  frexp (fabs (x1) > fabs (x2) ? x1 : x2, &exponent);
 
   /*
    * Scale epsilon.
@@ -395,18 +412,18 @@ cmp_double (double x1, double x2, double epsilon)
   difference = x1 - x2;
 
   if (difference > delta)
-    return DVC_GREATER;			/* x1 > x2 */
+    return DVC_GREATER;		/* x1 > x2 */
   else if (difference < -delta)
-    return DVC_LESS;			/* x1 < x2 */
-  else					/* -delta <= difference <= delta */
-    return DVC_MATCH;			/* x1 == x2 */
+    return DVC_LESS;		/* x1 < x2 */
+  else				/* -delta <= difference <= delta */
+    return DVC_MATCH;		/* x1 == x2 */
 }
 
 
 int
 numeric_compare_dvc (numeric_t x, numeric_t y)
 {
-  int rc = numeric_compare (x,y);
+  int rc = numeric_compare (x, y);
   return (rc < 0 ? DVC_LESS : rc == 0 ? DVC_MATCH : DVC_GREATER);
 }
 
@@ -418,7 +435,6 @@ numeric_compare_dvc (numeric_t x, numeric_t y)
    is less than NULL.
    That is, succ('\377') = NULL
  */
-
 
 
 int
@@ -440,13 +456,13 @@ cmp_dv_box (caddr_t dv, caddr_t box)
       switch (res_dtp)
 	{
 	case DV_LONG_INT:
-	  return (NUM_COMPARE (*(boxint *) &dn1, *(boxint *) &dn2));
+	  return (NUM_COMPARE (*(boxint *) & dn1, *(boxint *) & dn2));
 	case DV_SINGLE_FLOAT:
 	  return cmp_double (*(float *) &dn1, *(float *) &dn2, FLT_EPSILON);
 	case DV_DOUBLE_FLOAT:
 	  return cmp_double (*(double *) &dn1, *(double *) &dn2, DBL_EPSILON);
 	case DV_NUMERIC:
-	  return (numeric_compare_dvc ((numeric_t) &dn1, (numeric_t) &dn2));
+	  return (numeric_compare_dvc ((numeric_t) & dn1, (numeric_t) & dn2));
 	}
     }
   else
@@ -456,14 +472,14 @@ cmp_dv_box (caddr_t dv, caddr_t box)
 
 
 int
-cmp_boxes_safe (ccaddr_t box1, ccaddr_t box2, collation_t *collation1, collation_t *collation2)
+cmp_boxes_safe (ccaddr_t box1, ccaddr_t box2, collation_t * collation1, collation_t * collation2)
 {
   int inx, n1, n2;
   NUMERIC_VAR (dn1);
   NUMERIC_VAR (dn2);
   dtp_t dtp1, dtp2, res_dtp;
 
-  if ((IS_BOX_POINTER (box1) && DV_RDF == box_tag (box1))  || (IS_BOX_POINTER (box2) && DV_RDF == box_tag (box2)))
+  if ((IS_BOX_POINTER (box1) && DV_RDF == box_tag (box1)) || (IS_BOX_POINTER (box2) && DV_RDF == box_tag (box2)))
     return rdf_box_compare (box1, box2);
 
   NUM_TO_MEM (dn1, dtp1, box1);
@@ -476,123 +492,113 @@ cmp_boxes_safe (ccaddr_t box1, ccaddr_t box2, collation_t *collation1, collation
       switch (res_dtp)
 	{
 	case DV_LONG_INT:
-	  return (NUM_COMPARE (*(boxint *) &dn1, *(boxint *) &dn2));
+	  return (NUM_COMPARE (*(boxint *) & dn1, *(boxint *) & dn2));
 	case DV_SINGLE_FLOAT:
 	  return cmp_double (*(float *) &dn1, *(float *) &dn2, FLT_EPSILON);
 	case DV_DOUBLE_FLOAT:
 	  return cmp_double (*(double *) &dn1, *(double *) &dn2, DBL_EPSILON);
 	case DV_NUMERIC:
-	  return (numeric_compare_dvc ((numeric_t) &dn1, (numeric_t) &dn2));
+	  return (numeric_compare_dvc ((numeric_t) & dn1, (numeric_t) & dn2));
 	}
-      GPF_T1("cmp_boxes(): unsupported datatype returned by n_coerce");
+      GPF_T1 ("cmp_boxes(): unsupported datatype returned by n_coerce");
     }
-      if (!IS_BOX_POINTER (box1) || !IS_BOX_POINTER (box2))
-	return DVC_NOORDER;
+  if (!IS_BOX_POINTER (box1) || !IS_BOX_POINTER (box2))
+    return DVC_NOORDER;
 
-      if (DV_COMPOSITE == dtp1 && DV_COMPOSITE == dtp2)
-	return (dv_composite_cmp ((db_buf_t) box1, (db_buf_t) box2, collation1));
-      if (DV_IRI_ID == dtp1 && DV_IRI_ID == dtp2)
-	return NUM_COMPARE (unbox_iri_id (box1), unbox_iri_id (box2));
-      n1 = box_length (box1);
-      n2 = box_length (box2);
+  if (DV_COMPOSITE == dtp1 && DV_COMPOSITE == dtp2)
+    return (dv_composite_cmp ((db_buf_t) box1, (db_buf_t) box2, collation1, 0));
+  if (DV_IRI_ID == dtp1 && DV_IRI_ID == dtp2)
+    return NUM_COMPARE (unbox_iri_id (box1), unbox_iri_id (box2));
+  n1 = box_length (box1);
+  n2 = box_length (box2);
 
-      if ((dtp1 == DV_DATETIME && dtp2 == DV_BIN) ||
-	(dtp2 == DV_DATETIME && dtp1 == DV_BIN))
-	dtp1 = dtp2 = DV_DATETIME;
+  if ((dtp1 == DV_DATETIME && dtp2 == DV_BIN) || (dtp2 == DV_DATETIME && dtp1 == DV_BIN))
+    dtp1 = dtp2 = DV_DATETIME;
 
-      switch (dtp1)
+  switch (dtp1)
+    {
+    case DV_STRING:
+      n1--;
+      break;
+    case DV_LONG_WIDE:
+      dtp1 = DV_WIDE;
+    case DV_WIDE:
+      n1 = n1 / sizeof (wchar_t) - 1;
+      break;
+    case DV_LONG_BIN:
+      dtp1 = DV_BIN;
+      collation1 = collation2 = NULL;
+      break;
+    case DV_DATETIME:
+      dtp1 = DV_BIN;
+      n1 = DT_COMPARE_LENGTH;
+      collation1 = collation2 = NULL;
+      break;
+    default:
+      collation1 = collation2 = NULL;
+    }
+  switch (dtp2)
+    {
+    case DV_STRING:
+      n2--;
+      if (collation1)
 	{
-	case DV_STRING:
-	  n1--;
-	  break;
-	case DV_LONG_WIDE:
-	  dtp1 = DV_WIDE;
-	case DV_WIDE:
-	  n1 = n1 / sizeof (wchar_t) - 1;
-	  break;
-	case DV_LONG_BIN:
-	  dtp1 = DV_BIN;
-	  collation1 = collation2 = NULL;
-	  break;
-	case DV_DATETIME:
-	  dtp1 = DV_BIN;
-	  n1 = DT_COMPARE_LENGTH;
-	  collation1 = collation2 = NULL;
-	  break;
-	default:
-	  collation1 = collation2 = NULL;
+	  if (collation2 && collation1 != collation2)
+	    collation1 = default_collation;
 	}
-      switch (dtp2)
+      else
+	collation1 = collation2;
+      break;
+    case DV_LONG_BIN:
+      dtp2 = DV_BIN;
+      collation1 = NULL;
+      break;
+    case DV_DATETIME:
+      dtp2 = DV_BIN;
+      n2 = DT_COMPARE_LENGTH;
+      collation1 = NULL;
+      break;
+    case DV_LONG_WIDE:
+      dtp2 = DV_WIDE;
+    case DV_WIDE:
+      n2 = n2 / sizeof (wchar_t) - 1;
+      break;
+    default:
+      collation1 = NULL;
+    }
+
+  if (IS_WIDE_STRING_DTP (dtp1) && IS_STRING_DTP (dtp2))
+    return compare_wide_to_narrow ((wchar_t *) box1, n1, (unsigned char *) box2, n2);
+  if (IS_STRING_DTP (dtp1) && IS_WIDE_STRING_DTP (dtp2))
+    {
+      int res = compare_wide_to_narrow ((wchar_t *) box2, n2, (unsigned char *) box1, n1);
+      return (res == DVC_LESS ? DVC_GREATER : (res == DVC_GREATER ? DVC_LESS : res));
+    }
+  if (IS_WIDE_STRING_DTP (dtp1) && IS_WIDE_STRING_DTP (dtp2))
+    {
+      inx = 0;
+      while (1)
 	{
-	case DV_STRING:
-	  n2--;
-	  if (collation1)
+	  if (inx == n1)	/* box1 in end? */
 	    {
-	      if (collation2 && collation1 != collation2)
-		collation1 = default_collation;
-	    }
-	  else
-	    collation1 = collation2;
-	  break;
-	case DV_LONG_BIN:
-	  dtp2 = DV_BIN;
-	  collation1 = NULL;
-	  break;
-	case DV_DATETIME:
-	  dtp2 = DV_BIN;
-	  n2 = DT_COMPARE_LENGTH;
-	  collation1 = NULL;
-	  break;
-	case DV_LONG_WIDE:
-	  dtp2 = DV_WIDE;
-	case DV_WIDE:
-	  n2 = n2 / sizeof (wchar_t) - 1;
-	  break;
-	default:
-	  collation1 = NULL;
-	}
-      if (IS_WIDE_STRING_DTP (dtp1) && IS_STRING_DTP (dtp2))
-        {
-          if (box_flags (box2) & (BF_IRI | BF_UTF8))
-            return compare_wide_to_utf8_with_collation ((wchar_t *) box1, n1, (utf8char *) box2, n2, NULL);
-          else
-            return compare_wide_to_latin1 ((wchar_t *) box1, n1, (unsigned char *) box2, n2);
-        }
-      if (IS_STRING_DTP (dtp1) && IS_WIDE_STRING_DTP (dtp2))
-	{
-          int res;
-          if (box_flags (box2) & (BF_IRI | BF_UTF8))
-	    res = compare_wide_to_utf8_with_collation ((wchar_t *)box2, n2, (utf8char *) box1, n1, NULL);
-          else
-	    res = compare_wide_to_latin1 ((wchar_t *)box2, n2, (unsigned char *) box1, n1);
-	  return (res == DVC_LESS ? DVC_GREATER :
-	      (res == DVC_GREATER ? DVC_LESS : res));
-	}
-      if (IS_WIDE_STRING_DTP (dtp1) && IS_WIDE_STRING_DTP (dtp2))
-	{
-          inx = 0;
-	  while (1)
-	    {
-	      if (inx == n1)	/* box1 in end? */
-		{
-		  if (inx == n2)
-		    return DVC_MATCH;  /* box2 of same length */
-		  else
-		    return DVC_LESS;   /* otherwise box1 is shorter than box2 */
-		}
-
 	      if (inx == n2)
-		return DVC_GREATER;	/* box2 in end (but not box1) */
-
-	      if ((((wchar_t *) box1)[inx]) < (((wchar_t *) box2)[inx]))
-		return DVC_LESS;
-
-	      if ((((wchar_t *) box1)[inx]) > (((wchar_t *) box2)[inx]))
-		return DVC_GREATER;
-
-	      inx++;
+		return DVC_MATCH;	/* box2 of same length */
+	      else
+		return DVC_LESS;	/* otherwise box1 is shorter than box2 */
 	    }
+
+	  if (inx == n2)
+	    return DVC_GREATER;	/* box2 in end (but not box1) */
+
+	  if ((((wchar_t *) box1)[inx]) < (((wchar_t *) box2)[inx]))
+	    return DVC_LESS;
+
+	  if ((((wchar_t *) box1)[inx]) > (((wchar_t *) box2)[inx]))
+	    return DVC_GREATER;
+
+	  inx++;
 	}
+    }
 
   if ((IS_STRING_DTP (dtp1) && IS_STRING_DTP (dtp2)) || ((DV_BIN == dtp1) && (DV_BIN == dtp2)))
     {
@@ -604,9 +610,9 @@ cmp_boxes_safe (ccaddr_t box1, ccaddr_t box2, collation_t *collation1, collation
 	      if (inx == n1)	/* box1 in end? */
 		{
 		  if (inx == n2)
-		    return DVC_MATCH;  /* box2 of same length */
+		    return DVC_MATCH;	/* box2 of same length */
 		  else
-		    return DVC_LESS;   /* otherwise box1 is shorter than box2 */
+		    return DVC_LESS;	/* otherwise box1 is shorter than box2 */
 		}
 
 	      if (inx == n2)
@@ -628,9 +634,9 @@ cmp_boxes_safe (ccaddr_t box1, ccaddr_t box2, collation_t *collation1, collation
 	      if (inx == n1)	/* box1 in end? */
 		{
 		  if (inx == n2)
-		    return DVC_MATCH;  /* box2 of same length */
+		    return DVC_MATCH;	/* box2 of same length */
 		  else
-		    return DVC_LESS;   /* otherwise box1 is shorter than box2 */
+		    return DVC_LESS;	/* otherwise box1 is shorter than box2 */
 		}
 
 	      if (inx == n2)
@@ -656,24 +662,25 @@ cmp_boxes_safe (ccaddr_t box1, ccaddr_t box2, collation_t *collation1, collation
     {
       if (box1 == box2)
 	return DVC_MATCH;
-      return xe_compare_content ((xml_entity_t *)box1, (xml_entity_t *)box2, 0 /* do not compare URIs and DTDs */);
+      return xe_compare_content ((xml_entity_t *) box1, (xml_entity_t *) box2, 0 /* do not compare URIs and DTDs */ );
     }
   return DVC_NOORDER;
 }
 
+
 #ifdef CMP_MOREDEBUG
 int
-cmp_boxes_old (ccaddr_t box1, ccaddr_t box2, collation_t *collation1, collation_t *collation2)
+cmp_boxes_old (ccaddr_t box1, ccaddr_t box2, collation_t * collation1, collation_t * collation2)
 #else
 int
-cmp_boxes (ccaddr_t box1, ccaddr_t box2, collation_t *collation1, collation_t *collation2)
+cmp_boxes (ccaddr_t box1, ccaddr_t box2, collation_t * collation1, collation_t * collation2)
 #endif
 {
   NUMERIC_VAR (dn1);
   NUMERIC_VAR (dn2);
   dtp_t dtp1, dtp2, res_dtp;
 
-  if ((IS_BOX_POINTER (box1) && DV_RDF == box_tag (box1))  || (IS_BOX_POINTER (box2) && DV_RDF == box_tag (box2)))
+  if ((IS_BOX_POINTER (box1) && DV_RDF == box_tag (box1)) || (IS_BOX_POINTER (box2) && DV_RDF == box_tag (box2)))
     return rdf_box_compare (box1, box2);
 
   NUM_TO_MEM (dn1, dtp1, box1);
@@ -686,13 +693,13 @@ cmp_boxes (ccaddr_t box1, ccaddr_t box2, collation_t *collation1, collation_t *c
       switch (res_dtp)
 	{
 	case DV_LONG_INT:
-	  return (NUM_COMPARE (*(boxint *) &dn1, *(boxint *) &dn2));
+	  return (NUM_COMPARE (*(boxint *) & dn1, *(boxint *) & dn2));
 	case DV_SINGLE_FLOAT:
 	  return cmp_double (*(float *) &dn1, *(float *) &dn2, FLT_EPSILON);
 	case DV_DOUBLE_FLOAT:
 	  return cmp_double (*(double *) &dn1, *(double *) &dn2, DBL_EPSILON);
 	case DV_NUMERIC:
-	  return (numeric_compare_dvc ((numeric_t) &dn1, (numeric_t) &dn2));
+	  return (numeric_compare_dvc ((numeric_t) & dn1, (numeric_t) & dn2));
 	}
     }
   else
@@ -703,14 +710,13 @@ cmp_boxes (ccaddr_t box1, ccaddr_t box2, collation_t *collation1, collation_t *c
 	return DVC_LESS;
 
       if (DV_COMPOSITE == dtp1 && DV_COMPOSITE == dtp2)
-	return (dv_composite_cmp ((db_buf_t) box1, (db_buf_t) box2, collation1));
+	return (dv_composite_cmp ((db_buf_t) box1, (db_buf_t) box2, collation1, 0));
       if (DV_IRI_ID == dtp1 && DV_IRI_ID == dtp2)
 	return NUM_COMPARE (unbox_iri_id (box1), unbox_iri_id (box2));
       n1 = box_length (box1);
       n2 = box_length (box2);
 
-      if ((dtp1 == DV_DATETIME && dtp2 == DV_BIN) ||
-	(dtp2 == DV_DATETIME && dtp1 == DV_BIN))
+      if ((dtp1 == DV_DATETIME && dtp2 == DV_BIN) || (dtp2 == DV_DATETIME && dtp1 == DV_BIN))
 	dtp1 = dtp2 = DV_DATETIME;
 
       switch (dtp1)
@@ -776,21 +782,11 @@ cmp_boxes (ccaddr_t box1, ccaddr_t box2, collation_t *collation1, collation_t *c
 	}
 
       if (IS_WIDE_STRING_DTP (dtp1) && IS_STRING_DTP (dtp2))
-        {
-          if (box_flags (box2) & (BF_IRI | BF_UTF8))
-            return compare_wide_to_utf8_with_collation ((wchar_t *) box1, n1, (utf8char *) box2, n2, NULL);
-          else
-            return compare_wide_to_latin1 ((wchar_t *) box1, n1, (unsigned char *) box2, n2);
-        }
-      if (IS_STRING_DTP (dtp1) && IS_WIDE_STRING_DTP (dtp2))
+	return compare_wide_to_narrow ((wchar_t *) box1, n1, (unsigned char *) box2, n2);
+      else if (IS_STRING_DTP (dtp1) && IS_WIDE_STRING_DTP (dtp2))
 	{
-          int res;
-          if (box_flags (box2) & (BF_IRI | BF_UTF8))
-	    res = compare_wide_to_utf8_with_collation ((wchar_t *)box2, n2, (utf8char *) box1, n1, NULL);
-          else
-	    res = compare_wide_to_latin1 ((wchar_t *)box2, n2, (unsigned char *) box1, n1);
-	  return (res == DVC_LESS ? DVC_GREATER :
-	      (res == DVC_GREATER ? DVC_LESS : res));
+	  int res = compare_wide_to_narrow ((wchar_t *) box2, n2, (unsigned char *) box1, n1);
+	  return (res == DVC_LESS ? DVC_GREATER : (res == DVC_GREATER ? DVC_LESS : res));
 	}
       else if (dtp1 != dtp2)
 	return DVC_LESS;
@@ -802,9 +798,9 @@ cmp_boxes (ccaddr_t box1, ccaddr_t box2, collation_t *collation1, collation_t *c
 	      if (inx == n1)	/* box1 in end? */
 		{
 		  if (inx == n2)
-		    return DVC_MATCH;  /* box2 of same length */
+		    return DVC_MATCH;	/* box2 of same length */
 		  else
-		    return DVC_LESS;   /* otherwise box1 is shorter than box2 */
+		    return DVC_LESS;	/* otherwise box1 is shorter than box2 */
 		}
 
 	      if (inx == n2)
@@ -827,9 +823,9 @@ cmp_boxes (ccaddr_t box1, ccaddr_t box2, collation_t *collation1, collation_t *c
 	      if (inx == n1)	/* box1 in end? */
 		{
 		  if (inx == n2)
-		    return DVC_MATCH;  /* box2 of same length */
+		    return DVC_MATCH;	/* box2 of same length */
 		  else
-		    return DVC_LESS;   /* otherwise box1 is shorter than box2 */
+		    return DVC_LESS;	/* otherwise box1 is shorter than box2 */
 		}
 
 	      if (inx == n2)
@@ -851,9 +847,9 @@ cmp_boxes (ccaddr_t box1, ccaddr_t box2, collation_t *collation1, collation_t *c
 	      if (inx == n1)	/* box1 in end? */
 		{
 		  if (inx == n2)
-		    return DVC_MATCH;  /* box2 of same length */
+		    return DVC_MATCH;	/* box2 of same length */
 		  else
-		    return DVC_LESS;   /* otherwise box1 is shorter than box2 */
+		    return DVC_LESS;	/* otherwise box1 is shorter than box2 */
 		}
 
 	      if (inx == n2)
@@ -872,16 +868,16 @@ cmp_boxes (ccaddr_t box1, ccaddr_t box2, collation_t *collation1, collation_t *c
   return DVC_LESS;		/* default, should not happen */
 }
 
+
 #ifdef CMP_MOREDEBUG
 int
-cmp_boxes (ccaddr_t box1, ccaddr_t box2, collation_t *collation1, collation_t *collation2)
+cmp_boxes (ccaddr_t box1, ccaddr_t box2, collation_t * collation1, collation_t * collation2)
 {
   int res_safe = cmp_boxes_safe (box1, box2, collation1, collation2);
   int res_old = cmp_boxes_old (box1, box2, collation1, collation2);
   if (res_safe != res_old)
     {
-      fprintf (stderr, "\n%s:%d\n*** cmp_box error: now it is %d, safe is %d: ",
-      __FILE__, __LINE__, res_old, res_safe );
+      fprintf (stderr, "\n%s:%d\n*** cmp_box error: now it is %d, safe is %d: ", __FILE__, __LINE__, res_old, res_safe);
       dbg_print_box (box1, stderr);
       fprintf (stderr, ", ");
       dbg_print_box (box2, stderr);
@@ -895,14 +891,20 @@ typedef int (*numeric_bop_t) (numeric_t z, numeric_t x, numeric_t y);
 
 
 caddr_t
-numeric_bin_op (numeric_bop_t num_op, numeric_t x, numeric_t y, caddr_t * qst,
-    state_slot_t * target)
+numeric_bin_op (numeric_bop_t num_op, numeric_t x, numeric_t y, caddr_t * qst, state_slot_t * target)
 {
   int rc;
   caddr_t res_box = NULL;
   if (target)
     {
-      res_box = QST_GET (qst, target);
+      if (SSL_VEC == target->ssl_type)
+	{
+	  data_col_t *dc = QST_BOX (data_col_t *, qst, target->ssl_index);
+	  if (DCT_BOXES & dc->dc_type && ((QI *) qst)->qi_set < dc->dc_n_values)
+	    res_box = ((caddr_t *) dc->dc_values)[((QI *) qst)->qi_set];
+	}
+      else
+	res_box = QST_GET (qst, target);
       if (DV_NUMERIC == DV_TYPE_OF (res_box))
 	{
 	  rc = num_op ((numeric_t) res_box, x, y);
@@ -991,7 +993,7 @@ retry_rdf_boxes: \
 null_result: \
   if (target) \
     { \
-      qst_set_bin_string (qst, target, NULL, 0, DV_DB_NULL); \
+      qst_set_null (qst, target); \
       return NULL; \
     } \
   return (dk_alloc_box (0, DV_DB_NULL)); \
@@ -1008,64 +1010,60 @@ retry_rdf_boxes:
   NUM_TO_MEM (dn1, dtp1, box1);
   NUM_TO_MEM (dn2, dtp2, box2);
   if (dtp1 == DV_DB_NULL || dtp2 == DV_DB_NULL)
-    goto null_result; \
-  if (n_coerce ((caddr_t) & dn1, (caddr_t) & dn2,
-	  dtp1, dtp2, &res_dtp))
+    goto null_result;
+  if (n_coerce ((caddr_t) & dn1, (caddr_t) & dn2, dtp1, dtp2, &res_dtp))
     {
       switch (res_dtp)
 	{
 	case DV_LONG_INT:
-	  if (0 == *(boxint *) &dn2)
+	  if (0 == *(boxint *) & dn2)
 	    sqlr_new_error ("22012", "SR088", "Division by 0.");
 	  if (target)
-	    return (qst_set_long (qst, target,
-		(*(boxint *) &dn1 % * (boxint *) &dn2)), (caddr_t) 0);
-	  return (box_num (*(boxint *) &dn1 % * (boxint *) &dn2));
+	    return (qst_set_long (qst, target, (*(boxint *) & dn1 % *(boxint *) & dn2)), (caddr_t) 0);
+	  return (box_num (*(boxint *) & dn1 % *(boxint *) & dn2));
 	case DV_SINGLE_FLOAT:
 	  if (0 == *(float *) &dn2)
 	    sqlr_new_error ("22012", "SR089", "Division by 0.");
 	  if (target)
-	    return (qst_set_float (qst, target,
-		(float) fmod (*(float *) &dn1,  * (float *) &dn2)), (caddr_t) 0);
-	  return (box_float ((float) fmod (*(float *) &dn1, * (float *) &dn2)));
+	    return (qst_set_float (qst, target, (float) fmod (*(float *) &dn1, *(float *) &dn2)), (caddr_t) 0);
+	  return (box_float ((float) fmod (*(float *) &dn1, *(float *) &dn2)));
 	case DV_DOUBLE_FLOAT:
-	  if (0 == *(double*) &dn2)
+	  if (0 == *(double *) &dn2)
 	    sqlr_new_error ("22012", "SR090", "Division by 0.");
 	  if (target)
-	    return (qst_set_double (qst, target, fmod (*(double*) &dn1, *(double*) &dn2)), (caddr_t) 0);
-	  return (box_double (fmod (*(double*) &dn1, *(double*) &dn2)));
+	    return (qst_set_double (qst, target, fmod (*(double *) &dn1, *(double *) &dn2)), (caddr_t) 0);
+	  return (box_double (fmod (*(double *) &dn1, *(double *) &dn2)));
 	case DV_NUMERIC:
-	  return (numeric_bin_op (numeric_modulo, (numeric_t) &dn1, (numeric_t) &dn2, qst, target));
+	  return (numeric_bin_op (numeric_modulo, (numeric_t) & dn1, (numeric_t) & dn2, qst, target));
 	}
     }
   else
     {
       if (dtp1 == DV_RDF || dtp2 == DV_RDF)
-        {
-          if (dtp1 == DV_RDF)
-            box1 = ((rdf_box_t *)(box1))->rb_box;
-          if (dtp2 == DV_RDF)
-            box2 = ((rdf_box_t *)(box2))->rb_box;
-          goto retry_rdf_boxes;
-        }
-      if (((query_instance_t *)qst)->qi_query->qr_no_cast_error)
-        goto null_result; /* see below */
+	{
+	  if (dtp1 == DV_RDF)
+	    box1 = ((rdf_box_t *) (box1))->rb_box;
+	  if (dtp2 == DV_RDF)
+	    box2 = ((rdf_box_t *) (box2))->rb_box;
+	  goto retry_rdf_boxes;
+	}
+      if (((query_instance_t *) qst)->qi_query->qr_no_cast_error)
+	goto null_result;	/* see below */
       sqlr_new_error ("22003", "SR087", "Non numeric arguments to arithmetic operation modulo");
     }
-null_result: \
-  if (target) \
-    { \
-      qst_set_bin_string (qst, target, NULL, 0, DV_DB_NULL); \
-      return NULL; \
-    } \
-  return (dk_alloc_box (0, DV_DB_NULL)); \
+null_result:
+  if (target)
+    {
+      qst_set_bin_string (qst, target, NULL, 0, DV_DB_NULL);
+      return NULL;
+    }
+  return (dk_alloc_box (0, DV_DB_NULL));
 }
 
-ARTM_BIN_FUNC (box_add, +, numeric_add, 0)
-ARTM_BIN_FUNC (box_sub, -, numeric_subtract, 0)
-ARTM_BIN_FUNC (box_mpy, *, numeric_multiply, 0)
-ARTM_BIN_FUNC (box_div, /, numeric_divide, 1)
 
+ARTM_BIN_FUNC (box_add, +, numeric_add, 0);
+ARTM_BIN_FUNC (box_sub, -, numeric_subtract, 0);
+ARTM_BIN_FUNC (box_mpy, *, numeric_multiply, 0) ARTM_BIN_FUNC (box_div, /, numeric_divide, 1);
 
 caddr_t
 box_identity (ccaddr_t arg, ccaddr_t ignore, caddr_t * qst, state_slot_t * target)
@@ -1093,14 +1091,16 @@ Operands of the same type compare natively.
 */
 
 #if defined(WIN32) || defined (SOLARIS)
-double trunc (double x)
+double
+trunc (double x)
 {
   if (x >= 0)
-    return floor(x);
+    return floor (x);
   else
-    return ceil(x);
+    return ceil (x);
 }
 #endif
+
 
 int
 dvc_int_double (int64 i, double d)
@@ -1111,12 +1111,12 @@ dvc_int_double (int64 i, double d)
   int r;
   if (d > MIN_INT_DOUBLE && d < MAX_INT_DOUBLE && trunc (d) == d)
     {
-      int64 i2 = (int64)d;
+      int64 i2 = (int64) d;
       return NUM_COMPARE (i, i2);
     }
-  if (d > -1 && d< 1)
-    return NUM_COMPARE (((double)i), d);
-  r = NUM_COMPARE ((double)i, d);
+  if (d > -1 && d < 1)
+    return NUM_COMPARE (((double) i), d);
+  r = NUM_COMPARE ((double) i, d);
   if (DVC_MATCH == r)
     {
       /* if int and double look like eq and the double is outside the int precise int range, then the int is seen as farther from zero */
@@ -1135,8 +1135,8 @@ dvc_num_double (numeric_t num1, double d2)
   if (d2 > MIN_INT_DOUBLE && d2 < MAX_INT_DOUBLE && trunc (d2) == d2)
     {
       NUMERIC_VAR (num2);
-      numeric_from_double ((numeric_t)num2, d2);
-      return numeric_compare_dvc ((numeric_t)num1, (numeric_t)num2);
+      numeric_from_double ((numeric_t) num2, d2);
+      return numeric_compare_dvc ((numeric_t) num1, (numeric_t) num2);
     }
   numeric_to_double (num1, &d1);
   if (d1 == d2)
@@ -1153,20 +1153,21 @@ dvc_num_double (numeric_t num1, double d2)
   return DVC_GREATER;
 }
 
+
 int
 dvc_int_num (int64 i, numeric_t n2)
 {
   NUMERIC_VAR (n1);
-  numeric_from_int64 ((numeric_t)n1, i);
-  return numeric_compare_dvc ((numeric_t)n1, (numeric_t)n2);
+  numeric_from_int64 ((numeric_t) n1, i);
+  return numeric_compare_dvc ((numeric_t) n1, (numeric_t) n2);
 }
 
 
 #define REV(x) \
   { \
-  int __r = x; \
-return __r == DVC_LESS ? DVC_GREATER : (__r == DVC_MATCH ? DVC_MATCH : DVC_LESS); \
-}
+    int __r = x; \
+    return __r == DVC_LESS ? DVC_GREATER : (__r == DVC_MATCH ? DVC_MATCH : DVC_LESS); \
+  }
 
 
 int
@@ -1174,12 +1175,12 @@ dv_num_compare (numeric_t dn1, numeric_t dn2, dtp_t dtp1, dtp_t dtp2)
 {
   if (DV_SINGLE_FLOAT == dtp1)
     {
-      *(double *)dn1 = *(float *)dn1;
+      *(double *) dn1 = *(float *) dn1;
       dtp1 = DV_DOUBLE_FLOAT;
     }
   if (DV_SINGLE_FLOAT == dtp2)
     {
-      *(double *)dn2 = *(float *)dn2;
+      *(double *) dn2 = *(float *) dn2;
       dtp2 = DV_DOUBLE_FLOAT;
     }
 
@@ -1188,14 +1189,14 @@ dv_num_compare (numeric_t dn1, numeric_t dn2, dtp_t dtp1, dtp_t dtp2)
       switch (dtp1)
 	{
 	case DV_LONG_INT:
-	  return NUM_COMPARE (*(int64*)dn1, *(int64*)dn2);
-	  case DV_DOUBLE_FLOAT:
-	    return NUM_COMPARE (*(double *) dn1, *(double *) dn2);
-	  case DV_NUMERIC:
-	    return (numeric_compare_dvc ((numeric_t) dn1, (numeric_t) dn2));
-	  default:
-	    GPF_T;		/* Impossible num type combination */
-	  }
+	  return NUM_COMPARE (*(int64 *) dn1, *(int64 *) dn2);
+	case DV_DOUBLE_FLOAT:
+	  return NUM_COMPARE (*(double *) dn1, *(double *) dn2);
+	case DV_NUMERIC:
+	  return (numeric_compare_dvc ((numeric_t) dn1, (numeric_t) dn2));
+	default:
+	  GPF_T;		/* Impossible num type combination */
+	}
     }
   switch (dtp1)
     {
@@ -1203,31 +1204,552 @@ dv_num_compare (numeric_t dn1, numeric_t dn2, dtp_t dtp1, dtp_t dtp2)
       switch (dtp2)
 	{
 	case DV_NUMERIC:
-	  return dvc_int_num (*(int64*)dn1, dn2);
+	  return dvc_int_num (*(int64 *) dn1, dn2);
 	case DV_DOUBLE_FLOAT:
-	  return dvc_int_double (*(int64*)dn1, *(double*)dn2);
-	default: GPF_T1 ("bad num compare combination");
+	  return dvc_int_double (*(int64 *) dn1, *(double *) dn2);
+	default:
+	  GPF_T1 ("bad num compare combination");
 	}
     case DV_DOUBLE_FLOAT:
       switch (dtp2)
 	{
 	case DV_LONG_INT:
-	  REV (dvc_int_double (*(int64*)dn2,  *(double*) dn1));
+	  REV (dvc_int_double (*(int64 *) dn2, *(double *) dn1));
 	case DV_NUMERIC:
-	  REV (dvc_num_double (dn2, *(double*)dn1));
-	default: GPF_T1 ("bad num compare combination");
+	  REV (dvc_num_double (dn2, *(double *) dn1));
+	default:
+	  GPF_T1 ("bad num compare combination");
 	}
     case DV_NUMERIC:
       switch (dtp2)
 	{
 	case DV_LONG_INT:
-	  REV (dvc_int_num (*(int64*)dn2, (numeric_t)dn1));
+	  REV (dvc_int_num (*(int64 *) dn2, (numeric_t) dn1));
 	case DV_DOUBLE_FLOAT:
-	  return dvc_num_double ((numeric_t)dn1, *(double*)dn2);
-	default: GPF_T1 ("bad num compare combination");
+	  return dvc_num_double ((numeric_t) dn1, *(double *) dn2);
+	default:
+	  GPF_T1 ("bad num compare combination");
 	}
-    default: GPF_T1 ("bad num compare combination");
+    default:
+      GPF_T1 ("bad num compare combination");
     }
   return 0;
 }
 
+/* type specific vectored ops */
+
+
+#include "simd.h"
+
+
+void
+artm_const_cast (double *target, dtp_t target_dtp, caddr_t c, int n)
+{
+  int inx;
+  dtp_t dtp = DV_TYPE_OF (c);
+  switch (target_dtp)
+    {
+    case DV_DOUBLE_FLOAT:
+      {
+	double dc;
+	switch (dtp)
+	  {
+	  case DV_LONG_INT:
+	    dc = (double) unbox_inline (c);
+	    break;
+	  case DV_SINGLE_FLOAT:
+	    dc = (double) unbox_float (c);
+	    break;
+	  case DV_DOUBLE_FLOAT:
+	    dc = unbox_double (c);
+	    break;
+	  case DV_NUMERIC:
+	    numeric_to_double ((numeric_t) c, &dc);
+	    break;
+	  }
+	for (inx = 0; inx < n; inx++)
+	  target[inx] = dc;
+	break;
+      }
+    case DV_SINGLE_FLOAT:
+      {
+	float dc;
+	switch (dtp)
+	  {
+	  case DV_LONG_INT:
+	    dc = (float) unbox_inline (c);
+	    break;
+	  case DV_SINGLE_FLOAT:
+	    dc = (double) unbox_float (c);
+	    break;
+	  }
+	for (inx = 0; inx < n; inx++)
+	  ((float *) target)[inx] = dc;
+	break;
+      }
+    case DV_LONG_INT:
+      {
+	int64 dc;
+	switch (dtp)
+	  {
+	  case DV_LONG_INT:
+	    dc = unbox_inline (c);
+	    break;
+	  default:
+	    GPF_T1 ("should not cast down in artmm");
+	  }
+	for (inx = 0; inx < n; inx++)
+	  ((int64 *) target)[inx] = dc;
+	break;
+      }
+    }
+}
+
+
+typedef void (*dc_artm_cast_t) (double *target, data_col_t * dc, int *sets, int first_set, int n);
+
+
+void
+artm_float_to_double (double *target, data_col_t * dc, int *sets, int first_set, int n)
+{
+  int inx, fill = 0;
+  if (sets)
+    {
+      for (inx = 0; inx < n; inx++)
+	target[fill++] = (double) ((float *) dc->dc_values)[sets[inx]];
+    }
+  else
+    {
+      n += first_set;
+      for (inx = first_set; inx < n; inx++)
+	target[fill++] = (double) ((float *) dc->dc_values)[inx];
+    }
+}
+
+
+void
+artm_int_to_int (double *target, data_col_t * dc, int *sets, int first_set, int n)
+{
+  int inx, fill = 0;
+  if (sets)
+    {
+      for (inx = 0; inx < n; inx++)
+	((int64 *) target)[fill++] = ((int64 *) dc->dc_values)[sets[inx]];
+    }
+  else
+    GPF_T1 ("int to int cast with no sslr");
+}
+
+
+void
+artm_float_to_float (double *target, data_col_t * dc, int *sets, int first_set, int n)
+{
+  int inx, fill = 0;
+  if (sets)
+    {
+      for (inx = 0; inx < n; inx++)
+	((float *) target)[fill++] = ((float *) dc->dc_values)[sets[inx]];
+    }
+  else
+    GPF_T1 ("int to int cast with no sslr");
+}
+
+void
+artm_int_to_double (double *target, data_col_t * dc, int *sets, int first_set, int n)
+{
+  int inx, fill = 0;
+  if (sets)
+    {
+      for (inx = 0; inx < n; inx++)
+	target[fill++] = (double) ((int64 *) dc->dc_values)[sets[inx]];
+    }
+  else
+    {
+      n += first_set;
+      for (inx = first_set; inx < n; inx++)
+	target[fill++] = (double) ((int64 *) dc->dc_values)[inx];
+    }
+}
+
+
+void
+artm_int_to_float (double *target, data_col_t * dc, int *sets, int first_set, int n)
+{
+  int inx, fill = 0;
+  if (sets)
+    {
+      for (inx = 0; inx < n; inx++)
+	((float *) target)[fill++] = (float) ((int64 *) dc->dc_values)[sets[inx]];
+    }
+  else
+    {
+      n += first_set;
+      for (inx = first_set; inx < n; inx++)
+	((float *) target)[fill++] = (float) ((int64 *) dc->dc_values)[inx];
+    }
+}
+
+
+dtp_t
+ssl_artm_dtp (caddr_t * inst, state_slot_t * ssl)
+{
+  dtp_t dtp;
+  if (SSL_CONSTANT == ssl->ssl_type)
+    dtp = DV_TYPE_OF (ssl->ssl_constant);
+  else if (SSL_VEC == ssl->ssl_type || SSL_REF == ssl->ssl_type)
+    {
+      data_col_t *dc = QST_BOX (data_col_t *, inst, ssl->ssl_index);
+      if (dc->dc_any_null || !(DCT_NUM_INLINE & dc->dc_type))
+	return DV_ANY;
+      return dc->dc_dtp;
+    }
+  else
+    {
+      caddr_t d = qst_get (inst, ssl);
+      dtp = DV_TYPE_OF (d);
+    }
+  if (DV_LONG_INT == dtp || DV_SINGLE_FLOAT == dtp || DV_DOUBLE_FLOAT == dtp)
+    return dtp;
+  return DV_ANY;
+}
+
+
+#define ACF(target, source)  (target << 8 | source)
+
+
+dc_artm_cast_t
+dc_artm_cast_f (dtp_t target_dtp, dtp_t source_dtp)
+{
+  switch (ACF (target_dtp, source_dtp))
+    {
+    case ACF (DV_SINGLE_FLOAT, DV_LONG_INT):
+      return artm_int_to_float;
+    case ACF (DV_DOUBLE_FLOAT, DV_LONG_INT):
+      return artm_int_to_double;
+    case ACF (DV_DOUBLE_FLOAT, DV_SINGLE_FLOAT):
+      return artm_float_to_double;
+    case ACF (DV_LONG_INT, DV_LONG_INT):
+    case ACF (DV_DOUBLE_FLOAT, DV_DOUBLE_FLOAT):
+      return artm_int_to_int;
+    case ACF (DV_SINGLE_FLOAT, DV_SINGLE_FLOAT):
+      return artm_float_to_float;
+    }
+  return NULL;
+}
+
+
+int64 *
+ssl_artm_param (caddr_t * inst, state_slot_t * ssl, int64 * target, dtp_t target_dtp, int set, int n_sets)
+{
+  dc_artm_cast_t f;
+  if (SSL_VEC == ssl->ssl_type)
+    {
+      data_col_t *dc = QST_BOX (data_col_t *, inst, ssl->ssl_index);
+      if (target_dtp == dc->dc_dtp)
+	{
+	  if (DV_SINGLE_FLOAT == target_dtp)
+	    return (int64 *) & ((float *) dc->dc_values)[set];
+	  return &((int64 *) dc->dc_values)[set];
+	}
+      f = dc_artm_cast_f (target_dtp, dc->dc_dtp);
+      f ((double *) target, dc, NULL, set, n_sets);
+      return target;
+    }
+  if (SSL_REF == ssl->ssl_type)
+    {
+      data_col_t *dc = QST_BOX (data_col_t *, inst, ssl->ssl_index);
+      int sets[ARTM_VEC_LEN];
+      sslr_n_consec_ref (inst, (state_slot_ref_t *) ssl, sets, set, n_sets);
+      f = dc_artm_cast_f (target_dtp, dc->dc_dtp);
+      f ((double *) target, dc, sets, 0, n_sets);
+      return target;
+    }
+  artm_const_cast ((double *) target, target_dtp, qst_get (inst, ssl), n_sets);
+  return target;
+}
+
+
+#define ARTM_VEC(name, tp, vect, vec_len, op, is_div) \
+void \
+name (int64* res, int64 * l, int64* r, int n) \
+{ \
+  int inx; \
+  if (is_div) \
+    for (inx = 0; inx < n; inx++) \
+      if (0 == ((tp*)r)[inx]) \
+	sqlr_new_error ("22012", "SR084", "Division by 0."); \
+  for (inx = 0; 0 && inx <= n - 2 * vec_len; inx += 2 * vec_len) \
+    { \
+      *(vect*)&((tp*)res)[inx] = *(vect*)&((tp*)l)[inx] op  *(vect*)&((tp*)r)[inx]; \
+      *(vect*)&((tp*)res)[inx + vec_len] = *(vect*)&((tp*)l)[inx + vec_len] op *(vect*)&((tp*)r)[inx + vec_len]; \
+    } \
+  for (inx = 0; inx < n; inx++) \
+    ((tp*)res)[inx] = ((tp*)l)[inx] op ((tp*)r)[inx]; \
+}
+
+
+ARTM_VEC (artm_add_int, int64, v2di_t, 2, +, 0);
+ARTM_VEC (artm_add_float, float, v4sf_t, 4, +, 0);
+ARTM_VEC (artm_add_double, double, v2df_t, 2, +, 0);
+
+ARTM_VEC (artm_sub_int, int64, v2di_t, 2, -, 0);
+ARTM_VEC (artm_sub_float, float, v4sf_t, 4, -, 0);
+ARTM_VEC (artm_sub_double, double, v2df_t, 2, -, 0);
+
+ARTM_VEC (artm_mpy_int, int64, v2di_t, 2, *, 0);
+ARTM_VEC (artm_mpy_float, float, v4sf_t, 4, *, 0);
+ARTM_VEC (artm_mpy_double, double, v2df_t, 2, *, 0);
+
+ARTM_VEC (artm_div_int, int64, v2di_t, 2, /, 1);
+ARTM_VEC (artm_div_float, float, v4sf_t, 4, /, 1);
+ARTM_VEC (artm_div_double, double, v2df_t, 2, /, 1);
+
+
+artm_vec_f vec_adds[3] = { artm_add_int, artm_add_float, artm_add_double };
+artm_vec_f vec_subs[3] = { artm_sub_int, artm_sub_float, artm_sub_double };
+artm_vec_f vec_mpys[3] = { artm_mpy_int, artm_mpy_float, artm_mpy_double };
+artm_vec_f vec_divs[3] = { artm_div_int, artm_div_float, artm_div_double };
+
+
+int
+artm_vec (caddr_t * inst, instruction_t * ins, artm_vec_f * ops)
+{
+  data_col_t *res_dc = QST_BOX (data_col_t *, inst, ins->_.artm.result->ssl_index);
+  state_slot_t *l = ins->_.artm.left;
+  state_slot_t *r = ins->_.artm.right;
+  artm_vec_f op;
+  QNCAST (query_instance_t, qi, inst);
+  vn_temp_t vn_temp_1;
+  vn_temp_t vn_temp_2;
+  int inx;
+  dtp_t target_dtp;
+  dtp_t l_dtp = ssl_artm_dtp (inst, l);
+  dtp_t r_dtp = ssl_artm_dtp (inst, r);
+  int n_sets = qi->qi_n_sets;
+  if (DV_ANY == l_dtp || DV_ANY == r_dtp || SSL_VEC != ins->_.artm.result->ssl_type)
+    return 0;
+  target_dtp = MAX (l_dtp, r_dtp);
+  DC_CHECK_LEN (res_dc, n_sets - 1);
+  switch (target_dtp)
+    {
+    case DV_LONG_INT:
+      op = ops[0];
+      break;
+    case DV_SINGLE_FLOAT:
+      op = ops[1];
+      break;
+    case DV_DOUBLE_FLOAT:
+      op = ops[2];
+      break;
+    default:
+      return 0;
+    }
+  if (DCT_BOXES & res_dc->dc_type)
+    return 0;
+  if (DV_ANY == res_dc->dc_dtp)
+    {
+      dc_reset (res_dc);
+      dc_convert_empty (res_dc, target_dtp);
+    }
+  for (inx = 0; inx < n_sets; inx += ARTM_VEC_LEN)
+    {
+      int n = MIN (ARTM_VEC_LEN, n_sets - inx);
+      int64 *la, *ra;
+      int64 *res = (DV_SINGLE_FLOAT == target_dtp) ? (int64 *) & ((float *) res_dc->dc_values)[inx]
+	  : &((int64 *) res_dc->dc_values)[inx];
+      if (!inx || (SSL_VEC == l->ssl_type || SSL_REF == l->ssl_type))
+	la = ssl_artm_param (inst, l, (int64 *) & vn_temp_1.i, target_dtp, inx, n);
+      if (!inx || (SSL_VEC == r->ssl_type || SSL_REF == r->ssl_type))
+	ra = ssl_artm_param (inst, r, (int64 *) & vn_temp_2.i, target_dtp, inx, n);
+
+      op (res, la, ra, n);
+    }
+  res_dc->dc_n_values = n_sets;
+  return 1;
+}
+
+
+ins_dc_artm_t dc_artm_funcs[20];
+ins_dc_artm_t dc_artm_1_funcs[20];
+ins_dc_cmp_t dc_cmp_funcs[10];
+ins_dc_cmp_1_t dc_cmp_1_funcs[10];
+
+
+void
+dc_add_int_1 (instruction_t * ins, caddr_t * inst)
+{
+  QNCAST (query_instance_t, qi, inst);
+  data_col_t *dc1 = QST_BOX (data_col_t *, inst, ins->_.artm.left->ssl_index);
+  data_col_t *dc2 = QST_BOX (data_col_t *, inst, ins->_.artm.right->ssl_index);
+  data_col_t *res = QST_BOX (data_col_t *, inst, ins->_.artm.result->ssl_index);
+  int set1, set2;
+  set1 = set2 = qi->qi_set;
+  DC_CHECK_LEN (res, qi->qi_n_sets);
+  if (!res->dc_any_null && (dc1->dc_any_null || dc2->dc_any_null))
+    dc_ensure_null_bits (res);
+
+  if (SSL_REF == ins->_.artm.left->ssl_type)
+    set1 = sslr_set_no (inst, ins->_.artm.left, set1);
+  if (SSL_REF == ins->_.artm.right->ssl_type)
+    set2 = sslr_set_no (inst, ins->_.artm.right, set2);
+  if ((dc1->dc_nulls && DC_IS_NULL (dc1, set1)) || (dc2->dc_nulls && DC_IS_NULL (dc2, set2)))
+    {
+      DC_SET_NULL (res, qi->qi_set);
+    }
+  else
+    {
+      ((int64 *) res->dc_values)[qi->qi_set] = ((int64 *) dc1->dc_values)[set1] + ((int64 *) dc2->dc_values)[set2];
+    }
+  res->dc_n_values = MAX (res->dc_n_values, qi->qi_set + 1);
+}
+
+
+void
+dc_add_int (instruction_t * ins, caddr_t * inst)
+{
+  QNCAST (query_instance_t, qi, inst);
+  data_col_t *dc1 = QST_BOX (data_col_t *, inst, ins->_.artm.left->ssl_index);
+  data_col_t *dc2 = QST_BOX (data_col_t *, inst, ins->_.artm.right->ssl_index);
+  data_col_t *res = QST_BOX (data_col_t *, inst, ins->_.artm.result->ssl_index);
+  int set1, set2, last = -1;
+  int set, first_set = 0, n_sets = qi->qi_n_sets;
+  db_buf_t set_mask = qi->qi_set_mask;
+  DC_CHECK_LEN (res, n_sets);
+  if ((dc1->dc_any_null || dc2->dc_any_null) && !res->dc_nulls)
+    dc_ensure_null_bits (res);
+  SET_LOOP
+  {
+    last = set1 = set2 = set;
+    if (SSL_REF == ins->_.artm.left->ssl_type)
+      set1 = sslr_set_no (inst, ins->_.artm.left, set1);
+    if (SSL_REF == ins->_.artm.right->ssl_type)
+      set2 = sslr_set_no (inst, ins->_.artm.right, set2);
+    if ((dc1->dc_nulls && DC_IS_NULL (dc1, set1)) || (dc2->dc_nulls && DC_IS_NULL (dc2, set2)))
+      {
+	DC_SET_NULL (res, qi->qi_set);
+      }
+    else
+      {
+	((int64 *) res->dc_values)[qi->qi_set] = ((int64 *) dc1->dc_values)[set1] + ((int64 *) dc2->dc_values)[set2];
+      }
+  }
+  END_SET_LOOP;
+  res->dc_n_values = MAX (res->dc_n_values, last + 1);
+}
+
+
+int
+dc_cmp_int_1 (instruction_t * ins, caddr_t * inst)
+{
+  QNCAST (query_instance_t, qi, inst);
+  data_col_t *dc1 = QST_BOX (data_col_t *, inst, ins->_.cmp.left->ssl_index);
+  data_col_t *dc2 = QST_BOX (data_col_t *, inst, ins->_.cmp.right->ssl_index);
+  int set1, set2;
+  int64 i1, i2;
+  set1 = set2 = qi->qi_set;
+  if (SSL_REF == ins->_.artm.left->ssl_type)
+    set1 = sslr_set_no (inst, ins->_.artm.left, set1);
+  if (SSL_REF == ins->_.artm.right->ssl_type)
+    set2 = sslr_set_no (inst, ins->_.artm.right, set2);
+  if ((dc1->dc_nulls && DC_IS_NULL (dc1, set1)) || (dc2->dc_nulls && DC_IS_NULL (dc2, set2)))
+    return DVC_UNKNOWN;
+  i1 = ((int64 *) dc1->dc_values)[set1];
+  i2 = ((int64 *) dc2->dc_values)[set2];
+  return NUM_COMPARE (i1, i2);
+}
+
+
+int
+dc_cmp_int (instruction_t * ins, caddr_t * inst, db_buf_t bits)
+{
+  int unk_is_fail = ins->_.cmp.unkn == ins->_.cmp.fail, flag;
+  QNCAST (query_instance_t, qi, inst);
+  data_col_t *dc1 = QST_BOX (data_col_t *, inst, ins->_.cmp.left->ssl_index);
+  data_col_t *dc2 = QST_BOX (data_col_t *, inst, ins->_.cmp.right->ssl_index);
+  int n_true = 0, n_false = 0;
+  int set1, set2;
+  int64 i1, i2;
+  int set, n_sets = qi->qi_n_sets, first_set = 0;
+  db_buf_t set_mask = qi->qi_set_mask;
+  SET_LOOP
+  {
+    set1 = set2 = set;
+    if (SSL_REF == ins->_.artm.left->ssl_type)
+      set1 = sslr_set_no (inst, ins->_.artm.left, set1);
+    if (SSL_REF == ins->_.artm.right->ssl_type)
+      set2 = sslr_set_no (inst, ins->_.artm.right, set2);
+    if ((dc1->dc_nulls && DC_IS_NULL (dc1, set1)) || (dc2->dc_nulls && DC_IS_NULL (dc2, set2)))
+      flag = unk_is_fail ? 0 : ins->_.cmp.op;
+    else
+      {
+	i1 = ((int64 *) dc1->dc_values)[set1];
+	i2 = ((int64 *) dc2->dc_values)[set2];
+	flag = NUM_COMPARE (i1, i2);
+      }
+    if (flag & ins->_.cmp.op)
+      {
+	SET_MASK_SET (bits, set);
+	n_true++;
+      }
+    else
+      n_false++;
+  }
+  END_SET_LOOP;
+  return n_true && n_false ? 2 : n_true ? 1 : 0;
+}
+
+
+void
+dc_asg_64_1 (instruction_t * ins, caddr_t * inst)
+{
+  QNCAST (query_instance_t, qi, inst);
+  data_col_t *dc1 = QST_BOX (data_col_t *, inst, ins->_.artm.left->ssl_index);
+  data_col_t *res = QST_BOX (data_col_t *, inst, ins->_.artm.result->ssl_index);
+  int set1;
+  DC_CHECK_LEN (res, qi->qi_n_sets);
+  set1 = qi->qi_set;
+  if (SSL_REF == ins->_.artm.left->ssl_type)
+    set1 = sslr_set_no (inst, ins->_.artm.left, set1);
+  if (dc1->dc_nulls && DC_IS_NULL (dc1, set1))
+    {
+      if (!res->dc_nulls)
+	dc_ensure_null_bits (res);
+      DC_SET_NULL (res, qi->qi_set);
+    }
+  else
+    {
+      ((int64 *) res->dc_values)[qi->qi_set] = ((int64 *) dc1->dc_values)[set1];
+    }
+  res->dc_n_values = MAX (res->dc_n_values, qi->qi_set + 1);
+}
+
+
+void
+dc_asg_64 (instruction_t * ins, caddr_t * inst)
+{
+  QNCAST (query_instance_t, qi, inst);
+  data_col_t *dc1 = QST_BOX (data_col_t *, inst, ins->_.artm.left->ssl_index);
+  data_col_t *res = QST_BOX (data_col_t *, inst, ins->_.artm.result->ssl_index);
+  int set1, last = -1;
+  int set, first_set = 0, n_sets = qi->qi_n_sets;
+  db_buf_t set_mask = qi->qi_set_mask;
+  DC_CHECK_LEN (res, qi->qi_n_sets - 1);
+  if (dc1->dc_any_null && !res->dc_any_null)
+    dc_ensure_null_bits (res);
+  SET_LOOP
+  {
+    last = set1 = set;
+    if (SSL_REF == ins->_.artm.left->ssl_type)
+      set1 = sslr_set_no (inst, ins->_.artm.left, set1);
+    if (dc1->dc_nulls && DC_IS_NULL (dc1, set1))
+      {
+	DC_SET_NULL (res, qi->qi_set);
+      }
+    else
+      {
+	((int64 *) res->dc_values)[qi->qi_set] = ((int64 *) dc1->dc_values)[set1];
+      }
+  }
+  END_SET_LOOP;
+  res->dc_n_values = MAX (res->dc_n_values, last + 1);
+}

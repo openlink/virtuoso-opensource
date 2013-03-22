@@ -1139,12 +1139,12 @@ rfc1808_expand_uri (/*query_instance_t *qi,*/ ccaddr_t base_uri, ccaddr_t rel_ur
     }
   if ((base_cs != buffer_cs_upcase) && !((NULL != base_cs) && (NULL != buffer_cs_upcase) && !strcmp (base_cs, buffer_cs_upcase)))
     {
-      base_uri = charset_recode_from_named_to_named ((query_instance_t *)NULL, (caddr_t)base_uri, base_cs, buffer_cs_upcase, &base_uri_is_temp, err_ret);
+      base_uri = charset_recode_from_named_to_named ((caddr_t)base_uri, base_cs, buffer_cs_upcase, &base_uri_is_temp, err_ret);
       if (err_ret[0]) goto res_complete; /* see below */
     }
   if ((rel_cs != buffer_cs_upcase) && !((NULL != rel_cs) && (NULL != buffer_cs_upcase) && !strcmp (rel_cs, buffer_cs_upcase)))
     {
-      rel_uri = charset_recode_from_named_to_named ((query_instance_t *)NULL, (caddr_t)rel_uri, rel_cs, buffer_cs_upcase, &rel_uri_is_temp, err_ret);
+      rel_uri = charset_recode_from_named_to_named ((caddr_t)rel_uri, rel_cs, buffer_cs_upcase, &rel_uri_is_temp, err_ret);
       if (err_ret[0]) goto res_complete; /* see below */
     }
   if ((NULL == base_uri) || ('\0' == base_uri[0]))
@@ -1350,7 +1350,7 @@ buffer_ready:
     ((NULL == buffer_cs_upcase) || (NULL == output_cs_upcase) || strcmp(buffer_cs_upcase, output_cs_upcase)) )
     {
       caddr_t boxed_buffer = box_dv_short_nchars (buffer, buf_tail - buffer);
-      res = charset_recode_from_named_to_named ((query_instance_t *)NULL, boxed_buffer, buffer_cs_upcase, output_cs_upcase, &res_is_new, err_ret);
+      res = charset_recode_from_named_to_named (boxed_buffer, buffer_cs_upcase, output_cs_upcase, &res_is_new, err_ret);
       if (res_is_new)
         dk_free_box (boxed_buffer);
       else
@@ -1562,6 +1562,32 @@ static char restricted_xml_chars[0x80] = {
   return NULL;
 }
 
+static const char *cl_sequence_set_text =
+" create procedure cl_sequence_set (in _name varchar, in _count int, in _mode int)\n"
+"{\n"
+"if (sys_stat (\'cl_master_host\') = sys_stat (\'cl_this_host\'))\n"
+"{\n"
+"__sequence_set (\'__MAX__\' || _name, 0, 0);\n"
+"__sequence_set (\'__NEXT__\' || _name, _count, _mode);\n"
+"__sequence_set (_name, _count, _mode);\n"
+"}\n"
+"else\n"
+"{\n"
+"__sequence_set (\'__MAX__\' || _name, 0, 0);\n"
+"__sequence_set (_name, 0, _mode);\n"
+"}\n"
+"}\n"
+;
+
+static const char *sequence_set_text =
+" create procedure sequence_set (in _name varchar, in _count int, in _mode int)\n"
+"{\n"
+"if (sys_stat (\'cl_run_local_only\') or _mode = 2)\n"
+"return __sequence_set (_name, _count, _mode);\n"
+"else\n"
+"cl_exec (\'cl_sequence_set (?, ?, ?)\', vector (_name, _count, _mode), txn => 1);\n"
+"}\n"
+;
 
 
 /*
@@ -1699,11 +1725,6 @@ bif_this_server (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   return NEW_DB_NULL;
 }
-static caddr_t
-bif_is_geometry (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  return box_num (0);
-}
 
 void
 sqlbif2_init (void)
@@ -1736,8 +1757,7 @@ sqlbif2_init (void)
   bif_define ("__stop_cpt", bif_stop_cpt);
   bif_define ("soundex", bif_soundex);
   bif_define ("difference", bif_difference);
-  bif_define ("repl_this_server", bif_this_server);
-  bif_define ("isgeometry", bif_is_geometry);
+  /*bif_define ("repl_this_server", bif_this_server);*/
   /*sqls_bif_init ();*/
   sqls_bif_init ();
   sqlo_inv_bif_int ();
@@ -1747,7 +1767,13 @@ void
 sqlbif_sequence_init (void)
 {
   /* sequence_set bifs */
+  ddl_std_proc_1 (sequence_set_text, 0x1, 1);
+  ddl_std_proc_1 (cl_sequence_set_text, 0x1, 1);
+  pl_bif_name_define ("cl_sequence_set");
+  pl_bif_name_define ("sequence_set");
+#if 0
   bif_define_typed ("sequence_set", bif_sequence_set, &bt_integer);
+#endif
 }
 
 /* This should stay the last part of the file */

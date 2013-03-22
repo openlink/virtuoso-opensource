@@ -165,7 +165,7 @@ tb_is_trig_at (dbe_table_t * tb, int event, int trig_time, caddr_t * col_names)
 
 
 void
-trig_call (query_t * qr, caddr_t * qst, state_slot_t ** args, dbe_table_t *calling_tb)
+trig_call_1 (query_t * qr, caddr_t * qst, state_slot_t ** args, dbe_table_t *calling_tb, int is_vec)
 {
   query_instance_t *qi = (query_instance_t *) qst;
   char auto_qi[AUTO_QI_DEFAULT_SZ];
@@ -202,26 +202,68 @@ trig_call (query_t * qr, caddr_t * qst, state_slot_t ** args, dbe_table_t *calli
   inx = 0;
   DO_SET (dbe_column_t *, col, &trig_key->key_parts)
     {
-      pars[inx] = (caddr_t) qst_address (qst, args[inx]);
+      pars[inx] = is_vec ? (caddr_t) args[inx] : (caddr_t) qst_address (qst, args[inx]);
       if (n_total_pars > trig_key_n_parts)
 	{
-	  caddr_t cast_value = row_set_col_cast (QST_GET (qst,
+	  caddr_t cast_value;
+	  if (is_vec)
+	    {
+	      pars[inx + trig_key_n_parts] = (caddr_t)  args[inx + calling_key_n_parts];
+	      continue;
+	    }
+	  cast_value = row_set_col_cast (QST_GET (qst,
 		args[inx + calling_key_n_parts]), &col->col_sqt, &err,
 	        col->col_id, trig_key, qst);
 
 	  if (cast_value)
-	    qst_set (qst, args[inx + calling_key_n_parts], cast_value);
+	    qst_set_with_ref (qst, args[inx + calling_key_n_parts], cast_value);
 
 	  pars[inx + trig_key_n_parts] = (caddr_t) qst_address (qst, args[inx + calling_key_n_parts]);
 	}
       inx = inx + 1;
     }
   END_DO_SET ();
+  if (is_vec)
+      err = qr_subq_exec_vec (qi->qi_client, qr, qi,
+			      (caddr_t *) & auto_qi, sizeof (auto_qi), (state_slot_t**)pars, NULL, NULL, NULL);
+  else
   err = qr_subq_exec (qi->qi_client, qr, qi,
       (caddr_t *) & auto_qi, sizeof (auto_qi), NULL, pars, NULL);
   dk_free_box ((caddr_t) pars);
   if (err != (caddr_t) SQL_SUCCESS && err != (caddr_t) SQL_NO_DATA_FOUND)
     sqlr_resignal (err);
+}
+
+
+void
+trig_call (query_t * qr, caddr_t * qst, state_slot_t ** args, dbe_table_t *calling_tb, data_source_t * qn)
+{
+  QNCAST (query_instance_t, qi, qst);
+  int is_vec = qn->src_sets;
+  if (!is_vec &&  qr->qr_proc_vectored)
+    trig_call_1 (qr, qst, args, calling_tb, 1);
+  else if (!is_vec && !qr->qr_proc_vectored)
+    trig_call_1 (qr, qst, args, calling_tb, 0);
+  else if (is_vec && !qr->qr_proc_vectored)
+    {
+      QNCAST (query_instance_t, qi, qst);
+      db_buf_t set_mask = NULL;
+      int set, first_set = 0, n_sets;
+      QN_N_SETS (qn, qi);
+      n_sets = qi->qi_n_sets;
+      qi->qi_set_mask = NULL;
+      SET_LOOP
+	{
+	  trig_call_1 (qr, qst, args, calling_tb, 0);
+	}
+      END_SET_LOOP;
+    }
+  else
+    {
+      QN_N_SETS (qn, qi);
+      qi->qi_set_mask = NULL;
+      trig_call_1 (qr, qst, args, calling_tb, 1);
+    }
 }
 
 
@@ -316,22 +358,21 @@ trig_wrapper (caddr_t * qst, state_slot_t ** args, dbe_table_t * tb,
 
   for (inx = 0; inx < fill; inx++)
     if (trigs[inx]->qr_trig_time == TRIG_BEFORE)
-      trig_call (trigs[inx], qst, args, tb);
+      trig_call (trigs[inx], qst, args, tb, qn);
 
   for (inx = 0; inx < fill; inx++)
     if (trigs[inx]->qr_trig_time == TRIG_INSTEAD)
       {
-	trig_call (trigs[inx], qst, args, tb);
+	trig_call (trigs[inx], qst, args, tb, qn);
 	instead = 1;
       }
 
   if (!instead)
     {
       qn_run (qn, qst, qst);
-      cl_trig_flush (qn_run, qn, qst);
       ROW_AUTOCOMMIT (qi);
     }
   for (inx = 0; inx < fill; inx++)
     if (trigs[inx]->qr_trig_time == TRIG_AFTER)
-      trig_call (trigs[inx], qst, args, tb);
+      trig_call (trigs[inx], qst, args, tb, qn);
 }

@@ -353,6 +353,8 @@
 %type <tree> ordering_spec
 %type <list> ordering_spec_commalist
 %type <box> opt_order_by_clause
+%type <box> grouping_set
+%type <list> grouping_set_list
 
 %type <tree> trigger_def
 %type <tree> trig_action
@@ -514,6 +516,7 @@
 %type <tree> alter_type_action
 %type <box> array_modifier
 %type <tree> cost_decl
+%type <tree> vectored_decl
 %type <list> cost_number_list
 %type <box> cost_number
 %type <tree> cluster_def
@@ -532,12 +535,16 @@
 %type <box> opt_index
 %type <list> colnum_commalist_2
 %type <box> colnum_commalist
+%type <list> vectored_list
+%type <tree> vectored_var
+%type <intval> opt_modify
+
 
 %token <box> TYPE FINAL_L METHOD CHECKED SYSTEM GENERATED SOURCE RESULT LOCATOR INSTANCE_L CONSTRUCTOR SELF_L OVERRIDING STYLE SQL_L GENERAL DETERMINISTIC NO_L CONTAINS READS DATA DISABLE_L NOVALIDATE_L ENABLE_L VALIDATE_L
 %token <box> MODIFIES INPUT CALLED ADA C COBOL FORTRAN MUMPS PASCAL_L PLI NAME_L TEXT_L JAVA INOUT_L REMOTE KEYSET VALUE PARAMETER VARIABLE ADMIN_L ROLE_L TEMPORARY CLR ATTRIBUTE
 %token <box> __SOAP_DOC __SOAP_DOCW __SOAP_HEADER __SOAP_HTTP __SOAP_NAME __SOAP_TYPE __SOAP_XML_TYPE __SOAP_FAULT __SOAP_DIME_ENC __SOAP_ENC_MIME __SOAP_OPTIONS FOREACH POSITION_L
 %token ARE REF STATIC_L SPECIFIC DYNAMIC COLUMN START_L
-%token __TAG_L RDF_BOX_L VECTOR_L
+%token __TAG_L RDF_BOX_L VECTOR_L VECTORED FOR_VECTORED FOR_ROWS NOT_VECTORED VECTORING
 
 %nonassoc ORDER FOR
 %left UNION EXCEPT
@@ -567,10 +574,10 @@
 %token PUBLIC REAL REFERENCES RESTRICT ROLLBACK ROLLUP SCHEMA SELECT SET
 %token SMALLINT SOME SQLCODE SQLERROR TABLE TO UNION
 %token UNIQUE UPDATE USER VALUES VIEW WHENEVER WHERE WITH WORK WITHOUT_L
-%token ARRAY
+%token ARRAY SETS
 
 /* Extensions */
-%token CONTIGUOUS OBJECT_ID BITMAPPED UNDER CLUSTER CLUSTERED VARCHAR VARBINARY BINARY LONG_L REPLACING SOFT HASH LOOP IRI_ID IRI_ID_8 SAME_AS TRANSITIVE QUIETCAST_L SPARQL_L
+%token CONTIGUOUS OBJECT_ID BITMAPPED UNDER CLUSTER __ELASTIC CLUSTERED VARCHAR VARBINARY BINARY LONG_L REPLACING SOFT HASH LOOP IRI_ID IRI_ID_8 SAME_AS TRANSITIVE QUIETCAST_L SPARQL_L
 
 /* Admin statements */
 %token SHUTDOWN CHECKPOINT BACKUP REPLICATION
@@ -923,7 +930,8 @@ column_def_opt
 	| NULLX			{ $$ = (ST *) NULL; }
 	| IDENTITY		{ $$ = (ST *) CO_IDENTITY; }
 	| IDENTITY '(' identity_opt_list ')'		{ $$ = t_listst (2, CO_IDENTITY, t_list_to_array ($3)); }
-	| PRIMARY KEY		 { $$ = t_listst (5, INDEX_DEF, NULL, NULL, NULL, (ST *) 0); }
+	| PRIMARY KEY '('opt_index_option_list ')'	{ $$ = t_listst (5, INDEX_DEF, NULL, NULL, NULL, $4); }
+	| PRIMARY KEY 		 { dk_set_t opts = sqlp_index_default_opts (NULL); caddr_t * oa = opts ? (caddr_t*)t_list_to_array (opts) : NULL; $$ = t_listst (5, INDEX_DEF, NULL, NULL, NULL, oa); }
 	| compression_spec { $$ = $1; }
 	| DEFAULT signed_literal	{ $$ = t_listst (2, COL_DEFAULT, $2); }
 	| COLLATE q_table_name	{ $$ = t_listst (2, COL_COLLATE, $2); }
@@ -940,8 +948,12 @@ column_def_opt
 		      NULL );
 		  $$ = t_listst (3, CHECK_XMLSCHEMA_CONSTR, check, NULL);
 		}
-	| UNIQUE		 { $$ = t_listst (5, UNIQUE_DEF, NULL, NULL, NULL,
-					    (ST *) t_list (1, t_box_string ("unique"))); }
+	| UNIQUE		 { dk_set_t opts = t_CONS (t_box_string ("unique"), sqlp_index_default_opts (NULL));
+	   $$ = t_listst (5, UNIQUE_DEF, NULL, NULL, NULL,
+			  t_list_to_array (opts) ); }
+	| UNIQUE '(' index_option_list ')'		 {  dk_set_t opts = t_CONS (t_box_string ("unique"), $3);
+	   $$ = t_listst (5, UNIQUE_DEF, NULL, NULL, NULL,
+			  (ST *) t_list_to_array (opts)); }
 	;
 
 column_xml_schema_def
@@ -990,6 +1002,7 @@ index_option
 	| BITMAPPED 	{ $$ = t_box_string ("bitmap"); }
 	| DISTINCT { $$ = t_box_string ("distinct"); }
 	| COLUMN { $$ = t_box_string ("column"); }
+	| NOT COLUMN { $$ = t_box_string ("not_column"); }
 	| NOT NULLX { $$ = t_box_string ("not_null"); }
 	| NO_L PRIMARY KEY REF { $$ = t_box_string ("no_pk"); }
 	| INDEX_NO_FILL { $$ = t_box_string ("no_fill"); }
@@ -1001,8 +1014,8 @@ index_option_list
 	;
 
 opt_index_option_list
-	: /* empty */		{ $$ = (ST *) 0; }
-	| index_option_list	{ $$ = (ST *) t_list_to_array ($1); }
+	: /* empty */		{ dk_set_t deflt = sqlp_index_default_opts (NULL); if (deflt) $$ = (ST *) t_list_to_array (deflt); else $$ = NULL; }
+	| index_option_list	{ $$ = (ST *) t_list_to_array (sqlp_index_default_opts ($1)); }
 	;
 
 create_index_def
@@ -1409,9 +1422,9 @@ ordering_spec_commalist
 
 ordering_spec
 	: scalar_exp opt_asc_desc
-		{ $$ = t_listst (3, ORDER_BY, (caddr_t) $1, (ptrlong) $2);  }
+		{ $$ = t_listst (4, ORDER_BY, (caddr_t) $1, (ptrlong) $2, NULL);  }
 	|  mssql_xml_col opt_asc_desc
-		{ $$ = (ST*) t_list (3, ORDER_BY, t_list (3, COL_DOTTED, NULL, sqlp_xml_col_name ($1)), (ptrlong) $2); }
+		{ $$ = (ST*) t_list (4, ORDER_BY, t_list (3, COL_DOTTED, NULL, sqlp_xml_col_name ($1)), (ptrlong) $2, NULL); }
 	;
 
 opt_asc_desc
@@ -1684,6 +1697,10 @@ sql_option
 	| SAME_AS { $$ = t_CONS (OPT_SAME_AS, t_CONS (1, NULL)); }
 	| ARRAY { $$ = t_CONS (OPT_ARRAY, t_CONS (1, NULL)); }
 	| HASH { $$ = t_CONS (OPT_JOIN, t_CONS (OPT_HASH, NULL)); }
+	| HASH SET INTNUM  { $$ = t_CONS (OPT_HASH_SET, t_CONS ($3, NULL)); }
+	| HASH PARTITION column { $$ = t_CONS (OPT_HASH_PARTITION, t_CONS ( $3, NULL)); }
+	| HASH REPLICATION { $$ = t_CONS (OPT_HASH_REPLICATION, t_CONS ((ptrlong)1, NULL)); }
+	| ISOLATION_L txn_isolation_level { $$ = t_CONS (OPT_ISOLATION, t_CONS ( $2, NULL)); }
 	| INTERSECT { $$ = t_CONS (OPT_JOIN, t_CONS (OPT_INTERSECT, NULL)); }
 	| LOOP { $$ = t_CONS (OPT_JOIN, t_CONS (OPT_LOOP, NULL)); }
 	| LOOP EXISTS { $$ = t_CONS (OPT_SUBQ_LOOP, t_CONS (SUBQ_LOOP, NULL)); }
@@ -1694,7 +1711,15 @@ sql_option
 	| INDEX_ONLY { $$ = t_CONS (OPT_INDEX_ONLY, t_CONS (t_box_num (1), NULL)); }
 	| WITH STRING { $$ = t_CONS (OPT_RDF_INFERENCE, t_CONS ($2, NULL)); }
 	| NO_L CLUSTER { $$ = t_CONS (OPT_NO_CLUSTER, t_CONS (1, NULL)); }
+	| NO_L IDENTITY { $$ = t_CONS (OPT_NO_IDENTITY, t_CONS (1, NULL)); }
+	| NO_L TRIGGER { $$ = t_CONS (OPT_NO_TRIGGER, t_CONS (1, NULL)); }
 	| INTO scalar_exp { $$ = t_CONS (OPT_INTO, t_CONS ($2, NULL)); }
+	| FETCH column_ref BY scalar_exp SET column_ref { $$ = t_cons ((void*)OPT_INS_FETCH, t_cons (t_list (4, OPT_INS_FETCH, $2, $4, $6), NULL)); }
+	| VECTORED { $$ = t_cons ((void*)OPT_VECTORED, t_cons ((void*)1, NULL)); }
+	| PARTITION GROUP BY { $$ = t_cons ((void*)OPT_PART_GBY, t_cons ((void*)1, NULL)); }
+	| DO NOT PARTITION GROUP BY { $$ = t_cons ((void*)OPT_NO_PART_GBY, t_cons ((void*)1, NULL)); }
+	| CHECK { $$ = t_cons ((void*)OPT_CHECK, t_cons ((void*)1, NULL)); }
+	| WITHOUT_L VECTORING { $$ = t_cons ((void*)OPT_NOT_VECTORED, t_cons ((void*)1, NULL)); }
 	| NAME INTNUM {
 	  if (!stricmp ($1, "vacuum"))
 	    $$ = t_CONS (OPT_VACUUM, t_CONS ($2, NULL));
@@ -2172,12 +2197,34 @@ where_clause
 	: WHERE search_condition	{ $$ = $2; }
 	;
 
+grouping_set
+	: '(' ordering_spec_commalist ')' { $$ = (caddr_t) t_list_to_array ($2); }
+	| ORDER BY opt_top '(' ordering_spec_commalist ')'
+		{
+			caddr_t oby = (caddr_t) $3;
+			ST *o_spec = (ST *) ($5)->data;
+			if (!oby) oby = (caddr_t) (ptrlong) 1;
+		        o_spec->_.o_spec.gsopt = (ST *) oby;
+			$$ = (caddr_t) t_list_to_array ($5);
+		}
+	| '(' ')' { $$ = (caddr_t) t_list (0); }
+	;
+
+grouping_set_list
+	: grouping_set { $$ = t_CONS ($1, NULL); }
+	| grouping_set_list ',' grouping_set { $$ = t_NCONC ($1, t_CONS ($3, NULL));  }
+	;
+
 opt_group_by_clause
 	: /* empty */				{ $$ = NULL; }
 	| GROUP BY ordering_spec_commalist
 		{
 			$$ = (ST*) t_list_to_array(t_CONS (t_list_to_array ($3), NULL));
 		}
+	| GROUP BY GROUPING SETS '(' grouping_set_list ')'
+		{
+			$$ = (ST *) t_list_to_array ($6);
+ 		}
 	| GROUP BY ROLLUP '(' ordering_spec_commalist ')'
 		{
 			dk_set_t group_by_full = 0;
@@ -2413,7 +2460,7 @@ scalar_exp
 	| scalar_exp '*' scalar_exp	{ BIN_OP ($$, BOP_TIMES, $1, $3) }
 	| scalar_exp '/' scalar_exp	{ BIN_OP ($$, BOP_DIV, $1, $3) }
 	| '+' scalar_exp %prec UMINUS	{ $$ = $2; }
-	| '-' scalar_exp %prec UMINUS	{ if (sqlp_is_num_lit ((caddr_t)($2))) $$ = sqlp_minus ((caddr_t)($2));
+	| '-' scalar_exp %prec UMINUS	{ if (sqlp_is_num_lit ((caddr_t)($2))) $$ = (ST *) sqlp_minus ((caddr_t)($2));
 				          else BIN_OP ($$, BOP_MINUS, (ST*) t_box_num (0), $2) }
 	| assignment_statement
 	| string_concatenation_operator
@@ -2471,7 +2518,7 @@ scalar_exp_no_col_ref_no_mem_obs_chain
 cvt_exp
 	: CONVERT '(' data_type ',' scalar_exp ')'
 		{
-		  ST *dtype = t_list (2, QUOTE, $3);
+		  ST *dtype = (ST *) t_list (2, QUOTE, $3);
 		  ST *expn_to_cast = sqlp_wrapper_sqlxml_assign ($5);
 		  $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("_cvt"),
 		    t_list (2, dtype, expn_to_cast) );
@@ -2488,7 +2535,7 @@ opt_collate_exp
 cast_exp
 	: CAST '(' scalar_exp AS data_type opt_collate_exp ')'
 		{
-		  ST *dtype = t_list (2, QUOTE, $5);
+		  ST *dtype = (ST *) t_list (2, QUOTE, $5);
 		  ST *expn_to_cast = sqlp_wrapper_sqlxml_assign ($3);
 		  $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("_cvt"),
 		    t_list ($6 == NULL ? 2 : 3, dtype, expn_to_cast, $6) );
@@ -3349,6 +3396,11 @@ cost_decl
 	;
 
 
+vectored_decl
+	: VECTORED { $$ = (ST *) t_list (1, OPT_VECTORED); }
+	;
+
+
 routine_statement
 	: selectinto_statement
 	| update_statement_positioned
@@ -3362,6 +3414,7 @@ routine_statement
 	| rollback_statement
 	| commit_statement
 	| cost_decl
+	| vectored_decl
 	| /* empty */				{ $$ = t_listst (1, NULL_STMT); }
 	;
 
@@ -3636,6 +3689,24 @@ for_opt_search_cond
 	| search_condition { $$ = $1; }
 	;
 
+vectored_var
+	: IN_L identifier data_type_ref EQUALS scalar_exp { $$ = t_listst (5, VECT_DECL, IN_MODE, t_listst (3, COL_DOTTED, NULL, $2), $3, $5); }
+	| OUT_L identifier EQUALS scalar_exp { $$ = t_listst (5, VECT_DECL, OUT_MODE, t_listst (3, COL_DOTTED, NULL, $2), NULL, $4); }
+	;
+
+vectored_list
+	: vectored_var
+		{ $$ = t_CONS ($1, NULL); }
+	| vectored_list ',' vectored_var
+		{ $$ = t_NCONC ($1, t_CONS ($3, NULL)); }
+	;
+
+
+opt_modify
+	: /* empty */  { $$ = 0;}
+	| MODIFY { $$ = 1; }
+;
+
 for_statement
 	: FOR query_exp  DO statement
 		{ $$ = sqlp_for_statement ($2, $4); }
@@ -3643,6 +3714,7 @@ for_statement
 		{ $$ = sqlp_c_for_statement ((ST **) t_list_to_array ($3), $5, (ST **) t_list_to_array ($7), $9); }
 	| FOREACH '(' data_type_ref identifier IN_L scalar_exp ')' DO statement
 		{ $$ = sqlp_foreach_statement ($3, $4, $6, $9); }
+	| FOR VECTORED opt_modify '(' vectored_list ')' compound_statement { $$ = t_listst (4, FOR_VEC_STMT, t_list_to_array ($5), $7, (ptrlong) $3); }
 	;
 
 trigger_def
@@ -4406,18 +4478,21 @@ host_group
 
 
 host_group_list
-	: host_group { $$ = t_CONS ($1, NULL); }
+	: ALL { $$ = cl_all_host_group_list (); }
+	| host_group { $$ = t_CONS ($1, NULL); }
 	| host_group_list ',' host_group { $$ = t_NCONC ($1, t_CONS ($3, NULL)); }
 	;
 
 opt_modulo
 	: { $$ = NULL; }
+	| __ELASTIC INTNUM INTNUM { $$ = list (3, OPT_ELASTIC, $2, $3); }
 	| DEFAULT { $$ = (caddr_t) 1;}
 	;
 
 cluster_def
 	: CREATE	 CLUSTER NAME opt_modulo host_group_list
-{ $$ = t_listst (4, CLUSTER_DEF, t_box_string ($3), $4, t_list_to_array ($5)); }
+	{ if (strlen ($3) >= DBS_NAME_MAX_LEN) yyerror ("cluster name too long");
+	  $$ = t_listst (4, CLUSTER_DEF, t_box_string ($3), $4, t_list_to_array ($5)); }
 	;
 
 col_part_commalist
@@ -4430,7 +4505,7 @@ col_part_list
 	| '(' col_part_commalist ')' { $$ = $2; }
 	;
 opt_cluster
-	: { $$ = t_sym_string  ("__ALL"); }
+	: { $$ = t_sym_string  (sqlp_default_cluster ()); }
 	| CLUSTER  NAME { $$ = $2; }
 	;
 

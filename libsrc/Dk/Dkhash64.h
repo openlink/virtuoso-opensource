@@ -38,12 +38,62 @@
     id_hash_set (ht, (caddr_t)&kr, (caddr_t)&vr);	\
   }
 
+
+typedef struct hash_elt_64_s {
+  int64	key;
+  int64	data;
+  struct hash_elt_64_s *	next;
+} hash_elt_64_t;
+
+
 #define gethash_64(res, k, ht) \
   { \
     int64 * vp, kv = k; \
     vp = (int64*) id_hash_get (ht, (caddr_t)&kv); \
     if (!vp) res = 0; else res = *vp; \
   }
+
+
+#define GETHASH_64I(result, key_value, ht, not_found)	\
+{ \
+  union \
+  { \
+    boxint k; \
+    struct \
+    { \
+      int32 n1; \
+      int32 n2; \
+    } k32; \
+  } n; \
+  n.k = key_value; \
+  { \
+    uint32 inx = (0xfffffff & (n.k32.n1 ^ n.k32.n2)) % ht->ht_buckets; \
+    hash_elt_64_t *elt = &((hash_elt_64_t*)ht->ht_array)[inx];	\
+    hash_elt_64_t *next = elt->next; \
+    if (next == (hash_elt_64_t*)1L)	\
+      goto not_found;\
+    if (elt->key == (key_value))	  \
+      result = elt->data; \
+    else \
+      { \
+	elt = next; \
+	if (!elt) \
+	  goto not_found; \
+	for (;;) \
+	  { \
+	    if (elt->key == (key_value))		\
+	      { \
+		result = elt->data; \
+		break; \
+	      } \
+	    elt = elt->next; \
+	    if (!elt) \
+	      goto not_found; \
+	  } \
+      } \
+  }}
+
+
 
 #ifdef RH_TRACE
 #define remhash_64(k, ht) \
@@ -59,6 +109,24 @@
   { \
     int64 kv = k; \
     id_hash_remove (ht, (caddr_t) &kv); \
+  }
+#endif
+
+
+#ifdef RH_TRACE
+#define remhash_64_f(k, ht, flag)			\
+  { \
+    int64 kv = k; \
+    ht->ht_rem_k = kv; \
+    ht->ht_rem_line = __LINE__; \
+    ht->ht_rem_file = __FILE__; \
+    flag = id_hash_remove (ht, (caddr_t) &kv); \
+  }
+#else
+#define remhash_64_f(k, ht, flag)			\
+  { \
+    int64 kv = k; \
+    flag = id_hash_remove (ht, (caddr_t) &kv); \
   }
 #endif
 

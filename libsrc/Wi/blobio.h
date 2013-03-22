@@ -52,6 +52,7 @@ struct blob_handle_s
     dp_addr_t 	bh_dir_page;	/* points at first directory page */
     int32	bh_position;		/* -- */ /* point on page or string */
     short	bh_frag_no;
+    unsigned short	bh_slice;
     caddr_t bh_string;		/* if BLOB is in RAM as DV string */
     int64 bh_length;		/* Number of symbols in BLOB (either char-s or wchar_t-s */
     int64 bh_diskbytes;	/* Number of bytes required to store BLOB on disk
@@ -72,6 +73,8 @@ struct blob_handle_s
     caddr_t 		bh_source_session; /* used when bh_get_data_from_client is 3 */
   };
 
+
+#define BH_CLUSTER_DAE 5 /* in bh_ask_from_client to indicate that this is a data at exec blob made as temp before use on anothr partition */
 typedef struct blob_handle_s blob_handle_t;
 
 #define BH_ANY		((uint32)(-1))
@@ -146,6 +149,8 @@ int bh_read_ahead (struct lock_trx_s *lt, blob_handle_t * bh, unsigned from, uns
 
 int rbs_length (db_buf_t rbs);
 void rbs_hash_range (dtp_t ** buf, int * len, int * is_string);
+int64 rbs_ro_id (db_buf_t rbs);
+
 extern caddr_t rb_copy (rdf_box_t * rb);
 extern void rb_complete (rdf_box_t * rb, struct lock_trx_s * lt, void * /*actually query_instance_t * */ caller_qi);
 extern void rb_complete_1 (rdf_box_t * rb, struct lock_trx_s * lt, void * /*actually query_instance_t * */ caller_qi, int is_local);

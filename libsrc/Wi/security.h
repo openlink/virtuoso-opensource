@@ -80,6 +80,7 @@ int init_os_users (user_t * user, caddr_t u_sys_name, caddr_t u_sys_pwd);
 void sec_grant_single_role (user_t *user, user_t *gr, int make_err);
 void sec_revoke_single_role (user_t *user, user_t *gr, int make_err);
 void cli_flush_stmt_cache (user_t *user);
+extern int sec_usr_flatten_g_ids_refill (user_t *user);
 
 struct sql_tree_s; /* avoid gcc complaints */
 void sec_check_ddl (query_instance_t * qi, struct sql_tree_s * tree);

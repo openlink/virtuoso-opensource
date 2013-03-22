@@ -20,6 +20,7 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 --
+
 create procedure DB.DBA.ddl_load_script (in _filename varchar)
 {
   declare cnt, parts, errors any;

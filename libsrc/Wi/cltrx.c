@@ -1,6 +1,6 @@
 /*
  *  cltrx.c
- * 
+ *
  *  $Id$
  *
  *  Cluster Transaction Monitor

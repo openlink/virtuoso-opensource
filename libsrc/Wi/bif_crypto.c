@@ -248,7 +248,7 @@ asn1_parse_to_xml (BIO * bp, unsigned char **pp, long length, int offset, int de
   while ((p < tot) && (op < p))
     {
       op = p;
-      j = ASN1_get_object (&p, &len, &tag, &xclass, length);
+      j = ASN1_get_object ((const unsigned char **) &p, &len, &tag, &xclass, length);
       save_tag = tag;
 #ifdef LINT
       j = j;
@@ -332,7 +332,7 @@ asn1_parse_to_xml (BIO * bp, unsigned char **pp, long length, int offset, int de
 	  else if (tag == V_ASN1_OBJECT)
 	    {
 	      opp = op;
-	      if (d2i_ASN1_OBJECT (&o, &opp, len + hl) != NULL)
+	      if (d2i_ASN1_OBJECT (&o, (const unsigned char **)&opp, len + hl) != NULL)
 		{
 		  /*if (BIO_write(bp,":",1) <= 0) goto end; */
 		  i2a_ASN1_OBJECT (bp, o);
@@ -348,7 +348,7 @@ asn1_parse_to_xml (BIO * bp, unsigned char **pp, long length, int offset, int de
 	      int ii;
 
 	      opp = op;
-	      ii = d2i_ASN1_BOOLEAN (NULL, &opp, len + hl);
+	      ii = d2i_ASN1_BOOLEAN (NULL, (const unsigned char **)&opp, len + hl);
 	      if (ii < 0)
 		{
 		  if (BIO_write (bp, "Bad boolean\n", 12))
@@ -365,7 +365,7 @@ asn1_parse_to_xml (BIO * bp, unsigned char **pp, long length, int offset, int de
 	      int i, printable = 1;
 
 	      opp = op;
-	      os = d2i_ASN1_OCTET_STRING (NULL, &opp, len + hl);
+	      os = d2i_ASN1_OCTET_STRING (NULL, (const unsigned char **)&opp, len + hl);
 	      if (os != NULL && os->length > 0)
 		{
 		  opp = os->data;
@@ -425,7 +425,7 @@ asn1_parse_to_xml (BIO * bp, unsigned char **pp, long length, int offset, int de
 	      int i;
 
 	      opp = op;
-	      bs = d2i_ASN1_INTEGER (NULL, &opp, len + hl);
+	      bs = d2i_ASN1_INTEGER (NULL, (const unsigned char **)&opp, len + hl);
 	      if (bs != NULL)
 		{
 		  /*if (BIO_write(bp,":",1) <= 0) goto end; */
@@ -456,7 +456,7 @@ asn1_parse_to_xml (BIO * bp, unsigned char **pp, long length, int offset, int de
 	      int i;
 
 	      opp = op;
-	      bs = d2i_ASN1_ENUMERATED (NULL, &opp, len + hl);
+	      bs = d2i_ASN1_ENUMERATED (NULL, (const unsigned char **) &opp, len + hl);
 	      if (bs != NULL)
 		{
 		  /*if (BIO_write(bp,":",1) <= 0) goto end; */
@@ -714,7 +714,7 @@ strses_to_bio (dk_session_t * ses)
   return in_bio;
 }
 
-dk_session_t * 
+dk_session_t *
 bio_to_strses (BIO * out_bio)
 {
   dk_session_t * ses = strses_allocate ();
@@ -1562,7 +1562,7 @@ bif_get_certificate_info (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
 	  {
 	    ne = sk_X509_NAME_ENTRY_value(subj->entries,i);
 	    n = OBJ_obj2nid (ne->object);
-	    if ((n == NID_undef) || ((s = OBJ_nid2sn (n)) == NULL))
+	    if ((n == NID_undef) || ((s = (char *) OBJ_nid2sn (n)) == NULL))
 	      {
 		i2t_ASN1_OBJECT (buffer, sizeof (buffer), ne->object);
 		s = buffer;
@@ -1593,7 +1593,7 @@ bif_get_certificate_info (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
 	X509_NAME_ENTRY *ne;
 	int n, i, len;
 	char *s, *data_ptr;
-	dk_set_t set = NULL; 
+	dk_set_t set = NULL;
 	caddr_t val;
 	BIO *mem = BIO_new (BIO_s_mem ());
 	for (i = 0; NULL != subj && i < sk_X509_NAME_ENTRY_num(subj->entries); i++)
@@ -1601,7 +1601,7 @@ bif_get_certificate_info (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
 	    val = NULL;
 	    ne = sk_X509_NAME_ENTRY_value(subj->entries,i);
 	    n = OBJ_obj2nid (ne->object);
-	    if ((n == NID_undef) || ((s = OBJ_nid2sn (n)) == NULL))
+	    if ((n == NID_undef) || ((s = (char *) OBJ_nid2sn (n)) == NULL))
 	      {
 		i2t_ASN1_OBJECT (buffer, sizeof (buffer), ne->object);
 		s = buffer;

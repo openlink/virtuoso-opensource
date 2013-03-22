@@ -51,7 +51,7 @@ itc_ra_extents (it_cursor_t * itc, ra_req_t * ra)
   uint32 now;
   int inx;
   if (!enable_vec_ext_ra)
-    return;
+    return 0;
   if (disk_reads < main_bufs - 256)
     {
       threshold = em_ra_startup_threshold;
@@ -279,6 +279,9 @@ itc_prefetch_col (it_cursor_t * itc, buffer_desc_t * buf, dbe_col_loc_t * cl, ro
   itc->itc_col_refs[cl->cl_nth - n_keys]->cr_is_prefetched = 1;
   for (r = 0; r < n_rows; r++)
     {
+      if (buf->bd_content_map->pm_count <= rows[r])
+	continue;		/* safety against wrong argumenst */
+      {
       db_buf_t row = BUF_ROW (buf, rows[r]);
       db_buf_t xx, xx2;
       unsigned short vl1, vl2, offset;
@@ -299,6 +302,7 @@ itc_prefetch_col (it_cursor_t * itc, buffer_desc_t * buf, dbe_col_loc_t * cl, ro
 	    dps[fill++] = dp;
 	}
     }
+    }
   *dps_fill = fill;
 }
 
@@ -307,7 +311,7 @@ int
 itc_prefetch_col_leaf_page (it_cursor_t * itc, buffer_desc_t * buf)
 {
   /* all the cols refd get into read ahead.  Alternately, only count how many reads would be needed. */
-  int start_pos = buf->bd_page == itc->itc_page ? itc->itc_map_pos : 0;
+  int start_pos = (buf->bd_page == itc->itc_page && !itc->itc_is_ac) ? itc->itc_map_pos : 0;
   dp_addr_t dps[PAGE_DATA_SZ / sizeof (dp_addr_t)];
   row_no_t rows[PAGE_DATA_SZ / 6];
   int nth_key = 0, n_rows, n_out, any_pred = 0;
@@ -316,7 +320,7 @@ itc_prefetch_col_leaf_page (it_cursor_t * itc, buffer_desc_t * buf)
   int prev_reads;
   int n_keys = itc->itc_insert_key->key_n_significant;
   int inx;
-  if (itc->itc_page == buf->bd_page && itc->itc_rows_selected < itc->itc_rows_on_leaves)
+  if (itc->itc_page == buf->bd_page && itc->itc_rows_selected < itc->itc_rows_on_leaves && !itc->itc_is_ac)
     {
       rows[0] = itc->itc_map_pos;	/* always the current row.  By definition, when this returns, the dp requested must be queued, else will recursively call the hook again */
       n_rows = 1 + itc_rows_accessed (itc, buf, start_pos, &rows[1]);

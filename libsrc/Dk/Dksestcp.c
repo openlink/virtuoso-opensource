@@ -39,7 +39,7 @@ static int tcpses_listen (session_t * ses);
 static int tcpses_accept (session_t * ses, session_t * new_ses);
 static int tcpses_connect (session_t * ses);
 static int tcpses_disconnect (session_t * ses);
-static int tcpses_write (session_t * ses, char *buffer, int n_bytes);
+int tcpses_write (session_t * ses, char *buffer, int n_bytes);
 static int tcpses_read (session_t * ses, char *buffer, int n_bytes);
 static int tcpses_set_control (session_t * ses, int fld, char *p_value, int sz);
 static int fill_fdset (int count, session_t ** sestable, fd_set * p_fdset);
@@ -67,7 +67,7 @@ int tcpses_select (int ses_count, session_t ** reads, session_t ** writes, timeo
 	  }
 
 
-#define LISTEN_QLEN 50
+#define LISTEN_QLEN 500
 
 #ifndef MAX
 #define MAX(a, b)   ((a) > (b) ? (a) : (b))
@@ -132,6 +132,7 @@ tcpdev_allocate ()
   dev->dev_funs->dfp_disconnect = tcpses_disconnect;
   dev->dev_funs->dfp_read = tcpses_read;
   dev->dev_funs->dfp_write = tcpses_write;
+  dev->dev_funs->dfp_flush = NULL;
   dev->dev_funs->dfp_set_control = tcpses_set_control;
   dev->dev_funs->dfp_get_control = NULL;
 
@@ -373,6 +374,7 @@ tcpses_set_fd (session_t * ses, int fd)
 {
   ses->ses_device->dev_funs->dfp_read = fileses_read;
   ses->ses_device->dev_funs->dfp_write = fileses_write;
+  ses->ses_device->dev_funs->dfp_flush = NULL;
   ses->ses_device->dev_connection->con_s = fd;
   ses->ses_device->dev_connection->con_is_file = 1;
 }
@@ -637,7 +639,7 @@ tcpses_accept (session_t * ses, session_t * new_ses)
 
   SESSTAT_CLR (ses, SST_CONNECT_PENDING);
   SESSTAT_SET (ses, SST_OK);
-
+  new_ses->ses_class = ses->ses_class; /* can be tycpip or unix */
   dbg_printf_2 (("SER_SUCC."));
   return (SER_SUCC);
 }
@@ -876,7 +878,7 @@ tcpses_get_last_w_errno ()
 }
 
 
-static int
+int
 tcpses_write (session_t * ses, char *buffer, int n_bytes)
 {
   int flags = 0;		/* no flags used, one could use MSG_OOB  */
@@ -2425,7 +2427,6 @@ sslses_to_tcpses (session_t * ses)
   ses->ses_device->dev_funs->dfp_write = tcpses_write;
   ses->ses_device->dev_funs->dfp_free = tcpdev_free;
   ses->ses_device->dev_connection->ssl = NULL;
-  ses->ses_device->dev_connection->ssl_ctx = NULL;
 }
 
 
@@ -2618,7 +2619,7 @@ unixses_accept (session_t * ses, session_t * new_ses)
 
   SESSTAT_CLR (ses, SST_CONNECT_PENDING);
   SESSTAT_SET (ses, SST_OK);
-
+  new_ses->ses_class = ses->ses_class;
   dbg_printf_2 (("SER_SUCC."));
   return (SER_SUCC);
 }
@@ -2887,6 +2888,7 @@ unixdev_allocate ()
   dev->dev_funs->dfp_disconnect = unixses_disconnect;
   dev->dev_funs->dfp_read = tcpses_read;
   dev->dev_funs->dfp_write = tcpses_write;
+  dev->dev_funs->dfp_flush = NULL;
   dev->dev_funs->dfp_set_control = tcpses_set_control;
   dev->dev_funs->dfp_get_control = NULL;
 

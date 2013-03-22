@@ -583,7 +583,7 @@ check_inputs_low (TAKE_G timeout_t * timeout_org, int is_recursive, select_func_
   if (rc < 0)
     {
       int eno = errno;
-      check_inputs_for_errors (eno, protocol); 
+      check_inputs_for_errors (eno, protocol);
       PROCESS_ALLOW_SCHEDULE ();
       return 0;
     }
@@ -937,6 +937,8 @@ dk_report_error (const char *format, ...)
   return rc;
 }
 
+int dbf_assert_on_malformed_data;
+
 
 void
 sr_report_future_error (dk_session_t * ses, const char *service_name, const char *reason)
@@ -963,6 +965,8 @@ sr_report_future_error (dk_session_t * ses, const char *service_name, const char
 	    reason);
     }
 */
+  if (dbf_assert_on_malformed_data)
+    GPF_T1 ("Malformed data serialization");
 }
 
 #define is_string_type(type)\
@@ -2572,7 +2576,7 @@ sesclass_select_func (int sesclass)
 #endif /* NO_THREAD */
 
 timeout_t time_now;
-long time_now_msec;
+uint32 time_now_msec;
 
 
 static int
@@ -2678,7 +2682,7 @@ server_loop (void *arg)
   int sesclass = (int) (ptrlong) arg;
   timeout_t zero_timeout = { 0, 0 };
 
-  USE_GLOBAL 
+  USE_GLOBAL
   long time_spent = 0;
   long time_between_rounds = (atomic_timeout.to_sec * 1000 + atomic_timeout.to_usec / 1000) / time_slice;
 
@@ -3623,6 +3627,8 @@ PrpcInitialize (void)
 }
 
 
+int enable_malloc_cache = 1;
+
 void
 PrpcInitialize1 (int mem_mode)
 {
@@ -3652,7 +3658,7 @@ PrpcInitialize1 (int mem_mode)
 
   dk_memory_initialize (
 #ifndef NO_THREAD
-      1
+			enable_malloc_cache
 #else
       0
 #endif
@@ -4669,7 +4675,9 @@ cli_ssl_get_error_string (char *out_data, int out_data_len)
   const char *func = ERR_func_error_string (err);
   out_data[out_data_len - 1] = 0;
   snprintf (out_data, out_data_len - 1, "%s (%s:%s)",
-      reason ? reason : (err == 0 ? "No error" : "Unknown error"), lib ? lib : "?", func ? func : "?");
+      reason ? reason : (err == 0 ? "No error" : "Unknown error"),
+      lib ? lib : "?",
+      func ? func : "?");
   return 0;
 }
 
@@ -4782,7 +4790,6 @@ ssl_cert_verify_callback (int ok, void *_ctx)
   	app_ctx->ssci_name_ptr, errdepth, cp != NULL ? cp : "-unknown-",
 	cp2 != NULL ? cp2 : "-unknown");
 #endif
-
   /*
    * Additionally perform CRL-based revocation checks
    *
@@ -4860,9 +4867,9 @@ dk_ssl_free (void *old)
 #endif
 
 #if defined (_SSL) && !defined (NO_THREAD)
-int ssl_server_set_certificate (SSL_CTX* ssl_ctx, char * cert_name, char * key_name, char * extra);
+int ssl_server_set_certificate (SSL_CTX * ssl_ctx, char *cert_name, char *key_name, char *extra);
 
-static int 
+static int
 ssl_server_key_setup ()
 {
   if (!c_ssl_server_cert || !c_ssl_server_key)
@@ -4909,6 +4916,40 @@ ssl_server_key_setup ()
 }
 #endif
 
+#if !defined(OPENSSL_THREADS)
+#error Must have openssl configures with threads support
+#endif
+
+static dk_mutex_t ** lock_cs;
+
+void
+ssl_locking_callback (int mode, int type, char *file, int line)
+{
+  if (mode & CRYPTO_LOCK)
+    mutex_enter (lock_cs [type]);
+  else
+    mutex_leave (lock_cs [type]);
+}
+
+unsigned long
+ssl_thread_id (void)
+{
+  return (unsigned long) (ptrlong) THREAD_CURRENT_THREAD;
+}
+
+void
+ssl_thread_setup ()
+{
+  int i;
+  lock_cs = dk_alloc (CRYPTO_num_locks() * sizeof (dk_mutex_t *));
+  for (i = 0; i < CRYPTO_num_locks (); i ++)
+    {
+      lock_cs [i] = mutex_allocate ();
+    }
+  CRYPTO_set_locking_callback ((void (*) (int, int, char *, int)) ssl_locking_callback);
+  CRYPTO_set_id_callback ((unsigned long (*)()) ssl_thread_id);
+}
+
 static void
 ssl_server_init ()
 {
@@ -4944,6 +4985,7 @@ ssl_server_init ()
       ERR_print_errors_fp (stderr);
       call_exit (-1);
     }
+  ssl_thread_setup ();
 }
 
 
@@ -5141,7 +5183,7 @@ ssl_server_accept (dk_session_t * listen, dk_session_t * ses)
       new_ssl = SSL_new (ssl_server_ctx);
       SSL_set_fd (new_ssl, dst);
       ssl_err = SSL_accept (new_ssl);
-      if (ssl_err == -1) /* the SSL_accept do the certificate verification */
+      if (ssl_err == -1)	/* the SSL_accept do the certificate verification */
 	{
 	  char client_ip[16];
 	  caddr_t err;

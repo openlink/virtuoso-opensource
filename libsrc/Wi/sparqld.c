@@ -196,6 +196,7 @@ ssg_sd_opname (sparp_t *sparp, ptrlong opname, int is_op)
     case false_L: return "false";
     case FILTER_L: return "FILTER";
     /* case FROM_L: return "FROM"; */
+    case GEO_L: return "GEO";
     /* case GRAPH_L: return "GRAPH"; */
     case IFP_L: return "IFP";
     case IN_L: return "IN";
@@ -211,6 +212,7 @@ ssg_sd_opname (sparp_t *sparp, ptrlong opname, int is_op)
     case OFFSET_L: return "OFFSET";
     case OPTIONAL_L: return "OPTIONAL";
     case ORDER_L: return "ORDER";
+    case PRECISION_L: return "PRECISION";
     /* case PREDICATE_L: return "PREDICATE"; */
     /* case PREFIX_L: return "PREFIX"; */
     case SCORE_L: return "SCORE";

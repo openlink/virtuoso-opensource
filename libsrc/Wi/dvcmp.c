@@ -40,11 +40,13 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t * collation, offset_t offset
     {
       dv1_flags = LONG_REF_NA (dv1 + 1);
       dv1 += 5;
+      dtp1 = *dv1;
     }
   if (DV_BOX_FLAGS == dtp2)
     {
       dv2_flags = LONG_REF_NA (dv2 + 1);
       dv2 += 5;
+      dtp2 = *dv2;
     }
   if (dtp1 == dtp2)
     {
@@ -446,7 +448,7 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t * collation, offset_t offset
 	  case DV_NULL:
 	    return DVC_MATCH;
 	  case DV_COMPOSITE:
-	    return (dv_composite_cmp (dv1, dv2, collation));
+	    return (dv_composite_cmp (dv1, dv2, collation, offset));
 	  case DV_IRI_ID:
 	    return (NUM_COMPARE ((iri_id_t) ln1, (iri_id_t) ln2));
 	  }

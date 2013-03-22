@@ -3136,6 +3136,8 @@ xre_col_from_ssl (state_slot_t * ssl, int no, long directives)
   xre_col_t * col = (xre_col_t *) dk_alloc_box_zero (sizeof (xre_col_t), DV_ARRAY_OF_POINTER);
   col->xrc_xsdtype = (xv_schema_xsdtype_t *) dk_alloc_box (sizeof (xv_schema_xsdtype_t), DV_ARRAY_OF_LONG);
   xv_schema_xsdtype_default (directives, col->xrc_xsdtype);
+  if (ssl->ssl_type == SSL_REF)
+    ssl = ((state_slot_ref_t *) ssl)->sslr_ssl;
   if (NULL != ssl->ssl_name)
     col->xrc_name = cd_strip_col_name (ssl->ssl_name);
   else
@@ -4874,13 +4876,7 @@ xml_template_get_sqlx_parms (client_connection_t * cli, const caddr_t text, id_h
       if (place)
 	{
 	  ret [inx+named_params] = box_cast_to (NULL, *place, DV_TYPE_OF (*place), ssl->ssl_dtp,
-	      NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, err);
-	  if (*err)
-	    {
-	      dk_free_tree (ret);
-	      ret = NULL;
-	      goto err_end;
-	    }
+	      NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, NULL);
 	}
       else
 	ret [inx+named_params] = NEW_DB_NULL;

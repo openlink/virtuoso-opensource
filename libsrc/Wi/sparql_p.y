@@ -179,6 +179,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token FILTER_L		/*:: PUNCT_SPAR_LAST("FILTER") ::*/
 %token FROM_L		/*:: PUNCT_SPAR_LAST("FROM") ::*/
 %token FUNCTION_L	/*:: PUNCT_SPAR_LAST("FUNCTION") ::*/
+%token GEO_L		/*:: PUNCT_SPAR_LAST("GEO") ::*/
 %token GRAPH_L		/*:: PUNCT_SPAR_LAST("GRAPH") ::*/
 %token GROUP_L		/*:: PUNCT_SPAR_LAST("GROUP") ::*/
 %token GROUP_CONCAT_L	/*:: PUNCT_SPAR_LAST("GROUP_CONCAT") ::*/
@@ -224,6 +225,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token OPTIONAL_L	/*:: PUNCT_SPAR_LAST("OPTIONAL") ::*/
 %token OPTION_L		/*:: PUNCT_SPAR_LAST("OPTION") ::*/
 %token ORDER_L		/*:: PUNCT_SPAR_LAST("ORDER") ::*/
+%token PRECISION_L	/*:: PUNCT_SPAR_LAST("PRECISION") ::*/
 %token PREDICATE_L	/*:: PUNCT_SPAR_LAST("PREDICATE") ::*/
 %token PREFIX_L		/*:: PUNCT_SPAR_LAST("PREFIX") ::*/
 %token QUAD_L		/*:: PUNCT_SPAR_LAST("QUAD") ::*/
@@ -416,6 +418,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <trees> spar_triple_option
 %type <trees> spar_triple_inference_option
 %type <trees> spar_triple_freetext_option
+%type <trees> spar_triple_geo_option
 %type <trees> spar_triple_transit_option
 %type <backstack> spar_triple_option_var_commalist
 %type <token_type> spar_same_as_option
@@ -607,7 +610,7 @@ spar_query_or_ul_operations
 		$$ = spar_make_topmost_sparul_sql (sparp_arg, (SPART **)t_revlist_to_array ($2) ); }
 	| spar_prolog spar_create_macro_lib_opt spar_query_body { $$ = $3; }
 	;
-	
+
 /* PART 1. Standard SPARQL as described by W3C, with Virtuoso extensions for expressions. */
 
 spar_query_body		/* [1]	QueryBody	 ::=  SelectQuery | ConstructQuery | DescribeQuery | AskQuery	*/
@@ -1163,7 +1166,7 @@ spar_bindvals
 	;
 
 spar_bindval
-	: spar_iriref		
+	: spar_iriref
 	| spar_numeric_literal
 	| spar_rdf_literal
 	| spar_boolean_literal
@@ -1345,7 +1348,7 @@ spar_inline_data_values_opt
 	;
 
 spar_inline_data_value
-	: spar_iriref		
+	: spar_iriref
 	| spar_numeric_literal
 	| spar_rdf_literal
 	| spar_boolean_literal
@@ -1586,6 +1589,9 @@ spar_triple_option	/* [Virt]	TripleOption	 ::=  'TABLE_OPTION' SPARQL_STRING	*/
 	| spar_triple_freetext_option	{
 		SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_VIRTSPECIFIC, "free-text option");
 		$$ = $1; }
+	| spar_triple_geo_option	{
+		SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_VIRTSPECIFIC, "geo/spatial option");
+		$$ = $1; }
 	| spar_triple_transit_option	{
 		SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_TRANSIT, "TRANSITIVE and related options");
 		$$ = $1; }
@@ -1615,6 +1621,13 @@ spar_triple_freetext_option
 		$$ = (SPART **)t_list (2, (ptrlong)SCORE_L, $2); }
 	| SCORE_LIMIT_L spar_expn	{	/*... | 'SCORE_LIMIT' Expn	*/
 		$$ = (SPART **)t_list (2, (ptrlong)SCORE_LIMIT_L, $2); }
+	;
+
+spar_triple_geo_option
+	: GEO_L spar_expn		{	/*... | 'GEO' Expn	*/
+		$$ = (SPART **)t_list (2, (ptrlong)GEO_L, $2); }
+	| PRECISION_L spar_expn		{	/*... | 'PRECISION' Expn	*/
+		$$ = (SPART **)t_list (2, (ptrlong)PRECISION_L, $2); }
 	;
 
 spar_triple_transit_option
@@ -2229,7 +2242,7 @@ spar_numeric_literal	/* [59]	NumericLiteral	 ::=  INTEGER | DECIMAL | DOUBLE	*/
 	: SPARQL_INTEGER	{ $$ = spartlist (sparp_arg, 4, SPAR_LIT, $1, uname_xmlschema_ns_uri_hash_integer, NULL); }
 	| SPARQL_DECIMAL	{ $$ = spartlist (sparp_arg, 4, SPAR_LIT, $1, uname_xmlschema_ns_uri_hash_decimal, NULL); }
 	| SPARQL_DOUBLE		{ $$ = spartlist (sparp_arg, 4, SPAR_LIT, $1, uname_xmlschema_ns_uri_hash_double, NULL); }
-	| INF_L			{ double myZERO = 0.0; 
+	| INF_L			{ double myZERO = 0.0;
 				  double myPOSINF_d = 1.0/myZERO;
 				  $$ = spartlist (sparp_arg, 4, SPAR_LIT, t_box_double (myPOSINF_d), uname_xmlschema_ns_uri_hash_double, NULL); }
 	| NAN_L			{ double myZERO = 0.0;

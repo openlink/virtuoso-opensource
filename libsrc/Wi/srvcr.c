@@ -100,6 +100,9 @@ box_md5_1 (caddr_t box, MD5_CTX * ctx)
 	  MD5Update (ctx, (unsigned char *) box - 1, numeric_len + 1);
 	}
       break;
+    case DV_DB_NULL: /* special case since NULLs has zero len */
+      MD5Update (ctx, (unsigned char *) box - 1, 1);
+      break;
     default:
       MD5Update (ctx, (unsigned char *) box - 1, len + 1);
       break;
@@ -290,6 +293,12 @@ cr_lc_next (cursor_state_t * cs)
   query_instance_t *qi = (query_instance_t *) cs->cs_lc->lc_inst;
   if (!qi)
     return NULL;
+  if (qi->qi_query->qr_proc_vectored)
+    {
+      qi->qi_set++;
+      if (qi->qi_set < cs->cs_lc->lc_vec_n_rows)
+	return (caddr_t)SQL_SUCCESS;
+    }
   err = subq_next (qi->qi_query, (caddr_t *) qi, CR_OPEN);
   if (IS_BOX_POINTER (err))
     {
@@ -2073,19 +2082,19 @@ bif_scroll_cr_open (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t params_box_buf[5];
   caddr_t params_box;
   caddr_t **params;
-  stmt_options_t *opts;
+  stmt_options_t *opts = (stmt_options_t *)  dk_alloc_box_zero (sizeof (stmt_options_t), DV_ARRAY_OF_POINTER);
   uint32 inx, n_pars = BOX_ELEMENTS (args) - 1;
 
   BOX_AUTO (params_box, params_box_buf, sizeof (caddr_t), DV_ARRAY_OF_POINTER);
   params = (caddr_t **)params_box;
+
+  opts->so_use_bookmarks = 1;
   params[0] = (caddr_t *) dk_alloc_box_zero (n_pars * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
   for (inx = 0; inx < n_pars; inx++)
     {
       params[0][inx] = box_copy_tree (bif_arg (qst, args, inx + 1, "__scroll_cr_open"));
     }
-
-  opts = (stmt_options_t *)  dk_alloc_box_zero (sizeof (stmt_options_t), DV_ARRAY_OF_POINTER);
-  opts->so_use_bookmarks = 1;
+  memset (opts, 0, sizeof (opts));
   opts->so_concurrency = SQL_CONCUR_LOCK;
   opts->so_cursor_type = stmt->sst_query->qr_cursor_type;
 

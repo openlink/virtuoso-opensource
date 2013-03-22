@@ -274,7 +274,7 @@ pldbg_print_value (dk_session_t * ses, box_t box, query_instance_t *qi)
 	break;
 	case DV_BIN:
 	  {
-	    snprintf (tmp, sizeof (tmp), " LEN %ld", box_length (box));
+	    snprintf (tmp, sizeof (tmp), " LEN %d", box_length (box));
 	    SES_PRINT (ses, tmp);
 	  }
 	break;
@@ -344,6 +344,8 @@ pldbg_ssl_print (char * buf, size_t buf_len, state_slot_t * ssl, caddr_t * qst)
     case SSL_VARIABLE:
     case SSL_REF_PARAMETER:
     case SSL_REF_PARAMETER_OUT:
+    case SSL_VEC:
+    case SSL_REF:
 	  {
 	    caddr_t value = qst_get (qst, ssl);
 	    dtp_t dtp = DV_TYPE_OF (value);
@@ -1352,7 +1354,6 @@ pldbg_stats (query_t *qr, caddr_t * result1, int add_line, caddr_t udt_name)
 static caddr_t
 bif_pldbg_stats (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  query_instance_t *qi = (query_instance_t *)qst;
   caddr_t pname = BOX_ELEMENTS (args) > 0 ? bif_string_or_null_arg (qst, args, 0, "pldbg_stats") : NULL;
   long add_line = (long)(BOX_ELEMENTS (args) > 1 ? bif_long_arg (qst, args, 1, "pldbg_stats") : 0);
   caddr_t udt_name = (caddr_t)(BOX_ELEMENTS (args) > 2 ?
@@ -1436,7 +1437,6 @@ bif_pldbg_stats (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 static caddr_t
 bif_pldbg_stats_load (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  query_instance_t *qi = (query_instance_t *)qst;
   caddr_t * data = (caddr_t *)bif_strict_array_or_null_arg (qst, args, 0, "pldbg_stats_load");
   query_t *qr = NULL;
   long calls, time, self_time;
@@ -1554,7 +1554,6 @@ pldbg_stats_clear (query_t *qr)
 static caddr_t
 bif_pldbg_stats_clear (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  query_instance_t *qi = (query_instance_t *)qst;
   dbe_schema_t * sc = isp_schema (qi->qi_space);
   query_t *qr = NULL;
   query_t **ptp;

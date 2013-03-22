@@ -215,6 +215,8 @@ typedef struct sql_comp_s
     state_slot_t *	sc_grouping;
     ST **		sc_groupby_set;
     int		sc_is_update;
+    char	sc_parallel_dml;
+    char	sc_need_pk;
     char	sc_is_union;
     char	sc_order; /* If order of result rows is not important, like in filling a hash */
     char	sc_any_clb; /* any multi-state cluster node with a clb */
@@ -227,13 +229,39 @@ typedef struct sql_comp_s
     state_slot_t *	sc_set_no_ssl; /* for multistate qr with aggregate, top, distinct etc, set no of input */
     trans_node_t *	sc_trans; /* the tn while forming the step dt */
     dk_set_t		sc_dfg_stages;
+    data_source_t *	sc_qf_first; /* the qn that has the loc ts for the first stage of qf/dfg */
     query_frag_t *	sc_qf;
     fun_ref_node_t *	sc_outer_fref;
     char		sc_in_dfg_subq;
     char		sc_fref_nesting; /* if nested gby/oby, true if colocating the gby */
     char		sc_qf_n_temp_trees; /* how many gb/oby temps in qf.  If many, make shorter batches to save mem */
+    char		sc_is_scalar_agg; /* aggregation in scalar subq, no group by */
+    char		sc_vec_in_outer; /* true if vectoring right side of left oj.  Fetched cols may not be aliased to others */
+    char		sc_qf_in_outer; /* params for a qn in an outer sect inside a qf are nullable, a null there does not disqualify the qf param row  */
+    char		sc_is_first_of_qf;
+    char		sc_no_distinct_colocate; /* if distinct is for except or intersect, do not put inside a qf even if colocatable */
+    char		sc_in_ins_replacing;
     rdf_inf_slots_t *	sc_rdf_inf_slots;
     caddr_t * sc_big_ssl_consts;	/*!< Vector of saved values for SSL consts of unusual types (like vectors) or just too big to fit into SQL text in a plain way */
+    dk_set_t		sc_vec_pred;
+    dk_hash_t *		sc_vec_ssl_def;
+    dk_hash_t *		sc_vec_ssl_shadow;
+    dk_hash_t *		sc_vec_prov_cast;
+    dk_hash_t * 	sc_vec_last_ref;
+    data_source_t *	sc_pre_code_of; /* when setting last ref ni vec, pre code does not set last ref to ts current */
+    key_source_t * 	sc_ref_ks;
+    dk_hash_t *		sc_vec_no_copy_ssls;
+    query_frag_t *	sc_vec_qf; /* if inside a qf in sqlvec */
+    dk_hash_t * 	sc_vec_cast_ssls; /* from the cast ssl to its original ssl */
+    dk_set_t		sc_hash_fillers;
+    data_source_t *	sc_vec_current;
+    dbe_column_t *	sc_vec_current_col; /* set when looking for a comparison param for this col, implies null values get filterd out in cast  */
+    data_source_t *	sc_vec_first_of_qf; /* qf or stn if setting vec ssls  partitioning  ks of it. */
+    dk_set_t	sc_vec_new_ssls;
+    dk_set_t 	sc_ssl_prereset_only;
+    key_source_t *	sc_qf_ks;
+    query_frag_t *	sc_in_qf;
+    query_t *		sc_vec_qr;
   } sql_comp_t;
 
 
@@ -242,8 +270,9 @@ typedef struct sql_comp_s
 #define SC_UPD_INS 2
 
 #define TS_ORDER_KEY 0 /* generate results in key order and add key cols */
-#define TS_ORDER_PLACE 1 /* generate the results in any order but add key cols for subsequent searched upd or del */
-#define TS_ORDER_NONE 2  /* generate the resulsts in any order */
+#define TS_ORDER_DETERMINISTIC 1  /* Like key order but may sort for vectoring, i.e. no irder by coming from index order */
+#define TS_ORDER_PLACE 2 /* generate the results in any order but add key cols for subsequent searched upd or del */
+#define TS_ORDER_NONE 3  /* generate the results in any order */
 
 
 
@@ -378,12 +407,12 @@ void sqlc_decl_variable_list_1 (sql_comp_t * sc, ST ** params, int is_arg_list, 
 void sqlc_insert (sql_comp_t * sc, ST * tree);
 
 void sqlc_update_pos (sql_comp_t * sc, ST * tree,
-    subq_compilation_t * cursor_sqc);
+		      subq_compilation_t * cursor_sqc, ST ** src_ret);
 
 void sqlc_update_searched (sql_comp_t * sc, ST * tree);
 
 void sqlc_delete_pos (sql_comp_t * sc, ST * tree,
-    subq_compilation_t * cursor_sqc);
+		      subq_compilation_t * cursor_sqc, ST ** src_ret);
 
 void sqlc_delete_searched (sql_comp_t * sc, ST * tree);
 
@@ -399,7 +428,7 @@ dbe_table_t * table_ref_table (sql_comp_t * sc, ST* tref);
 state_slot_t * sqlc_col_ref_ssl (sql_comp_t * sc, ST* col_ref);
 
 setp_node_t *  sqlc_add_distinct_node (sql_comp_t * sc, data_source_t ** head,
-    state_slot_t ** ssl_out, long nrows);
+				       state_slot_t ** ssl_out, long nrows, dk_set_t * code, ptrlong * dist_pos);
 
 
 void ct_make_ts (sql_comp_t * sc, comp_table_t * ct);
@@ -407,7 +436,7 @@ void ct_generate_col_test (sql_comp_t * sc, comp_table_t * ct, predicate_t * pre
 
 void sqlc_mark_pred_deps (sql_comp_t * sc,  predicate_t * pred, sql_tree_t * tree);
 void sql_node_append (data_source_t ** head, data_source_t * node);
-void sqlc_copy_ssl_if_constant (sql_comp_t * sc, state_slot_t ** ssl_ret);
+void sqlc_copy_ssl_if_constant (sql_comp_t * sc, state_slot_t ** ssl_ret, dk_set_t * asg_code, setp_node_t * setp);
 
 data_source_t *sqlc_add_sort_nodes (sql_comp_t * sc, data_source_t * old_head);
 
@@ -428,6 +457,8 @@ void sqlc_table_ref_list (sql_comp_t *sc, ST** refs);
 
 caddr_t * sel_expand_stars (sql_comp_t * sc, ST ** selection, ST** from);
 
+int qr_is_local (query_t * qr, int is_cluster);
+int src_is_local (data_source_t * src, int is_cluster);
 int cv_is_local_1 (code_vec_t cv, int is_cluster);
 #define cv_is_local(cv) cv_is_local_1 (cv, 0)
 
@@ -435,7 +466,7 @@ int cv_is_local_1 (code_vec_t cv, int is_cluster);
 #define CV_IS_LOCAL_AGG 2 /* check that funcs are partitionable, allow aggrs */
 #define CV_IS_LOCAL_CN 3 /* when checking code node with subqs.  Accept the subqs but reject non locatable funcs */
 
-dk_set_t cv_assigned_slots (code_vec_t cv);
+dk_set_t cv_assigned_slots (code_vec_t cv, int no_subqs);
 void sqlc_ct_generate (sql_comp_t * sc, comp_table_t * ct);
 
 state_slot_t * sqlc_asg_stmt (sql_comp_t * sc, ST * stmt, dk_set_t * code);
@@ -464,6 +495,8 @@ void t_st_and (ST ** cond, ST * pred);
 struct remote_table_s * find_remote_table (char * name, int create);
 
 
+dbe_table_t *  sqlc_expand_remote_cursor (sql_comp_t * sc, ST * tree);
+
 
 
 /* sqlview.c */
@@ -484,7 +517,7 @@ void sqlc_update_set_keyset (sql_comp_t * sc, table_source_t * ts);
 
 
 void tc_init (trig_cols_t * tc, int event, dbe_table_t * tb, caddr_t * cols,
-    ST ** vals, int add_pk);
+    ST ** vals, dbe_key_t * add_pk);
 void tc_free (trig_cols_t * tc);
 int tc_new_value_inx (trig_cols_t * tc, char *col_name);
 int tc_pk_value_inx (trig_cols_t * tc, char *col_name);
@@ -518,6 +551,10 @@ void sqlc_cursor (sql_comp_t * sc, ST ** ptree, int cr_type);
 ST * sql_tree_and (ST * tree, ST * cond);
 ptrlong cmp_op_inverse (ptrlong op);
 caddr_t box_append_1 (caddr_t box, caddr_t elt);
+caddr_t box_append_1_free (caddr_t box, caddr_t elt);
+#define BOX_CONC_1(b, elt) \
+  *(caddr_t*)&b = box_append_1_free ((caddr_t)b, (caddr_t)elt)
+
 caddr_t t_box_append_1 (caddr_t box, caddr_t elt);
 
 col_ref_rec_t * sqlc_virtual_col_crr (sql_comp_t * sc, comp_table_t * ct, char * name, dtp_t dtp);
@@ -529,7 +566,7 @@ void sqlc_meta_data_hook (sql_comp_t * sc, ST * tree);
 void sqlc_proc_table_cols (sql_comp_t * sc, comp_table_t * ct);
 
 void sqlc_top_select_dt (sql_comp_t * sc, ST * tree);
-ST ** sqlc_selection_names (ST * tree, int only_edit_tree);
+ST ** sqlc_selection_names (ST * tree);
 
 #define P_NO_MATCH 0
 #define P_EXACT 1
@@ -541,12 +578,12 @@ int indexable_predicate_p (int p);
 unsigned char bop_to_dvc (int op);
 void sqlc_select_top (sql_comp_t * sc, select_node_t * sel, ST * tree, 		 dk_set_t * code);
 void sqlc_select_unique_ssls (sql_comp_t * sc, select_node_t * sel, dk_set_t *sel_set);
-data_source_t * sqlc_make_sort_out_node (sql_comp_t * sc, dk_set_t out_cols, dk_set_t out_slots, dk_set_t out_always_null);
+data_source_t * sqlc_make_sort_out_node (sql_comp_t * sc, dk_set_t out_cols, dk_set_t out_slots, dk_set_t out_always_null, int is_gb);
 setp_node_t * setp_node_keys (sql_comp_t * sc, select_node_t * sel, caddr_t * cols);
 void qr_replace_node (query_t * qr, data_source_t * to_replace,
-		      data_source_t * replace_with);
+		      data_source_t * replace_with, int move_after_code);
 
-void setp_distinct_hash (sql_comp_t * sc, setp_node_t * setp, long n_rows);
+void setp_distinct_hash (sql_comp_t * sc, setp_node_t * setp, uint64 n_rows, int op);
 void setp_after_deserialize (setp_node_t * setp);
 void ha_free (hash_area_t * ha);
 
@@ -600,7 +637,7 @@ extern int sqlg_count_qr_global_refs;
        && (sqlg_count_qr_global_refs||  !ssl->ssl_qr_global)  && SSL_PLACEHOLDER != ssl->ssl_type && SSL_ITC != ssl->ssl_type) \
 sethash ((void*)ssl, res, (void*)1); }
 
-void  ref_ssl_list (dk_hash_t * ht, dk_set_t ssls);
+void  ref_ssl_list (sql_comp_t * sc, dk_hash_t * ht, dk_set_t ssls);
 
 #define ASG_SSL(res, all_res, ssl) \
   if (IS_REAL_SSL (ssl)) \
@@ -635,12 +672,24 @@ dk_set_t  sqlg_continue_list (data_source_t * qn);
 extern int cl_rdf_inf_inited;
 extern du_thread_t * cl_rdf_inf_init_thread;
 
+void sqlg_vector (sql_comp_t * sc, query_t * qr);
+void sqlg_vector_params (sql_comp_t * sc, query_t * qr);
+void sqlg_vector_subq (sql_comp_t * sc);
+void sqlg_vec_qns (sql_comp_t * sc, data_source_t * qn, dk_set_t prev_nodes);
+void qn_vec_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t * all_res, int * non_cl_local);
+void qr_set_vec_ssls (query_t * qr);
+#define sqlg_is_vector  (sc->sc_cc->cc_query->qr_proc_vectored)
+
+
+void remhash_ssl (state_slot_t * ssl, dk_hash_t * ht);
+void qr_no_copy_ssls (query_t * qr, dk_hash_t * no_copy);
+
 
 #define OUTSIDE_PARSE_SEM \
   { \
       int is_sem = sqlc_inside_sem; \
       if (is_sem) \
-	semaphore_leave (parse_sem); 
+	semaphore_leave (parse_sem);
 
 
 #define END_OUTSIDE_PARSE_SEM \
@@ -648,5 +697,12 @@ extern du_thread_t * cl_rdf_inf_init_thread;
 	semaphore_enter (parse_sem); \
   }
 
+dk_hash_t * hash_table_copy (dk_hash_t * ht);
+dk_set_t sslr_set_member (dk_set_t ssls, state_slot_t * param);
+void dk_set_replace (dk_set_t s, void * old, void * repl);
+sql_comp_t * sc_top_select_sc (sql_comp_t * sc);
+void sqlc_need_enlist (sql_comp_t * sc);
+int sqlg_distinct_colocated  (sql_comp_t * sc, state_slot_t ** ssls, int n_ssls);
+void stn_set_in_slots (sql_comp_t * sc, stage_node_t * stn);
 
 #endif /* _SQLCMPS_H */

@@ -217,6 +217,9 @@ shcompo_stale_if_needed (shcompo_t *shc)
   vt = shc->_;
   if (NULL == vt->shcompo_check_if_stale)
     return;
+  /* Removed by Mitko in v6:
+  if (shc->shcompo_is_stale || (NULL == shc->shcompo_data))
+    return; */
   mutex_enter (vt->shcompo_cache_mutex);
   if (shc->shcompo_is_stale || (NULL == shc->shcompo_data))
     {
@@ -490,6 +493,7 @@ bif_shcompo_clear (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 /* Part 3. Init/final */
 
+int c_shcompo_size = 100;
 void shcompo_init (void)
 {
     shcompo_vtable__qr.shcompo_type_title = "precompiled SQL query";
@@ -497,18 +501,18 @@ void shcompo_init (void)
     shcompo_vtable__qr.shcompo_cache_mutex = mutex_allocate ();
     shcompo_vtable__qr.shcompo_spare_mutexes = NULL;
     shcompo_vtable__qr.shcompo_alloc = shcompo_alloc__default;
-    shcompo_vtable__qr.shcompo_alloc_copy = shcompo_alloc__default;
+    shcompo_vtable__qr.shcompo_alloc_copy = (shcompo_alloc_copy_t) shcompo_alloc__default;
     shcompo_vtable__qr.shcompo_compile = shcompo_compile__qr;
     shcompo_vtable__qr.shcompo_check_if_stale = shcompo_check_if_stale__qr;
     shcompo_vtable__qr.shcompo_recompile = shcompo_recompile__qr;
     shcompo_vtable__qr.shcompo_destroy_data = shcompo_destroy_data__qr;
-    shcompo_vtable__qr.shcompo_cache_size_limit = 1000;
+    shcompo_vtable__qr.shcompo_cache_size_limit = c_shcompo_size;
     shcompo_vtable__test.shcompo_type_title = "test emulator of compilation";
     shcompo_vtable__test.shcompo_cache = id_hash_allocate (4096, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
     shcompo_vtable__test.shcompo_cache_mutex = mutex_allocate ();
     shcompo_vtable__test.shcompo_spare_mutexes = NULL;
     shcompo_vtable__test.shcompo_alloc = shcompo_alloc__default;
-    shcompo_vtable__test.shcompo_alloc_copy = shcompo_alloc__default;
+    shcompo_vtable__test.shcompo_alloc_copy = (shcompo_alloc_copy_t) shcompo_alloc__default;
     shcompo_vtable__test.shcompo_compile = shcompo_compile__test;
     shcompo_vtable__test.shcompo_check_if_stale = shcompo_check_if_stale__test;
     shcompo_vtable__test.shcompo_recompile = shcompo_recompile__test;

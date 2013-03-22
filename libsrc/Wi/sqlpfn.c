@@ -604,7 +604,7 @@ sqlc_ensure_primary_key (dk_set_t elements)
       t_list (5,
 	  INDEX_DEF, NULL, NULL,
 	  t_list (1, t_box_string ("_IDN")),
-	  NULL));
+	      t_list_to_array (sqlp_index_default_opts (NULL))));
   t_set_push (&elements, NULL);
   t_set_push (&elements,
       t_list (2,
@@ -1474,11 +1474,7 @@ sqlp_complete_fun_ref (ST * tree)
     {
       /* count of non-* */
       ST * arg = tree->_.fn_ref.fn_arg; /* not AMMSC_USER so it's argument, not a vector of them */
-      ST * exp = (ST*) t_list (2, SEARCHED_CASE,
-			     t_list (4, t_list (4, BOP_NULL, arg, NULL, NULL),
-				   box_num (0),
-				   t_list (2, QUOTE, NULL),
-				   box_num (1)));
+      ST * exp = (ST*) t_list (3, CALL_STMT, t_sqlp_box_id_upcase  ("isnotnull"), t_list (1, arg));
       tree->_.fn_ref.fn_arg = exp;
       tree->_.fn_ref.fn_code = AMMSC_COUNTSUM;
     }
@@ -1892,7 +1888,8 @@ sqlp_contains_opts (ST * tree)
 		  || 0 == stricmp (name, "attr_ranges")
 		  || 0 == stricmp (name, "score")
 		  || 0 == stricmp (name, "score_limit")
-		  || 0 == stricmp (name, "end_id"))
+		  || 0 == stricmp (name, "end_id")
+		  || 0 == stricmp (name, "ext_fti") )
 		{
 /*		  dk_free_tree ((caddr_t) arg);*/
 		  tree->_.call.params[inx] = (ST *) t_box_string (name);
@@ -1991,6 +1988,8 @@ sqlp_xpath_or_xquery_eval (ST * funcall_tree)
       char buf[30];
       ST **old_params = funcall_tree->_.call.params;
       size_t old_argcount = BOX_ELEMENTS (old_params);
+  if (enable_vec)
+    return; /* FIXME: the _w_cache  do not run vectored, hack with ssl should be made vectored  */
       if (2 > old_argcount)
     yyerror ("Functions xpath_eval() and xquery_eval() require at least two arguments");
       if (DV_STRING == DV_TYPE_OF(old_params[0]))
@@ -2210,9 +2209,11 @@ generic_check:
       if (bmd->bmd_is_pure)
         {
           int argctr, quoted_arg_ctr = 0;
+          size_t args_memsize = 0, res_memsize = 0;
           caddr_t err = NULL;
           caddr_t ret_val;
           caddr_t *unquoted_params = NULL;
+          ST *lit;
           for (argctr = 0; argctr < argcount; argctr++)
             {
               ST *arg = funcall_tree->_.call.params[argctr];
@@ -2237,6 +2238,8 @@ generic_check:
             }
           else
             unquoted_params = (caddr_t *)(funcall_tree->_.call.params);
+          for (argctr = 0; argctr < argcount; argctr++)
+            args_memsize += 8 + (IS_BOX_POINTER (unquoted_params[argctr]) ? box_length (unquoted_params[argctr]) : 8);
           ret_val = sqlr_run_bif_in_sandbox (bmd, unquoted_params, &err);
           if (NULL != err)
             {
@@ -2248,17 +2251,23 @@ generic_check:
               dk_free_tree (err);
               return res;
 #else
-              goto not_a_constant_pure;
+              goto not_a_constant_pure; /* see below */
 #endif
             }
-          else if (LITERAL_P(ret_val))
+          if (!LITERAL_P(ret_val))
             {
-              ST *lit = (ST *)(t_full_box_copy_tree (ret_val));
               dk_free_box (ret_val);
-              return lit;
+              goto not_a_constant_pure; /* see below */
             }
-          else
+          res_memsize = 8 + (IS_BOX_POINTER (ret_val) ? box_length (ret_val) : 8);
+          if ((res_memsize > 0x1000) && (res_memsize > ((args_memsize * 3) / 2)))
+            {
+              dk_free_box (ret_val);
+              goto not_a_constant_pure; /* see below */
+            }
+          lit = (ST *)(t_full_box_copy_tree (ret_val));
             dk_free_box (ret_val);
+          return lit;
 not_a_constant_pure: ;
         }
     }
@@ -2616,3 +2625,49 @@ sqlp_is_num_lit (caddr_t x)
     default: return 0;
     }
 }
+
+
+char *
+sqlp_default_cluster ()
+{
+  return "__ALL";
+}
+
+
+dk_set_t
+cl_all_host_group_list ()
+{
+  dk_set_t res = NULL;
+  int inx;
+  for (inx = local_cll.cll_max_host; inx > 0; inx--)
+    {
+      if (cl_id_to_host (inx))
+	{
+	  char name[20];
+	  snprintf (name, sizeof (name), "Host%d", inx);
+	  dk_set_push (&res, t_list (3, NULL, t_list (1, t_sym_string (name)), NULL));
+	}
+    }
+  return res;
+}
+
+int enable_col_by_default  = 0;
+
+dk_set_t
+sqlp_index_default_opts(dk_set_t opts)
+{
+  if (enable_col_by_default)
+    {
+      DO_SET (caddr_t, opt, &opts)
+	{
+	  if (0 == stricmp (opt,  "not_column")
+	      || 0 == stricmp (opt,  "column")
+	      || 0 == stricmp (opt,  "bitmap"))
+	    return opts;
+	}
+      END_DO_SET();
+      return t_cons (t_box_string ("column"), opts);
+    }
+  return opts;
+}
+

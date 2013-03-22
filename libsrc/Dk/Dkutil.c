@@ -33,7 +33,7 @@
 void
 print_trace (void)
 {
-#define N_FRAMES 100 
+#define N_FRAMES 100
   void *array[N_FRAMES];
   size_t size, i;
   char **strings;
@@ -48,7 +48,7 @@ print_trace (void)
 }
 #else
 void print_trace (void) { }
-#endif 
+#endif
 
 int
 gpf_notice (const char *file, int line, const char *text)
@@ -126,7 +126,7 @@ get_real_time (timeout_t * to)
 static timeout_t boot_time;
 uint32 last_approx_msec_real_time;
 
-long
+uint32
 approx_msec_real_time (void)
 {
 /*  return (time_now.to_sec * 1000 + time_now.to_usec / 1000); */
@@ -151,7 +151,7 @@ approx_msec_real_time (void)
 }
 
 
-long
+uint32
 get_msec_real_time (void)
 {
 #if 0
@@ -162,8 +162,7 @@ get_msec_real_time (void)
 #endif
 
   get_real_time (&time_now);
-  time_now_msec = time_now.to_sec * 1000 + time_now.to_usec / 1000;
-  return approx_msec_real_time ();
+  return time_now_msec = approx_msec_real_time ();
 }
 
 

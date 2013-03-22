@@ -86,6 +86,8 @@ sql_compile_st (ST ** ptree, client_connection_t * cli,
     SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_SQLC_ERROR, NULL);
     sql_stmt_comp (&sc, ptree);
     qr_set_local_code_and_funref_flag (sc.sc_cc->cc_query);
+    if (sc.sc_cc->cc_query->qr_proc_vectored || sc.sc_cc->cc_has_vec_subq)
+      sqlg_vector (&sc, sc.sc_cc->cc_query);
     qr_resolve_aliases (qr);
     qr_set_freeable (&cc, qr);
     qr->qr_instance_length = cc.cc_instance_fill * sizeof (caddr_t);
@@ -208,7 +210,7 @@ qc_make_cols (sql_comp_t * sc, query_cursor_t * qc, ST * tree)
 	DO_SET (dbe_column_t *, col, &order_key->key_parts)
 	{
 	  ST *ref = sqlc_ct_col_ref (ct, col->col_name);
-	  ST *spec = (ST *) t_list (3, ORDER_BY, ref, (ptrlong) ORDER_ASC);
+	  ST *spec = (ST *) t_list (4, ORDER_BY, ref, (ptrlong) ORDER_ASC, NULL);
 	  t_NCONCF1 (new_sel, ref);
 	  NCONCF1 (new_order_by, spec);
 	  t_NCONCF1 (order_pos, (ptrlong) col_pos);
@@ -226,7 +228,7 @@ qc_make_cols (sql_comp_t * sc, query_cursor_t * qc, ST * tree)
 	{
 	  ST *ref = crr->crr_col_ref;
 	  ptrlong ord = ct->ct_order;
-	  ST *spec = (ST *) t_list (3, ORDER_BY, ref, ord);
+	  ST *spec = (ST *) t_list (4, ORDER_BY, ref, ord, NULL);
 	  t_NCONCF1 (new_sel, ref);
 	  NCONCF1 (new_order_by, spec);
 	  nth++;
@@ -450,7 +452,7 @@ qc_make_update (sql_comp_t * sc, query_cursor_t * qc)
   memset (vals, 0, box_length ((caddr_t) vals));
   DO_BOX (ST *, col_ref, inx, org_sel->_.select_stmt.selection)
   {
-    if (!ST_COLUMN (col_ref, COL_DOTTED))
+    if (!ST_P (col_ref, COL_DOTTED))
       {
 /*	dk_free_tree ((caddr_t) cols);
 	dk_free_tree ((caddr_t) vals);*/
@@ -488,7 +490,7 @@ qc_make_insert (sql_comp_t * sc, query_cursor_t * qc)
   memset (cols, 0, box_length ((caddr_t) vals));
   DO_BOX (ST *, col_ref, inx, org_sel->_.select_stmt.selection)
   {
-    if (!ST_COLUMN (col_ref, COL_DOTTED))
+    if (!ST_P (col_ref, COL_DOTTED))
       {
 /*	dk_free_tree ((caddr_t) cols);
 	dk_free_tree ((caddr_t) vals);*/
@@ -596,7 +598,7 @@ sqlc_top_select_wrap_dt (sql_comp_t * sc, ST * tree)
   top = SEL_TOP (tree);
   if (top)
     {
-      ST * out_names = (ST *) sqlc_selection_names (tree, 0);
+      ST * out_names = (ST *) sqlc_selection_names (tree);
       ST ** oby = tree->_.select_stmt.table_exp->_.table_exp.order_by;
       if (oby)
 	{

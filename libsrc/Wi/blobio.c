@@ -181,7 +181,7 @@ bh_serialize (blob_handle_t * bh, dk_session_t * ses)
   print_int (bh->bh_length, ses);
   print_int (bh->bh_diskbytes, ses);
   print_int (bh->bh_key_id, ses);
-  print_int (bh->bh_frag_no, ses);
+  print_int (bh->bh_frag_no + ((uint32)bh->bh_slice << 16), ses);
   print_int (bh->bh_dir_page, ses);
   print_int (bh->bh_timestamp, ses);
   print_object  (bh->bh_pages, ses, NULL, NULL);
@@ -191,6 +191,7 @@ bh_serialize (blob_handle_t * bh, dk_session_t * ses)
 caddr_t
 bh_deserialize (dk_session_t * session)
 {
+  uint32 frsl;
   blob_handle_t *bh;
   client_connection_t *cli = DKS_DB_DATA (session);
   if (cli && cli->cli_version < 3104)
@@ -214,7 +215,9 @@ bh_deserialize (dk_session_t * session)
   bh->bh_length = read_int (session);
   bh->bh_diskbytes = read_int (session);
   bh->bh_key_id = (unsigned short) read_int (session);
-  bh->bh_frag_no = (short) read_int (session);
+  frsl = read_int (session);
+  bh->bh_frag_no = frsl & 0xffff;
+  bh->bh_slice = frsl >> 16;
   bh->bh_dir_page = read_int (session);
   bh->bh_timestamp = read_int (session);
   bh->bh_pages = (dp_addr_t *) scan_session (session);

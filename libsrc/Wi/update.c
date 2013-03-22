@@ -332,7 +332,7 @@ upd_insert_2nd_key (dbe_key_t * key, it_cursor_t * ins_itc,
   rd.rd_n_values = nth;
 
   /* keep the owned params cause these can be casts owned by the itc when it made pk in ins replacing.  In update node, the casts are owned by another itc */
-  itc_from_keep_params (ins_itc, key);
+  itc_from_keep_params (ins_itc, key, QI_NO_SLICE);
   ins_itc->itc_search_par_fill = 0;
   for (inx = 0; inx < key->key_n_significant; inx++)
     ITC_SEARCH_PARAM (ins_itc, rd.rd_values[key->key_part_in_layout_order[inx]]);
@@ -437,7 +437,7 @@ update_quick (update_node_t * upd, caddr_t * qst, buffer_desc_t * cr_buf,
 	}
       END_FAIL (cr_itc);
     }
-  lt_rb_update (cr_itc->itc_ltrx, cr_buf, rf.rf_row);
+  lt_rb_update (cr_itc->itc_lock_lt, cr_buf, rf.rf_row);
   DO_BOX (dbe_col_loc_t *, cl, inx, upd->upd_fixed_cl)
     {
       caddr_t data = QST_GET (qst, upd->upd_quick_values[inx]);
@@ -527,6 +527,8 @@ update_node_run_1 (update_node_t * upd, caddr_t * inst,
 	      sqlr_new_error ("01001", "SR252", "Row deleted while waiting to update");
 	    }
 	}
+	if (SSL_IS_VEC_OR_REF (upd->upd_place))
+	  itc_unregister_inner ((it_cursor_t*)pl, cr_buf, 0);
 	cr_key = itc_get_row_key (cr_itc, cr_buf);
 	if (cr_key->key_id == upd->upd_exact_key
 	    && (upd->upd_fixed_cl || upd->upd_var_cl)
@@ -544,6 +546,7 @@ update_node_run_1 (update_node_t * upd, caddr_t * inst,
 	    if (row_err)
 	      sqlr_resignal (row_err);
 	    QI_ROW_AFFECTED (inst);
+	    rd_free (&rd);
 	    return;
 	  }
 	tb = cr_key->key_table;
@@ -675,8 +678,15 @@ update_node_run_1 (update_node_t * upd, caddr_t * inst,
 	  {
 	    new_rd.rd_map_pos = rd.rd_map_pos;
 	    if (!main_itc->itc_ltrx->lt_is_excl)
-	      lt_rb_update (main_itc->itc_ltrx, main_buf, BUF_ROW (main_buf, main_itc->itc_map_pos));
+	      lt_rb_update (main_itc->itc_lock_lt, main_buf, BUF_ROW (main_buf, main_itc->itc_map_pos));
 	    upd_refit_row (main_itc, &main_buf, &new_rd, RD_UPDATE);
+	  }
+	if (upd->src_gen.src_sets)
+	  {
+	    if (ALL_KEYS != keys)
+	      dk_set_free (keys);
+	    rd_free (&rd);
+	    return;
 	  }
       }
     ITC_FAILED
@@ -685,7 +695,14 @@ update_node_run_1 (update_node_t * upd, caddr_t * inst,
 	itc_free (main_itc);
       }
     END_FAIL (main_itc);
-
+    if (upd->upd_row_only)
+      {
+	if (keys != tb->tb_keys)
+	  dk_set_free (keys);
+      	itc_free (main_itc);
+	rd_free (&rd);
+	return;
+      }
     if (keys)
       {
 	del_itc = &del_itc_auto;
@@ -700,7 +717,6 @@ update_node_run_1 (update_node_t * upd, caddr_t * inst,
 		  goto next_key;
 		if (!key->key_distinct)
 		  {
-		    del_itc->itc_no_bitmap = 0; /* reset as prev ins may set it to true */
 		    res = itc_get_alt_key (del_itc, &del_buf, key, &rd);
 		    itc_delete_this (del_itc, &del_buf, res, NO_BLOBS);
 		  }
@@ -905,6 +921,19 @@ update_keyset_state_restore (update_node_t * upd, caddr_t * state, int * start)
 void
 update_node_run (update_node_t * upd, caddr_t * inst, caddr_t * state)
 {
+  QNCAST (QI, qi, inst);
+  if (upd->src_gen.src_sets)
+    {
+      if (!upd->upd_trigger_args)
+	{
+	  update_node_vec_run (upd, inst, state);
+	  if (!upd->cms.cms_clrg && ROW_AUTOCOMMIT_DUE (qi, upd->upd_table, 10000))
+	    ROW_AUTOCOMMIT (inst);
+	}
+      else
+	trig_wrapper (inst, upd->upd_trigger_args, upd->upd_table, TRIG_UPDATE, (data_source_t *) upd, (qn_input_fn) update_node_vec_run);
+      return;
+    }
   if (upd->upd_keyset)
     {
       if (state)
@@ -924,6 +953,7 @@ update_node_run (update_node_t * upd, caddr_t * inst, caddr_t * state)
 	      if (!upd->upd_trigger_args)
 		{
 		  update_node_run_1 (upd, inst, state);
+		  if (!upd->cms.cms_clrg && ROW_AUTOCOMMIT_DUE (qi, upd->upd_table, 10000))
 		  ROW_AUTOCOMMIT (inst);
 		}
 	      else
@@ -950,16 +980,24 @@ update_node_input (update_node_t * upd, caddr_t * inst, caddr_t * state)
       return;
     }
   if (upd->upd_policy_qr)
-    trig_call (upd->upd_policy_qr, inst, upd->upd_trigger_args, upd->upd_table);
+    trig_call (upd->upd_policy_qr, inst, upd->upd_trigger_args, upd->upd_table, (data_source_t*)upd);
 
   if (!upd->upd_trigger_args)
     {
+      if (upd->src_gen.src_sets)
+	{
+	  client_connection_t * cli = qi->qi_client;
+	  update_node_vec_run (upd, inst, state);
+	  if (!upd->cms.cms_clrg &&  cli->cli_row_autocommit && cli->cli_n_to_autocommit > dc_batch_sz)
+	    ROW_AUTOCOMMIT (qi);
+	}
+      else
       update_node_run_1 (upd, inst, state);
     }
   else
     {
       trig_wrapper (inst, upd->upd_trigger_args, upd->upd_table,
-	  TRIG_UPDATE, (data_source_t *) upd, (qn_input_fn) update_node_run_1);
+		    TRIG_UPDATE, (data_source_t *) upd, upd->src_gen.src_sets ? (qn_input_fn) update_node_vec_run : (qn_input_fn) update_node_run_1);
     }
   qn_send_output ((data_source_t *) upd, state);
 }
@@ -1080,9 +1118,9 @@ itc_row_insert (it_cursor_t * itc, row_delta_t * rd, buffer_desc_t ** unq_buf,
 		    int blobs_in_place, int pk_only)
 {
   int rc, inx;
+  itc_from_keep_params (itc, rd->rd_key, QI_NO_SLICE);
   if (!blobs_in_place)
     rd_fixup_blob_refs (itc, rd);
-  itc_from_keep_params (itc, rd->rd_key);
   itc->itc_insert_key = rd->rd_key;
   itc->itc_key_spec = rd->rd_key->key_insert_spec;
   for (inx = 0; inx < rd->rd_key->key_n_significant; inx++)
@@ -1102,35 +1140,6 @@ itc_row_insert (it_cursor_t * itc, row_delta_t * rd, buffer_desc_t ** unq_buf,
   return DVC_LESS;
 }
 
-void
-row_insert_rd_len (row_delta_t * rd)
-{
-  dbe_key_t * key = rd->rd_key;
-  int inx = 0;
-  DO_ALL_CL (cl, key)
-    {
-      caddr_t val = rd->rd_values [inx];
-      switch (cl->cl_sqt.sqt_dtp)
-	{
-	  case DV_STRING:
-	  case DV_WIDE:
-	  case DV_ANY:
-	  case DV_OBJECT:
-	      rd->rd_non_comp_len += (box_length (val) - 1);
-	      break;
-	  case DV_BIN:
-	      rd->rd_non_comp_len += box_length (val);
-	      break;
-	  case DV_BLOB:
-	  case DV_BLOB_BIN:
-	  case DV_BLOB_WIDE:
-	      rd->rd_non_comp_len += DV_BLOB_LEN;
-	      break;
-	}
-      inx++;
-    }
-  END_DO_ALL_CL;
-}
 
 void
 row_insert_node_input (row_insert_node_t * ins, caddr_t * inst,
@@ -1151,9 +1160,6 @@ row_insert_node_input (row_insert_node_t * ins, caddr_t * inst,
   if (!key)
     sqlr_new_error ("42000", "RFW..", "Key id " BOXINT_FMT " undefined in row insert", unbox (row[0]));
   rd.rd_key = key;
-  rd.rd_non_comp_len = key->key_row_var_start[0];
-  rd.rd_non_comp_max = MAX_ROW_BYTES;
-  row_insert_rd_len (&rd);
   ITC_FAIL (it)
   {
     if (DVC_MATCH == itc_row_insert (it, &rd, &buf, 0, 0))

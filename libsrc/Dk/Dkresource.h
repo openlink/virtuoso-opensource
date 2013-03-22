@@ -36,6 +36,7 @@ typedef struct
   uint32 		rc_fill;
   uint32 		rc_size;
   void **		rc_items;
+  uint32 *		rc_item_time;
   void *		rc_client_data;
   rc_constr_t 		rc_constructor;
   rc_destr_t 		rc_destructor;
@@ -58,6 +59,8 @@ void resource_no_sem (resource_t * rc);
 void *resource_get (resource_t * rc);
 void *resource_get_1 (resource_t * rc, int make_new);
 int resource_store (resource_t * rc, void *item);
+int resource_store_fifo (resource_t * rc, void *item, int n_fifo);
+int resource_store_timed (resource_t * rc, void *item);
 unsigned long resource_clear (resource_t * rc, rc_destr_t destruct);
 void _resource_adjust (resource_t * rc);
 #endif

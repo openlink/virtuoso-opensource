@@ -29,22 +29,23 @@ typedef double v2df_t __attribute__ ((vector_size (16)));
 typedef float v4sf_t __attribute__ ((vector_size (16)));
 typedef int v4si_t __attribute__ ((vector_size (16)));
 typedef char v16qi_t __attribute__ ((vector_size (16)));
+#else
+typedef long v2di_t;
+typedef double v2df_t;
+typedef float v4sf_t;
+typedef int v4si_t;
+typedef char v16qi_t;
 #endif
 
 typedef union
 {
-#if defined(__GNUC__)
   v2di_t v;
-#endif
   int64 l[2];
 } v2di_u_t;
 
 
-typedef union
-{
-#if defined(__GNUC__)
+typedef union {
   v2di_t v[ARTM_VEC_LEN / 2];
-#endif
   int64 i[ARTM_VEC_LEN];
 } vn_temp_t;
 

@@ -130,7 +130,7 @@ ld_add (in _fname varchar, in _graph varchar)
 
 create procedure ld_ttlp_flags (in fname varchar, in opt varchar)
 {
-  if (fname like '%/btc-20%' or fname like '%.nq%' or fname like '%.n4')
+  if (fname like '%/btc-20%' or fname like '%.nq%' or fname like '%.n4%')
 {
       if (lower (opt) = 'with_delete')
 	return 255 + 512 + 2048;
@@ -162,15 +162,18 @@ ld_file (in f varchar, in graph varchar)
           LL_ERROR = __sql_state || ' ' || __sql_message
       where LL_FILE = f;
     commit work;
-
+    log_stats (sprintf ('RDF load %s with error', f));
     log_message (sprintf (' File %s error %s %s', f, __sql_state, __sql_message));
     return;
   };
 
+  --log_message (sprintf ('loading: %s', f));
   connection_set ('ld_file', f);
   if (graph like 'sql:%')
     {
-      exec (subseq (graph, 4), null, null, vector (f), vector ('max_rows', 0, 'use_cache', 1));
+  declare str varchar;
+      exec (str := subseq (graph, 4), null, null, vector (f), vector ('max_rows', 0, 'use_cache', 1));
+      log_stats (str);
       return;
     }
 
@@ -182,18 +185,19 @@ ld_file (in f varchar, in graph varchar)
     {
       gzip_name := regexp_replace (f, '\.gz\x24', '');
       if (ld_is_rdfxml (gzip_name))
-	DB.DBA.RDF_LOAD_RDFXML (gz_file_open (f), graph, graph);
+	DB.DBA.RDF_LOAD_RDFXML_V (gz_file_open (f), graph, graph);
       else
-	TTLP (gz_file_open (f), graph, graph, ld_ttlp_flags (gzip_name, graph));
+	TTLP_V (gz_file_open (f), graph, graph, ld_ttlp_flags (gzip_name, graph));
     }
   else
     {
       if (ld_is_rdfxml (f))
-	DB.DBA.RDF_LOAD_RDFXML (file_open (f), graph, graph);
+	DB.DBA.RDF_LOAD_RDFXML_V (file_open (f), graph, graph);
       else
-	TTLP (file_open (f), graph, graph, ld_ttlp_flags (f, graph));
+	TTLP_V (file_open (f), graph, graph, ld_ttlp_flags (f, graph));
     }
 
+  log_stats (sprintf ('RDF load %s', f));
   --log_message (sprintf ('loaded %s', f));
 }
 ;
@@ -343,7 +347,7 @@ rdf_loader_run (in max_files integer := null, in log_enable int := 2)
 
 create procedure rdf_load_stop (in force int := 0)
 {
-  insert into DB.DBA.LOAD_LIST (LL_FILE) values ('##stop');
+  insert into DB.DBA.LOAD_LIST (LL_FILE, ll_graph) values ('##stop',  'xx');
   commit work;
   if (force)
     cl_exec ('txn_killall (1)');
@@ -360,7 +364,8 @@ create procedure RDF_LOADER_RUN_1 (in x int, in y int)
 create procedure rdf_ld_srv (in log_enable int := 2)
 {
   declare aq any;
-  aq := async_queue (1);
+  cl_detach_thread ();
+  aq := async_queue (1, 4);
   aq_request (aq, 'DB.DBA.RDF_LOADER_RUN_1', vector (null, log_enable));
   aq_wait_all (aq);
 }

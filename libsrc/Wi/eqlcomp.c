@@ -67,14 +67,36 @@ ssl_free (state_slot_t * ssl)
 {
   if (ssl->ssl_not_freeable)
     return;
-  dk_free_box (ssl->ssl_name);
   if (SSL_CONSTANT == ssl->ssl_type)
     {
       dk_free_tree (((state_const_slot_t *) ssl)->ssl_const_val);
       dk_free ((caddr_t) ssl, sizeof (state_const_slot_t));
     }
+  else if (SSL_REF == ssl->ssl_type)
+    {
+      QNCAST (state_slot_ref_t, sslr, ssl);
+      dk_free ((caddr_t)sslr->sslr_set_nos, sslr->sslr_distance * sizeof (ssl_index_t));
+      dk_free ((caddr_t) ssl, sizeof (state_slot_ref_t));
+    }
   else
+    {
+      dk_free_box (ssl->ssl_name);
     dk_free ((caddr_t) ssl, sizeof (state_slot_t));
+}
+}
+
+
+void
+sp_list_free (dk_set_t sps)
+{
+  DO_SET (search_spec_t *, sp, &sps)
+    {
+      if (CMP_HASH_RANGE == sp->sp_min_op)
+	dk_free ((caddr_t)sp->sp_min_ssl, sizeof (hash_range_spec_t));
+      dk_free ((caddr_t)sp, sizeof (search_spec_t));
+    }
+  END_DO_SET();
+  dk_set_free (sps);
 }
 
 
@@ -263,8 +285,10 @@ dsr_free (data_source_t * x)
   cv_free (x->src_pre_code);
   cv_free (x->src_after_test);
   cv_free (x->src_after_code);
-  dk_free_box (x->src_local_save);
   dk_set_free (x->src_continuations);
+  dk_free_box ((caddr_t)x->src_pre_reset);
+  dk_free_box ((caddr_t)x->src_continue_reset);
+  dk_free_box ((caddr_t)x->src_vec_reuse);
   dk_free ((caddr_t) x, -1);
 }
 
@@ -311,6 +335,18 @@ qr_free (query_t * qr)
 {
   if (!qr)
     return;
+  if (!qr->qr_qf_id && !qr->qr_super)
+    {
+      /* a local qr has parallel branches.  If going, let the last of them free the qr */
+      IN_CLL;
+      if (qr->qr_ref_count)
+	{
+	  qr->qr_last_qi_may_free = 1;
+	  LEAVE_CLL;
+	  return;
+	}
+      LEAVE_CLL;
+    }
   qr_drop_dependencies (qr);
   while (NULL != qr->qr_used_tables) dk_free_tree (dk_set_pop (&(qr->qr_used_tables)));
   while (NULL != qr->qr_used_udts) dk_free_tree (dk_set_pop (&(qr->qr_used_udts)));
@@ -345,6 +381,13 @@ qr_free (query_t * qr)
     ssl_free (ssl);
   }
   END_DO_SET ();
+  DO_SET (state_slot_t *, ssl, &qr->qr_ssl_refs)
+  {
+    ssl_free (ssl);
+  }
+  END_DO_SET ();
+  dk_set_free (qr->qr_ssl_refs);
+
   {
     state_const_slot_t * ssl = qr->qr_const_ssls, *nxt;
     while (ssl)
@@ -373,6 +416,7 @@ qr_free (query_t * qr)
   if (qr->qr_proc_result_cols)
     dk_free_tree ((caddr_t) list_to_array (qr->qr_proc_result_cols));
   dk_free_box ((caddr_t) qr->qr_freeable_slots);
+  dk_free_box ((caddr_t) qr->qr_qp_copy_ssls);
   DO_SET (dbe_key_t *, tkey, &qr->qr_temp_keys)
     {
       kpd_free (tkey->key_partition);
@@ -383,6 +427,9 @@ qr_free (query_t * qr)
 #ifndef ROLLBACK_XQ
   dk_free_tree ((box_t) qr->qr_xp_temp);
 #endif
+  if (qr->qr_proc_vectored)
+    dk_free_box ((box_t) qr->qr_parm_default);
+  else
   dk_free_tree ((box_t) qr->qr_parm_default);
   dk_free_tree ((box_t) qr->qr_parm_alt_types);
   dk_free_tree ((box_t) qr->qr_parm_place);
@@ -399,7 +446,8 @@ qr_free (query_t * qr)
   dk_free_box ((caddr_t) qr->qr_proc_cost);
   dk_free_box ((caddr_t)qr->qr_qf_params);
   dk_free_box ((caddr_t)qr->qr_qf_agg_res);
-  dk_free_box ((caddr_t)qr->qr_qf_agg_defaults);
+  dk_free_box ((caddr_t)qr->qr_vec_ssls);
+  dk_free_box ((caddr_t)qr->qr_stages);
 #ifdef PLDBG
   dk_free_box (qr->qr_source);
   if (qr->qr_line_counts)
@@ -417,8 +465,6 @@ qr_free (query_t * qr)
 	}
       id_hash_free (qr->qr_call_counts);
     }
-  if (qr->qr_stats_mtx)
-    mutex_free (qr->qr_stats_mtx);
 #endif
 #if defined (MALLOC_DEBUG) || defined (VALGRIND)
   if ((NULL != qr->qr_static_prev) || (NULL != qr->qr_static_next) || (qr == static_qr_dllist))
@@ -534,6 +580,7 @@ ssl_new_column (comp_context_t * cc, const char *cr_name, dbe_column_t * col)
   sl->ssl_type = SSL_COLUMN;
 
   SSL_ADD_TO_QR (sl);
+  ssl_set_dc_type (sl);
   return sl;
 }
 
@@ -637,6 +684,8 @@ ssl_new_constant (comp_context_t * cc, caddr_t val)
     sl->ssl_type = SSL_CONSTANT;
     sl->ssl_const_val = box_copy_tree (val);
     sl->ssl_dtp = DV_TYPE_OF (val);
+    if (sl->ssl_dtp != DV_DB_NULL)
+      sl->ssl_sqt.sqt_non_null = 1;
     if (sl->ssl_dtp == DV_LONG_STRING)
       sl->ssl_prec = box_length (val) - 1;
     else
@@ -698,6 +747,7 @@ ssl_new_placeholder (comp_context_t * cc, const char *name)
 
   sl->ssl_index = cc_new_instance_slot (cc);
   sl->ssl_type = SSL_PLACEHOLDER;
+  sl->ssl_sqt.sqt_dtp = DV_ITC;
   sl->ssl_name = box_dv_uname_string (name);
   SSL_ADD_TO_QR (sl);
   return sl;
@@ -726,6 +776,7 @@ ssl_is_settable (state_slot_t * ssl)
     case SSL_REF_PARAMETER:
     case SSL_REF_PARAMETER_OUT:
     case SSL_VARIABLE:
+    case SSL_VEC:
       return 1;
     default:
       return 0;
@@ -830,10 +881,6 @@ pred_to_spec (comp_context_t * cc, caddr_t * spec)
 {
   int len = (int) BOX_ELEMENTS (spec);
   NEW_VARZ (search_spec_t, sp);
-
-  sp->sp_is_boxed = 1;
-
-
   if (len == 3)
     {
       int op = sym_to_op (cc, spec[1]);
@@ -1070,6 +1117,7 @@ key_source_create (comp_context_t * cc,
   int part_no = 0;
   NEW_VARZ (key_source_t, ks);
   ks->ks_key = key;
+  ks->ks_row_check = itc_row_check;
   /* Make the index search key */
 
   if (specs)
@@ -1187,12 +1235,22 @@ ks_free (key_source_t * ks)
   dk_set_free (ks->ks_out_slots);
   cv_free (ks->ks_local_test);
   cv_free (ks->ks_local_code);
-  if (ks->ks_out_map)
+  if (ks->ks_out_map || ks->ks_v_out_map)
     dk_free_box ((caddr_t) ks->ks_out_map);
+    dk_free_box ((caddr_t) ks->ks_v_out_map);
+    dk_free_box ((caddr_t) ks->ks_vec_source);
+    dk_free_box ((caddr_t) ks->ks_vec_cast);
+    dk_free_box ((caddr_t) ks->ks_dc_val_cast);
+    dk_free_box (ks->ks_cast_null);
+    dk_free_box ((caddr_t) ks->ks_scalar_partition);
+    dk_free_box ((caddr_t) ks->ks_scalar_cp);
+    dk_free_box ((caddr_t) ks->ks_vec_cp);
+
   dk_set_free (ks->ks_always_null);
   dk_free_box ((caddr_t)ks->ks_qf_output);
   if (ks->ks_cl_order)
     cl_order_free (ks->ks_cl_order);
+  sp_list_free (ks->ks_hash_spec);
   dk_free ((caddr_t) ks, sizeof (key_source_t));
 }
 
@@ -1263,7 +1321,6 @@ ks_make_main_spec (comp_context_t * cc, key_source_t * ks, char *cr_name)
 	name_sym = str_to_sym (temp_name);
 	sp->sp_min_ssl = cc_name_to_slot (cc, name_sym, 1);
 	dk_free_box (name_sym);
-	sp->sp_is_boxed = 1;
 	sp->sp_cl = *key_find_cl (ks->ks_key, col->col_id);
       }
     part_no++;
@@ -1325,7 +1382,7 @@ ts_free (table_source_t * ts)
 {
   if (TS_ALT_POST == ts->ts_is_alternate)
     {
-      /* an alternate ts refers to the after tests and code of the primary ts.  Set the refs to null */
+      /* an alternate ts refers to the after tests and code of the primary ts.  Set the refs to nulll */
       ts->src_gen.src_after_test = NULL;
       ts->src_gen.src_after_code = NULL;
       if (ts->ts_order_ks)
@@ -1354,6 +1411,9 @@ ts_free (table_source_t * ts)
     }
   if (ts->ts_proc_ha)
     ha_free (ts->ts_proc_ha);
+  dk_free_box(ts->ts_sort_read_mask);
+  dk_free_box ((caddr_t)ts->ts_branch_ssls);
+  dk_free_box ((caddr_t)ts->ts_branch_sets);
 }
 
 
@@ -1421,9 +1481,50 @@ qr_resolve_aliases (query_t * qr)
 	    refd_ssl = refd_ssl->ssl_alias_of;
 	  }
 	ssl->ssl_index = refd_ssl->ssl_index;
+#if 0 /* XXX: makes complication */
+	if (ssl->ssl_type != refd_ssl->ssl_type) /* can be mark'd as global and no longer vec */
+	  ssl->ssl_type = refd_ssl->ssl_type;
+#endif
       }
   }
   END_DO_SET ();
+}
+
+
+void
+qr_no_copy_ssls (query_t * qr, dk_hash_t * no_copy)
+{
+  DO_SET (data_source_t *, qn, &qr->qr_nodes)
+    {
+      if (IS_QN (qn, subq_node_input))
+	qr_no_copy_ssls (((subq_source_t*)qn)->sqs_query, no_copy);
+      else if (IS_QN (qn, setp_node_input))
+	{
+	  QNCAST (setp_node_t, setp, qn);
+	  hash_area_t * ha = setp->setp_ha;
+	  if (ha && (HA_DISTINCT == ha->ha_op || HA_GROUP == ha->ha_op ||HA_ORDER == ha->ha_op))
+	    sethash ((void*)ha->ha_tree, no_copy, (void*)1);
+	  sethash ((void*)setp->setp_sorted, no_copy, (void*) 1);
+	}
+    }
+  END_DO_SET();
+  DO_SET (query_t *, sq, &qr->qr_subq_queries)
+    qr_no_copy_ssls (sq, no_copy);
+  END_DO_SET();
+}
+
+
+unsigned int
+ssl_sort_key (state_slot_t * ssl)
+{
+  return (unsigned int)ssl->ssl_index;
+}
+
+
+void
+ssl_sort_by_index (state_slot_t ** ssls)
+{
+  buf_sort ((buffer_desc_t**)ssls, BOX_ELEMENTS (ssls), (sort_key_func_t)ssl_sort_key);
 }
 
 
@@ -1433,6 +1534,9 @@ qr_set_freeable (comp_context_t *cc, query_t * qr)
   dk_set_t res = NULL;
   dk_set_t  slots = qr->qr_state_map;
   dk_set_t * prev = &qr->qr_state_map;
+  dk_set_t copy = NULL;
+  dk_hash_t * no_copy = hash_table_allocate (23);
+  qr_no_copy_ssls (qr, no_copy);
   if (qr->qr_state_map)
     stssl_query (cc, qr); /* top qr only */
   while (slots)
@@ -1445,6 +1549,8 @@ qr_set_freeable (comp_context_t *cc, query_t * qr)
 	  && ssl->ssl_type != SSL_CONSTANT)
 	{
 	  dk_set_push (&res, (void*)use_ssl);
+	  if (SSL_ITC != ssl->ssl_type && SSL_PLACEHOLDER != ssl->ssl_type && !gethash ((void*)ssl, no_copy))
+	    dk_set_push (&copy, ssl);
 	}
       if (use_ssl != ssl)
 	{
@@ -1459,6 +1565,9 @@ qr_set_freeable (comp_context_t *cc, query_t * qr)
     }
   dk_free_box ((box_t) qr->qr_freeable_slots);
   qr->qr_freeable_slots = (state_slot_t **) list_to_array (res);
+  ssl_sort_by_index (qr->qr_freeable_slots);
+  qr->qr_qp_copy_ssls = (state_slot_t **) list_to_array (copy);
+  hash_table_free (no_copy);
   if (cc->cc_keep_ssl)
     {
       hash_table_free (cc->cc_keep_ssl);
@@ -1529,21 +1638,40 @@ table_source_create (
 
 
 void
-ins_free (insert_node_t * ins)
+ik_array_free (ins_key_t ** iks)
 {
   int inx;
+  if (!iks)
+    return;
+  DO_BOX (ins_key_t *, ik, inx, iks)
+    {
+      if (!ik)
+	continue;
+      dk_free_box ((caddr_t) ik->ik_slots);
+      dk_free_box ((caddr_t) ik->ik_cols);
+      dk_free_box ((caddr_t) ik->ik_del_slots);
+      dk_free_box ((caddr_t) ik->ik_del_cast);
+      dk_free_box ((caddr_t) ik->ik_del_cast_func);
+      dk_free ((caddr_t) ik, -1);
+    }
+  END_DO_BOX;
+  dk_free_box ((caddr_t)iks);
+}
+
+
+void
+ins_free (insert_node_t * ins)
+{
   dk_free_box ((caddr_t) ins->ins_col_ids);
   dk_set_free (ins->ins_values);
   dk_free_box ((caddr_t) ins->ins_trigger_args);
   clb_free (&ins->clb);
-  DO_BOX (ins_key_t *, ik, inx, ins->ins_keys)
-    {
-      dk_free_box ((caddr_t) ik->ik_slots);
-      dk_free ((caddr_t) ik, -1);
-    }
-  END_DO_BOX;
-  dk_free_box ((caddr_t) ins->ins_keys);
+  dk_free_box ((caddr_t)ins->ins_vec_source);
+  dk_free_box ((caddr_t)ins->ins_vec_cast);
+  dk_free_box ((caddr_t)ins->ins_vec_cast_cl);
+  ik_array_free (ins->ins_keys);
   dk_free_box (ins->ins_key_only);
+  qr_free (ins->ins_policy_qr);
 }
 
 
@@ -1570,33 +1698,57 @@ ins_key (comp_context_t * cc, insert_node_t * ins, dbe_key_t * key)
 {
   int inx = 0;
   dk_set_t slots = NULL;
+  dk_set_t cols = NULL;
   NEW_VARZ (ins_key_t, ik);
   ik->ik_key = key;
   DO_CL (cl, key->key_key_fixed)
     {
+      dk_set_push (&cols, (void*)sch_id_to_column (wi_inst.wi_schema, cl->cl_col_id));
       dk_set_push (&slots, (void*) ins_col_slot (cc, ins, cl->cl_col_id));
     }
   END_DO_CL;
   DO_CL (cl, key->key_key_var)
     {
+      dk_set_push (&cols, (void*)sch_id_to_column (wi_inst.wi_schema, cl->cl_col_id));
       dk_set_push (&slots, (void*) ins_col_slot (cc, ins, cl->cl_col_id));
     }
   END_DO_CL;
-
+  if (key->key_is_col)
+    {
+      dk_set_t parts = key->key_parts;
+      int inx;
+      for (inx = 0; inx < key->key_n_significant; inx++)
+	parts = parts->next;
+      DO_SET (dbe_column_t *, col, &parts)
+	{
+	  dk_set_push (&cols, (void*)col);
+	  dk_set_push (&slots, (void*) ins_col_slot (cc, ins, col->col_id));
+	}
+      END_DO_SET();
+    }
+  else
+    {
   if (key->key_row_fixed)
     {
       for (inx = 0; key->key_row_fixed[inx].cl_col_id; inx++)
+	    {
+	      dk_set_push (&cols, (void*)sch_id_to_column (wi_inst.wi_schema, key->key_row_fixed[inx].cl_col_id));
 	dk_set_push (&slots, (void*) ins_col_slot (cc, ins, key->key_row_fixed[inx].cl_col_id));
     }
+	}
   if (key->key_row_var)
     {
       for (inx = 0; key->key_row_var[inx].cl_col_id; inx++)
 	{
-	  if (CI_BITMAP != key->key_row_var[inx].cl_col_id)
+	      if (CI_BITMAP == key->key_row_var[inx].cl_col_id)
+		continue;
+	      dk_set_push (&cols, (void*)sch_id_to_column (wi_inst.wi_schema, key->key_row_var[inx].cl_col_id));
 	    dk_set_push (&slots, (void*) ins_col_slot (cc, ins, key->key_row_var[inx].cl_col_id));
 	}
     }
+    }
   ik->ik_slots = (state_slot_t **) list_to_array (dk_set_nreverse (slots));
+  ik->ik_cols = (dbe_column_t **) list_to_array (dk_set_nreverse (cols));
   return ik;
 }
 
@@ -1622,7 +1774,7 @@ sqlc_ins_keys (comp_context_t * cc, insert_node_t * ins)
 	    }
 	}
       END_DO_SET();
-      sqlc_new_error (cc, "22000", "INS..", "explicit index in insert does not exist");
+      sqlc_new_error (cc, "22000", "INS..", "Explicit index %s in insert does not exist", ins->ins_key_only);
     }
   dk_set_push (&keys, (void*) ins_key (cc, ins, ins->ins_table->tb_primary_key));
   DO_SET (dbe_key_t *, key, &ins->ins_table->tb_keys)
@@ -1713,13 +1865,14 @@ key_source_om (comp_context_t * cc, key_source_t * ks)
     return;
   om = (out_map_t *) dk_alloc_box (sizeof (out_map_t) * n_out, DV_BIN);
   memset (om, 0, n_out * sizeof (out_map_t));
-  ks->ks_out_map = om;
   DO_SET (dbe_column_t *, col, &ks->ks_out_cols)
     {
       if (ks->ks_key->key_bit_cl && col->col_id == ks->ks_key->key_bit_cl->cl_col_id)
 	om[inx++].om_is_null = OM_BM_COL;
       else if (CI_ROW == (ptrlong) col)
 	om[inx++].om_is_null = OM_ROW;
+      else if (ks->ks_key->key_is_col)
+	om[inx++].om_cl = *cl_list_find (ks->ks_key->key_row_var, col->col_id);
       else
 	{
 	  dbe_col_loc_t * cl = key_find_cl (ks->ks_key, col->col_id);
@@ -1730,6 +1883,7 @@ key_source_om (comp_context_t * cc, key_source_t * ks)
 	}
     }
   END_DO_SET();
+  ks->ks_out_map = om;
 }
 
 
@@ -1924,10 +2078,14 @@ upd_free (update_node_t * upd)
 {
   dk_free_box ((caddr_t) upd->upd_col_ids);
   dk_free_box ((caddr_t) upd->upd_values);
+  dk_free_box ((caddr_t) upd->upd_pk_values);
+  dk_free_box ((caddr_t) upd->upd_old_blobs);
   dk_free_box ((caddr_t) upd->upd_quick_values);
   dk_free_box ((caddr_t) upd->upd_var_cl);
   dk_free_box ((caddr_t) upd->upd_trigger_args);
   dk_free_box ((caddr_t) upd->upd_fixed_cl);
+  ik_array_free (upd->upd_keys);
+  qr_free (upd->upd_policy_qr);
 }
 
 
@@ -2381,7 +2539,8 @@ qr_describe_1 (query_t * qr, caddr_t *err_ret, client_connection_t * cli)
 	      DV_ARRAY_OF_POINTER);
 	  state_slot_t *sl = sel->sel_out_slots[inx];
 	  dtp_t dtp = sl->ssl_dtp;
-
+	  if (SSL_REF == sl->ssl_type)
+	    sl = ((state_slot_ref_t*)sl)->sslr_ssl;
 	  cols[inx] = desc;
 	  /*if (sl->ssl_name)*/
 	    {
@@ -2413,6 +2572,8 @@ retry_dupe_check:
 	      dtp = DV_BLOB_WIDE;
 	      desc->cd_flags = box_num (CDF_XMLTYPE);
 	    }
+	  if (sl->ssl_dtp == DV_ARRAY_OF_POINTER && sl->ssl_type == SSL_VEC)
+	    dtp = DV_ANY;
 	  if (cli && DV_INT64 == dtp && cli->cli_version < 3016)
 	    dtp = DV_NUMERIC;
 	  desc->cd_dtp = dtp;
@@ -2457,7 +2618,7 @@ retry_dupe_check:
 	      desc->cd_scale = box_num (6);
 	    }
 	  if (desc->cd_dtp == DV_ANY)
-	    prec = 0x7fffffff;
+  	      prec = ROW_MAX_COL_BYTES;
 	  if (IS_BLOB_DTP (desc->cd_dtp))
 	    prec = 0x7fffffff;
 	  desc->cd_precision = box_num (prec);
@@ -2514,7 +2675,6 @@ eql_compile_eql (const char *string, client_connection_t * cli, caddr_t * err)
     eql_stmt_comp (&cc, (caddr_t) text, &head, &tail);
 
     qr->qr_head_node = head;
-    qr->qr_text = box_string (string);
 
     qr_add_current_of_output (qr);
     QR_POST_COMPILE (qr, (&cc));

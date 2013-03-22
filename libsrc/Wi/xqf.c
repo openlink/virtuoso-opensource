@@ -1478,7 +1478,6 @@ __xqf_compare  (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe, int do_wh
       break;
     case XQ_STARTSWITH:
       {
-	utf8char *tail, c;
 	int len = 0, wide_len;
 	caddr_t wide_box = box_utf8_as_wide_char (str1, NULL, strlen (str1), 0, DV_WIDE), utf8_box;
 
@@ -3378,11 +3377,11 @@ static xqf_str_parser_desc_t xqf_str_parser_descs[] = {
     {	"double"		, __float_from_string		, NULL			, XQ_DOUBLE		, 0	, 0	, DV_DOUBLE_FLOAT, "__xqf_str_parse_double"	, "DOUBLE PRECISION"	},
     {	"duration"		, __duration_from_string	, NULL /*???*/		, 0			, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			},
     {	"float"			, __float_from_string		, NULL			, XQ_FLOAT		, 0	, 0	, DV_SINGLE_FLOAT, "__xqf_str_parse_float"	, "REAL"		},
-    {	"gDay"			, __datetime_from_string	, __datetime_rcheck	, XQ_DAY		, 0	, 1	, DV_DATETIME	, "__xqf_str_parse_datetime"	, NULL			},
-    {	"gMonth"		, __datetime_from_string	, __datetime_rcheck	, XQ_MONTH		, 0	, 1	, DV_DATETIME	, "__xqf_str_parse_datetime"	, NULL			},
-    {	"gMonthDay"		, __datetime_from_string	, __datetime_rcheck	, XQ_MONTHDAY		, 0	, 1	, DV_DATETIME	, "__xqf_str_parse_datetime"	, NULL			},
-    {	"gYear"			, __datetime_from_string	, __datetime_rcheck	, XQ_YEAR		, 0	, 1	, DV_DATETIME	, "__xqf_str_parse_datetime"	, NULL			},
-    {	"gYearMonth"		, __datetime_from_string	, __datetime_rcheck	, XQ_YEARMONTH		, 0	, 1	, DV_DATETIME	, "__xqf_str_parse_datetime"	, NULL			},
+    {	"gDay"			, __datetime_from_string	, __datetime_rcheck	, XQ_DAY		, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			},
+    {	"gMonth"		, __datetime_from_string	, __datetime_rcheck	, XQ_MONTH		, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			},
+    {	"gMonthDay"		, __datetime_from_string	, __datetime_rcheck	, XQ_MONTHDAY		, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			},
+    {	"gYear"			, __datetime_from_string	, __datetime_rcheck	, XQ_YEAR		, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			},
+    {	"gYearMonth"		, __datetime_from_string	, __datetime_rcheck	, XQ_YEARMONTH		, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			},
     {	"int"			, __integer_from_string		, __integer_rcheck	, XQ_INT32		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
     {	"integer"		, __integer_from_string		, __integer_rcheck	, XQ_INT		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, "INTEGER"		},
     {	"long"			, __integer_from_string		, __integer_rcheck	, XQ_INT64		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, "INTEGER"		},
@@ -3545,6 +3544,23 @@ bif_xqf_str_parse_to_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
           /* test only : xte_word_range(xte,&l1,&l2); */
           return ((caddr_t) xte);
         }
+      if (!strcmp (type_iri, "http://www.openlinksw.com/schemas/virtrdf#Geometry")
+	  && DV_STRING == arg_dtp)
+	{
+	  caddr_t err = NULL;
+	  caddr_t g = geo_parse_wkt (arg, &err);
+	  if (err && !suppress_error)
+	    sqlr_resignal (err);
+	  if (!err)
+	    {
+	      rdf_box_t * rb = rb_allocate ();
+	      rb->rb_type = RDF_BOX_GEO;
+	      rb->rb_lang = RDF_BOX_DEFAULT_LANG;
+	      rb->rb_box = g;
+	      rb->rb_is_complete = 1;
+	      return (caddr_t) rb;
+	    }
+	}
       return NEW_DB_NULL;
     }
   p_name = type_iri + XMLSCHEMA_NS_URI_LEN + 1; /* +1 is to skip '#' */

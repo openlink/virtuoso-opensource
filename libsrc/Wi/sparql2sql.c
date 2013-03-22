@@ -280,7 +280,7 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
       SPART *var = spar_make_variable (sparp, varname);
       t_set_push (&new_vars, var);
     }
-  
+
   if ((SPART **)_STAR == retvals)
     {
       if (NULL == new_vars)
@@ -472,7 +472,7 @@ sparp_expand_binds_like_macro (sparp_t *sparp, SPART **expr_ptr, dk_set_t binds,
           {
             sparp_expand_binds_like_macro (sparp, &(oby->_.oby.expn), binds, parent_gp);
           }
-        END_DO_BOX_FAST; 
+        END_DO_BOX_FAST;
         return;
       }
     case SPAR_VARIABLE:
@@ -619,6 +619,7 @@ sparp_gp_trav_cu_in_options (sparp_t *sparp, SPART *gp, SPART *curr, SPART **opt
             break;
           }
         case SAME_AS_L: case SAME_AS_O_L: case SAME_AS_P_L: case SAME_AS_S_L:  case SAME_AS_S_O_L:
+        case GEO_L: case PRECISION_L:
         case SCORE_LIMIT_L: case T_MIN_L: case T_MAX_L:
           {
             sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
@@ -3770,7 +3771,7 @@ spar_refresh_binv_var_rvrs (sparp_t *sparp, SPART *binv)
   int varcount, rowcount, varctr, rowctr;
   if (binv->_.binv.rows_in_use == binv->_.binv.rows_last_rvr)
     return;
-  binv->_.binv.rows_last_rvr = binv->_.binv.rows_in_use; 
+  binv->_.binv.rows_last_rvr = binv->_.binv.rows_in_use;
   varcount = BOX_ELEMENTS (binv->_.binv.vars);
   if (0 == binv->_.binv.rows_in_use)
     {

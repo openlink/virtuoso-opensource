@@ -173,6 +173,7 @@ extern const char* recover_file_prefix;
 /* Specified in minutes. Note that 1440 minutes = 24 hours. */
 extern unsigned long cfg_autocheckpoint; /* from auxfiles.c */
 extern int default_txn_isolation;
+extern int c_col_by_default;
 extern int c_use_aio;
 extern long txn_after_image_limit; /* from log.c */
 extern int iri_cache_size;
@@ -184,7 +185,7 @@ extern int32 rdf_shorten_long_iri;
 extern int32 ric_samples_sz;
 extern int32 enable_p_stat;
 extern int aq_max_threads;
-extern int32 c_compress_mode;
+extern int c_compress_mode;
 
 char * http_log_file_check (struct tm *now); /* http log name checking */
 
@@ -639,6 +640,9 @@ cfg_open_syslog (int level, char *c_facility)
 #endif
 }
 
+int cfg_getsize (PCONFIG pc, char * sec, char * attr, size_t * sz);
+int cfg2_getsize (PCONFIG pc,  char * sec, char * attr, size_t * sz);
+
 extern LOG *virtuoso_log;
 static char *prefix;
 int
@@ -658,7 +662,6 @@ cfg_setup (void)
       log (L_ERR, "There is no configuration file %s", f_config_file);
       return -1;
     }
-
 #ifndef WIN32
   {
     /* Do this early, before the log file is created */
@@ -859,7 +862,7 @@ cfg_setup (void)
   if (cfg_getstring (pconfig, section, "DirsDenied", &c_denied_dirs) == -1)
     c_denied_dirs = 0;
 
-  if (cfg_getstring (pconfig, section, "BackupDirs", &c_allowed_dirs) == -1)
+  if (cfg_getstring (pconfig, section, "BackupDirs", &c_backup_dirs) == -1)
     c_backup_dirs = 0;
 
   if (cfg_getstring (pconfig, section, "SafeExecutables", &c_safe_execs) == -1)
@@ -970,6 +973,9 @@ cfg_setup (void)
     sqlo_max_mp_size = 200000000;
 
 #ifdef POINTER_64
+  if (sqlo_max_mp_size >= 0x40000000)
+    sqlo_max_mp_size = INT32_MAX;
+  else
   sqlo_max_mp_size *= 2;
 #endif
 
@@ -1020,7 +1026,7 @@ cfg_setup (void)
 
   if (cfg_getlong (pconfig, section, "LogProcOverwrite", &log_proc_overwrite) == -1)
     log_proc_overwrite = 1;
-  if (cfg_getlong (pconfig, section, "PageCompress", &c_compress_mode) == -1)
+  if (cfg_getlong (pconfig, section, "PageCompress", (int32*)&c_compress_mode) == -1)
     c_compress_mode = 0;
 
 
@@ -1392,7 +1398,7 @@ cfg_setup (void)
    */
   section = "Client";
   if (cfg_getlong (pconfig, section, "SQL_PREFETCH_ROWS", &cli_prefetch) == -1)
-    cli_prefetch = 20;
+    cli_prefetch = 2000;
 
   if (cfg_getlong (pconfig, section, "SQL_PREFETCH_BYTES", &cli_prefetch_bytes) == -1)
     cli_prefetch_bytes = 0;
@@ -1965,6 +1971,19 @@ cfg_parse_size_with_modifier (const char *valstr, unsigned long *size, char *mod
   return 0;
 }
 
+
+int
+cfg_getsize (PCONFIG pc, char * sec, char * attr, size_t * sz)
+{
+  char * str;
+  if (-1 == cfg_getstring (pc, sec, attr, &str))
+    return -1;
+  if (-1 == cfg_parse_size_with_modifier (str, sz, NULL, NULL))
+    return -1;
+  return 0;
+}
+
+
 void
 new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
 {
@@ -2137,7 +2156,11 @@ new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
 		}
 
 	      /* Check for queue name */
-	      if ((sep = strrchr (value, '=')) != NULL || (sep = strrchr (value, ':')) != NULL)
+	      if ((sep = strrchr (value, '=')) != NULL
+#if ! defined (WIN32)
+		  || (sep = strrchr (value, ':')) != NULL
+#endif
+		  )
 		{
 		  s_ioq = (char *) ltrim ((const char *) (sep + 1));
 		  *sep = '\0';
@@ -2269,10 +2292,10 @@ static void
 db_lck_write_pid (int fd)
 {
   char pid_arr[50];
-  size_t len;
+  int len;
 
   snprintf (pid_arr, sizeof (pid_arr), "VIRT_PID=%lu\n", (unsigned long) getpid ());
-  len = strlen (pid_arr);
+  len = (int) strlen (pid_arr);
   len = len > sizeof (pid_arr) ? sizeof (pid_arr) : len;
 
   if (len != write (fd, pid_arr, len))

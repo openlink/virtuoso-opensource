@@ -477,6 +477,17 @@ create table DB.DBA.SYS_HTTP_SPONGE (
 alter index SYS_HTTP_SPONGE on DB.DBA.SYS_HTTP_SPONGE partition (HS_LOCAL_IRI varchar)
 create index SYS_HTTP_SPONGE_EXPIRATION on DB.DBA.SYS_HTTP_SPONGE (HS_EXPIRATION desc) partition (HS_LOCAL_IRI varchar)
 create index SYS_HTTP_SPONGE_FROM_IRI on DB.DBA.SYS_HTTP_SPONGE (HS_FROM_IRI, HS_PARSER) partition (HS_FROM_IRI varchar)
+create index SYS_HTTP_SPONGE_ORIGIN_URI on DB.DBA.SYS_HTTP_SPONGE (HS_ORIGIN_URI) partition (HS_ORIGIN_URI varchar)
+;
+
+alter table DB.DBA.SYS_HTTP_SPONGE add HS_NOTE varchar
+;
+
+create table DB.DBA.SYS_HTTP_SPONGE_REFRESH_DEFAULTS (
+  HSRD_DATA_SOURCE_URI_PATTERN varchar not null,
+  HSRD_DEFAULT_REFRESH_INTERVAL_SECS integer,
+  primary key (HSRD_DATA_SOURCE_URI_PATTERN)
+)
 ;
 
 alter table DB.DBA.SYS_HTTP_SPONGE add HS_NOTE varchar
@@ -790,7 +801,7 @@ perform_actual_load:
   --!!!TBD: if (get_method in ('MGET', 'GET+MGET')) { ... }
   if (get_method in ('POST', 'GET', 'GET+MGET'))
     {
-      declare acc_hdr varchar; 
+      declare acc_hdr varchar;
       req_hdr := NULL;
       get_proxy := get_keyword_ucase ('get:proxy', options);
       acc_hdr := trim (get_keyword_ucase ('get:accept', options));
@@ -1103,7 +1114,7 @@ no_cr:
           -- dbg_obj_princ ('l = ', l);
           if (("LEFT" (l, 7) = '@prefix') or ("LEFT" (l, 5) = '@base') or ("LEFT" (l, 8) = '@keyword'))
             return 'text/rdf+n3';
-          if ((("LEFT" (l, 1) = '<') or ("LEFT" (l, 1) = '[')) and 
+          if ((("LEFT" (l, 1) = '<') or ("LEFT" (l, 1) = '[')) and
             (
              "RIGHT" (origin_uri, 4) in ('.ttl', '.TTL') or
              "RIGHT" (origin_uri, 3) in ('.n3', '.N3', '.nt', '.NT')
@@ -1285,7 +1296,7 @@ create procedure DB.DBA.RDF_HTTP_URL_GET (inout url any, in base any, inout hdr 
 }
 ;
 
--- Extracts Set-Cookie: headers from a source URL's response and builds a corresponding 
+-- Extracts Set-Cookie: headers from a source URL's response and builds a corresponding
 -- Cookie: request header for the URL being redirected to
 create procedure DB.DBA.COOKIE_HDR (in src_url any, in resp_hdrs any, in dest_url any)
 {
@@ -1328,11 +1339,11 @@ create procedure DB.DBA.COOKIE_HDR (in src_url any, in resp_hdrs any, in dest_ur
 
   if (length (cookies) = 0)
     goto done;
-    
+
   req_cookie_hdr := '';
   foreach (any cookie in cookies) do
   {
-    -- Assume any expiring cookies are still valid, they've only just been set. 
+    -- Assume any expiring cookies are still valid, they've only just been set.
     -- Check the cookies apply to the domain + path being redirected to
     valid := 1;
     cookie_domain := get_keyword ('domain', cookie, ua_src_domain);
@@ -1416,7 +1427,7 @@ create function DB.DBA.RDF_PROXY_GET_HTTP_HOST ()
     else if (connection_get ('__http_host') is not null)
         default_host := connection_get ('__http_host');
     else
-        default_host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+        default_host := virtuoso_ini_item_value ('URIQA', 'DefaultHost');
     if (default_host is not null)
         cname := default_host;
     else
@@ -1508,20 +1519,20 @@ create procedure DB.DBA.RDF_SPONGE_PROXY_IRI(in uri varchar := '', in login varc
 }
 ;
 
--- Postprocessing for sponging pure RDF sources 
+-- Postprocessing for sponging pure RDF sources
 create procedure DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC (in contents varchar, in base varchar, in graph varchar, in mimetype varchar :='text/html')
 {
   declare proxyiri, docproxyiri, dociri varchar;
   proxyiri := DB.DBA.RDF_PROXY_ENTITY_IRI (graph);
   docproxyiri := DB.DBA.RDF_SPONGE_PROXY_IRI (graph);
   dociri:=DB.DBA.RM_SPONGE_DOC_IRI(graph);
-  
-  sparql define input:storage "" 
-  	insert in iri(?:graph) { 
+
+  sparql define input:storage ""
+  	insert in iri(?:graph) {
   		`iri(?:graph)` <http://xmlns.com/foaf/0.1/topic> `iri(sql:XML_URI_RESOLVE_LIKE_GET(?:base, ?s))` .
-      `iri(sql:XML_URI_RESOLVE_LIKE_GET(?:base, ?s))` <http://www.w3.org/2007/05/powder-s#describedby> `iri(?:proxyiri)` 
+      `iri(sql:XML_URI_RESOLVE_LIKE_GET(?:base, ?s))` <http://www.w3.org/2007/05/powder-s#describedby> `iri(?:proxyiri)`
       }
-  where { { select distinct ?s 
+  where { { select distinct ?s
   	where { graph `iri(?:graph)` { ?s ?p ?o .
                                 filter (iri(sql:XML_URI_RESOLVE_LIKE_GET(?:base, ?s)) != iri(?:graph) && !(regex (?s, '#this$') || regex (?s, '/about/id/http') || regex (?s, '/about/id/entity/http')))
 				}
@@ -1532,10 +1543,10 @@ create procedure DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC (in contents varchar, in base
   sparql define input:storage "" insert in graph iri(?:graph)
       { `iri(?:docproxyiri)` a <http://purl.org/ontology/bibo/Document> ;
       				<http://www.w3.org/ns/formats/media_type> `?:mimetype` ;
-              <http://vocab.deri.ie/void#inDataset> `iri(?:graph)` ; 
+              <http://vocab.deri.ie/void#inDataset> `iri(?:graph)` ;
               <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://rdfs.org/sioc/ns#Container> , <http://purl.org/ontology/bibo/Document> ;
               <http://rdfs.org/sioc/ns#container_of> `iri(?:proxyiri)` .
-        `iri(?:dociri)` <http://www.w3.org/2002/07/owl#sameAs> `iri(?:proxyiri)` . 
+        `iri(?:dociri)` <http://www.w3.org/2002/07/owl#sameAs> `iri(?:proxyiri)` .
       };
 
   if (registry_get ('__rdf_cartridges_add_spongetime__') = '1')
@@ -1812,11 +1823,11 @@ load_grddl:;
   --      DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, groupdest);
   --    return 1;
   --  }
-  
+
 no_cart:
 
   if (rdf_fmt) -- even cartridges didn't extracted anything more, the rdf is already loaded
-    return 1; 
+    return 1;
 
   if ((dest is null) and (get_soft is null or (get_soft <> 'add')))
     {

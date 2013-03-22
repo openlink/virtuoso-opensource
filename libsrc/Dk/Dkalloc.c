@@ -86,7 +86,6 @@ int nth_memblock;
 
 #define AV_NOT_IN_USE 0xffff			 /* in av_fill */
 
-#define AV_FREE_MARK 0x00deadbeeffeedba00LL	 /* in 2nd word of free of over 8 b */
 #define AV_ALLOC_MARK 0x00a110cfcacfe00LL
 
 #define AV_CHECK_DOUBLE_FREE(av, thing, len)	\
@@ -110,6 +109,7 @@ int nth_memblock;
       av->av_gets++; \
       av->av_first = *(caddr_t**)p; \
       if ((av->av_fill && !av->av_first) || (!av->av_fill && av->av_first)) GPF_T1 ("av fill and list not in sync, likely double free"); \
+      if (align_sz > 8 && ((int64*)p)[1] != AV_FREE_MARK) GPF_T1 ("item in av list does not have av mark"); \
       hit; \
     } \
   else  \
@@ -590,6 +590,7 @@ dk_alloc (size_t c)
   else
     {
       thing = dk_alloc_reserve_malloc (ADD_END_MARK (align_sz), 1);
+      AV_MARK_ALLOC (thing, align_sz);
     }
 #endif
 
@@ -630,9 +631,11 @@ dk_try_alloc (size_t c)
 
 #define FREE_FIT mutex_leave (&av->av_mtx); return;
 
+
 void
 dk_free (void *ptr, size_t sz)
 {
+  ASSERT_NOT_IN_POOL (ptr);
 #ifdef MEMDBG
   {
     size_t alloc_sz;

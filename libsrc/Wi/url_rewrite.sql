@@ -223,10 +223,6 @@ create procedure DB.DBA.URLREWRITE_DROP_RULELIST (
     signal ('42000', 'Rule list IRI ' || rulelist_iri || ' is unknown');
   if (strstr (rulelist_iri, 'sys:') = 0)
     signal ('42000', 'Can not drop "sys:..." rule list ' || rulelist_iri);
-  if (exists (select top 1 1 from DB.DBA.HTTP_PATH where HP_OPTIONS is not null and deserialize (HP_OPTIONS) is not null and get_keyword ('url_rewrite', deserialize (HP_OPTIONS), 0) = rulelist_iri))
-    {
-      if (not force)
-        signal ('42000', 'Rule list IRI ' || rulelist_iri || ' is in use as opts in some HTTP virtual host');
       for select HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_DEFAULT, HP_SECURITY, HP_REALM,
         HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_PERSIST_SES_VARS, HP_SOAP_OPTIONS, HP_AUTH_OPTIONS, HP_OPTIONS, HP_IS_DEFAULT_HOST
         from DB.DBA.HTTP_PATH where HP_OPTIONS is not null do
@@ -238,6 +234,8 @@ create procedure DB.DBA.URLREWRITE_DROP_RULELIST (
           opts := deserialize (HP_OPTIONS);
 	  if (isarray (opts) and get_keyword ('url_rewrite', opts, 0) = rulelist_iri)
 	    {
+	      if (not force)
+		signal ('42000', 'Rule list IRI ' || rulelist_iri || ' is in use as opts in some HTTP virtual host');
 	      opts_len := length (opts);
 	      new_opts := vector ();
 	      for (i := 0; i < opts_len; i := i + 2)
@@ -254,7 +252,6 @@ create procedure DB.DBA.URLREWRITE_DROP_RULELIST (
 		deserialize (HP_AUTH_OPTIONS), new_opts, HP_IS_DEFAULT_HOST));
 	    }
         }
-    }
   if (exists (select 1 from DB.DBA.URL_REWRITE_RULE_LIST where URRL_MEMBER = rulelist_iri))
   {
     if (not force)
@@ -428,7 +425,7 @@ end_scan:
       long_path := replace (long_path, '^{URIQADefaultHost}^', host);
       if (strstr (long_path, '^{DynamicLocalFormat}^') is not null)
         {
-	  long_path := replace (long_path, '^{DynamicLocalFormat}^', 
+	  long_path := replace (long_path, '^{DynamicLocalFormat}^',
 	  	sprintf ('%s://%{WSHost}s', case when is_https_ctx () then 'https' else 'http' end));
         }
     }

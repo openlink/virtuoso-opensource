@@ -75,8 +75,13 @@ trset_printf (const char *str, ...)
   report_ptr = (char *) THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_PTR);
 
   va_start (ap, str);
+  if (!report_ptr)
+    vprintf (str, ap);
+  else
   vsnprintf (report_ptr, REPORT_BUF_MAX - (report_linebuf - report_ptr), str, ap);
   va_end (ap);
+  if (!report_ptr)
+    return;
 
   for (line = eol = report_linebuf; *line; line = eol)
     {

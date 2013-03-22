@@ -24,7 +24,6 @@
 #ifndef _RECOVERY_H
 #define _RECOVERY_H
 
-#define FILEN_BUFSIZ		256
 #define MIN_BACKUP_PAGES	100
 
 #define COMPRESS_ERR_STR "Could not compress page %ld"
@@ -55,8 +54,7 @@
 #define USER_PERM_ERR_CODE	"IB014"
 #define DIR_CLEARANCE_ERR_CODE	"IB015"
 #define BACKUP_DIR_ARG_ERR_CODE	"IB015"
-typedef
-struct ol_backup_context_s
+typedef struct ol_backup_context_s
 {
   dk_session_t*	octx_file;
   dp_addr_t	page_dp;
@@ -111,16 +109,6 @@ struct ol_backup_context_s
   int		octx_disable_increment;
 } ol_backup_context_t;
 
-typedef struct ol_backup_ctx_s
-{
-  char		db_bp_prfx[FILEN_BUFSIZ];
-  dp_addr_t	db_bp_ts;
-  dp_addr_t	db_bp_num;
-  dp_addr_t	db_bp_pages;
-  dp_addr_t	db_bp_date;
-  dp_addr_t	db_bp_index;
-  dp_addr_t	db_bp_wr_bytes;
-} ol_backup_ctx_t;
 
 extern ol_backup_ctx_t bp_ctx;
 

@@ -198,8 +198,7 @@ ptr += 4
 #ifdef _MSC_VER
 
 #define _DO_BOX(inx, arr) \
-	for (inx = 0; inx < (long)((arr) ? BOX_ELEMENTS(arr) : 0); inx ++) \
-	  {
+  _DO_BOX_FAST(inx, arr)
 
 #define _DO_BOX_FAST(inx, arr) \
 	do { \
@@ -216,9 +215,7 @@ ptr += 4
 #else
 
 #define _DO_BOX(inx, arr) \
-	for (inx = 0; inx < ((arr) ? BOX_ELEMENTS(arr) : 0); inx ++) \
-	  {
-
+  _DO_BOX_FAST(inx, arr)
 #define _DO_BOX_FAST(inx, arr) \
 	do { \
 	    uint32 __max_##inx = ((arr) ? BOX_ELEMENTS(arr) : 0); \
@@ -238,12 +235,17 @@ ptr += 4
 	    for (inx = (long)((arr) ? BOX_ELEMENTS(arr) : 0); inx--; /* no step */) \
 	      {
 
+#define DO_BOX_0(dtp, v, inx, arr) \
+	_DO_BOX_FAST(inx, (arr))
+
 #define DO_BOX(dtp, v, inx, arr) \
-	_DO_BOX(inx, (arr)) \
+	_DO_BOX_FAST(inx, (arr)) \
 	    dtp v = (dtp) (((void **)(arr)) [inx]);
 
 #define END_DO_BOX \
-}
+  }} while (0);
+
+
 
 #define DO_BOX_FAST(dtp, v, inx, arr) \
 	_DO_BOX_FAST(inx, (arr)) \
@@ -268,6 +270,7 @@ ptr += 4
 	  }} while (0)
 
 #define NEW_DB_NULL			dk_alloc_box (0, DV_DB_NULL)
+#define NEW_LIST(count)			((caddr_t *)(dk_alloc_box ((count) * sizeof (caddr_t), DV_ARRAY_OF_POINTER)))
 
 #ifdef DOUBLE_ALIGN
 
@@ -469,7 +472,7 @@ ptr += 4
 #define DV_PLACEHOLDER 			248		   /* This tag keeps placeholder_t structure */
 #define DV_RDF_ID 248 /* no confl w placeholder, pl is not serialized */
 #define DV_RDF_ID_8 249
-
+#define DV_RBUF 144
 
 /* Special box for wrapping memory for user-specific objects. */
 typedef void (*dk_free_box_trap_cbk_t) (void *obj);
@@ -501,9 +504,11 @@ typedef int64 boxint;
 #ifdef WIN32
 #define BOXINT_FMT 			"%I64d"
 #define UBOXINT_FMT 			"%I64u"
+#define BOXINT_FMTX 			"%I64x"
 #else
 #define BOXINT_FMT 			"%lld"
 #define UBOXINT_FMT 			"%llu"
+#define BOXINT_FMTX 			"%llx"
 #endif
 
 #define unbox_num(n) 			unbox(n)
@@ -625,14 +630,15 @@ uname_blk_t;
 
 #define RDF_BOX_DEFAULT_TYPE 		0x0101
 #define RDF_BOX_DEFAULT_LANG 		0x0101
+#define RDF_BOX_GEO_TYPE 256
 #define RDF_BOX_MAX_TYPE 		0x7F01
 #define RDF_BOX_MAX_LANG 		0x7F01
 #define RDF_BOX_ILL_TYPE 		0x7F02
 #define RDF_BOX_ILL_LANG 		0x7F03
-#define RDF_BOX_GEO 			0x100
-#define RDF_BOX_INTERVAL 		0xff
-#define RDF_BOX_STRING_ID 		0xfe /* Like a type 257 but no string inlined, collates by lang and id alone */
-#define RDF_BOX_MIN_TYPE 		0xfe
+#define RDF_BOX_GEO 0x100
+#define RDF_BOX_INTERVAL 0xff
+#define RDF_BOX_STRING_ID 0xfe /* Like a type 257 but no string inlined, collates by lang and id alone */
+#define RDF_BOX_MIN_TYPE 0xfe
 
 typedef struct rdf_box_s
 {
@@ -666,7 +672,7 @@ typedef struct rdf_box_s
 #define RBS_CHKSUM			0x10
 #define RBS_64				0x20
 #define RBS_SKIP_DTP			0x40
-#define RBS_EXT_TYPE 			0x80
+#define RBS_EXT_TYPE 0x80
 
 
 #define RBS_ID_ONLY(f) \
@@ -743,7 +749,7 @@ rdf_box_t *rb_allocate (void);
 rdf_bigbox_t *rbb_allocate (void);
 caddr_t rbb_from_id (int64 n);
 void rdf_box_audit_impl (rdf_box_t * rb);
-#ifdef DEBUG
+#ifndef NDEBUG
 #define rdf_box_audit(rb) 		rdf_box_audit_impl(rb)
 #define rdf_bigbox_audit(rbb) 		rdf_box_audit_impl(&(rbb->rbb_base))
 #else
@@ -754,6 +760,7 @@ void rdf_box_audit_impl (rdf_box_t * rb);
 EXE_EXPORT (box_t, box_copy, (cbox_t box));
 EXE_EXPORT (box_t, box_copy_tree, (cbox_t box));
 EXE_EXPORT (int, box_equal, (cbox_t b1, cbox_t b2));
+EXE_EXPORT (int, box_strong_equal, (cbox_t b1, cbox_t b2));
 
 extern box_t box_try_copy (cbox_t box, box_t stub);
 extern box_t box_try_copy_tree (cbox_t box, box_t stub);
@@ -882,15 +889,20 @@ extern void dkbox_terminate_module (void);
 
 #ifdef WORDS_BIGENDIAN
 #define DV_INT_TAG_WORD 		0x080000bd
-#define DV_INT_TAG_WORD_64 DV_INT_TAG_WORD 		
+#define DV_INT_TAG_WORD_64 DV_INT_TAG_WORD
 #define DV_IRI_TAG_WORD 		0x080000f3
 #define DV_IRI_TAG_WORD_64  DV_IRI_TAG_WORD
+#define DV_DOUBLE_TAG_WORD 		0x080000bf
+#define DV_FLOAT_TAG_WORD 		0x080000be
+
 
 #else
 #define DV_INT_TAG_WORD  		0xbd000008
 #define DV_INT_TAG_WORD_64 0xbd00000800000000
 #define DV_IRI_TAG_WORD 		0xf3000008
 #define DV_IRI_TAG_WORD_64 		0xf300000800000000
+#define DV_DOUBLE_TAG_WORD  0xbf000008
+#define DV_FLOAT_TAG_WORD 0xbe000008
 #endif
 
 /* values for box_flags */

@@ -26,6 +26,7 @@
  */
 
 #include "sqlnode.h"
+#include "aqueue.h"
 
 
 #ifdef PAGE_TRACE
@@ -603,12 +604,11 @@ itc_insert_dv (it_cursor_t * it, buffer_desc_t ** buf_ret, row_delta_t * rd,
   page_apply (it, *buf_ret, 1, &rd, PA_MODIFY);
 }
 
-int enable_distinct_key_dup_no_lock = 0;
 
 int
 itc_insert_unq_ck (it_cursor_t * it, row_delta_t * rd, buffer_desc_t ** unq_buf)
 {
-  row_lock_t * rl_flag = KI_TEMP != it->itc_insert_key->key_id  ? INS_NEW_RL : NULL;
+  row_lock_t * rl_flag = KI_TEMP != it->itc_insert_key->key_id   && !it->itc_non_txn_insert ? INS_NEW_RL : NULL;
   int res, was_allowed_duplicate = 0;
   buffer_desc_t *buf;
 
@@ -638,19 +638,11 @@ itc_insert_unq_ck (it_cursor_t * it, row_delta_t * rd, buffer_desc_t ** unq_buf)
   buf = itc_reset (it);
   res = itc_search (it, &buf);
  searched:
-  if (it->itc_insert_key->key_distinct && DVC_MATCH == res && enable_distinct_key_dup_no_lock)
-    {
-      /* if key is distinct values only hitting a duplicate does nothing and returns success */
-      page_leave_outside_map (buf);
-      return DVC_LESS;
-    }
-
-  if (NO_WAIT != itc_insert_lock (it, buf, &res))
+  if (NO_WAIT != itc_insert_lock (it, buf, &res, 1))
     goto reset_search;
   if (it->itc_insert_key->key_distinct && DVC_MATCH == res)
     {
       /* if key is distinct values only hitting a duplicate does nothing and returns success */
-      if (!itc_check_ins_deleted (it, buf, rd))
         page_leave_outside_map (buf);
       return DVC_LESS;
     }
@@ -683,7 +675,7 @@ itc_insert_unq_ck (it_cursor_t * it, row_delta_t * rd, buffer_desc_t ** unq_buf)
 
     case DVC_MATCH:
 
-      if (!itc_check_ins_deleted (it, buf, rd))
+      if (!itc_check_ins_deleted (it, buf, rd, 1))
 	{
 	  if (unq_buf == UNQ_ALLOW_DUPLICATES || unq_buf == UNQ_SORT)
 	    {
@@ -848,6 +840,7 @@ itc_delete (it_cursor_t * itc, buffer_desc_t ** buf_ret, int maybe_blobs)
     {
       if (BM_DEL_DONE == itc_bm_delete (itc, buf_ret))
 	return;
+      itc->itc_bm_row_deleted = 1;
     }
   pl_set_finalize (itc->itc_pl, buf);
   itc->itc_is_on_row = 0;
@@ -903,8 +896,10 @@ typedef struct page_rel_s
 #define CP_NOP 0
 #define CP_CHANGED 2
 #define CP_LEAVE 3 /* when the parent splits, no more processing on this parent page */
+#define CP_PR_MOVED 4
 
 
+int dp_is_compact_checked (dbe_storage_t * dbs, dp_addr_t dp, int set_checked);
 
 
 #if 0
@@ -912,6 +907,12 @@ typedef struct page_rel_s
 #else
 #define cmp_printf(a)
 #endif
+
+/* 0 age limit means all, neg age limit means age over the -nth bucket limit positive means age over the limit */
+int ac_age_limit;
+
+#define BUF_AC_AGE(buf) \
+  (0 == ac_age_limit ? 1 : ac_age_limit < 0 ? (buf->bd_pool->bp_ts - buf->bd_timestamp > buf->bd_pool->bp_bucket_limit[-1 - ac_age_limit]) :  (buf->bd_pool->bp_ts - buf->bd_timestamp >= ac_age_limit))
 
 
 void
@@ -922,11 +923,307 @@ pr_free (page_rel_t * pr, int pr_fill, int leave_bufs)
     {
       for (inx = 0; inx < pr_fill; inx++)
 	{
+	  if (pr[inx].pr_buf)
 	  page_leave_outside_map (pr[inx].pr_buf);
 	}
     }
 }
 
+
+int
+buf_has_leaves  (buffer_desc_t * buf)
+{
+  page_map_t * pm = buf->bd_content_map;
+  int r;
+  if (!pm)
+    return 1; /* we are not sure, see later */
+  for (r = 0; r < pm->pm_count; r++)
+    {
+      db_buf_t row = buf->bd_buffer + pm->pm_entries[r];
+      if (KV_LEAF_PTR == IE_KEY_VERSION (row))
+	return 1;
+    }
+  return 0;
+}
+
+
+void
+itc_col_ac_init (it_cursor_t * itc)
+{
+  dbe_key_t * key = itc->itc_insert_key;
+  int inx, n_keys = key->key_n_parts - key->key_n_significant;
+  itc_col_init (itc);
+  for (inx = 0; inx < n_keys; inx++)
+    itc->itc_col_refs[inx] = itc_new_cr (itc);
+}
+
+
+void
+acs_stat (ac_col_stat_t * acs, it_cursor_t * itc, buffer_desc_t * buf, int irow, int get_all, int * is_first)
+{
+  dbe_key_t * key = itc->itc_insert_key;
+  int n_cols = key->key_n_parts - key->key_n_significant, col;
+  db_buf_t row = BUF_ROW (buf, irow);
+  key_ver_t kv = IE_KEY_VERSION (row);
+  if (acs)
+    memset (acs, 0, sizeof (ac_col_stat_t));
+  if (KV_LEFT_DUMMY == kv)
+    return;
+  if (KV_LEAF_PTR == kv) GPF_T1 ("a pagge with leaves must not be considered for column ac");
+  itc->itc_map_pos = irow;
+  itc->itc_row_data = row;
+  for (col = 0; col < n_cols; col++)
+    {
+      itc_fetch_col (itc, buf, &key->key_row_var[col],
+		     get_all && *is_first ? 0 : get_all ? FC_APPEND : FC_APPEND_PRESENT, get_all ? COL_NO_ROW : (ptrlong)acs);
+    }
+  *is_first = 0;
+}
+
+
+
+
+#define MAX_AC_SEGS 500
+
+
+int
+acs_n_clean (ac_col_stat_t * acs, int i1, int i2)
+{
+  int inx, n = 0;
+  for (inx = i1; inx < i2; inx++)
+    n += acs[inx].acs_own_pages - acs[inx].acs_n_dirty;
+  return n;
+}
+
+
+int
+acs_total_pages (ac_col_stat_t * acs, int i1, int i2)
+{
+  int inx, n = 0;
+  for (inx = i1; inx < i2; inx++)
+    n += acs[inx].acs_own_pages;
+  return n;
+}
+
+
+void
+acs_leaf_stat (ac_col_stat_t * acs, int n_rows, int * first_dirty, int * last_dirty, int * leading_clean, int * trailing_clean)
+{
+  int inx;
+  int cum_dirty = 0, cum_absent = 0, cum_pages = 0, absent_at_first_dirty = 0, absent_at_last_dirty = 0;
+  *first_dirty = -1;
+  *last_dirty = -1;
+  for (inx = 0; inx < n_rows; inx++)
+    {
+      if (!acs[inx].acs_n_pages)
+	continue;
+      cum_dirty += acs[inx].acs_n_dirty;
+      cum_absent += acs[inx].acs_absent_pages;
+      cum_pages = acs[inx].acs_own_pages;
+      if (acs[inx].acs_n_dirty < acs[inx].acs_n_pages / 2)
+	continue;
+      if (-1 == *first_dirty)
+	{
+	  *first_dirty = inx;
+	  absent_at_first_dirty = cum_absent;
+	}
+      *last_dirty = inx;
+      absent_at_last_dirty = cum_absent;
+    }
+  *leading_clean = acs_n_clean (acs, 0, *first_dirty);
+  *trailing_clean = acs_n_clean (acs, *last_dirty + 1, n_rows);
+}
+
+
+void
+pr_right_compressible (it_cursor_t * itc, page_rel_t * pr, int from, int to)
+{
+  int inx;
+  for (inx = from; inx < to; inx++)
+    {
+      dp_may_compact (pr[inx].pr_buf->bd_tree->it_storage, pr[inx].pr_buf->bd_page);
+      page_leave_outside_map (pr[inx].pr_buf);
+      pr[inx].pr_buf = NULL;
+    }
+}
+
+
+void
+pr_move (page_rel_t ** pr_ret, int * pr_fill_ret, int first, int last)
+{
+  *pr_ret = &(*pr_ret)[first];
+  *pr_fill_ret = 1 + last - first;
+}
+
+
+int
+itc_col_ac_leaf (it_cursor_t * itc, buffer_desc_t * parent, buffer_desc_t * buf, int first_row, int last_row)
+{
+  int r, is_first = 1;
+  ce_ins_ctx_t ceic;
+  memset (&ceic, 0, sizeof (ce_ins_ctx_t));
+  ceic.ceic_is_ac = CEIC_AC_SINGLE_PAGE;
+  ceic.ceic_itc = itc;
+  ceic.ceic_end_map_pos = last_row;
+  itc_col_leave (itc, 0);
+  for (r = first_row; r <= last_row; r++)
+    acs_stat (NULL, itc, buf, r, 1, &is_first);
+  ceic.ceic_mp = mem_pool_alloc ();
+  itc->itc_map_pos = first_row;
+  page_leave_outside_map (parent);
+  /*itc->itc_app_stay_in_buf = ITC_APP_STAY; */
+  itc->itc_buf = buf;
+  ceic_split (&ceic, buf);
+  mp_free (ceic.ceic_mp);
+  itc->itc_buf = NULL;
+  if (ITC_APP_STAYED == itc->itc_app_stay_in_buf)
+    {
+      page_leave_outside_map (buf);
+      return CP_NOP;
+    }
+  return CP_LEAVE;
+}
+
+
+int ac_col_max_pages = 10000; /* some 100MB to recompress */
+int ac_col_max_rows = 1000000;
+
+int
+itc_col_ac_action (it_cursor_t * itc, buffer_desc_t * parent, page_rel_t ** pr_ret, int * pr_fill_ret)
+{
+  page_rel_t * pr = *pr_ret;
+  ac_col_stat_t acs[MAX_AC_SEGS];
+  dbe_key_t * key = itc->itc_insert_key;
+  int n_cols = key->key_n_parts - key->key_n_significant;
+  int pr_fill = *pr_fill_ret;
+  int is_first = 1, inx, row, acs_inx;
+  int pages_in_batch = 0, col;
+  int first_dirty = -1, last_dirty;
+  int first_row, last_row, n_leading_clean, n_trailing_clean;
+  itc->itc_dive_mode = PA_WRITE;
+  itc_col_ac_init (itc);
+  for (inx = 0; inx < pr_fill; inx++)
+    {
+      buffer_desc_t * buf = pr[inx].pr_buf;
+      page_map_t * pm = buf->bd_content_map;
+      acs_inx = 0;
+      for (col = 0; col < n_cols; col++)
+	itc->itc_col_refs[col]->cr_n_pages = 0;
+      for (row = 0; row < pm->pm_count; row++)
+	{
+	  key_ver_t kv = IE_KEY_VERSION (BUF_ROW (buf, row));
+	  if (KV_LEFT_DUMMY == kv)
+	    memset (&acs[acs_inx], 0, sizeof (ac_col_stat_t));
+	  else
+	    acs_stat (&acs[acs_inx], itc, buf, row, 0, &is_first);
+	  acs[acs_inx].acs_nth_leaf = inx;
+	  acs[acs_inx].acs_row = row;
+	  acs_inx++;
+	}
+      acs_leaf_stat (acs, pm->pm_count, &first_row, &last_row, &n_leading_clean, &n_trailing_clean);
+      itc_col_leave (itc, 0); /* some col bufs were wired but if action follows they will get rewired */
+      if (n_trailing_clean < 20)
+	{
+	  if (-1 == first_dirty)
+	    first_dirty = inx;
+	  pages_in_batch += acs_total_pages (acs, 0, pm->pm_count);
+	  if (pages_in_batch > ac_col_max_pages)
+	    {
+	      last_dirty = inx;
+	      goto flush_dirty;
+	    }
+	  continue;
+	}
+      if (-1 != first_dirty )
+	{
+	  if (-1 == first_row)
+	    last_dirty = inx - 1;
+	  else
+	    last_dirty = inx;
+	  goto flush_dirty;
+	}
+      if (-1 != first_row)
+	{
+	  if (CP_LEAVE == itc_col_ac_leaf (itc, parent, pr[inx].pr_buf, first_row, last_row))
+	    {
+	      pr_right_compressible (itc, pr, inx + 1, pr_fill);
+	      itc->itc_col_ac_redo = 1;
+	      return CP_LEAVE;
+	    }
+	  pr[inx].pr_buf = NULL;
+	}
+      else
+	{
+	  /* this is not dirty enough and there is no batch of dirties before this */
+	  page_leave_outside_map (pr[inx].pr_buf);
+	  pr[inx].pr_buf = NULL;
+	}
+    }
+  if (-1 == first_dirty)
+    return CP_NOP;
+  last_dirty = pr_fill - 1;
+ flush_dirty:
+  pr_right_compressible (itc, pr, last_dirty + 1, pr_fill);
+  pr_move (pr_ret, pr_fill_ret, first_dirty, last_dirty);
+  if (last_dirty < pr_fill - 1)
+    itc->itc_col_ac_redo = 1;
+  return CP_PR_MOVED;
+}
+
+
+int
+itc_ac_stat (it_cursor_t * itc, page_rel_t * pr, int pr_fill, int get_all,   ac_col_stat_t * acs, int n_acs)
+{
+  dbe_key_t * key = itc->itc_insert_key;
+  int n_cols = key->key_n_parts - key->key_n_significant;
+  int inx, acs_inx = 0, col, row, is_first = 1;
+  for (col = 0; col < n_cols; col++)
+    {
+      itc->itc_col_refs[col]->cr_n_pages = 0;
+    }
+  itc->itc_dive_mode = PA_WRITE;
+  if (get_all)
+    {
+      for (inx = 0; inx < pr_fill; inx++)
+	{
+	  buffer_desc_t * buf = pr[inx].pr_buf;
+	  itc_prefetch_col_leaf_page (itc, buf);
+	}
+    }
+  for (inx = 0; inx < pr_fill; inx++)
+    {
+      buffer_desc_t * buf = pr[inx].pr_buf;
+      page_map_t * pm = buf->bd_content_map;
+      for (row = 0; row < pm->pm_count; row++)
+	{
+	  if (acs)
+	    {
+	      acs[acs_inx].acs_nth_leaf = inx;
+	      acs[acs_inx].acs_row = row;
+	      acs_stat (&acs[acs_inx], itc, buf, row, get_all, &is_first);
+	    }
+	  else
+	    acs_stat (NULL, itc, buf, row, get_all, &is_first);
+	  if (acs_inx + 1 <n_acs)
+	    acs_inx++;
+	}
+    }
+  return 1;
+}
+
+void
+itc_col_multipage_ac (it_cursor_t * itc, page_rel_t * pr, int pr_fill, mem_pool_t ** mp_ret)
+{
+  ce_ins_ctx_t ceic;
+  memset (&ceic, 0, sizeof (ce_ins_ctx_t));
+  ceic.ceic_is_ac = CEIC_AC_MULTIPAGE;
+  ceic.ceic_itc = itc;
+  ceic.ceic_end_map_pos = itc->itc_map_pos;
+  itc_ac_stat (itc, pr, pr_fill, 1, NULL, 0);
+  *mp_ret = ceic.ceic_mp = mem_pool_alloc ();
+  itc->itc_buf = NULL; /* this will not use this to ref to segs right of split for ce updates since there is nothing to the right, being full page */
+  ceic_split (&ceic, pr[0].pr_buf);
+}
 
 extern long ac_pages_in;
 extern long ac_pages_out;
@@ -938,7 +1235,8 @@ itc_compact (it_cursor_t * itc, buffer_desc_t * parent, page_rel_t * pr, int pr_
 {
   dp_addr_t prev_dp;
   index_tree_t *it = itc->itc_tree;
-  int inx, n_leaves = 0, n_left;
+  int inx, n_leaves = 0, n_left, is_col = itc->itc_insert_key->key_is_col;
+  int old_pr_fill = pr_fill;
   row_delta_t ** lp_box;
   page_fill_t pf;
   LOCAL_COPY_RD (rd);
@@ -951,6 +1249,32 @@ itc_compact (it_cursor_t * itc, buffer_desc_t * parent, page_rel_t * pr, int pr_
   pf.pf_itc = itc;
   pf.pf_hash = resource_get (pfh_rc);
   pfh_init (pf.pf_hash, pf.pf_current);
+  if (is_col)
+    {
+      mem_pool_t * mp;
+      itc_col_multipage_ac (itc, pr, pr_fill, &mp);
+      if (KV_LEFT_DUMMY == IE_KEY_VERSION (BUF_ROW (pr[0].pr_buf, 0)))
+	{
+	  row_size_t tf = 1000;
+	  rd.rd_key_version = KV_LEFT_DUMMY;
+	  rd.rd_leaf = 0;
+	  pf_rd_append (&pf, &rd, &tf);
+	}
+      DO_BOX (row_delta_t *, rd, inx, itc->itc_vec_rds)
+	{
+	  row_size_t tf = target_fill; /* out param of pf_rd_append */
+	  if (!rd->rd_values[0])
+	    break;
+	  rd->rd_rl = NULL;
+	  rd->rd_itc = NULL;
+	  pf_rd_append (&pf, rd, &tf);
+	}
+      END_DO_BOX;
+      itc_col_leave (itc, 0);
+      mp_free (mp);
+    }
+  else
+    {
   for (inx = 0; inx < pr_fill; inx++)
     {
       buffer_desc_t * source = pr[inx].pr_buf;
@@ -963,9 +1287,10 @@ itc_compact (it_cursor_t * itc, buffer_desc_t * parent, page_rel_t * pr, int pr_
 	  rd_free (&rd);
 	}
     }
+    }
   resource_store (pfh_rc, (void*)pf.pf_hash);
   dk_set_append_1 (&pf.pf_left, (void*) pf.pf_current);
-  if (dk_set_length (pf.pf_left) >= pr_fill)
+  if (dk_set_length (pf.pf_left) >= pr_fill && !is_col)
     {
       /* not a full page saved.  Abort */
       inx = 0;
@@ -982,6 +1307,19 @@ itc_compact (it_cursor_t * itc, buffer_desc_t * parent, page_rel_t * pr, int pr_
       *pos_ret += pr_fill;
       return CP_NOP;
     }
+  if (dk_set_length (pf.pf_left) > pr_fill)
+    {
+      int inx, new_fill = dk_set_length (pf.pf_left);
+      for (inx = pr_fill; inx < new_fill; inx++)
+	{
+	  buffer_desc_t * lf = it_new_page (it, pr[pr_fill - 1].pr_buf->bd_page, DPF_INDEX, 0, itc);
+	  if (!lf) GPF_T1 ("col autocompact could not alloc new page for extra result page");
+	  LONG_SET (lf->bd_buffer + DP_PARENT, parent->bd_page);
+	  pr[inx].pr_buf = lf;
+	  pr[inx].pr_lp_pos = pr[0].pr_lp_pos + inx;
+	}
+      pr_fill = new_fill;
+    }
   lp_box = (row_delta_t **) dk_alloc_box (pr_fill * sizeof (caddr_t), DV_BIN);
   inx = 0;
   DO_SET (buffer_desc_t *, buf, &pf.pf_left)
@@ -992,8 +1330,10 @@ itc_compact (it_cursor_t * itc, buffer_desc_t * parent, page_rel_t * pr, int pr_
       NEW_VARZ (row_delta_t, rd);
       rd->rd_allocated = RD_ALLOCATED;
       lp_box[inx] = rd;
+      if (is_col)
+	dp_is_compact_checked (it->it_storage, buf->bd_page, 1);
       page_row (buf, 0, rd, RO_LEAF);
-      rd->rd_op = RD_UPDATE;
+      rd->rd_op = inx < old_pr_fill ? RD_UPDATE : RD_INSERT;
       rd->rd_leaf = pr[inx].pr_buf->bd_page;
       rdbg_printf_2 (("reuse L=%d under L=%d \n", pr[inx].pr_buf->bd_page, parent->bd_page));
       rd->rd_map_pos = pr[inx].pr_lp_pos;
@@ -1018,8 +1358,9 @@ itc_compact (it_cursor_t * itc, buffer_desc_t * parent, page_rel_t * pr, int pr_
   *pos_ret = pr[inx - 1].pr_lp_pos + 1;
   ac_pages_in += pr_fill;
   ac_pages_out += inx;
-
-  for (inx = inx; inx < pr_fill; inx++)
+  itc->itc_insert_key->key_ac_in += pr_fill;
+  itc->itc_insert_key->key_ac_out += inx;
+  for (inx = inx; inx < old_pr_fill; inx++)
     {
       buffer_desc_t * buf = pr[inx].pr_buf;
       NEW_VARZ (row_delta_t, rd);
@@ -1065,16 +1406,27 @@ itc_compact (it_cursor_t * itc, buffer_desc_t * parent, page_rel_t * pr, int pr_
 
 
 int
-it_try_compact (index_tree_t *it, buffer_desc_t * parent, page_rel_t * pr, int pr_fill, int * pos_ret, int mode)
+itc_try_compact (it_cursor_t * itc, buffer_desc_t * parent, page_rel_t * pr, int pr_fill, int * pos_ret, int mode)
 {
   /* look at the pr's and see if can rearrange so as to save one or more pages.
    * if so, verify the rearrange and update the pr array. */
-  it_cursor_t itc_auto;
-  it_cursor_t * itc = NULL;
+  index_tree_t *it = itc->itc_tree;
+  int is_col = it->it_key->key_is_col;
   int total_fill = 0, n_leaves = 0;
   int target_fill, est_res_pages;
-  int inx;
+  int inx, col_rc;
   int n_source_pages = 0;
+  if (is_col)
+    {
+      col_rc = itc_col_ac_action (itc, parent, &pr, &pr_fill);
+      if (CP_NOP == col_rc)
+	{
+	  *pos_ret += pr_fill;
+	  return CP_NOP;
+	}
+      if (CP_LEAVE == col_rc)
+	return CP_LEAVE;
+    }
   for (inx = 0; inx < pr_fill; inx++)
     {
       page_map_t * pm =  pr[inx].pr_buf->bd_content_map;
@@ -1083,7 +1435,7 @@ it_try_compact (index_tree_t *it, buffer_desc_t * parent, page_rel_t * pr, int p
       n_source_pages++;
     }
   est_res_pages = ((total_fill + (total_fill / 12)) / PAGE_DATA_SZ) + 1;
-  if (est_res_pages>= n_source_pages)
+  if (est_res_pages>= n_source_pages && !is_col)
     {
     return CP_NOP;
     }
@@ -1106,14 +1458,18 @@ it_try_compact (index_tree_t *it, buffer_desc_t * parent, page_rel_t * pr, int p
 	}
     }
 
-  itc = &itc_auto;
-  ITC_INIT (itc, NULL, NULL);
-  itc_from_it (itc, it);
-
   if (!LONG_REF (parent->bd_buffer + DP_PARENT))
     it_root_image_invalidate (parent->bd_tree);
 
-  return itc_compact (itc, parent, pr, pr_fill, target_fill, pos_ret);
+  col_rc = itc_compact (itc, parent, pr, pr_fill, target_fill, pos_ret);
+  if (CP_LEAVE == col_rc)
+    return col_rc;
+  if (itc->itc_col_ac_redo)
+    {
+      page_leave_outside_map (parent);
+      return CP_LEAVE;
+    }
+  return col_rc;
 }
 
 
@@ -1121,9 +1477,9 @@ it_try_compact (index_tree_t *it, buffer_desc_t * parent, page_rel_t * pr, int p
 #define CHECK_COMPACT \
 {  \
   if (!parent->bd_is_write) GPF_T1 ("parent not occupied in compact 1"); \
-  if (pr_fill > 1) \
+  if (pr_fill > (is_col ? 0 : 1))					\
     {\
-      compact_rc = it_try_compact (it, parent, pr, pr_fill, &map_pos, mode);	\
+      compact_rc = itc_try_compact (itc, parent, pr, pr_fill, &map_pos, mode);	\
       if (CP_LEAVE == compact_rc) \
         return compact_rc; /* no need for pr_free, it just leaves the bufs and they are not occupied here */  \
       if (!parent->bd_is_write) GPF_T1 ("parent not occupied in compact 2"); \
@@ -1150,8 +1506,10 @@ it_try_compact (index_tree_t *it, buffer_desc_t * parent, page_rel_t * pr, int p
 #define COMPACT_ALL 1
 
 int
-it_cp_check_node (index_tree_t *it, buffer_desc_t *parent, int mode)
+itc_cp_check_node (it_cursor_t * itc, buffer_desc_t *parent, int mode)
 {
+  index_tree_t *it = itc->itc_tree;
+  int is_col = it->it_key->key_is_col;
   it_map_t  * parent_itm;
   page_rel_t pr[MAX_CP_BATCH];
   int pr_fill = 0, any_change = 0, compact_rc, map_pos;
@@ -1168,6 +1526,15 @@ it_cp_check_node (index_tree_t *it, buffer_desc_t *parent, int mode)
     {
       db_buf_t row = parent->bd_buffer + parent->bd_content_map->pm_entries[map_pos];
       dp_addr_t leaf = leaf_pointer (row, parent->bd_tree->it_key);
+      if (leaf && is_col)
+	{
+	  int ck = dp_is_compact_checked (it->it_storage, leaf, 1);
+	  if (ck)
+	    {
+	      CHECK_COMPACT;
+	      continue;
+	    }
+	}
       if (leaf && pr_fill < MAX_CP_BATCH)
 	    {
 	  it_map_t * itm = IT_DP_MAP (it, leaf);
@@ -1175,7 +1542,8 @@ it_cp_check_node (index_tree_t *it, buffer_desc_t *parent, int mode)
 	  mutex_enter (&itm->itm_mtx);
 	  buf = (buffer_desc_t*) gethash ((void*)(ptrlong) leaf, &itm->itm_dp_to_buf);
 	  if (BUF_COMPACT_ALL_READY (buf, leaf, itm)
-	       && (COMPACT_ALL == mode ? 1 : buf->bd_is_dirty))
+	       && (COMPACT_ALL == mode ? 1 : buf->bd_is_dirty)
+	      && !buf_has_leaves (buf))
 	    {
 	      if (mode == COMPACT_DIRTY && !gethash ((void*)(void*)(ptrlong)leaf, &itm->itm_remap))
 		GPF_T1 ("In compact, no remap dp for a dirty buffer");
@@ -1212,7 +1580,88 @@ it_cp_check_node (index_tree_t *it, buffer_desc_t *parent, int mode)
   return any_change;
 }
 
+
+uint32 ac_cpu_time;
+uint32 ac_real_time;
+int ac_n_times;
+dk_mutex_t * dp_compact_mtx;
+
+caddr_t
+ac_aq_func (caddr_t av, caddr_t * err_ret)
+{
+  caddr_t *args = (caddr_t *) av;
+  uint32 ac_start = get_msec_real_time (), now;
+  it_cursor_t itc_auto;
+  index_tree_t * it = (index_tree_t*)(ptrlong)unbox (args[0]);
+  dp_addr_t parent_dp = unbox (args[1]);
+  it_cursor_t * itc = &itc_auto;
+  buffer_desc_t * parent;
+  it_map_t * parent_itm = IT_DP_MAP (it, parent_dp);
+  int is_col;
+  *err_ret = NULL;
+  dk_free_tree ((caddr_t)args);
+  ITC_INIT (itc, NULL, NULL);
+  itc_from_it (itc, it);
+  is_col = itc->itc_insert_key->key_is_col;
+  itc->itc_ac_non_leaf_splits = NULL;
+  itc->itc_is_ac = 1;
+ again:
+  mutex_enter (&parent_itm->itm_mtx);
+  parent = (buffer_desc_t *) gethash ((void*)(ptrlong) parent_dp, &parent_itm->itm_dp_to_buf);
+  if (BUF_COMPACT_ALL_READY (parent, parent_dp, parent_itm) && (is_col || parent->bd_is_dirty))
+    {
+      BD_SET_IS_WRITE (parent, 1);
+      mutex_leave (&parent_itm->itm_mtx);
+      itc_cp_check_node (itc, parent, COMPACT_DIRTY);
+      if (itc->itc_col_ac_redo)
+	{
+	  itc->itc_col_ac_redo = 0;
+	  goto again;
+	  if (itc->itc_ac_non_leaf_splits)
+	    {
+	      parent_dp = (uptrlong)dk_set_pop (&itc->itc_ac_non_leaf_splits);
+	      goto again;
+	    }
+	}
+    }
+  else
+    {
+      mutex_leave (&parent_itm->itm_mtx);
+      dp_may_compact (it->it_storage, parent_dp);
+    }
+  itc_clear (itc);
+  now = get_msec_real_time ();
+  mutex_enter (dp_compact_mtx);
+  ac_cpu_time += now - ac_start;
+  mutex_leave (dp_compact_mtx);
+
+  return NULL;
+}
+
+
 #define DP_VACUUM_RESERVE ((PAGE_DATA_SZ / 12) + 1) /* max no of leaf pointers + parent */
+int dbf_leaf_ac = 1;
+
+
+int
+itc_col_vacuum_compact (it_cursor_t * itc, buffer_desc_t * parent)
+{
+  static uint32 bp_ctr;
+  int first = dbf_leaf_ac ? 5 : 0;
+  int n_last = dbf_leaf_ac ? 10 : 0;
+  dp_may_compact (itc->itc_tree->it_storage, parent->bd_page);
+  if (!buf_has_leaves (parent))
+    itc->itc_nth_seq_page += col_ac_set_dirty (NULL, NULL, itc, parent, first, n_last);
+  ITC_IN_KNOWN_MAP (itc, parent->bd_page);
+  itc_delta_this_buffer (itc, parent, DELTA_MAY_LEAVE);
+  ITC_LEAVE_MAP_NC (itc);
+  if (itc->itc_nth_seq_page > main_bufs / 12)
+    {
+      bp_delayed_stat_action (wi_inst.wi_bps[bp_ctr++ % wi_inst.wi_n_bps]);
+      itc->itc_nth_seq_page = 10;
+    }
+  return DVC_MATCH;
+}
 
 
 int
@@ -1226,10 +1675,18 @@ itc_vacuum_compact (it_cursor_t * itc, buffer_desc_t ** buf_ret)
     {
       return DVC_MATCH;
     }
+  if (itc->itc_insert_key->key_is_col)
+    return itc_col_vacuum_compact (itc, *buf_ret);
   itc_hold_pages (itc, buf, DP_VACUUM_RESERVE);
   ITC_LEAVE_MAPS (itc);
-  rc = it_cp_check_node (itc->itc_tree, buf, COMPACT_ALL);
-  ITC_LEAVE_MAPS (itc);
+  {
+    it_cursor_t itc_auto;
+    it_cursor_t * itc2 = &itc_auto;
+    ITC_INIT (itc2, NULL, NULL);
+    itc_from_it (itc2, itc->itc_tree);
+    rc = itc_cp_check_node (itc2, buf, COMPACT_ALL);
+    ITC_LEAVE_MAPS (itc2);
+  }
   itc_free_hold (itc);
   if (CP_LEAVE == rc)
     {
@@ -1240,36 +1697,36 @@ itc_vacuum_compact (it_cursor_t * itc, buffer_desc_t ** buf_ret)
 }
 
 
-dk_hash_t * dp_compact_checked;
-dk_mutex_t * dp_compact_mtx;
-
 void
 dp_may_compact (dbe_storage_t *dbs, dp_addr_t dp)
 {
   mutex_enter (dp_compact_mtx);
-  remhash ((void*)(ptrlong)dp, dp_compact_checked);
+  remhash ((void*)(ptrlong)dp, dbs->dbs_dp_compact_checked);
   mutex_leave (dp_compact_mtx);
 }
 
 
 int
-dp_is_compact_checked (dbe_storage_t * dbs, dp_addr_t dp)
+dp_is_compact_checked (dbe_storage_t * dbs, dp_addr_t dp, int set_checked)
 {
   int rc;
   mutex_enter (dp_compact_mtx);
-  rc = (int)(ptrlong) gethash ((void*)(ptrlong)dp, dp_compact_checked);
-  if (!rc)
-    sethash ((void*)(ptrlong) dp, dp_compact_checked, (void*) 1);
+  rc = (int)(ptrlong) gethash ((void*)(ptrlong)dp, dbs->dbs_dp_compact_checked);
+  if (!rc && set_checked)
+    sethash ((void*)(ptrlong) dp, dbs->dbs_dp_compact_checked, (void*) 1);
   mutex_leave (dp_compact_mtx);
   return rc;
 }
 
 
+async_queue_t * ac_aq;
+int ac_aq_threads = 8;
 
 void
 it_check_compact (index_tree_t * it, int age_limit)
 {
-  int rc, inx;
+  int inx, is_col = it->it_key->key_is_col;
+  caddr_t err = NULL;
   dk_hash_t * candidates = hash_table_allocate (101);
   for (inx = 0; inx < IT_N_MAPS; inx++)
     {
@@ -1277,11 +1734,23 @@ it_check_compact (index_tree_t * it, int age_limit)
       mutex_enter (&itm->itm_mtx);
       DO_HT (void *, ignore, buffer_desc_t *, buf, &itm->itm_dp_to_buf)
     {
-      if (buf->bd_pool && buf->bd_pool->bp_ts - buf->bd_timestamp >= age_limit)
+	  if (buf->bd_pool && BUF_AC_AGE (buf)
+	      && !buf->bd_being_read && !buf->bd_is_write && !buf->bd_readers)
 	{
+	      short flags = SHORT_REF (buf->bd_buffer + DP_FLAGS);
 	  dp_addr_t parent_dp = LONG_REF (buf->bd_buffer + DP_PARENT);
-	      if (!dp_is_compact_checked (it->it_storage, parent_dp))
+	      if (DPF_INDEX != flags)
+		continue;
+	      if (parent_dp && !dp_is_compact_checked (it->it_storage, parent_dp, 1))
 		{
+		  if (buf_has_leaves (buf))
+		    continue;
+		  sethash (DP_ADDR2VOID (parent_dp), candidates, (void*) 1);
+		}
+	      else if (is_col &&  parent_dp && !dp_is_compact_checked (it->it_storage, buf->bd_page, 0))
+		{
+		  if (buf_has_leaves (buf))
+		    continue;
 		  sethash (DP_ADDR2VOID (parent_dp), candidates, (void*) 1);
 		}
 		}
@@ -1292,29 +1761,35 @@ it_check_compact (index_tree_t * it, int age_limit)
 
   DO_HT (ptrlong, parent_dp, void *, ignore, candidates)
     {
-      buffer_desc_t * parent;
-      it_map_t * parent_itm = IT_DP_MAP (it, parent_dp);
-      mutex_enter (&parent_itm->itm_mtx);
-      parent = (buffer_desc_t *) gethash ((void*)(ptrlong) parent_dp, &parent_itm->itm_dp_to_buf);
-      if (BUF_COMPACT_ALL_READY (parent, parent_dp, parent_itm) && parent->bd_is_dirty)
+      if (!ac_aq)
 	{
-	  BD_SET_IS_WRITE (parent, 1);
-	  mutex_leave (&parent_itm->itm_mtx);
-	  rc = it_cp_check_node (it, parent, COMPACT_DIRTY);
+	  ac_aq = aq_allocate (bootstrap_cli, ac_aq_threads);
+	  ac_aq->aq_do_self_if_would_wait = 1;
+	  ac_aq->aq_no_lt_enter = 1;
 	}
-      else
-	{
-	  mutex_leave (&parent_itm->itm_mtx);
-	  dp_may_compact (it->it_storage, parent_dp);
-	}
+      aq_request (ac_aq, ac_aq_func, list (2, box_num ((ptrlong)it), box_num (parent_dp)));
     }
   END_DO_HT;
   hash_table_free (candidates);
+  if (ac_aq && ac_aq->aq_queue.bsk_count > 10)
+    aq_wait_all (ac_aq, &err);
 }
 
 
 dk_mutex_t * dbs_autocompact_mtx;
 int dbs_autocompact_in_progress;
+int enable_ac = 1;
+int enable_col_ac = 1;
+uint32 col_ac_last_time;
+uint32 col_ac_last_duration;
+int col_ac_max_pct = 10; /* max this % of real time with col ac on */
+
+int
+col_ac_is_due (uint32 now)
+{
+  /* enough time elapsed so col ac is not more than max pct of real time */
+  return now  - col_ac_last_time > ((100 * col_ac_last_duration) / col_ac_max_pct) - col_ac_last_duration;
+}
 
 
 void
@@ -1322,26 +1797,64 @@ wi_check_all_compact (int age_limit)
 {
   /*  call before writing old dirty out. Also before pre-checkpoint flush of all things.
    * do not do many at the same time.  Also have in progress flag for background action which can autocompact and need a buffer, which can then recursively trigger autocompact which is not wanted */
+  uint32 ac_start;
+  int any_col = 0;
+  caddr_t err = NULL;
   du_thread_t * self;
+  uint32 now, col_ac_due;
   dbe_storage_t * dbs = wi_inst.wi_master;
   /*return;*/
 #ifndef AUTO_COMPACT
   return;
 #endif
   if (!dbs || wi_inst.wi_checkpoint_atomic
-      || dbs_autocompact_in_progress)
+      || dbs_autocompact_in_progress || !enable_ac)
     return; /* at the very start of init */
   self = THREAD_CURRENT_THREAD;
   if (THR_IS_STACK_OVERFLOW (self, &dbs, AC_STACK_MARGIN))
     return;
   mutex_enter (dbs_autocompact_mtx);
   dbs_autocompact_in_progress = 1;
+  ac_start = get_msec_real_time ();
+  ac_age_limit = age_limit;
+  ac_n_times++;
+  col_ac_due = col_ac_is_due (ac_start);
+  ac_aq = NULL;
+  DO_SET (dbe_storage_t *, dbs, &wi_inst.wi_master_wd->wd_storage)
+    {
+      if (DBS_TEMP == dbs->dbs_type)
+	continue;
   DO_SET (index_tree_t *, it, &dbs->dbs_trees)
     {
+      if (it->it_key && it->it_key->key_is_col)
+	{
+	      if (!enable_col_ac || 2 == (enable_col_ac && age_limit))
+	    continue;
+	      if (col_ac_last_duration && age_limit && !col_ac_due)
+		continue; /* col ac may be going for max 10% of real time */
+	      any_col = 1;
+	}
+      if (it->it_key
+	      && !it->it_key->key_is_geo
+	  )
 	it_check_compact (it, age_limit);
     }
   END_DO_SET();
+    }
+  END_DO_SET();
+  if (ac_aq)
+    {
+      aq_wait_all (ac_aq, &err);
+      dk_free_box ((caddr_t)ac_aq);
+    }
+  now = get_msec_real_time ();
+  if (any_col)
+    {
+      col_ac_last_duration = now - ac_start;
+      col_ac_last_time = now;
+    }
   dbs_autocompact_in_progress = 0;
+  ac_real_time += now - ac_start;
   mutex_leave (dbs_autocompact_mtx);
 }
 

@@ -98,7 +98,7 @@ sqlo_qc_make_cols (sqlo_t * so, query_cursor_t * qc, ST * tree)
 	  {
 	    ST *ref =
 		t_listst (3, COL_DOTTED, ot->ot_new_prefix, col->col_name);
-	    ST *spec = (ST *) t_list (3, ORDER_BY, ref, (ptrlong) ORDER_ASC);
+	    ST *spec = (ST *) t_list (4, ORDER_BY, ref, (ptrlong) ORDER_ASC, NULL);
 	    t_NCONCF1 (new_sel, ref);
 	    t_NCONCF1 (new_order_by, spec);
 	    t_NCONCF1 (order_pos, (ptrlong) col_pos);
@@ -116,7 +116,7 @@ sqlo_qc_make_cols (sqlo_t * so, query_cursor_t * qc, ST * tree)
 	  {
 	    ST *ref = col_dfe->dfe_tree;
 	    ptrlong ord = ot->ot_order_dir;
-	    ST *spec = (ST *) t_list (3, ORDER_BY, ref, ord);
+	    ST *spec = (ST *) t_list (4, ORDER_BY, ref, ord, NULL);
 	    t_NCONCF1 (new_sel, ref);
 	    t_NCONCF1 (new_order_by, spec);
 	    nth++;
@@ -257,7 +257,7 @@ sqlo_qc_make_update (sqlo_t * so, query_cursor_t * qc)
   memset (vals, 0, box_length ((caddr_t) vals));
   DO_BOX (ST *, col_ref, inx, org_sel->_.select_stmt.selection)
   {
-    if (!ST_COLUMN (col_ref, COL_DOTTED))
+    if (!ST_P (col_ref, COL_DOTTED))
       {
 	return NULL;
       }

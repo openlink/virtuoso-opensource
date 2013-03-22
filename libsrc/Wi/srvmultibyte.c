@@ -260,6 +260,13 @@ box_narrow_string_as_wide (unsigned char *str, caddr_t wide, long max_len, wchar
   long i, len = (long)(isbox ? (box_length ((box_t) str) - 1) : strlen((const char *) str));
   wchar_t *box;
   size_t wide_len;
+
+  if (isbox && strlen((const char *) str) < len)
+    {
+      if (err_ret)
+        *err_ret = srv_make_new_error ("22024", "SR578", "Wide string can't contain '\\0' character.");
+      return NULL;
+    }
   if (!charset)
     {
       client_connection_t *cli = GET_IMMEDIATE_CLIENT_OR_NULL;
@@ -360,7 +367,8 @@ bh_string_output_w (/* this was before 3.0: index_space_t * isp, */ lock_trx_t *
 
 
 dk_set_t
-bh_string_list_w (/* this was before 3.0: index_space_t * isp,*/ lock_trx_t * lt, blob_handle_t * bh, long get_chars, int omit, long blob_type)
+bh_string_list_w (/* this was before 3.0: index_space_t * isp,*/ lock_trx_t * lt, blob_handle_t * bh,
+    long get_chars, int omit)
 {
   /* take current page at current place and make string of
      n bytes from the place and write to client */
@@ -372,12 +380,9 @@ bh_string_list_w (/* this was before 3.0: index_space_t * isp,*/ lock_trx_t * lt
   long chars_filled = 0, chars_on_page;
   virt_mbstate_t state;
   wchar_t wpage[PAGE_SZ];
-#if 0 /* this was */
-  it_cursor_t *tmp_itc = itc_create (isp, lt);
-#else
-  it_cursor_t *tmp_itc = itc_create (NULL, lt);
+  it_cursor_t *tmp_itc;
+  tmp_itc = itc_create (NULL, lt);
   itc_from_it (tmp_itc, bh->bh_it);
-#endif
 
   while (start)
     {
@@ -533,9 +538,11 @@ row_print_wide (caddr_t thing, dk_session_t * ses, dbe_column_t * col,
 }
 
 int
-compare_wide_to_utf8_with_collation (wchar_t *wide_data, long wide_wcharcount, utf8char *utf8_data, long utf8_bytes,
-    collation_t *collation)
+compare_wide_to_utf8 (caddr_t _utf8_data, long utf8_len,
+    caddr_t _wide_data, long wide_len, collation_t *collation)
 {
+  unsigned char *utf8_data = (unsigned char *) _utf8_data;
+  wchar_t *wide_data = (wchar_t *) _wide_data;
   long winx, ninx;
 
   wchar_t wtmp;
@@ -543,22 +550,23 @@ compare_wide_to_utf8_with_collation (wchar_t *wide_data, long wide_wcharcount, u
   int rc;
 
   memset (&state, 0, sizeof (virt_mbstate_t));
+  wide_len = wide_len / sizeof (wchar_t);
 
   ninx = winx = 0;
   if (collation)
     while(1)
       {
-	if (ninx == utf8_bytes)
+	if (ninx == utf8_len)
 	  {
-	    if (winx == wide_wcharcount)
+	    if (winx == wide_len)
 	      return DVC_MATCH;
 	    else
 	      return DVC_LESS;
 	  }
-	if (winx == wide_wcharcount)
+	if (winx == wide_len)
 	  return DVC_GREATER;
 
-	rc = (int) virt_mbrtowc (&wtmp, utf8_data + ninx, utf8_bytes - ninx, &state);
+	rc = (int) virt_mbrtowc (&wtmp, utf8_data + ninx, utf8_len - ninx, &state);
 	if (rc <= 0)
 	  GPF_T1 ("inconsistent wide char data");
 	if (((wchar_t *)collation->co_table)[wtmp] <
@@ -573,17 +581,17 @@ compare_wide_to_utf8_with_collation (wchar_t *wide_data, long wide_wcharcount, u
   else
     while(1)
       {
-	if (ninx == utf8_bytes)
+	if (ninx == utf8_len)
 	  {
-	    if (winx == wide_wcharcount)
+	    if (winx == wide_len)
 	      return DVC_MATCH;
 	    else
 	      return DVC_LESS;
 	  }
-	if (winx == wide_wcharcount)
+	if (winx == wide_len)
 	  return DVC_GREATER;
 
-	rc = (int) virt_mbrtowc (&wtmp, utf8_data + ninx, utf8_bytes - ninx, &state);
+	rc = (int) virt_mbrtowc (&wtmp, utf8_data + ninx, utf8_len - ninx, &state);
 	if (rc <= 0)
 	  GPF_T1 ("inconsistent wide char data");
 	if (wtmp < wide_data[winx])
@@ -828,7 +836,7 @@ complete_charset_name (caddr_t _qi, char *cs_name)
 
 
 int
-compare_wide_to_latin1 (wchar_t *wbox1, long n1, unsigned char *box2, long n2)
+compare_wide_to_narrow (wchar_t *wbox1, long n1, unsigned char *box2, long n2)
 {
   wchar_t temp;
   long inx = 0;

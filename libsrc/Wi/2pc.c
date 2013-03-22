@@ -1998,11 +1998,3 @@ server_logmsg_ap (int level, char *file, int line, int mask, char *format,
 {
   return logmsg_ap (level, file, line, mask, format, ap);
 }
-
-
-
-
-
-
-
-

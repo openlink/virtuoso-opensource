@@ -153,6 +153,8 @@ sqlo_find_inx_intersect (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t col_preds, flo
   float a1, cost, best_arity = 0;
   dbe_table_t * tb = tb_dfe->_.table.ot->ot_table;
   int n_eqs;
+  if (so->so_sc->sc_cc->cc_query && so->so_sc->sc_cc->cc_query->qr_proc_vectored)
+    return;
   if (LOC_LOCAL != tb_dfe->dfe_locus)
     return;
   DO_SET (dbe_key_t *, k1, &tb->tb_keys)
@@ -510,7 +512,7 @@ sqlo_try_inx_int_joins (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t * group_ret, fl
   op_table_t * ot = so->so_this_dt;
   int n_eqs;
   dk_set_t group = NULL;
-  if (!inx_int_join)
+  if (!inx_int_join || (so->so_sc->sc_cc->cc_query && so->so_sc->sc_cc->cc_query->qr_proc_vectored))
     return;
   if (tb_dfe->_.table.is_unique
       || tb_dfe->_.table.ot->ot_rds

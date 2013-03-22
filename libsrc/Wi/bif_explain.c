@@ -51,16 +51,145 @@
 #include "sqlo.h"
 #include "rdfinf.h"
 #include "rdf_core.h"
+#ifndef WIN32
+#include <sys/resource.h>
+#endif
+#include "http.h"
+#include "mhash.h"
+
+
+int dbf_explain_level = 1;
 
 /* sqlprt.c */
 void trset_start (caddr_t *qst);
 void trset_printf (const char *str, ...);
 void trset_end (void);
 
+
+extern dk_mutex_t * prof_mtx;
+extern id_hash_t * qn_prof;
+
+void
+qi_qn_stat_1 (query_instance_t * qi, query_t * qr)
+{
+  caddr_t * inst = (caddr_t*)qi;
+  DO_SET (data_source_t *, qn, &qr->qr_nodes)
+    {
+      if (qn->src_stat)
+	{
+	  boxint sets = qn->src_sets;
+	  src_stat_t * srs;
+	  src_stat_t * qsrs = SRC_STAT (qn, inst);
+	  mutex_enter (prof_mtx);
+	  srs = (src_stat_t*)id_hash_get (qn_prof, (caddr_t)&sets);
+	  if (srs)
+	    {
+	      srs->srs_cum_time += qsrs->srs_cum_time;
+	      srs->srs_n_in += qsrs->srs_n_in;
+	      srs->srs_n_out += qsrs->srs_n_out;
+	    }
+	  else
+	    id_hash_set (qn_prof, (caddr_t)&sets, (caddr_t)qsrs);
+	  mutex_leave (prof_mtx);
+	}
+      if (IS_QN (qn, subq_node_input))
+	{
+	  qi_qn_stat_1 (qi, ((subq_source_t*)qn)->sqs_query);
+	}
+      else if (IS_QN (qn, trans_node_input))
+	{
+	  QNCAST (trans_node_t, tn, qn);
+	  if (tn->tn_inlined_step)
+	    qi_qn_stat_1 (qi, tn->tn_inlined_step);
+	  if (tn->tn_complement)
+	    qi_qn_stat_1 (qi, tn->tn_complement->tn_inlined_step);
+	}
+    }
+  END_DO_SET();
+  DO_SET (query_t *, sq, &qr->qr_subq_queries)
+    qi_qn_stat_1 (qi, sq);
+  END_DO_SET();
+}
+
+
+void
+qi_qn_stat (query_instance_t * qi)
+{
+  query_t * qr = qi->qi_query;
+  qi_qn_stat_1 (qi, qr);
+  if (qi->qi_log_stats)
+    qi_log_stats (qi, NULL);
+}
+
+
+int64
+qr_qn_total (query_t * qr)
+{
+  int64 sum = 0;
+  DO_SET (data_source_t *, qn, &qr->qr_nodes)
+    {
+      if (qn->src_stat)
+	{
+	  boxint sets = qn->src_sets;
+	  src_stat_t * srs;
+	  mutex_enter (prof_mtx);
+	  srs = (src_stat_t*)id_hash_get (qn_prof, (caddr_t)&sets);
+	  if (srs)
+	    {
+	      sum += srs->srs_cum_time;
+	    }
+	  mutex_leave (prof_mtx);
+	}
+      if (IS_QN (qn, subq_node_input))
+	{
+	  sum += qr_qn_total (((subq_source_t*)qn)->sqs_query);
+	}
+      else if (IS_QN (qn, trans_node_input))
+	{
+	  QNCAST (trans_node_t, tn, qn);
+	  if (tn->tn_inlined_step)
+	    sum += qr_qn_total (tn->tn_inlined_step);
+	  if (tn->tn_complement)
+	    sum += qr_qn_total (tn->tn_complement->tn_inlined_step);
+	}
+    }
+  END_DO_SET();
+  /* do not add up subqs from scalar/exists, their total figures in the node that has them in code */
+#if 0
+  DO_SET (query_t *, sq, &qr->qr_subq_queries)
+    sum += qr_qn_total (sq);
+  END_DO_SET();
+#endif
+  return sum;
+}
+
+
 #define stmt_printf(a) trset_printf a
 
 static void qr_print (query_t * qr);
 static void node_print (data_source_t * node);
+
+
+void
+ssl_type (state_slot_t * ssl, char * str)
+{
+  str[2] = 0;
+  switch (dtp_canonical[ssl->ssl_sqt.sqt_dtp])
+    {
+    case DV_LONG_INT: str[0] = 'i';  break;
+    case DV_IRI_ID: str[0] = 'r';  break;
+    case DV_SINGLE_FLOAT: str[0] = 'f';  break;
+    case DV_DOUBLE_FLOAT: str[0] = 'd';  break;
+    case DV_DATE: case DV_TIME: case DV_TIMESTAMP:
+    case DV_DATETIME: str[0] = 't';  break;
+    case DV_STRING: str[0] = 's'; break;
+    case DV_ANY: str[0] = 'a'; break;
+    case DV_WIDE: case DV_LONG_WIDE:
+      str[0] = 'N'; break;
+    default: str[0] = 'x';
+    }
+  str[1] = ssl->ssl_sqt.sqt_non_null ? 'n'  : 0;
+}
 
 
 
@@ -88,6 +217,7 @@ dv_iri_short_name (caddr_t x)
 static void
 ssl_print (state_slot_t * ssl)
 {
+  char str[3];
   if (!ssl)
     {
       stmt_printf ((" <none> "));
@@ -110,17 +240,33 @@ ssl_print (state_slot_t * ssl)
     case SSL_VARIABLE:
       stmt_printf (("$%d \"%s\"", ssl->ssl_index, ssl->ssl_name ? ssl->ssl_name : "-"));
       break;
-
+    case SSL_VEC:
+      ssl_type (ssl, str);
+      if (ssl->ssl_sets)
+	stmt_printf (("<v $%d %s S%d %s>", ssl->ssl_index, ssl->ssl_name, ssl->ssl_sets, str));
+      else
+	stmt_printf (("<V $%d %s %s>", ssl->ssl_index, ssl->ssl_name, str));
+      break;
+    case SSL_REF:
+      {
+	QNCAST (state_slot_ref_t, sslr, ssl);
+	int inx;
+	stmt_printf (("<r $%d %s via ", sslr->sslr_index, sslr->sslr_ssl && sslr->sslr_ssl->ssl_name ? sslr->sslr_ssl->ssl_name : ""));
+	for (inx = 0; inx < sslr->sslr_distance; inx++)
+	  stmt_printf ((" S%d", sslr->sslr_set_nos[inx]));
+	stmt_printf ((">"));
+	break;
+      }
     case SSL_CONSTANT:
 	{
-	  dtp_t dtp = DV_TYPE_OF (ssl->ssl_constant);
 	  caddr_t err_ret = NULL;
 	  if (DV_TYPE_OF (ssl->ssl_constant) == DV_DB_NULL)
-	    stmt_printf (("<constant DB_NULL>"));
+	    stmt_printf (("<DB_NULL>"));
 	  else
 	    {
+	      dtp_t dtp = DV_TYPE_OF (ssl->ssl_constant);
 	      caddr_t strval = box_cast_to (NULL, ssl->ssl_constant,
-		  DV_TYPE_OF (ssl->ssl_constant), DV_SHORT_STRING,
+					    dtp, DV_SHORT_STRING,
 		  NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE,
 		  &err_ret);
 	      if (!err_ret && strval)
@@ -231,7 +377,25 @@ artm_print:
 	      ssl_print (in->_.artm.right);
 	    }
 	  break;
-
+	case IN_AGG:
+	  {
+	    int op = in->_.agg.op;
+	    char * name = AMMSC_SUM == op ? "sum": AMMSC_COUNTSUM == op ? "countsum": AMMSC_COUNT == op ? "count": AMMSC_MIN == op ? "min": AMMSC_MAX == op ? "max" : AMMSC_ONE == op ? "subq_value": "unknown ";
+	    stmt_printf ((" %s ", name));
+	    ssl_print (in->_.agg.result);
+	    ssl_print (in->_.agg.arg);
+	    if (in->_.agg.set_no)
+	      {
+		stmt_printf (("set no "));
+		ssl_print (in->_.agg.set_no);
+	      }
+	    if (in->_.agg.distinct)
+	      {
+		stmt_printf (("distinct "));
+		ssl_print (in->_.agg.distinct->ha_tree);
+	      }
+	    break;
+	  }
 	case IN_PRED:
 	  {
 	    stmt_printf (("if ("));
@@ -244,7 +408,7 @@ artm_print:
 	      {
 		bop_comparison_t *bop = (bop_comparison_t *) in->_.pred.cmp;
 		ssl_print (bop->cmp_left);
-		stmt_printf ((" %d(%s) ", bop->cmp_op, bop_text (bop->cmp_op)));
+		stmt_printf ((" %s ", bop_text (bop->cmp_op)));
 		ssl_print (bop->cmp_right);
 	      }
 	    else if (in->_.pred.func == distinct_comp_func)
@@ -252,6 +416,10 @@ artm_print:
 		stmt_printf ((" DISTINCT "));
 		ssl_array_print (((hash_area_t *) in->_.pred.cmp)->ha_slots);
 	      }
+	    if (in->_.pred.end)
+	      stmt_printf ((") then %d else %d unkn %d merge %d",
+			    in->_.pred.succ, in->_.pred.fail, in->_.pred.unkn, in->_.pred.end));
+	    else
 	    stmt_printf ((") then %d else %d unkn %d",
 		in->_.pred.succ, in->_.pred.fail, in->_.pred.unkn));
 	    break;
@@ -261,8 +429,12 @@ artm_print:
 	  {
 	    stmt_printf (("if ("));
 	    ssl_print (in->_.cmp.left);
-	    stmt_printf ((" %d(%s) ", (int) in->_.cmp.op, cmp_op_text (in->_.cmp.op)));
+	    stmt_printf ((" %s ", cmp_op_text (in->_.cmp.op)));
 	    ssl_print (in->_.cmp.right);
+	    if (in->_.cmp.end)
+	      stmt_printf ((") then %d else %d unkn %d merge %d",
+			    in->_.cmp.succ, in->_.cmp.fail, in->_.cmp.unkn, in->_.cmp.end));
+	    else
 	    stmt_printf ((") then %d else %d unkn %d",
 			  in->_.cmp.succ, in->_.cmp.fail, in->_.cmp.unkn));
 	    break;
@@ -379,7 +551,16 @@ artm_print:
 	     stmt_printf (("Brkp #%d", (int) in->_.breakpoint.line_no));
 	   }
 	 break;
-
+	case INS_FOR_VECT:
+	  stmt_printf (("for vectored "));
+	  ssl_array_print (in->_.for_vect.in_vars);
+	  ssl_array_print (in->_.for_vect.in_values);
+	  ssl_array_print (in->_.for_vect.out_vars);
+	  ssl_array_print (in->_.for_vect.out_values);
+	  stmt_printf (("\n{\n"));
+	  code_vec_print (in->_.for_vect.code);
+	  stmt_printf (("\n}\n"));
+	  break;
 	default:;
 	}
       stmt_printf (("\n"));
@@ -419,15 +600,35 @@ cmp_op_text (int cmp)
 }
 
 
+void
+hrng_print (hash_range_spec_t * hrng, search_spec_t * sp)
+{
+  hash_source_t * hs;
+  stmt_printf (("hash partition by %d ", hrng->hrng_min));
+  ssl_array_print (hrng->hrng_ssls);
+  if ((hs = hrng->hrng_hs))
+    {
+      stmt_printf (("hash join merged %s card %9.2g", hs->hs_merged_into_ts ? "always": "if unique", hs->hs_cardinality));
+      if (sp->sp_col)
+	stmt_printf (("% ", sp->sp_col->col_name));
+      else
+	ssl_array_print (hs->hs_ref_slots);
+      stmt_printf ((" -> "));
+      ssl_array_print (hs->hs_out_slots);
+    }
+  stmt_printf (("\n"));
+}
+
 static void
 sp_list_print (search_spec_t * sp)
 {
   while (sp)
     {
 
-      stmt_printf (("<col=%ld", sp->sp_cl.cl_col_id));
       if (sp->sp_col)
 	stmt_printf ((" %s", sp->sp_col->col_name));
+      else
+	stmt_printf (("col#%ld", sp->sp_cl.cl_col_id));
       if (sp->sp_min_op != CMP_NONE)
 	{
 	  stmt_printf ((" %s ", cmp_op_text (sp->sp_min_op)));
@@ -443,7 +644,6 @@ sp_list_print (search_spec_t * sp)
 	{
 	  stmt_printf ((" collate : <%s> ", sp->sp_collation->co_name));
 	}
-      stmt_printf ((">"));
       if (sp->sp_next)
 	stmt_printf ((" "));
 
@@ -453,16 +653,49 @@ sp_list_print (search_spec_t * sp)
 }
 
 
+void
+ks_print_vec_cast (state_slot_t ** casts, state_slot_ref_t ** source)
+{
+  int first = 1, inx;
+  DO_BOX (state_slot_t *, cast, inx, casts)
+    {
+      if (cast)
+	{
+	  if (first)
+	    {
+	      stmt_printf (("vector param casts: "));
+	    }
+	  else
+	    stmt_printf ((", "));
+	  ssl_print ((state_slot_t*)source[inx]);
+	  stmt_printf (("-> "));
+	  ssl_print (cast);
+	  first = 0;
+	}
+    }
+  END_DO_BOX;
+  if (!first)
+    stmt_printf (("\n"));
+}
+
+
 static void
 ks_print (key_source_t * ks)
 {
   if (ks->ks_from_temp_tree || !ks->ks_key)
     stmt_printf (("Key from temp "));
   else
-    stmt_printf (("Key %s  %s ", ks->ks_key->key_name,
-		  ks->ks_descending ? "DESC" : "ASC"));
 
+    stmt_printf (("Key %s  %s %s %s", ks->ks_key->key_name,
+		  ks->ks_descending ? "DESC" : "ASC", ks->ks_is_deleting ? "deleting" : "", ks->ks_oby_order && !ks->ks_vec_asc_eq ? "no vec sort" : ""));
   ssl_list_print (ks->ks_out_slots);
+  if (ks->ks_v_out_map)
+    {
+      int inx;
+      for (inx = 0; inx < box_length ((caddr_t)ks->ks_v_out_map) / sizeof (v_out_map_t); inx++)
+	if (dc_itc_delete == ks->ks_v_out_map[inx].om_ref)
+	  stmt_printf (("deleting "));
+    }
   stmt_printf (("\n%s", ks->ks_spec.ksp_key_cmp ? " inlined " : ""));
 
   sp_list_print (ks->ks_spec.ksp_spec_array);
@@ -472,6 +705,22 @@ ks_print (key_source_t * ks)
     {
       stmt_printf (("row specs: "));
       sp_list_print (ks->ks_row_spec);
+      stmt_printf (("\n"));
+    }
+  if (ks->ks_hash_spec)
+    {
+      stmt_printf (("Hash filters: "));
+      DO_SET (search_spec_t *, sp, &ks->ks_hash_spec)
+	hrng_print ((hash_range_spec_t*)sp->sp_min_ssl, sp);
+      END_DO_SET();
+      stmt_printf (("\n"));
+    }
+  if (ks->ks_vec_cast)
+    ks_print_vec_cast (ks->ks_vec_cast, ks->ks_vec_source);
+  if (ks->ks_cl_local_cast)
+    {
+      stmt_printf (("local cast: "));
+      ssl_array_print (ks->ks_cl_local_cast);
       stmt_printf (("\n"));
     }
   if (ks->ks_local_test)
@@ -489,8 +738,36 @@ ks_print (key_source_t * ks)
       stmt_printf ((" Local setp:\n"));
       node_print ((data_source_t *) ks->ks_setp);
     }
-  if (ks->ks_qf_output)
-    stmt_printf (("  qf output\n"));
+}
+
+uint64 qi_total_rdtsc (query_instance_t * qi);
+
+
+void
+node_stat (data_source_t * qn)
+{
+  boxint sets = qn->src_sets;
+  int64 total;
+  src_stat_t * srs;
+  caddr_t * ctx_inst;
+  if (!qn->src_stat || !prof_on)
+    return;
+  ctx_inst = THR_ATTR (THREAD_CURRENT_THREAD, TA_STAT_INST);
+  if (ctx_inst)
+    srs = (src_stat_t *)&ctx_inst[qn->src_stat];
+  else
+  srs = (src_stat_t*)id_hash_get (qn_prof, (caddr_t)&sets);
+  if (!srs)
+    return;
+  total = (int64)THR_ATTR (THREAD_CURRENT_THREAD, TA_TOTAL_RDTSC);
+  if (IS_QN (qn, query_frag_input) && ctx_inst)
+    {
+      QNCAST (query_frag_t, qf, qn);
+      int64 rt = ((QI*)ctx_inst)->qi_client->cli_run_clocks;
+      stmt_printf (("wait time %9.2g%% of exec real time, fanout %9.2g\n",  (float)QST_INT (ctx_inst, qf->qf_wait_clocks) * 100 / (float)rt, srs->srs_n_in ? srs->srs_n_out / (float)srs->srs_n_in : 0.0));
+    }
+  else
+    stmt_printf (("time %9.2g%% fanout %9.2g  %9.2g rows in\n",  (float)srs->srs_cum_time * 100 / (float)total, srs->srs_n_in ? srs->srs_n_out / (float)srs->srs_n_in : 0.0, (float)srs->srs_n_in));
 }
 
 
@@ -508,9 +785,9 @@ ts_print (table_source_t * ts)
   int inx;
   if (ts->ts_inx_op)
     {
-      char card[30];
+      char card[50];
       inx_op_t * iop = ts->ts_inx_op;
-      snprintf (card, sizeof (card), "%9.2g rows", ts->ts_cardinality);
+      snprintf (card, sizeof (card), "%9.2g rows%s", ts->ts_cardinality, ts->ts_card_measured ? "by sample" : "");
       stmt_printf (("  Index AND %s {\n", card));
       DO_BOX (inx_op_t *, term, inx, iop->iop_terms)
 	{
@@ -535,9 +812,11 @@ ts_print (table_source_t * ts)
     }
   else
     {
-      char card[30];
+      char card[50];
       char max_rows[30];
       snprintf (card, sizeof (card), "%9.2g rows", ts->ts_cardinality);
+      if (ts->ts_aq)
+	snprintf (&card[strlen (card)], sizeof (card) - strlen (card), " Parallel, tail cost %9.2g", ts->ts_cost_after);
       if (ts->ts_max_rows)
 	snprintf (max_rows, sizeof (max_rows), "max %d", ts->ts_max_rows);
       else
@@ -545,8 +824,13 @@ ts_print (table_source_t * ts)
       if (!ts->ts_order_ks->ks_from_temp_tree && ts->ts_order_ks->ks_key)
 	{
 	  char idstr[20];
-      char card[30];
+	  char card[50];
+	  if (ts->ts_is_unique)
+	    snprintf (card, sizeof (card), "unq %9.2g rows ", ts->ts_cardinality);
+	  else
       snprintf (card, sizeof (card), "%9.2g rows", ts->ts_cardinality);
+	  if (ts->ts_aq)
+	    snprintf (&card[strlen (card)], sizeof (card) - strlen (card), " Parallel, tail cost %9.2g", ts->ts_cost_after);
 	  if (ts->clb.clb_fill)
 	    sprintf (idstr, "fill=%d", ts->clb.clb_fill);
 	  else
@@ -555,7 +839,7 @@ ts_print (table_source_t * ts)
 			ts->ts_order_ks->ks_key->key_table->tb_name,
 			ts->ts_order_ks->ks_key->key_name,
 			ts->ts_is_outer ? "OUTER" : "",
-			ts->ts_is_unique ? "Unique" : card,
+			card,
 			ts->clb.clb_fill ? (ts->ts_order_ks->ks_cl_order ? "cluster" : "cluster  unordered") : "", idstr, max_rows));
 	}
       ks_print (ts->ts_order_ks);
@@ -563,6 +847,18 @@ ts_print (table_source_t * ts)
 	{
 	  stmt_printf (("    Cluster save ctx: "));
 	  ssl_array_print (ts->clb.clb_save);
+	  stmt_printf (("\n"));
+	}
+      if (ts->ts_branch_ssls)
+	{
+	  int inx;
+	  stmt_printf (("copy on branch"));
+	  DO_BOX (state_slot_t *, ssl, inx, ts->ts_branch_ssls)
+	    stmt_printf ((" $%d", ssl ? ssl->ssl_index : 0));
+	  END_DO_BOX;
+	  stmt_printf ((" sets: "));
+	  for (inx = 0; inx < box_length (ts->ts_branch_sets) / sizeof (ssl_index_t); inx++)
+	    stmt_printf (("%d ", (int)ts->ts_branch_sets[inx]));
 	  stmt_printf (("\n"));
 	}
     }
@@ -588,15 +884,54 @@ ts_print (table_source_t * ts)
 }
 
 
+void
+ik_print (ins_key_t * ik)
+{
+  stmt_printf (("key %s ", ik->ik_key->key_name));
+  if (ik->ik_del_slots)
+    {
+      stmt_printf (("delete "));
+      ssl_array_print (ik->ik_del_slots);
+      stmt_printf (("\n"));
+    }
+  if (ik->ik_slots)
+    {
+      stmt_printf (("insert "));
+      ssl_array_print (ik->ik_slots);
+      stmt_printf (("\n"));
+    }
+}
+
+void
+qn_print_reuse (data_source_t * qn)
+{
+  if (qn->src_vec_reuse)
+    {
+      ssl_index_t * reuse = qn->src_vec_reuse;
+      int len = box_length (qn->src_vec_reuse) / sizeof (ssl_index_t);
+      int inx = 0, inx2;
+      while (inx < len)
+	{
+	  stmt_printf (("$%d (", reuse[inx]));
+	  for (inx2 = 0; inx2 < reuse[inx + 1]; inx2++)
+	    stmt_printf (("%d ", reuse[inx + inx2 + 2]));
+	  stmt_printf ((") "));
+
+	  inx += reuse[inx + 1] + 2;
+	}
+    }
+}
+
+
 static void
 node_print (data_source_t * node)
 {
   qn_input_fn in;
   query_instance_t * qi = (query_instance_t *) THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_QST);
-  if (!qi || qi->qi_trx->lt_threads != 1)
-    GPF_T;
   QI_CHECK_STACK (qi, &node, 10000);
   in = node->src_input;
+  if (node->src_stat)
+    node_stat (node);
   if (node->src_pre_code)
     {
       stmt_printf (("\nPrecode:\n"));
@@ -621,16 +956,40 @@ node_print (data_source_t * node)
       else
 	code_vec_print (node->src_pre_code);
     }
-  if (node->src_local_save)
+  if (dbf_explain_level > 2)
     {
-      stmt_printf (("  local save: "));
-      ssl_array_print (node->src_local_save);
+  if (node->src_pre_reset)
+    {
+      stmt_printf (("  clear: "));
+      ssl_array_print (node->src_pre_reset);
+	}
+      if (node->src_continue_reset)
+	{
+	  stmt_printf (("\n  clear on continue: "));
+	  ssl_array_print (node->src_continue_reset);
+	}
+      if (node->src_vec_reuse)
+	qn_print_reuse (node);
       stmt_printf (("\n"));
+    }
+  if (node->src_sets)
+    {
+      if (dbf_explain_level > 2)
+	stmt_printf (("s# %d %d ", node->src_sets, node->src_in_state));
+      else
+    stmt_printf (("s# %d ", node->src_sets));
     }
   if (in == (qn_input_fn) table_source_input ||
       in == (qn_input_fn) table_source_input_unique)
     {
       ts_print ((table_source_t *) node);
+    }
+  else if (IS_QN (node, ts_split_input))
+    {
+      QNCAST (ts_split_node_t, tssp, node);
+      stmt_printf (("Alternate ts {\n"));
+      node_print ((data_source_t *) tssp->tssp_alt_ts);
+      stmt_printf (("\n}\n"));
     }
   else if (in == (qn_input_fn) query_frag_input)
     {
@@ -644,8 +1003,11 @@ node_print (data_source_t * node)
       ssl_array_print (qf->qf_params);
       stmt_printf (("\nOutput: "));
       ssl_array_print (qf->qf_result);
+      if (dbf_explain_level > 2)
+	{
       stmt_printf (("    \nsave ctx:"));
       ssl_array_print (qf->clb.clb_save);
+	}
       stmt_printf (("\n"));
       if (qf->qf_trigger_args)
 	{
@@ -664,11 +1026,38 @@ node_print (data_source_t * node)
     }
   else if (in == (qn_input_fn) skip_node_input)
     {
-      stmt_printf (("skip node  \n"));
+      QNCAST (skip_node_t, sk, node);
+      stmt_printf (("skip node "));
+      ssl_print (sk->sk_top);
+      ssl_print (sk->sk_top_skip);
+      ssl_print (sk->sk_set_no);
+      stmt_printf (("\n"));
     }
   else if (in == (qn_input_fn) sort_read_input)
     {
-      stmt_printf (("top order by node  \n"));
+      QNCAST (table_source_t, ts, node);
+      stmt_printf (("top order by node "));
+      ssl_list_print (ts->ts_order_ks->ks_out_slots);
+      stmt_printf (("\n"));
+      if (ts->ts_order_ks->ks_set_no)
+	{
+	  stmt_printf (("set no "));
+	  ssl_print (ts->ts_order_ks->ks_set_no);
+	  stmt_printf (("\n"));
+	}
+    }
+  else if (in == (qn_input_fn) chash_read_input)
+    {
+      QNCAST (table_source_t, ts, node);
+      key_source_t * ks = ts->ts_order_ks;
+      stmt_printf (("group by read node  \n"));
+      ssl_list_print (ks->ks_out_slots);
+      if (ks->ks_set_no_col_ssl)
+	{
+	  stmt_printf (("\nset no returned in "));
+	  ssl_print (ks->ks_set_no_col_ssl);
+	}
+      stmt_printf (("\n"));
     }
   else if (in == (qn_input_fn) select_node_input)
     {
@@ -687,15 +1076,32 @@ node_print (data_source_t * node)
 	}
       ssl_array_print (sel->sel_out_slots);
       stmt_printf (("\n"));
+      if (sel->sel_set_no)
+	{
+	  stmt_printf (("  set no: "));
+	  ssl_print (sel->sel_set_no);
+      stmt_printf (("\n"));
+	}
     }
   else if (in == (qn_input_fn) setp_node_input)
     {
       setp_node_t *setp = (setp_node_t *) node;
-      stmt_printf (("%s ", setp->setp_distinct ? "Distinct" : "Sort"));
+      char hf[10];
+      if (setp->setp_ha && HA_FILL == setp->setp_ha->ha_op)
+	snprintf (hf, sizeof (hf), "hf %d", setp->setp_ha->ha_tree->ssl_index);
+      else
+	hf[0] = 0;
+      stmt_printf (("%s %s", setp->setp_distinct ? "Distinct" : "Sort", hf));
       if (setp->setp_ha)
 	{
 	  stmt_printf (("(HASH) "));
-
+	  if (setp->setp_ha->ha_set_no)
+	    {
+	      stmt_printf (("set no "));
+	      ssl_print (setp->setp_ha->ha_set_no);
+	    }
+	  if (setp->setp_is_streaming)
+	    stmt_printf (("%s ", FNR_STREAM_UNQ == setp->setp_is_streaming ? "streaming unique ": "streaming with duplicates"));
 	}
       if (setp->setp_top)
 	{
@@ -733,6 +1139,11 @@ node_print (data_source_t * node)
 	  stmt_printf (("\n"));
 	}
       stmt_printf (("\n"));
+      if (setp->setp_loc_ts)
+	{
+	  ks_print_vec_cast (setp->setp_loc_ts->ts_order_ks->ks_vec_cast, setp->setp_loc_ts->ts_order_ks->ks_vec_source);
+	  stmt_printf (("\n"));
+	}
     }
   else if (in == (qn_input_fn) fun_ref_node_input
 	   || in == (qn_input_fn) hash_fill_node_input)
@@ -740,6 +1151,18 @@ node_print (data_source_t * node)
       fun_ref_node_t *fref = (fun_ref_node_t *) node;
       stmt_printf (("Fork %d \n{  %s\n", node->src_in_state,
 		    fref->fnr_hi_signature ? " shareable hash fill " : ""));
+      if (fref->fnr_hash_part_min)
+	stmt_printf ((" Hash filler partition by %d", fref->fnr_hash_part_min));
+      if (IS_QN (fref, hash_fill_node_input) && fref->fnr_no_hash_partition)
+	stmt_printf ((" hash not partitionable"));
+      if (fref->fnr_prev_hash_fillers)
+	{
+	  stmt_printf (("Result after all partitions of hash fillers "));
+	  DO_SET (fun_ref_node_t *, filler, &fref->fnr_prev_hash_fillers)
+	    stmt_printf (("hf %d ", filler->fnr_setp->setp_ha->ha_tree->ssl_index));
+	  END_DO_SET();
+	  stmt_printf (("\n"));
+	}
       if (fref->clb.clb_fill)
 	{
 	  stmt_printf (("    \nsave ctx:"));
@@ -759,7 +1182,7 @@ node_print (data_source_t * node)
     {
       remote_table_source_t *rts = (remote_table_source_t *) node;
       char *szPtr = rts->rts_text;
-      stmt_printf (("Remote (%s) %s ", rts->rts_rds->rds_dsn, rts->rts_is_outer ? "OUTER" : ""));
+      stmt_printf (("Remote %s ", rts->rts_is_outer ? "OUTER" : ""));
       while (*szPtr)
 	{
 	  int len = (int) strlen (szPtr);
@@ -784,18 +1207,21 @@ node_print (data_source_t * node)
       if (rts->rts_out_slots)
 	{
 	  stmt_printf (("\nOutput "));
-	  ssl_list_print (rts->rts_out_slots);
+	  ssl_array_print (rts->rts_out_slots);
 	}
       if (rts->rts_after_join_test)
 	{
 	  stmt_printf (("\nAfter join test:\n"));
 	  code_vec_print (rts->rts_after_join_test);
 	}
-      if (rts->rts_save_env)
-	{
-	  stmt_printf (("\n save env: "));
-	  ssl_array_print (rts->rts_save_env);
+      stmt_printf (("\n"));
 	}
+  else if (in == (qn_input_fn) breakup_node_input)
+    {
+      QNCAST (breakup_node_t, brk, node);
+      stmt_printf (("Breakup "));
+      ssl_array_print (brk->brk_output);
+      ssl_array_print (brk->brk_all_output);
       stmt_printf (("\n"));
     }
   else if (in == (qn_input_fn) subq_node_input)
@@ -844,9 +1270,30 @@ node_print (data_source_t * node)
   else if (in == (qn_input_fn) update_node_input)
     {
       update_node_t *upd = (update_node_t *) node;
+      int inx;
       stmt_printf (("Update %s %s ", upd->upd_keyset ? "keyset" : "", upd->upd_table->tb_name));
       ssl_print (upd->upd_place);
       ssl_array_print (upd->upd_values);
+      if (upd->upd_vec_source)
+	{
+	  ks_print_vec_cast (upd->upd_vec_cast, upd->upd_vec_source);
+	}
+      if (upd->upd_old_blobs)
+	{
+	  stmt_printf ((" old blobs: "));
+	  ssl_array_print (upd->upd_old_blobs);
+	  stmt_printf (("\n"));
+	}
+      if (upd->upd_keys)
+	{
+	  DO_BOX (ins_key_t *, ik, inx, upd->upd_keys)
+	    {
+	      if (!ik)
+		continue;
+	      ik_print (ik);
+	    }
+	  END_DO_BOX;
+	}
       stmt_printf (("\n"));
     }
   else if (in == (qn_input_fn) delete_node_input)
@@ -856,13 +1303,35 @@ node_print (data_source_t * node)
       ssl_print (del->del_place);
       if (del->del_key_only)
 	stmt_printf ((" only key %s ", del->del_key_only->key_name));
+      if (del->del_keys)
+	{
+	  int inx;
+	  stmt_printf (("keys: "));
+	  DO_BOX (ins_key_t *, ik, inx, del->del_keys)
+	    if (ik)
+	      ik_print (ik);
+	  END_DO_BOX;
+	}
       stmt_printf (("\n"));
     }
   else if (in == (qn_input_fn) insert_node_input)
     {
       insert_node_t *ins = (insert_node_t *) node;
+      if (ins->ins_del_node)
+	{
+	  stmt_printf (("Replacing vectored {\n"));
+	  node_print (ins->ins_del_node);
+	  stmt_printf (("\n}\n"));
+	}
       stmt_printf (("Insert %s ", ins->ins_table->tb_name));
       ssl_list_print (ins->ins_values);
+      if (ins->ins_vec_source)
+	{
+	  stmt_printf (("\nvectored "));
+	  ssl_array_print ((state_slot_t**)ins->ins_vec_source);
+	  ssl_array_print (ins->ins_vec_cast);
+	  stmt_printf (("\n"));
+	}
       if (ins->ins_key_only)
 	stmt_printf ((" only key %s ", ins->ins_key_only));
       if (ins->ins_daq)
@@ -890,15 +1359,24 @@ node_print (data_source_t * node)
 	}
       ssl_array_print (sel->sel_out_slots);
       stmt_printf (("\n"));
+      if (sel->sel_set_no)
+	{
+	  stmt_printf (("  set no: "));
+	  ssl_print (sel->sel_set_no);
+      stmt_printf (("\n"));
+	}
     }
   else if (in == (qn_input_fn) hash_source_input)
     {
       hash_source_t *hs = (hash_source_t *) node;
-      stmt_printf (("Hash source %s ", hs->hs_is_outer ? "outer" : ""));
+      stmt_printf (("Hash source %d %s %s %9.2g rows", hs->hs_ha->ha_tree->ssl_index, hs->hs_merged_into_ts ? "merged into ts" : hs->hs_is_outer ? "outer" : "",
+		    hs->hs_no_partition ? "not partitionable" : "", hs->hs_cardinality));
       ssl_array_print (hs->hs_ref_slots);
       stmt_printf ((" -> "));
       ssl_array_print (hs->hs_out_slots);
       stmt_printf (("\n"));
+      if (hs->hs_ks)
+	ks_print_vec_cast (hs->hs_ks->ks_vec_cast, hs->hs_ks->ks_vec_source);
       if (hs->hs_after_join_test)
 	{
 	  stmt_printf (("  after join test\n"));
@@ -946,11 +1424,19 @@ node_print (data_source_t * node)
 	  stmt_printf ((" output "));
 	  ssl_array_print (tn->tn_output);
 	  stmt_printf  ((" %s\n", tn->tn_lowest_sas ? "min same-as id" : ""));
+	  if (tn->tn_sas_g)
+	    {
+	      stmt_printf (("g = "));
+	      ssl_array_print (tn->tn_sas_g);
+	      stmt_printf (("\n"));
+	    }
 	}
       else
 	{
 	  stmt_printf (("Transitive dt dir %d, input: ", tn->tn_direction));
 	  ssl_array_print (tn->tn_input);
+	  stmt_printf (("\n  input shadow: "));
+	  ssl_array_print (tn->tn_input_ref);
 	  stmt_printf (("\n  output: "));
 	  ssl_array_print (tn->tn_output);
 	  if (tn->tn_keep_path)
@@ -1003,6 +1489,11 @@ node_print (data_source_t * node)
       ssl_print (ose->ose_set_no);
       stmt_printf (("\n out: "));
       ssl_array_print (ose->ose_out_slots);
+      if (ose->ose_out_shadow)
+	{
+	  stmt_printf (("\n shadow: "));
+	  ssl_array_print (ose->ose_out_shadow);
+	}
       stmt_printf (("\n"));
     }
   else if (in == (qn_input_fn) set_ctr_input)
@@ -1012,12 +1503,23 @@ node_print (data_source_t * node)
       ssl_print (sctr->sctr_set_no);
       stmt_printf (("    \nsave ctx:"));
       ssl_array_print (sctr->clb.clb_save);
+      if (sctr->sctr_hash_spec)
+	{
+	  stmt_printf (("\nHash partition filter: "));
+	  DO_SET (search_spec_t *, sp, &sctr->sctr_hash_spec)
+	    hrng_print ((hash_range_spec_t*)sp->sp_min_ssl, sp);
+	  END_DO_SET();
+	  stmt_printf (("\n"));
+	}
       stmt_printf (("\n"));
     }
 #ifdef BIF_XML
   else if (in == (qn_input_fn) txs_input)
     {
       text_node_t *txs = (text_node_t *) node;
+      if (txs->txs_geo)
+	stmt_printf (("geo %s ", GSOP_INTERSECTS == txs->txs_geo ? "intersects": GSOP_CONTAINS == txs->txs_geo ? "contains": "within"));
+      else
 	if (txs->txs_xpath_text_exp)
 	stmt_printf (("XCONTAINS ("));
       else
@@ -1025,6 +1527,11 @@ node_print (data_source_t * node)
       ssl_print (txs->txs_text_exp);
       stmt_printf ((") node on %s %9.2g rows\n", txs->txs_table->tb_name, txs->txs_card));
       ssl_print (txs->txs_d_id);
+      if (txs->txs_precision)
+	{
+	  stmt_printf ((" geo prec: "));
+	  ssl_print (txs->txs_precision);
+	}
       stmt_printf (("\n"));
     }
   else if (in == (qn_input_fn) xn_input)
@@ -1144,8 +1651,10 @@ qr_print_params (query_t * qr)
 static void
 qr_print (query_t * qr)
 {
-  query_instance_t * qi = (query_instance_t *) THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_QST);
-  if (!qi || qi->qi_trx->lt_threads != 1)
+  du_thread_t * self = THREAD_CURRENT_THREAD;
+  query_instance_t * qi = (query_instance_t *) THR_ATTR (self, TA_REPORT_QST);
+  query_instance_t * stat_qi = (QI*)THR_ATTR (self, TA_STAT_INST);
+  if (!qi || (qi->qi_trx->lt_threads != 1&& qi != stat_qi))
     GPF_T;
   QI_CHECK_STACK (qi, &qr, 10000);
   stmt_printf (("{ %s\n", qr->qr_lock_mode == PL_EXCLUSIVE ? "FOR UPDATE" : ""));
@@ -1169,6 +1678,37 @@ qr_print (query_t * qr)
 }
 
 
+void
+qr_print_top (query_t * qr)
+{
+  du_thread_t * self = THREAD_CURRENT_THREAD;
+  query_instance_t * stat_qi = (QI*)THR_ATTR (self, TA_STAT_INST);
+  int64 total = 0;
+  if (prof_on)
+    {
+      if (stat_qi)
+	total = qi_total_rdtsc (stat_qi);
+      else
+	total = qr_qn_total (qr);
+    }
+  SET_THR_ATTR (self, TA_TOTAL_RDTSC, (void*)(ptrlong)total);
+
+  qr_print (qr);
+}
+
+
+caddr_t
+sqlc_text_no_semi (caddr_t text)
+{
+  int l = strlen (text) - 1;
+  while (l > 0 && (' ' ==  text[l] || '\n' == text[l] || '\r' == text[l]))
+    l--;
+  if (l && ';' == text[l])
+    l--;
+  return box_n_chars ((db_buf_t)text, l + 1);
+}
+
+
 static caddr_t
 bif_explain (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -1186,8 +1726,9 @@ bif_explain (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       old_debug = sqlo_print_debug_output;
       sqlo_print_debug_output = 1;
     }
-
+  text = sqlc_text_no_semi (text);
   qr = sql_compile (text, qi->qi_client, &err, cr_type);
+  dk_free_box (text);
   if (old_debug != -1)
     sqlo_print_debug_output = old_debug;
   if (err)
@@ -1233,7 +1774,7 @@ bif_explain (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       stmt_printf (("}\n"));
     }
   else
-    qr_print (qr);
+    qr_print_top (qr);
   /* stmt_printf (("\n")); */
   trset_end ();
   if (qr && !qr->qr_proc_name)
@@ -1537,6 +2078,593 @@ bif_sql_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
+
+typedef struct  qnw_mrg_cd_s
+{
+  query_instance_t * 	qnw_qi_from;
+  int64 **		qnw_serial;
+  int			qnw_fill;
+  int		qnw_read_to;
+  int64		qnw_hash;
+} qnw_cd_t;
+
+
+void
+qnw_merge_cb (query_instance_t * qi, data_source_t * qn, qnw_cd_t * qnw)
+{
+  if (qn->src_stat)
+    {
+      caddr_t * inst = (caddr_t*)qi, * inst2 = (caddr_t*)qnw->qnw_qi_from;
+      src_stat_t * srs = (src_stat_t*)&inst[qn->src_stat];
+      src_stat_t * srs2 = (src_stat_t*)&inst2[qn->src_stat];
+      srs->srs_n_in += srs2->srs_n_in;
+      srs->srs_n_out += srs2->srs_n_out;
+      srs->srs_cum_time += srs2->srs_cum_time;
+      memzero (srs2, sizeof (src_stat_t));
+    }
+}
+
+
+int
+col_id_is_rdf_p (oid_t id)
+{
+  dbe_column_t * col = sch_id_to_column (wi_inst.wi_schema, id);
+  return col && 'P' == col->col_name[0] && 0 == col->col_name[1];
+}
+
+
+void
+qnw_sp_hash (search_spec_t * sp, int64 * hash)
+{
+  MHASH_STEP (*hash, (sp->sp_cl.cl_col_id * 256 + sp->sp_min_op * 16 + sp->sp_max_op));
+  if (sp->sp_min_ssl)
+    MHASH_STEP (*hash, sp->sp_min_ssl->ssl_index);
+  if (sp->sp_min_ssl)
+    {
+      MHASH_STEP (*hash, sp->sp_min_ssl->ssl_index);
+      if (SSL_CONSTANT == sp->sp_min_ssl->ssl_type && col_id_is_rdf_p (sp->sp_cl.cl_col_id))
+	MHASH_STEP (*hash, unbox_iri_int64 (sp->sp_min_ssl->ssl_constant));
+    }
+  if (sp->sp_max_ssl)
+    MHASH_STEP (*hash, sp->sp_max_ssl->ssl_index);
+}
+
+
+void
+qnw_hash (query_instance_t * qi, data_source_t * qn, qnw_cd_t * qnw)
+{
+  int inx;
+  if (!qn)
+    {
+      MHASH_STEP (qnw->qnw_hash, 1);
+      return;
+    }
+  if (IS_TS (((table_source_t*)qn)))
+    {
+      key_source_t * ks = ((table_source_t *)qn)->ts_order_ks;
+      search_spec_t * sp;
+      int n_out = ks->ks_v_out_map ? box_length (ks->ks_v_out_map) / sizeof (v_out_map_t) : 0;
+      MHASH_STEP (qnw->qnw_hash, ks->ks_key->key_id);
+      for (inx = 0; inx < n_out; inx++)
+	{
+	  v_out_map_t * om = &ks->ks_v_out_map[inx];
+	  MHASH_STEP (qnw ->qnw_hash, om->om_cl.cl_col_id);
+	  if (om->om_ssl)
+	    MHASH_STEP (qnw->qnw_hash, om->om_ssl->ssl_index);
+	}
+      for (sp = ks->ks_spec.ksp_spec_array; sp; sp = sp->sp_next)
+	qnw_sp_hash (sp, &qnw->qnw_hash);
+      for (sp = ks->ks_row_spec; sp; sp = sp->sp_next)
+	qnw_sp_hash (sp, &qnw->qnw_hash);
+    }
+  else if ((qn_input_fn) update_node_input == qn->src_input)
+    {
+      QNCAST (update_node_t, upd, qn);
+      if (!upd->upd_table)
+	return;
+      MHASH_STEP (qnw->qnw_hash, upd->upd_table->tb_primary_key->key_id);
+    }
+  else if ((qn_input_fn) delete_node_input == qn->src_input)
+    {
+      QNCAST (delete_node_t, del, qn);
+      MHASH_STEP (qnw->qnw_hash, del->del_table->tb_primary_key->key_id);
+
+    }
+  else if ((qn_input_fn) deref_node_input == qn->src_input)
+    return;
+  else if ((qn_input_fn) setp_node_input == qn->src_input)
+    {
+      QNCAST (setp_node_t, setp, qn);
+      if (setp->setp_ha)
+	{
+	  DO_BOX (state_slot_t *, ssl, inx, setp->setp_keys_box)
+	    MHASH_STEP (qnw->qnw_hash, ssl->ssl_index);
+	  END_DO_BOX;
+	  DO_BOX (state_slot_t *, ssl, inx, setp->setp_dependent_box)
+	    MHASH_STEP (qnw->qnw_hash, ssl->ssl_index);
+	  END_DO_BOX;
+	}
+    }
+  else if ((qn_input_fn) select_node_input_subq == qn->src_input)
+    {
+      QNCAST (select_node_t, sel, qn);
+      DO_BOX (state_slot_t *, ssl, inx, sel->sel_out_slots)
+	if (ssl)
+	  MHASH_STEP (qnw->qnw_hash, ssl->ssl_index);
+      END_DO_BOX;
+    }
+  else if ((qn_input_fn) in_iter_input == qn->src_input)
+    {
+      QNCAST (in_iter_node_t, ii, qn);
+      MHASH_STEP (qnw->qnw_hash, ii->ii_output->ssl_index);
+    }
+  else if ((qn_input_fn) rdf_inf_pre_input == qn->src_input)
+    {
+      QNCAST (rdf_inf_pre_node_t, ri, qn);
+      MHASH_STEP (qnw->qnw_hash, ri->ri_iter.in_output->ssl_index);
+    }
+  if (IS_CL_TXS (qn))
+    {
+      QNCAST (text_node_t, txs, qn);
+      MHASH_STEP (qnw->qnw_hash, txs->txs_d_id->ssl_index);
+    }
+  else if ((qn_input_fn)dpipe_node_input == qn->src_input)
+    {
+      QNCAST (dpipe_node_t, dp, qn);
+      DO_BOX_0 (state_slot_t *, ssl, inx, dp->dp_inputs)
+	MHASH_STEP (qnw->qnw_hash, dp->dp_inputs[inx]->ssl_index);
+      END_DO_BOX;
+    }
+}
+
+
+void
+qnw_serialize (query_instance_t * qi, data_source_t * qn, qnw_cd_t * qnw)
+{
+  int64 * ser;
+  if (qn->src_stat)
+    {
+      caddr_t * inst = (caddr_t*)qi;
+      int sz = *qnw->qnw_serial ? box_length (*qnw->qnw_serial) : 0;
+      src_stat_t * srs = (src_stat_t*) &inst[qn->src_stat];
+      if (srs->srs_n_in)
+	{
+	  if (sz / sizeof (int64) < qnw->qnw_fill + 4)
+	    array_extend ((caddr_t**)qnw->qnw_serial,  (qnw->qnw_fill + 40) * (sizeof (int64) / sizeof (caddr_t)));
+	  ser = *qnw->qnw_serial;
+	  ser[qnw->qnw_fill++] = qn->src_stat;
+	  ser[qnw->qnw_fill++] = srs->srs_n_in;
+	  ser[qnw->qnw_fill++] = srs->srs_n_out;
+	  ser[qnw->qnw_fill++] = srs->srs_cum_time;
+	  memzero (srs, sizeof (src_stat_t));
+	}
+    }
+}
+
+
+
+typedef void (*qnw_cb_t) (query_instance_t * qi, data_source_t * qn, qnw_cd_t * cd);
+
+
+void
+qn_walk (query_instance_t * qi, query_t * qr, qnw_cb_t cb, qnw_cd_t * cd)
+{
+  DO_SET (data_source_t *, qn, &qr->qr_nodes)
+    {
+      cb (qi, qn, cd);
+      if (IS_QN (qn, query_frag_input))
+	{
+	  QNCAST (query_frag_t, qf, qn);
+	  DO_SET (data_source_t *, qn2, &qf->qf_nodes)
+	    cb (qi, qn2, cd);
+	  END_DO_SET();
+	}
+      else if (IS_QN (qn, subq_node_input))
+	{
+	  qn_walk (qi, ((subq_source_t*)qn)->sqs_query, cb, cd);
+	}
+      else if (IS_QN (qn, trans_node_input))
+	{
+	  QNCAST (trans_node_t, tn, qn);
+	  if (tn->tn_inlined_step)
+	    qn_walk (qi, tn->tn_inlined_step, cb, cd);
+	  if (tn->tn_complement)
+	    qn_walk (qi, tn->tn_complement->tn_inlined_step, cb, cd);
+	}
+    }
+  END_DO_SET();
+  DO_SET (query_t *, sq, &qr->qr_subq_queries)
+    qn_walk (qi, sq, cb, cd);
+  END_DO_SET();
+}
+
+
+
+void
+qi_branch_stats (query_instance_t * qi, query_instance_t * branch, query_t * qr)
+{
+  qnw_cd_t qnw;
+  if (!qr->qr_head_node->src_stat)
+    {
+      data_source_t * qn = qr->qr_head_node;
+      data_source_t * qn2 = qn;
+      while (qn2 && (IS_QN (qn2, fun_ref_node_input) || IS_QN (qn2, hash_fill_node_input)))
+	qn2 = ((fun_ref_node_t*)qn2)->fnr_select;
+      if (qn2 && !qn2->src_stat)
+	return;
+    }
+  qnw.qnw_qi_from = branch;
+  qn_walk (qi,  qr, qnw_merge_cb, &qnw);
+}
+
+void
+qnw_total_cb (query_instance_t * qi, data_source_t * qn, qnw_cd_t * qnw)
+{
+  if (IS_QN (qn, query_frag_input))
+    return;
+  if (qn->src_stat)
+    {
+      src_stat_t * srs = (src_stat_t*) &((caddr_t*)qi)[qn->src_stat];
+      qnw->qnw_hash += srs->srs_cum_time;
+    }
+}
+
+
+uint64
+qi_total_rdtsc (query_instance_t * qi)
+{
+  qnw_cd_t qnw;
+  if (!prof_on)
+    return 0;
+  qnw.qnw_hash = 0;
+  qn_walk (qi, qi->qi_query, qnw_total_cb, &qnw);
+  return qnw.qnw_hash;
+}
+
+uint64 qi_total_mem (QI * qi);
+
+uint64
+qi_array_mem (QI ** qis)
+{
+  uint64 mem = 0;
+  int inx;
+  DO_BOX (QI *, slice_qi, inx, qis)
+    if (slice_qi)
+      mem += qi_total_mem (slice_qi);
+  END_DO_BOX;
+  return mem;
+}
+
+
+int
+qn_has_clb (data_source_t * qn)
+{
+  return IS_QN (qn, query_frag_input) || IS_QN (qn, stage_node_input) || IS_QN (qn, trans_node_input) || IS_QN (qn, cl_fref_read_input);
+}
+
+void
+qnw_mem_cb (query_instance_t * qi, data_source_t * qn, qnw_cd_t * qnw)
+{
+  QNCAST (caddr_t, inst, qi);
+  if (qn_has_clb (qn))
+    {
+      QNCAST (query_frag_t, qf, qn);
+      if (qf->clb.clb_itcl)
+	{
+	  cl_op_t * itcl_clo = (cl_op_t*)qst_get (inst, qf->clb.clb_itcl);
+	  if (itcl_clo)
+	    {
+	      itc_cluster_t * itcl = itcl_clo->_.itcl.itcl;
+	      if (itcl && itcl->itcl_pool)
+		qnw->qnw_hash += itcl->itcl_pool->mp_bytes;
+	    }
+	}
+    }
+  if (IS_QN (qn, query_frag_input))
+    {
+      QNCAST (query_frag_t, qf, qn);
+      if (qf->qf_slice_qis)
+	qnw->qnw_hash += qi_array_mem ((QI**)qst_get (inst, qf->qf_slice_qis));
+    }
+  else if (IS_QN (qn, stage_node_input) && 1 == ((stage_node_t*)qn)->stn_nth)
+    {
+      QNCAST (stage_node_t, stn, qn);
+      qnw->qnw_hash += qi_array_mem ((QI**)qst_get (inst, stn->stn_slice_qis));
+    }
+}
+
+
+uint64
+qi_total_mem (query_instance_t * qi)
+{
+  qnw_cd_t qnw;
+  qnw.qnw_hash = 0;
+  qn_walk (qi, qi->qi_query, qnw_mem_cb, &qnw);
+  return (qi->qi_mp ? qi->qi_mp->mp_bytes : 0) + qnw.qnw_hash;
+}
+
+
+
+void
+qi_da_stat (query_instance_t * qi, db_activity_t * da, int is_final)
+{
+  qnw_cd_t qnw;
+  if (!qi->qi_query->qr_head_node->src_stat)
+    {
+      da->da_nodes_fill = 0;
+      return;
+    }
+  memzero (&qnw, sizeof (qnw));
+  qnw.qnw_serial = &da->da_nodes;
+  qn_walk (qi, qi->qi_query, qnw_serialize, &qnw);
+  da->da_nodes_fill = qnw.qnw_fill;
+  if (is_final)
+    da->da_memory = qi->qi_mp->mp_bytes;
+}
+
+
+void
+qi_add_cl_stat  (query_instance_t * qi, int64 * stat, int fill)
+{
+  caddr_t * inst = (caddr_t*) qi;
+  int inx;
+  qnw_cd_t qnw;
+  memzero (&qnw, sizeof (qnw));
+  qnw.qnw_serial = &stat;
+  qnw.qnw_fill = fill;
+  for (inx = 0; inx < fill; inx += 4)
+    {
+      int place = stat[inx];
+      src_stat_t  * srs = (src_stat_t*)&inst[place];
+      srs->srs_n_in += stat[inx + 1];
+      srs->srs_n_out += stat[inx + 2];
+      srs->srs_cum_time += stat[inx + 3];
+    }
+}
+
+uint64
+qr_plan_hash (query_t * qr)
+{
+  qnw_cd_t qnw;
+  qnw.qnw_hash = 1;
+  qn_walk (NULL, qr, qnw_hash, &qnw);
+  return qnw.qnw_hash;
+}
+
+
+int64 ql_ctr;
+dk_session_t * ql_file;
+dk_mutex_t ql_mtx;
+char * c_query_log_file = "virtuoso.qrl";
+#define QL_N_COLS 43
+
+void
+qi_log_stats_1 (query_instance_t * qi, caddr_t err, caddr_t ext_text)
+{
+#ifndef WIN32
+  caddr_t * inst = (caddr_t*)qi;
+  du_thread_t * self = THREAD_CURRENT_THREAD;
+  query_t * qr = qi->qi_query;
+  char from[20];
+  void * rs_comp = NULL;
+  int r_len = 0;
+  dk_set_t res = NULL;
+  struct rusage ru;
+  client_connection_t * cli = qi->qi_client;
+  dk_session_t * ses;
+  uint64 rt;
+  uint32 now;
+  if (!qi->qi_log_stats)
+    return;
+  now = get_msec_real_time ();
+  CLI_THREAD_TIME (cli);
+  rt = rdtsc ();
+  if (!(ses = cli->cli_ql_strses))
+    ses = cli->cli_ql_strses = strses_allocate ();
+  dks_array_head (ses, QL_N_COLS, DV_ARRAY_OF_POINTER);
+  session_buffered_write_char (DV_LONG_INT, ses);
+  print_long (0, ses);
+  /*0*/
+  session_buffered_write_char (DV_DATETIME, ses);
+  session_buffered_write (ses, (char*)cli->cli_start_dt, DT_LENGTH);
+  /*1*/
+  print_int (now - cli->cli_start_time, ses);
+  /*2*/
+  print_int (cli->cli_run_clocks, ses);
+  /*3*/
+  if (cli->cli_ws)
+    tcpses_print_client_ip (cli->cli_ws->ws_session->dks_session, from, sizeof (from));
+  else if (cli->cli_session && cli->cli_session->dks_session)
+    tcpses_print_client_ip (cli->cli_session->dks_session, from, sizeof (from));
+  else
+    strcpy (from, "internal");
+  session_buffered_write_char (DV_SHORT_STRING_SERIAL, ses);
+  session_buffered_write_char (strlen (from), ses);
+  session_buffered_write (ses, from, strlen (from));
+  /*4*/
+  if (cli->cli_user && cli->cli_user->usr_name)
+    print_object (cli->cli_user->usr_name, ses, NULL, NULL);
+  else
+    session_buffered_write_char (DV_DB_NULL, ses);
+  /*5, 6*/
+  if (IS_BOX_POINTER (err))
+    {
+      print_object (((caddr_t*)err)[1], ses, NULL, NULL);
+      print_object (((caddr_t*)err)[2], ses, NULL, NULL);
+    }
+  else
+    {
+      session_buffered_write_char (DV_DB_NULL, ses);
+      session_buffered_write_char (DV_DB_NULL, ses);
+    }
+  getrusage (RUSAGE_SELF, &ru);
+  /*7*/
+  print_int (ru.ru_majflt, ses);
+  /*8*/
+  print_int (ru.ru_utime.tv_sec * 1000 +  ru.ru_utime.tv_usec / 1000, ses);
+  /*9*/
+  print_int (ru.ru_stime.tv_sec * 1000 +  ru.ru_stime.tv_usec / 1000, ses);
+
+  /*10*/
+  if (ext_text)
+    print_object (ext_text, ses, NULL, NULL);
+  else if (qr->qr_text && !qr->qr_text_is_constant)
+    print_object (qr->qr_text, ses, NULL, NULL);
+  else
+    session_buffered_write_char (DV_DB_NULL, ses);
+  /*11*/
+  session_buffered_write_char (DV_DB_NULL, ses);
+  /*12*/
+  if (ext_text)
+    session_buffered_write_char (DV_DB_NULL, ses);
+  else
+    print_int (qr_plan_hash (qr), ses);
+  /*13*/
+  print_int (cli->cli_compile_activity.da_thread_time, ses);
+  /*14*/
+  /*15*/
+  print_int (cli->cli_compile_msec, ses);
+  cli->cli_compile_msec = 0;
+  /*16*/
+  print_int (cli->cli_compile_activity.da_disk_reads, ses);
+  /*17*/
+  print_int (cli->cli_compile_activity.da_thread_disk_wait, ses);
+  /*18*/
+  print_int (cli->cli_compile_activity.da_thread_cl_wait, ses);
+  /*19*/
+  print_int (cli->cli_compile_activity.da_cl_messages, ses);
+  /*20*/
+  print_int (cli->cli_compile_activity.da_random_rows, ses);
+  /*21*/
+  print_int (cli->cli_activity.da_random_rows, ses);
+  /*22*/
+  print_int (cli->cli_activity.da_seq_rows, ses);
+  /*23*/
+  print_int (cli->cli_activity.da_same_seg, ses);
+  /*24*/
+  print_int (cli->cli_activity.da_same_page, ses);
+  /*25*/
+  /*26*/
+  print_int (cli->cli_activity.da_same_parent, ses);
+  /*27*/
+  print_int (cli->cli_activity.da_thread_time, ses);
+  /*28*/
+  print_int (cli->cli_activity.da_thread_disk_wait, ses);
+  /*29*/
+  print_int (cli->cli_activity.da_thread_cl_wait, ses);
+  /*30*/
+  print_int (cli->cli_activity.da_thread_pg_wait, ses);
+  /*31*/
+  print_int (cli->cli_activity.da_disk_reads, ses);
+  /*32*/
+  print_int (cli->cli_activity.da_spec_disk_reads, ses);
+  /*33*/
+  print_int (cli->cli_activity.da_cl_messages, ses);
+  /*34*/
+  print_int (cli->cli_activity.da_cl_bytes, ses);
+  /*35*/
+  print_int (cli->cli_activity.da_qp_thread, ses);
+  /*36*/
+  print_int (cli->cli_activity.da_memory, ses);
+  /*37*/
+  print_int (cli->cli_activity.da_max_memory, ses);
+  /*38*/
+  print_int (cli->cli_activity.da_lock_waits, ses);
+  /*39*/
+  print_int (cli->cli_activity.da_lock_wait_msec, ses);
+
+  /*40*/
+  if (!ext_text)
+    {
+      cli->cli_resultset_max_rows = -1;
+      cli->cli_resultset_comp_ptr = (caddr_t *) &rs_comp;
+      cli->cli_resultset_data_ptr = &res;
+      SET_THR_ATTR (self, TA_STAT_INST, (void*)qi);
+      trset_start (inst);
+      QR_RESET_CTX
+	{
+	  qr_print_top (qr);
+	}
+      QR_RESET_CODE
+	{
+	}
+      END_QR_RESET;
+      trset_end ();
+      SET_THR_ATTR (self, TA_STAT_INST, NULL);
+      res = dk_set_nreverse (res);
+      DO_SET (caddr_t *, r, &res)
+	r_len += box_length (r[0]);
+      END_DO_SET ();
+      session_buffered_write_char (DV_STRING, ses);
+      print_long  (r_len, ses);
+      DO_SET (caddr_t *, r, &res)
+	{
+	  session_buffered_write (ses, r[0], box_length (r[0]) - 1);
+	  session_buffered_write_char ('\n', ses);
+	  dk_free_tree ((caddr_t)r);
+	}
+      END_DO_SET();
+      dk_set_free (res);
+      dk_free_tree (rs_comp);
+      cli->cli_resultset_data_ptr = NULL;
+      cli->cli_resultset_comp_ptr = NULL;
+    }
+  else
+    session_buffered_write_char (DV_DB_NULL, ses);
+  /*41*/
+  session_buffered_write_char (DV_DB_NULL, ses);
+  /*42*/
+  print_int (cli->cli_compile_activity.da_memory, ses);
+  /*43*/
+  print_int (qi->qi_n_affected, ses);
+mutex_enter (&ql_mtx);
+  strses_set_int32 (ses, 4, ql_ctr++);
+  if (!ql_file)
+    {
+      OFF_T off;
+      int fd;
+      file_set_rw (QL_NAME);
+      fd = fd_open (c_query_log_file, LOG_OPEN_FLAGS);
+      off = LSEEK (fd, 0, SEEK_END);
+      ql_file = dk_session_allocate (SESCLASS_TCPIP);
+      tcpses_set_fd (ql_file->dks_session, fd);
+    }
+  CATCH_WRITE_FAIL (ql_file)
+  {
+    strses_write_out (ses, ql_file);
+    session_flush (ql_file);
+  }
+  END_WRITE_FAIL (ql_file);
+  mutex_leave (&ql_mtx);
+  strses_flush (ses);
+  cli->cli_run_clocks = 0;
+  da_clear (&cli->cli_activity);
+  da_clear (&cli->cli_compile_activity);
+  qi->qi_log_stats = 0;
+#endif
+}
+
+
+void
+qi_log_stats (query_instance_t * qi, caddr_t err)
+{
+  qi_log_stats_1 (qi, err, NULL);
+}
+
+caddr_t
+bif_log_stats (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  QNCAST (QI, qi, qst);
+  caddr_t ext_text;
+  if (!prof_on)
+    return NULL;
+  ext_text = bif_string_arg (qst, args, 0, "log_stats");
+  qi_log_stats_1 (qi, NULL, ext_text);
+  cli_set_start_times (qi->qi_client);
+  return NULL;
+}
+
+
 void
 bif_explain_init (void)
 {
@@ -1544,5 +2672,8 @@ bif_explain_init (void)
   bif_define ("procedure_cols", bif_procedure_cols);
   bif_define ("sql_parse", bif_sql_parse);
   bif_define ("sql_text", bif_sql_text);
+  bif_define ("log_stats", bif_log_stats);
 }
+
+
 

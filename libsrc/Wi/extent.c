@@ -58,12 +58,11 @@
 #endif
 
 
-dp_addr_t ext_free_count (extent_t * ext);
+int ext_free_count (extent_t * ext);
 extent_t * em_new_extent (extent_map_t * em, int type, dp_addr_t extends);
 dp_addr_t em_try_get_dp (extent_map_t * em, int pg_type, dp_addr_t near);
 dp_addr_t em_new_dp_1 (extent_map_t * em, int ext_type, dp_addr_t near);
 
-extern int32 c_dense_page_allocation;
 
 int
 fd_extend (dbe_storage_t * dbs, int fd, int n_pages)
@@ -99,20 +98,20 @@ dbs_seg_extend (dbe_storage_t * dbs, int n)
   ds = (disk_segment_t*)last->data;
   fd = dst_fd (ds->ds_stripes[0]);
   org_sz = LSEEK (fd, 0, SEEK_END);
-  dst_fd_done (ds->ds_stripes[0], fd);
+  dst_fd_done (ds->ds_stripes[0], fd, NULL);
   DO_BOX (disk_stripe_t *, dst, inx, ds->ds_stripes)
     {
       fd = dst_fd (dst);
       rc = fd_extend (dbs, fd, n);
-      dst_fd_done (dst, fd);
+      dst_fd_done (dst, fd, NULL);
       if (rc != n)
 	{
 	  int inx2;
 	  for (inx2 = 0; inx2 < inx; inx2++)
 	    {
 	      fd = dst_fd (ds->ds_stripes[inx2]);
-	      FTRUNCATE (fd, org_sz);
-	      dst_fd_done (ds->ds_stripes[inx2], fd);
+	      ftruncate (fd, org_sz);
+	      dst_fd_done (ds->ds_stripes[inx2], fd, NULL);
 	    }
 	  return 0;
 	}
@@ -129,7 +128,10 @@ buffer_desc_t *
 page_set_last (buffer_desc_t * buf)
 {
   while (buf && buf->bd_next)
+    {
+      if (!buf->bd_physical_page) GPF_T1 ("fucking page set got 0 dp");
     buf = buf->bd_next;
+    }
   return buf;
 }
 
@@ -167,6 +169,8 @@ dbs_locate_ext_bit (dbe_storage_t* dbs, dp_addr_t near_dp,
     {
       if (!free_set->bd_next)
 	GPF_T1 ("extent set too short");
+      if (!free_set->bd_physical_page)
+	GPF_T1 ("ext set got 0 dp");
       free_set = free_set->bd_next;
     }
   page_set_check (free_set->bd_buffer + DP_DATA);
@@ -204,15 +208,54 @@ em_free_count (extent_map_t * em, int type)
   return n;
 }
 
-#define EM_DEC_FREE(em, t) \
-{ \
-  if (EXT_INDEX == t) em->em_n_free_pages--; \
-  else if (EXT_BLOB == t) em->em_n_free_blob_pages--; \
-  else em->em_n_free_remap_pages--;		      \
-}
 
 extern long dbf_no_disk;
-int32 dbs_check_extent_free_pages = 0;
+
+
+void
+dbs_ec_enter (dbe_storage_t * dbs)
+{
+  int inx;
+  for (inx = 0; inx <  DBS_EC_N_SETS; inx++)
+    mutex_enter (dbs->dbs_ext_cache_mtx[inx]);
+}
+
+
+void
+dbs_ec_leave (dbe_storage_t * dbs)
+{
+  int inx;
+  for (inx = 0; inx <  DBS_EC_N_SETS; inx++)
+    mutex_leave (dbs->dbs_ext_cache_mtx[inx]);
+}
+
+
+void
+dbs_extend_ext_cache (dbe_storage_t * dbs)
+{
+  if (dbs->dbs_ext_ref_ct && box_length (dbs->dbs_ext_ref_ct) < dbs->dbs_n_pages / EXTENT_SZ)
+    {
+      dbs_ec_enter (dbs);
+      {
+	int64 len = box_length (dbs->dbs_ext_ref_ct);
+	int64 reserve = len + 10000;
+	ext_ts_t * new_ts = (ext_ts_t*)dk_alloc_box_long (reserve * sizeof (ext_ts_t), DV_BIN);
+	db_buf_t new_ct = (db_buf_t)dk_alloc_box_long (reserve, DV_BIN);
+	memset (new_ct + len, 0, reserve - len);
+	memset (&new_ts[len], 0, sizeof (ext_ts_t) * (reserve - len));
+	memcpy (new_ct, dbs->dbs_ext_ref_ct, len);
+	memcpy (new_ts, dbs->dbs_ext_ts, len * sizeof (ext_ts_t));
+	  dk_free_box ((caddr_t)dbs->dbs_ext_ts);
+	  dk_free_box ((caddr_t)dbs->dbs_ext_ref_ct);
+	  dbs->dbs_ext_ts = new_ts;
+	  dbs->dbs_ext_ref_ct = new_ct;
+      }
+      dbs_ec_leave (dbs);
+    }
+}
+
+int32 dbs_check_extent_free_pages = 1;
+
 
 int
 dbs_file_extend (dbe_storage_t * dbs, extent_t ** new_ext_ret, int is_in_sys_em)
@@ -220,15 +263,15 @@ dbs_file_extend (dbe_storage_t * dbs, extent_t ** new_ext_ret, int is_in_sys_em)
   extent_map_t * em;
   	  extent_t * new_ext = NULL;
   int n, n_allocated = 0;
-  int32 em_n_free;
   dp_addr_t ext_first = dbs->dbs_n_pages;
   ASSERT_IN_DBS (dbs);
   if (dbf_no_disk)
     return 0;
   if (dbs->dbs_disks)
     {
-      n = dbs_seg_extend (dbs, EXTENT_SZ);
-      if (n != EXTENT_SZ)
+      int quota = DBS_ELASTIC == dbs->dbs_type ? 8 * EXTENT_SZ :  EXTENT_SZ;
+      n = dbs_seg_extend (dbs, quota);
+      if (n != quota)
 	return 0;
     }
   else
@@ -243,6 +286,7 @@ dbs_file_extend (dbe_storage_t * dbs, extent_t ** new_ext_ret, int is_in_sys_em)
       dbs->dbs_n_free_pages+= EXTENT_SZ;
     }
   wi_storage_offsets ();
+  dbs_extend_ext_cache (dbs);
   em = dbs->dbs_extent_map;
   if (!em)
     {
@@ -250,10 +294,9 @@ dbs_file_extend (dbe_storage_t * dbs, extent_t ** new_ext_ret, int is_in_sys_em)
     }
   if (!is_in_sys_em)
     mutex_enter (em->em_mtx);
-
   if (dbs_check_extent_free_pages)
     {
-      em_n_free = em_free_count (em, EXT_INDEX);
+      dp_addr_t em_n_free = em_free_count (em, EXT_INDEX);
       if (em->em_n_free_pages != em_n_free)
 	{
 	  log_error ("The %s free pages incorrect %d != %d actually free", em->em_name, em->em_n_free_pages, em_n_free);
@@ -306,13 +349,12 @@ dbs_file_extend (dbe_storage_t * dbs, extent_t ** new_ext_ret, int is_in_sys_em)
 	dbs_page_allocated (dbs, ext_first);
       last->bd_page = last->bd_physical_page = em_try_get_dp (em, EXT_INDEX, DP_ANY);
       if (!last->bd_page) GPF_T1 ("0 dp for page set page");
-      EM_DEC_FREE (em, EXT_INDEX);
-
+      em->em_n_free_pages--;
       last = page_set_extend (dbs, &dbs->dbs_incbackup_set, 0, DPF_INCBACKUP_SET);
       page_set_checksum_init (last->bd_buffer + DP_DATA);
       last->bd_page = last->bd_physical_page = em_try_get_dp (em, EXT_INDEX, DP_ANY);
       if (!last->bd_page) GPF_T1 ("0 dp for page set page");
-      EM_DEC_FREE (em, EXT_INDEX);
+      em->em_n_free_pages--;
       dbs->dbs_n_pages_in_sets += BITS_ON_PAGE;
     }
   if (dbs->dbs_n_pages > dbs->dbs_n_pages_in_extent_set)
@@ -320,7 +362,7 @@ dbs_file_extend (dbe_storage_t * dbs, extent_t ** new_ext_ret, int is_in_sys_em)
       buffer_desc_t * last = page_set_extend (dbs, &dbs->dbs_extent_set, 0, DPF_EXTENT_SET);
       last->bd_page = last->bd_physical_page = em_try_get_dp (em, EXT_INDEX, DP_ANY);
       if (!last->bd_page) GPF_T1 ("0 dp for extents alloc page");
-      EM_DEC_FREE (em, EXT_INDEX);
+      em->em_n_free_pages--;
       LONG_SET (last->bd_buffer + DP_DATA, 1); /* the newly made ext is the 1st of this page of the ext set, so set the bm 1st bit to 1 */
       page_set_checksum_init (last->bd_buffer + DP_DATA);
       dbs->dbs_n_pages_in_extent_set += EXTENT_SZ * BITS_ON_PAGE;
@@ -747,7 +789,7 @@ em_find_free_extender (extent_map_t * em, extent_t * near_ext)
 }
 
 
-dp_addr_t
+int
 ext_free_count (extent_t * ext)
 {
   int inx, b_idx, free = 0;
@@ -833,6 +875,12 @@ em_new_extent (extent_map_t * em, int type, dp_addr_t extends)
   return new_ext;
 }
 
+#define EM_DEC_FREE(em, t) \
+{ \
+  if (EXT_INDEX == t) em->em_n_free_pages--; \
+  else if (EXT_BLOB == t) em->em_n_free_blob_pages--; \
+  else em->em_n_free_remap_pages--;		      \
+}
 
 
 dp_addr_t
@@ -1047,7 +1095,7 @@ em_new_dp (extent_map_t * em, int type, dp_addr_t near, int * hold)
   else if (EXT_BLOB == type)
     dp = em_new_blob (em, near);
   else
-    dp = em_new_dp_1 (em, type, c_dense_page_allocation ? DP_ANY : near);
+    dp = em_new_dp_1 (em, type, near);
   if (EXT_INDEX == type && em != em->em_dbs->dbs_extent_map)
     sethash (DP_ADDR2VOID(dp), em->em_uninitialized, (void*) 1);
   em_printf ((" alloc L=%d t=%d\n", dp, type));
@@ -1150,6 +1198,13 @@ buf_ext_check (buffer_desc_t * buf)
   extent_t * ext;
   if (!it)
     return WI_OK;
+  if (DPF_COLUMN == SHORT_REF (buf->bd_buffer + DP_FLAGS))
+    {
+      if (!it->it_col_extent_maps)
+	return WI_OK;
+      em = (extent_map_t *)gethash ((void*)(ptrlong)LONG_REF (buf->bd_buffer + DP_PARENT), it->it_col_extent_maps);
+    }
+  else
   em = it->it_extent_map;
   if (!em)
     return WI_OK;
@@ -1377,11 +1432,38 @@ em_free (extent_map_t * em)
   mutex_free (em->em_mtx);
   hash_table_free (em->em_dp_to_ext);
   hash_table_free (em->em_read_history);
+  HT_NO_REQUIRE_MTX (em->em_uninitialized);
   hash_table_free (em->em_uninitialized);
   dk_mutex_destroy (&em->em_read_history_mtx);
   dk_free ((caddr_t) em, sizeof (extent_map_t));
 }
 
+void
+em_rename (extent_map_t * em, char * name)
+{
+  char str[4 * MAX_NAME_LEN];
+  IN_TXN;
+  dbs_registry_set (em->em_dbs, em->em_name, NULL, 1);
+  LEAVE_TXN;
+  snprintf (str, sizeof (str), "__EM:%s", name);
+  dk_free_box (em->em_name);
+  em->em_name = box_dv_short_string (name);
+}
+
+
+void
+it_rename_col_ems (index_tree_t * it, char * key_name)
+{
+  if (!it->it_col_extent_maps)
+    return;
+  DO_HT (ptrlong,  col_id, extent_map_t *, em, it->it_col_extent_maps)
+    {
+      char str[4 * MAX_NAME_LEN];
+      snprintf (str, sizeof (str), "__EMC:%s:%s:%d", it->it_key->key_table->tb_name, key_name, (int)col_id);
+      em_rename (em, str);
+    }
+  END_DO_HT;
+}
 
 
 void
@@ -1496,7 +1578,7 @@ void
 dbs_cpt_extents (dbe_storage_t * dbs, dk_set_t free_trees)
 {
   /* compact the extent maps.  Put them in the registry.
-  * Deleted go first because drop-create-drop-create would otherwise leave the dropped state in effect.*/
+  * Deled go first because drop-create-drop-create would otherwise leave the dropped state in effect.*/
   DO_SET (index_tree_t *, free_it, &free_trees)
     {
       if (free_it->it_extent_map != dbs->dbs_extent_map
@@ -1511,6 +1593,16 @@ dbs_cpt_extents (dbe_storage_t * dbs, dk_set_t free_trees)
 	}
     }
   END_DO_SET();
+  DO_SET (extent_map_t *, em, &dbs->dbs_deleted_ems)
+    {
+      em_compact (em, 1);
+      if (em->em_buf)
+	log_error ("suspect that the column ext map of %s is not empty at after drop", em->em_name);
+      em_free (em);
+    }
+  END_DO_SET();
+  dk_set_free (dbs->dbs_deleted_ems);
+  dbs->dbs_deleted_ems = NULL;
 
   DO_SET (index_tree_t *, it, &dbs->dbs_trees)
     {
@@ -1518,6 +1610,14 @@ dbs_cpt_extents (dbe_storage_t * dbs, dk_set_t free_trees)
 	  && it->it_extent_map)
 	{
 	  em_compact (it->it_extent_map, 0);
+	}
+      if (it->it_col_extent_maps)
+	{
+	  DO_HT (ptrlong, col_id, extent_map_t *, em, it->it_col_extent_maps)
+	    {
+	      em_compact (em, 0);
+	    }
+	  END_DO_HT;
 	}
     }
   END_DO_SET();
@@ -1536,6 +1636,12 @@ dbs_cpt_write_extents (dbe_storage_t * dbs)
 	  && it->it_extent_map)
 	{
 	  dbs_write_page_set (dbs, it->it_extent_map->em_buf);
+	}
+      if (it->it_col_extent_maps)
+	{
+	  DO_HT (ptrlong, col_id, extent_map_t *, em, it->it_col_extent_maps)
+	    dbs_write_page_set (dbs, em->em_buf);
+	  END_DO_HT;
 	}
     }
   END_DO_SET();
@@ -1631,29 +1737,9 @@ ext_read (index_tree_t * it, extent_t * ext, int keep_ts, dk_hash_t * phys_to_lo
       EXT_BIT (ext, ext->ext_dp + inx, word, bit);
       if (ext->ext_pages[word] & 1 << bit)
 	{
-	  buffer_desc_t *buf;
+	  buffer_desc_t * buf = bp_get_buffer (NULL, BP_BUF_IF_AVAIL);
 	  it_map_t * itm;
 	  dp_addr_t log;
-	  extern dbe_storage_t *cpt_dbs;
-
-	  if (dbs_is_free_page (cpt_dbs, ext->ext_dp + inx))
-	    {
-	      dp_addr_t log;
-
-	      if ((log = (ptrlong) gethash (DP_ADDR2VOID (ext->ext_dp + inx), phys_to_log)))
-		{
-		  log_error ("Remap %d corresponding to logical %d was marked free. marking allocated.", ext->ext_dp + inx, log);
-		  dbs_page_allocated (cpt_dbs, ext->ext_dp + inx);
-		}
-	      else
-		{
-		  log_error ("Correcting bad remap allocation %d", ext->ext_dp + inx);
-		  ext->ext_pages[word] &= ~(1 << bit);
-		}
-	      continue;
-	    }
-
-	  buf = bp_get_buffer (NULL, BP_BUF_IF_AVAIL);
 	  if (!buf)
 	    break;
 	  dk_set_push (&buf_list, (void*)buf);
@@ -1703,6 +1789,7 @@ it_own_extent_map (index_tree_t * tree)
   dbe_storage_t * dbs = tree->it_storage;
   extent_map_t * em;
   extent_t * new_ext;
+  int slice = 0;
   mutex_enter (extent_map_create_mtx);
   if (tree->it_extent_map != dbs->dbs_extent_map)
     {
@@ -1724,12 +1811,54 @@ it_own_extent_map (index_tree_t * tree)
 	  mutex_leave (extent_map_create_mtx);
 	  return 0;
     }
+  if (DBS_ELASTIC == tree->it_storage->dbs_type)
+    slice = tree->it_slice;
   snprintf (name, sizeof (name), "__EM:%s",
-	    KI_TEMP == tree->it_key->key_id ? "temp": tree->it_key->key_fragments[0]->kf_name);
+	    KI_TEMP == tree->it_key->key_id ? "temp": tree->it_key->key_fragments[slice]->kf_name);
   em->em_name = box_dv_short_string (name );
   tree->it_extent_map = em;
   mutex_leave (extent_map_create_mtx);
   return 1;
+}
+
+
+extent_map_t *
+it_col_own_extent_map (index_tree_t * tree, oid_t col_id)
+{
+  char name[1000];
+  dp_addr_t em_dp;
+  dbe_storage_t * dbs = tree->it_storage;
+  extent_map_t * em;
+  extent_t * new_ext;
+  mutex_enter (extent_map_create_mtx);
+  em = (extent_map_t *)gethash ((void*)(ptrlong)col_id, tree->it_col_extent_maps);
+  if (em)
+    {
+      mutex_leave (extent_map_create_mtx);
+      return em;
+    }
+  em_dp = em_new_dp (dbs->dbs_extent_map, EXT_INDEX, 0, NULL);
+  if (!em_dp)
+	{
+	  log_error ("Out of disk in making a new ext map");
+	  mutex_leave (extent_map_create_mtx);
+	  return NULL;
+	}
+  em = em_allocate (dbs, em_dp);
+  new_ext = em_new_extent (em, EXT_INDEX, EXT_EXTENDS_NONE);
+  if (!new_ext)
+    {
+      log_error ("out of disk in making first ext for new ext map");
+	  mutex_leave (extent_map_create_mtx);
+	  return NULL;
+    }
+  snprintf (name, sizeof (name), "__EMC:%s:%s:%d",
+	    KI_TEMP == tree->it_key->key_id ? "temp" : tree->it_key->key_table->tb_name,
+	    KI_TEMP == tree->it_key->key_id ? "temp": tree->it_key->key_name, (int)col_id);
+  em->em_name = box_dv_short_string (name);
+  sethash ((void*)(ptrlong)col_id, tree->it_col_extent_maps, (void*)em);
+  mutex_leave (extent_map_create_mtx);
+  return em;
 }
 
 
@@ -1742,7 +1871,7 @@ kf_set_extent_map (dbe_key_frag_t * kf)
   dbe_storage_t * dbs = kf->kf_it->it_storage;
   snprintf (name, sizeof (name), "__EM:%s", kf->kf_name);
   IN_TXN;
-  dp_str = registry_get (name);
+  dp_str = dbs_registry_get (dbs, name);
   LEAVE_TXN;
   dp = dp_str ? atoi (dp_str) : 0;
   dk_free_box (dp_str);
@@ -1751,6 +1880,28 @@ kf_set_extent_map (dbe_key_frag_t * kf)
   else
     {
       kf->kf_it->it_extent_map = dbs_read_extent_map (dbs, name, dp);
+    }
+  if (kf->kf_it->it_key->key_is_col)
+    {
+      index_tree_t * it = kf->kf_it;
+      DO_SET (dbe_column_t *, col, &it->it_key->key_parts)
+	{
+	  snprintf (name, sizeof (name), "__EMC:%s:%s:%d", it->it_key->key_table->tb_name, it->it_key->key_name, (int)col->col_id);
+	  IN_TXN;
+	  dp_str = dbs_registry_get (dbs, name);
+	  LEAVE_TXN;
+	  dp = dp_str ? atoi (dp_str) : 0;
+	  dk_free_box (dp_str);
+	  if (dp)
+	    {
+	      extent_map_t * em = dbs_read_extent_map (dbs, name, dp);
+	      if (!it->it_col_extent_maps)
+		it->it_col_extent_maps = hash_table_allocate (11);
+	      sethash ((void*)(ptrlong)col->col_id, it->it_col_extent_maps, (void*)em);
+
+	    }
+	}
+      END_DO_SET();
     }
 }
 

@@ -20,6 +20,62 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 --
+
+create table DB.DBA.SYS_COL_INFO (coi_table varchar, coi_index varchar, coi_nth int, coi_type int,
+  primary key (coi_table, coi_index, coi_nth, coi_type),
+  coi_column varchar,
+  coi_pages bigint,
+  coi_ces bigint,
+  coi_values bigint,
+  coi_bytes bigint)
+;
+
+
+
+create procedure coi_fill (in stats any)
+{
+  declare inx, n int;
+ n := length (stats);
+  delete from sys_col_info;
+  for (inx := 0; inx < n; inx := inx + 1)
+    {
+      declare stat any;
+      declare tb, kn, cname varchar;
+      declare icol, ice, k_id int;
+    stat := stats[inx];
+    k_id := stat[0];
+    stat := stat[6];
+      if (not isstring (stat))
+	goto next_key;
+      select key_table, key_name into tb, kn from sys_keys where key_id = k_id;
+    icol := 0;
+      for (;;)
+	{
+	cname := (select "COLUMN" from sys_key_parts, sys_cols where kp_key_id = k_id and kp_nth = icol and col_id = kp_col);
+	  if (cname is null)
+	    goto next_key;
+	  insert into sys_col_info (coi_table, coi_index, coi_nth, coi_type, coi_column,
+				coi_pages, coi_ces, coi_values, coi_bytes)
+	    values (tb, kn, icol, -1, cname,
+		    __col_info (stat, icol, 'n_pages', 0), 0, __col_info (stat, icol, 'n_values', 0), __col_info (stat, icol, 'n_bytes', 0));
+	  for (ice := 0; ice < 16; ice := ice + 1)
+	    {
+	      if (__col_info (stat, icol, 'ce_ces', ice))
+		{
+		  insert into sys_col_info (coi_table, coi_index, coi_nth, coi_type, coi_column,
+					coi_pages, coi_ces, coi_values, coi_bytes)
+		    values (tb, kn, icol, ice, cname,
+			    0, __col_info (stat, icol, 'ce_ces', ice), __col_info (stat, icol, 'ce_values', ice), __col_info (stat, icol, 'ce_bytes', ice));
+
+		}
+	    }
+	icol := icol + 1;
+	}
+    next_key: ;
+    }
+}
+;
+
 create procedure DB.DBA.SYS_INDEX_SPACE_STATS_PROC ()
 {
   declare ISS_KEY_ID, ISS_NROWS, ISS_ROW_BYTES, ISS_BLOB_PAGES, ISS_ROW_PAGES integer;
@@ -32,6 +88,7 @@ create procedure DB.DBA.SYS_INDEX_SPACE_STATS_PROC ()
   if (isarray (_res))
     {
       declare _inx, _len integer;
+      coi_fill (_res);
       _inx := 0;
       _len := length (_res);
 
@@ -60,10 +117,10 @@ create view DB.DBA.SYS_INDEX_SPACE_STATS as
   from
     DB.DBA.SYS_INDEX_SPACE_STATS_PROC () (
     ISS_KEY_ID integer,
-    ISS_NROWS integer,
-    ISS_ROW_BYTES integer,
-    ISS_BLOB_PAGES integer,
-    ISS_ROW_PAGES integer) _tmp,
+    ISS_NROWS bigint,
+    ISS_ROW_BYTES bigint,
+    ISS_BLOB_PAGES bigint,
+    ISS_ROW_PAGES bigint) _tmp,
     DB.DBA.SYS_KEYS table option (order)
   where
     ISS_KEY_ID = KEY_ID
@@ -151,7 +208,7 @@ create procedure DB.DBA.VD_STATISTICS (in _dsn varchar := '%', in vd_table_mask 
 		CS_AVG_LEN,
 		CS_N_VALUES, CS_N_ROWS)
 		select
-		  KEY_TABLE, "COLUMN", stat_cardinality, NULL, NULL,
+		  "TABLE", "COLUMN", stat_cardinality, NULL, NULL,
 		  (case when COL_PREC = 0 then 30
 			when dv_type_title (COL_DTP) like 'LONG %' then 30 else COL_PREC end),
 		  stat_cardinality, stat_cardinality
@@ -851,11 +908,11 @@ create procedure uptime ()
   if (sys_stat ('st_started_since_year') = 0)
     exec ('status ()', null, null, vector (), 0, meta, data);
 
-  y := sys_stat ('st_started_since_year'); 
-  m := sys_stat ('st_started_since_month'); 
-  d := sys_stat ('st_started_since_day'); 
-  h := sys_stat ('st_started_since_hour'); 
-  mn := sys_stat ('st_started_since_minute'); 
+  y := sys_stat ('st_started_since_year');
+  m := sys_stat ('st_started_since_month');
+  d := sys_stat ('st_started_since_day');
+  h := sys_stat ('st_started_since_hour');
+  mn := sys_stat ('st_started_since_minute');
 
   dt := stringdate (sprintf ('%d-%d-%d %d:%d', y,m,d,h,mn));
   delta := datediff ('minute', dt, now ());
@@ -865,9 +922,9 @@ create procedure uptime ()
   d2 := delta / 60 / 24;
 
   s := '';
-  if (d2) s := s || cast (d2 as varchar) || ' day(s), '; 
-  if (h2 or d2) s := s || cast (h2 as varchar) || ' hour(s), '; 
-  s := s || cast (mn2 as varchar) || ' minute(s)'; 
+  if (d2) s := s || cast (d2 as varchar) || ' day(s), ';
+  if (h2 or d2) s := s || cast (h2 as varchar) || ' hour(s), ';
+  s := s || cast (mn2 as varchar) || ' minute(s)';
   result (s);
 }
 ;

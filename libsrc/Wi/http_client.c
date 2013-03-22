@@ -2316,6 +2316,8 @@ http_cli_init_std_redir (http_cli_ctx* ctx, int r)
    13. insecure option
    14. ret argument index in args ssls
    15. how many redirects to follow
+In bif_http_client_impl, arguments qst, err_ret, args and me are traditional
+All arguments except the URL can be db NULLs in bif call, NULL pointers in _impl call.
 */
 
 caddr_t
@@ -2446,7 +2448,7 @@ bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, ch
   END_DO_SET();
   head = (caddr_t *)list_to_array (dk_set_nreverse (hdrs));
 
-  if (BOX_ELEMENTS (args) > ret_arg_index && ssl_is_settable (args[ret_arg_index]))
+  if (BOX_ELEMENTS_0 (args) > ret_arg_index && ssl_is_settable (args[ret_arg_index]))
     {
       qst_set (qst, args[ret_arg_index], (caddr_t) head);
       to_free_head = 0;

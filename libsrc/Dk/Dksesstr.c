@@ -68,7 +68,7 @@ long strses_file_wait_msec = 0;
 
 long read_wides_from_utf8_file (dk_session_t * ses, long nchars, unsigned char *dest, int copy_as_utf8, unsigned char **dest_ptr_out);
 
-OFF_T 
+OFF_T
 strf_lseek (strsestmpfile_t * sesfile, OFF_T offset, int whence)
 {
   OFF_T ret;
@@ -82,7 +82,7 @@ strf_lseek (strsestmpfile_t * sesfile, OFF_T offset, int whence)
   return ret;
 }
 
-size_t 
+size_t
 strf_read (strsestmpfile_t * sesfile, void *buf, size_t nbyte)
 {
   size_t ret;
@@ -96,7 +96,7 @@ strf_read (strsestmpfile_t * sesfile, void *buf, size_t nbyte)
   return ret;
 }
 
-static size_t 
+static size_t
 strf_write (strsestmpfile_t * sesfile, const void *buf, size_t nbyte)
 {
   size_t ret;
@@ -359,7 +359,7 @@ strdev_write (session_t * ses2, char *buffer, int bytes)
     }
   else
     {
-      memcpy (&buf->data[buf->fill], buffer, filled = MIN (bytes, space));
+      memcpy_16 (&buf->data[buf->fill], buffer, filled = MIN (bytes, space));
       buf->fill_chars += filled;
     }
   buf->fill += filled;
@@ -399,7 +399,7 @@ strdev_read (session_t * ses2, char *buffer, int bytes)
       /* take as much as needed from the first buffer */
       buffer_elt_t *buf = strdev->strdev_buffer_ptr;
       int count = MIN (buf->fill - buf->read, bytes);
-      memcpy (buffer, buf->data + buf->read, count);
+      memcpy_16 (buffer, buf->data + buf->read, count);
       buf->read += count;
       if (buf->read == buf->fill)
 	{
@@ -438,7 +438,7 @@ strdev_read (session_t * ses2, char *buffer, int bytes)
          be the out buffer, the read count to zero and the fill to the
          out buffer fill. Return the fill. */
       int count = MIN (ses->dks_out_fill - strdev->strdev_in_read, bytes);
-      memcpy (buffer, ses->dks_out_buffer + strdev->strdev_in_read, count);
+      memcpy_16 (buffer, ses->dks_out_buffer + strdev->strdev_in_read, count);
       strdev->strdev_in_read += count;
       return (count);
     }
@@ -507,7 +507,7 @@ DBG_NAME (strdev_allocate) (DBG_PARAMS_0)
 #endif
   dev->dev_funs->dfp_read = strdev_read;
   dev->dev_funs->dfp_write = strdev_write;
-
+  dev->dev_funs->dfp_flush = NULL;
   strdev->strdev_in_read = 0;
   strdev->strdev_buffer_ptr = NULL;
   strdev->strdev_is_utf8 = 0;
@@ -598,6 +598,7 @@ strses_flush (dk_session_t * ses)
   ses->dks_out_fill = strdev->strdev_in_read = 0;
   ses->dks_out_length = DKSES_OUT_BUFFER_LENGTH;
   ses->dks_bytes_sent = 0;
+  ses->dks_cluster_flags = 0;
   if (ses->dks_in_buffer)
     {
       ses->dks_in_length = DKSES_OUT_BUFFER_LENGTH;
@@ -730,6 +731,9 @@ strses_write_out (dk_session_t * ses, dk_session_t * out)
   while (elt)
     {
       session_flush_1 (out);
+      if (0 == out->dks_out_fill)
+	service_write (out, elt->data, elt->fill);
+      else
       session_buffered_write (out, elt->data, elt->fill);	/* was: service_write, there was error when we have smth in buffer */
       elt = elt->next;
     }
@@ -767,6 +771,58 @@ strses_write_out (dk_session_t * ses, dk_session_t * out)
     }
   if (ses->dks_out_fill)
     session_buffered_write (out, ses->dks_out_buffer, ses->dks_out_fill);
+}
+
+
+
+char *
+strses_elt_next (dk_session_t * ses, buffer_elt_t ** elt, int * pos_in_elt)
+{
+  if (!*elt)
+    {
+      (*pos_in_elt)++;
+      return  &ses->dks_out_buffer[*pos_in_elt - 1];
+    }
+  if (*pos_in_elt < (*elt)->fill)
+    {
+      (*pos_in_elt)++;
+      return ((*elt)->data + *pos_in_elt) - 1;
+    }
+  *elt = (*elt)->next;
+  *pos_in_elt = 0;
+  return  strses_elt_next (ses, elt, pos_in_elt);
+}
+
+
+void
+strses_set_int32 (dk_session_t * ses, int64 offset, int32 val)
+{
+  buffer_elt_t *elt = ses->dks_buffer_chain;
+  int64 pos = 0;
+  while (elt)
+    {
+      if (offset < pos + elt->fill)
+	{
+	  int off_in_elt = offset - pos;
+	  char * b1 = elt->data + off_in_elt;
+	  char * b2, *b3, *b4;
+	    off_in_elt++;
+	  b2 = strses_elt_next (ses, &elt, &off_in_elt);
+	  b3 = strses_elt_next (ses, &elt, &off_in_elt);
+	  b4 = strses_elt_next (ses, &elt, &off_in_elt);
+	  *b1 = val >> 24;
+	  *b2 = val >> 16;
+	  *b3 = val >> 8;
+	  *b4 = val;
+	  return;
+	}
+      pos += elt->fill;
+      elt = elt->next;
+    }
+  if (ses->dks_out_fill + pos > offset + 3)
+    {
+      LONG_SET_NA (ses->dks_out_buffer + offset - pos, val);
+    }
 }
 
 
@@ -969,7 +1025,7 @@ strses_to_array (dk_session_t * ses, char *buffer)
   buffer_elt_t *elt = ses->dks_buffer_chain;
   while (elt)
     {
-      memcpy (buffer, elt->data, elt->fill);
+      memcpy_16 (buffer, elt->data, elt->fill);
       buffer += elt->fill;
       elt = elt->next;
     }
@@ -996,7 +1052,7 @@ strses_to_array (dk_session_t * ses, char *buffer)
 	SESSTAT_SET (ses->dks_session, SST_DISK_ERROR);
       buffer += end;
     }
-  memcpy (buffer, ses->dks_out_buffer, ses->dks_out_fill);
+  memcpy_16 (buffer, ses->dks_out_buffer, ses->dks_out_fill);
 }
 
 
@@ -1023,7 +1079,7 @@ strses_fragment_to_array (dk_session_t * ses, char *buffer, size_t fragment_offs
 	}
       if (cut_sz > tail_size)
 	cut_sz = tail_size;
-      memcpy (buffer, data, cut_sz);
+      memcpy_16 (buffer, data, cut_sz);
       tail_size -= cut_sz;
       buffer += cut_sz;
     }
@@ -1075,7 +1131,7 @@ end_of_file_read:
       cut_sz -= fragment_offset;
       if (cut_sz > tail_size)
 	cut_sz = tail_size;
-      memcpy (buffer, data, cut_sz);
+      memcpy_16 (buffer, data, cut_sz);
       tail_size -= cut_sz;
     }
   return fragment_size - tail_size;
@@ -1179,7 +1235,7 @@ strses_get_part_1 (dk_session_t * ses, void *buf2, int64 starting_ofs, long nbyt
 	  if (cpf)
 	    dest_copybytes = cpf (buffer, elt->data, starting_ofs, copybytes, state_data);
 	  else
-	    memcpy (buffer, elt->data + starting_ofs, copybytes);
+	    memcpy_16 (buffer, elt->data + starting_ofs, copybytes);
 	  buffer += dest_copybytes;
 	  nbytes -= copybytes;
 	  starting_ofs = 0;
@@ -1305,7 +1361,7 @@ strses_get_part_1 (dk_session_t * ses, void *buf2, int64 starting_ofs, long nbyt
 	  if (cpf)
 	    dest_copybytes = cpf (buffer, ses->dks_out_buffer, starting_ofs, copybytes, state_data);
 	  else
-	    memcpy (buffer, ses->dks_out_buffer + starting_ofs, copybytes);
+	    memcpy_16 (buffer, ses->dks_out_buffer + starting_ofs, copybytes);
 	  buffer += dest_copybytes;
 	  nbytes -= copybytes;
 	}
@@ -1370,7 +1426,7 @@ read_wides_from_utf8_file (
 		  SESSTAT_SET (ses->dks_session, SST_DISK_ERROR);
 		  return -1;
 		}
-	      memcpy (dest_ptr, data_ptr, sz);
+	      memcpy_16 (dest_ptr, data_ptr, sz);
 	      dest_ptr += sz;
 	      data_ptr += sz;
 	      nchars--;
@@ -1600,7 +1656,7 @@ strdev_ws_chunked_write (session_t * ses2, char *buffer, int bytes)
       buf->read = strdev->strdev_in_read;
       strdev->strdev_in_read = 0;
     }
-  memcpy (&buf->data[buf->fill], buffer, filled = MIN (bytes, space));
+  memcpy_16 (&buf->data[buf->fill], buffer, filled = MIN (bytes, space));
   buf->fill += filled;
 
   if (buf->fill == DKSES_OUT_BUFFER_LENGTH)

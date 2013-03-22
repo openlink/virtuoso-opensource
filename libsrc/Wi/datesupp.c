@@ -25,6 +25,7 @@
  *
  */
 
+#include "wi.h"
 #include "CLI.h"
 #include "util/strfuns.h"
 #include "datesupp.h"
@@ -128,6 +129,7 @@ dt_day_ck (int day, int month, int year, int *err, const char **err_str)
 #endif
 
 
+#ifdef DATE2NUM_DEBUG
 /*
  *  Converts a given number of days of a year to a standard date
  *
@@ -163,7 +165,7 @@ yearday2date (int yday, const int is_leap_year, int *month, int *day)
 
   return 1;
 }
-
+#endif
 
 /*
  *  Computes the absolute number of days of the given date since 0001/01/01,
@@ -287,8 +289,6 @@ num2date_old (int32 julian_days, int *year, int *month, int *day)
 void
 num2date (int32 julian_days, int *year, int *month, int *day)
 {
-  double x;
-  int i;
   int y_civ, m_civ, d_civ;
   long midhignt_jdn;
   int mj, g, dg, c, dc, b, db, a, da, y, m, d;
@@ -840,7 +840,6 @@ dbg_dt_to_string (const char *dt, char *str, int len)
   else
     tail += snprintf (tail, (str + len) - tail, "Z}");
   return;
-short_buf:
   snprintf (str, len, "??? short output buffer for dt_to_string()");
 }
 
@@ -1423,6 +1422,38 @@ dt_make_day_zero (char *dt)
   DT_SET_DAY (dt, DAY_ZERO);
   DT_SET_DT_TYPE (dt, DT_TYPE_TIME);
 }
+
+
+unsigned int64
+dt_seconds (caddr_t dt1)
+{
+  return ((unsigned int64)DT_DAY (dt1)) * 24 * 60 * 60 + DT_HOUR (dt1) * 60 * 60 + DT_MINUTE (dt1) * 60 + DT_SECOND (dt1);
+}
+
+
+void
+dt_print (caddr_t dt)
+{
+  char str[100];
+  dt_to_string (dt, str, sizeof (str));
+		printf ("%s\n", str);
+}
+
+
+int
+dt_compare (caddr_t dt1, caddr_t dt2)
+{
+  int inx;
+  for (inx = 0; inx < DT_COMPARE_LENGTH; inx++)
+    {
+      if (dt1[inx] < dt2[inx])
+	return DVC_LESS;
+      else if (dt1[inx] > dt2[inx])
+	return DVC_GREATER;
+    }
+  return DVC_MATCH;
+}
+
 
 #ifdef DEBUG
 void

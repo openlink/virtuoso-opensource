@@ -584,7 +584,7 @@ main (int argc, char **argv)
   if (f_backup_dump || recover_file_prefix || f_crash_dump)
     f_foreground = 1;
 #ifdef V5UPGRADE
-  if (!f_backup_dump)
+  if (!f_backup_dump && !f_read_from_rebuilt_database)
     log_v6_format = 0;
 #endif
 

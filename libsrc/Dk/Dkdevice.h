@@ -63,6 +63,7 @@ struct devfuns_s
   int (*dfp_disconnect) (session_t * ses);
   int (*dfp_write) (session_t * ses, char *buffer, int n_bytes);
   int (*dfp_read) (session_t * ses, char *buffer, int n_bytes);
+  int (*dfp_flush) (session_t * ses, char *buffer, int n_bytes);
   int (*dfp_select) (int ses_count, session_t ** reads, session_t ** writes, timeout_t * timeout);
   int (*dfp_set_control) (session_t * ses, int fld, char *v, int sz);
   int (*dfp_get_control) (session_t * ses, int fld, char *v, int sz);

@@ -26,22 +26,23 @@
  */
 
 #include <limits.h>
+#include "text.h"
+
+#include "arith.h"
+#include "bif_text.h"
+#include "http_client.h"
+#include "multibyte.h"
 #include "sqlnode.h"
 #include "sqlbif.h"
-#include "bif_text.h"
-#include "text.h"
-#include "xmltree.h"
-
-
 #include "sqlpar.h"
 #include "sqlpfn.h"
 #include "sqlcmps.h"
 #include "sqlfn.h"
 #include "xml.h"
 #include "xmlgen.h"
-#include "arith.h"
-#include "multibyte.h"
+#include "xmltree.h"
 #include "xpathp_impl.h"
+#include "qncache.h"
 
 /*#define TEXT_DEBUG*/
 
@@ -62,7 +63,7 @@ d_id_cmp (d_id_t * d1, d_id_t * d2)
 {
   if (d1->id[0] == DV_COMPOSITE && d2->id[0] == DV_COMPOSITE)
     {
-      return (dv_composite_cmp (d1->id, d2->id, NULL));
+      return (dv_composite_cmp (d1->id, d2->id, NULL, 0));
 
     }
   else if (d1->id[0] != DV_COMPOSITE && d2->id[0] != DV_COMPOSITE)
@@ -276,6 +277,18 @@ d_id_ref (d_id_t * d_id, db_buf_t p)
     }
 }
 
+#define TXS_QST_SET(txs, qst, ssl, v) \
+   do { \
+      if ((txs)->src_gen.src_sets) \
+	{ \
+	  data_col_t * dc = QST_BOX (data_col_t *, qst, (ssl)->ssl_index); \
+	  caddr_t v2 = v; \
+	  dc_append_box (dc, v2); \
+	  dk_free_box (v2); \
+	} \
+      else \
+	qst_set ((qst), (ssl), (v)); \
+   } while (0)
 
 int
 itc_text_row (it_cursor_t * itc, buffer_desc_t * buf, dp_addr_t * leaf_ret)
@@ -448,7 +461,7 @@ itc_text_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_re
 	  if (it->itc_owns_page != it->itc_page)
 	    {
 	      if (it->itc_isolation == ISO_SERIALIZABLE
-		  || ITC_MAYBE_LOCK (itc, it->itc_map_pos))
+		  || (it->itc_isolation > ISO_COMMITTED && ITC_MAYBE_LOCK (it, it->itc_map_pos)))
 		{
 		  for (;;)
 		    {
@@ -923,7 +936,6 @@ wst_get_specs (dbe_key_t *key)
   ss->sp_cl = (cl); \
   ss->sp_min_op = (minop);	ss->sp_min = (minarg); \
   ss->sp_max_op = (maxop);	ss->sp_max = (maxarg); \
-  ss->sp_is_boxed = 1
 
 #define SS_ADVANCE ss->sp_next = ss+1; ss++
 
@@ -941,8 +953,6 @@ wst_get_specs (dbe_key_t *key)
   SS_ADVANCE;				SS_ASSIGN(d_id_cl[0]	,CMP_GT	,+1	,0	,0	);
 
   ss = res->wst_next_d_id_spec;		SS_ASSIGN(word_cl[0]	,CMP_EQ	,+0	,0	,0	);
-
-  res->wst_specs_are_initialized = 1;
 
 #define WST_KSP(name) \
   res->wst_ks_##name .ksp_spec_array = &res->wst_##name##_spec[0]; \
@@ -966,6 +976,7 @@ wst_get_specs (dbe_key_t *key)
     }
   else
     GPF_T1 ("not supporting composite d_id's");
+  res->wst_specs_are_initialized = 1;
   mutex_leave (wst_get_specs_mtx);
   return res;
 }
@@ -974,7 +985,8 @@ wst_get_specs (dbe_key_t *key)
 #define TEXT_ITC_INIT(itc, qi) \
   itc->itc_isolation = qi->qi_isolation; \
   itc->itc_search_mode = SM_READ; \
-  itc->itc_lock_mode = PL_SHARED;
+  itc->itc_lock_mode = PL_SHARED; \
+  itc->itc_ltrx = qi->qi_trx; /* qi can be contd w different clis in cl */
 
 
 int
@@ -992,7 +1004,7 @@ wst_random_seek (word_stream_t * wst)
       itc = itc_create (QI_SPACE(qi), qi->qi_trx);
     }
   TEXT_ITC_INIT (itc, qi);
-  itc_from (itc, wst->wst_table->tb_primary_key);
+  itc_from (itc, wst->wst_table->tb_primary_key, qi->qi_client->cli_slice);
   specs = wst_get_specs(itc->itc_row_key);
 
   if (D_NEXT (&target))
@@ -1052,6 +1064,7 @@ wst_random_seek (word_stream_t * wst)
     {
       wst->wst_itc = NULL;
       itc_free (itc);
+      D_SET_AT_END (&wst->sst_d_id);
     }
   END_FAIL (itc);
   return DVC_GREATER;
@@ -1118,7 +1131,7 @@ wst_range_itc (sst_tctx_t *tctx, const char * word, caddr_t *lower, caddr_t high
   int lower_offs = 0;
   caddr_t lcopy = box_copy(*lower);
   TEXT_ITC_INIT (itc, qi);
-  itc_from (itc, tctx->tctx_table->tb_primary_key);
+  itc_from (itc, tctx->tctx_table->tb_primary_key, qi->qi_client->cli_slice);
   specs = wst_get_specs(itc->itc_row_key);
   itc->itc_key_spec = specs->wst_ks_range;
   lower_offs = (int) itc->itc_search_par_fill; /* Ensure the offset of lower limit */
@@ -1201,7 +1214,7 @@ bif_vt_words_next_d_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   pl = (placeholder_t *) qst_get (qst, cr_ssl);
   if (!pl || !pl->itc_is_registered)
     sqlr_new_error ("24000", "FT004", "cursor in vt_words_next_d_id is not open or not on row");
-  itc_from (itc, tb->tb_primary_key);
+  itc_from (itc, tb->tb_primary_key, qi->qi_client->cli_slice);
   specs = wst_get_specs (itc->itc_row_key);
   itc->itc_key_spec = specs->wst_ks_next_d_id;
   ITC_SEARCH_PARAM (itc, word);
@@ -1230,9 +1243,23 @@ wst_seq_seek (word_stream_t * wst)
   int rc;
   buffer_desc_t * buf;
   it_cursor_t * itc = wst->wst_itc;
+  if (!itc)
+    {
+      D_SET_AT_END (&wst->sst_d_id);
+      return DVC_GREATER;
+    }
+  itc->itc_ltrx = wst->wst_qi->qi_trx; /* qi can be contd w different clis in cl */
   ITC_FAIL (itc)
     {
       tft_seq_seek++;
+      if (!itc->itc_buf_registered)
+	{
+	  log_error ("full text itc not registered at continue, can be dfgcontinue coming after anytime reset");
+	  itc_free (itc);
+	  wst->wst_itc = NULL;
+	  D_SET_AT_END (&wst->sst_d_id);
+	  return DVC_GREATER;
+	}
       buf = page_reenter_excl (wst->wst_itc);
       rc = itc_next (itc, &buf);
       if (DVC_MATCH != rc)
@@ -1253,6 +1280,9 @@ wst_seq_seek (word_stream_t * wst)
     }
   ITC_FAILED
     {
+      itc_free (itc);
+      wst->wst_itc = NULL;
+      D_SET_AT_END (&wst->sst_d_id);
     }
   END_FAIL (wst->wst_itc);
   return DVC_MATCH;
@@ -2911,7 +2941,7 @@ txs_set_offband (text_node_t * txs, caddr_t * qst)
 		  state_slot_t * ssl = txs->txs_offband[inx2 + 1];
 		  if (IS_BOX_POINTER (offband) && BOX_ELEMENTS (offband) > nth_offb)
 		    {
-		      qst_set (qst, ssl, offband[nth_offb]);
+		      TXS_QST_SET (txs, qst, ssl, offband[nth_offb]);
 		      offband[nth_offb] = NULL;
 		    }
 		}
@@ -3033,8 +3063,6 @@ skip_parsing_of_new_tree:
       tree2[2] = NULL;
       dk_free_tree ((caddr_t) tree2);
     }
-  if (txs->txs_is_driving)
-    qst_set_long (qst, txs->txs_d_id, 0);
   qst_set (qst, txs->txs_sst, (caddr_t) sst);
 }
 
@@ -3106,8 +3134,8 @@ txs_set_ranges (text_node_t * txs, caddr_t * qst, search_stream_t * sst)
   sst_range_lists (sst, &main_list, &attr_list);
   main_ranges = (ptrlong **)list_to_array (dk_set_nreverse (main_list));
   attr_ranges = (ptrlong **)list_to_array (dk_set_nreverse (attr_list));
-  qst_set (qst, txs->txs_main_range_out, (caddr_t)(main_ranges));
-  qst_set (qst, txs->txs_attr_range_out, (caddr_t)(attr_ranges));
+  TXS_QST_SET (txs, qst, txs->txs_main_range_out, (caddr_t)(main_ranges));
+  TXS_QST_SET (txs, qst, txs->txs_attr_range_out, (caddr_t)(attr_ranges));
 #ifdef TEXT_DEBUG
   fprintf(stderr,"\ntxs_set_ranges(...) stores ");
   dbg_print_box((caddr_t)main_ranges,stderr);
@@ -3248,7 +3276,7 @@ txs_next (text_node_t * txs, caddr_t * qst, int first_time)
       if (score_limit || txs->txs_score)
 	sst_scores (sst, &d_id);
       if (txs->txs_score)
-	qst_set_long (qst, txs->txs_score, sst->sst_score);
+	TXS_QST_SET (txs, qst, txs->txs_score, box_num (sst->sst_score));
       if (score_limit && sst->sst_score < score_limit)
 	return ((caddr_t) SQL_NO_DATA_FOUND);
       txs_set_ranges (txs, qst, sst);
@@ -3277,17 +3305,800 @@ txs_next (text_node_t * txs, caddr_t * qst, int first_time)
       break;
     }
   if (txs->txs_score)
-    qst_set_long (qst, txs->txs_score, sst->sst_score);
+    TXS_QST_SET (txs, qst, txs->txs_score, box_num (sst->sst_score));
   if (txs->txs_is_rdf)
     {
       unsigned int64 n = D_ID_NUM_REF (&d_id.id[0]);
-      qst_set (qst, txs->txs_d_id, (caddr_t)rbb_from_id (n));
+      dtp_t buf[9];
+      int len;
+      if (((dtp_t*)(&d_id.id[0]))[0] == D_ID_64)
+	{
+	  buf[0] = DV_RDF_ID_8;
+	  INT64_SET_NA (&buf[1], n);
+	  len = 9;
+	}
+      else
+	{
+	  buf[0] = DV_RDF_ID;
+	  LONG_SET_NA (&buf[1], n);
+	  len = 5;
+	}
+      if (txs->src_gen.src_sets)
+	{
+	  data_col_t * dc = QST_BOX (data_col_t *, qst, txs->txs_d_id->ssl_index);
+	  dc_append_bytes (dc, buf, len, NULL, 0);
+	}
+      else
+      TXS_QST_SET (txs, qst, txs->txs_d_id, (caddr_t)rbb_from_id (n));
     }
   else
-    qst_set (qst, txs->txs_d_id, box_d_id (&d_id));
+    {
+      TXS_QST_SET (txs, qst, txs->txs_d_id, box_d_id (&d_id));
+    }
   txs_set_offband (txs, qst);
   txs_set_ranges (txs, qst, sst);
   return ((caddr_t) SQL_SUCCESS);
+}
+
+
+void
+txs_qc_lookup (text_node_t * txs, caddr_t * inst)
+{
+  QNCAST (QI, qi, inst);
+  dbe_key_t * key = txs->txs_table->tb_primary_key;
+  qc_result_t *qcr;
+  uint32 clslice = key->key_partition ? (uint32)key->key_partition->kpd_map->clm_id + (((uint32)qi->qi_client->cli_slice) << 16) : 0;
+  caddr_t  qckey = list (2, box_num (key->key_id), box_copy (qst_get (inst, txs->txs_text_exp)));
+  qcr= qc_lookup (clslice, qckey);
+  qst_set (inst, txs->txs_qcr, (caddr_t)qcr);
+  if (!qcr)
+    return;
+}
+
+void
+txs_qc_accumulate (text_node_t * txs, caddr_t * inst)
+{
+  data_col_t * id = QST_BOX (data_col_t *, inst, txs->txs_d_id->ssl_index);
+  data_col_t * score = NULL, * id_cp = NULL, * score_cp = NULL;
+  qc_result_t * qcr = (qc_result_t *)QST_GET_V (inst, txs->txs_qcr);
+  if (!qcr)
+    return;
+  id_cp = mp_data_col (qcr->qcr_mp, txs->txs_d_id, id->dc_n_values);
+  dc_copy (id_cp, id);
+  if (txs->txs_score)
+    {
+      score = QST_BOX (data_col_t *, inst, txs->txs_score->ssl_index);
+      score_cp = mp_data_col (qcr->qcr_mp, txs->txs_score, id->dc_n_values);
+      dc_copy (score_cp, score);
+    }
+  mp_array_add (qcr->qcr_mp, (caddr_t **) &qcr->qcr_result, &qcr->qcr_fill, (void*) id_cp);
+  mp_array_add (qcr->qcr_mp, (caddr_t **) &qcr->qcr_result, &qcr->qcr_fill, (void*) score_cp);
+  if (!SRC_IN_STATE (txs, inst))
+    {
+      mutex_enter (&qcr_ref_mtx);
+      qcr->qcr_status = QCR_READY;
+      QST_BOX (void*, inst, txs->txs_qcr->ssl_index) = NULL;
+      qcr->qcr_ref_count--;
+      mutex_leave (&qcr_ref_mtx);
+    }
+}
+
+
+void
+txs_from_qcr (text_node_t * txs, caddr_t * inst, caddr_t * state)
+{
+  int nth_dc = QST_INT (inst, txs->txs_pos_in_qcr);
+  int pos_in_dc = QST_INT (inst, txs->txs_pos_in_dc);
+  qc_result_t * qcr = (qc_result_t *)QST_GET_V (inst, txs->txs_qcr);
+  data_col_t * id_ret = QST_BOX (data_col_t *, inst, txs->txs_d_id->ssl_index);
+  data_col_t * score_ret = QST_BOX (data_col_t *, inst, txs->txs_score->ssl_index);
+  int batch_size = QST_INT (inst, txs->src_gen.src_batch_size), dc_inx, pos;
+  if (state)
+    {
+      pos_in_dc = nth_dc = 0;
+    }
+  for (dc_inx = nth_dc; dc_inx < qcr->qcr_fill; dc_inx += 2)
+    {
+      data_col_t * id = qcr->qcr_result[dc_inx];
+      data_col_t * score = qcr->qcr_result[dc_inx + 1];
+      for (pos = pos_in_dc; pos < id->dc_n_values; pos++)
+	{
+	  if (score)
+	    dc_append_int64 (score_ret, ((int64*)score->dc_values)[pos]);
+
+	  dc_append_int64 (id_ret, ((int64*)id->dc_values)[pos]);
+	  qn_result ((data_source_t *)txs, inst, 0);
+	  if (id_ret->dc_n_values == batch_size)
+	    {
+	      QST_INT (inst, txs->txs_pos_in_dc) = pos + 1;
+	      QST_INT (inst, txs->txs_pos_in_qcr) = dc_inx;
+	      SRC_IN_STATE (txs, inst) = inst;
+	      qn_send_output ((data_source_t*)txs, inst);
+	      batch_size = QST_INT (inst, txs->src_gen.src_batch_size);
+	      dc_reset_array (inst, (data_source_t*)txs, txs->src_gen.src_continue_reset, -1);
+	      QST_INT (inst, txs->src_gen.src_out_fill) = 0;
+	      state = NULL;
+	    }
+	}
+      pos_in_dc = 0;
+    }
+  SRC_IN_STATE (txs, inst) = NULL;
+  if (QST_INT (inst, txs->src_gen.src_out_fill))
+    qn_send_output ((data_source_t*)txs, inst);
+}
+
+
+#define DCINT1(dc)  ((int*)(dc)->dc_values)[0]
+
+
+void
+txs_qcr_reverse (qc_result_t * qcr)
+{
+  int inx, sz = 0, n;
+  for (inx = 0; inx < qcr->qcr_fill; inx += 2)
+    sz += qcr->qcr_result[inx]->dc_n_values;
+  SET_THR_TMP_POOL (qcr->qcr_mp);
+  qcr->qcr_reverse = t_id_hash_allocate (sz, sizeof (boxint), sizeof (boxint), boxint_hash, boxint_hashcmp);
+    for (inx =  0; inx < qcr->qcr_fill; inx += 2)
+      {
+	data_col_t * id = qcr->qcr_result[inx];
+	data_col_t * score = qcr->qcr_result[inx + 1];
+	for (n = 0; n < id->dc_n_values; n++)
+	  {
+	    t_id_hash_set (qcr->qcr_reverse, (caddr_t)& ((int64*)id->dc_values)[n], (caddr_t) &((int64*)score->dc_values)[n]);
+	  }
+      }
+    SET_THR_TMP_POOL (NULL);
+}
+
+dk_mutex_t * txs_qcr_rev_mtx;
+
+void
+txs_qcr_check (text_node_t * txs, caddr_t * inst)
+{
+  /* d id is given, see if these are in the qcr */
+  QNCAST (QI, qi, inst);
+#if 0
+  data_col_t * dc = NULL;
+  int at_or_above = 0, below, guess;
+  int64 n;
+#endif
+  qc_result_t * qcr = QST_BOX (qc_result_t *, inst, txs->txs_qcr->ssl_index);
+  int n_sets = QST_INT (inst, txs->src_gen.src_prev->src_out_fill), set;
+  QST_INT (inst, txs->src_gen.src_out_fill) = 0;
+  mutex_enter (txs_qcr_rev_mtx);
+  if (!qcr->qcr_reverse)
+    txs_qcr_reverse (qcr);
+  mutex_leave (txs_qcr_rev_mtx);
+  for (set = 0; set < n_sets; set++)
+    {
+      int64 d_id = qst_vec_get_int64 (inst, txs->txs_d_id, set);
+      if (qcr->qcr_reverse)
+	{
+	  int64 * place = (int64 *) id_hash_get (qcr->qcr_reverse, (caddr_t)&d_id);
+	  if (place)
+	    {
+	      qi->qi_set = set;
+	      qst_set_long (inst, txs->txs_score, *place);
+	      qn_result ((data_source_t *)txs, inst, set);
+	    }
+	}
+#if 0
+      for (inx = 0; inx < qcr->qcr_fill; inx+= 2)
+	{
+	  int64 n = DCINT1 (qcr->qcr_result[inx]);
+	  if (n == d_id)
+	    goto found;
+	  if (n > d_id)
+	    {
+	      if (0 == inx)
+		goto next_set;
+	      dc = qcr->qcr_result[inx - 2];
+	      goto look_in_dc;
+	    }
+	  if (inx == qcr->qcr_fill)
+	    {
+	      dc = qcr->qcr_result[inx];
+	      goto look_in_dc;
+	    }
+	}
+      inx = qcr->qcr_fill - 2;
+      dc = qcr->qcr_result[inx];
+      if (d_id > ((int64*)dc->dc_values)[dc->dc_n_values - 1])
+	goto next_set;
+    look_in_dc:
+      at_or_above = 0;
+      below = dc->dc_n_values;
+      for (;;)
+	{
+	  if (below - at_or_above <= 1)
+	    {
+	      n = ((int64*)dc->dc_values)[at_or_above];
+	      if (n < d_id)
+		goto next_set;
+
+	      if (n == d_id)
+		goto found;
+	      goto next_set;
+	    }
+	  guess = (at_or_above + below) / 2;
+	  n = ((int64*)dc->dc_values)[guess];
+	  if (n == d_id)
+	    goto found;
+	  if (n > d_id)
+	    below = guess;
+	  else
+	    at_or_above = guess;
+	}
+    found:
+      qi->qi_set = set;
+      if (txs->txs_score)
+	qst_set_long (inst, txs->txs_score, ((int64*)qcr->qcr_result[inx+1]->dc_values)[at_or_above]);
+      qn_result ((data_source_t*)txs, inst, set);
+    next_set: ;
+#endif
+
+    }  qst_set (inst, txs->txs_qcr, NULL);
+  if (QST_INT (inst, txs->src_gen.src_out_fill))
+    qn_send_output ((data_source_t*)txs, inst);
+}
+
+
+int enable_qn_cache = 0;
+
+
+void
+txs_vec_input (text_node_t * txs, caddr_t * inst, caddr_t *state)
+{
+  QNCAST (query_instance_t, qi, inst);
+  int n_sets = txs->src_gen.src_prev ? QST_INT (inst, txs->src_gen.src_prev->src_out_fill) : qi->qi_n_sets;
+  int nth_set, first_time = 0, batch_sz;
+  QNCAST (data_source_t, qn, txs);
+  caddr_t err = NULL;
+  if (enable_qn_cache)
+    {
+      if (state)
+	{
+	  qc_result_t * qcr;
+	  txs_qc_lookup (txs, inst);
+	  qcr = (qc_result_t*)QST_GET_V (inst, txs->txs_qcr);
+	  if (qcr && QCR_READY == qcr->qcr_status)
+	    {
+	      if (txs->txs_is_driving)
+		txs_from_qcr (txs, inst, state);
+	      else
+		txs_qcr_check (txs, inst);
+	      return;
+	    }
+	}
+      else
+	{
+	  qc_result_t * qcr = (qc_result_t*)QST_GET_V (inst, txs->txs_qcr);
+	  if (qcr && QCR_READY == qcr->qcr_status)
+	    {
+	      txs_from_qcr (txs, inst, NULL);
+	      return;
+	    }
+	}
+    }
+
+
+  if (state)
+    nth_set = QST_INT (inst, txs->clb.clb_nth_set) = 0;
+  else
+    nth_set = QST_INT (inst, txs->clb.clb_nth_set);
+
+again:
+  batch_sz = QST_INT (inst, txs->src_gen.src_batch_size); /* May vary, receiver may increase the batch size to improve the locality */
+  QST_INT (inst, qn->src_out_fill) = 0;
+  dc_reset_array (inst, qn, qn->src_continue_reset, -1);
+  for (; nth_set < n_sets; nth_set ++)
+    {
+      qi->qi_set = nth_set;
+      for (;;)
+	{
+	  if (!state)
+	    {
+	      state = SRC_IN_STATE (qn, inst);
+	    }
+	  else
+	    {
+	      txs_init (txs, (query_instance_t *) state);
+	      first_time = 1;
+	    }
+	  err = txs_next (txs, state, first_time); /* Should become vectored and produce up to batch_sz - qn->src_out_fill results at a single run */
+	  first_time = 0;
+	  if (err != SQL_SUCCESS)
+	    {
+	      SRC_IN_STATE (qn, inst) = NULL;
+	      if (err != (caddr_t) SQL_NO_DATA_FOUND)
+		sqlr_resignal (err);
+	      break;
+	    }
+	  qn_result (qn, inst, nth_set);
+	  if (!txs->txs_is_driving)
+	    break;
+	  SRC_IN_STATE (qn, inst) = state;
+	  state = NULL;
+	  if (QST_INT (inst, qn->src_out_fill) >= batch_sz)
+	    {
+	      QST_INT (inst, txs->clb.clb_nth_set) = nth_set;
+	      if (txs->txs_is_driving && txs->txs_qcr)
+		txs_qc_accumulate (txs, inst);
+	      qn_send_output (qn, inst);
+	      goto again;
+	    }
+	}
+    }
+
+  SRC_IN_STATE (qn, inst) = NULL;
+  if (txs->txs_is_driving && txs->txs_qcr)
+    txs_qc_accumulate (txs, inst);
+  if (QST_INT (inst, qn->src_out_fill))
+    qn_send_output (qn, inst);
+}
+
+#define EXT_FTI_LOG 0
+
+caddr_t **
+txs_ext_fti_get (query_instance_t * qi, slice_id_t slice, caddr_t ext_fti, caddr_t req)
+{
+  caddr_t call_uri = NULL;
+  caddr_t err = NULL;
+  caddr_t tree = NULL;
+  xml_ns_2dict_t ns_2dict;
+  dtd_t *dtd = NULL;
+  id_hash_t *id_cache = NULL;
+  xml_tree_ent_t *xte = NULL;
+  static XT *response_test = NULL;
+  static XT *result_test = NULL;
+  static XT *doc_test = NULL;
+  static XT *int_test = NULL;
+  static XT *long_test = NULL;
+  static XT *name_test = NULL;
+  caddr_t **res = NULL;
+  int res_len = 0;
+  int res_ctr = 0;
+  unsigned buflen;
+  static char fti_params_template[] = "%s?wt=standard&sort=id%%20asc&start=0&rows=2147483647&fl=id&q=%s";
+  caddr_t resp_text;
+  if (!strcmp (ext_fti, "solr:local"))
+    {
+      caddr_t ext_fti_local = NULL;
+      static caddr_t solr_url = 0;
+      static caddr_t solr_url_sliced = 0;
+      if (0 == solr_url && 0 == solr_url_sliced)
+        {
+          solr_url = registry_get ("solr_url");
+          solr_url_sliced = registry_get ("solr_url_sliced");
+
+          if (!solr_url && !solr_url_sliced)
+            sqlr_new_error ("22023", "SOLR9", "Neither registry values \"solr_url\" or \"solr_url_sliced\" is set.");
+        }
+      if (QI_NO_SLICE == slice)
+        {
+          if (solr_url)
+            ext_fti_local = solr_url;
+          else
+            sqlr_new_error ("22023", "SOLR9", "Registry value \"solr_url\" is not set.");
+        }
+      else
+        {
+          if (solr_url_sliced)
+            ext_fti_local = box_sprintf (100, solr_url_sliced, slice);
+          else if (solr_url)
+            ext_fti_local = solr_url;
+          else
+            sqlr_new_error ("22023", "SOLR9", "Registry value \"solr_url_sliced\" is not set.");
+        }
+      buflen = box_length (ext_fti_local) + box_length (req) + sizeof(fti_params_template);
+      call_uri = box_sprintf (buflen, fti_params_template, ext_fti_local, req);
+      if (solr_url != ext_fti_local)
+        dk_free_box (ext_fti_local);
+    }
+  else
+    {
+      buflen = box_length (ext_fti) + box_length (req) + sizeof(fti_params_template);
+      call_uri = box_sprintf (buflen, fti_params_template, ext_fti, req);
+    }
+
+/* First we query the remote with HTTP */
+  resp_text = bif_http_client_impl ((caddr_t *)qi, &err, NULL /* no need in args */, "HTTP call to an external free-text indexing server",
+    call_uri, NULL /*uid*/, NULL /*pwd*/, NULL /*method*/, NULL /*http_hdr*/, NULL /*body*/,
+    NULL /*cert*/, NULL /*pk_pass*/, 600000 /*time_out*/, 0 /*time_out_is_null*/, NULL /*proxy*/, NULL /*ca_certs*/, 0 /*insecure*/,
+    0 /* ret_arg_index */,
+    3);
+
+#ifdef EXT_FTI_LOG
+  {
+  FILE *solr_log = fopen("solr_fti_log","a");
+  dbg_print_box(call_uri,solr_log);
+  fputs("\n",solr_log);
+  dbg_print_box(resp_text,solr_log);
+  fputs("\n",solr_log);
+  fclose(solr_log);
+  }
+#endif
+
+  if (NULL != err)
+    goto handle_err; /* see below */;
+/* Now we parse the returned XML */
+  tree = xml_make_mod_tree (qi, resp_text, (caddr_t *) &err, 0 /*parser_mode*/, call_uri, "UTF-8", &lh__xany, NULL/*dtd_config*/, &dtd, &id_cache, &ns_2dict);
+  if (NULL == tree)
+    goto handle_err; /* see below */;
+  xte = xte_from_tree (tree, qi);
+  tree = NULL;
+  xte->xe_doc.xd->xd_uri = call_uri;
+  xte->xe_doc.xd->xd_dtd = dtd; /* The refcounter is incremented inside xml_make_tree */
+  xte->xe_doc.xd->xd_id_dict = id_cache;
+  xte->xe_doc.xd->xd_id_scan = XD_ID_SCAN_COMPLETED;
+  xte->xe_doc.xd->xd_ns_2dict = ns_2dict;
+  xte->xe_doc.xd->xd_namespaces_are_valid = 0;
+  /* test only : xte_word_range(xte,&l1,&l2); */
+/* And fetch values from it */
+  if (NULL == response_test)
+    {
+      response_test = xp_make_name_test_from_qname (NULL /*xpp*/, box_dv_uname_string ("response"), 1);
+      result_test = xp_make_name_test_from_qname (NULL /*xpp*/, box_dv_uname_string ("result"), 1);
+      doc_test = xp_make_name_test_from_qname (NULL /*xpp*/, box_dv_uname_string ("doc"), 1);
+      int_test = xp_make_name_test_from_qname (NULL /*xpp*/, box_dv_uname_string ("int"), 1);
+      long_test = xp_make_name_test_from_qname (NULL /*xpp*/, box_dv_uname_string ("long"), 1);
+      name_test = xp_make_name_test_from_qname (NULL /*xpp*/, box_dv_uname_string ("name"), 1);
+    }
+  if (XI_AT_END != xte->_->xe_first_child ((xml_entity_t *) xte, response_test))
+    if (XI_AT_END != xte->_->xe_first_child ((xml_entity_t *) xte, result_test))
+      {
+        res_len = 3 + BOX_ELEMENTS (xte->xte_current);
+        res = (caddr_t **) dk_alloc_list_zero (res_len);
+        res_ctr = 3;
+        if (XI_AT_END != xte->_->xe_first_child ((xml_entity_t *) xte, doc_test))
+          {
+            do {
+                 if (XI_AT_END != xte->_->xe_first_child ((xml_entity_t *) xte, int_test))
+                   {
+                     if (2 == BOX_ELEMENTS (xte->xte_current) && (DV_STRING == DV_TYPE_OF (xte->xte_current[1])))
+                       res[res_ctr++] = (caddr_t *) list (1, box_num (atoi (xte->xte_current[1])));
+                   }
+                 else if (XI_AT_END != xte->_->xe_first_child ((xml_entity_t *) xte, long_test))
+                   {
+                     if (2 == BOX_ELEMENTS (xte->xte_current) && (DV_STRING == DV_TYPE_OF (xte->xte_current[1])))
+                       res[res_ctr++] = (caddr_t *) list (1, box_num (atoi (xte->xte_current[1])));
+                   }
+                 xte->_->xe_up ((xml_entity_t *) xte, (XT *) XP_NODE, 0);
+              } while (XI_AT_END != xte->_->xe_next_sibling ((xml_entity_t *) xte, doc_test));
+          }
+        res[0] = box_num (res_ctr-1);
+      }
+  if (NULL == res)
+    res = (caddr_t **) dk_alloc_list_zero (3);
+  dk_free_tree (xte);
+  dk_free_tree (tree);
+  dk_free_tree (resp_text);
+  return res;
+#if 1
+  return (caddr_t **)list (6, box_num (4), box_num (0), box_num (0),
+    list (1, box_num (10)),
+    list (1, box_num (11)),
+    uname__bang_exclude_result_prefixes /* as sample of garbage */ );
+#endif
+handle_err:
+  dk_free_tree (xte);
+  dk_free_tree (tree);
+  dk_free_tree (resp_text);
+  sqlr_resignal (err);
+  return NULL;
+}
+
+void
+txs_ext_fti_init (text_node_t * txs, query_instance_t * qi)
+{
+  caddr_t * qst = (caddr_t*) qi;
+  caddr_t err = NULL;
+  caddr_t str = qst_get (qst, txs->txs_text_exp);
+  caddr_t * old_tree, * tree;
+  caddr_t dtd_config = NULL;
+  caddr_t cached_string;
+  int tree_is_temporary;
+  sst_tctx_t context;
+  caddr_t **results;
+  wcharset_t *query_charset;
+  encoding_handler_t *eh;
+  slice_id_t slice;
+  query_charset = QST_CHARSET(qi);
+  if (NULL == query_charset)
+    query_charset = default_charset;
+  if (NULL == query_charset)
+    eh = &eh__ISO8859_1;
+  else
+    {
+      eh = eh_get_handler (CHARSET_NAME (query_charset, NULL));
+      if (NULL == eh)
+        eh = &eh__ISO8859_1;
+    }
+  tree_is_temporary = 0;
+  err = NULL;
+  cached_string = (caddr_t) qst_get (qst, txs->txs_cached_string);
+  if (NULL != cached_string)                /* cache is nonempty */
+    {
+      if(strcmp(cached_string, str))
+        {
+          qst_set (qst, txs->txs_cached_string, NULL);
+          qst_set (qst, txs->txs_cached_compiled_tree, NULL);
+          qst_set (qst, txs->txs_cached_dtd_config, NULL);
+          old_tree = NULL;
+          goto parse_new_tree;
+        }
+      else
+        {
+          old_tree = tree = (caddr_t *)qst_get (qst, txs->txs_cached_compiled_tree);
+          goto skip_parsing_of_new_tree;
+        }
+    }
+  else                                        /* cache is empty */
+    {
+      old_tree = NULL;
+      goto parse_new_tree;
+    }
+parse_new_tree:
+  tree = box_copy_tree (str);
+  if (NULL != err)
+    {
+      dk_free_tree ((caddr_t)tree);
+      dk_free_tree (dtd_config);
+      sqlr_resignal (err);
+    }
+  /*xpt_edit_range_flags (tree, ~SRC_RANGE_DUMMY, SRC_RANGE_MAIN);*/
+  qst_set (qst, txs->txs_cached_dtd_config, dtd_config);
+skip_parsing_of_new_tree:
+  qst_set (qst, txs->txs_cached_string, box_dv_short_string(str));
+  if (tree != old_tree)
+    qst_set (qst, txs->txs_cached_compiled_tree, (caddr_t) tree);
+  context.tctx_vtb = NULL;
+  context.tctx_descending = (txs->txs_desc ? (int) unbox (qst_get (qst, txs->txs_desc)) : 0);
+  context.tctx_end_id = (txs->txs_end_id ? qst_get (qst, txs->txs_end_id) : NULL);
+  if (txs->txs_offband)
+    sqlr_new_error ("22023", "FT100", "Offband with EXT_FTI");
+  context.tctx_qi = qi;
+  context.tctx_table = txs->txs_table;
+  context.tctx_calc_score = ((NULL != txs->txs_score) ? 1 : 0);
+  context.tctx_range_flags = SRC_RANGE_DUMMY;
+  slice = qi->qi_client->cli_slice;
+  results = txs_ext_fti_get (qi, slice, qst_get (qst, txs->txs_ext_fti), (caddr_t)tree);
+  if (tree_is_temporary)
+    dk_free_tree ((caddr_t)tree);
+  if (txs->txs_is_driving)
+    qst_set_long (qst, txs->txs_d_id, 0);
+  qst_set (qst, txs->txs_sst, (caddr_t)results);
+}
+
+boxint
+txs_ext_fti_next_result (caddr_t **results, boxint *target, int is_fixed)
+{
+  boxint len = unbox ((caddr_t)(results[0]));
+  boxint ctr = unbox ((caddr_t)(results[1])) + 3;
+  while (ctr <= len)
+    {
+      boxint curr_id = unbox ((caddr_t)(results[ctr][0]));
+      if (curr_id < target[0])
+        {
+          ctr++;
+          continue;
+        }
+      if (is_fixed && (curr_id > target[0]))
+        goto notfound;
+      ctr++;
+      dk_free_box (results[2]);
+      results[2] = box_num (curr_id);
+      dk_free_box (results[1]);
+      results[1] = box_num (ctr - 3);
+      return curr_id;
+    }
+notfound:
+  dk_free_box (results[1]);
+  results[1] = box_num (ctr - 3);
+  return -1;
+}
+
+
+caddr_t
+txs_ext_fti_next (text_node_t * txs, caddr_t * qst, int first_time)
+{
+  caddr_t **results = (caddr_t **) qst_get (qst, txs->txs_sst);
+  boxint d_id;
+#if 0
+  int score_limit = txs->txs_score_limit ? (int) unbox (qst_get (qst, txs->txs_score_limit)) : 0;
+#endif
+  d_id = unbox (qst_get (qst, txs->txs_d_id));
+  if (!txs->txs_is_driving)
+    {
+      if (d_id < 0)
+	return ((caddr_t) SQL_NO_DATA_FOUND);
+      if (0 > txs_ext_fti_next_result (results, &d_id, 1))
+	return ((caddr_t) SQL_NO_DATA_FOUND);
+#if 0 /*!!! tbd later */
+      if (score_limit || txs->txs_score)
+	sst_scores (sst, &d_id);
+      if (txs->txs_score)
+	TXS_QST_SET (txs, qst, txs->txs_score, box_num (sst->sst_score));
+      if (score_limit && sst->sst_score < score_limit)
+	return ((caddr_t) SQL_NO_DATA_FOUND);
+      txs_set_ranges (txs, qst, sst);
+#endif
+      return ((caddr_t) SQL_SUCCESS);
+
+    }
+  for (;;)
+    {
+      if (first_time)
+	{
+	  if (txs->txs_init_id)
+	    d_id = unbox (qst_get (qst, txs->txs_init_id));
+  else
+	    d_id = 0;
+	}
+      d_id = txs_ext_fti_next_result (results, &d_id, 0);
+      first_time = 0;
+      if (d_id < 0)
+	return ((caddr_t) SQL_NO_DATA_FOUND);
+#if 0 /*!!! tbd later */
+      if (score_limit || txs->txs_score)
+	sst_scores (sst, &d_id);
+      if (score_limit && sst->sst_score < score_limit)
+	continue;
+#endif
+      break;
+    }
+#if 0 /*!!! tbd later */
+  if (txs->txs_score)
+    TXS_QST_SET (txs, qst, txs->txs_score, box_num (sst->sst_score));
+#endif
+  if (txs->txs_is_rdf)
+    sqlr_new_error ("22023", "FT101", "RDF with EXT_FTI");
+  TXS_QST_SET (txs, qst, txs->txs_d_id, box_num (d_id));
+#if 0 /*!!! tbd later */
+  txs_set_offband (txs, qst);
+  txs_set_ranges (txs, qst, sst);
+#endif
+  return ((caddr_t) SQL_SUCCESS);
+}
+
+
+/* That's an exact clone of txs_vec_input */
+void
+txs_ext_fti_vec_input (text_node_t * txs, caddr_t * inst, caddr_t *state)
+{
+  QNCAST (query_instance_t, qi, inst);
+  int n_sets = txs->src_gen.src_prev ? QST_INT (inst, txs->src_gen.src_prev->src_out_fill) : qi->qi_n_sets;
+  int nth_set, first_time = 0, batch_sz;
+  QNCAST (data_source_t, qn, txs);
+  caddr_t err = NULL;
+  if (enable_qn_cache)
+    {
+      if (state)
+	{
+	  qc_result_t * qcr;
+	  txs_qc_lookup (txs, inst);
+	  qcr = (qc_result_t*)QST_GET_V (inst, txs->txs_qcr);
+	  if (qcr && QCR_READY == qcr->qcr_status)
+	    {
+	      if (txs->txs_is_driving)
+		txs_from_qcr (txs, inst, state);
+	      else
+		txs_qcr_check (txs, inst);
+	      return;
+	    }
+	}
+      else
+	{
+	  qc_result_t * qcr = (qc_result_t*)QST_GET_V (inst, txs->txs_qcr);
+	  if (qcr && QCR_READY == qcr->qcr_status)
+	    {
+	      txs_from_qcr (txs, inst, NULL);
+	      return;
+	    }
+	}
+    }
+  if (state)
+    nth_set = QST_INT (inst, txs->clb.clb_nth_set) = 0;
+  else
+    nth_set = QST_INT (inst, txs->clb.clb_nth_set);
+
+again:
+  batch_sz = QST_INT (inst, txs->src_gen.src_batch_size); /* May vary, receiver may increase the batch size to improve the locality */
+  QST_INT (inst, qn->src_out_fill) = 0;
+  dc_reset_array (inst, qn, qn->src_continue_reset, -1);
+  for (; nth_set < n_sets; nth_set ++)
+    {
+      qi->qi_set = nth_set;
+      for (;;)
+	{
+	  if (!state)
+	    {
+	      state = SRC_IN_STATE (qn, inst);
+	    }
+	  else
+	    {
+	      txs_ext_fti_init (txs, (query_instance_t *) state);
+	      if (txs->txs_is_driving)
+	      dc_reset (QST_BOX (data_col_t *, inst, txs->txs_d_id->ssl_index));
+	      first_time = 1;
+	    }
+	  err = txs_ext_fti_next (txs, state, first_time); /* Should become vectored and produce up to batch_sz - qn->src_out_fill results at a single run */
+	  first_time = 0;
+	  if (err != SQL_SUCCESS)
+	    {
+	      SRC_IN_STATE (qn, inst) = NULL;
+	      if (err != (caddr_t) SQL_NO_DATA_FOUND)
+		sqlr_resignal (err);
+	      break;
+	    }
+	  qn_result (qn, inst, nth_set);
+	  if (!txs->txs_is_driving)
+	    break;
+	  SRC_IN_STATE (qn, inst) = state;
+	  state = NULL;
+	  if (QST_INT (inst, qn->src_out_fill) >= batch_sz)
+	    {
+	      QST_INT (inst, txs->clb.clb_nth_set) = nth_set;
+              if (txs->txs_is_driving && txs->txs_qcr)
+                txs_qc_accumulate (txs, inst);
+	      qn_send_output (qn, inst);
+	      goto again;
+	    }
+	}
+    }
+
+  SRC_IN_STATE (qn, inst) = NULL;
+  if (txs->txs_is_driving && txs->txs_qcr)
+    txs_qc_accumulate (txs, inst);
+  if (QST_INT (inst, qn->src_out_fill))
+    qn_send_output (qn, inst);
+}
+
+
+/* That's an exact clone of loop in txn_input */
+void
+txs_ext_fti_input (text_node_t * txs, caddr_t * inst, caddr_t *state)
+{
+  int first_time = 0;
+  for (;;)
+    {
+      caddr_t err;
+      if (!state)
+	{
+	  state = qn_get_in_state ((data_source_t *) txs, inst);
+	}
+      else
+	{
+	  txs_ext_fti_init (txs, (query_instance_t *) state);
+	  first_time = 1;
+	}
+      err = txs_ext_fti_next (txs, state, first_time);
+      first_time = 0;
+      if (err == SQL_SUCCESS)
+	{
+	  if (txs->txs_is_driving)
+	    qn_record_in_state ((data_source_t *) txs, inst, state);
+	  if (!txs->src_gen.src_after_test
+	      || code_vec_run (txs->src_gen.src_after_test, inst))
+	    {
+	      qn_send_output ((data_source_t *) txs, inst);
+	    }
+	  if (!txs->txs_is_driving)
+	    {
+	      qn_record_in_state ((data_source_t *) txs, inst, NULL);
+	      return;
+	    }
+	}
+      else
+	{
+	  qn_record_in_state ((data_source_t *) txs, inst, NULL);
+	  if (err != (caddr_t) SQL_NO_DATA_FOUND)
+	    sqlr_resignal (err);
+	  return;
+	}
+      state = NULL;
+    }
 }
 
 
@@ -3296,6 +4107,24 @@ txs_input (text_node_t * txs, caddr_t * inst, caddr_t *state)
 {
   caddr_t err;
   int first_time = 0;
+  if (txs->txs_geo)
+    {
+      geo_node_input (txs, inst, state);
+      return;
+    }
+  if (txs->txs_ext_fti)
+    {
+      if (txs->src_gen.src_sets)
+        txs_ext_fti_vec_input (txs, inst, state);
+      else
+        txs_ext_fti_input (txs, inst, state);
+      return;
+    }
+  if (txs->src_gen.src_sets)
+    {
+      txs_vec_input (txs, inst, state);
+      return;
+    }
   for (;;)
     {
       if (!state)
@@ -3340,7 +4169,6 @@ txs_input (text_node_t * txs, caddr_t * inst, caddr_t *state)
 void
 txs_free (text_node_t * txs)
 {
-  dk_free_box (txs->txs_offband);
 }
 
 caddr_t
@@ -3373,7 +4201,7 @@ text_init (void)
 {
   int x;
   for (x = 1; x < 0x100; x++)
-    int_log2x16[x] = (unsigned char)(floor (16 * log10 (x) / log10 (2)));
+    int_log2x16[x] = (unsigned char)(floor (16 * log (x) / log (2)));
   for (x = -0x80; x < 0x80; x++)
     vt_hit_dist_weight[x + 0x80] = (unsigned char)(1 + floor ((VT_ZERO_DIST_WEIGHT-1) / (1 + (1.0 / (VT_HALF_FADE_DIST*VT_HALF_FADE_DIST)) * x * x)));
   wst_get_specs_mtx = mutex_allocate ();
@@ -3383,5 +4211,7 @@ text_init (void)
   bif_define ("int_log2x16", bif_int_log2x16);
   bif_define ("vt_hit_dist_weight", bif_vt_hit_dist_weight);
   dk_mem_hooks(DV_TEXT_SEARCH, box_non_copiable, (box_destr_f) sst_destroy, 0);
+  txs_qcr_rev_mtx = mutex_allocate ();
+  qc_init ();
 }
 

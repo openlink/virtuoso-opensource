@@ -293,7 +293,7 @@ void text_init (void);
 dk_set_t vt_string_words  ( char *string, char * extra);
 */
 
-#define WST_WILDCARD_MAX 1000
+#define WST_WILDCARD_MAX 100000
 
 search_stream_t * sst_from_tree (sst_tctx_t *tctx, caddr_t * tree);
 

@@ -116,7 +116,6 @@ typedef struct xper_ctx_s
     caddr_t vt_batch;		/*!< batch of word indexing information, or NULL */
     int xpc_index_attrs;	/*!< Flags if attributes should be indexed */
     id_hash_t *xpc_id_dict;
-    caddr_t xpc_src_filename;
     FILE *xpc_src_file;
     vxml_parser_t *xpc_parser;
     dk_set_t xpc_cut_chain;	/* Chain of boxes, which will be written into the copy */
@@ -1395,11 +1394,6 @@ xper_destroy_ctx (xper_ctx_t * ctx)
       VXmlParserDestroy (ctx->xpc_parser);
       ctx->xpc_parser = NULL;
     }
-  if (NULL != ctx->xpc_src_filename)
-    {
-      dk_free_box (ctx->xpc_src_filename);
-      ctx->xpc_src_filename = NULL;
-    }
 }
 
 static caddr_t
@@ -1426,7 +1420,7 @@ static caddr_t
   else
     {
       dbe_key_t* xper_key = sch_id_to_key (wi_inst.wi_schema, KI_COLS);
-      itc_from (tmp_itc, xper_key);
+      itc_from (tmp_itc, xper_key, sqlc_client ()->cli_slice);
     }
   ITC_FAIL (tmp_itc)
   {
@@ -2145,7 +2139,7 @@ bdfi_read (void *read_cd, char *tgtbuf, size_t bsize)
   else
     {
       dbe_key_t* xper_key = sch_id_to_key (wi_inst.wi_schema, KI_COLS);
-      itc_from (tmp_itc, xper_key);
+      itc_from (tmp_itc, xper_key, sqlc_client ()->cli_slice);
     }
   ITC_FAIL (tmp_itc)
   {
@@ -2358,7 +2352,7 @@ static void xper_get_blob_page_dir (xper_doc_t *xpd)
   else
     {
       dbe_key_t* xper_key = sch_id_to_key (wi_inst.wi_schema, KI_COLS);
-      itc_from (tmp_itc, xper_key);
+      itc_from (tmp_itc, xper_key, sqlc_client ()->cli_slice);
     }
   blob_read_dir (tmp_itc, &bh->bh_pages, &bh->bh_page_dir_complete, bh->bh_dir_page, NULL);
   itc_free (tmp_itc);
@@ -2515,20 +2509,37 @@ xper_entity_t *
   if ((dtp_of_source_arg == DV_SHORT_STRING_SERIAL) ||
       (dtp_of_source_arg == DV_STRING) ||
       (dtp_of_source_arg == DV_C_STRING))
-    {                             /* 01234567 */
-      if (!strncasecmp (source_arg, "file://", 7))
         {
+      if (!strncasecmp (source_arg, "file://", 7 /* strlen(("file://") */ ))
+        {
+#ifdef WIN32
+	    char fname[_MAX_PATH], *fname_ptr;
+	    /*fname = dk_alloc(strlen(source+7/ * strlen("file://"* /)+1); */
+	    strncpy (fname, source_arg + 7 /* strlen("file://" */ , _MAX_PATH);
+	    fname[_MAX_PATH - 1] = '\0';
+	    for (fname_ptr = fname; fname_ptr[0]; fname_ptr++)
+	      {
+		switch (fname_ptr[0])
+		  {
+		  case '|':
+		    fname_ptr[0] = ':';
+		    break;
+		  case '/':
+		    fname_ptr[0] = '\\';
+		    break;
+		  }
+	      }
+#else
+	    char *fname = ((char *) source_arg) + 7 /* strlen("file://") */ ;
+#endif
           sec_check_dba (qi, "<read XML from URL of type file://...>");
-                 context.xpc_src_filename = file_native_name_from_iri_path_nchars (source_arg + 7, strlen (source_arg + 7));
-          file_path_assert (context.xpc_src_filename, NULL, 1);
-          xper_dbg_print_1 ("File '%s'\n", context.xpc_src_filename);
-          context.xpc_src_file = fopen (context.xpc_src_filename, "rb");
+	    xper_dbg_print_1 ("File '%s'\n", fname);
+	    context.xpc_src_file = fopen (fname, "rb");
           if (NULL == context.xpc_src_file)
             {
-              caddr_t err = srv_make_new_error ("42000", "XP100", "Error opening file '%s'", context.xpc_src_filename);
               xper_destroy_ctx (&context);
               dk_free_box (uri);
-              sqlr_resignal (err);
+		sqlr_new_error ("42000", "XP100", "Error opening file '%s'", fname);
             }
         source_type = 'F';
 	iter = file_read;
@@ -2584,7 +2595,7 @@ parse_source:
     xpd->xpd_bh = bh_alloc (DV_BLOB_XPER_HANDLE);
     context.xpc_itc = itc_create (NULL, qi->qi_trx);
     xper_key = sch_id_to_key (wi_inst.wi_schema, KI_COLS);
-    itc_from (context.xpc_itc, xper_key);
+    itc_from (context.xpc_itc, xper_key, sqlc_client ()->cli_slice);
     xpd->xpd_bh->bh_it = context.xpc_itc->itc_tree;
     context.xpc_index_attrs = index_attrs;
     context.xpc_attr_word_ctr = (index_attrs ? FIRST_ATTR_WORD_POS : 0);
@@ -6339,7 +6350,7 @@ xper_entity_t *
     tgt_xpd->xpd_bh = bh_alloc (DV_BLOB_XPER_HANDLE);
     context.xpc_itc = itc_create (NULL, qi->qi_trx);
     xper_key = sch_id_to_key (wi_inst.wi_schema, KI_COLS);
-    itc_from (context.xpc_itc, xper_key);
+    itc_from (context.xpc_itc, xper_key, sqlc_client ()->cli_slice);
     tgt_xpd->xpd_bh->bh_it = context.xpc_itc->itc_tree;
     ITC_FAIL (context.xpc_itc)
     {

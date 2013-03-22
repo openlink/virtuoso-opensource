@@ -274,7 +274,7 @@ caddr_t udo_dbg_find_object_by_ref (query_instance_t *qi, caddr_t ref);
    ((int) ((inst) ? (BOX_ELEMENTS (inst) - 1): 0))
 
 extern caddr_t xmltype_class_name;
-#define XMLTYPE_CLASS (sch_name_to_type (isp_schema(NULL), xmltype_class_name))
+#define XMLTYPE_CLASS (xmltype_class_name ? sch_name_to_type (isp_schema(NULL), xmltype_class_name) : NULL)
 #define XMLTYPE_TO_ENTITY(obj) \
   ((xml_entity_t *) \
     ((UDT_I_CLASS(obj) == XMLTYPE_CLASS) ? \

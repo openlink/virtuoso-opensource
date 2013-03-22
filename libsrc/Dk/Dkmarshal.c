@@ -390,7 +390,7 @@ read_int (dk_session_t *session)
   if (dtp == DV_SHORT_INT)
     return read_short_int (session);
   else if (DV_LONG_INT == dtp)
-    return read_long (session);
+  return read_long (session);
   else if (DV_INT64 == dtp)
     return read_int64 (session);
 
@@ -543,7 +543,7 @@ rb_id_deserialize (dk_session_t * ses, dtp_t dtp)
     n = read_long (ses);
   return (void*)rbb_from_id (n);
 }
- 
+
 
 static void *
 rb_ext_deserialize (dk_session_t * ses, dtp_t flags)
@@ -561,6 +561,7 @@ rb_ext_deserialize (dk_session_t * ses, dtp_t flags)
       rb->rb_type = read_short (ses);
       rb->rb_lang = RDF_BOX_DEFAULT_LANG;
     }
+  rb_dt_lang_check(rb);
   if (flags & RBS_64)
     rb->rb_ro_id = read_int64 (ses);
   else
@@ -572,7 +573,7 @@ rb_ext_deserialize (dk_session_t * ses, dtp_t flags)
     }
   return (void*)rb;
 }
- 
+
 
 static void *
 rb_deserialize (dk_session_t * ses, dtp_t dtp)
@@ -626,6 +627,7 @@ rb_deserialize (dk_session_t * ses, dtp_t dtp)
     rb->rb_lang = read_short (ses);
   else
     rb->rb_lang = RDF_BOX_DEFAULT_LANG;
+  rb_dt_lang_check(rb);
   if (flags & RBS_CHKSUM)
     ((rdf_bigbox_t *) rb)->rbb_box_dtp = session_buffered_read_char (ses);
   if ((RDF_BOX_DEFAULT_TYPE != rb->rb_type) && (RDF_BOX_DEFAULT_LANG != rb->rb_lang))

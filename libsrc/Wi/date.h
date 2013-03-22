@@ -181,4 +181,21 @@ extern void dt_audit_fields (char *dt);
 	) \
        ))
 
+
+#ifdef WORDS_BIGENDIAN
+#define memcpy_dt(tgt, src) memcpy (tgt, src, DT_LENGTH)
+#define memcmp_dt(dt1, dt2) \
+  { if (memcmp (dt1, dt2, DT_CMP_LENGTH)) goto neq;}
+#else
+#define memcpy_dt(tgt1, src1) \
+  { db_buf_t __tgt = (db_buf_t)tgt1, __src = (db_buf_t)src1; 	\
+  *(int64*)(__tgt) = *(int64*)(__src); \
+  *(short*)(__tgt + 8) = *(short*)((__src) + 8); \
+}
+
+#define memcmp_dt(dt1, dt2, neq)				\
+  {if (*(int64*)(dt1) != *(int64*)(dt2)) goto neq;}
+#endif
+
+
 #endif /* _DATE_H */

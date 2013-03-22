@@ -166,6 +166,8 @@ GET_SEC_OBJECT_ID (in _name varchar, out id integer, out is_sql integer, out opt
   if (not isarray(opts))
     opts := vector ();
 
+  if (_login_qual like 'Q %')
+    _login_qual := subseq (_login_qual, 2);
   inl_opts := vector (
 		'PASSWORD_MODE', _pwd_mode,
 		'PASSWORD_MODE_DATA', _pwd_mode_data,
@@ -470,7 +472,7 @@ USER_GRANT_ROLE (in _name varchar, in _role varchar, in grant_opt integer := 0)
         {
 	  if (primary_group is null or inh[i] <> primary_group)
 	    {
-	      insert soft SYS_ROLE_GRANTS (GI_SUPER, GI_SUB, GI_ADMIN, GI_DIRECT, GI_GRANT)
+	      insert into SYS_ROLE_GRANTS (GI_SUPER, GI_SUB, GI_ADMIN, GI_DIRECT, GI_GRANT)
 		  values (_u_id, inh[i], grant_opt, 0, _g_id);
 	    }
           i := i + 1;
@@ -575,7 +577,6 @@ USER_DROP (in _name varchar, in _cascade integer := 0)
     signal ('37000', concat ('The user ''', _name, ''' does not exist'), 'U0015');
   delete from SYS_USER_GROUP where UG_UID = _u_id;
   delete from SYS_GRANTS where G_USER = _u_id;
-  delete from DB.DBA.RDF_GRAPH_USER where RGU_USER_ID = _u_id;
   if (_u_is_sql)
     DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_remove_user_struct(?)', vector (_name));
 }
@@ -637,7 +638,7 @@ USER_SET_OPTION (in _name varchar, in opt varchar, in value any)
     opts := ret;
   }
 
-
+  _login_qual := case when length (_login_qual) then concat ('Q ', _login_qual) else NULL end;
   update SYS_USERS set U_OPTS = serialize (opts),
       U_PASSWORD_HOOK = _pwd_mode,
       U_PASSWORD_HOOK_DATA = _pwd_mode_data,
@@ -645,7 +646,7 @@ USER_SET_OPTION (in _name varchar, in opt varchar, in value any)
       U_SQL_ENABLE = _sql_enable,
       U_DAV_ENABLE = _dav_enable,
       U_DEF_QUAL = _login_qual,
-      U_DATA = case when length (_login_qual) then concat ('Q ', _login_qual) else NULL end,
+      U_DATA = _login_qual,
       U_GROUP = _u_group_id,
       U_E_MAIL = _u_e_mail,
       U_FULL_NAME = _u_full_name,
@@ -660,8 +661,7 @@ USER_SET_OPTION (in _name varchar, in opt varchar, in value any)
     }
       select pwd_magic_calc (U_NAME, U_PASSWORD, 1) into passwd from SYS_USERS where U_NAME = _name;
       DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_set_user_struct (?,?,?,?,?)',
-      vector (_name, passwd, _u_id, _u_group_id,
-	case when length (_login_qual) then concat ('Q ', _login_qual) else NULL end));
+      vector (_name, passwd, _u_id, _u_group_id, _login_qual));
   DB.DBA.SECURITY_CL_EXEC_AND_LOG ('sec_user_enable (?, ?)', vector (_name, case when _disabled = 0 then 1 else 0 end));
 }
 ;
@@ -1079,7 +1079,7 @@ normal_auth:
     {
       rc := "DB"."DBA"."DBEV_LOGIN" (user_name, digest, session_random);
     }
-  else if (rc <= 0) -- only if not authenticated
+  else
     {
       rc := DB.DBA.FOAF_SSL_LOGIN (user_name, digest, session_random);
       if (rc = 0)
@@ -1322,32 +1322,12 @@ alter index SYS_USER_WEBID on SYS_USER_WEBID partition cluster replicated
 create index SYS_USER_WEBID_NAME on SYS_USER_WEBID (UW_U_NAME) partition cluster replicated
 ;
 
-create procedure FOAF_SSL_QRY (in gr varchar, in uri varchar)
-{
-    return sprintf ('sparql
-    define input:storage ""
-    define input:same-as "yes"
-    prefix cert: <http://www.w3.org/ns/auth/cert#>
-    prefix rsa: <http://www.w3.org/ns/auth/rsa#>
-    select (str (?exp)) (str (?mod))
-    from <%S>
-    where
-    {
-      { ?id cert:identity <%S> ; rsa:public_exponent ?exp ; rsa:modulus ?mod .  }
-      union
-      { ?id cert:identity <%S> ; rsa:public_exponent ?exp1 ; rsa:modulus ?mod1 . ?exp1 cert:decimal ?exp . ?mod1 cert:hex ?mod . }
-      union
-      { <%S> cert:key ?key . ?key cert:exponent ?exp . ?key cert:modulus ?mod .  }
-    }', gr, uri, uri, uri);
-}
-;
-
 create procedure
 DB.DBA.FOAF_SSL_LOGIN (inout user_name varchar, in digest varchar, in session_random varchar)
 {
   declare stat, msg, meta, data, info, qr, hf, graph, gr, alts any;
   declare agent varchar;
-  declare rc, vtype int;
+  declare rc int;
   rc := 0;
   gr := null;
 
@@ -1360,12 +1340,6 @@ DB.DBA.FOAF_SSL_LOGIN (inout user_name varchar, in digest varchar, in session_ra
 
   if (client_attr ('client_ssl') = 0)
     return 0;
-
-  if (__proc_exists ('DB.DBA.WEBID_AUTH_GEN_2') and DB.DBA.WEBID_AUTH_GEN_2 (null, 0, 'ODBC', 0, 0, agent, gr, 0, vtype))
-    {
-      user_name := connection_get ('SPARQLUserId');
-      return 1;
-    }
 
   info := get_certificate_info (9);
   agent := get_certificate_info (7, null, null, null, '2.5.29.17');
@@ -1386,10 +1360,19 @@ DB.DBA.FOAF_SSL_LOGIN (inout user_name varchar, in digest varchar, in session_ra
   graph := WS.WS.VFS_URI_COMPOSE (hf);
   qr := sprintf ('sparql load <%S> into graph <%S>', graph, gr);
   stat := '00000';
-  --exec (qr, stat, msg);
-  DB.DBA.SPARUL_LOAD (gr, graph, 0, 1, 0, vector ());
+  exec (qr, stat, msg);
   commit work;
-  qr := FOAF_SSL_QRY (gr, agent);
+  qr := sprintf (
+        'sparql define input:storage "" '||
+	' prefix cert: <http://www.w3.org/ns/auth/cert#> '||
+	' prefix rsa: <http://www.w3.org/ns/auth/rsa#> ' ||
+  	' select (str (bif:coalesce (?exp_val, ?exp))) (str (bif:coalesce (?mod_val, ?mod))) '||
+	' from <%S> '||
+  	' where { '||
+	' 	  ?id cert:identity <%S> ; rsa:public_exponent ?exp ; rsa:modulus ?mod . ' ||
+	' 	  optional { ?exp cert:decimal ?exp_val . ?mod cert:hex ?mod_val . } '||
+	'       } ',
+	gr, agent);
   stat := '00000';
   exec (qr, stat, msg, vector (), 0, meta, data);
   if (stat = '00000' and length (data))
@@ -1411,8 +1394,7 @@ DB.DBA.FOAF_SSL_LOGIN (inout user_name varchar, in digest varchar, in session_ra
     }
   err_ret:
   if (gr is not null)
-    DB.DBA.SPARUL_CLEAR (gr, 0, 0);
-    --exec (sprintf ('sparql clear graph <%S>', gr), stat, msg);
+    exec (sprintf ('sparql clear graph <%S>', gr), stat, msg);
   commit work;
   return rc;
 }

@@ -41,12 +41,14 @@ INS_NAME (ce_ins_ctx_t * ceic, ce_ins_ctx_t ** col_ceic, db_buf_t ce, int space_
       *split_at = 1015 / sizeof (ELT_T);
       return NULL;
     }
-  ce = ce_extend (ceic, col_ceic, ce, &ce_first, n_bytes + ceic->ceic_n_for_ce * sizeof (ELT_T), n_values + ceic->ceic_n_for_ce, &space_after);
+  ce = ce_extend (ceic, col_ceic, ce, &ce_first, n_bytes + ceic->ceic_n_for_ce * sizeof (ELT_T), n_values + ceic->ceic_n_for_ce,
+      &space_after);
   for (inx = 0; inx < ceic->ceic_n_for_ce; inx++)
     {
       int row_in_ce = itc->itc_ranges[itc->itc_ce_first_range + inx].r_first + ins_offset - itc->itc_row_of_ce;
       value = ceic_int_value (ceic, inx + itc->itc_ce_first_set, &val_dtp);
-      memmove (ce_first + (1 + row_in_ce) * sizeof (ELT_T), ce_first + row_in_ce * sizeof (ELT_T), (ins_offset + n_values - row_in_ce) * sizeof (ELT_T));
+      memmove (ce_first + (1 + row_in_ce) * sizeof (ELT_T), ce_first + row_in_ce * sizeof (ELT_T),
+	  (ins_offset + n_values - row_in_ce) * sizeof (ELT_T));
       SET_NA (ce_first + row_in_ce * sizeof (int), value);
       ins_offset++;
     }

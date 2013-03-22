@@ -162,7 +162,6 @@ pop3_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
       goto error_end;
     }
   END_READ_FAIL (ses);
-
   /*  IS_OK_NEXT (ses, resp, rc, "Bad user name and password"); */
 
   inx_mails = 0;
@@ -318,7 +317,8 @@ pop3_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
       if (!stricmp ("delete", mode))
 	{
 	  SEND (ses, rc, "DELE ", message);
-	  IS_OK_NEXT (ses, resp, rc, "PO011", "Could not DELE messages from remote POP3 server");
+	  IS_OK_NEXT (ses, resp, rc, "PO011",
+		      "Could not DELE messages from remote POP3 server");
 	}
     }
 
@@ -423,15 +423,18 @@ bif_ses_write (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   CATCH_WRITE_FAIL (out)
     {
-      if (dtp == DV_SHORT_STRING || dtp == DV_LONG_STRING || dtp == DV_C_STRING)
-	session_buffered_write (out, string, box_length (string) - (IS_STRING_DTP (DV_TYPE_OF (string)) ? 1 : 0));
+      if (dtp == DV_SHORT_STRING || dtp == DV_LONG_STRING ||
+	  dtp == DV_C_STRING)
+	session_buffered_write (out, string,
+	    box_length (string) - (IS_STRING_DTP (DV_TYPE_OF (string)) ? 1 : 0));
       else if ((dtp == DV_BLOB_HANDLE) || (dtp == DV_BLOB_WIDE_HANDLE))
 	{
 	  blob_handle_t *bh = (blob_handle_t *) string;
 	  if (!bh->bh_length)
 	    {
 	      if (bh->bh_ask_from_client)
-		sqlr_new_error ("22023", "HT001", "An interactive blob can't be passed as argument to ses_write");
+		sqlr_new_error ("22023", "HT001",
+		    "An interactive blob can't be passed as argument to ses_write");
 	      goto endwrite;
 	    }
 	  bh->bh_current_page = bh->bh_page;
@@ -445,7 +448,8 @@ bif_ses_write (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  strses_write_out ((dk_session_t *) string, out);
 	}
       else
-	*err_ret = srv_make_new_error ("22023", "HT002", "ses_write requires string, string_output or blob as argument 1");
+	*err_ret = srv_make_new_error ("22023", "HT002",
+	    "ses_write requires string, string_output or blob as argument 1");
     }
   FAILED
     {

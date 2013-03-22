@@ -300,7 +300,7 @@ literal_as_utf8 (encoding_handler_t * enc, caddr_t literal, int len)
 }
 
 caddr_t
-charset_recode_from_named_to_named (query_instance_t *qi, caddr_t narrow, const char *cs1_uppercase, const char *cs2_uppercase, int *res_is_new_ret, caddr_t *err_ret)
+charset_recode_from_named_to_named (caddr_t narrow, const char *cs1_uppercase, const char *cs2_uppercase, int *res_is_new_ret, caddr_t *err_ret)
 {
   wcharset_t *cs1, *cs2;
   int bom_skip_offset = 0;
@@ -318,18 +318,7 @@ charset_recode_from_named_to_named (query_instance_t *qi, caddr_t narrow, const 
     cs1 = CHARSET_WIDE;
   if (cs2_uppercase && !cs2 && !strcmp (cs2_uppercase, "_WIDE_"))
     cs2 = CHARSET_WIDE;
-  if (cs1_uppercase && !cs1 && !strcmp (cs1_uppercase, "_WS_"))
-    {
-      cs1 = ((NULL != qi) ? WS_CHARSET (qi->qi_client->cli_ws, qi) : NULL);
-      if (NULL == cs1)
-        cs1 = default_charset;
-    }
-  if (cs2_uppercase && !cs2 && !strcmp (cs2_uppercase, "_WS_"))
-    {
-      cs2 = ((NULL != qi) ? WS_CHARSET (qi->qi_client->cli_ws, qi) : NULL);
-      if (NULL == cs2)
-        cs2 = default_charset;
-    }
+
   if (!cs1 && cs1_uppercase && box_length (cs1_uppercase) > 1)
     {
       if (!stricmp (cs1_uppercase, "UTF-16") && box_length (narrow) > 2
@@ -442,7 +431,7 @@ bif_charset_recode (caddr_t *qst, caddr_t *err_ret, state_slot_t ** args)
 
   cs1_uname = cs1_name ? sqlp_box_upcase (cs1_name) : NULL;
   cs2_uname = cs2_name ? sqlp_box_upcase (cs2_name) : NULL;
-  res = charset_recode_from_named_to_named ((query_instance_t *)qst, narrow, cs1_uname, cs2_uname, &res_is_new, &err);
+  res = charset_recode_from_named_to_named (narrow, cs1_uname, cs2_uname, &res_is_new, &err);
   dk_free_box (cs1_uname); dk_free_box (cs2_uname);
   if (NULL != err)
     {

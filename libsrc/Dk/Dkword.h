@@ -98,5 +98,22 @@
 	goto neq; \
     } \
 }
+
+#define memcmp_8l(a1, a2, len, neq, lret)		\
+{ \
+ unsigned char * p1 = (unsigned char *)a1, *p2 = (unsigned char *)a2; \
+  unsigned char * end = p1 + (len & ~0x7); \
+  while (p1 != end) \
+    { \
+      if (*(int64*)p1 != *(int64*)p2) {lret = p1 - a1; goto neq; }	\
+      p1 += 8; p2 += 8; \
+    } \
+  if (len & 0x7) \
+    { \
+      int64 xo = *(int64*)p1 ^*(int64*)p2; \
+      if (xo & (((int64)1 << ((len & 0x7) << 3)) - 1))	\
+	{lret = p1 - a1; goto neq;}			\
+    } \
+}
 #endif
 #endif

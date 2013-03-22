@@ -946,6 +946,7 @@ extern caddr_t xml_deserialize_from_blob (caddr_t bh, lock_trx_t *lt, caddr_t *q
 
 extern void xte_serialize_packed (caddr_t *tree, dtd_t *dtd, dk_session_t * ses);
 extern void xte_deserialize_packed (dk_session_t *ses, caddr_t **ret_tree, dtd_t **ret_dtd);
+int xte_serialization_len (db_buf_t str);
 extern void dtd_save_str_to_buffer (unsigned char **tail_ptr, char *str);
 extern int dtd_get_buffer_length (dtd_t * dtd);
 extern void dtd_save_to_buffer (dtd_t *dtd, unsigned char *buf, size_t buf_len);

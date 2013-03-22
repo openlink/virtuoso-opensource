@@ -1201,7 +1201,7 @@ numeric_init (void)
 {
   _numeric_rc = resource_allocate (200,
       _numeric_rc_allocate, _numeric_rc_free, _numeric_rc_clear, 0);
-  dk_dtp_register_hash (DV_NUMERIC, (box_hash_func_t) numeric_hash, numeric_hash_cmp);
+  dk_dtp_register_hash (DV_NUMERIC, (box_hash_func_t) numeric_hash, numeric_hash_cmp, numeric_hash_cmp);
   return NUMERIC_STS_SUCCESS;
 }
 
@@ -2104,13 +2104,20 @@ numeric_to_double (numeric_t n, double *pvalue)
 {
   char res[NUMERIC_MAX_STRING_BYTES];
   int rc;
-
+  res[0] = 0;
   rc = _numeric_to_string (n, res, sizeof (res), NUMERIC_MAX_PRECISION, 15);
 
   if (rc == NUMERIC_STS_SUCCESS)
     *pvalue = strtod (res, NULL);
   else
+    {
+      if ('I' == res[0])
+	*pvalue = 1e200 * 1e200;
+      else if ('-' == res[0] && 'I' == res[1])
+	*pvalue = -1e200 * 1e200;
+      else
     *pvalue = 0.0;
+    }
 
   return rc;
 }
@@ -2119,6 +2126,16 @@ numeric_to_double (numeric_t n, double *pvalue)
 /*
  *  Convert a number to a marshalled value
  */
+
+int
+numeric_dv_len (numeric_t n)
+{
+  dtp_t res[255];
+  numeric_to_dv (n, res, sizeof (res));
+  return 2 + res[1];
+}
+
+
 int
 numeric_to_dv (numeric_t n, dtp_t *res, size_t reslength)
 {

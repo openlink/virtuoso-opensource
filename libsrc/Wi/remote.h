@@ -164,5 +164,6 @@ extern void dbev_dsn_login (remote_ds_t * rds, client_connection_t * cli, caddr_
 #define RTS_ERROR_QI(rts, qi) \
   (rts->src_gen.src_query->qr_is_bunion_term ? NULL : (query_instance_t *) qi)
 
+void rts_vec_run_single (remote_table_source_t * rts, query_instance_t * qi, caddr_t * state);
 
 #endif /* _REMOTE_H */
