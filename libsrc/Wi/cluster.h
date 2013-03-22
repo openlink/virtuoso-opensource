@@ -377,7 +377,6 @@ struct cl_thread_s
   char 			clt_is_recursive;
   char 			clt_has_dfg_stat;	/* on returning, set this to indicate that there is a dfg stat inside the reply */
   int			clt_n_bytes; /* total bytes sent by rpc */
-  MTX_TS_T (clt_rec_bind_ts);
   it_cursor_t *		clt_save_itc;	/* allow reuse of itc between selects with same cond */
   int64			clt_n_affected;
   int64			clt_sample_total;
@@ -532,7 +531,6 @@ typedef struct cl_req_group_s
   dk_set_t		clrg_last;
   cucurbit_t *		clrg_cu;
   dk_set_t 		clrg_vec_clos;
-  MTX_TS_T (clrg_wait_ts);
 } cl_req_group_t;
 
 #define CLRG_RETRY_SINGLY 1 /* clibs can be retried individually */
@@ -922,10 +920,6 @@ struct cl_message_s
   cl_thread_t *		cm_clt;		/* for dbg, if reg'd cm running on a clt */
   cl_message_t **	cm_extra_cm;	/* when many consec cms together because of dfg follows, this is the array of non first cms */
   int cm_n_extra;
-  MTX_TS_T (cm_queue_ts);
-  MTX_TS_T (cm_dfg_detach_ts);
-  MTX_TS_T (cm_dfg_skip_ts);
-  MTX_TS_T (cm_dfg_reg_ts);
 
 #ifdef MTX_METER
   uint64 		cm_id;
