@@ -132,7 +132,6 @@ twcopy \
 txslt \
 trecov \
 tlubm \
-ttpch \
 rtest"
 
 QUICKTEST=1
