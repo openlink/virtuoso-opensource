@@ -2332,7 +2332,7 @@ create procedure "VAD"."DBA"."VAD_AUTO_UPGRADE" ()
 	   if (ver is null and pname = 'conductor')
 	     {
 		  isdav := 1;
-		ver := '';
+		ver := '0.0.0';
 	     }
 
 	   -- Only upgrade if package exists in database with older version
