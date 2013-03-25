@@ -365,6 +365,7 @@ extern int64 tn_card_cutoff;
 extern size_t cha_max_gb_bytes;
 
 extern int64 chash_space_avail;
+extern int chash_per_query_pct;
 extern int enable_chash_gb;
 extern long tc_slow_temp_insert;
 extern long tc_slow_temp_lookup;
@@ -1731,6 +1732,7 @@ stat_desc_t dbf_descs [] =
     {"dbf_col_del_leaf", (long *)&dbf_col_del_leaf, SD_INT32},
     {"enable_pogs_check", (long *)&enable_pogs_check, SD_INT32},
     {"chash_space_avail", (long *)&chash_space_avail},
+    {"chash_per_query_pct", (long *)&chash_per_query_pct, SD_INT32},
     {"enable_chash_gb", (long *)&enable_chash_gb, SD_INT32},
     {"enable_ksp_fast", (long *)&enable_ksp_fast, SD_INT32},
     {"enable_ac", (long *)&enable_ac, SD_INT32},

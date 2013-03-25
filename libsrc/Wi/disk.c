@@ -4620,9 +4620,9 @@ wi_init_globals (void)
   dck_mtx = mutex_allocate ();
 #endif
   if (!c_max_large_vec)
-    c_max_large_vec = main_bufs <= 2000000 ? main_bufs * 800 :  6000000000;
+    c_max_large_vec = main_bufs <= 2000000 ? MAX (100000000, main_bufs * 800) :  6000000000;
   if (!cha_max_gb_bytes)
-    cha_max_gb_bytes = c_max_large_vec / 10;
+    cha_max_gb_bytes = MAX (3000000, c_max_large_vec / 10);
   mem_cache_init ();
   db_schema_mtx = mutex_allocate ();
   it_rc = resource_allocate (20, NULL, NULL, NULL, 0); /* put a destructor */

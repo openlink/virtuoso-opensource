@@ -47,6 +47,7 @@ dk_mutex_t chash_rc_mtx;
 dk_mutex_t cha_alloc_mtx;
 int64 chash_bytes;		/* bytes used in chash arrays */
 int64 chash_space_avail = 1000000000;
+int chash_per_query_pct = 50;
 resource_t *chash_array_rc;
 int cha_stream_gb_flush_pct = 200;
 int chash_block_size;
@@ -5182,7 +5183,7 @@ chash_fill_input (fun_ref_node_t * fref, caddr_t * inst, caddr_t * state)
 	{
 	  int64 card;
 	  int64 size_est = cha_bytes_est (ha, &card);
-	  n_part = 1 + (size_est / (chash_space_avail / 3));
+	  n_part = 1 + (size_est / (chash_space_avail * chash_per_query_pct / 100));
 	  if (fref->fnr_no_hash_partition && n_part > 1)
 	    sqlr_new_error ("42000", "HPART",
 		"Hash join would have to be partitioned but occurs in a place where partitioning is not allowed, e.g. probe comes from inside a value/exists subq, oj derived table or such.  Either increase the memory for hash join or use table option (loop) for the table.  See which hash join is marked no partition in the plan to see which table this applies to");
