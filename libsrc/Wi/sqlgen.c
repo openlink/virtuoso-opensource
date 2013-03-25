@@ -292,10 +292,16 @@ sqlg_non_index_ins (df_elt_t * tb_dfe)
       if (DFE_GEN != cp->dfe_is_placed
 	  && sqlo_in_list (cp, NULL, NULL))
 	{
+	  sqlo_t * so = tb_dfe->dfe_sqlo;
+	  df_elt_t ** pred;
+	  so->so_place_code_forr_cond = 1;
+	  so->so_gen_pt = tb_dfe;
+	  pred = sqlo_pred_body (tb_dfe->dfe_sqlo, LOC_LOCAL, tb_dfe, cp);
+	  so->so_place_code_forr_cond = 0;
 	  if (tb_dfe->_.table.join_test)
-	    tb_dfe->_.table.join_test = (df_elt_t **) list (3, BOP_AND, sqlo_pred_body (tb_dfe->dfe_sqlo, LOC_LOCAL, tb_dfe, cp), tb_dfe->_.table.join_test);
+	    tb_dfe->_.table.join_test = (df_elt_t **) list (3, BOP_AND, pred, tb_dfe->_.table.join_test);
 	  else
-	    tb_dfe->_.table.join_test = sqlo_pred_body (tb_dfe->dfe_sqlo, LOC_LOCAL, tb_dfe, cp);
+	    tb_dfe->_.table.join_test = pred;
 	  cp->dfe_is_placed = DFE_GEN;
 	}
     }
