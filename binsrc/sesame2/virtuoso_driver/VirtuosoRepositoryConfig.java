@@ -156,28 +156,28 @@ public class VirtuosoRepositoryConfig extends RepositoryImplConfigBase {
 		Resource implNode = super.export(graph);
 
 		if (hostlist != null) {
-			graph.add(implNode, HOSTLIST, graph.getValueFactory().createLiteral(hostlist));
+			graph.add(implNode, HOSTLIST, graph.getValueFactory().createLiteral(hostlist), new Resource[0]);
 		}
 		if (username != null) {
-			graph.add(implNode, USERNAME, graph.getValueFactory().createLiteral(username));
+			graph.add(implNode, USERNAME, graph.getValueFactory().createLiteral(username), new Resource[0]);
 		}
 		if (password != null) {
-			graph.add(implNode, PASSWORD, graph.getValueFactory().createLiteral(password));
+			graph.add(implNode, PASSWORD, graph.getValueFactory().createLiteral(password), new Resource[0]);
 		}
 
 		if (defGraph != null) {
-			graph.add(implNode, DEFGRAPH, graph.getValueFactory().createLiteral(defGraph));
+			graph.add(implNode, DEFGRAPH, graph.getValueFactory().createLiteral(defGraph), new Resource[0]);
 		}
 
 		if (ruleSet != null && ruleSet.length() > 0 && !ruleSet.equals("null")) {
-			graph.add(implNode, RULESET, graph.getValueFactory().createLiteral(ruleSet));
+			graph.add(implNode, RULESET, graph.getValueFactory().createLiteral(ruleSet), new Resource[0]);
 		}
 
-		graph.add(implNode, USELAZYADD, graph.getValueFactory().createLiteral(new Boolean(useLazyAdd).toString()));
+		graph.add(implNode, USELAZYADD, graph.getValueFactory().createLiteral(new Boolean(useLazyAdd).toString()), new Resource[0]);
 
-		graph.add(implNode, ROUNDROBIN, graph.getValueFactory().createLiteral(new Boolean(roundRobin).toString()));
+		graph.add(implNode, ROUNDROBIN, graph.getValueFactory().createLiteral(new Boolean(roundRobin).toString()), new Resource[0]);
 
-		graph.add(implNode, FETCHSIZE, graph.getValueFactory().createLiteral(Integer.toString(fetchSize,10)));
+		graph.add(implNode, FETCHSIZE, graph.getValueFactory().createLiteral(Integer.toString(fetchSize,10)), new Resource[0]);
 
 		return implNode;
 	}
