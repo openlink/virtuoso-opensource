@@ -629,7 +629,7 @@ bif_file_to_string (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (bytes > FS_MAX_STRING)
     {
       err = srv_make_new_error ("39000", "FA008",
-        "File '%.1000s' too long, cannot return string content %ld chars long", fname_cvt, (long)bytes );
+        "File '%.1000s' is too large (%ld bytes), cannot return string content larger than %ld bytes", fname_cvt, (long)bytes, (long)FS_MAX_STRING );
       goto signal_error;
     }
 
