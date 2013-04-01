@@ -48,7 +48,7 @@
 caddr_t
 bif_date_arg (caddr_t * qst, state_slot_t ** args, int nth, char *func)
 {
-  caddr_t arg = bif_arg (qst, args, nth, func);
+  caddr_t arg = bif_arg_unrdf (qst, args, nth, func);
   dtp_t dtp = DV_TYPE_OF (arg);
   if (dtp != DV_DATETIME && dtp != DV_BIN)
     sqlr_new_error ("22007", "DT001",
