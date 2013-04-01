@@ -63,6 +63,7 @@ public class VirtPrefixMapping extends PrefixMappingImpl {
 	      if (uri != null && uri != null)
 	        super.setNsPrefix(prefix, uri);
 	    }
+	    rs.close();
 	  } catch (Exception e) {
 	     throw new JenaException(e);
 	  } 
@@ -77,6 +78,7 @@ public class VirtPrefixMapping extends PrefixMappingImpl {
 	    PreparedStatement ps = m_graph.prepareStatement(query);
 	    ps.setString(1, prefix);
 	    ps.execute();
+	    ps.close();
 	  } catch (Exception e) {
 	     throw new JenaException(e);
 	  } 
@@ -103,6 +105,7 @@ public class VirtPrefixMapping extends PrefixMappingImpl {
 	    ps.setString(1, prefix);
 	    ps.setString(2, uri);
 	    ps.execute();
+	    ps.close();
 	  } catch (Exception e) {
 	     throw new JenaException(e.toString());
 	  } 

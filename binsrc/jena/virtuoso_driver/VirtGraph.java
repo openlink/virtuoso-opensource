@@ -450,6 +450,7 @@ public class VirtGraph extends GraphBase
         bindObject(ps, 4, t.getObject());
 
 	ps.execute();
+	ps.close();
       } catch(Exception e) {
         throw new AddDeniedException(e.toString());
       }
@@ -468,6 +469,7 @@ public class VirtGraph extends GraphBase
         bindObject(ps, 4, t.getObject());
 
 	ps.execute();
+	ps.close();
       } catch(Exception e) {
         throw new DeleteDeniedException(e.toString());
       }
@@ -640,6 +642,7 @@ public class VirtGraph extends GraphBase
       try {
         java.sql.Statement stmt = createStatement();
         stmt.execute(exec_text);
+        stmt.close();
       }	catch(Exception e) {
         throw new JenaException(e);
       }
@@ -679,6 +682,8 @@ public class VirtGraph extends GraphBase
           ps.executeBatch();
           ps.clearBatch();
         }
+        ps.close();
+
       }	catch(Exception e) {
         throw new JenaException(e);
       }
@@ -734,6 +739,7 @@ public class VirtGraph extends GraphBase
           bindObject(ps, 4, nO);
 
           ps.execute();
+          ps.close();
 
         } else  {
 
@@ -752,6 +758,7 @@ public class VirtGraph extends GraphBase
 
           java.sql.Statement stmt = createStatement();
           stmt.execute(query);
+          stmt.close();
         }
       } catch(Exception e) {
         throw new DeleteDeniedException(e.toString());
@@ -769,6 +776,7 @@ public class VirtGraph extends GraphBase
         java.sql.PreparedStatement ps = prepareStatement(query);
         ps.setString(1, name);
         ps.execute();
+        ps.close();
       }	catch(Exception e) {
         throw new JenaException(e);
       }
