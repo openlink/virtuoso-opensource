@@ -7579,6 +7579,12 @@ create function DB.DBA.SPARUL_COPYMOVEADD_IMPL (in opname varchar, in src_g_iri 
   tgt_g_iid := iri_to_id (tgt_g_iri);
   __rgs_assert_cbk (tgt_g_iri, uid, 2, 'SPARQL 1.1 ' || opname);
   __rgs_assert_cbk (src_g_iri, uid, case (opname) when 'MOVE' then 2 else 1 end, 'SPARQL 1.1 ' || opname);
+  if (src_g_iid = tgt_g_iid)
+    {
+      if (compose_report)
+        return sprintf ('%s <%s> to itself -- nothing to do', opname, src_g_iri);
+      return 1;
+    }
   src_repl := __rdf_graph_is_in_enabled_repl (src_g_iid);
   tgt_repl := __rdf_graph_is_in_enabled_repl (tgt_g_iid);
   if (src_repl and not tgt_repl)
