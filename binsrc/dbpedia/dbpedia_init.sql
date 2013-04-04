@@ -288,7 +288,7 @@ create procedure DB.DBA.DBP_LINK_HDR (in in_path varchar)
       p := replace (p, '/data/', '/page/');
       alt := alt || sprintf ('<http://%s%s>; rel="alternate"; type="text/html"; title="XHTML+RDFa", ', host, p);
       p := replace (p, '/page/', '/resource/');
-      if (in_path not like '/data/%')
+      if (in_path not like '/resource/%')
 	{
 	  alt := alt || sprintf ('<http://%s%s>; rel="http://xmlns.com/foaf/0.1/primaryTopic", ', host, p);
 	  alt := alt || sprintf ('<http://%s%s>; rev="describedby", ', host, p);
