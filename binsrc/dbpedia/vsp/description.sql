@@ -63,6 +63,7 @@ create procedure dbp_ldd_set_ns_decl ()
     'http://sw.opencyc.org/2008/06/10/concept/', 'opencyc',
     'http://mpii.de/yago/resource/', 'yago-res',
     'http://rdf.freebase.com/ns/', 'freebase',
+    'http://www.w3.org/2007/05/powder-s#', 'wdrs',
     'http://dbpedia.org/ontology/', 'dbpedia-owl');
    l := length (arr);
    for (i := 0; i < l; i := i + 2)
