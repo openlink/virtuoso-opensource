@@ -4002,7 +4002,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON_LD (inout triples any, inout ses any
   rowvector_subj_sort (triples, 1, 1);
   rowvector_subj_sort (triples, 0, 1);
   DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
-  http ('{ "@id": [\n    ', ses);
+  http ('{ "@graph": [\n    ', ses);
   status := 0;
   for (tctr := 0; tctr < tcount; tctr := tctr + 1)
     {
