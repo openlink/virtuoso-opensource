@@ -3413,7 +3413,7 @@ spar_make_ppath (sparp_t *sparp, char subtype, SPART *part1, SPART *part2, ptrlo
       part2subt = part2->_.ppath.subtype;
     }
   else
-    part1subt = 1; /* an intentionally bad value is set */
+    part2subt = 1; /* an intentionally bad value is set */
   switch (subtype)
     {
     case '^': return spar_inverse_ppath (sparp, part1);
