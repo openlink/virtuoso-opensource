@@ -3756,7 +3756,14 @@ sparp_extract_filters_replaced_by_equiv (sparp_t *sparp, sparp_equiv_t *eq, dk_s
         sparp_make_builtin_call (sparp, DATATYPE_L, (SPART **)t_list (1, spar_make_variable (sparp, sample_varname))),
         eq->e_rvr.rvrDatatype ) );
   if (repl_bits & SPART_VARR_FIXED)
-    t_set_push (filts_from_equiv_ret, spartlist (sparp, 3, BOP_EQ, spar_make_variable (sparp, sample_varname), eq->e_rvr.rvrFixedValue));
+    {
+      SPART *fval;
+      if (eq->e_rvr.rvrRestrictions & SPART_VARR_IS_REF)
+        fval = spartlist (sparp, 2, SPAR_QNAME, eq->e_rvr.rvrFixedValue);
+      else
+        fval = spartlist (sparp, 4, SPAR_LIT, eq->e_rvr.rvrFixedValue, eq->e_rvr.rvrDatatype, eq->e_rvr.rvrLanguage);
+      t_set_push (filts_from_equiv_ret, spartlist (sparp, 3, BOP_EQ, spar_make_variable (sparp, sample_varname), fval));
+    }
   if (repl_bits & SPART_VARR_NOT_NULL)
     t_set_push (filts_from_equiv_ret, sparp_make_builtin_call (sparp, BOUND_L, (SPART **)t_list (1, spar_make_variable (sparp, sample_varname))));
   if (repl_bits & SPART_VARR_ALWAYS_NULL)
