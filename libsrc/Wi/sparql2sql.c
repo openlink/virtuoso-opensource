@@ -4537,12 +4537,15 @@ sparp_refresh_triple_cases (sparp_t *sparp, SPART *triple)
       triple->_.triple.native_formats[field_ctr] = field_valmode;
       if (SPAR_IS_BLANK_OR_VAR (field_expn))
         {
-          sparp_rvr_tighten (sparp, &(field_expn->_.var.rvr), &acc_rvr, ~(SPART_VARR_EXTERNAL | SPART_VARR_GLOBAL));
+          int restr_of_col_mask = ~(SPART_VARR_EXTERNAL | SPART_VARR_GLOBAL);
+          if (OPTIONAL_L == triple->_.triple.subtype)
+            restr_of_col_mask &= ~SPART_VARR_NOT_NULL;
+          sparp_rvr_tighten (sparp, &(field_expn->_.var.rvr), &acc_rvr, restr_of_col_mask);
 /* var.restr_of_col is set with "=", not "|=" or "&=" because it may come from only one qmv or a union of qmvs.
 No "history" or "derived properties" here.
 The specific purpose of the field is a differentiation of what should be tested somewhere in the resulting SQL query
 and what is a natural property of the data source. */
-          field_expn->_.var.restr_of_col = acc_rvr.rvrRestrictions & ~(SPART_VARR_EXTERNAL | SPART_VARR_GLOBAL);
+          field_expn->_.var.restr_of_col = acc_rvr.rvrRestrictions & restr_of_col_mask;
         }
     }
   triple->_.triple.tc_list = new_cases;

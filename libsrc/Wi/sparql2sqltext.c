@@ -6261,9 +6261,23 @@ ssg_print_equivalences (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, dk_set
         }
     }
   /* A special case exists: if the equiv replaces NOT NULL filter then it should be checked for the output of every OPTIONAL subq. */
-  if ((SPART_VARR_NOT_NULL & restrs_not_filtered_in_subqs) && (UNION_L != eq->e_gp->_.gp.subtype) && (0 == eq->e_gspo_uses))
+  if ((SPART_VARR_NOT_NULL & restrs_not_filtered_in_subqs) && (UNION_L != eq->e_gp->_.gp.subtype))
     {
       int sub_ctr;
+      if (0 != eq->e_gspo_uses)
+        {
+          int varctr;
+          for (varctr = eq->e_var_count; varctr--; /* no step */)
+            {
+              SPART *var = eq->e_vars[varctr];
+              SPART *triple;
+              if (NULL == var->_.var.tabid)
+                continue;
+              triple = sparp_find_triple_of_var_or_retval (ssg->ssg_sparp, eq->e_gp, var, 1);
+              if (OPTIONAL_L != triple->_.triple.subtype)
+                goto eq_has_join_with_nonoptional_triple; /* see below */
+            }
+        }
       DO_BOX_FAST (ptrlong, sub_eq_idx, sub_ctr, eq->e_subvalue_idxs)
         {
           sparp_equiv_t *sub_eq = SPARP_EQUIV (ssg->ssg_sparp, sub_eq_idx);
@@ -6283,6 +6297,8 @@ ssg_print_equivalences (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, dk_set
             }
         }
       END_DO_BOX_FAST;
+eq_has_join_with_nonoptional_triple:
+      ;
     }
 /* After all plain variables we should print equalities of "ghost" variable names with globals and constants.
 "ghost" variable names do not correspond to any true variables that survived all optimizations.
