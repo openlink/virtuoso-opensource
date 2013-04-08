@@ -10685,7 +10685,7 @@ create function DB.DBA.RDF_QM_GC_MAPPING_SUBTREE (in mapname any, in gc_flags in
       select ?subm where {
           graph <http://www.openlinksw.com/schemas/virtrdf#> {
             `iri(?:mapname)` virtrdf:qmUserSubMaps ?submlist .
-                    ?submlist ?p ?subm } } ) as s1 );
+                    ?submlist ?p ?subm . filter (?p != rdf:type) . ?subm a [] } } ) as s1 );
   gc_res := DB.DBA.RDF_QM_GC_SUBTREE (mapname, gc_flags);
   if (gc_res is not null)
     return gc_res;
@@ -12158,7 +12158,7 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
   for (sparql define input:storage ""
     prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
     select ?atable where { graph <http://www.openlinksw.com/schemas/virtrdf#> {
-            `iri(?:qmvatablesid)` ?p ?atable } } ) do {
+            `iri(?:qmvatablesid)` ?p ?atable . filter (?p != rdf:type) } } ) do {
       DB.DBA.RDF_QM_GC_SUBTREE ("atable");
     }
   sparql define input:storage ""
@@ -12171,7 +12171,7 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
   for (sparql define input:storage ""
     prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
     select ?col where { graph <http://www.openlinksw.com/schemas/virtrdf#> {
-            `iri(?:qmvcolsid)` ?p ?col } } ) do {
+            `iri(?:qmvcolsid)` ?p ?col . filter (?p != rdf:type) } } ) do {
       DB.DBA.RDF_QM_GC_SUBTREE ("col");
     }
   sparql define input:storage ""
