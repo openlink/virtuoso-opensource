@@ -2278,10 +2278,10 @@ static void
 db_lck_write_pid (int fd)
 {
   char pid_arr[50];
-  size_t len;
+  int len;
 
   snprintf (pid_arr, sizeof (pid_arr), "VIRT_PID=%lu\n", (unsigned long) getpid ());
-  len = strlen (pid_arr);
+  len = (int) strlen (pid_arr);
   len = len > sizeof (pid_arr) ? sizeof (pid_arr) : len;
 
   if (len != write (fd, pid_arr, len))
