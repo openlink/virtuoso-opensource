@@ -143,7 +143,7 @@ typedef struct sparp_equiv_s
     caddr_t e_front_varname;	/*!< it may be ambiguous how to name a result column of an equiv if the equiv is printed as SELECT, this name is treated as preferable */
     SPART **e_vars;		/*!< Array of all equivalent variables, including different occurrences of same name in different triples */
     ptrlong e_var_count;	/*!< Number of used items in e_vars. This can be zero if equiv passes top-level var from alias to alias without local uses */
-    ptrlong e_gspo_uses;	/*!< Number of all local uses in members (+1 for each in G, P, S or O in triples) */
+    ptrlong e_gspo_uses;	/*!< Number of all local uses in members (+1 for each in G, P, S or O in triples). Note that nonzero e_gspo_uses does not imply SPART_VARR_NOT_NULL if some members has triple.subtype == OPTIONAL_L */
     ptrlong e_nested_bindings;	/*!< Number of all nested uses in members (+1 for each in G, P, S or O in triples, +1 for each subquery use) */
     ptrlong e_const_reads;	/*!< Number of constant-read uses in filters and in 'graph' of members */
     ptrlong e_optional_reads;	/*!< Number of uses in scalar subqueries of filters; both local and member filter are counted */
@@ -630,8 +630,10 @@ extern SPART *sparp_gp_detach_filter (sparp_t *sparp, SPART *parent_gp, int filt
 If \c touched_equivs_ptr is not NULL then the list of edited equivs is composed.
 Removal of filters does not alter restrictions of equivalence classes derived from filters, because the operation should be used as
 a part of safe rewriting that preserves the logic.
-The function returns the list of detached filters. */
-extern SPART **sparp_gp_detach_all_filters (sparp_t *sparp, SPART *parent_gp, sparp_equiv_t ***touched_equivs_ptr);
+If \c extract_filters_replaced_by_equivs is true and \c parent_gp contains equivs with nonzero e_replaces_filters
+then the replaced filters become expressions again and added to the resulting list.
+\returns the list of detached filters. */
+extern SPART **sparp_gp_detach_all_filters (sparp_t *sparp, SPART *parent_gp, int extract_filters_replaced_by_equivs, sparp_equiv_t ***touched_equivs_ptr);
 
 /*! This adds \c new_filter into list of filters of \c parent_gp, the insert position is specified by \c insert_before_idx
 If \c touched_equivs_ptr is not NULL then the list of edited equivs is composed.

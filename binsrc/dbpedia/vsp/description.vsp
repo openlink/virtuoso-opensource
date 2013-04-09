@@ -332,10 +332,11 @@
       <div id="ft_t">
         Browse using:
 	<a href="http://linkeddata.uriburner.com/ode/?uri=<?vsp http_url (page_resource_uri); ?>">OpenLink Data Explorer</a> |
-        <a href="http://dataviewer.zitgist.com/?uri=<?vsp http_url (page_resource_uri); ?>">Zitgist Data Viewer</a> |
+	<a href="/describe/?uri=<?vsp http_url (page_resource_uri); ?>">OpenLink Faceted Browser</a>
+        <!--a href="http://dataviewer.zitgist.com/?uri=<?vsp http_url (page_resource_uri); ?>">Zitgist Data Viewer</a> |
         <a href="http://beckr.org/marbles?uri=<?vsp http_url (page_resource_uri); ?>">Marbles</a> |
         <a href="http://www4.wiwiss.fu-berlin.de/rdf_browser/?browse_uri=<?vsp http_url (page_resource_uri); ?>">DISCO</a> |
-        <a href="http://dig.csail.mit.edu/2005/ajar/release/tabulator/0.8/tab.html?uri=<?vsp http_url (page_resource_uri); ?>" >Tabulator</a>
+        <a href="http://dig.csail.mit.edu/2005/ajar/release/tabulator/0.8/tab.html?uri=<?vsp http_url (page_resource_uri); ?>" >Tabulator</a-->
         &nbsp; &nbsp; Raw Data in:
 	<?vsp if (__proc_exists ('DB.DBA.RDF_TRIPLES_TO_CXML') is not null) { ?>
 	<a href="<?= cxml_link ?>">CXML</a> |
@@ -368,6 +369,7 @@
       </div> <!-- #ft_b -->
       <div id="ft_ccbysa">
 	<?vsp dbp_wikipedia_cc_by_sa(_S, _G); ?>
+	<br /><?vsp dbp_virt_info (); ?>
       </div> <!-- #ft_ccbysa -->
     </div> <!-- #footer -->
     <!--script type="text/javascript">

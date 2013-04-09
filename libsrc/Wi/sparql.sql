@@ -4027,7 +4027,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON_LD (inout triples any, inout ses any
   rowvector_subj_sort (triples, 1, 1);
   rowvector_subj_sort (triples, 0, 1);
   DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
-  http ('{ "@id": [\n    ', ses);
+  http ('{ "@graph": [\n    ', ses);
   status := 0;
   for (tctr := 0; tctr < tcount; tctr := tctr + 1)
     {
@@ -7686,6 +7686,12 @@ create function DB.DBA.SPARUL_COPYMOVEADD_IMPL (in opname varchar, in src_g_iri 
   tgt_g_iid := iri_to_id (tgt_g_iri);
   __rgs_assert_cbk (tgt_g_iri, uid, 2, 'SPARQL 1.1 ' || opname);
   __rgs_assert_cbk (src_g_iri, uid, case (opname) when 'MOVE' then 2 else 1 end, 'SPARQL 1.1 ' || opname);
+  if (src_g_iid = tgt_g_iid)
+    {
+      if (compose_report)
+        return sprintf ('%s <%s> to itself -- nothing to do', opname, src_g_iri);
+      return 1;
+    }
   src_repl := __rdf_graph_is_in_enabled_repl (src_g_iid);
   tgt_repl := __rdf_graph_is_in_enabled_repl (tgt_g_iid);
   if (src_repl and not tgt_repl)
@@ -11149,7 +11155,7 @@ create function DB.DBA.RDF_QM_GC_MAPPING_SUBTREE (in mapname any, in gc_flags in
       select ?subm where {
           graph <http://www.openlinksw.com/schemas/virtrdf#> {
             `iri(?:mapname)` virtrdf:qmUserSubMaps ?submlist .
-                    ?submlist ?p ?subm } } ) as s1 );
+                    ?submlist ?p ?subm . filter (?p != rdf:type) . ?subm a [] } } ) as s1 );
   gc_res := DB.DBA.RDF_QM_GC_SUBTREE (mapname, gc_flags);
   if (gc_res is not null)
     return gc_res;
@@ -12622,7 +12628,7 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
   for (sparql define input:storage ""
     prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
     select ?atable where { graph <http://www.openlinksw.com/schemas/virtrdf#> {
-            `iri(?:qmvatablesid)` ?p ?atable } } ) do {
+            `iri(?:qmvatablesid)` ?p ?atable . filter (?p != rdf:type) } } ) do {
       DB.DBA.RDF_QM_GC_SUBTREE ("atable");
     }
   sparql define input:storage ""
@@ -12635,7 +12641,7 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
   for (sparql define input:storage ""
     prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
     select ?col where { graph <http://www.openlinksw.com/schemas/virtrdf#> {
-            `iri(?:qmvcolsid)` ?p ?col } } ) do {
+            `iri(?:qmvcolsid)` ?p ?col . filter (?p != rdf:type) } } ) do {
       DB.DBA.RDF_QM_GC_SUBTREE ("col");
     }
   sparql define input:storage ""

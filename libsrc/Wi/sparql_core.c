@@ -910,7 +910,7 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
         }
       if (!strcmp (param, "input:with-graph-uri"))
         {
-          SPART *iri = ('\0' == value[0]) ? uname_virtrdf_ns_uri_DefaultSparul11Target : t_box_dv_uname_string (value);
+          caddr_t iri = ('\0' == value[0]) ? uname_virtrdf_ns_uri_DefaultSparul11Target : t_box_dv_uname_string (value);
           SPART *val = spartlist (sparp, 2, SPAR_QNAME, iri);
           sparp_make_and_push_new_graph_source (sparp, SPART_GRAPH_FROM, val, NULL, SPARP_SSRC_FROZEN_BY_PROTOCOL);
           sparp->sparp_env->spare_src.ssrc_graph_set_by_with = val;
@@ -921,7 +921,7 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
         }
       if (!strcmp (param, "input:with-fallback-graph-uri"))
         {
-          SPART *iri = ('\0' == value[0]) ? uname_virtrdf_ns_uri_DefaultSparul11Target : t_box_dv_uname_string (value);
+          caddr_t iri = ('\0' == value[0]) ? uname_virtrdf_ns_uri_DefaultSparul11Target : t_box_dv_uname_string (value);
           SPART *val = spartlist (sparp, 2, SPAR_QNAME, iri);
           sparp->sparp_env->spare_src.ssrc_graph_set_by_fallback_with = val;
           return;
@@ -3423,7 +3423,7 @@ spar_make_ppath (sparp_t *sparp, char subtype, SPART *part1, SPART *part2, ptrlo
       part2subt = part2->_.ppath.subtype;
     }
   else
-    part1subt = 1; /* an intentionally bad value is set */
+    part2subt = 1; /* an intentionally bad value is set */
   switch (subtype)
     {
     case '^': return spar_inverse_ppath (sparp, part1);
@@ -4580,7 +4580,7 @@ spar_make_sparul_copymoveadd (sparp_t *sparp, ptrlong opcode, SPART *from_graph_
     }
   if ((DEFAULT_L == (ptrlong)(from_graph_precode)) || (DEFAULT_L == (ptrlong)(to_graph_precode)))
     {
-      SPART *single_default;
+      SPART *single_default = NULL;
       dk_set_t graphs = sparp->sparp_env->spare_src.ssrc_default_graphs;
       if ((NULL == graphs) || (SPART_GRAPH_FROM != ((SPART *)(graphs->data))->_.graph.subtype))
         {

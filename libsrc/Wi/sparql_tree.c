@@ -3738,8 +3738,50 @@ sparp_gp_detach_filter (sparp_t *sparp, SPART *parent_gp, int filter_idx, sparp_
   return filt;
 }
 
+void
+sparp_extract_filters_replaced_by_equiv (sparp_t *sparp, sparp_equiv_t *eq, dk_set_t *filts_from_equiv_ret)
+{
+  int repl_bits = eq->e_replaces_filter;
+  caddr_t sample_varname = eq->e_varnames[0];
+  if (repl_bits & SPART_VARR_IS_REF)
+    t_set_push (filts_from_equiv_ret, sparp_make_builtin_call (sparp, SPAR_BIF_ISREF, (SPART **)t_list (1, spar_make_variable (sparp, sample_varname))));
+  if (repl_bits & SPART_VARR_IS_IRI)
+    t_set_push (filts_from_equiv_ret, sparp_make_builtin_call (sparp, SPAR_BIF_ISIRI, (SPART **)t_list (1, spar_make_variable (sparp, sample_varname))));
+  if (repl_bits & SPART_VARR_IS_BLANK)
+    t_set_push (filts_from_equiv_ret, sparp_make_builtin_call (sparp, SPAR_BIF_ISBLANK, (SPART **)t_list (1, spar_make_variable (sparp, sample_varname))));
+  if (repl_bits & SPART_VARR_IS_LIT)
+    t_set_push (filts_from_equiv_ret, sparp_make_builtin_call (sparp, SPAR_BIF_ISLITERAL, (SPART **)t_list (1, spar_make_variable (sparp, sample_varname))));
+  if (repl_bits & SPART_VARR_TYPED)
+    t_set_push (filts_from_equiv_ret, spartlist (sparp, 3, BOP_EQ,
+        sparp_make_builtin_call (sparp, DATATYPE_L, (SPART **)t_list (1, spar_make_variable (sparp, sample_varname))),
+        eq->e_rvr.rvrDatatype ) );
+  if (repl_bits & SPART_VARR_FIXED)
+    {
+      SPART *fval;
+      if (eq->e_rvr.rvrRestrictions & SPART_VARR_IS_REF)
+        fval = spartlist (sparp, 2, SPAR_QNAME, eq->e_rvr.rvrFixedValue);
+      else
+        fval = spartlist (sparp, 4, SPAR_LIT, eq->e_rvr.rvrFixedValue, eq->e_rvr.rvrDatatype, eq->e_rvr.rvrLanguage);
+      t_set_push (filts_from_equiv_ret, spartlist (sparp, 3, BOP_EQ, spar_make_variable (sparp, sample_varname), fval));
+    }
+  if (repl_bits & SPART_VARR_NOT_NULL)
+    t_set_push (filts_from_equiv_ret, sparp_make_builtin_call (sparp, BOUND_L, (SPART **)t_list (1, spar_make_variable (sparp, sample_varname))));
+  if (repl_bits & SPART_VARR_ALWAYS_NULL)
+    t_set_push (filts_from_equiv_ret, spartlist (sparp, 3, BOP_NOT,
+        sparp_make_builtin_call (sparp, BOUND_L, (SPART **)t_list (1, spar_make_variable (sparp, sample_varname))),
+        NULL ) );
+  if (repl_bits & SPART_VARR_EQ_VAR)
+    {
+      int varname_ctr, varname_count = BOX_ELEMENTS (eq->e_varnames);
+      for (varname_ctr = 1; varname_ctr < varname_count; varname_ctr++)
+        t_set_push (filts_from_equiv_ret, spartlist (sparp, 3, BOP_EQ,
+            spar_make_variable (sparp, sample_varname),
+            spar_make_variable (sparp, eq->e_varnames[varname_ctr]) ) );
+    }
+}
+
 SPART **
-sparp_gp_detach_all_filters (sparp_t *sparp, SPART *parent_gp, sparp_equiv_t ***touched_equivs_ptr)
+sparp_gp_detach_all_filters (sparp_t *sparp, SPART *parent_gp, int extract_filters_replaced_by_equivs, sparp_equiv_t ***touched_equivs_ptr)
 {
   sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
   SPART **filters = parent_gp->_.gp.filters;
@@ -3763,6 +3805,19 @@ sparp_gp_detach_all_filters (sparp_t *sparp, SPART *parent_gp, sparp_equiv_t ***
     touched_equivs_ptr[0] = (sparp_equiv_t **)(t_revlist_to_array (touched_equivs_set));
   parent_gp->_.gp.filters = (SPART **)t_list (0);
   sparp_equiv_audit_all (sparp, 0);
+  if (extract_filters_replaced_by_equivs)
+    {
+      int eq_inx;
+      dk_set_t filts_from_equivs = NULL;
+      SPARP_FOREACH_GP_EQUIV (sparp, parent_gp, eq_inx, eq)
+        {
+          if (eq->e_replaces_filter)
+            sparp_extract_filters_replaced_by_equiv (sparp, eq, &filts_from_equivs);
+        }
+      END_SPARP_FOREACH_GP_EQUIV;
+      if (NULL != filts_from_equivs)
+        filters = (SPART **)t_list_concat ((caddr_t)filters, (caddr_t)t_revlist_to_array (filts_from_equivs));
+    }
   return filters;
 }
 

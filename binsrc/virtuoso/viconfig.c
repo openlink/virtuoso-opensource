@@ -775,6 +775,7 @@ cfg_setup (void)
 #endif
 
   if (cfg_getlong (pconfig, section, "ServerThreads", &c_server_threads) == -1)
+    if (cfg_getlong (pconfig, section, "MaxClientConnections", &c_server_threads) == -1)
     c_server_threads = 10;
 
   if (cfg_getlong (pconfig, section, "CheckpointInterval", &c_checkpoint_interval) == -1)
@@ -1303,6 +1304,7 @@ cfg_setup (void)
 #endif
 
   if (cfg_getlong (pconfig, section, "ServerThreads", &c_http_threads) == -1)
+    if (cfg_getlong (pconfig, section, "MaxClientConnections", &c_http_threads) == -1)
     c_http_threads = 0;
 
   if (c_http_threads < 1 && c_http_port)

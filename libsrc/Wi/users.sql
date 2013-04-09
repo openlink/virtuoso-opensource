@@ -889,15 +889,15 @@ __USER_LOAD_KEY_BY_TYPE (inout key_name varchar, inout key_value any, inout key_
   if (key_type = '3DES')
     {
       -- the format is always DER, b64 encoded
-      xenc_key_3DES_read (key_name, key_value, fmt, key_passwd);
+      xenc_key_3DES_read (key_name, key_value);
     }
   else if (key_type = 'DSA')
     {
-      xenc_key_DSA_read (key_name, key_value, fmt, key_passwd);
+      xenc_key_DSA_read (key_name, key_value);
     }
   else if (key_type = 'RSA')
     {
-      xenc_key_RSA_read (key_name, key_value, fmt, key_passwd);
+      xenc_key_RSA_read (key_name, key_value);
     }
   else if (0 and key_type = 'AES') -- TODO: implement deserialization
     {

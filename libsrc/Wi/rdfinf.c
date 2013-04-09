@@ -1708,8 +1708,8 @@ rdf_inf_init ()
   bif_define ("rdf_inf_dump", bif_rdf_inf_dump);
   bif_define ("tn_cache_clear", bif_tn_cache_clear);
   dk_mem_hooks (DV_RI_ITERATOR, box_non_copiable, rit_free, 0);
-  sas_init ();
   empty_ric = ric_allocate (box_dv_short_string ("__ empty"));
+  sas_init ();
 }
 
 

@@ -80,8 +80,6 @@ public class VirtuosoQueryExecution  implements QueryExecution
 
     public ResultSet execSelect()
     {
-      ResultSet ret = null;
-
       try {
         stmt = graph.createStatement();
         java.sql.ResultSet rs = stmt.executeQuery(getQuery());
@@ -139,6 +137,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
           if (st != null)
             model.add(st);
         }	
+        rs.close();
         stmt.close();
         stmt = null;
 
@@ -171,6 +170,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
           if (st != null)
             model.add(st);
         }	
+        rs.close();
         stmt.close();
         stmt = null;
 
@@ -195,6 +195,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
           if (rs.getInt(1) == 1)
             ret = true;
         }	
+        rs.close();
         stmt.close();
         stmt = null;
 
@@ -277,7 +278,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
     private String getQuery()
     {
 	StringBuffer sb = new StringBuffer("sparql\n ");
-
+	
 	if (graph.getRuleSet()!= null)
           sb.append(" define input:inference '"+graph.getRuleSet()+"'\n");
 
@@ -444,5 +445,4 @@ public class VirtuosoQueryExecution  implements QueryExecution
 
 
     }
-
 }
