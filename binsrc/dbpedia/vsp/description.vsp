@@ -369,6 +369,7 @@
       </div> <!-- #ft_b -->
       <div id="ft_ccbysa">
 	<?vsp dbp_wikipedia_cc_by_sa(_S, _G); ?>
+	<br /><?vsp dbp_virt_info (); ?>
       </div> <!-- #ft_ccbysa -->
     </div> <!-- #footer -->
     <!--script type="text/javascript">
