@@ -240,7 +240,7 @@ create procedure DB.DBA.DBP_LINK_HDR (in in_path varchar)
 --  dbg_obj_print ('lines: ', lines);
   loc := ''; alt := ''; exp := '';
   host := http_request_header(lines, 'Host', null, '');
-  if (regexp_match ('/data/([a-z_\\-]*/)?(.*)\\.(nt|n3|rdf|ttl|jrdf|jsld|xml|atom|json|jsod|ntriples)', in_path) is null and in_path like '/data/%')
+  if (regexp_match ('/data/([a-z_\\-]*/)?(.*)\\.(nt|n3|rdf|ttl|jrdf|jsonld|xml|atom|json|jsod|ntriples)', in_path) is null and in_path like '/data/%')
     {
       declare tmp any;
       accept := http_request_header(lines, 'Accept', null, 'application/rdf+xml');
@@ -270,21 +270,21 @@ create procedure DB.DBA.DBP_LINK_HDR (in in_path varchar)
 	  s := ss[0];
 	  if (in_path not like '/data/%.'||s)
 	    {
-	      p := regexp_replace (in_path, '\\.(nt|n3|rdf|ttl|jrdf|xml|json|atom|jsod|jsld|ntriples)\x24', '.'||s);
+	      p := regexp_replace (in_path, '\\.(nt|n3|rdf|ttl|jrdf|xml|json|atom|jsod|jsonld|ntriples)\x24', '.'||s);
 	      alt := alt || sprintf ('<http://%s%s>; rel="alternate"; type="%s"; title="Structured Descriptor Document (%s format)", ', host, p, ss[2], ss[1]);
 	    }
 	}
       if (in_path not like '/data/%.atom')
 	{
-	  p := regexp_replace (in_path, '\\.(nt|n3|rdf|ttl|jrdf|xml|json|jsld|atom)\x24', '.atom');
+	  p := regexp_replace (in_path, '\\.(nt|n3|rdf|ttl|jrdf|xml|json|jsonld|atom)\x24', '.atom');
 	  alt := alt || sprintf ('<http://%s%s>; rel="alternate"; type="application/atom+xml"; title="OData (Atom+Feed format)", ', host, p);
 	}
       if (in_path not like '/data/%.jsod')
 	{
-	  p := regexp_replace (in_path, '\\.(nt|n3|rdf|ttl|jrdf|xml|json|jsld|atom)\x24', '.jsod');
+	  p := regexp_replace (in_path, '\\.(nt|n3|rdf|ttl|jrdf|xml|json|jsonld|atom)\x24', '.jsod');
 	  alt := alt || sprintf ('<http://%s%s>; rel="alternate"; type="application/odata+json"; title="OData (JSON format)", ', host, p);
 	}
-      p := regexp_replace (in_path, '\\.(n3|nt|rdf|ttl|jrdf|xml|json|jsld|atom)\x24', '');
+      p := regexp_replace (in_path, '\\.(n3|nt|rdf|ttl|jrdf|xml|json|jsonld|atom)\x24', '');
       p := replace (p, '/data/', '/page/');
       alt := alt || sprintf ('<http://%s%s>; rel="alternate"; type="text/html"; title="XHTML+RDFa", ', host, p);
       p := replace (p, '/page/', '/resource/');

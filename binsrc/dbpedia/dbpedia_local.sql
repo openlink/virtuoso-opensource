@@ -269,7 +269,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'dbpl_data_rule_10', 1, '/data/([a-z_\\-]*
 '/sparql?%s&query=define+sql:describe-mode+"DBPEDIA_ODATA"+DESCRIBE+%%3Chttp%%3A%%2F%%2Fdbpedia.org%%2Fresource%%2F%U%%3E&output=text%%2Fplain',
 vector ('gr', 'par_1'), 'DB.DBA.DBP_GRAPH_PARAM1', NULL, 2, null, '^{sql:DB.DBA.DBP_LINK_HDR}^');
 
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'dbpl_data_rule_11', 1, '/data/([a-z_\\-]*/)?(.*)\\.(jsld)', vector ('gr', 'par_1', 'f'), 1,
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'dbpl_data_rule_11', 1, '/data/([a-z_\\-]*/)?(.*)\\.(jsonld)', vector ('gr', 'par_1', 'f'), 1,
 '/sparql?%s&query=define+sql:describe-mode+"DBPEDIA_ODATA"+DESCRIBE+%%3Chttp%%3A%%2F%%2Fdbpedia.org%%2Fresource%%2F%U%%3E&output=application%%2Fld%%2Bjson',
 vector ('gr', 'par_1'), 'DB.DBA.DBP_GRAPH_PARAM1', NULL, 2, null, '^{sql:DB.DBA.DBP_LINK_HDR}^');
 
@@ -389,7 +389,7 @@ DB.DBA.HTTP_VARIANT_ADD ('dbpl_resource_rule_list', '/(.*)@__@(.*)', '/data/\x24
 DB.DBA.HTTP_VARIANT_ADD ('dbpl_resource_rule_list', '/(.*)@__@(.*)', '/data/\x242.jrdf',  'application/rdf+json', 0.60, location_hook=>null);
 DB.DBA.HTTP_VARIANT_ADD ('dbpl_resource_rule_list', '/(.*)@__@(.*)', '/data/\x242.atom',  'application/atom+xml', 0.50, location_hook=>null);
 DB.DBA.HTTP_VARIANT_ADD ('dbpl_resource_rule_list', '/(.*)@__@(.*)', '/data/\x242.jsod',  'application/odata+json', 0.50, location_hook=>null);
-DB.DBA.HTTP_VARIANT_ADD ('dbpl_resource_rule_list', '/(.*)@__@(.*)', '/data/\x242.jsld',  'application/ld+json', 0.50, location_hook=>null);
+DB.DBA.HTTP_VARIANT_ADD ('dbpl_resource_rule_list', '/(.*)@__@(.*)', '/data/\x242.jsonld',  'application/ld+json', 0.50, location_hook=>null);
 
 -- Wikicompany
 --DB.DBA.VHOST_REMOVE (lpath=>'/wikicompany/resource');
