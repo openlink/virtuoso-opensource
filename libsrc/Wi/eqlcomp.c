@@ -45,8 +45,12 @@
 #include "sqlbif.h"
 #include "libutil.h"
 #include "sqlcstate.h"
-
-
+#include "sqlo.h"
+#include "list2.h"
+#include "xmlnode.h"
+#include "xmltree.h"
+#include "arith.h"
+#include "rdfinf.h"
 #include "ssl.c"
 
 /* #define USE_SYS_CONSTANT */
@@ -279,6 +283,62 @@ udt_is_qr_used (char *name)
   return object_is_qr_used (name, udt_name_to_qr_dep);
 }
 
+
+#define QNSZ(f, t) if (IS_QN (qn, f)) return sizeof (t);
+
+
+int
+qn_size (data_source_t * qn)
+{
+  QNSZ (table_source_input, table_source_t);
+  QNSZ (table_source_input_unique, table_source_t);
+  QNSZ (chash_read_input, table_source_t);
+  QNSZ (sort_read_input, table_source_t);
+  QNSZ (set_ctr_input, set_ctr_node_t);
+  QNSZ (setp_node_input, setp_node_t);
+  QNSZ (fun_ref_node_input, fun_ref_node_t);
+  QNSZ (hash_fill_node_input, fun_ref_node_t);
+  QNSZ (end_node_input, end_node_t);
+  QNSZ (select_node_input, select_node_t);
+  QNSZ (table_source_input, table_source_t);
+  QNSZ (table_source_input_unique, table_source_t);
+  QNSZ (chash_read_input, table_source_t);
+  QNSZ (sort_read_input, table_source_t);
+  QNSZ (set_ctr_input, set_ctr_node_t);
+  QNSZ (setp_node_input, setp_node_t);
+  QNSZ (fun_ref_node_input, fun_ref_node_t);
+  QNSZ (hash_fill_node_input, fun_ref_node_t);
+  QNSZ (end_node_input, end_node_t);
+  QNSZ (select_node_input, select_node_t);
+  QNSZ (select_node_input_subq, select_node_t);
+  QNSZ (table_source_input, table_source_t);
+  QNSZ (table_source_input_unique, table_source_t);
+  QNSZ (chash_read_input, table_source_t);
+  QNSZ (sort_read_input, table_source_t);
+  QNSZ (set_ctr_input, set_ctr_node_t);
+  QNSZ (outer_seq_end_input, outer_seq_end_node_t);
+  QNSZ (setp_node_input, setp_node_t);
+  QNSZ (fun_ref_node_input, fun_ref_node_t);
+  QNSZ (hash_fill_node_input, fun_ref_node_t);
+  QNSZ (end_node_input, end_node_t);
+  QNSZ (hash_source_input, hash_source_t);
+  QNSZ (subq_node_input, subq_source_t);
+  QNSZ (union_node_input, union_node_t);
+  QNSZ (gs_union_node_input, gs_union_node_t);
+  QNSZ (insert_node_input, insert_node_t);
+  QNSZ (delete_node_input, delete_node_t);
+  QNSZ (update_node_input, update_node_t);
+  QNSZ (trans_node_input, trans_node_t);
+  QNSZ (in_iter_input, in_iter_node_t);
+  QNSZ (rdf_inf_pre_input , rdf_inf_pre_node_t);
+  QNSZ (skip_node_input, skip_node_t);
+  QNSZ (ddl_node_input, ddl_node_t);
+  QNSZ (op_node_input, op_node_t);
+  QNSZ (breakup_node_input, breakup_node_t);
+  return -1;
+}
+
+
 void
 dsr_free (data_source_t * x)
 {
@@ -289,7 +349,7 @@ dsr_free (data_source_t * x)
   dk_free_box ((caddr_t)x->src_pre_reset);
   dk_free_box ((caddr_t)x->src_continue_reset);
   dk_free_box ((caddr_t)x->src_vec_reuse);
-  dk_free ((caddr_t) x, -1);
+  dk_free ((caddr_t) x, qn_size (x));
 }
 
 void

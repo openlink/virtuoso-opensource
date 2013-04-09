@@ -735,7 +735,7 @@ dbe_col_loc_array (dk_set_t cls, int off)
       else
 	cl1->cl_pos[0] = - (-cl1->cl_pos[0] + off);
       cl[fill++] = * cl1;
-      dk_free ((caddr_t) cl1, -1);
+      dk_free ((caddr_t) cl1, sizeof (dbe_col_loc_t));
     }
   END_DO_SET();
   dk_set_free (cls);
