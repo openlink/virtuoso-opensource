@@ -971,6 +971,9 @@ cfg_setup (void)
     sqlo_max_mp_size = 200000000;
 
 #ifdef POINTER_64
+  if (sqlo_max_mp_size >= 0x40000000)
+    sqlo_max_mp_size = INT32_MAX;
+  else
   sqlo_max_mp_size *= 2;
 #endif
 
