@@ -1304,6 +1304,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
     {
       sql_warnings_clear ();
       MP_START();
+      mp_comment (THR_TMP_POOL, "compile ", string2);
     }
   string = wrap_sql_string (string2);
   if (SQLC_PARSE_ONLY_REC == cr_type)
