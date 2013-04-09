@@ -1397,7 +1397,7 @@ cfg_setup (void)
    */
   section = "Client";
   if (cfg_getlong (pconfig, section, "SQL_PREFETCH_ROWS", &cli_prefetch) == -1)
-    cli_prefetch = 20;
+    cli_prefetch = 2000;
 
   if (cfg_getlong (pconfig, section, "SQL_PREFETCH_BYTES", &cli_prefetch_bytes) == -1)
     cli_prefetch_bytes = 0;
