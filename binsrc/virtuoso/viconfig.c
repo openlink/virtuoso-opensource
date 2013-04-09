@@ -860,7 +860,7 @@ cfg_setup (void)
   if (cfg_getstring (pconfig, section, "DirsDenied", &c_denied_dirs) == -1)
     c_denied_dirs = 0;
 
-  if (cfg_getstring (pconfig, section, "BackupDirs", &c_allowed_dirs) == -1)
+  if (cfg_getstring (pconfig, section, "BackupDirs", &c_backup_dirs) == -1)
     c_backup_dirs = 0;
 
   if (cfg_getstring (pconfig, section, "SafeExecutables", &c_safe_execs) == -1)
