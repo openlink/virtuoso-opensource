@@ -53,6 +53,11 @@
 # include <pwd.h>
 #endif
 
+#include <unistd.h>
+#ifdef __APPLE__
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#endif
 
 
 
@@ -312,6 +317,7 @@ long st_started_since_month;
 long st_started_since_day;
 long st_started_since_hour;
 long st_started_since_minute;
+long st_sys_ram;
 
 long st_chkp_remap_pages;
 long st_chkp_mapback_pages;
@@ -1018,6 +1024,33 @@ char *product_version_string ()
   return buf;
 }
 
+long
+get_total_sys_mem ()
+{
+#if defined (linux) || defined (SOLARIS)
+    long pages = sysconf(_SC_PHYS_PAGES);
+    long page_size = sysconf(_SC_PAGE_SIZE);
+    return pages * page_size;
+#elif defined (__APPLE__)
+    int mib[2];
+    long physical_memory;
+    long length;
+
+    mib[0] = CTL_HW;
+    mib[1] = HW_MEMSIZE;
+    length = sizeof(long);
+    sysctl(mib, 2, &physical_memory, &length, NULL, 0);
+    return physical_memory;
+#elif defined (WIN32)
+    MEMORYSTATUSEX status;
+    status.dwLength = sizeof (status);
+    GlobalMemoryStatusEx (&status);
+    return status.ullTotalPhys;
+#else
+    return 0;
+#endif
+}
+
 extern int process_is_swapping;
 
 void
@@ -1388,6 +1421,8 @@ stat_desc_t stat_descs [] =
     {"st_started_since_day", &st_started_since_day, NULL},
     {"st_started_since_hour", &st_started_since_hour, NULL},
     {"st_started_since_minute", &st_started_since_minute, NULL},
+
+    {"st_sys_ram", &st_sys_ram, NULL},
 
     {"prof_on", &prof_on, NULL},
     {"prof_start_time", &prof_start_time, NULL},

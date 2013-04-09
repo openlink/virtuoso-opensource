@@ -3696,6 +3696,7 @@ srv_session_disconnect_action (dk_session_t *ses)
 }
 
 void   rdf_key_comp_init ();
+long get_total_sys_mem ();
 
 void
 srv_global_init (char *mode)
@@ -4033,6 +4034,7 @@ srv_global_init (char *mode)
   if (0 == strcmp (build_thread_model, "-fibers"))
     threads_is_fiber = 1;
   time (&st_started_since);
+  st_sys_ram = get_total_sys_mem ();
 }
 
 

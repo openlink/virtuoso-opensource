@@ -871,3 +871,60 @@ create procedure uptime ()
   result (s);
 }
 ;
+
+create procedure DB.DBA.CL_MEM_SRV ()
+{
+  return vector (sys_stat ('st_sys_ram'), sys_stat ('st_host_name'));
+}
+;
+
+create procedure mem_info_cl ()
+{
+  declare daq, r, dict, vec any;
+  declare s int;
+  if (1 = sys_stat ('cl_run_local_only'))
+    {
+      return sys_stat ('st_sys_ram');
+    }
+  commit work;
+  daq := daq (0);
+  daq_call (daq, 'DB.DBA.SYS_COLS', 'SYS_COLS_BY_NAME', 'DB.DBA.CL_MEM_SRV', vector (), 1);
+  dict := dict_new (10);
+  while (r:= daq_next (daq))
+    {
+      if (length (r) > 2 and isarray (r[2]) and r[2][0] = 3)
+	{
+	  declare err any;
+	  err := r[2][1];
+	  if (isarray (err))
+	    signal (err[1], err[2]);
+	}
+      if (dict_get (dict, r[2][1][1]) is null)
+	{
+	  dict_put (dict, r[2][1][1], 1);
+	  s := s + r[2][1][0];
+	}
+    }
+  return s;
+}
+;
+
+create procedure
+mem_hum_size (in sz integer) returns varchar
+{
+  if (sz = 0)
+    return ('unknown');
+  if (sz < 1024)
+    return (sprintf ('%d B', cast (sz as integer)));
+  if (sz < 102400)
+    return (sprintf ('%d kB', sz/1024));
+  if (sz < 1048576)
+    return (sprintf ('%d kB', cast (sz/1024 as integer)));
+  if (sz < 104857600)
+    return (sprintf ('%d MB', sz/1048576));
+  if (sz < 1073741824)
+    return (sprintf ('%d MB', cast (sz/1048576 as integer)));
+  return (sprintf ('%d GB', sz/1073741824));
+}
+;
+
