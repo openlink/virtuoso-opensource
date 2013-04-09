@@ -953,6 +953,7 @@ iso8601_or_odbc_string_to_dt_1 (const char *str, char *dt, int dtflags, int dt_t
   int tzsign = 0, res_flags = 0, tzmin = dt_local_tz;
   int odbc_braces = 0, new_dtflags, new_dt_type = 0;
   int us_mdy_format = 0;
+  int leading_minus = 0;
   const char *tail, *group_end;
   int fld_values[9];
   static int fld_min_values[9] =	{ 1	, 1	, 1	, 0	, 0	, 0	, 0		, 0	, 0	};
@@ -1007,6 +1008,11 @@ iso8601_or_odbc_string_to_dt_1 (const char *str, char *dt, int dtflags, int dt_t
           err_msg_ret[0] = box_dv_short_string ("Syntax error in ODBC literal (single-quoted constant expected after literal type");
           return;
         }
+    }
+  if ('-' == tail[0])
+    {
+      leading_minus = 1;
+      tail++;
     }
   for (fld_idx = 0; fld_idx < 9; fld_idx++)
     {
@@ -1202,6 +1208,15 @@ field_delim_checked:
               err_msg_ret[0] = box_sprintf (500, "Too many days (%d, the month has only %d)", fld_value, days_in_this_month);
               return;
             }
+        }
+    }
+  if (leading_minus)
+    {
+      if (DTFLAG_DATE & dtflags)
+        fld_values[0] = -(fld_values[0]);
+      else
+        {
+          err_msg_ret[0] = box_sprintf (500, "Leading minus is allowed for year but not for time, the value is \"%.200s\"", str);
         }
     }
   tzmin += (60 * fld_values[7]) + fld_values[8];
