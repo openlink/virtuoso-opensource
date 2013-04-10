@@ -2987,7 +2987,7 @@ dsig_##type##_f dsig_##type##_f_get (const char * xmln, xenc_try_block_t * t) \
     id_hash_get (select_store( store_name )->dat_hash, (caddr_t) & xmln); \
   if (!algo) \
      xenc_report_error (t, 300 + strlen (xmln), XENC_UNKNOWN_ALGO_ERR, "Unknown algorithm %s", xmln); \
-  return algo[0]->f; \
+  return algo ? algo[0]->f : NULL; \
 }
 
 generate_algo_accessor (sign, "dsig")
