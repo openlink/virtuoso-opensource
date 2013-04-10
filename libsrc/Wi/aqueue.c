@@ -909,6 +909,8 @@ bif_async_queue (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       dk_free_box ((caddr_t) aq->aq_cl_stack);
       aq->aq_cl_stack = NULL;
     }
+  if (srv_have_global_lock (THREAD_CURRENT_THREAD))
+    aq->aq_max_threads = 0;	/* run on same thread in atomic */
   aq->aq_ts = get_msec_real_time ();
   return (caddr_t) aq;
 }
