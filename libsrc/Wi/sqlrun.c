@@ -4917,11 +4917,13 @@ qr_quick_exec (query_t * qr, client_connection_t * cli, char *id,
     local_cursor_t ** lc_ret, long n_pars,...)
 {
   caddr_t ret;
+  local_cursor_t * lc = NULL;
   caddr_t *parms = (caddr_t *) dk_alloc_box (2 * n_pars * sizeof (caddr_t),
       DV_ARRAY_OF_POINTER);
   va_list ap;
   int inx;
-
+  if (!lc_ret)
+    lc_ret = &lc;
   va_start (ap, n_pars);
   for (inx = 0; inx < 2 * n_pars; inx += 2)
     {
@@ -4946,6 +4948,8 @@ qr_quick_exec (query_t * qr, client_connection_t * cli, char *id,
   va_end (ap);
   ret = qr_exec (cli, qr, CALLER_LOCAL, NULL, NULL, lc_ret, parms, NULL, 1);
   dk_free_box ((box_t) parms);
+  if (lc)
+    lc_free (lc);
   return ret;
 }
 
@@ -4963,11 +4967,14 @@ qr_rec_exec (query_t * qr, client_connection_t * cli, local_cursor_t ** lc_ret,
     query_instance_t * caller, stmt_options_t * opts, long n_pars, ...)
 {
   caddr_t ret;
+  local_cursor_t * lc = NULL;
   caddr_t *parms = (caddr_t *) dk_alloc_box (2 * n_pars * sizeof (caddr_t),
       DV_ARRAY_OF_POINTER);
   int inx;
   va_list ap;
 
+  if (!lc_ret)
+    lc_ret = &lc;
   va_start (ap, n_pars);
   for (inx = 0; inx < 2 * n_pars; inx += 2)
     {
@@ -4992,6 +4999,8 @@ qr_rec_exec (query_t * qr, client_connection_t * cli, local_cursor_t ** lc_ret,
   va_end (ap);
   ret = qr_exec (cli, qr, caller, NULL, NULL, lc_ret, parms, opts, 1);
   dk_free_box ((box_t) parms);
+  if (lc)
+    lc_free (lc);
   return ret;
 }
 
