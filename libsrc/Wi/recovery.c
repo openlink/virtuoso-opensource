@@ -237,6 +237,7 @@ srv_dd_to_log (client_connection_t * cli)
 	  rd.rd_n_values = BOX_ELEMENTS (row) - 1;
 	  rd.rd_key = sch_id_to_key (wi_inst.wi_schema, unbox (row[0]));
 	  log_insert (cli->cli_trx, &rd, INS_REPLACING);
+	  it->itc_tree = rd.rd_key->key_fragments[0]->kf_it;
 	  log_rd_blobs (it, &rd);
 	}
       lc_free (lc);
@@ -266,6 +267,7 @@ srv_dd_to_log (client_connection_t * cli)
 	  rd.rd_n_values = BOX_ELEMENTS (row) - 1;
 	  rd.rd_key = sch_id_to_key (wi_inst.wi_schema, unbox (row[0]));
 	  log_insert (cli->cli_trx, &rd, INS_REPLACING);
+	  it->itc_tree = rd.rd_key->key_fragments[0]->kf_it;
 	  log_rd_blobs (it, &rd);
 	}
       lc_free (lc);
