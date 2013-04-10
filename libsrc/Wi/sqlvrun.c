@@ -275,7 +275,11 @@ dc_set_flags (data_col_t * dc, sql_type_t * sqt, dtp_t dcdtp)
   switch (dtp_canonical[sqt->sqt_dtp])
     {
     case DV_LONG_INT:
-    case DV_DOUBLE_FLOAT:      dc->dc_type = DCT_NUM_INLINE;
+      dc->dc_type = DCT_NUM_INLINE;
+      dc->dc_sort_cmp = dc->dc_sqt.sqt_non_null ? dc_int_cmp : dc_int_null_cmp;
+      break;
+    case DV_DOUBLE_FLOAT:      
+      dc->dc_type = DCT_NUM_INLINE;
       dc->dc_sort_cmp = dc->dc_sqt.sqt_non_null ? dc_double_cmp : dc_double_null_cmp;
       break;
     case DV_IRI_ID:
