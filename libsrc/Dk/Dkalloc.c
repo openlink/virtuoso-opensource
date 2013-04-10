@@ -169,11 +169,14 @@ av_check_double_free (av_list_t * av1, void *thing, int len)
   log_error ("Looks like double free but the block is not twice in alloc cache, so proceeding");
 }
 
+int enable_no_free = 0;
 
 void
 av_clear (av_list_t * av)
 {
   caddr_t *ptr, *next;
+  if (enable_no_free)
+    return;
   for (ptr = av->av_first; ptr; ptr = next)
     {
       next = *(caddr_t **) ptr;;
@@ -398,11 +401,19 @@ void
 dk_alloc_cache_status (resource_t ** cache)
 {
   int inx;
+  size_t bs = 0;
   printf ("\n--------- dk_alloc cache\n");
 #ifdef CACHE_MALLOC
   for (inx = 0; inx < MAX_CACHED_MALLOC_SIZE / 8; inx++)
     {
+      int way;
+      int n = 0;
+      for (way = 0; way < MEMBLOCKS_N_WAYS; way++)
+	n += memblock_set[inx][way].av_fill;
+      printf ("Size %d %d blocks\n", inx * 8, n);
+      bs += n * inx * 8;
     }
+  printf ("%Ld total\n", bs);
 #endif
 }
 
@@ -674,6 +685,9 @@ dk_free (void *ptr, size_t sz)
 	  if (av->av_fill >= av->av_max)
 	    {
 	      av->av_n_full++;
+	      if (enable_no_free)
+		av->av_max = av->av_fill + 100;
+	      else
 	      goto full;
 	    }
 	  mutex_enter (&av->av_mtx);
@@ -688,6 +702,7 @@ dk_free (void *ptr, size_t sz)
 
   free (ptr);
 }
+#endif
 
 
 #ifdef MEMDBG
