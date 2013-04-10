@@ -42,6 +42,7 @@ extern int32 enable_qp;
 int enable_split_range = 1;
 int enable_split_sets = 1;
 int32 enable_dyn_batch_sz = 0;
+int32 enable_batch_sz_reserve;
 int qp_thread_min_usec = 5000;
 int qp_range_split_min_rows = 20;
 int dc_init_sz = 10000;
@@ -1832,6 +1833,41 @@ ts_need_large_out_batch (table_source_t * ts)
 }
 
 
+size_t
+qn_batch_inc (caddr_t * inst, data_source_t * qn)
+{
+  int inx, inc = 0;
+  int sz = QST_INT (inst, qn->src_batch_size);
+  DO_BOX (state_slot_t *, ssl, inx, qn->src_pre_reset)
+    {
+      if (DV_ANY == ssl->ssl_dc_dtp)
+	inc += 16;
+      else
+	inc += 8;
+    }
+  END_DO_BOX;
+  return inc * (dc_max_batch_sz - sz);
+}
+
+
+size_t
+qi_batch_inc (caddr_t * inst, data_source_t * qn)
+{
+  size_t inc = 0;
+  data_source_t * prev;
+  for (prev = qn->src_prev; prev; prev = prev->src_prev)
+    {
+      inc += qn_batch_inc (inst, prev);
+    }
+  for (prev = qn; prev; prev = qn_next (prev))
+    {
+      if (ts_need_large_out_batch ((table_source_t *)prev))
+	inc += qn_batch_inc (inst, prev);
+    }
+  return inc;
+}
+
+
 void
 qi_set_batch_sz (caddr_t * inst, table_source_t * ts, int new_sz)
 {
@@ -1988,6 +2024,7 @@ void
 ts_check_batch_sz (table_source_t * ts, caddr_t * inst, it_cursor_t * itc)
 {
   QNCAST (query_instance_t, qi, inst);
+  size_t inc;
   data_source_t *prev = ts->src_gen.src_prev;
   float rows_to_expect;
   int prev_sz;
@@ -2031,6 +2068,15 @@ ts_check_batch_sz (table_source_t * ts, caddr_t * inst, it_cursor_t * itc)
       int target_sz = MIN ((float) dc_max_batch_sz, rows_to_expect * 1.2);
       if (target_sz < prev_sz * 2)
 	return;
+      if (enable_batch_sz_reserve)
+	{
+	  inc = qi_batch_inc (inst, (data_source_t*)ts);
+	  if (!mp_reserve (qi->qi_mp, inc))
+	    {
+	      TC (tc_no_mem_for_longer_batch);
+	      return;
+	    }
+	}
       qi_set_batch_sz (inst, ts, target_sz);
     }
 }
