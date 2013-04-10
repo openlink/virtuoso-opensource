@@ -1918,3 +1918,157 @@ mp_comment (mem_pool_t * mp, char * str1, char * str2)
   mp->mp_comment = c;
 #endif
 }
+
+
+typedef struct ptr_and_sz_s
+{
+  uptrlong	ps_ptr;
+  uint32	ps_n_pages;
+} ptr_and_size_t;
+
+
+int
+ps_compare (const void *s1, const void *s2)
+{
+  uptrlong p1 = ((ptr_and_size_t*)s1)->ps_ptr;
+  uptrlong p2 = ((ptr_and_size_t*)s2)->ps_ptr;
+  return p1 < p2 ? -1 : p1 == p2 ? 0 : 1;
+}
+
+int
+munmap_ck (void* ptr, size_t sz)
+{
+  int rc;
+  /* mark freeing before the free and if free fails remark as allocd.  Else concurrent alloc on different thread can get the just freed thing and it will see the allocd bits set */
+  mp_mmap_mark  (ptr, sz, 0);
+  rc = munmap (ptr, sz);
+  if (0 != rc)
+    mp_mmap_mark  (ptr, sz, 1);
+
+  if (0 == rc || (-1 == rc && ENOMEM == errno))
+    return rc;
+  log_error ("munmap failed with errno %d ptr %p sz %ld", errno, ptr, sz);
+  GPF_T1 ("munmap failed with other than ENOMEM");
+  return -1;
+}
+
+
+int
+mm_unmap_asc (ptr_and_size_t * maps, int low, int high)
+{
+  int inx;
+  int rc = munmap_ck ((void*)maps[low].ps_ptr, maps[low].ps_n_pages * mm_page_sz);
+  if (-1 == rc)
+    return 0;
+  maps[low].ps_ptr = 0;
+  for (inx = low + 1; inx < high; inx++)
+    {
+      if (0 == munmap_ck ((void*)maps[inx].ps_ptr, maps[inx].ps_n_pages * mm_page_sz))
+	maps[inx].ps_ptr = 0;
+    }
+  return 1;
+}
+
+int
+mm_unmap_desc (ptr_and_size_t * maps, int low, int high)
+{
+  int inx;
+  int rc = munmap_ck ((void*)maps[high - 1].ps_ptr, maps[high - 1].ps_n_pages * mm_page_sz);
+  if (-1 == rc)
+    return 0;
+  maps[high - 1].ps_ptr = 0;
+  for (inx = high - 2; inx >=  low; inx--)
+    {
+      if (0 == munmap_ck ((void*)maps[inx].ps_ptr, maps[inx].ps_n_pages * mm_page_sz))
+	maps[inx].ps_ptr = 0;
+    }
+  return 1;
+}
+
+void
+mm_unmap_contiguous (ptr_and_size_t * maps, int n_maps)
+{
+  int inx;
+  for (inx = 0; inx < n_maps; inx++)
+    {
+      int inx2;
+      uptrlong pt = maps[inx].ps_ptr + mm_page_sz * maps[inx].ps_n_pages;;
+      for (inx2 = inx + 1; inx2 < n_maps; inx2++)
+	{
+	  if (maps[inx2].ps_ptr != pt)
+	    break;
+	  pt += maps[inx].ps_n_pages * mm_page_sz;
+    }
+      if (!mm_unmap_asc (maps, inx, inx2) && inx2 - inx > 1)
+	mm_unmap_desc (maps, inx, inx2);
+      inx = inx2 - 1;
+    }
+  for (inx = 0; inx < n_maps; inx++)
+    {
+      int nth = -1;
+      if (maps[inx].ps_ptr)
+	{
+	  void * ptr = (void*)maps[inx].ps_ptr;
+	  size_t sz = maps[inx].ps_n_pages * mm_page_sz;
+	  mm_next_size (sz, &nth);
+	  if (!(-1 != nth &&  nth < mm_n_large_sizes
+		&& resource_store_timed (mm_rc[nth], (void*)ptr)))
+	    sethash (ptr, &mm_failed_unmap, (void*)sz);
+	}
+    }
+}
+
+void
+mm_cache_clear ()
+{
+  int inx;
+  ptr_and_size_t * maps;
+  int n_maps;
+  int max_maps, map_fill = 0;
+  mutex_enter (&map_fail_mtx);
+  n_maps = mm_failed_unmap.ht_count;
+  for (inx = mm_n_large_sizes - 1; inx >= 0; inx--)
+    {
+      resource_t * rc = mm_rc[inx];
+      n_maps += rc->rc_fill;
+    }
+  max_maps = n_maps + 1000;
+  maps = (ptr_and_size_t*)dk_alloc (sizeof (ptr_and_size_t) * max_maps);
+  DO_HT (uptrlong, ptr, size_t, sz, &mm_failed_unmap)
+    {
+      maps[map_fill].ps_ptr = ptr;
+      maps[map_fill].ps_n_pages = sz / mm_page_sz;
+      map_fill++;
+    }
+  END_DO_HT;
+  clrhash (&mm_failed_unmap);
+  for (inx = 0; inx < mm_n_large_sizes; inx++)
+    {
+      int rc_sz = mm_sizes[inx] / mm_page_sz;
+      int inx2;
+      resource_t * rc = mm_rc[inx];
+      int fill;
+      mutex_enter (rc->rc_mtx);
+      fill = rc->rc_fill;
+      for (inx2 = 0; inx2 < fill; inx2++)
+	{
+	  maps[map_fill].ps_ptr = (uptrlong)rc->rc_items[inx2];
+	  maps[map_fill].ps_n_pages = rc_sz;
+	  map_fill++;
+	  if (map_fill == max_maps)
+	    {
+	      memmove (rc->rc_items, &rc->rc_items[inx2 + 1], sizeof (void*) * (fill - inx2));
+	      rc->rc_fill -= (inx2 + 1);
+	      mutex_leave (rc->rc_mtx);
+	      goto all_filled;
+	    }
+	}
+      rc->rc_fill = 0;
+      mutex_leave (rc->rc_mtx);
+    }
+ all_filled:
+  qsort (maps, map_fill, sizeof (ptr_and_size_t), ps_compare);
+  mm_unmap_contiguous (maps, map_fill);
+  dk_free ((caddr_t)maps, -1);
+  mutex_leave (&map_fail_mtx);
+}
