@@ -702,7 +702,6 @@ dk_free (void *ptr, size_t sz)
 
   free (ptr);
 }
-#endif
 
 
 #ifdef MEMDBG
