@@ -1581,6 +1581,7 @@ sqlc_trigger_decl (sql_comp_t * sc, ST * tree)
   sqlc_proc_stmt (sc, &(tree->_.trigger.body));
   sc->sc_is_trigger_decl = o_sc_trig_decl;
   sqlc_routine_qr (sc);
+  sqlc_opt_fetches (sc);
 
   sqlc_table_used (sc, qr->qr_trig_dbe_table);
   if (!has_similar)
