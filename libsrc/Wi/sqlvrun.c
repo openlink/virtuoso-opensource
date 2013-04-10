@@ -79,6 +79,16 @@ dc_int_cmp (data_col_t * dc, int r1, int r2, int r_prefetch)
 
 
 int
+dc_double_cmp (data_col_t * dc, int r1, int r2, int r_prefetch)
+{
+  double i1 = ((double*)dc->dc_values)[r1];
+  double i2 = ((double*)dc->dc_values)[r2];
+  __builtin_prefetch (&((double*)dc->dc_values)[r_prefetch]);
+  return NUM_COMPARE (i1, i2);
+}
+
+
+int
 dc_float_cmp (data_col_t * dc, int r1, int r2, int r_prefetch)
 {
   float i1 = ((float *) dc->dc_values)[r1];
@@ -118,6 +128,17 @@ dc_int_null_cmp (data_col_t * dc, int r1, int r2, int r_prefetch)
 
 
 int
+dc_double_null_cmp (data_col_t * dc, int r1, int r2, int r_prefetch)
+{
+  double i1 = ((double*)dc->dc_values)[r1];
+  double i2 = ((double*)dc->dc_values)[r2];
+  __builtin_prefetch (&((double*)dc->dc_values)[r_prefetch]);
+  NULL_CMP;
+  return NUM_COMPARE (i1, i2);
+}
+
+
+int
 dc_float_null_cmp (data_col_t * dc, int r1, int r2, int r_prefetch)
 {
   float i1 = ((float *) dc->dc_values)[r1];
@@ -126,6 +147,7 @@ dc_float_null_cmp (data_col_t * dc, int r1, int r2, int r_prefetch)
   NULL_CMP;
   return NUM_COMPARE (i1, i2);
 }
+
 
 int
 dc_iri_id_null_cmp (data_col_t * dc, int r1, int r2, int r_prefetch)
@@ -253,7 +275,7 @@ dc_set_flags (data_col_t * dc, sql_type_t * sqt, dtp_t dcdtp)
     {
     case DV_LONG_INT:
     case DV_DOUBLE_FLOAT:      dc->dc_type = DCT_NUM_INLINE;
-      dc->dc_sort_cmp = dc->dc_sqt.sqt_non_null ? dc_int_cmp : dc_int_null_cmp;
+      dc->dc_sort_cmp = dc->dc_sqt.sqt_non_null ? dc_double_cmp : dc_double_null_cmp;
       break;
     case DV_IRI_ID:
       dc->dc_type = DCT_NUM_INLINE;
