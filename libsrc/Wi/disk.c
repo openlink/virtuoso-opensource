@@ -4624,6 +4624,7 @@ wi_init_globals (void)
   if (!cha_max_gb_bytes)
     cha_max_gb_bytes = MAX (3000000, c_max_large_vec / 10);
   mem_cache_init ();
+  mp_large_reserve_limit = c_max_large_vec * 0.9;
   db_schema_mtx = mutex_allocate ();
   it_rc = resource_allocate (20, NULL, NULL, NULL, 0); /* put a destructor */
   lock_rc = resource_allocate (2000, (rc_constr_t) pl_allocate,
