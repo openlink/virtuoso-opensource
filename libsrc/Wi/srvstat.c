@@ -163,6 +163,7 @@ long  tc_get_buf_failed;
 long  tc_read_wait_decoy;
 long  tc_read_wait_while_ra_finding_buf;
 long  tc_pg_write_compact;
+long dbf_user_1, dbf_user_2;
 
 
 extern long read_block_usec;
@@ -1754,6 +1755,10 @@ stat_desc_t dbf_descs [] =
 
     {"c_max_large_vec", (long *)&c_max_large_vec, NULL},
     {"cha_max_gb_bytes", (long *)&cha_max_gb_bytes, NULL},
+    {"mp_large_reserved", &mp_large_reserved},
+    {"mp_max_large_reserved", &mp_max_large_reserved},
+    {"mp_large_reserve_limit", &mp_large_reserve_limit},
+
     {"iri_range_size", (long *)&iri_range_size, SD_INT32},
     { "tn_max_memory",  (long *)&tn_max_memory, NULL},
     {"tn_at_mem_cutoff", (long *)&tn_at_mem_cutoff, NULL},
@@ -1770,6 +1775,8 @@ stat_desc_t dbf_descs [] =
     {"c_no_dbg_print", (long *)&c_no_dbg_print, SD_INT32},
     {"dbf_explain_level", (long *)&dbf_explain_level, SD_INT32},
     {"mp_local_rc_sz", (long *)&mp_local_rc_sz, SD_INT32},
+    {"dbf_user_1", &dbf_user_1},
+    {"dbf_user_2", &dbf_user_2},
     {NULL, NULL, NULL}
   };
 
