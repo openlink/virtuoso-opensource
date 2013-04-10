@@ -81,6 +81,24 @@ mp_unregister (mem_pool_t * mp)
   mutex_leave (&mp_reg_mtx);
 }
 
+int
+mp_map_count ()
+{
+  int ctr = 0;
+  size_t sz = 0;
+  DO_HT (mem_pool_t *, mp, ptrlong,  ign, mp_registered)
+    {
+      ctr += mp->mp_large.ht_count;
+      DO_HT (void*, ptr, size_t, b_sz, &mp->mp_large)
+	sz += b_sz;
+      END_DO_HT;
+    }
+  END_DO_HT;
+  printf ("%d maps in mps, %ld bytes\n", ctr, sz);
+  return ctr;
+}
+
+
 #else
 #define mp_register(mp)
 #define mp_unregister(mp)
@@ -1298,12 +1316,20 @@ size_t mp_max_cache = 10000000;
 size_t mp_large_warn_threshold;
 dk_mutex_t mp_large_g_mtx;
 size_t mp_mmap_min = 80000;
+size_t mm_page_sz = 4096;
 int mm_n_large_sizes;
 #define N_LARGE_SIZES 30
 size_t mm_sizes[N_LARGE_SIZES];
+du_thread_t * mm_after_failed_unmap;
+dk_mutex_t map_fail_mtx;
+dk_hash_t mm_failed_unmap;
 resource_t * mm_rc[N_LARGE_SIZES];
 int32 mm_uses[N_LARGE_SIZES + 1];
 int mp_local_rc_sz = 1;
+size_t mp_large_reserved;
+size_t mp_max_large_reserved;
+size_t mp_large_reserve_limit;
+dk_mutex_t mp_reserve_mtx;
 
 
 size_t
@@ -1346,6 +1372,7 @@ mm_cache_init (size_t sz, size_t min, size_t max, int steps, float step)
     steps = N_LARGE_SIZES;
   if (!mp_large_g_mtx.mtx_handle)
     dk_mutex_init (&mp_large_g_mtx, MUTEX_TYPE_SHORT);
+  dk_mutex_init (&mp_reserve_mtx, MUTEX_TYPE_SHORT);
   mm_n_large_sizes = steps;
   for (inx = 0; inx < steps; inx++)
     {
@@ -1356,6 +1383,8 @@ mm_cache_init (size_t sz, size_t min, size_t max, int steps, float step)
       memzero (mm_rc[inx]->rc_item_time, sizeof (int32) * mm_rc[inx]->rc_size);
       mm_rc[inx]->rc_max_size = MAX (2, sz / (mm_sizes[inx] * 2));
     }
+  dk_mutex_init (&map_fail_mtx, MUTEX_TYPE_SHORT);
+  hash_table_init (&mm_failed_unmap, 23);
 }
 
 
@@ -1523,22 +1552,32 @@ mp_mark_check ()
 #define mp_mmap_mark(ptr, sz, f)
 #endif
 
+void mm_cache_clear ();
+
 
 void *
 mp_mmap (size_t sz)
 {
 #ifdef HAVE_SYS_MMAN_H
   void * ptr;
+  int retries = 0;
   if (sz < mp_mmap_min)
     return malloc (sz);
+  for (;;)
+    {
   ptr = mmap (NULL, sz, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
   if (MAP_FAILED == ptr || !ptr)
     {
       log_error ("mmap failed with %d", errno);
+	  mm_cache_clear ();
+	  retries++;
+	  if (retries > 3)
       GPF_T1 ("could not allocate memory with mmap");
+	  continue;
     }
   mp_mmap_mark (ptr, sz, 1);
   return ptr;
+    }
 #else
   return malloc (sz);
 #endif
@@ -1555,10 +1594,23 @@ mp_munmap (void* ptr, size_t sz)
   else
     {
       int rc;
+      /* mark freeing before the free and if free fails remark as allocd.  Else concurrent alloc on different thread can get the just freed thing and it will see the allocd bits set */
       mp_mmap_mark (ptr, sz, 0);
       rc = munmap (ptr, sz);
       if (-1 == rc)
 	{
+	  mp_mmap_mark (ptr, sz, 1);
+	  if (ENOMEM == errno)
+	    {
+	      int nth = -1;
+	      *(long*)ptr = 0; /*verify it is still mapped */
+	      mutex_enter (&map_fail_mtx);
+	      log_error ("munmap failed with ENOMEM, should increase sysctl v,vm.max_map_count.  May also try lower VectorSize ini setting, e.g. 1000");
+	      sethash (ptr, &mm_failed_unmap, (void*)sz);
+	      mutex_leave (&map_fail_mtx);
+	      mm_cache_clear ();
+	      return;
+	    }
 	  log_error ("munmap failed with %d", errno);
 	  GPF_T1 ("munmap failed");
 	}
@@ -1763,6 +1815,12 @@ mp_free_all_large (mem_pool_t * mp)
   mutex_enter (&mp_large_g_mtx);
   mp_large_in_use -= total;
   mutex_leave (&mp_large_g_mtx);
+  if (mp->mp_reserved)
+    {
+      mutex_enter (&mp_reserve_mtx);
+      mp_large_reserved -= mp->mp_reserved;
+      mutex_leave (&mp_reserve_mtx);
+    }
   hash_table_destroy (&mp->mp_large);
 }
 
@@ -1820,3 +1878,43 @@ mp_reuse_large (mem_pool_t * mp, void * ptr)
   return 1;
 }
 
+
+int 
+mp_reserve (mem_pool_t * mp, size_t inc)
+{
+  int ret = 0;
+  mutex_enter (&mp_reserve_mtx);
+  if (mp_large_reserved + inc < mp_large_reserve_limit)
+    {
+      mp_large_reserved += inc;
+      mp->mp_reserved += inc;
+      if (mp_max_large_reserved < mp_large_reserved)
+	mp_max_large_reserved = mp_large_reserved;
+      ret = 1;
+    }
+  mutex_leave (&mp_reserve_mtx);
+  return ret;
+}
+
+
+void
+mp_comment (mem_pool_t * mp, char * str1, char * str2)
+{
+#ifndef NDEBUG
+  int len1 = (str1 ? strlen (str1) : 0);
+  int len2 = (str2 ? strlen (str2) : 0);
+  caddr_t c = mp_alloc_box (mp, len1 + len2 + 1, DV_NON_BOX);
+  int fill = 0;
+  if (str1)
+    {
+      memcpy (c, str1, len1);
+      fill = len1;
+    }
+  if (str2)
+    {
+      memcpy (c + fill, str2, len2);
+    }
+  c[len1 + len2] = 0;
+  mp->mp_comment = c;
+#endif
+}

@@ -35,6 +35,9 @@ void mp_free_large (mem_pool_t * mp, void * ptr);
 void mp_cache_large (size_t sz, int n);
 extern size_t mp_large_in_use;
 extern size_t mp_max_large_in_use;
+extern size_t mp_large_reserved;
+extern size_t mp_max_large_reserved;
+extern size_t mp_large_reserve_limit;
 #ifdef VALGRIND
 #define LACERATED_POOL
 #endif
@@ -54,6 +57,7 @@ struct mem_pool_s
   resource_t **		mp_large_reuse;
   dk_hash_t *		mp_unames;
   dk_set_t 		mp_trash;		/* dk_alloc_box boxes that must be freed with the mp */
+  size_t		mp_reserved;
   size_t		mp_max_bytes;
 #if defined (DEBUG) || defined (MALLOC_DEBUG)
   const char *		mp_alloc_file;
@@ -64,6 +68,7 @@ struct mem_pool_s
   const char *		mp_list_alloc_file;
   int 			mp_list_alloc_line;
 #endif
+  caddr_t	mp_comment;
 };
 #else
 struct mem_block_s
@@ -81,6 +86,7 @@ struct mem_pool_s
   int 			mp_block_size;
   size_t 		mp_bytes;
   size_t		mp_max_bytes;
+  size_t		mp_reserved;
   dk_hash_t		mp_large;
   resource_t **		mp_large_reuse;
   dk_hash_t *		mp_unames;
@@ -89,6 +95,7 @@ struct mem_pool_s
   const char *		mp_alloc_file;
   int 			mp_alloc_line;
 #endif
+  caddr_t	mp_comment;
 };
 #endif
 
@@ -440,7 +447,7 @@ size_t mm_next_size (size_t n, int * nth);
 size_t mm_cache_trim (size_t target_sz, int age_limit, int old_only);
 extern size_t mp_block_size;
 
-#if !defined (NDEBUG) && !defined (MALLOC_DEBUG)
+#if !defined (NDEBUG) /*&& !defined (MALLOC_DEBUG)*/
 
 #define MP_MAP_CHECK
 
@@ -465,6 +472,7 @@ if (map && map->bits[((uint32)__ptr) >> 15] & (1 << (((((uint32)__ptr) >> 12) & 
 #endif
 
 int mp_reuse_large (mem_pool_t * mp, void * ptr);
-
+int mp_reserve (mem_pool_t * mp, size_t inc);
+void mp_comment (mem_pool_t * mp, char * str1, char * str2);
 
 #endif /* ifdef __DKPOOL_H */
