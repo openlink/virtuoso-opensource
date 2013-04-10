@@ -1656,6 +1656,7 @@ cha_allocate (setp_node_t * setp, caddr_t * inst, int64 card)
   qst_set_tree (inst, ha->ha_tree, ha->ha_set_no, tree);
   if (!hi->hi_pool)
     hi->hi_pool = mem_pool_alloc ();
+  mp_comment (tree->it_hi->hi_pool, "chash ", ((QI*)inst)->qi_query->qr_text);
   cha = hi->hi_chash = (chash_t *) mp_alloc (hi->hi_pool, sizeof (chash_t));
   memset (cha, 0, sizeof (chash_t));
   cha->cha_pool = hi->hi_pool;
