@@ -2186,9 +2186,9 @@ insert_node_run (insert_node_t * ins, caddr_t * inst, caddr_t * state)
 		  ssl_insert_cast (ins, inst, inx, &err, &rd, row, row + 1, 1);
 		  if (err)
 		    sqlr_resignal (err);
-		  last_set = row;
 		}
 	      END_DO_BOX;
+	      last_set = row;
 	    }
 	}
       else
