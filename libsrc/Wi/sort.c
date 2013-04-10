@@ -588,6 +588,29 @@ setp_node_input (setp_node_t * setp, caddr_t * inst, caddr_t * state)
 
 
 void
+qr_union_reset (query_t * qr, dk_set_t nodes, caddr_t * inst)
+{
+  if (!nodes)
+    nodes = qr->qr_nodes;
+  DO_SET (data_source_t *, qn, &nodes)
+    {
+      if (IS_QN (qn, subq_node_input))
+	{
+	    QNCAST (subq_source_t, sqs, qn);
+	    qr_union_reset (sqs->sqs_query, NULL, inst);
+	}
+    }
+  END_DO_SET ();
+
+  DO_SET (query_t *, subq, &qr->qr_subq_queries)
+    {
+      qr_union_reset (subq, NULL, inst);
+    }
+  END_DO_SET ();
+}
+
+
+void
 union_node_input (union_node_t * un, caddr_t * inst, caddr_t * state)
 {
   int inx;
@@ -614,11 +637,13 @@ union_node_input (union_node_t * un, caddr_t * inst, caddr_t * state)
 	}
       if (!out_list)
 	{
+	  qr_union_reset (un->src_gen.src_query, NULL, inst);
 	  qn_record_in_state ((data_source_t *) un, inst, NULL);
 	  qst_set (inst, un->uni_nth_output, box_num (0));
 	  return;
 	}
       qst_set (inst, un->uni_nth_output, box_num (nth + 1));
+      qr_union_reset (un->src_gen.src_query, NULL, inst);
       qn_record_in_state ((data_source_t *) un, inst, inst);
       qn_input (((query_t *) out_list->data)->qr_head_node, inst, inst);
       if (!un->src_gen.src_query->qr_cl_run_started || CL_RUN_LOCAL == cl_run_local_only
