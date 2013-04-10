@@ -467,6 +467,10 @@ qi_vec_init (query_instance_t * qi, int n_sets)
     {
       not_inited = 1;
   mp = qi->qi_mp = mem_pool_alloc ();
+#if 0 /*ndef NDEBUG */
+      if (qi->qi_query->qr_text)
+	qi->qi_mp->mp_comment = mp_box_string (qi->qi_mp, qi->qi_query->qr_text);
+#endif
     }
   if (n_sets <= 0)
     n_sets = dc_batch_sz;
