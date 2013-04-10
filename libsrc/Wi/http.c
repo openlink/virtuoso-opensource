@@ -1189,6 +1189,24 @@ ws_write_failed (ws_connection_t * ws)
   mutex_leave (ws_queue_mtx);
 }
 
+/* check request against server capabilities, e.g. expect header */
+static int
+ws_check_caps (ws_connection_t * ws)
+{
+  char *expect, *end;
+  expect = ws_header_field (ws->ws_lines, "Expect:", NULL);
+  if (!expect || !strlen (expect))
+    return 1;
+  end = expect + strlen (expect) - 1;
+  while (isspace (*expect)) expect++;
+  while (isspace (*end)) end--; end ++;
+  /* 100 continue is supported */
+  if ((end - expect) == 12 && 0 == strnicmp (expect, "100-continue", 12))
+    return 1;
+  ws_strses_reply (ws, "HTTP/1.1 417 Expectation Failed");
+  return 0;
+}
+
 static void
 ws_req_expect100 (ws_connection_t * ws)
 {
@@ -4051,6 +4069,11 @@ ws_read_req (ws_connection_t * ws)
 	    {
 	      ws->ws_try_pipeline = 0;
 	      ws_strses_reply (ws, hit ? "HTTP/1.1 509 Bandwidth Limit Exceeded" : "HTTP/1.1 403 Forbidden");
+	      goto end_req;
+	    }
+	  if (0 == ws_check_caps (ws))
+	    {
+	      ws->ws_try_pipeline = 0;
 	      goto end_req;
 	    }
 	  if (ws_path_and_params (ws))
