@@ -4,7 +4,7 @@ set SQL_FILES_WS=../../binsrc/vsp/vsp_auth.sql soap.sql wsrp_ultim.xsl wsrp_resp
 set SQL_FILES_REPL=snapshot_repl.sql repl.sql
 set SQL_FILES_DAV=../../binsrc/dav/dav.sql ../../binsrc/dav/dav_api.sql ../../binsrc/dav/dav_meta.sql ../../binsrc/dav/dav_acct.sql ../../binsrc/dav/dav_rdf_quad.sql ../../binsrc/vsp/admin/admin_dav/vfs.sql ../../binsrc/dav/davxml2rdfxml.xsl ../../binsrc/dav/davxml2n3xml.xsl ../../binsrc/dav/rdfxml2n3xml.xsl ../../binsrc/dav/n3xml2uriqahtml.xsl ../../binsrc/dav/uriqa.sql ../../binsrc/dav/DET_CatFilter.sql ../../binsrc/dav/DET_HostFs.sql ../../binsrc/dav/DET_ResFilter.sql ../../binsrc/dav/DET_PropFilter.sql ../../binsrc/dav/DET_RDFData.sql ../../binsrc/dav/Versioning/DET_Versioning.sql xml_view.sql ../../binsrc/dav/DET_S3.sql
 set SQL_FILES_DDK=replddk.sql ../../binsrc/dav/davddk.sql mail_cli.sql ../../binsrc/vsp/admin/admin_ddl.sql ../../binsrc/vsp/admin/admin_dav/vfsddk.sql virtual_dir.sql url_rewrite.sql
-set SQL_FILES_SYS=users.sql
+set SQL_FILES_SYS=users.sql qlog.sql
 set SQL_FILES_UDDI=uddi.sql
 set SQL_FILES_IMSG=pop3_svr.sql ftp.sql nn_svr.sql ../../binsrc/vsp/admin/admin_news/admin_news.sql
 set SQL_FILES_AUTO=autoexec.sql
@@ -15,7 +15,7 @@ set SQL_FILES_VDB=vdb.sql
 set SQL_FILES_PLDBG=cov_report.xsl cov_time.xsl
 set SQL_FILES_VAD=../../binsrc/vad/vad_root.sql ../../binsrc/vad/vad_misc.sql ../../binsrc/vad/oper_pars.sql ../../binsrc/vad/pars_init.sql ../../binsrc/vad/vad_make.sql
 set SQL_FILES_DBP=../../binsrc/vsp/admin/dbpump/dbpump_root.sql ../../binsrc/vsp/admin/dbpump/oper_pars.sql ../../binsrc/vsp/admin/dbpump/components.sql ../../binsrc/vsp/admin/dbpump/comp_html.sql ../../binsrc/vsp/admin/dbpump/comp_misc.sql ../../binsrc/vsp/admin/dbpump/comp_rpath.sql ../../binsrc/vsp/admin/dbpump/comp_tables.sql ../../binsrc/vsp/admin/dbpump/pars_init.sql
-set SQL_FILES_SPARQL=sparql.sql sparql_io.sql rdf_sponge.sql rdf_schema_objects.sql rdf_void.sql rdflddir2.sql
+set SQL_FILES_SPARQL=sparql.sql sparql_io.sql rdf_sponge.sql rdf_schema_objects.sql rdf_void.sql rdflddir2.sql ttlpv.sql
 set SQL_FILES_SPARQL_INIT=useraggr.sql sparql_init.sql
 
 rm -f sql_code.c sql_code_1.c sql_code_ws.c sql_code_repl.c sql_code_dav.c sql_code_ddk.c sql_code_sys.c sql_code_uddi.c 
