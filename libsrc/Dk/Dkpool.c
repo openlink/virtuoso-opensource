@@ -1938,6 +1938,7 @@ ps_compare (const void *s1, const void *s2)
 int
 munmap_ck (void* ptr, size_t sz)
 {
+#ifdef HAVE_SYS_MMAN_H
   int rc;
   /* mark freeing before the free and if free fails remark as allocd.  Else concurrent alloc on different thread can get the just freed thing and it will see the allocd bits set */
   mp_mmap_mark  (ptr, sz, 0);
@@ -1950,6 +1951,9 @@ munmap_ck (void* ptr, size_t sz)
   log_error ("munmap failed with errno %d ptr %p sz %ld", errno, ptr, sz);
   GPF_T1 ("munmap failed with other than ENOMEM");
   return -1;
+#else
+  return 0;
+#endif
 }
 
 
