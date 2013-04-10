@@ -1168,10 +1168,17 @@ pldbg_cmd_execute (dk_session_t * ses, caddr_t * args)
 void
 pldbg_loop (void)
 {
+  client_connection_t * cli = client_connection_create ();
   int mode;
   dk_session_t *ses;
   caddr_t cmd;
   pldbg_message_t * pd;
+  IN_TXN;
+  cli_set_new_trx (cli);
+  LEAVE_TXN;
+  sqlc_set_client (cli);
+  SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_IMMEDIATE_CLIENT, cli);
+
   for(;;)
     {
       semaphore_enter (pldbg_sem);
