@@ -62,7 +62,7 @@ DBG_HASHEXT_NAME (id_hash_allocate) (DBG_PARAMS id_hashed_key_t buckets, int key
 
 
 #define ID_HASH_FREE_INTERNALS(hash) \
-  DBG_HASHEXT_FREE ((char *) ((hash)->ht_array), -1)
+  DBG_HASHEXT_FREE ((char *) ((hash)->ht_array), (hash)->ht_buckets * (hash)->ht_bucket_length)
 
 
 void
