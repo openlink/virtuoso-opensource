@@ -1338,6 +1338,7 @@ static long st_has_vdb =
   0;
 char st_os_user_name[512];
 static char *_st_os_user_name = &st_os_user_name[0];
+extern long srv_cpu_count;
 
 
 
@@ -1623,6 +1624,7 @@ stat_desc_t stat_descs [] =
     {"db_sizeof_wide_char", &db_sizeof_wide_char, NULL},
 
     {"st_host_name", NULL, &dns_host_name},
+    {"st_cpu_count", &srv_cpu_count, NULL},
     {"st_default_language", NULL, &server_default_language_name},
 
     {"st_os_user_name", NULL, &_st_os_user_name},
