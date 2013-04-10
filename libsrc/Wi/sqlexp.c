@@ -245,7 +245,7 @@ sqlc_call_exp (sql_comp_t * sc, dk_set_t * code, state_slot_t * ret, ST * tree)
     }
   if ((sqlc_trans_funcs (sc, tree, ret, code)))
     return;
-  if ((func_len > 10) && !stricmp (func + (func_len - 10), " (w/cache)") && (n_params > 0))
+  if ((func_len > 9) && !stricmp (func + (func_len - 9), "__w_cache") && (n_params >= 1))
     {
       state_slot_t *cache = ssl_new_inst_variable (sc->sc_cc, "cache", DV_ARRAY_OF_POINTER);
       ((ptrlong *)(act_params[n_params - 1]))[0] = cache->ssl_index;
