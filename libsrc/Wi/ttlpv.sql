@@ -590,3 +590,27 @@ create procedure ID_TO_IRI_VEC (in id iri_id)
   return __box_flags_tweak (pref || subseq (name, 4, length (name)), 1);
 }
 ;
+
+
+create procedure DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (inout triples any)
+{
+  declare tcount, tctr, vcount, vctr integer;
+  declare inx, nt int;
+  declare os, op, oo any array;
+  nt := length (triples);
+  for vectored (in t any array := triples, out os := s1, out op := p1, out oo := o1)
+    {
+      declare s1, p1, o1 any array;
+      s1 := __ro2sq (t[0]);
+      p1 := __ro2sq (t[1]);
+      o1 := __ro2sq (t[2]);
+    }
+  for (inx := 0; inx < nt; inx := inx + 1)
+    {
+      triples[inx][0] := os[inx];
+      triples[inx][1] := op[inx];
+      triples[inx][2] := oo[inx];
+    }
+}
+;
+
