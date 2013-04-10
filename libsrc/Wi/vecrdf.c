@@ -482,7 +482,8 @@ bif_ro2sq_vec_1 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_s
       row_no = sslr_set_no (qst, ssl, row_no);
     dv = ((db_buf_t *) arg->dc_values)[row_no];
     dtp = is_boxes ? DV_TYPE_OF (dv) : dv[0];
-    if (DV_RDF_ID == dtp || DV_RDF_ID_8 == dtp || (DV_RDF == dtp && is_boxes && !((rdf_box_t *) dv)->rb_is_complete))
+    if (DV_RDF_ID == dtp || DV_RDF_ID_8 == dtp
+	|| (DV_RDF == dtp && (is_boxes ? !((rdf_box_t *) dv)->rb_is_complete : !(RBS_COMPLETE & dv[1]))))
       {
 	if (!rb_bits)
 	  {
