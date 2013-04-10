@@ -1608,7 +1608,7 @@ sqlo_inx_sample_1 (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_el
     *sop->sop_sc_key_ret = box_copy_tree (sc_key);
   if (sop && sop->sop_cols)
     itc->itc_st.cols = sop->sop_cols;
-  if (sop && sop->sop_ric && !sop->sop_cols)
+  if (sop && sop->sop_ric)
     {
       tb_sample_t * place;
       mutex_enter (sop->sop_ric->ric_mtx);
@@ -1616,6 +1616,8 @@ sqlo_inx_sample_1 (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_el
       if (place)
 	{
 	  int64 c = place->smp_card;
+	  if (sop->sop_cols && c)
+	    goto sample_for_cols; /* if this is a non-zero cached sample and col samples are wanted then go get them but if 0 then return this */
 	  ic->ic_inx_card = place->smp_inx_card;
 	  dk_free_tree (sc_key);
 	  itc_free (itc);
@@ -1623,6 +1625,7 @@ sqlo_inx_sample_1 (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_el
 	  sop->sop_res_from_ric_cache = 1;
 	  return c;
 	}
+    sample_for_cols: ;
       mutex_leave (sop->sop_ric->ric_mtx);
     }
   if (so->so_sc->sc_sample_cache)
