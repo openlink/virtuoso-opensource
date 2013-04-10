@@ -3738,6 +3738,11 @@ PrpcInitialize1 (int mem_mode)
 #ifdef _SSL
   ssl_server_init ();
 #endif
+#ifndef NO_THREAD
+#ifdef MALLOC_DEBUG
+  log_info ("*** THIS SERVER BINARY CONTAINS MEMORY DEBUG CODE! ***");
+#endif
+#endif
 }
 
 
