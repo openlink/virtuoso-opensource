@@ -240,11 +240,6 @@ hi_allocate (unsigned int32 sz, int use_memcache, hash_area_t * ha)
       if (HA_FILL == ha->ha_op || HI_CHASH == use_memcache)
 	{
 	  hi->hi_pool = mem_pool_alloc ();
-	  SET_THR_TMP_POOL (hi->hi_pool);
-	  hi->hi_memcache = t_id_hash_allocate (MAX (sz, HI_INIT_SIZE),
-					       sizeof (hi_memcache_key_t), sizeof (caddr_t *), hi_memcache_hash, hi_memcache_cmp);
-	  hi->hi_memcache_from_mp = 1;
-	  SET_THR_TMP_POOL (NULL);
 	}
       else
 	{
@@ -252,7 +247,8 @@ hi_allocate (unsigned int32 sz, int use_memcache, hash_area_t * ha)
 	    sizeof (hi_memcache_key_t), sizeof (caddr_t *), hi_memcache_hash, hi_memcache_cmp);
 	  hi->hi_memcache_from_mp = 0;
 	}
-      id_hash_set_rehash_pct (hi->hi_memcache, 120);
+      if (hi->hi_memcache)
+	id_hash_set_rehash_pct (hi->hi_memcache, 120);
     }
   else
     hi_alloc_elements (hi);
