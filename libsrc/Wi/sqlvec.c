@@ -3041,7 +3041,8 @@ qn_vec_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t * 
 	  {
 	    int org_shadowed;
 	    state_slot_t *sh;
-	    REF_SSL (res, ref);
+	    REF_SSL (res, tn->tn_input[inx]);
+	    ref = tn->tn_input[inx];
 	    sh = ssl_new_vec (sc->sc_cc, ref->ssl_name, ref->ssl_dtp);
 	    sh->ssl_column = ssl_base_ssl (ref)->ssl_column;
 	    sh->ssl_sqt.sqt_non_null = ref->ssl_sqt.sqt_non_null;
