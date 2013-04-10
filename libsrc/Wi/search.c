@@ -2051,7 +2051,23 @@ itc_page_rcf_search (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t * le
 	      if (LONG_REF (row + LD_LEAF)) GPF_T1 ("in geo index, not supposed to have left dummy in a non-leaf position");
 	      goto next_row;
 	    }
-	GPF_T1 ("not supposed to get left dummy in rcf page search");
+
+	  /* 
+ 	   *  In random access one does not hit amatch with a left dummy.  
+           *  In seq access can happen if other itc deletes the row and page this is on then this gets relocated to the 
+	   *  leaf ptr to the left of the delete, in case whole pages are deleted.
+	   *  If so, then take the first branch down from whatever is the next leftmost leaf ptr.  
+	   *  If on leaf already, so left dummy does not point down, go to next row 
+	   */
+	  if (!itc->itc_landed)
+	    GPF_T1 ("not supposed to get left dummy in rcf page search");
+	  else
+	    {
+	      *leaf_ret = LONG_REF (row + LD_LEAF);
+	      if (!*leaf_ret)
+		goto next_row;
+	      return DVC_MATCH;
+	    }
 	}
       rv = IE_ROW_VERSION (row);
       itc->itc_row_data = row;
