@@ -1316,7 +1316,7 @@ ins_fetch (instruction_t * ins, caddr_t * qst)
 
       AC_ENLIST_CK (((query_instance_t*)qst));
     }
-  else
+  else if (ins->_.fetch.row_ctr)
     QST_INT (qst, ins->_.fetch.row_ctr) = nth_row = nth_row + 1;
   if (ins->_.fetch.targets)
     {
