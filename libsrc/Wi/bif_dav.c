@@ -275,8 +275,6 @@ err_ret:
 
   ws->ws_try_pipeline = 0;
 
-  dk_free_tree ((box_t) ws->ws_path);
-  ws->ws_path = NULL;
   ws->ws_params = NULL;
   dk_free_tree (content_transfer_encoding);
   return err;
@@ -443,14 +441,10 @@ p_name_is_set:
 
   log_dav(ws, 1);
 
-  dk_free_tree ((box_t) ws->ws_path);
   dk_free_tree ((box_t) ws->ws_params);
- /*XXX: freed in ws_request dk_free_tree (ws->ws_lines);*/
+  ws->ws_params = NULL;
   strses_flush (ses);
   dk_free_box ((box_t) ses);
-  ws->ws_path = NULL;
-/*XXX: freed in ws_request ws->ws_lines = NULL;*/
-  ws->ws_params = NULL;
   return err;
 }
 
