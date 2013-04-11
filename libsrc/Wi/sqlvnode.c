@@ -645,6 +645,7 @@ subq_node_vec_input (subq_source_t * sqs, caddr_t * inst, caddr_t * state)
 	  END_DO_SET ();
 	}
       qi->qi_set_mask = NULL;
+      qi->qi_n_sets = set_nos->dc_n_values;
       err = subq_next (sqs->sqs_query, inst, flag);
       flag = CR_OPEN;
       if (IS_BOX_POINTER (err))

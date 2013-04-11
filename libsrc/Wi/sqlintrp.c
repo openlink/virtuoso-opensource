@@ -1160,9 +1160,11 @@ subq_next (query_t * subq, caddr_t * inst, int cr_state)
   {
     if (CR_INITIAL == cr_state)
       {
+	int qi_sets = qi->qi_n_sets;
 	if (subq->qr_no_cast_error)
 	  qi->qi_no_cast_error = 1;
 	qn_input (subq->qr_head_node, inst, inst);
+	qi->qi_n_sets = qi_sets;
 	qr_resume_pending_nodes (subq, inst);
       }
     else
