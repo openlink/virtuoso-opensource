@@ -196,9 +196,6 @@ ST * sqlp_wrapper_sqlxml_assign (ST * tree);
 
 int sqlp_tree_has_fun_ref (ST *tree);
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 extern int scn3_lineno;
 extern int scn3_plineno;
 extern int scn3_get_lineno (void);
