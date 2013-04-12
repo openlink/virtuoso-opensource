@@ -3995,6 +3995,7 @@ rdf_core_init (void)
   bif_define ("__i2idc", bif_iri_to_id_if_cached);
   bif_define_typed ("__id2i", bif_id_to_iri, &bt_varchar);
   bif_set_vectored (bif_id_to_iri, bif_id2i_vec);
+  bif_set_uses_index (bif_id_to_iri);
   bif_define ("__id2in", bif_id_to_iri_nosignal);
   bif_define ("rdf_graph_keyword", bif_rdf_graph_keyword);
   bif_define ("iri_split", bif_iri_split);
