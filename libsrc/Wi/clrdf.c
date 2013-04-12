@@ -611,9 +611,11 @@ cl_rdf_call_insert_cb (cucurbit_t * cu, caddr_t * qst, caddr_t * err_ret)
 
   SET_THR_TMP_POOL (cu->cu_clrg->clrg_pool);
   pre = id_hash_allocate (cu->cu_fill, sizeof (caddr_t), 0, treehash, treehashcmp);
+  id_hash_set_rehash_pct (pre, 200);
   rdf_fetch_gs (qi, (caddr_t *) g_iid_to_delete, err_ret, pre);
   dk_free_tree (g_iid_to_delete);
   ins = id_hash_allocate (cu->cu_fill, sizeof (caddr_t), 0, treehash, treehashcmp);
+  id_hash_set_rehash_pct (ins, 200);
   cu_feed_ins (cu, pre, ins, 1, 0, qst);
   cu_feed_del (cu, pre, ins, &deleted, qst);
   SET_THR_TMP_POOL (NULL);
