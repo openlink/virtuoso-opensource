@@ -256,6 +256,8 @@ ins_call_bif (instruction_t * ins, caddr_t * qst, code_vec_t code_vec)
 {
   caddr_t err = NULL;
       caddr_t value;
+  instruction_t ins_tmp;
+  instruction_t * ins_to_use = ins;
   if (ins->_.bif.ret == CV_CALL_PROC_TABLE)
 	{
 	  sqlr_new_error ("42000", "SR184",
@@ -263,23 +265,33 @@ ins_call_bif (instruction_t * ins, caddr_t * qst, code_vec_t code_vec)
 	      "function in a procedure view.  "
 	      "Define an intermediate PL function to call the bif.");
 	}
+  if (ins->_.bif.vectored)
+    {
+#if 0
+      sqlr_new_error ("42000", "SR184", "Vectored Built-in function is not allowed");
+#else
+      ins_tmp = *ins;
+      ins_to_use = &ins_tmp;
+      ins_tmp._.bif.bif = bif_find (ins->_.bif.proc);
+#endif
+    }
 
 #ifdef WIRE_DEBUG
   /*      list_wired_buffers (__FILE__, __LINE__, "BIF call start");*/
 #endif
-  value = ins->_.bif.bif (qst, &err, ins->_.call.params);
+  value = ins_to_use->_.bif.bif (qst, &err, ins_to_use->_.call.params);
 #ifdef WIRE_DEBUG
   /*      list_wired_buffers (__FILE__, __LINE__, "BIF call finish");*/
 #endif
 
       if (!err)
 	{
-      if (ins->_.bif.ret && IS_REAL_SSL (ins->_.bif.ret))
+      if (ins_to_use->_.bif.ret && IS_REAL_SSL (ins_to_use->_.bif.ret))
 	{
 	  if (!IS_BOX_POINTER (value))
-	    qst_set_long (qst, ins->_.bif.ret, (ptrlong)value);
+	    qst_set_long (qst, ins_to_use->_.bif.ret, (ptrlong)value);
 	  else
-	qst_set (qst, ins->_.bif.ret, value);
+	    qst_set (qst, ins_to_use->_.bif.ret, value);
 	}
 	  else
 	    dk_free_tree (value);
