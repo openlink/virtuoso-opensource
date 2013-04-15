@@ -3290,15 +3290,53 @@ res_bool_false:
 SPART *
 sparp_simplify_builtin (sparp_t *sparp, SPART *tree, int *trouble_ret)
 {
+  SPART **orig_args = tree->_.builtin.args;
   SPART *arg1;
-  if (0 == BOX_ELEMENTS_0 (tree->_.builtin.args))
+  int orig_argcount = BOX_ELEMENTS_0 (orig_args);
+  if (0 == orig_argcount)
     {
       trouble_ret[0] = 2;
       return NULL;
     }
-  arg1 = tree->_.builtin.args[0];
+  arg1 = orig_args[0];
   switch (tree->_.builtin.btype)
     {
+    case IN_L:
+      {
+        int argctr, new_argcount = orig_argcount;
+        rdf_val_range_t l_rvr;
+        sparp_get_expn_rvr (sparp, arg1, &l_rvr, 0);
+        if (l_rvr.rvrRestrictions & (SPART_VARR_CONFLICT | SPART_VARR_ALWAYS_NULL))
+          goto res_bool_false; /* see below */
+        for (argctr = new_argcount - 1; argctr > 0; argctr--)
+          {
+            SPART *r_arg = orig_args[argctr];
+            rdf_val_range_t r_rvr;
+            sparp_get_expn_rvr (sparp, r_arg, &r_rvr, 1);
+            sparp_rvr_tighten (sparp, &r_rvr, &l_rvr, ~0);
+            if (r_rvr.rvrRestrictions & (SPART_VARR_CONFLICT | SPART_VARR_ALWAYS_NULL))
+              {
+                if (argctr < new_argcount - 1)
+                  orig_args[argctr] = orig_args[new_argcount - 1];
+                new_argcount--;
+              }
+          }
+        if (2 > new_argcount)
+          goto res_bool_false; /* see below */
+        if (2 == new_argcount)
+          {
+            trouble_ret[0] = 0;
+            return spartlist (sparp, 3, BOP_EQ, arg1, orig_args[1]);
+          }
+        if (new_argcount < orig_argcount)
+          {
+            tree->_.builtin.args = (SPART **)t_alloc_list (new_argcount);
+            memcpy (tree->_.builtin.args, orig_args, new_argcount * sizeof (SPART *));
+            trouble_ret[0] = 0;
+            return tree;
+          }
+        goto trouble_now; /* see below */
+      }
     case SPAR_BIF_ABS: break;
     case SPAR_BIF_BNODE: break;
     case SPAR_BIF_CEIL: break;
@@ -3313,9 +3351,9 @@ sparp_simplify_builtin (sparp_t *sparp, SPART *tree, int *trouble_ret)
       {
         sparp_bool4way_t b4w_arg1 = sparp_cast_var_or_lit_to_bool4way (sparp, arg1);
         if ('T' == b4w_arg1)
-          { trouble_ret[0] = 0; return tree->_.builtin.args[1]; }
+          { trouble_ret[0] = 0; return orig_args[1]; }
         if ('F' == b4w_arg1)
-          { trouble_ret[0] = 0; return tree->_.builtin.args[2]; }
+          { trouble_ret[0] = 0; return orig_args[2]; }
         break;
       }
     case SPAR_BIF_ISBLANK: break;
@@ -4643,13 +4681,27 @@ sparp_flatten_union (sparp_t *sparp, SPART *parent_gp)
 void
 sparp_flatten_join (sparp_t *sparp, SPART *parent_gp)
 {
-  int memb_ctr;
+  int memb_ctr, eq_ctr;
 #ifdef DEBUG
   if (SPAR_GP != SPART_TYPE (parent_gp))
     spar_internal_error (sparp, "sparp_" "flatten_join(): parent_gp is not a GP");
   if ((UNION_L == parent_gp->_.gp.subtype) || (SELECT_L == parent_gp->_.gp.subtype) || (VALUES_L == parent_gp->_.gp.subtype))
     spar_internal_error (sparp, "sparp_" "flatten_join(): parent_gp is not a join");
 #endif
+  SPARP_FOREACH_GP_EQUIV (sparp, parent_gp, eq_ctr, eq)
+    {
+      if ((SPART_VARR_NOT_NULL & eq->e_rvr.rvrRestrictions) && !SPARP_EQ_IS_ASSIGNED_BY_CONTEXT(eq)
+        && (0 == eq->e_gspo_uses) && (1 == BOX_ELEMENTS_0 (eq->e_subvalue_idxs)) )
+        {
+          sparp_equiv_t *sub_eq = SPARP_EQUIV (sparp, eq->e_subvalue_idxs[0]);
+          if (OPTIONAL_L == sub_eq->e_gp->_.gp.subtype)
+            {
+              sub_eq->e_gp->_.gp.subtype = 0;
+              sparp->sparp_rewrite_dirty++;
+            }
+        }
+    }
+  END_SPARP_FOREACH_GP_EQUIV;
   for (memb_ctr = BOX_ELEMENTS (parent_gp->_.gp.members); memb_ctr--; /*no step*/)
     {
       SPART *memb = parent_gp->_.gp.members [memb_ctr];

@@ -400,7 +400,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <token_type> spar_exists_or_not_exists
 %type <tree> spar_service_req
 %type <backstack> spar_service_options_list_opt
-%type <backstack> spar_service_options
+%type <backstack> spar_service_options_opt
 %type <trees> spar_service_option
 %type <tree> spar_ctor_template_nolbra
 %type <nothing> spar_ctor_triples_or_quads_opt
@@ -1443,12 +1443,12 @@ spar_service_req	/* [Virt]	ServiceRequest ::=  'SERVICE' 'Silent'? VarOrIRIref S
 
 spar_service_options_list_opt	/* [Virt]	ServiceOptionList ::=  '(' ( 'DEFINE'? IRIref DefValue ( ',' DefValue )* )+ ')'	*/
 	: /* empty */				{ $$ = NULL; t_set_push (&($$), (SPART *)((ptrlong)IN_L)); t_set_push (&($$), (SPART *)((ptrlong)_STAR)); }
-	| _LPAR spar_service_options _RPAR	{ $$ = $2; }
+	| _LPAR spar_service_options_opt _RPAR	{ $$ = $2; }
 	;
 
-spar_service_options
-	: spar_service_option		{ $$ = NULL; t_set_push (&($$), $1[0]); t_set_push (&($$), $1[1]); }
-	| spar_service_options spar_service_option	{ $$ = $1; t_set_push (&($$), $2[0]); t_set_push (&($$), $2[1]); }
+spar_service_options_opt
+	: /* empty */						{ $$ = NULL; }
+	| spar_service_options_opt spar_service_option		{ $$ = $1; t_set_push (&($$), $2[0]); t_set_push (&($$), $2[1]); }
 	;
 
 spar_service_option

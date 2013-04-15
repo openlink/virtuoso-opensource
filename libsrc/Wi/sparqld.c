@@ -761,6 +761,7 @@ fname_printed:
                 tree->_.gp.subquery->_.req_top.pattern->_.gp.subtype = 0;
                 ssg_sdprint_tree (ssg, tree->_.gp.subquery->_.req_top.pattern);
                 tree->_.gp.subquery->_.req_top.pattern->_.gp.subtype = WHERE_L;
+                t_set_pop (&(ssg->ssg_sd_outer_gps));
                 return;
               }
             if (gp_is_top_in_filter)
@@ -811,6 +812,7 @@ fname_printed:
                 ssg->ssg_indent--;
               }
             END_DO_BOX_FAST;
+            t_set_pop (&(ssg->ssg_sd_outer_gps));
             return;
           case OPTIONAL_L: ssg_puts (" OPTIONAL"); break;
           case WHERE_L: ssg_puts (" WHERE"); break;
@@ -819,34 +821,37 @@ fname_printed:
               SPART *sinv = sparp_get_option (ssg->ssg_sparp, tree->_.gp.options, SPAR_SERVICE_INV);
               int ctr, count;
               ssg_puts (" SERVICE ");
-              ssg_sdprint_tree (ssg, sinv->_.sinv.endpoint);
               if (sinv->_.sinv.silent)
                 ssg_puts (" SILENT ");
-              ssg_puts (" (");
-              DO_BOX_FAST (caddr_t, varname, ctr, sinv->_.sinv.param_varnames)
+              ssg_sdprint_tree (ssg, sinv->_.sinv.endpoint);
+              if (SSG_SD_BI & ssg->ssg_sd_flags)
                 {
-                  ssg_puts (" IN ");
-                  ssg_sdprin_local_varname (ssg, varname);
-                }
-              END_DO_BOX_FAST;
-              count = BOX_ELEMENTS_0 (sinv->_.sinv.defines);
-              for (ctr = 0; ctr < count; ctr += 2)
-                {
-                  caddr_t name = (caddr_t)(sinv->_.sinv.defines[ctr]);
-                  SPART ***vals = (SPART ***)(sinv->_.sinv.defines[ctr+1]);
-                  int valctr;
-                  if (!strcmp (name, "lang:dialect"))
-                    continue;
-                  ssg_puts (" DEFINE ");
-                  ssg_puts (name);
-                  DO_BOX_FAST (SPART **, val, valctr, vals)
+                  ssg_puts (" (");
+                  DO_BOX_FAST (caddr_t, varname, ctr, sinv->_.sinv.param_varnames)
                     {
-                      if (valctr) ssg_putchar (',');
-                      ssg_sdprint_tree (ssg, val[1]);
+                      ssg_puts (" IN ");
+                      ssg_sdprin_local_varname (ssg, varname);
                     }
                   END_DO_BOX_FAST;
+                  count = BOX_ELEMENTS_0 (sinv->_.sinv.defines);
+                  for (ctr = 0; ctr < count; ctr += 2)
+                    {
+                      caddr_t name = (caddr_t)(sinv->_.sinv.defines[ctr]);
+                      SPART ***vals = (SPART ***)(sinv->_.sinv.defines[ctr+1]);
+                      int valctr;
+                      if (!strcmp (name, "lang:dialect"))
+                        continue;
+                      ssg_puts (" DEFINE ");
+                      ssg_puts (name);
+                      DO_BOX_FAST (SPART **, val, valctr, vals)
+                        {
+                          if (valctr) ssg_putchar (',');
+                          ssg_sdprint_tree (ssg, val[1]);
+                        }
+                      END_DO_BOX_FAST;
+                    }
+                  ssg_puts (") ");
                 }
-              ssg_puts (") ");
               break;
             }
           case VALUES_L:
@@ -872,6 +877,7 @@ fname_printed:
               ssg_puts (" }");
               ssg->ssg_indent--;
               ssg_newline (0);
+              t_set_pop (&(ssg->ssg_sd_outer_gps));
               return;
             }
           case 0: ssg_putchar (' '); break;

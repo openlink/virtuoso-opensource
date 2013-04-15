@@ -480,9 +480,10 @@ extern SPART *sparp_find_origin_of_external_var (sparp_t *sparp, SPART *var, int
 If no suitable item found then -1 is returned */
 extern int sparp_find_binv_rset_pos_of_varname (sparp_t *sparp, SPART *wrapping_gp, SPART *binv, caddr_t e_varname);
 
-/*! This finds a position of a variable or an equivalent of that variable in the result-set array made by a sinv.
+/*! This finds a position of a variable or an equivalent of that variable in the result-set/param-list array made by a sinv.
+\c do_search_for_param instructs where to search: true for param-list, zero for result-set.
 If no suitable item found then -1 is returned */
-extern int sparp_find_sinv_rset_pos_of_varname (sparp_t *sparp, SPART *service_gp, caddr_t e_varname);
+extern int sparp_find_sinv_rset_or_param_pos_of_varname (sparp_t *sparp, SPART *service_gp, caddr_t e_varname, int do_search_for_param);
 
 /*! This finds a variable or SPAR_ALIAS in \c retvals whose name is equal to \c varname, return the expression or, if \c return_alias, the whole SPAR_ALIAS */
 extern SPART *sparp_find_subexpn_in_retlist (sparp_t *sparp, const char *varname, SPART **retvals, int return_alias);
