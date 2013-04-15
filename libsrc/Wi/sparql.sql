@@ -461,7 +461,7 @@ create procedure DB.DBA.RDF_REPL_START (in quiet integer := 0)
   repl_publish ('__rdf_repl', '__rdf_repl.log');
   repl_text ('__rdf_repl', '__rdf_repl_flush_queue()');
   DB.DBA.RDF_GRAPH_GROUP_CREATE (UNAME'http://www.openlinksw.com/schemas/virtrdf#rdf_repl_graph_group', 1);
-  registry_set ('DB.DBA.RDF_REPL', cast (now() as varchar));
+  DB.DBA.CL_EXEC ('registry_set (?,?)', vector ('DB.DBA.RDF_REPL', cast (now() as varchar)));
   exec ('checkpoint');
 }
 ;
@@ -475,7 +475,7 @@ create procedure DB.DBA.RDF_REPL_STOP (in quiet integer := 0)
       signal ('RDF99', 'RDF replication is not enabled');
     }
   repl_unpublish ('__rdf_repl');
-  registry_remove ('DB.DBA.RDF_REPL');
+  DB.DBA.CL_EXEC ('registry_remove (?)', vector ('DB.DBA.RDF_REPL'));
 }
 ;
 

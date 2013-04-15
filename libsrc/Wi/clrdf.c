@@ -525,13 +525,15 @@ cu_feed_ins (cucurbit_t * cu, id_hash_t * pre, id_hash_t * ins, int fill_ins, dk
 	  mp_trash (cu->cu_clrg->clrg_pool, (caddr_t) row);
 	TC (tc_g_replace_ins);
 #if 1
+	  inx++;
 	if ((inx % rdf_ld_batch_sz) == 0)
 	  {
 	    cu_gr_next (cu, (query_instance_t *) qst, 1);
 	    bif_commit (qst, &err, NULL);
+	      rdf_repl_gs_batch ((query_instance_t *)qst, (caddr_t *) list_to_array (dk_set_nreverse (*set)), 1);
+	      *set = NULL;
 	    cu_clear (cu);
 	  }
-	inx++;
 #endif
       }
     SET_THR_TMP_POOL (mp);
@@ -558,13 +560,15 @@ cu_feed_del (cucurbit_t * cu, id_hash_t * pre, id_hash_t * ins, dk_set_t * set, 
 	  mp_trash (cu->cu_clrg->clrg_pool, (caddr_t) row);
 	TC (tc_g_replace_del);
 #if 1
+	  inx++;
 	if ((inx % rdf_ld_batch_sz) == 0)
 	  {
 	    cu_gr_next (cu, (query_instance_t *) qst, 1);
 	    bif_commit (qst, &err, NULL);
+	      rdf_repl_gs_batch ((query_instance_t *)qst, (caddr_t *) list_to_array (dk_set_nreverse (*set)), 0);
+	      *set = NULL;
 	    cu_clear (cu);
 	  }
-	inx++;
 #endif
       }
   }
