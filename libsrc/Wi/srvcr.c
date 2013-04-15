@@ -2274,9 +2274,14 @@ bif_cursors_init (void)
   bif_define_typed ("__burst_mode_set", bif_burst_mode_set, &bt_integer);
 }
 
+
+caddr_t bif_iri_to_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
+caddr_t bif_iri_to_id_nosignal (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
+
 int
 bif_is_relocatable (bif_t bif)
 {
+  bif_metadata_t * bmd;
   if (
       /* scrollable cursors */
       bif_sql_set_pos == bif
@@ -2294,6 +2299,13 @@ bif_is_relocatable (bif_t bif)
       || bif_convert == bif
       )
     return 0;
+
+  bmd = find_bif_metadata_by_bif (bif);
+  if (bmd && bmd->bmd_ret_type && DV_IRI_ID ==  bmd->bmd_ret_type->bt_dtp)
+    return 0;
+  if (bif_iri_to_id == bif || bif_iri_to_id_nosignal == bif)
+    return 0;
+
   return 1;
 }
 
