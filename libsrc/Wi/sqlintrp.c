@@ -170,11 +170,12 @@ sqlr_run_bif_in_sandbox (bif_metadata_t *bmd, caddr_t *args, caddr_t *err_ret)
   state_slot_t *ssls = (state_slot_t *)dk_alloc (ssls_size);
   state_slot_t **params = (state_slot_t **)dk_alloc_list (argcount);
   query_instance_t *qi_stub = (query_instance_t *)dk_alloc_list_zero (QI_FIRST_FREE + argcount);
-  caddr_t ret_val;
+  caddr_t ret_val = NULL;
   memset (ssls, 0, ssls_size);
   qi_stub->qi_client = sqlc_client ();
   qi_stub->qi_u_id = U_ID_NOBODY;
   qi_stub->qi_g_id = U_ID_NOGROUP;
+  qi_stub->qi_thread = THREAD_CURRENT_THREAD;
   for (argctr = argcount; argctr--; /* no step */)
     {
       state_slot_t *sl = ssls + argctr;
@@ -194,20 +195,23 @@ sqlr_run_bif_in_sandbox (bif_metadata_t *bmd, caddr_t *args, caddr_t *err_ret)
       if (!bmd->bmd_is_pure)
         sqlr_new_error ("42000", "SR650", "Only pure function can be executed in a sandbox, %.200s() is not pure", bmd->bmd_name);
       ret_val = bmd->bmd_main_impl ((caddr_t *)qi_stub, err_ret, params);
-      err_ret[0] = NULL;
     }
   QR_RESET_CODE
     {
       du_thread_t *self = THREAD_CURRENT_THREAD;
       err_ret[0] = thr_get_error_code (self);
       thr_set_error_code (self, NULL);
-      ret_val = NULL;
       /*no POP_QR_RESET*/;
     }
   END_QR_RESET
   dk_free_box ((caddr_t)qi_stub);
   dk_free_box ((caddr_t)params);
   dk_free (ssls, ssls_size);
+  if (NULL != err_ret[0])
+    {
+      dk_free_tree (ret_val);
+      return NULL;
+    }
   return ret_val;
 }
 
