@@ -3389,8 +3389,12 @@ bif_rdf_obj_ft_rule_count_in_graph (caddr_t * qst, caddr_t * err_ret, state_slot
   boxint g_id_int;
   if (CL_RUN_LOCAL != cl_run_local_only)
     {
-      caddr_t cl_text_set = registry_get ("cl_rdf_text_index");
-      char flag = cl_text_set ? cl_text_set[0] : '\0';
+      char flag;
+      caddr_t cl_text_set;
+      IN_TXN;
+      cl_text_set = registry_get ("cl_rdf_text_index");
+      LEAVE_TXN;
+      flag = cl_text_set ? cl_text_set[0] : '\0';
       dk_free_tree (cl_text_set);
       if ('1' == flag)
         return box_num (-1);
