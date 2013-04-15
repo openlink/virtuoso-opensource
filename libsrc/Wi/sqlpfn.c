@@ -2210,9 +2210,11 @@ generic_check:
       if (bmd->bmd_is_pure)
         {
           int argctr, quoted_arg_ctr = 0;
+          size_t args_memsize = 0, res_memsize = 0;
           caddr_t err = NULL;
           caddr_t ret_val;
           caddr_t *unquoted_params = NULL;
+          ST *lit;
           for (argctr = 0; argctr < argcount; argctr++)
             {
               ST *arg = funcall_tree->_.call.params[argctr];
@@ -2237,6 +2239,8 @@ generic_check:
             }
           else
             unquoted_params = (caddr_t *)(funcall_tree->_.call.params);
+          for (argctr = 0; argctr < argcount; argctr++)
+            args_memsize += 8 + (IS_BOX_POINTER (unquoted_params[argctr]) ? box_length (unquoted_params[argctr]) : 8);
           ret_val = sqlr_run_bif_in_sandbox (bmd, unquoted_params, &err);
           if (NULL != err)
             {
@@ -2248,17 +2252,23 @@ generic_check:
               dk_free_tree (err);
               return res;
 #else
-              goto not_a_constant_pure;
+              goto not_a_constant_pure; /* see below */
 #endif
             }
-          else if (LITERAL_P(ret_val))
+          if (!LITERAL_P(ret_val))
             {
-              ST *lit = (ST *)(t_full_box_copy_tree (ret_val));
               dk_free_box (ret_val);
-              return lit;
+              goto not_a_constant_pure; /* see below */
             }
-          else
+          res_memsize = 8 + (IS_BOX_POINTER (ret_val) ? box_length (ret_val) : 8);
+          if ((res_memsize > 0x1000) && (res_memsize > ((args_memsize * 3) / 2)))
+            {
+              dk_free_box (ret_val);
+              goto not_a_constant_pure; /* see below */
+            }
+          lit = (ST *)(t_full_box_copy_tree (ret_val));
             dk_free_box (ret_val);
+          return lit;
 not_a_constant_pure: ;
         }
     }
