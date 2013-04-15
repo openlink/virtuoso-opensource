@@ -4393,15 +4393,16 @@ sparp_find_binv_rset_pos_of_varname (sparp_t *sparp, SPART *wrapping_gp, SPART *
 }
 
 int
-sparp_find_sinv_rset_pos_of_varname (sparp_t *sparp, SPART *service_gp, caddr_t e_varname)
+sparp_find_sinv_rset_or_param_pos_of_varname (sparp_t *sparp, SPART *service_gp, caddr_t e_varname, int do_search_for_param)
 {
   int pos;
   sparp_equiv_t *e_eq;
   SPART *sinv = sparp_get_option (sparp, service_gp->_.gp.options, SPAR_SERVICE_INV);
+  caddr_t *sinv_varnames = do_search_for_param ? sinv->_.sinv.param_varnames : sinv->_.sinv.rset_varnames;
 /* An optimistic search first: */
-  DO_BOX_FAST_REV (caddr_t, ret_vname, pos, sinv->_.sinv.rset_varnames)
+  DO_BOX_FAST_REV (caddr_t, s_vname, pos, sinv_varnames)
     {
-      if (!strcmp (e_varname, ret_vname))
+      if (!strcmp (e_varname, s_vname))
         return pos;
     }
   END_DO_BOX_FAST_REV;
@@ -4412,9 +4413,9 @@ sparp_find_sinv_rset_pos_of_varname (sparp_t *sparp, SPART *service_gp, caddr_t 
       int vnamectr;
       DO_BOX_FAST_REV (caddr_t, e_eq_varname, vnamectr, e_eq->e_varnames)
         {
-          DO_BOX_FAST_REV (caddr_t, ret_vname, pos, sinv->_.sinv.rset_varnames)
+          DO_BOX_FAST_REV (caddr_t, s_vname, pos, sinv_varnames)
             {
-              if (!strcmp (e_eq_varname, ret_vname))
+              if (!strcmp (e_eq_varname, s_vname))
                 return pos;
             }
           END_DO_BOX_FAST_REV;

@@ -138,6 +138,7 @@ extern "C" {
 #define SPAR_BIF_URI		(ptrlong)1148
 #define SPAR_BIF_UUID		(ptrlong)1149
 #define SPAR_BIF_YEAR		(ptrlong)1150
+#define SPAR_BIF__ITEM_IN_VECTOR	(ptrlong)1151
 
 #define SPAR_SML_CREATE		(ptrlong)1201
 #define SPAR_SML_DROP		(ptrlong)1202
@@ -910,6 +911,10 @@ extern void spar_gp_finalize_binds (sparp_t *sparp, dk_set_t bind_revlist);
 extern void spar_gp_add_filter (sparp_t *sparp, SPART *filt);
 extern void spar_gp_add_filters_for_graph (sparp_t *sparp, SPART *graph_expn, int graph_is_named, int suppress_filters_for_good_names);
 extern void spar_gp_add_filters_for_named_graph (sparp_t *sparp);
+/*! Makes an expression for list of possible source graphs (IRI or sponge enxpns), with possible security filtering via \c SPECIAL::sql:RDF_GRAPH_GROUP_LIST_GET().
+\c from_type, from_group_type and from2_subtype are zeroes to ignore or SPART_GRAPH_xxx to indicate the needed names of sources.
+\c req_perms is bitmask of required permissions (usually 0x0 for SPART_GRAPH_NOT_xxx lists and at least RDF_GRAPH_PERM_READ for "positive" lists).
+\returns a bif:vector or something like if \c needle_in is NULL, otherwise it returns a boolean filter "needle_in IN list" */
 extern SPART *spar_make_list_of_sources_expn (sparp_t *sparp, ptrlong from_subtype, ptrlong from_group_subtype, ptrlong from2_subtype, ptrlong req_perms, SPART *needle_in);
 extern SPART *spar_add_propvariable (sparp_t *sparp, SPART *lvar, int opcode, SPART *verb_qname, int verb_lexem_type, caddr_t verb_lexem_text);
 /*! Creates a tree for service invocation but does not add it to the array of all invocations.
