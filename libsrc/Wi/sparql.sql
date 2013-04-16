@@ -13730,7 +13730,7 @@ create function DB.DBA.TTLP_MT (in strg varchar, in base varchar, in graph varch
       if ((graph is null) or (graph = ''))
         signal ('22023', 'DB.DBA.TTLP_MT() requires a valid IRI as a base argument if graph is not specified');
     }
-  DB.DBA.TTLP_V (strg, base, graph);
+  DB.DBA.TTLP_V (strg, base, graph, flags);
 }
 ;
 
