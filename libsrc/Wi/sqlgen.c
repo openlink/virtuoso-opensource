@@ -3010,6 +3010,8 @@ sqlg_may_parallelize (sql_comp_t * sc, data_source_t * qn)
 	  if (KI_TEMP == ts->ts_order_ks->ks_key->key_id)
 	    goto no;
 	}
+      if (IS_QN (ts, setp_node_input) && ((setp_node_t *)ts)->setp_distinct)
+	goto no;
     }
   if (!enable_mt_txn && select_sc->sc_cc->cc_query->qr_need_enlist)
     goto no;
