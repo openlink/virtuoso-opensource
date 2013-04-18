@@ -459,7 +459,7 @@ create procedure TTLP_V_GS (in strg varchar, in base varchar, in graph varchar :
 }
 ;
 
-create procedure DB.DBA.TTLP_V (in strg varchar, in base varchar, in graph varchar := null, in flags integer := 0, in threads int := 3, in transactional int := 0, in log_enable int := 0)
+create procedure DB.DBA.TTLP_V (in strg varchar, in base varchar, in graph varchar := null, in flags integer := 0, in threads int := 3, in transactional int := 0, in log_enable int := null)
 {
   declare ro_id_dict, app_env, g_iid, old_log_mode any;
   if (1 <> sys_stat ('cl_run_local_only'))
@@ -481,7 +481,10 @@ create procedure DB.DBA.TTLP_V (in strg varchar, in base varchar, in graph varch
   };
   old_log_mode := log_enable (null, 1);
   if (transactional = 0)
+    {
+      if (log_enable = 0 or log_enable = 1)
     log_enable (2 + log_enable, 1);
+    }
   else
     threads := 0;
   if (126 = __tag (strg))
@@ -610,6 +613,30 @@ create procedure DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (inout triples any)
       triples[inx][0] := os[inx];
       triples[inx][1] := op[inx];
       triples[inx][2] := oo[inx];
+    }
+}
+;
+
+create procedure DB.DBA.RDF_QUADS_BATCH_COMPLETE (inout triples any)
+{
+  declare tcount, tctr, vcount, vctr integer;
+  declare inx, nt int;
+  declare og, os, op, oo any array;
+  nt := length (triples);
+  for vectored (in t any array := triples, out og := g1, out os := s1, out op := p1, out oo := o1)
+    {
+      declare g1, s1, p1, o1 any array;
+      g1 := __ro2sq (t[0]);
+      s1 := __ro2sq (t[1]);
+      p1 := __ro2sq (t[2]);
+      o1 := __ro2sq (t[3]);
+    }
+  for (inx := 0; inx < nt; inx := inx + 1)
+    {
+      triples[inx][0] := og[inx];
+      triples[inx][1] := os[inx];
+      triples[inx][2] := op[inx];
+      triples[inx][3] := oo[inx];
     }
 }
 ;

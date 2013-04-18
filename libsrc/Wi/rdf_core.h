@@ -322,5 +322,6 @@ extern caddr_t uriqa_dynamic_local_replace_nocheck (caddr_t name, client_connect
 #define RB_BOX_HASH_MIN_LEN 50
 caddr_t mdigest5 (caddr_t str);
 boxint rdf_new_iri_id (lock_trx_t * lt, char ** value_seq_ret, int nth, query_instance_t * qi);
+int rdf_graph_is_in_enabled_repl (caddr_t * qst, iri_id_t q_iid, int *answer_is_one_for_all_ret);
 
 #endif

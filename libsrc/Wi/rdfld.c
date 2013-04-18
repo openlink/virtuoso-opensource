@@ -33,6 +33,7 @@
 
 
 query_t *rl_queries[10];
+query_t * rl_del_qrs[10];
 query_t *rl_all_keys_qr;
 query_t *rl_graph_words_qr;
 state_slot_t ssl_set_no_dummy;
@@ -205,9 +206,8 @@ cu_rl_local_exec (cucurbit_t * cu)
   END_DO_SET ();
 }
 
-
 caddr_t
-aq_rl_key_func (caddr_t av, caddr_t * err_ret)
+aq_rl_key_func_1 (caddr_t av, caddr_t * err_ret, int ins)
 {
   caddr_t *args = (caddr_t *) av;
   cl_req_group_t *clrg = (cl_req_group_t *) args[0];
@@ -215,7 +215,7 @@ aq_rl_key_func (caddr_t av, caddr_t * err_ret)
   int nth_key = unbox (args[1]);
   client_connection_t *cli = GET_IMMEDIATE_CLIENT_OR_NULL;
   caddr_t *params = ((caddr_t **) cu->cu_cd)[nth_key];
-  query_t *qr = rl_queries[nth_key];
+  query_t *qr = ins ? rl_queries[nth_key] : rl_del_qrs[nth_key];
   dk_free_box (args[1]);
   dk_free_box (av);
   if (0 == ((data_col_t **) params)[0]->dc_n_values)
@@ -224,6 +224,18 @@ aq_rl_key_func (caddr_t av, caddr_t * err_ret)
     *err_ret = qr_exec (cli, qr, CALLER_LOCAL, "", NULL, NULL, params, NULL, 0);
   dk_free_box ((caddr_t) clrg);
   return NULL;
+}
+
+caddr_t
+aq_rl_key_func (caddr_t av, caddr_t * err_ret)
+{
+  return aq_rl_key_func_1 (av, err_ret, 1);
+}
+
+caddr_t
+aq_rl_del_key_func (caddr_t av, caddr_t * err_ret)
+{
+  return aq_rl_key_func_1 (av, err_ret, 0);
 }
 
 int rl_query_inited;
@@ -238,6 +250,7 @@ rl_query_init (dbe_table_t * quad_tb)
   if (rl_query_inited == quad_tb->tb_primary_key->key_id)
     return;
   pars[0] = 0;
+  nth_key = 0;
   DO_SET (dbe_key_t *, key, &quad_tb->tb_keys)
   {
     int first = 1;
@@ -257,9 +270,27 @@ rl_query_init (dbe_table_t * quad_tb)
       sqlr_resignal (err);
   }
   END_DO_SET ();
-  rl_all_keys_qr =
-      sql_compile ("insert soft DB.DBA.RDF_QUAD option (vectored) (G, S, P, O) values (?, ?, ?, ?)", bootstrap_cli, &err,
-      SQLC_DEFAULT);
+  nth_key = 0;
+  DO_SET (dbe_key_t *, key, &quad_tb->tb_keys)
+    {
+      int first = 1;
+      if (key->key_distinct)
+	continue;
+      sprintf (txt, "delete from RDF_QUAD table option (index %s, vectored) where ", key->key_name);
+      DO_SET (dbe_column_t *, col, &key->key_parts)
+	{
+	  sprintf (txt + strlen (txt), "%s %s = ? ", first ? "" : "AND", col->col_name);
+	  first = 0;
+	}
+      END_DO_SET();
+      sprintf (txt + strlen (txt), "option (index %s, vectored)", key->key_name);
+      rl_del_qrs[nth_key] = sql_compile (txt, bootstrap_cli, &err, SQLC_DEFAULT);
+      nth_key++;
+      if (err)
+	sqlr_resignal (err);
+    }
+  END_DO_SET();
+  rl_all_keys_qr = sql_compile ("insert soft DB.DBA.RDF_QUAD option (vectored) (G, S, P, O) values (?, ?, ?, ?)", bootstrap_cli, &err, SQLC_DEFAULT);
   if (err)
     sqlr_resignal (err);
   rl_graph_words_qr = sql_compile ("DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH  (?, ?)", bootstrap_cli, &err, SQLC_DEFAULT);
@@ -299,6 +330,7 @@ cu_rl_graph_words (cucurbit_t * cu, caddr_t g_iid)
   dk_free_box ((caddr_t) pars);
 }
 
+void rdf_repl_gs_batch (query_instance_t * qi, caddr_t * batch, int ins);
 
 void
 cu_rl_cols (cucurbit_t * cu, caddr_t g_iid)
@@ -315,60 +347,91 @@ cu_rl_cols (cucurbit_t * cu, caddr_t g_iid)
   data_col_t *p_dc = mp_data_col (clrg->clrg_pool, &ssl_iri_dummy, dc_batch_sz);
   data_col_t *o_dc = mp_data_col (clrg->clrg_pool, &ssl_any_dummy, dc_batch_sz);
   int is_gs = BOX_ELEMENTS (cu->cu_input_funcs) == 5;
+  int is_del = cu->cu_rdf_load_mode == RDF_LD_DEL_GS, allg;
+  dk_set_t set = NULL;
+  caddr_t tmp[5], * quad;
+  BOX_AUTO_TYPED (caddr_t *, quad, tmp, 4 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
 
   rl_query_init (quad_tb);
   for (inx = 0; inx < cu->cu_fill; inx++)
     {
       caddr_t *row = (caddr_t *) cu->cu_rows[inx];
+      caddr_t gx;
+      /* dpipe from replication cb  */
+      if (cu->cu_rdf_load_mode == RDF_LD_INS_GS || cu->cu_rdf_load_mode == RDF_LD_DEL_GS)
+	{
+	  caddr_t x = row[5];
+	  dc_append_box (g_dc, row[2]); /* G */
+	  dc_append_box (s_dc, row[3]); /* S */
+	  dc_append_box (p_dc, row[4]); /* P */
+	  if (DV_RDF == DV_TYPE_OF (x)) /* O */
+	    {
+	      QNCAST (rdf_box_t, rb, x);
+	      int is_rb = rb->rb_is_complete && rb->rb_ro_id;
+	      if (is_rb) rb->rb_is_complete = 0;
+	      dc_append_box (o_dc, x);
+	      if (is_rb) rb->rb_is_complete = 1;
+	    }
+	  else
+	    dc_append_box (o_dc, row[5]);
+	  continue;
+	}
+      /* ttlpv loader */
       if (is_gs)
-	dc_append_box (g_dc, row[6]);
+	gx = row[6];
       else
-      dc_append_box (g_dc, g_iid);
+	gx = g_iid;
+      dc_append_box (g_dc, gx);
       dc_append_box (s_dc, row[2]);
       dc_append_box (p_dc, row[3]);
+      quad[0] = gx;
+      quad[1] = row[2];
+      quad[2] = row[3];
       if (DV_DB_NULL == DV_TYPE_OF (row[4]))
 	{
 	  caddr_t x = row[5];
 	  QNCAST (rdf_box_t, rb, x);
 	  int is_rb = DV_RDF == DV_TYPE_OF (x) && rb->rb_is_complete && rb->rb_ro_id;
+	  if (DV_DB_NULL == DV_TYPE_OF (x) || DV_STRING == DV_TYPE_OF (x))
+	    sqlr_new_error ("42000",  "CL...",  "NULL and string not allowed for O column value");
 	  if (is_rb)
 	    rb->rb_is_complete = 0;
 	  dc_append_box (o_dc, x);
 	  if (is_rb)
 	    rb->rb_is_complete = 1;
+	  quad[3] = x;
 	}
       else
+	{
 	dc_append_box (o_dc, row[4]);
+	  quad[3] = row[4];
+	}
+      if (rdf_graph_is_in_enabled_repl ((caddr_t *)qi, unbox_iri_id (quad[0]), &allg))
+	dk_set_push (&set, box_copy_tree (quad));
     }
+  BOX_DONE (quad, tmp);
+  if (set)
+    rdf_repl_gs_batch (qi, (caddr_t *) list_to_array (dk_set_nreverse (set)), 1);
 
   cu->cu_cd = (caddr_t *) mp_alloc_box (clrg->clrg_pool, sizeof (caddr_t) * dk_set_length (quad_tb->tb_keys), DV_BIN);
   DO_SET (dbe_key_t *, key, &quad_tb->tb_keys)
   {
     int n_parts = dk_set_length (key->key_parts);
     int nth_part = 0;
-    caddr_t *box = (caddr_t *) mp_alloc_box (clrg->clrg_pool, sizeof (caddr_t) * n_parts, DV_BIN);
+      caddr_t * box;
+      if (is_del && key->key_distinct) /* delete is on full inxes */
+	continue;
+      box = (caddr_t*)mp_alloc_box (clrg->clrg_pool, sizeof (caddr_t) * n_parts, DV_BIN);
     cu->cu_cd[nth_key] = (caddr_t) box;
     DO_SET (dbe_column_t *, col, &key->key_parts)
     {
       data_col_t *dc = NULL;
       switch (col->col_name[0])
 	{
-	case 'G':
-	case 'g':
-	  dc = g_dc;
-	  break;
-	case 'S':
-	case 's':
-	  dc = s_dc;
-	  break;
-	case 'P':
-	case 'p':
-	  dc = p_dc;
-	  break;
-	case 'O':
-	case 'o':
-	  dc = o_dc;
-	  break;
+	    case 'G': case 'g':  dc = g_dc; break;
+	    case 'S': case 's':  dc = s_dc; break;
+	    case 'P': case 'p':  dc = p_dc; break;
+	    case 'O': case 'o':  dc = o_dc; break;
 	}
       box[nth_part++] = (caddr_t) dc;
     }
@@ -385,7 +448,9 @@ cu_rl_cols (cucurbit_t * cu, caddr_t g_iid)
   nth_key = 0;
   DO_SET (dbe_key_t *, key, &quad_tb->tb_keys)
   {
-    aq_request (aq, aq_rl_key_func, list (2, box_copy ((caddr_t) clrg), box_num (nth_key++)));
+      if (is_del && key->key_distinct) /* delete is on full inxes */
+	continue;
+      aq_request  (aq, is_del ? aq_rl_del_key_func : aq_rl_key_func, list (2, box_copy ((caddr_t)clrg), box_num (nth_key++)));
   }
   END_DO_SET ();
   cu_rl_graph_words (cu, g_iid);
@@ -440,8 +505,7 @@ l_make_ro_disp (cucurbit_t * cu, caddr_t * args, value_state_t * vs)
 	{
 	  QNCAST (rdf_bigbox_t, rbb, rb);
 	  if (!rb->rb_ro_id)
-	    cu_local_dispatch (cu, vs, cf, (caddr_t) ap_list (&ap, 5, rbb->rbb_chksum, ap_box_num (&ap, dt_lang), content,
-		    (caddr_t) (ptrlong) rb->rb_is_text_index, ap_box_num (&ap, 0)));
+	    cu_local_dispatch (cu, vs, cf, (caddr_t) ap_list (&ap, 5, rbb->rbb_chksum, ap_box_num (&ap, dt_lang), content, (caddr_t)(ptrlong)rb->rb_is_text_index, ap_box_num (&ap, 0)));
 	  else
 	    cu_set_value (cu, vs, box_copy_tree (box));
 	  return NULL;
@@ -473,14 +537,12 @@ l_make_ro_disp (cucurbit_t * cu, caddr_t * args, value_state_t * vs)
       if (len > RB_BOX_HASH_MIN_LEN)
 	{
 	  caddr_t trid = mdigest5 (content);
-	  cu_local_dispatch (cu, vs, cf, (caddr_t) ap_list (&ap, 5, trid, ap_box_num (&ap, dt_lang), content,
-		  (caddr_t) (ptrlong) is_text, NULL));
+	  cu_local_dispatch (cu, vs, cf, (caddr_t) ap_list (&ap, 5, trid, ap_box_num (&ap, dt_lang), content, (caddr_t)(ptrlong)is_text, NULL));
 	  dk_free_box (trid);
 	  dk_free_box (allocd_content);
 	  return NULL;
 	}
-      cu_local_dispatch (cu, vs, cf, (caddr_t) ap_list (&ap, 5, content, ap_box_num (&ap, dt_lang), l_null,
-	      (caddr_t) (ptrlong) is_text, NULL));
+      cu_local_dispatch (cu, vs, cf, (caddr_t) ap_list (&ap, 5, content, ap_box_num (&ap, dt_lang), l_null, (caddr_t)(ptrlong)is_text, NULL));
       dk_free_box (allocd_content);
       return NULL;
     }
@@ -500,8 +562,7 @@ l_make_ro_disp (cucurbit_t * cu, caddr_t * args, value_state_t * vs)
   if (len > RB_BOX_HASH_MIN_LEN)
     {
       caddr_t trid = mdigest5 (box);
-      cu_local_dispatch (cu, vs, cf, (caddr_t) ap_list (&ap, 5, trid, ap_box_num (&ap, dt_lang), vs->vs_org_value, (caddr_t) 1,
-	      NULL));
+      cu_local_dispatch (cu, vs, cf, (caddr_t) ap_list (&ap, 5, trid, ap_box_num (&ap, dt_lang), vs->vs_org_value, (caddr_t) 1, NULL));
       dk_free_box (trid);
       return NULL;
     }
@@ -645,11 +706,15 @@ bif_rl_dp_ids (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   cl_req_group_t *clrg = bif_clrg_arg (qst, args, 0, "rl_ids");
   caddr_t g_iid = bif_arg (qst, args, 1, "rl_ids");
   cucurbit_t *cu = clrg->clrg_cu;
+  void * save;
   if (!cu)
     sqlr_new_error ("42000", "CL...", "Not a dpipe daq");
   cu->cu_qst = qst;
+  save = cu->cu_ready_cb;
+  cu->cu_ready_cb = NULL; /* local exec, CBs are for clustered operation */
   cu_rl_local_exec (cu);
   cu_rl_cols (cu, g_iid);
+  cu->cu_ready_cb = save;
   return NULL;
 }
 
