@@ -392,8 +392,8 @@ cu_rl_cols (cucurbit_t * cu, caddr_t g_iid)
 	  caddr_t x = row[5];
 	  QNCAST (rdf_box_t, rb, x);
 	  int is_rb = DV_RDF == DV_TYPE_OF (x) && rb->rb_is_complete && rb->rb_ro_id;
-	  if (DV_DB_NULL == DV_TYPE_OF (x) || DV_STRING == DV_TYPE_OF (x))
-	    sqlr_new_error ("42000",  "CL...",  "NULL and string not allowed for O column value");
+	  if (DV_DB_NULL == DV_TYPE_OF (x))
+	    sqlr_new_error ("42000",  "CL...",  "NULL for O position");
 	  if (is_rb)
 	    rb->rb_is_complete = 0;
 	  dc_append_box (o_dc, x);
