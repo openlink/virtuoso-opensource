@@ -1005,7 +1005,7 @@ ce_insert_int_delta (ce_ins_ctx_t * ceic, ce_ins_ctx_t ** col_ceic, db_buf_t ce,
     {
       if (DV_DATE == any_ce_dtp (ce_first_val))
 	{
-	  base = DT_DAY (ce_first_val + 1);
+	  base = DT_UDAY (ce_first_val + 1);
 	  run1 = run = base & 0xff;
 	  rl_ptr = ce_first_val + 3;
 	  base_1 = base = (base & CLEAR_LOW_BYTE) - base + run1;

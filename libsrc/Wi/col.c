@@ -200,7 +200,7 @@ any_num_f (dtp_t * any)
       {
 	if (DT_TYPE_DATE == DT_DT_TYPE (any + 1))
 	  {
-	    return DT_DAY (any + 1);
+	    return DT_UDAY (any + 1);
 	  }
       }
     default:
@@ -253,7 +253,7 @@ any_add (db_buf_t any, int len, int64 delta, db_buf_t res, dtp_t flags)
     {
     case DV_DATETIME:
       {
-	int day = DT_DAY (any + 1);
+	int day = DT_UDAY (any + 1);
 	res[0] = DV_DATETIME;
 	memcpy_dt (res + 1, any + 1);
 	DT_SET_DAY (res + 1, (day + delta));
@@ -2019,7 +2019,7 @@ new_ce:
 	      {
 		if (DV_DATE == any_ce_dtp (ce_first_val))
 		  {
-		    base = DT_DAY (ce_first_val + 1);
+		    base = DT_UDAY (ce_first_val + 1);
 		    run1 = run = base & 0xff;
 		    base_1 = base = (base & CLEAR_LOW_BYTE) - base + run1;
 		  }
@@ -3287,10 +3287,10 @@ asc_cmp_delta (dtp_t * dv1, dtp_t * dv2, uint32 * num_ret, int is_int_delta)
       if (DT_TYPE_DATE != DT_DT_TYPE (dv2 + 1))
 	{
 	  return ASC_NUMBERS;
-	  n1 = DT_DAY (dv1 + 1);
+	  n1 = DT_UDAY (dv1 + 1);
 	  if (is_int_delta)
 	    n1 &= CLEAR_LOW_BYTE;
-	  n2 = DT_DAY (dv2 + 1);
+	  n2 = DT_UDAY (dv2 + 1);
 	  if (n1 > n2)
 	    return DVC_DTP_GREATER;
 	  *num_ret = n2 - n1;
