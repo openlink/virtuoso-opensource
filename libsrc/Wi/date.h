@@ -74,6 +74,14 @@ extern void dt_audit_fields (char *dt);
     (CUC (dt, 1) << 8) | \
     CUC (dt, 2) | ((CUC (dt, 0) & 0x80) ? 0xff000000 : 0)))
 
+/* unsigned day, dt sorts as unsigned binary string for index, so when using numeric offset it is also unsigned for dates that have the high bit set */
+#define DT_UDAY(dt) \
+  ((int32)((CUC (dt, 0) << 16) | \
+    (CUC (dt, 1) << 8) | \
+	   CUC (dt, 2)))
+
+
+
 #define DT_HOUR(dt) \
   CUC(dt, 3)
 
