@@ -1476,7 +1476,7 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "TransitivityCacheEnabled", &tn_cache_enable) == -1)
     tn_cache_enable = 0;
   if (cfg_getlong (pconfig, section, "ShortenLongURIs", &rdf_shorten_long_iri) == -1)
-    rdf_shorten_long_iri = 0;
+    rdf_shorten_long_iri = 1;
   if (cfg_getlong (pconfig, section, "EnablePstats", &enable_p_stat) == -1)
     enable_p_stat = 1;
 
