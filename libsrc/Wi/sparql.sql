@@ -11950,6 +11950,9 @@ no_match: ;
 }
 ;
 
+registry_set ('DB.DBA.RDF_QM_PEDANTIC_GC', '')
+;
+
 create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, inout tablename varchar, in o_dt any := null, in o_lang any := null) returns varchar
 {
 /* iqi qmv: vector ( UNAME'http://www.openlinksw.com/schemas/oplsioc#user_iri' ,
@@ -11958,7 +11961,7 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
    vector ('^{alias1.}^.U+IS_ROLE = 0'),
    NULL
  ) */
-  declare atables, sqlcols, conds any;
+  declare atables, sqlcols, conds, items_for_pedantic_gc any;
   declare ftextid varchar;
   declare qry_metas any;
   declare atablectr, atablecount integer;
@@ -11976,6 +11979,7 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
   atablecount := length (atables);
   colcount := length (sqlcols);
   condcount := length (conds);
+  items_for_pedantic_gc := NULL;
   if (fmtid <> UNAME'literal')
     {
       DB.DBA.RDF_QM_ASSERT_JSO_TYPE (fmtid, 'http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat');
@@ -12085,7 +12089,7 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
         when __tag of numeric then 'numeric'
         when __tag of nvarchar then 'nvarchar'
         when __tag of long nvarchar then 'longnvarchar'
-	when __tag of bigint then 'integer'
+        when __tag of bigint then 'integer'
         else NULL end;
       if (coltype is null)
         signal ('22023', 'The datatype of column "' || sqlcols[0][2] ||
@@ -12148,6 +12152,23 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
             virtrdf:qmvFormat `iri(?:fmtid)` . } } ) )
     return qmvid;
 /* Create everything if qmv has not been found */
+  if (registry_get ('DB.DBA.RDF_QM_PEDANTIC_GC') <> '')
+    {
+      vectorbld_init (items_for_pedantic_gc);
+      for (sparql define input:storage ""
+        prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+        select ?atable where { graph <http://www.openlinksw.com/schemas/virtrdf#> {
+                `iri(?:qmvatablesid)` ?p ?atable . filter (?p != rdf:type) } } ) do {
+          vectorbld_acc (items_for_pedantic_gc, "atable");
+        }
+      for (sparql define input:storage ""
+        prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+        select ?col where { graph <http://www.openlinksw.com/schemas/virtrdf#> {
+                `iri(?:qmvcolsid)` ?p ?col . filter (?p != rdf:type) } } ) do {
+          vectorbld_acc (items_for_pedantic_gc, "col");
+        }
+      vectorbld_final (items_for_pedantic_gc);
+    }
   sparql define input:storage ""
   prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
   delete from graph <http://www.openlinksw.com/schemas/virtrdf#> {
@@ -12155,12 +12176,6 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
   where { graph <http://www.openlinksw.com/schemas/virtrdf#> {
           `iri(?:qmvid)` ?p ?o .
         } };
-  for (sparql define input:storage ""
-    prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
-    select ?atable where { graph <http://www.openlinksw.com/schemas/virtrdf#> {
-            `iri(?:qmvatablesid)` ?p ?atable . filter (?p != rdf:type) } } ) do {
-      DB.DBA.RDF_QM_GC_SUBTREE ("atable");
-    }
   sparql define input:storage ""
   prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
   delete from graph <http://www.openlinksw.com/schemas/virtrdf#> {
@@ -12168,12 +12183,6 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
   where { graph <http://www.openlinksw.com/schemas/virtrdf#> {
           `iri(?:qmvatablesid)` ?p ?o .
         } };
-  for (sparql define input:storage ""
-    prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
-    select ?col where { graph <http://www.openlinksw.com/schemas/virtrdf#> {
-            `iri(?:qmvcolsid)` ?p ?col . filter (?p != rdf:type) } } ) do {
-      DB.DBA.RDF_QM_GC_SUBTREE ("col");
-    }
   sparql define input:storage ""
   prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
   delete from graph <http://www.openlinksw.com/schemas/virtrdf#> {
@@ -12188,31 +12197,18 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
   where { graph <http://www.openlinksw.com/schemas/virtrdf#> {
           `iri(?:qmvcondsid)` ?p ?o .
         } };
+  if (items_for_pedantic_gc is not null)
+    {
+      foreach (any i in items_for_pedantic_gc) do
+        {
+          DB.DBA.RDF_QM_GC_SUBTREE (i);
+        }
+    }
   if (0 = atablecount)
     qmvatablesid := NULL;
   if (0 = condcount)
     qmvcondsid := NULL;
   columnsformkey := DB.DBA.RDF_QM_CHECK_COLUMNS_FORM_KEY (sqlcols);
-  sparql define input:storage ""
-  prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
-  delete from graph <http://www.openlinksw.com/schemas/virtrdf#> { ?s ?p ?o }
-  from <http://www.openlinksw.com/schemas/virtrdf#>
-  where { ?s ?p ?o . filter (?s = iri(?:qmvid)) };
-  sparql define input:storage ""
-  prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
-  delete from graph <http://www.openlinksw.com/schemas/virtrdf#> { ?s ?p ?o }
-  from <http://www.openlinksw.com/schemas/virtrdf#>
-  where { ?s ?p ?o . filter (?s = iri(?:qmvatablesid)) };
-  sparql define input:storage ""
-  prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
-  delete from graph <http://www.openlinksw.com/schemas/virtrdf#> { ?s ?p ?o }
-  from <http://www.openlinksw.com/schemas/virtrdf#>
-  where { ?s ?p ?o . filter (?s = iri(?:qmvcolsid)) };
-  sparql define input:storage ""
-  prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
-  delete from graph <http://www.openlinksw.com/schemas/virtrdf#> { ?s ?p ?o }
-  from <http://www.openlinksw.com/schemas/virtrdf#>
-  where { ?s ?p ?o . filter (?s = iri(?:qmvcondsid)) };
   sparql define input:storage ""
   prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
   insert in graph <http://www.openlinksw.com/schemas/virtrdf#> {
