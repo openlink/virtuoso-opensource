@@ -1055,10 +1055,12 @@ long ol_backup (const char* prefix, long pages, long timeout, caddr_t* backup_pa
   ctx->octx_dbs = wi_inst.wi_master;
   _pages = ctx->octx_page_count;
 
+  IN_DBS (dbs);
   ctx->octx_free_set = dbs_read_page_set (dbs, db.db_free_set, DPF_FREE_SET);
   ctx->octx_ext_set = dbs_read_page_set (dbs, db.db_extent_set, DPF_EXTENT_SET);
   if (db.db_checkpoint_map)
     ctx->octx_cpt_set = dbs_read_page_set (dbs, db.db_checkpoint_map, DPF_CP_REMAP);
+  LEAVE_DBS (dbs);
 
 #ifdef OBACKUP_TRACE
   fprintf (obackup_trace, "\n\n\Bakup file prefix %s\n", prefix);
