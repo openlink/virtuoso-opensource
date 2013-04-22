@@ -1720,7 +1720,7 @@ sqlg_del_ik (sql_comp_t * sc, delete_node_t * del1, dbe_key_t * key)
 #endif
     if (SSL_VEC != ik->ik_del_slots[n]->ssl_type || f || DV_ANY == col->col_sqt.sqt_dtp)
       {
-	dtp_t dtp = DV_ANY == col->col_sqt.sqt_dtp ? DV_ANY : ssl->ssl_sqt.sqt_dtp;
+	dtp_t dtp = DV_ANY == col->col_sqt.sqt_col_dtp ? DV_ANY : col->col_sqt.sqt_col_dtp;
 	ik->ik_del_cast[n] = ssl_new_vec (sc->sc_cc, "cast", dtp);
 	ik->ik_del_cast[n]->ssl_sqt.sqt_non_null = ssl->ssl_sqt.sqt_non_null;
 	ik->ik_del_cast[n]->ssl_sqt.sqt_col_dtp = col->col_sqt.sqt_dtp;
