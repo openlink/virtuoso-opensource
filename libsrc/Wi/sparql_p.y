@@ -3182,6 +3182,8 @@ spar_qm_sqlcol		/* [Virt]	QmSqlCol	 ::=  QmSqlId | spar_qm_sql_id	*/
 
 spar_qm_sql_id		/* [Virt]	QmSqlId		 ::=  PLAIN_ID | 'TEXT' | 'XML'	*/
 	: SPARQL_PLAIN_ID
+	| GEO_L		{ $$ = t_box_dv_short_string ("GEO"); }
+	| PRECISION_L	{ $$ = t_box_dv_short_string ("PRECISION"); }
 	| TEXT_L	{ $$ = t_box_dv_short_string ("TEXT"); }
 	| XML_L		{ $$ = t_box_dv_short_string ("XML"); }
 	/*| a_L		{ $$ = t_box_dv_short_string ("a"); }*/
