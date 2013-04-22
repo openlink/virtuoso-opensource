@@ -1995,6 +1995,7 @@ cv_refd_slots (sql_comp_t * sc, code_vec_t cv, dk_hash_t * res, dk_hash_t * all_
 	      state_slot_t ** out_save = sc->sc_sel_out;
 	      subq_pred_t * subp = (subq_pred_t *)ins->_.pred.cmp;
 	      sc->sc_sel_out = NULL;
+	      if (res)
 	      sqlg_qn_env (sc, subp->subp_query->qr_head_node, NULL, res);
 	      sc->sc_sel_out = out_save;
 	    }
