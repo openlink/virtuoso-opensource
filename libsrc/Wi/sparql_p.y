@@ -534,7 +534,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <backstack> spar_qm_text_literal_option_commalist
 %type <trees> spar_qm_text_literal_option
 %type <nothing> spar_qm_triples1
-%type <nothing> spar_qm_named_fields
+%type <nothing> spar_qm_named_fields_opt
 %type <nothing> spar_qm_named_field
 %type <nothing> spar_qm_props
 %type <nothing> spar_qm_prop
@@ -2930,7 +2930,7 @@ spar_qm_map_op			/* [Virt]	QmMapOp		 ::=  */
 		  spar_make_qm_sql (sparp_arg, "DB.DBA.RDF_QM_ATTACH_MAPPING",
                     (SPART **)t_list (2, t_box_copy (sparp_env()->spare_storage_name), $6),
 		    t_spartlist_concat ($7, (SPART **)t_list (2, t_box_dv_uname_string ("GRAPH"), $3)) ) ); }
-	| spar_qm_named_fields spar_qm_options_opt	/*... | ( QmNamedField+ QmOptions? QmMapGroup )	*/
+	| spar_qm_named_fields_opt spar_qm_options_opt	/*... | ( QmNamedField* QmOptions? QmMapGroup )	*/
 	    _LBRA {
 		t_set_push (&(sparp_env()->spare_acc_qm_sqls),
 		  spar_qm_make_empty_mapping (sparp_arg, NULL, $2) );
@@ -2943,9 +2943,9 @@ spar_qm_map_op			/* [Virt]	QmMapOp		 ::=  */
 	| spar_qm_triples1				/*... | QmTriples1	*/
 	;
 
-spar_qm_map_iddef	/* [Virt]	QmMapIdDef	 ::=  QmMapTriple | ( QmNamedField+ QmOptions? QmMapGroup )	*/
+spar_qm_map_iddef	/* [Virt]	QmMapIdDef	 ::=  QmMapTriple | ( QmNamedField* QmOptions? QmMapGroup )	*/
 	: spar_qm_map_single { }
-	| spar_qm_named_fields
+	| spar_qm_named_fields_opt
             spar_qm_options_opt _LBRA {
 		t_set_push (&(sparp_env()->spare_acc_qm_sqls),
 		  spar_qm_make_empty_mapping (sparp_arg,
@@ -2978,9 +2978,9 @@ spar_qm_triples1	/* [Virt]	QmTriples1	 ::=  QmFieldOrBlank QmProps	*/
 	    spar_qm_props {}
 	;
 
-spar_qm_named_fields	/* ::=  QmNamedField+	*/
-	: spar_qm_named_field
-	| spar_qm_named_fields spar_qm_named_field
+spar_qm_named_fields_opt	/* ::=  QmNamedField*	*/
+	: /* empty */
+	| spar_qm_named_fields_opt spar_qm_named_field
 	;
 
 spar_qm_named_field	/* [Virt]	QmNamedField	 ::=  ('GRAPH'|'SUBJECT'|'PREDICATE'|'OBJECT') QmField	*/
@@ -3163,8 +3163,10 @@ spar_qm_sqlfunc_arg	/* [Virt]	QmSqlfuncArg	 ::=  ('IN' | QmSqlId) QmSqlId QmSqlt
 	;
 
 spar_qm_sqltype		/* [Virt]	QmSqltype	 ::=  QmSqlId ( 'NOT' 'NULL' )?	*/
-	: spar_qm_sql_id		{ $$ = t_list (2, $1, (ptrlong)0); }
-	| spar_qm_sql_id NOT_NULL_L	{ $$ = t_list (2, $1, (ptrlong)1); }
+	: spar_qm_sql_id				{ $$ = t_list (2, $1, (ptrlong)0); }
+	| spar_qm_sql_id spar_qm_sql_id			{ $$ = t_list (2, t_box_sprintf (300, "%.100s %.100s", $1, $2), (ptrlong)0); }
+	| spar_qm_sql_id NOT_NULL_L			{ $$ = t_list (2, $1, (ptrlong)1); }
+	| spar_qm_sql_id spar_qm_sql_id NOT_NULL_L	{ $$ = t_list (2, t_box_sprintf (300, "%.100s %.100s", $1, $2), (ptrlong)1); }
 	;
 
 spar_qm_sql_in_out_inout	/* ::=  ('IN' | QmSqlId)	*/

@@ -3794,11 +3794,7 @@ spar_shorten_binv_dataset (sparp_t *sparp, SPART *binv)
           if (0 == eq->e_rvr.rvrSprintffCount)
             eq->e_rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
           if (eq->e_rvr.rvrSprintffCount != var->_.var.rvr.rvrSprintffCount)
-            {
-              sparp_rvr_tighten (sparp, &(var->_.var.rvr), &(eq->e_rvr), ~(SPART_VARR_EXTERNAL | SPART_VARR_GLOBAL));
-              var->_.var.rvr.rvrSprintffCount = eq->e_rvr.rvrSprintffCount;
-              var->_.var.rvr.rvrSprintffs = (ccaddr_t *)t_box_copy ((caddr_t)(eq->e_rvr.rvrSprintffs));
-            }
+            sparp_rvr_tighten (sparp, &(var->_.var.rvr), &(eq->e_rvr), ~(SPART_VARR_EXTERNAL | SPART_VARR_GLOBAL));
         }
     }
 }
@@ -4567,7 +4563,17 @@ sparp_refresh_triple_cases (sparp_t *sparp, SPART *triple)
                 qmv_rvr.rvrRestrictions |= (SPART_VARR_FIXED | SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL);
             }
           if (NULL != qmv)
-            sparp_rvr_tighten (sparp, &qmv_rvr, &(qmv->qmvFormat->qmfValRange), ~SPART_VARR_IRI_CALC);
+            {
+              if (qmv->qmvFormat->qmfValRange.rvrSprintffCount)
+                {
+#ifdef DEBUG
+                  if (!(qmv->qmvFormat->qmfValRange.rvrRestrictions & SPART_VARR_SPRINTFF))
+                    dbg_printf (("sparp_" "refresh_triple_cases(): qmvFormat %s has rvrSprintffCount but not SPART_VARR_SPRINTFF\n", qmv->qmvFormat->qmfName));
+#endif
+                  qmv->qmvFormat->qmfValRange.rvrRestrictions |= SPART_VARR_SPRINTFF;
+                }
+              sparp_rvr_tighten (sparp, &qmv_rvr, &(qmv->qmvFormat->qmfValRange), ~SPART_VARR_IRI_CALC);
+            }
           sparp_rvr_loose (sparp, &acc_rvr, &qmv_rvr, ~0);
         }
       if (all_cases_make_only_refs && (SSG_VALMODE_LONG == field_valmode))
@@ -4784,9 +4790,15 @@ just_remove_braces:
           int glued_last_idx = BOX_ELEMENTS (memb->_.gp.filters);
           int glued_first_idx = glued_last_idx - memb->_.gp.glued_filters_count;
           sparp_equiv_t *suspicious_filt_eq = NULL;
+          dk_set_t distint_varnames_of_glued_filters = NULL;
           int glued_idx, memb_equiv_inx;
           if (parent_gp->_.gp.glued_filters_count)
             continue; /* Don't know how to safely mix two lists of glued filters, one already in parent and one from member, hence the sabotage */
+          for (glued_idx = glued_first_idx; glued_idx < glued_last_idx; glued_idx++)
+            {
+              SPART *glued_filt = memb->_.gp.filters[glued_idx];
+              sparp_distinct_varnames_of_tree (sparp, glued_filt, &distint_varnames_of_glued_filters);
+            }
 /* Consider a glued filter in memb that refers to ?x . ?x may present in memb or not, it may also present in parent_gp or not.
 ?x in memb	| ?x in parent	| Can filter be moved?
 Yes & bound	| Yes & bound	| These two are equal due to join so filter can be moved
@@ -4805,19 +4817,21 @@ So the only unsafe case is a fixed filter on a variable that is missing where th
               int parent_conn_ctr;
               if (SPART_VARR_NOT_NULL & memb_eq->e_rvr.rvrRestrictions)
                 continue;
+              if ((0 == memb_eq->e_const_reads) && (0 == memb_eq->e_optional_reads))
+                continue; /* No reads guarantees no uses in glued filters */
               DO_BOX_FAST (ptrlong, parent_equiv_idx, parent_conn_ctr, memb_eq->e_receiver_idxs)
                 {
                   sparp_equiv_t *parent_equiv = SPARP_EQUIV (sparp, parent_equiv_idx);
-                  int glued_idx;
-                  for (glued_idx = glued_first_idx; glued_idx < glued_last_idx; glued_idx++)
+                  int varname_ctr;
+                  DO_BOX_FAST (caddr_t, varname, varname_ctr, parent_equiv->e_varnames)
                     {
-                      SPART *glued_filt = memb->_.gp.filters[glued_idx];
-                      if (sparp_tree_uses_var_of_eq (sparp, glued_filt, parent_equiv))
+                      if (dk_set_position_of_string (distint_varnames_of_glued_filters, varname))
                         {
                           suspicious_filt_eq = memb_eq;
                           goto suspicious_filt_eq_found; /* see below */
                         }
                     }
+                  END_DO_BOX_FAST;
                 }
               END_DO_BOX_FAST;
             }

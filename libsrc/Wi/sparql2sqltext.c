@@ -107,6 +107,7 @@ void rdf_ds_load_all (void)
   qmf->qmfColumnCount = 1;
   qmf->qmfOkForAnySqlvalue = 0; /* It can not store anything except IRI ids */
   qmf->qmfIsBijection = 1;
+  qmf->qmfMapsOnlyNullToNull = 1;
   qmf->qmfIsSubformatOfLong = 1;
   qmf->qmfValRange.rvrRestrictions = SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_NOT_NULL;
   qmf->qmfValRange.rvrDatatype = NULL;
@@ -148,6 +149,7 @@ void rdf_ds_load_all (void)
   qmf->qmfTypemaxTmpl = box_dv_short_string (" DB.DBA.RDF_TYPEMAX_OF_OBJ (^{tree}^)");
   qmf->qmfColumnCount = 1;
   qmf->qmfIsBijection = 1;
+  qmf->qmfMapsOnlyNullToNull = 1;
   qmf->qmfIsSubformatOfLongWhenEqToSql = 1;
   qmf->qmfIsSubformatOfLongWhenRef = 1;
   qmf->qmfOkForAnySqlvalue = 1; /* It can store anything */
@@ -3582,22 +3584,32 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
         else
           { ltext = "(isnotnull ("; rtext = "))"; }
         ssg_puts (ltext);
-        if (IS_BOX_POINTER (arg1_native) && (1 < arg1_native->qmfColumnCount))
+        if (IS_BOX_POINTER (arg1_native) && arg1_native->qmfMapsOnlyNullToNull)
           {
-            int colctr, colcount = arg1_native->qmfColumnCount;
-            ssg_puts (" coalesce (");
-            for (colctr = 0; colctr < colcount; colctr++)
+            switch (arg1_native->qmfColumnCount)
               {
-                if (colctr)
-                  ssg_putchar (',');
-                ssg_print_scalar_expn (ssg, arg1, arg1_native, COL_IDX_ASNAME + colctr);
+              case 0:
+                ssg_puts ("1 /* zero cols */");
+                break;
+              case 1:
+                ssg_print_scalar_expn (ssg, arg1, arg1_native, NULL_ASNAME);
+                break;
+              default:
+                {
+                  int colctr, colcount = arg1_native->qmfColumnCount;
+                  ssg_puts (" coalesce (");
+                  for (colctr = 0; colctr < colcount; colctr++)
+                    {
+                      if (colctr)
+                        ssg_putchar (',');
+                      ssg_print_scalar_expn (ssg, arg1, arg1_native, COL_IDX_ASNAME + colctr);
+                    }
+                  ssg_puts (")");
+                }
               }
-            ssg_puts (")");
           }
         else
-          {
-            ssg_print_scalar_expn (ssg, arg1, arg1_native, NULL_ASNAME);
-          }
+          ssg_print_scalar_expn (ssg, arg1, arg1_native, NULL_ASNAME);
         ssg_puts (rtext);
         goto print_asname;
       }
