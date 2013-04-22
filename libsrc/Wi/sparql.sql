@@ -10759,7 +10759,7 @@ create function DB.DBA.RDF_QM_DROP_MAPPING (in storage varchar, in mapname any) 
       vectorbld_acc (report, vector ('00000', 'Quad map <' || qmid || '> is deleted'));
       vectorbld_final (report);
       if (length (storages))
-        DB.DBA.RDF_QM_APPLY_CHANGES (null, storages);
+        report := vector_concat (report, DB.DBA.RDF_QM_APPLY_CHANGES (null, storages));
       return report;
     }
   else
@@ -10904,7 +10904,7 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
             when 'varchar' then __tag of varchar
             when 'date' then __tag of date
             when 'datetime' then __tag of datetime
-            when 'doubleprecision' then __tag of double precision
+            when 'double precision' then __tag of double precision
             when 'numeric' then __tag of numeric
             when 'nvarchar' then __tag of nvarchar
             else 255 end;
@@ -10916,9 +10916,9 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
   else /* arglist is 1 item long */
     {
       basetype := lower (arglist[0][2]);
-      if (not (basetype in ('integer', 'varchar', 'date', 'datetime', 'doubleprecision', 'numeric', 'nvarchar')))
+      if (not (basetype in ('integer', 'varchar', 'date', /* 'datetime', 'double precision',*/ 'numeric', 'nvarchar')))
         signal ('22023', 'The datatype "' || basetype || '" is not supported in CREATE IRI CLASS <' || classiri || '>' );
-      basetype := 'sql-' || basetype || '-uri';
+      basetype := 'sql-' || replace (basetype, ' ', '') || '-uri';
       if (not (coalesce (arglist[0][3], 0)))
         isnotnull := 0;
       if (basetype = 'nvarchar')
@@ -11107,9 +11107,9 @@ fheaders is, say,
   else
     {
       basetype := lower (arglist[0][2]);
-      if (not (basetype in ('integer', 'varchar', /* 'date', 'doubleprecision', */ 'numeric', 'nvarchar')))
+      if (not (basetype in ('integer', 'varchar', 'date', 'datetime', 'double precision', 'numeric', 'nvarchar')))
         signal ('22023', 'The datatype "' || basetype || '" is not supported in CREATE IRI CLASS <' || classiri || '> USING FUNCTION' );
-      basetype := 'sql-' || basetype || '-uri-fn';
+      basetype := 'sql-' || replace (basetype, ' ', '') || '-uri-fn';
       if (coalesce (arglist[0][3], 0))
         isnotnull := 1;
       else
@@ -11276,7 +11276,7 @@ create function DB.DBA.RDF_QM_DEFINE_LITERAL_CLASS_FORMAT (in classiri varchar, 
             when 'varchar' then __tag of varchar
             when 'date' then __tag of date
             when 'datetime' then __tag of datetime
-            when 'doubleprecision' then __tag of double precision
+            when 'double precision' then __tag of double precision
             when 'numeric' then __tag of numeric
             when 'nvarchar' then __tag of nvarchar
             else 255 end;
@@ -11288,9 +11288,9 @@ create function DB.DBA.RDF_QM_DEFINE_LITERAL_CLASS_FORMAT (in classiri varchar, 
   else /* arglist is 1 item long */
     {
       basetype := lower (arglist[0][2]);
-      if (not (basetype in ('integer', 'varchar', 'date', 'datetime', 'doubleprecision', 'numeric', 'nvarchar')))
+      if (not (basetype in ('integer', 'varchar', 'date', 'datetime', 'double precision', 'numeric', 'nvarchar')))
         signal ('22023', 'The datatype "' || basetype || '" is not supported in CREATE LITERAL CLASS <' || classiri || '>' );
-      basetype := 'sql-' || basetype || '-literal';
+      basetype := 'sql-' || replace (basetype, ' ', '') || '-literal';
       if (not (coalesce (arglist[0][3], 0)))
         isnotnull := 0;
       if (basetype = 'nvarchar')
@@ -11410,7 +11410,7 @@ create function DB.DBA.RDF_QM_DEFINE_LITERAL_CLASS_FORMAT (in classiri varchar, 
         virtrdf:qmfIsBijection ?:bij ;
         virtrdf:qmfDerefFlags ?:deref ;
         virtrdf:qmfArgDtps ?:arg_dtps ;
-        virtrdf:qmfValRange-rvrRestrictions virtrdf:SPART_VARR_IS_LIT ;
+        virtrdf:qmfValRange-rvrRestrictions virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_IRI_CALC;
         virtrdf:qmfValRange-rvrDatatype ?:const_dt ;
         virtrdf:qmfValRange-rvrLanguage ?:const_lang ;
         virtrdf:qmfValRange-rvrSprintffs `iri(?:sprintffsid)` ;
@@ -11467,9 +11467,9 @@ fheaders is identical to DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FUNCTIONS
   else
     {
       basetype := lower (arglist[0][2]);
-      if (not (basetype in ('integer', 'varchar' /*, 'date', 'doubleprecision'*/, 'nvarchar')))
+      if (not (basetype in ('integer', 'varchar' /*, 'date', 'double precision'*/, 'nvarchar')))
         signal ('22023', 'The datatype "' || basetype || '" is not supported in CREATE IRI CLASS <' || classiri || '> USING FUNCTION' );
-      basetype := 'sql-' || basetype || '-literal-fn';
+      basetype := 'sql-' || replace (basetype, ' ', '') || '-literal-fn';
       if (not (coalesce (arglist[0][3], 0)))
         basetype := basetype || '-nullable';
     }
@@ -12078,8 +12078,8 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
         when 188 then 'integer'
         when __tag of integer then 'integer'
         when __tag of varchar then 'varchar'
-        when __tag of real then 'doubleprecision' -- actually single precision float
-        when __tag of double precision then 'doubleprecision'
+        when __tag of real then 'double precision' -- actually single precision float
+        when __tag of double precision then 'double precision'
         when 192 then 'varchar' -- actually character
         when __tag of datetime then 'datetime'
         when __tag of numeric then 'numeric'
@@ -12091,14 +12091,14 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
         signal ('22023', 'The datatype of column "' || sqlcols[0][2] ||
           '" of table "' || sqlcols[0][0] || '" (COL_DTP=' || cast (coldtp as varchar) ||
           ') can not be mapped to an RDF literal in current version of Virtuoso' );
-      if (o_lang is not null and not (coltype in ('varchar', 'longvarchar', 'nvarchar', 'longnvarchar')))
+      if (o_lang is not null and not (coltype in ('varchar', 'long varchar', 'nvarchar', 'long nvarchar')))
         signal ('22023', 'The datatype of column "' || sqlcols[0][2] ||
           '" of table "' || sqlcols[0][0] || '" (COL_DTP=' || cast (coldtp as varchar) ||
           ') conflicts with LANG clause, only strings may have language' );
-      if (o_dt is not null and not (coltype in ('varchar', 'longvarchar', 'nvarchar', 'longnvarchar')))
+      if (o_dt is not null and not (coltype in ('varchar', 'long varchar', 'nvarchar', 'long nvarchar')))
         signal ('22023', 'Current version of Virtuoso does not support DATATYPE clause for columns other than varchar/nvarchar; the column "' || sqlcols[0][2] ||
           '" of table "' || sqlcols[0][0] || '" has COL_DTP=' || cast (coldtp as varchar) );
-      fmtid := 'http://www.openlinksw.com/virtrdf-data-formats#sql-' || coltype;
+      fmtid := 'http://www.openlinksw.com/virtrdf-data-formats#sql-' || replace (coltype, ' ', '');
       if (o_dt is not null)
         {
           if (__tag (o_dt) = __tag of vector)
@@ -15145,7 +15145,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
 {
   declare ver varchar;
   declare inx int;
-  ver := '2012-05-17 0001v6g';
+  ver := '2012-04-18 0001v6g';
   if (USER <> 'dba')
     signal ('RDFXX', 'Only DBA can reload quad map metadata');
   if (not exists (sparql define input:storage "" ask where {

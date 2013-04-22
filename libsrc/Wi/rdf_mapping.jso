@@ -119,7 +119,7 @@ JSO_SCALAR qmfShortOfSqlvalTmpl STRING REQUIRED		--!< ... makes short by sqlvalu
 JSO_SCALAR qmfShortOfLongTmpl STRING REQUIRED		--!< ... makes short by long
 JSO_SCALAR qmfShortOfUriTmpl STRING REQUIRED		--!< ... makes short by uri
 JSO_SCALAR qmfShortOfNiceSqlvalTmpl STRING OPTIONAL	--!< ... works like qmfShortOfSqlvalTmpl for values of one selected data type, not suitable for other types
-JSO_SCALAR qmfDtpOfNiceSqlval INTEGER OPTIONAL          --!< The 'nice' DTP that is an acceptable type of qmfShortOfNiceSqlvalTmpl, zero or unset if no nice type
+JSO_SCALAR qmfDtpOfNiceSqlval INTEGER OPTIONAL		--!< The 'nice' DTP that is an acceptable type of qmfShortOfNiceSqlvalTmpl, zero or unset if no nice type
 -- Templates of expressions that find existing short values from other representations
 JSO_SCALAR qmfExistingShortOfTypedsqlvalTmpl STRING OPTIONAL	--!< ... finds existing obj by SQL value with specified type and/or language
 JSO_SCALAR qmfExistingShortOfSqlvalTmpl STRING OPTIONAL		--!< ... finds existing obj by sqlvalue with no language and a datatype specified by SQL type
@@ -128,6 +128,7 @@ JSO_SCALAR qmfExistingShortOfUriTmpl STRING OPTIONAL		--!< ... finds existing ob
 JSO_SCALAR qmfExistingShortOfNiceSqlvalTmpl STRING OPTIONAL	--!< ... works like qmfExistingShortOfSqlvalTmpl for values of one selected data type, not suitable for other types
 -- Misc
 JSO_SCALAR qmfIsBijection BOOLEAN REQUIRED		--!< Nonzero if the format is bijection so long values are equal IFF short values of the type are equal
+JSO_SCALAR qmfMapsOnlyNullToNull BOOLEAN OPTIONAL	--!< Nonzero if the format gives NULL IFF short value is NULL
 JSO_SCALAR qmfDerefFlags BOOLEAN OPTIONAL		--!< Flags of IRI dereferencing
 JSO_SCALAR qmfIsStable BOOLEAN REQUIRED			--!< Nonzero if sql values are in order IFF of short values are in order
 JSO_SCALAR qmfIsSubformatOfLong BOOLEAN OPTIONAL	--!< Nonzero if the format is subformat of LONG valmode

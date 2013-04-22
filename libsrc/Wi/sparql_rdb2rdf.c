@@ -980,13 +980,32 @@ rdb2rdf_qm_codegen (rdb2rdf_ctx_t *rrc, rdb2rdf_optree_t *rro, caddr_t table_nam
         continue;
       if (SPART_VARR_NOT_NULL & fld_qmv->qmvRange.rvrRestrictions)
         continue;
-      ssg_print_where_or_and (ssg, "non-null cond");
       if (bits_of_fields_here & (1 << fld_ctr))
         {
+          ssg_print_where_or_and (ssg, "non-null cond (value from outer loop)");
           ssg_putchar ("gspo"[fld_ctr]); ssg_puts ("_val is not null");
+        }
+      else if (fld_qmv->qmvFormat->qmfMapsOnlyNullToNull)
+        {
+          qm_format_t *fmt = fld_qmv->qmvFormat;
+          if (1 == fmt->qmfColumnCount)
+            {
+              ssg_print_where_or_and (ssg, "non-null cond (optimized, single col)");
+              ssg_print_tmpl (ssg, fmt, " (^{tree}^ is not null)", prefix, fld_qmv, NULL, NULL_ASNAME);
+            }
+          else
+            {
+              int col_ctr;
+              for (col_ctr = 0; col_ctr < fmt->qmfColumnCount; col_ctr++)
+                {
+                  ssg_print_where_or_and (ssg, "non-null cond (optimized, multipart)");
+                  ssg_print_tmpl (ssg, fmt, "^{comma-list-begin}^ (^{alias-N-dot}^^{column-N}^ is not null)^{end}^", prefix, fld_qmv, NULL, COL_IDX_ASNAME + col_ctr); /*!!!TBD: skip check for not null of columns declared as NOT NULL */
+                }
+            }
         }
       else
         {
+          ssg_print_where_or_and (ssg, "non-null cond (non-optimized)");
           ssg_putchar ('(');
           ssg->ssg_indent++;
           rdb2rdf_print_fld_expn (rro, (RDB2RDF_CODEGEN_SUB_BEFORE_DEL == subopcode), alias_no, qm, fld_qmv, prefix, ssg);
