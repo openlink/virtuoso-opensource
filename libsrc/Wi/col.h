@@ -565,14 +565,29 @@ int asc_str_cmp (db_buf_t dv1, db_buf_t dv2, int len1, int len2, uint32 * num_re
 int64 dv_if_needed (int64 any_param, dtp_t dtp, db_buf_t tmp);
 dtp_t any_ce_dtp (db_buf_t dv);
 
+/* if a float/double becomes int of different length, as in short form of 0, then the box must be reallocd since the len of this must exactly match the length of the dv inside */
+#define FLI_CHLEN(str, af, ff)			\
+{ \
+ if (l1 != db_buf_const_length[(dtp_t)str[0]]) \
+   { caddr_t t = (caddr_t)str;  str = af; ff (t); }	\
+}
+
 /* below note that for a dict the short forms of int must be generated because if mixing long and short forms of equal numbers dict compression is not possible */
-#define CEIC_FLOAT_INT(col_dtp, str) \
+#define CEIC_FLOAT_INT(col_dtp, str, af, ff)	\
+{ \
+dtp_t l1 = db_buf_const_length[(dtp_t)str[0]]; \
   if (DV_DB_NULL == ((db_buf_t)str)[0])		\
     ; \
-  else if (DV_DOUBLE_FLOAT == col_dtp)	       \
+  else if (DV_DOUBLE_FLOAT == col_dtp) {			\
     dv_from_int ((db_buf_t)str, INT64_REF_NA (str + 1));	\
-  else if (DV_SINGLE_FLOAT == col_dtp)	\
-    dv_from_int ((db_buf_t)str, LONG_REF_NA (str + 1));
+    FLI_CHLEN (str, af, ff);					\
+  } else if (DV_SINGLE_FLOAT == col_dtp) {			\
+    dv_from_int ((db_buf_t)str, LONG_REF_NA (str + 1));		\
+    FLI_CHLEN (str, af, ff);					\
+  }								\
+} 
+
+int ff_nop (caddr_t);
 
 int ce_like_filter (col_pos_t * cpo, int row, dtp_t flags, db_buf_t val, int len, int64 offset, int rl);
 int itc_col_count (it_cursor_t * itc, buffer_desc_t * buf, int * row_match_ctr);
@@ -716,6 +731,7 @@ buffer_desc_t *it_new_col_page (index_tree_t * it, dp_addr_t near_dp, it_cursor_
 void itc_delete_blob_array (it_cursor_t * itc, caddr_t * blobs, int fill);
 int ce_space_after (buffer_desc_t * buf, db_buf_t ce);
 caddr_t mp_box_any_dv (mem_pool_t * mp, db_buf_t dv);
+caddr_t box_any_dv (db_buf_t dv);
 void itc_col_ins_locks_nti (it_cursor_t * itc, buffer_desc_t * buf);
 extern int ce_op_decode;
 caddr_t *ce_box (db_buf_t ce, int extra);

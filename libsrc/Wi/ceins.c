@@ -89,7 +89,7 @@ ceic_ins_any_value_ap (ce_ins_ctx_t * ceic, int nth, auto_pool_t * ap, int *from
     return (db_buf_t) box;
   *from_ap = 1;
   r = box_to_any_1 (box, &err, ap, 0);
-  CEIC_FLOAT_INT (ceic->ceic_col->col_sqt.sqt_dtp, r);
+  CEIC_FLOAT_INT (ceic->ceic_col->col_sqt.sqt_dtp, r, box_any_dv ((db_buf_t)r), ff_nop);
   return (db_buf_t) r;
 }
 

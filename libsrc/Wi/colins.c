@@ -881,6 +881,12 @@ col_dp_string (row_delta_t * rd, dp_addr_t dp)
 }
 
 
+int 
+ff_nop (caddr_t x)
+{
+  return 0;
+}
+
 db_buf_t
 ce_1_value (mem_pool_t * mp, dtp_t col_dtp, caddr_t val)
 {
@@ -894,7 +900,8 @@ ce_1_value (mem_pool_t * mp, dtp_t col_dtp, caddr_t val)
   else
     {
       dv = (db_buf_t) box_to_any (val, &err);
-      CEIC_FLOAT_INT (col_dtp, dv);
+
+      CEIC_FLOAT_INT (col_dtp, dv, (db_buf_t) box_any_dv ((db_buf_t) dv), dk_free_box);
     }
   cs_init (&cs, mp, 0, 1);
   cs.cs_exclude = dbf_compress_mask;
@@ -1489,7 +1496,7 @@ ceic_ins_any_value (ce_ins_ctx_t * ceic, int nth)
       return (db_buf_t) box;
     }
   r = mp_box_to_any_1 (box, &err, ceic->ceic_mp, 0);
-  CEIC_FLOAT_INT (ceic->ceic_col->col_sqt.sqt_dtp, r);
+  CEIC_FLOAT_INT (ceic->ceic_col->col_sqt.sqt_dtp, r, mp_box_any_dv (ceic->ceic_mp, (db_buf_t) r), ff_nop);
   return (db_buf_t) r;
 }
 
