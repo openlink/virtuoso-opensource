@@ -3284,7 +3284,7 @@ code_vec_run_v (code_vec_t code_vec, caddr_t * qst, int offset, int run_until, i
 	      }
 	    else
 	      {
-		SET_MASK_NEG (next_mask, qi->qi_set_mask, n_sets);
+		SET_MASK_NEG (next_mask, save_mask, n_sets);
 		qi->qi_set_mask = next_mask;
 		ins = INSTR_ADD_OFS (code_vec, ins->_.cmp.fail);
 		continue;
