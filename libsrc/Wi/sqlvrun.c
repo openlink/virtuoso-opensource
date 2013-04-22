@@ -1524,7 +1524,8 @@ itc_vec_digit_sort (it_cursor_t * itc)
       if (dc)
 	{
 	  dcs[fill++] = dc;
-	  if (!(DCT_NUM_INLINE & dc->dc_type))
+	  if (!(DCT_NUM_INLINE & dc->dc_type)
+	      || dc->dc_any_null)
 	    return 0;
 	}
     }
