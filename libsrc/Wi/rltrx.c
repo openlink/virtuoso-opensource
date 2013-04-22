@@ -1736,7 +1736,7 @@ lt_transact (lock_trx_t * lt, int op)
 	  ltm.ltm_lt = lt;
 	  if (!lt_aq)
 	    {
-	      lt_aq = aq_allocate (lt->lt_client, enable_qp);
+	      lt_aq = aq_allocate (bootstrap_cli, enable_qp);
 	      lt_aq->aq_do_self_if_would_wait = 1;
 	      lt_aq->aq_no_lt_enter = 1;
 	    }
