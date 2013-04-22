@@ -1674,7 +1674,7 @@ retry_after_deadlock:
         goto load_grddl_after_error;
       };
       --log_enable (2, 1);
-      DB.DBA.RDF_LOAD_XHTML_MICRODATA (ret_body, base, coalesce (dest, graph_iri));
+      --DB.DBA.RDF_LOAD_XHTML_MICRODATA (ret_body, base, coalesce (dest, graph_iri));
       rdf_fmt := 1;
       if (groupdest is not null and groupdest <> coalesce (dest, graph_iri))
         DB.DBA.RDF_LOAD_XHTML_MICRODATA (ret_body, base, groupdest);
