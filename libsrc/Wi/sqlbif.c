@@ -14398,6 +14398,24 @@ bif_idn_no_copy_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, sta
 
 
 caddr_t
+bif_asg_v (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  QNCAST (QI, qi, qst);
+  caddr_t v = bif_arg (qst, args, 1, "asg_v");
+  int set = qi->qi_set;
+  state_slot_t * ssl = args[0];
+  qi->qi_set = sslr_set_no (qst, args[0], qi->qi_set);
+  if (SSL_REF == ssl->ssl_type)
+    ssl = ((state_slot_ref_t *)ssl)->sslr_ssl;
+  if (SSL_VEC != ssl->ssl_type)
+    sqlr_new_error ("42000", "VECEQ", "asg_v applies only to vectored variables");
+  qst_set (qst, ssl, v);
+  qi->qi_set = set;
+  return NULL;
+}
+
+
+caddr_t
 bif_rdf_rand_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   double upper_limit = 1.0;
@@ -15431,6 +15449,7 @@ sql_bif_init (void)
   bif_define ("idn", bif_idn);
   bif_define_typed ("idn_no_copy", bif_idn_no_copy, &bt_any_box);
   bif_set_vectored (bif_idn_no_copy, bif_idn_no_copy_vec);
+  bif_define ("asg_v", bif_asg_v);
   bif_define_typed ("vector", bif_vector, &bt_any_box);
   bif_define_typed ("vector_zap_args", bif_vector_zap_args, &bt_any_box);
   bif_define_typed ("get_keyword", bif_get_keyword, &bt_any_box);
