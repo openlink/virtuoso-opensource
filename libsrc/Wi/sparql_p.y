@@ -2979,8 +2979,8 @@ spar_qm_triples1	/* [Virt]	QmTriples1	 ::=  QmFieldOrBlank QmProps	*/
 	;
 
 spar_qm_named_fields_opt	/* ::=  QmNamedField*	*/
-	: /* empty */
-	| spar_qm_named_fields_opt spar_qm_named_field
+	: /* empty */	{}
+	| spar_qm_named_fields_opt spar_qm_named_field	{}
 	;
 
 spar_qm_named_field	/* [Virt]	QmNamedField	 ::=  ('GRAPH'|'SUBJECT'|'PREDICATE'|'OBJECT') QmField	*/

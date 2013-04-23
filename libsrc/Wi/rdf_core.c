@@ -3248,44 +3248,74 @@ key_id_to_namespace_and_local (query_instance_t *qi, iri_id_t iid, caddr_t *subj
 caddr_t
 bif_id_to_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  query_instance_t * qi = (query_instance_t *) qst;
-  iri_id_t iid = bif_iri_id_or_null_arg (qst, args, 0, "id_to_iri");
-  caddr_t iri;
-  if (0L == iid)
-    return NEW_DB_NULL;
-  if ((min_bnode_iri_id () <= iid) && (min_named_bnode_iri_id () > iid))
-    iri = BNODE_IID_TO_LABEL(iid);
-  else
+  query_instance_t *qi = (query_instance_t *) qst;
+  caddr_t iid_box = bif_arg (qst, args, 0, "id_to_iri");
+  switch (DV_TYPE_OF (iid_box))
     {
-      iri = key_id_to_iri (qi, iid);
-      if (!iri)
-        return NEW_DB_NULL;
+    case DV_DB_NULL:
+      return NEW_DB_NULL;
+    case DV_IRI_ID:
+      {
+	iri_id_t iid = unbox_iri_id (iid_box);
+	caddr_t iri;
+	if (0L == iid)
+	  return NEW_DB_NULL;
+	if ((min_bnode_iri_id () <= iid) && (min_named_bnode_iri_id () > iid))
+	  iri = BNODE_IID_TO_LABEL (iid);
+	else
+	  {
+	    iri = key_id_to_iri (qi, iid);
+	    if (!iri)
+	      return NEW_DB_NULL;
+	  }
+	box_flags (iri) = BF_IRI;
+	return iri;
+      }
+    case DV_UNAME:
+      return box_copy (iid_box);
+    case DV_STRING:
+      if (BF_IRI == box_flags (iid_box))
+	return box_copy (iid_box);
+      break;
     }
-  box_flags (iri) = BF_IRI;
-  return iri;
+  sqlr_new_error ("22023", "SR008",
+      "Function id_to_iri needs a string or UNAME or IRI_ID or NULL as argument 1, "
+      "not an arg of type %s (%d)", dv_type_title (DV_TYPE_OF (iid_box)), DV_TYPE_OF (iid_box));
+  return NULL;			/* never reached */
 }
 
 caddr_t
 bif_id_to_iri_nosignal (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  query_instance_t * qi = (query_instance_t *) qst;
+  query_instance_t *qi = (query_instance_t *) qst;
   caddr_t iid_box;
-  iri_id_t iid;
-  caddr_t iri;
   iid_box = bif_arg (qst, args, 0, "id_to_iri_nosignal");
-  if (DV_IRI_ID != DV_TYPE_OF (iid_box))
-    return NEW_DB_NULL;
-  iid = unbox_iri_id (iid_box);
-  if (min_bnode_iri_id () <= iid)
-    iri = BNODE_IID_TO_LABEL(iid);
-  else
+  switch (DV_TYPE_OF (iid_box))
     {
-      iri = key_id_to_iri (qi, iid);
-      if (!iri)
-        return NEW_DB_NULL;
+    case DV_IRI_ID:
+      {
+	iri_id_t iid;
+	caddr_t iri;
+	iid = unbox_iri_id (iid_box);
+	if (min_bnode_iri_id () <= iid)
+	  iri = BNODE_IID_TO_LABEL (iid);
+	else
+	  {
+	    iri = key_id_to_iri (qi, iid);
+	    if (!iri)
+	      return NEW_DB_NULL;
+	  }
+	box_flags (iri) = BF_IRI;
+	return iri;
+      }
+    case DV_UNAME:
+      return box_copy (iid_box);
+    case DV_STRING:
+      if (BF_IRI == box_flags (iid_box))
+	return box_copy (iid_box);
+      break;
     }
-  box_flags (iri) = BF_IRI;
-  return iri;
+  return NEW_DB_NULL;
 }
 
 caddr_t
