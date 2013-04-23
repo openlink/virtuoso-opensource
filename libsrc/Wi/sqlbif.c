@@ -164,6 +164,20 @@ bif_arg_unrdf (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 }
 
 caddr_t
+bif_arg_unrdf_ext (caddr_t * qst, state_slot_t ** args, int nth, const char *func, caddr_t *ret_orig)
+{
+  caddr_t arg;
+  if (((uint32) nth) >= BOX_ELEMENTS (args))
+    sqlr_new_error ("22003", "SR030", "Too few (only %d) arguments for %s.", (int)(BOX_ELEMENTS (args)), func);
+  ret_orig[0] = arg = bif_arg_nochecks(qst,args,nth);
+  if (DV_RDF != DV_TYPE_OF (arg))
+    return arg;
+  if (!((rdf_box_t *)arg)->rb_is_complete)
+    sqlr_new_error ("22003", "SR586", "Incomplete RDF box as argument %d for %s().", nth, func);
+  return ((rdf_box_t *)arg)->rb_box;
+}
+
+caddr_t
 bif_string_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 {
   caddr_t arg = bif_arg_unrdf (qst, args, nth, func);
@@ -14566,8 +14580,8 @@ caddr_t
 bif_rdf_substr_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   char b[128] = "";
-  caddr_t src = bif_arg_unrdf (qst, args, 0, "rdf_substr_impl");
-  rdf_box_t *src_rdf_box = (rdf_box_t *)bif_arg_nochecks (qst, args, 0);
+  rdf_box_t *src_rdf_box;
+  caddr_t src = bif_arg_unrdf_ext (qst, args, 0, "rdf_substr_impl", (caddr_t *)(&src_rdf_box));
   char src_is_rdf_box = DV_TYPE_OF (src_rdf_box) == DV_RDF;
   boxint startl = bif_long_arg(qst, args, 1, "rdf_substr_impl");
   unsigned start = (unsigned) startl - 1;
@@ -14661,12 +14675,11 @@ The LCASE function corresponds to the XPath fn:lower-case function. It returns a
 caddr_t
 bif_rdf_ucase_lcase_impl(caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, char upcase /* == 1 - upcase, ==0 - lcase */)
 {
-  caddr_t str = bif_arg_unrdf (qst, args, 0, upcase ? "rdf_ucase_impl" : "rdf_lcase_impl");
-  rdf_box_t *str_rdf_box = (rdf_box_t *)bif_arg_nochecks (qst, args, 0);
+  rdf_box_t *str_rdf_box;
+  caddr_t str = bif_arg_unrdf_ext (qst, args, 0, upcase ? "rdf_ucase_impl" : "rdf_lcase_impl", (caddr_t *)(&str_rdf_box));
   char src_is_rdf_box = DV_TYPE_OF (str_rdf_box) == DV_RDF;
   size_t i, str_n_chars;
   wchar_t *wide_box = NULL;
-
   box_t r;
   unichar (*unicode3_get_x_case) (unichar);
   switch (DV_TYPE_OF (str))
