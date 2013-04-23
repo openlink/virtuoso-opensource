@@ -2936,6 +2936,7 @@ bif_concatenate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t *qi = (query_instance_t *)qst;
   int n_args = BOX_ELEMENTS (args), inx;
+  /*caddr_t *orig_args = dk_alloc_list_zero (n_args);*/
   caddr_t *cast_args = NULL;
   int alen;
   caddr_t a;
@@ -2947,7 +2948,7 @@ bif_concatenate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   /* First count the required length for a resulting string buffer. */
   for (inx = 0; inx < n_args; inx++)
     {
-      a = bif_arg (qst, args, inx, "concat");
+      /*orig_args[inx] =*/ a = bif_arg_nochecks (qst, args, inx);
       dtp1 = DV_TYPE_OF (a);
       switch (dtp1)
         {
@@ -2969,7 +2970,7 @@ bif_concatenate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       for (inx = 0; inx < n_args; inx++)
         {
-          a = bif_arg (qst, args, inx, "concat");
+          a = /*orig_args[inx];*/ bif_arg_nochecks (qst, args, inx);
           dtp1 = DV_TYPE_OF (a);
           switch (dtp1)
             {
@@ -3009,6 +3010,7 @@ bif_concatenate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
                     caddr_t err = thr_get_error_code (self);
                     thr_set_error_code (self, NULL);
                     POP_QR_RESET;
+                    /*dk_free_box ((caddr_t)orig_args);*/
                     dk_free_tree ((caddr_t)cast_args);
                     sqlr_resignal (err);
                   }
@@ -3021,14 +3023,19 @@ bif_concatenate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   sizeof_char = haveWides ? sizeof (wchar_t) : sizeof (char);
   if (((len + 1) * sizeof_char) > 10000000)
     {
+      /*dk_free_box ((caddr_t)orig_args);*/
       dk_free_tree ((caddr_t)cast_args);
     sqlr_new_error ("22023", "SR578", "The expected result length of string concatenation is too large (%ld bytes)", (long)((len + 1) * sizeof_char));
     }
   if (NULL == (res = dk_try_alloc_box ((len + 1) * sizeof_char, (dtp_t)(haveWides ? DV_WIDE : DV_LONG_STRING))))
-    qi_signal_if_trx_error (qi);
+    {
+      /*dk_free_box ((caddr_t)orig_args);*/
+      dk_free_tree ((caddr_t)cast_args);
+      qi_signal_if_trx_error (qi);
+    }
   for (inx = 0; inx < n_args; inx++)
     {
-      a = bif_arg (qst, args, inx, "concat");
+      a = /*orig_args[inx];*/ bif_arg_nochecks (qst, args, inx);
       dtp1 = DV_TYPE_OF (a);
       switch (dtp1)
         {
@@ -3059,6 +3066,7 @@ bif_concatenate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (fill != len)
     GPF_T1("Memory corruption in bif_concat");
   memset (res + len * sizeof_char, 0, sizeof_char);
+  /*dk_free_box ((caddr_t)orig_args);*/
   if (NULL != cast_args)
     dk_free_tree ((caddr_t)cast_args);
   return res;
@@ -3185,7 +3193,7 @@ bif_replace (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t from_str = bif_string_or_wide_or_null_arg (qst, args, 1, me);
   caddr_t to_str = bif_string_or_wide_or_null_arg (qst, args, 2, me);
   int only_n_flag = (n_args > 3);
-  int only_n, src_bytes, from_bytes, from_strlen, to_bytes, difference, occurrences;
+  int only_n, src_bytes, from_bytes, to_bytes, difference, occurrences;
   int res_bytes, non_changed_bytes, n_changes;
   char *src_tail, *src_end, *res_ptr;
   memmem_fun_t searcher;
@@ -3216,7 +3224,6 @@ bif_replace (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   src_bytes = box_length (src_str) - sizeof_char;
   src_end = src_str + src_bytes;
   from_bytes = box_length (from_str) - sizeof_char;
-  from_strlen = ((sizeof(wchar_t) == sizeof_char) ? 0 : (int) strlen (from_str));
   searcher = (
     (sizeof(wchar_t) == sizeof_char) ?
       widememmem :
@@ -3939,7 +3946,6 @@ bif_sprintf_or_null (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   for (argctr = 0; argctr < argcount; argctr++)
     {
       caddr_t arg = bif_arg_nochecks (qst, args, argctr);
-
       if (DV_DB_NULL == DV_TYPE_OF (arg))
 	return NEW_DB_NULL;
     }
@@ -4455,7 +4461,6 @@ retry_unrdf:
         {
           const char *val_tail = val_start;
           int fmt_idx = dk_set_length (res);
-          int e_found = 0;
           caddr_t val_buf;
           int exp_dtp = 0x80 | ((int)((fmt_idx < expected_dtp_len) ? (expected_dtp_strg[fmt_idx] & 0x7F) : 0));
           if (('-' == val_tail[0]) || ('+' == val_tail[0]))
@@ -4483,7 +4488,6 @@ retry_unrdf:
                   while (isdigit (val_tail_try[0])) val_tail_try++;
                   val_tail = val_tail_try;
                 }
-              e_found = 1;
             }
           if (val_tail != val_end)
             goto POP_format_mismatch_mid_field;
@@ -6676,7 +6680,6 @@ caddr_t
 bif_transparent_or (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   int argctr, argcount = BOX_ELEMENTS (args);
-  int good_arg_idx = -1;
   for (argctr = 0; argctr < argcount; argctr++)
     {
       caddr_t arg = bif_arg_nochecks(qst,args,argctr);
@@ -6692,11 +6695,9 @@ bif_transparent_or (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
           if (0 == unbox (arg))
             continue;
         /* no break */
-        default: good_arg_idx = argctr;
+        default: return box_copy_tree (arg);
         }
     }
-  if (0 <= good_arg_idx)
-    return box_copy_tree (bif_arg_nochecks(qst,args,good_arg_idx));
   return (caddr_t)0;
 }
 
@@ -7761,7 +7762,7 @@ sql_split_text (const char * str2, caddr_t * qst, int flags)
   if (0 == setjmp_splice (&parse_reset))
     {
       int lextype = -1;
-      int trail_pline = -1;
+      /*int trail_pline = -1;*/
       caddr_t full_text, descr;
       size_t full_text_blen;
       scn3split_yy_reset ();
@@ -7781,7 +7782,7 @@ sql_split_text (const char * str2, caddr_t * qst, int flags)
             has_useful_lexems = 1;
           if (((';' == lextype) || ('}' == lextype)) && (0 == scn3_lexdepth))
             {
-              trail_pline = scn3_plineno;
+              /*trail_pline = scn3_plineno;*/
               goto commit_the_statement; /* see below */
             }
           continue;
@@ -10035,12 +10036,11 @@ bif_blob_to_string (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   query_instance_t *qi = (query_instance_t *) QST_INSTANCE (qst);
   caddr_t bh = bif_arg (qst, args, 0, "blob_to_string");
   caddr_t res;
-  long use_temp = 0;
 
   dtp_t dtp = DV_TYPE_OF (bh);
 
-  if (BOX_ELEMENTS (args) > 1)
-    use_temp = (long) bif_long_arg (qst, args, 1, "blob_to_string");
+  /*if (BOX_ELEMENTS (args) > 1)
+    use_temp = (long) bif_long_arg (qst, args, 1, "blob_to_string");*/
 
   if (DV_DB_NULL == dtp)
     {
@@ -10115,12 +10115,12 @@ bif_blob_to_string_output (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
   query_instance_t *qi = (query_instance_t *) QST_INSTANCE (qst);
   caddr_t bh = bif_arg (qst, args, 0, "blob_to_string_output");
   dk_session_t *res;
-  long use_temp = 0;
+  /*long use_temp = 0;*/
 
   dtp_t dtp = DV_TYPE_OF (bh);
 
-  if (BOX_ELEMENTS (args) > 1)
-    use_temp = (long) bif_long_arg (qst, args, 1, "blob_to_string_output");
+  /*if (BOX_ELEMENTS (args) > 1)
+    use_temp = (long) bif_long_arg (qst, args, 1, "blob_to_string_output");*/
 
   if (DV_DB_NULL == dtp)
     {
@@ -11948,7 +11948,7 @@ bif_view_changed (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   char owner[MAX_NAME_LEN];
   char v_q[MAX_NAME_LEN];
   char v_n[MAX_NAME_LEN];
-  query_t * qr;
+  /*query_t * qr; */
   caddr_t err = NULL;
   char *name = bif_string_arg (qst, args, 0, "__view_changed");
   char *qual = bif_string_arg (qst, args, 1, "__view_changed");
@@ -11969,7 +11969,7 @@ bif_view_changed (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   CLI_QUAL_ZERO (cli);
   CLI_SET_QUAL (cli, qual);
   cli->cli_user = owner_user;
-  qr = sql_compile (text, qi->qi_client, &err, SQLC_DO_NOT_STORE_PROC);
+  /* qr =*/ sql_compile (text, qi->qi_client, &err, SQLC_DO_NOT_STORE_PROC);
   CLI_RESTORE_QUAL (cli, q);
   cli->cli_user = u;
   tb_mark_affected (name);
@@ -12666,7 +12666,6 @@ bif_exec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t text = NULL;
   caddr_t *params = NULL;
   caddr_t *new_params = NULL;
-  dtp_t ptype = DV_DB_NULL;
   caddr_t err = NULL;
   query_t *qr = NULL;
   long max = 0;
@@ -12701,7 +12700,6 @@ bif_exec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (n_args > 3)
     {
       params = (caddr_t *) bif_strict_array_or_null_arg (qst, args, 3, "exec");
-      ptype = DV_TYPE_OF (params);
     }
 
   if (n_args > 4)
@@ -13087,7 +13085,6 @@ bif_exec_next (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t *handle = (caddr_t *) bif_arg (qst, args, 0, "exec_next");
   local_cursor_t *lc;
-  query_t *qr;
   int n_cols;
 
   int n_args = BOX_ELEMENTS (args);
@@ -13101,7 +13098,7 @@ bif_exec_next (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     return bif_exec_error (qst, args,
 	srv_make_new_error ("22023", "SR080", "Parameter 4 is not a valid local exec handle"), NULL, NULL, NULL);
 
-  qr = (query_t *) handle[0];
+  /*qr = (query_t *) handle[0];*/
   lc = (local_cursor_t *) handle[1];
   n_cols = (int) (ptrlong) handle[2];
 
@@ -14712,7 +14709,7 @@ bif_rdf_ucase_lcase_impl(caddr_t * qst, caddr_t * err_ret, state_slot_t ** args,
       wide_box[i] = unicode3_get_x_case (wide_box[i]);
     }
   r = box_wide_as_utf8_char ((ccaddr_t)wide_box, str_n_chars, DV_STRING);
-  dk_free_box (wide_box);
+  dk_free_box ((caddr_t)wide_box);
 
   box_flags(r) |= BF_UTF8;
   if (src_is_rdf_box)
@@ -14954,7 +14951,6 @@ bif_rdf_encode_for_uri_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
 /*
 17.4.3.11 CONCAT
 
-A clone of XPath fn:encode-for-uri.
 */
 caddr_t
 bif_rdf_concat_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
