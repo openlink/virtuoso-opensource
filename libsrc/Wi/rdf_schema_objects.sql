@@ -1136,11 +1136,11 @@ RDF_VIEW_CHECK_SYNC_TB (in tb varchar)
 ;
 
 create procedure
-RDF_VIEW_DO_SYNC (in qualifier varchar, in load_data int := 0, in pgraph varchar := null)
+RDF_VIEW_DO_SYNC (in qualifier varchar, in load_data int := 0, in pgraph varchar := null, in log_mode int := 1, in load_atomic int := 1)
 {
    declare gr varchar;
    gr := sprintf ('http://%s/%s#', virtuoso_ini_item_value ('URIQA','DefaultHost'), qualifier);
-   return RDF_VIEW_SYNC_TO_PHYSICAL (gr, load_data, pgraph);
+   return RDF_VIEW_SYNC_TO_PHYSICAL (gr, load_data, pgraph, log_mode, load_atomic);
 }
 ;
 
@@ -1205,6 +1205,8 @@ RDF_VIEW_SYNC_TO_PHYSICAL (in vgraph varchar, in load_data int := 0, in pgraph v
     {
       for (declare ctr int, ctr := 1; ctr <= 4; ctr := ctr + 1)
         {
+	  if (ctr > 1 and exists (select 1 from DB.DBA.SYS_REMOTE_TABLE where RT_NAME = replace (tb, '"', '')))
+	    goto nextp;
 	  txt := sparql_rdb2rdf_codegen (tb, ctr, opt);
 	  stat := '00000';
 	  if (isvector (txt))
@@ -1226,14 +1228,20 @@ RDF_VIEW_SYNC_TO_PHYSICAL (in vgraph varchar, in load_data int := 0, in pgraph v
 		err_ret := vector_concat (err_ret, vector (vector (stat, msg)));
 	    }
 	}
+      nextp:;
+    }
       if (load_data)
 	{
+      declare aq, n any;
+      n := atoi (coalesce (virtuoso_ini_item_value ('Parameters','AsyncQueueMaxThreads'), '10')) / 2;
+      aq := async_queue (n);
+      foreach (varchar tb in tbls) do
+	{
 	  declare pname varchar;
-	  pname := sprintf ('DB.DBA."RDB2RDF_FILL__%s" ()', replace (replace (tb, '"', '`'), '.', '~'));
-	  stat := '00000';
-	  exec (pname, stat, msg);
-	  if (stat <> '00000') err_ret := vector_concat (err_ret, vector (sprintf ('%s: %s', stat, msg)));
+	  pname := sprintf ('DB.DBA.RDB2RDF_FILL__%s', replace (replace (tb, '"', '`'), '.', '~'));
+	  aq_request (aq, pname, vector ());
 	}
+      aq_wait_all (aq);
     }
   log_enable (old_mode, 1);
   if (load_atomic)
@@ -1373,3 +1381,159 @@ DB.DBA.R2RML_CREATE_DATASET (in nth int, in qualifier varchar, in qual_ns varcha
    return ret;
 }
 ;
+
+create procedure
+TBOX_URL_REWRITE (in prefix varchar, in graph varchar, in url_pattern varchar)
+{
+    declare h, ses, accept_pattern_regex, vector_1, vector_2, graph_path, graph_uri, elm, iri_path, iri_regex, iri_spf, iri_tcn, url_spf, url_regex, sprintf_pattern, url_tcn, iri_param, url_param, iri_vd, iri_st, url_vd any;
+    declare v, vec, rule_1_prop, rule_2_prop, rule_3_prop, rule_4_prop, rule_5_prop, rule_6_prop, rule_7_prop, rule_8_prop any;
+    declare i, pos, nth, fct int;
+
+    --sprintf_pattern := '/%s/%s/%s/%s/%s/%s';
+    --h := sprintf_inverse (url_pattern, sprintf_pattern, 2);
+
+    -- if there is no # at the end of the graph, we assign a / for graph_path used for the path to classes, properties and entities
+    if(regexp_match ('#\x24', graph) is null)
+    {
+        graph_uri := graph;
+        graph_path := concat (graph, '/');        
+    }
+    -- otherwise, we remove the # from the end of the graph, but add it to graph_path as %23 (for HTTP purposes)
+    else 
+    {        
+        graph_uri := regexp_replace(graph, '#\x24', '', 1, null);
+        graph_path := concat(graph_uri, '%23');
+    }        
+
+
+    h := rfc1808_parse_uri (url_pattern);
+    if(regexp_match ('/\x24', h[2]) is not null)
+        h[2] := regexp_replace(h[2], '/\x24', '', 1, null);
+    --iri_vd := regexp_replace(h[2], '/[^/]+/?$', '', 1, null);
+    iri_vd := h[2];
+    if(regexp_match ('(/.+)+/', h[2]) is not null)
+        iri_st := concat('/', regexp_replace(h[2], '(/.+)+/', '', 1, null));        
+        
+    dbg_obj_print ('---');
+    dbg_obj_print_vars (url_pattern);
+    dbg_obj_print_vars (h);
+    dbg_obj_print_vars (iri_vd);
+    dbg_obj_print_vars (iri_st);
+    dbg_obj_print ('---');
+
+    ses := string_output ();
+
+    http ('-- Virtual Directories \n', ses);
+    http (sprintf ('DB.DBA.VHOST_REMOVE (lpath=>\'%s\');\n', iri_vd), ses);
+    http (sprintf ('DB.DBA.VHOST_DEFINE (lpath=>\'%s\', ppath=>\'/\', is_dav=>0, opts=>vector (\'url_rewrite\', \'%s_url_rewrite_rule_list\'));\n', iri_vd, prefix), ses);
+    http ('\n', ses);
+
+    http ('-- Delete Old Rules \n', ses);
+
+    http (sprintf ('delete from DB.DBA.URL_REWRITE_RULE_LIST where urrl_list like \'%s_url_rewrite_rule_list\'\; \n', prefix), ses);
+    http (concat ('delete from DB.DBA.URL_REWRITE_RULE where urr_rule like \'', prefix, '_url_rewrite_rule_%\'\; \n'), ses);
+
+    http ('\n', ses);
+
+    http ('-- Rules List \n', ses);
+
+    http (sprintf ('DB.DBA.URLREWRITE_CREATE_RULELIST ( \'%s_url_rewrite_rule_list\', 1, vector (', prefix), ses);
+    i := 1;
+    while (i <= 8)
+    {
+      if (i > 1) http (',', ses);
+      http (sprintf ('\'%s_url_rewrite_rule_%d\'', prefix, i), ses);
+      i := i + 1;
+    }
+    http ('));\n', ses);
+
+    http ('\n', ses);
+
+    -- create vectors with property values for each Rule
+    rule_1_prop := vector(
+        concat(iri_st, '/.*/classes/([^/]+)/superclasses'),
+        'vector(\'class\')',        
+        --concat ('/sparql?default-graph-uri=', graph_uri, '&query=select+distinct+%%3Ftype+%%7B+%%3C', graph_path, '%U%%3E+rdf%%3Atype%%2Frdfs%%3AsubClassOf*+%%3Ftype+%%7D+order+by+asc+%%28%%3Ftype%%29&format=%U'),
+        concat ('/sparql?default-graph-uri=', graph_uri, '&query=prefix+pr%%3A+<', graph_path, '>+select+distinct+%%3Ftype+%%7B+pr%%3A%U+rdf%%3Atype%%2Frdfs%%3AsubClassOf*+%%3Ftype+%%7D+order+by+asc+%%28%%3Ftype%%29&format=%U'),
+        'vector(\'class\', \'\*accept\*\')',
+        '(text/html)|(\\\\*/\\\\*)'
+        );
+
+    rule_2_prop := vector(
+        concat(iri_st, '/.*/classes/([^/]+)/subclasses'),
+        'vector(\'class\')',        
+        --concat ('/sparql?default-graph-uri=', graph_uri, '&query=select+distinct+%%3Ftype+%%7B+%%3C', graph_path, '%U%%3E+rdf%%3Atype%%2F%%5Erdfs%%3AsubClassOf*+%%3Ftype+%%7D+order+by+asc+%%28%%3Ftype%%29&format=%U'),
+        concat ('/sparql?default-graph-uri=', graph_uri, '&query=prefix+pr%%3A+<', graph_path, '>+select+distinct+%%3Ftype+%%7B+pr%%3A%U+rdf%%3Atype%%2F%%5Erdfs%%3AsubClassOf*+%%3Ftype+%%7D+order+by+asc+%%28%%3Ftype%%29&format=%U'),
+        'vector(\'class\', \'\*accept\*\')',
+        '(text/html)|(\\\\*/\\\\*)'
+        );
+
+    rule_3_prop := vector(
+        concat(iri_st, '/.*/properties/([^/]+)/superproperties'),
+        'vector(\'property\')',
+        --concat ('/sparql?default-graph-uri=', graph_uri, '&query=select+distinct+%%3FpropType+%%7B+%%3C', graph_path, '%U%%3E+rdf%%3Atype%%2Frdfs%%3AsubPropertyOf*+%%3FpropType+%%7D+order+by+asc+%%28%%3FpropType%%29&format=%U'),
+        concat ('/sparql?default-graph-uri=', graph_uri, '&query=prefix+pr%%3A+<', graph_path, '>+select+distinct+%%3FpropType+%%7B+pr%%3A%U+rdf%%3Atype%%2Frdfs%%3AsubPropertyOf*+%%3FpropType+%%7D+order+by+asc+%%28%%3FpropType%%29&format=%U'),
+        'vector(\'property\', \'\*accept\*\')',
+        '(text/html)|(\\\\*/\\\\*)'
+        );
+
+    rule_4_prop := vector(
+        concat(iri_st, '/.*/properties/([^/]+)/subproperties'),
+        'vector(\'property\')',
+        --concat ('/sparql?default-graph-uri=', graph_uri, '&query=select+distinct+%%3FpropType+%%7B+%%3C', graph_path,'%U%%3E+rdf%%3Atype%%2F%%5Erdfs%%3AsubPropertyOf*+%%3FpropType+%%7D+order+by+asc+%%28%%3FpropType%%29&format=%U'),
+        concat ('/sparql?default-graph-uri=', graph_uri, '&query=prefix+pr%%3A+<', graph_path, '>+select+distinct+%%3FpropType+%%7B+pr%%3A%U+rdf%%3Atype%%2F%%5Erdfs%%3AsubPropertyOf*+%%3FpropType+%%7D+order+by+asc+%%28%%3FpropType%%29&format=%U'),
+        'vector(\'property\', \'\*accept\*\')',
+        '(text/html)|(\\\\*/\\\\*)'
+        );
+
+    rule_5_prop := vector(
+        concat(iri_st, '/.*/classes/([^/]+)'),
+        'vector(\'class\')',
+        concat ('/sparql?default-graph-uri=', graph_uri, '&query=prefix+pr%%3A+<', graph_path, '>+describe+pr%%3A%U&format=%U'),
+        'vector(\'class\', \'\*accept\*\')',
+        '(text/html)|(\\\\*/\\\\*)'
+        );
+
+    rule_6_prop := vector(
+        concat(iri_st, '/.*/properties/([^/]+)'),
+        'vector(\'property\')',
+        concat ('/sparql?default-graph-uri=', graph_uri, '&query=prefix+pr%%3A+<', graph_path, '>+describe+pr%%3A%U&format=%U'),
+        'vector(\'property\', \'\*accept\*\')',
+        '(text/html)|(\\\\*/\\\\*)'
+        );
+
+    rule_7_prop := vector(
+        concat(iri_st, '/.*/classes'),
+        'vector()',
+        concat ('/sparql?default-graph-uri=', graph_uri, '&query=select+distinct+%%3Fclasses+%%7B+%%7B+%%3Fclasses+a+owl%%3AClass+%%7D+union+%%7B+%%3Fclasses+a+rdfs%%3AClass+%%7D+%%7D+order+by+asc+%%28%%3Fclasses%%29&format=%U'),
+        'vector(\'\*accept\*\')',
+        '(text/html)|(\\\\*/\\\\*)'
+        );
+
+    rule_8_prop := vector(
+        concat(iri_st, '/.*/properties'),
+        'vector()',
+        concat ('/sparql?default-graph-uri=', graph_uri, '&query=select+distinct+%%3Fproperties%%0D%%0A%%7B%%0D%%0A++%%7B+%%3Fproperties+a+rdf%%3AProperty+%%7D+union%%0D%%0A++%%7B+%%3Fproperties+a+owl%%3AObjectProperty+%%7D+union%%0D%%0A++%%7B+%%3Fproperties+a+owl%%3ADatatypeProperty+%%7D+union%%0D%%0A++%%7B+%%3Fproperties+a+owl%%3AFunctionalProperty+%%7D+union%%0D%%0A++%%7B+%%3Fproperties+a+owl%%3AInverseFunctionalProperty+%%7D+union%%0D%%0A++%%7B+%%3Fproperties+a+owl%%3ATransitiveProperty+%%7D%%0D%%0A%%7D%%0D%%0Aorder+by+asc+%%28%%3Fproperties%%29&format=%U'),
+        'vector(\'\*accept\*\')',
+        '(text/html)|(\\\\*/\\\\*)'
+        );
+
+    -- create one vector which holds all of the 8 rule properties vectors
+    vec := vector(rule_1_prop, rule_2_prop, rule_3_prop, rule_4_prop, rule_5_prop, rule_6_prop, rule_7_prop, rule_8_prop);
+
+    -- create the 8th rewrite rules
+    http ('-- Rewrite Rules \n', ses);
+
+    i := 0;
+    while(i < 8)
+    {
+        v := vec[i];
+        http (sprintf ('DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( \'%s_url_rewrite_rule_%d\', 1, \'%s\', %s, 1, \'%s\', %s, null, \'%s\', 1, null); \n',
+        prefix, i + 1, v[0], v[1], v[2], v[3], v[4]), ses);
+        i := i + 1;
+    }
+
+    return string_output_string (ses);
+}
+;
+
