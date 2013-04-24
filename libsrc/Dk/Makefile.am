@@ -19,7 +19,7 @@
 #  
 #  
 
-noinst_LTLIBRARIES = libdksrv.la libdk1t.la
+noinst_LTLIBRARIES = libdksrv.la libdk1t.la libdk1t_nc.la
 noinst_HEADERS = \
 	Dkconfig.h \
 	Dkalloc.h Dkbasket.h Dkbox.h \
@@ -87,6 +87,35 @@ libdk1t_la_SOURCES = \
 libdk1t_la_CFLAGS   = @VIRT_AM_CFLAGS@
 libdk1t_la_CFLAGS  += -I$(top_srcdir)/libsrc
 libdk1t_la_LDFLAGS  = -prefer-pic
+
+#############################################
+#DK1T_NC
+libdk1t_nc_la_SOURCES = \
+	Dkalloc_nc.c \
+	Dkbasket.c \
+	Dkbox.c \
+	Dkdevice.c \
+	Dkhash.c \
+	Dkhashext.c \
+	Dklongjmp.c \
+	Dkmarshal.c \
+	Dkmem.c \
+	Dkresource.c \
+	Dkrusage.c \
+	Dkses2.c \
+	Dksesinp.c \
+	Dksession.c \
+	Dksesstr.c \
+	Dksestcp.c \
+	Dksets.c \
+	Dkpool.c \
+	Dkutil.c \
+	Dkstubs.c \
+	Dkstkern.c
+		     
+libdk1t_nc_la_CFLAGS  = @VIRT_AM_CFLAGS@
+libdk1t_nc_la_CFLAGS  += -I$(top_srcdir)/libsrc
+libdk1t_nc_la_LDFLAGS = -prefer-pic
 
 # ----------------------------------------------------------------------
 #

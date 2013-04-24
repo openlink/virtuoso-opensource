@@ -22,7 +22,7 @@
 #
 #  Driver version and description
 #
-DRIVER_VERS	= 06.01.3127
+DRIVER_VERS	= 07.00.3202
 DRIVER_DESC	= OpenLink Virtuoso ODBC Driver
 
 
@@ -50,13 +50,13 @@ VIRTODBC_LDFLAGS = -avoid-version -export-dynamic -no-undefined
 
 VIRTODBC_FIBER_LIBS = \
         $(top_srcdir)/libsrc/Thread/libthrs.la \
-        $(top_srcdir)/libsrc/Dk/libdk1t.la \
+        $(top_srcdir)/libsrc/Dk/libdk1t_nc.la \
 	$(top_srcdir)/libsrc/util/libutil.la \
 	$(clntlibs)
 
 VIRTODBC_PTHREAD_LIBS = \
         $(top_srcdir)/libsrc/Thread/libthrp.la \
-        $(top_srcdir)/libsrc/Dk/libdk1t.la \
+        $(top_srcdir)/libsrc/Dk/libdk1t_nc.la \
 	$(top_srcdir)/libsrc/util/libutil.la \
 	$(clntlibs) \
 	@LIBTHR@
