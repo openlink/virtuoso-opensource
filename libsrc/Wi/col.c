@@ -5293,6 +5293,7 @@ bzero16 (long *p, int n)
 }
 
 
+#if 0
 void
 cpy16 (long *t, long *s, int n)
 {
@@ -5315,6 +5316,7 @@ cpy16 (long *t, long *s, int n)
   GPF_T;
 #endif
 }
+#endif
 
 void
 memcpy_c_inl (char *s1, char *s2, int l)
