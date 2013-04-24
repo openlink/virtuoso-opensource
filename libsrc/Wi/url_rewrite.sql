@@ -1319,8 +1319,11 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
 
       if (http_redir in (301, 302, 303, 307))
 	{
+	  declare h any;
 	  http_status_set (http_redir);
-	  http_header (http_header_get () || 'Location: '|| DB.DBA.HTTP_LOC_NEW_URL (long_url) ||'\r\n');
+	  h := http_header_get ();
+	  h := regexp_replace (h,'Content-Location:[^\r\n]*\r\n');
+	  http_header (h || 'Location: '|| DB.DBA.HTTP_LOC_NEW_URL (long_url) ||'\r\n');
 	  http_body_read ();
 	  if (registry_get ('__debug_url_rewrite') in ('1', '2')) dbg_printf ('HTTP redirect');
 	  return 1;
