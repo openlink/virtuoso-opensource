@@ -2458,7 +2458,7 @@ log_exec_batch(caddr_t av, caddr_t* err_ret)
 void
 log_replay_err (caddr_t err)
 {
-  if (IS_BOX_POINTER (err))
+  if (IS_BOX_POINTER (err) && ARRAYP (err) && BOX_ELEMENTS (err) > QC_ERROR_STRING && DV_STRINGP (((caddr_t *) err)[QC_ERRNO]))
     log_error ("Rfwd error: %s: %s", ((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING]);
 }
 
