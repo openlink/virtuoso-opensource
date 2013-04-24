@@ -193,7 +193,7 @@
            href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=4<?V ses_parms ?>">Implicit Coreferences</a>
       </div>
     </div> <!-- TAB_ROW -->
-    <form name="f" action="usage.vsp?g=<?V page_resource_uri ?><?V b3s_render_ses_params(0) ?>" method="post">
+    <form name="f" action="usage.vsp?g=<?U page_resource_uri ?><?V b3s_render_ses_params(0) ?>" method="post">
     <div id="TAB_CTR">
       <div class="tab_page">
         <table class="description">
