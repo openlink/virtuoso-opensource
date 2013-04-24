@@ -877,8 +877,9 @@ fct_view (in tree any, in this_s int, in txt any, in pre any, in post any, in fu
       loc := xpath_eval ('@location-prop', tree);
 
       if (loc = 'any')
+	loc := '?anyloc';
+      if (length (loc) > 1)	
 	{
-	  loc := '?anyloc';
 	  http (sprintf ('select distinct ?location as ?c1 ?lat%d as ?c2 ?lng%d as ?c3 ', 
                          this_s, this_s, this_s), pre);
 	}

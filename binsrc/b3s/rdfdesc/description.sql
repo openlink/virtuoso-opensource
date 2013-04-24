@@ -220,7 +220,7 @@ create procedure b3s_find_class_type (in _s varchar, in _f varchar, inout types_
   st := '00000';
   msg:= '';
 
-  stmt := sprintf ('sparql select ?to %s where {?to a <%S>}', _f, _s);
+  stmt := sprintf ('sparql select ?to %s where { quad map virtrdf:DefaultQuadMap { ?to a <%S> }}', _f, _s);
 
   exec (stmt, st, msg, vector(), 1, meta, data);
 
@@ -252,6 +252,40 @@ create procedure b3s_uri_local_part (in uri varchar)
 
 create procedure
 b3s_get_types (in _s varchar,
+               in _from varchar,
+               in langs any) {
+  declare stat, msg, meta, data any;
+  declare t_a any;
+  declare i int;
+  declare stmt varchar;
+
+  stmt := sprintf ('sparql select distinct ?tp %s where { quad map virtrdf:DefaultQuadMap { <%S> a ?tp } }', _from, _s);
+  data := null;
+  t_a := vector();
+
+  if (length (_s))
+    {
+      data := null;
+      exec (stmt, stat, msg, vector (), 100, meta, data);
+
+      if (length(data)) 
+        {
+	  for (i := 0;i < length(data); i := i + 1) 
+            {
+--                dbg_printf ('data[%d][0]: %s', i,data[i][0]);
+		t_a := vector_concat (t_a, 
+                                      vector (vector (data[i][0], 
+                                      b3s_uri_curie (data[i][0]),
+                                      b3s_label (data[i][0], langs))));
+            }
+        }
+    }
+  return (t_a);
+}                 
+;
+
+create procedure
+b3s_get_all_types (in _s varchar,
                in _from varchar,
                in langs any) {
   declare stat, msg, meta, data any;
