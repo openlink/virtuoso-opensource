@@ -1055,7 +1055,7 @@ create function DB.DBA.RDF_SPONGE_TRY_TTL (in mode integer, inout txt varchar) r
   declare cr_pos integer;
   -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_TRY_TTL (', mode, txt, ')');
   whenever sqlstate '*' goto err;
-  DB.DBA.TTLP_VALIDATE (txt, '', null, mode);
+  DB.DBA.TTLP_VALIDATE (txt, '', 'dummy', mode);
   -- dbg_obj_princ ('-- no error');
   return '';
 err:
