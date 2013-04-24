@@ -243,7 +243,7 @@ again:
 
   b3s_dbg_out (dbg_out, 'label: "' || vlbl || '"');
 
-  declare types_a any;
+  declare types_a, types_b any;
   declare e_type any;
   declare e_type_label varchar;
   declare e_type_a any;
@@ -251,10 +251,11 @@ again:
 --  dbg_printf ('_S:%s', _s); 
 
   types_a := b3s_get_types (_S, _F, langs);
+  types_b := b3s_get_all_types (_S, _F, langs);
 
 --  dbg_obj_print (types_a);
 
-  e_type_a := b3s_choose_e_type (types_a);
+  e_type_a := b3s_choose_e_type (types_b);
 
 --  dbg_obj_print (e_type_a);
 
@@ -421,7 +422,7 @@ again:
   declare is_class int;
   is_class := b3s_find_class_type (_S, _F, types_a);
 
-  if ('http://www.w3.org/2002/07/owl#Thing' <> e_type or is_class) 
+  if (('http://www.w3.org/2002/07/owl#Thing' <> e_type and length (types_a)) or is_class) 
     {
 ?>
       <form id="fct_form" action="/fct/facet.vsp" method="get">

@@ -12,6 +12,7 @@ grant execute on DB.DBA.b3s_get_lang_acc to "SPARQL_SELECT";
 grant execute on b3s_dbg_out to "SPARQL_SELECT";
 grant execute on b3s_label to "SPARQL_SELECT";
 grant execute on b3s_get_types to "SPARQL_SELECT";
+grant execute on b3s_get_all_types to "SPARQL_SELECT";
 grant execute on DB.DBA.b3s_choose_e_type to "SPARQL_SELECT";
 grant execute on b3s_label_get to "SPARQL_SELECT";
 grant execute on DB.DBA.URLREWRITE_CALC_QS to "SPARQL_SELECT";
