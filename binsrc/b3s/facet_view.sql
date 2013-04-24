@@ -44,7 +44,7 @@ fct_view_info (in tree any, in ctx int, in txt any)
   http ('<h3 id="view_info">', txt);
   if ('list' = mode)
     {
-      http (sprintf ('List of %s%d', connection_get ('s_term'), pos), txt);
+      http (sprintf ('Query results for Relations for %s%d', connection_get ('s_term'), pos), txt);
     }
   if ('list-count' = mode)
     {
@@ -68,7 +68,7 @@ fct_view_info (in tree any, in ctx int, in txt any)
     }
   if ('properties-in' = mode)
     {
-      http ('Displaying Attributes with Entity Reference Values', txt);
+      http ('Query Pattern', txt);
     }
   if ('text-properties' = mode)
     {
@@ -94,7 +94,10 @@ fct_view_info (in tree any, in ctx int, in txt any)
 --    http (sprintf ('  values %d - %d', 1 + offs, lim), txt);
 
 
-  http (' where:</h3>', txt);
+  if ('properties-in' = mode)
+    http (':</h3>', txt);
+  else
+    http (' where:</h3>', txt);
 }
 ;
 
@@ -111,8 +114,8 @@ create procedure fct_p_term ()
 {
   declare s_term varchar;
   s_term := connection_get ('s_term');
-  if (s_term = 's') return 'Property';
-  return 'Attribute';
+  if (s_term = 's') return 'Relation'; -- Property
+  return 'Relation'; -- Attribute
 }
 ;
 
@@ -597,7 +600,7 @@ fct_nav (in tree any,
   fct_set_conn_tlogy (tree);
 
   http ('<div id="fct_nav">', txt);
-  http ('<h3>Entity Relations Navigation</h3>', txt);
+  http ('<h3>Entity Relationship Exploration</h3>', txt);
   http ('<ul class="n1">', txt);
 
   if ('text-properties' = tp)
@@ -615,13 +618,13 @@ fct_nav (in tree any,
     if (connection_get('c_term') = 'class')
 	fct_view_link ('classes', 'Classes', txt);
     else
-	fct_view_link ('classes', 'Types', txt, 'Entity Category or Class');
+	fct_view_link ('classes', 'Entity Types', txt, 'Entity Category or Class');
 
   if ('properties' <> tp)
     if (connection_get('s_term') = 's')
       fct_view_link ('properties', 'Properties', txt, 'Entity Characteristic or Property');
     else
-      fct_view_link ('properties', 'Attributes', txt, 'Entity Characteristic or Property');
+      fct_view_link ('properties', 'Relation Subjects', txt, 'Relations for which selected Entity is an Object');
 
   if ('text' = tp and pos = 0)
     fct_view_link ('text-properties', 'Properties containing the text', txt);
@@ -630,7 +633,7 @@ fct_nav (in tree any,
     if (connection_get('s_term') = 's')
       fct_view_link ('properties-in', 'Referencing Properties', txt, 'Characteristics or Properties with Entity References as values');
     else
-      fct_view_link ('properties-in', 'Referencing Attributes', txt, 'Characteristics or Properties with Entity References as values');
+      fct_view_link ('properties-in', 'Relation Objects', txt, 'Relations for which selected Entity is a Subject');
 
   if ('text' <> tp and tp <> 'text-d')
     {
@@ -643,7 +646,7 @@ fct_nav (in tree any,
 	if (connection_get('s_term') = 's')
 	  fct_view_link ('list', 'Show Matching Objects', txt, 'Displaying Ranked Enitity Names and Text summaries');
 	else
-	  fct_view_link ('list', 'Show Matching Values', txt, 'Displaying Ranked Enitity Names and Text summaries');
+	  fct_view_link ('list', 'Show Matching Entities', txt, 'Displaying Ranked Enitity Names and Text summaries');
     }
 
   if ('full-text' <> tp and not xpath_eval ('//query/text', tree))
@@ -858,6 +861,9 @@ fct_web (in tree any)
   declare reply, md, res, qr, qr2, txt any;
   declare p_qry varchar;
   declare timeout int;
+  declare pos int;
+
+  pos := fct_view_pos (tree);
 
   timeout := connection_get ('timeout');
 
@@ -967,7 +973,9 @@ fct_web (in tree any)
                             'tree',
                             tree,
 			    'agg_res',
-			    agg_res
+			    agg_res,
+			    'pos',
+			    pos + 1
 			    )),
 	      null, txt);
 
