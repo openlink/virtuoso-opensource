@@ -1252,7 +1252,7 @@ sample_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t data)
   dtp_t target_dtp = sp->sp_cl.cl_sqt.sqt_dtp;
   dtp_t dtp = DV_TYPE_OF (data);
   caddr_t name, vtype, lang;
-  if ((name = sqlo_iri_constant_name ((ST*) data)))
+  if ((name = sqlo_iri_constant_name ((ST *) data)))
     {
       data = key_name_to_iri_id (NULL, name, 0);
       if (!data)
@@ -1262,10 +1262,10 @@ sample_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t data)
 	  ITC_SEARCH_PARAM (itc, data);
 	  ITC_OWNS_PARAM (itc, data);
 	  return KS_CAST_OK;
-      	}
+	}
       else if (DV_ANY == sp->sp_col->col_sqt.sqt_dtp)
 	{
-	  caddr_t any_data  = box_to_any (data, &err);
+	  caddr_t any_data = box_to_any (data, &err);
 	  if (err)
 	    {
 	      dk_free_tree (err);
@@ -1283,16 +1283,16 @@ sample_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t data)
 	  return KS_CAST_NULL;
 	}
     }
-  if ((vtype = sqlo_rdf_obj_const_value ((ST*) data, &name, &lang)))
+  if ((vtype = sqlo_rdf_obj_const_value ((ST *) data, &name, &lang)))
     {
       if (RDF_UNTYPED == vtype)
 	{
-	  if (!rdf_obj_of_sqlval  (name, &data))
+	  if (!rdf_obj_of_sqlval (name, &data))
 	    return KS_CAST_UNDEF;
 	}
-      else  if (RDF_LANG_STRING == vtype)
+      else if (RDF_LANG_STRING == vtype)
 	{
-	  if (!rdf_obj_of_typed_sqlval  (name, vtype, lang,  &data))
+	  if (!rdf_obj_of_typed_sqlval (name, vtype, lang, &data))
 	    return KS_CAST_UNDEF;
 
 	}
@@ -1303,10 +1303,10 @@ sample_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t data)
 	  ITC_SEARCH_PARAM (itc, data);
 	  ITC_OWNS_PARAM (itc, data);
 	  return KS_CAST_OK;
-      	}
+	}
       else if (DV_ANY == sp->sp_col->col_sqt.sqt_dtp)
 	{
-	  caddr_t any_data  = box_to_any (data, &err);
+	  caddr_t any_data = box_to_any (data, &err);
 	  if (err)
 	    {
 	      dk_free_tree (err);
@@ -1346,45 +1346,46 @@ sample_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t data)
       ITC_OWNS_PARAM (itc, data);
       return KS_CAST_OK;
     }
-      if (IS_BLOB_DTP (target_dtp))
-	return KS_CAST_NULL;
-	  switch (target_dtp)
-	    {
+  if (IS_BLOB_DTP (target_dtp))
+    return KS_CAST_NULL;
+  switch (target_dtp)
+    {
 /* compare different number types.  If col more precise than arg, cast to col here, otherwise the cast is in itc_col_check */
-	    case DV_LONG_INT:
+    case DV_LONG_INT:
       if (!IS_NUM_DTP (dtp))
-        break;
-	      ITC_SEARCH_PARAM (itc, data); /* all are more precise, no cast down */
+	break;
+      ITC_SEARCH_PARAM (itc, data);	/* all are more precise, no cast down */
       return KS_CAST_OK;
-	    case DV_SINGLE_FLOAT:
+    case DV_SINGLE_FLOAT:
       if ((DV_LONG_INT == dtp) || (!IS_NUM_DTP (dtp)))
-        break;
-	      ITC_SEARCH_PARAM (itc, data);
+	break;
+      ITC_SEARCH_PARAM (itc, data);
       return KS_CAST_OK;
-	    case DV_DOUBLE_FLOAT:
+    case DV_DOUBLE_FLOAT:
       break;
-	    case DV_NUMERIC:
-	      if (DV_DOUBLE_FLOAT == dtp)
-		{
-		  ITC_SEARCH_PARAM (itc, data);
-          return KS_CAST_OK;
-	    }
+    case DV_NUMERIC:
+      if (DV_DOUBLE_FLOAT == dtp)
+	{
+	  ITC_SEARCH_PARAM (itc, data);
+	  return KS_CAST_OK;
+	}
       break;
     case DV_DATE:
       if (DV_DATETIME != dtp)
-        break;
+	break;
       ITC_SEARCH_PARAM (itc, data);
       return KS_CAST_OK;
-	}
-      data = box_cast_to (NULL, data, dtp, target_dtp,
-			  sp->sp_cl.cl_sqt.sqt_precision, sp->sp_cl.cl_sqt.sqt_scale, &err);
-      if (err)
-	{
-	  dk_free_tree (err);
-	  return KS_CAST_UNDEF;
-	}
-      ITC_SEARCH_PARAM (itc, data);
-      ITC_OWNS_PARAM (itc, data);
+    }
+  if (DV_ARRAY_OF_POINTER == dtp || DV_SYMBOL == dtp)
+    return KS_CAST_UNDEF;
+  data = box_cast_to (NULL, data, dtp, target_dtp, sp->sp_cl.cl_sqt.sqt_precision, sp->sp_cl.cl_sqt.sqt_scale, &err);
+  if (err)
+    {
+      dk_free_tree (err);
+      return KS_CAST_UNDEF;
+    }
+  ITC_SEARCH_PARAM (itc, data);
+  ITC_OWNS_PARAM (itc, data);
   return KS_CAST_OK;
 }
 
