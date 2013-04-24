@@ -343,7 +343,7 @@ tcpses_set_address (session_t * ses, char *addrinfo1)
 #else
 	      int status = h_errno;
 #endif
-	      log_error ("The function gethostbyname returned error %d for host \"%s\".\n", status, p_name);
+	      log_debug ("The function gethostbyname returned error %d for host \"%s\".\n", status, p_name);
 	      SESSTAT_CLR (ses, SST_OK);
 	      return (SER_FAIL);
 	    }
