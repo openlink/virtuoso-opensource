@@ -223,7 +223,7 @@ create procedure DB.DBA.URLREWRITE_DROP_RULELIST (
     signal ('42000', 'Rule list IRI ' || rulelist_iri || ' is unknown');
   if (strstr (rulelist_iri, 'sys:') = 0)
     signal ('42000', 'Can not drop "sys:..." rule list ' || rulelist_iri);
-      for select HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_DEFAULT, HP_SECURITY, HP_REALM,
+  for select HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_DEFAULT, HP_SECURITY, HP_REALM,
         HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_PERSIST_SES_VARS, HP_SOAP_OPTIONS, HP_AUTH_OPTIONS, HP_OPTIONS, HP_IS_DEFAULT_HOST
         from DB.DBA.HTTP_PATH where HP_OPTIONS is not null do
         {
@@ -1319,8 +1319,11 @@ create procedure DB.DBA.HTTP_URLREWRITE (in path varchar, in rule_list varchar, 
 
       if (http_redir in (301, 302, 303, 307))
 	{
+	  declare h any;
 	  http_status_set (http_redir);
-	  http_header (http_header_get () || 'Location: '|| DB.DBA.HTTP_LOC_NEW_URL (long_url) ||'\r\n');
+	  h := http_header_get ();
+	  h := regexp_replace (h,'Content-Location:[^\r\n]*\r\n');
+	  http_header (h || 'Location: '|| DB.DBA.HTTP_LOC_NEW_URL (long_url) ||'\r\n');
 	  http_body_read ();
 	  if (registry_get ('__debug_url_rewrite') in ('1', '2')) dbg_printf ('HTTP redirect');
 	  return 1;
