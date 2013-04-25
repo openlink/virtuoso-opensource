@@ -948,7 +948,8 @@ aq_sql_func (caddr_t * av, caddr_t * err_ret)
     }
   if (!cli->cli_user || !sec_proc_check (proc, cli->cli_user->usr_id, cli->cli_user->usr_g_id))
     {
-      *err_ret = srv_make_new_error ("42000", "SR186", "No permission to execute %s in aq_request", full_name);
+      *err_ret = srv_make_new_error ("42000", "SR186", "No permission to execute %s in aq_request() with user ID %d, group ID %d",
+        full_name, (int)(cli->cli_user->usr_id), (int)(cli->cli_user->usr_g_id) );
       dk_free_tree ((caddr_t) params);
       return NULL;
     }

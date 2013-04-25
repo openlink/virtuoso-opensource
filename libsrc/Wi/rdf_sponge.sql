@@ -118,7 +118,7 @@ create function DB.DBA.RDF_GRAB_SINGLE (in val any, inout grabbed any, inout env
         'get:error-recovery', get_keyword_ucase ('get:error-recovery', env),
         'get:note', get_keyword_ucase ('get:note', env) );
       dict_put (grabbed, url, 1);
-      call (get_keyword ('loader', env, 'DB.DBA.RDF_SPONGE_UP'))(url, opts, user);
+      call (get_keyword ('loader', env, 'DB.DBA.RDF_SPONGE_UP'))(url, opts, get_user_id (1));
       commit work;
       dict_put (grabbed, url, coalesce (final_dest, dest));
       -- dbg_obj_princ ('DB.DBA.RDF_GRAB_SINGLE (', val, ',... , ', env, ') has loaded ', url);
@@ -1992,6 +1992,9 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
       get_soft ) );
   if (not bit_and (perms, 4))
     {
+       if (get_keyword_ucase ('get:error-recovery', options, 'signal') = 'signal')
+         signal ('RDFZZ', sprintf (
+           'The graph <%.500s> is not sponged by RDF_SPONGE_UP_1 due to lack of sponge permission for user %d', dest, case (uid) when -1 then http_nobody_uid() else uid end ) );
        -- dbg_obj_princ (res_graph_iri, ' graph is not sponged by RDF_SPONGE_UP_1 due to lack of sponge permission for user ', uid);
        return null;
     }

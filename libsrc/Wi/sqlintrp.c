@@ -543,7 +543,8 @@ report_error:
 	eff_g_id = eff_u_id;
     }
   if (!sec_proc_check (proc, eff_g_id, eff_u_id))
-    sqlr_new_error ("42000", "SR186", "No permission to execute procedure %s with user ID %d, group ID %d", proc_name, (int)eff_g_id, (int)eff_u_id);
+    sqlr_new_error ("42000", "SR186", "No permission to execute procedure %s with user ID %d, group ID %d",
+      proc_name, (int)eff_g_id, (int)eff_u_id );
   if (1 || ins->_.call.kwds || 0 == param_len)
     {
       int formal_len = dk_set_length (proc->qr_parms);
@@ -764,7 +765,8 @@ ins_call_vec_vec (instruction_t * ins, caddr_t * qst, query_t * proc, code_vec_t
 	eff_g_id = eff_u_id;
     }
   if (!sec_proc_check (proc, eff_g_id, eff_u_id))
-    sqlr_new_error ("42000", "SR186", "No permission to execute procedure %s.", proc->qr_proc_name ? proc->qr_proc_name : "<unknown>");
+    sqlr_new_error ("42000", "SR186", "No permission to execute vectored procedure %s with user ID %d, group ID %d.",
+      proc->qr_proc_name ? proc->qr_proc_name : "<unknown>", (int)eff_g_id, (int)eff_u_id );
   formal_len = dk_set_length (proc->qr_parms);
   BOX_AUTO (ptmp, pars_auto, formal_len * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
   pars = (caddr_t *) ptmp;
