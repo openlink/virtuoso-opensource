@@ -53,6 +53,7 @@ doc_dav.vad: mkdoc.sh mksearch.sql drop.sql mkdemo.ini
 	HOME="$(TOP)" \
 	HTMLDOC="$(HTMLDOC)" \
 	HOST=localhost \
+	MAKE="$(MAKE)" \
 	$(SHELL) mkdoc.sh
 
 

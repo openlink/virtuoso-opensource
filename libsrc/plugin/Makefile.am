@@ -32,7 +32,6 @@ base_plugin_cflags  += -I$(top_srcdir)/libsrc/Dk
 base_plugin_cflags  += @ZLIB_INC@
 base_plugin_cflags  += -I$(top_srcdir)/libsrc/langfunc 
 base_plugin_cflags  += -I$(top_srcdir)/libsrc/plugin 
-base_plugin_cflags  += -I$(top_srcdir)/libsrc/Tidy 
 base_plugin_cflags  += -I$(top_srcdir)/libsrc/Xml.new 
 base_plugin_cflags  += -I$(top_srcdir)/libsrc/Wi
 base_plugin_cflags  += -I$(top_srcdir)/libsrc/odbcsdk/include

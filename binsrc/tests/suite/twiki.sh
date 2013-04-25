@@ -108,18 +108,18 @@ case $SERVER in
 	if [ "x$HOST_OS" = "x" ]
 	    then
 	    LOG "Create ODS VAD Package"
-	    (cd $VIRTUOSO_TEST/../../samples/wa/; ./make_vad.sh)
+	    (cd $VIRTUOSO_TEST/../../samples/wa/; $MAKE)
 	    cp $VIRTUOSO_TEST/../../samples/wa/ods_framework_dav.vad ./
 	    LOG "Create WIKI VAD Package"
-	    (cd $VIRTUOSO_TEST/../../samples/wikiv/; ./make_vad.sh)
+	    (cd $VIRTUOSO_TEST/../../samples/wikiv/; $MAKE)
 	    cp $VIRTUOSO_TEST/../../samples/wikiv/ods_wiki_dav.vad ./
 	elif [ "x$SRC" != "x" ]
 	    then
 	    LOG "Create ODS VAD Package"
-	    (cd "$SRC/binsrc/samples/wa/" ; ./make_vad.sh)
+	    (cd "$SRC/binsrc/samples/wa/" ; $MAKE)
 	    cp "$SRC/binsrc/samples/wa/ods_framework_dav.vad" .
 	    LOG "Create WIKI VAD Package"
-	    (cd "$SRC/binsrc/samples/wikiv/" ; ./make_vad.sh)
+	    (cd "$SRC/binsrc/samples/wikiv/" ; $MAKE)
 	    cp "$SRC/binsrc/samples/wikiv/ods_wiki_dav.vad" .
 	elif [ ! -f $VIRTUOSO_TEST/../../../autogen.sh ]
 	    then

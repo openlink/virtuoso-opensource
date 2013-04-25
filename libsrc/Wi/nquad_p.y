@@ -343,7 +343,7 @@ object_with_ctx
 ctx_opt
 	: /* empty */	{
 		triple_feed_t *tf = ttlp_arg->ttlp_tf;
-		if ((NULL == tf->tf_current_graph_uri) || strcmp (tf->tf_current_graph_uri, tf->tf_default_graph_uri))
+		if ((NULL == tf->tf_current_graph_uri) || ((NULL != tf->tf_default_graph_uri) && strcmp (tf->tf_current_graph_uri, tf->tf_default_graph_uri)))
 		  TF_CHANGE_GRAPH_TO_DEFAULT (tf);
 		  }
 	| q_complete {

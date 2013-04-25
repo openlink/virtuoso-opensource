@@ -214,7 +214,7 @@ SHUTDOWN_SERVER
 
 if [ "$MAKE_VAD" = "yes" ] ; then
     LOG "Create VAD BPEL4WS Package"
-    (cd $VIRTUOSO_TEST/../../bpel; ./make_vad.sh)
+    (cd $VIRTUOSO_TEST/../../bpel; $MAKE)
 fi
 
 RUN cp $VIRTUOSO_TEST/../../bpel/bpel_filesystem.vad .

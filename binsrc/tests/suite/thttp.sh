@@ -745,30 +745,30 @@ case $1 in
    if [ "$MAKE_VAD" = "yes" ] ; then
        if [ $do_mappers_only -eq 1 ]
        then
-	   (cd $VIRTUOSO_TEST/../../rdf_mappers; gmake)
+	   (cd $VIRTUOSO_TEST/../../rdf_mappers; $MAKE)
 	   cp $VIRTUOSO_TEST/../../rdf_mappers/cartridges_dav.vad ./
        elif [ "x$HOST_OS" = "x" ]
        then
 	   LOG "Create ODS VAD Package"
-	   (cd $VIRTUOSO_TEST/../../samples/wa/; gmake)
+	   (cd $VIRTUOSO_TEST/../../samples/wa/; $MAKE)
 	   cp $VIRTUOSO_TEST/../../samples/wa/ods_framework_dav.vad ./
 	   LOG "Create BLOG VAD Package"
-	   (cd $VIRTUOSO_TEST/../../weblog2/; gmake)
+	   (cd $VIRTUOSO_TEST/../../weblog2/; $MAKE)
 	   cp $VIRTUOSO_TEST/../../weblog2/ods_blog_dav.vad ./
 	   LOG "Create SyncML VAD Package"
-	   (cd $VIRTUOSO_TEST/../../sync/; gmake)
+	   (cd $VIRTUOSO_TEST/../../sync/; $MAKE)
 	   cp $VIRTUOSO_TEST/../../sync/syncml_dav.vad ./
-	   (cd $VIRTUOSO_TEST/../../rdf_mappers; gmake)
+	   (cd $VIRTUOSO_TEST/../../rdf_mappers; $MAKE)
 	   cp $VIRTUOSO_TEST/../../rdf_mappers/cartridges_dav.vad ./
        elif [ "x$SRC" != "x" ]
        then
 	   LOG "Create ODS VAD Package"
-	   (cd "$SRC/binsrc/samples/wa/" ; ./make_vad.sh)
+	   (cd "$SRC/binsrc/samples/wa/" ; $MAKE)
 	   cp "$SRC/binsrc/samples/wa/ods_framework_dav.vad" .
 	   LOG "Create BLOG VAD Package"
-	   (cd "$SRC/binsrc/weblog2/" ; ./make_vad.sh)
+	   (cd "$SRC/binsrc/weblog2/" ; $MAKE)
 	   cp "$SRC/binsrc/weblog2/ods_blog_dav.vad" .
-	   (cd "$SRC/binsrc/rdf_mappers"; make)
+	   (cd "$SRC/binsrc/rdf_mappers"; $MAKE)
 	   cp "$SRC/binsrc/rdf_mappers/cartridges_dav.vad" .
        elif [ ! -f ../../../../autogen.sh ]
        then
