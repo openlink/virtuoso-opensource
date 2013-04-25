@@ -206,6 +206,9 @@ extern long tc_dc_extend_values;
 extern int32 em_ra_window;
 extern int32 em_ra_threshold;
 extern int enable_mem_hash_join;
+#ifdef CACHE_MALLOC
+extern int enable_no_free;
+#endif
 extern int enable_subscore;
 extern int enable_dfg;
 extern int enable_feed_other_dfg;
@@ -1779,6 +1782,9 @@ stat_desc_t dbf_descs [] =
     {"mp_local_rc_sz", (long *)&mp_local_rc_sz, SD_INT32},
     {"dbf_user_1", &dbf_user_1},
     {"dbf_user_2", &dbf_user_2},
+#ifdef CACHE_MALLOC
+    {"enable_no_free", &enable_no_free, SD_INT32},
+#endif
     {NULL, NULL, NULL}
   };
 
