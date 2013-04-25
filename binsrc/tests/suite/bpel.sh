@@ -215,7 +215,7 @@ SHUTDOWN_SERVER
 if [ "$MAKE_VAD" = "yes" ] ; then
 LOG "Create VAD BPEL4WS Package"
 
-(cd ../../bpel; ./make_vad.sh)
+(cd ../../bpel; $MAKE)
 fi
 
 cp ../../bpel/bpel_filesystem.vad ./

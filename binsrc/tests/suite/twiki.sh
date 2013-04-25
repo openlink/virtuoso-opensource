@@ -108,18 +108,18 @@ case $SERVER in
 	if [ "x$HOST_OS" = "x" ]
 	    then
 	    LOG "Create ODS VAD Package"
-	    (cd ../../samples/wa/; ./make_vad.sh)
+	    (cd ../../samples/wa/; $MAKE)
 	    cp ../../samples/wa/ods_framework_dav.vad ./
 	    LOG "Create WIKI VAD Package"
-	    (cd ../../samples/wikiv/; ./make_vad.sh)
+	    (cd ../../samples/wikiv/; $MAKE)
 	    cp ../../samples/wikiv/ods_wiki_dav.vad ./
 	elif [ "x$SRC" != "x" ]
 	    then
 	    LOG "Create ODS VAD Package"
-	    (cd "$SRC/binsrc/samples/wa/" ; ./make_vad.sh)
+	    (cd "$SRC/binsrc/samples/wa/" ; $MAKE)
 	    cp "$SRC/binsrc/samples/wa/ods_framework_dav.vad" .
 	    LOG "Create WIKI VAD Package"
-	    (cd "$SRC/binsrc/samples/wikiv/" ; ./make_vad.sh)
+	    (cd "$SRC/binsrc/samples/wikiv/" ; $MAKE)
 	    cp "$SRC/binsrc/samples/wikiv/ods_wiki_dav.vad" .
 	elif [ ! -f ../../../autogen.sh ]
 	    then

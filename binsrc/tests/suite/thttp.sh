@@ -745,47 +745,47 @@ case $1 in
        if [ $do_mappers_only -eq 1 ]
        then
 	   LOG "Create RDF mappers Package"
-	   (cd ../../../../binsrc/rdf_mappers && make rdf_mappers_dav.vad)
+	   (cd ../../../../binsrc/rdf_mappers && $MAKE rdf_mappers_dav.vad)
 	   cp ../../../../binsrc/rdf_mappers/rdf_mappers_dav.vad .
        elif [ -f ../../../../autogen.sh ]
        then
 	   LOG "Create RDF mappers Package"
-	   (cd ../../../../binsrc/rdf_mappers && make rdf_mappers_dav.vad)
+	   (cd ../../../../binsrc/rdf_mappers && $MAKE rdf_mappers_dav.vad)
 	   cp ../../../../binsrc/rdf_mappers/rdf_mappers_dav.vad .
 
 	   LOG "Create ODS Framework VAD Package"
-	   (cd ../../../../appsrc/ODS-Framework && make ods_framework_dav.vad)
+	   (cd ../../../../appsrc/ODS-Framework && $MAKE ods_framework_dav.vad)
 	   cp ../../../../appsrc/ODS-Framework/ods_framework_dav.vad .
 
 	   LOG "Create ODS Blog VAD Package"
-	   (cd ../../../../appsrc/ODS-Blog && make ods_blog_dav.vad)
+	   (cd ../../../../appsrc/ODS-Blog && $MAKE ods_blog_dav.vad)
 	   cp ../../../../appsrc/ODS-Blog/ods_blog_dav.vad .
 
 	   LOG "Create SyncML VAD Package"
-	   (cd ../../../../binsrc/sync && make syncml_dav.vad)
+	   (cd ../../../../binsrc/sync && $MAKE syncml_dav.vad)
 	   cp ../../../../binsrc/sync/syncml_dav.vad .
        elif [ "x$HOST_OS" = "x" ]
        then
 	   LOG "Create ODS VAD Package"
-	   (cd ../../../samples/wa/; make)
+	   (cd ../../../samples/wa/; $MAKE)
 	   cp ../../../samples/wa/ods_framework_dav.vad ./
 	   LOG "Create BLOG VAD Package"
-	   (cd ../../../weblog2/; make)
+	   (cd ../../../weblog2/; $MAKE)
 	   cp ../../../weblog2/ods_blog_dav.vad ./
 	   LOG "Create SyncML VAD Package"
-	   (cd ../../../sync/; make)
+	   (cd ../../../sync/; $MAKE)
 	   cp ../../../sync/syncml_dav.vad ./
-	   (cd ../../../rdf_mappers; make)
+	   (cd ../../../rdf_mappers; $MAKE)
 	   cp ../../../rdf_mappers/rdf_mappers_dav.vad ./
        elif [ "x$SRC" != "x" ]
        then
 	   LOG "Create ODS VAD Package"
-	   (cd "$SRC/binsrc/samples/wa/" ; ./make_vad.sh)
+	   (cd "$SRC/binsrc/samples/wa/" ; $MAKE)
 	   cp "$SRC/binsrc/samples/wa/ods_framework_dav.vad" .
 	   LOG "Create BLOG VAD Package"
-	   (cd "$SRC/binsrc/weblog2/" ; ./make_vad.sh)
+	   (cd "$SRC/binsrc/weblog2/" ; $MAKE)
 	   cp "$SRC/binsrc/weblog2/ods_blog_dav.vad" .
-	   (cd "$SRC/binsrc/rdf_mappers"; make)
+	   (cd "$SRC/binsrc/rdf_mappers"; $MAKE)
 	   cp "$SRC/binsrc/rdf_mappers/rdf_mappers_dav.vad" .
        elif [ ! -f ../../../../autogen.sh ]
        then

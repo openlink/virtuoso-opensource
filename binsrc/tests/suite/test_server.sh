@@ -34,6 +34,9 @@ export LANG LC_ALL
 LOGFILE=test_server.output
 export LOGFILE
 
+MAKE=${MAKE-make}
+export MAKE
+
 # decide witch server options set to use based on the server's name
 SERVER=${SERVER-$1}
 case $SERVER in
