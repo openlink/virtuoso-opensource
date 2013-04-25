@@ -28,6 +28,8 @@ LANG=C
 LC_ALL=POSIX
 export LANG LC_ALL
 
+MAKE=`which gmake|which make`
+
 vspxdir="${HOME}/binsrc/vspx"
 vspxsql=${vspxsql-$vspxdir/vspx.sql}
 vspxxsd=${vspxxsd-$vspxdir/vspx.xsd}
@@ -40,8 +42,10 @@ else
     cutter="${cutterdir}/cutter"
 fi
 pwddir=`pwd`
+
 cd "${cutterdir}"
-gmake
+$MAKE
+
 cd "${pwddir}"
 
 begin_xml ()
