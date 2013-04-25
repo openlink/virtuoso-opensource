@@ -3790,7 +3790,7 @@ end_pred_sort: ;
 end_subj_sort: ;
   }
   rowvector_graph_sort (triples, 3, 1);
-  -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_TRIG after sort:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) dbg_obj_princ (triples[tctr]);
+  -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_TRIG after sort:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
   DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
   for (tctr := 0; (tctr < tcount) and aref_or_default (triples, tctr, 3, null) is null; tctr := tctr + 1)
     {
@@ -4322,7 +4322,7 @@ create function DB.DBA.RDF_PIVOT_DESCRIBE_LINK (in iri varchar)
 
 create procedure DB.DBA.RDF_TRIPLES_TO_HTML_UL (inout triples any, inout ses any)
 {
-  declare env, prev_subj, prev_pred any;
+  declare env, prev_subj, prev_pred any array;
   declare can_pivot, ctr, len, tcount, tctr, status, obj_needs_br integer;
   declare endpoint_fmt, subj_iri, pred_iri varchar;
   tcount := length (triples);
@@ -4352,7 +4352,7 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
   obj_needs_br := 0;
   for (tctr := 0; tctr < tcount; tctr := tctr + 1)
     {
-      declare subj, pred, obj, split, obj_iri_split any;
+      declare subj, pred, obj, split, obj_iri_split any array;
       declare pred_tagname varchar;
       declare res varchar;
       subj := triples[tctr][0];
