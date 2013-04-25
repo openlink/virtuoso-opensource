@@ -70,7 +70,6 @@
 #include "../Wi/sql3.h"
 #include "../Wi/repl.h"
 #include "../Wi/replsr.h"
-#include "../Tidy/html.h"
 #include "../langfunc/langfunc.h"
 #include "../Wi/wifn.h"
 #include "../Wi/sqlfn.h"
