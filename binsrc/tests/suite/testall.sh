@@ -105,6 +105,7 @@ then
 else
     run_tests_in_parallel=1
 fi
+run_tests_in_parallel=0
 
 #
 #  Setup the environment for the rest of the testsuite

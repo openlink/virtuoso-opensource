@@ -135,9 +135,6 @@ fi
 
 . $VIRTUOSO_TEST/testlib.sh
 
-MAKE=${MAKE-make}
-export MAKE
-
 # decide witch server options set to use based on the server's name
 
 case $SERVER in
