@@ -15225,8 +15225,8 @@ sql_bif_init (void)
 #if 0
   /*partition_def_bif_define ();*/
   dpipe_define_1_bif_define ();
-  bif_define ("dpipe_define", bif_dpipe_define);
 #endif
+  bif_define ("dpipe_define", bif_dpipe_define);
 
 #if 1
   bif_define ("xid_test", test_xid_encode_decode);
