@@ -191,3 +191,42 @@ time_gt (timeout_t * time1, timeout_t * time2)
   else
     return 0;
 }
+
+
+char * dk_strdup (char * s)
+{
+  return s ? box_dv_short_string (s) : NULL;
+}
+
+#include "util/strfuns.h"
+
+
+char *
+dk_cslentry (const char *list, int idx)
+{
+  char *start;
+  size_t length;
+
+  if (!list || !list[0] || !idx)
+    return NULL;
+
+  for (--idx; idx && *list; idx--)
+    {
+      if ((list = strchr (list, ',')) == NULL)
+	return NULL;
+      list++;
+    }
+  start = (char *) ltrim (list);
+  if ((list = strchr (start, ',')) == NULL)
+    length = strlen (start);
+  else
+    length = (u_int) (list - start);
+
+  if ((start = dk_strdup (start)) != NULL)
+    {
+      start[length] = 0;
+      rtrim (start);
+    }
+
+  return start;
+}
