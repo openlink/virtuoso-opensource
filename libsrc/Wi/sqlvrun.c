@@ -36,6 +36,8 @@
 #include "aqueue.h"
 #include "arith.h"
 #include "date.h"
+#include "sqlparext.h"
+
 
 
 extern int32 enable_qp;
@@ -3296,11 +3298,12 @@ vec_fref_single_result (fun_ref_node_t * fref, table_source_t * ts, caddr_t * in
 			}
 		    }
 		}
-	      if (ssl->ssl_name[0] == 'b'
-		  || ssl->ssl_name[0] == 'm')
+	      if (ssl->ssl_constant == (caddr_t)AMMSC_MAX
+		  || ssl->ssl_constant == (caddr_t)AMMSC_MIN)
 	    {
-	      int rc, is_max = ssl->ssl_name[0] == 'b';
+		  int rc, is_max = ssl->ssl_constant == AMMSC_MAX;
 		  if (no_old)
+
 		    rc = DVC_UNKNOWN;
 		  else
 	      rc = cmp_boxes (new_val, qst_get (inst, ssl), NULL, NULL);

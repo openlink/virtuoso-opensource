@@ -1045,6 +1045,7 @@ cv_agg (dk_set_t * code, int op, state_slot_t * res,
   ins->_.agg.op = op;
   ins->_.agg.arg = arg;
   ins->_.agg.result = res;
+  res->ssl_constant = (caddr_t)op;
   ins->_.agg.set_no = set_no;
   sc->sc_is_scalar_agg = 1;
   if (distinct)
