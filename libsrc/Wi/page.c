@@ -942,7 +942,7 @@ pf_fill_registered (page_fill_t * pf, buffer_desc_t * buf)
 	  it_cursor_t * cr2;
 	  for (cr2 = cr->itc_next_on_page; cr2; cr2 = cr2->itc_next_on_page)
 	    ctr++;
-	  reg2 = (placeholder_t**)dk_alloc (sizeof (caddr_t) * ctr);
+	  reg2 = (placeholder_t**)dk_alloc_box (sizeof (caddr_t) * ctr, DV_BIN);
 	  memcpy_16 (reg2, pf->pf_registered, sizeof (caddr_t) * cr_fill);
 	  pf->pf_registered = reg2;
 	  reg_allocd = 1;
@@ -2265,7 +2265,7 @@ pa_page_leave (it_cursor_t * itc, buffer_desc_t * buf, int chg)
 
 #define PF_REG_FREE \
   if (pf.pf_registered != &paf->paf_registered[0]) \
-    dk_free (pf.pf_registered, -1);
+    dk_free_box (pf.pf_registered);
 
 
 void
@@ -2513,7 +2513,7 @@ page_apply (it_cursor_t * itc, buffer_desc_t * buf, int n_delta, row_delta_t ** 
     {
       NEW_VAR (page_apply_frame_t, paf);
       page_apply_1 (itc, buf, n_delta, delta, op, paf);
-      dk_free ((caddr_t)paf, -1);
+      dk_free ((caddr_t)paf, sizeof (page_apply_frame_t));
     }
   else
     page_apply_s (itc, buf, n_delta, delta, op);
