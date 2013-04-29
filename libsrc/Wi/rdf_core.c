@@ -1511,7 +1511,7 @@ nic_remove_some_elements_n (name_id_cache_t * nic, int nth_name, char cachelet_m
           NIC_IN_ID (nic, nth_id, el.nicel_id);
           remhash_64_f ( el.nicel_id, nic->nic_in_array[nth_id], flag);
 	  if (!flag)
-	    log_error ("missed delete of name id cache %s %Ld", el.nicel_name, el.nicel_id);
+	    log_error ("missed delete of name id cache %s %L (%p %s)", el.nicel_name + 4, el.nicel_id, el.nicel_name, el.nicel_name);
           NIC_LEAVE_ID (nic, nth_id);
 
           if (/* IvAn/121009 nic->nic_is_boxes && */ flag)
