@@ -382,11 +382,18 @@ typedef struct gen_lock_s
   } gen_lock_t;
 
 
+/*#define CLK_DBG */
+
 typedef struct col_lock_s
 {
   LOCK;
   row_no_t	clk_pos;
   char		clk_change; /* row inserted/deleted/both by lock owner */
+#ifdef CLK_DBG
+  char		clk_rel_ctr;
+  short		clk_init_inx;
+  int64		clk_w_id;
+#endif
   db_buf_t *	clk_rbe;
 } col_row_lock_t;
 /* clk_change */
