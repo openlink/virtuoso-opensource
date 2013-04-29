@@ -7131,9 +7131,11 @@ sqlbif_rnd (int32* seed)
   hi = seed[0] / RNG_Q;
   lo = seed[0] % RNG_Q;
   if ((seed[0] = ((int32)(RNG_A * lo)) - ((int32)(RNG_R * hi))) <= 0)
-    seed[0] += RNG_M;
-
-  return seed[0];
+    {
+      seed[0] += RNG_M;
+      seed[0] &= 0x7fffffff;
+    }
+  return seed[0] & 0x7fffffff;
 }
 
 double
