@@ -2072,7 +2072,7 @@ sqlo_place_exp (sqlo_t * so, df_elt_t * super, df_elt_t * dfe)
 
 	    pred = sqlo_df (so, elt);
 	    elt_dfe = dfe_container (so, DFE_PRED_BODY, placed);
-	    elt_dfe->_.sub.is_control = 1;
+	    elt_dfe->_.sub.is_control = pred->dfe_type != DFE_FUN_REF ? 1 : 0;
 	    elt_dfe->dfe_locus = pref_loc;
 	    pred->dfe_locus = pref_loc;
 	    old_pt = so->so_gen_pt;
