@@ -2568,10 +2568,8 @@ ttl_try_to_cache_new_prefix (caddr_t *qst, dk_session_t *ses, ttl_env_t *env, pt
   id_hash_t *ns2pref = ns2pref_hit->hit_hash;
   caddr_t *prefx_ptr;
   ptrlong ns_counter_val;
-#ifndef NDEBUG
   if ('\0' == ti->ns[0])
-    GPF_T1("ttl_" "http_write_prefix_if_needed: empty ns");
-#endif
+    return 0;
   if (ti->is_bnode)
     return 0;
   if (('_' == ti->ns[0]) && (':' == ti->ns[1]))
