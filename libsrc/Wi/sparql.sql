@@ -6128,7 +6128,7 @@ create procedure DB.DBA.RDF_TRIPLE_OBJ_BNODE_TO_NICE_TTL (inout triples any, ino
           else
             http_ttl_value (env, itm, 2, ses);
           printed_triples_mask[u[2]] := ascii ('D');
-          s_bnode_iid := triples[u[2]][2];
+          s_bnode_iid := iri_to_id_nosignal (triples[u[2]][2]);
           u := dict_get (bnode_usage_dict, s_bnode_iid, null);
           -- dbg_obj_princ ('next node ', s_bnode_iid, ' u=', u);
         }
