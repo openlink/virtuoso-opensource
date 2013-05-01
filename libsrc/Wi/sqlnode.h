@@ -951,6 +951,7 @@ typedef struct dpipe_node_s
   table_source_t *	dp_loc_ts;
   state_slot_t ***	dp_input_args;
   state_slot_t *	dp_local_cache; /* if this is colocated and has no dpipe, use this for remembering some results */
+  state_slot_t *	dp_set_nos; /* if set mask is set, record which set no in dp corresponds to which in qi */
 } dpipe_node_t;
 
 #define dp_itcl clb.clb_itcl
