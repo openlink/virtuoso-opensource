@@ -2337,8 +2337,12 @@ sqlg_pred_1 (sqlo_t * so, df_elt_t ** body, dk_set_t * code, int succ, int fail,
     {
       for (inx = 1; inx < n_terms; inx++)
 	{
+	  char save = sc->sc_re_emit_code;
+	  sc->sc_re_emit_code = !sc->sc_is_first_cond;
 	  sqlg_dfe_code (so, body[inx], code, succ, fail, unk);
+	  sc->sc_re_emit_code = save;
 	}
+      sc->sc_is_first_cond = 0;
     }
 }
 
@@ -2456,6 +2460,7 @@ sqlg_pred_body_1 (sqlo_t * so, df_elt_t **  body, dk_set_t append)
 code_vec_t
 sqlg_pred_body (sqlo_t * so, df_elt_t **  body)
 {
+  so->so_sc->sc_is_first_cond = 1;
   return sqlg_pred_body_1 (so, body, NULL);
 }
 
@@ -4615,7 +4620,7 @@ sqlg_dt_query_1 (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query,
     sqlc_error (so->so_sc->sc_cc, ".....", "Stack Overflow");
   if (DK_MEM_RESERVE)
     sqlc_error (so->so_sc->sc_cc, ".....", "Out of memory");
-
+  sc->sc_re_emit_code = 0;
   switch (dt_dfe->dfe_type)
     {
     case DFE_DT:

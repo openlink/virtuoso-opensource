@@ -672,9 +672,10 @@ scalar_exp_generate (sql_comp_t * sc, ST * tree, dk_set_t * code)
   if (sc->sc_so)
     {
       dfe = sqlo_df (sc->sc_so, tree);
-      if (dfe->dfe_ssl)
+      if (dfe->dfe_ssl && !sc->sc_re_emit_code)
 	return (dfe->dfe_ssl);
     }
+  sc->sc_re_emit_code = 0;
   if (SYMBOLP (tree))
     {
       state_slot_t * ssl;

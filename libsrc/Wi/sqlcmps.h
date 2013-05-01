@@ -241,6 +241,8 @@ typedef struct sql_comp_s
     char		sc_is_first_of_qf;
     char		sc_no_distinct_colocate; /* if distinct is for except or intersect, do not put inside a qf even if colocatable */
     char		sc_in_ins_replacing;
+    char		sc_re_emit_code; /* in conditional expressions, repeating code must be generated for each branch even if overlap */
+    char		sc_is_first_cond; /* true if doing 1st condition in a conditional exp, i.e. will always execute */
     rdf_inf_slots_t *	sc_rdf_inf_slots;
     caddr_t * sc_big_ssl_consts;	/*!< Vector of saved values for SSL consts of unusual types (like vectors) or just too big to fit into SQL text in a plain way */
     dk_set_t		sc_vec_pred;
