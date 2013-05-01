@@ -87,7 +87,7 @@ void remove_old_xmlview ();
 page_lock_t *
 pl_allocate (void)
 {
-  NEW_VARZ (page_lock_t, pl);
+  B_NEW_VARZ (page_lock_t, pl);
   return pl;
 }
 
@@ -101,7 +101,7 @@ pl_free (page_lock_t * pl)
 row_lock_t *
 rl_allocate (void)
 {
-  NEW_VARZ (row_lock_t, rl);
+  B_NEW_VARZ (row_lock_t, rl);
   return rl;
 }
 
@@ -126,7 +126,7 @@ lt_new_trx_no (lock_trx_t * lt)
 lock_trx_t *
 lt_allocate (void)
 {
-  NEW_VARZ (lock_trx_t, lt);
+  B_NEW_VARZ (lock_trx_t, lt);
 
   lt->lt_log = strses_allocate ();
   lt->lt_log_mtx = mutex_allocate ();

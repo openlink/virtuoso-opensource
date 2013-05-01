@@ -776,7 +776,7 @@ static dk_mutex_t *bg_mutex = NULL;
 buffer_group_t *
 buffer_group_allocate ()
 {
-  NEW_VARZ (buffer_group_t, bg);
+  B_NEW_VARZ (buffer_group_t, bg);
   bg->bg_buffer0 = ALIGN_8K (bg->bg_space);
   if (NULL != bg_first)
     {

@@ -190,7 +190,7 @@ rl_col_release (row_lock_t * rl, lock_trx_t * lt)
 col_row_lock_t *
 itc_new_clk (it_cursor_t * itc, int row)
 {
-  NEW_VARZ (col_row_lock_t, clk);
+  B_NEW_VARZ (col_row_lock_t, clk);
   if (!itc->itc_lock_lt || NO_LOCK_LT == itc->itc_lock_lt)
     GPF_T1 ("col lock lock owner not set");
   clk->pl_owner = itc->itc_lock_lt;
@@ -930,7 +930,7 @@ ceic_merge_finalize (ce_ins_ctx_t * top_ceic, ce_ins_ctx_t ** col_ceic_ret, buff
   int any_rb = 0;
   int n_values;
   if (org_n_values > sizeof (matches_auto) / sizeof (row_no_t))
-    matches = dk_alloc (sizeof (row_no_t) * org_n_values);
+    matches = dk_alloc_box (sizeof (row_no_t) * org_n_values, DV_BIN);
   ITC_DELTA (itc, buf);
   if (IS_BLOB_DTP (top_ceic->ceic_col->col_sqt.sqt_dtp) && RB_CPT != top_ceic->ceic_is_rb)
     ceic_delete_blobs (top_ceic, buf, ice, &matches_auto[0], sizeof (matches_auto) / sizeof (row_no_t));
@@ -942,13 +942,13 @@ ceic_merge_finalize (ce_ins_ctx_t * top_ceic, ce_ins_ctx_t ** col_ceic_ret, buff
       mp_conc1 (col_ceic->ceic_mp, &col_ceic->ceic_delta_ce_op, (void *) (ptrlong) (CE_DELETE | ice));
       mp_conc1 (col_ceic->ceic_mp, &col_ceic->ceic_delta_ce, NULL);
       if (matches != &matches_auto[0])
-	dk_free ((caddr_t) matches, -1);
+	dk_free_box ((caddr_t) matches);
       return;
     }
   if (!any_rb && ceic_delete_direct (top_ceic, buf, ice))
     {
       if (matches != &matches_auto[0])
-	dk_free ((caddr_t) matches, -1);
+	dk_free_box ((caddr_t) matches);
     return;
     }
   NEED_CEIC;
@@ -1025,7 +1025,7 @@ ceic_merge_finalize (ce_ins_ctx_t * top_ceic, ce_ins_ctx_t ** col_ceic_ret, buff
   }
   END_DO_SET ();
   if (matches != &matches_auto[0])
-    dk_free ((caddr_t) matches, -1);
+    dk_free_box ((caddr_t) matches);
 }
 
 

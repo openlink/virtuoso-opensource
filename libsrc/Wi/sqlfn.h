@@ -1685,4 +1685,6 @@ int tb_is_rdf_quad (dbe_table_t * tb);
 void qn_vec_reuse (data_source_t * qn, caddr_t * inst);
 extern int32 enable_vec_reuse;
 
+#define B_NEW_VARZ(t, v) NEW_VARZ(t, v)
+
 #endif /* _SQLFN_H */

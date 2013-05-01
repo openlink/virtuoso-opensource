@@ -1712,7 +1712,7 @@ ik_array_free (ins_key_t ** iks)
       dk_free_box ((caddr_t) ik->ik_del_slots);
       dk_free_box ((caddr_t) ik->ik_del_cast);
       dk_free_box ((caddr_t) ik->ik_del_cast_func);
-      dk_free ((caddr_t) ik, -1);
+      dk_free ((caddr_t) ik, sizeof (ins_key_t));
     }
   END_DO_BOX;
   dk_free_box ((caddr_t)iks);
