@@ -885,6 +885,16 @@ sqlc_for_vectored_decl (sql_comp_t * sc, ST ** params, state_slot_t *** init_ret
   return (state_slot_t **)list_to_array (dk_set_nreverse (res));
 }
 
+void
+sqlc_code_dpipe (sql_comp_t * sc, dk_set_t * code)
+{
+  sqlo_t so;
+  if (!sc->sc_cc->cc_query->qr_proc_vectored)
+    return;
+  memzero (&so, sizeof (so));
+  so.so_sc = sc;
+  sqlg_pre_code_dpipe (&so, code, NULL);
+}
 
 
 void
@@ -918,12 +928,10 @@ sqlc_for_vectored_stmt (sql_comp_t * sc, ST * stmt)
   out = sqlc_compound_stmt (sc, stmt->_.for_vec.body, dk_set_nreverse (out_exps));
   ins->_.for_vect.out_vars = (state_slot_t**)revlist_to_array (out_ssls);
   ins->_.for_vect.out_values = out;
-  {
-    sqlo_t so;
-    memzero (&so, sizeof (so));
-    so.so_sc = sc;
-    sqlg_pre_code_dpipe (&so, &sc->sc_routine_code, NULL);
-  }
+
+  sqlc_code_dpipe (sc, &sc->sc_routine_code);
+
+
   ins->_.for_vect.code = code_to_cv (sc, sc->sc_routine_code);
   memset (&en, 0, sizeof (en));
   en.src_gen.src_pre_code = ins->_.for_vect.code;

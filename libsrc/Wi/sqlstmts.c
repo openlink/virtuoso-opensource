@@ -959,6 +959,7 @@ sqlc_insert (sql_comp_t * sc, ST * tree)
       fetch = (ST*)sqlo_opt_value (opts, OPT_INS_FETCH);
       if (fetch)
 	sqlc_ins_fetch (sc, ins, fetch, &code);
+      sqlc_code_dpipe (sc, &code);
       ins->src_gen.src_pre_code = code_to_cv (sc, code);
       if (INS_REPLACING == ins->ins_mode && sc->sc_cc->cc_query->qr_proc_vectored)
 	{
