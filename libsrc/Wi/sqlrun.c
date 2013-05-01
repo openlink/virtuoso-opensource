@@ -2973,6 +2973,8 @@ skip_node_input (skip_node_t * sk, caddr_t * inst, caddr_t * qst)
     sqlr_new_error ("22023", "SR349", "SKIP parameter < 0");
   if (top < 0 && !skip_only)
     sqlr_new_error ("22023", "SR350", "TOP parameter < 0");
+  if (0 == top)
+    return;
   if (sk->src_gen.src_sets)
     {
       data_col_t * ctr_dc = QST_BOX (data_col_t *, inst, sk->sk_row_ctr->ssl_index);
