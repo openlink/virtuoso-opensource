@@ -61,6 +61,9 @@ void ts_free (table_source_t * ts);
 
 void sel_free (select_node_t * sel);
 
+#define SSL_ADD_TO_QR(sl) \
+  dk_set_push (&cc->cc_super_cc->cc_query->qr_state_map, (void *) sl);
+
 state_slot_t * ssl_copy (comp_context_t * cc, state_slot_t * org);
 
 state_slot_t *ssl_new_variable (comp_context_t * cc, const char *name, dtp_t dtp);

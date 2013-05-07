@@ -1120,6 +1120,56 @@ bif_all_vec (instruction_t * ins)
   return any;
 }
 
+void
+cv_deduplicate_param_ssls (comp_context_t *cc, state_slot_t **params)
+{
+  int inx, prev_inx;
+  DO_BOX (state_slot_t *, arg, inx, params)
+  {
+    switch (arg->ssl_type)
+      {
+      case SSL_CONSTANT:
+	continue;
+      case SSL_VARIABLE:
+	continue;
+      }
+    for (prev_inx = inx; prev_inx--; /* no step */ )
+      {
+	if (arg->ssl_index == params[prev_inx]->ssl_index)
+	  goto dupe_found;	/* see below */
+      }
+    continue;
+  dupe_found:
+    switch (arg->ssl_type)
+      {
+      case SSL_REF:
+	{
+	  state_slot_ref_t *copy = (state_slot_ref_t *) dk_alloc (sizeof (state_slot_ref_t));
+	  ssl_index_t *nos;
+	  memcpy (copy, arg, sizeof (state_slot_ref_t));
+	  nos = copy->sslr_set_nos;
+	  copy->sslr_set_nos = (ssl_index_t *) dk_alloc ((copy->sslr_distance) * sizeof (ssl_index_t));
+	  memcpy (copy->sslr_set_nos, nos, (copy->sslr_distance) * sizeof (ssl_index_t));
+	  params[inx] = (state_slot_t *) copy;
+	  SSL_ADD_TO_QR (copy);
+	  break;
+	}
+      default:
+	{
+	  state_slot_t *copy = (state_slot_t *) dk_alloc (sizeof (state_slot_t));
+	  memcpy (copy, arg, sizeof (state_slot_t));
+	  copy->ssl_name = box_copy (arg->ssl_name);
+	  if (arg->ssl_box_index)
+	    copy->ssl_box_index = cc_new_instance_slot (cc);
+	  params[inx] = copy;
+	  SSL_ADD_TO_QR (copy);
+	  break;
+	}
+      }
+  }
+  END_DO_BOX;
+}
+
 
 void
 cv_vec_slots (sql_comp_t * sc, code_vec_t cv, dk_hash_t * res, dk_hash_t * all_res, int *non_cl_local)
@@ -1147,6 +1197,7 @@ cv_vec_slots (sql_comp_t * sc, code_vec_t cv, dk_hash_t * res, dk_hash_t * all_r
 
       case INS_CALL_BIF:
 	ref_ssls (res, ins->_.bif.params);
+	cv_deduplicate_param_ssls (sc->sc_cc, ins->_.bif.params);
 	if (!ins_is_single_state (ins))
 	  {
 	      bif_t vec = VEC_SINGLE_STATE == *non_cl_local ? NULL

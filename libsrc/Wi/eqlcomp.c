@@ -589,11 +589,6 @@ ssl_state (int type, dtp_t dtp)
   return (NULL);
 }
 
-#define SSL_ADD_TO_QR(sl) \
-  dk_set_push (&cc->cc_super_cc->cc_query->qr_state_map, (void *) sl);
-
-
-
 state_slot_t *
 ssl_copy (comp_context_t * cc, state_slot_t * org)
 {
