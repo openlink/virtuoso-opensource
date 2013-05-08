@@ -51,6 +51,7 @@ void memmove_16 (void * t, const void * s, size_t len);
 unsigned  int64 rdtsc();
 void print_trace (void);
 
+char * dk_cslentry (const char *list, int idx);
 
 
 END_CPLUSPLUS
