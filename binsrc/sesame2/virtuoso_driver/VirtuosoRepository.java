@@ -66,6 +66,7 @@ public class VirtuosoRepository implements Repository {
 	boolean useLazyAdd = false;
 	String defGraph;
 	int prefetchSize = 200;
+	int batchSize = 5000;
 	int queryTimeout = 0;
 	String ruleSet;
 	
@@ -263,6 +264,23 @@ public class VirtuosoRepository implements Repository {
 	 */
 	public int getFetchSize() {
 		return this.prefetchSize;
+	}
+
+	/**
+	 * Set the batch size for Inserts data(default 5000) 
+	 * 
+	 * @param sz
+	 *        batch size.
+	 */
+	public void setBatchSize(int sz) {
+		this.batchSize = sz;
+	}
+
+	/**
+	 * Get the batch size for Insert data
+	 */
+	public int getBatchSize() {
+		return this.batchSize;
 	}
 
 	/**
