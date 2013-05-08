@@ -43,6 +43,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Iterator;
 import java.util.List;
 import java.util.StringTokenizer;
@@ -156,10 +157,13 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	private static Resource nilContext;
 	private Connection quadStoreConnection;
 	protected VirtuosoRepository repository;
-	static final String S_INSERT = "sparql insert into graph iri(??) { `iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)` }";
+//	static final String S_INSERT = "sparql insert into graph iri(??) { `iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)` }";
         static final String S_DELETE = "sparql delete from graph iri(??) {`iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)`}";
-	static final int BATCH_SIZE = 5000;
-	private PreparedStatement psInsert;
+        static final String S_TTLP_INSERT = "DB.DBA.TTLP(?,'',?,255)";
+	private int BATCH_SIZE = 5000;
+//	private PreparedStatement psInsert;
+	private PreparedStatement psInsertTTLP;
+	private HashMap<String, StringBuilder> batchData = new HashMap<String,StringBuilder>();
 	private int psInsertCount = 0;
 	private boolean useLazyAdd = false;
 	private int prefetchSize = 200;
@@ -171,6 +175,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		this.repository = repository;
 		this.useLazyAdd = repository.useLazyAdd;
 		this.prefetchSize = repository.prefetchSize;
+		this.BATCH_SIZE = repository.batchSize;
 		this.nilContext = new ValueFactoryImpl().createURI(repository.defGraph);
 		this.repository.initialize();
 
@@ -937,12 +942,13 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				
 				int count = 0;
 				PreparedStatement ps = null; 
+				HashMap<String, StringBuilder> map = new HashMap<String,StringBuilder>();
 			        Resource[] _contexts = checkDMLContext(contexts);
 
 				public void startRDF() throws RDFHandlerException {
 					if (ps == null) 
 						try {
-				        		ps = prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
+				        		ps = prepareStatement(VirtuosoRepositoryConnection.S_TTLP_INSERT);
 				        	} catch (java.sql.SQLException e) {
 							throw new RDFHandlerException("Problem PrepareStatement: ", e);
 				        	}
@@ -951,8 +957,8 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				public void endRDF() throws RDFHandlerException {
 					try {
 						if (count > 0) {
-							ps.executeBatch();
-							ps.clearBatch();
+							flushDelayAddMap(ps, map);
+							map.clear();
 							count = 0;
 						}
 						if (ps != null) {
@@ -987,17 +993,26 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 					} else {
 						hcontexts = _contexts;
 					}
-					for (int i = 0; i < contexts.length; i++) {
-						ps.setString(1, hcontexts[i].stringValue());
-						bindResource(ps, 2, st.getSubject());
-						bindURI(ps, 3, st.getPredicate());
-						bindValue(ps, 4, st.getObject());
-						ps.addBatch();
+					for (int i = 0; i < hcontexts.length; i++) {
+
+						String ctx = hcontexts[i].stringValue();
+						StringBuilder data = map.get(ctx);
+						if (data == null)
+							data = new StringBuilder(256);
+
+						append(st.getSubject(), data);
+						data.append(' ');
+						append(st.getPredicate(), data);
+						data.append(' ');
+						append(st.getObject(), data);
+						data.append(" .\n");
+
+						map.put(ctx, data);
 						count++;
 					}
 					if (count > BATCH_SIZE) {
-						ps.executeBatch();
-						ps.clearBatch();
+						flushDelayAddMap(ps, map);
+						map.clear();
 						count = 0;
 					}
 				   }	
@@ -1186,7 +1201,8 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		setAutoCommit(false);
 
 		try {
-			PreparedStatement ps = prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
+			PreparedStatement ps = prepareStatement(VirtuosoRepositoryConnection.S_TTLP_INSERT);
+			HashMap<String, StringBuilder> map = new HashMap<String,StringBuilder>();
 			int count = 0;
 
 			while (it.hasNext()) {
@@ -1199,23 +1215,31 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				}
 
 				for (int i = 0; i < contexts.length; i++) {
-					ps.setString(1, contexts[i].stringValue());
-					bindResource(ps, 2, st.getSubject());
-					bindURI(ps, 3, st.getPredicate());
-					bindValue(ps, 4, st.getObject());
-					ps.addBatch();
+					String ctx = contexts[i].stringValue();
+					StringBuilder data = map.get(ctx);
+					if (data == null)
+						data = new StringBuilder(256);
+
+					append(st.getSubject(), data);
+					data.append(' ');
+					append(st.getPredicate(), data);
+					data.append(' ');
+					append(st.getObject(), data);
+					data.append(" .\n");
+
+					map.put(ctx, data);
 					count++;
 				}
 
 				if (count > BATCH_SIZE) {
-					ps.executeBatch();
-					ps.clearBatch();
+					flushDelayAddMap(ps, map);
+					map.clear();
 					count = 0;
 				}
 			}
 			if (count > 0) {
-				ps.executeBatch();
-				ps.clearBatch();
+				flushDelayAddMap(ps, map);
+				map.clear();
 			}
 			ps.close();
 		}	
@@ -1261,7 +1285,8 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		setAutoCommit(false);
 
 		try {
-			PreparedStatement ps = prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
+			PreparedStatement ps = prepareStatement(VirtuosoRepositoryConnection.S_TTLP_INSERT);
+			HashMap<String, StringBuilder> map = new HashMap<String,StringBuilder>();
 			int count = 0;
 
 			while (statements.hasNext()) {
@@ -1274,23 +1299,31 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				}
 
 				for (int i = 0; i < contexts.length; i++) {
-					ps.setString(1, contexts[i].stringValue());
-					bindResource(ps, 2, st.getSubject());
-					bindURI(ps, 3, st.getPredicate());
-					bindValue(ps, 4, st.getObject());
-					ps.addBatch();
+					String ctx = contexts[i].stringValue();
+					StringBuilder data = map.get(ctx);
+					if (data == null)
+						data = new StringBuilder(256);
+
+					append(st.getSubject(), data);
+					data.append(' ');
+					append(st.getPredicate(), data);
+					data.append(' ');
+					append(st.getObject(), data);
+					data.append(" .\n");
+
+					map.put(ctx, data);
 					count++;
 				}
 
 				if (count > BATCH_SIZE) {
-					ps.executeBatch();
-					ps.clearBatch();
+					flushDelayAddMap(ps, map);
+					map.clear();
 					count = 0;
 				}
 			}
 			if (count > 0) {
-				ps.executeBatch();
-				ps.clearBatch();
+				flushDelayAddMap(ps, map);
+				map.clear();
 			}
 			ps.close();
 		}
@@ -1986,45 +2019,53 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 
 
-	private void addToQuadStore(Resource subject, URI predicate, Value object, Resource... contexts) throws RepositoryException {
+	private synchronized void addToQuadStore(Resource subject, URI predicate, Value object, Resource... contexts) throws RepositoryException {
 		verifyIsOpen();
 
 		try {
 			boolean isAutoCommit = getQuadStoreConnection().getAutoCommit();
-		        synchronized(this) {
-		        	if (!isAutoCommit && useLazyAdd) {
-		        		if (psInsert == null)
-						psInsert = prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
+	        	if (psInsertTTLP == null)
+				psInsertTTLP = prepareStatement(VirtuosoRepositoryConnection.S_TTLP_INSERT);
 
+	        	if (!isAutoCommit && useLazyAdd) {
 					for (int i = 0; i < contexts.length; i++) {
-						psInsert.setString(1, contexts[i].stringValue());
-						bindResource(psInsert, 2, subject);
-						bindURI(psInsert, 3, predicate);
-						bindValue(psInsert, 4, object);
+					String ctx = contexts[i].stringValue();
+					StringBuilder data = batchData.get(ctx);
+					if (data == null)
+						data = new StringBuilder(256);
 
-						psInsert.addBatch();
+					append(subject, data);
+					data.append(' ');
+					append(predicate, data);
+					data.append(' ');
+					append(object, data);
+					data.append(" .\n");
+
+					batchData.put(ctx, data);
 						psInsertCount++;
 					}
-					if (psInsertCount >= BATCH_SIZE) {
-						psInsert.executeBatch();
-						psInsert.clearBatch();
-						psInsertCount = 0;
-					}
+				if (psInsertCount >= BATCH_SIZE)
+					flushDelayAdd();
 		        	} else {
-		        		if (psInsert == null)
-						psInsert = prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
+				HashMap<String, StringBuilder> map = new HashMap<String,StringBuilder>();
 
 					for (int i = 0; i < contexts.length; i++) {
-						psInsert.setString(1, contexts[i].stringValue());
-						bindResource(psInsert, 2, subject);
-						bindURI(psInsert, 3, predicate);
-						bindValue(psInsert, 4, object);
+					String ctx = contexts[i].stringValue();
+					StringBuilder data = map.get(ctx);
+					if (data == null)
+						data = new StringBuilder(256);
 
-						psInsert.addBatch();
-					}
-					psInsert.executeBatch();
-					psInsert.clearBatch();
+					append(subject, data);
+					data.append(' ');
+					append(predicate, data);
+					data.append(' ');
+					append(object, data);
+					data.append(" .\n");
+
+					map.put(ctx, data);
 			        }
+				flushDelayAddMap(null, map);
+				map.clear();
 		        }
 		}
 		catch (Exception e) {
@@ -2032,47 +2073,177 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 	}
 
-	private void sendDelayAdd() throws RepositoryException 
+
+	private void append(Value value, StringBuilder sb)
+		throws RepositoryException
 	{
-		synchronized(this) {
-			try {
-				if (psInsertCount >= BATCH_SIZE && psInsert!=null) {
-					psInsert.executeBatch();
-					psInsert.clearBatch();
-					psInsertCount = 0;
+		if (value instanceof Resource) {
+			append((Resource)value, sb);
 				}
+		else if (value instanceof Literal) {
+			append((Literal)value, sb);
 			}
-			catch (Exception e) {
+		else {
+			throw new RepositoryException("Unknown value type: " + value.getClass());
+		}
+	}
+
+	private void append(Resource resource, StringBuilder sb)
+		throws RepositoryException
+	{
+		if (resource instanceof URI) {
+			append((URI)resource, sb);
+		}
+		else if (resource instanceof BNode) {
+			append((BNode)resource, sb);
+		}
+		else {
+			throw new RepositoryException("Unknown resource type: " + resource.getClass());
+		}
+	}
+
+	private void append(URI uri, StringBuilder sb)
+		throws RepositoryException
+	{
+		sb.append("<");
+		escapeString(uri.toString(), sb);
+		sb.append(">");
+	}
+
+	private void append(BNode bNode, StringBuilder sb)
+		throws RepositoryException
+	{
+		sb.append("_:");
+		sb.append(bNode.getID());
+	}
+
+
+	private void append(Literal lit, StringBuilder sb)
+		throws RepositoryException
+	{
+		sb.append("\"");
+		escapeString(lit.getLabel(), sb);
+		sb.append("\"");
+
+		if (lit.getDatatype() != null) {
+			// Append the literal's datatype
+			sb.append("^^");
+			append(lit.getDatatype(), sb);
+		}
+		else if (lit.getLanguage() != null) {
+			// Append the literal's language
+			sb.append("@");
+			sb.append(lit.getLanguage());
+			}
+		}
+
+	private void escapeString(String label, StringBuilder sb)
+		throws RepositoryException
+	{
+		int labelLength = label.length();
+
+		for (int i = 0; i < labelLength; i++) {
+			char c = label.charAt(i);
+			int cInt = c;
+
+			if (c == '\\') {
+				sb.append("\\\\");
+			}
+			else if (c == '"') {
+				sb.append("\\\"");
+			}
+			else if (c == '\n') {
+				sb.append("\\n");
+			}
+			else if (c == '\r') {
+				sb.append("\\r");
+			}
+			else if (c == '\t') {
+				sb.append("\\t");
+			}
+			else if (
+				cInt >= 0x0 && cInt <= 0x8 ||
+				cInt == 0xB || cInt == 0xC ||
+				cInt >= 0xE && cInt <= 0x1F ||
+				cInt >= 0x7F && cInt <= 0xFFFF)
+			{
+				sb.append("\\u");
+				sb.append(toHexString(cInt, 4));
+	}
+			else if (cInt >= 0x10000 && cInt <= 0x10FFFF) {
+				sb.append("\\U");
+				sb.append(toHexString(cInt, 8));
+			}
+			else {
+				sb.append(c);
 			}
 		}
 	}
 
-	private void flushDelayAdd() throws RepositoryException 
+	private String toHexString(int decimal, int stringLength) {
+		StringBuilder sb = new StringBuilder(stringLength);
+		String hexVal = Integer.toHexString(decimal).toUpperCase();
+
+		int nofZeros = stringLength - hexVal.length();
+		for (int i = 0; i < nofZeros; i++)
+			sb.append('0');
+
+		sb.append(hexVal);
+		return sb.toString();
+	}
+
+
+	
+	private synchronized void sendDelayAdd() throws RepositoryException 
 	{
-		synchronized(this) {
+		try {
+			if (psInsertCount >= BATCH_SIZE)
+				flushDelayAdd();
+		}
+		catch (Exception e) {
+			throw new RepositoryException(e);
+		}
+	}
+
+	private synchronized void flushDelayAdd() throws RepositoryException 
+	{
 			try {
-				if (psInsertCount > 0 && psInsert!=null) {
-					psInsert.executeBatch();
-					psInsert.clearBatch();
+			if (psInsertCount > 0) {
+				flushDelayAddMap(null, batchData);
+				batchData.clear();
 					psInsertCount = 0;
 				}
 			}
 			catch (Exception e) {
+			throw new RepositoryException(e);
 			}
+		}
+
+
+	private void flushDelayAddMap(PreparedStatement ps, Map<String,StringBuilder> data) throws SQLException
+	{
+	        if (ps == null) {
+			if (psInsertTTLP == null)
+				psInsertTTLP = prepareStatement(VirtuosoRepositoryConnection.S_TTLP_INSERT);
+			ps = psInsertTTLP;
+	}
+
+		for(Map.Entry<String,StringBuilder> e : data.entrySet()) {
+			ps.setString(1, e.getValue().toString());
+			ps.setString(2, e.getKey());
+			ps.executeUpdate();
 		}
 	}
 
-	private void dropDelayAdd() throws RepositoryException 
+	private synchronized void dropDelayAdd() throws RepositoryException 
 	{
-		synchronized(this) {
 			try {
-				if (psInsertCount >= BATCH_SIZE && psInsert!=null) {
-					psInsert.clearBatch();
+			if (psInsertCount >= BATCH_SIZE) {
+				batchData.clear();
 					psInsertCount = 0;
 				}
 			} catch (Exception e) {}
 		}
-	}
 
 	private void clearQuadStore(Resource[] contexts) throws RepositoryException {
 		String  query = "sparql clear graph iri(??)";

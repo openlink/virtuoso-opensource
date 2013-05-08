@@ -70,6 +70,7 @@ public class VirtuosoRepositoryFactory implements RepositoryFactory {
 			result.setRoundrobin(vConfig.getRoundRobin());
 			result.setFetchSize(vConfig.getFetchSize());
 		  	result.setRuleSet(vConfig.getRuleSet());
+			result.setBatchSize(vConfig.getBatchSize());
 		}
 		else {
 			throw new RepositoryConfigException("Invalid configuration class: " + config.getClass());
