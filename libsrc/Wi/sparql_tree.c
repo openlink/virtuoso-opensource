@@ -2505,6 +2505,7 @@ fv_like_addon_sff:
         {
           dest->rvrSprintffs = (ccaddr_t *) t_box_copy ((caddr_t)(addon->rvrSprintffs));
           dest->rvrSprintffCount = addon->rvrSprintffCount;
+          new_restr |= SPART_VARR_SPRINTFF;
         }
     }
 
@@ -2674,6 +2675,7 @@ turn_sff_off:
         {
           dest->rvrSprintffs = (ccaddr_t *) t_box_copy ((caddr_t)(addon->rvrSprintffs));
           dest->rvrSprintffCount = addon->rvrSprintffCount;
+          new_restr |= SPART_VARR_SPRINTFF;
         }
     }
 
