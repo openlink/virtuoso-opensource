@@ -1482,7 +1482,7 @@ create function DB.DBA.RDF_LONG_OF_OBJ (in shortobj any) returns any -- DEPRECAT
 }
 ;
 
-create function DB.DBA.RDF_DATATYPE_OF_OBJ (in shortobj any, in dflt varchar := 'http://www.w3.org/2001/XMLSchema#string') returns any
+create function DB.DBA.RDF_DATATYPE_OF_OBJ (in shortobj any, in dflt varchar := UNAME'http://www.w3.org/2001/XMLSchema#string') returns any
 {
   declare twobyte integer;
   declare res any;
@@ -1493,14 +1493,14 @@ create function DB.DBA.RDF_DATATYPE_OF_OBJ (in shortobj any, in dflt varchar := 
       if (isstring (shortobj) and bit_and (__box_flags (shortobj), 1))
         return null;
       -- dbg_obj_princ ('DB.DBA.RDF_DATATYPE_OF_OBJ (', shortobj, ') will return ', __xsd_type (shortobj, dflt), ' for non-rdfbox');
-      return iri_to_id (__xsd_type (shortobj, dflt));
+      return __xsd_type (shortobj, dflt);
     }
   twobyte := rdf_box_type (shortobj);
   -- dbg_obj_princ ('DB.DBA.RDF_DATATYPE_OF_OBJ (', shortobj, ') found twobyte ', twobyte);
   if (257 = twobyte)
-    return case (rdf_box_lang (shortobj)) when 257 then iri_to_id (dflt) else null end;
+    return case (rdf_box_lang (shortobj)) when 257 then __uname (dflt) else null end;
   whenever not found goto badtype;
-  select RDT_IID into res from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = twobyte;
+  select __uname (RDT_QNAME) into res from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = twobyte;
   return res;
 
 badtype:
@@ -1770,9 +1770,9 @@ create function DB.DBA.RDF_DATATYPE_OF_LONG (in longobj any, in dflt any := UNAM
       declare res IRI_ID;
       twobyte := rdf_box_type (longobj);
       if (257 = twobyte)
-        return case (rdf_box_lang (longobj)) when 257 then iri_to_id (dflt) else null end;
+        return case (rdf_box_lang (longobj)) when 257 then __uname (dflt) else null end;
       whenever not found goto badtype;
-      select RDT_IID into res from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = twobyte;
+      select __uname (RDT_QNAME) into res from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = twobyte;
       return res;
 
 badtype:
@@ -1780,7 +1780,7 @@ badtype:
     }
   if (isiri_id (longobj))
     return NULL;
-  return iri_to_id (__xsd_type (longobj, dflt));
+  return __xsd_type (longobj, dflt);
 }
 ;
 
@@ -1885,15 +1885,15 @@ create function DB.DBA.RDF_DATATYPE_OF_SQLVAL (in v any,
       declare res IRI_ID;
       twobyte := rdf_box_type (v);
       if (257 = twobyte)
-        return case (rdf_box_lang (v)) when 257 then iri_to_id (strg_datatype) else null end;
+        return case (rdf_box_lang (v)) when 257 then __uname (strg_datatype) else null end;
       whenever not found goto badtype;
-      select RDT_IID into res from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = twobyte;
+      select __uname (RDT_QNAME) into res from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = twobyte;
       return res;
 
 badtype:
   signal ('RDFXX', sprintf ('Unknown datatype in DB.DBA.RDF_DATATYPE_OF_SQLVAL, bad id %d', twobyte));
     }
-  return iri_to_id (__xsd_type (v, strg_datatype, default_res));
+  return __uname (__xsd_type (v, strg_datatype, default_res));
 }
 ;
 
