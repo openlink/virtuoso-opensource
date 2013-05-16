@@ -505,6 +505,11 @@ cmp_boxes_safe (ccaddr_t box1, ccaddr_t box2, collation_t *collation1, collation
 	case DV_STRING:
 	  n1--;
 	  break;
+	case DV_UNAME:
+	  n1--;
+	  dtp1 = DV_STRING;
+	  collation1 = collation2 = NULL;
+	  break;
 	case DV_LONG_WIDE:
 	  dtp1 = DV_WIDE;
 	case DV_WIDE:
@@ -533,6 +538,11 @@ cmp_boxes_safe (ccaddr_t box1, ccaddr_t box2, collation_t *collation1, collation
 	    }
 	  else
 	    collation1 = collation2;
+	  break;
+	case DV_UNAME:
+	  n2--;
+	  dtp2 = DV_STRING;
+	  collation1 = NULL;
 	  break;
 	case DV_LONG_BIN:
 	  dtp2 = DV_BIN;
