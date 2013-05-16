@@ -2407,6 +2407,8 @@ sparp_rvr_set_by_constant (sparp_t *sparp, rdf_val_range_t *dest, ccaddr_t datat
               if (uname_xmlschema_ns_uri_hash_string == dest->rvrDatatype)
                 dest->rvrDatatype = NULL;
             }
+          if (NULL == dest->rvrDatatype)
+            dest->rvrRestrictions &= ~SPART_VARR_TYPED;
         }
     }
 }
@@ -3759,12 +3761,14 @@ sparp_extract_filters_replaced_by_equiv (sparp_t *sparp, sparp_equiv_t *eq, dk_s
         eq->e_rvr.rvrDatatype ) );
   if (repl_bits & SPART_VARR_FIXED)
     {
-      SPART *fval;
-      if (eq->e_rvr.rvrRestrictions & SPART_VARR_IS_REF)
-        fval = spartlist (sparp, 2, SPAR_QNAME, eq->e_rvr.rvrFixedValue);
+      SPART *r;
+      if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (eq->e_rvr.rvrFixedValue))
+        r = (SPART *)eq->e_rvr.rvrFixedValue;
+      else if (eq->e_rvr.rvrRestrictions & SPART_VARR_IS_REF)
+        r = spartlist (sparp, 2, SPAR_QNAME, eq->e_rvr.rvrFixedValue);
       else
-        fval = spartlist (sparp, 4, SPAR_LIT, eq->e_rvr.rvrFixedValue, eq->e_rvr.rvrDatatype, eq->e_rvr.rvrLanguage);
-      t_set_push (filts_from_equiv_ret, spartlist (sparp, 3, BOP_EQ, spar_make_variable (sparp, sample_varname), fval));
+        r = spartlist (sparp, 4, SPAR_LIT, eq->e_rvr.rvrFixedValue, eq->e_rvr.rvrDatatype, eq->e_rvr.rvrLanguage);
+      t_set_push (filts_from_equiv_ret, spartlist (sparp, 3, BOP_EQ, spar_make_variable (sparp, sample_varname), r));
     }
   if (repl_bits & SPART_VARR_NOT_NULL)
     t_set_push (filts_from_equiv_ret, sparp_make_builtin_call (sparp, BOUND_L, (SPART **)t_list (1, spar_make_variable (sparp, sample_varname))));

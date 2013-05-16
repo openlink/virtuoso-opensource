@@ -3285,6 +3285,45 @@ bif_id_to_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 caddr_t
+bif_id_to_canonicalized_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t * qi = (query_instance_t *) qst;
+  caddr_t iid_box = bif_arg (qst, args, 0, "id_to_canonicalized_iri");
+  switch (DV_TYPE_OF (iid_box))
+    {
+    case DV_DB_NULL:
+      return NEW_DB_NULL;
+    case DV_IRI_ID:
+      {
+       iri_id_t iid = unbox_iri_id (iid_box);
+        caddr_t iri;
+        if (0L == iid)
+          return NEW_DB_NULL;
+        if ((min_bnode_iri_id () <= iid) && (min_named_bnode_iri_id () > iid))
+          iri = BNODE_IID_TO_LABEL(iid);
+        else
+          {
+            iri = key_id_to_canonicalized_iri (qi, iid);
+            if (!iri)
+              return NEW_DB_NULL;
+          }
+        box_flags (iri) = BF_IRI;
+        return iri;
+      }
+    case DV_UNAME:
+      return box_copy (iid_box);
+    case DV_STRING:
+      if (BF_IRI == box_flags (iid_box))
+        return box_copy (iid_box);
+      break;
+    }
+  sqlr_new_error ("22023", "SR008",
+    "Function id_to_canonicalized_iri needs a string or UNAME or IRI_ID or NULL as argument 1, "
+    "not an arg of type %s (%d)", dv_type_title (DV_TYPE_OF (iid_box)), DV_TYPE_OF (iid_box) );
+  return NULL; /* never reached */
+}
+
+caddr_t
 bif_id_to_iri_nosignal (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t *qi = (query_instance_t *) qst;
@@ -3882,11 +3921,29 @@ bif_iri_ensure (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 caddr_t
+bif_uriqa_iri_is_local (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t name = bif_string_or_uname_arg (qst, args, 0, "uriqa_iri_is_local");
+  int tail = uriqa_iri_is_local ((query_instance_t *)qst, name);
+  return box_num (tail);
+}
+
+caddr_t 
 bif_uriqa_dynamic_local_replace (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t name = box_copy (bif_string_arg (qst, args, 0, "uriqa_dynamic_local_replace"));
   name = uriqa_dynamic_local_replace (name, ((query_instance_t *) qst)->qi_client);
   return name;
+}
+
+caddr_t 
+bif_uriqa_dynamic_local_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int val = bif_long_range_arg (qst, args, 0, "uriqa_dynamic_local_set", 0, 1);
+  sec_check_dba ((query_instance_t *)qst, "uriqa_dynamic_local_set");
+  if (val != uriqa_dynamic_local)
+    uriqa_dynamic_local = val;
+  return box_num (val);
 }
 
 
@@ -4005,6 +4062,9 @@ rdf_core_init (void)
   bif_define_typed ("id_to_iri", bif_id_to_iri, &bt_varchar);
   bif_set_uses_index (bif_id_to_iri);
   bif_set_cluster_rec ("id_to_iri");
+  bif_define_typed ("id_to_canonicalized_iri", bif_id_to_canonicalized_iri, &bt_varchar);
+  bif_set_uses_index (bif_id_to_canonicalized_iri);
+  bif_set_cluster_rec ("id_to_canonicalized_iri");
   bif_define_typed ("id_to_iri_nosignal", bif_id_to_iri_nosignal, &bt_varchar);
   bif_set_uses_index (bif_id_to_iri_nosignal);
   bif_set_cluster_rec ("id_to_iri_nosignal");
@@ -4029,6 +4089,8 @@ rdf_core_init (void)
   bif_define ("__id2in", bif_id_to_iri_nosignal);
   bif_define ("rdf_graph_keyword", bif_rdf_graph_keyword);
   bif_define ("iri_split", bif_iri_split);
+  bif_define ("uriqa_dynamic_local_set", bif_uriqa_dynamic_local_set);
+  bif_define ("uriqa_iri_is_local", bif_uriqa_iri_is_local);
   bif_define ("uriqa_dynamic_local_replace", bif_uriqa_dynamic_local_replace);
 #ifdef DEBUG
   bif_define ("turtle_lex_test", bif_turtle_lex_test);

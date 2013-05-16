@@ -3231,7 +3231,9 @@ sparp_calc_bop_of_fixed_vals (sparp_t *sparp, ptrlong bop_type, rdf_val_range_t 
      case BOP_EQ: case SPAR_BOP_EQNAMES: case SPAR_BOP_EQ_NONOPT: case BOP_NEQ:
     case BOP_LT: case BOP_LTE: case BOP_GT: case BOP_GTE:
       {
-        int cb = cmp_boxes_safe (left->rvrFixedValue, right->rvrFixedValue, NULL, NULL);
+        caddr_t left_val = SPAR_LIT_OR_QNAME_VAL ((SPART *)(left->rvrFixedValue));
+        caddr_t right_val = SPAR_LIT_OR_QNAME_VAL ((SPART *)(right->rvrFixedValue));
+        int cb = cmp_boxes_safe (left_val, right_val, NULL, NULL);
         switch (cb)
           {
           case DVC_MATCH:
@@ -3246,10 +3248,12 @@ sparp_calc_bop_of_fixed_vals (sparp_t *sparp, ptrlong bop_type, rdf_val_range_t 
             if ((BOP_NEQ == bop_type) || (BOP_GT == bop_type) || (BOP_GTE == bop_type) || (BOP_NSAME == bop_type))
               goto res_bool_true; /* see below */
             goto res_bool_false; /* see below */
+          case DVC_NOORDER:
+            return 1;
           default:
             if ((BOP_NEQ == bop_type) || (BOP_NSAME == bop_type))
               goto res_bool_true; /* see below */
-            goto res_bool_false; /* see below */
+            return 1; /* was goto res_bool_false; , but it might be unsafe for out of range and BOP_LT / BOP_GT. Let SQL compiler worries about that */
           }
       }
     case BOP_PLUS: case BOP_MINUS: case BOP_TIMES: case BOP_DIV: case BOP_MOD:
@@ -6713,10 +6717,10 @@ restoring filters is a preorder one, the postorder needs a complete stack of thi
             parent_gp->_.gp.selid, NULL,
             (ptrlong)(0), SPART_BAD_EQUIV_IDX, SPART_RVR_LIST_OF_NULLS, (ptrlong)(0x0) );
             memcpy (&(l->_.var.rvr.rvrRestrictions), &(subq_eq->e_rvr), sizeof (rdf_val_range_t));
-          if (eq->e_rvr.rvrRestrictions & SPART_VARR_IS_REF)
-            r = spartlist (sparp, 2, SPAR_QNAME, eq->e_rvr.rvrFixedValue);
-          else if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (eq->e_rvr.rvrFixedValue))
+          if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (eq->e_rvr.rvrFixedValue))
             r = (SPART *)eq->e_rvr.rvrFixedValue;
+          else if (eq->e_rvr.rvrRestrictions & SPART_VARR_IS_REF)
+            r = spartlist (sparp, 2, SPAR_QNAME, eq->e_rvr.rvrFixedValue);
           else
             r = spartlist (sparp, 4, SPAR_LIT, eq->e_rvr.rvrFixedValue, eq->e_rvr.rvrDatatype, eq->e_rvr.rvrLanguage);
           filt = spartlist (sparp, 3, BOP_EQ, l, r);

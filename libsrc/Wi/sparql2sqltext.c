@@ -90,7 +90,7 @@ void rdf_ds_load_all (void)
   qmf->qmf01uriOfShortTmpl = box_dv_short_string (" (lt (^{tree}^, min_bnode_iri_id ()))");
   qmf->qmf01blankOfShortTmpl = box_dv_short_string (" (gte (^{tree}^, min_bnode_iri_id ()))");
   qmf->qmfLongOfShortTmpl = box_dv_short_string (" ^{tree}^");
-  qmf->qmfDatatypeOfShortTmpl = box_dv_short_string (" 'http://www.w3.org/2001/XMLSchema#anyURI'");
+  qmf->qmfDatatypeOfShortTmpl = box_dv_short_string (" UNAME'http://www.w3.org/2001/XMLSchema#anyURI'");
   qmf->qmfLanguageOfShortTmpl = box_dv_short_string (" NULL");
   qmf->qmfSqlvalOfShortTmpl = box_dv_short_string (" __id2i (^{tree}^)");
   qmf->qmfBoolOfShortTmpl = box_dv_short_string (" NULL");
@@ -2288,7 +2288,7 @@ ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int mode)
       {
         double boxdbl = (double)(unbox_float (box));
         if (1.0 > ((2 - 1.41484755040568800000e+16) + 1.41484755040568800000e+16))
-          spar_error (ssg->ssg_sparp, "Platform-specific error: this build of Virtuoso does not supports literals of type %s due to rounding errors in math functions", dv_type_title (dtp));
+          spar_error (ssg->ssg_sparp, "Platform-specific error: this build of Virtuoso does not support literals of type %s due to rounding errors in math functions", dv_type_title (dtp));
         buffill = sprintf (tmpbuf, "cast (%lg", boxdbl);
         if ((NULL == strchr (tmpbuf+6, '.')) && (NULL == strchr (tmpbuf+6, 'E')) && (NULL == strchr (tmpbuf+6, 'e')))
           {
@@ -2378,7 +2378,7 @@ ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int mode)
         break;
       }
     default:
-      spar_error (ssg->ssg_sparp, "Current implementation of SPARQL does not supports literals of type %s", dv_type_title (dtp));
+      spar_error (ssg->ssg_sparp, "Current implementation of SPARQL does not support literals of type %s", dv_type_title (dtp));
       }
   session_buffered_write (ssg->ssg_out, tmpbuf, buffill);
   BOX_DONE (tmpbuf, smallbuf);
@@ -3668,8 +3668,8 @@ expanded_sameterm_ready:
         goto print_asname;
       }
     case DATATYPE_L:
-      if (SSG_VALMODE_LONG != needed)
-        ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_LONG, asname);
+      if (SSG_VALMODE_SQLVAL != needed)
+        ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_SQLVAL, asname);
       else
         ssg_print_scalar_expn (ssg, arg1, SSG_VALMODE_DATATYPE, asname);
       return;
@@ -3989,7 +3989,7 @@ expanded_sameterm_ready:
             ssg_print_tmpl (ssg, arg1_native, tmpl, NULL, NULL, arg1, NULL_ASNAME);
           }
         else if (SSG_VALMODE_DATATYPE == needed)
-          ssg_puts (" " XMLSCHEMA_NS_URI "#anyURI");
+          ssg_puts (" UNAME'" XMLSCHEMA_NS_URI "#anyURI'");
         else if (SSG_VALMODE_LANGUAGE == needed)
           ssg_puts (" NULL");
         else
