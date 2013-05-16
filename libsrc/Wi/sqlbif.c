@@ -12860,6 +12860,7 @@ bif_mutex_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
 #ifdef MTX_METER
   mutex_stat ();
+  fflush (stdout);
 #endif
   return 0;
 }
