@@ -584,6 +584,9 @@ create procedure DB.DBA.RDF_GLOBAL_RESET (in hard integer := 0)
         {
           jso_mark_affected (graph_iri);
           log_text ('jso_mark_affected (?)', graph_iri);
+          jso_mark_affected (iri_canonicalize (graph_iri));
+          log_text ('jso_mark_affected (?)', iri_canonicalize (graph_iri));
+          log_text ('jso_mark_affected (iri_canonicalize (?))', graph_iri);
         }
     }
   for (select __id2i(t.RGGM_GROUP_IID) as group_iri from (select distinct RGGM_GROUP_IID from DB.DBA.RDF_GRAPH_GROUP_MEMBER) as t) do
@@ -1526,12 +1529,8 @@ create function DB.DBA.RDF_LANGUAGE_OF_OBJ (in shortobj any, in dflt varchar := 
   -- dbg_obj_princ ('DB.DBA.RDF_LANGUAGE_OF_OBJ (', shortobj, ') found twobyte ', twobyte);
   if (257 = twobyte)
     return dflt;
-  whenever not found goto badtype;
-  select lower (RL_ID) into res from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = twobyte;
-  return res;
-
-badtype:
-  signal ('RDFXX', sprintf ('Unknown language in DB.DBA.RDF_LANGUAGE_OF_OBJ, bad string "%s"', cast (shortobj as varchar)));
+  return coalesce ((select lower (RL_ID)  from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = twobyte), 
+     signal ('RDFXX', sprintf ('Unknown language in DB.DBA.RDF_LANGUAGE_OF_OBJ, bad string "%s"', cast (shortobj as varchar))));
 }
 ;
 
@@ -1702,6 +1701,8 @@ create function DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (
       parsed := __xqf_str_parse_to_rdf_box (o_val, o_type, isstring (o_val));
       if (parsed is not null)
         {
+          if (__tag of XML = __tag (parsed))
+	    parsed := rdf_box (parsed, 257, 257, 0, 1);
           if (__tag of rdf_box = __tag (parsed))
             rdf_box_set_type (parsed,
               DB.DBA.RDF_TWOBYTE_OF_DATATYPE (iri_to_id (o_type)));
@@ -6102,7 +6103,7 @@ create procedure DB.DBA.RDF_TRIPLE_OBJ_BNODE_TO_NICE_TTL (inout triples any, ino
           else
             http_ttl_value (env, itm, 2, ses);
           printed_triples_mask[u[2]] := ascii ('D');
-          s_bnode_iid := triples[u[2]][2];
+          s_bnode_iid := iri_to_id_nosignal (triples[u[2]][2]);
           u := dict_get (bnode_usage_dict, s_bnode_iid, null);
           -- dbg_obj_princ ('next node ', s_bnode_iid, ' u=', u);
         }
@@ -13966,15 +13967,47 @@ create table DB.DBA.RDF_GRAPH_USER (
 alter index RDF_GRAPH_USER on DB.DBA.RDF_GRAPH_USER partition cluster replicated
 ;
 
+create procedure DB.DBA.RDF_GRAPH_CACHE_IID (in iid IRI_ID)
+{
+  declare iri any;
+  iri := __uname (id_to_canonicalized_iri (iid));
+  dict_put (__rdf_graph_iri2id_dict(), iri, iid);
+  dict_put (__rdf_graph_id2iri_dict(), iid, iri);
+}
+;
+
 create procedure DB.DBA.RDF_GRAPH_GROUP_CREATE_MEMONLY (in group_iri varchar, in group_iid IRI_ID)
 {
   group_iri := cast (group_iri as varchar);
-  dict_put (__rdf_graph_iri2id_dict(), __uname(group_iri), group_iid);
-  dict_put (__rdf_graph_id2iri_dict(), group_iid, __uname(group_iri));
+  DB.DBA.RDF_GRAPH_CACHE_IID (group_iid);
   dict_put (__rdf_graph_group_dict(), group_iid, vector ());
   jso_mark_affected (group_iri);
   log_text ('jso_mark_affected (?)', group_iri);
   __rdf_cli_mark_qr_to_recompile ();
+}
+;
+
+create function DB.DBA.RDF_GRAPH_GROUP_IRI_CHECK (in group_iri varchar, in fname varchar) returns IRI_ID
+{
+  declare group_iid IRI_ID;
+  group_iri := cast (group_iri as varchar);
+  group_iid := iri_to_id (group_iri);
+  if (group_iri <> id_to_canonicalized_iri (group_iid))
+    signal ('RDF99', sprintf ('Group IRI should be canonical, but the specified group IRI <%s> differs from its canonical form <%s>', group_iri, id_to_canonicalized_iri (group_iid)));
+  for (select RGG_IID from DB.DBA.RDF_GRAPH_GROUP where RGG_IRI = group_iri) do
+    {
+      if (RGG_IID = group_iid)
+        return RGG_IID;
+      if (not exists (select top 1 1 from DB.DBA.RDF_GRAPH_GROUP where RGG_IID = group_iid))
+        signal ('RDF99', sprintf ('Integrity violation in DB.DBA.RDF_GRAPH_GROUP table (found group IRI <%s>, not found group IRI ID %s)', group_iri, cast (group_iid as varchar)));
+    }
+  for (select RGG_IRI from DB.DBA.RDF_GRAPH_GROUP where RGG_IID = group_iid) do
+    {
+      if (RGG_IRI = id_to_canonicalized_iri (group_iid))
+        signal ('RDF99', sprintf ('Table DB.DBA.RDF_GRAPH_GROUP contains group with IRI <%s>, not IRI <%s>, for group IRI ID %s', RGG_IRI, group_iri, cast (group_iid as varchar)));
+      signal ('RDF99', sprintf ('Integrity violation in DB.DBA.RDF_GRAPH_GROUP table (not found group IRI <%s>, found group IRI ID %s)', group_iri, cast (group_iid as varchar)));
+    }
+  return NULL;
 }
 ;
 
@@ -13983,10 +14016,9 @@ create procedure DB.DBA.RDF_GRAPH_GROUP_CREATE (in group_iri varchar, in quiet i
   declare group_iid IRI_ID;
   group_iri := cast (group_iri as varchar);
   group_iid := iri_to_id (group_iri);
+  DB.DBA.RDF_GRAPH_GROUP_IRI_CHECK (group_iri, 'DB.DBA.RDF_GRAPH_GROUP_CREATE');
   if (exists (select top 1 1 from DB.DBA.RDF_GRAPH_GROUP where RGG_IRI = group_iri))
     {
-      if (not exists (select top 1 1 from DB.DBA.RDF_GRAPH_GROUP where RGG_IRI = group_iri and RGG_IID = group_iid))
-        signal ('RDF99', sprintf ('Integrity violation in DB.DBA.RDF_GRAPH_GROUP table, IRI=<%s>', group_iri));
       if (quiet)
         return;
       signal ('RDF99', sprintf ('The graph group <%s> already exists (%s)', group_iri, coalesce (
@@ -14003,8 +14035,7 @@ create procedure DB.DBA.RDF_GRAPH_GROUP_CREATE (in group_iri varchar, in quiet i
 create procedure DB.DBA.RDF_GRAPH_GROUP_DROP_MEMONLY (in group_iri varchar, in group_iid IRI_ID)
 {
   group_iri := cast (group_iri as varchar);
-  dict_put (__rdf_graph_iri2id_dict(), __uname(group_iri), group_iid);
-  dict_put (__rdf_graph_id2iri_dict(), group_iid, __uname(group_iri));
+  DB.DBA.RDF_GRAPH_CACHE_IID (group_iid);
   dict_put (__rdf_graph_group_dict(), group_iid, vector ());
   dict_remove (__rdf_graph_group_dict(), group_iid);
   jso_mark_affected (group_iri);
@@ -14028,10 +14059,9 @@ create procedure DB.DBA.RDF_GRAPH_GROUP_DROP (in group_iri varchar, in quiet int
   declare group_iid IRI_ID;
   group_iri := cast (group_iri as varchar);
   group_iid := iri_to_id (group_iri);
+  DB.DBA.RDF_GRAPH_GROUP_IRI_CHECK (group_iri, 'DB.DBA.RDF_GRAPH_GROUP_DROP');
   if (not exists (select top 1 1 from DB.DBA.RDF_GRAPH_GROUP where RGG_IRI = group_iri))
     {
-      if (exists (select top 1 1 from DB.DBA.RDF_GRAPH_GROUP where RGG_IRI = group_iri and RGG_IID = group_iid))
-        signal ('RDF99', sprintf ('Integrity violation in DB.DBA.RDF_GRAPH_GROUP table, IRI=<%s>', group_iri));
       if (quiet)
         return;
       signal ('RDF99', sprintf ('The graph group <%s> does not exist (%s)', group_iri, coalesce (
@@ -14078,10 +14108,8 @@ create procedure DB.DBA.RDF_GRAPH_GROUP_INS_MEMONLY (in group_iri varchar, in gr
 {
   group_iri := cast (group_iri as varchar);
   memb_iri := cast (memb_iri as varchar);
-  dict_put (__rdf_graph_iri2id_dict(), __uname(group_iri), group_iid);
-  dict_put (__rdf_graph_id2iri_dict(), group_iid, __uname(group_iri));
-  dict_put (__rdf_graph_iri2id_dict(), __uname(memb_iri), memb_iid);
-  dict_put (__rdf_graph_id2iri_dict(), memb_iid, __uname(memb_iri));
+  DB.DBA.RDF_GRAPH_CACHE_IID (group_iid);
+  DB.DBA.RDF_GRAPH_CACHE_IID (memb_iid);
   dict_put (__rdf_graph_group_dict(), group_iid,
     (select VECTOR_AGG (RGGM_MEMBER_IID) from DB.DBA.RDF_GRAPH_GROUP_MEMBER
      where RGGM_GROUP_IID = group_iid
@@ -14101,6 +14129,7 @@ create procedure DB.DBA.RDF_GRAPH_GROUP_INS (in group_iri varchar, in memb_iri v
 {
   declare group_iid, memb_iid IRI_ID;
   group_iri := cast (group_iri as varchar);
+  DB.DBA.RDF_GRAPH_GROUP_IRI_CHECK (group_iri, 'DB.DBA.RDF_GRAPH_GROUP_INS');
   memb_iri := cast (memb_iri as varchar);
   group_iid := iri_to_id (group_iri);
   memb_iid := iri_to_id (memb_iri);
@@ -14142,10 +14171,8 @@ create procedure DB.DBA.RDF_GRAPH_GROUP_DEL_MEMONLY (in group_iri varchar, in gr
 {
   group_iri := cast (group_iri as varchar);
   memb_iri := cast (memb_iri as varchar);
-  dict_put (__rdf_graph_iri2id_dict(), __uname(group_iri), group_iid);
-  dict_put (__rdf_graph_id2iri_dict(), group_iid, __uname(group_iri));
-  dict_put (__rdf_graph_iri2id_dict(), __uname(memb_iri), memb_iid);
-  dict_put (__rdf_graph_id2iri_dict(), memb_iid, __uname(memb_iri));
+  DB.DBA.RDF_GRAPH_CACHE_IID (group_iid);
+  DB.DBA.RDF_GRAPH_CACHE_IID (memb_iid);
   dict_put (__rdf_graph_group_dict(), group_iid,
     (select VECTOR_AGG (RGGM_MEMBER_IID) from DB.DBA.RDF_GRAPH_GROUP_MEMBER
      where RGGM_GROUP_IID = group_iid
@@ -14165,6 +14192,7 @@ create procedure DB.DBA.RDF_GRAPH_GROUP_DEL (in group_iri varchar, in memb_iri v
 {
   declare group_iid, memb_iid IRI_ID;
   group_iri := cast (group_iri as varchar);
+  DB.DBA.RDF_GRAPH_GROUP_IRI_CHECK (group_iri, 'DB.DBA.RDF_GRAPH_GROUP_DEL');
   memb_iri := cast (memb_iri as varchar);
   group_iid := iri_to_id (group_iri);
   memb_iid := iri_to_id (memb_iri);
@@ -14454,8 +14482,7 @@ create procedure DB.DBA.RDF_DEFAULT_USER_PERMS_DEL (in uname varchar, in set_pri
 create procedure DB.DBA.RDF_GRAPH_USER_PERMS_SET_MEMONLY (in graph_iri varchar, in graph_iid IRI_ID, in uid integer, in perms integer)
 {
   graph_iri := cast (graph_iri as varchar);
-  dict_put (__rdf_graph_iri2id_dict(), __uname(graph_iri), graph_iid);
-  dict_put (__rdf_graph_id2iri_dict(), graph_iid, __uname(graph_iri));
+  DB.DBA.RDF_GRAPH_CACHE_IID (graph_iid);
   if (uid = http_nobody_uid())
     dict_put (__rdf_graph_public_perms_dict(), graph_iid, perms);
   else
@@ -14534,8 +14561,7 @@ create procedure DB.DBA.RDF_GRAPH_USER_PERMS_SET (in graph_iri varchar, in uname
 create procedure DB.DBA.RDF_GRAPH_USER_PERMS_DEL_MEMONLY (in graph_iri varchar, in graph_iid IRI_ID, in uid integer)
 {
   graph_iri := cast (graph_iri as varchar);
-  dict_put (__rdf_graph_iri2id_dict(), __uname(graph_iri), graph_iid);
-  dict_put (__rdf_graph_id2iri_dict(), graph_iid, __uname(graph_iri));
+  DB.DBA.RDF_GRAPH_CACHE_IID (graph_iid);
   if (uid = http_nobody_uid())
     dict_remove (__rdf_graph_public_perms_dict(), graph_iid);
   else
@@ -14881,12 +14907,16 @@ create procedure DB.DBA.RDF_GRAPH_SECURITY_AUDIT (in recovery integer)
       delete from DB.DBA.RDF_GRAPH_GROUP_MEMBER where id_to_iri_nosignal (RGGM_GROUP_IID) is null;
       commit work;
       fake := (select
-          count (dict_put (__rdf_graph_iri2id_dict(), __uname (id_to_iri (RGG_IID)), RGG_IID)) +
-          count (dict_put (__rdf_graph_id2iri_dict(), RGG_IID, __uname (id_to_iri (RGG_IID))))
+          count (dict_put (__rdf_graph_iri2id_dict(), __uname (id_to_canonicalized_iri (RGG_IID)), RGG_IID)) +
+          count (dict_put (__rdf_graph_id2iri_dict(), RGG_IID, __uname (id_to_canonicalized_iri (RGG_IID))))
           from DB.DBA.RDF_GRAPH_GROUP );
       fake := (select
-          count (dict_put (__rdf_graph_iri2id_dict(), __uname (id_to_iri (RGGM_GROUP_IID)), RGGM_GROUP_IID)) +
-          count (dict_put (__rdf_graph_id2iri_dict(), RGGM_GROUP_IID, __uname (id_to_iri (RGGM_GROUP_IID))))
+          count (dict_put (__rdf_graph_iri2id_dict(), __uname (id_to_canonicalized_iri (RGGM_GROUP_IID)), RGGM_GROUP_IID)) +
+          count (dict_put (__rdf_graph_id2iri_dict(), RGGM_GROUP_IID, __uname (id_to_canonicalized_iri (RGGM_GROUP_IID))))
+          from DB.DBA.RDF_GRAPH_GROUP_MEMBER );
+      fake := (select
+          count (dict_put (__rdf_graph_iri2id_dict(), __uname (id_to_canonicalized_iri (RGGM_MEMB_IID)), RGGM_MEMB_IID)) +
+          count (dict_put (__rdf_graph_id2iri_dict(), RGGM_MEMB_IID, __uname (id_to_canonicalized_iri (RGGM_MEMB_IID))))
           from DB.DBA.RDF_GRAPH_GROUP_MEMBER );
     }
   err_count_total := err_count_total + err_recoverable_count + err_bad_count;
