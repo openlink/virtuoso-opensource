@@ -2818,63 +2818,144 @@ bif_trim (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_concatenate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  query_instance_t *qi = (query_instance_t *)qst;
+  query_instance_t *qi = (query_instance_t *) qst;
   int n_args = BOX_ELEMENTS (args), inx;
+  caddr_t *cast_args = NULL;
   int alen;
   caddr_t a;
   int len = 0, fill = 0;
   caddr_t res;
-  int haveWides = 0;
+  int haveWides = 0, haveWeirds = 0;
   dtp_t dtp1;
   int sizeof_char = 1;
-
   /* First count the required length for a resulting string buffer. */
   for (inx = 0; inx < n_args; inx++)
     {
-      a = bif_string_or_uname_or_wide_or_null_arg (qst, args, inx, "concat");
-      if (NULL == a)
-        {
-          continue;
-        }     /* Skip NULL's */
+      a = bif_arg (qst, args, inx, "concat");
       dtp1 = DV_TYPE_OF (a);
-      if (IS_WIDE_STRING_DTP (dtp1))
-        {
-          haveWides = 1;
-          len += box_length (a) / sizeof (wchar_t) - 1;
-        }
-      else
-        len += box_length (a) - 1;
+      switch (dtp1)
+	{
+	case DV_DB_NULL:
+	  continue;		/* Nulls are totally ignored */
+	case DV_STRING:
+	case DV_UNAME:
+	  len += box_length (a) - 1;
+	  break;
+	case DV_WIDE:
+	case DV_LONG_WIDE:
+	  haveWides = 1;
+	  len += box_length (a) / sizeof (wchar_t) - 1;
+	  break;
+	default:
+	  if (NULL == cast_args)
+	    cast_args = dk_alloc_list_zero (n_args);
+	  haveWeirds = 1;
+	  break;
+	}
     }
-
+  if (haveWeirds)
+    {
+      for (inx = 0; inx < n_args; inx++)
+	{
+	  a = bif_arg (qst, args, inx, "concat");
+	  dtp1 = DV_TYPE_OF (a);
+	  switch (dtp1)
+	    {
+	    case DV_DB_NULL:
+	      continue;		/* Nulls are totally ignored */
+	    case DV_STRING:
+	    case DV_UNAME:
+	    case DV_WIDE:
+	    case DV_LONG_WIDE:
+	      break;
+	    case DV_LONG_INT:
+	      if (!haveWides)
+		{
+		  char buf[50];
+		  if (NULL == cast_args)
+		    cast_args = dk_alloc_list_zero (n_args);
+		  sprintf (buf, BOXINT_FMT, unbox (a));
+		  cast_args[inx] = box_dv_short_string (buf);
+		  len += box_length (cast_args[inx]) - 1;
+		  break;
+		}
+	      /* no break */
+	    default:
+	      {
+		QR_RESET_CTX
+		{
+		  if (haveWides)
+		    {
+		      cast_args[inx] = box_cast (qst, a, st_nvarchar, dtp1);
+		      len += box_length (cast_args[inx]) / sizeof (wchar_t) - 1;
+		    }
+		  else
+		    {
+		      cast_args[inx] = box_cast (qst, a, st_varchar, dtp1);
+		      len += box_length (cast_args[inx]) - 1;
+		    }
+		}
+		QR_RESET_CODE
+		{
+		  du_thread_t *self = THREAD_CURRENT_THREAD;
+		  caddr_t err = thr_get_error_code (self);
+		  thr_set_error_code (self, NULL);
+		  POP_QR_RESET;
+		  dk_free_tree ((caddr_t) cast_args);
+		  sqlr_resignal (err);
+		}
+		END_QR_RESET break;
+	      }
+	    }
+	}
+    }
   sizeof_char = haveWides ? sizeof (wchar_t) : sizeof (char);
   if (((len + 1) * sizeof_char) > 10000000)
-    sqlr_new_error ("22023", "SR578", "The expected result length of string concatenation is too large (%ld bytes)", (long)((len + 1) * sizeof_char));
-  if (NULL == (res = dk_try_alloc_box ((len + 1) * sizeof_char, (dtp_t)(haveWides ? DV_WIDE : DV_LONG_STRING))))
+    {
+      dk_free_tree ((caddr_t) cast_args);
+      sqlr_new_error ("22023", "SR578", "The expected result length of string concatenation is too large (%ld bytes)",
+	  (long) ((len + 1) * sizeof_char));
+    }
+  if (NULL == (res = dk_try_alloc_box ((len + 1) * sizeof_char, (dtp_t) (haveWides ? DV_WIDE : DV_LONG_STRING))))
     qi_signal_if_trx_error (qi);
-
   for (inx = 0; inx < n_args; inx++)
     {
-      a = bif_string_or_uname_or_wide_or_null_arg (qst, args, inx, "concat");
-      if (NULL == a)
-        continue;
+      a = bif_arg (qst, args, inx, "concat");
       dtp1 = DV_TYPE_OF (a);
-      if (!IS_WIDE_STRING_DTP (dtp1) && haveWides)
-        {
-          alen = box_length (a) - 1;
-          box_narrow_string_as_wide ((unsigned char *) a, res + fill * sizeof_char, alen, QST_CHARSET (qst), err_ret, 1);
-        }
-      else
-        {
-          alen = box_length (a) / sizeof_char - 1;
-          memcpy (res + fill * sizeof_char, a, alen * sizeof_char);
-        }
+      switch (dtp1)
+	{
+	case DV_DB_NULL:
+	  continue;		/* Nulls are totally ignored */
+	case DV_STRING:
+	case DV_UNAME:
+	  if (haveWides)
+	    {
+	      alen = box_length (a) - 1;
+	      box_narrow_string_as_wide ((unsigned char *) a, res + fill * sizeof_char, alen, QST_CHARSET (qst), err_ret, 1);
+	      break;
+	    }
+	  /* no break */
+	case DV_WIDE:
+	case DV_LONG_WIDE:
+	  /* no break */
+	case DV_LONG_INT:
+	  /* no break */
+	default:
+	  {
+	    if ((NULL != cast_args) && (NULL != cast_args[inx]))
+	      a = cast_args[inx];
+	    alen = box_length (a) / sizeof_char - 1;
+	    memcpy (res + fill * sizeof_char, a, alen * sizeof_char);
+	    break;
+	  }
+	}
       fill += alen;
     }
-#ifdef DEBUG
   if (fill != len)
-    GPF_T;
-#endif
+    GPF_T1 ("Memory corruption in bif_concat");
   memset (res + len * sizeof_char, 0, sizeof_char);
+  if (NULL != cast_args)
+    dk_free_tree ((caddr_t) cast_args);
   return res;
 }
 
