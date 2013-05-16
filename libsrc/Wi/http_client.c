@@ -1703,7 +1703,7 @@ http_cli_get_host_from_url (char* url)
   while (*slash != '/' && *slash != 0)
     slash++;
 
-  host_len = MIN ((slash - st), sizeof (host));
+  host_len = MIN ((slash - st), (sizeof (host) - 1));
   memcpy (host, st, host_len);
   host[host_len] = 0;
 
@@ -1952,6 +1952,7 @@ http_cli_std_handle_redir (http_cli_ctx * ctx, caddr_t parm, caddr_t ret_val, ca
   ctx->hcctx_url = url;
   ctx->hcctx_host = http_cli_get_host_from_url (url);
   ctx->hcctx_uri = http_cli_get_uri_from_url (url);
+#ifdef _SSL
   if (!strnicmp (url, "https://", 8) && !ctx->hcctx_pkcs12_file)
     {
       http_cli_ssl_cert (ctx, (caddr_t)"1");
@@ -1962,6 +1963,7 @@ http_cli_std_handle_redir (http_cli_ctx * ctx, caddr_t parm, caddr_t ret_val, ca
     {
       ctx->hcctx_pkcs12_file = NULL;
     }
+#endif
   ctx->hcctx_redirects --;
   ctx->hcctx_retry_count = 0;
   F_SET (ctx, HC_F_RETRY);
@@ -2446,7 +2448,7 @@ bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, ch
   END_DO_SET();
   head = (caddr_t *)list_to_array (dk_set_nreverse (hdrs));
 
-  if (BOX_ELEMENTS (args) > ret_arg_index && ssl_is_settable (args[ret_arg_index]))
+  if (BOX_ELEMENTS_0 (args) > ret_arg_index && ssl_is_settable (args[ret_arg_index]))
     {
       qst_set (qst, args[ret_arg_index], (caddr_t) head);
       to_free_head = 0;
