@@ -7394,6 +7394,8 @@ spar_propagate_limit_as_option (sparp_t *sparp, SPART *tree, SPART *outer_limit)
   switch (SPART_TYPE (tree))
     {
     case SPAR_REQ_TOP:
+      if (0 != BOX_ELEMENTS_0 (tree->_.req_top.order))
+        return;
       tree->_.req_top.limit = sparp_cut_inner_limit_with_outer_limit (sparp, tree->_.req_top.limit, tree->_.req_top.offset, outer_limit);
       if ((NULL != tree->_.req_top.limit) && (DISTINCT_L != tree->_.req_top.subtype) && (NULL == tree->_.req_top.groupings) && (NULL == tree->_.req_top.having))
         spar_propagate_limit_as_option (sparp, tree->_.req_top.pattern,
