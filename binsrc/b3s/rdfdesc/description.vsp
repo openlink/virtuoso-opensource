@@ -60,6 +60,9 @@
   declare c_iri_a any;
   declare gs_user_id, gs_check_needed integer;
   declare gs_check_cond varchar;
+  declare state, msg any;
+
+  state := '00000'; msg := 'OK';
   deadl := 0;
 
   declare exit handler for sqlstate '40001' {
@@ -203,7 +206,7 @@ again:
       } 
   if (get_keyword ('sp', params) = '1' and 0 = length (_F))
     {
-      EXEC (sprintf ('sparql define input:storage "" define get:soft "add" SELECT * from <%S> where { ?x ?y ?z . }', doc));
+      EXEC (sprintf ('sparql define input:storage "" define get:soft "add" SELECT * from <%S> where { ?x ?y ?z . }', doc), state, msg);
       DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
     }
   else if ((get_keyword ('sr', params) is not null or get_keyword ('sponger:get', params) is not null) and 0 = length (_F))
@@ -219,7 +222,7 @@ again:
         }
       else
         refr := atoi (get_keyword ('sr', params, '0'));
-      EXEC (sprintf ('sparql define input:storage "" define get:refresh "%d" define get:soft "%s" %s SELECT * from <%S> where { ?x ?y ?z . }', refr, sp_mode, sp_accept, doc));
+      EXEC (sprintf ('sparql define input:storage "" define get:refresh "%d" define get:soft "%s" %s SELECT * from <%S> where { ?x ?y ?z . }', refr, sp_mode, sp_accept, doc), state, msg);
       DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
     }
 
@@ -486,6 +489,8 @@ if (_subject <> '') {
   <p class="subj_delim"></p>
 <?vsp
 }
+       if (state <> '00000')
+         http_value (msg, 'div');
 ?>
 <!--            <li><a href="/fct/facet.vsp?sid=<?V sid ?>&amp;cmd=set_class&amp;iri=<?V gr ?>">Choose <?V ''?> as Type</a></li>
                 <li><a href="/fct/facet.vsp?sid=<?V sid ?>&amp;cmd=open_property">Choose <?V ''?> as Property (p)</a></li>
