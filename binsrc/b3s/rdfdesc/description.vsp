@@ -535,6 +535,8 @@ if (_subject <> '') {
 	    }
 	  dt2 := sprintf ('select count(*) as cnt from (sparql %s define output:valmode "LONG" select distinct ?p ?o %s where { ?o ?p <%S> } order by 1) sp2', inf, _F, _S);
 	  count_str := sprintf ('select sum (cnt) from (%s UNION ALL %s) un0', dt1, dt2);
+          count_str := replace (count_str, 'distinct', '');
+          count_str := replace (count_str, 'order by 1', '');
 	  -- dbg_obj_princ ('count_str = ', count_str);
 	  exec (count_str, null, null, vector (), 0, meta, data);
 	  if (length (data) and length (data[0]))
