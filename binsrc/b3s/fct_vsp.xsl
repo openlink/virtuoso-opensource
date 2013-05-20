@@ -103,7 +103,7 @@
           <xsl:when test="$view-type = 'properties'"><h3>Properties</h3></xsl:when>
           <xsl:when test="$view-type = 'properties-in'"><h3>Referencing Properties</h3></xsl:when-->
           <xsl:when test="$view-type = 'list'"><h3>Select a value or condition</h3></xsl:when>
-          <xsl:when test="$view-type = 'entities-list'"><h3>Entities found</h3></xsl:when>
+          <xsl:when test="$view-type = 'entities-list'"><h3>Distinct Entities found</h3></xsl:when>
           <!--xsl:when test="$view-type = 'list-count'"><h3>Distinct values</h3></xsl:when>
           <xsl:when test="$view-type = 'geo'"><h3>Location</h3></xsl:when-->
         </xsl:choose>
@@ -341,7 +341,7 @@
 	  <tr><th></th><th><xsl:value-of select="$s_term"/><xsl:value-of select="$pos"/> Subject Of <xsl:value-of select="$p_term"/>(s)</th><!--th>Label</th--><th></th><th>Count</th></tr>
       </xsl:when>
       <xsl:when test="$view-type = 'list-count'">
-	<tr><th></th><th><xsl:value-of select="$s_term"/>(s)</th><!--th>Title</th--><th></th><th>Count</th></tr>
+	<tr><th></th><th><xsl:value-of select="$s_term"/>(s)</th><!--th>Title</th--><th></th><th>Occurrence Count</th></tr>
       </xsl:when>
       <xsl:when test="$view-type = 'text-properties'">
 	<tr><th></th><th><xsl:value-of select="$p_term"/>(s)</th><!--th>Label</th--><th></th><th>Count</th></tr>
