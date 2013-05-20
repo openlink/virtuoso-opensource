@@ -114,7 +114,7 @@ create procedure fct_p_term ()
 {
   declare s_term varchar;
   s_term := connection_get ('s_term');
-  if (s_term = 's') return 'Relation'; -- Property
+  if (s_term = 's') return 'Triple'; -- Property
   return 'Relation'; -- Attribute
 }
 ;
