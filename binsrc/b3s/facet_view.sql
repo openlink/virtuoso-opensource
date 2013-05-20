@@ -114,7 +114,7 @@ create procedure fct_p_term ()
 {
   declare s_term varchar;
   s_term := connection_get ('s_term');
-  if (s_term = 's') return 'Relation'; -- Property
+  if (s_term = 's') return 'Triple'; -- Property
   return 'Relation'; -- Attribute
 }
 ;
@@ -635,13 +635,15 @@ fct_nav (in tree any,
     else
       fct_view_link ('properties-in', 'Relation Objects', txt, 'Relations for which selected Entity is a Subject');
 
-  if ('text' <> tp and tp <> 'text-d')
-    {
       if (tp <> 'list-count')
+    {
 	if (connection_get('s_term') = 's')
 	  fct_view_link ('list-count', 'Distinct objects (Aggregated)', txt, 'Displaying List of Distinct Entity Names ordered by Count');
 	else
 	  fct_view_link ('list-count', 'Distinct values (Aggregated)', txt, 'Displaying List of Distinct Entity Names ordered by Count');
+    }
+  if ('text' <> tp and tp <> 'text-d')
+    {
       if (tp <> 'list')
 	if (connection_get('s_term') = 's')
 	  fct_view_link ('list', 'Show Matching Objects', txt, 'Displaying Ranked Enitity Names and Text summaries');

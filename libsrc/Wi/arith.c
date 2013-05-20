@@ -520,72 +520,82 @@ cmp_boxes_safe (ccaddr_t box1, ccaddr_t box2, collation_t * collation1, collatio
     case DV_STRING:
       n1--;
       break;
-    case DV_LONG_WIDE:
-      dtp1 = DV_WIDE;
-    case DV_WIDE:
-      n1 = n1 / sizeof (wchar_t) - 1;
-      break;
-    case DV_LONG_BIN:
-      dtp1 = DV_BIN;
-      collation1 = collation2 = NULL;
-      break;
-    case DV_DATETIME:
-      dtp1 = DV_BIN;
-      n1 = DT_COMPARE_LENGTH;
-      collation1 = collation2 = NULL;
-      break;
-    default:
-      collation1 = collation2 = NULL;
-    }
+	case DV_UNAME:
+	  n1--;
+	  dtp1 = DV_STRING;
+	  collation1 = collation2 = NULL;
+	  break;
+	case DV_LONG_WIDE:
+	  dtp1 = DV_WIDE;
+	case DV_WIDE:
+	  n1 = n1 / sizeof (wchar_t) - 1;
+	  break;
+	case DV_LONG_BIN:
+	  dtp1 = DV_BIN;
+	  collation1 = collation2 = NULL;
+	  break;
+	case DV_DATETIME:
+	  dtp1 = DV_BIN;
+	  n1 = DT_COMPARE_LENGTH;
+	  collation1 = collation2 = NULL;
+	  break;
+	default:
+	  collation1 = collation2 = NULL;
+	}
   switch (dtp2)
-    {
+	{
     case DV_STRING:
       n2--;
       if (collation1)
-	{
+	    {
 	  if (collation2 && collation1 != collation2)
 	    collation1 = default_collation;
+	    }
+	  else
+	    collation1 = collation2;
+	  break;
+	case DV_UNAME:
+	  n2--;
+	  dtp2 = DV_STRING;
+	  collation1 = NULL;
+	  break;
+	case DV_LONG_BIN:
+	  dtp2 = DV_BIN;
+	  collation1 = NULL;
+	  break;
+	case DV_DATETIME:
+	  dtp2 = DV_BIN;
+	  n2 = DT_COMPARE_LENGTH;
+	  collation1 = NULL;
+	  break;
+	case DV_LONG_WIDE:
+	  dtp2 = DV_WIDE;
+	case DV_WIDE:
+	  n2 = n2 / sizeof (wchar_t) - 1;
+	  break;
+	default:
+	  collation1 = NULL;
 	}
-      else
-	collation1 = collation2;
-      break;
-    case DV_LONG_BIN:
-      dtp2 = DV_BIN;
-      collation1 = NULL;
-      break;
-    case DV_DATETIME:
-      dtp2 = DV_BIN;
-      n2 = DT_COMPARE_LENGTH;
-      collation1 = NULL;
-      break;
-    case DV_LONG_WIDE:
-      dtp2 = DV_WIDE;
-    case DV_WIDE:
-      n2 = n2 / sizeof (wchar_t) - 1;
-      break;
-    default:
-      collation1 = NULL;
-    }
 
-  if (IS_WIDE_STRING_DTP (dtp1) && IS_STRING_DTP (dtp2))
+      if (IS_WIDE_STRING_DTP (dtp1) && IS_STRING_DTP (dtp2))
     return compare_wide_to_narrow ((wchar_t *) box1, n1, (unsigned char *) box2, n2);
-  if (IS_STRING_DTP (dtp1) && IS_WIDE_STRING_DTP (dtp2))
-    {
+      if (IS_STRING_DTP (dtp1) && IS_WIDE_STRING_DTP (dtp2))
+	{
       int res = compare_wide_to_narrow ((wchar_t *) box2, n2, (unsigned char *) box1, n1);
       return (res == DVC_LESS ? DVC_GREATER : (res == DVC_GREATER ? DVC_LESS : res));
-    }
-  if (IS_WIDE_STRING_DTP (dtp1) && IS_WIDE_STRING_DTP (dtp2))
-    {
-      inx = 0;
-      while (1)
+	}
+      if (IS_WIDE_STRING_DTP (dtp1) && IS_WIDE_STRING_DTP (dtp2))
 	{
-	  if (inx == n1)	/* box1 in end? */
+          inx = 0;
+	  while (1)
 	    {
-	      if (inx == n2)
-		return DVC_MATCH;	/* box2 of same length */
-	      else
-		return DVC_LESS;	/* otherwise box1 is shorter than box2 */
-	    }
+	      if (inx == n1)	/* box1 in end? */
+		{
+		  if (inx == n2)
+		    return DVC_MATCH;  /* box2 of same length */
+		  else
+		    return DVC_LESS;   /* otherwise box1 is shorter than box2 */
+		}
 
 	  if (inx == n2)
 	    return DVC_GREATER;	/* box2 in end (but not box1) */

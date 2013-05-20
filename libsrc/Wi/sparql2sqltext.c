@@ -2126,18 +2126,18 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
     case SPAR_FUNCALL:
       {
         caddr_t qname = tree->_.funcall.qname;
-        if ((!strcmp (qname, "SPECIAL::bif:MAX") || !strcmp (qname, "SPECIAL::bif:MIN")) &&
+        if ((uname_SPECIAL_cc_bif_c_MAX == qname || uname_SPECIAL_cc_bif_c_MIN == qname) &&
           (1 == BOX_ELEMENTS (tree->_.funcall.argtrees)) )
           return sparp_restr_bits_of_expn (sparp, tree->_.funcall.argtrees[0]) & ~SPART_VARR_NOT_NULL;
-        if (!strcmp (qname, "SPECIAL::bif:AVG") &&
+        if (uname_SPECIAL_cc_bif_c_AVG == qname &&
           (1 == BOX_ELEMENTS (tree->_.funcall.argtrees)) )
           return (SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL |
             (sparp_restr_bits_of_expn (sparp, tree->_.funcall.argtrees[0]) & ~SPART_VARR_NOT_NULL) );
-        if (!strcmp (qname, "SPECIAL::bif:SUM") &&
+        if (uname_SPECIAL_cc_bif_c_SUM == qname &&
           (1 == BOX_ELEMENTS (tree->_.funcall.argtrees)) )
           return (SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL |
             (sparp_restr_bits_of_expn (sparp, tree->_.funcall.argtrees[0]) & ~(SPART_VARR_NOT_NULL | SPART_VARR_FIXED)) );
-        if (!strcmp (qname, "SPECIAL::bif:COUNT"))
+        if (uname_SPECIAL_cc_bif_c_COUNT == qname)
           return (SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL | SPART_VARR_NOT_NULL);
         if (!strncmp (qname, "bif:", 4))
           {
@@ -4188,9 +4188,9 @@ sparp_rettype_of_function (sparp_t *sparp, caddr_t name, SPART *tree)
         return SSG_VALMODE_LONG;
       if (!strcmp (name, "SPECIAL::bif:iri_to_id"))
         return SSG_VALMODE_LONG;
-      if (!strcmp (name, "SPECIAL::bif:COUNT"))
+      if (uname_SPECIAL_cc_bif_c_COUNT == name)
         return SSG_VALMODE_SQLVAL;
-      if (!strcmp (name, "SPECIAL::bif:MIN") || !strcmp (name, "SPECIAL::bif:MAX"))
+      if (uname_SPECIAL_cc_bif_c_MIN == name || uname_SPECIAL_cc_bif_c_MAX == name)
         {
           SPART **args = tree->_.funcall.argtrees;
           SPART *arg1 = ((0 < BOX_ELEMENTS (args)) ? args[0] : NULL);
@@ -4205,7 +4205,7 @@ sparp_rettype_of_function (sparp_t *sparp, caddr_t name, SPART *tree)
             return SSG_VALMODE_BOOL;
           return SSG_VALMODE_SQLVAL;
         }
-      if (!strcmp (name, "SPECIAL::bif:AVG") || !strcmp (name, "SPECIAL::bif:SUM"))
+      if (uname_SPECIAL_cc_bif_c_AVG == name || uname_SPECIAL_cc_bif_c_SUM == name)
         return SSG_VALMODE_NUM;
       if (
         !strcmp (name, "SPECIAL::bif:__rgs_assert_cbk") ||
@@ -4288,9 +4288,9 @@ sparp_argtype_of_function (sparp_t *sparp, caddr_t name, SPART *tree, int arg_id
         return SSG_VALMODE_LONG;
       if (!strcmp (name, "SPECIAL::bif:iri_to_id"))
         return SSG_VALMODE_SQLVAL;
-      if (!strcmp (name, "SPECIAL::bif:COUNT"))
+      if (uname_SPECIAL_cc_bif_c_COUNT == name)
         return SSG_VALMODE_AUTO;
-      if (!strcmp (name, "SPECIAL::bif:MIN") || !strcmp (name, "SPECIAL::bif:MAX"))
+      if (uname_SPECIAL_cc_bif_c_MIN == name || uname_SPECIAL_cc_bif_c_MAX == name)
         {
           SPART **args = tree->_.funcall.argtrees;
           SPART *arg1 = ((0 < BOX_ELEMENTS (args)) ? args[0] : NULL);
@@ -4307,7 +4307,7 @@ sparp_argtype_of_function (sparp_t *sparp, caddr_t name, SPART *tree, int arg_id
             return SSG_VALMODE_BOOL;
           return SSG_VALMODE_SQLVAL;
         }
-      if (!strcmp (name, "SPECIAL::bif:AVG") || !strcmp (name, "SPECIAL::bif:SUM"))
+      if (uname_SPECIAL_cc_bif_c_AVG == name || uname_SPECIAL_cc_bif_c_SUM == name)
         return SSG_VALMODE_NUM;
       if (
         !strcmp (name, "SPECIAL::bif:__rgs_assert_cbk") ||
@@ -4924,7 +4924,7 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
         ssg_puts (" (");
         if (tree->_.funcall.agg_mode)
           {
-            if (!strcmp (tree->_.funcall.qname, "SPECIAL::bif:COUNT") && ((SPART *)((ptrlong)1) == tree->_.funcall.argtrees[0]))
+            if ((uname_SPECIAL_cc_bif_c_COUNT == tree->_.funcall.qname) && ((SPART *)((ptrlong)1) == tree->_.funcall.argtrees[0]))
               arg_count = 1; /* Trick to handle SELECT COUNT FROM ... that is translated to SELECT COUNT (1, all vars) */
             if (DISTINCT_L == tree->_.funcall.agg_mode)
               ssg_puts (" DISTINCT");
@@ -4948,6 +4948,8 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
               ssg_print_scalar_expn (ssg, arg, argtype, NULL_ASNAME);
             prev_arg_is_long = curr_arg_is_long;
           }
+        if (tree->_.funcall.agg_mode && (uname_SPECIAL_cc_bif_c_AVG == tree->_.funcall.qname))
+          ssg_puts (" + 0.0");
         ssg->ssg_indent--;
         ssg_putchar (')');
         goto print_asname;
@@ -7270,7 +7272,7 @@ ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_va
         ssg_puts (" (");
         if (tree->_.funcall.agg_mode)
           {
-            if (!strcmp (tree->_.funcall.qname, "SPECIAL::bif:COUNT") && ((SPART *)((ptrlong)1) == tree->_.funcall.argtrees[0]))
+            if ((uname_SPECIAL_cc_bif_c_COUNT == tree->_.funcall.qname) && ((SPART *)((ptrlong)1) == tree->_.funcall.argtrees[0]))
               arg_count = 1; /* Trick to handle SELECT COUNT FROM ... that is translated to SELECT COUNT (1, all vars) */
             if (DISTINCT_L == tree->_.funcall.agg_mode)
               ssg_puts (" DISTINCT");
@@ -7292,6 +7294,8 @@ ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_va
             else
               ssg_print_retval_simple_expn (ssg, gp, arg, argtype, NULL_ASNAME);
           }
+        if (tree->_.funcall.agg_mode && (uname_SPECIAL_cc_bif_c_AVG == tree->_.funcall.qname))
+          ssg_puts (" + 0.0");
         ssg->ssg_indent--;
         ssg_putchar (')');
         goto print_asname;

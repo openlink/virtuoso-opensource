@@ -1703,7 +1703,7 @@ http_cli_get_host_from_url (char* url)
   while (*slash != '/' && *slash != 0)
     slash++;
 
-  host_len = MIN ((slash - st), sizeof (host));
+  host_len = MIN ((slash - st), (sizeof (host) - 1));
   memcpy (host, st, host_len);
   host[host_len] = 0;
 
@@ -1952,6 +1952,7 @@ http_cli_std_handle_redir (http_cli_ctx * ctx, caddr_t parm, caddr_t ret_val, ca
   ctx->hcctx_url = url;
   ctx->hcctx_host = http_cli_get_host_from_url (url);
   ctx->hcctx_uri = http_cli_get_uri_from_url (url);
+#ifdef _SSL
   if (!strnicmp (url, "https://", 8) && !ctx->hcctx_pkcs12_file)
     {
       http_cli_ssl_cert (ctx, (caddr_t)"1");
@@ -1962,6 +1963,7 @@ http_cli_std_handle_redir (http_cli_ctx * ctx, caddr_t parm, caddr_t ret_val, ca
     {
       ctx->hcctx_pkcs12_file = NULL;
     }
+#endif
   ctx->hcctx_redirects --;
   ctx->hcctx_retry_count = 0;
   F_SET (ctx, HC_F_RETRY);

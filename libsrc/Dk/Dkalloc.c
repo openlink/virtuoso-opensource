@@ -203,7 +203,7 @@ av_adjust (av_list_t * av, int sz)
    * forget stats after 1000000 gets */
   if (av->av_n_empty > av->av_gets / 20 &&
       av->av_n_full > av->av_n_empty / 2 &&
-      av->av_max < 160000 / sz)
+      ((av->av_max * (long)(sz)) < 160000) )
     {
       av->av_n_empty = 0;
       av->av_n_full = 0;

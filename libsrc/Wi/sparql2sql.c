@@ -2916,7 +2916,7 @@ bifsparqlopt_special_bif_agg (sparp_t *sparp, int bif_opt_opcode, SPART *tree, b
       {
         rdf_val_range_t *rvr_ret = (rdf_val_range_t *)more;
         caddr_t qname = tree->_.funcall.qname;
-        if (!strcmp (qname, "SPECIAL::bif:COUNT"))
+        if (uname_SPECIAL_cc_bif_c_COUNT == qname)
           {
             memset (rvr_ret, 0, sizeof (rdf_val_range_t));
             rvr_ret->rvrRestrictions = SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL | SPART_VARR_NOT_NULL;
@@ -2926,18 +2926,18 @@ bifsparqlopt_special_bif_agg (sparp_t *sparp, int bif_opt_opcode, SPART *tree, b
           sparp_get_expn_rvr (sparp, tree->_.funcall.argtrees[0], rvr_ret, 1 /*return_independent_copy*/);
         else
           memset (rvr_ret, 0, sizeof (rdf_val_range_t));
-        if ((!strcmp (qname, "SPECIAL::bif:MAX") || !strcmp (qname, "SPECIAL::bif:MIN")) )
+        if (uname_SPECIAL_cc_bif_c_MAX == qname || uname_SPECIAL_cc_bif_c_MIN == qname)
           {
             rvr_ret->rvrRestrictions &= ~SPART_VARR_NOT_NULL;
             break;
           }
-        if (!strcmp (qname, "SPECIAL::bif:AVG"))
+        if (uname_SPECIAL_cc_bif_c_AVG == qname)
           {
             rvr_ret->rvrRestrictions &= ~SPART_VARR_NOT_NULL;
             rvr_ret->rvrRestrictions |= SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL;
             break;
           }
-        if (!strcmp (qname, "SPECIAL::bif:SUM"))
+        if (uname_SPECIAL_cc_bif_c_SUM == qname)
           {
             rvr_ret->rvrRestrictions &= ~(SPART_VARR_NOT_NULL | SPART_VARR_FIXED);
             rvr_ret->rvrRestrictions |= SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL;
@@ -7395,6 +7395,8 @@ spar_propagate_limit_as_option (sparp_t *sparp, SPART *tree, SPART *outer_limit)
   switch (SPART_TYPE (tree))
     {
     case SPAR_REQ_TOP:
+      if (0 != BOX_ELEMENTS_0 (tree->_.req_top.order))
+        return;
       tree->_.req_top.limit = sparp_cut_inner_limit_with_outer_limit (sparp, tree->_.req_top.limit, tree->_.req_top.offset, outer_limit);
       if ((NULL != tree->_.req_top.limit) && (DISTINCT_L != tree->_.req_top.subtype) && (NULL == tree->_.req_top.groupings) && (NULL == tree->_.req_top.having))
         spar_propagate_limit_as_option (sparp, tree->_.req_top.pattern,

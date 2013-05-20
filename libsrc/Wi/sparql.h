@@ -300,7 +300,8 @@ typedef struct sparp_env_s
     dk_set_t		spare_context_objects;		/*!< Expressions that are default values for objects field */
     dk_set_t		spare_context_gp_subtypes;	/*!< Subtypes of not-yet-completed graph patterns */
     dk_set_t		spare_acc_triples;		/*!< Sets of accumulated triples of GPs */
-    dk_set_t		spare_acc_filters;		/*!< Sets of accumulated filters of GPs */
+    dk_set_t		spare_acc_movable_filters;	/*!< Sets of accumulated position-independent filters of GPs. Position-independent means it can jump be moved around BIND() clause */
+    dk_set_t		spare_acc_local_filters;	/*!< Sets of accumulated position-dependent filters of GPs. Filters of this sort are implicit restrictions on specific triples, like check of value of _::default_xxx bnode for graph. They fall into subquery when BIND divides a BGP on subquery "before" BIND and triples "after" BIND. */
     dk_set_t		spare_acc_bgp_varnames;		/*!< Sets of used BGP names of GPs, sets of children are merged into sets of parent on each pop from the stack */
     int			spare_ctor_dflt_g_tmpl_count;	/*!< For CONSTRUCT and the like --- count of triple templates in the default graph, should be reset to zero after ctor to deal with DELETE{...} INSERT{...} */
     int			spare_ctor_g_grp_count;		/*!< For CONSTRUCT and the like --- count of graph {...} groups of triple templates, should be reset to zero after ctor to deal with DELETE{...} INSERT{...} */
@@ -908,7 +909,7 @@ extern SPART *spar_gp_add_triplelike (sparp_t *sparp, SPART *graph, SPART *subje
 /*! Checks if the given \c filt is a freetext filter. If it is so and \c base_triple is not NULL then it additionally checks if var name matches */
 extern int spar_filter_is_freetext (sparp_t *sparp, SPART *filt, SPART *base_triple);
 extern void spar_gp_finalize_binds (sparp_t *sparp, dk_set_t bind_revlist);
-extern void spar_gp_add_filter (sparp_t *sparp, SPART *filt);
+extern void spar_gp_add_filter (sparp_t *sparp, SPART *filt, int filt_is_movable);
 extern void spar_gp_add_filters_for_graph (sparp_t *sparp, SPART *graph_expn, int graph_is_named, int suppress_filters_for_good_names);
 extern void spar_gp_add_filters_for_named_graph (sparp_t *sparp);
 /*! Makes an expression for list of possible source graphs (IRI or sponge enxpns), with possible security filtering via \c SPECIAL::sql:RDF_GRAPH_GROUP_LIST_GET().

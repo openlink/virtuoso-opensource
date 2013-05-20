@@ -71,6 +71,7 @@
     </div>
     <!-- footer -->
     <div id="FT">
+	Faceted Search &amp; Find service v<?vsp http(DB.DBA.VAD_CHECK_VERSION('fct')); ?><br/>
       <div id="ft_t">
       </div> <!-- #ft_t -->
       <div id="ft_b">

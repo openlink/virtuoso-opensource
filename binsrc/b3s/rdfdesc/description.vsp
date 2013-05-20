@@ -60,6 +60,9 @@
   declare c_iri_a any;
   declare gs_user_id, gs_check_needed integer;
   declare gs_check_cond varchar;
+  declare state, msg any;
+
+  state := '00000'; msg := 'OK';
   deadl := 0;
 
   declare exit handler for sqlstate '40001' {
@@ -68,8 +71,9 @@
       goto again;	
     resignal;
   };
-  declare continue handler for sqlstate 'S1TAT';
-  set result_timeout = atoi (registry_get ('fct_timeout_max'));
+  -- XXX: disabled
+  --declare continue handler for sqlstate 'S1TAT';
+  --set result_timeout = atoi (registry_get ('fct_timeout_max'));
 
 again:
   n_per_page := 100;
@@ -202,7 +206,7 @@ again:
       } 
   if (get_keyword ('sp', params) = '1' and 0 = length (_F))
     {
-      EXEC (sprintf ('sparql define input:storage "" define get:soft "add" SELECT * from <%S> where { ?x ?y ?z . }', doc));
+      EXEC (sprintf ('sparql define input:storage "" define get:soft "add" SELECT * from <%S> where { ?x ?y ?z . }', doc), state, msg);
       DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
     }
   else if ((get_keyword ('sr', params) is not null or get_keyword ('sponger:get', params) is not null) and 0 = length (_F))
@@ -218,7 +222,7 @@ again:
         }
       else
         refr := atoi (get_keyword ('sr', params, '0'));
-      EXEC (sprintf ('sparql define input:storage "" define get:refresh "%d" define get:soft "%s" %s SELECT * from <%S> where { ?x ?y ?z . }', refr, sp_mode, sp_accept, doc));
+      EXEC (sprintf ('sparql define input:storage "" define get:refresh "%d" define get:soft "%s" %s SELECT * from <%S> where { ?x ?y ?z . }', refr, sp_mode, sp_accept, doc), state, msg);
       DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
     }
 
@@ -485,6 +489,8 @@ if (_subject <> '') {
   <p class="subj_delim"></p>
 <?vsp
 }
+       if (state <> '00000')
+         http_value (msg, 'div');
 ?>
 <!--            <li><a href="/fct/facet.vsp?sid=<?V sid ?>&amp;cmd=set_class&amp;iri=<?V gr ?>">Choose <?V ''?> as Type</a></li>
                 <li><a href="/fct/facet.vsp?sid=<?V sid ?>&amp;cmd=open_property">Choose <?V ''?> as Property (p)</a></li>
@@ -535,6 +541,8 @@ if (_subject <> '') {
 	    }
 	  dt2 := sprintf ('select count(*) as cnt from (sparql %s define output:valmode "LONG" select distinct ?p ?o %s where { ?o ?p <%S> } order by 1) sp2', inf, _F, _S);
 	  count_str := sprintf ('select sum (cnt) from (%s UNION ALL %s) un0', dt1, dt2);
+          count_str := replace (count_str, 'distinct', '');
+          count_str := replace (count_str, 'order by 1', '');
 	  -- dbg_obj_princ ('count_str = ', count_str);
 	  exec (count_str, null, null, vector (), 0, meta, data);
 	  if (length (data) and length (data[0]))
@@ -622,6 +630,7 @@ if (_subject <> '') {
     <?vsp b3s_render_dbg_out (dbg_out); ?>
 <!-- footer -->
     <div id="FT">
+       Faceted Search &amp; Find service v<?vsp http(DB.DBA.VAD_CHECK_VERSION('fct')); ?><br/>
 <?vsp if (_addthis_key <> '0') { ?>
   <div id="FT_share">
     <!-- AddThis Button BEGIN -->

@@ -1246,7 +1246,7 @@ spar_gp_not_triples	/* [21]*	GraphPatternNotTriples	 ::=  */
 	| spar_service_req { spar_gp_add_member (sparp_arg, $1); }	/*... | ServiceRequest	*/
 	| spar_binds { spar_gp_finalize_binds (sparp_arg, $1); }	/*... | Bind	*/
 	| spar_inline_data { spar_gp_add_member (sparp_arg, $1); }	/*... | InlineData	*/
-	| spar_constraint { spar_gp_add_filter (sparp_arg, $1); }	/*... | Constraint	*/
+	| spar_constraint { spar_gp_add_filter (sparp_arg, $1, 1); }	/*... | Constraint	*/
 	;
 
 spar_optional_gp	/* [22]	OptionalGraphPattern	 ::=  'OPTIONAL' GroupGraphPattern	*/
@@ -1837,11 +1837,11 @@ spar_agg_name	/* [Virt]	AggName	 ::=  'COUNT' | 'AVG' | 'MIN' | 'MAX' | 'SUM'	*/
 	;
 
 spar_agg_name_int
-	: COUNT_LPAR	{ $$ = t_box_dv_uname_string ("SPECIAL::bif:COUNT"); }
-	| AVG_L _LPAR	{ $$ = t_box_dv_uname_string ("SPECIAL::bif:AVG"); }
-	| MIN_L _LPAR	{ $$ = t_box_dv_uname_string ("SPECIAL::bif:MIN"); }
-	| MAX_L _LPAR	{ $$ = t_box_dv_uname_string ("SPECIAL::bif:MAX"); }
-	| SUM_L _LPAR	{ $$ = t_box_dv_uname_string ("SPECIAL::bif:SUM"); }
+	: COUNT_LPAR	{ $$ = uname_SPECIAL_cc_bif_c_COUNT; }
+	| AVG_L _LPAR	{ $$ = uname_SPECIAL_cc_bif_c_AVG; }
+	| MIN_L _LPAR	{ $$ = uname_SPECIAL_cc_bif_c_MIN; }
+	| MAX_L _LPAR	{ $$ = uname_SPECIAL_cc_bif_c_MAX; }
+	| SUM_L _LPAR	{ $$ = uname_SPECIAL_cc_bif_c_SUM; }
 	;
 
 spar_group_concat_begin
@@ -1926,7 +1926,7 @@ spar_backquoted		/* [Virt]	Backquoted	 ::=  '`' Expn '`'	*/
 		      SPART *bn = spar_make_blank_node (sparp_arg, spar_mkid (sparp_arg, "_:calc"), 1);
 		      SPART *eq;
 		      SPAR_BIN_OP (eq, BOP_EQ, t_full_box_copy_tree ((caddr_t)bn), $3);
-                      spar_gp_add_filter (sparp_arg, eq);
+		      spar_gp_add_filter (sparp_arg, eq, 0);
 		      $$ = bn;
                     }
 		}
