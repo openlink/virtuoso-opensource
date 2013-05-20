@@ -1427,7 +1427,8 @@ spar_gp_init (sparp_t *sparp, ptrlong subtype)
   int gp_is_top = ((WHERE_L == subtype) || (CONSTRUCT_L == subtype));
   spar_dbg_printf (("spar_gp_init (..., %ld)\n", (long)subtype));
   t_set_push (&(env->spare_acc_triples), NULL);
-  t_set_push (&(env->spare_acc_filters), NULL);
+  t_set_push (&(env->spare_acc_movable_filters), NULL);
+  t_set_push (&(env->spare_acc_local_filters), NULL);
   t_set_push (&(env->spare_context_gp_subtypes), (caddr_t)subtype);
   t_set_push (&(env->spare_good_graph_varname_sets), env->spare_good_graph_varnames);
   if (!gp_is_top)
@@ -1469,7 +1470,7 @@ spar_gp_finalize (sparp_t *sparp, SPART **options)
   caddr_t orig_selid;
   dk_set_t membs;
   int all_ctr, opt_ctr;
-  dk_set_t filts;
+  dk_set_t movable_filts, local_filts;
   ptrlong subtype = (ptrlong)(env->spare_context_gp_subtypes->data);
   SPART *res;
   if (sparp->sparp_macro_mode)
@@ -1510,7 +1511,8 @@ spar_gp_finalize (sparp_t *sparp, SPART **options)
 /* Pop the rest of the environment and adjust graph varnames */
   membs = (dk_set_t) t_set_pop (&(env->spare_acc_triples));
   membs = dk_set_nreverse (membs);
-  filts = (dk_set_t) t_set_pop (&(env->spare_acc_filters));
+  movable_filts = (dk_set_t) t_set_pop (&(env->spare_acc_movable_filters));
+  local_filts = (dk_set_t) t_set_pop (&(env->spare_acc_local_filters));
   t_set_pop (&(env->spare_context_gp_subtypes));
   env->spare_good_graph_bmk = (dk_set_t)t_set_pop (&(env->spare_good_graph_varname_sets));
 /* The following 'if' does not mention UNIONs because UNIONs are handled right in .y file
@@ -1539,11 +1541,11 @@ check_optionals:
                   SPART *memb = (SPART *)(t_set_pop (&membs));
                   if ((SPAR_TRIPLE == SPART_TYPE(memb)) && (memb->_.triple.ft_type))
                     {
-                      DO_SET (SPART *, filt, &filts)
+                      DO_SET (SPART *, filt, &local_filts)
                         {
                           if (!spar_filter_is_freetext (sparp, filt, memb))
                             continue;
-                          t_set_delete (&filts, filt);
+                          t_set_delete (&local_filts, filt);
                           t_set_push (&left_ft_filts, filt);
                           break;
                         }
@@ -1552,7 +1554,7 @@ check_optionals:
                   t_set_push (&left_membs, memb);
                 }
               env->spare_acc_triples->data = left_membs; /* a revlist is set to a revlist, no reverse needed */
-              env->spare_acc_filters->data = left_ft_filts; /* same is true for filters, even if not so important */
+              env->spare_acc_local_filters->data = left_ft_filts; /* same is true for filters, even if not so important */
               left_group = spar_gp_finalize (sparp, NULL);
               t_set_push (&membs, left_group);
               goto check_optionals; /* see above */
@@ -1570,7 +1572,7 @@ check_optionals:
 /* Plain composing of SPAR_GP tree node */
   res = spartlist (sparp, 10, SPAR_GP, subtype,
     t_list_to_array (membs),
-    t_revlist_to_array (filts),
+    t_revlist_to_array (dk_set_conc (local_filts, movable_filts)),
     NULL,
     orig_selid,
     NULL, (ptrlong)(0), (ptrlong)(0), options );
@@ -1664,8 +1666,8 @@ spar_gp_finalize_binds (sparp_t *sparp, dk_set_t bind_revlist)
   SPART *inner_gp, *wrapper_gp;
   int type_of_gp_to_resume;
   SPART *subselect_top;
-  dk_set_t filters_of_gp_to_resume = (dk_set_t)(sparp->sparp_env->spare_acc_filters->data);
-  sparp->sparp_env->spare_acc_filters->data = NULL;
+  dk_set_t filters_of_gp_to_resume = (dk_set_t)(sparp->sparp_env->spare_acc_movable_filters->data);
+  sparp->sparp_env->spare_acc_movable_filters->data = NULL;
   inner_gp = spar_gp_finalize (sparp, NULL);
   type_of_gp_to_resume = inner_gp->_.gp.subtype;
   inner_gp->_.gp.subtype = WHERE_L;
@@ -1676,21 +1678,22 @@ spar_gp_finalize_binds (sparp_t *sparp, dk_set_t bind_revlist)
   sparp_expand_top_retvals (sparp, subselect_top, 1 /* safely_copy_all_vars */, bind_revlist);
   spar_env_pop (sparp);
   spar_gp_init (sparp, type_of_gp_to_resume);
-  sparp->sparp_env->spare_acc_filters->data = filters_of_gp_to_resume;
+  sparp->sparp_env->spare_acc_movable_filters->data = filters_of_gp_to_resume;
   spar_gp_init (sparp, SELECT_L);
   wrapper_gp = spar_gp_finalize_with_subquery (sparp, NULL, subselect_top);
   spar_gp_add_member (sparp, wrapper_gp);
 }
 
 void
-spar_gp_add_filter (sparp_t *sparp, SPART *filt)
+spar_gp_add_filter (sparp_t *sparp, SPART *filt, int filt_is_movable)
 {
   int filt_type = SPART_TYPE (filt);
   int ft_type;
+  dk_set_t filters_set_stack;
   if (BOP_AND == filt_type)
     {
-      spar_gp_add_filter (sparp, filt->_.bin_exp.left);
-      spar_gp_add_filter (sparp, filt->_.bin_exp.right);
+      spar_gp_add_filter (sparp, filt->_.bin_exp.left, filt_is_movable);
+      spar_gp_add_filter (sparp, filt->_.bin_exp.right, filt_is_movable);
       return;
     }
   ft_type = spar_filter_is_freetext (sparp, filt, NULL);
@@ -1756,9 +1759,10 @@ spar_gp_add_filter (sparp_t *sparp, SPART *filt)
       else
         sparp->sparp_env->spare_sql_refresh_free_text = t_box_num (1);
     }
-  if (NULL == sparp->sparp_env->spare_acc_filters)
-    spar_internal_error (sparp, "spar_" "gp_add_filter(): NULL sparp->sparp_env->spare_acc_filters");
-  t_set_push ((dk_set_t *)(&(sparp->sparp_env->spare_acc_filters->data)), filt);
+  filters_set_stack = filt_is_movable ? sparp->sparp_env->spare_acc_movable_filters : sparp->sparp_env->spare_acc_local_filters;
+  if (NULL == filters_set_stack)
+    spar_internal_error (sparp, "spar_" "gp_add_filter(): NULL sparp->sparp_env->spare_acc_xxx_filters");
+  t_set_push ((dk_set_t *)(&(filters_set_stack->data)), filt);
 }
 
 void
@@ -1794,7 +1798,7 @@ spar_gp_add_filters_for_graph (sparp_t *sparp, SPART *graph_expn, int graph_is_n
           filter = spartlist (sparp, 3,
             ((SPART_GRAPH_MIN_NEGATION < src->_.graph.subtype) ? BOP_NEQ : BOP_EQ),
             graph_expn_copy, src->_.graph.expn );
-          spar_gp_add_filter (sparp, filter);
+          spar_gp_add_filter (sparp, filter, 0);
           return;
         }
     }
@@ -1809,9 +1813,9 @@ spar_gp_add_filters_for_graph (sparp_t *sparp, SPART *graph_expn, int graph_is_n
       bad_list_expn = spar_make_list_of_sources_expn (sparp, SPART_GRAPH_NOT_FROM, SPART_GRAPH_NOT_GROUP, 0, 0x0, graph_expn);
     }
   if (NULL != good_list_expn)
-    spar_gp_add_filter (sparp, good_list_expn);
+    spar_gp_add_filter (sparp, good_list_expn, 0);
   if (NULL != bad_list_expn)
-    spar_gp_add_filter (sparp, spartlist (sparp, 2, BOP_NOT, bad_list_expn));
+    spar_gp_add_filter (sparp, spartlist (sparp, 2, BOP_NOT, bad_list_expn), 0);
 }
 
 void
@@ -2684,7 +2688,7 @@ spar_gp_add_transitive_triple_anchor_filter (sparp_t *sparp, caddr_t fld_vname, 
 #else
     filt = spartlist (sparp, 3, SPAR_BOP_EQNAMES, spar_make_variable (sparp, fld_vname), spar_make_variable (sparp, orig_fld->_.var.vname));
 #endif
-  spar_gp_add_filter (sparp, filt);
+  spar_gp_add_filter (sparp, filt, 0);
 }
 
 SPART *
@@ -2692,7 +2696,8 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
 {
 #ifdef DEBUG
   sparp_env_t *saved_env = sparp->sparp_env;
-  dk_set_t filters_stack = sparp->sparp_env->spare_acc_filters;
+  dk_set_t movable_filters_stack = sparp->sparp_env->spare_acc_movable_filters;
+  dk_set_t local_filters_stack = sparp->sparp_env->spare_acc_local_filters;
   dk_set_t members_stack = sparp->sparp_env->spare_acc_triples;
 #endif
   SPART *subselect_top, *where_gp, *wrapper_gp, *fields[4];
@@ -2825,8 +2830,10 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
 #ifdef DEBUG
   if (saved_env != sparp->sparp_env)
     spar_internal_error (sparp, "spar_" "gp_add_transitive_triple(): mismatch in env");
-  if (filters_stack != sparp->sparp_env->spare_acc_filters)
-    spar_internal_error (sparp, "spar_" "gp_add_transitive_triple(): mismatch in filters");
+  if (movable_filters_stack != sparp->sparp_env->spare_acc_movable_filters)
+    spar_internal_error (sparp, "spar_" "gp_add_transitive_triple(): mismatch in movable filters");
+  if (local_filters_stack != sparp->sparp_env->spare_acc_local_filters)
+    spar_internal_error (sparp, "spar_" "gp_add_transitive_triple(): mismatch in local filters");
   if (members_stack != sparp->sparp_env->spare_acc_triples)
     spar_internal_error (sparp, "spar_" "gp_add_transitive_triple(): mismatch in triples");
 #endif
@@ -2898,7 +2905,7 @@ spar_gp_add_ppath_leaf (sparp_t *sparp,  SPART **parts, int part_count, int pp_m
       else
         filt = NULL;
       if (NULL != filt)
-        spar_gp_add_filter (sparp, filt);
+        spar_gp_add_filter (sparp, filt, 0);
     }
   if (pp_makes_union)
     {
@@ -3222,7 +3229,7 @@ spar_gp_add_triplelike (sparp_t *sparp, SPART *graph, SPART *subject, SPART *pre
             }
           spar_gp_add_filter (sparp,
             spar_make_funcall (sparp, 0, pname,
-              t_spartlist_concat ((SPART **)t_list (2, subject, object), options) ) );
+              t_spartlist_concat ((SPART **)t_list (2, subject, object), options) ), 0 );
           dk_free_tree ((caddr_t)spec_pred_names);
           return NULL;
         }
@@ -3266,7 +3273,7 @@ plain_triple_in_ctor:
   if (graph_can_bring_filters)
     spar_gp_add_filters_for_graph (sparp, graph, 0, 0);
   if (NULL != graph_eq_from_option_expn)
-    spar_gp_add_filter (sparp, graph_eq_from_option_expn);
+    spar_gp_add_filter (sparp, graph_eq_from_option_expn, 0);
 
   triple = spar_make_plain_triple (sparp, graph, subject, predicate, object, qm_iri_or_pair, options);
   if (NULL != options)
@@ -5137,7 +5144,8 @@ spar_env_push (sparp_t *sparp)
   /* no copy for spare_context_objects */
   /* no copy for spare_context_gp_subtypes */
   /* no copy for spare_acc_triples */
-  /* no copy for spare_acc_filters */
+  /* no copy for spare_acc_movable_filters */
+  /* no copy for spare_acc_local_filters */
   ENV_COPY (spare_good_graph_varnames);
   ENV_COPY (spare_good_graph_varname_sets);
   ENV_COPY (spare_good_graph_bmk);
