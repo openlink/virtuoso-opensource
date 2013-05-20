@@ -1824,11 +1824,11 @@ spar_agg_name	/* [Virt]	AggName	 ::=  'COUNT' | 'AVG' | 'MIN' | 'MAX' | 'SUM'	*/
 	;
 
 spar_agg_name_int
-	: COUNT_LPAR	{ $$ = t_box_dv_uname_string ("SPECIAL::bif:COUNT"); }
-	| AVG_L _LPAR	{ $$ = t_box_dv_uname_string ("SPECIAL::bif:AVG"); }
-	| MIN_L _LPAR	{ $$ = t_box_dv_uname_string ("SPECIAL::bif:MIN"); }
-	| MAX_L _LPAR	{ $$ = t_box_dv_uname_string ("SPECIAL::bif:MAX"); }
-	| SUM_L _LPAR	{ $$ = t_box_dv_uname_string ("SPECIAL::bif:SUM"); }
+	: COUNT_LPAR	{ $$ = uname_SPECIAL_cc_bif_c_COUNT; }
+	| AVG_L _LPAR	{ $$ = uname_SPECIAL_cc_bif_c_AVG; }
+	| MIN_L _LPAR	{ $$ = uname_SPECIAL_cc_bif_c_MIN; }
+	| MAX_L _LPAR	{ $$ = uname_SPECIAL_cc_bif_c_MAX; }
+	| SUM_L _LPAR	{ $$ = uname_SPECIAL_cc_bif_c_SUM; }
 	;
 
 spar_group_concat_begin

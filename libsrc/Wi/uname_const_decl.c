@@ -46,6 +46,11 @@ caddr_t uname__srcfile;
 caddr_t uname__srcline;
 caddr_t uname__txt;
 caddr_t uname__xslt;
+caddr_t uname_SPECIAL_cc_bif_c_AVG;
+caddr_t uname_SPECIAL_cc_bif_c_COUNT;
+caddr_t uname_SPECIAL_cc_bif_c_MAX;
+caddr_t uname_SPECIAL_cc_bif_c_MIN;
+caddr_t uname_SPECIAL_cc_bif_c_SUM;
 caddr_t uname_lang;
 caddr_t uname_nil;
 caddr_t uname_nodeID_ns;
@@ -171,7 +176,7 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname__bang_name				, " !name"			},
   { &uname__bang_ns				, " !ns"			},
   { &uname__bang_uri				, " !uri"			},
-  { &uname__bang_use_attribute_sets		, " !use-attribute-sets"	},
+  { &uname__bang_use_attribute_sets		, " !use-attribute-sets"		},
   { &uname__bang_xmlns				, " !xmlns"			},
   { &uname__attr				, " attr"			},
   { &uname__comment				, " comment"			},
@@ -183,6 +188,11 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname__srcline				, " srcline"			},
   { &uname__txt					, " txt"			},
   { &uname__xslt				, " xslt"			},
+  { &uname_SPECIAL_cc_bif_c_AVG			, "SPECIAL::bif:AVG"		},
+  { &uname_SPECIAL_cc_bif_c_COUNT		, "SPECIAL::bif:COUNT"		},
+  { &uname_SPECIAL_cc_bif_c_MAX			, "SPECIAL::bif:MAX"		},
+  { &uname_SPECIAL_cc_bif_c_MIN			, "SPECIAL::bif:MIN"		},
+  { &uname_SPECIAL_cc_bif_c_SUM			, "SPECIAL::bif:SUM"		},
   { &uname_lang					, "lang"			},
   { &uname_nil					, "nil"				},
   { &uname_nodeID_ns				, "nodeID://"			},
