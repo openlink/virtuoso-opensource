@@ -4948,6 +4948,8 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
               ssg_print_scalar_expn (ssg, arg, argtype, NULL_ASNAME);
             prev_arg_is_long = curr_arg_is_long;
           }
+        if (tree->_.funcall.agg_mode && (uname_SPECIAL_cc_bif_c_AVG == tree->_.funcall.qname))
+          ssg_puts (" + 0.0");
         ssg->ssg_indent--;
         ssg_putchar (')');
         goto print_asname;
@@ -7292,6 +7294,8 @@ ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_va
             else
               ssg_print_retval_simple_expn (ssg, gp, arg, argtype, NULL_ASNAME);
           }
+        if (tree->_.funcall.agg_mode && (uname_SPECIAL_cc_bif_c_AVG == tree->_.funcall.qname))
+          ssg_puts (" + 0.0");
         ssg->ssg_indent--;
         ssg_putchar (')');
         goto print_asname;
