@@ -68,8 +68,9 @@
       goto again;	
     resignal;
   };
-  declare continue handler for sqlstate 'S1TAT';
-  set result_timeout = atoi (registry_get ('fct_timeout_max'));
+  -- XXX: disabled
+  --declare continue handler for sqlstate 'S1TAT';
+  --set result_timeout = atoi (registry_get ('fct_timeout_max'));
 
 again:
   n_per_page := 100;
