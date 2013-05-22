@@ -2470,6 +2470,16 @@ bif_msec_time (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return (box_num (get_msec_real_time ()));
 }
 
+
+caddr_t
+bif_usec_time (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  timeout_t time_now;
+  get_real_time (&time_now);
+  return box_num ((int64)time_now.to_sec * 1000000 + time_now.to_usec);
+}
+
+
 caddr_t
 dbg_print_itcs (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 
@@ -4290,6 +4300,7 @@ bif_status_init (void)
   bif_define ("prof_sample", bif_profile_sample);
   bif_define ("prof_proc", bif_prof_proc);
   bif_define_typed ("msec_time", bif_msec_time, &bt_integer);
+  bif_define_typed ("usec_time", bif_usec_time, &bt_integer);
   bif_define_typed ("identify_self", bif_identify_self, &bt_any);
   ps_sem = semaphore_allocate (0);
   bif_define ("itcs", dbg_print_itcs);
