@@ -5161,6 +5161,7 @@ ddl_init_proc ()
 
 query_t *proc_st_query;
 query_t *proc_rm_duplicate_query;
+query_t *cl_proc_rm_duplicate_query;
 query_t *proc_revoke_query;
 query_t *trig_st_query;
 
@@ -5179,6 +5180,7 @@ ddl_store_proc (caddr_t * state, op_node_t * op)
       ? qst_get (state, op->op_arg_2)
       : qst_get (state, op->op_arg_3);
   caddr_t p_type =  op->op_code == OP_STORE_PROC ? qst_get (state, op->op_arg_3) : NULL;
+  int is_cl;
 /* Procedure's calls published for replication */
   query_t *qr_proc = sch_proc_def (wi_inst.wi_schema,
       (char *) qst_get (state, op->op_arg_1));
@@ -5191,6 +5193,8 @@ ddl_store_proc (caddr_t * state, op_node_t * op)
       proc_st_query = sql_compile_static ("insert into DB.DBA.SYS_PROCEDURES (P_QUAL, P_OWNER, P_NAME, P_TEXT, P_MORE, P_TYPE) values (?, user, ?, ?, ?, ?)",
 	  bootstrap_cli, NULL, SQLC_DEFAULT);
       proc_rm_duplicate_query = sql_compile_static ("delete from DB.DBA.SYS_PROCEDURES where P_NAME = ?",
+	      bootstrap_cli, NULL, SQLC_DEFAULT);
+      cl_proc_rm_duplicate_query = sql_compile_static ("cl_exec (\'delete from DB.DBA.SYS_PROCEDURES table option (no cluster) where P_NAME = ? option (no cluster)\', params => vector (?))",
 	      bootstrap_cli, NULL, SQLC_DEFAULT);
       proc_revoke_query = sql_compile_static ("delete from DB.DBA.SYS_GRANTS where G_OBJECT = ? and G_OP = 32",
 	      bootstrap_cli, NULL, SQLC_DEFAULT);
@@ -5255,11 +5259,12 @@ ddl_store_proc (caddr_t * state, op_node_t * op)
 #endif
       /* first we will remove all entries with the same name,
 	 because the PK of that table is not designed to keep only one entry per name */
-      err = qr_rec_exec (proc_rm_duplicate_query, cli, NULL, qi, NULL, 1,
-	  ":0", qst_get (state, op->op_arg_1), QRP_STR);
+      is_cl = !cl_run_local_only;
+      err = qr_rec_exec (is_cl ? cl_proc_rm_duplicate_query : proc_rm_duplicate_query, cli, NULL, qi, NULL, 1,
+			 ":0", qst_get (state, op->op_arg_1), QRP_STR);
       /* the grants also must be removed */
       qr_rec_exec (proc_revoke_query, cli, NULL, qi, NULL, 1,
-	  ":0", qst_get (state, op->op_arg_1), QRP_STR);
+		   ":0", qst_get (state, op->op_arg_1), QRP_STR);
       /* and if all is OK then will make simple insert */
       if (err == SQL_SUCCESS)
 	{
