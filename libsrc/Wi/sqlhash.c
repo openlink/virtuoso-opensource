@@ -57,7 +57,10 @@ key_col_from_ssl (dbe_key_t * key, state_slot_t * ssl, int quietcast, int op)
   if (DV_ARRAY_OF_POINTER == col->col_sqt.sqt_dtp)
     col->col_sqt.sqt_dtp = DV_ANY;
   if (DV_LONG_INT == ssl->ssl_dtp /*&& !ssl->ssl_column*/)
-    col->col_sqt.sqt_dtp = DV_INT64; /* temp results of int exprs can be wider */
+    {
+      col->col_sqt.sqt_col_dtp = col->col_sqt.sqt_dtp = DV_INT64; /* temp results of int exprs can be wider */
+      col->col_sqt.sqt_precision = 19;
+    }
   if (DV_IRI_ID == col->col_sqt.sqt_dtp)
     col->col_sqt.sqt_dtp = DV_IRI_ID_8;
   if (DV_UNKNOWN == col->col_sqt.sqt_dtp
