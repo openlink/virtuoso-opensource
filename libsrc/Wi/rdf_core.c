@@ -4085,7 +4085,7 @@ rdf_core_init (void)
   bif_define ("__i2idn", bif_iri_to_id_nosignal);
   bif_define ("__i2id", bif_iri_to_id);
   bif_define ("__i2idc", bif_iri_to_id_if_cached);
-  bif_define_typed ("__id2i", bif_id_to_iri, &bt_varchar);
+  bif_define_typed ("__id2i", bif_id_to_iri, &bt_any /* Was &bt_varchar */);
   bif_set_vectored (bif_id_to_iri, bif_id2i_vec);
   bif_set_uses_index (bif_id_to_iri);
   bif_define ("__id2in", bif_id_to_iri_nosignal);
