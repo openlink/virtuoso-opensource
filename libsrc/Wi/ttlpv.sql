@@ -513,7 +513,7 @@ create procedure DB.DBA.TTLP_V (in strg varchar, in base varchar, in graph varch
 }
 ;
 
-create procedure DB.DBA.RDF_LOAD_RDFXML_V (in strg varchar, in base varchar, in graph varchar := null, in threads int := 3, in transactional int := 0, in log_mode int := 0, in parse_mode intt := 0)
+create procedure DB.DBA.RDF_LOAD_RDFXML_V (in strg varchar, in base varchar, in graph varchar := null, in threads int := 3, in transactional int := 0, in log_mode int := 0, in parse_mode int := 0)
 {
   declare ro_id_dict, app_env, g_iid, old_log_mode any;
   if (1 <> sys_stat ('cl_run_local_only'))
