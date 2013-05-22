@@ -16062,18 +16062,9 @@ DB.DBA.RDF_QUAD_OUTLINE_ALL ()
 ;
 
 
-create procedure DB.DBA.RDF_QUAD_FT_UPGRADE ()
+create procedure DB.DBA.RDF_QUAD_LOAD_CACHE ()
 {
-  declare stat, msg varchar;
   declare fake integer;
-  if (USER <> 'dba')
-    signal ('RDFXX', 'Only DBA can alter DB.DBA.RDF_QUAD schema or initialize RDF storage');
-
-  if (sys_stat ('disable_rdf_init') = 1)
-    return;
-
-  rdf_geo_init ();
-
   fake := (select count (rdf_cache_id ('t', RDT_QNAME, RDT_TWOBYTE)) from DB.DBA.RDF_DATATYPE);
   fake := (select count (rdf_cache_id ('l', RL_ID, RL_TWOBYTE)) from DB.DBA.RDF_LANGUAGE);
   fake := (select
@@ -16104,6 +16095,20 @@ create procedure DB.DBA.RDF_QUAD_FT_UPGRADE ()
     from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = #i8192 );
   fake := (select count (dict_put (__rdf_graph_public_perms_dict(), RGU_GRAPH_IID, RGU_PERMISSIONS))
     from DB.DBA.RDF_GRAPH_USER where RGU_USER_ID = http_nobody_uid () );
+}
+;
+
+create procedure DB.DBA.RDF_QUAD_FT_UPGRADE ()
+{
+  declare stat, msg varchar;
+  declare fake integer;
+  if (USER <> 'dba')
+    signal ('RDFXX', 'Only DBA can alter DB.DBA.RDF_QUAD schema or initialize RDF storage');
+
+  if (sys_stat ('disable_rdf_init') = 1)
+    return;
+  rdf_geo_init ();
+  DB.DBA.RDF_QUAD_LOAD_CACHE ();
   delete from DB.DBA.RDF_GRAPH_USER where not exists (select 1 from DB.DBA.SYS_USERS where RGU_USER_ID = U_ID);
   if (row_count ())
     log_message ('Non-existing users are removed from graph security list');
