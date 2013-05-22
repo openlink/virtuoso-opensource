@@ -349,6 +349,7 @@ void ts_outer_output (table_source_t * ts, caddr_t * qst);
 
 void hash_fill_node_input (fun_ref_node_t * fref, caddr_t * inst, caddr_t * qst);
 void hash_source_input (hash_source_t * hs, caddr_t * qst, caddr_t * qst_cont);
+void hash_source_free (hash_source_t * hs);
 void hash_source_vec_input (hash_source_t * hs, caddr_t * qst, caddr_t * qst_cont);
 void fun_ref_free (fun_ref_node_t * fref);
 void gs_union_free (gs_union_node_t * gsu);
