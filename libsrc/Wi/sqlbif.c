@@ -13129,8 +13129,8 @@ lc_result_array (int * set_ret, mem_pool_t * mp, srv_stmt_t * lc, int fmt, dk_se
   select_node_t * sel = lc->sst_query->qr_select_node;
   state_slot_t ** out_slots = sel->sel_out_slots;
   int n_out = BOX_ELEMENTS (out_slots);
-  n_read = MIN (n_read, 128);
   int set_nos[128];
+  n_read = MIN (n_read, 128);
   sslr_n_consec_ref (lc->sst_qst, (state_slot_ref_t*)sel->sel_set_no, set_nos, start, n_read);
   DO_BOX (state_slot_t *, ssl, sslinx, out_slots)
     {
