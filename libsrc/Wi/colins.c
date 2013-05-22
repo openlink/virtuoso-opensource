@@ -2286,6 +2286,8 @@ cr_insert (ce_ins_ctx_t * ceic, buffer_desc_t * buf, col_data_ref_t * cr)
 	      itc->itc_row_of_ce = row_of_ce;
 	      if (is_upd)
 		n_updates++;
+	      /*prefetch the ce here, will be touched shortly */
+	      __builtin_prefetch (cr->cr_pages[inx].cp_buf->bd_buffer + pm->pm_entries[ice]);
 	      for (ira = nth_range + 1; ira < itc->itc_range_fill; ira++)
 		{
 		  is_upd = itc->itc_ranges[ira].r_end != itc->itc_ranges[ira].r_first;
