@@ -2099,7 +2099,7 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	( 'AS' ( VAR1 | VAR2 ) ) */
 spar_built_in_call	/* [52]*	BuiltInCall	 ::=  */
 	: SPARQL_BIF spar_arg_list {
 		SPART **args = (SPART **)(((dk_set_t)NIL_L == $2) ? NULL : t_revlist_to_array ($2));
-		if ((SPAR_BIF_REGEX == $1) && (2 == BOX_ELEMENTS (args)))
+		if ((SPAR_BIF_REGEX == $1) && (2 == BOX_ELEMENTS_0 (args)))
 		  $$ = spar_make_regex_or_like_or_eq (sparp_arg, args[0], args[1]);
 		else
 		  $$ = sparp_make_builtin_call (sparp_arg, $1, args); }
