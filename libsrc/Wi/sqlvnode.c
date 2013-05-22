@@ -1000,7 +1000,12 @@ delete_node_vec_run (delete_node_t * del, caddr_t * inst, caddr_t * state, int i
 			sqlr_resignal (err);
 		    }
 		  else
+			{
+			  if (target_dc->dc_type & DCT_BOXES)
+			    ((caddr_t*)target_dc->dc_values)[target_dc->dc_n_values] = box_copy_tree (((caddr_t*)source_dc->dc_values)[source_row]);
+			  else
 			memcpy_16 (target_dc->dc_values + elt_sz * target_dc->dc_n_values, source_dc->dc_values + source_row * elt_sz, elt_sz);
+			}
 		  target_dc->dc_n_values = n_values + 1;
 		}
 	    }
