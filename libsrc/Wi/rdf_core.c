@@ -1603,30 +1603,32 @@ void
 nic_set (name_id_cache_t * nic, caddr_t name, boxint id)
 {
   caddr_t name_box = NULL;
-  caddr_t * place;
+  caddr_t *place;
   if (nic->nic_n_ways)
     {
       nic_set_n (nic, name, id);
-      return;
-    }
-  mutex_enter (nic->nic_mtx);
-  place = (caddr_t*) id_hash_get (nic->nic_name_to_id, (caddr_t)&name);
-  if(place)
-    {
-      boxint old_id = *(boxint*)place;
-      name_box = ((caddr_t*)place) [-1];
-      *(boxint*) place = id;
-      remhash_64 (old_id, nic->nic_id_to_name);
-      sethash_64 (id, nic->nic_id_to_name,  (boxint)((ptrlong)(name_box)));
     }
   else
     {
-      nic_remove_some_elements (nic, 1);
-      name_box = nic->nic_is_boxes ? box_copy (name) :  box_dv_short_string (name);
-      id_hash_set (nic->nic_name_to_id, (caddr_t)&name_box, (caddr_t)&id);
-      sethash_64 (id, nic->nic_id_to_name, (boxint)((ptrlong)(name_box)));
+      mutex_enter (nic->nic_mtx);
+      place = (caddr_t *) id_hash_get (nic->nic_name_to_id, (caddr_t) & name);
+      if (place)
+	{
+	  boxint old_id = *(boxint *) place;
+	  name_box = ((caddr_t *) place)[-1];
+	  *(boxint *) place = id;
+	  remhash_64 (old_id, nic->nic_id_to_name);
+	  sethash_64 (id, nic->nic_id_to_name, (boxint) ((ptrlong) (name_box)));
+	}
+      else
+	{
+	  nic_remove_some_elements (nic, 1);
+	  name_box = nic->nic_is_boxes ? box_copy (name) : box_dv_short_string (name);
+	  id_hash_set (nic->nic_name_to_id, (caddr_t) & name_box, (caddr_t) & id);
+	  sethash_64 (id, nic->nic_id_to_name, (boxint) ((ptrlong) (name_box)));
+	}
+      mutex_leave (nic->nic_mtx);
     }
-  mutex_leave (nic->nic_mtx);
 }
 
 
