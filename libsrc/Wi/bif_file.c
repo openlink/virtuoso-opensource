@@ -661,6 +661,23 @@ signal_error:
 
 
 caddr_t
+bif_file_read_line (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  char buf[10000];
+  dk_session_t * ses = bif_strses_arg (qst, args, 0, "file_read_line");
+  int rc = -1;
+  CATCH_READ_FAIL (ses)
+  {
+    rc = dks_read_line (ses, buf, sizeof (buf));
+  }
+  END_READ_FAIL (ses);
+  if (-1 == rc)
+    return box_num (0);
+  return box_n_chars (buf, rc);
+}
+
+
+caddr_t
 bif_server_root (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   static char abs_path[PATH_MAX + 1], *p_abs_path = abs_path;
@@ -7046,6 +7063,7 @@ bif_file_init (void)
   bif_define_typed ("file_to_string_output_utf8", bif_file_to_string_session_utf8, &bt_any);
   bif_define_typed ("file_append_to_string_output", bif_file_append_to_string_session, &bt_integer);
   bif_define_typed ("file_append_to_string_output_utf8", bif_file_append_to_string_session_utf8, &bt_integer);
+  bif_define_typed ("file_read_line", bif_file_read_line, &bt_varchar);
   bif_define_typed ("virtuoso_ini_path", bif_virtuoso_ini_path, &bt_varchar);
   bif_define_typed ("virtuoso_ini_item_value", bif_virtuoso_ini_item_value, &bt_varchar);
   bif_define_typed ("cfg_section_count", bif_cfg_section_count, &bt_integer);
