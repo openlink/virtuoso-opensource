@@ -2063,7 +2063,7 @@ ts_check_batch_sz (table_source_t * ts, caddr_t * inst, it_cursor_t * itc)
   if (rows_to_expect < prev_sz)
     return;
   key = itc->itc_insert_key;
-  if (key->key_is_col)
+  if (key && key->key_is_col)
     {
       if (key->key_segs_sampled)
 	min_density = (float) 5 / ((1 | key->key_rows_in_sampled_segs) / key->key_segs_sampled);
