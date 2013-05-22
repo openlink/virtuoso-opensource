@@ -6038,7 +6038,7 @@ create procedure csv_parse (in s any, in cb varchar, inout cbd any, in _from int
 }
 ;
 
-create procedure csv_ins_stmt (in tb varchar, out num_cols int, in col_opts any)
+create procedure csv_ins_stmt (in tb varchar, out num_cols int, in col_opts any := null)
 {
   declare ss any;
   declare cols, cvt any;
@@ -6049,11 +6049,11 @@ create procedure csv_ins_stmt (in tb varchar, out num_cols int, in col_opts any)
   for select "COLUMN" as col from SYS_COLS where "TABLE" = tb and "COLUMN" <> '_IDN' and COL_CHECK <> 'I' order by COL_ID do
     {
       declare opt any;
-      opt := csv_col_opt (col_opts, col);
+      opt := get_keyword (col, col_opts);
       if ('exclude'= opt)
       goto nextc;
       cols := vector_concat (cols, vector (col));
-     cvt := vector_concat (cvt, vector (opt));
+      cvt := vector_concat (cvt, vector (opt));
       nextc: ;
     }
   if (length (cols) = 0)
@@ -6278,12 +6278,11 @@ create procedure csv_vec_ins_stmt (in tb varchar, out num_cols int, out pname va
   for select "COLUMN" as col from SYS_COLS where "TABLE" = tb and "COLUMN" <> '_IDN' and COL_CHECK <> 'I' order by COL_ID do
     {
       declare opt any;
-    opt := get_keyword (col, col_opts);
-    dbg_obj_print (col, opt, col_opts);
+      opt := get_keyword (col, col_opts);
       if ('exclude' = opt)
 	goto next;
       cols := vector_concat (cols, vector (col));
-    cvt := vector_concat (cvt, vector (opt));
+      cvt := vector_concat (cvt, vector (opt));
     next: ;
     }
   if (length (cols) = 0)
