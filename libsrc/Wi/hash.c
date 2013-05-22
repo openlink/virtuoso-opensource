@@ -1304,6 +1304,12 @@ itc_ha_flush_memcache (hash_area_t * ha, caddr_t * qst, int is_in_fill)
     hi->hi_size = MAX (hi->hi_size, 4 * hi_end_memcache_size); /* overflowed, more coming */
   else
     hi->hi_size = MAX (1, hi->hi_memcache->ht_count); /* this is all, flushing at end of query */
+  if (!itc)
+    {
+      itc = itc_create (NULL, ((QI*)qst)->qi_trx);
+      qst_set (qst, ha->ha_insert_itc, (caddr_t) itc);
+      itc_from_it_ha (itc, tree, ha);
+    }
   hi_alloc_elements (hi);
   id_hash_iterator (&hit, hi->hi_memcache);
   while (hit_next (&hit, (caddr_t *)(&key), (caddr_t *)(&val)))
