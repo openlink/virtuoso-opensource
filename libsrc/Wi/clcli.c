@@ -47,7 +47,7 @@ resource_t * clib_rc;
 cll_in_box_t *
 clib_allocate ()
 {
-  NEW_VARZ (cll_in_box_t, clib);
+  B_NEW_VARZ (cll_in_box_t, clib);
   return clib;
 }
 
