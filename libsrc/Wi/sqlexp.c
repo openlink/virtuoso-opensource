@@ -1645,6 +1645,8 @@ sqlo_proc_cl_locatable (caddr_t name, int level, query_t ** qr_ret)
     return 1;
   if (CL_LOCAL == qr->qr_cl_locatable)
     return 0;
+  if (!qr->qr_text) /* inside module */
+    return 0;
   WITHOUT_TMP_POOL
     {
       int is_sem = sqlc_inside_sem;
