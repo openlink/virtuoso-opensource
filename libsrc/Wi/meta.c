@@ -725,7 +725,7 @@ dbe_col_loc_array (dk_set_t cls, int off)
 {
   int fill = 0;
   int n = dk_set_length (cls);
-  dbe_col_loc_t * cl = (dbe_col_loc_t *) dk_alloc ((n + 1) * sizeof (dbe_col_loc_t));
+  dbe_col_loc_t * cl = (dbe_col_loc_t *) dk_alloc_box ((n + 1) * sizeof (dbe_col_loc_t), DV_BIN);
   DO_SET (dbe_col_loc_t *, cl1, &cls)
     {
       if (cl1->cl_fixed_len > 0)
@@ -1265,10 +1265,10 @@ dbe_key_version_layout (dbe_key_t * key, row_ver_t rv, dk_set_t parts)
       kcl->cl_null_flag[rv] = cl->cl_null_flag[0];
     }
   END_DO_CL;
-  dk_free ((caddr_t)kv->key_key_fixed, -1);
-  dk_free ((caddr_t)kv->key_key_var, -1);
-  dk_free ((caddr_t)kv->key_row_fixed, -1);
-  dk_free ((caddr_t)kv->key_row_var, -1);
+  dk_free_box ((caddr_t)kv->key_key_fixed);
+  dk_free_box ((caddr_t)kv->key_key_var);
+  dk_free_box ((caddr_t)kv->key_row_fixed);
+  dk_free_box ((caddr_t)kv->key_row_var);
   dk_free ((caddr_t)kv, sizeof (*kv));
 }
 
@@ -1306,7 +1306,7 @@ key_set_version (dbe_key_t * key)
 void
 key_part_in_layout_order (dbe_key_t * key)
 {
-  short * arr = key->key_part_in_layout_order = dk_alloc (sizeof (short) * key->key_n_significant);
+  short * arr = key->key_part_in_layout_order = dk_alloc_box (sizeof (short) * key->key_n_significant, DV_BIN);
   int inx = 0;
   int key_n_fixed = 0;
   DO_CL_0 (cl, key->key_key_fixed)
@@ -1579,11 +1579,11 @@ dbe_key_free (dbe_key_t * key)
       dk_free (tmp, sizeof (search_spec_t));
     }
   dk_set_free (key->key_parts);
-  dk_free ((caddr_t) key->key_key_fixed, -1);
-  dk_free ((caddr_t) key->key_key_var, -1);
-  dk_free ((caddr_t) key->key_row_fixed, -1);
-  dk_free ((caddr_t) key->key_row_var, -1);
-  dk_free ((caddr_t) key->key_part_in_layout_order, -1);
+  dk_free_box ((caddr_t) key->key_key_fixed);
+  dk_free_box ((caddr_t) key->key_key_var);
+  dk_free_box ((caddr_t) key->key_row_fixed);
+  dk_free_box ((caddr_t) key->key_row_var);
+  dk_free_box ((caddr_t) key->key_part_in_layout_order);
   if (KI_TEMP == key->key_id)
     dk_free_box ((caddr_t) key->key_versions);
   dk_free_box (key->key_name);
