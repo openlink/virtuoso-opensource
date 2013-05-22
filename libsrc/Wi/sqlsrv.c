@@ -433,7 +433,7 @@ cli_scrap_cursors (client_connection_t * cli, query_instance_t * exceptions,
 client_connection_t *
 client_connection_create (void)
 {
-  NEW_VARZ (client_connection_t, cli);
+  B_NEW_VARZ (client_connection_t, cli);
   cli->cli_statements = id_str_hash_create (31);
   cli->cli_cursors = id_str_hash_create (13);
   cli->cli_mtx = mutex_allocate ();
