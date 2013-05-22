@@ -210,6 +210,7 @@ bif_strict_type_array_arg (dtp_t element_dtp, caddr_t * qst, state_slot_t ** arg
   return arg;
 }
 
+
 caddr_t *
 bif_strict_2type_array_arg (dtp_t element_dtp1, dtp_t element_dtp2, caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 {
@@ -13110,6 +13111,319 @@ done:
   return res ? res : box_num (0);
 }
 
+
+
+
+#define LC_BOX_ARRAY 1
+#define MAX_COLS 16
+
+void
+lc_result_array (int * set_ret, mem_pool_t * mp, srv_stmt_t * lc, int fmt, dk_set_t * all_res)
+{
+  QNCAST (QI, qi, lc->sst_qst);
+  caddr_t * inst = lc->sst_qst; 
+  caddr_t * row;
+  int start = qi->qi_set, org_set, ref_set, set, sslinx;
+  int n_read = lc->sst_vec_n_rows - start;
+  int sets[MAX_COLS][128];
+  select_node_t * sel = lc->sst_query->qr_select_node;
+  state_slot_t ** out_slots = sel->sel_out_slots;
+  int n_out = BOX_ELEMENTS (out_slots);
+  n_read = MIN (n_read, 128);
+  int set_nos[128];
+  sslr_n_consec_ref (lc->sst_qst, (state_slot_ref_t*)sel->sel_set_no, set_nos, start, n_read);
+  DO_BOX (state_slot_t *, ssl, sslinx, out_slots)
+    {
+      if (SSL_REF == ssl->ssl_type)
+	{
+	  sslr_n_consec_ref (lc->sst_qst, (state_slot_ref_t*)ssl, (int*)&sets[sslinx], start, n_read);
+	}
+    }
+  END_DO_BOX;
+  for (set = start; set < start + n_read; set++)
+    {
+      switch (fmt)
+	{
+	case LC_BOX_ARRAY:
+	  org_set = set;
+	  row = dk_alloc_box (n_out * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+	  for (sslinx = 0; sslinx < n_out; sslinx++)
+	    {
+	      state_slot_t * ssl = out_slots[sslinx];
+	      if (SSL_REF == ssl->ssl_type)
+		{
+		  ref_set = sets[sslinx][set - start];
+		  ssl = ((state_slot_ref_t*)ssl)->sslr_ssl;
+		}
+	      else
+		ref_set = set;
+	      row[sslinx] = box_copy_tree (sslr_qst_get (inst, (state_slot_ref_t*)ssl, ref_set));
+	    }
+	  if (all_res)
+	    mp_set_push (mp, &all_res[set_nos[org_set - start]] + lc->sst_parms_processed, (void*)row);
+	  break;
+	}
+
+    }
+  qi->qi_set += n_read;
+}
+
+
+void 
+exec_read_lc (srv_stmt_t * lc, int rc, caddr_t * err_ret, mem_pool_t * mp, int fmt, void * all_res)
+{
+  if (LC_INIT == rc)
+    rc = lc_exec (lc, NULL, NULL, 0);
+  for (;;)
+    {
+      if (LC_ERROR == rc)
+	{
+	  caddr_t err = lc->sst_pl_error;
+	  lc->sst_pl_error = NULL;
+	  *err_ret = err;
+	  return;
+	}
+      if (LC_ROW == rc)
+	{
+	  while (((QI*)lc->sst_qst)->qi_set < lc->sst_vec_n_rows)
+	    lc_result_array (NULL, mp,  lc, fmt, all_res);
+	}
+      if (LC_AT_END == rc)
+	{
+	  lc_reuse (lc);
+	  return;
+	}
+      rc = lc_exec (lc, NULL, NULL, 0);
+    }
+}
+
+
+caddr_t 
+qr_exec_vec_lc (query_t * qr, caddr_t * caller, caddr_t ** params, caddr_t ** rsets)
+{
+  caddr_t err = NULL;
+  QNCAST (QI, qi, caller);
+  caddr_t * arr;
+  int n_sets = BOX_ELEMENTS (params), rc, inx;
+  mem_pool_t * mp = mem_pool_alloc ();
+  dk_set_t *  all_res = (dk_set_t*)mp_alloc_box_ni (mp, sizeof (caddr_t) * n_sets, DV_BIN);
+  int pinx;
+  srv_stmt_t * lc;
+  memzero (all_res, box_length (all_res));
+  if (qr->qr_select_node)
+    qr->qr_select_node->src_gen.src_input = (qn_input_fn)select_node_input_subq;
+  lc = qr_multistate_lc (qr, qi, n_sets);
+  if (qr->qr_select_node)
+    lc->sst_qst[qr->qr_select_node->sel_out_quota] = 0; /* make no local out buffer of rows */
+  rc = LC_AT_END;
+  DO_BOX (caddr_t *, p_row, pinx, params)
+    {
+      rc = lc_exec (lc, p_row, NULL, 1);
+      if (LC_INIT == rc)
+	continue;
+      if (LC_ERROR == rc)
+	{
+	  caddr_t err = lc->sst_pl_error;
+	  lc->sst_pl_error = NULL;
+	  dk_free_box ((caddr_t)lc);
+	  return err;
+	}
+      exec_read_lc (lc, rc, &err, mp, LC_BOX_ARRAY, all_res);
+      lc->sst_parms_processed = pinx;
+    }
+  END_DO_BOX;
+  if (LC_AT_END != rc)
+    exec_read_lc (lc, rc, &err, mp, LC_BOX_ARRAY, all_res);
+  dk_free_box ((caddr_t)lc);
+  arr = (caddr_t*)dk_alloc_box (n_sets * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  for (inx = 0; inx < n_sets; inx++)
+    arr[inx] = (caddr_t)dk_set_to_array (dk_set_nreverse (all_res[inx]));
+  *rsets = arr;
+  mp_free (mp);
+  return NULL;
+}
+
+
+
+
+caddr_t
+bif_exec_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  /* in text, out sqlstate, out message, in params, in max_rows,
+   * out result_desc, out rows, out handle, out warnings */
+  caddr_t * rsets = NULL;
+  int64 k;
+  dk_set_t proc_resultset = NULL;
+  int n_args = BOX_ELEMENTS (args), n_cols;
+  query_instance_t *qi = (query_instance_t *) qst;
+  stmt_compilation_t *comp = NULL, *proc_comp = NULL;
+  caddr_t _text;
+  caddr_t text = NULL;
+  caddr_t *params = NULL;
+  caddr_t err = NULL;
+  query_t *qr = NULL;
+  long max = 0;
+  client_connection_t *cli = qi->qi_client;
+  caddr_t res = NULL;
+  dk_set_t warnings = NULL;
+  ST *pt = NULL;
+  boxint max_rows = -1;
+  int max_rows_is_set = 0;
+  caddr_t *options = NULL;
+  shcompo_t *shc = NULL;
+  PROC_SAVE_VARS;
+
+  _text = bif_arg (qst, args, 0, "exec");
+
+  if (DV_STRINGP (_text))
+    text = _text;
+  else if (DV_WIDESTRINGP (_text))
+    {
+      unsigned out_len, wide_len = box_length (_text) / sizeof (wchar_t) - 1;
+      text = dk_alloc_box (wide_len * 9 + 1, DV_LONG_STRING);
+      out_len = (unsigned) cli_wide_to_escaped (QST_CHARSET (qst), 0, (wchar_t *) _text, wide_len,
+	  (unsigned char *) text, wide_len * 9, NULL, NULL);
+      text[out_len] = 0;
+    }
+  else if (ARRAYP (_text))
+    {
+      pt = (ST *) _text;
+    }
+  else
+    sqlr_new_error ("22023", "SR308", "exec() called with an invalid text to execute");
+  if (n_args > 3)
+    {
+      params = (caddr_t *) bif_strict_array_or_null_arg (qst, args, 3, "exec");
+    }
+
+  if (n_args > 4)
+    {
+      dtp_t options_dtp;
+      options = (caddr_t *)bif_arg(qst, args, 4, "exec");
+      options_dtp = DV_TYPE_OF (options);
+      if (DV_ARRAY_OF_POINTER != options_dtp)
+        {
+          if (DV_LONG_INT == options_dtp)
+            {
+              max_rows = unbox ((caddr_t)options);
+              max_rows_is_set = 1;
+              options = NULL;
+            }
+          else if (DV_DB_NULL == options_dtp)
+            options = NULL;
+          else
+            sqlr_new_error ("22023", "SR599", "Argument #5 of exec() should be either integer (max no of rows) or array of options or NULL");
+        }
+      else
+        {
+          caddr_t b = get_keyword_ucase_int (options, "max_rows", NULL);
+          if (NULL != b)
+            {
+              max_rows = unbox (b);
+              max_rows_is_set = 1;
+              dk_free_tree (b);
+            }
+        }
+    }
+  PROC_SAVE_PARENT;
+  warnings = sql_warnings_save (NULL);
+  if (n_args < 8 || !ssl_is_settable (args[7]))
+    { /* no cursor for stored procedures */
+      if (max_rows_is_set)
+        cli->cli_resultset_max_rows = max_rows ? max_rows : -1;
+      if (n_args > 5 && ssl_is_settable (args[5]))
+	cli->cli_resultset_comp_ptr = (caddr_t *) &proc_comp;
+      if (n_args > 6 && ssl_is_settable (args[6]))
+	cli->cli_resultset_data_ptr = &proc_resultset;
+    }
+  if (NULL != options)
+    {
+      caddr_t cache_b = get_keyword_ucase_int (options, "use_cache", NULL);
+      if ((DV_LONG_INT == DV_TYPE_OF (cache_b)) && unbox (cache_b))
+        {
+          shc = shcompo_get_or_compile (&shcompo_vtable__qr, list (3, box_copy_tree (text), qi->qi_u_id, qi->qi_g_id), 0, qi, NULL, &err);
+          if (NULL == err)
+            {
+              shcompo_recompile_if_needed (&shc);
+              if (NULL != shc->shcompo_error)
+                err = box_copy_tree (shc->shcompo_error);
+            }
+          if (NULL == err)
+            qr = (query_t *)(shc->shcompo_data);
+	  dk_free_tree (cache_b);
+          goto qr_set;
+        }
+      dk_free_tree (cache_b);
+    }
+  if (pt)
+    qr = sql_compile_1 ("", qi->qi_client, &err, SQLC_DEFAULT, pt, NULL);
+  else
+    qr = sql_compile (text, qi->qi_client, &err, SQLC_DEFAULT);
+
+qr_set:
+  if (err)
+    {
+      PROC_RESTORE_SAVED;
+      if (text != _text)
+	dk_free_box (text);
+      dk_free_tree (list_to_array (proc_resultset));
+      dk_free_tree ((caddr_t) proc_comp);
+      res = bif_exec_error (qst, args, err, warnings, shc, qr);
+      goto done;
+    }
+  if (text != _text)
+    dk_free_box (text);
+
+  if (prof_on)
+    cli->cli_log_qi_stats = 1;
+  k = bif_exec_start (cli, qr->qr_text);
+  cli_set_start_times (cli);
+  err =qr_exec_vec_lc (qr, qst, params,  &rsets);
+  bif_exec_done (k);
+  if (n_args > 6 && ssl_is_settable (args[6]))
+    qst_set (qst, args[6], (caddr_t)rsets);
+  else
+    dk_free_tree ((caddr_t)rsets);
+  if (err)
+    {
+      if (cli->cli_terminate_requested == CLI_RESULT)
+	{
+	  cli->cli_terminate_requested = 0;
+	  cli->cli_anytime_timeout_orig = cli->cli_anytime_timeout = 0;
+	  cli->cli_anytime_started = 0;
+	}
+      PROC_RESTORE_SAVED;
+      dk_free_tree ((caddr_t) proc_comp);
+      dk_free_tree (list_to_array (proc_resultset));
+      res = bif_exec_error (qst, args, err, warnings, shc, qr);
+      goto done;
+    }
+
+  PROC_RESTORE_SAVED;
+done:
+  dk_free_tree (list_to_array (sql_warnings_save (warnings)));
+  if (NULL != shc)
+    shcompo_release (shc);
+  else
+    qr_free (qr);
+  return res ? res : box_num (0);
+}
+
+
+
+
+#if 0
+caddr_t
+bif_transpose (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t * arr = bif_array_of_pointer_arg (qst, args, 0, "transpose");
+  int l = BOX_ELEMENTS (arr);
+  if (l < 2)
+    ;
+}
+#endif
+
+
 /*##
      exec_metadata() , this is to retrieve the column metadata
      w/o execution the parameters are like exec ()
@@ -15723,6 +16037,7 @@ sql_bif_init (void)
   bif_define_typed ("__copy_non_local", bif_copy_non_local, &bt_copy);
   bif_set_uses_index (bif_copy_non_local);
   bif_define_typed ("exec", bif_exec, &bt_integer);
+  bif_define_typed ("exec_vec", bif_exec_vec, &bt_integer);
   bif_define_typed ("exec_metadata", bif_exec_metadata, &bt_integer);
   bif_define ("exec_score", bif_exec_score);
   bif_set_uses_index (bif_exec);
