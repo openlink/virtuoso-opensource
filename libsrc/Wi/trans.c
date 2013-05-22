@@ -649,7 +649,7 @@ tn_fetchable (trans_node_t * tn, caddr_t * inst, caddr_t value)
     {
       to_fetch = (id_hash_t*)box_dv_dict_hashtable (6000);
       to_fetch->ht_free_hook = ht_free_no_content;
-      id_hash_set_rehash_pct  (to_fetch, 300);
+      id_hash_set_rehash_pct  (to_fetch, 150);
       qst_set (inst, tn->tn_to_fetch, (caddr_t)to_fetch);
     }
   if (id_hash_get (to_fetch, (caddr_t)&value))
@@ -1325,7 +1325,7 @@ tn_results (trans_node_t * tn, caddr_t * inst)
 }
 
 void
-tn_reset (trans_node_t * tn, caddr_t * inst)
+tn_reset (trans_node_t * tn, caddr_t * inst, int n_sets)
 {
   query_instance_t * qi = (query_instance_t *)inst;
   cl_op_t * itcl_clo;
@@ -1337,8 +1337,8 @@ tn_reset (trans_node_t * tn, caddr_t * inst)
   itcl_clo->_.itcl.itcl = itcl = itcl_allocate (qi->qi_trx, inst);
   qst_set (inst, tn->clb.clb_itcl, (caddr_t)itcl_clo);
   SET_THR_TMP_POOL (itcl->itcl_pool);
-  sets = t_id_hash_allocate (10000, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
-  id_hash_set_rehash_pct  (sets, 300);
+  sets = t_id_hash_allocate (n_sets, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+  id_hash_set_rehash_pct  (sets, 150);
   QST_BOX (id_hash_t *, inst, tn->tn_input_sets) = sets;
   QST_INT (inst, tn->clb.clb_nth_set) = -1;
   QST_INT (inst, tn->tn_nth_cache_result) = 0;
@@ -1365,12 +1365,12 @@ trans_node_start (trans_node_t * tn, caddr_t * inst, caddr_t * state, int n_sets
       itcl_clo->_.itcl.itcl = itcl = itcl_allocate (qi->qi_trx, inst);
       qst_set (inst, tn->clb.clb_itcl, (caddr_t)itcl_clo);
       SET_THR_TMP_POOL (itcl->itcl_pool);
-      sets = t_id_hash_allocate (10000, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
-      id_hash_set_rehash_pct  (sets, 300);
+      sets = t_id_hash_allocate (n_sets, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+      id_hash_set_rehash_pct  (sets, 150);
       QST_BOX (id_hash_t *, inst, tn->tn_input_sets) = sets;
-      rel = (id_hash_t*)box_dv_dict_hashtable (10000);
+      rel = (id_hash_t*)box_dv_dict_hashtable (1231);
       rel->ht_free_hook = ht_free_no_content;
-      id_hash_set_rehash_pct  (rel, 300);
+      id_hash_set_rehash_pct  (rel, 150);
       qst_set (inst, tn->tn_relation, (caddr_t)rel);
       SRC_IN_STATE ((data_source_t*)tn, inst) = inst;
       QST_INT (inst, tn->clb.clb_nth_set) = -1;
@@ -1378,7 +1378,7 @@ trans_node_start (trans_node_t * tn, caddr_t * inst, caddr_t * state, int n_sets
       nth = 0;
       if (tn->tn_complement && tn->tn_is_primary)
 	{
-	  tn_reset (tn->tn_complement, inst);
+	  tn_reset (tn->tn_complement, inst, n_sets);
 	  SET_THR_TMP_POOL (itcl->itcl_pool);
 	}
     }
