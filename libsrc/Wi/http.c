@@ -11279,7 +11279,7 @@ http_init_part_two ()
   dks_housekeeping_session_count_change (1);
   /* SSL support */
 #ifdef _SSL
-  if (https_port && https_cert && https_key)
+  if (https_port && https_cert && https_key && ssl_listen)
     {
       PrpcCheckIn (ssl_listen);
       dks_housekeeping_session_count_change (1);
