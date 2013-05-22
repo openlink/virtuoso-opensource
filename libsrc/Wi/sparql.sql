@@ -15296,8 +15296,8 @@ create procedure DB.DBA.RDF_GRAPH_SECURITY_AUDIT (in recovery integer)
           count (dict_put (__rdf_graph_id2iri_dict(), RGGM_GROUP_IID, __uname (id_to_canonicalized_iri (RGGM_GROUP_IID))))
           from DB.DBA.RDF_GRAPH_GROUP_MEMBER );
       fake := (select
-          count (dict_put (__rdf_graph_iri2id_dict(), __uname (id_to_canonicalized_iri (RGGM_MEMB_IID)), RGGM_MEMB_IID)) +
-          count (dict_put (__rdf_graph_id2iri_dict(), RGGM_MEMB_IID, __uname (id_to_canonicalized_iri (RGGM_MEMB_IID))))
+          count (dict_put (__rdf_graph_iri2id_dict(), __uname (id_to_canonicalized_iri (RGGM_MEMBER_IID)), RGGM_MEMBER_IID)) +
+          count (dict_put (__rdf_graph_id2iri_dict(), RGGM_MEMBER_IID, __uname (id_to_canonicalized_iri (RGGM_MEMBER_IID))))
           from DB.DBA.RDF_GRAPH_GROUP_MEMBER );
     }
   err_count_total := err_count_total + err_recoverable_count + err_bad_count;
