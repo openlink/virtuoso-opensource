@@ -1081,7 +1081,7 @@ int cl_read_frag_c (dk_session_t * ses);
 
 extern int enable_dfg_follows;
 int clm_has_slice (cluster_map_t * clm, cl_host_t * ch, slice_id_t slid);
-cl_message_t *clib_dfg_cm (cll_in_box_t * clib, int is_reply, int is_first_stn);
+cl_message_t * clib_dfg_cm (cll_in_box_t * clib, int is_reply, int is_first_stn, stage_node_t * stn);
 int clo_frag_is_empty (cl_op_t * clo);
 int clib_frag_is_empty (cll_in_box_t * clib);
 int clrg_dfg_send_g (cl_req_group_t * clrg, int coord_host, int64 * bytes_ret, int is_first_stn, stage_node_t * stn);
