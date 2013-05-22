@@ -54,6 +54,7 @@
 #define CE_MAX_CES 1000
 #define CE_VEC_MAX_VALUES 2267
 #define CS_MAX_VALUES 2267
+#define CE_DICT_MAX_VALUES ((PAGE_DATA_SZ / 3) * 2)
 #define COL_MAX_BYTES ((PAGE_DATA_SZ - 20) / 2) /* max bytes in non-blob col value before compression on column wise dependent part col */
 
 #define CE_TYPE_MASK 0xf
@@ -734,6 +735,7 @@ caddr_t mp_box_any_dv (mem_pool_t * mp, db_buf_t dv);
 caddr_t box_any_dv (db_buf_t dv);
 void itc_col_ins_locks_nti (it_cursor_t * itc, buffer_desc_t * buf);
 extern int ce_op_decode;
+extern int ce_op_hash;
 caddr_t *ce_box (db_buf_t ce, int extra);
 void itc_extend_array (it_cursor_t * itc, int *sz, int elt_sz, void ***arr);
 

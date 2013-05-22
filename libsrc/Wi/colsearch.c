@@ -2459,6 +2459,7 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
     {
       int row = 0;
       sp = itc->itc_sp_stat[nth_sp].spst_sp;
+      itc->itc_is_last_col_spec = nth_sp == itc->itc_n_row_specs - 1;
       if (!itc->itc_n_matches)
 	target = cpo.cpo_range->r_first;
       else
@@ -2476,7 +2477,13 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
 	    {
 	      caddr_t *inst = itc->itc_out_state;
 	      hash_range_spec_t *hrng = (hash_range_spec_t *) sp->sp_min_ssl;
-	      if (hrng->hrng_hs)
+	      if (hrng->hrng_ht_id)
+		{
+		  index_tree_t *it = qst_get_chash (inst, hrng->hrng_ht, hrng->hrng_ht_id, NULL);
+		  cpo.cpo_chash = it->it_hi->hi_chash;
+		  cpo.cpo_chash_dtp = cpo.cpo_chash->cha_sqt[0].sqt_dtp;
+		}
+	      else if (hrng->hrng_hs)
 		{
 		  cpo.cpo_chash = QST_BOX (index_tree_t *, inst, hrng->hrng_hs->hs_ha->ha_tree->ssl_index)->it_hi->hi_chash;
 		  cpo.cpo_chash_dtp = cpo.cpo_chash->cha_sqt[0].sqt_dtp;
@@ -2575,6 +2582,7 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
       itc->itc_n_matches = itc->itc_match_out;
       itc->itc_match_in = 0;
     }
+  itc->itc_is_last_col_spec = 0;
   if (itc->itc_n_row_specs > 1 && itc->itc_sp_stat[0].spst_in > 10000)
     itc_sp_stat_check (itc);
   if (RANDOM_SEARCH_COND == itc->itc_random_search)

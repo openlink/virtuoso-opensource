@@ -1711,6 +1711,7 @@ cs_decode (col_pos_t * cpo, int from, int to)
   db_buf_t first_ce = cpo->cpo_string;
   int str_bytes = cpo->cpo_bytes;
   db_buf_t ce = first_ce;
+  it_cursor_t * itc;
   int last_row = cpo->cpo_ce_row_no, target, ce_row;
   int init_pm_pos, pm_pos;
   page_map_t *pm = NULL;
@@ -2203,6 +2204,14 @@ new_ce:
 	  GPF_T1 ("unknown ce type");
 	}
     next_from_pm:
+      itc = cpo->cpo_itc;
+      if (itc->itc_is_last_col_spec&& itc->itc_n_results + itc->itc_match_out >= itc->itc_batch_size && itc->itc_batch_size)
+	{
+	  int n_sps = itc->itc_n_row_specs;
+	  if (n_sps > 1)
+	    itc->itc_sp_stat[n_sps - 1].spst_in -= itc->itc_n_matches - itc->itc_match_in;
+	  return CE_AT_END;
+	}
       last_row = ce_row + n_values;
       if (cpo->cpo_pm)
 	{
@@ -5716,6 +5725,7 @@ is_prime (int n)
 
 int ce_op_fill = 1;
 int ce_op_decode;
+int ce_op_hash;
 ce_op_desc_t ce_op_desc[256];
 ce_op_t *ce_op[512];		/* the even is the op for ranges, the odd is the same for sets */
 
