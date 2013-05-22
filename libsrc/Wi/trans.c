@@ -1192,7 +1192,7 @@ tn_reset (trans_node_t * tn, caddr_t * inst)
   query_instance_t * qi = (query_instance_t *)inst;
   cl_op_t * itcl_clo;
   itc_cluster_t * itcl;
-  id_hash_t * sets;
+  id_hash_t * sets, *rel;
 
   QST_INT (inst, tn->clb.clb_fill) = 0;
   itcl_clo = clo_allocate (CLO_ITCL);
@@ -1201,6 +1201,10 @@ tn_reset (trans_node_t * tn, caddr_t * inst)
   SET_THR_TMP_POOL (itcl->itcl_pool);
   sets = t_id_hash_allocate (tn->clb.clb_batch_size, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
   QST_BOX (id_hash_t *, inst, tn->tn_input_sets) = sets;
+  rel = (id_hash_t*)box_dv_dict_hashtable (61);
+  rel->ht_free_hook = ht_free_no_content;
+  id_hash_set_rehash_pct  (rel, 300);
+  qst_set (inst, tn->tn_relation, (caddr_t)rel);
   QST_INT (inst, tn->clb.clb_nth_set) = -1;
   QST_INT (inst, tn->tn_nth_cache_result) = 0;
 }
