@@ -38,6 +38,7 @@
 #include "xmlnode.h"
 
 
+int enable_hash_colocate = 0;
 int enable_dfg = 1;
 int enable_multistate_code = 1;
 int enable_last_qf_dml = 1;

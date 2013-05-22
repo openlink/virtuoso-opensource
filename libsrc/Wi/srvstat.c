@@ -229,6 +229,7 @@ extern int enable_cancel_waiting;
 extern int enable_setp_partition;
 extern int enable_stream_gb;
 extern int enable_min_card;
+extern int enable_hash_colocate;
 extern int enable_dfg_print;
 extern int dbf_cl_cancel_trap;
 extern int enable_itc_dfg_ck;
