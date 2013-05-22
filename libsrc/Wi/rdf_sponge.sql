@@ -783,7 +783,7 @@ add_new_origin:
   -- dbg_obj_princ ('adding new origin...');
   old_origin_uri := NULL; old_origin_login := NULL; old_last_load := NULL; old_last_etag := NULL;
   old_expiration := NULL; old_download_size := NULL; old_download_msec_time := NULL;
-  old_exp_is_true := 0; old_read_count := 0;
+  old_exp_is_true := 0; old_read_count := 0; old_last_modified := null;
   insert into DB.DBA.SYS_HTTP_SPONGE (HS_LOCAL_IRI, HS_PARSER, HS_ORIGIN_URI, HS_ORIGIN_LOGIN, HS_LAST_LOAD, HS_NOTE)
   values (local_iri, parser, new_origin_uri, new_origin_login, now(), get_note);
   commit work;
@@ -1272,7 +1272,7 @@ create procedure DB.DBA.RDF_HTTP_URL_GET (inout url any, in base any, inout hdr 
 
   if (hdr[0] not like 'HTTP/1._ 200 %')
     {
-      if (hdr[0] like 'HTTP/1._ 30_ %')
+      if (hdr[0] like 'HTTP/1._ 30_ %' and hdr[0] not like 'HTTP/1._ 304 %')
 	{
 	  url := http_request_header (hdr, 'Location');
 	  if (isstring (url))
