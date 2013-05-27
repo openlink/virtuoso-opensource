@@ -229,7 +229,7 @@ ssg_find_valmode_by_name (ccaddr_t name)
     return SSG_VALMODE_NUM;
   if (!strcmp (name, "AUTO"))
     return SSG_VALMODE_AUTO;
-  spar_error (NULL, "Unsupported valmode name '%.30s', only 'SQLVAL' and 'LONG' are supported", name);
+  spar_error (NULL, "Unsupported valmode name '%.30s', only 'SQLVAL', 'LONG', 'NUM' and 'AUTO' are supported", name);
   return NULL; /* to keep compiler happy */
 }
 
@@ -5894,6 +5894,8 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
         }
       else
         {
+          if (NULL == vartree)
+            vartree = spar_make_variable (ssg->ssg_sparp, varname);
           ssg_print_valmoded_scalar_expn (ssg, vartree, needed, native, asname);
           return 1;
         }
