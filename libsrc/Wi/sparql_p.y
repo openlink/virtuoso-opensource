@@ -39,7 +39,7 @@ Whitespaces in all other places, including two whitespaces after "::=" in BNF co
 %pure_parser
 %parse-param {sparp_t * sparp_arg}
 %lex-param {sparp_t * sparp_arg}
-%expect 11
+%expect 12
 
 %{
 #include "libutil.h"
@@ -2299,7 +2299,7 @@ spar_blank_node		/* [65]*	BlankNode	 ::=  BLANK_NODE_LABEL | ( '[' ']' )	*/
 
 spar_sparul1x_action_or_drop_macro_libs
 	: spar_sparul1x_action_or_drop_macro_lib	{ $$ = NULL; t_set_push (&($$), $1); }
-	| spar_sparul1x_action_or_drop_macro_libs _SEMI spar_sparul1x_action_or_drop_macro_lib	{ $$ = $1; t_set_push (&($$), $3); }
+	| spar_sparul1x_action_or_drop_macro_libs spar_sparul1x_action_or_drop_macro_lib	{ $$ = $1; t_set_push (&($$), $2); }
 	| spar_sparul1x_action_or_drop_macro_libs _SEMI	{ $$ = $1; }
 	;
 
