@@ -4644,7 +4644,7 @@ spar_make_topmost_sparul_sql (sparp_t *sparp, SPART **actions)
       ssg.ssg_sources = ssg.ssg_tree->_.req_top.sources; /*!!!TBD merge with environment */
       QR_RESET_CTX
         {
-          ssg_make_sql_query_text (&ssg);
+          ssg_make_sql_query_text (&ssg, 0);
         }
       QR_RESET_CODE
         {

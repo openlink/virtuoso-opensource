@@ -7501,7 +7501,11 @@ ssg_print_retval_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *ret_column, int col
     }
 }
 
-void ssg_print_retval_cols (spar_sqlgen_t *ssg, SPART *tree, SPART **retvals, ccaddr_t selid, const char *deser_name_or_code, int print_asname)
+#define SSG_PRINT_RETVAL_COLS_DIST_DESER_LONG		(const char *)((ptrlong)1)
+#define SSG_PRINT_RETVAL_COLS_RO2SQ_IF_BIJECTION	(const char *)((ptrlong)2)
+#define SSG_PRINT_RETVAL_COLS_RO2SQ_IF_NOT_BIJECTION	(const char *)((ptrlong)3)
+void
+ssg_print_retval_cols (spar_sqlgen_t *ssg, SPART *tree, SPART **retvals, ccaddr_t selid, const char *deser_name_or_code, int print_asname)
 {
   int col_idx;
   DO_BOX_FAST (SPART *, ret_column, col_idx, retvals)
@@ -7522,12 +7526,28 @@ void ssg_print_retval_cols (spar_sqlgen_t *ssg, SPART *tree, SPART **retvals, cc
           const char *deser_name = deser_name_or_code;
           if ((NULL != deser_name) && (!IS_BOX_POINTER (deser_name)))
             {
-              if ((ptrlong)DISTINCT_L == (ptrlong)deser_name)
+              if (SSG_PRINT_RETVAL_COLS_DIST_DESER_LONG == deser_name)
                 {
                   if (sparp_retval_should_wrap_distinct (ssg->ssg_sparp, tree, ret_column))
                     deser_name = "SPECIAL::sql:RDF_DIST_DESER_LONG";
                   else
                     deser_name = NULL;
+                }
+             else if (SSG_PRINT_RETVAL_COLS_RO2SQ_IF_BIJECTION == deser_name)
+                {
+                  ssg_valmode_t native = sparp_expn_native_valmode (ssg->ssg_sparp, ret_column);
+                  if (IS_BOX_POINTER (native) && native->qmfIsBijection)
+                    deser_name = "bif:__ro2sq";
+                  else
+                    deser_name = NULL;
+                }
+              else if (SSG_PRINT_RETVAL_COLS_RO2SQ_IF_NOT_BIJECTION == deser_name)
+                {
+                  ssg_valmode_t native = sparp_expn_native_valmode (ssg->ssg_sparp, ret_column);
+                  if (IS_BOX_POINTER (native) && native->qmfIsBijection)
+                    deser_name = NULL;
+                  else
+                    deser_name = "bif:__ro2sq";
                 }
               else
                 spar_sqlprint_error("ssg" "_print_retval_cols(): bad deser_name_or_code");
@@ -7598,12 +7618,19 @@ ssg_print_retval_list (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int res_l
   for (res_ctr = 0; res_ctr < res_len; res_ctr++)
     {
       SPART *ret_column = retlist[res_ctr];
+      ssg_valmode_t needed_for_col = needed;
       if (res_ctr > 0)
         {
           ssg_putchar (',');
           ssg_newline (1);
         }
-      ssg_print_retval_expn (ssg, gp, ret_column, res_ctr, flags, auto_valmode_gp, needed);
+      if (flags & SSG_RETVAL_IGNORE_NEEDED_VALMODE_IF_BIJ)
+        {
+          ssg_valmode_t native = sparp_expn_native_valmode (ssg->ssg_sparp, ret_column);
+          if (IS_BOX_POINTER (native) && native->qmfIsBijection)
+            needed_for_col = native;
+        }
+      ssg_print_retval_expn (ssg, gp, ret_column, res_ctr, flags, auto_valmode_gp, needed_for_col);
       if ((NULL != retlist_restr_bits) && (!(retlist_restr_bits[res_ctr] & SPART_VARR_IS_REF)) && (!(flags & SSG_RETVAL_STRICT_TYPES)))
         ssg_puts (" ANY");
     }
@@ -8186,7 +8213,7 @@ ssg_print_subquery_table_exp (spar_sqlgen_t *ssg, SPART *wrapping_gp)
     }
   if ((NULL != wrapping_gp) && (NULL != wrapping_gp->_.gp.options))
     sparp_set_valmodes_of_t_inouts (ssg->ssg_sparp, sub_sparp, wrapping_gp);
-  ssg_make_sql_query_text (subq_ssg);
+  ssg_make_sql_query_text (subq_ssg, 0);
   ssg_free_internals (subq_ssg);
   ssg_newline (1);
 #ifdef NDEBUG
@@ -8610,7 +8637,7 @@ ssg_print_scalar_subquery_exp (spar_sqlgen_t *ssg, SPART *sub_req_top, SPART *wr
       subq_sc.sc_client = sub_sparp->sparp_sparqre->sparqre_cli;
       subq_ssg->ssg_sc = &subq_sc;
     }
-  ssg_make_sql_query_text (subq_ssg);
+  ssg_make_sql_query_text (subq_ssg, 0);
   ssg_free_internals (subq_ssg);
   ssg_newline (1);
 #ifdef NDEBUG
@@ -9376,34 +9403,38 @@ ssg_req_top_needs_rb_complete (spar_sqlgen_t *ssg)
   ptrlong subtype = tree->_.req_top.subtype;
   ssg_valmode_t retvalmode;
   if ((SELECT_L != subtype) && (DISTINCT_L != subtype))
-    return 0;
+    return SSG_REQ_TOP_RB_COMPLETE_OFF;
   if ((NULL != tree->_.req_top.formatmode_name) && (strcmp (tree->_.req_top.formatmode_name, "_JAVA_") && strcmp (tree->_.req_top.formatmode_name, "_UDBC_") && strcmp (tree->_.req_top.formatmode_name, "_MSACCESS_")))
-    return 0;
+    return SSG_REQ_TOP_RB_COMPLETE_OFF;
   retvalmode = ssg_find_valmode_by_name (tree->_.req_top.retvalmode_name);
   if ((SSG_VALMODE_SQLVAL != retvalmode) && (NULL != retvalmode))
-    return 0;
-  if (DISTINCT_L == subtype)
-    return 1;
+    return SSG_REQ_TOP_RB_COMPLETE_OFF;
   if (0 != BOX_ELEMENTS_0 (tree->_.req_top.order))
-    return 1;
+    return SSG_REQ_TOP_RB_COMPLETE_COMMON_CASE;
   if (0 != BOX_ELEMENTS_0 (tree->_.req_top.groupings))
-    return 1;
+    return SSG_REQ_TOP_RB_COMPLETE_COMMON_CASE;
   if (NULL != tree->_.req_top.having)
-    return 1;
-  return 0;
+    return SSG_REQ_TOP_RB_COMPLETE_COMMON_CASE;
+  if (DISTINCT_L == subtype)
+    return SSG_REQ_TOP_RB_COMPLETE_DISTINCT_ONLY;
+  return SSG_REQ_TOP_RB_COMPLETE_OFF;
 }
 
 void
-ssg_make_rb_complete_wrapped (spar_sqlgen_t *ssg)
+ssg_make_rb_complete_wrapped (spar_sqlgen_t *ssg, int need_for_rb_complete)
 {
   SPART	*tree = ssg->ssg_tree;
   SPART **retvals = tree->_.req_top.retvals;
   caddr_t rbc_selid = t_box_sprintf (50, "%.40s_rbc", tree->_.req_top.retselid);
   ssg_puts (" SELECT ");
-  ssg_print_retval_cols (ssg, tree, retvals, rbc_selid, "bif:__ro2sq", 1);
+  ssg_print_retval_cols (ssg, tree, retvals, rbc_selid,
+    ((SSG_REQ_TOP_RB_COMPLETE_DISTINCT_ONLY == need_for_rb_complete) ?
+      SSG_PRINT_RETVAL_COLS_RO2SQ_IF_BIJECTION : "bif:__ro2sq" ), 1);
   ssg_puts (" FROM (");
   ssg->ssg_indent++;
-  ssg_make_sql_query_text (ssg);
+  ssg_make_sql_query_text (ssg,
+    ((SSG_REQ_TOP_RB_COMPLETE_DISTINCT_ONLY == need_for_rb_complete) ?
+      SSG_RETVAL_IGNORE_NEEDED_VALMODE_IF_BIJ : 0) );
   ssg->ssg_indent--;
   ssg_puts (") AS ");
   ssg_prin_id (ssg, rbc_selid);
@@ -9490,7 +9521,7 @@ ssg_print_tail_query_options (spar_sqlgen_t *ssg)
 }
 
 void
-ssg_make_sql_query_text (spar_sqlgen_t *ssg)
+ssg_make_sql_query_text (spar_sqlgen_t *ssg, int some_top_retval_flags)
 {
   int gby_ctr, oby_ctr;
   int has_limofs = 0;	/* 0 = no limit/offset clause in the output, 1 = it is in limofs_strg, 2 = should be printed in place */
@@ -9504,14 +9535,14 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
   const char *formatter, *agg_formatter, *agg_meta;
   ssg_valmode_t retvalmode;
   int top_union_head_flags = SSG_PRINT_UNION_NOFIRSTHEAD | SSG_PRINT_UNION_NONEMPTY_STUB;
-  int top_retval_flags =
+  caddr_t top_selid = tree->_.req_top.pattern->_.gp.selid;
+  int top_retval_flags = some_top_retval_flags |
     SSG_RETVAL_TOPMOST |
     SSG_RETVAL_FROM_JOIN_MEMBER |
     SSG_RETVAL_FROM_FIRST_UNION_MEMBER |
     SSG_RETVAL_MUST_PRINT_SOMETHING |
     SSG_RETVAL_CAN_PRINT_NULL |
     SSG_RETVAL_USES_ALIAS ;
-  caddr_t top_selid = tree->_.req_top.pattern->_.gp.selid;
   retvals = tree->_.req_top.retvals;
   if (NULL != ssg->ssg_sparp->sparp_env->spare_storage_name)
     {
@@ -9563,12 +9594,12 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
         {
           const char *deser_name = NULL;
           if (SSG_RETVAL_DIST_SER_LONG & top_retval_flags)
-            deser_name = (const char *)((ptrlong)DISTINCT_L);
+            deser_name = SSG_PRINT_RETVAL_COLS_DIST_DESER_LONG;
           ssg_puts ("SELECT "); ssg_puts (formatter); ssg_puts (" (");
           ssg_puts ("vector (");
           ssg_print_retval_cols (ssg, tree, retvals, top_selid, deser_name, 0);
           ssg_puts ("), vector (");
-          ssg_print_retval_cols (ssg, tree, retvals, NULL_ASNAME, NULL, 0);
+          ssg_print_retval_cols (ssg, tree, retvals, NULL, NULL, 0);
           ssg_puts (")) AS \"callret-0\" LONG VARCHAR\nFROM (");
           ssg->ssg_indent += 1;
           ssg_newline (0);
@@ -9600,7 +9631,7 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg)
       else if (SSG_RETVAL_DIST_SER_LONG & top_retval_flags)
         {
           ssg_puts ("SELECT ");
-          ssg_print_retval_cols (ssg, tree, retvals, top_selid, (const char *)((ptrlong)DISTINCT_L), 1);
+          ssg_print_retval_cols (ssg, tree, retvals, top_selid, SSG_PRINT_RETVAL_COLS_DIST_DESER_LONG, 1);
           ssg_puts (" FROM (");
           ssg->ssg_indent += 1;
           ssg_newline (0);
@@ -9968,13 +9999,13 @@ void ssg_make_whole_sql_text (spar_sqlgen_t *ssg)
         {
         case SPAR_REQ_TOP:
           {
-            int need_rb_complete;
+            int need_for_rb_complete;
             ssg->ssg_sources = ssg->ssg_tree->_.req_top.sources; /*!!!TBD merge with environment */
-            need_rb_complete = ssg_req_top_needs_rb_complete (ssg);
-            if (need_rb_complete)
-              ssg_make_rb_complete_wrapped (ssg);
+            need_for_rb_complete = ssg_req_top_needs_rb_complete (ssg);
+            if (need_for_rb_complete)
+              ssg_make_rb_complete_wrapped (ssg, need_for_rb_complete);
             else
-              ssg_make_sql_query_text (ssg);
+              ssg_make_sql_query_text (ssg, 0);
             break;
           }
         case SPAR_CODEGEN:
