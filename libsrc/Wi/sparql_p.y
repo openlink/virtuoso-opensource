@@ -1645,8 +1645,8 @@ spar_triple_transit_option
 	| T_SHORTEST_ONLY_L		{	/*... | 'T_SHORTEST_ONLY'	*/
 		$$ = (SPART **)t_list (2, (ptrlong)T_SHORTEST_ONLY_L, (ptrlong)1); }
 	| T_STEP_L _LPAR spar_var _RPAR AS_L spar_var		{	/*... | 'T_STEP' '(' ( Var | SPARQL_STRING ) ')' 'AS' Var	*/
-		$$ = (SPART **)t_list (2, (ptrlong)T_STEP_L, spartlist (sparp_arg, 5, SPAR_ALIAS, $3, $6->_.var.vname, SSG_VALMODE_AUTO, (ptrlong)0)); }
-	| T_STEP_L _LPAR SPARQL_STRING _RPAR AS_L spar_var	{ $$ = (SPART **)t_list (2, (ptrlong)T_STEP_L, spartlist (sparp_arg, 5, SPAR_ALIAS, $3, $6->_.var.vname, SSG_VALMODE_AUTO, (ptrlong)0)); }
+		$$ = (SPART **)t_list (2, (ptrlong)T_STEP_L, spartlist (sparp_arg, 6, SPAR_ALIAS, $3, $6->_.var.vname, SSG_VALMODE_AUTO, (ptrlong)0, (ptrlong)0)); }
+	| T_STEP_L _LPAR SPARQL_STRING _RPAR AS_L spar_var	{ $$ = (SPART **)t_list (2, (ptrlong)T_STEP_L, spartlist (sparp_arg, 6, SPAR_ALIAS, $3, $6->_.var.vname, SSG_VALMODE_AUTO, (ptrlong)0, (ptrlong)0)); }
 	| TRANSITIVE_L			{	/*... | 'TRANSITIVE'	*/
 		$$ = (SPART **)t_list (2, (ptrlong)TRANSITIVE_L, (ptrlong)1); }
 	;
@@ -1920,7 +1920,7 @@ spar_backquoted		/* [Virt]	Backquoted	 ::=  '`' Expn '`'	*/
 	;
 
 spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	( 'AS' ( VAR1 | VAR2 ) ) */
-	: spar_expn AS_L QD_VARNAME		{ $$ = spartlist (sparp_arg, 5, SPAR_ALIAS, $1, $3, SSG_VALMODE_AUTO, (ptrlong)0); }
+	: spar_expn AS_L QD_VARNAME		{ $$ = spartlist (sparp_arg, 6, SPAR_ALIAS, $1, $3, SSG_VALMODE_AUTO, (ptrlong)0, (ptrlong)0); }
 	| spar_expn _BAR_BAR spar_expn { /* [44]	ConditionalOrExpn	 ::=  ConditionalAndExpn ( '||' ConditionalAndExpn )*	*/
 		  SPAR_BIN_OP ($$, BOP_OR, $1, $3); }
 	| spar_expn _AMP_AMP spar_expn { /* [45]	ConditionalAndExpn	 ::=  ValueLogical ( '&&' ValueLogical )*	*/

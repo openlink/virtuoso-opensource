@@ -2338,7 +2338,7 @@ spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, SPART *limit_expn, SP
         opts_arg ) );
   if (need_limofs_trick)
     return (SPART **)t_list (2, descr_call,
-      spartlist (sparp, 5, SPAR_ALIAS, var_vector_expn, t_box_dv_short_string ("describe-1"), SSG_VALMODE_AUTO, (ptrlong)0) );
+      spartlist (sparp, 6, SPAR_ALIAS, var_vector_expn, t_box_dv_short_string ("describe-1"), SSG_VALMODE_AUTO, (ptrlong)0, (ptrlong)0) );
   else
     return (SPART **)t_list (1, descr_call);
 }

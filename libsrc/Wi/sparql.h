@@ -540,6 +540,7 @@ typedef struct spar_tree_s
         caddr_t aname;
         ssg_valmode_t native;		/*!< temporary use in SQL printer */
         ptrlong reruns_may_vary;	/*!< nonzero for BIND aliases that have scalar subqueries in \c arg so there is no warranty that \c arg will repeatedly return same value */
+        ptrlong was_expanded;		/*!< There was a variable originally, but it's declared before in BIND..AS or other aliasing so it's expanded */
       } alias; /*!< only for use in top-level result-set list */
     struct {
         SPART *left;

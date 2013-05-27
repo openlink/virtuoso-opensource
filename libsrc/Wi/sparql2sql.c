@@ -285,8 +285,8 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
     {
       if (NULL == new_vars)
         {
-          t_set_push (&new_vars, spartlist (sparp, 5, SPAR_ALIAS,
-            t_box_num (1), t_box_dv_short_string ("_star_fake"), SSG_VALMODE_AUTO, (ptrlong)0 ) );
+          t_set_push (&new_vars, spartlist (sparp, 6, SPAR_ALIAS,
+            t_box_num (1), t_box_dv_short_string ("_star_fake"), SSG_VALMODE_AUTO, (ptrlong)0, (ptrlong)0 ) );
         }
       query->_.req_top.retvals = retvals = (SPART **)t_list_to_array (new_vars);
 #if 0
@@ -326,9 +326,9 @@ int sparp_gp_trav_wrap_vars_in_max (sparp_t *sparp, SPART *curr, sparp_trav_stat
   if (curr->_.var.rvr.rvrRestrictions & SPART_VARR_FIXED)
     return SPAR_GPT_NODOWN;
   sts_this->sts_curr_array[sts_this->sts_ofs_of_curr_in_array] =
-    spartlist (sparp, 5, SPAR_ALIAS,
+    spartlist (sparp, 6, SPAR_ALIAS,
       spar_make_funcall (sparp, 1, t_box_dv_uname_string ("SPECIAL::bif:_LONG_MAX"), (SPART **)t_list (1, curr)),
-      varname, SSG_VALMODE_AUTO, (ptrlong)0 );
+      varname, SSG_VALMODE_AUTO, (ptrlong)0, (ptrlong)0 );
   return SPAR_GPT_NODOWN;
 }
 
@@ -481,7 +481,7 @@ sparp_expand_binds_like_macro (sparp_t *sparp, SPART **expr_ptr, dk_set_t binds,
         SPART *prev_bind = sparp_find_bind_in_dk_set_by_alias (binds, vname);
         if (NULL == prev_bind)
           return;
-        expr_ptr[0] = spartlist (sparp, 5, SPAR_ALIAS, sparp_tree_full_copy (sparp, prev_bind->_.alias.arg, parent_gp), vname, SSG_VALMODE_AUTO, (ptrlong)0);
+        expr_ptr[0] = spartlist (sparp, 6, SPAR_ALIAS, sparp_tree_full_copy (sparp, prev_bind->_.alias.arg, parent_gp), vname, SSG_VALMODE_AUTO, (ptrlong)0, (ptrlong)1);
         return;
       }
     case SPAR_GP:
@@ -679,7 +679,7 @@ sparp_gp_trav_cu_in_triples (sparp_t *sparp, SPART *curr, sparp_trav_state_t *st
                   case SPAR_VARIABLE:
                     name = retval->_.var.vname;
                     curr->_.gp.subquery->_.req_top./*orig_*/retvals[ctr] =
-                      retval = spartlist (sparp, 5, SPAR_ALIAS, retval, name, SSG_VALMODE_AUTO, (ptrlong)0);
+                      retval = spartlist (sparp, 6, SPAR_ALIAS, retval, name, SSG_VALMODE_AUTO, (ptrlong)0, (ptrlong)1);
                     break;
                   case SPAR_ALIAS:
                     name = retval->_.alias.aname; break;
