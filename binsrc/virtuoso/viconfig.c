@@ -1174,7 +1174,7 @@ cfg_setup (void)
     c_rdf_obj_ft_rules_size = 0;
 
   if (cfg_getlong (pconfig, section, "RdfInferenceSampleCacheSize", &ric_samples_sz) == -1)
-    ric_samples_sz = 0;
+    ric_samples_sz = 1000;
 
   if (cfg_getlong (pconfig, section, "IndexTreeMaps", &c_it_n_maps) == -1)
     c_it_n_maps = 0;
