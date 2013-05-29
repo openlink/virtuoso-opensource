@@ -556,6 +556,19 @@ box_deserialize_reusing (db_buf_t string, caddr_t box)
 	}
       dk_free_tree (box);
       return box_iri_id (iid);
+    case DV_RDF:
+    case DV_RDF_ID:
+    case DV_RDF_ID_8:
+	{
+	  rdf_box_t * x = (rdf_box_t *)box_deserialize_string ((caddr_t)string, INT32_MAX, 0);
+	  if (old_dtp == DV_RDF && x->rb_ro_id == ((rdf_box_t *)box)->rb_ro_id)
+	    {
+	      dk_free_box (x);
+	      return box;
+	    }
+	  dk_free_tree (box);
+	  return (caddr_t) x;
+	}
     case DV_SHORT_STRING_SERIAL:
       len = (unsigned char) string[1];
       head_len = 2;
@@ -1790,6 +1803,9 @@ qst_vec_set_copy (caddr_t * inst, state_slot_t * ssl, caddr_t v)
       DC_FILL_TO (dc, int64, set);
     }
   if (DV_ANY == ssl->ssl_sqt.sqt_dtp && DV_ANY != dc->dc_dtp && !(DCT_BOXES & dc->dc_type) && dtp_canonical[dtp] != dc->dc_dtp)
+    dc_heterogenous (dc);
+  /* value from uninitalized variable */
+  if (NULL == v && !(DCT_BOXES & dc->dc_type) && DV_DATETIME == dtp_canonical[dc->dc_dtp])
     dc_heterogenous (dc);
   if ((DCT_NUM_INLINE & dc->dc_type) && DV_SINGLE_FLOAT != dc->dc_dtp)
     {
