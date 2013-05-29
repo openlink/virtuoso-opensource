@@ -3023,9 +3023,9 @@ create procedure DB.DBA.RDF_TTL2SQLHASH_EXEC_TRIPLE_L (
   inout o_val any, inout o_type varchar, inout o_lang varchar,
   inout app_env any )
 {
-  if (not isstring (o_type) and o_type is not null)
+  if (not isstring (o_type) and not isuname (o_type) and o_type is not null)
     o_type := null;
-  if (not isstring (o_lang) and o_lang is not null)
+  if (not isstring (o_lang) and not isuname (o_lang) and o_lang is not null)
     o_lang := null;
   dict_put (app_env,
     vector (
