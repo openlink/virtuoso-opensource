@@ -619,18 +619,27 @@ create procedure DB.DBA.RDF_GLOBAL_RESET (in hard integer := 0)
     }
   for (select __id2i(t.RGGM_GROUP_IID) as group_iri from (select distinct RGGM_GROUP_IID from DB.DBA.RDF_GRAPH_GROUP_MEMBER) as t) do
     {
-      jso_mark_affected (group_iri);
-      log_text ('jso_mark_affected (?)', group_iri);
+      if (group_iri is not null)
+	{
+	  jso_mark_affected (group_iri);
+	  log_text ('jso_mark_affected (?)', group_iri);
+	}
     }
   for (select __id2i(RGGM_MEMBER_IID) as memb_iri from DB.DBA.RDF_GRAPH_GROUP_MEMBER where RGGM_GROUP_IID = __i2id ('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs')) do
     {
-      jso_mark_affected (memb_iri);
-      log_text ('jso_mark_affected (?)', memb_iri);
+      if (memb_iri is not null)
+	{
+	  jso_mark_affected (memb_iri);
+	  log_text ('jso_mark_affected (?)', memb_iri);
+	}
     }
   for (sparql define input:storage "" select distinct str (?qms) as ?qms_iri from virtrdf: where { ?qms a virtrdf:QuadStorage } ) do
     {
-      jso_mark_affected ("qms_iri");
-      log_text ('jso_mark_affected (?)', "qms_iri");
+      if ("qms_iri" is not null)
+	{
+	  jso_mark_affected ("qms_iri");
+	  log_text ('jso_mark_affected (?)', "qms_iri");
+	}
     }
   jso_mark_affected ('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs');
   log_text ('jso_mark_affected (?)', 'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs');

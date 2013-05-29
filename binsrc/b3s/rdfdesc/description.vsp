@@ -527,6 +527,7 @@ if (_subject <> '') {
 
       --topof := '';
       qry_str := sprintf ('select %s PRED, OBJECT, FLAG from (%s UNION ALL %s) un0', topof, dt1, dt2);
+      qry_str := replace (qry_str, 'distinct', '');
       if (_last = 0)
         {
 	  if (length (_F) or 1 = sys_stat ('cl_run_local_only'))
@@ -552,6 +553,7 @@ if (_subject <> '') {
 	  _last := _last / n_per_page;
         }
 
+      -- dbg_obj_princ ('qry_str = ', qry_str);
       exec (qry_str, null, null, vector (), 0, null, null, h1);
       curr_pred := '';
       inx := 0;
@@ -607,6 +609,12 @@ if (_subject <> '') {
 	      <?vsp if (sid is not null) { ?>
 	      <input type="hidden" name="sid" value="<?V sid ?>"/>
 	      <?vsp } ?>
+	      <?vsp if (connection_get ('graphs') is not null) { 
+	          foreach (any x in grs) do {
+              ?>
+	      <input type="hidden" name="graph" value="<?V x ?>"/>
+	      <?vsp 
+	      } } ?>
 	      <input type="hidden" name="lp" value="<?V _last ?>"/>
 	      <?vsp if (topof <> '' and _last > 0) {  if (1 or page > 0) { ?>
 	      <button type="submit" value="" name="first" <?vsp if (page <= 0) { http ('disabled="disabled"'); } ?>>&#9666;&#9666; First</button>

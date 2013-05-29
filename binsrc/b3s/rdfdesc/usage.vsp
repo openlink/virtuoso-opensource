@@ -34,7 +34,7 @@
 
   declare _S, odd_position any;
   declare page_resource_uri, proxy_iri, rdf_link, label, _subject any;
-  declare white_page, arr, data, meta, h1, h2, inx, gr, host, refr, sid, inf, langs, best_q, tp any;
+  declare white_page, arr, data, meta, h1, h2, inx, gr, host, refr, sid, inf, langs, best_q, tp, grs any;
   declare orig_refr varchar;
   declare urilookup integer;
   declare dbg_enable varchar;
@@ -63,6 +63,7 @@
   -- side-effect sets connection vars 'inf' and 'sas' - val or null
 
   b3s_parse_inf (sid, params);
+  grs := connection_get ('graphs');
 
   inf := b3s_render_inf_clause ();
   inf_rule := connection_get ('inf');
@@ -235,7 +236,7 @@
 	             grvar := data[0];
 		     http (sprintf ('<td><input type="checkbox" value="%V" name="graph" %s/><a href="/describe/?url=%U&graph=%U%s">%V</a></td>', 
 			grvar, 
-			case when position (grvar, params) then 'checked' else '' end,
+			case when position (grvar, grs) then 'checked' else '' end,
 			b3s_u2w (page_resource_uri), 
 			grvar, 
 			b3s_render_ses_params(), 

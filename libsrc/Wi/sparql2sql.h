@@ -1029,8 +1029,9 @@ extern void ssg_print_qm_sql (spar_sqlgen_t *ssg, SPART *tree);
 #define SSG_RETVAL_TOPMOST			0x02000	/*!< Top-level result list is printed, so __dummy_retval is renamed to __ask_retval (and there may be more renames in future) */
 #define SSG_RETVAL_EQUIV_INSTEAD_OF_TREE	0x04000	/*!< The name is passed to the function, not an SPART * with retval */
 #define SSG_RETVAL_DIST_SER_LONG		0x08000	/*!< Use DB.DBA.RDF_DIST_SER_LONG wrapper to let DISTINCT work with formatters. */
-#define SSG_RETVAL_OPTIONAL_MAKES_NULLABLE	0x10000	/*!< Return value should be printed as nullable because it comes from, say, OPTIONAL sub-gp */
-#define SSG_RETVAL_STRICT_TYPES			0x20000	/*!< Every returned expression should either be accomplished with its (known) SQL type or be CAST-ed to the VARCHAR (esp., if it's ANY) */
+#define SSG_RETVAL_IGNORE_NEEDED_VALMODE_IF_BIJ	0x10000	/*!< Ignore "needed" valmode specified for retval list if the native valmode is bijection. */
+#define SSG_RETVAL_OPTIONAL_MAKES_NULLABLE	0x20000	/*!< Return value should be printed as nullable because it comes from, say, OPTIONAL sub-gp */
+#define SSG_RETVAL_STRICT_TYPES			0x40000	/*!< Every returned expression should either be accomplished with its (known) SQL type or be CAST-ed to the VARCHAR (esp., if it's ANY) */
 /* descend = 0 -- at level, can descend. 1 -- at sublevel, can't descend, -1 -- at level, can't descend */
 extern int ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp,
   sparp_equiv_t *eq, int flags, ssg_valmode_t needed, const char *asname );
@@ -1064,10 +1065,13 @@ extern int sparp_retval_should_wrap_distinct (sparp_t *sparp, SPART *tree, SPART
 /*! Returns nonzero if some retvals of \c tree may screw up the result if not wrapped in RDF_DIST_SER_LONG/RDF_DIST_DESER_LONG */
 extern int sparp_some_retvals_should_wrap_distinct (sparp_t *sparp, SPART *tree);
 
-/*! Fills in ssg->ssg_out with an SQL text of a query */
-extern void ssg_make_sql_query_text (spar_sqlgen_t *ssg);
-/*! Fills in ssg->ssg_out with a wrapping query with rdf box completion for a result of \c ssg_make_sql_query_text() */
-extern void ssg_make_rb_complete_wrapped (spar_sqlgen_t *ssg);
+#define SSG_REQ_TOP_RB_COMPLETE_OFF		0	/*!< Flag to indicate that there is no need in SELECT __ro2sq(x) FROM (SELECT x ...) trick */
+#define SSG_REQ_TOP_RB_COMPLETE_DISTINCT_ONLY	1	/*!< Flag to indicate a need for either SELECT __ro2sq(x) FROM (SELECT DISTINCT x ...) or SELECT x FROM (SELECT DISTINCT __ro2sq(x) ...) trick depending on bijection/non-bijection of native valmode of x */
+#define SSG_REQ_TOP_RB_COMPLETE_COMMON_CASE	2	/*!< Flag to indicate that there a need in SELECT __ro2sq(x) FROM (SELECT x ...) trick not for (not only for) the DISTINCT_L */
+/*! Fills in ssg->ssg_out with an SQL text of a query. \c need_for_rb_complete is one of SSG_REQ_TOP_RB_COMPLETE_xxx */
+extern void ssg_make_sql_query_text (spar_sqlgen_t *ssg, int need_for_rb_complete);
+/*! Fills in ssg->ssg_out with a wrapping query with rdf box completion for a result of \c ssg_make_sql_query_text(). \c need_for_rb_complete is one of SSG_REQ_TOP_RB_COMPLETE_xxx but not SSG_REQ_TOP_RB_COMPLETE_OFF */
+extern void ssg_make_rb_complete_wrapped (spar_sqlgen_t *ssg, int need_for_rb_complete);
 /*! Makes a decision whether \c ssg_make_rb_complete_wrapped() is needed or plain \c ssg_make_sql_query_text() is adequate */
 extern int ssg_req_top_needs_rb_complete (spar_sqlgen_t *ssg);
 /*! Fills in ssg->ssg_out with an SQL text of quad map manipulation statement */

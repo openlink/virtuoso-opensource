@@ -123,6 +123,18 @@ void ssg_sdprin_qname (spar_sqlgen_t *ssg, SPART *tree)
   ssg_putchar ('>');
 }
 
+void
+ssg_replace_expanded_aliases_with_vars (spar_sqlgen_t *ssg, SPART **trees)
+{
+  int ctr;
+  DO_BOX_FAST (SPART *, tree, ctr, trees)
+    {
+      if ((SPAR_ALIAS == SPART_TYPE (tree)) && tree->_.alias.was_expanded)
+        trees[ctr] = spar_make_variable (ssg->ssg_sparp, tree->_.alias.aname);
+    }
+  END_DO_BOX_FAST;
+}
+
 void ssg_sdprint_tree_list (spar_sqlgen_t *ssg, SPART **trees, char delim)
 {
   int ctr;
@@ -1005,7 +1017,12 @@ fname_printed:
             ptrlong arg_type = SPART_TYPE (arg);
             if (0 != retctr)
               ssg_newline (0);
-            while ((SPAR_ALIAS == arg_type) && !((SSG_SD_BI & ssg->ssg_sd_flags)))
+            if ((SPAR_ALIAS == arg_type) && arg->_.alias.was_expanded)
+              {
+                arg = spar_make_variable (ssg->ssg_sparp, arg->_.alias.aname);
+                arg_type = SPART_TYPE (arg);
+              }
+            while ((SPAR_ALIAS == arg_type) && !(((SSG_SD_BI | SSG_SD_SPARQL11_MORE) & ssg->ssg_sd_flags)))
               {
                 arg = arg->_.alias.arg;
                 arg_type = SPART_TYPE (arg);
@@ -1031,7 +1048,7 @@ fname_printed:
           {
             caddr_t stub_varname = t_box_sprintf (100, "stubvar%d", ssg->ssg_sparp->sparp_unictr++);
             if (SSG_SD_BI_OR_SPARQL11_DRAFT & ssg->ssg_sd_flags)
-              ssg_sdprint_tree (ssg, spartlist (ssg->ssg_sparp, 5, SPAR_ALIAS, (ptrlong)1, stub_varname, SSG_VALMODE_AUTO, (ptrlong)0));
+              ssg_sdprint_tree (ssg, spartlist (ssg->ssg_sparp, 6, SPAR_ALIAS, (ptrlong)1, stub_varname, SSG_VALMODE_AUTO, (ptrlong)0, (ptrlong)0));
             else
               {
                 ssg_putchar (' '); ssg_sdprin_varname (ssg, stub_varname);
@@ -1072,6 +1089,7 @@ fname_printed:
               {
                 ssg_newline (0);
                 ssg_puts ("ORDER BY ");
+                ssg_replace_expanded_aliases_with_vars (ssg, tree->_.req_top.order);
                 ssg_sdprint_tree_list (ssg, tree->_.req_top.order, ' ');
               }
             if (NULL != lim)
@@ -1297,6 +1315,16 @@ fname_printed:
               }
             else
               ssg_sdprint_tree (ssg, retexpn);
+          }
+        else if (SPAR_ALIAS == SPART_TYPE(expn))
+          {
+            if (expn->_.alias.was_expanded)
+              {
+                ssg_putchar (' ');
+                ssg_sdprin_local_varname (ssg, expn->_.alias.aname);
+              }
+            else
+              ssg_sdprint_tree (ssg, expn->_.alias.arg);
           }
         else
           ssg_sdprint_tree (ssg, expn);

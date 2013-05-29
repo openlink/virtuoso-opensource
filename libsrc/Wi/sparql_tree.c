@@ -4554,7 +4554,7 @@ sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree, SPART **options)
                     v->_.var.vname, ((T_IN_L == key) ? "T_IN" : "T_OUT") );
                 ret = subq_orig_retvals [pos1_ret-1];
                 if (SPAR_ALIAS != SPART_TYPE (ret))
-                  subq_orig_retvals [pos1_ret-1] = spartlist (sparp, 5, SPAR_ALIAS, ret, v->_.var.vname, SSG_VALMODE_AUTO, (ptrlong)0);
+                  subq_orig_retvals [pos1_ret-1] = spartlist (sparp, 6, SPAR_ALIAS, ret, v->_.var.vname, SSG_VALMODE_AUTO, (ptrlong)0, (ptrlong)0);
               }
             END_DO_BOX_FAST;
             continue;
