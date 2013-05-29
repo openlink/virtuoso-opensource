@@ -580,3 +580,101 @@ bif_ro2lo_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slo
 {
   bif_ro2sq_vec_1 (qst, err_ret, args, ret, 1);
 }
+
+void
+rbs_string_range (dtp_t ** buf, int * len, int * is_string)
+{
+  /* the partition hash of a any type col with an rdf box value does not depend on all bytes but only the value serialization, not the flags and ro ids */
+  dtp_t * rbs = *buf;
+  dtp_t flags = rbs[1];
+  if (RBS_EXT_TYPE & flags)
+    {
+      *is_string = 0;
+      return;
+    }
+  if (RBS_SKIP_DTP & flags)
+    {
+      *buf += 3;
+      *is_string = 1;
+      *len = rbs[2];
+      return;
+    }
+  if (DV_SHORT_STRING_SERIAL == rbs[2])
+    {
+      *len = rbs[3];
+      *is_string = 1;
+      *buf += 4;
+    }
+  else if (DV_STRING == rbs[2])
+    {
+      *len = LONG_REF_NA (rbs + 3);
+      *is_string = 1;
+      *buf += 7;
+    }
+  else
+    *is_string = 0;
+}
+
+
+void
+bif_str_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret)
+{
+  QNCAST (QI, qi, qst);
+  data_col_t * dc;
+  db_buf_t set_mask = qi->qi_set_mask;
+  int set, n_sets = qi->qi_n_sets, first_set = 0, is_boxes;
+  bif_ro2sq_vec_1 (qst, err_ret, args, ret, 0);
+  dc = QST_BOX (data_col_t *, qst, ret->ssl_index);
+  SET_LOOP 
+    {
+      db_buf_t dv = ((db_buf_t*)dc->dc_values)[set];
+      switch (*dv)
+	{
+	case DV_BOX_FLAGS:
+	  ((db_buf_t*)dc->dc_values)[set] += 5;
+	  break;
+	case DV_RDF:
+	  {
+	    int len, is_string = 0;
+	    rbs_string_range (&dv, &len, &is_string);
+	    if (!is_string)
+	      goto general;
+	    if (len < 256)
+	      {
+		dv[-1] = len;
+		dv[-2] = DV_SHORT_STRING_SERIAL;
+		((db_buf_t*)dc->dc_values)[set] = dv - 2;
+	      }
+	    else
+	      ((db_buf_t *)dc->dc_values)[set] = dv - 5;
+	    break;
+	  }
+	case DV_STRING:
+	case DV_DB_NULL:
+	  break;
+	default:
+	  {
+	    caddr_t err;
+	    caddr_t box;
+	  general:
+	    err = NULL;
+	    box = qst_get (qst, ret);
+	    caddr_t cast = box_cast_to (qst, box, DV_TYPE_OF (box), DV_STRING, 0, 0, &err);
+	    if (err)
+	      {
+		dk_free_tree (err);
+		dc_set_null (dc, set);
+	      }
+	    else
+	      {
+		int save = dc->dc_n_values;
+		dc->dc_n_values = set;
+		dc_append_box (dc, cast);
+		dc->dc_n_values = save;
+		dk_free_tree (cast);
+	      }
+	  }
+	}
+    }
+  END_SET_LOOP;
+}

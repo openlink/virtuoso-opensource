@@ -5873,6 +5873,7 @@ extern box_tmp_copy_f box_tmp_copier[256];
 void bif_ro2lo_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret);
 void bif_ro2sq_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret);
 void bif_ro2lo_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret);
+void bif_str_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret);
 
 
 void
@@ -5928,6 +5929,8 @@ rdf_box_init ()
   bif_set_uses_index (bif_rdf_sqlval_of_obj);
   bif_define_typed ("__rdf_strsqlval", bif_rdf_strsqlval, &bt_varchar);
   bif_set_uses_index (bif_rdf_strsqlval);
+  bif_set_vectored (bif_rdf_strsqlval, bif_str_vec);
+    
   bif_define_typed ("__rdf_long_to_ttl", bif_rdf_long_to_ttl, &bt_any);
   bif_set_uses_index (bif_rdf_long_to_ttl);
   bif_define_typed ("__rq_iid_of_o", bif_rq_iid_of_o, &bt_any);
