@@ -16116,6 +16116,11 @@ create procedure DB.DBA.RDF_QUAD_FT_UPGRADE ()
 
   if (sys_stat ('disable_rdf_init') = 1)
     return;
+  if (0 = sys_stat ('db_exists') and 1 = sys_stat ('cl_run_local_only'))
+    {
+      -- v7 index is on by default
+      DB.DBA.RDF_OBJ_FT_RULE_ADD ('', '', 'ALL');
+    }
   rdf_geo_init ();
   DB.DBA.RDF_QUAD_LOAD_CACHE ();
   delete from DB.DBA.RDF_GRAPH_USER where not exists (select 1 from DB.DBA.SYS_USERS where RGU_USER_ID = U_ID);
