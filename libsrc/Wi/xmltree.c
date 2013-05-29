@@ -5910,6 +5910,11 @@ DBG_NAME (xte_string_value_from_tree) (DBG_PARAMS caddr_t * current, caddr_t * r
     }
   if (ses)
     {
+      if (strses_length (ses) >= MAX_BOX_LENGTH)
+	{
+	  strses_free (ses);
+	  sqlr_new_error ("HT002", "XI038", "Text entity too long");
+	}
       str = strses_string (ses);
       strses_free (ses);
     }
