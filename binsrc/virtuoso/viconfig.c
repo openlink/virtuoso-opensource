@@ -1675,7 +1675,6 @@ cfg_setup (void)
 
   /* Finalization */
 
-  /*free (savestr);*/
 
   PrpcSetThreadParams (c_server_thread_sz, c_main_thread_sz,
   c_future_thread_sz, c_server_threads);
@@ -1970,6 +1969,9 @@ cfg_parse_size_with_modifier (const char *valstr, unsigned long *size, char *mod
   return 0;
 }
 
+
+#define csl_free(f) free (f)
+
 void
 new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
 {
@@ -2096,13 +2098,13 @@ new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
 	  if (cfg_parse_size_with_modifier (segszstr, &segszvalue, &modifier, &n_pages))
 	    {
 	      log_error ("The size for strip segment %d is invalid", nsegs);
-	      free (segszstr);
+              csl_free (segszstr);
 	      return;
 	    }
 	  if (modifier == 'K' && segszvalue % KILOS_PER_PAGE)
 	    {
 	      log_error ("The size for stripe segment %d must be a multiple of %d", nsegs, PAGE_SZ);
-	      free (segszstr);
+              csl_free (segszstr);
 	      return;
 	    }
 	  if ((n_pages / n_stripes) > (LONG_MAX / PAGE_SZ))
@@ -2121,7 +2123,7 @@ new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
 		  nsegs, old_pages, unit, n_pages);
 	    }
 
-	  free (segszstr);
+          csl_free (segszstr);
 
 	  seg = (disk_segment_t *) dk_alloc (sizeof (disk_segment_t));
 	  seg->ds_size = n_pages;
@@ -2161,7 +2163,7 @@ new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
 	      dst->dst_file = box_string (value);
 	      seg->ds_stripes[indx] = dst;
 
-	      free (value);
+	      csl_free (value);
 	    }
 	  c_stripes = dk_set_conc (c_stripes, dk_set_cons ((caddr_t) seg, NULL));
 	}
