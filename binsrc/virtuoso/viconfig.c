@@ -1985,6 +1985,9 @@ cfg_getsize (PCONFIG pc, char * sec, char * attr, size_t * sz)
 }
 
 
+
+#define csl_free(f) free (f)
+
 void
 new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
 {
