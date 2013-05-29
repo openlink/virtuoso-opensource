@@ -2800,11 +2800,11 @@ ts_split_sets (table_source_t * ts, caddr_t * inst, it_cursor_t * itc, int n_par
   n_ways = 1 + (usecs / qp_thread_min_usec);
   if (n_ways > enable_qp)
     n_ways = enable_qp;
+  if (n_ways > n_sets)
+    n_ways = n_sets;
   n_ways = 1 + qi_inc_branch_count (qi, enable_qp, n_ways - 1);
   if (n_ways < 2)
     return itc_reset (itc);
-  if (n_ways > n_sets)
-    n_ways = n_sets;
   chunk = n_sets / n_ways;
   for (inx = 0; inx < n_ways - 1; inx++)
     {
