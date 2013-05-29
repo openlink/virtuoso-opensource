@@ -9298,6 +9298,7 @@ bif_mem_all_in_use (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   char *dp = bif_string_or_null_arg (qst, args, 0, "mem_all_in_use");
   FILE *fd = dp ? fopen (dp, "at") : NULL;
+  int nth = BOX_ELEMENTS (args) > 1 ? bif_long_arg (qst, args, 1, "mem_all_in_use") : 0;
   dbg_malstats (fd ? fd : stderr, DBG_MALSTATS_ALL);
   if (fd)
   fclose (fd);
@@ -9310,6 +9311,7 @@ bif_mem_new_in_use (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   char *dp = bif_string_or_null_arg (qst, args, 0, "mem_new_in_use");
   FILE *fd = dp ? fopen (dp, "at") : NULL;
+  int nth = BOX_ELEMENTS (args) > 1 ? bif_long_arg (qst, args, 1, "mem_all_in_use") : 0;
   dbg_malstats (fd ? fd : stderr, DBG_MALSTATS_NEW);
   if (fd)
   fclose (fd);
@@ -9327,12 +9329,25 @@ bif_mem_leaks (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   fclose (fd);
   return NULL;
 }
+#endif
+
 
 caddr_t bif_mem_get_current_total (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
+#ifdef MALLOC_DEBUG
   return box_num (dbg_malloc_get_current_total());
-}
+#else
+  return NULL;
 #endif
+}
+
+
+caddr_t
+bif_mem_summary (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  char *dp = bif_string_or_null_arg (qst, args, 0, "mem_summary");
+  return NULL;
+}
 
 
 #ifdef MALLOC_STRESS
@@ -16088,8 +16103,9 @@ sql_bif_init (void)
   bif_define ("mem_all_in_use", bif_mem_all_in_use);
   bif_define ("mem_new_in_use", bif_mem_new_in_use);
   bif_define ("mem_leaks", bif_mem_leaks);
-  bif_define ("mem_get_current_total", bif_mem_get_current_total);
 #endif
+  bif_define_typed ("mem_get_current_total", bif_mem_get_current_total, &bt_integer);
+  bif_define ("mem_summary", bif_mem_summary);
 #ifdef MALLOC_STRESS
   bif_define ("set_hard_memlimit", bif_set_hard_memlimit);
   bif_define ("set_hit_memlimit", bif_set_hit_memlimit);
