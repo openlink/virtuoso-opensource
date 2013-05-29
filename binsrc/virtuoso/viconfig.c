@@ -2176,7 +2176,7 @@ new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
 
   dbs->dbs_file = box_string (c_database_file);
   dbs->dbs_log_name = box_string (c_txfile);
-  dbs->dbs_cpt_file_name = box_string (setext (c_txfile, "cpt", EXT_SET));
+  dbs->dbs_cpt_file_name = box_string (setext (s_strdup (c_database_file), "cpt", EXT_SET));
   dbs->dbs_extend = c_file_extend;
   dbs->dbs_max_cp_remaps = c_max_checkpoint_remap;
   dbs->dbs_log_segments = c_log_segments;
