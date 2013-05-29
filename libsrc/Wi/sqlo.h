@@ -808,21 +808,29 @@ void qn_ins_before (sql_comp_t * sc, data_source_t ** head, data_source_t * ins_
 
 /* cost model constants */
 
-#define COL_PRED_COST 0.02 /* itc_col_check */
-#define ROW_SKIP_COST 0.035 /* itc_row_check and 1 iteration of itc_page_search */
-#define INX_INIT_COST 1  /* fixed overhead of starting an index lookup */
-#define INX_CMP_COST 0.25 /* one compare in random access lookup. Multiple by log2 of inx count to get cost of 1 random access */
-#define ROW_COST_PER_BYTE (COL_PRED_COST / 200) /* 200 b of row cost 1 itc_col_check */
-#define NEXT_PAGE_COST 5
-#define INX_ROW_INS_COST 1 /* cost of itc_insert_dv into inx */
-#define HASH_ROW_INS_COST 1.6 /* cost of adding a row to hash */
-#define HASH_MEM_INS_COST 0.7
-#define HASH_LOOKUP_COST 0.9
-#define HASH_ROW_COST 0.3
-#define CV_INSTR_COST 0.1   /* avg cost of instruction in code_vec_run */
+#define COL_PRED_COST col_pred_cost
+#define ROW_SKIP_COST row_skip_cost 
+#define INX_INIT_COST inx_init_cost 
+#define INX_CMP_COST inx_cmp_cost
+#define ROW_COST_PER_BYTE row_cost_per_byte 
+#define NEXT_PAGE_COST next_page_cost 
+#define INX_ROW_INS_COST inx_row_ins_cost
+#define HASH_ROW_INS_COST hash_row_ins_cost  /* cost of adding a row to hash */
+#define HASH_MEM_INS_COST hash_mem_ins_cost
+#define HASH_LOOKUP_COST hash_lookup_cost 
+#define HASH_ROW_COST hash_row_cost
+#define CV_INSTR_COST cv_instr_cost
+extern float hash_log_multiplier;
 
 #define HASH_COUNT_FACTOR(n)\
-  (0.05 * log(n) / log (2))
+  (hash_log_multiplier * log(n) / log (2))
+
+
+extern float hash_row_ins_cost;
+extern float hash_lookup_cost;
+extern float hash_row_cost;
+extern float hash_log_multiplier;
+
 
 char  sqlg_geo_op (sql_comp_t * sc, ST * op);
 

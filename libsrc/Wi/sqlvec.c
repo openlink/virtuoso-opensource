@@ -174,7 +174,8 @@ sqlg_dc_cast_func (sql_comp_t * sc, state_slot_t * target, state_slot_t * source
     return vc_anynn_generic;
 
   return vc_generic;
-  sqlc_new_error (sc->sc_cc, "22032", "VEC..", "No cast from %s to %s", dv_type_title (source->ssl_sqt.sqt_dtp), dv_type_title (target->ssl_sqt.sqt_dtp));
+  sqlc_new_error (sc->sc_cc, "22032", "VEC..", "No cast from %s to %s", dv_type_title (source->ssl_sqt.sqt_dtp),
+      dv_type_title (target->ssl_sqt.sqt_dtp));
   return NULL;
 }
 
@@ -199,10 +200,17 @@ ssl_set_dc_type (state_slot_t * ssl)
     }
   switch (dtp)
     {
-    case DV_SHORT_INT: case DV_LONG_INT: case DV_INT64:
-    case DV_IRI_ID: case DV_IRI_ID_8:
-    case DV_DOUBLE_FLOAT: case DV_SINGLE_FLOAT:
-    case DV_DATETIME: case DV_DATE: case DV_TIME: case DV_TIMESTAMP:
+    case DV_SHORT_INT:
+    case DV_LONG_INT:
+    case DV_INT64:
+    case DV_IRI_ID:
+    case DV_IRI_ID_8:
+    case DV_DOUBLE_FLOAT:
+    case DV_SINGLE_FLOAT:
+    case DV_DATETIME:
+    case DV_DATE:
+    case DV_TIME:
+    case DV_TIMESTAMP:
       ssl->ssl_dc_dtp = dtp;
       break;
     default:
@@ -253,8 +261,7 @@ ssl_vec_if (sql_comp_t * sc, state_slot_t * ssl, state_slot_t * r1, state_slot_t
 {
   if (SSL_VEC == ssl->ssl_type)
     return;
-  if ((r1 && (SSL_VEC == r1->ssl_type || SSL_REF == r1->ssl_type))
-      || (r2 && (SSL_VEC == r2->ssl_type || SSL_REF == r2->ssl_type)))
+  if ((r1 && (SSL_VEC == r1->ssl_type || SSL_REF == r1->ssl_type)) || (r2 && (SSL_VEC == r2->ssl_type || SSL_REF == r2->ssl_type)))
     ssl_vec (sc, ssl, 0);
 }
 
@@ -392,8 +399,7 @@ sqlg_qn_first_of (sql_comp_t * sc, data_source_t * qn)
     return NULL;
   if (qn == sc->sc_vec_qf->qf_head_node)
     return (data_source_t *) sc->sc_vec_qf;
-  if (IS_QN (sc->sc_vec_qf->qf_head_node, stage_node_input)
-      && qn == qn_next (sc->sc_vec_qf->qf_head_node))
+  if (IS_QN (sc->sc_vec_qf->qf_head_node, stage_node_input) && qn == qn_next (sc->sc_vec_qf->qf_head_node))
     return sc->sc_vec_qf->qf_head_node;
   return NULL;
 }
@@ -517,8 +523,7 @@ int
 qn_ssl_ref_steps (sql_comp_t * sc, data_source_t * qn, dk_set_t * steps, state_slot_t * ssl, state_slot_t ** ssl_to_ref)
 {
   /* normally put  the src_sets  into steps but if ts with restricting casts, add  this also.  Ret 1 if this node has a solid copy of the ssl being sought and return the copy in ssl to ref */
-  if (IS_QN (qn, fun_ref_node_input)
-      || IS_QN (qn, hash_fill_node_input))
+  if (IS_QN (qn, fun_ref_node_input) || IS_QN (qn, hash_fill_node_input))
     return 0;
 
 #if 0
@@ -611,8 +616,7 @@ qn_add_prof (sql_comp_t * sc, data_source_t * qn)
   comp_context_t *cc;
   if (!prof_on)
     return;
-  if (IS_QN (qn, fun_ref_node_input) || IS_QN (qn, hash_fill_node_input)
-      || IS_QN (qn, subq_node_input) || (IS_QN (qn, trans_node_input) && ((trans_node_t*)qn)->tn_inlined_step) || IS_QN (qn, union_node_input))
+  if (IS_QN (qn, subq_node_input) || (IS_QN (qn, trans_node_input) && ((trans_node_t*)qn)->tn_inlined_step) || IS_QN (qn, union_node_input))
     return;
   cc = sc->sc_cc->cc_super_cc;
   qn->src_stat = cc->cc_instance_fill;
@@ -643,9 +647,12 @@ sqlg_vec_after_test (sql_comp_t * sc, data_source_t * qn)
     }
   else if (qn->src_after_code)
     {
+      int const_card = qn_is_const_card (qn);
+      if (!const_card)
       t_set_push (&sc->sc_vec_pred, (void *) qn);
       cv_vec_slots (sc, qn->src_after_code, NULL, NULL, &ign);
       sqlg_new_vec_ssls (sc, qn);
+      if (!const_card)
       sc->sc_vec_pred = sc->sc_vec_pred->next;
     }
 }
@@ -801,8 +808,7 @@ sqlg_vec_ssl_ref (sql_comp_t * sc, state_slot_t * ssl, int test_only)
     sqlg_branch_copy (sc, qn, ssl);
   }
   END_DO_SET ();
-  if (0 && defd_in && !def_found && !sc->sc_in_ins_replacing
-      && DV_ITC != ssl->ssl_sqt.sqt_dtp)
+  if (0 && defd_in && !def_found && !sc->sc_in_ins_replacing && DV_ITC != ssl->ssl_sqt.sqt_dtp)
     {
       col_ref_rec_t *crr;
       AUTO_POOL (10);
@@ -998,8 +1004,11 @@ cv_artm_typed (instruction_t * ins)
 	    return;
 	  switch (dtp)
 	    {
-	    case DV_INT64: case DV_SHORT_INT:
-	    case DV_IRI_ID:  case DV_IRI_ID_8: case DV_DOUBLE_FLOAT:
+	    case DV_INT64:
+	    case DV_SHORT_INT:
+	    case DV_IRI_ID:
+	    case DV_IRI_ID_8:
+	    case DV_DOUBLE_FLOAT:
 	      /* all the above copy by copy of 64 bit value in dc_values plus opt null flag.  dv any is not like that because these dcs can change to a more precise type at run time.  */
 	      dtp = DV_LONG_INT;
 	      break;
@@ -1008,12 +1017,13 @@ cv_artm_typed (instruction_t * ins)
 	}
     }
   else if (SSL_IS_VEC_REF (ins->_.artm.left) && SSL_IS_VEC_REF (ins->_.artm.right)
-      && ins->_.artm.left->ssl_dtp == ins->_.artm.right->ssl_dtp
-      && ins->_.artm.result->ssl_dtp == ins->_.artm.right->ssl_dtp)
+      && ins->_.artm.left->ssl_dtp == ins->_.artm.right->ssl_dtp && ins->_.artm.result->ssl_dtp == ins->_.artm.right->ssl_dtp)
     {
       switch (ins->_.artm.left->ssl_dtp)
 	{
-	case DV_LONG_INT: case DV_INT64: case DV_SHORT_INT:
+	case DV_LONG_INT:
+	case DV_INT64:
+	case DV_SHORT_INT:
 	  ins->_.artm.func = ti_func_no (ins->ins_type, DV_LONG_INT);
 	  break;
 	}
@@ -1029,7 +1039,9 @@ cv_cmp_typed (instruction_t * ins)
     {
       switch (ins->_.artm.left->ssl_dtp)
 	{
-	case DV_LONG_INT: case DV_INT64: case DV_SHORT_INT:
+	case DV_LONG_INT:
+	case DV_INT64:
+	case DV_SHORT_INT:
 	  ins->_.cmp.func = ti_func_no (ins->ins_type, DV_LONG_INT);
 	  break;
 	}
@@ -1049,7 +1061,8 @@ ins_is_single_state (instruction_t * ins)
     return 0;
   switch (ins->ins_type)
     {
-    case INS_CALL: case INS_CALL_BIF:
+    case INS_CALL:
+    case INS_CALL_BIF:
       if (ins->_.call.ret && SSL_VEC == ins->_.call.ret->ssl_type)
 	  return 0;
       if (INS_CALL_BIF == ins->ins_type && 0 == stricmp (ins->_.bif.proc, "__all_eq"))
@@ -1060,8 +1073,7 @@ ins_is_single_state (instruction_t * ins)
 	}
       DO_BOX (state_slot_t *, ssl, inx, ins->_.call.params)
       {
-	  if (SSL_IS_VEC_REF (ssl)
-	      || SSL_ALWAYS_VEC (ssl))
+	if (SSL_IS_VEC_REF (ssl) || SSL_ALWAYS_VEC (ssl))
 	  {
 	    if (ins->_.bif.ret && IS_REAL_SSL (ins->_.bif.ret))
 	      ins->_.bif.ret->ssl_qr_global = 0;
@@ -1072,11 +1084,16 @@ ins_is_single_state (instruction_t * ins)
       if (INS_CALL_BIF == ins->ins_type && 0 == stricmp (ins->_.bif.proc, "sequence_next"))
 	return 0;
       return 1;
-    case IN_ARTM_FPTR: case IN_ARTM_PLUS: case IN_ARTM_MINUS: case IN_ARTM_TIMES: case IN_ARTM_DIV:
+    case IN_ARTM_FPTR:
+    case IN_ARTM_PLUS:
+    case IN_ARTM_MINUS:
+    case IN_ARTM_TIMES:
+    case IN_ARTM_DIV:
       if (SSL_ALWAYS_VEC (ins->_.artm.result))
 	return 0;		/*user agg variable are always vectors */
       return !SSL_IS_VEC_REF (ins->_.artm.left) && (!ins->_.artm.right || !SSL_IS_VEC_REF (ins->_.artm.right));
-    default: return 0;
+    default:
+      return 0;
     }
 }
 
@@ -1192,7 +1209,8 @@ cv_vec_slots (sql_comp_t * sc, code_vec_t cv, dk_hash_t * res, dk_hash_t * all_r
 	    else
 	      ASG_SS_SSL (res, all_res, ins->_.call.ret);
 	  }
-	  if (non_cl_local) *non_cl_local = 1;
+	if (non_cl_local)
+	  *non_cl_local = 1;
 	break;
 
       case INS_CALL_BIF:
@@ -1200,11 +1218,9 @@ cv_vec_slots (sql_comp_t * sc, code_vec_t cv, dk_hash_t * res, dk_hash_t * all_r
 	cv_deduplicate_param_ssls (sc->sc_cc, ins->_.bif.params);
 	if (!ins_is_single_state (ins))
 	  {
-	      bif_t vec = VEC_SINGLE_STATE == *non_cl_local ? NULL
-		: (bif_t)bif_vectored (ins->_.bif.bif);
+	    bif_t vec = VEC_SINGLE_STATE == *non_cl_local ? NULL : (bif_t) bif_vectored (ins->_.bif.bif);
 	    /* the result of bif is assigned if there is a ssl for it and it is not the same as 1st arg because some fuck makes x = blob to string (x) inside a query on proc view */
-	      if (IS_REAL_SSL (ins->_.bif.ret)
-		  && !(BOX_ELEMENTS (ins->_.bif.params) && ins->_.bif.ret == ins->_.bif.params[0]))
+	    if (IS_REAL_SSL (ins->_.bif.ret) && !(BOX_ELEMENTS (ins->_.bif.params) && ins->_.bif.ret == ins->_.bif.params[0]))
 	    ASG_SSL (res, all_res, ins->_.bif.ret);
 	    if (vec && bif_all_vec (ins))
 	      {
@@ -1217,8 +1233,10 @@ cv_vec_slots (sql_comp_t * sc, code_vec_t cv, dk_hash_t * res, dk_hash_t * all_r
 	break;
       case IN_ARTM_FPTR:
       case IN_ARTM_IDENTITY:
-	case IN_ARTM_PLUS: case IN_ARTM_MINUS:
-	case IN_ARTM_TIMES: case IN_ARTM_DIV:
+      case IN_ARTM_PLUS:
+      case IN_ARTM_MINUS:
+      case IN_ARTM_TIMES:
+      case IN_ARTM_DIV:
 	REF_SSL (res, ins->_.artm.left);
 	REF_SSL (res, ins->_.artm.right);
 	if (!ins_is_single_state (ins))
@@ -1255,8 +1273,7 @@ cv_vec_slots (sql_comp_t * sc, code_vec_t cv, dk_hash_t * res, dk_hash_t * all_r
 	  {
 	    sqlg_vec_ref_ssls (sc, ((hash_area_t *) ins->_.pred.cmp)->ha_slots);
 	  }
-	  if ((pred_func_t)exists_pred_func  ==  ins->_.pred.func
-	      || (pred_func_t)subq_comp_func  ==  ins->_.pred.func)
+	if ((pred_func_t) exists_pred_func == ins->_.pred.func || (pred_func_t) subq_comp_func == ins->_.pred.func)
 	  {
 	    subq_pred_t *subp = (subq_pred_t *) ins->_.pred.cmp;
 	    select_node_t *sel = subp->subp_query->qr_select_node;
@@ -1311,8 +1328,8 @@ sqlg_is_inline_hash_key (hash_area_t * ha, state_slot_t * ssl, table_source_t * 
   /* true for single intlike key to hash.  Can merge the hash lookup and partition filter as column condition in a ts */
   dtp_t s_dtp = dtp_canonical[ssl->ssl_sqt.sqt_dtp];
   if (ssl->ssl_column && ha->ha_n_keys == 1
-      &&  dtp_canonical[ha->ha_key_cols[0].cl_sqt.sqt_dtp] == s_dtp
-      && (DV_LONG_INT == s_dtp || DV_IRI_ID == s_dtp))
+      && (DV_ANY == ha->ha_key_cols[0].cl_sqt.sqt_dtp || DV_ANY == s_dtp
+	  || (dtp_canonical[ha->ha_key_cols[0].cl_sqt.sqt_dtp] == s_dtp && (DV_LONG_INT == s_dtp || DV_IRI_ID == s_dtp))))
     {
       if (ts)
 	{
@@ -1325,24 +1342,37 @@ sqlg_is_inline_hash_key (hash_area_t * ha, state_slot_t * ssl, table_source_t * 
   return 0;
 }
 
+#define HRNG_PROBE 0
+#define HRNG_MERGE 1
+#define HRNG_BUILD 2
 
 search_spec_t *
-sqlg_hash_spec (sql_comp_t * sc, state_slot_t ** ref_slots, int n_keys, table_source_t * ts, state_slot_t * col_ssl, hash_source_t * hs,
-		fun_ref_node_t * filler, int is_merge)
+sqlg_hash_spec (sql_comp_t * sc, state_slot_t ** ref_slots, int n_keys, table_source_t * ts, state_slot_t * col_ssl,
+    hash_source_t * hs, fun_ref_node_t * filler, int is_merge)
 {
   /* make a search_spec_t  that selects hash nos that fall within a hash partition range.  This is added to the last ts in join order that adds a col to the probe cols of the hash source.  This can also be a set ctr if the hash source is outer.  */
   data_source_t *save_cur = sc->sc_vec_current;
+  dtp_t dtp;
   int inx;
   dk_set_t save_pred = sc->sc_vec_pred;
   hash_range_spec_t *hrng = (hash_range_spec_t *) dk_alloc (sizeof (hash_range_spec_t));
   NEW_VARZ (search_spec_t, sp);
   memset (hrng, 0, sizeof (hash_range_spec_t));
   sp->sp_min_op = CMP_HASH_RANGE;
+  sp->sp_col_filter = ce_op_hash;
   sp->sp_min_ssl = (state_slot_t *) hrng;
+  hrng->hrng_part_ssl = filler->fnr_hash_part_ssl;
   hrng->hrng_min = filler->fnr_hash_part_min;
   hrng->hrng_max = filler->fnr_hash_part_max;
+  if (HRNG_BUILD != is_merge)
+    {
   hrng->hrng_hs = is_merge ? hs : NULL;
-  if (is_merge)
+      hrng->hrng_ht = hs->hs_ha->ha_tree;
+      hrng->hrng_ht_id = hs->hs_cl_id;
+    }
+  else
+    hrng->hrng_flags = HR_RANGE_ONLY;
+  if (HRNG_MERGE == is_merge)
     {
       hrng->hrng_ssls = (state_slot_t **) list (1, ssl_new_vec (sc->sc_cc, "tmp", hs->hs_ref_slots[0]->ssl_sqt.sqt_dtp));
     }
@@ -1374,6 +1404,10 @@ sqlg_hash_spec (sql_comp_t * sc, state_slot_t ** ref_slots, int n_keys, table_so
 	    }
 	}
     }
+  dtp = col_ssl ?  col_ssl->ssl_sqt.sqt_dtp : sp->sp_cl.cl_sqt.sqt_col_dtp;
+  if (hs)
+    dtp = dtp_canonical[hs->hs_ha->ha_key_cols[0].cl_sqt.sqt_dtp];
+  hrng->hrng_dc = ssl_new_vec (sc->sc_cc, "hrng_tmp", dtp);
   sc->sc_vec_current = save_cur;
   sc->sc_vec_pred = save_pred;
   return sp;
@@ -1389,8 +1423,7 @@ ts_col_ordering (table_source_t * ts, state_slot_t * ssl)
   int nth = 0, only_unq = 0;
   if (!ssl->ssl_column || !dk_set_member (ks->ks_out_slots, (void *) ssl))
     return 0;
-  if (1 == tb->tb_primary_key->key_n_significant
-      && ssl->ssl_column == (dbe_column_t*)tb->tb_primary_key->key_parts->data)
+  if (1 == tb->tb_primary_key->key_n_significant && ssl->ssl_column == (dbe_column_t *) tb->tb_primary_key->key_parts->data)
     return FNR_STREAM_UNQ;	/* the col is a 1 col pk, always unq no matter which key or which conditions */
   sp = ks->ks_spec.ksp_spec_array;
   DO_SET (dbe_column_t *, col, &ks->ks_key->key_parts)
@@ -1407,7 +1440,8 @@ ts_col_ordering (table_source_t * ts, state_slot_t * ssl)
       only_unq = FNR_STREAM_DUPS;
     else
       return only_unq;
-      if (sp) sp = sp->sp_next;
+    if (sp)
+      sp = sp->sp_next;
     nth++;
   }
   END_DO_SET ();
@@ -1548,7 +1582,7 @@ sqlg_vec_setp (sql_comp_t * sc, setp_node_t * setp, dk_hash_t * res)
 		  {
 		    setp->setp_hash_part_filter = (data_source_t *) fill_ts;
 		    dk_set_push (&fill_ts->ts_order_ks->ks_hash_spec, (void *)
-			sqlg_hash_spec (sc, ha->ha_slots, ha->ha_n_keys, fill_ts, one_key, NULL, setp->setp_fref, 0));
+				   sqlg_hash_spec (sc, ha->ha_slots, ha->ha_n_keys, fill_ts, one_key, NULL, setp->setp_fref, HRNG_BUILD));
 		  }
 		else
 		  setp->setp_hash_part_filter = (data_source_t *) setp;
@@ -1604,19 +1638,23 @@ sqlg_vec_setp (sql_comp_t * sc, setp_node_t * setp, dk_hash_t * res)
 int
 ssl_needs_ins_cast (state_slot_t * ssl, dbe_column_t * col)
 {
-  if (DV_WIDE == col->col_sqt.sqt_dtp
-      &&  (DV_ANY == ssl->ssl_dc_dtp  && DV_WIDE == ssl->ssl_sqt.sqt_dtp))
+  if (DV_WIDE == col->col_sqt.sqt_dtp && (DV_ANY == ssl->ssl_dc_dtp && DV_WIDE == ssl->ssl_sqt.sqt_dtp))
     return 0;
-  if (DV_STRING == col->col_sqt.sqt_dtp
-      &&  (DV_ANY == ssl->ssl_dc_dtp  && DV_STRING == ssl->ssl_sqt.sqt_dtp))
+  if (DV_STRING == col->col_sqt.sqt_dtp && (DV_ANY == ssl->ssl_dc_dtp && DV_STRING == ssl->ssl_sqt.sqt_dtp))
     return 0;
   if (ssl->ssl_dc_dtp == dtp_canonical[col->col_sqt.sqt_dtp])
     {
       switch (dtp_canonical[col->col_sqt.sqt_dtp])
 	{
-	case DV_LONG_INT: case DV_IRI_ID:
-	case DV_SINGLE_FLOAT: case DV_DOUBLE_FLOAT: case DV_NUMERIC:
-	case DV_DATETIME: case DV_DATE: case DV_TIMESTAMP: case DV_TIME:
+	case DV_LONG_INT:
+	case DV_IRI_ID:
+	case DV_SINGLE_FLOAT:
+	case DV_DOUBLE_FLOAT:
+	case DV_NUMERIC:
+	case DV_DATETIME:
+	case DV_DATE:
+	case DV_TIMESTAMP:
+	case DV_TIME:
 	  return 0;
 	}
     }
@@ -1878,7 +1916,8 @@ sqlg_vec_del (sql_comp_t * sc, delete_node_t * del)
 		del->del_keys = (ins_key_t **) list (1, sqlg_del_ik (sc, del, del->del_key_only));
 	      return;
 	    }
-	  del->del_keys = (ins_key_t**)dk_alloc_box_zero (sizeof (caddr_t) * (dk_set_length (all_keys) - dk_set_length (keys_done)), DV_BIN);
+	  del->del_keys =
+	      (ins_key_t **) dk_alloc_box_zero (sizeof (caddr_t) * (dk_set_length (all_keys) - dk_set_length (keys_done)), DV_BIN);
 	  ref_ssls (NULL, del->del_trigger_args);
 	  DO_SET (dbe_key_t *, key, &all_keys)
 	  {
@@ -2036,7 +2075,9 @@ sqlg_vec_upd_ins (sql_comp_t * sc, update_node_t * upd)
 	n_fixed = BOX_ELEMENTS (upd->upd_fixed_cl);
       DO_BOX_0 (state_slot_t *, ssl, inx, upd->upd_quick_values)
       {
-	  dbe_column_t * col = sch_id_to_column (wi_inst.wi_schema, inx < n_fixed ? upd->upd_fixed_cl[inx]->cl_col_id : upd->upd_var_cl[inx - n_fixed]->cl_col_id);
+	dbe_column_t *col =
+	    sch_id_to_column (wi_inst.wi_schema,
+	    inx < n_fixed ? upd->upd_fixed_cl[inx]->cl_col_id : upd->upd_var_cl[inx - n_fixed]->cl_col_id);
 	state_slot_t *copy = gethash ((void *) col, copies);
 	if (copy)
 	  upd->upd_quick_values[inx] = copy;
@@ -2300,8 +2341,7 @@ sqlg_set_cv_subq_prev (sql_comp_t * sc, code_vec_t cv, data_source_t * prev)
 	sqlg_sqs_qr_pred (sc, ins->_.subq.query, prev);
 	break;
       case IN_PRED:
-	  if ((pred_func_t)exists_pred_func  ==  ins->_.pred.func
-	      || (pred_func_t)subq_comp_func  ==  ins->_.pred.func)
+	if ((pred_func_t) exists_pred_func == ins->_.pred.func || (pred_func_t) subq_comp_func == ins->_.pred.func)
       {
 	    subq_pred_t *subp = (subq_pred_t *) ins->_.pred.cmp;
 	    sqlg_sqs_qr_pred (sc, subp->subp_query, prev);
@@ -2591,38 +2631,34 @@ void
 sqlg_vec_hs (sql_comp_t * sc, hash_source_t * hs)
 {
   /* set the casts. Set the refs.  The defs are set at the end. */
-  int cast_changes_card = 0;
+  int cast_changes_card = 0, cl_part_crossed = 0;
+  setp_node_t *setp = NULL;
   data_source_t *save_cur;
   dk_set_t save_pred;
   fun_ref_node_t *filler = NULL;
-  key_source_t *ks = (key_source_t *) dk_alloc (sizeof (key_source_t));
+  key_source_t *ks = NULL;
   int n_k_ssl = BOX_ELEMENTS (hs->hs_ref_slots);
   int fill = 0, inx = 0;
   set_ctr_node_t *last_sctr = NULL;
-  memset (ks, 0, sizeof (key_source_t));
-  ks->ks_ts = (table_source_t *) hs;
+  if (!hs->hs_loc_ts)
+    {
+      ks = (key_source_t *) dk_alloc (sizeof (key_source_t));
+      memset (ks, 0, sizeof (key_source_t));
+      ks->ks_ts = (table_source_t *) hs;
+      hs->hs_ks = ks;
+      ks->ks_vec_cast = (state_slot_t **) dk_alloc_box_zero (sizeof (caddr_t) * (n_k_ssl), DV_BIN);
+      ks->ks_vec_source = (state_slot_ref_t **) dk_alloc_box_zero (sizeof (caddr_t) * (n_k_ssl), DV_BIN);
+      ks->ks_dc_val_cast = (dc_val_cast_t *) dk_alloc_box_zero (sizeof (caddr_t) * (n_k_ssl), DV_BIN);
+    }
   hs->hs_done_in_probe = cc_new_instance_slot (sc->sc_cc);
   hs->hs_hash_no = ssl_new_vec (sc->sc_cc, "hno", DV_LONG_INT);
-  hs->hs_ks = ks;
-  ks->ks_vec_cast = (state_slot_t **) dk_alloc_box_zero (sizeof (caddr_t) * (n_k_ssl), DV_BIN);
-  ks->ks_vec_source = (state_slot_ref_t **) dk_alloc_box_zero (sizeof (caddr_t) * (n_k_ssl), DV_BIN);
-  ks->ks_dc_val_cast = (dc_val_cast_t *) dk_alloc_box_zero (sizeof (caddr_t) * (n_k_ssl), DV_BIN);
   hs->hs_ha->ha_tree->ssl_qr_global = 1;
   REF_SSL (NULL, hs->hs_ha->ha_tree);
-  DO_SET (setp_node_t *, setp, &sc->sc_cc->cc_query->qr_nodes)
-  {
-    if (IS_QN (setp, setp_node_input) && setp->setp_ha && setp->setp_ha->ha_tree == hs->hs_ha->ha_tree)
-      {
-	/*dk_set_push (&setp->setp_hash_sources, (void*)hs); */
-	filler = setp->setp_fref;
-	hs->hs_filler = filler;
-	if (!setp->setp_hash_fill_partitioned)
-	  setp->setp_hash_fill_partitioned = cc_new_instance_slot (sc->sc_cc);
-	hs->hs_is_partitioned = setp->setp_hash_fill_partitioned;
-      }
-  }
-  END_DO_SET ();
-
+  filler = hs->hs_filler;
+  setp = filler->fnr_setp;
+  if (!setp->setp_hash_fill_partitioned)
+    setp->setp_hash_fill_partitioned = cc_new_instance_slot (sc->sc_cc);
+  hs->hs_is_partitioned = setp->setp_hash_fill_partitioned;
   DO_SET (data_source_t *, pred, &sc->sc_vec_pred)
   {
     state_slot_t *one_key = NULL;
@@ -2636,12 +2672,12 @@ sqlg_vec_hs (sql_comp_t * sc, hash_source_t * hs)
 	  any_key = 1;
 	  if (!hs->hs_probe)
 	    hs->hs_probe = (table_source_t *) pred;
-	      if (one_key || !IS_TS (pred)
-		  || !sqlg_is_inline_hash_key (hs->hs_ha, ref, (table_source_t*)pred))
+	  if (one_key || !IS_TS (pred) || !sqlg_is_inline_hash_key (hs->hs_ha, ref, (table_source_t *) pred))
 	    {
 	      if (last_sctr)
 		dk_set_push (&last_sctr->sctr_hash_spec, (void *)
-				 sqlg_hash_spec (sc, hs->hs_ref_slots, BOX_ELEMENTS (hs->hs_ref_slots), (table_source_t*)pred, NULL, hs, filler, 0));
+		    sqlg_hash_spec (sc, hs->hs_ref_slots, BOX_ELEMENTS (hs->hs_ref_slots), (table_source_t *) pred, NULL, hs,
+			filler, 0));
 	      else
 		hs->hs_partition_filter_self = 1;
 	      goto ref_found;
@@ -2650,6 +2686,8 @@ sqlg_vec_hs (sql_comp_t * sc, hash_source_t * hs)
 	}
     }
     END_DO_BOX;
+    if ((IS_TS (pred) && ((table_source_t *) pred)->ts_order_ks->ks_is_qf_first) || IS_QN (pred, stage_node_input))
+      cl_part_crossed = 1;
     if (!any_key)
       continue;
     if (one_key)
@@ -2662,28 +2700,34 @@ sqlg_vec_hs (sql_comp_t * sc, hash_source_t * hs)
 	    else
 	      {
 		dk_set_push (&last_sctr->sctr_hash_spec, (void *)
-			       sqlg_hash_spec (sc, hs->hs_ref_slots, BOX_ELEMENTS (hs->hs_ref_slots), (table_source_t*)pred, NULL, hs, filler, 0));
+		    sqlg_hash_spec (sc, hs->hs_ref_slots, BOX_ELEMENTS (hs->hs_ref_slots), (table_source_t *) pred, NULL, hs,
+			filler, 0));
 		can_merge = MRG_NONE;
 	      }
 	  }
+	if (can_merge && cl_part_crossed && HS_CL_REPLICATED != hs->hs_cl_partition)
+	  can_merge = MRG_PART_ONLY;
 	if (can_merge)
 	  {
 	    hs->hs_probe = (table_source_t *) pred;
 	    if (MRG_ALWAYS == can_merge)
 	      {
 		sqlg_add_merged_hs (&((table_source_t *) pred)->ts_order_ks->ks_hash_spec,
-				      sqlg_hash_spec (sc, hs->hs_ref_slots, BOX_ELEMENTS (hs->hs_ref_slots), (table_source_t*)pred, one_key, hs, filler, 1));
+		    sqlg_hash_spec (sc, hs->hs_ref_slots, BOX_ELEMENTS (hs->hs_ref_slots), (table_source_t *) pred, one_key, hs,
+			filler, 1));
 		hs->hs_merged_into_ts = (table_source_t *) pred;
 	      }
 	    else if (MRG_IF_UNQ == can_merge)
 	      {
 		dk_set_push (&((table_source_t *) pred)->ts_order_ks->ks_hash_spec, (void *)
-			       sqlg_hash_spec (sc, hs->hs_ref_slots, BOX_ELEMENTS (hs->hs_ref_slots), (table_source_t*)pred, one_key, hs, filler, 1));
+		    sqlg_hash_spec (sc, hs->hs_ref_slots, BOX_ELEMENTS (hs->hs_ref_slots), (table_source_t *) pred, one_key, hs,
+			filler, 1));
 	      }
 	    else if (MRG_PART_ONLY == can_merge)
 	      {
 		dk_set_push (&((table_source_t *) pred)->ts_order_ks->ks_hash_spec, (void *)
-			       sqlg_hash_spec (sc, hs->hs_ref_slots, BOX_ELEMENTS (hs->hs_ref_slots), (table_source_t*)pred, one_key, hs, filler, 0));
+		    sqlg_hash_spec (sc, hs->hs_ref_slots, BOX_ELEMENTS (hs->hs_ref_slots), (table_source_t *) pred, one_key, hs,
+			filler, 0));
 	      }
 	  }
 	else
@@ -2699,17 +2743,25 @@ ref_found:
       cast_changes_card = 1;
   }
   END_DO_BOX;
-  DO_BOX_0 (state_slot_t *, ref, inx, hs->hs_ref_slots)
-  {
-    sql_type_t sqt = hs->hs_ha->ha_key_cols[inx].cl_sqt;
-    sqt.sqt_dtp = cha_dtp (dtp_canonical[sqt.sqt_dtp], 1);
-    if (DV_ANY == sqt.sqt_dtp)
-      sqt.sqt_col_dtp = DV_ANY;
-      sqlg_vec_cast (sc, ks->ks_vec_source, ks->ks_vec_cast, ks->ks_dc_val_cast, &hs->hs_ref_slots[inx], fill, &ks->ks_last_vec_param, &sqt, cast_changes_card);
-    hs->hs_ha->ha_slots[inx] = hs->hs_ref_slots[inx];
-    fill++;
-  }
-  END_DO_BOX;
+  if (hs->hs_ks)
+    {
+      DO_BOX_0 (state_slot_t *, ref, inx, hs->hs_ref_slots)
+      {
+	sql_type_t sqt = hs->hs_ha->ha_key_cols[inx].cl_sqt;
+	sqt.sqt_dtp = cha_dtp (dtp_canonical[sqt.sqt_dtp], 1);
+	if (DV_ANY == sqt.sqt_dtp)
+	  sqt.sqt_col_dtp = DV_ANY;
+	sqlg_vec_cast (sc, ks->ks_vec_source, ks->ks_vec_cast, ks->ks_dc_val_cast, &hs->hs_ref_slots[inx], fill,
+	    &ks->ks_last_vec_param, &sqt, cast_changes_card);
+	hs->hs_ha->ha_slots[inx] = hs->hs_ref_slots[inx];
+	fill++;
+      }
+      END_DO_BOX;
+    }
+  else
+    {
+      ref_ssls (res, hs->hs_ref_slots);
+    }
   hs->clb.clb_nth_set = cc_new_instance_slot (sc->sc_cc);
   save_cur = sc->sc_vec_current;
   save_pred = sc->sc_vec_pred;
@@ -2852,8 +2904,7 @@ qn_vec_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t * 
   int inx, src_resets_done;
   sc->sc_ssl_prereset_only = NULL;
 
-  if (!IS_QN (qn, fun_ref_node_input)
-      && !IS_QN (qn, hash_fill_node_input))
+  if (!IS_QN (qn, fun_ref_node_input) && !IS_QN (qn, hash_fill_node_input))
     {
       sc->sc_pre_code_of = qn;
       cv_vec_slots (sc, qn->src_pre_code, res, all_res, non_cl_local);
@@ -2865,8 +2916,7 @@ qn_vec_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t * 
   qn->src_out_fill = cc_new_instance_slot (sc->sc_cc);
   qn->src_batch_size = cc_new_instance_slot (sc->sc_cc);
   src_resets_done = 0;
-  if (IS_TS ((table_source_t*) qn) || IS_QN (qn, sort_read_input)
-      || IS_QN (qn, chash_read_input))
+  if (IS_TS ((table_source_t *) qn) || IS_QN (qn, sort_read_input) || IS_QN (qn, chash_read_input))
     {
       sqlg_vec_ts (sc, (table_source_t *) qn);
     }
@@ -2982,8 +3032,7 @@ qn_vec_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t * 
       sqlg_vec_gs_union (sc, (gs_union_node_t *) qn);
       src_resets_done = 1;
     }
-  else if ((qn_input_fn) select_node_input == qn->src_input
-	   || (qn_input_fn) select_node_input_subq == qn->src_input)
+  else if ((qn_input_fn) select_node_input == qn->src_input || (qn_input_fn) select_node_input_subq == qn->src_input)
     {
       select_node_t *sel = (select_node_t *) qn;
       ref_ssls (res, sel->sel_out_slots);
@@ -3012,7 +3061,8 @@ qn_vec_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t * 
 	state_slot_t *ref;
 	REF_SSL (res, ose->ose_out_slots[inx]);
 	ref = ose->ose_out_slots[inx];
-	  if (!ref) continue;
+	if (!ref)
+	  continue;
 	if (SSL_REF != ref->ssl_type && !ssl->ssl_sqt.sqt_non_null)
 	  {
 	    ose->ose_out_shadow[inx] = NULL;
@@ -3118,7 +3168,6 @@ qn_vec_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t * 
 	  if (tn->tn_complement && tn->tn_is_primary)
 	    {
 	      sc->sc_vec_current = (data_source_t *) tn;
-	      t_set_push (&sc->sc_vec_pred, (void *) tn);
 	      qn_vec_slots (sc, (data_source_t *) tn->tn_complement, res, all_res, non_cl_local);
 	      sc->sc_vec_pred = pred_save;
 	      qn->src_sets = sets_save;
@@ -3255,6 +3304,8 @@ qn_is_const_card (data_source_t * qn)
   /* true if always one row of output for one of input */
   if (IS_QN (qn, dpipe_node_input))
     return 1;
+  if (IS_QN (qn, hash_source_input) && ((hash_source_t*)qn)->hs_merged_into_ts)
+    return 1;
   return 0;
 }
 
@@ -3370,8 +3421,8 @@ ssl_cast_name (state_slot_t * ssl)
 
 
 void
-sqlg_vec_cast (sql_comp_t *sc, state_slot_ref_t ** refs, state_slot_t ** casts, dc_val_cast_t * val_cast, state_slot_t **ssl_ret, int fill,
-	       state_slot_t ** card_ssl, sql_type_t * target_sqt, int copy_always)
+sqlg_vec_cast (sql_comp_t * sc, state_slot_ref_t ** refs, state_slot_t ** casts, dc_val_cast_t * val_cast, state_slot_t ** ssl_ret,
+    int fill, state_slot_t ** card_ssl, sql_type_t * target_sqt, int copy_always)
 {
   /* if need cast or can have nulls, or can have to mask in qi then this means that the vector for the itc is a different length than the input vector.  So must copy, maybe filtering maybe casting.  The ref is a ssl ref if there are many card changing steps to the original, else it is the original itself with ssl vec type */
   state_slot_t *ssl = *ssl_ret;
@@ -3390,7 +3441,8 @@ sqlg_vec_cast (sql_comp_t *sc, state_slot_ref_t ** refs, state_slot_t ** casts, 
       return;
     }
   if (ssl->ssl_qr_global
-      || (SSL_VEC != ssl->ssl_type && SSL_REF != ssl->ssl_type && !gethash ((void*)(ptrlong)ssl->ssl_index, sc->sc_vec_ssl_shadow)))
+      || (SSL_VEC != ssl->ssl_type && SSL_REF != ssl->ssl_type
+	  && !gethash ((void *) (ptrlong) ssl->ssl_index, sc->sc_vec_ssl_shadow)))
     {
       /* can leave a non-vector ssl as is but check there is no shadow as this could be an out col that is replaced by equal search param */
       sqlg_all_branch_copy (sc, ssl);
@@ -3655,8 +3707,7 @@ sqlg_vec_ts_out_alias (sql_comp_t * sc, table_source_t * ts)
   int nth = 0;
   state_slot_t *out_ssl;
   key_source_t *ks = ts->ts_order_ks;
-  if (!enable_ks_out_alias || sc->sc_vec_in_outer
-      || !ks || ks->ks_from_temp_tree)
+  if (!enable_ks_out_alias || sc->sc_vec_in_outer || !ks || ks->ks_from_temp_tree)
     return;
 again:
   nth = -1;
@@ -3711,12 +3762,14 @@ sqlg_vec_ts (sql_comp_t * sc, table_source_t * ts)
 	  sc->sc_vec_current_col = sch_id_to_col (wi_inst.wi_schema, sp->sp_cl.cl_col_id);
 	  if (sp->sp_min_ssl)
 	    {
-	  sqlg_vec_cast (sc, ks->ks_vec_source, ks->ks_vec_cast, ks->ks_dc_val_cast, &sp->sp_min_ssl, fill, &ks->ks_last_vec_param, &sp->sp_cl.cl_sqt, cast_changes_card);
+	      sqlg_vec_cast (sc, ks->ks_vec_source, ks->ks_vec_cast, ks->ks_dc_val_cast, &sp->sp_min_ssl, fill,
+		  &ks->ks_last_vec_param, &sp->sp_cl.cl_sqt, cast_changes_card);
 	      fill++;
 	    }
 	  if (sp->sp_max_ssl)
 	    {
-	      sqlg_vec_cast (sc, ks->ks_vec_source, ks->ks_vec_cast, ks->ks_dc_val_cast, &sp->sp_max_ssl, fill, &ks->ks_last_vec_param, &sp->sp_cl.cl_sqt, cast_changes_card);
+	      sqlg_vec_cast (sc, ks->ks_vec_source, ks->ks_vec_cast, ks->ks_dc_val_cast, &sp->sp_max_ssl, fill,
+		  &ks->ks_last_vec_param, &sp->sp_cl.cl_sqt, cast_changes_card);
 	      fill++;
 	    }
 
@@ -3737,7 +3790,8 @@ sqlg_vec_ts (sql_comp_t * sc, table_source_t * ts)
 	      sql_type_t target_sqt = sp->sp_cl.cl_sqt;
 	      if (ks->ks_key->key_is_col)
 		target_sqt.sqt_dtp = target_sqt.sqt_col_dtp;
-	      sqlg_vec_cast (sc, ks->ks_vec_source, ks->ks_vec_cast, ks->ks_dc_val_cast, &sp->sp_min_ssl, fill, &ks->ks_last_vec_param, &target_sqt, cast_changes_card);
+	      sqlg_vec_cast (sc, ks->ks_vec_source, ks->ks_vec_cast, ks->ks_dc_val_cast, &sp->sp_min_ssl, fill,
+		  &ks->ks_last_vec_param, &target_sqt, cast_changes_card);
 	      if (!ks->ks_first_row_vec_ssl && SSL_IS_VEC_OR_REF (sp->sp_min_ssl))
 		ks->ks_first_row_vec_ssl = sp->sp_min_ssl;
 	      fill++;
@@ -3747,7 +3801,8 @@ sqlg_vec_ts (sql_comp_t * sc, table_source_t * ts)
 	      sql_type_t target_sqt = sp->sp_cl.cl_sqt;
 	      if (ks->ks_key->key_is_col)
 		target_sqt.sqt_dtp = target_sqt.sqt_col_dtp;
-	      sqlg_vec_cast (sc, ks->ks_vec_source, ks->ks_vec_cast, ks->ks_dc_val_cast, &sp->sp_max_ssl, fill, &ks->ks_last_vec_param, &target_sqt, cast_changes_card);
+	      sqlg_vec_cast (sc, ks->ks_vec_source, ks->ks_vec_cast, ks->ks_dc_val_cast, &sp->sp_max_ssl, fill,
+		  &ks->ks_last_vec_param, &target_sqt, cast_changes_card);
 	      if (!ks->ks_first_row_vec_ssl && SSL_IS_VEC_OR_REF (sp->sp_max_ssl))
 		ks->ks_first_row_vec_ssl = sp->sp_max_ssl;
 	      fill++;
@@ -3910,8 +3965,7 @@ sqlg_vec_qns (sql_comp_t * sc, data_source_t * qn, dk_set_t prev_nodes)
   int is_first = 1;
   for (qn = qn; qn; qn = qn_next (qn))
     {
-      if (IS_QN (qn, fun_ref_node_input)
-	  || IS_QN (qn, hash_fill_node_input))
+      if (IS_QN (qn, fun_ref_node_input) || IS_QN (qn, hash_fill_node_input))
 	{
 	  dk_hash_t *shadow_save = NULL;
 	  QNCAST (fun_ref_node_t, fref, qn);
@@ -3922,6 +3976,7 @@ sqlg_vec_qns (sql_comp_t * sc, data_source_t * qn, dk_set_t prev_nodes)
 	  sqlg_new_vec_ssls (sc, qn);
 	  if (IS_QN (fref, hash_fill_node_input))
 	    {
+	      ASG_SSL (NULL, NULL, fref->fnr_setp->setp_ht_id);
 	      shadow_save = hash_table_allocate (sc->sc_vec_ssl_shadow->ht_actual_size);
 	      dk_hash_copy (shadow_save, sc->sc_vec_ssl_shadow);
 	    }
@@ -3963,9 +4018,9 @@ sqlg_vec_qns (sql_comp_t * sc, data_source_t * qn, dk_set_t prev_nodes)
 	}
       sc->sc_vec_pred = prev_nodes;
       qn_vec_slots (sc, qn, NULL, NULL, &ign);
+      qn->src_prev = prev_nodes ? (data_source_t*)prev_nodes->data : NULL;
       if (qn_is_const_card (qn))
 	continue;
-      qn->src_prev = prev_nodes ? (data_source_t *) prev_nodes->data : NULL;
       if (IS_QN (qn, outer_seq_end_input))
 	prev_nodes = sc->sc_vec_pred;
       if (IS_QN (qn, gs_union_node_input))

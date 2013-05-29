@@ -1672,7 +1672,7 @@ sqlo_proc_cl_locatable (caddr_t name, int level, query_t ** qr_ret)
 
 
 int qr_is_local (query_t * qr, int is_cluster);
-
+extern int enable_hash_colocate;
 int
 src_is_local (data_source_t * src, int is_cluster)
 {
@@ -1681,7 +1681,7 @@ src_is_local (data_source_t * src, int is_cluster)
   if ((qn_input_fn) union_node_input == src->src_input
       || (!enable_rec_qf && IS_QN (src,  subq_node_input))
       || (qn_input_fn) remote_table_source_input == src->src_input
-      || (is_cluster && IS_QN (src, hash_source_input))
+      || (is_cluster && !enable_hash_colocate && IS_QN (src, hash_source_input))
       || (!enable_rec_qf && IS_QN (src, query_frag_input))
       )
     return 0;
@@ -2057,6 +2057,13 @@ setp_refd_slots (sql_comp_t * sc, setp_node_t * setp, dk_hash_t * res, dk_hash_t
   END_DO_SET();
   if (setp->setp_loc_ts)
     qn_refd_slots (sc, (data_source_t*)setp->setp_loc_ts, res, all_res, non_cl_local);
+  if (setp->setp_ha && HA_FILL == setp->setp_ha->ha_op)
+    {
+      /* if this is a hash filler then ref the set no so that the 1st stage of the filler qf should have at least one param else it  has none and can't compile without */
+      REF_SSL (res, sc->sc_set_no_ssl);
+      REF_SSL (res, setp->setp_ht_id);
+      REF_SSL (res, setp->setp_hash_part_ssl);
+    }
 }
 
 
@@ -2173,6 +2180,10 @@ qn_refd_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t *
       ref_ssls (res, hs->hs_ref_slots);
       ref_ssls (all_res, hs->hs_ref_slots);
       cv_refd_slots (sc, hs->hs_after_join_test, res, all_res, non_cl_local);
+      REF_SSL (res, hs->hs_cl_id);
+      REF_SSL (all_res, hs->hs_cl_id);
+      REF_SSL (res, hs->hs_part_ssl);
+      REF_SSL (all_res, hs->hs_part_ssl);
       DO_BOX (state_slot_t *, ssl, inx, hs->hs_out_slots)
 	{
 	  ASG_SSL (res, all_res, ssl);

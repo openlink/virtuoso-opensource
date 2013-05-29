@@ -807,6 +807,7 @@ typedef struct cl_self_message_s
 #define CL_ROLLBACK_SYNC 32 /* internal, indicate that a reply is expected for the rollback */
 #define CL_DISCONNECT_QUERY 33  /* request that the master check availability of node and eventually disable it */
 #define CL_ADMIN 34 /* internal admin action like resync or disable of failed */
+#define CL_SET_BLOOM 35 /* shipping bloom filter for partitioned hash table */
 
    /* enlist flag for CL_ATATOMIC */
 #define  CL_AC_SYNC 3
@@ -1046,6 +1047,11 @@ int itc_rd_cluster_blobs (it_cursor_t * itc, row_delta_t * rd, mem_pool_t * ins_
 
 
 /**add vec */
+void clrg_call_flush_if_due (cl_req_group_t * clrg, query_instance_t * qi, int anyway);
+void chash_cl_init ();
+caddr_t daq_call_1 (cl_req_group_t * clrg, dbe_key_t * key, caddr_t fn, caddr_t * vec, int flags, int * first_seq_ret, caddr_t * host_nos);
+extern dk_mutex_t cl_chash_mtx;
+extern dk_hash_t cl_id_to_chash;
 extern int enable_itc_dfg_ck;
 
 

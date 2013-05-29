@@ -722,7 +722,9 @@ it_temp_free (index_tree_t * it)
   if (it->it_extent_map != it->it_storage->dbs_extent_map)
     em_free (it->it_extent_map);
   if (it->it_hi)
-    hi_free (it->it_hi);
+    {
+      hi_free (it->it_hi);
+    }
   it->it_hi = NULL;
   it->it_hi_reuses = 0;
   it_temp_tree_done (it);

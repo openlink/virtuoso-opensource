@@ -1428,6 +1428,7 @@ sqlo_place_col (sqlo_t * so, df_elt_t * super, df_elt_t * dfe)
 	  dfe->_.col.is_fixed = 0;
 	  if (!dfe->_.col.vc)
 	    t_set_push (&tb_dfe->_.table.out_cols, (void*) dfe);
+	  tb_dfe->dfe_unit = 0;
 	  sqlo_rdf_col_card (so, tb_dfe, dfe);
 	  if (HR_REF == tb_dfe->_.table.hash_role)
 	    {
@@ -5047,6 +5048,9 @@ dfe_arity_with_supers (df_elt_t * dfe)
   float sub_arity = 1;
   if (!dfe)
     return 1;
+  if ((DFE_TABLE == dfe->dfe_type && HR_FILL == dfe->_.table.hash_role)
+      || (DFE_DT == dfe->dfe_type && dfe->_.sub.n_hash_fill_keys))
+    return 1;
   if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &sub_arity, 8000))
     sqlc_error (dfe->dfe_sqlo->so_sc->sc_cc, "42000", "Stack Overflow");
   while (dfe->dfe_prev)
@@ -5253,8 +5257,10 @@ sqlo_try_hash (sqlo_t * so, df_elt_t * dfe, op_table_t * super_ot, float * score
   sqlo_check_col_pred_placed (dfe);
   if (sqlo_hash_fill_join (so, dfe, &fill_dfe, org_preds, hash_keys))
     {
-      sqlo_check_col_pred_placed (dfe);      fill_unit = fill_dfe->dfe_unit;
+      sqlo_check_col_pred_placed (dfe);
+      fill_unit = fill_dfe->dfe_unit;
       fill_arity = fill_dfe->dfe_arity;
+      fill_unit += sqlo_hash_ins_cost (dfe, fill_arity, hash_keys);
       dfe->dfe_arity *= arity_scale (dfe_hash_fill_cond_card (dfe));
 
     }
@@ -5265,11 +5271,12 @@ sqlo_try_hash (sqlo_t * so, df_elt_t * dfe, op_table_t * super_ot, float * score
       fill_dfe->_.table.hash_role = HR_FILL;
       fill_dfe->_.table.is_hash_filler_unique = dfe->_.table.is_unique;
       sqlo_best_hash_filler (so, fill_dfe, remote, &org_preds, &post_preds, &fill_unit, &fill_arity, &ov);
+      fill_unit += sqlo_hash_ins_cost (dfe, fill_arity, hash_keys);
     }
 
   if (!mode)
     {
-      if (dfe->dfe_unit * ref_arity < fill_unit + ref_arity * HASH_LOOKUP_COST + ref_arity * HASH_ROW_COST * MAX (0, dfe->dfe_arity -1))
+      if (dfe->dfe_unit * ref_arity < fill_unit + ref_arity * sqlo_hash_ref_cost (dfe, fill_arity))
 	{
 	  /* hash us not better */
 	  {
@@ -5320,8 +5327,7 @@ sqlo_try_hash (sqlo_t * so, df_elt_t * dfe, op_table_t * super_ot, float * score
     }
   dfe->dfe_remote_locus_refs = hash_pred_locus_refs;/* Bug 1500 */
   dfe->_.table.join_test = sqlo_and_list_body (so, LOC_LOCAL, dfe, post_preds);
-  dfe->dfe_unit =  (float) HASH_LOOKUP_COST * (1 + ((dk_set_length (dfe->_.table.hash_refs) - 1) * (float)HASH_LOOKUP_COST * 0.5))
-	+ HASH_ROW_COST * MAX (0,  dfe->dfe_arity - 1);
+  dfe->dfe_unit = 0;
   *score_ret = sqlo_score (super_ot->ot_work_dfe, super_ot->ot_work_dfe->_.sub.in_arity);
   if (!dfe->_.table.is_unique)
     dfe->_.table.is_oby_order = 0;

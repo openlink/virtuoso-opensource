@@ -2488,6 +2488,11 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
 		  cpo.cpo_chash = QST_BOX (index_tree_t *, inst, hrng->hrng_hs->hs_ha->ha_tree->ssl_index)->it_hi->hi_chash;
 		  cpo.cpo_chash_dtp = cpo.cpo_chash->cha_sqt[0].sqt_dtp;
 		}
+	      else if (hrng->hrng_ht)
+		{
+		  cpo.cpo_chash = QST_BOX (index_tree_t *, inst, hrng->hrng_ht->ssl_index)->it_hi->hi_chash;
+		  cpo.cpo_chash_dtp = cpo.cpo_chash->cha_sqt[0].sqt_dtp;
+		}
 	      else
 		{
 		  cpo.cpo_max_op = CMP_HASH_RANGE_ONLY;

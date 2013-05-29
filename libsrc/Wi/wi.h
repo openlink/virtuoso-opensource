@@ -456,6 +456,8 @@ typedef struct chash_s
   int64 **		cha_array;
   int64 ** 		cha_exceptions;
   int			cha_exception_fill;
+  uint32		cha_n_bloom;
+  uint64 *		cha_bloom;
   dk_mutex_t		cha_mtx;
   chash_page_t *	cha_current;
   chash_page_t *		cha_current_data;
@@ -491,6 +493,7 @@ struct hash_index_s
   mem_pool_t *		hi_pool;
   id_hash_t *		hi_memcache;
   chash_t *		hi_chash;
+  uint64		hi_cl_id; /* if cluster hash join temp, id for reference */
   dk_hash_t *	hi_thread_cha; /* when filling hash join chash, maps from thread to cha */
   int			hi_size;
   char			hi_is_unique;
@@ -666,10 +669,23 @@ typedef struct hash_range_spec_s
 {
   /* if hash partitioning, test that hash no in range.  Occurs as sp_min_ssl in search_spec_t  */
   struct state_slot_s **	hrng_ssls;
+  struct state_slot_s *		hrng_part_ssl;
   ssl_index_t	hrng_min;
   ssl_index_t	hrng_max;
+  char		hrng_flags; /* range filter only, use bloom, not in, not exists in invisible hash join */
   struct hash_source_s *	hrng_hs;
+  struct state_slot_s *	hrng_ht;
+  struct state_slot_s *	hrng_ht_id;
+  struct state_slot_s *	hrng_dc; /* temp dc for decoding a ce */
 } hash_range_spec_t;
+
+
+/* hrng_flags */
+#define HR_NOT 1 /* true if not found */
+#define HR_NO_BLOOM 2 /* bloom not selective, do not check */
+#define HR_RANGE_ONLY 4
+
+
 
 struct row_range_s
 {
@@ -928,6 +944,7 @@ struct it_cursor_s
     db_buf_t		itc_last_cmp_ce;
     int64		itc_last_cmp_value;
     int			itc_last_cmp_row;
+    char		itc_is_last_col_spec;
     short		itc_n_row_specs;
     dp_addr_t		itc_last_checked_page;
     /* end of column related */

@@ -339,7 +339,9 @@ setp_node_run (setp_node_t * setp, caddr_t * inst, caddr_t * state, int print_bl
       itc_ha_feed (&ihfr, setp->setp_ha, inst, 0);
       else
 	{
-	  int set, n_sets = QST_INT (inst, setp->src_gen.src_prev->src_out_fill);
+	  int set, n_sets;
+	  /* can be first in a qf, so no prev if filling replicated hash */
+	  n_sets = setp->src_gen.src_prev ? QST_INT (inst, setp->src_gen.src_prev->src_out_fill) : qi->qi_n_sets;
 	  if (enable_chash_join)
 	    {
 	      setp_chash_fill (setp, inst);
@@ -1102,7 +1104,7 @@ sort_read_vec_input (table_source_t * ts, caddr_t * inst, caddr_t * state)
 	    {
 	      SRC_IN_STATE (ts, inst) = inst;
 	      QST_INT (inst, ts->clb.clb_nth_set) = set;
-	      ts_always_null (ts, inst);					    \
+	      ts_always_null (ts, inst);
 	      qn_send_output ((data_source_t*)ts, inst);
 	      state = NULL;
 	      dc_reset_array (inst, (data_source_t*)ts, ts->src_gen.src_continue_reset, -1);
@@ -1113,7 +1115,7 @@ sort_read_vec_input (table_source_t * ts, caddr_t * inst, caddr_t * state)
       QST_INT (inst, ks->ks_pos_in_temp) = 0;
     }
   SRC_IN_STATE ((data_source_t*)ts, inst) = NULL;
-  ts_always_null (ts, inst);					    \
+  ts_always_null (ts, inst);
   if (QST_INT (inst, ts->src_gen.src_out_fill))
     qn_ts_send_output ((data_source_t *)ts, inst, ts->ts_after_join_test);
 }

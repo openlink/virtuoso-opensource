@@ -1086,9 +1086,10 @@ node_print (data_source_t * node)
   else if (in == (qn_input_fn) setp_node_input)
     {
       setp_node_t *setp = (setp_node_t *) node;
-      char hf[10];
+      char hf[40];
       if (setp->setp_ha && HA_FILL == setp->setp_ha->ha_op)
-	snprintf (hf, sizeof (hf), "hf %d", setp->setp_ha->ha_tree->ssl_index);
+	snprintf (hf, sizeof (hf), "hf %d %s", setp->setp_ha->ha_tree->ssl_index,
+		  HS_CL_REPLICATED == setp->setp_cl_partition ? "replicated" : "");
       else
 	hf[0] = 0;
       stmt_printf (("%s %s", setp->setp_distinct ? "Distinct" : "Sort", hf));
@@ -1375,6 +1376,8 @@ node_print (data_source_t * node)
       stmt_printf ((" -> "));
       ssl_array_print (hs->hs_out_slots);
       stmt_printf (("\n"));
+      if (hs->hs_loc_ts)
+	ks_print_vec_cast (hs->hs_loc_ts->ts_order_ks->ks_vec_cast, hs->hs_loc_ts->ts_order_ks->ks_vec_source);
       if (hs->hs_ks)
 	ks_print_vec_cast (hs->hs_ks->ks_vec_cast, hs->hs_ks->ks_vec_source);
       if (hs->hs_after_join_test)

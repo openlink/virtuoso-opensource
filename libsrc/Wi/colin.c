@@ -575,6 +575,25 @@ ce_intd_register (flags)
   ce_op_register (CE_INT_DELTA | flags, CMP_EQ, 1, ce_intd_sets_ltgt);
 }
 
+int ce_hash_range_filter (col_pos_t * cpo, db_buf_t ce_first, int n_values, int n_bytes);
+int ce_hash_sets_filter (col_pos_t * cpo, db_buf_t ce_first, int n_values, int n_bytes);
+
+void
+ce_hash_register ()
+{
+  dtp_t cets[] = { CE_RL, CE_BITS, CE_VEC, CE_DICT, CE_RL_DELTA, CE_INT_DELTA};
+  dtp_t dtps[] = {0, 16, 96, 64};
+  int i1, i2;
+  for (i1 = 0; i1 < sizeof (cets); i1++)
+    {
+      for (i2 = 0; i2 < sizeof (dtps); i2++)
+	{
+	  dtp_t cet = cets[i1] | dtps[i2];
+	  ce_op_register (cet, CE_OP_CODE (CMP_HASH_RANGE, CMP_NONE), 0, ce_hash_range_filter);
+	  ce_op_register (cet, CE_OP_CODE (CMP_HASH_RANGE, CMP_NONE), 1, ce_hash_sets_filter);
+	}
+    }
+}
 
 void
 colin_init ()
@@ -620,7 +639,7 @@ colin_init ()
   ce_op_register (CE_BITS | CE_IS_64, CMP_EQ, 0, ce_bits_int_range_eq_filter);
   ce_op_register (CE_BITS | CE_IS_IRI, CMP_EQ, 0, ce_bits_iri_range_eq_filter);
   ce_op_register (CE_BITS | CE_IS_IRI | CE_IS_64, CMP_EQ, 0, ce_bits_iri_range_eq_filter);
-
+  ce_hash_register ();
   ce_intd_register (CET_ANY);
   ce_intd_register (0);
   ce_intd_register (CE_IS_64);
@@ -629,4 +648,5 @@ colin_init ()
 
 
   ce_op_decode = col_find_op (CE_DECODE);
+  ce_op_hash = col_find_op (CMP_HASH_RANGE);
 }

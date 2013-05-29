@@ -199,18 +199,24 @@ sqlo_dfe_print (df_elt_t * dfe, int offset)
 
     case DFE_TABLE:
       {
+	char spacing[40];
+	spacing[0] = 0;
+	if (dfe->_.table.hit_spacing)
+	  snprintf (spacing, sizeof (spacing), "%s spacing %9.2g", dfe->_.table.in_order ? "in order" : "", dfe->_.table.hit_spacing);
 	sqlo_print (("Table %s(%s %s) by %s %s", dfe->_.table.ot->ot_table->tb_name,
 	      dfe->_.table.ot->ot_prefix ? dfe->_.table.ot->ot_prefix : "",
 	      dfe->_.table.ot->ot_new_prefix,
 		     dfe->_.table.key ? dfe->_.table.key->key_name : "no key",
 		     dfe->_.table.hash_role == HR_FILL ? " hash filler " : dfe->_.table.hash_role == HR_REF ? "hash join" : ""));
 	if (compiler_unit_msecs)
-	  sqlo_print (("  Reached %9.2g unit %9.2g (%g msecs) arity %9.2g\n",
+	  sqlo_print (("  Reached %9.2g unit %9.2g (%g msecs) arity %9.2g %s\n",
 		(double) dfe->_.table.in_arity, (double) dfe->dfe_unit,
-		  (double) dfe->dfe_unit * compiler_unit_msecs, (double) dfe->dfe_arity));
+		(double) dfe->dfe_unit * compiler_unit_msecs,
+		       (double) dfe->dfe_arity, spacing));
 	else
-	  sqlo_print (("  Reached %9.2g unit %9.2g arity %9.2g\n",
-		  (double) dfe->_.table.in_arity, (double) dfe->dfe_unit, (double) dfe->dfe_arity));
+	  sqlo_print (("  Reached %9.2g unit %9.2g arity %9.2g %s\n",
+		(double) dfe->_.table.in_arity, (double) dfe->dfe_unit,
+		       (double) dfe->dfe_arity, spacing));
 	sqlo_print (("  col preds: "));
 	if (dfe->_.table.index_path)
 	  sqlo_index_path_print (dfe);
@@ -280,8 +286,9 @@ sqlo_dfe_print (df_elt_t * dfe, int offset)
 
 	if (dfe->_.table.hash_filler)
 	  {
-	    sqlo_print (("  hash filler dfe:\n"));
-	    sqlo_dfe_print (dfe->_.table.hash_filler, offset + OFS_INCR);
+	    df_elt_t * filler = dfe->_.table.hash_filler;
+	    sqlo_print (("  hash filler dfe build time %g:\n", sqlo_hash_ins_cost (dfe, filler->dfe_arity, dfe->_.table.out_cols)));
+	    sqlo_dfe_print (filler, offset + OFS_INCR);
 	  }
 
 	if (dfe->_.table.hash_filler_after_code)
@@ -398,7 +405,7 @@ sqlo_dfe_print (df_elt_t * dfe, int offset)
       }
     case DFE_ORDER:
     case DFE_GROUP:
-      sqlo_print (("  %s ", dfe->dfe_type == DFE_ORDER ? "order by" : "group by"));
+      sqlo_print (("  %s unit %g card %g", dfe->dfe_type == DFE_ORDER ? "order by" : "group by", dfe->dfe_unit, dfe->dfe_arity));
       if (dfe->_.setp.is_linear)
 	sqlo_print ((" linear "));
       dbg_print_box ((caddr_t) dfe->_.setp.specs, stdout);

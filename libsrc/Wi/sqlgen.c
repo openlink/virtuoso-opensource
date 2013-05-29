@@ -1502,7 +1502,11 @@ sqlg_hash_source (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t * pre_code)
   hash_area_t * ha = setp->setp_ha;
   SQL_NODE_INIT (hash_source_t, hs, hash_source_input, hash_source_free);
   hs->hs_cardinality = tb_dfe->dfe_arity;
+  hs->hs_filler = setp->setp_fref;
+  hs->hs_part_min = hs->hs_filler->fnr_hash_part_min;
+  hs->hs_part_max = hs->hs_filler->fnr_hash_part_max;
   hs->hs_no_partition = dfe_is_in_hash_filler (tb_dfe);
+  hs->clb.clb_fill = cc_new_instance_slot (so->so_sc->sc_cc);
   hs->hs_current_inx = cc_new_instance_slot (so->so_sc->sc_cc);
   hs->hs_saved_hmk = cc_new_instance_slot (so->so_sc->sc_cc);
   hs->hs_is_unique = tb_dfe->_.table.is_unique;

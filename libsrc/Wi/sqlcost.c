@@ -39,7 +39,62 @@
 #include "rdfinf.h"
 
 
+float col_pred_cost = 0.02; /* itc_col_check */
+float row_skip_cost = 0.035; /* itc_row_check and 1 iteration of itc_page_search */
+float inx_init_cost = 1;  /* fixed overhead of starting an index lookup */
+float inx_cmp_cost = 0.25; /* one compare in random access lookup. Multiple by log2 of inx count to get cost of 1 random access */
+float row_cost_per_byte = 0.001; /* 200 b of row cost 1 itc_col_check */
+float next_page_cost = 5;
+float inx_row_ins_cost = 1; /* cost of itc_insert_dv into inx */
+float hash_row_ins_cost = 5; /* cost of adding a row to hash */
+float hash_mem_ins_cost = 0.7;
+float hash_lookup_cost = 0.9;
+float hash_row_cost = 0.5;
+float cv_instr_cost = 0.1;   /* avg cost of instruction in code_vec_run */
+float hash_log_multiplier = 0.05;
+float sqlo_agg_cost = 0.0166; /* count, sum etc with no group by */
+float sqlo_cs_col_pred_cost = 0.003;
+float sqlo_cs_row_cost = 0.00374;
+float sqlo_cs_col_ref_cost = 0.0024;
+float sqlo_cs_seg_page_cost = 0.2;
+float sqlo_cs_intra_seg_cmp_cost = 0.28;
+float sqlo_cs_next_set_cost = 0.12;
 
+
+float segc_x[] = {1, 100, 500, 1000, 2000, 10000 };
+float segc_y[] = {0.28, 0.45, 0.7, 0.9, 1.2, 2.2};
+lin_int_t li_cs_seg_cost = { sizeof (segc_x) / sizeof (float), &segc_x, &segc_y};
+
+float sm_x[] = {0, 10000, 1000000};
+float sm_y[] = {0,  0.11, 0.22 };
+lin_int_t li_dc_sort_cost = {3, sm_x, sm_y};
+
+
+float hm_x[] = {1, 10000, 1000000, 100000000, 200000000};
+float hm_y[] = { 0.042, 0.045, 0.09, 0.25, 0.3};
+lin_int_t li_hash_mem_cost = {5, hm_x, hm_y};
+
+
+
+float
+lin_int (lin_int_t * li, float x)
+{
+  /* linear interpolation */
+  int pt, n = li->li_n_points;
+  float k;
+  if (x <= li->li_x[0])
+    pt = 0;
+  else if (x > li->li_x[n - 1])
+    pt = n - 1;
+  else
+    {
+      for (pt = 0; pt < n; pt++)
+	if (x <= li->li_x[pt + 1])
+	  break;
+    }
+  k =  (li->li_y[pt + 1] - li->li_y[pt]) / (li->li_x[pt + 1] - li->li_x[pt]);
+  return li->li_y[pt] + k * (x - li->li_x[pt]);
+}
 
 void dfe_list_cost (df_elt_t * dfe, float * unit_ret, float * arity_ret, float * overhead_ret, locus_t *loc);
 #define ABS(x) (x < 0 ? -(x) : x)
@@ -96,9 +151,30 @@ dbe_key_unit_cost (dbe_key_t * key)
 }
 
 
-static float
-dbe_key_row_cost (dbe_key_t * key, float * rpp)
+float
+dfe_cs_row_cost (df_elt_t * dfe, float inx_card, float col_card)
 {
+  dbe_key_t * key = dfe->_.table.key;
+  float ref_cost = 0, cost;
+  DO_SET (df_elt_t *, col, &dfe->_.table.out_cols)
+    {
+      int nth = dk_set_position (key->key_parts, col->_.col.col);
+      if (nth != -1 && nth < key->key_n_significant)
+	ref_cost += sqlo_cs_col_ref_cost * ((1.0 + nth) / (1.0 + key->key_n_significant ));
+      else
+	ref_cost += sqlo_cs_col_ref_cost;
+    }
+  END_DO_SET();
+  cost = inx_card * ref_cost;
+  cost += inx_card * sqlo_cs_row_cost;
+  return cost;
+}
+
+
+float
+dbe_key_row_cost (dbe_key_t * key, float * rpp, int * key_len)
+{
+  int is_col = key->key_is_col, nth = 0;
   int row_len = 0;
   /* weight the length of the column in the cost model */
   DO_SET (dbe_column_t *, k_col, &key->key_parts)
@@ -119,13 +195,322 @@ dbe_key_row_cost (dbe_key_t * key, float * rpp)
       else if (IS_BLOB_DTP (k_col->col_sqt.sqt_dtp))
 	col_len = 120;
       row_len += col_len;
+      nth++;
+      if (nth == key->key_n_significant)
+	{
+	  if (key_len)
+	    *key_len = row_len;
+	  if (is_col)
+	    break;
+	}
     }
   END_DO_SET ();
+  /* for column-wise , approx 16 bytes per col ref */
+  if (is_col)
+    row_len += dk_set_length (key->key_parts) * 16;
   if (key->key_is_bitmap)
     row_len = row_len / 3; /* assume three bits on the average, makes this less costly than regular */
   if (rpp)
-    *rpp = 6000.0 / row_len ;
+    *rpp = (PAGE_DATA_SZ * 0.9) / row_len ;
   return (float) row_len * ROW_COST_PER_BYTE;
+}
+
+
+
+df_elt_t *
+dfe_prev_tb_up (df_elt_t * pt)
+{
+  while (pt)
+    {
+      if (DFE_TABLE == pt->dfe_type && HR_NONE == pt->_.table.hash_role)
+	return pt;
+      if (pt->dfe_prev)
+	return pt->dfe_prev;
+      pt = pt->dfe_super;
+    }
+  return NULL;
+}
+
+
+df_elt_t *
+
+dfe_prev_tb (df_elt_t * dfe, float * card_between_ret)
+{
+  df_elt_t * pt;
+
+  pt = dfe->dfe_prev;
+
+  while (pt)
+    {
+      if (pt->dfe_arity)
+	(*card_between_ret) *= pt->dfe_arity;
+      if (DFE_TABLE == pt->dfe_type && HR_NONE == pt->_.table.hash_role)
+	return pt;
+      if (DFE_ORDER == pt->dfe_type || DFE_GROUP == pt->dfe_type)
+	return NULL;
+      if (pt->dfe_prev)
+	pt = pt->dfe_prev;
+      else
+	{
+	  df_elt_t * sup = dfe_prev_tb_up (pt);
+	  if (!sup)
+	    return NULL;
+	  pt = sup;
+	}
+    }
+  return NULL;
+}
+
+int pred_const_rhs (df_elt_t * pred);
+
+
+int
+dfe_lead_const (df_elt_t * dfe)
+{
+  int n = 0;
+  dbe_key_t * key = dfe->_.table.key;
+  DO_SET (dbe_column_t *, col, &key->key_parts)
+    {
+      df_elt_t * lower = sqlo_key_part_best (col, dfe->_.table.col_preds, 0);
+      if (!(lower &&  BOP_EQ == lower->_.bin.op && pred_const_rhs (lower)))
+	break;
+      n++;
+      if (n == key->key_n_significant)
+	return n;
+    }
+  END_DO_SET ();
+  return n;
+}
+
+df_elt_t *
+dfe_key_nth_dfe (df_elt_t * dfe, int nth)
+{
+  caddr_t col_name = ((dbe_column_t *)dk_set_nth (dfe->_.table.key->key_parts, nth))->col_name;
+  ST * st 
+= t_listst (3, COL_DOTTED, dfe->_.table.ot->ot_new_prefix, col_name);
+  return sqlo_df_elt (dfe->dfe_sqlo, st);
+}
+
+
+int 
+dfe_n_in_order (df_elt_t * dfe, df_elt_t ** prev_ret, float * card_between, int * eq_on_ordering)
+{
+  int c1, c2, n1, n2, mx, nth;
+  int n_col_eqs = 0;
+  df_elt_t * col1, *col2, *lower1, *upper1;
+  df_elt_t * prev_tb = NULL;
+  if (HR_FILL != dfe->_.table.hash_role);
+    prev_tb = dfe_prev_tb (dfe, card_between);
+  *prev_ret = prev_tb;
+  if (!prev_tb)
+    return 0;
+  c1 = dfe_lead_const (prev_tb);
+  c2 = dfe_lead_const (dfe);
+  n1 = prev_tb->_.table.key->key_n_significant;
+  n2 = dfe->_.table.key->key_n_significant;
+  mx = MIN (n1 - c1, n2 - c2);
+  for (nth = 0; nth < mx; nth++)
+    {
+      col1 =  dfe_key_nth_dfe (prev_tb, c1 + nth);
+      if (!col1)
+	break;
+      col2 = dfe_key_nth_dfe (dfe, c2 + nth);
+      if (!col2)
+	break;
+      if (!sqlo_is_col_eq (dfe->dfe_sqlo->so_this_dt, col1, col2))
+	break;
+      lower1 = sqlo_key_part_best (col1->_.col.col, prev_tb->_.table.col_preds, 0);
+      upper1 = sqlo_key_part_best (col1->_.col.col, prev_tb->_.table.col_preds, 1);
+      if (lower1 && dfe_is_eq_pred (lower1))
+	n_col_eqs++;
+      else  if (lower1)
+	*card_between *= lower1->dfe_arity;
+      if (upper1)
+	*card_between *= upper1->dfe_arity;
+    }
+  *eq_on_ordering = n_col_eqs;
+  return nth;
+}
+
+
+df_elt_t *
+cp_left_col_dfe (df_elt_t * lower)
+{
+  df_elt_t ** in_list = sqlo_in_list (lower, NULL, NULL);
+  if (in_list)
+    return in_list[0];
+  else
+    return lower->_.bin.left;
+}
+
+
+float
+dfe_cs_seg_cost (df_elt_t * dfe)
+{
+  /* cost of first row from a column wise seg */
+  float cost = 0;
+  DO_SET (df_elt_t *, col, &dfe->_.table.out_cols)
+    {
+      cost += sqlo_cs_seg_page_cost;
+    }
+  END_DO_SET();
+  DO_SET (df_elt_t *, cp, &dfe->_.table.col_preds)
+    {
+      df_elt_t * left_col = cp_left_col_dfe (cp);
+      if (dk_set_member (dfe->_.table.out_cols, left_col))
+	continue;
+      cost += sqlo_cs_seg_page_cost;
+    }
+  END_DO_SET();
+  return cost;
+}
+
+
+float
+dfe_key_next_cost (df_elt_t *dfe, float spacing, int is_same_parent)
+{
+  /* cost in row wise index to look for next set so much fwd.  If col wise, the distance is in logical rows, so divide by rows in seg */
+  float lg, col_seg_time = 0;
+  dbe_key_t * key = dfe->_.table.key;
+  spacing += 2; /* never under 1 comparison */
+  if (key->key_is_col)
+    {
+      /* one comparison cover as many rows as in seg, overhead is more since seg must be entered, i.e. accessed cols must be fetched */
+      float rows_per_seg = key->key_segs_sampled ? key->key_rows_in_sampled_segs  / key->key_segs_sampled : 10000;
+    spacing /= rows_per_seg;
+    col_seg_time = dfe_cs_seg_cost (dfe);
+    }
+  if (is_same_parent)
+    col_seg_time += 1.9; /* one up and one down transit if going to sibling under same parent */
+  else  if (spacing > 4)
+    spacing /= 2;
+    
+  lg = log (spacing) / log (2);
+  return  (lg * key->key_n_significant * inx_cmp_cost) + col_seg_time;
+}
+
+float 
+dfe_key_seg_next_cost (df_elt_t * dfe, float spacing)
+{
+  /* cost in column wise seg to search the next row so far  fwd */
+  float lg;
+  spacing += 2; /*log2 is never under one comparison */
+  return sqlo_cs_next_set_cost + lin_int (&li_cs_seg_cost, spacing);
+}
+
+
+float
+dfe_vec_index_unit (df_elt_t * dfe, float spacing)
+{
+  dbe_key_t * key = dfe->_.table.key;
+  float rows_per_page;
+  int key_len;
+  float inx_cost = dbe_key_unit_cost (key);
+  float fanout;
+  float n_from_top, n_sib, n_in_sibs, n_page, n_seg;
+  dbe_key_row_cost (key, &rows_per_page, &key_len);
+  fanout = PAGE_DATA_SZ * 0.9 /key_len;
+  n_in_sibs = fanout * rows_per_page;
+  if (key->key_is_col)
+    {
+      float n_in_seg = key->key_segs_sampled ? key->key_rows_in_sampled_segs / key->key_segs_sampled : 16000 ;
+      n_in_sibs *= n_in_seg;
+      rows_per_page *= n_in_seg;
+      if (spacing > n_in_sibs)
+	return dbe_key_unit_cost (key);
+      if (spacing > rows_per_page)
+	{
+	  n_from_top = spacing / n_in_sibs;
+	  return  inx_cost * n_from_top + (1 - n_from_top) * dfe_key_next_cost (dfe, spacing, 1);
+	}
+      else if (spacing > n_in_seg)
+	{
+	  n_from_top = spacing / n_in_sibs;
+	  n_sib = (1 - n_from_top) * (spacing / rows_per_page);
+	  n_page = (1 - n_from_top - n_sib);
+	  return inx_cost * n_from_top + dfe_key_next_cost (dfe, n_in_sibs, 1) + n_page * dfe_key_next_cost (dfe, spacing, 0);
+	}
+      else
+	{
+	  n_from_top = spacing / n_in_sibs;
+	  n_sib = (1 - n_from_top) * (spacing / rows_per_page);
+	  n_page = (1 - n_from_top - n_sib) * (spacing / n_in_seg);
+	  n_seg = 1 - n_from_top - n_sib - n_page;
+	  return inx_cost * n_from_top + n_sib * dfe_key_next_cost (dfe, n_in_sibs, 1) + n_page * dfe_key_next_cost (dfe, rows_per_page, 0) + dfe_key_seg_next_cost (dfe, spacing);
+	}
+    }
+  else
+    {
+      if (spacing > n_in_sibs)
+	return dbe_key_unit_cost (key);
+      if (spacing > rows_per_page)
+	{
+	  float n_from_top = spacing / n_in_sibs;
+	  return  inx_cost * n_from_top + (1 - n_from_top) * dfe_key_next_cost (dfe, spacing, 1);
+	}
+      else
+	{
+	  n_from_top = spacing / n_in_sibs;
+	  n_sib = (1 - n_from_top) * (spacing / rows_per_page);
+	  n_page = (1 - n_from_top - n_sib);
+	  return inx_cost * n_from_top + n_sib * dfe_key_next_cost (dfe, n_in_sibs, 1) + n_page * dfe_key_next_cost (dfe, spacing, 0);
+	}
+    }
+}
+
+int enable_vec_cost = 1;
+
+float 
+dfe_vec_inx_cost (df_elt_t * dfe, index_choice_t * ic, int64 sample)
+{
+  /* determine distance between consecutive hits.  If in order with previous, will be distance of previous times hanout of this if fanout > 1.
+   * if not in order, will be card of the table as selected by leading constants divided by min of expected inputs and max vector size */
+  float sort_cost = 0;
+  df_elt_t * prev_tb;
+  float card_between = 1;
+  int eq_on_ordering = 0;
+  int order;
+  float spacing;
+  dbe_key_t * key = dfe->_.table.key;
+  float ref_card = 1;
+  if (HR_NONE != dfe->_.table.hash_role)
+    return 8; /* hash fillers and refs do not take this into account */
+  order = dfe_n_in_order  (dfe, &prev_tb, &card_between, &eq_on_ordering);
+  ref_card = dfe_arity_with_supers (dfe->dfe_prev);;
+  if (!order)
+    {
+      float t_card;
+      int slices;
+      float vec_sz, max_vec;
+      int64 key_card = dbe_key_count (dfe->_.table.key);
+      if (ic->ic_leading_constants)
+	t_card = -1 != sample ? sample : key_card;
+      else
+	t_card = key_card;
+      slices = key->key_partition ? key->key_partition->kpd_map->clm_distinct_slices : 1;
+      max_vec = dc_max_batch_sz / slices;
+      vec_sz = MIN (max_vec, ref_card);
+      vec_sz = MAX (1, vec_sz);
+      spacing = t_card / vec_sz;
+      dfe->_.table.hit_spacing = spacing;
+      vec_sz = MIN (ref_card, max_vec);
+      sort_cost = lin_int (&li_dc_sort_cost, vec_sz);
+    }
+  else
+    {
+      if (eq_on_ordering)
+	{
+	  dfe->_.table.hit_spacing = prev_tb->_.table.hit_spacing / card_between;
+	  if (dfe->dfe_arity > 1)
+	    dfe->_.table.hit_spacing *= dfe->dfe_arity;
+	}
+      else
+	{
+	  float t_card = prev_tb->dfe_arity;
+	  dfe->_.table.hit_spacing = prev_tb->dfe_arity / t_card;
+	}
+    }
+  return  dfe_vec_index_unit (dfe, dfe->_.table.hit_spacing) + sort_cost;
 }
 
 
@@ -160,6 +545,7 @@ sqlo_enum_col_arity (df_elt_t * pred, dbe_column_t * left_col, float * a1)
       is_allocd = 1;
     }
   else if (DFE_IS_CONST (right))
+
     data = (caddr_t) right->dfe_tree;
   else
     return 0;
@@ -278,7 +664,7 @@ int dfe_range_card (df_elt_t * tb_dfe, df_elt_t * lower, df_elt_t * upper, float
 
 
 void
-sqlo_pred_unit (df_elt_t * lower, df_elt_t * upper, float * u1, float * a1)
+sqlo_pred_unit (df_elt_t * lower, df_elt_t * upper, df_elt_t * in_tb, float * u1, float * a1)
 {
   if (lower && lower->dfe_arity && lower->dfe_unit)
     {
@@ -286,7 +672,12 @@ sqlo_pred_unit (df_elt_t * lower, df_elt_t * upper, float * u1, float * a1)
       *a1 = lower->dfe_arity;
       return;
     }
-  *u1 = (float) COL_PRED_COST;
+  if (!in_tb)
+    *u1 = col_pred_cost * 2;
+  else if (in_tb->_.table.key->key_is_col)
+    *u1 = sqlo_cs_col_pred_cost;
+  else
+    *u1 = COL_PRED_COST;
   if (sqlo_in_list_unit (lower, u1, a1))
     return;
   if (upper == lower)
@@ -631,7 +1022,7 @@ dfe_pred_body_cost (df_elt_t **body, float * unit_ret, float * arity_ret, float 
     {
       df_elt_t *pred = (df_elt_t *) body;
       if (pred->dfe_type == DFE_BOP_PRED || (pred->dfe_type == DFE_BOP && pred->_.bin.op >= BOP_EQ && pred->_.bin.op <= BOP_GTE))
-	sqlo_pred_unit (pred, NULL, unit_ret, arity_ret);
+	sqlo_pred_unit (pred, NULL, NULL, unit_ret, arity_ret);
       else
 	dfe_unit_cost ((df_elt_t *) body, 1, unit_ret, arity_ret, overhead_ret);
     }
@@ -2155,91 +2546,18 @@ dfe_range_card (df_elt_t * tb_dfe, df_elt_t * lower, df_elt_t * upper, float * c
 }
 
 
+float 
+sqlo_hash_mem_cost (float hash_card)
+{
+  return lin_int (&li_hash_mem_cost, hash_card);
+}
+
+
 
 float
 dfe_hash_fill_unit (df_elt_t * dfe, float arity)
 {
   return HASH_ROW_INS_COST + HASH_COUNT_FACTOR (arity);
-}
-
-
-float
-sqlo_inx_intersect_cost (df_elt_t * tb_dfe, dk_set_t col_preds, dk_set_t group, float * arity_ret)
-{
-  /* Complicated.  Cost of inx int is the cost of the smallest term times no of terms.
-   * card is the card of the term with the least card times product of the selectivities of the rest.  The selectivity is the arity/count of the table */
-  int smallest_term = -1, inx;
-  float cf = 0;
-  int nth_term = 0;
-  dbe_table_t * tb = tb_dfe->_.table.ot->ot_table;
-  int n_inx = dk_set_length (group);
-  float arity[10], ov, cost[10], min = -1, total_cost, p_cost, p_arity, a, min_arity = -1;
-  float n_rows[10];
-  DO_SET (df_inx_op_t *, dio, &group)
-    {
-      dbe_key_t * prev_key = dio->dio_table->_.table.key;
-      dbe_key_t * key = dio->dio_key;
-      n_rows[nth_term] = dbe_key_count (dio->dio_table->_.table.ot->ot_table->tb_primary_key);
-      dio->dio_table->_.table.key = key;
-      dfe_table_cost (tb_dfe, &cost[nth_term], &arity[nth_term], &ov, 1);
-      if (-1 == smallest_term || min_arity > arity[nth_term])
-	{
-	  smallest_term = nth_term;
-	  min_arity = arity[nth_term];
-	}
-      if (-1 == min ||   cost[nth_term] < min)
-	min = cost[nth_term];
-      cf = cf + log (arity[nth_term]) * ROW_SKIP_COST * 0.1;
-      dio->dio_table->_.table.key = prev_key;
-      nth_term++;
-      if (nth_term >= 10)
-	break;
-    }
-  END_DO_SET();
-  a = arity[smallest_term];
-  for (inx = 0; inx < nth_term; inx++)
-    {
-      if (inx != smallest_term)
-	a *= arity_scale (arity[inx] / n_rows[inx]);
-    }
-  *arity_ret = a;
-  /* must get the main row? If cols refd that are not in any of the inxes. */
-  DO_SET (dbe_column_t *, col, &tb_dfe->_.table.ot->ot_table_refd_cols)
-    {
-      DO_SET (df_inx_op_t *, dio, &group)
-	{
-	  if (dk_set_member (dio->dio_key->key_parts, (void*) col))
-	    goto next_col;
-	}
-      END_DO_SET();
-      /* found a col that is in none of the inxes */
-	  goto get_main_row;
-    next_col: ;
-    }
-  END_DO_SET ();
-  return cf + (n_inx * min * 0.7);
- get_main_row:
-  min = min * n_inx * 0.7;
-  total_cost = min + (*arity_ret *
-	  (dbe_key_unit_cost (tb->tb_primary_key)
-	   + dbe_key_row_cost (tb->tb_primary_key, NULL)));
-
-  DO_SET (df_elt_t *, pred, &tb_dfe->_.table.col_preds)
-    {
-      DO_SET (df_inx_op_t *, dio, &group)
-	{
-	  dbe_key_t * key = dio->dio_key;
-	  if (dk_set_member (key->key_parts, (void*) pred->_.bin.left->_.col.col))
-	    goto next_pred;
-	}
-      END_DO_SET();
-      sqlo_pred_unit (pred, NULL, &p_cost, &p_arity);
-      (*arity_ret) *= p_arity;
-      total_cost += p_cost * *arity_ret;
-    next_pred: ;
-    }
-  END_DO_SET();
-  return cf + total_cost;
 }
 
 
@@ -2402,7 +2720,7 @@ sqlo_use_p_stat (df_elt_t * dfe, df_elt_t ** lowers, int inx_const_fill, int64 e
   if (lower3 || upper3)
     {
       float p_cost, p_arity;
-      sqlo_pred_unit (lower3, upper3, &p_cost, &p_arity);
+      sqlo_pred_unit (lower3, upper3, dfe, &p_cost, &p_arity);
 	  *inx_arity *= p_arity;
 	}
   return 1;
@@ -2437,6 +2755,10 @@ pred_const_rhs (df_elt_t * pred)
   return 0;
 }
 
+
+int enable_arity_scale = 1;
+
+
 float
 arity_scale (float ar)
 {
@@ -2452,10 +2774,48 @@ arity_scale (float ar)
     formula */
 
   float l;
+  if (!enable_arity_scale)
+    return ar;
   if (ar > 1)
     return ar;
   l = log (10/ar) / log (10);
   return  0.1 + (0.9 * (1 / l));
+}
+
+
+float 
+sqlo_hash_ins_cost (df_elt_t * dfe, float card, dk_set_t cols)
+{
+  float mem_cost = sqlo_hash_mem_cost (card);
+  if (dfe->_.table.is_unique && !cols)
+    return 3 * mem_cost  * card;
+  return card * (6 * mem_cost + (mem_cost * 0.2 * (1 + dk_set_length (cols))));
+}
+ 
+
+float
+sqlo_hash_ref_cost (df_elt_t * dfe, float hash_card)
+{
+  float mem_cost, total_cost;
+  float total_arity = dfe->dfe_arity;
+  total_cost = mem_cost = sqlo_hash_mem_cost (hash_card);
+  if (dfe->_.table.is_unique || dfe->_.table.out_cols)
+    total_cost *= 2;
+  if (dfe->_.table.out_cols)
+    total_cost += mem_cost * 0.5 * (dk_set_length (dfe->_.table.out_cols) - 1);
+  if (!dfe->_.table.is_unique)
+    total_cost += 2 * mem_cost * MAX (0,  total_arity - 1);
+
+} 
+
+void
+dfe_hash_fill_cost (df_elt_t * dfe, float * unit, float * card, float * overhead_ret)
+{
+  float ov = 0;
+  df_elt_t * fill_dfe = dfe->_.table.hash_filler;
+  dfe_unit_cost (fill_dfe, 0, unit, card, &ov);
+  *unit += sqlo_hash_ins_cost (dfe, *card, dfe->_.table.out_cols);
+  *unit += ov;
 }
 
 
@@ -2519,6 +2879,7 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
   float * u1 = &ic->ic_unit;
   float * a1 = &ic->ic_arity;
   float * overhead_ret = &ic->ic_overhead;
+  int64 inx_sample = -1;
   int nth_part = 0, eq_fill = 0;
   df_elt_t * eq_preds[10];
   dbe_key_t * key = dfe->_.table.key;
@@ -2544,14 +2905,6 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
   ic->ic_key = key;
   inx_arity = (float) dbe_key_count (dfe->_.table.key);
   ic->ic_leading_constants = dfe->_.table.is_arity_sure = 0;
-  if (!inx_only && dfe->_.table.inx_op)
-    {
-      *u1 = sqlo_inx_intersect_cost (dfe, dfe->_.table.col_preds, dfe->_.table.inx_op->dio_terms, a1);
-      ic->ic_is_unique = dfe->_.table.is_unique = 0;
-      overhead_ret = 0;
-      return;
-    }
-
   if (!inx_only && dfe->dfe_unit > 0)
     {
       /* do not recompute if already known */
@@ -2560,7 +2913,7 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
       if (dfe->_.table.hash_role == HR_REF)
 	{
 	  float fu1, fa1, fo1;
-	  dfe_unit_cost (dfe->_.table.hash_filler, 0, &fu1, &fa1, &fo1);
+	  dfe_hash_fill_cost (dfe, &fu1, &fa1, &fo1);
 	  *overhead_ret += fu1;
 	}
       if (dfe->_.table.join_test)
@@ -2581,7 +2934,7 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
 	eq_preds[eq_fill++] = (lower && PRED_IS_EQ (lower)) ? lower : NULL;
       if (lower || upper)
 	{
-	  sqlo_pred_unit (lower, upper, &p_cost, &p_arity);
+	  sqlo_pred_unit (lower, upper, dfe, &p_cost, &p_arity);
 	  if (is_indexed)
 	    {
 	      inx_cost += (float) COL_PRED_COST * log (inx_arity) / log (2);  /*cost of compare * log2 of inx count */
@@ -2640,7 +2993,7 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
 		(pred->_.bin.left->dfe_type == DFE_COLUMN ? pred->_.bin.left->_.col.col : NULL);
 	      if (DFE_BOP_PRED == pred->dfe_type && part == left_col && pred != lower && pred != upper)
 		{
-		  sqlo_pred_unit (pred, NULL, &p_cost, &p_arity);
+		  sqlo_pred_unit (pred, NULL, dfe, &p_cost, &p_arity);
 		  col_cost += p_cost * col_arity;
 		  col_arity *= p_arity;
 		}
@@ -2667,7 +3020,7 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
   else if (LOC_LOCAL == dfe->dfe_locus && inx_const_fill
 	   && !(dfe->dfe_sqlo->so_sc->sc_is_update && 0 == strcmp (dfe->_.table.ot->ot_new_prefix, "t1")))
     {
-      int64 inx_sample = sqlo_inx_sample (dfe, key, inx_lowers, inx_uppers, inx_const_fill, ic);
+       inx_sample = sqlo_inx_sample (dfe, key, inx_lowers, inx_uppers, inx_const_fill, ic);
       if (-1 == inx_sample)
 	goto no_sample;
       else if (0 == inx_sample)
@@ -2680,6 +3033,8 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
       ic->ic_leading_constants = dfe->_.table.is_arity_sure = inx_const_fill * 2 + p_stat;
     no_sample: ;
     }
+  if (enable_vec_cost)
+    inx_cost = dfe_vec_inx_cost (dfe, ic, inx_sample);
   if (unique && ic->ic_ric)
     inx_arity = MIN (1, inx_arity);
   if (ic->ic_ric)
@@ -2690,10 +3045,17 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
     {
       col_cost *= 0.6; /* cols packed closer together, more per page in bm inx */
     }
-  total_cost = inx_cost + (col_cost + ROW_SKIP_COST) * (3 + inx_arity_sc)
-    + dbe_key_row_cost (dfe->_.table.key, &rows_per_page) * inx_arity_sc;
-  /* count col compare cost at least twice, else you get a case where a key with 1 leading part matched + 1 non contiguous part matched is better than 2 leading parts as long as the selectivity of the 1st part is near one row.  This is the case with empty tables so procs compiled w no data will get this fucked up */
-  total_cost += NEXT_PAGE_COST * inx_arity_sc / rows_per_page;
+  if (dfe->_.table.key->key_is_col)
+    {
+      total_cost = inx_cost + dfe_cs_row_cost (dfe, inx_arity, col_arity);
+    }
+  else
+    {
+      total_cost = inx_cost + (col_cost + ROW_SKIP_COST) * (3 + inx_arity_sc)
+	+ dbe_key_row_cost (dfe->_.table.key, &rows_per_page, NULL) * inx_arity_sc;
+      /* count col compare cost at least twice, else you get a case where a key with 1 leading part matched + 1 non contiguous part matched is better than 2 leading parts as long as the selectivity of the 1st part is near one row.  This is the case with empty tables so procs compiled w no data will get this fucked up */
+      total_cost += NEXT_PAGE_COST * inx_arity_sc / rows_per_page;
+    }
   total_arity = inx_arity * col_arity;
 
   if (inx_only )
@@ -2709,10 +3071,11 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
       || (dfe->dfe_sqlo->so_sc->sc_is_update && 0 == strcmp (dfe->_.table.ot->ot_new_prefix, "t1")))
     {
       /* if cols are refd that are not on the key or if upd/del, in which case join to main row always needed */
-      if (dfe->_.table.key != tb->tb_primary_key)
+      dbe_key_t * pk = tb->tb_primary_key;
+      if (dfe->_.table.key != pk)
 	total_cost += inx_arity_sc * (
 	    dbe_key_unit_cost (tb->tb_primary_key) +
-	    dbe_key_row_cost (tb->tb_primary_key, NULL));
+	    dbe_key_row_cost (tb->tb_primary_key, NULL, NULL));
       DO_SET (df_elt_t *, pred, &dfe->_.table.col_preds)
 	{
 	  dbe_column_t * left_col;
@@ -2724,7 +3087,9 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
 	      !dk_set_member (key->key_parts, (void*) left_col) &&
 	      !dk_set_member (ic->ic_inx_sample_cols, (void*) left_col))
 	    {
-	      sqlo_pred_unit (pred, NULL, &p_cost, &p_arity);
+	      dfe->_.table.key = pk;
+	      sqlo_pred_unit (pred, NULL, dfe, &p_cost, &p_arity);
+	      dfe->_.table.key = key;
 	      total_arity *= p_arity;
 	      total_cost += p_cost * inx_arity_sc;
 	    }
@@ -2734,6 +3099,7 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
   if (dfe->_.table.join_test)
     {
       dfe_pred_body_cost (dfe->_.table.join_test, &p_cost, &p_arity, overhead_ret);
+      p_arity = arity_scale (p_arity);
     }
   else
     {
@@ -2745,6 +3111,7 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
 
   if (HR_FILL == dfe->_.table.hash_role)
     {
+#if 0
       float fill_arity = total_arity * p_arity; /* join pred may filter before hash insertion */
       total_cost = total_cost + fill_arity * dfe_hash_fill_unit (dfe, fill_arity);
       if (dfe->dfe_locus && IS_BOX_POINTER (dfe->dfe_locus))
@@ -2753,14 +3120,20 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
 	  total_cost += sqlo_dfe_locus_rpc_cost (dfe->dfe_locus, dfe);
 	  dfe->_.table.hash_role = HR_FILL;
 	}
+#endif
     }
   else if (dfe->_.table.hash_role == HR_REF)
     {
-      float fu1, fa1, fo1;
-      dfe_unit_cost (dfe->_.table.hash_filler, 0, &fu1, &fa1, &fo1);
+      float fu1, fa1, fo1, mem_cost;
+      dfe_hash_fill_cost (dfe, &fu1, &fa1, &fo1);
       *overhead_ret += fu1;
-      total_cost = (float) HASH_LOOKUP_COST * (1 + ((dk_set_length (dfe->_.table.hash_refs) - 1) * (float)HASH_LOOKUP_COST * 0.5))
-	+ HASH_ROW_COST * MAX (0,  total_arity - 1);
+      total_cost = mem_cost = sqlo_hash_mem_cost (fa1);
+      if (dfe->_.table.is_unique || dfe->_.table.out_cols)
+	total_cost *= 2;
+      if (dfe->_.table.out_cols)
+	total_cost += mem_cost * 0.5 * (dk_set_length (dfe->_.table.out_cols) - 1);
+      if (!dfe->_.table.is_unique)
+	total_cost += 2 * mem_cost * MAX (0,  total_arity - 1);
       p_arity *= dfe_hash_fill_cond_card (dfe);
     }
   total_cost += p_cost * arity_scale (total_arity);
@@ -3126,7 +3499,7 @@ dfe_unit_cost (df_elt_t * dfe, float input_arity, float * u1, float * a1, float 
       *a1 = 0.5;
       if (!dfe->_.setp.specs && dfe->_.setp.fun_refs)
 	{ /* pure fun ref node */
-	  *u1 = (float) (dk_set_length (dfe->_.setp.fun_refs) * 0.03);
+	  *u1 = (float) dk_set_length (dfe->_.setp.fun_refs) * sqlo_agg_cost;
 	  *a1 = 1 / input_arity;
 	}
       else

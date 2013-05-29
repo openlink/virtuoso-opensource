@@ -530,7 +530,6 @@ typedef struct hash_area_s
   dbe_col_loc_t *	ha_cols;	/* cols of feeding table, correspond to ha_key_cols */
   state_slot_t **	ha_slots;	/* slots where values to feed come from if they do not come from columns direct */
   struct hash_area_s *	ha_org_ha; /* can be a temp ha on stack for merge of gby or such, must ref the originnal allocated ha in the ht */
-  state_slot_t *	ha_cl_id; /* array of slice no/qf req no if this is a hash join partitioned in cluster */
   int			ha_n_keys;
   int			ha_n_deps;
   char 			ha_op;
@@ -610,7 +609,7 @@ struct key_source_s
 					   True if fun ref query */
     bitf_t		ks_is_loc_of_txs:1; /* if dummy cluster location ks for a txs then ks_ts is the text_source_t */
     bitf_t		ks_is_qf_first:1; /* the first in a cluster partition has its ks vec params set by the partitioning node so the cast dcs are ready to be set as search params */
-    bitf_t		ks_is_flood:1; /* partitioning ks of qf does not have eq on all partitioning columns, goes to all partitions */
+    bitf_t		ks_is_flood:2; /* partitioning ks of qf does not have eq on all partitioning columns, goes to all partitions.  If 2 is fill of replicated hash join temp, goes round tobin to any slice of recipient host */
     bitf_t		ks_vec_asc_eq:1;
     bitf_t		ks_oby_order:1;
     bitf_t		ks_is_deleting:1;
@@ -631,6 +630,9 @@ struct key_source_s
     dk_set_t	ks_hash_spec; /* hash fill frefs that cause this ts to filter out rows either as hash filler or as hash probe */
     ssl_index_t *	ks_hs_partition_spec;
 };
+
+/*ks_is_flood */
+#define KS_FLOOD_HASH_FILL 2
 
 #define ks_itcl ks_ts->clb.clb_itcl
 
@@ -965,30 +967,38 @@ typedef struct hash_source_s
   ssl_index_t		hs_pos_in_set; /* If interrupted in mid resullt set, this is the position in the set */
   ssl_index_t 		hs_done_in_probe; /* set in inst if hash was unique on hash key and operation was merged into the node that produced the probe input */
   key_source_t *	hs_ks; /* for vectored casts, near same functionality so use ks */
+  table_source_t *	hs_loc_ts;
   state_slot_t *	hs_hash_no;
   state_slot_t **	hs_ref_slots;
   hash_area_t *	hs_ha; /* shared with the filler setp */
   state_slot_t **	hs_out_slots;
-  state_slot_t *	hs_prehash; /* work area with the hashes of input rows, state etc. */
+  state_slot_t *	hs_cl_id;
   col_ref_t *		hs_col_ref;
   dbe_col_loc_t *	hs_out_cols;
   dk_set_t		hs_out_aliases;
   ptrlong *		hs_out_cols_indexes;
-  code_vec_t 		hs_local_test;
   char			hs_is_unique;
   char			hs_is_outer;
-  char			hs_range_partition; /* if hash filler in order of single hash join key */
   char			hs_no_partition; /* if probe from inside exists/value subq/dt as outer then can't distinguish between not exists and out of partition so must not partition */
+  char			hs_cl_partition; /* in cluster, is hash table replicated or partitioned on key or partitioned on key and colocated with probe */
   code_vec_t		hs_after_join_test;
   table_source_t *	hs_probe; /* the last ts in join order that binds a col that is input to here */
-  search_spec_t *	hs_probe_partition;  /* if the hash is partitioned, this sp is to filter out out of partition values from the probe */
   ssl_index_t 		hs_is_partitioned; /* set by hash filler, indicates whether the probe must filter based on hash partitioning */
   struct fun_ref_node_s *	hs_filler;
   table_source_t *	hs_merged_into_ts;
+  state_slot_t *	hs_part_ssl;
   float			hs_cardinality;
+  ssl_index_t 	hs_part_min;
+  ssl_index_t	hs_part_max;
   char 			hs_partition_filter_self; /* means that this hs will evaluate probe partition for each input because the place where the input is produced does not support filter in situ */
 } hash_source_t;
 
+
+/* hs_cl_partitioned */
+#define HS_CL_REPLICATED 1 /* identical hash table is built on all hosts */
+#define HS_CL_COLOCATED 2 /* hash table partitioned, same part key as probe */
+#define HS_CL_PART 3 /* partitioned and not colocated, add a dfg stage or a new qf, split input on part key of hash */
+#define HS_CL_COORD_ONLY 4 /* hash table exissts on coordinator only */
 typedef struct hi_memcache_key_s {
   id_hashed_key_t hmk_hash;
   int hmk_var_len;
@@ -1386,11 +1396,16 @@ typedef struct setp_node_s
     state_slot_t *	setp_streaming_ssl; /* if grouping cols are ordering cols but have duplicates, this is the col to check for distinguishing known complete groups from possible incomplete groups */
 
     /* partitioned hash fill */
+    state_slot_t *	setp_ht_id; /* id of ht for cluster hash fill */
     dk_set_t 	setp_hash_sources; /* hs nodes that ref the hash filled here */
     data_source_t *	setp_hash_part_filter; /* this filters out the rows that are not in partition.  Most often ts, sometimes the setp itself */
     search_spec_t *	setp_hash_part_spec; /* if hash join filler must make many partitions because too large, then this sp is applied to limit the probes si only stuff potentially in the hash is probed */
+    state_slot_t *	setp_chash_clrg;
+    state_slot_t *	setp_hash_part_ssl;
     ssl_index_t	setp_hash_fill_partitioned;
     ssl_index_t	setp_fill_cha; /* for chash join fill, the cha where the filler thread puts its rows */
+    char	setp_no_bloom;
+    char	setp_cl_partition;
 } setp_node_t;
 
 #define SETP_DISTINCT_MAX_KEYS 100
@@ -1437,6 +1452,8 @@ typedef struct fun_ref_node_s
     char		fnr_parallel_hash_fill;
     char		fnr_no_hash_partition;
     dk_set_t		fnr_prev_hash_fillers; /* This fun ref can produce output only when these hash fillers have gone through all partitions */
+    state_slot_t *	fnr_cl_hash_id; /* id of the hash table filled by this fnr for ref in cluster hash join  */
+    state_slot_t *	fnr_hash_part_ssl;
     ssl_index_t	fnr_n_part;
     ssl_index_t	fnr_nth_part;
     ssl_index_t fnr_hash_part_min;
