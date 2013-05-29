@@ -561,7 +561,7 @@ box_deserialize_reusing (db_buf_t string, caddr_t box)
     case DV_RDF_ID_8:
 	{
 	  rdf_box_t * x = (rdf_box_t *)box_deserialize_string ((caddr_t)string, INT32_MAX, 0);
-	  if (old_dtp == DV_RDF && x->rb_ro_id == ((rdf_box_t *)box)->rb_ro_id)
+	  if (old_dtp == DV_RDF && 0 != x->rb_ro_id && x->rb_ro_id == ((rdf_box_t *)box)->rb_ro_id)
 	    {
 	      dk_free_box (x);
 	      return box;
