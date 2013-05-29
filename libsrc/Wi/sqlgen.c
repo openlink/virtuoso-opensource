@@ -2749,6 +2749,8 @@ int
 sqlg_is_multistate_gb (sqlo_t * so)
 {
   /* a gby in a dt that is not the first will have multiple rows of input and must prefix the grouping cols with set no */
+  /* Same for a query with parameters, may get run on an array */
+  dk_set_t pars;
   sql_comp_t * sc = so->so_sc;
   query_t * qr;
   for (qr = sc->sc_cc->cc_query->qr_super; qr; qr = qr->qr_super)
@@ -2759,6 +2761,12 @@ sqlg_is_multistate_gb (sqlo_t * so)
 	    return 1;
 	}
       END_DO_SET();
+    }
+  if ((pars = sc->sc_cc->cc_query->qr_parms))
+    {
+      state_slot_t * ssl = (state_slot_t *)pars->data;
+      if (ssl->ssl_name && ':'== ssl->ssl_name[0])
+	return 1;
     }
   return 0;
 }
