@@ -2019,7 +2019,7 @@ extern void cache_resources(void);
 void sqls_bif_init (void);
 
 extern float compiler_unit_msecs;
-void srv_calculate_sqlo_unit_msec (void);
+void srv_calculate_sqlo_unit_msec (char * stmt);
 
 
 

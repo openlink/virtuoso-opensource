@@ -3889,7 +3889,7 @@ srv_global_init (char *mode)
     }
   if (!f_read_from_rebuilt_database)
     {
-      srv_calculate_sqlo_unit_msec ();
+      srv_calculate_sqlo_unit_msec (NULL);
     }
   the_main_thread = current_process;	/* Used by the_grim_lock_reaper */
 

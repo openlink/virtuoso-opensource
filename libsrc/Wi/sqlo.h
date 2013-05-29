@@ -244,6 +244,7 @@ struct df_elt_s
       bitf_t is_inf_col_given:1; /* if rdf inferred subclass/prop given and checked as after test, no itre over supers */
       bitf_t hash_role:3;
       bitf_t is_hash_filler_unique:1; /* if this is a hash filler and the key of the hash is unique, so guaranteed no dups in hash */
+      bitf_t in_order:1; /* for inx lookup, key in order w previous lookup */
       /* XPATH & FT members */
       df_elt_t         *text_pred;
       df_elt_t         *xpath_pred;
@@ -258,6 +259,7 @@ struct df_elt_s
       df_elt_t *	hash_filler_of; /* ref from filler to hash source dfe */
       float	in_arity;
       float	inx_card;
+      float	hit_spacing; /* 1 if consec rows, 2 if every 2nd, 0.5 if each repeats twice before mext */
     } table;
     struct {
       /* dt select body, pred body, value subq */
@@ -602,6 +604,14 @@ typedef struct join_plan_s
 } join_plan_t;
 
 
+typedef struct linint_s
+{
+  int	li_n_points;
+  float *	li_x;
+  float *	li_y;
+} lin_int_t;
+
+
 #define IC_OPT_ITERS 0 /* can change in or rdf inf iters into after test */
 #define IC_AS_IS 1 /* do not change in or rdf inf iteration into after test */
 
@@ -882,6 +892,8 @@ void dfe_unplace_fill_join (df_elt_t * fill_dt, df_elt_t * tb_dfe, dk_set_t org_
 int st_is_call (ST * tree, char * f, int n_args);
 df_elt_t * dfe_container (sqlo_t * so, int type, df_elt_t * super);
 float dfe_hash_fill_cond_card (df_elt_t * tb_dfe);
+float sqlo_hash_ins_cost (df_elt_t * dfe, float card, dk_set_t cols);
+float sqlo_hash_ref_cost (df_elt_t * dfe, float hash_card);
 
 #define SQK_MAX_CHARS 2000
 void dfe_cc_list_key (dk_set_t list, char * str, int * fill, int space);

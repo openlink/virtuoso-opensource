@@ -549,12 +549,15 @@ float compiler_unit_msecs = 0;
 
 #define COL_COUNT "select count (*) from SYS_COLS a table option (index primary key) where  exists (select 1 from SYS_COLS b table option (loop) where a.\"TABLE\" = b.\"TABLE\" and a.\"COLUMN\" = b.\"COLUMN\")"
 
+extern int enable_vec_cost;
 void
-srv_calculate_sqlo_unit_msec (void)
+srv_calculate_sqlo_unit_msec (char* stmt)
 {
   caddr_t err = NULL;
+  int deflt_stmt = 0;
   caddr_t score_box;
   float score;
+  int save_qp = enable_qp;
   float start_time, end_time;
   local_cursor_t *lc_tim = NULL;
   query_t *qr = NULL;
@@ -566,8 +569,14 @@ srv_calculate_sqlo_unit_msec (void)
   old_tb_count = sys_cols_tb->tb_count;
   sys_cols_tb->tb_count = wi_inst.wi_schema->sc_id_to_col->ht_count;
 
-  qr = sql_compile (COL_COUNT, cli, &err, SQLC_DEFAULT);
+  if (!stmt)
+    {
+      deflt_stmt = 1;
+      stmt = COL_COUNT;
+    }
+  qr = sql_compile (stmt, cli, &err, SQLC_DEFAULT);
   start_time = (float) get_msec_real_time ();
+  enable_qp = 1;
   for (inx = 0; inx < SQLO_NITERS; inx++)
     { /* repeat enough times as sys_cols is usually not very big */
       err = qr_quick_exec (qr, cli, NULL, &lc_tim, 0);
@@ -582,14 +591,16 @@ srv_calculate_sqlo_unit_msec (void)
         }
     }
   end_time = (float) get_msec_real_time ();
+  enable_qp = save_qp;
   qr_free (qr);
 
-  score_box = (caddr_t) sql_compile (COL_COUNT, cli, &err, SQLC_SQLO_SCORE);
+  score_box = (caddr_t) sql_compile (stmt, cli, &err, SQLC_SQLO_SCORE);
   score = unbox_float (score_box);
   /*printf ("cu score = %f\n", score);*/
   dk_free_tree (score_box);
   compiler_unit_msecs = (end_time - start_time) / (score * inx);
-
+  if (deflt_stmt && enable_vec_cost)
+    compiler_unit_msecs /= 4.339062;
   sys_cols_tb->tb_count = old_tb_count;
   local_commit (bootstrap_cli);
   log_info ("Compiler unit is timed at %f msec", (double) compiler_unit_msecs);
