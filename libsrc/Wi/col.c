@@ -2205,7 +2205,7 @@ new_ce:
 	}
     next_from_pm:
       itc = cpo->cpo_itc;
-      if (itc->itc_is_last_col_spec&& itc->itc_n_results + itc->itc_match_out >= itc->itc_batch_size && itc->itc_batch_size)
+      if (itc && itc->itc_is_last_col_spec&& itc->itc_n_results + itc->itc_match_out >= itc->itc_batch_size && itc->itc_batch_size)
 	{
 	  int n_sps = itc->itc_n_row_specs;
 	  if (n_sps > 1)
