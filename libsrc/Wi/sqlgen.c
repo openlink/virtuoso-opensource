@@ -2834,7 +2834,8 @@ sqlg_distinct_fun_ref_col (sql_comp_t * sc, state_slot_t * data, dk_set_t prev_k
   setp.src_gen.src_query = sc->sc_cc->cc_query;
   setp.setp_ssa.ssa_set_no = set_no;
   setp.setp_keys = dk_set_copy (prev_keys);
-  dk_set_push (&setp.setp_keys, (void*) data);
+  if (dk_set_position (setp.setp_keys, (void*) data) < 0)
+    dk_set_push (&setp.setp_keys, (void*) data);
   setp_distinct_hash (sc, &setp, n_rows, HA_DISTINCT);
   setp.setp_ha->ha_set_no = set_no;
   dk_set_free (setp.setp_keys);
