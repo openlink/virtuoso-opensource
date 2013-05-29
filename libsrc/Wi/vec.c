@@ -1805,7 +1805,7 @@ qst_vec_set_copy (caddr_t * inst, state_slot_t * ssl, caddr_t v)
   if (DV_ANY == ssl->ssl_sqt.sqt_dtp && DV_ANY != dc->dc_dtp && !(DCT_BOXES & dc->dc_type) && dtp_canonical[dtp] != dc->dc_dtp)
     dc_heterogenous (dc);
   /* value from uninitalized variable */
-  if (NULL == v && !(DCT_BOXES & dc->dc_type) && DV_DATETIME == dtp_canonical[dc->dc_dtp])
+  if (0 && NULL == v && !(DCT_BOXES & dc->dc_type) && DV_DATETIME == dtp_canonical[dc->dc_dtp])
     dc_heterogenous (dc);
   if ((DCT_NUM_INLINE & dc->dc_type) && DV_SINGLE_FLOAT != dc->dc_dtp)
     {
@@ -1849,12 +1849,20 @@ qst_vec_set_copy (caddr_t * inst, state_slot_t * ssl, caddr_t v)
 	case DV_DATE:
 	case DV_TIME:
 	case DV_TIMESTAMP:
-	  memcpy (dc->dc_values + DT_LENGTH * set, v, DT_LENGTH);
+	  {
+	    static char zero[DT_LENGTH];
+	    if (!v && !dc->dc_sqt.sqt_non_null)
+	      {
+		dc_set_null (dc, set);
+		return;
+	      }
+	    memcpy (dc->dc_values + DT_LENGTH * set, (v ? v : zero), DT_LENGTH);
 	  if (dc->dc_nulls)
 	    DC_CLR_NULL (dc, set);
 	  if (set >= dc->dc_n_values)
 	    dc->dc_n_values = set + 1;
 	  break;
+	  }
 	case DV_SINGLE_FLOAT:
 	  ((float *) dc->dc_values)[set] = box_to_float (v, DV_TYPE_OF (v));
 	  if (dc->dc_nulls)
