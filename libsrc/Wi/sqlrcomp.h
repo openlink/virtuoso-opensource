@@ -47,6 +47,7 @@ remote_ds_t *sqlc_table_remote_ds (sql_comp_t * sc, char *name);
   { \
   (sc)->sc_exp_col_name = ""; \
   (sc)->sc_exp_sqt.sqt_dtp = DV_UNKNOWN; \
+  (sc)->sc_exp_sqt.sqt_col_dtp = DV_UNKNOWN; \
   (sc)->sc_exp_sqt.sqt_precision = 0; \
   (sc)->sc_exp_sqt.sqt_scale = 0; \
   (sc)->sc_exp_sqt.sqt_non_null = 0; \

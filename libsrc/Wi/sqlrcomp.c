@@ -174,6 +174,7 @@ sqlc_print_literal_proc (char *text, size_t tlen, int *fill, char *name, ST ** p
 	    {
 	      sc->sc_exp_sqt.sqt_dtp = (dtp_t) rtype[0];
 	      sc->sc_exp_sqt.sqt_precision = (uint32) rtype[1];
+	      sc->sc_exp_sqt.sqt_col_dtp = 0;
 	    }
 	}
     }
@@ -286,6 +287,7 @@ sqlc_print_standard_proc (char *text, size_t tlen, int *fill, char *name, ST ** 
 	}
       END_DO_BOX;
       sc->sc_exp_sqt.sqt_dtp = DV_DATETIME;
+      sc->sc_exp_sqt.sqt_col_dtp = 0;
     }
   else if (!stricmp (name, "_cvt"))
     {				/* convert needs SQL_xxx instead of datatype xxx for second arg */
@@ -295,6 +297,7 @@ sqlc_print_standard_proc (char *text, size_t tlen, int *fill, char *name, ST ** 
       sqlc_exp_print (sc, ct, params[1], text, tlen, fill);
       sprintf_more (text, tlen, fill, ", %s", sqlc_sql_type_name (vd_dv_to_sql_type (dtp)));
       sc->sc_exp_sqt.sqt_dtp = dtp;
+      sc->sc_exp_sqt.sqt_col_dtp = 0;
     }
   else if (!stricmp (name, "__extract"))
     {				/* extract needs a special parameter layout */
@@ -303,6 +306,7 @@ sqlc_print_standard_proc (char *text, size_t tlen, int *fill, char *name, ST ** 
       sprintf_more (text, tlen, fill, " FROM ");
       sqlc_exp_print (sc, ct, params[2], text, tlen, fill);
       sc->sc_exp_sqt.sqt_dtp = DV_LONG_INT;
+      sc->sc_exp_sqt.sqt_col_dtp = 0;
     }
   else if (!stricmp (name, "position"))
     {				/* extract needs a special parameter layout */
@@ -311,6 +315,7 @@ sqlc_print_standard_proc (char *text, size_t tlen, int *fill, char *name, ST ** 
       sprintf_more (text, tlen, fill, " IN ");
       sqlc_exp_print (sc, ct, params[2], text, tlen, fill);
       sc->sc_exp_sqt.sqt_dtp = DV_LONG_INT;
+      sc->sc_exp_sqt.sqt_col_dtp = 0;
     }
   else
     {
@@ -348,6 +353,7 @@ sqlc_print_standard_proc (char *text, size_t tlen, int *fill, char *name, ST ** 
 	      if (((dtp_t) rtype[0]) != DV_UNKNOWN)
 		{
 		  sc->sc_exp_sqt.sqt_dtp = (dtp_t) rtype[0];
+		  sc->sc_exp_sqt.sqt_col_dtp = 0;
 		  sc->sc_exp_sqt.sqt_precision = (uint32) rtype[1];
 		}
 	    }
@@ -990,6 +996,7 @@ sqlc_print_count_exp (sql_comp_t * sc, comp_table_t * ct, ST * exp, char *text, 
 	      sqlc_exp_print (sc, ct, arg_st->_.comma_exp.exps[0]->_.bin_exp.left, text, tlen, fill);
 	      sprintf_more (text, tlen, fill, ")");
 	      sc->sc_exp_sqt.sqt_dtp = DV_LONG_INT;
+	      sc->sc_exp_sqt.sqt_col_dtp = 0;
 	      return 1;
 	    }
 	}
@@ -1007,6 +1014,7 @@ sqlc_print_count_exp (sql_comp_t * sc, comp_table_t * ct, ST * exp, char *text, 
 	    sqlc_exp_print (sc, ct, arg_st, text, tlen, fill);
 	  sprintf_more (text, tlen, fill, ")");
 	  sc->sc_exp_sqt.sqt_dtp = DV_LONG_INT;
+	  sc->sc_exp_sqt.sqt_col_dtp = 0;
 	  return 1;
 	}
     }
@@ -1560,6 +1568,7 @@ sqlc_exp_print (sql_comp_t * sc, comp_table_t * ct, ST * exp, char *text, size_t
 			  if (((dtp_t) rtype[0]) != DV_UNKNOWN)
 			    {
 			      sc->sc_exp_sqt.sqt_dtp = (dtp_t) rtype[0];
+			      sc->sc_exp_sqt.sqt_col_dtp = 0;
 			      sc->sc_exp_sqt.sqt_precision = (uint32) rtype[1];
 			    }
 			}
