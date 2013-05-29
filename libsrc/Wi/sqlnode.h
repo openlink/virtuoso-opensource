@@ -53,7 +53,7 @@ typedef struct _src_stat_s
   unsigned int64	srs_n_out;
 } src_stat_t;
 
-#define SRC_STAT(qn, inst)  ((src_stat_t*)&((caddr_t*)inst)[qn->src_stat])
+#define SRC_STAT(qn, inst)  ((src_stat_t*)&((caddr_t*)inst)[((data_source_t*)(qn))->src_stat])
 
 
 struct data_source_s

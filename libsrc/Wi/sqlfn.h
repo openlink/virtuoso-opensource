@@ -1556,7 +1556,7 @@ uint32 cp_any_hash (col_partition_t * cp, db_buf_t val, int32 * rem_ret);
 
 
 #define SRC_START_TIME(src, inst) \
-  if (src->src_stat) SRC_STAT(src, inst)->srs_start = rdtsc ();
+  if (((data_source_t*)src)->src_stat) SRC_STAT(src, inst)->srs_start = rdtsc ();
 
 #define SRC_RETURN(src, inst)  \
 { \
