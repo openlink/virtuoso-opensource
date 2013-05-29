@@ -656,10 +656,11 @@ bif_str_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_
 	  {
 	    caddr_t err;
 	    caddr_t box;
+	    caddr_t cast;
 	  general:
 	    err = NULL;
 	    box = qst_get (qst, ret);
-	    caddr_t cast = box_cast_to (qst, box, DV_TYPE_OF (box), DV_STRING, 0, 0, &err);
+	    cast = box_cast_to (qst, box, DV_TYPE_OF (box), DV_STRING, 0, 0, &err);
 	    if (err)
 	      {
 		dk_free_tree (err);
