@@ -824,8 +824,10 @@ qn_vec_reuse (data_source_t * qn, caddr_t * inst)
   data_col_t * dc;
   ssl_index_t * reuse = qn->src_vec_reuse;
   int inx = 0, inx2, len;
+  int small_dc_limit;
   if (!reuse || SRC_IN_STATE (qn, inst))
     return;
+  small_dc_limit = qn->src_query->qr_instance_length < 4000 ? dc_batch_sz : 100;
   len = box_length (reuse) / sizeof (ssl_index_t);
   while (inx < len)
     {
@@ -3389,9 +3391,15 @@ fun_ref_node_input (fun_ref_node_t * fref, caddr_t * inst, caddr_t * state)
   }
   if (0 && fref->fnr_setp)
     qn_record_in_state ((data_source_t *) fref, inst, inst);
+  if (fref->src_gen.src_stat)
+    {
+      uint64 now = rdtsc ();
+      SRC_STOP_TIME (fref, inst);
+    }
   qn_input (fref->fnr_select, inst, state);
   qn_record_in_state ((data_source_t *) fref, inst, NULL);
   cl_fref_resume (fref, inst);
+  SRC_START_TIME (fref, inst);
  fref_at_finish:
   if (fref->fnr_prev_hash_fillers && fref_hash_partitions_left (fref, inst))
     return; /* do not produce output, more partitions are due to come for aggregation */
