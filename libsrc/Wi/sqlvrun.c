@@ -2170,7 +2170,11 @@ qi_vec_copy_nodes (query_instance_t * qi, caddr_t * cp_inst, query_t * qr, int r
 	  QST_INT (cp_inst, fref->fnr_hash_part_min) = QST_INT (qi, fref->fnr_hash_part_min);
 	  QST_INT (cp_inst, fref->fnr_hash_part_max) = QST_INT (qi, fref->fnr_hash_part_max);
 	}
-
+      if (IS_QN (qn, hash_source_input) && ((hash_source_t *)qn)->hs_done_in_probe)
+	{
+	  QNCAST (hash_source_t, hs, qn);
+	  QST_INT (cp_inst, hs->hs_done_in_probe) = QST_INT (qi, hs->hs_done_in_probe);
+	}
   }
   END_DO_SET ();
   DO_SET (query_t *, sq, &qr->qr_subq_queries)
