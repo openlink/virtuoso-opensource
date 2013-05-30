@@ -30,8 +30,9 @@ create procedure L_O_LOOK (inout  val_str varchar, inout dt_lang int, inout lng 
   insert into rdf_obj index ro_val option (fetch id by 'RDF_RO_ID' set fetched) (ro_val, ro_dt_and_lang, ro_id) values (val_str, dt_lang, id);
   if (0 = fetched)
     {
-
-      insert into rdf_obj index rdf_obj (ro_id, ro_val, ro_flags, ro_dt_and_lang, ro_long) values (id, val_str, is_text, dt_lang, lng);
+      declare flags int;
+      flags := case when is_text = 2 then 0 else is_text end;
+      insert into rdf_obj index rdf_obj (ro_id, ro_val, ro_flags, ro_dt_and_lang, ro_long) values (id, val_str, flags, dt_lang, lng);
       if (1 = is_text)
 	insert into VTLOG_DB_DBA_RDF_OBJ option (no cluster) (vtlog_ro_id, SNAPTIME, DMLTYPE) values (id, curdatetime (), 'I');
       if (2 = is_text)
