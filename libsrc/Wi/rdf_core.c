@@ -3584,7 +3584,9 @@ int rdf_obj_ft_rule_iri_hkey_cmp (caddr_t d1, caddr_t d2)
 {
   rdf_obj_ft_rule_iri_hkey_t *ht1 = (rdf_obj_ft_rule_iri_hkey_t *)d1;
   rdf_obj_ft_rule_iri_hkey_t *ht2 = (rdf_obj_ft_rule_iri_hkey_t *)d2;
-  return ((ht1->hkey_g == ht2->hkey_g) && !strcmp (ht1->hkey_iri_p, ht2->hkey_iri_p));
+  caddr_t p1 = ht1->hkey_iri_p ? ht1->hkey_iri_p : "";
+  caddr_t p2 = ht2->hkey_iri_p ? ht2->hkey_iri_p : "";
+  return ((ht1->hkey_g == ht2->hkey_g) && !strcmp (p1, p2));
 }
 
 static ptrlong *
@@ -3679,17 +3681,12 @@ bif_rdf_obj_ft_rule_del (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       return box_num (0);
     }
   dk_free_box (dk_set_delete_nth (known_reasons_ptr, reason_pos));
-  if (CL_RUN_LOCAL != cl_run_local_only)
-    {
-      iri_hkey.hkey_g = g_id;
-      iri_hkey.hkey_iri_p = p_iri = ((0 == p_id) ? NULL
-				     : cl_id_to_iri ((query_instance_t *)qst, bif_arg_nochecks (qst, args, 1)));
-    }
+  iri_hkey.hkey_g = g_id;
+  iri_hkey.hkey_iri_p = p_iri = ((0 == p_id) ? NULL : key_id_to_iri ((query_instance_t *)qst, p_id));
   if (NULL == known_reasons_ptr[0])
     {
       ptrlong *rule_count_ptr = rdf_obj_ft_get_rule_count_ptr (g_id);
       id_hash_remove (rdf_obj_ft_rules_by_iids, (caddr_t)(&iid_hkey));
-      if (CL_RUN_LOCAL != cl_run_local_only)
         {
           rdf_obj_ft_rule_iri_hkey_t *old_iri_hkey = (rdf_obj_ft_rule_iri_hkey_t *)id_hash_get_key (rdf_obj_ft_rules_by_iris, (caddr_t)(&iri_hkey));
           caddr_t old_iri_p = old_iri_hkey->hkey_iri_p;
@@ -3701,12 +3698,9 @@ bif_rdf_obj_ft_rule_del (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   else
     {
-      if (CL_RUN_LOCAL != cl_run_local_only)
-        {
-          dk_set_t *second_ptr = (dk_set_t *)id_hash_get (rdf_obj_ft_rules_by_iris, (caddr_t)(&iri_hkey));
-          second_ptr[0] = known_reasons_ptr[0];
-          dk_free_box (p_iri);
-        }
+      dk_set_t *second_ptr = (dk_set_t *)id_hash_get (rdf_obj_ft_rules_by_iris, (caddr_t)(&iri_hkey));
+      second_ptr[0] = known_reasons_ptr[0];
+      dk_free_box (p_iri);
     }
   mutex_leave (rdf_obj_ft_rules_mtx);
   return box_num (1);
