@@ -314,8 +314,10 @@ box_hash (caddr_t box)
   switch (dtp)
     {
     case DV_LONG_INT:
-      return ((*(boxint *) box) & ID_HASHED_KEY_MASK);
-
+      {
+	uint64 i = *(uint64*)box;
+	return ((i >> 32) ^ i) & ID_HASHED_KEY_MASK;
+      }
     case DV_IRI_ID:
     case DV_IRI_ID_8:
       if (NULL == box)
@@ -343,7 +345,7 @@ box_hash (caddr_t box)
       {
 	uint32 len = box_length_inline (box);
 	if (len > 0)
-	  BYTE_BUFFER_HASH (h, box, len - 1);
+	  BYTE_BUFFER_HASH2 (h, box, len - 1);
 	else
 	  h = 0;
 	return h & ID_HASHED_KEY_MASK;

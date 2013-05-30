@@ -570,6 +570,7 @@ extern uint32 big_endian_box_length (const void *box);
 
 
 /* This must be a uniform hash for all sorts of strings. */
+#ifdef VALGRIND
 #define BYTE_BUFFER_HASH(hash,text,len) \
   do { \
     uint32 byte_buffer_hash_res = (len); \
@@ -581,6 +582,40 @@ extern uint32 big_endian_box_length (const void *box);
       } \
     (hash) = byte_buffer_hash_res; \
     } while (0)
+#define BYTE_BUFFER_HASH2(h, d, l) BYTE_BUFFER_HASH (h,d,l)
+
+#else
+#define BYTE_BUFFER_HASH(h, d, l) BYTE_BUFFER_HASH2 ((h),(d),(l))
+#define MHASH_M  ((uint64) 0xc6a4a7935bd1e995)
+#define MHASH_R 47
+
+
+#define BYTE_BUFFER_HASH2(init, ptr, len)		\
+do { \
+  uint64 __h, *data, *end; \
+  init = 1; \
+   __h = init; \
+  data = (uint64*)ptr; \
+  end = (uint64*)(((ptrlong)data) + ((len) & ~7));	\
+  while (data < end) \
+    { \
+      uint64 k  = *(data++); \
+      k *= MHASH_M;  \
+      k ^= k >> MHASH_R;  \
+      __h ^= k; \
+    } \
+  if ((len) & 7) \
+    { \
+      uint64 k = *data; \
+      k &= ((int64)1 << (((len) & 7) << 3)) - 1;	\
+      k *= MHASH_M;  \
+      k ^= k >> MHASH_R;  \
+      __h ^= k; \
+    }\
+  init = __h & 0x7fffffff; \
+ } while (0)
+
+#endif
 
 #define NTS_BUFFER_HASH(hash,text) \
   do { \
