@@ -1367,6 +1367,20 @@ dfe_hash_fill_defines (df_elt_t * dt_dfe, df_elt_t * col)
 }
 
 
+df_elt_t *
+dfe_hash_fill_defines_ot (df_elt_t * dt_dfe, op_table_t * ot)
+{
+  /* is the ot in the join in the hash filler */
+  DO_SET (df_elt_t *, from, &dt_dfe->_.sub.ot->ot_from_dfes)
+    {
+      if (0 == strcmp (from->_.table.ot->ot_prefix, ot->ot_new_prefix))
+	return from;
+    }
+  END_DO_SET();
+  return NULL;
+}
+
+
 void
 sqlo_hash_fill_dt_place_col (df_elt_t * dt_dfe, df_elt_t * col)
 {
@@ -1823,10 +1837,16 @@ dfe_defines_ot (df_elt_t * defining, op_table_t * ot)
 	return 1;
       if (defining->_.table.inx_op && dfe_inx_op_defines_ot (defining->_.table.inx_op, ot, defining))
 	return 1;
+      if (defining->_.table.hash_filler && dfe_defines_ot (defining->_.table.hash_filler, ot))
+	return 1;
       return 0;
     }
   if (DFE_DT == defining->dfe_type && ot == defining->_.sub.ot)
     return 1;
+  if (DFE_DT == defining->dfe_type && defining->_.sub.n_hash_fill_keys)
+    {
+      return NULL != dfe_hash_fill_defines_ot (defining, ot);
+    }
   if (DFE_GROUP == defining->dfe_type && ot == defining->_.setp.ot)
     return 1;
   return 0;
