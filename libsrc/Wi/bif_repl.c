@@ -36,6 +36,7 @@
 #include "sqlpar.h"
 #include "srvmultibyte.h"
 #include "sqlpfn.h"
+#include "security.h"
 
 
 static client_connection_t *sched_cli;
@@ -57,7 +58,8 @@ sched_do_round_1 (const char * text)
 
   if (cpt_is_global_lock (NULL))
     return;
-
+  if (!sched_cli->cli_user)
+    sched_cli->cli_user = sec_id_to_user (U_ID_DBA);
   sched_cli->cli_qualifier = box_string (org_qual);
   SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_IMMEDIATE_CLIENT, sched_cli);
   local_start_trx (sched_cli);
