@@ -582,7 +582,7 @@ void
 ce_hash_register ()
 {
   dtp_t cets[] = { CE_RL, CE_BITS, CE_VEC, CE_DICT, CE_RL_DELTA, CE_INT_DELTA};
-  dtp_t dtps[] = {0, 16, 96, 64};
+  dtp_t dtps[] = {0, 16, 32, 48, 64, 80, 96};
   int i1, i2;
   for (i1 = 0; i1 < sizeof (cets); i1++)
     {
