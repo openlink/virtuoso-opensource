@@ -839,6 +839,12 @@ qn_vec_reuse (data_source_t * qn, caddr_t * inst)
 	  if (inst[reuse[inx2 + inx + 2]])
 	    goto next;
 	}
+      if (DCT_BOXES & dc->dc_type)
+	{
+	  for (inx2 = 0; inx2 < dc->dc_n_values; inx2++)
+	    dk_free_tree (((caddr_t*)dc->dc_values)[inx2]);
+	  dc->dc_n_values = 0;
+	}
       if (mp_reuse_large (qi->qi_mp, (void*)dc->dc_values))
 	dc->dc_values = NULL;
     next:
