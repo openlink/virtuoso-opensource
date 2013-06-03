@@ -339,6 +339,8 @@ int ks_make_spec_list (it_cursor_t * it, search_spec_t * ks_spec, caddr_t * stat
 #define KS_CAST_NULL 1
 #define KS_CAST_DTP_LT 2
 #define KS_CAST_DTP_GT 4
+#define KS_CAST_UNDEF 16
+
 int ks_start_search (key_source_t * ks, caddr_t * inst, caddr_t * state,
     it_cursor_t * itc, buffer_desc_t ** buf_ret, table_source_t * ts,
 		 int search_mode);

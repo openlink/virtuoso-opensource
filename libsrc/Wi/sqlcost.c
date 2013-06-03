@@ -1537,9 +1537,6 @@ sqlo_iri_constant_name (ST* tree)
 }
 
 
-#define  RDF_UNTYPED ((caddr_t) 1)
-#define RDF_LANG_STRING ((caddr_t) 2)
-
 caddr_t
 sqlo_rdf_obj_const_value (ST * tree, caddr_t * val_ret, caddr_t *lang_ret)
 {
@@ -1569,10 +1566,6 @@ sqlo_rdf_obj_const_value (ST * tree, caddr_t * val_ret, caddr_t *lang_ret)
     }
   return 0;
 }
-
-
-#define KS_CAST_UNDEF 16
-
 
 
 int

@@ -708,4 +708,10 @@ int sqlg_distinct_colocated  (sql_comp_t * sc, state_slot_t ** ssls, int n_ssls)
 void stn_set_in_slots (sql_comp_t * sc, stage_node_t * stn);
 void sqlc_code_dpipe (sql_comp_t * sc, dk_set_t * code);
 
+
+#define  RDF_UNTYPED ((caddr_t) 1)
+#define RDF_LANG_STRING ((caddr_t) 2)
+
+caddr_t sqlo_rdf_obj_const_value (ST * tree, caddr_t * val_ret, caddr_t *lang_ret);
+
 #endif /* _SQLCMPS_H */

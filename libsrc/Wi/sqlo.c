@@ -2978,6 +2978,51 @@ sqlo_scalar_subq_scope (sqlo_t * so, ST ** ptree)
 }
 
 
+int
+sqlo_check_rdf_lit (ST ** ptree)
+{
+  ST * data = *ptree;
+  caddr_t name = NULL, lang = NULL;
+  int vtype;
+  if ((vtype = sqlo_rdf_obj_const_value (data, &name, &lang)))
+    {
+      if (RDF_UNTYPED == vtype)
+	{
+	  if (!rdf_obj_of_sqlval  (name, &data))
+	    return KS_CAST_UNDEF;
+	}
+      else  if (RDF_LANG_STRING == vtype)
+	{
+	  if (!rdf_obj_of_typed_sqlval  (name, vtype, lang,  &data))
+	    return KS_CAST_UNDEF;
+
+	}
+      else
+	return KS_CAST_UNDEF;
+    }
+  else
+    return KS_CAST_UNDEF;
+  if (DV_RDF != DV_TYPE_OF (data))
+    {
+      dk_free_tree (data);
+      return KS_CAST_UNDEF;
+    }
+  else
+    {
+      rdf_box_t * rb = (rdf_box_t*)data;
+      dtp_t dtp = DV_TYPE_OF (rb->rb_box);
+      if (!IS_NUM_DTP (dtp) && !rb->rb_ro_id)
+	{
+	  dk_free_tree (data);
+	  return KS_CAST_UNDEF;
+	}
+    }
+  mp_trash (THR_TMP_POOL, data);
+  *ptree = data;
+  return KS_CAST_OK;
+}
+
+
 void
 sqlo_scope (sqlo_t * so, ST ** ptree)
 {
@@ -3078,6 +3123,8 @@ sqlo_scope (sqlo_t * so, ST ** ptree)
 	else
 	  {
 	    CHECK_METHOD_CALL (ptree);
+	    if (KS_CAST_OK == sqlo_check_rdf_lit  (ptree))
+	      return;
 	  }
 	/* mark qr to do lock if it is for SPARQL insert/delete triples */
 	if (DV_STRINGP (call_name) &&
