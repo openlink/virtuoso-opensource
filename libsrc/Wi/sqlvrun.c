@@ -2801,7 +2801,7 @@ ts_split_sets (table_source_t * ts, caddr_t * inst, it_cursor_t * itc, int n_par
   usecs = itc->itc_n_sets * ts->ts_cost_after * compiler_unit_msecs * 1000;
   if (!enable_split_sets || usecs < qp_thread_min_usec)
     return itc_reset (itc);
-  n_ways = 1 + (usecs / qp_thread_min_usec);
+  n_ways = 1 + (usecs / MAX (1.0, qp_thread_min_usec));
   if (n_ways > enable_qp)
     n_ways = enable_qp;
   if (n_ways > n_sets)
