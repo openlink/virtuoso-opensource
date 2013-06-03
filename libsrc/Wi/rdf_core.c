@@ -3620,8 +3620,7 @@ bif_rdf_obj_ft_rule_add (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (1)
     {
       iri_hkey.hkey_g = g_id;
-      iri_hkey.hkey_iri_p = p_iri = ((0 == p_id) ? NULL
-				     : cl_id_to_iri ((query_instance_t*)qst, bif_arg_nochecks (qst, args, 1)));
+      iri_hkey.hkey_iri_p = p_iri = ((0 == p_id) ? NULL : key_id_to_iri ((query_instance_t *)qst, p_id));
     }
   mutex_enter (rdf_obj_ft_rules_mtx);
   known_reasons_ptr = (dk_set_t *)id_hash_get (rdf_obj_ft_rules_by_iids, (caddr_t)(&iid_hkey));
