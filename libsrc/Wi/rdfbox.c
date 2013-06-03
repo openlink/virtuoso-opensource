@@ -5376,7 +5376,7 @@ rdf_box_init ()
   bif_set_uses_index (bif_sparql_rset_xml_write_row);
   bif_define ("sparql_iri_split_rdfa_qname", bif_sparql_iri_split_rdfa_qname);
   /* Short aliases for use in generated SQL text: */
-  bif_define ("__ro2lo", bif_rdf_long_of_obj);
+  bif_define_typed ("__ro2lo", bif_rdf_long_of_obj, &bt_any);
   bif_set_no_cluster ("__ro2lo");
   bif_define_typed ("__ro2sq", bif_rdf_sqlval_of_obj, &bt_any);
   bif_set_uses_index (bif_rdf_sqlval_of_obj);
