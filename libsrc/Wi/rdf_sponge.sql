@@ -1517,34 +1517,35 @@ create procedure DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC (in contents varchar, in base
   dociri:=DB.DBA.RM_SPONGE_DOC_IRI(graph);
   
   sparql define input:storage "" 
-  	insert in iri(?:graph) { 
-  		`iri(?:graph)` <http://xmlns.com/foaf/0.1/topic> `iri(sql:XML_URI_RESOLVE_LIKE_GET(?:base, ?s))` .
+    insert in iri(?:graph) { 
+      `iri(?:graph)` <http://xmlns.com/foaf/0.1/topic> `iri(sql:XML_URI_RESOLVE_LIKE_GET(?:base, ?s))` .
       `iri(sql:XML_URI_RESOLVE_LIKE_GET(?:base, ?s))` <http://www.w3.org/2007/05/powder-s#describedby> `iri(?:proxyiri)` 
+    }
+    where { { select distinct ?s 
+      where { graph `iri(?:graph)` { ?s ?p ?o .
+	filter (iri(sql:XML_URI_RESOLVE_LIKE_GET(?:base, ?s)) != iri(?:graph) && !(regex (?s, '#this$') || regex (?s, '/about/id/http') || regex (?s, '/about/id/entity/http')))
+	}
       }
-  where { { select distinct ?s 
-  	where { graph `iri(?:graph)` { ?s ?p ?o .
-                                filter (iri(sql:XML_URI_RESOLVE_LIKE_GET(?:base, ?s)) != iri(?:graph) && !(regex (?s, '#this$') || regex (?s, '/about/id/http') || regex (?s, '/about/id/entity/http')))
-				}
-  	}
-  	}
-  	};
-
-  sparql define input:storage "" insert in graph iri(?:graph)
-      { `iri(?:docproxyiri)` a <http://purl.org/ontology/bibo/Document> ;
-      				<http://www.w3.org/ns/formats/media_type> `?:mimetype` ;
-              <http://vocab.deri.ie/void#inDataset> `iri(?:graph)` ; 
-              <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://rdfs.org/sioc/ns#Container> , <http://purl.org/ontology/bibo/Document> ;
-              <http://rdfs.org/sioc/ns#container_of> `iri(?:proxyiri)` .
-        `iri(?:dociri)` <http://www.w3.org/2002/07/owl#sameAs> `iri(?:proxyiri)` . 
+    }
+  };
+  sparql define input:storage "" 
+    insert in graph iri(?:graph) { 
+      `iri(?:docproxyiri)` a <http://purl.org/ontology/bibo/Document> ;
+      <http://www.w3.org/ns/formats/media_type> `?:mimetype` ;
+      <http://vocab.deri.ie/void#inDataset> `iri(?:graph)` ; 
+      <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://rdfs.org/sioc/ns#Container> , <http://purl.org/ontology/bibo/Document> ;
+      <http://rdfs.org/sioc/ns#container_of> `iri(?:proxyiri)` .
+      `iri(?:dociri)` <http://www.w3.org/2002/07/owl#sameAs> `iri(?:proxyiri)` . 
+    };
+  if (registry_get ('__rdf_cartridges_add_spongetime__') = '1') {
+    sparql define input:storage "" 
+      insert in graph iri(?:graph) { 
+	`iri(?:graph)` <http://www.openlinksw.com/schema/attribution#sponge_time> `bif:now()` . 
       };
-
-  if (registry_get ('__rdf_cartridges_add_spongetime__') = '1')
-  {
-        sparql define input:storage "" insert in graph iri(?:graph)
-          { `iri(?:graph)` <http://www.openlinksw.com/schema/attribution#sponge_time> `bif:now()` . };
   }
 }
 ;
+
 
 --! Load the document in triple store. returns 1 if the document is an RDF, otherwise if it has links etc. it returns 0
 create procedure DB.DBA.RDF_LOAD_HTTP_RESPONSE (in graph_iri varchar, in new_origin_uri varchar, inout ret_content_type varchar, inout ret_hdr any, inout ret_body any, inout options any, inout req_hdr_arr any)
