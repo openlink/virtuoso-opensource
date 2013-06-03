@@ -3973,8 +3973,8 @@ cha_ins_aq_func (caddr_t av, caddr_t * err_ret)
 void
 cha_alloc_bloom (chash_t * cha, int64 n_rows)
 {
-  int64 bytes = _RNDUP_PWR2 (((uint64) (n_rows * chash_bloom_bits / 8)), 64);
-  if (!chash_bloom_bits)
+  int64 bytes = _RNDUP_PWR2 (((uint64) (_RNDUP_PWR2 (n_rows, 32) * chash_bloom_bits / 8)), 64);
+  if (!chash_bloom_bits || !bytes)
     return;
   cha->cha_bloom = (uint64 *) mp_alloc_box (cha->cha_pool, bytes, DV_NON_BOX);
   cha->cha_n_bloom = bytes / sizeof (cha->cha_bloom[0]);
