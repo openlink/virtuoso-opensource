@@ -766,7 +766,8 @@ sqlg_vec_ssl_ref (sql_comp_t * sc, state_slot_t * ssl, int test_only)
       }
       END_DO_HT;
     }
-  sethash ((void *) (ptrlong) ssl->ssl_index, sc->sc_vec_last_ref, sc->sc_pre_code_of ? sc->sc_pre_code_of : sc->sc_vec_current);
+  if (SSL_IS_VEC_OR_REF (ssl))
+    sethash ((void *) (ptrlong) ssl->ssl_index, sc->sc_vec_last_ref, sc->sc_pre_code_of ? sc->sc_pre_code_of : sc->sc_vec_current);	/* for vec reuse, applies to vec ssls only */
   if (defd_in == sc->sc_vec_current)
     return test_only ? NULL : (state_slot_ref_t *) (shadow ? ssl : org_ssl);
   if (!defd_in && !ssl->ssl_vec_param)
