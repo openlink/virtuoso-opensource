@@ -6310,6 +6310,15 @@ static int x509_add_ext (X509 *cert, int nid, char *value)
   return 1;
 }
 
+static void
+x509_add_custom (X509 * x, ccaddr_t n, ccaddr_t v)
+{
+  int nid = OBJ_create (n, n, n);
+  X509V3_EXT_add_alias (nid, NID_netscape_comment);
+  x509_add_ext (x, nid, (char *) v);
+}
+
+
 static caddr_t
 bif_xenc_x509_generate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -6432,6 +6441,7 @@ bif_xenc_x509_generate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       nid = OBJ_sn2nid (exts[i]);
       if (nid == NID_undef)
 	{
+	  x509_add_custom (x, exts[i], exts[i+1]);
 	  sqlr_warning ("01V01", "QW001", "Unknown extension entry %s", exts[i]);
 	  continue;
 	}
@@ -6579,6 +6589,7 @@ bif_xenc_x509_ss_generate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
       nid = OBJ_sn2nid (exts[i]);
       if (nid == NID_undef)
 	{
+	  x509_add_custom (x, exts[i], exts[i+1]);
 	  sqlr_warning ("01V01", "QW001", "Unknown extension entry %s", exts[i]);
 	  continue;
 	}
