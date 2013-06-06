@@ -241,6 +241,11 @@ ssl_print (state_slot_t * ssl)
       stmt_printf (("$%d \"%s\"", ssl->ssl_index, ssl->ssl_name ? ssl->ssl_name : "-"));
       break;
     case SSL_VEC:
+      if (0 == dbf_explain_level)
+	{
+	  stmt_printf (("%s", ssl->ssl_name ? ssl->ssl_name : (snprintf (str, sizeof (str), "$%d", ssl->ssl_index), str)));
+	  break;
+	}
       ssl_type (ssl, str);
       if (ssl->ssl_sets)
 	stmt_printf (("<v $%d %s S%d %s>", ssl->ssl_index, ssl->ssl_name, ssl->ssl_sets, str));
@@ -251,6 +256,11 @@ ssl_print (state_slot_t * ssl)
       {
 	QNCAST (state_slot_ref_t, sslr, ssl);
 	int inx;
+	if (0 == dbf_explain_level)
+	  {
+	    ssl_print (sslr->sslr_ssl);
+	    break;
+	  }
 	stmt_printf (("<r $%d %s via ", sslr->sslr_index, sslr->sslr_ssl && sslr->sslr_ssl->ssl_name ? sslr->sslr_ssl->ssl_name : ""));
 	for (inx = 0; inx < sslr->sslr_distance; inx++)
 	  stmt_printf ((" S%d", sslr->sslr_set_nos[inx]));
@@ -260,11 +270,16 @@ ssl_print (state_slot_t * ssl)
     case SSL_CONSTANT:
 	{
 	  caddr_t err_ret = NULL;
-	  if (DV_TYPE_OF (ssl->ssl_constant) == DV_DB_NULL)
+	  dtp_t dtp = DV_TYPE_OF (ssl->ssl_constant);
+	  if (DV_DB_NULL == dtp)
 	    stmt_printf (("<DB_NULL>"));
+	  else if (DV_RDF == dtp)
+	    {
+	      rdf_box_t * rb = (rdf_box_t*)ssl->ssl_constant;
+	      stmt_printf (("rdflit" BOXINT_FMT, rb->rb_ro_id));
+	    }
 	  else
 	    {
-	      dtp_t dtp = DV_TYPE_OF (ssl->ssl_constant);
 	      caddr_t strval = box_cast_to (NULL, ssl->ssl_constant,
 					    dtp, DV_SHORT_STRING,
 		  NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE,
@@ -680,6 +695,57 @@ ks_print_vec_cast (state_slot_t ** casts, state_slot_ref_t ** source)
 
 
 static void
+ks_print_0 (key_source_t * ks)
+{
+  int any = 0;
+  if (ks->ks_from_temp_tree || !ks->ks_key)
+    stmt_printf (("Key from temp "));
+  ssl_list_print (ks->ks_out_slots);
+  if (ks->ks_v_out_map)
+    {
+      int inx;
+      for (inx = 0; inx < box_length ((caddr_t)ks->ks_v_out_map) / sizeof (v_out_map_t); inx++)
+	if (dc_itc_delete == ks->ks_v_out_map[inx].om_ref)
+	  stmt_printf (("deleting "));
+    }
+  stmt_printf (("\n%s", ks->ks_spec.ksp_key_cmp ? " inlined " : ""));
+
+  sp_list_print (ks->ks_spec.ksp_spec_array);
+  if (ks->ks_row_spec)
+    sp_list_print (ks->ks_row_spec);
+  if (ks->ks_hash_spec)
+    {
+      DO_SET (search_spec_t *, sp, &ks->ks_hash_spec)
+	{
+	  hash_range_spec_t * hrng = (hash_range_spec_t *)sp->sp_min_ssl;
+	  if (hrng->hrng_hs || hrng->hrng_ht_id)
+	    {
+	      if (!any)
+		{
+		  stmt_printf (("\n"));
+		  any = 1;
+		}
+	      hrng_print (hrng, sp);
+	    }
+	}
+      END_DO_SET();
+    }
+  if (!any)
+    stmt_printf (("\n"));
+  if (ks->ks_local_test)
+    {
+      stmt_printf ((" Local Test\n"));
+      code_vec_print (ks->ks_local_test);
+    }
+  if (ks->ks_local_code)
+    {
+      stmt_printf ((" Local Code\n"));
+      code_vec_print (ks->ks_local_code);
+    }
+}
+
+
+static void
 ks_print (key_source_t * ks)
 {
   if (ks->ks_from_temp_tree || !ks->ks_key)
@@ -767,7 +833,7 @@ node_stat (data_source_t * qn)
       stmt_printf (("wait time %9.2g%% of exec real time, fanout %9.2g\n",  (float)QST_INT (ctx_inst, qf->qf_wait_clocks) * 100 / (float)rt, srs->srs_n_in ? srs->srs_n_out / (float)srs->srs_n_in : 0.0));
     }
   else
-    stmt_printf (("time %9.2g%% fanout %9.2g  %9.2g rows in\n",  (float)srs->srs_cum_time * 100 / (float)total, srs->srs_n_in ? srs->srs_n_out / (float)srs->srs_n_in : 0.0, (float)srs->srs_n_in));
+    stmt_printf (("time %9.2g%% fanout %9.2g input %9.2g rows\n",  (float)srs->srs_cum_time * 100 / (float)total, srs->srs_n_in ? srs->srs_n_out / (float)srs->srs_n_in : 0.0, (float)srs->srs_n_in));
 }
 
 
@@ -778,6 +844,33 @@ node_print_next (data_source_t * node)
     node_print ((data_source_t *) node->src_continuations->data);
 }
 
+
+void
+ts_print_0 (table_source_t * ts)
+{
+  int inx;
+  char card[50];
+  char max_rows[30];
+  snprintf (card, sizeof (card), "%9.2g rows", ts->ts_cardinality);
+  max_rows[0] = 0;
+  if (!ts->ts_order_ks->ks_from_temp_tree && ts->ts_order_ks->ks_key)
+    {
+      char card[50];
+      if (ts->ts_is_unique)
+	snprintf (card, sizeof (card), "unq %9.2g rows ", ts->ts_cardinality);
+      else
+	snprintf (card, sizeof (card), "%9.2g rows", ts->ts_cardinality);
+      stmt_printf (("%s %s",
+		    ts->ts_order_ks->ks_key->key_name, card));
+    }
+  ks_print_0 (ts->ts_order_ks);
+  if (ts->ts_alternate)
+    {
+      stmt_printf (("Alternate ts {\n"));
+      node_print ((data_source_t *) ts->ts_alternate);
+      stmt_printf (("\n}\n"));
+    }
+}
 
 void
 ts_print (table_source_t * ts)
@@ -849,7 +942,7 @@ ts_print (table_source_t * ts)
 	  ssl_array_print (ts->clb.clb_save);
 	  stmt_printf (("\n"));
 	}
-      if (ts->ts_branch_ssls)
+      if (ts->ts_branch_ssls && dbf_explain_level > 2)
 	{
 	  int inx;
 	  stmt_printf (("copy on branch"));
@@ -923,7 +1016,493 @@ qn_print_reuse (data_source_t * qn)
 }
 
 
-static void
+
+void
+node_print_0 (data_source_t * node)
+{
+  qn_input_fn in;
+  query_instance_t * qi = (query_instance_t *) THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_QST);
+  in = node->src_input;
+  if (IS_TS (node))
+    {
+      ts_print_0 ((table_source_t *) node);
+    }
+  else if (IS_QN (node, ts_split_input))
+	{
+      QNCAST (ts_split_node_t, tssp, node);
+      stmt_printf (("Alternate ts {\n"));
+      node_print ((data_source_t *) tssp->tssp_alt_ts);
+      stmt_printf (("\n}\n"));
+    }
+  else if (in == (qn_input_fn) query_frag_input)
+	    {
+      query_frag_t * qf = (query_frag_t *) node;
+      stmt_printf (("QF {\n"));
+      node_print (qf->qf_head_node);
+      stmt_printf (("}\n"));
+    }
+  else if (in == (qn_input_fn) skip_node_input)
+		{
+      QNCAST (skip_node_t, sk, node);
+      stmt_printf (("skip node "));
+      ssl_print (sk->sk_top);
+      ssl_print (sk->sk_top_skip);
+      ssl_print (sk->sk_set_no);
+      stmt_printf (("\n"));
+    }
+  else if (in == (qn_input_fn) sort_read_input)
+    {
+      QNCAST (table_source_t, ts, node);
+      stmt_printf (("top order by read "));
+      ssl_list_print (ts->ts_order_ks->ks_out_slots);
+      stmt_printf (("\n"));
+		}
+  else if (in == (qn_input_fn) chash_read_input)
+    {
+      QNCAST (table_source_t, ts, node);
+      key_source_t * ks = ts->ts_order_ks;
+      stmt_printf (("group by read node  \n"));
+      ssl_list_print (ks->ks_out_slots);
+      stmt_printf (("\n"));
+	    }
+  else if (in == (qn_input_fn) select_node_input)
+    {
+      select_node_t *sel = (select_node_t *) node;
+      stmt_printf (("Select "));
+      if (sel->sel_top)
+	{
+	  stmt_printf (("(TOP "));
+	  if (sel->sel_top_skip)
+	    {
+	      ssl_print (sel->sel_top_skip);
+	      stmt_printf ((", "));
+	    }
+	  ssl_print (sel->sel_top);
+	  stmt_printf ((") "));
+	}
+      ssl_array_print (sel->sel_out_slots);
+      stmt_printf (("\n"));
+    }
+  else if (in == (qn_input_fn) setp_node_input)
+    {
+      setp_node_t *setp = (setp_node_t *) node;
+      char hf[40];
+      if (setp->setp_ha && HA_FILL == setp->setp_ha->ha_op)
+	snprintf (hf, sizeof (hf), "hf %d %s", setp->setp_ha->ha_tree->ssl_index,
+		  HS_CL_REPLICATED == setp->setp_cl_partition ? "replicated" : "");
+      else
+	hf[0] = 0;
+      stmt_printf (("%s %s", setp->setp_distinct ? "Distinct" : "Sort", hf));
+      if (setp->setp_is_streaming)
+	stmt_printf (("%s ", FNR_STREAM_UNQ == setp->setp_is_streaming ? "streaming unique ": "streaming with duplicates"));
+
+      ssl_list_print (setp->setp_keys);
+      if (setp->setp_dependent)
+	{
+	  stmt_printf ((" -> "));
+	  ssl_list_print (setp->setp_dependent);
+	  if (setp->setp_any_user_aggregate_gos)
+	    {
+	      DO_SET (gb_op_t *, go, &setp->setp_gb_ops)
+		{
+		  if (go->go_ua_init_setp_call)
+		    {
+		      stmt_printf (("\nuser aggr init\n"));
+		      code_vec_print (go->go_ua_init_setp_call);
+		      stmt_printf ((" user aggr acc\n"));
+		      code_vec_print (go->go_ua_acc_setp_call);
+		    }
+		}
+	      END_DO_SET();
+	    }
+	  stmt_printf (("\n"));
+	}
+      stmt_printf (("\n"));
+    }
+  else if (in == (qn_input_fn) fun_ref_node_input
+	   || in == (qn_input_fn) hash_fill_node_input)
+    {
+      fun_ref_node_t *fref = (fun_ref_node_t *) node;
+      stmt_printf (("{ %s\n", IS_QN (node, hash_fill_node_input) ? "hash filler": "fork"));
+      node_print (fref->fnr_select);
+      stmt_printf (("}\n"));
+    }
+  else if (in == (qn_input_fn) remote_table_source_input)
+    {
+      remote_table_source_t *rts = (remote_table_source_t *) node;
+      char *szPtr = rts->rts_text;
+      stmt_printf (("Remote %s ", rts->rts_is_outer ? "OUTER" : ""));
+      while (*szPtr)
+	{
+	  int len = (int) strlen (szPtr);
+	  char save_c = 0;
+	  if (len > EXPLAIN_LINE_MAX)
+	    {
+	      save_c = szPtr[EXPLAIN_LINE_MAX];
+	      szPtr[EXPLAIN_LINE_MAX] = 0;
+	    }
+	  stmt_printf ((EXPLAIN_LINE_MAX_STR_FORMAT, szPtr));
+	  if (len > EXPLAIN_LINE_MAX)
+	    szPtr[EXPLAIN_LINE_MAX] = save_c;
+	  szPtr += len > EXPLAIN_LINE_MAX ? EXPLAIN_LINE_MAX : len;
+	  if (*szPtr)
+	    stmt_printf (("\n"));
+	}
+      if (rts->rts_params)
+	{
+	  stmt_printf (("\nParams "));
+	  ssl_list_print (rts->rts_params);
+	}
+      if (rts->rts_out_slots)
+	{
+	  stmt_printf (("\nOutput "));
+	  ssl_array_print (rts->rts_out_slots);
+	}
+      if (rts->rts_after_join_test)
+	{
+	  stmt_printf (("\nAfter join test:\n"));
+	  code_vec_print (rts->rts_after_join_test);
+	}
+      stmt_printf (("\n"));
+    }
+  else if (in == (qn_input_fn) breakup_node_input)
+    {
+      QNCAST (breakup_node_t, brk, node);
+      stmt_printf (("Breakup "));
+      ssl_array_print (brk->brk_output);
+      ssl_array_print (brk->brk_all_output);
+      stmt_printf (("\n"));
+    }
+  else if (in == (qn_input_fn) subq_node_input)
+    {
+      subq_source_t *sqs = (subq_source_t *) node;
+      stmt_printf (("Subquery %d %s\n", node->src_in_state, sqs->sqs_is_outer ? "OUTER" : ""));
+      qr_print (sqs->sqs_query);
+	}
+  else if (in == (qn_input_fn) union_node_input)
+    {
+      union_node_t *uni = (union_node_t *) node;
+      if (((query_t *) uni->uni_successors->data)->qr_is_bunion_term)
+	stmt_printf (("BUnion\n"));
+      else
+	stmt_printf (("Union\n"));
+      DO_SET (query_t *, qr, &uni->uni_successors)
+      {
+	qr_print (qr);
+      }
+      END_DO_SET ();
+    }
+  else if (in == (qn_input_fn) gs_union_node_input)
+    {
+      gs_union_node_t *gsu = (gs_union_node_t *) node;
+      stmt_printf (("DataSource_Union\n"));
+      DO_SET (data_source_t *, nd, &gsu->gsu_cont)
+      {
+	stmt_printf (("DSU_Branch\n{  \n"));
+	node_print (nd);
+	stmt_printf (("}\n"));
+      }
+      END_DO_SET ();
+    }
+  else if (in == (qn_input_fn) update_node_input)
+    {
+      update_node_t *upd = (update_node_t *) node;
+      int inx;
+      stmt_printf (("Update %s %s ", upd->upd_keyset ? "keyset" : "", upd->upd_table->tb_name));
+      ssl_print (upd->upd_place);
+      ssl_array_print (upd->upd_values);
+      if (upd->upd_vec_source)
+	{
+	  ks_print_vec_cast (upd->upd_vec_cast, upd->upd_vec_source);
+	}
+      if (upd->upd_old_blobs)
+	{
+	  stmt_printf ((" old blobs: "));
+	  ssl_array_print (upd->upd_old_blobs);
+	  stmt_printf (("\n"));
+	}
+      if (upd->upd_keys)
+	{
+	  DO_BOX (ins_key_t *, ik, inx, upd->upd_keys)
+	    {
+	      if (!ik)
+		continue;
+	      ik_print (ik);
+	    }
+	  END_DO_BOX;
+	}
+      stmt_printf (("\n"));
+    }
+  else if (in == (qn_input_fn) delete_node_input)
+    {
+      QNCAST (delete_node_t, del, node);
+      stmt_printf (("Delete "));
+      ssl_print (del->del_place);
+      if (del->del_key_only)
+	stmt_printf ((" only key %s ", del->del_key_only->key_name));
+      if (del->del_keys)
+	{
+	  int inx;
+	  stmt_printf (("keys: "));
+	  DO_BOX (ins_key_t *, ik, inx, del->del_keys)
+	    if (ik)
+	      ik_print (ik);
+	  END_DO_BOX;
+	}
+      stmt_printf (("\n"));
+    }
+  else if (in == (qn_input_fn) insert_node_input)
+    {
+      insert_node_t *ins = (insert_node_t *) node;
+      if (ins->ins_del_node)
+	{
+	  stmt_printf (("Replacing vectored {\n"));
+	  node_print (ins->ins_del_node);
+	  stmt_printf (("\n}\n"));
+	}
+      stmt_printf (("Insert %s ", ins->ins_table->tb_name));
+      ssl_list_print (ins->ins_values);
+      if (ins->ins_vec_source)
+	{
+	  stmt_printf (("\nvectored "));
+	  ssl_array_print ((state_slot_t**)ins->ins_vec_source);
+	  ssl_array_print (ins->ins_vec_cast);
+	  stmt_printf (("\n"));
+	}
+      if (ins->ins_key_only)
+	stmt_printf ((" only key %s ", ins->ins_key_only));
+      if (ins->ins_daq)
+	{
+	  stmt_printf ((" DAQ ("));
+	  ssl_print (ins->ins_daq);
+	  stmt_printf ((")"));
+	}
+      stmt_printf (("\n"));
+    }
+  else if (in == (qn_input_fn) select_node_input_subq)
+    {
+      select_node_t *sel = (select_node_t *) node;
+      stmt_printf (("Subquery Select"));
+      if (sel->sel_top)
+	{
+	  stmt_printf (("(TOP "));
+	  if (sel->sel_top_skip)
+	    {
+	      ssl_print (sel->sel_top_skip);
+	      stmt_printf ((", "));
+	    }
+	  ssl_print (sel->sel_top);
+	  stmt_printf ((") "));
+	}
+      ssl_array_print (sel->sel_out_slots);
+      stmt_printf (("\n"));
+    }
+  else if (in == (qn_input_fn) hash_source_input)
+    {
+      hash_source_t *hs = (hash_source_t *) node;
+      stmt_printf (("Hash source %d %s %s %9.2g rows", hs->hs_ha->ha_tree->ssl_index, hs->hs_merged_into_ts ? "merged into ts" : hs->hs_is_outer ? "outer" : "",
+		    hs->hs_no_partition ? "not partitionable" : "", hs->hs_cardinality));
+      ssl_array_print (hs->hs_ref_slots);
+      stmt_printf ((" -> "));
+      ssl_array_print (hs->hs_out_slots);
+      stmt_printf (("\n"));
+    }
+  else if (in == (qn_input_fn) rdf_inf_pre_input)
+    {
+      rdf_inf_pre_node_t *ri = (rdf_inf_pre_node_t *) node;
+      char * mode = "";
+      switch (ri->ri_mode)
+	{
+	case RI_SUBCLASS: mode = "subclass"; break;
+	case RI_SUPERCLASS: mode = "superclass"; break;
+	case RI_SUBPROPERTY: mode = "subproperty"; break;
+	case RI_SUPERPROPERTY: mode = "superproperty"; break;
+	case RI_SAME_AS_O: mode = "same-as-O"; break;
+	case RI_SAME_AS_S: mode = "same-as-S"; break;
+	case RI_SAME_AS_P: mode = "same-as-P"; break;
+	}
+      stmt_printf (("RDF Inference %s %s iterates ", mode));
+      ssl_print (ri->ri_output);
+
+      stmt_printf (("  o= "));
+      ssl_print (ri->ri_o);
+      stmt_printf ((" p= "));
+      ssl_print (ri->ri_p);
+      stmt_printf (("\n"));
+    }
+  else if (in == (qn_input_fn) trans_node_input)
+    {
+      QNCAST (trans_node_t, tn, node);
+      if (tn->tn_prepared_step)
+	{
+	  if (tn->tn_ifp_ctx_name)
+	    stmt_printf (("  Multistate transitive canned over ifps of %s,  input ", tn->tn_ifp_ctx_name));
+	  else
+	    stmt_printf (("  Multistate transitive canned,  input "));
+	  ssl_array_print (tn->tn_input);
+	  stmt_printf ((" output "));
+	  ssl_array_print (tn->tn_output);
+	  stmt_printf  ((" %s\n", tn->tn_lowest_sas ? "min same-as id" : ""));
+	  if (tn->tn_sas_g)
+	    {
+	      stmt_printf (("g = "));
+	      ssl_array_print (tn->tn_sas_g);
+	      stmt_printf (("\n"));
+	    }
+	}
+      else
+	{
+	  stmt_printf (("Transitive dt dir %d, input: ", tn->tn_direction));
+	  ssl_array_print (tn->tn_input);
+	  stmt_printf (("\n  input shadow: "));
+	  ssl_array_print (tn->tn_input_ref);
+	  stmt_printf (("\n  output: "));
+	  ssl_array_print (tn->tn_output);
+	  if (tn->tn_keep_path)
+	    {
+	      stmt_printf (("\n  step data: "));
+	      ssl_array_print (tn->tn_data);
+	      ssl_print (tn->tn_path_no_ret);
+	      ssl_print (tn->tn_step_no_ret);
+	    }
+	  stmt_printf (("\n"));
+	  if (tn->tn_target)
+	    {
+	      stmt_printf ((" Target:  "));
+	      ssl_array_print (tn->tn_target);
+	      stmt_printf (("\n"));
+	    }
+	  qr_print (tn->tn_inlined_step);
+	  if (tn->tn_complement)
+	    {
+	      trans_node_t * tn2 = tn->tn_complement;
+	      stmt_printf (("Reverse transitive node, input: "));
+	      ssl_array_print (tn2->tn_input);
+	      stmt_printf (("\n  output: "));
+	      ssl_array_print (tn2->tn_output);
+	      stmt_printf (("\n"));
+	      if (tn2->tn_target)
+		{
+		  stmt_printf ((" Target:  "));
+		  ssl_array_print (tn2->tn_target);
+		  stmt_printf (("\n"));
+		}
+	      qr_print (tn2->tn_inlined_step);
+	    }
+	}
+    }
+  else if (in == (qn_input_fn) in_iter_input)
+    {
+      in_iter_node_t *ii = (in_iter_node_t *) node;
+      stmt_printf (("in iterates "));
+      ssl_print (ii->ii_output);
+      stmt_printf (("  over "));
+      ssl_array_print (ii->ii_values);
+      stmt_printf (("\n"));
+    }
+  else if (in == (qn_input_fn) outer_seq_end_input)
+    {
+      outer_seq_end_node_t * ose = (outer_seq_end_node_t *)node;
+      stmt_printf ((" end of outer}\n"));
+      ssl_print (ose->ose_set_no);
+      stmt_printf (("\n out: "));
+      ssl_array_print (ose->ose_out_slots);
+      if (ose->ose_out_shadow)
+	{
+	  stmt_printf (("\n shadow: "));
+	  ssl_array_print (ose->ose_out_shadow);
+	}
+      stmt_printf (("\n"));
+    }
+  else if (in == (qn_input_fn) set_ctr_input)
+    {
+      QNCAST (set_ctr_node_t, sctr, node);
+      if (sctr->sctr_ose)
+	{
+	  stmt_printf (("outer {\n"));
+	}
+    }
+#ifdef BIF_XML
+  else if (in == (qn_input_fn) txs_input)
+    {
+      text_node_t *txs = (text_node_t *) node;
+      if (txs->txs_geo)
+	stmt_printf (("geo %s ", GSOP_INTERSECTS == txs->txs_geo ? "intersects": GSOP_CONTAINS == txs->txs_geo ? "contains": "within"));
+      else
+	if (txs->txs_xpath_text_exp)
+	stmt_printf (("XCONTAINS ("));
+      else
+	stmt_printf (("CONTAINS ("));
+      ssl_print (txs->txs_text_exp);
+      stmt_printf ((") node on %s %9.2g rows\n", txs->txs_table->tb_name, txs->txs_card));
+      ssl_print (txs->txs_d_id);
+      if (txs->txs_precision)
+	{
+	  stmt_printf ((" geo prec: "));
+	  ssl_print (txs->txs_precision);
+	}
+      stmt_printf (("\n"));
+    }
+  else if (in == (qn_input_fn) xn_input)
+    {
+      xpath_node_t *xn = (xpath_node_t *) node;
+      if ('q' == xn->xn_predicate_type)
+	stmt_printf (("XQUERY_CONTAINS ("));
+      else
+	stmt_printf (("XPATH_CONTAINS ("));
+      ssl_print (xn->xn_text_col);
+      if (xn->xn_base_uri)
+	{
+	  stmt_printf ((" (url col: "));
+	  ssl_print (xn->xn_base_uri);
+	  stmt_printf ((" )"));
+	}
+      if (xn->xn_output_len)
+	{
+	  stmt_printf ((" (result node-set length: "));
+	  ssl_print (xn->xn_output_len);
+	  stmt_printf ((" )"));
+	}
+      if (xn->xn_output_ctr)
+	{
+	  stmt_printf ((" (result counter: "));
+	  ssl_print (xn->xn_output_ctr);
+	  stmt_printf ((" )"));
+	}
+      if (xn->xn_output_val)
+	{
+	  stmt_printf ((" (result value: "));
+	  ssl_print (xn->xn_output_val);
+	  stmt_printf ((" )"));
+	}
+
+      stmt_printf ((") node\n"));
+    }
+#endif
+  else if (in == (qn_input_fn) end_node_input)
+    {
+      stmt_printf (("END Node\n"));
+    }
+  else
+    {
+      stmt_printf (("Node\n"));
+    }
+
+  if (node->src_after_test)
+    {
+      stmt_printf (("After test:\n"));
+      code_vec_print (node->src_after_test);
+    }
+  if (node->src_after_code)
+    {
+      stmt_printf (("\nAfter code:\n"));
+      code_vec_print (node->src_after_code);
+    }
+  node_print_next (node);
+}
+
+
+void
 node_print (data_source_t * node)
 {
   qn_input_fn in;
@@ -955,6 +1534,11 @@ node_print (data_source_t * node)
 	}
       else
 	code_vec_print (node->src_pre_code);
+    }
+  if (0 == dbf_explain_level)
+    {
+      node_print_0 (node);
+      return;
     }
   if (dbf_explain_level > 2)
     {
