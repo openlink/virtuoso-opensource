@@ -409,12 +409,15 @@ bif_ro2lo_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slo
 void
 dc_no_empty_marks (data_col_t * dc, db_buf_t empty_mark)
 {
-  /* the empty mark is an illegal value in a boxes dc.  sset them to 0 before signalling anything */
+  /* the empty mark is an illegal value in a boxes dc.  sset them to 0 before signalling anything.
+  * For a dc of anies it is a statis dv db null which is ok whereas null pointer is not */
+  static dtp_t dv_null = DV_DB_NULL;
   int inx;
+  db_buf_t subst_empty = (DCT_BOXES & dc->dc_type) ? NULL : &dv_null;
   for (inx = 0; inx < dc->dc_n_values; inx++)
     {
       if (empty_mark == ((db_buf_t *) dc->dc_values)[inx])
-	((db_buf_t *) dc->dc_values)[inx] = NULL;
+	((db_buf_t *)dc->dc_values)[inx] = subst_empty;
     }
 }
 
