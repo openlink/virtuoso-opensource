@@ -3050,6 +3050,7 @@ ins_vec_agg (instruction_t * ins, caddr_t * inst)
     {
       if ((AMMSC_COUNT == ins->_.agg.op || AMMSC_COUNTSUM == ins->_.agg.op   || AMMSC_SUM == ins->_.agg.op)
 	  && !ins->_.agg.distinct
+	  && DV_LONG_INT == res->dc_dtp
 	  && ((SSL_IS_VEC_OR_REF (ins->_.agg.arg)  && DV_LONG_INT == QST_BOX (data_col_t*, inst, ins->_.agg.arg->ssl_index)->dc_sqt.sqt_dtp && !QST_BOX (data_col_t*, inst, ins->_.agg.arg->ssl_index)->dc_any_null)
 	      || (SSL_CONSTANT == ins->_.agg.arg->ssl_type && DV_LONG_INT == ins->_.agg.arg->ssl_sqt.sqt_dtp)))
 	{
