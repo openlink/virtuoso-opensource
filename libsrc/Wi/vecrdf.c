@@ -625,6 +625,8 @@ bif_str_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_
   int set, n_sets = qi->qi_n_sets, first_set = 0, is_boxes;
   bif_ro2sq_vec_1 (qst, err_ret, args, ret, 0);
   dc = QST_BOX (data_col_t *, qst, ret->ssl_index);
+  if (dc->dc_dtp != DV_ANY)
+    dc_heterogenous (dc);
   SET_LOOP 
     {
       db_buf_t dv = ((db_buf_t*)dc->dc_values)[set];
