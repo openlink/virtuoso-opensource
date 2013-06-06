@@ -1618,14 +1618,15 @@ dfe_skip_to_min_card (df_elt_t * place, df_elt_t * super, df_elt_t * dfe)
 	}
       if (DFE_TABLE == place->dfe_type || DFE_DT == place->dfe_type)
 	{
+	  if (place != org_place)
 	  arity *= place->dfe_arity * 0.99;
-	  /* .99 so that this will prefer placing after a unique rather than before it, a unique might always not hit */
+	  /* Do not count first table, after first table is card 1.  0.99 so that this will prefer placing after a unique rather than before it, a unique might always not hit */
 	}
       if (DFE_GROUP == place->dfe_type)
 	{
 	  if (place->_.setp.is_being_placed)
 	    goto over;
-	  ref_arity = dfe_arity_with_supers (org_place->dfe_prev);
+	  ref_arity = dfe_arity_with_supers (org_place);
 	  if (!place->_.setp.gb_card)
 	    place->_.setp.gb_card = dfe_group_by_card (place);
 	  arity *= MIN (0.8, place->_.setp.gb_card / ref_arity);
