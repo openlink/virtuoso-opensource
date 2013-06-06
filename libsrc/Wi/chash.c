@@ -837,7 +837,7 @@ cha_new_gb (setp_node_t * setp, caddr_t * inst, db_buf_t ** key_vecs, chash_t * 
 }
 
 #define CHA_IS_NULL(cha, is_cont, row, inx)				\
-  (((db_buf_t)row)[(int)cha->cha_null_flags - (is_cont ? cha->cha_n_keys * sizeof (int64) : 0) + ((inx) >> 3)] & (1 << ((inx) & 0x7)))
+  (((db_buf_t)row)[(int)cha->cha_null_flags - (is_cont ? (cha->cha_n_keys + !cha->cha_is_1_int_key) * sizeof (int64) : 0) + ((inx) >> 3)] & (1 << ((inx) & 0x7)))
 
 #define CHA_SET_NULL(cha, is_cont, row, inx)				\
   (((db_buf_t)row)[(int)cha->cha_null_flags - (is_cont ? cha->cha_n_keys * sizeof (int64) : 0) + ((inx) >> 3)] |= (1 << ((inx) & 0x7)))
