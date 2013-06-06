@@ -570,7 +570,6 @@ extern uint32 big_endian_box_length (const void *box);
 
 
 /* This must be a uniform hash for all sorts of strings. */
-#ifdef VALGRIND
 #define BYTE_BUFFER_HASH(hash,text,len) \
   do { \
     uint32 byte_buffer_hash_res = (len); \
@@ -582,10 +581,9 @@ extern uint32 big_endian_box_length (const void *box);
       } \
     (hash) = byte_buffer_hash_res; \
     } while (0)
+#ifdef VALGRIND
 #define BYTE_BUFFER_HASH2(h, d, l) BYTE_BUFFER_HASH (h,d,l)
-
 #else
-#define BYTE_BUFFER_HASH(h, d, l) BYTE_BUFFER_HASH2 ((h),(d),(l))
 #define MHASH_M  ((uint64) 0xc6a4a7935bd1e995)
 #define MHASH_R 47
 

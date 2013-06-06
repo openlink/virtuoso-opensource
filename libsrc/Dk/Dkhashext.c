@@ -345,7 +345,7 @@ box_hash (caddr_t box)
       {
 	uint32 len = box_length_inline (box);
 	if (len > 0)
-	  BYTE_BUFFER_HASH2 (h, box, len - 1);
+	  BYTE_BUFFER_HASH (h, box, len - 1); /* was BYTE_BUFFER_HASH2 but it break xslt compare with UNAMEs etc. */
 	else
 	  h = 0;
 	return h & ID_HASHED_KEY_MASK;
