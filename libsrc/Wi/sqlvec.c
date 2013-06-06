@@ -1328,8 +1328,9 @@ sqlg_is_inline_hash_key (hash_area_t * ha, state_slot_t * ssl, table_source_t * 
 {
   /* true for single intlike key to hash.  Can merge the hash lookup and partition filter as column condition in a ts */
   dtp_t s_dtp = dtp_canonical[ssl->ssl_sqt.sqt_dtp];
+  int is_row_merge = ts && !ts->ts_order_ks->ks_key->key_is_col;
   if (ssl->ssl_column && ha->ha_n_keys == 1
-      && (DV_ANY == ha->ha_key_cols[0].cl_sqt.sqt_dtp || DV_ANY == s_dtp
+      && ((!is_row_merge && (DV_ANY == ha->ha_key_cols[0].cl_sqt.sqt_dtp || DV_ANY == s_dtp))
 	  || (dtp_canonical[ha->ha_key_cols[0].cl_sqt.sqt_dtp] == s_dtp && (DV_LONG_INT == s_dtp || DV_IRI_ID == s_dtp))))
     {
       if (ts)
