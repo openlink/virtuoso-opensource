@@ -611,9 +611,14 @@ create procedure DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (inout triples any)
     }
   for (inx := 0; inx < nt; inx := inx + 1)
     {
-      triples[inx][0] := os[inx];
-      triples[inx][1] := op[inx];
-      triples[inx][2] := oo[inx];
+      declare obj any;
+      triples[inx][0] := uriqa_dynamic_local_replace (os[inx]);
+      triples[inx][1] := uriqa_dynamic_local_replace (op[inx]);
+      obj := oo[inx];
+      if (isstring (obj) and __box_flags (obj) = 1)
+	triples[inx][2] := uriqa_dynamic_local_replace (obj);
+      else	
+	triples[inx][2] := obj;
     }
 }
 ;
