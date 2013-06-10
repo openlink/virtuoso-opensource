@@ -2983,17 +2983,27 @@ sqlo_check_rdf_lit (ST ** ptree)
 {
   ST * data = *ptree;
   caddr_t name = NULL, lang = NULL;
-  int vtype;
+  caddr_t vtype;
+  if ((name = sqlo_iri_constant_name (data)))
+    {
+      caddr_t iri = key_name_to_iri_id (NULL, name, 0);
+      dtp_t dtp = DV_TYPE_OF (iri);
+      if (!iri || DV_DB_NULL == dtp)
+	return KS_CAST_UNDEF;
+  mp_trash (THR_TMP_POOL, iri);
+  *ptree = (ST*)iri;
+  return KS_CAST_OK;
+    }
   if ((vtype = sqlo_rdf_obj_const_value (data, &name, &lang)))
     {
       if (RDF_UNTYPED == vtype)
 	{
-	  if (!rdf_obj_of_sqlval  (name, &data))
+	  if (!rdf_obj_of_sqlval  (name, (caddr_t*)&data))
 	    return KS_CAST_UNDEF;
 	}
       else  if (RDF_LANG_STRING == vtype)
 	{
-	  if (!rdf_obj_of_typed_sqlval  (name, vtype, lang,  &data))
+	  if (!rdf_obj_of_typed_sqlval  (name, vtype, lang, (caddr_t*)&data))
 	    return KS_CAST_UNDEF;
 
 	}
@@ -3017,7 +3027,7 @@ sqlo_check_rdf_lit (ST ** ptree)
 	  return KS_CAST_UNDEF;
 	}
     }
-  mp_trash (THR_TMP_POOL, data);
+  mp_trash (THR_TMP_POOL, (caddr_t)data);
   *ptree = data;
   return KS_CAST_OK;
 }

@@ -713,5 +713,7 @@ void sqlc_code_dpipe (sql_comp_t * sc, dk_set_t * code);
 #define RDF_LANG_STRING ((caddr_t) 2)
 
 caddr_t sqlo_rdf_obj_const_value (ST * tree, caddr_t * val_ret, caddr_t *lang_ret);
+int rdf_obj_of_sqlval (caddr_t val, caddr_t * data_ret);
+int rdf_obj_of_typed_sqlval (caddr_t val, caddr_t vtype, caddr_t lang, caddr_t * data_ret);
 
 #endif /* _SQLCMPS_H */
