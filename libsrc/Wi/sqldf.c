@@ -3355,8 +3355,8 @@ int
 sqlo_need_index_path (df_elt_t * tb_dfe, caddr_t opt_inx_name)
 {
   /* rdf quad with text/geo and no p needs a potentially multi-index access path if partial distinct inxes are used.  Other cases are done with regular inx choice */
-  char * tn = tb_dfe->_.table.ot->ot_table->tb_name;
-  if (!stricmp (tn, "DB.DBA.RDF_QUAD") || !stricmp (tn, "DB.DBA.R2"))
+  dbe_table_t * tb = tb_dfe->_.table.ot->ot_table;
+  if (tb_is_rdf_quad (tb))
     {
       dbe_column_t * p_col = tb_name_to_column (tb_dfe->_.table.ot->ot_table, "P");
       df_elt_t * pred;

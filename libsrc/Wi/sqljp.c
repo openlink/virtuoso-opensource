@@ -65,7 +65,7 @@ dfe_right (df_elt_t * tb_dfe, df_elt_t * pred)
 int
 dfe_is_quad (df_elt_t * tb_dfe)
 {
-  return (DFE_TABLE == tb_dfe->dfe_type && nc_strstr ((db_buf_t) tb_dfe->_.table.ot->ot_table->tb_name, (db_buf_t) "RDF_QUAD"));
+  return (DFE_TABLE == tb_dfe->dfe_type && tb_is_rdf_quad (tb_dfe->_.table.ot->ot_table));
 }
 
 
