@@ -96,7 +96,11 @@ sp_list_free (dk_set_t sps)
   DO_SET (search_spec_t *, sp, &sps)
     {
       if (CMP_HASH_RANGE == sp->sp_min_op)
-	dk_free ((caddr_t)sp->sp_min_ssl, sizeof (hash_range_spec_t));
+	{
+	  QNCAST (hash_range_spec_t, hrng, sp->sp_min_ssl);
+	  dk_free_box ((caddr_t)hrng->hrng_ssls);
+	  dk_free ((caddr_t)sp->sp_min_ssl, sizeof (hash_range_spec_t));
+	}
       dk_free ((caddr_t)sp, sizeof (search_spec_t));
     }
   END_DO_SET();
