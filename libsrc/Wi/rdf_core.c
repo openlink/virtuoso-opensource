@@ -3093,9 +3093,10 @@ caddr_t
 key_id_to_canonicalized_iri (query_instance_t * qi, iri_id_t iri_id_no)
 {
   boxint pref_id;
-  lock_trx_t * lt = qi->qi_trx;
+  lock_trx_t * lt = qi ? qi->qi_trx : NULL;
+  lock_trx_t * nic_lt = lt ? lt : bootstrap_cli->cli_trx;
   caddr_t local, prefix, name;
-  local = lt_nic_id_name (lt, iri_name_cache, iri_id_no);
+  local = lt_nic_id_name (nic_lt, iri_name_cache, iri_id_no);
   if (!local)
     {
       caddr_t id_box;
@@ -3106,12 +3107,11 @@ key_id_to_canonicalized_iri (query_instance_t * qi, iri_id_t iri_id_no)
 	  dk_free_box (id_box);
 	  return ret;
 	}
-
-      local = tb_id_to_name (qi->qi_trx, "DB.DBA.RDF_IRI", id_box);
+      local = tb_id_to_name (lt, "DB.DBA.RDF_IRI", id_box);
       dk_free_box (id_box);
       if (!local)
 	return NULL;
-      if (lt->lt_lock.ht_count)
+      if (qi && lt->lt_lock.ht_count)
 	lt_nic_set (lt, iri_name_cache, local, iri_id_no);
       else
 	nic_set (iri_name_cache, local, iri_id_no);
@@ -3131,14 +3131,14 @@ key_id_to_canonicalized_iri (query_instance_t * qi, iri_id_t iri_id_no)
       else
 	{
 	  caddr_t pref_id_box = box_num (pref_id);
-	  prefix = tb_id_to_name (qi->qi_trx, "DB.DBA.RDF_PREFIX", pref_id_box);
+	  prefix = tb_id_to_name (lt, "DB.DBA.RDF_PREFIX", pref_id_box);
 	  dk_free_box (pref_id_box);
 	  if (!prefix)
 	    {
 	      dk_free_box (local);
 	      return NULL;
 	    }
-	  if (lt->lt_lock.ht_count)
+	  if (qi && lt->lt_lock.ht_count)
 	    lt_nic_set (lt, iri_prefix_cache, prefix, pref_id);
 	  else
 	    nic_set (iri_prefix_cache, prefix, pref_id);
