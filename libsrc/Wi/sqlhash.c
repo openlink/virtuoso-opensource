@@ -197,7 +197,7 @@ setp_distinct_hash (sql_comp_t * sc, setp_node_t * setp, uint64 n_rows, int op)
   else if (n_rows > 1000000)
     n_rows = 1000000; /* cap on size except for hash join where can be large and/or partitioned */
   ha->ha_row_count = MAX (800, n_rows);
-  ha->ha_key_cols = (dbe_col_loc_t *) dk_alloc_box_zero ((n_deps + n_keys + 1) * sizeof (dbe_col_loc_t), DV_CUSTOM);
+  ha->ha_key_cols = (dbe_col_loc_t *) dk_alloc_box_zero ((n_deps + n_keys + 1) * sizeof (dbe_col_loc_t), DV_BIN);
   for (inx = 0; inx < n_keys + n_deps; inx++)
     {
       dbe_col_loc_t * cl = key_find_cl (ha->ha_key, inx +1);
@@ -226,6 +226,12 @@ setp_distinct_hash (sql_comp_t * sc, setp_node_t * setp, uint64 n_rows, int op)
 }
 
 
+/* common header of ssl and ssl ref */
+typedef struct ssl_head_s
+{
+  SSL_FLAGS;
+} ssl_head_t;
+
 void
 setp_after_deserialize (setp_node_t * setp)
 {
@@ -234,6 +240,25 @@ setp_after_deserialize (setp_node_t * setp)
   hash_area_t * ha = setp->setp_ha;
   int n_keys = BOX_ELEMENTS (setp->setp_keys_box);
   int n_deps = BOX_ELEMENTS (setp->setp_dependent_box);
+  ssl_head_t * ssl_save = NULL;
+  ha->ha_slots = (state_slot_t **)
+    list_to_array (dk_set_conc (dk_set_copy (setp->setp_keys),
+				dk_set_copy (setp->setp_dependent)));
+  if (HA_FILL == ha->ha_op)
+    {
+      ssl_save = (ssl_head_t*)dk_alloc_box (BOX_ELEMENTS (ha->ha_slots) * sizeof (ssl_head_t), DV_BIN);
+      DO_BOX (state_slot_t *, ssl, inx, ha->ha_slots)
+	{
+	  ssl_save[inx] = *(ssl_head_t*)(ha->ha_slots[inx]);
+	  ssl->ssl_sqt = ha->ha_key_cols[inx].cl_sqt;
+	  if (DV_ANY != ssl->ssl_sqt.sqt_dtp)
+	    {
+	      ssl->ssl_dc_dtp = 0;
+	      ssl_set_dc_type (ssl);
+	    }
+	}
+      END_DO_BOX;
+    }
   ha->ha_key = setp_temp_key (setp, &ha->ha_row_size, setp->src_gen.src_query->qr_no_cast_error, ha->ha_op);
   ha->ha_n_keys = n_keys;
   ha->ha_n_deps = n_deps;
@@ -244,7 +269,15 @@ setp_after_deserialize (setp_node_t * setp)
   else if (n_rows > 1000000)
     n_rows = 1000000; /* have a cap on hash size */
   ha->ha_row_count = n_rows;
-  ha->ha_key_cols = (dbe_col_loc_t *) dk_alloc_box_zero ((n_deps + n_keys + 1) * sizeof (dbe_col_loc_t), DV_CUSTOM);
+  if (HA_FILL == ha->ha_op)
+    {
+      dk_free_box ((caddr_t)ha->ha_key_cols);
+      DO_BOX (state_slot_t *, ssl, inx, ha->ha_slots)
+	*(ssl_head_t*)ssl = ssl_save[inx];
+      END_DO_BOX;
+      dk_free_box ((caddr_t)ssl_save);
+    }
+  ha->ha_key_cols = (dbe_col_loc_t *) dk_alloc_box_zero ((n_deps + n_keys + 1) * sizeof (dbe_col_loc_t), DV_BIN);
   for (inx = 0; inx < n_keys + n_deps; inx++)
     {
       dbe_col_loc_t * cl = key_find_cl (ha->ha_key, inx +1);
@@ -257,9 +290,6 @@ setp_after_deserialize (setp_node_t * setp)
       if ((inx >= n_keys) && (cl->cl_fixed_len < 0))
 	ha->ha_memcache_only = 1;
     }
-  ha->ha_slots = (state_slot_t **)
-    list_to_array (dk_set_conc (dk_set_copy (setp->setp_keys),
-				dk_set_copy (setp->setp_dependent)));
   ha->ha_allow_nulls = 1;
   if (setp->setp_any_user_aggregate_gos)
     ha->ha_memcache_only = 1;

@@ -508,7 +508,7 @@ gb_values (chash_t * cha, uint64 * hash_no, caddr_t * inst, state_slot_t * ssl, 
       arr = (int64 *) (dc->dc_values + first_set * elt_sz);
       memcpy_16 (temp, arr, sizeof (int64) * (last_set - first_set));
       gv_any_to_typed (temp, chdtp, last_set - first_set, nulls);
-      temp = arr;
+      arr = temp;
       if (dc->dc_any_null)
 	{
 	  for (ninx = first_set; ninx < last_set; ninx++)

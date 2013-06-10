@@ -203,15 +203,15 @@ sqlo_dfe_print (df_elt_t * dfe, int offset)
 	spacing[0] = 0;
 	if (dfe->_.table.hit_spacing)
 	  snprintf (spacing, sizeof (spacing), "%s spacing %9.2g", dfe->_.table.in_order ? "in order" : "", dfe->_.table.hit_spacing);
-	sqlo_print (("Table %s(%s %s) by %s %s", dfe->_.table.ot->ot_table->tb_name,
-	      dfe->_.table.ot->ot_prefix ? dfe->_.table.ot->ot_prefix : "",
-	      dfe->_.table.ot->ot_new_prefix,
+	sqlo_print ((" key %s (%s %s) %s", 
 		     dfe->_.table.key ? dfe->_.table.key->key_name : "no key",
+		     dfe->_.table.ot->ot_prefix ? dfe->_.table.ot->ot_prefix : "",
+		     dfe->_.table.ot->ot_new_prefix,
 		     dfe->_.table.hash_role == HR_FILL ? " hash filler " : dfe->_.table.hash_role == HR_REF ? "hash join" : ""));
 	if (compiler_unit_msecs)
 	  sqlo_print (("  Reached %9.2g unit %9.2g (%g msecs) arity %9.2g %s\n",
 		(double) dfe->_.table.in_arity, (double) dfe->dfe_unit,
-		(double) dfe->dfe_unit * compiler_unit_msecs,
+		(double) dfe->dfe_unit * dfe->_.table.in_arity * compiler_unit_msecs,
 		       (double) dfe->dfe_arity, spacing));
 	else
 	  sqlo_print (("  Reached %9.2g unit %9.2g arity %9.2g %s\n",
@@ -287,7 +287,7 @@ sqlo_dfe_print (df_elt_t * dfe, int offset)
 	if (dfe->_.table.hash_filler)
 	  {
 	    df_elt_t * filler = dfe->_.table.hash_filler;
-	    sqlo_print (("  hash filler dfe build time %g:\n", sqlo_hash_ins_cost (dfe, filler->dfe_arity, dfe->_.table.out_cols)));
+	    sqlo_print (("  hash filler dfe build time %g ms:\n", sqlo_hash_ins_cost (dfe, filler->dfe_arity, dfe->_.table.out_cols) * compiler_unit_msecs));
 	    sqlo_dfe_print (filler, offset + OFS_INCR);
 	  }
 
