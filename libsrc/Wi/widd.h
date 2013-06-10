@@ -120,6 +120,7 @@ struct dbe_table_s
     dk_hash_t *		tb_grants;
     oid_t		tb_owner_col_id;
     char		tb_any_blobs;
+    char		tb_is_rdf_quad;
     struct remote_ds_s *tb_remote_ds;
     caddr_t		tb_remote_name;
     dk_hash_t *		tb_misc_id_to_col_id;

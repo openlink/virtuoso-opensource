@@ -797,9 +797,16 @@ ins_unq_hashcmp (char *x, char *y)
 int
 tb_is_rdf_quad (dbe_table_t * tb)
 {
+  int is_q;
   if (!tb)
     return 0;
-  return 0 == stricmp (tb->tb_name, "DB.DBA.RDF_QUAD");
+  if (1 == tb->tb_is_rdf_quad)
+    return 1;
+  if (2 == tb->tb_is_rdf_quad)
+    return 0;
+  is_q = 0 == stricmp (tb->tb_name, "DB.DBA.RDF_QUAD");
+  tb->tb_is_rdf_quad = is_q ? 1 : 2;
+  return is_q;
 }
 
 
