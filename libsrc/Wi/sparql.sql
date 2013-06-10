@@ -16479,3 +16479,77 @@ create procedure SPARQL_INI_PARAMS (inout metas any, inout dta any)
 }
 ;
 
+
+--
+-- Make geometries for geo:long, geo:lat pairs
+--
+create procedure num_or_null (in n any)
+{
+  declare exit handler for sqlstate '*'{ return null; };
+  return cast (cast (n as decimal) as real);
+}
+;
+
+create procedure GEO_FILL_SRV  (in arr any, in fill int)
+{
+  declare lat, lng, s, g, l any;
+  declare inx int;
+  log_enable (2, 1);
+  declare geop iri_id_8;
+  declare gs, ss, os any array;
+  gs := make_array (fill, 'any');
+  ss := make_array (fill, 'any');
+  os := make_array (fill, 'any');
+  geop := iri_to_id ('http://www.w3.org/2003/01/geo/wgs84_pos#geometry');
+  for (inx := 0; inx < fill; inx := inx + 1)
+    {
+      l := aref_set_0 (arr, inx);
+      gs[inx]  := aref_set_0 (l, 0);
+      ss[inx] := aref_set_0 (l, 1);
+      os[inx] := st_point (aref_set_0 (l, 2), aref_set_0 (l, 3));
+    }
+  for vectored (in g1 iri_id_8 := gs, in s1 iri_id_8 := ss, in o1 any array := os)
+    {
+      insert soft rdf_quad (g, s, p, o) values ("g1", "s1", geop, rdf_geo_add (rdf_box (o1, 256, 257, 0, 1)));
+    }
+}
+;
+
+create procedure rdf_geo_fill (in threads int := null, in batch int := 100000)
+{
+  declare arr, fill, aq, ctr any;
+  if (threads is null) threads := sys_stat ('enable_qp');
+  aq := async_queue (threads);
+  arr := make_array (batch, 'any');
+  fill := 0;
+  ctr := 0;
+  log_enable (2, 1);
+  for select "s", "long", "lat", "g" from (sparql define output:valmode "LONG" select ?g ?s ?long ?lat where {
+    graph ?g { ?s geo:long ?long . ?s geo:lat ?lat}}) f  do
+    {
+      declare lat2, long2 any;
+      long2 := num_or_null (rdf_box_data ("long"));
+      lat2 := num_or_null (rdf_box_data ("lat"));
+      if (isnumeric (long2) and isnumeric (lat2))
+	{
+	  arr[fill] := vector ("g", "s", long2, lat2);
+	  fill := fill + 1;
+	  if (batch = fill)
+	    {
+	      aq_request (aq, 'DB.DBA.GEO_FILL_SRV', vector (arr, fill));
+	      ctr := ctr + 1;
+	      if (ctr > 100)
+		{
+		  commit work;
+		  aq_wait_all (aq);
+		  ctr := 0;
+		}
+	      arr := make_array (batch, 'any');
+	      fill := 0;
+	    }
+	}
+    }
+  geo_fill_srv (arr, fill);
+  aq_wait_all (aq);
+}
+;
