@@ -5093,7 +5093,7 @@ dfe_arity_with_supers (df_elt_t * dfe)
 }
 
 
-int hash_join_enable = 0;
+int hash_join_enable = 1;
 int hash_join_full_table = 1;
 
 
