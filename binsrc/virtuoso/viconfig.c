@@ -177,6 +177,7 @@ extern int c_col_by_default;
 extern int c_use_aio;
 extern long txn_after_image_limit; /* from log.c */
 extern int iri_cache_size;
+extern int32 iri_range_size;
 extern int uriqa_dynamic_local;
 extern int lite_mode;
 extern int rdf_obj_ft_rules_size;
@@ -446,6 +447,15 @@ extern long sparql_result_set_max_rows;
 extern long sparql_max_mem_in_use;
 int32 c_sparql_result_set_max_rows = 0;
 int32 c_sparql_max_mem_in_use = 0;
+
+extern int32 enable_qp;
+extern int32 dc_max_batch_sz;
+extern int32 dc_batch_sz;
+extern int32 enable_dyn_batch_sz;
+extern int c_query_log;
+extern char * c_query_log_file;
+extern int64 chash_space_avail;
+extern size_t c_max_large_vec;
 
 /* for use in bif_servers */
 int
@@ -783,6 +793,8 @@ cfg_setup (void)
 
   if (cfg_getlong (pconfig, section, "NumberOfBuffers", &c_number_of_buffers) == -1)
     c_number_of_buffers = 2000;
+  if (c_number_of_buffers < 20000)
+    c_number_of_buffers = 20000;
 
   if (cfg_getlong (pconfig, section, "LockInMem", &c_lock_in_mem) == -1)
     c_lock_in_mem = 0;
@@ -995,14 +1007,21 @@ cfg_setup (void)
     c_java_classpath = 0;
 
   if (cfg_getlong (pconfig, section, "DefaultIsolation", &c_default_txn_isolation) == -1)
-    c_default_txn_isolation = ISO_REPEATABLE;
-
+    {
+      c_default_txn_isolation = ISO_COMMITTED;
+    }
   if (c_default_txn_isolation != ISO_UNCOMMITTED && 
       c_default_txn_isolation != ISO_COMMITTED && 
       c_default_txn_isolation != ISO_REPEATABLE && 
       c_default_txn_isolation != ISO_SERIALIZABLE) 
     c_default_txn_isolation = ISO_REPEATABLE;
 
+  if (cfg_getlong (pconfig, section, "ColumnStore", &c_col_by_default) == -1)
+    c_col_by_default = 0;
+  if (0 != cfg_getsize (pconfig, section, "MaxQueryMem", &c_max_large_vec))
+    c_max_large_vec = 0;
+  if (0 != cfg_getsize (pconfig, section, "HashJoinSpace", &chash_space_avail))
+    chash_space_avail = MAX (1000000000, main_bufs * 1000);
   if (cfg_getlong (pconfig, section, "UseAIO", &c_c_use_aio) == -1)
     c_c_use_aio = 0;
 
@@ -1027,7 +1046,7 @@ cfg_setup (void)
 
   if (cfg_getlong (pconfig, section, "LogProcOverwrite", &log_proc_overwrite) == -1)
     log_proc_overwrite = 1;
-  if (cfg_getlong (pconfig, section, "PageCompress", (int32*)&c_compress_mode) == -1)
+  if (cfg_getlong (pconfig, section, "PageCompress", &c_compress_mode) == -1)
     c_compress_mode = 0;
 
 
@@ -1170,6 +1189,9 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "IriCacheSize", &c_iri_cache_size) == -1)
     c_iri_cache_size = 0;
 
+  if (cfg_getlong (pconfig, section, "IRIRangeSize", &iri_range_size) == -1)
+    iri_range_size = 11 * 256 * 709;	/* far enough so as not to fall in same row wise leaf page and not a multiple of common slice count  so consecutive usually come on different host */
+
   if (cfg_getlong (pconfig, section, "LiteMode", &c_lite_mode) == -1)
     c_lite_mode = 0;
 
@@ -1191,6 +1213,31 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "MaxOpenClientStatements", &cli_max_cached_stmts) == -1)
     cli_max_cached_stmts = 10000;
 
+  if (cfg_getstring (pconfig, section, "QueryLog", &c_query_log_file) == -1)
+    c_query_log = 0;
+  else
+    c_query_log = 1;
+
+  if (cfg_getlong (pconfig, section, "ThreadsPerQuery", &enable_qp) == -1)
+    {
+      enable_qp = 8;
+    }
+
+  if (cfg_getlong (pconfig, section, "MaxVectorSize", &dc_max_batch_sz) == -1)
+    dc_max_batch_sz = 1000000;
+  if (dc_max_batch_sz > (1024 * 1024 * 4) - 16)
+    dc_max_batch_sz = (1024 * 1024 * 4) - 16;
+
+  if (cfg_getlong (pconfig, section, "VectorSize", &dc_batch_sz) == -1)
+    dc_batch_sz = 10000;
+
+  if (cfg_getlong (pconfig, section, "AdjustVectorSize", &enable_dyn_batch_sz) == -1)
+    enable_dyn_batch_sz = 1;
+
+
+  /*
+   *  Parse [HTTPServer] section
+   */
   section = "HTTPServer";
 
   if (cfg_getstring (pconfig, section, "ServerPort", &c_http_port) == -1)
