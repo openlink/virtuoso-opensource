@@ -1478,7 +1478,7 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "ShortenLongURIs", &rdf_shorten_long_iri) == -1)
     rdf_shorten_long_iri = 1;
   if (cfg_getlong (pconfig, section, "EnablePstats", &enable_p_stat) == -1)
-    enable_p_stat = 1;
+    enable_p_stat = 2;
 
  /* Initialize OpenSSL engines */
   ssl_engine_startup ();
