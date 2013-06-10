@@ -691,14 +691,14 @@ sqlo_hash_fill_join (sqlo_t * so, df_elt_t * hash_ref_tb, df_elt_t ** fill_ret, 
 	  snprintf (tmp, sizeof (tmp), "%s.%s", dfe->dfe_tree->_.col_ref.prefix, dfe->dfe_tree->_.col_ref.name);
 	else
 	  snprintf (tmp, sizeof (tmp), "h%d", ctr++);
-	as = listst (5, BOP_AS, t_box_copy_tree ((caddr_t) dfe->dfe_tree), NULL, t_box_string (tmp), NULL);
+	as = t_listst (5, BOP_AS, t_box_copy_tree ((caddr_t) dfe->dfe_tree), NULL, t_box_string (tmp), NULL);
 	sel->_.select_stmt.selection[inx] = (caddr_t) as;
       }
       END_DO_BOX;
       DO_BOX (df_elt_t *, tb_dfe, inx, texp->_.table_exp.from)
 	  texp->_.table_exp.from[inx] =
-	  listst (3, TABLE_REF, listst (6, TABLE_DOTTED, tb_dfe->_.table.ot->ot_table->tb_name, tb_dfe->_.table.ot->ot_new_prefix,
-	      NULL, NULL, NULL), NULL);
+	  t_listst (3, TABLE_REF, t_listst (6, TABLE_DOTTED, tb_dfe->_.table.ot->ot_table->tb_name,
+	      tb_dfe->_.table.ot->ot_new_prefix, NULL, NULL, NULL), NULL);
       END_DO_BOX;
       sqlo_scope (so, &sel);
       fill_dfe = sqlo_df (so, sel);

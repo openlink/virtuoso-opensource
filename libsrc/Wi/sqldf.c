@@ -1404,7 +1404,7 @@ sqlo_hash_fill_dt_place_col (df_elt_t * dt_dfe, df_elt_t * col)
 	}
     }
   END_DO_BOX;
-  ref_dfe = sqlo_df (so, listst (3, COL_DOTTED, defd->_.table.ot->ot_new_prefix, col->_.col.col->col_name));
+  ref_dfe = sqlo_df (so, t_listst (3, COL_DOTTED, defd->_.table.ot->ot_new_prefix, col->_.col.col->col_name));
   so->so_gen_pt = dt_dfe->_.sub.last;
   sqlo_place_exp (so, dt_dfe, ref_dfe);
   out = dt_dfe->_.sub.dt_out;
