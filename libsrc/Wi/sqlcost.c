@@ -3121,7 +3121,7 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
       dfe_hash_fill_cost (dfe, &fu1, &fa1, &fo1);
       *overhead_ret += fu1;
       total_cost = mem_cost = sqlo_hash_mem_cost (fa1);
-      if (dfe->_.table.is_unique || dfe->_.table.out_cols)
+      if (!dfe->_.table.is_unique || dfe->_.table.out_cols)
 	total_cost *= 2;
       if (dfe->_.table.out_cols)
 	total_cost += mem_cost * 0.5 * (dk_set_length (dfe->_.table.out_cols) - 1);
