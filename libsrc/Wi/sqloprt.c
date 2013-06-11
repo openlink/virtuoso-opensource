@@ -72,10 +72,20 @@ sqlo_index_path_print (df_elt_t * dfe)
 }
 
 
+caddr_t dv_iri_short_name (caddr_t x);
+
 void
 dbg_print_st (caddr_t * box, FILE * f)
 {
   ST * st = (ST*)box;
+  dtp_t dtp = DV_TYPE_OF (box);
+  if (DV_IRI_ID == dtp)
+    {
+      caddr_t n = dv_iri_short_name (box);
+      sqlo_print (("#%s ", n ? n :  "unnamed"));
+      dk_free_box (n);
+      return;
+    }
   if (ST_P (st, COL_DOTTED))
     sqlo_print (("%s.%s ", st->_.col_ref.prefix, st->_.col_ref.name));
   else if (ST_P (st, CALL_STMT))
