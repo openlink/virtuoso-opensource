@@ -203,11 +203,12 @@ sqlo_dfe_print (df_elt_t * dfe, int offset)
 	spacing[0] = 0;
 	if (dfe->_.table.hit_spacing)
 	  snprintf (spacing, sizeof (spacing), "%s spacing %9.2g", dfe->_.table.in_order ? "in order" : "", dfe->_.table.hit_spacing);
-	sqlo_print ((" key %s (%s %s) %s", 
+	sqlo_print ((" key %s (%s %s) %s %s",
 		     dfe->_.table.key ? dfe->_.table.key->key_name : "no key",
 		     dfe->_.table.ot->ot_prefix ? dfe->_.table.ot->ot_prefix : "",
 		     dfe->_.table.ot->ot_new_prefix,
-		     dfe->_.table.hash_role == HR_FILL ? " hash filler " : dfe->_.table.hash_role == HR_REF ? "hash join" : ""));
+		     dfe->_.table.hash_role == HR_FILL ? " hash filler " : dfe->_.table.hash_role == HR_REF ? "hash join" : "",
+		     dfe->_.table.is_cl_part_first ? "cl new partition" : ""));
 	if (compiler_unit_msecs)
 	  sqlo_print (("  Reached %9.2g unit %9.2g (%g msecs) arity %9.2g %s\n",
 		(double) dfe->_.table.in_arity, (double) dfe->dfe_unit,

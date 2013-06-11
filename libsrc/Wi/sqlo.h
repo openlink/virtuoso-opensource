@@ -241,6 +241,7 @@ struct df_elt_s
       bitf_t is_xcontains:1;
       bitf_t is_locus_first:1;
       bitf_t is_leaf:1;
+      bitf_t is_cl_part_first:1;
       bitf_t is_inf_col_given:1; /* if rdf inferred subclass/prop given and checked as after test, no itre over supers */
       bitf_t hash_role:3;
       bitf_t is_hash_filler_unique:1; /* if this is a hash filler and the key of the hash is unique, so guaranteed no dups in hash */
