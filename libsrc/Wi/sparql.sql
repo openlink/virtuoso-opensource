@@ -16550,6 +16550,7 @@ create procedure rdf_geo_fill (in threads int := null, in batch int := 100000)
 	}
     }
   geo_fill_srv (arr, fill);
+  commit work;
   aq_wait_all (aq);
 }
 ;
