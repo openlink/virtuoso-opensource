@@ -474,8 +474,10 @@ bif_ro2sq_vec_1 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_s
       return;
     }
   is_boxes = DCT_BOXES & arg->dc_type;
-  empty_mark = is_boxes ? NULL : &dv_null;
+  empty_mark = (DCT_BOXES & dc->dc_type) ? NULL : &dv_null;
   DC_CHECK_LEN (dc, qi->qi_n_sets - 1);
+  if (DCT_BOXES & dc->dc_type)
+    DC_FILL_TO (dc, int64, qi->qi_n_sets);
   SET_LOOP
   {
     db_buf_t dv;
@@ -625,7 +627,7 @@ bif_str_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_
   QNCAST (QI, qi, qst);
   data_col_t * dc;
   db_buf_t set_mask = qi->qi_set_mask;
-  int set, n_sets = qi->qi_n_sets, first_set = 0, is_boxes;
+  int set, n_sets = qi->qi_n_sets, first_set = 0;
   bif_ro2sq_vec_1 (qst, err_ret, args, ret, 0);
   dc = QST_BOX (data_col_t *, qst, ret->ssl_index);
   if (dc->dc_dtp != DV_ANY)
