@@ -4037,7 +4037,6 @@ srv_global_init (char *mode)
     set_ini_trace_option ();
 
   log_thread_initialize();
-  hash_join_enable = 1;
 
   if (mode_pass_change)
     {
