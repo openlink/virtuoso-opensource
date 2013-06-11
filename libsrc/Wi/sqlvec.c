@@ -3960,6 +3960,27 @@ sqlg_cl_setp_reader (sql_comp_t * sc, fun_ref_node_t * fref)
 
 
 void
+sqlg_const_card_ssl_defs (sql_comp_t * sc, data_source_t * qn)
+{
+  /* a node that  is constant cardinality is invisible for purposes of ssl ref.  So ssls that are assigned in a node like that 
+   * are not found to be assigned because a const card node does not figire in sc_vec_pred.  So move them so they are assigned in the previous non const card node */
+  data_source_t * prev = sc->sc_vec_pred ? (data_source_t*)sc->sc_vec_pred->data : NULL;
+  dk_set_t ssls = NULL;
+  DO_HT (state_slot_t *, ssl, data_source_t *, defd, sc->sc_vec_ssl_def)
+    {
+      if (defd == qn)
+	t_set_push (&ssls, (void*)ssl);
+    }
+  END_DO_HT;
+  DO_SET (state_slot_t *, ssl, &ssls)
+    {
+      sethash ((void*)ssl, sc->sc_vec_ssl_def, (void*)prev);
+    }
+  END_DO_SET();
+}
+
+
+void
 sqlg_vec_qns (sql_comp_t * sc, data_source_t * qn, dk_set_t prev_nodes)
 {
   int ign = 0;
@@ -4022,7 +4043,10 @@ sqlg_vec_qns (sql_comp_t * sc, data_source_t * qn, dk_set_t prev_nodes)
       qn_vec_slots (sc, qn, NULL, NULL, &ign);
       qn->src_prev = prev_nodes ? (data_source_t*)prev_nodes->data : NULL;
       if (qn_is_const_card (qn))
-	continue;
+	{
+	  sqlg_const_card_ssl_defs (sc, qn);
+	  continue;
+	}
       if (IS_QN (qn, outer_seq_end_input))
 	prev_nodes = sc->sc_vec_pred;
       if (IS_QN (qn, gs_union_node_input))
