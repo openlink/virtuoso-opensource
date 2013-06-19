@@ -4919,6 +4919,7 @@ qr_recompile_enter (int * is_entered, caddr_t * err_ret)
     {
       recomp_cli = client_connection_create ();
       recomp_cli->cli_replicate = REPL_NO_LOG;
+      recomp_cli->cli_resultset_max_rows = -1;
       local_start_trx (recomp_cli);
       local_commit_end_trx (recomp_cli);
     }
