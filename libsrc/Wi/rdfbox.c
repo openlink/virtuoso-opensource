@@ -596,7 +596,7 @@ bif_rdf_box_is_storeable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
       rdf_box_audit (rb);
       if (0 != rb->rb_ro_id)
         return box_num (1);
-      if ((!rb->rb_is_complete) || rb->rb_chksum_tail)
+      if (!rb->rb_is_complete)
         return box_num (0);
       data_dtp = DV_TYPE_OF (rb->rb_box);
       if ((DV_STRING == data_dtp) || (DV_UNAME == data_dtp))
