@@ -316,49 +316,6 @@ create procedure REPL_REMOTE_TYPES (
 }
 ;
 
-
-create procedure REPL_PK_COLS (in _tbl varchar)
-{
-  declare cr_pk cursor for
-      select
-          sc."COLUMN",
-          sc."COL_DTP",
-	  sc."COL_SCALE",
-	  sc."COL_PREC"
-      from
-          DB.DBA.SYS_KEYS k,
-	  DB.DBA.SYS_KEY_PARTS kp, DB.DBA.SYS_COLS sc
-      where
-          upper(k.KEY_TABLE) = upper(_tbl) and
-	  __any_grants(k.KEY_TABLE) and
-	  k.KEY_IS_MAIN = 1 and
-	  k.KEY_MIGRATE_TO is NULL and
-	  kp.KP_KEY_ID = k.KEY_ID and
-	  kp.KP_NTH < k.KEY_DECL_PARTS and
-	  sc.COL_ID = kp.KP_COL
-          and sc."COLUMN" <> '_IDN'
-      order by
-          kp.KP_NTH;
-  declare _pk_cols any;
-  declare _col_name varchar;
-  declare _col_dtp, _col_scale, _col_prec integer;
-
-  _pk_cols := vector ();
-  open cr_pk;
-  whenever not found goto done;
-  while (1)
-    {
-      fetch cr_pk into _col_name, _col_dtp, _col_scale, _col_prec;
-      _col_name := repl_undot_name (_col_name);
-      _pk_cols := vector_concat (
-          _pk_cols, vector (vector (_col_name, _col_dtp, _col_scale, _col_prec)));
-    }
-done:
-  close cr_pk;
-  return _pk_cols;
-}
-;
-
 create procedure REPL_ALL_COLS (in _tbl varchar)
 {
   declare _stmt varchar;
