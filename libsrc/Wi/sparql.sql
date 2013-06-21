@@ -220,7 +220,7 @@ sequence_set ('RDF_DATATYPE_TWOBYTE', 258, 1)
 sequence_set ('RDF_LANGUAGE_TWOBYTE', 258, 1)
 ;
 
-create procedure RDF_GEO_INIT ()
+create procedure RDF_QUAD_FT_INIT ()
 {
   if (not exists (select 1 from SYS_VT_INDEX where VI_COL = 'o'))
     {
@@ -15752,6 +15752,7 @@ create procedure DB.DBA.RDF_QUAD_FT_UPGRADE ()
   declare fake integer;
   if (USER <> 'dba')
     signal ('RDFXX', 'Only DBA can alter DB.DBA.RDF_QUAD schema or initialize RDF storage');
+  RDF_QUAD_FT_INIT ();
   DB.DBA.RDF_QUAD_LOAD_CACHE ();
   delete from DB.DBA.RDF_GRAPH_USER where not exists (select 1 from DB.DBA.SYS_USERS where RGU_USER_ID = U_ID);
   if (row_count ())
