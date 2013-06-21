@@ -6310,13 +6310,12 @@ static int x509_add_ext (X509 *cert, int nid, char *value)
   return 1;
 }
 
-
 static void
 x509_add_custom (X509 * x, ccaddr_t n, ccaddr_t v)
 {
   int nid = OBJ_create (n, n, n);
   X509V3_EXT_add_alias (nid, NID_netscape_comment);
-  x509_add_ext (x, nid, (char*)v);
+  x509_add_ext (x, nid, (char *) v);
 }
 
 

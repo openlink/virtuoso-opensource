@@ -964,13 +964,15 @@ rdb2rdf_qm_codegen (rdb2rdf_ctx_t *rrc, rdb2rdf_optree_t *rro, caddr_t table_nam
       ssg_puts (" AS ");
       ssg_prin_subalias (ssg, prefix, tblalias, 0);
     }
+  if (!need_comma)
+    ssg_puts (" DB.DBA.SYS_IDONLY_ONE AS emergency_stub");
   ssg_newline (0);
   ssg->ssg_where_l_printed = 0;
   ssg->ssg_where_l_text = " WHERE ";
   for (cond_ctr = 0; cond_ctr < qm->qmAllCondCount; cond_ctr++)
     {
       ccaddr_t cond = qm->qmAllConds[cond_ctr];
-      ssg_print_where_or_and (ssg, "inter-alias join cond or fitler");
+      ssg_print_where_or_and (ssg, "inter-alias join cond or filter");
       ssg_print_tmpl (ssg, NULL, cond, prefix, NULL, NULL, NULL_ASNAME);
     }
   for (fld_ctr = SPART_TRIPLE_FIELDS_COUNT; fld_ctr--; /* no step*/)
