@@ -81,27 +81,6 @@ create procedure REPL_OFFSET_TIME (
 }
 ;
 
-
-
-create procedure REPL_FQNAME (in _tbl varchar)
-{
-  declare _parts any;
-  _parts := vector ('', '', '');
-  declare _ix, _len integer;
-  _ix := 0;
-  _len := length (_parts);
-  while (_ix < _len)
-    {
-      declare _p any;
-      _p := name_part (_tbl, _ix);
-      if (_p <> 0)
-        _parts[_ix] := sprintf ('"%I"', _p);
-      _ix := _ix + 1;
-    }
-  return concat (_parts[0], '.', _parts[1], '.', _parts[2]);
-}
-;
-
 create procedure REPL_ORIGIN (in _rowguid varchar)
 {
   declare _delim_pos integer;
@@ -237,64 +216,6 @@ create table DB.DBA.SYS_REPL_POSTPONED_RES (
 create index SYS_REPL_POSTPONED_LOCKED_COL_ID on DB.DBA.SYS_REPL_POSTPONED_RES (LOCKED_COL_ID)
 create index SYS_REPL_POSTPONED_LOCKED_RES_ID on DB.DBA.SYS_REPL_POSTPONED_RES (LOCKED_RES_ID)
 ;
-
-create procedure REPL_COLTYPE_PS (
-    in _coltype varchar,
-    in _col_dtp integer, in _col_prec integer, in _col_scale integer)
-  returns varchar
-{
-  if ((_col_dtp = 181 or _col_dtp = 182 or _col_dtp = 192 or
-       _col_dtp = 222 or _col_dtp = 225)
-      and _col_prec is not null and _col_prec <> 0)
-    {
-      -- (length) for char or varchar
-      declare _pos integer;
-      declare _len_spec varchar;
-      _pos := strstr (_coltype, '()');
-      _len_spec := sprintf ('(%d)', _col_prec);
-      if (_pos is null)
-        _coltype := concat (_coltype, _len_spec);
-      else
-        {
-          declare _prefix, _suffix varchar;
-          _prefix := subseq (_coltype, 0, _pos);
-          _suffix := subseq (_coltype, _pos + 2);
-          _coltype := concat (_prefix, _len_spec, _suffix);
-        }
-    }
-  else if (_col_dtp = 219)
-    {
-      -- (prec, scale) for numeric
-      if (_col_prec < _col_scale)
-        _col_scale := 0;
-      _coltype := concat (_coltype, sprintf('(%d, %d)', _col_prec, _col_scale));
-    }
-  return _coltype;
-}
-;
-
-create procedure REPL_COLTYPE (in _col any) returns varchar
-{
-  declare _col_dtp, _col_prec, _col_scale integer;
-  _col_dtp := aref (_col, 1);
-  _col_scale := aref (_col, 2);
-  _col_prec := aref (_col, 3);
-
-  if (_col_dtp = 219)
-    {
-      if (_col_scale > 15)
-	_col_scale := 15;
-      if (_col_prec > 40)
-	_col_prec := 40;
-    }
-  return REPL_COLTYPE_PS (
-      dv_type_title(_col_dtp), _col_dtp, _col_prec, _col_scale);
-}
-;
-
-
-
-
 
 create procedure REPL_REMOTE_TYPES_RAW (in _dsn varchar)
   returns any
