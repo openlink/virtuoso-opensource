@@ -2898,6 +2898,7 @@ sparp_equiv_audit_all (sparp_t *sparp, int flags)
     {
       sparp_equiv_t *eq = SPARP_EQUIV (sparp, eq_ctr);
       SPART *gp;
+      int count_of_global_vars = 0;
       if (NULL == eq)
         continue;
       if (eq->e_own_idx != eq_ctr)
@@ -2923,6 +2924,15 @@ sparp_equiv_audit_all (sparp_t *sparp, int flags)
             spar_audit_error (sparp, "sparp_" "equiv_audit_all(): var->_.var.equiv_idx != eq_ctr: eq #%d for %s, gp %s, var %s/%s/%s with equiv_idx %d", eq_ctr, eq->e_varnames[0], var->_.var.selid, var->_.var.tabid, var->_.var.vname, var->_.var.equiv_idx);
           if (strcmp (var->_.var.selid, gp->_.gp.selid))
             spar_audit_error (sparp, "sparp_" "equiv_audit_all(): selid of var of eq differs from selid of gp of eq, gp %s, var %s/%s/%s with equiv_idx %d", gp->_.gp.selid, var->_.var.selid, var->_.var.tabid, var->_.var.vname, var->_.var.equiv_idx);
+          if (SPART_VARNAME_IS_GLOB (var->_.var.vname))
+            {
+              count_of_global_vars++;
+              if (!(var->_.var.rvr.rvrRestrictions & SPART_VARR_GLOBAL))
+                spar_audit_error (sparp, "sparp_" "equiv_audit_all(): varname is global, SPART_VARR_GLOBAL of var is not set, var %s/%s/%s with equiv_idx %d", gp->_.gp.selid, var->_.var.selid, var->_.var.tabid, var->_.var.vname, var->_.var.equiv_idx);
+            }
+          else
+            if (var->_.var.rvr.rvrRestrictions & SPART_VARR_GLOBAL)
+              spar_audit_error (sparp, "sparp_" "equiv_audit_all(): varname is not global, SPART_VARR_GLOBAL of var is set, var %s/%s/%s with equiv_idx %d", gp->_.gp.selid, var->_.var.selid, var->_.var.tabid, var->_.var.vname, var->_.var.equiv_idx);
           if (NULL != var->_.var.tabid)
             {
               int var_tr_idx = var->_.var.tr_idx;
@@ -2954,6 +2964,8 @@ sparp_equiv_audit_all (sparp_t *sparp, int flags)
                 }
             }
         }
+      if (!count_of_global_vars && (eq->e_rvr.rvrRestrictions & SPART_VARR_GLOBAL))
+        spar_audit_error (sparp, "sparp_" "equiv_audit_all(): No vars with global names, but SPART_VARR_GLOBAL of var is set, equiv_idx %d in %s", eq_ctr, gp->_.gp.selid);
       recv_ctr = BOX_ELEMENTS_0 (eq->e_receiver_idxs);
       if (0 != recv_ctr)
         {

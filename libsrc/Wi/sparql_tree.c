@@ -1655,6 +1655,15 @@ So it should be reordered in the list in such a way that it will never appear at
           break;
         }
     }
+  if ((eq->e_rvr.rvrRestrictions & SPART_VARR_GLOBAL) && (var->_.var.rvr.rvrRestrictions & SPART_VARR_GLOBAL))
+    {
+      int global_var_count = 0;
+      for (varctr = eq->e_var_count; varctr--; /*no step*/)
+        if (SPART_VARNAME_IS_GLOB (eq->e_vars[varctr]->_.var.vname))
+          global_var_count++;
+      if (!global_var_count)
+        eq->e_rvr.rvrRestrictions &= ~SPART_VARR_GLOBAL;
+    }
 }
 
 sparp_equiv_t *
