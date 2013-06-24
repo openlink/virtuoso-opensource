@@ -144,6 +144,7 @@ JSO_SCALAR qmfOkForAnySqlvalue BOOLEAN REQUIRED		--!< Nonzero if the field forma
 JSO_SCALAR qmfUriIdOffset INTEGER OPTIONAL		--!< The value that should be added to locally stored ref id in order to get portable ref id
 JSO_SCALAR qmfCustomString1 STRING OPTIONAL		--!< The value that can be used as a value of ^{custom-string-1}^ in templates
 JSO_SCALAR qmfArgDtps STRING OPTIONAL			--!< String of dtp_t bytes, can be used as a value of ^{opt-comma-arg-dtps}^ in templates
+JSO_POINTER qmfSubFormatForRefs qm_format OPTIONAL	--!< Subformat that supports all refs (IRIs and bnodes) that are supported by this format (and NULLs if they're supported by this formats)
 JSO_POINTER qmfSuperFormats qm_format_array OPTIONAL	--!< Array of formats that can store any value that current format can store
 JSO_GROUP_BEGIN qmfValRange virtrdf rdf_val_range	--!< Natural restrictions on values stored in the source column of format
 JSO_SCALAR rvrRestrictions BITMASK OPTIONAL
@@ -193,6 +194,7 @@ JSO_SCALAR rvrDatatype ANY_URI OPTIONAL			--!< Datatype of stored values, if fix
 JSO_SCALAR rvrLanguage ANY_URI OPTIONAL			--!< Language, if fixed
 JSO_SCALAR rvrFixedValue ANY OPTIONAL			--!< Value of stored values, if fixed
 JSO_GROUP_END
+JSO_SCALAR qmvHash STRING PRIVATE			--!< Hash that uniquely identifies the qmv structure (its more reproducible than an address)
 JSO_STRUCT_END
 
 JSO_STRUCT_BEGIN quad_map virtrdf QuadMap		--!< Description of single mapping pattern, including its subpatterns

@@ -990,6 +990,151 @@ sparp_rotate_comparisons_by_rank (SPART *filt)
     }
 }
 
+#define SPAR_ASSUME_IS_ALWAYS_TRUE	((SPART *)((ptrlong)1))
+#define SPAR_ASSUME_IS_CONTRADICTION	((SPART *)((ptrlong)0))
+
+void
+sparp_use_assume_rvr_restr (sparp_t *sparp, SPART *curr, SPART **expn_ptr, SPART *arg, ptrlong addon_restrictions)
+{
+  switch (SPART_TYPE (arg))
+    {
+    case SPAR_VARIABLE:
+/*      if (SPART_VARNAME_IS_GLOB (arg->_.var.vname))*/
+        {
+          int eq_ctr, eq_count = sparp->sparp_sg->sg_equiv_count;
+          for (eq_ctr = sparp->sparp_first_equiv_idx; eq_ctr < eq_count; eq_ctr++)
+            {
+              sparp_equiv_t *eq = SPARP_EQUIV (sparp, eq_ctr);
+              int vctr = ((NULL != eq) ? eq->e_var_count : 0);
+              while (vctr--)
+                if ((eq->e_vars[vctr]->_.var.vname == arg->_.var.vname)
+                  && ((eq->e_vars[vctr]->_.var.rvr.rvrRestrictions & addon_restrictions) != addon_restrictions) )
+                  {
+                    sparp_rvr_add_restrictions (sparp, &(eq->e_vars[vctr]->_.var.rvr), addon_restrictions);
+                    eq->e_vars[vctr]->_.var.restr_of_col |= addon_restrictions;
+                  }
+            }
+        }
+/*      else
+        {
+          sparp_rvr_add_restrictions (sparp, &(arg->_.var.rvr), addon_restrictions);
+          arg->_.var.restr_of_col |= addon_restrictions;
+        }*/
+      return;
+    case SPAR_QNAME: case SPAR_LIT:
+      if (NULL != expn_ptr)
+        {
+          rdf_val_range_t rvr;
+          sparp_rvr_set_by_constant (sparp, &rvr, NULL, arg);
+          sparp_rvr_add_restrictions (sparp, &rvr, addon_restrictions);
+          if (rvr.rvrRestrictions & SPART_VARR_CONFLICT)
+            expn_ptr[0] = SPAR_ASSUME_IS_CONTRADICTION;
+        }
+      return;
+    default:
+      if (NULL != expn_ptr)
+        {
+          rdf_val_range_t rvr;
+          sparp_get_expn_rvr (sparp, arg, &rvr, 0);
+          sparp_rvr_add_restrictions (sparp, &rvr, addon_restrictions);
+          if (rvr.rvrRestrictions & SPART_VARR_CONFLICT)
+            expn_ptr[0] = SPAR_ASSUME_IS_CONTRADICTION;
+        }
+      return;
+    }
+}
+
+void
+sparp_use_assume_eq (sparp_t *sparp, SPART *curr, SPART **stmt_ptr, SPART *left, SPART *right)
+{
+  sparp_use_assume_rvr_restr (sparp, curr, stmt_ptr, left, SPART_VARR_NOT_NULL);
+  sparp_use_assume_rvr_restr (sparp, curr, stmt_ptr, right, SPART_VARR_NOT_NULL);
+  if (SPAR_ASSUME_IS_CONTRADICTION != stmt_ptr[0])
+    {
+      rdf_val_range_t left_rvr, right_rvr, mix_rvr;
+      ptrlong addon_restrs;
+      sparp_get_expn_rvr (sparp, left, &left_rvr, 1);
+      sparp_get_expn_rvr (sparp, right, &right_rvr, 0);
+      sparp_rvr_copy (sparp, &mix_rvr, &left_rvr);
+      sparp_rvr_tighten (sparp, &mix_rvr, &right_rvr, ~(SPART_VARR_EXTERNAL | SPART_VARR_GLOBAL));
+      if (mix_rvr.rvrRestrictions & SPART_VARR_CONFLICT)
+        {
+          stmt_ptr[0] = SPAR_ASSUME_IS_CONTRADICTION;
+          return;
+        }
+      addon_restrs = (mix_rvr.rvrRestrictions & ~left_rvr.rvrRestrictions & ~(SPART_VARR_FIXED | SPART_VARR_TYPED | SPART_VARR_SPRINTFF | SPART_VARR_IRI_CALC));
+      if (0x0 != addon_restrs)
+        sparp_use_assume_rvr_restr (sparp, curr, stmt_ptr, left, addon_restrs);
+      addon_restrs = (mix_rvr.rvrRestrictions & ~right_rvr.rvrRestrictions & ~(SPART_VARR_FIXED | SPART_VARR_TYPED | SPART_VARR_SPRINTFF | SPART_VARR_IRI_CALC));
+      if (0x0 != addon_restrs)
+        sparp_use_assume_rvr_restr (sparp, curr, stmt_ptr, left, addon_restrs);
+    }
+}
+
+void
+sparp_use_assume (sparp_t *sparp, SPART *curr, SPART **stmt_ptr)
+{
+  SPART *stmt = stmt_ptr[0];
+  int stmt_type = SPART_TYPE (stmt);
+  if (BOP_AND == stmt_type)
+    {
+      sparp_use_assume (sparp, curr, &(stmt->_.bin_exp.left));
+      if (SPAR_ASSUME_IS_CONTRADICTION == stmt->_.bin_exp.left)
+        {
+          stmt_ptr[0] = SPAR_ASSUME_IS_CONTRADICTION;
+          return;
+        }
+      sparp_use_assume (sparp, curr, &(stmt->_.bin_exp.right));
+      if (SPAR_ASSUME_IS_CONTRADICTION == stmt->_.bin_exp.right)
+        {
+          stmt_ptr[0] = SPAR_ASSUME_IS_CONTRADICTION;
+          return;
+        }
+      return;
+    }
+  switch (stmt_type)
+    {
+    case SPAR_QNAME: case SPAR_LIT: spar_error (sparp, "Constant expression in ASSUME is formally valid but too suspicious");
+    case SPAR_BUILT_IN_CALL:
+      {
+        SPART *arg;
+        if (0 == BOX_ELEMENTS (stmt->_.builtin.args))
+          return;
+        arg = stmt->_.builtin.args[0];
+        switch (stmt->_.builtin.btype)
+          {
+          case SPAR_BIF_ISBLANK: sparp_use_assume_rvr_restr (sparp, curr, stmt_ptr, arg, SPART_VARR_NOT_NULL | SPART_VARR_IS_REF | SPART_VARR_IS_BLANK); return;
+          case SPAR_BIF_ISIRI: sparp_use_assume_rvr_restr (sparp, curr, stmt_ptr, arg, SPART_VARR_NOT_NULL | SPART_VARR_IS_REF | SPART_VARR_IS_IRI); return;
+          case SPAR_BIF_ISREF: sparp_use_assume_rvr_restr (sparp, curr, stmt_ptr, arg, SPART_VARR_NOT_NULL | SPART_VARR_IS_REF); return;
+          case SPAR_BIF_ISLITERAL: sparp_use_assume_rvr_restr (sparp, curr, stmt_ptr, arg, SPART_VARR_NOT_NULL | SPART_VARR_IS_LIT); return;
+          case SPAR_BIF_ISNUMERIC: sparp_use_assume_rvr_restr (sparp, curr, stmt_ptr, arg, SPART_VARR_NOT_NULL | SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL); return;
+          case BOUND_L: sparp_use_assume_rvr_restr (sparp, curr, stmt_ptr, arg, SPART_VARR_NOT_NULL); return;
+          case SPAR_BIF_SAMETERM:
+            sparp_rotate_comparisons_by_rank (stmt);
+            sparp_use_assume_eq (sparp, curr, stmt_ptr, stmt->_.builtin.args[0], stmt->_.builtin.args[1]);
+            return;
+          }
+      }
+    case SPAR_FUNCALL:
+      {
+        ccaddr_t qname = stmt->_.funcall.qname;
+        SPART *arg;
+        if (0 == BOX_ELEMENTS (stmt->_.funcall.argtrees))
+          return;
+        arg = stmt->_.funcall.argtrees[0];
+        if (!strcmp (qname, "bif:isnull")) { sparp_use_assume_rvr_restr (sparp, curr, stmt_ptr, arg, SPART_VARR_ALWAYS_NULL); return; }
+        if (!strcmp (qname, "bif:isnotnull")) { sparp_use_assume_rvr_restr (sparp, curr, stmt_ptr, arg, SPART_VARR_NOT_NULL); return; }
+      }
+    case BOP_EQ:
+      {
+        sparp_rotate_comparisons_by_rank (stmt);
+        sparp_use_assume_eq (sparp, curr, stmt_ptr, stmt->_.bin_exp.left, stmt->_.bin_exp.right);
+        return;
+      }
+    }
+}
+
+
 typedef struct so_BOP_OR_filter_ctx_s
 {
   sparp_t *bofc_sparp;			/*!< parser/compiler context, to not pass an extra argument */
@@ -1366,7 +1511,7 @@ sparp_filter_to_equiv (sparp_t *sparp, SPART *curr, SPART *filt)
                 (DATATYPE_L == r->_.builtin.btype) )
                 {
                   SPART *rarg1 = r->_.builtin.args[0];
-	          if (SPAR_IS_BLANK_OR_VAR (rarg1))
+                  if (SPAR_IS_BLANK_OR_VAR (rarg1))
                     {
                       sparp_equiv_t *rarg1_eq = sparp_equiv_get (sparp, curr, rarg1, 0);
                       flags = SPART_VARR_NOT_NULL;
@@ -1470,6 +1615,11 @@ because const=str(var) is never recognized as a special condition on t_in or t_o
         if (0 == BOX_ELEMENTS_0 (filt->_.builtin.args))
           break;
         arg1 = filt->_.builtin.args[0];
+        if (ASSUME_L == filt->_.builtin.btype)
+          {
+            sparp_use_assume (sparp, curr, &arg1);
+            return 1;
+          }
         if (SPAR_IS_BLANK_OR_VAR (arg1))
           arg1_eq = sparp_equiv_get (sparp, curr, arg1, 0);
         else
@@ -4524,11 +4674,12 @@ sparp_refresh_triple_cases (sparp_t *sparp, SPART *triple)
           if (OPTIONAL_L == triple->_.triple.subtype)
             restr_of_col_mask &= ~SPART_VARR_NOT_NULL;
           sparp_rvr_tighten (sparp, &(field_expn->_.var.rvr), &acc_rvr, restr_of_col_mask);
-/* var.restr_of_col is set with "=", not "|=" or "&=" because it may come from only one qmv or a union of qmvs.
-No "history" or "derived properties" here.
-The specific purpose of the field is a differentiation of what should be tested somewhere in the resulting SQL query
-and what is a natural property of the data source. */
-          field_expn->_.var.restr_of_col = acc_rvr.rvrRestrictions & restr_of_col_mask;
+/* The specific purpose of the field is a differentiation of what should be tested somewhere in the resulting SQL query
+and what is a natural property of the data source.
+Before introduction of ASSUME() trick, var.restr_of_col was set with "=", not "|=" or "&=" because it may come from only one qmv or a union of qmvs.
+There was no "history" or "derived properties" here.
+With ASSUME(), "|=" is needed instead of "=", because some bits can be set by ASSUME() and the initial value is no longer zero */
+          field_expn->_.var.restr_of_col |= acc_rvr.rvrRestrictions & restr_of_col_mask;
         }
     }
   triple->_.triple.tc_list = new_cases;

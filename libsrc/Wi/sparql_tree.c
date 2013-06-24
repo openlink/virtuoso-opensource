@@ -2533,6 +2533,53 @@ sparp_rvr_set_by_constant (sparp_t *sparp, rdf_val_range_t *dest, ccaddr_t datat
 }
 
 void
+sparp_rvr_add_restrictions (sparp_t *sparp, rdf_val_range_t *dest, ptrlong addon_restrictions)
+{
+  ptrlong new_restr;
+  new_restr = dest->rvrRestrictions | addon_restrictions;
+#ifdef DEBUG
+  if (addon_restrictions & (SPART_VARR_FIXED | SPART_VARR_TYPED | SPART_VARR_SPRINTFF | SPART_VARR_IRI_CALC))
+    spar_internal_error (sparp, "sparp" "_rvr_add_restrictions(): unsupported addon restriction");
+  if (((new_restr & SPART_VARR_IS_REF) && (new_restr & SPART_VARR_IS_LIT)) &&
+      !((dest->rvrRestrictions & SPART_VARR_IS_REF) && (dest->rvrRestrictions & SPART_VARR_IS_LIT)) )
+    dbg_printf (("sparp" "_rvr_add_restrictions will tighten %x with %x (ref|lit)\n", (unsigned)(dest->rvrRestrictions), (unsigned)(addon->rvrRestrictions)));
+  if ((new_restr & SPART_VARR_CONFLICT) &&
+      !(dest->rvrRestrictions & SPART_VARR_CONFLICT) )
+    dbg_printf (("sparp" "_rvr_add_restrictions will tighten %x with %x (SPART_VARR_CONFLICT)\n", (unsigned)(dest->rvrRestrictions), (unsigned)(addon->rvrRestrictions)));
+#endif
+  if (new_restr & SPART_VARR_CONFLICT)
+    goto conflict; /* see below */
+  sparp_rvr_audit (sparp, dest);
+  if (
+    ((new_restr & SPART_VARR_IS_REF) && (new_restr & SPART_VARR_IS_LIT)) ||
+    ((new_restr & SPART_VARR_IS_BLANK) && (new_restr & SPART_VARR_IS_IRI)) ||
+    ((new_restr & SPART_VARR_ALWAYS_NULL) &&
+     (new_restr & (SPART_VARR_NOT_NULL | SPART_VARR_IS_LIT | SPART_VARR_IS_REF)) ) )
+    goto conflict; /* see below */
+
+#if 0
+  do {
+      dk_session_t *ses = strses_allocate ();
+      caddr_t strg;
+      spart_dump_rvr (ses, dest, 0, '!');
+      strg = strses_string (ses);
+      printf ("Nice rvr add restrictions: %s\n", strg);
+      dk_free_box ((caddr_t)ses);
+      dk_free_box (strg);
+    } while (0);
+#endif
+  dest->rvrRestrictions = new_restr;
+  sparp_rvr_audit (sparp, dest);
+  return;
+
+conflict:
+  new_restr |= SPART_VARR_CONFLICT;
+  dest->rvrRestrictions = new_restr;
+  /* sparp_rvr_audit (sparp, dest); -- that's not valid here */
+  return;
+}
+
+void
 sparp_rvr_tighten (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *addon, int changeable_flags)
 {
   ptrlong new_restr;

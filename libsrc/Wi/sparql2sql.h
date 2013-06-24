@@ -375,6 +375,11 @@ extern rdf_val_range_t *sparp_rvr_copy (sparp_t *sparp, rdf_val_range_t *dest, c
 /*! Tries to zap \c dest and then restrict it by \c datatype and/or value. */
 extern void sparp_rvr_set_by_constant (sparp_t *sparp, rdf_val_range_t *dest, ccaddr_t datatype, SPART *value);
 
+/*! Restricts \c dest by additional restrictions from \c addon_restrictions.
+The operation checks for validity of resulting combination of the \c rvrRestrictions bits and may set SPART_VARR_CONFLICT.
+The following are not supported: SPART_VARR_FIXED, SPART_VARR_TYPED, SPART_VARR_SPRINTFF, SPART_VARR_IRI_CALC. */
+extern void sparp_rvr_add_restrictions (sparp_t *sparp, rdf_val_range_t *dest, ptrlong addon_restrictions);
+
 /*! Restricts \c dest by additional restrictions from \c addon that match the mask of \c changeable_flags.
 The operation may set SPART_VARR_CONFLICT even if SPART_VARR_CONFLICT bit is not set in \c changeable_flags. */
 extern void sparp_rvr_tighten (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *addon, int changeable_flags);

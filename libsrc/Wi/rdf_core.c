@@ -3660,6 +3660,7 @@ void jso__rdf_val_range_inst_validation (rdf_val_range_t *rvr, const char *struc
       else
         {
           dtp_t valtype = DV_TYPE_OF (value);
+          rvr->rvrFixedValue = (ccaddr_t)value;
           rvr->rvrRestrictions |= (SPART_VARR_IS_LIT | SPART_VARR_TYPED | SPART_VARR_FIXED | SPART_VARR_NOT_NULL);
           if (NULL == dt)
             {

@@ -76,11 +76,11 @@ void rdf_ds_load_all (void)
     }
 
 /* field for graph, subject and predicate */
-  qmf = qm_format_default_iri_ref = dk_alloc_box_zero (sizeof (qm_format_t), DV_ARRAY_OF_POINTER);
+  qmf = qm_format_default_iri_ref = (qm_format_t *)dk_alloc_box_zero (sizeof (qm_format_t), DV_ARRAY_OF_POINTER);
   qmf->qmfName = box_dv_short_string ("default-iid-nonblank");
   qmf->qmfShortTmpl = box_dv_short_string (" ^{alias-dot}^^{column}^");
   qmf->qmfLongTmpl = box_dv_short_string (" /* LONG: */ ^{alias-dot}^^{column}^");
-  qmf->qmfSqlvalTmpl = box_dv_short_string (" __id2i (^{alias-dot}^^{column}^)");
+  qmf->qmfSqlvalTmpl = box_dv_short_string (" __id2in (^{alias-dot}^^{column}^)");
   qmf->qmfBoolTmpl = box_dv_short_string (" NULL");
   qmf->qmfIsrefOfShortTmpl = box_dv_short_string (" 1");
   qmf->qmfIsuriOfShortTmpl = box_dv_short_string (" (^{tree}^ < min_bnode_iri_id ())");
@@ -92,11 +92,11 @@ void rdf_ds_load_all (void)
   qmf->qmfLongOfShortTmpl = box_dv_short_string (" ^{tree}^");
   qmf->qmfDatatypeOfShortTmpl = box_dv_short_string (" UNAME'http://www.w3.org/2001/XMLSchema#anyURI'");
   qmf->qmfLanguageOfShortTmpl = box_dv_short_string (" NULL");
-  qmf->qmfSqlvalOfShortTmpl = box_dv_short_string (" __id2i (^{tree}^)");
+  qmf->qmfSqlvalOfShortTmpl = box_dv_short_string (" __id2in (^{tree}^)");
   qmf->qmfBoolOfShortTmpl = box_dv_short_string (" NULL");
   qmf->qmfIidOfShortTmpl = box_dv_short_string (" ^{tree}^");
-  qmf->qmfUriOfShortTmpl = box_dv_short_string (" __id2i (^{tree}^)");
-  qmf->qmfStrsqlvalOfShortTmpl = box_dv_short_string (" __bft (__id2i (^{tree}^), 2)");
+  qmf->qmfUriOfShortTmpl = box_dv_short_string (" __id2in (^{tree}^)");
+  qmf->qmfStrsqlvalOfShortTmpl = box_dv_short_string (" __bft (__id2in (^{tree}^), 2)");
   qmf->qmfShortOfTypedsqlvalTmpl = box_dv_short_string (" NULL");
   qmf->qmfShortOfSqlvalTmpl = box_dv_short_string (" __i2idn (^{sqlval-of-tree}^)");
   qmf->qmfShortOfLongTmpl = box_dv_short_string (" /* SHORT of LONG: */ ^{tree}^");
@@ -121,7 +121,7 @@ void rdf_ds_load_all (void)
   qmf->qmfValRange.rvrRedCutCount = 0;
   qmf->qmfUriIdOffset = 0;
 
-  qmf = qm_format_default = dk_alloc_box_zero (sizeof (qm_format_t), DV_ARRAY_OF_POINTER);
+  qmf = qm_format_default = (qm_format_t *)dk_alloc_box_zero (sizeof (qm_format_t), DV_ARRAY_OF_POINTER);
   qmf->qmfName = box_dv_short_string ("default");
   qmf->qmfShortTmpl = box_dv_short_string (" ^{alias-dot}^^{column}^");
   qmf->qmfLongTmpl = box_dv_short_string (" __rdf_long_of_obj /*o*/ (^{alias-dot}^^{column}^)");
@@ -165,19 +165,19 @@ void rdf_ds_load_all (void)
   qmf->qmfValRange.rvrRedCutCount = 0;
   qmf->qmfUriIdOffset = 0;
 
-  qmf = qm_format_default_ref = box_copy (qm_format_default_iri_ref);
+  qmf = qm_format_default_ref = (qm_format_t *)box_copy ((caddr_t)qm_format_default_iri_ref);
   qmf->qmfName = box_dv_short_string ("default-iid");
   qmf->qmfValRange.rvrRestrictions = SPART_VARR_IS_REF | SPART_VARR_NOT_NULL;
 
-  qmf = qm_format_default_iri_ref_nullable = box_copy (qm_format_default_iri_ref);
+  qmf = qm_format_default_iri_ref_nullable = (qm_format_t *)box_copy ((caddr_t)qm_format_default_iri_ref);
   qmf->qmfName = box_dv_short_string ("default-iid-nonblank-nullable");
   qmf->qmfValRange.rvrRestrictions &= ~SPART_VARR_NOT_NULL;
 
-  qmf = qm_format_default_ref_nullable = box_copy (qm_format_default_ref);
+  qmf = qm_format_default_ref_nullable = (qm_format_t *)box_copy ((caddr_t)qm_format_default_ref);
   qmf->qmfName = box_dv_short_string ("default-iid-nullable");
   qmf->qmfValRange.rvrRestrictions &= ~SPART_VARR_NOT_NULL;
 
-  qmf = qm_format_default_nullable = box_copy (qm_format_default);
+  qmf = qm_format_default_nullable = (qm_format_t *)box_copy ((caddr_t)qm_format_default);
   qmf->qmfName = box_dv_short_string ("default-nullable");
   qmf->qmfValRange.rvrRestrictions &= ~SPART_VARR_NOT_NULL;
 
@@ -192,17 +192,17 @@ void rdf_ds_load_all (void)
   qm_default_values[SPART_TRIPLE_PREDICATE_IDX]->qmvFormat = qm_format_default_iri_ref;
   qm_default_values[SPART_TRIPLE_OBJECT_IDX]->qmvFormat = qm_format_default;
 
-  qm_default = dk_alloc_box_zero (sizeof (quad_map_t), DV_ARRAY_OF_POINTER);
+  qm_default = (quad_map_t *)dk_alloc_box_zero (sizeof (quad_map_t), DV_ARRAY_OF_POINTER);
   qm_default->qmGraphMap = qm_default_values[SPART_TRIPLE_GRAPH_IDX];
   qm_default->qmSubjectMap = qm_default_values[SPART_TRIPLE_SUBJECT_IDX];
   qm_default->qmPredicateMap = qm_default_values[SPART_TRIPLE_PREDICATE_IDX];
   qm_default->qmObjectMap = qm_default_values[SPART_TRIPLE_OBJECT_IDX];
   qm_default->qmTableName = box_dv_short_string ("DB.DBA.RDF_QUAD");
 
-  tc_default = dk_alloc_box_zero (sizeof (triple_case_t), DV_ARRAY_OF_POINTER);
+  tc_default = (triple_case_t *)dk_alloc_box_zero (sizeof (triple_case_t), DV_ARRAY_OF_POINTER);
   tc_default->tc_qm = qm_default;
 
-  rdf_sys_storage = dk_alloc_box_zero (sizeof (quad_storage_t), DV_ARRAY_OF_POINTER);
+  rdf_sys_storage = (quad_storage_t *)dk_alloc_box_zero (sizeof (quad_storage_t), DV_ARRAY_OF_POINTER);
   rdf_sys_storage->qsDefaultMap = qm_default;
 
 #if 0
@@ -1798,6 +1798,11 @@ sparp_expn_native_valmode (sparp_t *sparp, SPART *tree)
             spar_internal_error (sparp, "sparp_" "expn_native_valmode(): NULL == qm_list");
 #endif
           tr_valmode = triple->_.triple.native_formats[tr_idx];
+          if ((SPART_VARR_IS_REF & tree->_.var.restr_of_col) && IS_BOX_POINTER (tr_valmode) && (NULL != tr_valmode->qmfSubFormatForRefs))
+            {
+              sparp_jso_validate_format (sparp, tr_valmode);
+              tr_valmode = tr_valmode->qmfSubFormatForRefs;
+            }
           sparp_jso_validate_format (sparp, tr_valmode);
           return tr_valmode;
         }
@@ -1839,6 +1844,11 @@ sparp_expn_native_valmode (sparp_t *sparp, SPART *tree)
           if (1 != BOX_ELEMENTS_0 (triple->_.triple.tc_list))
             spar_internal_error (sparp, "sparp_" "expn_native_valmode(): lengths of triple->_.triple.qm_list differs from 1");
           tr_valmode = triple->_.triple.native_formats[tr_idx];
+          if ((SPART_VARR_IS_REF & tree->_.var.restr_of_col) && IS_BOX_POINTER (tr_valmode) && (NULL != tr_valmode->qmfSubFormatForRefs))
+            {
+              sparp_jso_validate_format (sparp, tr_valmode);
+              tr_valmode = tr_valmode->qmfSubFormatForRefs;
+            }
           sparp_jso_validate_format (sparp, tr_valmode);
           if (SSG_VALMODE_AUTO == tr_valmode)
             {
@@ -4697,7 +4707,6 @@ ssg_print_valmoded_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t n
   return;
 }
 
-
 caddr_t
 ssg_triple_retval_alias (spar_sqlgen_t *ssg, SPART *triple, int field_idx, int col_idx, const char *simple_vname)
 {
@@ -4721,21 +4730,26 @@ ssg_triple_retval_alias (spar_sqlgen_t *ssg, SPART *triple, int field_idx, int c
               while ((0 < ctr--) && (v < t) && (isalnum ((unsigned char) (t[-1])))) t--;
               tail = t;
             }
-          full_vname = t_box_sprintf (210, "%lx~%.100s", box_hash (v), tail);
-        }
-      else if (col_idx >= BOX_ELEMENTS_0 (qmv->qmvColumns))
-        {
-          if (col_idx > 0)
-            spar_internal_error (ssg->ssg_sparp, "ssg_triple_retval_alias (): col_idx is too big");
-          full_vname = t_box_sprintf (210, "%lx~fake", box_hash ((caddr_t)qmv));
+          full_vname = t_box_sprintf (210, "%lx~%.100s", box_hash_cut (v, 1), tail);
         }
       else
         {
-          ccaddr_t colname = qmv->qmvColumns[col_idx]->qmvcColumnName;
-          if ('\"' != colname[0])
-            full_vname = t_box_sprintf (210, "%lx~%.100s", box_hash ((caddr_t)qmv), colname);
+          if (NULL == qmv->qmvHash)
+            qmv->qmvHash = /* not t_*/box_sprintf (210, "%lx", box_hash_cut ((caddr_t)qmv, 3));
+          if (col_idx >= BOX_ELEMENTS_0 (qmv->qmvColumns))
+            {
+              if (col_idx > 0)
+                spar_internal_error (ssg->ssg_sparp, "ssg_triple_retval_alias (): col_idx is too big");
+              full_vname = t_box_sprintf (210, "%.100s~fake", qmv->qmvHash);
+            }
           else
-            full_vname = t_box_sprintf (210, "%lx%lx", box_hash ((caddr_t)qmv), box_hash ((caddr_t)colname));
+            {
+              ccaddr_t colname = qmv->qmvColumns[col_idx]->qmvcColumnName;
+              if ('\"' != colname[0])
+                full_vname = t_box_sprintf (210, "%.100s~%.100s", qmv->qmvHash, colname);
+              else
+                full_vname = t_box_sprintf (210, "%.100s%lx", qmv->qmvHash, box_hash ((caddr_t)colname));
+            }
         }
       return full_vname;
     }
@@ -5650,6 +5664,8 @@ ssg_print_fld_var_restrictions_ex (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_valu
   sparp_env_t *env = ssg->ssg_sparp->sparp_env;
   ptrlong field_restr = field->qmvFormat->qmfValRange.rvrRestrictions;
   ptrlong tree_restr = rvr->rvrRestrictions;
+  if (SPAR_VARIABLE == SPART_TYPE (fld_tree))
+    field_restr |= fld_tree->_.var.restr_of_col; /* This is needed because ASSUME() can add more bits than set by qmfValRange.rvrRestrictions */
   if ((SPART_VARR_NOT_NULL & tree_restr) && (!(SPART_VARR_NOT_NULL & field_restr)))
     {
       ssg_print_where_or_and (ssg, "nullable variable is not null");
