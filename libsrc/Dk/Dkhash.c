@@ -344,9 +344,9 @@ DBG_NAME (sethash) (DBG_PARAMS const void *key, dk_hash_t * ht, void *data)
 
   if (HASH_EMPTY == next)
     {
-      elt->next = NULL;
-      elt->key = key;
       elt->data = data;
+      elt->key = key;
+      elt->next = NULL;
       ht->ht_count++;
 #ifdef HT_STATS
       ht->ht_stats[0]++;
