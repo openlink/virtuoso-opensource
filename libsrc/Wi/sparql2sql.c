@@ -2278,7 +2278,7 @@ sparp_restr_of_select_eq_from_connected_subvalues (sparp_t *sparp, sparp_equiv_t
       if (SPAR_IS_BLANK_OR_VAR(sub_expn))
         {
           sparp_equiv_t *eq_sub = sparp_equiv_get (sparp, gp->_.gp.subquery->_.req_top.pattern, sub_expn, 0);
-          sparp_equiv_tighten (sparp, eq, &(eq_sub->e_rvr), ~0);
+          sparp_equiv_tighten (sparp, eq, &(eq_sub->e_rvr), ~(SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL));
         }
       else
         {
@@ -2347,7 +2347,7 @@ sparp_restr_of_union_eq_from_connected_subvalues (sparp_t *sparp, sparp_equiv_t 
     dbg_printf (("sparp_" "restr_of_union_eq_from_connected_subvalues(): strong optimization on ?%s (was 0x%x) by 0x%x acc", eq->e_varnames[0],
       (unsigned)(eq->e_rvr.rvrRestrictions), (unsigned)(acc.rvrRestrictions) ) );
 #endif
-  sparp_equiv_tighten (sparp, eq, &acc, ~0);
+  sparp_equiv_tighten (sparp, eq, &acc, ~(SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL));
   if (NULL == common_vars)
     eq->e_rvr.rvrRestrictions &= ~(SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL);
   else
@@ -2371,11 +2371,11 @@ sparp_restr_of_join_eq_from_connected_subvalue (sparp_t *sparp, sparp_equiv_t *e
       if ((1 == eq->e_nested_bindings) && (0 == eq->e_gspo_uses) && (0 == eq->e_subquery_uses) &&
         (0 == eq->e_replaces_filter) && SPARP_EQ_IS_ASSIGNED_LOCALLY (sub_eq) &&
         !(sub_eq->e_rvr.rvrRestrictions & (SPART_VARR_CONFLICT | SPART_VARR_ALWAYS_NULL)) )
-        sparp_equiv_tighten (sparp, eq, &(sub_eq->e_rvr), ~SPART_VARR_NOT_NULL);
+        sparp_equiv_tighten (sparp, eq, &(sub_eq->e_rvr), ~(SPART_VARR_NOT_NULL | SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL));
     }
   else
     if (SPARP_EQ_IS_ASSIGNED_LOCALLY (sub_eq))
-      sparp_equiv_tighten (sparp, eq, &(sub_eq->e_rvr), ~0);
+      sparp_equiv_tighten (sparp, eq, &(sub_eq->e_rvr), ~(SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL));
 }
 
 void
@@ -2647,7 +2647,7 @@ sparp_eq_restr_from_connected (sparp_t *sparp)
                   sparp_equiv_t *ret_orig_eq = SPARP_EQUIV (sparp, ret_expn->_.var.equiv_idx);
                   sparp_equiv_tighten (sparp, var_eq, &(ret_orig_eq->e_rvr), ~(SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL));
                   if (!(sparp_req_top_has_limofs (sparp->sparp_expr) && (NULL != sparp->sparp_expr->_.req_top.order)))
-                    sparp_equiv_tighten (sparp, ret_orig_eq, &(var_eq->e_rvr), ~0);
+                    sparp_equiv_tighten (sparp, ret_orig_eq, &(var_eq->e_rvr), ~(SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL));
                 }
             }
         }
