@@ -51,6 +51,8 @@
 #define TTLYYERROR_OR_REPORT(strg) do { \
   if (!(ttlp_arg[0].ttlp_flags & TTLP_ERROR_RECOVERY)) \
     ttlyyerror (strg); \
+  else if (TTLP_SNIFFER & ttlp_arg[0].ttlp_flags) \
+    { ttlp_reset_stacks(ttlp_arg); BEGIN(GARBAGE); } \
   else tf_report (ttlp_arg[0].ttlp_tf, 'E', NULL, NULL, (strg)); } while (0)
 
 #define TTLYYERROR_OR_RECOVER(strg) do { \
@@ -115,6 +117,13 @@ extern int ttlyyerror_if_long_qname (ttlp_t *ttlp_arg, int lexcode, caddr_t box,
  ttlyylval.box = box_dv_short_string (yytext); \
  return QNAME;
 
+#define TTL_ONE_CR ttlp_arg[0].ttlp_lexlineno++
+
+#define TTL_TWO_CRS do { \
+    ttlp_arg[0].ttlp_lexlineno += 2; \
+    if (TTLP_SNIFFER & ttlp_arg[0].ttlp_flags) { BEGIN(TWO_CRS); } \
+  } while (0);
+
 extern int ttlp_NUMBER_int (YYSTYPE *yylval_param, ttlp_t *ttlp_arg, struct yyguts_t * yyg);
 extern int ttlp_NUMBER_decimal (YYSTYPE *yylval_param, ttlp_t *ttlp_arg, struct yyguts_t * yyg);
 extern int ttlp_NUMBER_double (YYSTYPE *yylval_param, ttlp_t *ttlp_arg, struct yyguts_t * yyg);
@@ -127,7 +136,16 @@ extern int ttlyydebug;
 %}
 
 	/* Top-level INITIAL state */
-/*%x INITIAL*/
+/*%x INITIAL */
+
+	/* Initial state of "Turtle sniffer" parser: beginning of line that is probably garbage */
+%x GARBAGE_BOL
+
+	/* State of "Turtle sniffer" parser in the middle of a line that is probably garbage */
+%x GARBAGE
+
+	/* State for empty lines after a sniffed fragment, parser can transit to INITIAL without CRs before braces or transit to GARBAGE */
+%x TWO_CRS
 
 	/* Internals of single-quoted INITIAL string lit */
 %x TURTLE_SQ
@@ -160,6 +178,12 @@ INTEGER_LITERAL ([0-9]+)
 DECIMAL_LITERAL (([0-9]+"."[0-9]*)|("."[0-9]+))
 DOUBLE_LITERAL	(({INTEGER_LITERAL}|{DECIMAL_LITERAL})[eE][+-]?[0-9]+)
 
+TTL_CR_IRIREF	([^\x00-\x20<>\\""{}|^`]|{TTL_CR_UCHAR})
+TTL_CR_PN_PREFIX	({SPAR_NCCHAR1p}(({SPAR_NCCHAR}|[.])*{SPAR_NCCHAR})?)
+TTL_CR_PN_LOCAL	(({SPAR_NCCHAR1}|[0-9:]|{TTL_CR_PLX})(({SPAR_NCCHAR}|[.:]|{TTL_CR_PLX})*({SPAR_NCCHAR}|[:]|{TTL_CR_PLX}))?)
+TTL_CR_UCHAR	([\\](("u"{HEX}{HEX}{HEX}{HEX})|("U"{HEX}{HEX}{HEX}{HEX}{HEX}{HEX}{HEX}{HEX})))
+TTL_CR_PLX	(([%]{HEX}{HEX})|([\\][_~.!$&''()*+,;=/?#@%-]))
+
 SPAR_SQ_PLAIN	([^\x00-\x1f\\''\r\n]|[\t])
 SPAR_DQ_PLAIN	([^\x00-\x1f\\""\r\n]|[\t])
 SPAR_ECHAR	([\\]([atbvnrf\\""'']|("u"{HEX}{HEX}{HEX}{HEX})|("U"{HEX}{HEX}{HEX}{HEX}{HEX}{HEX}{HEX}{HEX})))
@@ -179,60 +203,75 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 
 %%
 
-<INITIAL>"^"[ \t]	{ return _CARET_WS ; }
-<INITIAL>"^"{S_NL}	{ ttlp_arg[0].ttlp_lexlineno++; return _CARET_WS ; }
-<INITIAL>"^"		{ return _CARET_NOWS	; }
-<INITIAL>"^^"		{ return _CARET_CARET	; }
-<INITIAL>","		{ return _COMMA; }
-<INITIAL>"."[ \t]	{ return _DOT_WS; }
-<INITIAL>"."{S_NL}	{ ttlp_arg[0].ttlp_lexlineno++; return _DOT_WS; }
-<INITIAL>"."[^0-9]	{ TTLYYERROR_OR_RECOVER ("Whitespace is required after dot if dot is not inside decimal number, string or IRI"); }
-<INITIAL>"."		{ return _DOT_WS; }
-<INITIAL>":"		{ return _COLON; }
-<INITIAL>";"		{ return _SEMI; }
-<INITIAL>"="		{ return (((0 == ttlp_arg[0].ttlp_lexdepth) && (ttlp_arg[0].ttlp_flags & TTLP_ALLOW_TRIG)) ? _EQ_TOP_TRIG : _EQ); }
-<INITIAL>"=>"		{ return _EQ_GT; }
-<INITIAL>"<="		{ return _LT_EQ; }
-<INITIAL>"!"		{ return _BANG; }
+<INITIAL>"^"[ \t]		{		return _CARET_WS; }
+<INITIAL>"^"{S_NL}[ \t]*{S_NL}	{ TTL_TWO_CRS;	return _CARET_WS; }
+<INITIAL>"^"{S_NL}		{ TTL_ONE_CR;	return _CARET_WS; }
+<INITIAL>"^"			{ return _CARET_NOWS	; }
+<INITIAL>"^^"			{ return _CARET_CARET	; }
+<INITIAL>","			{ return _COMMA; }
+<INITIAL>"."[ \t]		{		return _DOT_WS; }
+<INITIAL>"."{S_NL}[ \t]*{S_NL}	{ TTL_TWO_CRS;	return _DOT_WS; }
+<INITIAL>"."{S_NL}		{ TTL_ONE_CR;	return _DOT_WS; }
+<INITIAL>"."[^0-9]		{ TTLYYERROR_OR_RECOVER ("Whitespace is required after dot if dot is not inside decimal number, string or IRI"); }
+<INITIAL>"."			{ return _DOT_WS; }
+<INITIAL>":"			{ return _COLON; }
+<INITIAL>";"			{ return _SEMI; }
+<INITIAL>"="			{ return (((0 == ttlp_arg[0].ttlp_lexdepth) && (ttlp_arg[0].ttlp_flags & TTLP_ALLOW_TRIG)) ? _EQ_TOP_TRIG : _EQ); }
+<INITIAL>"=>"			{ return _EQ_GT; }
+<INITIAL>"<="			{ return _LT_EQ; }
+<INITIAL>"!"			{ return _BANG; }
 
-<INITIAL>"@a"				{ return _AT_a_L; }
-<INITIAL>"@base"			{ return _AT_base_L; }
-<INITIAL>"@has"				{ return _AT_has_L; }
-<INITIAL>"@is"				{ return _AT_is_L; }
-<INITIAL>"@of"				{ return _AT_of_L; }
-<INITIAL>"@this"			{ return _AT_this_L; }
-<INITIAL>"@keywords"			{ return _AT_keywords_L; }
-<INITIAL>"@prefix"			{ return _AT_prefix_L; }
-<INITIAL>"@forAll"			{ ttlyyerror ("Current version of Virtuoso does not support @forAll keyword"); }
-<INITIAL>"@forSome"			{ ttlyyerror ("Current version of Virtuoso does not support @forSome keyword"); }
-<INITIAL>"-INF"				{ return _MINUS_INF_L; }
-<INITIAL>[+]?"INF"			{ return INF_L; }
-<INITIAL>[+-]?"NaN"			{ return NaN_L; }
-<INITIAL>"false"			{ return false_L; }
-<INITIAL>"true"				{ return true_L; }
+<INITIAL>"@a"			{ return _AT_a_L; }
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>"@base"	{ BEGIN(INITIAL); return _AT_base_L; }
+<INITIAL>"@has"			{ return _AT_has_L; }
+<INITIAL>"@is"			{ return _AT_is_L; }
+<INITIAL>"@of"			{ return _AT_of_L; }
+<INITIAL>"@this"		{ return _AT_this_L; }
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>"@keywords"	{ BEGIN(INITIAL); return _AT_keywords_L; }
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>"@prefix"	{ BEGIN(INITIAL); return _AT_prefix_L; }
+<INITIAL>"@forAll"		{ ttlyyerror ("Current version of Virtuoso does not support @forAll keyword"); }
+<INITIAL>"@forSome"		{ ttlyyerror ("Current version of Virtuoso does not support @forSome keyword"); }
+<INITIAL>"-INF"			{ return _MINUS_INF_L; }
+<INITIAL>[+]?"INF"		{ return INF_L; }
+<INITIAL>[+-]?"NaN"		{ return NaN_L; }
+<INITIAL>"false"		{ return false_L; }
+<INITIAL>"true"			{ return true_L; }
 
-<INITIAL>"a"				{ TTL_SPECIAL_QNAME (TTLP_ALLOW_QNAME_A, _AT_a_L) }
-<INITIAL>"has"				{ TTL_SPECIAL_QNAME (TTLP_ALLOW_QNAME_HAS, _AT_has_L) }
-<INITIAL>"is"				{ TTL_SPECIAL_QNAME (TTLP_ALLOW_QNAME_IS, _AT_is_L) }
-<INITIAL>"of"				{ TTL_SPECIAL_QNAME (TTLP_ALLOW_QNAME_OF, _AT_of_L) }
-<INITIAL>"this"				{ TTL_SPECIAL_QNAME (TTLP_ALLOW_QNAME_THIS, _AT_this_L) }
+<INITIAL>"a"			{ TTL_SPECIAL_QNAME (TTLP_ALLOW_QNAME_A, _AT_a_L) }
+<INITIAL>"has"			{ TTL_SPECIAL_QNAME (TTLP_ALLOW_QNAME_HAS, _AT_has_L) }
+<INITIAL>"is"			{ TTL_SPECIAL_QNAME (TTLP_ALLOW_QNAME_IS, _AT_is_L) }
+<INITIAL>"of"			{ TTL_SPECIAL_QNAME (TTLP_ALLOW_QNAME_OF, _AT_of_L) }
+<INITIAL>"this"			{ TTL_SPECIAL_QNAME (TTLP_ALLOW_QNAME_THIS, _AT_this_L) }
 
 
-<INITIAL>"("				{ ttlp_arg[0].ttlp_lexdepth++; return _LPAR; }
-<INITIAL>")"				{ ttlp_arg[0].ttlp_lexdepth--; return _RPAR; }
-<INITIAL>"["				{ ttlp_arg[0].ttlp_lexdepth++; return _LSQBRA; }
-<INITIAL>"[]"				{ return _LSQBRA_RSQBRA; }
-<INITIAL>"]"				{ ttlp_arg[0].ttlp_lexdepth--; return _RSQBRA; }
-<INITIAL>"{"				{
+<INITIAL>"("			{			ttlp_arg[0].ttlp_lexdepth++;	return _LPAR; }
+<GARBAGE_BOL>"("		{ BEGIN(INITIAL);	ttlp_arg[0].ttlp_lexdepth++;	return _LPAR; }
+<TWO_CRS>"("			{ BEGIN(INITIAL);	ttlp_arg[0].ttlp_lexdepth++;	return _LPAR; }
+<INITIAL>")"			{			ttlp_arg[0].ttlp_lexdepth--;	return _RPAR; }
+<INITIAL>"["			{			ttlp_arg[0].ttlp_lexdepth++;	return _LSQBRA; }
+<GARBAGE_BOL>"["		{ BEGIN(INITIAL);	ttlp_arg[0].ttlp_lexdepth++;	return _LSQBRA; }
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>"[]"	{ BEGIN(INITIAL);					return _LSQBRA_RSQBRA; }
+<INITIAL>"]"			{			ttlp_arg[0].ttlp_lexdepth--;	return _RSQBRA; }
+<INITIAL>"{"			{
     int depth = ttlp_arg[0].ttlp_lexdepth++;
     return (((0 == depth) && (ttlp_arg[0].ttlp_flags & TTLP_ALLOW_TRIG)) ? _LBRA_TOP_TRIG : _LBRA);
   }
-<INITIAL>"}"				{ ttlp_arg[0].ttlp_lexdepth--; return _RBRA; }
+<GARBAGE_BOL>"{"		{ BEGIN(INITIAL);	ttlp_arg[0].ttlp_lexdepth++;	return _LBRA; }
+<INITIAL>"}"			{			ttlp_arg[0].ttlp_lexdepth--;	return _RBRA; }
 
-<INITIAL>"<"([^\\>\001-\040])*">"	{
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>"<"([^\\>\001-\040])*">"	{
     if (TTL_MAX_IRI_LEN <= yyleng)
       TTLYYERROR_OR_RECOVER("The \"relative IRI\" (angle-bracketed) notation is too long");
+    BEGIN(INITIAL);
     ttlyylval.box = box_dv_short_nchars (yytext + 1, yyleng - 2);
+    return Q_IRI_REF;
+  }
+
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>"<"{TTL_CR_IRIREF}">"	{
+    if (TTL_MAX_IRI_LEN <= yyleng)
+      TTLYYERROR_OR_RECOVER("The \"relative IRI\" (angle-bracketed) notation is too long");
+    BEGIN(INITIAL);
+    ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_LTGT, '>');
     return Q_IRI_REF;
   }
 
@@ -260,7 +299,7 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
       TTLYYERROR_OR_RECOVER("The \"relative IRI\" (angle-bracketed) notation is too long");
     tf_report (ttlp_arg[0].ttlp_tf, 'W', NULL, NULL, "Line break in angle-bracketed name");
     ttlyylval.box = box_dv_short_nchars (yytext + 1, yyleng - 2);
-    ttlp_arg[0].ttlp_lexlineno++;
+    TTL_ONE_CR;
     return Q_IRI_REF;
   }
 
@@ -268,16 +307,21 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
     TTLYYERROR_OR_REPORT ("Invalid characters in angle-bracketed name");
     BEGIN (TURTLE_SKIP_TO_DOT_WS); yymore (); }
 
-<INITIAL>({SPAR_NCNAME_PREFIX}?)":"{SPAR_NCNAME}	{ TTL_TOKBOX_Q(0,QNAME,"qualified URI"); }
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>({SPAR_NCNAME_PREFIX}?)":"{SPAR_NCNAME}	{ BEGIN(INITIAL); TTL_TOKBOX_Q(0,QNAME,"qualified URI"); }
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>({TTL_CR_PN_PREFIX}?)":"{TTL_CR_PN_LOCAL}	{ BEGIN(INITIAL); TTL_TOKBOX_Q(0,QNAME,"qualified URI"); }
 <INITIAL>({SPAR_NCNAME_PREFIX}?)":"{SPAR_NCNAME_X}	{
     if (!(ttlp_arg[0].ttlp_flags & TTLP_NAME_MAY_CONTAIN_PATH))
       TTLYYERROR_OR_RECOVER ("Invalid characters in local part of QName; this error can be suppressed by parser flags");
     tf_report (ttlp_arg[0].ttlp_tf, 'W', NULL, NULL, "Invalid characters in local part of QName");
     TTL_TOKBOX_Q(0,QNAME,"qualified URI"); }
 
-<INITIAL>{SPAR_NCNAME_PREFIX}":"		{ TTL_TOKBOX_Q(0,QNAME_NS,"namespace"); }
-<INITIAL>{SPAR_NCNAME}				{ TTL_TOKBOX_Q(0,QNAME,"name without prefix"); }
-<INITIAL>"_:"{SPAR_NCNAME}			{ TTL_TOKBOX_BNODE(0,BLANK_NODE_LABEL,"blank node label"); }
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>{SPAR_NCNAME_PREFIX}":"		{ BEGIN(INITIAL); TTL_TOKBOX_Q(0,QNAME_NS,"namespace"); }
+<INITIAL>{SPAR_NCNAME}							{
+    if ((TTLP_SNIFFER & ttlp_arg[0].ttlp_flags) && ((NULL == ttlp_arg[0].ttlp_base_uri) || ('\0' == ttlp_arg[0].ttlp_base_uri[0])))
+      BEGIN (GARBAGE);
+    else
+      TTL_TOKBOX_Q(0,QNAME,"name without prefix"); }
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>"_:"{SPAR_NCNAME}			{ BEGIN(INITIAL); TTL_TOKBOX_BNODE(0,BLANK_NODE_LABEL,"blank node label"); }
 
 <INITIAL>"_:"{SPAR_NCCHAR_X}+	{
     if (!(ttlp_arg[0].ttlp_flags & TTLP_ACCEPT_DIRTY_NAMES))
@@ -347,8 +391,8 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 <TURTLE_DDDQ>[""][""]([""]+)	{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The triple-double-quoted string is too long"); ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT, '\"'); BEGIN INITIAL; return TURTLE_STRING; }
 <TURTLE_SSSQ>['']['']['']"@"	{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The triple-single-quoted string is too long"); ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT_AT, '\''); BEGIN TURTLE_AT_AFTER_QUOTED; return TURTLE_STRING; }
 <TURTLE_DDDQ>[""][""][""]"@"	{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The triple-double-quoted string is too long"); ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_3QUOT_AT, '\"'); BEGIN TURTLE_AT_AFTER_QUOTED; return TURTLE_STRING; }
-<TURTLE_SSSQ>(([''](['']?))?{S_NL})		{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The triple-single-quoted string is too long"); ttlp_arg[0].ttlp_lexlineno++; yymore(); }
-<TURTLE_DDDQ>(([""]([""]?))?{S_NL})		{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The triple-double-quoted string is too long"); ttlp_arg[0].ttlp_lexlineno++; yymore(); }
+<TURTLE_SSSQ>(([''](['']?))?{S_NL})		{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The triple-single-quoted string is too long"); TTL_ONE_CR; yymore(); }
+<TURTLE_DDDQ>(([""]([""]?))?{S_NL})		{ if (TTL_MAX_LITERAL_LEN <= yyleng) TTLYYERROR_OR_RECOVER("The triple-double-quoted string is too long"); TTL_ONE_CR; yymore(); }
 <TURTLE_SSSQ>((([''](['']?))?({SPAR_SQ_PLAIN}|{SPAR_ECHAR}))+)		{ yymore(); }
 <TURTLE_DDDQ>((([""]([""]?))?({SPAR_DQ_PLAIN}|{SPAR_ECHAR}))+)		{ yymore(); }
 <TURTLE_SSSQ>[\\]		{ ttlyyerror ("Bad escape sequence in a long single-quoted string"); }
@@ -373,7 +417,7 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
       }
     else
       tf_report (ttlp_arg[0].ttlp_tf, 'W', NULL, NULL, "End-of-line in a short single-quoted string");
-    ttlp_arg[0].ttlp_lexlineno++; yymore(); }
+    TTL_ONE_CR; yymore(); }
 <TURTLE_DQ>{S_NL}	{
     if (!(TTLP_STRING_MAY_CONTAIN_CRLF & ttlp_arg[0].ttlp_flags))
       {
@@ -382,21 +426,21 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
       }
     else
       tf_report (ttlp_arg[0].ttlp_tf, 'W', NULL, NULL, "End-of-line in a short double-quoted string");
-    ttlp_arg[0].ttlp_lexlineno++; yymore(); }
+    TTL_ONE_CR; yymore(); }
 <TURTLE_SQ>[\\]{S_NL}	{
     if (!(TTLP_STRING_MAY_CONTAIN_CRLF & ttlp_arg[0].ttlp_flags))
       {
         TTLYYERROR_OR_REPORT ("End-of-line escape sequence in a single-quoted string is not permitted by strict TURTLE; this error can be suppressed by parser flags");
         BEGIN TURTLE_BAD_SQ;
       }
-    ttlp_arg[0].ttlp_lexlineno++; yymore(); }
+    TTL_ONE_CR; yymore(); }
 <TURTLE_DQ>[\\]{S_NL}	{
     if (!(TTLP_STRING_MAY_CONTAIN_CRLF & ttlp_arg[0].ttlp_flags))
       {
         TTLYYERROR_OR_REPORT ("End-of-line escape sequence in a double-quoted string is not permitted by strict TURTLE; this error can be suppressed by parser flags");
         BEGIN TURTLE_BAD_DQ;
       }
-    ttlp_arg[0].ttlp_lexlineno++; yymore(); }
+    TTL_ONE_CR; yymore(); }
 <TURTLE_SQ>(({SPAR_SQ_PLAIN}|{SPAR_ECHAR})+)		{ yymore(); }
 <TURTLE_DQ>(({SPAR_DQ_PLAIN}|{SPAR_ECHAR})+)		{ yymore(); }
 <TURTLE_SQ>[\\]		{
@@ -407,8 +451,8 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
     BEGIN (TURTLE_BAD_DQ); yymore(); }
 <TURTLE_BAD_SQ>(({SPAR_SQ_PLAIN}|{SPAR_ECHAR})+) {}
 <TURTLE_BAD_DQ>(({SPAR_DQ_PLAIN}|{SPAR_ECHAR})+) {}
-<TURTLE_BAD_SQ>{S_NL}	{ ttlp_arg[0].ttlp_lexlineno++; yymore(); }
-<TURTLE_BAD_DQ>{S_NL}	{ ttlp_arg[0].ttlp_lexlineno++; yymore(); }
+<TURTLE_BAD_SQ>{S_NL}	{ TTL_ONE_CR; yymore(); }
+<TURTLE_BAD_DQ>{S_NL}	{ TTL_ONE_CR; yymore(); }
 <TURTLE_BAD_SQ>[^''] {}
 <TURTLE_BAD_DQ>[^""] {}
 <TURTLE_BAD_SQ>['']("@"{SPAR_LANGTAG})? { BEGIN INITIAL; return TTL_RECOVERABLE_ERROR; }
@@ -421,19 +465,27 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 <INITIAL>[+-]?{DECIMAL_LITERAL}		{ return ttlp_NUMBER_decimal (yylval, ttlp_arg, yyg); }
 <INITIAL>[+-]?{DOUBLE_LITERAL}		{ return ttlp_NUMBER_double (yylval, ttlp_arg, yyg); }
 
-<INITIAL>("#"(.*))?{S_NL}		{ ttlp_arg[0].ttlp_lexlineno++; }
-<INITIAL>"#"(.*)				{ }
-<INITIAL>[ \t]+				{ }
+<INITIAL>("#"(.*))?{S_NL}[ \t]*{S_NL}[ \t]*			{ TTL_TWO_CRS; }
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>("#"(.*))?{S_NL}		{ TTL_ONE_CR; }
+<INITIAL,TWO_CRS>"#"(.*)		{ }
+<INITIAL,TWO_CRS>[ \t]+			{ }
 <INITIAL>.		{
     char buf[100]; sprintf (buf, "Unexpected character '%c'", yytext[yyleng-1]);
     TTLYYERROR_OR_REPORT (buf);
     BEGIN TURTLE_SKIP_TO_DOT_WS; yymore(); }
 <TURTLE_SKIP_TO_DOT_WS>"."[ \t]		{ BEGIN INITIAL; yyless (yyleng-2); return _GARBAGE_BEFORE_DOT_WS; }
-<TURTLE_SKIP_TO_DOT_WS>"."{S_NL}	{ BEGIN INITIAL; yyless (('.' == yytext[yyleng-2]) ? yyleng-2 : yyleng-3); ttlp_arg[0].ttlp_lexlineno++; return _GARBAGE_BEFORE_DOT_WS; }
+<TURTLE_SKIP_TO_DOT_WS>"."{S_NL}	{ BEGIN INITIAL; yyless (('.' == yytext[yyleng-2]) ? yyleng-2 : yyleng-3); TTL_ONE_CR; return _GARBAGE_BEFORE_DOT_WS; }
 <TURTLE_SKIP_TO_DOT_WS>.	{
     if (yyleng > 8000)
       { char buf[100]; sprintf (buf, "Failed to recover syntax error at \"%.50s...\"", yytext); ttlyyerror (buf); }
     yymore(); }
+
+<GARBAGE>([^_:<@ \t][^: \t]*[ \t]+)+	{ }
+<GARBAGE>[^ \t]+	{ }
+<GARBAGE>[ \t]+	{ }
+<GARBAGE_BOL>[^ \t]+			{ BEGIN(GARBAGE); }
+<GARBAGE,GARBAGE_BOL>{S_NL}[ \t]*	{ BEGIN(GARBAGE_BOL); TTL_ONE_CR; }
+<TWO_CRS>("#"(.*))?{S_NL}[ \t]*		{ TTL_ONE_CR; }
 
 %%
 
@@ -533,37 +585,51 @@ ttlp_NUMBER_double (YYSTYPE *yylval_param, ttlp_t *ttlp_arg, struct yyguts_t * y
 }
 
 caddr_t
-ttl_lex_analyze (caddr_t str, int mode_bits, wcharset_t *query_charset)
+ttl_lex_analyze (caddr_t str, int flags, wcharset_t *query_charset)
 {
   dk_set_t lexems = NULL;
   caddr_t result_array;
   ttlp_t *ttlp;
   yyscan_t scanner;
+  int sniffer_recovery = 0;
   if (!DV_STRINGP(str))
     {
       return list (1, list (3, (ptrlong)0, (ptrlong)0, box_dv_short_string ("TURTLE parser: input text is not a string")));
     }
   ttlp = ttlp_alloc ();
+  ttlp->ttlp_flags = flags;
+
+resume_sniffing:
   QR_RESET_CTX
     {
-      ttlp->ttlp_text = str;
-      ttlp->ttlp_text_len = strlen (str);
-      ttlp->ttlp_err_hdr = ((mode_bits & TTLP_ALLOW_NQUAD) ? "NQuads lexical analyzer" : ((mode_bits & TTLP_ALLOW_TRIG) ? "TriG lexical analyzer" : "TURTLE lexical analyzer"));
-      if (NULL == query_charset)
-	query_charset = default_charset;
-      if (NULL == query_charset)
-	ttlp->ttlp_enc = &eh__ISO8859_1;
+      if (sniffer_recovery)
+        yy_push_state (GARBAGE, scanner);
       else
-	{
-	  ttlp->ttlp_enc = eh_get_handler (CHARSET_NAME (query_charset, NULL));
-	  if (NULL == ttlp->ttlp_enc)
-	    ttlp->ttlp_enc = &eh__ISO8859_1;
-	}
-      ttlyylex_init (&scanner);
-      ttlyyset_extra (ttlp, scanner);
+        {
+          ttlp->ttlp_text = str;
+          ttlp->ttlp_text_len = strlen (str);
+          ttlp->ttlp_err_hdr = ((flags & TTLP_ALLOW_NQUAD) ? "NQuads lexical analyzer" : ((flags & TTLP_ALLOW_TRIG) ? "TriG lexical analyzer" : "TURTLE lexical analyzer"));
+          if (NULL == query_charset)
+            query_charset = default_charset;
+          if (NULL == query_charset)
+            ttlp->ttlp_enc = &eh__ISO8859_1;
+          else
+            {
+              ttlp->ttlp_enc = eh_get_handler (CHARSET_NAME (query_charset, NULL));
+              if (NULL == ttlp->ttlp_enc)
+                ttlp->ttlp_enc = &eh__ISO8859_1;
+            }
+          ttlyylex_init (&scanner);
+          ttlyyset_extra (ttlp, scanner);
+          if (flags & TTLP_SNIFFER)
+            yy_push_state (GARBAGE_BOL, scanner);
+          else
+            {
 #ifdef MALLOC_DEBUG
-      yy_push_state (INITIAL, scanner);
+              yy_push_state (INITIAL, scanner);
 #endif
+            }
+        }
       for (;;)
         {
           caddr_t lex_value = NULL;
@@ -571,21 +637,41 @@ ttl_lex_analyze (caddr_t str, int mode_bits, wcharset_t *query_charset)
           lexem = ttlyylex ((YYSTYPE *)(&lex_value), ttlp, scanner);
           if (0 == lexem)
             break;
-          dk_set_push (&lexems, list (5,
-		box_num (ttlp->ttlp_lexlineno),
-		ttlp->ttlp_lexdepth,
-		box_copy (ttlp->ttlp_raw_text),
-		lexem, lex_value ) );
-	}
+          yy_push_state (0, scanner);
+          dk_set_push (&lexems, list (6,
+              box_num (ttlp->ttlp_lexlineno),
+              ttlp->ttlp_lexdepth,
+              box_copy (ttlp->ttlp_raw_text),
+              lexem, lex_value,
+              (ptrlong)yy_top_state (scanner) ) );
+          yy_pop_state (scanner);
+        }
     }
   QR_RESET_CODE
     {
       du_thread_t *self = THREAD_CURRENT_THREAD;
-      ttlp->ttlp_catched_error = thr_get_error_code (self);
-      thr_set_error_code (self, NULL);
+      if (flags & TTLP_SNIFFER)
+        {
+          dk_free_tree (thr_get_error_code (self));
+          thr_set_error_code (self, NULL);
+          yy_pop_state (scanner);
+          ttlp_reset_stacks (ttlp);
+          sniffer_recovery = 2;
+        }
+      else
+        {
+          /* ttlyydebug = 0; */
+          ttlp->ttlp_catched_error = thr_get_error_code (self);
+          thr_set_error_code (self, NULL);
+        }
       /*no POP_QR_RESET*/;
     }
   END_QR_RESET
+  if (2 == sniffer_recovery)
+    {
+      sniffer_recovery = 1;
+      goto resume_sniffing;
+    }
   ttlyylex_destroy (scanner);
   if (NULL != ttlp->ttlp_catched_error)
     {
@@ -609,6 +695,7 @@ rdf_load_turtle (
   bh_from_client_fwd_iter_t bcfi;
   bh_from_disk_fwd_iter_t bdfi;
   dk_session_fwd_iter_t dsfi;
+  int sniffer_recovery = 0;
   /* !!!TBD: add wide support: int text_strg_is_wide = 0; */
   dtp_t dtp_of_text = (arg1_is_filename ? 0 : DV_TYPE_OF (text_or_filename));
   caddr_t res;
@@ -701,18 +788,31 @@ iter_is_set:
   if (box_length (base_uri) > 1)
     tf->tf_base_uri = box_copy (base_uri);
   tf->tf_line_no_ptr = &(ttlp->ttlp_lexlineno);
+resume_sniffing:
   QR_RESET_CTX
     {
-      ttlyylex_init (&scanner);
-      ttlyyset_extra (ttlp, scanner);
-      if ((ttlp->ttlp_iter == file_read) && !lite_mode && (YY_BUF_SIZE < 0x10000))
-        ttlyypush_buffer_state (ttlyy_create_buffer (NULL, (YY_BUF_SIZE > 0x2000) ? (YY_BUF_SIZE * 8) : 0x10000, scanner), scanner);
+      if (sniffer_recovery)
+        yy_push_state (GARBAGE, scanner);
+      else
+        {
+          ttlyylex_init (&scanner);
+          ttlyyset_extra (ttlp, scanner);
+          if ((ttlp->ttlp_iter == file_read) && !lite_mode && (YY_BUF_SIZE < 0x10000))
+            ttlyypush_buffer_state (ttlyy_create_buffer (NULL, (YY_BUF_SIZE > 0x2000) ? (YY_BUF_SIZE * 8) : 0x10000, scanner), scanner);
+          if (flags & TTLP_SNIFFER)
+            yy_push_state (GARBAGE_BOL, scanner);
+          else
+            {
 #ifdef MALLOC_DEBUG
-      yy_push_state (INITIAL, scanner);
+              yy_push_state (INITIAL, scanner);
 #endif
-      tf_set_cbk_names (tf, (ccaddr_t *)cbk_names);
-      TF_CHANGE_GRAPH_TO_DEFAULT (tf);
-      /* ttlyydebug = 1; */
+            }
+          tf_set_cbk_names (tf, (ccaddr_t *)cbk_names);
+          TF_CHANGE_GRAPH_TO_DEFAULT (tf);
+          /* ttlyydebug = 1; */
+        }
+      if (flags & TTLP_SNIFFER)
+        ttlyyparse (ttlp, scanner);
       if (flags & TTLP_ALLOW_NQUAD)
         nqyyparse (ttlp, scanner);
       else
@@ -723,17 +823,33 @@ iter_is_set:
   QR_RESET_CODE
     {
       du_thread_t *self = THREAD_CURRENT_THREAD;
-      /* ttlyydebug = 0; */
-      ttlp->ttlp_catched_error = thr_get_error_code (self);
-      thr_set_error_code (self, NULL);
-      if (NULL != ttlp->ttlp_iter_abend)
+      if (flags & TTLP_SNIFFER)
         {
-          ttlp->ttlp_iter_abend (ttlp->ttlp_iter_data);
-          ttlp->ttlp_iter_abend = NULL;
+          dk_free_tree (thr_get_error_code (self));
+          thr_set_error_code (self, NULL);
+          yy_pop_state (scanner);
+          ttlp_reset_stacks (ttlp);
+          sniffer_recovery = 2;
+        }
+      else
+        {
+          /* ttlyydebug = 0; */
+          ttlp->ttlp_catched_error = thr_get_error_code (self);
+          thr_set_error_code (self, NULL);
+          if (NULL != ttlp->ttlp_iter_abend)
+            {
+              ttlp->ttlp_iter_abend (ttlp->ttlp_iter_data);
+              ttlp->ttlp_iter_abend = NULL;
+            }
         }
       /*no POP_QR_RESET*/;
     }
   END_QR_RESET
+  if (2 == sniffer_recovery)
+    {
+      sniffer_recovery = 1;
+      goto resume_sniffing;
+    }
   if (NULL != srcfile)
     fclose (srcfile);
 #ifdef MALLOC_DEBUG_1

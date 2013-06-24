@@ -706,7 +706,7 @@ ttlp_leave_trig_group (ttlp_t *ttlp)
 }
 
 void
-ttlp_free (ttlp_t *ttlp)
+ttlp_reset_stacks (ttlp_t *ttlp)
 {
   if (ttlp->ttlp_in_trig_graph)
     {
@@ -715,20 +715,29 @@ ttlp_free (ttlp_t *ttlp)
         dk_free_box (ttlp->ttlp_default_ns_uri_saved);
       if (ttlp->ttlp_base_uri_saved != ttlp->ttlp_base_uri)
         dk_free_box (ttlp->ttlp_base_uri_saved);
+      ttlp->ttlp_in_trig_graph = 0;
     }
-  dk_free_box (ttlp->ttlp_default_ns_uri);
-  dk_free_box ((caddr_t)(ttlp->ttlp_namespaces_prefix2iri));
   while (NULL != ttlp->ttlp_saved_uris)
     dk_free_tree ((box_t) dk_set_pop (&(ttlp->ttlp_saved_uris)));
   while (NULL != ttlp->ttlp_unused_seq_bnodes)
     dk_free_tree ((box_t) dk_set_pop (&(ttlp->ttlp_unused_seq_bnodes)));
-  dk_free_tree (ttlp->ttlp_last_complete_uri);
-  dk_free_tree (ttlp->ttlp_subj_uri);
-  dk_free_tree (ttlp->ttlp_pred_uri);
-  dk_free_tree (ttlp->ttlp_obj);
-  dk_free_tree (ttlp->ttlp_obj_type);
-  dk_free_tree (ttlp->ttlp_obj_lang);
-  dk_free_tree (ttlp->ttlp_formula_iid);
+  dk_free_tree (ttlp->ttlp_last_complete_uri);	ttlp->ttlp_last_complete_uri = NULL;
+  dk_free_tree (ttlp->ttlp_subj_uri);		ttlp->ttlp_subj_uri = NULL;
+  dk_free_tree (ttlp->ttlp_pred_uri);		ttlp->ttlp_pred_uri = NULL;
+  dk_free_tree (ttlp->ttlp_obj);			ttlp->ttlp_obj = NULL;
+  dk_free_tree (ttlp->ttlp_obj_type);		ttlp->ttlp_obj_type = NULL;
+  dk_free_tree (ttlp->ttlp_obj_lang);		ttlp->ttlp_obj_lang = NULL;
+  dk_free_tree (ttlp->ttlp_formula_iid);		ttlp->ttlp_formula_iid = NULL;
+  ttlp->ttlp_lexdepth = 0;
+  ttlp->ttlp_pred_is_reverse = 0;
+}
+
+void
+ttlp_free (ttlp_t *ttlp)
+{
+  ttlp_reset_stacks (ttlp);
+  dk_free_box (ttlp->ttlp_default_ns_uri);
+  dk_free_box ((caddr_t)(ttlp->ttlp_namespaces_prefix2iri));
   tf_free (ttlp->ttlp_tf);
   dk_free (ttlp, sizeof (ttlp_t));
 }

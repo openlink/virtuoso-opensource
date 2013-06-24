@@ -161,6 +161,7 @@ extern void tf_new_base (triple_feed_t *tf, caddr_t new_base);
 #define TTLP_ALLOW_TRIG			0x0100	/*!< Allows TriG syntax, thus loading data in more than one graph. */
 #define TTLP_ALLOW_NQUAD		0x0200	/*!< Enables NQuads syntax but disables TURTLE and TriG */
 #define TTLP_DEBUG_BNODES		0x1000	/*!< Add virtrdf:bnode-base, virtrdf:bnode-row and virtrdf:bnode-label triples for every created blank node. */
+#define TTLP_SNIFFER			0x2000	/*!< Sniffer mode: scan for Turtle fragments in non-Turtle texts. */
 
 #define TTLP_ALLOW_QNAME_A		0x01
 #define TTLP_ALLOW_QNAME_HAS		0x02
@@ -212,6 +213,7 @@ typedef struct ttlp_s
 extern ttlp_t *ttlp_alloc (void);
 extern void ttlp_enter_trig_group (ttlp_t *ttlp);
 extern void ttlp_leave_trig_group (ttlp_t *ttlp);
+extern void ttlp_reset_stacks (ttlp_t *ttlp);
 extern void ttlp_free (ttlp_t *ttlp);
 
 extern caddr_t rdf_load_turtle (
