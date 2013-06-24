@@ -255,6 +255,7 @@ int treehashcmp (char *x, char *y);
 id_hashed_key_t voidptrhash (char *voidp);	/* For keys like pointer to subtree of XML tree entity */
 int voidptrhashcmp (char *x, char *y);	/* For keys like pointer to subtree of XML tree entity */
 id_hashed_key_t box_hash (caddr_t box);
+id_hashed_key_t box_hash_cut (caddr_t box, int depth);
 EXE_EXPORT (id_hashed_key_t, boxint_hash, (char *x));
 EXE_EXPORT (int, boxint_hashcmp, (char *x, char *y));
 

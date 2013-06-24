@@ -340,6 +340,54 @@ box_hash (caddr_t box)
     }
 }
 
+id_hashed_key_t
+box_hash_cut (caddr_t box, int depth)
+{
+  id_hashed_key_t h;
+  dtp_t dtp;
+  if (!IS_BOX_POINTER (box))
+    return ((uint32) ((ptrlong) box)) & ID_HASHED_KEY_MASK;
+  dtp = box_tag (box);
+  if (dtp_hash_func[dtp])
+    return ID_HASHED_KEY_MASK & dtp_hash_func[dtp] (box);
+  switch (dtp)
+    {
+    case DV_LONG_INT:
+      return ((*(boxint *) box) & ID_HASHED_KEY_MASK);
+    case DV_IRI_ID:
+    case DV_IRI_ID_8:
+      if (NULL == box)
+        return 0;
+      return ((*(unsigned int64 *) box) & ID_HASHED_KEY_MASK);
+    case DV_ARRAY_OF_POINTER:
+    case DV_LIST_OF_POINTER:
+    case DV_ARRAY_OF_XQVAL:
+    case DV_XTREE_HEAD:
+    case DV_XTREE_NODE:
+      {
+        int inx, len = box_length (box) / sizeof (caddr_t);
+        if (0 >= depth)
+          return ((id_hashed_key_t)len * dtp) & ID_HASHED_KEY_MASK;
+        h = 0;
+        depth--;
+        for (inx = 0; inx < len; inx++)
+          h = ROL (h) ^ box_hash_cut (((caddr_t *) box)[inx], depth);
+        return h & ID_HASHED_KEY_MASK;
+      }
+    case DV_UNAME:
+      DV_UNAME_BOX_HASH (h, box);
+      return h & ID_HASHED_KEY_MASK;
+    default:
+      {
+        uint32 len = box_length_inline (box);
+        if (len > 0)
+          BYTE_BUFFER_HASH (h, box, len - 1);
+        else
+          h = 0;
+        return h & ID_HASHED_KEY_MASK;
+      }
+    }
+}
 
 void dtp_set_cmp (dtp_t dtp, box_hash_cmp_func_t f);
 
