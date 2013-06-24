@@ -1815,7 +1815,7 @@ spar_gp_add_filters_for_graph (sparp_t *sparp, SPART *graph_expn, int graph_is_n
   if (NULL != good_list_expn)
     spar_gp_add_filter (sparp, good_list_expn, 0);
   if (NULL != bad_list_expn)
-    spar_gp_add_filter (sparp, spartlist (sparp, 2, BOP_NOT, bad_list_expn), 0);
+    spar_gp_add_filter (sparp, spartlist (sparp, 3, BOP_NOT, bad_list_expn, NULL), 0);
 }
 
 void
