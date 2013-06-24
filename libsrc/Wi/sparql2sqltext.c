@@ -1473,11 +1473,6 @@ ssg_prin_id (spar_sqlgen_t *ssg, const char *name)
 void
 ssg_prin_id_with_suffix (spar_sqlgen_t *ssg, const char *name, const char *suffix)
 {
-#if 0
-  char tmp[1000 + 1];
-  sprintf_escaped_id (t_box_sprintf ("%s%s", name, suffix), tmp, NULL);
-  ssg_puts (tmp);
-#else
 #ifdef DEBUG
   if (NULL != strstr (name, "CRASH"))
     ssg_puts ("!!!CRASH!!!");
@@ -1486,7 +1481,6 @@ ssg_prin_id_with_suffix (spar_sqlgen_t *ssg, const char *name, const char *suffi
   ssg_puts (name);
   ssg_puts (suffix);
   ssg_putchar ('"');
-#endif
 }
 
 ssg_valmode_t
@@ -2678,7 +2672,7 @@ ssg_print_tr_var_expn (spar_sqlgen_t *ssg, SPART *var, ssg_valmode_t needed, con
       triple = rv->_.retval.triple = sparp_find_triple_of_var_or_retval (ssg->ssg_sparp, NULL, var, 1);
     }
   native = sparp_expn_native_valmode (ssg->ssg_sparp, rv);
-  if (IS_BOX_POINTER (native) && native->qmfValRange.rvrRestrictions & SPART_VARR_NOT_NULL &&
+  if (IS_BOX_POINTER (native) && (native->qmfValRange.rvrRestrictions & SPART_VARR_NOT_NULL) &&
     !(var->_.var.rvr.rvrRestrictions & SPART_VARR_NOT_NULL) )
     {
       ssg_valmode_t nullable_native = ssg_find_nullable_superformat (native);
@@ -4717,7 +4711,8 @@ ssg_triple_retval_alias (spar_sqlgen_t *ssg, SPART *triple, int field_idx, int c
       caddr_t full_vname;
       if (NULL == qmv)
         {
-          caddr_t v = SPARP_FIELD_CONST_OF_QM (qm, field_idx);
+          rdf_val_range_t *v_rvr = SPARP_FIELD_CONST_RVR_OF_QM (qm, field_idx);
+          ccaddr_t v = v_rvr->rvrFixedValue;
           const char *tail = "";
           if ((DV_UNAME == DV_TYPE_OF (v)) || (DV_STRING == DV_TYPE_OF (v)))
             {
@@ -8784,12 +8779,16 @@ ssg_print_breakup_in_union (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int 
           quad_map_t *mcase_qm = mcase_triple->_.triple.tc_list[0]->tc_qm;
           for (fld_ctr = 0; fld_ctr < SPART_TRIPLE_FIELDS_COUNT; fld_ctr++)
             {
+              rdf_val_range_t *first_mcase_const_rvr, *mcase_const_rvr;
               qm_value_t *first_mcase_qmv, *mcase_qmv;
               SPART *first_mcase_fld, *mcase_fld;
               if (! (common_fld_restrictions_bitmasks[leftmost_tc] & (1 << fld_ctr)))
                 continue; /* It's not common already, no need to check */
-              if (SPARP_FIELD_CONST_OF_QM (mcase_qm, fld_ctr) !=
-                  SPARP_FIELD_CONST_OF_QM (first_mcase_qm, fld_ctr) )
+              first_mcase_const_rvr = SPARP_FIELD_CONST_RVR_OF_QM (first_mcase_qm, fld_ctr);
+              mcase_const_rvr = SPARP_FIELD_CONST_RVR_OF_QM (mcase_qm, fld_ctr);
+              if (!sparp_values_equal (ssg->ssg_sparp,
+                mcase_const_rvr->rvrFixedValue, mcase_const_rvr->rvrDatatype, mcase_const_rvr->rvrLanguage,
+                first_mcase_const_rvr->rvrFixedValue, first_mcase_const_rvr->rvrDatatype, first_mcase_const_rvr->rvrLanguage ) )
                 goto fld_restrictions_may_vary; /* see below */
               first_mcase_qmv = SPARP_FIELD_QMV_OF_QM (first_mcase_qm, fld_ctr);
               mcase_qmv = SPARP_FIELD_QMV_OF_QM (mcase_qm, fld_ctr);
@@ -8920,9 +8919,6 @@ ssg_print_union_member_item (spar_sqlgen_t *ssg, SPART *member, int *itm_idx_ptr
   /* int itm_is_binv = ((SPAR_GP == itm->type) && (VALUES_L == itm->_.gp.subtype)); */
   int itm_is_sinv = ((SPAR_GP == itm->type) && (SERVICE_L == itm->_.gp.subtype));
   itm_alias = ssg_id_of_gp_or_triple (itm);
-#if 0
-  ssg_puts (t_box_sprintf (100, " /* alias %s #%d */", itm_alias, first_tabexpn_itm_idx));
-#endif
   if (0 < itm_idx_ptr[0])
     {
       if (itm_is_opt)
@@ -8932,13 +8928,8 @@ ssg_print_union_member_item (spar_sqlgen_t *ssg, SPART *member, int *itm_idx_ptr
         }
       else
         {
-#if 0
-          ssg_putchar (',');
-          ssg_newline (1);
-#else
           ssg_newline (0);
           ssg_puts ("INNER JOIN");
-#endif
         }
     }
   if (SPAR_TRIPLE == itm->type)
@@ -9017,10 +9008,6 @@ ssg_print_union_member_item (spar_sqlgen_t *ssg, SPART *member, int *itm_idx_ptr
                       SPART *left_triple = left_gp_or_triple;
                       quad_map_t *left_qm = left_triple->_.triple.tc_list[0]->tc_qm;
                       qm_value_t *left_qmv = NULL;
-#if 0
-                      if (left_gp_or_triple != member->_.gp.members[itm_idx_ptr[0]-1])
-                        spar_internal_error (ssg->ssg_sparp, "Unusual left outer join");
-#endif
                       if (SPART_TRIPLE_FIELDS_COUNT > left_tree->_.var.tr_idx)
                         left_qmv = SPARP_FIELD_QMV_OF_QM (left_qm, left_tree->_.var.tr_idx);
                       ssg_print_fld_var_restrictions_ex (ssg, left_qm, left_qmv, left_triple->_.triple.tabid, left_tree, left_triple, NULL /*fld_if_outer*/, &tmp_rvr);
@@ -9117,7 +9104,7 @@ ssg_print_union (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int head_flags,
                 goto breakup_group_complete; /* see below */
               for (bt_ctr = tabids_count; bt_ctr--; /* no step */)
                 {
-#ifdef DEBUG
+#ifdef SPARQL_DEBUG
                   printf ("ssg_print_union() checks breakup in %s from %d to %d incl, bt_ctr %d: first %s next %s.\n",
                     gp->_.gp.selid, memb_ctr, memb_ctr + breakup_shift + 1,
                     bt_ctr, first_breakup_tabids [bt_ctr], next_breakup_tabids [bt_ctr] );
@@ -9129,7 +9116,7 @@ ssg_print_union (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int head_flags,
             }
         }
 breakup_group_complete:
-#ifdef DEBUG
+#ifdef SPARQL_DEBUG
       if (0 != breakup_shift)
         {
           printf ("ssg_print_union() has found breakup in %s from %d to %d incl.\n",
@@ -9155,7 +9142,7 @@ retval_list_complete:
       ssg_newline (0);
       ssg_puts ("FROM");
       ssg->ssg_indent++;
-#ifdef DEBUG
+#ifdef SPARQL_DEBUG
       if (SPAR_GP != SPART_TYPE (member))
         spar_internal_error (ssg->ssg_sparp, "ssg_" "print_union(): the member is not a SPAR_GP");
 #endif
@@ -9245,10 +9232,6 @@ end_of_table_list: ;
       ssg->ssg_where_l_printed = 0;
       ssg->ssg_where_l_text = "\bWHERE";
       ssg->ssg_indent++;
-#if 0
-      if ((1 == itm_count) && (SPAR_GP == SPART_TYPE (first_itm) && (SERVICE_L == first_itm->_.gp.subtype))
-        ssg_print_sinv_table_exp (ssg, first_itm, SSG_TABLE_PVIEW_PARAM_PASS);
-#endif
       if ((0 == gp->_.gp.subtype) || (WHERE_L == gp->_.gp.subtype) || (1 >= itm_count))
         {
           for (equiv_ctr = 0; equiv_ctr < gp->_.gp.equiv_count; equiv_ctr++)
@@ -9268,9 +9251,6 @@ end_of_table_list: ;
           ccaddr_t itm_alias;
           int first_tabexpn_itm_idx = itm_idx;
           itm_alias = ssg_id_of_gp_or_triple (itm);
-#if 0
-          ssg_puts (t_box_sprintf (100, " /* alias %s #%d */", itm_alias, first_tabexpn_itm_idx));
-#endif
           if (SPAR_TRIPLE == itm->type)
             {
               while (itm_idx + 1 < itm_count)

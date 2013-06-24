@@ -74,6 +74,7 @@ typedef struct jso_struct_descr_s {
   int		jsosd_field_count;		/*!< Number of fields, including deprecated fields */
   jso_field_descr_t *	jsosd_field_list;	/*!< Array of field descriptions. The array may be longer than needed and have NULL pointers at the end */
   dk_hash_t *	jsosd_field_hash;		/*!< Hashtable to get field description by jsofd_property_iri of a field */
+  jso_field_descr_t **	jsosd_fields_by_idx;	/*!< \c jsosd_fields_by_idx is array of (mostly) NULLs, jsosd_sizeof/sizeof(caddr_t) elements long. If the structure is treated as DV_ARRAY_OF_POINTER, N-th item of arrary can be a described field. In this case the description can be found as jsosd_fields_by_idx[N]. */
 } jso_struct_descr_t;
 
 /*! Data specific to JSO_CAT_ARRAY classes */
@@ -83,6 +84,10 @@ typedef struct jso_array_descr_s {
   int		jsoad_max_length;	/*!< Max allowed number of elements in the instance */
 } jso_array_descr_t;
 
+/*! A type for validation callback called at the end of jso_validate(). The callback can validate and optionally enrich the data.
+\c warning_acc_ptr is a pointer to set of 2-element vectors, each vector is a pair of pointer to jso_rtti_t and text of warning  */
+typedef void jso_validation_cbk_t (struct jso_rtti_s *inst_rtti, dk_set_t *warnings_log_ptr);
+
 /*! Description of a JSO class */
 typedef struct jso_class_descr_s {
   int		jsocd_cat;		/*!< Class category as an JSO_CAT_xxx value */
@@ -90,6 +95,7 @@ typedef struct jso_class_descr_s {
   const char *  jsocd_class_iri;	/*!< IRI for loading from RDF graphs, will be used as value of rdf:type property of an instance */
   const char *	jsocd_ns_uri;		/*!< Namespace URI, it will be used for fields as well */
   const char *	jsocd_local_name;	/*!< Local part of jsocd_class_iri */
+  jso_validation_cbk_t *jsocd_validation_cbk;
   dk_hash_t *	jsocd_rttis;		/*!< Hashtable to get jso_rtti_t of an instance by instance IRI */
   struct {
     jso_struct_descr_t sd;
@@ -129,12 +135,16 @@ extern void jso_define_class (jso_class_descr_t *jsocd);
 /*! The function searches for an loaded instance such that { ?jinstance rdf:type ?jclass } */
 extern void jso_get_cd_and_rtti (ccaddr_t jclass, ccaddr_t jinstance, jso_class_descr_t **cd_ptr, jso_rtti_t **inst_rtti_ptr, int quiet_if_deleted);
 
+/*! The function returns a description of member field pointed to by \c inst_member_field assuming that this is a field of instance described by \c inst_rtti and the category is JSO_CAT_STRUCT */
+extern jso_field_descr_t *jso_get_fd_by_rtti_and_member (jso_rtti_t *inst_rtti, void *inst_member_field);
+
+extern caddr_t jso_dbg_text_fd_and_member_field (jso_field_descr_t *fd, void *inst_member_field);
+
 extern dk_hash_t *jso_consts;		/*!< All known named constants, e.g., made by jso_define_const() */
 extern dk_hash_t *jso_classes;		/*!< All known JSO classes, e.g., made by jso_define_class() */
 extern dk_hash_t *jso_properties;	/*!< All known property names of all JSO classes, to cross-check classes for duplicate names */
 extern dk_hash_t *jso_rttis_of_names;	/*!< All JSO class instances of all classes, to distinguish between missing instances and type mismatches */
 extern dk_hash_t *jso_rttis_of_structs;	/*!< Similar to jso_rttis_of_names but keys are 'jrtti_self' structures, not instance IRIs */
-
 
 /* Part 2. A small storage of triples that are not preset properties of objects. */
 

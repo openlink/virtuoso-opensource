@@ -1286,7 +1286,7 @@ spar_triple_matches_macro_quad_pattern (sparp_t *sparp, SPART *defm, SPART *grap
       templ_fld = defm->_.defmacro.quad_pattern[(templ_fld_idx)]; \
       if (SPAR_IS_LIT_OR_QNAME (templ_fld) && \
          !((SPART_TYPE (triple_fld) == SPART_TYPE (templ_fld)) && \
-         sparp_fixedvalues_equal (sparp, triple_fld, templ_fld) ) ) \
+         sparp_values_equal (sparp, (ccaddr_t)triple_fld, NULL, NULL, (ccaddr_t)templ_fld, NULL, NULL) ) ) \
         return 0; } while (0)
   FLD_CHECK(tp, SPART_TRIPLE_PREDICATE_IDX, predicate);
   FLD_CHECK(to, SPART_TRIPLE_OBJECT_IDX, object);
@@ -3691,7 +3691,7 @@ SPART *spar_make_typed_literal (sparp_t *sparp, caddr_t strg, caddr_t type, cadd
       if (!strcmp ("true", strg))
         return spartlist (sparp, 4, SPAR_LIT, (ptrlong)1, type, NULL);
       if (!strcmp ("false", strg))
-        return spartlist (sparp, 4, SPAR_LIT, (ptrlong)0, type, NULL);
+        return spartlist (sparp, 4, SPAR_LIT, t_box_num_nonull (0), type, NULL);
       goto cannot_cast;
     }
   if (uname_xmlschema_ns_uri_hash_date == type)
@@ -5429,7 +5429,7 @@ spar_make_literal_from_sql_box (sparp_t * sparp, caddr_t box, int mode)
 {
   switch (DV_TYPE_OF (box))
     {
-    case DV_LONG_INT: return spartlist (sparp, 4, SPAR_LIT, t_box_copy (box), uname_xmlschema_ns_uri_hash_integer, NULL);
+    case DV_LONG_INT: return spartlist (sparp, 4, SPAR_LIT, t_box_num_nonull (box), uname_xmlschema_ns_uri_hash_integer, NULL);
     case DV_NUMERIC: return spartlist (sparp, 4, SPAR_LIT, t_box_copy (box), uname_xmlschema_ns_uri_hash_decimal, NULL);
     case DV_DOUBLE_FLOAT: return spartlist (sparp, 4, SPAR_LIT, t_box_copy (box), uname_xmlschema_ns_uri_hash_double, NULL);
     case DV_UNAME: return spartlist (sparp, 2, SPAR_QNAME, t_box_copy (box));
@@ -5488,6 +5488,25 @@ spar_make_literal_from_sql_box (sparp_t * sparp, caddr_t box, int mode)
   }
   return NULL; /* to keep compiler happy */
 }
+
+SPART *
+spar_make_qname_or_literal_from_rvr (sparp_t * sparp, rdf_val_range_t *rvr, int make_naked_box_if_possible)
+{
+  if (!(rvr->rvrRestrictions & SPART_VARR_FIXED) || !(rvr->rvrRestrictions & (SPART_VARR_IS_LIT | SPART_VARR_IS_REF)))
+    spar_internal_error (sparp, "spar_" "make_qname_or_literal_from_rvr(): the rvr does not contain enough restrictions");
+  if (rvr->rvrRestrictions & SPART_VARR_IS_REF)
+    {
+      if (!(rvr->rvrRestrictions & SPART_VARR_IS_IRI))
+        spar_internal_error (sparp, "spar_" "make_qname_or_literal_from_rvr(): the SPART_VARR_IS_REF rvr is not SPART_VARR_IS_IRI");
+      if (make_naked_box_if_possible)
+        return (SPART *)t_box_copy (rvr->rvrFixedValue);
+      return spartlist (sparp, 2, SPAR_QNAME, t_box_copy (rvr->rvrFixedValue));
+    }
+  if (make_naked_box_if_possible && !(rvr->rvrRestrictions & SPART_VARR_TYPED) && (NULL == rvr->rvrFixedValue))
+    return (SPART *)t_box_copy (rvr->rvrFixedValue);
+  return spartlist (sparp, 4, SPAR_LIT, t_box_copy (rvr->rvrFixedValue), t_box_copy (rvr->rvrDatatype), t_box_copy (rvr->rvrLanguage));
+}
+
 
 #define QUAD_MAPS_FOR_QUAD 1
 #define SQL_COLS_FOR_QUAD 2

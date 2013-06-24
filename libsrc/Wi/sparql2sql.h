@@ -28,10 +28,10 @@
 #include "rdf_core.h"
 
 extern ptrdiff_t qm_field_map_offsets[SPART_TRIPLE_FIELDS_COUNT];
-extern ptrdiff_t qm_field_constants_offsets[SPART_TRIPLE_FIELDS_COUNT];
+extern ptrdiff_t qm_field_const_rvrs_offsets[SPART_TRIPLE_FIELDS_COUNT];
 
 #define SPARP_FIELD_QMV_OF_QM(qm,field_ctr) (JSO_FIELD_ACCESS(qm_value_t *, (qm), qm_field_map_offsets[(field_ctr)])[0])
-#define SPARP_FIELD_CONST_OF_QM(qm,field_ctr) (JSO_FIELD_ACCESS(caddr_t, (qm), qm_field_constants_offsets[(field_ctr)])[0])
+#define SPARP_FIELD_CONST_RVR_OF_QM(qm,field_ctr) (JSO_FIELD_ACCESS(rdf_val_range_t, (qm), qm_field_const_rvrs_offsets[(field_ctr)]))
 
 /* PART 1. EXPRESSION TERM REWRITING */
 
@@ -276,16 +276,24 @@ extern int sparp_equiv_merge (sparp_t *sparp, sparp_equiv_t *primary, sparp_equi
 /*! Removes the given veriable from its equiv. This is useful for <sparql-only:args_in_same_eq> and similar internal tricks */
 extern void sparp_equiv_forget_var (sparp_t *sparp, SPART *var);
 
-/*! Returns whether two given fixedvalue trees are equal (same language and SQL value, no comparison for datatypes) */
-extern int sparp_fixedvalues_equal (sparp_t *sparp, SPART *first, SPART *second);
+/*! Returns whether two given values are equal (same language, same datatype, same SQL value).
+If \c first is SPAR_LIT or SPAR_QNAME tree then \c first_dt and \c first_lang are redundand and thus should be NULLs;
+If \c first is not a string then \c first_lang should be NULL and \c first_dt should be non-NULL.
+Ditto \c second / \c second_dt / \c second_lang .
+ */
+extern int sparp_values_equal (sparp_t *sparp, ccaddr_t first, ccaddr_t first_dt, ccaddr_t first_lang, ccaddr_t second, ccaddr_t second_dt, ccaddr_t second_lang);
 
 /*! Returns 1 if tightening \c dest by \c add_on might give some effect, 0 if that is proven to be no-op.
 Nonzero \c assume_binv_var_and_eq means special policy for binding variable as \c dest an its equiv as \c add_on */
 extern int rvr_can_be_tightened (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *add_on, int assume_binv_var_and_eq);
 
+/*! Returns whether two given rvrs have equal restriction by fixedvalue (and fixedtype).
+If any of two are not restricted or they are restricted by two different values then the function returns zero */
+extern int sparp_rvrs_have_same_fixedvalue (sparp_t *sparp, rdf_val_range_t *first_rvr, rdf_val_range_t *second_rvr);
+
 /*! Returns whether two given equivs have equal restriction by fixedvalue (and fixedtype).
 If any of two are not restricted or they are restricted by two different values then the function returns zero */
-extern int sparp_equivs_have_same_fixedvalue (sparp_t *sparp, sparp_equiv_t *first_eq, sparp_equiv_t *second_eq);
+#define sparp_equivs_have_same_fixedvalue(sparp,first_eq,second_eq) sparp_rvrs_have_same_fixedvalue ((sparp), &((first_eq)->e_rvr), &((second_eq)->e_rvr))
 
 /*! Returns a datatype that may contain any value from both dt_iri1 and dt_iri2 datatypes, NULL if the result is 'any'.
 The function is not 100% accurate so its result may be a supertype of the actual smallest union datatype. */
@@ -396,9 +404,6 @@ The function can not be used if \c addon has SPART_VARR_CONFLICT set */
 extern void sparp_equiv_loose (sparp_t *sparp, sparp_equiv_t *eq, rdf_val_range_t *addon, int changeable_flags);
 #else
 #define sparp_equiv_tighten(sparp,eq,addon,flags) sparp_rvr_tighten((sparp),&((eq)->e_rvr),(addon),(flags))
-#if 0 /* Attention: this code is not complete */
-#define sparp_equiv_override(sparp,eq,addon,flags) sparp_rvr_override((sparp),&((eq)->e_rvr),(addon),(flags))
-#endif
 #define sparp_equiv_loose(sparp,eq,addon,flags) sparp_rvr_loose((sparp),&((eq)->e_rvr),(addon),(flags))
 #endif
 

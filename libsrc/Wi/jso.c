@@ -56,6 +56,7 @@ jso_define_struct (jso_class_descr_t *cd)
         sd->jsosd_field_count += 1;
     }
   sd->jsosd_field_hash = hash_table_allocate (sd->jsosd_field_count);
+  sd->jsosd_fields_by_idx = (jso_field_descr_t **)dk_alloc_list_zero (sd->jsosd_sizeof / sizeof (caddr_t));
   for (field_ctr = sd->jsosd_field_count; field_ctr--; /* no step */)
     {
       jso_field_descr_t *fldd = sd->jsosd_field_list+field_ctr;
@@ -74,6 +75,18 @@ jso_define_struct (jso_class_descr_t *cd)
         }
       sethash (fldd->jsofd_property_iri, jso_properties, fldd);
       sethash (fldd->jsofd_property_iri, sd->jsosd_field_hash, fldd);
+      if ((JSO_DEPRECATED != fldd->jsofd_required) && !(fldd->jsofd_byte_offset % sizeof (caddr_t)))
+        {
+          int fld_idx_as_in_dv_array_of_pointers = fldd->jsofd_byte_offset / sizeof (caddr_t);
+          if (NULL != sd->jsosd_fields_by_idx [fld_idx_as_in_dv_array_of_pointers])
+            {
+              char buf[2000];
+              sprintf (buf, "In %s, JSO properties %s and %s have same offset (a union inside struct?)",
+                cd->jsocd_c_typedef, fldd->jsofd_property_iri, sd->jsosd_fields_by_idx[fld_idx_as_in_dv_array_of_pointers]->jsofd_property_iri);
+              GPF_T1 (buf);
+            }
+          sd->jsosd_fields_by_idx [fld_idx_as_in_dv_array_of_pointers] = fldd;
+        }
     }
 }
 
@@ -205,7 +218,6 @@ jso_get_cd_and_rtti (ccaddr_t jclass, ccaddr_t jinstance, jso_class_descr_t **cd
     }
 }
 
-
 caddr_t
 bif_jso_delete (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -267,7 +279,7 @@ end_delete_private_members:
 
 
 void
-jso_validate (jso_rtti_t *inst_rtti, jso_rtti_t *root_rtti, dk_hash_t *known, int change_status)
+jso_validate (jso_rtti_t *inst_rtti, jso_rtti_t *root_rtti, dk_hash_t *known, int change_status, dk_set_t *warnings_log_ptr)
 {
 #define SET_STATUS_FAILED \
   do { \
@@ -418,7 +430,7 @@ jso_validate (jso_rtti_t *inst_rtti, jso_rtti_t *root_rtti, dk_hash_t *known, in
   DO_BOX_FAST (jso_rtti_t *, sub, ctr, inst)
     {
       if (DV_CUSTOM == DV_TYPE_OF(sub))
-        jso_validate (sub, root_rtti, known, change_status);
+        jso_validate (sub, root_rtti, known, change_status, warnings_log_ptr);
     }
   END_DO_BOX_FAST;
   switch (cd->jsocd_cat)
@@ -428,7 +440,7 @@ jso_validate (jso_rtti_t *inst_rtti, jso_rtti_t *root_rtti, dk_hash_t *known, in
         DO_BOX_FAST (jso_rtti_t *, sub, ctr, inst)
           {
             if (DV_CUSTOM == DV_TYPE_OF (sub))
-              jso_validate (sub, root_rtti, known, change_status);
+              jso_validate (sub, root_rtti, known, change_status, warnings_log_ptr);
           }
         END_DO_BOX_FAST;
         break;
@@ -442,13 +454,15 @@ jso_validate (jso_rtti_t *inst_rtti, jso_rtti_t *root_rtti, dk_hash_t *known, in
             jso_class_descr_t *fld_type_cd = gethash (fldd->jsofd_type, jso_classes);
             jso_rtti_t *sub = (jso_rtti_t *)(JSO_FIELD_PTR (inst, fldd)[0]);
             if ((NULL != sub) && (NULL != fld_type_cd))
-              jso_validate (sub, root_rtti, known, change_status);
+              jso_validate (sub, root_rtti, known, change_status, warnings_log_ptr);
           }
         break;
       }
     }
   if (change_status && (JSO_STATUS_FAILED == inst_rtti->jrtti_status))
     inst_rtti->jrtti_status = JSO_STATUS_NEW;
+  if (NULL != cd->jsocd_validation_cbk)
+    cd->jsocd_validation_cbk (inst_rtti, warnings_log_ptr);
 }
 
 
@@ -459,6 +473,9 @@ bif_jso_validate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t jinstance = bif_string_or_wide_or_uname_arg (qst, args, 1, "jso_validate");
   ptrlong change_status = bif_long_arg (qst, args, 2, "jso_validate");
   dk_hash_t *known = hash_table_allocate (256);
+  dk_set_t warnings_log = NULL;
+  caddr_t **report;
+  int wrnng_ctr;
   jso_class_descr_t *cd;
   jso_rtti_t *inst_rtti;
   jclass = box_cast_to_UTF8_uname (qst, jclass);
@@ -466,7 +483,7 @@ bif_jso_validate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   jso_get_cd_and_rtti (jclass, jinstance, &cd, &inst_rtti, 0);
   QR_RESET_CTX
     {
-      jso_validate (inst_rtti, inst_rtti, known, change_status);
+      jso_validate (inst_rtti, inst_rtti, known, change_status, &warnings_log);
     }
   QR_RESET_CODE
     {
@@ -474,11 +491,25 @@ bif_jso_validate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       caddr_t err = thr_get_error_code (self);
       POP_QR_RESET;
       hash_table_free (known);
+      while (NULL != warnings_log)
+        {
+          caddr_t *wrnng = (caddr_t *)dk_set_pop (&warnings_log);
+          dk_free_tree (wrnng[1]);
+          dk_free_box ((caddr_t)wrnng);
+        }
       sqlr_resignal (err);
     }
   END_QR_RESET
   hash_table_free (known);
-  return jinstance;
+  report = (caddr_t **)revlist_to_array (warnings_log);
+  DO_BOX_FAST (caddr_t *, wrnng, wrnng_ctr, report)
+    {
+      jso_rtti_t *wrnng_rtti = (jso_rtti_t *)(wrnng[0]);
+      report[wrnng_ctr] = (caddr_t *)list (3, box_copy (wrnng_rtti->jrtti_inst_iri), box_copy (wrnng_rtti->jrtti_class->jsocd_class_iri), wrnng[1]);
+      dk_free_box ((caddr_t)wrnng);
+    }
+  END_DO_BOX_FAST;
+  return (caddr_t)report;
 }
 
 
@@ -979,6 +1010,57 @@ jso_get_field_value_as_o (caddr_t val, ccaddr_t fld_type, int fld_req, ptrlong s
     {
       jso_rtti_t *val_as_rtti = (jso_rtti_t *)val;
       return box_copy (val_as_rtti->jrtti_inst_iri);
+    }
+  return box_copy_tree (val);
+}
+
+extern jso_field_descr_t *
+jso_get_fd_by_rtti_and_member (jso_rtti_t *inst_rtti, void *inst_member_field)
+{
+  jso_class_descr_t *cd = inst_rtti->jrtti_class;
+  ptrdiff_t ofs = (char *)inst_member_field - (char *)(inst_rtti->jrtti_self);
+  if (JSO_CAT_STRUCT != cd->jsocd_cat)
+    return NULL;
+  if ((ofs < 0) || (ofs >= cd->_.sd.jsosd_sizeof) || (ofs % sizeof (caddr_t)))
+    return NULL;
+  return cd->_.sd.jsosd_fields_by_idx [ofs / sizeof (caddr_t)];
+}
+
+caddr_t
+jso_dbg_text_fd_and_member_field (jso_field_descr_t *fd, void *inst_member_field)
+{
+  caddr_t val = ((caddr_t)inst_member_field);
+  ccaddr_t fld_type = fd->jsofd_type;
+  if (NULL == val)
+    {
+      if (
+        (!strcmp (JSO_INTEGER, fld_type) ||
+          (!strcmp (JSO_ANY, fld_type) && (JSO_REQUIRED == fd->jsofd_required)) ) )
+        return box_sprintf (1000, "%.500s 0", fd->jsofd_local_name);
+      return NULL;
+    }
+  if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (val))
+    {
+      jso_rtti_t *sub = (jso_rtti_t *)gethash (val, jso_rttis_of_structs);
+      if (NULL == sub)
+        return box_sprintf (1000, "%.500s " VIRTRDF_NS_URI "PointerToCorrupted", fd->jsofd_local_name);
+      else if (sub->jrtti_self != val)
+        return box_sprintf (1000, "%.500s " VIRTRDF_NS_URI "PointerToStaleDeleted", fd->jsofd_local_name);
+      else
+        return box_sprintf (1000, "%.500s <%.500s>", fd->jsofd_local_name, ((jso_rtti_t *)(sub))->jrtti_inst_iri);
+    }
+  if (DV_CUSTOM == DV_TYPE_OF (val))
+    {
+      jso_rtti_t *val_as_rtti = (jso_rtti_t *)val;
+      return box_sprintf (1000, "%.500s <%.500s>", fd->jsofd_local_name, val_as_rtti->jrtti_inst_iri);
+    }
+  switch (DV_TYPE_OF (val))
+    {
+    case DV_LONG_INT: return box_sprintf (1000, "%.500s " BOXINT_FMT, fd->jsofd_local_name, unbox (val));
+    case DV_STRING: return box_sprintf (600 + box_length (val), "%.500s '''%s'''", fd->jsofd_local_name, val);
+    case DV_DOUBLE_FLOAT: return box_sprintf (1000, "%.500s %lf", fd->jsofd_local_name, unbox_double (val));
+    case DV_UNAME: return box_sprintf (1000, "%.500s <%.500s>", fd->jsofd_local_name, val);
+    default: return box_sprintf (1000, "%.500s /* box with tag %d */", fd->jsofd_local_name, DV_TYPE_OF (val));
     }
   return box_copy_tree (val);
 }

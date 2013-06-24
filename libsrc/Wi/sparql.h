@@ -961,6 +961,7 @@ extern SPART *spar_make_fake_blank_node (sparp_t *sparp); /*!< Not for use in re
 #define SPAR_ML_MAKE_VAR_IF_NULL	2
 #define SPAR_ML_RESULT_FROM_SANDBOX	3
 extern SPART *spar_make_literal_from_sql_box (sparp_t * sparp, caddr_t box, int mode);
+extern SPART *spar_make_qname_or_literal_from_rvr (sparp_t * sparp, rdf_val_range_t *rvr, int make_naked_box_if_possible);
 
 #define SPAR_MAKE_BOOL_LITERAL(sparp,v) (spartlist ((sparp), 4, SPAR_LIT, (SPART *)t_box_num_nonull((v)?1:0), uname_xmlschema_ns_uri_hash_boolean, NULL))
 

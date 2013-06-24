@@ -303,7 +303,15 @@ create function DB.DBA.JSO_LOAD_GRAPH (in jgraph varchar, in pin_now integer := 
     DB.DBA.JSO_LOAD_INSTANCE (jgraph, j[1], 0, 0, j[2]);
 /* Pass 4. Validation all instances. */
   foreach (any j in instances) do
-    jso_validate (j[0], j[1], 1);
+    {
+      declare warnings any;
+      warnings := jso_validate (j[0], j[1], 1);
+      if (length (warnings))
+        {
+          dbg_obj_princ ('JSO_LOAD_GRAPH: warnings for <', j[0], '> <', j[1], '> :'); foreach (any w in warnings) do { dbg_obj_princ (w[0], w[1], w[2]); }
+          ;
+        }
+    }
 /* Pass 5. Pin all instances. */
   if (pin_now)
     {

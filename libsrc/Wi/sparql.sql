@@ -12140,7 +12140,14 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
       iriclassid := null;
     }
   else
-    iriclassid := fmtid;
+    {
+      if (exists (sparql define input:storage ""
+          ask where {
+              graph <http://www.openlinksw.com/schemas/virtrdf#> { `iri (?:fmtid)` virtrdf:qmfValRange-rvrRestrictions virtrdf:SPART_VARR_IS_REF } } ) )
+        iriclassid := fmtid;
+      else
+        iriclassid := null;
+    }
   qmvid := 'sys:qmv-' || md5 (serialize (vector (fmtid, sqlcols)));
   qmvatablesid := qmvid || '-atables';
   qmvcolsid := qmvid || '-cols';
@@ -12431,12 +12438,35 @@ create function DB.DBA.RDF_QM_DEFINE_MAPPING (in storage varchar,
       `iri(?:qmid)`
         rdf:type virtrdf:QuadMap ;
         virtrdf:qmGraphRange-rvrFixedValue ?:qmvfix_g ;
+        virtrdf:qmGraphRange-rvrRestrictions
+            `if (bound(?:qmvfix_g), virtrdf:SPART_VARR_NOT_NULL, ?:NULL)` ,
+            `if (bound(?:qmvfix_g), virtrdf:SPART_VARR_FIXED, ?:NULL)` ,
+            `if (bound(?:qmvfix_g), virtrdf:SPART_VARR_IS_REF, ?:NULL)` ,
+            `if (bound(?:qmvfix_g), virtrdf:SPART_VARR_IS_IRI, ?:NULL)` ;
         virtrdf:qmGraphMap `iri(?:qmvid_g)` ;
         virtrdf:qmSubjectRange-rvrFixedValue ?:qmvfix_s ;
+        virtrdf:qmSubjectRange-rvrRestrictions
+            `if (bound(?:qmvfix_s), virtrdf:SPART_VARR_NOT_NULL, ?:NULL)` ,
+            `if (bound(?:qmvfix_s), virtrdf:SPART_VARR_FIXED, ?:NULL)` ,
+            `if (bound(?:qmvfix_s), virtrdf:SPART_VARR_IS_REF, ?:NULL)` ,
+            `if (bound(?:qmvfix_s), virtrdf:SPART_VARR_IS_IRI, ?:NULL)` ;
         virtrdf:qmSubjectMap `iri(?:qmvid_s)` ;
         virtrdf:qmPredicateRange-rvrFixedValue ?:qmvfix_p ;
+        virtrdf:qmPredicateRange-rvrRestrictions
+            `if (bound(?:qmvfix_p), virtrdf:SPART_VARR_NOT_NULL, ?:NULL)` ,
+            `if (bound(?:qmvfix_p), virtrdf:SPART_VARR_FIXED, ?:NULL)` ,
+            `if (bound(?:qmvfix_p), virtrdf:SPART_VARR_IS_REF, ?:NULL)` ,
+            `if (bound(?:qmvfix_p), virtrdf:SPART_VARR_IS_IRI, ?:NULL)` ;
         virtrdf:qmPredicateMap `iri(?:qmvid_p)` ;
         virtrdf:qmObjectRange-rvrFixedValue ?:qmvfix_o ;
+        virtrdf:qmObjectRange-rvrRestrictions
+            `if (bound(?:qmvfix_o), virtrdf:SPART_VARR_NOT_NULL, ?:NULL)` ,
+            `if (bound(?:qmvfix_o), virtrdf:SPART_VARR_FIXED, ?:NULL)` ,
+            `if (bound(?:qmvfix_o), if (isREF(?:qmvfix_o), virtrdf:SPART_VARR_IS_REF, virtrdf:SPART_VARR_IS_LIT), ?:NULL)` ,
+            `if (isIRI(?:qmvfix_o), virtrdf:SPART_VARR_IS_IRI, ?:NULL)` ,
+            `if (<bif:isnull> (datatype(?:qmvfix_o)), ?:NULL, virtrdf:SPART_VARR_TYPED)` ;
+        virtrdf:qmObjectRange-rvrDatatype `datatype (?:qmvfix_o)` ;
+        virtrdf:qmObjectRange-rvrLanguage `if (<bif:length> (lang (?:qmvfix_o)), lang (?:qmvfix_o), ?:NULL)` ;
         virtrdf:qmObjectMap `iri(?:qmvid_o)` ;
         virtrdf:qmTableName ?:tablename ;
         virtrdf:qmATables `iri(?:atablesid)` ;
