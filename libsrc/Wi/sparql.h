@@ -231,7 +231,7 @@ typedef struct rdf_grab_config_s {
     caddr_t	rgc_destination;	/*!< IRI of the graph to be extended */
     caddr_t	rgc_group_destination;	/*!< IRI of the commonly used graph to be extended, in addition to usual flow */
     caddr_t	rgc_resolver_name;	/*!< Name of function of the graph IRI resolver */
-    caddr_t	rgc_loader_name;	/*!< Name of function that actually load the resource */
+    caddr_t	rgc_loader_name;	/*!< Name of function that actually loads the resource */
 } rdf_grab_config_t;
 
 #define SPARE_GLOBALS_ARE_PLAIN		0	/*!< Global parameters are printed without quotes and a colon, so "?:paramname" in query becomes "paramname" in SQL. This is the default so it's value is zero. */
