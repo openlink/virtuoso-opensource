@@ -145,6 +145,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token AS_L		/*:: PUNCT_SPAR_LAST("AS") ::*/
 %token ASC_L		/*:: PUNCT_SPAR_LAST("ASC") ::*/
 %token ASK_L		/*:: PUNCT_SPAR_LAST("ASK") ::*/
+%token ASSUME_L		/*:: PUNCT_SPAR_LAST("ASSUME") ::*/
 %token ATTACH_L		/*:: PUNCT_SPAR_LAST("ATTACH") ::*/
 %token AVG_L		/*:: PUNCT_SPAR_LAST("AVG") ::*/
 %token BASE_L		/*:: PUNCT_SPAR_LAST("BASE") ::*/
@@ -1364,6 +1365,9 @@ spar_constraint		/* [25]*	Constraint	 ::=  'FILTER' ( ( '(' Expn ')' ) | BuiltIn
 	: FILTER_L _LPAR spar_expn _RPAR	{ $$ = $3; }
 	| FILTER_L spar_built_in_call	{ $$ = $2; }
 	| FILTER_L spar_function_call	{ $$ = $2; }
+	| ASSUME_L _LPAR spar_expn _RPAR	{ $$ = sparp_make_builtin_call (sparp_arg, ASSUME_L, (SPART **)t_list (1, $3)); }
+	| ASSUME_L spar_built_in_call		{ $$ = sparp_make_builtin_call (sparp_arg, ASSUME_L, (SPART **)t_list (1, $2)); }
+	| ASSUME_L spar_function_call		{ $$ = sparp_make_builtin_call (sparp_arg, ASSUME_L, (SPART **)t_list (1, $2)); }
 	| MINUS_L spar_constraint_exists_int {		/*... | 'MINUS' DatasetClause* WhereClause */
 		/*!!! Dirty hack! Works wrong if MINUS is at the middle of the GP (before smth or not a 2-nd item) */
 		  SPAR_BIN_OP ($$, BOP_NOT, $2, NULL); }

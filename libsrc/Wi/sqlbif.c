@@ -12868,10 +12868,7 @@ bif_exec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   else
     sqlr_new_error ("22023", "SR308", "exec() called with an invalid text to execute");
   if (n_args > 3)
-    {
-      params = (caddr_t *) bif_strict_array_or_null_arg (qst, args, 3, "exec");
-    }
-
+    params = (caddr_t *) bif_strict_array_or_null_arg (qst, args, 3, "exec");
   if (n_args > 4)
     {
       dtp_t options_dtp;

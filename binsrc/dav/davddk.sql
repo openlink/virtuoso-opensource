@@ -1221,6 +1221,8 @@ DB.DBA.vt_create_text_index ('WS.WS.SYS_DAV_PROP', 'PROP_VALUE', 'PROP_ID', 2, 0
 ;
 
 -- Initial WebDAV resource mime types
+update WS.WS.SYS_DAV_RES_TYPES set T_TYPE = 'text/turtle' where T_TYPE = 'text/rdf+ttl'
+;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/andrew-inset','ez')
 ;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/bpel+xml','bpel')
@@ -1561,7 +1563,7 @@ insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('video/3gpp','3gp')
 ;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('audio/amr','amr')
 ;
-insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('text/rdf+ttl','ttl')
+insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('text/turtle','ttl')
 ;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('text/rdf+n3','n3')
 ;

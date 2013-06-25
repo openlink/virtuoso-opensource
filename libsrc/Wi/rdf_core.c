@@ -725,7 +725,7 @@ ttlp_leave_trig_group (ttlp_t *ttlp)
 }
 
 void
-ttlp_free (ttlp_t *ttlp)
+ttlp_reset_stacks (ttlp_t *ttlp)
 {
   if (ttlp->ttlp_in_trig_graph)
     {
@@ -734,20 +734,29 @@ ttlp_free (ttlp_t *ttlp)
         dk_free_box (ttlp->ttlp_default_ns_uri_saved);
       if (ttlp->ttlp_base_uri_saved != ttlp->ttlp_base_uri)
         dk_free_box (ttlp->ttlp_base_uri_saved);
+      ttlp->ttlp_in_trig_graph = 0;
     }
-  dk_free_box (ttlp->ttlp_default_ns_uri);
-  dk_free_box ((caddr_t)(ttlp->ttlp_namespaces_prefix2iri));
   while (NULL != ttlp->ttlp_saved_uris)
     dk_free_tree ((box_t) dk_set_pop (&(ttlp->ttlp_saved_uris)));
   while (NULL != ttlp->ttlp_unused_seq_bnodes)
     dk_free_tree ((box_t) dk_set_pop (&(ttlp->ttlp_unused_seq_bnodes)));
-  dk_free_tree (ttlp->ttlp_last_complete_uri);
-  dk_free_tree (ttlp->ttlp_subj_uri);
-  dk_free_tree (ttlp->ttlp_pred_uri);
-  dk_free_tree (ttlp->ttlp_obj);
-  dk_free_tree (ttlp->ttlp_obj_type);
-  dk_free_tree (ttlp->ttlp_obj_lang);
-  dk_free_tree (ttlp->ttlp_formula_iid);
+  dk_free_tree (ttlp->ttlp_last_complete_uri);	ttlp->ttlp_last_complete_uri = NULL;
+  dk_free_tree (ttlp->ttlp_subj_uri);		ttlp->ttlp_subj_uri = NULL;
+  dk_free_tree (ttlp->ttlp_pred_uri);		ttlp->ttlp_pred_uri = NULL;
+  dk_free_tree (ttlp->ttlp_obj);			ttlp->ttlp_obj = NULL;
+  dk_free_tree (ttlp->ttlp_obj_type);		ttlp->ttlp_obj_type = NULL;
+  dk_free_tree (ttlp->ttlp_obj_lang);		ttlp->ttlp_obj_lang = NULL;
+  dk_free_tree (ttlp->ttlp_formula_iid);		ttlp->ttlp_formula_iid = NULL;
+  ttlp->ttlp_lexdepth = 0;
+  ttlp->ttlp_pred_is_reverse = 0;
+}
+
+void
+ttlp_free (ttlp_t *ttlp)
+{
+  ttlp_reset_stacks (ttlp);
+  dk_free_box (ttlp->ttlp_default_ns_uri);
+  dk_free_box ((caddr_t)(ttlp->ttlp_namespaces_prefix2iri));
   tf_free (ttlp->ttlp_tf);
   dk_free (ttlp, sizeof (ttlp_t));
 }
@@ -4019,6 +4028,102 @@ rdf_key_comp_init ()
 
 void bif_rld_init ();
 void bif_id2i_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret);
+extern jso_class_descr_t jso__quad_map;
+
+void jso__rdf_val_range_inst_validation (rdf_val_range_t *rvr, const char *structname, jso_rtti_t *inst_rtti, dk_set_t *warnings_log_ptr)
+{
+  rdf_val_range_t saved_orig_rvr;
+  memcpy (&saved_orig_rvr, rvr, sizeof (rdf_val_range_t));
+  if (NULL != rvr->rvrFixedValue)
+    {
+      ccaddr_t value = rvr->rvrFixedValue;
+      ccaddr_t dt = rvr->rvrDatatype;
+      ccaddr_t lang = rvr->rvrLanguage;
+      memset (rvr, 0, sizeof (rdf_val_range_t));
+      if (DV_UNAME == DV_TYPE_OF (value))
+        {
+          rvr->rvrFixedValue = (ccaddr_t)value;
+          rvr->rvrRestrictions |= (SPART_VARR_IS_REF | SPART_VARR_FIXED | SPART_VARR_NOT_NULL);
+          /*                              0123456789 */
+          if (!strncmp ((ccaddr_t)value, "nodeID://", 9))
+            rvr->rvrRestrictions |= SPART_VARR_IS_BLANK;
+          else
+            rvr->rvrRestrictions |= SPART_VARR_IS_IRI;
+          rvr->rvrDatatype = NULL;
+          rvr->rvrLanguage = NULL;
+        }
+      else
+        {
+          dtp_t valtype = DV_TYPE_OF (value);
+          rvr->rvrFixedValue = (ccaddr_t)value;
+          rvr->rvrRestrictions |= (SPART_VARR_IS_LIT | SPART_VARR_TYPED | SPART_VARR_FIXED | SPART_VARR_NOT_NULL);
+          if (NULL == dt)
+            {
+              rvr->rvrDatatype = xsd_type_of_box ((caddr_t)value);
+              if (uname_xmlschema_ns_uri_hash_string == rvr->rvrDatatype)
+                rvr->rvrDatatype = NULL;
+              rvr->rvrLanguage = (NULL != rvr->rvrDatatype) ? NULL : lang;
+            }
+          else
+            rvr->rvrDatatype = dt;
+          if (NULL == rvr->rvrDatatype)
+            rvr->rvrRestrictions &= ~SPART_VARR_TYPED;
+        }
+    }
+  else if ((NULL != rvr->rvrDatatype) && !(SPART_VARR_TYPED & rvr->rvrRestrictions))
+    {
+      dk_set_push (warnings_log_ptr, list (2, inst_rtti, box_sprintf (1000, "%s-rvrDatatype is set to <%.500s> whereas %s-rvrRestrictions has no SPART_VARR_TYPED bit set", structname, rvr->rvrDatatype, structname)));
+      rvr->rvrDatatype = NULL;
+    }
+  if (memcmp (&saved_orig_rvr, rvr, sizeof (rdf_val_range_t)))
+    {
+      caddr_t *tail;
+      for (tail = (caddr_t *)rvr; tail < (caddr_t *)rvr + sizeof (rdf_val_range_t) / sizeof (caddr_t); tail++)
+        {
+          jso_field_descr_t *fd = jso_get_fd_by_rtti_and_member (inst_rtti, tail);
+          caddr_t *old_val_tail = ((caddr_t *)(&saved_orig_rvr)) + (tail - (caddr_t *)rvr);
+          if ((NULL != fd) && (tail[0] != old_val_tail[0]))
+            {
+              caddr_t old_dbg_text = jso_dbg_text_fd_and_member_field (fd, old_val_tail[0]);
+              caddr_t new_dbg_text = jso_dbg_text_fd_and_member_field (fd, tail[0]);
+              if (NULL == old_dbg_text)
+                old_dbg_text = box_sprintf (1000, "/* %.500s is not set */", fd->jsofd_local_name);
+              if (NULL == new_dbg_text)
+                new_dbg_text = box_sprintf (1000, "/* %.500s is not set */", fd->jsofd_local_name);
+              dk_set_push (warnings_log_ptr, list (2, inst_rtti,
+                  box_sprintf (600 + box_length (old_dbg_text) + box_length (new_dbg_text),
+                    "A field is fixed:\nbefore validation:\n%s\nafter validation:\n%s", old_dbg_text, new_dbg_text ) ) );
+              dk_free_box (old_dbg_text);
+              dk_free_box (new_dbg_text);
+            }
+        }
+    }
+}
+
+void jso__quad_map_jsocd_validation_cbk (jso_rtti_t *inst_rtti, dk_set_t *warnings_log_ptr)
+{
+  quad_map_t *qm = (quad_map_t *)(inst_rtti->jrtti_self);
+  jso__rdf_val_range_inst_validation (&(qm->qmGraphRange), "qmGraphRange", inst_rtti, warnings_log_ptr);
+  jso__rdf_val_range_inst_validation (&(qm->qmSubjectRange), "qmSubjectRange", inst_rtti, warnings_log_ptr);
+  jso__rdf_val_range_inst_validation (&(qm->qmPredicateRange), "qmPredicateRange", inst_rtti, warnings_log_ptr);
+  jso__rdf_val_range_inst_validation (&(qm->qmObjectRange), "qmObjectRange", inst_rtti, warnings_log_ptr);
+}
+
+extern jso_class_descr_t jso__qm_value;
+
+void jso__qm_value_jsocd_validation_cbk (jso_rtti_t *inst_rtti, dk_set_t *warnings_log_ptr)
+{
+  qm_value_t *qmv = (qm_value_t *)(inst_rtti->jrtti_self);
+  jso__rdf_val_range_inst_validation (&(qmv->qmvRange), "qmVRange", inst_rtti, warnings_log_ptr);
+}
+
+extern jso_class_descr_t jso__qm_format;
+
+void jso__qm_format_jsocd_validation_cbk (jso_rtti_t *inst_rtti, dk_set_t *warnings_log_ptr)
+{
+  qm_format_t *qmf = (qm_format_t *)(inst_rtti->jrtti_self);
+  jso__rdf_val_range_inst_validation (&(qmf->qmfValRange), "qmfValRange", inst_rtti, warnings_log_ptr);
+}
 
 
 void
@@ -4026,6 +4131,9 @@ rdf_core_init (void)
 {
   jso_init ();
   rdf_mapping_jso_init ();
+  jso__quad_map.jsocd_validation_cbk = jso__quad_map_jsocd_validation_cbk;
+  jso__qm_value.jsocd_validation_cbk = jso__qm_value_jsocd_validation_cbk;
+  jso__qm_format.jsocd_validation_cbk = jso__qm_format_jsocd_validation_cbk;
   iri_nic_rc = resource_allocate (10, NULL, (rc_destr_t)nic_free, (rc_destr_t)nic_clear, 0);
   prefix_nic_rc = resource_allocate (10, NULL, (rc_destr_t)nic_free, (rc_destr_t)nic_clear, 0);
   bif_define_typed ("rdf_load_rdfxml", bif_rdf_load_rdfxml, &bt_xml_entity);

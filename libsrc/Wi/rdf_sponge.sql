@@ -806,7 +806,7 @@ perform_actual_load:
       get_proxy := get_keyword_ucase ('get:proxy', options);
       acc_hdr := trim (get_keyword_ucase ('get:accept', options));
       if (not length (acc_hdr))
-	acc_hdr := 'application/rdf+xml; q=1.0, text/rdf+n3; q=0.9, application/rdf+turtle; q=0.5, application/x-turtle; q=0.6, application/turtle; q=0.5, text/turtle; q=0.7, application/xml; q=0.2, */*; q=0.1';
+	acc_hdr := 'application/rdf+xml; q=1.0, text/rdf+n3; q=0.9, application/rdf+turtle; q=0.5, application/x-turtle; q=0.6, application/turtle; q=0.5, text/turtle; q=1.0, application/xml; q=0.2, */*; q=0.1';
       connection_set ('sparql-get:proxy', get_proxy);
       --!!!TBD: proper support for POST
       --!!!TBD: proper authentication if get:login / get:password is provided.
@@ -1086,9 +1086,9 @@ no_cr:
   -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_GUESS_TTL_CONTENT_TYPE: shorter_ret_begin=', shorter_ret_begin);
   msg := DB.DBA.RDF_SPONGE_TRY_TTL (0, ret_begin);
   if ('' = msg)
-    return 'text/rdf+n3';
+    return 'text/turtle';
   if (last_cr_pos is not null and DB.DBA.RDF_SPONGE_TRY_TTL (0, shorter_ret_begin) <> msg)
-    return 'text/rdf+n3';
+    return 'text/turtle';
   msg := DB.DBA.RDF_SPONGE_TRY_TTL (512, ret_begin);
   if ('' = msg)
     return 'text/x-nquads';
@@ -1113,10 +1113,14 @@ no_cr:
           l := rtrim (replace (ret_lines [ret_lctr], '\r', ''));
           -- dbg_obj_princ ('l = ', l);
           if (("LEFT" (l, 7) = '@prefix') or ("LEFT" (l, 5) = '@base') or ("LEFT" (l, 8) = '@keyword'))
-            return 'text/rdf+n3';
-          if ((("LEFT" (l, 1) = '<') or ("LEFT" (l, 1) = '[')) and
+            return 'text/turtle';
+          if ((("LEFT" (l, 1) = '<') or ("LEFT" (l, 1) = '[')) and 
             (
-             "RIGHT" (origin_uri, 4) in ('.ttl', '.TTL') or
+             "RIGHT" (origin_uri, 4) in ('.ttl', '.TTL')
+            ))
+            return 'text/turtle';
+          if ((("LEFT" (l, 1) = '<') or ("LEFT" (l, 1) = '[')) and 
+            (
              "RIGHT" (origin_uri, 3) in ('.n3', '.N3', '.nt', '.NT')
             ))
             return 'text/rdf+n3';
@@ -1140,14 +1144,14 @@ create function DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (in origin_uri varchar, in 
         return 'application/sparql-results+xml';
       if (strstr (ret_content_type, 'application/rdf+xml') is not null)
         return 'application/rdf+xml';
-      if (
-        strstr (ret_content_type, 'text/n3') is not null or
-        strstr (ret_content_type, 'text/rdf+n3') is not null or
-        strstr (ret_content_type, 'text/rdf+ttl') is not null or
+      if (strstr (ret_content_type, 'text/rdf+ttl') is not null or
         strstr (ret_content_type, 'text/rdf+turtle') is not null or
         strstr (ret_content_type, 'text/turtle') is not null or
         strstr (ret_content_type, 'application/x-turtle') is not null or
         strstr (ret_content_type, 'application/turtle') is not null )
+        return 'text/turtle';
+      if (strstr (ret_content_type, 'text/n3') is not null or
+        strstr (ret_content_type, 'text/rdf+n3') is not null )
         return 'text/rdf+n3';
       if (strstr (ret_content_type, 'application/x-trig') is not null)
         return 'application/x-trig';

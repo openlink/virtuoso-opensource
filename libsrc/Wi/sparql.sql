@@ -12033,6 +12033,76 @@ fheaders is identical to DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FUNCTIONS
 }
 ;
 
+create function DB.DBA.RDF_QM_DEFINE_LITERAL_CLASS_WITH_FIXED_LANG (in coltype varchar, in o_lang varchar, in is_nullable integer := 0) returns any
+{
+  declare src_lname, res_lname, src_fmtid, res_fmtid, src_baseid, res_baseid, superformatsid, nullablesuperformatid, o_lang_str varchar;
+  nullablesuperformatid := null;
+  if (not is_nullable)
+    nullablesuperformatid := DB.DBA.RDF_QM_DEFINE_LITERAL_CLASS_WITH_FIXED_LANG (coltype, o_lang, 1);
+  src_baseid := 'http://www.openlinksw.com/virtrdf-data-formats#' || 'sql-' || replace (coltype, ' ', '') || '-fixedlang-x-any' ;
+  res_baseid := 'http://www.openlinksw.com/virtrdf-data-formats#' || 'sql-' || replace (coltype, ' ', '') || '-fixedlang-' || o_lang ;
+  src_lname := 'sql-' || replace (coltype, ' ', '') || '-fixedlang-x-any' || case when is_nullable then '-nullable' else '' end;
+  res_lname := 'sql-' || replace (coltype, ' ', '') || '-fixedlang-' || o_lang || case when is_nullable then '-nullable' else '' end ;
+  src_fmtid := 'http://www.openlinksw.com/virtrdf-data-formats#' || src_lname;
+  res_fmtid := 'http://www.openlinksw.com/virtrdf-data-formats#' || res_lname;
+  superformatsid := res_fmtid || '--SuperFormats';
+  if (exists (sparql define input:storage ""
+      prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+      prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
+      ask where { graph virtrdf: { `iri(?:res_fmtid)` a virtrdf:QuadMapFormat } } ) )
+    {
+      -- dbg_obj_princ ('DB.DBA.RDF_QM_DEFINE_LITERAL_CLASS_WITH_FIXED_LANG (', coltype, o_lang, is_nullable, ') exists');
+      return res_fmtid;
+    }
+  if (not exists (sparql define input:storage ""
+      prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+      prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
+      ask where { graph virtrdf: { `iri(?:src_fmtid)` a virtrdf:QuadMapFormat } } ) )
+    {
+      -- dbg_obj_princ ('DB.DBA.RDF_QM_DEFINE_LITERAL_CLASS_WITH_FIXED_LANG (', coltype, o_lang, is_nullable, '): ', src_fmtid, 'does not exist');
+      signal ('22023', 'Unable to find appropriate quad map format to make its analog for a fixed language');
+    }
+  -- dbg_obj_princ ('DB.DBA.RDF_QM_DEFINE_LITERAL_CLASS_WITH_FIXED_LANG (', coltype, o_lang, is_nullable, '): will make ', res_fmtid, ' from ', src_fmtid);
+  o_lang_str := WS.WS.STR_SQL_APOS (o_lang);
+  sparql define input:storage ""
+  prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+  prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
+  prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+  with virtrdf:
+  delete { `iri(?:res_fmtid)` ?p ?o }
+  where  { `iri(?:res_fmtid)` ?p ?o };
+  sparql define input:storage ""
+  prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+  prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
+  prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+  with virtrdf:
+  delete { `iri(?:superformatsid)` ?p ?o }
+  where  { `iri(?:superformatsid)` ?p ?o };
+  sparql define input:storage ""
+  prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+  prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
+  prefix xsd: <http://www.w3.org/2001/XMLSchema#>
+  insert in virtrdf:
+    {
+      `iri(?:res_fmtid)` ?p
+            `if (isref (?o) || isnumeric (?o) || datatype(?o) != xsd:string,
+                if (isref (?o) && (?o = iri(?:src_baseid)), iri(?:res_baseid), ?o),
+                bif:replace (?o, "'x-any'", ?:o_lang_str) ) ` ;
+        virtrdf:qmfSuperFormats `iri(?:superformatsid)` .
+      `iri(?:superformatsid)`
+        rdf:type virtrdf:array-of-QuadMapFormat ;
+        rdf:_1 `iri(?:nullablesuperformatid)` .
+    }
+  from virtrdf:
+  where
+    {
+      `iri(?:src_fmtid)` ?p ?o .
+      filter (?p != virtrdf:qmfSuperFormats ) };
+  commit work;
+  return res_fmtid;
+}
+;
+
 --!AWK PUBLIC
 create function DB.DBA.RDF_BAD_CLASS_INV_FUNCTION (inout val any) returns any
 {
@@ -12616,7 +12686,14 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
       iriclassid := null;
     }
   else
-    iriclassid := fmtid;
+    {
+      if (exists (sparql define input:storage ""
+          ask where {
+              graph <http://www.openlinksw.com/schemas/virtrdf#> { `iri (?:fmtid)` virtrdf:qmfValRange-rvrRestrictions virtrdf:SPART_VARR_IS_REF } } ) )
+        iriclassid := fmtid;
+      else
+        iriclassid := null;
+    }
   qmvid := 'sys:qmv-' || md5 (serialize (vector (fmtid, sqlcols)));
   qmvatablesid := qmvid || '-atables';
   qmvcolsid := qmvid || '-cols';
@@ -12907,12 +12984,35 @@ create function DB.DBA.RDF_QM_DEFINE_MAPPING (in storage varchar,
       `iri(?:qmid)`
         rdf:type virtrdf:QuadMap ;
         virtrdf:qmGraphRange-rvrFixedValue ?:qmvfix_g ;
+        virtrdf:qmGraphRange-rvrRestrictions
+            `if (bound(?:qmvfix_g), virtrdf:SPART_VARR_NOT_NULL, ?:NULL)` ,
+            `if (bound(?:qmvfix_g), virtrdf:SPART_VARR_FIXED, ?:NULL)` ,
+            `if (bound(?:qmvfix_g), virtrdf:SPART_VARR_IS_REF, ?:NULL)` ,
+            `if (bound(?:qmvfix_g), virtrdf:SPART_VARR_IS_IRI, ?:NULL)` ;
         virtrdf:qmGraphMap `iri(?:qmvid_g)` ;
         virtrdf:qmSubjectRange-rvrFixedValue ?:qmvfix_s ;
+        virtrdf:qmSubjectRange-rvrRestrictions
+            `if (bound(?:qmvfix_s), virtrdf:SPART_VARR_NOT_NULL, ?:NULL)` ,
+            `if (bound(?:qmvfix_s), virtrdf:SPART_VARR_FIXED, ?:NULL)` ,
+            `if (bound(?:qmvfix_s), virtrdf:SPART_VARR_IS_REF, ?:NULL)` ,
+            `if (bound(?:qmvfix_s), virtrdf:SPART_VARR_IS_IRI, ?:NULL)` ;
         virtrdf:qmSubjectMap `iri(?:qmvid_s)` ;
         virtrdf:qmPredicateRange-rvrFixedValue ?:qmvfix_p ;
+        virtrdf:qmPredicateRange-rvrRestrictions
+            `if (bound(?:qmvfix_p), virtrdf:SPART_VARR_NOT_NULL, ?:NULL)` ,
+            `if (bound(?:qmvfix_p), virtrdf:SPART_VARR_FIXED, ?:NULL)` ,
+            `if (bound(?:qmvfix_p), virtrdf:SPART_VARR_IS_REF, ?:NULL)` ,
+            `if (bound(?:qmvfix_p), virtrdf:SPART_VARR_IS_IRI, ?:NULL)` ;
         virtrdf:qmPredicateMap `iri(?:qmvid_p)` ;
         virtrdf:qmObjectRange-rvrFixedValue ?:qmvfix_o ;
+        virtrdf:qmObjectRange-rvrRestrictions
+            `if (bound(?:qmvfix_o), virtrdf:SPART_VARR_NOT_NULL, ?:NULL)` ,
+            `if (bound(?:qmvfix_o), virtrdf:SPART_VARR_FIXED, ?:NULL)` ,
+            `if (bound(?:qmvfix_o), if (isREF(?:qmvfix_o), virtrdf:SPART_VARR_IS_REF, virtrdf:SPART_VARR_IS_LIT), ?:NULL)` ,
+            `if (isIRI(?:qmvfix_o), virtrdf:SPART_VARR_IS_IRI, ?:NULL)` ,
+            `if (<bif:isnull> (datatype(?:qmvfix_o)), ?:NULL, virtrdf:SPART_VARR_TYPED)` ;
+        virtrdf:qmObjectRange-rvrDatatype `datatype (?:qmvfix_o)` ;
+        virtrdf:qmObjectRange-rvrLanguage `if (<bif:length> (lang (?:qmvfix_o)), lang (?:qmvfix_o), ?:NULL)` ;
         virtrdf:qmObjectMap `iri(?:qmvid_o)` ;
         virtrdf:qmTableName ?:tablename ;
         virtrdf:qmATables `iri(?:atablesid)` ;

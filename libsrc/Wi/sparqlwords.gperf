@@ -31,6 +31,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "AS",			AS_L			, 0
 "ASC",			ASC_L			, 0
 "ASK",			ASK_L			, 0
+"ASSUME",		ASSUME_L		, 0
 "ATTACH",		ATTACH_L		, 0
 "AVG",			AVG_L			, 0
 "BASE",			BASE_L			, 0

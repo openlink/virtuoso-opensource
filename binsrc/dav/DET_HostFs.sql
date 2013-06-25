@@ -803,7 +803,7 @@ create function "HostFs_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in d
 	        vectorbld_concat_acc (res,
 		  "HostFs_DAV_DIR_LIST" (detcol_id,
 		  vector_concat (subseq (path_parts, 0, length (path_parts)-1), vector (name, '')),
-		  concat (DAV_CONCAT_PATH (detcol_path, name), '/'), name_mask, recursive, auth_uid) );
+		  detcol_path, name_mask, recursive, auth_uid) );
 	    }
 	}
       ctr := ctr + 1;
@@ -839,7 +839,7 @@ create function "HostFs_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in d
 	  WS.WS.HOSTFS_HANDLE_RES_SCAN (fullname, parent_c_id, flen, cr_time, mod_time, mimetype, ft_mode);
           if (name like name_mask)
 	    {
-	      -- dbg_obj_princ ('HostFs_DAV_DIR_LIST makes ', fullname);
+	      -- dbg_obj_princ ('HostFs_DAV_DIR_LIST makes ', fullname, '\t->\t', DAV_CONCAT_PATH (top_davpath, name));
 	      vectorbld_acc (res, vector (
 		DAV_CONCAT_PATH (top_davpath, name), 'R',
 		flen,

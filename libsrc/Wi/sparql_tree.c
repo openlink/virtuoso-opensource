@@ -1655,6 +1655,15 @@ So it should be reordered in the list in such a way that it will never appear at
           break;
         }
     }
+  if ((eq->e_rvr.rvrRestrictions & SPART_VARR_GLOBAL) && (var->_.var.rvr.rvrRestrictions & SPART_VARR_GLOBAL))
+    {
+      int global_var_count = 0;
+      for (varctr = eq->e_var_count; varctr--; /*no step*/)
+        if (SPART_VARNAME_IS_GLOB (eq->e_vars[varctr]->_.var.vname))
+          global_var_count++;
+      if (!global_var_count)
+        eq->e_rvr.rvrRestrictions &= ~SPART_VARR_GLOBAL;
+    }
 }
 
 sparp_equiv_t *
@@ -1923,33 +1932,108 @@ rvr_string_fixedvalue (rdf_val_range_t *rvr)
 }
 
 int
-sparp_fixedvalues_equal (sparp_t *sparp, SPART *first, SPART *second)
+sparp_values_equal (sparp_t *sparp, ccaddr_t first, ccaddr_t first_dt, ccaddr_t first_lang, ccaddr_t second, ccaddr_t second_dt, ccaddr_t second_lang)
 {
-  caddr_t first_val, first_language = NULL;
-  caddr_t second_val, second_language = NULL;
+  ccaddr_t first_val, second_val;
+  int first_is_iri, second_is_iri;
   if (first == second)
     return 1;
   if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (first))
     {
-      first_val = first->_.lit.val;
-      if (SPAR_LIT == first->type)
-        first_language = first->_.lit.language;
+#ifndef NDEBUG
+      if ((NULL != first_dt) || (NULL != first_lang))
+        spar_internal_error (sparp, "sparp_" "values_equal(): first is a tree with non-NULL dt/lang");
+#endif
+      first_val = ((SPART *)first)->_.lit.val;
+      if (SPAR_LIT == ((SPART *)first)->type)
+        {
+          first_dt = ((SPART *)first)->_.lit.datatype;
+          first_lang = ((SPART *)first)->_.lit.language;
+          first_is_iri = 0;
+        }
+      else
+        {
+#ifndef NDEBUG
+          if (SPAR_QNAME != ((SPART *)first)->type)
+            spar_internal_error (sparp, "sparp_" "values_equal(): first is a tree of wrong type");
+#endif
+          first_is_iri = 1;
+        }
     }
   else
-    first_val = (caddr_t)(first);
+    {
+      first_val = (caddr_t)(first);
+      if (DV_UNAME == DV_TYPE_OF (first_val))
+        {
+#ifndef NDEBUG
+          if ((NULL != first_dt) || (NULL != first_lang))
+            spar_internal_error (sparp, "sparp_" "values_equal(): first is a uname with non-NULL dt/lang");
+#endif
+          first_is_iri = 1;
+        }
+      else
+        {
+#ifndef NDEBUG
+          if ((DV_STRING != DV_TYPE_OF (first_val)) && ((NULL == first_dt) || (NULL != first_lang)))
+            spar_internal_error (sparp, "sparp_" "values_equal(): first is a uname with non-NULL dt/lang");
+#endif
+          first_is_iri = 0;
+        }
+    }
+
   if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (second))
     {
-      second_val = second->_.lit.val;
-      if (SPAR_LIT == second->type)
-        second_language = second->_.lit.language;
+#ifndef NDEBUG
+      if ((NULL != second_dt) || (NULL != second_lang))
+        spar_internal_error (sparp, "sparp_" "values_equal(): second is a tree with non-NULL dt/lang");
+#endif
+      second_val = ((SPART *)second)->_.lit.val;
+      if (SPAR_LIT == ((SPART *)second)->type)
+        {
+          second_dt = ((SPART *)second)->_.lit.datatype;
+          second_lang = ((SPART *)second)->_.lit.language;
+          second_is_iri = 0;
+        }
+      else
+        {
+#ifndef NDEBUG
+          if (SPAR_QNAME != ((SPART *)second)->type)
+            spar_internal_error (sparp, "sparp_" "values_equal(): second is a tree of wrong type");
+#endif
+          second_is_iri = 1;
+        }
     }
   else
-    second_val = (caddr_t)(second);
-  if (strcmp (
-      ((NULL == first_language) ? "" : first_language),
-      ((NULL == second_language) ? "" : second_language) ) )
+    {
+      second_val = (caddr_t)(second);
+      if (DV_UNAME == DV_TYPE_OF (second_val))
+        {
+#ifndef NDEBUG
+          if ((NULL != second_dt) || (NULL != second_lang))
+            spar_internal_error (sparp, "sparp_" "values_equal(): second is a uname with non-NULL dt/lang");
+#endif
+          second_is_iri = 1;
+        }
+      else
+        {
+#ifndef NDEBUG
+          if ((DV_STRING != DV_TYPE_OF (second_val)) && ((NULL == second_dt) || (NULL != second_lang)))
+            spar_internal_error (sparp, "sparp_" "values_equal(): second is a uname with non-NULL dt/lang");
+#endif
+          second_is_iri = 0;
+        }
+    }
+
+
+  if (first_is_iri != second_is_iri)
     return 0;
-  if (DVC_MATCH != cmp_boxes (first_val, second_val, NULL, NULL))
+  if (first_is_iri)
+    return first_val == second_val ? 1 : 0;
+  if (first_dt != second_dt)
+    return 0;
+  if (first_lang != second_lang)
+    return 0;
+  if (DVC_MATCH != cmp_boxes_safe (first_val, second_val, NULL, NULL))
     return 0;
   return 1;
 }
@@ -1963,16 +2047,11 @@ rvr_can_be_tightened (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *ad
     ( SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_IS_BLANK | SPART_VARR_IRI_CALC | SPART_VARR_IS_LIT |
       SPART_VARR_TYPED | SPART_VARR_FIXED | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL | SPART_VARR_ALWAYS_NULL ) )
     return 1;
-  if ((add_on->rvrRestrictions & SPART_VARR_TYPED) &&
-    strcmp (
-      (NULL == dest->rvrDatatype) ? "" : dest->rvrDatatype,
-      (NULL == add_on->rvrDatatype) ? "" : add_on->rvrDatatype ) )
+  if ((add_on->rvrRestrictions & SPART_VARR_TYPED) && (dest->rvrDatatype != add_on->rvrDatatype))
     return 1; /* Both are typed (if add_on is typed and dest is not then flag diff woud return 1 before), different types would tighten to the conflict */
-  if ( strcmp (
-    ((NULL == dest->rvrLanguage) ? "" : dest->rvrLanguage),
-    ((NULL == add_on->rvrLanguage) ? "" : add_on->rvrLanguage) ) )
+  if (dest->rvrLanguage != add_on->rvrLanguage)
     return 1; /* different languages would tighten to the conflict */
-  if ((add_on->rvrRestrictions & SPART_VARR_FIXED) && !sparp_fixedvalues_equal (sparp, (SPART *)(dest->rvrFixedValue), (SPART *)(add_on->rvrFixedValue)))
+  if ((add_on->rvrRestrictions & SPART_VARR_FIXED) && (DVC_MATCH != cmp_boxes_safe (dest->rvrFixedValue, add_on->rvrFixedValue, NULL, NULL)))
     return 1; /* different fixed values would tighten to the conflict */
   if (add_on->rvrRestrictions & SPART_VARR_IRI_CALC)
     {
@@ -2004,17 +2083,25 @@ rvr_can_be_tightened (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *ad
 }
 
 int
-sparp_equivs_have_same_fixedvalue (sparp_t *sparp, sparp_equiv_t *first_eq, sparp_equiv_t *second_eq)
+sparp_rvrs_have_same_fixedvalue (sparp_t *sparp, rdf_val_range_t *first_rvr, rdf_val_range_t *second_rvr)
 {
-  if (!(SPART_VARR_FIXED & first_eq->e_rvr.rvrRestrictions))
+  if (!(SPART_VARR_FIXED & first_rvr->rvrRestrictions))
     return 0;
-  if (!(SPART_VARR_FIXED & second_eq->e_rvr.rvrRestrictions))
+  if (!(SPART_VARR_FIXED & second_rvr->rvrRestrictions))
+    return 0;
+#ifndef NDEBUG
+  return sparp_values_equal (sparp,
+    first_rvr->rvrFixedValue, first_rvr->rvrDatatype, first_rvr->rvrLanguage,
+    second_rvr->rvrFixedValue, second_rvr->rvrDatatype, second_rvr->rvrLanguage );
+#endif
+  if ((SPART_VARR_IS_REF & first_rvr->rvrRestrictions) != (SPART_VARR_IS_REF & second_rvr->rvrRestrictions))
+    return 0;
+  if (first_rvr->rvrDatatype != second_rvr->rvrDatatype)
     return 0;
   if ( strcmp (
-    ((NULL == first_eq->e_rvr.rvrDatatype) ? "" : first_eq->e_rvr.rvrDatatype),
-    ((NULL == second_eq->e_rvr.rvrDatatype) ? "" : second_eq->e_rvr.rvrDatatype) ) )
+    ((NULL == first_rvr->rvrDatatype) ? "" : first_rvr->rvrDatatype),
+    ((NULL == second_rvr->rvrDatatype) ? "" : second_rvr->rvrDatatype) ) )
     return 0;
-  return sparp_fixedvalues_equal (sparp, (SPART *)(first_eq->e_rvr.rvrFixedValue), (SPART *)(second_eq->e_rvr.rvrFixedValue));
 }
 
 void
@@ -2288,6 +2375,12 @@ dbg_sparp_rvr_audit (const char *file, int line, sparp_t *sparp, const rdf_val_r
   caddr_t err = NULL;
   int ctr;
 #define GOTO_RVR_ERR(x) { err = x; goto rvr_err; }
+  if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (rvr->rvrFixedValue))
+    GOTO_RVR_ERR("weird rvrFixedValue");
+  if ((NULL != rvr->rvrDatatype) && (DV_UNAME != DV_TYPE_OF (rvr->rvrDatatype)))
+    GOTO_RVR_ERR("weird rvrDatatype");
+  if ((NULL != rvr->rvrLanguage) && (DV_UNAME != DV_TYPE_OF (rvr->rvrLanguage)))
+    GOTO_RVR_ERR("weird rvrLanguage");
   if (!(rvr->rvrRestrictions & SPART_VARR_SPRINTFF) && (0 != rvr->rvrSprintffCount))
     GOTO_RVR_ERR("nonzero rvrSprintffCount when not SPART_VARR_SPRINTFF");
   if ((rvr->rvrRestrictions & SPART_VARR_FIXED) && (0 != rvr->rvrSprintffCount))
@@ -2296,12 +2389,8 @@ dbg_sparp_rvr_audit (const char *file, int line, sparp_t *sparp, const rdf_val_r
     GOTO_RVR_ERR("NULL rvrFixedValue when SPART_VARR_FIXED");
   if (!(rvr->rvrRestrictions & SPART_VARR_FIXED) && (NULL != rvr->rvrFixedValue))
     GOTO_RVR_ERR("non-NULL rvrFixedValue when not SPART_VARR_FIXED");
-/*
-  if ((rvr->rvrRestrictions & SPART_VARR_TYPED) && (NULL == rvr->rvrDatatype))
-    GOTO_RVR_ERR("NULL rvrDatatype when SPART_VARR_TYPED");
   if (!(rvr->rvrRestrictions & SPART_VARR_TYPED) && (NULL != rvr->rvrDatatype))
     GOTO_RVR_ERR("non-NULL rvrDatatype when not SPART_VARR_TYPED");
-*/
   if ((rvr->rvrRestrictions & SPART_VARR_FIXED) && (rvr->rvrRestrictions & SPART_VARR_SPRINTFF))
     GOTO_RVR_ERR("SPART_VARR_FIXED and SPART_VARR_SPRINTFF");
   if (rvr->rvrRestrictions & SPART_VARR_SPRINTFF)
@@ -2314,10 +2403,36 @@ dbg_sparp_rvr_audit (const char *file, int line, sparp_t *sparp, const rdf_val_r
               GOTO_RVR_ERR("non-string sprintff");
         }
     }
-  if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (rvr->rvrFixedValue))
+  if (!(SPART_VARR_CONFLICT & rvr->rvrRestrictions))
     {
-      if (!SPAR_LIT_OR_QNAME_VAL ((SPART *)(rvr->rvrFixedValue)))
-        GOTO_RVR_ERR("weird non-NULL rvrFixedValue");
+      if (DV_UNAME == DV_TYPE_OF (rvr->rvrFixedValue))
+        {
+          if (!((SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_IS_BLANK) & rvr->rvrRestrictions))
+            GOTO_RVR_ERR("UNAME fixed value for non-IRI");
+          if (SPART_VARR_IS_LIT & rvr->rvrRestrictions)
+            GOTO_RVR_ERR("UNAME fixed value for literal");
+          if (NULL != rvr->rvrDatatype)
+            GOTO_RVR_ERR("UNAME fixed value and a datatype");
+          if (NULL != rvr->rvrLanguage)
+            GOTO_RVR_ERR("UNAME fixed value and a language");
+        }
+      else
+        {
+          if (!(SPART_VARR_IS_LIT & rvr->rvrRestrictions) && (NULL != rvr->rvrFixedValue))
+            GOTO_RVR_ERR("non-UNAME fixed value for non-literal");
+          if (((SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_IS_BLANK) & rvr->rvrRestrictions) && (NULL != rvr->rvrFixedValue))
+            GOTO_RVR_ERR("non-UNAME fixed value for IRI");
+          if ((NULL != rvr->rvrDatatype) && (NULL != rvr->rvrLanguage))
+            GOTO_RVR_ERR("both datatype and language are set");
+          if ((DV_STRING != DV_TYPE_OF (rvr->rvrFixedValue)) && (NULL != rvr->rvrFixedValue))
+            {
+              if (NULL == rvr->rvrDatatype)
+                GOTO_RVR_ERR("non-string fixed value without a datatype");
+              if (NULL != rvr->rvrLanguage)
+                GOTO_RVR_ERR("non-string fixed value with language");
+            }
+        }
+      
     }
   return;
 rvr_err:
@@ -2359,6 +2474,7 @@ sparp_rvr_set_by_constant (sparp_t *sparp, rdf_val_range_t *dest, ccaddr_t datat
   if (NULL != datatype)
     {
       dest->rvrDatatype = datatype;
+      dest->rvrLanguage = NULL;
       dest->rvrRestrictions |= SPART_VARR_TYPED;
     }
   if (NULL != value)
@@ -2376,6 +2492,8 @@ sparp_rvr_set_by_constant (sparp_t *sparp, rdf_val_range_t *dest, ccaddr_t datat
             dest->rvrRestrictions |= SPART_VARR_IS_BLANK;
           else
             dest->rvrRestrictions |= SPART_VARR_IS_IRI;
+          dest->rvrDatatype = NULL;
+          dest->rvrLanguage = NULL;
         }
       else if (DV_UNAME == DV_TYPE_OF (value))
         {
@@ -2386,6 +2504,8 @@ sparp_rvr_set_by_constant (sparp_t *sparp, rdf_val_range_t *dest, ccaddr_t datat
             dest->rvrRestrictions |= SPART_VARR_IS_BLANK;
           else
             dest->rvrRestrictions |= SPART_VARR_IS_IRI;
+          dest->rvrDatatype = NULL;
+          dest->rvrLanguage = NULL;
         }
       else
         {
@@ -2394,23 +2514,78 @@ sparp_rvr_set_by_constant (sparp_t *sparp, rdf_val_range_t *dest, ccaddr_t datat
               if (SPAR_LIT != SPART_TYPE (value))
                 GPF_T1("sparp_" "rvr_set_by_constant(): value is neither QNAME nor a literal");
 #endif
-          dest->rvrFixedValue = (ccaddr_t)value;
           dest->rvrRestrictions |= (SPART_VARR_IS_LIT | SPART_VARR_TYPED | SPART_VARR_FIXED | SPART_VARR_NOT_NULL);
           if (DV_ARRAY_OF_POINTER == valtype)
             {
+              dest->rvrFixedValue = value->_.lit.val;
               dest->rvrDatatype = value->_.lit.datatype;
               dest->rvrLanguage = value->_.lit.language;
+              if ((NULL == dest->rvrDatatype) && (NULL == dest->rvrLanguage) && (DV_STRING != valtype))
+                {
+                  dest->rvrDatatype = xsd_type_of_box (value->_.lit.val);
+                  if (uname_xmlschema_ns_uri_hash_string == dest->rvrDatatype)
+                    dest->rvrDatatype = NULL;
+                }
             }
           else
             {
               dest->rvrDatatype = xsd_type_of_box ((caddr_t)value);
               if (uname_xmlschema_ns_uri_hash_string == dest->rvrDatatype)
                 dest->rvrDatatype = NULL;
+              dest->rvrLanguage = NULL;
             }
           if (NULL == dest->rvrDatatype)
             dest->rvrRestrictions &= ~SPART_VARR_TYPED;
         }
     }
+  sparp_rvr_audit (sparp, dest);
+}
+
+void
+sparp_rvr_add_restrictions (sparp_t *sparp, rdf_val_range_t *dest, ptrlong addon_restrictions)
+{
+  ptrlong new_restr;
+  new_restr = dest->rvrRestrictions | addon_restrictions;
+#ifdef DEBUG
+  if (addon_restrictions & (SPART_VARR_FIXED | SPART_VARR_TYPED | SPART_VARR_SPRINTFF | SPART_VARR_IRI_CALC))
+    spar_internal_error (sparp, "sparp" "_rvr_add_restrictions(): unsupported addon restriction");
+  if (((new_restr & SPART_VARR_IS_REF) && (new_restr & SPART_VARR_IS_LIT)) &&
+      !((dest->rvrRestrictions & SPART_VARR_IS_REF) && (dest->rvrRestrictions & SPART_VARR_IS_LIT)) )
+    dbg_printf (("sparp" "_rvr_add_restrictions will tighten %x with %x (ref|lit)\n", (unsigned)(dest->rvrRestrictions), (unsigned)(addon->rvrRestrictions)));
+  if ((new_restr & SPART_VARR_CONFLICT) &&
+      !(dest->rvrRestrictions & SPART_VARR_CONFLICT) )
+    dbg_printf (("sparp" "_rvr_add_restrictions will tighten %x with %x (SPART_VARR_CONFLICT)\n", (unsigned)(dest->rvrRestrictions), (unsigned)(addon->rvrRestrictions)));
+#endif
+  if (new_restr & SPART_VARR_CONFLICT)
+    goto conflict; /* see below */
+  sparp_rvr_audit (sparp, dest);
+  if (
+    ((new_restr & SPART_VARR_IS_REF) && (new_restr & SPART_VARR_IS_LIT)) ||
+    ((new_restr & SPART_VARR_IS_BLANK) && (new_restr & SPART_VARR_IS_IRI)) ||
+    ((new_restr & SPART_VARR_ALWAYS_NULL) &&
+     (new_restr & (SPART_VARR_NOT_NULL | SPART_VARR_IS_LIT | SPART_VARR_IS_REF)) ) )
+    goto conflict; /* see below */
+
+#if 0
+  do {
+      dk_session_t *ses = strses_allocate ();
+      caddr_t strg;
+      spart_dump_rvr (ses, dest, 0, '!');
+      strg = strses_string (ses);
+      printf ("Nice rvr add restrictions: %s\n", strg);
+      dk_free_box ((caddr_t)ses);
+      dk_free_box (strg);
+    } while (0);
+#endif
+  dest->rvrRestrictions = new_restr;
+  sparp_rvr_audit (sparp, dest);
+  return;
+
+conflict:
+  new_restr |= SPART_VARR_CONFLICT;
+  dest->rvrRestrictions = new_restr;
+  /* sparp_rvr_audit (sparp, dest); -- that's not valid here */
+  return;
 }
 
 void
@@ -2450,7 +2625,7 @@ sparp_rvr_tighten (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *addon
     {
       if (dest->rvrRestrictions & SPART_VARR_FIXED)
         {
-          if (!sparp_fixedvalues_equal (sparp, (SPART *)(dest->rvrFixedValue), (SPART *)(addon->rvrFixedValue)))
+          if (DVC_MATCH != cmp_boxes_safe (dest->rvrFixedValue, addon->rvrFixedValue, NULL, NULL))
             goto conflict; /* see below */
         }
       else
@@ -2460,6 +2635,8 @@ sparp_rvr_tighten (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *addon
                 GPF_T1("sparp_" "rvr_tighten(): addon->rvrFixedValue is not a literal");
 #endif
           dest->rvrFixedValue = addon->rvrFixedValue;
+          dest->rvrDatatype = addon->rvrDatatype;
+          dest->rvrLanguage = addon->rvrLanguage;
         }
     }
   if (new_restr & SPART_VARR_FIXED)
@@ -2536,7 +2713,7 @@ end_of_sff_processing:
       for (cut_ctr = dest->rvrRedCutCount; cut_ctr--; /* no step */)
         {
           ccaddr_t cut_val = dest->rvrRedCuts [cut_ctr];
-          if (sparp_fixedvalues_equal (sparp, (SPART *)cut_val, (SPART *)(dest->rvrFixedValue)))
+          if (DVC_MATCH == cmp_boxes_safe (cut_val, dest->rvrFixedValue, NULL, NULL))
             goto conflict; /* see below */
         }
     }
@@ -2578,177 +2755,6 @@ always_null:
   return;
 #endif
 }
-
-#if 0 /* Attention: this code is not complete */
-void
-sparp_rvr_override (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *addon, int changeable_flags, int reasons_for_conflict)
-{
-  ptrlong new_restr;
-  new_restr = (dest->rvrRestrictions | (addon->rvrRestrictions & changeable_flags));
-  if (new_restr & SPART_VARR_CONFLICT)
-    goto conflict; /* see below */
-  sparp_rvr_audit (sparp, dest);
-  sparp_rvr_audit (sparp, addon);
-  if (dest->rvrDatatype != addon->rvrDatatype)
-    {
-      if (dest->rvrRestrictions & addon->rvrRestrictions & SPART_VARR_TYPED)
-        {
-          if (reasons_for_conflict & SPART_VARR_TYPED)
-            goto conflict; /* see below */
-          else
-            dest->rvrDatatype = addon->rvrDatatype;
-        }
-      else
-        {
-          ccaddr_t isect_dt = sparp_largest_intersect_superdatatype (sparp, dest->rvrDatatype, addon->rvrDatatype);
-          dest->rvrDatatype = isect_dt;
-        }
-    }
-  if (addon->rvrRestrictions & changeable_flags & SPART_VARR_FIXED)
-    {
-      if (dest->rvrRestrictions & SPART_VARR_FIXED)
-        {
-          if (!sparp_fixedvalues_equal (sparp, (SPART *)(dest->rvrFixedValue), (SPART *)(addon->rvrFixedValue)))
-            {
-              if (reasons_for_conflict & SPART_VARR_FIXED)
-                goto conflict; /* see below */
-              else
-                dest->rvrFixedValue = addon->rvrFixedValue;
-            }
-        }
-      else
-        {
-#ifdef DEBUG
-              if (SPAR_LIT != SPART_TYPE ((SPART *)(addon->rvrFixedValue)))
-                GPF_T1("sparp_" "rvr_tighten(): addon->rvrFixedValue is not a literal");
-#endif
-          dest->rvrFixedValue = addon->rvrFixedValue;
-        }
-    }
-  if (new_restr & SPART_VARR_FIXED)
-    {
-      caddr_t fv = rvr_string_fixedvalue (dest);
-      if (NULL != fv)
-        {
-          int ctr;
-          if (dest->rvrRestrictions & SPART_VARR_SPRINTFF)
-            {
-              for (ctr = dest->rvrSprintffCount; ctr--; /* no step */)
-                {
-                  if (sprintff_like (fv, dest->rvrSprintffs[ctr]))
-                    goto fv_like_dest_sff; /* see below */
-                }
-              if (reasons_for_conflict & SPART_VARR_SPRINTFF)
-                goto conflict; /* see below */
-              else
-                goto turn_sff_off; /* see below */
-            }
-fv_like_dest_sff:
-          if (addon->rvrRestrictions & changeable_flags & SPART_VARR_SPRINTFF)
-            {
-              for (ctr = addon->rvrSprintffCount; ctr--; /* no step */)
-                {
-                  if (sprintff_like (fv, addon->rvrSprintffs[ctr]))
-                    goto fv_like_addon_sff; /* see below */
-                }
-              if (reasons_for_conflict & SPART_VARR_SPRINTFF)
-                goto conflict; /* see below */
-              else
-                goto turn_sff_off; /* see below */
-            }
-fv_like_addon_sff:
-turn_sff_off:
-          new_restr &= ~SPART_VARR_SPRINTFF; /* With fixed string value, there's no need in sprintffs at all */
-          dest->rvrSprintffCount = 0;
-          goto end_of_sff_processing; /* see below */
-        }
-    }
-  if (addon->rvrRestrictions & changeable_flags & SPART_VARR_SPRINTFF)
-    {
-      if (dest->rvrRestrictions & SPART_VARR_SPRINTFF)
-        {
-          sparp_rvr_intersect_sprintffs (sparp, dest, addon->rvrSprintffs, addon->rvrSprintffCount);
-          if (0 == dest->rvrSprintffCount)
-            goto conflict; /* see below */
-        }
-      else
-        {
-          dest->rvrSprintffs = (ccaddr_t *) t_box_copy ((caddr_t)(addon->rvrSprintffs));
-          dest->rvrSprintffCount = addon->rvrSprintffCount;
-          new_restr |= SPART_VARR_SPRINTFF;
-        }
-    }
-
-end_of_sff_processing:
-  if (addon->rvrRestrictions & changeable_flags & SPART_VARR_IRI_CALC)
-    {
-      if (dest->rvrRestrictions & SPART_VARR_IRI_CALC)
-        {
-          sparp_rvr_intersect_iri_classes (sparp, dest, addon->rvrIriClasses, addon->rvrIriClassCount);
-          if (0 == dest->rvrIriClassCount)
-#if 0 /*!!! TBD enable when iri classes are valid */
-            goto conflict; /* see below */
-#else
-            new_restr &= ~SPART_VARR_IRI_CALC;
-#endif
-        }
-      else
-        {
-          dest->rvrIriClasses = (ccaddr_t *) t_box_copy ((caddr_t)(addon->rvrIriClasses));
-          dest->rvrIriClassCount = addon->rvrIriClassCount;
-        }
-    }
-  if (0 != addon->rvrRedCutCount)
-    sparp_rvr_add_red_cuts (sparp, dest, addon->rvrRedCuts, addon->rvrRedCutCount);
-  if (dest->rvrRestrictions & SPART_VARR_FIXED)
-    {
-      int cut_ctr;
-      for (cut_ctr = dest->rvrRedCutCount; cut_ctr--; /* no step */)
-        {
-          ccaddr_t cut_val = dest->rvrRedCuts [cut_ctr];
-          if (sparp_fixedvalues_equal (sparp, (SPART *)cut_val, (SPART *)(dest->rvrFixedValue)))
-            goto conflict; /* see below */
-        }
-    }
-  if (
-    ((new_restr & SPART_VARR_IS_REF) && (new_restr & SPART_VARR_IS_LIT)) ||
-    ((new_restr & SPART_VARR_IS_BLANK) && (new_restr & SPART_VARR_IS_IRI)) ||
-    ((new_restr & SPART_VARR_ALWAYS_NULL) &&
-     (new_restr & (SPART_VARR_NOT_NULL | SPART_VARR_IS_LIT | SPART_VARR_IS_REF)) ) )
-    goto conflict; /* see below */
-
-#if 0
-  do {
-      dk_session_t *ses = strses_allocate ();
-      caddr_t strg;
-      spart_dump_rvr (ses, dest, 0, '!');
-      strg = strses_string (ses);
-      printf ("Nice tighten op: %s\n", strg);
-      dk_free_box ((caddr_t)ses);
-      dk_free_box (strg);
-    } while (0);
-#endif
-  dest->rvrRestrictions = new_restr;
-  sparp_rvr_audit (sparp, dest);
-  sparp_rvr_audit (sparp, addon);
-  return;
-
-conflict:
-  new_restr |= SPART_VARR_CONFLICT;
-  dest->rvrRestrictions = new_restr;
-  /* sparp_rvr_audit (sparp, dest); -- that's not valid here */
-  return;
-
-#if 0
-always_null:
-  new_restr = SPART_VARR_ALWAYS_NULL | (dest->rvrRestrictions & (SPART_VARR_EXPORTED | SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL));
-  memset (dest, 0, sizeof (rdf_val_range_t));
-  dest->rvrRestrictions = new_restr;
-  sparp_rvr_audit (sparp, dest);
-  return;
-#endif
-}
-#endif
 
 void
 sparp_rvr_loose (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *addon, int changeable_flags)
@@ -2773,12 +2779,18 @@ sparp_rvr_loose (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *addon, 
   if (dest->rvrDatatype != addon->rvrDatatype)
     {
       ccaddr_t union_dt = sparp_smallest_union_superdatatype (sparp, dest->rvrDatatype, addon->rvrDatatype);
-      new_restr &= ~SPART_VARR_TYPED;
+      new_restr &= ~(SPART_VARR_TYPED | SPART_VARR_FIXED);
       dest->rvrDatatype = union_dt;
+    }
+  if (dest->rvrLanguage != addon->rvrLanguage)
+    {
+      new_restr &= ~SPART_VARR_FIXED;
+      dest->rvrLanguage = NULL;
+      dest->rvrDatatype = NULL;
     }
   if (new_restr & changeable_flags & SPART_VARR_FIXED)
     {
-      if (!sparp_fixedvalues_equal (sparp, (SPART *)(dest->rvrFixedValue), (SPART *)(addon->rvrFixedValue)))
+      if (DVC_MATCH != cmp_boxes_safe (dest->rvrFixedValue, addon->rvrFixedValue, NULL, NULL))
         new_restr &= ~SPART_VARR_FIXED;
     }
   if (!(new_restr & changeable_flags & SPART_VARR_FIXED))
@@ -3935,8 +3947,11 @@ sparp_gp_tighten_by_eq_replaced_filters (sparp_t *sparp, SPART *dest, SPART *ori
         {
           DO_BOX_FAST (caddr_t, varname, varname_ctr, orig_eq->e_varnames)
             {
+              int changeable_flags = orig_eq->e_replaces_filter;
               sparp_equiv_t *dest_eq = sparp_equiv_get (sparp, dest, (SPART *)varname, SPARP_EQUIV_GET_NAMESAKES | SPARP_EQUIV_INS_CLASS);
-              sparp_equiv_tighten (sparp, dest_eq, &(orig_eq->e_rvr), orig_eq->e_replaces_filter);
+              if (orig_eq->e_rvr.rvrRestrictions & SPART_VARR_FIXED)
+                changeable_flags |= (SPART_VARR_TYPED | SPART_VARR_IS_LIT | SPART_VARR_IS_REF | SPART_VARR_IS_BLANK | SPART_VARR_IS_IRI | SPART_VARR_NOT_NULL);
+              sparp_equiv_tighten (sparp, dest_eq, &(orig_eq->e_rvr), changeable_flags);
               dest_eq->e_replaces_filter |= orig_eq->e_replaces_filter;
             }
           END_DO_BOX_FAST;

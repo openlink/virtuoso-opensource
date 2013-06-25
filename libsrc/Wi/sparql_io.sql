@@ -1699,7 +1699,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
       if ((ret_format is null) or (ret_format = 'TTL'))
         {
           if (ret_format is null)
-            ret_mime := 'text/rdf+n3';
+            ret_mime := 'text/turtle';
           DB.DBA.RDF_TRIPLES_TO_TTL (triples, ses);
           if (status is not null)
             SPARQL_WRITE_EXEC_STATUS (ses, '#%015s: %s\n', status);
@@ -1748,7 +1748,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
       else if (ret_format = 'NICE_TTL')
         {
           DB.DBA.RDF_TRIPLES_TO_NICE_TTL (triples, ses);
-          ret_mime := 'text/rdf+n3';
+          ret_mime := 'text/turtle';
         }
       else if (ret_format = 'SOAP')
 	{
@@ -1803,7 +1803,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
       if ((ret_format = 'TTL') or (ret_format is null))
         {
           if (ret_format is null)
-            ret_mime := 'text/rdf+n3';
+            ret_mime := 'text/turtle';
         }
       http (rset[0][0], ses);
       if (status is not null)
@@ -1857,7 +1857,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
   if ((ret_format = 'TTL') or (ret_format = 'NICE_TTL'))
     {
       if (ret_format is null)
-        ret_mime := 'text/rdf+n3';
+        ret_mime := 'text/turtle';
       SPARQL_RESULTS_TTL_WRITE_NS (ses);
       SPARQL_RESULTS_TTL_WRITE_HEAD (ses, metas);
       SPARQL_RESULTS_TTL_WRITE_RES (ses, metas, rset);
@@ -2324,7 +2324,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
     http('		if ((query.match(/\\bconstruct\\b/i) || query.match(/\\bdescribe\\b/i)) && last_format == 1) {\n');
     http('			for(var i = format.options.length; i > 0; i--)\n');
     http('				format.options[i] = null;\n');
-    http('			format.options[1] = new Option(\'N3/Turtle\',\'text/rdf+n3\');\n');
+    http('			format.options[1] = new Option(\'Turtle\',\'text/turtle\');\n');
     http('			format.options[2] = new Option(\'RDF/JSON\',\'application/rdf+json\');\n');
     http('			format.options[3] = new Option(\'RDF/XML\',\'application/rdf+xml\');\n');
     http('			format.options[4] = new Option(\'N-Triples\',\'text/plain\');\n');
@@ -2359,7 +2359,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
     http('			format.options[3] = new Option(\'XML\',\'application/sparql-results+xml\');\n');
     http('			format.options[4] = new Option(\'JSON\',\'application/sparql-results+json\');\n');
     http('			format.options[5] = new Option(\'Javascript\',\'application/javascript\');\n');
-    http('			format.options[6] = new Option(\'N3/Turtle\',\'text/rdf+n3\');\n');
+    http('			format.options[6] = new Option(\'Turtle\',\'text/turtle\');\n');
     http('			format.options[7] = new Option(\'RDF/XML\',\'application/rdf+xml\');\n');
     http('			format.options[8] = new Option(\'N-Triples\',\'text/plain\');\n');
     http('			format.options[9] = new Option(\'CSV\',\'text/csv\');\n');
@@ -2442,6 +2442,8 @@ create procedure WS.WS.SPARQL_ENDPOINT_FORMAT_OPTS (in can_cxml integer, in can_
         when 'json'		then 'application/sparql-results+json'
         when 'json-ld'		then 'application/ld+json'
         when 'n3'		then 'text/rdf+n3'
+        when 'ttl'		then 'text/turtle'
+        when 'turtle'		then 'text/turtle'
         when 'rdf'		then 'application/rdf+xml'
         when 'sparql'		then 'application/sparql-results+xml'
         when 'xml'		then 'application/sparql-results+xml'
@@ -2455,7 +2457,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_FORMAT_OPTS (in can_cxml integer, in can_
       )
     {
       opts := vector (
-	  vector ('text/rdf+n3'				, 'N3/Turtle'		),
+        vector ('text/turtle'			, 'Turtle'				),
 	  vector ('application/rdf+json'		, 'RDF/JSON'		),
 	  vector ('application/rdf+xml'			, 'RDF/XML'		),
 	  vector ('text/plain'				, 'N-Triples'		),
@@ -3176,6 +3178,8 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
         when 'xml' then 'application/sparql-results+xml'
         when 'rdf' then 'application/rdf+xml'
         when 'n3' then 'text/rdf+n3'
+        when 'ttl' then 'text/turtle'
+        when 'turtle' then 'text/turtle'
         when 'cxml' then 'text/cxml'
         when 'cxml+qrcode' then 'text/cxml+qrcode'
         when 'csv' then 'text/csv'
@@ -3866,7 +3870,7 @@ graph_processing:
       if (graph_uri_is_relative)
         {
           full_graph_uri := null;
-          if (res_content_type = 'text/rdf+n3')
+          if (res_content_type in ('text/rdf+n3', 'text/turtle'))
             full_graph_uri := DB.DBA.SPARQL_CRUD_BASE_TTL (res_file, graph_uri, 255);
           else if (res_content_type = 'application/rdf+xml')
             full_graph_uri := DB.DBA.SPARQL_CRUD_BASE_RDFXML (res_file, graph_uri);
@@ -3879,7 +3883,7 @@ graph_processing:
         full_graph_uri := graph_uri;
       commit work;
       graph_exists := (sparql define input:storage "" ask where { graph `iri(?:full_graph_uri)` { ?s ?p ?o }});
-      if (res_content_type = 'text/rdf+n3')
+      if (res_content_type in ('text/rdf+n3', 'text/turtle'))
         {
           if (reqbegin like 'PUT%')
             {
@@ -4049,13 +4053,13 @@ create procedure DB.DBA.SPARQL_ROUTE_DICT_CONTENT_DAV (
           if ((output_format_name is not null) and (output_format_name <> 'AUTO') and (output_format_name <> 'RDF/XML'))
             signal ('RDFXX', sprintf ('SPARUL can not update resource "%.200s" because its MIME type "%s" conflicts with directive output:format "%s"', graph_iri, coalesce (in_mime, mime), output_format_name));
         }
-      else if ('text/rdf+n3' = mime)
+      else if (mime in ('text/rdf+n3', 'text/turtle'))
         {
           if ((output_format_name is not null) and (output_format_name <> 'AUTO') and (output_format_name <> 'TURTLE') and (output_format_name <> 'TTL'))
             signal ('RDFXX', sprintf ('SPARUL can not update resource "%.200s" because its MIME type "%s" conflicts with directive output:format "%s"', graph_iri, coalesce (in_mime, mime), output_format_name));
         }
       else
-        signal ('RDFXX', sprintf ('SPARUL can not update resource "%.200s" of MIME type "%s" because only "application/rdf+xml" and "text/rdf+n3" are supported', graph_iri, coalesce (in_mime, mime)));
+        signal ('RDFXX', sprintf ('SPARUL can not update resource "%.200s" of MIME type "%s" because only "application/rdf+xml", "text/rdf+n3" and  "text/turtle" are supported', graph_iri, coalesce (in_mime, mime)));
     }
   if ('INSERT' = opname)
     final_res := DB.DBA.SPARQL_INSERT_DICT_CONTENT (graph_iri, ins_dict, uid, log_mode, compose_report);
@@ -4136,6 +4140,8 @@ DB.DBA.http_rq_file_handler (in content any, in params any, in lines any, inout 
       when 'xml' then 'application/sparql-results+xml'
       when 'rdf' then 'application/rdf+xml'
       when 'n3' then 'text/rdf+n3'
+      when 'ttl' then 'text/turtle'
+      when 'turtle' then 'text/turtle'
       when 'cxml' then 'text/cxml'
       when 'cxml+qrcode' then 'text/cxml+qrcode'
       when 'csv' then 'text/csv'
@@ -4305,12 +4311,12 @@ create procedure WS.WS."/!sparql-sd/" (inout path varchar, inout params any, ino
   ses := null;
   if (strstr (accept, 'text/rdf+n3') is not null)
     { http_header ('Content-Type: text/rdf+n3; charset=UTF-8\r\n');		DB.DBA.RDF_TRIPLES_TO_NT (sd, ses);	}
+  else if (strstr (accept, 'text/turtle') is not null)
+    { http_header ('Content-Type: text/turtle; charset=UTF-8\r\n');		DB.DBA.RDF_TRIPLES_TO_TTL (sd, ses);	}
   else if (strstr (accept, 'text/rdf+ttl') is not null)
     { http_header ('Content-Type: text/rdf+ttl; charset=UTF-8\r\n');		DB.DBA.RDF_TRIPLES_TO_TTL (sd, ses);	}
   else if (strstr (accept, 'text/rdf+turtle') is not null)
     { http_header ('Content-Type: text/rdf+turtle; charset=UTF-8\r\n');		DB.DBA.RDF_TRIPLES_TO_TTL (sd, ses);	}
-  else if (strstr (accept, 'text/turtle') is not null)
-    { http_header ('Content-Type: text/turtle; charset=UTF-8\r\n');		DB.DBA.RDF_TRIPLES_TO_TTL (sd, ses);	}
   else if (strstr (accept, 'application/turtle') is not null)
     { http_header ('Content-Type: application/turtle; charset=UTF-8\r\n');	DB.DBA.RDF_TRIPLES_TO_TTL (sd, ses);	}
   else if (strstr (accept, 'application/turtle') is not null)

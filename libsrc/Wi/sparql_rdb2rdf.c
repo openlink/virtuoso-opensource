@@ -57,7 +57,7 @@ If quad map value is specified but not a constant then there's no need to rememb
 
 typedef struct rdb2rdf_blocker_s {
     struct rdb2rdf_blocker_s *rrb_next;			/*!< Next item in list */
-    ccaddr_t rrb_const_vals[SPART_TRIPLE_FIELDS_COUNT];	/*!< Field values. No graph translation here, otherwise xlat can merge merge an exclusive graph is merged with non-exclusive */
+    SPART *rrb_const_vals[SPART_TRIPLE_FIELDS_COUNT];	/*!< Field values as boxes, SPAR_QNAME or SPAR_LITERAL. No graph translation here, otherwise xlat can merge an exclusive graph merged with non-exclusive */
     int rrb_total_eclipse;				/*!< Nonzero if total eclipse so no further scan required. For debugging, bits 0x1-0x8 indicate positions of non-constant quad map values */
   } rdb2rdf_blocker_t;
 
@@ -81,10 +81,21 @@ typedef struct rdb2rdf_optree_s {
     int			rro_sample_of_rule;	/*!< Value for RULE_ID field of RDF_QUAD_DELETE_QUEUE */
   } rdb2rdf_optree_t;
 
+#define RDB2RDF_RSVS_CONST	1
+#define RDB2RDF_RSVS_QMV	2
+typedef struct rdb2rdf_single_val_state_s {
+  char rsvs_type;
+  union {
+    ccaddr_t	tsvs_const;
+    qm_value_t	*tsvs_qm;
+    void *	tsvs_ptr;
+    } _;
+} rdb2rdf_single_val_state_t;
+
 /*! State of variables g_val, s_val, p_val and o_val */
 typedef struct rdb2rdf_vals_state_s {
     struct rdb2rdf_vals_state_s *rrvs_next;		/*!< Pointer to next state in enclosing branch */
-    ccaddr_t rrvs_jsos[SPART_TRIPLE_FIELDS_COUNT];		/*!< Pointers to source qmvs or consts that are now values of variables. NULL means that the variable is uninitialized or unknown after branching on if(){} . */
+    rdb2rdf_single_val_state_t rrvs_vals[SPART_TRIPLE_FIELDS_COUNT];	/*!< Pointers to source qmvs or consts that are now values of variables. NULL means that the variable is uninitialized or unknown after branching on if(){} . */
   } rdb2rdf_vals_state_t;
 
 typedef struct rdb2rdf_ctx_s {
@@ -164,20 +175,23 @@ rdb2rdf_pop_rrvs_stack (rdb2rdf_ctx_t *rrc, int expects_empty_after)
         RDB2RDF_INTERNAL_ERROR;
       for (fld_ctr = SPART_TRIPLE_FIELDS_COUNT; fld_ctr--; /* no step */)
         {
-          ccaddr_t curr_jso = curr->rrvs_jsos[fld_ctr];
-          ccaddr_t next_jso = next->rrvs_jsos[fld_ctr];
-          dtp_t curr_dtp;
-          if ((curr_jso == next_jso) || (NULL == next_jso))
+          rdb2rdf_single_val_state_t *curr_val = curr->rrvs_vals + fld_ctr;
+          rdb2rdf_single_val_state_t *next_val = next->rrvs_vals + fld_ctr;
+          if ((curr_val->_.tsvs_ptr == next_val->_.tsvs_ptr) || (0 == next_val->rsvs_type))
             continue;
-          if (NULL == curr_jso)
+          if (0 == curr_val->rsvs_type)
             {
-              next->rrvs_jsos[fld_ctr] = NULL;
+              next->rrvs_vals[fld_ctr].rsvs_type = 0;
+              next->rrvs_vals[fld_ctr]._.tsvs_ptr = NULL;
               continue;
             }
-          curr_dtp = DV_TYPE_OF (curr_jso);
-          if ((DV_ARRAY_OF_POINTER == curr_dtp) || (DV_TYPE_OF (next_jso) != curr_dtp) ||
-            (DVC_MATCH != cmp_boxes (curr_jso, next_jso, NULL, NULL)) )
-          next->rrvs_jsos[fld_ctr] = NULL;
+          if ((RDB2RDF_RSVS_CONST != curr_val->rsvs_type) || (RDB2RDF_RSVS_CONST != next_val->rsvs_type) ||
+            (DV_TYPE_OF (next_val->_.tsvs_ptr) != DV_TYPE_OF (curr_val->_.tsvs_ptr)) ||
+            !sparp_values_equal (&(rrc->rrc_sparp_stub), curr_val->_.tsvs_const, NULL, NULL, next_val->_.tsvs_const, NULL, NULL) )
+            {
+              next->rrvs_vals[fld_ctr].rsvs_type = 0;
+              next->rrvs_vals[fld_ctr]._.tsvs_ptr = NULL;
+            }
         }
       rrc->rrc_rrvs_stack = next;
    }
@@ -241,9 +255,9 @@ rdb2rdf_create_optree (rdb2rdf_ctx_t *rrc, rdb2rdf_optree_t *parent, rdb2rdf_opt
       for (fld_ctr = SPART_TRIPLE_FIELDS_COUNT; fld_ctr--; /*no step*/)
         {
           qm_value_t *fld_qmv = SPARP_FIELD_QMV_OF_QM(qm,fld_ctr);
-          ccaddr_t fld_const = SPARP_FIELD_CONST_OF_QM(qm,fld_ctr);
-          if (NULL != fld_const)
-            local_rrb->rrb_const_vals[fld_ctr] = fld_const;
+          rdf_val_range_t *fld_const_rvr = SPARP_FIELD_CONST_RVR_OF_QM(qm,fld_ctr);
+          if (fld_const_rvr->rvrRestrictions & SPART_VARR_FIXED)
+            local_rrb->rrb_const_vals[fld_ctr] = spar_make_qname_or_literal_from_rvr (&(rrc->rrc_sparp_stub), fld_const_rvr, 1);
           else if (NULL != fld_qmv)
             local_rrb->rrb_total_eclipse |= 1 << fld_ctr;
         }
@@ -281,8 +295,8 @@ rdb2rdf_create_optree (rdb2rdf_ctx_t *rrc, rdb2rdf_optree_t *parent, rdb2rdf_opt
       for (fld_ctr = SPART_TRIPLE_FIELDS_COUNT; fld_ctr--; /*no step*/)
         {
           qm_value_t *fld_qmv = SPARP_FIELD_QMV_OF_QM(qm,fld_ctr);
-          ccaddr_t fld_const = SPARP_FIELD_CONST_OF_QM(qm,fld_ctr);
-          if (NULL != fld_const)
+          rdf_val_range_t *fld_const_rvr = SPARP_FIELD_CONST_RVR_OF_QM(qm,fld_ctr);
+          if (fld_const_rvr->rvrRestrictions & SPART_VARR_FIXED)
             tmpres.rro_bits_of_fields_here |= (0x11111111 << fld_ctr);
           else if (NULL != fld_qmv->qmvATables)
             {
@@ -405,45 +419,57 @@ rdb2rdf_calculate_qmqm (rdb2rdf_ctx_t *rrc, rdb2rdf_optree_t *main_optree, int o
 /* Optimistic loop */
   for (fld_ctr = 0; fld_ctr < SPART_TRIPLE_FIELDS_COUNT; fld_ctr++)
     {
-      ccaddr_t main_fld_const, other_fld_const;
-      dtp_t fld_const_dtp;
-      main_fld_const = SPARP_FIELD_CONST_OF_QM(main_qm,fld_ctr);
-      if (NULL == main_fld_const)
+      rdf_val_range_t *main_fld_const_rvr, *other_fld_const_rvr;
+      main_fld_const_rvr = SPARP_FIELD_CONST_RVR_OF_QM(main_qm,fld_ctr);
+      if (!(main_fld_const_rvr->rvrRestrictions & SPART_VARR_FIXED))
         continue;
-      other_fld_const = SPARP_FIELD_CONST_OF_QM(other_qm,fld_ctr);
-      if (NULL == other_fld_const)
+      other_fld_const_rvr = SPARP_FIELD_CONST_RVR_OF_QM(other_qm,fld_ctr);
+      if (!(other_fld_const_rvr->rvrRestrictions & SPART_VARR_FIXED))
         continue;
-      fld_const_dtp = DV_TYPE_OF (other_fld_const);
-      if (DV_TYPE_OF (main_fld_const) != fld_const_dtp)
+      if ((main_fld_const_rvr->rvrRestrictions & SPART_VARR_IS_REF) != (other_fld_const_rvr->rvrRestrictions & SPART_VARR_IS_REF))
+        goto disjoin; /* see below */
+      if (main_fld_const_rvr->rvrDatatype != other_fld_const_rvr->rvrDatatype)
         goto disjoin; /* see below */
       if ((SPART_TRIPLE_GRAPH_IDX == fld_ctr) && rrc->rrc_graph_xlat_count)
         {
+          ccaddr_t main_fld_const = main_fld_const_rvr->rvrFixedValue;
+          ccaddr_t other_fld_const = other_fld_const_rvr->rvrFixedValue;
           rrc_tweak_const_with_graph_xlat (rrc, &main_fld_const);
           rrc_tweak_const_with_graph_xlat (rrc, &other_fld_const);
+          if (main_fld_const != other_fld_const) /* These consts are either UNAMEs or smth weirdly wrong, so we can compare pointers */
+            goto disjoin; /* see below */
         }
-          if ((DV_TYPE_OF (main_fld_const) != DV_TYPE_OF (other_fld_const)) ||
-            (DVC_MATCH != cmp_boxes (main_fld_const, other_fld_const, NULL, NULL)) )
-              goto disjoin; /* see below */
+      else if (!sparp_rvrs_have_same_fixedvalue (&(rrc->rrc_sparp_stub), main_fld_const_rvr, other_fld_const_rvr))
+        goto disjoin; /* see below */
         }
 /* Pessimistic loop */
   for (fld_ctr = 0; fld_ctr < SPART_TRIPLE_FIELDS_COUNT; fld_ctr++)
     {
-      ccaddr_t main_fld_const = SPARP_FIELD_CONST_OF_QM(main_qm,fld_ctr);
-      ccaddr_t other_fld_const = SPARP_FIELD_CONST_OF_QM(other_qm,fld_ctr);
+      rdf_val_range_t *main_fld_const_rvr = SPARP_FIELD_CONST_RVR_OF_QM(main_qm,fld_ctr);
+      rdf_val_range_t *other_fld_const_rvr = SPARP_FIELD_CONST_RVR_OF_QM(other_qm,fld_ctr);
       qm_value_t *main_fld_qmv;
       qm_value_t *other_fld_qmv;
       rdf_val_range_t main_rvr, other_rvr;
-      if ((NULL != main_fld_const) && (NULL != other_fld_const))
+      if ((main_fld_const_rvr->rvrRestrictions & SPART_VARR_FIXED) && (other_fld_const_rvr->rvrRestrictions & SPART_VARR_FIXED))
         continue; /* consts are compared in the optimistic loop, so either disjoin is found or there's no need to compare equal values again */
       main_fld_qmv = SPARP_FIELD_QMV_OF_QM(main_qm,fld_ctr);
       other_fld_qmv = SPARP_FIELD_QMV_OF_QM(other_qm,fld_ctr);
       if ((SPART_TRIPLE_GRAPH_IDX == fld_ctr) && rrc->rrc_graph_xlat_count)
         {
+          ccaddr_t main_fld_const = main_fld_const_rvr->rvrFixedValue;
+          ccaddr_t other_fld_const = other_fld_const_rvr->rvrFixedValue;
           rrc_tweak_const_with_graph_xlat (rrc, &main_fld_const);
           rrc_tweak_const_with_graph_xlat (rrc, &other_fld_const);
+          rdb2rdf_set_rvr_by_const_or_qmv (rrc, &main_rvr, main_fld_const, main_fld_qmv);
+          rdb2rdf_set_rvr_by_const_or_qmv (rrc, &other_rvr, other_fld_const, other_fld_qmv);
         }
-      rdb2rdf_set_rvr_by_const_or_qmv (rrc, &main_rvr, main_fld_const, main_fld_qmv);
-      rdb2rdf_set_rvr_by_const_or_qmv (rrc, &other_rvr, other_fld_const, other_fld_qmv);
+      else
+        {
+          sparp_rvr_copy (&(rrc->rrc_sparp_stub), &main_rvr,
+            ((main_fld_const_rvr->rvrRestrictions & SPART_VARR_FIXED) ? main_fld_const_rvr : &(main_fld_qmv->qmvRange)) );
+          sparp_rvr_copy (&(rrc->rrc_sparp_stub), &other_rvr,
+            ((other_fld_const_rvr->rvrRestrictions & SPART_VARR_FIXED) ? other_fld_const_rvr : &(other_fld_qmv->qmvRange)) );
+        }
       sparp_rvr_audit(&(rrc->rrc_sparp_stub), &main_rvr);
       sparp_rvr_audit(&(rrc->rrc_sparp_stub), &other_rvr);
       sparp_rvr_tighten (&(rrc->rrc_sparp_stub), &main_rvr, &other_rvr, ~0);
@@ -534,14 +560,14 @@ rdb2rdf_optree_dump (rdb2rdf_ctx_t *rrc, rdb2rdf_optree_t *rro, dk_session_t *se
       SES_PRINT (ses, "Quad: ");
       for (ctr = 0; ctr < SPART_TRIPLE_FIELDS_COUNT; ctr++)
         {
-          ccaddr_t fld_const = SPARP_FIELD_CONST_OF_QM(rro->rro_qm, ctr);
-          if (NULL != fld_const)
+          rdf_val_range_t *fld_const_rvr = SPARP_FIELD_CONST_RVR_OF_QM(rro->rro_qm, ctr);
+          if (fld_const_rvr->rvrRestrictions & SPART_VARR_FIXED)
             {
-              switch (DV_TYPE_OF (fld_const))
+              switch (DV_TYPE_OF (fld_const_rvr->rvrFixedValue))
                 {
-                case DV_UNAME: sprintf (buf, " <%s>", fld_const); SES_PRINT (ses, buf); break;
-                case DV_STRING: sprintf (buf, " '''%s'''", fld_const); SES_PRINT (ses, buf); break;
-                case DV_LONG_INT: sprintf (buf, " " BOXINT_FMT, (boxint)fld_const); SES_PRINT (ses, buf); break;
+                case DV_UNAME: sprintf (buf, " <%s>", fld_const_rvr->rvrFixedValue); SES_PRINT (ses, buf); break;
+                case DV_STRING: sprintf (buf, " '''%s'''", fld_const_rvr->rvrFixedValue); SES_PRINT (ses, buf); break;
+                case DV_LONG_INT: sprintf (buf, " " BOXINT_FMT, (boxint)(fld_const_rvr->rvrFixedValue)); SES_PRINT (ses, buf); break;
                 default: SES_PRINT (ses, " const"); break;
                 }
             }
@@ -809,25 +835,26 @@ rdb2rdf_qm_codegen (rdb2rdf_ctx_t *rrc, rdb2rdf_optree_t *rro, caddr_t table_nam
   for (fld_ctr = SPART_TRIPLE_FIELDS_COUNT; fld_ctr--; /* no step*/)
     {
       qm_value_t *fld_qmv = SPARP_FIELD_QMV_OF_QM(qm,fld_ctr);
-      ccaddr_t fld_const = SPARP_FIELD_CONST_OF_QM(qm,fld_ctr);
-      ccaddr_t *rvvs_jso_ptr = rrc->rrc_rrvs_stack->rrvs_jsos + fld_ctr;
+      rdf_val_range_t *fld_const_rvr = SPARP_FIELD_CONST_RVR_OF_QM(qm,fld_ctr);
+      rdb2rdf_single_val_state_t *rvvs_val_ptr = rrc->rrc_rrvs_stack->rrvs_vals + fld_ctr;
       rdb2rdf_blocker_t *rrb_iter;
       if (!(bits_of_fields_here & (1 << fld_ctr)))
         continue;
       if (bits_of_fields_above & (1 << fld_ctr))
         continue;
-      if (NULL != fld_const)
+      if (fld_const_rvr->rvrRestrictions & SPART_VARR_FIXED)
         continue;
-      if (rvvs_jso_ptr[0] == (void *)fld_qmv)
+      if (rvvs_val_ptr->_.tsvs_qm == fld_qmv)
         continue;
       ssg_newline (0);
       ssg_putchar ("gspo"[fld_ctr]); ssg_puts ("_val := ");
       rdb2rdf_print_fld_expn (rro, (RDB2RDF_CODEGEN_SUB_BEFORE_DEL == subopcode), alias_no, qm, fld_qmv, prefix, ssg);
       ssg_putchar (';');
-      rvvs_jso_ptr[0] = (void *)fld_qmv;
+      rvvs_val_ptr->rsvs_type = RDB2RDF_RSVS_QMV;
+      rvvs_val_ptr->_.tsvs_qm = fld_qmv;
       for (rrb_iter = rro->rro_blockers_before_next; rrb_iter != rro->rro_blockers_before ; rrb_iter = rrb_iter->rrb_next)
         {
-          ccaddr_t rrb_c = rrb_iter->rrb_const_vals [fld_ctr];
+          SPART *rrb_c = rrb_iter->rrb_const_vals [fld_ctr];
           if (NULL == rrb_c)
             continue;
           ssg_newline (0);
@@ -842,26 +869,29 @@ rdb2rdf_qm_codegen (rdb2rdf_ctx_t *rrc, rdb2rdf_optree_t *rro, caddr_t table_nam
 /* Now a similar loop deals with consts. Blockers are not checked here because they've inspected when optree is composed. */
   for (fld_ctr = SPART_TRIPLE_FIELDS_COUNT; fld_ctr--; /* no step*/)
     {
-      ccaddr_t fld_const = SPARP_FIELD_CONST_OF_QM(qm,fld_ctr);
-      ccaddr_t *rvvs_jso_ptr = rrc->rrc_rrvs_stack->rrvs_jsos + fld_ctr;
+      rdf_val_range_t *fld_const_rvr = SPARP_FIELD_CONST_RVR_OF_QM(qm,fld_ctr);
+      caddr_t *fld_const = NULL;
+      rdb2rdf_single_val_state_t *rvvs_val_ptr = rrc->rrc_rrvs_stack->rrvs_vals + fld_ctr;
       if (!(bits_of_fields_here & (1 << fld_ctr)))
         continue;
       if (bits_of_fields_above & (1 << fld_ctr))
         continue;
-      if (NULL == fld_const)
+      if (!(fld_const_rvr->rvrRestrictions & SPART_VARR_FIXED))
         continue;
       if ((0 != alias_no) && (RDB2RDF_MAX_ALIASES_OF_MAIN_TABLE != alias_no))
         continue;
+      fld_const = spar_make_qname_or_literal_from_rvr (&(rrc->rrc_sparp_stub), fld_const_rvr, 1);
       if ((SPART_TRIPLE_GRAPH_IDX == fld_ctr) && rrc->rrc_graph_xlat_count)
         rrc_tweak_const_with_graph_xlat (rrc, &fld_const);
-      if ((NULL != rvvs_jso_ptr[0]) && (DV_ARRAY_OF_POINTER != DV_TYPE_OF (rvvs_jso_ptr[0])) &&
-        (DVC_MATCH == cmp_boxes (rvvs_jso_ptr[0], fld_const, NULL, NULL)) )
+      if ((RDB2RDF_RSVS_CONST == rvvs_val_ptr->rsvs_type) &&
+        sparp_values_equal (&(rrc->rrc_sparp_stub), rvvs_val_ptr->_.tsvs_const, NULL, NULL, fld_const, NULL, NULL))
       continue;
       ssg_newline (0);
       ssg_putchar ("gspo"[fld_ctr]); ssg_puts ("_val := ");
       rdb2rdf_print_const (rrc, fld_const, ssg);
       ssg_putchar (';');
-      rvvs_jso_ptr[0] = fld_const;
+      rvvs_val_ptr->rsvs_type = RDB2RDF_RSVS_CONST;
+      rvvs_val_ptr->_.tsvs_const = fld_const;
     }
   if ((1 == dk_set_length (rro->rro_aliases_of_main_table)) &&
     (1 == rro->rro_qm->qmAllATableUseCount) &&
@@ -1272,8 +1302,8 @@ rdb2rdf_init_conflicts (rdb2rdf_ctx_t *rrc)
       for (fld_ctr = 0; fld_ctr < SPART_TRIPLE_FIELDS_COUNT; fld_ctr++)
         {
           qm_value_t *fld_qmv = SPARP_FIELD_QMV_OF_QM(qm,fld_ctr);
-          ccaddr_t fld_const = SPARP_FIELD_CONST_OF_QM(qm,fld_ctr);
-          if ((NULL == fld_qmv) && (NULL == fld_const))
+          rdf_val_range_t *fld_const_rvr = SPARP_FIELD_CONST_RVR_OF_QM(qm,fld_ctr);
+          if ((NULL == fld_qmv) && !(fld_const_rvr->rvrRestrictions & SPART_VARR_FIXED))
             {
               memset (main_qm_conflicts, RDB2RDF_QMQM_GROUPING, rrc->rrc_all_qm_count);
               for (other_qm_ctr = rrc->rrc_all_qm_count; other_qm_ctr--; /* no step */)

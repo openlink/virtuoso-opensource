@@ -410,11 +410,8 @@ ssg_sdprint_equiv_restrs (spar_sqlgen_t *ssg, sparp_equiv_t *eq)
             mixed_field_restr |= qmv->qmvRange.rvrRestrictions | qmv->qmvFormat->qmfValRange.rvrRestrictions;
           else
             {
-              caddr_t c = SPARP_FIELD_CONST_OF_QM (qm, v->_.var.tr_idx);
-              if (DV_UNAME == DV_TYPE_OF (c))
-                mixed_field_restr |= (SPART_VARR_NOT_NULL | SPART_VARR_IS_REF | SPART_VARR_IS_IRI);
-              else
-                mixed_field_restr |= SPART_VARR_NOT_NULL | SPART_VARR_IS_LIT;
+              rdf_val_range_t *c_rvr = SPARP_FIELD_CONST_RVR_OF_QM (qm, v->_.var.tr_idx);
+              mixed_field_restr |= c_rvr->rvrRestrictions;
             }
         }
       else

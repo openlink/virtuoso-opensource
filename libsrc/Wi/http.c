@@ -3238,7 +3238,7 @@ ws_check_rdf_accept (ws_connection_t *ws)
   accept = ws_header_field (ws->ws_lines, "Accept:", NULL);
   if (!ws || !ws->ws_map || !accept)
     return 0;
-  if (NULL == strstr (accept, "application/rdf+xml") && NULL == strstr (accept, "text/rdf+n3"))
+  if (NULL == strstr (accept, "application/rdf+xml") && NULL == strstr (accept, "text/rdf+n3") && NULL == strstr (accept, "text/turtle"))
     return 0;
 
   if (!(proc = (query_t *)sch_name_to_object (wi_inst.wi_schema, sc_to_proc, "DB.DBA.HTTP_RDF_ACCEPT", NULL, "dba", 0)))
