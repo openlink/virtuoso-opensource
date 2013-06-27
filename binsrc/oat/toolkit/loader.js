@@ -86,8 +86,8 @@ OAT.Preferences = {
     imagePath: "/DAV/JS/images/",
     stylePath: "/DAV/JS/styles/",
     endpointXmla: "/XMLA",
-    version: "2.9.4",
-    build: "$Date: 2012/08/16 10:26:11 $",
+    version: "2.9.5",
+    build: "$Date: 2013/01/29 18:03:47 $",
     httpError: 1, /* show http errors */
     allowDefaultResize: 1,
     allowDefaultDrag: 1
@@ -630,7 +630,7 @@ OAT.Dom = {
 		if (!(children instanceof Array)) { children = [children]; }
 		for (var k=0;k<children.length;k++) {
 		    var child = children[k];
-		    parent.appendChild($(child));
+		    if (parent) parent.appendChild($(child));
 		}
 	    }
 	}
