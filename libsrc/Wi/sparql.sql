@@ -6535,6 +6535,18 @@ from DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL_INIT,	-- Not DB.DBA.RDF_FORMAT_BOOL_RE
 -----
 -- Insert, delete, modify operations for lists of triples
 
+-- By default, SPARQL 1.0 codegen makes calls of SPARQL_INSERT_DICT_CONTENT() / SPARQL_DELETE_DICT_CONTENT() / SPARQL_MODIFY_BY_DICT_CONTENTS()
+-- with SPARQL_CONSTRUCT as an aggregate that makes dictionary of triples
+-- SPARQL 1.1 codegen can also make calls of SPARQL_INSERT_QUAD_DICT_CONTENT() / SPARQL_DELETE_QUAD_DICT_CONTENT() / SPARQL_MODIFY_BY_QUAD_DICT_CONTENTS()
+-- with SPARQL_CONSTRUCT as an aggregate that makes dictionary of triples or quads.
+-- The optimizer can tweak these calls for optimization: instead of plain constant for default graph IRI,
+-- a call of SPARQL_INSERT_CTOR / SPARQL_DELETE_CTOR / SPARQL_MODIFY_CTOR can be placed.
+-- Thus some triples will be inserted/deleted witout being accumulated in dictionary for the whole time of the selection process.
+-- Accomulators SPARQL_INSERT_CTOR_ACC / SPARQL_DELETE_CTOR_ACC / SPARQL_MODIFY_CTOR_ACC are based on a common
+-- SPARQL_INS_OR_DEL_CTOR_IMPL that calls either RDF_INSERT_TRIPLES / RDF_INSERT_QUADS or RDF_DELETE_TRIPLES_AGG / RDF_DELETE_QUADS, depending on the requested operation code.
+-- A common finalizer SPARQL_INS_OR_DEL_OR_MODIFY_CTOR_FIN calls RDF_INSERT_TRIPLES / RDF_INSERT_QUADS or RDF_DELETE_TRIPLES /* without _AGG suffix*/  / RDF_DELETE_QUADS.
+
+
 create procedure DB.DBA.RDF_INSERT_TRIPLES_CL (inout graph_iri any, inout triples any, in log_mode integer := null)
 {
   declare is_text, ctr, old_log_enable, l integer;
@@ -6770,8 +6782,9 @@ create procedure DB.DBA.SPARQL_INS_OR_DEL_OR_MODIFY_CTOR_INIT (inout _env any)
 --!AWK PUBLIC
 create procedure DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (inout _env any, in graph_iri any, in opcodes any, in vars any, in log_mode integer, in ctor_op integer)
 {
-  declare triple_ctr integer;
+  declare triple_ctr, quads_found integer;
   declare blank_ids any;
+  declare dict any;
   declare action_ctr integer;
   declare old_log_enable integer;
   old_log_enable := log_enable (log_mode, 1);
@@ -6779,12 +6792,24 @@ create procedure DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (inout _env any, in graph_ir
   declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
   blank_ids := 0;
   action_ctr := 0;
+  quads_found := _env[5 + ctor_op];
   for (triple_ctr := length (opcodes) - 1; triple_ctr >= 0; triple_ctr := triple_ctr-1)
     {
-      declare fld_ctr integer;
+      declare fld_ctr, fld_count integer;
       declare triple_vec any;
-      triple_vec := vector (0,0,0);
-      for (fld_ctr := 2; fld_ctr >= 0; fld_ctr := fld_ctr - 1)
+      declare g_opcode integer;
+      g_opcode := aref_or_default (opcodes, triple_ctr, 6, null);
+      if (g_opcode is null)
+        {
+          fld_count := 3;
+          triple_vec := vector (0,0,0);
+        }
+      else
+        {
+          fld_count := 4;
+          triple_vec := vector (0,0,0,0);
+        }
+      for (fld_ctr := fld_count - 1; fld_ctr >= 0; fld_ctr := fld_ctr - 1)
         {
           declare op integer;
           declare arg any;
@@ -6796,13 +6821,22 @@ create procedure DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (inout _env any, in graph_ir
               i := vars[arg];
               if (i is null)
                 goto end_of_adding_triple;
-              if ((2 > fld_ctr) and not isiri_id (i))
+              if (isiri_id (i))
+                {
+                  if (fld_ctr in (1,3) and is_bnode_iri_id (i))
+                    signal ('RDF01', 'Bad variable value in INSERT: blank node can not be used as predicate or graph');
+                }
+              else if ((isstring (i) and (1 = __box_flags (i))) or (217 = __tag(i)))
+                {
+                  if (fld_ctr in (1,3) and (i like 'bnode://%'))
+                    signal ('RDF01', 'Bad variable value in INSERT: blank node can not be used as predicate or graph');
+                  i := iri_to_id (i);
+                }
+              else if (2 <> fld_ctr)
                 signal ('RDF01',
-                  sprintf ('Bad variable value in INSERT: "%.100s" is not a valid %s, only object of a triple can be a literal',
-                    __rdf_strsqlval (i),
+                  sprintf ('Bad variable value in INSERT: "%.100s" (tag %d box flags %d) is not a valid %s, only object of a triple can be a literal',
+                    __rdf_strsqlval (i), __tag (i), __box_flags (i),
                     case (fld_ctr) when 1 then 'predicate' else 'subject' end ) );
-              if ((1 = fld_ctr) and isiri_id (i) and (i >= min_bnode_iri_id ()))
-                signal ('RDF01', 'Bad variable value in INSERT: blank node can not be used as predicate');
               triple_vec[fld_ctr] := i;
             }
           else if (2 = op)
@@ -6811,7 +6845,7 @@ create procedure DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (inout _env any, in graph_ir
                 blank_ids := vector (iri_id_from_num (sequence_next ('RDF_URL_IID_BLANK')));
               while (arg >= length (blank_ids))
                 blank_ids := vector_concat (blank_ids, vector (iri_id_from_num (sequence_next ('RDF_URL_IID_BLANK'))));
-              if (1 = fld_ctr)
+              if (fld_ctr in (1,3))
                 signal ('RDF01', 'Bad triple for INSERT: blank node can not be used as predicate');
               triple_vec[fld_ctr] := blank_ids[arg];
             }
@@ -6819,41 +6853,68 @@ create procedure DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (inout _env any, in graph_ir
             {
               if (arg is null)
                 goto end_of_adding_triple;
-              if ((2 > fld_ctr) and not isiri_id (arg))
-                signal ('RDF01', sprintf ('Bad const value in INSERT: "%.100s" is not a valid %s, only object of a triple can be a literal',
-                  __rdf_strsqlval (arg),
-                  case (fld_ctr) when 1 then 'predicate' else 'subject' end ) );
-              if ((1 = fld_ctr) and isiri_id (arg) and (arg >= min_bnode_iri_id ()))
-                signal ('RDF01', 'Bad const value in CONSTRUCT: blank node can not be used as predicate');
+              if (isiri_id (arg))
+                {
+                  if (fld_ctr in (1,3) and is_bnode_iri_id (arg))
+                    signal ('RDF01', 'Bad const value in INSERT: blank node can not be used as predicate or graph');
+                }
+              else if ((isstring (arg) and (1 = __box_flags (arg))) or (217 = __tag(arg)))
+                {
+                  if (fld_ctr in (1,3) and (arg like 'bnode://%'))
+                    signal ('RDF01', 'Bad const value in INSERT: blank node can not be used as predicate or graph');
+                  arg := iri_to_id (arg);
+                }
+              else if (2 <> fld_ctr)
+                signal ('RDF01',
+                  sprintf ('Bad const value in INSERT: "%.100s" (tag %d box flags %d) is not a valid %s, only object of a triple can be a literal',
+                    __rdf_strsqlval (arg), __tag (arg), __box_flags (arg),
+                    case (fld_ctr) when 1 then 'predicate' else 'subject' end ) );
+              else if (__tag of vector = __tag (arg))
+                arg := DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (arg[0], arg[1], arg[2]);
               triple_vec[fld_ctr] := arg;
             }
           else signal ('RDFXX', 'Bad opcode in DB.DBA.SPARQL_INSERT_CTOR()');
         }
       -- dbg_obj_princ ('generated triple:', triple_vec);
+      if (4 = fld_count)
+        quads_found := 1;
+      dict := _env [2 + ctor_op];
+      dict_put (dict, triple_vec, 1);
       if (1 = ctor_op)
         {
 --          delete from DB.DBA.RDF_QUAD
 --          where G = _env[0] and S = triple_vec[0] and P = triple_vec[1] and O = DB.DBA.RDF_OBJ_OF_LONG(triple_vec[2]);
-          declare dict any;
-          dict := _env[3];
-          dict_put (dict, triple_vec, 1);
           if (80000 <= dict_size (dict))
-            DB.DBA.RDF_DELETE_TRIPLES_AGG (_env[0], dict_list_keys (dict, 2), _env[5]);
+            {
+              if (quads_found)
+                {
+                  DB.DBA.RDF_DELETE_QUADS (_env[0], dict_list_keys (dict, 2), _env[8], _env[5]);
+                  quads_found := 0;
+                }
+              else
+                DB.DBA.RDF_DELETE_TRIPLES_AGG (_env[0], dict_list_keys (dict, 2), _env[5]);
+            }
         }
       else
         {
 --          insert soft DB.DBA.RDF_QUAD (G,S,P,O)
 --          values (_env[0], triple_vec[0], triple_vec[1], DB.DBA.RDF_OBJ_OF_LONG(triple_vec[2]));
-          declare dict any;
-          dict := _env[4];
-          dict_put (dict, triple_vec, 1);
           if (80000 <= dict_size (dict))
-            DB.DBA.RDF_INSERT_TRIPLES (_env[0], dict_list_keys (dict, 2), _env[5]);
+            {
+              if (quads_found)
+                {
+                  DB.DBA.RDF_INSERT_QUADS (_env[0], dict_list_keys (dict, 2), _env[8], _env[5]);
+                  quads_found := 0;
+                }
+              else
+                DB.DBA.RDF_INSERT_TRIPLES (_env[0], dict_list_keys (dict, 2), _env[5]);
+            }
         }
       action_ctr := action_ctr + 1;
 end_of_adding_triple: ;
     }
   _env[ctor_op] := _env[ctor_op] + action_ctr;
+  _env[5 + ctor_op] := quads_found;
   log_enable (old_log_enable, 1);
 }
 ;
@@ -6862,7 +6923,8 @@ end_of_adding_triple: ;
 create function DB.DBA.SPARQL_DELETE_CTOR_ACC (inout _env any, in graph_iri any, in opcodes any, in vars any, in uid integer, in log_mode integer)
 {
   if (not (isarray (_env)))
-    _env := vector (iri_to_id (graph_iri), 0, 0, dict_new (80000), null, log_mode);
+--                  0                      1  2  3                 4     5         6  7  8
+    _env := vector (iri_to_id (graph_iri), 0, 0, dict_new (80000), null, log_mode, 0, 0, uid);
   if (not _env[1])
     __rgs_assert_cbk (graph_iri, uid, 2, 'SPARUL DELETE');
   DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (_env, graph_iri, opcodes, vars, log_mode, 1);
@@ -6874,7 +6936,8 @@ create procedure DB.DBA.SPARQL_INSERT_CTOR_ACC (inout _env any, in graph_iri any
 {
   -- dbg_obj_princ ('DB.DBA.SPARQL_INSERT_CTOR_ACC (', _env, graph_iri, opcodes, vars, uid, log_mode);
   if (not (isarray (_env)))
-    _env := vector (iri_to_id (graph_iri), 0, 0, null, dict_new (80000), log_mode);
+--                  0                      1  2  3     4                 5         6  7  8
+    _env := vector (iri_to_id (graph_iri), 0, 0, null, dict_new (80000), log_mode, 0, 0, uid);
   if (not _env[2])
     __rgs_assert_cbk (graph_iri, uid, 2, 'SPARUL INSERT');
   DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (_env, graph_iri, opcodes, vars, log_mode, 2);
@@ -6885,7 +6948,8 @@ create procedure DB.DBA.SPARQL_INSERT_CTOR_ACC (inout _env any, in graph_iri any
 create procedure DB.DBA.SPARQL_MODIFY_CTOR_ACC (inout _env any, in graph_iri any, in del_opcodes any, in ins_opcodes any, in vars any, in uid integer, in log_mode integer)
 {
   if (not (isarray (_env)))
-    _env := vector (iri_to_id (graph_iri), 0, 0, dict_new (80000), dict_new (80000), log_mode);
+--                  0                      1  2  3                 4                 5         6  7  8
+    _env := vector (iri_to_id (graph_iri), 0, 0, dict_new (80000), dict_new (80000), log_mode, 0, 0, uid);
   if (not _env[1] and not _env[2])
     __rgs_assert_cbk (graph_iri, uid, 2, 'SPARUL MODIFY');
   DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (_env, graph_iri, del_opcodes, vars, log_mode, 1);
@@ -6903,13 +6967,19 @@ create procedure DB.DBA.SPARQL_INS_OR_DEL_OR_MODIFY_CTOR_FIN (inout _env any)
       if (dict is not null and (0 < dict_size (dict)))
         {
           _env[3] := null;
-          DB.DBA.RDF_DELETE_TRIPLES (_env[0], dict_list_keys (dict, 2), _env[5]);
+          if (_env[6])
+            DB.DBA.RDF_DELETE_QUADS (_env[0], dict_list_keys (dict, 2), _env[8], _env[5]);
+          else
+            DB.DBA.RDF_DELETE_TRIPLES (_env[0], dict_list_keys (dict, 2), _env[5]);
         }
       dict := _env[4];
       if (dict is not null and (0 < dict_size (dict)))
         {
           _env[4] := null;
-          DB.DBA.RDF_INSERT_TRIPLES (_env[0], dict_list_keys (dict, 2), _env[5]);
+          if (_env[7])
+            DB.DBA.RDF_INSERT_QUADS (_env[0], dict_list_keys (dict, 2), _env[8], _env[5]);
+          else
+            DB.DBA.RDF_INSERT_TRIPLES (_env[0], dict_list_keys (dict, 2), _env[5]);
         }
     }
   return _env;
@@ -7418,6 +7488,50 @@ grant select on DB.DBA.SPARQL_BINDINGS_VIEW to public
 ;
 
 -- SPARQL 1.1 UPDATE functions
+create procedure DB.DBA.RDF_INSERT_QUADS (in dflt_graph_iri any, inout quads any, in uid integer, in log_mode integer := null) returns any
+{
+  declare groups any;
+  declare group_ctr, group_count, g_ins_count integer;
+  rowvector_graph_sort (quads, 3, 1);
+  groups := rowvector_graph_partition (quads, 3);
+  group_count := length (groups);
+  for (group_ctr := 0; group_ctr < group_count; group_ctr := group_ctr+1)
+    {
+      declare g_group, g any;
+      g_group := aref_set_0 (groups, group_ctr);
+      g := aref_or_default (g_group, 0, 3, dflt_graph_iri);
+      __rgs_assert_cbk (g, uid, 2, 'SPARQL 1.1 INSERT');
+      DB.DBA.RDF_INSERT_TRIPLES (g, g_group, log_mode);
+      if (isiri_id (g))
+        g := id_to_iri (g);
+      if (g is not null and __rdf_graph_is_in_enabled_repl (iri_to_id (g)))
+        repl_text ('__rdf_repl', '__rdf_repl_flush_queue ()');
+    }
+}
+;
+
+create function DB.DBA.RDF_DELETE_QUADS (in dflt_graph_iri any, inout quads any, in uid integer, in log_mode integer := null) returns any
+{
+  declare groups any;
+  declare group_ctr, group_count, g_del_count integer;
+  rowvector_graph_sort (quads, 3, 1);
+  groups := rowvector_graph_partition (quads, 3);
+  group_count := length (groups);
+  for (group_ctr := 0; group_ctr < group_count; group_ctr := group_ctr+1)
+    {
+      declare g_group, g any;
+      g_group := aref_set_0 (groups, group_ctr);
+      g := aref_or_default (g_group, 0, 3, dflt_graph_iri);
+      __rgs_assert_cbk (g, uid, 2, 'SPARQL 1.1L DELETE');
+      DB.DBA.RDF_DELETE_TRIPLES (g, g_group, log_mode);
+      if (isiri_id (g))
+        g := id_to_iri (g);
+      if (g is not null and __rdf_graph_is_in_enabled_repl (iri_to_id (g)))
+        repl_text ('__rdf_repl', '__rdf_repl_flush_queue ()');
+    }
+}
+;
+
 
 create function DB.DBA.SPARQL_INSERT_QUAD_DICT_CONTENT (in dflt_graph_iri any, in quads_dict any, in uid integer, in log_mode integer := null, in compose_report integer := 0) returns any
 {
@@ -7475,7 +7589,6 @@ create function DB.DBA.SPARQL_INSERT_QUAD_DICT_CONTENT (in dflt_graph_iri any, i
     return ins_count;
 }
 ;
-
 
 create function DB.DBA.SPARQL_DELETE_QUAD_DICT_CONTENT (in dflt_graph_iri any, in quads_dict any, in uid integer, in log_mode integer := null, in compose_report integer := 0) returns any
 {
@@ -7910,7 +8023,6 @@ create procedure DB.DBA.SPARQL_CONSTRUCT_ACC (inout _env any, in opcodes any, in
             {
               if (arg is null)
                 goto end_of_adding_triple;
-
               if (isiri_id (arg))
                 {
                   if (fld_ctr in (1,3) and is_bnode_iri_id (arg))
@@ -14070,6 +14182,7 @@ create table DB.DBA.RDF_GRAPH_USER (
   primary key (RGU_GRAPH_IID, RGU_USER_ID)
   )
 alter index RDF_GRAPH_USER on DB.DBA.RDF_GRAPH_USER partition cluster replicated
+create index RDF_GRAPH_USER_USER_ID on DB.DBA.RDF_GRAPH_USER (RGU_USER_ID, RGU_GRAPH_IID, RGU_PERMISSIONS) partition cluster replicated
 ;
 
 create procedure DB.DBA.RDF_GRAPH_CACHE_IID (in iid IRI_ID)
@@ -14211,14 +14324,40 @@ create procedure DB.DBA.RDF_GRAPH_CHECK_VISIBILITY_CHANGE (in memb_iri varchar, 
 
 create procedure DB.DBA.RDF_GRAPH_GROUP_INS_MEMONLY (in group_iri varchar, in group_iid IRI_ID, in memb_iri varchar, in memb_iid IRI_ID)
 {
+  declare membs any;
   group_iri := cast (group_iri as varchar);
   memb_iri := cast (memb_iri as varchar);
   DB.DBA.RDF_GRAPH_CACHE_IID (group_iid);
   DB.DBA.RDF_GRAPH_CACHE_IID (memb_iid);
-  dict_put (__rdf_graph_group_dict(), group_iid,
-    (select VECTOR_AGG (RGGM_MEMBER_IID) from DB.DBA.RDF_GRAPH_GROUP_MEMBER
-     where RGGM_GROUP_IID = group_iid
-     order by RGGM_MEMBER_IID ) );
+--  This is not scalable enough for big groups: N*N/2 time to create a group of size N.
+--  dict_put (__rdf_graph_group_dict(), group_iid,
+--    (select VECTOR_AGG (RGGM_MEMBER_IID) from DB.DBA.RDF_GRAPH_GROUP_MEMBER
+--     where RGGM_GROUP_IID = group_iid
+--     order by RGGM_MEMBER_IID ) );
+  membs := dict_get (__rdf_graph_group_dict(), group_iid, null);
+  if (membs is null)
+    dict_put (__rdf_graph_group_dict(), group_iid, vector (memb_iid));
+  else if (isvector (membs))
+    {
+      if (0 >= position (memb_iid, membs))
+        {
+          if (length (membs) < 1000)
+            dict_put (__rdf_graph_group_dict(), group_iid, vector_concat (membs, vector (memb_iid)));
+          else
+            {
+              declare new_membs any;
+              new_membs := dict_new (1000);
+              foreach (IRI_ID m in membs) do dict_put (new_membs, m, 1);
+              dict_put (new_membs, memb_iid, 1);
+              dict_put (__rdf_graph_group_dict(), group_iid, new_membs);
+            }
+        }
+    }
+  else
+    {
+      dict_put (membs, memb_iid, 1);
+      dict_put (__rdf_graph_group_dict(), group_iid, membs);
+    }
   jso_mark_affected (group_iri);
   log_text ('jso_mark_affected (?)', group_iri);
   if (group_iri = 'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs')
@@ -14274,14 +14413,36 @@ create procedure DB.DBA.RDF_GRAPH_GROUP_INS (in group_iri varchar, in memb_iri v
 
 create procedure DB.DBA.RDF_GRAPH_GROUP_DEL_MEMONLY (in group_iri varchar, in group_iid IRI_ID, in memb_iri varchar, in memb_iid IRI_ID)
 {
+  declare membs any;
   group_iri := cast (group_iri as varchar);
   memb_iri := cast (memb_iri as varchar);
   DB.DBA.RDF_GRAPH_CACHE_IID (group_iid);
   DB.DBA.RDF_GRAPH_CACHE_IID (memb_iid);
-  dict_put (__rdf_graph_group_dict(), group_iid,
-    (select VECTOR_AGG (RGGM_MEMBER_IID) from DB.DBA.RDF_GRAPH_GROUP_MEMBER
-     where RGGM_GROUP_IID = group_iid
-     order by RGGM_MEMBER_IID ) );
+--  This is not scalable enough for big groups: N*N/2 time to drop a group of size N item by item.
+--  dict_put (__rdf_graph_group_dict(), group_iid,
+--    (select VECTOR_AGG (RGGM_MEMBER_IID) from DB.DBA.RDF_GRAPH_GROUP_MEMBER
+--     where RGGM_GROUP_IID = group_iid
+--     order by RGGM_MEMBER_IID ) );
+  membs := dict_get (__rdf_graph_group_dict(), group_iid, null);
+  if (membs is null)
+    dict_put (__rdf_graph_group_dict(), group_iid, vector ());
+  else if (isvector (membs))
+    {
+      declare p integer;
+again:
+      p := position (memb_iid, membs);
+      if (p > 0)
+        {
+          membs := vector_concat (subseq (membs, 0, p-1), subseq (membs, p));
+          goto again; -- Paranoidal check for multiple occurencies of memb_iid in the graph group
+        }
+      dict_put (__rdf_graph_group_dict(), group_iid, membs);
+    }
+  else
+    {
+      dict_remove (membs, memb_iid);
+      dict_put (__rdf_graph_group_dict(), group_iid, membs);
+    }
   jso_mark_affected (group_iri);
   log_text ('jso_mark_affected (?)', group_iri);
   if (group_iri = 'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs')
@@ -14792,7 +14953,17 @@ create function DB.DBA.RDF_GRAPH_GROUP_LIST_GET (in group_iri any, in extra_grap
           else
             perms := common_perms;
           if (bit_and (perms, 8))
-            vectorbld_concat_acc (full_list, dict_get (__rdf_graph_group_dict(), group_iid, vector ()));
+            {
+              declare membs any;
+              membs := dict_get (__rdf_graph_group_dict(), group_iid, null);
+              if (membs is not null)
+                {
+                  if (isvector (membs))
+                    vectorbld_concat_acc (full_list, membs);
+                  else
+                    vectorbld_concat_acc (full_list, dict_list_keys (membs, 0));
+                }
+            }
         }
       vectorbld_final (full_list);
     }
@@ -14813,7 +14984,13 @@ create function DB.DBA.RDF_GRAPH_GROUP_LIST_GET (in group_iri any, in extra_grap
       else
         perms := common_perms;
       if (bit_and (perms, 8))
-        full_list := dict_get (__rdf_graph_group_dict(), group_iid, vector ());
+        {
+          full_list := dict_get (__rdf_graph_group_dict(), group_iid, null);
+          if (full_list is null)
+            full_list := vector ();
+          else if (not isvector (full_list))
+            full_list := dict_list_keys (full_list, 0);
+        }
       else
         full_list := vector ();
     }
@@ -14876,7 +15053,7 @@ create procedure DB.DBA.RDF_GRAPH_SECURITY_AUDIT (in recovery integer)
   declare user_sparql_half_protects_from_extra_access integer;
   err_recoverable_count_total := 0; err_count_total := 0;
   sparql_u_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME='SPARQL');
-
+  -- dbg_obj_princ ('Starting RDF Graph Security Audit, please be patient.');
   result ('', null, null, null, null, 'Inspecting caches of IRI_IDs of IRIs mentioned in security data...');
   err_bad_count := 0;
   err_recoverable_count := 0;
@@ -14892,6 +15069,7 @@ create procedure DB.DBA.RDF_GRAPH_SECURITY_AUDIT (in recovery integer)
   mem_vec := dict_to_vector (mem_dict, 0);
   mem_vec_inv := dict_to_vector (mem_dict_inv, 0);
   mem_count := length (mem_vec);
+  -- dbg_obj_princ ('Inspecting ', mem_count, ' IRIs cached in memory for structures related to security and graph groups...');
   for (mem_ctr := 0; mem_ctr < mem_count; mem_ctr := mem_ctr + 2)
     {
       declare iri varchar;
@@ -14927,8 +15105,14 @@ create procedure DB.DBA.RDF_GRAPH_SECURITY_AUDIT (in recovery integer)
                 dict_remove (mem_dict, iri);
             }
         }
+      if (0 = mod (mem_ctr, 100000))
+        {
+          -- dbg_obj_princ ('...', mem_ctr, '/', mem_count, ' IRIs passed forward check...');
+          ;
+        }
     }
   mem_count := length (mem_vec_inv);
+  -- dbg_obj_princ ('Inspecting ', mem_count, ' IRI IDs cached in memory for structures related to security and graph groups');
   for (mem_ctr := 0; mem_ctr < mem_count; mem_ctr := mem_ctr + 2)
     {
       declare iid IRI_ID;
@@ -14965,6 +15149,11 @@ create procedure DB.DBA.RDF_GRAPH_SECURITY_AUDIT (in recovery integer)
                 dict_remove (mem_dict_inv, iid);
             }
         }
+      if (0 = mod (mem_ctr, 100000))
+        {
+          -- dbg_obj_princ ('...', mem_ctr, '/', mem_count, ' IRI IDs passed reverse check');
+          ;
+        }
     }
   if (err_recoverable_count)
     {
@@ -14988,7 +15177,7 @@ create procedure DB.DBA.RDF_GRAPH_SECURITY_AUDIT (in recovery integer)
     }
   err_count_total := err_count_total + err_recoverable_count + err_bad_count;
   err_recoverable_count_total := err_recoverable_count_total + err_recoverable_count;
-
+  -- dbg_obj_princ ('Inspecting completeness of IRI cache for graph groups...');
   result ('', null, null, null, null, 'Inspecting completeness of IRI cache for graph groups...');
   err_bad_count := 0;
   err_recoverable_count := 0;
@@ -15008,17 +15197,22 @@ create procedure DB.DBA.RDF_GRAPH_SECURITY_AUDIT (in recovery integer)
     }
   if (err_recoverable_count and recovery)
     {
+      -- dbg_obj_princ ('Erasing invalid graph groups...');
       delete from DB.DBA.RDF_GRAPH_GROUP where id_to_iri_nosignal (RGG_IID) is null;
+      -- dbg_obj_princ ('Erasing membership data about invalid graph groups...');
       delete from DB.DBA.RDF_GRAPH_GROUP_MEMBER where id_to_iri_nosignal (RGGM_GROUP_IID) is null;
       commit work;
+      -- dbg_obj_princ ('Updating IRI caches for graph groups...');
       fake := (select
           count (dict_put (__rdf_graph_iri2id_dict(), __uname (id_to_canonicalized_iri (RGG_IID)), RGG_IID)) +
           count (dict_put (__rdf_graph_id2iri_dict(), RGG_IID, __uname (id_to_canonicalized_iri (RGG_IID))))
           from DB.DBA.RDF_GRAPH_GROUP );
+      -- dbg_obj_princ ('Updating IRI caches for graph groups via memberships...');
       fake := (select
           count (dict_put (__rdf_graph_iri2id_dict(), __uname (id_to_canonicalized_iri (RGGM_GROUP_IID)), RGGM_GROUP_IID)) +
           count (dict_put (__rdf_graph_id2iri_dict(), RGGM_GROUP_IID, __uname (id_to_canonicalized_iri (RGGM_GROUP_IID))))
           from DB.DBA.RDF_GRAPH_GROUP_MEMBER );
+      -- dbg_obj_princ ('Updating IRI caches for graph group members...');
       fake := (select
           count (dict_put (__rdf_graph_iri2id_dict(), __uname (id_to_canonicalized_iri (RGGM_MEMBER_IID)), RGGM_MEMBER_IID)) +
           count (dict_put (__rdf_graph_id2iri_dict(), RGGM_MEMBER_IID, __uname (id_to_canonicalized_iri (RGGM_MEMBER_IID))))
@@ -15026,7 +15220,7 @@ create procedure DB.DBA.RDF_GRAPH_SECURITY_AUDIT (in recovery integer)
     }
   err_count_total := err_count_total + err_recoverable_count + err_bad_count;
   err_recoverable_count_total := err_recoverable_count_total + err_recoverable_count;
-
+  -- dbg_obj_princ ('Inspecting completeness of IRI cache for graph group members...');
   result ('', null, null, null, null, 'Inspecting completeness of IRI cache for graph group members...');
   err_bad_count := 0;
   err_recoverable_count := 0;
@@ -15054,6 +15248,7 @@ create procedure DB.DBA.RDF_GRAPH_SECURITY_AUDIT (in recovery integer)
   err_count_total := err_count_total + err_recoverable_count + err_bad_count;
   err_recoverable_count_total := err_recoverable_count_total + err_recoverable_count;
 
+  -- dbg_obj_princ ('Check for mismatches between graph group IRIs and graph group IRI_IDs...');
   result ('', null, null, null, null, 'Check for mismatches between graph group IRIs and graph group IRI_IDs...');
   err_bad_count := 0;
   err_recoverable_count := 0;
@@ -15076,6 +15271,7 @@ create procedure DB.DBA.RDF_GRAPH_SECURITY_AUDIT (in recovery integer)
           RGG_IID, actual_iri, RGG_IRI ) );
       return;
     }
+  -- dbg_obj_princ ('Check for memberships in nonexisting graph groups...');
   for (select distinct RGGM_GROUP_IID as new_group_iid, iri_to_id_nosignal (RGGM_GROUP_IID) as new_group_iri from DB.DBA.RDF_GRAPH_GROUP_MEMBER
     where not exists (select 1 from DB.DBA.RDF_GRAPH_GROUP where RGG_IID = RGGM_GROUP_IID) for update) do
     {
@@ -15093,7 +15289,7 @@ create procedure DB.DBA.RDF_GRAPH_SECURITY_AUDIT (in recovery integer)
       else if (exists (select 1 from DB.DBA.RDF_GRAPH_GROUP where RGG_IRI = new_group_iri))
         {
           result ('ERROR', new_group_iid, new_group_iri, null, null,
-            sprintf ('Conflicting data in list of groups: the group does not exists, the group IRI is used in a currupted group record') );
+            sprintf ('Conflicting data in list of groups: the group does not exists, the group IRI is used in a corrupted group record') );
           err_recoverable_count := err_recoverable_count + 1;
           if (recovery)
             {
@@ -15123,6 +15319,7 @@ create procedure DB.DBA.RDF_GRAPH_SECURITY_AUDIT (in recovery integer)
 
   pg_mem_dict := mem_dict := __rdf_graph_group_of_privates_dict();
   pg_count := (select count (1) from DB.DBA.RDF_GRAPH_GROUP_MEMBER where RGGM_GROUP_IID = iri_to_id ('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs'));
+  -- dbg_obj_princ ('Inspecting caching of list of private graphs (', pg_mem_dict, ' items in memory, ', pg_count, ' items in the table) ...');
   if (dict_size (mem_dict) <> pg_count)
     {
       result ('ERROR', null, null, null, null,
@@ -15151,7 +15348,13 @@ create procedure DB.DBA.RDF_GRAPH_SECURITY_AUDIT (in recovery integer)
               commit work;
             }
         }
+      if (0 = mod (mem_ctr, 100000))
+        {
+          -- dbg_obj_princ ('...', mem_ctr, '/', mem_count, ' in-memory private graphs done...');
+          ;
+        }
     }
+  -- dbg_obj_princ ('...reverse check...');
   for (select RGGM_MEMBER_IID from DB.DBA.RDF_GRAPH_GROUP_MEMBER
     where RGGM_GROUP_IID = iri_to_id ('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs') ) do
     {
@@ -15168,6 +15371,7 @@ create procedure DB.DBA.RDF_GRAPH_SECURITY_AUDIT (in recovery integer)
   err_count_total := err_count_total + err_recoverable_count + err_bad_count;
   err_recoverable_count_total := err_recoverable_count_total + err_recoverable_count;
 
+  -- dbg_obj_princ ('Inspecting permissions of users...');
   result ('', null, null, null, null, 'Inspecting permissions of users...');
   err_bad_count := 0;
   err_recoverable_count := 0;
@@ -15188,16 +15392,28 @@ create procedure DB.DBA.RDF_GRAPH_SECURITY_AUDIT (in recovery integer)
     where (common.RGU_GRAPH_IID = special.RGU_GRAPH_IID
       and common.RGU_USER_ID = http_nobody_uid() and special.RGU_USER_ID <> http_nobody_uid()
       and bit_and (common.RGU_PERMISSIONS, special.RGU_PERMISSIONS) < common.RGU_PERMISSIONS )
-    or (common.RGU_GRAPH_IID = #i8192 and dict_get (pg_mem_dict, special.RGU_GRAPH_IID, 0)
+    union select special.RGU_GRAPH_IID, special.RGU_USER_ID, special.RGU_PERMISSIONS,
+    common.RGU_GRAPH_IID, common.RGU_USER_ID, common.RGU_PERMISSIONS
+    from DB.DBA.RDF_GRAPH_USER special, DB.DBA.RDF_GRAPH_USER common
+    where (common.RGU_GRAPH_IID = #i8192 and dict_get (pg_mem_dict, special.RGU_GRAPH_IID, 0)
       and common.RGU_USER_ID = http_nobody_uid() and special.RGU_USER_ID <> http_nobody_uid()
       and bit_and (common.RGU_PERMISSIONS, special.RGU_PERMISSIONS) < common.RGU_PERMISSIONS )
-    or (common.RGU_GRAPH_IID = #i0 and special.RGU_GRAPH_IID <> #i8192 and not dict_get (pg_mem_dict, special.RGU_GRAPH_IID, 0)
+    union select special.RGU_GRAPH_IID, special.RGU_USER_ID, special.RGU_PERMISSIONS,
+    common.RGU_GRAPH_IID, common.RGU_USER_ID, common.RGU_PERMISSIONS
+    from DB.DBA.RDF_GRAPH_USER special, DB.DBA.RDF_GRAPH_USER common
+    where (common.RGU_GRAPH_IID = #i0 and special.RGU_GRAPH_IID <> #i8192 and not dict_get (pg_mem_dict, special.RGU_GRAPH_IID, 0)
       and common.RGU_USER_ID = http_nobody_uid() and special.RGU_USER_ID <> http_nobody_uid()
       and bit_and (common.RGU_PERMISSIONS, special.RGU_PERMISSIONS) < common.RGU_PERMISSIONS )
-    or (common.RGU_GRAPH_IID = #i8192 and dict_get (pg_mem_dict, special.RGU_GRAPH_IID, 0)
+    union select special.RGU_GRAPH_IID, special.RGU_USER_ID, special.RGU_PERMISSIONS,
+    common.RGU_GRAPH_IID, common.RGU_USER_ID, common.RGU_PERMISSIONS
+    from DB.DBA.RDF_GRAPH_USER special, DB.DBA.RDF_GRAPH_USER common
+    where (common.RGU_GRAPH_IID = #i8192 and dict_get (pg_mem_dict, special.RGU_GRAPH_IID, 0)
       and common.RGU_USER_ID = special.RGU_USER_ID
       and bit_and (common.RGU_PERMISSIONS, special.RGU_PERMISSIONS) < common.RGU_PERMISSIONS )
-    or (common.RGU_GRAPH_IID = #i0 and special.RGU_GRAPH_IID <> #i8192 and not dict_get (pg_mem_dict, special.RGU_GRAPH_IID, 0)
+    union select special.RGU_GRAPH_IID, special.RGU_USER_ID, special.RGU_PERMISSIONS,
+    common.RGU_GRAPH_IID, common.RGU_USER_ID, common.RGU_PERMISSIONS
+    from DB.DBA.RDF_GRAPH_USER special, DB.DBA.RDF_GRAPH_USER common
+    where (common.RGU_GRAPH_IID = #i0 and special.RGU_GRAPH_IID <> #i8192 and not dict_get (pg_mem_dict, special.RGU_GRAPH_IID, 0)
       and common.RGU_USER_ID = special.RGU_USER_ID
       and bit_and (common.RGU_PERMISSIONS, special.RGU_PERMISSIONS) < common.RGU_PERMISSIONS )
     order by c_userid, c_g_iid ) do
@@ -15217,7 +15433,7 @@ create procedure DB.DBA.RDF_GRAPH_SECURITY_AUDIT (in recovery integer)
     }
   err_count_total := err_count_total + err_recoverable_count + err_bad_count;
   err_recoverable_count_total := err_recoverable_count_total + err_recoverable_count;
-
+  -- dbg_obj_princ ('Inspecting SPARQL user...');
   result ('', null, null, null, null, 'Inspecting SPARQL user...');
   err_bad_count := 0;
   err_recoverable_count := 0;
@@ -15266,6 +15482,7 @@ create procedure DB.DBA.RDF_GRAPH_SECURITY_AUDIT (in recovery integer)
   else
     result ('', null, null, null, null,
       sprintf ('%d security errors found and none of them can be repaired by DB.DBA.RDF_GRAPH_SECURITY_AUDIT (1)', err_count_total) );
+  -- dbg_obj_princ ('Starting RDF Graph Security Audit complete, ', err_recoverable_count_total, '/', err_count_total, ' recoverable/total errors.');
 }
 ;
 
@@ -15517,6 +15734,8 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_DELETE_TRIPLES to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_DELETE_TRIPLES_AGG to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_MODIFY_TRIPLES to SPARQL_UPDATE',
+    'grant execute on DB.DBA.RDF_INSERT_QUADS to SPARQL_UPDATE',
+    'grant execute on DB.DBA.RDF_DELETE_QUADS to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARQL_INSERT_DICT_CONTENT to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARQL_INSERT_QUAD_DICT_CONTENT to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARQL_DELETE_DICT_CONTENT to SPARQL_UPDATE',
@@ -15831,10 +16050,22 @@ create procedure DB.DBA.RDF_QUAD_LOAD_CACHE ()
       count (dict_put (__rdf_graph_iri2id_dict(), __uname (id_to_iri (RGU_GRAPH_IID)), RGU_GRAPH_IID)) +
       count (dict_put (__rdf_graph_id2iri_dict(), RGU_GRAPH_IID, __uname (id_to_iri (RGU_GRAPH_IID))))
       from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID <> #i8192 and RGU_GRAPH_IID <> #i0 );
-  fake := (select count (dict_put (__rdf_graph_group_dict(), g.RGG_IID,
+  for (select
+      g.RGG_IID as group_iid,
       (select DB.DBA.VECTOR_AGG (RGGM_MEMBER_IID) from DB.DBA.RDF_GRAPH_GROUP_MEMBER as gm
-         where gm.RGGM_GROUP_IID = g.RGG_IID order by gm.RGGM_MEMBER_IID ) ) )
-    from DB.DBA.RDF_GRAPH_GROUP as g );
+         where gm.RGGM_GROUP_IID = g.RGG_IID order by gm.RGGM_MEMBER_IID ) as membs
+      from DB.DBA.RDF_GRAPH_GROUP as g ) do
+    {
+      if (length (membs) < 1000)
+        dict_put (__rdf_graph_group_dict(), group_iid, membs);
+      else
+        {
+          declare new_membs any;
+          new_membs := dict_new (length (membs));
+          foreach (IRI_ID m in membs) do dict_put (new_membs, m, 1);
+          dict_put (__rdf_graph_group_dict(), group_iid, new_membs);
+        }
+    }
   fake := (select count (dict_put (__rdf_graph_group_of_privates_dict(), RGGM_MEMBER_IID, 1))
     from DB.DBA.RDF_GRAPH_GROUP_MEMBER where RGGM_GROUP_IID = iri_to_id('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs'));
   fake := (select count (dict_put (__rdf_graph_default_perms_of_user_dict(0), RGU_USER_ID, RGU_PERMISSIONS))
