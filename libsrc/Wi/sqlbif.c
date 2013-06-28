@@ -14825,6 +14825,7 @@ bif_sparql_init (void)
 
 
 extern caddr_t bif_search_excerpt (caddr_t *qst, caddr_t * err_ret, state_slot_t ** args);
+extern caddr_t bif_sum_rank (caddr_t *qst, caddr_t * err_ret, state_slot_t ** args);
 
 void
 sql_bif_init (void)
@@ -15263,6 +15264,7 @@ sql_bif_init (void)
   bif_define ("v_equal", bif_v_equal);
   bif_define ("bit_print", bif_bit_print);
   bif_define ("search_excerpt", bif_search_excerpt);
+  bif_define_typed ("sum_rank", bif_sum_rank, &bt_double);
 
   /* Short aliases for use in generated SQL text: */
   bif_define ("__bft", bif_box_flags_tweak);
