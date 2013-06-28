@@ -297,7 +297,7 @@ extern id_hash_t *rdf_graph_iri2id_dict_htable;		/*!< Dictionary of IRI_IDs of I
 extern id_hash_iterator_t *rdf_graph_iri2id_dict_hit;	/*!< Hash iterator for \c rdf_graph_iri2id_dict_hit */
 extern id_hash_t *rdf_graph_id2iri_dict_htable;		/*!< Dictionary of IRIs of IRI_IDs of graphs mentioned in graph-level security config, boxed IRI_IDs are keys, IRI UNAMEs are values */
 extern id_hash_iterator_t *rdf_graph_id2iri_dict_hit;	/*!< Hash iterator for \c rdf_graph_id2irid_dict_hit */
-extern id_hash_t *rdf_graph_group_dict_htable;		/*!< Dictionary of graph group members: group IID is key, vector of member IIDs is value */
+extern id_hash_t *rdf_graph_group_dict_htable;		/*!< Dictionary of graph group members: group IID is key, vector or hashtable of member IIDs is value */
 extern id_hash_iterator_t *rdf_graph_group_dict_hit;	/*!< Hash iterator for \c rdf_graph_group_dict_htable */
 extern id_hash_t *rdf_graph_public_perms_dict_htable;		/*!< Dictionary of public permissions for graphs: graph/group IID is key, copy of DB.DBA.RDF_GRAPH_USER.RGU_PERMISSIONS is a value */
 extern id_hash_iterator_t *rdf_graph_public_perms_dict_hit;	/*!< Hash iterator for \c rdf_graph_group_dict_htable */

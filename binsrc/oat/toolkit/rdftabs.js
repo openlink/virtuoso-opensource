@@ -1387,7 +1387,7 @@ OAT.RDFTabs.map = function(parent,optObj) {
 						     "http://www.w3.org/2003/01/geo/wgs84_pos#geometry"]); /* containing coords */
 
     this.locProperties    = OAT.IRIDB.insertIRIArr (["http://xmlns.com/foaf/0.1/location", 
-						     "http://www.w3.org/2006/vcard/ns#Locality",
+						     "http://www.w3.org/2006/vcard/ns#locality",
 						     "http://www.w3.org/2001/vcard-rdf/3.0#Locality"]); /* containing location */
 
     this.latProperties    = OAT.IRIDB.insertIRIArr (["http://www.w3.org/2003/01/geo/lat",

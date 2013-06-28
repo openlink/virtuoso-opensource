@@ -1206,12 +1206,12 @@ rnk_scale (caddr_t box)
 
 
 caddr_t
-bif_sum_rank (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+bif_sum_rank (caddr_t *qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t *arr = (caddr_t *) bif_arg (qst, args, 0, "sum_rank");
+  caddr_t * arr = (caddr_t*)bif_arg (qst, args, 0, "sum_rank");
   if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (arr) || BOX_ELEMENTS (arr) < 3)
     return NULL;
-  return box_double (rnk_scale (arr[0]) + (float) ((float) unbox (arr[2]) / ((unbox (arr[1]) / 3))));
+  return box_double (rnk_scale (arr[0]) + (float) ((float)unbox (arr[2]) / ((unbox (arr[1]) / 3))));
   /* return  rnk_scale_v (arr[0]) + cast (arr[2] as real) / (arr[1] / 3); */
 }
 

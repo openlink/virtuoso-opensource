@@ -1049,7 +1049,10 @@ extern int ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp,
 extern void ssg_print_sparul_run_call (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, int compose_report);
 extern void ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_valmode_t needed, const char *asname);
 
-extern void ssg_print_fld_var_restrictions_ex (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *field, caddr_t tabid, SPART *fld_tree, SPART *triple, SPART *fld_if_outer, rdf_val_range_t *rvr);
+/*! Prints restrictions specified by \c rvr on \c fld_tree variable that is a field of \c triple.
+If bit is set in both \c rvr and \c restr_bits_to_ignore then the codegen for bit's property can be suppressed, however the bit in \c rvr is still valid for use in other parts of the codegen.
+The purpose of \c restr_bits_to_ignore is to suspend checks that are made as a side effect of "good" equalities printed for the equiv of the variable */
+extern void ssg_print_fld_var_restrictions_ex (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *field, caddr_t tabid, SPART *fld_tree, SPART *triple, SPART *fld_if_outer, rdf_val_range_t *rvr, ptrlong restr_bits_to_ignore);
 extern void ssg_print_fld_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *field, caddr_t tabid, SPART *triple, int fld_idx, int print_outer_filter);
 extern void ssg_print_all_table_fld_restrictions (spar_sqlgen_t *ssg, quad_map_t *qm, caddr_t alias, SPART *triple, int enabled_field_bitmask, int print_outer_filter);
 

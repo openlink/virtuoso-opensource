@@ -15677,6 +15677,8 @@ extern caddr_t bif_fct_level (caddr_t *qst, caddr_t * err_ret, state_slot_t ** a
 void bif_fct_level_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret);
 caddr_t bif_sum_rank (caddr_t *qst, caddr_t * err_ret, state_slot_t ** args);
 caddr_t bif_dpipe_define (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
+
+
 void
 sql_bif_init (void)
 {
