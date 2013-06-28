@@ -5905,28 +5905,67 @@ bif_vector_sort (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return out_vector;
 }
 
+typedef struct file_io_descriptor_s {
+  ptrlong fiod_refctr;
+  dk_mutex_t *fiod_mutex;
+  ptrlong fiod_fd;
+} file_io_descriptor_t;
+
+
+
 int
-filep_destroy (caddr_t fdi)
+fiop_release (caddr_t box)
 {
-  int fd = (int) *(boxint *) fdi;
-  if (fd > 0)
-    fd_close (fd, NULL);
+  file_io_descriptor_t *fiod = (file_io_descriptor_t *)box;
+  if (NULL != fiod->fiod_mutex)
+    mutex_enter (fiod->fiod_mutex);
+  if (0 >= fiod->fiod_refctr)
+    GPF_T1 ("filep_destroy: nonpositive refctr");
+  if (--(fiod->fiod_refctr))
+{
+      if (NULL != fiod->fiod_mutex)
+        mutex_leave (fiod->fiod_mutex);
+      return 1;
+    }
+  if (NULL != fiod->fiod_mutex)
+    mutex_leave (fiod->fiod_mutex);
+  if (fiod->fiod_fd > 0)
+    {
+      fd_close (fiod->fiod_fd, NULL);
+      fiod->fiod_fd = -256;
+    }
+  if (NULL != fiod->fiod_mutex)
+    mutex_free (fiod->fiod_mutex);
   return 0;
 }
 
 caddr_t
+fiop_copy (caddr_t box)
+{
+  file_io_descriptor_t *fiod = (file_io_descriptor_t *)box;
+  if (NULL != fiod->fiod_mutex)
+    mutex_enter (fiod->fiod_mutex);
+  if (0 >= fiod->fiod_refctr)
+    GPF_T1 ("filep_copy: nonpositive refctr");
+  fiod->fiod_refctr++;
+  if (NULL != fiod->fiod_mutex)
+    mutex_leave (fiod->fiod_mutex);
+  return box;
+}
+
+
+caddr_t
 bif_file_rlc (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t fdi = bif_arg (qst, args, 0, "file_rlc");
-  volatile int fd;
+  file_io_descriptor_t *fiod = (file_io_descriptor_t *)bif_arg (qst, args, 0, "file_rlc");
   sec_check_dba ((query_instance_t *) qst, "file_rlc");
-  if (DV_TYPE_OF (fdi) != DV_FD)
+  if (DV_TYPE_OF (fiod) != DV_FD)
     sqlr_new_error ("22023", "SSSSS", "The argument of file_rlc must be an valid file pointer");
-  fd = (int) *(boxint *) fdi;
-  if (fd < 0)
+  if (fiod->fiod_fd < 0)
     sqlr_new_error ("22023", "SSSSS", "The file pointer is already closed");
-  fd_close (fd, NULL);
-  *(boxint *) fdi = (boxint) -1;
+
+  fd_close (fiod->fiod_fd, NULL);
+  fiod->fiod_fd = -257;
   return box_num (1);
 }
 
@@ -5934,7 +5973,7 @@ caddr_t
 bif_file_rlo (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t fname = bif_string_arg (qst, args, 0, "file_rlo");
-  caddr_t *ret;
+  file_io_descriptor_t *fiod;
   volatile int fd;
 #ifdef HAVE_DIRECT_H
   char *fname_cvt, *fname_tail;
@@ -5975,12 +6014,13 @@ bif_file_rlo (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       sqlr_new_error ("39000", "FA003", "Can't open file %s, error : %s",
 	  fname, virt_strerror (errn));
     }
-
-  ret = (caddr_t *) dk_alloc_box (sizeof (boxint), DV_FD);
-  *(boxint *) ret = (boxint) fd;
-
-  return (caddr_t) ret;
+  fiod = (file_io_descriptor_t *) dk_alloc_box_zero (sizeof (file_io_descriptor_t), DV_FD);
+  fiod->fiod_refctr = 1;
+  fiod->fiod_fd = fd;
+  return (caddr_t) fiod;
 }
+
+
 
 int
 ses_read_line_unbuffered (dk_session_t * ses, char *buf, int max, char * state)
@@ -6008,22 +6048,20 @@ ses_read_line_unbuffered (dk_session_t * ses, char *buf, int max, char * state)
 caddr_t
 bif_file_rl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t fdi = bif_arg (qst, args, 0, "file_rl");
+  file_io_descriptor_t *fiod = (file_io_descriptor_t *)bif_arg (qst, args, 0, "file_rl");
   long inx = (long) bif_long_arg (qst, args, 1, "file_rl");
   long max_len = BOX_ELEMENTS (args) > 2 ? (long) bif_long_arg (qst, args, 2, "file_rl") : 80*1024;
   caddr_t str;
-  volatile int fd;
   dk_set_t line = NULL;
   caddr_t ret = NULL;
   dk_session_t *file_in;
 
   sec_check_dba ((query_instance_t *) qst, "file_rl");
 
-  if (DV_TYPE_OF (fdi) != DV_FD)
+  if (DV_TYPE_OF ((caddr_t)fiod) != DV_FD)
     sqlr_new_error ("22023", "SSSSS", "The argument of file_rl must be an valid file pointer");
 
-  fd = *(boxint *) fdi;
-  if (fd < 0)
+  if (fiod->fiod_fd < 0)
     sqlr_new_error ("22023", "SSSSS", "The file pointer is already closed");
 
   if (max_len <= 0 || max_len > 1000000)
@@ -6033,7 +6071,7 @@ bif_file_rl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   str[0]=0;
 
   file_in = dk_session_allocate (SESCLASS_TCPIP);
-  tcpses_set_fd (file_in->dks_session, fd);
+  tcpses_set_fd (file_in->dks_session, fiod->fiod_fd);
   CATCH_READ_FAIL (file_in)
     {
       char state = '\0';
@@ -6050,10 +6088,10 @@ bif_file_rl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (state == 13) /* after so many reads we look for last LF, if no LF, we restore position */
 	{
 	  char c;
-          pos = LSEEK (fd, 0L, SEEK_CUR);
+          pos = LSEEK (fiod->fiod_fd, 0L, SEEK_CUR);
 	  service_read (file_in, &c, 1, 1);
 	  if (c != 10)
-	    LSEEK (fd, pos, SEEK_SET);
+	    LSEEK (fiod->fiod_fd, pos, SEEK_SET);
 	}
     }
   FAILED
@@ -6064,6 +6102,44 @@ bif_file_rl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   dk_free_box (str);
   ret = list_to_array (dk_set_nreverse (line));
   return ret;
+}
+
+caddr_t
+bif_file_rb (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  file_io_descriptor_t *fiod = (file_io_descriptor_t *)bif_arg (qst, args, 0, "file_rb");
+  long len = bif_long_arg (qst, args, 1, "file_rb");
+  caddr_t str;
+  dk_session_t *file_in;
+  sec_check_dba ((query_instance_t *) qst, "file_rb");
+  if (DV_TYPE_OF (fiod) != DV_FD)
+    sqlr_new_error ("22023", "SSSSS", "The argument of file_rb must be an valid file pointer");
+
+  if (fiod->fiod_fd < 0)
+    sqlr_new_error ("22023", "SSSSS", "The file pointer is already closed");
+
+  if (len <= 0 || len >= (10000000-1))
+    sqlr_new_error ("22023", "SSSSS", "The max length of fragment could not be negative or over 10mb");
+
+  str = dk_alloc_box (len+1, DV_STRING);
+  str[len]=0;
+  if (0 == len)
+    return str;
+
+  file_in = dk_session_allocate (SESCLASS_TCPIP);
+  tcpses_set_fd (file_in->dks_session, fiod->fiod_fd);
+  CATCH_READ_FAIL (file_in)
+    {
+      service_read (file_in, str, len, 1);
+    }
+  FAILED
+    {
+      dk_free_box (str);
+      str = NEW_DB_NULL;
+    }
+  END_READ_FAIL (file_in);
+  PrpcSessionFree (file_in);
+  return str;
 }
 
 caddr_t
@@ -6793,6 +6869,7 @@ bif_file_init (void)
   bif_define_typed ("file_mkpath", bif_sys_mkpath, &bt_integer);
   bif_define_typed ("file_dirlist", bif_sys_dirlist, &bt_any);
   bif_define_typed ("file_rl", bif_file_rl, &bt_any);
+  bif_define_typed ("file_rb", bif_file_rb, &bt_any);
   bif_define_typed ("file_rlo", bif_file_rlo, &bt_any);
   bif_define_typed ("file_rlc", bif_file_rlc, &bt_any);
   bif_define_typed ("file_open", bif_file_open, &bt_any);
@@ -6820,5 +6897,5 @@ bif_file_init (void)
 
   cfg_init (&_bif_pconfig, f_config_file);
 
-  dk_mem_hooks(DV_FD, box_non_copiable, (box_destr_f) filep_destroy, 0);
+  dk_mem_hooks (DV_FD, fiop_copy, (box_destr_f) fiop_release, 1);
 }
