@@ -1174,11 +1174,12 @@ nf:
 -- /* PROPPATCH method */
 create procedure WS.WS.PROPPATCH (in path varchar, inout params varchar, in lines varchar)
 {
+  -- dbg_obj_princ ('WS.WS.PROPPATCH (', path, params, lines, ')');
   declare _u_id, _g_id, _slen, _len, _ix, id, _pid, _ix1, is_calendar, is_addressbook integer;
   declare uname, upwd, st, _perms, _body, _name varchar;
   declare _ses, _set, _del, _tmp, _val any;
-  declare rc, acc, _proprc, xtree any;
-  --dbg_obj_princ ('WS.WS.PROPPATCH (', path, params, lines, ')');
+  declare rc, acc, _proprc, xtree, prop_path any;
+
   is_addressbook := 0;
   is_calendar := 0;
   id := DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (vector(''), path, vector('')), 'C'));
@@ -1192,12 +1193,16 @@ create procedure WS.WS.PROPPATCH (in path varchar, inout params varchar, in line
 				is_addressbook := 1;
 		}
 		st := 'C';
+    prop_path := DB.DBA.DAV_CONCAT_PATH (vector_concat (vector(''), path, vector('')), null);
 	}
   else
     {
       id := DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (vector(''), path), 'R'));
       if (id is not null)
+    {
 	st := 'R';
+      prop_path := DB.DBA.DAV_CONCAT_PATH (vector_concat (vector(''), path), null);
+    }
       else
         {
           http_request_status ('HTTP/1.1 404 Not Found');
@@ -1220,14 +1225,13 @@ create procedure WS.WS.PROPPATCH (in path varchar, inout params varchar, in line
       http_request_status ('HTTP/1.1 400 Bad Request');
       return (0);
     }
-  xte_nodebld_init (acc);
-
   if (WS.WS.ISLOCKED (vector_concat (vector (''), path), lines, _u_id))
     {
       http_request_status ('HTTP/1.1 423 Locked');
       return;
     }
 
+  xte_nodebld_init (acc);
   http_request_status ('HTTP/1.1 207 Multi-Status');
   http ('<?xml version="1.0" encoding="utf-8" ?>\n', rc);
   http ('<D:multistatus xmlns:D="DAV:">\n', rc);
@@ -1264,13 +1268,13 @@ create procedure WS.WS.PROPPATCH (in path varchar, inout params varchar, in line
            xte_nodebld_acc (acc, xte_node (xte_head (pn)));
 		if (is_calendar or is_addressbook)
 		{
-			--- do nothing for now;
+        -- do nothing for now;
 			;
 		}
-	   else if (pns = 'http://www.openlinksw.com/virtuoso/webdav/1.0/'
-	       and _prop_name in ('virtpermissions', 'virtowneruid', 'virtownergid'))
+      else if (pns = 'http://www.openlinksw.com/virtuoso/webdav/1.0/' and _prop_name in ('virtpermissions', 'virtowneruid', 'virtownergid'))
 	     {
 	       declare tmp, tmp_id any;
+
 	       tmp := cast (xpath_eval ('string()', pa) as varchar);
 	       if (_prop_name = 'virtpermissions')
 		 {
@@ -1282,40 +1286,23 @@ create procedure WS.WS.PROPPATCH (in path varchar, inout params varchar, in line
 		   if (regexp_match (DB.DBA.DAV_REGEXP_PATTERN_FOR_PERM (), tmp) is null)
 		     goto skip_perm_update;
 
-		   if (st = 'R')
-		     update WS.WS.SYS_DAV_RES set RES_PERMS = tmp where RES_ID = id;
-		   else
-		     update WS.WS.SYS_DAV_COL set COL_PERMS = tmp where COL_ID = id;
-
+          DAV_PROP_SET_INT (prop_path, ':' || _prop_name, tmp, null, null, 0, 0, 1);
 		   skip_perm_update:;
 		 }
 	       else if (_prop_name = 'virtowneruid')
 		 {
                    tmp_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = tmp);
-		   if (st = 'R')
-		     update WS.WS.SYS_DAV_RES set RES_OWNER = tmp_id where RES_ID = id;
-		   else
-		     update WS.WS.SYS_DAV_COL set COL_GROUP = tmp_id where COL_ID = id;
+          DAV_PROP_SET_INT (prop_path, ':' || _prop_name, tmp_id, null, null, 0, 0, 1);
 		 }
 	       else if (_prop_name = 'virtownergid')
 		 {
                    tmp_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = tmp);
-		   if (st = 'R')
-		     update WS.WS.SYS_DAV_RES set RES_GROUP = tmp_id where RES_ID = id;
-		   else
-		     update WS.WS.SYS_DAV_COL set COL_GROUP = tmp_id where COL_ID = id;
+          DAV_PROP_SET_INT (prop_path, ':' || _prop_name, tmp_id, null, null, 0, 0, 1);
 		 }
 	     }
-	   else if (not exists (select 1 from WS.WS.SYS_DAV_PROP where PROP_NAME = pn and PROP_TYPE = st and PROP_PARENT_ID = id))
-	    {
-              _pid := WS.WS.GETID ('P');
-              insert into WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_TYPE, PROP_PARENT_ID, PROP_VALUE)
-		  values (_pid, pn, st, id, serialize(pv[1]));
-	    }
 	  else
 	    {
-	      update WS.WS.SYS_DAV_PROP set PROP_VALUE = serialize(pv[1])
-		  where PROP_PARENT_ID = id and PROP_TYPE = st and PROP_NAME = pn;
+        DAV_PROP_SET_INT (path, pn, serialize(pv[1]), null, null, 0, 0, 1);
 	    }
            i := i + 1;
 	}
@@ -1340,8 +1327,7 @@ create procedure WS.WS.PROPPATCH (in path varchar, inout params varchar, in line
              pn := concat (pns, ':', pn);
 
            xte_nodebld_acc (acc, xte_node (xte_head (pn)));
-	   delete from WS.WS.SYS_DAV_PROP
-		  where PROP_PARENT_ID = id and PROP_TYPE = st and PROP_NAME = pn;
+      DAV_PROP_REMOVE_INT (prop_path, pn, null, null, 0, 0);
            i := i + 1;
 	}
     }
