@@ -3165,6 +3165,7 @@ DAV_DELETE_INT (
                   rrc := call (det || '_DAV_DELETE') (id, split_and_decode (item[10] || case when (item[1] = 'C') then '/' else '' end, 0, '\0\0/'), item[1], silent, auth_uid);
                   if (rrc <> 1)
                     {
+                      connection_set ('dav_store', null);
                       rollback work;
                       return rrc;
                     }
@@ -3178,17 +3179,19 @@ DAV_DELETE_INT (
               for select RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_COL = id do
                 {
                   rrc := DAV_DELETE_INT (RES_FULL_PATH, silent, auth_uname, auth_pwd, extern);
-                  if (rrc <> 1)
+                  if ((rrc <> 1) and (RES_FULL_PATH not like '%,acl'))
                     {
+                      connection_set ('dav_store', null);
                       rollback work;
                       return rrc;
                     }
                 }
-              for select COL_ID from WS.WS.SYS_DAV_COL where COL_PARENT = id do
+              for select COL_ID, COL_NAME from WS.WS.SYS_DAV_COL where COL_PARENT = id do
                 {
                   rrc := DAV_DELETE_INT (WS.WS.COL_PATH(COL_ID), silent, auth_uname, auth_pwd, extern);
-                  if (rrc <> 1)
+                  if ((rrc <> 1) and (COL_NAME not like '%,acl'))
                     {
+                      connection_set ('dav_store', null);
                       rollback work;
                       return rrc;
                     }
