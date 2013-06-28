@@ -1017,7 +1017,12 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
 /*                         0         1         2 */
 /*                         012345678901234567890 */
       else if (CMD_EQUAL ("sqlval-of-tree", 14))
-        ssg_print_scalar_expn (ssg, tree, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+        {
+          if (SPAR_LIT == SPART_TYPE (tree))
+            ssg_print_box_as_sql_atom (ssg, SPAR_LIT_VAL(tree), SQL_ATOM_UTF8_ONLY);
+          else
+            ssg_print_scalar_expn (ssg, tree, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+        }
 /*                         0         1         2 */
 /*                         012345678901234567890 */
       else if (CMD_EQUAL ("datatype-of-tree", 16))
@@ -2507,9 +2512,9 @@ ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
         }
     }
 #ifdef NDEBUG
-  ssg_puts (" __ro2sq(DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS(");
+  ssg_puts (" DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (");
 #else
-  ssg_puts (" /* sqlval of typed literal */ __ro2sq (DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (");
+  ssg_puts (" /* sqlval of typed literal */ DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (");
 #endif
   ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_NARROW_OR_WIDE);
   ssg_putchar (',');
@@ -2522,7 +2527,7 @@ ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
     ssg_print_box_as_sql_atom (ssg, lang, SQL_ATOM_ASCII_ONLY);
   else
     ssg_puts (" NULL");
-  ssg_puts ("))");
+  ssg_puts (")");
 }
 
 void
