@@ -5512,6 +5512,35 @@ ssg_find_external_in_equiv (sparp_equiv_t *eq, SPART **var_ret, caddr_t *name_re
     name_ret[0] = NULL;
 }
 
+ptrlong
+ssg_restr_bits_derived_for_var_from_equiv_qm_vals (spar_sqlgen_t *ssg, ssg_valmode_t orig_var_native_valmode, SPART *orig_var)
+{
+  sparp_equiv_t *eq;
+  int varctr;
+  ptrlong acc = 0;
+  if (NULL == orig_var->_.var.tabid)
+    return 0;
+  eq = SPARP_EQUIV (ssg->ssg_sparp, orig_var->_.var.equiv_idx);
+  for (varctr = eq->e_var_count; varctr--; /* no step */)
+    {
+      SPART *other_var = eq->e_vars[varctr];
+      ssg_valmode_t other_vmode;
+      ssg_valmode_t eq_vmode;
+      if (other_var == orig_var)
+        continue;
+      if (NULL == other_var->_.var.tabid)
+        continue;
+      other_vmode = sparp_expn_native_valmode (ssg->ssg_sparp, other_var);
+      if (IS_BOX_POINTER (other_vmode) && !other_vmode->qmfIsBijection)
+        continue;
+      eq_vmode = ssg_largest_intersect_valmode (orig_var_native_valmode, other_vmode);
+      if ((eq_vmode == other_vmode) || (eq_vmode == orig_var_native_valmode) ||
+        ((SSG_VALMODE_LONG == eq_vmode) && (orig_var_native_valmode->qmfIsSubformatOfLong || other_vmode->qmfIsSubformatOfLong)) )
+        acc |= other_var->_.var.restr_of_col;
+    }
+  return acc;
+}
+
 void
 ssg_print_fld_lit_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *field, caddr_t tabid, SPART *triple, int fld_idx, int print_outer_filter)
 {
@@ -5521,6 +5550,7 @@ ssg_print_fld_lit_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t
   ptrlong field_restr = field->qmvFormat->qmfValRange.rvrRestrictions;
 /*  caddr_t litvalue = ((DV_ARRAY_OF_POINTER == DV_TYPE_OF (fld_tree)) ? fld_tree->_.lit.val : (caddr_t)fld_tree);*/
   caddr_t litvalue, littype, litlang;
+  int col_count;
   if (print_outer_filter)
     {
       SPART_AUTO (rv, rv_buf, SPAR_RETVAL);
@@ -5545,15 +5575,15 @@ ssg_print_fld_lit_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t
         (DVC_MATCH == cmp_boxes ((caddr_t)(field->qmvFormat->qmfValRange.rvrFixedValue), litvalue, NULL, NULL)) )
         return;
     }
-  if (!(SPART_VARR_IS_LIT & field_restr))
+  col_count = BOX_ELEMENTS (field->qmvColumns);
+  if (!((SPART_VARR_IS_LIT & field_restr) || (field->qmvFormat->qmfIsBijection && (0 < col_count))))
     {
       ssg_print_where_or_and (ssg, "obj field is a literal");
       ssg_print_tmpl (ssg, field->qmvFormat, field->qmvFormat->qmfIslitOfShortTmpl, tabid, field, rv, NULL_ASNAME);
     }
   if (field->qmvFormat->qmfIsBijection)
     {
-      int col_ctr, col_count;
-      col_count = BOX_ELEMENTS (field->qmvColumns);
+      int col_ctr;
       for (col_ctr = 0; col_ctr < col_count; col_ctr++)
         {
 	  qm_format_t *qmf = field->qmvFormat;
@@ -5584,6 +5614,7 @@ ssg_print_fld_uri_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t
   SPART_buf rv_buf;
   SPART *rv = NULL;
   ptrlong field_restr = field->qmvFormat->qmfValRange.rvrRestrictions;
+  int col_count;
 #ifndef NDEBUG
 #if 0
   SPART *fld_tree = triple->_.triple.tr_fields [fld_idx];
@@ -5601,17 +5632,17 @@ ssg_print_fld_uri_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t
       rv->_.retval.tr_idx = fld_idx;
       rv->_.retval.tabid = tabid;
     }
-  if (!(SPART_VARR_IS_REF & field_restr))
+  col_count = BOX_ELEMENTS (field->qmvColumns);
+  if (!((SPART_VARR_IS_REF & field_restr) || (field->qmvFormat->qmfIsBijection && (0 < col_count))))
     {
       ssg_print_where_or_and (ssg, "node field is a URI ref");
       ssg_print_tmpl (ssg, field->qmvFormat, field->qmvFormat->qmfIsrefOfShortTmpl, tabid, field, rv, NULL_ASNAME);
     }
   if (field->qmvFormat->qmfIsBijection)
     {
-      int col_ctr, col_count;
+      int col_ctr;
       caddr_t *split;
       caddr_t arg_dtps = (caddr_t) field->qmvFormat->qmfArgDtps;
-      col_count = BOX_ELEMENTS (field->qmvColumns);
       split = ssg_const_is_good_for_split_into_short (ssg, (SPART *)uri, 1, field->qmvFormat);
       for (col_ctr = 0; col_ctr < col_count; col_ctr++)
         {
@@ -5659,11 +5690,12 @@ ssg_print_fld_uri_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t
 }
 
 void
-ssg_print_fld_var_restrictions_ex (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *field, caddr_t tabid, SPART *fld_tree, SPART *triple, SPART *fld_if_outer, rdf_val_range_t *rvr)
+ssg_print_fld_var_restrictions_ex (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *field, caddr_t tabid, SPART *fld_tree, SPART *triple, SPART *fld_if_outer, rdf_val_range_t *rvr, ptrlong restr_bits_to_ignore)
 {
   sparp_env_t *env = ssg->ssg_sparp->sparp_env;
   ptrlong field_restr = field->qmvFormat->qmfValRange.rvrRestrictions;
   ptrlong tree_restr = rvr->rvrRestrictions;
+  ptrlong restr_to_check = tree_restr & ~field_restr & ~restr_bits_to_ignore;
   if (SPAR_VARIABLE == SPART_TYPE (fld_tree))
     field_restr |= fld_tree->_.var.restr_of_col; /* This is needed because ASSUME() can add more bits than set by qmfValRange.rvrRestrictions */
   if ((SPART_VARR_NOT_NULL & tree_restr) && (!(SPART_VARR_NOT_NULL & field_restr)))
@@ -5724,22 +5756,22 @@ Maybe the best thing is to prohibit seealso declarations in subqueries at all.
         }
       ssg_puts (", :0)");
     }
-  if ((SPART_VARR_IS_BLANK & tree_restr) && (!(SPART_VARR_IS_BLANK & field_restr)))
+  if (SPART_VARR_IS_BLANK & restr_to_check)
     {
       ssg_print_where_or_and (ssg, "variable is blank node");
       ssg_print_tmpl (ssg, field->qmvFormat, field->qmvFormat->qmfIsblankOfShortTmpl, tabid, field, fld_if_outer, NULL_ASNAME);
     }
-  else if ((SPART_VARR_IS_IRI & tree_restr) && (!(SPART_VARR_IS_IRI & field_restr)))
+  else if (SPART_VARR_IS_IRI & restr_to_check)
     {
       ssg_print_where_or_and (ssg, "variable is IRI");
       ssg_print_tmpl (ssg, field->qmvFormat, field->qmvFormat->qmfIsuriOfShortTmpl, tabid, field, fld_if_outer, NULL_ASNAME);
     }
-  else if ((SPART_VARR_IS_REF & tree_restr) && (!(SPART_VARR_IS_REF & field_restr)))
+  else if (SPART_VARR_IS_REF & restr_to_check)
     {
       ssg_print_where_or_and (ssg, "'any' variable is a reference");
       ssg_print_tmpl (ssg, field->qmvFormat, field->qmvFormat->qmfIsrefOfShortTmpl, tabid, field, fld_if_outer, NULL_ASNAME);
     }
-  else if ((SPART_VARR_IS_LIT & tree_restr) && (!(SPART_VARR_IS_LIT & field_restr)))
+  else if (SPART_VARR_IS_LIT & restr_to_check)
     {
       ssg_print_where_or_and (ssg, "'any' variable is a literal");
       ssg_print_tmpl (ssg, field->qmvFormat, field->qmvFormat->qmfIslitOfShortTmpl, tabid, field, fld_if_outer, NULL_ASNAME);
@@ -5817,6 +5849,7 @@ ssg_print_fld_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *fi
     case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL:
       {
         ptrlong tree_restr = fld_tree->_.var.rvr.rvrRestrictions;
+        ptrlong restr_bits_to_ignore;
         if (SPARP_ASSIGNED_EXTERNALLY (tree_restr))
           return; /* Because this means that equiv has equality on the field that is to be printed later; so there's nothing to do right here */
         if (SPART_VARR_CONFLICT & tree_restr)
@@ -5825,7 +5858,8 @@ ssg_print_fld_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *fi
             ssg_puts (" 0");
             return;
           }
-        ssg_print_fld_var_restrictions_ex (ssg, qmap, field, tabid, fld_tree, triple, fld_if_outer, &(fld_tree->_.var.rvr));
+        restr_bits_to_ignore = (((NULL != field) && field->qmvFormat->qmfIsBijection) ? ssg_restr_bits_derived_for_var_from_equiv_qm_vals (ssg, field->qmvFormat, fld_tree) : 0);
+        ssg_print_fld_var_restrictions_ex (ssg, qmap, field, tabid, fld_tree, triple, fld_if_outer, &(fld_tree->_.var.rvr), restr_bits_to_ignore);
         return;
       }
     default:
@@ -9026,7 +9060,7 @@ ssg_print_union_member_item (spar_sqlgen_t *ssg, SPART *member, int *itm_idx_ptr
                       qm_value_t *left_qmv = NULL;
                       if (SPART_TRIPLE_FIELDS_COUNT > left_tree->_.var.tr_idx)
                         left_qmv = SPARP_FIELD_QMV_OF_QM (left_qm, left_tree->_.var.tr_idx);
-                      ssg_print_fld_var_restrictions_ex (ssg, left_qm, left_qmv, left_triple->_.triple.tabid, left_tree, left_triple, NULL /*fld_if_outer*/, &tmp_rvr);
+                      ssg_print_fld_var_restrictions_ex (ssg, left_qm, left_qmv, left_triple->_.triple.tabid, left_tree, left_triple, NULL /*fld_if_outer*/, &tmp_rvr, 0);
                       if (SPART_VARR_FIXED & tmp_rvr.rvrRestrictions)
                         ssg_print_nice_equality_for_var_and_eq_fixed_val (ssg, &tmp_rvr, left_tree, left_triple);
                     }
