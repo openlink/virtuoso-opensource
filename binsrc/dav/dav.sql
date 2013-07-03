@@ -88,6 +88,7 @@ create procedure WS.WS."OPTIONS" (in path varchar, inout params varchar, in line
   http_rewrite ();
   http_header (concat (sprintf ('Content-Type: %s\r\n', ctype),
 		'DAV: 1,2,<http://www.openlinksw.com/virtuoso/webdav/1.0>\r\n',
+		'Link: <http://www.w3.org/ns/ldp/profile>;rel="profile"\r\n',
 		sprintf ('MS-Author-Via: %s\r\n', msauthor)));
 }
 ;
@@ -1401,6 +1402,7 @@ create procedure WS.WS.MKCOL (in path varchar, inout params varchar, in lines va
       commit work;
       -- dbg_obj_princ ('HTTP/1.1 201 Created');
       http_request_status ('HTTP/1.1 201 Created');
+      http_header('Link: <>;rel=<http://www.w3.org/ns/ldp/Container>\r\n');
       return;
     }
   if (rc = -24)
@@ -1794,6 +1796,7 @@ create procedure WS.WS.PUT (in path varchar, inout params varchar, in lines varc
     {
       commit work;
       http_request_status ('HTTP/1.1 201 Created');
+      http_header (sprintf('Content-Type: %s\r\nLink: <>;rel=<http://www.w3.org/ns/ldp/Resource>\r\n', content_type));
       if (is_sparql = 1)
 	http_header ('MS-Author-Via: SPARQL\r\n');
       else
