@@ -800,7 +800,7 @@ void spar_change_sign (caddr_t *lit_ptr)
 }
 
 static const char *sparp_known_get_params[] = {
-    "get:accept", "get:cartridge", "get:destination", "get:error-recovery", "get:group-destination", "get:login", "get:method", "get:note", "get:proxy", "get:query", "get:refresh", "get:soft", "get:strategy", "get:uri", NULL };
+    "get:accept", "get:cartridge", "get:destination", "get:error-recovery", "get:group-destination", "get:login", "get:method", "get:note", "get:private", "get:proxy", "get:query", "get:refresh", "get:soft", "get:strategy", "get:uri", NULL };
 
 static const char *sparp_integer_defines[] = {
     "input:grab-depth", "input:grab-limit", "output:maxrows", "sql:big-data-const", "sql:log-enable", "sql:signal-void-variables", NULL };
@@ -3879,7 +3879,7 @@ sparp_make_graph_precode (sparp_t *sparp, ptrlong subtype, SPART *iriref, SPART 
   rdf_grab_config_t *rgc_ptr = &(sparp->sparp_env->spare_src.ssrc_grab);
   dk_set_t *opts_ptr = &(sparp->sparp_env->spare_src.ssrc_common_sponge_options);
   SPART **mixed_options, **mixed_tail;
-  int common_count, ctr;
+  int common_count, ctr, use_expn_in_gs_checks = 0;
   user_t *exec_user;
   if (NULL != rgc_ptr->rgc_sa_preds)
     {
@@ -3925,18 +3925,25 @@ sparp_make_graph_precode (sparp_t *sparp, ptrlong subtype, SPART *iriref, SPART 
     sparp->sparp_env->spare_sql_refresh_free_text = t_box_num_and_zero (0);
   (mixed_tail++)[0] = (SPART *) t_box_dv_short_string ("refresh_free_text");
   (mixed_tail++)[0] = (SPART *) sparp->sparp_env->spare_sql_refresh_free_text;
+  for (ctr = BOX_ELEMENTS_0 (mixed_options) - 2; 0 <= ctr; ctr -= 2)
+    {
+      ccaddr_t param = (ccaddr_t)(mixed_options[ctr]);
+      if (!strcmp (param, "get:private"))
+        use_expn_in_gs_checks = 1;
+    }
   exec_user = sparp->sparp_sparqre->sparqre_exec_user;
-  return spartlist (sparp, 4, SPAR_GRAPH, subtype, iriref->_.qname.val,
+  return spartlist (sparp, 5, SPAR_GRAPH, subtype, iriref->_.qname.val,
     spar_make_funcall (sparp, 0, "SPECIAL::bif:iri_to_id",
       (SPART **)t_list (1,
         spar_make_funcall (sparp, 0, "sql:RDF_SPONGE_UP",
           (SPART **)t_list (3,
              iriref,
              spar_make_funcall (sparp, 0, "bif:vector", mixed_options),
-             ((NULL != exec_user) ? exec_user->usr_id : U_ID_NOBODY) ) ) ) ) );
+             ((NULL != exec_user) ? exec_user->usr_id : U_ID_NOBODY) ) ) ) ),
+    (ptrlong)use_expn_in_gs_checks );
 
 plain_source_without_sponge:
-  return spartlist (sparp, 4, SPAR_GRAPH, subtype, iriref->_.qname.val, iriref);
+  return spartlist (sparp, 5, SPAR_GRAPH, subtype, iriref->_.qname.val, iriref, (ptrlong)0);
 }
 
 SPART *
@@ -5580,16 +5587,16 @@ bif_sparql_quad_maps_for_quad_impl (caddr_t * qst, caddr_t * err_ret, state_slot
         {
           SPART *expn = spar_make_literal_from_sql_box (&sparp, itm, SPAR_ML_SAFEST);
           if (SPAR_QNAME == SPART_TYPE (expn))
-            sources [src_total_count++] = spartlist (&sparp, 4, SPAR_GRAPH,
-             SPART_GRAPH_FROM, expn->_.qname.val, expn );
+            sources [src_total_count++] = spartlist (&sparp, 5, SPAR_GRAPH,
+             SPART_GRAPH_FROM, expn->_.qname.val, expn, (ptrlong)0 );
         }
       END_DO_BOX_FAST;
       DO_BOX_FAST (caddr_t, itm, src_idx, bad_sources_val)
         {
           SPART *expn = spar_make_literal_from_sql_box (&sparp, itm, SPAR_ML_SAFEST);
           if (SPAR_QNAME == SPART_TYPE (expn))
-            sources [src_total_count++] = spartlist (&sparp, 4, SPAR_GRAPH,
-             SPART_GRAPH_NOT_FROM, expn->_.qname.val, expn );
+            sources [src_total_count++] = spartlist (&sparp, 5, SPAR_GRAPH,
+             SPART_GRAPH_NOT_FROM, expn->_.qname.val, expn, (ptrlong)0 );
         }
       END_DO_BOX_FAST;
       if (src_total_count < src_max_count)

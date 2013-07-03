@@ -6836,6 +6836,7 @@ restoring filters is a preorder one, the postorder needs a complete stack of thi
 int
 sparp_gp_trav_add_graph_perm_read_filters (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
+  SPART **sources = sparp->sparp_expr->_.req_top.sources;
   int depth, membctr, membcount;
   if (SPAR_GP != SPART_TYPE (curr))
     return 0;
@@ -6860,6 +6861,7 @@ sparp_gp_trav_add_graph_perm_read_filters (sparp_t *sparp, SPART *curr, sparp_tr
       SPART *memb = curr->_.gp.members[membctr];
       SPART *g_expn, *g_copy, *filter;
       SPART *g_norm_expn;
+      SPART *g_fake_arg_for_side_fx = NULL;
       ccaddr_t fixed_g;
       dtp_t g_norm_expn_dtp;
       int g_norm_is_var;
@@ -6871,17 +6873,38 @@ sparp_gp_trav_add_graph_perm_read_filters (sparp_t *sparp, SPART *curr, sparp_tr
         continue;
       if (spar_plain_const_value_of_tree (g_expn, &fixed_g))
         {
+          SPART **sources = sparp->sparp_expr->_.req_top.sources;
+          int ctr;
           g_norm_expn = (SPART *)fixed_g;
           g_norm_expn_dtp = DV_TYPE_OF (g_norm_expn);
           g_norm_is_var = 0;
+          DO_BOX_FAST (SPART *, src, ctr, sources)
+            {
+              if (src->_.graph.use_expn_in_gs_checks && IS_BOX_POINTER (g_norm_expn) && !strcmp (SPAR_LIT_OR_QNAME_VAL (g_norm_expn), src->_.graph.iri))
+                {
+                  g_fake_arg_for_side_fx = sparp_tree_full_copy (sparp, src->_.graph.expn, curr);
+                  break;
+                }
+            }
+          END_DO_BOX_FAST;
         }
       else
         {
+          int ctr;
+          dk_set_t candidates = NULL;
           g_norm_expn = g_expn;
           if (!SPAR_IS_BLANK_OR_VAR (g_norm_expn))
             continue;
           g_norm_expn_dtp = DV_ARRAY_OF_POINTER;
           g_norm_is_var = 1;
+          DO_BOX_FAST (SPART *, src, ctr, sources)
+            {
+              if (src->_.graph.use_expn_in_gs_checks && ((SPART_IS_DEFAULT_GRAPH_BLANK (g_norm_expn) ? SPART_GRAPH_FROM : SPART_GRAPH_NAMED) == src->_.graph.subtype))
+                t_set_push (&candidates, sparp_tree_full_copy (sparp, src->_.graph.expn, curr));
+            }
+          END_DO_BOX_FAST;
+          if (NULL != candidates)
+            g_fake_arg_for_side_fx = spar_make_funcall (sparp, 0, "bif:vector", (SPART **)t_revlist_to_array (candidates));
         }
       gp_of_cache = curr;
       for (depth = 0; ; depth--)
@@ -6918,7 +6941,11 @@ sparp_gp_trav_add_graph_perm_read_filters (sparp_t *sparp, SPART *curr, sparp_tr
         }
       filter = spar_make_funcall (sparp, 0,
         ((NULL != sparp->sparp_gs_app_callback) ? "SPECIAL::bif:__rgs_ack_cbk" : "SPECIAL::bif:__rgs_ack"),
-        (SPART **)t_list (3, g_copy, spar_exec_uid_and_gs_cbk (sparp), RDF_GRAPH_PERM_READ) );
+        (NULL == g_fake_arg_for_side_fx) ?
+          (SPART **)t_list (3, g_copy, spar_exec_uid_and_gs_cbk (sparp), RDF_GRAPH_PERM_READ) :
+          (SPART **)t_list (5, g_copy, spar_exec_uid_and_gs_cbk (sparp), RDF_GRAPH_PERM_READ,
+            spartlist (sparp, 4, SPAR_LIT, t_box_dv_short_string ("SPARQL query"), NULL, NULL),
+            g_fake_arg_for_side_fx ) );
       sparp_gp_attach_filter (sparp, curr, filter, 0, NULL);
       if (!g_norm_is_var ||
         ((SPART_VARR_NOT_NULL & g_norm_expn->_.var.rvr.rvrRestrictions) &&

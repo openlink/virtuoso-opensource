@@ -23,6 +23,7 @@
 
 -- Function				is called from
 -- RDF_FT_INDEX_GRABBED			RDF_GRAB_SEEALSO, RDF_GRAB
+-- RDF_GRAB_PREPARE_PRIVATE		RDF_GRAB_SINGLE
 -- RDF_GRAB_SINGLE			RDF_GRAB_SINGLE_ASYNC
 -- RDF_GRAB_SINGLE_ASYNC			RDF_GRAB_SEEALSO, RDF_GRAB
 -- RDF_GRAB_SEEALSO			RDF_GRAB
@@ -81,12 +82,91 @@ create procedure DB.DBA.RDF_FT_INDEX_GRABBED (inout grabbed any, inout options a
 }
 ;
 
+create procedure DB.DBA.RDF_GRAB_PREPARE_PRIVATE (in graph_iri varchar, in group_iri varchar, in uname varchar, inout options any)
+{
+  declare uid, graph_public_perms integer;
+  declare g_iid, group_iid IRI_ID;
+  declare g_is_private integer;
+#pragma prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
+  g_iid := iri_to_id (graph_iri);
+  uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
+  -- dbg_obj_princ    ('DB.DBA.RDF_GRAB_PREPARE_PRIVATE (', graph_iri, group_iri, uname, options, '): g_iid is ', g_iid, ', uid is ', uid);
+  if (uid is null)
+    signal ('RDFGS', sprintf ('A SPARQL query with get:private has failed to get data about user "%s"', uname));
+  if (uid = http_nobody_uid())
+    signal ('RDFGS', sprintf ('A SPARQL query with get:private is used by user "nobody", that is prohibited'));
+-- If graph is virtrdf: then an error is signalled.
+  if (graph_iri = 'http://www.openlinksw.com/schemas/virtrdf#')
+    signal ('RDFGS', sprintf ('A SPARQL query with get:private tries to change access permissions of system metadata graph <%.500s>', graph_iri));
+  if (group_iri in (UNAME'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', UNAME'http://www.openlinksw.com/schemas/virtrdf#rdf_repl_graph_group'))
+    signal ('RDFGS', sprintf ('A SPARQL query with get:private tries to add graph <%.500s> to special graph group <%.500s>', graph_iri, group_iri));
+-- If graph name is an IRI of handshaked web service endpoint then an error is signalled.
+  if (exists (sparql define input:storage "" ask from virtrdf:
+      where { `iri(?:graph_iri)` virtrdf:dialect|virtrdf:isEndpointOfService|^virtrdf:isEndpointOfService ?o } ) )
+    signal ('RDFGS', sprintf ('A SPARQL query with get:private tries to change access permissions of graph <%.500s> but the graph is a known web service endpoint', graph_iri));
+-- If access is public by default even for private graphs then an error is signalled and sponging is not tried.
+  graph_public_perms := DB.DBA.RDF_GRAPH_USER_PERMS_GET (graph_iri, http_nobody_uid());
+  if (bit_and (15, graph_public_perms)
+    and (bit_and (15, dict_get (__rdf_graph_default_perms_of_user_dict(1), http_nobody_uid(), 15))
+      or exists (select 1 from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = g_iid and RGU_USER_ID = http_nobody_uid()) ) )
+    signal ('RDFGS', sprintf ('A SPARQL query with get:private tries to change access permissions of publicly accessible graph <%.500s>', graph_iri));
+  if (group_iri <> '' and 11 <> bit_and (11, DB.DBA.RDF_GRAPH_USER_PERMS_GET (group_iri, uid)))
+    signal ('RDFGS', sprintf ('A SPARQL query with get:private tries to change graph group <%.500s> and add <%.500s> there but user "%s" has not enough rights on that group', group_iri, graph_iri, uname));
+-- If default is "no access" but someone (other than current user) has specifically granted read access to the graph in question AND current user is not dba then an error is signalled.
+  if (uid <> 0)
+    {
+      declare other_reader varchar;
+      other_reader := (select U_NAME from DB.DBA.RDF_GRAPH_USER join DB.DBA.SYS_USERS on (RGU_USER_ID=U_ID)
+        where RGU_GRAPH_IID = g_iid and RGU_USER_ID <> uid and RGU_USER_ID <> 0 and RGU_PERMISSIONS <> 0 );
+      if ((other_reader is not null) and not bit_and (32, DB.DBA.RDF_GRAPH_USER_PERMS_GET (graph_iri, uid)))
+        signal ('RDFGS', sprintf ('A SPARQL query of user "%.500s" with get:private tries to change access permissions of graph <%.500s> privately used by user "%.500s"', uname, graph_iri, other_reader));
+    }
+  g_is_private := 0;
+-- If read access is public by default for world and disabled for private graphs then the graph to be sponged is added to the group of private graphs.
+  if (bit_and (15, dict_get (__rdf_graph_default_perms_of_user_dict(0), http_nobody_uid(), 15)))
+    {
+      -- dbg_obj_princ    ('DB.DBA.RDF_GRAB_PREPARE_PRIVATE (', graph_iri, group_iri, uname, ') will put graph to virtrdf:PrivateGraphs');
+      DB.DBA.RDF_GRAPH_GROUP_INS (UNAME'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', graph_iri);
+      g_is_private := 1;
+    }
+-- If current user is not DBA, current user gets granted read+write+sponge+admin access to the graph to be sponged.
+  if (uid <> 0)
+    {
+      -- dbg_obj_princ    ('DB.DBA.RDF_GRAB_PREPARE_PRIVATE (', graph_iri, group_iri, uname, ') will set perms of non-dba user on the graph');
+      DB.DBA.RDF_GRAPH_USER_PERMS_SET (graph_iri, uname, 15+32);
+    }
+-- If the value of get:private is an IRI then
+  if (group_iri <> '')
+    {
+      group_iid := iri_to_id (group_iri);
+      -- the IRI is supposed to be an IRI of "plain" graph group, error is signalled in case of nonexising graph group, group of private graphs or group of graphs to be replicated.
+      -- - the graph is added to that group,
+      -- dbg_obj_princ    ('DB.DBA.RDF_GRAB_PREPARE_PRIVATE (', graph_iri, group_iri, uname, ') will add the graph to graph group iid ', group_iid);
+      DB.DBA.RDF_GRAPH_GROUP_INS (group_iri, graph_iri);
+      for (
+        select sub.U_NAME as fellow_name, bit_or (MAX (RGU_PERMISSIONS), graph_public_perms, 1) as max_perms from
+          (
+            select U_NAME, RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER join DB.DBA.SYS_USERS on (RGU_USER_ID=U_ID)
+            where RGU_USER_ID <> uid and RGU_USER_ID <> http_nobody_uid() and RGU_USER_ID <> 0 and RGU_GRAPH_IID = group_iid and bit_and (RGU_PERMISSIONS, 8)
+            union select U_NAME, RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER join DB.DBA.SYS_USERS on (RGU_USER_ID=U_ID)
+            where RGU_USER_ID <> uid and RGU_USER_ID <> http_nobody_uid() and RGU_USER_ID <> 0 and RGU_GRAPH_IID = case when (g_is_private) then #i8192 else #i0 end and bit_and (RGU_PERMISSIONS, 8) ) sub
+        group by sub.U_NAME ) do
+        {
+          -- - each non-dba user that can get list of files of the group will get permissions for the loaded graph equal to permissions they have on graph group minus "list" permission.
+          -- dbg_obj_princ    ('DB.DBA.RDF_GRAB_PREPARE_PRIVATE (', graph_iri, group_iri, uname, ') will grant ', max_perms, ' to ', fellow_name);
+          DB.DBA.RDF_GRAPH_USER_PERMS_SET (graph_iri, fellow_name, max_perms);
+        }
+    }
+  -- dbg_obj_princ    ('DB.DBA.RDF_GRAB_PREPARE_PRIVATE (', graph_iri, group_iri, uname, ') done');
+}
+;
+
 create function DB.DBA.RDF_GRAB_SINGLE (in val any, inout grabbed any, inout env any) returns integer
 {
   declare url, get_method, recov varchar;
   declare dest varchar;
-  declare opts any;
-  -- dbg_obj_princ ('DB.DBA.RDF_GRAB_SINGLE (', coalesce (id_to_iri_nosignal (val), val), ',,... , ', env, ')');
+  declare opts, err any;
+  -- dbg_obj_princ  ('DB.DBA.RDF_GRAB_SINGLE (', coalesce (id_to_iri_nosignal (val), val), ',,... , ', env, ')');
   {
   whenever sqlstate '*' goto end_of_sponge;
   if (val is null)
@@ -100,12 +180,12 @@ create function DB.DBA.RDF_GRAB_SINGLE (in val any, inout grabbed any, inout env
   if (217 = __tag (val))
     val := cast (val as varchar);
   dest := null;
-  call (get_keyword ('resolver', env, 'DB.DBA.RDF_GRAB_RESOLVER_DEFAULT')) (get_keyword ('base_iri', env), val, url, dest, get_method);
+  call (get_keyword_ucase ('resolver', env, 'DB.DBA.RDF_GRAB_RESOLVER_DEFAULT')) (get_keyword_ucase ('base_iri', env), val, url, dest, get_method);
   --if (dest is not null and dest = url)
   --  dest := null;
   if (url is not null and not dict_get (grabbed, url, 0))
     {
-      declare final_dest, final_gdest varchar;
+      declare final_dest, final_gdest, get_private, varchar;
       final_dest := get_keyword ('get:destination', env, dest);
       final_gdest := get_keyword ('get:group-destination', env);
       opts := vector (
@@ -115,14 +195,18 @@ create function DB.DBA.RDF_GRAB_SINGLE (in val any, inout grabbed any, inout env
         'get:destination', final_dest,
         'get:group-destination', final_gdest,
         'get:strategy', get_keyword_ucase ('get:strategy', env),
+        'get:private', get_keyword_ucase ('get:private', env),
         'get:error-recovery', get_keyword_ucase ('get:error-recovery', env),
         'get:note', get_keyword_ucase ('get:note', env) );
       dict_put (grabbed, url, 1);
+      get_private := get_keyword_ucase ('get:private', env, null);
+      if (get_private is not null)
+        DB.DBA.RDF_GRAB_PREPARE_PRIVATE (final_dest, get_private, user, env);
       call (get_keyword ('loader', env, 'DB.DBA.RDF_SPONGE_UP'))(url, opts, user);
       commit work;
       dict_put (grabbed, url, coalesce (final_dest, dest));
       -- dbg_obj_princ ('DB.DBA.RDF_GRAB_SINGLE (', val, ',... , ', env, ') has loaded ', url);
-      if (coalesce (get_keyword ('refresh_free_text', env), 0) and
+      if (coalesce (get_keyword_ucase ('refresh_free_text', env), 0) and
         (__rdf_obj_ft_rule_count_in_graph (iri_to_id (final_dest)) or
           __rdf_obj_ft_rule_count_in_graph (iri_to_id (final_gdest)) ) )
         {
@@ -1933,9 +2017,9 @@ create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any, in u
 
 create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in uid integer := -1)
 {
-  declare dest, get_soft, local_iri, immg, res_graph_iri, cookie varchar;
+  declare dest, get_soft, local_iri, immg, res_graph_iri, cookie, get_private varchar;
   declare perms, log_mode integer;
-  -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_UP_1 (', graph_iri, options, ')');
+  -- dbg_obj_princ  ('DB.DBA.RDF_SPONGE_UP_1 (', graph_iri, options, ')');
   graph_iri := cast (graph_iri as varchar);
   --set_user_id ('dba', 1);
   dest := get_keyword_ucase ('get:destination', options);
@@ -1954,16 +2038,16 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
   if (log_mode is not null) -- when in aq mode
     log_enable (log_mode, 1);
   -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_UP_1 (', graph_iri, options, ') set local_iri=', local_iri);
-  perms := DB.DBA.RDF_GRAPH_USER_PERMS_GET (dest, case (uid) when -1 then http_nobody_uid() else uid end);
   get_soft := get_keyword_ucase ('get:soft', options);
   if ('soft' = get_soft)
     {
       if ((dest = graph_iri) and exists (select 1 from DB.DBA.RDF_QUAD table option (index G) where G = iri_to_id (graph_iri, 0) ) and
         not exists (select 1 from DB.DBA.SYS_HTTP_SPONGE
           where HS_LOCAL_IRI = local_iri and HS_PARSER = 'DB.DBA.RDF_LOAD_HTTP_RESPONSE' and
-	  HS_EXPIRATION is not null))
+          HS_EXPIRATION is not null))
         {
           -- dbg_obj_princ ('Exists and get:soft=soft, leaving');
+          perms := DB.DBA.RDF_GRAPH_USER_PERMS_GET (dest, case (uid) when -1 then http_nobody_uid() else uid end);
           if (not bit_and (perms, 1))
             {
                -- dbg_obj_princ (dest, ' graph is OK as it is but not returned from RDF_SPONGE_UP_1 due to lack of read permission for user ', uid);
@@ -1984,10 +2068,17 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
     signal ('RDFZZ', sprintf (
       'This version of Virtuoso supports only "soft", "replacing" and "add" values of "define get:soft ...", not "%.500s"',
       get_soft ) );
-  if (not bit_and (perms, 4))
+  get_private := get_keyword_ucase ('get:private', options, null);
+  if (get_private is not null)
+    DB.DBA.RDF_GRAB_PREPARE_PRIVATE (graph_iri, get_private, user, options);
+  else
     {
-       -- dbg_obj_princ (res_graph_iri, ' graph is not sponged by RDF_SPONGE_UP_1 due to lack of sponge permission for user ', uid);
-       return null;
+      perms := DB.DBA.RDF_GRAPH_USER_PERMS_GET (dest, case (uid) when -1 then http_nobody_uid() else uid end);
+      if (not bit_and (perms, 4))
+        {
+           -- dbg_obj_princ  (res_graph_iri, ' graph is not sponged by RDF_SPONGE_UP_1 due to lack of sponge permission for user ', uid);
+           return null;
+        }
     }
   -- if requested iri is immutable, do not try to get it at all
   -- this is to preserve rdf storage in certain cases
@@ -1997,25 +2088,25 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
       immg := split_and_decode (immg, 0, '\0\0,');
       foreach (any imm in immg) do
         {
-	  imm := trim (imm);
-	  if (imm = dest)
+          imm := trim (imm);
+          if (imm = dest)
+                   {
+                     res_graph_iri := dest;
+                     -- dbg_obj_princ ('immutable');
+                     goto graph_is_ready;
+                   }
+          if (imm = 'inference-graphs' and exists (select 1 from DB.DBA.SYS_RDF_SCHEMA where RS_URI = dest))
             {
-              res_graph_iri := dest;
-              -- dbg_obj_princ ('immutable');
+                     res_graph_iri := dest;
+                     -- dbg_obj_princ ('immutable');
+                     goto graph_is_ready;
+            }
+          -- Like pattern allowed
+          if (dest like imm)
+            {
+              res_graph_iri := local_iri;
               goto graph_is_ready;
             }
-	  if (imm = 'inference-graphs' and exists (select 1 from DB.DBA.SYS_RDF_SCHEMA where RS_URI = dest))
-	    {
-              res_graph_iri := dest;
-              -- dbg_obj_princ ('immutable');
-              goto graph_is_ready;
-	    }
-	  -- Like pattern allowed
-	  if (dest like imm)
-	    {
-	      res_graph_iri := local_iri;
-	      goto graph_is_ready;
-	    }
         }
     }
   -- dbg_obj_princ ('will sponge...');
