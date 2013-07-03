@@ -5140,7 +5140,7 @@ spar_env_push (sparp_t *sparp)
   ENV_COPY (spare_common_sql_table_options);
   /* no copy for spare_groupings */
   ENV_COPY (spare_sql_select_options);
-  /* no copy for spare_context_qms */
+  ENV_COPY (spare_context_sinvs);
   ENV_COPY (spare_context_qms);
 #if 0 /* This check is replaced with check for context qms if define input:storage appear */
   if ((NULL != env_copy->spare_context_qms) && ((SPART *)((ptrlong)_STAR) != env_copy->spare_context_qms->data))
