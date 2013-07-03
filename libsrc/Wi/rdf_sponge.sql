@@ -166,7 +166,7 @@ create function DB.DBA.RDF_GRAB_SINGLE (in val any, inout grabbed any, inout env
   declare url, get_method, recov varchar;
   declare dest varchar;
   declare opts, err any;
-  -- dbg_obj_princ  ('DB.DBA.RDF_GRAB_SINGLE (', coalesce (id_to_iri_nosignal (val), val), ',,... , ', env, ')');
+  -- dbg_obj_princ ('DB.DBA.RDF_GRAB_SINGLE (', coalesce (id_to_iri_nosignal (val), val), ',,... , ', env, ')');
   {
   whenever sqlstate '*' goto end_of_sponge;
   if (val is null)
@@ -185,7 +185,7 @@ create function DB.DBA.RDF_GRAB_SINGLE (in val any, inout grabbed any, inout env
   --  dest := null;
   if (url is not null and not dict_get (grabbed, url, 0))
     {
-      declare final_dest, final_gdest, get_private, varchar;
+      declare final_dest, final_gdest, get_private varchar;
       final_dest := get_keyword ('get:destination', env, dest);
       final_gdest := get_keyword ('get:group-destination', env);
       opts := vector (
@@ -561,6 +561,17 @@ create table DB.DBA.SYS_HTTP_SPONGE (
 alter index SYS_HTTP_SPONGE on DB.DBA.SYS_HTTP_SPONGE partition (HS_LOCAL_IRI varchar)
 create index SYS_HTTP_SPONGE_EXPIRATION on DB.DBA.SYS_HTTP_SPONGE (HS_EXPIRATION desc) partition (HS_LOCAL_IRI varchar)
 create index SYS_HTTP_SPONGE_FROM_IRI on DB.DBA.SYS_HTTP_SPONGE (HS_FROM_IRI, HS_PARSER) partition (HS_FROM_IRI varchar)
+create index SYS_HTTP_SPONGE_ORIGIN_URI on DB.DBA.SYS_HTTP_SPONGE (HS_ORIGIN_URI) partition (HS_ORIGIN_URI varchar)
+;
+
+alter table DB.DBA.SYS_HTTP_SPONGE add HS_NOTE varchar
+;
+
+create table DB.DBA.SYS_HTTP_SPONGE_REFRESH_DEFAULTS (
+  HSRD_DATA_SOURCE_URI_PATTERN varchar not null,
+  HSRD_DEFAULT_REFRESH_INTERVAL_SECS integer,
+  primary key (HSRD_DATA_SOURCE_URI_PATTERN)
+)
 ;
 
 alter table DB.DBA.SYS_HTTP_SPONGE add HS_NOTE varchar
@@ -856,7 +867,7 @@ add_new_origin:
   -- dbg_obj_princ ('adding new origin...');
   old_origin_uri := NULL; old_origin_login := NULL; old_last_load := NULL; old_last_etag := NULL;
   old_expiration := NULL; old_download_size := NULL; old_download_msec_time := NULL;
-  old_exp_is_true := 0; old_read_count := 0;
+  old_exp_is_true := 0; old_read_count := 0; old_last_modified := null;
   insert into DB.DBA.SYS_HTTP_SPONGE (HS_LOCAL_IRI, HS_PARSER, HS_ORIGIN_URI, HS_ORIGIN_LOGIN, HS_LAST_LOAD, HS_NOTE)
   values (local_iri, parser, new_origin_uri, new_origin_login, now(), get_note);
   commit work;
@@ -1128,7 +1139,7 @@ create function DB.DBA.RDF_SPONGE_TRY_TTL (in mode integer, inout txt varchar) r
   declare cr_pos integer;
   -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_TRY_TTL (', mode, txt, ')');
   whenever sqlstate '*' goto err;
-  DB.DBA.TTLP_VALIDATE (txt, '', null, mode);
+  DB.DBA.TTLP_VALIDATE (txt, '', 'dummy', mode);
   -- dbg_obj_princ ('-- no error');
   return '';
 err:
@@ -1349,7 +1360,7 @@ create procedure DB.DBA.RDF_HTTP_URL_GET (inout url any, in base any, inout hdr 
 
   if (hdr[0] not like 'HTTP/1._ 200 %')
     {
-      if (hdr[0] like 'HTTP/1._ 30_ %')
+      if (hdr[0] like 'HTTP/1._ 30_ %' and hdr[0] not like 'HTTP/1._ 304 %')
 	{
 	  url := http_request_header (hdr, 'Location');
 	  if (isstring (url))
@@ -2019,7 +2030,7 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
 {
   declare dest, get_soft, local_iri, immg, res_graph_iri, cookie, get_private varchar;
   declare perms, log_mode integer;
-  -- dbg_obj_princ  ('DB.DBA.RDF_SPONGE_UP_1 (', graph_iri, options, ')');
+  -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_UP_1 (', graph_iri, options, ')');
   graph_iri := cast (graph_iri as varchar);
   --set_user_id ('dba', 1);
   dest := get_keyword_ucase ('get:destination', options);
@@ -2076,7 +2087,10 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
       perms := DB.DBA.RDF_GRAPH_USER_PERMS_GET (dest, case (uid) when -1 then http_nobody_uid() else uid end);
       if (not bit_and (perms, 4))
         {
-           -- dbg_obj_princ  (res_graph_iri, ' graph is not sponged by RDF_SPONGE_UP_1 due to lack of sponge permission for user ', uid);
+           if (get_keyword_ucase ('get:error-recovery', options, 'signal') = 'signal')
+             signal ('RDFZZ', sprintf (
+               'The graph <%.500s> is not sponged by RDF_SPONGE_UP_1 due to lack of sponge permission for user %d', dest, case (uid) when -1 then http_nobody_uid() else uid end ) );
+           -- dbg_obj_princ (res_graph_iri, ' graph is not sponged by RDF_SPONGE_UP_1 due to lack of sponge permission for user ', uid);
            return null;
         }
     }
@@ -2090,16 +2104,16 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
         {
           imm := trim (imm);
           if (imm = dest)
-                   {
-                     res_graph_iri := dest;
-                     -- dbg_obj_princ ('immutable');
-                     goto graph_is_ready;
-                   }
+            {
+              res_graph_iri := dest;
+              -- dbg_obj_princ ('immutable');
+              goto graph_is_ready;
+            }
           if (imm = 'inference-graphs' and exists (select 1 from DB.DBA.SYS_RDF_SCHEMA where RS_URI = dest))
             {
-                     res_graph_iri := dest;
-                     -- dbg_obj_princ ('immutable');
-                     goto graph_is_ready;
+              res_graph_iri := dest;
+              -- dbg_obj_princ ('immutable');
+              goto graph_is_ready;
             }
           -- Like pattern allowed
           if (dest like imm)
