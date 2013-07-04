@@ -298,13 +298,16 @@ create procedure rl_send (inout env any, in g_iid any)
 {
   declare req, n_reqs int;
   commit work;
- n_reqs := env[2];
+  n_reqs := env[2];
   env[2] := n_reqs + 1;
- req := aq_request (env[0], 'DB.DBA.RL_FLUSH', vector (env[1], g_iid));
+  req := aq_request (env[0], 'DB.DBA.RL_FLUSH', vector (env[1], g_iid));
   env[1] := rl_local_dpipe ();
   env[4 + mod (n_reqs, 5)] := req;
   if (n_reqs > 5)
-    aq_wait (env[0], env[4 + mod (n_reqs - 4, 5)], 1);
+    {
+      commit work; -- it may happen the aq request before is executed on client thread
+      aq_wait (env[0], env[4 + mod (n_reqs - 4, 5)], 1);
+    }
 }
 ;
 
@@ -326,7 +329,10 @@ create procedure rl_send_gs (inout env any, in g_iid any)
   env[1] := rl_local_dpipe_gs ();
   env[4 + mod (n_reqs, 5)] := req;
   if (n_reqs > 5)
-    aq_wait (env[0], env[4 + mod (n_reqs - 4, 5)], 1);
+    {
+      commit work; -- it may happen the aq request before is executed on client thread
+      aq_wait (env[0], env[4 + mod (n_reqs - 4, 5)], 1);
+    }
 }
 ;
 
