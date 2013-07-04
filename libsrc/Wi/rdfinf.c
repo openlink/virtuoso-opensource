@@ -2498,9 +2498,15 @@ sqlg_cl_bracket_outer (sqlo_t * so, data_source_t * first)
     }
   SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_SQLC_ASG_SET, NULL);
   {
+    int inx;
     SQL_NODE_INIT (outer_seq_end_node_t, ose2, outer_seq_end_input, ose_free);
     ose = ose2;
     ose->ose_out_slots = (state_slot_t **) ht_keys_to_array (res);
+    DO_BOX (state_slot_t *, ssl, inx, ose->ose_out_slots)
+      {
+	ssl->ssl_always_vec = 1;
+      }
+    END_DO_BOX;
     ose->ose_set_no = ssl_new_inst_variable (so->so_sc->sc_cc, "set_ctr", DV_LONG_INT);
     ose->ose_prev_set_no = ssl_new_inst_variable (so->so_sc->sc_cc, "prev_set_ctr", DV_LONG_INT);
     ose->ose_buffered_row = ssl_new_inst_variable (so->so_sc->sc_cc, "buf_row", DV_ARRAY_OF_POINTER);
