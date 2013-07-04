@@ -4882,7 +4882,7 @@ sqlg_set_ts_order (sqlo_t * so, df_elt_t * dt)
       sqlg_set_ts_order (so, dt->_.sub.generated_dfe);
       return;
     }
-  if (so->so_sc->sc_is_update || sqlo_opt_value (dt->_.sub.ot->ot_opts, OPT_ANY_ORDER))
+  if (so->so_sc->sc_is_update || sqlo_opt_value (dt->_.sub.ot->ot_opts, OPT_ANY_ORDER) || dt->_.sub.hash_filler_of)
     {
       so->so_sc->sc_order = TS_ORDER_NONE;
       return;
