@@ -95,16 +95,16 @@ create procedure DB.DBA.RDF_GRAB_PREPARE_PRIVATE (in graph_iri varchar, in group
     signal ('RDFGS', sprintf ('A SPARQL query with get:private has failed to get data about user "%s"', uname));
   if (uid = http_nobody_uid())
     signal ('RDFGS', sprintf ('A SPARQL query with get:private is used by user "nobody", that is prohibited'));
--- If graph is virtrdf: then an error is signalled.
+-- If graph is virtrdf: then an error is signaled.
   if (graph_iri = 'http://www.openlinksw.com/schemas/virtrdf#')
     signal ('RDFGS', sprintf ('A SPARQL query with get:private tries to change access permissions of system metadata graph <%.500s>', graph_iri));
   if (group_iri in (UNAME'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', UNAME'http://www.openlinksw.com/schemas/virtrdf#rdf_repl_graph_group'))
     signal ('RDFGS', sprintf ('A SPARQL query with get:private tries to add graph <%.500s> to special graph group <%.500s>', graph_iri, group_iri));
--- If graph name is an IRI of handshaked web service endpoint then an error is signalled.
+-- If graph name is an IRI of handshaked web service endpoint then an error is signaled.
   if (exists (sparql define input:storage "" ask from virtrdf:
       where { `iri(?:graph_iri)` virtrdf:dialect|virtrdf:isEndpointOfService|^virtrdf:isEndpointOfService ?o } ) )
     signal ('RDFGS', sprintf ('A SPARQL query with get:private tries to change access permissions of graph <%.500s> but the graph is a known web service endpoint', graph_iri));
--- If access is public by default even for private graphs then an error is signalled and sponging is not tried.
+-- If access is public by default even for private graphs then an error is signaled and sponging is not tried.
   graph_public_perms := DB.DBA.RDF_GRAPH_USER_PERMS_GET (graph_iri, http_nobody_uid());
   if (bit_and (15, graph_public_perms)
     and (bit_and (15, dict_get (__rdf_graph_default_perms_of_user_dict(1), http_nobody_uid(), 15))
@@ -112,7 +112,7 @@ create procedure DB.DBA.RDF_GRAB_PREPARE_PRIVATE (in graph_iri varchar, in group
     signal ('RDFGS', sprintf ('A SPARQL query with get:private tries to change access permissions of publicly accessible graph <%.500s>', graph_iri));
   if (group_iri <> '' and 11 <> bit_and (11, DB.DBA.RDF_GRAPH_USER_PERMS_GET (group_iri, uid)))
     signal ('RDFGS', sprintf ('A SPARQL query with get:private tries to change graph group <%.500s> and add <%.500s> there but user "%s" has not enough rights on that group', group_iri, graph_iri, uname));
--- If default is "no access" but someone (other than current user) has specifically granted read access to the graph in question AND current user is not dba then an error is signalled.
+-- If default is "no access" but someone (other than current user) has specifically granted read access to the graph in question AND current user is not dba then an error is signaled.
   if (uid <> 0)
     {
       declare other_reader varchar;
@@ -139,7 +139,7 @@ create procedure DB.DBA.RDF_GRAB_PREPARE_PRIVATE (in graph_iri varchar, in group
   if (group_iri <> '')
     {
       group_iid := iri_to_id (group_iri);
-      -- the IRI is supposed to be an IRI of "plain" graph group, error is signalled in case of nonexising graph group, group of private graphs or group of graphs to be replicated.
+      -- the IRI is supposed to be an IRI of "plain" graph group, error is signaled in case of nonexising graph group, group of private graphs or group of graphs to be replicated.
       -- - the graph is added to that group,
       -- dbg_obj_princ    ('DB.DBA.RDF_GRAB_PREPARE_PRIVATE (', graph_iri, group_iri, uname, ') will add the graph to graph group iid ', group_iid);
       DB.DBA.RDF_GRAPH_GROUP_INS (group_iri, graph_iri);
