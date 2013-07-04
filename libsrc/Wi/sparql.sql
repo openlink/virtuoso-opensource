@@ -7318,6 +7318,7 @@ create function DB.DBA.SPARUL_LOAD (in graph_iri any, in resource varchar, in ui
       'get:error-recovery', get_keyword ('get:error-recovery', options, 'signal'),
       -- 'flags', flags,
       'get:strategy', get_keyword ('get:strategy', options, 'rdfa-only'),
+      'get:private', get_keyword ('get:private', options, null),
       'grabbed', grabbed ),
     options );
   commit work;

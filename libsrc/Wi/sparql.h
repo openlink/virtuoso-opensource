@@ -578,9 +578,10 @@ typedef struct spar_tree_s
       } gp;
     struct {
 	/* #define SPAR_GRAPH		(ptrlong)1018 */
-        ptrlong subtype;
-        caddr_t iri;
-        SPART *expn;
+        ptrlong subtype;		/*!< One of SPART_GRAPH_FROM, SPART_GRAPH_GROUP, SPART_GRAPH_NAMED, SPART_GRAPH_NOT_FROM, SPART_GRAPH_NOT_GROUP, SPART_GRAPH_NOT_NAMED */
+        caddr_t iri;			/*!< Constant IRI of a source */
+        SPART *expn;			/*!< A QNAME with IRI of "plain" source or an expression that returns an IRI (or NULL) and makes some side effects such as sponging */
+        ptrlong use_expn_in_gs_checks;	/*!< Nonzero if \c _.graph.expn acts in such a way that it can change graph-level permissions, so it should be used instead of \c _.graph.iri in run-time security checks */
       } graph;
     struct { /* Note that all first members of \c lit case should match to \c qname case */
         /* #define SPAR_LIT		(ptrlong)1009 */
