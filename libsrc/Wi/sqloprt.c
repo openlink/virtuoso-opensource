@@ -108,6 +108,21 @@ sqlo_dfe_print (df_elt_t * dfe, int offset)
   if (!IS_BOX_POINTER (dfe))
     {
       sqlo_print (("#%ld", (long) (ptrlong) dfe));
+      switch ((ptrlong)dfe)
+	{
+	case BOP_NOT:
+	    sqlo_print ((" (not)"));
+	  break;
+	case BOP_OR:
+	    sqlo_print ((" (or)"));
+	  break;
+	case BOP_AND:
+	    sqlo_print ((" (and)"));
+	  break;
+	case DFE_PRED_BODY:
+	    sqlo_print ((" (pred body)"));
+	  break;
+	}
       return;
     }
   if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (dfe))
@@ -619,3 +634,23 @@ dbg_qi_print_slots (query_instance_t * qi, state_slot_t ** slots, int nthset)
 }
 
 #endif // DEBUG
+
+
+void
+jp_arr_print (dk_set_t * arr)
+{
+  int inx;
+  DO_BOX (dk_set_t, list, inx, arr)
+    {
+      df_elt_t * head = (df_elt_t*)list->data;
+      printf (" card %s %g score %g %s ", head->dfe_is_joined ? "": "NJ", head->dfe_arity, head->dfe_unit, head->_.table.ot->ot_new_prefix);
+      DO_SET (df_elt_t *, dfe, &list->next)
+	{
+	  printf ("%s ", dfe->_.table.ot->ot_new_prefix);
+	}
+      END_DO_SET();
+      printf ("\n");
+    }
+  END_DO_BOX;
+}
+
