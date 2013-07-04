@@ -6293,8 +6293,9 @@ chash_fill_input (fun_ref_node_t * fref, caddr_t * inst, caddr_t * state)
       QR_RESET_CODE
       {
 	POP_QR_RESET;
-	if (RST_ERROR == reset_code)
-	  longjmp_splice (THREAD_CURRENT_THREAD->thr_reset_ctx, RST_ERROR);
+	if (RST_ERROR == reset_code || RST_KILLED == reset_code || RST_DEADLOCK == reset_code)
+	  longjmp_splice (THREAD_CURRENT_THREAD->thr_reset_ctx, reset_code);
+	log_error ("reset code %d", reset_code);
 	GPF_T1 ("hash filler reset for partition over full not implemented");
       }
       END_QR_RESET;
