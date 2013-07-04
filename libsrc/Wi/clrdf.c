@@ -601,13 +601,16 @@ cl_rdf_call_insert_cb (cucurbit_t * cu, caddr_t * qst, caddr_t * err_ret)
   dk_set_t set = NULL, deleted = NULL, inserted = NULL;
 
   cu->cu_clrg->clrg_inst = cu->cu_qst = (caddr_t *) qi;
-  id_hash_iterator (&hit, cu->cu_ld_graphs);
-  while (hit_next (&hit, (caddr_t *) & kp, (caddr_t *) & vp))
+  if (cu->cu_ld_graphs)
     {
-      boxint g = (boxint) * kp;
-      dk_set_push (&set, list (1, box_iri_id (g)));
+      id_hash_iterator (&hit, cu->cu_ld_graphs);
+      while (hit_next (&hit, (caddr_t *) & kp, (caddr_t *) & vp))
+	{
+	  boxint g = (boxint) * kp;
+	  dk_set_push (&set, list (1, box_iri_id (g)));
+	}
+      id_hash_free (cu->cu_ld_graphs);
     }
-  id_hash_free (cu->cu_ld_graphs);
   cu->cu_ld_graphs = NULL;
   qi->qi_client->cli_row_autocommit = 0;
   cu->cu_clrg->clrg_no_txn = 0;
