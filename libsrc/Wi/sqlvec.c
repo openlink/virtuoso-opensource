@@ -2628,6 +2628,7 @@ sqlg_hs_realias_key_out (sql_comp_t * sc, hash_source_t * hs)
   hs->hs_out_aliases = NULL;
 }
 
+int enable_unq_non_unq = 1;
 
 void
 sqlg_vec_hs (sql_comp_t * sc, hash_source_t * hs)
@@ -2660,6 +2661,9 @@ sqlg_vec_hs (sql_comp_t * sc, hash_source_t * hs)
   setp = filler->fnr_setp;
   if (!setp->setp_hash_fill_partitioned)
     setp->setp_hash_fill_partitioned = cc_new_instance_slot (sc->sc_cc);
+  /* if a hash is filled by a join that is not known to be uniquely card reducing then the hs which by itself, if joining to a single table would be unique  may stop being unique.  Affects merging into a ts */
+  if (enable_unq_non_unq)
+    hs->hs_is_unique = CHA_ALWAYS_UNQ == setp->setp_ha->ha_ch_unique;
   hs->hs_is_partitioned = setp->setp_hash_fill_partitioned;
   DO_SET (data_source_t *, pred, &sc->sc_vec_pred)
   {
