@@ -15277,6 +15277,17 @@ bif_rdf_strcontains_x_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
   int found = 0;
   size_t hit_pos = 0;
   caddr_t res;
+  switch (DV_TYPE_OF (pattern))
+    {
+      case DV_STRING: 
+      case DV_UNAME:
+      case DV_WIDE:
+      case DV_LONG_WIDE:
+	  break;
+      default:
+	  sqlr_new_error ("22023", "SL001", "The SPARQL 1.1 function %s() needs a string value as 2d argument", sparql_fnname);
+	  return NULL;
+    }
   switch (DV_TYPE_OF (str))
     {
     case DV_STRING: /* utf-8 */
