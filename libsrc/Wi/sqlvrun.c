@@ -2558,7 +2558,7 @@ ts_thread (table_source_t * ts, caddr_t * inst, it_cursor_t * itc, int aq_state,
   if (itc->itc_buf_registered && itc->itc_map_pos >= itc->itc_buf_registered->bd_content_map->pm_count) GPF_T1 ("itc regd after end of pagfe in ts_thread ");
   if (!aq)
     {
-      aq = aq_allocate (qi->qi_client, 16);
+      aq = aq_allocate (qi->qi_client, enable_qp * 1.5);
       aq->aq_do_self_if_would_wait = 1;
       lt_timestamp (qi->qi_trx, &aq->aq_lt_timestamp[0]);
       aq->aq_ts = get_msec_real_time ();
