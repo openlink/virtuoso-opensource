@@ -1615,7 +1615,7 @@ ha_rehash (caddr_t * inst, hash_area_t * ha, index_tree_t * it)
     {
       if (inx >= ha->ha_n_keys)
 	break;
-      if (SSL_VEC != ssl->ssl_type && SSL_REF != ssl->ssl_type)
+      if (SSL_VEC != ssl->ssl_type && SSL_REF != ssl->ssl_type && SSL_IS_REFERENCEABLE (ssl))
       qst_set (inst, ssl, save[inx]);
     }
   END_DO_BOX;
