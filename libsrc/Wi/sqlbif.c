@@ -14837,7 +14837,7 @@ bif_cl_idni_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_s
 caddr_t
 bif_idn (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  return box_copy_tree (bif_arg (qst, args, 0, "cl_idn"));
+  return box_mt_copy_tree (bif_arg (qst, args, 0, "cl_idn"));
 }
 
 
