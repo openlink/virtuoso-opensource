@@ -718,7 +718,7 @@ ks_print_0 (key_source_t * ks)
       DO_SET (search_spec_t *, sp, &ks->ks_hash_spec)
 	{
 	  hash_range_spec_t * hrng = (hash_range_spec_t *)sp->sp_min_ssl;
-	  if (hrng->hrng_hs || hrng->hrng_ht_id)
+	  if (hrng->hrng_hs || hrng->hrng_ht_id || hrng->hrng_ht)
 	    {
 	      if (!any)
 		{
