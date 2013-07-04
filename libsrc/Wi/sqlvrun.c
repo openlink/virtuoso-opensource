@@ -2279,7 +2279,7 @@ itc_copy (it_cursor_t * itc)
     {
       caddr_t c = NULL;
       if (!itc->itc_n_sets || !ITC_P_VEC (itc, inx))
-	c = box_copy_tree (itc->itc_search_params[inx]);
+	c = box_mt_copy_tree (itc->itc_search_params[inx]);
       ITC_SEARCH_PARAM (cp, c);
       if (c)
 	ITC_OWNS_PARAM (cp, c);
