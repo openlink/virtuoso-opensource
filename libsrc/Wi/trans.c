@@ -1346,6 +1346,7 @@ tn_reset (trans_node_t * tn, caddr_t * inst, int n_sets)
   qst_set (inst, tn->tn_relation, (caddr_t)rel);
   QST_INT (inst, tn->clb.clb_nth_set) = -1;
   QST_INT (inst, tn->tn_nth_cache_result) = 0;
+  QST_INT (inst, tn->tn_state) = 0;
 }
 
 void
