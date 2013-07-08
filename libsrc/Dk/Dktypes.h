@@ -190,6 +190,11 @@ typedef long long 		int64;
 #endif
 #endif
 
+#ifdef WIN32
+#define INFINITY (DBL_MAX+DBL_MAX)
+#define NAN (INFINITY-INFINITY)
+#endif
+
 struct mem_pool_s;
 typedef struct mem_pool_s 	mem_pool_t;
 
