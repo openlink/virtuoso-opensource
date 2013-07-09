@@ -1698,6 +1698,11 @@ sparp_equiv_clone (sparp_t *sparp, sparp_equiv_t *orig, SPART *cloned_gp)
     {
       sparp_equiv_t *esrc = SPARP_EQUIV(sparp, orig->e_external_src_idx);
       if (esrc->e_cloning_serial == sparp->sparp_sg->sg_cloning_serial)
+        {
+          sparp_equiv_t *cloned_esrc = SPARP_EQUIV(sparp, esrc->e_clone_idx);
+          sparp_equiv_connect_param_to_external (sparp, tgt, cloned_esrc);
+        }
+      else
         sparp_equiv_connect_param_to_external (sparp, tgt, esrc);
     }
   /* no copying for e_dbg_saved_gp and e_dbg_merge_dest */
@@ -3158,11 +3163,11 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
               cloned_eq->e_receiver_idxs = (ptrlong *)t_list (0);
             }
         }
+      tgt->_.gp.members = sparp_treelist_full_clone_int (sparp, orig->_.gp.members, orig); /* Should be before everything else to clone equivs */
       /*if (NULL != orig->_.gp.binds)
         tgt->_.gp.binds = sparp_treelist_full_clone_int (sparp, orig->_.gp.binds, orig);*/
       if (NULL != orig->_.gp.filters)
         tgt->_.gp.filters = sparp_treelist_full_clone_int (sparp, orig->_.gp.filters, orig);
-      tgt->_.gp.members = sparp_treelist_full_clone_int (sparp, orig->_.gp.members, orig);
       if (NULL != orig->_.gp.subquery)
           tgt->_.gp.subquery = sparp_tree_full_clone_int (sparp, orig->_.gp.subquery, orig);
       if (NULL != orig->_.gp.options)
