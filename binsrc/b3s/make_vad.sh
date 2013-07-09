@@ -495,7 +495,7 @@ vad_create $STICKER_DAV $VAD_NAME_RELEASE
 virtuoso_shutdown
 #chmod 644 $VAD_NAME_DEVEL
 chmod 644 $VAD_NAME_RELEASE
-directory_clean
+#directory_clean
 
 CHECK_LOG
 RUN egrep  '"\*\*.*FAILED:|\*\*.*ABORTED:"' "$LOGFILE"

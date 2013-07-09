@@ -760,6 +760,18 @@ create procedure b3s_label (in _S any, in langs any, in lbl_order_pref_id int :=
   declare best_q, q float;
   declare lang, stat, msg varchar;
 
+  if (__proc_exists ('rdf_resolve_labels_s') is not null)
+    {
+      declare ret any;
+      ret := rdf_resolve_labels_s (adler32 (langs), vector (__i2id (_S)));
+      ret := coalesce (ret[0], '');
+      ret := __ro2sq (ret); 
+      if (__tag (ret) = 246)
+	ret := __rdf_strsqlval (ret);
+      if (isnumeric (ret)) 
+        return (cast (ret as varchar));
+      return ret;	
+    }
   stat := '00000';
   --exec (sprintf ('sparql define input:inference "facets" '||
   --'select ?o (lang(?o)) where { <%S> virtrdf:label ?o }', _S), stat, msg, vector (), 0, meta, data);

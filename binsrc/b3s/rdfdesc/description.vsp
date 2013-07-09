@@ -125,7 +125,6 @@ again:
   if (not isstring(_addthis_key)) _addthis_key := '0';
   if ('1' = _addthis_key) _addthis_key := 'xa-4ce13e0065cdadc0';
 
-  ses_parms := b3s_render_ses_params ();
 
   host := http_request_header (http_request_header (), 'X-Forwarded-Host', null, null);
   if (host is null)
@@ -143,6 +142,17 @@ again:
 
   _F := ''; _from := null;
   grs := connection_get ('graphs', null);
+  if (length (grs) = 0)
+    {
+      declare fg any;
+      fg := (select top 1 "g" from (sparql select ?g count (*) where { quad map virtrdf:DefaultQuadMap { graph ?g { `iri(?:gr)` ?p ?o }}} group by ?g order by desc 2 limit 1) x); 
+      if (fg is not null)
+        {
+          grs := vector (fg);
+          connection_set ('graphs', grs);
+        }
+    }
+  ses_parms := b3s_render_ses_params ();
   if (grs is not null)
     {
       foreach (any x in grs) do
@@ -599,6 +609,7 @@ if (_subject <> '') {
 	  <form action="/describe/" method="get">
 	  <div>
 	      <input type="hidden" name="url" value="<?V gr ?>" />
+              <input type="submit" name="go" value="Go" style="width: 0px; height: 0px; margin: 0px; padding: 0px; outline: none; border: 0px;" />
 	      <?vsp if (connection_get ('inf') is not null) { ?>
 	      <input type="hidden" name="inf" value="<?V connection_get ('inf') ?>" />
 	      <?vsp } ?>

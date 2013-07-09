@@ -40,6 +40,7 @@
 <xsl:param name="t_term"/>
 <xsl:param name="p_qry"/>
 <xsl:param name="p_xml"/>
+<xsl:param name="p_link"/>
 <xsl:param name="tree"/>
 <xsl:param name="addthis_key"/>
 <xsl:param name="type"/>
@@ -199,7 +200,7 @@
   sparql_a.href='/sparql?default-graph-uri=&amp;qtxt=<xsl:value-of select="urlify ($p_qry)"/>&amp;debug='
   sparql_a.innerHTML = 'View query as SPARQL';
   var plink_a = OAT.Dom.create('a',{}, 'plink_a');
-  plink_a.href='/fct/facet.vsp?qxml=<xsl:value-of select="urlify ($p_xml)"/>'
+  plink_a.href='<xsl:value-of select="$p_link"/>'; <!--'/fct/facet.vsp?qxml=<xsl:value-of select="urlify ($p_xml)"/>'; -->
   plink_a.innerHTML = 'Facet permalink';
   OAT.Dom.append (['sparql_a_ctr',sparql_a, plink_a]);
   </script>
