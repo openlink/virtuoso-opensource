@@ -50,5 +50,6 @@ create distinct no primary key ref column index RDF_QUAD_OP on RDF_QUAD (O, P) p
 -- as result of query might be too large to fit into transaction
 log_enable(2, 1);
 insert into rdf_quad (g,s,p,o) select g,s,p,o from rq_rows;
+checkpoint;
 -- reenable transaction log
 log_enable(1, 1);
