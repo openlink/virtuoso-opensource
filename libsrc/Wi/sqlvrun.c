@@ -1312,14 +1312,14 @@ itc_temp_any_box (it_cursor_t * itc, int inx, db_buf_t dv)
       hl = 5;
     wide:
       box_len = box ? box_length (box) : 0;
-      if (box_len == len + 1 && DV_WIDE == box_tag (box))
+      if (box_len == len + 1 && DV_STRING == box_tag (box))
 	{
 	  memcpy (box, dv + hl, len);
 	  return box;
 	}
       else
 	{
-	  new_box = dk_alloc_box (len + 1, DV_WIDE);
+	  new_box = dk_alloc_box (len + 1, DV_STRING);
 	  memcpy (new_box, dv + hl, len);
 	  new_box[len] = 0;
 	  goto replace_owned_par;
