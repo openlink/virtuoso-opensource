@@ -2312,6 +2312,7 @@ itc_copy (it_cursor_t * itc)
       itc_col_init (cp);
       itc_range (cp, 0, COL_NO_ROW);
       cp->itc_col_row = 0;
+      cp->itc_value_ret_hash_spec = itc->itc_value_ret_hash_spec;
     }
   return cp;
 }
