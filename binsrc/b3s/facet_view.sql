@@ -854,6 +854,17 @@ fct_pretty_sparql (in q varchar, in lev int := 0)
 }
 ;
 
+create procedure
+fct_c_plink (in p_xml any)
+{
+  declare link any;
+  link := sprintf ('local:/fct/facet.vsp?qxml=%U', p_xml);
+  link := uriqa_dynamic_local_replace (link);
+  if (__proc_exists ('WS..CURI_MAKE_CURI') is not null)
+    link := '/c/' || WS..CURI_MAKE_CURI (link);
+  return link;  
+}
+;
 
 create procedure
 fct_web (in tree any)
@@ -924,7 +935,7 @@ fct_web (in tree any)
   tp := cast (xpath_eval ('//view/@type', tree) as varchar);
 
   declare p_ses, r_ses any;
-  declare p_xml varchar;
+  declare p_xml, p_link varchar;
   declare p_xml_tree any;
 
   p_xml_tree := xslt (registry_get ('_fct_xslt_') || 'fct_strip_loc.xsl', tree, vector());
@@ -933,6 +944,7 @@ fct_web (in tree any)
   http_value (p_xml_tree, null, p_ses);
 
   p_xml := cast (p_ses as varchar);
+  p_link := fct_c_plink (p_xml);
 
   r_ses := string_output ();
   http_value (reply, null, r_ses);
@@ -977,7 +989,9 @@ fct_web (in tree any)
 			    'agg_res',
 			    agg_res,
 			    'pos',
-			    pos + 1
+			    pos + 1,
+			    'p_link',
+			    p_link
 			    )),
 	      null, txt);
 

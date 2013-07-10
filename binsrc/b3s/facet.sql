@@ -305,6 +305,13 @@ FCT_LABEL_NP (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar := 'en'
 
   if (not isiri_id (x))
     return null;
+  if (__proc_exists ('rdf_resolve_labels_s') is not null)
+    {
+      declare ret any;
+      ret := rdf_resolve_labels_s (adler32 (lng), vector (x));
+      ret := coalesce (ret[0], '');
+      return __ro2sq (ret); 
+    }
   rdf_check_init ();
   label_iri := iri_id_from_num (atoi (registry_get ('fct_label_iri')));
   best_str := '';

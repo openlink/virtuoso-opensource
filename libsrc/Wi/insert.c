@@ -1546,7 +1546,11 @@ itc_cp_check_node (it_cursor_t * itc, buffer_desc_t *parent, int mode)
 	      && !buf_has_leaves (buf))
 	    {
 	      if (mode == COMPACT_DIRTY && !gethash ((void*)(void*)(ptrlong)leaf, &itm->itm_remap))
-		GPF_T1 ("In compact, no remap dp for a dirty buffer");
+		{
+		  dbg_page_map_to_file (buf);
+		  log_error ("dirty buffer flags: can reuse logical: %d, dp=%d, physical dp=%d", it_can_reuse_logical (it, buf->bd_page), buf->bd_page, buf->bd_physical_page);
+		  GPF_T1 ("In compact, no remap dp for a dirty buffer");
+		}
 	      BD_SET_IS_WRITE (buf, 1);
 	      mutex_leave (&itm->itm_mtx);
 	      pg_check_map (buf);

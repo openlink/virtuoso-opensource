@@ -64,6 +64,8 @@ grant execute on DB.DBA.S_SUM to "SPARQL";
 
 create procedure sum_rank (inout arr any)
 {
+  if (not isvector (arr) or length (arr) < 3)
+    return 0; 
   return  rnk_scale (arr[0]) + cast (arr[2] as real) / (arr[1] / 3);
 }
 ;

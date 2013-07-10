@@ -415,8 +415,6 @@ qr_free (query_t * qr)
   while (NULL != qr->qr_used_tables) dk_free_tree (dk_set_pop (&(qr->qr_used_tables)));
   while (NULL != qr->qr_used_udts) dk_free_tree (dk_set_pop (&(qr->qr_used_udts)));
   while (NULL != qr->qr_used_jsos) dk_free_tree (dk_set_pop (&(qr->qr_used_jsos)));
-  if (!qr->qr_text_is_constant)
-    dk_free_box (qr->qr_text);
   dk_free_tree (qr->qr_parse_tree);
   DO_SET (data_source_t *, sr, &qr->qr_nodes)
   {
@@ -534,6 +532,8 @@ qr_free (query_t * qr)
   if ((NULL != qr->qr_static_prev) || (NULL != qr->qr_static_next) || (qr == static_qr_dllist))
     static_qr_dllist_remove (qr);
 #endif
+  if (!qr->qr_text_is_constant)
+    dk_free_box (qr->qr_text);
   dk_free ((caddr_t) qr, sizeof (query_t));
 }
 
