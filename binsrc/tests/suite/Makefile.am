@@ -99,7 +99,7 @@ TESTS_ENVIRONMENT=PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" \
 	PORT=$(PORT) TOP="$(TOP)" HOME="$(TOP)" JDK2="@ac_jdk2_path@" JDK3="@ac_jdk3_path@" HOST=localhost SERVER=virtuoso-t MAKE=$(MAKE)
 
 clean-local:
-	./clean.sh
+	VIRTDEV_HOME="$(TOP)" ./clean.sh
 
 
 # ----------------------------------------------------------------------
