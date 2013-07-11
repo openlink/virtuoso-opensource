@@ -56,6 +56,7 @@
 #include "recovery.h"
 #include "zlib.h"
 #include "math.h"
+#include "monitor.h"
 
 #ifdef BUF_ALLOC_CK
 #include <openssl/rand.h>
@@ -4489,6 +4490,7 @@ wi_open (char *mode)
 	rdf_no_string_inline = 1;
       LEAVE_TXN;
     }
+  mon_init ();
 }
 
 
