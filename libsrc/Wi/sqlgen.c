@@ -1407,6 +1407,8 @@ sqlg_hash_filler_dt (sqlo_t * so, df_elt_t * dt_dfe, subq_source_t * sqs)
     setp->src_gen.src_pre_code = sel->src_gen.src_pre_code;
     sel->src_gen.src_pre_code = NULL;
     qr_replace_node (sqs->sqs_query, (data_source_t*)sel, (data_source_t*)setp, 0);
+    dk_set_delete (&sc->sc_cc->cc_query->qr_nodes, (void*)setp);
+    dk_set_push (&sqs->sqs_query->qr_nodes, (void*)setp); /* for src stats, must be counted in the nodes of the containing subq */
     return ((data_source_t *) fref);
   }
 }

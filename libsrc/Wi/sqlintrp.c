@@ -883,8 +883,12 @@ qn_init (table_source_t * ts, caddr_t * inst)
   qn_record_in_state ((data_source_t*) ts, inst, NULL);
   /* no subq nodes continuable after init */
   if (ts->src_gen.src_input == (qn_input_fn) setp_node_input)
+    {
+      QNCAST (setp_node_t, setp, ts);
+      if (HA_FILL != setp->setp_ha->ha_op)
     setp_temp_clear ((setp_node_t *) ts, ((setp_node_t*)ts)->setp_ha, inst);
-  if (ts->src_gen.src_input == (qn_input_fn) fun_ref_node_input)
+    }
+  else if (ts->src_gen.src_input == (qn_input_fn) fun_ref_node_input)
     {
       fun_ref_node_t * fref = (fun_ref_node_t*) ts;
       DO_SET (hash_area_t *, ha, &fref->fnr_distinct_ha)
@@ -893,7 +897,7 @@ qn_init (table_source_t * ts, caddr_t * inst)
 	}
       END_DO_SET();
     }
-  if (ts->src_gen.src_input == (qn_input_fn) skip_node_input)
+  else if (ts->src_gen.src_input == (qn_input_fn) skip_node_input)
     {
       QNCAST (skip_node_t, sk, ts);
       if (sk->src_gen.src_sets)
@@ -901,7 +905,7 @@ qn_init (table_source_t * ts, caddr_t * inst)
       else
       qst_set_long (inst, ((skip_node_t *)ts)->sk_row_ctr, 0);
     }
-  if ((qn_input_fn) select_node_input == ts->src_gen.src_input
+  else if ((qn_input_fn) select_node_input == ts->src_gen.src_input
       || (qn_input_fn) select_node_input_subq == ts->src_gen.src_input)
     {
       QNCAST (select_node_t, sel, ts);
@@ -910,9 +914,9 @@ qn_init (table_source_t * ts, caddr_t * inst)
       if (sel->sel_row_ctr_array)
 	qst_set_long (inst, sel->sel_row_ctr_array, 0);
     }
-  if (IS_QN (ts, trans_node_input))
+  else if (IS_QN (ts, trans_node_input))
     tn_qn_init ((data_source_t*)ts, inst);
-  if (IS_QN (ts, chash_read_input))
+  else if (IS_QN (ts, chash_read_input))
     {
       key_source_t * ks = ts->ts_order_ks;
       if (ts->ts_nth_slice)
@@ -963,8 +967,6 @@ subq_init (query_t * subq, caddr_t * inst)
     {
       qn_record_in_state ((data_source_t*) ts, inst, NULL);
       /* no subq nodes continuable after init */
-      if (ts->src_gen.src_input == (qn_input_fn) setp_node_input)
-	setp_temp_clear ((setp_node_t *) ts, ((setp_node_t*)ts)->setp_ha, inst);
       if (ts->src_gen.src_input == (qn_input_fn) fun_ref_node_input)
 	{
 	  fun_ref_node_t * fref = (fun_ref_node_t*) ts;
@@ -973,6 +975,11 @@ subq_init (query_t * subq, caddr_t * inst)
 	      setp_temp_clear (NULL, ha, inst);
 	    }
 	  END_DO_SET();
+	}
+      else if (IS_QN (ts, hash_fill_node_input))
+	{
+	  QNCAST (fun_ref_node_t, fref, ts);
+	  setp_temp_clear (fref->fnr_setp, fref->fnr_setp->setp_ha, inst);
 	}
       qn_init (ts, inst);
     }
