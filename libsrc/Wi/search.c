@@ -3255,6 +3255,24 @@ itc_col_stat_free (it_cursor_t * itc, int upd_col, float est)
   itc->itc_st.cols = NULL;
 }
 
+void
+cs_new_page (dk_hash_t * cols)
+{
+  DO_HT (dbe_column_t *, col, col_stat_t *, cs, cols)
+    {
+      id_hash_iterator_t hit;
+      int64 * place;
+      caddr_t * p_value;
+      id_hash_iterator (&hit, cs->cs_distinct);
+      while (hit_next (&hit, &p_value, (caddr_t*)&place))
+	{
+	  *place &= ~CS_IN_SAMPLE; 
+	}
+    }
+  END_DO_HT;
+}
+
+
 
 void
 itc_n_p_matches_in_col (it_cursor_t * itc, caddr_t * data_col, int * first, int *last)
@@ -3320,6 +3338,7 @@ itc_row_col_stat (it_cursor_t * itc, buffer_desc_t * buf)
 	{
 	  if (itc->itc_insert_key->key_is_col)
 	    {
+	      //if (tlsf_check (THREAD_CURRENT_THREAD->thr_tlsf, 0)) GPF_T1 ("corrupt");
 	      data_col = itc_box_col_seg (itc, buf, cl);
 	      if (col == (dbe_column_t*)itc->itc_insert_key->key_parts->data && 1 == itc->itc_search_par_fill)
 		{
@@ -3386,13 +3405,17 @@ itc_row_col_stat (it_cursor_t * itc, buffer_desc_t * buf)
 	  place = (ptrlong *) id_hash_get (col_stat->cs_distinct, (caddr_t) &data);
 	  if (place)
 	    {
-	      (*place)++;
+		  if (!(CS_IN_SAMPLE & *place))
+		    *place += CS_IN_SAMPLE | CS_SAMPLE_INC | 1;
+		  else
+		    (*place)++;
 	      dk_free_tree (data);
 	    }
 	  else
 	    {
-	      ptrlong one = 1;
+		  uint64 one = CS_IN_SAMPLE | CS_SAMPLE_INC | 1;
 	      id_hash_set (col_stat->cs_distinct, (caddr_t) &data, (caddr_t)&one);
+		  //if (THREAD_CURRENT_THREAD->thr_tlsf->tlsf_total_mapped < 4000000 && tlsf_check (THREAD_CURRENT_THREAD->thr_tlsf, 0)) GPF_T1 ("corrupt");
 	    }
 	}
 	  if (data_col)
@@ -3411,6 +3434,7 @@ void
 itc_page_col_stat (it_cursor_t * itc, buffer_desc_t * buf)
     {
   int pos = itc->itc_map_pos;
+  cs_new_page (itc->itc_st.cols);
   if (itc->itc_insert_key->key_is_col)
 	{
       int r;

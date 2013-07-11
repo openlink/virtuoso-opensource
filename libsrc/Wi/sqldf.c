@@ -283,6 +283,7 @@ sqlo_df_from (sqlo_t * so, df_elt_t * tb_dfe, ST ** from)
 	  dfe = sqlo_new_dfe (so, DFE_DT, NULL);
 	  dfe->_.sub.ot = ot;
 	  ot->ot_dfe = dfe;
+	  ot->ot_super = top_ot;
 	  top_ot->ot_from_dfes = dk_set_conc (top_ot->ot_from_dfes, t_cons ((void *) dfe, NULL));
 	  DO_SET (op_virt_col_t *, vc, &ot->ot_virtual_cols)
 	    {
@@ -298,6 +299,7 @@ sqlo_df_from (sqlo_t * so, df_elt_t * tb_dfe, ST ** from)
 	  if (ot->ot_table && DBE_NO_STAT_DATA == ot->ot_table->tb_count && DBE_NO_STAT_DATA == ot->ot_table->tb_count_estimate)
 	    dbe_key_count (ot->ot_table->tb_primary_key);
 	  ot->ot_dfe = dfe;
+	  ot->ot_super = top_ot;
 	  top_ot->ot_from_dfes = dk_set_conc (top_ot->ot_from_dfes, t_cons ((void *) dfe, NULL));
 #if 0
 	  DO_SET (op_virt_col_t *, vc, &ot->ot_virtual_cols)
@@ -3341,6 +3343,9 @@ dfe_table_set_by_best (df_elt_t * tb_dfe, index_choice_t * ic, float true_arity,
   tb_dfe->dfe_unit = ic->ic_unit;
   tb_dfe->dfe_arity = true_arity != -1 ? true_arity : ic->ic_arity;
   tb_dfe->_.table.inx_card = ic->ic_inx_card;
+  tb_dfe->_.table.hit_spacing = ic->ic_spacing;
+  tb_dfe->_.table.is_cl_part_first = ic->ic_is_cl_part_first;
+  tb_dfe->_.table.in_order = ic->ic_in_order != 0;
   if (ic->ic_altered_col_pred)
     {
       tb_dfe->_.table.col_preds = ic->ic_altered_col_pred;
@@ -5073,7 +5078,7 @@ dfe_arity_with_supers (df_elt_t * dfe)
   if (!dfe)
     return 1;
   if ((DFE_TABLE == dfe->dfe_type && HR_FILL == dfe->_.table.hash_role)
-      || (DFE_DT == dfe->dfe_type && dfe->_.sub.n_hash_fill_keys))
+      || (DFE_DT == dfe->dfe_type && (dfe->_.sub.hash_filler_of || dfe->_.sub.n_hash_fill_keys)))
     return 1;
   if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &sub_arity, 8000))
     sqlc_error (dfe->dfe_sqlo->so_sc->sc_cc, "42000", "Stack Overflow");
@@ -5279,13 +5284,13 @@ sqlo_try_hash (sqlo_t * so, df_elt_t * dfe, op_table_t * super_ot, float * score
   text_pred_save = dfe->_.table.text_pred;
   dfe->_.table.text_pred = NULL; /* if text pred on inner table of hash join, the filler will always do the text pred */
   sqlo_check_col_pred_placed (dfe);
-  if (sqlo_hash_fill_join (so, dfe, &fill_dfe, org_preds, hash_keys))
+  if (sqlo_hash_fill_join (so, dfe, &fill_dfe, org_preds, hash_keys, ref_arity))
     {
       sqlo_check_col_pred_placed (dfe);
       fill_unit = fill_dfe->dfe_unit;
       fill_arity = fill_dfe->dfe_arity;
       fill_unit += sqlo_hash_ins_cost (dfe, fill_arity, hash_keys);
-      dfe->dfe_arity *= arity_scale (dfe_hash_fill_cond_card (dfe));
+      dfe->dfe_arity *= dfe_hash_fill_cond_card (dfe);
 
     }
   else
@@ -5358,6 +5363,30 @@ sqlo_try_hash (sqlo_t * so, df_elt_t * dfe, op_table_t * super_ot, float * score
   if (dfe->_.table.ot->ot_is_outer)
     sqlo_outer_hash (so, dfe);
   return 1;
+}
+
+int enable_scan_order = 1;
+
+int
+sqlo_try_scan_order (sqlo_t * so, df_elt_t * dfe)
+{
+  df_elt_t * prev_tb;
+  if (!enable_scan_order)
+    return 0;
+  for (dfe = dfe; dfe; dfe = prev_tb)
+    {
+      float card;
+      prev_tb = dfe_prev_tb (dfe, &card, 1);
+      if (!prev_tb)
+	return 0;
+      if (!dfe->_.table.in_order)
+	{
+	  dfe_try_ordered_key (prev_tb, dfe);
+	  return 1;
+	}
+      dfe = prev_tb;
+    }
+  return 0;
 }
 
 
@@ -6021,6 +6050,71 @@ df_leaf_score_key (df_elt_t * dfe)
 }
 
 
+int
+jp_card_cmp (const void *s1, const void *s2)
+{
+  dk_set_t l1 = *(dk_set_t*)s1;
+  dk_set_t l2 = *(dk_set_t*)s2;
+  df_elt_t * dfe1 = (df_elt_t*)l1->data;
+  df_elt_t * dfe2 = (df_elt_t*)l2->data;
+  return dfe1->dfe_arity > dfe2->dfe_arity ? -1 : 1;
+}
+
+int
+jp_unit_cmp (const void *s1, const void *s2)
+{
+  dk_set_t l1 = *(dk_set_t*)s1;
+  dk_set_t l2 = *(dk_set_t*)s2;
+  df_elt_t * dfe1 = (df_elt_t*)l1->data;
+  df_elt_t * dfe2 = (df_elt_t*)l2->data;
+  return dfe1->dfe_unit > dfe2->dfe_unit ? -1 : 1;
+}
+
+int
+jp_cmp (const void *s1, const void *s2)
+{
+  /* if cardinalities are close,, unit decides, else card decides */
+  dk_set_t l1 = *(dk_set_t*)s1;
+  dk_set_t l2 = *(dk_set_t*)s2;
+  df_elt_t * dfe1 = (df_elt_t*)l1->data;
+  df_elt_t * dfe2 = (df_elt_t*)l2->data;
+  float c1 = dfe1->dfe_arity;
+  float c2 = dfe2->dfe_arity;
+  if (!dfe1->dfe_is_joined && dfe2->dfe_is_joined)
+    return -1;
+  if (dfe1->dfe_is_joined && !dfe2->dfe_is_joined)
+    return 1;
+  if (0 == c1)
+    return 1;
+  if (0 == c2)
+    return -1;
+  if (c1 / c2 < 1.1 && c1 / c2 > 0.9)
+    return dfe1->dfe_unit > dfe2->dfe_unit ? -1 : 1;
+  return dfe1->dfe_arity > dfe2->dfe_arity ? -1 : 1;
+}
+
+int
+jp_init_cost_cmp (const void *s1, const void *s2)
+{
+  /* if cardinalities are close,, unit decides, else card decides */
+  dk_set_t l1 = *(dk_set_t*)s1;
+  dk_set_t l2 = *(dk_set_t*)s2;
+  df_elt_t * dfe1 = (df_elt_t*)l1->data;
+  df_elt_t * dfe2 = (df_elt_t*)l2->data;
+  op_table_t * ot1 = dfe1->_.table.ot;
+  op_table_t * ot2 = dfe2->_.table.ot;
+  if (-1 == ot1->ot_initial_cost)
+    return -1;
+  if (-1 == ot2->ot_initial_cost)
+    return 1;
+  if (!ot1->ot_any_plan && ot2->ot_any_plan)
+    return -1;
+  if (ot1->ot_any_plan && !ot2->ot_any_plan)
+    return 1;
+  return ot1->ot_initial_cost > ot2->ot_initial_cost ? -1 : 1;
+}
+
+
 
 void
 sqlo_leaves  (sqlo_t * so, op_table_t * ot, dk_set_t * all_leaves, dk_set_t * new_leaves)
@@ -6125,14 +6219,16 @@ sqlo_trans_placeable (sqlo_t * so, op_table_t * ot, df_elt_t * dfe, int * any_tr
 int enable_leaves = 1;
 int enable_joins_only = 0;
 int enable_jp = 1;
+int enable_initial_plan = 0;
 
 void
-sqlo_joins_only (dk_set_t * res, int is_restr)
+sqlo_joins_only (sqlo_t * so, dk_set_t * res, int is_restr)
 {
   dk_set_t * prev = res;
   dk_set_t iter, next;
   int any = 0;
-  if (!enable_joins_only)
+  /* if doing an initial plan, only consider tables that join to previous tables and do restrictive joins first */
+  if (SO_INITIAL_PLAN != so->so_plan_mode && !enable_joins_only)
     return;
   for (iter = *res; iter; iter = next)
     {
@@ -6188,7 +6284,7 @@ sqlo_check_order_dbg (op_table_t * ot)
 dk_set_t
 sqlo_layout_sort_tables (sqlo_t *so, op_table_t * ot, dk_set_t from_dfes, dk_set_t * new_leaves)
 {
-  int any_trans = 0;
+  int any_trans = 0, n_candidates;
   dk_set_t all_leaves = NULL;
   int inx;
   dk_set_t res = NULL;
@@ -6248,16 +6344,19 @@ sqlo_layout_sort_tables (sqlo_t *so, op_table_t * ot, dk_set_t from_dfes, dk_set
     }
   if (!res || !res->next)
     return res;
-  sqlo_joins_only (&res, 0);
+  sqlo_joins_only (so, &res, 0);
   if (enable_jp && so->so_any_placed)
-    sqlo_joins_only (&res, 1);
+    sqlo_joins_only (so, &res, 1);
   arr = (df_elt_t **) dk_set_to_array (dk_set_nreverse (res)); /* reverse to preserve order among items of equal score, stable sort */
-  buf_bsort ((buffer_desc_t**) arr, BOX_ELEMENTS (arr), (sort_key_func_t) df_pred_score_key);
+  n_candidates = BOX_ELEMENTS (arr);
+  qsort (arr, n_candidates, sizeof (caddr_t), (SO_REFINE_PLAN == so->so_plan_mode && !so->so_any_placed) ? jp_init_cost_cmp : jp_cmp);
   res = NULL;
   DO_BOX (dk_set_t, elt, inx, arr)
     {
       df_elt_t * dfe = (df_elt_t *)elt->data;
       dfe->dfe_arity = dfe->dfe_unit = 0;
+      if (SO_INITIAL_PLAN == so->so_plan_mode && so->so_any_placed && inx < n_candidates - 1)
+	continue; /* if doing initial plans and first op already placed, only try the best candidate */
       t_set_push (&res, (void*) elt);
     }
   END_DO_BOX;
@@ -6312,6 +6411,8 @@ sqlo_try (sqlo_t * so, op_table_t * ot, dk_set_t dfes, df_elt_t ** in_loop_ret, 
 	{
 	  this_score = sqlo_score (ot->ot_work_dfe, ot->ot_work_dfe->_.sub.in_arity);
 	  sqlo_try_hash (so, dfe, ot, &this_score);
+	  if (DFE_TABLE == dfe->dfe_type && HR_NONE == dfe->_.table.hash_role)
+	    sqlo_try_scan_order (so, dfe);
 	  if (!dfes->next)
 	    sqlo_try_in_loop (so, ot, dfe, in_loop_ret, &this_score);
 	  score_set = 1;
@@ -6329,16 +6430,20 @@ int32 sqlo_n_layout_steps;
 int32 sqlo_n_full_layouts;
 int32 sqlo_n_best_layouts;
 int32 sqlo_compiler_exceeds_run_factor;
+long tc_sqlo_no_mem;
 
 int
 sqlo_no_more_time (sqlo_t * so, op_table_t * ot)
 {
   /* every so often, see if the best plan's time is less than the time to compile so far. If so, no point in further scenarios */
   uint32 now;
-      if (!so->so_best)
+  if (!so->so_best || !so->so_any_with_this_first)
 	return 0;
-  if (sqlo_max_mp_size > 0 && THR_TMP_POOL->mp_bytes > (so->so_max_memory / 10) * 7)
-    return 1;
+  if (sqlo_max_mp_size > 0 && THR_TMP_POOL->mp_bytes > (so->so_max_memory / 20) * 19)
+    {
+      TC (tc_sqlo_no_mem);
+      return 1;
+    }
   if (sqlo_compiler_exceeds_run_factor /*&& 0 == ++ctr % 2 */)
     {
       now = get_msec_real_time ();
@@ -6357,8 +6462,25 @@ sqlo_no_more_time (sqlo_t * so, op_table_t * ot)
   return 0;
 }
 
+df_elt_t * 
+dfe_nth_tb (df_elt_t * dt, int nth)
+{
+  df_elt_t * dfe;
+  int ctr = 0;
+  if (dt->_.sub.generated_dfe)
+    return dfe_nth_tb (dt->_.sub.generated_dfe, nth);
+  for (dfe = dt->_.sub.first; dfe; dfe = dfe->dfe_next)
+    {
+      if (DFE_TABLE == dfe->dfe_type && ctr == nth)
+	return dfe;
+      if (DFE_TABLE == dfe->dfe_type)
+	ctr++;
+    }
+  return NULL;
+}
 
-int enable_subscore = 1;
+
+int enable_subscore = 2;
 
 int
 sqlo_subscore (sqlo_t * so, op_table_t * ot, float score)
@@ -6399,7 +6521,38 @@ sqlo_subscore (sqlo_t * so, op_table_t * ot, float score)
       return 1;
     }
   else
-    return 0;
+    {
+      if (2 == enable_subscore)
+	{
+	  /* subscore is unreliable if a plan starts with scan and selective hash join.  It can be that subsequent ops are much cheaper in this case because going in key order and not a vector of randoms followed by another vector of randoms.  
+	   * so do not disqualify based on subscore if this is the pattern */
+	  df_elt_t * first_tb = dfe_nth_tb (ot->ot_work_dfe, 0);
+	  df_elt_t * second_tb = dfe_nth_tb (ot->ot_work_dfe, 1);
+	  if (first_tb && second_tb && HR_REF == second_tb->_.table.hash_role)
+	    {
+	      if (second_tb->dfe_arity * dfe_hash_fill_cond_card  (second_tb) < 1)
+		return 1;
+	    }
+	}
+      return 0;
+    }
+}
+
+void
+sqlo_best_exceeded (sqlo_t * so, op_table_t * ot, float this_score)
+{
+  if (SO_INITIAL_PLAN == so->so_plan_mode 
+      && ot->ot_first_dfe && (DFE_TABLE == ot->ot_first_dfe->dfe_type || DFE_DT == ot->ot_first_dfe->dfe_type))
+    ot->ot_first_dfe->_.table.ot->ot_initial_cost = this_score;
+  if (sqlo_print_debug_output)
+    {
+      if (compiler_unit_msecs)
+	sqlo_print (("best exceeded on %s, best = %f (%g msecs)\n",
+		     ot->ot_new_prefix, so->so_best_score, so->so_best_score * compiler_unit_msecs));
+      else
+	sqlo_print (("best exceeded on %s, best = %f\n", ot->ot_new_prefix, so->so_best_score));
+      sqlo_scenario_summary (ot->ot_work_dfe, this_score);
+    }
 }
 
 
@@ -6442,7 +6595,8 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
   df_elt_t * must_be_next;
   dk_set_t sort_set = NULL, new_leaves = NULL;
   float this_score;
-  int any_tried = 0;
+  int any_tried = 0, is_first_level = 0;
+  char is_first_join = 0;
   must_be_next = sqlo_next_joined (so, ot->ot_work_dfe);
   if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &any_tried, 8000))
     sqlc_error (so->so_sc->sc_cc, "42000", "Stack Overflow");
@@ -6467,7 +6621,11 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
   if (must_be_next)
     sort_set = t_cons ((void*)t_cons ((void*) must_be_next, NULL), NULL);
   else
-    sort_set = sqlo_layout_sort_tables (so, ot, ot->ot_from_dfes, &new_leaves);
+    {
+      sort_set = sqlo_layout_sort_tables (so, ot, ot->ot_from_dfes, &new_leaves);
+      is_first_level = !so->so_any_placed;
+    }
+  is_first_join = !so->so_any_placed;
   if (SQLO_BACKTRACK == sort_set)
     return;
   ot_placed_check (ot);
@@ -6476,7 +6634,11 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
       df_elt_t * dfe = (df_elt_t*)dfes->data;
       df_elt_t * in_loop_dfe = NULL;
       any_tried = 1;
+      if (is_first_level)
+	ot->ot_first_dfe = (df_elt_t*)dfes->data;
       sqlo_try (so, ot, dfes, &in_loop_dfe, &this_score);
+      if (is_first_join)
+	so->so_any_with_this_first = 0;
       if (-1 == so->so_best_score
 	  || (this_score < so->so_best_score && sqlo_subscore (so, ot, this_score)))
 	{
@@ -6501,16 +6663,7 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
 		  LAYOUT_ABORT;
 		}
 	    }
-	  if (sqlo_print_debug_output)
-	    {
-	      if (compiler_unit_msecs)
-		sqlo_print (("best exceeded on %s, best = %7.2g\n",
-			     ot->ot_new_prefix, so->so_best_score));
-	      else
-		sqlo_print (("best exceeded on %s, best = %7.2g (%g msec)\n",
-			     ot->ot_new_prefix, so->so_best_score, so->so_best_score * compiler_unit_msecs));
-	      sqlo_scenario_summary (ot->ot_work_dfe, this_score);
-	    }
+	  sqlo_best_exceeded (so, ot, this_score);
 	}
 
       if (!ot->ot_is_top_ties && sqlo_try_oby_order (so, dfe))
@@ -6529,16 +6682,7 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
 	    }
 	  else
 	    {
-	      if (sqlo_print_debug_output)
-		{
-		  if (compiler_unit_msecs)
-		    sqlo_print (("best exceeded on %s, best = %7.2g (%g msec)\n",
-				 ot->ot_new_prefix, so->so_best_score, so->so_best_score * compiler_unit_msecs));
-		  else
-		    sqlo_print (("best exceeded on %s, best = %7.2g\n",
-				 ot->ot_new_prefix, so->so_best_score));
-		  sqlo_scenario_summary (ot->ot_work_dfe, this_score);
-		}
+	      sqlo_best_exceeded (so, ot, this_score);
 	      ot->ot_layouts_tried += 1;
 	      if ((sqlo_max_layouts && so->so_best && ot->ot_layouts_tried >= sqlo_max_layouts)
 		  || sqlo_no_more_time (so, ot))
@@ -6644,21 +6788,20 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
 	      sqlo_scenario_summary (ot->ot_work_dfe, this_score);
 	    }
 	  if (brk_dt_plan && brk_dt_plan == OT_NO (ot->ot_new_prefix)) bing ();
+	  if (ot->ot_first_dfe && (DFE_TABLE == ot->ot_first_dfe->dfe_type || DFE_DT == ot->ot_first_dfe->dfe_type))
+	    {
+	      ot->ot_first_dfe->_.table.ot->ot_any_plan = 1;
+	      if (SO_INITIAL_PLAN == so->so_plan_mode)
+		ot->ot_first_dfe->_.table.ot->ot_initial_cost = this_score;
+	    }
+	  so->so_any_with_this_first = 1;
 	  so->so_best = sqlo_layout_copy (so, ot->ot_work_dfe, NULL);
 	  dfe_ref_check (so->so_best);
 	  so->so_best_score = this_score;
 	}
       else
 	{
-	  if (sqlo_print_debug_output)
-	    {
-	      if (compiler_unit_msecs)
-		sqlo_print (("best exceeded on %s, best = %f (%g msecs)\n",
-		      ot->ot_new_prefix, so->so_best_score, so->so_best_score * compiler_unit_msecs));
-	      else
-		sqlo_print (("best exceeded on %s, best = %f\n", ot->ot_new_prefix, so->so_best_score));
-	      sqlo_scenario_summary (ot->ot_work_dfe, this_score);
-	    }
+	  sqlo_best_exceeded (so, ot, this_score);
 	}
       if (ST_P (ot->ot_dt, SELECT_STMT) && (is_top || SEL_IS_DISTINCT (ot->ot_dt)))
 	{
@@ -6701,6 +6844,33 @@ sqlo_restore_loci (df_elt_t * dt_dfe)
   END_DO_SET();
 }
 
+
+void
+sqlo_layout_plan (sqlo_t * so, op_table_t * ot, int is_top)
+{
+  /* if many joined tables, do layout in two passes, first one plan starting with each table.  refine the best  */
+  int n_dfes = 0;
+  ot->ot_first_dfe = NULL;
+  DO_SET (df_elt_t *, from, &ot->ot_from_dfes)
+    {
+      ot->ot_any_plan = 0;
+      ot->ot_initial_cost = -1;
+      n_dfes++;
+    }
+  END_DO_SET();
+  if (n_dfes < 4 || !enable_initial_plan)
+    {
+      so->so_plan_mode = SO_ALL_PLANS;
+      sqlo_layout_1 (so, ot, is_top);
+      return;
+    }
+  so->so_plan_mode = SO_INITIAL_PLAN;
+  sqlo_layout_1 (so, ot, is_top);
+  so->so_plan_mode = SO_REFINE_PLAN;
+  sqlo_layout_1 (so, ot, is_top);
+}
+
+
 df_elt_t *
 sqlo_layout (sqlo_t * so, op_table_t * ot, int is_top, df_elt_t * super)
 {
@@ -6714,6 +6884,8 @@ sqlo_layout (sqlo_t * so, op_table_t * ot, int is_top, df_elt_t * super)
   char cache_subqs = so->so_cache_subqs;
   df_elt_t * best1 = so->so_best;
   df_elt_t * pt = so->so_gen_pt;
+  char any_w_first = so->so_any_with_this_first;
+  char save_mode = so->so_plan_mode;
   so->so_this_dt = ot;
   so->so_cache_subqs = enable_subq_cache && dk_set_length (ot->ot_from_dfes) > 2;
   so->so_gen_pt = ot->ot_work_dfe->_.sub.first;
@@ -6752,7 +6924,7 @@ sqlo_layout (sqlo_t * so, op_table_t * ot, int is_top, df_elt_t * super)
   ot->ot_is_contradiction = 0;
   ot->ot_invariant_preds = NULL;
   ot->ot_layouts_tried = 0;
-  sqlo_layout_1 (so, ot, is_top);
+  sqlo_layout_plan (so, ot, is_top);
 
   ret = so->so_best;
   dfe_ref_check (ret);
@@ -6763,6 +6935,8 @@ sqlo_layout (sqlo_t * so, op_table_t * ot, int is_top, df_elt_t * super)
     ret->dfe_tree = ot->ot_dt;
   ret->dfe_hash = sql_tree_hash ((char*)&ret->dfe_tree);
   ret->dfe_unit = so->so_best_score;
+  so->so_plan_mode = save_mode;
+  so->so_any_with_this_first = any_w_first;
   so->so_this_dt = prev_dt;
   so->so_subscore = subs;
   so->so_best = best1;

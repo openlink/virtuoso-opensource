@@ -50,7 +50,6 @@ dk_mutex_t cha_alloc_mtx;
 int64 chash_bytes;		/* bytes used in chash arrays */
 int64 chash_space_avail = 1000000000;
 int chash_per_query_pct = 50;
-resource_t *chash_array_rc;
 int cha_stream_gb_flush_pct = 200;
 int chash_block_size;
 
@@ -5443,6 +5442,14 @@ void
 asc_row_nos (row_no_t * matches, int n_values)
 {
   int inx;
+  for (inx = 0; inx < n_values; inx++)
+    matches[inx] = inx;
+}
+
+void
+asc_row_nos_l (row_no_t * matches, int n_values)
+{
+  int inx;
 #ifdef WORDS_BIGENDIAN
   int64 n = (1L << 48) | (2L << 32) | (3L << 16) + 3;
 #else
@@ -6299,7 +6306,7 @@ chash_fill_input (fun_ref_node_t * fref, caddr_t * inst, caddr_t * state)
       END_QR_RESET;
       if (enable_hash_last)
 	{
-	  int64 da_time;
+	  int64 da_time = 0;
 	  if (fref->src_gen.src_stat)
 	    da_time = qi->qi_client->cli_activity.da_thread_time;
 	  chash_filled (fref->fnr_setp, tree->it_hi, 0 == nth_part, n_filled);

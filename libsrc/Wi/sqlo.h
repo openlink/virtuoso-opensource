@@ -113,6 +113,9 @@ typedef struct op_table_s
   dk_set_t 	ot_invariant_preds;
   id_hash_t * 	ot_eq_hash; /* eq group of things, use for eq transitivity */
   ST *		ot_trans; /* if transitive dt, trans opts */
+  df_elt_t *	ot_first_dfe; /* first dfe in current plan, one of ot from dfes */
+  float		ot_initial_cost; /* cost of initial plan with this ot in first position */
+  char		ot_any_plan; /* true if there is at least one full plan with this ot in first position */
 } op_table_t;
 
 typedef struct jt_mark_s
@@ -423,6 +426,8 @@ struct sqlo_s
   char	so_is_top_and;
   char	so_in_cond_exp;
   char	so_no_text_preds;
+  char	so_any_with_this_first;  /* is there any plan that starts with the dfe this plan starts with  */
+  char	so_plan_mode;
   dk_set_t	so_placed; /*accumulate new prospective placements here */
   short	so_label_ctr;
   float		so_best_score;
@@ -469,6 +474,11 @@ struct sqlo_s
   char		so_no_dt_cache;
 };
 
+
+/* so_plan_mode */
+#define SO_ALL_PLANS 0
+#define SO_INITIAL_PLAN 1
+#define SO_REFINE_PLAN 2
 
 #define L2_APPEND(first, last, elt, pref) \
 { \
@@ -600,8 +610,10 @@ typedef struct join_plan_s
   float		jp_cost;
   float		jp_best_cost;
   float		jp_best_card;
+  float		jp_fill_selectivity; /* for selective hash join, seeing if more joins should go in the build, this is the fraction selected by the first dfe on build side */
   char		jp_not_for_hash_fill; /* set if jp_tb_dfe not suited for use in hash fill join */
   dk_set_t	jp_best_jp;
+  dk_set_t	jp_extra_preds; /* if hash filler dt, preds that are redundant, covered by the join of the first to the probe */
   struct join_plan_s *	jp_prev;
   dk_set_t		jp_hash_fill_dfes; /* other dfes that compose a join on the  fill side of hash join */
   dk_set_t		jp_hash_fill_preds;
@@ -637,7 +649,7 @@ void sqlo_dt_unplace (sqlo_t * so, df_elt_t * tb_dfe);
 void sqlo_dfe_unplace (sqlo_t * so, df_elt_t * dfe);
 float sqlo_score (df_elt_t * dfe, float in_arity);
 int dfe_try_ordered_key (df_elt_t * prev_tb, df_elt_t * dfe);
-df_elt_t * dfe_prev_tb (df_elt_t * dfe, float * card_between_ret);
+df_elt_t * dfe_prev_tb (df_elt_t * dfe, float * card_between_ret, int stop_on_new_order);
 void dfe_revert_scan_order (df_elt_t * dfe, df_elt_t * prev_tb, dbe_key_t * prev_key);
 void sqlo_dfe_print (df_elt_t * dfe, int offset);
 #define OFS_INCR 4
@@ -903,7 +915,7 @@ float dfe_join_score_jp (sqlo_t * so, op_table_t * ot,  df_elt_t *tb_dfe, dk_set
 			 join_plan_t * prev_jp);
 int  dfe_is_quad (df_elt_t * tb_dfe);
 char * dfe_p_const_abbrev (df_elt_t * tb_dfe);
-int sqlo_hash_fill_join (sqlo_t * so, df_elt_t * hash_ref_tb, df_elt_t ** fill_ret, dk_set_t org_preds, dk_set_t hash_keys);
+int sqlo_hash_fill_join (sqlo_t * so, df_elt_t * hash_ref_tb, df_elt_t ** fill_ret, dk_set_t org_preds, dk_set_t hash_keys, float ref_card);
 void dfe_unplace_fill_join (df_elt_t * fill_dt, df_elt_t * tb_dfe, dk_set_t org_preds);
 int st_is_call (ST * tree, char * f, int n_args);
 df_elt_t * dfe_container (sqlo_t * so, int type, df_elt_t * super);
@@ -925,5 +937,7 @@ int sqlg_is_multistate_gb (sqlo_t * so);
 void dbg_qi_print_row( query_instance_t *qi, dk_set_t slots, int nthset );
 void dbg_qi_print_slots( query_instance_t *qi, state_slot_t** slots, int nthset );
 #endif // DEBUG
+dbe_key_t * tb_px_key (dbe_table_t * tb, dbe_column_t * col);
+float dfe_scan_card (df_elt_t * dfe);
 
 #endif /* _SQLO_H */
