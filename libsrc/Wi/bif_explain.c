@@ -57,6 +57,15 @@
 #include "http.h"
 #include "mhash.h"
 
+#define MSG_MAX_LEN 100
+#define TA_STAT_COMM 1219
+
+typedef struct qr_comment_s
+{
+  int qrc_warning; /* a flag for warning if the query has a bad plan */
+  int qrc_is_first; /* a flag to indicate whether this is the first node */
+  dk_set_t  qrc_wrn_msgs; /* a set of warning messages */
+} qr_comment_t;
 
 int dbf_explain_level = 1;
 
@@ -68,6 +77,26 @@ void trset_end (void);
 
 extern dk_mutex_t * prof_mtx;
 extern id_hash_t * qn_prof;
+
+void
+qrc_add_wrn_msg(const char *format, ...)
+{  
+  char buf[MSG_MAX_LEN];
+  va_list va;
+  va_start (va, format);
+  vsnprintf (buf, sizeof (buf), format, va);
+  va_end (va);
+  buf[sizeof (buf) - 1] = 0;
+  /* milos: add the warning text to the list of warnings */
+  du_thread_t * self = THREAD_CURRENT_THREAD;
+  qr_comment_t * comm = THR_ATTR (self, TA_STAT_COMM);
+  if(comm)
+  {
+    dk_set_push(&comm->qrc_wrn_msgs, (void*)list(1, box_dv_short_string(buf)));
+    /* milos: set the warning flag */
+    comm->qrc_warning = 1;
+  }
+}
 
 void
 qi_qn_stat_1 (query_instance_t * qi, query_t * qr)
@@ -744,10 +773,54 @@ ks_print_0 (key_source_t * ks)
     }
 }
 
+/* milos: function which is used to detect a bad plan (possible Cartesian product) and set a warning with appropriate message */
+static int
+ssl_is_column_derived(state_slot_t * ssl)
+{
+  return SSL_VEC == ssl->ssl_type && ssl->ssl_column;
+}
+
+/* milos: function which is used to detect a bad plan (possible Cartesian product) and set a warning with appropriate message */
+static int
+ks_is_column_derived(key_source_t * ks)
+{
+  int inx;
+  search_spec_t * sp;
+
+  for(sp = ks->ks_spec.ksp_spec_array; sp; sp=sp->sp_next)
+  {
+  	if(ssl_is_column_derived(sp->sp_min_ssl) || ssl_is_column_derived(sp->sp_max_ssl)) 
+  		return 1;
+  }
+
+  for(sp = ks->ks_row_spec; sp; sp=sp->sp_next)
+  {
+  	if(ssl_is_column_derived(sp->sp_min_ssl) || ssl_is_column_derived(sp->sp_max_ssl)) 
+  		return 1;      	
+  }
+
+  DO_BOX(state_slot_t *, ssl, inx, ks->ks_vec_source)
+	if(ssl_is_column_derived(ssl)) 
+		return 1;
+  END_DO_BOX;
+	
+  DO_BOX(state_slot_t *, ssl, inx, ks->ks_vec_cast)
+	if(ssl_is_column_derived(ssl)) 
+		return 1;
+  END_DO_BOX;
+  return 0;
+}
 
 static void
 ks_print (key_source_t * ks)
-{
+{  
+  /* milos: check if there is a bad plan (a possible Cartesian product), and create a warning */
+  du_thread_t * self = THREAD_CURRENT_THREAD;
+  qr_comment_t * comm = THR_ATTR (self, TA_STAT_COMM);
+  if(comm)
+  	if(!(comm->qrc_is_first) && (!ks_is_column_derived(ks)))
+  	  qrc_add_wrn_msg("Warning: You might have a Cartesian product.\n");
+
   if (ks->ks_from_temp_tree || !ks->ks_key)
     stmt_printf (("Key from temp "));
   else
@@ -772,6 +845,7 @@ ks_print (key_source_t * ks)
       stmt_printf (("row specs: "));
       sp_list_print (ks->ks_row_spec);
       stmt_printf (("\n"));
+     
     }
   if (ks->ks_hash_spec)
     {
@@ -779,7 +853,7 @@ ks_print (key_source_t * ks)
       DO_SET (search_spec_t *, sp, &ks->ks_hash_spec)
 	hrng_print ((hash_range_spec_t*)sp->sp_min_ssl, sp);
       END_DO_SET();
-      stmt_printf (("\n"));
+      stmt_printf (("\n"));      
     }
   if (ks->ks_vec_cast)
     ks_print_vec_cast (ks->ks_vec_cast, ks->ks_vec_source);
@@ -834,6 +908,13 @@ node_stat (data_source_t * qn)
     }
   else
     stmt_printf (("time %9.2g%% fanout %9.2g input %9.2g rows\n",  (float)srs->srs_cum_time * 100 / (float)total, srs->srs_n_in ? srs->srs_n_out / (float)srs->srs_n_in : 0.0, (float)srs->srs_n_in));
+  if (IS_TS (qn) || IS_QN (qn, hash_source_input))
+    {
+  	  float guess = IS_TS (qn) ? ((table_source_t *)qn)->ts_cardinality : ((hash_source_t *)qn)->hs_cardinality;
+  	  float fanout = srs->srs_n_in ? srs->srs_n_out / (float)srs->srs_n_in : 0.0;
+  	  if((guess/fanout >= 10.0) || (guess/fanout <= 0.1))
+  		stmt_printf (("Warning: the cardinality estimate of the cost model differs greatly from the measured time. Cardinality estimate: %9.2g Fanout: %9.2g\n",  guess, fanout));
+    }
 }
 
 
@@ -848,7 +929,6 @@ node_print_next (data_source_t * node)
 void
 ts_print_0 (table_source_t * ts)
 {
-  int inx;
   char card[50];
   char max_rows[30];
   snprintf (card, sizeof (card), "%9.2g rows", ts->ts_cardinality);
@@ -870,6 +950,10 @@ ts_print_0 (table_source_t * ts)
       node_print ((data_source_t *) ts->ts_alternate);
       stmt_printf (("\n}\n"));
     }
+  /* milos: clear the 'first' flag */
+    du_thread_t * self = THREAD_CURRENT_THREAD;
+    qr_comment_t * comm = THR_ATTR (self, TA_STAT_COMM);
+    if(comm) comm->qrc_is_first = 0;
 }
 
 void
@@ -974,6 +1058,10 @@ ts_print (table_source_t * ts)
       node_print ((data_source_t *) ts->ts_alternate);
       stmt_printf (("\n}\n"));
     }
+  /* milos: clear the 'first' flag */
+    du_thread_t * self = THREAD_CURRENT_THREAD;
+    qr_comment_t * comm = THR_ATTR (self, TA_STAT_COMM);
+    if(comm) comm->qrc_is_first = 0;
 }
 
 
@@ -1021,7 +1109,6 @@ void
 node_print_0 (data_source_t * node)
 {
   qn_input_fn in;
-  query_instance_t * qi = (query_instance_t *) THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_QST);
   in = node->src_input;
   if (IS_TS (node))
     {
@@ -1124,7 +1211,14 @@ node_print_0 (data_source_t * node)
     {
       fun_ref_node_t *fref = (fun_ref_node_t *) node;
       stmt_printf (("{ %s\n", IS_QN (node, hash_fill_node_input) ? "hash filler": "fork"));
+      /* milos: set the 'first' flag */
+      du_thread_t * self = THREAD_CURRENT_THREAD;
+      qr_comment_t * comm = THR_ATTR (self, TA_STAT_COMM);
+      if (comm) comm->qrc_is_first = 1;
       node_print (fref->fnr_select);
+      /* milos: set the 'first' flag */
+      comm = THR_ATTR (self, TA_STAT_COMM);
+      if(comm) comm->qrc_is_first = 1;
       stmt_printf (("}\n"));
     }
   else if (in == (qn_input_fn) remote_table_source_input)
@@ -1761,7 +1855,20 @@ node_print (data_source_t * node)
 	  ssl_array_print (fref->fnr_ssa.ssa_save);
 	  stmt_printf (("\n"));
 	}
+	  // milos: set the 'first' flag on
+	  du_thread_t * self = THREAD_CURRENT_THREAD;
+	  qr_comment_t * comm = THR_ATTR (self, TA_STAT_COMM);
+	  if(comm) comm->qrc_is_first = 1;
+	  /* milos: detect a new warning and add the warning text: it is a partition hash join, and it did N passes (N = fref->fnr_select->src_stat.srs_n_in)  	 */
+	  caddr_t * ctx_inst;
+	  	ctx_inst = THR_ATTR (THREAD_CURRENT_THREAD, TA_STAT_INST);
+	  	src_stat_t * srs = (src_stat_t *)&ctx_inst[fref->fnr_select->src_stat];
+	  if ((fref->fnr_select->src_stat) && (qi != NULL) && (QST_INT(qi, srs->srs_n_in) > 1))	
+	    qrc_add_wrn_msg("Warning: There is a partition hash join which did %d passes.\n", srs->srs_n_in);
       node_print (fref->fnr_select);
+      /* milos: set the 'first' flag on */
+      comm = THR_ATTR (self, TA_STAT_COMM);
+	  if(comm) comm->qrc_is_first = 1;
       stmt_printf (("}\n"));
     }
   else if (in == (qn_input_fn) remote_table_source_input)
@@ -3024,14 +3131,21 @@ int64 ql_ctr;
 dk_session_t * ql_file;
 dk_mutex_t ql_mtx;
 char * c_query_log_file = "virtuoso.qrl";
+int enable_qrc; /* generate query plan comments and warnings */
 #define QL_N_COLS 43
 
 void
 qi_log_stats_1 (query_instance_t * qi, caddr_t err, caddr_t ext_text)
 {
-#ifndef WIN32
+#ifndef WIN32    
   caddr_t * inst = (caddr_t*)qi;
   du_thread_t * self = THREAD_CURRENT_THREAD;
+  /* milos: allocate memory for the comment structure */
+  qr_comment_t comm;
+  memset(&comm, 0, sizeof(comm));
+  /* comm.qrc_is_first = 0; */
+  if (enable_qrc)
+    SET_THR_ATTR (self, TA_STAT_COMM, (void*)&comm);
   query_t * qr = qi->qi_query;
   char from[20];
   void * rs_comp = NULL;
@@ -3179,7 +3293,15 @@ qi_log_stats_1 (query_instance_t * qi, caddr_t err, caddr_t ext_text)
       END_QR_RESET;
       trset_end ();
       SET_THR_ATTR (self, TA_STAT_INST, NULL);
-      res = dk_set_nreverse (res);
+	  res = dk_set_nreverse (res);
+	  /* milos: Get the list of warnings from the TA_STAT_COMM and print it */
+      qr_comment_t * comm = THR_ATTR (self, TA_STAT_COMM);
+      if(comm)
+      {
+      	dk_set_t msgs = comm->qrc_wrn_msgs;
+      	msgs = dk_set_nreverse (msgs);
+      	res = dk_set_conc (res, msgs);
+      }      
       DO_SET (caddr_t *, r, &res)
 	r_len += box_length (r[0]);
       END_DO_SET ();
