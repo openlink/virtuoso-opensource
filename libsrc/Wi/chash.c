@@ -72,9 +72,7 @@ int chash_block_size;
 #define H_PART(h) (((uint64)(h)) >> 32)
 
 void hash_source_chash_input_1i (hash_source_t * hs, caddr_t * inst, caddr_t * state, int n_sets);
-void setp_chash_fill_1i (setp_node_t * setp, caddr_t * inst);
 void hash_source_chash_input_1i_n (hash_source_t * hs, caddr_t * inst, caddr_t * state, int n_sets);
-void setp_chash_fill_1i_n (setp_node_t * setp, caddr_t * inst);
 
 
 
@@ -1727,12 +1725,6 @@ cha_alloc_int (chash_t * cha, setp_node_t * setp, sql_type_t * new_sqt, chash_t 
 	  cha_p->cha_size = chash_part_size;
 	  cha_p->cha_array = (int64 **) mp_alloc_box_ni (cha->cha_pool, sizeof (int64) * cha_p->cha_size, DV_NON_BOX);
 	  int64_fill_nt ((int64 *) cha_p->cha_array, cha->cha_is_1_int ? CHA_EMPTY : 0, cha_p->cha_size);
-	  if (inx < old_n_part)
-	    {
-	      chash_t *oldp = CHA_PARTITION (old_cha, inx);
-	      if (oldp->cha_is_parallel)
-		dk_mutex_destroy (&oldp->cha_mtx);
-	    }
 	  if (!cha->cha_is_1_int)
 	    {
 	      if (inx < old_n_part)
@@ -1747,8 +1739,6 @@ cha_alloc_int (chash_t * cha, setp_node_t * setp, sql_type_t * new_sqt, chash_t 
 		  memset (cha_p->cha_current, 0, DP_DATA);
 		}
 	    }
-	  if (cha->cha_is_parallel)
-	    dk_mutex_init (&cha_p->cha_mtx, MUTEX_TYPE_SHORT);
 	}
     }
   else
@@ -1836,8 +1826,6 @@ cha_allocate (setp_node_t * setp, caddr_t * inst, int64 card)
   else
     cha->cha_size = card;
   cha_alloc_int (cha, setp, NULL, NULL);
-  if (cha->cha_is_parallel)
-    dk_mutex_init (&cha->cha_mtx, MUTEX_TYPE_SHORT);
   return tree;
 }
 
@@ -1908,15 +1896,6 @@ cha_clear (chash_t * cha, hash_index_t * hi)
 void
 cha_free (chash_t * cha)
 {
-  int inx;
-  if (cha->cha_is_parallel)
-    {
-      for (inx = 0; inx < cha->cha_n_partitions; inx++)
-	{
-	  dk_mutex_destroy (&cha->cha_partitions[inx].cha_mtx);
-	}
-      dk_mutex_destroy (&cha->cha_mtx);
-    }
   mutex_enter (&chash_rc_mtx);
   chash_space_avail += cha->cha_reserved;
   mutex_leave (&chash_rc_mtx);
@@ -4075,8 +4054,6 @@ chash_filled (setp_node_t * setp, hash_index_t * hi, int first_time, int64 n_fil
 }
 
 
-int enable_hash_last = 1;
-
 void
 setp_chash_fill_1i_d (setp_node_t * setp, caddr_t * inst, chash_t * cha)
 {
@@ -4179,7 +4156,7 @@ setp_chash_fill_1i_n_d (setp_node_t * setp, caddr_t * inst, chash_t * cha)
 
 
 void
-setp_chash_fill_d (setp_node_t * setp, caddr_t * inst)
+setp_chash_fill (setp_node_t * setp, caddr_t * inst)
 {
   index_tree_t *tree;
   hash_area_t *ha = setp->setp_ha;
@@ -4194,6 +4171,7 @@ setp_chash_fill_d (setp_node_t * setp, caddr_t * inst)
   int first_set, set;
   char is_parallel;
   SELF_PARTITION_FILL;
+  qi->qi_n_affected += n_sets;
   qi->qi_set = 0;
   tree = qst_get_chash (inst, ha->ha_tree, setp->setp_ht_id, setp);
   cha = setp_fill_cha (setp, inst, tree);
@@ -4245,232 +4223,6 @@ setp_chash_fill_d (setp_node_t * setp, caddr_t * inst)
 	  cha_new_hj_row (setp, inst, key_vecs, cha, h_1, inx, NULL);
 	}
     }
-}
-
-
-
-#define CHAP_ENTER(cha_p) \
-  {if (is_parallel)  mutex_enter (&cha_p->cha_mtx);}
-
-#define CHAP_LEAVE(cha_p) \
-  {if (is_parallel) { mutex_leave (&cha_p->cha_mtx);}}
-
-#define CHA_ENTER(cha) if (cha->cha_is_parallel) mutex_enter (&cha->cha_mtx)
-#define CHA_LEAVE(cha) if (cha->cha_is_parallel) mutex_leave (&cha->cha_mtx)
-
-void
-cha_check_rehash (setp_node_t * setp, caddr_t * inst)
-{
-  index_tree_t *tree;
-  hash_area_t *ha = setp->setp_ha;
-  chash_t *cha = NULL;
-  int key, do_rehash, cha_sz;
-  du_thread_t *self = THREAD_CURRENT_THREAD;
-
-re_check:
-  do_rehash = 0;
-  tree = qst_tree (inst, ha->ha_tree, setp->setp_ssa.ssa_set_no);
-  cha = tree->it_hi->hi_chash;
-  cha_sz = cha->cha_n_partitions ? cha->cha_partitions[0].cha_size * cha->cha_n_partitions : cha->cha_size;
-  for (key = 0; key < ha->ha_n_keys; key++)
-    {
-      state_slot_t *ssl = ha->ha_slots[key];
-      data_col_t *dc = QST_BOX (data_col_t *, inst, ssl->ssl_index);
-      if (dc->dc_dtp != cha->cha_sqt[key].sqt_dtp && cha->cha_sqt[key].sqt_dtp != DV_ANY)
-	{
-	  cha->cha_new_sqt[key].sqt_dtp = DV_ANY;
-	  do_rehash = 1;
-	}
-    }
-  if (cha_sz * cha_resize_factor < cha->cha_count)
-    do_rehash = 1;
-  if (!do_rehash)
-    return;
-  CHA_ENTER (cha);
-#ifndef NDEBUG
-  if (cha->cha_wait_excl == self)
-    GPF_T;			/* must not enter twice */
-#endif
-  if (!cha->cha_wait_excl)
-    {
-      cha->cha_wait_excl = self;
-      CHA_LEAVE (cha);
-    }
-  else
-    {
-      dk_set_push (&cha->cha_waiting, (void *) self);
-      CHA_LEAVE (cha);
-      semaphore_enter (self->thr_sem);
-      goto re_check;
-    }
-  /* rehash */
-  cha_retype (cha, setp);
-  CHA_ENTER (cha);
-  DO_SET (du_thread_t *, waiting, &cha->cha_waiting)
-  {
-    semaphore_leave (waiting->thr_sem);
-  }
-  END_DO_SET ();
-  cha->cha_wait_excl = NULL;
-  CHA_LEAVE (cha);
-}
-
-void
-setp_chash_fill (setp_node_t * setp, caddr_t * inst)
-{
-  index_tree_t *tree;
-  hash_area_t *ha = setp->setp_ha;
-  cha_cmp_t cmp = cha_cmp;
-  chash_t *cha = NULL;
-  QNCAST (query_instance_t, qi, inst);
-  int n_sets = setp->src_gen.src_prev ? QST_INT (inst, setp->src_gen.src_prev->src_out_fill) : qi->qi_n_sets;
-  uint64 hash_no[ARTM_VEC_LEN];
-  db_buf_t *key_vecs[CHASH_GB_MAX_KEYS];
-  dtp_t temp[ARTM_VEC_LEN * CHASH_GB_MAX_KEYS * DT_LENGTH];
-  dtp_t temp_any[9 * CHASH_GB_MAX_KEYS * ARTM_VEC_LEN];
-  int first_set, set;
-  char is_parallel;
-  SELF_PARTITION_FILL;
-  qi->qi_n_affected += n_sets;
-  if (enable_hash_last)
-    {
-      setp_chash_fill_d (setp, inst);
-      return;
-    }
-  qi->qi_set = 0;
-  /* cha_check_rehash (setp, inst); */
-  tree = qst_tree (inst, ha->ha_tree, setp->setp_ssa.ssa_set_no);
-  cha = tree->it_hi->hi_chash;
-  if (!cha->cha_is_1_int)
-    {
-      int inx, last = cha->cha_ha->ha_n_keys + cha->cha_ha->ha_n_deps;
-      for (inx = cha->cha_n_keys; inx < last; inx++)
-	{
-	  data_col_t *dc = QST_BOX (data_col_t *, inst, ha->ha_slots[inx]->ssl_index);
-	  if (DV_ANY == cha->cha_sqt[inx].sqt_dtp && DV_ANY != dc->dc_dtp)
-	    dc_heterogenous (dc);
-	}
-    }
-  if (cha->cha_is_1_int_key)
-    {
-      setp_chash_fill_1i (setp, inst);
-      return;
-    }
-  if (cha->cha_is_1_int)
-    {
-      setp_chash_fill_1i_n (setp, inst);
-      return;
-    }
-  is_parallel = cha->cha_is_parallel;
-  if (CHA_ALWAYS_UNQ == cha->cha_unique)
-    cmp = (cha_cmp_t) cha_cmp_unq_fill;
-  for (first_set = 0; first_set < n_sets; first_set += ARTM_VEC_LEN)
-    {
-      int any_temp_fill = 0;
-      int key;
-      int last_set = MIN (first_set + ARTM_VEC_LEN, n_sets);
-      for (key = 0; key < last_set - first_set; key++)
-	hash_no[key] = 1;
-      for (key = 0; key < ha->ha_n_keys; key++)
-	{
-	  key_vecs[key] =
-	      (db_buf_t *) gb_values (cha, hash_no, inst, ha->ha_slots[key], key, first_set, last_set, (db_buf_t) temp, temp_any,
-	      &any_temp_fill, NULL, 0);
-	}
-      qi->qi_set = first_set;
-      set = first_set;
-      if (self_partition)
-	goto singles;
-      for (set = first_set; set + 4 <= last_set; set += 4)
-	{
-	  int inx = set - first_set, e;
-	  chash_t *cha_p_1, *cha_p_2, *cha_p_3, *cha_p_4;
-	  int64 **array_1, **array_2, **array_3, **array_4;
-	  uint64 h_1, h_2, h_3, h_4;
-	  int64 *ent;
-	  int pos1_1, pos2_1, pos1_2, pos2_2, pos1_3, pos2_3, pos1_4, pos2_4;
-
-#undef CHA_PRE
-#define CHF_PRE(n) \
-	  h_##n = hash_no[inx + n - 1]; \
-	  cha_p_##n = CHA_PARTITION (cha, h_##n); \
-	  __builtin_prefetch (&cha_p_##n->cha_current->h.h.chp_fill); \
-	  array_##n = cha_p_##n->cha_array; \
-	  pos1_##n = CHA_POS_1 (cha_p_##n, h_##n); \
-	  pos2_##n = CHA_POS_2 (cha_p_##n, h_##n);
-
-	  CHF_PRE (1);
-	  CHF_PRE (2);
-	  CHA_PREFETCH (2);
-	  CHF_PRE (3);
-	  CHA_PREFETCH (3);
-	  CHF_PRE (4);
-	  CHA_PREFETCH (4);
-
-#define CHF_CK(n, f)		     \
-	  CHAP_ENTER (cha_p_##n); \
-	  ent = array_##n[pos1_##n]; \
-	  if (!ent) \
-	    { \
-	      cha->cha_distinct_count++; \
-	      cha_add_row (setp, inst, key_vecs, cha_p_##n, h_##n, pos1_##n, inx + n - 1, NULL); \
-	      goto done_##n##f; \
-	    } \
-	  if (h_##n == *ent && cmp (cha, ent, key_vecs, inx + n -1, NULL))	\
-	  { \
-	    cha_add_row (setp, inst, key_vecs, cha_p_##n, h_##n, pos1_##n, inx + n - 1, ent); \
-	    goto done_##n##f; \
-	  } \
-	  ent = array_##n[pos2_##n]; \
-	  if (!ent) \
-	    { \
-	      cha->cha_distinct_count++; \
-	      cha_add_row (setp, inst, key_vecs, cha_p_##n, h_##n, pos2_##n, inx + n - 1, NULL); \
-	      goto done_##n##f; \
-	    } \
-	  if (h_##n == *ent && cmp (cha, ent, key_vecs, inx + n -1, NULL))	\
-	    {								\
-	      cha_add_row (setp, inst, key_vecs, cha_p_##n, h_##n, 0, inx + n - 1, ent); \
-	      goto done_##n##f;						\
-	    } \
-	  for (e = 0; e < cha_p_##n->cha_exception_fill; e++) \
-	    { \
-	      int64 * ent = ((int64**)cha_p_##n->cha_exceptions)[e]; \
-	      if (h_##n == ent[0] && cmp (cha, ent, key_vecs, inx + n - 1, NULL)) \
-		{ \
-		  cha_add_row (setp, inst, key_vecs, cha_p_##n, h_##n, 0, inx + n - 1, ent); \
-		  goto done_##n##f; \
-		} \
-	    } \
-	  cha->cha_distinct_count++; \
-	  cha_add_row (setp, inst, key_vecs, cha_p_##n, h_##n, -1, inx + n - 1, NULL); \
-	done_##n##f : ;  \
-	  CHAP_LEAVE (cha_p_##n);
-
-	  CHF_CK (1, f);
-	  CHF_CK (2, f);
-	  CHF_CK (3, f);
-	  CHF_CK (4, f);
-	}
-    singles:
-      for (set = set; set < last_set; set++)
-	{
-	  int inx = set - first_set, e, pos1_1, pos2_1;
-	  uint64 h_1;
-	  chash_t *cha_p_1;
-	  int64 **array_1;
-	  int64 *ent;
-	  CHF_PRE (1);
-	  if (self_partition && !(p_min <= H_PART (h_1) && p_max >= H_PART (h_1)))
-	    continue;
-	  CHF_CK (1, ff);
-	}
-    }
-  if (cha->cha_n_partitions)
-    cha->cha_count += n_sets;
-  /* the count and distinct count comparison is not thread safe.  Can be that a unq is set to non-unq.  Prevent this for one known to be unq from schema since this does not have a next pointer in the dependent part.  The loss of sometimes marknig a happens-to-be unq as non-unq is ok */
-  if (cha->cha_count != cha->cha_distinct_count && CHA_ALWAYS_UNQ != cha->cha_unique)
-    cha->cha_unique = CHA_NON_UNQ;
 }
 
 void
@@ -4567,137 +4319,6 @@ singles:
 }
 
 
-void
-setp_chash_fill_1i (setp_node_t * setp, caddr_t * inst)
-{
-  index_tree_t *tree;
-  hash_area_t *ha = setp->setp_ha;
-  chash_t *cha = NULL;
-  char is_parallel;
-  QNCAST (query_instance_t, qi, inst);
-  int n_sets = QST_INT (inst, setp->src_gen.src_prev->src_out_fill);
-  int64 *data;
-  uint64 hash_no[ARTM_VEC_LEN];
-  db_buf_t *key_vecs[1];
-  int64 temp[ARTM_VEC_LEN * CHASH_GB_MAX_KEYS];
-  dtp_t temp_any[9 * CHASH_GB_MAX_KEYS * ARTM_VEC_LEN];
-  int first_set, set;
-  SELF_PARTITION_FILL;
-  qi->qi_set = 0;
-  tree = qst_tree (inst, ha->ha_tree, setp->setp_ssa.ssa_set_no);
-  cha = tree->it_hi->hi_chash;
-  is_parallel = cha->cha_is_parallel;
-  for (first_set = 0; first_set < n_sets; first_set += ARTM_VEC_LEN)
-    {
-      int any_temp_fill = 0;
-      int key;
-      int last_set = MIN (first_set + ARTM_VEC_LEN, n_sets);
-      for (key = 0; key < last_set - first_set; key++)
-	hash_no[key] = 1;
-      for (key = 0; key < ha->ha_n_keys; key++)
-	{
-	  key_vecs[key] =
-	      (db_buf_t *) gb_values (cha, hash_no, inst, ha->ha_slots[key], key, first_set, last_set, (db_buf_t) temp, temp_any,
-	      &any_temp_fill, NULL, 0);
-	}
-      data = (int64 *) key_vecs[0];
-      qi->qi_set = first_set;
-      set = first_set;
-      if (self_partition)
-	goto singles;
-      for (set = first_set; set + 4 <= last_set; set += 4)
-	{
-	  int inx = set - first_set, e;
-	  chash_t *cha_p_1, *cha_p_2, *cha_p_3, *cha_p_4;
-	  int64 **array_1, **array_2, **array_3, **array_4;
-	  uint64 h_1, h_2, h_3, h_4;
-	  int64 *ent, data_1, data_2, data_3, data_4;
-	  int pos1_1, pos2_1, pos1_2, pos2_2, pos1_3, pos2_3, pos1_4, pos2_4;
-
-#undef CHF_PRE
-#define CHF_PRE(n) \
-	  data_##n = data[inx + n - 1]; \
-	  h_##n = hash_no[inx + n - 1]; \
-	  cha_p_##n = CHA_PARTITION (cha, h_##n); \
-	  __builtin_prefetch (&cha_p_##n->cha_current->h.h.chp_fill); \
-	  array_##n = cha_p_##n->cha_array; \
-	  pos1_##n = CHA_POS_1 (cha_p_##n, h_##n); \
-	  pos2_##n = CHA_POS_2 (cha_p_##n, h_##n);
-
-	  CHF_PRE (1);
-	  CHF_PRE (2);
-	  CHA_PREFETCH (2);
-	  CHF_PRE (3);
-	  CHA_PREFETCH (3);
-	  CHF_PRE (4);
-	  CHA_PREFETCH (4);
-
-#undef CHF_CK
-#define CHF_CK(n, f)		     \
-	  CHAP_ENTER (cha_p_##n); \
-	  ent = array_##n[pos1_##n]; \
-	  if (!ent) \
-	    { \
-	      cha->cha_distinct_count++; \
-	      cha_add_row (setp, inst, key_vecs, cha_p_##n, h_##n, pos1_##n, inx + n - 1, NULL); \
-	      goto done_##n##f; \
-	    } \
-	  if (data_##n == *ent) \
-	  { \
-	    cha_add_row (setp, inst, key_vecs, cha_p_##n, h_##n, pos1_##n, inx + n - 1, ent); \
-	    goto done_##n##f; \
-	  } \
-	  ent = array_##n[pos2_##n]; \
-	  if (!ent) \
-	    { \
-	      cha->cha_distinct_count++; \
-	      cha_add_row (setp, inst, key_vecs, cha_p_##n, h_##n, pos2_##n, inx + n - 1, NULL); \
-	      goto done_##n##f; \
-	    } \
-	  if (data_##n == *ent) \
-	    {								\
-	      cha_add_row (setp, inst, key_vecs, cha_p_##n, h_##n, 0, inx + n - 1, ent); \
-	      goto done_##n##f;						\
-	    } \
-	  for (e = 0; e < cha_p_##n->cha_exception_fill; e++) \
-	    { \
-	      int64 * ent = ((int64**)cha_p_##n->cha_exceptions)[e]; \
-	      if (data_##n == ent[0]) \
-		{ \
-		  cha_add_row (setp, inst, key_vecs, cha_p_##n, h_##n, 0, inx + n - 1, ent); \
-		  goto done_##n##f; \
-		} \
-	    } \
-	  cha->cha_distinct_count++; \
-	  cha_add_row (setp, inst, key_vecs, cha_p_##n, h_##n, -1, inx + n - 1, NULL); \
-	done_##n##f : ; \
-	  CHAP_LEAVE (cha_p_##n);
-
-	  CHF_CK (1, f);
-	  CHF_CK (2, f);
-	  CHF_CK (3, f);
-	  CHF_CK (4, f);
-	}
-    singles:
-      for (set = set; set < last_set; set++)
-	{
-	  int inx = set - first_set, e, pos1_1, pos2_1;
-	  uint64 h_1;
-	  int64 data_1;
-	  chash_t *cha_p_1;
-	  int64 **array_1;
-	  int64 *ent;
-	  CHF_PRE (1);
-	  if (self_partition && !(p_min <= H_PART (h_1) && p_max >= H_PART (h_1)))
-	    continue;
-	  CHF_CK (1, ff);
-	}
-    }
-  if (cha->cha_n_partitions)
-    cha->cha_count += n_sets;
-  if (cha->cha_count != cha->cha_distinct_count && CHA_ALWAYS_UNQ != cha->cha_unique)
-    cha->cha_unique = CHA_NON_UNQ;
-}
 
 /* for the single int unq hash, the result just marks the set no in the sets */
 
@@ -4813,143 +4434,6 @@ cha_1_int_non_unq (setp_node_t * setp, caddr_t * inst, int set)
 {
   GPF_T1 ("not impl. Must convert 1 int chash into generic chash");
 }
-
-void
-setp_chash_fill_1i_n (setp_node_t * setp, caddr_t * inst)
-{
-  index_tree_t *tree;
-  hash_area_t *ha = setp->setp_ha;
-  chash_t *cha = NULL;
-  QNCAST (query_instance_t, qi, inst);
-  int n_sets = QST_INT (inst, setp->src_gen.src_prev->src_out_fill);
-  int64 *data;
-  uint64 hash_no[ARTM_VEC_LEN];
-  db_buf_t *key_vecs[1];
-  int64 temp[ARTM_VEC_LEN * CHASH_GB_MAX_KEYS];
-  dtp_t temp_any[9 * CHASH_GB_MAX_KEYS * ARTM_VEC_LEN];
-  int first_set, set;
-  char is_parallel;
-  SELF_PARTITION_FILL;
-  qi->qi_set = 0;
-  tree = qst_tree (inst, ha->ha_tree, setp->setp_ssa.ssa_set_no);
-  cha = tree->it_hi->hi_chash;
-  is_parallel = cha->cha_is_parallel;
-  for (first_set = 0; first_set < n_sets; first_set += ARTM_VEC_LEN)
-    {
-      int any_temp_fill = 0;
-      int key;
-      int last_set = MIN (first_set + ARTM_VEC_LEN, n_sets);
-      for (key = 0; key < last_set - first_set; key++)
-	hash_no[key] = 1;
-      for (key = 0; key < ha->ha_n_keys; key++)
-	{
-	  key_vecs[key] =
-	      (db_buf_t *) gb_values (cha, hash_no, inst, ha->ha_slots[key], key, first_set, last_set, (db_buf_t) temp, temp_any,
-	      &any_temp_fill, NULL, 0);
-	}
-      data = (int64 *) key_vecs[0];
-      qi->qi_set = first_set;
-      set = first_set;
-      if (self_partition)
-	goto singles;
-      for (set = first_set; set + 4 <= last_set; set += 4)
-	{
-	  int inx = set - first_set, e;
-	  chash_t *cha_p_1, *cha_p_2, *cha_p_3, *cha_p_4;
-	  int64 *array_1, *array_2, *array_3, *array_4;
-	  uint64 h_1, h_2, h_3, h_4;
-	  int64 ent, data_1, data_2, data_3, data_4;
-	  int pos1_1, pos2_1, pos1_2, pos2_2, pos1_3, pos2_3, pos1_4, pos2_4;
-
-#undef CHF_PRE
-#define CHF_PRE(n) \
-	  data_##n = data[inx + n - 1]; \
-	  h_##n = hash_no[inx + n - 1]; \
-	  cha_p_##n = CHA_PARTITION (cha, h_##n); \
-	  array_##n = (int64*)cha_p_##n->cha_array;	\
-	  pos1_##n = CHA_POS_1 (cha_p_##n, h_##n); \
-	  pos2_##n = CHA_POS_2 (cha_p_##n, h_##n);
-
-#undef CHA_PREFETCH
-#define CHA_PREFETCH(n) __builtin_prefetch (&array_##n[pos1_##n])
-
-
-	  CHF_PRE (1);
-	  CHF_PRE (2);
-	  CHA_PREFETCH (2);
-	  CHF_PRE (3);
-	  CHA_PREFETCH (3);
-	  CHF_PRE (4);
-	  CHA_PREFETCH (4);
-
-#undef CHF_CK
-#define CHF_CK(n, f) \
-	  {					       \
-	    CHAP_ENTER (cha_p_##n); \
-	  if (data_##n == CHA_EMPTY) goto exc_##n##f; \
-	  ent = array_##n[pos1_##n]; \
-	  if (CHA_EMPTY == ent ) \
-	    { \
-	      cha->cha_distinct_count++; \
-	      array_##n[pos1_##n] = data_##n; \
-	      goto done_##n##f; \
-	    } \
-	  if (data_##n == ent) \
-	  { \
-	    cha_1_int_non_unq (setp, inst, inx); \
-	    return; \
-	  } \
-	  ent = array_##n[pos2_##n]; \
-	  if (CHA_EMPTY == ent) \
-	    { \
-	      cha->cha_distinct_count++; \
-	      array_##n[pos2_##n] = data_##n; \
-	      goto done_##n##f; \
-	    } \
-	  if (data_##n == ent) \
-	    {								\
-	      cha_1_int_non_unq (setp, inst, set); \
-	      return; \
-	    } \
-    exc_##n##f:						      \
-	  for (e = 0; e < cha_p_##n->cha_exception_fill; e++) \
-	    { \
-	      int64  ent = ((int64*)cha_p_##n->cha_exceptions)[e]; \
-	      if (data_##n == ent) \
-		{ \
-		  cha_1_int_non_unq (setp, inst, set); \
-		  return; \
-		} \
-	    } \
-	  cha->cha_distinct_count++; \
-	  cha_add_1_int (setp, inst, cha_p_##n, h_##n, data_##n); \
-    done_##n##f : ; \
-	  CHAP_LEAVE (cha_p_##n); }
-
-	  CHF_CK (1, f);
-	  CHF_CK (2, f);
-	  CHF_CK (3, f);
-	  CHF_CK (4, f);
-	}
-    singles:
-      for (set = set; set < last_set; set++)
-	{
-	  int inx = set - first_set, e, pos1_1, pos2_1;
-	  uint64 h_1;
-	  int64 data_1;
-	  chash_t *cha_p_1;
-	  int64 *array_1;
-	  int64 ent;
-	  CHF_PRE (1);
-	  if (self_partition && !(p_min <= H_PART (h_1) && p_max >= H_PART (h_1)))
-	    continue;
-	  CHF_CK (1, ff);
-	}
-    }
-  if (cha->cha_n_partitions)
-    cha->cha_count += n_sets;
-}
-
 
 int
 itc_hash_compare (it_cursor_t * itc, buffer_desc_t * buf, search_spec_t * sp)
@@ -6299,7 +5783,6 @@ chash_fill_input (fun_ref_node_t * fref, caddr_t * inst, caddr_t * state)
 	GPF_T1 ("hash filler reset for partition over full not implemented");
       }
       END_QR_RESET;
-      if (enable_hash_last)
 	{
 	  int64 da_time = 0;
 	  if (fref->src_gen.src_stat)

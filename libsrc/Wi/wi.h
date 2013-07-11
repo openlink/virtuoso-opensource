@@ -458,7 +458,6 @@ typedef struct chash_s
   int			cha_exception_fill;
   uint32		cha_n_bloom;
   uint64 *		cha_bloom;
-  dk_mutex_t		cha_mtx;
   chash_page_t *	cha_current;
   chash_page_t *		cha_current_data;
   mem_pool_t *		cha_pool;
