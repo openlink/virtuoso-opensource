@@ -51,20 +51,11 @@ extern size_t mp_large_in_use;
 extern long tc_part_hash_join;
 extern long tc_slow_temp_insert;
 extern long tc_slow_temp_lookup;
-extern dk_cpu_set_t wi_affinity;
-extern int thr_is_default_affinity;
 extern unsigned char byte_logcount[256];
 extern int32 enable_qp;
 
 void mon_init() {
-  if (thr_is_default_affinity) {
-    int j, sum = 0;
-    for (j = 0; j < sizeof(dk_cpu_set_t); j++)
-      sum += byte_logcount[*(((unsigned char *)(&wi_affinity)) + j)];
-    mon_max_threads = sum;
-  }
-  else
-    mon_max_threads = enable_qp;
+  mon_max_threads = enable_qp;
   mon_max_cpu_pct = 100 * mon_max_threads;
   mon_is_init = 1;
 }
