@@ -475,9 +475,12 @@ gb_values (chash_t * cha, uint64 * hash_no, caddr_t * inst, state_slot_t * ssl, 
   data_col_t *dc = QST_BOX (data_col_t *, inst, ssl->ssl_index);
   int elt_sz, inx, ninx;
   dtp_t chdtp = cha->cha_sqt[nth].sqt_dtp;
-  if (clear_nulls && !cha->cha_sqt[nth].sqt_non_null && nulls)
+  char is_fill = HA_FILL == cha->cha_ha->ha_op;
+  if (clear_nulls)
     {
-      nulls += nth * ARTM_VEC_LEN;
+      /* a group by or distinct has null flags for every col, a hash filler has one per row, so the first null skips the row */
+      if (!is_fill)
+	nulls += nth * ARTM_VEC_LEN;
       memzero (nulls, last_set - first_set);
     }
   if (DV_ANY == chdtp && DV_ANY != dc->dc_dtp && !(DCT_BOXES & dc->dc_type))
@@ -3146,8 +3149,7 @@ hash_source_chash_input (hash_source_t * hs, caddr_t * inst, caddr_t * state)
 	}
 
       hash_nos = (uint64 *) h_dc->dc_values;
-      for (inx = 0; inx < n_sets; inx++)
-	hash_nos[inx] = 1;
+      int64_fill ((int64 *) hash_nos, 1, n_sets);
       DO_BOX (state_slot_t *, ssl, inx, hs->hs_ref_slots)
       {
 	data_col_t *dc = QST_BOX (data_col_t *, inst, ssl->ssl_index);
@@ -4080,7 +4082,6 @@ chash_filled (setp_node_t * setp, hash_index_t * hi, int first_time, int64 n_fil
 
 
 int enable_hash_last = 1;
-dtp_t zero_artm_vec[ARTM_VEC_LEN];
 
 void
 setp_chash_fill_1i_d (setp_node_t * setp, caddr_t * inst, chash_t * cha)
@@ -4100,14 +4101,13 @@ setp_chash_fill_1i_d (setp_node_t * setp, caddr_t * inst, chash_t * cha)
   SELF_PARTITION_FILL;
   qi->qi_set = 0;
   is_parallel = cha->cha_is_parallel;
-  nulls = cha->cha_sqt[0].sqt_non_null ? zero_artm_vec : nulls_auto;
+  nulls = nulls_auto;
   for (first_set = 0; first_set < n_sets; first_set += ARTM_VEC_LEN)
     {
       int any_temp_fill = 0;
       int key;
       int last_set = MIN (first_set + ARTM_VEC_LEN, n_sets);
-      for (key = 0; key < last_set - first_set; key++)
-	hash_no[key] = 1;
+      int64_fill ((int64*)hash_no, 1, last_set - first_set);
       for (key = 0; key < ha->ha_n_keys; key++)
 	{
 	  key_vecs[key] =
@@ -4150,7 +4150,7 @@ setp_chash_fill_1i_n_d (setp_node_t * setp, caddr_t * inst, chash_t * cha)
   int first_set, set;
   char is_parallel;
   SELF_PARTITION_FILL;
-  nulls = cha->cha_sqt[0].sqt_non_null ? zero_artm_vec : nulls_auto;
+  nulls = nulls_auto;
   qi->qi_set = 0;
   is_parallel = cha->cha_is_parallel;
   for (first_set = 0; first_set < n_sets; first_set += ARTM_VEC_LEN)
@@ -4158,8 +4158,7 @@ setp_chash_fill_1i_n_d (setp_node_t * setp, caddr_t * inst, chash_t * cha)
       int any_temp_fill = 0;
       int key;
       int last_set = MIN (first_set + ARTM_VEC_LEN, n_sets);
-      for (key = 0; key < last_set - first_set; key++)
-	hash_no[key] = 1;
+      int64_fill ((int64*)hash_no, 1, last_set - first_set);
       for (key = 0; key < ha->ha_n_keys; key++)
 	{
 	  key_vecs[key] =
@@ -4231,8 +4230,7 @@ setp_chash_fill_d (setp_node_t * setp, caddr_t * inst)
       int key;
       int last_set = MIN (first_set + ARTM_VEC_LEN, n_sets);
       memzero (nulls, last_set - first_set);
-      for (key = 0; key < last_set - first_set; key++)
-	hash_no[key] = 1;
+      int64_fill ((int64*)hash_no, 1, last_set - first_set);
       for (key = 0; key < ha->ha_n_keys; key++)
 	{
 	  key_vecs[key] =
