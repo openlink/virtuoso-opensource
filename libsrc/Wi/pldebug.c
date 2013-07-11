@@ -293,7 +293,10 @@ pldbg_print_value (dk_session_t * ses, box_t box, query_instance_t *qi)
 		    SES_PRINT (ses, "'");
 		}
 	      else
-		SES_PRINT (ses, "<box>");
+		{
+		  snprintf (tmp, sizeof (tmp), "<box dtp=%d>", dtp);
+		  SES_PRINT (ses, tmp);
+		}
 	    }
     }
 }
