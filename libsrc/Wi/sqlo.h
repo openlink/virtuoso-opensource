@@ -287,6 +287,7 @@ struct df_elt_s
       bitf_t 	is_being_placed:1;
       bitf_t	to_be_trans:1; /* if will be transitive even though ot_trans is not set during placing */
       bitf_t	is_control:1; /* if set, do not place things inside into supers evenn if could by  dependency. */
+    bitf_t	not_in_top_and:1; /* existence in a not or or, scalar subq. if hash probe outside of this subq, must not prefilter on bloom when fetching the probe col */
     } sub;
     struct {
       /* union dt head, or union coming from a table + or */

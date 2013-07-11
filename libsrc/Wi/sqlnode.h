@@ -820,6 +820,7 @@ typedef struct set_ctr_node_s
   dk_set_t 			sctr_continuable; /* continuable nodes between the sctr and the ose */
   dk_set_t 			sctr_hash_spec; /* if before partitioned outer hash join, these sp's are the hash filler frefs that determine the partition */
   char				sctr_role;
+  char				sctr_not_in_top_and;
 } set_ctr_node_t;
 
 
@@ -977,6 +978,7 @@ typedef struct hash_source_s
   dbe_col_loc_t *	hs_out_cols;
   dk_set_t		hs_out_aliases;
   ptrlong *		hs_out_cols_indexes;
+  char			hs_cl_part_opt; /* if explicit cluster partitioning option */
   char			hs_is_unique;
   char			hs_is_outer;
   char			hs_no_partition; /* if probe from inside exists/value subq/dt as outer then can't distinguish between not exists and out of partition so must not partition */
