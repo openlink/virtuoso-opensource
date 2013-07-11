@@ -1377,7 +1377,16 @@ new_val:
     {
       /* ce is less, no match, insert point after or at end of range */
       if (CE_FIND_LAST == rc)
-	GPF_T1 ("not supposed to hit lt rl ce if looking for end of range");
+	{
+#ifdef DEBUG
+	  QNCAST (query_instance_t, qi, itc->itc_out_state);
+	  if (itc->itc_insert_key) 
+	    log_error ("error looking ce on index %s", itc->itc_insert_key->key_name ? itc->itc_insert_key->key_name : "<temp>");
+	  if (qi && qi->qi_query && qi->qi_query->qr_text)
+	    log_error ("query text: %s", qi->qi_query->qr_text);  
+#endif
+	  GPF_T1 ("not supposed to hit lt rl ce if looking for end of range");
+	}
       if (0 == nth_key)
 	itc_range (itc, COL_NO_ROW, COL_NO_ROW);
       else
