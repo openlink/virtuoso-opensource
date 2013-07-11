@@ -193,6 +193,7 @@ libwi_la_SOURCES = \
 	json_p.c \
 	lisprdr.c \
 	lock.c \
+	monitor.c \
 	log.c \
 	map_schema.c \
 	mem.c \
@@ -342,6 +343,7 @@ libwi_odbc_la_SOURCES = \
 	json_p.c \
 	lisprdr.c \
 	lock.c \
+	monitor.c \
 	log.c \
 	map_schema.c \
 	mem.c \

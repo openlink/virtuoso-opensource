@@ -37,6 +37,7 @@
 #include "statuslog.h"
 #include "security.h"
 #include "srvstat.h"
+#include "monitor.h"
 #ifdef DEBUG
 #include "shuric.h"
 #endif
@@ -50,6 +51,7 @@ long lock_killed_by_force = 0;
 long lock_deadlocks = 0;
 long lock_2r1w_deadlocks;
 long lock_waits = 0;
+long lock_wait_msec = 0;
 long lock_enters = 0;
 long lock_leaves = 0;
 
@@ -2234,6 +2236,7 @@ the_grim_lock_reaper (void)
   static unsigned long resources_clear_last_time = 0;
   long now = approx_msec_real_time ();
   int server_is_idle = 1;
+  int n_threads = 0, n_vdb_threads = 0, n_lw_threads = 0;
   dt_init ();
   dt_now ((caddr_t)&srv_approx_dt);
   if (CPT_CHECKPOINT == wi_inst.wi_is_checkpoint_pending)
@@ -2251,6 +2254,9 @@ the_grim_lock_reaper (void)
   IN_TXN;
   DO_SET (lock_trx_t *, lt, &all_trxs)
     {
+      n_threads += lt->lt_threads;
+      n_vdb_threads += lt->lt_vdb_threads;
+      n_lw_threads += lt->lt_lw_threads;
       client_connection_t * cli = lt->lt_client;
       CHECK_DK_MEM_RESERVE (lt);
       if (lt->lt_started &&
@@ -2396,6 +2402,8 @@ the_grim_lock_reaper (void)
 #endif
   if (DK_ALLOC_ON_RESERVE)
     dk_alloc_set_reserve_mode (DK_ALLOC_RESERVE_PREPARED); /* IvAn/OutOfMem/040513 If idle then it must have memory reserve. */
+  mon_update();
+  mon_check();
 }
 
 

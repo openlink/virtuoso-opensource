@@ -515,6 +515,7 @@ fragment instead of searching for the the fragment actually needed. */
       k1->key_lock_wait++; \
       k1->key_lock_wait_time += delay; \
     } \
+  lock_wait_msec += delay; \
   it->itc_ltrx->lt_client->cli_activity.da_lock_wait_msec += delay; \
   it->itc_ltrx->lt_client->cli_activity.da_lock_waits++; \
 }
