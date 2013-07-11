@@ -4571,7 +4571,9 @@ qr_skip_node (sqlo_t * so, query_t * qr)
   int is_vec = sqlg_is_vector;
   int post_nodes = 0;
   select_node_t * sel = NULL;
-  data_source_t * prev = NULL, * qn;
+  data_source_t * prev = NULL, * qn = qr->qr_head_node;
+  if (IS_QN (qn, select_node_input) && !qn_next (qn))
+    return;
   for (qn = qr->qr_head_node; qn; qn = qn_next (qn))
     {
       qn_input_fn f = qn->src_input;
