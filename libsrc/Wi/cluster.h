@@ -383,6 +383,7 @@ struct cl_thread_s
   dk_hash_t *		clt_col_stat;
   cl_thread_t *		clt_top_clt;	/* a recursive cm on a aq thread on non top coord must feed from a real clt, to which the recursive req is bound.  This is the clt for a temp clt 2nd rec clt */
   int 			clt_n_sample_rows;
+  int 			clt_n_row_spec_matches;
   uint32		clt_start_time; /* approx time, use for keep alive */
   uint32 		clt_reply_req_no;	/* use for req no in reply if dissociated from the pending cm, as in recursive dfg */
   int 			clt_id;
