@@ -2578,6 +2578,10 @@ caddr_t bif_xenc_key_serialize (caddr_t * qst, caddr_t * err_r, state_slot_t ** 
     {
       len = k->ki.raw.bits / 8;
     }
+  else if (k->xek_type == DSIG_KEY_AES)
+    {
+      len = k->ki.aes.bits / 8;
+    }
   else
     return NEW_DB_NULL;
 
@@ -2611,6 +2615,10 @@ caddr_t bif_xenc_key_serialize (caddr_t * qst, caddr_t * err_r, state_slot_t ** 
   else if (k->xek_type == DSIG_KEY_RAW)
     {
       memcpy (in_buf, k->ki.raw.k, len);
+    }
+  else if (k->xek_type == DSIG_KEY_AES)
+    {
+      memcpy (in_buf, k->ki.aes.k, len);
     }
   else
     GPF_T;
@@ -2726,8 +2734,13 @@ caddr_t bif_xenc_key_aes_rand_create (caddr_t * qst, caddr_t * err_r, state_slot
   char * name = bif_key_name_arg (qst, args, 0, "xenc_key_aes_rnd_create");
   long bits = bif_long_arg (qst, args, 1, "xenc_key_aes_rnd_create");
   xenc_key_t * k;
+  int rc;
+  unsigned char buf[KEYSIZB];
 
-  k = xenc_key_aes_create (name, bits, "temppwd");
+  rc = RAND_bytes(buf, sizeof (buf));
+  if (rc <= 0)
+    sqlr_new_error ("42000", "XENC14", "Cannot generate key data");
+  k = xenc_key_aes_create (name, bits, buf);
   if (!k)
     SQLR_NEW_KEY_EXIST_ERROR (name);
 
