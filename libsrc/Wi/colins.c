@@ -3471,7 +3471,8 @@ ceic_split (ce_ins_ctx_t * ceic, buffer_desc_t * buf)
   n_rds = BOX_ELEMENTS (rds);
   DO_BOX (row_delta_t *, rd, inx, rds)
   {
-    if (rd->rd_op != RD_DELETE && !rd->rd_values[0])
+    /* test the place of 1st ce in the rd, else an integer 0 in a key column will look like no value */
+    if (rd->rd_op != RD_DELETE && !rd->rd_values[key->key_n_significant])
       GPF_T1 ("ceic split is expected to produce a seg for each split, there is an unused split rd");
     rd->rd_itc = itc;
     if (RD_DELETE != rd->rd_op)
