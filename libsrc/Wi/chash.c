@@ -364,11 +364,6 @@ dv_to_int (db_buf_t dv, dtp_t * nf)
   return 0x8000000000000000;
 }
 
-#ifdef WIN32
-#define INFINITY (DBL_MAX+DBL_MAX)
-#define NAN (INFINITY-INFINITY)
-#endif
-
 double
 dv_to_double (db_buf_t dv, dtp_t * nf)
 {
