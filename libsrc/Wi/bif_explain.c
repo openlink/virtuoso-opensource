@@ -84,14 +84,14 @@ qrc_add_wrn_msg(const char *format, ...)
 {  
   char buf[MSG_MAX_LEN];
   va_list va;
+  du_thread_t * self = THREAD_CURRENT_THREAD;
+  qr_comment_t * comm = THR_ATTR (self, TA_STAT_COMM);
   va_start (va, format);
   vsnprintf (buf, sizeof (buf), format, va);
   va_end (va);
   buf[sizeof (buf) - 1] = 0;
   /* milos: add the warning text to the list of warnings */
-  du_thread_t * self = THREAD_CURRENT_THREAD;
-  qr_comment_t * comm = THR_ATTR (self, TA_STAT_COMM);
-  if(comm)
+  if (comm)
   {
     dk_set_push(&comm->qrc_wrn_msgs, (void*)list(1, box_dv_short_string(buf)));
     /* milos: set the warning flag */
@@ -951,10 +951,12 @@ ts_print_0 (table_source_t * ts)
       node_print ((data_source_t *) ts->ts_alternate);
       stmt_printf (("\n}\n"));
     }
+  {
   /* milos: clear the 'first' flag */
     du_thread_t * self = THREAD_CURRENT_THREAD;
     qr_comment_t * comm = THR_ATTR (self, TA_STAT_COMM);
     if(comm) comm->qrc_is_first = 0;
+  }  
 }
 
 void
@@ -1059,10 +1061,12 @@ ts_print (table_source_t * ts)
       node_print ((data_source_t *) ts->ts_alternate);
       stmt_printf (("\n}\n"));
     }
+  {
   /* milos: clear the 'first' flag */
     du_thread_t * self = THREAD_CURRENT_THREAD;
     qr_comment_t * comm = THR_ATTR (self, TA_STAT_COMM);
     if(comm) comm->qrc_is_first = 0;
+  }  
 }
 
 
@@ -1211,10 +1215,10 @@ node_print_0 (data_source_t * node)
 	   || in == (qn_input_fn) hash_fill_node_input)
     {
       fun_ref_node_t *fref = (fun_ref_node_t *) node;
-      stmt_printf (("{ %s\n", IS_QN (node, hash_fill_node_input) ? "hash filler": "fork"));
-      /* milos: set the 'first' flag */
       du_thread_t * self = THREAD_CURRENT_THREAD;
       qr_comment_t * comm = THR_ATTR (self, TA_STAT_COMM);
+      stmt_printf (("{ %s\n", IS_QN (node, hash_fill_node_input) ? "hash filler": "fork"));
+      /* milos: set the 'first' flag */
       if (comm) comm->qrc_is_first = 1;
       node_print (fref->fnr_select);
       /* milos: set the 'first' flag */
@@ -1856,20 +1860,23 @@ node_print (data_source_t * node)
 	  ssl_array_print (fref->fnr_ssa.ssa_save);
 	  stmt_printf (("\n"));
 	}
+      { 
 	  // milos: set the 'first' flag on
 	  du_thread_t * self = THREAD_CURRENT_THREAD;
 	  qr_comment_t * comm = THR_ATTR (self, TA_STAT_COMM);
+	  caddr_t * ctx_inst;
+	  src_stat_t * srs;
 	  if(comm) comm->qrc_is_first = 1;
 	  /* milos: detect a new warning and add the warning text: it is a partition hash join, and it did N passes (N = fref->fnr_select->src_stat.srs_n_in)  	 */
-	  caddr_t * ctx_inst;
-	  	ctx_inst = THR_ATTR (THREAD_CURRENT_THREAD, TA_STAT_INST);
-	  	src_stat_t * srs = (src_stat_t *)&ctx_inst[fref->fnr_select->src_stat];
+	  ctx_inst = THR_ATTR (THREAD_CURRENT_THREAD, TA_STAT_INST);
+	  srs = (src_stat_t *)&ctx_inst[fref->fnr_select->src_stat];
 	  if ((fref->fnr_select->src_stat) && (qi != NULL) && (QST_INT(qi, srs->srs_n_in) > 1))	
 	    qrc_add_wrn_msg("Warning: There is a partition hash join which did %d passes.\n", srs->srs_n_in);
-      node_print (fref->fnr_select);
-      /* milos: set the 'first' flag on */
-      comm = THR_ATTR (self, TA_STAT_COMM);
+	  node_print (fref->fnr_select);
+	  /* milos: set the 'first' flag on */
+	  comm = THR_ATTR (self, TA_STAT_COMM);
 	  if(comm) comm->qrc_is_first = 1;
+      }
       stmt_printf (("}\n"));
     }
   else if (in == (qn_input_fn) remote_table_source_input)
@@ -3140,12 +3147,6 @@ qi_log_stats_1 (query_instance_t * qi, caddr_t err, caddr_t ext_text)
 #ifndef WIN32    
   caddr_t * inst = (caddr_t*)qi;
   du_thread_t * self = THREAD_CURRENT_THREAD;
-  /* milos: allocate memory for the comment structure */
-  qr_comment_t comm;
-  memset(&comm, 0, sizeof(comm));
-  /* comm.qrc_is_first = 0; */
-  if (enable_qrc)
-    SET_THR_ATTR (self, TA_STAT_COMM, (void*)&comm);
   query_t * qr = qi->qi_query;
   char from[20];
   void * rs_comp = NULL;
@@ -3156,8 +3157,16 @@ qi_log_stats_1 (query_instance_t * qi, caddr_t err, caddr_t ext_text)
   dk_session_t * ses;
   uint64 rt;
   uint32 now;
+  /* milos: allocate memory for the comment structure */
+  qr_comment_t comm;
+
+  memset(&comm, 0, sizeof(comm));
+  /* comm.qrc_is_first = 0; */
+  if (enable_qrc)
+    SET_THR_ATTR (self, TA_STAT_COMM, (void*)&comm);
   if (!qi->qi_log_stats)
     return;
+
   now = get_msec_real_time ();
   CLI_THREAD_TIME (cli);
   rt = rdtsc ();
@@ -3278,6 +3287,7 @@ qi_log_stats_1 (query_instance_t * qi, caddr_t err, caddr_t ext_text)
   /*40*/
   if (!ext_text)
     {
+      qr_comment_t * comm;
       cli->cli_resultset_max_rows = -1;
       cli->cli_resultset_comp_ptr = (caddr_t *) &rs_comp;
       cli->cli_resultset_data_ptr = &res;
@@ -3295,7 +3305,7 @@ qi_log_stats_1 (query_instance_t * qi, caddr_t err, caddr_t ext_text)
       SET_THR_ATTR (self, TA_STAT_INST, NULL);
 	  res = dk_set_nreverse (res);
 	  /* milos: Get the list of warnings from the TA_STAT_COMM and print it */
-      qr_comment_t * comm = THR_ATTR (self, TA_STAT_COMM);
+      comm = THR_ATTR (self, TA_STAT_COMM);
       if(comm)
       {
       	dk_set_t msgs = comm->qrc_wrn_msgs;
