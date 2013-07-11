@@ -1252,6 +1252,57 @@ bif_st_y (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_double (g->Ykey);
 }
 
+caddr_t
+bif_st_xmin (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  geo_t * g = bif_geo_arg (qst, args, 0, "st_xmin", -1);
+  if (GEO_POINT == GEO_TYPE_NO_ZM (g->geo_flags))
+    {
+      if (geoc_FARAWAY == g->Xkey)
+        return box_double (geoc_FARAWAY);
+      return box_double (g->Xkey);
+    }
+  return box_double (g->XYbox.Xmin);
+}
+
+caddr_t
+bif_st_ymin (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  geo_t * g = bif_geo_arg (qst, args, 0, "st_ymin", -1);
+  if (GEO_POINT == GEO_TYPE_NO_ZM (g->geo_flags))
+    {
+      if (geoc_FARAWAY == g->Xkey) /* yes, Xkey here and not Ykey */
+        return box_double (geoc_FARAWAY);
+      return box_double (g->Ykey);
+    }
+  return box_double (g->XYbox.Ymin);
+}
+
+caddr_t
+bif_st_xmax (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  geo_t * g = bif_geo_arg (qst, args, 0, "st_xmax", -1);
+  if (GEO_POINT == GEO_TYPE_NO_ZM (g->geo_flags))
+    {
+      if (geoc_FARAWAY == g->Xkey)
+        return box_double (geoc_FARAWAY);
+      return box_double (g->Xkey);
+    }
+  return box_double (g->XYbox.Xmax);
+}
+
+caddr_t
+bif_st_ymax (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  geo_t * g = bif_geo_arg (qst, args, 0, "st_ymax", -1);
+  if (GEO_POINT == GEO_TYPE_NO_ZM (g->geo_flags))
+    {
+      if (geoc_FARAWAY == g->Xkey) /* yes, Xkey here and not Ykey */
+        return box_double (geoc_FARAWAY);
+      return box_double (g->Ykey);
+    }
+  return box_double (g->XYbox.Ymax);
+}
 
 caddr_t
 bif_st_srid (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -1397,7 +1448,7 @@ geo_pred (geo_t * g1, geo_t * g2, int op, double prec)
   if (GEO_POINT == GEO_TYPE (g1->geo_flags) && GEO_POINT == GEO_TYPE (g2->geo_flags) && GSOP_INTERSECTS == op)
     {
       if (prec >= geo_distance (g1->geo_srcode, g1->Xkey, g1->Ykey, g2->Xkey, g2->Ykey))
-	return 1;
+        return 1;
       return 0;
     }
   else
@@ -1829,6 +1880,10 @@ geo_init ()
   bif_define ("st_point", bif_st_point);
   bif_define ("st_x", bif_st_x);
   bif_define ("st_y", bif_st_y);
+  bif_define ("st_xmin", bif_st_xmin);
+  bif_define ("st_ymin", bif_st_ymin);
+  bif_define ("st_xmax", bif_st_xmax);
+  bif_define ("st_ymax", bif_st_ymax);
   bif_define ("geo_insert", bif_geo_insert);
   bif_set_uses_index (bif_geo_insert);
   bif_set_enlist ("geo_insert");
