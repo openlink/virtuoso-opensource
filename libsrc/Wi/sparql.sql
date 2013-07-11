@@ -2536,6 +2536,11 @@ create procedure DB.DBA.RDF_QUAD_L_RDB2RDF (in g_iid varchar, in s_iid varchar, 
     o_val := DB.DBA.RDF_OBJ_ADD (257, o_val, 257);
 
 o_val_done:
+  if (o_val is null or s_iid is null) 
+    {
+      -- cannot have null values
+      return;
+    }
   insert soft DB.DBA.RDF_QUAD (G,S,P,O) values (g_iid, s_iid, p_iid, o_val);
 }
 ;
