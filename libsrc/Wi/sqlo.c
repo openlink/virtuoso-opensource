@@ -2977,7 +2977,7 @@ sqlo_scalar_subq_scope (sqlo_t * so, ST ** ptree)
   t_set_push (&sco->sco_scalar_subqs, (void*)org);
 }
 
-int32 enable_rdf_box_const = 0;
+int32 enable_rdf_box_const = 2;
 
 int
 sqlo_check_rdf_lit (ST ** ptree)
@@ -3029,7 +3029,12 @@ sqlo_check_rdf_lit (ST ** ptree)
 	}
     }
   mp_trash (THR_TMP_POOL, (caddr_t)data);
-  *ptree = data;
+  if (2 == enable_rdf_box_const)
+    {
+      *ptree = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("__rdflit"), t_list (1, data));
+    }
+  else
+    *ptree = data;
   return KS_CAST_OK;
 }
 

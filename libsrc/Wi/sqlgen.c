@@ -166,6 +166,15 @@ done:
 }
 
 
+state_slot_t *
+sqlg_sp_ssl (sqlo_t * so, df_elt_t * dfe)
+{
+  caddr_t val;
+  if (DFE_CALL == dfe->dfe_type
+      && (val = sqlo_rdf_lit_const (dfe->dfe_tree)))
+    return ssl_new_constant (so->so_sc->sc_cc, val);
+  return sqlg_dfe_ssl (so, dfe);
+}
 search_spec_t *
 dfe_to_spec (df_elt_t * lower, df_elt_t * upper, dbe_key_t * key)
 {
@@ -185,7 +194,7 @@ dfe_to_spec (df_elt_t * lower, df_elt_t * upper, dbe_key_t * key)
 	{
 	  sp->sp_min_op = CMP_NONE;
 	  sp->sp_max_op = op;
-	  sp->sp_max_ssl = sqlg_dfe_ssl (so, lower->_.bin.right);
+	  sp->sp_max_ssl = sqlg_sp_ssl (so, lower->_.bin.right);
 	  if (SSL_IS_UNTYPED_PARAM (sp->sp_max_ssl))
 	    {
 	      sp->sp_max_ssl->ssl_sqt = sp->sp_col->col_sqt;
@@ -195,7 +204,7 @@ dfe_to_spec (df_elt_t * lower, df_elt_t * upper, dbe_key_t * key)
 	{
 	  sp->sp_max_op = CMP_NONE;
 	  sp->sp_min_op = op;
-	  sp->sp_min_ssl = sqlg_dfe_ssl (so, lower->_.bin.right);
+	  sp->sp_min_ssl = sqlg_sp_ssl (so, lower->_.bin.right);
 	  if (SSL_IS_UNTYPED_PARAM (sp->sp_min_ssl))
 	    {
 	      sp->sp_min_ssl->ssl_sqt = sp->sp_col->col_sqt;
@@ -207,13 +216,13 @@ dfe_to_spec (df_elt_t * lower, df_elt_t * upper, dbe_key_t * key)
   else
     {
       sp->sp_min_op = bop_to_dvc (lower->_.bin.op);
-      sp->sp_min_ssl = sqlg_dfe_ssl (so, lower->_.bin.right);
+      sp->sp_min_ssl = sqlg_sp_ssl (so, lower->_.bin.right);
       if (SSL_IS_UNTYPED_PARAM (sp->sp_min_ssl))
 	{
 	  sp->sp_min_ssl->ssl_sqt = sp->sp_col->col_sqt;
 	}
       sp->sp_max_op = bop_to_dvc (upper->_.bin.op);
-      sp->sp_max_ssl = sqlg_dfe_ssl (so, upper->_.bin.right);
+      sp->sp_max_ssl = sqlg_sp_ssl (so, upper->_.bin.right);
       if (SSL_IS_UNTYPED_PARAM (sp->sp_max_ssl))
 	{
 	  sp->sp_max_ssl->ssl_sqt = sp->sp_col->col_sqt;

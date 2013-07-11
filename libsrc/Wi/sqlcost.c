@@ -1536,12 +1536,35 @@ sqlo_iri_constant_name (ST* tree)
   return NULL;
 }
 
+caddr_t
+sqlo_rdf_lit_const (ST * tree)
+{
+  if (DV_RDF == DV_TYPE_OF (tree))
+    return (caddr_t)tree;
+  if (ST_P (tree, CALL_STMT) && 1 == BOX_ELEMENTS (tree->_.call.params)
+      && SINV_DV_STRINGP (tree->_.call.name) && 0 == strnicmp (tree->_.call.name, "__rdflit", 8))
+    {
+      caddr_t p1 = (caddr_t)tree->_.call.params[0];
+      dtp_t dtp = DV_TYPE_OF (p1);
+      if (DV_RDF == dtp)
+	return p1;
+    }
+  return NULL;
+}
+
 
 caddr_t
 sqlo_rdf_obj_const_value (ST * tree, caddr_t * val_ret, caddr_t *lang_ret)
 {
+  caddr_t lit = sqlo_rdf_lit_const (tree);
+  if (lit)
+    {
+      if (val_ret)
+	*val_ret = lit;
+      return RDF_UNTYPED;
+    }
   if (ST_P (tree, CALL_STMT) && 1 == BOX_ELEMENTS (tree->_.call.params)
-      && DV_STRINGP (tree->_.call.name) && nc_strstr ((dtp_t*)tree->_.call.name, (dtp_t*)"obj_of_sqlval")
+      && DV_STRINGP (tree->_.call.name) && nc_strstr ((dtp_t*)tree->_.call.name, (dtp_t*)"OBJ_OF_SQLVAL")
       && DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree->_.call.params[0]))
     {
       dtp_t dtp = DV_TYPE_OF (tree->_.call.params[0]);
@@ -1553,15 +1576,30 @@ sqlo_rdf_obj_const_value (ST * tree, caddr_t * val_ret, caddr_t *lang_ret)
     }
   if (ST_P (tree, CALL_STMT) && 3 == BOX_ELEMENTS (tree->_.call.params)
       && DV_STRINGP (tree->_.call.name) && nc_strstr ((dtp_t*)tree->_.call.name, (dtp_t*)"RDF_MAKE_OBJ_OF_TYPEDSQLVAL")
-      && DV_STRINGP (tree->_.call.params[0]))
+      && DV_STRINGP (tree->_.call.params[0])
+      && DV_STRINGP (tree->_.call.params[2]))
     {
       dtp_t dtp = DV_TYPE_OF (tree->_.call.params[0]);
       if (DV_SYMBOL == dtp)
-	return 0;
+        return 0;
       if (val_ret)
-	*val_ret = (caddr_t) tree->_.call.params[0];
+        *val_ret = (caddr_t) tree->_.call.params[0];
       if (lang_ret)
-	*lang_ret = (caddr_t) tree->_.call.params[2];
+        *lang_ret = (caddr_t) tree->_.call.params[2];
+      return RDF_LANG_STRING;
+    }
+  if (ST_P (tree, CALL_STMT) && 3 == BOX_ELEMENTS (tree->_.call.params)
+      && DV_STRINGP (tree->_.call.name) && nc_strstr ((dtp_t*)tree->_.call.name, (dtp_t*)"RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS")
+      && DV_STRINGP (tree->_.call.params[0])
+      && DV_STRINGP (tree->_.call.params[2]))
+    {
+      dtp_t dtp = DV_TYPE_OF (tree->_.call.params[0]);
+      if (DV_SYMBOL == dtp)
+        return 0;
+      if (val_ret)
+        *val_ret = (caddr_t) tree->_.call.params[0];
+      if (lang_ret)
+        *lang_ret = (caddr_t) tree->_.call.params[2];
       return RDF_LANG_STRING;
     }
   return 0;
@@ -1572,6 +1610,11 @@ int
 rdf_obj_of_sqlval (caddr_t val, caddr_t * data_ret)
 {
   dtp_t dtp = DV_TYPE_OF (val);
+  if (DV_RDF == dtp)
+    {
+      *data_ret = box_copy (val);
+      return 1;
+    }
   if (IS_NUM_DTP (dtp))
     {
       *data_ret = box_copy (val);
