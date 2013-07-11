@@ -637,7 +637,7 @@ void sqlo_dt_unplace (sqlo_t * so, df_elt_t * tb_dfe);
 void sqlo_dfe_unplace (sqlo_t * so, df_elt_t * dfe);
 float sqlo_score (df_elt_t * dfe, float in_arity);
 int dfe_try_ordered_key (df_elt_t * prev_tb, df_elt_t * dfe);
-df_elt_t * dfe_prev_tb (df_elt_t * dfe, float * card_between_ret, int stop_on_new_order);
+df_elt_t * dfe_prev_tb (df_elt_t * dfe, float * card_between_ret);
 void dfe_revert_scan_order (df_elt_t * dfe, df_elt_t * prev_tb, dbe_key_t * prev_key);
 void sqlo_dfe_print (df_elt_t * dfe, int offset);
 #define OFS_INCR 4
