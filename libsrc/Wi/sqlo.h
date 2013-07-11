@@ -242,10 +242,10 @@ struct df_elt_s
       bitf_t is_locus_first:1;
       bitf_t is_leaf:1;
       bitf_t is_cl_part_first:1;
+      bitf_t in_order:1;
       bitf_t is_inf_col_given:1; /* if rdf inferred subclass/prop given and checked as after test, no itre over supers */
       bitf_t hash_role:3;
       bitf_t is_hash_filler_unique:1; /* if this is a hash filler and the key of the hash is unique, so guaranteed no dups in hash */
-      bitf_t in_order:1; /* for inx lookup, key in order w previous lookup */
       /* XPATH & FT members */
       df_elt_t         *text_pred;
       df_elt_t         *xpath_pred;
@@ -544,6 +544,9 @@ typedef struct index_choice_s
   float	ic_arity;
   float	ic_unit;
   float	ic_overhead;
+  float	ic_spacing; /* this many rows between consecutive rows fetched on vectored index lookup. 1 means consecutive */
+  char	ic_in_order; /* vectored index lookup in order with the previous index lookup */
+  char	ic_is_cl_part_first; /* preceded by a cluster partitioning step, qf or dfg stage */ 
   char	ic_leading_constants; /* this many leading constants used for sampling */
   char	ic_is_unique;
   char	ic_not_applicable;
@@ -633,6 +636,9 @@ df_elt_t * sqlo_layout_copy_1 (sqlo_t * so, df_elt_t * dfe, df_elt_t * parent);
 void sqlo_dt_unplace (sqlo_t * so, df_elt_t * tb_dfe);
 void sqlo_dfe_unplace (sqlo_t * so, df_elt_t * dfe);
 float sqlo_score (df_elt_t * dfe, float in_arity);
+int dfe_try_ordered_key (df_elt_t * prev_tb, df_elt_t * dfe);
+df_elt_t * dfe_prev_tb (df_elt_t * dfe, float * card_between_ret, int stop_on_new_order);
+void dfe_revert_scan_order (df_elt_t * dfe, df_elt_t * prev_tb, dbe_key_t * prev_key);
 void sqlo_dfe_print (df_elt_t * dfe, int offset);
 #define OFS_INCR 4
 df_elt_t * sqlo_layout (sqlo_t * so, op_table_t * ot, int is_top, df_elt_t * super);
