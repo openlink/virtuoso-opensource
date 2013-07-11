@@ -1420,9 +1420,8 @@ node_print_0 (data_source_t * node)
 	case RI_SAME_AS_S: mode = "same-as-S"; break;
 	case RI_SAME_AS_P: mode = "same-as-P"; break;
 	}
-      stmt_printf (("RDF Inference %s %s iterates ", mode));
+      stmt_printf (("RDF Inference %s iterates ", mode));
       ssl_print (ri->ri_output);
-
       stmt_printf (("  o= "));
       ssl_print (ri->ri_o);
       stmt_printf ((" p= "));
