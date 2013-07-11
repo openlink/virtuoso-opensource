@@ -1599,7 +1599,7 @@ key_add_part (dbe_key_t * key, oid_t col_id)
   dbe_column_t *col = (dbe_column_t *) gethash ((void *) (ptrlong) col_id,
       key->key_table->tb_schema->sc_id_to_col);
   if (dk_set_length (key->key_parts) < (uint32) key->key_n_significant)
-    col->col_is_key_part = 1;
+    col->col_is_key_part = (1 == key->key_n_significant && (key->key_is_primary || key->key_is_unique)) ? COL_KP_UNQ : 1;
   key->key_parts = dk_set_conc (key->key_parts,
       dk_set_cons ((caddr_t) col, NULL));
   if (IS_BLOB_DTP (col->col_sqt.sqt_dtp))

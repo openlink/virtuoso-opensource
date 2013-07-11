@@ -110,7 +110,6 @@ struct dbe_table_s
     char *		tb_owner;
     char *		tb_qualifier_name;
     id_hash_t *		tb_name_to_col;
-    dk_hash_t *		tb_id_to_col;
     dbe_key_t *		tb_primary_key;
     dk_set_t		tb_keys;
     dk_set_t		tb_old_keys;
@@ -247,6 +246,12 @@ typedef struct col_stat_s
   int64		cs_n_values;
 } col_stat_t;
 
+/* fields in int64 in cs_distinct counting repeats of a value */
+#define CS_IN_SAMPLE 0x8000000000000000
+#define CS_SAMPLE_INC 0x1000000000000
+#define CS_N_SAMPLES(n) (0x7fff & ((int64)(n) >> 48))
+#define CS_N_VALUES(n) ((int64)(n) & 0xffffffffffff)
+
 
 struct dbe_column_s
   {
@@ -288,6 +293,10 @@ struct dbe_column_s
 #define col_scale col_sqt.sqt_scale
 #define col_non_null col_sqt.sqt_non_null
 #define col_collation col_sqt.sqt_collation
+
+/* col_is_key_part */
+#define COL_KP_UNQ 100
+
 
 
 
