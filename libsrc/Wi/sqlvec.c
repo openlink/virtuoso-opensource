@@ -1038,7 +1038,7 @@ cv_cmp_typed (instruction_t * ins)
   if (SSL_IS_VEC_REF (ins->_.cmp.left) && SSL_IS_VEC_REF (ins->_.cmp.right)
       && ins->_.cmp.left->ssl_dtp == ins->_.cmp.right->ssl_dtp)
     {
-      switch (ins->_.artm.left->ssl_dtp)
+      switch (ins->_.cmp.left->ssl_dtp)
 	{
 	case DV_LONG_INT:
 	case DV_INT64:

@@ -1657,10 +1657,10 @@ dc_cmp_int_1 (instruction_t * ins, caddr_t * inst)
   int set1, set2;
   int64 i1, i2;
   set1 = set2 = qi->qi_set;
-  if (SSL_REF == ins->_.artm.left->ssl_type)
-    set1 = sslr_set_no (inst, ins->_.artm.left, set1);
-  if (SSL_REF == ins->_.artm.right->ssl_type)
-    set2 = sslr_set_no (inst, ins->_.artm.right, set2);
+  if (SSL_REF == ins->_.cmp.left->ssl_type)
+    set1 = sslr_set_no (inst, ins->_.cmp.left, set1);
+  if (SSL_REF == ins->_.cmp.right->ssl_type)
+    set2 = sslr_set_no (inst, ins->_.cmp.right, set2);
   if ((dc1->dc_nulls && DC_IS_NULL (dc1, set1)) || (dc2->dc_nulls && DC_IS_NULL (dc2, set2)))
     return DVC_UNKNOWN;
   i1 = ((int64 *) dc1->dc_values)[set1];
@@ -1684,10 +1684,10 @@ dc_cmp_int (instruction_t * ins, caddr_t * inst, db_buf_t bits)
   SET_LOOP
   {
     set1 = set2 = set;
-    if (SSL_REF == ins->_.artm.left->ssl_type)
-      set1 = sslr_set_no (inst, ins->_.artm.left, set1);
-    if (SSL_REF == ins->_.artm.right->ssl_type)
-      set2 = sslr_set_no (inst, ins->_.artm.right, set2);
+    if (SSL_REF == ins->_.cmp.left->ssl_type)
+      set1 = sslr_set_no (inst, ins->_.cmp.left, set1);
+    if (SSL_REF == ins->_.cmp.right->ssl_type)
+      set2 = sslr_set_no (inst, ins->_.cmp.right, set2);
     if ((dc1->dc_nulls && DC_IS_NULL (dc1, set1)) || (dc2->dc_nulls && DC_IS_NULL (dc2, set2)))
       flag = unk_is_fail ? 0 : ins->_.cmp.op;
     else
