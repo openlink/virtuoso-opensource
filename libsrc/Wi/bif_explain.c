@@ -57,6 +57,7 @@
 #include "http.h"
 #include "mhash.h"
 
+int enable_qrc; /* generate query plan comments and warnings */
 #define MSG_MAX_LEN 100
 #define TA_STAT_COMM 1219
 
@@ -912,7 +913,7 @@ node_stat (data_source_t * qn)
     {
   	  float guess = IS_TS (qn) ? ((table_source_t *)qn)->ts_cardinality : ((hash_source_t *)qn)->hs_cardinality;
   	  float fanout = srs->srs_n_in ? srs->srs_n_out / (float)srs->srs_n_in : 0.0;
-  	  if((guess/fanout >= 10.0) || (guess/fanout <= 0.1))
+  	  if(enable_qrc && (guess/fanout >= 10.0 || guess/fanout <= 0.1))
   		stmt_printf (("Warning: the cardinality estimate of the cost model differs greatly from the measured time. Cardinality estimate: %9.2g Fanout: %9.2g\n",  guess, fanout));
     }
 }
@@ -3131,7 +3132,6 @@ int64 ql_ctr;
 dk_session_t * ql_file;
 dk_mutex_t ql_mtx;
 char * c_query_log_file = "virtuoso.qrl";
-int enable_qrc; /* generate query plan comments and warnings */
 #define QL_N_COLS 43
 
 void
