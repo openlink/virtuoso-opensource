@@ -209,6 +209,7 @@ extern int enable_mem_hash_join;
 #ifdef CACHE_MALLOC
 extern int enable_no_free;
 #endif
+extern int32 enable_rdf_box_const;
 extern int enable_subscore;
 extern int enable_dfg;
 extern int enable_feed_other_dfg;
@@ -1786,6 +1787,7 @@ stat_desc_t dbf_descs [] =
 #ifdef CACHE_MALLOC
     {"enable_no_free", &enable_no_free, SD_INT32},
 #endif
+    {"enable_rdf_box_const", &enable_rdf_box_const, SD_INT32},
     {NULL, NULL, NULL}
   };
 

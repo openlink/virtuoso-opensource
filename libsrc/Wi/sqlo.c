@@ -2977,6 +2977,7 @@ sqlo_scalar_subq_scope (sqlo_t * so, ST ** ptree)
   t_set_push (&sco->sco_scalar_subqs, (void*)org);
 }
 
+int32 enable_rdf_box_const = 0;
 
 int
 sqlo_check_rdf_lit (ST ** ptree)
@@ -2994,7 +2995,7 @@ sqlo_check_rdf_lit (ST ** ptree)
   *ptree = (ST*)iri;
   return KS_CAST_OK;
     }
-  if ((vtype = sqlo_rdf_obj_const_value (data, &name, &lang)))
+  if (enable_rdf_box_const && (vtype = sqlo_rdf_obj_const_value (data, &name, &lang)))
     {
       if (RDF_UNTYPED == vtype)
 	{
