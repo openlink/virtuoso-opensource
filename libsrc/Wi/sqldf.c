@@ -661,6 +661,8 @@ sqlo_df (sqlo_t * so, ST * tree)
 	dfe->dfe_type = DFE_EXISTS;
 	if (so->so_is_top_and)
 	  sqlo_push_pred (so, dfe);
+	else
+	  dfe->_.sub.not_in_top_and = 1;
 	return (dfe);
       }
     case COALESCE_EXP:
