@@ -2291,6 +2291,7 @@ sqlo_pred_body (sqlo_t * so, locus_t * loc, df_elt_t * tb_dfe, df_elt_t * pred)
 	copy = sqlo_layout (so, ot, SQLO_LAY_EXISTS, tb_dfe);
 	copy->dfe_type = DFE_EXISTS;
 	copy->_.sub.org_in = pred->_.sub.org_in;
+	copy->_.sub.not_in_top_and = pred->_.sub.not_in_top_and;
 	return ((df_elt_t **) t_list (2, (ptrlong)DFE_PRED_BODY, copy));
       }
     case DFE_TEXT_PRED:
@@ -6881,6 +6882,7 @@ dfe_body_copy (sqlo_t * so, df_elt_t * super, df_elt_t * parent)
   copy_super->dfe_arity = super->dfe_arity;
   copy_super->_.sub.in_arity = super->_.sub.in_arity;
   copy_super->_.sub.n_hash_fill_keys = super->_.sub.n_hash_fill_keys;
+  copy_super->_.sub.not_in_top_and = super->_.sub.not_in_top_and;
   if (super->_.sub.generated_dfe)
     {
       /* the dt of a union dt has no subs but has the top qexp as generated_dfe.  This will become the only sub in the copied structure */

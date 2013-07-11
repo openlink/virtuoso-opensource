@@ -1231,6 +1231,30 @@ void sqlg_parallel_ts_seq (sql_comp_t * sc, df_elt_t * dt_dfe, table_source_t * 
 int enable_par_fill = 2;
 int  qn_is_hash_fill (data_source_t * qn);
 
+void
+sqlg_set_no_bloom (fun_ref_node_t * fref)
+{
+  /* if a a hash filler is a single table with no conditions or rdf quad with only p givem we expect no selectivity, so no bloom filter */
+  key_source_t * ks;
+  table_source_t * ts = (table_source_t *)fref->fnr_select;
+  if (!IS_TS (ts))
+    return;
+  if (ts->src_gen.src_after_test || ts->src_gen.src_after_code)
+    return;
+  if (qn_next ((data_source_t*)ts) != (data_source_t*)fref->fnr_setp)
+    return;
+  ks = ts->ts_order_ks;
+  if (!ks->ks_spec.ksp_spec_array && !ks->ks_row_spec)
+    fref->fnr_setp->setp_no_bloom = 1;
+  if (tb_is_rdf_quad (ks->ks_key->key_table))
+    {
+      search_spec_t * sp = ks->ks_spec.ksp_spec_array;
+      if (sp && !sp->sp_next && sp->sp_col && 'P'== sp->sp_col->col_name[0])
+	fref->fnr_setp->setp_no_bloom = 1;
+    }
+}
+
+
 data_source_t *
 sqlg_hash_filler (sqlo_t * so, df_elt_t * tb_dfe, data_source_t * ts_src)
 {
@@ -1309,6 +1333,7 @@ sqlg_hash_filler (sqlo_t * so, df_elt_t * tb_dfe, data_source_t * ts_src)
     fref->fnr_nth_part = cc_new_instance_slot (sc->sc_cc);
     fref->fnr_hash_part_min = cc_new_instance_slot (sc->sc_cc);
     fref->fnr_hash_part_max = cc_new_instance_slot (sc->sc_cc);
+    sqlg_set_no_bloom (fref);
     if (shareable)
       fref->fnr_hi_signature = hs_make_signature (setp, tb_dfe->_.table.ot->ot_table);
     return ((data_source_t *) fref);
@@ -1506,6 +1531,8 @@ sqlg_hash_source (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t * pre_code)
   hs->hs_part_min = hs->hs_filler->fnr_hash_part_min;
   hs->hs_part_max = hs->hs_filler->fnr_hash_part_max;
   hs->hs_no_partition = dfe_is_in_hash_filler (tb_dfe);
+  hs->hs_cl_part_opt = sqlo_opt_value (ot->ot_opts, OPT_HASH_REPLICATION) ? HS_CL_REPLICATED 
+    : sqlo_opt_value (ot->ot_opts, OPT_HASH_PARTITION) ? HS_CL_PART : 0;
   hs->clb.clb_fill = cc_new_instance_slot (so->so_sc->sc_cc);
   hs->hs_current_inx = cc_new_instance_slot (so->so_sc->sc_cc);
   hs->hs_saved_hmk = cc_new_instance_slot (so->so_sc->sc_cc);
@@ -1550,6 +1577,8 @@ sqlg_hash_source (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t * pre_code)
 	      if (!tb_dfe->_.table.ot->ot_is_outer /* ssl->ssl_sqt.sqt_dtp != hs->hs_ref_slots[nth]->ssl_sqt.sqt_dtp */)
 		{
 		  cv_artm (pre_code, (ao_func_t) box_identity, ssl, hs->hs_ref_slots[nth], NULL);
+		  if (DV_ANY == ssl->ssl_sqt.sqt_dtp)
+		    ssl->ssl_sqt.sqt_col_dtp = DV_ANY;
 		}
 	      else
 		{
@@ -2255,6 +2284,7 @@ sqlg_dfe_code (sqlo_t * so, df_elt_t * dfe, dk_set_t * code, int succ, int fail,
 	  dk_set_push (&sc->sc_cc->cc_query->qr_subq_queries, subp->subp_query);
 	  qr->qr_select_node->src_gen.src_input = (qn_input_fn) select_node_input_subq;
 	  qr->qr_select_node->sel_vec_role = SEL_VEC_EXISTS;
+	  ((set_ctr_node_t*)qr->qr_head_node)->sctr_not_in_top_and = dfe->_.sub.not_in_top_and;
 	  sqlg_parallel_ts_seq (sc, dfe, (table_source_t*)qr->qr_head_node, NULL, qr->qr_select_node);
 	  subp->subp_type = EXISTS_PRED;
 	  ins->_.pred.cmp =subp;
@@ -2276,6 +2306,7 @@ sqlg_dfe_code (sqlo_t * so, df_elt_t * dfe, dk_set_t * code, int succ, int fail,
 	org_dfe->dfe_ssl = ssl;
 	ext_sets = ssl_new_variable (sc->sc_cc, "ext_sets", DV_LONG_INT);
 	((set_ctr_node_t*)qr->qr_head_node)->sctr_ext_set_no = ext_sets;
+	((set_ctr_node_t*)qr->qr_head_node)->sctr_not_in_top_and = 1;
 	qr->qr_select_node->sel_ext_set_no = ext_sets;
 	qr->qr_select_node->src_gen.src_input = (qn_input_fn) select_node_input_subq;
 	qr->qr_select_node->sel_vec_role = SEL_VEC_SCALAR;

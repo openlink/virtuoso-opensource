@@ -619,7 +619,7 @@ void
 hrng_print (hash_range_spec_t * hrng, search_spec_t * sp)
 {
   hash_source_t * hs;
-  stmt_printf (("hash partition by %d ", hrng->hrng_min));
+  stmt_printf (("hash partition%s by %d ", (hrng->hrng_flags & HR_RANGE_ONLY) ? "" : "+bloom", hrng->hrng_min));
   ssl_array_print (hrng->hrng_ssls);
   if ((hs = hrng->hrng_hs))
     {
@@ -1672,8 +1672,9 @@ node_print (data_source_t * node)
       setp_node_t *setp = (setp_node_t *) node;
       char hf[40];
       if (setp->setp_ha && HA_FILL == setp->setp_ha->ha_op)
-	snprintf (hf, sizeof (hf), "hf %d %s", setp->setp_ha->ha_tree->ssl_index,
-		  HS_CL_REPLICATED == setp->setp_cl_partition ? "replicated" : "");
+	snprintf (hf, sizeof (hf), "hf %d %s %s", setp->setp_ha->ha_tree->ssl_index,
+		  HS_CL_REPLICATED == setp->setp_cl_partition ? "replicated" : "",
+		  setp->setp_no_bloom ? "no bloom" : "");
       else
 	hf[0] = 0;
       stmt_printf (("%s %s", setp->setp_distinct ? "Distinct" : "Sort", hf));

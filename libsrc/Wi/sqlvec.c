@@ -1347,6 +1347,8 @@ sqlg_is_inline_hash_key (hash_area_t * ha, state_slot_t * ssl, table_source_t * 
 #define HRNG_PROBE 0
 #define HRNG_MERGE 1
 #define HRNG_BUILD 2
+#define HRNG_PROBE_PART_ONLY 3
+
 
 search_spec_t *
 sqlg_hash_spec (sql_comp_t * sc, state_slot_t ** ref_slots, int n_keys, table_source_t * ts, state_slot_t * col_ssl,
@@ -1368,9 +1370,11 @@ sqlg_hash_spec (sql_comp_t * sc, state_slot_t ** ref_slots, int n_keys, table_so
   hrng->hrng_max = filler->fnr_hash_part_max;
   if (HRNG_BUILD != is_merge)
     {
-  hrng->hrng_hs = is_merge ? hs : NULL;
+      hrng->hrng_hs = (HRNG_MERGE == is_merge) ? hs : NULL;
       hrng->hrng_ht = hs->hs_ha->ha_tree;
       hrng->hrng_ht_id = hs->hs_cl_id;
+      if (HRNG_PROBE_PART_ONLY == is_merge)
+	hrng->hrng_flags = HR_RANGE_ONLY;
     }
   else
     hrng->hrng_flags = HR_RANGE_ONLY;
@@ -2553,7 +2557,8 @@ sqlg_hs_non_partitionable (sql_comp_t * sc, hash_source_t * hs)
 #define MRG_NONE 0
 #define MRG_ALWAYS 1
 #define MRG_IF_UNQ 2
-#define MRG_PART_ONLY 3
+#define MRG_PART_AND_BLOOM 3
+#define MRG_PART_ONLY 4
 
 int
 sqlg_can_merge_hs (sql_comp_t * sc, hash_source_t * hs, table_source_t * ts, state_slot_t * ssl)
@@ -2569,12 +2574,12 @@ sqlg_can_merge_hs (sql_comp_t * sc, hash_source_t * hs, table_source_t * ts, sta
     if (hs2 && hs2->hs_merged_into_ts && hs2->hs_ha->ha_n_deps)
       {
 	if (hs->hs_ha->ha_n_deps)
-      return MRG_PART_ONLY;
+	  return MRG_PART_AND_BLOOM;
   }
   }
   END_DO_SET ();
   if (hs->hs_ha->ha_n_deps && !hs->hs_is_unique)
-    return MRG_PART_ONLY;	/* a hs with out cols can only be merged always, cannot decide at run time because ref path to the ssls would be different */
+    return MRG_PART_AND_BLOOM;	/* a hs with out cols can only be merged always, cannot decide at run time because ref path to the ssls would be different */
   return hs->hs_is_unique ? MRG_ALWAYS : MRG_IF_UNQ;
 }
 
@@ -2634,7 +2639,7 @@ void
 sqlg_vec_hs (sql_comp_t * sc, hash_source_t * hs)
 {
   /* set the casts. Set the refs.  The defs are set at the end. */
-  int cast_changes_card = 0, cl_part_crossed = 0;
+  int cast_changes_card = 0, cl_part_crossed = 0, no_bloom_in_probe = 0;
   setp_node_t *setp = NULL;
   data_source_t *save_cur;
   dk_set_t save_pred;
@@ -2670,7 +2675,12 @@ sqlg_vec_hs (sql_comp_t * sc, hash_source_t * hs)
     state_slot_t *one_key = NULL;
     int any_key = 0;
     if (IS_QN (pred, set_ctr_input))
-      last_sctr = (set_ctr_node_t *) pred;
+      {
+	QNCAST (set_ctr_node_t, sctr, pred);
+	last_sctr = sctr;
+	if (sctr->sctr_ose || sctr->sctr_not_in_top_and)
+	  no_bloom_in_probe = 1;
+      }
     DO_BOX (state_slot_t *, ref, inx, hs->hs_ref_slots)
     {
       if (pred == gethash ((void *) ref, sc->sc_vec_ssl_def))
@@ -2683,7 +2693,7 @@ sqlg_vec_hs (sql_comp_t * sc, hash_source_t * hs)
 	      if (last_sctr)
 		dk_set_push (&last_sctr->sctr_hash_spec, (void *)
 		    sqlg_hash_spec (sc, hs->hs_ref_slots, BOX_ELEMENTS (hs->hs_ref_slots), (table_source_t *) pred, NULL, hs,
-			filler, 0));
+			filler, HRNG_PROBE_PART_ONLY));
 	      else
 		hs->hs_partition_filter_self = 1;
 	      goto ref_found;
@@ -2702,17 +2712,17 @@ sqlg_vec_hs (sql_comp_t * sc, hash_source_t * hs)
 	if (last_sctr)
 	  {
 	    if (can_merge && enable_oj_hash_part_merge)
-	      can_merge = MRG_PART_ONLY;
+	      can_merge = no_bloom_in_probe ? MRG_PART_ONLY : MRG_PART_AND_BLOOM;
 	    else
 	      {
 		dk_set_push (&last_sctr->sctr_hash_spec, (void *)
 		    sqlg_hash_spec (sc, hs->hs_ref_slots, BOX_ELEMENTS (hs->hs_ref_slots), (table_source_t *) pred, NULL, hs,
-			filler, 0));
+			filler, HRNG_PROBE_PART_ONLY));
 		can_merge = MRG_NONE;
 	      }
 	  }
 	if (can_merge && cl_part_crossed && HS_CL_REPLICATED != hs->hs_cl_partition)
-	  can_merge = MRG_PART_ONLY;
+	  can_merge = MRG_PART_AND_BLOOM;
 	if (can_merge)
 	  {
 	    hs->hs_probe = (table_source_t *) pred;
@@ -2720,20 +2730,20 @@ sqlg_vec_hs (sql_comp_t * sc, hash_source_t * hs)
 	      {
 		sqlg_add_merged_hs (&((table_source_t *) pred)->ts_order_ks->ks_hash_spec,
 		    sqlg_hash_spec (sc, hs->hs_ref_slots, BOX_ELEMENTS (hs->hs_ref_slots), (table_source_t *) pred, one_key, hs,
-			filler, 1));
+			filler, HRNG_MERGE));
 		hs->hs_merged_into_ts = (table_source_t *) pred;
 	      }
 	    else if (MRG_IF_UNQ == can_merge)
 	      {
 		dk_set_push (&((table_source_t *) pred)->ts_order_ks->ks_hash_spec, (void *)
 		    sqlg_hash_spec (sc, hs->hs_ref_slots, BOX_ELEMENTS (hs->hs_ref_slots), (table_source_t *) pred, one_key, hs,
-			filler, 1));
+			filler, HRNG_MERGE));
 	      }
-	    else if (MRG_PART_ONLY == can_merge)
+	    else if (MRG_PART_ONLY == can_merge || MRG_PART_AND_BLOOM == can_merge)
 	      {
 		dk_set_push (&((table_source_t *) pred)->ts_order_ks->ks_hash_spec, (void *)
 		    sqlg_hash_spec (sc, hs->hs_ref_slots, BOX_ELEMENTS (hs->hs_ref_slots), (table_source_t *) pred, one_key, hs,
-			filler, 0));
+			filler, MRG_PART_ONLY == can_merge ? HRNG_PROBE_PART_ONLY : HRNG_PROBE));
 	      }
 	  }
 	else
