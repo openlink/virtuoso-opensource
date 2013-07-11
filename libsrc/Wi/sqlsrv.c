@@ -3505,7 +3505,7 @@ sql_code_global_init ()
   ddl_sel_for_effect ("select count (*) from DB.DBA.SYS_XPF_EXTENSIONS where xpf_extension (XPE_NAME, XPE_PNAME, 0)");
 #ifdef _SSL
   /* do load of the persisted encryption keys */
-  ddl_sel_for_effect ("select count (*) from DB.DBA.SYS_USERS where U_IS_ROLE = 0 and U_OPTS is not null and USER_KEYS_INIT (U_NAME, U_OPTS)");
+  ddl_sel_for_effect ("select USER_KEYS_INIT (U_NAME, U_OPTS) from DB.DBA.SYS_USERS where U_IS_ROLE = 0 and U_OPTS is not null");
 #endif
 
   qr_dotnet_get_assembly_real = sql_compile ("SELECT VAC_REAL_NAME from DB.DBA.CLR_VAC where VAC_INTERNAL_NAME=?", bootstrap_cli, NULL, 0);
