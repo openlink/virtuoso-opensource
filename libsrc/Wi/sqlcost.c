@@ -930,7 +930,7 @@ pst_pred_sort (pred_sort_stat_t * pst, pred_sort_t * pso, df_elt_t ** body, int 
 {
   df_elt_t * reorder[PRED_SORT_MAX];
   int inx;
-  if (!enable_pred_sort)
+  if (!enable_pred_sort || n_preds > 8)
     return;
   pst->pst_best_cost  = -1;
   pst_pred_sort_1 (pst, pso, n_preds,  0, 1, 0);
