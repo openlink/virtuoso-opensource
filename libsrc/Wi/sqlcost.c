@@ -3182,7 +3182,7 @@ sqlo_use_p_stat_2 (df_elt_t * dfe, float *inx_card, float * col_card, index_choi
   dbe_key_t * key = dfe->_.table.key;
   rq_cols_t rq;
   float p_stat[4];
-  if (!key->key_p_stat )
+  if (!key->key_p_stat  || ic->ic_ric)
     return 0;
   memzero (&rq, sizeof (rq));
   rq_cols_init (dfe, &rq);
