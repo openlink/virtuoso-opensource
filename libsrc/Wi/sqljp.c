@@ -69,6 +69,8 @@ dfe_is_quad (df_elt_t * tb_dfe)
 }
 
 
+caddr_t dv_iri_short_name (caddr_t x);
+
 char *
 dfe_p_const_abbrev (df_elt_t * tb_dfe)
 {
@@ -77,20 +79,32 @@ dfe_p_const_abbrev (df_elt_t * tb_dfe)
   int len;
   DO_SET (df_elt_t *, pred, &tb_dfe->_.table.col_preds)
   {
-    if (PRED_IS_EQ (pred) && pred->_.bin.left->dfe_type == DFE_COLUMN && 'P' == toupper (pred->_.bin.left->_.col.col->col_name[0])
-	&& (name = sqlo_iri_constant_name (pred->_.bin.right->dfe_tree)))
+      if (PRED_IS_EQ (pred) && pred->_.bin.left->dfe_type == DFE_COLUMN && 'P' == toupper (pred->_.bin.left->_.col.col->col_name[0]))
       {
-	caddr_t pref, local;
-	if (iri_split (name, &pref, &local))
+	  df_elt_t * right = pred->_.bin.right;
+	  if (DFE_CONST == right->dfe_type && DV_IRI_ID == DV_TYPE_OF (right->dfe_tree))
 	  {
-	    dk_free_box (pref);
-	    len = box_length (local) - 5;
-	    strncpy (tmp, local + 4 + (len > sizeof (tmp) ? len - sizeof (tmp) : 0), sizeof (tmp));
+	      caddr_t box = dv_iri_short_name (right->dfe_tree);
+	      strncpy (tmp, box ? box : "unnamed", sizeof (tmp));
 	    tmp[sizeof (tmp) - 1] = 0;
-	    dk_free_box (local);
-	    return tmp;
+	      dk_free_box (box);
+	    }
+	  else if ((name  = sqlo_iri_constant_name (pred->_.bin.right->dfe_tree)))
+	    {
+	      caddr_t pref, local;
+	      if (iri_split (name, &pref, &local))
+		{
+		  dk_free_box (pref);
+		  len = box_length (local) - 5;
+		  strncpy (tmp, local + 4 + (len > sizeof (tmp) ? len - sizeof (tmp) : 0), sizeof (tmp));
+		  tmp[sizeof (tmp) - 1] = 0;
+		  dk_free_box (local);
+		  return tmp;
+		}
 	  }
-	return name;
+	  else
+	    tmp[0] = 0;
+	  return tmp;
       }
   }
   END_DO_SET ();
