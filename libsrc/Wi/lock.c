@@ -2254,10 +2254,10 @@ the_grim_lock_reaper (void)
   IN_TXN;
   DO_SET (lock_trx_t *, lt, &all_trxs)
     {
+      client_connection_t * cli = lt->lt_client;
       n_threads += lt->lt_threads;
       n_vdb_threads += lt->lt_vdb_threads;
       n_lw_threads += lt->lt_lw_threads;
-      client_connection_t * cli = lt->lt_client;
       CHECK_DK_MEM_RESERVE (lt);
       if (lt->lt_started &&
 	  ( (lt->lt_timeout && now - lt->lt_started > lt->lt_timeout) || (process_is_swapping && LT_IS_RUNNING (lt)) ) &&
