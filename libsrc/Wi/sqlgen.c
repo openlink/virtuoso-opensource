@@ -4304,6 +4304,16 @@ sqlg_dtp_coerce (sql_type_t *res_sqt, sql_type_t *arg_sqt)
 		      return 0;
 		}
 	    }
+      case DV_IRI_ID:
+      case DV_IRI_ID_8:
+	    {
+	      if (arg_sqt->sqt_dtp == DV_ANY)
+		{
+		  memset (res_sqt, 0, sizeof (sql_type_t));
+		  res_sqt->sqt_dtp = DV_ANY;
+		  return 1;
+		}
+	    }
       default:
 	  return 0;
     }
