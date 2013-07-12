@@ -1717,6 +1717,47 @@ bif_sha1_digest (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_dv_short_string ((char *) md64);
 }
 
+static caddr_t
+bif_pkcs7_certificates (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  char * me = "pkcs7_certificates";
+  X509 *cert = NULL;
+  caddr_t scert = bif_string_arg (qst, args, 0, me);
+  caddr_t * ret = NULL;
+  BIO *in = BIO_new_mem_buf (scert, box_length (scert) - 1), *out;
+  PKCS7 *p7 = NULL;
+  STACK_OF(X509) *certs = NULL;
+  int i;
+
+  p7 = d2i_PKCS7_bio (in, NULL);
+  BIO_free (in);
+
+  if (!p7)
+    sqlr_new_error ("22023", "CR014", "Invalid PKCS7 file");
+
+  certs = PKCS7_get0_signers (p7, NULL, 0);
+  if (certs != NULL)
+    {
+      int n_certs = sk_X509_num (certs);
+      char * ptr;
+
+      ret = (caddr_t *) dk_alloc_box_zero (n_certs * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+      out = BIO_new (BIO_s_mem ());
+      for (i = 0; i < n_certs; i++)
+	{
+	  cert = sk_X509_value (certs,i);
+	  PEM_write_bio_X509 (out, cert);
+	  ret[i] = dk_alloc_box (BIO_get_mem_data (out, &ptr) + 1, DV_SHORT_STRING);
+	  memcpy (ret[i], ptr, box_length (ret[i]) - 1);
+	  ret[i][box_length (ret[i]) - 1] = 0;
+	  BIO_reset (out);
+	}
+      BIO_free (out);
+    }
+  PKCS7_free (p7);
+  return (caddr_t) ret;
+}
+
 void
 bif_crypto_init (void)
 {
@@ -1731,6 +1772,7 @@ bif_crypto_init (void)
   bif_define_typed ("pem_certificates_to_array", bif_pem_certificates_to_array, &bt_any);
   bif_define_typed ("get_certificate_info", bif_get_certificate_info, &bt_any);
   bif_define_typed ("x509_certificate_verify", bif_x509_certificate_verify, &bt_any);
+  bif_define_typed ("pkcs7_certificates", bif_pkcs7_certificates, &bt_any);
   bif_define_typed ("bin2hex", bif_bin2hex, &bt_varchar);
   bif_define_typed ("hex2bin", bif_hex2bin, &bt_bin);
 }
