@@ -851,7 +851,8 @@ cl_local_deletes (delete_node_t * del, caddr_t * inst, caddr_t * part_inst)
 	{
 	  data_col_t * source_dc = QST_BOX (data_col_t *, inst, ik->ik_del_slots[inx2]->ssl_index);
 	  dc_val_cast_t f = ik->ik_del_cast_func[inx2];
-	  if (!f && DV_ANY != source_dc->dc_dtp && ik->ik_del_cast[inx2] && DV_ANY == ik->ik_del_cast[inx2]->ssl_sqt.sqt_dtp)
+	  char is_vec = SSL_IS_VEC_OR_REF (ssl);
+	  if (!f && is_vec && DV_ANY != source_dc->dc_dtp && ik->ik_del_cast[inx2] && DV_ANY == ik->ik_del_cast[inx2]->ssl_sqt.sqt_dtp)
 	    f = vc_to_any (source_dc->dc_dtp);
 
 	  if (SSL_VEC != ssl->ssl_type || f)
@@ -952,7 +953,8 @@ delete_node_vec_run (delete_node_t * del, caddr_t * inst, caddr_t * state, int i
     DO_BOX (state_slot_t *, ssl, inx2, ik->ik_del_slots)
     {
 	  data_col_t * source_dc = QST_BOX (data_col_t *, inst, ssl->ssl_index);
-      int elt_sz = dc_elt_size (source_dc);
+	  char is_vec = SSL_IS_VEC_OR_REF (ssl);
+	  int elt_sz = is_vec ? dc_elt_size (source_dc) : -1;
       dc_val_cast_t f = ik->ik_del_cast_func[inx2];
 	  data_col_t * target_dc = NULL;
 	  if (ik->ik_del_cast[inx2])
@@ -961,7 +963,7 @@ delete_node_vec_run (delete_node_t * del, caddr_t * inst, caddr_t * state, int i
 	      target_dc = QST_BOX (data_col_t *, inst, ik->ik_del_cast[inx2]->ssl_index);
 	      dc_reset (target_dc);
 	    }
-      if (!f && DV_ANY != source_dc->dc_dtp && ik->ik_del_cast[inx2] && DV_ANY == ik->ik_del_cast[inx2]->ssl_sqt.sqt_dtp)
+	  if (!f && is_vec && DV_ANY != source_dc->dc_dtp && ik->ik_del_cast[inx2] && DV_ANY == ik->ik_del_cast[inx2]->ssl_sqt.sqt_dtp)
 	f = vc_to_any (source_dc->dc_dtp);
 
 	  if (SSL_VEC != ssl->ssl_type || f)
