@@ -654,3 +654,14 @@ jp_arr_print (dk_set_t * arr)
   END_DO_BOX;
 }
 
+void
+ot_list_print (dk_set_t ots)
+{
+  DO_SET (op_table_t *, ot, &ots)
+    {
+      printf ("%s ", ot->ot_new_prefix);
+    }
+  END_DO_SET();
+  printf ("\n");
+}
+
