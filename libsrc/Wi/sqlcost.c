@@ -400,30 +400,7 @@ dfe_col_by_id (df_elt_t * dfe, oid_t col_id)
 int
 dfe_cl_colocated (df_elt_t * prev, df_elt_t * dfe)
 {
-  /* are prev and dfe joined  by eq of partition col or otherwise colocated */
-  key_partition_def_t * part1 = prev->_.table.key->key_partition;
-  key_partition_def_t * part2 = dfe->_.table.key->key_partition;
-  int n1, n2, nth;
-  if (!part1 && !part2)
-    return CL_NO_CLUSTER;
-  if (part2 && clm_replicated == part2->kpd_map)
-    return CL_COLOCATED;
-  if (!part1 || !part2)
-    return CL_NOT_COLOCATED;
-  if (!clm_is_colocated (part1->kpd_map, part2->kpd_map))
-    return CL_NOT_COLOCATED;
-  n1 = BOX_ELEMENTS (part1->kpd_cols);
-  n2 = BOX_ELEMENTS (part2->kpd_cols);
-  if (n1 != n2)
-    return CL_NOT_COLOCATED;
-  for (nth = 0; nth < n1; nth++)
-    {
-      df_elt_t * c1 = dfe_col_by_id (prev, part1->kpd_cols[nth]->cp_col_id);
-      df_elt_t * c2 = dfe_col_by_id (dfe, part2->kpd_cols[nth]->cp_col_id);
-      if (!c1 || !c2 || !sqlo_is_col_eq (dfe->dfe_sqlo->so_this_dt, c1, c2))
-	return CL_NOT_COLOCATED;
-    }
-return CL_COLOCATED;
+  return CL_NO_CLUSTER;
 }
 
 
