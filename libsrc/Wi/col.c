@@ -1059,6 +1059,52 @@ ce_head_info (db_buf_t ce, int *r_bytes, int *r_values, dtp_t * r_ce_type, dtp_t
 
 
 extern unsigned char byte_logcount[256];
+int enable_ce_skip_bits_2 = 0;
+#define ce_skip_bits_m(bits, skip, byte, bit) \
+  {if (enable_ce_skip_bits_2) ce_skip_bits_2 (bits, skip, byte, bit);	\
+   else ce_skip_bits (bits, skip, byte, bit);}
+
+void
+ce_skip_bits_2 (db_buf_t bits, int skip, int * byte_ret, int * bit_ret)
+{
+  /* count skip one bits forward from byte/bit and return the byte/bit in byte/bit */
+  int byte = *byte_ret, bit = *bit_ret;
+  int n_ones = 0;
+  dtp_t init_mask = 0xff;
+  if (bit)
+    init_mask = init_mask << bit; /* ignore the bit lowest bits of first byte */
+  for (;;)
+    {
+      n_ones = __builtin_popcountl (init_mask & bits[byte]);
+      if (n_ones > skip)
+	{
+	  /* the targeted bit is the n_ones - skip 1 bit  of the byte */
+	  dtp_t b = bits[byte] & init_mask;
+	  uint32 bit_pos = byte_bits[b];
+	  *byte_ret = byte;
+	  *bit_ret = (bit_pos >> (skip * 3))  & 7;
+	  return;
+	}
+      skip -= n_ones;
+      init_mask = 0xff;
+      bit = 0;
+      byte++;
+      if (skip < 32)
+	continue;
+      if (skip >= 64)
+	{
+	  int n = __builtin_popcountl (*(uint64*)(bits + byte));
+	  skip -= n;
+	  byte += 8;
+	}
+      else
+	{
+	  int n = __builtin_popcountl (*(uint32*) (bits + byte));
+	  skip -= n;
+	  byte += 4;
+	}
+    }
+}
 
 
 void
@@ -2111,12 +2157,12 @@ new_ce:
 		  }
 		skip = target - last_row;
 		byte = bit = 0;
-		ce_skip_bits (ce_first, skip, &byte, &bit);
+		ce_skip_bits_m (ce_first, skip, &byte, &bit);
 		last_row += skip;
 	      }
 	    else
 	      {
-		ce_skip_bits (ce_first, skip - 1, &byte, &bit);
+		ce_skip_bits_m (ce_first, skip - 1, &byte, &bit);
 		last_row += skip;
 	      }
 	    for (;;)
@@ -2137,7 +2183,7 @@ new_ce:
 		    byte++;
 		    bit = 0;
 		  }
-		ce_skip_bits (ce_first, skip, &byte, &bit);
+		ce_skip_bits_m (ce_first, skip, &byte, &bit);
 		last_row = target;
 	      }
 	    break;
