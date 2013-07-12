@@ -2033,6 +2033,12 @@ sqlo_opt_value (caddr_t * opts, int opt)
 }
 
 
+dk_set_t
+t_set_diff_ordered (dk_set_t s, dk_set_t minus)
+{
+  return dk_set_nreverse (t_set_diff (s, minus));
+}
+
 int
 sqlo_expand_distinct_joins (sqlo_t * so, ST *tree, op_table_t *sel_ot, dk_set_t *res)
 {
@@ -2065,7 +2071,7 @@ sqlo_expand_distinct_joins (sqlo_t * so, ST *tree, op_table_t *sel_ot, dk_set_t 
 		}
 	      if (ot->ot_from_ots)
 		{
-		  so->so_tables = t_set_diff (so->so_tables, ot->ot_from_ots);
+		  so->so_tables = t_set_diff_ordered (so->so_tables, ot->ot_from_ots);
 		  so->so_scope->sco_tables = t_set_diff (so->so_tables, ot->ot_from_ots);
 		  sel_ot->ot_from_ots = t_set_diff (sel_ot->ot_from_ots, ot->ot_from_ots);
 		}
