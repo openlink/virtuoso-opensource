@@ -3870,7 +3870,7 @@ create trigger SYS_DAV_RES_FULL_PATH_I after insert on WS.WS.SYS_DAV_RES order 0
       full_path := concat ('/', name, full_path);
     }
 not_found:
-  DAV_SPACE_QUOTA_RES_INSERT (full_path, length (N.RES_CONTENT));
+  DAV_SPACE_QUOTA_RES_INSERT (full_path, DAV_RES_LENGTH (N.RES_CONTENT, N.RES_SIZE));
   set triggers off;
   -- dbg_obj_princ ('inserted perms = ', N.RES_PERMS, ', patched perms = ', _rflags);
   if (_rflags <> N.RES_PERMS)
@@ -3960,7 +3960,7 @@ create trigger SYS_DAV_RES_FULL_PATH_U after update on WS.WS.SYS_DAV_RES referen
     }
 not_found:
   set triggers off;
-  DAV_SPACE_QUOTA_RES_UPDATE (O.RES_FULL_PATH, length (O.RES_CONTENT), full_path, length (N.RES_CONTENT));
+  DAV_SPACE_QUOTA_RES_UPDATE (O.RES_FULL_PATH, DAV_RES_LENGTH (O.RES_CONTENT, O.RES_SIZE), full_path, length (N.RES_CONTENT));
   -- delete all associated url entries
   if (O.RES_FULL_PATH <> full_path)
     {
@@ -4394,7 +4394,7 @@ create trigger SYS_DAV_RES_FULL_PATH_D after delete on WS.WS.SYS_DAV_RES
 {
   set triggers off;
   -- dbg_obj_princ ('trigger SYS_DAV_RES_FULL_PATH_D (', RES_ID, ')');
-  DAV_SPACE_QUOTA_RES_DELETE (RES_FULL_PATH, length (RES_CONTENT));
+  DAV_SPACE_QUOTA_RES_DELETE (RES_FULL_PATH, DAV_RES_LENGTH (RES_CONTENT, RES_SIZE));
   -- dbg_obj_princ ('trigger SYS_DAV_RES_FULL_PATH_D has updated total quota use.');
   -- DAV_DEBUG_CHECK_SPACE_QUOTAS ();
   WS.WS.DAV_VSP_DEF_REMOVE (RES_FULL_PATH);
@@ -4880,7 +4880,7 @@ create procedure WS.WS.COPY_TO_OTHER (in path varchar,
   if (WS.WS.ISRES (path))
     {
       -- copy single resource
-      select blob_to_string (RES_CONTENT), length (RES_CONTENT)
+      select blob_to_string (RES_CONTENT), DAV_RES_LENGTH (RES_CONTENT, RES_SIZE)
         into _content, _len from WS.WS.SYS_DAV_RES where RES_FULL_PATH = _s_path;
       commit work;
       http_get (_dst_name, _resp, 'PUT', _thdr, _content);

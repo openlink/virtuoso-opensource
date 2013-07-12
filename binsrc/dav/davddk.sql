@@ -74,6 +74,7 @@ create table WS.WS.SYS_DAV_RES (
     RES_COL             integer,
     RES_CONTENT         long varbinary IDENTIFIED BY RES_FULL_PATH,
     RES_TYPE            varchar,
+    RES_SIZE            integer,
     RES_CR_TIME         datetime,
     RES_MOD_TIME        datetime,
     RES_PERMS           char (11),
@@ -105,7 +106,10 @@ alter table WS.WS.SYS_DAV_RES modify RES_PERMS char (11)
 
 alter table WS.WS.SYS_DAV_RES add RES_IID IRI_ID_8
 ;
+
 --#ENDIF
+alter table WS.WS.SYS_DAV_RES add RES_SIZE integer
+;
 
 --__ddl_changed ('WS.WS.SYS_DAV_RES')
 --;
