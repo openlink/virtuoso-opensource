@@ -472,26 +472,6 @@ clrg_add_slice (cl_req_group_t * clrg, cl_host_t * host, cl_op_t * clop, slice_i
 
 extern du_thread_t *recomp_thread;
 
-boxint
-cl_sequence_next_no_refill (query_instance_t * qi, caddr_t seq, int step, boxint sz, int in_map, caddr_t * err_ret)
-{
-  boxint max, val;
-  SEQ_MAX (seq);
-  if (INSIDE_MAP != in_map)
-    IN_TXN;
-  max =  sequence_set_1 (__seq, 0, SEQUENCE_GET, INSIDE_MAP, err_ret);
-  ASSERT_IN_TXN;
-  val = sequence_next_inc_1 (seq, INSIDE_MAP, step, err_ret);
-  if (val >= max)
-    {
-      *err_ret = 1;
-      val = max;
-    }
-  if (INSIDE_MAP != in_map)
-    LEAVE_TXN;
-  return val;
-}
-
 int
 clrg_wait (cl_req_group_t * clrg, int wait_all, caddr_t * qst)
 	{
