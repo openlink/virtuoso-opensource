@@ -71,8 +71,6 @@ char * pl_debug_cov_file = NULL;
 int lite_mode = 0;
 extern int it_n_maps;
 extern int rdf_obj_ft_rules_size;
-//dk_cpu_set_t wi_affinity;
-//dk_cpu_set_t wi_cl_listener_affinity;
 int wi_is_cl_listener_affinity;
 int cp_unremap_quota;
 int correct_parent_links;
