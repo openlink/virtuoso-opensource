@@ -10526,27 +10526,7 @@ boxint cl_sequence_next_no_refill (query_instance_t * qi, caddr_t seq, int step,
 caddr_t
 bif_sequence_next_bounded (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int sec_check)
 {
-#ifdef CL6
-  caddr_t err = NULL;
-  state_slot_t * ret = NULL;
-  query_instance_t *qi = (query_instance_t *) QST_INSTANCE (qst);
-  caddr_t name = bif_string_arg (qst, args, 0, "sequence_next");
-  boxint inc_by = 1, res = 0;
-
-  if (strlen (name) > SEQ_MAX_CHARS)
-    sqlr_new_error ("42000", "SEQMA", "Sequence name too long");
-  if (BOX_ELEMENTS (args) > 1 && ssl_is_settable (args[1]))
-    ret = args[1];
-  check_sequence_grants (qi, name);
-  res = cl_sequence_next_no_refill (qi, name, inc_by, 1000, OUTSIDE_MAP, &err);
-  if (ret)
-    qst_set (qst, ret, err);
-  if (!err)
-    log_sequence (qi->qi_trx, name, res + inc_by);
-  return (box_num (res));
-#else
-  *err_ret = srv_make_new_error ("42000", "sequence_next_bounded not defined outside cluster support");
-#endif
+  *err_ret = srv_make_new_error ("42000", "SEQCL", "sequence_next_bounded not defined outside cluster support");
 }
 
 caddr_t
