@@ -7263,6 +7263,10 @@ create procedure DB.DBA.DAV_QUEUE_RUN ()
   declare N, waited, threads integer;
   declare retValue, error any;
   declare aq, item, items, threadsArray any;
+
+  if (is_atomic ())
+    return;
+
   declare exit handler for sqlstate '*'
   {
     log_message (sprintf ('%s exit handler:\n %s', current_proc_name (), __SQL_MESSAGE));
