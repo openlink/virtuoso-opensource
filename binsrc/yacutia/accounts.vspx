@@ -139,7 +139,7 @@
            <v:data-set name="ds"
 	     sql="select U_NAME, U_FULL_NAME, U_LOGIN_TIME, U_EDIT_TIME from Y_SYS_USERS_USERS where mask = :self.search_mask
 	     and ord = :self.ord and seq = :self.ordseq"
-                       nrows="1000"
+                       nrows="10"
                        scrollable="1"
                        cursor-type="static"
                        edit="0"

@@ -1659,7 +1659,7 @@ create function DB.DBA.S3__listBuckets (
     DB.DBA.S3__activity (detcol_id, 'HTTP error: ' || xt);
     return -28;
   }
-  buckets := vector ();
+  vectorbld_init (buckets);
   xt := xml_tree_doc (xt);
   xtItems := xpath_eval ('//Buckets/Bucket', xt, 0);
   foreach (any xtItem in xtItems) do
@@ -1670,9 +1670,8 @@ create function DB.DBA.S3__listBuckets (
     if ((name = bucket) or isnull (bucket))
     {
       creationDate := stringdate (cast (xpath_eval ('./CreationDate', xtItem) as varchar));
-      buckets := vector_concat (
+      vectorbld_acc (
         buckets,
-        vector (
           vector_concat (
             subseq (soap_box_structure ('x', 1), 0, 2),
             vector ('path', '/' || name || '/',
@@ -1682,10 +1681,10 @@ create function DB.DBA.S3__listBuckets (
                     'size', 0
                    )
           )
-        )
       );
     }
   }
+  vectorbld_final (buckets);
   return buckets;
 }
 ;
@@ -1721,7 +1720,7 @@ create function DB.DBA.S3__listBucket (
     DB.DBA.S3__activity (detcol_id, 'HTTP error: ' || xt);
     return -28;
   }
-  buckets := vector ();
+  vectorbld_init (buckets);
   xt := xml_tree_doc (xt);
   xtItems := xpath_eval ('//CommonPrefixes', xt, 0);
   foreach (any xtItem in xtItems) do
@@ -1734,9 +1733,8 @@ create function DB.DBA.S3__listBucket (
     itemPath := url || itemName || case when (itemType = 'C') then '/' end;
     lastModified := now ();
     itemSize := 0;
-    buckets := vector_concat (
+    vectorbld_acc (
       buckets,
-      vector (
         vector_concat (
           subseq (soap_box_structure ('x', 1), 0, 2),
           vector ('path', itemPath,
@@ -1746,7 +1744,6 @@ create function DB.DBA.S3__listBucket (
                   'size', itemSize
           )
         )
-      )
     );
   }
   xtItems := xpath_eval ('//Contents', xt, 0);
@@ -1763,9 +1760,8 @@ create function DB.DBA.S3__listBucket (
     itemSize := cast (xpath_eval ('./Size', xtItem) as integer);
     itemETag := cast (xpath_eval ('./ETag', xtItem) as varchar);
     itemStorage := cast (xpath_eval ('./StorageClass', xtItem) as varchar);
-    buckets := vector_concat (
+    vectorbld_acc (
       buckets,
-      vector (
         vector_concat (
           subseq (soap_box_structure ('x', 1), 0, 2),
           vector ('path', itemPath,
@@ -1777,9 +1773,9 @@ create function DB.DBA.S3__listBucket (
                   'storage', itemStorage
           )
         )
-      )
     );
   }
+  vectorbld_final (buckets);
   return buckets;
 }
 ;

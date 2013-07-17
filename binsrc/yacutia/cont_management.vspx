@@ -23,10 +23,61 @@
  -
  -
 -->
-<v:page name="db_repl_pub"
+<v:page
+  name="cont_management"
   doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
-  fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+  fast-render="1"
+  xmlns:v="http://www.openlinksw.com/vspx/"
   xmlns:xhtml="http://www.w3.org/1999/xhtml"
   xmlns:vm="http://www.openlinksw.com/vspx/macro">
+
+  <v:form name="F1" type="simple" method="POST" xhtml_enctype="multipart/form-data">
+    <v:variable name="settings" type="any" default="null" />
+    <v:variable name="domain_id" type="integer" default="0" />
+    <v:variable name="owner_id" type="integer" default="0" />
+    <v:variable name="account_id" type="integer" default="0" />
+    <v:variable name="account_role" type="varchar" default="'W'" />
+
+    <v:login
+      name="admin_login_isql_browser"
+      realm="virtuoso_admin"
+      mode="url"
+      user-password="y_sql_user_password"
+      user-password-check="y_sql_user_password_check"
+      xmlns:v="http://www.openlinksw.com/vspx/"
+      xmlns:xhtml="http://www.w3.org/1999/xhtml">
+      <v:template name='inl_browser' type="if-no-login">
+        <P>You are not logged in</P>
+      </v:template>
+      <v:login-form name="loginf_browser"
+                    required="1"
+                    title="Login"
+                    user-title="User Name"
+                    password-title="Password"
+                    submit-title="Login"/>
+      <v:template name='il_browser' type="if-login">
+        <?vsp
+          connection_set ('ctr', coalesce (connection_get ('ctr'), 0) + 1);
+        ?>
+      </v:template>
+    </v:login>
+
+    <v:before-data-bind>
+      <![CDATA[
+        declare vspx_user varchar;
+
+        vspx_user := connection_get ('vspx_user');
+        if (isnull (vspx_user))
+        {
+          self.account_id := http_nobody_uid ();
+        } else {
+          self.account_id := WEBDAV.DBA.account_id (vspx_user);
+        }
+        self.owner_id := self.account_id;
+        self.settings := WEBDAV.DBA.settings (self.account_id);
+      ]]>
+    </v:before-data-bind>
 	<vm:dav_browser />
+  </v:form>
+
 </v:page>

@@ -36,6 +36,7 @@
   </vm:menu>
   <vm:variables>
       <v:variable persist="0" name="db_object_to_process" type="any" default="null"/>
+      <v:variable persist="0" name="vdb_used" type="int" default="0"/>
       <v:variable persist="0" name="base_url" type="any" default="null" param-name="host"/>
       <v:variable persist="0" name="voidst" type="int" default="0" param-name="st"/>
       <v:variable name="exec_ret" type="any" default="null" persist="temp"/>
@@ -103,7 +104,7 @@
 		}
              if (self.rdb_sync.ufl_selected)
 	       {
-	         self.sync_ret := RDF_VIEW_DO_SYNC (self.base_url, self.fill.ufl_selected, self.pgraph.ufl_value);
+	         self.sync_ret := RDF_VIEW_DO_SYNC (self.base_url, self.fill.ufl_selected, self.pgraph.ufl_value, 3, 0);
                  if (0 = length (self.sync_ret))
 		   self.sync_ret := vector (vector ('00000', 'OK'));
   	       }	       
@@ -144,11 +145,15 @@
 	  self.exist_sql := self._view + self.view_vd + self.owl_vd;
 	  if (self.db_object_to_process is NULL)
 	    {
+	       declare tbls any;
 	       self.db_object_to_process := get_keyword('list', self.vc_event.ve_params, NULL);
                if (self.db_object_to_process is null)
 	         self.db_object_to_process := vector (get_keyword('name', self.vc_event.ve_params));
                else
 	         self.db_object_to_process := deserialize(decode_base64(self.db_object_to_process));
+	       tbls := self.db_object_to_process;
+               --if (exists (select 1 from sys_remote_table where RT_NAME in (tbls)))
+               --  self.vdb_used := 1;	       
 	    }
 
 	  _base_url := get_keyword('host', self.vc_event.ve_params, NULL);
@@ -396,9 +401,14 @@
 	  <?vsp } ?>
 	  <?vsp if (self.text_e = 0 and __proc_exists ('DB.DBA.RDF_VIEW_DO_SYNC')) { ?>
 	  <br />
+	  <v:template type="simple" condition="self.vdb_used = 0"> 
 	  <label>Physical Graph Name</label> <v:text name="pgraph" value="--sprintf ('urn:%{URIQADefaultHost}s:%s', self.base_url)" xhtml_size="70" /><br />
 	  <v:check-box name="rdb_sync" value="1" xhtml_id="rdb_sync" /> <label for="rdb_sync">Generate RDB2RDF triggers</label> <br/>
 	  <v:check-box name="fill" value="1" xhtml_id="fill" /> <label for="fill">Enable Data Syncs with Physical Quad Store</label> <br/>
+          </v:template>
+	  <v:template type="simple" condition="self.vdb_used = 1">
+	      <div class="warning">RDB2RDF triggers cannot be generated on remote tables</div>
+          </v:template>
 	  <?vsp } ?>
 	  <input type="hidden" name="host" value="<?V get_keyword('host', self.vc_event.ve_params) ?>"/><br/>
 	  <v:button action="simple" name="cncl" value="Start Over">

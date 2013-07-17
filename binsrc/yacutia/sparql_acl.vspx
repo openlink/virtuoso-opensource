@@ -226,7 +226,7 @@
 
 		      <?vsp if (DB.DBA.VAD_CHECK_VERSION ('Framework') is not null or DB.DBA.VAD_CHECK_VERSION ('policy_manager') is not null) { ?>
 		      <td class="page_tab_selected" align="center">
-			<v:url xhtml_style="page_tab" url="sparql_acl.vspx" value="WebID ACLs" render-only="1"/>
+			<v:url xhtml_style="page_tab" url="sparql_acl.vspx" value="NetID ACLs" render-only="1"/>
 		      </td>
 		      <?vsp } ?>
                         
@@ -249,7 +249,7 @@
 		      <v:form type="simple" method="POST">
 			<table class="listing">
 			  <tr class="listing_header_row">
-			      <th>WebID/Group</th>
+			      <th>NetID/Group</th>
 			    <th>Realm</th>
 			    <th>SQL User Account</th>
 			    <th>Action</th>
@@ -363,7 +363,7 @@
 				  <v:item name="Advanced" value="Advanced"/>
 			      </v:select-list> <br/>
 			      <span id="webid">
-				  WebID/Group: <v:text name="webid" value="" xhtml_size="100"/>
+				  NetID/Group: <v:text name="webid" value="" xhtml_size="100"/>
 			      <!--v:button action="browse" name="sel_id" value="Browse" selector="sel_user.vspx"
 				  child-window-options="scrollbars=yes, menubar=no, height=630, width=600"
 				  enabled="-#-coalesce ((select top 1 1 from SYS_KEYS where KEY_TABLE = 'DB.DBA.WA_USER_INFO'), 0)">
@@ -448,6 +448,12 @@
 					  else if (self.type.ufl_value = 'Person')
 					    tp := 0;   
 
+					  if (0 = length (self.app_realm.ufl_value))
+					    {
+					      self.vc_is_valid := 0;
+					      self.vc_error_message := 'Application realm can not be empty string';
+					      return;
+					    }
 					  if (self.type.ufl_value <> 'Advanced')
   					  {
 					  if (0 = length (self.webid.ufl_value))
@@ -475,10 +481,10 @@
                                             {
 					      if (self.usr.ufl_value = 'none')
                                             {
-					      if (exists (select 1 from FOAF_SSL_ACL where FS_URI = self.webid.ufl_value))
+						  if (exists (select 1 from FOAF_SSL_ACL where FS_URI = self.webid.ufl_value and FS_REALM = self.app_realm.ufl_value))
 						{
 						  self.vc_is_valid := 0;
-						      self.vc_error_message := 'This Web ID is already registered';
+						      self.vc_error_message := 'This Web ID is already registered for that realm';
 						  return;
 						}
 					      uid := sprintf ('SPUID%d', sequence_next ('__SPUID'));

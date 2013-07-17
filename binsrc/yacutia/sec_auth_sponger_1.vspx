@@ -134,8 +134,8 @@
 		          }
                       ?>
 		      <?vsp if (DB.DBA.VAD_CHECK_VERSION ('Framework') is not null or DB.DBA.VAD_CHECK_VERSION ('policy_manager') is not null) { ?>
-		      <td class="<?V self.astyle ('WebID ACLs') ?>" align="center">
-			<v:url xhtml_style="page_tab" url="sparql_acl.vspx" value="WebID ACLs" render-only="1"/>
+		      <td class="<?V self.astyle ('NetID ACLs') ?>" align="center">
+			<v:url xhtml_style="page_tab" url="sparql_acl.vspx" value="NetID ACLs" render-only="1"/>
 		      </td>
 		      <?vsp } ?>
                         
@@ -185,7 +185,7 @@
 				</tr>  
 				<?vsp ctr := ctr + 1; } 
 				if (ctr = 0) 
-				  http ('<tr><td colspan="2">No WebIDs present</td></tr>');	
+				  http ('<tr><td colspan="2">No NetIDs present</td></tr>');
 				?>
 			    </table> <br />
 			    <label for="wname">WebID</label> <v:text name="wname" value="" xhtml_id="wname" xhtml_size="100"/> 

@@ -61,7 +61,7 @@
 		    self.email1 := get_keyword ('emailAddress', arr, '');
 		    self.uri1 := get_certificate_info (7, 'id_rsa', 3, '', '2.5.29.17');
 		    if (self.uri1 is null) self.uri1 := '';
-		    if (self.uri1 = '')
+		    if (self.uri1 = '' or self.uri1 like 'email:%')
 		      {
 			declare rc, res, gr any;
 			res := make_cert_iri ('id_rsa');
@@ -69,6 +69,8 @@
 			rc := coalesce ((sparql ask where { graph `iri(?:gr)` { `iri(?:res)` ?p ?o }}), 0);
 			if (rc)
 			  self.uri1 := res;
+			else
+                          self.uri1 := '';
 		      }
 		  }
 	      }

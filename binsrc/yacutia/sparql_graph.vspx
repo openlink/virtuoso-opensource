@@ -67,7 +67,7 @@
 		   {
                      declare _graph any;
 		     _graph := self.graph_name;
-		      delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (self.graph_name);
+		     SPARQL DEFINE sql:log-enable 3 CLEAR GRAPH (?:_graph) ;
                      SPARQL DROP SILENT GRAPH iri (?:_graph) ; 
 		     for select "s" from (sparql 
 		        define input:storage "" 

@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html
+     PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<head>
+  <link rel="stylesheet" href="yacutia_style.css" type="text/css"/>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+  <title>Sponger - Facebook Access Token Generation</title>
+<?vsp
+  declare fb_app_id, fb_app_name, fb_app_secret, fb_app_site_url, fb_login_dialog_url, fb_offline_access varchar;
+  declare og_user_url, og_user_name, og_user_id, og_app_url, og_resp varchar;
+  declare oauth_code, oauth_error, oauth_url, oauth_token, oauth_token_expiry, oauth_resp varchar;
+  declare oauth_headers, oauth_resp_params any;
+  declare rm_options any;
+  declare xt, og_tree any;
+  declare _host varchar;
+  declare offline_access integer;
+  declare rdf_mappers_vad_update_required integer;
+
+  oauth_token := null;
+  fb_app_site_url := null;
+  offline_access := 0;
+  rdf_mappers_vad_update_required := 0;
+
+  _host := registry_get ('URIQADefaultHost');
+  if (is_http_ctx ()) _host := http_request_header(http_request_header (), 'Host', null, _host);
+
+  if (_host is not null)
+    fb_app_site_url := sprintf('http://%s/facebook_oauth/', _host);
+
+  rm_options := (select RM_OPTIONS from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH');
+  fb_app_id := get_keyword ('app_id', rm_options);
+  fb_app_secret := get_keyword ('app_secret', rm_options);
+  fb_offline_access := get_keyword ('offline_access', rm_options);
+  if (fb_offline_access = '1')
+    offline_access := 1;
+
+  -- dbg_printf ('fb_app_id: %s', fb_app_id);
+  -- dbg_printf ('fb_app_secret: %s', fb_app_secret);
+  -- dbg_printf ('fb_app_site_url: %s', fb_app_site_url);
+  -- dbg_printf ('offline_access: %d', offline_access);
+
+  oauth_error := cast (http_param ('error_description') as varchar);
+
+  if (oauth_error <> '0')
+    goto auth_err;
+
+  oauth_code := cast (http_param ('code') as varchar);
+  -- dbg_printf ('http_param[code]: %s', oauth_code);
+
+  if (fb_app_site_url is not null and fb_app_id is not null and fb_app_secret is not null)
+  {
+    -- Get the OAuth code
+    if (oauth_code = '0')
+    {
+      fb_login_dialog_url := sprintf ('http://www.facebook.com/dialog/oauth?client_id=%s&redirect_uri=%U', fb_app_id, fb_app_site_url);
+
+      -- Request a non-expiring token
+      if (offline_access)
+        fb_login_dialog_url := fb_login_dialog_url || '&scope=offline_access';
+
+      http ('<script>');
+      http (sprintf ('top.location.href=\'%s\';', fb_login_dialog_url));
+      http ('</script>');
+    }
+
+    -- Get the access token
+    oauth_url := sprintf ('https://graph.facebook.com/oauth/access_token?client_id=%s&redirect_uri=%U&client_secret=%s&code=%s',
+        fb_app_id, fb_app_site_url, fb_app_secret, oauth_code);
+
+    oauth_resp := http_client_ext (url=>oauth_url, headers=>oauth_headers);
+    -- dbg_printf ('oauth_resp: [%s]', oauth_resp);
+
+    oauth_resp_params := split_and_decode (oauth_resp);
+    oauth_token := get_keyword ('access_token', oauth_resp_params);
+    oauth_token_expiry := get_keyword ('expires', oauth_resp_params);
+    -- dbg_printf ('access_token: %s', oauth_token);
+    -- dbg_printf ('access_token expiry (secs): %s', oauth_token_expiry);
+
+    -- Retrieve the name of the Facebook user granting the access token
+    og_user_url := sprintf ('https://graph.facebook.com/me?access_token=%s', oauth_token);
+    og_resp := http_client (og_user_url);
+    -- dbg_printf ('og_resp: %s', og_resp);
+    xt := json_parse (og_resp);
+    og_tree := DB.DBA.SOCIAL_TREE_TO_XML (xt);
+    og_user_name := cast (xpath_eval('/results/name', og_tree) as varchar);
+    og_user_id := cast (xpath_eval('/results/id', og_tree) as varchar);
+    og_user_name := coalesce (og_user_name, '(unknown)');
+    og_user_id := coalesce (og_user_id, '(unknown)');
+
+    -- Retrieve the name of the Facebook application requesting the access token
+    og_app_url := sprintf ('https://graph.facebook.com/%s', fb_app_id);
+    og_resp := http_client (og_app_url);
+    -- dbg_printf ('og_resp: %s', og_resp);
+    xt := json_parse (og_resp);
+    og_tree := DB.DBA.SOCIAL_TREE_TO_XML (xt);
+    fb_app_name := cast (xpath_eval('/results/name', og_tree) as varchar);
+    fb_app_name := coalesce (fb_app_name, '(unknown)');
+
+    -- Save to DB
+    if (oauth_error = '0' and oauth_token is not null and og_user_id is not null)
+    {
+      if (__proc_exists ('DB.DBA.OPENGRAPH_SAVE_ACCESS_TOKEN') is not null)
+        DB.DBA.OPENGRAPH_SAVE_ACCESS_TOKEN (og_user_id, og_user_name, fb_app_site_url, fb_app_id, oauth_token, oauth_token_expiry);
+      else
+        rdf_mappers_vad_update_required := 1;
+    }
+  }
+auth_err: ;
+?>
+</head>
+
+<body style="margin-left: 20px;">
+
+<h1>Sponger - Facebook Access Token Generation</h1>
+<!--
+<p>Access token generation used these settings (specified as Sponger cartridge options) for the Facebook app:</p>
+<ul>
+<li>Site URL:&nbsp;<?vsp http (coalesce (fb_app_site_url, 'NULL')); ?></li>
+<li>App ID:&nbsp;<?vsp http (coalesce (fb_app_id, 'NULL')); ?></li>
+</ul>
+-->
+
+<?vsp  if (oauth_error <> '0') { ?>
+  <p><?vsp http (oauth_error); ?></p>
+<?vsp } else { ?>
+  <?vsp if (fb_app_site_url is null) { ?>
+    <p>Site URL could not be determined. Please ensure DefaultHost is set in the URIQA section of your virtuoso.ini file.</p>
+  <?vsp } ?>
+  <?vsp if (fb_app_id is null) { ?>
+    <p>App ID could not be determined. Please ensure the cartridge options include an entry like app_id=124017734999999</p>
+  <?vsp } ?>
+  <?vsp if (fb_app_secret is null) { ?>
+    <p>App secret could not be determined. Please ensure the cartridge options include an entry like app_secret=xxxxx</p>
+  <?vsp } ?>
+
+  <?vsp if (oauth_token is not null) { ?>
+    <p>The Linked Data Generator hosted by application <em><?=fb_app_name ?></em> now has access to your Facebook-hosted Data Space.</p>
+    <!--
+    <p><?vsp http (oauth_token); ?></p>
+    <?vsp if (oauth_token_expiry is not null) { ?>
+      <p>This token expires in <?vsp http (oauth_token_expiry); ?> seconds.</p>
+    <?vsp } else { ?>
+      <p>This is a non-expiring token.</p>
+    <?vsp } ?>
+    -->
+    <?vsp if (rdf_mappers_vad_update_required = 1) { ?>
+      <p>Please enter this token as the value for the API Key in the Sponger cartridge configuration and close this window.</p>
+      <p>If configuring more than one access token in the API Key, enter them in the format <em>facebook_id1=access_token1&amp;facebook_id2=access_token2...</em></p>
+      <p><strong>Please update your RDF Mappers VAD. The latest VAD saves access tokens to a Virtuoso table. Manual entry of access tokens in the API Key is no longer required.</strong></p>
+    <?vsp } else {
+      declare entity_uri, about_sponge_uri, describe_sponge_uri varchar;
+      about_sponge_uri := sprintf ('http://%s/about/html/http/%s/about/id/entity/http/graph.facebook.com/%s?@Lookup@=&refresh=0', _host, _host, og_user_id);
+      entity_uri := sprintf ('http://%s/about/id/entity/http/graph.facebook.com/%s', _host, og_user_id);
+      describe_sponge_uri := sprintf ('http://%s/describe/?url=%U&sp=1', _host, entity_uri);
+    ?>
+      <p>Here are a variety of Linked Data oriented views of your Facebook profile:</p>
+      <div>
+      <ol>
+      <li><a href="<?=about_sponge_uri?>"><?vsp http (og_user_name || ' (Facebook ID: ' || og_user_id || ')'); ?></a>&nbsp;- a simple page for follow-your-nose exploration</li>
+      <li><a href="<?=describe_sponge_uri?>"><?vsp http (og_user_name || ' (Facebook ID: ' || og_user_id || ')'); ?></a>&nbsp;- a powerful faceted navigation and exploration page</li>
+      </ol>
+      </div>
+      <h3>Revoking your access token</h3>
+      <p>
+      You have authorised the Sponger to interact with you Facebook account. You can revoke access to your profile at any time by removing this application
+      (<em><?=fb_app_name ?></em>) from the list of authorised applications shown in your Facebook profile. To remove an application,
+      <a href="http://www.facebook.com/settings/?tab=privacy">access your Facebook privacy settings</a>, follow the <strong>Edit your settings</strong>
+      link under the heading <strong>Apps and websites</strong>, then select the application you wish to remove.
+      </p>
+      <h3>Useful OpenLink Links</h3>
+      <div>
+      <ul>
+      <li><a href="http://www.openlinksw.com/">OpenLink Software</a> - Company site</li>
+      <li><a href="http://linkeddata.uriburner.com/">URIBurner.com</a> - A service that delivers RDF-based structured descriptions of Web addressable resources (documents or real world objects)</li>
+      <li><a href="http://virtuoso.openlinksw.com/">OpenLink Virtuoso</a> - OpenLink&#39;s enterprise grade multi-model data server</li>
+      <li><a href="http://ode.openlinksw.com/">OpenLink Data Explorer (ODE)</a> - A browser extension for viewing Linked Data Sources</li>
+      <li><a href="http://oat.openlinksw.com/">OpenLink AJAX Toolkit (OAT)</a> - A JavaScript-based toolkit for browser-independent Rich Internet Application development</li>
+      </ul>
+      </div>
+    <?vsp } ?>
+  <?vsp } ?>
+<?vsp } ?>
+
+</body>
+</html>
