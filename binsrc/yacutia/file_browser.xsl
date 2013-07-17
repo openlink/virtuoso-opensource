@@ -230,7 +230,7 @@
           <table class="vdir_headertable" border="0" cellspacing="0" cellpadding="2">
             <tr class="vdir_headertr" align="left">
               <td class="vdir_headertd">
-		<a href="#" style="text-decoration:none;" onclick="javascript: if (opener != null) opener.focus(); window.close()"><img src="images/dav_browser/close_16.png" border="0" hspace="2" alt="Close"/>Close</a>
+		<a href="#" style="text-decoration:none;" onclick="javascript: if (opener != null) opener.focus(); window.close()"><img src="dav/image/close_16.png" border="0" hspace="2" alt="Close"/>Close</a>
               </td>
             </tr>
             <tr class="vdir_headertr" align="left">
@@ -261,7 +261,7 @@
                 </v:button>
               </td>
               <td class="vdir_headertd">
-		  <v:button name="b_up22" style="image" value="images/dav_browser/up_16.png" xhtml_alt="Up one level" action="simple">
+		  <v:button name="b_up22" style="image" value="images/icons/up_16.png" xhtml_alt="Up one level" action="simple">
                   <v:before-render>
                     <v:script>
                       <![CDATA[
@@ -286,7 +286,7 @@
                 </v:button>
               </td>
               <td class="vdir_headertd">
-		  <v:button name="b_create2" style="image" value="images/dav_browser/foldr_new_16.png" xhtml_alt="Create new folder" action="simple">
+		  <v:button name="b_create2" style="image" value="dav/image/foldr_new_16.png" xhtml_alt="Create new folder" action="simple">
                   <v:before-render>
                     <v:script>
                       <![CDATA[
@@ -414,7 +414,7 @@
                   ?>
                   <tr class="vdir_listrow">
                     <td>
-			<v:button name="b_up23" style="image" value="images/dav_browser/up_16.png" xhtml_alt="Up one level" action="simple">
+			<v:button name="b_up23" style="image" value="images/icons/up_16.png" xhtml_alt="Up one level" action="simple">
                         <v:on-post>
                           <v:script>
                             <![CDATA[
@@ -459,9 +459,9 @@
                       if( length(rowset) > 2 and not isnull(rowset[2]) )
                         imgname := rowset[2];
                       else if( rowset[0] <> 0 )
-		        imgname := 'images/dav_browser/foldr_16.png';
+		        imgname := 'dav/image/dav/foldr_16.png';
                       else
-		        imgname := 'images/dav_browser/file_gen_16.png';
+		        imgname := 'dav/image/dav/generic_file.png';
                     ?>
                     <td>
                       <img src="<?V imgname ?>"/>
