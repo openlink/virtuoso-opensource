@@ -349,11 +349,13 @@ create procedure WEBDAV.DBA.dc_xml ()
 create procedure WEBDAV.DBA.dc_xml_doc (
   in search varchar)
 {
-  declare exit handler for SQLSTATE '*'
-  {
-    return xtree_doc (WEBDAV.DBA.dc_xml ());
-  };
+  declare exit handler for SQLSTATE '*' {goto _error;};
+
+  if (not is_empty_or_null (search))
   return xtree_doc (search);
+
+_error:
+  return xtree_doc (WEBDAV.DBA.dc_xml ());
 }
 ;
 
@@ -2905,9 +2907,12 @@ create procedure WEBDAV.DBA.DAV_GET_VERSION_SET (
   declare exit handler for SQLSTATE '*' {return;};
 
   versionSet := WEBDAV.DBA.DAV_PROP_GET (WEBDAV.DBA.DAV_GET_VERSION_HISTORY_PATH(path), 'DAV:version-set', auth_name, auth_pwd);
+  if (not WEBDAV.DBA.DAV_ERROR (versionSet))
+  {
   hrefs := xpath_eval ('/href', xtree_doc(versionSet), 0);
   for (N := 0; N < length (hrefs); N := N + 1)
     result(cast (hrefs[N] as varchar), either (equ (N+1,length (hrefs)),0,1));
+}
 }
 ;
 
