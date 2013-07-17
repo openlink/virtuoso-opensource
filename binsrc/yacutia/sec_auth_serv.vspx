@@ -188,8 +188,8 @@
 			  }
                       ?>
 		      <!--?vsp if (DB.DBA.VAD_CHECK_VERSION ('Framework') is not null) { ?-->
-		      <!--td class="<?V self.astyle ('WebID ACLs') ?>" align="center">
-			<v:url xhtml_style="page_tab" url="sparql_acl.vspx" value="WebID ACLs" render-only="1"/>
+		      <!--td class="<?V self.astyle ('NetID ACLs') ?>" align="center">
+			<v:url xhtml_style="page_tab" url="sparql_acl.vspx" value="NetID ACLs" render-only="1"/>
 		      </td-->
 		      <!--?vsp } ?-->
                         <!--td class="page_tab_empty" align="center" width="100%">

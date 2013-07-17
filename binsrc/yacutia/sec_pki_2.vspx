@@ -449,6 +449,12 @@
 	<?vsp 
 	  if (exists (select 1 from DB.DBA.HTTP_PATH where HP_HOST not like '*ini*'and HP_HOST not like '*sslini*')) {
 	?>
+		<v:button action="simple" name="val" value="Configure VAL Endpoints" enabled="--case when __proc_exists ('VAL.DBA.setup_val_host') is null then 0 else 1 end">
+		    <v:on-post><![CDATA[
+			self.vc_redirect ('sec_pki_val.vspx');
+       ]]></v:on-post>
+		</v:button>
+
 		<v:button action="simple" name="nxt" value="Configure ODS Endpoints" enabled="--check_package ('Framework')">
 		    <v:on-post><![CDATA[
 			self.vc_redirect ('sec_pki_3.vspx');

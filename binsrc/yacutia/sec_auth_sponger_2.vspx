@@ -118,8 +118,8 @@
 		          }
                       ?>
 		      <?vsp if (DB.DBA.VAD_CHECK_VERSION ('Framework') is not null or DB.DBA.VAD_CHECK_VERSION ('policy_manager') is not null) { ?>
-		      <td class="<?V self.astyle ('WebID ACLs') ?>" align="center">
-			<v:url xhtml_style="page_tab" url="sparql_acl.vspx" value="WebID ACLs" render-only="1"/>
+		      <td class="<?V self.astyle ('NetID ACLs') ?>" align="center">
+			<v:url xhtml_style="page_tab" url="sparql_acl.vspx" value="NetID ACLs" render-only="1"/>
 		      </td>
 		      <?vsp } ?>
                         
@@ -133,7 +133,7 @@
 			<!-- MAIN -->
 			<v:template name="list" type="simple" condition="self.addnew = 0 and self.edit is null">
 			<table class="listing">
-			    <tr class="listing_header_row"><th>WebID/Group URI</th><th><v:url value="Add New" name="uadd" url="sec_auth_sponger_2.vspx?add=1"  enabled="--(select 1 from FOAF_SSL_ACL where FS_REALM = 'Virtuoso Sponger')"/></th></tr>
+			    <tr class="listing_header_row"><th>NetID/Group URI</th><th><v:url value="Add New" name="uadd" url="sec_auth_sponger_2.vspx?add=1"  enabled="--(select 1 from FOAF_SSL_ACL where FS_REALM = 'Virtuoso Sponger')"/></th></tr>
 			    <?vsp 
 			    	declare ctr int;
 			    	for select distinct RC_WEBID from RDF_CARTRIDGES_ACL do { ?>
@@ -152,7 +152,7 @@
 		        </v:template>
 			<v:template name="tadd" type="simple" condition="self.addnew = 1 or self.edit is not null">
 			    <div>
-				<label for="gname">WebID/Group URI pattern</label> 
+				<label for="gname">NetID/Group URI pattern</label>
 				      <!--v:text name="gname" value="-#-self.edit" xhtml_id="gname" xhtml_size="100"/--> 
 				      <v:data-list name="gname" 
 					  sql="select FS_URI from FOAF_SSL_ACL where FS_REALM = 'Virtuoso Sponger'" 
