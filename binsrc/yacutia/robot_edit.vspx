@@ -445,7 +445,7 @@
               <td/>
               <td>
                 <v:check-box name="store" value="1" initial-checked="--case when self._store then 1 else 0 end" xhtml_id="store"/>
-                <label for="store">Store content locally</label>
+                <label for="store">Store documents locally</label>
               </td>
             </tr>
             <tr>
