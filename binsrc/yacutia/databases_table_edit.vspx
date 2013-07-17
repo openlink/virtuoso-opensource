@@ -310,7 +310,7 @@
                             ?>
                               <td class="listing_col"><?V (control as vspx_row_template).te_rowset[1] ?></td>
                               <td class="listing_col"><?V case (control as vspx_row_template).te_rowset[2] when 1 then 'No' else 'Yes' end ?></td>
-                              <td class="listing_col"><?V case (control as vspx_row_template).te_rowset[3] when 1 then 'Clustered' when 2 then 'Hashed' else 'Other' end ?></td>
+                              <td class="listing_col"><?V case (control as vspx_row_template).te_rowset[3] when 1 then 'Clustered' when 2 then 'Hashed' when 4 then 'Bitmap' when 5 then 'Column' else 'Other' end ?></td>
                               <td class="listing_col"><?V (control as vspx_row_template).te_rowset[4] ?></td>
                               <td class="listing_col">
                                 <v:button name="indx_delete" value="Drop" style="url" action="simple" url="databases_drop.vspx">
