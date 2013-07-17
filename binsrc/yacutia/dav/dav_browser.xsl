@@ -1163,7 +1163,8 @@
                 if (self.mode = 'webdav' and VAL.DBA.session_id_for_connection (val_sid, val_serviceId, val_realm))
                 {
                   http ('<div style="float:right;">');
-                  http (sprintf ('<span class="toolbar" style="width:auto">Logged in as<br/>%V</span>', val_serviceId));
+                  http (sprintf ('<span class="toolbar" style="width:auto;text-align:right;padding:10px;"><b>Logged in as</b><br/><span style="font-weight:normal;">%V</span></span>', val_serviceId));
+                  http (sprintf ('<img src="%s" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
                   http ('<span id="tb_logout" class="toolbar" style="cursor: pointer;">');
                   http (sprintf ('  <a href="/val/logout.vsp?returnto=%U">', HTTP_REQUESTED_URL()));
                   http (sprintf ('    <img src="%s" border="0" alt="Logout" /><br /><span class="toolbarLabel">Logout</span>', self.image_src ('dav/image/logout_32.png')));
