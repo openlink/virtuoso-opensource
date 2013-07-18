@@ -58,6 +58,7 @@ public class VirtGraph extends GraphBase
     protected String ruleSet = null;
     protected boolean useSameAs = false;
     protected int queryTimeout = 0;
+    static final String S_TTLP_INSERT = "DB.DBA.TTLP(?,'',?,255)";
     static final String sinsert = "sparql insert into graph iri(??) { `iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)` }";
     static final String sdelete = "sparql delete from graph iri(??) {`iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)`}";
     static final int BATCH_SIZE = 5000;
@@ -311,16 +312,58 @@ public class VirtGraph extends GraphBase
 
     private static String escapeString(String s) 
     {
-      StringBuffer buf = new StringBuffer(s.length());
-      int i = 0;
-      char ch;
-      while( i < s.length()) {
-        ch = s.charAt(i++);
-        if (ch == '\'') 
-          buf.append('\\');
-        buf.append(ch);
+      StringBuilder sb = new StringBuilder(s.length());
+      int slen = s.length();
+
+      for (int i = 0; i < slen; i++) {
+	char c = s.charAt(i);
+	int cInt = c;
+
+	if (c == '\\') {
+	  sb.append("\\\\");
+	}
+	else if (c == '"') {
+	  sb.append("\\\"");
+	}
+	else if (c == '\n') {
+	  sb.append("\\n");
+	}
+	else if (c == '\r') {
+	  sb.append("\\r");
+	}
+	else if (c == '\t') {
+	  sb.append("\\t");
+	}
+	else if (
+	        cInt >= 0x0 && cInt <= 0x8 ||
+		cInt == 0xB || cInt == 0xC ||
+		cInt >= 0xE && cInt <= 0x1F ||
+		cInt >= 0x7F && cInt <= 0xFFFF)
+	{
+	  sb.append("\\u");
+	  sb.append(toHexString(cInt, 4));
+	}
+	else if (cInt >= 0x10000 && cInt <= 0x10FFFF) {
+	  sb.append("\\U");
+	  sb.append(toHexString(cInt, 8));
+	}
+	else {
+	  sb.append(c);
+	}
       }
-      return buf.toString();
+      return sb.toString();
+    }
+
+    private static String toHexString(int decimal, int stringLength) {
+      StringBuilder sb = new StringBuilder(stringLength);
+      String hexVal = Integer.toHexString(decimal).toUpperCase();
+
+      int nofZeros = stringLength - hexVal.length();
+      for (int i = 0; i < nofZeros; i++)
+	sb.append('0');
+
+      sb.append(hexVal);
+      return sb.toString();
     }
 
 
@@ -356,9 +399,9 @@ public class VirtGraph extends GraphBase
       } else if (n.isLiteral()) {
         String s;
         StringBuffer sb = new StringBuffer();
-        sb.append("'");
+        sb.append("\"");
         sb.append(escapeString(n.getLiteralValue().toString()));
-        sb.append("'");
+        sb.append("\"");
 
         s = n.getLiteralLanguage();
         if (s != null && s.length() > 0) {
@@ -653,7 +696,8 @@ public class VirtGraph extends GraphBase
     void add(Iterator<Triple> it, List<Triple> list) 
     {
       try {
-        PreparedStatement ps = prepareStatement(sinsert);
+        PreparedStatement ps = prepareStatement(S_TTLP_INSERT);
+        StringBuilder sb = new StringBuilder(256);
         int count = 0;
 	    
         while (it.hasNext())
@@ -663,24 +707,28 @@ public class VirtGraph extends GraphBase
           if (list != null)
             list.add(t);
 
-          ps.setString(1, this.graphName);
-          bindSubject(ps, 2, t.getSubject());
-          bindPredicate(ps, 3, t.getPredicate());
-          bindObject(ps, 4, t.getObject());
-          ps.addBatch();
+          sb.append(Node2Str(t.getSubject()));
+          sb.append(' ');
+          sb.append(Node2Str(t.getPredicate()));
+          sb.append(' ');
+          sb.append(Node2Str(t.getObject()));
+          sb.append(" .\n");
           count++;
 
           if (count > BATCH_SIZE) {
-            ps.executeBatch();
-            ps.clearBatch();
+	    ps.setString(1, sb.toString());
+            ps.setString(2, this.graphName);
+	    ps.executeUpdate();
+	    sb.setLength(0);
             count = 0;
           }
         }
 
         if (count > 0) 
         {
-          ps.executeBatch();
-          ps.clearBatch();
+	  ps.setString(1, sb.toString());
+          ps.setString(2, this.graphName);
+	  ps.executeUpdate();
         }
         ps.close();
 
@@ -995,8 +1043,11 @@ public class VirtGraph extends GraphBase
       timestampBuf.append(minuteS);
       timestampBuf.append(":");
       timestampBuf.append(secondS);
-      timestampBuf.append(".");
-      timestampBuf.append(nanosS);
+      if (nanos!=0) {
+        timestampBuf.append(".");
+        timestampBuf.append(nanosS);
+      }
+      timestampBuf.append("Z");
 
       return (timestampBuf.toString());
     }
