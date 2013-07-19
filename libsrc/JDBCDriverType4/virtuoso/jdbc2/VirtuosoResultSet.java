@@ -1586,7 +1586,7 @@ public class VirtuosoResultSet implements ResultSet
       // Run the method
       date = ((VirtuosoRow)rows.elementAt(currentRow - 1)).getTimestamp(columnIndex);
       // Specify a calendar
-      if(cal != null)
+      if(cal != null && date!=null)
       {
         cal.setTime(date);
 	date = new java.sql.Timestamp (cal.getTime().getTime());
