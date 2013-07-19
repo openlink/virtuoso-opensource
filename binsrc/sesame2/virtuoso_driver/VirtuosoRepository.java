@@ -34,7 +34,7 @@ import org.openrdf.repository.Repository;
 import org.openrdf.repository.RepositoryConnection;
 import org.openrdf.repository.RepositoryException;
 
-import virtuoso.jdbc3.VirtuosoConnectionPoolDataSource;
+import virtuoso.jdbc4.VirtuosoConnectionPoolDataSource;
 
 /**
  * A Sesame repository that contains RDF data that can be queried and updated.
@@ -242,7 +242,7 @@ public class VirtuosoRepository implements Repository {
 	        }
 		else if (url_hostlist.startsWith("jdbc:virtuoso://")) {
 			try {
-				Class.forName("virtuoso.jdbc3.Driver");
+				Class.forName("virtuoso.jdbc4.Driver");
 				String url = url_hostlist;
 				if (url.toLowerCase().indexOf(utf8) == -1) {
 	   				if (url.charAt(url.length()-1) != '/')
