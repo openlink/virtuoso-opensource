@@ -56,7 +56,7 @@ public class VirtDataSource extends VirtGraph implements DataSource {
       super();
     }
 
-    public VirtDataSource(String _graphName, VirtuosoDataSource _ds)
+    public VirtDataSource(String _graphName, javax.sql.DataSource _ds)
     {
       super(_graphName, _ds);
     }
@@ -187,7 +187,7 @@ public class VirtDataSource extends VirtGraph implements DataSource {
     public Model getNamedModel(String name) 
     {
       try {
-        VirtuosoDataSource _ds = getDataSource();
+        javax.sql.DataSource _ds = getDataSource();
         if (_ds != null) 
 	    return new VirtModel(new VirtGraph(name, _ds));
         else

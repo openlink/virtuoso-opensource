@@ -23,6 +23,7 @@
 package virtuoso.jena.driver;
 
 
+import javax.sql.*;
 import com.hp.hpl.jena.graph.Graph;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.impl.ModelCom;
@@ -40,13 +41,25 @@ public class VirtModel extends ModelCom {
     }
 	
 	
-    public static VirtModel openDefaultModel(VirtuosoDataSource ds) 
+    public static VirtModel openDefaultModel(ConnectionPoolDataSource ds) 
     {
     	return new VirtModel(new VirtGraph(ds));
     }
 
     public static VirtModel openDatabaseModel(String graphName, 
-	VirtuosoDataSource ds)
+	ConnectionPoolDataSource ds)
+    {
+	return new VirtModel(new VirtGraph(graphName, ds));
+    }
+
+
+    public static VirtModel openDefaultModel(DataSource ds) 
+    {
+    	return new VirtModel(new VirtGraph(ds));
+    }
+
+    public static VirtModel openDatabaseModel(String graphName, 
+	DataSource ds)
     {
 	return new VirtModel(new VirtGraph(graphName, ds));
     }

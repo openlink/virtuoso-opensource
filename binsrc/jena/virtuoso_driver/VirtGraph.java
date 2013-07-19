@@ -25,6 +25,7 @@ package virtuoso.jena.driver;
 
 import java.sql.*;
 import java.util.*;
+import javax.sql.*;
 
 import virtuoso.sql.*;
 
@@ -35,6 +36,7 @@ import com.hp.hpl.jena.util.iterator.*;
 import com.hp.hpl.jena.datatypes.*;
 import com.hp.hpl.jena.rdf.model.*;
 import com.hp.hpl.jena.rdf.model.impl.*;
+import com.hp.hpl.jena.datatypes.xsd.impl.*;
 
 import virtuoso.jdbc3.VirtuosoConnectionPoolDataSource;
 import virtuoso.jdbc3.VirtuosoDataSource;
@@ -66,9 +68,7 @@ public class VirtGraph extends GraphBase
     static final String charset = "UTF-8";
 
     private VirtuosoConnectionPoolDataSource pds = new VirtuosoConnectionPoolDataSource();
-    private VirtuosoDataSource ds;
-
-    private boolean isDSconnection = false;
+    private javax.sql.DataSource ds;
 
 
     public VirtGraph()
@@ -93,21 +93,23 @@ public class VirtGraph extends GraphBase
     }
 
 
-    public VirtGraph(String _graphName, VirtuosoDataSource _ds) 
+    public VirtGraph(String _graphName, javax.sql.DataSource _ds) 
     {
 	super();
 
-	this.url_hostlist = _ds.getServerName();
-	this.graphName = _graphName;
-	this.user = _ds.getUser();
-	this.password = _ds.getPassword();
+	if (_ds instanceof VirtuosoDataSource) {
+	    VirtuosoDataSource vds = (VirtuosoDataSource)_ds;
+	    this.url_hostlist = vds.getServerName();
+	    this.graphName = _graphName;
+	    this.user = vds.getUser();
+	    this.password = vds.getPassword();
+	}
 
 	if (this.graphName == null)
 	    this.graphName = DEFAULT;
 
 	try {
 	    connection = _ds.getConnection();
-            isDSconnection = true;
 	    ds = _ds;
 	    ModelCom m = new ModelCom(this); //don't drop is it needed for initialize internal Jena classes
 	    TypeMapper tm = TypeMapper.getInstance();
@@ -116,7 +118,39 @@ public class VirtGraph extends GraphBase
 	}
     }
 
-    public VirtGraph(VirtuosoDataSource _ds) 
+
+    public VirtGraph(javax.sql.DataSource _ds) 
+    {		
+	this(null, _ds);
+    }
+
+
+    public VirtGraph(String _graphName, ConnectionPoolDataSource _ds) 
+    {
+	super();
+
+	if (_ds instanceof VirtuosoConnectionPoolDataSource) {
+	    VirtuosoDataSource vds = (VirtuosoDataSource)_ds;
+	    this.url_hostlist = vds.getServerName();
+	    this.graphName = _graphName;
+	    this.user = vds.getUser();
+	    this.password = vds.getPassword();
+	}
+
+	if (this.graphName == null)
+	    this.graphName = DEFAULT;
+
+	try {
+	    connection = _ds.getPooledConnection().getConnection();
+	    ModelCom m = new ModelCom(this); //don't drop is it needed for initialize internal Jena classes
+	    TypeMapper tm = TypeMapper.getInstance();
+	} catch(Exception e) {
+	    throw new JenaException(e);
+	}
+    }
+
+
+    public VirtGraph(ConnectionPoolDataSource _ds) 
     {		
 	this(null, _ds);
     }
@@ -162,7 +196,7 @@ public class VirtGraph extends GraphBase
 		pds.setRoundrobin(roundrobin);
 		javax.sql.PooledConnection pconn = pds.getPooledConnection();
 		connection = pconn.getConnection();
-                isDSconnection = true;
+                ds = (javax.sql.DataSource)pds;
 	    }
 
 	    ModelCom m = new ModelCom(this); //don't drop is it needed for initialize internal Jena classes
@@ -174,11 +208,8 @@ public class VirtGraph extends GraphBase
     }
 
 // getters
-    public VirtuosoDataSource getDataSource() {
-        if (isDSconnection)
-	  return (ds!=null? ds: (VirtuosoDataSource)pds);
-        else
-          return null;
+    public javax.sql.DataSource getDataSource() {
+        return ds;
     }
 
     public String getGraphName()
@@ -894,6 +925,7 @@ public class VirtGraph extends GraphBase
 
         if ( rb_type != null)
           dt = TypeMapper.getInstance().getSafeTypeByName(rb_type);
+
         return Node.createLiteral(rb.toString(), rb.getLang(), dt);
 
       } else if (o instanceof java.lang.Integer) {
