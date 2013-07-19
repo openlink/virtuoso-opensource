@@ -2201,7 +2201,8 @@ public class VirtuosoResultSet implements ResultSet
 		       }
 		       Object elt = rows.firstElement();
 		       //System.err.println ("stmt_co_last_in_batch=" + stmt_co_last_in_batch + " currentRow=" + currentRow);
-		       if (!stmt_co_last_in_batch && currentRow == 0 && elt != null)
+/**		       if (!stmt_co_last_in_batch && currentRow == 0 && elt != null) **/
+		       if (currentRow == 0 && elt != null)
 		       { /* we have a prefetched row */
 			   //System.err.println ("fetch :Prefetched row used " + rows.elementAt (0).toString());
 			   stmt_current_of++;
