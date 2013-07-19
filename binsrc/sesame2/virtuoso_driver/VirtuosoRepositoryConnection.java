@@ -64,7 +64,7 @@ import org.openrdf.model.URI;
 import org.openrdf.model.Value;
 import org.openrdf.model.ValueFactory;
 import org.openrdf.model.impl.ContextStatementImpl;
-import org.openrdf.model.impl.GraphImpl;
+//import org.openrdf.model.impl.GraphImpl;
 import org.openrdf.model.impl.NamespaceImpl;
 import org.openrdf.model.impl.ValueFactoryImpl;
 import org.openrdf.query.Dataset;
@@ -90,6 +90,7 @@ import org.openrdf.repository.Repository;
 import org.openrdf.repository.RepositoryConnection;
 import org.openrdf.repository.RepositoryException;
 import org.openrdf.repository.RepositoryResult;
+import org.openrdf.repository.UnknownTransactionStateException;
 import org.openrdf.rio.ParserConfig;
 import org.openrdf.rio.RDFFormat;
 import org.openrdf.rio.RDFHandler;
@@ -160,12 +161,15 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 //	static final String S_INSERT = "sparql insert into graph iri(??) { `iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)` }";
         static final String S_DELETE = "sparql delete from graph iri(??) {`iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)`}";
         static final String S_TTLP_INSERT = "DB.DBA.TTLP(?,'',?,255)";
+
 	private int BATCH_SIZE = 5000;
-//	private PreparedStatement psInsert;
+	private PreparedStatement psInsert;
+	private PreparedStatement psInsertTTLP;
 	private HashMap<String, StringBuilder> batchData = new HashMap<String,StringBuilder>();
 	private int psInsertCount = 0;
 	private boolean useLazyAdd = false;
 	private int prefetchSize = 200;
+
 	private volatile ParserConfig parserConfig = new ParserConfig(true, true, false, DatatypeHandling.IGNORE);
 
 
@@ -826,6 +830,56 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 	}
 
+
+	/**
+	 * Indicates if a transaction is currently active on the connection. A
+	 * transaction is active if {@link #begin()} has been called, and becomes
+	 * inactive after {@link #commit()} or {@link #rollback()} has been called.
+	 * 
+	 * @since 2.7.0
+	 * @return <code>true</code> iff a transaction is active, <code>false</code>
+	 *         iff no transaction is active.
+	 * @throws UnknownTransactionStateException
+	 *         if the transaction state can not be determined. This can happen
+	 *         for instance when communication with a repository fails or times
+	 *         out.
+	 * @throws RepositoryException
+	 */
+	public boolean isActive()
+		throws UnknownTransactionStateException, RepositoryException
+	{
+		verifyIsOpen();
+		try {
+			return !getQuadStoreConnection().getAutoCommit();
+		}
+		catch (SQLException e) {
+			throw new RepositoryException(e);
+		}
+	}
+
+	/**
+	 * Begins a transaction requiring {@link #commit()} or {@link #rollback()} to
+	 * be called to end the transaction.
+	 * 
+	 * @throws RepositoryException
+	 *         If the connection could not start a transaction.
+	 * @see #isActive()
+	 * @see #commit()
+	 * @see #rollback()
+	 * @since 2.7.0
+	 */
+	public void begin() throws RepositoryException {
+		verifyIsOpen();
+		flushDelayAdd();
+		verifyNotTxnActive("Connection already has an active transaction");
+
+		try {
+			getQuadStoreConnection().setAutoCommit(false);
+		}
+		catch (SQLException e) {
+			throw new RepositoryException(e);
+		}
+	}
 	/**
 	 * Commits all updates that have been performed as part of this connection
 	 * sofar.
@@ -838,6 +892,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		flushDelayAdd();
 		try {
 			getQuadStoreConnection().commit();
+			getQuadStoreConnection().setAutoCommit(true);
 		}
 		catch (SQLException e) {
 			throw new RepositoryException(e);
@@ -855,7 +910,8 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		verifyIsOpen();
 		dropDelayAdd();
 		try {
-			this.getQuadStoreConnection().rollback();
+			getQuadStoreConnection().rollback();
+			getQuadStoreConnection().setAutoCommit(true);
 		}
 		catch (SQLException e) {
 			throw new RepositoryException("Problem with rollback", e);
@@ -1020,9 +1076,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				   }
 				}
 			});
-
 			parser.parse(reader, baseURI); // parse out each tripled to be handled by the handler above
-
 		}
 		catch (Exception e) {
 			if (autoCommit)
@@ -2216,14 +2270,14 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 	}
 
-
 	private void flushDelayAddMap(PreparedStatement ps, Map<String,StringBuilder> data) throws SQLException
 	{
 		PreparedStatement pstmp = null;
 	        if (ps == null) {
-	        	ps = pstmp = prepareStatement(VirtuosoRepositoryConnection.S_TTLP_INSERT);
+			ps = pstmp = prepareStatement(VirtuosoRepositoryConnection.S_TTLP_INSERT);
 		}
-		try{
+
+		try {
 			for(Map.Entry<String,StringBuilder> e : data.entrySet()) {
 				ps.setString(1, e.getValue().toString());
 				ps.setString(2, e.getKey());
@@ -2563,6 +2617,24 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 	}
 
+
+	protected void verifyNotTxnActive(String msg)
+		throws RepositoryException
+	{
+		if (!isAutoCommit()) {
+			throw new RepositoryException(msg);
+		}
+	}
+
+/**
+	protected void verifyTxnActive()
+		throws StoreException
+	{
+		if (isAutoCommit()) {
+			throw new RepositoryException("Connection does not have an active transaction");
+		}
+	}
+**/
 
         public class CloseableIterationBase<E, X extends Exception> implements CloseableIteration<E, X> {
                                            
