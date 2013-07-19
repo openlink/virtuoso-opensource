@@ -827,6 +827,8 @@ sqlo_exp_cols_from_dt (sqlo_t * so, ST * tree, df_elt_t * dt_dfe, dk_set_t * ret
     }
   if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree))
     return;
+  if (ST_P (tree, FUN_REF))
+    return;
   DO_BOX (ST*, x, inx, (ST**)tree)
     {
       sqlo_exp_cols_from_dt (so, x, dt_dfe, ret);
