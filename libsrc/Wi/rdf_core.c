@@ -3669,19 +3669,23 @@ void jso__rdf_val_range_inst_validation (rdf_val_range_t *rvr, const char *struc
       else
         {
           dtp_t valtype = DV_TYPE_OF (value);
+          caddr_t box_dt = xsd_type_of_box ((caddr_t)value);
           rvr->rvrFixedValue = (ccaddr_t)value;
-          rvr->rvrRestrictions |= (SPART_VARR_IS_LIT | SPART_VARR_TYPED | SPART_VARR_FIXED | SPART_VARR_NOT_NULL);
-          if (NULL == dt)
+          rvr->rvrRestrictions |= (SPART_VARR_IS_LIT | SPART_VARR_FIXED | SPART_VARR_NOT_NULL);
+          if ((NULL == dt)
+            || (((box_dt == dt) || ((NULL == box_dt) && (uname_xmlschema_ns_uri_hash_string == dt)))
+              && !((SPART_VARR_IS_LIT & saved_orig_rvr.rvrRestrictions) && (SPART_VARR_FIXED & saved_orig_rvr.rvrRestrictions))) )
             {
-              rvr->rvrDatatype = xsd_type_of_box ((caddr_t)value);
+              rvr->rvrDatatype = box_dt;
               if (uname_xmlschema_ns_uri_hash_string == rvr->rvrDatatype)
                 rvr->rvrDatatype = NULL;
               rvr->rvrLanguage = (NULL != rvr->rvrDatatype) ? NULL : lang;
             }
           else
-            rvr->rvrDatatype = dt;
-          if (NULL == rvr->rvrDatatype)
-            rvr->rvrRestrictions &= ~SPART_VARR_TYPED;
+            {
+              rvr->rvrDatatype = dt;
+              rvr->rvrRestrictions |= SPART_VARR_TYPED;
+            }
         }
     }
   else if ((NULL != rvr->rvrDatatype) && !(SPART_VARR_TYPED & rvr->rvrRestrictions))

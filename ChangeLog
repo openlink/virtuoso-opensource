@@ -1,3 +1,1397 @@
+2013-07-22  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Updated NEWS
+
+	* Fixed missing files in make dist
+
+	* Added missing file to distribution
+
+	* Updated documentation
+
+	* Fixed issue for errors with typed rvrFixedValue-s
+
+	* Fixed support for untyped strings and xsd:string strings
+
+	* Fixed support for SPARQL ASSUME
+
+	* Fixed handling of constants in SPART_RVTR_FIXED rdf_value_range-s
+
+	* Fixed initialization of lock struct
+
+	* Updated version to 6.1.7 for final release
+
+	* Updated VAD version
+
+	* Updated VAD version
+
+	* Fixed creation of RSA SSE
+
+	* Fixed regression in URLs containing ?1
+
+	* Rebuild drivers
+
+	* Rebuild driver
+
+	* Updated driver version to 3.64
+
+	* Fixed backward compatibility version
+
+	* Added support for Java trusted certificate storage
+
+	* Added missing DISTINCT from catalog call
+
+2013-07-19  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Small cleanups
+
+	* Added support for Apache Jena 2.10.1
+
+	* Fixed issue with count distinct
+
+	* Updated version numbers
+
+	* Updated version of provider
+
+	* Fixed reference to jdbc4 driver
+
+	* Updated Sesame2 provider
+	- Updated provider for using 3rd party connection pool managers
+	- Updated provider to use Sesame 2.7.3 API
+	- Updated provider to use JDK 1.6
+	- Updated provider to use virtjdbc4.jar
+
+	* Updated Jena classes for using 3rd party connection pool managers
+
+	* Updated driver version to 3.63
+
+	* Fixed issue with last record in batch
+
+	* Fixed issue with date conversion
+
+2013-07-18  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed issue building on windows
+
+	* Rebuild driver
+
+	* Fixed Sesame2 provider
+	- Fixed issue with too many open statements in new DB.TTLP call
+	- Fixed escape values
+	- Fixed timezone handling of date fields
+
+	* Regenerated driver
+
+	* Fixed Jena provider
+	- Use TTLP for batch inserts
+	- Fixed unicode escape handling
+	- Fixed timezone handling of date
+
+2013-07-17  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Updated conductor VAD version
+
+	* FIxed conductor packaging
+
+	* Fixed support functions
+
+	* Updated support functions
+	- Added val hooks
+	- Fixed Index type
+	- Fixed labels
+
+	* Added new templates for WebDAV
+
+	* Updated WebDAV with common template from briefcase
+
+	* Added initial callback for facebook token
+
+	* Fixed labels
+
+	* Fixed label
+
+	* Added initial val hooks
+
+	* Removed lock esc from index view
+
+	* Fixed numer of rows for paging
+
+	* Added support for content management pages
+
+	* Added support to show new index types
+
+	* Added WebDAV skin based on common template
+
+	* Fixed style and icons on file_browser window
+
+	* Fixed auth layer
+	- Added hooks for VAL
+	- Changed WebID to NetID
+	- Fixed issue with invalid HTTPS listeners
+	- Fixed issue creating vhosts
+	- Fixed issue with issuerAltName
+
+	* Fixed encryption on server
+
+	* Fixed layout of logout box
+
+	* Fixed exception handling
+
+	* Optimized retrieve and list operations
+
+2013-07-16  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed problem in the queue in the atomic mode
+
+2013-07-12  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	- Added new images
+
+	* Updated DAV api
+	- Added proppath support for DET
+	- Added session-id handling
+	- Fixed calculation proper size
+	- Fixed subfolder creation and mime type for downloaded resources
+
+	* Fixed preserve order in dt across removal of no longer existent dts
+
+2013-07-11  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Upgraded RDF views
+	- Updated to latest API
+	- Fixed issue with onclick on google chrome
+	- Fixed disable rdb2rdf triggers in vdb
+
+	* Upgraded to latest DAV api
+
+	* Fixed issue deleting large graphs
+
+2013-07-09  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed clean dir only after successful build for debugging
+
+	* Merged Facet Browser
+	- Added support to shorten permalinks
+	- Fixed use carts label api to increase speed
+	- Fixed array check
+	- Fixed display largest graph first
+	- Fixed small bugs
+
+	* Fixed issue with tabid used outside its scope
+
+	* Added debug info if remap fails
+
+	* Fixed release qr text last for debugging purposes
+
+	* Added more metadata to date bif functions
+
+	* Fixed new databases can skip this check
+
+2013-07-04  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed typos
+
+2013-07-03  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed select where { service { select { }}} on a database with quad maps in use
+
+	* Merged code from V7 branch
+
+	* Added suppport for private sponge
+
+	* Added ldp links to http headers for DAV
+
+2013-06-28  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Extended mp_check_tree to support circular structures in tree w/o hanging
+
+	* Updated codegen for literals with types and languages
+
+	* Updated code generation
+	* suppressing isiri_id(column) and similar checks if there's a good
+	* equality between a column and some other expression that is known
+	* to be iri_id
+
+	* Added new BIF function sum_rank
+
+	* Upgraded sparql
+	- Fixed scalibility of graph level security
+	- Added RDF_INSERT_QUADS and RDF_DELETE_QUADS
+	*   to optimize sparql:
+	* insert { graph `iri(?:param1)` {...} graph `iri(?:param2)` {...}
+
+	* Upgraded file handing to use filedescriptors
+
+	* Upgraded S3 DET support
+	- Updated sse flag
+	- Reorganized procedures
+	- Fixed rename problem
+	- Fixed problem with retrieve correct MIME type
+	- Fixed subfolder creation
+
+	* Fixed problem with deleting DET folders containing items with ACLs
+
+	* Upgraded PROPPATH support for DET
+
+2013-06-27  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed exception when parent node does not exist
+
+	* Fixed property name for VCard ontology
+
+2013-06-25  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Upgraded DAV API
+	- Added basic ACL support
+	- Added support for new WebDAV skin action and templates
+	- Added scheduled interval for DETs
+	- Added activity log
+	- Added support for  multiple threads in DAV queue
+	- Faster ETAG procedure
+	- Fixed text/turtle MIME support
+	- Fixed use of private graphs
+
+2013-06-24  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Added new function box_hash_cut
+
+	* Merged back  from v7 branch
+
+	* Fixed assignment order to align with v7 branch
+
+	* Fixed handling of global variables in rewriting of joins
+
+	* Fixed typo in commment
+
+	* Added missing function RDF_QM_DEFINE_LITERAL_CLASS_WITH_FIXED_LANG
+
+	* Fixed support of text/turtle MIME type
+
+	* Added initial support for TTLP_SNIFFER
+
+	* Fixed SPARQL_DEBUG build handling of BOP_NOT
+
+	* Fixed compilation of queries with deeply nested ?:globals
+
+	* Added initial support for SPARQL ASSUME
+
+	* Fixed handling of constants in SPART_RVR_FIXED
+
+2013-06-21  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Moved function
+
+	* Fixed RDF FT initialization
+
+	* Fixed issue with application/xhtml.xml mime type
+
+	* Removed duplicate procedures
+
+2013-06-20  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed issue importing XMLLiteral from RDFa using dictionary
+
+2013-06-19  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Merged from v7
+
+	* Fixed set recomp cli max rows to -1 to get correct sparql formatter
+
+2013-06-18  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed issue with dummy table
+
+2013-06-05  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Added support for custom extension
+
+2013-06-04  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed use proper type to avoid seeting a string for iri id
+
+	* Fixed indentation
+
+2013-05-29  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed do not use .trx name to gen .ctp as audit trail changes its name
+
+	* Fixed use macro for v6
+
+	* Fixed set default RdfInferenceSampleCacheSize to 1000
+
+2013-05-27  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Updated VAD version to 1.13.34
+
+	* Fixed handling of graph
+
+	* Fixed ssg_print_equiv_retval_expn() of a global parameter if needed and vative valmodes differ
+
+	* Fixed SPARQL codegen
+	- Better federation support for variables makde by 'AS'
+	- Better codegen for define output:valmode "LONG" SELECT DISTINCT
+
+	* Fixed issue executing multiple sparul statements without semicolon
+
+	* Fixed conversions in SELECT DISTINCT statements
+
+2013-05-22  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed clean the relations hash else they keep refs to the MP which is free
+
+	* Fixed minor issue
+
+	* Fixed issue with no args on regex
+
+2013-05-20  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Updated VAD version to 1.13.31
+
+	* Fixed show error in sponge
+
+	* Disabled fct max timeout
+
+	* Fixed labels
+
+	* Fixed visibility of aggregate links
+
+	* Fixed remove order by and distinct as they are irrelevant and kill performance
+
+	* Fixed labels
+
+	* Fixed issue with SPARQL AVG and integer values
+
+	* Fixed use constants instead of boxes
+
+	* Fixed issue with SPARQL 1.1 BIND and 1+ graph assigned to default graph
+
+2013-05-16  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed divide by zero error on allocation of size 0
+
+	* Fixes for RDF graph security
+	- Added function for re-loading RDF graph security
+	- Added function for grouping cache
+	- Minor fixes
+
+	* Fixed support for mixed types in concatinate
+
+	* Added optimization for top
+
+	* Fixed issue with scalar
+
+	* Fixed write past end of buffer
+
+	* Fixed comment
+
+	* Fixed DB.DBA.RDF_DATATYPE_OF_xxx() procedures
+
+	* Fixed cmp_boxes_safe for combination of DV_STRING and DV_UNAME
+
+	* Fixed flush stdout
+
+2013-05-09  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed bad compile of filter exp
+
+2013-05-08  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Rebuild driver
+
+	* Added support for batched inserts
+
+2013-05-01  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed handling of non-absolute IRIs in NICE TTL format
+
+2013-04-26  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed issue for dbpedia international chapters
+
+2013-04-25  OpenLink Software  <github@openlinksw.com>
+
+	* Merge pull request #30 from indeyets/filesize
+	* SPARQL. LOAD <…> INTO <…>. File size limit
+
+2013-04-25  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Use MAKE environment variable in scripts
+
+	* Fixed isssue with NQUAD parser during validation
+
+	* Removed reference to old Tidy
+
+	* Fixed issue with content location setting in header
+
+	* Backported from v7
+
+2013-04-24  Alexey Zakhlestin  <indeyets@gmail.com>
+
+	* better error message for file-size limitation
+
+2013-04-24  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Updated VAD version to 1.13.21
+
+	* Fixed display only if part of default quadmap
+
+	* Fixed labels
+
+	* Fixed show location
+
+	* Fixed use maximum of 200 marrs on grid
+
+	* Fixed url encoding
+
+2013-04-23  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed id_to_iri and id_to_iri_nosignal to extend domain
+
+	* Added support for running rdb2rdf in parallel
+
+	* Fixed warning
+
+2013-04-22  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Added new GC policy in RDF_QM_DEFINE_MAP_VALUE
+
+	* Improved codegen for RDF Views
+
+	* Fixed HTML5 microdata extraction
+
+2013-04-18  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Set ShortenLongURIs by default to 1
+
+2013-04-15  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Removed deprecated functions
+
+	* Added functions to export gate
+
+	* Fixed check for text index
+
+	* Fixed run of pure BIFs in sandbox
+
+	* Fixed error handling in sandbox for pure BIFs
+
+	* Added SPARQL optimizations
+	- IN is optimized to remove items of its right hand side vector
+	*   that are in conflict with rvr of left hand argument
+	- If a null variable has no external/global origin, no GSPO uses
+	*   and a single OPTIONAL subvalue then that OPTIONAL becomes plain
+	*   group pattern
+	- scalar in (scalar1, scalar2, ..., scalarN) is now handled separately
+	*   from say graph-scalar in (vector-of-authorized-graph-IRIs)
+
+2013-04-09  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Updated DBpedia vad version to 1.4.23
+
+	* Added process info to footer
+
+	* Changed jsld to jsonld
+
+	* Added support for showing available memory on machine
+
+	* Fixed compiler warning
+
+	* Fixed portability issue on Windows
+
+	* Updated default value for prefetch rows to 2000
+
+	* Fixed possible overflow
+
+	* Fixed wrong variable
+
+	* Added alias MaxClientConnections for ServerThreads
+
+	* Fixed bad number of arguments
+
+	* Added support for negative year
+
+2013-04-08  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Added optimization for faster (re)creation of RDF View
+
+2013-04-05  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed extraction of equiv restrictions as filters
+
+	* Fixed missing initialization of variable
+
+	* Fixed support of triple patterns of subtype OPTIONAL_L
+
+	* Fixed issue with lost joings on rewriting of unions
+	- sparql_gp_detach_all_filters is extended with ability to extract
+	*   detached filters from equivs
+
+2013-04-04  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed suppress Content-Type header on json output
+
+	* Replaced top level @id with @graph in ld-json output
+
+	* Fixed variable should be initialized before used by sas_init
+
+	* Fixed missing check for jsld format
+
+	* Updated vad version to 1.4.18
+
+	* Fixed rewrite rules
+	- Added support for ld+json
+	- Added support for text/turtle
+	- Added alias for .rdf
+
+	* Fixed issue with /resource links
+
+	* Removed dead links
+
+	* Added wdrs namespace
+
+2013-04-03  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed issue with FILTER (isURI(?resourceUri)) code generation
+
+	* Fixed check for attempting to move graph to itself.
+
+2013-04-01  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Rebuild driver
+
+	* Fixed "too many open statements" error in jena provider
+
+	* Fixed convert if arg is rdf box
+
+2013-03-25  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Rebuild driver
+
+	* Rebuild driver
+
+	* Fixed "too many open statements" error in sesame providers
+
+2013-03-22  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed project title
+
+	* Fixed issue installing conductor in new db
+
+2013-03-20  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed VAD version number comparison functions
+
+	* Fixed VAD versionnumber comparison functions
+
+2013-03-16  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Added support for SPARQL 1.1. Update protocol using /sparql?update=
+
+2013-03-15  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed prettier ttl print
+
+	* Fixed issue with inx opt check needs inx path
+
+2013-03-14  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Updated version to 6.1.7-rc1
+
+	* Added option to get pretty-print TTL from /sparql endpoint
+
+	* Temporary workaround
+	* Problem with turning join with union into union of joins of the
+	* original join contained an origin equiv of some external variable.
+
+	* Fixed search for origin of external var if origin is UNION or something
+
+	- Updated support for SPARQL 1.1 UPDATE/INSERT statements
+
+2013-03-11  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Added function to push two items in one set
+
+	* Allow use of first key part instead of full name in index option
+
+2013-03-07  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed issue with bnode treshold
+
+	* Added new option 'none' to disable sponging
+
+	* Added new macro NO_ITC_DEBUG
+
+2013-03-04  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Partial fix for issue with TRANSITIVE codegen
+
+	* Updated SPARQL
+	- Improved sparql_detalize
+	- Added support for STRBEFORE and STRAFTER
+
+	* Fixed crash if db exists and dba tries recovery
+
+	* Fixed sending cors headers
+
+2013-02-26  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Added optimization to load rdf_quad meta data early during startup
+
+	* Fixed issue running pure bif function in sandbox
+
+	* Rollback of BMD_IS_PURE optimization for bif_repeat
+
+2013-02-25  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Added support for setting the graph scope
+
+	* Rollback of BMD_IS_PURE optimization for bif_rand
+
+2013-02-23  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Updated version number
+
+	* Fixed permalink
+
+	* Fixed position calculation
+
+2013-02-22  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Rollback of BMD_IS_PURE optimization for bif_sprintf_xxx
+
+	* Fixed _cvt() to BMD_PURE
+
+	* Fixed missing define
+
+	* Fixed compiler warning
+
+	* Allow DB_DATETIME constants as leafs of ST tree
+
+	* Added optimization for BMD_PURE functions and CAST of constants
+
+	* Added digest param to csr function
+
+	* Fixed issue with insert over deleted row on partial distinct index
+
+2013-02-20  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed missing tag
+
+	* Fixed type of bnode_t_treshold to iri_id_t
+
+	* Added new defines and fixed starting value for named bnodes
+
+	* Fixed support for "named bnodes" in 64-bit builds
+
+2013-02-19  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed access permissions for disabled users
+
+	* Added support for CONSTRUCT WHERE {} + optimization of DELETE {GRAPH {}}
+
+	* Fixed search of 'known' variable names in GROUP BY (expn as ?X)
+
+2013-02-18  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed issues with i18n encoding
+
+2013-02-15  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed vad version number
+
+	* Fixed set condition to equality if no op
+
+	* Fixed issues with focus
+
+	* Fixed use same_as for labels
+
+	* Fixed i18n issue
+
+	* Fixed bad order of ctx param
+
+	* Fixed issue with focus on class
+
+	* Added check for sponger ACL
+
+	* Added initial support for aggregates
+
+	* Added initial support for aggregates
+
+	* Fixed issue with transitivity
+
+	* Fixed issue with subquery table deps that can be refd from join
+
+	* Added support for use HREF for IRix in HTML output of SPARQL endpoint
+
+2013-02-14  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Regenerated JDBC 4.0 and JDBC4.1 drivers
+
+	* Added initial support for Oracle JDK 1.7.x
+
+	* Added initial support for Oracle JDK 1.7.x
+
+	* Fixed reference to cvs
+
+2013-02-14  OpenLink Software  <github@openlinksw.com>
+
+	* Merge pull request #24 from eliasp/patch-1
+	* Replace CVS with git
+
+2013-02-12  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed xslt skin for WebDAV
+
+2013-02-07  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed printing of Host if present in body
+
+	* Merged latest documentation
+
+	* Increased aq max threads limit
+
+	* Fixed issue with IN option of SERVICE
+
+	* Added support for ?graph parameter in SPARQL 1.1 Graph Crud
+
+2013-02-05  Will Daniels  <mail@willdaniels.co.uk>
+
+	* Fixed SQLSetConnectOption interpretation of param value
+
+2013-02-05  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed error diagnostic when graph missing from DELETE DATA
+
+	* Added uptime function
+
+	* Added support for handling Set-Cookie directives when redirecting
+
+2013-02-01  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Support for full syntax of SPARQL 1.1 update language
+	- Added new 1.1 built-in functions
+	- Fixed support for external vars for subqueries
+	- Fixed codegen for retvals of SQL Selects
+	- Small fixes for DAWG testsuite
+
+	* Fixed issue with '|' operator at opt level of expression
+
+	* Added support for UUID build-in function SPARQL 1.1
+
+	* Fixed cost of pg card
+
+2013-01-31  Elias Probst  <mail@eliasprobst.eu>
+
+	* Replace CVS with git
+	* The README still mentioned CVS although git is used now. Fixed this.
+
+2013-01-25  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed opl:sponge_time when sponging pure RDF sources
+
+	* Fixed constant
+
+2013-01-21  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed ro2sql should not be allowed on 6 to execute on remotes inside qf
+
+2013-01-13  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed issue with content length
+	* If ContentLength is given we must take care of zero length.
+	* If ContentLength is not given and close is called, we wait for peer
+	* to drop connection.
+
+2013-01-12  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed issue with transitivity and cost of g & p cols
+
+2013-01-10  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed issuewith  SQL transitive closure causing incorrect results
+
+	* Fixed issue with T_STEP in transitive query
+
+	* Fixed issue with T_STEP in transitive query
+
+	* Added support for 'define output:format "NICE_TTL"'
+
+	* Fixed proper support of bnodes in http_ttl_value
+
+	* Added support for _:vt syntax of bnodes in debugging
+
+	* Fixed missing symbol ref
+
+	* Fixed missing tests for checkpoint in progress
+
+	* Fixed issue with WebDAV methods
+
+	* Added bif_rowvector_obj_sort()
+
+	* Fixed composing of SPARQL for remote endpoints
+	* if the query contains transitive subqueries and the like, with bnodes in retval lists
+
+	* Fixed missing argument to error message
+
+	* Added support for nodeID://t... syntax
+
+	* Added support for nodeID://t... syntax
+	* Can be used for debugging in order to make more stable outputs
+
+2013-01-08  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed deprecated macro
+
+2013-01-04  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Updated copyright to include 2013
+
+	* Fixed select distinct graphs
+
+2012-12-31  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed SPARQL internal error on free-text with score
+
+	* Fixed limit output to 20M else this code may overflow and abort
+
+	* Fixed use DV_NON_BOX so there is no lenght limit
+
+2012-12-28  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed several issues in SPARQL
+	- Assign selids of gps at closing braces
+	- Assign selids of triples/vars at traversals
+	- Fixed decision making in printing equivs due to new
+	*   _.var.restr_of_col field
+
+	* Fixed compiler warnings
+
+2012-12-27  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Added initial support for SPARQL VALUES clause
+
+	* Fixed compare as int64
+
+	* Fixed issues with rdfxml
+	- Added protection from wrong calls to tf_triple/tf_triple_l
+	- Fixed double free
+	- Fixed compiler warnings
+
+	* Fixed behaviour of the 'Dynamic Resource' DET folder
+
+	* Fixed do not clear raised errors, so error pages can respond
+
+	* Added new get:strategy option no-sponge
+
+	* Added new function xenc_rsa_sha1_digest
+
+2012-12-11  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fix to reduce unreachable subjects in sponged RDF
+
+	* Merged repl stubs
+
+	* Rebuild driver
+
+	* Upgraded to Sesame2 version 2.6.10
+
+2012-12-04  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed allocate sel out box for select node
+
+2012-12-02  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed expansion of BINDs in scalar subqueries
+
+	* Fixed repl stubs
+
+	* Fixed repl stub
+
+2012-11-29  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Added extra files to include
+
+	* Fixed guard against multiple inclusion
+
+	* Removed support for req_top.orig_retvals
+
+2012-11-28  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Added function sys_stat_impl for use in plugins
+
+	* Fixed when freeing temp, unreg all itcs that were attached
+
+	* Fixed alignment to 8
+
+2012-11-27  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed issue with MALLOC_DEBUG
+
+	* Added initial support for SPARQL BIND
+
+	* Fixed issues with DV_WIDE
+	- Added specific checks for MALLOC_DEBUG
+	- Added support for renaming of "array"
+
+2012-11-26  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Export more functions via EXE_EXPORT
+
+	* Added support for identifying pure RDF source via MIME type
+
+2012-11-23  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed rev link for /resource
+
+	* Fixed support for text/turtle
+
+2012-11-22  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Added checks for trailing zeroes in DV_WIDE boxed in MALLOC_DEBUG
+
+	* Added support for exporting cert signature
+
+	* Fixed description on RTFM to be more polite
+
+2012-11-20  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed compiling transitive queries with SPRRQL_DEBUG enabled
+
+	* Fixed only print trace in debug mode
+
+	* Fixed issues in ftp client
+	- Added support for login without password
+	- Fixed return strses to client
+
+	* Updated documentation
+
+2012-11-16  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Merged Framework VAD
+	- Added ACL rules validation
+	- Added API admin.client.add to add ODS clients for authentication
+	- Added API call admin.apikeys.new to add a new 3rd-party client key
+	- Added API to fetch client and key information for any third-party service from OAUTH.APP_REG
+	- Added API user.authenticate.webid
+	- Added API user.certificates.create to create new X.509 certs
+	- Added authentication, registration, and connection support for BrowserID
+	- Added authentication support for Foursquare
+	- Added better error handling in user.authenticate.callback
+	- Added better error messages when username or email are already in use
+	- Added Bitly authentication and registration support
+	- Added callback procedure for privat egraphs
+	- Added certificate expiration period
+	- Added Disqus OAuth support for authentication and registration
+	- Added import certificate
+	- Added Instagram support for authentication and registration
+	- Added login and connect support for Tumblr
+	- Added more ODS documentation
+	- Added multi-line tabs
+	- Added ODS API quickstart guide
+	- Added registration confirmation functionality
+	- Added SPARQL property for ACLs
+	- Added support for GitHub and DropBox OAuth authentication
+	- Added support for login/register with Yahoo via OAuth
+	- Added support for Wordpress login via user.authtenticate.authenticationUrl
+	- Added user session XML format for all authentication methods
+	- Added way of authentication via third-party services
+	- Add new public procedures for OpenID registration and authentication
+	- Updated documentation
+	- Allow things other than URIs as online account identifiers, like email
+	*   address for Google
+	- Fixed ACL advanced rules
+	- Fixed authenticate callback URL creation in an SSL
+	- Fixed bad function use 'contains'
+	- Fixed bad VAD install
+	- Fixed BrowserID auth
+	- Fixed WebID login
+	- Fixed certificate upload for JS version
+	- Fixed disable #Digest' Login/registration problem
+	- Fixed Facebook login/register
+	- Fixed FOAF data and import problems
+	- Fixed folder rewrite rule
+	- Fixed hidden digest login
+	- Fixed JS errors
+	- Fixed Login/Registration rules
+	- Fixed mail rewrite rule
+	- Fixed not correct shown disabled digest authentication
+	- Fixed online accounts API
+	- Fixed print date on dashboard
+	- Fixed private graphs init
+	- Fixed private graphs update
+	- Fixed registration bug
+	- Fixed separation login and register
+	- Fixed session expire scheduler
+	- Fixed stack overflow when check user name
+	- Fixed twitter registration
+	- Fixed typo
+	- Fixed IAN validation
+	- Fixed JSON return value of user.certificates.list()
+	- Fixed  bad validation rule
+
+	* Fixed memory leak in wikiv
+
+	* Merged Polls VAD
+	- Added ACL rules validation
+	- Fixed param type
+
+	* Merged Gallery VAD
+	- Fixed param type
+
+	* Merged FeedManager VAD
+	- Added ACL rules valdation
+	- Fixed use IN for vectored execution
+
+	* Merged Calendar VAD
+	- Added ACL rules validation
+	- Fixed 'PROCENT-COMPLETE' property
+	- Fixed syntax warnings
+	- Fixed sharing problem with read/only
+	- Fixed issue with 'Not Completed' filter
+	- Fixed API file
+
+	* Merged Briefcase fixes
+	- Added ACL rules validation
+	- Added WebID access to WebDat DET
+	- Added scheduled interval for DETs
+	- Added activity log for IMAP DET
+	- Added "Kind" info for DET folders
+	- Added start updates for Rackspace
+	- Added IMAP DET folder subscription
+	- Added Rackspace DET
+	- Added DynaRes WebID support
+	- Added IMAP folder create and delete
+	- Upgraded to new BOX API
+	- Fixed updating private graphs
+	- Fixed setting properties for DET folders
+	- Fixed init load
+	- Fixed syntax warnings
+	- Fixed SkyDrive file name extension problem
+	- Fixed file delete and rename
+
+	* Merged Bookmark fixes
+	- Added ACL rules validation
+
+	* Merged Addressbook fixes
+	- Added ACL rules validation
+
+	* Updated VAD version numbers
+
+	* Updated documentation files
+
+	* Updated version number
+
+	* Fixed show object as it is
+
+	* Fixed issue mixing http and https content on page for Chrome
+
+	* Fixed permissions
+
+	* Changed permissions to run as SPARQL user
+
+	* FIxed sparql grammer for math expr
+
+2012-11-15  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Added option to split saved recordings per IP address
+
+2012-11-14  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed declaration after stmt
+
+	* Added checks for abnormal long lexems to protect TTL parser
+
+	* Fixed for transitivity, inferencing and property paths
+	- Added support for indirect decls of transitivity in rule sets
+	- Fixed inferencing
+	- Fixed property paths
+
+	* Fixed verification of large messages
+
+	* Added initial support for property paths
+
+	* Fixed loading of rules for symmetric properties
+
+	* Added new field HS_NOTE in list of sponged resources
+
+	* Added stream mime parser
+
+	* Fixed container/contained doc relationship tidyups for RDF src
+
+	* Fixed issues with MALLOC_DEBUG
+	- Added proxy functions in order to build plugins
+	- Fixed export of Dkpool symbols for plugins
+
+2012-11-08  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Reverted exporting symbols patch as it breaks MALLOC_DEBUG
+
+	* Fixed building with MALLOC_DEBUG
+
+	* Added support for larger messages
+
+	* Fixed infinite loop when cb_read_up_to is bigger than bh length
+
+2012-11-06  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Added SPARQL expression optimizations with new BIF metadata
+
+	* Updated version number of VAD package
+
+	* Fixed SAN and IAN
+
+	* Added support for making issuer graph
+
+	* Added support for issuerAltName
+
+	* Fixed text
+
+	* Added support for SAN
+
+	* Fixed component check
+
+	* Fixed vad config pages
+
+	* Fixed typo
+
+	* Fixed save stack_size
+
+	* Fixed MTX_METER code
+
+2012-11-05  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fix should not remove inside iterator as it can read deleted
+
+	* Fix in unit testing code
+
+	* Fixed codegen to use IS NULL when the fixed datatype  is NULL
+
+	* Fixed speed of bif_dict_zip when dict is empty
+
+	* Fix to support '\>' in angle-bracketed relative URLs
+
+	* Fixes for RDF_GRAPH_SECURITY_AUDIT
+	- Added more checks
+	- Added RDF_DEFAULT_USER_PERMS_DEL() and RDF_ALL_USER_PERMS_DEL()
+
+2012-10-24  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Additional fix for MINUS and TRANSITIVE
+
+2012-10-23  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed issue with MINUX and TRANSITIVE in SPARQL
+
+	* Fixed support for CONSTRUCT on huge triple sets
+
+	* Fixed NOT FROM construction in SPARQL
+
+2012-10-15  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Added support for x509 verify
+
+	* Fixed typo in call to equ function
+
+	* Fixed issue with xpath query appearing twice in same tree
+	* This can happen if it is owned by a reused shuric (Shared URI
+	* Content) that contained included stypesheets, so there is no need
+	* to GPF.
+
+2012-10-08  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed DB.DBA.RDF_QUAD_FT_UPGRADE check
+
+	* Fixed triger for XHML cartridge on text/microdata+html
+
+	* Added DB.DBA.RDF_GRAPH_SECURITY_AUDIT
+
+	* Added support for GROUP_CONCAT (DISTINCT ..) in SPARQL
+
+	* Added DO_KEYWORD_SET
+
+	* Added mp_alloc_sized for big arrays
+
+2012-10-01  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed issue with MALLOC_DEBUG
+
+	* Added missing EXE_EXPORT
+
+	* Fixed memory leaks
+
+	* Fixed issue with graph group access
+
+	* Fixed postprocessing following ingestion of RDF
+
+	* Fixed diagnostic 'Bad variable value in CONSTRUCT'
+
+	* Fixed bad length
+
+	* Fixed SPARQL 1.1 aggregates can be used with or without bif: prefix
+
+	* Added new function to dump nquads
+
+	* Fixed initialization of rdf_graph_group_of_private_dicts
+
+	* Fixed issue with sparql CONSTRUCT ... WHERE ... GROUP BY ...
+
+	* Added support for get:xxx defines in recursive sponge
+
+	* Added support for text/x-nquad MIME-type
+
+	* Added timeout to RestPingService
+
+	* Fixed typo in condition
+
+	* Fixed issue invoking cartridges when text/mictodate+html was used
+
+	* Added 'Dynamic Resource' DET folder selection
+
+	* Fixed handling of rdf_repl_uid account
+
+	* Merged sponger fixes
+	- Added auto-detection of NQuads and Trig
+	- Fixed detection of Turtle, N3 and similar formats
+
+	* Fixed missing public grants
+
+	* Fixed bad C++ extern C construction
+
+	* Fixed issue with graph reload
+
+2012-09-07  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Removed duplicate declaration of bif_isentity
+
+	* Fixed isolation level
+
+2012-08-31  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed issues with S3 DET
+	- Added resource rename
+	- Fixed issue with resource server side encryption
+
+	* Added Rackspace DET
+
+	* Fixed minor issue
+
+2012-08-30  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Added triples for rdf docs
+
+	* Fixed several issues in bulkloader
+	- Fixes issue with loading specific number of files
+	- Fixed issue if files are not available on all nodes
+	- Removed unused variables
+
+2012-08-23  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed use official mime name
+
+	* Added check for stpcpy in C library
+
+	* Fixed bad namespace urls
+
+	* Fixed crash using DEFMACRO in SPARQL SQL Views
+
+2012-08-22  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Use __box_flags_tweak and __box_flags_set to set BF_UTF (2)
+
+	* Fixed links at bottom of page
+
+	* Fixed titles
+
+	* Fixed when using utf8 strings, http_value does not need to recode
+
+	* Fixed processing of OPTION() clauses for SPARQL-FED
+
+2012-08-21  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Added new macros for iterations on pairs of items in given array
+
+	* FIxed conflict between normal decl and extern "C" decl for C++
+
+	* Fixed compiler warnings
+
+	* Fixed error diag if RDF view decl contains same quad map twice
+
+	* Fixed error recovery on incomplete metadata
+
+	* Fixed typo in encoding name
+
+	* Removed deprecated code block
+
+	* Fixed parameter name
+
+	* Fixed recovery after errors during load
+
+2012-08-20  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Merge branch 'develop/6' of scms:virtuoso-opensource into develop/6
+
+	* Merged Conductor VAD
+	- Added SPARQL property for ACLs
+	- Fixed ACL type change and ACL delete error
+	- Fixed do not edit grants on existing user
+
+	* Fixed slow query
+
+	* Fixed labels
+
+	* Fixed warnings from W3C Validator
+
+	* Fixed difference between a failed prev sponge and an in-progress one
+
+2012-08-16  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Merge branch 'develop/6' of scms:virtuoso-opensource into develop/6
+
+	* Merged OAT toolkit
+	- Attempt to force XML+RDF output from PROXY
+	- Updated version to 2.6.4
+
+	* Added support for N3 HAS keyword
+
+2012-08-13  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Fixed exponential parsing time for ill nesting of entity refs
+
+2012-08-03  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Added better support for ":" as a QName
+
+	* Fixed show more of the command currently being executed
+
+	* Fixed use user info if authenticated via webid
+
+2012-08-02  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Merge branch 'develop/6' of scms:virtuoso-opensource into develop/6
+
+2012-08-01  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	* Updated version to 6.1.7-dev for next development cycle
+
+	* Merge branch 'release/6.1.6' into develop/6
+
+	* Merge branch 'release/6.1.6' into stable/6
+
+	* Updated final notes to NEWS and ChangeLog
+
+	* Added files to distribution
+
+	* Added files to distribution
+
+	* Added files to distribution
+
+	* Added files to distribution
+
+	* Removed reference to old file
+
+	* Updated debian changelog
+
+	* Fixed issues with Bison 2.6 code generation
+
 2012-08-01  VOS Maintainer  <vos.admin@openlinksw.com>
 
 	* Fixed issue with Bison 2.6 code generation

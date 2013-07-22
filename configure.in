@@ -30,7 +30,7 @@ AC_REVISION($Id$)
 ##########################################################################
 
 AC_INIT([Virtuoso Open Source Edition (Row Store)],
-	[6.1.7-rc1],
+	[6.1.7],
 	[vos.admin@openlinksw.com],
 	[virtuoso-opensource])
 AC_CONFIG_SRCDIR([libsrc/Dk.h])
