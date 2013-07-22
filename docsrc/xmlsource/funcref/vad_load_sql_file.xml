@@ -56,7 +56,7 @@
     <refsect2><title>grouping</title>
       <para>Always set this parameter to 1.</para>
     </refsect2>
-    <refsect2><title>grouping</title>
+    <refsect2><title>report_errors</title>
       <para>The supported values for this parameter are:</para>
       <itemizedlist mark="bullet">
         <listitem><emphasis>'report'</emphasis> - to log errors and continue or:</listitem>

@@ -835,6 +835,9 @@ file:// protocol.
        	not. As with tables stored row-wise, the table row itself is stored following the primary 
        	key index entry on the index tree leaf corresponding to the entry. This arrangement is 
        	sometimes called a <emphasis>clustered index</emphasis>.</para>
+<para>One can specify column-wise storage as the default for any new tables or indices by adding ColumnStore = 1 to the [Parameters] section of the virtuoso.ini file.  Otherwise, tables and indices are created tow-wise unless the column option is specified, as described below.
+</para>
+
        <para>The statement below declares the table xx to be stored column-wise:</para>
  <programlisting><![CDATA[
 CREATE TABLE xx ( id    INT, 
