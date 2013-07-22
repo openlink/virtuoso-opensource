@@ -158,8 +158,8 @@ rdfdf:default-iid
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_REF, virtrdf:SPART_VARR_NOT_NULL;
-#  virtrdf:qmfValRange-rvrDatatype "";						# STRING OPTIONAL Datatype of stored values, if fixed
-#  virtrdf:qmfValRange-rvrLanguage "x-any";					# STRING OPTIONAL Language, if fixed
+#  virtrdf:qmfValRange-rvrDatatype "";						# ANY_URI OPTIONAL Datatype of stored values, if fixed
+#  virtrdf:qmfValRange-rvrLanguage "x-any";					# ANY_URI OPTIONAL Language, if fixed
 #  virtrdf:qmfFixedValue "";							# ANY OPTIONAL Value of stored values, if fixed
   virtrdf:qmfUriIdOffset 0;							# INTEGER OPTIONAL The value that should be added to locally stored ref id in order to get portable ref id
   virtrdf:qmfSuperFormats rdfdf:default-iid-SuperFormats
@@ -268,8 +268,8 @@ rdfdf:default
   virtrdf:qmfOkForAnySqlvalue 1;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_NOT_NULL;
-#  virtrdf:qmfValRange-rvrDatatype "";						# STRING OPTIONAL Datatype of stored values, if fixed
-#  virtrdf:qmfValRange-rvrLanguage "x-any";					# STRING OPTIONAL Language, if fixed
+#  virtrdf:qmfValRange-rvrDatatype "";						# ANY_URI OPTIONAL Datatype of stored values, if fixed
+#  virtrdf:qmfValRange-rvrLanguage "x-any";					# ANY_URI OPTIONAL Language, if fixed
 #  virtrdf:qmfFixedValue "";							# ANY OPTIONAL Value of stored values, if fixed
   virtrdf:qmfUriIdOffset 0;							# INTEGER OPTIONAL The value that should be added to locally stored ref id in order to get portable ref id
   virtrdf:qmfSuperFormats rdfdf:default-SuperFormats
@@ -612,7 +612,7 @@ rdfdf:sql-nvarchar
 # Templates that convert short value into other types (can be applied to both field and not field expression)
   virtrdf:qmfLongOfShortTmpl " DB.DBA.RDF_MAKE_LONG_OF_SQLVAL (^{tree}^)";	# STRING REQUIRED ... long from short
   virtrdf:qmfSqlvalOfShortTmpl " ^{tree}^";					# STRING REQUIRED ... SQL value from short
-  virtrdf:qmfDatatypeOfShortTmpl " UNAME'http://www.w3.org/2001/XMLSchema#string'";# STRING REQUIRED ... datatype IRI STRING from short
+  virtrdf:qmfDatatypeOfShortTmpl " NULL";					# STRING REQUIRED ... datatype IRI STRING from short
   virtrdf:qmfLanguageOfShortTmpl " NULL";					# STRING REQUIRED ... language ID STRING from short
   virtrdf:qmfBoolOfShortTmpl " (case (^{tree}^) when '' then 0 else 1 end)";	# STRING REQUIRED ... boolean value from short
   virtrdf:qmfIidOfShortTmpl " __i2id (^{tree}^)";
@@ -636,9 +636,9 @@ rdfdf:sql-nvarchar
   virtrdf:qmfColumnCount 1;							# Number of columns of the oroginal data (usually 1, zero if variable and not yet set)
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
-    virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_TYPED, virtrdf:SPART_VARR_NOT_NULL;
-  virtrdf:qmfValRange-rvrDatatype "http://www.w3.org/2001/XMLSchema#string";	# STRING OPTIONAL Datatype of stored values, if fixed
-#  virtrdf:qmfValRange-rvrLanguage "NULL";					# STRING OPTIONAL Language, if fixed
+    virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_NOT_NULL;
+#  virtrdf:qmfValRange-rvrDatatype "";						# ANY_URI OPTIONAL Datatype of stored values, if fixed
+#  virtrdf:qmfValRange-rvrLanguage "";						# ANY_URI OPTIONAL Language, if fixed
 #  virtrdf:qmfFixedValue "";							# ANY OPTIONAL Value of stored values, if fixed
   virtrdf:qmfUriIdOffset 0;							# INTEGER OPTIONAL The value that should be added to locally stored ref id in order to get portable ref id
   virtrdf:qmfSuperFormats rdfdf:sql-nvarchar-SuperFormats
@@ -702,8 +702,8 @@ rdfdf:sql-nvarchar-dt
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_NOT_NULL;
-#  virtrdf:qmfValRange-rvrDatatype "http://www.w3.org/2001/XMLSchema#string";	# STRING OPTIONAL Datatype of stored values, if fixed
-#  virtrdf:qmfValRange-rvrLanguage "NULL";					# STRING OPTIONAL Language, if fixed
+#  virtrdf:qmfValRange-rvrDatatype "";						# ANY_URI OPTIONAL Datatype of stored values, if fixed
+#  virtrdf:qmfValRange-rvrLanguage "";						# ANY_URI OPTIONAL Language, if fixed
 #  virtrdf:qmfFixedValue "";							# ANY OPTIONAL Value of stored values, if fixed
   virtrdf:qmfUriIdOffset 0;							# INTEGER OPTIONAL The value that should be added to locally stored ref id in order to get portable ref id
   virtrdf:qmfSuperFormats rdfdf:sql-nvarchar-dt-SuperFormats
@@ -769,8 +769,8 @@ rdfdf:sql-nvarchar-lang
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_NOT_NULL;
-#  virtrdf:qmfValRange-rvrDatatype "http://www.w3.org/2001/XMLSchema#string";	# STRING OPTIONAL Datatype of stored values, if fixed
-#  virtrdf:qmfValRange-rvrLanguage "NULL";					# STRING OPTIONAL Language, if fixed
+#  virtrdf:qmfValRange-rvrDatatype "";						# ANY_URI OPTIONAL Datatype of stored values, if fixed
+#  virtrdf:qmfValRange-rvrLanguage "";						# ANY_URI OPTIONAL Language, if fixed
 #  virtrdf:qmfFixedValue "";							# ANY OPTIONAL Value of stored values, if fixed
   virtrdf:qmfUriIdOffset 0;							# INTEGER OPTIONAL The value that should be added to locally stored ref id in order to get portable ref id
   virtrdf:qmfSuperFormats rdfdf:sql-nvarchar-lang-SuperFormats
@@ -936,8 +936,8 @@ rdfdf:sql-longvarbinary
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_TYPED, virtrdf:SPART_VARR_NOT_NULL;
-  virtrdf:qmfValRange-rvrDatatype "http://www.w3.org/2001/XMLSchema#octetStream";	# STRING OPTIONAL Datatype of stored values, if fixed
-#  virtrdf:qmfValRange-rvrLanguage "NULL";					# STRING OPTIONAL Language, if fixed
+  virtrdf:qmfValRange-rvrDatatype "http://www.w3.org/2001/XMLSchema#octetStream";	# ANY_URI OPTIONAL Datatype of stored values, if fixed
+#  virtrdf:qmfValRange-rvrLanguage "NULL";					# ANY_URI OPTIONAL Language, if fixed
 #  virtrdf:qmfFixedValue "";							# ANY OPTIONAL Value of stored values, if fixed
   virtrdf:qmfUriIdOffset 0;							# INTEGER OPTIONAL The value that should be added to locally stored ref id in order to get portable ref id
   virtrdf:qmfSuperFormats rdfdf:sql-longvarbinary-SuperFormats
@@ -953,7 +953,7 @@ rdfdf:sql-longvarbinary-nullable
   virtrdf:inheritFrom rdfdf:sql-longvarbinary;
   virtrdf:noInherit virtrdf:qmfValRange-rvrRestrictions;
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
-    virtrdf:SPART_VARR_IS_LIT;
+    virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_TYPED;
   virtrdf:qmfName "sql-longvarbinary-nullable";
   virtrdf:qmfSuperFormats rdfdf:sql-longvarbinary-nullable-SuperFormats
 .
@@ -1001,8 +1001,8 @@ rdfdf:sql-varchar-uri
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_NOT_NULL, virtrdf:SPART_VARR_IS_REF, virtrdf:SPART_VARR_IS_IRI, virtrdf:SPART_VARR_IRI_CALC;
-  virtrdf:qmfValRange-rvrDatatype "http://www.w3.org/2001/XMLSchema#anyURI";	# STRING OPTIONAL Datatype of stored values, if fixed
-  virtrdf:qmfValRange-rvrLanguage "NULL";					# STRING OPTIONAL Language, if fixed
+#  virtrdf:qmfValRange-rvrDatatype "";						# ANY_URI OPTIONAL Datatype of stored values, if fixed
+#  virtrdf:qmfValRange-rvrLanguage "";						# ANY_URI OPTIONAL Language, if fixed
 #  virtrdf:qmfFixedValue "";							# ANY OPTIONAL Value of stored values, if fixed
   virtrdf:qmfCustomString1 "local://%s";
   virtrdf:qmfUriIdOffset 0;							# INTEGER OPTIONAL The value that should be added to locally stored ref id in order to get portable ref id
@@ -1074,8 +1074,8 @@ rdfdf:sql-varchar-literal
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_NOT_NULL, virtrdf:SPART_VARR_IS_LIT;
-#  virtrdf:qmfValRange-rvrDatatype "http://www.w3.org/2001/XMLSchema#anyURI";	# STRING OPTIONAL Datatype of stored values, if fixed
-  virtrdf:qmfValRange-rvrLanguage "NULL";					# STRING OPTIONAL Language, if fixed
+#  virtrdf:qmfValRange-rvrDatatype "";						# ANY_URI OPTIONAL Datatype of stored values, if fixed
+  virtrdf:qmfValRange-rvrLanguage "";						# ANY_URI OPTIONAL Language, if fixed
 #  virtrdf:qmfFixedValue "";							# ANY OPTIONAL Value of stored values, if fixed
   virtrdf:qmfCustomString1 "%s";
   virtrdf:qmfUriIdOffset 0;							# INTEGER OPTIONAL The value that should be added to locally stored ref id in order to get portable ref id
@@ -1193,8 +1193,8 @@ rdfdf:sql-integer
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_TYPED, virtrdf:SPART_VARR_NOT_NULL, virtrdf:SPART_VARR_LONG_EQ_SQL;
-  virtrdf:qmfValRange-rvrDatatype "http://www.w3.org/2001/XMLSchema#integer";	# STRING OPTIONAL Datatype of stored values, if fixed
-#  virtrdf:qmfValRange-rvrLanguage "NULL";					# STRING OPTIONAL Language, if fixed
+  virtrdf:qmfValRange-rvrDatatype "http://www.w3.org/2001/XMLSchema#integer";	# ANY_URI OPTIONAL Datatype of stored values, if fixed
+#  virtrdf:qmfValRange-rvrLanguage "NULL";					# ANY_URI OPTIONAL Language, if fixed
 #  virtrdf:qmfFixedValue "";							# ANY OPTIONAL Value of stored values, if fixed
   virtrdf:qmfUriIdOffset 0;							# INTEGER OPTIONAL The value that should be added to locally stored ref id in order to get portable ref id
   virtrdf:qmfSuperFormats rdfdf:sql-integer-SuperFormats
@@ -1212,7 +1212,7 @@ rdfdf:sql-integer-nullable
   virtrdf:inheritFrom rdfdf:sql-integer;
   virtrdf:noInherit virtrdf:qmfValRange-rvrRestrictions;
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
-    virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_LONG_EQ_SQL;
+    virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_TYPED, virtrdf:SPART_VARR_LONG_EQ_SQL;
   virtrdf:qmfName "sql-integer-nullable";
   virtrdf:qmfIidOfShortTmpl " __i2id (__spfin (^{custom-string-1}^, ^{tree}^))";
   virtrdf:qmfSuperFormats rdfdf:sql-integer-nullable-SuperFormats
@@ -1351,8 +1351,8 @@ rdfdf:sql-doubleprecision
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_TYPED, virtrdf:SPART_VARR_NOT_NULL, virtrdf:SPART_VARR_LONG_EQ_SQL;
-  virtrdf:qmfValRange-rvrDatatype "http://www.w3.org/2001/XMLSchema#double";	# STRING OPTIONAL Datatype of stored values, if fixed
-#  virtrdf:qmfValRange-rvrLanguage "NULL";					# STRING OPTIONAL Language, if fixed
+  virtrdf:qmfValRange-rvrDatatype "http://www.w3.org/2001/XMLSchema#double";	# ANY_URI OPTIONAL Datatype of stored values, if fixed
+#  virtrdf:qmfValRange-rvrLanguage "NULL";					# ANY_URI OPTIONAL Language, if fixed
 #  virtrdf:qmfFixedValue "";							# ANY OPTIONAL Value of stored values, if fixed
   virtrdf:qmfUriIdOffset 0;							# INTEGER OPTIONAL The value that should be added to locally stored ref id in order to get portable ref id
   virtrdf:qmfSuperFormats rdfdf:sql-doubleprecision-SuperFormats
@@ -1370,7 +1370,7 @@ rdfdf:sql-doubleprecision-nullable
   virtrdf:inheritFrom rdfdf:sql-doubleprecision;
   virtrdf:noInherit virtrdf:qmfValRange-rvrRestrictions;
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
-    virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_LONG_EQ_SQL;
+    virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_TYPED, virtrdf:SPART_VARR_LONG_EQ_SQL;
   virtrdf:qmfName "sql-doubleprecision-nullable";
   virtrdf:qmfSuperFormats rdfdf:sql-doubleprecision-nullable-SuperFormats
 .
@@ -1420,8 +1420,8 @@ rdfdf:sql-numeric
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_TYPED, virtrdf:SPART_VARR_NOT_NULL, virtrdf:SPART_VARR_LONG_EQ_SQL;
-  virtrdf:qmfValRange-rvrDatatype "http://www.w3.org/2001/XMLSchema#decimal";	# STRING OPTIONAL Datatype of stored values, if fixed
-#  virtrdf:qmfValRange-rvrLanguage "NULL";					# STRING OPTIONAL Language, if fixed
+  virtrdf:qmfValRange-rvrDatatype "http://www.w3.org/2001/XMLSchema#decimal";	# ANY_URI OPTIONAL Datatype of stored values, if fixed
+#  virtrdf:qmfValRange-rvrLanguage "NULL";					# ANY_URI OPTIONAL Language, if fixed
 #  virtrdf:qmfFixedValue "";							# ANY OPTIONAL Value of stored values, if fixed
   virtrdf:qmfUriIdOffset 0;							# INTEGER OPTIONAL The value that should be added to locally stored ref id in order to get portable ref id
   virtrdf:qmfSuperFormats rdfdf:sql-numeric-SuperFormats
@@ -1439,7 +1439,7 @@ rdfdf:sql-numeric-nullable
   virtrdf:inheritFrom rdfdf:sql-numeric;
   virtrdf:noInherit virtrdf:qmfValRange-rvrRestrictions;
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
-    virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_LONG_EQ_SQL;
+    virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_TYPED, virtrdf:SPART_VARR_LONG_EQ_SQL;
   virtrdf:qmfName "sql-numeric-nullable";
   virtrdf:qmfIidOfShortTmpl " __i2id (__spfin (^{custom-string-1}^, ^{tree}^))";
   virtrdf:qmfSuperFormats rdfdf:sql-numeric-nullable-SuperFormats
@@ -1622,8 +1622,8 @@ rdfdf:sql-date
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_TYPED, virtrdf:SPART_VARR_NOT_NULL, virtrdf:SPART_VARR_LONG_EQ_SQL;
-  virtrdf:qmfValRange-rvrDatatype "http://www.w3.org/2001/XMLSchema#date";	# STRING OPTIONAL Datatype of stored values, if fixed
-#  virtrdf:qmfValRange-rvrLanguage "NULL";					# STRING OPTIONAL Language, if fixed
+  virtrdf:qmfValRange-rvrDatatype "http://www.w3.org/2001/XMLSchema#date";	# ANY_URI OPTIONAL Datatype of stored values, if fixed
+#  virtrdf:qmfValRange-rvrLanguage "NULL";					# ANY_URI OPTIONAL Language, if fixed
 #  virtrdf:qmfFixedValue "";							# ANY OPTIONAL Value of stored values, if fixed
   virtrdf:qmfUriIdOffset 0;							# INTEGER OPTIONAL The value that should be added to locally stored ref id in order to get portable ref id
   virtrdf:qmfSuperFormats rdfdf:sql-date-SuperFormats
@@ -1643,7 +1643,7 @@ rdfdf:sql-date-nullable
   virtrdf:inheritFrom rdfdf:sql-date;
   virtrdf:noInherit virtrdf:qmfValRange-rvrRestrictions;
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
-    virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_LONG_EQ_SQL;
+    virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_TYPED, virtrdf:SPART_VARR_LONG_EQ_SQL;
   virtrdf:qmfName "sql-date-nullable";
   virtrdf:qmfIidOfShortTmpl " __i2id (__spfin (^{custom-string-1}^, ^{tree}^))";
   virtrdf:qmfSuperFormats rdfdf:sql-date-nullable-SuperFormats
@@ -1739,8 +1739,8 @@ rdfdf:sql-time
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_TYPED, virtrdf:SPART_VARR_NOT_NULL, virtrdf:SPART_VARR_LONG_EQ_SQL;
-  virtrdf:qmfValRange-rvrDatatype "http://www.w3.org/2001/XMLSchema#time";	# STRING OPTIONAL Datatype of stored values, if fixed
-#  virtrdf:qmfValRange-rvrLanguage "NULL";					# STRING OPTIONAL Language, if fixed
+  virtrdf:qmfValRange-rvrDatatype "http://www.w3.org/2001/XMLSchema#time";	# ANY_URI OPTIONAL Datatype of stored values, if fixed
+#  virtrdf:qmfValRange-rvrLanguage "NULL";					# ANY_URI OPTIONAL Language, if fixed
 #  virtrdf:qmfFixedValue "";							# ANY OPTIONAL Value of stored values, if fixed
   virtrdf:qmfUriIdOffset 0;							# INTEGER OPTIONAL The value that should be added to locally stored ref id in order to get portable ref id
   virtrdf:qmfSuperFormats rdfdf:sql-time-SuperFormats
@@ -1758,7 +1758,7 @@ rdfdf:sql-time-nullable
   virtrdf:inheritFrom rdfdf:sql-time;
   virtrdf:noInherit virtrdf:qmfValRange-rvrRestrictions;
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
-    virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_LONG_EQ_SQL;
+    virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_TYPED, virtrdf:SPART_VARR_LONG_EQ_SQL;
   virtrdf:qmfName "sql-time-nullable";
   virtrdf:qmfIidOfShortTmpl " __i2id (__spfin (^{custom-string-1}^, ^{tree}^))";
   virtrdf:qmfSuperFormats rdfdf:sql-time-nullable-SuperFormats
@@ -1829,14 +1829,14 @@ rdfdf:sql-datetime
 # Templates that convert short value into other types (can be applied to both field and not field expression)
   virtrdf:qmfLongOfShortTmpl " ^{tree}^";		# STRING REQUIRED ... long from short
   virtrdf:qmfSqlvalOfShortTmpl " ^{tree}^";		# STRING REQUIRED ... SQL value from short
-  virtrdf:qmfDatatypeOfShortTmpl " UNAME'http://www.w3.org/2001/XMLSchema#datetime'";	# STRING REQUIRED ... datatype IRI STRING from short
+  virtrdf:qmfDatatypeOfShortTmpl " UNAME'http://www.w3.org/2001/XMLSchema#dateTime'";	# STRING REQUIRED ... datatype IRI STRING from short
   virtrdf:qmfLanguageOfShortTmpl " NULL";					# STRING REQUIRED ... language ID STRING from short
   virtrdf:qmfBoolOfShortTmpl " (case (^{tree}^) when 0 then 0 else 1 end)";	# STRING REQUIRED ... boolean value from short
   virtrdf:qmfIidOfShortTmpl " NULL";
   virtrdf:qmfUriOfShortTmpl " NULL";						# STRING REQUIRED ... URI STRING from short
   virtrdf:qmfStrsqlvalOfShortTmpl " cast (^{tree}^ as varchar)";		# STRING REQUIRED ... SQL representation of the STRING value of short
 # Templates of expressions that make short values from other representations
-  virtrdf:qmfShortOfTypedsqlvalTmpl " (case (^{datatype-of-tree}^) when 'http://www.w3.org/2001/XMLSchema#datetime' then ^{sqlval-of-tree}^ else NULL end)";	# STRING REQUIRED ... makes short by SQL value with specified type and/or language
+  virtrdf:qmfShortOfTypedsqlvalTmpl " (case (^{datatype-of-tree}^) when 'http://www.w3.org/2001/XMLSchema#dateTime' then ^{sqlval-of-tree}^ else NULL end)";	# STRING REQUIRED ... makes short by SQL value with specified type and/or language
   virtrdf:qmfShortOfSqlvalTmpl " ^{sqlval-of-tree}^";				# STRING REQUIRED ... makes short by sqlvalue with no language and a datatype specified by SQL type
   virtrdf:qmfShortOfLongTmpl " ^{tree}^";					# STRING REQUIRED ... makes short by long
   virtrdf:qmfShortOfUriTmpl " NULL";						# STRING REQUIRED ... makes short by uri
@@ -1853,8 +1853,8 @@ rdfdf:sql-datetime
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_TYPED, virtrdf:SPART_VARR_NOT_NULL, virtrdf:SPART_VARR_LONG_EQ_SQL;
-  virtrdf:qmfValRange-rvrDatatype "http://www.w3.org/2001/XMLSchema#datetime";	# STRING OPTIONAL Datatype of stored values, if fixed
-#  virtrdf:qmfValRange-rvrLanguage "NULL";					# STRING OPTIONAL Language, if fixed
+  virtrdf:qmfValRange-rvrDatatype "http://www.w3.org/2001/XMLSchema#dateTime";	# ANY_URI OPTIONAL Datatype of stored values, if fixed
+#  virtrdf:qmfValRange-rvrLanguage "NULL";					# ANY_URI OPTIONAL Language, if fixed
 #  virtrdf:qmfFixedValue "";							# ANY OPTIONAL Value of stored values, if fixed
   virtrdf:qmfUriIdOffset 0;							# INTEGER OPTIONAL The value that should be added to locally stored ref id in order to get portable ref id
   virtrdf:qmfSuperFormats rdfdf:sql-datetime-SuperFormats
@@ -1872,7 +1872,7 @@ rdfdf:sql-datetime-nullable
   virtrdf:inheritFrom rdfdf:sql-datetime;
   virtrdf:noInherit virtrdf:qmfValRange-rvrRestrictions;
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
-    virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_LONG_EQ_SQL;
+    virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_TYPED, virtrdf:SPART_VARR_LONG_EQ_SQL;
   virtrdf:qmfName "sql-datetime-nullable";
   virtrdf:qmfSuperFormats rdfdf:sql-datetime-nullable-SuperFormats
 .
@@ -1967,8 +1967,8 @@ rdfdf:multipart-uri
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_REF, virtrdf:SPART_VARR_IS_IRI, virtrdf:SPART_VARR_NOT_NULL;
-#  virtrdf:qmfValRange-rvrDatatype "";						# STRING OPTIONAL Datatype of stored values, if fixed
-#  virtrdf:qmfValRange-rvrLanguage "x-any";					# STRING OPTIONAL Language, if fixed
+#  virtrdf:qmfValRange-rvrDatatype "";						# ANY_URI OPTIONAL Datatype of stored values, if fixed
+#  virtrdf:qmfValRange-rvrLanguage "x-any";					# ANY_URI OPTIONAL Language, if fixed
 #  virtrdf:qmfFixedValue "";							# ANY OPTIONAL Value of stored values, if fixed
   virtrdf:qmfUriIdOffset 0;							# INTEGER OPTIONAL The value that should be added to locally stored ref id in order to get portable ref id
   virtrdf:qmfSuperFormats rdfdf:multipart-uri-SuperFormats
@@ -2016,7 +2016,7 @@ rdfdf:multipart-literal
 # Templates that convert short value into other types (can be applied to both field and not field expression)
   virtrdf:qmfLongOfShortTmpl " __spf (^{custom-string-1}^, ^{comma-list-begin}^ ^{tree-N}^^{end}^)";	# STRING REQUIRED ... long from short
   virtrdf:qmfSqlvalOfShortTmpl " __spf (^{custom-string-1}^, ^{comma-list-begin}^ ^{tree-N}^^{end}^)";		# STRING REQUIRED ... SQL value from short
-  virtrdf:qmfDatatypeOfShortTmpl " UNAME'http://www.w3.org/2001/XMLSchema#anyURI'";# STRING REQUIRED ... datatype IRI STRING from short
+  virtrdf:qmfDatatypeOfShortTmpl " NULL";					# STRING REQUIRED ... datatype IRI STRING from short
   virtrdf:qmfLanguageOfShortTmpl " NULL";					# STRING REQUIRED ... language ID STRING from short
   virtrdf:qmfBoolOfShortTmpl " NULL";						# STRING REQUIRED ... boolean value from short
   virtrdf:qmfIidOfShortTmpl " __i2id (__spfi (^{custom-string-1}^, ^{comma-list-begin}^ ^{tree-N}^^{end}^))";
@@ -2041,8 +2041,8 @@ rdfdf:multipart-literal
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_SPRINTFF, virtrdf:SPART_VARR_NOT_NULL;
-#  virtrdf:qmfValRange-rvrDatatype "";						# STRING OPTIONAL Datatype of stored values, if fixed
-#  virtrdf:qmfValRange-rvrLanguage "x-any";					# STRING OPTIONAL Language, if fixed
+#  virtrdf:qmfValRange-rvrDatatype "";						# ANY_URI OPTIONAL Datatype of stored values, if fixed
+#  virtrdf:qmfValRange-rvrLanguage "x-any";					# ANY_URI OPTIONAL Language, if fixed
 #  virtrdf:qmfFixedValue "";							# ANY OPTIONAL Value of stored values, if fixed
   virtrdf:qmfUriIdOffset 0;							# INTEGER OPTIONAL The value that should be added to locally stored ref id in order to get portable ref id
   virtrdf:qmfSuperFormats rdfdf:multipart-literal-SuperFormats
@@ -2113,8 +2113,8 @@ rdfdf:multipart-uri-fn-nullable
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_REF, virtrdf:SPART_VARR_IS_IRI, virtrdf:SPART_VARR_IRI_CALC;
-#  virtrdf:qmfValRange-rvrDatatype "";						# STRING OPTIONAL Datatype of stored values, if fixed
-#  virtrdf:qmfValRange-rvrLanguage "x-any";					# STRING OPTIONAL Language, if fixed
+#  virtrdf:qmfValRange-rvrDatatype "";						# ANY_URI OPTIONAL Datatype of stored values, if fixed
+#  virtrdf:qmfValRange-rvrLanguage "x-any";					# ANY_URI OPTIONAL Language, if fixed
 #  virtrdf:qmfFixedValue "";							# ANY OPTIONAL Value of stored values, if fixed
   virtrdf:qmfUriIdOffset 0;							# INTEGER OPTIONAL The value that should be added to locally stored ref id in order to get portable ref id
   virtrdf:qmfSuperFormats rdfdf:multipart-uri-fn-nullable-SuperFormats
@@ -2161,8 +2161,8 @@ rdfdf:multipart-literal-fn-nullable
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_LIT;
-#  virtrdf:qmfValRange-rvrDatatype "";						# STRING OPTIONAL Datatype of stored values, if fixed
-#  virtrdf:qmfValRange-rvrLanguage "x-any";					# STRING OPTIONAL Language, if fixed
+#  virtrdf:qmfValRange-rvrDatatype "";						# ANY_URI OPTIONAL Datatype of stored values, if fixed
+#  virtrdf:qmfValRange-rvrLanguage "x-any";					# ANY_URI OPTIONAL Language, if fixed
 #  virtrdf:qmfFixedValue "";							# ANY OPTIONAL Value of stored values, if fixed
   virtrdf:qmfUriIdOffset 0;							# INTEGER OPTIONAL The value that should be added to locally stored ref id in order to get portable ref id
   virtrdf:qmfSuperFormats rdfdf:multipart-literal-fn-nullable-SuperFormats
@@ -2210,8 +2210,8 @@ rdfdf:zeropart-uri
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_REF, virtrdf:SPART_VARR_IS_IRI, virtrdf:SPART_VARR_NOT_NULL;
-#  virtrdf:qmfValRange-rvrDatatype "";						# STRING OPTIONAL Datatype of stored values, if fixed
-#  virtrdf:qmfValRange-rvrLanguage "x-any";					# STRING OPTIONAL Language, if fixed
+#  virtrdf:qmfValRange-rvrDatatype "";						# ANY_URI OPTIONAL Datatype of stored values, if fixed
+#  virtrdf:qmfValRange-rvrLanguage "x-any";					# ANY_URI OPTIONAL Language, if fixed
 #  virtrdf:qmfFixedValue "";							# ANY OPTIONAL Value of stored values, if fixed
   virtrdf:qmfUriIdOffset 0;							# INTEGER OPTIONAL The value that should be added to locally stored ref id in order to get portable ref id
   virtrdf:qmfSuperFormats rdfdf:zeropart-uri-SuperFormats
@@ -2259,7 +2259,7 @@ rdfdf:zeropart-literal
 # Templates that convert short value into other types (can be applied to both field and not field expression)
   virtrdf:qmfLongOfShortTmpl " __spf (^{custom-string-1}^)";	# STRING REQUIRED ... long from short
   virtrdf:qmfSqlvalOfShortTmpl " __spf (^{custom-string-1}^)";		# STRING REQUIRED ... SQL value from short
-  virtrdf:qmfDatatypeOfShortTmpl " UNAME'http://www.w3.org/2001/XMLSchema#anyURI'";	# STRING REQUIRED ... datatype IRI STRING from short
+  virtrdf:qmfDatatypeOfShortTmpl " NULL";					# STRING REQUIRED ... datatype IRI STRING from short
   virtrdf:qmfLanguageOfShortTmpl " NULL";					# STRING REQUIRED ... language ID STRING from short
   virtrdf:qmfBoolOfShortTmpl " NULL";						# STRING REQUIRED ... boolean value from short
   virtrdf:qmfIidOfShortTmpl " __i2id (__spfi (^{custom-string-1}^))";
@@ -2281,8 +2281,8 @@ rdfdf:zeropart-literal
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_NOT_NULL;
-#  virtrdf:qmfValRange-rvrDatatype "";						# STRING OPTIONAL Datatype of stored values, if fixed
-#  virtrdf:qmfValRange-rvrLanguage "x-any";					# STRING OPTIONAL Language, if fixed
+#  virtrdf:qmfValRange-rvrDatatype "";						# ANY_URI OPTIONAL Datatype of stored values, if fixed
+#  virtrdf:qmfValRange-rvrLanguage "x-any";					# ANY_URI OPTIONAL Language, if fixed
 #  virtrdf:qmfFixedValue "";							# ANY OPTIONAL Value of stored values, if fixed
   virtrdf:qmfUriIdOffset 0;							# INTEGER OPTIONAL The value that should be added to locally stored ref id in order to get portable ref id
   virtrdf:qmfSuperFormats rdfdf:zeropart-literal-SuperFormats
@@ -2352,8 +2352,8 @@ rdfdf:zeropart-uri-fn-nullable
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_REF, virtrdf:SPART_VARR_IS_IRI, virtrdf:SPART_VARR_IRI_CALC;
-#  virtrdf:qmfValRange-rvrDatatype "";						# STRING OPTIONAL Datatype of stored values, if fixed
-#  virtrdf:qmfValRange-rvrLanguage "x-any";					# STRING OPTIONAL Language, if fixed
+#  virtrdf:qmfValRange-rvrDatatype "";						# ANY_URI OPTIONAL Datatype of stored values, if fixed
+#  virtrdf:qmfValRange-rvrLanguage "x-any";					# ANY_URI OPTIONAL Language, if fixed
 #  virtrdf:qmfFixedValue "";							# ANY OPTIONAL Value of stored values, if fixed
   virtrdf:qmfUriIdOffset 0;							# INTEGER OPTIONAL The value that should be added to locally stored ref id in order to get portable ref id
   virtrdf:qmfSuperFormats rdfdf:zeropart-uri-fn-nullable-SuperFormats
@@ -2400,8 +2400,8 @@ rdfdf:zeropart-literal-fn-nullable
   virtrdf:qmfOkForAnySqlvalue 0;							# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions							# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_LIT;
-#  virtrdf:qmfValRange-rvrDatatype "";							# STRING OPTIONAL Datatype of stored values, if fixed
-#  virtrdf:qmfValRange-rvrLanguage "x-any";						# STRING OPTIONAL Language, if fixed
+#  virtrdf:qmfValRange-rvrDatatype "";							# ANY_URI OPTIONAL Datatype of stored values, if fixed
+#  virtrdf:qmfValRange-rvrLanguage "x-any";						# ANY_URI OPTIONAL Language, if fixed
 #  virtrdf:qmfFixedValue "";								# ANY OPTIONAL Value of stored values, if fixed
   virtrdf:qmfUriIdOffset 0;								# INTEGER OPTIONAL The value that should be added to locally stored ref id in order to get portable ref id
   virtrdf:qmfSuperFormats rdfdf:zeropart-literal-fn-nullable-SuperFormats
@@ -2449,8 +2449,8 @@ rdfdf:sql-varchar-uri-fn
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_NOT_NULL, virtrdf:SPART_VARR_IS_REF, virtrdf:SPART_VARR_IS_IRI, virtrdf:SPART_VARR_IRI_CALC;
-  virtrdf:qmfValRange-rvrDatatype "http://www.w3.org/2001/XMLSchema#anyURI";	# STRING OPTIONAL Datatype of stored values, if fixed
-#  virtrdf:qmfValRange-rvrLanguage "NULL";					# STRING OPTIONAL Language, if fixed
+#  virtrdf:qmfValRange-rvrDatatype "";						# ANY_URI OPTIONAL Datatype of stored values, if fixed
+#  virtrdf:qmfValRange-rvrLanguage "";						# ANY_URI OPTIONAL Language, if fixed
 #  virtrdf:qmfFixedValue "";							# ANY OPTIONAL Value of stored values, if fixed
   virtrdf:qmfCustomString1 "DB.DBA.RDF_DF_VARCHAR_URI";
   virtrdf:qmfUriIdOffset 0;							# INTEGER OPTIONAL The value that should be added to locally stored ref id in order to get portable ref id
@@ -2753,8 +2753,8 @@ rdfdf:sql-varchar-literal-fn
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_NOT_NULL;
-  virtrdf:qmfValRange-rvrDatatype "http://www.w3.org/2001/XMLSchema#any";	# STRING OPTIONAL Datatype of stored values, if fixed
-#  virtrdf:qmfValRange-rvrLanguage "NULL";					# STRING OPTIONAL Language, if fixed
+#  virtrdf:qmfValRange-rvrDatatype "http://www.w3.org/2001/XMLSchema#any";	# ANY_URI OPTIONAL Datatype of stored values, if fixed
+#  virtrdf:qmfValRange-rvrLanguage "NULL";					# ANY_URI OPTIONAL Language, if fixed
 #  virtrdf:qmfFixedValue "";							# ANY OPTIONAL Value of stored values, if fixed
   virtrdf:qmfCustomString1 "DB.DBA.RDF_DF_VARCHAR_LITERAL";
   virtrdf:qmfUriIdOffset 0;							# INTEGER OPTIONAL The value that should be added to locally stored ref id in order to get portable ref id
@@ -3213,8 +3213,8 @@ rdfdf:sinv-iid
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_REF, virtrdf:SPART_VARR_NOT_NULL;
-#  virtrdf:qmfValRange-rvrDatatype "";						# STRING OPTIONAL Datatype of stored values, if fixed
-#  virtrdf:qmfValRange-rvrLanguage "x-any";					# STRING OPTIONAL Language, if fixed
+#  virtrdf:qmfValRange-rvrDatatype "";						# ANY_URI OPTIONAL Datatype of stored values, if fixed
+#  virtrdf:qmfValRange-rvrLanguage "x-any";					# ANY_URI OPTIONAL Language, if fixed
 #  virtrdf:qmfFixedValue "";							# ANY OPTIONAL Value of stored values, if fixed
   virtrdf:qmfUriIdOffset 0;							# INTEGER OPTIONAL The value that should be added to locally stored ref id in order to get portable ref id
   virtrdf:qmfSuperFormats rdfdf:sinv-iid-SuperFormats
@@ -3323,8 +3323,8 @@ rdfdf:sinv
   virtrdf:qmfOkForAnySqlvalue 1;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_NOT_NULL;
-#  virtrdf:qmfValRange-rvrDatatype "";						# STRING OPTIONAL Datatype of stored values, if fixed
-#  virtrdf:qmfValRange-rvrLanguage "x-any";					# STRING OPTIONAL Language, if fixed
+#  virtrdf:qmfValRange-rvrDatatype "";						# ANY_URI OPTIONAL Datatype of stored values, if fixed
+#  virtrdf:qmfValRange-rvrLanguage "x-any";					# ANY_URI OPTIONAL Language, if fixed
 #  virtrdf:qmfFixedValue "";							# ANY OPTIONAL Value of stored values, if fixed
   virtrdf:qmfUriIdOffset 0;							# INTEGER OPTIONAL The value that should be added to locally stored ref id in order to get portable ref id
   virtrdf:qmfSuperFormats rdfdf:sinv-SuperFormats
