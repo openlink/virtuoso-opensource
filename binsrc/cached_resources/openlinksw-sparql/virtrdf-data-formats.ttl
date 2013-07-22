@@ -47,7 +47,7 @@ virtrdf:QuadStorage virtrdf:isGcResistantType "2" .
 
 # Don't forget to change version, both here and in DB.DBA.SPARQL_RELOAD_QM_GRAPH, to force reload.
 <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-  virtrdf:version '2013-05-07 0002v6g' ;
+  virtrdf:version '2013-06-10 0001v6g' ;
   virtrdf:item
     rdfdf:default-iid ,				rdfdf:default-iid-nullable ,
     rdfdf:default-iid-nonblank ,		rdfdf:default-iid-nonblank-nullable ,
@@ -55,19 +55,23 @@ virtrdf:QuadStorage virtrdf:isGcResistantType "2" .
     rdfdf:sql-varchar ,				rdfdf:sql-varchar-nullable ,
     rdfdf:sql-varchar-dt ,			rdfdf:sql-varchar-dt-nullable ,
     rdfdf:sql-varchar-lang ,			rdfdf:sql-varchar-lang-nullable ,
+    rdfdf:sql-varchar-fixedlang-x-any ,		rdfdf:sql-varchar-fixedlang-x-any-nullable ,
     rdfdf:sql-varchar-uri ,			rdfdf:sql-varchar-uri-nullable ,
     rdfdf:sql-varchar-literal ,			rdfdf:sql-varchar-literal-nullable ,
     rdfdf:sql-longvarchar ,			rdfdf:sql-longvarchar-nullable ,
     rdfdf:sql-longvarchar-dt ,			rdfdf:sql-longvarchar-dt-nullable ,
     rdfdf:sql-longvarchar-lang ,		rdfdf:sql-longvarchar-lang-nullable ,
+    rdfdf:sql-longvarchar-fixedlang-x-any ,	rdfdf:sql-longvarchar-fixedlang-x-any-nullable ,
     rdfdf:sql-nvarchar ,			rdfdf:sql-nvarchar-nullable ,
     rdfdf:sql-nvarchar-dt ,			rdfdf:sql-nvarchar-dt-nullable ,
     rdfdf:sql-nvarchar-lang ,			rdfdf:sql-nvarchar-lang-nullable ,
+    rdfdf:sql-nvarchar-fixedlang-x-any ,		rdfdf:sql-nvarchar-fixedlang-x-any-nullable ,
     rdfdf:sql-nvarchar-uri ,			rdfdf:sql-nvarchar-uri-nullable ,
     rdfdf:sql-nvarchar-literal ,			rdfdf:sql-nvarchar-literal-nullable ,
     rdfdf:sql-longnvarchar ,			rdfdf:sql-longnvarchar-nullable ,
     rdfdf:sql-longnvarchar-dt ,			rdfdf:sql-longnvarchar-dt-nullable ,
     rdfdf:sql-longnvarchar-lang ,		rdfdf:sql-longnvarchar-lang-nullable ,
+    rdfdf:sql-longnvarchar-fixedlang-x-any ,	rdfdf:sql-longnvarchar-fixedlang-x-any-nullable ,
     rdfdf:sql-longvarbinary ,			rdfdf:sql-longvarbinary-nullable ,
     rdfdf:sql-integer ,				rdfdf:sql-integer-nullable ,
     rdfdf:sql-integer-uri ,			rdfdf:sql-integer-uri-nullable ,
@@ -132,13 +136,13 @@ rdfdf:default-iid
   virtrdf:qmf01blankOfShortTmpl " is_bnode_iri_id (^{tree}^)";			# STRING REQUIRED ... whether the short is blank node ref, returns 0 or 1
 # Templates that convert short value into other types (can be applied to both field and not field expression)
   virtrdf:qmfLongOfShortTmpl " ^{tree}^ ";					# STRING REQUIRED ... long from short
-  virtrdf:qmfSqlvalOfShortTmpl " __id2i (^{tree}^)";				# STRING REQUIRED ... SQL value from short
+  virtrdf:qmfSqlvalOfShortTmpl " __id2in (^{tree}^)";				# STRING REQUIRED ... SQL value from short
   virtrdf:qmfDatatypeOfShortTmpl " UNAME'http://www.w3.org/2001/XMLSchema#anyURI'";	# STRING REQUIRED ... datatype IRI STRING from short
   virtrdf:qmfLanguageOfShortTmpl " NULL";					# STRING REQUIRED ... language ID STRING from short
   virtrdf:qmfBoolOfShortTmpl " NULL";						# STRING REQUIRED ... boolean value from short
   virtrdf:qmfIidOfShortTmpl " ^{tree}^";
-  virtrdf:qmfUriOfShortTmpl " __id2i (^{tree}^)";				# STRING REQUIRED ... URI STRING from short
-  virtrdf:qmfStrsqlvalOfShortTmpl " __bft (__id2i (^{tree}^), 2)";		# STRING REQUIRED ... SQL representation of the STRING value of short
+  virtrdf:qmfUriOfShortTmpl " __id2in (^{tree}^)";				# STRING REQUIRED ... URI STRING from short
+  virtrdf:qmfStrsqlvalOfShortTmpl " __bft (__id2in (^{tree}^), 2)";		# STRING REQUIRED ... SQL representation of the STRING value of short
 # Templates of expressions that make short values from other representations
   virtrdf:qmfShortOfTypedsqlvalTmpl " NULL";					# STRING REQUIRED ... makes short by SQL value with specified type and/or language
   virtrdf:qmfShortOfSqlvalTmpl " __i2idn (^{sqlval-of-tree}^)";			# STRING REQUIRED ... makes short by sqlvalue with no language and a datatype specified by SQL type
@@ -312,7 +316,7 @@ rdfdf:sql-varchar
 # Templates that convert short value into other types (can be applied to both field and not field expression)
   virtrdf:qmfLongOfShortTmpl " DB.DBA.RDF_MAKE_LONG_OF_SQLVAL (^{tree}^)";	# STRING REQUIRED ... long from short
   virtrdf:qmfSqlvalOfShortTmpl " ^{tree}^";		# STRING REQUIRED ... SQL value from short
-  virtrdf:qmfDatatypeOfShortTmpl " UNAME'http://www.w3.org/2001/XMLSchema#string'";# STRING REQUIRED ... datatype IRI STRING from short
+  virtrdf:qmfDatatypeOfShortTmpl " NULL";					# STRING REQUIRED ... datatype IRI STRING from short
   virtrdf:qmfLanguageOfShortTmpl " NULL";					# STRING REQUIRED ... language ID STRING from short
   virtrdf:qmfBoolOfShortTmpl " (case (^{tree}^) when '' then 0 else 1 end)";	# STRING REQUIRED ... boolean value from short
   virtrdf:qmfIidOfShortTmpl " __i2id (^{tree}^)";
@@ -336,9 +340,9 @@ rdfdf:sql-varchar
   virtrdf:qmfColumnCount 1;							# Number of columns of the oroginal data (usually 1, zero if variable and not yet set)
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
-    virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_TYPED, virtrdf:SPART_VARR_NOT_NULL;
-  virtrdf:qmfValRange-rvrDatatype "http://www.w3.org/2001/XMLSchema#string";	# STRING OPTIONAL Datatype of stored values, if fixed
-#  virtrdf:qmfValRange-rvrLanguage "NULL";					# STRING OPTIONAL Language, if fixed
+    virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_NOT_NULL;
+#  virtrdf:qmfValRange-rvrDatatype "";						# ANY_URI OPTIONAL Datatype of stored values, if fixed
+#  virtrdf:qmfValRange-rvrLanguage "";						# ANY_URI OPTIONAL Language, if fixed
 #  virtrdf:qmfFixedValue "";							# ANY OPTIONAL Value of stored values, if fixed
   virtrdf:qmfUriIdOffset 0;							# INTEGER OPTIONAL The value that should be added to locally stored ref id in order to get portable ref id
   virtrdf:qmfSuperFormats rdfdf:sql-varchar-SuperFormats
@@ -402,8 +406,8 @@ rdfdf:sql-varchar-dt
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_NOT_NULL;
-#  virtrdf:qmfValRange-rvrDatatype "http://www.w3.org/2001/XMLSchema#string";	# STRING OPTIONAL Datatype of stored values, if fixed
-#  virtrdf:qmfValRange-rvrLanguage "NULL";					# STRING OPTIONAL Language, if fixed
+#  virtrdf:qmfValRange-rvrDatatype "";						# ANY_URI OPTIONAL Datatype of stored values, if fixed
+#  virtrdf:qmfValRange-rvrLanguage "";						# ANY_URI OPTIONAL Language, if fixed
 #  virtrdf:qmfFixedValue "";							# ANY OPTIONAL Value of stored values, if fixed
   virtrdf:qmfUriIdOffset 0;							# INTEGER OPTIONAL The value that should be added to locally stored ref id in order to get portable ref id
   virtrdf:qmfSuperFormats rdfdf:sql-varchar-dt-SuperFormats
@@ -470,8 +474,8 @@ rdfdf:sql-varchar-lang
   virtrdf:qmfOkForAnySqlvalue 0;						# BOOLEAN REQUIRED Nonzero if the field format can store any possible SQL value (even if the field itself can not)
   virtrdf:qmfValRange-rvrRestrictions						# BITMASK OPTIONAL Natural restrictions on values stored at the field
     virtrdf:SPART_VARR_IS_LIT, virtrdf:SPART_VARR_NOT_NULL;
-#  virtrdf:qmfValRange-rvrDatatype "http://www.w3.org/2001/XMLSchema#string";	# STRING OPTIONAL Datatype of stored values, if fixed
-#  virtrdf:qmfValRange-rvrLanguage "NULL";					# STRING OPTIONAL Language, if fixed
+#  virtrdf:qmfValRange-rvrDatatype "";						# ANY_URI OPTIONAL Datatype of stored values, if fixed
+#  virtrdf:qmfValRange-rvrLanguage "";						# ANY_URI OPTIONAL Language, if fixed
 #  virtrdf:qmfFixedValue "";							# ANY OPTIONAL Value of stored values, if fixed
   virtrdf:qmfUriIdOffset 0;							# INTEGER OPTIONAL The value that should be added to locally stored ref id in order to get portable ref id
   virtrdf:qmfSuperFormats rdfdf:sql-varchar-lang-SuperFormats
