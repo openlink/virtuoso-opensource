@@ -1454,12 +1454,12 @@
                     else if (_action = 'select')
                     {
                       _path := get_keyword ('_path', params, '');
-                      _tmp := WEBDAV.DBA.read_permission (_path);
                       if (self.mode = 'webdav')
                       {
-                        self.webdav_redirect (_path, _tmp);
+                        self.webdav_redirect (_path, '');
                         			      return;
                       }
+                      _tmp := WEBDAV.DBA.read_permission (_path);
                       if (not _tmp)
                       {
                         self.vc_error_message := 'You have not rights to read this folder/file!';
@@ -3246,7 +3246,7 @@
                       -- properties
                       if (self.fieldRights ('properties'))
                       {
-                        properties := WEBDAV.DBA.DAV_PROP_LIST (dav_fullPath, '%', vector ('redirectref', 'virt:%', 'http://www.openlinksw.com/schemas/%', 'http://local.virt/DAV-RDF%'));
+                        properties := WEBDAV.DBA.DAV_PROP_LIST (dav_fullPath, '%', vector ('redirectref', 'virt:%', 'DAV:%', 'http://www.openlinksw.com/schemas/%', 'http://local.virt/DAV-RDF%'));
                         for (N := 0; N < length (properties); N := N + 1)
                         {
                           WEBDAV.DBA.DAV_PROP_REMOVE (dav_fullPath, properties[N][0]);
