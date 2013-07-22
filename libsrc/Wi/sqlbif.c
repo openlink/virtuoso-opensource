@@ -13399,6 +13399,12 @@ bif_atomic (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return 0;
 }
 
+caddr_t
+bif_is_atomic (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return box_num (server_lock.sl_count);
+}
+
 
 caddr_t
 bif_trx_disk_log_length (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -15207,6 +15213,7 @@ sql_bif_init (void)
   bif_define_typed ("set_row_count", bif_set_row_count, &bt_integer);
   bif_define ("__assert_found", bif_assert_found);
   bif_define ("__atomic", bif_atomic);
+  bif_define ("is_atomic", bif_is_atomic);
   bif_define_ex ("\x01__reset_temp" /* was "__reset_temp" */, bif_clear_temp, BMD_MAX_ARGCOUNT, 0, BMD_IS_DBA_ONLY, BMD_DONE);
   bif_define ("__trx_disk_log_length", bif_trx_disk_log_length);
   bif_define ("checkpoint_interval", bif_checkpoint_interval);
