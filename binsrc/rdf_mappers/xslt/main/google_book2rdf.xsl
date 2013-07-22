@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2012 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -59,7 +59,7 @@
   xmlns:owl="http://www.w3.org/2002/07/owl#"
   xmlns:bibo="&bibo;"
   xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
-  xmlns:dcterms="http://purl.org/dc/terms"
+  xmlns:dcterms="http://purl.org/dc/terms/"
   version="1.0">
 
 <xsl:output indent="yes" />

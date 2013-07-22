@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -4889,6 +4889,7 @@ qr_recompile_enter (int * is_entered)
     {
       recomp_cli = client_connection_create ();
       recomp_cli->cli_replicate = REPL_NO_LOG;
+      recomp_cli->cli_resultset_max_rows = -1;
       local_start_trx (recomp_cli);
       local_commit_end_trx (recomp_cli);
     }

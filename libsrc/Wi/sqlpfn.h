@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -155,7 +155,8 @@ extern void sqlp_tweak_selection_names (ST * tree);
 ptrlong sqlp_bunion_flag (ST * l, ST * r, long f);
 ST *sqlp_wpar_nonselect (ST *subq);
 ST * sqlp_inline_order_by (ST *tree, ST **oby);
-ST * sqlp_patch_call_if_special (ST * funcall_tree);
+/*! Tweaks special calls and replaces calls of pure functions on costants with results of that functions */
+ST * sqlp_patch_call_if_special_or_optimizable (ST * funcall_tree);
 ptrlong sqlp_cursor_name_to_type (caddr_t name);
 ptrlong sqlp_fetch_type_to_code (caddr_t name);
 
@@ -195,11 +196,10 @@ ST * sqlp_wrapper_sqlxml_assign (ST * tree);
 
 int sqlp_tree_has_fun_ref (ST *tree);
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-extern int scn3_lineno;
-extern int scn3_plineno;
+extern int scn3_lineno;			/*!< Throughout counter of lines in the source text */
+extern int scn3_plineno;		/*!< Physical counter of lines in the source text - used for the PL debugger */
+extern int scn3_lineno_increment;	/*!< This is zero for 'macroexpanded' fragments of SQL text, to prevent from confusing when a long text is inserted instead of a single line */
+extern int scn3_lexdepth;		/*!< Number of opened parenthesis */
 extern int scn3_get_lineno (void);
 extern char *scn3_get_file_name (void);
 extern char *yytext;

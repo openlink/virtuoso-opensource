@@ -26,7 +26,7 @@
 
 ?>
 <head>
-  <base href="http://<?V host ?>/fct/rdfdesc/" />
+  <base href="http<?V case is_https_ctx () when 1 then 's' else '' end ?>://<?V host ?>/fct/rdfdesc/" />
   <title>Settings</title>
 
   <link rel="stylesheet" type="text/css" href="styles/default.css"  charset="utf-8" />
@@ -45,11 +45,11 @@
         <?vsp if (sid is not null) { ?>
           <li><a href="<?= b3s_render_fct_link() ?>">Facets</a></li>
         <?vsp } ?>
-        <li id="mnu_descr"><a href="/describe/?uri=<?U _S ?><?V ses_parms ?>">Description</a></li>
+        <li id="mnu_descr"><a href="/describe/?uri=<?U b3s_u2w (_S) ?><?V ses_parms ?>">Description</a></li>
         <li id="mnu_usage" class="sel">
-          <a href="usage.vsp?g=<?U _S ?><?V ses_parms ?>">Metadata</a>
+          <a href="usage.vsp?g=<?U b3s_u2w (_S) ?><?V ses_parms ?>">Metadata</a>
         </li>
-        <li id="mnu_settings"><a href="settings.vsp?uri=<?V page_resource_uri ?><?V ses_parms ?>">Settings</a></li>
+        <li id="mnu_settings"><a href="settings.vsp?uri=<?V b3s_u2w (page_resource_uri) ?><?V ses_parms ?>">Settings</a></li>
       </ul>
 
     </div> <!-- #HD -->
@@ -71,11 +71,12 @@
     </div>
     <!-- footer -->
     <div id="FT">
+	Faceted Search &amp; Find service v<?vsp http(DB.DBA.VAD_CHECK_VERSION('fct')); ?><br/>
       <div id="ft_t">
       </div> <!-- #ft_t -->
       <div id="ft_b">
 	<?vsp fct_virt_info (); ?><br />
-	Copyright &copy; 2009-2012 OpenLink Software | <a href="/fct/facet_doc.html">About</a>
+	Copyright &copy; 2009-2013 OpenLink Software | <a href="/fct/facet_doc.html">About</a>
       </div> <!-- #ft_b -->
     </div> <!-- #FT -->
   </div> <!-- #PG -->

@@ -155,7 +155,7 @@
 	<A class="m_n" href="http://virtuoso.openlinksw.com/interop/index.htm#">Privacy</A>
       </div>
       <div class="copyright">
-	<xsl:text disable-output-escaping="yes">Copyright &amp;copy; 1998-2012 OpenLink Software</xsl:text>
+	<xsl:text disable-output-escaping="yes">Copyright &amp;copy; 1998-2013 OpenLink Software</xsl:text>
       </div>
     </td>
   </tr>

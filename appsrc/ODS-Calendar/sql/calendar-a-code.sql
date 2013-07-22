@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2012 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -293,7 +293,7 @@ create procedure CAL.WA.access_is_write (
 --
 create procedure CAL.WA.wa_home_link ()
 {
-  return case when registry_get ('wa_home_link') = 0 then '/ods/' else registry_get ('wa_home_link') end;
+  return case when cast (registry_get ('wa_home_link') as varchar) = '0' then '/ods/' else registry_get ('wa_home_link') end;
 }
 ;
 
@@ -301,7 +301,7 @@ create procedure CAL.WA.wa_home_link ()
 --
 create procedure CAL.WA.wa_home_title ()
 {
-  return case when registry_get ('wa_home_title') = 0 then 'ODS Home' else registry_get ('wa_home_title') end;
+  return case when cast (registry_get ('wa_home_title') as varchar) = '0' then 'ODS Home' else registry_get ('wa_home_title') end;
 }
 ;
 
@@ -1229,11 +1229,12 @@ create procedure CAL.WA.dav_home(
   inout account_id integer) returns varchar
 {
   declare name, home any;
-  declare cid integer;
+  declare cid any;
 
-  name := coalesce((select U_NAME from DB.DBA.SYS_USERS where U_ID = account_id), -1);
-  if (isinteger(name))
+  name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = account_id);
+  if (isnull (name))
     return null;
+
   home := CAL.WA.dav_home_create(name);
   if (isinteger(home))
     return null;
@@ -1553,7 +1554,8 @@ create procedure CAL.WA.xml_set(
   declare aEntity any;
 
   {
-    declare exit handler for SQLSTATE '*' {
+    declare exit handler for SQLSTATE '*'
+    {
       pXml := xtree_doc('<?xml version="1.0" encoding="UTF-8"?><settings />');
       goto _skip;
     };
@@ -1585,8 +1587,12 @@ create procedure CAL.WA.xml_get(
 
   declare exit handler for SQLSTATE '*' {return defaultValue;};
 
+  if (isnull (pXml))
+    return defaultValue;
+
   if (not isentity(pXml))
     pXml := xtree_doc(pXml);
+
   value := xpath_eval (sprintf ('string(/settings/entry[@ID = "%s"]/.)', id), pXml);
   if (is_empty_or_null(value))
     return defaultValue;
@@ -1647,7 +1653,7 @@ create procedure CAL.WA.normalize_space(
 -------------------------------------------------------------------------------
 --
 create procedure CAL.WA.utfClear(
-  inout S varchar)
+  in S varchar)
 {
   declare N integer;
   declare retValue varchar;
@@ -1667,7 +1673,7 @@ create procedure CAL.WA.utfClear(
 -------------------------------------------------------------------------------
 --
 create procedure CAL.WA.utf2wide (
-  inout S any)
+  in S any)
 {
   declare retValue any;
 
@@ -1684,7 +1690,7 @@ create procedure CAL.WA.utf2wide (
 -------------------------------------------------------------------------------
 --
 create procedure CAL.WA.wide2utf (
-  inout S any)
+  in S any)
 {
   declare retValue any;
 
@@ -2436,7 +2442,7 @@ create procedure CAL.WA.dt_deformat (
 --
 create procedure CAL.WA.dt_deformat_tmp (
   in S varchar,
-  inout N varchar)
+  inout N integer)
 {
   declare V any;
 
@@ -2502,7 +2508,7 @@ create procedure CAL.WA.dt_formatTemplate (
 -----------------------------------------------------------------------------
 --
 create procedure CAL.WA.dt_timeDecode(
-  inout pTime time,
+  inout pTime datetime,
   inout pHour integer,
   inout pMinute integer)
 {
@@ -2525,7 +2531,7 @@ create procedure CAL.WA.dt_timeEncode(
 -----------------------------------------------------------------------------
 --
 create procedure CAL.WA.dt_timestring (
-  in pTime integer,
+  in pTime datetime,
   in pFormat varchar := 'e')
 {
   declare exit handler for SQLSTATE '*' {
@@ -2591,7 +2597,7 @@ create procedure CAL.WA.dt_stringtime (
 -----------------------------------------------------------------------------------------
 --
 create procedure CAL.WA.dt_timeFloor (
-  in pTime datetime,
+  in pTime time,
   in pRound integer := 0)
 {
   declare h, m integer;
@@ -3382,7 +3388,7 @@ create procedure CAL.WA.test_clear (
 --
 create procedure CAL.WA.test (
   in value any,
-  in params any := null)
+  in params any := null) returns any
 {
   declare valueType, valueClass, valueName, valueMessage, tmp any;
 
@@ -3648,7 +3654,7 @@ create procedure CAL.WA.validate_tags (
 -----------------------------------------------------------------------------------------
 --
 create procedure CAL.WA.checkedAttribute (
-  in checkedValue integer,
+  in checkedValue any,
   in compareValue any := 1)
 {
   if (checkedValue = compareValue)
@@ -4016,7 +4022,7 @@ create procedure CAL.WA.settings_set (
 --
 -----------------------------------------------------------------------------------------
 create procedure CAL.WA.event_sioc_iri (
-  in domain_id varchar,
+  in domain_id integer,
   in event_id integer)
 {
   return CAL.WA.iri_fix (SIOC..calendar_event_iri (domain_id, event_id));
@@ -4183,9 +4189,9 @@ create procedure CAL.WA.event_update (
         (coalesce (eEventStart   , now ()) = coalesce (_eEventStart   , now ())) and
         (coalesce (eEventEnd     , now ()) = coalesce (_eEventEnd     , now ())) and
         (coalesce (eRepeat       , ''    ) = coalesce (_eRepeat       , ''    )) and
-        (coalesce (eRepeatParam1 , ''    ) = coalesce (_eRepeatParam1 , ''    )) and
-        (coalesce (eRepeatParam2 , ''    ) = coalesce (_eRepeatParam2 , ''    )) and
-        (coalesce (eRepeatParam3 , ''    ) = coalesce (_eRepeatParam3 , ''    )) and
+        (coalesce (eRepeatParam1 , -1    ) = coalesce (_eRepeatParam1 , -1    )) and
+        (coalesce (eRepeatParam2 , -1    ) = coalesce (_eRepeatParam2 , -1    )) and
+        (coalesce (eRepeatParam3 , -1    ) = coalesce (_eRepeatParam3 , -1    )) and
         (coalesce (eRepeatUntil  , now ()) = coalesce (_eRepeatUntil  , now ())) and
         (coalesce (eReminder     , -1    ) = coalesce (_eReminder     , -1    )) and
         (coalesce (notes         , ''    ) = coalesce (_notes         , ''    ))
@@ -5175,7 +5181,8 @@ create procedure CAL.WA.task_update (
         (coalesce (notes,       '')     = coalesce (_notes,       ''))
        )
       goto _end;
-
+      if (status is null)
+	status := _status;
     update CAL.WA.EVENTS
        set E_SUBJECT = subject,
            E_DESCRIPTION = description,
@@ -5636,14 +5643,14 @@ create procedure CAL.WA.vcal_str2status (
   in xmlPath varchar)
 {
   declare N integer;
-  declare S, V any;
+  declare S, V, W any;
 
   V := vector ('Not Started', 'In Progress', 'Completed', 'Waiting', 'Deferred');
+  W := vector ('NEEDS-ACTION', 'IN-PROCESS', 'COMPLETED', 'DELEGATED', 'DECLINED');
   S := CAL.WA.vcal_str (xmlItem, xmlPath);
   for (N := 0; N < length (V); N := N + 1)
-    if (lcase (S) = lcase (V[N]))
+    if (lcase (S) = lcase (V[N]) or lcase (S) = lcase (W[N]))
       return V[N];
-
   return null;
 }
 ;
@@ -6251,8 +6258,22 @@ create procedure CAL.WA.export_vcal (
         CAL.WA.export_vcal_line ('DTSTART;VALUE=DATE', CAL.WA.vcal_date2str (CAL.WA.dt_dateClear (CAL.WA.event_gmt2user (E_EVENT_START, tz, daylight))), sStream);
         CAL.WA.export_vcal_line ('DUE;VALUE=DATE', CAL.WA.vcal_date2str (CAL.WA.dt_dateClear (CAL.WA.event_gmt2user (E_EVENT_END, tz, daylight))), sStream);
         CAL.WA.export_vcal_line ('COMPLETED;VALUE=DATE', CAL.WA.vcal_date2str (CAL.WA.dt_dateClear (CAL.WA.event_gmt2user (E_COMPLETED, tz, daylight))), sStream);
+        CAL.WA.export_vcal_line ('PERCENT-COMPLETE', E_COMPLETE, sStream);
         CAL.WA.export_vcal_line ('PRIORITY', E_PRIORITY, sStream);
-        CAL.WA.export_vcal_line ('STATUS', E_STATUS, sStream);
+        declare tmp_value varchar;
+        if (E_STATUS = 'Not Started')
+          tmp_value := 'NEEDS-ACTION';
+        else if (E_STATUS = 'In Progress')
+          tmp_value := 'IN-PROCESS';
+        else if (E_STATUS = 'Completed')
+          tmp_value := 'COMPLETED';
+        else if (E_STATUS = 'Waiting')
+          tmp_value := 'DELEGATED';
+        else if (E_STATUS = 'Deferred')
+          tmp_value := 'DECLINED';
+      	else
+      	  tmp_value := 'NEEDS-ACTION';
+        CAL.WA.export_vcal_line ('STATUS', tmp_value, sStream);
         CAL.WA.export_vcal_attendees (E_ID, E_DOMAIN_ID, E_ATTENDEES, sStream);
         CAL.WA.export_vcal_line ('X-OL-NOTES', E_NOTES, sStream);
         CAL.WA.export_vcal_privacy (E_PRIVACY, sStream);
@@ -6469,7 +6490,7 @@ create procedure CAL.WA.import_vcal (
         if (isnull (priority))
           priority := '3';
           status := CAL.WA.vcal_str2status (xmlEvent, 'STATUS');
-          complete := CAL.WA.vcal_str (xmlEvent, 'COMPLETE');
+          complete := CAL.WA.vcal_str (xmlEvent, 'PERCENT-COMPLETE');
           completed := CAL.WA.vcal_str2date (xmlEvent, 'COMPLETED');
         completed := CAL.WA.dt_join (completed, CAL.WA.dt_timeEncode (12, 0));
           updated := CAL.WA.vcal_str2date (xmlEvent, 'DTSTAMP', tzDict);
@@ -7017,9 +7038,9 @@ create procedure CAL.WA.exchange_exec_internal (
     {
       -- syncml
 
-      declare data any;
+      declare data, _pathID any;
       declare N, _in, _out, _tmp, _rlog_res_id integer;
-      declare _path, _pathID varchar;
+      declare _path varchar;
 
       _in := vector (0, 0);
       _out := vector (0, 0);
@@ -7443,9 +7464,9 @@ create procedure CAL.WA.syncml2entry_internal (
     return;
   };
 
-  declare N, _pathID integer;
+  declare N integer;
   declare _data  varchar;
-  declare IDs any;
+  declare IDs, _pathID any;
 
   if (not xslt_is_sheet ('http://local.virt/sync_out_xsl'))
     DB.DBA.sync_define_xsl ();

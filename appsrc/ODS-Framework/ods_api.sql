@@ -25,6 +25,7 @@
 --
 -- Access to procedures granted to GDATA_ODS SOAP user using /ods_services endpoint.
 
+use DB;
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ods_svc_rule1', 1,
   '/ods_services/search/(.*)', vector ('par'), 1,
@@ -260,8 +261,37 @@ create procedure ODS_CREATE_USER (
   {
     _err:='Given domain is incorrect.';
     goto report_err;
-
   }
+
+  -- Check input parameter: email and username
+  if (_email is null or _email = '' or length (_email) > 40)
+  {
+    _err := sprintf('The E-mail address cannot be empty or longer then 40 chars: %s', _email);
+    goto report_err;
+  }
+  else if (regexp_match ('[^@ ]+@([^\. ]+\.)+[^\. ]+', _email) is null)
+  {
+    _err := sprintf('Invalid E-mail address provided: %s', _email);
+    goto report_err;
+  }
+
+  if (_username is null or length (_username) < 1 or length (_username) > 20)
+  {
+    _err := 'Login name cannot be empty or longer than 20 chars';
+    goto report_err;
+  }
+  else if (regexp_match ('^[A-Za-z0-9_.@-]+\$', _username) is null)
+  {
+    _err := sprintf('The login name contains invalid characters: %s', _username);
+    goto report_err;
+  }
+
+  if (_passwd is null or length (_passwd) < 1 or length (_passwd) > 40)
+  {
+    _err := 'Password cannot be empty or longer then 40 chars';
+    goto report_err;
+  }
+
 
    dom_reg := null;
    whenever not found goto nfd;
@@ -295,7 +325,13 @@ create procedure ODS_CREATE_USER (
    -- check if this login already exists
    if (exists(select 1 from DB.DBA.SYS_USERS where U_NAME = _username))
    {
-     _err := 'Login name already in use';
+    _err := sprintf('The username "%s" is already registered', _username);
+    goto report_err;
+  }
+
+  if (exists (select 1 from DB.DBA.SYS_USERS where U_E_MAIL = _email) and exists (select 1 from DB.DBA.WA_SETTINGS where WS_UNIQUE_MAIL = 1))
+  {
+    _err := sprintf('The e-mail "%s" address is already registered', _email);
      goto report_err;
    }
 

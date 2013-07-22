@@ -6,7 +6,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2012 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -86,7 +86,7 @@
                     $pos = count (./ancestor::*[name () = 'query' or
 		                                name () = 'property' or
 			                        name () = 'property-of']) +
-                           count (./preceding::*[name () = 'query' or
+			   count (./ancestor-or-self::*/preceding-sibling::*/descendant-or-self::*[name () = 'query' or
 			                         name () = 'property' or
 				                 name () = 'property-of'])">
         <xsl:element name="{$name}">
@@ -159,11 +159,11 @@
         </cond-range>
       </xsl:if>
 
-      <xsl:if test="$op = 'cond' and
+      <xsl:if test="$op = 'cond' and 
 	            $pos = count (./ancestor::*[name () = 'query' or
 		                                name () = 'property' or
 			                        name () = 'property-of']) +
-                           count (./preceding::*[name () = 'query' or
+                           count (./ancestor-or-self::*/preceding-sibling::*/descendant-or-self::*[name () = 'query' or
 			                         name () = 'property' or
 				                 name () = 'property-of'])">
         <xsl:choose>

@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -123,6 +123,18 @@ void ssg_sdprin_qname (spar_sqlgen_t *ssg, SPART *tree)
   ssg_putchar ('>');
 }
 
+void
+ssg_replace_expanded_aliases_with_vars (spar_sqlgen_t *ssg, SPART **trees)
+{
+  int ctr;
+  DO_BOX_FAST (SPART *, tree, ctr, trees)
+    {
+      if ((SPAR_ALIAS == SPART_TYPE (tree)) && tree->_.alias.was_expanded)
+        trees[ctr] = spar_make_variable (ssg->ssg_sparp, tree->_.alias.aname);
+    }
+  END_DO_BOX_FAST;
+}
+
 void ssg_sdprint_tree_list (spar_sqlgen_t *ssg, SPART **trees, char delim)
 {
   int ctr;
@@ -135,7 +147,20 @@ void ssg_sdprint_tree_list (spar_sqlgen_t *ssg, SPART **trees, char delim)
           else
             ssg_putchar (delim);
         }
-      ssg_sdprint_tree (ssg, tree);
+      if ((('\0' == delim) || (' ' == delim)))
+        {
+          int need_par;
+          switch (SPART_TYPE (tree))
+            {
+            case SPAR_BUILT_IN_CALL: case SPAR_FUNCALL: case SPAR_ALIAS: case SPAR_VARIABLE: case ORDER_L: need_par = 0; break;
+            default: need_par = 1; break;
+            }
+          if (need_par) { ssg_puts (" ("); ssg->ssg_indent++; }
+          ssg_sdprint_tree (ssg, tree);
+          if (need_par) { ssg_puts (")"); ssg->ssg_indent--; }
+        }
+      else
+        ssg_sdprint_tree (ssg, tree);
     }
   END_DO_BOX_FAST;
 }
@@ -150,7 +175,8 @@ ssg_sd_opname (sparp_t *sparp, ptrlong opname, int is_op)
     case BOP_AND: return "&&";
     case BOP_OR: return "||";
     case BOP_NOT: return "!";
-    case SPAR_BOP_EQ: spar_internal_error (sparp, "special assignment can not be rendered in SPARQL text");
+    case SPAR_BOP_EQ_NONOPT: spar_internal_error (sparp, "special assignment can not be rendered in SPARQL text");
+    case SPAR_BOP_EQNAMES: spar_internal_error (sparp, "equivalence of names can not be rendered in SPARQL text");
     case BOP_EQ: return "=";
     case BOP_NEQ: return "!=";
     case BOP_LT: return "<";
@@ -183,7 +209,9 @@ ssg_sd_opname (sparp_t *sparp, ptrlong opname, int is_op)
     case FILTER_L: return "FILTER";
     /* case FROM_L: return "FROM"; */
     /* case GRAPH_L: return "GRAPH"; */
+    case IFP_L: return "IFP";
     case IN_L: return "IN";
+    case INFERENCE_L: return "INFERENCE";
     case IRI_L: return "IRI";
     case LANG_L: return "LANG";
     case LIKE_L: return "LIKE";
@@ -200,8 +228,29 @@ ssg_sd_opname (sparp_t *sparp, ptrlong opname, int is_op)
     case SCORE_L: return "SCORE";
     case SCORE_LIMIT_L: return "SCORE_LIMIT";
     case SELECT_L: return "SELECT";
+    case SILENT_L: return "SILENT";
     /* case SUBJECT_L: return "SUBJECT"; */
+    case T_CYCLES_ONLY_L: return "T_CYCLES_ONLY";
+    case T_DIRECTION_L: return "T_DIRECTORY";
+    case T_DISTINCT_L: return "T_DISTINCT";
+    case T_END_FLAG_L: return "T_END_FLAG";
+    case T_EXISTS_L: return "T_EXISTS";
+    case T_FINAL_AS_L: return "T_FINAL_AS";
+    case T_IN_L: return "T_IN";
+    case T_MIN_L: return "T_MIN";
+    case T_MAX_L: return "T_MAX";
+    case T_NO_CYCLES_L: return "T_NO_CYCLES";
+    case T_NO_ORDER_L: return "T_NO_ORDER";
+    case T_OUT_L: return "T_OUT";
+    case T_SHORTEST_ONLY_L: return "T_SHORTEST_ONLY";
+    case T_STEP_L: return "T_STEP";
+    case TRANSITIVE_L: return "TRANSITIVE";
     case true_L: return "true";
+    case SAME_AS_L: return "SAME_AS";
+    case SAME_AS_O_L: return "SAME_AS_O";
+    case SAME_AS_P_L: return "SAME_AS_P";
+    case SAME_AS_S_L: return "SAME_AS_S";
+    case SAME_AS_S_O_L: return "SAME_AS_S_O";
     case UNION_L: return "UNION";
     /* case WHERE_L: return "WHERE"; */
 
@@ -245,6 +294,37 @@ ssg_fields_are_equal (SPART *tree1, SPART *tree2)
   return 0;
 }
 
+
+void
+ssg_sdprin_local_varname (spar_sqlgen_t *ssg, ccaddr_t vname)
+{
+  if ('_' == vname[0] && ':' == vname[1])
+    {
+      if (':' == vname[2])
+        {
+          ssg_puts ("?TmpBN");
+          ssg_puts (vname+3);
+          return;
+        }
+      if (ssg->ssg_inside_t_inouts)
+        spar_error (ssg->ssg_sparp, "Bnode %.100s should not appear in T_IN or T_OUT variable lists", vname);
+      ssg_puts ("?OrgnBN");
+      ssg_puts (vname+2);
+      return;
+    }
+  else if (':' == vname[0])
+    {
+      if (ssg->ssg_inside_t_inouts)
+        spar_error (ssg->ssg_sparp, "External parameter ?%.100s should not appear in T_IN or T_OUT variable lists", vname);
+      if (!(SSG_SD_GLOBALS & ssg->ssg_sd_flags))
+        spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (like external parameters) so SPARQL query can not be composed", ssg->ssg_sd_service_naming);
+    }
+  else if ((/* strchr (vname, '_') || --- Bug 14613 */ strchr (vname, '"') || strchr (vname, ':')) && !(SSG_SD_BI & ssg->ssg_sd_flags))
+    spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (say, SQL-like names of variables) so SPARQL query can not be composed", ssg->ssg_sd_service_naming);
+  ssg_putchar ('?');
+  ssg_puts (vname);
+}
+
 void
 ssg_sdprin_varname (spar_sqlgen_t *ssg, ccaddr_t vname)
 {
@@ -256,6 +336,12 @@ ssg_sdprin_varname (spar_sqlgen_t *ssg, ccaddr_t vname)
           char buf[20];
           if (strcmp (vname, param_vname))
             continue;
+          if (ssg->ssg_inside_t_inouts)
+            {
+              t_set_push (&(ssg->ssg_param_t_inouts), (caddr_t)vname);
+              ssg_sdprin_local_varname (ssg, vname);
+              return;
+            }
           if (SSG_SD_GLOBALS & ssg->ssg_sd_flags)
             {
               sprintf (buf, "?:%d", paramctr+1);
@@ -272,21 +358,7 @@ ssg_sdprin_varname (spar_sqlgen_t *ssg, ccaddr_t vname)
         }
       END_DO_BOX_FAST;
     }
-  if (('_' == vname[0]) && ':' == vname[1])
-    {
-      ssg_puts (vname);
-      return;
-    }
-  if (':' == vname[0])
-    {
-      if (!(SSG_SD_GLOBALS & ssg->ssg_sd_flags))
-        spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (like external parameters) so SPARQL query can not be composed", ssg->ssg_sd_service_name);
-    }
-  else if ((/* strchr (vname, '_') || --- Bug 14613 */ strchr (vname, '"') || strchr (vname, ':')) && !(SSG_SD_BI & ssg->ssg_sd_flags))
-    spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (say, SQL-like names of variables) so SPARQL query can not be composed", ssg->ssg_sd_service_name);
-  ssg_putchar ('?');
-  ssg_puts (vname);
-  return;
+  ssg_sdprin_local_varname (ssg, vname);
 }
 
 int ssg_filter_is_default_graph_condition (SPART *filt)
@@ -336,11 +408,8 @@ ssg_sdprint_equiv_restrs (spar_sqlgen_t *ssg, sparp_equiv_t *eq)
             mixed_field_restr |= qmv->qmvRange.rvrRestrictions | qmv->qmvFormat->qmfValRange.rvrRestrictions;
           else
             {
-              caddr_t c = SPARP_FIELD_CONST_OF_QM (qm, v->_.var.tr_idx);
-              if (DV_UNAME == DV_TYPE_OF (c))
-                mixed_field_restr |= (SPART_VARR_NOT_NULL | SPART_VARR_IS_REF | SPART_VARR_IS_IRI);
-              else
-                mixed_field_restr |= SPART_VARR_NOT_NULL | SPART_VARR_IS_LIT;
+              rdf_val_range_t *c_rvr = SPARP_FIELD_CONST_RVR_OF_QM (qm, v->_.var.tr_idx);
+              mixed_field_restr |= c_rvr->rvrRestrictions;
             }
         }
       else
@@ -399,7 +468,7 @@ ssg_sdprint_equiv_restrs (spar_sqlgen_t *ssg, sparp_equiv_t *eq)
   else if ((SPART_VARR_IS_BLANK & eq->e_rvr.rvrRestrictions) && !(SPART_VARR_IS_BLANK & mixed_field_restr))
     builtin_name = "isBLANK";
   else if ((SPART_VARR_IS_REF & eq->e_rvr.rvrRestrictions) && !(SPART_VARR_IS_REF & mixed_field_restr))
-    builtin_name = "!isLITERAL";
+    builtin_name = ((ssg->ssg_sd_flags & (SSG_SD_BI | SSG_SD_VIRTSPECIFIC)) ? "isREF" : "!isLITERAL");
   else if ((SPART_VARR_NOT_NULL & eq->e_rvr.rvrRestrictions) && !(SPART_VARR_NOT_NULL & mixed_field_restr))
     builtin_name = "BOUND";
   if (NULL != builtin_name)
@@ -423,7 +492,59 @@ end_builtin_checks:
     }
 }
 
-void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
+void
+ssg_sdprint_option_list (spar_sqlgen_t *ssg, SPART **options)
+{
+  int inside_option_list = 0;
+  int option_ctr;
+  dk_set_t old_param_t_inouts = ssg->ssg_param_t_inouts;
+  DO_BOX_FAST_STEP2 (ptrlong, opt_id, SPART *, opt_val, option_ctr, options)
+    {
+      switch (opt_id)
+        {
+        case LIMIT_L: continue; /* It's only a hint, not a requirement, and it's put sometimes via other parts of codegen, but not always */
+        case SPAR_SERVICE_INV: continue; /* It's printed via dedicated code */
+        }
+      if (!(SSG_SD_OPTION & ssg->ssg_sd_flags))
+        spar_error (ssg->ssg_sparp, "%.100s does not support OPTION (...) clause for triples so SPARQL query can not be composed", ssg->ssg_sd_service_naming);
+      if (inside_option_list)
+        ssg_puts (", ");
+      else
+        {
+          inside_option_list = 1;
+          ssg_puts (" OPTION ( ");
+        }
+      switch (opt_id)
+        {
+        case T_CYCLES_ONLY_L: case T_DISTINCT_L: case T_EXISTS_L: case T_NO_CYCLES_L:
+        case T_NO_ORDER_L: case T_SHORTEST_ONLY_L: case TRANSITIVE_L: case IFP_L:
+          ssg_puts (ssg_sd_opname (ssg->ssg_sparp, opt_id, 0));
+          break;
+        case T_STEP_L:
+          ssg_puts (" T_STEP ("); ssg_sdprint_tree (ssg, opt_val->_.alias.arg);
+          ssg_puts (") AS "); ssg_sdprin_local_varname (ssg, opt_val->_.alias.aname);
+          break;
+        case T_IN_L: case T_OUT_L:
+          if (NULL != old_param_t_inouts)
+            spar_error (ssg->ssg_sparp, "Unsupported combination of transitive subqueries (transitive subquery in options of other transitive subquery?)");
+          ssg->ssg_inside_t_inouts = 1;
+          ssg_puts (ssg_sd_opname (ssg->ssg_sparp, opt_id, 0));
+          ssg_sdprint_tree (ssg, opt_val);
+          ssg->ssg_inside_t_inouts = 0;
+          break;
+        default:
+          ssg_puts (ssg_sd_opname (ssg->ssg_sparp, opt_id, 0));
+          ssg_sdprint_tree (ssg, opt_val);
+          break;
+        }
+    }
+  END_DO_BOX_FAST_STEP2;
+  if (inside_option_list)
+    ssg_putchar (')');
+}
+
+void
+ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
 {
   int ctr = 0, count;
   int tree_type;
@@ -441,6 +562,46 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
     case SPAR_ALIAS:
       {
         int old_parens = ((SSG_SD_VIRTSPECIFIC & ssg->ssg_sd_flags) && !(SSG_SD_SPARQL11_DRAFT & ssg->ssg_sd_flags));
+        if (SPAR_VARIABLE == SPART_TYPE (tree->_.alias.arg))
+          {
+            int alias_is_needed = 0;
+            caddr_t varname = tree->_.alias.arg->_.var.vname;
+            if (strcmp (varname, tree->_.alias.aname))
+              alias_is_needed = 1;
+            if (!alias_is_needed && (NULL != ssg->ssg_wrapping_sinv))
+              {
+                int paramctr;
+                DO_BOX_FAST (caddr_t, param_vname, paramctr, ssg->ssg_wrapping_sinv->_.sinv.param_varnames)
+                  {
+                    if (strcmp (varname, param_vname))
+                      continue;
+                    alias_is_needed = 1;
+                    break;
+                  }
+                END_DO_BOX_FAST;
+              }
+            if (!alias_is_needed)
+              {
+                ssg_putchar (' ');
+                ssg_sdprin_local_varname (ssg, tree->_.alias.aname);
+                return;
+              }
+          }
+        else if (SPAR_BLANK_NODE_LABEL == SPART_TYPE (tree->_.alias.arg))
+          {
+            int alias_is_needed = 0;
+            caddr_t varname = tree->_.alias.arg->_.var.vname;
+            if (strcmp (varname, tree->_.alias.aname))
+              alias_is_needed = 1;
+            if (!alias_is_needed && !(('_' == varname[0]) && (':' == varname[1]) && (':' == varname[2])))
+              alias_is_needed = 1;
+            if (!alias_is_needed)
+              {
+                ssg_putchar (' ');
+                ssg_sdprin_local_varname (ssg, tree->_.alias.aname);
+                return;
+              }
+          }
         if (!(SSG_SD_BI_OR_SPARQL11_DRAFT & ssg->ssg_sd_flags))
           {
             ssg_sdprint_tree (ssg, tree->_.alias.arg);
@@ -455,8 +616,8 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
             ssg_puts (")");
             ssg->ssg_indent--;
           }
-        ssg_puts (" AS ?");
-        ssg_puts (tree->_.alias.aname);
+        ssg_puts (" AS ");
+        ssg_sdprin_local_varname (ssg, tree->_.alias.aname);
         if (!old_parens)
           {
             ssg_puts (")");
@@ -477,7 +638,7 @@ void ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
           {
           case LIKE_L:
             if (!(SSG_SD_LIKE & ssg->ssg_sd_flags))
-              spar_error (ssg->ssg_sparp, "%.100s does not support LIKE operator so SPARQL query can not be composed", ssg->ssg_sd_service_name);
+              spar_error (ssg->ssg_sparp, "%.100s does not support LIKE operator so SPARQL query can not be composed", ssg->ssg_sd_service_naming);
             ssg_puts (" (");
             ssg->ssg_indent++;
             ssg_sdprint_tree (ssg, tree->_.builtin.args[0]);
@@ -544,7 +705,7 @@ static const char *sparql11aggregates[] = { "AVG", "COUNT", "GROUP_CONCAT", "MAX
             if (ECM_MEM_NOT_FOUND != ecm_find_name (fname+13, sparql11aggregates, sizeof (sparql11aggregates)/sizeof (char *), sizeof (char *)))
               {
                 if (!(SSG_SD_BI_OR_SPARQL11_DRAFT & ssg->ssg_sd_flags))
-                  spar_error (ssg->ssg_sparp, "%.100s does not support %s aggregate function so SPARQL query can not be composed", ssg->ssg_sd_service_name, fname+13);
+                  spar_error (ssg->ssg_sparp, "%.100s does not support %s aggregate function so SPARQL query can not be composed", ssg->ssg_sd_service_naming, fname+13);
                 ssg_puts (fname+13);
                 goto fname_printed; /* see below */
               }
@@ -572,6 +733,7 @@ fname_printed:
       }
     case SPAR_GP:
       {
+        int gp_is_top_in_filter = 0;
         if (ssg->ssg_sd_forgotten_dot)
           {
             ssg_puts (" .");
@@ -586,6 +748,8 @@ fname_printed:
             ssg->ssg_sd_graph_gp_nesting--;
           }
         ssg_newline (0);
+        if ((NULL != ssg->ssg_sd_outer_gps) && (NULL == ssg->ssg_sd_outer_gps->data))
+          gp_is_top_in_filter = 1;
         t_set_push (&(ssg->ssg_sd_outer_gps), tree);
 #if 0 /* I can't understand it */
         ssg->ssg_sd_outer_gps = NULL; /* The first triple pattern in the group can not use ';' or ',' shorthand */
@@ -594,8 +758,20 @@ fname_printed:
           {
           case SELECT_L:
             if (!(SSG_SD_BI & ssg->ssg_sd_flags))
-              spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (like nested SELECT) so SPARQL query can not be composed", ssg->ssg_sd_service_name);
-            if (NULL == ssg->ssg_sd_outer_gps->data)
+              spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (like nested SELECT) so SPARQL query can not be composed", ssg->ssg_sd_service_naming);
+            if ((gp_is_top_in_filter) && (ASK_L == tree->_.gp.subquery->_.req_top.subtype)
+              && (0 == BOX_ELEMENTS_0 (tree->_.gp.options))
+              && (0 == BOX_ELEMENTS_0 (tree->_.gp.subquery->_.req_top.sources))
+              && (NULL == tree->_.gp.subquery->_.req_top.having) )
+              {
+                ssg_puts (" EXISTS");
+                tree->_.gp.subquery->_.req_top.pattern->_.gp.subtype = 0;
+                ssg_sdprint_tree (ssg, tree->_.gp.subquery->_.req_top.pattern);
+                tree->_.gp.subquery->_.req_top.pattern->_.gp.subtype = WHERE_L;
+                t_set_pop (&(ssg->ssg_sd_outer_gps));
+                return;
+              }
+            if (gp_is_top_in_filter)
               {
                 ssg_puts (" (");
                 ssg->ssg_indent++;
@@ -606,16 +782,29 @@ fname_printed:
                 ssg->ssg_indent += 2;
               }
             ssg_sdprint_tree (ssg, tree->_.gp.subquery);
-            if (NULL == ssg->ssg_sd_outer_gps->data)
+            if (gp_is_top_in_filter)
               {
                 ssg_puts (" )");
                 ssg->ssg_indent--;
+                if (BOX_ELEMENTS_0 (tree->_.gp.options))
+                  spar_internal_error (ssg->ssg_sparp, "OPTION() clause is not allowed for invocation of scalar subquery");
               }
             else
               {
                 ssg_puts (" }");
                 ssg->ssg_indent -= 2;
+                ssg_sdprint_option_list (ssg, tree->_.gp.options);
+                while (NULL != ssg->ssg_param_t_inouts)
+                  {
+                    ccaddr_t vname = (ccaddr_t)t_set_pop (&(ssg->ssg_param_t_inouts));
+                    ssg_puts (" FILTER (");
+                    ssg_sdprin_local_varname (ssg, vname);
+                    ssg_puts (" = ");
+                    ssg_sdprin_varname (ssg, vname);
+                    ssg_puts (")");
+                  }
               }
+            t_set_pop (&(ssg->ssg_sd_outer_gps));
             return;
           case UNION_L:
             DO_BOX_FAST (SPART *, sub, ctr, tree->_.gp.members)
@@ -630,6 +819,7 @@ fname_printed:
                 ssg->ssg_indent--;
               }
             END_DO_BOX_FAST;
+            t_set_pop (&(ssg->ssg_sd_outer_gps));
             return;
           case OPTIONAL_L: ssg_puts (" OPTIONAL"); break;
           case WHERE_L: ssg_puts (" WHERE"); break;
@@ -638,33 +828,64 @@ fname_printed:
               SPART *sinv = sparp_get_option (ssg->ssg_sparp, tree->_.gp.options, SPAR_SERVICE_INV);
               int ctr, count;
               ssg_puts (" SERVICE ");
-              ssg_sdprin_qname (ssg, (SPART *)(sinv->_.sinv.endpoint));
-              ssg_puts (" (");
-              DO_BOX_FAST (SPART *, var, ctr, sinv->_.sinv.param_varnames)
+              if (sinv->_.sinv.silent)
+                ssg_puts (" SILENT ");
+              ssg_sdprint_tree (ssg, sinv->_.sinv.endpoint);
+              if (SSG_SD_BI & ssg->ssg_sd_flags)
                 {
-                  ssg_puts (" IN ");
-                  ssg_sdprint_tree (ssg, var);
-                }
-              END_DO_BOX_FAST;
-              count = BOX_ELEMENTS_0 (sinv->_.sinv.defines);
-              for (ctr = 0; ctr < count; ctr += 2)
-                {
-                  caddr_t name = (caddr_t)(sinv->_.sinv.defines[ctr]);
-                  SPART ***vals = (SPART ***)(sinv->_.sinv.defines[ctr+1]);
-                  int valctr;
-                  if (!strcmp (name, "lang:dialect"))
-                    continue;
-                  ssg_puts (" DEFINE ");
-                  ssg_puts (name);
-                  DO_BOX_FAST (SPART **, val, valctr, vals)
+                  ssg_puts (" (");
+                  DO_BOX_FAST (caddr_t, varname, ctr, sinv->_.sinv.param_varnames)
                     {
-                      if (valctr) ssg_putchar (',');
-                      ssg_sdprint_tree (ssg, val[1]);
+                      ssg_puts (" IN ");
+                      ssg_sdprin_local_varname (ssg, varname);
                     }
                   END_DO_BOX_FAST;
+                  count = BOX_ELEMENTS_0 (sinv->_.sinv.defines);
+                  for (ctr = 0; ctr < count; ctr += 2)
+                    {
+                      caddr_t name = (caddr_t)(sinv->_.sinv.defines[ctr]);
+                      SPART ***vals = (SPART ***)(sinv->_.sinv.defines[ctr+1]);
+                      int valctr;
+                      if (!strcmp (name, "lang:dialect"))
+                        continue;
+                      ssg_puts (" DEFINE ");
+                      ssg_puts (name);
+                      DO_BOX_FAST (SPART **, val, valctr, vals)
+                        {
+                          if (valctr) ssg_putchar (',');
+                          ssg_sdprint_tree (ssg, val[1]);
+                        }
+                      END_DO_BOX_FAST;
+                    }
+                  ssg_puts (") ");
                 }
-              ssg_puts (") ");
               break;
+            }
+          case VALUES_L:
+            {
+              SPART *binv = tree->_.gp.subquery;
+              int colctr, colcount = BOX_ELEMENTS (binv->_.binv.vars);
+              int rowctr, rowcount = BOX_ELEMENTS (binv->_.binv.data_rows);
+              ssg_puts (" VALUES (");
+              ssg->ssg_indent++;
+              for (colctr = 0; colctr < colcount; colctr++) ssg_sdprint_tree (ssg, binv->_.binv.vars[colctr]);
+              ssg_puts (") {");
+              for (rowctr = 0; rowctr < rowcount; rowctr++)
+                {
+                  if ('/' != binv->_.binv.data_rows_mask[rowctr])
+                    continue;
+                  ssg_newline (0);
+                  ssg_puts (" (");
+                  ssg->ssg_indent++;
+                  for (colctr = 0; colctr < colcount; colctr++) ssg_sdprint_tree (ssg, binv->_.binv.data_rows[rowctr][colctr]);
+                  ssg_puts (" )");
+                  ssg->ssg_indent--;
+                }
+              ssg_puts (" }");
+              ssg->ssg_indent--;
+              ssg_newline (0);
+              t_set_pop (&(ssg->ssg_sd_outer_gps));
+              return;
             }
           case 0: ssg_putchar (' '); break;
           }
@@ -698,6 +919,14 @@ fname_printed:
             ssg->ssg_sd_graph_gp_nesting--;
           }
         t_set_push (&(ssg->ssg_sd_outer_gps), NULL);
+        /*
+        DO_BOX_FAST (SPART *, bind, ctr, tree->_.gp.binds)
+          {
+            ssg_puts (" BIND ");
+            ssg_sdprint_tree (ssg, bind);
+          }
+        END_DO_BOX_FAST;
+        */
         SPARP_FOREACH_GP_EQUIV (ssg->ssg_sparp, tree, ctr, eq)
           {
             ssg_sdprint_equiv_restrs (ssg, eq);
@@ -718,7 +947,7 @@ fname_printed:
           }
         if (OPTIONAL_L == tree->_.gp.subtype)
           {
-            SPART *outer_gp = ssg->ssg_sd_outer_gps->data;
+            SPART *outer_gp = (SPART *)(ssg->ssg_sd_outer_gps->data);
             if (NULL != outer_gp)
               {
                 count = BOX_ELEMENTS (outer_gp->_.gp.filters);
@@ -738,7 +967,7 @@ fname_printed:
         t_set_pop (&(ssg->ssg_sd_outer_gps));
         ssg_puts (" }");
         ssg->ssg_indent -= 2;
-/*!!!TBD print tree->_.gp.options */
+        ssg_sdprint_option_list (ssg, tree->_.gp.options);
         return;
       }
     case SPAR_LIT:
@@ -757,15 +986,17 @@ fname_printed:
       {
         int retctr;
         int srcctr, srccount = BOX_ELEMENTS (tree->_.req_top.sources);
+        SPART *saved_ssg_sd_req_top = ssg->ssg_sd_req_top;
         caddr_t saved_ssg_sd_single_from = ssg->ssg_sd_single_from;
         int saved_ssg_sd_graph_gp_nesting = ssg->ssg_sd_graph_gp_nesting;
         int from_count = 0;
+        ssg->ssg_sd_req_top = tree;
         ssg->ssg_sd_single_from = NULL;
         ssg->ssg_sd_graph_gp_nesting = 0;
         if ((NULL != tree->_.req_top.storage_name) && (tree->_.req_top.storage_name != uname_virtrdf_ns_uri_DefaultServiceStorage))
           {
             if (!(SSG_SD_VIRTSPECIFIC & ssg->ssg_sd_flags))
-              spar_error (ssg->ssg_sparp, "%.100s does not support Virtuoso-specific extensions (like define input:storage) so SPARQL query can not be composed", ssg->ssg_sd_service_name);
+              spar_error (ssg->ssg_sparp, "%.100s does not support Virtuoso-specific extensions (like define input:storage) so SPARQL query can not be composed", ssg->ssg_sd_service_naming);
             ssg_puts ("define input:storage <");
             ssg_puts (tree->_.req_top.storage_name);
             ssg_puts ("> ");
@@ -781,7 +1012,12 @@ fname_printed:
             ptrlong arg_type = SPART_TYPE (arg);
             if (0 != retctr)
               ssg_newline (0);
-            while ((SPAR_ALIAS == arg_type) && !((SSG_SD_BI & ssg->ssg_sd_flags)))
+            if ((SPAR_ALIAS == arg_type) && arg->_.alias.was_expanded)
+              {
+                arg = spar_make_variable (ssg->ssg_sparp, arg->_.alias.aname);
+                arg_type = SPART_TYPE (arg);
+              }
+            while ((SPAR_ALIAS == arg_type) && !(((SSG_SD_BI | SSG_SD_SPARQL11_MORE) & ssg->ssg_sd_flags)))
               {
                 arg = arg->_.alias.arg;
                 arg_type = SPART_TYPE (arg);
@@ -793,7 +1029,7 @@ fname_printed:
                 break;
               default:
                 if (!(SSG_SD_BI & ssg->ssg_sd_flags))
-                  spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (like expressions in result list) so SPARQL query can not be composed", ssg->ssg_sd_service_name);
+                  spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (like expressions in result list) so SPARQL query can not be composed", ssg->ssg_sd_service_naming);
                 ssg_putchar ('(');
                 ssg->ssg_indent++;
                 ssg_sdprint_tree (ssg, arg);
@@ -807,10 +1043,10 @@ fname_printed:
           {
             caddr_t stub_varname = t_box_sprintf (100, "stubvar%d", ssg->ssg_sparp->sparp_unictr++);
             if (SSG_SD_BI_OR_SPARQL11_DRAFT & ssg->ssg_sd_flags)
-              ssg_sdprint_tree (ssg, spartlist (ssg->ssg_sparp, 4, SPAR_ALIAS, (ptrlong)1, stub_varname, SSG_VALMODE_AUTO));
+              ssg_sdprint_tree (ssg, spartlist (ssg->ssg_sparp, 6, SPAR_ALIAS, (ptrlong)1, stub_varname, SSG_VALMODE_AUTO, (ptrlong)0, (ptrlong)0));
             else
               {
-                ssg_puts (" ?"); ssg_puts (stub_varname);
+                ssg_putchar (' '); ssg_sdprin_varname (ssg, stub_varname);
               }
           }
         for (srcctr = 0; srcctr < srccount; srcctr++)
@@ -848,12 +1084,13 @@ fname_printed:
               {
                 ssg_newline (0);
                 ssg_puts ("ORDER BY ");
+                ssg_replace_expanded_aliases_with_vars (ssg, tree->_.req_top.order);
                 ssg_sdprint_tree_list (ssg, tree->_.req_top.order, ' ');
               }
             if (NULL != lim)
               {
                 if ((DV_LONG_INT != DV_TYPE_OF (lim)) && !(SSG_SD_BI & ssg->ssg_sd_flags))
-                  spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (like expression in LIMIT clause) so SPARQL query can not be composed", ssg->ssg_sd_service_name);
+                  spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (like expression in LIMIT clause) so SPARQL query can not be composed", ssg->ssg_sd_service_naming);
                 ssg_newline (0);
                 ssg_puts ("LIMIT");
                 ssg_sdprint_tree (ssg, lim);
@@ -861,12 +1098,13 @@ fname_printed:
             if (NULL != ofs)
               {
                 if ((DV_LONG_INT != DV_TYPE_OF (ofs)) && !(SSG_SD_BI & ssg->ssg_sd_flags))
-                  spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (like expression in OFFSET clause) so SPARQL query can not be composed", ssg->ssg_sd_service_name);
+                  spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (like expression in OFFSET clause) so SPARQL query can not be composed", ssg->ssg_sd_service_naming);
                 ssg_newline (0);
                 ssg_puts ("OFFSET");
                 ssg_sdprint_tree (ssg, ofs);
               }
           }
+        ssg->ssg_sd_req_top = saved_ssg_sd_req_top;
         ssg->ssg_sd_single_from = saved_ssg_sd_single_from;
         ssg->ssg_sd_graph_gp_nesting = saved_ssg_sd_graph_gp_nesting;
         return;
@@ -876,7 +1114,6 @@ fname_printed:
         SPART *curr_graph = tree->_.triple.tr_graph;
         int new_g_is_dflt = 0;
         int should_close_graph, need_new_graph, place_qm;
-        int option_count;
         if (ssg->ssg_sd_graph_gp_nesting <= ssg->ssg_sd_forgotten_graph)
           {
             switch (SPART_TYPE (curr_graph))
@@ -954,7 +1191,7 @@ fname_printed:
         if (place_qm)
           {
             quad_map_t *qm = tree->_.triple.tc_list[0]->tc_qm;
-            jso_rtti_t *qm_rtti = gethash (qm, jso_rttis_of_structs);
+            jso_rtti_t *qm_rtti = (jso_rtti_t *)gethash (qm, jso_rttis_of_structs);
             if (NULL == qm_rtti)
               spar_internal_error (ssg->ssg_sparp, "bad quad map JSO instance");
             ssg_puts (" QUAD MAP ");
@@ -986,13 +1223,7 @@ fname_printed:
             ssg_newline (0);
           }
         ssg_sdprint_tree (ssg, tree->_.triple.tr_object);
-        option_count = BOX_ELEMENTS_0 (tree->_.triple.options);
-        if (0 != option_count)
-          {
-            if (!(SSG_SD_OPTION & ssg->ssg_sd_flags))
-              spar_error (ssg->ssg_sparp, "%.100s does not support OPTION (...) clause for triples so SPARQL query can not be composed", ssg->ssg_sd_service_name);
-/*@@@*/
-          }
+        ssg_sdprint_option_list (ssg, tree->_.triple.options);
         if (place_qm || (OPTIONAL_L == tree->_.triple.subtype))
           {
             if (ssg->ssg_sd_forgotten_dot)
@@ -1061,13 +1292,37 @@ fname_printed:
       }
     case ORDER_L:
       {
+        SPART *expn = tree->_.oby.expn;
         switch (tree->_.oby.direction)
           {
           case ASC_L: ssg_puts (" ASC ("); break;
           case DESC_L: ssg_puts (" DESC ("); break;
           }
         ssg->ssg_indent++;
-        ssg_sdprint_tree (ssg, tree->_.oby.expn);
+        if ((DV_LONG_INT == DV_TYPE_OF (expn)) && (NULL != ssg->ssg_sd_req_top)
+          && (0 < unbox ((caddr_t)expn)) && (BOX_ELEMENTS (ssg->ssg_sd_req_top->_.req_top.retvals) >= unbox ((caddr_t)expn)))
+          {
+            SPART *retexpn = ssg->ssg_sd_req_top->_.req_top.retvals[unbox ((caddr_t)expn) - 1];
+            if (SPAR_ALIAS == SPART_TYPE (retexpn))
+              {
+                ssg_putchar (' ');
+                ssg_sdprin_local_varname (ssg, retexpn->_.alias.aname);
+              }
+            else
+              ssg_sdprint_tree (ssg, retexpn);
+          }
+        else if (SPAR_ALIAS == SPART_TYPE(expn))
+          {
+            if (expn->_.alias.was_expanded)
+              {
+                ssg_putchar (' ');
+                ssg_sdprin_local_varname (ssg, expn->_.alias.aname);
+              }
+            else
+              ssg_sdprint_tree (ssg, expn->_.alias.arg);
+          }
+        else
+          ssg_sdprint_tree (ssg, expn);
         ssg_putchar (')');
         ssg->ssg_indent--;
         return;
@@ -1075,7 +1330,7 @@ fname_printed:
     case SPAR_GRAPH:
       {
         if (NULL == tree->_.graph.iri)
-          spar_error (ssg->ssg_sparp, "%.100s can be invoked only with constant graphs in FROM... clauses so SPARQL query can not be composed", ssg->ssg_sd_service_name);
+          spar_error (ssg->ssg_sparp, "%.100s can be invoked only with constant graphs in FROM... clauses so SPARQL query can not be composed", ssg->ssg_sd_service_naming);
         switch (tree->_.graph.subtype)
           {
           case SPART_GRAPH_FROM:
@@ -1093,14 +1348,75 @@ fname_printed:
         ssg_sdprin_qname (ssg, (SPART *)(tree->_.graph.iri));
         return;
       }
-#if 0
     case SPAR_LIST:
       {
-        ssg_puts ("LIST:");
-        SES_PRINT (ses, buf);
-        spart_dump (tree->_.list.items, ses, indent+2, "ITEMS", -2);
+        int ctr;
+        ssg_puts (" (");
+        ssg->ssg_indent++;
+        DO_BOX_FAST (SPART *, itm, ctr, tree->_.list.items)
+          {
+            if (ctr)
+              ssg_puts (", ");
+            ssg_sdprint_tree (ssg, itm);
+          }
+        END_DO_BOX_FAST;
+        ssg_putchar (')');
+        ssg->ssg_indent--;
         break;
       }
+    case SPAR_PPATH:
+      {
+      int ctr, count = BOX_ELEMENTS (tree->_.ppath.parts);
+      switch (tree->_.ppath.subtype)
+        {
+        case '!':
+          ssg_puts (" !");
+          /* no break */
+        case 0:
+          if (1 != count) ssg_puts (" (");
+          for (ctr = 0; ctr < count; ctr++)
+            {
+              if (0 < ctr) ssg_puts (" |");
+              if ((count - tree->_.ppath.num_of_invs) <= ctr) ssg_puts (" ^");
+              ssg_sdprint_tree (ssg, tree->_.ppath.parts[ctr]);
+            }
+          if (1 != count) ssg_puts (" )");
+          return;
+        case 'D':
+          ssg_puts (" DISTINCT");
+          /* no break */
+        case '|':
+          ssg_puts (" (");
+          for (ctr = 0; ctr < count; ctr++)
+            {
+              if (0 < ctr) ssg_puts (" |");
+              ssg_sdprint_tree (ssg, tree->_.ppath.parts[ctr]);
+            }
+          ssg_puts (" )");
+          return;
+        case '/':
+          ssg_puts (" (");
+          for (ctr = 0; ctr < count; ctr++)
+            {
+              if (0 < ctr) ssg_puts (" /");
+              ssg_sdprint_tree (ssg, tree->_.ppath.parts[ctr]);
+            }
+          ssg_puts (" )");
+          return;
+        case '*':
+          {
+            boxint minrepeat = unbox (tree->_.ppath.minrepeat);
+            boxint maxrepeat = unbox (tree->_.ppath.maxrepeat);
+            ssg_sdprint_tree (ssg, tree->_.ppath.parts[0]);
+            if ((0 == minrepeat) && (-1 == maxrepeat)) ssg_putchar ('*');
+            else if ((1 == minrepeat) && (-1 == maxrepeat)) ssg_putchar ('+');
+            else if ((0 == minrepeat) && (1 == maxrepeat)) ssg_putchar ('?');
+            else spar_error (ssg->ssg_sparp, "%.100s can not handle property path with {m,n} modifier in the loop", ssg->ssg_sd_service_naming);
+            return;
+          }
+        }
+      }
+#if 0
     default:
       {
         sprintf (buf, "NODE OF TYPE %ld (", (ptrlong)(tree->type));
@@ -1109,7 +1425,7 @@ fname_printed:
         sprintf (buf, ") with %d children:\n", childrens-SPART_HEAD);
         SES_PRINT (ses, buf);
         for (ctr = SPART_HEAD; ctr < childrens; ctr++)
-	spart_dump (((void **)(tree))[ctr], ses, indent+2, NULL, 0);
+          spart_dump (((void **)(tree))[ctr], ses, indent+2, NULL, 0);
         return;
       }
 #endif

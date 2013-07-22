@@ -9,7 +9,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -252,7 +252,54 @@ DBG_NAME (mp_alloc_box) (DBG_PARAMS mem_pool_t * mp, size_t len1, dtp_t dtp)
   return ((caddr_t) ptr);
 }
 
-
+caddr_t
+mp_alloc_sized (mem_pool_t * mp, size_t len1)
+{
+#ifdef LACERATED_POOL
+  return mp_alloc_box (mp, len1, DV_NON_BOX);
+#else
+  dtp_t *ptr;
+  size_t len = ALIGN_8 (len1);
+  mem_block_t *mb = NULL;
+  mem_block_t *f = mp->mp_first;
+  size_t hlen = ALIGN_8 ((sizeof (mem_block_t)));	/* we can have a doubles so structure also must be aligned */
+  if (!f || f->mb_size - f->mb_fill < len)
+    {
+      if (len > mp->mp_block_size - hlen)
+	{
+	  mb = (mem_block_t *) dk_alloc (hlen + len);
+	  mb->mb_size = len + hlen;
+	  mb->mb_fill = hlen;
+	  if (f)
+	    {
+	      mb->mb_next = f->mb_next;
+	      f->mb_next = mb;
+	    }
+	  else
+	    {
+	      mb->mb_next = NULL;
+	      mp->mp_first = mb;
+	    }
+	  mp->mp_bytes += mb->mb_size;
+	}
+      else
+	{
+	  mb = (mem_block_t *) dk_alloc (mp->mp_block_size);
+	  mb->mb_size = mp->mp_block_size;
+	  mb->mb_fill = hlen;
+	  mb->mb_next = mp->mp_first;
+	  mp->mp_first = mb;
+	  mp->mp_bytes += mb->mb_size;
+	}
+    }
+  else
+    mb = f;
+  ptr = ((dtp_t *) mb) + mb->mb_fill;
+  mb->mb_fill += len;
+  memset (ptr, 0, len1);
+  return ((caddr_t) ptr);
+#endif
+}
 caddr_t
 DBG_NAME (mp_box_string) (DBG_PARAMS mem_pool_t * mp, const char *str)
 {
@@ -390,6 +437,15 @@ DBG_NAME (mp_box_copy) (DBG_PARAMS mem_pool_t * mp, caddr_t box)
     case DV_XPATH_QUERY:
       return box;
 
+#ifdef MALLOC_DEBUG
+    case DV_WIDE:
+      {
+        int len = box_length (box);
+        if ((len % sizeof (wchar_t)) || (0 != ((wchar_t *)box)[len/sizeof (wchar_t) - 1]))
+          GPF_T1 ("mp_box_copy of a damaged wide string");
+        /* no break */
+      }
+#endif
     default:
       {
 	caddr_t cp;
@@ -816,7 +872,7 @@ DBG_NAME (t_set_pushnew) (DBG_PARAMS s_node_t ** set, void *item)
 
 
 int
-DBG_NAME (t_set_push_new_string) (DBG_PARAMS s_node_t ** set, void *item)
+DBG_NAME (t_set_push_new_string) (DBG_PARAMS s_node_t ** set, char *item)
 {
   if (0 > dk_set_position_of_string (*set, item))
     {
@@ -948,6 +1004,43 @@ DBG_NAME (t_set_copy) (DBG_PARAMS dk_set_t s)
 
 
 #ifdef MALLOC_DEBUG
+
+void
+mp_check_tree_iter (mem_pool_t * mp, box_t box, box_t parent, dk_hash_t **known_ptr)
+{
+  uint32 count;
+  dtp_t tag;
+  mp_alloc_box_assert (mp, (caddr_t) box);
+  tag = box_tag (box);
+  if (IS_NONLEAF_DTP (tag))
+    {
+      box_t *obj = (box_t *) box;
+      for (count = box_length ((caddr_t) box) / sizeof (caddr_t); count; count--)
+        {
+          if (IS_BOX_POINTER (*obj))
+            {
+              if (*obj >= parent)
+                {
+                  if (NULL == known_ptr[0])
+                    known_ptr[0] = hash_table_allocate (101);
+                  if (gethash (*obj, known_ptr[0]))
+                    return;
+                  sethash (*obj, known_ptr[0], box);
+                }
+              else if (NULL != known_ptr[0])
+                {
+                  if (gethash (*obj, known_ptr[0]))
+                    return;
+                  sethash (*obj, known_ptr[0], box);
+                }
+              mp_check_tree_iter (mp, *obj, box, known_ptr);
+            }
+          obj++;
+        }
+    }
+}
+
+
 void
 mp_check_tree (mem_pool_t * mp, box_t box)
 {
@@ -960,8 +1053,15 @@ mp_check_tree (mem_pool_t * mp, box_t box)
   if (IS_NONLEAF_DTP (tag))
     {
       box_t *obj = (box_t *) box;
+      dk_hash_t *known = NULL;
       for (count = box_length ((caddr_t) box) / sizeof (caddr_t); count; count--)
-	mp_check_tree (mp, *obj++);
+        {
+          if (IS_BOX_POINTER (*obj))
+            mp_check_tree_iter (mp, *obj, box, &known);
+          obj++;
+        }
+      if (NULL != known)
+        hash_table_free (known);
     }
 }
 #endif
@@ -1068,3 +1168,31 @@ ap_list (auto_pool_t * apool, long n, ...)
   va_end (ap);
   return ((caddr_t *) box);
 }
+
+#if defined (DEBUG) || defined (MALLOC_DEBUG)
+#undef mem_pool_alloc
+mem_pool_t *mem_pool_alloc (void) { return dbg_mem_pool_alloc (__FILE__, __LINE__); }
+#endif
+
+#ifdef MALLOC_DEBUG
+#undef mp_alloc_box
+caddr_t mp_alloc_box (mem_pool_t * mp, size_t len, dtp_t dtp) { return dbg_mp_alloc_box (__FILE__, __LINE__, mp, len, dtp); }
+#undef mp_box_string
+caddr_t mp_box_string (mem_pool_t * mp, const char *str) { return dbg_mp_box_string (__FILE__, __LINE__, mp, str); }
+#undef mp_box_substr
+caddr_t mp_box_substr (mem_pool_t * mp, ccaddr_t str, int n1, int n2) { return dbg_mp_box_substr (__FILE__, __LINE__, mp, str, n1, n2); }
+#undef mp_box_dv_short_nchars
+box_t mp_box_dv_short_nchars (mem_pool_t * mp, const char *str, size_t len) { return dbg_mp_box_dv_short_nchars (__FILE__, __LINE__, mp, str, len); }
+#undef mp_box_dv_uname_string
+caddr_t mp_box_dv_uname_string (mem_pool_t * mp, const char *str) { return dbg_mp_box_dv_uname_string (__FILE__, __LINE__, mp, str); }
+#undef mp_box_dv_uname_nchars
+box_t mp_box_dv_uname_nchars (mem_pool_t * mp, const char *str, size_t len) { return dbg_mp_box_dv_uname_nchars (__FILE__, __LINE__, mp, str, len); }
+#undef mp_box_copy
+caddr_t mp_box_copy (mem_pool_t * mp, caddr_t box) { return dbg_mp_box_copy (__FILE__, __LINE__, mp, box); }
+#undef mp_box_copy_tree
+caddr_t mp_box_copy_tree (mem_pool_t * mp, caddr_t box) { return dbg_mp_box_copy_tree (__FILE__, __LINE__, mp, box); }
+#undef mp_full_box_copy_tree
+caddr_t mp_full_box_copy_tree (mem_pool_t * mp, caddr_t box) { return dbg_mp_full_box_copy_tree (__FILE__, __LINE__, mp, box); }
+#undef mp_box_num
+caddr_t mp_box_num (mem_pool_t * mp, boxint num) { return dbg_mp_box_num (__FILE__, __LINE__, mp, num); }
+#endif

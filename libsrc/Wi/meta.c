@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1360,6 +1360,8 @@ dbe_key_compression (dbe_key_t * key)
 void
 key_set_simple_compression (dbe_key_t * key)
 {
+  if (!key->key_is_bitmap && dk_set_length (key->key_parts) == key->key_n_significant)
+    key->key_no_dependent = 1;
   key->key_n_key_compressibles  = dk_set_length (key->key_key_compressibles);
   key->key_n_row_compressibles  = dk_set_length (key->key_row_compressibles);
   if (dk_set_length (key->key_key_compressibles) == dk_set_length (key->key_row_compressibles)

@@ -7,7 +7,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2012 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -33,6 +33,9 @@ export LANG LC_ALL
 
 LOGFILE=test_server.output
 export LOGFILE
+
+MAKE=${MAKE-make}
+export MAKE
 
 # decide witch server options set to use based on the server's name
 SERVER=${SERVER-$1}

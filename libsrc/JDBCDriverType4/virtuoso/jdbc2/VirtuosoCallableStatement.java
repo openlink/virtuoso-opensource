@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1916,6 +1916,127 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
   {
     throw new VirtuosoException ("Method 'setNClob(parameterName, reader)' not yet implemented", VirtuosoException.NOTIMPLEMENTED);
   }
+
+
+#if JDK_VER >= 17
+    //------------------------- JDBC 4.1 -----------------------------------
+    /**
+     *<p>Returns an object representing the value of OUT parameter
+     * {@code parameterIndex} and will convert from the
+     * SQL type of the parameter to the requested Java data type, if the
+     * conversion is supported. If the conversion is not
+     * supported or null is specified for the type, a
+     * <code>SQLException</code> is thrown.
+     *<p>
+     * At a minimum, an implementation must support the conversions defined in
+     * Appendix B, Table B-3 and conversion of appropriate user defined SQL
+     * types to a Java type which implements {@code SQLData}, or {@code Struct}.
+     * Additional conversions may be supported and are vendor defined.
+     *
+     * @param parameterIndex the first parameter is 1, the second is 2, and so on
+     * @param type Class representing the Java data type to convert the
+     * designated parameter to.
+     * @return an instance of {@code type} holding the OUT parameter value
+     * @throws SQLException if conversion is not supported, type is null or
+     *         another error occurs. The getCause() method of the
+     * exception may provide a more detailed exception, for example, if
+     * a conversion error occurs
+     * @throws SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.7
+     */
+  public <T> T getObject(int parameterIndex, Class<T> type) throws SQLException
+  {
+    if (type == null) {
+      throw new VirtuosoException ("Type parameter can not be null", 
+                    "S1009", VirtuosoException.BADPARAM);
+    }
+		
+    if (type.equals(String.class)) {
+      return (T) getString(parameterIndex);
+    } else if (type.equals(BigDecimal.class)) {
+      return (T) getBigDecimal(parameterIndex);
+    } else if (type.equals(Boolean.class) || type.equals(Boolean.TYPE)) {
+      return (T) Boolean.valueOf(getBoolean(parameterIndex));
+    } else if (type.equals(Integer.class) || type.equals(Integer.TYPE)) {
+      return (T) Integer.valueOf(getInt(parameterIndex));
+    } else if (type.equals(Long.class) || type.equals(Long.TYPE)) {
+      return (T) Long.valueOf(getLong(parameterIndex));
+    } else if (type.equals(Float.class) || type.equals(Float.TYPE)) {
+      return (T) Float.valueOf(getFloat(parameterIndex));
+    } else if (type.equals(Double.class) || type.equals(Double.TYPE)) {
+      return (T) Double.valueOf(getDouble(parameterIndex));
+    } else if (type.equals(byte[].class)) {
+      return (T) getBytes(parameterIndex);
+    } else if (type.equals(java.sql.Date.class)) {
+      return (T) getDate(parameterIndex);
+    } else if (type.equals(Time.class)) {
+      return (T) getTime(parameterIndex);
+    } else if (type.equals(Timestamp.class)) {
+      return (T) getTimestamp(parameterIndex);
+    } else if (type.equals(Clob.class)) {
+      return (T) getClob(parameterIndex);
+    } else if (type.equals(Blob.class)) {
+      return (T) getBlob(parameterIndex);
+    } else if (type.equals(Array.class)) {
+      return (T) getArray(parameterIndex);
+    } else if (type.equals(Ref.class)) {
+      return (T) getRef(parameterIndex);
+    } else if (type.equals(java.net.URL.class)) {
+      return (T) getURL(parameterIndex);
+//		} else if (type.equals(Struct.class)) {
+//				
+//			} 
+//		} else if (type.equals(RowId.class)) {
+//			
+//		} else if (type.equals(NClob.class)) {
+//			
+//		} else if (type.equals(SQLXML.class)) {
+			
+    } else {
+      try {
+        return (T) getObject(parameterIndex);
+      } catch (ClassCastException cce) {
+         throw new VirtuosoException ("Conversion not supported for type " + type.getName(), 
+                    "S1009", VirtuosoException.BADPARAM);
+      }
+    }
+  }
+
+
+    /**
+     *<p>Returns an object representing the value of OUT parameter
+     * {@code parameterName} and will convert from the
+     * SQL type of the parameter to the requested Java data type, if the
+     * conversion is supported. If the conversion is not
+     * supported  or null is specified for the type, a
+     * <code>SQLException</code> is thrown.
+     *<p>
+     * At a minimum, an implementation must support the conversions defined in
+     * Appendix B, Table B-3 and conversion of appropriate user defined SQL
+     * types to a Java type which implements {@code SQLData}, or {@code Struct}.
+     * Additional conversions may be supported and are vendor defined.
+     *
+     * @param parameterName the name of the parameter
+     * @param type Class representing the Java data type to convert
+     * the designated parameter to.
+     * @return an instance of {@code type} holding the OUT parameter
+     * value
+     * @throws SQLException if conversion is not supported, type is null or
+     *         another error occurs. The getCause() method of the
+     * exception may provide a more detailed exception, for example, if
+     * a conversion error occurs
+     * @throws SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @since 1.7
+     */
+  public <T> T getObject(String parameterName, Class<T> type) throws SQLException
+  {
+    return getObject(findParam(parameterName), type);
+  }
+
+
+#endif
 
 #endif
 #endif

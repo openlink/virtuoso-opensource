@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -3212,7 +3212,7 @@ box_flags_serial_test (dk_session_t * ses)
 {
   /* serialize box flags only for clients that are 3029 or newer.  Do not serialize this if going to non-client.  */
   client_connection_t *cli = DKS_DB_DATA (ses);
-  if (ses->dks_cluster_flags & (DKS_TO_CLUSTER | DKS_TO_OBY_KEY | DKS_TO_HA_DISK_ROW))
+  if (ses->dks_cluster_flags & (DKS_TO_CLUSTER | DKS_TO_OBY_KEY | DKS_TO_HA_DISK_ROW | DKS_REPLICATION))
     return 1;
   if (!cli)
     return 0;
@@ -3696,6 +3696,7 @@ srv_session_disconnect_action (dk_session_t *ses)
 }
 
 void   rdf_key_comp_init ();
+long get_total_sys_mem ();
 
 void
 srv_global_init (char *mode)
@@ -4033,6 +4034,7 @@ srv_global_init (char *mode)
   if (0 == strcmp (build_thread_model, "-fibers"))
     threads_is_fiber = 1;
   time (&st_started_since);
+  st_sys_ram = get_total_sys_mem ();
 }
 
 

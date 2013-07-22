@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2012 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -219,7 +219,7 @@ DB.DBA.VHOST_REMOVE (lpath=>'/data');
 DB.DBA.VHOST_DEFINE (lpath=>'/data', ppath=>registry_get('_dbpedia_path_'), is_dav=>atoi (registry_get('_dbpedia_dav_')),
 	 vsp_user=>'dba', opts=>vector ('url_rewrite', 'dbpl_data_rule_list', 'expiration_function', 'DB.DBA.DBP_CHECK_304', 'graph', registry_get ('dbp_graph')));
 
-DB.DBA.URLREWRITE_CREATE_RULELIST ( 'dbpl_data_rule_list', 1, vector ('dbpl_data_rule_0', 'dbpl_data_rule_1', 'dbpl_data_rule_2', 'dbpl_data_rule_3', 'dbpl_data_rule_4', 'dbpl_data_rule_5', 'dbpl_data_rule_6', 'dbpl_data_rule_7', 'dbpl_data_rule_8', 'dbpl_data_rule_9', 'dbpl_data_rule_10'));
+DB.DBA.URLREWRITE_CREATE_RULELIST ( 'dbpl_data_rule_list', 1, vector ('dbpl_data_rule_0', 'dbpl_data_rule_1', 'dbpl_data_rule_2', 'dbpl_data_rule_3', 'dbpl_data_rule_4', 'dbpl_data_rule_5', 'dbpl_data_rule_6', 'dbpl_data_rule_7', 'dbpl_data_rule_8', 'dbpl_data_rule_9', 'dbpl_data_rule_10', 'dbpl_data_rule_11'));
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'dbpl_data_rule_0', 1, '/data/([a-z_\\-]*/)?(.*)', vector ('gr', 'par_1'), 1,
 '/sparql?%s&query='||dbp_gen_describe('resource')||'&format=rdf',
@@ -230,9 +230,9 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'dbpl_data_rule_1', 1, '/data/([a-z_\\-]*/
 vector ('gr', 'par_1', 'par_1', 'par_1', 'par_1', 'par_1', 'par_1', '*accept*'), 'DB.DBA.DBP_GRAPH_PARAM', 
 				'(application/rdf.xml)|(text/rdf.n3)', 2, null, '^{sql:DB.DBA.DBP_LINK_HDR}^');
 
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'dbpl_data_rule_2', 1, '/data/([a-z_\\-]*/)?(.*)\\.(rdf|ttl)', vector ('gr', 'par_1', 'fmt'), 1,
-'/sparql?%s&query='||dbp_gen_describe('resource')||'&format=%U',
-vector ('gr', 'par_1', 'par_1', 'par_1', 'par_1', 'par_1', 'par_1', 'fmt'), 'DB.DBA.DBP_GRAPH_PARAM', NULL, 2, null, '^{sql:DB.DBA.DBP_LINK_HDR}^');
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'dbpl_data_rule_2', 1, '/data/([a-z_\\-]*/)?(.*)\\.(ttl)', vector ('gr', 'par_1', 'fmt'), 1,
+'/sparql?%s&query='||dbp_gen_describe('resource')||'&format=text%%2Fturtle',
+vector ('gr', 'par_1', 'par_1', 'par_1', 'par_1', 'par_1', 'par_1'), 'DB.DBA.DBP_GRAPH_PARAM', NULL, 2, null, '^{sql:DB.DBA.DBP_LINK_HDR}^');
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'dbpl_data_rule_3', 1, '/data/([a-z_\\-]*/)?(.*)\\.(jrdf)', vector ('gr', 'par_1', 'fmt'), 1,
 '/sparql?%s&query='||dbp_gen_describe('resource')||'&format=application%%2Frdf%%2Bjson',
@@ -242,7 +242,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'dbpl_data_rule_4', 1, '/data/([a-z_\\-]*/
 '/sparql?%s&query='||dbp_gen_describe('resource')||'&format=application%%2Fjson',
 vector ('gr', 'par_1', 'par_1', 'par_1', 'par_1', 'par_1', 'par_1'), 'DB.DBA.DBP_GRAPH_PARAM', NULL, 2, null, '^{sql:DB.DBA.DBP_LINK_HDR}^');
 
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'dbpl_data_rule_5', 1, '/data/([a-z_\\-]*/)?(.*)\\.(xml)', vector ('gr', 'par_1', 'fmt'), 1,
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'dbpl_data_rule_5', 1, '/data/([a-z_\\-]*/)?(.*)\\.(xml|rdf)', vector ('gr', 'par_1', 'fmt'), 1,
 '/sparql?%s&query='||dbp_gen_describe('resource')||'&format=rdf',
 vector ('gr', 'par_1', 'par_1', 'par_1', 'par_1', 'par_1', 'par_1'), 'DB.DBA.DBP_GRAPH_PARAM', NULL, 2, null, '^{sql:DB.DBA.DBP_LINK_HDR}^');
 
@@ -267,6 +267,10 @@ vector ('gr', 'par_1'), 'DB.DBA.DBP_GRAPH_PARAM1', NULL, 2, null, '^{sql:DB.DBA.
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'dbpl_data_rule_10', 1, '/data/([a-z_\\-]*/)?(.*)\\.(ntriples)', vector ('gr', 'par_1', 'f'), 1,
 '/sparql?%s&query=define+sql:describe-mode+"DBPEDIA_ODATA"+DESCRIBE+%%3Chttp%%3A%%2F%%2Fdbpedia.org%%2Fresource%%2F%U%%3E&output=text%%2Fplain',
+vector ('gr', 'par_1'), 'DB.DBA.DBP_GRAPH_PARAM1', NULL, 2, null, '^{sql:DB.DBA.DBP_LINK_HDR}^');
+
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'dbpl_data_rule_11', 1, '/data/([a-z_\\-]*/)?(.*)\\.(jsonld)', vector ('gr', 'par_1', 'f'), 1,
+'/sparql?%s&query=define+sql:describe-mode+"DBPEDIA_ODATA"+DESCRIBE+%%3Chttp%%3A%%2F%%2Fdbpedia.org%%2Fresource%%2F%U%%3E&output=application%%2Fld%%2Bjson',
 vector ('gr', 'par_1'), 'DB.DBA.DBP_GRAPH_PARAM1', NULL, 2, null, '^{sql:DB.DBA.DBP_LINK_HDR}^');
 
 
@@ -374,17 +378,18 @@ create procedure DB.DBA.DBP_DATA_IRI (in par varchar, in fmt varchar, in val var
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'dbpl_resource_rule_2', 1, '/resource/([^\\?]*)(\\?lang=.*)?\x24', vector ('par_1', 'par_2'), 1,
     '/data/%s@__@%s', vector ('par_2', 'par_1'), 'DB.DBA.DBP_DATA_IRI', 
-    '(application/rdf.xml)|(text/rdf.n3)|(text/n3)|(application/x-turtle)|(application/rdf.json)|(application/json)|(application/atom.xml)|(application/odata.json)', 2, 303, '^{sql:DB.DBA.DBP_LINK_HDR}^');
+    '(application/rdf.xml)|(text/rdf.n3)|(text/n3)|(text/turtle)|(application/rdf.json)|(application/json)|(application/atom.xml)|(application/odata.json)|(application/ld.json)', 2, 303, '^{sql:DB.DBA.DBP_LINK_HDR}^');
 
 delete from DB.DBA.HTTP_VARIANT_MAP where VM_RULELIST = 'dbpl_resource_rule_list';
 DB.DBA.HTTP_VARIANT_ADD ('dbpl_resource_rule_list', '/(.*)@__@(.*)', '/data/\x242.xml', 'application/rdf+xml', 0.95, location_hook=>null);
 DB.DBA.HTTP_VARIANT_ADD ('dbpl_resource_rule_list', '/(.*)@__@(.*)', '/data/\x242.n3',  'text/n3', 0.80, location_hook=>null);
 DB.DBA.HTTP_VARIANT_ADD ('dbpl_resource_rule_list', '/(.*)@__@(.*)', '/data/\x242.nt',  'text/rdf+n3', 0.80, location_hook=>null);
-DB.DBA.HTTP_VARIANT_ADD ('dbpl_resource_rule_list', '/(.*)@__@(.*)', '/data/\x242.ttl',  'application/x-turtle', 0.70, location_hook=>null);
+DB.DBA.HTTP_VARIANT_ADD ('dbpl_resource_rule_list', '/(.*)@__@(.*)', '/data/\x242.ttl',  'text/turtle', 0.70, location_hook=>null);
 DB.DBA.HTTP_VARIANT_ADD ('dbpl_resource_rule_list', '/(.*)@__@(.*)', '/data/\x242.json',  'application/json', 0.60, location_hook=>null);
 DB.DBA.HTTP_VARIANT_ADD ('dbpl_resource_rule_list', '/(.*)@__@(.*)', '/data/\x242.jrdf',  'application/rdf+json', 0.60, location_hook=>null);
 DB.DBA.HTTP_VARIANT_ADD ('dbpl_resource_rule_list', '/(.*)@__@(.*)', '/data/\x242.atom',  'application/atom+xml', 0.50, location_hook=>null);
 DB.DBA.HTTP_VARIANT_ADD ('dbpl_resource_rule_list', '/(.*)@__@(.*)', '/data/\x242.jsod',  'application/odata+json', 0.50, location_hook=>null);
+DB.DBA.HTTP_VARIANT_ADD ('dbpl_resource_rule_list', '/(.*)@__@(.*)', '/data/\x242.jsonld',  'application/ld+json', 0.50, location_hook=>null);
 
 -- Wikicompany
 --DB.DBA.VHOST_REMOVE (lpath=>'/wikicompany/resource');

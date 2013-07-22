@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -400,7 +400,7 @@ sqlo_try_oby_order (sqlo_t * so, df_elt_t * tb_dfe)
 	continue;
       if (opt_inx_name)
 	{
-	  if (!CASEMODESTRCMP (opt_inx_name, key->key_name))
+	  if (key_matches_index_opt (key, opt_inx_name))
 	    {
 	      if (!sqlo_is_key_in_order (so, tb_dfe, key))
 		return 0;
@@ -826,6 +826,8 @@ sqlo_exp_cols_from_dt (sqlo_t * so, ST * tree, df_elt_t * dt_dfe, dk_set_t * ret
 	t_set_pushnew (ret, col_dfe);
     }
   if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree))
+    return;
+  if (ST_P (tree, FUN_REF))
     return;
   DO_BOX (ST*, x, inx, (ST**)tree)
     {

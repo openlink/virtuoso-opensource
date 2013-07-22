@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2012 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -801,6 +801,71 @@ order
 
 
 --!AWK PUBLIC
+create procedure DB.DBA.GROUP_CONCAT_DISTINCT_INIT (inout _env any)
+{
+  _env := 0;
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.GROUP_CONCAT_DISTINCT_ACC (inout _env any, in token varchar, in delim varchar)
+{
+  declare curlen integer;
+  declare env_vec, items any;
+  if (__tag of varchar <> __tag (token))
+    {
+      token := cast (token as varchar);
+      if (token is null)
+        return;
+    }
+  if (__tag of varchar <> __tag (_env))
+    {
+      _env := serialize (vector_zap_args (vector_zap_args (token), cast (delim as varchar)));
+      return;
+    }
+  env_vec := deserialize (_env);
+  items := aref_set_0 (env_vec, 0);
+  if (0 < position (token, items))
+    return;
+  items := vector_concat (items, vector_zap_args (token));
+  aset_zap_arg (env_vec, 0, items);
+  _env := serialize (env_vec);
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.GROUP_CONCAT_DISTINCT_FIN (inout _env any)
+{
+  declare itemctr, itemcount integer;
+  declare env_vec, items, ses any;
+  declare delim varchar;
+  if (__tag of varchar <> __tag (_env))
+    return '';
+  env_vec := deserialize (_env);
+  items := aref_set_0 (env_vec, 0);
+  gvector_sort (items, 1, 0, 1);
+  delim := aref_set_0 (env_vec, 1);
+  ses := string_output ();
+  itemctr := 0;
+  itemcount := length (items);
+  for (itemctr := 0; itemctr < itemcount; itemctr := itemctr + 1)
+    {
+      declare itm varchar;
+      if (itemctr)
+        http (delim, ses);
+      itm := items [itemctr];
+      http (itm, ses);
+    }
+items_done:
+  return string_output_string (ses);
+}
+;
+
+create aggregate DB.DBA.GROUP_CONCAT_DISTINCT (in token varchar, in delim varchar, in maxlen integer, in mode integer) returns varchar
+  from DB.DBA.GROUP_CONCAT_DISTINCT_INIT, DB.DBA.GROUP_CONCAT_DISTINCT_ACC, DB.DBA.GROUP_CONCAT_DISTINCT_FIN
+;
+
+--!AWK PUBLIC
 create procedure DB.DBA.GROUP_DIGEST_INIT (inout _env any)
 {
   _env := 0;
@@ -926,4 +991,20 @@ create procedure DB.DBA.SAMPLE_FIN (inout _env any)
 create aggregate DB.DBA.SAMPLE (in sample any) returns any
   from DB.DBA.SAMPLE_INIT, DB.DBA.SAMPLE_ACC, DB.DBA.SAMPLE_FIN
 order
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.BIT_OR_AGG_INIT (inout _env integer) { _env := 0; }
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.BIT_OR_AGG_ACC (inout _env integer, in v integer) { _env := __bit_or (_env, v); }
+;
+
+--!AWK PUBLIC
+create function DB.DBA.BIT_OR_AGG_FINAL (inout _env integer) returns integer { return _env; }
+;
+
+create aggregate DB.DBA.BIT_OR_AGG (in _child any) returns any
+  from DB.DBA.BIT_OR_AGG_INIT, DB.DBA.BIT_OR_AGG_ACC, DB.DBA.BIT_OR_AGG_FINAL
 ;

@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -42,8 +42,8 @@ typedef struct rdf_inf_ctx_s
   id_hash_t *	ric_iid_to_rel_ifp;			/*!< Map from IRI_ID of an IFP to array of IFPs of all IFPs with a common IFP superproperty */
   caddr_t *	ric_ifp_list;				/*!< Array of IRI_IDs of inverse functional properties */
   caddr_t *	ric_ifp_rel_list;			/*!< Array of IRI_IDs of inverse functional properties that have related IFPs (i.e. IFP super- and/or sub- properties) */
-  caddr_t *	ric_inverse_prop_pair_sortedalist;	/*!< List of pairs of props that are inverse to each other. Each pair is named twice. Pairs are sorted by keys */
-  caddr_t *	ric_prop_props;				/*!< Flags of properties name1 bits1 name2 bits2... names are sorted, only bit1 is used atm means transitive */
+  caddr_t *	ric_inverse_prop_pair_sortedalist;	/*!< List of pairs of UNAMEs of props that are inverse to each other. Each pair is named twice. Pairs are sorted by keys. */
+  caddr_t *	ric_prop_props;				/*!< Flags of properties name1 bits1 name2 bits2... names are sorted UNAMEs, only bit 1 is used atm and means "transitive" */
   id_hash_t *	ric_ifp_exclude;			/*!< Map from ifp P iri to values that do not make identity even if they occur as ifp values of 2 subjects. e.g. sha1 of "mailto://" */
   id_hash_t *	ric_samples;				/*!< Cardinality estimates with this inf ctx enabled */
   dk_mutex_t *	ric_mtx;				/*!< Mutex for ric_samples sample cache */

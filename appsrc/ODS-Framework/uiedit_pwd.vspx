@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2012 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -397,33 +397,72 @@
 	  <br/>
           <h3>X.509 Certificate</h3>
 			<table width="100%">
-      <tr>
-	  <td colspan="2" align="left">
 	      <?vsp if (length (self.certificate_content)) { ?>
-	      <div>
-		  <label>Subject:</label>
+            <tr>
+              <th width="135px">
+                Subject
+              </th>
+              <td align="left">
 		  <?vsp
 		  http_value (get_certificate_info (2, cast(self.certificate_content as varchar), 0, ''),'b');
 		  ?>
-	      </div>
-	      <div>
-		  <label>Agent ID:</label>
+              </td>
+            </tr>
+            <tr>
+              <th width="135px">
+                Agent ID
+              </th>
+              <td align="left">
 		  <?vsp
   		          http_value (ODS.ODS_API.SSL_WEBID_GET (cast(self.certificate_content as varchar)),'b');
 		  ?>
-	      </div>
-  	        <div>
-    	    	  <label>Fingerprint:</label>
+              </td>
+            </tr>
+            <tr>
+              <th width="135px">
+                Fingerprint
+              </th>
+              <td align="left">
         		  <?vsp
   		          http_value (get_certificate_info (6, cast(self.certificate_content as varchar), 0, ''),'b');
   		        ?>
-  	        </div>
+              </td>
+            </tr>
 	      <?vsp } ?>
+            <tr>
+              <td colspan="2" align="left">
+                <label>
+                  <v:check-box name="cert_import" value="1" xhtml_id="cert_import" auto-submit="1">
+                    <v:after-data-bind>
+                      <![CDATA[
+                        if (e.ve_is_post and e.ve_initiator is not null and e.ve_initiator.vc_name = control.vc_name)
+                        {
+                          control.ufl_selected := atoi (get_keyword ('cert_import', e.ve_params, '0'));
+                        }
+                      ]]>
+                    </v:after-data-bind>
+                  </v:check-box>
+                  <b>Import from local file</b>
+                </label>
+              </td>
+            </tr>
+            <v:template type="simple" condition="self.cert_import.ufl_selected">
+            <tr>
+              <th width="135px">
+                File to import
+              </th>
+              <td align="left">
+                <input type="file" name="cert_file" />
+              </td>
+            </tr>
+            </v:template>
+            <v:template type="simple" condition="not self.cert_import.ufl_selected">
+            <tr>
+              <td colspan="2" align="left">
 	    <v:textarea name="cert1" value="--self.certificate_content" xhtml_cols="70" xhtml_rows="20" />
-  	          <!--?vsp if (not length (self.certificate_content) and xenc_key_exists ('id_rsa')) { ?-->
-  	        <!--?vsp } ?-->
 	</td>
       </tr>
+            </v:template>
       <tr>
 	      <td colspan="2" align="left">
           <label>
@@ -451,12 +490,22 @@
               <v:on-post>
                 <![CDATA[
   		    declare agent, mail varchar;
+                        declare cert any;
 
                   if(self.vc_is_valid = 0)
                     return;
-                    agent := ODS.ODS_API.SSL_WEBID_GET (self.cert1.ufl_value);
-                    mail := FOAF_SSL_MAIL_GET (self.cert1.ufl_value);
-                    if ((agent is null and mail is null and length (self.cert1.ufl_value)) or (0 = length (self.cert1.ufl_value)))
+
+                        if (self.cert_import.ufl_selected)
+                        {
+                          cert := get_keyword ('cert_file', e.ve_params);
+                        }
+                        else
+                        {
+                          cert := self.cert1.ufl_value;
+                        }
+                        agent := ODS.ODS_API.SSL_WEBID_GET (cert);
+                        mail := FOAF_SSL_MAIL_GET (cert);
+                        if ((agent is null and mail is null and length (cert)) or (0 = length (cert)))
 		    {
                       self.vc_is_valid := 0;
 		      self.vc_error_message := 'The certificate must be in PEM format and must have Alternate Name attribute.';
@@ -465,13 +514,13 @@
 		    if (self.cert_edit is null)
                       {
 		        insert into WA_USER_CERTS (UC_U_ID, UC_CERT, UC_FINGERPRINT, UC_LOGIN, UC_TS) 
-		         values (self.u_id, self.cert1.ufl_value, get_certificate_info (6, self.cert1.ufl_value, 0, ''), self.cert_login.ufl_selected, now ());
+                            values (self.u_id, cert, get_certificate_info (6, cert, 0, ''), self.cert_login.ufl_selected, now ());
 		      }
 		    else
 		      {
                             update WA_USER_CERTS
-                               set UC_CERT = self.cert1.ufl_value,
-			 	UC_FINGERPRINT = get_certificate_info (6, self.cert1.ufl_value, 0, ''),
+                             set UC_CERT = cert,
+                                 UC_FINGERPRINT = get_certificate_info (6, cert, 0, ''),
 				UC_LOGIN = self.cert_login.ufl_selected
 				where UC_U_ID = self.u_id and UC_ID = self.cert_edit ;
 			self.cert_edit := null;	

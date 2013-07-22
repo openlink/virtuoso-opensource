@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2012 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -836,6 +836,8 @@
           self.v_repeatUntil := null;
         }
       }
+      -- validate ACL rules
+      DB.DBA.wa_aci_validate (DB.DBA.wa_aci_params (params));
 
       -- reminder
       self.v_reminder := cast (trim (self.e_reminder.ufl_value) as integer);
@@ -976,6 +978,8 @@
       if (self.v_completed < self.v_eventStart)
         signal ('TEST', '''Completed date'' value should be greater then ''Start date'' value!<>');
 
+      -- validate ACL rules
+      DB.DBA.wa_aci_validate (DB.DBA.wa_aci_params (params));
 
       self.v_id := CAL.WA.task_update (
         self.v_id,
@@ -2059,7 +2063,7 @@
                             {
                               CAL.WA.settings_set (self.domain_id, 'taskFilter', self.tv_status);
                               if (self.tv_status <> 'All')
-                                sql := sql || sprintf (' and a.E_STATUS %s', case when (self.tv_status = 'Not Completed') then '<> ''Completed''' else '= ''' || self.tv_status || '''' end);
+                                sql := sql || sprintf (' and coalesce (a.E_STATUS, '''') %s', case when (self.tv_status = 'Not Completed') then '<> ''Completed''' else '= ''' || self.tv_status || '''' end);
 
                               self.sortChange (get_keyword ('t_sortColumn', e.ve_params), 'ts_order', 'ts_direction', self.ds);
                               sql := sql || sprintf (' order by %s %s', self.ts_order, self.ts_direction);
@@ -2392,7 +2396,7 @@
                       ?>
                     </td>
                     <td nowrap="nowrap" width="1%" colspan="2">
-                                &nbsp;<vm:label for="e_event" value="--'All day event'" />
+                                &amp;nbsp;<vm:label for="e_event" value="--'All day event'" />
                     </td>
                   </tr>
                   <tr>
@@ -2587,7 +2591,7 @@
                       <?vsp
                                   http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_0" value="" %s />', CAL.WA.checkedAttribute (self.v_repeat, '')));
                       ?>
-                                &nbsp;
+                                &amp;nbsp;
                       <vm:label for="e_repeat_0" value="--'No repeat'" />
                     </td>
                   </tr>
@@ -2599,7 +2603,7 @@
                       <?vsp
                                   http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_1" value="D1" %s />', CAL.WA.checkedAttribute (self.v_repeat, 'D1')));
                       ?>
-                                &nbsp;
+                                &amp;nbsp;
                       <vm:label for="e_repeat_1" value="--'Every'" />
                       <v:text name="e_repeat_param1_D1" null-value="''" value="--self.repeatParam (self.v_repeat, 'D1', 1, null);" xhtml_onfocus="--'javascript: checkRepetition (\'e_repeat\', \'e_repeat_1\');'" xhtml_class="textbox" xhtml_size="1" /> day(s)
                     </td>
@@ -2609,7 +2613,7 @@
                       <?vsp
                                   http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_2" value="D2" %s />', CAL.WA.checkedAttribute (self.v_repeat, 'D2')));
                       ?>
-                                &nbsp;
+                                &amp;nbsp;
                       <vm:label for="e_repeat_2" value="--'Every weekday (Monday-Friday)'" />
                     </td>
                   </tr>
@@ -2621,7 +2625,7 @@
                       <?vsp
                                   http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_3" value="W1" %s />', CAL.WA.checkedAttribute (self.v_repeat, 'W1')));
                       ?>
-                                &nbsp;
+                                &amp;nbsp;
                       <vm:label for="e_repeat_3" value="--'Every'" />
                       <v:text name="e_repeat_param1_W1" null-value="''" value="--self.repeatParam (self.v_repeat, 'W1', 1, null);" xhtml_onfocus="--'javascript: checkRepetition (\'e_repeat\', \'e_repeat_3\');'" xhtml_class="textbox" xhtml_size="1" /> week(s) on
                       <?vsp
@@ -2643,7 +2647,7 @@
                       <?vsp
                                   http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_4" value="M1" %s />', CAL.WA.checkedAttribute (self.v_repeat, 'M1')));
                       ?>
-                                &nbsp;
+                                &amp;nbsp;
                       <vm:label for="e_repeat_4" value="--'Every'" />
                       <v:select-list name="e_repeat_param1_M1" xhtml_onfocus="--'javascript: checkRepetition (\'e_repeat\', \'e_repeat_4\');'" >
                         <v:on-init>
@@ -2694,7 +2698,7 @@
                       <?vsp
                                   http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_5" value="M2" %s />', CAL.WA.checkedAttribute (self.v_repeat, 'M2')));
                       ?>
-                                &nbsp;
+                                &amp;nbsp;
                       <vm:label for="e_repeat_5" value="--'Every'" />
                       <v:select-list name="e_repeat_param1_M2" xhtml_onfocus="--'javascript: checkRepetition (\'e_repeat\', \'e_repeat_5\');'">
                         <v:on-init>
@@ -2792,7 +2796,7 @@
                       <?vsp
                                   http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_6" value="Y1" %s />', CAL.WA.checkedAttribute (self.v_repeat, 'Y1')));
                       ?>
-                                &nbsp;
+                                &amp;nbsp;
                       <vm:label for="e_repeat_6" value="--'Every'" />
                       <v:text name="e_repeat_param1_Y1" null-value="''" value="--self.repeatParam (self.v_repeat, 'Y1', 1, null);" xhtml_onfocus="--'javascript: checkRepetition (\'e_repeat\', \'e_repeat_6\');'" xhtml_class="textbox" xhtml_size="1" /> year(s)
                       on
@@ -2856,7 +2860,7 @@
                       <?vsp
                                   http(sprintf('<input type="radio" name="e_repeat" id="e_repeat_7" value="Y2" %s />', CAL.WA.checkedAttribute (self.v_repeat, 'Y2')));
                       ?>
-                                &nbsp;
+                                &amp;nbsp;
                       <vm:label for="e_repeat_7" value="--'The'" />
                       <v:select-list name="e_repeat_param1_Y2" xhtml_onfocus="--'javascript: checkRepetition (\'e_repeat\', \'e_repeat_7\');'">
                         <v:on-init>
@@ -2978,7 +2982,7 @@
                     S := 'checked="checked"';
                   http(sprintf('<input type="radio" name="e_repeatUntilKind" id="e_repeatUntilKind_0" value="0" %s />', S));
                 ?>
-                                &nbsp;
+                                &amp;nbsp;
                 <vm:label for="e_repeatUntilKind_0" value="--'No end date'" />
               </td>
             </tr>
@@ -2992,9 +2996,9 @@
                     S := 'checked="checked"';
                   http(sprintf('<input type="radio" name="e_repeatUntilKind" id="e_repeatUntilKind_1" value="1" %s />', S));
                 ?>
-                                &nbsp;
+                                &amp;nbsp;
                 <vm:label for="e_repeatUntilKind_1" value="--'Until'" />
-                                &nbsp;
+                                &amp;nbsp;
                                 <v:text name="e_repeatUntil" xhtml_id="e_repeatUntil" null-value="--''" value="--CAL.WA.dt_datestring (self.v_repeatUntil, self.cDateFormat)" xhtml_onfocus="--'javascript: checkRepetition (\'e_repeatUntilKind\', \'e_repeatUntilKind_1\');'" xhtml_onclick="--sprintf ('datePopup(\'e_repeatUntil\', \'%s\');', self.cDateFormat)" xhtml_class="textbox" xhtml_size="10" />
                                 <a href="#" id="e_repeatUntil_select" onclick="datePopup('e_repeatUntil', '<?V self.cDateFormat ?>'); return false;" class="noapp">
                   <img border="0" title="pick" alt="pick" src="image/pick_calendar.gif"/>
@@ -3531,6 +3535,28 @@
                   </v:on-init>
                   <v:before-data-bind>
                     <![CDATA[
+                                if (not isnull (self.v_complete))
+                                {
+                                  if (not CAL.WA.vector_contains (control.vsl_item_values, self.v_complete))
+                                  {
+                                    declare N, isAdded integer;
+                                    declare x any;
+
+                                    isAdded := 0;
+                                    x := vector ();
+                                    for (N := 0; N < length (control.vsl_item_values); N := N + 1)
+                                    {
+                                      if (not isAdded and (self.v_complete < atoi (control.vsl_item_values[N])))
+                                      {
+                                        isAdded := 1;
+                                        x := vector_concat (x, vector (cast (self.v_complete as varchar)));
+                                      }
+                                      x := vector_concat (x, vector (control.vsl_item_values[N]));
+                                    }
+                                    control.vsl_item_values := x;
+                                    control.vsl_items := x;
+                                  }
+                                }
                       control.ufl_value := self.v_complete;
                     ]]>
                   </v:before-data-bind>
@@ -3935,7 +3961,7 @@
                       ]]>
                     </v:before-render>
                   </v:radio-button>
-                      &nbsp;
+                      &amp;nbsp;
                   <b><vm:label for="icSource_0" value="--'File'" /></b>
                 </td>
               </tr>
@@ -3948,7 +3974,7 @@
                       ]]>
                     </v:before-render>
                   </v:radio-button>
-                      &nbsp;
+                      &amp;nbsp;
                   <b><vm:label for="icSource_1" value="--'WebDAV'" /></b>
                 </td>
               </tr>
@@ -3961,7 +3987,7 @@
                           ]]>
                         </v:before-render>
                       </v:radio-button>
-                      &nbsp;
+                      &amp;nbsp;
                       <b><vm:label for="icSource_3" value="--'CalDAV'" /></b>
                     </td>
                   </tr>
@@ -3974,7 +4000,7 @@
                       ]]>
                     </v:before-render>
                   </v:radio-button>
-                      &nbsp;
+                      &amp;nbsp;
                   <b><vm:label for="icSource_2" value="--'URL'" /></b>
               </td>
             </tr>
@@ -4190,7 +4216,7 @@
                           ]]>
                         </v:before-render>
                       </v:radio-button>
-                      &nbsp;
+                      &amp;nbsp;
                       <b><vm:label for="ex_destination_type_1" value="--'WebDAV'" /></b>
                     </td>
                   </tr>
@@ -4203,7 +4229,7 @@
                           ]]>
                         </v:before-render>
                       </v:radio-button>
-                      &nbsp;
+                      &amp;nbsp;
                       <b><vm:label for="ex_destination_type_2" value="--'URL'" /></b>
                     </td>
                   </tr>
@@ -5351,10 +5377,10 @@
                 <v:template type="simple" enabled="--case when self.cSubAction = '' then 1 else 0 end">
                   <div id="s" class="c1">
                     <div class="tabs">
-                      &nbsp;<vm:tabCaption tab="s" tabsCount="4" tabNo="0" caption="General" />
-                      &nbsp;<vm:tabCaption tab="s" tabsCount="4" tabNo="1" caption="Grids" />
-                      &nbsp;<vm:tabCaption tab="s" tabsCount="4" tabNo="2" caption="Calendar" />
-                      &nbsp;<vm:tabCaption tab="s" tabsCount="4" tabNo="3" caption="Discussion" />
+                      &amp;nbsp;<vm:tabCaption tab="s" tabsCount="4" tabNo="0" caption="General" />
+                      &amp;nbsp;<vm:tabCaption tab="s" tabsCount="4" tabNo="1" caption="Grids" />
+                      &amp;nbsp;<vm:tabCaption tab="s" tabsCount="4" tabNo="2" caption="Calendar" />
+                      &amp;nbsp;<vm:tabCaption tab="s" tabsCount="4" tabNo="3" caption="Discussion" />
                     </div>
                     <div id="s_contents" class="contents">
                       <div id="s_content_0" class="tabContent" style="display: none;">
@@ -5367,7 +5393,7 @@
                               <?vsp
                                 http(sprintf('<input type="radio" name="sr_chars" id="sr_chars_0" value="0" %s />', CAL.WA.checkedAttribute (CAL.WA.settings_chars (self.settings), 0)));
                               ?>
-                              &nbsp;<vm:label for="s_chars_0" value="--'show everything'" />
+                              &amp;nbsp;<vm:label for="s_chars_0" value="--'show everything'" />
                             </td>
                           </tr>
                           <tr>
@@ -5381,9 +5407,9 @@
                                   S := 'checked="checked"';
                                 http(sprintf('<input type="radio" name="sr_chars" id="sr_chars_1" value="1" %s />', S));
                               ?>
-                              &nbsp;<vm:label for="s_chars_1" value="--'show no more than'" />&nbsp;
+                              &amp;nbsp;<vm:label for="s_chars_1" value="--'show no more than'" />&amp;nbsp;
                               <v:text name="s_chars" null-value="--''" value="--get_keyword('chars', self.settings, '60')" xhtml_size="3" />
-                              &nbsp;<vm:label for="s_chars_1" value="--'characters'" />&nbsp;
+                              &amp;nbsp;<vm:label for="s_chars_1" value="--'characters'" />&amp;nbsp;
                             </td>
                           </tr>
                         <tr>
@@ -5704,7 +5730,7 @@
                   </tr>
                           </v:template>
                   <tr>
-                            <th width="30%">&nbsp;</th>
+                            <th width="30%">&amp;nbsp;</th>
                     <td>
                               <label>
                               <?vsp
@@ -5719,7 +5745,7 @@
                     </td>
                   </tr>
                   <tr>
-                            <th width="30%">&nbsp;</th>
+                            <th width="30%">&amp;nbsp;</th>
                     <td>
                               <label>
                               <?vsp
@@ -6335,7 +6361,7 @@
                           <?vsp
                             http(sprintf('<label><input type="radio" name="sg_mode" id="sg_mode_0" value="R" %s />Read Only</label>', CAL.WA.checkedAttribute (self.vg_mode, 'R')));
                             http('<br />');
-                            http(sprintf('<label><input type="radio" name="sg_mode" id="sg_mode_1" value="R" %s />Read/Write</label>', CAL.WA.checkedAttribute (self.vg_mode, 'W')));
+                            http(sprintf('<label><input type="radio" name="sg_mode" id="sg_mode_1" value="W" %s />Read/Write</label>', CAL.WA.checkedAttribute (self.vg_mode, 'W')));
                           ?>
                         </td>
                       </tr>

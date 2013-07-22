@@ -5,7 +5,7 @@
     <name package="test2">
       <prop name="Title" value="Test2"/>
       <prop name="Developer" value="OpenLink Software"/>
-      <prop name="Copyright" value="(C) 1998-2012 OpenLink Software"/>
+      <prop name="Copyright" value="(C) 1998-2013 OpenLink Software"/>
       <prop name="Download" value="http://www.openlinksw.com/virtuoso"/>
       <prop name="Download" value="http://www.openlinksw.co.uk/virtuoso"/>
     </name>

@@ -7,7 +7,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2012 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -34,7 +34,7 @@
                 xmlns:vm="http://www.openlinksw.com/vspx/macro">
 
 <xsl:include href="form.xsl"/>
-<xsl:include href="dav_browser.xsl"/>
+<xsl:include href="dav/dav_browser.xsl"/>
 <!--xsl:include href="cond_help.xsl"/-->
 <xsl:include href="file_browser.xsl"/>
 
@@ -628,6 +628,36 @@ http(sprintf('<xsl:for-each select="text">
 </xsl:choose>
 <xsl:if test="position() != last()">,</xsl:if></xsl:for-each>
 ));</xsl:if>
+</xsl:template>
+
+<xsl:template match="vm:label">
+  <label>
+    <xsl:attribute name="for"><xsl:value-of select="@for"/></xsl:attribute>
+    <v:label><xsl:attribute name="value"><xsl:value-of select="@value"/></xsl:attribute></v:label>
+  </label>
+</xsl:template>
+
+<xsl:template match="vm:tabCaption">
+  <div>
+    <xsl:if test="@hide">
+      <xsl:attribute name="style">display: none;</xsl:attribute>
+    </xsl:if>
+    <xsl:attribute name="id"><xsl:value-of select="concat('tab_', @tab)"/></xsl:attribute>
+    <xsl:attribute name="class">tab <xsl:if test="@activeTab = @tab">activeTab</xsl:if></xsl:attribute>
+    <xsl:attribute name="onclick">javascript:showTab(<xsl:value-of select="@tab"/>, <xsl:value-of select="@tabs"/>)</xsl:attribute>
+    <xsl:value-of select="@caption"/>
+  </div>
+</xsl:template>
+
+<xsl:template match="vm:if">
+  <xsl:processing-instruction name="vsp">
+    if (<xsl:value-of select="@test"/>)
+    {
+  </xsl:processing-instruction>
+      <xsl:apply-templates />
+  <xsl:processing-instruction name="vsp">
+    }
+  </xsl:processing-instruction>
 </xsl:template>
 
 <!-- dashboard status areas -->

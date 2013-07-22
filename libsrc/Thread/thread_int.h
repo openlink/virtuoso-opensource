@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -243,6 +243,13 @@ struct mutex_s
     int			mtx_type;
   };
 
+#ifdef MTX_METER
+#define MTX_TS_T(m) long m;
+#define MTX_TS_SET(m, mtx) m = mtx->mtx_enters
+#else
+#define MTX_TS_T(m)
+#define MTX_TS_SET(m, mtx)
+#endif
 /* thread_queue.c */
 void thread_queue_init (thread_queue_t *thq);
 void thread_queue_to (thread_queue_t *thq, thread_t *thr);

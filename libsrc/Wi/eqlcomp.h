@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -93,13 +93,20 @@ void sqlc_error (comp_context_t * cc, const char *st, const char *str,...);
 void sqlc_new_error (comp_context_t * cc, const char *st, const char *virt_code, const char *str,...);
 void sqlc_resignal_1 (comp_context_t * cc, caddr_t err);
 
+EXE_EXPORT(query_t *, sql_compile, (const char *string2, client_connection_t * cli, caddr_t * err, volatile int store_procs));
+EXE_EXPORT(query_t *, sql_proc_to_recompile, (const char *string2, client_connection_t * cli, caddr_t proc_name, int text_is_constant));
+
 extern query_t *DBG_NAME (sql_compile) (DBG_PARAMS const char *string2, client_connection_t * cli, caddr_t * err,
     volatile int store_procs);
 extern query_t *DBG_NAME (sql_proc_to_recompile) (DBG_PARAMS const char *string2, client_connection_t * cli, caddr_t proc_name,
     int text_is_constant);
 #ifdef MALLOC_DEBUG
+#ifndef _USRDLL
+#ifndef EXPORT_GATE
 #define sql_compile(s,c,e,sp) dbg_sql_compile(__FILE__,__LINE__,(s),(c),(e),(sp))
 #define sql_proc_to_recompile(s,c,pn,tic) dbg_sql_proc_to_recompile(__FILE__,__LINE__,(s),(c),(pn),(tic))
+#endif
+#endif
 #endif
 
 #if defined (MALLOC_DEBUG) || defined (VALGRIND)

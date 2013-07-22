@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1041,5 +1041,48 @@ fin:
   dk_free_tree ((caddr_t)normalized_word_hits);
   return _result;
 }
+
+
+
+float
+rnk_scale (caddr_t box)
+{
+  dtp_t * dtp = DV_TYPE_OF (box);
+  int i;
+  float ret;
+  if (DV_DB_NULL == dtp)
+    i = 0;
+  else
+    i = unbox_inline (box);
+  
+  ret = exp (i - 0x3FFFFFFF) / (float)0x3FFFFFF;
+  
+  if (ret < 1) 
+    {
+      return (2 * atan (ret*5));
+    }
+  
+  if (ret > 1 && ret < 10)
+    {
+      return 3 + ((atan (ret-1) * 4) / 3.14e0);
+    }
+  else 
+    {
+      return 7 + (atan ((ret-10)/50) * 2);
+    }
+}
+
+
+
+caddr_t
+bif_sum_rank (caddr_t *qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t * arr = (caddr_t*)bif_arg (qst, args, 0, "sum_rank");
+  if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (arr) || BOX_ELEMENTS (arr) < 3)
+    return NULL;
+  return box_double (rnk_scale (arr[0]) + (float) ((float)unbox (arr[2]) / ((unbox (arr[1]) / 3))));
+  /* return  rnk_scale_v (arr[0]) + cast (arr[2] as real) / (arr[1] / 3); */
+}
+
 
 #endif

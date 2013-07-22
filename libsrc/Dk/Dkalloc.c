@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -200,7 +200,7 @@ av_adjust (av_list_t * av, int sz)
    * forget stats after 1000000 gets */
   if (av->av_n_empty > av->av_gets / 20 &&
       av->av_n_full > av->av_n_empty / 2 &&
-      av->av_max < 160000 / sz)
+      ((av->av_max * (long)(sz)) < 160000) )
     {
       av->av_n_empty = 0;
       av->av_n_full = 0;

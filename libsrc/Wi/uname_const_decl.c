@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -46,6 +46,11 @@ caddr_t uname__srcfile;
 caddr_t uname__srcline;
 caddr_t uname__txt;
 caddr_t uname__xslt;
+caddr_t uname_SPECIAL_cc_bif_c_AVG;
+caddr_t uname_SPECIAL_cc_bif_c_COUNT;
+caddr_t uname_SPECIAL_cc_bif_c_MAX;
+caddr_t uname_SPECIAL_cc_bif_c_MIN;
+caddr_t uname_SPECIAL_cc_bif_c_SUM;
 caddr_t uname_lang;
 caddr_t uname_nil;
 caddr_t uname_nodeID_ns;
@@ -70,6 +75,11 @@ caddr_t uname_rdf_ns_uri_type;
 caddr_t uname_rdf_ns_uri_datatype;
 caddr_t uname_rdf_ns_uri_parseType;
 caddr_t uname_rdf_ns_uri_value;
+caddr_t uname_rdfdf_ns_uri;
+caddr_t uname_rdfdf_ns_uri_default;
+caddr_t uname_rdfdf_ns_uri_default_nullable;
+caddr_t uname_rdfdf_ns_uri_default_iid;
+caddr_t uname_rdfdf_ns_uri_default_iid_nullable;
 caddr_t uname_space;
 caddr_t uname_swap_reify_ns_uri;
 caddr_t uname_swap_reify_ns_uri_statement;
@@ -77,6 +87,7 @@ caddr_t uname_virtrdf_ns_uri;
 caddr_t uname_virtrdf_ns_uri_DefaultQuadMap;
 caddr_t uname_virtrdf_ns_uri_DefaultQuadStorage;
 caddr_t uname_virtrdf_ns_uri_DefaultServiceStorage;
+caddr_t uname_virtrdf_ns_uri_DefaultSparul11Target;
 caddr_t uname_virtrdf_ns_uri_PrivateGraphs;
 caddr_t uname_virtrdf_ns_uri_QuadMap;
 caddr_t uname_virtrdf_ns_uri_QuadMapFormat;
@@ -165,7 +176,7 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname__bang_name				, " !name"			},
   { &uname__bang_ns				, " !ns"			},
   { &uname__bang_uri				, " !uri"			},
-  { &uname__bang_use_attribute_sets		, " !use-attribute-sets"	},
+  { &uname__bang_use_attribute_sets		, " !use-attribute-sets"		},
   { &uname__bang_xmlns				, " !xmlns"			},
   { &uname__attr				, " attr"			},
   { &uname__comment				, " comment"			},
@@ -177,6 +188,11 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname__srcline				, " srcline"			},
   { &uname__txt					, " txt"			},
   { &uname__xslt				, " xslt"			},
+  { &uname_SPECIAL_cc_bif_c_AVG			, "SPECIAL::bif:AVG"		},
+  { &uname_SPECIAL_cc_bif_c_COUNT		, "SPECIAL::bif:COUNT"		},
+  { &uname_SPECIAL_cc_bif_c_MAX			, "SPECIAL::bif:MAX"		},
+  { &uname_SPECIAL_cc_bif_c_MIN			, "SPECIAL::bif:MIN"		},
+  { &uname_SPECIAL_cc_bif_c_SUM			, "SPECIAL::bif:SUM"		},
   { &uname_lang					, "lang"			},
   { &uname_nil					, "nil"				},
   { &uname_nodeID_ns				, "nodeID://"			},
@@ -201,6 +217,11 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname_rdf_ns_uri_datatype			, RDF_NS_URI "datatype"		},
   { &uname_rdf_ns_uri_parseType			, RDF_NS_URI "parseType"	},
   { &uname_rdf_ns_uri_value			, RDF_NS_URI "value"		},
+  { &uname_rdfdf_ns_uri				, RDFDF_NS_URI			},
+  { &uname_rdfdf_ns_uri_default			, RDFDF_NS_URI "default"	},
+  { &uname_rdfdf_ns_uri_default_nullable	, RDFDF_NS_URI "default-nullable"	},
+  { &uname_rdfdf_ns_uri_default_iid		, RDFDF_NS_URI "default-iid"	},
+  { &uname_rdfdf_ns_uri_default_iid_nullable	, RDFDF_NS_URI "default-iid-nullable"	},
   { &uname_space				, "space"			},
   { &uname_swap_reify_ns_uri			, SWAP_REIFY_NS_URI		},
   { &uname_swap_reify_ns_uri_statement		, SWAP_REIFY_NS_URI "statement"	},
@@ -208,6 +229,7 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname_virtrdf_ns_uri_DefaultQuadMap	, VIRTRDF_NS_URI "DefaultQuadMap"	},
   { &uname_virtrdf_ns_uri_DefaultQuadStorage	, VIRTRDF_NS_URI "DefaultQuadStorage"	},
   { &uname_virtrdf_ns_uri_DefaultServiceStorage	, VIRTRDF_NS_URI "DefaultServiceStorage"	},
+  { &uname_virtrdf_ns_uri_DefaultSparul11Target	, VIRTRDF_NS_URI "DefaultSparul11Target"	},
   { &uname_virtrdf_ns_uri_PrivateGraphs		, VIRTRDF_NS_URI "PrivateGraphs"	},
   { &uname_virtrdf_ns_uri_QuadMap		, VIRTRDF_NS_URI "QuadMap"	},
   { &uname_virtrdf_ns_uri_QuadMapFormat		, VIRTRDF_NS_URI "QuadMapFormat"	},

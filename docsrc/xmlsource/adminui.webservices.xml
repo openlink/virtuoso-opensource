@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2012 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -28,26 +28,28 @@
     <itemizedlist mark="bullet">Some of the supported features are:
       <listitem><emphasis>Import Targets</emphasis>: Virtuoso can be set up to retrieve content from external web sites and host it in its own
 WebDAV repository via this page.
-        <figure float="1"><title>Web Robot - Target</title>
+        <figure float="1"><title>Web Robot - Crawl Job</title>
       <graphic fileref="ui/dav_rbt_trgt_01.png"/>
     </figure>
+        <figure float="1"><title>Web Robot - Crawl Job</title>
+          <graphic fileref="ui/dav_rbt_trgt_02.png"/>
+        </figure>        
         <itemizedlist mark="bullet">
-          <listitem><emphasis>Target Description</emphasis> lets you provide a friendly description for the
-target that you are defining.</listitem>
-          <listitem><emphasis>Target URL</emphasis> is the url of the web site that you are trying
+          <listitem><emphasis>Crawl Job Name</emphasis> lets you provide a friendly name for the target that you are defining.</listitem>
+          <listitem><emphasis>Data Source Address (URL)</emphasis> is the url of the web site that you are trying
 to retrieve content from. Only the hostname should be provided here, along with the protocol. For
 example http://www.myhost.com.</listitem>
-          <listitem><emphasis>Login name on target</emphasis> is the username for accessing the remote server,
+          <listitem><emphasis>Data Source Username (Login ID)</emphasis> is the username for accessing the remote server,
 if required.
           </listitem>
-          <listitem><emphasis>Login password on target</emphasis> is the password for the login name above.</listitem>
-          <listitem><emphasis>Copy to Local DAV collection</emphasis> is the name of the collection (folder)
-where retrieved content will be stored in DAV.</listitem>
+          <listitem><emphasis>Data Source Password</emphasis> is the password for the login name above.</listitem>
+          <listitem><emphasis>Local WebDAV Identifier</emphasis> this *mandatory* value will serve 
+          as the DAV root location if content is stored locally.</listitem>
           <listitem><emphasis>Single page download</emphasis> radio button specifies whether
 Virtuoso will retrieved linked content also.</listitem>
           <listitem><emphasis>Local Resources Owner</emphasis> The DAV user that will be the owner
 of the content that will copied to DAV.</listitem>
-          <listitem>The <emphasis>Download only newer than</emphasis> field allows you to specify
+          <listitem>The <emphasis>Retrieve data newer than</emphasis> field allows you to specify
 a datetime value to prevent Virtuoso downloading files that are older than
 that datetime.</listitem>
           <listitem>Use the <emphasis>Follow Links Matching</emphasis> field to limit the content
@@ -56,12 +58,39 @@ that is downloaded by specify pattern matching criteria.</listitem>
 specifying what files not to download.</listitem>
         </itemizedlist>
       </listitem>                                                
+      <listitem><emphasis>Use robots.txt</emphasis> check-box is checked by default.</listitem>
+      <listitem><emphasis>Custom HTTP headers</emphasis> can be used to specigy custom HTTP headers.</listitem>
+      <listitem><emphasis>Number of HTTP redirects to follow</emphasis> is set by default to 1.</listitem>
+      <listitem><emphasis>XPath expression for links extraction</emphasis> allows to be entered custom XPath expression.</listitem>
+      <listitem><emphasis>Crawling depth limit</emphasis> allows to limit crawling depth. By default is set to "unlimited".</listitem>
+      <listitem><emphasis>Update Interval (minutes)</emphasis> is on what interval the updated of the crawled data should be performed.</listitem>      
+      <listitem><emphasis>Number of threads</emphasis> allows setting crawling threads.</listitem>            
+      <listitem><emphasis>Crawl delay (sec)</emphasis> allows to be specified a delay. By default is set to "0.00".</listitem>                  
+      <listitem><emphasis>Store Function</emphasis> allows to be used a specific stored function for ex. in Semantic Sitemaps crawling. 
+        <para>  
+          <tip><title>See Also:</title>
+            <para><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSetCrawlerJobsGuideSemanticSitemapsFuncExample">Example of Stored Functions.</ulink></para>
+          </tip>
+        </para>  
+      </listitem>                        
+      <listitem><emphasis>Extract Function</emphasis> allows to be used a specific extract function for ex. in Semantic Sitemaps crawling. If left empty, will be used a system Store function.
+        <para>  
+          <tip><title>See Also:</title>
+            <para><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSetCrawlerJobsGuideSemanticSitemapsFuncExample">Example of Stored Functions.</ulink></para>
+          </tip>
+        </para>        
+      </listitem>                              
+      <listitem><emphasis>Semantic Web Crawling</emphasis>: hatch to retrieve Semantic Sitemaps. If left empty, will be used a system Store function.</listitem>                              
+      <listitem><emphasis>If Graph IRI is unassigned use this Data Source URL:</emphasis> use to specify a custom graph URI for data storage.</listitem>                              
+      <listitem><emphasis>Follow URLs outside of the target host</emphasis> is check-box to specify either to follow URIS outside of the target host.</listitem>                               	
+      <listitem><emphasis>Follow HTML meta link</emphasis> is check-box to specifiy either to follow HTML meta links.</listitem>                               	
+      <listitem><emphasis>Follow these properties paths (list one IRI per row)</emphasis>.</listitem>                               	
       <listitem><emphasis>Download Images</emphasis> radio buttons to allow Virtuoso to pull
 down image type also.  You may want to prevent this if you are more interested
 in the textual content rather than bandwidth draining images.</listitem>                                    
       <listitem><emphasis>Use WebDAV methods</emphasis> can be checked if the host is known to
 support WebDAV methods. This would enable better copying of sites that support DAV.</listitem>                                    
-      <listitem><emphasis>Delete if Remove on Remote is Detected</emphasis> can be switched on
+      <listitem><emphasis>Delete if remove on remote detected</emphasis> can be switched on
 so that when Virtuoso synchronizes its content with that on the remote host
 it will check for files that have been removed on the remote and remove
 them from the local copy also.</listitem>                                    
@@ -142,17 +171,18 @@ to any WebDAV server. WebDAV methods assume that the target is publicly availabl
   </listitem>
   <listitem>In the form displayed:
 <itemizedlist mark="bullet">
-  <listitem>Enter a name of choice in the "Target description" text box:
+  <listitem>Enter a name of choice in the "Crawl Job Name" text box:
 <programlisting><![CDATA[
 Virtuoso Sample Example	
 ]]></programlisting>  	
 </listitem>
-  <listitem>Enter the URL of the site to be crawled in the "Target URL" text box: 
+  <listitem>Enter the URL of the site to be crawled in the "Data Source Address (URL)" text box: 
 <programlisting><![CDATA[
 http://virtuoso.openlinksw.com/
 ]]></programlisting>  	
 </listitem>
-  <listitem>Enter the location in the Virtuoso WebDAV repository the crawled should stored in the "Copy to local DAV collection" text box, for example, if user demo is available, then:
+  <listitem>Enter the location in the Virtuoso WebDAV repository the crawled should stored, in the 
+  	"Local WebDAV Identifier" text box, for example, if user demo is available, then:
 <programlisting><![CDATA[
 /DAV/home/demo/VirtSample/	
 ]]></programlisting>  	
@@ -170,10 +200,6 @@ http://virtuoso.openlinksw.com/
       <title>Setting up a Content Crawler Job to Retrieve Sitemaps</title>
       <graphic fileref="ui/cr11a.png"/>
     </figure>    
-    <figure id="cr11b" float="1">
-      <title>Setting up a Content Crawler Job to Retrieve Sitemaps</title>
-      <graphic fileref="ui/cr11b.png"/>
-    </figure>        
   </listitem>
   <listitem>Click the "Import Queues" button.
     <figure id="cr12" float="1">
@@ -237,17 +263,18 @@ http://virtuoso.openlinksw.com/
   </listitem>
   <listitem>In the shown form:
 <itemizedlist mark="bullet">
-  <listitem>Enter for "Target description":
+  <listitem>Enter for "Crawl Job Name":
 <programlisting><![CDATA[
 Semantic Web Sitemap Example 	
 ]]></programlisting>  	
 </listitem>
-  <listitem>Enter for "Target URL":
+  <listitem>Enter for "Data Source Address (URL)":
 <programlisting><![CDATA[
 http://www.connexfilter.com/sitemap_en.xml	
 ]]></programlisting>  	
 </listitem>
-  <listitem>Enter the location in the Virtuoso WebDAV  repository the crawled should stored in the "Copy to local DAV collection" text box, for example, if user demo is available, then:
+  <listitem>Enter the location in the Virtuoso WebDAV  repository the crawled should stored in the 
+  	"Local WebDAV Identifier" text box, for example, if user demo is available, then:
 <programlisting><![CDATA[
 /DAV/home/demo/semantic_sitemap/	
 ]]></programlisting>  	
@@ -387,7 +414,8 @@ create procedure WS.WS.SITEMAP_BB_STORE (
   </listitem>    
 </itemizedlist>  	
   </listitem>
-  <listitem>Hatch "Ask for RDF"
+  <listitem>Optionally you can select "Convert Link" to make all HREFs in the local stored content relative.</listitem>
+  <listitem>Hatch "Accept RDF"
     <figure id="cr16" float="1">
       <title>Setting up a Content Crawler Job to Retrieve Semantic Sitemap content</title>
       <graphic fileref="ui/cr16.png"/>
@@ -396,12 +424,13 @@ create procedure WS.WS.SITEMAP_BB_STORE (
       <title>Setting up a Content Crawler Job to Retrieve Semantic Sitemap content</title>
       <graphic fileref="ui/cr17.png"/>
     </figure>    
+  </listitem>  
+  <listitem>Optionally you can hatch "Store metadata *" and specify which RDF Cartridges to be included from the Sponger: 
     <figure id="cr17a" float="1">
       <title>Setting up a Content Crawler Job to Retrieve Semantic Sitemap content</title>
       <graphic fileref="ui/cr17a.png"/>
     </figure>        
   </listitem>
-  <listitem>Optionally you can select "Convert Link" to make all HREFs in the local stored content relative.</listitem>
   <listitem>Click the button "Create". 
     <figure id="cr18" float="1">
       <title>Setting up a Content Crawler Job to Retrieve Semantic Sitemap content</title>
@@ -463,17 +492,17 @@ WHERE
   </listitem>
   <listitem>In the shown form:
 <itemizedlist mark="bullet">
-  <listitem>Enter for "Target description":
+  <listitem>Enter for "Crawl Job Name":
 <programlisting><![CDATA[
 Gov.UK data	
 ]]></programlisting>  	
 </listitem>
-  <listitem>Enter for "Target URL":
+  <listitem>Enter for "Data Source Address (URL)":
 <programlisting><![CDATA[
 http://source.data.gov.uk/data/	
 ]]></programlisting>  	
 </listitem>
-  <listitem>Enter for "Copy to local DAV collection" for available user, for ex. demo:
+  <listitem>Enter for "Local WebDAV Identifier" for available user, for ex. demo:
 <programlisting><![CDATA[
 /DAV/home/demo/gov.uk/	
 ]]></programlisting>  	
@@ -483,6 +512,10 @@ http://source.data.gov.uk/data/
       <title>Setting up a Content Crawler Job to Retrieve Content from Specific Directories</title>
       <graphic fileref="ui/d1.png"/>
     </figure>  	
+    <figure id="d1a" float="1">
+      <title>Setting up a Content Crawler Job to Retrieve Content from Specific Directories</title>
+      <graphic fileref="ui/d1a.png"/>
+    </figure>      	
 </listitem>
   <listitem>Optionally you can select "Convert Link" to make all HREFs in the local stored content relative.</listitem>
   <listitem>Click the button "Create".</listitem>
@@ -553,18 +586,20 @@ DAV/home/demo/gov.uk/data
         </figure>       	
       </listitem>
       <listitem>Click "New Target":
-        <figure id="cra2" float="1">
+        <figure id="cr3" float="1">
           <title>Crawling ATOM feed</title>
-          <graphic fileref="ui/cra2.png"/>
+          <graphic fileref="ui/cr3.png"/>
         </figure>       	
       </listitem>
       <listitem>In the presented form specify respectively:
         <itemizedlist mark="bullet">
-          <listitem>"Target description": for ex. National Bibliography ;</listitem>
-          <listitem>"Target URL": for ex. http://data.libris.kb.se/nationalbibliography/feed/ ;
-          <para>Note: the entered URL will be the graph URI for storing the imported RDF data. You can also set it explicitly by entering another graph URI in the "Data Source URL" shown as option in this form.</para>
+          <listitem>"Crawl Job Name": for ex. National Bibliography ;</listitem>
+          <listitem>"Data Source Address (URL)": for ex. http://data.libris.kb.se/nationalbibliography/feed/ ;
+          <para>Note: the entered URL will be the graph URI for storing the imported RDF data. 
+          	You can also set it explicitly by entering another graph URI in the 
+          	"Data Source URL" shown as option in this form.</para>
           </listitem>
-          <listitem>"Copy to local DAV collection": for ex.
+          <listitem>"Local WebDAV Identifier": for ex.
 <programlisting><![CDATA[
 /DAV/temp/nbio/ 	
 ]]></programlisting>          	
@@ -591,10 +626,6 @@ DAV/home/demo/gov.uk/data
               <title>Crawling ATOM feed</title>
               <graphic fileref="ui/cra5.png"/>
             </figure>
-            <figure id="cra6" float="1">
-              <title>Crawling ATOM feed</title>
-              <graphic fileref="ui/cra6.png"/>
-            </figure>                                         	
           </listitem>
         </itemizedlist>      	
       </listitem>
@@ -742,20 +773,20 @@ omepage+%3Furl+%7D%0D%0A&format=sparql"
         </figure>        	
       </listitem>
       <listitem>Click "New Target":
-        <figure id="scp3" float="1">
+        <figure id="cr3" float="1">
           <title>Crawling SPARQL Endpoints</title>
-          <graphic fileref="ui/scp3.png"/>
+          <graphic fileref="ui/cr3.png"/>
         </figure>      	
       </listitem>
       <listitem>In the presented form enter for ex.:
         <orderedlist>
-          <listitem>"Target description": voiD store;</listitem>
-          <listitem>"Target URL": the url from above i.e.:
+          <listitem>"Crawl Job Name": voiD store;</listitem>
+          <listitem>"Data Source Address (URL)": the url from above i.e.:
 <programlisting><![CDATA[
 http://void.rkbexplorer.com/sparql/?query=PREFIX+foaf%3A+%3Chttp%3A%2F%2Fxmlns.com%2Ffoaf%2F0.1%2F%3E+%0D%0APREFIX+void%3A+++++%3Chttp%3A%2F%2Frdfs.org%2Fns%2Fvoid%23%3E++%0D%0ASELECT+distinct+%3Furl++WHERE+%7B+%3Fds+a+void%3ADataset+%3B+foaf%3Ahomepage+%3Furl+%7D%0D%0A&format=sparql	
 ]]></programlisting>          	
           </listitem>
-          <listitem>"Copy to local DAV collection":
+          <listitem>"Local WebDAV Identifier":
 <programlisting><![CDATA[
 /DAV/void.rkbexplorer.com/content	
 ]]></programlisting>          	
@@ -787,10 +818,6 @@ http://void.collection
               <title>Crawling SPARQL Endpoints</title>
               <graphic fileref="ui/scp5.png"/>
             </figure>           	
-            <figure id="scp6" float="1">
-              <title>Crawling SPARQL Endpoints</title>
-              <graphic fileref="ui/scp6.png"/>
-            </figure>           	                        
           </listitem>
         </orderedlist>      	
       </listitem>

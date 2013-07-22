@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2012 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -126,8 +126,12 @@ create function "WebDAV_DAV_COL_CREATE" (
       V := rfc1808_parse_uri (url);
       V[2] := parentListHref;
       url := DB.DBA.vspx_uri_compose (V);
-      listHref := rtrim (V[2], '/') || listHref;
     }
+    else
+    {
+      V := rfc1808_parse_uri (url);
+    }
+    listHref := rtrim (V[2], '/') || '/' || title || '/';
     url := rtrim (url) || '/' || sprintf ('%U', title) || '/';
     result := DB.DBA.WebDAV__exec (detcol_id, retHeader, 'MKCOL', url);
     if (DAV_HIDE_ERROR (result) is null)
@@ -204,7 +208,7 @@ create function "WebDAV_DAV_DELETE" (
   -- dbg_obj_princ ('WebDAV_DAV_DELETE (', detcol_id, path_parts, what, silent, auth_uid, ')');
   declare path, listHref varchar;
   declare V, retValue, save any;
-  declare id, url, header, retHeader, params any;
+  declare id, id_acl, url, header, retHeader any;
   declare exit handler for sqlstate '*'
   {
     connection_set ('dav_store', save);
@@ -228,6 +232,20 @@ create function "WebDAV_DAV_DELETE" (
     retValue := DB.DBA.WebDAV__exec (detcol_id, retHeader, 'DELETE', url);
     if (DAV_HIDE_ERROR (retValue) is null)
       goto _exit;
+
+    id_acl := DB.DBA.DAV_SEARCH_ID (path || ',acl', 'R');
+    if (DAV_HIDE_ERROR (id_acl) is not null)
+    {
+      listHref := DB.DBA.WebDAV__paramGet (id_acl, 'R', 'href', 0);
+      if (listHref is null)
+        goto _exit;
+
+      url := DB.DBA.WebDAV__paramGet (detcol_id, 'C', 'path', 0);
+      V := rfc1808_parse_uri (url);
+      V[2] := listHref;
+      url := DB.DBA.vspx_uri_compose (V);
+      DB.DBA.WebDAV__exec (detcol_id, retHeader, 'DELETE', url);
+    }
   }
   connection_set ('dav_store', 1);
   if (what = 'R')
@@ -258,7 +276,6 @@ create function "WebDAV_DAV_RES_UPLOAD" (
   -- dbg_obj_princ ('WebDAV_DAV_RES_UPLOAD (', detcol_id, path_parts, ', [content], ', type, permissions, uid, gid, auth_uid, ')');
   declare ouid, ogid integer;
   declare title, path, parentID, parentListHref, listHref, listItem, rdf_graph varchar;
-  declare url, body, header any;
   declare url, header, body, params any;
   declare V, retValue, retHeader, result, save any;
   declare exit handler for sqlstate '*'
@@ -280,7 +297,6 @@ create function "WebDAV_DAV_RES_UPLOAD" (
     }
     title := path_parts[length (path_parts)-1];
     url := DB.DBA.WebDAV__paramGet (detcol_id, 'C', 'path', 0);
-    listHref := '/' || title;
     if (length (path_parts) > 1)
     {
       parentID := DB.DBA.DAV_SEARCH_ID (path, 'P');
@@ -291,8 +307,12 @@ create function "WebDAV_DAV_RES_UPLOAD" (
       V := rfc1808_parse_uri (url);
       V[2] := parentListHref;
       url := DB.DBA.vspx_uri_compose (V);
-      listHref := rtrim (V[2], '/') || listHref;
     }
+    else
+    {
+      V := rfc1808_parse_uri (url);
+    }
+    listHref := rtrim (V[2], '/') || '/' || title;
     header := sprintf (
       'Content-Length: %d\r\n' ||
       'Content-Type: %s\r\n',
@@ -327,7 +347,7 @@ _exit:;
 
     if (save is null)
     {
-      DB.DBA.WebDAV__paramSet (retValue, 'R', 'Entry', DB.DBA.WebDAV__obj2xml (listItem), 0);
+      DB.DBA.WebDAV__paramSet (retValue, 'R', 'Entry', listItem, 0);
       DB.DBA.WebDAV__paramSet (retValue, 'R', 'href', listHref, 0);
     }
     DB.DBA.WebDAV__paramSet (retValue, 'R', 'virt:DETCOL_ID', cast (detcol_id as varchar), 0, 0);
@@ -446,8 +466,8 @@ create function "WebDAV_DAV_DIR_LIST" (
 {
   -- dbg_obj_princ ('WebDAV_DAV_DIR_LIST (', detcol_id, subPath_parts, detcol_parts, name_mask, recursive, auth_uid, ')');
   declare colId integer;
-  declare what, colPath, colHref varchar;
-  declare tmp, retValue, save, downloads, listItems, listItem, davItems, colEntry, xmlItems, davEntry, listHrefs, listHref any;
+  declare what, colPath varchar;
+  declare retValue, save any;
   declare exit handler for sqlstate '*'
   {
     connection_set ('dav_store', save);
@@ -455,7 +475,6 @@ create function "WebDAV_DAV_DIR_LIST" (
   };
 
   save := connection_get ('dav_store');
-  connection_set ('dav_store', null);
   what := case when ((length (subPath_parts) = 0) or (subPath_parts[length (subPath_parts) - 1] = '')) then 'C' else 'R' end;
   if ((what = 'R') or (recursive = -1))
     return DB.DBA.WebDAV_DAV_DIR_SINGLE (detcol_id, what, null, auth_uid);
@@ -463,147 +482,8 @@ create function "WebDAV_DAV_DIR_LIST" (
   colPath := DB.DBA.DAV_CONCAT_PATH (detcol_parts, subPath_parts);
   colId := DB.DBA.DAV_SEARCH_ID (colPath, 'C');
 
-  downloads := vector ();
-  listItems := DB.DBA.WebDAV__list (detcol_id, detcol_parts, subPath_parts);
-  if (DAV_HIDE_ERROR (listItems) is null)
-    goto _exit;
-
-  if (isinteger (listItems))
-    goto _exit;
-
-  DB.DBA.WebDAV__activity (detcol_id, 'Sync started');
-  {
-    declare _id, _what, _type, _content any;
-    declare title varchar;
-    {
-      declare exit handler for sqlstate '*'
-      {
-        DB.DBA.WebDAV__activity (detcol_id, 'Exec error: ' || __SQL_MESSAGE);
-        goto _exitSync;
-      };
-
-      connection_set ('dav_store', 1);
-      colEntry := DB.DBA.DAV_DIR_SINGLE_INT (colId, 'C', '', null, null, http_dav_uid ());
-      colHref := null;
-      if (length (subPath_parts) = 1)
-      {
-        tmp := DB.DBA.WebDAV__paramGet (detcol_id, 'C', 'path', 0);
-        tmp := rfc1808_parse_uri (tmp);
-        colHRef := tmp[2];
-      }
-      else
-      {
-        colHref := DB.DBA.WebDAV__paramGet (colId, 'C', 'href', 0);
-      }
-      if (colHref is null)
-        goto _exit;
-
-      connection_set ('dav_store', 1);
-      listItems := xml_tree_doc (xml_expand_refs (xml_tree (listItems)));
-      listHrefs := vector ();
-      davItems := DB.DBA.WebDAV__davList (detcol_id, colId);
-      foreach (any davItem in davItems) do
-      {
-        listHref := DB.DBA.WebDAV__paramGet (davItem[4], davItem[1], 'href', 0);
-        if ((listHref <> colHref) and not position (listHref, listHrefs))
-        {
-          listItem := DB.DBA.WebDAV__entryXPath (listItems, sprintf ('[D:href = "%s"]', listHref), 0);
-          if (listItem is not null)
-          {
-            listItem := xml_cut (listItem);
-            davEntry := DB.DBA.WebDAV__paramGet (davItem[4], davItem[1], 'Entry', 0);
-            if ((davEntry is not null) and (DB.DBA.WebDAV__title (listHref) = davItem[10]))
-            {
-              listHrefs := vector_concat (listHrefs, vector (listHref));
-              davEntry := xtree_doc (davEntry);
-              if (
-                  (DB.DBA.WebDAV__propertyXPath (davEntry, '/D:getlastmodified', 1) <> DB.DBA.WebDAV__propertyXPath (listItem, '/D:getlastmodified', 1)) or
-                  (DB.DBA.WebDAV__propertyXPath (davEntry, '/D:getetag', 1) <> DB.DBA.WebDAV__propertyXPath (listItem, '/D:getetag', 1))
-                 )
-              {
-                set triggers off;
-                DB.DBA.WebDAV__paramSet (davItem[4], davItem[1], ':getlastmodified', DB.DBA.WebDAV__stringdate (DB.DBA.WebDAV__propertyXPath (listItem, '/D:getlastmodified', 1)), 0, 0);
-                set triggers on;
-                DB.DBA.WebDAV__paramSet (davItem[4], davItem[1], 'Entry', DB.DBA.WebDAV__xml2string (listItem), 0);
-                if (davItem[1] = 'R')
-                {
-                  DB.DBA.WebDAV__paramSet (davItem[4], davItem[1], 'download', '0', 0);
-                  downloads := vector_concat (downloads, vector (vector (davItem[4], davItem[1])));
-                }
-              }
-              else
-              {
-                declare downloaded integer;
-
-                downloaded := DB.DBA.WebDAV__paramGet (davItem[4], davItem[1], 'download', 0);
-                if (downloaded is not null)
-                {
-                  downloaded := cast (downloaded as integer);
-                  if (downloaded <= 5)
-                    downloads := vector_concat (downloads, vector (vector (davItem[4], davItem[1])));
-                }
-              }
-              goto _continue;
-            }
-          }
-        }
-        if (davItem[1] = 'R')
-          DB.DBA.WebDAV__rdf_delete (detcol_id, davItem[4], davItem[1]);
-        DAV_DELETE_INT (davItem[0], 1, null, null, 0, 0);
-
-      _continue:;
-        commit work;
-      }
-      listItems := xpath_eval ('[xmlns:D="DAV:"] /D:multistatus/D:response', listItems, 0);
-      foreach (any listItem in listItems) do
-      {
-        listItem := xml_cut(listItem);
-        listHref := DB.DBA.WebDAV__entryXPath (listItem, '/D:href', 1);
-        if ((listHref <> colHref) and not position (listHref, listHrefs))
-        {
-          title := DB.DBA.WebDAV__title (listHref);
-          connection_set ('dav_store', 1);
-          if (not isnull (DB.DBA.WebDAV__propertyXPath (listItem, '/D:resourcetype/D:collection', 0)))
-          {
-            _id := DB.DBA.DAV_COL_CREATE (colPath || title || '/',  colEntry[5], colEntry[7], colEntry[6], DB.DBA.WebDAV__user (http_dav_uid ()), DB.DBA.WebDAV__password (http_dav_uid ()));
-            _what := 'C';
-          }
-          else
-          {
-            _content := '';
-            _type := DB.DBA.WebDAV__propertyXPath (listItem, '/D:getcontenttype', 1);
-            if (DB.DBA.is_empty_or_null (_type))
-              _type := http_mime_type (title);
-            _id := DB.DBA.DAV_RES_UPLOAD (colPath || title,  _content, _type, colEntry[5], colEntry[7], colEntry[6], DB.DBA.WebDAV__user (http_dav_uid ()), DB.DBA.WebDAV__password (http_dav_uid ()));
-            _what := 'R';
-          }
-          if (DAV_HIDE_ERROR (_id) is not null)
-          {
-            set triggers off;
-            DB.DBA.WebDAV__paramSet (_id, _what, ':creationdate', stringdate (DB.DBA.WebDAV__propertyXPath (listItem, '/D:creationdate', 1)), 0, 0);
-            DB.DBA.WebDAV__paramSet (_id, _what, ':getlastmodified', DB.DBA.WebDAV__stringdate (DB.DBA.WebDAV__propertyXPath (listItem, '/D:getlastmodified', 1)), 0, 0);
-            set triggers on;
-            DB.DBA.WebDAV__paramSet (_id, _what, 'virt:DETCOL_ID', cast (detcol_id as varchar), 0, 0);
-            DB.DBA.WebDAV__paramSet (_id, _what, 'href', listHref, 0);
-            DB.DBA.WebDAV__paramSet (_id, _what, 'Entry', DB.DBA.WebDAV__xml2string (listItem), 0);
-            if (_what = 'R')
-            {
-              DB.DBA.WebDAV__paramSet (_id, _what, 'download', '0', 0);
-              downloads := vector_concat (downloads, vector (vector (_id, _what)));
-            }
-          }
-          commit work;
-        }
-      }
-    }
-  _exitSync:
-    connection_set ('dav_store', save);
-  }
-  DB.DBA.WebDAV__activity (detcol_id, 'Sync ended');
-
-_exit:;
+  DB.DBA.WebDAV__load (detcol_id, subPath_parts, detcol_parts);
   retValue := DB.DBA.WebDAV__davList (detcol_id, colId);
-  DB.DBA.WebDAV__downloads (detcol_id, downloads);
 
   return retValue;
 }
@@ -718,7 +598,80 @@ create function "WebDAV_DAV_RES_UPLOAD_MOVE" (
   in auth_uid integer) returns any
 {
   -- dbg_obj_princ ('WebDAV_DAV_RES_UPLOAD_MOVE (', detcol_id, path_parts, source_id, what, overwrite_flags, auth_uid, ')');
-  return -20;
+  declare oldHref, oldName, newHref, newName varchar;
+  declare url, header, body any;
+  declare V, srcEntry, listItem any;
+  declare retValue, retHeader, result, save any;
+
+  retValue := -20;
+  srcEntry := DB.DBA.DAV_DIR_SINGLE_INT (source_id, what, '', null, null, http_dav_uid ());
+  if (DB.DBA.DAV_HIDE_ERROR (srcEntry) is null)
+    return;
+
+  oldName := srcEntry[10];
+  newName := case when what = 'C' then path_parts[length (path_parts)-2] else path_parts[length (path_parts)-1] end;
+  if (oldName <> newName)
+  {
+    declare exit handler for sqlstate '*'
+    {
+      connection_set ('dav_store', save);
+      resignal;
+    };
+
+    save := connection_get ('dav_store');
+    if (save is null)
+    {
+      oldHref := DB.DBA.WebDAV__paramGet (source_id, what, 'href', 0);
+      V := split_and_decode (oldHref, 0, '\0\0/');
+      if (V[length (V)-1] = '')
+      {
+        V[length (V)-2] := newName;
+      } else {
+        V[length (V)-1] := newName;
+      }
+      newHref := DB.DBA.DAV_CONCAT_PATH (null, V);
+      url := DB.DBA.WebDAV__paramGet (detcol_id, 'C', 'path', 0);
+      V := rfc1808_parse_uri (url);
+      V[2] := oldHref;
+      url := DB.DBA.vspx_uri_compose (V);
+      header := sprintf ('Destination: %s\r\nOverwrite: T\r\n', newHref);
+      result := DB.DBA.WebDAV__exec (detcol_id, retHeader, 'MOVE', url, header);
+      if (DAV_HIDE_ERROR (result) is null)
+      {
+        retValue := result;
+        goto _exit;
+      }
+      V := rfc1808_parse_uri (url);
+      V[2] := newHref;
+      url := DB.DBA.vspx_uri_compose (V);
+      listItem := DB.DBA.WebDAV__resource (detcol_id, url);
+      if (DAV_HIDE_ERROR (listItem) is null)
+      {
+        retValue := listItem;
+        goto _exit;
+      }
+    }
+    connection_set ('dav_store', 1);
+    if (what = 'C')
+    {
+      update WS.WS.SYS_DAV_COL set COL_NAME = newName, COL_MOD_TIME = now () where COL_ID = source_id[2];
+    } else {
+      update WS.WS.SYS_DAV_RES set RES_NAME = newName, RES_MOD_TIME = now () where RES_ID = source_id[2];
+    }
+    retValue := source_id;
+
+  _exit:;
+    connection_set ('dav_store', save);
+    if (DAV_HIDE_ERROR (retValue) is not null)
+    {
+      if (save is null)
+      {
+        DB.DBA.WebDAV__paramSet (retValue, what, 'Entry', listItem, 0);
+        DB.DBA.WebDAV__paramSet (retValue, what, 'href', newHref, 0);
+      }
+    }
+  }
+  return retValue;
 }
 ;
 
@@ -885,6 +838,43 @@ create function "WebDAV_DAV_LIST_LOCKS" (
   connection_set ('dav_store', save);
 
   return retValue;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create function "WebDAV_DAV_SCHEDULER" (
+  in queue_id integer)
+{
+  -- dbg_obj_princ ('DB.DBA.WebDAV_DAV_SCHEDULER (', queue_id, ')');
+  declare detcol_parts any;
+
+  for (select COL_ID from WS.WS.SYS_DAV_COL where COL_DET = cast (DB.DBA.WebDAV__detName () as varchar)) do
+  {
+    detcol_parts := split_and_decode (WS.WS.COL_PATH (COL_ID), 0, '\0\0/');
+    DB.DBA.WebDAV_DAV_SCHEDULER_FOLDER (queue_id, COL_ID, detcol_parts, COL_ID, vector (''));
+  }
+  DB.DBA.DAV_QUEUE_UPDATE_STATE (queue_id, 2);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create function "WebDAV_DAV_SCHEDULER_FOLDER" (
+  in queue_id integer,
+  in detcol_id integer,
+  in detcol_parts any,
+  in cid integer,
+  in path_parts any)
+{
+  -- dbg_obj_princ ('DB.DBA.WebDAV_DAV_SCHEDULER_FOLDER (', queue_id, detcol_id, detcol_parts, cid, path_parts, ')');
+
+  DB.DBA.WebDAV__load (detcol_id, path_parts, detcol_parts);
+
+  for (select COL_ID, COL_NAME from WS.WS.SYS_DAV_COL where COL_PARENT = cid) do
+  {
+    DB.DBA.WebDAV_DAV_SCHEDULER_FOLDER (queue_id, detcol_id, detcol_parts, COL_ID, vector_concat (subseq (path_parts, 0, length (path_parts)-1), vector (COL_NAME, '')));
+  }
 }
 ;
 
@@ -1077,6 +1067,9 @@ create function DB.DBA.WebDAV__params (
   params := vector (
     'authentication', 'Yes',
     'path',           DB.DBA.WebDAV__paramGet (colId, 'C', 'path', 0),
+    'authenticationType', DB.DBA.WebDAV__paramGet (colId, 'C', 'authenticationType', 0),
+    'key',                DB.DBA.WebDAV__paramGet (colId, 'C', 'key', 0),
+    'keyOwner',           DB.DBA.WebDAV__paramGet (colId, 'C', 'keyOwner', 0),
     'user',           DB.DBA.WebDAV__paramGet (colId, 'C', 'user', 0),
     'password',       DB.DBA.WebDAV__paramGet (colId, 'C', 'password', 0, 1, 1),
     'graph',          DB.DBA.WebDAV__paramGet (colId, 'C', 'graph', 0)
@@ -1118,7 +1111,7 @@ create function DB.DBA.WebDAV__paramSet (
 -------------------------------------------------------------------------------
 --
 create function DB.DBA.WebDAV__paramGet (
-  in _id integer,
+  in _id any,
   in _what varchar,
   in _propName varchar,
   in _serialized integer := 1,
@@ -1131,7 +1124,7 @@ create function DB.DBA.WebDAV__paramGet (
   if (_prefixed)
     _propName := 'virt:WebDAV-' || _propName;
 
-  propValue := DB.DBA.DAV_PROP_GET_INT (DB.DBA.WebDAV__davId (_id), _what, _propName, 0, DB.DBA.Dropbox__user (http_dav_uid ()), DB.DBA.Dropbox__password (http_dav_uid ()), http_dav_uid ());
+  propValue := DB.DBA.DAV_PROP_GET_INT (DB.DBA.WebDAV__davId (_id), _what, _propName, 0, DB.DBA.WebDAV__user (http_dav_uid ()), DB.DBA.WebDAV__password (http_dav_uid ()), http_dav_uid ());
   if (isinteger (propValue))
     propValue := null;
 
@@ -1148,7 +1141,7 @@ create function DB.DBA.WebDAV__paramGet (
 -------------------------------------------------------------------------------
 --
 create function DB.DBA.WebDAV__paramRemove (
-  in _id integer,
+  in _id any,
   in _what varchar,
   in _propName varchar,
   in _prefixed integer := 1)
@@ -1247,6 +1240,7 @@ create function DB.DBA.WebDAV__exec (
   -- dbg_obj_princ ('DB.DBA.WebDAV__exec', detcol_id, method, url, header, ')');
   declare retValue, params any;
   declare _reqHeader, _resHeader any;
+  declare _key, _keyOwner varchar;
   declare exit handler for sqlstate '*'
   {
     DB.DBA.WebDAV__activity (detcol_id, 'Exec error: ' || __SQL_MESSAGE);
@@ -1260,13 +1254,30 @@ create function DB.DBA.WebDAV__exec (
     return -28;
   }
 
+  retHeader := null;
+  if (get_keyword ('authenticationType', params) = 'Digest')
+  {
   _reqHeader := sprintf ('Authorization: Basic %s\r\n', encode_base64 (get_keyword ('user', params) || ':' || get_keyword ('password', params)));
   if (header <> '')
     _reqHeader :=  _reqHeader || header;
 
-  retHeader := null;
   retValue := http_client_ext (url=>url, http_method=>method, http_headers=>_reqHeader, headers =>retHeader, body=>content, n_redirects=>15);
-  -- dbg_obj_print ('retValue', DB.DBA.WebDAV__exec_code (retHeader), url, method);
+  }
+  else
+  {
+    _keyOwner := get_keyword ('keyOwner', params);
+    if (isnull (_keyOwner))
+      return -28;
+
+    set_user_id (_keyOwner);
+    _reqHeader := null;
+    if (header <> '')
+      _reqHeader :=  header;
+
+    _key := 'db:' || get_keyword ('key', params, '');
+    retValue := http_client_ext (url=>url, http_method=>method, cert_file=>_key, insecure=>1, http_headers=>_reqHeader, headers =>retHeader, body=>content, n_redirects=>15);
+  }
+  -- dbg_obj_print ('retHeader', retHeader);
   if (not DB.DBA.WebDAV__exec_error (retHeader, 1))
   {
     DB.DBA.WebDAV__activity (detcol_id, 'HTTP error: ' || retValue);
@@ -1326,31 +1337,196 @@ create function DB.DBA.WebDAV__davList (
 
 -------------------------------------------------------------------------------
 --
+create function DB.DBA.WebDAV__load (
+  in detcol_id any,
+  in subPath_parts any,
+  in detcol_parts varchar) returns any
+{
+  -- dbg_obj_princ ('DB.DBA.WebDAV__load (', detcol_id, subPath_parts, detcol_parts, ')');
+  declare colId integer;
+  declare colPath, colHref varchar;
+  declare tmp, retValue, save, downloads, listItems, davItems, colEntry, xmlItems, davEntry, listHrefs, listHref any;
+  declare syncTime datetime;
+  declare exit handler for sqlstate '*'
+  {
+    connection_set ('dav_store', save);
+    resignal;
+  };
+
+  save := connection_get ('dav_store');
+  downloads := vector ();
+
+  colPath := DB.DBA.DAV_CONCAT_PATH (detcol_parts, subPath_parts);
+  colId := DB.DBA.DAV_SEARCH_ID (colPath, 'C');
+  if (DAV_HIDE_ERROR (colId) is null)
+    goto _exit;
+
+  syncTime := DB.DBA.WebDAV__paramGet (colId, 'C', 'syncTime');
+  if (not isnull (syncTime) and (datediff ('second', syncTime, now ()) < 300))
+    goto _exit;
+
+  listItems := DB.DBA.WebDAV__list (detcol_id, detcol_parts, colId, subPath_parts);
+  if (DAV_HIDE_ERROR (listItems) is null)
+    goto _exit;
+
+  if (isinteger (listItems))
+    goto _exit;
+
+  DB.DBA.WebDAV__activity (detcol_id, 'Sync started');
+  {
+    declare _id, _what, _type, _content any;
+    declare title varchar;
+    {
+      declare exit handler for sqlstate '*'
+      {
+        DB.DBA.WebDAV__activity (detcol_id, 'Exec error: ' || __SQL_MESSAGE);
+        goto _exitSync;
+      };
+
+      connection_set ('dav_store', 1);
+      colEntry := DB.DBA.DAV_DIR_SINGLE_INT (colId, 'C', '', null, null, http_dav_uid ());
+      colHref := null;
+      if (length (subPath_parts) = 1)
+      {
+        tmp := DB.DBA.WebDAV__paramGet (detcol_id, 'C', 'path', 0);
+        tmp := rfc1808_parse_uri (tmp);
+        colHRef := tmp[2];
+      }
+      else
+      {
+        colHref := DB.DBA.WebDAV__paramGet (colId, 'C', 'href', 0);
+      }
+      if (colHref is null)
+        goto _exit;
+
+      connection_set ('dav_store', 1);
+      listItems := xml_tree_doc (xml_expand_refs (xml_tree (listItems)));
+      listHrefs := vector ();
+      davItems := DB.DBA.WebDAV__davList (detcol_id, colId);
+      foreach (any davItem in davItems) do
+      {
+        listHref := DB.DBA.WebDAV__paramGet (davItem[4], davItem[1], 'href', 0);
+        if ((listHref <> colHref) and not position (listHref, listHrefs))
+        {
+          declare listItem any;
+
+          listItem := DB.DBA.WebDAV__entryXPath (listItems, sprintf ('[D:href = "%s"]', listHref), 0);
+          if (listItem is not null)
+          {
+            listItem := xml_cut (listItem);
+            davEntry := DB.DBA.WebDAV__paramGet (davItem[4], davItem[1], 'Entry', 0);
+            if ((davEntry is not null) and (DB.DBA.WebDAV__title (listHref) = davItem[10]))
+            {
+              listHrefs := vector_concat (listHrefs, vector (listHref));
+              davEntry := xtree_doc (davEntry);
+              if (
+                  (DB.DBA.WebDAV__propertyXPath (davEntry, '/D:getlastmodified', 1) <> DB.DBA.WebDAV__propertyXPath (listItem, '/D:getlastmodified', 1)) or
+                  (DB.DBA.WebDAV__propertyXPath (davEntry, '/D:getetag', 1) <> DB.DBA.WebDAV__propertyXPath (listItem, '/D:getetag', 1))
+                 )
+              {
+                set triggers off;
+                DB.DBA.WebDAV__paramSet (davItem[4], davItem[1], ':getlastmodified', DB.DBA.WebDAV__stringdate (DB.DBA.WebDAV__propertyXPath (listItem, '/D:getlastmodified', 1)), 0, 0);
+                set triggers on;
+                DB.DBA.WebDAV__paramSet (davItem[4], davItem[1], 'Entry', DB.DBA.WebDAV__xml2string (listItem), 0);
+                if (davItem[1] = 'R')
+                {
+                  DB.DBA.WebDAV__paramSet (davItem[4], davItem[1], 'download', '0', 0);
+                  downloads := vector_concat (downloads, vector (vector (davItem[4], davItem[1])));
+                }
+              }
+              else
+              {
+                declare downloaded integer;
+
+                downloaded := DB.DBA.WebDAV__paramGet (davItem[4], davItem[1], 'download', 0);
+                if (downloaded is not null)
+                {
+                  downloaded := cast (downloaded as integer);
+                  if (downloaded <= 5)
+                    downloads := vector_concat (downloads, vector (vector (davItem[4], davItem[1])));
+                }
+              }
+              goto _continue;
+            }
+          }
+        }
+        if (davItem[1] = 'R')
+          DB.DBA.WebDAV__rdf_delete (detcol_id, davItem[4], davItem[1]);
+
+        connection_set ('dav_store', 1);
+        DAV_DELETE_INT (davItem[0], 1, null, null, 0, 0);
+
+      _continue:;
+        commit work;
+      }
+      listItems := xpath_eval ('[xmlns:D="DAV:"] /D:multistatus/D:response', listItems, 0);
+      foreach (any listItem in listItems) do
+      {
+        listItem := xml_cut(listItem);
+        listHref := DB.DBA.WebDAV__entryXPath (listItem, '/D:href', 1);
+        if ((listHref <> colHref) and not position (listHref, listHrefs))
+        {
+          title := DB.DBA.WebDAV__title (listHref);
+          connection_set ('dav_store', 1);
+          if (not isnull (DB.DBA.WebDAV__propertyXPath (listItem, '/D:resourcetype/D:collection', 0)))
+          {
+            _id := DB.DBA.DAV_COL_CREATE (colPath || title || '/',  colEntry[5], colEntry[7], colEntry[6], DB.DBA.WebDAV__user (http_dav_uid ()), DB.DBA.WebDAV__password (http_dav_uid ()));
+            _what := 'C';
+          }
+          else
+          {
+            _content := '';
+            _type := DB.DBA.WebDAV__propertyXPath (listItem, '/D:getcontenttype', 1);
+            if (DB.DBA.is_empty_or_null (_type))
+              _type := http_mime_type (title);
+            _id := DB.DBA.DAV_RES_UPLOAD (colPath || title,  _content, _type, colEntry[5], colEntry[7], colEntry[6], DB.DBA.WebDAV__user (http_dav_uid ()), DB.DBA.WebDAV__password (http_dav_uid ()));
+            _what := 'R';
+          }
+          if (DAV_HIDE_ERROR (_id) is not null)
+          {
+            set triggers off;
+            DB.DBA.WebDAV__paramSet (_id, _what, ':creationdate', stringdate (DB.DBA.WebDAV__propertyXPath (listItem, '/D:creationdate', 1)), 0, 0);
+            DB.DBA.WebDAV__paramSet (_id, _what, ':getlastmodified', DB.DBA.WebDAV__stringdate (DB.DBA.WebDAV__propertyXPath (listItem, '/D:getlastmodified', 1)), 0, 0);
+            set triggers on;
+            DB.DBA.WebDAV__paramSet (_id, _what, 'virt:DETCOL_ID', cast (detcol_id as varchar), 0, 0);
+            DB.DBA.WebDAV__paramSet (_id, _what, 'href', listHref, 0);
+            DB.DBA.WebDAV__paramSet (_id, _what, 'Entry', DB.DBA.WebDAV__xml2string (listItem), 0);
+            if (_what = 'R')
+            {
+              DB.DBA.WebDAV__paramSet (_id, _what, 'download', '0', 0);
+              downloads := vector_concat (downloads, vector (vector (_id, _what)));
+            }
+          }
+          commit work;
+        }
+      }
+    }
+  _exitSync:
+    connection_set ('dav_store', save);
+  }
+  DB.DBA.WebDAV__activity (detcol_id, 'Sync ended');
+
+_exit:;
+  DB.DBA.WebDAV__downloads (detcol_id, downloads);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create function DB.DBA.WebDAV__list (
   inout detcol_id any,
   inout detcol_parts varchar,
+  inout col_id any,
   inout subPath_parts varchar)
 {
   -- dbg_obj_princ ('DB.DBA.WebDAV__list (', detcol_id, detcol_parts, subPath_parts, ')');
-  declare colId integer;
-  declare colPath varchar;
   declare url, href, header, body varchar;
-  declare syncTime datetime;
   declare V, retValue, retHeader any;
-
-  colPath := DB.DBA.DAV_CONCAT_PATH (detcol_parts, subPath_parts);
-  colId := DB.DBA.WebDAV__davId (DB.DBA.DAV_SEARCH_ID (colPath, 'C'));
-  if (DAV_HIDE_ERROR (colId) is null)
-    return -28;
-
-  syncTime := DB.DBA.WebDAV__paramGet (colId, 'C', 'syncTime');
-  if (not isnull (syncTime) and (datediff ('second', syncTime, now ()) < 15))
-    return 0;
 
   url := DB.DBA.WebDAV__paramGet (detcol_id, 'C', 'path', 0);
   if (length (subPath_parts) <> 1)
   {
-    href := DB.DBA.WebDAV__paramGet (colId, 'C', 'href', 0);
+    href := DB.DBA.WebDAV__paramGet (col_id, 'C', 'href', 0);
     if (isnull (href))
       return -28;
 
@@ -1374,7 +1550,7 @@ create function DB.DBA.WebDAV__list (
   retValue := DB.DBA.WebDAV__exec (detcol_id, retHeader, 'PROPFIND', url, header, body);
   -- dbg_obj_print ('retValue', retValue);
   if (not isinteger (retValue))
-    DB.DBA.WebDAV__paramSet (colId, 'C', 'syncTime', now ());
+    DB.DBA.WebDAV__paramSet (col_id, 'C', 'syncTime', now ());
 
   return retValue;
 }
@@ -1644,12 +1820,7 @@ create function DB.DBA.WebDAV__rdf_delete (
     return;
 
   path := DB.DBA.DAV_SEARCH_PATH (id, what);
-  if (path like '%.gz')
-    path := regexp_replace (path, '\.gz\x24', '');
-
-  rdf_graph2 := 'http://local.virt' || path;
-  SPARQL delete from graph ?:rdf_graph { ?s ?p ?o } where { graph `iri(?:rdf_graph2)` { ?s ?p ?o } };
-  SPARQL clear graph ?:rdf_graph2;
+  DB.DBA.RDF_SINK_CLEAR (path, rdf_graph);
 }
 ;
 

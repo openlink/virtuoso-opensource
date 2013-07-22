@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -80,8 +80,6 @@ public class VirtuosoQueryExecution  implements QueryExecution
 
     public ResultSet execSelect()
     {
-      ResultSet ret = null;
-
       try {
         stmt = graph.createStatement();
         java.sql.ResultSet rs = stmt.executeQuery(getQuery());
@@ -139,6 +137,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
           if (st != null)
             model.add(st);
         }	
+        rs.close();
         stmt.close();
         stmt = null;
 
@@ -171,6 +170,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
           if (st != null)
             model.add(st);
         }	
+        rs.close();
         stmt.close();
         stmt = null;
 
@@ -195,6 +195,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
           if (rs.getInt(1) == 1)
             ret = true;
         }	
+        rs.close();
         stmt.close();
         stmt = null;
 
@@ -277,7 +278,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
     private String getQuery()
     {
 	StringBuffer sb = new StringBuffer("sparql\n ");
-
+	
 	if (graph.getRuleSet()!= null)
           sb.append(" define input:inference '"+graph.getRuleSet()+"'\n");
 
@@ -444,5 +445,4 @@ public class VirtuosoQueryExecution  implements QueryExecution
 
 
     }
-
 }

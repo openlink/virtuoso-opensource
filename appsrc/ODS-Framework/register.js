@@ -3,7 +3,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -20,8 +20,9 @@
  *
  */
 
+var regData;
+var facebookData;
 var rfTab;
-var rfFacebookData;
 var rfSslData;
 var rfOptions;
 var rfAjaxs = 0;
@@ -116,7 +117,7 @@ function rfRowImage(tbl, label, value, leftTag) {
 
 function rfRowInput(tbl, label, fName, fOptions) {
   var tr = OAT.Dom.create('tr');
-  tr.id = 'tr+'+fName;
+  tr.id = 'tr_'+fName;
 
   var th = OAT.Dom.create('th');
   th.width = '20%';
@@ -137,10 +138,13 @@ function rfRowInput(tbl, label, fName, fOptions) {
   tbl.appendChild(tr);
 }
 
+function addProfileRowInput(tbl, label, fName, fOptions) {
+  rfRowInput(tbl, label, fName, fOptions);
+}
+
 function rfInit() {
   if (!$("rf")) {return;}
 
-  var regData;
   var x = function (data) {
     try {
       regData = OAT.JSON.parse(data);
@@ -150,16 +154,37 @@ function rfInit() {
 
   rfTab = new OAT.Tab("rf_content", {goCallback: rfCallback});
   rfTab.add("rf_tab_0", "rf_page_0");
-  if (regData.openidEnable)
-    OAT.Dom.show('rf_tab_1');
   rfTab.add("rf_tab_1", "rf_page_1");
   rfTab.add("rf_tab_2", "rf_page_2");
-  if (regData.sslEnable)
-    OAT.Dom.show('rf_tab_3');
   rfTab.add("rf_tab_3", "rf_page_3");
   rfTab.add("rf_tab_4", "rf_page_4");
   rfTab.add("rf_tab_5", "rf_page_5");
-  rfTab.go(0);
+  var N = null;
+  if (regData.register) {
+    if (N == null) N = 0;
+    OAT.Dom.show('rf_tab_0');
+  }
+  if (regData.sslEnable) {
+    if (N == null) N = 3;
+    OAT.Dom.show('rf_tab_3');
+  }
+  if (regData.openidEnable) {
+    if (N == null) N = 1;
+    OAT.Dom.show('rf_tab_1');
+  }
+  if (regData.twitterEnable) {
+    if (N == null) N = 4;
+    OAT.Dom.show("rf_tab_4");
+  }
+  if (regData.linkedinEnable) {
+    if (N == null) N = 5;
+    OAT.Dom.show("rf_tab_5");
+  }
+  if (N != null) {
+    rfTab.go(N);
+  } else {
+    rfTab.add("rf_tab_6", "rf_page_6");
+  }
 
   var uriParams = OAT.Dom.uriParams();
   if (uriParams['oid-form'] == 'rf') {
@@ -274,25 +299,6 @@ function rfInit() {
     }
     }
   }
-  if (regData.facebookEnable) {
-    rfLoadFacebookData(function() {
-      if (rfFacebookData)
-        FB.init(rfFacebookData.api_key, "/ods/fb_dummy.vsp", {
-          ifUserConnected : function() {
-            rfShowFacebookData();
-          },
-          ifUserNotConnected : function() {
-            rfHideFacebookData();
-          }
-        });
-    });
-  }
-  if (regData.twitterEnable) {
-    OAT.Dom.show("rf_tab_4");
-  }
-  if (regData.linkedinEnable) {
-    OAT.Dom.show("rf_tab_5");
-  }
 
   if (regData.sslEnable) {
     var x = function(data) {
@@ -307,6 +313,10 @@ function rfInit() {
         var tbl = $(prefix+'_table_3');
         if (tbl) {
           OAT.Dom.unlink(prefix+'_table_3_throbber');
+          if (rfSslData && !rfSslData.certFilterCheck) {
+            rfRowText(tbl, 'Sign up for an ODS account using another WebID', 'font-weight: bold;');
+            $('rf_signup').disabled = true;
+          } else {
           rfRowValue(tbl, 'WebID', rfSslData.iri);
           if (rfSslData.depiction)
             rfRowImage(tbl, 'Photo', rfSslData.depiction);
@@ -334,6 +344,7 @@ function rfInit() {
           rfTab.go(3);
         }
       }
+    }
     }
     if (document.location.protocol == 'https:') {
     OAT.AJAX.GET('/ods/api/user.getFOAFSSLData?sslFOAFCheck=1', '', x);
@@ -367,6 +378,14 @@ function rfInit() {
       }
     }
     OAT.AJAX.GET ('/ods/api/server.getInfo?info=sslPort', false, x);
+  }
+  if (regData.facebookEnable) {
+    (function() {
+      var e = document.createElement('script');
+      e.src = document.location.protocol + '//connect.facebook.net/en_US/all.js';
+      e.async = true;
+      document.getElementById('fb-root').appendChild(e);
+    }());
   }
 }
 
@@ -434,8 +453,8 @@ function rfSignupSubmit(event) {
     if ($v('rf_openId') == '')
       return showError('Bad openID. Please correct!');
   } else if (rfTab.selectedIndex == 2) {
-    if (!rfFacebookData || !rfFacebookData.uid)
-      return showError('Invalid Facebook UserID');
+    if (!facebookData || (!facebookData.id && !facebookData.link))
+      return showError('Invalid Facebook User');
   } else if (rfTab.selectedIndex == 3) {
     if (!rfSslData || !rfSslData.iri)
       return showError('Invalid WebID UserID');
@@ -459,8 +478,8 @@ function rfSignupSubmit(event) {
       + '&email=' + encodeURIComponent($v('rf_email_1'));
   }
   else if (rfTab.selectedIndex == 2) {
-    q += '&data=' + encodeURIComponent(OAT.JSON.stringify(rfFacebookData))
-      + '&name=' + encodeURIComponent($v('rf_uid_2'));
+    q +='&data=' + encodeURIComponent(OAT.JSON.stringify(facebookData))
+      + '&name=' + encodeURIComponent($v('rf_uid_2'))
       + '&email=' + encodeURIComponent($v('rf_email_2'));
   }
   else if (rfTab.selectedIndex == 3) {
@@ -474,7 +493,7 @@ function rfSignupSubmit(event) {
       return false;
     }
     q +='&data=' + encodeURIComponent($v('twitter-data'))
-      + '&name=' + encodeURIComponent($v('rf_uid_4'));
+      + '&name=' + encodeURIComponent($v('rf_uid_4'))
       + '&email=' + encodeURIComponent($v('rf_email_4'));
   }
   else if (rfTab.selectedIndex == 5) {
@@ -517,7 +536,7 @@ function rfCheckAvalability(event) {
   }
 
   var q = '&name=' + encodeURIComponent(name) + '&email=' + encodeURIComponent(email);
-  OAT.AJAX.POST("/ods/api/user.checkAvalability", q, x);
+  OAT.AJAX.POST("/ods/api/user.checkAvailability", q, x);
   return false;
 }
 
@@ -566,11 +585,11 @@ function rfOpenIdAuthenticate(prefix) {
         + '&openid.claimed_id=' + encodeURIComponent(oidIdent)
         + '&openid.identity=' + encodeURIComponent(oidIdent)
 
-    if (oidParams = 'sreg')
+    if (oidParams == 'sreg')
       S +='&openid.sreg.optional='+encodeURIComponent('fullname,nickname,dob,gender,postcode,country,timezone')
         + '&openid.sreg.required=' + encodeURIComponent('email,nickname');
 
-    if (oidParams = 'ax')
+    if (oidParams == 'ax')
       S +='&openid.ns.ax=http://openid.net/srv/ax/1.0'
         + '&openid.ax.mode=fetch_request'
         + '&openid.ax.required=country,email,firstname,fname,language,lastname,timezone'
@@ -611,47 +630,4 @@ function linkedinAuthenticate(prefix) {
     document.location = data;
   }
   OAT.AJAX.POST ("/ods/api/linkedinServer?hostUrl="+encodeURIComponent(thisPage), null, x);
-}
-
-function rfLoadFacebookData(cb) {
-  var x = function(data) {
-    try {
-      rfFacebookData = OAT.JSON.parse(data);
-    } catch (e) {
-      rfFacebookData = null;
-    }
-    if (rfFacebookData)
-      OAT.Dom.show("rf_tab_2");
-
-    if (cb) {cb()};
-  }
-  OAT.AJAX.GET('/ods/api/user.getFacebookData?fields=uid,name,first_name,last_name,sex,birthday', '', x);
-}
-
-function rfShowFacebookData(skip) {
-  var rfLabel = $('rf_facebookData');
-  if (rfLabel) {
-    rfLabel.innerHTML = '';
-    if (rfFacebookData && rfFacebookData.name) {
-      rfLabel.innerHTML = 'Connected as <b><i>' + rfFacebookData.name + '</i></b></b>';
-      var tbl = $('rf_table_2');
-      rfRowInput(tbl, 'Login Name', 'rf_uid_2', {value: (rfFacebookData.name).replace(' ', ''), width: '150px'});
-      rfRowInput(tbl, 'E-Mail', 'rf_email_2', {value: '', width: '300px'});
-      rfCheckUpdate(2);
-    } else if (!skip) {
-      rfLoadFacebookData(function() {self.rfShowFacebookData(true);});
-    }
-  }
-}
-
-function rfHideFacebookData() {
-  var label = $('rf_facebookData');
-  if (label)
-    label.innerHTML = '';
-  if (rfFacebookData) {
-    var o = {}
-    o.api_key = rfFacebookData.api_key;
-    o.secret = rfFacebookData.secret;
-    rfFacebookData = o;
-  }
 }

@@ -16,15 +16,17 @@
 	<paramdef>in <parameter>vgraph</parameter> varchar</paramdef>
 	<paramdef>in <parameter>load_data</parameter> int := 0</paramdef>
 	<paramdef>in <parameter>pgraph</parameter> varchar := null</paramdef>
-	<paramdef>in <parameter>log_mode</parameter> int := 1</paramdef>
+	<paramdef>in <parameter>transaction_mode</parameter> int := 1</paramdef>
   <paramdef>in <parameter>load_atomic</parameter> int := 1</paramdef>	
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
   <refsect1 id="desc_rdf_view_sync_to_physical">
     <title>Description</title>
-    <para>This function does triggers on a liked data view and optionally fills the 
-    	physical graph. Note: applicable for Virtuoso 6.0 and higher.</para>
+    <para>This function create new Transient and Materialized View pairs with option (where load = 1/0) to load 
+    data or wait for updates -- from triggers at execute time. 0 for non-transaction mode, and atomicity 0/1 
+    determines server accessiblity where 1 indicates inaccessiblity during run. 
+    Note: applicable for Virtuoso 6.0 and higher.</para>
   </refsect1>
   <refsect1 id="params_rdf_view_sync_to_physical">
     <title>Parameters</title>
@@ -32,12 +34,17 @@
       <para>The graph which linked data view defines.</para>
     </refsect2>
     <refsect2><title>load_data</title>
-      <para>1/0 flag to load the triples in the physical store initially.</para>
+      <para>1/0 flag to load the triples in the physical store initially:</para>
+      <itemizedlist mark="bullet">
+        <listitem>0 -- do not load data i.e. will create triggers but not fill in the graph. That is useful if 
+        are is known that source tables are empty or if need to be filled in manually at a right time. </listitem>
+        <listitem>1 -- load data i.e. will create all physical quads as soon as triggers are created.</listitem>
+      </itemizedlist>
     </refsect2>
     <refsect2><title>pgraph</title>
       <para>The destination's physical graph.</para>
     </refsect2>
-    <refsect2><title>log_mode</title>
+    <refsect2><title>transaction_mode</title>
       <para>This parameter takes integer values: 0,1,2,3. It is used to call log_enable () 
       	with the same flags.</para>
     </refsect2>
@@ -52,11 +59,25 @@
   <refsect1 id="examples_rdf_view_sync_to_physical">
    <title>Examples</title>
     <example id="ex_rdf_view_sync_to_physical"><title></title>
-     <para></para>
+     <para>Example 1</para>
 <screen><![CDATA[
-SQL>RDF_VIEW_SYNC_TO_PHYSICAL ('http://www.openlinksw.com/schemas/oplweb#', 0, 'http://mygraph.com', 1, 1);
+# -- Rebuild from scratch
 
-Done. -- 0 msec.
+SQL> RDF_VIEW_SYNC_TO_PHYSICAL ('http://www.openlinksw.com/schemas/oplweb#', 1, 'urn:my:demo');
+
+# which is equivalent to:
+
+SQL> RDF_VIEW_SYNC_TO_PHYSICAL ('http://www.openlinksw.com/schemas/oplweb#', 1, 'urn:my:demo', 1, 1); 
+
+Done. -- 12 msec.
+]]></screen>
+     <para>Example 2</para>
+<screen><![CDATA[
+# -- ACID 
+
+SQL> RDF_VIEW_SYNC_TO_PHYSICAL ('http://www.openlinksw.com/schemas/oplweb#', 0, 'urn:my:demo', 1, 1);
+
+Done. -- 6 msec.
 ]]></screen>
     </example>
   </refsect1>

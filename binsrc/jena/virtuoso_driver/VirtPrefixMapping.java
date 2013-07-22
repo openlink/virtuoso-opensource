@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -63,6 +63,7 @@ public class VirtPrefixMapping extends PrefixMappingImpl {
 	      if (uri != null && uri != null)
 	        super.setNsPrefix(prefix, uri);
 	    }
+	    rs.close();
 	  } catch (Exception e) {
 	     throw new JenaException(e);
 	  } 
@@ -77,6 +78,7 @@ public class VirtPrefixMapping extends PrefixMappingImpl {
 	    PreparedStatement ps = m_graph.prepareStatement(query);
 	    ps.setString(1, prefix);
 	    ps.execute();
+	    ps.close();
 	  } catch (Exception e) {
 	     throw new JenaException(e);
 	  } 
@@ -103,6 +105,7 @@ public class VirtPrefixMapping extends PrefixMappingImpl {
 	    ps.setString(1, prefix);
 	    ps.setString(2, uri);
 	    ps.execute();
+	    ps.close();
 	  } catch (Exception e) {
 	     throw new JenaException(e.toString());
 	  } 

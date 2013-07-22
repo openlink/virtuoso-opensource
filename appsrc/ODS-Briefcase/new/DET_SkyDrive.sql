@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2012 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -196,7 +196,7 @@ create function "SkyDrive_DAV_DELETE" (
   -- dbg_obj_princ ('SkyDrive_DAV_DELETE (', detcol_id, path_parts, what, silent, auth_uid, ')');
   declare path, listId varchar;
   declare retValue, save any;
-  declare id, url, header, retHeader, params any;
+  declare id, id_acl, url, retHeader any;
   declare exit handler for sqlstate '*'
   {
     connection_set ('dav_store', save);
@@ -209,11 +209,18 @@ create function "SkyDrive_DAV_DELETE" (
   if (save is null)
   {
     listId := DB.DBA.SkyDrive__paramGet (id, what, 'id', 0);
-    header := null;
     url := sprintf ('https://apis.live.net/v5.0/%s', listId);
-    retValue := DB.DBA.SkyDrive__exec (detcol_id, retHeader, 'DELETE', url, header);
+    retValue := DB.DBA.SkyDrive__exec (detcol_id, retHeader, 'DELETE', url);
     if (DAV_HIDE_ERROR (retValue) is null)
       goto _exit;
+
+    id_acl := DB.DBA.DAV_SEARCH_ID (path || ',acl', 'R');
+    if (DAV_HIDE_ERROR (id_acl) is not null)
+    {
+      listId := DB.DBA.SkyDrive__paramGet (id_acl, 'R', 'id', 0);
+      url := sprintf ('https://apis.live.net/v5.0/%s', listId);
+      retValue := DB.DBA.SkyDrive__exec (detcol_id, retHeader, 'DELETE', url);
+    }
   }
   connection_set ('dav_store', 1);
   if (what = 'R')
@@ -244,7 +251,6 @@ create function "SkyDrive_DAV_RES_UPLOAD" (
   -- dbg_obj_princ ('SkyDrive_DAV_RES_UPLOAD (', detcol_id, path_parts, ', [content], ', type, permissions, uid, gid, auth_uid, ')');
   declare ouid, ogid integer;
   declare name, path, parentID, parentListID, listID, listItem, rdf_graph varchar;
-  declare url, body, header any;
   declare url, header, body, params any;
   declare retValue, retHeader, result, save any;
   declare exit handler for sqlstate '*'
@@ -416,7 +422,7 @@ create function "SkyDrive_DAV_DIR_LIST" (
   -- dbg_obj_princ ('SkyDrive_DAV_DIR_LIST (', detcol_id, subPath_parts, detcol_parts, name_mask, recursive, auth_uid, ')');
   declare colId integer;
   declare what, colPath varchar;
-  declare retValue, save, downloads, listItems, davItems, colEntry, xmlItems, davEntry, listIds, listId any;
+  declare retValue, save any;
   declare exit handler for sqlstate '*'
   {
     connection_set ('dav_store', save);
@@ -432,125 +438,8 @@ create function "SkyDrive_DAV_DIR_LIST" (
   colPath := DB.DBA.DAV_CONCAT_PATH (detcol_parts, subPath_parts);
   colId := DB.DBA.DAV_SEARCH_ID (colPath, 'C');
 
-  downloads := vector ();
-  listItems := DB.DBA.SkyDrive__list (detcol_id, detcol_parts, subPath_parts);
-  if (DAV_HIDE_ERROR (listItems) is null)
-    goto _exit;
-
-  if (isinteger (listItems))
-    goto _exit;
-
-  DB.DBA.SkyDrive__activity (detcol_id, 'Sync started');
-  {
-    declare _id, _what, _type, _content any;
-    declare title varchar;
-    {
-      declare exit handler for sqlstate '*'
-      {
-        DB.DBA.SkyDrive__activity (detcol_id, 'Exec error: ' || __SQL_MESSAGE);
-        goto _exitSync;
-      };
-
-      connection_set ('dav_store', 1);
-      colEntry := DB.DBA.DAV_DIR_SINGLE_INT (colId, 'C', '', null, null, http_dav_uid ());
-      listItems := subseq (ODS..json2obj (listItems), 2);
-      listItems := get_keyword ('data', listItems);
-      listIds := vector ();
-      davItems := DB.DBA.SkyDrive__davList (detcol_id, colId);
-      foreach (any davItem in davItems) do
-      {
-        listID := DB.DBA.SkyDrive__paramGet (davItem[4], davItem[1], 'id', 0);
-        foreach (any listItem in listItems) do
-        {
-          title := get_keyword ('name', listItem);
-          if ((listID = get_keyword ('id', listItem)) and (title = davItem[10]))
-          {
-            davEntry := DB.DBA.SkyDrive__paramGet (davItem[4], davItem[1], 'Entry', 0);
-            if (davEntry is not null)
-            {
-              listIds := vector_concat (listIds, vector (listID));
-              davEntry := xtree_doc (davEntry);
-              if (DB.DBA.SkyDrive__entryXPath (davEntry, '/updated_time', 1) <> get_keyword ('updated_time', listItem))
-              {
-                set triggers off;
-                DB.DBA.SkyDrive__paramSet (davItem[4], davItem[1], ':getlastmodified', DB.DBA.SkyDrive__stringdate (get_keyword ('updated_time', listItem)), 0, 0);
-                set triggers on;
-                DB.DBA.SkyDrive__paramSet (davItem[4], davItem[1], 'Entry', DB.DBA.SkyDrive__obj2xml (listItem), 0);
-                if (davItem[1] = 'R')
-                {
-                  DB.DBA.SkyDrive__paramSet (davItem[4], davItem[1], 'download', '0', 0);
-                  downloads := vector_concat (downloads, vector (vector (davItem[4], davItem[1])));
-                }
-              }
-              else
-              {
-                declare downloaded integer;
-
-                downloaded := DB.DBA.SkyDrive__paramGet (davItem[4], davItem[1], 'download', 0);
-                if (downloaded is not null)
-                {
-                  downloaded := cast (downloaded as integer);
-                  if (downloaded <= 5)
-                    downloads := vector_concat (downloads, vector (vector (davItem[4], davItem[1])));
-                }
-              }
-              goto _continue;
-            }
-          }
-        }
-        if (davItem[1] = 'R')
-          DB.DBA.SkyDrive__rdf_delete (detcol_id, davItem[4], davItem[1]);
-        DAV_DELETE_INT (davItem[0], 1, null, null, 0, 0);
-
-      _continue:;
-        commit work;
-      }
-      foreach (any listItem in listItems) do
-      {
-        listID := get_keyword ('id', listItem);
-        if (not position (listID, listIDs))
-        {
-          title := get_keyword ('name', listItem);
-          connection_set ('dav_store', 1);
-          if (get_keyword ('type', listItem) in ('folder', 'album'))
-          {
-            _id := DB.DBA.DAV_COL_CREATE (colPath || title || '/',  colEntry[5], colEntry[7], colEntry[6], DB.DBA.SkyDrive__user (http_dav_uid ()), DB.DBA.SkyDrive__password (http_dav_uid ()));
-            _what := 'C';
-          }
-          else
-          {
-            _content := '';
-            _type := http_mime_type (title);
-            _id := DB.DBA.DAV_RES_UPLOAD (colPath || title,  _content, _type, colEntry[5], colEntry[7], colEntry[6], DB.DBA.SkyDrive__user (http_dav_uid ()), DB.DBA.SkyDrive__password (http_dav_uid ()));
-            _what := 'R';
-          }
-          if (DAV_HIDE_ERROR (_id) is not null)
-          {
-            set triggers off;
-            DB.DBA.SkyDrive__paramSet (_id, _what, ':creationdate', DB.DBA.SkyDrive__stringdate (get_keyword ('created_time', listItem)), 0, 0);
-            DB.DBA.SkyDrive__paramSet (_id, _what, ':getlastmodified', DB.DBA.SkyDrive__stringdate (get_keyword ('updated_time', listItem)), 0, 0);
-            set triggers on;
-            DB.DBA.SkyDrive__paramSet (_id, _what, 'virt:DETCOL_ID', cast (detcol_id as varchar), 0, 0);
-            DB.DBA.SkyDrive__paramSet (_id, _what, 'id', listID, 0);
-            DB.DBA.SkyDrive__paramSet (_id, _what, 'Entry', DB.DBA.SkyDrive__obj2xml (listItem), 0);
-            if (_what = 'R')
-            {
-              DB.DBA.SkyDrive__paramSet (_id, _what, 'download', '0', 0);
-              downloads := vector_concat (downloads, vector (vector (_id, _what)));
-            }
-          }
-          commit work;
-        }
-      }
-    }
-  _exitSync:
-    connection_set ('dav_store', save);
-  }
-  DB.DBA.SkyDrive__activity (detcol_id, 'Sync ended');
-
-_exit:;
+  DB.DBA.SkyDrive__load (detcol_id, subPath_parts, detcol_parts);
   retValue := DB.DBA.SkyDrive__davList (detcol_id, colId);
-  DB.DBA.SkyDrive__downloads (detcol_id, downloads);
 
   return retValue;
 }
@@ -665,7 +554,66 @@ create function "SkyDrive_DAV_RES_UPLOAD_MOVE" (
   in auth_uid integer) returns any
 {
   -- dbg_obj_princ ('SkyDrive_DAV_RES_UPLOAD_MOVE (', detcol_id, path_parts, source_id, what, overwrite_flags, auth_uid, ')');
-  return -20;
+  declare listID, oldName, newName varchar;
+  declare url, header, body any;
+  declare srcEntry, listItem any;
+  declare retValue, retHeader, result, save any;
+
+  retValue := -20;
+  srcEntry := DB.DBA.DAV_DIR_SINGLE_INT (source_id, what, '', null, null, http_dav_uid ());
+  if (DB.DBA.DAV_HIDE_ERROR (srcEntry) is null)
+    return;
+
+  oldName := srcEntry[10];
+  newName := case when what = 'C' then path_parts[length (path_parts)-2] else path_parts[length (path_parts)-1] end;
+  if (oldName <> newName)
+  {
+    declare exit handler for sqlstate '*'
+    {
+      connection_set ('dav_store', save);
+      resignal;
+    };
+
+    save := connection_get ('dav_store');
+    if (save is null)
+    {
+      listID := DB.DBA.SkyDrive__paramGet (source_id, what, 'id', 0);
+      body := sprintf ('{name: "%s"}', newName);
+      header := sprintf (
+        'Content-Length: %d\r\n' ||
+        'Content-Type: application/json\r\n',
+        length (body));
+      url := sprintf ('https://apis.live.net/v5.0/%U', listID);
+      result := DB.DBA.SkyDrive__exec (detcol_id, retHeader, 'PUT', url, header, body);
+      if (DAV_HIDE_ERROR (result) is null)
+      {
+        retValue := result;
+        goto _exit;
+      }
+      listItem := ODS..json2obj (result);
+      listID := get_keyword ('id', listItem);
+    }
+    connection_set ('dav_store', 1);
+    if (what = 'C')
+    {
+      update WS.WS.SYS_DAV_COL set COL_NAME = newName, COL_MOD_TIME = now () where COL_ID = source_id[2];
+    } else {
+      update WS.WS.SYS_DAV_RES set RES_NAME = newName, RES_MOD_TIME = now () where RES_ID = source_id[2];
+    }
+    retValue := source_id;
+
+  _exit:;
+    connection_set ('dav_store', save);
+    if (DAV_HIDE_ERROR (retValue) is not null)
+    {
+      if (save is null)
+      {
+        DB.DBA.SkyDrive__paramSet (retValue, what, 'Entry', DB.DBA.SkyDrive__obj2xml (listItem), 0);
+        DB.DBA.SkyDrive__paramSet (retValue, what, 'id', listID, 0);
+      }
+    }
+  }
+  return retValue;
 }
 ;
 
@@ -837,6 +785,43 @@ create function "SkyDrive_DAV_LIST_LOCKS" (
 
 -------------------------------------------------------------------------------
 --
+create function "SkyDrive_DAV_SCHEDULER" (
+  in queue_id integer)
+{
+  -- dbg_obj_princ ('DB.DBA.SkyDrive_DAV_SCHEDULER (', queue_id, ')');
+  declare detcol_parts any;
+
+  for (select COL_ID from WS.WS.SYS_DAV_COL where COL_DET = cast (DB.DBA.SkyDrive__detName () as varchar)) do
+  {
+    detcol_parts := split_and_decode (WS.WS.COL_PATH (COL_ID), 0, '\0\0/');
+    DB.DBA.SkyDrive_DAV_SCHEDULER_FOLDER (queue_id, COL_ID, detcol_parts, COL_ID, vector (''));
+  }
+  DB.DBA.DAV_QUEUE_UPDATE_STATE (queue_id, 2);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create function "SkyDrive_DAV_SCHEDULER_FOLDER" (
+  in queue_id integer,
+  in detcol_id integer,
+  in detcol_parts any,
+  in cid integer,
+  in path_parts any)
+{
+  -- dbg_obj_princ ('DB.DBA.SkyDrive_DAV_SCHEDULER_FOLDER (', queue_id, detcol_id, detcol_parts, cid, path_parts, ')');
+
+  DB.DBA.SkyDrive__load (detcol_id, path_parts, detcol_parts);
+
+  for (select COL_ID, COL_NAME from WS.WS.SYS_DAV_COL where COL_PARENT = cid) do
+  {
+    DB.DBA.SkyDrive_DAV_SCHEDULER_FOLDER (queue_id, detcol_id, detcol_parts, COL_ID, vector_concat (subseq (path_parts, 0, length (path_parts)-1), vector (COL_NAME, '')));
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create function DB.DBA.SkyDrive__root ()
 {
   return 'me/skydrive';
@@ -962,6 +947,25 @@ create function DB.DBA.SkyDrive__detName ()
 
 -------------------------------------------------------------------------------
 --
+create function DB.DBA.SkyDrive__validateName (
+  in name varchar)
+{
+  declare dot integer;
+  declare ext varchar;
+
+  dot := strrchr (name, '.');
+  if (dot is not null)
+  {
+    ext := lower (substring (name, dot + 2, length (name)));
+    if (ext in ('3g2', '3gp', 'ai', 'bmp', 'chm', 'doc', 'docm', 'docx', 'dot', 'dotx', 'epub', 'gif', 'jpeg', 'jpg', 'mp4', 'one', 'pdf', 'png', 'pot', 'potm', 'potx', 'pps', 'ppsm', 'ppsx', 'ppt', 'pptm', 'pptx', 'psd', 'tif', 'tiff', 'txt', 'xls', 'xlsb', 'xlsm', 'xlsx', 'wav', 'webp', 'wmv'))
+      return 1;
+  }
+  return 0;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create function DB.DBA.SkyDrive__xml2string (
   in _xml any)
 {
@@ -1053,7 +1057,7 @@ create function DB.DBA.SkyDrive__paramSet (
 -------------------------------------------------------------------------------
 --
 create function DB.DBA.SkyDrive__paramGet (
-  in _id integer,
+  in _id any,
   in _what varchar,
   in _propName varchar,
   in _serialized integer := 1,
@@ -1066,7 +1070,7 @@ create function DB.DBA.SkyDrive__paramGet (
   if (_prefixed)
     _propName := 'virt:SkyDrive-' || _propName;
 
-  propValue := DB.DBA.DAV_PROP_GET_INT (DB.DBA.SkyDrive__davId (_id), _what, _propName, 0, DB.DBA.Dropbox__user (http_dav_uid ()), DB.DBA.Dropbox__password (http_dav_uid ()), http_dav_uid ());
+  propValue := DB.DBA.DAV_PROP_GET_INT (DB.DBA.SkyDrive__davId (_id), _what, _propName, 0, DB.DBA.SkyDrive__user (http_dav_uid ()), DB.DBA.SkyDrive__password (http_dav_uid ()), http_dav_uid ());
   if (isinteger (propValue))
     propValue := null;
 
@@ -1083,7 +1087,7 @@ create function DB.DBA.SkyDrive__paramGet (
 -------------------------------------------------------------------------------
 --
 create function DB.DBA.SkyDrive__paramRemove (
-  in _id integer,
+  in _id any,
   in _what varchar,
   in _propName varchar,
   in _prefixed integer := 1)
@@ -1269,25 +1273,164 @@ create function DB.DBA.SkyDrive__davList (
 
 -------------------------------------------------------------------------------
 --
-create function DB.DBA.SkyDrive__list (
-  inout detcol_id any,
-  inout detcol_parts varchar,
-  inout subPath_parts varchar)
+create function DB.DBA.SkyDrive__load (
+  in detcol_id any,
+  in subPath_parts any,
+  in detcol_parts varchar) returns any
 {
-  -- dbg_obj_princ ('DB.DBA.SkyDrive__list (', detcol_id, detcol_parts, subPath_parts, ')');
+  -- dbg_obj_princ ('SkyDrive_DAV_DIR_LIST (', detcol_id, subPath_parts, detcol_parts, name_mask, recursive, auth_uid, ')');
   declare colId integer;
-  declare colPath, listId varchar;
+  declare colPath varchar;
+  declare retValue, save, downloads, listItems, davItems, colEntry, xmlItems, davEntry, listIds, listId any;
   declare syncTime datetime;
-  declare retValue, retHeader, value, entry any;
+  declare exit handler for sqlstate '*'
+  {
+    connection_set ('dav_store', save);
+    resignal;
+  };
+
+  save := connection_get ('dav_store');
+  downloads := vector ();
 
   colPath := DB.DBA.DAV_CONCAT_PATH (detcol_parts, subPath_parts);
-  colId := DB.DBA.SkyDrive__davId (DB.DBA.DAV_SEARCH_ID (colPath, 'C'));
+  colId := DB.DBA.DAV_SEARCH_ID (colPath, 'C');
   if (DAV_HIDE_ERROR (colId) is null)
-    return -28;
+    goto _exit;
 
   syncTime := DB.DBA.SkyDrive__paramGet (colId, 'C', 'syncTime');
   if (not isnull (syncTime) and (datediff ('second', syncTime, now ()) < 300))
-    return 0;
+    goto _exit;
+
+  listItems := DB.DBA.SkyDrive__list (detcol_id, detcol_parts, colId, subPath_parts);
+  if (DAV_HIDE_ERROR (listItems) is null)
+    goto _exit;
+
+  DB.DBA.SkyDrive__activity (detcol_id, 'Sync started');
+  {
+    declare _id, _what, _type, _content any;
+    declare title varchar;
+    {
+      declare exit handler for sqlstate '*'
+      {
+        DB.DBA.SkyDrive__activity (detcol_id, 'Exec error: ' || __SQL_MESSAGE);
+        goto _exitSync;
+      };
+
+      connection_set ('dav_store', 1);
+      colEntry := DB.DBA.DAV_DIR_SINGLE_INT (colId, 'C', '', null, null, http_dav_uid ());
+      listItems := subseq (ODS..json2obj (listItems), 2);
+      listItems := get_keyword ('data', listItems);
+      listIds := vector ();
+      davItems := DB.DBA.SkyDrive__davList (detcol_id, colId);
+      foreach (any davItem in davItems) do
+      {
+        listID := DB.DBA.SkyDrive__paramGet (davItem[4], davItem[1], 'id', 0);
+        foreach (any listItem in listItems) do
+        {
+          title := get_keyword ('name', listItem);
+          if ((listID = get_keyword ('id', listItem)) and (title = davItem[10]))
+          {
+            davEntry := DB.DBA.SkyDrive__paramGet (davItem[4], davItem[1], 'Entry', 0);
+            if (davEntry is not null)
+            {
+              listIds := vector_concat (listIds, vector (listID));
+              davEntry := xtree_doc (davEntry);
+              if (DB.DBA.SkyDrive__entryXPath (davEntry, '/updated_time', 1) <> get_keyword ('updated_time', listItem))
+              {
+                set triggers off;
+                DB.DBA.SkyDrive__paramSet (davItem[4], davItem[1], ':getlastmodified', DB.DBA.SkyDrive__stringdate (get_keyword ('updated_time', listItem)), 0, 0);
+                set triggers on;
+                DB.DBA.SkyDrive__paramSet (davItem[4], davItem[1], 'Entry', DB.DBA.SkyDrive__obj2xml (listItem), 0);
+                if (davItem[1] = 'R')
+                {
+                  DB.DBA.SkyDrive__paramSet (davItem[4], davItem[1], 'download', '0', 0);
+                  downloads := vector_concat (downloads, vector (vector (davItem[4], davItem[1])));
+                }
+              }
+              else
+              {
+                declare downloaded integer;
+
+                downloaded := DB.DBA.SkyDrive__paramGet (davItem[4], davItem[1], 'download', 0);
+                if (downloaded is not null)
+                {
+                  downloaded := cast (downloaded as integer);
+                  if (downloaded <= 5)
+                    downloads := vector_concat (downloads, vector (vector (davItem[4], davItem[1])));
+                }
+              }
+              goto _continue;
+            }
+          }
+        }
+        if (davItem[1] = 'R')
+          DB.DBA.SkyDrive__rdf_delete (detcol_id, davItem[4], davItem[1]);
+
+        connection_set ('dav_store', 1);
+        DAV_DELETE_INT (davItem[0], 1, null, null, 0, 0);
+
+      _continue:;
+        commit work;
+      }
+      foreach (any listItem in listItems) do
+      {
+        listID := get_keyword ('id', listItem);
+        if (not position (listID, listIDs))
+        {
+          title := get_keyword ('name', listItem);
+          connection_set ('dav_store', 1);
+          if (get_keyword ('type', listItem) in ('folder', 'album'))
+          {
+            _id := DB.DBA.DAV_COL_CREATE (colPath || title || '/',  colEntry[5], colEntry[7], colEntry[6], DB.DBA.SkyDrive__user (http_dav_uid ()), DB.DBA.SkyDrive__password (http_dav_uid ()));
+            _what := 'C';
+          }
+          else
+          {
+            _content := '';
+            _type := http_mime_type (title);
+            _id := DB.DBA.DAV_RES_UPLOAD (colPath || title,  _content, _type, colEntry[5], colEntry[7], colEntry[6], DB.DBA.SkyDrive__user (http_dav_uid ()), DB.DBA.SkyDrive__password (http_dav_uid ()));
+            _what := 'R';
+          }
+          if (DAV_HIDE_ERROR (_id) is not null)
+          {
+            set triggers off;
+            DB.DBA.SkyDrive__paramSet (_id, _what, ':creationdate', DB.DBA.SkyDrive__stringdate (get_keyword ('created_time', listItem)), 0, 0);
+            DB.DBA.SkyDrive__paramSet (_id, _what, ':getlastmodified', DB.DBA.SkyDrive__stringdate (get_keyword ('updated_time', listItem)), 0, 0);
+            set triggers on;
+            DB.DBA.SkyDrive__paramSet (_id, _what, 'virt:DETCOL_ID', cast (detcol_id as varchar), 0, 0);
+            DB.DBA.SkyDrive__paramSet (_id, _what, 'id', listID, 0);
+            DB.DBA.SkyDrive__paramSet (_id, _what, 'Entry', DB.DBA.SkyDrive__obj2xml (listItem), 0);
+            if (_what = 'R')
+            {
+              DB.DBA.SkyDrive__paramSet (_id, _what, 'download', '0', 0);
+              downloads := vector_concat (downloads, vector (vector (_id, _what)));
+            }
+          }
+          commit work;
+        }
+      }
+    }
+  _exitSync:
+    connection_set ('dav_store', save);
+  }
+  DB.DBA.SkyDrive__activity (detcol_id, 'Sync ended');
+
+_exit:;
+  DB.DBA.SkyDrive__downloads (detcol_id, downloads);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create function DB.DBA.SkyDrive__list (
+  inout detcol_id any,
+  inout detcol_parts varchar,
+  inout col_id any,
+  inout subPath_parts varchar)
+{
+  -- dbg_obj_princ ('DB.DBA.SkyDrive__list (', detcol_id, detcol_parts, subPath_parts, ')');
+  declare listId varchar;
+  declare retValue, retHeader any;
 
   if (length (subPath_parts) = 1)
   {
@@ -1295,14 +1438,14 @@ create function DB.DBA.SkyDrive__list (
   }
   else
   {
-    listId := DB.DBA.SkyDrive__paramGet (colId, 'C', 'id', 0);
+    listId := DB.DBA.SkyDrive__paramGet (col_id, 'C', 'id', 0);
     if (isnull (listId))
       return -28;
   }
   retValue := DB.DBA.SkyDrive__exec (detcol_id, retHeader, 'GET', sprintf ('https://apis.live.net/v5.0/%s/files', listId));
   -- dbg_obj_print ('retValue', retValue);
   if (not isinteger (retValue))
-    DB.DBA.SkyDrive__paramSet (colId, 'C', 'syncTime', now ());
+    DB.DBA.SkyDrive__paramSet (col_id, 'C', 'syncTime', now ());
 
   return retValue;
 }
@@ -1541,12 +1684,7 @@ create function DB.DBA.SkyDrive__rdf_delete (
     return;
 
   path := DB.DBA.DAV_SEARCH_PATH (id, what);
-  if (path like '%.gz')
-    path := regexp_replace (path, '\.gz\x24', '');
-
-  rdf_graph2 := 'http://local.virt' || path;
-  SPARQL delete from graph ?:rdf_graph { ?s ?p ?o } where { graph `iri(?:rdf_graph2)` { ?s ?p ?o } };
-  SPARQL clear graph ?:rdf_graph2;
+  DB.DBA.RDF_SINK_CLEAR (path, rdf_graph);
 }
 ;
 

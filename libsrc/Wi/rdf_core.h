@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -47,22 +47,25 @@ extern int key_id_to_namespace_and_local (query_instance_t *qi, iri_id_t iid, ca
 extern caddr_t xsd_type_of_box (caddr_t arg);
 /*! Casts \c new_val to some datatype appropriate for XPATH/XSLT and stores in an XSLT variable value or XQI slot passed as an address to free and set */
 extern void rb_cast_to_xpath_safe (query_instance_t *qi, caddr_t new_val, caddr_t *retval_ptr);
-#define BNODE_IID_TO_LABEL_BUFFER(buf,iid) (((iid) >= MIN_64BIT_BNODE_IRI_ID) ? \
-  sprintf (buf, "nodeID://b" BOXINT_FMT, (boxint)((iid)-MIN_64BIT_BNODE_IRI_ID)) : \
-  sprintf (buf, "nodeID://" BOXINT_FMT, (boxint)(iid)) )
-#define BNODE_IID_TO_LABEL(iid) (((iid) >= MIN_64BIT_BNODE_IRI_ID) ? \
-  box_sprintf (30, "nodeID://b" BOXINT_FMT, (boxint)((iid)-MIN_64BIT_BNODE_IRI_ID)) : \
-  box_sprintf (30, "nodeID://" BOXINT_FMT, (boxint)(iid)) )
-#define BNODE_IID_TO_LABEL_LOCAL(iid) (((iid) >= MIN_64BIT_BNODE_IRI_ID) ? \
-  box_sprintf (30, "b" BOXINT_FMT, (boxint)((iid)-MIN_64BIT_BNODE_IRI_ID)) : \
-  box_sprintf (30, BOXINT_FMT, (boxint)(iid)) )
-#define BNODE_IID_TO_TTL_LABEL_LOCAL(iid) (((iid) >= MIN_64BIT_BNODE_IRI_ID) ? \
-  box_sprintf (30, "vb" BOXINT_FMT, (boxint)((iid)-MIN_64BIT_BNODE_IRI_ID)) : \
-  box_sprintf (30, "v" BOXINT_FMT, (boxint)(iid)) )
-#define BNODE_IID_TO_TALIS_JSON_LABEL(iid) (((iid) >= MIN_64BIT_BNODE_IRI_ID) ? \
-  box_sprintf (30, "_:vb" BOXINT_FMT, (boxint)((iid)-MIN_64BIT_BNODE_IRI_ID)) : \
-  box_sprintf (30, "_:v" BOXINT_FMT, (boxint)(iid)) )
+extern iri_id_t bnode_t_treshold;
+#ifndef NDEBUG
+#define BNODE_FMT_IMPL(fn,arg1,pfx,iid) (((iri_id_t)(iid) >= bnode_t_treshold) ? \
+  (fn) ((arg1), pfx "t" IIDBOXINT_FMT, (boxint)((iri_id_t)(iid) - bnode_t_treshold)) : \
+  (((iri_id_t)(iid) >= MIN_64BIT_BNODE_IRI_ID) ? \
+    (fn) ((arg1), pfx "b" IIDBOXINT_FMT, (boxint)((iri_id_t)(iid)-MIN_64BIT_BNODE_IRI_ID)) : \
+    (fn) ((arg1), pfx IIDBOXINT_FMT, (boxint)((iri_id_t)(iid))) ) )
+#else
+#define BNODE_FMT_IMPL(fn,arg1,pfx,iid) (((iri_id_t)(iid) >= MIN_64BIT_BNODE_IRI_ID) ? \
+  (fn) ((arg1), pfx "b" IIDBOXINT_FMT, (boxint)((iri_id_t)(iid)-MIN_64BIT_BNODE_IRI_ID)) : \
+  (fn) ((arg1), pfx IIDBOXINT_FMT, (boxint)((iri_id_t)(iid))) )
+#endif
 
+
+#define BNODE_IID_TO_LABEL_BUFFER(buf,iid) BNODE_FMT_IMPL(sprintf,buf,"nodeID://",iid)
+#define BNODE_IID_TO_LABEL(iid) BNODE_FMT_IMPL(box_sprintf,30,"nodeID://",iid)
+#define BNODE_IID_TO_LABEL_LOCAL(iid) BNODE_FMT_IMPL(box_sprintf,30,"",iid)
+#define BNODE_IID_TO_TTL_LABEL_LOCAL(iid) BNODE_FMT_IMPL(box_sprintf,30,"v",iid)
+#define BNODE_IID_TO_TALIS_JSON_LABEL(iid) BNODE_FMT_IMPL(box_sprintf,30,"_:v",iid)
 
 /* Set of callback to accept the stream of RDF quads that are grouped by graph and share blank node IDs */
 
@@ -158,6 +161,7 @@ extern void tf_new_base (triple_feed_t *tf, caddr_t new_base);
 #define TTLP_ALLOW_TRIG			0x0100	/*!< Allows TriG syntax, thus loading data in more than one graph. */
 #define TTLP_ALLOW_NQUAD		0x0200	/*!< Enables NQuads syntax but disables TURTLE and TriG */
 #define TTLP_DEBUG_BNODES		0x1000	/*!< Add virtrdf:bnode-base, virtrdf:bnode-row and virtrdf:bnode-label triples for every created blank node. */
+#define TTLP_SNIFFER			0x2000	/*!< Sniffer mode: scan for Turtle fragments in non-Turtle texts. */
 
 #define TTLP_ALLOW_QNAME_A		0x01
 #define TTLP_ALLOW_QNAME_HAS		0x02
@@ -209,6 +213,7 @@ typedef struct ttlp_s
 extern ttlp_t *ttlp_alloc (void);
 extern void ttlp_enter_trig_group (ttlp_t *ttlp);
 extern void ttlp_leave_trig_group (ttlp_t *ttlp);
+extern void ttlp_reset_stacks (ttlp_t *ttlp);
 extern void ttlp_free (ttlp_t *ttlp);
 
 extern caddr_t rdf_load_turtle (
@@ -220,6 +225,11 @@ extern caddr_t rdf_load_turtle (
 #define YY_TYPEDEF_YY_SCANNER_T
 typedef void* yyscan_t;
 #endif
+
+#define TTL_MAX_IRI_LEN 8000
+#define TTL_MAX_KEYWORD_LEN 100
+#define TTL_MAX_LANGNAME_LEN 64
+#define TTL_MAX_LITERAL_LEN 10000000
 
 extern int ttlyyparse (ttlp_t *ttlp_arg, yyscan_t scanner);
 extern int nqyyparse (ttlp_t *ttlp_arg, yyscan_t scanner);
@@ -283,7 +293,7 @@ extern id_hash_t *rdf_graph_iri2id_dict_htable;		/*!< Dictionary of IRI_IDs of I
 extern id_hash_iterator_t *rdf_graph_iri2id_dict_hit;	/*!< Hash iterator for \c rdf_graph_iri2id_dict_hit */
 extern id_hash_t *rdf_graph_id2iri_dict_htable;		/*!< Dictionary of IRIs of IRI_IDs of graphs mentioned in graph-level security config, boxed IRI_IDs are keys, IRI UNAMEs are values */
 extern id_hash_iterator_t *rdf_graph_id2iri_dict_hit;	/*!< Hash iterator for \c rdf_graph_id2irid_dict_hit */
-extern id_hash_t *rdf_graph_group_dict_htable;		/*!< Dictionary of graph group members: group IID is key, vector of member IIDs is value */
+extern id_hash_t *rdf_graph_group_dict_htable;		/*!< Dictionary of graph group members: group IID is key, vector or hashtable of member IIDs is value */
 extern id_hash_iterator_t *rdf_graph_group_dict_hit;	/*!< Hash iterator for \c rdf_graph_group_dict_htable */
 extern id_hash_t *rdf_graph_public_perms_dict_htable;		/*!< Dictionary of public permissions for graphs: graph/group IID is key, copy of DB.DBA.RDF_GRAPH_USER.RGU_PERMISSIONS is a value */
 extern id_hash_iterator_t *rdf_graph_public_perms_dict_hit;	/*!< Hash iterator for \c rdf_graph_group_dict_htable */

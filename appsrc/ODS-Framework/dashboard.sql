@@ -6,7 +6,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2012 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -423,7 +423,7 @@ create procedure wa_abs_date (in  dt datetime)
     }
   else if (ddiff = 1)
     {
-      ret := sprintf ('Yesterday at %d:%d', hour(dt), minute(dt));
+      ret := sprintf ('Yesterday at %02d:%02d', hour(dt), minute(dt));
     }
   else if (ddiff < 7)
     {

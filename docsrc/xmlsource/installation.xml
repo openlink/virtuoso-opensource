@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2012 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -4691,7 +4691,7 @@ Virtuoso configuration parameter is set to when the demo database VAD package is
   </listitem>
   <listitem>The Virtuoso ADO.Net provider for .Net 3.5 and the Entity Framework.</listitem>
   <listitem>Microsoft Visual Studio 2008</listitem>
-  <listitem>The Virtuoso <ulink url="http://s3.amazonaws.com/opldownload/uda/vad-packages/6.3/virtuoso/rdf_mappers_dav.vad">RDF Mappers VAD package</ulink>.</listitem>
+  <listitem>The Virtuoso <ulink url="http://s3.amazonaws.com/opldownload/uda/vad-packages/6.3/virtuoso/cartridges_dav.vad">Cartridges VAD package</ulink>.</listitem>
 </orderedlist>
     </sect2>
     <sect2 id="installcrwebcrserv">
@@ -4866,7 +4866,7 @@ launch a browser and display the IRIs from sparqlview as a list of hyperlinks.
       <title>list of hyperlinks</title>
       <graphic fileref="ui/sparqlwinf29.png"/>
     </figure>
-<para>With the <ulink url="http://s3.amazonaws.com/opldownload/uda/vad-packages/6.3/virtuoso/rdf_mappers_dav.vad">RDF Mappers VAD package</ulink> installed in Virtuoso, clicking on these
+<para>With the <ulink url="http://s3.amazonaws.com/opldownload/uda/vad-packages/6.3/virtuoso/cartridges_dav.vad">Cartridges VAD package</ulink> installed in Virtuoso, clicking on these
 links will take you to a description page of the referenced resource. The description page is created
 using <ulink url="http://virtuoso.openlinksw.com/Whitepapers/html/vdld_html/VirtDeployingLinkedDataGuide_Glossary.html#mozTocId13075">description.vsp</ulink>.
 </para>
@@ -5083,7 +5083,7 @@ the URIQA DefaultHost Virtuoso configuration parameter is set to when the demo d
 is installed.</listitem>
   <listitem>The Virtuoso ADO.Net provider for .Net 3.5 and the Entity Framework.</listitem>
   <listitem>Microsoft Visual Studio 2008</listitem>
-  <listitem>The Virtuoso <ulink url="http://s3.amazonaws.com/opldownload/uda/vad-packages/6.3/virtuoso/rdf_mappers_dav.vad">RDF Mappers VAD package</ulink>.</listitem>
+  <listitem>The Virtuoso <ulink url="http://s3.amazonaws.com/opldownload/uda/vad-packages/6.3/virtuoso/cartridges_dav.vad">Cartridges VAD package</ulink>.</listitem>
   <listitem><ulink url="http://www.microsoft.com/downloads/details.aspx?familyid=9442b0f2-7465-417a-88f3-5e7b5409e9dd&amp;displaylang=en">Silverlight 3 Tools for Visual Studio 2008 SP1</ulink>.</listitem>
   <listitem><ulink url="http://www.microsoft.com/downloads/details.aspx?FamilyID=76bb3a07-3846-4564-b0c3-27972bcaabce&amp;displaylang=en">Microsoft .NET RIA Services July 2009 Preview</ulink>.</listitem>
 </orderedlist>
@@ -5873,13 +5873,17 @@ $
   <listitem>Backup every node using <link linkend="fn_backup_online"><function>back_online</function></link>
     <para><emphasis>For example, for every cluster in its backup folder execute:</emphasis></para>
 <programlisting><![CDATA[
-backup_online ('dbp', 10000000, 0, 'backup');
+SQL> backup_online('dbp',10000000,0,vector('backup')); 
+
+Done. -- 272 msec.
 ]]></programlisting>
 </listitem>
   <listitem>Make backup of all nodes at once using
 <link linkend="clusteroperationadmclexec"><function>cl_exec</function></link>. For example, execute:
 <programlisting><![CDATA[
-cl_exec ('backup_online (''dbp'', 10000000, 0,  vector (''backup''))');
+SQL> cl_exec ('backup_online (''dbp'', 10000000, 0,  vector (''backup''))');
+
+Done. -- 573 msec.
 ]]></programlisting>
 </listitem>
 </orderedlist>

@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -326,6 +326,7 @@ aq_wait_all (async_queue_t * aq, caddr_t * err_ret)
 	  dk_free_tree (err);
 	  waited = 1;
 	  mutex_enter (aq->aq_mtx);
+	  break;
 	}
     }
   while (waited);

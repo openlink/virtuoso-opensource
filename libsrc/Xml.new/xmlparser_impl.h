@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -79,6 +79,7 @@
 #define PM(member) (parser->member)
 
 #define LIST_INC 32
+#define MAX_ENTITY_NESTING_DEPTH 5  /*!< Entities can not be stedted deeper than this limit */
 
 #define MAX_CONTEXT_LEFT 70
 #define MAX_CONTEXT_ALL (MAX_CONTEXT_LEFT+8)
@@ -243,6 +244,7 @@ struct vxml_parser_s {
   xml_pos_t		curr_pos;	/*!< current position in source text of document (main or included) */
   buf_ptr_t		curr_pos_ptr;   /*!< Place in current buffer where curr_pos has measured */
   xml_pos_t		last_main_pos;	/*!< Last reached position in main source text */
+  int			entity_nesting;	/*!< Nesting of entities in text of names of other entities */
 
   vxml_parser_handlers_t masters;	/*!< top level callbacks */
   vxml_parser_handlers_t slaves;		/*!< lower level of callbacks */

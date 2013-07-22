@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -396,6 +396,9 @@ verb
 	| _AT_a_L	{ $$ = uname_rdf_ns_uri_type; }
 	| _EQ		{ $$ = box_dv_uname_string ("http://www.w3.org/2002/07/owl#sameAs"); }
 	| _EQ_GT	{ $$ = box_dv_uname_string ("http://www.w3.org/2000/10/swap/log#implies"); }
+	| _AT_has_L q_complete	{ $$ = ttlp_arg->ttlp_last_complete_uri; ttlp_arg->ttlp_last_complete_uri = NULL; }
+	| _AT_has_L VARIABLE	{ $$ = $2; }
+	| _AT_has_L  error { ttlyyerror_action ("Only predicate is allowed after \"has\" keyword"); }
 	| _LSQBRA_RSQBRA
 		{
 		  TTLYYERROR_ACTION_COND (TTLP_VERB_MAY_BE_BLANK, "Blank node (written as '[]') can not be used as a predicate");
@@ -717,6 +720,15 @@ q_complete
 		    ttlyyerror_action ("Internal error: proven memory leak");
 		  ttlp_arg->ttlp_last_complete_uri = $1;
 		  ttlp_arg->ttlp_last_complete_uri = ttlp_expand_qname_prefix (ttlp_arg, ttlp_arg->ttlp_last_complete_uri);
+		  TTLP_URI_RESOLVE_IF_NEEDED(ttlp_arg->ttlp_last_complete_uri);
+		}
+	| _COLON
+		{
+		  if (NULL != ttlp_arg->ttlp_last_complete_uri)
+		    ttlyyerror_action ("Internal error: proven memory leak");
+		  if (NULL == ttlp_arg->ttlp_default_ns_uri)
+		    ttlyyerror_action ("Default namespace prefix is not defined, so standalone ':' can not be used as an identifier.");
+		  ttlp_arg->ttlp_last_complete_uri = box_copy_tree (ttlp_arg->ttlp_default_ns_uri);
 		  TTLP_URI_RESOLVE_IF_NEEDED(ttlp_arg->ttlp_last_complete_uri);
 		}
 	;

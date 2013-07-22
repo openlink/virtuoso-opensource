@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -117,7 +117,8 @@ public class VirtuosoConnection implements Connection
 
 #ifdef SSL
    // The SSL parameters
-   private String keystore_pass, keystore_cert, keystore_path;
+   private String keystore_path, keystore_pass;
+   private String truststore_path, truststore_pass;
    private String ssl_provider;
 #endif
 
@@ -128,7 +129,7 @@ public class VirtuosoConnection implements Connection
    private boolean readOnly = false;
 
    // The timeout for I/O
-   protected int timeout_def = 60;
+   protected int timeout_def = 60*1000;
    protected int timeout = 0;
    protected int txn_timeout = 0;
 
@@ -145,7 +146,6 @@ public class VirtuosoConnection implements Connection
 
    protected String charset;
    protected boolean charset_utf8 = false;
-
 
    
 #if JDK_VER >= 16
@@ -167,6 +167,11 @@ public class VirtuosoConnection implements Connection
 #endif
    protected boolean rdf_type_loaded = false;
    protected boolean rdf_lang_loaded = false;
+
+#if JDK_VER >= 17
+   private static final SQLPermission SET_NETWORK_TIMEOUT_PERM = new SQLPermission("setNetworkTimeout");
+   private static final SQLPermission ABORT_PERM = new SQLPermission("abort");
+#endif
 
   private boolean useRoundRobin;
   // The pingStatement to know if the connection is still available
@@ -299,7 +304,7 @@ public class VirtuosoConnection implements Connection
       if (password == null)
          password = "";
       if (prop.get("timeout") != null)
-	 timeout = Integer.parseInt(prop.getProperty("timeout"));
+	 timeout = Integer.parseInt(prop.getProperty("timeout"))*1000;
       pwdclear = (String)prop.get("pwdclear");
       if(prop.get("sendbs") != null)
 	  sendbs = Integer.parseInt(prop.getProperty("sendbs"));
@@ -315,7 +320,8 @@ public class VirtuosoConnection implements Connection
           fbs = VirtuosoTypes.DEFAULTPREFETCH;;
       //System.err.println ("3PwdClear is " + pwdclear);
 #ifdef SSL
-      keystore_cert = (String)prop.get("certificate");
+      truststore_path = (String)prop.get("certificate");
+      truststore_pass = (String)prop.get("certificatepass");
       keystore_pass = (String)prop.get("keystorepass");
       keystore_path = (String)prop.get("keystorepath");
       ssl_provider = (String)prop.get("provider");
@@ -356,10 +362,10 @@ public class VirtuosoConnection implements Connection
       pingStatement = prepareStatement("select 1");
    }
 
-   public boolean isConnectionLost() 
+   public boolean isConnectionLost(int timeout_sec) 
    {
      try{
-	pingStatement.setQueryTimeout(1);
+	pingStatement.setQueryTimeout(timeout_sec);
         pingStatement.execute();
         return false;
      } catch (Exception e ) {
@@ -479,7 +485,7 @@ public class VirtuosoConnection implements Connection
       {
          // Establish the connection
 #ifdef SSL
-	if(keystore_cert != null)
+	if(truststore_path != null)
 	  {
 	    //System.out.println ("Will do SSL");
 	    if(ssl_provider != null && ssl_provider.length() != 0)
@@ -489,10 +495,11 @@ public class VirtuosoConnection implements Connection
 	      }
 	    else
 	      java.security.Security.addProvider(new com.sun.net.ssl.internal.ssl.Provider());
-	    if(keystore_cert.length() == 0)
+
+	    if(truststore_path.length() == 0)
 	      {
 		/* Connection without authentication  */
-		//System.setProperty ("java.protocol.handler.pkgs", "com.sun.net.ssl.internal.www.protocol");
+		System.setProperty ("java.protocol.handler.pkgs", "com.sun.net.ssl.internal.www.protocol");
 		/*javax.net.ssl.SSLSocketFactory sf =
 		    (javax.net.ssl.SSLSocketFactory) javax.net.ssl.SSLSocketFactory.getDefault();*/
 		/*javax.net.ssl.SSLSocket sock = null;*/
@@ -516,7 +523,7 @@ public class VirtuosoConnection implements Connection
 	      }
 	    else
 	      {
-		//System.out.println ("Auth conn" + keystore_cert);
+		//System.out.println ("Auth conn " + keystore_cert);
 		/* Connection with authentication  */
 		KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
 		SSLContext ssl_ctx = SSLContext.getInstance("TLS");
@@ -525,7 +532,16 @@ public class VirtuosoConnection implements Connection
 		ks.load(new FileInputStream((keystore_path!=null) ? keystore_path : System.getProperty("user.home") + System.getProperty("file.separator") + ".keystore"),
 		    (keystore_pass!= null) ? keystore_pass.toCharArray() : new String("").toCharArray());
 		kmf.init(ks, (keystore_pass!= null) ? keystore_pass.toCharArray() : new String("").toCharArray());
-		ssl_ctx.init(kmf.getKeyManagers(), null, null);
+
+                String alg=TrustManagerFactory.getDefaultAlgorithm();
+                TrustManagerFactory tmf=TrustManagerFactory.getInstance(alg);
+    
+                ks=KeyStore.getInstance("JKS");
+                ks.load(new FileInputStream(truststore_path), 
+                    (truststore_pass!= null) ? truststore_pass.toCharArray() : new String("").toCharArray());
+                tmf.init(ks);
+
+		ssl_ctx.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
 
 		socket = ((SSLSocketFactory)ssl_ctx.getSocketFactory()).createSocket(host, port);
 	      }
@@ -537,7 +553,7 @@ public class VirtuosoConnection implements Connection
 	 socket = new Socket(host,port);
 
 	 if (timeout > 0)
-	   socket.setSoTimeout(timeout*1000);
+	   socket.setSoTimeout(timeout);
 	 socket.setTcpNoDelay(true);
 #if JDK_VER >= 12
          socket.setReceiveBufferSize(recvbs);
@@ -662,14 +678,14 @@ public class VirtuosoConnection implements Connection
 			 //  System.err.println ("<NULL>");
 
 			 if (timeout <= 0) {
-			   timeout = (int) (cdef_param (client_defaults, "SQL_QUERY_TIMEOUT", timeout_def * 1000) / 1000);
+			   timeout = (int) (cdef_param (client_defaults, "SQL_QUERY_TIMEOUT", timeout_def));
 			   //System.err.println ("timeout = " + timeout);
 			 }
                          if (timeout > 0)
-			   socket.setSoTimeout(timeout*1000);
+			   socket.setSoTimeout(timeout);
 
 			 if (txn_timeout <= 0) {
-			   txn_timeout = (int) (cdef_param (client_defaults, "SQL_TXN_TIMEOUT", txn_timeout * 1000)/ 1000);
+			   txn_timeout = (int) (cdef_param (client_defaults, "SQL_TXN_TIMEOUT", txn_timeout * 1000)/1000);
 			   //System.err.println ("txn timeout = " + txn_timeout);
 			 }
 
@@ -1547,7 +1563,7 @@ public class VirtuosoConnection implements Connection
 	{
 	  //System.err.println ("timeout = " + timeout);
 	  if (timeout != -1)
-	    socket.setSoTimeout (timeout * 1000);
+	    socket.setSoTimeout (timeout);
 	}
       catch (java.net.SocketException e)
 	{
@@ -1928,10 +1944,30 @@ public class VirtuosoConnection implements Connection
 	 * <p>
 	 * @see java.sql.DatabaseMetaData#getClientInfoProperties
 	 */
-   public boolean isValid(int timeout) throws SQLException
-   {
-     throw new VirtuosoFNSException ("isValid(timeout)  not supported", VirtuosoException.NOTIMPLEMENTED);
-   }
+  public boolean isValid(int _timeout) throws SQLException
+  {
+    if (isClosed())
+      return false;
+
+    boolean isLost = true;		
+    try {
+      try {
+        isLost = isConnectionLost(_timeout);
+      } catch (Throwable t) {
+        try {
+          abortInternal();
+        } catch (Throwable ignoreThrown) {
+          // we're dead now anyway
+        }
+
+        return false;
+      }
+    } catch (Throwable t) {
+      return false;
+    }
+		
+    return !isLost;
+  }
 
 	/**
 	 * Sets the value of the client info property specified by name to the
@@ -2154,8 +2190,6 @@ public class VirtuosoConnection implements Connection
      */
   public <T> T unwrap(java.lang.Class<T> iface) throws java.sql.SQLException
   {
-    if(isClosed())
-      throw new VirtuosoException("The connection is already closed.",VirtuosoException.DISCONNECTED);
     try {
       // This works for classes that aren't actually wrapping anything
       return iface.cast(this);
@@ -2188,6 +2222,269 @@ public class VirtuosoConnection implements Connection
     return iface.isInstance(this);
   }
 
+
+#if JDK_VER >= 17
+   //--------------------------JDBC 4.1 -----------------------------
+
+   /**
+    * Sets the given schema name to access.
+    * <P>
+    * If the driver does not support schemas, it will
+    * silently ignore this request.
+    * <p>
+    * Calling {@code setSchema} has no effect on previously created or prepared
+    * {@code Statement} objects. It is implementation defined whether a DBMS
+    * prepare operation takes place immediately when the {@code Connection}
+    * method {@code prepareStatement} or {@code prepareCall} is invoked.
+    * For maximum portability, {@code setSchema} should be called before a
+    * {@code Statement} is created or prepared.
+    *
+    * @param schema the name of a schema  in which to work
+    * @exception SQLException if a database access error occurs
+    * or this method is called on a closed connection
+    * @see #getSchema
+    * @since 1.7
+    */
+  public void setSchema(String schema) throws java.sql.SQLException 
+  {
+    if(isClosed())
+      throw new VirtuosoException("The connection is closed.",VirtuosoException.DISCONNECTED);
+  }
+
+    /**
+     * Retrieves this <code>Connection</code> object's current schema name.
+     *
+     * @return the current schema name or <code>null</code> if there is none
+     * @exception SQLException if a database access error occurs
+     * or this method is called on a closed connection
+     * @see #setSchema
+     * @since 1.7
+     */
+  public String getSchema() throws java.sql.SQLException
+  {
+    if(isClosed())
+      throw new VirtuosoException("The connection is closed.",VirtuosoException.DISCONNECTED);
+    return null;
+  }
+
+    /**
+     * Terminates an open connection.  Calling <code>abort</code> results in:
+     * <ul>
+     * <li>The connection marked as closed
+     * <li>Closes any physical connection to the database
+     * <li>Releases resources used by the connection
+     * <li>Insures that any thread that is currently accessing the connection
+     * will either progress to completion or throw an <code>SQLException</code>.
+     * </ul>
+     * <p>
+     * Calling <code>abort</code> marks the connection closed and releases any
+     * resources. Calling <code>abort</code> on a closed connection is a
+     * no-op.
+     * <p>
+     * It is possible that the aborting and releasing of the resources that are
+     * held by the connection can take an extended period of time.  When the
+     * <code>abort</code> method returns, the connection will have been marked as
+     * closed and the <code>Executor</code> that was passed as a parameter to abort
+     * may still be executing tasks to release resources.
+     * <p>
+     * This method checks to see that there is an <code>SQLPermission</code>
+     * object before allowing the method to proceed.  If a
+     * <code>SecurityManager</code> exists and its
+     * <code>checkPermission</code> method denies calling <code>abort</code>,
+     * this method throws a
+     * <code>java.lang.SecurityException</code>.
+     * @param executor  The <code>Executor</code>  implementation which will
+     * be used by <code>abort</code>.
+     * @throws java.sql.SQLException if a database access error occurs or
+     * the {@code executor} is {@code null},
+     * @throws java.lang.SecurityException if a security manager exists and its
+     *    <code>checkPermission</code> method denies calling <code>abort</code>
+     * @see SecurityManager#checkPermission
+     * @see Executor
+     * @since 1.7
+     */
+  public void abort(java.util.concurrent.Executor executor) throws java.sql.SQLException
+  {
+    SecurityManager sec = System.getSecurityManager();
+		
+    if (sec != null)
+      sec.checkPermission(ABORT_PERM);
+		
+    if (executor == null)
+      throw new VirtuosoException ("Executor can not be null", 
+                    VirtuosoException.BADPARAM);
+		
+    executor.execute(new Runnable() 
+    {
+      public void run() {
+        try {
+          abortInternal();
+        } catch (SQLException e) {
+          throw new RuntimeException(e);
+        }
+      }
+    });
+
+  }
+
+
+    /**
+     *
+     * Sets the maximum period a <code>Connection</code> or
+     * objects created from the <code>Connection</code>
+     * will wait for the database to reply to any one request. If any
+     *  request remains unanswered, the waiting method will
+     * return with a <code>SQLException</code>, and the <code>Connection</code>
+     * or objects created from the <code>Connection</code>  will be marked as
+     * closed. Any subsequent use of
+     * the objects, with the exception of the <code>close</code>,
+     * <code>isClosed</code> or <code>Connection.isValid</code>
+     * methods, will result in  a <code>SQLException</code>.
+     * <p>
+     * <b>Note</b>: This method is intended to address a rare but serious
+     * condition where network partitions can cause threads issuing JDBC calls
+     * to hang uninterruptedly in socket reads, until the OS TCP-TIMEOUT
+     * (typically 10 minutes). This method is related to the
+     * {@link #abort abort() } method which provides an administrator
+     * thread a means to free any such threads in cases where the
+     * JDBC connection is accessible to the administrator thread.
+     * The <code>setNetworkTimeout</code> method will cover cases where
+     * there is no administrator thread, or it has no access to the
+     * connection. This method is severe in it's effects, and should be
+     * given a high enough value so it is never triggered before any more
+     * normal timeouts, such as transaction timeouts.
+     * <p>
+     * JDBC driver implementations  may also choose to support the
+     * {@code setNetworkTimeout} method to impose a limit on database
+     * response time, in environments where no network is present.
+     * <p>
+     * Drivers may internally implement some or all of their API calls with
+     * multiple internal driver-database transmissions, and it is left to the
+     * driver implementation to determine whether the limit will be
+     * applied always to the response to the API call, or to any
+     * single  request made during the API call.
+     * <p>
+     *
+     * This method can be invoked more than once, such as to set a limit for an
+     * area of JDBC code, and to reset to the default on exit from this area.
+     * Invocation of this method has no impact on already outstanding
+     * requests.
+     * <p>
+     * The {@code Statement.setQueryTimeout()} timeout value is independent of the
+     * timeout value specified in {@code setNetworkTimeout}. If the query timeout
+     * expires  before the network timeout then the
+     * statement execution will be canceled. If the network is still
+     * active the result will be that both the statement and connection
+     * are still usable. However if the network timeout expires before
+     * the query timeout or if the statement timeout fails due to network
+     * problems, the connection will be marked as closed, any resources held by
+     * the connection will be released and both the connection and
+     * statement will be unusable.
+     *<p>
+     * When the driver determines that the {@code setNetworkTimeout} timeout
+     * value has expired, the JDBC driver marks the connection
+     * closed and releases any resources held by the connection.
+     * <p>
+     *
+     * This method checks to see that there is an <code>SQLPermission</code>
+     * object before allowing the method to proceed.  If a
+     * <code>SecurityManager</code> exists and its
+     * <code>checkPermission</code> method denies calling
+     * <code>setNetworkTimeout</code>, this method throws a
+     * <code>java.lang.SecurityException</code>.
+     *
+     * @param executor  The <code>Executor</code>  implementation which will
+     * be used by <code>setNetworkTimeout</code>.
+     * @param milliseconds The time in milliseconds to wait for the database
+     * operation
+     *  to complete.  If the JDBC driver does not support milliseconds, the
+     * JDBC driver will round the value up to the nearest second.  If the
+     * timeout period expires before the operation
+     * completes, a SQLException will be thrown.
+     * A value of 0 indicates that there is not timeout for database operations.
+     * @throws java.sql.SQLException if a database access error occurs, this
+     * method is called on a closed connection,
+     * the {@code executor} is {@code null},
+     * or the value specified for <code>seconds</code> is less than 0.
+     * @throws java.lang.SecurityException if a security manager exists and its
+     *    <code>checkPermission</code> method denies calling
+     * <code>setNetworkTimeout</code>.
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @see SecurityManager#checkPermission
+     * @see Statement#setQueryTimeout
+     * @see #getNetworkTimeout
+     * @see #abort
+     * @see Executor
+     * @since 1.7
+     */
+  public void setNetworkTimeout(java.util.concurrent.Executor executor, 
+  			 final int milliseconds) throws java.sql.SQLException
+  {
+    SecurityManager sec = System.getSecurityManager();
+		
+    if (sec != null)
+      sec.checkPermission(SET_NETWORK_TIMEOUT_PERM);
+		
+    if (executor == null)
+      throw new VirtuosoException ("Executor can not be null", 
+                    VirtuosoException.BADPARAM);
+		
+    if(isClosed())
+      throw new VirtuosoException("The connection is closed.",VirtuosoException.DISCONNECTED);
+
+    executor.execute(new Runnable() 
+    {
+      public void run() {
+          try {
+            setSocketTimeout(milliseconds); // for re-connects
+          } catch (SQLException e) {
+            throw new RuntimeException(e);
+          }
+      }
+    });
+  }
+
+    /**
+     * Retrieves the number of milliseconds the driver will
+     * wait for a database request to complete.
+     * If the limit is exceeded, a
+     * <code>SQLException</code> is thrown.
+     *
+     * @return the current timeout limit in milliseconds; zero means there is
+     *         no limit
+     * @throws SQLException if a database access error occurs or
+     * this method is called on a closed <code>Connection</code>
+     * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
+     * this method
+     * @see #setNetworkTimeout
+     * @since 1.7
+     */
+  public int getNetworkTimeout() throws java.sql.SQLException
+  {
+    if(isClosed())
+      throw new VirtuosoException("The connection is closed.",VirtuosoException.DISCONNECTED);
+
+    return timeout;
+  }
+
+
+#endif
+
+
+  private void abortInternal() throws java.sql.SQLException 
+  {
+    if (isClosed())
+      return;
+
+    try {
+        close();
+    } catch (Throwable t) {
+    }
+  }
+
+
+  
   private void createCaches(int cacheSize)
   {
     pStatementCache = new LRUCache<String,VirtuosoPreparedStatement>(cacheSize) {

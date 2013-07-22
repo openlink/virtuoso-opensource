@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -110,6 +110,8 @@ failed:
   return NULL;
 }
 
+void wikilexdone ();
+
 caddr_t bif_wikiv_lexer_impl (caddr_t * qst, caddr_t * err, state_slot_t ** args, char *bifname, int run_lexer)
 {
   caddr_t rawtext = bif_string_arg (qst, args, 0, bifname);
@@ -167,12 +169,17 @@ caddr_t bif_wikiv_lexer_impl (caddr_t * qst, caddr_t * err, state_slot_t ** args
       strses_free (pipe);
       dk_free_box (macroexpanded);
       if (run_lexer)
+	{
+	  wikilexdone ();
         strses_free (out);
+	}
       POP_QR_RESET;
       sqlr_resignal (err);
     }
   END_QR_RESET;
   dk_free_box (wikiv_env); /* not dk_free_tree */
+  if (run_lexer)
+    wikilexdone ();
   mutex_leave (wikiv_lexer_mutex);
   if (run_lexer)
     {

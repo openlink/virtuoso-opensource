@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -158,6 +158,62 @@ ins_call_kwds (caddr_t * qst, query_t * proc, instruction_t * ins, caddr_t * par
   END_DO_SET();
 }
 
+caddr_t
+sqlr_run_bif_in_sandbox (bif_metadata_t *bmd, caddr_t *args, caddr_t *err_ret)
+{
+  int argctr, argcount = BOX_ELEMENTS (args);
+#ifdef MALLOC_DEBUG
+  size_t ssls_size = (argcount ? sizeof (state_slot_t) * argcount : 1); /* 1 instead of 0 to avoid "zero bytes allocation" warning */
+#else
+  size_t ssls_size = sizeof (state_slot_t) * argcount;
+#endif
+  state_slot_t *ssls = (state_slot_t *)dk_alloc (ssls_size);
+  state_slot_t **params = (state_slot_t **)dk_alloc_list (argcount);
+  query_instance_t *qi_stub = (query_instance_t *)dk_alloc_list_zero (QI_FIRST_FREE + argcount);
+  caddr_t ret_val = NULL;
+  memset (ssls, 0, ssls_size);
+  qi_stub->qi_client = sqlc_client ();
+  qi_stub->qi_u_id = U_ID_NOBODY;
+  qi_stub->qi_g_id = U_ID_NOGROUP;
+  qi_stub->qi_thread = THREAD_CURRENT_THREAD;
+  for (argctr = argcount; argctr--; /* no step */)
+    {
+      state_slot_t *sl = ssls + argctr;
+      caddr_t val = args[argctr];
+      sl->ssl_index = QI_FIRST_FREE + argctr;
+      sl->ssl_type = SSL_CONSTANT;
+      sl->ssl_constant = ((caddr_t *)(qi_stub))[QI_FIRST_FREE + argctr] = val;
+      sl->ssl_dtp = DV_TYPE_OF (val);
+      if (sl->ssl_dtp == DV_LONG_STRING)
+        sl->ssl_prec = box_length (val) - 1;
+      else
+        sl->ssl_prec = ddl_dv_default_prec (sl->ssl_dtp);
+      params[argctr] = sl;
+    }
+  QR_RESET_CTX
+    {
+      if (!bmd->bmd_is_pure)
+        sqlr_new_error ("42000", "SR650", "Only pure function can be executed in a sandbox, %.200s() is not pure", bmd->bmd_name);
+      ret_val = bmd->bmd_main_impl ((caddr_t *)qi_stub, err_ret, params);
+    }
+  QR_RESET_CODE
+    {
+      du_thread_t *self = THREAD_CURRENT_THREAD;
+      err_ret[0] = thr_get_error_code (self);
+      thr_set_error_code (self, NULL);
+      /*no POP_QR_RESET*/;
+    }
+  END_QR_RESET
+  dk_free_box ((caddr_t)qi_stub);
+  dk_free_box ((caddr_t)params);
+  dk_free (ssls, ssls_size);
+  if (NULL != err_ret[0])
+    {
+      dk_free_tree (ret_val);
+      return NULL;
+    }
+  return ret_val;
+}
 
 void
 ins_call_bif (instruction_t * ins, caddr_t * qst, code_vec_t code_vec)
@@ -1330,9 +1386,9 @@ box_err_print_box (caddr_t param_value, int call_depth)
       {
         iri_id_t iid = unbox_iri_id (param_value);
         if (iid >= MIN_64BIT_BNODE_IRI_ID)
-          return box_sprintf (30, "#ib" BOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
+          return box_sprintf (30, "#ib" IIDBOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
         else
-          return box_sprintf (30, "#i" BOXINT_FMT, (boxint)(iid));
+          return box_sprintf (30, "#i" IIDBOXINT_FMT, (boxint)(iid));
       }
     case DV_REFERENCE:
       {

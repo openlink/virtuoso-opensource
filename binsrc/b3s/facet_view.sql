@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2012 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -44,7 +44,7 @@ fct_view_info (in tree any, in ctx int, in txt any)
   http ('<h3 id="view_info">', txt);
   if ('list' = mode)
     {
-      http (sprintf ('List of %s%d', connection_get ('s_term'), pos), txt);
+      http (sprintf ('Query results for Relations for %s%d', connection_get ('s_term'), pos), txt);
     }
   if ('list-count' = mode)
     {
@@ -68,7 +68,7 @@ fct_view_info (in tree any, in ctx int, in txt any)
     }
   if ('properties-in' = mode)
     {
-      http ('Displaying Attributes with Entity Reference Values', txt);
+      http ('Query Pattern', txt);
     }
   if ('text-properties' = mode)
     {
@@ -94,7 +94,10 @@ fct_view_info (in tree any, in ctx int, in txt any)
 --    http (sprintf ('  values %d - %d', 1 + offs, lim), txt);
 
 
-  http (' where:</h3>', txt);
+  if ('properties-in' = mode)
+    http (':</h3>', txt);
+  else
+    http (' where:</h3>', txt);
 }
 ;
 
@@ -111,8 +114,8 @@ create procedure fct_p_term ()
 {
   declare s_term varchar;
   s_term := connection_get ('s_term');
-  if (s_term = 's') return 'Property';
-  return 'Attribute';
+  if (s_term = 's') return 'Triple'; -- Property
+  return 'Relation'; -- Attribute
 }
 ;
 
@@ -357,7 +360,7 @@ fct_query_info (in tree any,
                        fct_s_term (),
                        new_s), txt);
 
-      fct_query_info_1 (tree, new_s, max_s, ctx, level, txt, cno);
+      fct_query_info_1 (tree, new_s, max_s, level, ctx, txt, cno);
       http ('</li>\n', txt);
     }
   if ('value' = n)
@@ -387,7 +390,7 @@ fct_query_info (in tree any,
       dtp    := xpath_eval ('./@datatype',tree);
       val    := cast (xpath_eval ('.', tree) as varchar);
 
-      if (0 = xpath_eval ('count (./ancestor::*[name()=''property''])+ count(./ancestor::*[name()=''property-of''])', tree, 1))
+      if (0 = xpath_eval ('count (./ancestor::*[name()=''property''])+ count(./ancestor::*[name()=''property-of'']) + count(./preceding::*[name()=''class''])', tree, 1)) 
         prop_qual := ' (any property) ';
       else
         prop_qual := '';
@@ -527,7 +530,7 @@ VHOST_REMOVE (lpath=>'/fct');
 VHOST_DEFINE (lpath=>'/fct',
     	ppath=>case when registry_get('_fct_path_') = 0 then '/fct/' else registry_get('_fct_path_') end,
 	is_dav=>atoi (case when registry_get('_fct_dav_') = 0 then '0' else registry_get('_fct_dav_') end),
-    	vsp_user=>'dba', def_page=>'facet.vsp');
+    	vsp_user=>'SPARQL', def_page=>'facet.vsp');
 VHOST_REMOVE (lpath=>'/b3s');
 VHOST_DEFINE (lpath=>'/b3s',
     	ppath=>case when registry_get('_fct_path_') = 0 then '/fct/' else registry_get('_fct_path_') end || 'www/',
@@ -597,7 +600,7 @@ fct_nav (in tree any,
   fct_set_conn_tlogy (tree);
 
   http ('<div id="fct_nav">', txt);
-  http ('<h3>Entity Relations Navigation</h3>', txt);
+  http ('<h3>Entity Relationship Exploration</h3>', txt);
   http ('<ul class="n1">', txt);
 
   if ('text-properties' = tp)
@@ -615,13 +618,13 @@ fct_nav (in tree any,
     if (connection_get('c_term') = 'class')
 	fct_view_link ('classes', 'Classes', txt);
     else
-	fct_view_link ('classes', 'Types', txt, 'Entity Category or Class');
+	fct_view_link ('classes', 'Entity Types', txt, 'Entity Category or Class');
 
   if ('properties' <> tp)
     if (connection_get('s_term') = 's')
       fct_view_link ('properties', 'Properties', txt, 'Entity Characteristic or Property');
     else
-      fct_view_link ('properties', 'Attributes', txt, 'Entity Characteristic or Property');
+      fct_view_link ('properties', 'Relation Subjects', txt, 'Relations for which selected Entity is an Object');
 
   if ('text' = tp and pos = 0)
     fct_view_link ('text-properties', 'Properties containing the text', txt);
@@ -630,20 +633,22 @@ fct_nav (in tree any,
     if (connection_get('s_term') = 's')
       fct_view_link ('properties-in', 'Referencing Properties', txt, 'Characteristics or Properties with Entity References as values');
     else
-      fct_view_link ('properties-in', 'Referencing Attributes', txt, 'Characteristics or Properties with Entity References as values');
+      fct_view_link ('properties-in', 'Relation Objects', txt, 'Relations for which selected Entity is a Subject');
 
-  if ('text' <> tp and tp <> 'text-d')
-    {
       if (tp <> 'list-count')
+    {
 	if (connection_get('s_term') = 's')
 	  fct_view_link ('list-count', 'Distinct objects (Aggregated)', txt, 'Displaying List of Distinct Entity Names ordered by Count');
 	else
 	  fct_view_link ('list-count', 'Distinct values (Aggregated)', txt, 'Displaying List of Distinct Entity Names ordered by Count');
+    }
+  if ('text' <> tp and tp <> 'text-d')
+    {
       if (tp <> 'list')
 	if (connection_get('s_term') = 's')
 	  fct_view_link ('list', 'Show Matching Objects', txt, 'Displaying Ranked Enitity Names and Text summaries');
 	else
-	  fct_view_link ('list', 'Show Matching Values', txt, 'Displaying Ranked Enitity Names and Text summaries');
+	  fct_view_link ('list', 'Show Matching Entities', txt, 'Displaying Ranked Enitity Names and Text summaries');
     }
 
   if ('full-text' <> tp and not xpath_eval ('//query/text', tree))
@@ -654,7 +659,7 @@ fct_nav (in tree any,
   if ('geo' <> tp)
     {
       --fct_view_link ('geo', 'Map', txt);
-      http (sprintf ('<li><a id="map_link" href="/fct/facet.vsp?cmd=set_view&sid=%d&type=%s&limit=20&offset=0" title="%V">%s</a>&nbsp;'||
+      http (sprintf ('<li><a id="map_link" href="/fct/facet.vsp?cmd=set_view&sid=%d&type=%s&limit=200&offset=0" title="%V">%s</a>&nbsp;'||
 	    		'<select name="map_of" onchange="javascript:link_change(this.value)">'||
 	    		'<option value="any">Any location</option>'||
 	    		'<option value="">Shown items</option>'||
@@ -849,15 +854,29 @@ fct_pretty_sparql (in q varchar, in lev int := 0)
 }
 ;
 
+create procedure
+fct_c_plink (in p_xml any)
+{
+  declare link any;
+  link := sprintf ('local:/fct/facet.vsp?qxml=%U', p_xml);
+  link := uriqa_dynamic_local_replace (link);
+  if (__proc_exists ('WS..CURI_MAKE_CURI') is not null)
+    link := '/c/' || WS..CURI_MAKE_CURI (link);
+  return link;  
+}
+;
 
 create procedure
 fct_web (in tree any)
 {
-  declare sqls, msg, tp varchar;
+  declare sqls, msg, tp, agg, agg_qr, agg_res varchar;
   declare start_time int;
   declare reply, md, res, qr, qr2, txt any;
   declare p_qry varchar;
   declare timeout int;
+  declare pos int;
+
+  pos := fct_view_pos (tree);
 
   timeout := connection_get ('timeout');
 
@@ -878,6 +897,24 @@ fct_web (in tree any)
 
   p_qry := fct_query (tree, 1); -- get "plain" query text
   p_qry := fct_pretty_sparql (p_qry);
+  agg := cast (xpath_eval('/query/@agg', tree) as varchar);
+
+  agg_res := null;
+  if (length (agg))
+    {
+      declare state, message, dta any;
+      agg_qr := 'sparql ' || fct_agg_query (tree, agg);
+      state := '00000';
+      exec (agg_qr, state, message, vector (), 0, null, dta);
+      dbg_obj_print (dta);
+      if (state = '00000') agg_res := dta[0][0];
+      else -- wrong query
+        {
+	  tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_agg.xsl', tree, vector ('agg', ''));
+	  update fct_state set fct_state = tree where fct_sid = connection_get ('sid');
+	  commit work;
+	}
+    }
 
 --  dbg_obj_print (reply);
 
@@ -898,7 +935,7 @@ fct_web (in tree any)
   tp := cast (xpath_eval ('//view/@type', tree) as varchar);
 
   declare p_ses, r_ses any;
-  declare p_xml varchar;
+  declare p_xml, p_link varchar;
   declare p_xml_tree any;
 
   p_xml_tree := xslt (registry_get ('_fct_xslt_') || 'fct_strip_loc.xsl', tree, vector());
@@ -907,6 +944,7 @@ fct_web (in tree any)
   http_value (p_xml_tree, null, p_ses);
 
   p_xml := cast (p_ses as varchar);
+  p_link := fct_c_plink (p_xml);
 
   r_ses := string_output ();
   http_value (reply, null, r_ses);
@@ -947,7 +985,13 @@ fct_web (in tree any)
                             'addthis_key',
                             _addthis_key,
                             'tree',
-                            tree
+                            tree,
+			    'agg_res',
+			    agg_res,
+			    'pos',
+			    pos + 1,
+			    'p_link',
+			    p_link
 			    )),
 	      null, txt);
 
@@ -1228,6 +1272,8 @@ fct_set_class (in tree any,
 {
   declare pos int;
 
+  pos := fct_view_pos (tree);
+
   fct_dbg_msg (sprintf ('fct_set_class: sid: %d, iri: %s, pos: %d', sid, iri, pos));
 
   tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl',
@@ -1486,7 +1532,7 @@ fct_create_ses ()
 
   sid := sequence_next ('fct_seq');
   new_tree := xtree_doc('<?xml version="1.0" encoding="UTF-8"?>\n' ||
-                        '<query inference="" same-as="" view3="" s-term="" c-term=""/>');
+                        '<query inference="" same-as="" view3="" s-term="" c-term="" agg=""/>');
 
   insert into fct_state (fct_sid, fct_state)
          values (sid, new_tree);
@@ -1775,6 +1821,18 @@ fct_open_iri (in tree any, in sid int, in iri varchar)
 create procedure
 fct_refresh (in tree any)
 {
+  fct_web (tree);
+}
+;
+
+create procedure 
+fct_set_agg (in tree any, in sid varchar)
+{
+  declare agg any;
+  agg := http_param ('agg');
+  tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_agg.xsl', tree, vector ('agg', agg));
+  update fct_state set fct_state = tree where fct_sid = sid;
+  commit work;
   fct_web (tree);
 }
 ;
@@ -2389,13 +2447,16 @@ exec:;
     }
   else if ('set_inf' = cmd)
     fct_set_inf (tree, sid);
+  else if ('set_agg' = cmd)
+    fct_set_agg (tree, sid);
   else if ('select_value' = cmd) {
     fct_select_value (tree,
     		      sid,
 		      http_param ('iri'),
 		      http_param ('lang'),
 		      http_param ('datatype'),
-		      http_param ('op'));
+		      'eq' --http_param ('op')
+		      );
     fct_dbg_msg (sprintf ('select_value: iri=%s, val=%s',
                           cast (http_param('iri') as varchar),
                           cast (http_param('val') as varchar)));

@@ -9,7 +9,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -81,13 +81,22 @@ struct mem_pool_s
 };
 #endif
 
-
+EXE_EXPORT (mem_pool_t *, mem_pool_alloc, (void));
 #if defined (DEBUG) || defined (MALLOC_DEBUG)
 extern mem_pool_t *dbg_mem_pool_alloc (const char *file, int line);
 #define mem_pool_alloc() dbg_mem_pool_alloc (__FILE__, __LINE__)
-#else
-extern mem_pool_t *mem_pool_alloc (void);
 #endif
+
+EXE_EXPORT (caddr_t, mp_alloc_box, (mem_pool_t * mp, size_t len, dtp_t dtp));
+EXE_EXPORT (caddr_t, mp_box_string, (mem_pool_t * mp, const char *str));
+EXE_EXPORT (caddr_t, mp_box_substr, (mem_pool_t * mp, ccaddr_t str, int n1, int n2));
+EXE_EXPORT (box_t, mp_box_dv_short_nchars, (mem_pool_t * mp, const char *str, size_t len));
+EXE_EXPORT (caddr_t, mp_box_dv_uname_string, (mem_pool_t * mp, const char *str));
+EXE_EXPORT (box_t, mp_box_dv_uname_nchars, (mem_pool_t * mp, const char *str, size_t len));
+EXE_EXPORT (caddr_t, mp_box_copy, (mem_pool_t * mp, caddr_t box));
+EXE_EXPORT (caddr_t, mp_box_copy_tree, (mem_pool_t * mp, caddr_t box));
+EXE_EXPORT (caddr_t, mp_full_box_copy_tree, (mem_pool_t * mp, caddr_t box));
+EXE_EXPORT (caddr_t, mp_box_num, (mem_pool_t * mp, boxint num));
 
 #ifdef MALLOC_DEBUG
 extern caddr_t dbg_mp_alloc_box (const char *file, int line, mem_pool_t * mp, size_t len, dtp_t dtp);
@@ -100,6 +109,8 @@ extern caddr_t dbg_mp_box_copy (const char *file, int line, mem_pool_t * mp, cad
 extern caddr_t dbg_mp_box_copy_tree (const char *file, int line, mem_pool_t * mp, caddr_t box);
 extern caddr_t dbg_mp_full_box_copy_tree (const char *file, int line, mem_pool_t * mp, caddr_t box);
 extern caddr_t dbg_mp_box_num (const char *file, int line, mem_pool_t * mp, boxint num);
+#ifndef _USRDLL
+#ifndef EXPORT_GATE
 #define mp_alloc_box(mp,len,dtp) dbg_mp_alloc_box (__FILE__, __LINE__, (mp), (len), (dtp))
 #define mp_box_string(mp, str) dbg_mp_box_string (__FILE__, __LINE__, (mp), (str))
 #define mp_box_substr(mp, str, n1, n2) dbg_mp_box_substr (__FILE__, __LINE__, (mp), (str), (n1), (n2))
@@ -110,18 +121,10 @@ extern caddr_t dbg_mp_box_num (const char *file, int line, mem_pool_t * mp, boxi
 #define mp_box_copy_tree(mp, box) dbg_mp_box_copy_tree (__FILE__, __LINE__, (mp), (box))
 #define mp_full_box_copy_tree(mp, box) dbg_mp_full_box_copy_tree (__FILE__, __LINE__, (mp), (box))
 #define mp_box_num(mp, num) dbg_mp_box_num (__FILE__, __LINE__, (mp), (num))
-#else
-extern caddr_t mp_alloc_box (mem_pool_t * mp, size_t len, dtp_t dtp);
-extern caddr_t mp_box_string (mem_pool_t * mp, const char *str);
-extern caddr_t mp_box_substr (mem_pool_t * mp, ccaddr_t str, int n1, int n2);
-extern box_t mp_box_dv_short_nchars (mem_pool_t * mp, const char *str, size_t len);
-extern caddr_t mp_box_dv_uname_string (mem_pool_t * mp, const char *str);
-extern box_t mp_box_dv_uname_nchars (mem_pool_t * mp, const char *str, size_t len);
-extern caddr_t mp_box_copy (mem_pool_t * mp, caddr_t box);
-extern caddr_t mp_box_copy_tree (mem_pool_t * mp, caddr_t box);
-extern caddr_t mp_full_box_copy_tree (mem_pool_t * mp, caddr_t box);
-extern caddr_t mp_box_num (mem_pool_t * mp, boxint num);
 #endif
+#endif
+#endif
+caddr_t mp_alloc_sized (mem_pool_t * mp, size_t len);
 
 #ifdef LACERATED_POOL
 void mp_alloc_box_assert (mem_pool_t * mp, caddr_t box);
@@ -266,7 +269,7 @@ void dbg_mp_set_push (const char *file, int line, mem_pool_t * mp, dk_set_t * se
 dk_set_t dbg_t_cons (const char *file, int line, void *car, dk_set_t cdr);
 void dbg_t_set_push (const char *file, int line, dk_set_t * set, void *elt);
 int dbg_t_set_pushnew (const char *file, int line, s_node_t ** set, void *item);
-int dbg_t_set_push_new_string (const char *file, int line, s_node_t ** set, void *item);
+int dbg_t_set_push_new_string (const char *file, int line, s_node_t ** set, char *item);
 void *dbg_t_set_pop (const char *file, int line, dk_set_t * set);
 dk_set_t dbg_t_set_union (const char *file, int line, dk_set_t s1, dk_set_t s2);
 dk_set_t dbg_t_set_intersect (const char *file, int line, dk_set_t s1, dk_set_t s2);
@@ -293,7 +296,7 @@ void mp_set_push (mem_pool_t * mp, dk_set_t * set, void *elt);
 dk_set_t t_cons (void *car, dk_set_t cdr);
 void t_set_push (dk_set_t * set, void *elt);
 int t_set_pushnew (s_node_t ** set, void *item);
-int t_set_push_new_string (s_node_t ** set, void *item);
+int t_set_push_new_string (s_node_t ** set, char *item);
 void *t_set_pop (dk_set_t * set);
 dk_set_t t_set_union (dk_set_t s1, dk_set_t s2);
 dk_set_t t_set_intersect (dk_set_t s1, dk_set_t s2);

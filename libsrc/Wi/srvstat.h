@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -26,7 +26,8 @@
  */
 
 #ifndef _SRVSTAT_H
-# define _SRVSTAT_H
+#define _SRVSTAT_H
+#include "Dk.h"
 
 /* disk.c */
 extern long disk_reads;
@@ -64,6 +65,10 @@ extern long srv_max_clients;
 /* srvstat.c */
 extern char *product_version_string (void);
 extern time_t st_started_since;
+extern long st_sys_ram;
 
 extern long first_id;
+
+EXE_EXPORT (caddr_t, sys_stat_impl, (const char *name));
+
 #endif /* _SRVSTAT_H */

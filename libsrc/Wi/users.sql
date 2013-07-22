@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2012 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -889,15 +889,15 @@ __USER_LOAD_KEY_BY_TYPE (inout key_name varchar, inout key_value any, inout key_
   if (key_type = '3DES')
     {
       -- the format is always DER, b64 encoded
-      xenc_key_3DES_read (key_name, key_value, fmt, key_passwd);
+      xenc_key_3DES_read (key_name, key_value);
     }
   else if (key_type = 'DSA')
     {
-      xenc_key_DSA_read (key_name, key_value, fmt, key_passwd);
+      xenc_key_DSA_read (key_name, key_value);
     }
   else if (key_type = 'RSA')
     {
-      xenc_key_RSA_read (key_name, key_value, fmt, key_passwd);
+      xenc_key_RSA_read (key_name, key_value);
     }
   else if (0 and key_type = 'AES') -- TODO: implement deserialization
     {

@@ -6,7 +6,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2012 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -40,9 +40,11 @@
 <xsl:param name="t_term"/>
 <xsl:param name="p_qry"/>
 <xsl:param name="p_xml"/>
+<xsl:param name="p_link"/>
 <xsl:param name="tree"/>
 <xsl:param name="addthis_key"/>
 <xsl:param name="type"/>
+<xsl:param name="agg_res"/>
 
 <xsl:variable name="view-type">
   <xsl:choose>
@@ -102,7 +104,7 @@
           <xsl:when test="$view-type = 'properties'"><h3>Properties</h3></xsl:when>
           <xsl:when test="$view-type = 'properties-in'"><h3>Referencing Properties</h3></xsl:when-->
           <xsl:when test="$view-type = 'list'"><h3>Select a value or condition</h3></xsl:when>
-          <xsl:when test="$view-type = 'entities-list'"><h3>Entities found</h3></xsl:when>
+          <xsl:when test="$view-type = 'entities-list'"><h3>Distinct Entities found</h3></xsl:when>
           <!--xsl:when test="$view-type = 'list-count'"><h3>Distinct values</h3></xsl:when>
           <xsl:when test="$view-type = 'geo'"><h3>Location</h3></xsl:when-->
         </xsl:choose>
@@ -198,7 +200,7 @@
   sparql_a.href='/sparql?default-graph-uri=&amp;qtxt=<xsl:value-of select="urlify ($p_qry)"/>&amp;debug='
   sparql_a.innerHTML = 'View query as SPARQL';
   var plink_a = OAT.Dom.create('a',{}, 'plink_a');
-  plink_a.href='/fct/facet.vsp?qxml=<xsl:value-of select="urlify ($p_xml)"/>'
+  plink_a.href='<xsl:value-of select="$p_link"/>'; <!--'/fct/facet.vsp?qxml=<xsl:value-of select="urlify ($p_xml)"/>'; -->
   plink_a.innerHTML = 'Facet permalink';
   OAT.Dom.append (['sparql_a_ctr',sparql_a, plink_a]);
   </script>
@@ -337,22 +339,22 @@
   <thead>
     <xsl:choose>
       <xsl:when test="$view-type = 'properties'">
-	<tr><th></th><th><xsl:value-of select="$p_term"/></th><!--th>Label</th--><th></th><th>Count</th></tr>
+	  <tr><th></th><th><xsl:value-of select="$s_term"/><xsl:value-of select="$pos"/> Subject Of <xsl:value-of select="$p_term"/>(s)</th><!--th>Label</th--><th></th><th>Count</th></tr>
       </xsl:when>
       <xsl:when test="$view-type = 'list-count'">
-	<tr><th></th><th><xsl:value-of select="$s_term"/></th><!--th>Title</th--><th></th><th>Count</th></tr>
+	<tr><th></th><th><xsl:value-of select="$s_term"/>(s)</th><!--th>Title</th--><th></th><th>Occurrence Count</th></tr>
       </xsl:when>
       <xsl:when test="$view-type = 'text-properties'">
-	<tr><th></th><th><xsl:value-of select="$p_term"/></th><!--th>Label</th--><th></th><th>Count</th></tr>
+	<tr><th></th><th><xsl:value-of select="$p_term"/>(s)</th><!--th>Label</th--><th></th><th>Count</th></tr>
       </xsl:when>
       <xsl:when test="$view-type = 'properties-in'">
-	<tr><th></th><th><xsl:value-of select="$p_term"/></th><!--th>Label</th--><th></th><th>Count</th></tr>
+	<tr><th></th><th><xsl:value-of select="$s_term"/><xsl:value-of select="$pos"/> Object Of <xsl:value-of select="$p_term"/>(s)</th><!--th>Label</th--><th></th><th>Count</th></tr>
       </xsl:when>
       <xsl:when test="$view-type = 'list'">
 	<tr><th></th><th></th><th></th></tr>
       </xsl:when>
       <xsl:when test="$view-type = 'classes'">
-	<tr><th></th><th><xsl:value-of select="$t_term"/></th><!--th>Label</th--><th></th><th>Count</th></tr>
+	  <tr><th></th><th><xsl:value-of select="$s_term"/><xsl:value-of select="$pos"/><xsl:text> </xsl:text><xsl:value-of select="$t_term"/>(s)</th><!--th>Label</th--><th></th><th>Count</th></tr>
       </xsl:when>
       <xsl:when test="$view-type = 'text' or $view-type = 'text-d'">
 	<tr><th></th><th></th><th></th><th><xsl:value-of select="$s_term"/></th><th>Title</th><th>Named Graph</th></tr>
@@ -547,6 +549,19 @@
     <div id="in_ctr" style="display:none"></div>
     <div id="geo_ctr" style="display:none"></div>
   </form>
+  <form id="agg_form">
+      <input type="hidden" name="sid"><xsl:attribute name="value"><xsl:value-of select="$sid"/></xsl:attribute></input>
+    <input type="hidden" name="cmd" value="set_agg" id="set_agg"/>
+      Show aggregate: 
+    <select id="agg_type" name="agg">
+      <option value="">None</option>
+      <option value="SUM"><xsl:if test="$tree//query/@agg = 'SUM'"><xsl:attribute name="selected">1</xsl:attribute></xsl:if>Sum</option>
+      <option value="AVG"><xsl:if test="$tree//query/@agg = 'AVG'"><xsl:attribute name="selected">1</xsl:attribute></xsl:if>Avg</option>
+      <option value="MIN"><xsl:if test="$tree//query/@agg = 'MIN'"><xsl:attribute name="selected">1</xsl:attribute></xsl:if>Min</option>
+      <option value="MAX"><xsl:if test="$tree//query/@agg = 'MAX'"><xsl:attribute name="selected">1</xsl:attribute></xsl:if>Max</option>
+    </select>
+    <span id="agg_val"><xsl:value-of select="$agg_res"/></span>
+  </form> 
 </xsl:if>
 
 <xsl:call-template name="render-init-func">

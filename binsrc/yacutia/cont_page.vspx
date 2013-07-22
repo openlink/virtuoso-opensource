@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2012 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -60,7 +60,7 @@
                           <v:url name="b_url12" value="Content Imports" format="%s" url="--'cont_page.vspx?page=2'" xhtml_class="uddi"/>
                         </td>
                         <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url13" value="--'Text Indexing'" format="%s" url="--'cont_page.vspx?page=3'" xhtml_class="uddi"/>
+                          <v:url name="b_url13" value="--'Settings'" format="%s" url="--'cont_page.vspx?page=3'" xhtml_class="uddi"/>
                         </td>
                         <td class="page_tab" align="center" nowrap="1">
                           <v:url name="b_url14" value="--'Resource Types'" format="%s" url="--'cont_page.vspx?page=4'" xhtml_class="uddi"/>
@@ -82,7 +82,7 @@
                           Content Imports
                         </td>
                         <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url23" value="--'Text Indexing'" format="%s" url="--'cont_page.vspx?page=3'" xhtml_class="uddi"/>
+                          <v:url name="b_url23" value="--'Settings'" format="%s" url="--'cont_page.vspx?page=3'" xhtml_class="uddi"/>
                         </td>
                         <td class="page_tab" align="center" nowrap="1">
                           <v:url name="b_url24" value="--'Resource Types'" format="%s" url="--'cont_page.vspx?page=4'" xhtml_class="uddi"/>
@@ -104,7 +104,7 @@
                           <v:url name="b_url32" value="Content Imports" format="%s" url="--'cont_page.vspx?page=2'" xhtml_class="uddi"/>
                         </td>
                         <td class="page_tab_selected" align="center" nowrap="1">
-                          Text Indexing
+                          Settings
                         </td>
                         <td class="page_tab" align="center" nowrap="1">
                           <v:url name="b_url34" value="--'Resource Types'" format="%s" url="--'cont_page.vspx?page=4'" xhtml_class="uddi"/>
@@ -126,7 +126,7 @@
                           <v:url name="b_url42" value="Content Imports" format="%s" url="--'cont_page.vspx?page=2'" xhtml_class="uddi"/>
                         </td>
                         <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url43" value="--'Text Indexing'" format="%s" url="--'cont_page.vspx?page=3'" xhtml_class="uddi"/>
+                          <v:url name="b_url43" value="--'Settings'" format="%s" url="--'cont_page.vspx?page=3'" xhtml_class="uddi"/>
                         </td>
                         <td class="page_tab_selected" align="center" nowrap="1">
                           Resource Types

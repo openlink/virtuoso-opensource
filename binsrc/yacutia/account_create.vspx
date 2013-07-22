@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2012 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -757,7 +757,7 @@
 			<?V xenc_key ?> (<?V xenc_type ?>) 
 		    </td>
 		    <td>
-			<?vsp if (xenc_type = 'X.509') { ?>
+			<?vsp if ((xenc_type = 'X.509') or (xenc_type = 'RSA')) { ?>
 			<v:url name="dwn1" value="Download" render-only="1" 
 			    url="--sprintf ('sec_pki_download.vsp?key=%U&user=%U', xenc_key, self.user_name)"/>
 			<?vsp } ?>
@@ -807,6 +807,7 @@
 		    };
 		    set_user_id (self.user_name);
 		    USER_KEY_LOAD (self.k_name.ufl_value, get_keyword ('k_value', params), 'X.509', 'PKCS12', self.k_pwd.ufl_value, null, 1);
+		    exec (make_cert_stmt (self.k_name.ufl_value));
 		    ]]></v:on-post>
 	    </v:button>
 	    </td>
@@ -1031,7 +1032,7 @@
               from SYS_USERS
               where U_ID = UG_GID and U_IS_ROLE = 1;
 
-            if (g_name <> '' and g_name <> self.dl_default_group.ufl_value)
+            if (g_name <> '' and g_name <> coalesce (self.dl_default_group.ufl_value, ''))
               {
                 declare st, msg any;
                 exec ('USER_REVOKE_ROLE(?,?)', st, msg, vector (user_name, g_name));
@@ -1043,7 +1044,7 @@
 
         while (i < cnt)
           {
-            if (self.roles_grant_list[i] <> self.dl_default_group.ufl_value)
+            if (self.roles_grant_list[i] <> self.dl_default_group.ufl_value or self.dl_default_group.ufl_value is null)
 	      {
 	        if (not exists (select 1 from SYS_ROLE_GRANTS, SYS_USERS g, SYS_USERS u
 		  where g.U_NAME = self.roles_grant_list[i] and gi_super = u.u_id and u.u_name = user_name and gi_grant = g.u_id))

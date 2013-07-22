@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2012 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -211,13 +211,28 @@
 		      xhtml_title="Configure"
 		      text="&#160;Configure"
 		      >
-                      <v:on-init>
+                      <!--v:on-init>
                         <![CDATA[
                           if ((control.vc_parent as vspx_row_template).te_rowset[0] <> 'Framework' or
 			      (control.vc_parent as vspx_row_template).te_rowset[2] is null)
                             control.vc_enabled := 0;
                         ]]>
-                      </v:on-init>
+		      </v:on-init-->
+                      <v:after-data-bind> 
+			  <![CDATA[
+                          if ((control.vc_parent as vspx_row_template).te_rowset[0] <> 'Framework' or
+			      (control.vc_parent as vspx_row_template).te_rowset[2] is null)
+			    control.vc_enabled := 0;
+
+			   declare pkg any;
+			   pkg := (control.vc_parent as vspx_row_template).te_rowset[0]; 
+			   if (exists (select 1 from WS.WS.SYS_DAV_RES where RES_FULL_PATH = '/DAV/VAD/conductor/vad_' || pkg || '_config.vspx'))
+			     {
+			       control.vc_enabled := 1;
+                               control.bt_url := 'vad_' || pkg || '_config.vspx';
+			     }  
+                        ]]>
+		      </v:after-data-bind> 
                     </v:button>
 		    <v:button action="simple" style="image" name="bt_ist1"
 		      value="images/icons/add_16.png"

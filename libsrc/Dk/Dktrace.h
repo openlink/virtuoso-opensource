@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -24,6 +24,9 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
+
+#ifndef _DKTRACE_H
+#define _DKTRACE_H
 
 #define GPF_T \
 	gpf_notice (__FILE__, __LINE__, NULL)
@@ -137,3 +140,5 @@ BEGIN_CPLUSPLUS
 int gpf_notice (const char *file, int line, const char *text);
 
 END_CPLUSPLUS
+
+#endif

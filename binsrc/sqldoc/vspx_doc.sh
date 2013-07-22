@@ -5,7 +5,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2012 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -28,6 +28,9 @@ LANG=C
 LC_ALL=POSIX
 export LANG LC_ALL
 
+MAKE=${MAKE-make}
+export MAKE
+
 vspxdir="${HOME}/binsrc/vspx"
 vspxsql=${vspxsql-$vspxdir/vspx.sql}
 vspxxsd=${vspxxsd-$vspxdir/vspx.xsd}
@@ -41,7 +44,8 @@ else
 fi
 pwddir=`pwd`
 cd "${cutterdir}"
-gmake
+echo "Running $MAKE in $cutterdir"
+$MAKE
 cd "${pwddir}"
 
 begin_xml ()

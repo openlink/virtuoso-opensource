@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -565,6 +565,31 @@ public class StatementWrapper implements Statement, Closeable {
       throw ex;
     }
   }
+
+#if JDK_VER >= 17
+    //--------------------------JDBC 4.1 -----------------------------
+  public void closeOnCompletion() throws SQLException
+  {
+    check_close();
+    try {
+      stmt.closeOnCompletion();
+    } catch (SQLException ex) {
+      exceptionOccurred(ex);
+      throw ex;
+    }
+  }
+
+  public boolean isCloseOnCompletion() throws SQLException
+  {
+    check_close();
+    try {
+      return stmt.isCloseOnCompletion();
+    } catch (SQLException ex) {
+      exceptionOccurred(ex);
+      throw ex;
+    }
+  }
+#endif
 
 #endif
 #endif

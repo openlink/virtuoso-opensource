@@ -3,7 +3,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -534,20 +534,37 @@ function init()
 	if ($("lf")) {
     lfTab = new OAT.Tab("lf_content", {goCallback: lfCallback});
 		lfTab.add("lf_tab_0", "lf_page_0");
-		if (regData.openidEnable)
-      OAT.Dom.show('lf_tab_1');
 		lfTab.add("lf_tab_1", "lf_page_1");
 		lfTab.add("lf_tab_2", "lf_page_2");
-    if (regData.sslEnable)
-      OAT.Dom.show('lf_tab_3');
 		lfTab.add("lf_tab_3", "lf_page_3");
-    if (regData.twitterEnable)
-      OAT.Dom.show('lf_tab_4');
     lfTab.add("lf_tab_4", "lf_page_4");
-    if (regData.linkedinEnable)
-      OAT.Dom.show('lf_tab_5');
     lfTab.add("lf_tab_5", "lf_page_5");
-		lfTab.go(0);
+    var N = null;
+    if (regData.login) {
+      if (N == null) N = 0;
+      OAT.Dom.show('lf_tab_0');
+    }
+    if (regData.loginSslEnable) {
+      if (N == null) N = 3;
+      OAT.Dom.show('lf_tab_3');
+    }
+    if (regData.loginOpenidEnable) {
+      if (N == null) N = 1;
+      OAT.Dom.show('lf_tab_1');
+    }
+    if (regData.loginTwitterEnable) {
+      if (N == null) N = 4;
+      OAT.Dom.show('lf_tab_4');
+    }
+    if (regData.loginLinkedinEnable) {
+      if (N == null) N = 5;
+      OAT.Dom.show('lf_tab_5');
+    }
+    if (N != null) {
+      lfTab.go(N);
+    } else {
+      lfTab.add("lf_tab_6", "lf_page_6");
+    }
     if (uriParams['oid-form'] == 'lf') {
       startForm = 'lf';
       OAT.Dom.show('lf');
@@ -572,21 +589,37 @@ function init()
 	if ($("rf")) {
     rfTab = new OAT.Tab("rf_content", {goCallback: rfCallback});
 		rfTab.add("rf_tab_0", "rf_page_0");
-		if (regData.openidEnable)
-      OAT.Dom.show('rf_tab_1');
 		rfTab.add("rf_tab_1", "rf_page_1");
 		rfTab.add("rf_tab_2", "rf_page_2");
-    if (regData.sslEnable)
-      OAT.Dom.show('rf_tab_3');
 		rfTab.add("rf_tab_3", "rf_page_3");
-    if (regData.twitterEnable)
-      OAT.Dom.show('rf_tab_4');
     rfTab.add("rf_tab_4", "rf_page_4");
-    if (regData.linkedinEnable)
-      OAT.Dom.show('rf_tab_5');
     rfTab.add("rf_tab_5", "rf_page_5");
-		rfTab.go(0);
-
+    var N = null;
+    if (regData.register) {
+      if (N == null) N = 0;
+      OAT.Dom.show('rf_tab_0');
+    }
+    if (regData.sslEnable) {
+      if (N == null) N = 3;
+      OAT.Dom.show('rf_tab_3');
+    }
+    if (regData.openidEnable) {
+      if (N == null) N = 1;
+      OAT.Dom.show('rf_tab_1');
+    }
+    if (regData.twitterEnable) {
+      if (N == null) N = 4;
+      OAT.Dom.show("rf_tab_4");
+    }
+    if (regData.linkedinEnable) {
+      if (N == null) N = 5;
+      OAT.Dom.show("rf_tab_5");
+    }
+    if (N != null) {
+      rfTab.go(N);
+    } else {
+      rfTab.add("rf_tab_6", "rf_page_6");
+    }
     if (uriParams['oid-form'] == 'rf') {
       startForm = 'rf';
       OAT.Dom.hide('lf');
@@ -703,41 +736,24 @@ function init()
 	if (($v('mode') == 'html') && typeof (uriParams['form']) != 'undefined' && uriParams['form'] == 'register')
     lfRegisterSubmit(null, true);
 
-	if ($("lf") || $("rf") || $("pf")) {
-		loadFacebookData(function() {
-			if (facebookData)
-				FB.init(facebookData.api_key, "/ods/fb_dummy.vsp", {
-					ifUserConnected : function() {
-						showFacebookData();
-					},
-					ifUserNotConnected : function() {
-						hideFacebookData();
-					}
-				});
-		});
-	}
-  if (($("lf") || $("rf")) && regData.sslEnable) {
+  if (($("lf") && regData.loginSslEnable) || ($("rf") && regData.sslEnable)) {
 		var x = function(data) {
 		  var x2 = function(prefix) {
 		  	OAT.Dom.show(prefix+"_tab_3");
 				var tbl = $(prefix+'_table_3');
 				if (tbl) {
           OAT.Dom.unlink(prefix+'_table_3_throbber');
+          if ((prefix == "lf") && regData.loginSslEnable) {
+            if (sslData.certFilterCheck == '1') {
 					addProfileRowValue(tbl, 'WebID', sslData.iri);
           if (sslData.depiction)
             addProfileRowImage(tbl, 'Photo', sslData.depiction);
 
-          if (sslData.loginName && sslData.certLogin)
+              if (sslData.loginName)
             addProfileRowValue(tbl, 'Login Name', sslData.loginName);
 
-          if ((prefix == "rf") && !sslData.certLogin)
-            addProfileRowInput(tbl, 'Login Name', 'rf_uid_3', {value: sslData.loginName, width: '150px'});
-
-          if (sslData.mbox && ((prefix == "lf") || ((prefix == "rf") && sslData.certLogin)))
+              if (sslData.mbox)
             addProfileRowValue(tbl, 'E-Mail', sslData.mbox);
-
-          if ((prefix == "rf") && !sslData.certLogin)
-            addProfileRowInput(tbl, 'E-Mail', 'rf_email_3', {value: sslData.mbox, width: '300px'});
 
 					if (sslData.firstName)
 						addProfileRowValue(tbl, 'First Name', sslData.firstName);
@@ -745,20 +761,46 @@ function init()
 					if (sslData.family_name)
 						addProfileRowValue(tbl, 'Family Name', sslData.family_name);
 
-          if (prefix == "lf") {
             if (!sslData.certLogin) {
               var td = addProfileRowText(tbl, 'Sign up for an ODS account using your existing WebID - ', 'font-weight: bold;');
               addProfileRowButton2(td, 'sign_up_1');
-            } else {
+              }
             lfTab.go(3);
+            } else {
+              addProfileRowText(tbl, 'You must have cerificate with WebID to use this option', 'font-weight: bold;', 17);
+              if ((document.location.protocol == 'http:') || !sslData.certLogin)
+                $('lf_login').disabled = true;
             }
           }
-          else if (prefix == "rf")
+          else if ((prefix == "rf") && regData.sslEnable)
           {
+            if (!sslData.certFilterCheck) {
+              addProfileRowText(tbl, 'Sign up for an ODS account using another WebID', 'font-weight: bold;');
+              $('rf_signup').disabled = true;
+            } else {
+              addProfileRowValue(tbl, 'WebID', sslData.iri);
+              if (sslData.depiction)
+                addProfileRowImage(tbl, 'Photo', sslData.depiction);
+
+              if (!sslData.certLogin)
+                addProfileRowInput(tbl, 'Login Name', 'rf_uid_3', {value: sslData.loginName, width: '150px'});
+
+              if (sslData.mbox && sslData.certLogin)
+                addProfileRowValue(tbl, 'E-Mail', sslData.mbox);
+
+              if (!sslData.certLogin)
+                addProfileRowInput(tbl, 'E-Mail', 'rf_email_3', {value: sslData.mbox, width: '300px'});
+
+              if (sslData.firstName)
+                addProfileRowValue(tbl, 'First Name', sslData.firstName);
+
+              if (sslData.family_name)
+                addProfileRowValue(tbl, 'Family Name', sslData.family_name);
+
             if (sslData.certLogin) {
               var td = addProfileRowText(tbl, 'You have registered WebID. You can sign in with it! - ', 'font-weight: bold; ');
               addProfileRowButton(td, 'sign_in_1');
-            } else {
+              }
               rfCheckUpdate(3);
             rfTab.go(3);
             }
@@ -846,17 +888,15 @@ function init()
     OAT.Event.attach("pf_tab_0_3", 'click', function(){pfTabSelect('pf_tab_0_', 0, 3);});
     OAT.Event.attach("pf_tab_0_4", 'click', function(){pfTabSelect('pf_tab_0_', 0, 4);});
     OAT.Event.attach("pf_tab_0_5", 'click', function(){pfTabSelect('pf_tab_0_', 0, 5);});
+    OAT.Event.attach("pf_tab_0_6", 'click',  function(){pfTabSelect('pf_tab_0_', 0, 6);});
+    OAT.Event.attach("pf_tab_0_7", 'click',  function(){pfTabSelect('pf_tab_0_', 0, 7);});
+    OAT.Event.attach("pf_tab_0_8", 'click',  function(){pfTabSelect('pf_tab_0_', 0, 8);});
+    OAT.Event.attach("pf_tab_0_9", 'click',  function(){pfTabSelect('pf_tab_0_', 0, 9);});
+    OAT.Event.attach("pf_tab_0_10", 'click', function(){pfTabSelect('pf_tab_0_', 0, 10);});
+    OAT.Event.attach("pf_tab_0_11", 'click', function(){pfTabSelect('pf_tab_0_', 0, 11);});
+    OAT.Event.attach("pf_tab_0_12", 'click', function(){pfTabSelect('pf_tab_0_', 0, 12);});
     pfTabInit('pf_tab_0_', $v('formTab2'));
-
-    OAT.Event.attach("pf_tab_0_5_0", 'click', function(){pfTabSelect('pf_tab_0_5_', 0, 5, 0);});
-    OAT.Event.attach("pf_tab_0_5_1", 'click', function(){pfTabSelect('pf_tab_0_5_', 0, 5, 1);});
-    OAT.Event.attach("pf_tab_0_5_2", 'click', function(){pfTabSelect('pf_tab_0_5_', 0, 5, 2);});
-    OAT.Event.attach("pf_tab_0_5_3", 'click', function(){pfTabSelect('pf_tab_0_5_', 0, 5, 3);});
-    OAT.Event.attach("pf_tab_0_5_4", 'click', function(){pfTabSelect('pf_tab_0_5_', 0, 5, 4);});
-    OAT.Event.attach("pf_tab_0_5_5", 'click', function(){pfTabSelect('pf_tab_0_5_', 0, 5, 5);});
-    OAT.Event.attach("pf_tab_0_5_6", 'click', function(){pfTabSelect('pf_tab_0_5_', 0, 5, 6);});
-    OAT.Event.attach("pf_tab_0_5_7", 'click', function(){pfTabSelect('pf_tab_0_5_', 0, 5, 7);});
-    pfTabInit('pf_tab_0_5_', $v('formTab3'));
+    swapRows($v('formTab2'));
 
     OAT.Event.attach("pf_tab_1_0", 'click', function(){pfTabSelect('pf_tab_1_', 1, 0);});
     OAT.Event.attach("pf_tab_1_1", 'click', function(){pfTabSelect('pf_tab_1_', 1, 1);});
@@ -868,10 +908,9 @@ function init()
     OAT.Event.attach("pf_tab_2_1", 'click', function(){pfTabSelect('pf_tab_2_', 2, 1);});
     OAT.Event.attach("pf_tab_2_2", 'click', function(){pfTabSelect('pf_tab_2_', 2, 2);});
     OAT.Event.attach("pf_tab_2_3", 'click', function(){pfTabSelect('pf_tab_2_', 2, 3);});
-    OAT.Event.attach("pf_tab_2_4", 'click', function(){pfTabSelect('pf_tab_2_', 2, 4);});
-    // pf_tab_2_5
+    // pf_tab_2_4
     ufCertificateGenerator();
-    OAT.Event.attach("pf_tab_2_6", 'click', function(){pfTabSelect('pf_tab_2_', 2, 6);});
+    OAT.Event.attach("pf_tab_2_5", 'click', function(){pfTabSelect('pf_tab_2_', 2, 5);});
 
     pfTabInit('pf_tab_2_', $v('formTab2'));
 	}
@@ -952,6 +991,14 @@ function init()
       tag_15.parentNode.insertBefore(tag_16, tag_1.nextSibling);
 	  }
 	}
+  if (regData.loginFacebookEnable || regData.facebookEnable) {
+    (function() {
+      var e = document.createElement('script');
+      e.src = document.location.protocol + '//connect.facebook.net/en_US/all.js';
+      e.async = true;
+      document.getElementById('fb-root').appendChild(e);
+    }());
+	}
 
   OAT.MSG.send(OAT, 'PAGE_LOADED');
 }
@@ -968,8 +1015,11 @@ function lfCallback(oldIndex, newIndex)
     $('lf_login').value = 'Login';
   else if (newIndex == 1)
     $('lf_login').value = 'OpenID Login';
-  else if (newIndex == 2)
+  else if (newIndex == 2) {
     $('lf_login').value = 'Facebook Login';
+    if (!facebookData)
+      $('lf_login').disabled = true;
+  }
   else if (newIndex == 3) {
     $('lf_login').value = 'WebID Login';
     if ((document.location.protocol == 'http:') || (sslData && !sslData.certLogin))
@@ -990,8 +1040,11 @@ function rfCallback(oldIndex, newIndex)
     $('rf_signup').value = 'Sign Up';
   else if (newIndex == 1)
     $('rf_signup').value = 'OpenID Sign Up';
-  else if (newIndex == 2)
+  else if (newIndex == 2) {
     $('rf_signup').value = 'Facebook Sign Up';
+    if (!facebookData)
+      $('rf_signup').disabled = true;
+  }
   else if (newIndex == 3) {
     $('rf_signup').value = 'WebID Sign Up';
     if ((document.location.protocol == 'http:') || (sslData && sslData.certLogin))
@@ -1123,11 +1176,49 @@ function mySubmit(prefix)
       }
     }
     if (prefix == 'pf26') {
-      var S = '/ods/api/user.certificates.'+ $v('formMode') +'?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm'))
-              + '&id=' + encodeURIComponent($v('pf26_id'))
-              + '&certificate=' + encodeURIComponent($v('pf26_certificate'))
-              + '&enableLogin=' + encodeURIComponent($('pf26_enableLogin').checked? '1': '0');
+      var file;
+      var fr;
+      var formMode = $v('formMode');
+      var id = $v('pf26_id');
+      var certificate;
+      var enableLogin = $('pf26_enableLogin').checked? '1': '0';
+
+      var fileReadText = function() {
+        if (fr) {
+          certificate = fr.result;
+          pf26Call();
+        }
+      }
+
+      var pf26Call = function () {
+        var S = '/ods/api/user.certificates.'+ formMode +'?sid=' + encodeURIComponent($v('sid')) + '&realm=' + encodeURIComponent($v('realm'))
+                + '&id=' + encodeURIComponent(id)
+                + '&certificate=' + encodeURIComponent(certificate)
+                + '&enableLogin=' + encodeURIComponent(enableLogin);
       OAT.AJAX.GET(S, '', function(data){pfShowCertificates();});
+    }
+
+      if ($v('pf26_importFile') == '1') {
+        if (window.File && window.FileReader && window.FileList && window.Blob) {
+          //do your stuff!
+          var fld = $('pf26_file');
+          if (!fld.files) {
+            alert('This browser doesn\'t seem to support the "files" property of file inputs.');
+          } else if (!fld.files[0]) {
+            alert('Please select a file!');
+          } else {
+            file = fld.files[0];
+            fr = new FileReader();
+            fr.onload = fileReadText;
+            fr.readAsText(file);
+          }
+        } else {
+          alert('The File APIs are not fully supported by your browser.');
+        }
+      } else {
+        certificate = $v('pf26_certificate');
+        pf26Call();
+      }
     }
     OAT.Dom.show(prefix+'_list');
     OAT.Dom.hide(prefix+'_form');
@@ -1332,23 +1423,23 @@ function pfTabSelect(tabPrefix, newIndex, newIndex2, newIndex3)
     document.location = document.location.protocol + '//' + document.location.host + document.location.pathname + S;
     return;
   }
+  if (newIndex == 0)
+    swapRows(newIndex2);
+
   if (myCheckLeave($('page_form'))) {
     if (newIndex3) {
       $('formTab').value = newIndex;
       $('formTab2').value = newIndex2;
-      $('formTab3').value = newIndex3;
     }
     else if (newIndex2)
     {
       $('formTab').value = newIndex;
       $('formTab2').value = newIndex2;
-      $('formTab3').value = 0;
     }
     else
     {
       $('formTab').value = newIndex;
       $('formTab2').value = 0;
-      $('formTab3').value = 0;
     }
     ufProfileLoad();
   } else {
@@ -1431,9 +1522,11 @@ function pfShowOnlineAccounts(prefix, accountType, showRow)
 		if (o) {
       var tbl = prefix+'_tbl';
     	for (var N = 0; N < o.length; N++) {
+        if (o[N][1] != 'webid') {
          showRow(prefix, o[N][0], o[N][1], o[N][2], o[N][3]);
         rowCount++;
     	}
+    }
     }
   	if (rowCount == 0)
   	  OAT.Dom.show(prefix+'_tr_no');
@@ -1654,12 +1747,14 @@ function pfShowLike(mode, id)
   pfShowItem('user.likes.get', 'pf056', ['flag', 'type', 'uri', 'name'], x);
 }
 
-function pfShowKnow(mode, id) {
+function pfShowKnow(mode, id)
+{
   pfShowMode('pf057', mode, id);
   pfShowItem('user.knows.get', 'pf057', ['flag', 'uri', 'label']);
 }
 
-function pfShowCertificate(mode, id) {
+function pfShowCertificate(mode, id)
+{
   pfShowMode('pf26', mode, id);
   if (mode == 'new') {
     OAT.Dom.hide("pf26_form_0");
@@ -1710,73 +1805,6 @@ function isShow(element) {
 	if (elm && elm.style.display == "none")
 	  return false;
   return true;
-}
-
-function loadFacebookData(cb) {
-	var x = function(data) {
-		try {
-			facebookData = OAT.JSON.parse(data);
-		} catch (e) {
-			facebookData = null;
-		}
-		if (facebookData && regData.facebookEnable) {
-			OAT.Dom.show("lf_tab_2");
-			OAT.Dom.show("rf_tab_2");
-		}
-		if (cb) {cb()};
-	}
-	OAT.AJAX.GET('/ods/api/user.getFacebookData?fields=uid,name,first_name,last_name,sex,birthday', '', x);
-}
-
-function showFacebookData(skip) {
-	var lfLabel = $('lf_facebookData');
-	var rfLabel = $('rf_facebookData');
-	var pfLabel = $('pf_facebookData');
-	if (lfLabel || rfLabel || pfLabel) {
-    if (lfLabel)
-      lfLabel.innerHTML = '';
-    if (rfLabel)
-      rfLabel.innerHTML = '';
-    if (pfLabel)
-      pfLabel.innerHTML = '';
-  	if (facebookData && facebookData.name) {
-      if (lfLabel)
-        lfLabel.innerHTML = 'Connected as <b><i>' + facebookData.name + '</i></b></b>';
-      if (rfLabel) {
-        rfLabel.innerHTML = 'Connected as <b><i>' + facebookData.name + '</i></b></b>';
-        var tbl = $('rf_table_2');
-        addProfileRowInput(tbl, 'Login Name', 'rf_uid_2', {value: (facebookData.name).replace(' ', ''), width: '150px'});
-        addProfileRowInput(tbl, 'E-Mail', 'rf_email_2', {value: '', width: '300px'});
-        rfCheckUpdate(2);
-      }
-      if (pfLabel) {
-        pfLabel.innerHTML = 'Connected as <b><i>' + facebookData.name + '</i></b></b>'
-        hiddenCreate('pf_securityFacebookID', null, facebookData.uid);
-      }
-  	}
-  	else if (!skip) {
-  		self.loadFacebookData(function() {self.showFacebookData(true);});
-  	}
-	}
-}
-
-function hideFacebookData() {
-	var label = $('lf_facebookData');
-	if (label)
-	label.innerHTML = '';
-	var label = $('rf_facebookData');
-	if (label)
-  	label.innerHTML = '';
-  var label = $('pf_facebookData');
-  if (label) {
-    label.innerHTML = '';
-  }
-	if (facebookData) {
-	var o = {}
-	o.api_key = facebookData.api_key;
-	o.secret = facebookData.secret;
-	facebookData = o;
-}
 }
 
 function tagValue(xml, tName) {
@@ -2178,7 +2206,7 @@ function addProfileRowImage(tbl, label, value, leftTag) {
 
 function addProfileRowInput(tbl, label, fName, fOptions) {
 	var tr = OAT.Dom.create('tr');
-  tr.id = 'tr+'+fName;
+  tr.id = 'tr_'+fName;
 
   var th = OAT.Dom.create('th', {verticalAlign: 'top'});
   th.width = '20%';
@@ -2279,10 +2307,10 @@ function loginSubmit(mode, prefix) {
   	}
   }
   else if (mode == 2) {
-		if (!facebookData || !facebookData.uid)
-			return showError('Invalid Facebook UserID');
+    if (!facebookData || (!facebookData.id && !facebookData.link))
+      return showError('Invalid Facebook User');
 
-		q += '&facebookUID=' + facebookData.uid;
+    q += '&facebookUID=' + ((facebookData.link)? facebookData.link: facebookData.id);
   }
   else if (mode == 3) {
   }
@@ -2382,13 +2410,13 @@ function ufCertificateGenerator() {
       a.href = url;
       a.innerHTML = 'Certificate Generator';
       a.style.cssText = 'color: #000; text-decoration: none;';
-      $("pf_tab_2_5").innerHTML = '';
-      $("pf_tab_2_5").appendChild(a);
-      OAT.Dom.show("pf_tab_2_5");
+      $("pf_tab_2_4").innerHTML = '';
+      $("pf_tab_2_4").appendChild(a);
+      OAT.Dom.show("pf_tab_2_4");
     } else {
-      $("pf_tab_2_5").innerHTML = 'Certificate Generator';
-      OAT.Event.attach("pf_tab_2_5", 'click', function(){pfTabSelect('pf_tab_2_', 2, 5);});
-      OAT.Dom.show("pf_tab_2_5");
+      $("pf_tab_2_4").innerHTML = 'Certificate Generator';
+      OAT.Event.attach("pf_tab_2_4", 'click', function(){pfTabSelect('pf_tab_2_', 2, 4);});
+      OAT.Dom.show("pf_tab_2_4");
     }
   }
   OAT.AJAX.GET ('/ods/api/user.certificateUrl?sid='+encodeURIComponent($v('sid'))+'&realm='+encodeURIComponent($v('realm')), false, x, {async: false});
@@ -2905,6 +2933,18 @@ function pfUpdateSubmit(No) {
           S += '&homeLongitude=' + encodeURIComponent($v('i_homelng'));
         if ($v('cb_item_i_homePhone') == '1')
           S += '&homePhone=' + encodeURIComponent($v('i_homePhone'));
+        if ($v('cb_item_i_homeCountry') == '1')
+          S += '&homeCountry=' + encodeURIComponent($v('i_homeCountry'));
+        if ($v('cb_item_i_homeState') == '1')
+          S += '&homeState=' + encodeURIComponent($v('i_homeState'));
+        if ($v('cb_item_i_homeCity') == '1')
+          S += '&homeCity=' + encodeURIComponent($v('i_homeCity'));
+        if ($v('cb_item_i_homeCode') == '1')
+          S += '&homeCode=' + encodeURIComponent($v('i_homeCode'));
+        if ($v('cb_item_i_homeAddress1') == '1')
+          S += '&homeAddress1=' + encodeURIComponent($v('i_homeAddress1'));
+        if ($v('cb_item_i_homeAddress2') == '1')
+          S += '&homeAddress2=' + encodeURIComponent($v('i_homeAddress2'));
         if ($v('cb_item_i_businessOrganization') == '1')
           S += '&businessOrganization=' + encodeURIComponent($v('i_businessOrganization'));
         if ($v('cb_item_i_businessHomePage') == '1')
@@ -3075,15 +3115,6 @@ function pfUpdateSubmit(No) {
     	}
       else if (formTab2 == 3)
       {
-        if (No == 2)
-        {
-          S += '&securityFacebookID=';
-        } else {
-        S += '&securityFacebookID=' + encodeURIComponent(facebookData.uid);
-    	}
-      }
-      else if (formTab2 == 4)
-      {
         S += '&securitySiocLimit=' + encodeURIComponent($v('pf_securitySiocLimit'));
     	}
   	}
@@ -3161,11 +3192,10 @@ function pfGetFOAFData(iri) {
 		if (o && o.iri) {
   	  OAT.Dom.show('i_tbl');
   	  var tbody = $('i_tbody');
-
 			pfSetFOAFValue(tbody, o.iri,                  'Personal WebID',        'i_iri');
       pfSetFOAFValue(tbody, o.depiction,            'Photo',                        'i_photo');
-			pfSetFOAFValue(tbody, o.nick,                 'Nick Name',             'i_nickName');
 			pfSetFOAFValue(tbody, o.title,                'Title',                 'i_title');
+      pfSetFOAFValue(tbody, o.nick,                 'Nick Name',                    'i_nickName');
 			pfSetFOAFValue(tbody, o.firstName,            'First Name',            'i_firstName');
 			pfSetFOAFValue(tbody, o.family_name,          'Last Name',             'i_lastName');
 			pfSetFOAFValue(tbody, o.name,                 'Full Name',             'i_fullName');
@@ -3179,6 +3209,12 @@ function pfGetFOAFData(iri) {
 			pfSetFOAFValue(tbody, o.yahooChatID,          'Yahoo! ID',             'i_yahoo');
 			pfSetFOAFValue(tbody, o.msnChatID,            'MSN Messenger',         'i_msn');
 			pfSetFOAFValue(tbody, o.phone,                'Phone',                 'i_homePhone');
+      pfSetFOAFValue(tbody, o.country,              'Address - Country',            'i_homeCountry');
+      pfSetFOAFValue(tbody, o.region,               'Address - State/Province',     'i_homeState');
+      pfSetFOAFValue(tbody, o.locality,             'Address - City',               'i_homeCity');
+      pfSetFOAFValue(tbody, o.pobox,                'Address - Zip/Postal Code',    'i_homeCode');
+      pfSetFOAFValue(tbody, o.street,               'Address - Address 1',          'i_homeAddress1');
+      pfSetFOAFValue(tbody, o.extadd,               'Address - Address 2',          'i_homeAddress2');
 			pfSetFOAFValue(tbody, o.lat,                  'Latitude',              'i_homelat');
 			pfSetFOAFValue(tbody, o.lng,                  'Longitude',             'i_homelng');
 			pfSetFOAFValue(tbody, o.organizationTitle,    'Organization',          'i_businessOrganization');
@@ -3346,8 +3382,8 @@ function rfSignupSubmit(event) {
     if ($v('rf_openId') == '')
 			return showError('Bad openID. Please correct!');
 	} else if (rfTab.selectedIndex == 2) {
-		if (!facebookData || !facebookData.uid)
-			return showError('Invalid Facebook UserID');
+    if (!facebookData || (!facebookData.id && !facebookData.lonk))
+      return showError('Invalid Facebook User');
 	} else if (rfTab.selectedIndex == 3) {
 		if (!sslData || !sslData.iri)
 			return showError('Invalid WebID UserID');
@@ -3426,7 +3462,7 @@ function rfCheckAvalability(event) {
   }
 
   var q = '&name=' + encodeURIComponent(name) + '&email=' + encodeURIComponent(email);
-  OAT.AJAX.POST("/ods/api/user.checkAvalability", q, x);
+  OAT.AJAX.POST("/ods/api/user.checkAvailability", q, x);
   return false;
 }
 
@@ -3505,11 +3541,11 @@ function openIdAuthenticate(prefix) {
         + '&openid.identity=' + encodeURIComponent(oidIdent)
 
     if (prefix == 'rf') {
-      if (oidParams = 'sreg')
+      if (oidParams == 'sreg')
         S +='&openid.sreg.optional='+encodeURIComponent('fullname,nickname,dob,gender,postcode,country,timezone')
           + '&openid.sreg.required=' + encodeURIComponent('email,nickname');
 
-      if (oidParams = 'ax')
+      if (oidParams == 'ax')
         S +='&openid.ns.ax=http://openid.net/srv/ax/1.0'
           + '&openid.ax.mode=fetch_request'
           + '&openid.ax.required=country,email,firstname,fname,language,lastname,timezone'

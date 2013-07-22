@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -2125,9 +2125,11 @@ sqlp_xpath_funcall_or_apply (ST * funcall_tree)
 }
 
 ST *
-sqlp_patch_call_if_special (ST * funcall_tree)
+sqlp_patch_call_if_special_or_optimizable (ST * funcall_tree)
 {
   char *call_name = funcall_tree->_.call.name;
+  bif_metadata_t *bmd;
+  int argcount = BOX_ELEMENTS (funcall_tree->_.call.params);
   if ((DV_SYMBOL != DV_TYPE_OF (call_name)) && (DV_STRING != DV_TYPE_OF (call_name)))
     call_name = "";
   if (0 == stricmp (call_name, "contains")
@@ -2150,7 +2152,7 @@ sqlp_patch_call_if_special (ST * funcall_tree)
   if (0 == stricmp (call_name, "fix_identifier_case"))
     {
       ST * param;
-      if (0 == BOX_ELEMENTS (funcall_tree->_.call.params))
+      if (0 == argcount)
 	goto generic_check;
       param = funcall_tree->_.call.params[0];
       if (CM_UPPER != case_mode)
@@ -2177,7 +2179,7 @@ sqlp_patch_call_if_special (ST * funcall_tree)
       goto generic_check;
     }
   if ((0 == strnicmp (call_name, "__I2ID", 6) || strstr (call_name, "IID_OF_QNAME"))
-      && BOX_ELEMENTS (funcall_tree->_.call.params) >= 1)
+      && argcount >= 1)
     {
       caddr_t arg = sqlo_iri_constant_name_1 (funcall_tree->_.call.params[0]);
       if (arg)
@@ -2187,11 +2189,90 @@ sqlp_patch_call_if_special (ST * funcall_tree)
 	  funcall_tree->_.call.params[0] = (ST *) arg;
 	}
     }
-
 generic_check:
-  sqlp_check_arg(funcall_tree);
-
-/*end*/
+  bmd = find_bif_metadata_by_raw_name (call_name);
+  if (NULL != bmd)
+    {
+#if 0
+      if ((bmd->bmd_min_argcount == bmd->bmd_max_argcount) && (bmd->bmd_min_argcount != argcount))
+        yyerror (t_box_sprintf (1000, "Wrong number of arguments in %.200s() function call (%d arguments, must be %d):",
+            call_name, argcount, bmd->bmd_min_argcount ) );
+      if (bmd->bmd_min_argcount > argcount)
+        yyerror (t_box_sprintf (1000, "Insufficient number of arguments in %.200s() function call (%d arguments, the minimum is %d):",
+            call_name, argcount, bmd->bmd_min_argcount ) );
+      if (bmd->bmd_max_argcount < argcount)
+        yyerror (t_box_sprintf (1000, "Too many arguments in %.200s() function call (%d arguments, no more than %d are allowed):",
+            call_name, argcount, bmd->bmd_max_argcount ) );
+      if ((1 < bmd->bmd_argcount_inc) && (argcount - bmd->bmd_min_argcount) % bmd->bmd_argcount_inc)
+        yyerror (t_box_sprintf (1000, "Wrong number of arguments in %.200s() function call (%d arguments, valid counts are %d, %d, %d etc.):",
+            call_name, argcount, bmd->bmd_min_argcount, bmd->bmd_min_argcount + bmd->bmd_argcount_inc, bmd->bmd_min_argcount + 2 * bmd->bmd_argcount_inc ) );
+#endif
+      if (bmd->bmd_is_pure)
+        {
+          int argctr, quoted_arg_ctr = 0;
+          size_t args_memsize = 0, res_memsize = 0;
+          caddr_t err = NULL;
+          caddr_t ret_val;
+          caddr_t *unquoted_params = NULL;
+          ST *lit;
+          for (argctr = 0; argctr < argcount; argctr++)
+            {
+              ST *arg = funcall_tree->_.call.params[argctr];
+              if (LITERAL_P (arg))
+                continue;
+              if (ST_P (arg, QUOTE))
+                {
+                  quoted_arg_ctr++;
+                  continue;
+                }
+              goto not_a_constant_pure;
+            }
+          if (quoted_arg_ctr)
+            {
+              unquoted_params = (caddr_t *)t_box_copy ((caddr_t)(funcall_tree->_.call.params));
+              for (argctr = 0; argctr < argcount; argctr++)
+                {
+                  ST *arg = funcall_tree->_.call.params[argctr];
+                  if (ST_P (arg, QUOTE))
+                    unquoted_params[argctr] = (caddr_t)(arg->_.op.arg_1);
+                }
+            }
+          else
+            unquoted_params = (caddr_t *)(funcall_tree->_.call.params);
+          for (argctr = 0; argctr < argcount; argctr++)
+            args_memsize += 8 + (IS_BOX_POINTER (unquoted_params[argctr]) ? box_length (unquoted_params[argctr]) : 8);
+          ret_val = sqlr_run_bif_in_sandbox (bmd, unquoted_params, &err);
+          if (NULL != err)
+            {
+#if 0
+              ST *res;
+              res = t_listst (3, CALL_STMT, t_box_dv_short_string ("signal"), t_list (2,
+                  t_box_dv_short_string (ERR_STATE (err)),
+                  t_box_dv_short_string (ERR_MESSAGE (err)) ) );
+              dk_free_tree (err);
+              return res;
+#else
+              goto not_a_constant_pure; /* see below */
+#endif
+            }
+          if (!LITERAL_P(ret_val))
+            {
+              dk_free_box (ret_val);
+              goto not_a_constant_pure; /* see below */
+            }
+          res_memsize = 8 + (IS_BOX_POINTER (ret_val) ? box_length (ret_val) : 8);
+          if ((res_memsize > 0x1000) && (res_memsize > ((args_memsize * 3) / 2)))
+            {
+              dk_free_box (ret_val);
+              goto not_a_constant_pure; /* see below */
+            }
+          lit = (ST *)(t_full_box_copy_tree (ret_val));
+            dk_free_box (ret_val);
+          return lit;
+not_a_constant_pure: ;
+        }
+    }
+  sqlp_check_arg (funcall_tree);
   return funcall_tree;
 }
 

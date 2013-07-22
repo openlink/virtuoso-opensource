@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2012 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -74,6 +74,7 @@ create table WS.WS.SYS_DAV_RES (
     RES_COL             integer,
     RES_CONTENT         long varbinary IDENTIFIED BY RES_FULL_PATH,
     RES_TYPE            varchar,
+    RES_SIZE            integer,
     RES_CR_TIME         datetime,
     RES_MOD_TIME        datetime,
     RES_PERMS           char (11),
@@ -105,7 +106,10 @@ alter table WS.WS.SYS_DAV_RES modify RES_PERMS char (11)
 
 alter table WS.WS.SYS_DAV_RES add RES_IID IRI_ID_8
 ;
+
 --#ENDIF
+alter table WS.WS.SYS_DAV_RES add RES_SIZE integer
+;
 
 --__ddl_changed ('WS.WS.SYS_DAV_RES')
 --;
@@ -1221,6 +1225,8 @@ DB.DBA.vt_create_text_index ('WS.WS.SYS_DAV_PROP', 'PROP_VALUE', 'PROP_ID', 2, 0
 ;
 
 -- Initial WebDAV resource mime types
+update WS.WS.SYS_DAV_RES_TYPES set T_TYPE = 'text/turtle' where T_TYPE = 'text/rdf+ttl'
+;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/andrew-inset','ez')
 ;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/bpel+xml','bpel')
@@ -1331,7 +1337,7 @@ insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/x-gtar',
 ;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/x-hdf','hdf')
 ;
-insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/x-javascript','js')
+insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/javascript','js')
 ;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/x-koan','skp')
 ;
@@ -1561,7 +1567,7 @@ insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('video/3gpp','3gp')
 ;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('audio/amr','amr')
 ;
-insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('text/rdf+ttl','ttl')
+insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('text/turtle','ttl')
 ;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('text/rdf+n3','n3')
 ;

@@ -137,6 +137,16 @@
 						<td></td>
 					</tr>
 					<tr>
+						<th>
+						        Batch buffer size
+						</th>
+						<td>
+							<input type="text" id="batchSize"
+								name="Batch buffer size" size="4" value="5000" />
+						</td>
+						<td></td>
+					</tr>
+					<tr>
 						<td>
 						        Use RoundRobin for connection
 						</td>

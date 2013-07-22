@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1531,8 +1531,11 @@ extern int64 bdf_is_avail_mask; /* all bits on except read aside flag which does
 #define RST_TIMEOUT	5
 #define RST_AT_END 6 /*  reached top or max rows in a select */
 
+#ifndef DEBUG
+#define NO_ITC_DEBUG
+#endif
 
-#ifdef DEBUG
+#ifndef NO_ITC_DEBUG
 # define FAILCK(it) if (! it -> itc_fail_context) GPF_T1("No fail context.");
 #else
 # define FAILCK(it)

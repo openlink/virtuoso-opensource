@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1377,6 +1377,7 @@ em_free (extent_map_t * em)
   mutex_free (em->em_mtx);
   hash_table_free (em->em_dp_to_ext);
   hash_table_free (em->em_read_history);
+  hash_table_free (em->em_uninitialized);
   dk_mutex_destroy (&em->em_read_history_mtx);
   dk_free ((caddr_t) em, sizeof (extent_map_t));
 }

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -3868,10 +3868,9 @@ skip_insertion:
 caddr_t
 bif_dict_zap (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  id_hash_iterator_t hit, *hit1 = bif_dict_iterator_or_null_arg (qst, args, 0, "dict_zap", 0);
+  id_hash_iterator_t *hit1 = bif_dict_iterator_or_null_arg (qst, args, 0, "dict_zap", 0);
   long destructive = bif_long_range_arg (qst, args, 1, "dict_zap", 1, 3);
   id_hash_t *ht;
-  caddr_t *keyp, *valp;
   long len;
   if (NULL == hit1)
     return box_num (0);
@@ -3879,19 +3878,24 @@ bif_dict_zap (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (ht->ht_mutex)
     mutex_enter (ht->ht_mutex);
   len = ht->ht_inserts - ht->ht_deletes;
-  id_hash_iterator (&hit, ht);
   if ((1 != ht->ht_dict_refctr) && !(destructive &= ~1))
     {
       if (ht->ht_mutex)
         mutex_leave (ht->ht_mutex);
       sqlr_new_error ("22023", "SR632", "dict_zap() can not zap a dictionary that is used in many places, if second parameter is 0 or 1");
     }
-  while (hit_next (&hit, (char **)&keyp, (char **)&valp))
+  if (len)
     {
-       dk_free_tree (keyp[0]);
-       dk_free_tree (valp[0]);
+      id_hash_iterator_t hit;
+      caddr_t *keyp, *valp;
+      id_hash_iterator (&hit, ht);
+      while (hit_next (&hit, (char **)&keyp, (char **)&valp))
+        {
+           dk_free_tree (keyp[0]);
+           dk_free_tree (valp[0]);
+        }
+      id_hash_clear (ht);
     }
-  id_hash_clear (ht);
   ht->ht_dict_version++;
   ht->ht_dict_mem_in_use = 0;
   if (ht->ht_mutex)
@@ -4498,7 +4502,7 @@ bif_rowvector_sort_imp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, 
       GPF_T1("rowvector_qsort_int is not yet implemented");
       /*rowvector_qsort_int (vect, temp, vect_elems, 0, &specs); */
     }
-  else /* if (('D' == algo) || ('S' == algo)) */
+  else /* if (('D' == algo) || ('S' == algo) || ('O' == algo)) */
     {
       uint32 *offsets;
       dsort_itm_t *src, *tgt, *swap;
@@ -4555,7 +4559,7 @@ bif_rowvector_sort_imp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, 
             key_val = unbox (key);
           else if (DV_IRI_ID == key_dtp)
             key_val = unbox_iri_id (key);
-          else if (('S' == algo) && ((DV_STRING == key_dtp) || (DV_UNAME == key_dtp)))
+          else if ((('S' == algo) || ('O' == algo)) && ((DV_STRING == key_dtp) || (DV_UNAME == key_dtp)))
             {
               /* caddr_t iid = key_name_to_iri_id (((query_instance_t *)qst)->qi_trx, key, 0); */
               caddr_t iid = iri_to_id (qst, key, IRI_TO_ID_IF_KNOWN, err_ret);
@@ -4570,8 +4574,27 @@ bif_rowvector_sort_imp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, 
                     DV_UNAME_BOX_HASH(key_val,key);
                   else
                     BYTE_BUFFER_HASH(key_val,key,box_length(key)-1);
-                  key_val |= 0x80000000L;
+                  key_val |= 0x84000000L;
                 }
+            }
+          else if ('O' == algo)
+            {
+              if (DV_RDF == key_dtp)
+                {
+                  rdf_box_t *rb = (rdf_box_t *)key;
+                  if (rb->rb_chksum_tail)
+                    {
+                      caddr_t cs = ((rdf_bigbox_t *)rb)->rbb_chksum;
+                      BYTE_BUFFER_HASH(key_val,cs,box_length(cs)-1);
+                    }
+                  else if (rb->rb_is_complete)
+                    key_val = box_hash (rb->rb_box);
+                  else
+                    key_val = rb->rb_ro_id;
+                }
+              else
+                key_val = box_hash (key);
+              key_val |= 0x88000000L;
             }
           else
             {
@@ -4689,6 +4712,13 @@ bif_rowvector_subj_sort (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   int sort_asc = bif_long_range_arg (qst, args, 2, "rowvector_subj_sort", 0, 1);
   return bif_rowvector_sort_imp (qst, err_ret, args, "rowvector_subj_sort", 'S', 1, 0, sort_asc);
+}
+
+caddr_t
+bif_rowvector_obj_sort (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int sort_asc = bif_long_range_arg (qst, args, 2, "rowvector_obj_sort", 0, 1);
+  return bif_rowvector_sort_imp (qst, err_ret, args, "rowvector_obj_sort", 'O', 1, 0, sort_asc);
 }
 
 caddr_t
@@ -5086,8 +5116,14 @@ xslt_init (void)
   bif_define ("gvector_digit_sort", bif_gvector_digit_sort);
   bif_define ("rowvector_digit_sort", bif_rowvector_digit_sort);
   bif_define ("rowvector_subj_sort", bif_rowvector_subj_sort);
+  bif_set_uses_index (bif_rowvector_subj_sort);
+  bif_define ("rowvector_obj_sort", bif_rowvector_obj_sort);
+  bif_set_uses_index (bif_rowvector_obj_sort);
   bif_define ("rowvector_graph_sort", bif_rowvector_graph_sort);
+  bif_set_uses_index (bif_rowvector_graph_sort);
   bif_define ("rowgvector_subj_sort", bif_rowgvector_subj_sort);
+  bif_set_uses_index (bif_rowgvector_subj_sort);
   bif_define ("rowvector_graph_partition", bif_rowvector_graph_partition);
+  bif_set_uses_index (bif_rowvector_graph_partition);
 }
 

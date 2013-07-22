@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id:$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2013 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="oauth_apps" decor="yacutia_decor.vspx" style="yacutia_style.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" button-anchors="1">
+	<vm:pagetitle>Login Authentication Keys</vm:pagetitle>
+	<v:method name="serviceName" arglist="in a_key any">
+		<![CDATA[
+			declare N integer;
+			for (N := 0; N < length (self.a_services); N := N + 2)
+			{
+				if (replace (replace (lcase (a_key), ' ', ''), 'api', '') = replace (replace (lcase (self.a_services[N]), ' ', ''), 'api', ''))
+					return self.a_services[N+1];
+			}
+			return a_key;
+		]]>
+	</v:method>
+	<v:method name="serviceKey" arglist="in a_name any">
+		<![CDATA[
+			declare N integer;
+			for (N := 0; N < length (self.a_services); N := N + 2)
+			{
+				if (a_name = self.a_services[N+1])
+					return self.a_services[N];
+			}
+			return a_name;
+		]]>
+	</v:method>
+	<vm:pagewrapper>
+		<vm:variables>
+			<v:variable name="a_name" type="varchar" default="''" />
+			<v:variable name="a_services" type="any" default="null" />
+			<v:variable name="lk_edit" type="integer" default="null" param-name="edit" />
+			<v:variable name="lk_delete" type="integer" default="null" param-name="del" />
+		</vm:variables>
+		<vm:menu>
+			<vm:menuitem value="OAuth Service Binding"/>
+		</vm:menu>
+		<vm:header caption="Login Authentication Keys"/>
+		<vm:pagebody>
+			<v:on-init>
+				self.a_services := vector(
+					'MyOpenLink API',    'MyOpenLink',
+					'Bitly API',         'Bitly',
+					'Box Net API',       'Box Net',
+					'Disqus API',        'Disqus',
+					'Dropbox API',       'Dropbox',
+					'Facebook API',      'Facebook',
+					'flickr',            'Flickr',
+					'Foursquare API',    'Foursquare',
+					'GitHub API',        'GitHub',
+					'Google API',        'Google',
+					'Instagram API',     'Instagram',
+					'LinkedIn API',      'LinkedIn',
+					'meetup',            'Meetup',
+					'salesforce',        'Salesforce',
+					'Tumblr API',        'Tumblr',
+					'Twitter API',       'Twitter',
+					'Windows Live API',  'Windows Live',
+					'Wordpress API',     'Wordpress',
+					'Xing',              'Xing',
+					'Yahoo API',         'Yahoo');
+			</v:on-init>
+			<v:form type="simple" method="POST">
+				<table class="listing" rules="groups">
+					<colgroup>
+						<col/>
+						<col/>
+					</colgroup>
+					<tr class="listing_header_row">
+						<th>Provider</th>
+						<th width="5%">Action</th>
+					</tr>
+					<v:data-set name="maps" sql="select A_ID, A_NAME, A_KEY, A_SECRET from OAUTH..APP_REG where A_OWNER = 0" scrollable="1" editable="1" nrows="0">
+						<v:before-data-bind>
+							if (not e.ve_is_post and self.lk_delete is not null)
+							{
+								delete from OAUTH..APP_REG where A_ID = self.lk_delete;
+							}
+						</v:before-data-bind>
+						<v:template name="maps_rep" type="repeat">
+							<v:template name="maps_brows" type="browse">
+								<v:after-data-bind>
+									if (not e.ve_is_post and control.te_rowset[0] = self.lk_edit)
+									{
+										self.a_name := control.te_rowset[1];
+										self.a_key.ufl_value := control.te_rowset[2];
+										self.a_secret.ufl_value := control.te_rowset[3];
+									}
+								</v:after-data-bind>
+								<tr class="<?V case when self.lk_edit = control.te_rowset[0] then 'listing_row_selected' when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+									<td>
+										<v:url name="ur1"
+										value='--concat (&apos;<img src="images/icons/edit_16.png" hspace="3" border="0"/>&apos;, self.serviceName ((control.vc_parent as vspx_row_template).te_rowset[1]))'
+										format="%s"
+										url="--sprintf ('login_keys.vspx?edit=%d', (control.vc_parent as vspx_row_template).te_rowset[0])"
+										xhtml_title="Edit"
+										xhtml_alt="Edit"
+										/>
+									</td>
+									<td nowrap="nowrap">
+										<v:url name="ur2" value='<img src="images/icons/trash_16.png" hspace="3" border="0"/>Delete'
+										format="%s"
+										url="--sprintf ('login_keys.vspx?del=%d', (control.vc_parent as vspx_row_template).te_rowset[0])"
+										xhtml_title="Delete"
+										xhtml_alt="Delete"
+										xhtml_class="img_button"
+										/>
+									</td>
+								</tr>
+							</v:template>
+						</v:template>
+						<v:template name="maps_footer" type="simple">
+							<tr>
+								<td colspan="3" class="listing_col_action">
+									<vm:ds-navigation data-set="maps" type="set" />
+								</td>
+							</tr>
+						</v:template>
+					</v:data-set>
+				</table>
+				<div class="fm">
+					<table>
+						<tr>
+							<th width="90px">
+								<label for="a_name">Service Name</label>
+							</th>
+							<td id="td_name">
+								<script type="text/javascript">
+									<![CDATA[
+										function f_name ()
+										{
+											var fld = new OAT.Combolist([], "<?V self.serviceName (self.a_name) ?>");
+											fld.input.name = 'a_name';
+											fld.input.id = 'a_name';
+											fld.input.style.width = "300px";
+											$("td_name").appendChild(fld.div);
+											<?vsp
+												declare N integer;
+												for (N := 0; N < length (self.a_services); N := N + 2)
+													http (sprintf ('fld.addOption("%s");', self.a_services[N+1]));
+											?>
+										}
+										OAT.Loader.load(["combolist"], f_name);
+									]]>
+								</script>
+							</td>
+						</tr>
+						<tr>
+							<th>
+								<label for="a_key">Key</label>
+							</th>
+							<td>
+								<v:text name="a_key" value="" xhtml_size="110" xhtml_id="a_key" error-glyph="*" />
+							</td>
+						</tr>
+						<tr>
+							<th>
+								<label for="a_secret">Secret</label>
+							</th>
+							<td>
+								<v:text name="a_secret" value="" xhtml_size="110" xhtml_id="a_secret" error-glyph="*" />
+							</td>
+						</tr>
+						<tr>
+							<th>
+							</th>
+							<td>
+								<v:button name="cancel1" value="Cancel" action="simple" enabled="--equ(isnull(self.lk_edit),0)">
+									<v:on-post>
+										self.a_name := '';
+										self.a_key.ufl_value := '';
+										self.a_secret.ufl_value := '';
+										self.lk_edit := null;
+										self.save1.vc_data_bind (e);
+										control.vc_enabled := 0;
+									</v:on-post>
+								</v:button>
+								<v:button name="save1" value="--case when self.lk_edit is null then 'Add' else 'Update' end" action="simple">
+									<v:on-post>
+										if (not self.vc_is_valid)
+											return;
+										declare exit handler for sqlstate '23000'
+										{
+											rollback work;
+											self.vc_is_valid := 0;
+											self.vc_error_message := 'The values entered conflict with other data. Please supply correct new values.';
+											return;
+										};
+										self.a_name := self.serviceKey (get_keyword ('a_name', e.ve_params));
+										if (self.lk_edit is null)
+										{
+											insert into OAUTH..APP_REG (A_OWNER, A_NAME, A_KEY, A_SECRET)
+												values (0, self.a_name, self.a_key.ufl_value, self.a_secret.ufl_value);
+										}
+										else
+										{
+											update OAUTH..APP_REG
+												set A_NAME = self.a_name,
+												A_KEY = self.a_key.ufl_value,
+												A_SECRET = self.a_secret.ufl_value
+												where A_ID = self.lk_edit;
+										}
+										self.a_name := '';
+										self.a_key.ufl_value := '';
+										self.a_secret.ufl_value := '';
+										self.lk_edit := null;
+										control.vc_data_bind (e);
+										self.maps.vc_data_bind (e);
+									</v:on-post>
+								</v:button>
+							</td>
+						</tr>
+					</table>
+				</div>
+			</v:form>
+		</vm:pagebody>
+	</vm:pagewrapper>
+</v:page>

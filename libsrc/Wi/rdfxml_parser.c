@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -347,7 +347,11 @@ xp_rdfxml_resolve_iri_avalue (xparse_ctx_t *xp, const char *avalue, int is_id_at
       strcpy (local+1, avalue);
     }
   else
-    local = box_dv_short_string (avalue);
+    {
+      local = box_dv_short_string (avalue);
+      if (('_' == local[0]) && (':' == local[1]))
+        return local;
+    }
 #if 1
   res = rfc1808_expand_uri (xp->xp_rdfxml_locals->xrl_base, local,
     NULL /*output_cs_name*/, 0, NULL /*base_string_cs_name*/, NULL /*rel_string_cs_name*/, &err);
@@ -432,7 +436,7 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
   inner = xp_push_rdf_locals (xp);
   xn = xp->xp_free_list;
   if (NULL == xn)
-    xn = dk_alloc (sizeof (xp_node_t));
+    xn = (xp_node_t *)dk_alloc (sizeof (xp_node_t));
   else
     xp->xp_free_list = xn->xn_parent;
   memset (xn, 0, sizeof (xp_node_t));
@@ -713,19 +717,7 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
           continue;
         }
       else if (!stricmp (tmp_nsuri, "xml"))
-        {
-/*
-   	  XXX: moved above
-          if (!strcmp (tmp_local, "lang"))
-            XRL_SET_INHERITABLE (inner, xrl_language, box_dv_short_string (avalue), "Attribute 'xml:lang' is used twice");
-          else if (!strcmp (tmp_local, "base"))
-            XRL_SET_INHERITABLE (inner, xrl_base, box_dv_short_string (avalue), "Attribute 'xml:base' is used twice");
-          else if (0 != strcmp (tmp_local, "space"))
-            xmlparser_logprintf (xp->xp_parser, XCFG_WARNING, 200,
-              "Unsupported 'xml:...' attribute, only 'xml:lang', 'xml:base' and 'xml:space' are supported" );
-*/
           continue;
-        }
 push_inner_attr_prop:
       dk_set_push (&inner_attr_props, avalue);
       dk_set_push (&inner_attr_props, tmp_local);
@@ -1041,7 +1033,9 @@ xp_expand_relative_uri (caddr_t base, caddr_t *relative_ptr)
   caddr_t relative = relative_ptr[0];
   caddr_t expanded;
   caddr_t err = NULL;
-  if ((NULL == base) || ('\0' == base[0]) || (NULL == relative) || (DV_IRI_ID == DV_TYPE_OF (relative)) || !strncmp (relative, "http://", 7))
+  if ((NULL == base) || ('\0' == base[0])
+    || (NULL == relative) || (DV_IRI_ID == DV_TYPE_OF (relative)) || !strncmp (relative, "http://", 7)
+    || !strncmp (relative, "_:", 2) )
     return;
   expanded = rfc1808_expand_uri (/*xn->xn_xp->xp_qi,*/ base, relative, "UTF-8", 0, "UTF-8", "UTF-8", &err);
   if (NULL != err)
@@ -2502,7 +2496,7 @@ xp_rdfa_entity (void *userdata, const char * refname, int reflen, int isparam, c
   xparse_ctx_t *xp = (xparse_ctx_t *) userdata;
   xp_rdfa_locals_t *inner = xp->xp_rdfa_locals;
   if (RDFA_IN_XMLLITERAL & inner->xrdfal_place_bits)
-    xp_entity (userdata, refname, reflen, isparam, edef);
+    xp_entity ((vxml_parser_t *)userdata, refname, reflen, isparam, edef);
   else if (RDFA_IN_STRLITERAL & inner->xrdfal_place_bits)
     xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Entities are not supported in string literal object");
 }
@@ -2513,7 +2507,7 @@ xp_rdfa_pi (void *userdata, const char *target, const char *data)
   xparse_ctx_t *xp = (xparse_ctx_t *) userdata;
   xp_rdfa_locals_t *inner = xp->xp_rdfa_locals;
   if (RDFA_IN_XMLLITERAL & inner->xrdfal_place_bits)
-    xp_pi (userdata, target, data);
+    xp_pi ((vxml_parser_t *)userdata, target, data);
 }
 
 void
@@ -2522,7 +2516,7 @@ xp_rdfa_comment (void *userdata, const char *text)
   xparse_ctx_t *xp = (xparse_ctx_t *) userdata;
   xp_rdfa_locals_t *inner = xp->xp_rdfa_locals;
   if (RDFA_IN_XMLLITERAL & inner->xrdfal_place_bits)
-    xp_comment (userdata, text);
+    xp_comment ((vxml_parser_t *)userdata, text);
 }
 
 /* Part 3. Microdata parser */
@@ -2919,12 +2913,17 @@ mdata_feed_or_keep (xparse_ctx_t *xp, xp_mdata_locals_t *subj_l, caddr_t prop, x
           dk_free_tree ((caddr_t)triple);
         }
     }
-  else
+  else if (NULL != subj_l->xmdatal_subj)
     {
       if (obj_is_iri)
         tf_triple (xp->xp_tf, subj_l->xmdatal_subj, prop, obj);
       else
         tf_triple_l (xp->xp_tf, subj_l->xmdatal_subj, prop, obj, obj_datatype, obj_lang);
+      dk_free_box (prop);
+      dk_free_box (obj);
+    }
+  else
+    {
       dk_free_box (prop);
       dk_free_box (obj);
     }
@@ -3245,7 +3244,7 @@ xp_mdata_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
     }
   else if (NULL != avalues[MDATA_ATTR_ITEMREF])
     xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute itemref in an opening tag that has no itemscope attribute");
-  if (outer->xmdatal_prop_count && (NULL != outer->xmdatal_subj) && ((NULL != avalues[MDATA_ATTR_ITEMSCOPE]) || (NULL != avalues[MDATA_ATTR_ID])))
+  if (outer->xmdatal_prop_count && (NULL != outer->xmdatal_subj) && (NULL != inner->xmdatal_subj) && ((NULL != avalues[MDATA_ATTR_ITEMSCOPE]) || (NULL != avalues[MDATA_ATTR_ID])))
     {
       int prop_ctr;
       for (prop_ctr = 0; prop_ctr < outer->xmdatal_prop_count; prop_ctr++)
@@ -3270,9 +3269,12 @@ xp_mdata_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
           dk_free_tree (itemtype);
           xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "The subject '%.200s' has more than one itemtype definition", inner->xmdatal_subj);
         }
-      mdata_feed_or_keep (xp, inner, uname_rdf_ns_uri_type, inner, box_copy (itemtype), MDATA_ATTR_ITEMSCOPE);
-      itemid = box_copy (itemid);
-      id_hash_set (xpt->xpt_subj2type, (caddr_t)(&itemid), (caddr_t)(&itemtype));
+      else
+        {
+          mdata_feed_or_keep (xp, inner, uname_rdf_ns_uri_type, inner, box_copy (itemtype), MDATA_ATTR_ITEMSCOPE);
+          itemid = box_copy (itemid);
+          id_hash_set (xpt->xpt_subj2type, (caddr_t)(&itemid), (caddr_t)(&itemtype));
+        }
     }
   if ((NULL != avalues[MDATA_ATTR_ITEMPROP]) && !props_connect_local_id_to_local_itemscope)
     {
@@ -3452,7 +3454,7 @@ xp_mdata_entity (void *userdata, const char * refname, int reflen, int isparam, 
   xparse_ctx_t *xp = (xparse_ctx_t *) userdata;
   xp_mdata_locals_t *inner = xp->xp_mdata_locals;
   if (MDATA_IN_XMLLITERAL & inner->xmdatal_place_bits)
-    xp_entity (userdata, refname, reflen, isparam, edef);
+    xp_entity ((vxml_parser_t *)userdata, refname, reflen, isparam, edef);
   else if (MDATA_IN_STRLITERAL & inner->xmdatal_place_bits)
     xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Entities are not supported in string literal object");
 }
@@ -3463,7 +3465,7 @@ xp_mdata_pi (void *userdata, const char *target, const char *data)
   xparse_ctx_t *xp = (xparse_ctx_t *) userdata;
   xp_mdata_locals_t *inner = xp->xp_mdata_locals;
   if (MDATA_IN_XMLLITERAL & inner->xmdatal_place_bits)
-    xp_pi (userdata, target, data);
+    xp_pi ((vxml_parser_t *)userdata, target, data);
 }
 
 void
@@ -3472,7 +3474,7 @@ xp_mdata_comment (void *userdata, const char *text)
   xparse_ctx_t *xp = (xparse_ctx_t *) userdata;
   xp_mdata_locals_t *inner = xp->xp_mdata_locals;
   if (MDATA_IN_XMLLITERAL & inner->xmdatal_place_bits)
-    xp_comment (userdata, text);
+    xp_comment ((vxml_parser_t *)userdata, text);
 }
 
 /* Part 4. Common parser invocation routine */

@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2012 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -2259,31 +2259,26 @@ create procedure DB.DBA.VAD_DEPS_CHECK (in parr any, in name varchar, in version
 }
 ;
 
--- checks if x is less than y
+--!
+-- \brief Compare two version strings.
+--
+-- An arbitrary number of version components are supported in addition to an
+-- optional suffix like "_xxxNN" where "xxx" is a word and "NN" is the suffix
+-- number.
+--
+-- \b Examples:
+-- \code
+-- 1.0
+-- 1.0.0
+-- 1.0.2
+-- 2.3_git12
+-- \endcode
+--
+-- \return \p 1 if \p x is smaller than \p y, \p 0 otherwise.
+--/
 create procedure VAD.DBA.VER_LT (in x varchar, in y varchar)
 {
-  declare xx, yy any;
-  if (x is null)
-    return 0;
-  if (length (x) = 0 and length (y) > 0)
-    return 1;
-  xx := split_and_decode (x, 0, '\0\0.');
-  yy := split_and_decode (y, 0, '\0\0.');
-  if (length (xx) > length (yy))
-    return 0;
-  if (length (xx) < length (yy))
-    return 1;
-  for (declare i, l int, i := 0, l := length (xx); i < l; i := i + 1)
-    {
-      declare xi, yi int;
-      xi := atoi (xx[i]);
-      yi := atoi (yy[i]);
-      if (xi < yi)
-	return 1;
-      if (xi > yi)
-	return 0;
-    }
-  return 0;
+  return (case when "VAD"."DBA"."VERSION_COMPARE" (x, y) = -1 then 1 else 0 end);
 }
 ;
 
@@ -2337,7 +2332,7 @@ create procedure "VAD"."DBA"."VAD_AUTO_UPGRADE" ()
 	   if (ver is null and pname = 'conductor')
 	     {
 		  isdav := 1;
-		ver := '';
+		ver := '0.0.0';
 	     }
 
 	   -- Only upgrade if package exists in database with older version

@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2012 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -32,7 +32,6 @@ base_plugin_cflags  += -I$(top_srcdir)/libsrc/Dk
 base_plugin_cflags  += @ZLIB_INC@
 base_plugin_cflags  += -I$(top_srcdir)/libsrc/langfunc 
 base_plugin_cflags  += -I$(top_srcdir)/libsrc/plugin 
-base_plugin_cflags  += -I$(top_srcdir)/libsrc/Tidy 
 base_plugin_cflags  += -I$(top_srcdir)/libsrc/Xml.new 
 base_plugin_cflags  += -I$(top_srcdir)/libsrc/Wi
 base_plugin_cflags  += -I$(top_srcdir)/libsrc/odbcsdk/include

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -42,7 +42,9 @@ print_trace (void)
   strings = backtrace_symbols (array, size);
   for (i = 0; i < size; i++)
     log_info ("%s\n", strings[i]);
+#ifndef MALLOC_DEBUG
   free (strings);
+#endif
 }
 #else
 void print_trace (void) { }

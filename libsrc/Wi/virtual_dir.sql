@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2012 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -1082,7 +1082,9 @@ end_loop:;
 	    {
 	      if ("output-format" = 'rdf' or "output-format" = 'rdf+xml' or "output-format" = 'xml')
 		accept := 'application/rdf+xml';
-	      else if ("output-format" = 'ttl' or "output-format" = 'turtle' or "output-format" = 'n3')
+	      else if ("output-format" = 'ttl' or "output-format" = 'turtle')
+		accept := 'text/turtle';
+	      else if ("output-format" = 'n3')
 		accept := 'text/rdf+n3';
               else if ("output-format" = 'nt' or "output-format" = 'txt')
                 accept := 'text/n3';
@@ -1092,7 +1094,7 @@ end_loop:;
                 accept := "output-format";
 	    }
           stat := '00000';
-	  if (get not in ('soft', 'replacing', 'add'))
+	  if (get not in ('soft', 'replacing', 'add', 'none'))
 	    get := 'add';
 	  if (length (login))
 	    login := concat ('define get:login "', login, '" ');
@@ -1123,6 +1125,9 @@ end_loop:;
 	  url := replace (url, '>', '%3E');
 	  url := replace (url, ' ', '%20');
 
+	  if (get = 'none')
+	    sponge := '';
+          else
 	  sponge := sprintf ('define get:soft "%s"', get);
 
 	  set_user_id ('SPARQL');
@@ -1450,14 +1455,14 @@ xslt_sheet ('http://local.virt/dir_output', xml_tree_doc ('
     <xsl:template match="PATH">
 	<xsl:variable name="path"><xsl:value-of select="@dir_name"/></xsl:variable>
 	&lt;!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN"&gt;
-	&lt;HTML&gt;
-	&lt;TITLE&gt;Directory listing of <xsl:value-of select="\044path"/>&lt;/TITLE&gt;
-	&lt;BODY bgcolor="#FFFFFF" fgcolor="#000000"&gt;
-	&lt;H4&gt;Index of <xsl:value-of select="\044path"/>&lt;/H4&gt;
-	  &lt;TABLE&gt;
-	    &lt;tr&gt;&lt;td colspan=2 align="center"&gt;Name&lt;/td&gt;
+	&lt;html&gt;
+	&lt;title&gt;Directory listing of <xsl:value-of select="\044path"/>&lt;/title&gt;
+	&lt;body bgcolor="#FFFFFF" fgcolor="#000000"&gt;
+	&lt;h4&gt;Index of <xsl:value-of select="\044path"/>&lt;/h4&gt;
+	  &lt;table&gt;
+	    &lt;tr&gt;&lt;td colspan="2" align="center"&gt;Name&lt;/td&gt;
 	    &lt;td align="center"&gt;Last modified&lt;/td&gt;&lt;td align="center"&gt;Size&lt;/td&gt;&lt;/tr&gt;
-	    &lt;tr&gt;&lt;td colspan=5&gt;&lt;HR /&gt;&lt;/td&gt;&lt;/tr&gt;
+	    &lt;tr&gt;&lt;td colspan="4"&gt;&lt;HR /&gt;&lt;/td&gt;&lt;/tr&gt;
 
 	<xsl:apply-templates select="DIRS">
 	  <xsl:with-param name="f_path" select="\044path"/>
@@ -1467,16 +1472,16 @@ xslt_sheet ('http://local.virt/dir_output', xml_tree_doc ('
 	  <xsl:with-param name="f_path" select="\044path"/>
 	</xsl:apply-templates>
 
-	     &lt;tr&gt;&lt;td colspan=5&gt;&lt;HR /&gt;&lt;/td&gt;&lt;/tr&gt;
-	  &lt;/TABLE&gt;
-	&lt;/BODY&gt;
-	&lt;/HTML&gt;
+	     &lt;tr&gt;&lt;td colspan="4"&gt;&lt;HR /&gt;&lt;/td&gt;&lt;/tr&gt;
+	  &lt;/table&gt;
+	&lt;/body&gt;
+	&lt;/html&gt;
     </xsl:template>
 
     <xsl:template match="SUBDIR">
 	 <xsl:param name="f_path" />
     	&lt;tr&gt;
-	   &lt;td&gt;&lt;img src="/conductor/images/dav_browser/foldr_16.png" alt="folder"&gt;&lt;/td&gt;
+	   &lt;td&gt;&lt;img src="/conductor/dav/image/dav/foldr_16.png" alt="folder"&gt;&lt;/td&gt;
 	   &lt;td&gt;&lt;a href="<xsl:value-of select="\044f_path"/><xsl:value-of select="@name"/>/"&gt;<xsl:value-of select="@name"/>&lt;/a&gt;&lt;/td&gt;
 	   &lt;td&gt;<xsl:value-of select="@modify"/>&lt;/td&gt;&lt;td align="right"&gt;-&lt;/td&gt;
 	&lt;/tr&gt;
@@ -1485,7 +1490,7 @@ xslt_sheet ('http://local.virt/dir_output', xml_tree_doc ('
     <xsl:template match="FILE">
 	 <xsl:param name="f_path" />
     	&lt;tr&gt;
-	   &lt;td&gt;&lt;img src="/conductor/images/dav_browser/file_gen_16.png" alt="file"&gt;&lt;/td&gt;
+	   &lt;td&gt;&lt;img src="/conductor/dav/image/dav/generic_file.png" alt="file"&gt;&lt;/td&gt;
 	   &lt;td&gt;&lt;a href="<xsl:value-of select="\044f_path"/><xsl:value-of select="@name"/>"&gt;<xsl:value-of select="@name"/>&lt;/a&gt;&lt;/td&gt;
 	   &lt;td&gt;<xsl:value-of select="@modify"/>&lt;/td&gt;&lt;td align="right"&gt;<xsl:value-of select="@hs"/>&lt;/td&gt;
 	&lt;/tr&gt;

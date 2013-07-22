@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2012 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -37,6 +37,7 @@
 	<v:variable name="ou1" type="varchar" default="''" persist="temp"/>
 	<v:variable name="name1" type="varchar" default="''" persist="temp"/>
 	<v:variable name="email1" type="varchar" default="''" persist="temp"/>
+	<v:variable name="uri1" type="varchar" default="''" persist="temp"/>
     </vm:variables>
     <vm:menu>
       <vm:menuitem name="PKI" value="Public Key Infrastructure"/>
@@ -49,16 +50,32 @@
 	      {
                 declare tmp, arr any;
 		tmp := get_certificate_info (2, decode_base64 (xenc_X509_certificate_serialize ('id_rsa')), 1);
-		if (tmp is not null) {
-		arr := split_and_decode (tmp, 0, '\0\0/=');
-		self.c1 := get_keyword ('C', arr, '');
-		self.st1 := get_keyword ('ST', arr, '');
-		self.o1 := get_keyword ('O', arr, '');
-		self.ou1 := get_keyword ('OU', arr, '');
-		self.name1 := get_keyword ('CN', arr, '');
-		self.email1 := get_keyword ('emailAddress', arr, '');
+		if (tmp is not null) 
+		  {
+		    arr := split_and_decode (tmp, 0, '\0\0/=');
+		    self.c1 := get_keyword ('C', arr, '');
+		    self.st1 := get_keyword ('ST', arr, '');
+		    self.o1 := get_keyword ('O', arr, '');
+		    self.ou1 := get_keyword ('OU', arr, '');
+		    self.name1 := get_keyword ('CN', arr, '');
+		    self.email1 := get_keyword ('emailAddress', arr, '');
+		    self.uri1 := get_certificate_info (7, 'id_rsa', 3, '', '2.5.29.17');
+		    if (self.uri1 is null) self.uri1 := '';
+		    if (self.uri1 = '' or self.uri1 like 'email:%')
+		      {
+			declare rc, res, gr any;
+			res := make_cert_iri ('id_rsa');
+			gr := sprintf ('http://%{WSHost}s/pki');
+			rc := coalesce ((sparql ask where { graph `iri(?:gr)` { `iri(?:res)` ?p ?o }}), 0);
+			if (rc)
+			  self.uri1 := res;
+			else
+                          self.uri1 := '';
+		      }
+		  }
 	      }
-	      }
+	     else
+	       self.uri1 := make_cert_iri ('id_rsa');  
 	    ]]></v:on-init>
     <!--vm:help id="sec_pki" sect=""/-->
     <v:form name="form1" type="simple" method="POST">
@@ -135,6 +152,14 @@
 			</v:before-render>
 		    </v:text>
 			<br/>
+			<label>SAN (URI):</label> 
+			<v:text xhtml_size="100" value="" name="uri" default_value="--self.uri1" > 
+			<v:before-render>
+			    if (xenc_key_exists ('id_rsa'))
+			      control.vc_add_attribute ('disabled', '1');
+			</v:before-render>
+		    </v:text>
+			<br/>
 		   <label>Key strength:</label> 
 		   <v:select-list name="num">
 		       <v:item name="2048" value="2048"/>
@@ -159,6 +184,11 @@
 	 return 0;
        }
 
+       declare w varchar;
+       w := get_keyword ('uri', params);
+       if (length (w))
+         w := 'URI:'||w;
+
        xenc_key_RSA_create ('id_rsa', atoi (get_keyword ('num', params, '1024')));
        xenc_x509_ss_generate ('id_rsa', sequence_next ('ca_id_rsa'), 365, 
 		vector ('C', get_keyword ('c', params), 
@@ -168,14 +198,23 @@
 			'CN',  get_keyword ('name', params), 
 			'emailAddress',  get_keyword ('email', params)), 
 		vector ('basicConstraints', 'critical,CA:TRUE', 
-			'authorityKeyIdentifier', 'keyid,issuer:always', 
+			'authorityKeyIdentifier', 'keyid,issuer:always', 'subjectAltName', w,
 			'nsComment', 'Virtuoso Generated Certificate'));
        USER_KEY_STORE (user, 'id_rsa', 'X.509', 2, '', cast (xenc_pkcs12_export ('id_rsa', 'CA Certificate', '') as varchar));
+       exec (make_cert_stmt ('id_rsa'));
        commit work;
        control.vc_enabled := 0;
        self.delcert.vc_enabled := 1;
        self.nxt.vc_enabled := 1;
+       self.mgr.vc_enabled := 1;
        ]]></v:on-post>
+		</v:button>
+		<v:button action="simple" name="mgr" value="Create Issuer Graph" enabled="--case when xenc_key_exists ('id_rsa') and length (self.uri1) = 0 then 1 else 0 end ">
+		    <v:on-post><![CDATA[
+		    exec (make_cert_stmt ('id_rsa'));
+		    commit work;
+		    self.vc_redirect ('sec_pki_1.vspx');
+		]]></v:on-post>
 		</v:button>
 		<v:button action="simple" name="nxt" value="Configure HTTPS Listeners" enabled="--xenc_key_exists ('id_rsa')">
 		    <v:on-post><![CDATA[

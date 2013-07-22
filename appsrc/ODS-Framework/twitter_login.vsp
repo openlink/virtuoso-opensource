@@ -11,7 +11,7 @@
       ret_url := sprintf ('http://%{WSHost}s%s?sid=%U', http_path(), sid);
       url := OAUTH..sign_request ('GET', 'http://twitter.com/oauth/request_token', sprintf ('oauth_callback=%U', ret_url), tok, null, 1); 
       res := http_get (url);
-      dbg_obj_print (res);
+      -- dbg_obj_print (res);
       sid := OAUTH..parse_response (sid, tok, res);
 
       OAUTH..set_session_data (sid, params);
@@ -24,22 +24,22 @@
   else if ({?'oauth_verifier'} is not null)
     {
       declare header, auth any;
-      dbg_obj_print (params);
+      -- dbg_obj_print (params);
       url := OAUTH..sign_request ('GET', 'http://twitter.com/oauth/access_token', 
 		sprintf ('oauth_token=%U&oauth_verifier=%U', {?'oauth_token'}, {?'oauth_verifier'}), 
 			tok, sid, 1);
-      dbg_obj_print (url);
+      -- dbg_obj_print (url);
       res := http_get (url);
-      dbg_obj_print (res);
+      -- dbg_obj_print (res);
       sid := OAUTH..parse_response (sid, tok, res);
       tmp := split_and_decode (res, 0);
       screen_name := get_keyword ('screen_name', tmp);  
 
       auth := OAUTH..signed_request_header ('GET', 'http://api.twitter.com/1/users/lookup.xml', sprintf ('screen_name=%U', screen_name), tok, '', sid,0);
       url := sprintf ('http://api.twitter.com/1/users/lookup.xml?screen_name=%U', screen_name);
-      dbg_obj_print_vars (url, auth);
+      -- dbg_obj_print_vars (url, auth);
       res := http_get (url, header, 'GET', auth);
-      dbg_printf ('%s', res);
+      -- dbg_printf ('%s', res);
       OAUTH..session_terminate (sid); 
     }
 ?>
@@ -54,8 +54,7 @@
            if (exists (select 1 from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_URL = sprintf ('http://twitter.com/%U', screen_name)))
              {
                declare uname varchar;
-               uname := (select U_NAME from SYS_USERS, WA_USER_OL_ACCOUNTS where WUO_U_ID = U_ID and 
-			WUO_URL = sprintf ('http://twitter.com/%U', screen_name));
+              uname := (select U_NAME from SYS_USERS, WA_USER_OL_ACCOUNTS where WUO_U_ID = U_ID and WUO_URL = sprintf ('http://twitter.com/%U', screen_name));
 	       http_value (sprintf ('You are logged in as ODS account: %s', uname), 'b');
                sid := vspx_sid_generate ();
                insert into VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY, VS_STATE) 

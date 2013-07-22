@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2012 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -303,6 +303,12 @@ create procedure
 
   uname := xmla_get_property ("Properties", 'UserName', null);
   passwd := xmla_get_property ("Properties", 'Password', null);
+
+  if (uname is null and is_https_ctx ())
+    {
+      uname := connection_get ('SPARQLUserId'); -- if WebID ACL is checked
+      passwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = uname);
+    }
 
   -- XMLA command, no statement
   if (stmt is null and ("BeginSession" is not null or "EndSession" is not null))

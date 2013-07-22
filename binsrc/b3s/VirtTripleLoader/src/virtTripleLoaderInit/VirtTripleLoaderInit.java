@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -84,7 +84,7 @@ public class VirtTripleLoaderInit {
 	private static final Integer myMajorVer = 0;
 	private static final Integer myMinorVer = 1;
 	private static final Integer myBuild = 0;
-	private static final String myCopyright = "Copyright (c) 2008-2012 OpenLink Software";
+	private static final String myCopyright = "Copyright (c) 2008-2013 OpenLink Software";
 
 	private static final String virtConnectUrlDef = "jdbc:virtuoso://neo:1111";
 	private static final String virtUserDef = "dba";

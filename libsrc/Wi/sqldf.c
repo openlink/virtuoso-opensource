@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -70,6 +70,7 @@ sql_tree_hash_1 (ST * st)
 	if (len > 10)
 	  {
 	    int d = len / 2;
+	    d &= ~7L;
 	    len -= d;
 	    str += d;
 	  }
@@ -339,6 +340,9 @@ sqlo_select_deps (sqlo_t * so, df_elt_t * from_dfe)
 	  df_elt_t *dt_dfe = sqlo_df (so, ot->ot_dt);
 	  set = t_set_union (dt_dfe->dfe_tables, set);
 	}
+      DO_SET (df_elt_t *, jp, &ot->ot_join_preds)
+	set = t_set_union (set, jp->dfe_tables);
+      END_DO_SET();
     }
   END_DO_SET();
   set = t_set_diff (set, ot->ot_from_ots);
@@ -3039,7 +3043,7 @@ dfe_table_set_by_best (df_elt_t * tb_dfe, index_choice_t * ic, float true_arity,
 int enable_index_path = 1;
 
 int
-sqlo_need_index_path (df_elt_t * tb_dfe)
+sqlo_need_index_path (df_elt_t * tb_dfe, caddr_t opt_inx_name)
 {
   /* rdf quad with text/geo and no p needs a potentially multi-index access path if partial distinct inxes are used.  Other cases are done with regular inx choice */
   char * tn = tb_dfe->_.table.ot->ot_table->tb_name;
@@ -3047,6 +3051,12 @@ sqlo_need_index_path (df_elt_t * tb_dfe)
     {
       dbe_column_t * p_col = tb_name_to_column (tb_dfe->_.table.ot->ot_table, "P");
       df_elt_t * pred;
+      if (opt_inx_name)
+	{
+	  dbe_key_t * key = tb_key_by_index_opt (tb_dfe->_.table.ot->ot_table, opt_inx_name);
+	  if (key && (key->key_distinct || key->key_no_pk_ref))
+	    return 1;
+	}
       if (2 == enable_index_path)
 	return 1;
       if (tb_dfe->_.table.text_pred)
@@ -3070,6 +3080,40 @@ sqlo_need_index_path (df_elt_t * tb_dfe)
 }
 
 
+int
+key_matches_index_opt (dbe_key_t * key, caddr_t opt)
+{
+  if (!opt)
+    return 1;
+  if (!strcmp (opt, "PRIMARY KEY"))
+    return key->key_is_primary;
+  if (!CASEMODESTRCMP (opt, key->key_name))
+    return 1;
+  if (!CASEMODESTRCMP (opt, ((dbe_column_t*)key->key_parts->data)->col_name))
+    return 1;
+  return 0;
+}
+
+
+dbe_key_t * 
+tb_key_by_index_opt (dbe_table_t * tb, caddr_t opt)
+{
+  dbe_key_t * best = NULL;
+  DO_SET (dbe_key_t *, key, &tb->tb_keys)
+    {
+      if (key_matches_index_opt (key, opt))
+	{
+	  if (!best)
+	    best = key;
+	  else if (key->key_distinct)
+	    best = key;
+	}
+    }
+  END_DO_SET();
+  return best;
+}
+
+
 void
 sqlo_choose_index (sqlo_t * so, df_elt_t * tb_dfe,
 		   dk_set_t * col_preds, dk_set_t * after_preds)
@@ -3087,7 +3131,8 @@ sqlo_choose_index (sqlo_t * so, df_elt_t * tb_dfe,
   float best_group;
   if (tb_dfe->_.table.key)
     return;
-  if (enable_index_path && sqlo_need_index_path (tb_dfe))
+  opt_inx_name = sqlo_opt_value (ot->ot_opts, OPT_INDEX);
+  if (enable_index_path && sqlo_need_index_path (tb_dfe, opt_inx_name))
     {
       sqlo_choose_index_path (so, tb_dfe, col_preds, after_preds);
       return;
@@ -3095,7 +3140,6 @@ sqlo_choose_index (sqlo_t * so, df_elt_t * tb_dfe,
   memset (&best_ic, 0, sizeof (best_ic));
   sqlo_prepare_inx_int_preds (so);
   tb_dfe->_.table.is_unique = 0;
-  opt_inx_name = sqlo_opt_value (ot->ot_opts, OPT_INDEX);
 
   if (opt_inx_name && !strcmp (opt_inx_name, "PRIMARY KEY"))
     is_pk_inx = 1;
@@ -3129,16 +3173,7 @@ sqlo_choose_index (sqlo_t * so, df_elt_t * tb_dfe,
 	  if (key->key_no_pk_ref && !opt_inx_name)
 	    continue;
 	  memset (&ic, 0, sizeof (ic));
-	  if (opt_inx_name)
-	    {
-	      if (!CASEMODESTRCMP (opt_inx_name, key->key_name))
-		{
-		  tb_dfe->_.table.key = key;
-		  dfe_table_cost_ic (tb_dfe, &best_ic, 0);
-		  break;
-		}
-	    }
-	  else
+	  if (key_matches_index_opt (key, opt_inx_name))
 	    {
 	      tb_dfe->_.table.key = key;
 	      tb_dfe->dfe_unit = 0;
@@ -5659,7 +5694,9 @@ sqlo_trans_placeable (sqlo_t * so, op_table_t * ot, df_elt_t * dfe, int * any_tr
   if (!in_cols)
     flag |= TN_FWD;
   if (!out_cols)
-    flag |= TN_FWD;
+    flag |= TN_BWD;
+  if (3 == trans->_.trans.direction   && flag != (TN_FWD | TN_BWD))
+    return 0;
   return flag;
 }
 

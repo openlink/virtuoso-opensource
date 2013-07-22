@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2012 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -73,6 +73,7 @@ that string.
 	<member>8 - return the certificate name of the key from current user store</member>
 	<member>9 - return a vector of three elements: the certificate's public key type, exponent and modulus</member>
 	      <member>10 - return attribute value for given attribute name</member>
+        <member>12 - return certificate's signature</member>
       </simplelist>
   </refsect2>
   

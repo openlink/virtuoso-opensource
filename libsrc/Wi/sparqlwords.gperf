@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -32,9 +32,11 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "AS",			AS_L			, 0
 "ASC",			ASC_L			, 0
 "ASK",			ASK_L			, 0
+"ASSUME",		ASSUME_L		, 0
 "ATTACH",		ATTACH_L		, 0
 "AVG",			AVG_L			, 0
 "BASE",			BASE_L			, 0
+"BIND",			BIND_L			, 0
 "BINDINGS",		BINDINGS_L		, 0
 "BIJECTION",		BIJECTION_L		, 0
 "BNODE",		SPARQL_BIF		, SPAR_BIF_BNODE
@@ -74,6 +76,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "HOURS",		SPARQL_BIF		, SPAR_BIF_HOURS
 "GRAPH",		GRAPH_L			, 0
 "GROUP",		GROUP_L			, 0
+"GROUP_CONCAT",		GROUP_CONCAT_L		, 0
 "HAVING",		HAVING_L		, 0
 "IF",			SPARQL_BIF		, SPAR_BIF_IF
 "IFP",			IFP_L			, 0
@@ -142,6 +145,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "SAME_AS_S",		SAME_AS_S_L		, 0
 "SAME_AS_S_O",		SAME_AS_S_O_L		, 0
 "SAMETERM",		SPARQL_BIF		, SPAR_BIF_SAMETERM
+"SAMPLE",		SAMPLE_L		, 0
 "SECONDS",		SPARQL_BIF		, SPAR_BIF_SECONDS
 "SELECT",		SELECT_L		, 0
 "SERVICE",		SERVICE_L		, 0
@@ -156,11 +160,14 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "SQLQUERY",		SQLQUERY_L		, 0
 "STORAGE",		STORAGE_L		, 0
 "STR",			SPARQL_BIF		, SPAR_BIF_STR
+"STRAFTER",		SPARQL_BIF		, SPAR_BIF_STRAFTER
+"STRBEFORE",		SPARQL_BIF		, SPAR_BIF_STRBEFORE
 "STRDT",		SPARQL_BIF		, SPAR_BIF_STRDT
 "STRENDS",		SPARQL_BIF		, SPAR_BIF_STRENDS
 "STRLANG",		SPARQL_BIF		, SPAR_BIF_STRLANG
 "STRLEN",		SPARQL_BIF		, SPAR_BIF_STRLEN
 "STRSTARTS",		SPARQL_BIF		, SPAR_BIF_STRSTARTS
+"STRUUID",		SPARQL_BIF		, SPAR_BIF_STRUUID
 "SUBCLASS",		SUBCLASS_L		, 0
 "SUBJECT",		SUBJECT_L		, 0
 "SUBSTR",		SPARQL_BIF		, SPAR_BIF_SUBSTR
@@ -192,6 +199,8 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "UNION",		UNION_L			, 0
 "URI",			SPARQL_BIF		, SPAR_BIF_URI
 "USING",		USING_L			, 0
+"UUID",			SPARQL_BIF		, SPAR_BIF_UUID
+"VALUES",		VALUES_L		, 0
 "WHERE",		WHERE_L			, 0
 "WITH",			WITH_L			, 0
 "XML",			XML_L			, 0

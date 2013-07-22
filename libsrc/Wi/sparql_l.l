@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -305,11 +305,14 @@ static int sparscn_NUMBER_double (void *yylval, sparp_t *sparp)
 	/* Whitespace between 'COUNT' keyword and '(' or 'DISTINCT' after it */
 %x SPARQL_AFTER_COUNT
 
-	/* Whitespace between 'WHERE'/'SQLQUERY' keyword and '(' or '{' after it */
-%x SPARQL_AFTER_WHERE
-
 	/* Whitespace between 'IDENTIFIED' keyword and 'BY' keyword */
 %x SPARQL_AFTER_IDENTIFIED
+
+	/* Whitespace between 'NOT' keyword and 'FROM', 'IN' or 'EXISTS' after it */
+%x SPARQL_AFTER_NOT
+
+	/* Whitespace between 'WHERE'/'SQLQUERY' keyword and '(' or '{' after it */
+%x SPARQL_AFTER_WHERE
 
 	/* A fragment of SQL text between 'WHERE (' and matching ')' */
 %x SPARQL_SQL_FRAGMENT
@@ -378,7 +381,9 @@ SPAR_PARAMNAME	(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQL
 <SPARQL>"&&"		{ return _AMP_AMP	; }
 <SPARQL>"`"		{ return _BACKQUOTE	; }
 <SPARQL>"!"		{ return _BANG		; }
+<SPARQL>"|"		{ return _BAR		; }
 <SPARQL>"||"		{ return _BAR_BAR	; }
+<SPARQL>"^"		{ return _CARET		; }
 <SPARQL>"^^"		{ return _CARET_CARET	; }
 <SPARQL>","		{ return _COMMA		; }
 <SPARQL>"."		{ return _DOT		; }
@@ -391,6 +396,7 @@ SPAR_PARAMNAME	(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQL
 <SPARQL>"!="		{ return _NOT_EQ	; }
 <SPARQL>"+"		{ sparyylval.token_type = sparp->sparp_lexdepth; return _PLUS		; }
 <SPARQL>"+>"		{ return _PLUS_GT	; }
+<SPARQL>"?"		{ return _QMARK		; }
 <SPARQL>";"		{ return _SEMI		; }
 <SPARQL>"/"		{ return _SLASH		; }
 <SPARQL>"*"		{ return _STAR		; }
@@ -452,6 +458,7 @@ SPAR_PARAMNAME	(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQL
       {
       case COUNT_L: BEGIN SPARQL_AFTER_COUNT; break;
       case IDENTIFIED_L: BEGIN SPARQL_AFTER_IDENTIFIED; return IDENTIFIED_L;
+      case NOT_L: BEGIN SPARQL_AFTER_NOT; break;
       case WHERE_L: BEGIN SPARQL_AFTER_WHERE; return WHERE_L;
       case SQLQUERY_L: BEGIN SPARQL_AFTER_WHERE; return SQLQUERY_L;
       case SPARQL_BIF: sparyylval.token_type = sk->subtype; return SPARQL_BIF;
@@ -485,8 +492,8 @@ SPAR_PARAMNAME	(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQL
 <SPARQL_DDDQ>((([""]([""]?))?({SPAR_DQ_PLAIN}|{SPAR_ECHAR}))+)		{ yymore(); }
 <SPARQL_SSSQ>[\\]		{ sparyyerror ("Bad escape sequence in a long single-quoted string"); }
 <SPARQL_DDDQ>[\\]		{ sparyyerror ("Bad escape sequence in a long double-quoted string"); }
-<SPARQL_SSSQ>.			{ sparyyerror ("Bad character in a long single-quoted string"); }
-<SPARQL_DDDQ>.			{ sparyyerror ("Bad character in a long double-quoted string"); }
+<SPARQL_SSSQ>.			{ sparyyerror (t_box_sprintf (100, "Bad character '%c' (0x%x) in a long single-quoted string", sparyytext[0], (unsigned int)((unsigned char)(sparyytext[0])))); }
+<SPARQL_DDDQ>.			{ sparyyerror (t_box_sprintf (100, "Bad character '%c' (0x%x) in a long double-quoted string", sparyytext[0], (unsigned int)((unsigned char)(sparyytext[0])))); }
 <SPARQL_SSSQ><<EOF>>		{ sparyyerror ("Unterminated long single-quoted string"); }
 <SPARQL_DDDQ><<EOF>>		{ sparyyerror ("Unterminated long double-quoted string"); }
 
@@ -508,12 +515,20 @@ SPAR_PARAMNAME	(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQL
 	/* Whitespace after COUNT keyword */
 <SPARQL_AFTER_COUNT>"(" { BEGIN SPARQL; TOKPAR_OPEN (COUNT_LPAR, ')', GET_CURRENT_BEGIN) }
 <SPARQL_AFTER_COUNT>{D}{I}{S}{T}{I}{N}{C}{T} { BEGIN SPARQL; return COUNT_DISTINCT_L; }
-<SPARQL_AFTER_COUNT><<EOF>>	{ sparyyerror ("Unexpected end of SPARQL expression after IDENTIFIED keyword"); }
+<SPARQL_AFTER_COUNT><<EOF>>	{ sparyyerror ("Unexpected end of SPARQL expression after COUNT keyword"); }
 
 	/* Whitespace after IDENTIFIED keyword */
 
 <SPARQL_AFTER_IDENTIFIED>{B}{Y}		{ BEGIN SPARQL; return BY_L; }
 <SPARQL_AFTER_IDENTIFIED><<EOF>>	{ sparyyerror ("Unexpected end of SPARQL expression after IDENTIFIED keyword"); }
+
+	/* Whitespace after NOT keyword */
+<SPARQL_AFTER_NOT>{E}{X}{I}{S}{T}{S}	{ BEGIN SPARQL; return NOT_EXISTS_L; }
+<SPARQL_AFTER_NOT>{F}{R}{O}{M}		{ BEGIN SPARQL; return NOT_FROM_L; }
+<SPARQL_AFTER_NOT>{I}{N}		{ BEGIN SPARQL; return NOT_IN_L; }
+<SPARQL_AFTER_NOT>{N}{U}{L}{L}		{ BEGIN SPARQL; return NOT_NULL_L; }
+<SPARQL_AFTER_NOT>{U}{S}{I}{N}{G}	{ BEGIN SPARQL; return NOT_USING_L; }
+<SPARQL_AFTER_NOT><<EOF>>	{ sparyyerror ("Unexpected end of SPARQL expression after NOT keyword"); }
 
 	/* SQL fragments */
 
@@ -558,9 +573,9 @@ SPAR_PARAMNAME	(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQL
 
 	/* Whitespace and comments */
 
-<SPARQL,SPARQL_AFTER_COUNT,SPARQL_AFTER_IDENTIFIED,SPARQL_AFTER_WHERE>("#"(.*))?{S_NL}		{ sparp->sparp_lexlineno++; }
-<SPARQL,SPARQL_AFTER_COUNT,SPARQL_AFTER_IDENTIFIED,SPARQL_AFTER_WHERE>"#"(.*)				{ }
-<SPARQL,SPARQL_AFTER_COUNT,SPARQL_AFTER_IDENTIFIED,SPARQL_AFTER_WHERE>[ \t]+				{ }
+<SPARQL,SPARQL_AFTER_COUNT,SPARQL_AFTER_IDENTIFIED,SPARQL_AFTER_NOT,SPARQL_AFTER_WHERE>("#"(.*))?{S_NL}	{ sparp->sparp_lexlineno++; }
+<SPARQL,SPARQL_AFTER_COUNT,SPARQL_AFTER_IDENTIFIED,SPARQL_AFTER_NOT,SPARQL_AFTER_WHERE>"#"(.*)		{ }
+<SPARQL,SPARQL_AFTER_COUNT,SPARQL_AFTER_IDENTIFIED,SPARQL_AFTER_NOT,SPARQL_AFTER_WHERE>[ \t]+		{ }
 
 <SPARQL_SQL_FRAGMENT>"/\*"	{ BEGIN (SPARQL_SQL_COMMENT); yymore(); }
 <SPARQL_SQL_FRAGMENT><<EOF>>	{ sparyyerror ("Unterminated SQL fragment after WHERE keyword"); }
@@ -571,10 +586,11 @@ SPAR_PARAMNAME	(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQL
 
 	/* Traps; these rules should be latest rules in the file. */
 
-<SPARQL_AFTER_COUNT>.	{ sparyyerror ("Only '(' and 'DISTINCT' are allowed after COUNT keyword in SPARQL expression"); }
-<SPARQL_AFTER_IDENTIFIED>.	{ sparyyerror ("Ill formed IDENTIFIED BY term"); }
+<SPARQL_AFTER_COUNT>.		{ sparyyerror ("Only '(' and DISTINCT are allowed after COUNT keyword in SPARQL expression"); }
+<SPARQL_AFTER_IDENTIFIED>.	{ sparyyerror ("Ill formed 'IDENTIFIED BY' term"); }
+<SPARQL_AFTER_NOT>.		{ sparyyerror ("Only EXISTS, FROM, IN, NULL and USING are allowed after NOT keyword in SPARQL expression"); }
 <SPARQL_AFTER_WHERE>.	{ sparyyerror ("Only '{', '(' and a string literal are allowed after WHERE or SQLQUERY keyword in SPARQL expression"); }
-<SPARQL>.		{ sparyyerror ("Invalid character in SPARQL expression"); }
+<SPARQL>.			{ sparyyerror (t_box_sprintf (100, "Bad character '%c' (0x%x) in SPARQL expression", sparyytext[0], (unsigned int)((unsigned char)(sparyytext[0])))); }
 
 %%
 

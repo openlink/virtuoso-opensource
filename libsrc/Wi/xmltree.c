@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -7473,14 +7473,6 @@ dk_set_t xte_namespace_scope (xml_entity_t *xe, int use_default)
   return (dk_set_nreverse (res));
 }
 
-caddr_t
-bif_is_entity (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  caddr_t x = bif_arg (qst, args, 0, "is_entity");
-  return (box_num (DV_XML_ENTITY == DV_TYPE_OF (x)));
-}
-
-
 void
 xte_replace_strings_with_unames (caddr_t **tree)
 {
@@ -10670,7 +10662,6 @@ xml_tree_init (void)
 #ifdef XPATHP_DEBUG
   bif_define ("xpathp_test", bif_xpathp_test);
 #endif
-  bif_define_typed ("isentity", bif_is_entity, &bt_integer);
   bif_define_typed ("xslt_format_number", bif_xslt_format_number, &bt_varchar);
   bif_define ("updateXML", bif_updateXML);
   bif_define ("updateXML_ent", bif_updateXML_ent);
@@ -10702,7 +10693,7 @@ xml_tree_init (void)
   dk_mem_hooks (DV_XML_ENTITY, xe_make_copy, xe_destroy, 0);
   box_tmp_copier[DV_XML_ENTITY] = xe_mp_copy;
   dk_mem_hooks (DV_XQI, box_non_copiable, xqi_destroy, 0);
-  dk_mem_hooks (DV_XPATH_QUERY, xqr_addref, xqr_release, 0);
+  dk_mem_hooks (DV_XPATH_QUERY, xqr_addref, xqr_release, 1);
   PrpcSetWriter (DV_XML_ENTITY, (ses_write_func) xe_serialize);
   PrpcSetWriter (DV_XPATH_QUERY, (ses_write_func) xqr_serialize);
   rt = get_readtable ();

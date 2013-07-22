@@ -15,7 +15,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2012 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -34,7 +34,7 @@
 
   declare _S, odd_position any;
   declare page_resource_uri, proxy_iri, rdf_link, label, _subject any;
-  declare white_page, arr, data, meta, h1, h2, inx, gr, host, refr, sid, inf, langs, best_q, tp any;
+  declare white_page, arr, data, meta, h1, h2, inx, gr, host, refr, sid, inf, langs, best_q, tp, grs any;
   declare orig_refr varchar;
   declare urilookup integer;
   declare dbg_enable varchar;
@@ -63,6 +63,7 @@
   -- side-effect sets connection vars 'inf' and 'sas' - val or null
 
   b3s_parse_inf (sid, params);
+  grs := connection_get ('graphs');
 
   inf := b3s_render_inf_clause ();
   inf_rule := connection_get ('inf');
@@ -129,7 +130,7 @@
 
 <!-- header -->
 <head>
-    <base href="http://<?V host ?>/fct/rdfdesc/" />
+    <base href="http<?V case is_https_ctx () when 1 then 's' else '' end ?>://<?V host ?>/fct/rdfdesc/" />
     <title>Metadata about: <?vsp http (sprintf ('%s', label)); ?></title>
     <link rel="alternate" type="application/rdf+xml" href="<?=rdf_link?>" title="RDF" />
     <link rel="stylesheet" type="text/css" href="styles/default.css" charset="utf-8" />
@@ -147,18 +148,18 @@
       <?vsp if (sid is not null) { ?>
         <li><a href="<?= b3s_render_fct_link() ?>">Facets</a></li>
       <?vsp } ?>
-      <li id="mnu_descr"><a href="/describe/?uri=<?U page_resource_uri ?><?V ses_parms ?>">Description</a></li>
+      <li id="mnu_descr"><a href="/describe/?uri=<?U b3s_u2w (page_resource_uri) ?><?V ses_parms ?>">Description</a></li>
       <li id="mnu_usage" class="sel">
-        <a href="#" class="sel">Metadata</a>
+        <a href="javascript:void()" class="sel">Metadata</a>
       </li>
-      <li id="mnu_settings"><a href="settings.vsp?g=<?U page_resource_uri ?><?V ses_parms ?>">Settings</a></li>
+      <li id="mnu_settings"><a href="settings.vsp?g=<?U b3s_u2w (page_resource_uri) ?><?V ses_parms ?>">Settings</a></li>
     </ul>
 
   </div> <!-- #HD -->
   <div id="MD">
     <div class="page_resource_info">
       <h2>Usage stats on <a href="<?= case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end ?>">
-        <?vsp http (sprintf ('%s', label)); ?></a></h2>&nbsp;<a class="desc_permalink" href="usage.vsp?g=<?U page_resource_uri ?>">Permalink</a>
+        <?vsp http (sprintf ('%s', label)); ?></a></h2>&nbsp;<a class="desc_permalink" href="usage.vsp?g=<?U b3s_u2w (page_resource_uri) ?>">Permalink</a>
       <p> an Entity in Data Space: <a href="http://<?V host ?>"><?V host ?></a></p>
     </div>
     <div class="subj_nav">
@@ -179,21 +180,21 @@
 <!-- proptable -->
     <div id="TAB_ROW">
       <div class="tab <?vsp http (case when tp = 1 then ' tab_selected' else '' end); ?>">
-        <a href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=1<?V ses_parms ?>">Source Graphs</a>
+        <a href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=1<?V ses_parms ?>">Source Documents</a>
       </div>
       <div class="tab <?vsp http (case when tp = 2 then ' tab_selected' else '' end); ?>">
-        <a href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=2<?V ses_parms ?>">Referenced by Graphs</a>
+        <a href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=2<?V ses_parms ?>">Referenced by Documents</a>
       </div>
       <div class="tab <?vsp http (case when tp = 3 then ' tab_selected' else '' end); ?>">
-        <a title="A list of other identifiers for the current entity."
-           href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=3<?V ses_parms ?>">Direct coreferences</a>
+        <a title="A list of reconciled identifiers resulting from interpretation of equivalence by name semantics defined by the Web Ontology (OWL)."
+           href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=3<?V ses_parms ?>">Explicit Coreferences</a>
       </div>
       <div class="tab <?vsp http (case when tp = 4 then ' tab_selected' else '' end); ?>">
-        <a title="A list of indirect identifiers for the current entity based on Inverse Functional Property values."
-           href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=4<?V ses_parms ?>">Indirect coreferences</a>
+        <a title="A list of reconciled identifiers resulting from interpretation of equivalence by value using inverse functional property designation semantics defined by the Web Ontology (OWL)."
+           href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=4<?V ses_parms ?>">Implicit Coreferences</a>
       </div>
     </div> <!-- TAB_ROW -->
-
+    <form name="f" action="usage.vsp?g=<?U page_resource_uri ?><?V b3s_render_ses_params(0) ?>" method="post">
     <div id="TAB_CTR">
       <div class="tab_page">
         <table class="description">
@@ -231,20 +232,15 @@
 	         http ('<tr>');
                  if (tp = 1 or tp = 2)
 		   {
-		     declare dset_link, grvar any;
+		     declare grvar any;
 	             grvar := data[0];
-		     dset_link := (sparql select ?dset where { ?dset a <http://rdfs.org/ns/void#Dataset> ; ?p `iri (?:grvar)` . });
-		     --for (declare i, l int, i := 0, l := length (data); i < l; i := i + 1)
-		     --	{
-		     --	  http_value (data[i], 'td');
-	             -- }
-                     if (exists (select 1 from RDF_QUAD where G = iri_to_id ('http://lod.openlinksw.com/void/') and
-					S = iri_to_id (sprintf ('http://lod.openlinksw.com/void/%s/Dataset', rtrim (data[0], '/#')))))
-		       http (sprintf ('<td><a href="http://lod.openlinksw.com/void/%s/Dataset">%V</a></td>', rtrim (data[0], '/#'), data[0]));
-		     else if (dset_link is not null)
-		       http (sprintf ('<td><a href="/describe/?url=%U%s">%V</a></td>', dset_link, b3s_render_ses_params(), data[0]));
-                     else
-		       http (sprintf ('<td>%V</td>', data[0]));
+		     http (sprintf ('<td><input type="checkbox" value="%V" name="graph" %s/><a href="/describe/?url=%U&graph=%U%s">%V</a></td>', 
+			grvar, 
+			case when position (grvar, grs) then 'checked' else '' end,
+			b3s_u2w (page_resource_uri), 
+			grvar, 
+			b3s_render_ses_params(), 
+			data[0]));
 		     http (sprintf ('<td align="right">%d</td>', data[1]));
 		   }
 		 else if (tp = 3)
@@ -277,13 +273,20 @@
 	      }
 	    exec_close (h1);
 	  ?>
+	  <?vsp if (tp = 1 or tp = 2) { ?>
+	  <tr><td colspan="2">
+		  <input type="submit" name="set_graphs" value="Set Graphs"/> 
+	  </td></tr>
+	  <?vsp } ?>
         </table>
       </div> <!-- .tab_page -->
     </div> <!-- #TAB_CTR -->
+    </form>
     <?vsp b3s_render_dbg_out(dbg_out); ?>
   </div> <!--  #MD -->
 <!-- footer -->
   <div id="FT">
+      Faceted Search &amp; Find service v<?vsp http(DB.DBA.VAD_CHECK_VERSION('fct')); ?><br/>    
 <?vsp if (_addthis_key <> '0') { ?>
   <div id="FT_share">
     <!-- AddThis Button BEGIN -->
@@ -305,7 +308,7 @@
 	var g_plusone_id = document.getElementById('g_plusone_id');
 	if (g_plusone_id) g_plusone_id.setAttribute('g:plusone:size', 'medium');
     </script>
-    <script type="text/javascript" src="http://s7.addthis.com/js/250/addthis_widget.js#pubid=<?=_addthis_key?>"></script>
+    <script type="text/javascript" src="http<?V case is_https_ctx () when 1 then 's' else '' end ?>://s7.addthis.com/js/250/addthis_widget.js#pubid=<?=_addthis_key?>"></script>
     <!-- AddThis Button END -->
   </div><!-- ft_s -->
 <?vsp } ?>
@@ -357,7 +360,7 @@
 	This work is licensed under a
 	<a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/">Creative Commons Attribution-Share Alike 3.0 Unported License</a>.<br />
 	<?vsp fct_virt_info (); ?><br />
-	Copyright &copy; 2009-2012 OpenLink Software
+	Copyright &copy; 2009-2013 OpenLink Software
       </div> <!-- #ft_b -->
   </div> <!-- #FT -->
 </body>

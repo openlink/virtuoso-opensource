@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2012 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -3224,5 +3224,634 @@ http://www.openlinksw.com/virtrdf-data-formats#sql-nvarchar-lang       20
         <listitem>Click "Save". </listitem>
       </orderedlist>    	                   
     </sect2>   
+    <sect2 id="delsptriple">    
+    	<title>How Can I Delete a Specific Triple Across Graphs?</title>        	
+    	<para>Suppose the following situation:</para>  
+      <itemizedlist mark="bullet">
+        <listitem>There is a specific triple somewhere in a massive dataset in a Virtuoso DBMS.</listitem>
+        <listitem>There are too many possible named graphs associated with the pattern so 
+        	<emphasis>SPARQL DELETE</emphasis> (which requires <emphasis>FROM</emphasis> i.e., Named 
+        	Graph scoping) isn't adequate</listitem>
+      </itemizedlist>  
+      <para>What is the solution?</para>    	 	
+      <para>Using SQL you can execute the following:</para>    	 	      
+<programlisting><![CDATA[
+SQL> SPARQL
+DELETE FROM rdf_quad 
+WHERE s = iri_to_id ('http://linkeddata.uriburner.com/about/id/entity/http/twitter.com/kidehen') 
+  AND o = iri_to_id ('http://purl.org/ontology/bibo/Document') 
+  AND p = iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type');	
+]]></programlisting>      
+    </sect2>        	
+    <sect2 id="sparqlnotexists">    
+    	<title>How Do I Use NOT EXISTS in SPARQL Query?</title>        
+    	<para>Virtuoso supports "NOT EXISTS" SPARQL 1.1 feature. For example:</para>    	
+<programlisting><![CDATA[    	
+SQL> SPARQL 
+SELECT COUNT(*) 
+WHERE 
+  {
+    ?s ?p "Novosibirsk"  FILTER NOT EXISTS { ?s ?p "Новосибирск" } 
+  }
+
+callret-0
+INTEGER
+313
+No. of rows in result: 1 	
+]]></programlisting>     	
+    	<para>This query is equivalent to the following query:</para>    	
+<programlisting><![CDATA[
+SQL> SPARQL 
+SELECT COUNT(*) 
+WHERE 
+  { 
+    { ?s ?p "Novosibirsk" } MINUS { ?s ?p "Новосибирск" } }
+
+callret-0
+INTEGER
+ 313
+No. of rows in result: 1 	    	
+]]></programlisting>     
+    </sect2>        	    	
+    <sect2 id="sparqlminus">    
+    	<title>How Do I Use MINUS in SPARQL Query?</title>        
+    	<para>Virtuoso supports "MINUS" SPARQL 1.1 feature. For example:</para>
+<programlisting><![CDATA[    
+
+SQL> SPARQL 
+SELECT COUNT(*) 
+WHERE 
+  { 
+    { ?s ?p "Novosibirsk" } MINUS { ?s ?p "Новосибирск" } }
+
+callret-0
+INTEGER
+ 313
+No. of rows in result: 1 		
+]]></programlisting>     
+    	<para>This query is equivalent to the following query:</para>    	
+<programlisting><![CDATA[    	
+SQL> SPARQL 
+SELECT COUNT(*) 
+WHERE 
+  {
+    ?s ?p "Novosibirsk"  FILTER NOT EXISTS { ?s ?p "Новосибирск" } 
+  }
+
+callret-0
+INTEGER
+313
+No. of rows in result: 1 	
+]]></programlisting>         	
+    </sect2>        	    	    
+    <sect2 id="subclassofinferenceoptions">    
+    	<title>How Do I Use Transitive SPARQL Query Options and Exploit Inference Rules?</title>        
+    	<para>This section contains subClassOf oriented subsumption examples and examples for 
+    		Transitive Options e.g., Scope the reasoning to layers in the hierarchy.</para>
+      <sect3 id="subclassofinferenceoptionstranexmp">    
+      	<title>Transitive query options examples usage</title>    
+        <itemizedlist mark="bullet">
+          <listitem><ulink url="http://virtuoso.openlinksw.com/presentations/SPARQL_Tutorials/SPARQL_Tutorials_Part_5/SPARQL_Tutorials_Part_5.html#%2849%29">Transitivity with sameAs and graph</ulink></listitem>
+          <listitem><ulink url="http://virtuoso.openlinksw.com/presentations/SPARQL_Tutorials/SPARQL_Tutorials_Part_5/SPARQL_Tutorials_Part_5.html#%2850%29">Transitive Closure via Graph Path Expressions: TBox</ulink></listitem>
+          <listitem><ulink url="http://virtuoso.openlinksw.com/presentations/SPARQL_Tutorials/SPARQL_Tutorials_Part_5/SPARQL_Tutorials_Part_5.html#%2851%29">Transitive Closure via Graph Path Expressions: ABox</ulink></listitem>
+          <listitem><link linkend="rdfsparqlimplementatiotransexamples7">Inference Rule using transitive properties from SKOS vocabulary</link></listitem>                    
+        </itemizedlist>      	    
+    	</sect3>
+      <sect3 id="subclassofinferenceoptionsinferexmp">    
+      	<title>subClassOf examples usage</title>        
+        <itemizedlist mark="bullet">
+          <listitem><link linkend="rdfiridereferencingfacetprlh">Processing Large Hierarchies in SPARQL</link></listitem>
+          <listitem><link linkend="rdfsparqlimplementatiotransexamples5">Example for TBox Subsumption</link></listitem>
+          <listitem><link linkend="rdfsparqlimplementatiotransexamples6">Example for Receptors</link></listitem>
+          <listitem><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtTipsAndTricksGuideRDFSchemaOWLInferenceRules">Inference Rule using transitive properties from SKOS vocabulary</ulink></listitem>                    
+        </itemizedlist>      	    
+    	</sect3>    	
+    </sect2>      
+    <sect2 id="samplegroupconcatdigest">    
+    	<title>What is the difference between the functions SAMPLE, GROUP_CONCAT and GROUP_DIGEST?</title>        
+    	<para>This section demonstrates the differences between the functions 
+    		<link linkend="fn_SAMPLE"><function>SAMPLE</function></link>, 
+    		<link linkend="fn_GROUP_CONCAT"><function>GROUP_CONCAT</function></link> and 
+    		<link linkend="fn_GROUP_DIGEST"><function>GROUP_DIGEST</function></link>.
+      </para>      	    	        	
+    	<para>Assume the following query that should get all ?assets as a list with delimiters:</para>	
+<programlisting><![CDATA[
+SPARQL SELECT ?view ?path (sql:GROUP_CONCAT (?asset, ' ')) as ?asset_list
+FROM <http://mygraph.com> 
+WHERE
+ { 
+   ?view <viewPath> ?path ; 
+     <viewContent> ?asset ; 
+     <viewType>  'phyview'. 
+ }
+;	
+]]></programlisting>  
+      <para>This method is not universal, because conversion to strings will eliminate the difference 
+      	between strings and IRIs and there should be some delimiter that never appears in values of 
+      	?asset. In addition, the query may fail with "row too long" error if values of ?asset are 
+      	lengthy and/or numerous enough. It is also possible the query not work completely free from 
+      	duplicates if more than one list is desired. E.g.:</para>  	
+<programlisting><![CDATA[
+SPARQL 
+SELECT ?view (sql:GROUP_CONCAT (?path, ' ')) as ?path_list
+  (sql:GROUP_CONCAT (?asset, ' ')) as ?asset_list
+FROM <http://mygraph.com>
+WHERE 
+  { 
+    ?view <viewPath> ?path ; 
+      <viewContent> ?asset ; 
+      <viewType> 'phyview' . 
+  }	
+]]></programlisting>      	
+      <para>will not contain duplicates in lists only if either ?path or ?asset is unique for every 
+      	found ?view; but if it's so unique then there's no need in the corresponding 
+      	sql:GROUP_CONCAT().</para>  	
+      <para>If there are many values per property but it's enough to return any single value and ignore 
+      	the rest then use sql:<link linkend="fn_SAMPLE"><function>SAMPLE ()</function></link> 
+      	function instead of sql:<link linkend="fn_GROUP_CONCAT"><function>GROUP_CONCAT ()</function></link>.
+      </para>  	            
+      <para>If there are many values per property and it's better to show more than one value but "row 
+      	too long" error happens, then the sql:<link linkend="fn_GROUP_DIGEST"><function>GROUP_DIGEST ()</function></link> 
+      	function can be used:</para>  	    
+<programlisting><![CDATA[
+SPARQL 
+SELECT ?view (sql:GROUP_DIGEST (?path, ' ', 1000, 1)) as ?path_list 
+  (sql:GROUP_DIGEST (?asset, ' ', 1000, 1)) as ?asset_list
+FROM <http://mygraph.com> 
+WHERE
+  { 
+    ?view <viewPath> ?path ; 
+      <viewContent> ?asset ; 
+      <viewType> 'phyview' . 
+  }
+]]></programlisting>      	
+    </sect2>          		
+    <sect2 id="constructaggfunc">    
+    	<title>How Do I use CONSTRUCT with objects which are value of aggregate function?</title>   
+    	<para>The following section demonstrates usage example of CONSTRUCT Query with object which is 
+    		a value of the aggregate function COUNT:</para>
+      <orderedlist>
+        <listitem>Assume following SPARQL SELECT Query: 
+<programlisting><![CDATA[
+SELECT DISTINCT ?category COUNT(?category) AS ?count
+WHERE
+  {
+    ?s<http://purl.org/dc/terms/subject> ?category
+    FILTER(?s =<http://dbpedia.org/resource/Higgs_boson> || ?s =<http://dbpedia.org/resource/Gluon>)
+  }	
+]]></programlisting>        	
+        </listitem>
+        <listitem>To present it as CONSTRUCT Query, one should put "SELECT DISTINCT" into the 
+        	CONSTRUCT's WHERE clause as a subquery. So for example it could be: 
+<programlisting><![CDATA[
+
+CONSTRUCT 
+  {
+    ?category a<http://www.w3.org/2004/02/skos/core#Concept> .
+    ?category<http://www.turnguard.com/virtuoso/aggregates#count>  ?count
+  }
+WHERE 
+  {
+    { 
+      SELECT DISTINCT ?category COUNT(?category) AS ?count
+      WHERE
+        {
+          ?s <http://purl.org/dc/terms/subject> ?category
+          FILTER(?s =<http://dbpedia.org/resource/Higgs_boson> || ?s =<http://dbpedia.org/resource/Gluon>)
+        } 
+    } 
+  }	
+]]></programlisting>        	
+        </listitem>
+      </orderedlist>	
+    </sect2>          		    	
+    <sect2 id="sparqlcleanerrantdata">
+      <title>How Do I Clean Up Errant Data using SPARQL Update Language?</title>         
+      <sect3 id="sparqlcleanerrantdatawhat">
+      	<title>What?</title>
+        <para>Cleaning up errant data using SPARQL Update Language.</para>         
+      </sect3>           
+      <sect3 id="sparqlcleanerrantdatawhy">
+      	<title>Why?</title>
+        <para>All data endeavors involve varying degrees of prospective and retrospective error 
+        correction.</para>         
+      </sect3>           
+      <sect3 id="sparqlcleanerrantdatahow">
+      	<title>How?</title>
+        <para>Given a triple in a Virtuoso Quad store that contains an errant URI e.g. one that 
+        accidentally contains spaces, here is a SPARQL example that showcases how to delete said 
+        triple using a built-in function:</para>         
+<programlisting><![CDATA[
+DELETE FROM <your_graph> 
+  { 
+    `iri("http://isbsg.clearbluewater.com.au/wsf/datasets/378/Capers Jones_107_12122011081257")` 
+     a <http://isbsg.org/ontology/data/Dataset>  
+  };
+]]></programlisting>  
+      </sect3>           
+    </sect2> 
+    <sect2 id="sparqladdmissingtriples">
+      <title>How to Use SPARQL to add missing isDefinedBy relations to an Ontology?</title>         
+      <sect3 id="sparqladdmissingtripleswhat">
+      	<title>What?</title>
+      	<para>Using SPARQL to add missing isDefinedBy relations to an Ontology.</para>
+      </sect3>   	      	
+      <sect3 id="sparqladdmissingtripleswhy">
+      	<title>Why?</title>      	
+      	<para>isDefinedBy relations make Ontologies (TBox) more navigable using follow-your-nose 
+      		pattern. This also makes ABox instance data more discoverable.</para>      	
+      </sect3>      
+      <sect3 id="sparqladdmissingtripleshow">
+      	<title>How?</title>      	
+      	<para>Use SPARQL to generate relations that associate Classes and Properties the Ontology 
+      		that describes them.</para>      	
+        <sect4 id="sparqladdmissingtriplesvcard">
+        	<title>Example Using the Ontology for vCards</title>      	
+      	  <para>In this example we will use:</para>        	
+          <itemizedlist mark="bullet">
+            <listitem>Ontology Document URL: http://www.w3.org/2006/vcard/ns ;</listitem>
+            <listitem>Ontology URI: http://www.w3.org/2006/vcard/ns# ;</listitem>
+            <listitem>A local Named Graph IRI to host SPARQL Update (SPARUL) the new relations.</listitem>            
+          </itemizedlist>      	  
+<programlisting><![CDATA[
+## Uncomment line below if using Virtuoso and executing SPARQL via iSQL 
+## or via an ODBC, JDBC, ADO.NET connection
+
+## SPARQL
+
+## Uncomment line (a SPARQL pragma) below if using Virtuoso and there 
+## isn't a local Named Graph holding triples retrieved from the Ontology URL
+
+## DEFINE get:soft "add"
+
+INSERT INTO <urn:data:qos:vcard> 
+  { ?s rdfs:isDefinedBy <http://www.w3.org/2006/vcard/ns#> }
+FROM <http://www.w3.org/2006/vcard/ns>
+WHERE 
+  {
+    ?s a ?o
+  }	
+]]></programlisting>      	  
+        </sect4>        	
+        <sect4 id="sparqladdmissingtripleshowrmedia">
+        	<title>Example Using the Recorded Media Ontology</title>      	
+      	  <para>In this example we will use:</para>        	
+          <itemizedlist mark="bullet">
+            <listitem>Ontology Document URL: http://www.w3.org/ns/ma-ont ;</listitem>
+            <listitem>Ontology URI: http://www.w3.org/ns/ma-ont# ;</listitem>
+            <listitem>A local Named Graph IRI to host SPARQL Update (SPARUL) the new relations.</listitem>            
+          </itemizedlist>      	  
+      	  
+<programlisting><![CDATA[
+SPARQL
+INSERT INTO <urn:data:qos:ma-ont> 
+  { ?s rdfs:isDefinedBy <http://www.w3.org/ns/ma-ont#> }
+FROM <http://www.w3.org/ns/ma-ont>
+WHERE 
+  {
+    ?s a ?o
+  }	
+]]></programlisting>      	  
+        </sect4>        	        
+      </sect3>            
+    </sect2>   	
+    <sect2 id="loadsqldjdbc">
+      <title>How Can I execute load of sql dump from jdbc?</title>       
+      <para>LOAD" is not a Virtuoso SQL command, it's an ISQL one. The ISQL checks the command to 
+      	be executed, whether it's of special "isql"-ish syntax or not, it executes commands it 
+      	understand and send the rest to the server, unchanged.</para>
+      <para>There's no way to mimic ISQL's behavior right on the server, without ISQL. However 
+      	some files can be loaded via the 
+      	<link linkend="fn_vad_load_sql_file"><function>DB.DBA.VAD_LOAD_SQL_FILE</function></link> 
+      	function.
+      </para>      
+    </sect2>   	
+    <sect2 id="usemodifyasinsert">          
+    	<title>How Can I Use MODIFY to update triples?</title>
+    	<para>The following queries are equivalent:</para>
+<programlisting><![CDATA[
+MODIFY <http://test.com/>
+DELETE {?s ?p ?o}
+INSERT {?s_new ?p ?o}
+FROM <http://test.com/>
+WHERE
+{
+  {
+    SELECT iri(bif:replace(str(?s),"http://test.com/link","http://test.com/extra/link" ) )
+      AS ?s_new ?s ?p ?o
+    WHERE 
+      {
+        ?s ?p ?o FILTER (regex (str(?s), "http://test.com/link"))
+      }
+  }
+}	
+]]></programlisting>
+<programlisting><![CDATA[
+MODIFY <http://test.com/>
+DELETE {?s ?p ?o}
+INSERT {`iri(?s_new)` ?p ?o}
+FROM <http://test.com/>
+WHERE 
+  {
+    {
+      SELECT bif:replace(str(?s),"http://test.com/link","http://test.com/extra/link" )
+        AS ?s_new ?s ?p ?o
+      WHERE 
+        {
+          ?s ?p ?o FILTER (regex (str(?s), "http://test.com/link"))
+        }
+    }
+  }	
+]]></programlisting>
+<programlisting><![CDATA[
+MODIFY <http://test.com/>
+DELETE {?s ?p ?o}
+INSERT
+  { `iri(bif:replace(str(?s),"http://test.com/link","http://test.com/extra/link" ))`  ?p ?o }
+FROM <http://test.com/>  
+WHERE
+  {
+    {
+      ?s ?p ?o FILTER (regex (str(?s), "http://test.com/link"))
+    }
+  }
+}	
+]]></programlisting>    	
+    </sect2>   	    	
+    <sect2 id="exectinsdelsparqilwebid">          
+    	<title>How Can I execute INSERT/DELETE (SPARUL) statements against a WebID? protected SPARQL endpoint?</title>
+      <para>View our <link linkend="rdfsparulexamples22">sample scenario</link>.</para>
+    </sect2>  
+    <sect2 id="loggingandrecording">          
+    	<title>How can I make HTTP Logging and Recording in Virtuoso?</title>
+      <sect3 id="loggingandrecordinglg">     
+      	<title>HTTP Logging</title>      	
+        <para>Virtuoso can keep http log with all the requests that are made to the HTTP endpoint. Here 
+        	are the steps:</para>      	
+        <orderedlist>
+          <listitem>Edit your virtuoso.ini and add the following setting:
+<programlisting><![CDATA[
+[HTTPServer]
+HTTPLogFile                = logs/http15022012.log	
+]]></programlisting>         	
+          </listitem>
+          <listitem>Restart Virtuoso.</listitem>          
+          <listitem>Virtuoso will now maintain a http log in the logs 
+          	subdirectory, with one line per request as in:
+<programlisting><![CDATA[
+180.76.5.87 - - [15/Feb/2012:21:50:44 +0100] "GET /data/Wilton_power_stations.json HTTP/1.0" 200 8014 "" 
+  "Mozilla/5.0 (compatible; Baiduspider/2.0; +http://www.baidu.com/search/spider.html)"
+180.76.5.87 - - [15/Feb/2012:21:50:45 +0100] "POST /sparql HTTP/1.0" 200 3012 "" ""	
+]]></programlisting>          	
+          </listitem>
+          <listitem>The first request after midnight will open a new logfile, to make sure the logfile does not keep growing. 
+Old logfiles can be gzipped or removed by hand to conserve disk space.</listitem>
+        </orderedlist>        	
+        <para>The HTTP log files that Virtuoso produces can be processed by programs like 
+        	<ulink url="http://www.webalizer.org/">Webalizer</ulink> or 
+        	<ulink url="http://awstats.sourceforge.net/">AWstats</ulink> to accurately measure 
+        	site usage.
+        </para>          
+      </sect3>      	
+      <sect3 id="loggingandrecordingrc">     
+      	<title>HTTP Recording</title>      	
+        <para>Virtuoso can also record the complete HTTP request for both GET and POST requests, 
+        	including all incoming headers, POST parameters etc. This is a very useful tool for debugging, 
+        	but it will cost performance and disk space, so it should not be left on for long periods of 
+        	time. Each request will be written to a separate file.
+        </para>    
+        <para><emphasis>Note</emphasis>: Some filesystem types like ext2 and earlier versions of ext3 
+        on Linux cannot handle huge amounts of files in a single directory without slowing down the whole 
+        system.</para>  	
+      </sect3>      	
+        <sect4 id="loggingandrecordingrcexget">    
+          <title>Example of a GET request</title>         
+<programlisting><![CDATA[
+GET /sparql?query=DESCRIBE%20%3CnodeID%3A%2F%2Fb15481%3E&output=text%2Fcxml     HTTP/1.1
+Host: localhost:8890
+Connection: Keep-alive
+Accept: */*
+From: googlebot(at)googlebot.com
+User-Agent: Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)
+Accept-Encoding: gzip,deflate	
+]]></programlisting>          
+        </sect4>      	        	
+        <sect4 id="loggingandrecordingrcexpost">    
+          <title>Example of a POST request</title>         
+<programlisting><![CDATA[
+POST /ods_services/Http/usersGetInfo HTTP/1.1
+User-Agent: Opera/9.80 (Macintosh; Intel Mac OS X 10.5.8; U; en) Presto/2.9.168 Version/11.51
+Host: localhost:8890
+Accept: text/html, application/xml;q=0.9, application/xhtml+xml, image/png, image/webp, image/jpeg, image/gif, 
+  image/x-xbitmap, */*;q=0.1
+Accept-Language: en,en-US;q=0.9,ja;q=0.8,fr;q=0.7,de;q=0.6,es;q=0.5,it;q=0.4,pt;q=0.3,pt-  
+  PT;q=0.2,nl;q=0.1,sv;q=0.1,nb;q=0.1,da;q=0.1,fi;q=0.1,ru;q=0.1,pl;q=0.1,zh-CN;q=0.1,zh-TW;q=0.1,ko;q=0.1
+Accept-Encoding: gzip, deflate
+Referer: https://localhost:8890/ods/
+Cookie: interface=js; oatSecurityCookie=0123456878794576; sid=b3fae40reb78bc4babab3cb2a70fb111
+Connection: Keep-Alive
+Content-Length: 77
+Content-Type: application/x-www-form-urlencoded
+Authorization: Basic bnQacPPuhhxs
+Content-Transfer-Encoding: binary	
+]]></programlisting>          
+        </sect4>   
+        <sect4 id="loggingandrecordingrcexenbr">    
+          <title>Example Enabling recording</title>    
+          <orderedlist>
+            <listitem>Go to the directory where the database is started from:
+<programlisting><![CDATA[
+mkdir sys_http_recording
+chmod 777 sys_http_recording	
+]]></programlisting>            	
+            </listitem>
+            <listitem>Edit virtuoso.ini and set:
+<programlisting><![CDATA[
+[HTTPServer]
+EnableRequestTrap          = 1	
+]]></programlisting>            	
+            </listitem>
+            <listitem>Next connect with isql to your database and run the following commands:
+<programlisting><![CDATA[
+registry_set ('__save_http_history_on_disk', '1');
+registry_set ('__save_http_history', '/');	
+]]></programlisting>            	
+            </listitem>
+            <listitem>Finally restart Virtuoso.</listitem>
+            <listitem>As result at this point every HTTP GET and POST request will be logged with 
+            	all the parameters, headers and settings.
+            </listitem>            
+          </orderedlist>               
+        </sect4>        
+        <sect4 id="loggingandrecordingrcexdsbr">    
+          <title>Example Disabling recording</title>     
+          <orderedlist>
+            <listitem>To temporary disable the recordings, edit virtuoso.ini and set:
+<programlisting><![CDATA[
+[HTTPServer]
+EnableRequestTrap          = 0
+]]></programlisting>            	
+            </listitem>
+            <listitem>Next you should remove the two registry items:
+<programlisting><![CDATA[
+registry_remove ('__save_http_history_on_disk');
+registry_remove ('__save_http_history');	
+]]></programlisting>            	
+            </listitem>
+            <listitem>Finally restart Virtuoso.</listitem>            
+          </orderedlist>     
+        </sect4>                 	        	        
+    </sect2>     	    	
+    <sect2 id="rdfinsertcrawlingmethods">          
+    	<title>Quad Store Data Loading via Virtuoso's In-built Content Crawler?</title>
+    	<para>This section covers the use of Virtuoso's in-built content crawler as a mechanism for 
+    		scheduled of one-off data loading operations for its native quad store.</para>
+    	<para><emphasis>Why is this important?</emphasis></para>
+    	<para>Transforming external data sources into Linked Data "on the fly" (e.g., via the 'Sponger') 
+    		is sufficient for many use cases, but there are times when the volume or sheer nature of a 
+    		data source makes batch-loading necessary. For example, Freebase offers RDF representations 
+    		of its data, but it doesn't publish RDF dumps; even if it did, such dumps would usually be 
+    		outdated by the time they were loaded. Thus, a scheduled crawl of that resource collection 
+    		offers a viable alternative.</para>
+    	<para><emphasis>How to Set Up the Content Crawler for Linked Data generation and import</emphasis></para>    	
+    	<para>The Virtuoso Conductor can be used to set up various Content Crawler Jobs:</para>
+    	<itemizedlist mark="bullet">
+        <listitem><link linkend="rdfinsertmethodvirtuosocrawler">Setting up a Content Crawler Job to Import Linked Data into the Virtuoso Quad Store</link></listitem>
+        <listitem><link linkend="contentcrawlerrdfsm">Setting up a Content Crawler Job to Retrieve Sitemaps</link> (when the source includes RDFa) </listitem>
+        <listitem><link linkend="contentcrawlerrdfssm">Setting up a Content Crawler Job to Retrieve Semantic Sitemaps</link> (a variation of the standard sitemap)</listitem>
+        <listitem><link linkend="contentcrawlerrdfsd">Setting up a Content Crawler Job to Retrieve Content from Specific Directories</link></listitem>        
+        <listitem><link linkend="contentcrawleratom">Setting up a Content Crawler Job to Retrieve Content from ATOM feed</link></listitem>
+        <listitem><link linkend="contentcrawlersparqlendp">Setting up a Content Crawler Job to Retrieve Content from SPARQL endpoint</link></listitem>
+      </itemizedlist>
+    </sect2>     	    
+    <sect2 id="setshortenlongurisparam">          
+    	<title>What is the ShortenLongURIs Virtuoso configuration parameter?</title>	    	
+    	<para>The ShortenLongURIs parameter is a Virtuoso configuration setting to shorten extremely long 
+    		URIs in datasets when loading with the RDF Bulk Loader.</para>
+      <para>Some RDF datasets have long URIs that exceed the Virtuoso internal maximum size of 1900 bytes 
+      	and thus need to be shortened to avoid errors like:</para>
+<programlisting><![CDATA[
+"SR133: Can not set NULL to not nullable column 'DB.DBA.RDF_QUAD.S' (or .O, or .P)"	
+]]></programlisting>      	
+      <para>which has been seen loading some of the DBpedia 3.7 datasets, for example.</para>    		
+      <para>The Virtuoso ShortenLongURIs parameter needs to be set in the 
+      	<link linkend="ini_SPARQL">[SPARQL]</link> section of the Virtuoso configuration file 
+      	(virtuoso.ini by default) and restart the Virtuoso Server.
+      </para>
+<programlisting><![CDATA[
+[SPARQL]
+.
+.
+.
+ShortenLongURIs = 1
+.
+.
+.	
+]]></programlisting>      	
+    <para><emphasis>Note</emphasis>: This parameter is only in the Virtuoso 06.03.3131+ commercial builds, 
+  	at the time of writing it is not included in the open source 6.1.4 archives but will be in the 
+  	next 6.1.5 release. A patch to enable this feature is however available from the 
+  	<ulink url="http://sourceforge.net/tracker/?func=detail&amp;aid=3496331&amp;group_id=161622&amp;tid=820576">Virtuso patches page on source forge</ulink>, which can be applied to a 6.1.4 archive from source forge and the Virtuoso 
+  	server binary rebuilt.</para>
+    </sect2>     	
+    <sect2 id="soaprequestoversparqlendpoint">          	
+      <title>How Can I send SOAP requests to Virtuoso SPARQL Endpoint?</title>    	
+      <para>This section presents sample scenario how to execute SPARQL query in SOAP request over 
+      	Virtuoso SPARQL Endpoint.</para>
+      <orderedlist>
+        <listitem>Assume the following sample SOAP request containing simple SPARQL query:
+<programlisting><![CDATA[
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+   <soapenv:Body>
+      <query-request xmlns="http://www.w3.org/2005/09/sparql-protocol-types/#">
+         <query xmlns="">SELECT DISTINCT ?z FROM virtrdf: {?x ?y ?z .} LIMIT 10</query>
+      </query-request>
+   </soapenv:Body>
+</soapenv:Envelope>	
+]]></programlisting>
+        </listitem>
+        <listitem>Save locally the content from above for ex. to file with name "soap.xml".</listitem>
+        <listitem>To pass the SOAP request to a Virtuoso SPARQL Endpoint, execute the following curl command:
+<programlisting><![CDATA[
+$ curl -d@soap.xml -H "Content-Type:text/xml" -H "SOAPAction: ''" http://localhost:8890/sparql
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+  <soapenv:Body>
+    <query-result xmlns="http://www.w3.org/2005/09/sparql-protocol-types/#">
+      <sparql xmlns="http://www.w3.org/2005/sparql-results#" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2001/sw/DataAccess/rf1/result2.xsd">
+        <head>
+         <variable name="z"/>
+        </head>
+        <results distinct="false" ordered="true">
+          <result>
+            <binding name="z">
+             <uri>http://www.openlinksw.com/schemas/virtrdf#QuadMapFormat</uri>
+            </binding>
+          </result>
+          <result>
+            <binding name="z">
+             <uri>http://www.openlinksw.com/schemas/virtrdf#QuadStorage</uri>
+            </binding>
+          </result>
+          <result>
+            <binding name="z">
+             <uri>http://www.openlinksw.com/schemas/virtrdf#array-of-QuadMapFormat</uri>
+            </binding>
+          </result>
+          <result>
+            <binding name="z">
+             <uri>http://www.openlinksw.com/schemas/virtrdf#QuadMap</uri>
+            </binding>
+          </result>
+          <result>
+            <binding name="z">
+             <uri>http://www.openlinksw.com/schemas/virtrdf#QuadMapValue</uri>
+            </binding>
+          </result>
+          <result>
+            <binding name="z">
+             <uri>http://www.openlinksw.com/schemas/virtrdf#array-of-QuadMapColumn</uri>
+            </binding>
+          </result>
+          <result>
+            <binding name="z">
+             <uri>http://www.openlinksw.com/schemas/virtrdf#QuadMapColumn</uri>
+            </binding>
+          </result>
+          <result>
+            <binding name="z">
+             <uri>http://www.openlinksw.com/schemas/virtrdf#array-of-QuadMapATable</uri>
+            </binding>
+          </result>
+          <result>
+            <binding name="z">
+             <uri>http://www.openlinksw.com/schemas/virtrdf#QuadMapATable</uri>
+            </binding>
+          </result>
+          <result>
+            <binding name="z">
+             <uri>http://www.openlinksw.com/schemas/virtrdf#QuadMapFText</uri>
+            </binding>
+          </result>          
+        </results>        
+      </sparql>
+    </query-result>
+  </soapenv:Body>
+</soapenv:Envelope>	
+]]></programlisting>
+        </listitem>
+      </orderedlist>	
+    </sect2>     	 
+    <sect2 id="howtodeleteblanknodes">          	
+      <title>How Can I Delete Triples containing blank nodes?</title>   	
+      <para>Please see details and sample scenario <link linkend="rdfsparulexamples24">here</link>.</para>
+    </sect2>     	       
+    <sect2 id="howtogetfullexplainplanforsparqlquery">          	
+      <title>How Can I Get a full explain plan for a simple SPARQL query?</title>   	
+      <para>Please see details and sample scenario <link linkend="rdfperfcosttransanalyze">here</link>.</para>
+    </sect2>     	       
+    <sect2 id="expressionsusage">          	
+      <title>How Can I Use Expressions inside CONSTRUCT, INSERT and DELETE {...} Templates?</title>   	
+      <para>Please examples <link linkend="rdfsparulexamples25">here</link>.</para>
+    </sect2>     
   </sect1>    
 </chapter>
