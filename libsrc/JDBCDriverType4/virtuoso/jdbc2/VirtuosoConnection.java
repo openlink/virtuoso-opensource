@@ -117,7 +117,8 @@ public class VirtuosoConnection implements Connection
 
 #ifdef SSL
    // The SSL parameters
-   private String keystore_pass, keystore_cert, keystore_path;
+   private String keystore_path, keystore_pass;
+   private String truststore_path, truststore_pass;
    private String ssl_provider;
 #endif
 
@@ -145,7 +146,6 @@ public class VirtuosoConnection implements Connection
 
    protected String charset;
    protected boolean charset_utf8 = false;
-
 
    
 #if JDK_VER >= 16
@@ -320,7 +320,8 @@ public class VirtuosoConnection implements Connection
           fbs = VirtuosoTypes.DEFAULTPREFETCH;;
       //System.err.println ("3PwdClear is " + pwdclear);
 #ifdef SSL
-      keystore_cert = (String)prop.get("certificate");
+      truststore_path = (String)prop.get("certificate");
+      truststore_pass = (String)prop.get("certificatepass");
       keystore_pass = (String)prop.get("keystorepass");
       keystore_path = (String)prop.get("keystorepath");
       ssl_provider = (String)prop.get("provider");
@@ -484,7 +485,7 @@ public class VirtuosoConnection implements Connection
       {
          // Establish the connection
 #ifdef SSL
-	if(keystore_cert != null)
+	if(truststore_path != null)
 	  {
 	    //System.out.println ("Will do SSL");
 	    if(ssl_provider != null && ssl_provider.length() != 0)
@@ -494,10 +495,11 @@ public class VirtuosoConnection implements Connection
 	      }
 	    else
 	      java.security.Security.addProvider(new com.sun.net.ssl.internal.ssl.Provider());
-	    if(keystore_cert.length() == 0)
+
+	    if(truststore_path.length() == 0)
 	      {
 		/* Connection without authentication  */
-		//System.setProperty ("java.protocol.handler.pkgs", "com.sun.net.ssl.internal.www.protocol");
+		System.setProperty ("java.protocol.handler.pkgs", "com.sun.net.ssl.internal.www.protocol");
 		/*javax.net.ssl.SSLSocketFactory sf =
 		    (javax.net.ssl.SSLSocketFactory) javax.net.ssl.SSLSocketFactory.getDefault();*/
 		/*javax.net.ssl.SSLSocket sock = null;*/
@@ -521,7 +523,7 @@ public class VirtuosoConnection implements Connection
 	      }
 	    else
 	      {
-		//System.out.println ("Auth conn" + keystore_cert);
+		//System.out.println ("Auth conn " + keystore_cert);
 		/* Connection with authentication  */
 		KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
 		SSLContext ssl_ctx = SSLContext.getInstance("TLS");
@@ -530,7 +532,16 @@ public class VirtuosoConnection implements Connection
 		ks.load(new FileInputStream((keystore_path!=null) ? keystore_path : System.getProperty("user.home") + System.getProperty("file.separator") + ".keystore"),
 		    (keystore_pass!= null) ? keystore_pass.toCharArray() : new String("").toCharArray());
 		kmf.init(ks, (keystore_pass!= null) ? keystore_pass.toCharArray() : new String("").toCharArray());
-		ssl_ctx.init(kmf.getKeyManagers(), null, null);
+
+                String alg=TrustManagerFactory.getDefaultAlgorithm();
+                TrustManagerFactory tmf=TrustManagerFactory.getInstance(alg);
+    
+                ks=KeyStore.getInstance("JKS");
+                ks.load(new FileInputStream(truststore_path), 
+                    (truststore_pass!= null) ? truststore_pass.toCharArray() : new String("").toCharArray());
+                tmf.init(ks);
+
+		ssl_ctx.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
 
 		socket = ((SSLSocketFactory)ssl_ctx.getSocketFactory()).createSocket(host, port);
 	      }

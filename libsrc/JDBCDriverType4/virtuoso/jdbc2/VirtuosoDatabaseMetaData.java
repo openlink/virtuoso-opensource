@@ -4388,7 +4388,7 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
 
 
    private static final String getWideSchemasCaseMode0 =
-       "SELECT distinct " +
+       "SELECT DISTINCT " +
          "charset_recode (name_part(\\KEY_TABLE,1), 'UTF-8', '_WIDE_') AS \\TABLE_SCHEM NVARCHAR(128)," +
 	 "charset_recode (name_part(\\KEY_TABLE,0), 'UTF-8', '_WIDE_') AS \\TABLE_CAT NVARCHAR(128) " +
        "FROM DB.DBA.SYS_KEYS " +
@@ -4398,7 +4398,7 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
        "ORDER BY 1, 2";
 
    private static final String getWideSchemasCaseMode2 =
-       "SELECT " +
+       "SELECT DISTINCT " +
          "charset_recode (name_part(\\KEY_TABLE,1), 'UTF-8', '_WIDE_') AS \\TABLE_SCHEM NVARCHAR(128)," +
 	 "charset_recode (name_part(\\KEY_TABLE,0), 'UTF-8', '_WIDE_') AS \\TABLE_CAT NVARCHAR(128) " +
        "FROM DB.DBA.SYS_KEYS " +

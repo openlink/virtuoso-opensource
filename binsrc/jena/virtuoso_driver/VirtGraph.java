@@ -25,6 +25,7 @@ package virtuoso.jena.driver;
 
 import java.sql.*;
 import java.util.*;
+import javax.sql.*;
 
 import virtuoso.sql.*;
 
@@ -35,6 +36,7 @@ import com.hp.hpl.jena.util.iterator.*;
 import com.hp.hpl.jena.datatypes.*;
 import com.hp.hpl.jena.rdf.model.*;
 import com.hp.hpl.jena.rdf.model.impl.*;
+import com.hp.hpl.jena.datatypes.xsd.impl.*;
 
 import virtuoso.jdbc3.VirtuosoConnectionPoolDataSource;
 import virtuoso.jdbc3.VirtuosoDataSource;
@@ -58,6 +60,7 @@ public class VirtGraph extends GraphBase
     protected String ruleSet = null;
     protected boolean useSameAs = false;
     protected int queryTimeout = 0;
+    static final String S_TTLP_INSERT = "DB.DBA.TTLP(?,'',?,255)";
     static final String sinsert = "sparql insert into graph iri(??) { `iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)` }";
     static final String sdelete = "sparql delete from graph iri(??) {`iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)`}";
     static final int BATCH_SIZE = 5000;
@@ -65,9 +68,7 @@ public class VirtGraph extends GraphBase
     static final String charset = "UTF-8";
 
     private VirtuosoConnectionPoolDataSource pds = new VirtuosoConnectionPoolDataSource();
-    private VirtuosoDataSource ds;
-
-    private boolean isDSconnection = false;
+    private javax.sql.DataSource ds;
 
 
     public VirtGraph()
@@ -92,21 +93,23 @@ public class VirtGraph extends GraphBase
     }
 
 
-    public VirtGraph(String _graphName, VirtuosoDataSource _ds) 
+    public VirtGraph(String _graphName, javax.sql.DataSource _ds) 
     {
 	super();
 
-	this.url_hostlist = _ds.getServerName();
-	this.graphName = _graphName;
-	this.user = _ds.getUser();
-	this.password = _ds.getPassword();
+	if (_ds instanceof VirtuosoDataSource) {
+	    VirtuosoDataSource vds = (VirtuosoDataSource)_ds;
+	    this.url_hostlist = vds.getServerName();
+	    this.graphName = _graphName;
+	    this.user = vds.getUser();
+	    this.password = vds.getPassword();
+	}
 
 	if (this.graphName == null)
 	    this.graphName = DEFAULT;
 
 	try {
 	    connection = _ds.getConnection();
-            isDSconnection = true;
 	    ds = _ds;
 	    ModelCom m = new ModelCom(this); //don't drop is it needed for initialize internal Jena classes
 	    TypeMapper tm = TypeMapper.getInstance();
@@ -115,7 +118,39 @@ public class VirtGraph extends GraphBase
 	}
     }
 
-    public VirtGraph(VirtuosoDataSource _ds) 
+
+    public VirtGraph(javax.sql.DataSource _ds) 
+    {		
+	this(null, _ds);
+    }
+
+
+    public VirtGraph(String _graphName, ConnectionPoolDataSource _ds) 
+    {
+	super();
+
+	if (_ds instanceof VirtuosoConnectionPoolDataSource) {
+	    VirtuosoDataSource vds = (VirtuosoDataSource)_ds;
+	    this.url_hostlist = vds.getServerName();
+	    this.graphName = _graphName;
+	    this.user = vds.getUser();
+	    this.password = vds.getPassword();
+	}
+
+	if (this.graphName == null)
+	    this.graphName = DEFAULT;
+
+	try {
+	    connection = _ds.getPooledConnection().getConnection();
+	    ModelCom m = new ModelCom(this); //don't drop is it needed for initialize internal Jena classes
+	    TypeMapper tm = TypeMapper.getInstance();
+	} catch(Exception e) {
+	    throw new JenaException(e);
+	}
+    }
+
+
+    public VirtGraph(ConnectionPoolDataSource _ds) 
     {		
 	this(null, _ds);
     }
@@ -161,7 +196,7 @@ public class VirtGraph extends GraphBase
 		pds.setRoundrobin(roundrobin);
 		javax.sql.PooledConnection pconn = pds.getPooledConnection();
 		connection = pconn.getConnection();
-                isDSconnection = true;
+                ds = (javax.sql.DataSource)pds;
 	    }
 
 	    ModelCom m = new ModelCom(this); //don't drop is it needed for initialize internal Jena classes
@@ -173,11 +208,8 @@ public class VirtGraph extends GraphBase
     }
 
 // getters
-    public VirtuosoDataSource getDataSource() {
-        if (isDSconnection)
-	  return (ds!=null? ds: (VirtuosoDataSource)pds);
-        else
-          return null;
+    public javax.sql.DataSource getDataSource() {
+        return ds;
     }
 
     public String getGraphName()
@@ -311,16 +343,58 @@ public class VirtGraph extends GraphBase
 
     private static String escapeString(String s) 
     {
-      StringBuffer buf = new StringBuffer(s.length());
-      int i = 0;
-      char ch;
-      while( i < s.length()) {
-        ch = s.charAt(i++);
-        if (ch == '\'') 
-          buf.append('\\');
-        buf.append(ch);
+      StringBuilder sb = new StringBuilder(s.length());
+      int slen = s.length();
+
+      for (int i = 0; i < slen; i++) {
+	char c = s.charAt(i);
+	int cInt = c;
+
+	if (c == '\\') {
+	  sb.append("\\\\");
+	}
+	else if (c == '"') {
+	  sb.append("\\\"");
+	}
+	else if (c == '\n') {
+	  sb.append("\\n");
+	}
+	else if (c == '\r') {
+	  sb.append("\\r");
+	}
+	else if (c == '\t') {
+	  sb.append("\\t");
+	}
+	else if (
+	        cInt >= 0x0 && cInt <= 0x8 ||
+		cInt == 0xB || cInt == 0xC ||
+		cInt >= 0xE && cInt <= 0x1F ||
+		cInt >= 0x7F && cInt <= 0xFFFF)
+	{
+	  sb.append("\\u");
+	  sb.append(toHexString(cInt, 4));
+	}
+	else if (cInt >= 0x10000 && cInt <= 0x10FFFF) {
+	  sb.append("\\U");
+	  sb.append(toHexString(cInt, 8));
+	}
+	else {
+	  sb.append(c);
+	}
       }
-      return buf.toString();
+      return sb.toString();
+    }
+
+    private static String toHexString(int decimal, int stringLength) {
+      StringBuilder sb = new StringBuilder(stringLength);
+      String hexVal = Integer.toHexString(decimal).toUpperCase();
+
+      int nofZeros = stringLength - hexVal.length();
+      for (int i = 0; i < nofZeros; i++)
+	sb.append('0');
+
+      sb.append(hexVal);
+      return sb.toString();
     }
 
 
@@ -356,9 +430,9 @@ public class VirtGraph extends GraphBase
       } else if (n.isLiteral()) {
         String s;
         StringBuffer sb = new StringBuffer();
-        sb.append("'");
+        sb.append("\"");
         sb.append(escapeString(n.getLiteralValue().toString()));
-        sb.append("'");
+        sb.append("\"");
 
         s = n.getLiteralLanguage();
         if (s != null && s.length() > 0) {
@@ -653,7 +727,8 @@ public class VirtGraph extends GraphBase
     void add(Iterator<Triple> it, List<Triple> list) 
     {
       try {
-        PreparedStatement ps = prepareStatement(sinsert);
+        PreparedStatement ps = prepareStatement(S_TTLP_INSERT);
+        StringBuilder sb = new StringBuilder(256);
         int count = 0;
 	    
         while (it.hasNext())
@@ -663,24 +738,28 @@ public class VirtGraph extends GraphBase
           if (list != null)
             list.add(t);
 
-          ps.setString(1, this.graphName);
-          bindSubject(ps, 2, t.getSubject());
-          bindPredicate(ps, 3, t.getPredicate());
-          bindObject(ps, 4, t.getObject());
-          ps.addBatch();
+          sb.append(Node2Str(t.getSubject()));
+          sb.append(' ');
+          sb.append(Node2Str(t.getPredicate()));
+          sb.append(' ');
+          sb.append(Node2Str(t.getObject()));
+          sb.append(" .\n");
           count++;
 
           if (count > BATCH_SIZE) {
-            ps.executeBatch();
-            ps.clearBatch();
+	    ps.setString(1, sb.toString());
+            ps.setString(2, this.graphName);
+	    ps.executeUpdate();
+	    sb.setLength(0);
             count = 0;
           }
         }
 
         if (count > 0) 
         {
-          ps.executeBatch();
-          ps.clearBatch();
+	  ps.setString(1, sb.toString());
+          ps.setString(2, this.graphName);
+	  ps.executeUpdate();
         }
         ps.close();
 
@@ -846,6 +925,7 @@ public class VirtGraph extends GraphBase
 
         if ( rb_type != null)
           dt = TypeMapper.getInstance().getSafeTypeByName(rb_type);
+
         return Node.createLiteral(rb.toString(), rb.getLang(), dt);
 
       } else if (o instanceof java.lang.Integer) {
@@ -995,8 +1075,11 @@ public class VirtGraph extends GraphBase
       timestampBuf.append(minuteS);
       timestampBuf.append(":");
       timestampBuf.append(secondS);
-      timestampBuf.append(".");
-      timestampBuf.append(nanosS);
+      if (nanos!=0) {
+        timestampBuf.append(".");
+        timestampBuf.append(nanosS);
+      }
+      timestampBuf.append("Z");
 
       return (timestampBuf.toString());
     }
