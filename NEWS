@@ -1,3 +1,39 @@
+Jul 22, 2013, V6.1.7:
+  * Database engine
+    - Added JDK 1.7 / JDBC 4.1 driver
+    - Added new DAV api and DETs
+    - Upgraded Conductor including new WebDAV
+    - Upgraded Facet Browser
+    - Fixed JDBC catalog metadata call
+    - Fixed issue with http content length
+    - Fixed issue with SQL transitive closure
+    - Fixed issue with xpath query appearing twice in same tree
+    - Fixed small issues in cost based optimizer
+    - Fixed memory leaks
+    - Updated documentation
+
+  * SPARQL and RDF
+    - Added support for SPARQL 1.1 ASSUME, BIND,  VALUES clauses
+    - Added support for SPARQL 1.1 Update protocol
+    - Added support for SPARQL 1.1 functions and aggregates
+    - Added support for ?graph parameter in SPARQL 1.1 Graph Crud
+    - Added SPARQL expression optimizations
+    - Added support for use HREF for IRix in HTML output of SPARQL endpoint
+    - Added Jena 2.10.x connector
+    - Added Sesame 2.7.x connector
+    - Added option to  pretty-print TTL from /sparql endpoint
+    - Fixed processing of OPTION clauses for SPARQL-FED
+    - Fixed support for untyped strings and xsd:string strings
+    - Fixed scalability of graph level security
+    - Fixed issues in TRANSITIVE
+    - Fixed missing RDF_QM_DEFINE_LITERAL_CLASS_WITH_FIXED_LANG
+    - Fixed compilation of queries with deeply nested ?:globals
+    - Fixed for transitivity, inferencing and property paths
+
+  * ODS Applications
+    - Merged newer versions of the ODS applications
+
+
 Jul 30, 2012, V6.1.6:
   * Database engine
     - Added support for Sparql Service Description
