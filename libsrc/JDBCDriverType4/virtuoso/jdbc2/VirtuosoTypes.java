@@ -35,7 +35,7 @@ class VirtuosoTypes
    /**
     * The version string.
     */
-   public static final String version = "06.00.3039";
+   public static final String version = "05.12.3039";
 
    /**
     * NIL, false, the NULL pointer
