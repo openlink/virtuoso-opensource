@@ -110,12 +110,42 @@ which LDAP server the import should be done:</para>
        <graphic fileref="ui/ldap6.png"/>
      </figure>   	
    </listitem>	  	
-   <listitem>Select the desired profiles to be imported and click "Import".
+   <listitem>Select the desired profiles to be imported and set prefered "LDAP Authentication" for selected user:
+     <itemizedlist mark="bullet">
+       <listitem>If set to "enabled", then on an attempt to log in into Virtuoso, the system tries to 
+       log in into the LDAP server with the given username and password. If this succeeds, then the user logs 
+       in successfully in Virtuoso. </listitem>
+       <listitem>If set to "account check",  then on an attempt to log in into Virtuoso, the system performs a 
+       check if there is such an user on the LDAP server. If yes, then the user logs in successfully in 
+       Virtuoso.</listitem>
+     </itemizedlist>     
    	 <figure id="ldap7" float="1">
        <title>LDAP Servers Configure and Import</title>
        <graphic fileref="ui/ldap7.png"/>
      </figure>   	
    </listitem>	  	
+     <listitem>Click "Import".
+<para>Note: By default an importing LDAP user has "User type" set to "WebDAV". To log in into iSQL with 
+     an imported LDAP user credentials you should:</para>
+     <orderedlist>
+       <listitem>Make sure you have set in Virtuoso ini the SQL_ENCRYPTION_ON_PASSWORD parameter to 1 in the [Client] section, i.e.:
+<programlisting><![CDATA[
+;virtuoso.ini
+....
+[Client]
+SQL_ENCRYPTION_ON_PASSWORD  = 1
+...
+]]></programlisting>       
+       </listitem>
+       <listitem>Set the "User type" of the imported LDAP user to be "SQL/ODBC" by going to Virtuoso Conductor -&gt; 
+       System Admin -&gt; User Accounts -&gt; user -&gt; Edit -&gt; field "User type".</listitem>
+       <listitem>Log in into iSQL:
+<programlisting><![CDATA[
+isql host:port ldap-user-name ldap-user-password 
+]]></programlisting>       
+       </listitem>
+     </orderedlist>     
+     </listitem>	  	
    <listitem>Click "Finish".</listitem>	  	
    <listitem>The imported profile(s) should be displayed in the Users tab:
    	 <figure id="ldap8" float="1">

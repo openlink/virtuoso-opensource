@@ -40,6 +40,16 @@
     ]]>
   </v:method>
 
+  <v:method name="sse_check_key" arglist="">
+    <![CDATA[
+      set_user_id ('dba');
+      if (xenc_key_exists ('__sse_rsa'))
+        return 1;
+
+      return 0;
+    ]]>
+  </v:method>
+
       <v:variable name="inter" type="integer" default="10" persist="0"/>
       <v:variable name="chk" type="integer" default="0" persist="0"/>
   <v:variable name="skin" type="integer" default="0" persist="0"/>
@@ -63,15 +73,6 @@
 
       self.skin := case when registry_get ('__WebDAV_vspx__') = 'yes' then 1 else 0 end;
       self.sse := self.sse_enabled2 ();
-      if (self.sse = 1)
-      {
-        _key := '__sse_rsa';
-        if (not xenc_key_exists (_key))
-        {
-          xenc_key_RSA_create (_key, 1024);
-          USER_KEY_STORE ('dba', _key, 'RSA', 'DER', '');
-        }
-      }
             if ('' <> get_keyword ('edit', control.vc_page.vc_event.ve_params, ''))
             {
               _mode1 := atoi(get_keyword('choice_source', control.vc_page.vc_event.ve_params));
@@ -128,6 +129,12 @@
         }
         self.sse := self.sse_enabled2 ();;
             }
+      if ((self.sse = 1) and not self.sse_check_key ())
+      {
+        _key := '__sse_rsa';
+        xenc_key_RSA_create (_key, 1024);
+        USER_KEY_STORE ('dba', _key, 'RSA', 'DER', '');
+      }
             self.inter := coalesce((select SE_INTERVAL from SYS_SCHEDULED_EVENT where upper (SE_NAME) = 'VT_INC_INDEX_WS_WS_SYS_DAV_RES()'), 10);
           ]]>
       </v:before-data-bind>
@@ -193,9 +200,9 @@
             </v:before-data-bind>
           </v:check-box>
       		<?vsp
-        		for (select xenc_key, xenc_type from yac_list_keys (username) (xenc_key varchar, xenc_type varchar) x where username = 'dba' and xenc_key = '__sse_rsa') do
+            if (self.sse_check_key ())
         		{
-        		  http (sprintf ('<br /><input type="button" name="dwn" id="dwn" value="Donwload SSE RSA Key" onclick="javascript: document.location = ''sec_pki_download.vsp?key=%U&user=dba''; return false;" />', xenc_key));
+        		  http ('<br /><input type="button" name="dwn" id="dwn" value="Download SSE RSA Key" onclick="javascript: document.location = ''sec_pki_download.vsp?key=__sse_rsa&user=dba''; return false;" />');
       		  }
       		?>
         </td>

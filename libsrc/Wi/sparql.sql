@@ -13042,7 +13042,7 @@ create function DB.DBA.RDF_QM_DEFINE_MAPPING (in storage varchar,
 {
   declare old_actual_type varchar;
   declare tablename, qmvid_g, qmvid_s, qmvid_p, qmvid_o varchar;
-  declare qmvfix_g, qmvfix_s, qmvfix_p, qmvfix_o any;
+  declare qmvfix_g, qmvfix_s, qmvfix_p, qmvfix_o, qmvfix_o_typed, qmvfix_o_dt any;
   declare qm_exclusive, qm_soft_exclusive, qm_empty, qm_is_default, qmusersubmapsid, atablesid, qmcondsid varchar;
   declare qm_order, atablectr, atablecount, condctr, condcount integer;
   -- dbg_obj_princ ('DB.DBA.RDF_QM_DEFINE_MAPPING (', storage, qmrawid, qmid, qmparentid, qmv_g, qmv_s, qmv_p, qmv_o, is_real, atables, conds, opts, ')');
@@ -13166,6 +13166,29 @@ create function DB.DBA.RDF_QM_DEFINE_MAPPING (in storage varchar,
   delete from graph <http://www.openlinksw.com/schemas/virtrdf#> { ?s ?p ?o }
   from <http://www.openlinksw.com/schemas/virtrdf#>
   where { ?s ?p ?o . filter (?s = iri(?:qmusersubmapsid)) };
+-- This did not work for some reason:
+--      `iri(?:qmid)`
+--        virtrdf:qmObjectRange-rvrRestrictions
+--            `if (((bif:isnotnull(datatype(?:qmvfix_o)) && (datatype(?:qmvfix_o) != xsd:string)) || bound(?:o_dt)), virtrdf:SPART_VARR_TYPED, ?:NULL)` ;
+--        virtrdf:qmObjectRange-rvrDatatype
+--            `if (bound (?:o_dt), ?:o_dt, if ((bif:isnotnull(datatype(?:qmvfix_o)) && (datatype(?:qmvfix_o) != xsd:string)), datatype (?:qmvfix_o), ?:NULL))` ;
+-- ... so it's replaced with SQL
+  qmvfix_o_typed := 0;
+  if (o_dt is not null)
+    {
+      qmvfix_o_typed := 1;
+      qmvfix_o_dt := o_dt;
+    }
+  else if (isstring (qmvfix_o) || iswidestring (qmvfix_o))
+    {
+      qmvfix_o_typed := 0;
+      qmvfix_o_dt := NULL;
+    }
+  else
+    {
+      qmvfix_o_typed := 1;
+      qmvfix_o_dt := __xsd_type (qmvfix_o);
+    }
   sparql define input:storage ""
   prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
   insert in graph <http://www.openlinksw.com/schemas/virtrdf#> {
@@ -13198,8 +13221,8 @@ create function DB.DBA.RDF_QM_DEFINE_MAPPING (in storage varchar,
             `if (bound(?:qmvfix_o), virtrdf:SPART_VARR_FIXED, ?:NULL)` ,
             `if (bound(?:qmvfix_o), if (isREF(?:qmvfix_o), virtrdf:SPART_VARR_IS_REF, virtrdf:SPART_VARR_IS_LIT), ?:NULL)` ,
             `if (isIRI(?:qmvfix_o), virtrdf:SPART_VARR_IS_IRI, ?:NULL)` ,
-            `if (<bif:isnull> (datatype(?:qmvfix_o)), ?:NULL, virtrdf:SPART_VARR_TYPED)` ;
-        virtrdf:qmObjectRange-rvrDatatype `datatype (?:qmvfix_o)` ;
+            `if (?:qmvfix_o_typed, virtrdf:SPART_VARR_TYPED, ?:NULL)` ;
+        virtrdf:qmObjectRange-rvrDatatype ?:qmvfix_o_dt ;
         virtrdf:qmObjectRange-rvrLanguage `if (<bif:length> (lang (?:qmvfix_o)), lang (?:qmvfix_o), ?:NULL)` ;
         virtrdf:qmObjectMap `iri(?:qmvid_o)` ;
         virtrdf:qmTableName ?:tablename ;
@@ -15954,7 +15977,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
 {
   declare ver varchar;
   declare inx int;
-  ver := '2013-05-07 0002v6g';
+  ver := '2013-06-10 0001v6g';
   if (USER <> 'dba')
     signal ('RDFXX', 'Only DBA can reload quad map metadata');
   if (not exists (sparql define input:storage "" ask where {

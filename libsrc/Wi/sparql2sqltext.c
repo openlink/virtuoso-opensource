@@ -5547,6 +5547,33 @@ ssg_restr_bits_derived_for_var_from_equiv_qm_vals (spar_sqlgen_t *ssg, ssg_valmo
 }
 
 void
+ssg_print_rvr_fixed_val (spar_sqlgen_t *ssg, rdf_val_range_t *rvr, ssg_valmode_t needed, const char *asname)
+{
+  if (!(rvr->rvrRestrictions & SPART_VARR_FIXED))
+    spar_internal_error (ssg->ssg_sparp, "ssg_print_rvr_fixed_val(): no SPART_VARR_FIXED");
+  if (NULL != rvr->rvrLanguage)
+    goto use_temporary_literal;
+  if (!(rvr->rvrRestrictions & SPART_VARR_TYPED))
+    goto use_sql_box;
+  if ((rvr->rvrDatatype == uname_xmlschema_ns_uri_hash_string) || (rvr->rvrDatatype != xsd_type_of_box ((caddr_t)(rvr->rvrFixedValue))))
+    goto use_temporary_literal;
+
+use_sql_box:
+  ssg_print_scalar_expn (ssg, (SPART *)(rvr->rvrFixedValue), needed, asname);
+  return;
+use_temporary_literal:
+    {
+      SPART_buf lit_buf;
+      SPART *lit = NULL;
+      SPART_AUTO (lit, lit_buf, SPAR_LIT);
+      lit->_.lit.val = rvr->rvrFixedValue;
+      lit->_.lit.datatype = rvr->rvrDatatype;
+      lit->_.lit.language = rvr->rvrLanguage;
+      ssg_print_scalar_expn (ssg, lit, needed, asname);
+    }
+}
+
+void
 ssg_print_fld_lit_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *field, caddr_t tabid, SPART *triple, int fld_idx, int print_outer_filter)
 {
   SPART *fld_tree = triple->_.triple.tr_fields [fld_idx];
@@ -5906,7 +5933,7 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
 #endif
   if (SPARP_EQ_IS_FIXED_AND_NOT_NULL (eq) && (!(flags & SSG_RETVAL_OPTIONAL_MAKES_NULLABLE)))
     {
-      ssg_print_scalar_expn (ssg, (SPART *)(eq->e_rvr.rvrFixedValue), needed, asname);
+      ssg_print_rvr_fixed_val (ssg, &(eq->e_rvr), needed, asname);
       return 1;
     }
   var_count = eq->e_var_count;
@@ -6240,7 +6267,7 @@ ssg_print_nice_equality_for_var_and_eq_fixed_val (spar_sqlgen_t *ssg, rdf_val_ra
           else
             ssg_print_tr_var_expn (ssg, var, vmode, eq_idx_asname);
           ssg_puts (" =");
-          ssg_print_scalar_expn (ssg, (SPART *)(rvr->rvrFixedValue), vmode, eq_idx_asname);
+          ssg_print_rvr_fixed_val (ssg, rvr, vmode, eq_idx_asname);
         }
       return;
     }
@@ -8587,7 +8614,7 @@ ssg_print_sinv_table_exp (spar_sqlgen_t *ssg, SPART *gp, int pass)
             goto try_parent_eq; /* see below */
           if ((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) == ((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) & local_eq->e_rvr.rvrRestrictions))
             {
-              ssg_print_scalar_expn (ssg, (SPART *)(local_eq->e_rvr.rvrFixedValue), SSG_VALMODE_LONG, NULL_ASNAME); /*!!!TBD better print for typed/lang literals */
+              ssg_print_rvr_fixed_val (ssg, &(local_eq->e_rvr), SSG_VALMODE_LONG, NULL_ASNAME);
               goto param_value_is_printed; /* see below */
             }
           if (((SPART_VARR_EXTERNAL | SPART_VARR_GLOBAL) & local_eq->e_rvr.rvrRestrictions))
@@ -8611,7 +8638,7 @@ try_parent_eq:
           parent_gp = parent_eq->e_gp;
           if ((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) == ((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) & parent_eq->e_rvr.rvrRestrictions))
             {
-              ssg_print_scalar_expn (ssg, (SPART *)(parent_eq->e_rvr.rvrFixedValue), SSG_VALMODE_LONG, NULL_ASNAME); /*!!!TBD better print for typed/lang literals */
+              ssg_print_rvr_fixed_val (ssg, &(parent_eq->e_rvr), SSG_VALMODE_LONG, NULL_ASNAME);
               goto param_value_is_printed; /* see below */
             }
           for (varctr = parent_eq->e_var_count; varctr--; /* no step */)
