@@ -121,9 +121,11 @@ EXTRA_DIST = \
 	testsuite/*.class \
 	testsuite/start.bat \
 	testsuite/start.sh \
-	testsuite/testing/regression/testModelEquals/*.nt \
-	testsuite/testing/regression/testModelEquals/*.rdf \
-	testsuite/testing/regression/testNTripleReader/*.nt \
-	testsuite/testing/regression/testReaderInterface/*.nt \
+	testsuite/testing/regression/README_LICENSE \
+	testsuite/testing/regression/testNTripleReader/1.nt \
+	testsuite/testing/regression/testNTripleReader/README_LICENSE \
 	testsuite/testing/regression/testReaderInterface/*.rdf \
-	testsuite/testing/regression/testWriterAndReader/*.rdf 
+	testsuite/testing/regression/testReaderInterface/2.nt \
+	testsuite/testing/regression/testReaderInterface/README_LICENSE \
+	testsuite/testing/regression/testWriterAndReader/*.rdf \
+	testsuite/testing/regression/testWriterAndReader/README_LICENSE
