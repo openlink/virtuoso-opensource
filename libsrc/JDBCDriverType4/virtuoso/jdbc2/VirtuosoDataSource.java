@@ -48,6 +48,7 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
 
 #ifdef SSL
     protected String certificate;
+    protected String certificatepass;
     protected String keystorepass;
     protected String keystorepath;
     protected String provider;
@@ -80,6 +81,7 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
 
 #ifdef SSL
     final static String n_certificate = "certificate";
+    final static String n_certificatepass = "certificatepass";
     final static String n_keystorepass = "keystorepass";
     final static String n_keystorepath = "keystorepath";
     final static String n_provider = "provider";
@@ -131,6 +133,9 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
 #ifdef SSL
     if (certificate != null)
       ref.add(new StringRefAddr(VirtuosoDataSource.n_certificate, certificate));
+
+    if (certificatepass != null)
+      ref.add(new StringRefAddr(VirtuosoDataSource.n_certificatepass, certificatepass));
 
     if (keystorepass != null)
       ref.add(new StringRefAddr(VirtuosoDataSource.n_keystorepass, keystorepass));
@@ -200,7 +205,8 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
     if (pwdclear != null)   prop.setProperty("pwdclear", pwdclear);
 
 #ifdef SSL
-    if (certificate!=null)  prop.setProperty("certificate", certificate);
+    if (certificate!=null)      prop.setProperty("certificate", certificate);
+    if (certificatepass!=null)  prop.setProperty("certificatepass", certificatepass);
     if (keystorepass!=null)  prop.setProperty("keystorepass", keystorepass);
     if (keystorepath!=null)  prop.setProperty("keystorepath", keystorepath);
     if (provider!=null)  prop.setProperty("provider", provider);
@@ -402,6 +408,15 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
   public String getCertificate ()
   {
     return this.certificate;
+  }
+
+  public void setCertificatepass (String value)
+  {
+    this.certificatepass = value;
+  }
+  public String getCertificatepass ()
+  {
+    return this.certificatepass;
   }
 
   public void setKeystorepass (String value)

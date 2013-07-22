@@ -266,12 +266,27 @@ public class Driver implements java.sql.Driver
         props.put(attr.toLowerCase(), val);
     }
 
+    char fsep = System.getProperty("file.separator").charAt(0);
+
     val = props.getProperty("kpath");
     if (val != null) {
-      char fsep = System.getProperty("file.separator").charAt(0);
       if (fsep != '\\') {
         val = val.replace('\\', fsep);
         props.put("kpath", val);
+      }
+    }
+    val = props.getProperty("cert");
+    if (val != null) {
+      if (fsep != '\\') {
+        val = val.replace('\\', fsep);
+        props.put("cert", val);
+      }
+    }
+    val = props.getProperty("ts");
+    if (val != null) {
+      if (fsep != '\\') {
+        val = val.replace('\\', fsep);
+        props.put("ts", val);
       }
     }
 
@@ -293,17 +308,31 @@ public class Driver implements java.sql.Driver
     if (val != null)
       props.setProperty("password", val);
 
+
     val = props.getProperty("cert");
     if (val != null)
       props.setProperty("certificate", val);
+
+    val = props.getProperty("ts");
+    if (val != null)
+      props.setProperty("certificate", val);
+
+    val = props.getProperty("tspass");
+    if (val != null)
+      props.setProperty("certificatepass", val);
+
+
+    val = props.getProperty("kpath");
+    if (val != null)
+      props.setProperty("keystorepath", val);
 
     val = props.getProperty("pass");
     if (val != null)
       props.setProperty("keystorepass", val);
 
-    val = props.getProperty("kpath");
+    val = props.getProperty("kpass");
     if (val != null)
-      props.setProperty("keystorepath", val);
+      props.setProperty("keystorepass", val);
 
     return props;
    }
