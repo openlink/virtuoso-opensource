@@ -7043,6 +7043,7 @@ dfe_body_copy (sqlo_t * so, df_elt_t * super, df_elt_t * parent)
   copy_super->_.sub.is_contradiction = super->_.sub.is_contradiction;
   copy_super->_.sub.invariant_test = dfe_pred_body_copy (so, super->_.sub.invariant_test, copy_super);
   copy_super->_.sub.trans = super->_.sub.trans;
+  copy_super->_.sub.is_hash_filler_unique = super->_.sub.is_hash_filler_unique;
   if (copy_super->_.sub.trans && copy_super->_.sub.trans->tl_complement)
     {
       copy_super->_.sub.trans->tl_complement = dfe_body_copy (so, copy_super->_.sub.trans->tl_complement, parent);
