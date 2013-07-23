@@ -4054,6 +4054,8 @@ sqlg_group_node (sqlo_t * so, data_source_t ** head, df_elt_t * group, df_elt_t 
 int
 sqlg_dtp_coerce (sql_type_t *res_sqt, sql_type_t *arg_sqt)
 {
+  char non_null;
+  dtp_t res_dtp = res_sqt->sqt_dtp, arg_dtp = arg_sqt->sqt_dtp;
   if (arg_sqt->sqt_dtp == DV_UNKNOWN)
     return 0;
   if (res_sqt->sqt_dtp == DV_UNKNOWN)
@@ -4061,7 +4063,51 @@ sqlg_dtp_coerce (sql_type_t *res_sqt, sql_type_t *arg_sqt)
       memcpy (res_sqt, arg_sqt, sizeof (sql_type_t));
       return 1;
     }
-
+  non_null = res_sqt->sqt_non_null & arg_sqt->sqt_non_null;
+  if (dtp_canonical[res_dtp] == dtp_canonical[arg_dtp])
+    {
+      res_sqt->sqt_dtp = MAX (res_dtp, arg_dtp);
+      res_sqt->sqt_non_null = non_null;
+      switch (dtp_canonical[arg_dtp])
+	{
+	  case DV_STRING:
+	  case DV_BIN:
+	  case DV_LONG_WIDE:
+	     res_sqt->sqt_precision = arg_sqt->sqt_precision && res_sqt->sqt_precision ? 
+		 MAX (res_sqt->sqt_precision, arg_sqt->sqt_precision) : 0;
+	     break;
+	  case DV_LONG_INT:
+	  case DV_SINGLE_FLOAT:
+	  case DV_DOUBLE_FLOAT:
+	     break;
+	  case DV_NUMERIC:
+	     res_sqt->sqt_precision = MAX (res_sqt->sqt_precision, arg_sqt->sqt_precision);
+	     res_sqt->sqt_scale = MAX (res_sqt->sqt_scale, arg_sqt->sqt_scale);
+	     break;
+	  case DV_OBJECT:
+	     if (res_sqt->sqt_class == arg_sqt->sqt_class)
+	       return 0;
+	     goto any;
+	}
+      return 1;
+    }
+  else if (IS_NUM_DTP (res_dtp) && IS_NUM_DTP (arg_dtp))
+    {
+      res_sqt->sqt_dtp = MAX (res_dtp, arg_dtp);
+      res_sqt->sqt_non_null = non_null;
+      res_sqt->sqt_precision = MAX (res_sqt->sqt_precision, arg_sqt->sqt_precision);
+      res_sqt->sqt_scale = MAX (res_sqt->sqt_scale, arg_sqt->sqt_scale);
+      return 1;
+    }
+  else
+    {
+any:
+      memset (res_sqt, 0, sizeof (sql_type_t));
+      res_sqt->sqt_dtp = DV_ANY;
+      res_sqt->sqt_non_null = non_null;
+      return 1;
+    }
+#if 0
   switch (res_sqt->sqt_dtp)
     {
       case DV_SHORT_INT:
@@ -4319,6 +4365,7 @@ sqlg_dtp_coerce (sql_type_t *res_sqt, sql_type_t *arg_sqt)
       default:
 	  return 0;
     }
+#endif
 }
 
 
