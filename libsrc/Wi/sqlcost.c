@@ -819,9 +819,10 @@ sqlo_eq_cost (dbe_column_t * left_col, df_elt_t * right, df_elt_t * lower, float
 	{
 	  dbe_column_t * right_col = DFE_COLUMN == right->dfe_type ? right->_.col.col : NULL;
 	  float n_dist = left_col->col_n_distinct;
-	  if (right_col && right_col->col_n_distinct && right_col->col_n_distinct < left_col->col_n_distinct)
+	  int is_rdf_col = (tb_is_rdf_quad (left_col->col_defined_in) || (right_col && tb_is_rdf_quad (right_col->col_defined_in)));
+	  if (!is_rdf_col && right_col && right_col->col_n_distinct && right_col->col_n_distinct < left_col->col_n_distinct)
 	    n_dist = right_col->col_n_distinct;
-	  if (right_col && COL_KP_UNQ != left_col->col_is_key_part &&  COL_KP_UNQ == right_col->col_is_key_part)
+	  if (!is_rdf_col && right_col && COL_KP_UNQ != left_col->col_is_key_part &&  COL_KP_UNQ == right_col->col_is_key_part)
 	    n_dist = right_col->col_n_distinct;
 	  *a1 = 1.0 / n_dist;
 	}
