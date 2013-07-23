@@ -58,6 +58,15 @@ EXTRA_DIST = \
 	*.xml \
 	*.xsl \
 	conductor.list \
+	dav/*.css \
+	dav/*.js \
+	dav/*.sql \
+	dav/*.vsp \
+	dav/*.xsl \
+	dav/image/*.gif \
+	dav/image/*.png \
+	dav/image/dav/*.gif \
+	dav/image/dav/*.png \
 	ent.dtd \
 	help/*.xml \
 	images/*.gif \
