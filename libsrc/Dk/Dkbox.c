@@ -2401,6 +2401,10 @@ caddr_t uname___empty;
 void
 dk_box_initialize (void)
 {
+  static int dk_box_is_initialized = 0;
+  if (dk_box_is_initialized)
+    return;
+  dk_box_is_initialized = 1;
   dk_mem_hooks (DV_MEM_WRAPPER, box_mem_wrapper_copy_hook, box_mem_wrapper_destr_hook, 0);
 #ifdef MALLOC_DEBUG
   dk_mem_hooks_2 (DV_NON_BOX, box_copy_non_box, NULL, 0, box_mp_copy_non_box);
