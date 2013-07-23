@@ -4311,6 +4311,7 @@ sqlg_dtp_coerce (sql_type_t *res_sqt, sql_type_t *arg_sqt)
 		{
 		  memset (res_sqt, 0, sizeof (sql_type_t));
 		  res_sqt->sqt_dtp = DV_ANY;
+		  res_sqt->sqt_non_null = arg_sqt->sqt_non_null;
 		  return 1;
 		}
 	    }
