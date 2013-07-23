@@ -29,6 +29,7 @@
 #include "sqlcmps.h"
 #include "sqlo.h"
 #include "rdfinf.h"
+#include "security.h"
 
 
 char *rdf_label_inf_name;
@@ -702,8 +703,12 @@ bif_dpipe_set_rdf_load (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   cl_req_group_t *clrg = bif_clrg_arg (qst, args, 0, "dpipe_set_rdf_load");
   cucurbit_t *cu = clrg->clrg_cu;
+  QNCAST (query_instance_t, qi, qst);
+
   if (!cu)
     sqlr_new_error ("42000", "CL...", "Not a dpipe daq");
+  if (!QI_IS_DBA (qi) && !sec_user_has_group_name ("SPARQL_UPDATE", qi->qi_u_id))
+    sqlr_new_error ("42000", "CL...", "No permission to use rdf load");
   cu->cu_ready_cb = cu_rdf_ins_cb;
   if (BOX_ELEMENTS (args) > 1)
     cu->cu_rdf_load_mode = bif_long_arg (qst, args, 1, "dpipe_set_rdf_load");
