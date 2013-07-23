@@ -11864,8 +11864,13 @@ caddr_t bif_icc_try_lock (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
       return NEW_DB_NULL;
     }
   hash_lock = icc_lock_from_hashtable (name);
-  if (!semaphore_try_enter (hash_lock->iccl_sem))
-    return box_num (0);
+  if (ICCL_WAIT & flags)
+    semaphore_enter (hash_lock->iccl_sem);
+  else
+    {
+      if (!semaphore_try_enter (hash_lock->iccl_sem))
+	return box_num (0);
+    }
   hash_lock->iccl_cli = qi->qi_client;
   cli_lock = icc_lock_alloc (hash_lock->iccl_name, cli, ((flags & ICCL_IS_LOCAL) ? qi : NULL));
   hash_lock->iccl_qi = cli_lock->iccl_qi;

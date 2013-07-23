@@ -1220,6 +1220,7 @@ void udt_can_write_to (sql_type_t *sqt, caddr_t data, caddr_t *err_ret);
 /* interconnection communication */
 
 #define ICCL_IS_LOCAL	0x01
+#define ICCL_WAIT 2
 
 typedef struct icc_lock_s
 {
