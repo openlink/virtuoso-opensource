@@ -5457,15 +5457,22 @@ test_bits (query_instance_t * qi, db_buf_t set_mask, int n_sets)
   return res;
 }
 
+#define BYTE_N_LOW(byte, n) \
+  (byte & ~(0xff >> (n)))
 int
 test_bits_2 (query_instance_t * qi, dtp_t * set_mask, int n_sets)
 {
   int res = 0;
   int set;
   int byte, bytes = ALIGN_8 (n_sets) / 8;
-  for (byte = 0; byte < bytes; byte++)
+  int bits_in_last = bytes * 8 - n_sets;
+  for (byte = 0; byte <= bytes; byte++)
     {
-      uint32 binx, bits = byte_bits[set_mask[byte]];
+      uint32 binx, bits;
+      dtp_t sbits = set_mask[byte];
+      if (byte == bytes)
+	sbits = BYTE_N_LOW (sbits, bits_in_last);
+      bits = byte_bits[sbits];
       int cnt = bits >> 28;
       for (binx = 0; binx < cnt; binx++)
 	{
