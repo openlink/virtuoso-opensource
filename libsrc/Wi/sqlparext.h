@@ -881,6 +881,7 @@ extern long sqlp_bin_op_serial;
    || DV_UNAME == box_tag((caddr_t) a) \
    || DV_IRI_ID == box_tag((caddr_t) a) \
    || DV_DATETIME == box_tag((caddr_t) a) \
+   || DV_GEO == box_tag((caddr_t) a) \
    || DV_XPATH_QUERY == box_tag((caddr_t) a) )
 
 #define ST_P(s, tp) \

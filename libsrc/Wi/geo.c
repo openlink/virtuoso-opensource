@@ -1796,7 +1796,7 @@ dk_mutex_t *geo_reg_mtx;
 void
 geo_init ()
 {
-  bif_define ("st_point", bif_st_point);
+  bif_define_ex ("st_point"		, bif_st_point	, BMD_RET_TYPE, &bt_any_box	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 4	, BMD_IS_PURE, BMD_DONE);
   bif_define ("st_x", bif_st_x);
   bif_define ("st_y", bif_st_y);
   bif_define ("st_xmin", bif_st_xmin);
@@ -1819,7 +1819,7 @@ geo_init ()
   bif_define_typed ("st_astext", bif_st_astext, &bt_varchar);
   bif_define_typed ("st_srid", bif_st_srid, &bt_integer);
   bif_define ("st_setsrid", bif_st_setsrid);
-  bif_define ("st_geomfromtext", bif_st_geomfromtext);
+  bif_define_ex ("st_geomfromtext"		, bif_st_geomfromtext	, BMD_RET_TYPE, &bt_any_box	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define ("st_ewkt_read", bif_st_ewkt_read);
   bif_define ("http_st_ewkt", bif_http_st_ewkt);
   bif_define ("st_get_bounding_box", bif_st_get_bounding_box);
