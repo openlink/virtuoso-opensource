@@ -30,6 +30,7 @@
 #include "rdf_core.h"
 #include "aqueue.h"
 #include "sqlbif.h"
+#include "security.h"
 
 
 query_t *rl_queries[10];
@@ -121,6 +122,7 @@ cu_rl_local_exec (cucurbit_t * cu)
   clib = (cll_in_box_t *) clrg->clrg_clibs->data;
   DO_SET (cl_op_t *, clo, &clib->clib_vec_clos)
   {
+    client_connection_t *cli = qi->qi_client;
     query_t *proc = sch_proc_def (wi_inst.wi_schema, clo->_.call.func);
     caddr_t save_pars[10];
     caddr_t err = NULL;
@@ -131,6 +133,12 @@ cu_rl_local_exec (cucurbit_t * cu)
 	proc = qr_recompile (proc, &err);
 	if (err)
 	  sqlr_resignal (err);
+      }
+    if (!cli->cli_user || !sec_proc_check (proc, cli->cli_user->usr_id, cli->cli_user->usr_g_id))
+      {
+	user_t *usr = cli->cli_user;
+	sqlr_new_error ("42000", "SR186", "No permission to execute dpipe %s with user ID %d, group ID %d",
+	    clo->_.call.func, (int) (usr ? usr->usr_id : 0), (int) (usr ? usr->usr_g_id : 0));
       }
     memcpy (save_pars, clo->_.call.params, box_length ((caddr_t) clo->_.call.params));
     qi->qi_client->cli_non_txn_insert = qi->qi_non_txn_insert;
