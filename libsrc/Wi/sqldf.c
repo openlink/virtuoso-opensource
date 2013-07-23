@@ -6385,8 +6385,9 @@ sqlo_untry (sqlo_t * so, df_elt_t * dfe, df_elt_t * in_loop_dfe)
 {
   so->so_gen_pt = dfe->dfe_prev;
   sqlo_dt_unplace (so, dfe);
-  if (in_loop_dfe)
+  if (in_loop_dfe && in_loop_dfe->dfe_prev)
     {
+      /* it can be that the in loop dfe was after the first unplaced, in which case it is already unplaced.  Happens if placing a plan fragment with more than 1 tables */
       so->so_gen_pt = in_loop_dfe->dfe_prev;
       sqlo_dt_unplace (so, in_loop_dfe);
     }
@@ -6413,9 +6414,10 @@ sqlo_try (sqlo_t * so, op_table_t * ot, dk_set_t dfes, df_elt_t ** in_loop_ret, 
 	  sqlo_try_hash (so, dfe, ot, &this_score);
 	  if (DFE_TABLE == dfe->dfe_type && HR_NONE == dfe->_.table.hash_role)
 	    sqlo_try_scan_order (so, dfe);
-	  if (!dfes->next)
-	    sqlo_try_in_loop (so, ot, dfe, in_loop_ret, &this_score);
+	  sqlo_try_in_loop (so, ot, dfe, in_loop_ret, &this_score);
 	  score_set = 1;
+	  if (*in_loop_ret)
+	    break;
 	}
     }
   END_DO_SET();

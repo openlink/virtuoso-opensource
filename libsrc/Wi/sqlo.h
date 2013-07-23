@@ -177,6 +177,7 @@ typedef struct df_inx_op_s
 
 #define DFE_PLACED 1	/* placed in a scenario */
 #define DFE_GEN 2	/* placed in the executable graph */
+#define DFE_JP_PLACED 3 /* placed for join plan */
 
 #define TN_FWD 1
 #define TN_BWD 2
@@ -200,6 +201,7 @@ struct df_elt_s
 {
   short	dfe_type;
   char	dfe_is_placed;
+  bitf_t	dfe_double_placed:1; /* can be a dfe is placed in many copies for restricting more than one hash build */
   bitf_t	dfe_unit_includes_vdb:1;
   bitf_t	dfe_is_joined:1; /* in planning next op, true if there is join to any previously placed dfe */
   bitf_t	dfe_is_planned:1; /* true if included in a multi-dfe next step in planning next dfe */
@@ -533,6 +535,7 @@ typedef struct tb_sample_s
   float		smp_card;
   float		smp_inx_card;
   int		smp_time;
+  float *	smp_dep_sel; /* if contains samples on dependent cols, selectivity in order of dep conditions */
 } tb_sample_t;
 
 
@@ -613,6 +616,7 @@ typedef struct join_plan_s
   float		jp_best_card;
   float		jp_fill_selectivity; /* for selective hash join, seeing if more joins should go in the build, this is the fraction selected by the first dfe on build side */
   char		jp_not_for_hash_fill; /* set if jp_tb_dfe not suited for use in hash fill join */
+  char		jp_hash_fill_non_unq;
   dk_set_t	jp_best_jp;
   dk_set_t	jp_extra_preds; /* if hash filler dt, preds that are redundant, covered by the join of the first to the probe */
   struct join_plan_s *	jp_prev;

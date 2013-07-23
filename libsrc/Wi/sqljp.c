@@ -561,7 +561,8 @@ dfe_join_score_jp (sqlo_t * so, op_table_t * ot, df_elt_t * tb_dfe, dk_set_t * r
       root_jp = prev_jp;
       level++;
     }
-  tb_dfe->dfe_is_placed = 1;	/* to fool dfe_reqd_placed */
+  tb_dfe->dfe_double_placed = tb_dfe->dfe_is_placed != 0;
+  tb_dfe->dfe_is_placed = DFE_JP_PLACED;	/* to fool dfe_reqd_placed */
   dfe_jp_fill (so, ot, tb_dfe, &jp, JPF_TRY, 0);
   if (jp.jp_prev)
     jp.jp_cost = jp.jp_prev->jp_cost + path_fanout * jp.jp_fanout;
@@ -593,8 +594,7 @@ dfe_join_score_jp (sqlo_t * so, op_table_t * ot, df_elt_t * tb_dfe, dk_set_t * r
 restricting:
   if (!any_tried && level > 0)
     {
-      dk_set_t prev_best = jp.jp_best_jp;
-      int is_restr = jp_mark_restr_join (so, &jp, root_jp);
+      jp_mark_restr_join (so, &jp, root_jp);
     }
   tb_dfe->dfe_is_placed = 0;
   if (!jp.jp_prev)
@@ -657,6 +657,30 @@ sqlo_hash_filler_unique (sqlo_t * so, df_elt_t * hash_ref_tb, df_elt_t * fill_co
 
 /* hash join with a join on the build side */
 
+void
+jp_add_hash_fill_join (join_plan_t * root_jp, join_plan_t * jp)
+{
+  int n_pk, pos, inx;
+  dbe_key_t * pk;
+  if (dk_set_member (root_jp->jp_hash_fill_dfes, (void*)jp->jp_tb_dfe))
+    return;
+  t_set_push (&root_jp->jp_hash_fill_dfes, (void*)jp->jp_tb_dfe);
+  pk = jp->jp_tb_dfe->_.table.ot->ot_table->tb_primary_key;
+  n_pk = pk->key_n_significant;
+  for (inx = 0; inx < jp->jp_n_preds; inx++)
+    {
+      if (!jp->jp_preds[inx].ps_is_placeable || !dfe_is_eq_pred (jp->jp_preds[inx].ps_pred))
+	continue;
+      pos = dk_set_position (pk->key_parts, jp->jp_preds[inx].ps_left_col);
+      if (pos >= pk->key_n_significant)
+	continue;
+      n_pk--;
+      if (!n_pk)
+	break;
+    }
+  if (n_pk)
+    root_jp->jp_hash_fill_non_unq = 1; /* hash join build side not guaranteed to keep unique, conatins other than pk to fk joins */
+}
 
 void
 dfe_hash_fill_score (sqlo_t * so, op_table_t * ot, df_elt_t * tb_dfe, join_plan_t * prev_jp, int hash_set)
@@ -678,7 +702,9 @@ dfe_hash_fill_score (sqlo_t * so, op_table_t * ot, df_elt_t * tb_dfe, join_plan_
   if (dk_set_member (root_jp->jp_hash_fill_dfes, (void*)tb_dfe))
     return;
   jp.jp_hash_fill_dfes = jp.jp_prev->jp_hash_fill_dfes;
-  tb_dfe->dfe_is_placed = 1;	/* to fool dfe_reqd_placed */
+  if (tb_dfe->dfe_is_placed)
+    tb_dfe->dfe_double_placed = 1;
+  tb_dfe->dfe_is_placed = DFE_JP_PLACED;	/* to fool dfe_reqd_placed */
   jp.jp_not_for_hash_fill = 0;
   dfe_jp_fill (so, ot, tb_dfe, &jp, JPF_HASH, hash_set);
   if (jp.jp_fanout > 1.3 || jp.jp_not_for_hash_fill)
@@ -689,13 +715,14 @@ dfe_hash_fill_score (sqlo_t * so, op_table_t * ot, df_elt_t * tb_dfe, join_plan_
 	  root_jp->jp_best_card *= path_fanout;
 	  for (prev = jp.jp_prev; prev; prev = prev->jp_prev)
 	    {
-	      t_set_pushnew (&root_jp->jp_hash_fill_dfes, (void *) prev->jp_tb_dfe);
+	      jp_add_hash_fill_join (root_jp, prev);
 	      for (pinx = 0; pinx < prev->jp_n_preds; pinx++)
 		if (prev->jp_preds[pinx].ps_is_placeable)
 		  t_set_pushnew (&root_jp->jp_hash_fill_preds, (void *) prev->jp_preds[pinx].ps_pred);
 	    }
 	}
-      tb_dfe->dfe_is_placed = 0;
+      tb_dfe->dfe_is_placed = tb_dfe->dfe_double_placed ? DFE_PLACED : 0;
+      tb_dfe->dfe_double_placed = 0;
       return;
     }
   if (jp.jp_n_joined && level < 4)
@@ -719,14 +746,15 @@ dfe_hash_fill_score (sqlo_t * so, op_table_t * ot, df_elt_t * tb_dfe, join_plan_
 	  root_jp->jp_best_card *= path_fanout * jp.jp_fanout / root_fanout;
 	  for (prev = &jp; prev; prev = prev->jp_prev)
 	    {
-	      t_set_pushnew (&root_jp->jp_hash_fill_dfes, (void *) prev->jp_tb_dfe);
+	      jp_add_hash_fill_join (root_jp, prev);
 	      for (pinx = 0; pinx < prev->jp_n_preds; pinx++)
 		if (prev->jp_preds[pinx].ps_is_placeable)
 		  t_set_pushnew (&root_jp->jp_hash_fill_preds, (void *) prev->jp_preds[pinx].ps_pred);
 	    }
 	}
     }
-  tb_dfe->dfe_is_placed = 0;
+  tb_dfe->dfe_is_placed = tb_dfe->dfe_double_placed ? DFE_PLACED : 0;
+  tb_dfe->dfe_double_placed = 0;
 }
 
 
@@ -766,6 +794,7 @@ sqlo_hash_fill_join (sqlo_t * so, df_elt_t * hash_ref_tb, df_elt_t ** fill_ret, 
   jp.jp_prev = NULL;
   jp.jp_extra_preds = NULL;
   jp.jp_hash_fill_dfes = NULL;
+  jp.jp_hash_fill_non_unq = !hash_ref_tb->_.table.is_unique;
   dfe_jp_fill (so, ot, hash_ref_tb, &jp, JPF_TRY | JPF_NO_PLACED_JOINS, hash_set);
   jp.jp_fill_selectivity = jp.jp_fanout / dfe_scan_card (hash_ref_tb);
   jp.jp_best_card = 1;
@@ -776,7 +805,7 @@ sqlo_hash_fill_join (sqlo_t * so, df_elt_t * hash_ref_tb, df_elt_t ** fill_ret, 
     dfe_hash_fill_score (so, ot, jp.jp_joined[jinx], &jp, hash_set);
   if (jp.jp_best_card > 0.9 && !hash_set)
     return 0;
-  if (ref_card <= jp.jp_fanout * jp.jp_best_card)
+  if (ref_card <= jp.jp_fanout * jp.jp_best_card && !hash_set)
     return 0; /* the build is larger than the probe, reverse order bound to be better  */
   if (2 == enable_hash_fill_join)
     return 0;
@@ -830,7 +859,7 @@ sqlo_hash_fill_join (sqlo_t * so, df_elt_t * hash_ref_tb, df_elt_t ** fill_ret, 
       fill_ot->ot_work_dfe->_.sub.in_arity = 1;
       fill_ot->ot_work_dfe->_.sub.hash_filler_of = hash_ref_tb;
       fill_copy = sqlo_layout (so, fill_ot, SQLO_LAY_VALUES, hash_ref_tb);
-      fill_copy->_.sub.is_hash_filler_unique = sqlo_hash_filler_unique (so, hash_ref_tb, fill_copy);
+      fill_copy->_.sub.is_hash_filler_unique = hash_ref_tb->_.table.is_unique && !jp.jp_hash_fill_non_unq;
       fill_copy->_.sub.hash_filler_of = hash_ref_tb;
       fill_copy->_.sub.n_hash_fill_keys = dk_set_length (hash_keys);
       if (so->so_cache_subqs)

@@ -1670,12 +1670,18 @@ itc_ce_at_row (it_cursor_t * itc, buffer_desc_t * buf, int *is_last_ce)
   return NULL;
 }
 
+int enable_sp_stat = 2;
+
 
 float
 spst_selectivity (sp_stat_t * spst)
 {
   if (0 == spst->spst_in)
     return 1;
+  if (2 == enable_sp_stat)
+    {
+      return (float) spst->spst_time / (1 + spst->spst_in - spst->spst_out);
+    }
   return (float) spst->spst_out / (float) spst->spst_in;
 }
 
@@ -1687,8 +1693,6 @@ spst_cmp (const void *s1, const void *s2)
   return sel1 < sel2 ? -1 : sel1 == sel2 ? 0 : 1;
 }
 
-
-int enable_sp_stat = 1;
 
 void
 itc_sp_stat_check (it_cursor_t * itc)
@@ -3057,11 +3061,16 @@ start:
 int enable_col_dep_sample = 1;
 
 
+
+extern int32 sqlo_sample_dep_cols;
 int
 itc_col_count (it_cursor_t * itc, buffer_desc_t * buf, int *row_match_ctr)
 {
+  /* Take a sample of rows.  If the last index spec is not equality this becomes the first row spec.  There may be other row specs.  The count returned is the matches in the seg according to index.  The row matchh ctr is matches in index after row specs evaluated */
   db_buf_t row;
-  int inx;
+  int inx, row_matches;
+  int inx_spec_in_row_spec = 0;
+  search_spec_t *prev_row_sp = itc->itc_row_specs;
   itc->itc_col_row = COL_NO_ROW;
 #if 0
   for (inx = 0; inx < itc->itc_search_par_fill; inx++)
@@ -3084,10 +3093,9 @@ itc_col_count (it_cursor_t * itc, buffer_desc_t * buf, int *row_match_ctr)
       rows_in_seg = cr_n_rows (cr);
       itc->itc_st.segs_sampled++;
       itc->itc_st.rows_in_segs += rows_in_seg;
-      inx = rows_in_seg - itc->itc_ranges[0].r_first;
+	  itc->itc_ranges[0].r_end = rows_in_seg;
     }
-  else
-    inx = itc->itc_ranges[0].r_end - itc->itc_ranges[0].r_first;
+  inx = row_matches = itc->itc_ranges[0].r_end - itc->itc_ranges[0].r_first;
   if (enable_col_dep_sample)
     {
       search_spec_t tmp_sp;
@@ -3104,11 +3112,16 @@ itc_col_count (it_cursor_t * itc, buffer_desc_t * buf, int *row_match_ctr)
 	    }
 	  if (CMP_EQ != sp->sp_min_op)
 	    {
+	      inx_spec_in_row_spec = 1;
 	      tmp_sp = *sp;
 	      tmp_sp.sp_cl = itc->itc_insert_key->key_row_var[nth_key];
-	      tmp_sp.sp_next = itc->itc_row_specs;
+	      tmp_sp.sp_next = sqlo_sample_dep_cols ? prev_row_sp : NULL;
 	      itc->itc_row_specs = &tmp_sp;
 	    }
+	}
+      else if (sqlo_sample_dep_cols )
+	{
+	  itc->itc_row_specs = prev_row_sp;
 	}
       if (itc->itc_row_specs)
 	{
@@ -3116,14 +3129,28 @@ itc_col_count (it_cursor_t * itc, buffer_desc_t * buf, int *row_match_ctr)
 	  itc_set_sp_stat (itc);
 	  itc_col_seg (itc, buf, 0, 0);
 	  itc->itc_random_search = RANDOM_SEARCH_OFF;
-	  inx = itc->itc_n_matches;
+	  if (inx_spec_in_row_spec)
+	    {
+	      if (itc->itc_n_row_specs > 1)
+		{
+		  inx = itc->itc_sp_stat[0].spst_out;
+		  row_matches = itc->itc_n_matches;
+		}
+	      else
+		inx = row_matches = itc->itc_n_matches;
+	    }
+	  else
+	    {
+	      row_matches = itc->itc_n_matches;
+	    }
 	}
       ITC_RESTORE_ROW_SPECS (itc);
     }
   itc_col_leave (itc, 0);
-  *row_match_ctr += inx;
+  *row_match_ctr += row_matches;
   return inx;
 }
+
 
 int
 itc_col_row_check_dummy (it_cursor_t * itc, buffer_desc_t * buf)

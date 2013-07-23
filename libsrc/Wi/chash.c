@@ -2638,6 +2638,7 @@ next_batch:
       if (setp->setp_streaming_ssl)
 	{
 	  data_col_t *dc = QST_BOX (data_col_t *, branch, setp->setp_streaming_ssl->ssl_index);
+	  if (dc->dc_n_values)
 	  surviving = dc_any_value (dc, dc->dc_n_values - 1);
 	}
       part = QST_INT (inst, ks->ks_nth_cha_part);
@@ -3951,6 +3952,8 @@ cha_alloc_bloom (chash_t * cha, int64 n_rows)
   int64 bytes = _RNDUP_PWR2 (((uint64) (_RNDUP_PWR2 (n_rows, 32) * chash_bloom_bits / 8)), 64);
   if (!chash_bloom_bits || !bytes)
     return;
+  if (bytes < sizeof (cha->cha_bloom[0]))
+    bytes = sizeof (cha->cha_bloom[0]);
   cha->cha_bloom = (uint64 *) mp_alloc_box (cha->cha_pool, bytes, DV_NON_BOX);
   cha->cha_n_bloom = bytes / sizeof (cha->cha_bloom[0]);
   memzero (cha->cha_bloom, cha->cha_n_bloom * sizeof (cha->cha_bloom[0]));
@@ -5068,6 +5071,12 @@ dc_hash_nulls (data_col_t * dc, row_no_t * matches, int n_values)
   return fill;
 }
 
+#define DC_OR_AUTO(dtp, var, n, auto, dc)	       \
+{\
+  if ((n) > sizeof (auto) / sizeof (dtp))	       \
+    var = (dtp*)dc_alloc (dc, sizeof (dtp) * ((n) + 512)); \
+  else var = auto;\
+}
 
 
 int
@@ -5085,7 +5094,8 @@ ce_hash_range_filter (col_pos_t * cpo, db_buf_t ce_first, int n_values, int n_by
   int ce_row = cpo->cpo_ce_row_no;
   int add_ce_row = ce_row + cpo->cpo_skip;
   uint32 min, max;
-  uint64 hash_no[CE_DICT_MAX_VALUES];
+  uint64 hash_no_auto[CE_DICT_MAX_VALUES];
+  uint64 *hash_no;
   data_col_t *dc = QST_BOX (data_col_t *, inst, hrng->hrng_dc->ssl_index);
   col_pos_t fetch_cpo = *cpo;
   chash_t *cha = cpo->cpo_chash;
@@ -5105,26 +5115,9 @@ ce_hash_range_filter (col_pos_t * cpo, db_buf_t ce_first, int n_values, int n_by
       rl = n_values;
       n_values = 1;
     }
-#if 1
   ce_hash_dc (&fetch_cpo, ce, ce_first, n_values, n_bytes, &dc_off);
-#else
-  fetch_cpo.cpo_ce_op = NULL;
-  fetch_cpo.cpo_dc = dc;
-  if (!itc->itc_col_need_preimage && (op = ce_op[ce_op_decode * 2][flags & ~CE_IS_SHORT]))
-    {
-      int res = op (&fetch_cpo, ce_first, n_values, n_bytes);
-      if (!res)
-	goto gen_dec;
-    }
-  else
-    {
-    gen_dec:
-      fetch_cpo.cpo_ce_row_no = 0;
-      fetch_cpo.cpo_string = ce;
-      cs_decode (&fetch_cpo, cpo->cpo_skip, n_values);
-    }
-#endif
   n_values = dc->dc_n_values - (dc_off / sizeof (caddr_t));
+  DC_OR_AUTO (uint64, hash_no, n_values, hash_no_auto, dc);
   int64_fill ((int64 *) hash_no, 1, n_values);
   chash_array ((int64 *) (dc->dc_values + dc_off), hash_no, dc->dc_dtp, 0, n_values, dc_elt_size (dc));
   min = QST_INT (inst, hrng->hrng_min);
@@ -5210,8 +5203,9 @@ ce_hash_sets_filter (col_pos_t * cpo, db_buf_t ce_first, int n_values, int n_byt
   caddr_t *inst = itc->itc_out_state;
   int ce_row = cpo->cpo_ce_row_no;
   uint32 min, max;
-  uint64 hash_no[CE_DICT_MAX_VALUES];
-  row_no_t matches_temp[CE_DICT_MAX_VALUES + 4];
+  uint64 hash_no_auto[CE_DICT_MAX_VALUES];
+  uint64 *hash_no;
+  row_no_t matches_auto[CE_DICT_MAX_VALUES + 4];
   row_no_t *matches;
   data_col_t *dc = QST_BOX (data_col_t *, inst, hrng->hrng_dc->ssl_index);
   col_pos_t fetch_cpo = *cpo;
@@ -5247,25 +5241,10 @@ ce_hash_sets_filter (col_pos_t * cpo, db_buf_t ce_first, int n_values, int n_byt
   else
     last_v = n_values + ce_row;
   fetch_cpo.cpo_dc = dc;
-#if 1
   ce_hash_dc (&fetch_cpo, ce, ce_first, n_values, n_bytes, &dc_off);
-#else
-  fetch_cpo.cpo_ce_op = NULL;
-  if (!itc->itc_col_need_preimage && (op = ce_op[ce_op_decode * 2 + 1][flags & ~CE_IS_SHORT]))
-    {
-      int res = op (&fetch_cpo, ce_first, n_values, n_bytes);
-      if (!res)
-	goto gen_dec;
-    }
-  else
-    {
-    gen_dec:
-      fetch_cpo.cpo_string = ce;
-      cs_decode (&fetch_cpo, itc->itc_matches[init_in], last_v);
-    }
-#endif
   n_values = dc->dc_n_values - (dc_off / sizeof (caddr_t));
-  matches = matches_temp;
+  DC_OR_AUTO (uint64, hash_no, n_values, hash_no_auto, dc);
+  DC_OR_AUTO (row_no_t, matches, n_values, matches_auto, dc);
   if (post_in != -1)
     itc->itc_match_in = post_in;
   int64_fill ((int64 *) hash_no, 1, n_values);
@@ -5682,7 +5661,7 @@ chash_fill_input (fun_ref_node_t * fref, caddr_t * inst, caddr_t * state)
   int p, n_part, nth_part;
   setp_node_t *setp = fref->fnr_setp;
   index_tree_t *tree = (index_tree_t *) qst_get (inst, setp->setp_ha->ha_tree);
-  int64 n_filled;
+  int64 n_filled = 0;
   chash_t *cha;
   hash_area_t *ha = fref->fnr_setp->setp_ha;
   if (tree && state)
@@ -5707,12 +5686,10 @@ chash_fill_input (fun_ref_node_t * fref, caddr_t * inst, caddr_t * state)
 	  mutex_leave (&chash_rc_mtx);
 	  QST_INT (inst, fref->fnr_n_part) = n_part;
 	  nth_part = QST_INT (inst, fref->fnr_nth_part) = 0;
-	  tree = cha_allocate (setp, inst, enable_hash_last ? 1 : card / n_part);
+	  tree = cha_allocate (setp, inst, 1);
 	  cha = tree->it_hi->hi_chash;
 	  cha->cha_reserved = size_est / n_part;
-	  cha->cha_hash_last = enable_hash_last;
-	  /*if (setp->setp_ht_id)
-	    cl_chash_fill_init (fref, inst);*/
+	  cha->cha_hash_last = 1;
 	}
       else
 	{

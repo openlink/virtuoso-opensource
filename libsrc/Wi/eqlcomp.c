@@ -534,6 +534,7 @@ qr_free (query_t * qr)
 #endif
   if (!qr->qr_text_is_constant)
     dk_free_box (qr->qr_text);
+  qr->qr_nodes = (dk_set_t)-1;
   dk_free ((caddr_t) qr, sizeof (query_t));
 }
 

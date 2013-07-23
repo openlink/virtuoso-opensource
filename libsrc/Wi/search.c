@@ -3712,6 +3712,12 @@ itc_matches_on_page (it_cursor_t * itc, buffer_desc_t * buf, int * leaf_ctr_ret,
     {
       bing ();
     }
+  if (is_col)
+    itc->itc_st.n_rows_sampled = itc->itc_st.rows_in_segs;
+  else
+    itc->itc_st.n_rows_sampled += ctr;
+
+  itc->itc_st.n_row_spec_matches += row_match_ctr;
   return ctr;
 }
 
@@ -3719,6 +3725,7 @@ int
 itc_sample_next (it_cursor_t * itc, buffer_desc_t ** buf_ret)
 {
   /* if landed at end of a page with the hits starting on the next, go one forward */
+  int rc;
   itc_try_land (itc, buf_ret);
   if (!itc->itc_landed)
     return -1;
@@ -3726,15 +3733,18 @@ itc_sample_next (it_cursor_t * itc, buffer_desc_t ** buf_ret)
   itc->itc_map_pos = (*buf_ret)->bd_content_map->pm_count - 1;
   if (itc->itc_insert_key->key_is_bitmap)
     itc->itc_bp.bp_value = BITNO_MAX;
+  ITC_SAVE_ROW_SPECS (itc);
+  ITC_NO_ROW_SPECS (itc);
   if (itc->itc_is_col)
     {
-      int rc;
       itc->itc_is_col = 0;
       rc = itc_next (itc, buf_ret);
       itc->itc_is_col = 1;
-      return rc;
     }
-  return itc_next (itc, buf_ret);
+  else 
+    rc =  itc_next (itc, buf_ret);
+  ITC_RESTORE_ROW_SPECS (itc);
+  return rc;
 }
 
 
@@ -3981,7 +3991,7 @@ itc_sample (it_cursor_t * itc)
     {
 
       if (itc->itc_insert_key->key_is_elastic && !itc->itc_tree)
-	return 1;
+	return -1;
     return itc_local_sample (itc);
 }
 }

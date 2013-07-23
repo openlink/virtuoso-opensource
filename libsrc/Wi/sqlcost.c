@@ -866,8 +866,9 @@ sqlo_in_list_unit (df_elt_t * pred, float * u1, float * a1)
 int dfe_range_card (df_elt_t * tb_dfe, df_elt_t * lower, df_elt_t * upper, float * card);
 
 
+
 void
-sqlo_pred_unit (df_elt_t * lower, df_elt_t * upper, df_elt_t * in_tb, float * u1, float * a1)
+sqlo_pred_unit_1 (df_elt_t * lower, df_elt_t * upper, df_elt_t * in_tb, float * u1, float * a1)
 {
   if (lower && lower->dfe_arity && lower->dfe_unit)
     {
@@ -986,6 +987,21 @@ sqlo_pred_unit (df_elt_t * lower, df_elt_t * upper, df_elt_t * in_tb, float * u1
     }
   *a1 = MIN (1, *a1);
   *a1 = CARD_ADJUST (*a1);
+}
+
+
+void
+sqlo_pred_unit (df_elt_t * lower, df_elt_t * upper, df_elt_t * in_tb, float * u1, float * a1)
+{
+  sqlo_pred_unit_1 (lower, upper, in_tb, u1, a1);
+  if (lower)
+    {
+      lower->dfe_arity = *a1;
+      if (upper)
+	upper->dfe_arity = 1;
+    }
+  else if (upper)
+    upper->dfe_arity = *a1;
 }
 
 
@@ -1328,6 +1344,7 @@ sqlo_geo_count (df_elt_t * tb_dfe, df_elt_t * pred)
     card = geo_estimate (tb, geo, gt, prec, key_one_slice (tb->tb_primary_key)) * key_n_partitions (tb->tb_primary_key);
   else
     card = 2;
+  card = MAX (card, 2);
   if (tb_dfe->_.table.text_pred)
     tb_dfe->_.table.text_pred->dfe_arity = card;
   return  pred->dfe_arity = card;
@@ -1668,7 +1685,7 @@ dfe_text_cost (df_elt_t * dfe, float *u1, float * a1, int text_order_anyway)
   dbe_table_t *ot_tbl = dfe->_.table.ot->ot_table;
   float text_selectivity, n_text_hits;
   float text_key_cost;
-  int64 ot_tbl_size = dbe_key_count (ot_tbl->tb_primary_key);
+  int64 ot_tbl_size = dfe_scan_card (dfe);
   dbe_key_t * text_key = tb_text_key (ot_tbl);
   text_known = sqlo_text_estimate (dfe, &text_pred, &text_selectivity);
   if (text_pred)
@@ -1879,7 +1896,7 @@ int
 sample_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t data)
 {
   caddr_t err = NULL;
-  dtp_t target_dtp = sp->sp_cl.cl_sqt.sqt_dtp;
+  dtp_t target_dtp = sp->sp_cl.cl_sqt.sqt_col_dtp;
   dtp_t dtp = DV_TYPE_OF (data);
   caddr_t name, vtype, lang;
   if ((name = sqlo_iri_constant_name ((ST *) data)))
@@ -2139,7 +2156,7 @@ extern rdf_inf_ctx_t * empty_ric;
 #define SMPL_QUEUE 1
 #define SMPL_RESULT 2
 
-int32 sqlo_sample_dep_cols = 0;
+int32 sqlo_sample_dep_cols = 1;
 search_spec_t * dfe_to_spec (df_elt_t * lower, df_elt_t * upper, dbe_key_t * key);
 
 
@@ -2149,7 +2166,8 @@ itc_row_selectivity (it_cursor_t * itc, int64 inx_est)
   if (itc->itc_row_specs && itc->itc_st.n_rows_sampled)
     {
       if (itc->itc_st.n_row_spec_matches)
-	return (float)itc->itc_st.n_row_spec_matches / (float) MIN (inx_est, itc->itc_st.n_rows_sampled);
+	
+return (float)itc->itc_st.n_row_spec_matches / (float)itc->itc_st.n_rows_sampled;
       else
 	return MAX (1e-3, 1.0 / itc->itc_st.n_rows_sampled);
     }
@@ -2161,7 +2179,9 @@ int64
 sqlo_inx_sample_1 (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_elt_t ** uppers, int n_parts,
     sample_opt_t * sop, index_choice_t * ic)
 {
-  sqlo_t * so = NULL;
+  int64 c;
+  float col_predicted = 1;
+  sqlo_t * so = tb_dfe->dfe_sqlo;
   caddr_t sc_key = NULL;
   tb_sample_t * place;
   int64 res, tb_count;
@@ -2224,6 +2244,7 @@ sqlo_inx_sample_1 (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_el
 	      if (KS_CAST_OK != res)
 		continue;
 	      *prev_sp = &row_specs[inx];
+	      col_predicted *= cp->dfe_arity;
 	      if (key->key_is_col)
 		(*prev_sp)->sp_cl = *cl_list_find (key->key_row_var, cp->_.bin.left->_.col.col->col_id);
 	      prev_sp = &row_specs[inx].sp_next;
@@ -2246,14 +2267,15 @@ sqlo_inx_sample_1 (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_el
       place = (tb_sample_t*) id_hash_get (sop->sop_ric->ric_samples, (caddr_t) &sc_key);
       if (place)
 	{
-	  int64 c = place->smp_card;
+	  c = place->smp_card;
 	  if (sop->sop_cols && c)
 	    goto sample_for_cols; /* if this is a non-zero cached sample and col samples are wanted then go get them but if 0 then return this */
 	  ic->ic_inx_card = place->smp_inx_card;
+	  mutex_leave (sop->sop_ric->ric_mtx);
 	  dk_free_tree (sc_key);
 	  itc_free (itc);
-	  mutex_leave (sop->sop_ric->ric_mtx);
 	  sop->sop_res_from_ric_cache = 1;
+	  ic->ic_col_card_corr = col_predicted / (c / ic->ic_inx_card);
 	  return c;
 	}
     sample_for_cols: ;
@@ -2270,8 +2292,10 @@ sqlo_inx_sample_1 (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_el
     {
       dk_free_tree (sc_key);
       itc_free (itc);
+      c = place->smp_card;
       ic->ic_inx_card = place->smp_inx_card;
-      return place->smp_card;
+      ic->ic_col_card_corr = col_predicted / (c / ic->ic_inx_card);
+      return c;
     }
   if (sop)
     itc->itc_st.cols = sop->sop_cols;
@@ -2289,13 +2313,15 @@ sqlo_inx_sample_1 (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_el
     {
       tb_sample_t smp;
       memset (&smp, 0, sizeof (tb_sample_t));
-      smp.smp_card = res / row_sel;
+      smp.smp_card = res * row_sel;
       smp.smp_inx_card = res;
       if (so->so_sc->sc_sample_cache)
 	id_hash_set (so->so_sc->sc_sample_cache, (caddr_t)&sc_key, (caddr_t)&smp);
     }
+  c = res * row_sel;
   ic->ic_inx_card = res;
-  return res / row_sel;
+  ic->ic_col_card_corr = col_predicted / (c / ic->ic_inx_card);
+  return c;
 }
 
 int32 ric_samples_sz = 10000;
@@ -3290,7 +3316,7 @@ sqlo_use_p_stat (df_elt_t * dfe, df_elt_t ** lowers, int inx_const_fill, int64 e
   df_elt_t * so_dfe, * g_dfe;
   df_elt_t * lower3 = NULL, * upper3 = NULL;
   dbe_column_t * col2, * col3 = NULL;
-  if (!enable_p_stat)
+  if (!enable_p_stat || !inx_const_fill)
     return 0;
   if (!key->key_p_stat || 0 != strcmp (((dbe_column_t*)key->key_parts->data)->col_name, "P")
       || !strstr (key->key_table->tb_name, "RDF_QUAD"))
@@ -3466,6 +3492,55 @@ dfe_rq_col_pos (df_elt_t * dfe, char cn)
 
 
 int
+dfe_sample_dep_only (df_elt_t * dfe, float col_card)
+{
+  if (tb_is_rdf_quad (dfe->_.table.ot->ot_table))
+    return 0;
+  if (sqlo_sample_dep_cols && dfe->_.table.col_preds && 1 != col_card)
+    return 1;
+  return 0;
+}
+
+
+void
+dfe_table_unq_card (df_elt_t * dfe, index_choice_t * ic, float tb_card, float * inx_card_ret, df_elt_t ** eq_preds, int eq_fill, float * col_card_ret)
+{
+  /* adjust card of joini to a non rdf table where unique keys are given.  If this is a multipart fk, then the card guess is 1, if the parts come from different tables these are considered independent and the card is the product of the selectivities */
+  int inx;
+  dbe_key_t * key = dfe->_.table.key;
+  float inx_card = *inx_card_ret;
+  float col_card = *col_card_ret;
+  caddr_t pref = NULL;
+  if (sqlo_sample_dep_cols && col_card < 0.9)
+    {
+      int64 est = sqlo_inx_sample (dfe, dfe->_.table.key, NULL, NULL, 0, ic);
+      *col_card_ret /= ic->ic_col_card_corr;
+    }
+  if (1 == key->key_n_significant)
+    goto independent;
+  for (inx = 0; inx < eq_fill; inx++)
+    {
+      df_elt_t * eq = eq_preds[inx];
+      df_elt_t * rhs = eq->_.bin.right;
+      if (DFE_COLUMN != rhs->dfe_type)
+	goto independent;
+      if (!pref)
+	pref = rhs->dfe_tree->_.col_ref.prefix;
+      else if (strcmp (pref, rhs->dfe_tree->_.col_ref.prefix))
+	goto independent;
+    }
+  if (eq_fill == key->key_n_significant)
+    {
+      *inx_card_ret = 1;
+      return;
+    }
+ independent:
+  inx_card = MIN (1, inx_card);
+  *inx_card_ret = inx_card;
+}
+
+
+int
 dfe_rdfs_type_check_card (df_elt_t * dfe, index_choice_t * ic, df_elt_t ** eqs, int n_eqs, float * inx_cost_ret)
 {
   /* recognize p = rdfs:type and s and o given, s not constant. Favor use of pogs  */
@@ -3512,7 +3587,7 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
   dbe_table_t * tb = dfe->_.table.ot->ot_table;
   float p_cost, p_arity, rows_per_page, inx_arity_sc;
   float inx_cost = 0;
-  float inx_arity, inx_arity_guess_for_const_parts = -1;
+  float inx_arity, inx_arity_guess_for_const_parts = -1, tb_count;
   float col_arity = 1;
   float col_cost = (float) 0.12;
   float total_cost, total_arity;
@@ -3526,7 +3601,8 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
 	return;
     }
   ic->ic_key = key;
-  inx_arity = (float) dbe_key_count (dfe->_.table.key);
+  tb_count = inx_arity = (float) dbe_key_count (dfe->_.table.key);
+  tb_count = MAX (1, tb_count);
   ic->ic_leading_constants = dfe->_.table.is_arity_sure = 0;
   if (!inx_only && dfe->dfe_unit > 0)
     {
@@ -3590,9 +3666,9 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
 		    (upper ? !sqlo_in_list (upper, NULL, NULL) && pred_const_rhs (upper) : 1)))
 		{
 		  dfe_range_card (dfe, lower, upper, &p_arity);
-		  col_cost += p_cost * col_arity;
-		  col_arity *= p_arity;
 		}
+	      col_cost += p_cost * col_arity;
+	      col_arity *= p_arity;
 	    }
 	}
       else
@@ -3646,20 +3722,30 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
       p_stat = 2;
     }
   else if (unique && !ic->ic_ric)
-    inx_arity = MIN (1, inx_arity);
-  else if (LOC_LOCAL == dfe->dfe_locus && inx_const_fill
+    {
+      dfe_table_unq_card (dfe, ic, tb_count, &inx_arity, eq_preds, eq_fill, &col_arity);
+    }
+  else if (LOC_LOCAL == dfe->dfe_locus && (inx_const_fill || dfe_sample_dep_only (dfe, col_arity))
 	   && !(dfe->dfe_sqlo->so_sc->sc_is_update && 0 == strcmp (dfe->_.table.ot->ot_new_prefix, "t1")))
     {
-       inx_sample = sqlo_inx_sample (dfe, key, inx_lowers, inx_uppers, inx_const_fill, ic);
+      inx_sample = sqlo_inx_sample (dfe, key, inx_lowers, inx_uppers, inx_const_fill, ic);
+      if (inx_sample > 1 && sqlo_sample_dep_cols)
+	{
+	  col_arity /= ic->ic_col_card_corr;
+	  inx_sample = ic->ic_inx_card;
+	}
       if (-1 == inx_sample)
 	goto no_sample;
       else if (0 == inx_sample)
-	inx_arity = 0.01;
+	inx_arity = 10 / tb_count;
       else if (sqlo_use_p_stat (dfe, inx_lowers, inx_const_fill, inx_sample, &inx_arity, &col_arity))
 	p_stat = 1;
       else
-	inx_arity = inx_sample * inx_arity / (inx_arity_guess_for_const_parts != -1 ? inx_arity_guess_for_const_parts : inx_arity);
-      /* Consider if 2 first key parts are const and third is var.  Get the real arity for the const but do not forget the guess  for  the 3rd*/
+	{
+	  if (inx_const_fill)
+	    inx_arity = inx_sample * inx_arity / (inx_arity_guess_for_const_parts != -1 ? inx_arity_guess_for_const_parts : inx_arity);
+	  /* Consider if 2 first key parts are const and third is var.  Get the real arity for the const but do not forget the guess  for  the 3rd*/
+	}
       ic->ic_leading_constants = dfe->_.table.is_arity_sure = inx_const_fill * 2 + (0 != p_stat);
     no_sample: ;
     }

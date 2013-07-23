@@ -793,6 +793,7 @@ ins_unq_hashcmp (char *x, char *y)
   return 1;
 }
 
+extern int enable_p_stat;
 
 int
 tb_is_rdf_quad (dbe_table_t * tb)
@@ -806,6 +807,20 @@ tb_is_rdf_quad (dbe_table_t * tb)
     return 0;
   is_q = 0 == stricmp (tb->tb_name, "DB.DBA.RDF_QUAD");
   tb->tb_is_rdf_quad = is_q ? 1 : 2;
+  if (is_q)
+    {
+      enable_p_stat = 1;
+      DO_SET (dbe_key_t *, key, &tb->tb_keys)
+	{
+	  if (!stricmp (key->key_name, "RDF_QUAD_POGS") && key->key_decl_parts == 4)
+	    {
+	      dbe_column_t *c1 = dk_set_nth (key->key_parts, 0), *c2 = dk_set_nth (key->key_parts, 1), *c3 = dk_set_nth (key->key_parts, 2), *c4 = dk_set_nth (key->key_parts, 3);
+	      if (!stricmp (c1->col_name, "P") && !stricmp (c2->col_name, "O") && !stricmp (c3->col_name, "S") && !stricmp (c4->col_name, "G"))
+		enable_p_stat = 2;
+	    }
+	}
+      END_DO_SET();
+    }
   return is_q;
 }
 
