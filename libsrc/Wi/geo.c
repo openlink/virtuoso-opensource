@@ -1457,37 +1457,76 @@ geo_pred (geo_t * g1, geo_t * g2, int op, double prec)
 }
 
 
+query_t * geo_ck_qr;
+
 void
 geo_rdf_check (text_node_t * txs, caddr_t * inst)
 {
   /* will always be in the partition where the rdf box can be completed locally */
   QNCAST (query_instance_t, qi, inst);
+  int n_sets = txs->src_gen.src_prev ? QST_INT (inst, txs->src_gen.src_prev->src_out_fill) : qi->qi_n_sets;
+  caddr_t geo = NULL;
+  data_col_t * ser_dc;
   double prec;
   geo_t *g1, *g2;
-  rdf_box_t *rb = (rdf_box_t *) qst_get (inst, txs->txs_d_id);
-  if (DV_RDF != DV_TYPE_OF (rb) || RDF_BOX_GEO != rb->rb_type)
-    return;
-  rb_complete_1 (rb, qi->qi_trx, CALLER_LOCAL, cl_run_local_only ? 0 : 1);
-  g1 = (geo_t *) rb->rb_box;
-  if (DV_GEO != DV_TYPE_OF (g1))
+  data_col_t * id_dc = QST_BOX (data_col_t *, inst, txs->txs_d_id->ssl_index);
+  caddr_t err = NULL;
+  state_slot_t ** args;
+  select_node_t * sel;
+  int inx, n_res = 0;
+  local_cursor_t lc;
+  AUTO_POOL (100);
+  QST_INT (inst, txs->src_gen.src_out_fill) = 0;
+  SRC_IN_STATE (txs, inst) = NULL;
+  if (!geo_ck_qr)
     {
-      return;
-    }
-  g2 = (geo_t *) qst_get (inst, txs->txs_text_exp);
-  if (DV_RDF == DV_TYPE_OF (g2))
-    g2 = (geo_t *) ((rdf_box_t *) g2)->rb_box;
-  if (DV_GEO != DV_TYPE_OF (g2))
-    {
-      if (qi->qi_no_cast_error)
-	return;
-      sqlr_new_error ("22023", "GEO..", "after check with geo contains expects a geo as arg 2");
+      geo_ck_qr = sql_compile_static ("select coalesce (blob_to_string (ro_long), ro_val)  from rdf_obj table option (no cluster) where ro_id = ?", bootstrap_cli, &err, SQLC_DEFAULT);
+      if (err)
+	sqlr_resignal (err);
     }
   prec = txs_prec (txs, inst);
-  if (geo_pred (g1, g2, txs->txs_geo, prec))
+  qi->qi_set_mask = NULL;
+  qi->qi_n_sets = n_sets;
+  if (SSL_VEC != txs->txs_d_id->ssl_type)
+    sqlr_new_error ("VECSL", "VECSL",  "Geo chekc ro id is to be a vec ssl.  For support.");
+  args = (state_slot_t**)ap_list (&ap, 1, txs->txs_d_id);
+  sel = geo_ck_qr->qr_select_node;
+  memset (&lc, 0, sizeof (lc));
+  err = qr_subq_exec_vec (qi->qi_client, geo_ck_qr, qi, NULL, 0, args, NULL, NULL, &lc);
+  if (err)
+    {
+      sqlr_resignal (err);
+    }
+  ser_dc = QST_BOX (data_col_t *, lc.lc_inst, sel->sel_out_slots[0]->ssl_index);
+  while (lc_next (&lc))
+    {
+      int set = qst_vec_get_int64  (lc.lc_inst, sel->sel_set_no, lc.lc_position), hl;
+      db_buf_t dv = ((db_buf_t *)ser_dc->dc_values)[set];
+      if (DV_SHORT_STRING_SERIAL == *dv)
+	hl = 2;
+      else if (DV_STRING == *dv)
+	hl = 5;
+      else
+	continue;
+      geo = box_deserialize_reusing (dv + hl, geo);
+      qi->qi_set = set;
+      g2 = qst_get (inst, txs->txs_text_exp);
+  if (DV_RDF == DV_TYPE_OF (g2))
+	g2 = ((rdf_box_t *)g2)->rb_box;
+      if (geo_pred (geo, g2, txs->txs_geo, prec));
+    {
+	qn_result ((data_source_t*)txs, inst, set);
+    }
+    }
+  dk_free_box (geo);
+  if (lc.lc_inst)
+    qi_free (lc.lc_inst);
+  if (lc.lc_error)
+    sqlr_resignal (lc.lc_error);
+  if (QST_INT (inst, txs->src_gen.src_out_fill));
     qn_send_output ((data_source_t *) txs, inst);
 }
 
-/*!!!TBD check new v7 */
 void
 geo_node_vec_input (text_node_t * txs, caddr_t * inst, caddr_t * state)
 {
@@ -1652,13 +1691,6 @@ again:
 void
 geo_node_input (text_node_t * txs, caddr_t * inst, caddr_t * state)
 {
-  QNCAST (query_instance_t, qi, inst);
-  boxint id;
-  int rc, org_flags;
-  it_cursor_t *itc = (it_cursor_t *) QST_GET_V (inst, txs->txs_sst);
-  buffer_desc_t *buf;
-  dbe_key_t *key = txs->txs_table->tb_primary_key;
-  dbe_col_loc_t *id_cl = &key->key_key_fixed[4];
   if (!txs->txs_is_driving && txs->txs_is_rdf)
     {
       geo_rdf_check (txs, inst);
@@ -1669,120 +1701,7 @@ geo_node_input (text_node_t * txs, caddr_t * inst, caddr_t * state)
       geo_node_vec_input (txs, inst, state);
       return;
     }
-  for (;;)
-    {
-      int need_enter = 0;
-      if (state)
-	{
-	  double prec = 0;
-	  geo_t *geo, *box;
-	  if (!itc)
-	    {
-	      itc = itc_create (NULL, qi->qi_trx);
-	      memset (&itc->itc_search_params, 0, 3 * sizeof (caddr_t));
-	      itc_from (itc, key, qi->qi_client->cli_slice);
-	      itc_geo_register (itc);
-	      itc->itc_key_spec.ksp_key_cmp = cmpf_geo;
-	      QST_GET_V (inst, txs->txs_sst) = (caddr_t) itc;
-	    }
-	  else
-	    {
-	      itc_unregister (itc);
-	    }
-	  geo = (geo_t *) qst_get (inst, txs->txs_text_exp);
-	  if (DV_RDF == DV_TYPE_OF (geo))
-	    {
-	      QNCAST (rdf_box_t, rb, geo);
-	      if (!rb->rb_is_complete)
-		sqlr_new_error ("22023", "GEO..", "An incomplete rdf box is not accepted as 2nd arg of st_intersect ro id=%Ld",
-		    rb->rb_ro_id);
-	      geo = (geo_t *) rb->rb_box;
-	    }
-	  if (DV_GEO != DV_TYPE_OF ((caddr_t) geo))
-	    {
-	      if (qi->qi_no_cast_error)
-		{
-		  SRC_IN_STATE (txs, inst) = NULL;
-		  return;
-		}
-	      sqlr_new_error ("22032", "GEO..", "Indexed geo operation expects a geometry as search argument");
-	    }
-	  box = (geo_t *) itc->itc_search_params[0];
-	  if (!box)
-	    {
-	      box = geo_alloc (GEO_GSOP, 0, geo->geo_srcode);
-	      box->_.point.point_gs_op = txs->txs_geo;
-	      box->_.point.point_gs_precision = (txs->txs_precision ? GSOP_PRECISION : 0);
-	      ITC_OWNS_PARAM (itc, (caddr_t) box);
-	      itc->itc_search_params[0] = (caddr_t) box;
-	    }
-	  prec = txs_prec (txs, inst);
-	  if (txs->txs_precision)
-	    {
-	      if (itc->itc_search_params[2])
-		*(double *) itc->itc_search_params[2] = prec;
-	      else
-		{
-		  caddr_t dbox = box_double (prec);
-		  ITC_OWNS_PARAM (itc, dbox);
-		  itc->itc_search_params[2] = dbox;
-		}
-	    }
-	  org_flags = box->geo_flags;
-	  geo_get_bounding_XYbox (geo, box, prec, prec);
-	  box->geo_flags = org_flags;
-	  itc->itc_search_params[1] = (caddr_t) geo;
-
-	  itc->itc_search_mode = SM_INSERT;
-	  itc->itc_bp.bp_is_pos_valid = 1;
-	  buf = itc_reset (itc);
-	  itc->itc_search_mode = SM_READ;
-	  itc->itc_landed = 1;
-	  itc->itc_map_pos = 0;
-	}
-      else
-	need_enter = 1;
-      itc->itc_ltrx = qi->qi_trx;	/*may run on different clis of different clt or aq threads at different times */
-      ITC_FAIL (itc)
-      {
-	if (need_enter)
-	  buf = page_reenter_excl (itc);
-	rc = itc_next (itc, &buf);
-      }
-      ITC_FAILED
-      {
-      }
-      END_FAIL (itc);
-      if (!itc->itc_bp.bp_is_pos_valid)
-	{
-	  itc_page_leave (itc, buf);
-	  sqlr_new_error ("40001", "GEO..", "Cursor over geo index reset due to concurrent split of index.  Retry the query");
-	}
-      if (DVC_MATCH != rc)
-	{
-	  itc_page_leave (itc, buf);
-	  SRC_IN_STATE (txs, inst) = NULL;
-	  return;
-	}
-      if (DV_INT64 == id_cl->cl_sqt.sqt_dtp)
-	id = INT64_REF (itc->itc_row_data + id_cl->cl_pos[0]);
-      else
-	id = LONG_REF (itc->itc_row_data + id_cl->cl_pos[0]);
-      if (txs->txs_is_rdf)
-	{
-	  rdf_box_t *rb = rb_allocate ();
-	  rb->rb_ro_id = id;
-	  rb->rb_type = RDF_BOX_GEO;
-	  qst_set (inst, txs->txs_d_id, (caddr_t) rb);
-	}
-      else
-	qst_set_long (inst, txs->txs_d_id, id);
-      SRC_IN_STATE (txs, inst) = inst;
-      itc_register (itc, buf);
-      itc_page_leave (itc, buf);
-      qn_send_output ((data_source_t *) txs, inst);
-      state = NULL;
-    }
+  GPF_T1 ("non-vectored geo node");
 }
 
 

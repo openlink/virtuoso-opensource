@@ -615,15 +615,16 @@ sqlg_virtual_col_ssl (sqlo_t *so, op_virt_col_t *vc)
 
 
 state_slot_t *
-sqlg_rdf_text_check (df_elt_t * tb_dfe, text_node_t * txs, state_slot_t * id_ssl, dk_set_t * code)
+sqlg_rdf_text_check (df_elt_t * tb_dfe, text_node_t * txs, df_elt_t * col_dfe, state_slot_t * id_ssl, dk_set_t * code)
 {
   sql_comp_t * sc = tb_dfe->dfe_sqlo->so_sc;
-  if (0 == stricmp (tb_dfe->_.table.ot->ot_table->tb_name, "DB.DBA.RDF_QUAD"))
+  if (tb_is_rdf_quad (tb_dfe->_.table.ot->ot_table))
     {
       if (id_ssl->ssl_column && 0 == stricmp (id_ssl->ssl_column->col_name, "O"))
 	{
 	  state_slot_t * id2 = sqlc_new_temp (sc, "ro_id", DV_LONG_INT);
 	  cv_call (code, NULL, t_sqlp_box_id_upcase  ("ro_digest_id"), id2, (state_slot_t **) sc_list (1, id_ssl));
+	  t_set_pushnew (&tb_dfe->_.table.out_cols, (void*)col_dfe);
 	  return id2;
 	}
     }
@@ -687,7 +688,7 @@ sqlg_text_node (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic)
       df_elt_t *col_dfe = sqlo_df (so, t_listst (3, COL_DOTTED, ot->ot_new_prefix, col->col_name));
       text_id = sqlg_dfe_ssl (so, col_dfe);
       if (!tb_dfe->_.table.is_text_order)
-	text_id = sqlg_rdf_text_check (tb_dfe, txs, text_id, &code);
+	text_id = sqlg_rdf_text_check (tb_dfe, txs, col_dfe, text_id, &code);
       if (tb_dfe->_.table.is_text_order)
 	col_dfe->dfe_is_placed = DFE_GEN;
     }
