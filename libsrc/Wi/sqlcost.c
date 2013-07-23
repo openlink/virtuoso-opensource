@@ -1311,31 +1311,15 @@ sqlo_geo_count (df_elt_t * tb_dfe, df_elt_t * pred)
   geo_t * geo = NULL;
   if (BOX_ELEMENTS (args) > 2)
     prec = sqlo_double_literal (args[2], &prec_literal);
-  if (ST_P (args[1], CALL_STMT)
-      && !stricmp (args[1]->_.call.name, "st_point"))
-    {
-      ST ** pt_args = args[1]->_.call.params;
-      int x_lit = 0, y_lit = 0;
-      double x = sqlo_double_literal (pt_args[0], &x_lit);
-      double y = sqlo_double_literal (pt_args[1], &y_lit);
-      if (x_lit && y_lit)
-	geo = geo_point (x, y);
-    }
-  if (ST_P (args[1], CALL_STMT)
-      && !stricmp (args[1]->_.call.name, "st_geomfromtext")
-      && BOX_ELEMENTS (args[1]->_.call.params) > 0
-      && DV_STRINGP ((str = (caddr_t)args[1]->_.call.params[0])))
-    {
-      caddr_t err = NULL;
-      geo = (geo_t*)geo_parse_wkt (str, &err);
-      if (err)
-	geo = NULL;
-    }
+  if (DV_GEO == DV_TYPE_OF (args[0]))
+    geo = (geo_t*) args[0];
+  else if (DV_GEO == DV_TYPE_OF (args[1]))
+    geo = (geo_t*)args[1];
   if (prec_literal && !geo)
     {
       /* precision is given but geometry is unknown.  Estimate card by ratio of surfaces */
       int64 ct = dbe_key_count (tb->tb_primary_key);
-      if (tb_is_rdf_quad (tb))
+      if (tb_is_rdf_quad (tb_dfe->_.table.ot->ot_table))
 	prec *= KM_TO_DEG;
       card = (M_PI * prec * prec) / tb->tb_geo_area;
       card = MIN (card, 1) * ct;

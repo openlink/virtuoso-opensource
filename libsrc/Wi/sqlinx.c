@@ -333,7 +333,7 @@ sqlo_ip_leading_text (df_elt_t * tb_dfe, dbe_key_t * key, index_choice_t * ic, d
     }
   END_DO_SET();
   text_pred->dfe_is_placed = DFE_PLACED;
-  text_card = dbe_key_count (key->key_table->tb_primary_key);
+  text_card = dfe_scan_card (tb_dfe);
   ic->ic_key = key;
   ic->ic_text_pred = text_pred;
   ic->ic_text_order = 1;
