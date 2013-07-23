@@ -1064,12 +1064,14 @@ EXTRA_DIST = \
 	bif_purify.c \
 	box2any.c \
 	cebits.c \
-	ceintd2.c \
+	cebitsdec.c \
 	cedict1.c \
 	cedictad.c \
+	ceintd2.c \
 	ceintd.c \
-	cevecf.c \
+	ceintddec.c \
 	cesearch.c \
+	cevecf.c \
 	ceveci.c \
 	cevecins.c \
 	coltry.c \

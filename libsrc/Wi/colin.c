@@ -335,6 +335,7 @@ itc->itc_matches[itc->itc_match_out++] = row;
 #include "ceintd.c"
 
 int enable_intd_range = 1;
+int enable_bits_dec = 1;
 
 #define CE_NAME ce_intd_range_ltgt
 #define CEINTD_RANGE
@@ -562,6 +563,133 @@ ce_vec_any_range_filter (col_pos_t * cpo, db_buf_t ce_first, int n_values, int n
 #include "cebits.c"
 
 
+/* delta like ce decode */
+
+
+
+#define CED_ANY_VARS \
+  char is_date = 0; \
+uint32 any_base = 0;
+
+#define CED_ANY_CHECK \
+{ \
+  if (first_len < 5) return 0; \
+  if (!ced_any_dc_check (cpo, ce_first_val)) return 0; \
+  if (DV_DATETIME == ce_first_val[0]) \
+    { \
+      is_date = 1; \
+      any_base = DT_DAY (ce_first_val + 1); \
+    } \
+  else  \
+    any_base = LONG_REF_NA (ce_first_val + first_len - 4); \
+}
+
+
+#define CED_ANY_OUT(ce_first_val, first_len, off)	\
+{ \
+  if (is_date) \
+    { \
+      db_buf_t tgt = dc->dc_values + DT_LENGTH * dc->dc_n_values; \
+      memcpy_dt (tgt, ce_first_val + 1); \
+      dc->dc_n_values++; \
+      DT_SET_DAY (tgt, any_base + off); \
+    } \
+  else \
+    { \
+      db_buf_t tgt; \
+      int buf_fill = dc->dc_buf_fill, buf_len = dc->dc_buf_len; \
+      if (buf_fill + first_len <= buf_len) \
+	{ \
+	  tgt = ((db_buf_t*)dc->dc_values)[dc->dc_n_values++] = dc->dc_buffer + buf_fill; \
+	  memcpy_16 (tgt, ce_first_val, first_len); \
+	  dc->dc_buf_fill += first_len; \
+	} \
+      else \
+	{ \
+	  dc_append_bytes (dc, ce_first_val, first_len, NULL, 0); \
+	  tgt = ((db_buf_t*)dc->dc_values)[dc->dc_n_values - 1]; \
+	} \
+      LONG_SET_NA (tgt + first_len - 4, any_base + off); \
+    } \
+}
+
+
+#define CED_INT_OUT(i1, i2, off) \
+  ((int64*)dc->dc_values)[dc->dc_n_values++] = off
+
+int 
+ced_any_dc_check (col_pos_t * cpo, db_buf_t ce_first_val)
+{
+  data_col_t * dc = cpo->cpo_dc;
+  if (DV_DATETIME == dc->dc_sqt.sqt_dtp && DV_DATETIME == ce_first_val[0])
+    return 1;
+  if (DV_DATETIME == ce_first_val[0])
+    {
+      if (dc->dc_n_values || DV_ANY != dc->dc_sqt.sqt_col_dtp)
+	return 0;
+      dc_convert_empty (dc, DV_DATETIME);
+      return 1;
+    }
+  if (DV_ANY != dc->dc_sqt.sqt_col_dtp)
+    return 0;
+  if (DV_ANY != dc->dc_sqt.sqt_dtp)
+    dc_heterogenous (dc);
+}
+
+
+int
+ced_intlike_dc_check (col_pos_t * cpo, dtp_t flags)
+{
+  data_col_t * dc = cpo->cpo_dc;
+  if (((CE_IS_IRI & flags) ? DV_IRI_ID : DV_LONG_INT) == dtp_canonical[dc->dc_dtp])
+    return 1;
+  if (DV_ANY == dc->dc_sqt.sqt_col_dtp)
+    {
+      if (!dc->dc_n_values)
+	{
+	  dc_convert_empty (dc, (CE_IS_IRI &flags) ? DV_IRI_ID : DV_LONG_INT);
+	  return 1;
+	}
+      else
+	return 0;
+    }
+  return 0;
+}
+
+
+
+
+#define CE_NAME ce_intd_any_range_decode 
+#define IS_INTD_ANY 1
+#define CEINTD_RANGE
+#define CED_VARS CED_ANY_VARS
+#define CED_CHECK CED_ANY_CHECK
+#define CE_OUT(first_val,first_len,off) CED_ANY_OUT (first_val,first_len,off)
+#include "ceintddec.c"
+
+#define CE_NAME ce_intd_any_sets_decode 
+#define IS_INTD_ANY 1
+#define CED_VARS CED_ANY_VARS
+#define CED_CHECK CED_ANY_CHECK
+#define CE_OUT(first_val,first_len,off) CED_ANY_OUT (first_val,first_len,off)
+#include "ceintddec.c"
+
+
+#define CE_NAME ce_bits_int_range_decode 
+#define CE_BITS_RANGE
+#define CED_CHECK if (!ced_intlike_dc_check (cpo, flags)) return 0;
+#define CED_VARS
+#define CE_OUT(first_val, first_len, off) CED_INT_OUT (first_val, first_len, off)
+#include "cebitsdec.c"
+
+
+#define CE_NAME ce_bits_int_sets_decode 
+#define CED_CHECK if (!ced_intlike_dc_check (cpo, flags)) return 0;
+#define CED_VARS
+#define CE_OUT(first_val, first_len, off) CED_INT_OUT (first_val, first_len, off)
+#include "cebitsdec.c"
+
+
 
 int enable_vecf = 1;
 
@@ -649,4 +777,20 @@ colin_init ()
 
   ce_op_decode = col_find_op (CE_DECODE);
   ce_op_hash = col_find_op (CMP_HASH_RANGE);
+  
+
+
+  ce_op_register (CE_INT_DELTA | CET_ANY, CE_DECODE, 0, ce_intd_any_range_decode);
+  ce_op_register (CE_INT_DELTA | CET_ANY, CE_DECODE, 1, ce_intd_any_sets_decode);
+
+  ce_op_register (CE_BITS | CET_INT, CE_DECODE, 0, ce_bits_int_range_decode);
+  ce_op_register (CE_BITS | CET_INT, CE_DECODE, 1, ce_bits_int_sets_decode);
+  ce_op_register (CE_BITS | CET_INT | CE_IS_64, CE_DECODE, 0, ce_bits_int_range_decode);
+  ce_op_register (CE_BITS | CET_INT | CE_IS_64, CE_DECODE, 1, ce_bits_int_sets_decode);
+
+  ce_op_register (CE_BITS | CE_IS_IRI, CE_DECODE, 0, ce_bits_int_range_decode);
+  ce_op_register (CE_BITS | CE_IS_IRI, CE_DECODE, 1, ce_bits_int_sets_decode);
+  ce_op_register (CE_BITS | CE_IS_IRI | CE_IS_64, CE_DECODE, 0, ce_bits_int_range_decode);
+  ce_op_register (CE_BITS | CE_IS_IRI | CE_IS_64, CE_DECODE, 1, ce_bits_int_sets_decode);
+
 }

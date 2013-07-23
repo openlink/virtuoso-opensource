@@ -3193,6 +3193,8 @@ qi_caller_set (query_instance_t * caller, int * pos, int skip)
   return -1;
 }
 
+int enable_cmp_vec = 1;
+
 
 void
 code_vec_run_v (code_vec_t code_vec, caddr_t * qst, int offset, int run_until, int n_sets, data_col_t * ret_dc, int * bool_ret, ssl_index_t bool_ret_fill)
@@ -3309,7 +3311,9 @@ code_vec_run_v (code_vec_t code_vec, caddr_t * qst, int offset, int run_until, i
 	    dtp_t * next_mask;
 	    NEXT_MASK (next_mask, qst, ins->_.cmp.next_mask);
 	    SET_MASK_CLEAR (next_mask, n_sets);
-	    if (ins->_.cmp.func)
+	    if (enable_cmp_vec && CMP_VEC_NA != (mix = cmp_vec (qst, ins, qi->qi_set_mask, next_mask)))
+	      ;
+	    else if (ins->_.cmp.func)
 	      mix = dc_cmp_funcs[ins->_.cmp.func] (ins, qst, next_mask);
 	    else
 	      {
