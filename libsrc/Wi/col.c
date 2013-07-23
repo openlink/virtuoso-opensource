@@ -1064,6 +1064,11 @@ int enable_ce_skip_bits_2 = 0;
   {if (enable_ce_skip_bits_2) ce_skip_bits_2 (bits, skip, byte, bit);	\
    else ce_skip_bits (bits, skip, byte, bit);}
 
+#ifdef WIN32
+#include <intrin.h>
+#define __builtin_popcountl __popcnt64
+#endif
+
 void
 ce_skip_bits_2 (db_buf_t bits, int skip, int * byte_ret, int * bit_ret)
 {
