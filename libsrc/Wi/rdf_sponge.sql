@@ -1622,7 +1622,7 @@ create procedure DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC (in contents varchar, in base
     }
     where { { select distinct ?s 
       where { graph `iri(?:graph)` { ?s ?p ?o .
-	filter (iri(sql:XML_URI_RESOLVE_LIKE_GET(?:base, ?s)) != iri(?:graph) && !(regex (?s, '#this$') || regex (?s, '/about/id/http') || regex (?s, '/about/id/entity/http')))
+	filter (iri(sql:XML_URI_RESOLVE_LIKE_GET(?:base, ?s)) != iri(?:graph) && !(regex (?s, '/about/id/http') || regex (?s, '/about/id/entity/http')))
 	}
       }
     }
