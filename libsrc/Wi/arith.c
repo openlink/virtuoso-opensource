@@ -1918,8 +1918,7 @@ vec_cmp_t dbl_cmp_ops[] = {NULL, cmp_vec_dbl_eq, cmp_vec_dbl_lt, cmp_vec_dbl_lte
 
 
 
-#define 
-CMP_VEC_OP(name, dtp, op) \
+#define CMP_VEC_OP(name, dtp, op) \
 void name  (dtp * l, dtp * r, int n_sets, dtp_t * set_mask, dtp_t * res_bits, dtp_t cmp_op, char * mix_ret) \
 { \
   int set; \
