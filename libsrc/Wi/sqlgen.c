@@ -2805,7 +2805,8 @@ sqlg_is_multistate_gb (sqlo_t * so)
     {
       DO_SET (data_source_t *, qn, &qr->qr_nodes)
 	{
-	  if (IS_TS (qn) || IS_QN (qn, subq_node_input))
+	  /* a derived table with gby/oby is multistate and will have the set no in the setp  if in the enclosing there is a ts or dt before it.  But  a dt w no qr   does not count because this is the immediately enclosing, not a previous one */
+	  if (IS_TS (qn) || (IS_QN (qn, subq_node_input) && ((subq_source_t*)qn)->sqs_query))
 	    return 1;
 	}
       END_DO_SET();
