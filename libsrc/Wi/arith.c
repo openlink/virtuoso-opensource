@@ -1070,10 +1070,10 @@ null_result:
   return (dk_alloc_box (0, DV_DB_NULL));
 }
 
-
-ARTM_BIN_FUNC (box_add, +, numeric_add, 0);
-ARTM_BIN_FUNC (box_sub, -, numeric_subtract, 0);
-ARTM_BIN_FUNC (box_mpy, *, numeric_multiply, 0) ARTM_BIN_FUNC (box_div, /, numeric_divide, 1);
+ARTM_BIN_FUNC (box_add, +, numeric_add, 0)
+ARTM_BIN_FUNC (box_sub, -, numeric_subtract, 0)
+ARTM_BIN_FUNC (box_mpy, *, numeric_multiply, 0) 
+ARTM_BIN_FUNC (box_div, /, numeric_divide, 1) 
 
 caddr_t
 box_identity (ccaddr_t arg, ccaddr_t ignore, caddr_t * qst, state_slot_t * target)
@@ -1250,10 +1250,11 @@ dv_num_compare (numeric_t dn1, numeric_t dn2, dtp_t dtp1, dtp_t dtp2)
 
 
 #include "simd.h"
+#include "date.h"
 
 
 void
-artm_const_cast (double *target, dtp_t target_dtp, caddr_t c, int n)
+artm_const_cast (double *target, dtp_t target_dtp, caddr_t c, int n, auto_pool_t * ap, caddr_t * allocd_ret)
 {
   int inx;
   dtp_t dtp = DV_TYPE_OF (c);
@@ -1312,6 +1313,23 @@ artm_const_cast (double *target, dtp_t target_dtp, caddr_t c, int n)
 	  ((int64 *) target)[inx] = dc;
 	break;
       }
+    case DV_DATETIME:
+      {
+	for (inx = 0; inx < n; inx++)
+	  {
+	    db_buf_t tgt = ((db_buf_t)target) + DT_LENGTH * inx;
+	    memcpy_dt (tgt, c);
+	  }
+	break;
+      }
+    case DV_ANY:
+      {
+	caddr_t err = NULL;
+	caddr_t xx = box_to_any_1 (c, &err, ap, DKS_TO_DC);
+	*allocd_ret = xx;
+	for (inx = 0; inx < n; inx++)
+	  ((caddr_t *) target)[inx] = xx;
+      }
     }
 }
 
@@ -1350,6 +1368,23 @@ artm_int_to_int (double *target, data_col_t * dc, int *sets, int first_set, int 
     GPF_T1 ("int to int cast with no sslr");
 }
 
+
+void
+artm_date_to_date (double *target, data_col_t * dc, int *sets, int first_set, int n)
+{
+  int inx, fill = 0;
+  if (sets)
+    {
+      for (inx = 0; inx < n; inx++)
+	{
+	  db_buf_t tgt = ((db_buf_t) target) + fill;
+	  db_buf_t src = ((db_buf_t) dc->dc_values) + DT_LENGTH * sets[inx];
+	  memcpy_dt (tgt, src);
+	}
+    }
+  else
+    GPF_T1 ("int to int cast with no sslr");
+}
 
 void
 artm_float_to_float (double *target, data_col_t * dc, int *sets, int first_set, int n)
@@ -1423,6 +1458,31 @@ ssl_artm_dtp (caddr_t * inst, state_slot_t * ssl)
   return DV_ANY;
 }
 
+dtp_t
+ssl_cmp_dtp (caddr_t * inst, state_slot_t * ssl)
+{
+  dtp_t dtp;
+  if (SSL_CONSTANT == ssl->ssl_type)
+    dtp = DV_TYPE_OF (ssl->ssl_constant);
+  else if (SSL_VEC == ssl->ssl_type || SSL_REF == ssl->ssl_type)
+    {
+      data_col_t * dc = QST_BOX (data_col_t *, inst, ssl->ssl_index);
+      if ((DCT_BOXES & dc->dc_type) || dc->dc_any_null)
+	return DV_ARRAY_OF_POINTER;
+      return dc->dc_dtp;
+    }
+  else 
+    {
+      caddr_t d = qst_get (inst, ssl);
+      dtp = DV_TYPE_OF (d);
+    }
+  if (DV_LONG_INT == dtp || DV_SINGLE_FLOAT == dtp || DV_DOUBLE_FLOAT == dtp || DV_DATETIME == dtp)
+    return dtp;
+  if (vec_box_dtps[dtp])
+    return DV_ARRAY_OF_POINTER;
+  return DV_ANY;
+}
+
 
 #define ACF(target, source)  (target << 8 | source)
 
@@ -1438,18 +1498,27 @@ dc_artm_cast_f (dtp_t target_dtp, dtp_t source_dtp)
       return artm_int_to_double;
     case ACF (DV_DOUBLE_FLOAT, DV_SINGLE_FLOAT):
       return artm_float_to_double;
+#if 8 == SIZEOF_CHAR_P
+    case ACF (DV_ANY, DV_ANY):
+#endif
     case ACF (DV_LONG_INT, DV_LONG_INT):
     case ACF (DV_DOUBLE_FLOAT, DV_DOUBLE_FLOAT):
       return artm_int_to_int;
+#if 4 == SIZEOF_CHAR_P
+    case ACF (DV_ANY, DV_ANY):
+#endif
     case ACF (DV_SINGLE_FLOAT, DV_SINGLE_FLOAT):
       return artm_float_to_float;
+    case ACF (DV_DATETIME, DV_DATETIME):
+      return artm_date_to_date;
     }
   return NULL;
 }
 
 
 int64 *
-ssl_artm_param (caddr_t * inst, state_slot_t * ssl, int64 * target, dtp_t target_dtp, int set, int n_sets)
+ssl_artm_param (caddr_t * inst, state_slot_t * ssl, int64 * target, dtp_t target_dtp, int set, int n_sets, auto_pool_t * ap,
+    caddr_t * allocd_ret)
 {
   dc_artm_cast_t f;
   if (SSL_VEC == ssl->ssl_type)
@@ -1459,6 +1528,8 @@ ssl_artm_param (caddr_t * inst, state_slot_t * ssl, int64 * target, dtp_t target
 	{
 	  if (DV_SINGLE_FLOAT == target_dtp)
 	    return (int64 *) & ((float *) dc->dc_values)[set];
+	  if (DV_DATETIME == target_dtp)
+	    return (int64 *) (((db_buf_t) dc->dc_values) + DT_LENGTH * set);
 	  return &((int64 *) dc->dc_values)[set];
 	}
       f = dc_artm_cast_f (target_dtp, dc->dc_dtp);
@@ -1474,7 +1545,7 @@ ssl_artm_param (caddr_t * inst, state_slot_t * ssl, int64 * target, dtp_t target
       f ((double *) target, dc, sets, 0, n_sets);
       return target;
     }
-  artm_const_cast ((double *) target, target_dtp, qst_get (inst, ssl), n_sets);
+  artm_const_cast ((double *) target, target_dtp, qst_get (inst, ssl), n_sets, ap, allocd_ret);
   return target;
 }
 
@@ -1568,9 +1639,9 @@ artm_vec (caddr_t * inst, instruction_t * ins, artm_vec_f * ops)
       int64 *res = (DV_SINGLE_FLOAT == target_dtp) ? (int64 *) & ((float *) res_dc->dc_values)[inx]
 	  : &((int64 *) res_dc->dc_values)[inx];
       if (!inx || (SSL_VEC == l->ssl_type || SSL_REF == l->ssl_type))
-	la = ssl_artm_param (inst, l, (int64 *) & vn_temp_1.i, target_dtp, inx, n);
+	la = ssl_artm_param (inst, l, (int64 *) & vn_temp_1.i, target_dtp, inx, n, NULL, NULL);
       if (!inx || (SSL_VEC == r->ssl_type || SSL_REF == r->ssl_type))
-	ra = ssl_artm_param (inst, r, (int64 *) & vn_temp_2.i, target_dtp, inx, n);
+	ra = ssl_artm_param (inst, r, (int64 *) & vn_temp_2.i, target_dtp, inx, n, NULL, NULL);
 
       op (res, la, ra, n);
     }
@@ -1733,7 +1804,6 @@ dc_asg_64_1 (instruction_t * ins, caddr_t * inst)
   res->dc_n_values = MAX (res->dc_n_values, qi->qi_set + 1);
 }
 
-
 void
 dc_asg_64 (instruction_t * ins, caddr_t * inst)
 {
@@ -1762,4 +1832,228 @@ dc_asg_64 (instruction_t * ins, caddr_t * inst)
   }
   END_SET_LOOP;
   res->dc_n_values = MAX (res->dc_n_values, last + 1);
+}
+
+
+#define BYTE_N_LOW(byte, n) \
+  (byte & ~(0xff << (n)))
+
+
+#define SET_LOOP_FAST(set, n_sets, set_mask) \
+{ \
+  int set, byte, bytes = ALIGN_8 (n_sets) / 8; \
+  int bits_in_last = n_sets - (bytes - 1) * 8; \
+  for (byte = 0; byte < bytes; byte++) \
+    { \
+      uint32 binx, bits, cnt; \
+      dtp_t sbits = set_mask[byte]; \
+      if (byte == bytes - 1) \
+	sbits = BYTE_N_LOW (sbits, bits_in_last); \
+      bits = byte_bits[sbits]; \
+      cnt = bits >> 28; \
+      for (binx = 0; binx < cnt; binx++) \
+	{ \
+	  set = (byte * 8) + (bits & 7); \
+	  bits = bits >> 3;
+
+
+
+#define END_SET_LOOP_FAST  }}}
+
+
+
+typedef void (*vec_cmp_t)  (int64 * l, int64 * r, int n_sets, dtp_t * set_mask, dtp_t * res_bits, char * mix_ret);
+
+
+#define CMP_VEC(name, dtp, op) \
+  void name  (dtp * l, dtp * r, int n_sets, dtp_t * set_mask, dtp_t * res_bits, char * mix_ret) \
+{ \
+  int set; \
+  char mix = *mix_ret; \
+  if (!set_mask) \
+    { \
+      for (set = 0; set < n_sets; set++) \
+	{ \
+	  if (l[set] op r[set]) \
+	    { BIT_SET (res_bits, set); mix |= 2;}	\
+	  else mix |= 1; \
+	} \
+    } \
+  else \
+    { \
+      SET_LOOP_FAST  (set, n_sets, set_mask) \
+	{ \
+	  if (l[set] op r[set]) \
+	    { BIT_SET (res_bits, set); mix |= 2;}	\
+	  else mix |= 1; \
+	} \
+      END_SET_LOOP_FAST; \
+    } \
+  *mix_ret = mix; \
+}
+
+
+#define CMPOP(op) (l[set] op r[set])
+
+
+CMP_VEC (cmp_vec_int_eq, int64, ==)
+CMP_VEC (cmp_vec_int_lt, int64, <)
+CMP_VEC (cmp_vec_int_lte, int64, <=)
+
+CMP_VEC (cmp_vec_sf_eq, float, ==)
+CMP_VEC (cmp_vec_sf_lt, float, <)
+CMP_VEC (cmp_vec_sf_lte, float, <=)
+
+CMP_VEC (cmp_vec_dbl_eq, double, ==)
+CMP_VEC (cmp_vec_dbl_lt, double, <)
+CMP_VEC (cmp_vec_dbl_lte, double, <=)
+
+
+
+vec_cmp_t int_cmp_ops[] = {NULL, cmp_vec_int_eq, cmp_vec_int_lt, cmp_vec_int_lte};
+vec_cmp_t sf_cmp_ops[] = {NULL, cmp_vec_sf_eq, cmp_vec_sf_lt, cmp_vec_sf_lte};
+vec_cmp_t dbl_cmp_ops[] = {NULL, cmp_vec_dbl_eq, cmp_vec_dbl_lt, cmp_vec_dbl_lte};
+
+
+
+
+
+#define 
+CMP_VEC_OP(name, dtp, op) \
+void name  (dtp * l, dtp * r, int n_sets, dtp_t * set_mask, dtp_t * res_bits, dtp_t cmp_op, char * mix_ret) \
+{ \
+  int set; \
+  char mix = *mix_ret; \
+  if (!set_mask) \
+    { \
+      for (set = 0; set < n_sets; set++) \
+	{ \
+	  if (op)				\
+	    { BIT_SET (res_bits, set); mix |= 2;}	\
+	  else mix |= 1;				\
+	}						\
+      } \
+  else \
+    { \
+      SET_LOOP_FAST  (set, n_sets, set_mask) \
+	{ \
+	  if (op) \
+	    { BIT_SET (res_bits, set); mix |= 2;}	\
+	  else mix |= 1; \
+	} \
+      END_SET_LOOP_FAST; \
+    } \
+  *mix_ret = mix; \
+}
+
+int
+dt_cmp_fl (db_buf_t dt1, db_buf_t dt2)
+{
+  int inx;
+  for (inx = 0; inx < DT_COMPARE_LENGTH; inx++)
+    {
+      dtp_t d1 = dt1[inx], d2 = dt2[inx];
+      if (d1 < d2) 
+	return DVC_LESS;
+      if (d1 > d2)
+	return DVC_GREATER;
+    }
+  return DVC_MATCH;
+}
+
+
+CMP_VEC_OP (cmp_vec_dt, dtp_t *, cmp_op & dt_cmp_fl (((db_buf_t)l) + DT_LENGTH * set, ((db_buf_t)r) + DT_LENGTH * set))
+CMP_VEC_OP (cmp_vec_any, dtp_t **, cmp_op & dv_compare (((db_buf_t*)l)[set], ((db_buf_t*)r)[set], NULL, 0))
+#define SWAP(t, l, r) { t tmp; tmp = r; r = l; l = tmp;}
+#define CMP_REV(new_op) \
+  { cmp_op = new_op; SWAP (dtp_t, l_dtp, r_dtp); SWAP (state_slot_t *, l, r);}
+     int cmp_vec (caddr_t * inst, instruction_t * ins, dtp_t * set_mask, dtp_t * res_bits)
+{
+  state_slot_t * l = ins->_.cmp.left;
+  state_slot_t * r = ins->_.cmp.right;
+  unsigned char cmp_op;
+  vec_cmp_t op;
+  char mix = 0;
+  QNCAST (query_instance_t, qi, inst);
+  vn_temp_t vn_temp_1;
+  vn_temp_t vn_temp_2;
+  int inx;
+  dtp_t target_dtp;
+  dtp_t l_dtp = ssl_cmp_dtp (inst, l);
+  dtp_t r_dtp = ssl_cmp_dtp (inst, r);
+  int n_sets = qi->qi_n_sets;
+  if (DV_ARRAY_OF_POINTER == l_dtp || DV_ARRAY_OF_POINTER == r_dtp)
+    return CMP_VEC_NA;
+  cmp_op = ins->_.cmp.op;
+  if (CMP_GT == cmp_op)
+    {
+      CMP_REV (CMP_LT);
+    }
+  else if (CMP_GTE == cmp_op)
+    {
+      CMP_REV (CMP_LTE);
+    }
+  if (IS_NUM_DTP (l_dtp) && IS_NUM_DTP (r_dtp))
+    {
+      target_dtp = MAX (l_dtp, r_dtp);
+      switch (target_dtp)
+	{
+	case DV_LONG_INT:
+	  op = int_cmp_ops[cmp_op];
+	  break;
+	case DV_SINGLE_FLOAT:
+	  op = sf_cmp_ops[cmp_op];
+	  break;
+	case DV_DOUBLE_FLOAT:
+	  op = dbl_cmp_ops[cmp_op];
+	  break;
+	default:
+	  return CMP_VEC_NA;
+	}
+      for (inx = 0; inx < n_sets; inx += ARTM_VEC_LEN)
+	{
+	  int n = MIN (ARTM_VEC_LEN, n_sets - inx);
+	  int64 * la, *ra;
+	  if (!inx || (SSL_VEC == l->ssl_type || SSL_REF == l->ssl_type))
+	    la = ssl_artm_param (inst, l, (int64 *) & vn_temp_1.i, target_dtp, inx, n, NULL, NULL);
+	  if (!inx || (SSL_VEC == r->ssl_type || SSL_REF == r->ssl_type))
+	    ra = ssl_artm_param (inst, r, (int64 *) & vn_temp_2.i, target_dtp, inx, n, NULL, NULL);
+	  
+	  op (la, ra, n, set_mask ? &set_mask[inx / 8] : NULL, &res_bits[inx / 8], &mix);
+	}
+      return mix - 1;
+    }
+  if (DV_DATETIME == l_dtp && DV_DATETIME == r_dtp)
+    {
+      for (inx = 0; inx < n_sets; inx += ARTM_VEC_LEN)
+	{
+	  int n = MIN (ARTM_VEC_LEN, n_sets - inx);
+	  int64 * la, *ra;
+	  if (!inx || (SSL_VEC == l->ssl_type || SSL_REF == l->ssl_type))
+	    la = ssl_artm_param (inst, l, (int64 *) & vn_temp_1.i, DV_DATETIME, inx, n, NULL, NULL);
+	  if (!inx || (SSL_VEC == r->ssl_type || SSL_REF == r->ssl_type))
+	    ra = ssl_artm_param (inst, r, (int64 *) & vn_temp_2.i, DV_DATETIME, inx, n, NULL, NULL);
+	  cmp_vec_dt ((db_buf_t)la, (db_buf_t)ra, n, set_mask ? &set_mask[inx / 8] : NULL, &res_bits[inx / 8], cmp_op, &mix);
+	}
+      return mix - 1;
+    }
+  else if (DV_ANY == l_dtp && DV_ANY == r_dtp)
+    {
+      caddr_t allocd = NULL;
+      AUTO_POOL (500);
+      for (inx = 0; inx < n_sets; inx += ARTM_VEC_LEN)
+	{
+	  int n = MIN (ARTM_VEC_LEN, n_sets - inx);
+	  int64 * la, *ra;
+	  if (!inx || (SSL_VEC == l->ssl_type || SSL_REF == l->ssl_type))
+	    la = ssl_artm_param (inst, l, (int64 *) & vn_temp_1.i, DV_ANY, inx, n, &ap, &allocd);
+	  if (!inx || (SSL_VEC == r->ssl_type || SSL_REF == r->ssl_type))
+	    ra = ssl_artm_param (inst, r, (int64 *) & vn_temp_2.i, DV_ANY, inx, n, &ap, &allocd);
+	  cmp_vec_any (la, ra, n, set_mask ? &set_mask[inx / 8] : NULL, &res_bits[inx / 8], cmp_op, &mix);
+	}
+      if (allocd && (allocd < ap.ap_area || allocd > ap.ap_area + ap.ap_fill))
+	dk_free_box (allocd);
+      return mix - 1;
+    }
+  return CMP_VEC_NA;
 }

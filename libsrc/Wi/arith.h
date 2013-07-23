@@ -74,4 +74,8 @@ extern  artm_vec_f vec_divs[3];
 
 int artm_vec (caddr_t * inst, instruction_t * ins, artm_vec_f * ops);
 
+int cmp_vec (caddr_t * inst, instruction_t * ins, dtp_t * set_mask, dtp_t * res_bits);
+
+#define CMP_VEC_NA 3 /* vec cmp not applicable, do items one by one */
+
 #endif /* _WI_ARITH_H */
