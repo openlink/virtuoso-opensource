@@ -3094,7 +3094,7 @@ dfe_cost_before_agg (df_elt_t * dt_dfe, int from_nth_ts)
   df_elt_t * dfe;
   if (DFE_TABLE == dt_dfe->dfe_type)
     return dt_dfe->dfe_unit;
-  if (DFE_DT != dt_dfe->dfe_type)
+  if (DFE_DT != dt_dfe->dfe_type && DFE_VALUE_SUBQ != dt_dfe->dfe_type)
     return 10;
   for (dfe = dt_dfe->_.sub.first; dfe; dfe = dfe->dfe_next)
     {
