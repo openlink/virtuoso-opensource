@@ -5470,10 +5470,11 @@ test_bits_2 (query_instance_t * qi, dtp_t * set_mask, int n_sets)
     {
       uint32 binx, bits;
       dtp_t sbits = set_mask[byte];
+      int cnt;
       if (byte == bytes)
 	sbits = BYTE_N_LOW (sbits, bits_in_last);
       bits = byte_bits[sbits];
-      int cnt = bits >> 28;
+      cnt = bits >> 28;
       for (binx = 0; binx < cnt; binx++)
 	{
 	  set = (byte * 8) + (bits & 7);
