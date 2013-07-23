@@ -47,6 +47,7 @@ typedef union
 typedef union {
   v2di_t v[ARTM_VEC_LEN / 2];
   int64 i[ARTM_VEC_LEN];
+  unsigned char 	dt[ARTM_VEC_LEN][DT_LENGTH];
 } vn_temp_t;
 
 
