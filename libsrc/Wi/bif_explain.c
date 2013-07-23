@@ -68,7 +68,7 @@ typedef struct qr_comment_s
   dk_set_t  qrc_wrn_msgs; /* a set of warning messages */
 } qr_comment_t;
 
-int dbf_explain_level = 1;
+int dbf_explain_level = 0;
 
 /* sqlprt.c */
 void trset_start (caddr_t *qst);
