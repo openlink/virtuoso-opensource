@@ -221,7 +221,8 @@ function getFileName(obj)
         S = S + '.rdf';
     }
   }
-  document.F1.dav_name.value = S;
+  if ($('dav_name'))
+    $('dav_name').value = S;
 }
 
 function chkbx(bx1, bx2)
@@ -243,6 +244,9 @@ function updateLabel(value)
     for (var i = from; i <= to; i++)
       OAT.Dom.hide('tab_'+i);
   }
+
+  if (!value)
+    return;
 
   hideLabel(4, 17);
   if (value == 'oMail')
@@ -286,9 +290,9 @@ function showTab(tab, tabs)
   for (var i = 1; i <= tabs; i++) {
     var div = document.getElementById(i);
     if (div) {
-      var divTab = document.getElementById('tab_'+i);
+      var divTab = $('tab_'+i);
       if (i == tab) {
-        var divNo = document.getElementById('tabNo');
+        var divNo = $('tabNo');
         divNo.value = tab;
         OAT.Dom.show(div);
         if (divTab) {
@@ -306,22 +310,21 @@ function showTab(tab, tabs)
 
 function initTab(tabs, defaultNo)
 {
-  var divNo = document.getElementById('tabNo');
+  var divNo = $v('tabNo');
   var tab = defaultNo;
   if (divNo) {
-    var divTab = document.getElementById('tab_'+divNo.value);
+    var divTab = $v('tab_'+divNo);
     if (divTab)
-      tab = divNo.value;
+      tab = divNo;
   }
   showTab(tab, tabs);
 }
 
 function initDisabled()
 {
-  var formRight = document.F1.elements['formRight'];
-  if (!formRight) {return;}
-  formRight = formRight.value;
-  if (formRight != '1') {return;}
+  var formRight = $v('formRight');
+  if (formRight && formRight != '1')
+    return;
 
   var objects = document.F1.elements;
   for (var i = 0; i < objects.length; i++) {
