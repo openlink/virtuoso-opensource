@@ -360,6 +360,13 @@ AC_CHECK_SIZEOF(void *)
 dnl AC_CHECK_SIZEOF(void(*)())	dnl Could not be checked this way
 dnl OBSOLETE AC_INT_16_BITS	dnl now checked by AC_CHECK_SIZE(int)
 
+#
+#  Check if this is a 64bit build
+#
+if test "x$ac_cv_sizeof_void_p" != 'x8'
+then
+    AC_ERROR([The current version of $PACKAGE_NAME can only be build on 64bit platforms])
+fi
 
 ##########################################################################
 ##									##
