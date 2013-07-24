@@ -1064,9 +1064,15 @@ int enable_ce_skip_bits_2 = 0;
   {if (enable_ce_skip_bits_2) ce_skip_bits_2 (bits, skip, byte, bit);	\
    else ce_skip_bits (bits, skip, byte, bit);}
 
-#ifdef WIN32
-#include <intrin.h>
-#define __builtin_popcountl __popcnt64
+#if !defined (__GNUC__)
+uint64 
+popcount (uint64 x)
+{
+  uint64 count;
+  for (count = 0; x; count += x&1, x >>= 1);
+  return count;
+}
+#define __builtin_popcountl popcount
 #endif
 
 void
@@ -1080,7 +1086,7 @@ ce_skip_bits_2 (db_buf_t bits, int skip, int * byte_ret, int * bit_ret)
     init_mask = init_mask << bit; /* ignore the bit lowest bits of first byte */
   for (;;)
     {
-      n_ones = __builtin_popcountl (init_mask & bits[byte]);
+      n_ones = __builtin_popcountl ((uint64) (init_mask & bits[byte]));
       if (n_ones > skip)
 	{
 	  /* the targeted bit is the n_ones - skip 1 bit  of the byte */
@@ -1104,7 +1110,7 @@ ce_skip_bits_2 (db_buf_t bits, int skip, int * byte_ret, int * bit_ret)
 	}
       else
 	{
-	  int n = __builtin_popcountl (*(uint32*) (bits + byte));
+	  int n = __builtin_popcountl ((uint64) (*(uint32*) (bits + byte)));
 	  skip -= n;
 	  byte += 4;
 	}
