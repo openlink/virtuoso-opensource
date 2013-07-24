@@ -343,10 +343,10 @@ function webidShow(obj) {
 }
 
 function windowShowInternal(sPage, sPageName, width, height) {
-	if (width == null)
-		width = 700;
-	if (height == null)
-		height = 500;
+  if (width == null)
+    width = 700;
+  if (height == null)
+    height = 500;
   win = window.open(sPage, sPageName, "width="+width+",height="+height+",top=100,left=100,status=yes,toolbar=no,menubar=no,scrollbars=yes,resizable=yes");
   win.window.focus();
 }
@@ -660,9 +660,9 @@ WEBDAV.resetToolbars = function ()
 
 WEBDAV.davFolderSelect = function (fld)
 {
-	/* load stylesheets */
-	OAT.Style.include("grid.css");
-	OAT.Style.include("webdav.css");
+  /* load stylesheets */
+  OAT.Style.include("grid.css");
+  OAT.Style.include("webdav.css");
 
   var options = {
     mode: 'browser',
@@ -674,9 +674,9 @@ WEBDAV.davFolderSelect = function (fld)
 
 WEBDAV.davFileSelect = function (fld)
 {
-	/* load stylesheets */
-	OAT.Style.include("grid.css");
-	OAT.Style.include("webdav.css");
+  /* load stylesheets */
+  OAT.Style.include("grid.css");
+  OAT.Style.include("webdav.css");
 
   var options = {
     mode: 'browser',
@@ -816,7 +816,7 @@ WEBDAV.verifyDialog = function ()
   verifyDiv = OAT.Dom.create('div', {height: '160px', overflow: 'hidden'});
   verifyDiv.id = 'verifyDiv';
   verifyDialog = new OAT.Dialog('Verify External Account', verifyDiv, {width:475, buttons: 0, resize:0, modal:1});
-	verifyDialog.cancel = verifyDialog.hide;
+  verifyDialog.cancel = verifyDialog.hide;
   verifyDiv.innerHTML = '<img src="'+OAT.Preferences.imagePath+'Ajax_throbber.gif'+'" style="margin: 80px 220px;" />';
   verifyDialog.show();
 
@@ -907,11 +907,11 @@ WEBDAV.httpsLink = function (page) {
 
   var href =
     'https://' +
-		document.location.hostname +
-		((WEBDAV.sslData.sslPort != '443')? ':' + WEBDAV.sslData.sslPort: '') +
-		document.location.pathname +
-		'/' +
-		page;
+    document.location.hostname +
+    ((WEBDAV.sslData.sslPort != '443')? ':' + WEBDAV.sslData.sslPort: '') +
+    document.location.pathname +
+    '/' +
+    page;
   return href;
 }
 
