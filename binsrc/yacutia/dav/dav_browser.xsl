@@ -1136,7 +1136,7 @@
               }
                     else if (self.dav_action = 'edit')
               {
-                      self.source := self.dir_path;
+                      self.source := get_keyword ('_path', params, self.dir_path);
                       self.command_push (20, 0);
                     }
                   }
@@ -1361,13 +1361,13 @@
                     else if (_action = 'edit')
                     {
                       self.source := get_keyword ('_path', params, '');
-                      if (not WEBDAV.DBA.write_permission (self.source))
-                      {
                         if (self.mode = 'webdav')
                         {
                           self.webdav_redirect (self.source, 'a=edit');
                           return;
                         }
+                      if (not WEBDAV.DBA.write_permission (self.source))
+                      {
                         self.vc_error_message := 'You have not permissions to edit this file!';
                         self.vc_is_valid := 0;
                           return;
@@ -3320,6 +3320,15 @@
                 self.mimeType := WEBDAV.DBA.DAV_GET (item, 'mimeType');
               ]]>
             </v:before-data-bind>
+            <?vsp
+              if (self.mode = 'webdav')
+              {
+            ?>
+            <input type="hidden" name="a" id="a" value="<?V case when self.command = 20 then 'edit' else 'view' end ?>" />
+            <input type="hidden" name="_path" id="_path" value="<?V self.source ?>" />
+            <?vsp
+              }
+            ?>
             <div class="WEBDAV_formHeader">
               <?V case when self.command = 20 then 'Edit' else 'View' end ?> resource <?V WEBDAV.DBA.utf2wide (self.source) ?>
             </div>
@@ -3362,14 +3371,24 @@
                       if (WEBDAV.DBA.DAV_ERROR (retValue))
                         signal ('TEST', WEBDAV.DBA.DAV_PERROR (retValue) || '<>');
                     }
-                  ]]>
+                    if (self.mode = 'webdav')
+                    {
+                      self.webdav_redirect (WEBDAV.DBA.path_parent (self.source, 1), '');
+                      return;
+                    }
                   self.command_pop (null);
                   self.vc_data_bind (self.vc_page.vc_event);
+                  ]]>
                 </v:on-post>
               </v:button>
               <v:button action="simple" name="Cancel_20" value="Cancel">
                 <v:on-post>
                   <![CDATA[
+                    if (self.mode = 'webdav')
+                    {
+                      self.webdav_redirect (WEBDAV.DBA.path_parent (self.source, 1), '');
+                      return;
+                    }
                     self.command_pop (null);
                     self.vc_data_bind (self.vc_page.vc_event);
                   ]]>
