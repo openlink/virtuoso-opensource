@@ -1014,12 +1014,10 @@ create procedure WEBDAV.DBA.vector_contains (
   inout aVector any,
   in value any)
 {
-  declare N integer;
-
-  for (N := 0; N < length(aVector); N := N + 1)
-    if (value = aVector[N])
-      return 1;
+  if (not isarray (aVector))
   return 0;
+
+  return case when position (value, aVector) then 1 else 0 end;
 }
 ;
 
@@ -1644,6 +1642,24 @@ create procedure WEBDAV.DBA.exec_permission (
   inout path varchar)
 {
   return WEBDAV.DBA.effective_permissions (path, '__1');
+}
+;
+
+-----------------------------------------------------------------------------
+--
+create procedure WEBDAV.DBA.version_permission (
+  inout path varchar)
+{
+  declare tmp varchar;
+
+  if (is_empty_or_null (WEBDAV.DBA.DAV_PROP_GET (path, 'DAV:checked-in', '')))
+     return 1;
+
+  tmp := WEBDAV.DBA.DAV_PROP_GET (path, 'DAV:auto-version', '');
+  if (tmp in ('DAV:checkout-checkin', 'DAV:checkout-unlocked-checkin'))
+    return 1;
+
+  return 0;
 }
 ;
 
@@ -2507,9 +2523,15 @@ create procedure WEBDAV.DBA.det_type (
   if (detType = '')
   {
     if (what = 'R')
-      path := '/' || WEBDAV.DBA.path_parent (path) || '/';
+      path := WEBDAV.DBA.path_parent (path, 1);
 
-    if (WEBDAV.DBA.DAV_PROP_GET (path, 'virt:rdfSink-graph', '') <> '')
+    if (WEBDAV.DBA.path_name (path) = 'Attic')
+      detType := 'Versioning';
+
+    else if (WEBDAV.DBA.path_name (path) = 'VVC')
+      detType := 'Versioning';
+
+    else if (WEBDAV.DBA.DAV_PROP_GET (path, 'virt:rdfSink-graph', '') <> '')
       detType := 'rdfSink';
 
     else if (WEBDAV.DBA.DAV_PROP_GET (path, 'virt:Versioning-History', '') <> '')
@@ -2550,6 +2572,7 @@ create procedure WEBDAV.DBA.det_type_name (
     'Box',        'Box Net',
     'WebDAV',     'WebDAV',
     'RACKSPACE',  'Rackspace Cloud Files',
+    'nntp',       'Discussion',
     'CardDAV',    'CardDAV',
     'Blog',       'Blog',
     'Bookmark',   'Bookmark',
@@ -2570,17 +2593,99 @@ create procedure WEBDAV.DBA.det_class (
   in what varchar := null) returns varchar
 {
   declare id any;
+  declare retValue varchar;
 
   if (isnull (what))
     what := case when (path[length (path)-1] <> ascii('/')) then 'R' else 'C' end;
 
   id := DB.DBA.DAV_SEARCH_ID (path, what);
   if (not WEBDAV.DBA.DAV_ERROR (id) and isarray (id))
-    return cast (id[0] as varchar);
+    retValue := cast (id[0] as varchar);
 
-  return '';
+  else if (WEBDAV.DBA.path_name (path) = 'Attic')
+    retValue := 'Versioning';
+
+  else
+    retValue := '';
+
+  return retValue;
 }
 ;
+
+-------------------------------------------------------------------------------
+--
+create procedure WEBDAV.DBA.det_ownClass (
+  in path varchar,
+  in what varchar) returns varchar
+{
+  declare id any;
+  declare retValue varchar;
+
+  id := DB.DBA.DAV_SEARCH_ID (path, what);
+  if (WEBDAV.DBA.DAV_ERROR (id))
+    retValue := null;
+
+  else if (isarray (id))
+    retValue := cast (id[0] as varchar);
+
+
+  else if (WEBDAV.DBA.path_name (path) = 'Attic')
+    retValue := 'Versioning';
+
+  else if (WEBDAV.DBA.path_name (path) = 'VVC')
+    retValue := 'Versioning';
+
+  else
+    retValue := WEBDAV.DBA.det_subClass (WEBDAV.DBA.path_parent (path, 1), 'C');
+
+  return retValue;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure WEBDAV.DBA.det_subClass (
+  in path varchar,
+  in what varchar) returns varchar
+{
+  declare id any;
+  declare retValue varchar;
+
+  retValue := '';
+  if (what = 'R')
+    retValue := WEBDAV.DBA.det_ownClass (path, what);
+
+  else
+  {
+    id := DB.DBA.DAV_SEARCH_ID (path, what);
+    if (WEBDAV.DBA.DAV_ERROR (id))
+      retValue := null;
+
+    else if (WEBDAV.DBA.DAV_PROP_GET (path, 'DAV:version-history', '') <> '')
+      retValue := 'UnderVersioning';
+
+    else if (WEBDAV.DBA.DAV_PROP_GET (path, 'virt:Versioning-History', '') <> '')
+      retValue := 'UnderVersioning';
+
+    else if (WEBDAV.DBA.DAV_PROP_GET (path, 'virt:Versioning-Collection', '') <> '')
+      retValue := 'Versioning';
+
+    else if (WEBDAV.DBA.path_name (path) = 'Attic')
+      retValue := 'Versioning';
+
+    else if (WEBDAV.DBA.DAV_PROP_GET (path, 'virt:rdfSink-graph', '') <> '')
+      retValue := 'rdfSink';
+
+    else if (WEBDAV.DBA.syncml_detect (path))
+      retValue := 'SyncML';
+
+    else
+      retValue := cast (coalesce (DB.DBA.DAV_PROP_GET_INT (id, what, ':virtdet', 0), '') as varchar);
+  }
+  return retValue;
+}
+;
+
 
 -------------------------------------------------------------------------------
 --
@@ -3124,7 +3229,7 @@ create procedure WEBDAV.DBA.DAV_GET (
 
       path := resource[0];
       if (WEBDAV.DBA.DAV_GET (resource, 'type') = 'R')
-        path := '/' || WEBDAV.DBA.path_parent (path) || '/';
+        path := WEBDAV.DBA.path_parent (path, 1);
 
       if (WEBDAV.DBA.DAV_PROP_GET (path, 'virt:rdfSink-graph', '') <> '')
         detType := 'rdfSink';
@@ -4456,6 +4561,42 @@ create procedure WEBDAV.DBA.aci_save (
 
 -------------------------------------------------------------------------------
 --
+create procedure WEBDAV.DBA.aci_compare (
+  inout aci_1 any,
+  inout aci_2 any)
+{
+  declare N, M, L integer;
+  declare length_1, length_2 integer;
+
+  length_1 := length (aci_1);
+  length_2 := length (aci_2);
+  if (length_1 <> length_2)
+    return 0;
+
+  for (N := 0; N < length_1; N := N + 1)
+  {
+    for (M := 0; M < length_2; M := M + 1)
+    {
+      for (L := 0; L < length (aci_1[N]); L := L + 1)
+      {
+        if (aci_1[N][L] <> aci_2[M][L])
+          goto _continue_2;
+      }
+      goto _continue_1;
+
+    _continue_2:;
+    }
+    return 0;
+
+  _continue_1:;
+  }
+
+  return 1;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure WEBDAV.DBA.aci_n3 (
   in aciArray any)
 {
@@ -4717,11 +4858,17 @@ create procedure WEBDAV.DBA.aci_lines (
 
   for (N := 0; N < length (_acl); N := N + 1)
   {
-    if (_mode <> 'view')
+    if (_mode = 'view')
+    {
+      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {mode: 50, value: "%s"}, fld_2: {mode: 51, value: %s}, fld_3: {mode: 52, value: [%d, %d, %d], execute: \'%s\', tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}, fld_4: {value: "Inherited"}});});', _acl[N][2], WEBDAV.DBA.obj2json (_acl[N][1]), _acl[N][3], _acl[N][4], _acl[N][5], _execute));
+    }
+    else if (_mode = 'disabled')
+    {
+      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {mode: 50, value: "%s"}, fld_2: {mode: 51, value: %s}, fld_3: {mode: 52, value: [%d, %d, %d], execute: \'%s\', tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}, fld_4: {value: ""}});});', _acl[N][2], WEBDAV.DBA.obj2json (_acl[N][1]), _acl[N][3], _acl[N][4], _acl[N][5], _execute));
+    }
+    else
     {
       http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("s", null, {fld_1: {mode: 50, value: "%s", noAdvanced: %s, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: "F1", tdCssText: "white-space: nowrap;", className: "_validate_ _webid_", value: %s, readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], execute: \'%s\', tdCssText: "width: 1%%; text-align: center;"}});});', _acl[N][2], _advanced, WEBDAV.DBA.obj2json (_acl[N][1]), case when _acl[N][2] = 'public' then 'true' else 'false' end, case when _acl[N][2] = 'public' then 'display: none;' else '' end, _acl[N][3], _acl[N][4], _acl[N][5], _execute));
-    } else {
-      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {mode: 50, value: "%s"}, fld_2: {mode: 51, value: %s}, fld_3: {mode: 52, value: [%d, %d, %d], execute: \'%s\', tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}, fld_4: {value: "Inherited"}});});', _acl[N][2], WEBDAV.DBA.obj2json (_acl[N][1]), _acl[N][3], _acl[N][4], _acl[N][5], _execute));
     }
   }
 }
