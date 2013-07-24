@@ -98,9 +98,19 @@
               declare vspx_user varchar;
 
               vspx_user := connection_get ('vspx_user');
-              if (isnull (vspx_user))
+
+              if (isnull (vspx_user) or (vspx_user = 'nobody'))
               {
                 self.account_id := http_nobody_uid ();
+                if (__proc_exists ('VAL.DBA.session_id_for_connection') is not null)
+                {
+                  declare val_sid, val_serviceId, val_realm varchar;
+                  if (VAL.DBA.session_id_for_connection (val_sid, val_serviceId, val_realm))
+                  {
+                    connection_set ('vspx_user', val_serviceId);
+                    self.account_id := WEBDAV.DBA.account_id (val_serviceId);
+                  }
+                }
               } else {
                 self.account_id := WEBDAV.DBA.account_id (vspx_user);
               }
