@@ -10387,6 +10387,17 @@ bif_get_user_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 static caddr_t
+bif_get_user_id_by_name (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t *qi = (query_instance_t *) QST_INSTANCE (qst);
+  caddr_t name = bif_string_arg (qst, args, 0, "get_user_id");
+  user_t * usr = sec_name_to_user (name);
+  if (usr) 
+    return box_num (usr->usr_id);
+  return box_num (-1);
+}
+
+static caddr_t
 bif_identity_value (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t *qi = (query_instance_t *) QST_INSTANCE (qst);
@@ -15226,6 +15237,7 @@ sql_bif_init (void)
   bif_define ("__set_user_id", bif_set_user_id);
   bif_define ("set_user_id", bif_set_user_id);
   bif_define ("get_user_id", bif_get_user_id);
+  bif_define ("get_user_id_by_name", bif_get_user_id_by_name);
   bif_define ("__pop_user_id", bif_pop_user_id);
   bif_define ("identity_value", bif_identity_value);
   fcache_init ();
