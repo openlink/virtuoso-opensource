@@ -3506,7 +3506,10 @@ dfe_table_unq_card (df_elt_t * dfe, index_choice_t * ic, float tb_card, float * 
   for (inx = 0; inx < eq_fill; inx++)
     {
       df_elt_t * eq = eq_preds[inx];
-      df_elt_t * rhs = eq->_.bin.right;
+      df_elt_t * rhs;
+      if (!eq)
+	goto independent;
+      rhs = eq->_.bin.right;
       if (DFE_COLUMN != rhs->dfe_type)
 	goto independent;
       if (!pref)
