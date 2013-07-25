@@ -5967,6 +5967,11 @@ create procedure csv_load (in s any, in _from int := 0, in _to int := null, in t
   declare inx, old_mode, num_cols, nrows, mode, log_error, import_first_n_cols int;
   declare delim, quot char;
 
+  if (1 = sys_stat ('enable_vec') and not is_atomic ())
+    {
+      return csv_vec_load (s, _from, _to, tb, log_mode, opts);
+    }
+
   delim := quot := enc := mode := null;
   log_error := 0;
   if (isvector (opts) and mod (length (opts), 2) = 0)
@@ -6172,8 +6177,8 @@ create procedure csv_cols_def (in f varchar)
 create procedure csv_vec_load (in s any, in _from int := 0, in _to int := null, in tb varchar := null, in log_mode int := 2, in opts any := null, in cols any := null)
 {
   declare r, log_ses, vecarr any;
-  declare stmt, enc, pname varchar;
-  declare inx, old_mode, num_cols, nrows, mode, log_error, import_first_n_cols, fill, txn int;
+  declare stmt, enc, pname, stat, msg varchar;
+  declare inx, old_mode, num_cols, nrows, mode, log_error, import_first_n_cols, fill, txn, deadl int;
   declare delim, quot char;
 
   delim := quot := enc := mode := null;
@@ -6191,7 +6196,19 @@ create procedure csv_vec_load (in s any, in _from int := 0, in _to int := null, 
     }
 
   stmt := csv_vec_ins_stmt (tb, num_cols, pname, cols);
-  exec (stmt);
+  deadl := 0;
+  again:
+  stat := '00000';
+  exec (stmt, stat, msg);
+  if (stat <> '00000')
+    {
+      deadl := deadl + 1;
+      rollback work;
+      if (deadl > 5)
+	resignal;
+      delay (0.1 * deadl);
+      goto again;
+    }
   commit work;
   pname := replace (pname, '\"', '');
   if (0 = txn)
