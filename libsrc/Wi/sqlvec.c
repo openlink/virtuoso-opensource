@@ -1165,6 +1165,7 @@ cv_deduplicate_param_ssls (comp_context_t *cc, state_slot_t **params)
 	  state_slot_ref_t *copy = (state_slot_ref_t *) dk_alloc (sizeof (state_slot_ref_t));
 	  ssl_index_t *nos;
 	  memcpy (copy, arg, sizeof (state_slot_ref_t));
+	  copy->ssl_box_index = cc_new_instance_slot (cc);
 	  nos = copy->sslr_set_nos;
 	  copy->sslr_set_nos = (ssl_index_t *) dk_alloc ((copy->sslr_distance) * sizeof (ssl_index_t));
 	  memcpy (copy->sslr_set_nos, nos, (copy->sslr_distance) * sizeof (ssl_index_t));
@@ -1186,6 +1187,18 @@ cv_deduplicate_param_ssls (comp_context_t *cc, state_slot_t **params)
       }
   }
   END_DO_BOX;
+}
+
+void
+cv_deduplicate_2 (comp_context_t * cc, state_slot_t ** left, state_slot_t ** right)
+{
+  if (*left && *right && (*left)->ssl_index == (*right)->ssl_index)
+    {
+      state_slot_t **arr = (state_slot_t **) t_list (2, *left, *right);
+      cv_deduplicate_param_ssls (cc, arr);
+      *left = arr[0];
+      *right = arr[1];
+    }
 }
 
 
@@ -1266,6 +1279,7 @@ cv_vec_slots (sql_comp_t * sc, code_vec_t cv, dk_hash_t * res, dk_hash_t * all_r
 	    bop_comparison_t *bop = (bop_comparison_t *) ins->_.pred.cmp;
 	    REF_SSL (res, bop->cmp_left);
 	    REF_SSL (res, bop->cmp_right);
+	    cv_deduplicate_2 (sc->sc_cc, &bop->cmp_left, &bop->cmp_right);
 	    continue;
 	  }
 	else
@@ -1298,6 +1312,7 @@ cv_vec_slots (sql_comp_t * sc, code_vec_t cv, dk_hash_t * res, dk_hash_t * all_r
       case IN_COMPARE:
 	REF_SSL (res, ins->_.cmp.left);
 	REF_SSL (res, ins->_.cmp.right);
+	cv_deduplicate_2 (sc->sc_cc, &ins->_.cmp.left, &ins->_.cmp.right);
 	ins->_.cmp.next_mask = cc_new_instance_slot (sc->sc_cc);
 	cv_cmp_typed (ins);
 	break;
