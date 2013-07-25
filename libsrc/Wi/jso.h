@@ -85,8 +85,9 @@ typedef struct jso_array_descr_s {
 } jso_array_descr_t;
 
 /*! A type for validation callback called at the end of jso_validate(). The callback can validate and optionally enrich the data.
-\c warning_acc_ptr is a pointer to set of 2-element vectors, each vector is a pair of pointer to jso_rtti_t and text of warning  */
-typedef void jso_validation_cbk_t (struct jso_rtti_s *inst_rtti, dk_set_t *warnings_log_ptr);
+\c warning_acc_ptr is a pointer to set of 2-element vectors, each vector is a pair of pointer to jso_rtti_t and text of warning.
+\c inst_rtti is made void * because gcc 4.4.7 disliked proper typedef for proper type of pointer. */
+typedef void jso_validation_cbk_t (void * /* actually jso_rtti_t * */ inst_rtti, dk_set_t *warnings_log_ptr);
 
 /*! Description of a JSO class */
 typedef struct jso_class_descr_s {

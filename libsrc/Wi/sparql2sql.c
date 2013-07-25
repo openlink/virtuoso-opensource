@@ -268,7 +268,7 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
       sparp_gp_trav_list_expn_retval_names, NULL, NULL,
       NULL );
   }
-  if (((SPART **)_STAR == retvals) && (NULL == lnar.names) && env->spare_signal_void_variables)
+  if (((SPART **)_STAR == retvals) && (NULL == lnar.names) && sparp->sparp_sg->sg_signal_void_variables)
     spar_error (sparp, "The list of return values contains '*' but the pattern does not contain variables");
   while (NULL != binds_revlist)
     {
@@ -296,13 +296,6 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
         query->_.req_top.orig_retvals = (SPART **) t_box_copy ((box_t) retvals);
 #endif
     }
-/*  else if ((SPART **)COUNT_L == old_retvals)
-    {
-      SPART *countagg;
-      t_set_push (&new_vars, (caddr_t)((ptrlong)1));
-      countagg = spar_make_funcall (sparp, 1, "SPECIAL::bif:COUNT", (SPART **)t_list_to_array (new_vars));
-      sparp->sparp_expr->_.req_top.retvals = (SPART **)t_list (1, countagg);
-    }*/
   else
     spar_internal_error (sparp, "sparp_" "expand_top_retvals () failed to process special result-set");
 }
@@ -364,9 +357,9 @@ sparp_gp_trav_preopt_in_gp (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts
     case SPAR_GP:
       if (SELECT_L == curr->_.gp.subtype)
         {
-          sparp_t *sub_sparp = sparp_down_to_sub (sparp, curr);
-          sparp_rewrite_retvals (sub_sparp, 1);
-          sparp_up_from_sub (sparp, curr, sub_sparp);
+          sparp_gp_trav_suspend (sparp);
+          sparp_rewrite_retvals (sparp, curr->_.gp.subquery, 1);
+          sparp_gp_trav_resume (sparp);
         }
       return SPAR_GPT_ENV_PUSH;
     }
@@ -376,9 +369,9 @@ sparp_gp_trav_preopt_in_gp (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts
 int
 sparp_gp_trav_preopt_expn_subq (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
-  sparp_t *sub_sparp = sparp_down_to_sub (sparp, curr);
-  sparp_rewrite_retvals (sub_sparp, 1);
-  sparp_up_from_sub (sparp, curr, sub_sparp);
+  sparp_gp_trav_suspend (sparp);
+  sparp_rewrite_retvals (sparp, curr->_.gp.subquery, 1);
+  sparp_gp_trav_resume (sparp);
   return 0;
 }
 
@@ -409,9 +402,9 @@ sparp_gp_trav_expand_binds_gp_in (sparp_t *sparp, SPART *curr, sparp_trav_state_
     case SPAR_GP:
       if (SELECT_L == curr->_.gp.subtype)
         {
-          sparp_t *sub_sparp = sparp_down_to_sub (sparp, curr);
-          sparp_expand_binds_like_macro (sub_sparp, &(sub_sparp->sparp_expr), e->binds, sub_sparp->sparp_expr->_.req_top.pattern);
-          sparp_up_from_sub (sparp, curr, sub_sparp);
+          sparp_gp_trav_suspend (sparp);
+          sparp_expand_binds_like_macro (sparp, &(curr->_.gp.subquery), e->binds, curr->_.gp.subquery->_.req_top.pattern);
+          sparp_gp_trav_resume (sparp);
         }
     }
   return SPAR_GPT_ENV_PUSH;
@@ -445,9 +438,9 @@ int
 sparp_gp_trav_expand_binds_expn_subq (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   sparp_expand_binds_env_t *e = (sparp_expand_binds_env_t *)common_env;
-  sparp_t *sub_sparp = sparp_down_to_sub (sparp, curr);
-  sparp_expand_binds_like_macro (sub_sparp, &(curr->_.gp.subquery), e->binds, curr->_.gp.subquery->_.req_top.pattern);
-  sparp_up_from_sub (sparp, curr, sub_sparp);
+  sparp_gp_trav_suspend (sparp);
+  sparp_expand_binds_like_macro (sparp, &(curr->_.gp.subquery), e->binds, curr->_.gp.subquery->_.req_top.pattern);
+  sparp_gp_trav_resume (sparp);
   return 0;
 }
 
@@ -489,7 +482,7 @@ sparp_expand_binds_like_macro (sparp_t *sparp, SPART **expr_ptr, dk_set_t binds,
         sparp_expand_binds_env_t e;
         e.binds = binds;
         e.parent_gp = parent_gp;
-        sparp_gp_trav (sparp, expr_ptr[0], &e,
+        sparp_gp_trav (sparp, NULL /*unused*/, expr_ptr[0], &e,
           sparp_gp_trav_expand_binds_gp_in, NULL,
           sparp_gp_trav_expand_binds_expn_in, NULL, sparp_gp_trav_expand_binds_expn_subq,
           NULL );
@@ -514,7 +507,7 @@ sparp_expand_binds_like_macro (sparp_t *sparp, SPART **expr_ptr, dk_set_t binds,
         ((SPART *)tmp_oby)->_.oby.expn = expr_ptr[0];
         e.binds = binds;
         e.parent_gp = parent_gp;
-        sparp_gp_trav (sparp, (SPART *)tmp_oby, &e,
+        sparp_gp_trav (sparp, NULL /*unused*/, (SPART *)tmp_oby, &e,
           sparp_gp_trav_expand_binds_gp_in, NULL,
           sparp_gp_trav_expand_binds_expn_in, NULL, sparp_gp_trav_expand_binds_expn_subq,
           NULL );
@@ -525,56 +518,55 @@ sparp_expand_binds_like_macro (sparp_t *sparp, SPART **expr_ptr, dk_set_t binds,
 }
 
 void
-sparp_rewrite_retvals (sparp_t *sparp, int safely_copy_retvals)
+sparp_rewrite_retvals (sparp_t *sparp, SPART *req_top, int safely_copy_retvals)
 {
   dk_set_t binds = NULL;
   int ctr;
   rdf_grab_config_t *rgc = &(sparp->sparp_env->spare_src.ssrc_grab);
-  SPART *root = sparp->sparp_expr;
   if (rgc->rgc_all)
-    spar_add_rgc_vars_and_consts_from_retvals (sparp, root->_.req_top.retvals);
+    spar_add_rgc_vars_and_consts_from_retvals (sparp, req_top->_.req_top.retvals);
   if (safely_copy_retvals)
-    root->_.req_top.expanded_orig_retvals = sparp_treelist_full_copy (sparp, root->_.req_top.retvals, root->_.req_top.pattern);
+    req_top->_.req_top.expanded_orig_retvals = sparp_treelist_full_copy (sparp, req_top->_.req_top.retvals, req_top->_.req_top.pattern);
   else
-    root->_.req_top.expanded_orig_retvals = (SPART **)t_box_copy ((caddr_t)(root->_.req_top.retvals));
+    req_top->_.req_top.expanded_orig_retvals = (SPART **)t_box_copy ((caddr_t)(req_top->_.req_top.retvals));
 /* Unlike spar_retvals_of_construct() that can be called during parsing,
 spar_retvals_of_describe() should wait for obtaining all variables and then
 sparp_expand_top_retvals () to process 'DESCRIBE * ...'. */
-  if (DESCRIBE_L == root->_.req_top.subtype)
+  if (DESCRIBE_L == req_top->_.req_top.subtype)
     {
-      root->_.req_top.retvals =
-        spar_retvals_of_describe (sparp,
-          root->_.req_top.retvals,
-          root->_.req_top.limit,
-          root->_.req_top.offset );
+      req_top->_.req_top.retvals =
+        spar_retvals_of_describe (sparp, req_top,
+          req_top->_.req_top.retvals,
+          req_top->_.req_top.limit,
+          req_top->_.req_top.offset );
     }
-  sparp_gp_trav (sparp, root->_.req_top.pattern, NULL,
+  sparp_gp_trav_top_pattern (sparp, req_top, NULL,
     sparp_gp_trav_preopt_in_gp, NULL,
     NULL, NULL, sparp_gp_trav_preopt_expn_subq,
     NULL );
-  DO_BOX_FAST (SPART *, gby, ctr, root->_.req_top.groupings)
+  DO_BOX_FAST (SPART *, gby, ctr, req_top->_.req_top.groupings)
     {
       if (NULL != binds)
-        sparp_expand_binds_like_macro (sparp, root->_.req_top.groupings + ctr, binds, root->_.req_top.pattern);
+        sparp_expand_binds_like_macro (sparp, req_top->_.req_top.groupings + ctr, binds, req_top->_.req_top.pattern);
       if (SPAR_ALIAS == SPART_TYPE (gby))
         t_set_push (&binds, gby);
     }
   END_DO_BOX_FAST;
-  if ((NULL != root->_.req_top.having) && (NULL != binds))
-    sparp_expand_binds_like_macro (sparp, &(root->_.req_top.having), binds, root->_.req_top.pattern);
-  DO_BOX_FAST (SPART *, rval, ctr, root->_.req_top.retvals)
+  if ((NULL != req_top->_.req_top.having) && (NULL != binds))
+    sparp_expand_binds_like_macro (sparp, &(req_top->_.req_top.having), binds, req_top->_.req_top.pattern);
+  DO_BOX_FAST (SPART *, rval, ctr, req_top->_.req_top.retvals)
     {
       if (NULL != binds)
-        sparp_expand_binds_like_macro (sparp, root->_.req_top.retvals + ctr, binds, root->_.req_top.pattern);
+        sparp_expand_binds_like_macro (sparp, req_top->_.req_top.retvals + ctr, binds, req_top->_.req_top.pattern);
       if (SPAR_ALIAS == SPART_TYPE (rval))
         t_set_push (&binds, rval);
     }
   END_DO_BOX_FAST;
   if (NULL != binds)
     {
-      DO_BOX_FAST (SPART *, oby, ctr, root->_.req_top.order)
+      DO_BOX_FAST (SPART *, oby, ctr, req_top->_.req_top.order)
         {
-          sparp_expand_binds_like_macro (sparp, &(oby->_.oby.expn), binds, root->_.req_top.pattern);
+          sparp_expand_binds_like_macro (sparp, &(oby->_.oby.expn), binds, req_top->_.req_top.pattern);
         }
       END_DO_BOX_FAST;
     }
@@ -668,9 +660,9 @@ sparp_gp_trav_cu_in_triples (sparp_t *sparp, SPART *curr, sparp_trav_state_t *st
       if ((SELECT_L == curr->_.gp.subtype) && (0 == curr->_.gp.equiv_count))
         {
           int ctr;
-          sparp_t *sub_sparp = sparp_down_to_sub (sparp, curr);
-          sparp_rewrite_all (sub_sparp, 1);
-          sparp_up_from_sub (sparp, curr, sub_sparp);
+          sparp_gp_trav_suspend (sparp);
+          curr->_.gp.subquery = sparp_rewrite_all (sparp, curr->_.gp.subquery, 1);
+          sparp_gp_trav_resume (sparp);
           DO_BOX_FAST (SPART *, retval, ctr, curr->_.gp.subquery->_.req_top./*orig_*/retvals)
             {
               caddr_t name;
@@ -838,10 +830,9 @@ int
 sparp_gp_trav_cu_in_subq (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   dk_set_t all_sub_vars = NULL;
-  sparp_t *sub_sparp;
-  sub_sparp = sparp_down_to_sub (sparp, curr);
-  sparp_count_usages (sub_sparp, &all_sub_vars);
-  sparp_up_from_sub (sparp, curr, sub_sparp);
+  sparp_gp_trav_suspend (sparp);
+  sparp_count_usages (sparp, curr->_.gp.subquery, &all_sub_vars);
+  sparp_gp_trav_resume (sparp);
   DO_SET (caddr_t, varname, &all_sub_vars)
     {
       SPART *rel_gp;
@@ -849,7 +840,7 @@ sparp_gp_trav_cu_in_subq (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_t
       if (NULL != sts_this->sts_ancestor_gp)
         rel_gp = sts_this->sts_ancestor_gp;
       else
-        rel_gp = sparp->sparp_expr->_.req_top.pattern;
+        rel_gp = sparp->sparp_stp->stp_trav_req_top->_.req_top.pattern;
       sparp_equiv_get (sparp, rel_gp, (SPART *)varname, SPARP_EQUIV_INS_CLASS | SPARP_EQUIV_GET_NAMESAKES | SPARP_EQUIV_ADD_OPTIONAL_READ);
     }
   END_DO_SET ()
@@ -860,7 +851,7 @@ sparp_gp_trav_cu_in_subq (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_t
 int
 sparp_gp_trav_cu_in_retvals (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
-  SPART *top_gp = sparp->sparp_expr->_.req_top.pattern;
+  SPART *top_gp = sparp->sparp_stp->stp_trav_req_top->_.req_top.pattern;
   sparp_equiv_t *eq;
   switch (SPART_TYPE(curr))
     {
@@ -878,18 +869,18 @@ sparp_gp_trav_cu_in_retvals (sparp_t *sparp, SPART *curr, sparp_trav_state_t *st
 }
 
 void
-sparp_count_usages (sparp_t *sparp, dk_set_t *optvars_ret)
+sparp_count_usages (sparp_t *sparp, SPART *req_top, dk_set_t *optvars_ret)
 {
-  sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, optvars_ret,
+  sparp_gp_trav_top_pattern (sparp, req_top, optvars_ret,
     sparp_gp_trav_cu_in_triples, sparp_gp_trav_cu_out_triples_1,
     sparp_gp_trav_cu_in_expns, NULL, sparp_gp_trav_cu_in_subq,
     NULL );
-  sparp_trav_out_clauses (sparp, sparp->sparp_expr, optvars_ret,
+  sparp_trav_out_clauses (sparp, req_top, optvars_ret,
         NULL, NULL,
         sparp_gp_trav_cu_in_retvals, NULL, sparp_gp_trav_cu_in_subq,
         NULL );
   if (NULL != optvars_ret)
-    sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, optvars_ret,
+    sparp_gp_trav_top_pattern (sparp, req_top, optvars_ret,
       NULL, sparp_gp_trav_cu_out_triples_2,
       NULL, NULL, sparp_gp_trav_cu_in_subq,
       NULL );
@@ -1456,6 +1447,7 @@ spar_var_bangeq_to_equiv (sparp_t *sparp, SPART *curr, sparp_equiv_t *eq_l, SPAR
           return 0;
         if (sparp_equivs_have_same_fixedvalue (sparp, eq_l, eq_r))
           {
+            SPARP_DEBUG_WEIRD(sparp,"conflict");
             eq_l->e_rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
             eq_r->e_rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
             return SPART_VARR_CONFLICT;
@@ -1466,6 +1458,7 @@ spar_var_bangeq_to_equiv (sparp_t *sparp, SPART *curr, sparp_equiv_t *eq_l, SPAR
       {
         if (sparp_values_equal (sparp, eq_l->e_rvr.rvrFixedValue, eq_l->e_rvr.rvrDatatype, eq_l->e_rvr.rvrLanguage, (ccaddr_t)r, NULL, NULL))
           {
+            SPARP_DEBUG_WEIRD(sparp,"conflict");
             eq_l->e_rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
             return SPART_VARR_CONFLICT;
           }
@@ -1716,9 +1709,9 @@ sparp_gp_trav_restrict_by_simple_filters_expn_subq (sparp_t *sparp, SPART *curr,
 
 
 void
-sparp_restrict_by_simple_filters (sparp_t *sparp)
+sparp_restrict_by_simple_filters (sparp_t *sparp, SPART *req_top)
 {
-  sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, NULL,
+  sparp_gp_trav_top_pattern (sparp, req_top, NULL,
     sparp_gp_trav_restrict_by_simple_filters_gp_in, NULL,
     NULL, NULL, sparp_gp_trav_restrict_by_simple_filters_expn_subq,
     NULL );
@@ -1821,9 +1814,9 @@ sparp_gp_trav_make_common_eqs_expn_subq (sparp_t *sparp, SPART *curr, sparp_trav
 {
   dk_set_t *parent_vars;
   dk_set_t vars_to_propagate = NULL;
-  sparp_t *sub_sparp = sparp_down_to_sub (sparp, curr);
-  sparp_make_common_eqs (sub_sparp);
-  sparp_up_from_sub (sparp, curr, sub_sparp);
+  sparp_gp_trav_suspend (sparp);
+  sparp_make_common_eqs (sparp, curr->_.gp.subquery);
+  sparp_gp_trav_resume (sparp);
   if (sts_this == sparp->sparp_stss+1)
     parent_vars = ((dk_set_t *)common_env);
   else
@@ -1835,14 +1828,14 @@ sparp_gp_trav_make_common_eqs_expn_subq (sparp_t *sparp, SPART *curr, sparp_trav
 }
 
 void
-sparp_make_common_eqs (sparp_t *sparp)
+sparp_make_common_eqs (sparp_t *sparp, SPART *req_top)
 {
   dk_set_t top_vars_to_propagate = NULL;
-  sparp_trav_out_clauses (sparp, sparp->sparp_expr, &top_vars_to_propagate,
+  sparp_trav_out_clauses (sparp, req_top, &top_vars_to_propagate,
     sparp_gp_trav_make_common_eqs_in, sparp_gp_trav_make_common_eqs_out,
     NULL, NULL, sparp_gp_trav_make_common_eqs_expn_subq,
     NULL );
-  sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, &top_vars_to_propagate,
+  sparp_gp_trav_top_pattern (sparp, req_top, &top_vars_to_propagate,
     sparp_gp_trav_make_common_eqs_in, sparp_gp_trav_make_common_eqs_out,
     NULL, NULL, sparp_gp_trav_make_common_eqs_expn_subq,
     NULL );
@@ -1964,9 +1957,9 @@ sparp_gp_trav_make_common_aliases_gp_in (sparp_t *sparp, SPART *curr, sparp_trav
 int
 sparp_gp_trav_make_aliases_expn_subq (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
-  sparp_t *sub_sparp = sparp_down_to_sub (sparp, curr);
-  sparp_make_aliases (sub_sparp);
-  sparp_up_from_sub (sparp, curr, sub_sparp);
+  sparp_gp_trav_suspend (sparp);
+  sparp_make_aliases (sparp, curr->_.gp.subquery);
+  sparp_gp_trav_resume (sparp);
   return 0;
 }
 
@@ -2006,25 +1999,23 @@ sparp_gp_trav_remove_unused_aliases (sparp_t *sparp, SPART *curr, sparp_trav_sta
 }
 
 void
-sparp_make_aliases (sparp_t *sparp)
+sparp_make_aliases (sparp_t *sparp, SPART *req_top)
 {
-  SPART **retvars = sparp->sparp_expr->_.req_top.retvals;
-  SPART *top = sparp->sparp_expr;
-  SPART *top_pattern = top->_.req_top.pattern;
+  SPART **retvars = req_top->_.req_top.retvals;
   /*int retvar_ctr;*/
-  sparp_gp_trav (sparp, top_pattern, retvars,
+  sparp_gp_trav_top_pattern (sparp, req_top, retvars,
     sparp_gp_trav_make_retval_aliases, sparp_gp_trav_cu_out_triples_1,
     NULL, NULL, NULL,
     NULL );
-  sparp_gp_trav (sparp, top_pattern, NULL,
+  sparp_gp_trav_top_pattern (sparp, req_top, NULL,
     sparp_gp_trav_make_common_aliases_gp_in, sparp_gp_trav_cu_out_triples_1_merge_recvs,
     NULL, NULL, sparp_gp_trav_make_aliases_expn_subq,
     NULL );
-  sparp_gp_trav (sparp, top_pattern, NULL,
+  sparp_gp_trav_top_pattern (sparp, req_top, NULL,
     sparp_gp_trav_remove_unused_aliases, sparp_gp_trav_cu_out_triples_1,
     NULL, NULL, NULL,
     NULL );
-  sparp_trav_out_clauses (sparp, top, NULL,
+  sparp_trav_out_clauses (sparp, req_top, NULL,
     NULL, NULL /* was sparp_gp_trav_cu_out_triples_1 */,
     NULL, NULL, sparp_gp_trav_make_aliases_expn_subq,
     NULL );
@@ -2033,19 +2024,6 @@ sparp_make_aliases (sparp_t *sparp)
 sparp_equiv_t *
 sparp_find_external_namesake_eq_of_varname (sparp_t *sparp, caddr_t varname, dk_set_t parent_gps)
 {
-#if 0 /* code for old draft of SPARQL 1.1 */
-  if (NULL != sparp->sparp_env->spare_bindings_vars)
-    {
-      int ctr;
-      DO_BOX_FAST_REV (SPART *, bvar, ctr, sparp->sparp_env->spare_bindings_vars)
-        {
-          if (strcmp (varname, bvar->_.var.vname))
-            continue;
-          return SPARP_EQUIV (sparp, bvar->_.var.equiv_idx);
-        }
-      END_DO_BOX_FAST_REV;
-    }
-#endif
   DO_SET (SPART *, parent, &parent_gps)
     {
       sparp_equiv_t *parent_eq = sparp_equiv_get (sparp, parent, (SPART *)varname, SPARP_EQUIV_GET_NAMESAKES);
@@ -2075,15 +2053,15 @@ sparp_gp_trav_label_external_vars_gp_in (sparp_t *sparp, SPART *curr, sparp_trav
   if (SPAR_GP != SPART_TYPE (curr))
     return 0;
   sleve = (sparp_label_external_vars_env_t *)common_env;
-  if ((NULL == sleve->parent_gps_for_table_subq) /* && (NULL == sparp->sparp_env->spare_bindings_vars) --- code for old draft of SPARQL 1.1 */)
+  if (NULL == sleve->parent_gps_for_table_subq)
     return SPAR_GPT_ENV_PUSH;
   if (SELECT_L == curr->_.gp.subtype)
     {
-      sparp_t *sub_sparp = sparp_down_to_sub (sparp, curr);
       sparp_label_external_vars_env_t tmp_sleve;
       tmp_sleve.parent_gps_for_var_search = tmp_sleve.parent_gps_for_table_subq = sleve->parent_gps_for_table_subq;
-      sparp_label_external_vars (sub_sparp, &tmp_sleve);
-      sparp_up_from_sub (sparp, curr, sub_sparp);
+      sparp_gp_trav_suspend (sparp);
+      sparp_label_external_vars (sparp, curr->_.gp.subquery, &tmp_sleve);
+      sparp_gp_trav_resume (sparp);
     }
   SPARP_FOREACH_GP_EQUIV (sparp, curr, eqctr, eq)
     {
@@ -2135,36 +2113,34 @@ sparp_gp_trav_label_external_vars_expn_subq (sparp_t *sparp, SPART *curr, sparp_
 {
   sparp_label_external_vars_env_t *sleve = (sparp_label_external_vars_env_t *)common_env;
   SPART *anc_gp = sts_this->sts_ancestor_gp;
-  sparp_t *sub_sparp = sparp_down_to_sub (sparp, curr);
   s_node_t tmp_stack;
   sparp_label_external_vars_env_t tmp_sleve;
   tmp_stack.data = anc_gp;
   tmp_stack.next = sleve->parent_gps_for_var_search;
   tmp_sleve.parent_gps_for_var_search = tmp_sleve.parent_gps_for_table_subq = &tmp_stack;
-  sparp_label_external_vars (sub_sparp, &tmp_sleve);
-  sparp_up_from_sub (sparp, curr, sub_sparp);
+  sparp_gp_trav_suspend (sparp);
+  sparp_label_external_vars (sparp, curr->_.gp.subquery, &tmp_sleve);
+  sparp_gp_trav_resume (sparp);
   return 0;
 }
 
 void
-sparp_label_external_vars (sparp_t *sparp, sparp_label_external_vars_env_t *sleve)
+sparp_label_external_vars (sparp_t *sparp, SPART *req_top, sparp_label_external_vars_env_t *sleve)
 {
-  SPART *top = sparp->sparp_expr;
-  SPART *top_pattern = top->_.req_top.pattern;
   sparp_label_external_vars_env_t tmp_sleve;
   if (NULL == sleve)
     {
       tmp_sleve.parent_gps_for_var_search = tmp_sleve.parent_gps_for_table_subq = NULL;
       sleve = &tmp_sleve;
     }
-  sparp_trav_out_clauses (sparp, top, sleve,
+  sparp_trav_out_clauses (sparp, req_top, sleve,
     NULL, NULL,
-    (((NULL != sleve->parent_gps_for_var_search) /*|| (NULL != sparp->sparp_env->spare_bindings_vars) --- code for old draft of SPARQL 1.1 */) ?
+    ((NULL != sleve->parent_gps_for_var_search) ?
       sparp_gp_trav_label_external_vars_expn_in : NULL ),
     NULL,
     sparp_gp_trav_label_external_vars_expn_subq,
     NULL );
-  sparp_gp_trav (sparp, top_pattern, sleve,
+  sparp_gp_trav_top_pattern (sparp, req_top, sleve,
     sparp_gp_trav_label_external_vars_gp_in, NULL,
     NULL, NULL, sparp_gp_trav_label_external_vars_expn_subq,
     NULL );
@@ -2204,24 +2180,22 @@ again:
 int
 sparp_gp_trav_remove_redundant_connections (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
-  sparp_t *sub_sparp = sparp_down_to_sub (sparp, curr);
-  sparp_remove_redundant_connections (sub_sparp, (ptrlong)common_env);
-  sparp_up_from_sub (sparp, curr, sub_sparp);
+  sparp_gp_trav_suspend (sparp);
+  sparp_remove_redundant_connections (sparp, curr->_.gp.subquery, (ptrlong)common_env);
+  sparp_gp_trav_resume (sparp);
   return 0;
 }
 
 void
-sparp_remove_redundant_connections (sparp_t *sparp, ptrlong flags)
+sparp_remove_redundant_connections (sparp_t *sparp, SPART *req_top, ptrlong flags)
 {
-  SPART *top = sparp->sparp_expr;
-  SPART *top_pattern = top->_.req_top.pattern;
   sparp_equiv_t **equivs = sparp->sparp_sg->sg_equivs;
   int eq_first_idx, eq_ctr;
-  sparp_gp_trav (sparp, top_pattern, NULL,
+  sparp_gp_trav_top_pattern (sparp, req_top, NULL,
     sparp_gp_trav_remove_unused_aliases, sparp_gp_trav_cu_out_triples_1,
     NULL, NULL, sparp_gp_trav_remove_redundant_connections,
     NULL );
-  sparp_trav_out_clauses (sparp, top, NULL,
+  sparp_trav_out_clauses (sparp, req_top, NULL,
     NULL, NULL /* was sparp_gp_trav_cu_out_triples_1*/,
     NULL, NULL, sparp_gp_trav_remove_redundant_connections,
     NULL );
@@ -2259,7 +2233,7 @@ sparp_remove_redundant_connections (sparp_t *sparp, ptrlong flags)
     }
 
 skip_ext_ext_unlinks:
-  sparp_gp_trav (sparp, top_pattern, NULL,
+  sparp_gp_trav_top_pattern (sparp, req_top, NULL,
     sparp_gp_trav_remove_unused_aliases, NULL,
     NULL, NULL, NULL,
     NULL );
@@ -2524,7 +2498,10 @@ sparp_gp_trav_eq_restr_from_connected_subvalues_gp_out (sparp_t *sparp, SPART *c
 /*      if ((eq->e_replaces_filter) && (OPTIONAL_L == curr->_.gp.subtype))
         continue;*/
       if (eq->e_rvr.rvrRestrictions & SPART_VARR_NOT_NULL)
-        eq->e_rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
+        {
+          SPARP_DEBUG_WEIRD(sparp,"conflict");
+          eq->e_rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
+        }
       else
         eq->e_rvr.rvrRestrictions |= SPART_VARR_ALWAYS_NULL;
     } END_SPARP_FOREACH_GP_EQUIV;
@@ -2596,14 +2573,14 @@ sparp_gp_trav_eq_restr_from_connected_receivers_expn_subq (sparp_t *sparp, SPART
 }
 
 void
-sparp_eq_restr_from_connected (sparp_t *sparp)
+sparp_eq_restr_from_connected (sparp_t *sparp, SPART *req_top)
 {
   /*sparp_env_t *env = sparp->sparp_env;*/
-  SPART *binv = sparp->sparp_expr->_.req_top.binv;
+  SPART *binv = req_top->_.req_top.binv;
   if (NULL != binv)
     {
       int varctr, varcount = BOX_ELEMENTS (binv->_.binv.vars);
-      SPART **retlist = sparp->sparp_expr->_.req_top.retvals;
+      SPART **retlist = req_top->_.req_top.retvals;
       for (varctr = varcount; varctr--; /* no step */)
         {
           SPART *var, *ret_expn = NULL;
@@ -2635,8 +2612,9 @@ sparp_eq_restr_from_connected (sparp_t *sparp)
             }
           if (NULL == ret_expn)
             {
-              if (sparp->sparp_env->spare_signal_void_variables)
+              if (sparp->sparp_sg->sg_signal_void_variables)
                 spar_error (sparp, "Variable name '%.100s' is used in the BINDINGS clause but not in the query result set", var->_.var.vname);
+              SPARP_DEBUG_WEIRD(sparp,"conflict");
               var_eq->e_rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
             }
           else
@@ -2646,7 +2624,7 @@ sparp_eq_restr_from_connected (sparp_t *sparp)
                 {
                   sparp_equiv_t *ret_orig_eq = SPARP_EQUIV (sparp, ret_expn->_.var.equiv_idx);
                   sparp_equiv_tighten (sparp, var_eq, &(ret_orig_eq->e_rvr), ~(SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL));
-                  if (!(sparp_req_top_has_limofs (sparp->sparp_expr) && (NULL != sparp->sparp_expr->_.req_top.order)))
+                  if (!(sparp_req_top_has_limofs (req_top) && (NULL != req_top->_.req_top.order)))
                     sparp_equiv_tighten (sparp, ret_orig_eq, &(var_eq->e_rvr), ~(SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL));
                 }
             }
@@ -2654,11 +2632,11 @@ sparp_eq_restr_from_connected (sparp_t *sparp)
       spar_shorten_binv_dataset (sparp, binv);
       spar_refresh_binv_var_rvrs (sparp, binv);
     }
-  sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, NULL,
+  sparp_gp_trav_top_pattern (sparp, req_top, NULL,
     NULL, sparp_gp_trav_eq_restr_from_connected_subvalues_gp_out,
     NULL, NULL, sparp_gp_trav_eq_restr_from_connected_subvalues_expn_subq,
     NULL );
-  sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, NULL,
+  sparp_gp_trav_top_pattern (sparp, req_top, NULL,
     sparp_gp_trav_eq_restr_from_connected_receivers_gp_in, NULL,
     NULL, NULL, sparp_gp_trav_eq_restr_from_connected_receivers_expn_subq,
     NULL );
@@ -2706,10 +2684,10 @@ sparp_gp_trav_eq_restr_to_vars_expn_subq (sparp_t *sparp, SPART *curr, sparp_tra
 }
 
 void
-sparp_eq_restr_to_vars (sparp_t *sparp)
+sparp_eq_restr_to_vars (sparp_t *sparp, SPART *req_top)
 {
   /*sparp_env_t *env = sparp->sparp_env;*/
-  sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, NULL,
+  sparp_gp_trav_top_pattern (sparp, req_top, NULL,
     sparp_gp_trav_eq_restr_to_vars_gp_in, NULL,
     NULL, NULL, sparp_gp_trav_eq_restr_to_vars_expn_subq,
     NULL );
@@ -2782,8 +2760,8 @@ sparp_gp_trav_equiv_audit_inner_vars (sparp_t *sparp, SPART *curr, sparp_trav_st
       if (strcmp (gp->_.gp.selid, curr->_.var.selid))
         spar_audit_error (sparp, "sparp_" "gp_trav_equiv_audit_inner_vars(): var selid differs from gp selid, gp %s var %s/%s/%s", gp->_.gp.selid, curr->_.var.selid, curr->_.var.tabid, curr->_.var.vname);
     }
-  else if (SPARP_EQUIV_AUDIT_NOBAD & ((ptrlong)common_env))
-    spar_audit_error (sparp, "sparp_" "gp_trav_equiv_audit_inner_vars(): var with SPART_BAD_EQUIV_IDX, var %s/%s/%s", curr->_.var.selid, curr->_.var.tabid, curr->_.var.vname);
+  /*else if (SPARP_EQUIV_AUDIT_NOBAD & ((ptrlong)common_env))
+    spar_audit_error (sparp, "sparp_" "gp_trav_equiv_audit_inner_vars(): var with SPART_BAD_EQUIV_IDX, var %s/%s/%s", curr->_.var.selid, curr->_.var.tabid, curr->_.var.vname);*/
   return 0;
 }
 
@@ -2884,15 +2862,15 @@ sparp_equiv_audit_all (sparp_t *sparp, int flags)
 {
   sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
   int eq_ctr, eq_count, var_ctr, recv_ctr, subv_ctr;
-  if (NULL == sparp->sparp_expr)
+  if (NULL == sparp->sparp_entire_query)
     return; /* Internal error during parsing phase, there's no complete query to validate equivalence classes in it. */
   memset (stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
   stss[0].sts_ofs_of_curr_in_array = -1;
-  sparp_gp_trav_int (sparp, sparp->sparp_expr->_.req_top.pattern, stss+1, (void *)((ptrlong)flags),
+  sparp_gp_trav_int (sparp, sparp->sparp_entire_query->_.req_top.pattern, stss+1, (void *)((ptrlong)flags),
     sparp_gp_trav_equiv_audit_inner_vars, NULL,
     sparp_gp_trav_equiv_audit_inner_vars, NULL, sparp_gp_trav_equiv_audit_inner_vars,
     NULL );
-  sparp_equiv_audit_retvals (sparp, sparp->sparp_expr);
+  sparp_equiv_audit_retvals (sparp, sparp->sparp_entire_query);
   eq_count = sparp->sparp_sg->sg_equiv_count;
   for (eq_ctr = sparp->sparp_first_equiv_idx; eq_ctr < eq_count; eq_ctr++)
     {
@@ -3017,7 +2995,7 @@ recv_of_subv_ok: ;
 void
 sparp_audit_mem (sparp_t *sparp)
 {
-  t_check_tree (sparp->sparp_expr);
+  t_check_tree (sparp->sparp_entire_query);
 }
 
 #endif
@@ -3039,7 +3017,7 @@ int sparp_gp_trav_check_if_local (sparp_t *sparp, SPART *curr, sparp_trav_state_
 int
 sparp_tree_is_global_expn (sparp_t *sparp, SPART *tree)
 {
-  int res = sparp_gp_trav (sparp, tree, NULL,
+  int res = sparp_gp_trav (sparp, NULL /* unused */, tree, NULL,
     NULL, NULL,
     sparp_gp_trav_check_if_local, NULL, NULL /*!!!TBD add*/,
     NULL );
@@ -3060,7 +3038,7 @@ int
 sparp_expn_reads_equiv (sparp_t *sparp, SPART *expn, sparp_equiv_t *eq)
 {
   ptrlong eq_idx = eq->e_own_idx;
-  int res = sparp_gp_trav (sparp, expn, (void *)eq_idx,
+  int res = sparp_gp_trav (sparp, NULL /* unused */, expn, (void *)eq_idx,
     NULL, NULL,
     sparp_gp_trav_expn_reads_equiv, NULL, NULL /*!!!TBD add*/,
     NULL );
@@ -3739,41 +3717,41 @@ sparp_gp_trav_simplify_expn_subq (sparp_t *sparp, SPART *curr, sparp_trav_state_
 /* Main rewriting functions */
 
 void
-sparp_rewrite_basic (sparp_t *sparp)
+sparp_rewrite_basic (sparp_t *sparp, SPART *req_top)
 {
   sparp_audit_mem (sparp);
-  sparp_count_usages (sparp, NULL);
+  sparp_count_usages (sparp, req_top, NULL);
   sparp_audit_mem (sparp);
-  sparp_restrict_by_simple_filters (sparp);
+  sparp_restrict_by_simple_filters (sparp, req_top);
   sparp_audit_mem (sparp);
-  sparp_make_common_eqs (sparp);
-  sparp_make_aliases (sparp);
-  sparp_label_external_vars (sparp, NULL); /* This is now before sparp_eq_restr_from_connected() to prevent wrong SPART_VARR_ALWAYS_NULL for external vars that are used solely in const reads */
-  sparp_eq_restr_from_connected (sparp);
-  sparp_eq_restr_to_vars (sparp);
+  sparp_make_common_eqs (sparp, req_top);
+  sparp_make_aliases (sparp, req_top);
+  sparp_label_external_vars (sparp, req_top, NULL); /* This is now before sparp_eq_restr_from_connected() to prevent wrong SPART_VARR_ALWAYS_NULL for external vars that are used solely in const reads */
+  sparp_eq_restr_from_connected (sparp, req_top);
+  sparp_eq_restr_to_vars (sparp, req_top);
   sparp_remove_totally_useless_equivs (sparp);
-  sparp_remove_redundant_connections (sparp, 0);
+  sparp_remove_redundant_connections (sparp, req_top, 0);
   sparp_audit_mem (sparp);
 }
 
 void
-sparp_simplify_expns (sparp_t *sparp)
+sparp_simplify_expns (sparp_t *sparp, SPART *req_top)
 {
   int saved_sparp_dirty = sparp->sparp_rewrite_dirty;
   int local_dirty;
   sparp->sparp_rewrite_dirty = 0;
   local_dirty = sparp->sparp_rewrite_dirty;
-  sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, NULL,
+  sparp_gp_trav_top_pattern (sparp, req_top, NULL,
     NULL, NULL,
     NULL, sparp_gp_trav_simplify_expn_out, sparp_gp_trav_simplify_expn_subq,
     NULL );
-  sparp_trav_out_clauses (sparp, sparp->sparp_expr, NULL,
+  sparp_trav_out_clauses (sparp, req_top, NULL,
     NULL, NULL,
     NULL, sparp_gp_trav_simplify_expn_out, sparp_gp_trav_simplify_expn_subq,
     NULL );
   sparp->sparp_rewrite_dirty += saved_sparp_dirty;
   if (local_dirty)
-    sparp_rewrite_basic (sparp);
+    sparp_rewrite_basic (sparp, req_top);
 }
 
 
@@ -3900,7 +3878,10 @@ spar_shorten_binv_dataset (sparp_t *sparp, SPART *binv)
               eq->e_rvr.rvrSprintffCount -= 1;
             }
           if (0 == eq->e_rvr.rvrSprintffCount)
-            eq->e_rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
+            {
+              SPARP_DEBUG_WEIRD(sparp,"conflict");
+              eq->e_rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
+            }
           if (eq->e_rvr.rvrSprintffCount != var->_.var.rvr.rvrSprintffCount)
             sparp_rvr_tighten (sparp, &(var->_.var.rvr), &(eq->e_rvr), ~(SPART_VARR_EXTERNAL | SPART_VARR_GLOBAL));
         }
@@ -4493,7 +4474,7 @@ sparp_find_triple_cases (sparp_t *sparp, SPART *triple, SPART **sources, int req
       triple_storage_iri = sparp->sparp_env->spare_storage_name;
       triple_storage = sparp->sparp_storage;
       if ((SPART **)((ptrlong)(_STAR)) == sources)
-        sources = sparp->sparp_expr->_.req_top.sources;
+        sources = sparp->sparp_stp->stp_trav_req_top->_.req_top.sources;
     }
   if (NULL == triple_storage)
     {
@@ -4585,9 +4566,8 @@ full_exclusive_match_detected:
 }
 
 void
-sparp_refresh_triple_cases (sparp_t *sparp, SPART *triple)
+sparp_refresh_triple_cases (sparp_t *sparp, SPART **sources, SPART *triple)
 {
-  SPART **sources = sparp->sparp_expr->_.req_top.sources;
   /*ssg_valmode_t valmodes[SPART_TRIPLE_FIELDS_COUNT];*/
   triple_case_t **new_cases;
   int old_cases_count, new_cases_count, ctr;
@@ -4605,7 +4585,7 @@ sparp_refresh_triple_cases (sparp_t *sparp, SPART *triple)
   new_cases_count = BOX_ELEMENTS (new_cases);
   if ((NULL == triple->_.triple.tc_list) &&
     (0 == new_cases_count) &&
-    sparp->sparp_env->spare_signal_void_variables )
+    sparp->sparp_sg->sg_signal_void_variables )
     spar_error (sparp, "No one quad map pattern is suitable for GRAPH %s { %s %s %s } triple at line %ld",
       spar_dbg_string_of_triple_field (sparp, graph),
       spar_dbg_string_of_triple_field (sparp, triple->_.triple.tr_subject),
@@ -4685,6 +4665,10 @@ sparp_refresh_triple_cases (sparp_t *sparp, SPART *triple)
           int restr_of_col_mask = ~(SPART_VARR_EXTERNAL | SPART_VARR_GLOBAL);
           if (OPTIONAL_L == triple->_.triple.subtype)
             restr_of_col_mask &= ~SPART_VARR_NOT_NULL;
+          if (acc_rvr.rvrRestrictions & SPART_VARR_CONFLICT)
+            {
+              SPARP_DEBUG_WEIRD(sparp,"conflict");
+            }
           sparp_rvr_tighten (sparp, &(field_expn->_.var.rvr), &acc_rvr, restr_of_col_mask);
 /* The specific purpose of the field is a differentiation of what should be tested somewhere in the resulting SQL query
 and what is a natural property of the data source.
@@ -5022,57 +5006,6 @@ sparp_set_triple_selid_and_tabid (sparp_t *sparp, SPART *triple, caddr_t new_sel
   triple->_.triple.tabid = /*t_box_copy*/ (new_tabid);
 }
 
-
-#if 0
-int
-sparp_set_retval_selid_cbk (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
-{
-  if (SPAR_IS_BLANK_OR_VAR (curr))
-    curr->_.var.selid = t_box_copy (common_env);
-  return 0;
-}
-
-void
-sparp_set_retval_and_order_selid (sparp_t *sparp)
-{
-  int ctr;
-  sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
-  caddr_t top_gp_selid = sparp->sparp_expr->_.req_top.pattern->_.gp.selid;
-  DO_BOX_FAST (SPART *, filt, ctr, sparp->sparp_expr->_.req_top.retvals)
-    {
-      sparp_gp_trav_int (sparp, filt, stss + 1, top_gp_selid,
-        NULL, NULL,
-        sparp_set_retval_selid_cbk, NULL, NULL,
-        NULL );
-    }
-  END_DO_BOX_FAST;
-  DO_BOX_FAST (SPART *, grouping, ctr, sparp->sparp_expr->_.req_top.groupings)
-    {
-      sparp_gp_trav_int (sparp, grouping, stss + 1, top_gp_selid,
-        NULL, NULL,
-        sparp_set_retval_selid_cbk, NULL, NULL,
-        NULL );
-    }
-  END_DO_BOX_FAST;
-  if (NULL != sparp->sparp_expr->_.req_top.having)
-    {
-      sparp_gp_trav_int (sparp, sparp->sparp_expr->_.req_top.having, stss + 1, top_gp_selid,
-        NULL, NULL,
-        sparp_set_retval_selid_cbk, NULL, NULL,
-        NULL );
-    }
-  END_DO_BOX_FAST;
-  DO_BOX_FAST (SPART *, oby, ctr, sparp->sparp_expr->_.req_top.order)
-    {
-      sparp_gp_trav_int (sparp, oby->_.oby.expn, stss + 1, top_gp_selid,
-        NULL, NULL,
-        sparp_set_retval_selid_cbk, NULL, NULL,
-        NULL );
-    }
-  END_DO_BOX_FAST;
-}
-#endif
-
 int
 sparp_expns_are_equal (sparp_t *sparp, SPART *one, SPART *two)
 {
@@ -5144,43 +5077,6 @@ sparp_expn_lists_are_equal (sparp_t *sparp, SPART **one, SPART **two)
     }
   return 1;
 }
-
-#if 0
-int
-sparp_set_special_order_selid_cbk (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
-{
-  SPART *new_gp = (SPART *)common_env;
-  if (SPAR_IS_BLANK_OR_VAR (curr))
-    {
-      sparp_equiv_t *eq;
-/* !!! TBD: replace with silent detach if needed.
-      int idx = curr->_.var.equiv_idx;
-      if (SPART_BAD_EQUIV_IDX != idx)
-        spar_internal_error (sparp, "sparp_" "set_special_order_selid(): attempt to attach a filter with used variable"); */
-      curr->_.var.selid = t_box_copy (new_gp->_.gp.selid);
-      eq = sparp_equiv_get (sparp, new_gp, curr, SPARP_EQUIV_INS_VARIABLE/* !!!TBD: add | SPARP_EQUIV_ADD_CONST_READ*/);
-      if (NULL == eq)
-        spar_internal_error (sparp, "sparp_" "set_special_order_selid(): variable in order by comes from nowhere");
-      curr->_.var.equiv_idx = eq->e_own_idx;
-    }
-  return 0;
-}
-
-void
-sparp_set_special_order_selid (sparp_t *sparp, SPART *new_gp)
-{
-  int ctr;
-  sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
-  DO_BOX_FAST (SPART *, oby, ctr, sparp->sparp_expr->_.req_top.order)
-    {
-      sparp_gp_trav_int (sparp, oby->_.oby.expn, stss + 1, new_gp,
-        NULL, NULL,
-        sparp_set_special_order_selid_cbk, NULL, NULL,
-        NULL );
-    }
-  END_DO_BOX_FAST;
-}
-#endif
 
 SPART **
 sparp_make_qm_cases (sparp_t *sparp, SPART *triple, SPART *parent_gp)
@@ -5299,14 +5195,20 @@ sparp_gp_produce_nothing (sparp_t *sparp, SPART *curr)
     {
       int recv_eq_ctr;
       if (SPART_VARR_NOT_NULL & eq->e_rvr.rvrRestrictions)
-        eq->e_rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
+        {
+          SPARP_DEBUG_WEIRD(sparp,"conflict");
+          eq->e_rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
+        }
       else
         eq->e_rvr.rvrRestrictions |= SPART_VARR_ALWAYS_NULL;
       DO_BOX_FAST (ptrlong, recv_eq_idx, recv_eq_ctr, eq->e_receiver_idxs)
         {
           sparp_equiv_t *recv_eq = SPARP_EQUIV (sparp, recv_eq_idx);
           if ((UNION_L != recv_eq->e_gp->_.gp.subtype) && (OPTIONAL_L != curr->_.gp.subtype))
-            recv_eq->e_rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
+            {
+              SPARP_DEBUG_WEIRD(sparp,"conflict");
+              recv_eq->e_rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
+            }
           sparp_equiv_disconnect_outer_from_inner (sparp, recv_eq, eq);
         }
       END_DO_BOX_FAST;
@@ -5328,15 +5230,28 @@ int sparp_gp_trav_refresh_triple_cases (sparp_t *sparp, SPART *curr, sparp_trav_
   switch (curr->type)
     {
     case SPAR_TRIPLE:
-      sparp_refresh_triple_cases (sparp, curr);
-      return SPAR_GPT_NODOWN /*| SPAR_GPT_NOOUT */;
+      {
+        SPART *sinv = sparp_get_option (sparp, curr->_.gp.options, SPAR_SERVICE_INV);
+        SPART **sources;
+        if (NULL != sinv)
+          {
+            sts_this[0].sts_env = sinv;
+            sources = sinv->_.sinv.sources;
+            sparp_refresh_triple_cases (sparp, sources, curr);
+            return SPAR_GPT_ENV_PUSH;
+          }
+        sinv = (SPART *)(sts_this[-1].sts_env);
+        sources = (NULL != sinv) ? sinv->_.sinv.sources : sparp->sparp_stp->stp_trav_req_top->_.req_top.sources;
+        sparp_refresh_triple_cases (sparp, sources, curr);
+        return SPAR_GPT_NODOWN /*| SPAR_GPT_NOOUT */;
+      }
     case SPAR_GP:
       if (SELECT_L == curr->_.gp.subtype)
         {
-          sparp_t *sub_sparp = sparp_down_to_sub (sparp, curr);
-          if (sparp_rewrite_qm_optloop (sub_sparp, (ptrlong)common_env))
+          sparp_gp_trav_suspend (sparp);
+          if (sparp_rewrite_qm_optloop (sparp, curr->_.gp.subquery, (ptrlong)common_env))
             sparp->sparp_rewrite_dirty = 1;
-          sparp_up_from_sub (sparp, curr, sub_sparp);
+          sparp_gp_trav_resume (sparp);
           return SPAR_GPT_NODOWN /*| SPAR_GPT_NOOUT */;
         }
       break;
@@ -6749,23 +6664,20 @@ sparp_reduce_trivial_optional (sparp_t *sparp, SPART *opt)
 }
 
 
-void
-sparp_rewrite_all (sparp_t *sparp, int safely_copy_retvals)
+SPART *
+sparp_rewrite_all (sparp_t *sparp, SPART *req_top, int safely_copy_retvals)
 {
-  ptrlong top_type = SPART_TYPE (sparp->sparp_expr);
+  ptrlong top_type = SPART_TYPE (req_top);
   if ((NULL == sparp->sparp_env->spare_storage_name) && (NULL == sparp->sparp_storage))
     sparp->sparp_storage = sparp_find_storage_by_name (NULL);
   if (SPAR_QM_SQL_FUNCALL == top_type)
-    return;
+    return req_top;
   if (SPAR_CODEGEN == top_type)
-    return;
-  sparp_rewrite_retvals (sparp, safely_copy_retvals);
-  if ((sparp->sparp_env->spare_src.ssrc_grab.rgc_pview_mode) && (NULL == sparp->sparp_parent_sparp))
-    {
-      sparp_rewrite_grab (sparp);
-      return;
-    }
-  sparp_rewrite_qm (sparp);
+    return req_top;
+  sparp_rewrite_retvals (sparp, req_top, safely_copy_retvals);
+  if ((sparp->sparp_env->spare_src.ssrc_grab.rgc_pview_mode) && (NULL == sparp->sparp_suspended_stps))
+    return sparp_rewrite_grab (sparp, req_top);
+  return sparp_rewrite_qm (sparp, req_top);
 }
 
 /*! This fixes sparql select * where {{ select * where { ?s <knows> ?o }} . filter (?s=<me>)}.
@@ -6777,10 +6689,17 @@ sparp_gp_trav_restore_filters_for_weird_subq (sparp_t *sparp, SPART *curr, sparp
   if (SPAR_GP != SPART_TYPE (curr))
     return SPAR_GPT_NODOWN;
   if (SELECT_L != curr->_.gp.subtype)
-    return SPAR_GPT_ENV_PUSH; /* SPAR_GPT_ENV_PUSH is not really required for this callback by itself,
+    {
+      SPART *sinv = sparp_get_option (sparp, curr->_.gp.options, SPAR_SERVICE_INV);
+      if (NULL != sinv)
+        sts_this[0].sts_env = sinv;
+      else
+        sts_this[0].sts_env = sts_this[-1].sts_env;
+      return SPAR_GPT_ENV_PUSH; /* SPAR_GPT_ENV_PUSH is not really required for this callback by itself,
 because parent gp can be obtained as an ancestor_gp, but it is required for \c sparp_gp_trav_add_graph_perm_read_filters() that can be
 used in one iteration with sparp_gp_trav_restore_filters_for_weird_subq(). Permission processing is a postorder callback whereas
 restoring filters is a preorder one, the postorder needs a complete stack of things */
+    }
   SPARP_FOREACH_GP_EQUIV (sparp, curr, eq_ctr, eq)
     {
       sparp_equiv_t *subq_eq, *recv_eq;
@@ -6836,7 +6755,7 @@ restoring filters is a preorder one, the postorder needs a complete stack of thi
 int
 sparp_gp_trav_add_graph_perm_read_filters (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
-  SPART **sources = sparp->sparp_expr->_.req_top.sources;
+  SPART **sources;
   int depth, membctr, membcount;
   if (SPAR_GP != SPART_TYPE (curr))
     return 0;
@@ -6844,17 +6763,12 @@ sparp_gp_trav_add_graph_perm_read_filters (sparp_t *sparp, SPART *curr, sparp_tr
     return 0;
   if (sparp->sparp_query_uses_sinvs)
     { /* Bug 14737 fix: No permission filters should be placed inside service invocations */
-      int sts_idx;
       if (sparp->sparp_env->spare_storage_name == uname_virtrdf_ns_uri_DefaultServiceStorage)
         return 0;
-      if (NULL != sparp_get_option (sparp, curr->_.gp.options, SPAR_SERVICE_INV))
+      if (NULL != sts_this->sts_env)
         return 0;
-      for (sts_idx = 0; NULL != sts_this[sts_idx].sts_ancestor_gp; sts_idx++)
-        {
-          if (NULL != sparp_get_option (sparp, sts_this[sts_idx].sts_ancestor_gp->_.gp.options, SPAR_SERVICE_INV))
-            return 0;
-        }
     }
+  sources = sparp->sparp_stp->stp_trav_req_top->_.req_top.sources;
   membcount = BOX_ELEMENTS_0 (curr->_.gp.members);
   for (membctr = 0; membctr < membcount; membctr++)
     {
@@ -6873,7 +6787,6 @@ sparp_gp_trav_add_graph_perm_read_filters (sparp_t *sparp, SPART *curr, sparp_tr
         continue;
       if (spar_plain_const_value_of_tree (g_expn, &fixed_g))
         {
-          SPART **sources = sparp->sparp_expr->_.req_top.sources;
           int ctr;
           g_norm_expn = (SPART *)fixed_g;
           g_norm_expn_dtp = DV_TYPE_OF (g_norm_expn);
@@ -6998,48 +6911,17 @@ expn_is_dupe: ;
   return 0;
 }
 
-#if 0
-int
-sparp_gp_trav_expand_binds_gp_in (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
+SPART *
+sparp_rewrite_qm (sparp_t *sparp, SPART *req_top)
 {
-  SPART *gp = sts_this->sts_ancestor_gp;
-  int bind_count;
-  switch (SPART_TYPE(curr))
-    {
-    case SPAR_GP:
-      if (SELECT_L == curr->_.gp.subtype)
-        return SPAR_GPT_NODOWN;
-      bind_count = BOX_ELEMENTS_0 (curr->_.gp.binds);
-      if (0 == bind_count)
-        return SPAR_GPT_ENV_PUSH;
-      return SPAR_GPT_ENV_PUSH;
-    case SPAR_TRIPLE: break;
-    default: return 0;
-    }
-}
-
-void
-sparp_expand_binds (sparp_t *sparp)
-{
-/*
-  sparp_gp_trav (sparp, sparp->sparp_expr, NULL,
-    sparp_gp_trav_expand_binds_gp_in, sparp_gp_trav_expand_binds_gp_out,
-    NULL, NULL, sparp_gp_trav_expand_binds_expn_subq,
-    NULL );
-*/
-}
-#endif
-
-void
-sparp_rewrite_qm (sparp_t *sparp)
-{
-  if (SPAR_CODEGEN == SPART_TYPE (sparp->sparp_expr))
-    return;
-  if (SPAR_QM_SQL_FUNCALL == SPART_TYPE (sparp->sparp_expr))
-    return;
-  sparp_rewrite_qm_preopt (sparp, 1);
-  sparp_rewrite_qm_optloop (sparp, SPARP_MULTIPLE_OPTLOOPS);
-  sparp_rewrite_qm_postopt (sparp);
+  if (SPAR_CODEGEN == SPART_TYPE (req_top))
+    return req_top;
+  if (SPAR_QM_SQL_FUNCALL == SPART_TYPE (req_top))
+    return req_top;
+  sparp_rewrite_qm_preopt (sparp, req_top, 1);
+  sparp_rewrite_qm_optloop (sparp, req_top, SPARP_MULTIPLE_OPTLOOPS);
+  sparp_rewrite_qm_postopt (sparp, req_top);
+  return req_top;
 }
 
 int
@@ -7079,19 +6961,19 @@ sparp_dig_and_glue_loj_filter_for_eq (sparp_t *sparp, sparp_equiv_t *eq)
 }
 
 void
-sparp_rewrite_qm_preopt (sparp_t *sparp, int safely_copy_retvals)
+sparp_rewrite_qm_preopt (sparp_t *sparp, SPART *req_top, int safely_copy_retvals)
 {
   sparp_equiv_t **equivs /* do not set here */;
   int equiv_ctr, equiv_count;
-  if (SPAR_CODEGEN == SPART_TYPE (sparp->sparp_expr))
+  if (SPAR_CODEGEN == SPART_TYPE (req_top))
     GPF_T1 ("sparp_" "rewrite_qm_preopt () for CODEGEN");
-  if (SPAR_QM_SQL_FUNCALL == SPART_TYPE (sparp->sparp_expr))
+  if (SPAR_QM_SQL_FUNCALL == SPART_TYPE (req_top))
     GPF_T1 ("sparp_" "rewrite_qm_preopt () for SQL_FUNCALL");
 
 retry_preopt:
-  sparp_rewrite_basic (sparp);
-  if (sparp->sparp_env->spare_signal_void_variables)
-    sparp_simplify_expns (sparp);
+  sparp_rewrite_basic (sparp, req_top);
+  if (sparp->sparp_sg->sg_signal_void_variables)
+    sparp_simplify_expns (sparp, req_top);
   equivs = sparp->sparp_sg->sg_equivs;
   equiv_count = sparp->sparp_sg->sg_equiv_count;
   for (equiv_ctr = sparp->sparp_first_equiv_idx; equiv_ctr < equiv_count; equiv_ctr++)
@@ -7108,7 +6990,7 @@ retry_preopt:
       /* At this point we know that some variable is used but not assigned. It may be non-optional variable in FILTER inside OPTIONAL or an error. */
       if (sparp_dig_and_glue_loj_filter_for_eq (sparp, eq))
         goto retry_preopt; /* see above */
-      if (sparp->sparp_env->spare_signal_void_variables)
+      if (sparp->sparp_sg->sg_signal_void_variables)
         {
           if (eq->e_rvr.rvrRestrictions & SPART_VARR_EXPORTED)
             spar_error (sparp, "Variable '%.100s' is used in the query result set but not assigned", eq->e_varnames[0]);
@@ -7118,40 +7000,40 @@ retry_preopt:
         }
     }
 /* Building qm_list for every triple in the tree. */
-  sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, NULL,
+  sparp_gp_trav_top_pattern (sparp, req_top, NULL,
     sparp_gp_trav_refresh_triple_cases, NULL,
     NULL, NULL, NULL,
     NULL );
   sparp_equiv_audit_all (sparp, 0);
-  sparp_rewrite_basic (sparp);
+  sparp_rewrite_basic (sparp, req_top);
 }
 
 int
 sparp_gp_trav_rewrite_qm_optloop (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
-  sparp_t *sub_sparp = sparp_down_to_sub (sparp, curr);
-  if (sparp_rewrite_qm_optloop (sub_sparp, (ptrlong)common_env))
+  sparp_gp_trav_suspend (sparp);
+  if (sparp_rewrite_qm_optloop (sparp, curr->_.gp.subquery, (ptrlong)common_env))
     sparp->sparp_rewrite_dirty = 1;
-  sparp_up_from_sub (sparp, curr, sub_sparp);
+  sparp_gp_trav_resume (sparp);
   return 0;
 }
 
 int
-sparp_rewrite_qm_optloop (sparp_t *sparp, int opt_ctr)
+sparp_rewrite_qm_optloop (sparp_t *sparp, SPART *req_top, int opt_ctr)
 {
   int res;
   int saved_sparp_rewrite_dirty = sparp->sparp_rewrite_dirty;
-  if (SPAR_CODEGEN == SPART_TYPE (sparp->sparp_expr))
+  if (SPAR_CODEGEN == SPART_TYPE (req_top))
     GPF_T1 ("sparp_" "rewrite_qm_postopt () for CODEGEN");
-  if (SPAR_QM_SQL_FUNCALL == SPART_TYPE (sparp->sparp_expr))
+  if (SPAR_QM_SQL_FUNCALL == SPART_TYPE (req_top))
     GPF_T1 ("sparp_" "rewrite_qm_optloop () for SQL_FUNCALL");
   if (SPARP_MULTIPLE_OPTLOOPS == opt_ctr)
     {
-      SPART *binv = sparp->sparp_expr->_.req_top.binv;
+      SPART *binv = req_top->_.req_top.binv;
       int old_bindings_len = ((NULL != binv) ? BOX_ELEMENTS (binv->_.binv.data_rows) : -1);
       int optimization_loop_ctr = 0;
       int optimization_loop_count = 10 + ((NULL != binv) ? 2 * BOX_ELEMENTS (binv->_.binv.vars) : 0);
-      while (sparp_rewrite_qm_optloop (sparp, optimization_loop_ctr))
+      while (sparp_rewrite_qm_optloop (sparp, req_top, optimization_loop_ctr))
         {
           if (0 < old_bindings_len)
             { /* Shortening BINDINGS table can be arbitrarily long but it can't be infinite so optimization_loop_ctr is left intact */
@@ -7175,51 +7057,51 @@ sparp_rewrite_qm_optloop (sparp_t *sparp, int opt_ctr)
   sparp_equiv_audit_all (sparp, 0);
   sparp->sparp_rewrite_dirty = 0;
 /* Converting to GP_UNION of every triple such that many quad maps contains triples that matches the mapping pattern */
-  sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, (void *)((ptrlong)opt_ctr),
+  sparp_gp_trav_top_pattern (sparp, req_top, (void *)((ptrlong)opt_ctr),
     sparp_gp_trav_refresh_triple_cases, sparp_gp_trav_multiqm_to_unions,
     NULL, NULL, sparp_gp_trav_rewrite_qm_optloop,
     NULL );
-  sparp_trav_out_clauses (sparp, sparp->sparp_expr, (void *)((ptrlong)opt_ctr),
+  sparp_trav_out_clauses (sparp, req_top, (void *)((ptrlong)opt_ctr),
     NULL, NULL,
     NULL, NULL, sparp_gp_trav_rewrite_qm_optloop,
     NULL );
   sparp_equiv_audit_all (sparp, 0);
-  sparp_rewrite_basic (sparp);
+  sparp_rewrite_basic (sparp, req_top);
   sparp_equiv_audit_all (sparp, SPARP_EQUIV_AUDIT_NOBAD);
 /* Converting join with a union into a union of joins with parts of union */
-  sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, NULL,
+  sparp_gp_trav_top_pattern (sparp, req_top, NULL,
     sparp_gp_trav_union_of_joins_in, sparp_gp_trav_union_of_joins_out,
     NULL, NULL, NULL,
     NULL );
   sparp_equiv_audit_all (sparp, 0);
-  sparp_rewrite_basic (sparp);
+  sparp_rewrite_basic (sparp, req_top);
 /* Removal of gps that can not produce results */
-  sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, NULL,
+  sparp_gp_trav_top_pattern (sparp, req_top, NULL,
     NULL, sparp_gp_trav_detach_conflicts_out,
     NULL, NULL, NULL,
     NULL );
   sparp_equiv_audit_all (sparp, 0);
-  sparp_rewrite_basic (sparp);
-  sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, NULL,
+  sparp_rewrite_basic (sparp, req_top);
+  sparp_gp_trav_top_pattern (sparp, req_top, NULL,
     NULL, sparp_gp_trav_detach_conflicts_out,
     NULL, NULL, NULL,
     NULL );
   sparp_equiv_audit_all (sparp, 0);
-  sparp_simplify_expns (sparp);
-  sparp_rewrite_basic (sparp);
+  sparp_simplify_expns (sparp, req_top);
+  sparp_rewrite_basic (sparp, req_top);
   sparp_equiv_audit_all (sparp, 0);
   if (!(opt_ctr % 2)) /* Do this not in every loop because it's costly and it almost never give a result after first loop */
     {
-      sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, NULL,
+      sparp_gp_trav_top_pattern (sparp, req_top, NULL,
         sparp_gp_trav_localize_filters, NULL,
         NULL, NULL, NULL,
         NULL );
       sparp_equiv_audit_all (sparp, 0);
-      sparp_rewrite_basic (sparp);
+      sparp_rewrite_basic (sparp, req_top);
       sparp_equiv_audit_all (sparp, 0);
     }
   sparp_equiv_audit_all (sparp, SPARP_EQUIV_AUDIT_NOBAD);
-  sparp_trav_out_clauses (sparp, sparp->sparp_expr, sparp->sparp_expr->_.req_top.pattern,
+  sparp_trav_out_clauses (sparp, req_top, req_top->_.req_top.pattern,
     NULL, NULL,
     NULL, NULL, sparp_gp_trav_rewrite_qm_optloop,
     NULL );
@@ -7278,9 +7160,9 @@ sparp_gp_trav_list_external_vars_gp_in (sparp_t *sparp, SPART *curr, sparp_trav_
 {
   if ((SPAR_GP == SPART_TYPE (curr)) && (SELECT_L == curr->_.gp.subtype))
     {
-      sparp_t *sub_sparp = sparp_down_to_sub (sparp, curr);
-      sparp_list_external_vars (sub_sparp, curr->_.gp.subquery, common_env);
-      sparp_up_from_sub (sparp, curr, sub_sparp);
+      sparp_gp_trav_suspend (sparp);
+      sparp_list_external_vars (sparp, curr->_.gp.subquery, common_env);
+      sparp_gp_trav_resume (sparp);
     }
   return 0;
 }
@@ -7296,16 +7178,16 @@ sparp_gp_trav_list_external_vars_expn_in (sparp_t *sparp, SPART *curr, sparp_tra
 int
 sparp_gp_trav_list_external_vars_expn_subq (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
-  sparp_t *sub_sparp = sparp_down_to_sub (sparp, curr);
-  sparp_list_external_vars (sub_sparp, curr->_.gp.subquery, common_env);
-  sparp_up_from_sub (sparp, curr, sub_sparp);
+  sparp_gp_trav_suspend (sparp);
+  sparp_list_external_vars (sparp, curr->_.gp.subquery, common_env);
+  sparp_gp_trav_resume (sparp);
   return 0;
 }
 
 void
 sparp_list_external_vars (sparp_t *sparp, SPART *tree, dk_set_t *set_ret)
 {
-  SPART *top,*top_pattern;
+  SPART *top, *top_pattern;
   if (SPAR_REQ_TOP == SPART_TYPE (tree))
     {
       top = tree;
@@ -7321,7 +7203,7 @@ sparp_list_external_vars (sparp_t *sparp, SPART *tree, dk_set_t *set_ret)
       NULL, NULL,
       sparp_gp_trav_list_external_vars_expn_in, NULL, sparp_gp_trav_list_external_vars_expn_subq,
       NULL );
-  sparp_gp_trav (sparp, top_pattern, set_ret,
+  sparp_gp_trav (sparp, NULL /* unused */, top_pattern, set_ret,
     sparp_gp_trav_list_external_vars_gp_in, NULL,
     sparp_gp_trav_list_external_vars_expn_in, NULL, sparp_gp_trav_list_external_vars_expn_subq,
     NULL );
@@ -7428,7 +7310,7 @@ name_from_eq_is_found_in_params: ;
 }
 
 void
-sparp_tweak_order_of_iter (sparp_t *sparp, SPART **obys)
+sparp_tweak_order_of_iter (sparp_t *sparp, SPART *req_top, SPART **obys)
 {
   int oby_ctr;
   DO_BOX_FAST (SPART *, oby, oby_ctr, obys)
@@ -7442,12 +7324,12 @@ sparp_tweak_order_of_iter (sparp_t *sparp, SPART **obys)
       if (DV_LONG_INT != DV_TYPE_OF (lit_val))
         continue;
       col_idx = unbox (lit_val);
-      if ((0 >= col_idx) && (col_idx > BOX_ELEMENTS (sparp->sparp_expr->_.req_top./*orig_*/retvals)))
+      if ((0 >= col_idx) && (col_idx > BOX_ELEMENTS (req_top->_.req_top./*orig_*/retvals)))
         continue;
-      tree = sparp->sparp_expr->_.req_top./*orig_*/retvals [col_idx-1];
+      tree = req_top->_.req_top./*orig_*/retvals [col_idx-1];
       while (SPAR_ALIAS == SPART_TYPE (tree))
         tree = tree->_.alias.arg;
-      tree_copy = sparp_tree_full_copy (sparp, tree, sparp->sparp_expr->_.req_top.pattern);
+      tree_copy = sparp_tree_full_copy (sparp, tree, req_top->_.req_top.pattern);
       oby->_.oby.expn = tree_copy;
     }
   END_DO_BOX_FAST;
@@ -7456,12 +7338,11 @@ sparp_tweak_order_of_iter (sparp_t *sparp, SPART **obys)
 int
 sparp_gp_trav_rewrite_qm_postopt (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
-  sparp_t *sub_sparp;
   if ((SPAR_GP != SPART_TYPE (curr)) || (SELECT_L != curr->_.gp.subtype))
     return 0;
-  sub_sparp = sparp_down_to_sub (sparp, curr);
-  sparp_rewrite_qm_postopt (sub_sparp);
-  sparp_up_from_sub (sparp, curr, sub_sparp);
+  sparp_gp_trav_suspend (sparp);
+  sparp_rewrite_qm_postopt (sparp, curr->_.gp.subquery);
+  sparp_gp_trav_resume (sparp);
   return 0;
 }
 
@@ -7628,23 +7509,22 @@ spar_propagate_limit_as_option (sparp_t *sparp, SPART *tree, SPART *outer_limit)
 }
 
 void
-sparp_rewrite_qm_postopt (sparp_t *sparp)
+sparp_rewrite_qm_postopt (sparp_t *sparp, SPART *req_top)
 {
   sparp_equiv_t **equivs;
   int equiv_ctr, equiv_count;
   int retval_ctr;
   dk_set_t optionals_to_reduce;
-  SPART *root = sparp->sparp_expr;
   sparp_gp_trav_cbk_t *security_cbk;
-  if (SPAR_CODEGEN == SPART_TYPE (sparp->sparp_expr))
+  if (SPAR_CODEGEN == SPART_TYPE (req_top))
     GPF_T1 ("sparp_" "rewrite_qm_postopt () for CODEGEN");
-  if (SPAR_QM_SQL_FUNCALL == SPART_TYPE (sparp->sparp_expr))
+  if (SPAR_QM_SQL_FUNCALL == SPART_TYPE (req_top))
     GPF_T1 ("sparp_" "rewrite_qm_postopt () for SQL_FUNCALL");
-  sparp_wpar_retvars_in_max (sparp, sparp->sparp_expr);
+  sparp_wpar_retvars_in_max (sparp, req_top);
 
 retry_after_reducing_optionals:
   optionals_to_reduce = NULL;
-  sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, &optionals_to_reduce,
+  sparp_gp_trav_top_pattern (sparp, req_top, &optionals_to_reduce,
     sparp_gp_trav_rewrite_qm_postopt, sparp_gp_trav_flatten_and_reuse_tabids,
     NULL, NULL, sparp_gp_trav_rewrite_qm_postopt,
     NULL );
@@ -7653,38 +7533,38 @@ retry_after_reducing_optionals:
       SPART *opt = t_set_pop (&optionals_to_reduce);
       if (sparp_reduce_trivial_optional (sparp, opt))
         {
-          sparp_rewrite_qm_optloop (sparp, 1);
+          sparp_rewrite_qm_optloop (sparp, req_top, 1);
           goto retry_after_reducing_optionals; /* see above */
         }
     }
-  sparp_remove_redundant_connections (sparp, SPARP_UNLINK_IF_ASSIGNED_EXTERNALLY);
+  sparp_remove_redundant_connections (sparp, req_top, SPARP_UNLINK_IF_ASSIGNED_EXTERNALLY);
   sparp_audit_mem (sparp);
-  sparp_trav_out_clauses (sparp, sparp->sparp_expr, NULL,
+  sparp_trav_out_clauses (sparp, req_top, NULL,
     NULL, NULL,
     NULL, NULL, sparp_gp_trav_rewrite_qm_postopt,
     NULL );
   security_cbk = ((spar_graph_static_perms (sparp, NULL, RDF_GRAPH_PERM_READ) & RDF_GRAPH_PERM_READ) ? NULL :
     sparp_gp_trav_add_graph_perm_read_filters );
-  sparp_gp_trav (sparp, sparp->sparp_expr->_.req_top.pattern, NULL,
+  sparp_gp_trav_top_pattern (sparp, req_top, NULL,
     sparp_gp_trav_restore_filters_for_weird_subq, security_cbk,
     NULL, NULL, NULL,
     NULL );
 /* Final processing: */
-  switch (root->_.req_top.subtype)
+  switch (req_top->_.req_top.subtype)
     {
     case DELETE_L:
-      if (spar_optimize_delete_of_single_triple_pattern (sparp, root))
+      if (spar_optimize_delete_of_single_triple_pattern (sparp, req_top))
         break; /* If optimized then there's nothing more to optimize. */
       /* no break here */
     case INSERT_L:
-      spar_optimize_retvals_of_insert_or_delete (sparp, root);
+      spar_optimize_retvals_of_insert_or_delete (sparp, req_top);
       break;
     case MODIFY_L:
-      spar_optimize_retvals_of_modify (sparp, root);
+      spar_optimize_retvals_of_modify (sparp, req_top);
       break;
     }
-  spar_propagate_limit_as_option (sparp, root, NULL);
-  if (NULL != sparp->sparp_parent_sparp)
+  spar_propagate_limit_as_option (sparp, req_top, NULL);
+  if (NULL != sparp->sparp_suspended_stps)
     goto end_of_equiv_checks; /* see below */
   equivs = sparp->sparp_sg->sg_equivs;
   equiv_count = sparp->sparp_sg->sg_equiv_count;
@@ -7696,14 +7576,17 @@ retry_after_reducing_optionals:
       if (eq->e_deprecated)
         continue;
       if (!SPARP_EQ_IS_ASSIGNED_LOCALLY(eq) &&
-	((0 != eq->e_const_reads) || (0 != eq->e_replaces_filter) || /* note: no check for (0 != eq->e_optional_reads) */
+        ((0 != eq->e_const_reads) || (0 != eq->e_replaces_filter) || /* note: no check for (0 != eq->e_optional_reads) */
           (0 != BOX_ELEMENTS_0 (eq->e_receiver_idxs)) ) &&
         !(eq->e_rvr.rvrRestrictions & (SPART_VARR_FIXED | SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL)) )
         {
           if ((1 == eq->e_var_count) && SPART_VARNAME_IS_SPECIAL (eq->e_varnames[0]))
             continue; /* Special variable can not be bound in SPARQL because they does not exist in SPARQL. Thus no restricitons can be ifrerred from SPARQL context. */
-          if (!sparp->sparp_env->spare_signal_void_variables)
-            eq->e_rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
+          if (!sparp->sparp_sg->sg_signal_void_variables)
+            {
+              SPARP_DEBUG_WEIRD(sparp,"conflict");
+              eq->e_rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
+            }
           else if (eq->e_rvr.rvrRestrictions & SPART_VARR_EXPORTED)
             spar_error (sparp, "Variable '%.100s' can not be bound due to mutually exclusive restrictions on its value", eq->e_varnames[0]);
           else
@@ -7718,7 +7601,7 @@ retry_after_reducing_optionals:
     }
 
 end_of_equiv_checks:
-  DO_BOX_FAST (SPART *, retval, retval_ctr, root->_.req_top.retvals)
+  DO_BOX_FAST (SPART *, retval, retval_ctr, req_top->_.req_top.retvals)
     {
       caddr_t name;
       int retval_type = SPART_TYPE (retval);
@@ -7747,14 +7630,14 @@ end_of_equiv_checks:
       END_DO_SET();
     }
   END_DO_BOX_FAST;
-  if ((NULL == sparp->sparp_parent_sparp) && sparp->sparp_query_uses_sinvs)
-    sparp_fill_sinv_varlists (sparp, root); /* This is global so can (and should) be made only at top level */
+  if ((NULL == sparp->sparp_suspended_stps) && sparp->sparp_query_uses_sinvs)
+    sparp_fill_sinv_varlists (sparp, req_top); /* This is global so can (and should) be made only at top level */
 }
 
-
-void
-sparp_rewrite_grab (sparp_t *sparp)
+SPART *
+sparp_rewrite_grab (sparp_t *sparp, SPART *req_top)
 {
+  SPART *rewritten_req_top;
   sparp_env_t *env = sparp->sparp_env;
   rdf_grab_config_t *rgc = &(env->spare_src.ssrc_grab);
   sparp_t *sparp_of_seed;	/* This will compile the statement that will collect the first set of graphs */
@@ -7772,7 +7655,7 @@ sparp_rewrite_grab (sparp_t *sparp)
   int sub_sparp_ctr;
   ptrlong rgc_flags = 0;
   int use_plain_return;
-  top_subtype = sparp->sparp_expr->_.req_top.subtype;
+  top_subtype = req_top->_.req_top.subtype;
   use_plain_return = (((CONSTRUCT_L == top_subtype) || (DESCRIBE_L == top_subtype)) ? 1 : 0);
   DO_SET (caddr_t, grab_name, &(rgc->rgc_vars))
     {
@@ -7786,56 +7669,59 @@ sparp_rewrite_grab (sparp_t *sparp)
   if (NULL != new_vars)
     grab_retvals = (SPART **)t_revlist_to_array (new_vars);
   else
-    grab_retvals = sparp_treelist_full_copy (sparp, sparp->sparp_expr->_.req_top.expanded_orig_retvals, NULL);
+    grab_retvals = sparp_treelist_full_copy (sparp, req_top->_.req_top.expanded_orig_retvals, NULL);
 /* Making subqueries: seed */
-  sub_sparps[0] = sparp_of_seed = sparp_clone_for_variant (sparp, 0);
-  sparp_of_seed->sparp_expr = sparp_tree_full_copy (sparp_of_seed, sparp->sparp_expr, NULL);
-  sparp_of_seed->sparp_expr->_.req_top.shared_spare_box = t_box_num ((ptrlong)(sparp_of_seed->sparp_env));
-  sparp_of_seed->sparp_expr->_.req_top.subtype = SELECT_L;
-  sparp_of_seed->sparp_expr->_.req_top.retvals = grab_retvals;
-  sparp_of_seed->sparp_expr->_.req_top.retvalmode_name = t_box_string ("LONG");
-  sparp_of_seed->sparp_expr->_.req_top.limit = NULL;
-  sparp_of_seed->sparp_expr->_.req_top.offset = 0;
-  sparp_of_seed->sparp_env->spare_globals_mode = SPARE_GLOBALS_ARE_COLONUMBERED;
-  sparp_of_seed->sparp_env->spare_global_num_offset = 1;
+  sub_sparps[0] = sparp_of_seed = sparp_clone_for_variant (sparp);
+  sparp_of_seed->sparp_entire_query = sparp_tree_full_copy (sparp_of_seed, req_top, NULL);
+  sparp_of_seed->sparp_entire_query->_.req_top.shared_spare_box = t_box_num ((ptrlong)(sparp_of_seed->sparp_env));
+  sparp_of_seed->sparp_entire_query->_.req_top.subtype = SELECT_L;
+  sparp_of_seed->sparp_entire_query->_.req_top.retvals = grab_retvals;
+  sparp_of_seed->sparp_entire_query->_.req_top.retvalmode_name = t_box_string ("LONG");
+  sparp_of_seed->sparp_entire_query->_.req_top.limit = NULL;
+  sparp_of_seed->sparp_entire_query->_.req_top.offset = 0;
+  sparp_of_seed->sparp_env->spare_disable_output_formatting = 1;
+  sparp_of_seed->sparp_globals_mode = SPARE_GLOBALS_ARE_COLONUMBERED;
+  sparp_of_seed->sparp_global_num_offset = 1;
   sparp_of_seed->sparp_env->spare_src.ssrc_grab.rgc_sa_graphs = env->spare_src.ssrc_grab.rgc_sa_graphs;
   sparp_of_seed->sparp_env->spare_src.ssrc_grab.rgc_sa_preds = env->spare_src.ssrc_grab.rgc_sa_preds;
   sparp_of_seed->sparp_env->spare_src.ssrc_grab.rgc_sa_vars = env->spare_src.ssrc_grab.rgc_sa_vars;
   sparp_of_seed->sparp_env->spare_src.ssrc_grab.rgc_vars = env->spare_src.ssrc_grab.rgc_vars;
 /* Making subqueries: iter */
-  sub_sparps[1] = sparp_of_iter = sparp_clone_for_variant (sparp_of_seed, 0);
-  sparp_of_iter->sparp_expr = sparp_tree_full_copy (sparp_of_seed, sparp_of_seed->sparp_expr, NULL);
-  sparp_of_iter->sparp_expr->_.req_top.shared_spare_box = t_box_num ((ptrlong)(sparp_of_iter->sparp_env));
-  if (NULL != sparp_of_iter->sparp_expr->_.req_top.order)
-    sparp_tweak_order_of_iter (sparp_of_iter, sparp_of_iter->sparp_expr->_.req_top.order);
-  sparp_of_iter->sparp_env->spare_globals_mode = SPARE_GLOBALS_ARE_COLONUMBERED;
-  sparp_of_iter->sparp_env->spare_global_num_offset = 1;
+  sub_sparps[1] = sparp_of_iter = sparp_clone_for_variant (sparp_of_seed);
+  sparp_of_iter->sparp_entire_query = sparp_tree_full_copy (sparp_of_seed, sparp_of_seed->sparp_entire_query, NULL);
+  sparp_of_iter->sparp_entire_query->_.req_top.shared_spare_box = t_box_num ((ptrlong)(sparp_of_iter->sparp_env));
+  if (NULL != sparp_of_iter->sparp_entire_query->_.req_top.order)
+    sparp_tweak_order_of_iter (sparp_of_iter, sparp_of_iter->sparp_entire_query, sparp_of_iter->sparp_entire_query->_.req_top.order);
+  sparp_of_iter->sparp_env->spare_disable_output_formatting = 1;
+  sparp_of_iter->sparp_globals_mode = SPARE_GLOBALS_ARE_COLONUMBERED;
+  sparp_of_iter->sparp_global_num_offset = 1;
   sparp_of_iter->sparp_env->spare_src.ssrc_grab.rgc_sa_graphs = env->spare_src.ssrc_grab.rgc_sa_graphs;
   sparp_of_iter->sparp_env->spare_src.ssrc_grab.rgc_sa_preds = env->spare_src.ssrc_grab.rgc_sa_preds;
   sparp_of_iter->sparp_env->spare_src.ssrc_grab.rgc_sa_vars = env->spare_src.ssrc_grab.rgc_sa_vars;
   sparp_of_iter->sparp_env->spare_src.ssrc_grab.rgc_vars = env->spare_src.ssrc_grab.rgc_vars;
 /* Only after making the iter subquery from the seed one, seed may loose its ORDER BY */
-  sparp_of_seed->sparp_expr->_.req_top.order = NULL;
+  sparp_of_seed->sparp_entire_query->_.req_top.order = NULL;
 /*!!! TBD: relax graph conditions in sparp_of_iter */
 /* Making subqueries: final */
-  sub_sparps[2] = sparp_of_final = sparp_clone_for_variant (sparp, 1);
-  sparp_of_final->sparp_expr = sparp_tree_full_copy (sparp_of_seed, sparp->sparp_expr, NULL);
-  sparp_of_final->sparp_expr->_.req_top.shared_spare_box = t_box_num ((ptrlong)(sparp_of_final->sparp_env));
-  sparp_of_final->sparp_env->spare_globals_mode = SPARE_GLOBALS_ARE_COLONUMBERED;
-  sparp_of_final->sparp_env->spare_global_num_offset = 0;
+  sub_sparps[2] = sparp_of_final = sparp_clone_for_variant (sparp);
+  sparp_of_final->sparp_entire_query = sparp_tree_full_copy (sparp_of_seed, req_top, NULL);
+  sparp_of_final->sparp_entire_query->_.req_top.shared_spare_box = t_box_num ((ptrlong)(sparp_of_final->sparp_env));
+  sparp_of_final->sparp_env->spare_disable_output_formatting = 1;
+  sparp_of_final->sparp_globals_mode = SPARE_GLOBALS_ARE_COLONUMBERED;
+  sparp_of_final->sparp_global_num_offset = 0;
 /*!!! TBD: relax graph conditions in sparp_of_final */
   for (sub_sparp_ctr = 3; sub_sparp_ctr--; /* no step */)
     {
       spar_sqlgen_t ssg;
       sparp_t *sub_sparp = sub_sparps [sub_sparp_ctr];
-      sparp_rewrite_qm (sub_sparp);
+      sub_sparp->sparp_entire_query = sparp_rewrite_qm (sub_sparp, sub_sparp->sparp_entire_query);
       memset (&ssg, 0, sizeof (spar_sqlgen_t));
       memset (&sc, 0, sizeof (sql_comp_t));
       sc.sc_client = sub_sparp->sparp_sparqre->sparqre_cli;
       ssg.ssg_out = strses_allocate ();
       ssg.ssg_sc = &sc;
       ssg.ssg_sparp = sub_sparp;
-      ssg.ssg_tree = sub_sparp->sparp_expr;
+      ssg.ssg_tree = sub_sparp->sparp_entire_query;
       ssg.ssg_sources = ssg.ssg_tree->_.req_top.sources; /*!!!TBD merge with environment */
       ssg.ssg_seealso_enabled = (sub_sparp_ctr < 2) ? 1 : 0;
       ssg_make_sql_query_text (&ssg, 0);
@@ -7868,11 +7754,11 @@ sparp_rewrite_grab (sparp_t *sparp)
         continue;
       PUSH_GRAB_PARAM (optname, sparp_tree_full_copy (sparp, optvalue, NULL));
     } END_DO_SET()
-  ret_limit_expn = sparp->sparp_expr->_.req_top.limit;
+  ret_limit_expn = req_top->_.req_top.limit;
   ret_limit_expn = ((NULL == ret_limit_expn) ? (SPART *)t_NEW_DB_NULL : sparp_tree_full_copy (sparp, ret_limit_expn, NULL));
-  sparp->sparp_expr = spartlist (sparp, 21, SPAR_CODEGEN,					/* #0 */
+  rewritten_req_top = spartlist (sparp, 21, SPAR_CODEGEN,					/* #0 */
     t_box_num ((ptrlong)(ssg_grabber_codegen)),							/* #1 */
-    sparp_treelist_full_copy (sparp, sparp->sparp_expr->_.req_top.retvals, NULL),		/* #2 */
+    sparp_treelist_full_copy (sparp, sparp->sparp_entire_query->_.req_top.retvals, NULL),		/* #2 */
     t_box_dv_short_string ("sql:RDF_GRAB"),							/* #3 */
     spar_make_vector_qm_sql (sparp, (SPART **)(t_revlist_to_array (grab_params))),		/* #4 */
     sql_texts[0], sql_texts[1], sql_texts[2],							/* #5-#7 */
@@ -7882,6 +7768,7 @@ sparp_rewrite_grab (sparp_t *sparp)
     t_box_copy (rgc->rgc_depth),									/* #10 */
     (ptrlong)use_plain_return );								/* #11 */
     /* Note that the uid is not in the list of codegen arguments! */
+  return rewritten_req_top;
 }
 
 void
