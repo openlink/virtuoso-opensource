@@ -45,13 +45,17 @@ extern "C" {
 #endif
 
 #ifdef SPARQL_DEBUG
+struct sparp_s;
+extern void sparp_debug_weird (struct sparp_s *sparp, const char *file, int line, const char *msg);
 #define spar_dbg_printf(x) printf x
 #define SPARQL_DBG_NAME(nm) dbg_##nm
 #define SPARQL_DBG_PARAMS const char *file, int line,
+#define SPARP_DEBUG_WEIRD(sparp,msg) sparp_debug_weird ((sparp), __FILE__, __LINE__, (msg))
 #else
 #define spar_dbg_printf(x)
 #define SPARQL_DBG_NAME
 #define SPARQL_DBG_PARAMS
+#define SPARP_DEBUG_WEIRD(sparp,msg)
 #endif
 
 /*! Number of NULLs should match number of fields in rdf_val_range_t */
@@ -87,6 +91,7 @@ extern "C" {
 
 #define SPAR_BOP_EQ_NONOPT		(ptrlong)1051	/*!< An equality that is not optimized into an equivalence class */
 #define SPAR_BOP_EQNAMES		(ptrlong)1052	/*!< A special "equality": arguments are variables whose names are merged into one equivalence class */
+#define SPAR_UNION_WO_ALL		(ptrlong)1053	/*!< A special union that will become SQL UNION, not SQL UNION ALL as we usually cheat */
 
 #define SPAR_BIF_ABS		(ptrlong)1101
 #define SPAR_BIF_BNODE		(ptrlong)1102
@@ -179,13 +184,13 @@ typedef struct spar_lexbmk_s {
 
 #if 0
 typedef struct spar_query_s
-  {
-    shuric_t *		sparqr_shuric;
-    int			sparqr_owned_by_shuric;
-    struct spar_tree_s * sparqr_tree;
-    caddr_t		sparqr_key;
-    dk_set_t		sparqr_imports;
-  } spar_query_t;
+{
+  shuric_t *		sparqr_shuric;
+  int			sparqr_owned_by_shuric;
+  struct spar_tree_s * sparqr_tree;
+  caddr_t		sparqr_key;
+  dk_set_t		sparqr_imports;
+} spar_query_t;
 #endif
 
 /*! WHERE condition template and aliases it refers to */
@@ -217,21 +222,21 @@ typedef struct spar_propvariable_s {
 
 /*! Configuration of RDF grabber, A.K.A. 'IRI resolver'. */
 typedef struct rdf_grab_config_s {
-    int		rgc_pview_mode;		/*!< The query is executed using procedure view that will form a result-set by calling more than one statement via exec() */
-    int		rgc_all;		/*!< Automatically add all IRI constants/vars (except P) to spare_src.ssrc_grab_consts */
-    int		rgc_intermediate;	/*!< Automatically add all IRI constants/vars (except P) to spare_src.ssrc_grab_consts */
-    dk_set_t	rgc_consts;		/*!< Constants to be used as names of additional graphs */
-    dk_set_t	rgc_vars;		/*!< Names of variables whose values should be used as names of additional graphs */
-    dk_set_t	rgc_sa_graphs;		/*!< SeeAlso graph names. Every time a value can be downloaded, its seeAlso values can also be downloaded */
-    dk_set_t	rgc_sa_preds;		/*!< SeeAlso predicate names. Every time a value can be downloaded, its seeAlso values can also be downloaded */
-    dk_set_t	rgc_sa_vars;		/*!< Names of variables whose values should be used as names of subjects (not objects!) for seeAlso predicates */
-    caddr_t	rgc_depth;		/*!< Number of iterations that can be made to find additional graphs */
-    caddr_t	rgc_limit;		/*!< Limit on number of grabbed remote documents */
-    caddr_t	rgc_base;		/*!< Base IRI to use as a first argument to the grab IRI resolver */
-    caddr_t	rgc_destination;	/*!< IRI of the graph to be extended */
-    caddr_t	rgc_group_destination;	/*!< IRI of the commonly used graph to be extended, in addition to usual flow */
-    caddr_t	rgc_resolver_name;	/*!< Name of function of the graph IRI resolver */
-    caddr_t	rgc_loader_name;	/*!< Name of function that actually loads the resource */
+  int		rgc_pview_mode;		/*!< The query is executed using procedure view that will form a result-set by calling more than one statement via exec() */
+  int		rgc_all;		/*!< Automatically add all IRI constants/vars (except P) to spare_src.ssrc_grab_consts */
+  int		rgc_intermediate;	/*!< Automatically add all IRI constants/vars (except P) to spare_src.ssrc_grab_consts */
+  dk_set_t	rgc_consts;		/*!< Constants to be used as names of additional graphs */
+  dk_set_t	rgc_vars;		/*!< Names of variables whose values should be used as names of additional graphs */
+  dk_set_t	rgc_sa_graphs;		/*!< SeeAlso graph names. Every time a value can be downloaded, its seeAlso values can also be downloaded */
+  dk_set_t	rgc_sa_preds;		/*!< SeeAlso predicate names. Every time a value can be downloaded, its seeAlso values can also be downloaded */
+  dk_set_t	rgc_sa_vars;		/*!< Names of variables whose values should be used as names of subjects (not objects!) for seeAlso predicates */
+  caddr_t	rgc_depth;		/*!< Number of iterations that can be made to find additional graphs */
+  caddr_t	rgc_limit;		/*!< Limit on number of grabbed remote documents */
+  caddr_t	rgc_base;		/*!< Base IRI to use as a first argument to the grab IRI resolver */
+  caddr_t	rgc_destination;	/*!< IRI of the graph to be extended */
+  caddr_t	rgc_group_destination;	/*!< IRI of the commonly used graph to be extended, in addition to usual flow */
+  caddr_t	rgc_resolver_name;	/*!< Name of function of the graph IRI resolver */
+  caddr_t	rgc_loader_name;	/*!< Name of function that actually loads the resource */
 } rdf_grab_config_t;
 
 #define SPARE_GLOBALS_ARE_PLAIN		0	/*!< Global parameters are printed without quotes and a colon, so "?:paramname" in query becomes "paramname" in SQL. This is the default so it's value is zero. */
@@ -244,115 +249,114 @@ typedef struct rdf_grab_config_s {
 #define SPARP_SSRC_FROZEN_EXPLICITLY	0x8	/*!< Neither the query nor protocol can extend the dataset because define input:freeze prohibits that */
 /*!< Description of query sources (all input graphs, their status, automatic data loading) */
 typedef struct sparp_sources_s
-  {
-    rdf_grab_config_t	ssrc_grab;			/*!< Grabber configuration */
-    dk_set_t		ssrc_common_sponge_options;	/*!< Options that are added to every FROM ... OPTION ( ... ) list */
-    SPART *		ssrc_graph_set_by_with;		/*!< The precode expression of WITH clause, if exists */
-    SPART *		ssrc_graph_set_by_fallback_with;	/*!< For debugging purposes, it may be convenient to fallback to virtrdf:DefaultSparul11Target or the like instead of "No default graph specified in the preamble..." error. Set the value of this field to non-NULL for this effect. */
-    dk_set_t		ssrc_default_graphs;		/*!< Default graphs and NOT FROM graphs as set by protocol or FROM graph-uri-precode. All NOT FROM are after all FROM! */
-    dk_set_t		ssrc_named_graphs;		/*!< Named graphs and NOT FROM NAMED graphs as set by protocol or clauses. All NOT FROM NAMED are after all FROM NAMED! */
-    int			ssrc_default_graphs_listed;	/*!< At least one default graph was set, so the list of default graphs is exhaustive even if empty or consists of solely NOT FROM (NOT FROM may remove all FROM, making the list empty) */
-    int			ssrc_named_graphs_listed;	/*!< At least one named graph was set, so the list of named graphs is exhaustive even if empty or consists of solely NOT FROM NAMED */
-    int			ssrc_freeze_status;		/*!< Default and named graphs can not be overwritten if set by protocol or using/with defines in service endpoint config. There's no locking for NOT FROM and NOT FROM NAMED */
-    caddr_t		ssrc_frozen_pragma_example;	/*!< An example of name of pragma that prevents the user from dereferencing of variables and the like */
-  } sparp_sources_t;
+{
+  rdf_grab_config_t	ssrc_grab;			/*!< Grabber configuration */
+  dk_set_t		ssrc_common_sponge_options;	/*!< Options that are added to every FROM ... OPTION ( ... ) list */
+  SPART *		ssrc_graph_set_by_with;		/*!< The precode expression of WITH clause, if exists */
+  SPART *		ssrc_graph_set_by_fallback_with;	/*!< For debugging purposes, it may be convenient to fallback to virtrdf:DefaultSparul11Target or the like instead of "No default graph specified in the preamble..." error. Set the value of this field to non-NULL for this effect. */
+  dk_set_t		ssrc_default_graphs;		/*!< Default graphs and NOT FROM graphs as set by protocol or FROM graph-uri-precode. All NOT FROM are after all FROM! */
+  dk_set_t		ssrc_named_graphs;		/*!< Named graphs and NOT FROM NAMED graphs as set by protocol or clauses. All NOT FROM NAMED are after all FROM NAMED! */
+  int			ssrc_default_graphs_listed;	/*!< At least one default graph was set, so the list of default graphs is exhaustive even if empty or consists of solely NOT FROM (NOT FROM may remove all FROM, making the list empty) */
+  int			ssrc_named_graphs_listed;	/*!< At least one named graph was set, so the list of named graphs is exhaustive even if empty or consists of solely NOT FROM NAMED */
+  int			ssrc_freeze_status;		/*!< Default and named graphs can not be overwritten if set by protocol or using/with defines in service endpoint config. There's no locking for NOT FROM and NOT FROM NAMED */
+  caddr_t		ssrc_frozen_pragma_example;	/*!< An example of name of pragma that prevents the user from dereferencing of variables and the like */
+} sparp_sources_t;
 
 /* When a new field is added here, please check whether it should be added to sparp_clone_for_variant () */
 typedef struct sparp_env_s
-  {
-    /*spar_query_t *	spare_sparqr;*/
-    ptrlong		spare_start_lineno;		/*!< The first line number of the query, may be nonzero if inlined into SQL */
-    ptrlong *		spare_param_counter_ptr;	/*!< Pointer to parameter counter used to convert '??' or '$?' to ':nnn' in the query */
-    dk_set_t		spare_namespace_prefixes;	/*!< Pairs of ns prefixes and URIs */
-    dk_set_t		spare_namespace_prefixes_outer;	/*!< Bookmark in spare_namespace_prefixes that points to the first inherited (not local) namespace */
-    caddr_t		spare_base_uri;			/*!< Default base URI for fn:doc and fn:resolve-uri */
-    caddr_t		spare_input_param_valmode_name;	/*!< Name of valmode for global variables, including protocol parameters listed in \c spare_protocol_params */
-    caddr_t		spare_output_valmode_name;	/*!< Name of valmode for top-level result-set */
-    caddr_t		spare_output_format_name;	/*!< Name of format for serialization of top-level result-set */
-    caddr_t		spare_output_scalar_format_name;	/*!< Overrides generic \c spare_output_format_name for scalar result sets, like ASK */
-    caddr_t		spare_output_dict_format_name;	/*!< Overrides generic \c spare_output_format_name for "dictionary of triples" result sets, like CONSTRUCT and DESCRIBE */
-    caddr_t		spare_output_route_name;	/*!< Name of procedure that makes a decision re. method of writing SPARUL results (quad storage / DAV file / something else) */
-    caddr_t		spare_output_storage_name;	/*!< Name of quad_storage_t JSO object to control the use of quad mapping at SPARUL output side */
-    caddr_t		spare_output_compose_report;	/*!< Boxed non-NULL number that indicates wither a verbose report string should be created (value of 1) or just a number of changes (value of 0) */
-    caddr_t		spare_output_maxrows;		/*!< boxed maximum expected number of rows to return */
-    caddr_t		spare_storage_name;		/*!< Name of quad_storage_t JSO object to control the use of quad mapping at input side and maybe at SPARUL output side */
-    caddr_t		spare_inference_name;		/*!< Name of inference rule set to control the expansion of types */
-    struct rdf_inf_ctx_s *	spare_inference_ctx;		/*!< Pointer to an inference structure, to expand transitive and add unions for inverses */
-    caddr_t		spare_use_ifp;			/*!< Non-NULL pointer if the resulting SQL should contain OPTION(IFP) */
-    caddr_t		spare_use_same_as;		/*!< Non-NULL pointer if the resulting SQL should contain OPTION(SAME_AS) */
-    dk_set_t		spare_protocol_params;		/*!< Names of variables that are used as parameters of SPARQL protocol call */
-    struct sparp_env_s *spare_parent_env;		/*!< Pointer to parent env */
+{
+  /*spar_query_t *	spare_sparqr;*/
+  ptrlong		spare_start_lineno;		/*!< The first line number of the query, may be nonzero if inlined into SQL */
+  ptrlong *		spare_param_counter_ptr;	/*!< Pointer to parameter counter used to convert '??' or '$?' to ':nnn' in the query */
+  dk_set_t		spare_namespace_prefixes;	/*!< Pairs of ns prefixes and URIs */
+  dk_set_t		spare_namespace_prefixes_outer;	/*!< Bookmark in spare_namespace_prefixes that points to the first inherited (not local) namespace */
+  caddr_t		spare_base_uri;			/*!< Default base URI for fn:doc and fn:resolve-uri */
+  caddr_t		spare_storage_name;		/*!< Name of quad_storage_t JSO object to control the use of quad mapping at input side and maybe at SPARUL output side */
+  caddr_t		spare_inference_name;		/*!< Name of inference rule set to control the expansion of types */
+  struct rdf_inf_ctx_s *	spare_inference_ctx;		/*!< Pointer to an inference structure, to expand transitive and add unions for inverses */
+  caddr_t		spare_use_ifp;			/*!< Non-NULL pointer if the resulting SQL should contain OPTION(IFP) */
+  caddr_t		spare_use_same_as;		/*!< Non-NULL pointer if the resulting SQL should contain OPTION(SAME_AS) */
+  dk_set_t		spare_protocol_params;		/*!< Names of variables that are used as parameters of SPARQL protocol call */
+  struct sparp_env_s *spare_parent_env;		/*!< Pointer to parent env */
 #if 0 /* These will be used when libraries of inference rules are introduced. Don't forget to patch sparp_clone_for_variant()! */
-    id_hash_t *		spare_fundefs;			/*!< In-scope function definitions */
-    id_hash_t *		spare_vars;			/*!< Known variables as keys, equivs as values */
-    id_hash_t *		spare_global_bindings;		/*!< Dictionary of global bindings, varnames as keys, default value expns as values. DV_DB_NULL box for no expn! */
+  id_hash_t *		spare_fundefs;			/*!< In-scope function definitions */
+  id_hash_t *		spare_vars;			/*!< Known variables as keys, equivs as values */
+  id_hash_t *		spare_global_bindings;		/*!< Dictionary of global bindings, varnames as keys, default value expns as values. DV_DB_NULL box for no expn! */
 #endif
-    sparp_sources_t	spare_src;			/*!< Query sources, temporarily reset to all zeroes when entering SERVICE with nonempty set of sources */
-    dk_set_t		spare_common_sql_table_options;	/*!< SQL 'TABLE OPTION' strings that are added to every table */
-    dk_set_t		spare_groupings;		/*!< Variables that should be placed in GROUP BY list */
-    dk_set_t		spare_sql_select_options;	/*!< SQL 'OPTION' strings that are added at the end of query (right after permanent QUIETCAST) */
-    caddr_t		spare_describe_mode;		/*!< Version of DESCRIBE SQL 'OPTION' strings that are added at the end of query (right after permanent QUIETCAST) */
-    dk_set_t		spare_context_sinvs;		/*!< Stack of not yet closed service invocations */
-    dk_set_t		spare_context_qms;		/*!< IRIs of allowed quad maps (IRI if quad map is restricted, DEFAULT_L if default qm only, _STAR if not restricted) */
-    dk_set_t		spare_context_graphs;		/*!< Expressions that are default values for graph field */
-    dk_set_t		spare_context_subjects;		/*!< Expressions that are default values for subject field */
-    dk_set_t		spare_context_predicates;	/*!< Expressions that are default values for predicate field */
-    dk_set_t		spare_context_objects;		/*!< Expressions that are default values for objects field */
-    dk_set_t		spare_context_gp_subtypes;	/*!< Subtypes of not-yet-completed graph patterns */
-    dk_set_t		spare_acc_triples;		/*!< Sets of accumulated triples of GPs */
-    dk_set_t		spare_acc_movable_filters;	/*!< Sets of accumulated position-independent filters of GPs. Position-independent means it can jump be moved around BIND() clause */
-    dk_set_t		spare_acc_local_filters;	/*!< Sets of accumulated position-dependent filters of GPs. Filters of this sort are implicit restrictions on specific triples, like check of value of _::default_xxx bnode for graph. They fall into subquery when BIND divides a BGP on subquery "before" BIND and triples "after" BIND. */
-    dk_set_t		spare_acc_bgp_varnames;		/*!< Sets of used BGP names of GPs, sets of children are merged into sets of parent on each pop from the stack */
-    int			spare_ctor_dflt_g_tmpl_count;	/*!< For CONSTRUCT and the like --- count of triple templates in the default graph, should be reset to zero after ctor to deal with DELETE{...} INSERT{...} */
-    int			spare_ctor_g_grp_count;		/*!< For CONSTRUCT and the like --- count of graph {...} groups of triple templates, should be reset to zero after ctor to deal with DELETE{...} INSERT{...} */
-    int			spare_inline_data_colcount;	/*!< Number of variables in VALUES (...) {...} clause, not set for single-variable syntax because it's used only to check the width of data rows */
-    SPART **		spare_bindings_vars;		/*!< List of variables enumerated in local BINDINGS Var+ list */
-    SPART ***		spare_bindings_rowset;		/*!< Array of arrays of values in BINDINGS {...} */
-    dk_set_t		spare_good_graph_varnames;	/*!< Varnames found in non-optional triples before or outside, (including non-optional inside previous non-optional siblings), but not after or inside */
-    dk_set_t		spare_good_graph_varname_sets;	/*!< Pointers to the spare_known_gspo_varnames stack, to pop */
-    dk_set_t		spare_good_graph_bmk;		/*!< Varnames found in non-optional triples before or outside, (including non-optional inside previous non-optional siblings), but not after or inside */
-    dk_set_t		spare_global_var_names;		/*!< List of all distinct global names used in the query, to know what should be passed to 'rdf grab' procedure view */
-    int			spare_globals_mode;		/*!< Flags if all global parameters are translated into ':N' because they're passed via 'params' argument of exec() inside a procedure view, */
-    int			spare_global_num_offset;	/*!< If \c spare_globals_mode is set to \c SPARE_GLOBALS_ARE_COLONUMBERED then numbers of 'app-specific' global parameters starts from spare_global_num_offset up, some number of first params are system-specific. */
-    dk_set_t		spare_propvar_sets;		/*!< Stack of sets of propvars that should form triples */
-    dk_set_t		spare_acc_qm_sqls;		/*!< Backstack of first-level function calls that change quad maps, items are SPART * with SPAR_QM_SQL_FUNCALL type */
-    caddr_t		spare_qm_default_table;		/*!< The name of default table (when a single table name is used without an alias for everything. */
-    caddr_t		spare_qm_current_table_alias;	/*!< The last alias definition, used for processing of 'FROM table AS alias TEXT LITERAL ...' */
-    dk_set_t		spare_qm_parent_tables_of_aliases;	/*!< get_keyword-style list of aliases of relational tables, aliases are keys, tables are values. */
-    dk_set_t		spare_qm_parent_aliases_of_aliases;	/*!< get_keyword-style list of aliases of other aliases, parent aliases are values. */
-    dk_set_t		spare_qm_descendants_of_aliases;	/*!< get_keyword-style list of aliases of other aliases, bases are keys, sets of descendants are values. */
-    dk_set_t		spare_qm_ft_indexes_of_columns;		/*!< get_keyword-style list of free-text indexes of aliased columns, 'alias.col' are keys, spar_qm_ft_t are values. */
-    dk_set_t		spare_qm_where_conditions;	/*!< Set of 'where' conditions for tables represented by sparp_qm_table_condition_t structures. */
-    dk_set_t		spare_qm_locals;		/*!< Parameters in not-yet-closed '{...}' blocks. Names (as keyword ids) and values, with NULLs as bookmarks. */
-    dk_set_t		spare_qm_affected_jso_iris;	/*!< Backstack of affected JS objects */
-    dk_set_t		spare_qm_deleted;		/*!< Backstack of deleted JS objects, class IRI pushed first, instance IRI pushed after so it's above) */
-    caddr_t		spare_sparul_log_mode;		/*!< log_mode argument of SPARQL_MODIFY_BY_DICT_CONTENTS() and similar procedures; if set then it's a boxed integer or boxed zero */
-    int			spare_signal_void_variables;	/*!< Flag if 'Variable xxx can not be bound...' error (and the like) should be signalled. */
-    caddr_t		spare_sql_refresh_free_text;	/*!< Flags if there's any use of bif:contains or the like, so 'sql:refresh-free-text' 'yes' option should be added to any vector of sponge options. This is a _boxed_ integer even if it's zero; that is used to store a reference to a changing integer in a compiled tree. */
-    struct sparp_trav_params_s *spare_saved_stp;	/*!< Saved sparp_stp, used when a subquery is entered */
-    struct sparp_trav_state_s *spare_saved_stss;	/*!< Saved state of \c sparp_stss, used when a subquery is entered */
-    int spare_gp_trav_is_saved;	/*!< Flags whether \c spare_saved_stp and \c spare_saved_stss are in use, i.e. \c sparp_gp_trav_suspend() has been called but sparp_gep_trav_resume() is not */
-  } sparp_env_t;
+  sparp_sources_t	spare_src;			/*!< Query sources, temporarily reset to all zeroes when entering SERVICE with nonempty set of sources */
+  dk_set_t		spare_common_sql_table_options;	/*!< SQL 'TABLE OPTION' strings that are added to every table */
+  dk_set_t		spare_groupings;		/*!< Variables that should be placed in GROUP BY list */
+  dk_set_t		spare_sql_select_options;	/*!< SQL 'OPTION' strings that are added at the end of query (right after permanent QUIETCAST) */
+  caddr_t		spare_describe_mode;		/*!< Version of DESCRIBE SQL 'OPTION' strings that are added at the end of query (right after permanent QUIETCAST) */
+  dk_set_t		spare_context_sinvs;		/*!< Stack of not yet closed service invocations */
+  dk_set_t		spare_context_qms;		/*!< IRIs of allowed quad maps (IRI if quad map is restricted, DEFAULT_L if default qm only, _STAR if not restricted) */
+  dk_set_t		spare_context_graphs;		/*!< Expressions that are default values for graph field */
+  dk_set_t		spare_context_subjects;		/*!< Expressions that are default values for subject field */
+  dk_set_t		spare_context_predicates;	/*!< Expressions that are default values for predicate field */
+  dk_set_t		spare_context_objects;		/*!< Expressions that are default values for objects field */
+  dk_set_t		spare_context_gp_subtypes;	/*!< Subtypes of not-yet-completed graph patterns */
+  dk_set_t		spare_acc_triples;		/*!< Sets of accumulated triples of GPs */
+  dk_set_t		spare_acc_movable_filters;	/*!< Sets of accumulated position-independent filters of GPs. Position-independent means it can be moved around BIND() clause */
+  dk_set_t		spare_acc_local_filters;	/*!< Sets of accumulated position-dependent filters of GPs. Filters of this sort are implicit restrictions on specific triples, like check of value of _::default_xxx bnode for graph. They fall into subquery when BIND divides a BGP on subquery "before" BIND and triples "after" BIND. */
+  dk_set_t		spare_acc_bgp_varnames;		/*!< Sets of used BGP names of GPs, sets of children are merged into sets of parent on each pop from the stack */
+  int			spare_ctor_dflt_g_tmpl_count;	/*!< For CONSTRUCT and the like --- count of triple templates in the default graph, should be reset to zero after ctor to deal with DELETE{...} INSERT{...} */
+  int			spare_ctor_g_grp_count;		/*!< For CONSTRUCT and the like --- count of graph {...} groups of triple templates, should be reset to zero after ctor to deal with DELETE{...} INSERT{...} */
+  int			spare_inline_data_colcount;	/*!< Number of variables in VALUES (...) {...} clause, not set for single-variable syntax because it's used only to check the width of data rows */
+  SPART **		spare_bindings_vars;		/*!< List of variables enumerated in local BINDINGS Var+ list */
+  SPART ***		spare_bindings_rowset;		/*!< Array of arrays of values in BINDINGS {...} */
+  dk_set_t		spare_good_graph_varnames;	/*!< Varnames found in non-optional triples before or outside, (including non-optional inside previous non-optional siblings), but not after or inside */
+  dk_set_t		spare_good_graph_varname_sets;	/*!< Pointers to the spare_known_gspo_varnames stack, to pop */
+  dk_set_t		spare_good_graph_bmk;		/*!< Varnames found in non-optional triples before or outside, (including non-optional inside previous non-optional siblings), but not after or inside */
+  dk_set_t		spare_global_var_names;		/*!< List of all distinct global names used in the query, to know what should be passed to 'rdf grab' procedure view */
+  int			spare_disable_output_formatting;	/*!< Indicates that sg_output_xxx_format_name are all ignored, because the query is intermediate in iterative get with "seealso" */
+  dk_set_t		spare_propvar_sets;		/*!< Stack of sets of propvars that should form triples */
+  caddr_t		spare_sql_refresh_free_text;	/*!< Flags if there's any use of bif:contains or the like, so 'sql:refresh-free-text' 'yes' option should be added to any vector of sponge options. This is a _boxed_ integer even if it's zero; that is used to store a reference to a changing integer in a compiled tree. */
+} sparp_env_t;
 
 typedef struct sparp_globals_s {
   struct sparp_equiv_s **sg_equivs;	/*!< All variable equivalences made for the tree, in pointer to a growing buffer */
 #ifdef SPARQL_DEBUG
   struct sparp_equiv_s **sg_removed_equivs;	/*!< Deleted equivalences, in pointer to a growing buffer of size equal to \c sg_equivs */
 #endif
-  ptrlong sg_equiv_count;		/*!< A count of used items in the beginning of \c sg_equivs buffer */
-  ptrlong sg_cloning_serial;		/*!< The pointer to the serial used for current \c sparp_gp_full_clone() operation */
-  struct spar_tree_s **sg_sinvs;	/*!< All descriptions of service invocations, in pointer to a growing buffer */
-  ptrlong sg_sinv_count;		/*!< A count of used items in the beginning of \c sg_sinvs buffer */
-  dk_set_t sg_invalidated_bnode_labels;	/*!< All blank name labels used in basic graph patterns of that are now closed (in the query and all its subqueries) */
-  dk_set_t sg_bnode_label_sets;		/*!< A stack of dk_set_t-s of blank name labels in not-yet-closed basic graph patterns */
+  ptrlong		sg_equiv_count;			/*!< A count of used items in the beginning of \c sg_equivs buffer */
+  ptrlong		sg_cloning_serial;		/*!< The pointer to the serial used for current \c sparp_gp_full_clone() operation */
+  struct spar_tree_s **	sg_sinvs;			/*!< All descriptions of service invocations, in pointer to a growing buffer */
+  ptrlong		sg_sinv_count;			/*!< A count of used items in the beginning of \c sg_sinvs buffer */
+  dk_set_t		sg_invalidated_bnode_labels;	/*!< All blank name labels used in basic graph patterns of that are now closed (in the query and all its subqueries) */
+  dk_set_t		sg_bnode_label_sets;		/*!< A stack of dk_set_t-s of blank name labels in not-yet-closed basic graph patterns */
+  int			sg_signal_void_variables;	/*!< Flag if 'Variable xxx can not be bound...' error (and the like) should be signalled. */
+  caddr_t		sg_input_param_valmode_name;	/*!< Name of valmode for global variables, including protocol parameters listed in \c sg_protocol_params */
+  caddr_t		sg_output_valmode_name;		/*!< Name of valmode for top-level result-set */
+  caddr_t		sg_output_format_name;		/*!< Name of format for serialization of top-level result-set */
+  caddr_t		sg_output_scalar_format_name;	/*!< Overrides generic \c sg_output_format_name for scalar result sets, like ASK */
+  caddr_t		sg_output_dict_format_name;	/*!< Overrides generic \c sg_output_format_name for "dictionary of triples" result sets, like CONSTRUCT and DESCRIBE */
+  caddr_t		sg_output_route_name;		/*!< Name of procedure that makes a decision re. method of writing SPARUL results (quad storage / DAV file / something else) */
+  caddr_t		sg_output_storage_name;		/*!< Name of quad_storage_t JSO object to control the use of quad mapping at SPARUL output side */
+  caddr_t		sg_output_maxrows;		/*!< boxed maximum expected number of rows to return */
+  caddr_t sg_output_compose_report;			/*!< Boxed non-NULL number that indicates wither a verbose report string should be created (value of 1) or just a number of changes (value of 0) */
+  caddr_t		sg_sparul_log_mode;		/*!< log_mode argument of SPARQL_MODIFY_BY_DICT_CONTENTS() and similar procedures; if set then it's a boxed integer or boxed zero */
 } sparp_globals_t;
+
+typedef struct sparp_e4qm_s {
+  dk_set_t		e4qm_acc_sqls;			/*!< Backstack of first-level function calls that change quad maps, items are SPART * with SPAR_QM_SQL_FUNCALL type */
+  caddr_t		e4qm_default_table;		/*!< The name of default table (when a single table name is used without an alias for everything. */
+  caddr_t		e4qm_current_table_alias;	/*!< The last alias definition, used for processing of 'FROM table AS alias TEXT LITERAL ...' */
+  dk_set_t		e4qm_parent_tables_of_aliases;	/*!< get_keyword-style list of aliases of relational tables, aliases are keys, tables are values. */
+  dk_set_t		e4qm_parent_aliases_of_aliases;	/*!< get_keyword-style list of aliases of other aliases, parent aliases are values. */
+  dk_set_t		e4qm_descendants_of_aliases;	/*!< get_keyword-style list of aliases of other aliases, bases are keys, sets of descendants are values. */
+  dk_set_t		e4qm_ft_indexes_of_columns;	/*!< get_keyword-style list of free-text indexes of aliased columns, 'alias.col' are keys, spar_qm_ft_t are values. */
+  dk_set_t		e4qm_where_conditions;		/*!< Set of 'where' conditions for tables represented by sparp_qm_table_condition_t structures. */
+  dk_set_t		e4qm_locals;			/*!< Parameters in not-yet-closed '{...}' blocks. Names (as keyword ids) and values, with NULLs as bookmarks. */
+  dk_set_t		e4qm_affected_jso_iris;		/*!< Backstack of affected JS objects */
+  dk_set_t		e4qm_deleted;			/*!< Backstack of deleted JS objects, class IRI pushed first, instance IRI pushed after so it's above) */
+} sparp_e4qm_t;
+
 
 typedef struct sparp_s {
 /* Generic environment */
   spar_query_env_t *sparp_sparqre;	/*!< External environment of the query */
   caddr_t sparp_err_hdr;
-  SPART * sparp_expr;
-  struct sparp_s *sparp_parent_sparp;	/*!< Pointer to the parser state used to keep parent query of the current query. */
+  SPART * sparp_entire_query;		/*!< The query as a whole, the root of the whole parsed tree. */
   encoding_handler_t *sparp_enc;
   lang_handler_t *sparp_lang;
   int sparp_synthighlight;
@@ -400,7 +404,9 @@ typedef struct sparp_s {
   int sparp_disable_storage_macro_lib;	/*!< If nonzero, the macro library of the quad storage is not used. This is set e.g. when the query to compile is the declaration of the macro lib by itself. */
   struct sparp_trav_params_s *sparp_stp;	/*!< Parameters of traverse (callbacks in use). It is filled in by sparp_gp_grav() only, not by sparp_gp_grav_int() */
   struct sparp_trav_state_s *sparp_stss;	/*!< Stack of traverse states. [0] is fake for parent on 'where', [1] is for 'where' etc. */
+  struct sparp_trav_params_s *sparp_suspended_stps;	/*!< Pointer to a chained stack of suspended traversals */
   sparp_globals_t *sparp_sg;		/*!< Pointer to data common for all sparp_t-s for whole stack of nested sparp-s */
+  sparp_e4qm_t *sparp_e4qm;		/*!< Pointer to data for compilation of quad map metadata manipulation statements */
   int sparp_macrolib_ignore_create;	/*!< True if define input:macrolib-ignore-create is set */
   caddr_t sparp_macrolib_to_create;	/*!< IRI of macro lib that should be created, NULL if that's not a CREATE MACRO LIBRARY statement */
   int sparp_macro_mode;			/*!< Indicator of special mode of parsing DEFMACRO arguments, body, or invocation */
@@ -411,13 +417,14 @@ typedef struct sparp_s {
   int sparp_macro_call_count;		/*!< If nonzero then macroexpansion should be made */
   int sparp_first_equiv_idx;		/*!< The index of the first equivalence class allocated in this sparp, to avoid integrity checks of incomplete equivs of outer sparps */
   int sparp_rewrite_dirty;		/*!< An integer that is incremented when any optimization subroutine rewrites the tree. */
-  int sparp_trav_running;		/*!< Flags that some traverse is in progress, in order to GPF if traverse procedure re-enters */
   ccaddr_t *sparp_sprintff_isect_buf;	/*!< Temporary buffer to calculate intersections of value ranges; solely for sparp_rvr_intersect_sprintffs() */
   caddr_t sparp_boxed_exec_uid;		/*!< Cached value returned by spar_boxed_exec_uid(). Do not use directly, call spar_boxed_exec_uid() instead! */
   caddr_t sparp_immortal_exec_uname;	/*!< Cached value returned by spar_immortal_exec_uname(). Do not use directly, call spar_immortal_exec_uname() instead! */
   caddr_t sparp_gs_app_callback;	/*!< NULL or name of application-specific callback function */
   caddr_t sparp_gs_app_uid;		/*!< NULL or ID (supposedly app user ID) for application-specific callback */
   int sparp_internal_error_runs_audit;	/*!< Flags whether the sparp_internal_error has called audit so inner sparp_internal_error should not try to re-run audit or signal but should simply report */
+  int sparp_globals_mode;		/*!< Flags if all global parameters are translated into ':N' because they're passed via 'params' argument of exec() inside a procedure view, */
+  int sparp_global_num_offset;		/*!< If \c sparp_globals_mode is set to \c SPARE_GLOBALS_ARE_COLONUMBERED then numbers of 'app-specific' global parameters starts from \c sparp_global_num_offset up, some number of first params are system-specific. */
 } sparp_t;
 
 
@@ -457,15 +464,15 @@ extern void spar_error_if_unsupported_syntax_imp (sparp_t *sparp, int feature_in
 
 extern ptrlong sparp_tr_usage_natural_restrictions[SPART_TRIPLE_FIELDS_COUNT];
 
-/* These values should be greater than any SQL opcode AND greater than 0x7F to not conflict with codepoints of "syntactically important" chars AND less than 0xFF to not conflict with YACC IDs for keywords. */
-#define SPART_GRAPH_FROM		0x100
-#define SPART_GRAPH_GROUP_BIT		0x001
-#define SPART_GRAPH_GROUP		0x101	/*!< == SPART_GRAPH_FROM | SPART_GRAPH_GROUP_BIT */
-#define SPART_GRAPH_NAMED		0x110
-#define SPART_GRAPH_MIN_NEGATION	0x17F
-#define SPART_GRAPH_NOT_FROM		0x180
-#define SPART_GRAPH_NOT_GROUP		0x181	/*!< == SPART_GRAPH_NOT_FROM | SPART_GRAPH_GROUP_BIT */
-#define SPART_GRAPH_NOT_NAMED		0x190
+/* These values should be greater than any SQL opcode AND greater than 0x7F to not conflict with codepoints of "syntactically important" chars and, moreover, greater than 0x1000 to not conflict with YACC IDs for keywords. */
+#define SPART_GRAPH_FROM		0x1000
+#define SPART_GRAPH_GROUP_BIT		0x0001
+#define SPART_GRAPH_GROUP		0x1001	/*!< == SPART_GRAPH_FROM | SPART_GRAPH_GROUP_BIT */
+#define SPART_GRAPH_NAMED		0x1010
+#define SPART_GRAPH_MIN_NEGATION	0x107F
+#define SPART_GRAPH_NOT_FROM		0x1080
+#define SPART_GRAPH_NOT_GROUP		0x1081	/*!< == SPART_GRAPH_NOT_FROM | SPART_GRAPH_GROUP_BIT */
+#define SPART_GRAPH_NOT_NAMED		0x1090
 
 #define SPARP_EQUIV(sparp,idx) ((sparp)->sparp_sg->sg_equivs[(idx)])
 #define SPARP_SINV(sparp,idx) ((sparp)->sparp_sg->sg_sinvs[(idx)])
@@ -625,7 +632,7 @@ typedef struct spar_tree_s
         triple_case_t **tc_list;
         struct qm_format_s *native_formats[SPART_TRIPLE_FIELDS_COUNT];
         SPART **options;
-        ptrlong ft_type;
+        caddr_t ft_type;
         ptrlong src_serial;	/*!< Assigned once at parser and preserved in all clone operations */
       } triple;
     struct { /* Note that all first members of \c retval and bnode cases should match to \c var case */
@@ -818,12 +825,6 @@ extern void spart_dump (void *tree_arg, dk_session_t *ses, int indent, const cha
 #define SPART_BAD_EQUIV_IDX (ptrlong)(SMALLEST_POSSIBLE_POINTER-1)
 #define SPART_BAD_GP_SUBTYPE (ptrlong)(SMALLEST_POSSIBLE_POINTER-2)
 
-#define SPAR_FT_CONTAINS	11
-#define SPAR_FT_XCONTAINS	12
-#define SPAR_FT_XPATH_CONTAINS	13
-#define SPAR_FT_XQUERY_CONTAINS	14
-#define SPAR_GEO_CONTAINS	21
-
 /*! The context of the macro processor */
 typedef struct spar_mproc_ctx_s {
   SPART *smpc_context_gp;		/*!< A gp where the macroexpansion takes place, if notnull. */
@@ -908,8 +909,18 @@ extern void spar_gp_add_member (sparp_t *sparp, SPART *memb);
 /*! Makes and adds a triple or a macro call or a filter like CONTAINS or a SELECT group for transitive prop or a UNION prop with inverse props or combination of few, with optional filter on graph.
 \c banned tricks is a bitmask that is 0 by default, SPAR_ADD_TRIPLELIKE_NO_xxx */
 extern SPART *spar_gp_add_triplelike (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri, SPART **options, int banned_tricks);
-/*! Checks if the given \c filt is a freetext filter. If it is so and \c base_triple is not NULL then it additionally checks if var name matches */
-extern int spar_filter_is_freetext (sparp_t *sparp, SPART *filt, SPART *base_triple);
+/*! Checks if the given \c filt is a freetext filter. If it is so and \c base_triple is not NULL then it additionally checks if var name matches
+\returns NULL if filter is not free-text, UNAME like "bif:contains" if it is a free-text predicate */
+extern caddr_t spar_filter_is_freetext (sparp_t *sparp, SPART *filt, SPART *base_triple);
+#define SPAR_FT_TYPE_IS_GEO(ft_type) ( \
+  (uname_bif_c_spatial_contains == ft_type) || \
+  (uname_bif_c_spatial_intersects == ft_type) || \
+  (uname_bif_c_sp_contains == ft_type) || \
+  (uname_bif_c_sp_intersects == ft_type) )
+#define SPAR_TRIPLE_SHOULD_HAVE_FT_TYPE		0x01
+#define SPAR_TRIPLE_SHOULD_HAVE_NO_FT_TYPE	0x02
+#define SPAR_TRIPLE_FOR_FT_SHOULD_EXIST		0x04
+extern SPART *sparp_find_triple_with_var_obj_of_freetext (sparp_t *sparp, SPART *gp, SPART *filt, int make_ft_type_check);
 extern void spar_gp_finalize_binds (sparp_t *sparp, dk_set_t bind_revlist);
 extern void spar_gp_add_filter (sparp_t *sparp, SPART *filt, int filt_is_movable);
 extern void spar_gp_add_filters_for_graph (sparp_t *sparp, SPART *graph_expn, int graph_is_named, int suppress_filters_for_good_names);
@@ -939,7 +950,7 @@ extern void spar_compose_retvals_of_delete_from_wm (sparp_t *sparp, SPART *tree,
 extern int spar_optimize_delete_of_single_triple_pattern (sparp_t *sparp, SPART *top);
 extern void spar_optimize_retvals_of_insert_or_delete (sparp_t *sparp, SPART *top);
 extern void spar_optimize_retvals_of_modify (sparp_t *sparp, SPART *top);
-extern SPART **spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, SPART *limit, SPART *offset);
+extern SPART **spar_retvals_of_describe (sparp_t *sparp, SPART *req_top, SPART **retvals, SPART *limit, SPART *offset);
 extern void spar_add_rgc_vars_and_consts_from_retvals (sparp_t *sparp, SPART **retvals);
 extern SPART *spar_make_wm (sparp_t *sparp, SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset, SPART *binv);
 /*! Creates SPAR_REQ_TOP tree or a codegen for some special case. A macroexpansion is made before recognizing special cases. */
@@ -1010,7 +1021,7 @@ extern void spar_copy_lexem_bufs (sparp_t *tgt_sparp, spar_lexbmk_t *begin, spar
 extern id_hashed_key_t spar_var_hash (caddr_t p_data);
 extern int spar_var_cmp (caddr_t p_data1, caddr_t p_data2);
 
-extern sparp_t *sparp_clone_for_variant (sparp_t *sparp, int allow_output_formatting);
+extern sparp_t *sparp_clone_for_variant (sparp_t *sparp);
 extern void spar_env_push (sparp_t *sparp);
 extern void spar_env_pop (sparp_t *sparp);
 

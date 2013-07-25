@@ -35,11 +35,11 @@ extern ptrdiff_t qm_field_const_rvrs_offsets[SPART_TRIPLE_FIELDS_COUNT];
 
 /* PART 1. EXPRESSION TERM REWRITING */
 
-#define SPAR_GPT_NODOWN		0x10	/* Don't trav children, i.e. do not call any callbacks for children of the current subtree */
-#define SPAR_GPT_NOOUT		0x20	/* Don't call 'out' callback for the current subtree */
-#define SPAR_GPT_COMPLETED	0x40	/* Don't trav anything at all: the processing is complete */
-#define SPAR_GPT_RESCAN		0x80	/* Lists of children should be found again because they may become obsolete during 'in' callback */
-#define SPAR_GPT_ENV_PUSH	0x01	/* Environment should be pushed. */
+#define SPAR_GPT_NODOWN		0x10	/*!< Don't trav children, i.e. do not call any callbacks for children of the current subtree */
+#define SPAR_GPT_NOOUT		0x20	/*!< Don't call 'out' callback for the current subtree */
+#define SPAR_GPT_COMPLETED	0x40	/*!< Don't trav anything at all: the processing is complete */
+#define SPAR_GPT_RESCAN		0x80	/*!< Lists of children should be found again because they may become obsolete during 'in' callback */
+#define SPAR_GPT_ENV_PUSH	0x01	/*!< Environment should be pushed. */
 
 /*! Single item of state stack of sparp_gp_trav() */
 typedef struct sparp_trav_state_s {
@@ -55,15 +55,25 @@ typedef int sparp_gp_trav_cbk_t (sparp_t *sparp, SPART *curr, sparp_trav_state_t
 
 /*! Parameters of the call of sparp_gp_trav() */
 typedef struct sparp_trav_params_s {
-  sparp_gp_trav_cbk_t *stp_gp_in_cbk;	/*!< Preorder callback to traverse group patterns */
-  sparp_gp_trav_cbk_t *stp_gp_out_cbk;	/*!< Postorder callback to traverse group patterns */
-  sparp_gp_trav_cbk_t *stp_expn_in_cbk;	/*!< Preorder callback to traverse expressions (filters, retvals etc.) */
+  sparp_gp_trav_cbk_t *stp_gp_in_cbk;		/*!< Preorder callback to traverse group patterns */
+  sparp_gp_trav_cbk_t *stp_gp_out_cbk;		/*!< Postorder callback to traverse group patterns */
+  sparp_gp_trav_cbk_t *stp_expn_in_cbk;		/*!< Preorder callback to traverse expressions (filters, retvals etc.) */
   sparp_gp_trav_cbk_t *stp_expn_out_cbk;	/*!< Postordercallback to traverse expressions (filters, retvals etc.) */
   sparp_gp_trav_cbk_t *stp_expn_subq_cbk;	/*!< Inorder callback to traverse scalar subqueries inside expressions */
-  sparp_gp_trav_cbk_t *stp_literal_cbk;	/*!< Inorder callback to traverse literals (scalars) inside expressions */
+  sparp_gp_trav_cbk_t *stp_literal_cbk;		/*!< Inorder callback to traverse literals (scalars) inside expressions */
+  SPART *stp_trav_req_top;				/*!< The req_top of a tree in question */
+  SPART *stp_trav_root;				/*!< The expression where the traversal has started from, i.e., \c tree argument of sparp_gp_trav() or a whole clause of sparp_trav_out_clauses() */
+  sparp_trav_state_t *stp_stack_in_use;		/*!< Pointer to a stack in use */
+  struct sparp_trav_params_s *stp_prev_suspended;	/*!< Pointer to the previous suspended traversal, NULL if the current one is top-level */
 } sparp_trav_params_t;
 
-extern int sparp_gp_trav (sparp_t *sparp, SPART *tree, void *common_env,
+extern int sparp_gp_trav (sparp_t *sparp, SPART *req_top, SPART *tree, void *common_env,
+  sparp_gp_trav_cbk_t *gp_in_cbk, sparp_gp_trav_cbk_t *gp_out_cbk,
+  sparp_gp_trav_cbk_t *expn_in_cbk, sparp_gp_trav_cbk_t *expn_out_cbk, sparp_gp_trav_cbk_t *expn_subq_cbk,
+  sparp_gp_trav_cbk_t *literal_cbk
+ );
+
+extern int sparp_gp_trav_top_pattern (sparp_t *sparp, SPART *req_top, void *common_env,
   sparp_gp_trav_cbk_t *gp_in_cbk, sparp_gp_trav_cbk_t *gp_out_cbk,
   sparp_gp_trav_cbk_t *expn_in_cbk, sparp_gp_trav_cbk_t *expn_out_cbk, sparp_gp_trav_cbk_t *expn_subq_cbk,
   sparp_gp_trav_cbk_t *literal_cbk
@@ -82,7 +92,7 @@ typedef int sparp_gp_trav_int_t (sparp_t *sparp, SPART *tree,
   sparp_gp_trav_cbk_t *literal_cbk
  );
 
-extern int sparp_gp_trav_1 (sparp_t *sparp, sparp_gp_trav_int_t *intcall, SPART *root, void *common_env,
+extern int sparp_gp_trav_1 (sparp_t *sparp, sparp_gp_trav_int_t *intcall, SPART *req_top, SPART *root, void *common_env,
   sparp_gp_trav_cbk_t *gp_in_cbk, sparp_gp_trav_cbk_t *gp_out_cbk,
   sparp_gp_trav_cbk_t *expn_in_cbk, sparp_gp_trav_cbk_t *expn_out_cbk, sparp_gp_trav_cbk_t *expn_subq_cbk,
   sparp_gp_trav_cbk_t *literal_cbk
@@ -116,14 +126,10 @@ extern int sparp_trav_out_clauses_int (sparp_t *sparp, SPART *root,
   (stp).stp_expn_in_cbk, (stp).stp_expn_out_cbk, (stp).stp_expn_subq_cbk, \
   (stp).stp_literal_cbk
 
-/*!< Suspends the traversal in order to start other traversal */
+/*!< Suspends the traversal in order to start other traversal, params and state are saved in \c saved_stp_ptr[0] and \c saved_stss_ptr[0], the values under taht pointers should be NULLs initially */
 extern void sparp_gp_trav_suspend (sparp_t *sparp);
 /*!< Resumes the suspended traversal */
 extern void sparp_gp_trav_resume (sparp_t *sparp);
-/*!< Suspends the traversal, creates a copy of \c sparp, sets its top expn to subquery of \c subq_gp_wrapper, sets the environment; returns the copy */
-extern sparp_t *sparp_down_to_sub (sparp_t *sparp, SPART *subq_gp_wrapper);
-/*!< Reverts the effect of \c sparp_down_to_sub() by copying changes from \c sub_sparp to \c sparp and resuming the traversal */
-extern void sparp_up_from_sub (sparp_t *sparp, SPART *subq_gp_wrapper, sparp_t *sub_sparp);
 /*!< Continues the current traversal in the given gp with subquery */
 extern void sparp_continue_gp_trav_in_sub (sparp_t *sparp, SPART *subq_gp_wrapper, void *common_env, int trav_in_out_clauses);
 
@@ -419,17 +425,17 @@ extern int sparp_tree_is_global_expn (sparp_t *sparp, SPART *tree);
 extern int sparp_expn_reads_equiv (sparp_t *sparp, SPART *expn, sparp_equiv_t *eq);
 
 /*!< Adds variables to equivalence classes and set counters of usages */
-extern void sparp_count_usages (sparp_t *sparp, dk_set_t *optvars_ret);
+extern void sparp_count_usages (sparp_t *sparp, SPART *req_top, dk_set_t *optvars_ret);
 
 /*!< Given set \c binds of \c SPAR_ALIAS expressions and a poitner to an expression to edit, replaces all bound variables with \c alias.arg expressions from alias expressions */
 extern void sparp_expand_binds_like_macro (sparp_t *sparp, SPART **expr_ptr, dk_set_t binds, SPART *parent_gp);
 
 /*!< Changes and expands lists of return values to handle recursive graph traversal and DESCRIBE. */
-void sparp_rewrite_retvals (sparp_t *sparp, int safely_copy_retvals);
+void sparp_rewrite_retvals (sparp_t *sparp, SPART *req_top, int safely_copy_retvals);
 
 /*! Performs all basic term rewritings of the query tree, except simplification of all expressions, that can be made by sparp_simplify_expns().
 sparp_rewrite_basic() should not call sparp_simplify_expns() directly or indirectly due to the danger of infinite recursion. */
-extern void sparp_rewrite_basic (sparp_t *sparp);
+extern void sparp_rewrite_basic (sparp_t *sparp, SPART *req_top);
 
 /*! Tries to calculate the range of values returned by a \c tree and fill in the structure under \c rvr_ret.
 if \c return_independent_copy is zero then the filled structure should remain static, otherwise it gets its own copy of list of formats and can be edited
@@ -448,7 +454,7 @@ extern sparp_bool4way_t sparp_cast_var_or_lit_to_bool4way (sparp_t *sparp, SPART
 This should be done after at least one sparp_rewrite_basic() on same query tree.
 This also should be done at least once before check for sql:signal-void-variable because it may eliminate branches of IF and the like, eliminating "conditionally void" variables.
 In case of success, i.e., if some expression is really rewritten, the function ends its execution with sparp_rewrite_basic(). */
-extern void sparp_simplify_expns (sparp_t *sparp);
+extern void sparp_simplify_expns (sparp_t *sparp, SPART *req_top);
 
 /* PART 2. GRAPH PATTERN TERM REWRITING */
 
@@ -459,9 +465,6 @@ extern void spar_shorten_binv_dataset (sparp_t *sparp, SPART *binv);
 
 /*! Re-calculates common properties of \c binv variables by values in their data columns. Any UNBOUND in column disables the re-calculation. */
 extern void spar_refresh_binv_var_rvrs (sparp_t *sparp, SPART *binv);
-
-
-extern SPART *sparp_find_gp_by_alias (sparp_t *sparp, caddr_t alias);
 
 /*! Returns triple that contains the given variable \c var as a field.
 If \c gp is not NULL the search is restricted by triples that
@@ -504,8 +507,6 @@ extern int sparp_subexpn_position1_in_retlist (sparp_t *sparp, const char *varna
 /*! This returns a mapping of \c var.
 If var_triple is NULL then it tries to find it using \c sparp_find_triple_of_var() for vars and \c sparp_find_triple_of_var_or_retval() for retvals */
 extern qm_value_t *sparp_find_qmv_of_var_or_retval (sparp_t *sparp, SPART *var_triple, SPART *gp, SPART *var);
-
-extern SPART *sparp_find_gp_by_eq_idx (sparp_t *sparp, ptrlong eq_idx);
 
 extern int sparp_find_language_dialect_by_service (sparp_t *sparp, SPART *service_expn);
 
@@ -551,7 +552,7 @@ that describe an union of all elementary datasources that can store triples that
 extern triple_case_t **sparp_find_triple_cases (sparp_t *sparp, SPART *triple, SPART **sources, int required_source_type);
 
 /*! This calls sparp_find_triple_cases() and fills in \c tc_list and \c native_formats of \c triple->_.triple */
-extern void sparp_refresh_triple_cases (sparp_t *sparp, SPART *triple);
+extern void sparp_refresh_triple_cases (sparp_t *sparp, SPART **sources, SPART *triple);
 
 extern int sparp_expns_are_equal (sparp_t *sparp, SPART *one, SPART *two);
 extern int sparp_expn_lists_are_equal (sparp_t *sparp, SPART **one, SPART **two);
@@ -634,7 +635,8 @@ extern void sparp_gp_attach_many_members (sparp_t *sparp, SPART *parent_gp, SPAR
 If \c touched_equivs_ptr is not NULL then the list of edited equivs is composed.
 Removal of a filter does not alter restrictions of equivalence classes derived from a filter, because the operation should be used as
 a part of safe rewriting that preserves the logic.
-The function returns the detached filter. */
+Filters should be detached before triple patterns are detached, to make proper assignments of triple_with_var_obj->_.triple.ft_type .
+\returns the detached filter. */
 extern SPART *sparp_gp_detach_filter (sparp_t *sparp, SPART *parent_gp, int filter_idx, sparp_equiv_t ***touched_equivs_ptr);
 
 /*! This removes all filters from \c parent_gp and removes its variables from equivs.
@@ -643,20 +645,23 @@ Removal of filters does not alter restrictions of equivalence classes derived fr
 a part of safe rewriting that preserves the logic.
 If \c extract_filters_replaced_by_equivs is true and \c parent_gp contains equivs with nonzero e_replaces_filters
 then the replaced filters become expressions again and added to the resulting list.
+Filters should be detached before triple patterns are detached, to make proper assignments of triple_with_var_obj->_.triple.ft_type .
 \returns the list of detached filters. */
 extern SPART **sparp_gp_detach_all_filters (sparp_t *sparp, SPART *parent_gp, int extract_filters_replaced_by_equivs, sparp_equiv_t ***touched_equivs_ptr);
 
 /*! This adds \c new_filter into list of filters of \c parent_gp, the insert position is specified by \c insert_before_idx
 If \c touched_equivs_ptr is not NULL then the list of edited equivs is composed.
 All selids of variables of the attached filter are adjusted automatically and these variables are added to equiv classes of \c parent_gp.
-Restrictions on variables of \c new_filter should be propagated across the tree by additional calls of appropriate functions. */
+Restrictions on variables of \c new_filter should be propagated across the tree by additional calls of appropriate functions.
+Filters should be attached after triple patterns are attached, to make proper assignments of triple_with_var_obj->_.triple.ft_type . */
 extern void sparp_gp_attach_filter (sparp_t *sparp, SPART *parent_gp, SPART *new_filter, int insert_before_idx, sparp_equiv_t ***touched_equivs_ptr);
 
 /*! This adds \c new_filters into list of filters of \c parent_gp, the insert position is specified by \c insert_before_idx
 If \c touched_equivs_ptr is not NULL then the list of edited equivs is composed.
 All selids of variables of the attached filters are adjusted automatically and these variables are added to equiv classes of \c parent_gp.
 Restrictions on variables of \c new_filters should be propagated across the tree by additional calls of appropriate functions.
-This is faster than attach \c new_filters by a sequence of sparp_gp_attach_member() calls. */
+This is faster than attach \c new_filters by a sequence of sparp_gp_attach_member() calls.
+Filters should be attached after triple patterns are attached, to make proper assignments of triple_with_var_obj->_.triple.ft_type . */
 extern void sparp_gp_attach_many_filters (sparp_t *sparp, SPART *parent_gp, SPART **new_filters, int insert_before_idx, sparp_equiv_t ***touched_equivs_ptr);
 
 extern void sparp_gp_tighten_by_eq_replaced_filters (sparp_t *sparp, SPART *dest, SPART *orig, int remove_origin);
@@ -701,9 +706,9 @@ extern caddr_t *sparp_gp_may_reuse_tabids_in_union (sparp_t *sparp, SPART *gp, i
 /*! This produces a list of single-triple GPs such that every GP implements only one quad mapping from
 qm_list of the original \c triple.
 Every generated gp contains a triple that has qm_list of length 1; guess what's the member of the list :)
-If an original triple has \c ft_type set then a free-text condition is removed from parent_gp and cloned into every generated gp
+If an original triple has \c ft_type set then a free-text condition should be removed from \c parent_gp before the removal of triple from parent_gp and passed as \c ft_cod_to_relocate argument to be cloned into every generated gp
 */
-extern SPART **sparp_make_qm_cases (sparp_t *sparp, SPART *triple, SPART *parent_gp);
+extern SPART **sparp_make_qm_cases (sparp_t *sparp, SPART *triple, SPART *parent_gp, SPART *ft_cond_to_relocate);
 
 /*! Creates a new graph pattern of specified \c subtype as if it is parsed ar \c srcline of source text. */
 extern SPART *sparp_new_empty_gp (sparp_t *sparp, ptrlong subtype, ptrlong srcline);
@@ -718,12 +723,12 @@ extern void sparp_collect_all_atable_uses (sparp_t *sparp_or_null, quad_map_t *q
 extern void sparp_collect_all_conds (sparp_t *sparp_or_null, quad_map_t *qm);
 
 /*! Perform all rewritings according to the type of the tree, grab logc etc. */
-extern void sparp_rewrite_all (sparp_t *sparp, int safely_copy_retvals);
+extern SPART *sparp_rewrite_all (sparp_t *sparp, SPART *req_top, int safely_copy_retvals);
 
-extern void sparp_make_common_eqs (sparp_t *sparp);
+extern void sparp_make_common_eqs (sparp_t *sparp, SPART *req_top);
 
 /*! Assigns table aliases to all variables in the expression */
-extern void sparp_make_aliases (sparp_t *sparp);
+extern void sparp_make_aliases (sparp_t *sparp, SPART *req_top);
 
 
 typedef struct sparp_label_external_vars_env_s {
@@ -732,7 +737,7 @@ typedef struct sparp_label_external_vars_env_s {
 } sparp_label_external_vars_env_t;
 
 /*! Label variables as EXTERNAL. */
-extern void sparp_label_external_vars (sparp_t *sparp, sparp_label_external_vars_env_t *sleve);
+extern void sparp_label_external_vars (sparp_t *sparp, SPART *req_top, sparp_label_external_vars_env_t *sleve);
 
 /*! Visits all subtres and subqueries of \c tree and places all distinct names of global and external variables to \c set_set[0] */
 extern void sparp_list_external_vars (sparp_t *sparp, SPART *tree, dk_set_t *set_ret);
@@ -742,7 +747,7 @@ extern void sparp_remove_totally_useless_equivs (sparp_t *sparp);
 
 #define SPARP_UNLINK_IF_ASSIGNED_EXTERNALLY 0x1
 /*! Removes equivalence classes that were supposed to be pure connections but are not connections at all. */
-extern void sparp_remove_redundant_connections (sparp_t *sparp, ptrlong flags);
+extern void sparp_remove_redundant_connections (sparp_t *sparp, SPART *req_top, ptrlong flags);
 
 /*! Given an OPTIONAL_L right side of loj (specified by combination of \c parent and \c pos_of_curr_memb) and an equiv \c eq,
 this finds the most restrictive variable or retval at left side, and fills in \c ret_parent_eq[0] and \c ret_tree_in_parent[0].
@@ -752,28 +757,28 @@ appropriated variables in scope of WHERE clause of SELECT at the right size of l
 extern void sparp_find_best_join_eq_for_optional (sparp_t *sparp, SPART *parent, int pos_of_curr_memb, sparp_equiv_t *eq, sparp_equiv_t **ret_parent_eq, SPART **ret_tree_in_parent, SPART **ret_source_in_parent);
 
 /*! Convert a query with grab vars into a select with procedure view with seed/iter/final sub-SQLs as arguments. */
-extern void sparp_rewrite_grab (sparp_t *sparp);
+extern SPART *sparp_rewrite_grab (sparp_t *sparp, SPART *req_top);
 
 /*! Scans the query with its subqueries and replaces vars made by binds with expressions from that binds. Members of UNION gp that have BINDs inside become subqueries. BINDs of subquery are added to the resultset of the subquery. */
-extern void sparp_expand_binds (sparp_t *sparp);
+extern void sparp_expand_binds (sparp_t *sparp, SPART *req_top);
 
 /*! Finds all mappings of all triples, then performs all graph pattern term rewritings of the query tree */
-extern void sparp_rewrite_qm (sparp_t *sparp);
+extern SPART *sparp_rewrite_qm (sparp_t *sparp, SPART *req_top);
 
 /*! Initial part of sparp_rewrite_qm() that is executed once at top and in every subquery. It finds all mappings of all triples. */
-extern void sparp_rewrite_qm_preopt (sparp_t *sparp, int safely_copy_retvals);
+extern void sparp_rewrite_qm_preopt (sparp_t *sparp, SPART *req_top, int safely_copy_retvals);
 
 /*! Optimization loop body sparp_rewrite_qm() that is executed recursively at top and in every subquery while it has some effect.
 Returns zero if optimization gives no effect. \c opt_ctr is just a value counter of loops, mostly to run some optimizations not on every loop.
 A special value of SPARP_MULTIPLE_OPTLOOPS tells to run default sequence of few optloops with check for dirty and endless optimization. */
-extern int sparp_rewrite_qm_optloop (sparp_t *sparp, int opt_ctr);
+extern int sparp_rewrite_qm_optloop (sparp_t *sparp, SPART *req_top, int opt_ctr);
 #define SPARP_MULTIPLE_OPTLOOPS -20080327
 
 /*! Tries to propagate the \c outer_limit inside the \c tree */
 extern void spar_propagate_limit_as_option (sparp_t *sparp, SPART *tree, SPART *outer_limit);
 
 /*! Finalization part of sparp_rewrite_qm(), including invocation of whole support of recursive sponge. */
-extern void sparp_rewrite_qm_postopt (sparp_t *sparp);
+extern void sparp_rewrite_qm_postopt (sparp_t *sparp, SPART *req_top);
 
 /*! Expand '*' retval list into actual list of variables, add MAX around non-grouped variables etc.
 This also edits ORDER BY ?top-resultset-alias and replaces it with appropriate ORDER BY <int> */
@@ -1053,8 +1058,8 @@ extern void ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *
 If bit is set in both \c rvr and \c restr_bits_to_ignore then the codegen for bit's property can be suppressed, however the bit in \c rvr is still valid for use in other parts of the codegen.
 The purpose of \c restr_bits_to_ignore is to suspend checks that are made as a side effect of "good" equalities printed for the equiv of the variable */
 extern void ssg_print_fld_var_restrictions_ex (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *field, caddr_t tabid, SPART *fld_tree, SPART *triple, SPART *fld_if_outer, rdf_val_range_t *rvr, ptrlong restr_bits_to_ignore);
-extern void ssg_print_fld_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *field, caddr_t tabid, SPART *triple, int fld_idx, int print_outer_filter);
-extern void ssg_print_all_table_fld_restrictions (spar_sqlgen_t *ssg, quad_map_t *qm, caddr_t alias, SPART *triple, int enabled_field_bitmask, int print_outer_filter);
+extern void ssg_print_fld_restrictions (spar_sqlgen_t *ssg, quad_map_t *qmap, qm_value_t *field, caddr_t tabid, SPART *gp, SPART *triple, int fld_idx, int print_outer_filter);
+extern void ssg_print_all_table_fld_restrictions (spar_sqlgen_t *ssg, quad_map_t *qm, caddr_t alias, SPART *gp, SPART *triple, int enabled_field_bitmask, int print_outer_filter);
 
 extern void ssg_print_limofs_expn (spar_sqlgen_t *ssg, SPART *lim, SPART *ofs);
 

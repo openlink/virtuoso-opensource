@@ -193,47 +193,47 @@ create procedure WEBDAV.DBA.obj2json (
   {
     for (N := 0; N < length(o); N := N + 1)
     {
-  	  R := chr (o[N]);
-  	  for (M := 0; M < length(T); M := M + 2)
-	    {
-	      if (R = T[M])
-      		R := T[M+1];
-	    }
-	    retValue := retValue || R;
-	  }
+      R := chr (o[N]);
+      for (M := 0; M < length(T); M := M + 2)
+      {
+        if (R = T[M])
+          R := T[M+1];
+      }
+      retValue := retValue || R;
+    }
     retValue := '"' || retValue || '"';
   }
   else if (isarray (o) and (length (o) > 1) and ((__tag (o[0]) = 255) or (o[0] is null and (o[1] = '<soap_box_structure>' or o[1] = 'structure'))))
   {
-  	retValue := '{';
-  	for (N := 2; N < length (o); N := N + 2)
-  	{
-  	  S := o[N];
-  	  if (chr (S[0]) = attributePrefix)
-  	    S := subseq (S, length (attributePrefix));
-  	  if (not isnull (nsArray))
-  	  {
+    retValue := '{';
+    for (N := 2; N < length (o); N := N + 2)
+    {
+      S := o[N];
+      if (chr (S[0]) = attributePrefix)
+        S := subseq (S, length (attributePrefix));
+      if (not isnull (nsArray))
+      {
         for (M := 0; M < length (nsArray); M := M + 1)
-    	  {
+        {
           if (S like nsArray[M]||':%')
-  	        S := subseq (S, length (nsArray[M])+1);
+            S := subseq (S, length (nsArray[M])+1);
         }
-  	  }
-  	  retValue := retValue || '"' || S || '":' || WEBDAV.DBA.obj2json (o[N+1], d-1, nsArray, attributePrefix);
-  	  if (N <> length(o)-2)
-  		  retValue := retValue || ', ';
-  	}
-  	retValue := retValue || '}';
+      }
+      retValue := retValue || '"' || S || '":' || WEBDAV.DBA.obj2json (o[N+1], d-1, nsArray, attributePrefix);
+      if (N <> length(o)-2)
+        retValue := retValue || ', ';
+    }
+    retValue := retValue || '}';
   }
   else if (isarray (o))
   {
     retValue := '[';
     for (N := 0; N < length(o); N := N + 1)
-	  {
+    {
       retValue := retValue || WEBDAV.DBA.obj2json (o[N], d-1, nsArray, attributePrefix);
-	    if (N <> length(o)-1)
-	      retValue := retValue || ',\n';
-	  }
+      if (N <> length(o)-1)
+        retValue := retValue || ',\n';
+    }
     retValue := retValue || ']';
   }
   return retValue;
@@ -283,16 +283,16 @@ create procedure WEBDAV.DBA.obj2xml (
       {
         retValue := retValue || obj2xml (o[N+1], d-1, o[N], nsArray, attributePrefix);
       } else {
-    	  if (chr (o[N][0]) <> attributePrefix)
-    	  {
+        if (chr (o[N][0]) <> attributePrefix)
+        {
           nsArray := null;
           S := '';
           if ((attributePrefix <> '') and isJsonObject (o[N+1]))
           {
             for (M := 2; M < length(o[N+1]); M := M + 2)
             {
-          	  if (chr (o[N+1][M][0]) = attributePrefix)
-          	    S := sprintf ('%s %s="%s"', S, subseq (o[N+1][M], length (attributePrefix)), obj2xml (o[N+1][M+1]));
+              if (chr (o[N+1][M][0]) = attributePrefix)
+                S := sprintf ('%s %s="%s"', S, subseq (o[N+1][M], length (attributePrefix)), obj2xml (o[N+1][M+1]));
             }
           }
           retValue := retValue || sprintf ('<%s%s%s>%s</%s>\n', o[N], S, nsValue, obj2xml (o[N+1], d-1, null, nsArray, attributePrefix), o[N]);
@@ -314,8 +314,8 @@ create procedure WEBDAV.DBA.obj2xml (
         {
           for (M := 2; M < length(o[N]); M := M + 2)
           {
-        	  if (chr (o[N][M][0]) = attributePrefix)
-        	    S := sprintf ('%s %s="%s"', S, subseq (o[N][M], length (attributePrefix)), obj2xml (o[N][M+1]));
+            if (chr (o[N][M][0]) = attributePrefix)
+              S := sprintf ('%s %s="%s"', S, subseq (o[N][M], length (attributePrefix)), obj2xml (o[N][M+1]));
           }
         }
         retValue := retValue || sprintf ('<%s%s%s>%s</%s>\n', tag, S, nsValue, obj2xml (o[N], d-1, null, nsArray, attributePrefix), tag);
@@ -352,7 +352,7 @@ create procedure WEBDAV.DBA.dc_xml_doc (
   declare exit handler for SQLSTATE '*' {goto _error;};
 
   if (not is_empty_or_null (search))
-  return xtree_doc (search);
+    return xtree_doc (search);
 
 _error:
   return xtree_doc (WEBDAV.DBA.dc_xml ());
@@ -386,12 +386,12 @@ create procedure WEBDAV.DBA.dc_set_criteria (
 
   if (is_empty_or_null (id))
   {
-	  aXml := WEBDAV.DBA.dc_xml_doc (search);
-	  id := cast (xpath_eval ('count (/dc/criteria/entry)', aXml) as varchar);
+    aXml := WEBDAV.DBA.dc_xml_doc (search);
+    id := cast (xpath_eval ('count (/dc/criteria/entry)', aXml) as varchar);
     if (is_empty_or_null (id))
     {
-	    id := '0';
-	  }
+      id := '0';
+    }
   }
   S := '';
   if (not isnull (fField))
@@ -483,15 +483,15 @@ create procedure WEBDAV.DBA.dc_get_criteria (
   S := '';
   if (not isnull (id))
   {
-  	S := S || case when S = '' then '' else ' and ' end || sprintf('@ID = "%s"', id);
+    S := S || case when S = '' then '' else ' and ' end || sprintf('@ID = "%s"', id);
   }
   if (not isnull (fField))
   {
-  	S := S || case when S = '' then '' else ' and ' end || sprintf('@field = "%s"', fField);
+    S := S || case when S = '' then '' else ' and ' end || sprintf('@field = "%s"', fField);
   }
   if (not isnull (fCriteria))
   {
-  	S := S || case when S = '' then '' else ' and ' end || sprintf('@criteria = "%s"', fCriteria);
+    S := S || case when S = '' then '' else ' and ' end || sprintf('@criteria = "%s"', fCriteria);
   }
   aXml := WEBDAV.DBA.dc_xml_doc (search);
   retValue := cast (xpath_eval (sprintf('/dc/criteria/entry[%s]/%s', S, getValue), aXml) as varchar);
@@ -602,14 +602,14 @@ create procedure WEBDAV.DBA.dc_cast (
 create procedure WEBDAV.DBA.dc_valueType (
   in fField any)
 {
-	declare fPredicates, fPredicate any;
+  declare fPredicates, fPredicate any;
 
-	WEBDAV.DBA.dc_predicateMetas (fPredicates);
-	fPredicate := get_keyword (fField, fPredicates);
-	if (isnull (fPredicate))
-	{
-	  return null;
-	}
+  WEBDAV.DBA.dc_predicateMetas (fPredicates);
+  fPredicate := get_keyword (fField, fPredicates);
+  if (isnull (fPredicate))
+  {
+    return null;
+  }
   return fPredicate[4];
 }
 ;
@@ -1015,7 +1015,7 @@ create procedure WEBDAV.DBA.vector_contains (
   in value any)
 {
   if (not isarray (aVector))
-  return 0;
+    return 0;
 
   return case when position (value, aVector) then 1 else 0 end;
 }
@@ -1433,7 +1433,7 @@ create procedure WEBDAV.DBA.proc(
   declare c0, c1, c3, c4, c5, c6, c7, c8, c9 varchar;
   declare exit handler for SQLSTATE '*'
   {
-  	-- dbg_obj_print ('', __SQL_STATE, __SQL_MESSAGE);
+    -- dbg_obj_print ('', __SQL_STATE, __SQL_MESSAGE);
     result(__SQL_STATE, substring (__SQL_MESSAGE, 1, 255), 0, '', '', '', '', '', '');
     return;
   };
@@ -3011,13 +3011,13 @@ create procedure WEBDAV.DBA.DAV_GET_VERSION_SET (
 
   declare exit handler for SQLSTATE '*' {return;};
 
-  versionSet := WEBDAV.DBA.DAV_PROP_GET (WEBDAV.DBA.DAV_GET_VERSION_HISTORY_PATH(path), 'DAV:version-set', auth_name, auth_pwd);
+  versionSet := WEBDAV.DBA.DAV_PROP_GET (WEBDAV.DBA.DAV_GET_VERSION_HISTORY_PATH (path), 'DAV:version-set', auth_name, auth_pwd);
   if (not WEBDAV.DBA.DAV_ERROR (versionSet))
   {
-  hrefs := xpath_eval ('/href', xtree_doc(versionSet), 0);
-  for (N := 0; N < length (hrefs); N := N + 1)
-    result(cast (hrefs[N] as varchar), either (equ (N+1,length (hrefs)),0,1));
-}
+    hrefs := xpath_eval ('/href', xtree_doc (versionSet), 0);
+    for (N := 0; N < length (hrefs); N := N + 1)
+      result (cast (hrefs[N] as varchar), either (equ (N+1, length (hrefs)),0,1));
+  }
 }
 ;
 
@@ -3081,8 +3081,10 @@ create procedure WEBDAV.DBA.DAV_INIT (
   resource := WEBDAV.DBA.DAV_DIR_LIST (path, -1, auth_name, auth_pwd);
   if (WEBDAV.DBA.DAV_ERROR (resource))
     return resource;
+
   if (length (resource) = 0)
     return -1;
+
   return resource[0];
 }
 ;
@@ -4240,8 +4242,8 @@ create procedure WEBDAV.DBA.ui_size (
 create procedure WEBDAV.DBA.ui_date (
   in itemDate datetime)
 {
-	itemDate := left (cast (itemDate as varchar), 19);
-	return sprintf ('%s <font size="1">%s</font>', left(itemDate, 10), right(itemDate, 8));
+  itemDate := left (cast (itemDate as varchar), 19);
+  return sprintf ('%s <font size="1">%s</font>', left(itemDate, 10), right(itemDate, 8));
 }
 ;
 
@@ -4796,26 +4798,26 @@ create procedure WEBDAV.DBA.aci_validate (
       {
         if (criteria[M][1] = 'certSparqlASK')
         {
-		      declare exit handler for sqlstate '*' {
-		        if (not silent)
-		          signal('TEST', WA_CLEAR ('Bad criteria: ' || __SQL_MESSAGE));
+          declare exit handler for sqlstate '*' {
+            if (not silent)
+              signal('TEST', WA_CLEAR ('Bad criteria: ' || __SQL_MESSAGE));
 
-		        return 0;
-		      };
+            return 0;
+          };
 
           sqlStatement := criteria[M][4];
           sqlStatement := regexp_replace (sqlStatement, '\\^\\{([a-zA-Z0-9])+\\}\\^', '??');
-		      sqlTree := sql_parse ('sparql ' || sqlStatement);
+          sqlTree := sql_parse ('sparql ' || sqlStatement);
         }
         else if (criteria[M][1] = 'certSparqlTriplet')
         {
           declare command, commands any;
-		      declare exit handler for sqlstate '*' {
-		        if (not silent)
-		          signal('TEST', WA_CLEAR ('Bad criteria: ' || __SQL_MESSAGE));
+          declare exit handler for sqlstate '*' {
+            if (not silent)
+              signal('TEST', WA_CLEAR ('Bad criteria: ' || __SQL_MESSAGE));
 
-		        return 0;
-		      };
+            return 0;
+          };
 
           commands := ODS.ODS_API.commands ();
           command := get_keyword (criteria[M][2], commands);
@@ -4834,7 +4836,7 @@ create procedure WEBDAV.DBA.aci_validate (
             criteria[M][4],
             command);
           sqlStatement := regexp_replace (sqlStatement, '\\^\\{([a-zA-Z0-9])+\\}\\^', '??');
-		      sqlTree := sql_parse ('sparql ' || sqlStatement);
+          sqlTree := sql_parse ('sparql ' || sqlStatement);
         }
       }
     }

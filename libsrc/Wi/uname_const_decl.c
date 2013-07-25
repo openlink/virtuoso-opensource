@@ -51,6 +51,14 @@ caddr_t uname_SPECIAL_cc_bif_c_COUNT;
 caddr_t uname_SPECIAL_cc_bif_c_MAX;
 caddr_t uname_SPECIAL_cc_bif_c_MIN;
 caddr_t uname_SPECIAL_cc_bif_c_SUM;
+caddr_t uname_bif_c_contains;
+caddr_t uname_bif_c_spatial_contains;
+caddr_t uname_bif_c_spatial_intersects;
+caddr_t uname_bif_c_sp_contains;
+caddr_t uname_bif_c_sp_intersects;
+caddr_t uname_bif_c_xcontains;
+caddr_t uname_bif_c_xpath_contains;
+caddr_t uname_bif_c_xquery_contains;
 caddr_t uname_lang;
 caddr_t uname_nil;
 caddr_t uname_nodeID_ns;
@@ -194,6 +202,14 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname_SPECIAL_cc_bif_c_MAX			, "SPECIAL::bif:MAX"		},
   { &uname_SPECIAL_cc_bif_c_MIN			, "SPECIAL::bif:MIN"		},
   { &uname_SPECIAL_cc_bif_c_SUM			, "SPECIAL::bif:SUM"		},
+  { &uname_bif_c_contains			, "bif:contains"		},
+  { &uname_bif_c_spatial_contains		, "bif:spatial_contains"	},
+  { &uname_bif_c_spatial_intersects		, "bif:spatial_intersects"	},
+  { &uname_bif_c_sp_contains			, "bif:sp_contains"		},
+  { &uname_bif_c_sp_intersects			, "bif:sp_intersects"		},
+  { &uname_bif_c_xcontains			, "bif:xcontains"		},
+  { &uname_bif_c_xpath_contains			, "bif:xpath_contains"		},
+  { &uname_bif_c_xquery_contains		, "bif:xquery_contains"		},
   { &uname_lang					, "lang"			},
   { &uname_nil					, "nil"				},
   { &uname_nodeID_ns				, "nodeID://"			},
