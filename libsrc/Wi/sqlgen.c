@@ -4095,6 +4095,7 @@ sqlg_dtp_coerce (sql_type_t *res_sqt, sql_type_t *arg_sqt)
   else if (IS_NUM_DTP (res_dtp) && IS_NUM_DTP (arg_dtp))
     {
       res_sqt->sqt_dtp = MAX (res_dtp, arg_dtp);
+      res_sqt->sqt_col_dtp = res_sqt->sqt_dtp;
       res_sqt->sqt_non_null = non_null;
       res_sqt->sqt_precision = MAX (res_sqt->sqt_precision, arg_sqt->sqt_precision);
       res_sqt->sqt_scale = MAX (res_sqt->sqt_scale, arg_sqt->sqt_scale);
