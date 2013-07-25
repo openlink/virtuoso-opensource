@@ -1431,7 +1431,7 @@ retry_unrdf:
 }
 ;
 
-create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_FT (in v any, in dt_iid IRI_ID, in lang varchar, in g_iid IRI_ID, in p_iid IRI_ID, in ro_id_dict any := null) returns any
+create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_FT (in v any, in dt_iid IRI_ID, in lang varchar, in g_iid IRI_ID, in p_iid IRI_ID, in ro_id_dict any := null) returns any array
 {
   declare t, dt_twobyte, lang_twobyte int;
   -- dbg_obj_princ ('DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_FT (', v, dt_iid, lang, g_iid, p_iid, ro_id_dict, ')');
@@ -1477,7 +1477,7 @@ retry_unrdf:
 ;
 
 create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_STRINGS (
-  in o_val any, in o_type varchar, in o_lang varchar ) returns any
+  in o_val any, in o_type varchar, in o_lang varchar ) returns any array
 {
   -- dbg_obj_princ ('DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_STRINGS (', o_val, o_type, o_lang, ')');
   if (__tag (o_type) in (__tag of varchar, 217))
