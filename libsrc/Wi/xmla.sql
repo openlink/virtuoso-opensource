@@ -895,7 +895,7 @@ create method xmla_dbschema_columns () for xmla_discover
 	 KEY_IS_MAIN = 1 and
 	 KEY_MIGRATE_TO is null and
 	 KP_KEY_ID = KEY_ID and
-	 COL_ID = KP_COL order by KEY_TABLE, 7'
+	 COL_ID = KP_COL order by KEY_TABLE, 7 option (order)'
        , null, null,
       vector (cat, sch, tb, col), 0, mdta, dta);
     }
