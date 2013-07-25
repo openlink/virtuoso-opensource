@@ -14867,6 +14867,13 @@ bif_idn (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 caddr_t
+bif_rdflit_idn (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return bif_idn (qst, err_ret, args);
+}
+
+
+caddr_t
 bif_idn_no_copy (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   return box_copy_tree (bif_arg (qst, args, 0, "cl_idn"));
@@ -15968,6 +15975,7 @@ sql_bif_init (void)
   bif_define ("idn", bif_idn);
   bif_define_typed ("idn_no_copy", bif_idn_no_copy, &bt_any_box);
   bif_set_vectored (bif_idn_no_copy, bif_idn_no_copy_vec);
+  bif_define_typed ("__rdflit", bif_rdflit_idn, &bt_any_box);
   bif_define ("asg_v", bif_asg_v);
   bif_define_typed ("vector", bif_vector, &bt_any_box);
   bif_define_typed ("vector_zap_args", bif_vector_zap_args, &bt_any_box);
