@@ -1346,10 +1346,10 @@ sparp_optimize_BOP_OR_filter (sparp_t *sparp, SPART *parent_gp, SPART *gp, int g
         spar_error (sparp, "A special predicate, like bif:contains or bif:sp_intersects, can not be used as an argument of '||' operator in a \"joining\" FILTER at line %ld of query; please re-phrase the query", (long)unbox (filt_ptr[0]->srcline));
       if (0 != gp->_.gp.subtype)
         {
-          SPART **all_membs, *filt;
+          SPART **all_membs, *filt, *new_gp;
           filt = sparp_gp_detach_filter (sparp, gp, filt_idx, NULL);
           all_membs = sparp_gp_detach_all_members (sparp, gp, NULL);
-          SPART *new_gp = sparp_new_empty_gp (sparp, 0, unbox (gp->srcline));
+          new_gp = sparp_new_empty_gp (sparp, 0, unbox (gp->srcline));
           sparp_gp_attach_many_members (sparp, new_gp, all_membs, 0, NULL);
           sparp_gp_attach_filter (sparp, new_gp, filt, 0, NULL);
           parent_gp = gp;
