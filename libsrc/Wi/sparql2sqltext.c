@@ -1594,7 +1594,7 @@ sparp_equiv_native_valmode (sparp_t *sparp, SPART *gp, sparp_equiv_t *eq)
         }
       return SSG_VALMODE_LONG;
     }
-  if (UNION_L == gp->_.gp.subtype)
+  if ((UNION_L == gp->_.gp.subtype) || (SPAR_UNION_WO_ALL == gp->_.gp.subtype))
     {
       ssg_valmode_t smallest_union = SSG_VALMODE_AUTO;
       int var_miss_in_some_members = 0;
@@ -1787,7 +1787,7 @@ sparp_expn_native_valmode (sparp_t *sparp, SPART *tree)
 #ifdef DEBUG
               sparp_find_triple_of_var_or_retval (sparp, NULL, tree, 1); /* to debug the bad search */
 #endif
-              spar_error (sparp, "SPARQL optimizer can not generate SQL code for variable ?%.200s at line %ld of query, the variable can be misused", tree->_.var.vname, (long) unbox(tree->srcline));
+              spar_error (sparp, "SPARQL optimizer can not generate SQL code for variable ?%.200s at line %ld of query, the variable can be misused", tree->_.var.vname, (long) unbox (tree->srcline));
             }
           tr_idx = tree->_.var.tr_idx;
           if (SPART_TRIPLE_FIELDS_COUNT <= tr_idx)
@@ -4033,7 +4033,11 @@ expanded_sameterm_ready:
           {
           case 'B': ssg_puts (" rdf_"); break;
           case 'S': ssg_puts (" DB.DBA.rdf_"); break;
-          default: spar_internal_error (ssg->ssg_sparp, "Built-in function is not implemented"); break;
+          default:
+            if (!strcmp ("BIND", sbd->sbd_name))
+              spar_error (ssg->ssg_sparp, "Built-in function BIND is not implemented");
+            spar_internal_error (ssg->ssg_sparp, "Built-in function is not implemented");
+            break;
           }
         ssg_puts (sbd->sbd_name);
         ssg_puts ("_impl");
@@ -5998,7 +6002,7 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
         }
       if ((0 == eq->e_var_count) &&
         ((flags & SSG_RETVAL_FROM_ANY_SELECTED) ||
-          (UNION_L == gp->_.gp.subtype) || (0 == gp->_.gp.subtype)) )
+          (UNION_L == gp->_.gp.subtype) || (SPAR_UNION_WO_ALL == gp->_.gp.subtype) || (0 == gp->_.gp.subtype)) )
         { /* Special case of an equiv used only to pass column of UNION to the next level, can print it always */
           SPART_buf rv_buf;
           SPART *rv;
@@ -6041,6 +6045,7 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
       if (0 > dk_set_position_of_string (ssg->ssg_valid_ret_selids, gp->_.gp.selid))
         spar_internal_error (ssg->ssg_sparp, "ssg_" "print_equiv_retval_expn(): select selid is out of scope");
       /* no break */
+    case UNION_L: case SPAR_UNION_WO_ALL: /* This line should be commented out if a separate branch is un-ifdef-ed below */
     case SERVICE_L: case VALUES_L:
       {
         SPART_buf rv_buf;
@@ -6096,7 +6101,8 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
         ssg_print_valmoded_scalar_expn (ssg, rv, needed, native, asname);
         return 1;
       }
-    case UNION_L:
+#if 0
+    case UNION_L: case SPAR_UNION_WO_ALL:
       {
         SPART *gp_member = NULL;
         sparp_equiv_t *subval;
@@ -6113,6 +6119,7 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
         printed = ssg_print_equiv_retval_expn (ssg, gp_member, subval, sub_flags, needed, asname);
         return printed;
       }
+#endif
     default:
       {
         SPART *gp_member = NULL;
@@ -6323,7 +6330,7 @@ ssg_print_equivalences (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, dk_set
       int sub_ctr;
       if (eq->e_replaces_filter & ~(eq->e_rvr.rvrRestrictions) & ~SPART_VARR_EQ_VAR)
         spar_internal_error (ssg->ssg_sparp, "lost filters in equivs");
-      if (UNION_L != eq->e_gp->_.gp.subtype)
+      if ((UNION_L != eq->e_gp->_.gp.subtype) && (SPAR_UNION_WO_ALL != eq->e_gp->_.gp.subtype))
         {
           DO_BOX_FAST (ptrlong, sub_idx, sub_ctr, eq->e_subvalue_idxs)
             {
@@ -6347,7 +6354,7 @@ ssg_print_equivalences (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, dk_set
         }
     }
   /* A special case exists: if the equiv replaces NOT NULL filter then it should be checked for the output of every OPTIONAL subq. */
-  if ((SPART_VARR_NOT_NULL & restrs_not_filtered_in_subqs) && (UNION_L != eq->e_gp->_.gp.subtype))
+  if ((SPART_VARR_NOT_NULL & restrs_not_filtered_in_subqs) && (UNION_L != eq->e_gp->_.gp.subtype) && (SPAR_UNION_WO_ALL != eq->e_gp->_.gp.subtype))
     {
       int sub_ctr;
       if (0 != eq->e_gspo_uses)
@@ -7621,7 +7628,7 @@ ssg_print_filter (spar_sqlgen_t *ssg, SPART *tree)
 {
   if (tree == (SPART *)(1)) /* The filter has been disabled because it's printed already */
     return;
-  if (spar_filter_is_freetext (ssg->ssg_sparp, tree, NULL))
+  if (NULL != spar_filter_is_freetext (ssg->ssg_sparp, tree, NULL))
     {
       return;
       /* spar_error (ssg->ssg_sparp, "Unable to generate SQL code for %.100s() special predicate for variable '%.100s', try to rephrase the query",
@@ -7856,13 +7863,13 @@ ssg_print_fake_self_join_subexp (spar_sqlgen_t *ssg, SPART *gp, SPART ***tree_se
           qm_atable_t **ft_atables;
           if (NULL == qm->qmObjectMap)
             {
-              tree->_.triple.ft_type = -1;
+              tree->_.triple.ft_type = (caddr_t)((ptrlong)(1));
               goto no_extra_ft_tables; /* see below */ /*spar_sqlprint_error ("ssg_" "print_fake_self_join_subexp(): NULL == qm->qmObjectMap");*/
             }
-          qmft = ((SPAR_GEO_CONTAINS == tree->_.triple.ft_type) ? qm->qmObjectMap->qmvGeo : qm->qmObjectMap->qmvFText);
+          qmft = (SPAR_FT_TYPE_IS_GEO(tree->_.triple.ft_type) ? qm->qmObjectMap->qmvGeo : qm->qmObjectMap->qmvFText);
           if (NULL == qmft)
             {
-              tree->_.triple.ft_type = -1;
+              tree->_.triple.ft_type = (caddr_t)((ptrlong)(1));
               goto no_extra_ft_tables; /* see below */ /*spar_sqlprint_error ("ssg_" "print_fake_self_join_subexp(): NULL == qmft");*/
             }
           if (NULL == qmft->qmvftTableName) /* This happens when special predicate uses columns of table(s) that are mapped to the object, like bif:spatial_contains on DB.DBA.RDF_QUAD.O */
@@ -7959,16 +7966,22 @@ from_printed:
       quad_map_t *qm = tc_list[0]->tc_qm;
       ccaddr_t *conds = qm->qmConds;
       ccaddr_t rowfilter = qm->qmTableRowFilter;
-      if (0 < tree->_.triple.ft_type)
+      caddr_t ft_type = tree->_.triple.ft_type;
+      if (IS_BOX_POINTER (ft_type))
         {
           caddr_t var_name = tree->_.triple.tr_object->_.var.vname;
           SPART *ft_pred = NULL, **args, *ft_arg1, *g;
-          qm_ftext_t *qmft = ((SPAR_GEO_CONTAINS == tree->_.triple.ft_type) ? qm->qmObjectMap->qmvGeo : qm->qmObjectMap->qmvFText);
-          caddr_t ft_alias = (NULL == qmft->qmvftAlias) ? sub_tabid : t_box_sprintf (210, "%.100s~%.100s", sub_tabid, qmft->qmvftAlias);
+          int ft_type_is_geo = ((uname_bif_c_spatial_contains == ft_type) || (uname_bif_c_spatial_intersects == ft_type) || (uname_bif_c_sp_contains == ft_type) || (uname_bif_c_sp_intersects == ft_type));
+          qm_ftext_t *qmft = (ft_type_is_geo ? qm->qmObjectMap->qmvGeo : qm->qmObjectMap->qmvFText);
+          caddr_t ft_alias;
           int ctr, argctr, argcount, contains_in_rdf_quad;
+          if (NULL == qmft)
+            spar_error (ssg->ssg_sparp, "Special predicate %.100s() for variable %.100s is always false for this specific query on this specific quad storage",
+              ft_type, var_name );
+          ft_alias = (NULL == qmft->qmvftAlias) ? sub_tabid : t_box_sprintf (210, "%.100s~%.100s", sub_tabid, qmft->qmvftAlias);
           DO_BOX_FAST (SPART *, filt, ctr, gp->_.gp.filters)
             {
-              if (!spar_filter_is_freetext (ssg->ssg_sparp, filt, tree))
+              if (NULL == spar_filter_is_freetext (ssg->ssg_sparp, filt, tree))
                 continue;
               if (NULL == ft_pred)
                 {
@@ -7985,13 +7998,13 @@ from_printed:
           args = ft_pred->_.funcall.argtrees;
           ft_arg1 = args[1];
           argcount = BOX_ELEMENTS (args);
-          contains_in_rdf_quad = (SPAR_FT_CONTAINS == tree->_.triple.ft_type) &&
+          contains_in_rdf_quad = (uname_bif_c_contains == tree->_.triple.ft_type) &&
             !strcmp ("DB.DBA.RDF_QUAD", tree->_.triple.tc_list[0]->tc_qm->qmTableName);
           g = tree->_.triple.tr_graph;
           ft_arg1 = ssg_patch_ft_arg1 (ssg, ft_arg1, g, contains_in_rdf_quad);
-          ssg_print_where_or_and (ssg, ((SPAR_GEO_CONTAINS == tree->_.triple.ft_type) ? "spatial predicate" : "freetext predicate"));
+          ssg_print_where_or_and (ssg, (ft_type_is_geo ? "spatial predicate" : "freetext predicate"));
           ssg_putchar (' ');
-          ssg_puts (((SPAR_GEO_CONTAINS == tree->_.triple.ft_type) ? "contains" : (ft_pred->_.funcall.qname + 4)));
+          ssg_puts (((uname_bif_c_spatial_contains == ft_type) ? "contains" : (ft_pred->_.funcall.qname + 4)));
           ssg_puts ("(");
           ssg_prin_id (ssg, ft_alias);
           ssg_puts (".");
@@ -8019,7 +8032,7 @@ contains_print_scalar:
             }
           ssg_puts (")");
         }
-      else if (0 > tree->_.triple.ft_type)
+      else if (NULL != ft_type)
         {
           ssg_print_where_or_and (ssg, "invalidated freetext or spatial predicate");
           ssg_puts ("(1 = 2)");
@@ -9020,7 +9033,7 @@ ssg_print_union (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int head_flags,
   const char *save_where_l_text = NULL;
   ptrlong *retlist_restr_bits = NULL;
   SPART *topn_expn_to_propagate = sparp_get_option (ssg->ssg_sparp, gp->_.gp.options, LIMIT_L);
-  if (UNION_L == gp->_.gp.subtype)
+  if ((UNION_L == gp->_.gp.subtype) || (SPAR_UNION_WO_ALL == gp->_.gp.subtype))
     {
       members = gp->_.gp.members;
       memb_count = BOX_ELEMENTS_INT (members);
@@ -9097,7 +9110,12 @@ breakup_group_complete:
 #endif
       ssg_newline (0);
       if (memb_ctr > 0)
-        ssg_puts ("UNION ALL ");
+        {
+          if (SPAR_UNION_WO_ALL == gp->_.gp.subtype)
+            ssg_puts ("UNION ");
+          else
+            ssg_puts ("UNION ALL ");
+        }
       ssg_puts ("SELECT");
       if (NULL != topn_expn_to_propagate)
         ssg_print_limofs_expn (ssg, topn_expn_to_propagate, NULL);
@@ -9149,6 +9167,19 @@ retval_list_complete:
            ssg_print_binv_table_exp (ssg, member, SSG_TABLE_PVIEW_PARAM_PASS);
            ssg->ssg_where_l_printed = save_where_l_printed;
            ssg->ssg_where_l_text = save_where_l_text;
+           goto end_of_where_list; /* see below */
+         }
+      if ((UNION_L == member->_.gp.subtype) || (SPAR_UNION_WO_ALL == member->_.gp.subtype))
+         {
+           int member_retval_flags = (SSG_RETVAL_EQUIV_INSTEAD_OF_TREE & retval_flags) |
+             ( SSG_RETVAL_FROM_FIRST_UNION_MEMBER | SSG_RETVAL_FROM_JOIN_MEMBER |
+               SSG_RETVAL_SET_ALIAS_BY_EQUIV | SSG_RETVAL_USES_ALIAS | SSG_RETVAL_MUST_PRINT_SOMETHING );
+           ssg_puts (" (");
+           ssg->ssg_indent++;
+           ssg_print_union (ssg, member, retlist, 0 /* no head flags*/, member_retval_flags, needed);
+           ssg->ssg_indent--;
+           ssg_puts (" ) AS ");
+           ssg_prin_id (ssg, member->_.gp.selid);
            goto end_of_where_list; /* see below */
          }
       itm_count = BOX_ELEMENTS (member->_.gp.members);

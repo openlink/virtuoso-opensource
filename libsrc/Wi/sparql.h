@@ -91,6 +91,7 @@ extern void sparp_debug_weird (struct sparp_s *sparp, const char *file, int line
 
 #define SPAR_BOP_EQ_NONOPT		(ptrlong)1051	/*!< An equality that is not optimized into an equivalence class */
 #define SPAR_BOP_EQNAMES		(ptrlong)1052	/*!< A special "equality": arguments are variables whose names are merged into one equivalence class */
+#define SPAR_UNION_WO_ALL		(ptrlong)1053	/*!< A special union that will become SQL UNION, not SQL UNION ALL as we usually cheat */
 
 #define SPAR_BIF_ABS		(ptrlong)1101
 #define SPAR_BIF_BNODE		(ptrlong)1102
@@ -295,7 +296,7 @@ typedef struct sparp_env_s
   dk_set_t		spare_context_objects;		/*!< Expressions that are default values for objects field */
   dk_set_t		spare_context_gp_subtypes;	/*!< Subtypes of not-yet-completed graph patterns */
   dk_set_t		spare_acc_triples;		/*!< Sets of accumulated triples of GPs */
-  dk_set_t		spare_acc_movable_filters;	/*!< Sets of accumulated position-independent filters of GPs. Position-independent means it can jump be moved around BIND() clause */
+  dk_set_t		spare_acc_movable_filters;	/*!< Sets of accumulated position-independent filters of GPs. Position-independent means it can be moved around BIND() clause */
   dk_set_t		spare_acc_local_filters;	/*!< Sets of accumulated position-dependent filters of GPs. Filters of this sort are implicit restrictions on specific triples, like check of value of _::default_xxx bnode for graph. They fall into subquery when BIND divides a BGP on subquery "before" BIND and triples "after" BIND. */
   dk_set_t		spare_acc_bgp_varnames;		/*!< Sets of used BGP names of GPs, sets of children are merged into sets of parent on each pop from the stack */
   int			spare_ctor_dflt_g_tmpl_count;	/*!< For CONSTRUCT and the like --- count of triple templates in the default graph, should be reset to zero after ctor to deal with DELETE{...} INSERT{...} */
@@ -463,15 +464,15 @@ extern void spar_error_if_unsupported_syntax_imp (sparp_t *sparp, int feature_in
 
 extern ptrlong sparp_tr_usage_natural_restrictions[SPART_TRIPLE_FIELDS_COUNT];
 
-/* These values should be greater than any SQL opcode AND greater than 0x7F to not conflict with codepoints of "syntactically important" chars AND less than 0xFF to not conflict with YACC IDs for keywords. */
-#define SPART_GRAPH_FROM		0x100
-#define SPART_GRAPH_GROUP_BIT		0x001
-#define SPART_GRAPH_GROUP		0x101	/*!< == SPART_GRAPH_FROM | SPART_GRAPH_GROUP_BIT */
-#define SPART_GRAPH_NAMED		0x110
-#define SPART_GRAPH_MIN_NEGATION	0x17F
-#define SPART_GRAPH_NOT_FROM		0x180
-#define SPART_GRAPH_NOT_GROUP		0x181	/*!< == SPART_GRAPH_NOT_FROM | SPART_GRAPH_GROUP_BIT */
-#define SPART_GRAPH_NOT_NAMED		0x190
+/* These values should be greater than any SQL opcode AND greater than 0x7F to not conflict with codepoints of "syntactically important" chars and, moreover, greater than 0x1000 to not conflict with YACC IDs for keywords. */
+#define SPART_GRAPH_FROM		0x1000
+#define SPART_GRAPH_GROUP_BIT		0x0001
+#define SPART_GRAPH_GROUP		0x1001	/*!< == SPART_GRAPH_FROM | SPART_GRAPH_GROUP_BIT */
+#define SPART_GRAPH_NAMED		0x1010
+#define SPART_GRAPH_MIN_NEGATION	0x107F
+#define SPART_GRAPH_NOT_FROM		0x1080
+#define SPART_GRAPH_NOT_GROUP		0x1081	/*!< == SPART_GRAPH_NOT_FROM | SPART_GRAPH_GROUP_BIT */
+#define SPART_GRAPH_NOT_NAMED		0x1090
 
 #define SPARP_EQUIV(sparp,idx) ((sparp)->sparp_sg->sg_equivs[(idx)])
 #define SPARP_SINV(sparp,idx) ((sparp)->sparp_sg->sg_sinvs[(idx)])
@@ -631,7 +632,7 @@ typedef struct spar_tree_s
         triple_case_t **tc_list;
         struct qm_format_s *native_formats[SPART_TRIPLE_FIELDS_COUNT];
         SPART **options;
-        ptrlong ft_type;
+        caddr_t ft_type;
         ptrlong src_serial;	/*!< Assigned once at parser and preserved in all clone operations */
       } triple;
     struct { /* Note that all first members of \c retval and bnode cases should match to \c var case */
@@ -824,12 +825,6 @@ extern void spart_dump (void *tree_arg, dk_session_t *ses, int indent, const cha
 #define SPART_BAD_EQUIV_IDX (ptrlong)(SMALLEST_POSSIBLE_POINTER-1)
 #define SPART_BAD_GP_SUBTYPE (ptrlong)(SMALLEST_POSSIBLE_POINTER-2)
 
-#define SPAR_FT_CONTAINS	11
-#define SPAR_FT_XCONTAINS	12
-#define SPAR_FT_XPATH_CONTAINS	13
-#define SPAR_FT_XQUERY_CONTAINS	14
-#define SPAR_GEO_CONTAINS	21
-
 /*! The context of the macro processor */
 typedef struct spar_mproc_ctx_s {
   SPART *smpc_context_gp;		/*!< A gp where the macroexpansion takes place, if notnull. */
@@ -914,8 +909,18 @@ extern void spar_gp_add_member (sparp_t *sparp, SPART *memb);
 /*! Makes and adds a triple or a macro call or a filter like CONTAINS or a SELECT group for transitive prop or a UNION prop with inverse props or combination of few, with optional filter on graph.
 \c banned tricks is a bitmask that is 0 by default, SPAR_ADD_TRIPLELIKE_NO_xxx */
 extern SPART *spar_gp_add_triplelike (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri, SPART **options, int banned_tricks);
-/*! Checks if the given \c filt is a freetext filter. If it is so and \c base_triple is not NULL then it additionally checks if var name matches */
-extern int spar_filter_is_freetext (sparp_t *sparp, SPART *filt, SPART *base_triple);
+/*! Checks if the given \c filt is a freetext filter. If it is so and \c base_triple is not NULL then it additionally checks if var name matches
+\returns NULL if filter is not free-text, UNAME like "bif:contains" if it is a free-text predicate */
+extern caddr_t spar_filter_is_freetext (sparp_t *sparp, SPART *filt, SPART *base_triple);
+#define SPAR_FT_TYPE_IS_GEO(ft_type) ( \
+  (uname_bif_c_spatial_contains == ft_type) || \
+  (uname_bif_c_spatial_intersects == ft_type) || \
+  (uname_bif_c_sp_contains == ft_type) || \
+  (uname_bif_c_sp_intersects == ft_type) )
+#define SPAR_TRIPLE_SHOULD_HAVE_FT_TYPE		0x01
+#define SPAR_TRIPLE_SHOULD_HAVE_NO_FT_TYPE	0x02
+#define SPAR_TRIPLE_FOR_FT_SHOULD_EXIST		0x04
+extern SPART *sparp_find_triple_with_var_obj_of_freetext (sparp_t *sparp, SPART *gp, SPART *filt, int make_ft_type_check);
 extern void spar_gp_finalize_binds (sparp_t *sparp, dk_set_t bind_revlist);
 extern void spar_gp_add_filter (sparp_t *sparp, SPART *filt, int filt_is_movable);
 extern void spar_gp_add_filters_for_graph (sparp_t *sparp, SPART *graph_expn, int graph_is_named, int suppress_filters_for_good_names);

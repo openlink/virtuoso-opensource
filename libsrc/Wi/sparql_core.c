@@ -1551,7 +1551,7 @@ check_optionals:
                     {
                       DO_SET (SPART *, filt, &local_filts)
                         {
-                          if (!spar_filter_is_freetext (sparp, filt, memb))
+                          if (NULL == spar_filter_is_freetext (sparp, filt, memb))
                             continue;
                           t_set_delete (&local_filts, filt);
                           t_set_push (&left_ft_filts, filt);
@@ -1618,26 +1618,22 @@ void spar_gp_add_member (sparp_t *sparp, SPART *memb)
   t_set_push (set_ptr, memb);
 }
 
-int
+caddr_t
 spar_filter_is_freetext (sparp_t *sparp, SPART *filt, SPART *base_triple)
 {
-  int res = 0;
   caddr_t fname;
   if (SPAR_FUNCALL != SPART_TYPE (filt))
     return 0;
   fname = filt->_.funcall.qname;
-  if (!strcmp (fname, "bif:contains"))
-    res = SPAR_FT_CONTAINS;
-  else if (!strcmp (fname, "bif:xcontains"))
-    res = SPAR_FT_XCONTAINS;
-  else if (!strcmp (fname, "bif:xpath_contains"))
-    res = SPAR_FT_XPATH_CONTAINS;
-  else if (!strcmp (fname, "bif:xquery_contains"))
-    res = SPAR_FT_XQUERY_CONTAINS;
-  else if (!strcmp (fname, "bif:spatial_contains"))
-    res = SPAR_GEO_CONTAINS;
-  else
-    return 0;
+  if (!((fname == uname_bif_c_contains) ||
+    (fname == uname_bif_c_spatial_contains) ||
+    (fname == uname_bif_c_spatial_intersects) ||
+    (fname == uname_bif_c_sp_contains) ||
+    (fname == uname_bif_c_sp_intersects) ||
+    (fname == uname_bif_c_xcontains) ||
+    (fname == uname_bif_c_xpath_contains) ||
+    (fname == uname_bif_c_xquery_contains) ) )
+  return NULL;
   if (NULL != base_triple)
     {
       caddr_t ft_var_name;
@@ -1649,7 +1645,7 @@ spar_filter_is_freetext (sparp_t *sparp, SPART *filt, SPART *base_triple)
         strcmp (filt->_.funcall.argtrees[0]->_.var.vname, ft_var_name) )
       return 0;
     }
-  return res;
+  return fname;
 }
 
 int
@@ -1696,7 +1692,7 @@ void
 spar_gp_add_filter (sparp_t *sparp, SPART *filt, int filt_is_movable)
 {
   int filt_type = SPART_TYPE (filt);
-  int ft_type;
+  caddr_t ft_type;
   dk_set_t filters_set_stack;
   if (BOP_AND == filt_type)
     {
@@ -1733,7 +1729,7 @@ spar_gp_add_filter (sparp_t *sparp, SPART *filt, int filt_is_movable)
           if (strcmp (obj->_.var.vname, var_name))
             continue;
           if (memb->_.triple.ft_type)
-            spar_error (sparp, "More than one %s() or similar predicate for '$%s' variable in a single group", ft_pred_name, var_name);
+            spar_error (sparp, "%s() predicate for '$%s' variable found with another %s() predicate found before for same variable in same basic group pattern", ft_pred_name, var_name, memb->_.triple.ft_type);
           if (NULL == triple_with_var_obj)
             triple_with_var_obj = memb;
         }
@@ -1766,6 +1762,7 @@ spar_gp_add_filter (sparp_t *sparp, SPART *filt, int filt_is_movable)
         ((boxint *)(sparp->sparp_env->spare_sql_refresh_free_text))[0] = 1;
       else
         sparp->sparp_env->spare_sql_refresh_free_text = t_box_num (1);
+      filt_is_movable = 0;
     }
   filters_set_stack = filt_is_movable ? sparp->sparp_env->spare_acc_movable_filters : sparp->sparp_env->spare_acc_local_filters;
   if (NULL == filters_set_stack)
@@ -2114,7 +2111,7 @@ spar_make_service_inv (sparp_t *sparp, SPART *endpoint, dk_set_t all_options, pt
                   int gp_subtype = (ptrlong)(gp_subtypes_iter->data);
                   if (SELECT_L == gp_subtype)
                     break;
-                  if (UNION_L == gp_subtype)
+                  if ((UNION_L == gp_subtype) || (SPAR_UNION_WO_ALL == gp_subtype))
                     continue;
                   members_before = (dk_set_t)(acc_triples_iter->data);
                   DO_SET (SPART *, member, &members_before)
@@ -2163,9 +2160,9 @@ spar_sinv_naming (sparp_t *sparp, SPART *sinv)
 {
   switch (SPART_TYPE (sinv->_.sinv.endpoint))
     {
-    case SPAR_VARIABLE: return t_box_sprintf (300, "SERVICE ?%.200s at line %d", sinv->_.sinv.endpoint->_.var.vname, (int)(unbox(sinv->_.sinv.endpoint->srcline)));
-    case SPAR_QNAME: return t_box_sprintf (300, "SERVICE <%.200s> at line %d", sinv->_.sinv.endpoint->_.qname.val, (int)(unbox(sinv->_.sinv.endpoint->srcline)));
-    default: return t_box_sprintf (300, "SERVICE at line %d", (int)(unbox(sinv/*->_.sinv.endpoint*/->srcline)));
+    case SPAR_VARIABLE: return t_box_sprintf (300, "SERVICE ?%.200s at line %ld", sinv->_.sinv.endpoint->_.var.vname, (long)(unbox(sinv->_.sinv.endpoint->srcline)));
+    case SPAR_QNAME: return t_box_sprintf (300, "SERVICE <%.200s> at line %ld", sinv->_.sinv.endpoint->_.qname.val, (long)(unbox(sinv->_.sinv.endpoint->srcline)));
+    default: return t_box_sprintf (300, "SERVICE at line %d", (long)(unbox(sinv/*->_.sinv.endpoint*/->srcline)));
     }
 }
 

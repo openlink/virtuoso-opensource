@@ -35,11 +35,11 @@ extern ptrdiff_t qm_field_const_rvrs_offsets[SPART_TRIPLE_FIELDS_COUNT];
 
 /* PART 1. EXPRESSION TERM REWRITING */
 
-#define SPAR_GPT_NODOWN		0x10	/* Don't trav children, i.e. do not call any callbacks for children of the current subtree */
-#define SPAR_GPT_NOOUT		0x20	/* Don't call 'out' callback for the current subtree */
-#define SPAR_GPT_COMPLETED	0x40	/* Don't trav anything at all: the processing is complete */
-#define SPAR_GPT_RESCAN		0x80	/* Lists of children should be found again because they may become obsolete during 'in' callback */
-#define SPAR_GPT_ENV_PUSH	0x01	/* Environment should be pushed. */
+#define SPAR_GPT_NODOWN		0x10	/*!< Don't trav children, i.e. do not call any callbacks for children of the current subtree */
+#define SPAR_GPT_NOOUT		0x20	/*!< Don't call 'out' callback for the current subtree */
+#define SPAR_GPT_COMPLETED	0x40	/*!< Don't trav anything at all: the processing is complete */
+#define SPAR_GPT_RESCAN		0x80	/*!< Lists of children should be found again because they may become obsolete during 'in' callback */
+#define SPAR_GPT_ENV_PUSH	0x01	/*!< Environment should be pushed. */
 
 /*! Single item of state stack of sparp_gp_trav() */
 typedef struct sparp_trav_state_s {
@@ -635,7 +635,8 @@ extern void sparp_gp_attach_many_members (sparp_t *sparp, SPART *parent_gp, SPAR
 If \c touched_equivs_ptr is not NULL then the list of edited equivs is composed.
 Removal of a filter does not alter restrictions of equivalence classes derived from a filter, because the operation should be used as
 a part of safe rewriting that preserves the logic.
-The function returns the detached filter. */
+Filters should be detached before triple patterns are detached, to make proper assignments of triple_with_var_obj->_.triple.ft_type .
+\returns the detached filter. */
 extern SPART *sparp_gp_detach_filter (sparp_t *sparp, SPART *parent_gp, int filter_idx, sparp_equiv_t ***touched_equivs_ptr);
 
 /*! This removes all filters from \c parent_gp and removes its variables from equivs.
@@ -644,20 +645,23 @@ Removal of filters does not alter restrictions of equivalence classes derived fr
 a part of safe rewriting that preserves the logic.
 If \c extract_filters_replaced_by_equivs is true and \c parent_gp contains equivs with nonzero e_replaces_filters
 then the replaced filters become expressions again and added to the resulting list.
+Filters should be detached before triple patterns are detached, to make proper assignments of triple_with_var_obj->_.triple.ft_type .
 \returns the list of detached filters. */
 extern SPART **sparp_gp_detach_all_filters (sparp_t *sparp, SPART *parent_gp, int extract_filters_replaced_by_equivs, sparp_equiv_t ***touched_equivs_ptr);
 
 /*! This adds \c new_filter into list of filters of \c parent_gp, the insert position is specified by \c insert_before_idx
 If \c touched_equivs_ptr is not NULL then the list of edited equivs is composed.
 All selids of variables of the attached filter are adjusted automatically and these variables are added to equiv classes of \c parent_gp.
-Restrictions on variables of \c new_filter should be propagated across the tree by additional calls of appropriate functions. */
+Restrictions on variables of \c new_filter should be propagated across the tree by additional calls of appropriate functions.
+Filters should be attached after triple patterns are attached, to make proper assignments of triple_with_var_obj->_.triple.ft_type . */
 extern void sparp_gp_attach_filter (sparp_t *sparp, SPART *parent_gp, SPART *new_filter, int insert_before_idx, sparp_equiv_t ***touched_equivs_ptr);
 
 /*! This adds \c new_filters into list of filters of \c parent_gp, the insert position is specified by \c insert_before_idx
 If \c touched_equivs_ptr is not NULL then the list of edited equivs is composed.
 All selids of variables of the attached filters are adjusted automatically and these variables are added to equiv classes of \c parent_gp.
 Restrictions on variables of \c new_filters should be propagated across the tree by additional calls of appropriate functions.
-This is faster than attach \c new_filters by a sequence of sparp_gp_attach_member() calls. */
+This is faster than attach \c new_filters by a sequence of sparp_gp_attach_member() calls.
+Filters should be attached after triple patterns are attached, to make proper assignments of triple_with_var_obj->_.triple.ft_type . */
 extern void sparp_gp_attach_many_filters (sparp_t *sparp, SPART *parent_gp, SPART **new_filters, int insert_before_idx, sparp_equiv_t ***touched_equivs_ptr);
 
 extern void sparp_gp_tighten_by_eq_replaced_filters (sparp_t *sparp, SPART *dest, SPART *orig, int remove_origin);
@@ -702,9 +706,9 @@ extern caddr_t *sparp_gp_may_reuse_tabids_in_union (sparp_t *sparp, SPART *gp, i
 /*! This produces a list of single-triple GPs such that every GP implements only one quad mapping from
 qm_list of the original \c triple.
 Every generated gp contains a triple that has qm_list of length 1; guess what's the member of the list :)
-If an original triple has \c ft_type set then a free-text condition is removed from parent_gp and cloned into every generated gp
+If an original triple has \c ft_type set then a free-text condition should be removed from \c parent_gp before the removal of triple from parent_gp and passed as \c ft_cod_to_relocate argument to be cloned into every generated gp
 */
-extern SPART **sparp_make_qm_cases (sparp_t *sparp, SPART *triple, SPART *parent_gp);
+extern SPART **sparp_make_qm_cases (sparp_t *sparp, SPART *triple, SPART *parent_gp, SPART *ft_cond_to_relocate);
 
 /*! Creates a new graph pattern of specified \c subtype as if it is parsed ar \c srcline of source text. */
 extern SPART *sparp_new_empty_gp (sparp_t *sparp, ptrlong subtype, ptrlong srcline);

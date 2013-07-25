@@ -384,6 +384,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <tree> spar_graph_gp
 %type <tree> spar_quad_map_gp
 %type <tree> spar_group_or_union_gp
+%type <token_type> spar_union_type
 %type <backstack> spar_binds
 %type <tree> spar_bind
 %type <tree> spar_inline_data
@@ -1271,20 +1272,25 @@ spar_graph_gp		/* [23]	GraphGraphPattern	 ::=  'GRAPH' VarOrBlankNodeOrIRIref Gr
 
 spar_group_or_union_gp	/* [24]	GroupOrUnionGraphPattern	 ::=  GroupGraphPattern ( 'UNION' GroupGraphPattern )*	*/
 	: _LBRA { spar_gp_init (sparp_arg, 0); } spar_group_gp { $$ = $3; }
-	| spar_group_or_union_gp UNION_L _LBRA {
+	| spar_group_or_union_gp spar_union_type _LBRA {
 		sparp_env()->spare_good_graph_varnames = sparp_env()->spare_good_graph_bmk;
-		if (UNION_L != $1->_.gp.subtype) {
-		    spar_gp_init (sparp_arg, UNION_L);
+		if ($2 != $1->_.gp.subtype) {
+		    spar_gp_init (sparp_arg, $2);
 		    spar_gp_add_member (sparp_arg, $1); }
 		spar_gp_init (sparp_arg, 0); }
 	    spar_group_gp {
-		if (UNION_L != $1->_.gp.subtype) {
+		if ($2 != $1->_.gp.subtype) {
 		    spar_gp_add_member (sparp_arg, $5);
 		    $$ = spar_gp_finalize (sparp_arg, NULL); }
 		else {
 		    $$->_.gp.members = (SPART **)t_list_concat_tail ((caddr_t)($$->_.gp.members), 1, $5);
 		    $$ = $1; }
 		}
+	;
+
+spar_union_type
+	: UNION_L		{ $$ = UNION_L; }
+	| DISTINCT_L UNION_L	{ $$ = SPAR_UNION_WO_ALL; }
 	;
 
 spar_binds

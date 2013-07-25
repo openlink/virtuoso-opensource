@@ -743,7 +743,7 @@ spar_macroprocess_tree (sparp_t *sparp, SPART *tree, spar_mproc_ctx_t *ctx)
               subq->_.req_top.offset = spar_macroprocess_tree (sparp, subq->_.req_top.offset, ctx);
               break;
             }
-          case UNION_L:
+          case UNION_L: case SPAR_UNION_WO_ALL:
             DO_BOX_FAST (SPART *, memb, ctr, tree->_.gp.members)
               {
                 tree->_.gp.members[ctr] = spar_macroprocess_tree (sparp, memb, ctx);
@@ -3631,6 +3631,42 @@ sparp_gp_attach_many_members (sparp_t *sparp, SPART *parent_gp, SPART **new_memb
   sparp_equiv_audit_all (sparp, 0);
 }
 
+SPART *
+sparp_find_triple_with_var_obj_of_freetext (sparp_t *sparp, SPART *gp, SPART *filt, int make_ft_type_check)
+{
+  caddr_t ft_pred_name = filt->_.funcall.qname;
+  SPART *ft_literal_var;
+  caddr_t var_name;
+  SPART **args, *triple_with_var_obj = NULL;
+  int memb_ctr;
+  args = filt->_.funcall.argtrees;
+  ft_literal_var = filt->_.funcall.argtrees[0];
+  if (SPAR_VARIABLE != SPART_TYPE (ft_literal_var))
+    spar_internal_error (sparp, "sparp_" "find_triple_with_var_obj_of_freetext(): the first argument of a ft predicate is not a variable");
+  var_name = ft_literal_var->_.var.vname;
+  DO_BOX_FAST_REV (SPART *, memb, memb_ctr, gp->_.gp.members)
+    {
+      SPART *obj;
+      if (SPAR_TRIPLE != SPART_TYPE (memb))
+        continue;
+      obj = memb->_.triple.tr_object;
+      if (SPAR_VARIABLE != SPART_TYPE (obj))
+        continue;
+      if (strcmp (obj->_.var.vname, var_name))
+        continue;
+      if ((SPAR_TRIPLE_SHOULD_HAVE_NO_FT_TYPE & make_ft_type_check) && (NULL != memb->_.triple.ft_type))
+        spar_error (sparp, "Two special predicates, %.500s() and %.500s() are used for same variable $%.500s in same scope, please rephrase the query", memb->_.triple.ft_type, ft_pred_name, var_name);
+      if ((SPAR_TRIPLE_SHOULD_HAVE_FT_TYPE & make_ft_type_check) && (NULL == memb->_.triple.ft_type))
+        spar_internal_error (sparp, "sparp_" "find_triple_with_var_obj_of_freetext(): lost connection between triple pattern and an ft predicate");
+      if (NULL == triple_with_var_obj)
+        triple_with_var_obj = memb;
+    }
+  END_DO_BOX_FAST_REV;
+  if ((SPAR_TRIPLE_FOR_FT_SHOULD_EXIST & make_ft_type_check) && (NULL == triple_with_var_obj))
+    spar_error (sparp, "No suitable triple pattern is found for a variable $%.500s in special predicate %.500s() at line %ld of query", var_name, ft_pred_name, (long) unbox (filt->srcline));
+  return triple_with_var_obj;
+}
+
 int
 sparp_gp_detach_filter_expn_in_cbk (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
@@ -3700,6 +3736,7 @@ sparp_gp_detach_filter (sparp_t *sparp, SPART *parent_gp, int filter_idx, sparp_
   SPART *filt;
   SPART **old_filters = parent_gp->_.gp.filters;
   int old_len = BOX_ELEMENTS (old_filters);
+  caddr_t ft_type;
   dk_set_t touched_equivs_set = NULL;
   dk_set_t *touched_equivs_set_ptr = ((NULL == touched_equivs_ptr) ? NULL : &touched_equivs_set);
 #ifdef DEBUG
@@ -3707,6 +3744,12 @@ sparp_gp_detach_filter (sparp_t *sparp, SPART *parent_gp, int filter_idx, sparp_
     spar_internal_error (sparp, "sparp_" "gp_detach_filter(): bad filter_idx");
 #endif
   filt = old_filters [filter_idx];
+  ft_type = spar_filter_is_freetext (sparp, filt, NULL);
+  if (NULL != ft_type)
+    {
+      SPART *triple_with_var_obj = sparp_find_triple_with_var_obj_of_freetext (sparp, parent_gp, filt, SPAR_TRIPLE_FOR_FT_SHOULD_EXIST | SPAR_TRIPLE_SHOULD_HAVE_FT_TYPE);
+      triple_with_var_obj->_.triple.ft_type = 0;
+    }
   memset (stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
   stss[0].sts_ofs_of_curr_in_array = -1;
   stss[1].sts_ancestor_gp = parent_gp;
@@ -3779,6 +3822,12 @@ sparp_gp_detach_all_filters (sparp_t *sparp, SPART *parent_gp, int extract_filte
     spar_internal_error (sparp, "sparp_" "gp_detach_all_filters(): optimization tries to break the semantics of LEFT OUTER JOIN for OPTIONAL clause");
   DO_BOX_FAST_REV (SPART *, filt, filt_ctr, filters)
     {
+      caddr_t ft_type = spar_filter_is_freetext (sparp, filt, NULL);
+      if (NULL != ft_type)
+        {
+          SPART *triple_with_var_obj = sparp_find_triple_with_var_obj_of_freetext (sparp, parent_gp, filt, SPAR_TRIPLE_FOR_FT_SHOULD_EXIST | SPAR_TRIPLE_SHOULD_HAVE_FT_TYPE);
+          triple_with_var_obj->_.triple.ft_type = 0;
+        }
       memset (stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
       stss[0].sts_ofs_of_curr_in_array = -1;
       stss[1].sts_ancestor_gp = parent_gp;
@@ -3839,6 +3888,7 @@ sparp_gp_attach_filter (sparp_t *sparp, SPART *parent_gp, SPART *new_filt, int i
   sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
   SPART **old_filters = parent_gp->_.gp.filters;
   int old_len = BOX_ELEMENTS (old_filters);
+  caddr_t ft_type;
   dk_set_t touched_equivs_set = NULL;
   dk_set_t *touched_equivs_set_ptr = ((NULL == touched_equivs_ptr) ? NULL : &touched_equivs_set);
 #ifdef DEBUG
@@ -3848,6 +3898,12 @@ sparp_gp_attach_filter (sparp_t *sparp, SPART *parent_gp, SPART *new_filt, int i
   parent_gp->_.gp.filters = (SPART **)t_list_insert_before_nth ((caddr_t)old_filters, (caddr_t)new_filt, insert_before_idx);
   if (insert_before_idx > (old_len - parent_gp->_.gp.glued_filters_count))
     parent_gp->_.gp.glued_filters_count += 1;
+  ft_type = spar_filter_is_freetext (sparp, new_filt, NULL);
+  if (NULL != ft_type)
+    {
+      SPART *triple_with_var_obj = sparp_find_triple_with_var_obj_of_freetext (sparp, parent_gp, new_filt, SPAR_TRIPLE_FOR_FT_SHOULD_EXIST | SPAR_TRIPLE_SHOULD_HAVE_NO_FT_TYPE);
+      triple_with_var_obj->_.triple.ft_type = ft_type;
+    }
   memset (stss, 0, sizeof (sparp_trav_state_t) * (SPARP_MAX_SYNTDEPTH+2));
   stss[0].sts_ofs_of_curr_in_array = -1;
   stss[0].sts_env = parent_gp;
@@ -3887,10 +3943,19 @@ sparp_gp_attach_many_filters (sparp_t *sparp, SPART *parent_gp, SPART **new_filt
   stss[0].sts_ofs_of_curr_in_array = -1;
   stss[0].sts_env = parent_gp;
   for (filt_ctr = ins_count; filt_ctr--; /*no step*/)
-    sparp_gp_trav_int (sparp, new_filters [filt_ctr], stss + 1, touched_equivs_set_ptr,
-      NULL, NULL,
-      sparp_gp_attach_filter_cbk, NULL, NULL,
-      NULL );
+    {
+      SPART *new_filt = new_filters [filt_ctr];
+      caddr_t ft_type = spar_filter_is_freetext (sparp, new_filt, NULL);
+      if (NULL != ft_type)
+        {
+          SPART *triple_with_var_obj = sparp_find_triple_with_var_obj_of_freetext (sparp, parent_gp, new_filt, SPAR_TRIPLE_FOR_FT_SHOULD_EXIST | SPAR_TRIPLE_SHOULD_HAVE_NO_FT_TYPE);
+          triple_with_var_obj->_.triple.ft_type = ft_type;
+        }
+      sparp_gp_trav_int (sparp, new_filt, stss + 1, touched_equivs_set_ptr,
+        NULL, NULL,
+        sparp_gp_attach_filter_cbk, NULL, NULL,
+        NULL );
+    }
   if (NULL != touched_equivs_ptr)
     touched_equivs_ptr[0] = (sparp_equiv_t **)(t_revlist_to_array (touched_equivs_set));
   sparp_equiv_audit_all (sparp, 0);
@@ -4141,7 +4206,7 @@ sparp_find_origin_of_external_varname_in_eq (sparp_t *sparp, sparp_equiv_t *eq, 
         return bnd;
       goto null_or_error; /* see below */
     }
-  if (UNION_L == esrc->e_gp->_.gp.subtype) /* No one specimen from (one branch of) union can reliably represent all cases a union can produce. */
+  if ((UNION_L == esrc->e_gp->_.gp.subtype) || (SPAR_UNION_WO_ALL == esrc->e_gp->_.gp.subtype)) /* No one specimen from (one branch of) union can reliably represent all cases a union can produce. */
     {
       esub_res_eq = esrc;
       esub_res_gp = esrc->e_gp;
@@ -4673,6 +4738,7 @@ spart_dump_opname (ptrlong opname, int is_op)
     case BOP_EQ: return "boolean operation '='";
     case SPAR_BOP_EQ_NONOPT: return "special nonoptimizable equality";
     case SPAR_BOP_EQNAMES: return "declaration of equivalence of names";
+    case SPAR_UNION_WO_ALL: return "UNION (but not UNION ALL) gp";
     case BOP_NEQ: return "boolean operation '!='";
     case BOP_LT: return "boolean operation '<'";
     case BOP_LTE: return "boolean operation '<='";
@@ -4976,7 +5042,7 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
 	    SES_PRINT (ses, "]");
 	    goto printed;
 	  }
-        sprintf (buf, "(line %ld) ", (long) unbox(tree->srcline));
+        sprintf (buf, "(line %ld) ", (long) unbox (tree->srcline));
         SES_PRINT (ses, buf);
 	childrens = BOX_ELEMENTS (tree);
 	switch (tree->type)
@@ -5115,30 +5181,31 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
                   else
                     spart_dump_opname (tr_idx, 0);
                 }
-	      spart_dump (tree->_.var.vname, ses, indent+2, "NAME", 0);
-	      spart_dump (tree->_.var.selid, ses, -(indent+2), "SELECT ID", 0);
-	      spart_dump (tree->_.var.tabid, ses, -(indent+2), "TABLE ID", 0);
-	      spart_dump ((void*)(tree->_.var.equiv_idx), ses, -(indent+2), "EQUIV", 0);
-	      break;
-	    }
-	  case SPAR_TRIPLE:
-	    {
-	      sprintf (buf, "TRIPLE:");
-	      SES_PRINT (ses, buf);
-	      if (tree->_.triple.ft_type)
+              spart_dump (tree->_.var.vname, ses, indent+2, "NAME", 0);
+              spart_dump (tree->_.var.selid, ses, -(indent+2), "SELECT ID", 0);
+              spart_dump (tree->_.var.tabid, ses, -(indent+2), "TABLE ID", 0);
+              spart_dump ((void*)(tree->_.var.equiv_idx), ses, -(indent+2), "EQUIV", 0);
+              break;
+            }
+          case SPAR_TRIPLE:
+            {
+              int ft_type = tree->_.triple.ft_type;
+              sprintf (buf, "TRIPLE:");
+              SES_PRINT (ses, buf);
+              if (tree->_.triple.ft_type)
                 {
-	          sprintf (buf, " ft predicate %d", (int)(tree->_.triple.ft_type));
-	          SES_PRINT (ses, buf);
+                  sprintf (buf, " ft predicate \"%s\"", (IS_BOX_POINTER(ft_type) ? ft_type : "disabled"));
+                  SES_PRINT (ses, buf);
                 }
-	      spart_dump (tree->_.triple.options, ses, indent+2, "OPTIONS", -2);
-	      spart_dump (tree->_.triple.tr_graph, ses, indent+2, "GRAPH", -1);
-	      spart_dump (tree->_.triple.tr_subject, ses, indent+2, "SUBJECT", -1);
-	      spart_dump (tree->_.triple.tr_predicate, ses, indent+2, "PREDICATE", -1);
-	      spart_dump (tree->_.triple.tr_object, ses, indent+2, "OBJECT", -1);
-	      spart_dump (tree->_.triple.selid, ses, indent+2, "SELECT ID", 0);
-	      spart_dump (tree->_.triple.tabid, ses, indent+2, "TABLE ID", 0);
-	      break;
-	    }
+              spart_dump (tree->_.triple.options, ses, indent+2, "OPTIONS", -2);
+              spart_dump (tree->_.triple.tr_graph, ses, indent+2, "GRAPH", -1);
+              spart_dump (tree->_.triple.tr_subject, ses, indent+2, "SUBJECT", -1);
+              spart_dump (tree->_.triple.tr_predicate, ses, indent+2, "PREDICATE", -1);
+              spart_dump (tree->_.triple.tr_object, ses, indent+2, "OBJECT", -1);
+              spart_dump (tree->_.triple.selid, ses, indent+2, "SELECT ID", 0);
+              spart_dump (tree->_.triple.tabid, ses, indent+2, "TABLE ID", 0);
+              break;
+            }
           case SPAR_SERVICE_INV:
             {
               sprintf (buf, "SERVICE INV:");

@@ -761,7 +761,7 @@ sparp_gp_trav_cu_out_triples_1_merge_recvs (sparp_t *sparp, SPART *curr, sparp_t
               recv_gp = recv1_eq->e_gp;
               if (recv_gp != recv2_eq->e_gp)
                 spar_internal_error (sparp, "sparp_" "gp_trav_cu_out_triples_1_merge_recvs (): receivers in different gps");
-              if (UNION_L == recv_gp->_.gp.subtype)
+              if ((UNION_L == recv_gp->_.gp.subtype) || (SPAR_UNION_WO_ALL == recv_gp->_.gp.subtype))
                 return 0;
               sparp_equiv_merge (sparp, recv1_eq, recv2_eq);
             }
@@ -1128,13 +1128,15 @@ sparp_use_assume (sparp_t *sparp, SPART *curr, SPART **stmt_ptr)
 
 typedef struct so_BOP_OR_filter_ctx_s
 {
-  sparp_t *bofc_sparp;			/*!< parser/compiler context, to not pass an extra argument */
-  SPART *bofc_var_sample;		/*!< Common optimizable variable in question */
-  dk_set_t bofc_strings;		/*!< Collected string values, they may be convert into sprintf format strings to tighten equiv of the common variable */
-  ptrlong bofc_not_optimizable;		/*!< Teh filter is of complicated form or the variable is not common or global */
-  ptrlong bofc_can_be_iri;		/*!< Flag if there's at least equality to a IRI */
-  ptrlong bofc_can_be_string;		/*!< Flag if there's at least equality to a literal string */
-  ptrlong bofc_can_be_nonstringlit;	/*!< Flag if there's at least equality to a non-string literal */
+  sparp_t *bofc_sparp;				/*!< parser/compiler context, to not pass an extra argument */
+  SPART *bofc_var_sample;			/*!< Common optimizable variable in question */
+  dk_set_t bofc_strings;			/*!< Collected string values, they may be convert into sprintf format strings to tighten equiv of the common variable */
+  SPART *bofc_reason_for_union;			/*!< The filter has a call of contains() or sp_intersects() as members so the gp containing this OR should be converted to UNION */
+  SPART **bofc_BOP_OR_of_reason_for_union;	/*!< When a { pattern FILTER ( ... OR ... ) } should be replaced with UNION, one OR should be edited */
+  int bofc_not_optimizable;			/*!< The filter is of complicated form or the variable is not common or global */
+  int bofc_can_be_iri;				/*!< Flag if there's at least equality to a IRI */
+  int bofc_can_be_string;			/*!< Flag if there's at least equality to a literal string */
+  int bofc_can_be_nonstringlit;			/*!< Flag if there's at least equality to a non-string literal */
 } so_BOP_OR_filter_ctx_t;
 
 int
@@ -1228,9 +1230,10 @@ sparp_merge_BOP_OR_of_INs (SPART *first, SPART *second, so_BOP_OR_filter_ctx_t *
   return sparp_make_builtin_call (sparp, IN_L, res_IN_args);
 }
 
-SPART *
-sparp_optimize_BOP_OR_filter_walk (SPART *filt, so_BOP_OR_filter_ctx_t *ctx)
+void
+sparp_optimize_BOP_OR_filter_walk (SPART **filt_ptr, SPART **filt_parent_ptr, so_BOP_OR_filter_ctx_t *ctx)
 {
+  SPART *filt = filt_ptr[0];
   ptrlong filt_type = SPART_TYPE (filt);
   if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &filt_type, 8000))
     spar_error (ctx->bofc_sparp, "Stack overflow");
@@ -1238,16 +1241,25 @@ sparp_optimize_BOP_OR_filter_walk (SPART *filt, so_BOP_OR_filter_ctx_t *ctx)
     {
     case BOP_OR:
       {
-        SPART *new_l = sparp_optimize_BOP_OR_filter_walk (filt->_.bin_exp.left, ctx);
-        SPART *new_r = sparp_optimize_BOP_OR_filter_walk (filt->_.bin_exp.right, ctx);
-        SPART *new_merged;
+        SPART *new_l, *new_r, *new_merged;
+        sparp_optimize_BOP_OR_filter_walk (&(filt->_.bin_exp.left), filt_ptr, ctx);
+        if (ctx->bofc_reason_for_union)
+          return;
+        sparp_optimize_BOP_OR_filter_walk (&(filt->_.bin_exp.right), filt_ptr, ctx);
+        if (ctx->bofc_reason_for_union)
+          return;
+        new_l = filt->_.bin_exp.left;
+        new_r = filt->_.bin_exp.right;
         if (BOP_OR != SPART_TYPE (new_r))
           {
             if (BOP_OR != SPART_TYPE (new_l))
               {
                 new_merged = sparp_merge_BOP_OR_of_INs (new_l, new_r, ctx);
                 if (NULL != new_merged)
-                  return new_merged;
+                  {
+                    filt_ptr[0] = new_merged;
+                    return;
+                  }
               }
             else
               {
@@ -1255,19 +1267,19 @@ sparp_optimize_BOP_OR_filter_walk (SPART *filt, so_BOP_OR_filter_ctx_t *ctx)
                 if (NULL != new_merged)
                   {
                     new_l->_.bin_exp.left = new_merged;
-                    return new_l;
+                    filt_ptr[0] = new_l;
+                    return;
                   }
                 new_merged = sparp_merge_BOP_OR_of_INs (new_l->_.bin_exp.right, new_r, ctx);
                 if (NULL != new_merged)
                   {
                     new_l->_.bin_exp.right = new_merged;
-                    return new_l;
+                    filt_ptr[0] = new_l;
+                    return;
                   }
               }
           }
-        filt->_.bin_exp.left = new_l;
-        filt->_.bin_exp.right = new_r;
-        return filt;
+        return;
       }
     case SPAR_BUILT_IN_CALL:
       if (IN_L == filt->_.builtin.btype)
@@ -1280,44 +1292,124 @@ sparp_optimize_BOP_OR_filter_walk (SPART *filt, so_BOP_OR_filter_ctx_t *ctx)
               if (sparp_optimize_BOP_OR_filter_walk_rexpn (filt->_.builtin.args[argctr], ctx))
                 goto cannot_optimize; /* see below */
             }
-          return filt;
+          return;
         }
       if (SPAR_BIF_SAMETERM != filt->_.builtin.btype)
         goto cannot_optimize; /* see below */
       /* no break, try get optimization hints like it is BOP_EQ */
-     case BOP_EQ: case SPAR_BOP_EQNAMES: /* No case for SPAR_BOP_EQ_NONOPT ! */
+    case BOP_EQ: case SPAR_BOP_EQNAMES: /* No case for SPAR_BOP_EQ_NONOPT ! */
       sparp_rotate_comparisons_by_rank (filt);
       if (sparp_optimize_BOP_OR_filter_walk_lvar (filt->_.bin_exp.left, ctx))
         goto cannot_optimize; /* see below */
       if (sparp_optimize_BOP_OR_filter_walk_rexpn (filt->_.bin_exp.right, ctx))
         goto cannot_optimize; /* see below */
-      return filt;
+      return;
+    case SPAR_FUNCALL:
+      {
+        if (NULL != spar_filter_is_freetext (ctx->bofc_sparp, filt, NULL))
+          {
+            ctx->bofc_reason_for_union = filt;
+            ctx->bofc_BOP_OR_of_reason_for_union = filt_parent_ptr;
+            return;
+          }
+        break;
+      }
     default: ;
     }
 cannot_optimize:
 /* The very natural default is to say 'cannot optimize' and escape */
   ctx->bofc_not_optimizable = 1;
-  return filt;
+  return;
 }
 
 /*! Processes of simple filters inside BOP_OR (or top-level IN_L) that introduce restrictions on variables. */
-SPART *
-sparp_optimize_BOP_OR_filter (sparp_t *sparp, SPART *curr, SPART *filt)
+int
+sparp_optimize_BOP_OR_filter (sparp_t *sparp, SPART *parent_gp, SPART *gp, int gp_idx, int filt_idx)
 {
+  SPART **filt_ptr = gp->_.gp.filters + filt_idx;
   sparp_equiv_t *eq_l;
   rdf_val_range_t new_rvr;
   so_BOP_OR_filter_ctx_t ctx;
   int sff_ctr;
-  SPART *new_filt;
   memset (&ctx, 0, sizeof (so_BOP_OR_filter_ctx_t));
   ctx.bofc_sparp = sparp;
-  new_filt = sparp_optimize_BOP_OR_filter_walk (filt, &ctx);
+  sparp_optimize_BOP_OR_filter_walk (filt_ptr, NULL, &ctx);
+  if (NULL != ctx.bofc_reason_for_union)
+    { /* This eliminates the need in the rest of processing because OR will be changed (or even disappear entirely) */
+      SPART *alt_for_reason, *case_with_reason, *case_with_rest;
+#ifdef SPARQL_DEBUG
+      if (((NULL == parent_gp) ? 1 : 0) != ((WHERE_L == gp->_.gp.subtype) ? 1 : 0))
+        spar_internal_error (sparp, "sparp_" "optimize_BOP_OR_filter(): weird NULL parent gp / WHERE_L gp subtype combination");
+#endif
+      if (filt_idx >= BOX_ELEMENTS (gp->_.gp.filters) - gp->_.gp.glued_filters_count)
+        spar_error (sparp, "A special predicate, like bif:contains or bif:sp_intersects, can not be used as an argument of '||' operator in a \"joining\" FILTER at line %ld of query; please re-phrase the query", (long)unbox (filt_ptr[0]->srcline));
+      if (0 != gp->_.gp.subtype)
+        {
+          SPART **all_membs, *filt;
+          filt = sparp_gp_detach_filter (sparp, gp, filt_idx, NULL);
+          all_membs = sparp_gp_detach_all_members (sparp, gp, NULL);
+          SPART *new_gp = sparp_new_empty_gp (sparp, 0, unbox (gp->srcline));
+          sparp_gp_attach_many_members (sparp, new_gp, all_membs, 0, NULL);
+          sparp_gp_attach_filter (sparp, new_gp, filt, 0, NULL);
+          parent_gp = gp;
+          gp = new_gp;
+          gp_idx = 0;
+          filt_idx = 0;
+          if (ctx.bofc_BOP_OR_of_reason_for_union == filt_ptr)
+            ctx.bofc_BOP_OR_of_reason_for_union = gp->_.gp.filters + filt_idx;
+          filt_ptr = gp->_.gp.filters + filt_idx;
+        }
+      else
+        sparp_gp_detach_member (sparp, parent_gp, gp_idx, NULL);
+      if (ctx.bofc_BOP_OR_of_reason_for_union[0]->_.bin_exp.left == ctx.bofc_reason_for_union)
+        alt_for_reason = ctx.bofc_BOP_OR_of_reason_for_union[0]->_.bin_exp.right;
+      else if (ctx.bofc_BOP_OR_of_reason_for_union[0]->_.bin_exp.right == ctx.bofc_reason_for_union)
+        alt_for_reason = ctx.bofc_BOP_OR_of_reason_for_union[0]->_.bin_exp.left;
+      else
+        spar_internal_error (sparp, "sparp_" "optimize_BOP_OR_filter(): bad bofc_BOP_OR_of_reason_for_union");
+      ctx.bofc_BOP_OR_of_reason_for_union[0] = alt_for_reason;
+      case_with_rest = sparp_gp_full_clone (sparp, gp);
+      if (ctx.bofc_BOP_OR_of_reason_for_union == filt_ptr)
+        {
+          caddr_t ft_type = spar_filter_is_freetext (sparp, alt_for_reason, NULL);
+          if (NULL != ft_type)
+            {
+              SPART *triple_with_var_obj = sparp_find_triple_with_var_obj_of_freetext (sparp, case_with_rest, alt_for_reason, SPAR_TRIPLE_FOR_FT_SHOULD_EXIST | SPAR_TRIPLE_SHOULD_HAVE_NO_FT_TYPE);
+              triple_with_var_obj->_.triple.ft_type = ft_type;
+            }
+        }
+
+      ctx.bofc_BOP_OR_of_reason_for_union[0] = ctx.bofc_reason_for_union;
+      if (ctx.bofc_BOP_OR_of_reason_for_union == filt_ptr)
+        {
+          caddr_t ft_type = spar_filter_is_freetext (sparp, ctx.bofc_reason_for_union, NULL);
+          if (NULL != ft_type)
+            {
+              SPART *triple_with_var_obj = sparp_find_triple_with_var_obj_of_freetext (sparp, gp, ctx.bofc_reason_for_union, SPAR_TRIPLE_FOR_FT_SHOULD_EXIST | SPAR_TRIPLE_SHOULD_HAVE_NO_FT_TYPE);
+              triple_with_var_obj->_.triple.ft_type = ft_type;
+            }
+        }
+      case_with_reason = gp;
+      if (SPAR_UNION_WO_ALL == parent_gp->_.gp.subtype)
+        {
+          sparp_gp_attach_member (sparp, parent_gp, case_with_rest, gp_idx, NULL);
+          sparp_gp_attach_member (sparp, parent_gp, case_with_reason, gp_idx, NULL);
+        }
+      else
+        {
+          SPART *new_union = sparp_new_empty_gp (sparp, SPAR_UNION_WO_ALL, unbox (gp->srcline));
+          sparp_gp_attach_member (sparp, parent_gp, new_union, gp_idx, NULL);
+          sparp_gp_attach_member (sparp, new_union, case_with_rest, 0, NULL);
+          sparp_gp_attach_member (sparp, new_union, case_with_reason, 0, NULL);
+        }
+      return 2;
+    }
   if (ctx.bofc_not_optimizable)
     {
       while (NULL != ctx.bofc_strings) dk_set_pop (&(ctx.bofc_strings));
-      return new_filt;
+      return 0;
     }
-  eq_l = sparp_equiv_get (sparp, curr, ctx.bofc_var_sample, 0);
+  eq_l = sparp_equiv_get (sparp, gp, ctx.bofc_var_sample, 0);
   memset (&new_rvr, 0, sizeof (rdf_val_range_t));
   new_rvr.rvrRestrictions |= SPART_VARR_NOT_NULL;
   if (0 == ctx.bofc_can_be_iri)
@@ -1337,8 +1429,7 @@ sparp_optimize_BOP_OR_filter (sparp_t *sparp, SPART *curr, SPART *filt)
       while (NULL != ctx.bofc_strings) dk_set_pop (&(ctx.bofc_strings));
     }
   sparp_equiv_tighten (sparp, eq_l, &new_rvr, ~0);
-/* TBD: it is possible to remove branches of OR that contradicts with known restrictions of \c eq_l */
-  return new_filt;
+  return 1;
 }
 
 int
@@ -1667,7 +1758,7 @@ because const=str(var) is never recognized as a special condition on t_in or t_o
 int
 sparp_gp_trav_restrict_by_simple_filters_gp_in (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
-  int fctr;
+  int fctr, first_glued_filt_idx;
   switch (SPART_TYPE(curr))
     {
     case SPAR_GP:
@@ -1675,29 +1766,32 @@ sparp_gp_trav_restrict_by_simple_filters_gp_in (sparp_t *sparp, SPART *curr, spa
     case SPAR_TRIPLE: return SPAR_GPT_NODOWN;
     default: return 0;
     }
-/* Note that glued filters do not participate in this optimization, otherwise
+/* Note that glued filters do not participate in filter-to-equiv optimization, otherwise
 select * where { graph <g1> { ?s1 ?p1 ?o1 } optional { graph <g2> { ?s2 ?p2 ?o2 } filter (?o1 = <const>) }}
 become an equivalent of
 select * where { graph <g1> { ?s1 ?p1 ?o1 . filter (?o1 = <const>) } optional { graph <g2> { ?s2 ?p2 ?o2 } filter (?o1 = <const>) }}
 */
-  for (fctr = BOX_ELEMENTS (curr->_.gp.filters) - curr->_.gp.glued_filters_count; fctr--; /* no step */)
+  first_glued_filt_idx = BOX_ELEMENTS (curr->_.gp.filters) - curr->_.gp.glued_filters_count;
+  for (fctr = BOX_ELEMENTS (curr->_.gp.filters); fctr--; /* no step */)
     { /* The descending order of fctr values is important -- note possible sparp_gp_detach_filter () */
       SPART *filt = curr->_.gp.filters[fctr];
       int ret;
       if (BOP_OR == SPART_TYPE (filt))
         {
-          SPART *new_filt = sparp_optimize_BOP_OR_filter (sparp, curr, filt);
-          if (NULL == new_filt)
-            sparp_gp_detach_filter (sparp, curr, fctr, NULL);
-          else
-            curr->_.gp.filters[fctr] = new_filt;
+          SPART *parent_gp = sts_this->sts_parent;
+          int curr_gp_idx = sts_this->sts_ofs_of_curr_in_array;
+          int optimization_status = sparp_optimize_BOP_OR_filter (sparp, parent_gp, curr, curr_gp_idx, fctr);
+          if (2 == optimization_status)
+            return SPAR_GPT_COMPLETED; /* The tree has changed, other optimizations should take place only on a next optimization round */
           continue;
         }
+      if (fctr >= first_glued_filt_idx)
+        continue;
       ret = sparp_filter_to_equiv (sparp, curr, filt);
       if (0 != ret)
         sparp_gp_detach_filter (sparp, curr, fctr, NULL);
     }
-  return 0;
+  return SPAR_GPT_ENV_PUSH;
 }
 
 int
@@ -2470,7 +2564,7 @@ sparp_gp_trav_eq_restr_from_connected_subvalues_gp_out (sparp_t *sparp, SPART *c
       switch (curr->_.gp.subtype)
         {
         case SELECT_L: sparp_restr_of_select_eq_from_connected_subvalues (sparp, eq); break;
-        case UNION_L: sparp_restr_of_union_eq_from_connected_subvalues (sparp, eq); break;
+        case UNION_L: case SPAR_UNION_WO_ALL: sparp_restr_of_union_eq_from_connected_subvalues (sparp, eq); break;
         default: sparp_restr_of_join_eq_from_connected_subvalues (sparp, eq); break;
         }
       if (SPARP_EQ_IS_ASSIGNED_LOCALLY(eq))
@@ -4382,16 +4476,16 @@ sparp_qm_find_triple_cases (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm, i
   END_DO_BOX_FAST;
   for (;;)
     {
-      int ft_t;
+      caddr_t ft_type;
       if (SPART_QM_EMPTY & qm->qmMatchingFlags)
         break; /* not a good case */
-      ft_t = tcc->tcc_triple->_.triple.ft_type;
-      if (0 != ft_t)
+      ft_type = tcc->tcc_triple->_.triple.ft_type;
+      if (0 != ft_type)
         {
           qm_ftext_t *qmft;
           if (NULL == qm->qmObjectMap)
             break; /* not a good case for ft */
-          qmft = ((SPAR_GEO_CONTAINS == ft_t) ? qm->qmObjectMap->qmvGeo : qm->qmObjectMap->qmvFText);
+          qmft = (SPAR_FT_TYPE_IS_GEO(ft_type) ? qm->qmObjectMap->qmvGeo : qm->qmObjectMap->qmvFText);
           if (NULL == qmft)
             break; /* not a good case for ft */
         }
@@ -4591,7 +4685,7 @@ sparp_refresh_triple_cases (sparp_t *sparp, SPART **sources, SPART *triple)
       spar_dbg_string_of_triple_field (sparp, triple->_.triple.tr_subject),
       spar_dbg_string_of_triple_field (sparp, triple->_.triple.tr_predicate),
       spar_dbg_string_of_triple_field (sparp, triple->_.triple.tr_object),
-      (long) unbox(triple->srcline));
+      (long)unbox (triple->srcline));
   for (field_ctr = SPART_TRIPLE_FIELDS_COUNT; field_ctr--; /*no step*/)
     {
       ssg_valmode_t field_valmode = SSG_VALMODE_AUTO;
@@ -4701,7 +4795,7 @@ sparp_detach_conflicts (sparp_t *sparp, SPART *parent_gp)
             }
           END_SPARP_FOREACH_GP_EQUIV;
           continue;
-        case UNION_L:
+        case UNION_L: case SPAR_UNION_WO_ALL:
           if (0 == BOX_ELEMENTS_0 (memb->_.gp.members))
             goto do_detach_memb; /* see below */
           continue;
@@ -4716,7 +4810,7 @@ sparp_detach_conflicts (sparp_t *sparp, SPART *parent_gp)
           continue;
         }
 do_detach_or_zap:
-      if (UNION_L != parent_gp->_.gp.subtype)
+      if ((UNION_L != parent_gp->_.gp.subtype) && (SPAR_UNION_WO_ALL != parent_gp->_.gp.subtype))
         {
           sparp_gp_produce_nothing (sparp, parent_gp);
           return 1;
@@ -4736,7 +4830,7 @@ sparp_flatten_union (sparp_t *sparp, SPART *parent_gp)
 #ifdef DEBUG
   if (SPAR_GP != SPART_TYPE (parent_gp))
     spar_internal_error (sparp, "sparp_" "flatten_union(): parent_gp is not a GP");
-  if (UNION_L != parent_gp->_.gp.subtype)
+  if ((UNION_L != parent_gp->_.gp.subtype) && (SPAR_UNION_WO_ALL != parent_gp->_.gp.subtype))
     spar_internal_error (sparp, "sparp_" "flatten_union(): parent_gp is not a union");
 #endif
   for (memb_ctr = BOX_ELEMENTS (parent_gp->_.gp.members); memb_ctr--; /*no step*/)
@@ -4745,7 +4839,7 @@ sparp_flatten_union (sparp_t *sparp, SPART *parent_gp)
       if ((SPAR_GP == SPART_TYPE (memb)) &&
         (0 == BOX_ELEMENTS_0 (memb->_.gp.filters)) && /* This condition might be commented out if memb_filters and memb_filters_count below are uncommented */
         (NULL == memb->_.gp.options) &&
-        ((UNION_L == memb->_.gp.subtype) ||
+        ((parent_gp->_.gp.subtype == memb->_.gp.subtype) ||
           ((0 == memb->_.gp.subtype) &&
             (1 == BOX_ELEMENTS (memb->_.gp.members)) &&
             (SPAR_GP == SPART_TYPE (memb->_.gp.members[0])) ) ) )
@@ -4776,7 +4870,7 @@ sparp_flatten_join (sparp_t *sparp, SPART *parent_gp)
 #ifdef DEBUG
   if (SPAR_GP != SPART_TYPE (parent_gp))
     spar_internal_error (sparp, "sparp_" "flatten_join(): parent_gp is not a GP");
-  if ((UNION_L == parent_gp->_.gp.subtype) || (SELECT_L == parent_gp->_.gp.subtype) || (VALUES_L == parent_gp->_.gp.subtype))
+  if ((UNION_L == parent_gp->_.gp.subtype) || (SPAR_UNION_WO_ALL == parent_gp->_.gp.subtype) || (SELECT_L == parent_gp->_.gp.subtype) || (VALUES_L == parent_gp->_.gp.subtype))
     spar_internal_error (sparp, "sparp_" "flatten_join(): parent_gp is not a join");
 #endif
   SPARP_FOREACH_GP_EQUIV (sparp, parent_gp, eq_ctr, eq)
@@ -4807,7 +4901,7 @@ sparp_flatten_join (sparp_t *sparp, SPART *parent_gp)
       if (NULL != memb->_.gp.options)
         continue; /* Members with options can not be optimized */
       sub_count = BOX_ELEMENTS (memb->_.gp.members);
-      if ((UNION_L == memb->_.gp.subtype) && (1 == sub_count))
+      if (((UNION_L == memb->_.gp.subtype) || (SPAR_UNION_WO_ALL == memb->_.gp.subtype)) && (1 == sub_count))
         goto just_remove_braces; /* see below */
       if (0 == memb->_.gp.subtype)
         {
@@ -5079,32 +5173,15 @@ sparp_expn_lists_are_equal (sparp_t *sparp, SPART **one, SPART **two)
 }
 
 SPART **
-sparp_make_qm_cases (sparp_t *sparp, SPART *triple, SPART *parent_gp)
+sparp_make_qm_cases (sparp_t *sparp, SPART *triple, SPART *parent_gp, SPART *ft_cond_to_relocate)
 {
   triple_case_t **tc_list = triple->_.triple.tc_list;
-  SPART *ft_cond_to_relocate = NULL;
   SPART **res;
   int tc_idx;
 #ifdef DEBUG
   if (1 >= BOX_ELEMENTS (triple->_.triple.tc_list))
     spar_internal_error (sparp, "sparp_" "make_qm_cases(): redundant call");
 #endif
-  if (triple->_.triple.ft_type)
-    {
-      int filt_ctr;
-      DO_BOX_FAST_REV (SPART *, filt, filt_ctr, parent_gp->_.gp.filters)
-        {
-          if (spar_filter_is_freetext (sparp, filt, triple))
-            {
-              ft_cond_to_relocate = sparp_gp_detach_filter (sparp, parent_gp, filt_ctr, NULL);
-              break;
-            }
-        }
-      END_DO_BOX_FAST_REV;
-      if (NULL == ft_cond_to_relocate)
-        spar_error (sparp, "optimizer can not process a combination of quad map patterns and free-text condition for variable ?%.200s",
-          triple->_.triple.tr_object->_.var.vname );
-    }
   res = (SPART **)t_alloc_box (box_length (tc_list), DV_ARRAY_OF_POINTER);
   DO_BOX_FAST (triple_case_t *, tc, tc_idx, tc_list)
     {
@@ -5204,7 +5281,7 @@ sparp_gp_produce_nothing (sparp_t *sparp, SPART *curr)
       DO_BOX_FAST (ptrlong, recv_eq_idx, recv_eq_ctr, eq->e_receiver_idxs)
         {
           sparp_equiv_t *recv_eq = SPARP_EQUIV (sparp, recv_eq_idx);
-          if ((UNION_L != recv_eq->e_gp->_.gp.subtype) && (OPTIONAL_L != curr->_.gp.subtype))
+          if ((UNION_L != recv_eq->e_gp->_.gp.subtype) && (SPAR_UNION_WO_ALL != recv_eq->e_gp->_.gp.subtype) && (OPTIONAL_L != curr->_.gp.subtype))
             {
               SPARP_DEBUG_WEIRD(sparp,"conflict");
               recv_eq->e_rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
@@ -5262,24 +5339,41 @@ int sparp_gp_trav_refresh_triple_cases (sparp_t *sparp, SPART *curr, sparp_trav_
 
 int sparp_gp_trav_multiqm_to_unions (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
-  int memb_ctr;
+  int curr_is_union, memb_ctr;
   if (SPAR_GP != curr->type) /* Not a gp ? -- nothing to do */
     return 0;
   if (sparp_detach_conflicts (sparp, curr))
     return 0;
+  curr_is_union = ((UNION_L == curr->_.gp.subtype) || (SPAR_UNION_WO_ALL == curr->_.gp.subtype));
   DO_BOX_FAST_REV (SPART *, memb, memb_ctr, curr->_.gp.members)
     { /* countdown direction of 'for' is important due to possible insertions/removals */
       int tc_count;
-      SPART **qm_cases;
+      SPART **qm_cases, *ft_cond_to_relocate;
       int case_ctr;
       if (SPAR_TRIPLE != memb->type)
         continue;
       tc_count = BOX_ELEMENTS (memb->_.triple.tc_list);
       if (1 == tc_count)
         continue;
+      if (memb->_.triple.ft_type)
+        {
+          int filt_ctr;
+          DO_BOX_FAST_REV (SPART *, filt, filt_ctr, curr->_.gp.filters)
+            {
+              if (NULL != spar_filter_is_freetext (sparp, filt, memb))
+                {
+                  ft_cond_to_relocate = sparp_gp_detach_filter (sparp, curr, filt_ctr, NULL); 
+                  break;
+                }
+            }
+          END_DO_BOX_FAST_REV;
+          if (NULL == ft_cond_to_relocate)
+            spar_error (sparp, "optimizer can not process a combination of quad map patterns and free-text condition for variable ?%.200s",
+              curr->_.triple.tr_object->_.var.vname );
+        }
       if (0 == tc_count)
         {
-          if (UNION_L != curr->_.gp.subtype)
+          if (!curr_is_union)
             {
               sparp_gp_produce_nothing (sparp, curr);
               return SPAR_GPT_NODOWN;
@@ -5288,8 +5382,8 @@ int sparp_gp_trav_multiqm_to_unions (sparp_t *sparp, SPART *curr, sparp_trav_sta
           continue;
         }
       sparp_gp_detach_member (sparp, curr, memb_ctr, NULL);
-      qm_cases = sparp_make_qm_cases (sparp, memb, curr);
-      if (UNION_L == curr->_.gp.subtype)
+      qm_cases = sparp_make_qm_cases (sparp, memb, curr, ft_cond_to_relocate);
+      if (curr_is_union)
         {
           DO_BOX_FAST_REV (SPART *, qm_case, case_ctr, qm_cases)
             {
@@ -5309,7 +5403,7 @@ int sparp_gp_trav_multiqm_to_unions (sparp_t *sparp, SPART *curr, sparp_trav_sta
         }
     }
   END_DO_BOX_FAST_REV;
-  if (UNION_L == curr->_.gp.subtype)
+  if (curr_is_union)
     sparp_flatten_union (sparp, curr);
   else if ((SELECT_L != curr->_.gp.subtype) && (VALUES_L != curr->_.gp.subtype))
     sparp_flatten_join (sparp, curr);
@@ -5323,7 +5417,7 @@ int sparp_gp_trav_detach_conflicts_out (sparp_t *sparp, SPART *curr, sparp_trav_
     return 0;
   if (sparp_detach_conflicts (sparp, curr))
     return 0;
-  if (UNION_L == curr->_.gp.subtype)
+  if ((UNION_L == curr->_.gp.subtype) || (SPAR_UNION_WO_ALL == curr->_.gp.subtype))
     sparp_flatten_union (sparp, curr);
   else if ((SELECT_L != curr->_.gp.subtype) && (VALUES_L != curr->_.gp.subtype))
     sparp_flatten_join (sparp, curr);
@@ -5387,7 +5481,7 @@ sparp_gp_trav_localize_filters (sparp_t *sparp, SPART *curr, sparp_trav_state_t 
           SPART *sub_gp = sub_eq->e_gp;
           switch (sub_gp->_.gp.subtype)
             {
-            case UNION_L:
+            case UNION_L: case SPAR_UNION_WO_ALL:
               if (!(SPART_VARR_NOT_NULL & sv_eq->e_rvr.rvrRestrictions))
                 subval_count --; /* It's too hard to safely localize a filter on nullable variable in UNION, too many checks for too little effect */
               /* In case of union, we can't place filter right in UNION gp, because nobody expects it there.
@@ -5423,7 +5517,7 @@ sparp_gp_trav_localize_filters (sparp_t *sparp, SPART *curr, sparp_trav_state_t 
           SPART *filter_clone;
           switch (sub_gp->_.gp.subtype)
             {
-            case UNION_L:
+            case UNION_L: case SPAR_UNION_WO_ALL:
               if (!localize_in_unions)
                 continue;
               if (!(SPART_VARR_NOT_NULL & sv_eq->e_rvr.rvrRestrictions))
@@ -5441,7 +5535,7 @@ sparp_gp_trav_localize_filters (sparp_t *sparp, SPART *curr, sparp_trav_state_t 
             }
           if (0 >= localizations_left--)
             break;
-          if (UNION_L == sub_gp->_.gp.subtype)
+          if ((UNION_L == sub_gp->_.gp.subtype) || (SPAR_UNION_WO_ALL == sub_gp->_.gp.subtype))
             {
               int sub_memb_ctr, bad_subcase_found = 0;
               if (!filt_is_detached)
@@ -5540,7 +5634,7 @@ sparp_find_index_of_most_important_union (sparp_t *sparp, SPART *parent_gp)
   DO_BOX_FAST_REV (SPART *, memb, idx, parent_gp->_.gp.members)
     {
       int importance;
-      if ((SPAR_GP != memb->type) || (UNION_L != memb->_.gp.subtype))
+      if ((SPAR_GP != memb->type) || ((UNION_L != memb->_.gp.subtype) && (SPAR_UNION_WO_ALL != memb->_.gp.subtype)))
         continue;
       importance = sparp_calc_importance_of_member (sparp, memb);
       if (importance >= best_importance) /* '>=', not '>' to give little preference to the leftmost union of a few */
@@ -5604,7 +5698,7 @@ sparp_gp_trav_union_of_joins_out (sparp_t *sparp, SPART *curr, sparp_trav_state_
           if (SPAR_GP != SPART_TYPE (parent))
             spar_internal_error (sparp, "sparp_" "gp_trav_union_of_joins_out (): parent is not a gp");
 #endif
-          if (UNION_L == parent->_.gp.subtype)
+          if ((UNION_L == parent->_.gp.subtype) || (SPAR_UNION_WO_ALL == parent->_.gp.subtype))
             parent_len = BOX_ELEMENTS (parent->_.gp.members);
           if (2000 < (parent_len + case_count))
             return 0; /* This restricts the size of the resulting SQL statement */
@@ -5630,12 +5724,12 @@ sparp_gp_trav_union_of_joins_out (sparp_t *sparp, SPART *curr, sparp_trav_state_
         }
       if (WHERE_L != curr->_.gp.subtype)
         {
-          curr->_.gp.subtype = UNION_L;
+          curr->_.gp.subtype = sub_union->_.gp.subtype;
           new_union = curr;
         }
       else
         {
-          new_union = sparp_new_empty_gp (sparp, UNION_L, unbox (curr->srcline));
+          new_union = sparp_new_empty_gp (sparp, sub_union->_.gp.subtype, unbox (curr->srcline));
           sparp_gp_attach_member (sparp, curr, new_union, 0, NULL);
         }
       sparp_gp_attach_many_members (sparp, new_union, new_union_joins, 0, NULL);
@@ -6276,7 +6370,7 @@ sparp_gp_trav_flatten_and_reuse_tabids (sparp_t *sparp, SPART *curr, sparp_trav_
     return 0;
   switch (curr->_.gp.subtype)
     {
-    case UNION_L:
+    case UNION_L: /* no case SPAR_UNION_WO_ALL while we don't have special breakup with union "not all" in SQL */
       DO_BOX_FAST (SPART *, base, base_idx, curr->_.gp.members)
         {
           int breakup_offset;
@@ -6842,7 +6936,7 @@ sparp_gp_trav_add_graph_perm_read_filters (sparp_t *sparp, SPART *curr, sparp_tr
           if ((OPTIONAL_L == gp_of_cache->_.gp.subtype) || (WHERE_L == gp_of_cache->_.gp.subtype))
             break;
           gp_of_cache = sts_this[depth].sts_parent;
-          if (UNION_L == gp_of_cache->_.gp.subtype)
+          if ((UNION_L == gp_of_cache->_.gp.subtype) || (SPAR_UNION_WO_ALL == gp_of_cache->_.gp.subtype))
             break;
         }
       g_copy = sparp_tree_full_copy (sparp, g_norm_expn, curr);
@@ -6868,10 +6962,11 @@ g_norm_expn_is_dupe: ;
     }
   if ((OPTIONAL_L != curr->_.gp.subtype) &&
     (WHERE_L != curr->_.gp.subtype) &&
-    (UNION_L != sts_this[0].sts_parent->_.gp.subtype) )
+    (UNION_L != sts_this[0].sts_parent->_.gp.subtype) &&
+    (SPAR_UNION_WO_ALL != sts_this[0].sts_parent->_.gp.subtype) )
     {
-      dk_set_t curr_graph_expns = sts_this[0].sts_env;
-      dk_set_t parent_graph_expns = sts_this[-1].sts_env;
+      dk_set_t curr_graph_expns = (dk_set_t)(sts_this[0].sts_env);
+      dk_set_t parent_graph_expns = (dk_set_t)(sts_this[-1].sts_env);
       DO_SET (SPART *, expn, &curr_graph_expns)
         {
           dtp_t expn_dtp = DV_TYPE_OF (expn);
@@ -6951,7 +7046,7 @@ sparp_dig_and_glue_loj_filter_for_eq (sparp_t *sparp, sparp_equiv_t *eq)
       if (!sparp_expn_reads_equiv (sparp, filt, eq))
         continue;
       good_recv_gp = good_recv_eq->e_gp;
-      if (UNION_L == good_recv_gp->_.gp.subtype)
+      if ((UNION_L == good_recv_gp->_.gp.subtype) || (SPAR_UNION_WO_ALL == good_recv_gp->_.gp.subtype))
         spar_error (sparp, "Variable '%.100s' is used in OPTIONAL inside UNION but not assigned in OPTIONAL, please rephrase the query", eq->e_varnames[0]);
       sparp_gp_detach_filter (sparp, gp, filter_ctr, NULL);
       sparp_gp_attach_filter (sparp, good_recv_gp, filt, BOX_ELEMENTS_0 (good_recv_gp->_.gp.filters) - good_recv_gp->_.gp.glued_filters_count, NULL);
@@ -7453,7 +7548,7 @@ spar_propagate_limit_as_option (sparp_t *sparp, SPART *tree, SPART *outer_limit)
                   }
               }
             return;
-          case UNION_L:
+          case UNION_L: case SPAR_UNION_WO_ALL:
             {
               int memb_ctr;
               DO_BOX_FAST (SPART *, memb, memb_ctr, tree->_.gp.members)
