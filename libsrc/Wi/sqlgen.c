@@ -2509,8 +2509,18 @@ sqlg_pred_body_1 (sqlo_t * so, df_elt_t **  body, dk_set_t append)
 code_vec_t
 sqlg_pred_body (sqlo_t * so, df_elt_t **  body)
 {
+  code_vec_t cv;
+  dk_set_t save = so->so_sc->sc_re_emitted_dfes;
+  so->so_sc->sc_re_emitted_dfes = NULL;
   so->so_sc->sc_is_first_cond = 1;
-  return sqlg_pred_body_1 (so, body, NULL);
+  cv = sqlg_pred_body_1 (so, body, NULL);
+  DO_SET (df_elt_t *, dfe, &so->so_sc->sc_re_emitted_dfes)
+    {
+      dfe->dfe_ssl = NULL;
+    }
+  END_DO_SET();
+  so->so_sc->sc_re_emitted_dfes = save;
+  return cv;
 }
 
 data_source_t *

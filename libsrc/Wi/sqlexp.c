@@ -654,8 +654,10 @@ sqlc_coalesce_exp (sql_comp_t * sc, ST * tree, dk_set_t * code)
 
 
 state_slot_t *
-seg_ret_fn (df_elt_t * dfe, state_slot_t * ssl)
+seg_ret_fn (sql_comp_t * sc, df_elt_t * dfe, state_slot_t * ssl, char is_re_emit)
 {
+  if (is_re_emit && dfe)
+    t_set_push (&sc->sc_re_emitted_dfes, (void*)dfe);
   if (dfe)
     dfe->dfe_ssl = ssl;
   return ssl;
@@ -663,16 +665,17 @@ seg_ret_fn (df_elt_t * dfe, state_slot_t * ssl)
 
 
 #define seg_return(x) \
-  return (seg_ret_fn (dfe, x))
+  return (seg_ret_fn (sc, dfe, x, is_re_emit))
 
 state_slot_t *
 scalar_exp_generate (sql_comp_t * sc, ST * tree, dk_set_t * code)
 {
   df_elt_t * dfe = NULL;
+  char is_re_emit = sc->sc_re_emit_code;
   if (sc->sc_so)
     {
       dfe = sqlo_df (sc->sc_so, tree);
-      if (dfe->dfe_ssl && !sc->sc_re_emit_code)
+      if (dfe->dfe_ssl && (!is_re_emit || !dk_set_member (sc->sc_re_emitted_dfes, (void*)dfe)))
 	return (dfe->dfe_ssl);
     }
   sc->sc_re_emit_code = 0;
