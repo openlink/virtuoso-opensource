@@ -2165,7 +2165,7 @@ sparp_gp_trav_label_external_vars_gp_in (sparp_t *sparp, SPART *curr, sparp_trav
           sparp_equiv_t *external_namesake_eq = sparp_find_external_namesake_eq_of_varname (sparp, varname, sleve->parent_gps_for_var_search);
           if (NULL == external_namesake_eq)
             continue;
-          if (external_namesake_eq->e_own_idx < eq->e_external_src_idx)
+          if (external_namesake_eq->e_own_idx != eq->e_external_src_idx)
             sparp_equiv_connect_param_to_external (sparp, eq, external_namesake_eq);
           eq->e_rvr.rvrRestrictions |= SPART_VARR_EXTERNAL;
           for (varctr = eq->e_var_count; varctr--; /* no step */)
