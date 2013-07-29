@@ -699,7 +699,7 @@ b3s_trunc_uri (in s varchar, in maxlen int := 80)
 ;
 
 create procedure
-b3s_http_url (in url varchar, in sid varchar := null, in _from varchar := null)
+b3s_http_url (in url varchar, in sid varchar := null, in _from varchar := null, in with_graph int := 1)
 {
   declare host, pref, more, i, wurl varchar;
 
@@ -710,7 +710,7 @@ b3s_http_url (in url varchar, in sid varchar := null, in _from varchar := null)
 --  else
 --    more := '';
 
-  i := b3s_render_ses_params();
+  i := b3s_render_ses_params(with_graph);
   if (length (_from))
     i := sprintf ('%s&graph=%U', i, _from);
   wurl := charset_recode (url, 'UTF-8', '_WIDE_');
@@ -734,7 +734,7 @@ b3s_http_print_l (in p_text any, inout odd_position int, in r int := 0, in sid v
    p_prefix := b3s_label (p_text, langs);
    if (not length (p_prefix))
      p_prefix := b3s_uri_curie (p_text);
-   url := b3s_http_url (p_text, sid);
+   url := b3s_http_url (p_text, sid, null, 0);
 
    if (not length (p_text))
      return;
