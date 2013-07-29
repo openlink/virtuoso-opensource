@@ -5189,10 +5189,10 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
             }
           case SPAR_TRIPLE:
             {
-              caddr_t ft_type = tree->_.triple.ft_type;
+              int ft_type = tree->_.triple.ft_type;
               sprintf (buf, "TRIPLE:");
               SES_PRINT (ses, buf);
-              if (ft_type)
+              if (tree->_.triple.ft_type)
                 {
                   sprintf (buf, " ft predicate \"%s\"", (IS_BOX_POINTER(ft_type) ? ft_type : "disabled"));
                   SES_PRINT (ses, buf);
