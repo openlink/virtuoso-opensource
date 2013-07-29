@@ -316,7 +316,11 @@ DBG_NAME (mp_alloc_box) (DBG_PARAMS mem_pool_t * mp, size_t len1, dtp_t dtp)
 #else
   len = ALIGN_4 (len1 + 4);
 #endif
-  new_alloc = DBG_NAME (mallocp) (DBG_ARGS len, mp);
+#if defined (MALLOC_DEBUG)
+  new_alloc = dbg_mallocp (file, line, len, mp);
+#else
+  new_alloc = DK_ALLOC (len);
+#endif
   mp->mp_bytes += len;
   if (mp->mp_fill >= mp->mp_size)
     {
@@ -1147,43 +1151,6 @@ DBG_NAME (t_set_copy) (DBG_PARAMS dk_set_t s)
 
 
 #ifdef MALLOC_DEBUG
-
-void
-mp_check_tree_iter (mem_pool_t * mp, box_t box, box_t parent, dk_hash_t **known_ptr)
-{
-  uint32 count;
-  dtp_t tag;
-  mp_alloc_box_assert (mp, (caddr_t) box);
-  tag = box_tag (box);
-  if (IS_NONLEAF_DTP (tag))
-    {
-      box_t *obj = (box_t *) box;
-      for (count = box_length ((caddr_t) box) / sizeof (caddr_t); count; count--)
-        {
-          if (IS_BOX_POINTER (*obj))
-            {
-              if (*obj >= parent)
-                {
-                  if (NULL == known_ptr[0])
-                    known_ptr[0] = hash_table_allocate (101);
-                  if (gethash (*obj, known_ptr[0]))
-                    return;
-                  sethash (*obj, known_ptr[0], box);
-                }
-              else if (NULL != known_ptr[0])
-                {
-                  if (gethash (*obj, known_ptr[0]))
-                    return;
-                  sethash (*obj, known_ptr[0], box);
-                }
-              mp_check_tree_iter (mp, *obj, box, known_ptr);
-            }
-          obj++;
-        }
-    }
-}
-
-
 void
 mp_check_tree (mem_pool_t * mp, box_t box)
 {
@@ -1196,15 +1163,8 @@ mp_check_tree (mem_pool_t * mp, box_t box)
   if (IS_NONLEAF_DTP (tag))
     {
       box_t *obj = (box_t *) box;
-      dk_hash_t *known = NULL;
       for (count = box_length ((caddr_t) box) / sizeof (caddr_t); count; count--)
-        {
-          if (IS_BOX_POINTER (*obj))
-            mp_check_tree_iter (mp, *obj, box, &known);
-          obj++;
-        }
-      if (NULL != known)
-        hash_table_free (known);
+	mp_check_tree (mp, *obj++);
     }
 }
 #endif
@@ -1455,7 +1415,7 @@ mp_mmap_mark (void * __ptr, size_t sz, int flag)
   if (!flag && !map) GPF_T1 ("freeing mmap mark where no mapping");
   if (!map)
     {
-      map = dk_pool_map[map_off] = dk_alloc (sizeof (dk_pool_4g_t));
+      map = dk_pool_map[map_off] = malloc (sizeof (dk_pool_4g_t));
       memzero (map, sizeof (dk_pool_4g_t));
     }
   ptr &= 0xffffffff;
