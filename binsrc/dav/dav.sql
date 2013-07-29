@@ -2944,7 +2944,7 @@ create procedure WS.WS.SPARQL_QUERY_POST (in path varchar, inout ses varchar, in
       triples := dict_list_keys (dict, 1);
       DB.DBA.RDF_TRIPLES_TO_TTL (triples, ses);
       ses := string_output_string (ses);
-      DB.DBA.TTLP (ses, '', def_gr);
+      DB.DBA.TTLP (ses, HTTP_REQUESTED_URL (), def_gr);
     }
   ses := sprintf ('CONSTRUCT { ?s ?p ?o } FROM <%s> WHERE { ?s ?p ?o }', def_gr);
 }
@@ -2973,7 +2973,7 @@ create procedure WS.WS.TTL_QUERY_POST (in path varchar, inout ses varchar, in un
   def_gr := sprintf ('http://%s%s', cname, path);
   if (exists (select 1 from DB.DBA.SYS_USERS where U_NAME = uname and U_SQL_ENABLE = 1))
     set_user_id (uname);
-  DB.DBA.TTLP (ses, '', def_gr);
+  DB.DBA.TTLP (ses, HTTP_REQUESTED_URL (), def_gr);
 }
 ;
 
