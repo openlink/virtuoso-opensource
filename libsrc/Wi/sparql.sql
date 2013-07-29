@@ -7568,7 +7568,10 @@ grant select on DB.DBA.SPARQL_BINDINGS_VIEW to public
 create procedure DB.DBA.RDF_INSERT_QUADS (in dflt_graph_iri any, inout quads any, in uid integer, in log_mode integer := null) returns any
 {
   declare groups any;
-  declare group_ctr, group_count, g_ins_count integer;
+  declare group_ctr, group_count integer;
+  declare qtst, all_sv, all_pv, all_ov, all_gv, repl_sv, repl_pv, repl_ov, repl_gv any;
+  qtst := quads;
+  __rgs_prepare_del_or_ins (qtst, uid, dflt_graph_iri, all_sv, all_pv, all_ov, all_gv, repl_sv, repl_pv, repl_ov, repl_gv);
   rowvector_graph_sort (quads, 3, 1);
   groups := rowvector_graph_partition (quads, 3);
   group_count := length (groups);
@@ -7590,22 +7593,63 @@ create procedure DB.DBA.RDF_INSERT_QUADS (in dflt_graph_iri any, inout quads any
 create function DB.DBA.RDF_DELETE_QUADS (in dflt_graph_iri any, inout quads any, in uid integer, in log_mode integer := null) returns any
 {
   declare groups any;
-  declare group_ctr, group_count, g_del_count integer;
-  rowvector_graph_sort (quads, 3, 1);
-  groups := rowvector_graph_partition (quads, 3);
-  group_count := length (groups);
-  for (group_ctr := 0; group_ctr < group_count; group_ctr := group_ctr+1)
+  declare group_ctr, group_count integer;
+  declare old_log_enable integer;
+  old_log_enable := log_enable (log_mode, 1);
+  declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
+  declare repl_quads any array;
+  declare all_sv, all_pv, all_ov, all_gv, repl_sv, repl_pv, repl_ov, repl_gv any;
+  -- dbg_obj_princ ('__rgs_prepare_del_or_ins (', quads, uid, dflt_graph_iri, ') formed the following:');
+  __rgs_prepare_del_or_ins (quads, uid, dflt_graph_iri, all_sv, all_pv, all_ov, all_gv, repl_sv, repl_pv, repl_ov, repl_gv);
+  for vectored (in a_s any array := all_sv, in a_p any array := all_pv, in a_o any array := all_ov, in a_g any array := all_gv)
     {
-      declare g_group, g any;
-      g_group := aref_set_0 (groups, group_ctr);
-      g := aref_or_default (g_group, 0, 3, dflt_graph_iri);
-      __rgs_assert_cbk (g, uid, 2, 'SPARQL 1.1L DELETE');
-      DB.DBA.RDF_DELETE_TRIPLES (g, g_group, log_mode);
-      if (isiri_id (g))
-        g := id_to_iri (g);
-      if (g is not null and __rdf_graph_is_in_enabled_repl (iri_to_id (g)))
-        repl_text ('__rdf_repl', '__rdf_repl_flush_queue ()');
+      declare o_val any array;
+      declare o_dt_and_lang_twobyte integer;
+      if (not isinteger (a_g))
+        {
+          if (not isiri_id (a_s))
+            a_s := __i2idn (a_s);
+          if (not isiri_id (a_p))
+            a_p := __i2idn (a_p);
+          if (isiri_id (a_s) and isiri_id (a_p))
+            {
+              if (isiri_id (a_o))
+                delete from DB.DBA.RDF_QUAD where G = a_g and S = a_s and P = a_p and O = a_o;
+              else
+                {
+                  declare o_val any array;
+                  declare o_dt_and_lang_twobyte integer;
+                  declare search_fields_are_ok integer;
+                  search_fields_are_ok := __rdf_box_to_ro_id_search_fields (a_o, o_val, o_dt_and_lang_twobyte);
+                  -- dbg_obj_princ ('__rdf_box_to_ro_id_search_fields (', a_o, ') returned ', search_fields_are_ok, o_val, o_dt_and_lang_twobyte);
+                  if (search_fields_are_ok)
+                    delete from DB.DBA.RDF_QUAD where G = a_g and S = a_s and P = a_p and O = (select rdf_box_from_ro_id(RO_ID) from DB.DBA.RDF_OBJ where RO_VAL = o_val and RO_DT_AND_LANG = o_dt_and_lang_twobyte);
+                  else if (isstring (a_o)) /* it should be string IRI otherwise it's in RDF_OBJ */
+                    delete from DB.DBA.RDF_QUAD where G = a_g and S = a_s and P = a_p and O = iri_to_id (a_o);
+                  else
+                    delete from DB.DBA.RDF_QUAD where G = a_g and S = a_s and P = a_p and O = a_o;
+                }
+            }
+        }
     }
+  if (0 < length (repl_sv))
+    {
+      for vectored (in r_s any array := repl_sv, in r_p any array := repl_pv, in r_o any array := repl_ov, in r_g any array := repl_gv, out repl_quads := r_q)
+        {
+          declare r_q, r_o any array;
+          declare r_g_iri, r_s_iri, r_p_iri varchar;
+          r_g_iri := iri_canonicalize (__id2in (r_q[3]));
+          r_s_iri := iri_canonicalize (__id2in (r_q[0]));
+          r_p_iri := iri_canonicalize (__id2in (r_q[1]));
+          r_o := r_q[2];
+          if (isiri_id (r_o) or (__tag (r_o) = 217) or ((__tag (r_o) = __tag of varchar) and bit_and (1, __box_flags (r_o))))
+            r_q := vector (r_g_iri, r_s_iri, r_p_iri, iri_canonicalize (__id2in (r_o)));
+          else
+            r_q := vector (r_g_iri, r_s_iri, r_p_iri, __ro2sq (r_o));
+        }
+      repl_text ('__rdf_repl', 'DB.DBA.RDF_REPL_DELETE_QUADS (?)', repl_quads);
+    }
+  log_enable (old_log_enable, 1);
 }
 ;
 
