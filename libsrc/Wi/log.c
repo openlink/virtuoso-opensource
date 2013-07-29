@@ -2193,6 +2193,23 @@ get_key_col_names(char ***names_res, int *n_cols_res, dbe_key_t * key)
   }
 }
 
+char *
+log_qname_escape (char * name, char * buf, size_t max)
+{
+  int i, fill = 0, len = strlen (name);
+  for (i = 0; i < len; i ++)
+    {
+      buf[fill++] = name[i];
+      if (name[i] == '"')
+        buf[fill++] = name[i];
+      if (fill >= max)
+	break;
+    }
+  buf[fill] = '\0';
+  return buf;
+}
+
+#define ESC(x,n) log_qname_escape (x, &temp##n[0], sizeof (temp##n))
 
 query_t *
 log_key_ins_del_qr (dbe_key_t * key, caddr_t * err_ret, int op, int ins_mode, int is_rfwd)
@@ -2202,6 +2219,7 @@ log_key_ins_del_qr (dbe_key_t * key, caddr_t * err_ret, int op, int ins_mode, in
   dbe_table_t * key_table = key->key_table;
   string_buffer sb;
   caddr_t err;
+  char temp1[MAX_NAME_LEN], temp2[MAX_NAME_LEN], temp3[MAX_NAME_LEN];
   key_id_t old_key = key->key_migrate_to;
   if (key->key_partition && clm_replicated == key->key_partition->kpd_map)
     is_rfwd = 0;
@@ -2212,18 +2230,18 @@ log_key_ins_del_qr (dbe_key_t * key, caddr_t * err_ret, int op, int ins_mode, in
     {
       case LOG_INSERT:
       case LOG_INSERT_SOFT:
-    case LOG_INSERT_REPL:
+      case LOG_INSERT_REPL:
       case LOG_KEY_INSERT:
 	    {
 	      int n_cols, k, need_comma = 0;
 	      caddr_t * names;
-	sb_printf(&sb, "INSERT %s \"%s\".\"%s\".\"%s\"", ((LOG_INSERT_SOFT == op || INS_SOFT == ins_mode || -1 == ins_mode) ? "SOFT" : ((op == LOG_INSERT_REPL || ins_mode == LOG_INSERT_REPL) ? "REPLACING" : "INTO")),
-		  key_table->tb_qualifier, key_table->tb_owner, key_table->tb_name_only);
+	      sb_printf(&sb, "INSERT %s \"%s\".\"%s\".\"%s\"", ((LOG_INSERT_SOFT == op || INS_SOFT == ins_mode || -1 == ins_mode) ? "SOFT" : ((op == LOG_INSERT_REPL || ins_mode == LOG_INSERT_REPL) ? "REPLACING" : "INTO")),
+		 ESC(key_table->tb_qualifier, 1), ESC(key_table->tb_owner, 2), ESC(key_table->tb_name_only,3));
 	      if (op == LOG_KEY_INSERT && !old_key)
 		{
 		  sb_printf(&sb, " INDEX \"%s\"", key->key_name); /* FIXME */
 		}
-	sb_printf(&sb, " OPTION (VECTORED, no identity %s) (", is_rfwd ? "" : ", no cluster");
+	      sb_printf(&sb, " OPTION (VECTORED, no identity %s) (", is_rfwd ? "" : ", no cluster");
 	      get_col_names (&names, &n_cols, key);
 	      for (k = 0; k < n_cols; k++)
 		{
@@ -2231,7 +2249,7 @@ log_key_ins_del_qr (dbe_key_t * key, caddr_t * err_ret, int op, int ins_mode, in
 		    sb_printf(&sb, ", ");
 		  else
 		    need_comma = 1;
-		  sb_printf(&sb, "\"%s\"", names[k]);
+	          sb_printf(&sb, "\"%s\"", ESC(names[k],1));
 		}
 
 	      sb_printf(&sb, " ) VALUES (");
@@ -2253,7 +2271,7 @@ log_key_ins_del_qr (dbe_key_t * key, caddr_t * err_ret, int op, int ins_mode, in
 	    {
 	      int n_cols, k, need_comma = 0;
 	      char **names;
-	      sb_printf (&sb, "DELETE FROM \"%s\".\"%s\".\"%s\"", key_table->tb_qualifier, key_table->tb_owner, key_table->tb_name_only);
+	      sb_printf (&sb, "DELETE FROM \"%s\".\"%s\".\"%s\"", ESC(key_table->tb_qualifier,1), ESC(key_table->tb_owner,2), ESC(key_table->tb_name_only,3));
 	      if (op == LOG_KEY_DELETE)
 		{
 	    sb_printf(&sb, " table option (%s INDEX \"%s\") ", is_rfwd ? "": "no cluster, ", key->key_name);
@@ -2266,7 +2284,7 @@ log_key_ins_del_qr (dbe_key_t * key, caddr_t * err_ret, int op, int ins_mode, in
 		    sb_printf (&sb, " AND ");
 		  else
 		    need_comma = 1;
-		  sb_printf(&sb, "\"%s\"=?", names[k]);
+	          sb_printf(&sb, "\"%s\"=?", ESC(names[k],1));
 		}
 	if (LOG_KEY_DELETE == op)
 	  sb_printf(&sb, ") OPTION (%s index \"%s\", VECTORED) ", is_rfwd ? "" :  "no cluster, ", key->key_name);
