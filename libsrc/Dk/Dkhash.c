@@ -399,7 +399,7 @@ DBG_NAME (sethash) (DBG_PARAMS const void *key, dk_hash_t * ht, void *data)
     }
 #endif
   {
-    hash_elt_t *new_elt = (hash_elt_t *) DK_ALLOC (sizeof (hash_elt_t));
+    hash_elt_t *new_elt = (hash_elt_t *) ht_alloc (ht, sizeof (hash_elt_t));
     new_elt->key = key;
     new_elt->data = data;
     new_elt->next = ht->ht_elements[inx].next;
@@ -730,7 +730,7 @@ DBG_NAME (dk_rehash) (DBG_PARAMS dk_hash_t * ht, uint32 new_sz)
   memset (&new_ht, 0, sizeof (new_ht));
   new_ht.ht_rehash_threshold = ht->ht_rehash_threshold;
   new_ht.ht_actual_size = new_sz;
-  new_ht.ht_elements = (hash_elt_t *) DK_ALLOC (sizeof (hash_elt_t) * new_sz);
+  new_ht.ht_elements = (hash_elt_t *) ht_alloc (ht, sizeof (hash_elt_t) * new_sz);
   memset (new_ht.ht_elements, 0xff, sizeof (hash_elt_t) * new_sz);
 #ifdef MTX_DEBUG
   new_ht.ht_required_mtx = ht->ht_required_mtx;

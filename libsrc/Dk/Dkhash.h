@@ -36,6 +36,9 @@
  * item given the number
  */
 
+
+#define ht_alloc(ht, sz) dk_alloc (sz)
+
 typedef void (*maphash_func) (const void *k, void *data);
 typedef void (*maphash3_func) (const void *k, void *data, void *env);
 
