@@ -4532,13 +4532,13 @@ int
 rdf_graph_configured_perms (query_instance_t *qst, caddr_t graph_boxed_iid, user_t *u, int check_usr_rdf_graph_perms, int req_perms)
 {
   int perms = 0;
-  oid_t u_id;
+  caddr_t u_id;
   int graph_is_private;
   id_hash_t *dict;
   caddr_t *hit;
   if (NULL == u)
     return ((0 == req_perms) ? 0x8000 : 0);
-  u_id = u->usr_id;
+  u_id = box_num (u->usr_id);
   do {
       if (U_ID_DBA == u_id)
         {
@@ -4583,6 +4583,7 @@ rdf_graph_configured_perms (query_instance_t *qst, caddr_t graph_boxed_iid, user
         perms = RDF_GRAPH_PERM_DEFAULT;
       break;
     } while (0);
+  dk_free_box (u_id);
   return perms;
 }
 
