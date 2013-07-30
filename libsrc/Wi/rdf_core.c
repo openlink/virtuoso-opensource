@@ -903,6 +903,43 @@ ttlp_bit_of_special_qname (caddr_t qname)
   return 0;
 }
 
+int
+ttlp_qname_prefix_is_explicit_and_valid (ttlp_t *ttlp_arg, caddr_t qname)
+{
+  char *lname = strchr (qname, ':');
+  caddr_t ns_pref;
+  id_hash_t *ns_dict;
+  caddr_t **ns_uri_ptr;
+  if (NULL == lname)
+    return 0;
+  if (qname == lname)
+    return ((NULL == ttlp_arg[0].ttlp_default_ns_uri) ? 0 : 1);
+  lname++;
+  ns_pref = box_dv_short_nchars (qname, lname - qname);
+  if (ttlp_arg[0].ttlp_in_trig_graph)
+    {
+      ns_dict = ttlp_arg[0].ttlp_inner_namespaces_prefix2iri;
+      ns_uri_ptr = ((NULL == ns_dict) ? NULL : (caddr_t *) id_hash_get (ns_dict, (caddr_t)(&ns_pref)));
+      if (NULL != ns_uri_ptr)
+        goto ns_found; /* see below */
+    }
+  ns_dict = ttlp_arg[0].ttlp_namespaces_prefix2iri;
+  ns_uri_ptr = ((NULL == ns_dict) ? NULL : (caddr_t *) id_hash_get (ns_dict, (caddr_t)(&ns_pref)));
+  if (NULL != ns_uri_ptr)
+    goto ns_found; /* see below */
+  if (!strcmp (ns_pref, "rdf:"))
+    goto ns_found; /* see below */
+  if (!strcmp (ns_pref, "xsd:"))
+    goto ns_found; /* see below */
+  if (!strcmp (ns_pref, "virtrdf:"))
+    goto ns_found; /* see below */
+  dk_free_box (ns_pref);
+  return 0;
+ns_found:
+  dk_free_box (ns_pref);
+  return 1;
+}
+
 #undef ttlp_expand_qname_prefix
 caddr_t DBG_NAME (ttlp_expand_qname_prefix) (DBG_PARAMS ttlp_t *ttlp_arg, caddr_t qname)
 {

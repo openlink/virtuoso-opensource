@@ -108,8 +108,10 @@ extern int ttlyylex (void *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner);
 %token _AT_prefix_L	/*:: PUNCT_TTL_LAST("@prefix") ::*/
 %token _AT_this_L	/*:: PUNCT_TTL_LAST("@this") ::*/
 %token _MINUS_INF_L	/*:: PUNCT_TTL_LAST("-INF") ::*/
+%token BASE_L		/*:: PUNCT("BASE"), TTL, LAST("BASE "), LAST("Base "), LAST("base ") ::*/
 %token INF_L		/*:: PUNCT_TTL_LAST("INF") ::*/
 %token NaN_L		/*:: PUNCT_TTL_LAST("NaN") ::*/
+%token PREFIX_L		/*:: PUNCT("PREFIX"), TTL, LAST("PREFIX "), LAST("Prefix "), LAST("prefix ") ::*/
 %token false_L		/*:: PUNCT_TTL_LAST("false") ::*/
 %token true_L		/*:: PUNCT_TTL_LAST("true") ::*/
 
@@ -175,15 +177,20 @@ clause
 	;
 
 base_clause
-	: _AT_base_L Q_IRI_REF {
+	: base_kwd Q_IRI_REF {
 		  if (ttlp_arg->ttlp_base_uri != ttlp_arg->ttlp_base_uri_saved)
 		    dk_free_box (ttlp_arg->ttlp_base_uri);
 		  ttlp_arg->ttlp_base_uri = $2;
 		  TF_CHANGE_BASE_AND_DEFAULT_GRAPH(ttlp_arg->ttlp_tf, box_copy ($2)); }
 	;
 
+base_kwd
+	: _AT_base_L
+	| BASE_L
+	;
+
 prefix_clause
-	: _AT_prefix_L QNAME_NS Q_IRI_REF {
+	: prefix_kwd QNAME_NS Q_IRI_REF {
 		id_hash_t **local_hash_ptr = (ttlp_arg->ttlp_in_trig_graph ?
 		  &(ttlp_arg->ttlp_inner_namespaces_prefix2iri) :
 		  &(ttlp_arg->ttlp_namespaces_prefix2iri) );
@@ -205,12 +212,16 @@ prefix_clause
 		  }
 		else
 		  id_hash_set (local_hash_ptr[0], (caddr_t)(&($2)), (caddr_t)(&($3))); }
-	| _AT_prefix_L _COLON Q_IRI_REF	{
+	| prefix_kwd _COLON Q_IRI_REF	{
 		if (ttlp_arg->ttlp_default_ns_uri != ttlp_arg->ttlp_default_ns_uri_saved)
 		  dk_free_box (ttlp_arg->ttlp_default_ns_uri);
 		ttlp_arg->ttlp_default_ns_uri = $3; }
 	;
 
+prefix_kwd
+	: _AT_prefix_L
+	| PREFIX_L
+	;
 
 dot_opt
 	: /* empty */

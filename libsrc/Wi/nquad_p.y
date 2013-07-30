@@ -112,8 +112,10 @@ extern int ttlyylex (void *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner);
 %token _AT_prefix_L	/*:: PUNCT_TTL_LAST("@prefix") ::*/
 %token _AT_this_L	/*:: PUNCT_TTL_LAST("@this") ::*/
 %token _MINUS_INF_L	/*:: PUNCT_TTL_LAST("-INF") ::*/
+%token BASE_L		/*:: PUNCT("BASE"), TTL, LAST("BASE "), LAST("Base "), LAST("base ") ::*/
 %token INF_L		/*:: PUNCT_TTL_LAST("INF") ::*/
 %token NaN_L		/*:: PUNCT_TTL_LAST("NaN") ::*/
+%token PREFIX_L		/*:: PUNCT("PREFIX"), TTL, LAST("PREFIX "), LAST("Prefix "), LAST("prefix ") ::*/
 %token false_L		/*:: PUNCT_TTL_LAST("false") ::*/
 %token true_L		/*:: PUNCT_TTL_LAST("true") ::*/
 
