@@ -3705,9 +3705,9 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
     inx_arity = ic->ic_inx_card;
   else if (2 == enable_p_stat && tb_is_rdf_quad (dfe->_.table.ot->ot_table) && sqlo_use_p_stat_2 (dfe, &inx_arity, &col_arity, ic, &inx_sample))
     {
+      p_stat = 2;
       ic->ic_inx_card = inx_arity;
       ic->ic_leading_constants = dfe->_.table.is_arity_sure = inx_const_fill * 2 + (0 != p_stat);
-      p_stat = 2;
     }
   else if (unique && !ic->ic_ric)
     {
@@ -3769,6 +3769,8 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
       *u1 = total_cost;
       if (p_stat != 2)
 	*a1 = arity_scale (total_arity);
+      else
+	*a1 = total_arity;
       *overhead_ret = 0;
       return;
     }
