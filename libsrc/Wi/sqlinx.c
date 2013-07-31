@@ -357,7 +357,7 @@ sqlo_ip_trailing_text (df_elt_t * tb_dfe, index_choice_t * ic)
     return 0;
   dfe_text_cost (tb_dfe, &text_cost, &text_card, 0);
   ic->ic_unit += text_cost;
-  ic->ic_arity *= text_card;
+  ic->ic_arity /= MAX (1, text_card);
   ic->ic_text_pred = text_pred;
   return 1;
 }
