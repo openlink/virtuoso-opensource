@@ -328,7 +328,8 @@ sqlo_ip_leading_text (df_elt_t * tb_dfe, dbe_key_t * key, index_choice_t * ic, d
       if (prev_col == id_col)
 	break;
       eq_pred = sqlo_key_part_best (prev_col, tb_dfe->_.table.col_preds, 0);
-      if (!dfe_is_eq_pred (eq_pred))
+      if (!dfe_is_eq_pred (eq_pred)
+	  || !pred_const_rhs (eq_pred))
 	return 0;
     }
   END_DO_SET();
