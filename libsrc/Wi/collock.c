@@ -161,6 +161,9 @@ rl_empty_clks (row_lock_t * rl, int first_free)
 }
 
 
+long tc_col_wait_release;
+
+
 void
 rl_col_release (row_lock_t * rl, lock_trx_t * lt)
 {
@@ -169,6 +172,10 @@ rl_col_release (row_lock_t * rl, lock_trx_t * lt)
     {
       col_row_lock_t *clk = rl->rl_cols[inx];
       clk->pl_type &= ~CLK_FINALIZED;
+#ifdef CLK_DBG
+      tc_col_wait_release += NULL != clk->pl_waiting;
+      clk->clk_rel_ctr++;
+#endif
       lock_release ((gen_lock_t *) clk, lt);
       if (PL_FREE == PL_TYPE (clk))
 	{
@@ -198,6 +205,9 @@ itc_new_clk (it_cursor_t * itc, int row)
   clk->pl_type = itc->itc_lock_mode;
   if (ISO_SERIALIZABLE == itc->itc_isolation)
     clk->pl_type |= RL_FOLLOW;
+#ifdef CLK_DBG
+  clk->clk_w_id = itc->itc_ltrx->lt_w_id;
+#endif
   if (!itc->itc_ks)
     clk->clk_change = CLK_INSERTED | CLK_DELETE_AT_ROLLBACK;
   else if (itc->itc_ks->ks_is_deleting)
@@ -233,6 +243,9 @@ rl_add_clk (row_lock_t * rl, col_row_lock_t * clk, int inx, int is_ins)
     GPF_T1 ("attempt to add a clk past end of clk array");
   memmove_16 (&rl->rl_cols[inx + 1], &rl->rl_cols[inx], sizeof (caddr_t) * (rl->rl_n_cols - inx - 1));
   rl->rl_cols[inx] = clk;
+#ifdef CLK_DBG
+  clk->clk_init_inx = inx == rl->rl_n_cols - 1 ? -inx : inx;
+#endif
   if (dbf_clk_order_check)
     {
       for (ctr = 1; ctr < rl->rl_n_cols; ctr++)
