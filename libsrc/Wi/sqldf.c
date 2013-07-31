@@ -602,7 +602,7 @@ sqlo_df (sqlo_t * so, ST * tree)
   if (so->so_max_memory > 0 && (THR_TMP_POOL)->mp_bytes > so->so_max_memory)
     {
       sqlc_error (so->so_sc->sc_cc, "42000",
-	  "The memory pool size %d reached the limit %d bytes, try to increase the MaxMemPoolSize ini setting",
+	  "Query optimization temp memory   %d bytes reached the limit %d bytes, try to increase the MaxMemPoolSize ini setting",
 	  (THR_TMP_POOL)->mp_bytes, sqlo_max_mp_size);
     }
   if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree))
