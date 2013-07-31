@@ -2890,7 +2890,7 @@ void dsig_dsa_sha1_sign_test()
   in->dks_in_fill = sizeof (msg) - 1;
   in->dks_in_read = 0;
 
-  __xenc_key_dsa_init ("virtdev4@localhost", 1);
+  __xenc_key_dsa_init ("virtdev4@localhost", 1, 512);
 
   xenc_assert (dsig_dsa_sha1_digest (in, sizeof (msg) -1, xenc_get_key_by_name ("virtdev4@localhost", 1), &digest));
 
