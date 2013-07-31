@@ -10527,6 +10527,7 @@ caddr_t
 bif_sequence_next_bounded (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int sec_check)
 {
   *err_ret = srv_make_new_error ("42000", "SEQCL", "sequence_next_bounded not defined outside cluster support");
+  return NULL;
 }
 
 caddr_t
