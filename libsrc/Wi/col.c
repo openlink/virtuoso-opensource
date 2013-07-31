@@ -4668,7 +4668,10 @@ itc_box_col_seg (it_cursor_t * itc, buffer_desc_t * buf, dbe_col_loc_t * cl)
 	  if (dc.dc_n_values != nv)
 	    log_error ("decode count and ce value count differ");
 	  for (inx = 0; inx < dc.dc_n_values; inx++)
-	    seg[fill++] = ((caddr_t *) dc.dc_values)[inx];
+	    {
+	      ASSERT_NOT_IN_POOL (((caddr_t *) dc.dc_values)[inx]);
+	      seg[fill++] = ((caddr_t *) dc.dc_values)[inx];
+	    }
 	  if (fill > len)
 	    GPF_T1 ("more stuff than len indicates in ce stat");
 	}
