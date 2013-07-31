@@ -627,6 +627,7 @@ void ce_op_register (dtp_t ce_type, int op, int is_sets, ce_op_t f);
 #define CE_OP_CODE(min, max) (min + (max << 8))
 void colin_init ();
 db_buf_t  ce_any_dict_array (db_buf_t ce, dtp_t flags);
+void ce_skip_bits_2 (db_buf_t bits, int skip, int * byte_ret, int * bit_ret);
 int  col_find_op (int op);
 #define CE_DECODE 255 /* col op for getting values.  must be different from any CMP_* */
 #define CE_ALL_LTGT 254		/* op for range with >= > < <= */
