@@ -1359,6 +1359,7 @@ typedef struct setp_node_s
     dk_set_t		setp_key_is_desc;
     dk_set_t		setp_dependent;
     dk_set_t		setp_gb_ops;	/* AMMSC for group by */
+    state_slot_t **	setp_merge_temps; /* temp ssls for adding up gnby/obys.  Same as the ssls where the result is read */
     char		setp_distinct;
     char		setp_set_op;
     char		setp_top_sort_distinct; /* when merging branches of top k obys, remove duplicates */

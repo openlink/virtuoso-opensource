@@ -3388,6 +3388,9 @@ vec_merge_setp (setp_node_t ** setp_ret, hash_area_t ** ha_ret, setp_node_t * tm
       tmp_ha->ha_slots = (state_slot_t **) box_copy ((caddr_t) tmp_ha->ha_slots);
       DO_BOX (state_slot_t *, ssl, inx, tmp_ha->ha_slots)
       {
+	  if (inx >= tmp_ha->ha_n_keys && tmp_setp->setp_merge_temps && BOX_ELEMENTS (tmp_setp->setp_merge_temps) > inx)
+	    tmp_ha->ha_slots[inx] = ssl_single_state_shadow (tmp_setp->setp_merge_temps[inx], &tmp_ssls[inx]);
+	  else
 	tmp_ha->ha_slots[inx] = ssl_single_state_shadow (ssl, &tmp_ssls[inx]);
 	if (inx >= tmp_ha->ha_n_keys)
 	  tmp_setp->setp_dependent_box[inx - tmp_ha->ha_n_keys] = tmp_ha->ha_slots[inx];
@@ -3629,13 +3632,14 @@ vec_fref_group_result (fun_ref_node_t * fref, table_source_t * ts, caddr_t * ins
   index_tree_t *tree;
   caddr_t ***qis = (caddr_t ***) QST_GET_V (inst, ts->ts_aq_qis);
   int qi_inx;
+  setp_node_t * one_setp = (setp_node_t*)fref->fnr_setps->data;
   ITC_INIT (itc, NULL, NULL);
   if (!qis)
     return;
-  if (HA_GROUP == fref->fnr_setp->setp_ha->ha_op && fref->fnr_setp->setp_set_no_in_key)
+  if (HA_GROUP == one_setp->setp_ha->ha_op && one_setp->setp_set_no_in_key)
     n_sets = 1;
   qi->qi_set = 0;
-  if (HA_GROUP == fref->fnr_setp->setp_ha->ha_op && enable_chash_gb)
+  if (HA_GROUP == one_setp->setp_ha->ha_op && enable_chash_gb)
     {
       if (vec_fref_chash_result (fref, ts, inst, n_sets))
 	return;

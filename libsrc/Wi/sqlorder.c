@@ -69,6 +69,7 @@ setp_node_free (setp_node_t * setp)
   dk_free_box ((box_t) setp->setp_dependent_box);
   dk_set_free (setp->setp_key_is_desc);
   dk_free_box ((caddr_t) setp->setp_ordered_gb_out);
+  dk_free_box ((box_t) setp->setp_merge_temps);
   if (setp->setp_reserve_ha)
     {
       ha_free (setp->setp_reserve_ha);
@@ -136,6 +137,8 @@ sqlc_make_sort_out_node (sql_comp_t * sc, dk_set_t out_cols, dk_set_t out_slots,
   SQL_NODE_INIT (table_source_t, ts, table_source_input, ts_free);
   ts->ts_order_cursor = ssl_new_itc (sc->sc_cc);
 
+  if (is_gb)
+    setp->setp_merge_temps = (state_slot_t**) dk_set_to_array (out_slots);
   {
     NEW_VARZ (key_source_t, ks);
     ts->ts_order_ks = ks;
