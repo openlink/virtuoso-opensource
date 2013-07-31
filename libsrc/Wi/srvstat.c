@@ -1249,9 +1249,9 @@ status_report (const char * mode, query_instance_t * qi)
 
   if (gen_info)
     {
-      rep_printf ("Started on: %04d/%02d/%02d %02d:%02d GMT%+03d\n",
+      rep_printf ("Started on: %04d-%02d-%02d %02d:%02d GMT%+d\n",
 		  st_started_since_year, st_started_since_month, st_started_since_day,
-		  st_started_since_hour, st_started_since_minute, dt_local_tz);
+	  st_started_since_hour, st_started_since_minute, dt_local_tz / 60);
     }
   if (!gen_info)
     return;
