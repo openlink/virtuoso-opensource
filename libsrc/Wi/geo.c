@@ -996,6 +996,7 @@ geo_leaf_estimate (it_cursor_t * itc, buffer_desc_t * buf)
     }
 }
 
+int enable_geo_itc_sample = 1;
 
 int64
 geo_estimate (dbe_table_t * tb, geo_t * g, int op, double prec, slice_id_t slice)
@@ -1014,6 +1015,13 @@ geo_estimate (dbe_table_t * tb, geo_t * g, int op, double prec, slice_id_t slice
   itc->itc_search_params[0] = (caddr_t) & box;
   itc->itc_search_params[1] = (caddr_t) g;
   itc->itc_key_spec.ksp_key_cmp = cmpf_geo;
+  if (enable_geo_itc_sample)
+    {
+      int64 res;
+      memzero (&itc->itc_st, sizeof (itc->itc_st));
+      res = itc_local_sample (itc);
+      return res;
+    }
   itc->itc_search_mode = SM_INSERT;
   buf = itc_reset (itc);
   itc->itc_search_mode = SM_READ;

@@ -3634,15 +3634,22 @@ itc_matches_on_page (it_cursor_t * itc, buffer_desc_t * buf, int * leaf_ctr_ret,
 	{
 	  if (r_kv)
 	    itc->itc_row_key = itc->itc_insert_key->key_versions[r_kv];
-	  while (sp)
+	  if (itc->itc_geo_op)
 	    {
-	      if (DVC_MATCH != (res = itc_compare_spec (itc, buf, key_find_cl (itc->itc_row_key, sp->sp_cl.cl_col_id), sp)))
-		break;
-	      sp = sp->sp_next;
+	      res = cmpf_geo (buf, pos, itc);
+	    }
+	  else 
+	    {
+	      while (sp)
+		{
+		  if (DVC_MATCH != (res = itc_compare_spec (itc, buf, key_find_cl (itc->itc_row_key, sp->sp_cl.cl_col_id), sp)))
+		    break;
+		  sp = sp->sp_next;
+		}
 	    }
 	  if (DVC_GREATER == res)
 	    break;
-	  if (!r_kv)
+	  if (!r_kv && (!itc->itc_geo_op  || DVC_MATCH == res))
 	    {
 	      dp_addr_t leaf1 = LONG_REF (row + itc->itc_insert_key->key_key_leaf[IE_ROW_VERSION (row)]);
 	      leaves[leaf_fill++] = leaf1;
@@ -3701,6 +3708,10 @@ itc_matches_on_page (it_cursor_t * itc, buffer_desc_t * buf, int * leaf_ctr_ret,
       /* angle is a measure between 0 to 999.  Scale it to leaf count and pick the leaf */
       int nth = (leaf_ctr * angle) / 1000;
       *alt_leaf_ret = leaves[MIN (nth, leaf_ctr - 1)];
+    }
+  else if (itc->itc_geo_op && -1 == angle)
+    {
+      *alt_leaf_ret = leaf_ctr ? leaves[0] : 0;
     }
   if (ITC_STAT_ANGLE == itc->itc_st.mode && -1 != first_row)
     {
@@ -3777,12 +3788,16 @@ itc_sample_1 (it_cursor_t * it, buffer_desc_t ** buf_ret, int64 * n_leaves_ret, 
   rnd_leaf = 0;
   if (RANDOM_SEARCH_ON == it->itc_random_search)
     res = itc_random_leaf (it, *buf_ret, &rnd_leaf);
+  else if (it->itc_geo_op)
+    res = DVC_MATCH;
   else
     res = itc_page_split_search_1 (it, *buf_ret, &leaf);
  make_est:
   if (it->itc_st.cols)
     itc_page_col_stat (it, *buf_ret);
   ctr = itc_matches_on_page (it, *buf_ret, &leaf_ctr, &rows_per_bm, &leaf, angle, &ends_with_match);
+  if (level < RA_MAX_ROOTS)
+    it->itc_ra_root[level] = leaf_ctr + ctr;
   if (leaf_ctr)
     {
       any_leaf_match = 1;
@@ -3885,6 +3900,26 @@ itc_sample_1 (it_cursor_t * it, buffer_desc_t ** buf_ret, int64 * n_leaves_ret, 
     }
   if (it->itc_map_pos >= (*buf_ret)->bd_content_map->pm_count)
     it->itc_map_pos = (*buf_ret)->bd_content_map->pm_count - 1;
+  if (it->itc_geo_op)
+    {
+      /* for a geo sample, the estimate is the product of the counts on different levels.  If no match on leaf but matches higher up, return 0 but set leaf ctr so will look in other branches */
+      int inx;
+      leaf_estimate = 1;
+      level = MIN (level, RA_MAX_ROOTS);
+      for (inx = 0; inx <= level; inx++)
+	{
+	  int l = it->itc_ra_root[inx];
+	  if (0 == l)
+	    {
+	      *n_leaves_ret = 1 == leaf_estimate ? 0 : leaf_estimate;
+	      return 0;
+	    }
+	  if (inx == level)
+	    *n_leaves_ret = leaf_estimate;
+	  leaf_estimate *= l;
+	}
+      return leaf_estimate;
+    }
   return ctr + leaf_estimate;
 }
 
@@ -3937,7 +3972,7 @@ itc_local_sample (it_cursor_t * itc)
       tb->tb_geo_area = MAX (tb->tb_geo_area, ar);
     }
 #endif
-  if (!itc->itc_key_spec.ksp_spec_array)
+  if (!itc->itc_key_spec.ksp_spec_array && !itc->itc_geo_op)
     {
       res = itc_sample_1 (itc, &buf, NULL, -1);
       itc_page_leave (itc, buf);
