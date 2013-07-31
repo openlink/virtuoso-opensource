@@ -1683,8 +1683,12 @@ lt_transact (lock_trx_t * lt, int op)
     }
   ASSERT_IN_TXN;
   if (lt != wi_inst.wi_cpt_lt && wi_inst.wi_checkpoint_atomic)
-    log_error ("transact (%d) while cpt atomic, trx no %d (status %d), cpt trx no %d", op, lt->lt_trx_no, lt->lt_status, 
-	(wi_inst.wi_cpt_lt ? wi_inst.wi_cpt_lt->lt_trx_no : 0));
+    {
+      log_error ("transact (%d) while cpt atomic, trx no %d (status %d), cpt trx no %d, entering wait cpt",
+	  op, lt->lt_trx_no, lt->lt_status, (wi_inst.wi_cpt_lt ? wi_inst.wi_cpt_lt->lt_trx_no : 0));
+      lt_wait_checkpoint ();
+      log_error ("transact (%d) resumed, trx no %d (status %d)", op, lt->lt_trx_no, lt->lt_status);
+    }
   if (lt->lt_threads != lt->lt_lw_threads + lt->lt_close_ack_threads + lt->lt_vdb_threads)
     {
       lt_log_debug ((
