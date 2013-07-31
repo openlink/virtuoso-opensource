@@ -8504,7 +8504,7 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
   long https_cvdepth = -1;
   int i, len, https_client_verify = -1;
   ssl_meth = SSLv23_server_method ();
-  ssl_ctx = SSL_CTX_new (ssl_meth);
+  ssl_ctx = SSL_CTX_new ((SSL_METHOD *) ssl_meth);
 
   /* Initialize the parameters */
   len = BOX_ELEMENTS (https_opts);
@@ -11084,7 +11084,7 @@ http_init_part_two ()
       SSL_CTX* ssl_ctx = NULL;
       const SSL_METHOD *ssl_meth = NULL;
       ssl_meth = SSLv23_server_method();
-      ssl_ctx = SSL_CTX_new (ssl_meth);
+      ssl_ctx = SSL_CTX_new ((SSL_METHOD *) ssl_meth);
       if (!ssl_ctx)
 	{
 	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
