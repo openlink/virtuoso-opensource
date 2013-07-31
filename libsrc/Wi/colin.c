@@ -634,6 +634,7 @@ ced_any_dc_check (col_pos_t * cpo, db_buf_t ce_first_val)
     return 0;
   if (DV_ANY != dc->dc_sqt.sqt_dtp)
     dc_heterogenous (dc);
+  return 1;
 }
 
 
