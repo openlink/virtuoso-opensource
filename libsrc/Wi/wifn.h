@@ -1350,6 +1350,7 @@ extern int rdf_no_string_inline;
 /* geo.c */
 
 void dv_geo_length (db_buf_t dv, long * hl, long * l);
+int  cmpf_geo (buffer_desc_t * buf, int irow, it_cursor_t * itc);
 void  itc_geo_insert (it_cursor_t * itc, buffer_desc_t * buf, row_delta_t * rd);
 caddr_t geo_wkt (caddr_t g);
 extern dk_mutex_t * geo_reg_mtx;
