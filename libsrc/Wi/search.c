@@ -3789,7 +3789,10 @@ itc_sample_1 (it_cursor_t * it, buffer_desc_t ** buf_ret, int64 * n_leaves_ret, 
   if (RANDOM_SEARCH_ON == it->itc_random_search)
     res = itc_random_leaf (it, *buf_ret, &rnd_leaf);
   else if (it->itc_geo_op)
-    res = DVC_MATCH;
+    {
+      it->itc_map_pos = 0;
+      res = DVC_MATCH;
+    }
   else
     res = itc_page_split_search_1 (it, *buf_ret, &leaf);
  make_est:
