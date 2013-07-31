@@ -353,6 +353,7 @@ struct df_elt_s
       op_table_t *ot;
       df_elt_t **	after_test;
       dk_set_t		after_preds;
+      dbe_table_t *	inx_table; /* geo pred can specify different rtree tables for the same indexed col */
     } text;
     struct {
       df_elt_t ***	terms;
@@ -945,5 +946,6 @@ void dbg_qi_print_slots( query_instance_t *qi, state_slot_t** slots, int nthset 
 #endif // DEBUG
 dbe_key_t * tb_px_key (dbe_table_t * tb, dbe_column_t * col);
 float dfe_scan_card (df_elt_t * dfe);
+int sqlo_parse_tree_count_node (ST *tree, long *nodes, int n_nodes);
 
 #endif /* _SQLO_H */

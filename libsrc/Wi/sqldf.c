@@ -2090,15 +2090,17 @@ sqlo_place_exp (sqlo_t * so, df_elt_t * super, df_elt_t * dfe)
 	dfe->_.control.terms = (df_elt_t ***) t_box_copy ((caddr_t) dfe->dfe_tree->_.comma_exp.exps);
 	DO_BOX (ST *, elt, inx, dfe->dfe_tree->_.comma_exp.exps)
 	  {
+	    long agg[] = {FUN_REF};
 	    df_elt_t *pred;
 	    df_elt_t *elt_dfe;
-
+	    int n_agg;
 	    old_private_elts = so->so_df_private_elts;
 	    so->so_df_private_elts = dfe->_.control.private_elts[inx];
 
 	    pred = sqlo_df (so, elt);
 	    elt_dfe = dfe_container (so, DFE_PRED_BODY, placed);
-	    elt_dfe->_.sub.is_control = pred->dfe_type != DFE_FUN_REF ? 1 : 0;
+	    n_agg = sqlo_parse_tree_count_node (pred->dfe_tree, agg, sizeof (agg) / sizeof (long));
+	    elt_dfe->_.sub.is_control = 0 == n_agg;
 	    elt_dfe->dfe_locus = pref_loc;
 	    pred->dfe_locus = pref_loc;
 	    old_pt = so->so_gen_pt;
