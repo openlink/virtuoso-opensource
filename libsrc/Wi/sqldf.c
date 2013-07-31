@@ -599,7 +599,7 @@ sqlo_df (sqlo_t * so, ST * tree)
   if (DK_MEM_RESERVE)
     sqlc_error (so->so_sc->sc_cc, "42000", "Out of memory");
   SQLO_MP_SAMPLE;
-  if (so->so_max_memory > 0 && (THR_TMP_POOL)->mp_bytes > so->so_max_memory)
+  if (so->so_max_memory > 0 && (THR_TMP_POOL)->mp_bytes > so->so_max_memory * 1.4)
     {
       sqlc_error (so->so_sc->sc_cc, "42000",
 	  "Query optimization temp memory   %d bytes reached the limit %d bytes, try to increase the MaxMemPoolSize ini setting",
