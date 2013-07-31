@@ -99,8 +99,8 @@ cmpf_geo (buffer_desc_t * buf, int irow, it_cursor_t * itc)
   int gs_op, gs_precision;
   if (GEO_GSOP == g->geo_flags)
     {
-      gs_op = g->_.point.point_gs_op;
-      gs_precision = g->_.point.point_gs_precision;
+      gs_op = itc->itc_geo_op;
+      gs_precision = GSOP_PRECISION;
     }
   else
     {
@@ -894,8 +894,6 @@ itc_geo_delete (it_cursor_t * itc, buffer_desc_t * buf, boxint id)
   itc->itc_search_params[1] = id_box;
   ITC_OWNS_PARAM (itc, id_box);
   g = (geo_t *) itc->itc_search_params[0];
-  if (GEO_GSOP == g->geo_flags)
-    g->_.point.point_gs_op |= GSOP_CONTAINS;
   itc_geo_register (itc);
 again:
   itc->itc_landed = 1;
@@ -1003,17 +1001,23 @@ geo_estimate (dbe_table_t * tb, geo_t * g, int op, double prec, slice_id_t slice
 {
   buffer_desc_t *buf;
   int rc;
+  double prec_box[2];
   geo_t box;
   it_cursor_t itc_auto;
   it_cursor_t *itc = &itc_auto;
   ITC_INIT (itc, NULL, NULL);
   geo_get_bounding_XYbox (g, &box, prec, prec);
-  box.geo_flags |= ((int) op) << 8;
+  box.geo_flags = GEO_GSOP;
   if (tb->tb_primary_key->key_is_elastic && QI_NO_SLICE == slice)
     return 100;			/* dummy, must not get error in mid cost model */
   itc_from (itc, tb->tb_primary_key, slice);
+  itc->itc_geo_op = op;
   itc->itc_search_params[0] = (caddr_t) & box;
   itc->itc_search_params[1] = (caddr_t) g;
+  *(int64 *) & prec_box[0] = 0;
+  ((dtp_t *) & prec_box[1])[-1] = DV_DOUBLE_FLOAT;
+  prec_box[1] = prec;
+  itc->itc_search_params[2] = (caddr_t) & prec_box[1];
   itc->itc_key_spec.ksp_key_cmp = cmpf_geo;
   if (enable_geo_itc_sample)
     {
@@ -1429,7 +1433,6 @@ bif_is_geometry (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 double
 txs_prec (text_node_t * txs, caddr_t * inst)
 {
-
   if (txs->txs_precision)
     {
       state_slot_t **prec_box;
@@ -1476,19 +1479,20 @@ geo_rdf_check (text_node_t * txs, caddr_t * inst)
   caddr_t geo = NULL;
   data_col_t * ser_dc;
   double prec;
-  geo_t *g1, *g2;
-  data_col_t * id_dc = QST_BOX (data_col_t *, inst, txs->txs_d_id->ssl_index);
+  geo_t *g2;
   caddr_t err = NULL;
   state_slot_t ** args;
   select_node_t * sel;
-  int inx, n_res = 0;
   local_cursor_t lc;
   AUTO_POOL (100);
   QST_INT (inst, txs->src_gen.src_out_fill) = 0;
   SRC_IN_STATE (txs, inst) = NULL;
   if (!geo_ck_qr)
     {
-      geo_ck_qr = sql_compile_static ("select coalesce (blob_to_string (ro_long), ro_val)  from rdf_obj table option (no cluster) where ro_id = ?", bootstrap_cli, &err, SQLC_DEFAULT);
+      geo_ck_qr =
+	  sql_compile_static
+	  ("select coalesce (blob_to_string (ro_long), ro_val)  from rdf_obj table option (no cluster) where ro_id = ?",
+	  bootstrap_cli, &err, SQLC_DEFAULT);
       if (err)
 	sqlr_resignal (err);
     }
@@ -1508,6 +1512,7 @@ geo_rdf_check (text_node_t * txs, caddr_t * inst)
   ser_dc = QST_BOX (data_col_t *, lc.lc_inst, sel->sel_out_slots[0]->ssl_index);
   while (lc_next (&lc))
     {
+      dtp_t dtp;
       int set = qst_vec_get_int64  (lc.lc_inst, sel->sel_set_no, lc.lc_position), hl;
       db_buf_t dv = ((db_buf_t *)ser_dc->dc_values)[set];
       if (DV_SHORT_STRING_SERIAL == *dv)
@@ -1518,20 +1523,22 @@ geo_rdf_check (text_node_t * txs, caddr_t * inst)
 	continue;
       geo = box_deserialize_reusing (dv + hl, geo);
       qi->qi_set = set;
-      g2 = qst_get (inst, txs->txs_text_exp);
-  if (DV_RDF == DV_TYPE_OF (g2))
-	g2 = ((rdf_box_t *)g2)->rb_box;
-      if (geo_pred (geo, g2, txs->txs_geo, prec));
+      g2 = (geo_t *) qst_get (inst, txs->txs_text_exp);
+      dtp = DV_TYPE_OF (g2);
+      if (DV_RDF == dtp)
     {
-	qn_result ((data_source_t*)txs, inst, set);
+	  g2 = (geo_t *) ((rdf_box_t *) g2)->rb_box;
+	  dtp = DV_TYPE_OF (g2);
     }
+      if (DV_GEO == dtp && geo_pred ((geo_t *) geo, g2, txs->txs_geo, prec))
+	qn_result ((data_source_t *) txs, inst, set);
     }
   dk_free_box (geo);
   if (lc.lc_inst)
     qi_free (lc.lc_inst);
   if (lc.lc_error)
     sqlr_resignal (lc.lc_error);
-  if (QST_INT (inst, txs->src_gen.src_out_fill));
+  if (QST_INT (inst, txs->src_gen.src_out_fill))
     qn_send_output ((data_source_t *) txs, inst);
 }
 
@@ -1607,15 +1614,12 @@ again:
 	      if (!box)
 		{
 		  box = geo_alloc (GEO_GSOP, 0, GEO_SRID (geo->geo_srcode));
-		  box->_.point.point_gs_op = txs->txs_geo;
-		  box->_.point.point_gs_precision = (int) (ptrlong) txs->txs_precision;
+		  itc->itc_geo_op = txs->txs_geo;
 		  box->geo_fill = 0;
 		  ITC_OWNS_PARAM (itc, (caddr_t) box);
 		  itc->itc_search_params[0] = (caddr_t) box;
 		}
 	      prec = txs_prec (txs, inst);
-	      if (txs->txs_precision)
-		{
 		  if (itc->itc_search_params[2])
 		    *(double *) itc->itc_search_params[2] = prec;
 		  else
@@ -1624,7 +1628,6 @@ again:
 		      ITC_OWNS_PARAM (itc, dbox);
 		      itc->itc_search_params[2] = dbox;
 		    }
-		}
 	      org_flags = box->geo_flags;
 	      geo_get_bounding_XYbox (geo, box, prec, prec);
 	      box->geo_flags = org_flags;
