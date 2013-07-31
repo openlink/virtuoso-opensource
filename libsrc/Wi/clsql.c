@@ -1211,12 +1211,6 @@ qr_is_multistate (query_t * qr)
 }
 
 
-dk_set_t
-cv_multistate (code_vec_t cv)
-{
-}
-
-
 int
 qr_begins_with_iter_or_test (query_t * qr, data_source_t ** first_clb_ret)
 {
