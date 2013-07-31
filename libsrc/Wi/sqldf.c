@@ -3324,11 +3324,11 @@ sqlo_is_text_order (sqlo_t * so, df_elt_t * dfe)
       END_DO_SET();
       return 1;
     }
-  if (0 == stricmp ("DB.DBA.RDF_QUAD",  dfe->_.table.ot->ot_table->tb_name ))
+  if (tb_is_rdf_quad (dfe->_.table.ot->ot_table))
     {
       /* geo cond on rdf quad.  If there is an eq on the leading part then geo is not driving */
       df_elt_t * key_part_best = sqlo_key_part_best ((dbe_column_t*)dfe->_.table.key->key_parts->data, dfe->_.table.col_preds, 0);
-      if (key_part_best && DFE_BOP_PRED == key_part_best->dfe_type && BOP_EQ == key_part_best->_.bin.op)
+      if (dfe_is_eq_pred (key_part_best))
 	return 0;
     }
   return 1;
