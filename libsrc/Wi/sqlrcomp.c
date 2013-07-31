@@ -39,6 +39,7 @@
 #include "sqlintrp.h"
 #include "sqlo.h"
 #include "sqlcstate.h"
+#include "date.h"
 
 
 
@@ -1148,7 +1149,16 @@ sqlc_exp_print (sql_comp_t * sc, comp_table_t * ct, ST * exp, char *text, size_t
       }
       break;
 #endif
-
+    case DV_DATETIME:
+    case DV_DATE:
+    case DV_TIME:
+	{
+	  char temp[100];
+	  int dt_type = DT_DT_TYPE (exp);
+	  dt_to_string ((char *) exp, temp, sizeof (temp));
+	  sprintf_more (text, tlen, fill, "{%s '%s'}", dt_type == DT_TYPE_DATE ? "d" : dt_type == DT_TYPE_TIME ? "t" : "ts",  temp);
+	  break;
+	}
 
     case DV_LIST_OF_POINTER:
     case DV_ARRAY_OF_POINTER:
