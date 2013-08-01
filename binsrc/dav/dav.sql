@@ -2465,15 +2465,22 @@ again:
   else
     {
       declare _server_etag, _xslt_sheet, _document_q, _xml_t varchar;
+    declare _sse, _sse_cont_type, _sse_mime_encrypt, _sse_email, _sse_certificate any;
       declare fext, hdl_mode varchar;
       declare dot integer;
       declare xml_mime_type varchar;
+    whenever not found goto err_end;
 
       -- XXX: temporary to avoid test noise
       set isolation='repeatable';
-      whenever not found goto err_end;
+    _sse_mime_encrypt := 0;
+
+
       content := string_output (http_strses_memory_size ());
       rc := DAV_RES_CONTENT_INT (_res_id, content, cont_type, 1, 0);
+    _sse_cont_type := cont_type;
+    cont_type := case when not _sse_mime_encrypt then cont_type else 'message/rfc822' end;
+
       -- dbg_obj_princ ('DAV_RES_CONTENT_INT (', _res_id, ', [content], ', cont_type, 1, 0, ' returns ', rc);
       if (DAV_HIDE_ERROR (rc) is null)
 	{
@@ -2490,6 +2497,8 @@ again:
       -- HTTP handlers are going here
       _name := path [length(path)-1];
       -- dbg_obj_princ (_name);
+    if (not _sse_mime_encrypt)
+    {
       dot := strrchr (_name, '.');
       if (dot is not null)
 	{
@@ -2525,25 +2534,27 @@ again:
 	      return;
 	    }
 	}
+    }
       _xml_t := DAV_HIDE_ERROR (DAV_PROP_GET_INT (_res_id, 'R', 'xml-template', 0), '');
-      xml_mime_type := DAV_HIDE_ERROR (DAV_PROP_GET_INT (_res_id, 'R', 'xml-sql-mime-type', 0), 'text/xml');
       -- XML templates execution
       if (cont_type = 'text/xml' and
-	       (http_map_get ('xml_templates') or _xml_t = 'execute')
-	       and (exec_safety_level > 1))
+       (http_map_get ('xml_templates') or _xml_t = 'execute') and
+       (exec_safety_level > 1))
 	{
 	  declare new_params, _enc any;
 	  declare _base_url varchar;
+
           _base_url := concat ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:', full_path);
-          new_params := vector_concat (params, vector ('template', string_output_string (content),
-	  '__base_url', _base_url, 'contenttype', xml_mime_type));
+      xml_mime_type := DAV_HIDE_ERROR (DAV_PROP_GET_INT (_res_id, 'R', 'xml-sql-mime-type', 0), 'text/xml');
+      new_params := vector_concat (params, vector ('template', string_output_string (content), '__base_url', _base_url, 'contenttype', xml_mime_type));
           _enc := DAV_HIDE_ERROR (DAV_PROP_GET_INT (_res_id, 'R', 'xml-sql-encoding', 0));
           DB.DBA.__XML_TEMPLATE (path, new_params, lines, _enc);
           return;
 	}
 
       server_etag := WS.WS.ETAG (_name, _col, modt);
-
+    if (not _sse_mime_encrypt)
+    {
       _document_q := DAV_HIDE_ERROR (DAV_PROP_GET_INT (_res_id, 'R', 'xml-sql', 0), '');
       _xslt_sheet := DAV_HIDE_ERROR (DAV_PROP_GET_INT (_res_id, 'R', 'xml-stylesheet', 0), '');
 
@@ -2566,8 +2577,7 @@ again:
 			case when is_https_ctx () then 'https' else 'http' end,
 			http_request_header (lines, 'Host', NULL, NULL), http_path ());
 		}
-	      rdf_graph := (select PROP_VALUE from WS.WS.SYS_DAV_PROP where
-		PROP_PARENT_ID = _col and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdfSink-graph');
+          rdf_graph := (select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = _col and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdfSink-graph');
 	      if (rdf_graph is not null)
 	        {
 		  declare rdf_uri varchar;
@@ -2579,6 +2589,7 @@ again:
 	  else
 	    http_header (concat ('Content-Type: text/xml\r\nETag: "',server_etag,'"\r\n'));
 	}
+    }
 --      else
 --	http_header (concat ('ETag: "', server_etag, '"\n'));
 
