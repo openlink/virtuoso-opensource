@@ -4772,6 +4772,12 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
     case BOP_TIMES:	ssg_print_bop_calc_expn (ssg, tree, " (", " * ", ")", needed); goto print_asname;
     case BOP_DIV:	ssg_print_bop_calc_expn (ssg, tree, " (", " / ", ")", needed); goto print_asname;
     case BOP_MOD:	ssg_print_bop_calc_expn (ssg, tree, " mod (", ", ", ")", needed); goto print_asname;
+    case SPAR_ALIAS:
+      if ((needed == tree->_.alias.native) || (SSG_VALMODE_AUTO == tree->_.alias.native))
+        ssg_print_scalar_expn (ssg, tree->_.alias.arg, needed, asname);
+      else
+        ssg_print_valmoded_scalar_expn (ssg, tree->_.alias.arg, needed, tree->_.alias.native, asname);
+      break;
     case SPAR_BLANK_NODE_LABEL:
     case SPAR_VARIABLE:
       {
