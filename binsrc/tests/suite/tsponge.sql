@@ -14,6 +14,7 @@ delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_CALAIS';
 delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_FEED_RESPONSE';
 delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_FACEBOOK_OPENGRAPH';
 delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_HTMLTABLE';
+delete from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_RDFA_CARTRIDGE';
 update DB.DBA.SYS_RDF_MAPPERS set RM_OPTIONS = vector ('add-html-meta', 'no', 'get-feeds', 'no') where RM_HOOK = 'DB.DBA.RDF_LOAD_HTML_RESPONSE';
 delete from DB.DBA.RDF_META_CARTRIDGES;
 
@@ -34,9 +35,9 @@ ECHO BOTH ": Get RDF from a spreadsheet : " $ROWCNT " triples, expected 22\n";
 sparql define get:soft "replacing" define input:default-graph-uri
 <http://localhost:$U{HTTPPORT}/grddl-tests/rdf_sem.html>
 select * where { ?s ?p ?o . };
-ECHO BOTH $IF $EQU $ROWCNT 6 "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $ROWCNT 14 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": RDFa example : " $ROWCNT " triples, expected 6\n";
+ECHO BOTH ": RDFa example : " $ROWCNT " triples, expected 14\n";
 
 -- the bellow is not quite right
 sparql define get:soft "replacing" define input:default-graph-uri
@@ -119,9 +120,9 @@ ECHO BOTH ": Transformations may produce serializations other than RDF/XML " $RO
 sparql define get:soft "replacing" define input:default-graph-uri
 <http://localhost:$U{HTTPPORT}/grddl-tests/conneg.html>
 select * where { ?s ?p ?o . };
-ECHO BOTH $IF $EQU $ROWCNT 3 "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $ROWCNT 10 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": Content Negotiation with GRDDL " $ROWCNT " triples, expected 3\n";
+ECHO BOTH ": Content Negotiation with GRDDL " $ROWCNT " triples, expected 10\n";
 
 sparql define get:soft "replacing" define input:default-graph-uri
 <http://localhost:$U{HTTPPORT}/grddl-tests/grddlonrdf-xmlmediatype.rdf>
@@ -222,5 +223,13 @@ ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": search for word in all graphs " $LAST[1] "\n";
 
+
+revoke SPARQL_UPDATE from "SPARQL"; -- in case it is granted by before
+http_get (sprintf ('http://localhost:%s/sparql/?default-graph-uri=&query=INSERT+IN+GRAPH%3Chttp%3A%2F%2Fwww.openphacts.org%2Fapi%2F052a1343%3E%0D%0A%7B%0D%0A_%3AsearchResult+%3Chttp%3A%2F%2Fwww.chemspider.com%2Fapi%2FsearchOptions%23Molecule%3E%0D%0A%22Cn1c%28%3DO%29cnn%28c1%3DO%29CCCCN2CCN%28CC2%29c3cccc4c3cc%28cc4%29OC%22+.%0D%0A_%3AsearchResult+%3Chttp%3A%2F%2Fwww.chemspider.com%2Fapi%2FSearchType%3E%0D%0A%22ExactStructureSearch%22+.%0D%0A_%3AsearchResult+%3Chttp%3A%2F%2Fwww.chemspider.com%2Fapi%2Fresult%3E%0D%0A%3Chttp%3A%2F%2Frdf.chemspider.com%2F8500448%3E+.%0D%0A%7D&format=text%2Fhtml', http_port ()));
+sparql select * from <http://www.openphacts.org/api/052a1343> { ?s ?p ?o };
+
+ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $ROWCNT " triples in graph after disabled sparql update\n";
 
 ECHO BOTH "COMPLETED WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED: JSON parser tests\n";

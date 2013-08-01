@@ -92,7 +92,7 @@ then
     exit 1
 fi
 
-LOG + running sql script testtext.sql (full text search index)
+LOG + "running sql script testtext.sql (full text search index)"
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u 'table=TTEST1' 'idtype=integer' 'haspk=yes' < $VIRTUOSO_TEST/testtext.sql
 if test $STATUS -ne 0
 then
@@ -102,14 +102,14 @@ fi
 
 if [ "$CURRENT_VIRTUOSO_CAPACITY" = "single" ] # explicit with key option is required for partitioned table
 then
-    LOG + running sql script testtext.sql (fti, table TTEST2)
+    LOG + "running sql script testtext.sql (fti, table TTEST2)"
     RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u 'table=TTEST2' 'idtype=integer' 'haspk=no' < $VIRTUOSO_TEST/testtext.sql
     if test $STATUS -ne 0
     then
 	LOG "***ABORTED: freetext test integer -- testtext.sql"
 	exit 1
     fi
-    LOG + running sql script testtext.sql (fti, table TTEST3)
+    LOG + "running sql script testtext.sql (fti, table TTEST3)"
     RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u 'table=TTEST3' 'idtype=varchar' 'haspk=yes' < $VIRTUOSO_TEST/testtext.sql
     if test $STATUS -ne 0
     then

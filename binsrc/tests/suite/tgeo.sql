@@ -75,14 +75,13 @@ select top 10 a.id, a.geo  from geo a where not exists (select 1 from geo b wher
 echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
 echo both ": geo self not exists 2\n";
 
--- XXX: HANGS
---select count (geo_delete ('DB.DBA.GEO_INX', geo, id)) from geo;
---echo both $if $equ $last[1] 20000 "PASSED" "***FAILED";
---echo both ":geo deleted\n";
+select count (geo_delete ('DB.DBA.GEO_INX', geo, id)) from geo;
+echo both $if $equ $last[1] 20000 "PASSED" "***FAILED";
+echo both ":geo deleted\n";
 
---select count (*) from geo_inx;
---echo both $if $equ $last[1] 0 "PASSED" "***FAILED";
---echo both ":geo deleted 2\n";
+select count (*) from geo_inx;
+echo both $if $equ $last[1] 0 "PASSED" "***FAILED";
+echo both ":geo deleted 2\n";
 
 rollback work;
 
@@ -112,7 +111,15 @@ echo both ": read busted by geo split\n";
 wait_for_children;
 __dbf_set ('dc_batch_sz', 10000);
 
+SPARQL PREFIX ex: <http://example.org/> PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> INSERT DATA INTO <http://test.org> {ex:p02 geo:geometry "POINT(25.466665 35.15)"^^virtrdf:Geometry};
+SPARQL PREFIX ex: <http://example.org/> PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> INSERT DATA INTO <http://test.org> {ex:p01 geo:geometry "POINT(25.4666665 35.15)"^^virtrdf:Geometry};
+SPARQL PREFIX ex: <http://example.org/> PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> SELECT ?s1 ?s2 FROM <http://test.org> WHERE {?s1 geo:geometry ?g1. ?s2 geo:geometry ?g2. FILTER(bif:st_intersects(?g1, ?g2))};
+
+echo both $if $equ $rowcnt 4 "PASSED" "***FAILED";
+echo both ": in st_intersects\n";
 exit;
+
+sparql select count (*) where { ?s <http://example.org/sparql/geo/hasGeography1> ?g1 . filter (!bif:exists ((select (1) where {?s1 <http://example.org/sparql/geo/hasGeography1> ?g2 . filter (bif:st_intersects (?g1, ?g2, 0) ) })))};
 
 sparql select ?m count (*) where { ?m a <http://dbpedia.org/class/yago/RomanCatholicChurchesInParis> .
  ?m geo:geometry ?geo . filter (bif:st_intersects (?geo, bif:st_point (0, 52), 100))}

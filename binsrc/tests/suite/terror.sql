@@ -1513,4 +1513,73 @@ select coalesce ((select u_name from sys_users where u_name = get_user (u_name))
 echo both $if $equ $last[1]  "dba" "PASSED" "***FAILED";
 echo both ":  control exp and value subbq\n";
 
+EXEC_STMT ('
+sparql
+create quad storage virtrdf:IRI_Rank_Storage
+from DB.DBA.RDF_IRI_RANK_C as r
+  {
+    create virtrdf:IRI_Rank_c_qm as graph virtrdf:IRI_Rank_c option (exclusive)
+      {
+        rdfdf:default-iid(r.rnk_iri) virtrdf:IRI_Rank_rnk_c_int r.rnk_rank as virtrdf:IRI_Rank_rnk_string_c_qm .
+      } .
+    create virtrdf:DefaultQuadMap using storage virtrdf:DefaultQuadStorage .
+  }
+',0)
+;
 
+select xmlelement ("result", xmlattributes ('list' as "type"),
+    xmlagg (xmlelement ("row",
+	xmlelement ("column",
+	xmlattributes (fct_lang ("c1") as "xml:lang",
+	  fct_dtp ("c1") as "datatype",
+	  fct_short_form(__ro2sq("c1")) as "shortform",
+	  fct_sparql_ser ("c1") as "sparql_ser"),
+	__ro2sq ("c1")),
+	xmlelement ("column", fct_label ("c1", 0, 'facets' )))))
+	from (sparql define output:valmode "LONG"  define input:storage virtrdf:IRI_Rank_Storage     
+	    select distinct ?s11 as ?c1 ?g where {?s1 ?s1condp ?s2 .
+	    filter (?s2 = """EMBL""") .
+	    ?s1 ?s1condp ?s3 .
+	    filter (?s3 = """GeneID""") .
+	    ?s1 ?s1condp ?s4 .
+	    filter (?s4 = """IPI""") .
+	    ?s1 ?s1condp ?s5 .
+	    filter (?s5 = """InterPro""") .
+	    ?s1 ?s1condp ?s6 .
+	    filter (?s6 = """MGI""") .
+	    ?s1 ?s1condp ?s7 .
+	    filter (?s7 = """UniGene""") .
+	    ?s1 ?s1condp ?s8 .
+	    filter (?s8 = <http://purl.uniprot.org/database/EMBL>) .
+	    quad map virtrdf:DefaultQuadMap { ?s9 <http://rdf.freebase.com/ns/common.webpage.uri> ?s1 .
+	    }?s1 a <http://bio2rdf.org/ncbi_resource:source> .
+	    quad map virtrdf:DefaultQuadMap { ?s10 <http://xmlns.com/foaf/0.1/homepage> ?s1 .
+	    } quad map virtrdf:DefaultQuadMap { ?s11 <http://purl.uniprot.org/core/source> ?s10 .
+	    } filter (?s11 = <http://purl.uniprot.org/proteinmodelportal/Q0R6X1>) .
+	    ?s10 a <http://linkedgeodata.org/ontology/HighwayThing> .
+	    ?s10 a <http://purl.uniprot.org/core/Citation_Statement> .
+	    filter (?s1 = <http://purl.uniprot.org/kegg/xla:100301961>) .
+	    quad map virtrdf:DefaultQuadMap { ?s12 <http://uberblic.org/meta/source_uri> ?s1 .
+	    } quad map virtrdf:DefaultQuadMap { ?s13 <http://vocab.sindice.com/xfn#colleague-hyperlink> ?s1 .
+	    }?s1 a <http://bio2rdf.org/ncbi_resource:Record> .
+	    filter (?s1 = <http://purl.uniprot.org/proteinmodelportal/A7YWZ6>) .
+	    ?s1 a <http://www.w3.org/2006/vcard/ns#Name> .
+	    quad map virtrdf:DefaultQuadMap { ?s14 <http://vocab.sindice.com/xfn#mePage> ?s1 .
+	    }?s14 a <http://purl.uniprot.org/core/Domain_Assignment_Statement> .
+	    filter (?s1 = <http://purl.uniprot.org/refseq/YP_293796.1>) .
+	    ?s1 a <http://www.w3.org/1999/02/22-rdf-syntax-ns#Seq> .
+	    filter (?s1 = <http://purl.uniprot.org/unigene/Dr.82736>) .
+	    ?s1 a <http://www.w3.org/2006/vcard/ns#VCard> .
+	    ?s1 a <http://bio2rdf.org/geneid_resource:Gene-commentary> .
+	    ?s1 a <http://bio2rdf.org/ncbi_resource:date_changed> .
+	    filter (?s1 = <http://purl.uniprot.org/proteinmodelportal/Q97356>) .
+	    quad map virtrdf:DefaultQuadMap { ?s15 <http://dbpedia.org/ontology/wikiPageExternalLink> ?s1 .
+	    }?s15 a <http://bio2rdf.org/geneid_resource:Other-source> .
+	    filter (?s1 = <http://purl.uniprot.org/proteinmodelportal/Q80448>) .
+	    filter (?s1 = <http://purl.uniprot.org/proteinmodelportal/Q4SGH6>) .
+	    filter (?s1 = <http://purl.uniprot.org/proteinmodelportal/A6MYD2>) .
+	    quad map virtrdf:DefaultQuadMap { ?s1 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?s16 .
+} } order by desc (?srank11)  limit 20  offset 0 ) xx option (quietcast)
+;
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": long sql statement, over 64K ssls STATE=" $STATE " MESSAGE=" $MESSAGE "\n";

@@ -34,7 +34,7 @@ DoCommand()
   _dsn=$1
   command=$2
   comment=$3
-  file='tvadtest.sql'
+  file="$VIRTUOSO_TEST/tvadtest.sql"
   shift 
   shift 
   shift
@@ -48,7 +48,7 @@ END_SQL
   echo $comment >> $file 
 
   echo "+ " $ISQL $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $*		>> $LOGFILE	
-  RUN $ISQL $DSN dba dba PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tvadtest.sql 
+  RUN $ISQL $DSN dba dba PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tvadtest.sql
 }
 
 DoBadCommand()
@@ -56,7 +56,7 @@ DoBadCommand()
   _dsn=$1
   command=$2
   comment=$3
-  file='tvadbtest.sql'
+  file="$VIRTUOSO_TEST/tvadbtest.sql"
   shift 
   shift 
   shift
@@ -76,7 +76,7 @@ END_SQL
   
   START_SERVER $PORT 1000 
 
-  RUN $ISQL $DSN dba dba PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tvadbtest.sql 
+  RUN $ISQL $DSN dba dba PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tvadbtest.sql
 
   STOP_SERVER
   rm -f $DBLOGFILE
