@@ -364,19 +364,19 @@ extern caddr_t xml_uri_get (struct query_instance_s * qi, caddr_t *err_ret, cadd
 /* These are from sqlbif2.c */
 
 typedef struct rdf1808_split_s {
-  ptrlong schema_begin;		/* schema without ':' */
+  ptrlong schema_begin;		/*!< schema without ':' */
   ptrlong schema_end;
-  ptrlong netloc_begin;		/* network location/login without ' */
+  ptrlong netloc_begin;		/*!< network location/login without '/' */
   ptrlong netloc_end;
-  ptrlong path_begin;		/* path with starting '/' */
+  ptrlong path_begin;		/*!< path with starting '/' */
   ptrlong path_end;
-  ptrlong params_begin;		/* parameters without starting ';' */
+  ptrlong params_begin;		/*!< parameters without starting ';' */
   ptrlong params_end;
-  ptrlong query_begin;		/* query without starting '?' */
+  ptrlong query_begin;		/*!< query without starting '?' */
   ptrlong query_end;
-  ptrlong fragment_begin;	/* fragment without starting '#' */
+  ptrlong fragment_begin;	/*!< fragment without starting '#' */
   ptrlong fragment_end;
-  ptrlong two_slashes;		/* position of end of two slashes, zero if missing */
+  ptrlong two_slashes;		/*!< position of end of two slashes, zero if missing */
 } rdf1808_split_t;
 
 #ifndef NDEBUG
