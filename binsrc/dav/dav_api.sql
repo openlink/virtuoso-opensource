@@ -845,6 +845,7 @@ DAV_SEARCH_ID (in path any, in what char (1)) returns any
       what := 'C';
     }
 
+
   if (what = 'R')
     {
       if (aref (par, length (par) - 1) = '')
@@ -885,7 +886,6 @@ DAV_SEARCH_ID (in path any, in what char (1)) returns any
       -- dbg_obj_princ ('-14 ???');
       return -14;
     }
-  -- dbg_obj_princ ('Found ', id);
   if (id = -1)
     {
       declare det_ret, detcol_id, detcol_path_parts, unreached_path_parts any;
@@ -1137,6 +1137,7 @@ DAV_SEARCH_ID_OR_DET (in path any, in what char (1), out det_ret varchar, out de
     return -14;
 
 descending_col_search:
+
   inx := 1;
   cur_id := 0;
   parent_id := 0;
@@ -1146,7 +1147,7 @@ descending_col_search:
   while (inx < depth)
     {
       cname := aref (par, inx);
-      -- dbg_obj_princ ('select, cname =', cname, inx);
+      -- dbg_obj_princ ('select, cname =', cname, inx, parent_id);
       select COL_ID, COL_DET into cur_id, det from WS.WS.SYS_DAV_COL where COL_NAME = cname and COL_PARENT = parent_id;
       if ((det is not NULL) and (connection_get ('dav_store') is null))
         {
@@ -1157,6 +1158,7 @@ descending_col_search:
           unreached_path_parts := par;
           if ((what = 'C') and (inx = depth - 1))
             return cur_id;
+
           return call (cast (det as varchar) || '_DAV_SEARCH_ID') (cur_id, par, what);
         }
       parent_id := cur_id;
@@ -1177,7 +1179,6 @@ found_plain_id:
   return id;
 
 not_found:
-  -- dbg_obj_princ ('not found, inx = ', inx);
   det_ret := NULL;
   detcol_id := null;
   detcol_path_parts := null;
@@ -1605,6 +1606,7 @@ DAV_AUTHENTICATE (in id any, in what char(1), in req varchar, in a_uname varchar
 
     return rc;
   }
+
   whenever not found goto nf_col_or_res;
   if (what = 'R')
   {
@@ -1629,24 +1631,24 @@ DAV_AUTHENTICATE (in id any, in what char(1), in req varchar, in a_uname varchar
 
   if (a_uid >= 0)
   {
-  if (DAV_CHECK_PERM (pperms, req, oid, ogid, pgid, puid))
-  {
-    -- dbg_obj_princ ('DAV_CHECK_PERM (', pperms, req, oid, ogid, pgid, puid, ') returns nonzero, DAV_AUTHENTICATE returns', a_uid);
-    return a_uid;
-  }
-  if (WS.WS.ACL_IS_GRANTED (pacl, oid, DAV_REQ_CHARS_TO_BITMASK (req)))
-  {
-    -- dbg_obj_princ ('WS.WS.ACL_IS_GRANTED (', pacl, oid, DAV_REQ_CHARS_TO_BITMASK (req), ') returns nonzero, DAV_AUTHENTICATE returns', a_uid);
-    return a_uid;
-  }
+    if (DAV_CHECK_PERM (pperms, req, oid, ogid, pgid, puid))
+    {
+      -- dbg_obj_princ ('DAV_CHECK_PERM (', pperms, req, oid, ogid, pgid, puid, ') returns nonzero, DAV_AUTHENTICATE returns', a_uid);
+      return a_uid;
+    }
+    if (WS.WS.ACL_IS_GRANTED (pacl, oid, DAV_REQ_CHARS_TO_BITMASK (req)))
+    {
+      -- dbg_obj_princ ('WS.WS.ACL_IS_GRANTED (', pacl, oid, DAV_REQ_CHARS_TO_BITMASK (req), ') returns nonzero, DAV_AUTHENTICATE returns', a_uid);
+      return a_uid;
+    }
   }
 
 
-    declare _perms, a_gid any;
+  declare _perms, a_gid any;
   declare webid, serviceId varchar;
 
-    if (DAV_AUTHENTICATE_SSL (id, what, null, req, a_uid, a_gid, _perms, webid))
-      return a_uid;
+  if (DAV_AUTHENTICATE_SSL (id, what, null, req, a_uid, a_gid, _perms, webid))
+    return a_uid;
 
   if (DAV_AUTHENTICATE_WITH_SESSION_ID (id, what, null, req, a_uid, a_gid, _perms, serviceId))
     return a_uid;
@@ -3157,7 +3159,6 @@ DAV_DELETE_INT (
         {
           if (det = 'IMAP')
             {
-
               items := call (det || '_DAV_DIR_LIST') (id, vector (), path, 0, '%', http_dav_uid ());
               connection_set ('dav_store', 1);
               foreach (any item in items) do
@@ -3174,8 +3175,9 @@ DAV_DELETE_INT (
             }
           else
             {
-	      if (det <> '')
-		connection_set ('dav_store', 1);
+              if (det <> '')
+                connection_set ('dav_store', 1);
+
               for select RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_COL = id do
                 {
                   rrc := DAV_DELETE_INT (RES_FULL_PATH, silent, auth_uname, auth_pwd, extern);
@@ -4771,7 +4773,8 @@ DAV_RES_CONTENT_INT (
     out type varchar,
     in content_mode integer, -- 0 for set output to a string or blob, 1 for writing to content as to session, 2 for set output to whatever including XML, 3 for writing to http.
     in extern integer := 1,
-    in auth_uname varchar := null, in auth_pwd varchar := null )
+    in auth_uname varchar := null,
+    in auth_pwd varchar := null )
 {
   declare rc, auth_uid integer;
   declare _value, _password any;
@@ -5053,6 +5056,7 @@ create procedure WS.WS.WAC_DELETE (
     connection_set ('dav_acl_sync', null);
   }
   set_user_id ('dba');
+
   delete from DB.DBA.RDF_QUAD table option (index G) where G = iri_to_id (graph);
 }
 ;
@@ -7216,7 +7220,7 @@ create procedure DB.DBA.DAV_QUEUE_GET (
 {
   declare dummy, items any;
 
-  set isolation='serializable';
+  set isolation = 'serializable';
   select DQL_ID into dummy from WS.WS.SYS_DAV_QUEUE_LCK where DQL_ID = 0 for update;
 
   vectorbld_init (items);
@@ -7224,7 +7228,7 @@ create procedure DB.DBA.DAV_QUEUE_GET (
     goto _exit;
 
   for (select TOP 100 DQ_ID, DQ_PROCEDURE, DQ_PARAMS
-                      from WS.WS.SYS_DAV_QUEUE
+         from WS.WS.SYS_DAV_QUEUE
         where DQ_STATE = 0
         order by DQ_PRIORITY desc, DQ_TS for update) do
   {
@@ -7292,7 +7296,7 @@ create procedure DB.DBA.DAV_QUEUE_RUN ()
 
 _new_batch:;
   items := DB.DBA.DAV_QUEUE_GET (threads);
-    if (not length (items))
+  if (not length (items))
     goto _exit;
 
   threadsArray := make_array (threads, 'any');
@@ -7336,9 +7340,9 @@ _again:;
 
 _exit:;
   -- clean
-    delete from WS.WS.SYS_DAV_QUEUE where DQ_STATE = 2;
-    commit work;
-  }
+  delete from WS.WS.SYS_DAV_QUEUE where DQ_STATE = 2;
+  commit work;
+}
 ;
 
 -------------------------------------------------------------------------------

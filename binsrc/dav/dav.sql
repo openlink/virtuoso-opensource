@@ -1808,7 +1808,7 @@ create procedure WS.WS.PUT (in path varchar, inout params varchar, in lines varc
       return;
     }
 error_ret:
-   --dbg_obj_princ ('PUT get error: ', __SQL_STATE, __SQL_MESSAGE);
+   -- dbg_obj_princ ('PUT get error: ', __SQL_STATE, __SQL_MESSAGE);
 
   if (__SQL_STATE = '40001')
     {
@@ -2134,9 +2134,10 @@ create procedure WS.WS.GET (in path any, inout params any, in lines any)
   declare def_page varchar;
   declare asmx_path, auth_opts, webid_check, webid_check_rc, modt any;
   -- dbg_obj_princ ('WS.WS.GET (', path, params, lines, ')');
-  --set isolation='committed';
+  -- set isolation='committed';
   if (WS.WS.DAV_CHECK_ASMX (path, asmx_path))
     path := asmx_path;
+
   def_page := '';
   full_path := http_physical_path ();
   if (full_path = '')
@@ -2150,225 +2151,233 @@ again:
   exec_safety_level := 0;
 
   if (_res_id is null and _col_id is null)
-    {
-      declare procname varchar;
-      -- dbg_obj_princ ('full_path=', full_path);
-      procname := sprintf ('%s.%s.%s',
-        http_map_get ('vsp_qual'), http_map_get ('vsp_proc_owner'), full_path);
+  {
+    declare procname varchar;
+    -- dbg_obj_princ ('full_path=', full_path);
+    procname := sprintf ('%s.%s.%s',
+    http_map_get ('vsp_qual'), http_map_get ('vsp_proc_owner'), full_path);
 
-      if ( __proc_exists (procname) and
-         (cast (registry_get (full_path) as varchar) = 'no_vsp_recompile') and
-	 (http_map_get ('noinherit') = 1))
-        {
-	  commit work;
-	  __set_user_id (http_map_get ('vsp_uid'));
-	  call (procname)(path, params, lines);
-	  __pop_user_id ();
-	  return;
-        }
-      http_request_status ('HTTP/1.1 404 Not Found');
-      http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
-	    '<HTML><HEAD>',
-	    '<TITLE>404 Not Found</TITLE>',
-	    '</HEAD><BODY>', '<H1>Not Found</H1>',
-	    'Resource ', sprintf ('%V', http_path ()), ' not found.</BODY></HTML>'));
-      return;
-    }
+   if ( __proc_exists (procname) and
+      (cast (registry_get (full_path) as varchar) = 'no_vsp_recompile') and
+      (http_map_get ('noinherit') = 1))
+   {
+     commit work;
+     __set_user_id (http_map_get ('vsp_uid'));
+     call (procname)(path, params, lines);
+     __pop_user_id ();
+     return;
+   }
+   http_request_status ('HTTP/1.1 404 Not Found');
+   http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
+     '<HTML><HEAD>',
+     '<TITLE>404 Not Found</TITLE>',
+     '</HEAD><BODY>', '<H1>Not Found</H1>',
+     'Resource ', sprintf ('%V', http_path ()), ' not found.</BODY></HTML>'));
+    return;
+  }
   if (_col_id is not null)
+  {
+    declare fpath any;
+    if (http_path () not like '%/') -- This is for default pages that refer to css in same directory and the like.
     {
-      declare fpath any;
-      if (http_path () not like '%/') -- This is for default pages that refer to css in same directory and the like.
-	{
-	  declare url_pars varchar;
-	  url_pars := http_request_get ('QUERY_STRING');
-	  if (length (url_pars))
-	    url_pars := '?' || url_pars;
-	  http_request_status ('HTTP/1.1 301 Moved Permanently');
-	  http_header (sprintf ('Location: %s/%s\r\n', http_path (), url_pars));
-	  return (0);
-	}
-      def_page := WS.WS.GET_DAV_DEFAULT_PAGE (path);
-      if (def_page is null)
-        return;
-      if (def_page <> '')
-	{
-          declare new_path varchar;
-	  new_path := DAV_CONCAT_PATH (http_path (), def_page);
-	  full_path := DAV_CONCAT_PATH (full_path, def_page);
-	  http_internal_redirect (new_path);
-          goto again;
-        }
+      declare url_pars varchar;
+      url_pars := http_request_get ('QUERY_STRING');
+      if (length (url_pars))
+        url_pars := '?' || url_pars;
+
+      http_request_status ('HTTP/1.1 301 Moved Permanently');
+      http_header (sprintf ('Location: %s/%s\r\n', http_path (), url_pars));
+      return (0);
     }
+    def_page := WS.WS.GET_DAV_DEFAULT_PAGE (path);
+    if (def_page is null)
+      return;
+
+    if (def_page <> '')
+    {
+      declare new_path varchar;
+      new_path := DAV_CONCAT_PATH (http_path (), def_page);
+      full_path := DAV_CONCAT_PATH (full_path, def_page);
+      http_internal_redirect (new_path);
+      goto again;
+    }
+  }
 
   if (not (http_map_get ('executable')
            --and WS.WS.IS_ACTIVE_CONTENT (http_path ())
-	  ))
+     ))
+  {
+    declare tgt_type, tgt_perms, perms varchar;
+    declare tgt_id, gid integer;
+    -- dbg_obj_princ ('this is not executable');
+    uname := null;
+    upwd := null;
+    uid := null;
+    tgt_perms := '1__';
+    if (_col_id is not null)
     {
-      declare tgt_type, tgt_perms, perms varchar;
-      declare tgt_id, gid integer;
-      -- dbg_obj_princ ('this is not executable');
-      uname := null;
-      upwd := null;
-      uid := null;
-      tgt_perms := '1__';
-      if (_col_id is not null)
-        {
-	  tgt_type := 'C';
-	  tgt_id := _col_id;
-    if (get_keyword ('a', params) in ('new', 'create', 'upload', 'link', 'update'))
-      tgt_perms := '_1_';
-	}
-      else
-	{
-	  tgt_type := 'R';
-	  tgt_id := _res_id;
-    if (get_keyword ('a', params) in ('update', 'edit'))
-      tgt_perms := '_1_';
-	}
-      rc := DAV_AUTHENTICATE_HTTP (tgt_id, tgt_type, tgt_perms, 1, lines, uname, upwd, uid, gid, perms);
-      if ((rc < 0) and (rc <> -1))
-        {
-          if (-24 = rc)
-            return 0;
-	  http_rewrite (0);
-	  http_request_status ('HTTP/1.1 403 Prohibited');
-	  http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
-		'<HTML><HEAD>',
-		'<TITLE>403 Prohibited</TITLE>',
-		'</HEAD><BODY>', '<H1>Prohibited</H1> ',
-	        'You are not permitted to view the content of this location: ',
-		sprintf ('%V', http_path ()), '.</BODY></HTML>'));
-	  return 0;
-	}
-      if (_col_id is null and (rc >= 0))
-	{
-	  if (uid = http_nobody_uid () and gid = http_nogroup_gid ())
-	    uid := null;
-	  rc := DAV_AUTHENTICATE_HTTP (tgt_id, tgt_type, '1_1', 0, lines, uname, upwd, uid, gid, perms);
-	  if (rc >= 0)
-	    exec_safety_level := 1;
-	}
+      tgt_type := 'C';
+      tgt_id := _col_id;
+      if (get_keyword ('a', params) in ('new', 'create', 'upload', 'link', 'update'))
+        tgt_perms := '_1_';
     }
+    else
+    {
+      tgt_type := 'R';
+      tgt_id := _res_id;
+      if (get_keyword ('a', params) in ('update', 'edit'))
+        tgt_perms := '_1_';
+    }
+    rc := DAV_AUTHENTICATE_HTTP (tgt_id, tgt_type, tgt_perms, 1, lines, uname, upwd, uid, gid, perms);
+    if ((rc < 0) and (rc <> -1))
+    {
+      if (-24 = rc)
+        return 0;
 
+      http_rewrite (0);
+      http_request_status ('HTTP/1.1 403 Prohibited');
+      http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
+      '<HTML><HEAD>',
+      '<TITLE>403 Prohibited</TITLE>',
+      '</HEAD><BODY>', '<H1>Prohibited</H1> ',
+            'You are not permitted to view the content of this location: ',
+      sprintf ('%V', http_path ()), '.</BODY></HTML>'));
+      return 0;
+    }
+    if (_col_id is null and (rc >= 0))
+    {
+      if (uid = http_nobody_uid () and gid = http_nogroup_gid ())
+        uid := null;
+      rc := DAV_AUTHENTICATE_HTTP (tgt_id, tgt_type, '1_1', 0, lines, uname, upwd, uid, gid, perms);
+      if (rc >= 0)
+        exec_safety_level := 1;
+    }
+  }
   http_rewrite (0);
 
   -- execute + webid
   auth_opts := http_map_get ('auth_opts');
+
   if (isvector (auth_opts) and mod (length (auth_opts), 2) = 0)
     webid_check := atoi (get_keyword ('webid_check', auth_opts, '0'));
   else
     webid_check := 0;
   webid_check_rc := 1;
   if (is_https_ctx () and webid_check and http_map_get ('executable'))
+  {
+    declare gid, perms, _check_id, _check_type any;
+    uid := null;
+    if (isinteger (_res_id))
     {
-      declare gid, perms, _check_id, _check_type any;
-      uid := null;
-      if (isinteger (_res_id))
-	{
-	  _check_id := _res_id;
-	  _check_type := 'R';
-	}
-      else
-	{
-	  _check_id := _col_id;
-	  _check_type := 'C';
-       	}
-      webid_check_rc := DAV_AUTHENTICATE_HTTP (_check_id, _check_type, '1__', 1, lines, uname, upwd, uid, gid, perms);
-      if ((webid_check_rc < 0) and (webid_check_rc <> -1))
-	return 0;
+      _check_id := _res_id;
+      _check_type := 'R';
     }
+    else
+    {
+      _check_id := _col_id;
+      _check_type := 'C';
+    }
+    webid_check_rc := DAV_AUTHENTICATE_HTTP (_check_id, _check_type, '1__', 1, lines, uname, upwd, uid, gid, perms);
+    if ((webid_check_rc < 0) and (webid_check_rc <> -1))
+      return 0;
+  }
   http_rewrite (0);
   if (_col_id is not null and http_path () not like '%/')
-    {
-      http_request_status ('HTTP/1.1 301 Moved Permanently');
-      http_header (sprintf ('Location: %s/\r\n', http_path ()));
-      return (0);
-    };
+  {
+    http_request_status ('HTTP/1.1 301 Moved Permanently');
+    http_header (sprintf ('Location: %s/\r\n', http_path ()));
+    return (0);
+  }
   declare location varchar;
   if (WS.WS.IS_REDIRECT_REF (path, lines, location) and (get_keyword ('a', params, '') not in ('update', 'edit')))
-    {
-      declare host1 varchar;
-      http_request_status ('HTTP/1.1 302 Found');
-      host1 := http_request_header (lines, 'Host', NULL, NULL);
-      if (host1 is not null and location not like '%://%')
-        host1 := concat ('http://', host1);
-      else
-        host1 := '';
-      http_header (sprintf ('Location: %s%s\r\n', host1, location));
-      return (0);
-    }
+  {
+    declare host1 varchar;
+    http_request_status ('HTTP/1.1 302 Found');
+    host1 := http_request_header (lines, 'Host', NULL, NULL);
+    if (host1 is not null and location not like '%://%')
+      host1 := concat ('http://', host1);
+    else
+      host1 := '';
+    http_header (sprintf ('Location: %s%s\r\n', host1, location));
+    return (0);
+  }
   http_request_status ('HTTP/1.1 200 OK');
   client_etag := WS.WS.FINDPARAM (lines, 'If-None-Match:');
   if ((_col_id is not null) or ((_res_id is not null) and (get_keyword ('a', params) in ('update', 'edit'))))
+  {
+    declare dir_ret any;
+    if (WS.WS.GET_EXT_LDP(lines, client_etag, full_path, _res_id, _col_id))
+      return;
+
+    if (0 = http_map_get ('browseable'))
     {
-      declare dir_ret any;
-	  if (WS.WS.GET_EXT_LDP(lines, client_etag, full_path, _res_id, _col_id))
-		return;
-      if (0 = http_map_get ('browseable'))
-	{
-	  http_rewrite (0);
-	  http_request_status ('HTTP/1.1 403 Prohibited');
-	  http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
-		'<HTML><HEAD>',
-		'<TITLE>403 Prohibited</TITLE>',
-		'</HEAD><BODY>', '<H1>Prohibited</H1> ',
-	        'You are not permitted to view the directory index in this location: ',
-		sprintf ('%V', http_path ()), '.</BODY></HTML>'));
-	  return;
-	}
-       dir_ret := WS.WS.DAV_DIR_LIST (full_path, http_path(), _col_id, uname, upwd, uid);
-       if (DAV_HIDE_ERROR (dir_ret))
-	{
-	  http_rewrite (0);
-	  http_request_status ('HTTP/1.1 500 Internal Server Error or Misconfiguration');
-	  http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
-		'<HTML><HEAD>',
-		'<TITLE>500 Internal Server Error or Misconfiguration</TITLE>',
-		'</HEAD><BODY>', '<H1>Internal Server Error or Misconfiguration</H1> ',
-	        'Failed to return the directory index in this location: ',
-		sprintf ('%V', http_path ()), '<BR>', DAV_PERROR (dir_ret), '</BODY></HTML>'));
-	  return;
-	}
-       return;
+      http_rewrite (0);
+      http_request_status ('HTTP/1.1 403 Prohibited');
+      http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
+      '<HTML><HEAD>',
+      '<TITLE>403 Prohibited</TITLE>',
+      '</HEAD><BODY>', '<H1>Prohibited</H1> ',
+            'You are not permitted to view the directory index in this location: ',
+      sprintf ('%V', http_path ()), '.</BODY></HTML>'));
+      return;
     }
+    dir_ret := WS.WS.DAV_DIR_LIST (full_path, http_path(), _col_id, uname, upwd, uid);
+    if (DAV_HIDE_ERROR (dir_ret))
+    {
+      http_rewrite (0);
+      http_request_status ('HTTP/1.1 500 Internal Server Error or Misconfiguration');
+      http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
+      '<HTML><HEAD>',
+      '<TITLE>500 Internal Server Error or Misconfiguration</TITLE>',
+      '</HEAD><BODY>', '<H1>Internal Server Error or Misconfiguration</H1> ',
+            'Failed to return the directory index in this location: ',
+      sprintf ('%V', http_path ()), '<BR>', DAV_PERROR (dir_ret), '</BODY></HTML>'));
+      return;
+    }
+    return;
+  }
+
 -- if def VIRTUAL_DIR
 --  if (isstring (def_page))
 --    http (concat ('def page is "', def_page, '".'));
 
 --  http (concat ('physical path is "', full_path, '".'));
 
-  is_admin_owned_res := 0; rc := 0;
+  is_admin_owned_res := 0;
+  rc := 0;
   -- XXX: moved at common cursor rc := WS.WS.FINDRES (path, _col, _name);
   -- Only WebDAV admin can own executable resources
   -- XXX: moved at common cursor
   --if (exists (select 1 from WS.WS.SYS_DAV_RES where RES_NAME = _name and RES_COL = _col
-  --	and RES_OWNER = http_dav_uid ()))
+  --  and RES_OWNER = http_dav_uid ()))
   --  is_admin_owned_res := 1;
   modt := null;
   if (isinteger (_res_id))
+  {
+    for select RES_OWNER, RES_COL, RES_NAME, RES_TYPE, RES_MOD_TIME
+          from WS.WS.SYS_DAV_RES
+         where RES_ID = _res_id do
     {
-      for select RES_OWNER, RES_COL, RES_NAME, RES_TYPE, RES_MOD_TIME
-	from WS.WS.SYS_DAV_RES where RES_ID = _res_id do
-	{
-	  _col := RES_COL;
-	  _name := RES_NAME;
-	  resource_owner := RES_OWNER;
-	  cont_type := RES_TYPE;
-	  modt := RES_MOD_TIME;
-	  if (resource_owner = http_dav_uid ())
-	    is_admin_owned_res := 1;
-        }
+      _col := RES_COL;
+      _name := RES_NAME;
+      resource_owner := RES_OWNER;
+      cont_type := RES_TYPE;
+      modt := RES_MOD_TIME;
+      if (resource_owner = http_dav_uid ())
+        is_admin_owned_res := 1;
     }
-	if (WS.WS.GET_EXT_LDP(lines, client_etag, full_path, _res_id, _col_id))
-		return;
+  }
+  if (WS.WS.GET_EXT_LDP(lines, client_etag, full_path, _res_id, _col_id))
+    return;
+
   --for select COL_OWNER from WS.WS.SYS_DAV_COL where COL_ID = _col do
   --  {
   --    collection_owner := COL_OWNER;
   --  }
 
   -- special extensions can be executed if special flag is set
-   if ((http_map_get ('executable') and webid_check_rc >= 0) or (exec_safety_level and is_admin_owned_res))
-     exec_safety_level := 2;
+  if ((http_map_get ('executable') and webid_check_rc >= 0) or (exec_safety_level and is_admin_owned_res))
+    exec_safety_level := 2;
   -- dbg_obj_princ ('exec_safety_level is ', exec_safety_level);
   -- when directory is executable set the owner for execution to the resource owner
   -- this would apply to the included files etc.
@@ -2381,178 +2390,186 @@ again:
   --    http_rewrite ();
   --    http_request_status ('HTTP/1.1 403 Forbidden');
   --    http ('<HTML><BODY><p>The requested active content cannot be displayed due to execution restriction</p>
-  --	     <p>To enable execution set the EnabledDavVSP INI setting to 1.</p></BODY></HTML>');
+  --       <p>To enable execution set the EnabledDavVSP INI setting to 1.</p></BODY></HTML>');
   --    return;
   --  }
 
   if ((exec_safety_level > 1) and full_path like '%.vsp')
+  {
+    declare incstat any;
+    declare pname varchar;
+    pname := sprintf ('%s.%s.%s', http_map_get ('vsp_qual'), http_map_get ('vsp_proc_owner'), full_path);
+    if (__proc_exists (pname) and not WS.WS.DAV_VSP_INCLUDES_CHANGED (full_path, http_map_get ('vsp_proc_owner')))
     {
-      declare incstat any;
-      declare pname varchar;
-      pname := sprintf ('%s.%s.%s', http_map_get ('vsp_qual'), http_map_get ('vsp_proc_owner'), full_path);
-      if (__proc_exists (pname) and not WS.WS.DAV_VSP_INCLUDES_CHANGED (full_path, http_map_get ('vsp_proc_owner')))
-	{
-	  stat := '00000';
-	  msg := '';
-	  commit work;
-	  declare exit handler for sqlstate '*', not found {
-	    __pop_user_id ();
-	    if (__SQL_STATE <> 100)
-	      {
-		stat := __SQL_STATE;
-		msg := __SQL_MESSAGE;
-	      }
-	    else
-	      {
-		stat := '01W01';
-		msg := 'No WHENEVER statement provided for SQLCODE 100';
-	      }
-	    goto exec_err;
-	  };
-	  __set_user_id (http_map_get ('vsp_uid'));
-	  call (pname) (path, params, lines);
-	  __pop_user_id ();
-	  -- dbg_obj_princ ('VSP called without re-compilation: ', stat, msg);
-	  return;
-	}
-       select blob_to_string (RES_CONTENT), RES_FULL_PATH into resource_content, full_path
-	  from WS.WS.SYS_DAV_RES where RES_NAME = _name and RES_COL = _col;
-       p_comm := sprintf (
-	       'create procedure "%s"."%s"."%s" (in path varchar, in params varchar, in lines varchar) { ?>',
-	       http_map_get ('vsp_qual'), http_map_get ('vsp_proc_owner'), full_path);
-       str := string_output ();
-       http (p_comm, str);
-       incstat := vector ();
-       WS.WS.EXPAND_INCLUDES (full_path, str, 0, 1, resource_content, incstat);
-       http ('<?vsp }', str);
-       str := string_output_string (str);
-       -- dbg_obj_princ ('__depend_', incstat);
-       stat := '00000';
-       msg := '';
-       __set_user_id (http_map_get ('vsp_uid'));
-       exec (str, stat, msg);
-       commit work;
-       if (stat = '00000')
-	 {
-	   stat := '00000';
-	   msg := '';
-	   p_comm := sprintf ('call "%s"."%s"."%s" (?, ?, ?)',
-	       http_map_get ('vsp_qual'), http_map_get ('vsp_proc_owner'), full_path);
-	   exec (p_comm, stat, msg, vector (path, params, lines));
-	 }
-       __pop_user_id ();
-       -- dbg_obj_princ ('execution status: ', stat, msg);
-       if (stat <> '00000')
-	 {
-	   exec_err:
-	   http_status_set (500);
-	   http ('<html><body>');
-	   http (concat ('<H3>Execution of "', sprintf ('%V', http_path()), '" failed.</H3>'));
-	   http (concat ('<p><b>SQL Error: ', stat, ' '));
-	   http_value (msg);
-	   http ('</b></p>');
-	   http ('</body></html>');
-	 }
-       else
-	 registry_set (concat ('__depend_', http_map_get ('vsp_proc_owner'), '_', full_path), serialize(incstat));
-       return;
+      stat := '00000';
+      msg := '';
+      commit work;
+      declare exit handler for sqlstate '*', not found
+      {
+        __pop_user_id ();
+        if (__SQL_STATE <> 100)
+        {
+          stat := __SQL_STATE;
+          msg := __SQL_MESSAGE;
+        }
+        else
+        {
+          stat := '01W01';
+          msg := 'No WHENEVER statement provided for SQLCODE 100';
+        }
+        goto exec_err;
+      };
+      __set_user_id (http_map_get ('vsp_uid'));
+      call (pname) (path, params, lines);
+      __pop_user_id ();
+      -- dbg_obj_princ ('VSP called without re-compilation: ', stat, msg);
+      return;
     }
+    select blob_to_string (RES_CONTENT), RES_FULL_PATH
+      into resource_content, full_path
+      from WS.WS.SYS_DAV_RES
+     where RES_NAME = _name and RES_COL = _col;
+    p_comm := sprintf (
+      'create procedure "%s"."%s"."%s" (in path varchar, in params varchar, in lines varchar) { ?>',
+      http_map_get ('vsp_qual'), http_map_get ('vsp_proc_owner'), full_path);
+    str := string_output ();
+    http (p_comm, str);
+    incstat := vector ();
+    WS.WS.EXPAND_INCLUDES (full_path, str, 0, 1, resource_content, incstat);
+    http ('<?vsp }', str);
+    str := string_output_string (str);
+    -- dbg_obj_princ ('__depend_', incstat);
+    stat := '00000';
+    msg := '';
+    __set_user_id (http_map_get ('vsp_uid'));
+    exec (str, stat, msg);
+    commit work;
+    if (stat = '00000')
+    {
+      stat := '00000';
+      msg := '';
+      p_comm := sprintf ('call "%s"."%s"."%s" (?, ?, ?)',
+      http_map_get ('vsp_qual'), http_map_get ('vsp_proc_owner'), full_path);
+      exec (p_comm, stat, msg, vector (path, params, lines));
+    }
+    __pop_user_id ();
+    -- dbg_obj_princ ('execution status: ', stat, msg);
+    if (stat <> '00000')
+    {
+      exec_err:
+      http_status_set (500);
+      http ('<html><body>');
+      http (concat ('<H3>Execution of "', sprintf ('%V', http_path()), '" failed.</H3>'));
+      http (concat ('<p><b>SQL Error: ', stat, ' '));
+      http_value (msg);
+      http ('</b></p>');
+      http ('</body></html>');
+    }
+    else
+      registry_set (concat ('__depend_', http_map_get ('vsp_proc_owner'), '_', full_path), serialize(incstat));
+
+    return;
+  }
   else if ((exec_safety_level > 1) and full_path like '%.vspx')
-    {
-      -- dbg_obj_princ ('Will run DB.DBA.vspx_dispatch (', full_path, path, params, lines,')');
-      DB.DBA.vspx_dispatch (full_path, path, params, lines);
-    }
+  {
+    -- dbg_obj_princ ('Will run DB.DBA.vspx_dispatch (', full_path, path, params, lines,')');
+    DB.DBA.vspx_dispatch (full_path, path, params, lines);
+  }
   else
-    {
-      declare _server_etag, _xslt_sheet, _document_q, _xml_t varchar;
+  {
+    declare _server_etag, _xslt_sheet, _document_q, _xml_t varchar;
     declare _sse, _sse_cont_type, _sse_mime_encrypt, _sse_email, _sse_certificate any;
-      declare fext, hdl_mode varchar;
-      declare dot integer;
-      declare xml_mime_type varchar;
+    declare fext, hdl_mode varchar;
+    declare dot integer;
+    declare xml_mime_type varchar;
     whenever not found goto err_end;
 
-      -- XXX: temporary to avoid test noise
-      set isolation='repeatable';
+    -- XXX: temporary to avoid test noise
+    set isolation='repeatable';
     _sse_mime_encrypt := 0;
 
 
-      content := string_output (http_strses_memory_size ());
-      rc := DAV_RES_CONTENT_INT (_res_id, content, cont_type, 1, 0);
+    content := string_output (http_strses_memory_size ());
+    rc := DAV_RES_CONTENT_INT (_res_id, content, cont_type, 1, 0);
     _sse_cont_type := cont_type;
     cont_type := case when not _sse_mime_encrypt then cont_type else 'message/rfc822' end;
 
-      -- dbg_obj_princ ('DAV_RES_CONTENT_INT (', _res_id, ', [content], ', cont_type, 1, 0, ' returns ', rc);
-      if (DAV_HIDE_ERROR (rc) is null)
-	{
-	  http_rewrite (0);
-	  http_request_status ('HTTP/1.1 500 Internal server error');
-	  http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
-		'<HTML><HEAD>',
-		'<TITLE>500 Internal server error</TITLE>',
-		'</HEAD><BODY>', '<H1>Internal server error</H1> ',
-	        'Server is unable to compose the text of the resource in this location: ',
-		sprintf ('%V', http_path ()), '.</BODY></HTML>'));
-	  return;
-	}
-      -- HTTP handlers are going here
-      _name := path [length(path)-1];
-      -- dbg_obj_princ (_name);
+    -- dbg_obj_princ ('DAV_RES_CONTENT_INT (', _res_id, ', [content], ', cont_type, 1, 0, ' returns ', rc);
+    if (DAV_HIDE_ERROR (rc) is null)
+    {
+      http_rewrite (0);
+      http_request_status ('HTTP/1.1 500 Internal server error');
+      http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
+      '<HTML><HEAD>',
+      '<TITLE>500 Internal server error</TITLE>',
+      '</HEAD><BODY>', '<H1>Internal server error</H1> ',
+            'Server is unable to compose the text of the resource in this location: ',
+      sprintf ('%V', http_path ()), '.</BODY></HTML>'));
+      return;
+    }
+
+    -- HTTP handlers are going here
+    _name := path [length(path)-1];
+    -- dbg_obj_princ (_name);
     if (not _sse_mime_encrypt)
     {
       dot := strrchr (_name, '.');
       if (dot is not null)
-	{
-          declare is_exist integer;
-          is_exist := 0;
-          fext := ws_get_ftext (_name, dot);
-	  if (__proc_exists (fext, 2))
-	    is_exist := 1;
-          else
-            {
-               fext := concat ('WS.WS.', fext);
-               if (__proc_exists (fext, 1))
-                 is_exist := 1;
-            }
+      {
+        declare is_exist integer;
 
-	  if (is_exist and exec_safety_level > 0)
-	    {
-	      -- handler string input
-              declare stream_params any;
-              fext := cast (fext as varchar);
-              hdl_mode := concat ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:', full_path);
-              __set_user_id (http_map_get ('vsp_uid'));
-              stream_params := __http_stream_params ();
-	      commit work;
-	      http (call (fext) (string_output_string (content), stream_params, lines, hdl_mode));
-	      if (isarray (hdl_mode) and length (hdl_mode) > 1)
-		{
-		  if (hdl_mode[0] <> '' and isstring (hdl_mode[0]))
-		    http_request_status (hdl_mode[0]);
-		  if (hdl_mode[1] <> '' and isstring (hdl_mode[1]))
-		    http_header (hdl_mode[1]);
-		}
-	      return;
-	    }
-	}
+        is_exist := 0;
+        fext := ws_get_ftext (_name, dot);
+
+        if (__proc_exists (fext, 2))
+          is_exist := 1;
+        else
+        {
+          fext := concat ('WS.WS.', fext);
+          if (__proc_exists (fext, 1))
+            is_exist := 1;
+        }
+
+        if (is_exist and exec_safety_level > 0)
+        {
+          -- handler string input
+          declare stream_params any;
+          fext := cast (fext as varchar);
+          hdl_mode := concat ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:', full_path);
+          __set_user_id (http_map_get ('vsp_uid'));
+          stream_params := __http_stream_params ();
+          commit work;
+          http (call (fext) (string_output_string (content), stream_params, lines, hdl_mode));
+          if (isarray (hdl_mode) and length (hdl_mode) > 1)
+          {
+            if (hdl_mode[0] <> '' and isstring (hdl_mode[0]))
+              http_request_status (hdl_mode[0]);
+
+            if (hdl_mode[1] <> '' and isstring (hdl_mode[1]))
+              http_header (hdl_mode[1]);
+          }
+          return;
+        }
+      }
     }
-      _xml_t := DAV_HIDE_ERROR (DAV_PROP_GET_INT (_res_id, 'R', 'xml-template', 0), '');
-      -- XML templates execution
-      if (cont_type = 'text/xml' and
+    _xml_t := DAV_HIDE_ERROR (DAV_PROP_GET_INT (_res_id, 'R', 'xml-template', 0), '');
+    -- XML templates execution
+    if (cont_type = 'text/xml' and
        (http_map_get ('xml_templates') or _xml_t = 'execute') and
        (exec_safety_level > 1))
-	{
-	  declare new_params, _enc any;
-	  declare _base_url varchar;
+    {
+      declare new_params, _enc any;
+      declare _base_url varchar;
 
-          _base_url := concat ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:', full_path);
+      _base_url := concat ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:', full_path);
       xml_mime_type := DAV_HIDE_ERROR (DAV_PROP_GET_INT (_res_id, 'R', 'xml-sql-mime-type', 0), 'text/xml');
       new_params := vector_concat (params, vector ('template', string_output_string (content), '__base_url', _base_url, 'contenttype', xml_mime_type));
-          _enc := DAV_HIDE_ERROR (DAV_PROP_GET_INT (_res_id, 'R', 'xml-sql-encoding', 0));
-          DB.DBA.__XML_TEMPLATE (path, new_params, lines, _enc);
-          return;
-	}
+      _enc := DAV_HIDE_ERROR (DAV_PROP_GET_INT (_res_id, 'R', 'xml-sql-encoding', 0));
+      DB.DBA.__XML_TEMPLATE (path, new_params, lines, _enc);
+      return;
+    }
 
-      server_etag := WS.WS.ETAG (_name, _col, modt);
+    server_etag := WS.WS.ETAG (_name, _col, modt);
     if (not _sse_mime_encrypt)
     {
       _document_q := DAV_HIDE_ERROR (DAV_PROP_GET_INT (_res_id, 'R', 'xml-sql', 0), '');
@@ -2562,235 +2579,245 @@ again:
         cont_type := 'sql/xml';
 
       if (cont_type <> '' and cont_type <> 'sql/xml')
-	{
-	  if (cont_type <> 'xml/view' and cont_type <> 'xml/persistent-view')
-	    {
-	      declare hdr_str any;
-	      hdr_str := http_header_get ();
-	      hdr_str := hdr_str || 'ETag: "' || server_etag || '"\r\n';
-	      if (strcasestr (hdr_str, 'Content-Type:') is null)
-		hdr_str := hdr_str || 'Content-Type: ' || cont_type || '\r\n';
-              if (isinteger (_res_id) and
-		exists (select 1 from WS.WS.SYS_DAV_PROP where PROP_NAME = 'virt:aci_meta_n3' and PROP_TYPE = 'R' and PROP_PARENT_ID = _res_id))
-		{
-		  hdr_str := hdr_str || sprintf ('Link: <%s://%s%s,acl>; rel="http://www.w3.org/ns/auth/acl#"; title="Access Control File"\r\n',
-			case when is_https_ctx () then 'https' else 'http' end,
-			http_request_header (lines, 'Host', NULL, NULL), http_path ());
-		}
+      {
+        if (cont_type <> 'xml/view' and cont_type <> 'xml/persistent-view')
+        {
+          declare hdr_str any;
+          hdr_str := http_header_get ();
+          hdr_str := hdr_str || 'ETag: "' || server_etag || '"\r\n';
+          if (strcasestr (hdr_str, 'Content-Type:') is null)
+            hdr_str := hdr_str || 'Content-Type: ' || cont_type || '\r\n';
+
+          if (isinteger (_res_id) and
+              exists (select 1 from WS.WS.SYS_DAV_PROP where PROP_NAME = 'virt:aci_meta_n3' and PROP_TYPE = 'R' and PROP_PARENT_ID = _res_id))
+          {
+            hdr_str := hdr_str || sprintf ('Link: <%s://%s%s,acl>; rel="http://www.w3.org/ns/auth/acl#"; title="Access Control File"\r\n',
+            case when is_https_ctx () then 'https' else 'http' end,
+            http_request_header (lines, 'Host', NULL, NULL), http_path ());
+          }
           rdf_graph := (select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = _col and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdfSink-graph');
-	      if (rdf_graph is not null)
-	        {
-		  declare rdf_uri varchar;
-		  rdf_uri := rfc1808_expand_uri (DB.DBA.HTTP_REQUESTED_URL (), DAV_RDF_RES_NAME (rdf_graph));
-		  hdr_str := hdr_str || sprintf ('Link: <%s>; rel="alternate"\r\n', rdf_uri);
-                }
-  	      http_header (hdr_str);
-	    }
-	  else
-	    http_header (concat ('Content-Type: text/xml\r\nETag: "',server_etag,'"\r\n'));
-	}
+          if (rdf_graph is not null)
+          {
+            declare rdf_uri varchar;
+            rdf_uri := rfc1808_expand_uri (DB.DBA.HTTP_REQUESTED_URL (), DAV_RDF_RES_NAME (rdf_graph));
+            hdr_str := hdr_str || sprintf ('Link: <%s>; rel="alternate"\r\n', rdf_uri);
+          }
+          http_header (hdr_str);
+        }
+        else
+          http_header (concat ('Content-Type: text/xml\r\nETag: "',server_etag,'"\r\n'));
+      }
     }
 --      else
---	http_header (concat ('ETag: "', server_etag, '"\n'));
+--  http_header (concat ('ETag: "', server_etag, '"\n'));
 
-      _server_etag := server_etag;
-      server_etag := concat ('"', server_etag, '"');
+    _server_etag := server_etag;
+    server_etag := concat ('"', server_etag, '"');
 
-      if (client_etag <> server_etag)
-	{
-	  http_request_status ('HTTP/1.1 200 OK');
-          xpr := get_keyword ('XPATH', params, '/*');
-	  if (cont_type = 'xml/view')
-	    {
-	      declare ondemand_data varchar;
-	      declare view_name varchar;
-	      declare meta_mode integer;
-	      declare meta_data varchar;
-	      declare delim1, delim2 integer;
-	      declare zero integer;
-	      ondemand_data := string_output_string (content);
-	      delim1 := locate('{view_name}\n',ondemand_data);
-	      delim2 := locate('{meta_mode}\n',ondemand_data);
-	      if(delim1 >= delim2 or delim2 = 0)
-	        {
-		  view_name := ondemand_data;
-		  meta_mode := 0;
-		  meta_data := '';
-		} else {
-		  view_name := substring(ondemand_data, 1, delim1-1);
-		  delim1 := delim1 + length('{view_name}\n');
-		  meta_mode := cast(substring(ondemand_data, delim1, delim2-delim1) as integer);
-		  delim2 := delim2 + length('{meta_mode}\n');
-		  meta_data := substring(ondemand_data, delim2, length(ondemand_data)+1-delim2);
-		}
-              if (xpr = '')
-                {
-		  http ('Error: XPATH param is empty');
-		  return;
-		}
-	      sxtag := get_keyword ('set_tag', params, view_name);
-	      maxres := atoi (get_keyword ('maxresults', params, '100'));
-	      rxtag := get_keyword ('result_tag', params, '');
-	      if (rxtag <> '')
-	        rxtag := concat ('__tag  "', rxtag, '"');
-              p_comm := concat ('XPATH [__http __view "', view_name, '" ', rxtag, '] ', xpr);
-              stat := '00000';
-              msg := '';
-	      zero := 0;
-	      WS.WS.XML_VIEW_HEADER (view_name, sxtag, full_path, meta_mode, meta_data, zero);
-	      -- http(concat('<!-- ',view_name,' -->\n'));
-	      -- http(concat('<!-- ',sxtag,' -->\n'));
-	      -- http(concat('<!-- ',full_path,' -->\n'));
-	      -- http(concat('<!-- ',cast(meta_mode as varchar),' -->\n'));
-	      -- http(concat('<!-- ',meta_data,' -->\n'));
-              err := exec (p_comm, stat, msg, vector (), maxres);
-	      http (concat ('</', sxtag, '>\n'));
-              if (stat = '00000')
-	        return;
-	      else
-	        {
-	          http_header (concat ('Content-Type: text/html\r\n'));
-	          http (concat ('SQL Error: ', stat, ' ', msg));
-	          return;
-	        }
-	    }
-    	  else if ((cont_type = 'text/xml' or cont_type = 'xml/persistent-view' or (cont_type = 'sql/xml' and length (content) > 0))  and xpr <> '/*')
-	    {
-	      declare c_xml cursor for select t from WS.WS.SYS_DAV_RES where xpath_contains (RES_CONTENT, xpr, t)
-		    and RES_NAME = _name and RES_COL = _col;
-              declare ht varchar;
-	      sxtag := get_keyword ('set_tag', params, 'document');
-	      rxtag := get_keyword ('result_tag', params, '');
-	      http (sprintf ('<?xml version="1.0" encoding="%s"?>\n', current_charset()));
-	      http (concat ('<', sxtag, '>\n'));
-	      whenever not found goto end_xml;
-	      open c_xml;
-	      while (1)
-	        {
-		  fetch c_xml into ht;
-		  if (rxtag <> '')
-		    http (concat ('<', rxtag, '>\n'));
-		  http_value (ht);
-		  if (rxtag <> '')
-		    http (concat ('</', rxtag, '>\n'));
-		}
-end_xml:
-              close c_xml;
-	      http (concat ('</', sxtag, '>\n'));
-	    }
-	  else if (cont_type = 'application/sparql-query')
-	    {
-	       WS.WS.SPARQL_QUERY_GET (content, path, lines);
-	    }
-	  else if (not isnull (content))
-	    {
-	      if (DAV_HIDE_ERROR (DAV_PROP_GET_INT (_res_id, 'R', 'xper', 0)) is not null)
- 	       {
-	         http (sprintf ('<?xml version="1.0" encoding="%s" ?>\n', current_charset()));
-	         http_value (xper_cut (xml_persistent (content)));
-	       }
-	      else
-	       { -- normal static content from DAV
+    if ((client_etag <> server_etag) or (1 = 0))
+    {
+      http_request_status ('HTTP/1.1 200 OK');
+      xpr := get_keyword ('XPATH', params, '/*');
+      if (cont_type = 'xml/view')
+      {
+        declare ondemand_data varchar;
+        declare view_name varchar;
+        declare meta_mode integer;
+        declare meta_data varchar;
+        declare delim1, delim2 integer;
+        declare zero integer;
+        ondemand_data := string_output_string (content);
+        delim1 := locate('{view_name}\n',ondemand_data);
+        delim2 := locate('{meta_mode}\n',ondemand_data);
+        if(delim1 >= delim2 or delim2 = 0)
+        {
+          view_name := ondemand_data;
+          meta_mode := 0;
+          meta_data := '';
+        } else {
+          view_name := substring(ondemand_data, 1, delim1-1);
+          delim1 := delim1 + length('{view_name}\n');
+          meta_mode := cast(substring(ondemand_data, delim1, delim2-delim1) as integer);
+          delim2 := delim2 + length('{meta_mode}\n');
+          meta_data := substring(ondemand_data, delim2, length(ondemand_data)+1-delim2);
+        }
+        if (xpr = '')
+        {
+          http ('Error: XPATH param is empty');
+          return;
+        }
+        sxtag := get_keyword ('set_tag', params, view_name);
+        maxres := atoi (get_keyword ('maxresults', params, '100'));
+        rxtag := get_keyword ('result_tag', params, '');
+        if (rxtag <> '')
+          rxtag := concat ('__tag  "', rxtag, '"');
 
-		 -- handle the Range headers
-		 declare _http_ranges_header any;
-		 _http_ranges_header := http_sys_parse_ranges_header (length (content));
+        p_comm := concat ('XPATH [__http __view "', view_name, '" ', rxtag, '] ', xpr);
+        stat := '00000';
+        msg := '';
+        zero := 0;
+        WS.WS.XML_VIEW_HEADER (view_name, sxtag, full_path, meta_mode, meta_data, zero);
+        -- http(concat('<!-- ',view_name,' -->\n'));
+        -- http(concat('<!-- ',sxtag,' -->\n'));
+        -- http(concat('<!-- ',full_path,' -->\n'));
+        -- http(concat('<!-- ',cast(meta_mode as varchar),' -->\n'));
+        -- http(concat('<!-- ',meta_data,' -->\n'));
+        err := exec (p_comm, stat, msg, vector (), maxres);
+        http (concat ('</', sxtag, '>\n'));
+        if (stat = '00000')
+          return;
 
-		 if (isinteger (_http_ranges_header))
-		   { -- the bif has already sent the 416
-		     return;
-		   }
-		 else if (_http_ranges_header is not null)
-		   { -- there is a range header
-		     declare _http_if_range varchar;
-		     _http_if_range := http_request_header (lines, 'If-Range', null, '');
-		     if (length (_http_if_range) > 0 and _http_if_range <> server_etag)
-		       _http_ranges_header := NULL;
-		     if (length (_http_ranges_header) > 2)
-		       { -- fixme: DAV does not support multipart/byteranges
-			 _http_ranges_header := NULL;
-		       }
-		   }
-		 if (_http_ranges_header is not null)
-		   {
-		     http_header (concat (coalesce (http_header_get (), ''), sprintf (
-		       'Content-Length: %ld\r\nContent-Range: bytes %ld-%ld/%ld\r\n',
-                       _http_ranges_header[1] - _http_ranges_header[0] + 1,
-		       _http_ranges_header[0],
-		       _http_ranges_header[1],
-		       length (content))));
-		     http_request_status ('HTTP/1.1 206 Partial content');
+        http_header (concat ('Content-Type: text/html\r\n'));
+        http (concat ('SQL Error: ', stat, ' ', msg));
+        return;
+      }
+      else if ((cont_type = 'text/xml' or cont_type = 'xml/persistent-view' or (cont_type = 'sql/xml' and length (content) > 0))  and xpr <> '/*')
+      {
+        declare c_xml cursor for select t from WS.WS.SYS_DAV_RES where xpath_contains (RES_CONTENT, xpr, t)
+        and RES_NAME = _name and RES_COL = _col;
+        declare ht varchar;
 
-		     declare _left, _to_get, _start integer;
-		     declare _chunk, _ses any;
-		     _left := _http_ranges_header[1] - _http_ranges_header[0] + 1;
-		     _start := _http_ranges_header[0];
-		     _ses := http_flush (2);
+        sxtag := get_keyword ('set_tag', params, 'document');
+        rxtag := get_keyword ('result_tag', params, '');
+        http (sprintf ('<?xml version="1.0" encoding="%s"?>\n', current_charset()));
+        http (concat ('<', sxtag, '>\n'));
+        whenever not found goto end_xml;
+        open c_xml;
+        while (1)
+        {
+          fetch c_xml into ht;
+          if (rxtag <> '')
+            http (concat ('<', rxtag, '>\n'));
 
-		     declare exit handler for sqlstate '*' { rollback work; return; };
-		     --ses_write ('\r\n', _ses);
-		     while (_left > 0)
-		       {
-			 _to_get := _left;
-			 if (_to_get > 65536)
-			   _to_get := 65536;
-			 _chunk := subseq (content, _start, _start + _to_get);
-			 if (__tag (_chunk) = 185)
-			   _chunk := string_output_string (_chunk);
-			 ses_write (_chunk, _ses);
-			 _left := _left - _to_get;
-			 _start := _start + _to_get;
-		       }
-                   }
-		 else
-		   {
-		     if (length (content) > WS.WS.GET_DAV_CHUNKED_QUOTA ())
-		       http_flush (1);
-		     http (content);
-		   }
-	       }
-	      if (cont_type = 'sql/xml')
-	        {
-		  declare  _root, _doc_ses, _comments varchar;
-	          if (length (content) = 0)
-		    {
-		      declare _dtd, _sch, _enc varchar;
-		      _root := coalesce ((select blob_to_string (PROP_VALUE) from WS.WS.SYS_DAV_PROP where
-						       PROP_NAME = 'xml-sql-root'
-						       and PROP_TYPE = 'R'
-						       and PROP_PARENT_ID = _res_id), '');
-		      _dtd := coalesce ((select blob_to_string (PROP_VALUE) from WS.WS.SYS_DAV_PROP where
-						       PROP_NAME = 'xml-sql-dtd'
-						       and PROP_TYPE = 'R'
-						       and PROP_PARENT_ID = _res_id), '');
-		      _sch := coalesce ((select blob_to_string (PROP_VALUE) from WS.WS.SYS_DAV_PROP where
-						       PROP_NAME = 'xml-sql-schema'
-						       and PROP_TYPE = 'R'
-						       and PROP_PARENT_ID = _res_id), '');
-		      _comments := coalesce ((select blob_to_string (PROP_VALUE) from WS.WS.SYS_DAV_PROP where
-						       PROP_NAME = 'xml-sql-description'
-						       and PROP_TYPE = 'R'
-						       and PROP_PARENT_ID = _res_id), '');
-		      _enc := (select blob_to_string (PROP_VALUE) from WS.WS.SYS_DAV_PROP where
-						       PROP_NAME = 'xml-sql-encoding'
-						       and PROP_TYPE = 'R'
-						       and PROP_PARENT_ID = _res_id);
-		      _doc_ses := null; -- HTTP stream will be used
-	              http_rewrite ();
-	              WS.WS.XMLSQL_TO_STRSES (_document_q, _root, _sch, _dtd, _comments, _doc_ses, _enc);
-		    }
-	          if (_xslt_sheet <> '')
-		    http_xslt (_xslt_sheet);
-		  else if (length (content) = 0)
-		    http_header (http_header_get () || sprintf ('Cache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\nExpires: %s\r\nContent-Type: %s\r\n', soap_print_box (now (), '', 1), xml_mime_type));
-		  else
-		    http_header (http_header_get () || sprintf ('Content-Type: %s\r\nETag: "%s"\r\n', xml_mime_type, _server_etag));
-		}
-	    }
-	}
-      else
-	http_request_status ('HTTP/1.1 304 Not Modified');
+          http_value (ht);
+          if (rxtag <> '')
+            http (concat ('</', rxtag, '>\n'));
+        }
+      end_xml:
+        close c_xml;
+        http (concat ('</', sxtag, '>\n'));
+      }
+      else if (cont_type = 'application/sparql-query')
+      {
+        WS.WS.SPARQL_QUERY_GET (content, path, lines);
+      }
+      else if (not isnull (content))
+      {
+        if (DAV_HIDE_ERROR (DAV_PROP_GET_INT (_res_id, 'R', 'xper', 0)) is not null)
+        {
+          http (sprintf ('<?xml version="1.0" encoding="%s" ?>\n', current_charset()));
+          http_value (xper_cut (xml_persistent (content)));
+        }
+        else
+        {
+          -- normal static content from DAV
+          -- handle the Range headers
+          declare _http_ranges_header any;
+          _http_ranges_header := http_sys_parse_ranges_header (length (content));
+
+          -- the bif has already sent the 416
+          if (isinteger (_http_ranges_header))
+            return;
+
+          if (_http_ranges_header is not null)
+          {
+            -- there is a range header
+            declare _http_if_range varchar;
+
+            _http_if_range := http_request_header (lines, 'If-Range', null, '');
+            if (length (_http_if_range) > 0 and _http_if_range <> server_etag)
+              _http_ranges_header := NULL;
+
+            if (length (_http_ranges_header) > 2)
+            { -- fixme: DAV does not support multipart/byteranges
+              _http_ranges_header := NULL;
+            }
+          }
+          if (_http_ranges_header is not null)
+          {
+            http_header (concat (coalesce (http_header_get (), ''), sprintf (
+              'Content-Length: %ld\r\nContent-Range: bytes %ld-%ld/%ld\r\n',
+              _http_ranges_header[1] - _http_ranges_header[0] + 1,
+              _http_ranges_header[0],
+              _http_ranges_header[1],
+              length (content))));
+            http_request_status ('HTTP/1.1 206 Partial content');
+
+            declare _left, _to_get, _start integer;
+            declare _chunk, _ses any;
+            _left := _http_ranges_header[1] - _http_ranges_header[0] + 1;
+            _start := _http_ranges_header[0];
+            _ses := http_flush (2);
+
+            declare exit handler for sqlstate '*' { rollback work; return; };
+            --ses_write ('\r\n', _ses);
+            while (_left > 0)
+            {
+              _to_get := _left;
+              if (_to_get > 65536)
+                _to_get := 65536;
+
+              _chunk := subseq (content, _start, _start + _to_get);
+              if (__tag (_chunk) = 185)
+               _chunk := string_output_string (_chunk);
+
+              ses_write (_chunk, _ses);
+              _left := _left - _to_get;
+              _start := _start + _to_get;
+            }
+          }
+          else
+          {
+            if (length (content) > WS.WS.GET_DAV_CHUNKED_QUOTA ())
+              http_flush (1);
+
+
+            http (content);
+          }
+        }
+        if (cont_type = 'sql/xml')
+        {
+          declare  _root, _doc_ses, _comments varchar;
+          if (length (content) = 0)
+          {
+            declare _dtd, _sch, _enc varchar;
+            _root := coalesce ((select blob_to_string (PROP_VALUE) from WS.WS.SYS_DAV_PROP where
+                     PROP_NAME = 'xml-sql-root'
+                     and PROP_TYPE = 'R'
+                     and PROP_PARENT_ID = _res_id), '');
+            _dtd := coalesce ((select blob_to_string (PROP_VALUE) from WS.WS.SYS_DAV_PROP where
+                     PROP_NAME = 'xml-sql-dtd'
+                     and PROP_TYPE = 'R'
+                     and PROP_PARENT_ID = _res_id), '');
+            _sch := coalesce ((select blob_to_string (PROP_VALUE) from WS.WS.SYS_DAV_PROP where
+                     PROP_NAME = 'xml-sql-schema'
+                     and PROP_TYPE = 'R'
+                     and PROP_PARENT_ID = _res_id), '');
+            _comments := coalesce ((select blob_to_string (PROP_VALUE) from WS.WS.SYS_DAV_PROP where
+                     PROP_NAME = 'xml-sql-description'
+                     and PROP_TYPE = 'R'
+                     and PROP_PARENT_ID = _res_id), '');
+            _enc := (select blob_to_string (PROP_VALUE) from WS.WS.SYS_DAV_PROP where
+                     PROP_NAME = 'xml-sql-encoding'
+                     and PROP_TYPE = 'R'
+                     and PROP_PARENT_ID = _res_id);
+            _doc_ses := null; -- HTTP stream will be used
+            http_rewrite ();
+            WS.WS.XMLSQL_TO_STRSES (_document_q, _root, _sch, _dtd, _comments, _doc_ses, _enc);
+          }
+          xml_mime_type := DAV_HIDE_ERROR (DAV_PROP_GET_INT (_res_id, 'R', 'xml-sql-mime-type', 0), 'text/xml');
+          if (_xslt_sheet <> '')
+            http_xslt (_xslt_sheet);
+          else if (length (content) = 0)
+            http_header (http_header_get () || sprintf ('Cache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\nExpires: %s\r\nContent-Type: %s\r\n', soap_print_box (now (), '', 1), xml_mime_type));
+          else
+            http_header (http_header_get () || sprintf ('Content-Type: %s\r\nETag: "%s"\r\n', xml_mime_type, _server_etag));
+        }
+      }
     }
+    else
+      http_request_status ('HTTP/1.1 304 Not Modified');
+  }
 err_end:
   return;
 }
@@ -2984,6 +3011,7 @@ create procedure WS.WS.TTL_QUERY_POST (in path varchar, inout ses varchar, in un
   def_gr := sprintf ('http://%s%s', cname, path);
   if (exists (select 1 from DB.DBA.SYS_USERS where U_NAME = uname and U_SQL_ENABLE = 1))
     set_user_id (uname);
+
   DB.DBA.TTLP (ses, HTTP_REQUESTED_URL (), def_gr);
 }
 ;
