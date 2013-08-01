@@ -54,6 +54,7 @@
 #include "../Wi/datesupp.h"
 #include "../Wi/multibyte.h"
 #include "../Wi/srvmultibyte.h"
+#include "../Wi/srvstat.h"
 #include "../Wi/bif_xper.h"
 #include <math.h>
 #include "../libutil.h"
@@ -75,6 +76,7 @@
 #include "../Wi/sqlfn.h"
 #include "../Wi/ltrx.h"
 #include "../Wi/2pc.h"
+#include "../Wi/geo.h"
 #include "../Wi/rdf_core.h"
 
 
