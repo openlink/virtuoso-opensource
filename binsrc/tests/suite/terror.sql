@@ -1514,6 +1514,16 @@ echo both $if $equ $last[1]  "dba" "PASSED" "***FAILED";
 echo both ":  control exp and value subbq\n";
 
 EXEC_STMT ('
+create table RDF_IRI_RANK_C (rnk_iri iri_id_8, rnk_rank int not null, primary key (rnk_iri) column)
+',0)
+;
+
+EXEC_STMT ('
+alter index RDF_IRI_RANK_C on RDF_IRI_RANK_C partition (rnk_iri int (0hexffff00))
+',0)
+;
+
+EXEC_STMT ('
 sparql
 create quad storage virtrdf:IRI_Rank_Storage
 from DB.DBA.RDF_IRI_RANK_C as r

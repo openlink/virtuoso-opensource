@@ -589,7 +589,7 @@ insert into B6594 values (1, 'a');
 select "fullname" from (
       select
         case when "ext" = 'be' then
-	    0
+	    '\0'
 	  else
         concat (case when ("path" <> '') then concat ('/', "path") else '' end, '/', "name", '.', "ext")
 	  end

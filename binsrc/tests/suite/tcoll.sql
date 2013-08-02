@@ -119,6 +119,7 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": Last word of these='" $LAST[1] "'\n";
 #endif
 
+#if $NEQ $U{COLUMNSTORE} 1
 select word from testcoll 
   where cast (word as varchar collate spanish) between 'os' and 'ov' 
   order by cast (word as varchar collate spanish) desc;
@@ -129,6 +130,7 @@ ECHO BOTH ": " $ROWCNT " cast (collate spanish) words between os and ov\n";
 ECHO BOTH $IF $EQU $LAST[1] "os" "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": Last word of these='" $LAST[1] "'\n";
+#endif
 
 --
 -- Test IN-predicate.
