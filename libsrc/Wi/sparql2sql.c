@@ -5348,7 +5348,7 @@ int sparp_gp_trav_multiqm_to_unions (sparp_t *sparp, SPART *curr, sparp_trav_sta
   DO_BOX_FAST_REV (SPART *, memb, memb_ctr, curr->_.gp.members)
     { /* countdown direction of 'for' is important due to possible insertions/removals */
       int tc_count;
-      SPART **qm_cases, *ft_cond_to_relocate;
+      SPART **qm_cases, *ft_cond_to_relocate = NULL;
       int case_ctr;
       if (SPAR_TRIPLE != memb->type)
         continue;
