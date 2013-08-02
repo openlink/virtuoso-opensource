@@ -1,3 +1,9 @@
+August 02, 2013, V7.0.0:
+  * First official release of Virtuoso Open Source Edition v7 using the Column Store Engine
+
+  NOTE: At this point in time the engine is only buildable  in 64bit mode
+
+
 July 12, 2011, V7.0.0-alpha1:
   * First release of the experimental V7 branch.
 
